@@ -710,11 +710,13 @@ void model_unload(int modelnum, int force = 0);
 
 // Call to free all existing models
 void model_free_all();
+void model_instance_free_all();
 
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
 int model_create_instance(int model_num, int submodel_num = -1);
+void model_delete_instance(int model_instance_num);
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);

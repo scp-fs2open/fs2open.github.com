@@ -2860,7 +2860,7 @@ strcpy_s(parse_error_text, temp_error);
 			Mp++;
 			for(i = 0;i < sip->n_subsystems; i++)
 			{
-				if(!stricmp(sip->subsystems[i].subobj_name, name_tmp))
+				if(!subsystem_stricmp(sip->subsystems[i].subobj_name, name_tmp))
 					sp = &sip->subsystems[i];
 			}
 
@@ -3304,6 +3304,7 @@ strcpy_s(parse_error_text, temp_error);
 				}
 				else if(!stricmp(name_tmp, "linked"))
 				{
+					mprintf(("TODO: set up linked animation\n"));
 				}
 			}
 		}
@@ -5229,7 +5230,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 	// Fix up animation code references
 	for (i = 0; i < sinfo->n_subsystems; i++) {
 		for (int j = 0; j < sinfo->subsystems[i].n_triggers; j++) {
-			if (stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>")) {
+			if (subsystem_stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>")) {
 				int idx = ship_get_subobj_model_num(sinfo, sinfo->subsystems[i].triggers[j].sub_name);
 				if (idx != -1) {
 					sinfo->subsystems[i].triggers[j].subtype = idx;
@@ -6436,6 +6437,7 @@ void ship_delete( object * obj )
 //	ship_page_out_textures(shipp->ship_info_index);
 	
 	ship_clear_cockpit_displays(shipp);
+	model_delete_instance(shipp->model_instance_num);
 }
 
 // function used by ship_cleanup which is called if the ship is in a wing.
@@ -12970,14 +12972,14 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 {
 	if ( Dc_command )	{
 		dc_get_arg(ARG_STRING);
-		if ( !stricmp( Dc_arg, "weapons" ))	{
+		if ( !subsystem_stricmp( Dc_arg, "weapons" ))	{
 			dc_get_arg(ARG_FLOAT);
 			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
 				Dc_help = 1;
 			} else {
 				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, Dc_arg_float );
 			} 
-		} else if ( !stricmp( Dc_arg, "engine" ))	{
+		} else if ( !subsystem_stricmp( Dc_arg, "engine" ))	{
 			dc_get_arg(ARG_FLOAT);
 			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
 				Dc_help = 1;
@@ -12989,28 +12991,28 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 					Player_ship->flags &= (~SF_DISABLED);				// add the disabled flag
 				}
 			} 
-		} else if ( !stricmp( Dc_arg, "sensors" ))	{
+		} else if ( !subsystem_stricmp( Dc_arg, "sensors" ))	{
 			dc_get_arg(ARG_FLOAT);
 			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
 				Dc_help = 1;
 			} else {
 				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_SENSORS, Dc_arg_float );
 			} 
-		} else if ( !stricmp( Dc_arg, "communication" ))	{
+		} else if ( !subsystem_stricmp( Dc_arg, "communication" ))	{
 			dc_get_arg(ARG_FLOAT);
 			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
 				Dc_help = 1;
 			} else {
 				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_COMMUNICATION, Dc_arg_float );
 			} 
-		} else if ( !stricmp( Dc_arg, "navigation" ))	{
+		} else if ( !subsystem_stricmp( Dc_arg, "navigation" ))	{
 			dc_get_arg(ARG_FLOAT);
 			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
 				Dc_help = 1;
 			} else {
 				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_NAVIGATION, Dc_arg_float );
 			} 
-		} else if ( !stricmp( Dc_arg, "radar" ))	{
+		} else if ( !subsystem_stricmp( Dc_arg, "radar" ))	{
 			dc_get_arg(ARG_FLOAT);
 			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
 				Dc_help = 1;
@@ -16958,7 +16960,7 @@ void parse_weapon_targeting_priorities()
 int ship_get_subobj_model_num(ship_info* sip, char* subobj_name) 
 {
 	for (int i = 0; i < sip->n_subsystems; i++) {
-		if (!stricmp(sip->subsystems[i].subobj_name, subobj_name))
+		if (!subsystem_stricmp(sip->subsystems[i].subobj_name, subobj_name))
 			return sip->subsystems[i].subobj_num;
 	}
 
