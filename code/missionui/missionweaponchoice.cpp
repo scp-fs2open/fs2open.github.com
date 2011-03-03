@@ -562,7 +562,7 @@ int wl_get_pilot_subsys_index(p_object *pobjp)
 	end_index = start_index + pobjp->subsys_count;
 	pilot_index = -1;
 	for ( i = start_index; i < end_index; i++ ) {
-		if ( !stricmp(Subsys_status[i].name, NOX("pilot") ) ) {
+		if ( !subsystem_stricmp(Subsys_status[i].name, NOX("pilot") ) ) {
 			pilot_index = i;
 			break;
 		}
