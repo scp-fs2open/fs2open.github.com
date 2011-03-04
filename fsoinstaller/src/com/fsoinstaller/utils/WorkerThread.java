@@ -97,6 +97,13 @@ public class WorkerThread extends Thread
 	}
 
 	// not a parent constructor
+	public WorkerThread(Runnable target, String name, int priority)
+	{
+		super(target, name);
+		setPriority(priority);
+	}
+
+	// not a parent constructor
 	public WorkerThread(Runnable target, int priority)
 	{
 		super(target);

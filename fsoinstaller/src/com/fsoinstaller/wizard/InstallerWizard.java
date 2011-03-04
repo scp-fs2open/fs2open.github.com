@@ -19,6 +19,8 @@
 
 package com.fsoinstaller.wizard;
 
+import com.fsoinstaller.utils.MiscUtils;
+
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 
@@ -42,8 +44,9 @@ public class InstallerWizard
 		// stick the WizardContainer into a frame:
 		final JFrame frame = new JFrame();
 		frame.getContentPane().add(wizard);
-		frame.pack();
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		frame.pack();
+		MiscUtils.centerWindowOnScreen(frame);
 		frame.setVisible(true);
 	}
 }

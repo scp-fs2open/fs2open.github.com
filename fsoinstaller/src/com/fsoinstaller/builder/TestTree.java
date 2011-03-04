@@ -26,10 +26,9 @@ import com.fsoinstaller.internet.InvalidProxyException;
 
 public class TestTree extends JFrame
 {
-	public TestTree() throws MalformedURLException, InvalidProxyException, IOException //, InstallerNodeParseException
+	public TestTree() throws MalformedURLException, InvalidProxyException, IOException, InstallerNodeParseException
 	{
 		
-/*		
 		Reader reader = new FileReader("fsport.txt");
 		Writer writer = new FileWriter("fsport-new.txt");
 		
@@ -45,18 +44,17 @@ public class TestTree extends JFrame
 		InstallerNodeFactory.writeNode(writer, fsport);
 		
 		writer.close();
-*/
+
 	}
 
 	public static void main(String[] args) throws IOException, InvalidProxyException, InstallerNodeParseException
 	{
-		/*
 		JFrame frame = new TestTree();
 		frame.pack();
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.setVisible(true);
-		*/
 		
+		/*		
 		Connector connector = new Connector();
 		Downloader downloader = new Downloader(connector);
 		
@@ -69,6 +67,6 @@ System.exit(0);
 		File dir = new File("C:\\temp\\download\\");
 		boolean result = downloader.download(url, dir);
 		System.out.println(result);
-
+*/
 	}
 }
