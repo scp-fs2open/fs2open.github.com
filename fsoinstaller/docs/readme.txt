@@ -36,5 +36,9 @@ Apache Commons Logging (a dependency of CJWizard)
 http://commons.apache.org/logging/
 Apache License, version 2.0
 
+JarClassLoader
+http://www.jdotsoft.com/JarClassLoader.php
+GNU General Public License, version 2.0
+
 Non-FS2SCP-controlled components provide source code at their respective websites.  However, the
 text of all licenses can be found in the FSO Installer jar package.

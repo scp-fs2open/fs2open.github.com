@@ -2,7 +2,8 @@
 
   <property name="projectname" value="FreeSpace Open Installer"/>
   <property name="projectversion" value="v2.0.0"/>
-  <property name="mainclass" value="com.fsoinstaller.main.FreeSpaceOpenInstaller"/>
+  <property name="main-class" value="com.fsoinstaller.main.FreeSpaceOpenInstaller"/>
+  <property name="jar-launcher" value="com.jdotsoft.jarloader.JarLauncher"/>
 
   <property name="build" value="build"/>
   <property name="dist" value="dist"/>
@@ -37,39 +38,23 @@
   </target>
 
   <target name="run" depends="compile">
-    <java classpathref="runtime.class.path" classname="${mainclass}" fork="true"/>
+    <java classpathref="runtime.class.path" classname="${main-class}" fork="true"/>
   </target>
 
   <target name="jar" depends="compile">
     <mkdir dir="${dist}"/>
-    <mkdir dir="${dist}/build"/>
-
-    <!-- copy build folder -->
-    <copy todir="${dist}/build">
-      <fileset dir="${build}"/>
-    </copy>
-
-    <!-- put library jar contents in build folder, since we want to deploy a single jar -->
-    <unzip dest="${dist}/build" overwrite="false">
-      <patternset>
-        <exclude name="META-INF/MANIFEST.MF"/>
-        <exclude name="**/*.txt"/>
-      </patternset>
-      <fileset dir="${lib}">
-        <include name="**/*.jar"/>
-      </fileset>
-    </unzip>
 
     <!-- jar it up -->
     <jar jarfile="${dist}/FreeSpaceOpenInstaller.jar">
       <fileset file="log4j.xml"/>
-      <fileset dir="${dist}/build" excludes="**/svn*"/>
+      <fileset dir="${build}" excludes="**/svn*"/>
       <fileset dir="${src}" excludes="**/svn*"/>
-      <fileset dir="${docs}" includes="*.txt"/>
-      <fileset dir="${resources}" excludes="**/svn*"/>
+      <fileset dir="." includes="${lib}/**" excludes="**/svn*"/>
+      <fileset dir="." includes="${resources}/**" excludes="**/svn*"/>
+      <fileset dir="${docs}" excludes="**/svn*"/>
       <manifest>
-        <attribute name="Main-Class" value="${mainclass}"/>
-        <attribute name="SplashScreen-Image" value="splash.gif"/>
+        <attribute name="Main-Class" value="${jar-launcher}"/>
+        <attribute name="SplashScreen-Image" value="${resources}/splash.gif"/>
       </manifest>
     </jar>
   </target>
