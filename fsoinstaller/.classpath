@@ -4,5 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/sevenzipjbinding-AllPlatforms.jar"/>
 	<classpathentry kind="lib" path="lib/sevenzipjbinding.jar"/>
+	<classpathentry kind="lib" path="lib/l2fprod-common-directorychooser.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
