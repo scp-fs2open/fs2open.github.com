@@ -20,13 +20,36 @@
 package com.fsoinstaller.wizard;
 
 import java.awt.CardLayout;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 
+import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+
+import com.fsoinstaller.utils.Logger;
+import com.fsoinstaller.utils.MiscUtils;
 
 
 public class InstallerGUI extends JFrame
 {
+	private static final Logger logger = Logger.getLogger(InstallerGUI.class);
+	
+	private static final BufferedImage app_icon;
+	static
+	{
+		BufferedImage temp = null;
+		try
+		{
+			temp = ImageIO.read(MiscUtils.getResourceURL("resources/fso_icon.png"));
+		}
+		catch (IOException ioe)
+		{
+			logger.error("Could not read banner image", ioe);
+		}
+		app_icon = temp;
+	}
+	
 	public InstallerGUI()
 	{
 		JComponent contentPane = (JComponent) getContentPane();
@@ -42,5 +65,9 @@ public class InstallerGUI extends JFrame
 		contentPane.removeAll();
 		for (InstallerPage page: pages)
 			contentPane.add(page, page.getName());
+		
+		setIconImage(app_icon);
+		setResizable(false);
+		setTitle("FreeSpace Open Installer");
 	}
 }

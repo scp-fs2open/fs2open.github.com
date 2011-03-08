@@ -20,13 +20,21 @@
 package com.fsoinstaller.wizard;
 
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 
 public class ConfigPage extends InstallerPage
 {
 	public ConfigPage()
 	{
-		add(new JLabel("Hello world!"));
 		setName("config");
+	}
+	
+	@Override
+	public JPanel createCenterPanel()
+	{
+		JPanel panel = new JPanel();
+		panel.add(new JLabel("Stuff"));
+		return panel;
 	}
 }

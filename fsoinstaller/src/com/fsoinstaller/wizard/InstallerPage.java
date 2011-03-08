@@ -19,9 +19,68 @@
 
 package com.fsoinstaller.wizard;
 
+import java.awt.BorderLayout;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JPanel;
 
+import com.fsoinstaller.utils.Logger;
+import com.fsoinstaller.utils.MiscUtils;
 
-public class InstallerPage extends JPanel
+
+public abstract class InstallerPage extends JPanel
 {
+	private static final Logger logger = Logger.getLogger(InstallerPage.class);
+	
+	private static final BufferedImage banner;
+	static
+	{
+		BufferedImage temp = null;
+		try
+		{
+			temp = ImageIO.read(MiscUtils.getResourceURL("resources/top.png"));
+		}
+		catch (IOException ioe)
+		{
+			logger.error("Could not read banner image", ioe);
+		}
+		banner = temp;
+	}
+	
+	private final JButton backButton = new JButton("< Back");
+	private final JButton nextButton = new JButton("Next >");
+	private final JButton cancelButton = new JButton("Cancel");
+	
+	public InstallerPage()
+	{
+		setLayout(new BorderLayout());
+		add(createHeaderPanel(), BorderLayout.NORTH);
+		add(createCenterPanel(), BorderLayout.CENTER);
+		add(createFooterPanel(), BorderLayout.SOUTH);
+	}
+	
+	public JPanel createHeaderPanel()
+	{
+		return new ImagePanel(banner);
+	}
+	
+	public abstract JPanel createCenterPanel();
+	
+	public JPanel createFooterPanel()
+	{
+		JPanel footer = new JPanel();
+		footer.setLayout(new BoxLayout(footer, BoxLayout.X_AXIS));
+		footer.add(Box.createHorizontalGlue());
+		footer.add(backButton);
+		footer.add(Box.createHorizontalStrut(GUIConstants.DEFAULT_MARGIN));
+		footer.add(nextButton);
+		footer.add(Box.createHorizontalStrut(GUIConstants.DEFAULT_MARGIN * 2));
+		footer.add(cancelButton);
+		return footer;
+	}
 }
