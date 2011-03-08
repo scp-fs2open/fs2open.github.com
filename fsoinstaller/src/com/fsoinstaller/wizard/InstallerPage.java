@@ -22,6 +22,7 @@ package com.fsoinstaller.wizard;
 import java.awt.BorderLayout;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URL;
 
 import javax.imageio.ImageIO;
 import javax.swing.Box;
@@ -43,7 +44,9 @@ public abstract class InstallerPage extends JPanel
 		BufferedImage temp = null;
 		try
 		{
-			temp = ImageIO.read(MiscUtils.getResourceURL("resources/top.png"));
+			URL url = MiscUtils.getResourceURL("resources/top.png");
+			if (url != null)
+				temp = ImageIO.read(url);
 		}
 		catch (IOException ioe)
 		{

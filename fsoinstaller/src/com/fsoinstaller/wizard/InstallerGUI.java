@@ -22,6 +22,7 @@ package com.fsoinstaller.wizard;
 import java.awt.CardLayout;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URL;
 
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
@@ -41,7 +42,9 @@ public class InstallerGUI extends JFrame
 		BufferedImage temp = null;
 		try
 		{
-			temp = ImageIO.read(MiscUtils.getResourceURL("resources/fso_icon.png"));
+			URL url = MiscUtils.getResourceURL("resources/fso_icon.png");
+			if (url != null)
+				temp = ImageIO.read(url);
 		}
 		catch (IOException ioe)
 		{
