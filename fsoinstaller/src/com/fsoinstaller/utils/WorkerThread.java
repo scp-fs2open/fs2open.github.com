@@ -27,7 +27,7 @@ import java.awt.EventQueue;
  * priority. This avoids the possibility that a new thread may be created from
  * the event thread and accidentally given the event thread's higher priority.
  * 
- * @see http://java.sun.com/developer/JDCTechTips/2005/tt0727.html#1
+ * @see "http://java.sun.com/developer/JDCTechTips/2005/tt0727.html#1"
  * @author Goober5000
  */
 public class WorkerThread extends Thread
