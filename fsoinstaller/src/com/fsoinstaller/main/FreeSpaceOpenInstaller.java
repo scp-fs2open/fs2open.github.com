@@ -19,12 +19,16 @@
 
 package com.fsoinstaller.main;
 
+import java.awt.EventQueue;
+
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.WindowConstants;
 
-import org.apache.log4j.Logger;
+import com.fsoinstaller.utils.Logger;
+import com.fsoinstaller.utils.MiscUtils;
+import com.fsoinstaller.wizard.InstallerGUI;
 
-import com.fsoinstaller.wizard.InstallerWizard;
 
 public class FreeSpaceOpenInstaller
 {
@@ -60,8 +64,18 @@ public class FreeSpaceOpenInstaller
 		
 		// for now, we only have one possible operation: going through the wizard
 		logger.debug("Launching wizard...");
-		InstallerWizard wizard = new InstallerWizard();
-		wizard.launch();
+		EventQueue.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				InstallerGUI gui = new InstallerGUI();
+				gui.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+				gui.pack();
+				MiscUtils.centerWindowOnScreen(gui);
+				gui.setVisible(true);
+			}
+		});
 		
 		// later we'll evaluate the runtime args to launch the txtfile builder, etc.
 	}

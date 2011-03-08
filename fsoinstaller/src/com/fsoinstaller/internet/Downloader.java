@@ -46,11 +46,10 @@ import net.sf.sevenzipjbinding.PropID;
 import net.sf.sevenzipjbinding.SevenZip;
 import net.sf.sevenzipjbinding.SevenZipException;
 
-import org.apache.log4j.Logger;
-
 import com.fsoinstaller.common.InputStreamInStream;
 import com.fsoinstaller.common.InputStreamSource;
 import com.fsoinstaller.common.OutputStreamSequentialOutStream;
+import com.fsoinstaller.utils.Logger;
 
 
 /**
