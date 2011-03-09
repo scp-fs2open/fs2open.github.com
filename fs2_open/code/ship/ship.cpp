@@ -11351,6 +11351,14 @@ int ship_info_lookup(char *token)
 
 		return -1;
 	}
+	else if (!stricmp(token, "GTF Loki (stealth)"))
+	{
+		idx = ship_info_lookup_sub("GTF Loki#stealth");
+		if (idx >= 0)
+			return idx;
+
+		return -1;
+	}
 
 	// get first part of new string
 	strcpy_s(temp1, token);
