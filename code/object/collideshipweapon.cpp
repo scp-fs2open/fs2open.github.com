@@ -157,7 +157,6 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	int	valid_hit_occurred = 0;				// If this is set, then hitpos is set
 	int	quadrant_num = -1;
 	polymodel *pm = model_get(sip->model_num);
-	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 
 	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
 	vec3d weapon_end_pos;
