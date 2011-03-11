@@ -3257,11 +3257,11 @@ void parse_common_object_data(p_object	*objp)
 		stuff_string(Subsys_status[i].name, F_NAME, NAME_LENGTH);
 		
 		// Genghis: check that the subsystem name makes sense for this ship type
-		if (stricmp("Pilot", Subsys_status[i].name))
+		if (subsystem_stricmp(Subsys_status[i].name, NOX("pilot")))
 		{
 			int j;
 			for (j=0; j < sip->n_subsystems; ++j)
-				if (!stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
+				if (!subsystem_stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
 					break;
 			if (j == sip->n_subsystems)
 				Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
