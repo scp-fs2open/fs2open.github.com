@@ -114,9 +114,4 @@ public class Configuration
 		String dirStr = MiscUtils.validateApplicationDir(dir) ? dir.getAbsolutePath() : "none";
 		properties.setProperty("application.dir", dirStr);
 	}
-	
-	public String getLoggerLevel()
-	{
-		return properties.getProperty("logger.level");
-	}
 }

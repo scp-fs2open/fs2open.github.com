@@ -32,8 +32,6 @@ import java.util.logging.Level;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
-import com.fsoinstaller.wizard.Configuration;
-
 
 /**
  * This is a wrapper over the Java logging API that provides an API similar to
@@ -53,17 +51,7 @@ public final class Logger
 	static
 	{
 		// set level of root logger
-		String levelName = Configuration.getInstance().getLoggerLevel();
-		Level level;
-		try
-		{
-			level = Level.parse(levelName);
-		}
-		catch (RuntimeException re)
-		{
-			level = Level.ALL;
-		}
-		java.util.logging.Logger.getLogger("").setLevel(level);
+		java.util.logging.Logger.getLogger("").setLevel(Level.ALL);
 		
 		List<StreamHandler> temp = new ArrayList<StreamHandler>();
 		
