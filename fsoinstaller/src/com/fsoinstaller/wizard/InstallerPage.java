@@ -21,39 +21,18 @@ package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.URL;
 
-import javax.imageio.ImageIO;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import com.fsoinstaller.utils.Logger;
-import com.fsoinstaller.utils.MiscUtils;
+import com.fsoinstaller.utils.GraphicsUtils;
 
 
 public abstract class InstallerPage extends JPanel
 {
-	private static final Logger logger = Logger.getLogger(InstallerPage.class);
-	
-	private static final BufferedImage banner;
-	static
-	{
-		BufferedImage temp = null;
-		try
-		{
-			URL url = MiscUtils.getResourceURL("resources/top.png");
-			if (url != null)
-				temp = ImageIO.read(url);
-		}
-		catch (IOException ioe)
-		{
-			logger.error("Could not read banner image", ioe);
-		}
-		banner = temp;
-	}
+	private static final BufferedImage banner = GraphicsUtils.getResourceImage("top.png");
 	
 	private final JButton backButton = new JButton("< Back");
 	private final JButton nextButton = new JButton("Next >");

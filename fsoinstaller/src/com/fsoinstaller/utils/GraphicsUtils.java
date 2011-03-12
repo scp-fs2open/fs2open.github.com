@@ -28,7 +28,10 @@ import java.awt.Image;
 import java.awt.Transparency;
 import java.awt.image.BufferedImage;
 import java.awt.image.PixelGrabber;
+import java.io.IOException;
+import java.net.URL;
 
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
 
@@ -39,12 +42,14 @@ import javax.swing.ImageIcon;
  */
 public class GraphicsUtils
 {
+	private static final Logger logger = Logger.getLogger(GraphicsUtils.class);
+	
 	private GraphicsUtils()
 	{
 	}
 	
 	/**
-	 * Adapted from http://javaalmanac.com/egs/java.awt.image/Image2Buf.html
+	 * Adapted from http://www.exampledepot.com/egs/java.awt.image/Image2Buf.html
 	 */
 	public static BufferedImage createBufferedImage(int width, int height, int transparencyType)
 	{
@@ -77,7 +82,7 @@ public class GraphicsUtils
 	}
 	
 	/**
-	 * Adapted from http://javaalmanac.com/egs/java.awt.image/HasAlpha.html
+	 * Adapted from http://www.exampledepot.com/egs/java.awt.image/HasAlpha.html
 	 */
 	public static boolean hasAlpha(Image image)
 	{
@@ -111,7 +116,7 @@ public class GraphicsUtils
 	}
 	
 	/**
-	 * Adapted from http://javaalmanac.com/egs/java.awt.image/Image2Buf.html
+	 * Adapted from http://www.exampledepot.com/egs/java.awt.image/Image2Buf.html
 	 */
 	public static BufferedImage getBufferedImage(Image image, boolean addAlpha)
 	{
@@ -139,5 +144,23 @@ public class GraphicsUtils
 		g.dispose();
 		
 		return bimage;
+	}
+	
+	public static BufferedImage getResourceImage(String resource)
+	{
+		try
+		{
+			URL url = MiscUtils.getResourceURL("resources/" + resource);
+			if (url != null)
+				return ImageIO.read(url);
+			
+			logger.warn("Resource '" + resource + "' could not be found!");
+		}
+		catch (IOException ioe)
+		{
+			logger.error("Could not read image '" + resource + "'!", ioe);
+		}
+		
+		return null;
 	}
 }
