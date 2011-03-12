@@ -24,12 +24,8 @@ import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Toolkit;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Properties;
 
 
 /**
@@ -78,66 +74,6 @@ public class MiscUtils
 		return null;
 	}
 	
-	public static Properties loadProperties(String resource)
-	{
-		Properties properties = new Properties();
-		
-		// try file
-		File file = new File(resource);
-		if (file.exists())
-		{
-			logger.info("Loading '" + resource + "' properties from file");
-			FileReader reader = null;
-			try
-			{
-				try
-				{
-					reader = new FileReader(file);
-					properties.load(reader);
-					return properties;
-				}
-				finally
-				{
-					if (reader != null)
-						reader.close();
-				}
-			}
-			catch (FileNotFoundException fnfe)
-			{
-				logger.error("The properties file exists, but it could not be opened for reading!", fnfe);
-			}
-			catch (IOException ioe)
-			{
-				logger.error("The properties file exists, but it could not be read!", ioe);
-			}
-		}
-		
-		// try stream
-		InputStream is = getResourceStream(resource);
-		if (is != null)
-		{
-			// already logged it in the other function
-			try
-			{
-				try
-				{
-					properties.load(is);
-					return properties;
-				}
-				finally
-				{
-					is.close();
-				}
-			}
-			catch (IOException ioe)
-			{
-				logger.error("There was a problem reading the properties file from the resource stream!", ioe);
-			}
-		}
-		
-		return null;
-	}
-	
 	public static InputStream getResourceStream(String resource)
 	{
 		InputStream is = ClassLoader.getSystemResourceAsStream(resource);
@@ -174,5 +110,32 @@ public class MiscUtils
 		}
 		
 		return null;
+	}
+	
+	public static File validateApplicationDir(String dirName)
+	{
+		// come on, man
+		if (dirName == null)
+			return null;
+		
+		File file = new File(dirName);
+		if (validateApplicationDir(file))
+			return file;
+		else
+			return null;
+	}
+	
+	public static boolean validateApplicationDir(File dir)
+	{
+		// must be a directory
+		if (!dir.isDirectory())
+			return false;
+		
+		// must exist or be createable (for TCs)
+		if (!dir.exists() && !dir.mkdirs())
+			return false;
+		
+		// should be valid
+		return true;
 	}
 }
