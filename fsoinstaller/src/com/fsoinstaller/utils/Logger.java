@@ -50,6 +50,9 @@ public class Logger
 	// do logging setup
 	static
 	{
+		// set level of root logger
+		java.util.logging.Logger.getLogger("").setLevel(Level.ALL);
+		
 		List<StreamHandler> temp = new ArrayList<StreamHandler>();
 		
 		// add all our handlers
@@ -69,9 +72,6 @@ public class Logger
 		
 		// assign to list
 		handlers = Collections.unmodifiableList(temp);
-		
-		// set level of root logger
-		java.util.logging.Logger.getLogger("").setLevel(Level.ALL);
 	}
 	
 	// per-logger logging setup
