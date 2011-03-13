@@ -114,7 +114,6 @@ public class MiscUtils
 	
 	public static File validateApplicationDir(String dirName)
 	{
-		// come on, man
 		if (dirName == null)
 			return null;
 		
@@ -129,10 +128,6 @@ public class MiscUtils
 	{
 		// must be a directory
 		if (!dir.isDirectory())
-			return false;
-		
-		// must exist or be createable (for TCs)
-		if (!dir.exists() && !dir.mkdirs())
 			return false;
 		
 		// should be valid
