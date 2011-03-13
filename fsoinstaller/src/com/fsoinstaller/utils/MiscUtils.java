@@ -21,10 +21,12 @@ package com.fsoinstaller.utils;
 
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Frame;
 import java.awt.Toolkit;
 import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 
 
@@ -72,6 +74,41 @@ public class MiscUtils
 			if (frame.isVisible())
 				return frame;
 		return null;
+	}
+	
+	public static void invokeAndWait(Runnable runnable)
+	{
+		try
+		{
+			// be sure we don't block the event dispatch thread
+			if (EventQueue.isDispatchThread())
+				runnable.run();
+			else
+				EventQueue.invokeAndWait(runnable);
+		}
+		catch (InvocationTargetException ite)
+		{
+			logger.error("An InvocationTargetException occurred!", ite);
+			throw (RuntimeException) ite.getCause();
+		}
+		catch (InterruptedException ie)
+		{
+			logger.error("Thread interrupted!", ie);
+			Thread.currentThread().interrupt();
+		}
+	}
+	
+	public static void sleep(long millis)
+	{
+		try
+		{
+			Thread.sleep(millis);
+		}
+		catch (InterruptedException ie)
+		{
+			logger.error("Thread interrupted!", ie);
+			Thread.currentThread().interrupt();
+		}
 	}
 	
 	public static InputStream getResourceStream(String resource)
