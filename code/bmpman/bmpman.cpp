@@ -85,16 +85,19 @@ void bm_set_low_mem( int mode )
 
 int bm_get_next_handle()
 {
-	int n = bm_next_handle;
+	//bm_next_handle used to wrap around to 1 if it was over 30000. Now, believe it or not, but that is actually not uncommon;
+	//as bitmaps get allocated and released, bm_next_handle could get there far more often than you'd think.
+	//The check introduced below is intended to replace this behaviour with one that ensures we won't be seeing handle collisions
+	//for a very long time.
+
 	bm_next_handle++;
-	if ( bm_next_handle > 30000 )	{
+
+	//Due to the way bm_next_handle is used to generate the /actual/ bitmap handles ( (bm_next_handle * MAX_BITMAPS) + free slot index in bm_bitmaps[]),
+	//this check is necessary to ensure we don't start giving out negative handles all of a sudden.
+	if (( (bm_next_handle + 1) * MAX_BITMAPS) > INT_MAX)
 		bm_next_handle = 1;
-	}
 
-	if (bm_next_handle == 4750)
-		bm_next_handle++;
-
-	return n;
+	return bm_next_handle;
 }
 
 // Frees a bitmaps data if it should, and
@@ -158,7 +161,8 @@ SkipFree:
 #ifdef BMPMAN_NDEBUG
 	be->data_size = 0;
 #endif
-	be->signature = Bm_next_signature++; 
+	be->signature = Bm_next_signature++;
+	be->type = BM_TYPE_NONE;
 }
 
 // a special version of bm_free_data() that can be safely used in gr_*_texture
@@ -211,6 +215,7 @@ static void bm_free_data_fast(int n)
 #endif
 	vm_free((void *)bmp->data);
 	bmp->data = 0;
+	be->type = BM_TYPE_NONE;
 }
 
 
