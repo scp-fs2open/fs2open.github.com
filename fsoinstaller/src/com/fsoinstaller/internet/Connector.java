@@ -51,7 +51,7 @@ import com.fsoinstaller.utils.Logger;
 public class Connector
 {
 	private static final Logger logger = Logger.getLogger(Connector.class);
-
+	
 	/**
 	 * Used to identify the windows platform.
 	 */
@@ -80,37 +80,41 @@ public class Connector
 	{
 		Authenticator.setDefault(authenticator);
 	}
-
+	
 	protected final Proxy proxy;
 	protected final boolean onWindows;
-
-	public Connector()
-	{
-		proxy = null;
-		onWindows = isWindowsPlatform();
-	}
-
-	public Connector(String proxyHost, int proxyPort) throws InvalidProxyException
+	
+	public static Proxy createProxy(String proxyHost, int proxyPort) throws InvalidProxyException
 	{
 		try
 		{
-			proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+			return new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
 		}
 		catch (IllegalArgumentException iae)
 		{
-			throw new InvalidProxyException("Cannot create a proxy object from the host '" + proxyHost + "' at port " + proxyPort + "!");
+			throw new InvalidProxyException("Cannot create a proxy object from the host '" + proxyHost + "' at port " + proxyPort + "!", iae);
 		}
-		onWindows = isWindowsPlatform();
 	}
-
-	public Connector(String proxyHost, int proxyPort, String proxyUsername, char[] proxyPassword) throws InvalidProxyException
+	
+	public Connector(Proxy proxy)
 	{
-		this(proxyHost, proxyPort);
-
+		this.proxy = proxy;
+		this.onWindows = isWindowsPlatform();
+	}
+	
+	public Connector()
+	{
+		this(null);
+	}
+	
+	public Connector(Proxy proxy, String proxyUsername, char[] proxyPassword)
+	{
+		this(proxy);
+		
 		authenticator.put(proxy, new PasswordAuthentication(proxyUsername, proxyPassword));
 		Arrays.fill(proxyPassword, (char) 0);
 	}
-
+	
 	/**
 	 * Display a file in the system browser. If you want to display a file, you
 	 * must include the absolute path name.
@@ -118,14 +122,14 @@ public class Connector
 	public boolean browseToURL(URL url)
 	{
 		logger.info("Browsing to URL: " + url);
-
+		
 		String cmd = null;
 		try
 		{
 			if (onWindows)
 			{
 				logger.debug("Launching browser in Windows OS");
-
+				
 				// cmd = 'rundll32 url.dll,FileProtocolHandler http://...'
 				cmd = WIN_PATH + " " + WIN_FLAG + " " + url;
 				Runtime.getRuntime().exec(cmd);
@@ -133,7 +137,7 @@ public class Connector
 			else
 			{
 				logger.debug("Launching browser in non-Windows OS");
-
+				
 				// Under Unix, Netscape has to be running for the "-remote"
 				// command to work.  So, we try sending the command and
 				// check for an exit value.  If the exit command is 0,
@@ -144,14 +148,14 @@ public class Connector
 				try
 				{
 					logger.debug("Waiting for exit code");
-
+					
 					// wait for exit code -- if it's 0, command worked,
 					// otherwise we need to start the browser up.
 					int exitCode = process.waitFor();
 					if (exitCode != 0)
 					{
 						logger.debug("Command failed; starting the browser explicitly");
-
+						
 						// cmd = 'netscape http://www.java-tips.org'
 						cmd = UNIX_PATH + " " + url;
 						Runtime.getRuntime().exec(cmd);
@@ -160,10 +164,10 @@ public class Connector
 				catch (InterruptedException ie)
 				{
 					logger.error("Error bringing up browser; cmd='" + cmd + "'", ie);
-
+					
 					// restore interrupt
 					Thread.currentThread().interrupt();
-
+					
 					return false;
 				}
 			}
@@ -174,23 +178,23 @@ public class Connector
 			logger.error("Could not invoke browser; cmd='" + cmd + "'", ioe);
 			return false;
 		}
-
+		
 		return true;
 	}
-
+	
 	public URLConnection openConnection(URL url) throws IOException
 	{
 		logger.debug("Opening connection to URL: " + url);
-
+		
 		URLConnection conn;
 		if (proxy == null)
 			conn = url.openConnection();
 		else
 			conn = url.openConnection(proxy);
-
+		
 		return conn;
 	}
-
+	
 	/**
 	 * Try to determine whether this application is running under Windows or
 	 * some other platform by examining the "os.name" property.
@@ -202,7 +206,7 @@ public class Connector
 		String os = System.getProperty("os.name");
 		return (os != null && os.startsWith(WIN_ID));
 	}
-
+	
 	/**
 	 * Only one instance of this class should be created, and it should be set
 	 * as the system default. It allows multiple Connector instances to be
@@ -215,12 +219,12 @@ public class Connector
 		 * instances in different threads.
 		 */
 		private Map<Proxy, PasswordAuthentication> map = Collections.synchronizedMap(new HashMap<Proxy, PasswordAuthentication>());
-
+		
 		public void put(Proxy proxy, PasswordAuthentication authentication)
 		{
 			map.put(proxy, authentication);
 		}
-
+		
 		@Override
 		protected PasswordAuthentication getPasswordAuthentication()
 		{
@@ -237,7 +241,7 @@ public class Connector
 				logger.debug("requesting type=" + getRequestorType());
 				logger.debug("-----------------------------------------");
 			}
-
+			
 			int mapSize;
 			synchronized (map)
 			{
@@ -245,7 +249,7 @@ public class Connector
 				for (Map.Entry<Proxy, PasswordAuthentication> entry: map.entrySet())
 				{
 					InetSocketAddress address = ((InetSocketAddress) entry.getKey().address());
-
+					
 					if (logger.isDebugEnabled())
 					{
 						logger.debug("proxy type=" + entry.getKey().type());
@@ -253,7 +257,7 @@ public class Connector
 						logger.debug("proxy port=" + address.getPort());
 						logger.debug("proxy site=" + address.getAddress());
 					}
-
+					
 					if (address.getHostName().equals(getRequestingHost()) && address.getPort() == getRequestingPort() && address.getAddress().toString().equals(getRequestingSite().toString()))
 					{
 						logger.info("Stored proxy information and requesting site match; performing authentication...");
@@ -261,7 +265,7 @@ public class Connector
 					}
 				}
 			}
-
+			
 			logger.warn("Could not find a stored proxy that matched the requesting site!");
 			if (mapSize == 1)
 				logger.error("The one and only proxy stored in the map did not match the request; this is very bad!");
