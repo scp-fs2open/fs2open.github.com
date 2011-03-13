@@ -30,6 +30,9 @@ import com.fsoinstaller.utils.PropertiesUtils;
 
 public class Configuration
 {
+	public static final String PROXY_KEY = "PROXY";
+	public static final String CONNECTOR_KEY = "CONNECTOR";
+	
 	/**
 	 * Use the Initialization On Demand Holder idiom for thread-safe
 	 * non-synchronized singletons.
@@ -77,13 +80,6 @@ public class Configuration
 		return host;
 	}
 	
-	public void setProxyHost(String host)
-	{
-		if (host == null || host.equalsIgnoreCase("none") || host.isEmpty())
-			host = "none";
-		properties.setProperty("proxy.host", host);
-	}
-	
 	public int getProxyPort()
 	{
 		String port = properties.getProperty("proxy.port");
@@ -91,16 +87,23 @@ public class Configuration
 		{
 			return Integer.valueOf(port);
 		}
-		catch (RuntimeException re)
+		catch (NumberFormatException re)
 		{
 			return -1;
 		}
 	}
 	
-	public void setProxyPort(int port)
+	public void setProxyInfo(String host, int port)
 	{
-		String portStr = (port < 0) ? "none" : Integer.toString(port);
-		properties.setProperty("proxy.port", portStr);
+		// resolve host
+		if (host == null || host.equalsIgnoreCase("none") || host.isEmpty())
+			host = null;
+		
+		// store either both or none
+		boolean valid = (host != null && port >= 0);
+		
+		properties.setProperty("proxy.host", valid ? host : "none");
+		properties.setProperty("proxy.port", valid ? Integer.toString(port) : "none");
 	}
 	
 	public File getApplicationDir()

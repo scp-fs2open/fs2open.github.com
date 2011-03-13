@@ -19,8 +19,30 @@
 
 package com.fsoinstaller.wizard;
 
-public class GUIConstants
+import javax.swing.JPanel;
+
+
+public class BlankPage extends InstallerPage
 {
-	public static final int DEFAULT_MARGIN = 10;
-	public static final int SMALL_MARGIN = 5;
+	public BlankPage()
+	{
+		super("blank");
+	}
+	
+	@Override
+	public JPanel createCenterPanel()
+	{
+		return new JPanel();
+	}
+	
+	@Override
+	public void prepareForDisplay()
+	{
+	}
+	
+	@Override
+	public boolean prepareToLeavePage()
+	{
+		return true;
+	}
 }

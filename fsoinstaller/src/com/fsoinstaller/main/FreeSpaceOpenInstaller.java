@@ -70,6 +70,7 @@ public class FreeSpaceOpenInstaller
 			public void run()
 			{
 				InstallerGUI gui = new InstallerGUI();
+				gui.buildUI();
 				gui.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 				gui.pack();
 				MiscUtils.centerWindowOnScreen(gui);
