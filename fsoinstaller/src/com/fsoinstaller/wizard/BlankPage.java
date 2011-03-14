@@ -41,8 +41,8 @@ public class BlankPage extends InstallerPage
 	}
 	
 	@Override
-	public boolean prepareToLeavePage()
+	public void prepareToLeavePage(Runnable runWhenReady)
 	{
-		return true;
+		runWhenReady.run();
 	}
 }

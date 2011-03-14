@@ -34,6 +34,22 @@ public class FreeSpaceOpenInstaller
 {
 	private static Logger logger = Logger.getLogger(FreeSpaceOpenInstaller.class);
 	
+	public static final String INSTALLER_TITLE = "FreeSpace Open Installer";
+	
+	/**
+	 * Version of the Installer.
+	 */
+	public static final double INSTALLER_VERSION = 2.0;
+	
+	/**
+	 * URL of the directories where version.txt and filenames.txt reside.
+	 */
+	public static final String[] INSTALLER_HOME_URLs = new String[]
+	{
+		"http://www.fsoinstaller.com/files/installer/java/",
+		"http://scp.indiegames.us/fsoinstaller/"
+	};
+	
 	private FreeSpaceOpenInstaller()
 	{
 	}

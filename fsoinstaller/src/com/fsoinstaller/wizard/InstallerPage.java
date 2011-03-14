@@ -95,10 +95,11 @@ public abstract class InstallerPage extends JPanel
 	
 	/**
 	 * This method will be called immediately before the page is about to be
-	 * changed. This method should return a boolean value to indicate whether
-	 * the change may proceed.
+	 * changed. This method should perform any validation necessary, then invoke
+	 * runWhenReady upon validation success. If the page should not be left for
+	 * any reason, do not invokeRunWhenReady.
 	 */
-	public abstract boolean prepareToLeavePage();
+	public abstract void prepareToLeavePage(Runnable runWhenReady);
 	
 	public JPanel createFooterPanel()
 	{
@@ -134,8 +135,14 @@ public abstract class InstallerPage extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			if (prepareToLeavePage())
-				gui.moveBack();
+			prepareToLeavePage(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					gui.moveBack();
+				}
+			});
 		}
 	}
 	
@@ -150,8 +157,14 @@ public abstract class InstallerPage extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			if (prepareToLeavePage())
-				gui.moveNext();
+			prepareToLeavePage(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					gui.moveNext();
+				}
+			});
 		}
 	}
 	

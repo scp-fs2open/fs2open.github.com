@@ -20,6 +20,7 @@
 package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -32,9 +33,13 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 
+import com.fsoinstaller.utils.Logger;
+
 
 public class ModSelectPage extends InstallerPage
 {
+	private static final Logger logger = Logger.getLogger(ModSelectPage.class);
+	
 	private final JRadioButton basicButton;
 	private final JRadioButton completeButton;
 	private final JRadioButton customButton;
@@ -98,6 +103,17 @@ public class ModSelectPage extends InstallerPage
 	@Override
 	public void prepareForDisplay()
 	{
+		@SuppressWarnings("unchecked")
+		List<String> urls = (List<String>) Configuration.getInstance().getSettings().get(Configuration.MOD_URLs);
+		if (urls == null)
+			logger.warn("D'oh!  No URLs!");
+		else
+		{
+			logger.info("mod URLs:");
+			for (String url: urls)
+				logger.info(url);
+		}
+		
 		modPanel.removeAll();
 		modPanel.add(new SingleModPanel("FSPort"));
 		modPanel.add(new SingleModPanel("MediaVPs"));
@@ -106,9 +122,9 @@ public class ModSelectPage extends InstallerPage
 	}
 	
 	@Override
-	public boolean prepareToLeavePage()
+	public void prepareToLeavePage(Runnable runWhenReady)
 	{
-		return true;
+		runWhenReady.run();
 	}
 	
 	private static class SingleModPanel extends JPanel

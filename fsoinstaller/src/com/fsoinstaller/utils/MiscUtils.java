@@ -24,10 +24,15 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Frame;
 import java.awt.Toolkit;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -169,5 +174,35 @@ public class MiscUtils
 		
 		// should be valid
 		return true;
+	}
+	
+	public static List<String> readTextFile(File file)
+	{
+		List<String> lines = new ArrayList<String>();
+		try
+		{
+			BufferedReader reader = null;
+			try
+			{
+				// open file for buffered input
+				reader = new BufferedReader(new FileReader(file));
+				
+				// read lines
+				String line;
+				while ((line = reader.readLine()) != null)
+					lines.add(line);
+			}
+			finally
+			{
+				if (reader != null)
+					reader.close();
+			}
+		}
+		catch (IOException ioe)
+		{
+			logger.error("Error reading file '" + file.getName() + "'!", ioe);
+			lines.clear();
+		}
+		return lines;
 	}
 }

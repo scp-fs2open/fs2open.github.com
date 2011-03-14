@@ -32,6 +32,9 @@ public class Configuration
 {
 	public static final String PROXY_KEY = "PROXY";
 	public static final String CONNECTOR_KEY = "CONNECTOR";
+	public static final String DOWNLOADER_KEY = "DOWNLOADER";
+	public static final String REMOTE_VERSION = "REMOTE-VERSION";
+	public static final String MOD_URLs = "MOD-URLs";
 	
 	/**
 	 * Use the Initialization On Demand Holder idiom for thread-safe

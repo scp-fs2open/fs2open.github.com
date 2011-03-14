@@ -25,6 +25,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
+import com.fsoinstaller.main.FreeSpaceOpenInstaller;
 import com.fsoinstaller.utils.GraphicsUtils;
 
 
@@ -76,7 +77,7 @@ public class InstallerGUI extends JFrame
 		// final frame tweaks
 		setIconImage(app_icon);
 		setResizable(false);
-		setTitle("FreeSpace Open Installer");
+		setTitle(FreeSpaceOpenInstaller.INSTALLER_TITLE);
 	}
 	
 	@Override
