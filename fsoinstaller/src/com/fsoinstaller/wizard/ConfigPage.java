@@ -166,6 +166,7 @@ public class ConfigPage extends InstallerPage
 		panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN));
 		panel.add(outerProxyPanel);
 		panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN));
+		panel.add(Box.createVerticalGlue());
 		
 		return panel;
 	}

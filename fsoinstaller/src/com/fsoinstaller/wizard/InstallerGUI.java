@@ -46,6 +46,7 @@ public class InstallerGUI extends JFrame
 		pages = new InstallerPage[]
 		{
 			new ConfigPage(),
+			new ModSelectPage(),
 			new BlankPage()
 		};
 		activePageIndex = 0;
