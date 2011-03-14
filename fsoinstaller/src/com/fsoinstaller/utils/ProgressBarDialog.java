@@ -34,6 +34,7 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
 
+import com.fsoinstaller.main.FreeSpaceOpenInstaller;
 import com.fsoinstaller.wizard.GUIConstants;
 
 
@@ -66,6 +67,9 @@ public class ProgressBarDialog
 	
 	public ProgressBarDialog(String text, String title)
 	{
+		if (title == null)
+			title = FreeSpaceOpenInstaller.INSTALLER_TITLE;
+		
 		this.text = text;
 		this.title = title;
 		started = new AtomicBoolean(false);
@@ -83,6 +87,15 @@ public class ProgressBarDialog
 				progressBar.setStringPainted(true);
 			}
 		});
+	}
+	
+	/**
+	 * Runs the specified task in a background thread. If an exception occurs
+	 * while the task is running, it will be logged.
+	 */
+	public void runTask(Callable<Void> task)
+	{
+		runTask(task, null);
 	}
 	
 	/**

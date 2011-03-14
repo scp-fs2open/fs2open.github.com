@@ -156,7 +156,7 @@ public class MiscUtils
 	
 	public static File validateApplicationDir(String dirName)
 	{
-		if (dirName == null)
+		if (dirName == null || dirName.isEmpty())
 			return null;
 		
 		File file = new File(dirName);
@@ -168,10 +168,6 @@ public class MiscUtils
 	
 	public static boolean validateApplicationDir(File dir)
 	{
-		// must be a directory
-		if (!dir.isDirectory())
-			return false;
-		
 		// should be valid
 		return true;
 	}

@@ -24,12 +24,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import com.fsoinstaller.utils.Logger;
 import com.fsoinstaller.utils.MiscUtils;
 import com.fsoinstaller.utils.PropertiesUtils;
 
 
 public class Configuration
 {
+	private static final Logger logger = Logger.getLogger(Configuration.class);
+	
 	public static final String PROXY_KEY = "PROXY";
 	public static final String CONNECTOR_KEY = "CONNECTOR";
 	public static final String DOWNLOADER_KEY = "DOWNLOADER";
@@ -56,8 +59,15 @@ public class Configuration
 	// prevent instantiation
 	private Configuration()
 	{
+		Properties temp = PropertiesUtils.loadProperties("fsoinstaller.properties");
+		if (temp == null)
+		{
+			logger.info("No fsoinstaller.properties file could be found; a new one will be created");
+			temp = new Properties();
+		}
+		
 		settings = new HashMap<String, Object>();
-		properties = PropertiesUtils.loadProperties("fsoinstaller.properties");
+		properties = temp;
 	}
 	
 	public void saveProperties()
