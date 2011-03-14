@@ -21,6 +21,7 @@ package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -50,6 +52,7 @@ import com.fsoinstaller.internet.InvalidProxyException;
 import com.fsoinstaller.main.FreeSpaceOpenInstaller;
 import com.fsoinstaller.utils.Logger;
 import com.fsoinstaller.utils.MiscUtils;
+import com.fsoinstaller.utils.ProgressBarDialog;
 import com.l2fprod.common.swing.JDirectoryChooser;
 
 
@@ -187,197 +190,17 @@ public class ConfigPage extends InstallerPage
 	@Override
 	public void prepareToLeavePage(Runnable runWhenReady)
 	{
-		Map<String, Object> settings = configuration.getSettings();
-		JFrame activeFrame = (JFrame) MiscUtils.getActiveFrame();
-		
-		logger.info("Validating user input...");
-		
-		// check directory
-		File destinationDir = MiscUtils.validateApplicationDir(directoryField.getText());
-		if (destinationDir == null)
+		Callable<Void> task = new SuperValidationTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), usingProxy, hostField.getText(), portField.getText(), runWhenReady, new Runnable()
 		{
-			JOptionPane.showMessageDialog(activeFrame, "The destination directory is not valid.  Please select another directory.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
-			return;
-		}
-		
-		// ditto
-		if (!destinationDir.exists())
-		{
-			// prompt to create it
-			int result = JOptionPane.showConfirmDialog(activeFrame, "The destination directory does not exist.  Do you want to create it?", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
-			if (result != JOptionPane.YES_OPTION)
-				return;
-			
-			logger.info("Attempting to create directory/ies...");
-			
-			// attempt to create it
-			if (!destinationDir.mkdirs())
+			@Override
+			public void run()
 			{
-				JOptionPane.showMessageDialog(activeFrame, "Could not create the destination directory.  Please select another directory.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-				return;
+				cancelButton.doClick();
 			}
-		}
+		});
 		
-		// check proxy
-		Proxy proxy = null;
-		String host = null;
-		int port = -1;
-		if (usingProxy)
-		{
-			logger.info("Checking proxy...");
-			
-			try
-			{
-				host = hostField.getText();
-				port = Integer.valueOf(portField.getText());
-				proxy = Connector.createProxy(host, port);
-			}
-			catch (NumberFormatException nfe)
-			{
-				JOptionPane.showMessageDialog(activeFrame, "The proxy port could not be parsed as an integer.  Please enter a correct proxy port.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
-				return;
-			}
-			catch (InvalidProxyException ipe)
-			{
-				logger.error("Proxy could not be created!", ipe);
-				JOptionPane.showMessageDialog(activeFrame, "This proxy appears to be invalid!  Check that you have entered the host and port correctly.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-				return;
-			}
-			
-			// good to go
-			settings.put(Configuration.PROXY_KEY, proxy);
-		}
-		
-		logger.info("Validation succeeded!");
-		
-		// save our settings
-		configuration.setApplicationDir(destinationDir);
-		configuration.setProxyInfo(host, port);
-		configuration.saveProperties();
-		
-		Connector connector = new Connector(proxy);
-		Downloader downloader = new Downloader(connector);
-		settings.put(Configuration.CONNECTOR_KEY, connector);
-		settings.put(Configuration.DOWNLOADER_KEY, downloader);
-		
-		// if we already have a version, we must have checked this already
-		if (settings.containsKey(Configuration.REMOTE_VERSION))
-		{
-			runWhenReady.run();
-			return;
-		}
-		
-		logger.info("Checking installer version...");
-		
-		File tempVersion;
-		File tempFileNames;
-		try
-		{
-			tempVersion = File.createTempFile("fsoinstaller_version", null);
-			tempFileNames = File.createTempFile("fsoinstaller_filenames", null);
-		}
-		catch (IOException ioe)
-		{
-			logger.error("Error creating temporary file!", ioe);
-			JOptionPane.showMessageDialog(activeFrame, "There was an error creating a temporary file!  This application may need elevated privileges to run.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-			return;
-		}
-		tempVersion.deleteOnExit();
-		tempFileNames.deleteOnExit();
-		
-		double maxVersion = -1.0;
-		String maxVersionURL = null;
-		
-		// check all URLs for version and filename info
-		for (String url: FreeSpaceOpenInstaller.INSTALLER_HOME_URLs)
-		{
-			logger.debug("Accessing version info from " + url + "...");
-			
-			// assemble URLs
-			URL versionURL;
-			URL filenameURL;
-			try
-			{
-				versionURL = new URL(url + "version.txt");
-				filenameURL = new URL(url + "filenames.txt");
-			}
-			catch (MalformedURLException murle)
-			{
-				logger.error("Something went wrong with the URL!", murle);
-				continue;
-			}
-			
-			// download version information
-			if (downloader.downloadFile(versionURL, tempVersion))
-			{
-				List<String> versionLines = MiscUtils.readTextFile(tempVersion);
-				if (!versionLines.isEmpty())
-				{
-					double thisVersion;
-					try
-					{
-						thisVersion = Double.valueOf(versionLines.get(0));
-					}
-					catch (NumberFormatException nfe)
-					{
-						thisVersion = 0.0;
-					}
-					
-					logger.debug("Version at this URL is " + thisVersion);
-					
-					// get the file names from the highest version available
-					if (thisVersion > maxVersion)
-					{
-						if (downloader.downloadFile(filenameURL, tempFileNames))
-						{
-							List<String> filenameLines = MiscUtils.readTextFile(tempFileNames);
-							if (!filenameLines.isEmpty())
-							{
-								settings.put(Configuration.REMOTE_VERSION, thisVersion);
-								settings.put(Configuration.MOD_URLs, filenameLines);
-								
-								maxVersion = thisVersion;
-								maxVersionURL = versionLines.get(1);
-							}
-						}
-					}
-				}
-			}
-		}
-		
-		// make sure we could access version information
-		if (!settings.containsKey(Configuration.REMOTE_VERSION))
-		{
-			JOptionPane.showMessageDialog(activeFrame, "There was a problem accessing the remote sites.  Check your network connection and try again.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
-			return;
-		}
-		
-		// we have a version; check if it is more recent than what we're running
-		// (this prompt should only ever come up once, because once the version is known, future visits to this page will take the early exit above)
-		if (maxVersion > FreeSpaceOpenInstaller.INSTALLER_VERSION)
-		{
-			int result = JOptionPane.showConfirmDialog(activeFrame, "This version of the installer is out-of-date.  Would you like to bring up the download page for the most recent version?\n\n(If you click Yes, the program will exit.)", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
-			if (result == JOptionPane.YES_OPTION)
-			{
-				try
-				{
-					if (connector.browseToURL(new URL(maxVersionURL)))
-					{
-						cancelButton.doClick();
-						return;
-					}
-				}
-				catch (MalformedURLException murle)
-				{
-					logger.error("Something went wrong with the URL!", murle);
-				}
-				JOptionPane.showMessageDialog(activeFrame, "Sorry, there was a problem bringing up the download link.  Try re-downloading the installer using your favorite Internet browser.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-				return;
-			}
-		}
-		
-		// validation completed!
-		runWhenReady.run();
+		ProgressBarDialog dialog = new ProgressBarDialog("Accessing installer information...");
+		dialog.runTask(task, null);
 	}
 	
 	private final class BrowseAction extends AbstractAction
@@ -420,6 +243,290 @@ public class ConfigPage extends InstallerPage
 			
 			hostField.setEnabled(usingProxy);
 			portField.setEnabled(usingProxy);
+		}
+	}
+	
+	private static final class SuperValidationTask implements Callable<Void>
+	{
+		private final JFrame activeFrame;
+		private final String directoryText;
+		private final boolean usingProxy;
+		private final String hostText;
+		private final String portText;
+		private final Runnable runWhenReady;
+		private final Runnable exitRunnable;
+		private final Configuration configuration;
+		private final Map<String, Object> settings;
+		private int result;
+		
+		public SuperValidationTask(JFrame activeFrame, String directoryText, boolean usingProxy, String hostText, String portText, Runnable runWhenReady, Runnable exitRunnable)
+		{
+			this.activeFrame = activeFrame;
+			this.directoryText = directoryText;
+			this.usingProxy = usingProxy;
+			this.hostText = hostText;
+			this.portText = portText;
+			this.runWhenReady = runWhenReady;
+			this.exitRunnable = exitRunnable;
+			this.result = 0;
+			
+			// this isn't synchronized, but we know for sure that we will be the only thread accessing the configuration while the progress bar is running
+			this.configuration = Configuration.getInstance();
+			this.settings = configuration.getSettings();
+		}
+		
+		public Void call() throws Exception
+		{
+			logger.info("Validating user input...");
+			
+			// check directory
+			File destinationDir = MiscUtils.validateApplicationDir(directoryText);
+			if (destinationDir == null)
+			{
+				EventQueue.invokeLater(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						JOptionPane.showMessageDialog(activeFrame, "The destination directory is not valid.  Please select another directory.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
+					}
+				});
+				return null;
+			}
+			
+			// ditto
+			if (!destinationDir.exists())
+			{
+				// prompt to create it
+				// this will block until the dialog returns
+				MiscUtils.invokeAndWait(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						result = JOptionPane.showConfirmDialog(activeFrame, "The destination directory does not exist.  Do you want to create it?", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
+					}
+				});
+				if (result != JOptionPane.YES_OPTION)
+					return null;
+				
+				logger.info("Attempting to create directory/ies...");
+				
+				// attempt to create it
+				if (!destinationDir.mkdirs())
+				{
+					EventQueue.invokeLater(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							JOptionPane.showMessageDialog(activeFrame, "Could not create the destination directory.  Please select another directory.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+						}
+					});
+					return null;
+				}
+				
+				logger.info("Directory creation successful.");
+			}
+			
+			// check proxy
+			Proxy proxy = null;
+			String host = null;
+			int port = -1;
+			if (usingProxy)
+			{
+				logger.info("Checking proxy...");
+				
+				try
+				{
+					host = hostText;
+					port = Integer.valueOf(portText);
+					proxy = Connector.createProxy(host, port);
+				}
+				catch (NumberFormatException nfe)
+				{
+					EventQueue.invokeLater(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							JOptionPane.showMessageDialog(activeFrame, "The proxy port could not be parsed as an integer.  Please enter a correct proxy port.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
+						}
+					});
+					return null;
+				}
+				catch (InvalidProxyException ipe)
+				{
+					logger.error("Proxy could not be created!", ipe);
+					EventQueue.invokeLater(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							JOptionPane.showMessageDialog(activeFrame, "This proxy appears to be invalid!  Check that you have entered the host and port correctly.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+						}
+					});
+					return null;
+				}
+				
+				// good to go
+				settings.put(Configuration.PROXY_KEY, proxy);
+			}
+			
+			logger.info("Validation succeeded!");
+			
+			// save our settings
+			configuration.setApplicationDir(destinationDir);
+			configuration.setProxyInfo(host, port);
+			configuration.saveProperties();
+			
+			Connector connector = new Connector(proxy);
+			Downloader downloader = new Downloader(connector);
+			settings.put(Configuration.CONNECTOR_KEY, connector);
+			settings.put(Configuration.DOWNLOADER_KEY, downloader);
+			
+			// if we already have a version, we must have checked this already
+			if (settings.containsKey(Configuration.REMOTE_VERSION))
+			{
+				EventQueue.invokeLater(runWhenReady);
+				return null;
+			}
+			
+			logger.info("Checking installer version...");
+			
+			File tempVersion;
+			File tempFileNames;
+			try
+			{
+				tempVersion = File.createTempFile("fsoinstaller_version", null);
+				tempFileNames = File.createTempFile("fsoinstaller_filenames", null);
+			}
+			catch (IOException ioe)
+			{
+				logger.error("Error creating temporary file!", ioe);
+				EventQueue.invokeLater(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						JOptionPane.showMessageDialog(activeFrame, "There was an error creating a temporary file!  This application may need elevated privileges to run.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+					}
+				});
+				return null;
+			}
+			tempVersion.deleteOnExit();
+			tempFileNames.deleteOnExit();
+			
+			double maxVersion = -1.0;
+			String maxVersionURL = null;
+			
+			// check all URLs for version and filename info
+			for (String url: FreeSpaceOpenInstaller.INSTALLER_HOME_URLs)
+			{
+				logger.debug("Accessing version info from " + url + "...");
+				
+				// assemble URLs
+				URL versionURL;
+				URL filenameURL;
+				try
+				{
+					versionURL = new URL(url + "version.txt");
+					filenameURL = new URL(url + "filenames.txt");
+				}
+				catch (MalformedURLException murle)
+				{
+					logger.error("Something went wrong with the URL!", murle);
+					continue;
+				}
+				
+				// download version information
+				if (downloader.downloadFile(versionURL, tempVersion))
+				{
+					List<String> versionLines = MiscUtils.readTextFile(tempVersion);
+					if (!versionLines.isEmpty())
+					{
+						double thisVersion;
+						try
+						{
+							thisVersion = Double.valueOf(versionLines.get(0));
+						}
+						catch (NumberFormatException nfe)
+						{
+							thisVersion = 0.0;
+						}
+						
+						logger.info("Version at this URL is " + thisVersion);
+						
+						// get the file names from the highest version available
+						if (thisVersion > maxVersion)
+						{
+							if (downloader.downloadFile(filenameURL, tempFileNames))
+							{
+								List<String> filenameLines = MiscUtils.readTextFile(tempFileNames);
+								if (!filenameLines.isEmpty())
+								{
+									settings.put(Configuration.REMOTE_VERSION, thisVersion);
+									settings.put(Configuration.MOD_URLs, filenameLines);
+									
+									maxVersion = thisVersion;
+									maxVersionURL = versionLines.get(1);
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			// make sure we could access version information
+			if (!settings.containsKey(Configuration.REMOTE_VERSION))
+			{
+				EventQueue.invokeLater(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						JOptionPane.showMessageDialog(activeFrame, "There was a problem accessing the remote sites.  Check your network connection and try again.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
+					}
+				});
+				return null;
+			}
+			
+			// we have a version; check if it is more recent than what we're running
+			// (this prompt should only ever come up once, because once the version is known, future visits to this page will take the early exit above)
+			if (maxVersion > FreeSpaceOpenInstaller.INSTALLER_VERSION)
+			{
+				int result = JOptionPane.showConfirmDialog(activeFrame, "This version of the installer is out-of-date.  Would you like to bring up the download page for the most recent version?\n\n(If you click Yes, the program will exit.)", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
+				if (result == JOptionPane.YES_OPTION)
+				{
+					try
+					{
+						if (connector.browseToURL(new URL(maxVersionURL)))
+						{
+							EventQueue.invokeLater(exitRunnable);
+							return null;
+						}
+					}
+					catch (MalformedURLException murle)
+					{
+						logger.error("Something went wrong with the URL!", murle);
+					}
+					EventQueue.invokeLater(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							JOptionPane.showMessageDialog(activeFrame, "There was a problem bringing up the download link.  Try re-downloading the installer using your favorite Internet browser.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+						}
+					});
+					return null;
+				}
+			}
+			
+			logger.info("Done checking version and filename information.");
+			
+			// validation completed!
+			EventQueue.invokeLater(runWhenReady);
+			return null;
 		}
 	}
 }
