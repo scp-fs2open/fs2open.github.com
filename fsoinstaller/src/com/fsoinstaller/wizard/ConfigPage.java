@@ -54,6 +54,7 @@ import com.fsoinstaller.main.FreeSpaceOpenInstaller;
 import com.fsoinstaller.utils.Logger;
 import com.fsoinstaller.utils.MiscUtils;
 import com.fsoinstaller.utils.ProgressBarDialog;
+import com.fsoinstaller.utils.ThreadSafeJOptionPane;
 import com.l2fprod.common.swing.JDirectoryChooser;
 
 
@@ -248,9 +249,9 @@ public class ConfigPage extends InstallerPage
 		private final String hostText;
 		private final String portText;
 		private final Runnable runWhenReady;
+		
 		private final Configuration configuration;
 		private final Map<String, Object> settings;
-		private int result;
 		
 		public SuperValidationTask(JFrame activeFrame, String directoryText, boolean usingProxy, String hostText, String portText, Runnable runWhenReady)
 		{
@@ -260,7 +261,6 @@ public class ConfigPage extends InstallerPage
 			this.hostText = hostText;
 			this.portText = portText;
 			this.runWhenReady = runWhenReady;
-			this.result = 0;
 			
 			// Configuration and its two maps are thread-safe
 			this.configuration = Configuration.getInstance();
@@ -275,14 +275,7 @@ public class ConfigPage extends InstallerPage
 			File destinationDir = MiscUtils.validateApplicationDir(directoryText);
 			if (destinationDir == null)
 			{
-				EventQueue.invokeLater(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						JOptionPane.showMessageDialog(activeFrame, "The destination directory is not valid.  Please select another directory.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
-					}
-				});
+				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "The destination directory is not valid.  Please select another directory.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
 				return null;
 			}
 			
@@ -290,15 +283,7 @@ public class ConfigPage extends InstallerPage
 			if (!destinationDir.exists())
 			{
 				// prompt to create it
-				// this will block until the dialog returns
-				MiscUtils.invokeAndWait(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						result = JOptionPane.showConfirmDialog(activeFrame, "The destination directory does not exist.  Do you want to create it?", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
-					}
-				});
+				int result = ThreadSafeJOptionPane.showConfirmDialog(activeFrame, "The destination directory does not exist.  Do you want to create it?", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
 				if (result != JOptionPane.YES_OPTION)
 					return null;
 				
@@ -307,14 +292,7 @@ public class ConfigPage extends InstallerPage
 				// attempt to create it
 				if (!destinationDir.mkdirs())
 				{
-					EventQueue.invokeLater(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							JOptionPane.showMessageDialog(activeFrame, "Could not create the destination directory.  Please select another directory.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-						}
-					});
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "Could not create the destination directory.  Please select another directory.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
 					return null;
 				}
 				
@@ -337,27 +315,13 @@ public class ConfigPage extends InstallerPage
 				}
 				catch (NumberFormatException nfe)
 				{
-					EventQueue.invokeLater(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							JOptionPane.showMessageDialog(activeFrame, "The proxy port could not be parsed as an integer.  Please enter a correct proxy port.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
-						}
-					});
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "The proxy port could not be parsed as an integer.  Please enter a correct proxy port.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
 					return null;
 				}
 				catch (InvalidProxyException ipe)
 				{
 					logger.error("Proxy could not be created!", ipe);
-					EventQueue.invokeLater(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							JOptionPane.showMessageDialog(activeFrame, "This proxy appears to be invalid!  Check that you have entered the host and port correctly.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-						}
-					});
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "This proxy appears to be invalid!  Check that you have entered the host and port correctly.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
 					return null;
 				}
 				
@@ -396,14 +360,7 @@ public class ConfigPage extends InstallerPage
 			catch (IOException ioe)
 			{
 				logger.error("Error creating temporary file!", ioe);
-				EventQueue.invokeLater(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						JOptionPane.showMessageDialog(activeFrame, "There was an error creating a temporary file!  This application may need elevated privileges to run.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-					}
-				});
+				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was an error creating a temporary file!  This application may need elevated privileges to run.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
 				return null;
 			}
 			tempVersion.deleteOnExit();
@@ -472,14 +429,7 @@ public class ConfigPage extends InstallerPage
 			// make sure we could access version information
 			if (!settings.containsKey(Configuration.REMOTE_VERSION_KEY))
 			{
-				EventQueue.invokeLater(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						JOptionPane.showMessageDialog(activeFrame, "There was a problem accessing the remote sites.  Check your network connection and try again.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
-					}
-				});
+				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was a problem accessing the remote sites.  Check your network connection and try again.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
 				return null;
 			}
 			
@@ -487,7 +437,7 @@ public class ConfigPage extends InstallerPage
 			// (this prompt should only ever come up once, because once the version is known, future visits to this page will take the early exit above)
 			if (maxVersion > FreeSpaceOpenInstaller.INSTALLER_VERSION)
 			{
-				int result = JOptionPane.showConfirmDialog(activeFrame, "This version of the installer is out-of-date.  Would you like to bring up the download page for the most recent version?\n\n(If you click Yes, the program will exit.)", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
+				int result = ThreadSafeJOptionPane.showConfirmDialog(activeFrame, "This version of the installer is out-of-date.  Would you like to bring up the download page for the most recent version?\n\n(If you click Yes, the program will exit.)", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
 				if (result == JOptionPane.YES_OPTION)
 				{
 					try
@@ -510,14 +460,7 @@ public class ConfigPage extends InstallerPage
 					{
 						logger.error("Something went wrong with the URL!", murle);
 					}
-					EventQueue.invokeLater(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							JOptionPane.showMessageDialog(activeFrame, "There was a problem bringing up the download link.  Try re-downloading the installer using your favorite Internet browser.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-						}
-					});
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was a problem bringing up the download link.  Try re-downloading the installer using your favorite Internet browser.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
 					return null;
 				}
 			}
