@@ -62,7 +62,7 @@ public class PropertiesUtils
 		if (properties != null)
 			return properties;
 		
-		// try jar file
+		// try file in jar
 		InputStream is = MiscUtils.getResourceStream(resource);
 		if (is != null)
 			properties = loadPropertiesFromStream(is);

@@ -49,7 +49,8 @@ public class GraphicsUtils
 	}
 	
 	/**
-	 * Adapted from http://www.exampledepot.com/egs/java.awt.image/Image2Buf.html
+	 * Adapted from
+	 * http://www.exampledepot.com/egs/java.awt.image/Image2Buf.html
 	 */
 	public static BufferedImage createBufferedImage(int width, int height, int transparencyType)
 	{
@@ -116,7 +117,8 @@ public class GraphicsUtils
 	}
 	
 	/**
-	 * Adapted from http://www.exampledepot.com/egs/java.awt.image/Image2Buf.html
+	 * Adapted from
+	 * http://www.exampledepot.com/egs/java.awt.image/Image2Buf.html
 	 */
 	public static BufferedImage getBufferedImage(Image image, boolean addAlpha)
 	{
@@ -150,7 +152,7 @@ public class GraphicsUtils
 	{
 		try
 		{
-			URL url = MiscUtils.getResourceURL("resources/" + resource);
+			URL url = MiscUtils.getResourceURL(resource);
 			if (url != null)
 				return ImageIO.read(url);
 			

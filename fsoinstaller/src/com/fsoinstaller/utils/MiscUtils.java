@@ -94,7 +94,12 @@ public class MiscUtils
 		catch (InvocationTargetException ite)
 		{
 			logger.error("An InvocationTargetException occurred!", ite);
-			throw (RuntimeException) ite.getCause();
+			if (ite.getCause() instanceof Error)
+				throw (Error) ite.getCause();
+			else if (ite.getCause() instanceof RuntimeException)
+				throw (RuntimeException) ite.getCause();
+			else
+				throw new IllegalStateException("Illegal exception type?", ite.getCause());
 		}
 		catch (InterruptedException ie)
 		{
@@ -118,14 +123,14 @@ public class MiscUtils
 	
 	public static InputStream getResourceStream(String resource)
 	{
-		InputStream is = ClassLoader.getSystemResourceAsStream(resource);
+		InputStream is = ClassLoader.getSystemResourceAsStream("resources/" + resource);
 		if (is != null)
 		{
 			logger.info("Loading '" + resource + "' via system class loader");
 			return is;
 		}
 		
-		is = MiscUtils.class.getResourceAsStream(resource);
+		is = MiscUtils.class.getResourceAsStream("resources/" + resource);
 		if (is != null)
 		{
 			logger.info("Loading '" + resource + "' via MiscUtils class loader");
@@ -137,14 +142,14 @@ public class MiscUtils
 	
 	public static URL getResourceURL(String resource)
 	{
-		URL url = ClassLoader.getSystemResource(resource);
+		URL url = ClassLoader.getSystemResource("resources/" + resource);
 		if (url != null)
 		{
 			logger.info("Loading '" + resource + "' via system class loader");
 			return url;
 		}
 		
-		url = MiscUtils.class.getResource(resource);
+		url = MiscUtils.class.getResource("resources/" + resource);
 		if (url != null)
 		{
 			logger.info("Loading '" + resource + "' via MiscUtils class loader");
