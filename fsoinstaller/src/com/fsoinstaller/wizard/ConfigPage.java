@@ -49,6 +49,7 @@ import javax.swing.JTextField;
 import com.fsoinstaller.internet.Connector;
 import com.fsoinstaller.internet.Downloader;
 import com.fsoinstaller.internet.InvalidProxyException;
+import com.fsoinstaller.main.Configuration;
 import com.fsoinstaller.main.FreeSpaceOpenInstaller;
 import com.fsoinstaller.utils.Logger;
 import com.fsoinstaller.utils.MiscUtils;
@@ -190,14 +191,7 @@ public class ConfigPage extends InstallerPage
 	@Override
 	public void prepareToLeavePage(Runnable runWhenReady)
 	{
-		Callable<Void> task = new SuperValidationTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), usingProxy, hostField.getText(), portField.getText(), runWhenReady, new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				cancelButton.doClick();
-			}
-		});
+		Callable<Void> task = new SuperValidationTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), usingProxy, hostField.getText(), portField.getText(), runWhenReady);
 		
 		ProgressBarDialog dialog = new ProgressBarDialog("Accessing installer information...");
 		dialog.runTask(task, null);
@@ -254,12 +248,11 @@ public class ConfigPage extends InstallerPage
 		private final String hostText;
 		private final String portText;
 		private final Runnable runWhenReady;
-		private final Runnable exitRunnable;
 		private final Configuration configuration;
 		private final Map<String, Object> settings;
 		private int result;
 		
-		public SuperValidationTask(JFrame activeFrame, String directoryText, boolean usingProxy, String hostText, String portText, Runnable runWhenReady, Runnable exitRunnable)
+		public SuperValidationTask(JFrame activeFrame, String directoryText, boolean usingProxy, String hostText, String portText, Runnable runWhenReady)
 		{
 			this.activeFrame = activeFrame;
 			this.directoryText = directoryText;
@@ -267,10 +260,9 @@ public class ConfigPage extends InstallerPage
 			this.hostText = hostText;
 			this.portText = portText;
 			this.runWhenReady = runWhenReady;
-			this.exitRunnable = exitRunnable;
 			this.result = 0;
 			
-			// this isn't synchronized, but we know for sure that we will be the only thread accessing the configuration while the progress bar is running
+			// Configuration and its two maps are thread-safe
 			this.configuration = Configuration.getInstance();
 			this.settings = configuration.getSettings();
 		}
@@ -386,7 +378,7 @@ public class ConfigPage extends InstallerPage
 			settings.put(Configuration.DOWNLOADER_KEY, downloader);
 			
 			// if we already have a version, we must have checked this already
-			if (settings.containsKey(Configuration.REMOTE_VERSION))
+			if (settings.containsKey(Configuration.REMOTE_VERSION_KEY))
 			{
 				EventQueue.invokeLater(runWhenReady);
 				return null;
@@ -465,8 +457,8 @@ public class ConfigPage extends InstallerPage
 								List<String> filenameLines = MiscUtils.readTextFile(tempFileNames);
 								if (!filenameLines.isEmpty())
 								{
-									settings.put(Configuration.REMOTE_VERSION, thisVersion);
-									settings.put(Configuration.MOD_URLs, filenameLines);
+									settings.put(Configuration.REMOTE_VERSION_KEY, thisVersion);
+									settings.put(Configuration.MOD_URLs_KEY, filenameLines);
 									
 									maxVersion = thisVersion;
 									maxVersionURL = versionLines.get(1);
@@ -478,7 +470,7 @@ public class ConfigPage extends InstallerPage
 			}
 			
 			// make sure we could access version information
-			if (!settings.containsKey(Configuration.REMOTE_VERSION))
+			if (!settings.containsKey(Configuration.REMOTE_VERSION_KEY))
 			{
 				EventQueue.invokeLater(new Runnable()
 				{
@@ -502,7 +494,15 @@ public class ConfigPage extends InstallerPage
 					{
 						if (connector.browseToURL(new URL(maxVersionURL)))
 						{
-							EventQueue.invokeLater(exitRunnable);
+							// this should close the program
+							EventQueue.invokeLater(new Runnable()
+							{
+								@Override
+								public void run()
+								{
+									activeFrame.dispose();
+								}
+							});
 							return null;
 						}
 					}

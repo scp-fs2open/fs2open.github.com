@@ -34,6 +34,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 
+import com.fsoinstaller.main.Configuration;
 import com.fsoinstaller.utils.GraphicsUtils;
 import com.fsoinstaller.utils.MiscUtils;
 

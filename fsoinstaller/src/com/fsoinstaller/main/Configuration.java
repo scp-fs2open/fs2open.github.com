@@ -17,9 +17,10 @@
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-package com.fsoinstaller.wizard;
+package com.fsoinstaller.main;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -29,6 +30,11 @@ import com.fsoinstaller.utils.MiscUtils;
 import com.fsoinstaller.utils.PropertiesUtils;
 
 
+/**
+ * Thread-safe class which manages access to global state.
+ * 
+ * @author Goober5000
+ */
 public class Configuration
 {
 	private static final Logger logger = Logger.getLogger(Configuration.class);
@@ -36,8 +42,8 @@ public class Configuration
 	public static final String PROXY_KEY = "PROXY";
 	public static final String CONNECTOR_KEY = "CONNECTOR";
 	public static final String DOWNLOADER_KEY = "DOWNLOADER";
-	public static final String REMOTE_VERSION = "REMOTE-VERSION";
-	public static final String MOD_URLs = "MOD-URLs";
+	public static final String REMOTE_VERSION_KEY = "REMOTE-VERSION";
+	public static final String MOD_URLs_KEY = "MOD-URLs";
 	
 	/**
 	 * Use the Initialization On Demand Holder idiom for thread-safe
@@ -66,7 +72,8 @@ public class Configuration
 			temp = new Properties();
 		}
 		
-		settings = new HashMap<String, Object>();
+		settings = Collections.synchronizedMap(new HashMap<String, Object>());
+		// since Properties inherits from Hashtable, it is already thread-safe
 		properties = temp;
 	}
 	
@@ -117,6 +124,17 @@ public class Configuration
 		
 		properties.setProperty("proxy.host", valid ? host : "none");
 		properties.setProperty("proxy.port", valid ? Integer.toString(port) : "none");
+	}
+	
+	public String getApplicationTitle()
+	{
+		return properties.getProperty("application.title");
+	}
+	
+	// this is not likely to ever get called unless we're building a custom installer
+	public void setApplicationTitle(String title)
+	{
+		properties.setProperty("application.title", title);
 	}
 	
 	public File getApplicationDir()

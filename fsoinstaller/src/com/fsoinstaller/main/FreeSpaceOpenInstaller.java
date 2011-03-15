@@ -34,7 +34,18 @@ public class FreeSpaceOpenInstaller
 {
 	private static Logger logger = Logger.getLogger(FreeSpaceOpenInstaller.class);
 	
-	public static final String INSTALLER_TITLE = "FreeSpace Open Installer";
+	/**
+	 * Title used for dialogs and such.
+	 */
+	public static final String INSTALLER_TITLE;
+	static
+	{
+		// grab it from the properties file, with a reasonable default
+		String title = Configuration.getInstance().getApplicationTitle();
+		if (title == null)
+			title = "FreeSpace Open Installer";
+		INSTALLER_TITLE = title;
+	}
 	
 	/**
 	 * Version of the Installer.
@@ -56,35 +67,43 @@ public class FreeSpaceOpenInstaller
 	
 	public static void main(String[] args)
 	{
-		logger.debug("Setting look-and-feel...");
-		try
-		{
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		}
-		catch (ClassNotFoundException cnfe)
-		{
-			logger.error("Error setting look-and-feel!", cnfe);
-		}
-		catch (InstantiationException ie)
-		{
-			logger.error("Error setting look-and-feel!", ie);
-		}
-		catch (IllegalAccessException iae)
-		{
-			logger.error("Error setting look-and-feel!", iae);
-		}
-		catch (UnsupportedLookAndFeelException iae)
-		{
-			logger.error("Error setting look-and-feel!", iae);
-		}
-		
-		// for now, we only have one possible operation: going through the wizard
-		logger.debug("Launching wizard...");
+		// Swing code goes on the event-dispatching thread...
 		EventQueue.invokeLater(new Runnable()
 		{
 			@Override
 			public void run()
 			{
+				logger.debug("Setting look-and-feel...");
+				try
+				{
+					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+				}
+				catch (ClassNotFoundException cnfe)
+				{
+					logger.error("Error setting look-and-feel!", cnfe);
+				}
+				catch (InstantiationException ie)
+				{
+					logger.error("Error setting look-and-feel!", ie);
+				}
+				catch (IllegalAccessException iae)
+				{
+					logger.error("Error setting look-and-feel!", iae);
+				}
+				catch (UnsupportedLookAndFeelException iae)
+				{
+					logger.error("Error setting look-and-feel!", iae);
+				}
+			}
+		});
+		
+		// for now, we only have one possible operation: going through the wizard
+		EventQueue.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				logger.debug("Launching wizard...");
 				InstallerGUI gui = new InstallerGUI();
 				gui.buildUI();
 				gui.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);

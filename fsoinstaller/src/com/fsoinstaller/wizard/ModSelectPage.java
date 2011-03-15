@@ -33,6 +33,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 
+import com.fsoinstaller.main.Configuration;
 import com.fsoinstaller.utils.Logger;
 
 
@@ -104,7 +105,7 @@ public class ModSelectPage extends InstallerPage
 	public void prepareForDisplay()
 	{
 		@SuppressWarnings("unchecked")
-		List<String> urls = (List<String>) Configuration.getInstance().getSettings().get(Configuration.MOD_URLs);
+		List<String> urls = (List<String>) Configuration.getInstance().getSettings().get(Configuration.MOD_URLs_KEY);
 		if (urls == null)
 			logger.warn("D'oh!  No URLs!");
 		else
