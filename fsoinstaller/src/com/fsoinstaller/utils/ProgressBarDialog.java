@@ -33,6 +33,8 @@ import javax.swing.JLabel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.Border;
 
 import com.fsoinstaller.main.FreeSpaceOpenInstaller;
 import com.fsoinstaller.wizard.GUIConstants;
@@ -53,7 +55,8 @@ public class ProgressBarDialog
 	private final String title;
 	private final AtomicBoolean started;
 	
-	private JProgressBar progressBar;
+	private volatile JProgressBar temp;
+	private final JProgressBar progressBar;
 	
 	public ProgressBarDialog()
 	{
@@ -81,12 +84,13 @@ public class ProgressBarDialog
 			@Override
 			public void run()
 			{
-				progressBar = new JProgressBar(0, 100);
-				progressBar.setIndeterminate(true);
-				progressBar.setString(INDETERMINATE_STATUS);
-				progressBar.setStringPainted(true);
+				temp = new JProgressBar(0, 100);
+				temp.setIndeterminate(true);
+				temp.setString(INDETERMINATE_STATUS);
+				temp.setStringPainted(true);
 			}
 		});
+		progressBar = temp;
 	}
 	
 	/**
@@ -117,14 +121,20 @@ public class ProgressBarDialog
 				// create dialog
 				JDialog dialog = new JDialog(MiscUtils.getActiveFrame(), title, true);
 				dialog.setResizable(false);
+				dialog.setUndecorated(true);
 				
 				// populate content pane
 				JComponent contentPane = (JComponent) dialog.getContentPane();
-				contentPane.setBorder(BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN));
 				contentPane.setLayout(new BorderLayout());
 				if (text != null)
 					contentPane.add(new JLabel(text), BorderLayout.NORTH);
 				contentPane.add(progressBar, BorderLayout.CENTER);
+				
+				// this approximates the look of a dialog border
+				Border edge = BorderFactory.createEmptyBorder(1, 1, 0, 0);
+				Border bevel = BorderFactory.createBevelBorder(BevelBorder.RAISED);
+				Border margin = BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN);
+				contentPane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createCompoundBorder(edge, bevel), margin));
 				
 				// configure display settings
 				dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
