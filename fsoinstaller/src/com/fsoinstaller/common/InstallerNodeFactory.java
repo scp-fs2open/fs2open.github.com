@@ -35,7 +35,7 @@ import java.util.List;
 public class InstallerNodeFactory
 {
 	private static final String EOL = System.getProperty("line.separator");
-
+	
 	public static InstallerNode readNode(Reader reader) throws InstallerNodeParseException, IOException
 	{
 		// skip strings until NAME or EOF is reached
@@ -50,15 +50,15 @@ public class InstallerNodeFactory
 			else if (object instanceof InstallerNodeToken)
 				throw new InstallerNodeParseException("Unexpected token '" + object + "' found while looking for '" + InstallerNodeToken.NAME + "'!");
 		}
-
+		
 		return readNodeSub(reader);
 	}
-
+	
 	private static InstallerNode readNodeSub(Reader reader) throws InstallerNodeParseException, IOException
 	{
 		// create the node with its name
 		InstallerNode node = new InstallerNode(readString(reader));
-
+		
 		// populate this node
 		Object object = null;
 		InstallerNode.InstallUnit currentInstallUnit = null;
@@ -67,7 +67,7 @@ public class InstallerNodeFactory
 			object = readStringOrToken(reader);
 			if (object == null)
 				throw new InstallerNodeParseException("End of reader reached before parsing completed!");
-
+			
 			// child node
 			if (object == InstallerNodeToken.NAME)
 			{
@@ -92,7 +92,7 @@ public class InstallerNodeFactory
 				{
 					currentInstallUnit = null;
 				}
-
+				
 				handleToken(reader, (InstallerNodeToken) object, node, currentInstallUnit);
 			}
 			// an unannotated string means something we install
@@ -104,14 +104,14 @@ public class InstallerNodeFactory
 					currentInstallUnit = new InstallerNode.InstallUnit();
 					node.addInstall(currentInstallUnit);
 				}
-
+				
 				currentInstallUnit.addFile((String) object);
 			}
 		}
-
+		
 		return node;
 	}
-
+	
 	private static void handleToken(Reader reader, InstallerNodeToken token, InstallerNode node, InstallerNode.InstallUnit currentInstallUnit) throws InstallerNodeParseException, IOException
 	{
 		switch (token)
@@ -120,17 +120,17 @@ public class InstallerNodeFactory
 				String delete = readString(reader);
 				node.addDelete(delete);
 				break;
-
+			
 			case DESC:
 				String desc = readStringUntilEndToken(reader, InstallerNodeToken.ENDDESC);
 				node.setDescription(desc);
 				break;
-
+			
 			case FOLDER:
 				String folder = readString(reader);
 				node.setFolder(folder);
 				break;
-
+			
 			case MULTIURL:
 				List<String> strings = readStringsUntilEndToken(reader, InstallerNodeToken.ENDMULTI);
 				try
@@ -144,18 +144,18 @@ public class InstallerNodeFactory
 					throw new InstallerNodeParseException(ibue.getMessage(), ibue);
 				}
 				break;
-
+			
 			case NOTE:
 				String note = readStringUntilEndToken(reader, InstallerNodeToken.ENDNOTE);
 				node.setNote(note);
 				break;
-
+			
 			case RENAME:
 				String renameFrom = readString(reader);
 				String renameTo = readString(reader);
 				node.addRenamePair(new InstallerNode.RenamePair(renameFrom, renameTo));
 				break;
-
+			
 			case URL:
 				String string = readString(reader);
 				try
@@ -167,26 +167,34 @@ public class InstallerNodeFactory
 					throw new InstallerNodeParseException(ibue.getMessage(), ibue);
 				}
 				break;
-
+			
 			case VERSION:
 				String version = readString(reader);
 				node.setVersion(version);
 				break;
-
+			
+			case HASH:
+				String filename = readString(reader);
+				String type = readString(reader);
+				String hash = readString(reader);
+				node.addHashTriple(new InstallerNode.HashTriple(filename, type, hash));
+				break;
+			
 			case ENDDESC:
 			case ENDMULTI:
 			case ENDNOTE:
+			case ENDHASH:
 				throw new InstallerNodeParseException("Unexpected token '" + token + "' found!");
-
+				
 			case NAME:
 			case END:
 				throw new Error("The token '" + token + "' should have been handled already!");
-
+				
 			default:
 				throw new Error("Unhandled token '" + token + "'!");
 		}
 	}
-
+	
 	private static String readString(Reader reader) throws InstallerNodeParseException, IOException
 	{
 		Object object = readStringOrToken(reader);
@@ -194,14 +202,14 @@ public class InstallerNodeFactory
 			throw new InstallerNodeParseException("End of reader reached before parsing completed!");
 		else if (object instanceof InstallerNodeToken)
 			throw new InstallerNodeParseException("Expected a plain string; found the token '" + object + "'!");
-
+		
 		return (String) object;
 	}
-
+	
 	private static List<String> readStringsUntilEndToken(Reader reader, InstallerNodeToken endToken) throws InstallerNodeParseException, IOException
 	{
 		List<String> strings = new ArrayList<String>();
-
+		
 		while (true)
 		{
 			Object object = readStringOrToken(reader);
@@ -211,20 +219,20 @@ public class InstallerNodeFactory
 				break;
 			else if (object instanceof InstallerNodeToken)
 				throw new InstallerNodeParseException("Unexpected token '" + object + "' found while looking for '" + endToken + "'!");
-
+			
 			strings.add((String) object);
 		}
-
+		
 		return strings;
 	}
-
+	
 	private static String readStringUntilEndToken(Reader reader, InstallerNodeToken endToken) throws InstallerNodeParseException, IOException
 	{
 		List<String> strings = readStringsUntilEndToken(reader, endToken);
 		Iterator<String> ii = strings.iterator();
 		if (!ii.hasNext())
 			return "";
-
+		
 		StringBuilder builder = new StringBuilder(ii.next());
 		while (ii.hasNext())
 		{
@@ -233,27 +241,27 @@ public class InstallerNodeFactory
 		}
 		return builder.toString();
 	}
-
+	
 	private static Object readStringOrToken(Reader reader) throws IOException
 	{
 		String line = readLine(reader);
 		if (line == null)
 			return null;
-
+		
 		for (InstallerNodeToken token: InstallerNodeToken.values())
 		{
 			if (token.getToken().equals(line))
 				return token;
 		}
-
+		
 		return line;
 	}
-
+	
 	/**
-	 * Returns the next line of input, trimmed of whitespace on either side. Returns
-	 * null if the end of the reader has been reached. (Note that this means the last
-	 * line of characters will be lost, if there is no newline between it and the end of
-	 * the reader.)
+	 * Returns the next line of input, trimmed of whitespace on either side.
+	 * Returns null if the end of the reader has been reached. (Note that this
+	 * means the last line of characters will be lost, if there is no newline
+	 * between it and the end of the reader.)
 	 */
 	private static String readLine(Reader reader) throws IOException
 	{
@@ -269,28 +277,28 @@ public class InstallerNodeFactory
 		}
 		return builder.toString().trim();
 	}
-
+	
 	public static void writeNode(Writer writer, InstallerNode node) throws IOException
 	{
 		writeNode(0, writer, node);
 	}
-
+	
 	public static void writeNode(int indent, Writer writer, InstallerNode node) throws IOException
 	{
 		writeLine(indent, writer, InstallerNodeToken.NAME, node.getName());
-
+		
 		if (node.getDescription() != null)
 			writeLine(indent, writer, InstallerNodeToken.DESC, node.getDescription(), InstallerNodeToken.ENDDESC);
-
+		
 		if (node.getFolder() != null)
 			writeLine(indent, writer, InstallerNodeToken.FOLDER, node.getFolder());
-
+		
 		for (String delete: node.getDeleteList())
 			writeLine(indent, writer, InstallerNodeToken.DELETE, delete);
-
+		
 		for (InstallerNode.RenamePair pair: node.getRenameList())
 			writeLine(indent, writer, InstallerNodeToken.RENAME, pair.getFrom(), pair.getTo());
-
+		
 		for (InstallerNode.InstallUnit unit: node.getInstallList())
 		{
 			// first URLs
@@ -303,29 +311,29 @@ public class InstallerNodeFactory
 					writeLine(indent, writer, baseURL.toString());
 				writeLine(indent, writer, InstallerNodeToken.ENDMULTI);
 			}
-
+			
 			// then install items
 			for (String install: unit.getFileList())
 				writeLine(indent, writer, install);
 		}
-
+		
 		if (!node.getChildren().isEmpty())
 		{
 			writeLine(indent, writer, "");
 			for (InstallerNode child: node.getChildren())
 				writeNode(indent + 1, writer, child);
 		}
-
+		
 		if (node.getVersion() != null)
 			writeLine(indent, writer, InstallerNodeToken.VERSION, node.getVersion());
-
+		
 		if (node.getNote() != null)
 			writeLine(indent, writer, InstallerNodeToken.NOTE, node.getNote(), InstallerNodeToken.ENDNOTE);
-
+		
 		writeLine(indent, writer, InstallerNodeToken.END);
 		writeLine(indent, writer, "");
 	}
-
+	
 	private static void writeLine(int indent, Writer writer, Object ... objects) throws IOException
 	{
 		for (Object object: objects)
@@ -338,7 +346,7 @@ public class InstallerNodeFactory
 				writeLine(indent, writer, object.toString());
 		}
 	}
-
+	
 	private static void writeLine(int indent, Writer writer, String string) throws IOException
 	{
 		String trimmed = string.trim();
