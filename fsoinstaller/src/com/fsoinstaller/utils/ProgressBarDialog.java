@@ -41,15 +41,15 @@ import com.fsoinstaller.wizard.GUIConstants;
 
 
 /**
- * A utility class that displays a modal dialog with a progress bar while
- * running an asynchronous task. The task has the responsibility of updating the
- * progress bar's status.
+ * A neat little class to run a task while displaying a progress bar indicating
+ * time to completion. The task is specified as a Callable interface, and it has
+ * the responsibilty of updating the dialog's progress as needed.
  */
 public class ProgressBarDialog
 {
 	private static final Logger logger = Logger.getLogger(ProgressBarDialog.class);
 	
-	private static final String INDETERMINATE_STATUS = "Working...";
+	private static final String INDETERMINATE_STRING = "Working...";
 	
 	private final String text;
 	private final String title;
@@ -86,7 +86,7 @@ public class ProgressBarDialog
 			{
 				temp = new JProgressBar(0, 100);
 				temp.setIndeterminate(true);
-				temp.setString(INDETERMINATE_STATUS);
+				temp.setString(INDETERMINATE_STRING);
 				temp.setStringPainted(true);
 			}
 		});
@@ -159,7 +159,7 @@ public class ProgressBarDialog
 			public void run()
 			{
 				progressBar.setIndeterminate(indeterminate);
-				progressBar.setString(indeterminate ? INDETERMINATE_STATUS : null);
+				progressBar.setString(indeterminate ? INDETERMINATE_STRING : null);
 			}
 		});
 	}
