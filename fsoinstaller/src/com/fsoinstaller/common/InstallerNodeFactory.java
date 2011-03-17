@@ -116,11 +116,6 @@ public class InstallerNodeFactory
 	{
 		switch (token)
 		{
-			case DELETE:
-				String delete = readString(reader);
-				node.addDelete(delete);
-				break;
-			
 			case DESC:
 				String desc = readStringUntilEndToken(reader, InstallerNodeToken.ENDDESC);
 				node.setDescription(desc);
@@ -131,23 +126,9 @@ public class InstallerNodeFactory
 				node.setFolder(folder);
 				break;
 			
-			case MULTIURL:
-				List<String> strings = readStringsUntilEndToken(reader, InstallerNodeToken.ENDMULTI);
-				try
-				{
-					Iterator<String> ii = strings.iterator();
-					while (ii.hasNext())
-						currentInstallUnit.addBaseURL(new BaseURL(ii.next()));
-				}
-				catch (InvalidBaseURLException ibue)
-				{
-					throw new InstallerNodeParseException(ibue.getMessage(), ibue);
-				}
-				break;
-			
-			case NOTE:
-				String note = readStringUntilEndToken(reader, InstallerNodeToken.ENDNOTE);
-				node.setNote(note);
+			case DELETE:
+				String delete = readString(reader);
+				node.addDelete(delete);
 				break;
 			
 			case RENAME:
@@ -168,9 +149,18 @@ public class InstallerNodeFactory
 				}
 				break;
 			
-			case VERSION:
-				String version = readString(reader);
-				node.setVersion(version);
+			case MULTIURL:
+				List<String> strings = readStringsUntilEndToken(reader, InstallerNodeToken.ENDMULTI);
+				try
+				{
+					Iterator<String> ii = strings.iterator();
+					while (ii.hasNext())
+						currentInstallUnit.addBaseURL(new BaseURL(ii.next()));
+				}
+				catch (InvalidBaseURLException ibue)
+				{
+					throw new InstallerNodeParseException(ibue.getMessage(), ibue);
+				}
 				break;
 			
 			case HASH:
@@ -180,10 +170,19 @@ public class InstallerNodeFactory
 				node.addHashTriple(new InstallerNode.HashTriple(filename, type, hash));
 				break;
 			
+			case VERSION:
+				String version = readString(reader);
+				node.setVersion(version);
+				break;
+			
+			case NOTE:
+				String note = readStringUntilEndToken(reader, InstallerNodeToken.ENDNOTE);
+				node.setNote(note);
+				break;
+			
 			case ENDDESC:
 			case ENDMULTI:
 			case ENDNOTE:
-			case ENDHASH:
 				throw new InstallerNodeParseException("Unexpected token '" + token + "' found!");
 				
 			case NAME:
@@ -316,6 +315,9 @@ public class InstallerNodeFactory
 			for (String install: unit.getFileList())
 				writeLine(indent, writer, install);
 		}
+		
+		for (InstallerNode.HashTriple triple: node.getHashList())
+			writeLine(indent, writer, InstallerNodeToken.HASH, triple.getFilename(), triple.getType(), triple.getHash());
 		
 		if (!node.getChildren().isEmpty())
 		{
