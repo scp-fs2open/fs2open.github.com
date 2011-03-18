@@ -162,7 +162,6 @@ SkipFree:
 	be->data_size = 0;
 #endif
 	be->signature = Bm_next_signature++;
-	be->type = BM_TYPE_NONE;
 }
 
 // a special version of bm_free_data() that can be safely used in gr_*_texture
@@ -215,7 +214,6 @@ static void bm_free_data_fast(int n)
 #endif
 	vm_free((void *)bmp->data);
 	bmp->data = 0;
-	be->type = BM_TYPE_NONE;
 }
 
 
