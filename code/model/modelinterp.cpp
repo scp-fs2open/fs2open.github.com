@@ -3137,18 +3137,19 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 			switch( Detail.detail_distance )	{
 			case 0:		// lowest
-				depth *= 8.0f;
+				depth /= The_mission.ai_profile->detail_distance_mult[0];
 				break;
 			case 1:		// lower than normal
-				depth *= 4.0f; 
+				depth /= The_mission.ai_profile->detail_distance_mult[1];
 				break;
-			case 2:		// default  (leave the same)
+			case 2:		// default
+				depth /= The_mission.ai_profile->detail_distance_mult[2];
 				break;
 			case 3:		// above normal
-				depth /= 4.0f;
+				depth /= The_mission.ai_profile->detail_distance_mult[3];
 				break;
 			case 4:		// even more normal
-				depth /= 8.0f;
+				depth /= The_mission.ai_profile->detail_distance_mult[4];
 				break;
 			}
 

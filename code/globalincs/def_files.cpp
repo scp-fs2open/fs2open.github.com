@@ -856,6 +856,10 @@ $Max Aim Update Delay: 0, 0, 0, 0, 0									\n\
 ;; aim. Applies for turrets vs small ships								\n\
 $Turret Max Aim Update Delay: 0, 0, 0, 0, 0								\n\
 																		\n\
+;; The maximum amount of delay allowed before turret AI will update its	\n\
+;; aim. Applies for turrets vs small ships								\n\
+$Detail Distance Multiplier: 0.125, 0.25, 1.0, 4.0, 8.0					\n\
+																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
 																		\n\
