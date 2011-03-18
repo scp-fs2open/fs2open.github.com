@@ -1166,11 +1166,12 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 	vec3d * gun_pos;
 	model_subsystem *tp = ssp->system_info;
 
-	ship_model_start(objp);
+	//ship_model_start(objp);
 
 	gun_pos = &tp->turret_firing_point[ssp->turret_next_fire_pos % tp->turret_num_firing_points];
 
-	model_find_world_point(gpos, gun_pos, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
+	//model_find_world_point(gpos, gun_pos, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
+	model_instance_find_world_point(gpos, gun_pos, tp->model_num, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
 	if (use_angles)
 		model_find_world_dir(gvec, &tp->turret_norm, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
@@ -1180,7 +1181,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 		vm_vec_normalized_dir(gvec, targetp, gpos);
 	}
 
-	ship_model_stop(objp);
+	//ship_model_stop(objp);
 
 	// per firingpoint based changes go here for turrets
 }
