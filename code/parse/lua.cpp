@@ -6192,35 +6192,32 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	//Get default turret info
 	vec3d gpos, gvec;
 	model_subsystem *tp = sso->ss->system_info;
-	//ship_get_global_turret_info(sso->objp, sso->ss->system_info, &gpos, &gvec);
 
-	//Rotate turret position with ship
-	vm_vec_unrotate(&gpos, &tp->pnt, &sso->objp->orient);
-	//Add turret position to appropriate world space
-	vm_vec_add2(&gpos, &sso->objp->pos);
+	vec3d * gun_pos;
 
-	//Rotate turret heading with turret base and gun
-	//Now rotate a matrix by angles
-	vec3d turret_heading = vmd_zero_vector;
-	matrix m = IDENTITY_MATRIX;
-	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_1.angs);
-	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_2.angs);
-	vm_vec_unrotate(&turret_heading, &tp->turret_norm, &m);
+	//ship_model_start(sso->objp);
 
-	//Rotate into world space
-	vm_vec_unrotate(&gvec, &turret_heading, &sso->objp->orient);	
+	gun_pos = &tp->turret_firing_point[sso->ss->turret_next_fire_pos % tp->turret_num_firing_points];
+
+	model_instance_find_world_point(&gpos, gun_pos, tp->model_num, Ships[sso->objp->instance].model_instance_num , tp->turret_gun_sobj, &sso->objp->orient, &sso->objp->pos );
+
+	model_find_world_dir(&gvec, &tp->turret_norm, tp->model_num, tp->turret_gun_sobj, &sso->objp->orient, &sso->objp->pos );
+
+	//ship_model_stop(sso->objp);
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
+	
+	sso->ss->turret_next_fire_pos++;
 
 	return ade_set_args(L, "b", rtn);
 }
 
-ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "number", "Something")
+ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "boolean", "true on success false otherwise")
 {
 	ship_subsys_h *sso;
 	vec3d pos = vmd_zero_vector;
 	bool reset = false;
-	if (!ade_get_args(L, "oo|o", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
+	if (!ade_get_args(L, "oo|b", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
 		return ADE_RETURN_NIL;
 
 	//Get default turret info
@@ -6246,7 +6243,10 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates
 	
 	int ret_val = model_rotate_gun(Ship_info[(&Ships[sso->objp->instance])->ship_info_index].model_num, sso->ss->system_info, &Objects[sso->objp->instance].orient, &sso->ss->submodel_info_1.angs, &sso->ss->submodel_info_2.angs, &Objects[sso->objp->instance].pos, &pos, (&Ships[sso->objp->instance])->objnum, reset);
 
-	return ade_set_args(L, "i", ret_val);
+	if (ret_val)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector or null vector on error")
