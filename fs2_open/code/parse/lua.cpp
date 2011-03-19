@@ -8908,6 +8908,175 @@ ADE_FUNC(pollAllButtons, l_Control_Info, NULL, "Access the four bitfields contai
 	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
 }
 
+class particle_h
+{
+protected:
+	particle *part;
+public:
+	particle_h()
+	{
+		part = NULL;
+	}
+
+	particle_h(particle *particle)
+	{
+		this->part = particle;
+	}
+
+	particle* Get()
+	{
+		return this->part;
+	}
+
+	bool isValid()
+	{
+		return this != NULL && part != NULL;
+	}
+};
+
+//**********HANDLE: Particle
+ade_obj<particle_h> l_Particle("particle", "Handle to a particle");
+
+ADE_VIRTVAR(Position, l_Particle, "vector", "The current position of the particle (world vector)", "vector", "The current position")
+{
+	particle_h *ph = NULL;
+	vec3d newVec = vmd_zero_vector;
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Vector.Get(&newVec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!ph->isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR)
+	{
+		ph->Get()->pos = newVec;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(ph->Get()->pos));
+}
+
+ADE_VIRTVAR(Velocity, l_Particle, "vector", "The current velocity of the particle (world vector)", "vector", "The current velocity")
+{
+	particle_h *ph = NULL;
+	vec3d newVec = vmd_zero_vector;
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Vector.Get(&newVec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!ph->isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR)
+	{
+		ph->Get()->velocity = newVec;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(ph->Get()->velocity));
+}
+
+ADE_VIRTVAR(Age, l_Particle, "number", "The time this particle already lives", "number", "The current age or -1 on error")
+{
+	particle_h *ph = NULL;
+	float newAge = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newAge))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!ph->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newAge >= 0)
+			ph->Get()->age = newAge;
+	}
+
+	return ade_set_args(L, "f", ph->Get()->age);
+}
+
+ADE_VIRTVAR(MaximumLife, l_Particle, "number", "The time this particle can live", "number", "The maximal life or -1 on error")
+{
+	particle_h *ph = NULL;
+	float newLife = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newLife))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!ph->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newLife >= 0)
+			ph->Get()->max_life = newLife;
+	}
+
+	return ade_set_args(L, "f", ph->Get()->max_life);
+}
+
+ADE_VIRTVAR(Radius, l_Particle, "number", "The radius of the particle", "number", "The radius or -1 on error")
+{
+	particle_h *ph = NULL;
+	float newRadius = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newRadius))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!ph->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newRadius >= 0)
+			ph->Get()->radius = newRadius;
+	}
+
+	return ade_set_args(L, "f", ph->Get()->radius);
+}
+
+ADE_VIRTVAR(TracerLength, l_Particle, "number", "The tracer legth of the particle", "number", "The radius or -1 on error")
+{
+	particle_h *ph = NULL;
+	float newTracer = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newTracer))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!ph->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newTracer >= 0) 
+			ph->Get()->tracer_length = newTracer;
+	}
+
+	return ade_set_args(L, "f", ph->Get()->tracer_length);
+}
+
+ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is attached to. If valid the position will be relativ to this object and the velocity will be ignored.", "object", "Attached object or invalid object handle on error")
+{
+	particle_h *ph = NULL;
+	object_h *newObj;
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Object.GetPtr(&newObj)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if (!ph->isValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newObj->IsValid())
+			ph->Get()->attached_objnum = newObj->objp->signature;
+	}
+
+	return ade_set_args(L, "o", l_Object.Set(object_h(&Objects[ph->Get()->attached_objnum])));
+}
+
+ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boolean", "true if valid false if not")
+{
+	particle_h *ph = NULL;
+	if (!ade_get_args(L, "o", l_Particle.GetPtr(&ph)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", ph->isValid());
+}
+
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
 
@@ -11984,8 +12153,8 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		 "Creates a particle. Use PARTICLE_* enumerations for type."
 		 "Reverse reverse animation, if one is specified"
 		 "Attached object specifies object that Position will be (and always be) relative to.",
-		 NULL,
-		 NULL)
+		 "particle",
+		 "Handle to the created particle")
 {
 	particle_info pi;
 	pi.type = PARTICLE_DEBUG;
@@ -12008,7 +12177,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 			case LE_PARTICLE_DEBUG:
 				pi.type = PARTICLE_DEBUG;
 				break;
-			/*case LE_PARTICLE_FIRE:
+			case LE_PARTICLE_FIRE:
 				pi.type = PARTICLE_FIRE;
 				break;
 			case LE_PARTICLE_SMOKE:
@@ -12016,7 +12185,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 				break;
 			case LE_PARTICLE_SMOKE2:
 				pi.type = PARTICLE_SMOKE2;
-				break;*/
+				break;
 			case LE_PARTICLE_BITMAP:
 				pi.type = PARTICLE_BITMAP;
 				break;
@@ -12032,9 +12201,12 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		pi.attached_sig = objh->objp->signature;
 	}
 
-	particle_create(&pi);
+	particle *p = particle_create(&pi);
 
-	return ADE_RETURN_NIL;
+	if (p != NULL)
+		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
+	else
+		return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getStack, l_Testing, NULL, "Generates an ADE stackdump", "string", "Current Lua stack")
