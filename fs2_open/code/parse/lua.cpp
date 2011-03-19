@@ -1990,7 +1990,7 @@ ADE_VIRTVAR(Mass, l_Model, "number", "Model mass", "number", "Model mass, or 0 i
 	return ade_set_args(L, "f", pm->mass);
 }
 
-ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", "orientation", NULL)
+ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", "orientation", "Moment of Inertia matrix or identity matrix if invalid" )
 {
 	model_h *mdl = NULL;
 	matrix_h *mh = NULL;
@@ -2010,7 +2010,7 @@ ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&pm->moment_of_inertia)));
 }
 
-ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culling detection)", "number", NULL)
+ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culling detection)", "number", "Model Radius or 0 if invalid")
 {
 	model_h *mdl = NULL;
 	float nr = 0.0f;
@@ -2731,6 +2731,22 @@ ADE_FUNC(isAfterburnerActive, l_Physics, NULL, "True if Afterburners are on, fal
 		return ade_set_error(L, "b", false);
 
 	if (pih->pi->flags & PF_AFTERBURNER_ON)
+		return ade_set_args(L, "b",  true);
+	else
+		return ade_set_args(L, "b",  false);
+}
+
+//nukes glide function
+ADE_FUNC(isGliding, l_Physics, NULL, "True if glide mode is on, false or nil if not", "boolean", "Detects if ship is gliding")
+{
+	physics_info_h *pih;
+	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
+		return ADE_RETURN_NIL;
+
+	if(!pih->IsValid())
+		return ade_set_error(L, "b", false);
+
+	if (pih->pi->flags & (PF_GLIDING|PF_FORCE_GLIDE))
 		return ade_set_args(L, "b",  true);
 	else
 		return ade_set_args(L, "b",  false);
@@ -4414,6 +4430,23 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->pos));
 }
 
+ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last frame (World vector)", "vector", "World position, or null vector if handle is invalid")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(ADE_SETTING_VAR && v3 != NULL) {
+		objh->objp->last_pos = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp->last_pos));
+}
+
 ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
 {
 	object_h *objh;
@@ -4429,6 +4462,23 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->orient)));
+}
+
+ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation as of last frame (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
+{
+	object_h *objh;
+	matrix_h *mh=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Matrix.GetPtr(&mh)))
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+
+	if(ADE_SETTING_VAR && mh != NULL) {
+		objh->objp->last_orient = *mh->GetMatrix();
+	}
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->last_orient)));
 }
 
 ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship between frames", "physics", "Physics data, or invalid physics handle if object handle is invalid")
@@ -9656,7 +9706,8 @@ ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using
 	if( !gTirDll_TrackIR.Enabled( ) )
 		return ADE_RETURN_FALSE;
 
-	gTirDll_TrackIR.Query( );
+	if (gTirDll_TrackIR.Query( ) == 0)
+		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", true);
 }
