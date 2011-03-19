@@ -1162,12 +1162,29 @@ typedef struct ship_info {
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
 	float big_exp_visual_rad;				//SUSHI: The visual size of the main explosion
+	float prop_exp_rad_mult;				// propagating explosions radius multiplier
 	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
 	float vaporize_chance;					
 
-	int ispew_max_particles;						//Temp field until someone works on particles -C
-	int dspew_max_particles;						//Temp field until someone works on particles -C
+	int			ispew_max_particles;						//Temp field until someone works on particles -C
+	int			ispew_min_particles;
+	float		ispew_rad_max;
+	float		ispew_rad_min;
+	float		ispew_life_max;
+	float		ispew_life_min;
+	float		ispew_vel_max;
+	float		ispew_vel_min;	
+	float		ispew_normal_variance;
+	int			dspew_max_particles;						//Temp field until someone works on particles -C
+	int			dspew_min_particles;
+	float		dspew_rad_max;
+	float		dspew_rad_min;
+	float		dspew_life_max;
+	float		dspew_life_min;
+	float		dspew_vel_max;
+	float		dspew_vel_min;
+	float		dspew_normal_variance;
 
 	//Debris stuff
 	float			debris_min_lifetime;
