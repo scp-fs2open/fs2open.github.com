@@ -43,7 +43,10 @@ public class InstallerNode
 	protected final List<InstallUnit> installList;
 	protected final List<HashTriple> hashList;
 	
+	protected InstallerNode parent;
 	protected final List<InstallerNode> children;
+	
+	protected Object userObject;
 	
 	public InstallerNode(String name)
 	{
@@ -61,7 +64,10 @@ public class InstallerNode
 		this.installList = new ArrayList<InstallUnit>();
 		this.hashList = new ArrayList<HashTriple>();
 		
+		this.parent = null;
 		this.children = new ArrayList<InstallerNode>();
+		
+		this.userObject = null;
 	}
 	
 	public String getName()
@@ -142,6 +148,16 @@ public class InstallerNode
 		return Collections.unmodifiableList(children);
 	}
 	
+	public InstallerNode getParent()
+	{
+		return parent;
+	}
+	
+	public Object getUserObject()
+	{
+		return userObject;
+	}
+	
 	public void addRenamePair(RenamePair renamePair)
 	{
 		if (renamePair == null)
@@ -200,11 +216,18 @@ public class InstallerNode
 			throw new NullPointerException("Cannot add a null child!");
 		
 		children.add(installerNode);
+		installerNode.parent = this;
 	}
 	
 	public void removeChild(InstallerNode installerNode)
 	{
 		children.remove(installerNode);
+		installerNode.parent = null;
+	}
+	
+	public void setUserObject(Object userObject)
+	{
+		this.userObject = userObject;
 	}
 	
 	@Override
