@@ -20,8 +20,13 @@
 package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -29,6 +34,7 @@ import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
@@ -36,6 +42,8 @@ import javax.swing.JScrollPane;
 import com.fsoinstaller.common.InstallerNode;
 import com.fsoinstaller.main.Configuration;
 import com.fsoinstaller.utils.Logger;
+import com.fsoinstaller.utils.MiscUtils;
+import com.fsoinstaller.utils.ThreadSafeJOptionPane;
 
 
 public class ModSelectPage extends InstallerPage
@@ -47,9 +55,12 @@ public class ModSelectPage extends InstallerPage
 	private final JRadioButton customButton;
 	private final JPanel modPanel;
 	
+	private final Map<InstallerNode, SingleModPanel> map;
+	
 	public ModSelectPage()
 	{
 		super("mod-select");
+		map = new HashMap<InstallerNode, SingleModPanel>();
 		
 		// create widgets
 		basicButton = new JRadioButton("Basic - FreeSpace 2 Open and MediaVPs, but no mods");
@@ -116,8 +127,18 @@ public class ModSelectPage extends InstallerPage
 		// populate the mod panel
 		modPanel.removeAll();
 		for (InstallerNode node: modNodes)
-			modPanel.add(new SingleModPanel(node));
+			addTreeNode(node, 0);
 		modPanel.add(Box.createVerticalGlue());
+	}
+	
+	private void addTreeNode(InstallerNode node, int depth)
+	{
+		SingleModPanel panel = new SingleModPanel(node, depth);
+		map.put(node, panel);
+		
+		modPanel.add(panel);
+		for (InstallerNode child: node.getChildren())
+			addTreeNode(child, depth + 1);
 	}
 	
 	@Override
@@ -128,12 +149,60 @@ public class ModSelectPage extends InstallerPage
 	
 	private static class SingleModPanel extends JPanel
 	{
-		public SingleModPanel(InstallerNode node)
+		private final InstallerNode node;
+		private final JCheckBox checkBox;
+		private final JButton button;
+		
+		public SingleModPanel(InstallerNode node, int depth)
 		{
+			this.node = node;
+			this.checkBox = createCheckBox(node);
+			this.button = createMoreInfoButton(node);
+			
+			// set up layout
 			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-			add(new JCheckBox(node.getName()));
+			for (int i = 0; i < depth; i++)
+				add(Box.createHorizontalStrut(15));
+			add(checkBox);
 			add(Box.createHorizontalGlue());
-			add(new JButton("More Info"));
+			add(button);
+		}
+		
+		public InstallerNode getNode()
+		{
+			return node;
+		}
+		
+		public boolean isChecked()
+		{
+			return checkBox.isSelected();
+		}
+		
+		private static JCheckBox createCheckBox(final InstallerNode node)
+		{
+			return new JCheckBox(node.getName());
+		}
+		
+		private static JButton createMoreInfoButton(final InstallerNode node)
+		{
+			JButton button = new JButton(new AbstractAction()
+			{
+				{
+					putValue(AbstractAction.NAME, "More Info");
+					putValue(AbstractAction.SHORT_DESCRIPTION, "Click to display additional information about this mod");
+				}
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					JOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), node.getDescription(), node.getName(), JOptionPane.INFORMATION_MESSAGE);
+				}
+			});
+			
+			if (node.getDescription() == null || node.getDescription().isEmpty())
+				button.setEnabled(false);
+			
+			return button;
 		}
 	}
 }
