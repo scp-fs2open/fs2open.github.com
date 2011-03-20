@@ -131,7 +131,9 @@ void pilotfile::csg_read_info()
 
 	// check the idx is within bounds
 	Assertion ((idx < (int)ship_list.size()), "Campaign file contains an incorrect value for the last flown ship class. No data in ship_list for ship number %d.", idx); 
-	if (idx != -1)
+	if (idx >= (int)ship_list.size())
+		idx = -1;
+	else if (idx != -1)
 		p->last_ship_flown_si_index = ship_list[idx].index;
 	else
 		p->last_ship_flown_si_index = -1;
@@ -566,8 +568,8 @@ void pilotfile::csg_read_loadout()
 		idx = cfread_int(cfp);
 
 		if (idx > ship_list.size() || idx < 0) {
-			CLAMP(idx, 0, (int)ship_list.size());
-			mprintf(("CSG => Parse Error: ship_list index invalid, please report this!\n"));				
+			mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), Clamping to valid range.\n", idx));	
+			CLAMP(idx, 0, (int)ship_list.size());						
 		}
 
 		if (slot) {
@@ -581,8 +583,8 @@ void pilotfile::csg_read_loadout()
 			idx = cfread_int(cfp);
 
 			if (idx > weapon_list.size() || idx < 0) {
+				mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));	
 				CLAMP(idx, 0, (int)weapon_list.size());
-				mprintf(("CSG => Parse Error: weapon_list index invalid, please report this!\n"));				
 			}
 
 
@@ -604,8 +606,8 @@ void pilotfile::csg_read_loadout()
 			idx = cfread_int(cfp);
 
 			if (idx > weapon_list.size() || idx < 0) {
-				CLAMP(idx, 0, (int)weapon_list.size());
-				mprintf(("CSG => Parse Error: weapon_list index invalid, please report this!\n"));				
+				mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));
+				CLAMP(idx, 0, (int)weapon_list.size());		
 			}
 
 			if ( slot && (j < MAX_SHIP_SECONDARY_BANKS) ) {
