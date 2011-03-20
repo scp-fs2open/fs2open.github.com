@@ -21,12 +21,9 @@ package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -43,7 +40,6 @@ import com.fsoinstaller.common.InstallerNode;
 import com.fsoinstaller.main.Configuration;
 import com.fsoinstaller.utils.Logger;
 import com.fsoinstaller.utils.MiscUtils;
-import com.fsoinstaller.utils.ThreadSafeJOptionPane;
 
 
 public class ModSelectPage extends InstallerPage
@@ -55,12 +51,9 @@ public class ModSelectPage extends InstallerPage
 	private final JRadioButton customButton;
 	private final JPanel modPanel;
 	
-	private final Map<InstallerNode, SingleModPanel> map;
-	
 	public ModSelectPage()
 	{
 		super("mod-select");
-		map = new HashMap<InstallerNode, SingleModPanel>();
 		
 		// create widgets
 		basicButton = new JRadioButton("Basic - FreeSpace 2 Open and MediaVPs, but no mods");
@@ -134,7 +127,7 @@ public class ModSelectPage extends InstallerPage
 	private void addTreeNode(InstallerNode node, int depth)
 	{
 		SingleModPanel panel = new SingleModPanel(node, depth);
-		map.put(node, panel);
+		node.setUserObject(panel);
 		
 		modPanel.add(panel);
 		for (InstallerNode child: node.getChildren())
@@ -173,14 +166,43 @@ public class ModSelectPage extends InstallerPage
 			return node;
 		}
 		
-		public boolean isChecked()
+		public boolean isSelected()
 		{
 			return checkBox.isSelected();
 		}
 		
+		public void setSelected(boolean selected)
+		{
+			checkBox.setSelected(selected);
+		}
+		
 		private static JCheckBox createCheckBox(final InstallerNode node)
 		{
-			return new JCheckBox(node.getName());
+			JCheckBox checkBox = new JCheckBox(new AbstractAction()
+			{
+				{
+					putValue(AbstractAction.NAME, node.getName());
+				}
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					// we want to automatically select or deselect any children
+					setSubTreeState(node, ((JCheckBox) e.getSource()).isSelected());
+				}
+				
+				private void setSubTreeState(InstallerNode root, boolean selected)
+				{
+					// this check exists because we don't want to doubly-set the node we're on
+					if (root != node)
+						((SingleModPanel) root.getUserObject()).setSelected(selected);
+					
+					// iterate through the tree
+					for (InstallerNode child: root.getChildren())
+						setSubTreeState(child, selected);
+				}
+			});
+			return checkBox;
 		}
 		
 		private static JButton createMoreInfoButton(final InstallerNode node)
