@@ -33,6 +33,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 
+import com.fsoinstaller.common.InstallerNode;
 import com.fsoinstaller.main.Configuration;
 import com.fsoinstaller.utils.Logger;
 
@@ -105,20 +106,17 @@ public class ModSelectPage extends InstallerPage
 	public void prepareForDisplay()
 	{
 		@SuppressWarnings("unchecked")
-		List<String> urls = (List<String>) Configuration.getInstance().getSettings().get(Configuration.MOD_URLs_KEY);
-		if (urls == null)
-			logger.warn("D'oh!  No URLs!");
-		else
+		List<InstallerNode> modNodes = (List<InstallerNode>) Configuration.getInstance().getSettings().get(Configuration.MOD_NODES_KEY);
+		if (modNodes.isEmpty())
 		{
-			logger.info("mod URLs:");
-			for (String url: urls)
-				logger.info(url);
+			logger.error("There are no mods available!  (And this should have been checked already!");
+			return;
 		}
 		
+		// populate the mod panel
 		modPanel.removeAll();
-		modPanel.add(new SingleModPanel("FSPort"));
-		modPanel.add(new SingleModPanel("MediaVPs"));
-		modPanel.add(new SingleModPanel("woot"));
+		for (InstallerNode node: modNodes)
+			modPanel.add(new SingleModPanel(node));
 		modPanel.add(Box.createVerticalGlue());
 	}
 	
@@ -130,10 +128,10 @@ public class ModSelectPage extends InstallerPage
 	
 	private static class SingleModPanel extends JPanel
 	{
-		public SingleModPanel(String name)
+		public SingleModPanel(InstallerNode node)
 		{
 			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-			add(new JCheckBox(name));
+			add(new JCheckBox(node.getName()));
 			add(Box.createHorizontalGlue());
 			add(new JButton("More Info"));
 		}

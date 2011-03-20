@@ -24,10 +24,13 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -46,6 +49,9 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
+import com.fsoinstaller.common.InstallerNode;
+import com.fsoinstaller.common.InstallerNodeFactory;
+import com.fsoinstaller.common.InstallerNodeParseException;
 import com.fsoinstaller.internet.Connector;
 import com.fsoinstaller.internet.Downloader;
 import com.fsoinstaller.internet.InvalidProxyException;
@@ -192,7 +198,14 @@ public class ConfigPage extends InstallerPage
 	@Override
 	public void prepareToLeavePage(Runnable runWhenReady)
 	{
-		Callable<Void> task = new SuperValidationTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), usingProxy, hostField.getText(), portField.getText(), runWhenReady);
+		Callable<Void> task = new SuperValidationTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), usingProxy, hostField.getText(), portField.getText(), runWhenReady, new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				MiscUtils.getActiveFrame().dispose();
+			}
+		});
 		
 		ProgressBarDialog dialog = new ProgressBarDialog("Accessing installer information...");
 		dialog.runTask(task, null);
@@ -249,11 +262,12 @@ public class ConfigPage extends InstallerPage
 		private final String hostText;
 		private final String portText;
 		private final Runnable runWhenReady;
+		private final Runnable exitRunnable;
 		
 		private final Configuration configuration;
 		private final Map<String, Object> settings;
 		
-		public SuperValidationTask(JFrame activeFrame, String directoryText, boolean usingProxy, String hostText, String portText, Runnable runWhenReady)
+		public SuperValidationTask(JFrame activeFrame, String directoryText, boolean usingProxy, String hostText, String portText, Runnable runWhenReady, Runnable exitRunnable)
 		{
 			this.activeFrame = activeFrame;
 			this.directoryText = directoryText;
@@ -261,13 +275,14 @@ public class ConfigPage extends InstallerPage
 			this.hostText = hostText;
 			this.portText = portText;
 			this.runWhenReady = runWhenReady;
+			this.exitRunnable = exitRunnable;
 			
 			// Configuration and its two maps are thread-safe
 			this.configuration = Configuration.getInstance();
 			this.settings = configuration.getSettings();
 		}
 		
-		public Void call() throws Exception
+		public Void call()
 		{
 			logger.info("Validating user input...");
 			
@@ -415,7 +430,7 @@ public class ConfigPage extends InstallerPage
 								if (!filenameLines.isEmpty())
 								{
 									settings.put(Configuration.REMOTE_VERSION_KEY, thisVersion);
-									settings.put(Configuration.MOD_URLs_KEY, filenameLines);
+									settings.put(Configuration.MOD_URLS_KEY, filenameLines);
 									
 									maxVersion = thisVersion;
 									maxVersionURL = versionLines.get(1);
@@ -445,14 +460,7 @@ public class ConfigPage extends InstallerPage
 						if (connector.browseToURL(new URL(maxVersionURL)))
 						{
 							// this should close the program
-							EventQueue.invokeLater(new Runnable()
-							{
-								@Override
-								public void run()
-								{
-									activeFrame.dispose();
-								}
-							});
+							EventQueue.invokeLater(exitRunnable);
 							return null;
 						}
 					}
@@ -465,9 +473,94 @@ public class ConfigPage extends InstallerPage
 				}
 			}
 			
-			logger.info("Done checking version and filename information.");
+			logger.info("Downloading mod information...");
+			
+			@SuppressWarnings("unchecked")
+			List<String> urls = (List<String>) Configuration.getInstance().getSettings().get(Configuration.MOD_URLS_KEY);
+			if (urls == null || urls.isEmpty())
+			{
+				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.  It shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+				EventQueue.invokeLater(exitRunnable);
+				return null;
+			}
+			
+			// parse mod urls into nodes
+			List<InstallerNode> modNodes = new ArrayList<InstallerNode>();
+			for (String url: urls)
+			{
+				// create a URL
+				URL modURL;
+				try
+				{
+					modURL = new URL(url);
+				}
+				catch (MalformedURLException murle)
+				{
+					logger.error("Something went wrong with the URL!", murle);
+					continue;
+				}
+				
+				// create a temporary file
+				File tempModFile;
+				try
+				{
+					tempModFile = File.createTempFile("fsoinstaller_mod", null);
+				}
+				catch (IOException ioe)
+				{
+					logger.error("Error creating temporary file!", ioe);
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was an error creating a temporary file!  This application may need elevated privileges to run.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+					return null;
+				}
+				tempModFile.deleteOnExit();
+				
+				// download it to the temp file
+				if (!downloader.downloadFile(modURL, tempModFile))
+				{
+					logger.warn("Could not download mod information from '" + url + "'");
+					continue;
+				}
+				
+				// parse it into a node
+				InstallerNode node;
+				try
+				{
+					FileReader reader = new FileReader(tempModFile);
+					node = InstallerNodeFactory.readNode(reader);
+					modNodes.add(node);
+				}
+				catch (FileNotFoundException fnfe)
+				{
+					logger.error("This is very odd; we can't find the temp file we just created!", fnfe);
+					continue;
+				}
+				catch (IOException ioe)
+				{
+					logger.error("This is very odd; there was an error reading the temp file we just created!", ioe);
+					continue;
+				}
+				catch (InstallerNodeParseException inpe)
+				{
+					logger.warn("There was an error parsing the mod file at '" + url + "'", inpe);
+					continue;
+				}
+				
+				logger.info("Successfully added " + node.getName());
+			}
+			
+			// check that we have mods
+			if (modNodes.isEmpty())
+			{
+				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.  It shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+				EventQueue.invokeLater(exitRunnable);
+				return null;
+			}
+			
+			// add to settings
+			settings.put(Configuration.MOD_NODES_KEY, modNodes);
 			
 			// validation completed!
+			logger.info("Done with SuperValidationTask!");
 			EventQueue.invokeLater(runWhenReady);
 			return null;
 		}
