@@ -22,26 +22,6 @@
 #include "io/timer.h"
 #endif
 
-
-typedef struct particle {
-	// old style data
-	vec3d	pos;				// position
-	vec3d	velocity;			// velocity
-	float	age;				// How long it's been alive
-	float	max_life;			// How much life we had
-	float	radius;				// radius
-	int		type;				// type										// -1 = None
-	int		optional_data;		// depends on type
-	int		nframes;			// If an ani, how many frames?	
-
-	// new style data
-	float	tracer_length;		// if this is set, draw as a rod to simulate a "tracer" effect
-	int		attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
-	int		attached_sig;		// to check for dead/nonexistent objects
-	ubyte	reverse;			// play any animations in reverse
-	int		particle_index;		// used to keep particle offset in dynamic array for orient usage
-} particle;
-
 int Num_particles = 0;
 static SCP_vector<particle> Particles;
 
@@ -119,13 +99,13 @@ DCF(particles,"Turns particles on/off")
 int Num_particles_hwm = 0;
 
 // Creates a single particle. See the PARTICLE_?? defines for types.
-void particle_create( particle_info *pinfo )
+particle* particle_create( particle_info *pinfo )
 {
 	particle new_particle;
 	int fps = 1;
 
 	if ( !Particles_enabled )
-		return;
+		return NULL;
 
 	// Init the particle data
 	memset( &new_particle, 0, sizeof(particle) );
@@ -148,7 +128,7 @@ void particle_create( particle_info *pinfo )
 		case PARTICLE_BITMAP_PERSISTENT: {
 			if (pinfo->optional_data < 0) {
 				Int3();
-				return;
+				return NULL;
 			}
 
 			bm_get_info( pinfo->optional_data, NULL, NULL, NULL, &new_particle.nframes, &fps );
@@ -163,7 +143,7 @@ void particle_create( particle_info *pinfo )
 
 		case PARTICLE_FIRE: {
 			if (Anim_bitmap_id_fire < 0) {
-				return;
+				return NULL;
 			}
 
 			new_particle.optional_data = Anim_bitmap_id_fire;
@@ -174,7 +154,7 @@ void particle_create( particle_info *pinfo )
 
 		case PARTICLE_SMOKE: {
 			if (Anim_bitmap_id_smoke < 0) {
-				return;
+				return NULL;
 			}
 
 			new_particle.optional_data = Anim_bitmap_id_smoke;
@@ -185,7 +165,7 @@ void particle_create( particle_info *pinfo )
 
 		case PARTICLE_SMOKE2: {
 			if (Anim_bitmap_id_smoke2 < 0) {
-				return;
+				return NULL;
 			}
 
 			new_particle.optional_data = Anim_bitmap_id_smoke2;
@@ -213,15 +193,17 @@ void particle_create( particle_info *pinfo )
 		nprintf(("Particles", "Num_particles high water mark = %i\n", Num_particles_hwm));
 	}
 #endif
+
+	return &Particles.back();
 }
 
-void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data, float tracer_length, object *objp, bool reverse )
+particle* particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data, float tracer_length, object *objp, bool reverse )
 {
 	particle_info pinfo;
 
 	if ( (type < 0) || (type >= NUM_PARTICLE_TYPES) ) {
 		Int3();
-		return;
+		return NULL;
 	}
 
 	// setup old data
@@ -247,7 +229,7 @@ void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int typ
 	pinfo.reverse = reverse? 1 : 0;
 
 	// lower level function
-	particle_create(&pinfo);
+	return particle_create(&pinfo);
 }
 
 MONITOR( NumParticles )
@@ -262,7 +244,7 @@ void particle_move_all(float frametime)
 	if ( Particles.empty() )
 		return;
 
-	for (SCP_vector<particle>::iterator p = Particles.begin(); p != Particles.end(); ) {
+	for (SCP_vector<particle>::iterator p = Particles.begin(); p != Particles.end(); ) {	
 		if (p->age == 0.0f) {
 			p->age = 0.00001f;
 		} else {

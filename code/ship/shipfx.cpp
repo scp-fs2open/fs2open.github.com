@@ -1734,10 +1734,10 @@ void shipfx_emit_spark( int n, int sn )
 	float ship_radius, spark_scale_factor;
 
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
-	if(sn > -1 && sip->ispew_max_particles == 0)
+	if(sn > -1 && sip->ispew_max_particles <= 0)
 		return;
 
-	if(sn < 0 && sip->dspew_max_particles == 0)
+	if(sn < 0 && sip->dspew_max_particles <= 0)
 		return;
 	
 	if ( shipp->num_hits <= 0 )
@@ -1857,9 +1857,6 @@ void shipfx_emit_spark( int n, int sn )
 		}
 				
 		pe.normal = tmp_norm;			// What normal the particle emit around
-		pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
-		pe.min_rad = 0.20f;				// Min radius
-		pe.max_rad = 0.50f;				// Max radius
 
 		// first time through - set up end time and make heavier initially
 		if ( sn > -1 )	{
@@ -1875,34 +1872,28 @@ void shipfx_emit_spark( int n, int sn )
 				}
 			}
 
-			pe.num_low  = 25;				// Lowest number of particles to create (hardware)
-			if(sip->ispew_max_particles > 0) {
-				pe.num_high = sip->ispew_max_particles;
-			} else {
-				pe.num_high = 30;				// Highest number of particles to create (hardware)
-			}
-			pe.normal_variance = 1.0f;	//	How close they stick to that normal 0=good, 1=360 degree
-			pe.min_vel = 2.0f;				// How fast the slowest particle can move
-			pe.max_vel = 12.0f;				// How fast the fastest particle can move
-			pe.min_life = 0.05f;				// How long the particles live
-			pe.max_life = 0.55f;				// How long the particles live
+			pe.min_rad = sip->ispew_rad_min;
+			pe.max_rad = sip->ispew_rad_max;
+			pe.num_low = sip->ispew_min_particles;				// Lowest number of particles to create (hardware)
+			pe.num_high = sip->ispew_max_particles;
+			pe.normal_variance = sip->ispew_normal_variance;	//	How close they stick to that normal 0=good, 1=360 degree
+			pe.min_vel = sip->ispew_vel_min;				// How fast the slowest particle can move
+			pe.max_vel = sip->ispew_vel_max;				// How fast the fastest particle can move
+			pe.min_life = sip->ispew_life_min;				// How long the particles live
+			pe.max_life = sip->ispew_life_max;				// How long the particles live
 
 			particle_emit( &pe, PARTICLE_FIRE, 0 );
 		} else {
 
-			pe.min_rad = 0.7f;				// Min radius
-			pe.max_rad = 1.3f;				// Max radius
-			pe.num_low  = int (20 * spark_num_scale);		// Lowest number of particles to create (hardware)
-			if(sip->dspew_max_particles > 0) {
-				pe.num_high = sip->dspew_max_particles;
-			} else {
-				pe.num_high = int (50 * spark_num_scale);		// Highest number of particles to create (hardware)
-			}
-			pe.normal_variance = 0.2f * spark_width_scale;		//	How close they stick to that normal 0=good, 1=360 degree
-			pe.min_vel = 3.0f;				// How fast the slowest particle can move
-			pe.max_vel = 12.0f;				// How fast the fastest particle can move
-			pe.min_life = 0.35f*2.0f * spark_time_scale;		// How long the particles live
-			pe.max_life = 0.75f*2.0f * spark_time_scale;		// How long the particles live
+			pe.min_rad = sip->dspew_rad_min;				// Min radius
+			pe.max_rad = sip->dspew_rad_max;				// Max radius
+			pe.num_low  = int (sip->dspew_min_particles * spark_num_scale);		// Lowest number of particles to create (hardware)
+			pe.num_high = int (sip->dspew_max_particles * spark_num_scale);		// Highest number of particles to create (hardware)
+			pe.normal_variance = sip->dspew_normal_variance * spark_width_scale;		//	How close they stick to that normal 0=good, 1=360 degree
+			pe.min_vel = sip->dspew_vel_min;				// How fast the slowest particle can move
+			pe.max_vel = sip->dspew_vel_max;				// How fast the fastest particle can move
+			pe.min_life = sip->dspew_life_min * spark_time_scale;		// How long the particles live
+			pe.max_life = sip->dspew_life_max * spark_time_scale;		// How long the particles live
 			
 			particle_emit( &pe, PARTICLE_SMOKE, 0 );
 		}
@@ -2462,14 +2453,18 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 
 			float rad = get_model_cross_section_at_z(half_ship->cur_clip_plane_pt, pm);
 			if (rad < 1) {
-				rad = half_ship->parent_obj->radius * frand_range(0.4f, 0.6f);
+				// changed from 0.4 & 0.6 to 0.6 & 0.9 as later 1.5 multiplier was removed
+				rad = half_ship->parent_obj->radius * frand_range(0.6f, 0.9f);
 			} else {
 				// make fireball radius (1.5 +/- .1) * model_cross_section value
-				rad *= frand_range(1.4f, 1.6f);
+				// changed from 1.4 & 1.6 to 2.1 & 2.4 as later 1.5 multiplier was removed
+				rad *= frand_range(2.1f, 2.4f);
 			}
 
-			rad *= 1.5f;
 			rad = MIN(rad, half_ship->parent_obj->radius);
+
+			//defaults to 1.0 now that multiplier was applied to the static values above
+			rad *= sip->prop_exp_rad_mult;
 
 			// mprintf(("xc %.1f model %.1f\n", rad, half_ship->parent_obj->radius*0.25));
 

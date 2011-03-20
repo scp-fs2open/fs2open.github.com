@@ -703,6 +703,7 @@ void init_ship_entry(ship_info *sip)
 	
 	sip->explosion_propagates = 0;
 	sip->big_exp_visual_rad = -1.0f;
+	sip->prop_exp_rad_mult = 1.0f;
 	sip->vaporize_chance = 0;
 	sip->shockwave_count = 1;
 	sip->explosion_bitmap_anims.clear();
@@ -881,8 +882,27 @@ void init_ship_entry(ship_info *sip)
 	sip->n_subsystems = 0;
 	sip->subsystems = NULL;
 
-	sip->ispew_max_particles = -1;
-	sip->dspew_max_particles = -1;
+	// default values from shipfx.cpp
+	sip->ispew_max_particles = 30;
+	sip->ispew_min_particles = 25;
+	sip->ispew_rad_max = 0.5f;
+	sip->ispew_rad_min = 0.2f;
+	sip->ispew_life_max = 0.55f;
+	sip->ispew_life_min = 0.05f;
+	sip->ispew_vel_max = 12.0f;
+	sip->ispew_vel_min = 2.0f;
+	sip->ispew_normal_variance = 1.0f;
+	
+	// default values from shipfx.cpp
+	sip->dspew_max_particles = 50;
+	sip->dspew_min_particles = 20;
+	sip->dspew_rad_max = 1.3f;
+	sip->dspew_rad_min = 0.7f;
+	sip->dspew_life_max = 1.5f;
+	sip->dspew_life_min = 0.7f;
+	sip->dspew_vel_max = 12.0f;
+	sip->dspew_vel_min = 3.0f;
+	sip->dspew_normal_variance = 0.2f;
 
 	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
@@ -1412,16 +1432,206 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	//are settable, but erg, just not happening right now -C
 	if(optional_string("$Impact Spew:"))
 	{
+		float tempf;
+		int temp;
 		if(optional_string("+Max particles:"))
 		{
-			stuff_int(&sip->ispew_max_particles);
+			stuff_int(&temp);
+			if (temp < 0) {
+				Warning(LOCATION,"Bad value %i, defined as impact spew particle number (max) in ship '%s'.\nValue should be a non-negative integer.\n", temp, sip->name);
+			} else {
+				sip->ispew_max_particles = temp;
+				if (sip->ispew_max_particles == 0) {
+					// notification for disabling the particles
+					mprintf(("Impact spew particles disabled on ship '%s'.\n", sip->name));
+				}
+			}
+		}
+		if(optional_string("+Min particles:"))
+		{
+			stuff_int(&temp);
+			if (temp < 0) {
+				Warning(LOCATION,"Bad value %i, defined as impact spew particle number (min) in ship '%s'.\nValue should be a non-negative integer.\n", temp, sip->name);
+			} else {
+				sip->ispew_min_particles = temp;
+			}
+		}
+		if (sip->ispew_min_particles > sip->ispew_max_particles)
+			sip->ispew_min_particles = sip->ispew_max_particles;
+
+		if(optional_string("+Max Radius:"))
+		{
+			stuff_float(&tempf);
+			if (tempf <= 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as impact spew particle radius (max) in ship '%s'.\nValue should be a positive float.\n", tempf, sip->name);
+			} else {
+				sip->ispew_rad_max = tempf;
+			}
+		}
+		if(optional_string("+Min Radius:"))
+		{
+			stuff_float(&tempf);
+			if (tempf < 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as impact spew particle radius (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
+			} else {
+				sip->ispew_rad_min = tempf;
+			}
+		}
+		if (sip->ispew_rad_min > sip->ispew_rad_max)
+			sip->ispew_rad_min = sip->ispew_rad_max;
+
+		if(optional_string("+Max Lifetime:"))
+		{
+			stuff_float(&tempf);
+			if (tempf <= 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as impact spew particle lifetime (max) in ship '%s'.\nValue should be a positive float.\n", tempf, sip->name);
+			} else {
+				sip->ispew_life_max = tempf;
+			}
+		}
+		if(optional_string("+Min Lifetime:"))
+		{
+			stuff_float(&tempf);
+			if (tempf < 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as impact spew particle lifetime (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
+			} else {
+				sip->ispew_life_min = tempf;
+			}
+		}
+		if (sip->ispew_life_min > sip->ispew_life_max)
+			sip->ispew_life_min = sip->ispew_life_max;
+
+		if(optional_string("+Max Velocity:"))
+		{
+			stuff_float(&tempf);
+			if (tempf < 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as impact spew particle velocity (max) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
+			} else {
+				sip->ispew_vel_max = tempf;
+			}
+		}
+		if(optional_string("+Min Velocity:"))
+		{
+			stuff_float(&tempf);
+			if (tempf < 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as impact spew particle velocity (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
+			} else {
+				sip->ispew_vel_min = tempf;
+			}
+		}
+		if (sip->ispew_vel_min > sip->ispew_vel_max)
+			sip->ispew_vel_min = sip->ispew_vel_max;
+
+		if(optional_string("+Normal Variance:"))
+		{
+			stuff_float(&tempf);
+			if ((tempf >= 0.0f) && (tempf <= 2.0f)) {
+				sip->ispew_normal_variance = tempf;
+			} else {
+				Warning(LOCATION,"Bad value %f, defined as impact spew particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", tempf, sip->name);
+			}
 		}
 	}
 	if(optional_string("$Damage Spew:"))
 	{
+		float tempf;
+		int temp;
 		if(optional_string("+Max particles:"))
 		{
-			stuff_int(&sip->dspew_max_particles);
+			stuff_int(&temp);
+			if (temp < 0) {
+				Warning(LOCATION,"Bad value %i, defined as damage spew particle number (max) in ship '%s'.\nValue should be a non-negative integer.\n", temp, sip->name);
+			} else {
+				sip->dspew_max_particles = temp;
+				if (sip->dspew_max_particles == 0) {
+					// notification for disabling the particles
+					mprintf(("Damage spew particles disabled on ship '%s'.\n", sip->name));
+				}
+			}
+		}
+		if(optional_string("+Min particles:"))
+		{
+			stuff_int(&temp);
+			if (temp < 0) {
+				Warning(LOCATION,"Bad value %i, defined as damage spew particle number (min) in ship '%s'.\nValue should be a non-negative integer.\n", temp, sip->name);
+			} else {
+				sip->dspew_min_particles = temp;
+			}
+		}
+		if (sip->dspew_min_particles > sip->dspew_max_particles)
+			sip->dspew_min_particles = sip->dspew_max_particles;
+
+		if(optional_string("+Max Radius:"))
+		{
+			stuff_float(&tempf);
+			if (tempf <= 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as damage spew particle radius (max) in ship '%s'.\nValue should be a positive float.\n", tempf, sip->name);
+			} else {
+				sip->dspew_rad_max = tempf;
+			}
+		}
+		if(optional_string("+Min Radius:"))
+		{
+			stuff_float(&tempf);
+			if (tempf < 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as damage spew particle radius (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
+			} else {
+				sip->dspew_rad_min = tempf;
+			}
+		}
+		if (sip->dspew_rad_min > sip->dspew_rad_max)
+			sip->dspew_rad_min = sip->dspew_rad_max;
+
+		if(optional_string("+Max Lifetime:"))
+		{
+			stuff_float(&tempf);
+			if (tempf <= 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as damage spew particle lifetime (max) in ship '%s'.\nValue should be a positive float.\n", tempf, sip->name);
+			} else {
+				sip->dspew_life_max = tempf;
+			}
+		}
+		if(optional_string("+Min Lifetime:"))
+		{
+			stuff_float(&tempf);
+			if (tempf < 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as damage spew particle lifetime (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
+			} else {
+				sip->dspew_life_min = tempf;
+			}
+		}
+		if (sip->dspew_life_min > sip->dspew_life_max)
+			sip->dspew_life_min = sip->dspew_life_max;
+
+		if(optional_string("+Max Velocity:"))
+		{
+			stuff_float(&tempf);
+			if (tempf < 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as damage spew particle velocity (max) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
+			} else {
+				sip->dspew_vel_max = tempf;
+			}
+		}
+		if(optional_string("+Min Velocity:"))
+		{
+			stuff_float(&tempf);
+			if (tempf < 0.0f) {
+				Warning(LOCATION,"Bad value %f, defined as damage spew particle velocity (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
+			} else {
+				sip->dspew_vel_min = tempf;
+			}
+		}
+		if (sip->dspew_vel_min > sip->dspew_vel_max)
+			sip->dspew_vel_min = sip->dspew_vel_max;
+
+		if(optional_string("+Normal Variance:"))
+		{
+			stuff_float(&tempf);
+			if ((tempf >= 0.0f) && (tempf <= 2.0f)) {
+				sip->dspew_normal_variance = tempf;
+			} else {
+				Warning(LOCATION,"Bad value %f, defined as damage spew particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", tempf, sip->name);
+			}
 		}
 	}
 
@@ -1828,6 +2038,15 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Expl Propagates:")){
 		stuff_boolean(&sip->explosion_propagates);
+	}
+
+	if(optional_string("$Propagating Expl Radius Multiplier:")){
+		stuff_float(&sip->prop_exp_rad_mult);
+		if(sip->prop_exp_rad_mult <= 0) {
+			// on invalid value return to default setting
+			Warning(LOCATION, "Propagating explosion radius multiplier was set to non-positive value.\nDefaulting multiplier to 1.0 on ship '%s'.\n", sip->name);
+			sip->prop_exp_rad_mult = 1.0f;
+		}
 	}
 
 	if(optional_string("$Expl Visual Rad:")){
