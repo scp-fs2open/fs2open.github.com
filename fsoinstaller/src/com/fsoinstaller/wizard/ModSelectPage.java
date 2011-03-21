@@ -77,28 +77,11 @@ public class ModSelectPage extends InstallerPage
 		labelPanel.add(new JLabel("Select the items you would like to install."));
 		labelPanel.add(Box.createHorizontalGlue());
 		
-		JPanel quickSelectPanel = new JPanel();
-		quickSelectPanel.setLayout(new BoxLayout(quickSelectPanel, BoxLayout.Y_AXIS));
-		quickSelectPanel.add(basicButton);
-		quickSelectPanel.add(completeButton);
-		quickSelectPanel.add(customButton);
-		
-		JPanel outerQuickSelectPanel = new JPanel(new BorderLayout());
-		outerQuickSelectPanel.setBorder(BorderFactory.createTitledBorder("Quick Select"));
-		outerQuickSelectPanel.add(quickSelectPanel, BorderLayout.CENTER);
-		
-		JPanel topPanel = new JPanel();
-		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
-		topPanel.add(labelPanel);
-		topPanel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN));
-		topPanel.add(outerQuickSelectPanel);
-		topPanel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN));
-		
 		JScrollPane modScrollPane = new JScrollPane(modPanel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		
-		JPanel panel = new JPanel(new BorderLayout());
+		JPanel panel = new JPanel(new BorderLayout(0, GUIConstants.DEFAULT_MARGIN));
 		panel.setBorder(BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN));
-		panel.add(topPanel, BorderLayout.NORTH);
+		panel.add(labelPanel, BorderLayout.NORTH);
 		panel.add(modScrollPane, BorderLayout.CENTER);
 		
 		basicButton.doClick();
@@ -109,6 +92,8 @@ public class ModSelectPage extends InstallerPage
 	@Override
 	public void prepareForDisplay()
 	{
+		setNextButton("Install", "Proceed with installation");
+		
 		@SuppressWarnings("unchecked")
 		List<InstallerNode> modNodes = (List<InstallerNode>) Configuration.getInstance().getSettings().get(Configuration.MOD_NODES_KEY);
 		if (modNodes.isEmpty())
@@ -137,6 +122,7 @@ public class ModSelectPage extends InstallerPage
 	@Override
 	public void prepareToLeavePage(Runnable runWhenReady)
 	{
+		resetNextButton();
 		runWhenReady.run();
 	}
 	

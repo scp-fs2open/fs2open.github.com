@@ -20,6 +20,7 @@
 package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 
@@ -50,13 +51,41 @@ public abstract class InstallerPage extends JPanel
 	protected final JButton nextButton;
 	protected final JButton cancelButton;
 	
+	protected String oldNextText;
+	protected String oldNextToolTip;
+	
 	public InstallerPage(String name)
 	{
-		this.configuration = Configuration.getInstance();
+		gui = null;
+		configuration = Configuration.getInstance();
 		
 		backButton = new JButton(new BackAction());
 		nextButton = new JButton(new NextAction());
 		cancelButton = new JButton(new CancelAction());
+		
+		oldNextText = null;
+		oldNextToolTip = null;
+		
+		// set sizes
+		Dimension[] sizes = new Dimension[]
+		{
+			backButton.getPreferredSize(),
+			nextButton.getPreferredSize(),
+			cancelButton.getPreferredSize()
+		};
+		int maxWidth = -1;
+		int maxHeight = -1;
+		for (Dimension size: sizes)
+		{
+			if (size.width > maxWidth)
+				maxWidth = size.width;
+			if (size.height > maxHeight)
+				maxHeight = size.height;
+		}
+		Dimension max = new Dimension(maxWidth, maxHeight);
+		backButton.setPreferredSize(max);
+		nextButton.setPreferredSize(max);
+		cancelButton.setPreferredSize(max);
 		
 		setName(name);
 	}
@@ -101,6 +130,28 @@ public abstract class InstallerPage extends JPanel
 	 * any reason, do not invokeRunWhenReady.
 	 */
 	public abstract void prepareToLeavePage(Runnable runWhenReady);
+	
+	protected void setNextButton(String text, String tooltip)
+	{
+		if (text != null)
+		{
+			oldNextText = nextButton.getText();
+			nextButton.setText(text);
+		}
+		if (tooltip != null)
+		{
+			oldNextToolTip = nextButton.getToolTipText();
+			nextButton.setToolTipText(tooltip);
+		}
+	}
+	
+	protected void resetNextButton()
+	{
+		if (oldNextText != null)
+			nextButton.setText(oldNextText);
+		if (oldNextToolTip != null)
+			nextButton.setToolTipText(oldNextToolTip);
+	}
 	
 	public JPanel createFooterPanel()
 	{

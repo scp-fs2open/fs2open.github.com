@@ -19,7 +19,6 @@
 
 package com.fsoinstaller.wizard;
 
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
@@ -128,9 +127,10 @@ public class ConfigPage extends InstallerPage
 		dirPanel.add(Box.createHorizontalStrut(GUIConstants.DEFAULT_MARGIN));
 		dirPanel.add(new JButton(new BrowseAction()));
 		
-		JPanel outerDirPanel = new JPanel(new BorderLayout());
+		JPanel outerDirPanel = new JPanel();
 		outerDirPanel.setBorder(BorderFactory.createTitledBorder("Installation Directory"));
-		outerDirPanel.add(dirPanel, BorderLayout.CENTER);
+		outerDirPanel.setLayout(new BoxLayout(outerDirPanel, BoxLayout.Y_AXIS));
+		outerDirPanel.add(dirPanel);
 		
 		JCheckBox check = new JCheckBox(new ProxyCheckAction());
 		check.setSelected(usingProxy);
@@ -171,9 +171,10 @@ public class ConfigPage extends InstallerPage
 		proxyPanel.add(Box.createVerticalStrut(GUIConstants.SMALL_MARGIN));
 		proxyPanel.add(portPanel);
 		
-		JPanel outerProxyPanel = new JPanel(new BorderLayout());
+		JPanel outerProxyPanel = new JPanel();
 		outerProxyPanel.setBorder(BorderFactory.createTitledBorder("Proxy Settings"));
-		outerProxyPanel.add(proxyPanel, BorderLayout.CENTER);
+		outerProxyPanel.setLayout(new BoxLayout(outerProxyPanel, BoxLayout.Y_AXIS));
+		outerProxyPanel.add(proxyPanel);
 		
 		JPanel panel = new JPanel();
 		panel.setBorder(BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN));
