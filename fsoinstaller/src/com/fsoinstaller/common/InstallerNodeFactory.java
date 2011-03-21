@@ -258,9 +258,7 @@ public class InstallerNodeFactory
 	
 	/**
 	 * Returns the next line of input, trimmed of whitespace on either side.
-	 * Returns null if the end of the reader has been reached. (Note that this
-	 * means the last line of characters will be lost, if there is no newline
-	 * between it and the end of the reader.)
+	 * Returns null if the end of the reader has been reached.
 	 */
 	private static String readLine(Reader reader) throws IOException
 	{
@@ -269,7 +267,7 @@ public class InstallerNodeFactory
 		{
 			int ch = reader.read();
 			if (ch < 0)
-				return null;
+				return builder.length() > 0 ? builder.toString().trim() : null;
 			else if (ch == '\n')
 				break;
 			builder.append((char) ch);

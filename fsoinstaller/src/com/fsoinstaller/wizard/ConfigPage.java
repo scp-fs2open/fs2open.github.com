@@ -521,31 +521,33 @@ public class ConfigPage extends InstallerPage
 					continue;
 				}
 				
-				// parse it into a node
+				// parse it into one or more nodes
 				InstallerNode node;
 				try
 				{
 					FileReader reader = new FileReader(tempModFile);
-					node = InstallerNodeFactory.readNode(reader);
-					modNodes.add(node);
+					while (true)
+					{
+						node = InstallerNodeFactory.readNode(reader);
+						if (node == null)
+							break;
+						
+						modNodes.add(node);
+						logger.info("Successfully added " + node.getName());
+					}
 				}
 				catch (FileNotFoundException fnfe)
 				{
 					logger.error("This is very odd; we can't find the temp file we just created!", fnfe);
-					continue;
 				}
 				catch (IOException ioe)
 				{
 					logger.error("This is very odd; there was an error reading the temp file we just created!", ioe);
-					continue;
 				}
 				catch (InstallerNodeParseException inpe)
 				{
 					logger.warn("There was an error parsing the mod file at '" + url + "'", inpe);
-					continue;
 				}
-				
-				logger.info("Successfully added " + node.getName());
 			}
 			
 			// check that we have mods
