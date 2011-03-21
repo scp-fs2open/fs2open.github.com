@@ -21,7 +21,9 @@ package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -51,6 +53,9 @@ public class ModSelectPage extends InstallerPage
 	private final JRadioButton customButton;
 	private final JPanel modPanel;
 	
+	private final List<InstallerNode> treeWalk;
+	private boolean inited;
+	
 	public ModSelectPage()
 	{
 		super("mod-select");
@@ -67,6 +72,9 @@ public class ModSelectPage extends InstallerPage
 		group.add(basicButton);
 		group.add(completeButton);
 		group.add(customButton);
+		
+		treeWalk = new ArrayList<InstallerNode>();
+		inited = false;
 	}
 	
 	@Override
@@ -94,25 +102,53 @@ public class ModSelectPage extends InstallerPage
 	{
 		setNextButton("Install", "Proceed with installation");
 		
+		Map<String, Object> settings = Configuration.getInstance().getSettings();
 		@SuppressWarnings("unchecked")
-		List<InstallerNode> modNodes = (List<InstallerNode>) Configuration.getInstance().getSettings().get(Configuration.MOD_NODES_KEY);
-		if (modNodes.isEmpty())
+		List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
+		
+		// populating the mod panel only needs to be done once
+		if (!inited)
 		{
-			logger.error("There are no mods available!  (And this should have been checked already!");
-			return;
+			if (modNodes.isEmpty())
+			{
+				logger.error("There are no mods available!  (And this should have been checked already!");
+				return;
+			}
+			
+			// populate the mod panel
+			modPanel.removeAll();
+			treeWalk.clear();
+			for (InstallerNode node: modNodes)
+				addTreeNode(node, 0);
+			modPanel.add(Box.createVerticalGlue());
+			
+			inited = true;
 		}
 		
-		// populate the mod panel
-		modPanel.removeAll();
-		for (InstallerNode node: modNodes)
-			addTreeNode(node, 0);
-		modPanel.add(Box.createVerticalGlue());
+		// select applicable nodes
+		InstallChoice choice = (InstallChoice) settings.get(Configuration.INSTALL_CHOICE_KEY);
+		if (choice == InstallChoice.BASIC)
+		{
+			@SuppressWarnings("unchecked")
+			List<String> basicMods = (List<String>) settings.get(Configuration.BASIC_CONFIG_MODS_KEY);
+			
+			for (InstallerNode node: treeWalk)
+				((SingleModPanel) node.getUserObject()).setSelected(basicMods.contains(node.getName()) && MiscUtils.validForOS(node.getName()));
+		}
+		else if (choice == InstallChoice.COMPLETE)
+		{
+			for (InstallerNode node: treeWalk)
+				((SingleModPanel) node.getUserObject()).setSelected(MiscUtils.validForOS(node.getName()));
+		}
+		
+		// TODO: select and disable nodes that have been installed already
 	}
 	
 	private void addTreeNode(InstallerNode node, int depth)
 	{
 		SingleModPanel panel = new SingleModPanel(node, depth);
 		node.setUserObject(panel);
+		treeWalk.add(node);
 		
 		modPanel.add(panel);
 		for (InstallerNode child: node.getChildren())
@@ -175,6 +211,9 @@ public class ModSelectPage extends InstallerPage
 				{
 					// we want to automatically select or deselect any children
 					setSubTreeState(node, ((JCheckBox) e.getSource()).isSelected());
+					
+					// changing the selection means the installation is now custom
+					Configuration.getInstance().getSettings().put(Configuration.INSTALL_CHOICE_KEY, InstallChoice.CUSTOM);
 				}
 				
 				private void setSubTreeState(InstallerNode root, boolean selected)

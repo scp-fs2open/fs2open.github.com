@@ -255,6 +255,24 @@ public class InstallerNode
 		return name;
 	}
 	
+	public InstallerNode findInTree(String name)
+	{
+		if (name == null)
+			throw new NullPointerException("Name cannot be null!");
+		
+		if (this.name.equals(name))
+			return this;
+		
+		for (InstallerNode child: this.children)
+		{
+			InstallerNode result = child.findInTree(name);
+			if (result != null)
+				return result;
+		}
+		
+		return null;
+	}
+	
 	public static class RenamePair
 	{
 		private String from;

@@ -30,6 +30,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -367,11 +368,13 @@ public class ConfigPage extends InstallerPage
 			logger.info("Checking installer version...");
 			
 			File tempVersion;
-			File tempFileNames;
+			File tempFilenames;
+			File tempBasicConfig;
 			try
 			{
 				tempVersion = File.createTempFile("fsoinstaller_version", null);
-				tempFileNames = File.createTempFile("fsoinstaller_filenames", null);
+				tempFilenames = File.createTempFile("fsoinstaller_filenames", null);
+				tempBasicConfig = File.createTempFile("fsoinstaller_basicconfig", null);
 			}
 			catch (IOException ioe)
 			{
@@ -380,7 +383,8 @@ public class ConfigPage extends InstallerPage
 				return null;
 			}
 			tempVersion.deleteOnExit();
-			tempFileNames.deleteOnExit();
+			tempFilenames.deleteOnExit();
+			tempBasicConfig.deleteOnExit();
 			
 			double maxVersion = -1.0;
 			String maxVersionURL = null;
@@ -393,10 +397,12 @@ public class ConfigPage extends InstallerPage
 				// assemble URLs
 				URL versionURL;
 				URL filenameURL;
+				URL basicURL;
 				try
 				{
 					versionURL = new URL(url + "version.txt");
 					filenameURL = new URL(url + "filenames.txt");
+					basicURL = new URL(url + "basic_config.txt");
 				}
 				catch (MalformedURLException murle)
 				{
@@ -422,12 +428,13 @@ public class ConfigPage extends InstallerPage
 						
 						logger.info("Version at this URL is " + thisVersion);
 						
-						// get the file names from the highest version available
+						// get the information from the highest version available
 						if (thisVersion > maxVersion)
 						{
-							if (downloader.downloadFile(filenameURL, tempFileNames))
+							// get file names
+							if (downloader.downloadFile(filenameURL, tempFilenames))
 							{
-								List<String> filenameLines = MiscUtils.readTextFile(tempFileNames);
+								List<String> filenameLines = MiscUtils.readTextFile(tempFilenames);
 								if (!filenameLines.isEmpty())
 								{
 									settings.put(Configuration.REMOTE_VERSION_KEY, thisVersion);
@@ -435,6 +442,21 @@ public class ConfigPage extends InstallerPage
 									
 									maxVersion = thisVersion;
 									maxVersionURL = versionLines.get(1);
+									
+									// try to get basic configuration too, but this can be optional (sort of)
+									if (downloader.downloadFile(basicURL, tempBasicConfig))
+									{
+										List<String> basicLines = MiscUtils.readTextFile(tempBasicConfig);
+										
+										// strip empty/blank lines
+										Iterator<String> ii = basicLines.iterator();
+										while (ii.hasNext())
+											if (ii.next().trim().isEmpty())
+												ii.remove();
+										
+										if (!basicLines.isEmpty())
+											settings.put(Configuration.BASIC_CONFIG_MODS_KEY, basicLines);
+									}
 								}
 							}
 						}

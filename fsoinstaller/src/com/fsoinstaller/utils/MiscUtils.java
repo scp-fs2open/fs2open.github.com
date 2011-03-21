@@ -206,4 +206,44 @@ public class MiscUtils
 		}
 		return lines;
 	}
+	
+	public enum OperatingSystem
+	{
+		WINDOWS,
+		MAC,
+		UNIX,
+		OTHER
+	}
+	
+	public static OperatingSystem determineOS()
+	{
+		String os_name_lower = System.getProperty("os.name").toLowerCase();
+		if (os_name_lower.startsWith("windows"))
+			return OperatingSystem.WINDOWS;
+		else if (os_name_lower.startsWith("mac"))
+			return OperatingSystem.MAC;
+		else if (os_name_lower.contains("nix") || os_name_lower.contains("nux"))
+			return OperatingSystem.UNIX;
+		else
+			return OperatingSystem.OTHER;
+	}
+	
+	public static boolean validForOS(String modName)
+	{
+		OperatingSystem os = determineOS();
+		
+		// if we have a specific OS, make sure the name doesn't exclude itself
+		if (os != OperatingSystem.OTHER)
+		{
+			String mod_lower = modName.toLowerCase();
+			if (mod_lower.contains("windows") && os != OperatingSystem.WINDOWS)
+				return false;
+			if ((mod_lower.contains("macintosh") || mod_lower.contains("osx") || mod_lower.contains("os x")) && os != OperatingSystem.MAC)
+				return false;
+			if ((mod_lower.contains("linux") || mod_lower.contains("unix")) && os != OperatingSystem.UNIX)
+				return false;
+		}
+		
+		return true;
+	}
 }

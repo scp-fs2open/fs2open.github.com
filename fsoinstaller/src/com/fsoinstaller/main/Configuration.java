@@ -44,7 +44,9 @@ public class Configuration
 	public static final String DOWNLOADER_KEY = "DOWNLOADER";
 	public static final String REMOTE_VERSION_KEY = "REMOTE-VERSION";
 	public static final String MOD_URLS_KEY = "MOD-URLS";
+	public static final String BASIC_CONFIG_MODS_KEY = "BASIC-CONFIG-MODS";
 	public static final String MOD_NODES_KEY = "MOD-NODES";
+	public static final String INSTALL_CHOICE_KEY = "INSTALL-CHOICE";
 	
 	/**
 	 * Use the Initialization On Demand Holder idiom for thread-safe
