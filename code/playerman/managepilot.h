@@ -53,3 +53,4 @@ void pilot_format_callsign_personal(char *in_callsign,char *out_callsign);
 // 1 == ok to overwrite, 0 == not ok
 int pilot_verify_overwrite();
 
+void pilot_set_start_campaign(player* p);

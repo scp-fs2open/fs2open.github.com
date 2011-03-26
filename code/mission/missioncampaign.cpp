@@ -230,22 +230,6 @@ void mission_campaign_free_list()
 	Campaign_names_inited = 0;
 }
 
-void mission_campaign_maybe_add( char *filename, int multiplayer )
-{
-	Int3();
-
-/*	char name[NAME_LENGTH];
-	int type, max_players;
-
-	if ( mission_campaign_get_info( filename, name, &type, &max_players) ) {
-		if ( !multiplayer && ( type == CAMPAIGN_TYPE_SINGLE) ) {
-			Campaign_names[Num_campaigns] = vm_strdup(name);
-			Campaign_file_names[Num_campaigns] = vm_strdup(filename);
-			Num_campaigns++;
-		}
-	}*/
-}
-
 int mission_campaign_maybe_add(char *filename)
 {
 	char name[NAME_LENGTH];
