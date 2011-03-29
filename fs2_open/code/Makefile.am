@@ -258,6 +258,8 @@ FS2_SOURCES =	\
 	debugconsole/dbugfile.h	\
 	debugconsole/timerbar.cpp	\
 	debugconsole/timerbar.h	\
+	demo/demo.cpp	\
+	demo/demo.h	\
 	exceptionhandler/exceptionhandler.cpp	\
 	exceptionhandler/exceptionhandler.h	\
 	external_dll/externalcode.h		\
