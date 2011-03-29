@@ -17,9 +17,7 @@
 #include <windows.h>	// for MAX_PATH
 #endif
 
-#ifdef SCP_UNIX
 #include <limits.h>		// for MAX_INT
-#endif
 
 #include "bmpman/bmpman.h"
 #include "pcxutils/pcxutils.h"
