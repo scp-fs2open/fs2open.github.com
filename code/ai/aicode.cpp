@@ -15081,8 +15081,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 
 		maybe_process_friendly_hit(objp_hitter, objp_ship, hit_objp);		//	Deal with player's friendly fire.
 
-		if (Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER))
-			ship_maybe_ask_for_help(shipp);
+		ship_maybe_ask_for_help(shipp);
 	} else if (hit_objp->type == OBJ_SHIP) {
 		if (shipp->team == Ships[hit_objp->instance].team)		//	Don't have AI react to collisions between teammates.
 			return;
