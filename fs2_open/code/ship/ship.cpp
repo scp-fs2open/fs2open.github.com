@@ -14694,7 +14694,9 @@ void ship_maybe_ask_for_help(ship *sp)
 
 play_ask_help:
 
-	Assertion(Ship_info[sp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER), "Ship %s (Class %s) tries to call for help from its wingmen, but is neither Fighter nor Bomber.\n", sp->ship_name, Ship_info[sp->ship_info_index].name);	// get Alan
+	if (!(Ship_info[sp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER))) //If we're still here, only continue if we're a fighter or bomber.
+		return;
+
 	if (!(sp->flags2 & SF2_NO_BUILTIN_MESSAGES)) // Karajorma - Only unsilenced ships should ask for help
 	{
 	message_send_builtin_to_player(MESSAGE_HELP, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
