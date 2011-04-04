@@ -2291,9 +2291,10 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 		
 		// possibly add this ship to a hotkey set
-		if ((shipp->wingnum == -1) && (shipp->hotkey != -1))
+		// Ships can now have both a ship-hotkey and a wing-hotkey -- FSF
+		if (shipp->hotkey != -1)
 			mission_hotkey_mf_add(shipp->hotkey, shipp->objnum, HOTKEY_MISSION_FILE_ADDED);
-		else if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].hotkey != -1))
+		if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].hotkey != -1))
 			mission_hotkey_mf_add(Wings[shipp->wingnum].hotkey, shipp->objnum, HOTKEY_MISSION_FILE_ADDED);
 
 		// possibly add this ship to the hud escort list
