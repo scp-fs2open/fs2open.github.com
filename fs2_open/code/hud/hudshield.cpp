@@ -596,7 +596,7 @@ void HudGaugeShield::render(float frametime)
 {
 }
 
-void HudGaugeShield::showShields(object *objp)
+void HudGaugeShield::showShields(object *objp, int mode)
 {
 //	static int fod_model = -1;
 	float			max_shield;
@@ -750,7 +750,7 @@ void HudGaugeShield::showShields(object *objp)
 		}
 
 		int flash=0;
-		flash = maybeFlashShield(SHIELD_HIT_PLAYER, i);
+		flash = maybeFlashShield(mode, i);
 		
 				
 		if ( !flash ) {
@@ -921,7 +921,7 @@ HudGaugeShield(HUD_OBJECT_PLAYER_SHIELD, HUD_PLAYER_SHIELD_ICON)
 
 void HudGaugeShieldPlayer::render(float frametime)
 {
-	showShields(Player_obj);
+	showShields(Player_obj, SHIELD_HIT_PLAYER);
 }
 
 HudGaugeShieldTarget::HudGaugeShieldTarget():
@@ -942,7 +942,10 @@ void HudGaugeShieldTarget::render(float frametime)
 		return;
 	}
 
-	showShields(targetp);
+	if ( targetp == Player_obj)
+		return;
+
+	showShields(targetp, SHIELD_HIT_TARGET);
 }
 
 HudGaugeShieldMini::HudGaugeShieldMini(): // HUD_TARGET_MINI_ICON
