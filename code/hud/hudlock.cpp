@@ -109,24 +109,14 @@ void hud_init_missile_lock()
 	Rotate_time_id = 1;
 
 	// Load in the frames need for the lead indicator
-	if (!Lock_gauge_loaded) {
-		/*
-		Lock_gauge.first_frame = bm_load_animation(Lock_fname[Hud_reticle_style][gr_screen.res], &Lock_gauge.num_frames);
-		if ( Lock_gauge.first_frame < 0 ) {
-			Warning(LOCATION,"Cannot load hud ani: Lock_fname[Hud_reticle_style][gr_screen.res]\n");
-		}
-		*/
-		hud_anim_init(&Lock_gauge, 0, 0, Lock_fname[Hud_reticle_style][gr_screen.res]);
-		hud_anim_load(&Lock_gauge);
-
-		hud_anim_init(&Lock_anim, 0, 0, Lockspin_fname[Hud_reticle_style][gr_screen.res]);
-		hud_anim_load(&Lock_anim);
+	//if (!Lock_gauge_loaded) {
+	//Commented out due to changes in HUD loading behaviour. These checks are no longer needed at this point.
 
 		Lock_gauge_loaded = 1;
 		
 		Lock_gauge_draw_stamp = -1;
 		Lock_gauge_draw = 0;
-	}
+	//}
 }
 
 void hud_draw_diamond(int x, int y, int width, int height)
