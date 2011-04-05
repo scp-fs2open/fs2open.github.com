@@ -383,7 +383,7 @@ int multi_msg_check_command(char *str)
 		}
 	}
 
-	/*
+	
 	// apply the results as a general expression, if we're in message all mode
 	if(Multi_msg_mode == MULTI_MSG_ALL){
 		strcpy_s(Multi_msg_text,param);
@@ -397,7 +397,7 @@ int multi_msg_check_command(char *str)
 		// return true
 		return 1;
 	}	
-	*/
+	
 
 	// no commands performed
 	return 0;

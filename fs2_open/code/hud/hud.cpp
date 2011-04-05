@@ -3730,6 +3730,11 @@ HudGauge(HUD_OBJECT_MULTI_MSG, HUD_MESSAGE_LINES, true, false, true, 0, 255, 255
 {
 }
 
+bool HudGaugeMultiMsg::canRender() 
+{
+	return true;
+}
+
 // render multiplayer text message currently being entered if any
 void HudGaugeMultiMsg::render(float frametime)
 {
