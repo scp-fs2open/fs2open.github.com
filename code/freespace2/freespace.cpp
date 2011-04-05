@@ -3138,6 +3138,11 @@ void say_view_target()
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 				}
+			case OBJ_DEBRIS: {
+				strcpy_s(view_target_name, "Debris");
+				Viewer_mode &= ~VM_OTHER_SHIP;
+				break;
+				}
 
 			default:
 				Int3();
