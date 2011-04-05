@@ -97,12 +97,6 @@ void update_ets(object* objp, float fl_frametime)
 	float max_g=sinfo_p->max_weapon_reserve,
 		  max_s=ship_p->ship_max_shield_strength;
 
-	if ( ship_p->flags2 & SF2_NO_ETS) {
-		//Maybe this got set during gameplay?
-		ship_p->next_manage_ets = -1;
-		return;
-	}
-
 	if ( ship_p->flags & SF_DYING ){
 		return;
 	}
@@ -223,9 +217,6 @@ void ai_manage_ets(object* obj)
 		return;
 
 	if (ship_p->flags & SF_DYING)
-		return;
-
-	if (ship_p->flags2 & SF2_NO_ETS)
 		return;
 
 	// check if any of the three systems are not being used.  If so, don't allow energy management.
