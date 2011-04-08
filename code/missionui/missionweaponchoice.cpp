@@ -3571,7 +3571,7 @@ void wl_swap_weapons(int ship_slot, int from_bank, int to_bank)
 
 	slot = &Wss_slots[ship_slot];
 
-	if ( from_bank == to_bank ) {
+	if ( from_bank == to_bank || (from_bank >= MAX_SHIP_WEAPONS || from_bank < 0 ) || (to_bank >= MAX_SHIP_WEAPONS || from_bank < 0 ) ) {
 		return;
 	}
 
