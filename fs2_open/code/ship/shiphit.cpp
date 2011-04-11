@@ -2324,14 +2324,6 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 		//	Ie, player can always do damage.  AI can only damage team if that ship is targeted.
 		if (wp->target_num != OBJ_INDEX(ship_obj)) {
 			if ((ship_p->team == wp->team) && !(Objects[other_obj->parent].flags & OF_PLAYER_SHIP) ) {
-				/*char	ship_name[64];
-
-				if (other_obj->parent_type == OBJ_SHIP) {
-					strcpy_s(ship_name, Ships[Objects[other_obj->parent].instance].ship_name);
-				} else
-					strcpy_s(ship_name, XSTR("[not a ship]",-1));
-				*/
-				// nprintf(("AI", "Ignoring hit on %s by weapon #%i, parent = %s\n", ship_p->ship_name, other_obj-Objects, ship_name));
 				return;
 			}
 		}
@@ -2350,24 +2342,8 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 		}
 	}
 
-	// send a packet in multiplayer -- but don't sent it if the ship is already dying.  Clients can
-	// take care of dealing with ship hits after a ship is already dead.
-	// if ( (MULTIPLAYER_MASTER) && !(ship_p->flags & SF_DYING) ){
-		// if this is a player ship which is not mine, send him a ship hit packet
-		// int np_index = multi_find_player_by_object(ship_obj);
-		// if((np_index > 0) && (np_index < MAX_PLAYERS) && (np_index != MY_NET_PLAYER_NUM) && MULTI_CONNECTED(Net_players[np_index])){
-			// send_ship_hit_packet( ship_obj, other_obj, hitpos, damage, quadrant, submodel_num, &Net_players[np_index]);
-		// }
-	// }
-
 	// maybe tag the ship
-	if(!MULTIPLAYER_CLIENT && (other_obj->type == OBJ_WEAPON) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_TAG)) {
-		// Goober5000 - temp probably should be hitpos
-		//vector temp;
-		//vm_vec_unrotate(&temp, &ship_obj->pos, &Objects[other_obj->instance].orient);
-
-		//vm_vec_add2(&temp, &Objects[aip->artillery_objnum].pos);
-
+	if(!MULTIPLAYER_CLIENT && (other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_TAG)) {
 		weapon_info *wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 
 		// ssm stuff
