@@ -2360,6 +2360,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 
 			ship_apply_tag(ship_obj->instance, wip->tag_level, wip->tag_time, ship_obj, start, ssm_index, wp->team);
 		}
+	}
 
 #ifndef NDEBUG
 	if (other_obj->type == OBJ_WEAPON) {
