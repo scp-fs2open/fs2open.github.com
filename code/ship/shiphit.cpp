@@ -2343,15 +2343,23 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 	}
 
 	// maybe tag the ship
-	if(!MULTIPLAYER_CLIENT && (other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM) && (Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_TAG)) {
-		weapon_info *wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
+	if(!MULTIPLAYER_CLIENT && (other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM)) {
+		weapon_info *wip = NULL;
 
-		// ssm stuff
-		vec3d *start = hitpos;
-		int ssm_index = wip->SSM_index;
+		if (other_obj->type == OBJ_WEAPON)
+			wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
+		else if (other_obj->type == OBJ_BEAM)
+			wip = &Weapon_info[Beams[other_obj->instance].weapon_info_index];
 
-		ship_apply_tag(ship_obj->instance, wip->tag_level, wip->tag_time, ship_obj, start, ssm_index, wp->team);
-	}
+		Assert(wip != NULL);
+
+		if (wip->wi_flags & WIF_TAG) {
+			// ssm stuff
+			vec3d *start = hitpos;
+			int ssm_index = wip->SSM_index;
+
+			ship_apply_tag(ship_obj->instance, wip->tag_level, wip->tag_time, ship_obj, start, ssm_index, wp->team);
+		}
 
 #ifndef NDEBUG
 	if (other_obj->type == OBJ_WEAPON) {
