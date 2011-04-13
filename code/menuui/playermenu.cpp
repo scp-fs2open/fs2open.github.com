@@ -795,6 +795,8 @@ void player_select_scroll_list_down()
 // fill in the data on the last played pilot (callsign and is_multi or not)
 int player_select_get_last_pilot_info()
 {
+	//TODO: Replace this with a function that does this properly for the new pilot code.
+
 	char *last_player;
 
 	last_player = os_config_read_string( NULL, "LastPlayer", NULL);
@@ -805,8 +807,10 @@ int player_select_get_last_pilot_info()
 		strcpy_s(Player_select_last_pilot,last_player);
 	}
 
-	// determine if he was a single or multi-player based upon the last character in his callsign
-	Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
+	//// determine if he was a single or multi-player based upon the last character in his callsign
+	//Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
+	Player_select_last_is_multi = 0;
+
 	Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';
 
 	return 1;
