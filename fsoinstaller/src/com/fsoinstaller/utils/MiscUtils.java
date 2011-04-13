@@ -64,6 +64,12 @@ public class MiscUtils
 	
 	public static void centerWindowOnParent(Container window, Container parent)
 	{
+		if (parent == null)
+		{
+			centerWindowOnScreen(window);
+			return;
+		}
+		
 		// find the coordinates to center the whole window
 		int x = (int) (parent.getX() + ((parent.getWidth() - window.getWidth()) / 2.0 + 0.5));
 		int y = (int) (parent.getY() + ((parent.getHeight() - window.getHeight()) / 2.0 + 0.5));
