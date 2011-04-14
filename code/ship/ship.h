@@ -910,6 +910,17 @@ typedef struct thruster_particles {
 	float		variance;
 } thruster_particles;
 
+typedef struct particle_effect {
+	int				n_low;
+	int				n_high;
+	float			min_rad;
+	float			max_rad;
+	float			min_life;
+	float			max_life;
+	float			min_vel;
+	float			max_vel;
+	float			variance;
+} particle_effect;
 
 #define STI_MSG_COUNTS_FOR_ALONE		(1<<0)
 #define STI_MSG_PRAISE_DESTRUCTION		(1<<1)
@@ -1163,28 +1174,20 @@ typedef struct ship_info {
 	int	explosion_propagates;				// If true, then the explosion propagates
 	float big_exp_visual_rad;				//SUSHI: The visual size of the main explosion
 	float prop_exp_rad_mult;				// propagating explosions radius multiplier
+	float death_roll_r_mult;
+	float death_fx_r_mult;
+	float death_roll_time_mult;
+	int death_roll_base_time;
+	int death_fx_count;
 	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
 	float vaporize_chance;					
 
-	int			ispew_max_particles;						//Temp field until someone works on particles -C
-	int			ispew_min_particles;
-	float		ispew_rad_max;
-	float		ispew_rad_min;
-	float		ispew_life_max;
-	float		ispew_life_min;
-	float		ispew_vel_max;
-	float		ispew_vel_min;	
-	float		ispew_normal_variance;
-	int			dspew_max_particles;						//Temp field until someone works on particles -C
-	int			dspew_min_particles;
-	float		dspew_rad_max;
-	float		dspew_rad_min;
-	float		dspew_life_max;
-	float		dspew_life_min;
-	float		dspew_vel_max;
-	float		dspew_vel_min;
-	float		dspew_normal_variance;
+	particle_effect		impact_spew;
+	particle_effect		damage_spew;
+	particle_effect		split_particles;
+	particle_effect		knossos_end_particles;
+	particle_effect		regular_end_particles;
 
 	//Debris stuff
 	float			debris_min_lifetime;
@@ -1531,6 +1534,7 @@ extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 //Template stuff, here's as good a place as any.
 int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace);
 extern int ship_template_lookup(char *name = NULL);
+void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
 extern int ship_info_lookup(char *name = NULL);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name

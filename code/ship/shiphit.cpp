@@ -1313,7 +1313,7 @@ void player_died_start(object *killer_objp)
 }
 
 
-#define	DEATHROLL_TIME						3000			//	generic deathroll is 3 seconds (3 * 1000 milliseconds)
+//#define	DEATHROLL_TIME						3000			//	generic deathroll is 3 seconds (3 * 1000 milliseconds) - Moved to ships.tbl
 #define	MIN_PLAYER_DEATHROLL_TIME		1000			// at least one second deathroll for a player
 #define	DEATHROLL_ROTVEL_CAP				6.3f			// maximum added deathroll rotvel in rad/sec (about 1 rev / sec)
 #define	DEATHROLL_ROTVEL_MIN				0.8f			// minimum added deathroll rotvel in rad/sec (about 1 rev / 12 sec)
@@ -1357,7 +1357,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
 	sp->flags |= SF_DYING;
 	objp->phys_info.flags |= (PF_DEAD_DAMP | PF_REDUCED_DAMP);
-	delta_time = (int) (DEATHROLL_TIME);
+	delta_time = (int) (sip->death_roll_base_time);
 
 	//	For smaller ships, subtract off time proportional to excess damage delivered.
 	if (objp->radius < BIG_SHIP_MIN_RADIUS)
@@ -1741,6 +1741,7 @@ void shiphit_hit_after_death(object *ship_obj, float damage)
 	float	percent_killed;
 	int	delta_time, time_remaining;
 	ship	*shipp = &Ships[ship_obj->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	// Since the explosion has two phases (final_death_time and really_final_death_time)
 	// we should only shorten the deathroll time if that is the phase we're in.
@@ -1763,7 +1764,7 @@ void shiphit_hit_after_death(object *ship_obj, float damage)
 	if (percent_killed > 1.0f)
 		percent_killed = 1.0f;
 
-	delta_time = (int) (4 * DEATHROLL_TIME * percent_killed);
+	delta_time = (int) (4 * sip->death_roll_base_time * percent_killed);
 	time_remaining = timestamp_until(shipp->final_death_time);
 
 	//nprintf(("AI", "Gametime = %7.3f, Time until %s dies = %7.3f, delta = %7.3f\n", f2fl(Missiontime), Ships[ship_obj->instance].ship_name, (float)time_remaining/1000.0f, delta_time));
