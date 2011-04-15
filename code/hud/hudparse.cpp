@@ -518,7 +518,8 @@ void init_hud() {
 					HUD_config.clr[config_type].red, 
 					HUD_config.clr[config_type].green, 
 					HUD_config.clr[config_type].blue, 
-					HUD_config.clr[config_type].alpha
+					HUD_config.clr[config_type].alpha,
+					true
 					);
 			}
 		}
