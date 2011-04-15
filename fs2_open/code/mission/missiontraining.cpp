@@ -1042,17 +1042,9 @@ HudGauge(HUD_OBJECT_TRAINING_MESSAGES, HUD_DIRECTIVES_VIEW, true, false, true, V
 
 bool HudGaugeTrainingMessages::canRender()
 {
-	if(hud_disabled_except_messages() && !message_gauge) {
-		return false;
-	}
-
 	if (hud_disabled()) {
 		return false;
 	}
-
-	// Gauge should display even if it's disabled.
-	//if(!active)
-	//	return false;
 	
 	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
 		return false;

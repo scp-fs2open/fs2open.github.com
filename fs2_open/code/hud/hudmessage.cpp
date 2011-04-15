@@ -1260,6 +1260,36 @@ void HudGaugeTalkingHead::pageIn()
 	bm_page_in_aabitmap( Head_frame.first_frame, Head_frame.num_frames );
 }
 
+bool HudGaugeTalkingHead::canRender()
+{
+	if (sexp_override) {
+		return false;
+	}
+
+	if (hud_disabled()) {
+		return false;
+	}
+
+	if(!active)
+		return false;
+	
+	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
+		return false;
+	}
+
+	if ((Viewer_mode & disabled_views)) {
+		return false;
+	}
+
+	if(pop_up) {
+		if(!popUpActive()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 HudGaugeFixedMessages::HudGaugeFixedMessages():
 HudGauge(HUD_OBJECT_FIXED_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
 {
