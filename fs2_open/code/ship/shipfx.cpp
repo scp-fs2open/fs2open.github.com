@@ -2543,7 +2543,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 			pe.normal = vmd_x_vector;		// What normal the particle emit around
 			pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 
-			if (pe.max_vel > 0.0f) {
+			if (pef.max_vel > 0.0f) {
 				pe.min_vel = pef.min_vel;
 				pe.max_vel = pef.max_vel;
 			} else {
