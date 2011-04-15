@@ -82,7 +82,7 @@ public class ModSelectPage extends InstallerPage
 	{
 		JPanel labelPanel = new JPanel();
 		labelPanel.setLayout(new BoxLayout(labelPanel, BoxLayout.X_AXIS));
-		labelPanel.add(new JLabel("Select the items you would like to install."));
+		labelPanel.add(new JLabel("You can modify your installation here, or continue with your current selection."));
 		labelPanel.add(Box.createHorizontalGlue());
 		
 		JScrollPane modScrollPane = new JScrollPane(modPanel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
