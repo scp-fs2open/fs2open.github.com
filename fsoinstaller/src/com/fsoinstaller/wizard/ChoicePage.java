@@ -19,18 +19,25 @@
 
 package com.fsoinstaller.wizard;
 
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.UIManager;
 
 import com.fsoinstaller.common.InstallerNode;
 import com.fsoinstaller.main.Configuration;
@@ -44,6 +51,7 @@ public class ChoicePage extends InstallerPage
 	private static final Logger logger = Logger.getLogger(ChoicePage.class);
 	
 	private final ButtonGroup group;
+	private final Map<InstallChoice, JRadioButton> buttons;
 	private final JRadioButton basic;
 	private final JRadioButton complete;
 	private final JRadioButton custom;
@@ -60,10 +68,17 @@ public class ChoicePage extends InstallerPage
 		complete = createButton(InstallChoice.COMPLETE);
 		custom = createButton(InstallChoice.CUSTOM);
 		
+		// keep track of buttons
+		buttons = new LinkedHashMap<InstallChoice, JRadioButton>();
+		buttons.put(InstallChoice.BASIC, basic);
+		buttons.put(InstallChoice.COMPLETE, complete);
+		buttons.put(InstallChoice.CUSTOM, custom);
+		
 		inited = false;
 	}
 	
-	private JRadioButton createButton(final InstallChoice choice)
+	// careful with this; it's called from the constructor
+	private final JRadioButton createButton(final InstallChoice choice)
 	{
 		JRadioButton button = new JRadioButton(choice.getName());
 		group.add(button);
@@ -83,13 +98,53 @@ public class ChoicePage extends InstallerPage
 	public JPanel createCenterPanel()
 	{
 		JPanel panel = new JPanel();
-		panel.setBorder(BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN));
+		panel.setBorder(BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, 3 * GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, 3 * GUIConstants.DEFAULT_MARGIN));
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-		panel.add(new JLabel("Please select a mode of installation."));
 		
-		panel.add(basic);
-		panel.add(complete);
-		panel.add(custom);
+		JLabel selectLabel = new JLabel("Please select a mode of installation.");
+		selectLabel.setAlignmentX(LEFT_ALIGNMENT);
+		panel.add(selectLabel);
+		
+		for (Map.Entry<InstallChoice, JRadioButton> entry: buttons.entrySet())
+		{
+			JPanel optionPanel = createOptionPanel(entry.getKey(), entry.getValue());
+			optionPanel.setAlignmentX(LEFT_ALIGNMENT);
+			
+			panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN));
+			panel.add(optionPanel);
+		}
+		
+		return panel;
+	}
+	
+	private JPanel createOptionPanel(InstallChoice choice, JRadioButton button)
+	{
+		// bold for distinguishing
+		button.setFont(button.getFont().deriveFont(Font.BOLD));
+		
+		// figure out how wide radio button icons are
+		Icon icon = UIManager.getIcon("RadioButton.icon");
+		int width = (icon != null) ? icon.getIconWidth() : 13;
+		// add spacing around icon
+		width += 2 * button.getIconTextGap();
+		
+		// for some annoying reason, creating a standard horizontal strut leads to vertical spacing!
+		Box.Filler strictStrut = new Box.Filler(new Dimension(width, 0), new Dimension(width, 0), new Dimension(width, 0));
+		
+		JLabel detailLabel = new JLabel(choice.getDescription(), new ImageIcon(choice.getImage()), JLabel.LEFT);
+		detailLabel.setIconTextGap(GUIConstants.DEFAULT_MARGIN);
+		
+		JPanel detailPanel = new JPanel();
+		detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.X_AXIS));
+		detailPanel.add(strictStrut);
+		detailPanel.add(detailLabel);
+		
+		JPanel panel = new JPanel();
+		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+		button.setAlignmentX(LEFT_ALIGNMENT);
+		panel.add(button);
+		detailPanel.setAlignmentX(LEFT_ALIGNMENT);
+		panel.add(detailPanel);
 		
 		return panel;
 	}
@@ -129,7 +184,7 @@ public class ChoicePage extends InstallerPage
 		List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
 		if (modNodes.isEmpty())
 		{
-			logger.error("There are no mods available!  (And this should have been checked already!");
+			logger.error("There are no mods available!  (And this should have been checked already!)");
 			return;
 		}
 		
