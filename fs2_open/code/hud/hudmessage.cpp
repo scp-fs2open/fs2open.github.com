@@ -248,7 +248,7 @@ void hud_clear_msg_buffer()
 }
 
 HudGaugeMessages::HudGaugeMessages():
-HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE), 255, 255, 255)
 {
 }
 
