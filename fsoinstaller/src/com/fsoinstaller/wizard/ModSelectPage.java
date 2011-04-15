@@ -111,7 +111,7 @@ public class ModSelectPage extends InstallerPage
 		{
 			if (modNodes.isEmpty())
 			{
-				logger.error("There are no mods available!  (And this should have been checked already!");
+				logger.error("There are no mods available!  (And this should have been checked already!)");
 				return;
 			}
 			
