@@ -28,7 +28,7 @@ public enum InstallChoice
 {
 	BASIC("Basic", "basic.png", "Install the latest FreeSpace 2 Open and MediaVPs, but no mods."),
 	COMPLETE("Complete", "complete.png", "Install everything: FreeSpace 2 Open, the MediaVPs, all mods, and all optional downloads."),
-	CUSTOM("Custom", "custom.png", "Choose the mods to install");
+	CUSTOM("Custom", "custom.png", "Choose the mods to install.");
 	
 	private final String name;
 	private final BufferedImage image;
