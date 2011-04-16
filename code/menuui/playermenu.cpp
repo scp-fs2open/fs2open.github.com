@@ -1354,6 +1354,7 @@ void player_tips_popup()
 			ret = 0;
 			Player->tips = 0;
 			Pilot.save_player(Player);
+			Pilot.save_savefile();
 			break;
 		}
 	} while(ret > 0);
