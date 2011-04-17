@@ -704,6 +704,11 @@ void init_ship_entry(ship_info *sip)
 	sip->explosion_propagates = 0;
 	sip->big_exp_visual_rad = -1.0f;
 	sip->prop_exp_rad_mult = 1.0f;
+	sip->death_roll_base_time = 3000;
+	sip->death_roll_r_mult = 1.0f;
+	sip->death_roll_time_mult = 1.0f;
+	sip->death_fx_r_mult = 1.0f;
+	sip->death_fx_count = 6;
 	sip->vaporize_chance = 0;
 	sip->shockwave_count = 1;
 	sip->explosion_bitmap_anims.clear();
@@ -883,26 +888,56 @@ void init_ship_entry(ship_info *sip)
 	sip->subsystems = NULL;
 
 	// default values from shipfx.cpp
-	sip->ispew_max_particles = 30;
-	sip->ispew_min_particles = 25;
-	sip->ispew_rad_max = 0.5f;
-	sip->ispew_rad_min = 0.2f;
-	sip->ispew_life_max = 0.55f;
-	sip->ispew_life_min = 0.05f;
-	sip->ispew_vel_max = 12.0f;
-	sip->ispew_vel_min = 2.0f;
-	sip->ispew_normal_variance = 1.0f;
+	sip->impact_spew.n_high = 30;
+	sip->impact_spew.n_low = 25;
+	sip->impact_spew.max_rad = 0.5f;
+	sip->impact_spew.min_rad = 0.2f;
+	sip->impact_spew.max_life = 0.55f;
+	sip->impact_spew.min_life = 0.05f;
+	sip->impact_spew.max_vel = 12.0f;
+	sip->impact_spew.min_vel = 2.0f;
+	sip->impact_spew.variance = 1.0f;
 	
 	// default values from shipfx.cpp
-	sip->dspew_max_particles = 50;
-	sip->dspew_min_particles = 20;
-	sip->dspew_rad_max = 1.3f;
-	sip->dspew_rad_min = 0.7f;
-	sip->dspew_life_max = 1.5f;
-	sip->dspew_life_min = 0.7f;
-	sip->dspew_vel_max = 12.0f;
-	sip->dspew_vel_min = 3.0f;
-	sip->dspew_normal_variance = 0.2f;
+	sip->damage_spew.n_high = 1;						// 1 is used here to trigger retail behaviour
+	sip->damage_spew.n_low = 0;
+	sip->damage_spew.max_rad = 1.3f;
+	sip->damage_spew.min_rad = 0.7f;
+	sip->damage_spew.max_life = 0.0f;
+	sip->damage_spew.min_life = 0.0f;
+	sip->damage_spew.max_vel = 12.0f;
+	sip->damage_spew.min_vel = 3.0f;
+	sip->damage_spew.variance = 0.0f;
+
+	sip->knossos_end_particles.n_high = 30;
+	sip->knossos_end_particles.n_low = 15;
+	sip->knossos_end_particles.max_rad = 100.0f;
+	sip->knossos_end_particles.min_rad = 30.0f;
+	sip->knossos_end_particles.max_life = 12.0f;
+	sip->knossos_end_particles.min_life = 2.0f;
+	sip->knossos_end_particles.max_vel = 350.0f;
+	sip->knossos_end_particles.min_vel = 50.0f;
+	sip->knossos_end_particles.variance = 2.0f;
+
+	sip->split_particles.n_high = 80;
+	sip->split_particles.n_low = 40;
+	sip->split_particles.max_rad = 0.0f;
+	sip->split_particles.min_rad = 0.0f;
+	sip->split_particles.max_life = 0.0f;
+	sip->split_particles.min_life = 0.0f;
+	sip->split_particles.max_vel = 0.0f;
+	sip->split_particles.min_vel = 0.0f;
+	sip->split_particles.variance = 2.0f;
+
+	sip->regular_end_particles.n_high = 100;
+	sip->regular_end_particles.n_low = 50;
+	sip->regular_end_particles.max_rad = 1.5f;
+	sip->regular_end_particles.min_rad = 0.1f;
+	sip->regular_end_particles.max_life = 4.0f;
+	sip->regular_end_particles.min_life = 0.5f;
+	sip->regular_end_particles.max_vel = 20.0f;
+	sip->regular_end_particles.min_vel = 0.0f;
+	sip->regular_end_particles.variance = 2.0f;
 
 	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
@@ -1134,6 +1169,109 @@ int parse_ship_template()
 	}
 	
 	return rtn;
+}
+
+void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string)
+{
+	float tempf;
+	int temp;
+	if(optional_string("+Max particles:"))
+	{
+		stuff_int(&temp);
+		if (temp < 0) {
+			Warning(LOCATION,"Bad value %i, defined as %s particle number (max) in ship '%s'.\nValue should be a non-negative integer.\n", temp, id_string, sip->name);
+		} else {
+			pe->n_high = temp;
+			if (pe->n_high == 0) {
+				// notification for disabling the particles
+				mprintf(("Particle effect for %s disabled on ship '%s'.\n", id_string, sip->name));
+			}
+		}
+	}
+	if(optional_string("+Min particles:"))
+	{
+		stuff_int(&temp);
+		if (temp < 0) {
+			Warning(LOCATION,"Bad value %i, defined as %s particle number (min) in ship '%s'.\nValue should be a non-negative integer.\n", temp, id_string, sip->name);
+		} else {
+			pe->n_low = temp;
+		}
+	}
+	if (pe->n_low > pe->n_high)
+		pe->n_low = pe->n_high;
+
+	if(optional_string("+Max Radius:"))
+	{
+		stuff_float(&tempf);
+		if (tempf <= 0.0f) {
+			Warning(LOCATION,"Bad value %f, defined as %s particle radius (max) in ship '%s'.\nValue should be a positive float.\n", tempf, id_string, sip->name);
+		} else {
+			pe->max_rad = tempf;
+		}
+	}
+	if(optional_string("+Min Radius:"))
+	{
+		stuff_float(&tempf);
+		if (tempf < 0.0f) {
+			Warning(LOCATION,"Bad value %f, defined as %s particle radius (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
+		} else {
+			pe->min_rad = tempf;
+		}
+	}
+	if (pe->min_rad > pe->max_rad)
+		pe->min_rad = pe->max_rad;
+
+	if(optional_string("+Max Lifetime:"))
+	{
+		stuff_float(&tempf);
+		if (tempf <= 0.0f) {
+			Warning(LOCATION,"Bad value %f, defined as %s particle lifetime (max) in ship '%s'.\nValue should be a positive float.\n", tempf, id_string, sip->name);
+		} else {
+			pe->max_life = tempf;
+		}
+	}
+	if(optional_string("+Min Lifetime:"))
+	{
+		stuff_float(&tempf);
+		if (tempf < 0.0f) {
+			Warning(LOCATION,"Bad value %f, defined as %s particle lifetime (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
+		} else {
+			pe->min_life = tempf;
+		}
+	}
+	if (pe->min_life > pe->max_life)
+		pe->min_life = pe->max_life;
+
+	if(optional_string("+Max Velocity:"))
+	{
+		stuff_float(&tempf);
+		if (tempf < 0.0f) {
+			Warning(LOCATION,"Bad value %f, defined as %s particle velocity (max) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
+		} else {
+			pe->max_vel = tempf;
+		}
+	}
+	if(optional_string("+Min Velocity:"))
+	{
+		stuff_float(&tempf);
+		if (tempf < 0.0f) {
+			Warning(LOCATION,"Bad value %f, defined as %s particle velocity (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
+		} else {
+			pe->min_vel = tempf;
+		}
+	}
+	if (pe->min_vel > pe->max_vel)
+		pe->min_vel = pe->max_vel;
+
+	if(optional_string("+Normal Variance:"))
+	{
+		stuff_float(&tempf);
+		if ((tempf >= 0.0f) && (tempf <= 2.0f)) {
+			pe->variance = tempf;
+		} else {
+			Warning(LOCATION,"Bad value %f, defined as %s particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", tempf, id_string, sip->name);
+		}
+	}
 }
 
 // Puts values into a ship_info.
@@ -1432,207 +1570,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	//are settable, but erg, just not happening right now -C
 	if(optional_string("$Impact Spew:"))
 	{
-		float tempf;
-		int temp;
-		if(optional_string("+Max particles:"))
-		{
-			stuff_int(&temp);
-			if (temp < 0) {
-				Warning(LOCATION,"Bad value %i, defined as impact spew particle number (max) in ship '%s'.\nValue should be a non-negative integer.\n", temp, sip->name);
-			} else {
-				sip->ispew_max_particles = temp;
-				if (sip->ispew_max_particles == 0) {
-					// notification for disabling the particles
-					mprintf(("Impact spew particles disabled on ship '%s'.\n", sip->name));
-				}
-			}
-		}
-		if(optional_string("+Min particles:"))
-		{
-			stuff_int(&temp);
-			if (temp < 0) {
-				Warning(LOCATION,"Bad value %i, defined as impact spew particle number (min) in ship '%s'.\nValue should be a non-negative integer.\n", temp, sip->name);
-			} else {
-				sip->ispew_min_particles = temp;
-			}
-		}
-		if (sip->ispew_min_particles > sip->ispew_max_particles)
-			sip->ispew_min_particles = sip->ispew_max_particles;
-
-		if(optional_string("+Max Radius:"))
-		{
-			stuff_float(&tempf);
-			if (tempf <= 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as impact spew particle radius (max) in ship '%s'.\nValue should be a positive float.\n", tempf, sip->name);
-			} else {
-				sip->ispew_rad_max = tempf;
-			}
-		}
-		if(optional_string("+Min Radius:"))
-		{
-			stuff_float(&tempf);
-			if (tempf < 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as impact spew particle radius (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
-			} else {
-				sip->ispew_rad_min = tempf;
-			}
-		}
-		if (sip->ispew_rad_min > sip->ispew_rad_max)
-			sip->ispew_rad_min = sip->ispew_rad_max;
-
-		if(optional_string("+Max Lifetime:"))
-		{
-			stuff_float(&tempf);
-			if (tempf <= 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as impact spew particle lifetime (max) in ship '%s'.\nValue should be a positive float.\n", tempf, sip->name);
-			} else {
-				sip->ispew_life_max = tempf;
-			}
-		}
-		if(optional_string("+Min Lifetime:"))
-		{
-			stuff_float(&tempf);
-			if (tempf < 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as impact spew particle lifetime (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
-			} else {
-				sip->ispew_life_min = tempf;
-			}
-		}
-		if (sip->ispew_life_min > sip->ispew_life_max)
-			sip->ispew_life_min = sip->ispew_life_max;
-
-		if(optional_string("+Max Velocity:"))
-		{
-			stuff_float(&tempf);
-			if (tempf < 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as impact spew particle velocity (max) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
-			} else {
-				sip->ispew_vel_max = tempf;
-			}
-		}
-		if(optional_string("+Min Velocity:"))
-		{
-			stuff_float(&tempf);
-			if (tempf < 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as impact spew particle velocity (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
-			} else {
-				sip->ispew_vel_min = tempf;
-			}
-		}
-		if (sip->ispew_vel_min > sip->ispew_vel_max)
-			sip->ispew_vel_min = sip->ispew_vel_max;
-
-		if(optional_string("+Normal Variance:"))
-		{
-			stuff_float(&tempf);
-			if ((tempf >= 0.0f) && (tempf <= 2.0f)) {
-				sip->ispew_normal_variance = tempf;
-			} else {
-				Warning(LOCATION,"Bad value %f, defined as impact spew particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", tempf, sip->name);
-			}
-		}
+		parse_ship_particle_effect(sip, &sip->impact_spew, "impact spew");
 	}
 	if(optional_string("$Damage Spew:"))
 	{
-		float tempf;
-		int temp;
-		if(optional_string("+Max particles:"))
-		{
-			stuff_int(&temp);
-			if (temp < 0) {
-				Warning(LOCATION,"Bad value %i, defined as damage spew particle number (max) in ship '%s'.\nValue should be a non-negative integer.\n", temp, sip->name);
-			} else {
-				sip->dspew_max_particles = temp;
-				if (sip->dspew_max_particles == 0) {
-					// notification for disabling the particles
-					mprintf(("Damage spew particles disabled on ship '%s'.\n", sip->name));
-				}
-			}
-		}
-		if(optional_string("+Min particles:"))
-		{
-			stuff_int(&temp);
-			if (temp < 0) {
-				Warning(LOCATION,"Bad value %i, defined as damage spew particle number (min) in ship '%s'.\nValue should be a non-negative integer.\n", temp, sip->name);
-			} else {
-				sip->dspew_min_particles = temp;
-			}
-		}
-		if (sip->dspew_min_particles > sip->dspew_max_particles)
-			sip->dspew_min_particles = sip->dspew_max_particles;
-
-		if(optional_string("+Max Radius:"))
-		{
-			stuff_float(&tempf);
-			if (tempf <= 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as damage spew particle radius (max) in ship '%s'.\nValue should be a positive float.\n", tempf, sip->name);
-			} else {
-				sip->dspew_rad_max = tempf;
-			}
-		}
-		if(optional_string("+Min Radius:"))
-		{
-			stuff_float(&tempf);
-			if (tempf < 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as damage spew particle radius (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
-			} else {
-				sip->dspew_rad_min = tempf;
-			}
-		}
-		if (sip->dspew_rad_min > sip->dspew_rad_max)
-			sip->dspew_rad_min = sip->dspew_rad_max;
-
-		if(optional_string("+Max Lifetime:"))
-		{
-			stuff_float(&tempf);
-			if (tempf <= 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as damage spew particle lifetime (max) in ship '%s'.\nValue should be a positive float.\n", tempf, sip->name);
-			} else {
-				sip->dspew_life_max = tempf;
-			}
-		}
-		if(optional_string("+Min Lifetime:"))
-		{
-			stuff_float(&tempf);
-			if (tempf < 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as damage spew particle lifetime (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
-			} else {
-				sip->dspew_life_min = tempf;
-			}
-		}
-		if (sip->dspew_life_min > sip->dspew_life_max)
-			sip->dspew_life_min = sip->dspew_life_max;
-
-		if(optional_string("+Max Velocity:"))
-		{
-			stuff_float(&tempf);
-			if (tempf < 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as damage spew particle velocity (max) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
-			} else {
-				sip->dspew_vel_max = tempf;
-			}
-		}
-		if(optional_string("+Min Velocity:"))
-		{
-			stuff_float(&tempf);
-			if (tempf < 0.0f) {
-				Warning(LOCATION,"Bad value %f, defined as damage spew particle velocity (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, sip->name);
-			} else {
-				sip->dspew_vel_min = tempf;
-			}
-		}
-		if (sip->dspew_vel_min > sip->dspew_vel_max)
-			sip->dspew_vel_min = sip->dspew_vel_max;
-
-		if(optional_string("+Normal Variance:"))
-		{
-			stuff_float(&tempf);
-			if ((tempf >= 0.0f) && (tempf <= 2.0f)) {
-				sip->dspew_normal_variance = tempf;
-			} else {
-				Warning(LOCATION,"Bad value %f, defined as damage spew particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", tempf, sip->name);
-			}
-		}
+		parse_ship_particle_effect(sip, &sip->damage_spew, "damage spew");
 	}
 
 	if(optional_string("$Collision Physics:"))
@@ -2051,6 +1993,51 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Expl Visual Rad:")){
 		stuff_float(&sip->big_exp_visual_rad);
+	}
+
+	if(optional_string("$Base Death-Roll Time:")){
+		stuff_int(&sip->death_roll_base_time);
+		if (sip->death_roll_base_time < 2)
+			sip->death_roll_base_time = 2;
+	}
+
+	if(optional_string("$Death-Roll Explosion Radius Mult:")){
+		stuff_float(&sip->death_roll_r_mult);
+		if (sip->death_roll_r_mult < 0)
+			sip->death_roll_r_mult = 0;
+	}
+
+	if(optional_string("$Death-Roll Explosion Intensity Mult:")){
+		stuff_float(&sip->death_roll_time_mult);
+		if (sip->death_roll_time_mult <= 0)
+			sip->death_roll_time_mult = 1.0f;
+	}
+
+	if(optional_string("$Death FX Explosion Radius Mult:")){
+		stuff_float(&sip->death_fx_r_mult);
+		if (sip->death_fx_r_mult < 0)
+			sip->death_fx_r_mult = 0;
+	}
+
+	if(optional_string("$Death FX Explosion Count:")){
+		stuff_int(&sip->death_fx_count);
+		if (sip->death_fx_count < 0)
+			sip->death_fx_count = 0;
+	}
+
+	if(optional_string("$Ship Splitting Particles:"))
+	{
+		parse_ship_particle_effect(sip, &sip->split_particles, "ship split spew");
+	}
+
+	if(optional_string("$Ship Death Particles:"))
+	{
+		parse_ship_particle_effect(sip, &sip->regular_end_particles, "normal death spew");
+	}
+
+	if(optional_string("$Alternate Death Particles:"))
+	{
+		parse_ship_particle_effect(sip, &sip->knossos_end_particles, "knossos death spew");
 	}
 
 	if(optional_string("$Vaporize Percent Chance:")){
@@ -7145,7 +7132,7 @@ void ship_dying_frame(object *objp, int ship_num)
 		objp->phys_info.desired_rotvel = shipp->deathroll_rotvel;
 
 		// Do fireballs for Big ship with propagating explostion, but not Kamikaze
-		if (!(Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) && ship_get_exp_propagates(shipp)) {
+		if (!(Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) && ship_get_exp_propagates(shipp) && (sip->death_roll_r_mult > 0.0f)) {
 			if ( timestamp_elapsed(shipp->next_fireball))	{
 				vec3d outpnt, pnt1, pnt2;
 				polymodel *pm = model_get(sip->model_num);
@@ -7158,13 +7145,24 @@ void ship_dying_frame(object *objp, int ship_num)
 
 				float rad = objp->radius*0.1f;
 				
+				if (sip->death_roll_r_mult != 1.0f)
+					rad *= sip->death_roll_r_mult;
+
 				int fireball_type = fireball_ship_explosion_type(sip);
 				if(fireball_type < 0) {
 					fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
 				}
 				fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
-				shipp->next_fireball = timestamp_rand(333,500);
+				int min_time = 333;
+				int max_time = 500;
+
+				if (sip->death_roll_time_mult != 1.0f) {
+					min_time = (int) (min_time / sip->death_roll_time_mult);
+					max_time = (int) (max_time / sip->death_roll_time_mult);
+				}
+
+				shipp->next_fireball = timestamp_rand(min_time,max_time);
 
 				// do sound - maybe start a random sound, if it has played far enough.
 				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle);
@@ -7195,20 +7193,24 @@ void ship_dying_frame(object *objp, int ship_num)
 
 				// emit particles
 				particle_emitter	pe;
-
-				pe.num_low = 15;					// Lowest number of particles to create
-				pe.num_high = 30;				// Highest number of particles to create
+				particle_effect		pef = sip->knossos_end_particles;
+				
+				pe.num_low = pef.n_low;					// Lowest number of particles to create
+				pe.num_high = pef.n_high;				// Highest number of particles to create
 				pe.pos = outpnt;				// Where the particles emit from
 				pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-				pe.min_life = 2.0f;	// How long the particles live
-				pe.max_life = 12.0f;	// How long the particles live
+				pe.min_life = pef.min_life;	// How long the particles live
+				pe.max_life = pef.max_life;	// How long the particles live
 				pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-				pe.normal_variance = 2.0f;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-				pe.min_vel = 50.0f;
-				pe.max_vel = 350.0f;
-				pe.min_rad = 30.0f;	// * objp->radius;
-				pe.max_rad = 100.0f; // * objp->radius;
-				particle_emit( &pe, PARTICLE_SMOKE2, 0, 50 );
+				pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+				pe.min_vel = pef.min_vel;
+				pe.max_vel = pef.max_vel;
+				pe.min_rad = pef.min_rad;	// * objp->radius;
+				pe.max_rad = pef.max_rad; // * objp->radius;
+
+				if (pe.num_high > 0) {
+					particle_emit( &pe, PARTICLE_SMOKE2, 0, 50 );
+				}
 
 				// do sound - maybe start a random sound, if it has played far enough.
 				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle);
@@ -7235,9 +7237,15 @@ void ship_dying_frame(object *objp, int ship_num)
 				ship_blow_up_area_apply_blast( objp );
 			}
 
-			for (int zz=0; zz<6; zz++ ) {
+			int zz_max = sip->death_fx_count;
+
+			for (int zz=0; zz<zz_max; zz++ ) {
 				// don't make sequence of fireballs for knossos
 				if (knossos_ship) {
+					break;
+				}
+
+				if (sip->death_fx_r_mult <= 0.0f) {
 					break;
 				}
 				// Find two random vertices on the model, then average them
@@ -7250,8 +7258,10 @@ void ship_dying_frame(object *objp, int ship_num)
 				vm_vec_avg( &tmp, &pnt1, &pnt2 );
 				model_find_world_point(&outpnt, &tmp, pm->id, pm->detail[0], &objp->orient, &objp->pos );
 
-				float rad = frand()*0.30f;
-				rad += objp->radius*0.40f;
+				//float rad = frand()*0.30f; //this line never really did anything - better off without it
+				float rad = objp->radius*0.40f;
+
+				rad *= sip->death_fx_r_mult;
 
 				int fireball_type = fireball_ship_explosion_type(sip);
 				if(fireball_type < 0) {
@@ -7297,21 +7307,22 @@ void ship_dying_frame(object *objp, int ship_num)
 
 			// play a random explosion
 			particle_emitter	pe;
+			particle_effect		pef = sip->regular_end_particles;
 
-			pe.num_low = 50;					// Lowest number of particles to create
-			pe.num_high = 100;				// Highest number of particles to create
+			pe.num_low = pef.n_low;					// Lowest number of particles to create
+			pe.num_high = pef.n_high;				// Highest number of particles to create
 			pe.pos = objp->pos;				// Where the particles emit from
 			pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-			pe.min_life = 0.5f;				// How long the particles live
-			pe.max_life = 4.0f;				// How long the particles live
+			pe.min_life = pef.min_life;				// How long the particles live
+			pe.max_life = pef.max_life;				// How long the particles live
 			pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-			pe.normal_variance = 2.0f;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-			pe.min_vel = 0.0f;				// How fast the slowest particle can move
-			pe.max_vel = 20.0f;				// How fast the fastest particle can move
-			pe.min_rad = 0.1f;				// Min radius
-			pe.max_rad = 1.5f;				// Max radius
+			pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+			pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
+			pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
+			pe.min_rad = pef.min_rad;				// Min radius
+			pe.max_rad = pef.max_rad;				// Max radius
 
-			if (!knossos_ship) {
+			if ((!knossos_ship) && (pe.num_high > 0)) {
 				particle_emit( &pe, PARTICLE_SMOKE2, 0 );
 			}
 
