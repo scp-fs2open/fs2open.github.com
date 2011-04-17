@@ -45,9 +45,9 @@ float frand()
 }
 
 /**
- * Return a floating point number in the range min..max.
- * @brief min Minimum (inclusive)
- * @brief max Maxiumum (inclusive) 
+ * @brief Return a floating point number in the range min..max.
+ * @param min Minimum (inclusive)
+ * @param max Maxiumum (inclusive) 
  */
 float frand_range(float min, float max)
 {
