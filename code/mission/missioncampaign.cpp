@@ -1183,7 +1183,6 @@ void mission_campaign_store_goals_and_events_and_variables()
 			// maybe update...
 			for (j = 0; j < Campaign.num_variables; j++) {
 				if ( !stricmp(Sexp_variables[i].variable_name, n_variables[j].variable_name) ) {
-					Assertion ((n_variables[j].type == Sexp_variables[i].type), "Attempting to copy string variable %s to a slot already occupied by a campaign persistent variable of a different type.", Sexp_variables[i].variable_name); 
 					n_variables[j].type = Sexp_variables[i].type;
 					strcpy_s(n_variables[j].text, Sexp_variables[i].text);
 					add_it = false;
