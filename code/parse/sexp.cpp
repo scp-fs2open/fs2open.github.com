@@ -263,6 +263,7 @@ sexp_oper Operators[] = {
 	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
 	{ "has-primary-weapon",			OP_HAS_PRIMARY_WEAPON,		3,	INT_MAX},	// Karajorma
 	{ "has-secondary-weapon",		OP_HAS_SECONDARY_WEAPON,	3,	INT_MAX},	// Karajorma
+	{ "directive-is-variable",		OP_DIRECTIVE_IS_VARIABLE,	1,	2},	// Karajorma
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
@@ -5764,6 +5765,48 @@ int sexp_hits_left_subsystem_specific(int node)
 		Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
 	}
 	return SEXP_NAN;
+}
+
+int sexp_directive_is_variable(int n)
+{
+	int sexp_variable_index;
+	int sexp_variable_value = 0;
+	int replace_current_value = SEXP_TRUE; 
+
+	Assert(n >= 0);
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER)
+	{
+		// get new numerical value
+		sexp_variable_value = atoi(Sexp_variables[sexp_variable_index].text);
+	}
+	else
+	{
+		Warning(LOCATION, "Invalid variable type. Directive variables must be a number!\n");
+		return SEXP_KNOWN_FALSE;
+	}
+
+	n = CDR(n);
+	if (n > -1) {
+		replace_current_value = eval_sexp(n);
+	}
+
+	if ((replace_current_value == SEXP_KNOWN_FALSE) || (replace_current_value == SEXP_FALSE) ) {
+		Directive_count += sexp_variable_value;
+	}
+	else {
+		Directive_count = sexp_variable_value;
+	}
+
+		
+	return SEXP_TRUE;
 }
 
 int sexp_determine_team(char *subj)
@@ -20496,6 +20539,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_has_weapon(node, op_num);
 				break;
 
+			case OP_DIRECTIVE_IS_VARIABLE:
+				sexp_val = sexp_directive_is_variable(node);
+				break;
+
+
+
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -21235,6 +21285,7 @@ int query_operator_return_type(int op)
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_IS_BIT_SET:
+		case OP_DIRECTIVE_IS_VARIABLE:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -23134,6 +23185,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_WEAPON_BANK_NUMBER;
 			else 
 				return OPF_WEAPON_NAME;
+			
+		case OP_DIRECTIVE_IS_VARIABLE:
+			if (argnum == 0)
+				return OPF_VARIABLE_NAME;
+			else 
+				return OPF_BOOL;			
 
 		case OP_NAV_IS_VISITED:		//Kazan
 		case OP_NAV_DISTANCE:		//kazan
@@ -27696,6 +27753,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number\r\n"
 		"\tRest:\tWeapon name\r\n"
+	},
+
+	// Karajora
+	{ OP_DIRECTIVE_IS_VARIABLE, "directive-is-variable\r\n"
+		"\tCauses the variable to appear in the directive count\r\n"
+		"\tAlways returns true. Takes 1 or more arguments...\r\n\r\n"
+		"\t1:\tVariable name\r\n"
+		"\t2:\t(Optional) Reset the directive count set by any earlier SEXPs in the event.\r\n"
 	},
 
 	//phreak
