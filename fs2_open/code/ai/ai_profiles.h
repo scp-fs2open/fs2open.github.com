@@ -60,7 +60,10 @@
 #define AIPF2_AI_AIMS_FROM_SHIP_CENTER								(1 << 6)
 #define AIPF2_ALLOW_PRIMARY_LINK_DELAY								(1 << 7)
 
-
+// AI Path types
+#define	AI_PATH_MODE_NORMAL 0
+#define	AI_PATH_MODE_ALT1	1
+	
 #define MAX_AI_PROFILES	5
 
 typedef struct ai_profile_t {
@@ -135,6 +138,8 @@ typedef struct ai_profile_t {
 	int chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 
 	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
+
+	int ai_path_mode;
 
 } ai_profile_t;
 
