@@ -1005,6 +1005,10 @@ $ai aims from ship center:			NO									\n\
 ;; few minutes of the mission											\n\
 $allow primary link delay:				YES								\n\
 																		\n\
+;; If set, prevents beams from instantly killing all weapons from first	\n\
+;; hit, instead allows weapon hitpoints to be used instead				\n\
+$allow beams to damage bombs:			NO								\n\
+																		\n\
 #End																	\n\
 ";
 
