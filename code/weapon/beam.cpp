@@ -2647,9 +2647,15 @@ int beam_collide_early_out(object *a, object *b)
 /*		if(bwi->b_info.beam_type == BEAM_TYPE_C){
 			return 1;
 		}*/
-		// don't ever collide against laser weapons - duh
-		if(Weapon_info[Weapons[b->instance].weapon_info_index].subtype == WP_LASER){
-			return 1;
+		if(The_mission.ai_profile->flags2 & AIPF2_BEAMS_DAMAGE_WEAPONS) {
+			if((Weapon_info[Weapons[b->instance].weapon_info_index].weapon_hitpoints <= 0) && (Weapon_info[Weapons[b->instance].weapon_info_index].subtype == WP_LASER)) {
+				return 1;
+			}
+		} else {
+			// don't ever collide against laser weapons - duh
+			if(Weapon_info[Weapons[b->instance].weapon_info_index].subtype == WP_LASER){
+				return 1;
+			}
 		}
 		break;
 	}
@@ -2958,11 +2964,43 @@ void beam_handle_collisions(beam *b)
 				break;
 
 			case OBJ_WEAPON:
-				// detonate the missile
-				Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
+				if (The_mission.ai_profile->flags2 & AIPF2_BEAMS_DAMAGE_WEAPONS) {
+					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
+						object *trgt = &Objects[target];
 
-				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
-					weapon_hit(&Objects[target], NULL, &Objects[target].pos);
+						if (trgt->hull_strength > 0) {
+							float attenuation = 1.0f;
+							if ((b->damage_threshold >= 0.0f) && (b->damage_threshold < 1.0f)) {
+								float dist = vm_vec_dist(&b->last_shot, &b->last_start);
+								float range = b->range;
+								float atten_dist = range * b->damage_threshold;
+								if ((range > dist) && (atten_dist < dist)) {
+									attenuation = (dist - atten_dist) / (range - atten_dist);
+								}
+							}
+
+							float damage = Weapon_info[b->weapon_info_index].damage * attenuation;
+
+							trgt->hull_strength -= damage;
+
+							if (trgt->hull_strength < 0) {
+								weapon_hit(trgt, NULL, &trgt->pos);
+							}
+						} else {
+							if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
+								weapon_hit(&Objects[target], NULL, &Objects[target].pos);
+							}
+						}
+						
+
+					}
+				} else {
+					// detonate the missile
+					Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
+
+					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
+						weapon_hit(&Objects[target], NULL, &Objects[target].pos);
+					}
 				}
 				break;
 

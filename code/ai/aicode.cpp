@@ -3791,7 +3791,7 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 //		model_path	*paths;
 
 //	Returns distance to goal point.
-float ai_path()
+float ai_path_0()
 {
 	polymodel	*pm;
 	int		num_paths, num_points;
@@ -3953,6 +3953,185 @@ float ai_path()
 	}
 
 	return dist_to_goal;
+}
+
+//	--------------------------------------------------------------------------
+//	Alternate version of default ai_path
+//  1. 
+float ai_path_1()
+{
+	polymodel	*pm;
+	int		num_paths, num_points;
+	float		dot, dist_to_goal, dist_to_next, speed, dot_to_next;
+	ship		*shipp = &Ships[Pl_objp->instance];
+	ship_info	*sip = &Ship_info[shipp->ship_info_index];
+	ai_info	*aip;
+	vec3d	nvel_vec;
+	float		mag, prev_dot_to_goal;
+	object	*gobjp;
+	ship		*gshipp;
+	vec3d	*pvp, *cvp, *nvp, next_vec, gpvp, gcvp, gnvp;		//	previous, current and next vertices in global coordinates.
+
+	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+
+	Assert(aip->goal_objnum != -1);
+	Assert(Objects[aip->goal_objnum].type == OBJ_SHIP);
+
+	gobjp = &Objects[aip->goal_objnum];
+	gshipp = &Ships[gobjp->instance];
+
+	// Get path data
+	pm = model_get(Ship_info[gshipp->ship_info_index].model_num);
+	num_paths = pm->n_paths;
+	Assert(num_paths > 0);
+
+	if (aip->path_start == -1) {
+		Assert(aip->goal_objnum >= 0 && aip->goal_objnum < MAX_OBJECTS);
+		int path_num;
+		Assert(aip->active_goal >= 0);
+		ai_goal *aigp = &aip->goals[aip->active_goal];
+		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+
+		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aigp->dockee.index);
+		ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
+	}
+
+	maybe_recreate_path(Pl_objp, aip, 0);
+
+	num_points = aip->path_length;
+
+	//	Set cvp and nvp as pointers to current and next vertices of interest on path.
+	cvp = &Path_points[aip->path_cur].pos;
+	if ((aip->path_cur + aip->path_dir - aip->path_start < num_points) || (aip->path_cur + aip->path_dir < aip->path_start))
+		nvp = &Path_points[aip->path_cur + aip->path_dir].pos;
+	else {
+		//	If this is 0, then path length must be 1 which means we have no direction!
+		Assert((aip->path_cur - aip->path_dir >= aip->path_start) && (aip->path_cur - aip->path_dir - aip->path_start < num_points));
+		//	Cleanup for above Assert() which we hit too near release. -- MK, 5/24/98.
+		if (aip->path_cur - aip->path_dir - aip->path_start >= num_points) {
+			if (aip->path_dir == 1)
+				aip->path_cur = aip->path_start;
+			else
+				aip->path_cur = aip->path_start + num_points - 1;
+		}
+
+		vec3d	delvec;
+		vm_vec_sub(&delvec, cvp, &Path_points[aip->path_cur - aip->path_dir].pos);
+		vm_vec_normalize(&delvec);
+		vm_vec_scale_add(&next_vec, cvp, &delvec, 10.0f);
+		nvp = &next_vec;
+	}
+	// Set pvp to the previous vertex of interest on the path (if there is one)
+	int prev_point = aip->path_cur - aip->path_dir;
+	if (prev_point >= aip->path_start && prev_point <= aip->path_start + num_points)
+		pvp = &Path_points[prev_point].pos;
+	else
+		pvp = NULL;
+
+	gpvp = (pvp != NULL) ? *pvp : *cvp;
+	gcvp = *cvp;
+	gnvp = *nvp;
+
+	speed = Pl_objp->phys_info.speed;
+
+	dist_to_goal = vm_vec_dist_quick(&Pl_objp->pos, &gcvp);
+	dist_to_next = vm_vec_dist_quick(&Pl_objp->pos, &gnvp);
+
+	//	Can't use fvec, need to use velocity vector because we aren't necessarily
+	//	moving in the direction we're facing.
+	if ( vm_vec_mag_quick(&Pl_objp->phys_info.vel) < AICODE_SMALL_MAGNITUDE ) {
+		mag = 0.0f;
+		vm_vec_zero(&nvel_vec);
+	} else
+		mag = vm_vec_copy_normalize(&nvel_vec, &Pl_objp->phys_info.vel);
+
+	if (mag < 1.0f)
+		nvel_vec = Pl_objp->orient.vec.fvec;
+
+	// Turn toward midpoint between where we are on the path and the goal. This helps keep the ship flying
+	// "down the line"
+	if (dist_to_goal > 0.1f) {
+		//Get nearest point on line between current and previous path points
+		vec3d closest_point;
+		float r = find_nearest_point_on_line(&closest_point, &gpvp, &gcvp, &Pl_objp->pos);
+ 
+		//Turn towards the midpoint between the closest point on the line and the current goal point 
+		//(unless we are already past the current goal)
+		if (r <= 1.0f) {
+			vec3d midpoint;
+			vm_vec_avg(&midpoint, &gcvp, &closest_point);
+			ai_turn_towards_vector(&midpoint, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0);
+		}
+		else {
+			ai_turn_towards_vector(&gcvp, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0);
+		}
+	}
+
+	//	Code to control speed is MUCH less forgiving in path following than in waypoint
+	//	following.  Must be very close to path or might hit objects.
+	prev_dot_to_goal = aip->prev_dot_to_goal;
+	dot = vm_vec_dot_to_point(&nvel_vec, &Pl_objp->pos, &gcvp);
+	dot_to_next = vm_vec_dot_to_point(&nvel_vec, &Pl_objp->pos, &gnvp);
+
+	set_accel_for_docking(Pl_objp, aip, dot, dot_to_next, dist_to_next, dist_to_goal, sip);
+	aip->prev_dot_to_goal = dot;
+
+	//	If moving at a non-tiny velocity, detect attaining path point by its being close to
+	//	line between previous and current object location.
+	if ((dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || (vm_vec_dist_quick(&Pl_objp->last_pos, &Pl_objp->pos) > 0.1f)) {
+		vec3d	nearest_point;
+		float		r, min_dist_to_goal;
+
+		r = find_nearest_point_on_line(&nearest_point, &Pl_objp->last_pos, &Pl_objp->pos, &gcvp);
+
+		//	Set min_dist_to_goal = how close must be to waypoint to pick next one.
+		//	If docking and this is the second last waypoint, must be very close.
+		if ((aip->mode == AIM_DOCK) && (aip->path_cur - aip->path_start >= aip->path_length-1)) {
+			min_dist_to_goal = MIN_DIST_TO_WAYPOINT_GOAL;
+		}
+		//  If this is not the last waypoint, include a term to compensate for inertia
+		else if (aip->path_cur - aip->path_start < aip->path_length - (aip->mode == AIM_DOCK ? 0 : 1)) {
+			vec3d cp_rel;
+			vm_vec_sub(&cp_rel, &gcvp, &Pl_objp->pos);
+			float goal_mag = 0.0f;
+			if (vm_vec_mag(&cp_rel) > 0.0f) {
+				vm_vec_normalize(&cp_rel);
+				goal_mag = vm_vec_dot(&Pl_objp->phys_info.vel, &cp_rel);
+			}
+			min_dist_to_goal = MIN_DIST_TO_WAYPOINT_GOAL + Pl_objp->radius + (goal_mag * sip->damp);
+		}
+		else {
+			min_dist_to_goal = MIN_DIST_TO_WAYPOINT_GOAL + Pl_objp->radius;
+		}
+
+		if ( (vm_vec_dist_quick(&Pl_objp->pos, &gcvp) < min_dist_to_goal) ||
+			((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, &gcvp) < (MIN_DIST_TO_WAYPOINT_GOAL + Pl_objp->radius))) {
+			aip->path_cur += aip->path_dir;
+			//nprintf(("AI", " Near: Advancing from point %i to %i of %i points.\n", aip->path_cur-aip->path_dir, aip->path_cur, num_points));
+			if (((aip->path_cur - aip->path_start) > (num_points+1)) || (aip->path_cur < aip->path_start)) {
+				Assert(aip->mode != AIM_DOCK);		//	If docking, should never get this far, getting to last point handled outside ai_path()
+				aip->path_dir = -aip->path_dir;
+			}
+		}
+	}
+
+	return dist_to_goal;
+}
+
+float ai_path()
+{
+	switch (The_mission.ai_profile->ai_path_mode)
+	{
+	case AI_PATH_MODE_NORMAL:
+		return ai_path_0();
+		break;
+	case AI_PATH_MODE_ALT1:
+		return ai_path_1();
+		break;
+	default:
+		Error(LOCATION, "Invalid path mode found: %d\n", The_mission.ai_profile->ai_path_mode);
+		return ai_path_0();
+	}
 }
 
 void update_min_max(float val, float *min, float *max)

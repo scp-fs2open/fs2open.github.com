@@ -3149,7 +3149,10 @@ strcpy_s(parse_error_text, temp_error);
 				}
 				else
 				{
-					Error(LOCATION, "Optional not working");
+					Error(LOCATION, "Malformed $Subsystem entry '%s' %s.\n\n"
+						"Specify a turning rate or remove the trailing comma.",
+						sp->subobj_name,
+						strlen(parse_error_text) >0 ? parse_error_text: "unknown ship");
 				}
 			}
 
