@@ -97,12 +97,38 @@ int collide_weapon_weapon( obj_pair * pair )
 			//nprintf(("AI", "[%s] %s's missile %i shot down by [%s] %s's laser %i\n", Iff_info[sbp->team].iff_name, sbp->ship_name, B->instance, Iff_info[sap->team].iff_name, sap->ship_name, A->instance));
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
-					Weapons[A->instance].lifeleft = 0.01f;
-					Weapons[B->instance].lifeleft = 0.01f;
-					Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
-					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					if ((wipA->wi_flags & WIF_BOMB) && (wipB->wi_flags & WIF_BOMB)) {
+						Weapons[A->instance].lifeleft = 0.01f;
+						Weapons[B->instance].lifeleft = 0.01f;
+						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					} else {
+						A->hull_strength -= wipB->damage;
+						B->hull_strength -= wipA->damage;
+
+						// safety to make sure either of the weapons die - allow 'bulkier' to keep going
+						if ((A->hull_strength > 0.0f) && (B->hull_strength > 0.0f)) {
+							if (wipA->weapon_hitpoints > wipB->weapon_hitpoints) {
+								B->hull_strength = -1.0f;
+							} else {
+								A->hull_strength = -1.0f;
+							}
+						}
+						
+						if (A->hull_strength < 0.0f) {
+							Weapons[A->instance].lifeleft = 0.01f;
+							Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						}
+						B->hull_strength -= wipA->damage;
+						if (B->hull_strength < 0.0f) {
+							Weapons[B->instance].lifeleft = 0.01f;
+							Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						}
+					}
 				} else {
 					A->hull_strength -= wipB->damage;
+					Weapons[B->instance].lifeleft = 0.01f;
+					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 					if (A->hull_strength < 0.0f) {
 						Weapons[A->instance].lifeleft = 0.01f;
 						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
@@ -110,6 +136,8 @@ int collide_weapon_weapon( obj_pair * pair )
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= wipA->damage;
+				Weapons[A->instance].lifeleft = 0.01f;
+				Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 				if (B->hull_strength < 0.0f) {
 					Weapons[B->instance].lifeleft = 0.01f;
 					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
