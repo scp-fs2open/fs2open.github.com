@@ -369,6 +369,7 @@ target_w(-1), target_h(-1), textoffset_x(0), textoffset_y(0), cache_w(-1), cache
 
 	custom_name[0] = '\0';
 	custom_text[0] = '\0';
+	default_text[0] = '\0';
 	custom_frame.first_frame = -1;
 	custom_frame.num_frames = 0;
 	custom_frame_offset = 0;
@@ -405,8 +406,10 @@ target_x(-1), target_y(-1), target_w(-1), target_h(-1), textoffset_x(txtoffset_x
 
 	if(_custom_text) {
 		strcpy_s(custom_text, _custom_text);
+		strcpy_s(default_text, _custom_text);
 	} else {
 		custom_text[0] = '\0';
+		default_text[0] = '\0';
 	}
 
 	custom_frame.first_frame = -1;
@@ -1033,6 +1036,8 @@ void HudGauge::pageIn()
 
 void HudGauge::initialize()
 {
+	//Reset text to default
+	strcpy_s(custom_text, default_text);
 }
 
 bool HudGauge::canRender()
