@@ -875,6 +875,7 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
 extern void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
+extern void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos);
 
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);

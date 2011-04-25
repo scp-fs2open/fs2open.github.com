@@ -209,6 +209,7 @@ protected:
 	int custom_frame_offset;
 	char custom_name[NAME_LENGTH];
 	char custom_text[NAME_LENGTH];
+	char default_text[NAME_LENGTH];
 
 	// Render to texture stuff
 	char texture_target_fname[MAX_FILENAME_LEN];
