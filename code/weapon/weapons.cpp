@@ -2411,10 +2411,11 @@ int parse_weapon(int subtype, bool replace)
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 		}
 
-		required_string("+radius:");
 		float bogus;
+		
+		required_string("+radius:");
 		stuff_float(&bogus);
-
+		
 		if ( optional_string("+burn time:") ) {
 			stuff_float(&bogus);
 		}
@@ -5307,8 +5308,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wp->weapon_flags |= WF_SPAWNED;
 	}
 
-	wp->armor_type_idx = wip->armor_type_idx;
-
 	wp->alpha_current = -1.0f;
 	wp->alpha_backward = 0;
 
@@ -5787,11 +5786,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			asteroid_hit(objp, NULL, NULL, damage);
 			break;
 		case OBJ_WEAPON:
-			if (Weapon_info[Weapons[objp->instance].weapon_info_index].armor_type_idx == -1) {
-				objp->hull_strength -= damage;
-			} else {
-				objp->hull_strength -= Armor_types[Weapon_info[Weapons[objp->instance].weapon_info_index].armor_type_idx].GetDamage(damage, sci->damage_type_idx);
-			}
+			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
 				Weapons[objp->instance].lifeleft = 0.01f;
 				Weapons[objp->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
