@@ -1017,6 +1017,8 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->thruster_glow_factor = 1.0f;
 	wip->target_lead_scaler = 0.0f;
+
+	wip->armor_type_idx = -1;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -2403,8 +2405,7 @@ int parse_weapon(int subtype, bool replace)
 
 	//Left in for compatibility
 	if ( optional_string("$decal:") ) {
-		WarningEx(LOCATION, "The decal system has been deactivated in FSO builds. Entries will be discarded.\n");
-		mprintf(("WARNING: The decal system has been deactivated in FSO builds. Entries will be discarded.\n"));
+		mprintf(("WARNING: The decal system has been deactivated in FSO builds. Entries for weapon %s will be discarded.\n", wip->name));
 		required_string("+texture:");
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
@@ -2413,8 +2414,12 @@ int parse_weapon(int subtype, bool replace)
 		}
 
 		required_string("+radius:");
+		float bogus;
+		stuff_float(&bogus);
 
-		if ( optional_string("+burn time:") ) {}
+		if ( optional_string("+burn time:") ) {
+			stuff_float(&bogus);
+		}
 	}
 
 
@@ -2579,6 +2584,15 @@ int parse_weapon(int subtype, bool replace)
 
 			wip->weapon_substitution_pattern_names[index] = subname;
 		}
+	}
+
+	if(optional_string("$Armor Type:"))
+	{
+		stuff_string(buf, F_NAME, 4096);
+		wip->armor_type_idx = armor_type_get_idx(buf);
+
+		if(wip->armor_type_idx == -1)
+			Warning(LOCATION,"Invalid armor name %s specified for hull in weapon class %s", buf, wip->name);
 	}
 
 	return WEAPON_INFO_INDEX(wip);
@@ -5304,6 +5318,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wp->weapon_flags |= WF_SPAWNED;
 	}
 
+	wp->armor_type_idx = wip->armor_type_idx;
+
 	wp->alpha_current = -1.0f;
 	wp->alpha_backward = 0;
 
@@ -5782,7 +5798,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			asteroid_hit(objp, NULL, NULL, damage);
 			break;
 		case OBJ_WEAPON:
-			objp->hull_strength -= damage;
+			if (Weapon_info[Weapons[objp->instance].weapon_info_index].armor_type_idx == -1) {
+				objp->hull_strength -= damage;
+			} else {
+				objp->hull_strength -= Armor_types[Weapon_info[Weapons[objp->instance].weapon_info_index].armor_type_idx].GetDamage(damage, sci->damage_type_idx);
+			}
 			if (objp->hull_strength < 0.0f) {
 				Weapons[objp->instance].lifeleft = 0.01f;
 				Weapons[objp->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
