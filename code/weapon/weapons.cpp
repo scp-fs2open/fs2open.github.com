@@ -2403,8 +2403,7 @@ int parse_weapon(int subtype, bool replace)
 
 	//Left in for compatibility
 	if ( optional_string("$decal:") ) {
-		WarningEx(LOCATION, "The decal system has been deactivated in FSO builds. Entries will be discarded.\n");
-		mprintf(("WARNING: The decal system has been deactivated in FSO builds. Entries will be discarded.\n"));
+		mprintf(("WARNING: The decal system has been deactivated in FSO builds. Entries for weapon %s will be discarded.\n", wip->name));
 		required_string("+texture:");
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
@@ -2412,9 +2411,14 @@ int parse_weapon(int subtype, bool replace)
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 		}
 
-		required_string("+radius:");
+		float bogus;
 
-		if ( optional_string("+burn time:") ) {}
+		required_string("+radius:");
+		stuff_float(&bogus);
+
+		if ( optional_string("+burn time:") ) {
+			stuff_float(&bogus);
+		}
 	}
 
 
