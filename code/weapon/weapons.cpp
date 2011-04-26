@@ -1017,8 +1017,6 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->thruster_glow_factor = 1.0f;
 	wip->target_lead_scaler = 0.0f;
-
-	wip->armor_type_idx = -1;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -2584,15 +2582,6 @@ int parse_weapon(int subtype, bool replace)
 
 			wip->weapon_substitution_pattern_names[index] = subname;
 		}
-	}
-
-	if(optional_string("$Armor Type:"))
-	{
-		stuff_string(buf, F_NAME, 4096);
-		wip->armor_type_idx = armor_type_get_idx(buf);
-
-		if(wip->armor_type_idx == -1)
-			Warning(LOCATION,"Invalid armor name %s specified for hull in weapon class %s", buf, wip->name);
 	}
 
 	return WEAPON_INFO_INDEX(wip);
