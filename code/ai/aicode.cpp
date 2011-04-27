@@ -2732,7 +2732,7 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	ship			*shipp = &Ships[pl_objp->instance];
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
-//	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
+	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
 	polymodel	*pm = model_get(Ship_info[Ships[mobjp->instance].ship_info_index].model_num);
 	int			num_points;
 	model_path	*mp;
@@ -2800,6 +2800,17 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	aip->path_next_create_time = timestamp(1000);	//	OK to try to create one second later
 	aip->path_create_pos = pl_objp->pos;
 	aip->path_create_orient = pl_objp->orient;
+	
+	//Get path departure orientation from ships.tbl if it exists, otherwise zero it
+	SCP_string pathName(mp->name);
+	if (osip->pathMetadata.find(pathName) != osip->pathMetadata.end() && !IS_VEC_NULL(&osip->pathMetadata[pathName].departure_rvec))
+	{
+		vm_vec_copy_normalize(&aip->path_depart_orient, &osip->pathMetadata[pathName].departure_rvec);
+	}
+	else
+	{
+		vm_vec_zero(&aip->path_depart_orient);
+	}
 
 	aip->ai_flags &= ~AIF_USE_EXIT_PATH;			// ensure this flag is cleared
 }
@@ -3694,7 +3705,20 @@ float maybe_recreate_path(object *objp, ai_info *aip, int force_recreate_flag, i
 
 				aip->path_create_pos = path_objp->pos;
 				aip->path_create_orient = path_objp->orient;
-				
+		
+				//Get path departure orientation from ships.tbl if it exists, otherwise zero it
+				ship_info *osip = &Ship_info[Ships[path_objp->instance].ship_info_index];
+				model_path	*mp = &model_get(osip->model_num)->paths[aip->mp_index];
+				SCP_string pathName(mp->name);
+				if (osip->pathMetadata.find(pathName) != osip->pathMetadata.end() && !IS_VEC_NULL(&osip->pathMetadata[pathName].departure_rvec))
+				{
+					vm_vec_copy_normalize(&aip->path_depart_orient, &osip->pathMetadata[pathName].departure_rvec);
+				}
+				else
+				{
+					vm_vec_zero(&aip->path_depart_orient);
+				}
+
 				return dist;
 			}
 		}
@@ -3957,7 +3981,7 @@ float ai_path_0()
 }
 
 //	--------------------------------------------------------------------------
-//	Alternate version of default ai_path
+//	Alternate version of ai_path
 //  1. 
 float ai_path_1()
 {
@@ -4049,6 +4073,15 @@ float ai_path_1()
 	if (mag < 1.0f)
 		nvel_vec = Pl_objp->orient.vec.fvec;
 
+	// For departures, optionally rotate so the ship is pointing the correct direction
+	// (so you can always have "wheels-down" landings)
+	vec3d rvec;
+	vec3d *prvec = NULL;
+	if ( aip->mode == AIM_BAY_DEPART && !IS_VEC_NULL(&aip->path_depart_orient) ) {
+		vm_vec_unrotate(&rvec, &aip->path_depart_orient, &Objects[aip->path_objnum].orient);
+		prvec = &rvec;
+	}
+
 	// Turn toward midpoint between where we are on the path and the goal. This helps keep the ship flying
 	// "down the line"
 	if (dist_to_goal > 0.1f) {
@@ -4061,10 +4094,10 @@ float ai_path_1()
 		if (r <= 1.0f) {
 			vec3d midpoint;
 			vm_vec_avg(&midpoint, &gcvp, &closest_point);
-			ai_turn_towards_vector(&midpoint, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0);
+			ai_turn_towards_vector(&midpoint, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0, &rvec);
 		}
 		else {
-			ai_turn_towards_vector(&gcvp, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0);
+			ai_turn_towards_vector(&gcvp, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0, &rvec);
 		}
 	}
 
@@ -14609,6 +14642,7 @@ void init_ai_object(int objnum)
 	aip->path_next_create_time = timestamp(1);
 	aip->path_create_pos = Objects[objnum].pos;
 	aip->path_create_orient = Objects[objnum].orient;
+	vm_vec_zero(&aip->path_depart_orient);
 
 	aip->ignore_expire_timestamp = timestamp(1);
 	aip->warp_out_timestamp = 0;
