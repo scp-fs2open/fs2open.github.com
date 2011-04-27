@@ -1096,6 +1096,10 @@ typedef struct ship_collision_physics {
 
 } ship_collision_physics;
 
+typedef struct path_metadata {
+	vec3d departure_rvec;
+} path_metadata;
+
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
@@ -1345,6 +1349,8 @@ typedef struct ship_info {
 	bool hud_retail;
 
 	SCP_vector<cockpit_display_info> displays;
+
+	SCP_map<SCP_string, path_metadata> pathMetadata;
 } ship_info;
 
 extern int Num_wings;
@@ -1874,5 +1880,8 @@ int armor_type_get_idx(char* name);
 void armor_init();
 
 int thruster_glow_anim_load(generic_anim *ga);
+
+// Sushi - Path metadata
+void init_path_metadata(path_metadata& metadata);
 
 #endif
