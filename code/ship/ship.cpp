@@ -964,6 +964,7 @@ void init_ship_entry(ship_info *sip)
 	sip->hud_retail = false;
 	sip->piercing_damage_draw_limit = 0.10f;
 	sip->damage_lightning_type = SLT_DEFAULT;
+	sip->pathMetadata.clear();
 }
 
 // function to parse the information for a specific ship type.	
@@ -3033,6 +3034,25 @@ strcpy_s(parse_error_text, temp_error);
 		sip->piercing_damage_draw_limit = tempf / 100.0f;
 	}
 
+	while(optional_string("$Path Metadata:")) 
+	{
+		char path_name[64];
+		stuff_string(path_name, F_NAME, sizeof(path_name));
+
+		path_metadata metadata;
+		init_path_metadata(metadata);
+
+		//Get +departure rvec and store on the path_metadata object
+		if (optional_string("+departure rvec:"))
+		{
+			stuff_vector(&metadata.departure_rvec);
+		}
+
+		//Add the new path_metadata to sip->pathMetadata keyed by path name
+		SCP_string pathName(path_name);
+		sip->pathMetadata[pathName] = metadata;
+	}
+
 	int n_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems
@@ -3516,6 +3536,7 @@ strcpy_s(parse_error_text, temp_error);
 					mprintf(("TODO: set up linked animation\n"));
 				}
 			}
+
 		}
 		break;
 		case 2:
@@ -17208,4 +17229,9 @@ int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 	}
 
 	return -1;
+}
+
+void init_path_metadata(path_metadata& metadata)
+{
+	vm_vec_zero(&metadata.departure_rvec);
 }
