@@ -28008,7 +28008,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name\r\n"
-		"\tSets the name of a jump node. Takes 2 arguments...\r\n"
+		"\tSets the name of a jump node. WARNING: Once a nodes name is changed, sexps that referred to the old name will not function correctly. Takes 2 arguments...\r\n"
 		"\t1: Name of jump node to change name for\r\n"
 		"\t2: New name for jump node\r\n"
 	},
