@@ -613,6 +613,7 @@ sexp_oper Operators[] = {
 	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
 	{ "set-camera-shudder",			OP_SET_CAMERA_SHUDDER,					2, 2, },
 
+	{ "set-jumpnode-name",			OP_JUMP_NODE_SET_JUMPNODE_NAME,			2, 2, }, //CommanderDJ
 	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
 	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
 	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, 1, },
@@ -18715,6 +18716,19 @@ void multi_sexp_set_camera_shudder()
 	}
 }
 
+void sexp_set_jumpnode_name(int n) //CommanderDJ
+{
+	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+
+	if(jnp==NULL) 
+		return;
+
+	n=CDR(n);
+
+	jnp->set_name(CTEXT(n));
+}
+
+
 void sexp_set_jumpnode_color(int n)
 {
 	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
@@ -20748,6 +20762,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_camera_shudder(node);
 				break;
 
+			case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+				sexp_val = SEXP_TRUE;
+				sexp_set_jumpnode_name(node);
+				break;
+
 			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 				sexp_val = SEXP_TRUE;
 				sexp_set_jumpnode_color(node);
@@ -21598,6 +21617,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_SET_CAMERA_SHUDDER:
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -23341,6 +23361,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		//</Cutscenes>
 
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+			if(argnum==0)
+				return OPF_JUMP_NODE_NAME;
+			else if (argnum==1)
+				return OPF_STRING;
+
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 			if(argnum==0)
 				return OPF_JUMP_NODE_NAME;
@@ -24842,6 +24868,7 @@ int get_subcategory(int sexp_id)
 		case OP_SUPERNOVA_START:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -27978,6 +28005,12 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 arguments...\r\n"
 		"\t1: Time (in milliseconds)\r\n"
 		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440."
+	},
+
+	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name\r\n"
+		"\tSets the name of a jump node. Takes 2 arguments...\r\n"
+		"\t1: Name of jump node to change name for\r\n"
+		"\t2: New name for jump node\r\n"
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
