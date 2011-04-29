@@ -17781,7 +17781,7 @@ void sexp_toggle_cutscene_bars(int node, int set)
 	multi_end_packet();
 }
 
-void muli_sexp_toggle_cutscene_bars(int set)
+void multi_sexp_toggle_cutscene_bars(int set)
 {
 	float delta_speed;
 
@@ -18719,6 +18719,8 @@ void multi_sexp_set_camera_shudder()
 void sexp_set_jumpnode_name(int n) //CommanderDJ
 {
 	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+	
+	char *old_name = CTEXT(n); //for multi
 
 	if(jnp==NULL) 
 		return;
@@ -18726,8 +18728,33 @@ void sexp_set_jumpnode_name(int n) //CommanderDJ
 	n=CDR(n);
 
 	jnp->set_name(CTEXT(n));
+
+	char *new_name = CTEXT(n); //for multi
+
+	//multiplayer callback
+	multi_start_packet();
+	multi_send_string(old_name);
+	multi_send_string(new_name);
+	multi_end_packet();
 }
 
+void multi_sexp_set_jumpnode_name(int n) //CommanderDJ
+{
+	char *old_name;
+	
+	multi_get_string(old_name);
+
+	char *new_name;
+
+	multi_get_string(new_name);
+
+	jump_node *jnp = jumpnode_get_by_name(old_name);
+
+	if(jnp==NULL) 
+		return;
+
+	jnp->set_name(new_name);
+}
 
 void sexp_set_jumpnode_color(int n)
 {
@@ -21056,11 +21083,15 @@ void multi_sexp_eval()
 				break;
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
-				muli_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
+				multi_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
 				break;
 
 			case OP_SET_CAMERA_SHUDDER:
 				multi_sexp_set_camera_shudder();
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+				multi_sexp_set_jumpnode_name(op_num == OP_JUMP_NODE_SET_JUMPNODE_NAME);
 				break;
 
 			// bad sexp in the packet
@@ -28008,9 +28039,10 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name\r\n"
-		"\tSets the name of a jump node. WARNING: Once a nodes name is changed, sexps that referred to the old name will not function correctly. Takes 2 arguments...\r\n"
+		"\tSets the name of a jump node. Takes 2 arguments...\r\n"
 		"\t1: Name of jump node to change name for\r\n"
-		"\t2: New name for jump node\r\n"
+		"\t2: New name for jump node\r\n\r\n"
+		"\tNote: SEXPs referencing the old name will not work after the name change.\r\n"
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
