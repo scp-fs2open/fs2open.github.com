@@ -18777,7 +18777,7 @@ void sexp_set_jumpnode_model(int n)
 
 	n=CDR(n);
 
-	jnp->set_model(CTEXT(n),(CDR(n)==SEXP_KNOWN_TRUE));
+	jnp->set_model(CTEXT(n), is_sexp_true(CDR(n)));
 }
 
 void sexp_show_jumpnode(int n)
@@ -23407,8 +23407,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 			if(argnum==0)
 				return OPF_JUMP_NODE_NAME;
-			else
+			else if (argnum == 1)
 				return OPF_STRING;
+			else
+				return OPF_BOOL;
 
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
@@ -28060,7 +28062,7 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 3 arguments...\r\n"
 		"\t1:\tJump node to change model for\r\n"
 		"\t2:\tModel filename\r\n"
-		"\t3:\tShow as normal model\r\n"
+		"\t3:\tShow as normal model. When this is true, the jumpnode will be rendered like a normal model.\r\n"
 	},
 
 	{ OP_JUMP_NODE_SHOW_JUMPNODE, "show-jumpnode\r\n"
