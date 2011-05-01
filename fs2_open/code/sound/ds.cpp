@@ -446,7 +446,7 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 }
 
 /**
- * Parse a sound file, any format, and store the info in ::s_info.
+ * Parse a sound file, any format, and store the info in s_info.
  *
  * @param real_filename Filename to parse
  * @param s_info Storage for the sound file info
@@ -663,7 +663,7 @@ int ds_get_sid()
 
 /**
  * @brief Load a secondary buffer with sound data.
- * @detailed The sounds data for game sounds are stored in the DirectSound secondary buffers, 
+ * @details The sounds data for game sounds are stored in the DirectSound secondary buffers, 
  * and are duplicated as needed and placed in the Channels[] array to be played.
  * 
  * @param sid Pointer to software id for sound ( output parm)
@@ -1674,7 +1674,7 @@ void ds_stop_channel(int channel)
  */
 void ds_stop_channel_all()
 {
-	int i;
+	size_t i;
 
 	for ( i=0; i<MAX_CHANNELS; i++ ) {
 		if ( Channels[i].source_id != 0 ) {
@@ -1685,7 +1685,7 @@ void ds_stop_channel_all()
 
 /**
  * @brief Set the volume for a channel.  The volume is expected to be in linear scale
- * @detailed If the sound is a 3D sound buffer, this is like re-establishing the maximum volume.
+ * @details If the sound is a 3D sound buffer, this is like re-establishing the maximum volume.
  */
 void ds_set_volume( int channel, float vol )
 {
@@ -2042,7 +2042,7 @@ int ds_eax_set_volume(float volume)
  * Set the decay time for the EAX environment (ie all sound sources)
  *
  * @param seconds Decay time in seconds
- * @eturn 0 if decay time is successfully set, otherwise return -1
+ * @return 0 if decay time is successfully set, otherwise return -1
  */
 int ds_eax_set_decay_time(float seconds)
 {

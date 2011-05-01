@@ -5367,8 +5367,6 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
  * 
  * The AI will now intelligently choose the best weapon to use based on the overall shield
  * status of the target.
- * 
- * ##UnknownPlayer##
  */
 int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 {
