@@ -285,7 +285,7 @@ char *Joy_button_text_french[] = {
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
 	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
 	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
-	"Bouton 31",		"Bouton 32",		"Chapeau Arrière",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+	"Bouton 31",		"Bouton 32",		"Chapeau Arriere",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
 //	This is the text that is displayed on the screen for the keys a player selects
