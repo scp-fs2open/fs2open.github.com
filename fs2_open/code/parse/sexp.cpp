@@ -18777,7 +18777,7 @@ void sexp_set_jumpnode_model(int n)
 
 	n=CDR(n);
 
-	jnp->set_model(CTEXT(n), is_sexp_true(CDR(n) != 0));
+	jnp->set_model(CTEXT(n), is_sexp_true(CDR(n)) != 0);
 }
 
 void sexp_show_jumpnode(int n)
