@@ -211,7 +211,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 
 	int n_triggers;
-	queued_animation *triggers;		//all the triggered animations assosiated with this object
+	queued_animation *triggers;		//all the triggered animations associated with this object
 
 	int		turret_reset_delay;
 
