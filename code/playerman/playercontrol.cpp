@@ -8,8 +8,6 @@
 */
 
 
-
-
 #include "playerman/player.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
@@ -75,10 +73,10 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
 void playercontrol_read_stick(int *axis, float frame_time);
 void player_set_padlock_state();
 
-//	Slew angles chase towards a value like they're on a spring.
-//	When furthest away, move fastest.
-//	Minimum speed set so that doesn't take too long.
-//	When gets close, clamps to the value.
+/**
+ * @brief Slew angles chase towards a value like they're on a spring.
+ * @details When furthest away, move fastest. Minimum speed set so that doesn't take too long. When gets close, clamps to the value.
+ */
 void chase_angles_to_value(angles *ap, angles *bp, int scale)
 {
 	float sk;
@@ -137,9 +135,6 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 		vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
 	} else {
 		// View slewing commands commented out until we can safely add more commands in the pilot code.
-
-		/*t = (check_control_timef(VIEW_RIGHT) - check_control_timef(VIEW_LEFT)) / 16.0f;
-		u = (check_control_timef(VIEW_DOWN) - check_control_timef(VIEW_UP)) / 16.0f;*/
 	}
 
 	if (t != 0.0f)
@@ -237,7 +232,6 @@ void do_view_track_target(float frame_time)
 		target_pos = targetp->pos;
 	}
 
-	//vm_vec_normalized_dir(&dir_to_target, &targetp->pos, &Player_obj->pos);
 	vm_vec_rotate(&targetpos_rotated, &target_pos, &Player_obj->orient);
 	vm_vec_rotate(&playerpos_rotated, &Player_obj->pos, &Player_obj->orient);
 	vm_vec_rotate(&forwardvec_rotated, &Player_obj->orient.vec.fvec, &Player_obj->orient);
@@ -264,12 +258,12 @@ void do_view_track_target(float frame_time)
 }
 
 
-//	When PAD0 is pressed, keypad controls viewer direction slewing.
+/**
+ * When PAD0 is pressed, keypad controls viewer direction slewing.
+ */
 void do_view_slew(float frame_time)
 {
-	//angles view_slew_angles;
 	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3, frame_time);
-	//chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, 15);
 }
 
 void do_view_chase(float frame_time)
@@ -327,8 +321,9 @@ void do_view_external(float frame_time)
 		Viewer_external_info.angles.h = PI2 + Viewer_external_info.angles.h;
 }
 
-// separate out the reading of thrust keys, so we can call this from external
-// view as well as from normal view
+/**
+ * Separate out the reading of thrust keys, so we can call this from external view as well as from normal view
+ */
 void do_thrust_keys(control_info *ci)
 {
 	ci->forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
@@ -336,7 +331,9 @@ void do_thrust_keys(control_info *ci)
 	ci->vertical = (check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST));//for slideing-Bobboau
 }
 
-// called by single and multiplayer modes to reset information inside of control info structure
+/**
+ * Called by single and multiplayer modes to reset information inside of control info structure
+ */
 void player_control_reset_ci( control_info *ci )
 {
 	float t1, t2, oldspeed;
@@ -383,8 +380,6 @@ void playercontrol_read_stick(int *axis, float frame_time)
 		int dx, dy, dz;
 		float factor;
 
-//		factor = (float) Mouse_sensitivity + 2.5f;
-//		factor = factor * factor / frame_time / 1.2f;
 		factor = (float) Mouse_sensitivity + 1.77f;
 		factor = factor * factor / frame_time / 0.6f;
 
@@ -465,10 +460,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if ( check_control(BANK_WHEN_PRESSED) ) {
 			ci->bank = check_control_timef(BANK_LEFT) + check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT) - check_control_timef(BANK_RIGHT);
 			ci->heading = 0.0f;
-/*		} else if ( check_control(SLIDE_WHEN_PRESSED) ) {
-			ci->sideways = check_control_timef(RIGHT_SLIDE_THRUST) + check_control_timef(YAW_RIGHT) - check_control_timef(LEFT_SLIDE_THRUST) - check_control_timef(YAW_LEFT);
-			ci->heading = 0.0f;
-*/
 		} else {
 			kh = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT)) / 8.0f;
 			if (kh == 0.0f) {
@@ -488,22 +479,17 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		ci->heading += kh;
 
-/*		if ( check_control(SLIDE_WHEN_PRESSED) ) {
-			ci->vertical = check_control_timef(UP_SLIDE_THRUST) + check_control_timef(PITCH_FORWARD) - check_control_timef(DOWN_SLIDE_THRUST) - check_control_timef(PITCH_BACK);
+		kh = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK)) / 8.0f;
+		if (kh == 0.0f) {
 			ci->pitch = 0.0f;
-		} else {*/
-			kh = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK)) / 8.0f;
-			if (kh == 0.0f) {
- 				ci->pitch = 0.0f;
-			} else if (kh > 0.0f) {
-				if (ci->pitch < 0.0f)
-					ci->pitch = 0.0f;
+		} else if (kh > 0.0f) {
+			if (ci->pitch < 0.0f)
+				ci->pitch = 0.0f;
 
-			} else {  // kh < 0
-				if (ci->pitch > 0.0f)
-					ci->pitch = 0.0f;
-			}
-//		}
+		} else {  // kh < 0
+			if (ci->pitch > 0.0f)
+				ci->pitch = 0.0f;
+		}
 
 		ci->pitch += kh;
 	}
@@ -545,22 +531,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			override_analog_throttle = 1;
 		}
 
-//		if ( button_info_query(&Player->bi, PLUS_5_PERCENT_THROTTLE) ) {
-//			control_used(PLUS_5_PERCENT_THROTTLE);
-//			Player->ci.forward_cruise_percent += (100.0f/Player_ship->current_max_speed);
-//		}
-
 		if ( button_info_query(&Player->bi, PLUS_5_PERCENT_THROTTLE) ) {
 			control_used(PLUS_5_PERCENT_THROTTLE);
 			Player->ci.forward_cruise_percent += 5.0f;
 			if (Player->ci.forward_cruise_percent > 100.0f)
 				Player->ci.forward_cruise_percent = 100.0f;
 		}
-
-//		if ( button_info_query(&Player->bi, MINUS_5_PERCENT_THROTTLE) ) {
-//			control_used(MINUS_5_PERCENT_THROTTLE);
-//			Player->ci.forward_cruise_percent -= (100.0f/Player_ship->current_max_speed);
-//		}
 
 		if ( button_info_query(&Player->bi, MINUS_5_PERCENT_THROTTLE) ) {
 			control_used(MINUS_5_PERCENT_THROTTLE);
@@ -600,9 +576,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->forward = -pi->max_rear_vel * 1.0f;
 		}
 
-		/*if (Player_ship->boost_pod_engaged)
-			ci->forward = 1.0f;*/
-
 		if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
 			if ( (Player_ai->last_target == Player_ai->target_objnum) && (Player_ai->target_objnum != -1) && ( ci->forward_cruise_percent == oldspeed) ) {
 				float tspeed, pmax_speed;
@@ -630,7 +603,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 				//SUSHI: If gliding, don't do anything for speed matching
 				if (!( (Objects[Player->objnum].phys_info.flags & PF_GLIDING) || (Objects[Player->objnum].phys_info.flags & PF_FORCE_GLIDE) )) {
-					//pmax_speed = Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 					pmax_speed = Ships[Player_obj->instance].current_max_speed;
 					if (pmax_speed > 0.0f) {
 						ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
@@ -638,16 +610,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 						ci->forward_cruise_percent = 0.0f;
 					}
 					override_analog_throttle = 1;
-					//if ( ci->forward_cruise_percent > 100.0f )
-						//HUD_printf ("Cannot travel that fast.  Setting throttle to full.");
-					// mprintf(("forward -- %7.3f\n", ci->forward_cruise_percent));
 				}
 
 			} else
 				Player->flags &= ~PLAYER_FLAGS_MATCH_TARGET;
 		}
 
-//			player_read_joystick();
 		// code to read joystick axis for pitch/heading.  Code to read joystick buttons
 		// for bank.
 		if ( !(Game_mode & GM_DEAD) )	{
@@ -666,12 +634,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					ci->bank -= delta;
 					ignore_pitch = TRUE;
 				}
-/*			} else if ( check_control(SLIDE_WHEN_PRESSED) ) {
-				delta = f2fl( axis[JOY_HEADING_AXIS] );
-				if ( (delta > 0.05f) || (delta < -0.05f) ) {
-					ci->sideways += delta;
-				}
-*/
 			} else {
 				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
 			}
@@ -679,15 +641,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		// check the pitch on the y axis
 		if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
-/*			if ( check_control(SLIDE_WHEN_PRESSED) ) {
-				delta = f2fl( axis[JOY_PITCH_AXIS] );
-				if ( (delta > 0.05f) || (delta < -0.05f) ) {
-					ci->vertical -= delta;
-				}
-
-			} else {*/
-				ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
-//			}
+			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
 		}
 
 		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
@@ -699,7 +653,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			scaled = (float) axis[JOY_ABS_THROTTLE_AXIS] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
 			oldspeed = ci->forward_cruise_percent;
 
-//			scaled = (scaled + 1.0f) / 1.85f;
 			newspeed = (1.0f - scaled) * 100.0f;
 
 			delta = analog_throttle_last - newspeed;
@@ -707,22 +660,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				ci->forward_cruise_percent = newspeed;
 				analog_throttle_last = newspeed;
 				override_analog_throttle = 0;
-/*
-				// AL 1-5-98: don't play throttle sounds when using analog control
-
-				if ( (oldspeed < 1.0f) && (newspeed >= 1.0f) )
-					snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
-				else if ( (oldspeed < 66.6f) && (newspeed >= 66.6f) )
-					snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
-				else if ( (oldspeed < 33.3f) && (newspeed >= 33.3f) )
-					snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
-				else if ( (oldspeed > 99.0f) && (newspeed <= 99.0f) )
-					snd_play( &Snds[SND_THROTTLE_DOWN], 0.0f );
-				else if ( (oldspeed > 33.3f) && (newspeed <= 33.3f) )
-					snd_play( &Snds[SND_THROTTLE_DOWN], 0.0f );
-				else if ( (oldspeed > 66.6f) && (newspeed <= 66.6f) )
-					snd_play( &Snds[SND_THROTTLE_DOWN], 0.0f );
-*/
 			}
 		}
 
@@ -742,9 +679,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->fire_primary_count++;
 		}
 
-		// mouse: fire the current primary weapon
-//		ci->fire_primary_count += mouse_down(1);
-
 		// for debugging, check to see if the debug key is down -- if so, make fire the debug laser instead
 #ifndef NDEBUG
 		if ( keyd_pressed[KEY_DEBUG_KEY] ) {
@@ -763,9 +697,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			}
 		}
 
-
-		// keyboard: launch countermeasures
-		if ( button_info_query(&Player->bi, LAUNCH_COUNTERMEASURE) ) {
+		// keyboard: launch countermeasures, but not if AI controlling Player
+		if (button_info_query(&Player->bi, LAUNCH_COUNTERMEASURE) && !Player_use_ai) {
 			control_used(LAUNCH_COUNTERMEASURE);
 			ci->fire_countermeasure_count++;
 			hud_gauge_popup_start(HUD_CMEASURE_GAUGE);
@@ -807,7 +740,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		// than press_glide. Since it sets press_glide equal to glide_when_pressed inside of this if statement,
 		//  this only evaluates to true when the state of the button is different than it was last time. 
 		if ( check_control(GLIDE_WHEN_PRESSED) != press_glide ) {
-//			control_used(GLIDE_WHEN_PRESSED);
 			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
 				// This only works if check_control returns only 1 or 0. Shouldn't be a problem,
 				// but this comment's here just in case it is.
@@ -856,8 +788,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	}
 
-	if ( (Viewer_mode & VM_EXTERNAL) /*|| slew_active*/ ) {
-		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) /*|| slew_active */) {
+	if ( (Viewer_mode & VM_EXTERNAL) ) {
+		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
 			ci->heading=0.0f;
 			ci->pitch=0.0f;
 			ci->bank=0.0f;
@@ -888,10 +820,6 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci)
 		dest_ci->sideways = src_ci->sideways;
 		dest_ci->bank = src_ci->bank;
 		dest_ci->forward = src_ci->forward;
-		/*dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
-		dest_ci->fire_countermeasure_count = src_ci->fire_countermeasure_count;
-		dest_ci->fire_secondary_count = src_ci->fire_countermeasure_count;
-		dest_ci->fire_primary_count = src_ci->fire_countermeasure_count;*/
 	}
 }
 
@@ -900,9 +828,6 @@ void read_player_controls(object *objp, float frametime)
 	float diff;
 	int can_warp = 0, warp_failed = 0;
 	float target_warpout_speed;
-
-//	if (Game_mode & GM_DEAD)
-//		return;
 
 	joy_ff_adjust_handling((int) objp->phys_info.speed);
 
@@ -960,17 +885,8 @@ void read_player_controls(object *objp, float frametime)
 						if ( (!warp_failed) && (Ships[objp->instance].current_max_speed >= target_warpout_speed) ) {
 							can_warp = 1;
 						} else {
-//WMC - Commented this out Oct 23 2005
-//							if (Ship_info[Ships[objp->instance].ship_info_index].max_overclocked_speed < target_warpout_speed) {
-//								// Cannot go fast enough, so abort sequence.
-//								warp_failed=1;
-//								HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Unable to engage warp... ship must be able to reach %.1f km/s", 82), target_warpout_speed );
-//								can_warp = 0;
-//							} else {
-								Ships[objp->instance].current_max_speed = target_warpout_speed + 5.0f;
-								//Ships[objp->instance].current_max_speed = Ship_info[Ships[objp->instance].ship_info_index].max_overclocked_speed;
-								can_warp = 1;
-//							}
+							Ships[objp->instance].current_max_speed = target_warpout_speed + 5.0f;
+							can_warp = 1;
 						}
 
 						if (can_warp) {
@@ -1047,7 +963,9 @@ void player_controls_init()
 	Viewer_slew_angles_delta.h = 0.0f;
 }
 
-// Clear current speed matching and auto-speed matching flags
+/**
+ * Clear current speed matching and auto-speed matching flags
+ */
 void player_clear_speed_matching()
 {
 	if ( !Player ) {
@@ -1059,11 +977,13 @@ void player_clear_speed_matching()
 	Player->flags &= ~PLAYER_FLAGS_AUTO_MATCH_SPEED;
 }
 
-// function which computes the forward_thrust_time needed for the player ship to match
-// velocities with the currently selected target
-// input:	no_target_text	=> default parm (NULL), used to override HUD output when no target exists
-//				match_off_text	=>	default parm (NULL), used to overide HUD output when matching toggled off
-//				match_on_text	=>	default parm (NULL), used to overide HUD output when matching toggled on
+/**
+ * Computes the forward_thrust_time needed for the player ship to match velocities with the currently selected target
+ *
+ * @param no_target_text Default parm (NULL), used to override HUD output when no target exists
+ * @param match_off_text Default parm (NULL), used to overide HUD output when matching toggled off
+ * @param match_on_text	Default parm (NULL), used to overide HUD output when matching toggled on
+ */
 void player_match_target_speed(char *no_target_text, char *match_off_text, char *match_on_text)
 {
 	// multiplayer observers can't match target speed
@@ -1126,9 +1046,6 @@ void player_match_target_speed(char *no_target_text, char *match_off_text, char 
 	}
 }
 
-
-//#ifndef NDEBUG
-
 // toggle_player_object toggles between the player objects (i.e. the ship they are currently flying)
 // and a descent style ship.
 
@@ -1148,9 +1065,9 @@ void toggle_player_object()
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Using %s style physics for player ship."), use_descent ? NOX("DESCENT") : NOX("FreeSpace"));
 }
 
-//#endif		// ifndef NDEBUG
-
-// Init the data required for determining whether 'all alone' message should play
+/**
+ * Initialise the data required for determining whether 'all alone' message should play
+ */
 void player_init_all_alone_msg()
 {
 	ship_obj	*so;
@@ -1177,7 +1094,9 @@ void player_init_all_alone_msg()
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 }
 
-// Called when a new pilot is created
+/**
+ * Called when a new pilot is created
+ */
 void player_set_pilot_defaults(player *p)
 {
 	// Enable auto-targeting by default for all new pilots
@@ -1187,7 +1106,9 @@ void player_set_pilot_defaults(player *p)
 	p->auto_advance = 1;
 }
 
-// Store some player preferences to Player->save_flags
+/**
+ * Store some player preferences to ::Player->save_flags
+ */
 void player_save_target_and_weapon_link_prefs()
 {
 	Player->save_flags = 0;
@@ -1219,7 +1140,9 @@ void player_save_target_and_weapon_link_prefs()
 	}
 }
 
-// Store some player preferences to Player->save_flags
+/**
+ * Store some player preferences to ::Player->save_flags
+ */
 void player_restore_target_and_weapon_link_prefs()
 {
 	ship_info *player_sip;
@@ -1241,7 +1164,10 @@ void player_restore_target_and_weapon_link_prefs()
 	}
 }
 
-// initialize player statistics on a per mission basis
+/**
+ * Initialise player statistics on a per mission basis
+ * @todo Don't use memset(0) approach to setting up Player->ci
+ */
 void player_level_init()
 {
 	memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
@@ -1318,12 +1244,12 @@ void player_level_init()
 	Player->flags &= ~PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 
 	Player->death_message = "";
-
-	// Player->insignia_bitmap = -1;
 }
 
-// player_init() initializes global veriables once a game -- needed because of mallocing that
-// goes on in structures in the player file
+/**
+ * Initializes global variables once a game -- needed because of mallocing that
+ * goes on in structures in the player file
+ */
 void player_init()
 {
 	Player_num = 0;
@@ -1334,7 +1260,9 @@ void player_init()
 	Player->show_skip_popup = (ubyte) 1;
 }
 
-// stop any looping sounds associated with the Player, called from game_stop_looped_sounds().
+/**
+ * Stop any looping sounds associated with the Player, called from ::game_stop_looped_sounds().
+ */
 void player_stop_looped_sounds()
 {
 	Assert(Player);
@@ -1348,8 +1276,10 @@ void player_stop_looped_sounds()
 	}
 }
 
-// Start the repair sound if it hasn't already been started.  Called when a player ship is being
-// repaired by a support ship
+/**
+ * Start the repair sound if it hasn't already been started.  Called when a player ship is being
+ * repaired by a support ship
+ */
 void player_maybe_start_repair_sound()
 {
 	Assert(Player);
@@ -1358,7 +1288,9 @@ void player_maybe_start_repair_sound()
 	}
 }
 
-// stop the player repair sound if it is already playing
+/**
+ * Stop the player repair sound if it is already playing
+ */
 void player_stop_repair_sound()
 {
 	Assert(Player);
@@ -1368,7 +1300,9 @@ void player_stop_repair_sound()
 	}
 }
 
-// start the cargo scanning sound if it hasn't already been started
+/**
+ * Start the cargo scanning sound if it hasn't already been started
+ */
 void player_maybe_start_cargo_scan_sound()
 {
 	Assert(Player);
@@ -1377,7 +1311,9 @@ void player_maybe_start_cargo_scan_sound()
 	}
 }
 
-// stop the player repair sound if it is already playing
+/**
+ * Stop the player repair sound if it is already playing
+ */
 void player_stop_cargo_scan_sound()
 {
 	Assert(Player);
@@ -1387,14 +1323,15 @@ void player_stop_cargo_scan_sound()
 	}
 }
 
-// See if there is a praise message to deliver to the player.  We want to delay the praise messages
-// a bit, to make them more realistic
-//
-// exit:	1	=>	a praise message was delivered to the player, or a praise is pending
-//			0	=> no praise is pending
 
 #define PLAYER_ALLOW_PRAISE_INTERVAL	60000		// minimum time between praises
 
+/**
+ * @brief See if there is a praise message to deliver to the player.  We want to delay the praise messages
+ * a bit, to make them more realistic
+ *
+ * @return 1 if a praise message was delivered to the player, or a praise is pending; 0	if no praise is pending
+ */
 int player_process_pending_praise()
 {
 	// in multiplayer, never praise
@@ -1432,12 +1369,15 @@ int player_process_pending_praise()
 }
 
 int player_inspect_cap_subsys_cargo(float frametime, char *outstr);
-// See if the player should be inspecting cargo, and update progress.
-// input:	frametime	=>		time since last frame in seconds
-// input:	outstr		=>		(output parm) holds string that HUD should display
-//
-//	exit:		1				=>		player should display outstr on HUD
-//				0				=>		don't display cargo on HUD
+
+/**
+ * See if the player should be inspecting cargo, and update progress.
+ * 
+ * @param frametime	Time since last frame in seconds
+ * @param outstr (output parm) holds string that HUD should display
+ *
+ * @return 1 if player should display outstr on HUD; 0if don't display cargo on HUD
+ */
 int player_inspect_cargo(float frametime, char *outstr)
 {
 	object		*cargo_objp;
@@ -1542,8 +1482,9 @@ int player_inspect_cargo(float frametime, char *outstr)
 	return 1;
 }
 
-//	exit:		1				=>		player should display outstr on HUD
-//				0				=>		don't display cargo on HUD
+/**
+ * @return 1 if player should display outstr on HUD; 0 if don't display cargo on HUD
+ */
 int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 {
 	object		*cargo_objp;
@@ -1631,7 +1572,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			return 1;
 		}
 
-		// player is facing the cargo, and withing range, so proceed with inspection
+		// player is facing the cargo, and within range, so proceed with inspection
 		if ( hud_sensors_ok(Player_ship, 0) ) {
 			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
 		}
@@ -1657,7 +1598,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 }
 
 
-// get the maximum weapon range for the player (of both primary and secondary)
+/**
+ * get the maximum weapon range for the player (of both primary and secondary)
+ */
 float	player_farthest_weapon_range()
 {
 	float prange,srange;
@@ -1668,10 +1611,13 @@ float	player_farthest_weapon_range()
 	return MAX(prange,srange);
 }
 
-// Determine text name for the weapon that killed the player.
-// input:	weapon_info_index	=>		weapon type that killed the player (can be -1 if no weapon involved)
-//				killer_species		=>		species of ship that fired weapon
-//				weapon_name			=>		output parameter... stores weapon name generated in this function	
+/**
+ * Determine text name for the weapon that killed the player.
+ *
+ * @param weapon_info_index	Weapon type that killed the player (can be -1 if no weapon involved)
+ * @param killer_species Species of ship that fired weapon
+ * @param weapon_name (Output parameter) Stores weapon name generated in this function
+ */
 void player_generate_killer_weapon_name(int weapon_info_index, int killer_species, char *weapon_name)
 {
 	if ( weapon_info_index < 0 ) {
@@ -1693,7 +1639,9 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 	}
 }
 
-// function to generate the message for death of a player given the information stored in the player object.
+/**
+ * Generates the message for death of a player given the information stored in the player object.
+ */
 void player_generate_death_message(player *player_p)
 {
 	char weapon_name[NAME_LENGTH];
@@ -1708,7 +1656,6 @@ void player_generate_death_message(player *player_p)
 		case OBJ_SHOCKWAVE:
 			if (weapon_name[0])
 			{
-//				sprintf(msg, XSTR("%s was killed by a shockwave from a %s, fired by %s",-1), player_p->callsign, weapon_name, player_p->killer_parent_name);
 				sprintf(msg, XSTR( "%s was killed by a missile shockwave", 92), player_p->callsign);
 			}
 			else
@@ -1782,7 +1729,9 @@ void player_generate_death_message(player *player_p)
 	}
 }
 
-// display what/who killed the player
+/**
+ * Display what/who killed the player
+ */
 void player_show_death_message()
 {
 	SCP_string &msg = Player->death_message;
@@ -1819,56 +1768,14 @@ void player_show_death_message()
 	HUD_fixed_printf(30.0f, const_cast<char *>(msg.c_str()));
 }
 
-/*
-//WMC - commented this out in favor of process_subobjects, see ship_process_post
-extern void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum);
-
-// maybe fire a turret that is on a player ship (single or multi)
-void player_maybe_fire_turret(object *objp)
-{
-	model_subsystem	*psub;
-	ship_subsys		*pss;
-
-	ship			*shipp = &Ships[objp->instance];
-	ai_info			*aip = &Ai_info[shipp->ai_index];
-
-	// do a quick out if this isn't a bomber
-	// Goober5000 - removed this restriction
-	//if ( !(Ship_info[shipp->ship_info_index].flags & SIF_BOMBER) ) {
-	//	return;
-	//}
-
-	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
-	{
-		if (aip->support_ship_objnum >= 0)
-		{
-			if (vm_vec_dist_quick(&objp->pos, &Objects[aip->support_ship_objnum].pos) < (objp->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
-				return;
-		}
-	}
-
-	// See if there are any turrets on the ship, if so see if they should fire
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-
-		if ( pss->current_hits <= 0.0f ) 
-			continue;
-
-		psub = pss->system_info;
-
-		if ( psub->type == SUBSYSTEM_TURRET ) {
-			if ( psub->turret_num_firing_points > 0 ) {
-				ai_fire_from_turret(shipp, pss, OBJ_INDEX(objp));
-			}
-		}
-	}
-}*/
-
 void player_set_next_all_alone_msg_timestamp()
 {
 	Player->check_for_all_alone_msg=timestamp(30000);
 }
 
-// maybe play message from Terran Command 'You're all alone now, pilot'
+/**
+ * Maybe play message from Terran Command 'You're all alone now, pilot'
+ */
 void player_maybe_play_all_alone_msg()
 {
 	if ( Game_mode & GM_MULTIPLAYER ){
@@ -2009,7 +1916,7 @@ void player_display_packlock_view()
 		return;
 	}
 
-	char	str[128];
+	char str[128];
 
 	if ( !(Viewer_mode & (VM_CHASE|VM_EXTERNAL)) ) {
 		switch (padlock_view_index) {
@@ -2027,12 +1934,13 @@ void player_display_packlock_view()
 	}
 }
 
-// get the player's eye position and orient
-// NOTE : this is mostly just copied from game_render_frame_setup()
 extern vec3d Dead_camera_pos;
 extern vec3d Dead_player_last_vel;
 
 #define	MIN_DIST_TO_DEAD_CAMERA			50.0f
+/**
+ * Get the player's eye position and orient
+ */
 camid player_get_cam()
 {
 	static camid player_camera;
@@ -2079,7 +1987,6 @@ camid player_get_cam()
 			if ( view_from_player ) {
 				//	View target from player ship.
 				viewer_obj = NULL;
-				//rtn_cid = ship_get_followtarget_eye( Player_obj );
 				eye_pos = Player_obj->pos;
 
 				vm_vec_normalized_dir(&tmp_dir, &Objects[Player_ai->target_objnum].pos, &eye_pos);
