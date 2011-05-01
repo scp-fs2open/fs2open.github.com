@@ -1675,7 +1675,7 @@ void ds_stop_channel(int channel)
  */
 void ds_stop_channel_all()
 {
-	size_t i;
+	int i;
 
 	for ( i=0; i<MAX_CHANNELS; i++ ) {
 		if ( Channels[i].source_id != 0 ) {
