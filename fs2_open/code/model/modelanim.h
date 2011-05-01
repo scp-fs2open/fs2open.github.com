@@ -16,22 +16,22 @@
 #define MAX_TRIGGERED_ANIMATIONS 15
 
 // WMC: Steps to adding a triggered animation
-// 1 - add TRIGGER_TYPE define
+// 1 - add TRIGGER_TYPE_* define
 // 2 - increment MAX_TRIGGER_ANIMATION_TYPES
 // 3 - add name to animation_type_names array
 // 4 - add start trigger (model_anim_start_type)
 // 5 - add stop trigger (model_anim_start_type)
 
-#define TRIGGER_TYPE_NONE					-1		//no animation
-#define TRIGGER_TYPE_INITIAL				0		//this is just the position the subobject should be placed in
-#define TRIGGER_TYPE_DOCKING				1		//before you dock
-#define TRIGGER_TYPE_DOCKED					2		//after you have docked
-#define TRIGGER_TYPE_PRIMARY_BANK			3		//primary banks
-#define TRIGGER_TYPE_SECONDARY_BANK			4		//secondary banks
-#define TRIGGER_TYPE_DOCK_BAY_DOOR			5		//fighter bays
-#define TRIGGER_TYPE_AFTERBURNER			6		//Afterburner -C
-#define TRIGGER_TYPE_TURRET_FIRING			7		//Turret shooting -C
-#define TRIGGER_TYPE_SCRIPTED				8		//Triggered exclusively by scripting...maybe SEXPs? -C
+#define TRIGGER_TYPE_NONE					-1		// No animation
+#define TRIGGER_TYPE_INITIAL				0		// This is just the position the subobject should be placed in
+#define TRIGGER_TYPE_DOCKING				1		// Before you dock
+#define TRIGGER_TYPE_DOCKED					2		// After you have docked
+#define TRIGGER_TYPE_PRIMARY_BANK			3		// Primary banks
+#define TRIGGER_TYPE_SECONDARY_BANK			4		// Secondary banks
+#define TRIGGER_TYPE_DOCK_BAY_DOOR			5		// Fighter bays
+#define TRIGGER_TYPE_AFTERBURNER			6		// Afterburner -C
+#define TRIGGER_TYPE_TURRET_FIRING			7		// Turret shooting -C
+#define TRIGGER_TYPE_SCRIPTED				8		// Triggered exclusively by scripting...maybe SEXPs? -C
 
 #define MAX_TRIGGER_ANIMATION_TYPES			9
 
@@ -42,8 +42,10 @@
 
 #define ANIMATION_SUBTYPE_ALL -1
 
-// this is an object responsable for storeing the animation information assosiated with
-// a specific triggered animation, one subobject can have many triggered animations
+/**
+ * This is an object responsable for storing the animation information assosiated with 
+ * a specific triggered animation, one subobject can have many triggered animations
+ */
 struct queued_animation {
 	queued_animation();
 	void correct();
@@ -79,8 +81,10 @@ struct trigger_instance{
 };
 */
 
-// this is the triggered animation object, it is responcable for controleing how the current triggered animation works
-// rot_accel is the accelleration for starting to move and stopping, so figure it in twice
+/**
+ * This is the triggered animation object, it is responsable for controlling how the current triggered animation works
+ * rot_accel is the acceleration for starting to move and stopping, so figure it in twice.
+ */
 class triggered_rotation
 {
 	private:
@@ -109,7 +113,7 @@ class triggered_rotation
 
 		vec3d current_ang;
 		vec3d current_vel;
-		vec3d rot_accel;	// rotational accelleration, 0 means instant
+		vec3d rot_accel;	// rotational acceleration, 0 means instant
 		vec3d rot_vel;		// radians per second, hold this speed when rot_accel has pushed it to this
 		vec3d slow_angle;	// angle that we should start to slow down
 		vec3d end_angle;	// lock it in
