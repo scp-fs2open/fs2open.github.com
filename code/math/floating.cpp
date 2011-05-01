@@ -61,7 +61,7 @@ float frand_range(float min, float max)
 
 /**
  * @brief Call this in the frame interval to get TRUE chance times per second.
- * @detailed If you want it to return TRUE 3 times per second, call it in the frame interval like so: rand_chance(flFrametime, 3.0f);
+ * @details If you want it to return TRUE 3 times per second, call it in the frame interval like so: rand_chance(flFrametime, 3.0f);
  * @param frametime
  * @param chance
  */

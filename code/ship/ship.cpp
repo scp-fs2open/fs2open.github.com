@@ -3372,12 +3372,6 @@ strcpy_s(parse_error_text, temp_error);
 			}
 
 			if (old_flags) {
-			/*	Warning(LOCATION, "Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
-				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
-				"\t+untargetable\n" \
-				"\t+carry-no-damage\n" \
-				"\t+use-multiple-guns\n" \
-				"\t+fire-down-normals\n", sip->name, sp->name); */
 				mprintf(("Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
 				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
 				"\t+untargetable\n" \

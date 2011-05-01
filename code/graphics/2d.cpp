@@ -16,7 +16,6 @@
 
 #include <limits.h>
 
-//#include "graphics/GrSoft.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 #include "graphics/2d.h"
@@ -33,8 +32,6 @@
 #include "parse/scripting.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 
-// 3dnow stuff
-// #include "amd3d.h"
 
 #if defined(SCP_UNIX) && !defined(__APPLE__)
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
@@ -68,20 +65,19 @@ uint Gr_signature = 0;
 
 float Gr_gamma = 1.8f;
 int Gr_gamma_int = 180;
-//int Gr_gamma_lookup[256];
 
 // z-buffer stuff
 int gr_zbuffering = 0;
 int gr_zbuffering_mode = 0;
 int gr_global_zbuffering = 0;
 
-//Default clipping distances
+// Default clipping distances
 const float Default_min_draw_distance = 1.0f;
 const float Default_max_draw_distance = 1e10;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
 
-// pre-computed screen resize vars
+// Pre-computed screen resize vars
 static float Gr_resize_X = 1.0f, Gr_resize_Y = 1.0f;
 static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
 
@@ -110,9 +106,9 @@ void gr_reset_screen_scale()
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
  * lengths in order to keep the correctly scaled to nonstandard resolutions
  *
- * @param int *x - x value (width to be scaled), can be NULL
- * @param int *y - y value (height to be scaled), can be NULL
- * @return always true
+ * @param x X value (width to be scaled), can be NULL
+ * @param y Y value (height to be scaled), can be NULL
+ * @return always true unless error
  */
 bool gr_resize_screen_pos(int *x, int *y)
 {
@@ -137,9 +133,9 @@ bool gr_resize_screen_pos(int *x, int *y)
 
 /**
  *
- * @param int *x - x value (width to be unsacled), can be NULL
- * @param int *y - y value (height to be unsacled), can be NULL
- * @return always true
+ * @param x X value (width to be unscaled), can be NULL
+ * @param y Y value (height to be unscaled), can be NULL
+ * @return always true unless error
  */
 bool gr_unsize_screen_pos(int *x, int *y)
 {
@@ -166,9 +162,9 @@ bool gr_unsize_screen_pos(int *x, int *y)
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
  * lengths in order to keep the correctly scaled to nonstandard resolutions
  *
- * @param float *x - x value (width to be scaled), can be NULL
- * @param float *y - y value (height to be scaled), can be NULL
- * @return always true
+ * @param x X value (width to be scaled), can be NULL
+ * @param y Y value (height to be scaled), can be NULL
+ * @return always true unless error
  */
 bool gr_resize_screen_posf(float *x, float *y)
 {
@@ -187,9 +183,9 @@ bool gr_resize_screen_posf(float *x, float *y)
 
 /**
  *
- * @param int *x - x value (width to be unsacled), can be NULL
- * @param int *y - y value (height to be unsacled), can be NULL
- * @return always true
+ * @param x X value (width to be unscaled), can be NULL
+ * @param y Y value (height to be unscaled), can be NULL
+ * @return always true unless error
  */
 bool gr_unsize_screen_posf(float *x, float *y)
 {
@@ -245,16 +241,6 @@ DCF(gr,"Changes graphics mode")
 			// print usage, not stats
 			Dc_help = 1;
 		}
-
-		/*
-		if ( mode != gr_screen.mode ) {
-			dc_printf( "Setting new video mode...\n" );
-			int errcode = gr_init( gr_screen.max_w, gr_screen.max_h, mode );
-			if (errcode) {
-				dc_printf( "Error %d.  Graphics unchanged.\n", errcode );
-			}
-		}
-		*/
 	}
 
 	if ( Dc_help ) {
@@ -320,8 +306,6 @@ void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_
 		memmove( Gr_original_palette, palette, 768 );
 		memmove( Gr_current_palette, palette, 768 );
 	}
-
-//	mprintf(("Setting new palette\n" ));
 
 	if ( Gr_inited ) {
 		if (gr_screen.gf_set_palette) {
@@ -622,8 +606,6 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	// load the web pointer cursor bitmap
 	if (Web_cursor_bitmap < 0) {
-		//int nframes;			// used to pass, not really needed (should be 1)
-
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
 		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb")) < 0 ) {
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
@@ -1410,8 +1392,6 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 		}
 
 		buffer_list_internal.n_verts++;
-
-	//	Assert( find_first_index(&buffer_list_internal, z) == z );
 		z++;
 	}
 
@@ -1489,16 +1469,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 
 void gr_flip()
 {
-	//WMC - Evaluate state script hook if not override
-	/*
-	if(gameseq_get_depth() > -1)	//WMC - Make sure we're _in_ a state
-	{
-		int state = gameseq_get_state();
-		if(!Script_system.IsOverride(GS_state_hooks[state])) {
-			Script_system.RunBytecode(GS_state_hooks[state]);
-		}
-	}*/
-
 	//WMC - Evaluate global hook if not override.
 	Script_system.RunBytecode(Script_globalhook);
 	//WMC - Do conditional hooks. Yippee!

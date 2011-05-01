@@ -613,6 +613,7 @@ sexp_oper Operators[] = {
 	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
 	{ "set-camera-shudder",			OP_SET_CAMERA_SHUDDER,					2, 2, },
 
+	{ "set-jumpnode-name",			OP_JUMP_NODE_SET_JUMPNODE_NAME,			2, 2, }, //CommanderDJ
 	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
 	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
 	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, 1, },
@@ -17780,7 +17781,7 @@ void sexp_toggle_cutscene_bars(int node, int set)
 	multi_end_packet();
 }
 
-void muli_sexp_toggle_cutscene_bars(int set)
+void multi_sexp_toggle_cutscene_bars(int set)
 {
 	float delta_speed;
 
@@ -18715,6 +18716,46 @@ void multi_sexp_set_camera_shudder()
 	}
 }
 
+void sexp_set_jumpnode_name(int n) //CommanderDJ
+{
+	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+	
+	char *old_name = CTEXT(n); //for multi
+
+	if(jnp==NULL) 
+		return;
+
+	n=CDR(n);
+
+	jnp->set_name(CTEXT(n));
+
+	char *new_name = CTEXT(n); //for multi
+
+	//multiplayer callback
+	multi_start_packet();
+	multi_send_string(old_name);
+	multi_send_string(new_name);
+	multi_end_packet();
+}
+
+void multi_sexp_set_jumpnode_name(int n) //CommanderDJ
+{
+	char *old_name = "\0";
+	
+	multi_get_string(old_name);
+
+	char *new_name = "\0";
+
+	multi_get_string(new_name);
+
+	jump_node *jnp = jumpnode_get_by_name(old_name);
+
+	if(jnp==NULL) 
+		return;
+
+	jnp->set_name(new_name);
+}
+
 void sexp_set_jumpnode_color(int n)
 {
 	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
@@ -18736,7 +18777,7 @@ void sexp_set_jumpnode_model(int n)
 
 	n=CDR(n);
 
-	jnp->set_model(CTEXT(n),(CDR(n)==SEXP_KNOWN_TRUE));
+	jnp->set_model(CTEXT(n), is_sexp_true(CDR(n)) != 0);
 }
 
 void sexp_show_jumpnode(int n)
@@ -20748,6 +20789,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_camera_shudder(node);
 				break;
 
+			case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+				sexp_val = SEXP_TRUE;
+				sexp_set_jumpnode_name(node);
+				break;
+
 			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 				sexp_val = SEXP_TRUE;
 				sexp_set_jumpnode_color(node);
@@ -21037,11 +21083,15 @@ void multi_sexp_eval()
 				break;
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
-				muli_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
+				multi_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
 				break;
 
 			case OP_SET_CAMERA_SHUDDER:
 				multi_sexp_set_camera_shudder();
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+				multi_sexp_set_jumpnode_name(op_num == OP_JUMP_NODE_SET_JUMPNODE_NAME);
 				break;
 
 			// bad sexp in the packet
@@ -21598,6 +21648,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_SET_CAMERA_SHUDDER:
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -23341,6 +23392,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		//</Cutscenes>
 
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+			if(argnum==0)
+				return OPF_JUMP_NODE_NAME;
+			else if (argnum==1)
+				return OPF_STRING;
+
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 			if(argnum==0)
 				return OPF_JUMP_NODE_NAME;
@@ -23350,8 +23407,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 			if(argnum==0)
 				return OPF_JUMP_NODE_NAME;
-			else
+			else if (argnum == 1)
 				return OPF_STRING;
+			else
+				return OPF_BOOL;
 
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
@@ -24842,6 +24901,7 @@ int get_subcategory(int sexp_id)
 		case OP_SUPERNOVA_START:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -27980,6 +28040,13 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440."
 	},
 
+	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name\r\n"
+		"\tSets the name of a jump node. Takes 2 arguments...\r\n"
+		"\t1: Name of jump node to change name for\r\n"
+		"\t2: New name for jump node\r\n\r\n"
+		"\tNote: SEXPs referencing the old name will not work after the name change.\r\n"
+	},
+
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
 		"\tSets the color of a jump node.  "
 		"Takes 5 arguments...\r\n"
@@ -27995,7 +28062,7 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 3 arguments...\r\n"
 		"\t1:\tJump node to change model for\r\n"
 		"\t2:\tModel filename\r\n"
-		"\t3:\tShow as normal model\r\n"
+		"\t3:\tShow as normal model. When this is true, the jumpnode will be rendered like a normal model.\r\n"
 	},
 
 	{ OP_JUMP_NODE_SHOW_JUMPNODE, "show-jumpnode\r\n"
