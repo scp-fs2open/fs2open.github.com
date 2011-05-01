@@ -1138,14 +1138,15 @@ int ds_init()
 
 	mprintf(("\n"));
 
-	ALCint freq;
+	{
+	ALCint freq = 0;
 	OpenAL_ErrorPrint( alcGetIntegerv(ds_sound_device, ALC_FREQUENCY, sizeof(ALCint), &freq) );
 
 	mprintf(("  Sample rate: %d (%d)\n", freq, sample_rate));
+	}
 
 	if (Ds_use_eax) {
-		ALCint major = 0, minor = 0;
-		ALCint max_sends = 0;
+		ALCint major = 0, minor = 0, max_sends = 0;
 
 		alcGetIntegerv(ds_sound_device, ALC_EFX_MAJOR_VERSION, 1, &major);
 		alcGetIntegerv(ds_sound_device, ALC_EFX_MINOR_VERSION, 1, &minor);
