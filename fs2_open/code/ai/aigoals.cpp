@@ -937,6 +937,12 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		aigp->ai_mode = AI_GOAL_KEEP_SAFE_DISTANCE;
 		break;
 
+	case OP_AI_FORM_ON_WING:
+		aigp->priority = 99;
+		aigp->ship_name = ai_get_goal_ship_name(CTEXT(CDR(node)), &aigp->ship_name_index);
+		aigp->ai_mode = AI_GOAL_FORM_ON_WING;
+		break;
+
 	case OP_AI_CHASE:
 	case OP_AI_GUARD:
 	case OP_AI_GUARD_WING:
