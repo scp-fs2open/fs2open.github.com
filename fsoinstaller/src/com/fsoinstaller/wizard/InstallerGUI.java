@@ -31,7 +31,7 @@ import com.fsoinstaller.utils.GraphicsUtils;
 
 public class InstallerGUI extends JFrame
 {
-	private static final BufferedImage app_icon = GraphicsUtils.getResourceImage("fso_icon.png");
+	private static final BufferedImage app_icon = GraphicsUtils.getResourceImage("installer_icon.png");
 	
 	protected final InstallerPage[] pages;
 	protected final CardLayout layout;
