@@ -561,6 +561,7 @@ sexp_oper Operators[] = {
 	{ "ai-keep-safe-distance",	OP_AI_KEEP_SAFE_DISTANCE,	1, 1, },
 	{ "ai-stay-still",			OP_AI_STAY_STILL,				2, 2, },
 	{ "ai-play-dead",				OP_AI_PLAY_DEAD,				1, 1, },
+	{ "ai-form-on-wing",		OP_AI_FORM_ON_WING,			1,	1 },
 
 	{ "goals",	OP_GOALS_ID,	1, INT_MAX, },
 
@@ -651,6 +652,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_IGNORE_NEW, OP_AI_IGNORE_NEW },
 	{ AI_GOAL_STAY_STILL, OP_AI_STAY_STILL },
 	{ AI_GOAL_PLAY_DEAD, OP_AI_PLAY_DEAD },
+	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING }
 };
 
 char *HUD_gauge_text[NUM_HUD_GAUGES] = 
@@ -21722,6 +21724,7 @@ int query_operator_return_type(int op)
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_STAY_STILL:
 		case OP_AI_PLAY_DEAD:
+		case OP_AI_FORM_ON_WING:
 			return OPR_AI_GOAL;
 
 		case OP_ANY_OF:
@@ -22658,6 +22661,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_POINT;
 			else
 				return OPF_POSITIVE;
+
+		case OP_AI_FORM_ON_WING:
+			return OPF_SHIP;
 
 		case OP_GOOD_REARM_TIME:
 			if ( argnum == 0 )
@@ -26700,6 +26706,12 @@ sexp_help_struct Sexp_help[] = {
 		"should really be named ai-is-dead\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_FORM_ON_WING, "Ai-form-on-wing (Ship Goal)\r\n"
+		"\tCauses the ship to form on the specified ship's wing. This works analogous to the "
+		"player order, and will cause all other goals specified for the ship to be purged.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tShip to form on." },
 
 	{ OP_FLASH_HUD_GAUGE, "Ai-flash hud gauge (Training goal)\r\n"
 		"\tCauses the specified hud gauge to flash to draw the player's attention to it.\r\n\r\n"
