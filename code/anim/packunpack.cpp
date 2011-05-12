@@ -15,8 +15,6 @@
 #include "anim/animplay.h"
 
 
-
-
 const int packer_code = PACKER_CODE;
 const int transparent_code = 254;
 
@@ -101,12 +99,7 @@ int anim_get_next_frame(anim_instance *inst)
 		return -1;
 	}
 
-	if (inst->parent->flags & ANF_XPARENT) {
-		// bitmap_flags = BMP_XPARENT;
-		bitmap_flags = 0;
-	} else {
-		bitmap_flags = 0;
-	}
+	bitmap_flags = 0;
 
 	bpp = 16;
 	if(inst->aa_color != NULL){
@@ -168,11 +161,16 @@ ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap
 	return inst->frame;
 }
 
-// frame = frame pixel data to pack
-// save = memory to store packed data to
-// size = number of bytes to pack
-// max = maximum number of packed bytes (size of buffer)
-// returns: actual number of bytes data packed to or -1 if error
+/**
+ * @brief Pack key frame
+ *
+ * @param frame Frame pixel data to pack
+ * @param save Memory to store packed data to
+ * @param size Number of bytes to pack
+ * @param max Maximum number of packed bytes (size of buffer)
+ * @param compress_type Compress type
+ * @return Actual number of bytes data packed to or -1 if error
+ */
 int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_type)
 {
 	int last = -32768, count = 0;
@@ -257,14 +255,12 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 							*save++ = (ubyte)last;
 							packed_size++;
 							Assert( last != STD_RLE_CODE );
-//							printf("Just packed %d 1 times, since pixel change, no count included\n",last);
 						}
 						else {
 							count |= STD_RLE_CODE;
 							*save++ = (ubyte)count;
 							*save++ = (ubyte)last;
 							packed_size += 2;
-//							printf("Just packed %d %d times, since pixel change\n",last,count);
 						}
 					}
 		
@@ -281,8 +277,6 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 					*save++ = (ubyte)last;
 					packed_size += 2;
 					count = 0;
-//					printf("Just packed %d %d times, since count overflow\n",last,count);
-
 				}
 			}	// end for
 
@@ -294,7 +288,6 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 				if ( (count == 1) && !(last & STD_RLE_CODE) ) {
 					*save++ = (ubyte)last;
 					packed_size++;
-//					printf("Just packed %d 1 times, at end since single pixel, no count\n",last);
 					Assert( last != STD_RLE_CODE );
 				}
 				else {
@@ -302,7 +295,6 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 					*save++ = (ubyte)count;
 					*save++ = (ubyte)last;
 					packed_size += 2;
-//					printf("Just packed %d %d times, at end since pixel change\n",last,count);
 				}
 			}
 
@@ -320,12 +312,17 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 	return packed_size;
 }
 
-// frame = frame pixel data to pack
-// frame2 = previous frame's pixel data
-// save = memory to store packed data to
-// size = number of bytes to pack
-// max = maximum number of packed bytes (size of buffer)
-// returns: actual number of bytes data packed to or -1 if error
+/**
+ * @brief Pack frame
+ *
+ * @param frame Frame pixel data to pack
+ * @param frame2 Previous frame's pixel data
+ * @param save Memory to store packed data to
+ * @param size Number of bytes to pack
+ * @param max Maximum number of packed bytes (size of buffer)
+ * @param compress_type Compress type
+ * @return Actual number of bytes data packed to or -1 if error
+ */
 int pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, int compress_type)
 {
 	int pixel, last = -32768, count = 0, i;
@@ -481,7 +478,11 @@ int pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, in
 	return packed_size;
 }
 
-// convert a 24 bit value to a 16 bit value
+/**
+ * @brief Convert a 24 bit value to a 16 bit value
+ * @param bit_24 24 bit value
+ * @param bit_16 16 bit value (output)
+ */
 void convert_24_to_16(int bit_24, ushort *bit_16)
 {
 	ubyte *pixel = (ubyte*)&bit_24;
@@ -490,7 +491,10 @@ void convert_24_to_16(int bit_24, ushort *bit_16)
 	bm_set_components((ubyte*)bit_16, (ubyte*)&pixel[0], (ubyte*)&pixel[1], (ubyte*)&pixel[2], &alpha);
 }
 
-// unpack a pixel given the passed index and the anim_instance's palette, return bytes stuffed
+/**
+ * @brief Unpack a pixel given the passed index and the anim_instance's palette
+ * @return Bytes stuffed
+ */
 int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bpp)
 {
 	int bit_24;
@@ -570,7 +574,10 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 	return pixel_size;
 }
 
-// unpack a pixel given the passed index and the anim_instance's palette, return bytes stuffed
+/**
+ * @brief Unpack a pixel given the passed index and the anim_instance's palette
+ * @return Bytes stuffed
+ */
 int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0, int aabitmap = 0, int bpp = 8)
 {
 	int bit_24;
@@ -649,10 +656,16 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 	return (pixel_size * count);
 }
 
-// ptr = packed data to unpack
-// frame = where to store unpacked data to
-// size = total number of unpacked pixels requested
-// pal_translate = color translation lookup table (NULL if no palette translation desired)
+/**
+ * @brief Unpack frame
+ *
+ * @param ptr Packed data to unpack
+ * @param frame Where to store unpacked data to
+ * @param size Total number of unpacked pixels requested
+ * @param pal_translate Color translation lookup table (NULL if no palette translation desired)
+ * @param aabitmap
+ * @param bpp
+ */
 ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte *pal_translate, int aabitmap, int bpp)
 {
 	int	xlate_pal, value, count = 0;
@@ -735,9 +748,6 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 		}
 	}
 	else if (*ptr == PACKING_METHOD_RLE) {  // normal frame, Hoffoss's RLE format
-
-// test code, to show unused pixels
-// memset(frame, 255, size);
 	
 		ptr++;
 		while (size > 0) {
@@ -828,17 +838,23 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 		}
 	}
 	else {
-	//	Assert(0);  // unknown packing method
+		// unknown packing method
 		return NULL;
 	}
 
 	return ptr;
 }
 
-// ptr = packed data to unpack
-// frame = where to store unpacked data to
-// size = total number of unpacked pixels requested
-// pal_translate = color translation lookup table (NULL if no palette translation desired)
+/**
+ * @brief Unpack frame from file
+ *
+ * @param ptr Packed data to unpack
+ * @param frame Where to store unpacked data to
+ * @param size Total number of unpacked pixels requested
+ * @param pal_translate Color translation lookup table (NULL if no palette translation desired)
+ * @param aabitmap
+ * @param bpp
+ */
 int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal_translate, int aabitmap, int bpp)
 {
 	int	xlate_pal, value, count = 0;
@@ -928,9 +944,6 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 		}
 	}
 	else if (anim_instance_get_byte(ai,offset) == PACKING_METHOD_RLE) {  // normal frame, Hoffoss's RLE format
-
-// test code, to show unused pixels
-// memset(frame, 255, size);
 	
 		offset++;
 		while (size > 0) {
@@ -1033,21 +1046,17 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 }
 
 
-// TODO: actually convert the frame data to correct palette at this point
+/**
+ * @brief Set animation palette
+ * @todo Actually convert the frame data to correct palette at this point
+ */
 void anim_set_palette(anim *ptr)
 {
 	int i, xparent_found = 0;
 	
 	// create the palette translation look-up table
 	for ( i = 0; i < 256; i++ ) {
-
-		//if ( (ptr->palette[i*3] == ptr->xparent_r) && (ptr->palette[i*3+1] == ptr->xparent_g) && (ptr->palette[i*3+2] == ptr->xparent_b) ) {
-		//	ptr->palette_translation[i] = 255;
-		//	xparent_found = 1;
-		//} else	{
-			// ptr->palette_translation[i] = (ubyte)palette_find( ptr->palette[i*3], ptr->palette[i*3+1], ptr->palette[i*3+2] );
-			ptr->palette_translation[i] = (ubyte)i;
-		//}
+		ptr->palette_translation[i] = (ubyte)i;
 	}	
 
 	if ( xparent_found ) {

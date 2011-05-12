@@ -18,11 +18,11 @@ struct CFILE;
 
 #define ANI_STREAM_CACHE_SIZE			4096
 
-#define PACKER_CODE						0xEE	// Use'd by PACKING_METHOD_RLE
-#define PACKING_METHOD_RLE				0		// Hoffoss's RLE format
-#define PACKING_METHOD_RLE_KEY		1		// Hoffoss's key frame RLE format
-#define PACKING_METHOD_STD_RLE		2		// Standard RLE format (high bit is count)
-#define PACKING_METHOD_STD_RLE_KEY	3		// Standard RLE format key frame
+#define PACKER_CODE						0xEE	/// Used by PACKING_METHOD_RLE
+#define PACKING_METHOD_RLE				0		/// Hoffoss's RLE format
+#define PACKING_METHOD_RLE_KEY			1		/// Hoffoss's key frame RLE format
+#define PACKING_METHOD_STD_RLE			2		/// Standard RLE format (high bit is count)
+#define PACKING_METHOD_STD_RLE_KEY		3		/// Standard RLE format key frame
 
 #define STD_RLE_CODE						0x80
 
