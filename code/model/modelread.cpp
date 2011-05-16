@@ -2855,10 +2855,13 @@ polymodel * model_get(int model_num)
 
 	int num = model_num % MAX_POLYGON_MODELS;
 	
-	Assert( num >= 0 );
-	Assert( num < MAX_POLYGON_MODELS );
-	Assert( Polygon_models[num] );
-	Assert( Polygon_models[num]->id == model_num );
+	Assertion( num >= 0, "Model id %d is invalid. Please backtrace and investigate.\n", num);
+	Assertion( num < MAX_POLYGON_MODELS, "Model id %d is larger than MAX_POLYGON_MODELS (%d). This is impossible, thus we have to conclude that math as we know it has ceased to work.\n", num, MAX_POLYGON_MODELS );
+	Assertion( Polygon_models[num], "No model with id %d found. Please backtrace and investigate.\n", num );
+	Assertion( Polygon_models[num]->id == model_num, "Index collision between model %s and requested model %d. Please backtrace and investigate.\n", Polygon_models[num]->filename, model_num );
+
+	if (num < 0 || num > MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
+		return NULL;
 
 	return Polygon_models[num];
 }

@@ -3729,8 +3729,6 @@ void game_render_frame( camid cid )
 
 	gr_post_process_begin();
 
-	clip_frame_view();
-
 	neb2_render_setup(cid);
 
 #ifndef DYN_CLIP_DIST
@@ -4535,8 +4533,6 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
 
-			clip_frame_view();
-
 			game_render_frame( cid );
 
 			// save the eye position and orientation
@@ -4585,6 +4581,9 @@ void game_frame(int paused)
 					}
 				}
 			}
+
+			//Cutscene bars
+			clip_frame_view();
 
 			DEBUG_GET_TIME( render3_time2 )
 			DEBUG_GET_TIME( render2_time1 )
