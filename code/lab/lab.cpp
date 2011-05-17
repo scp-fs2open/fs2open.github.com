@@ -1643,7 +1643,10 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Rotate Subsystems", Lab_viewer_flags, LAB_FLAG_SUBMODEL_ROTATE);
 	if (Use_GLSL) {
 		ADD_RENDER_BOOL("Fixed Render Pipeline", GLSL_override);
-		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
+		if (Cmdline_postprocess) {
+			ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
+			ADD_RENDER_BOOL("Use FXAA", Cmdline_fxaa);
+		}
 	}
 	// map related flags
 	ADD_RENDER_BOOL("No Diffuse Map", Basemap_override);
