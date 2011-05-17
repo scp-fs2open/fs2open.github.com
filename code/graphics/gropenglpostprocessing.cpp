@@ -14,6 +14,11 @@
 extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
 
+//Needed to track where the FXAA shaders are
+size_t fxaa_shader_id;
+//In case we don't find the shaders at all, this override is needed
+bool fxaa_unavailable = false;
+
 
 #define SDR_POST_FLAG_MAIN		(1<<0)
 #define SDR_POST_FLAG_BRIGHT	(1<<1)
@@ -24,7 +29,7 @@ extern int opengl_check_framebuffer();
 static SCP_vector<opengl_shader_t> GL_post_shader;
 
 // NOTE: The order of this list *must* be preserved!  Additional shaders can be
-//       added, but the first 4 are used with magic numbers so their position
+//       added, but the first 5 are used with magic numbers so their position
 //       is assumed to never change.
 static opengl_shader_file_t GL_post_shader_files[] = {
 	// NOTE: the main post-processing shader has any number of uniforms, but
@@ -39,7 +44,10 @@ static opengl_shader_file_t GL_post_shader_files[] = {
 		2, { "tex", "bsize" } },
 
 	{ "post-v.sdr", "brightpass-f.sdr", SDR_POST_FLAG_BRIGHT,
-		1, { "tex" } }
+		1, { "tex" } },
+
+	{ "fxaa-v.sdr", "fxaa-f.sdr", NULL, 
+		3, { "tex0", "rt_w", "rt_h"} }
 };
 
 static const unsigned int Num_post_shader_files = sizeof(GL_post_shader_files) / sizeof(opengl_shader_file_t);
@@ -215,15 +223,44 @@ void gr_opengl_post_process_begin()
 	Post_in_frame = true;
 }
 
+void opengl_post_pass_fxaa() {
+
+	// set and configure post shader ..
+	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id] );
+
+	// basic/default uniforms
+	vglUniform1iARB( opengl_shader_get_uniform("tex0"), 0 );
+	vglUniform1fARB( opengl_shader_get_uniform("rt_w"), static_cast<float>(Post_texture_width));
+	vglUniform1fARB( opengl_shader_get_uniform("rt_h"), static_cast<float>(Post_texture_height));
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Post_screen_texture_id);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex2f(-1.0f, -1.0f);
+
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex2f(1.0f, -1.0f);
+
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex2f(1.0f, 1.0f);
+
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex2f(-1.0f, 1.0f);
+	glEnd();
+
+	GL_state.Texture.Disable();
+
+	opengl_shader_set_current();
+}
+
 void gr_opengl_post_process_end()
 {
 	if ( !Post_in_frame ) {
 		return;
 	}
-
-	// done with screen render framebuffer
-	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
 	// state switch just the once (for bloom pass and final render-to-screen)
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
@@ -233,6 +270,15 @@ void gr_opengl_post_process_end()
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	// Do FXAA
+	if (Cmdline_fxaa && !fxaa_unavailable) {
+		opengl_post_pass_fxaa();
+	}
+
+	// done with screen render framebuffer
+	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
 	// do bloom, hopefully ;)
 	bool bloomed = opengl_post_pass_bloom();
@@ -702,11 +748,17 @@ static bool opengl_post_init_shader()
 			frag = NULL;
 		}
 
+		if (idx == 4)
+			fxaa_shader_id = GL_post_shader.size() - 1;
+
 		if (in_error) {
 			if (idx == 0) {
 				// only the main/first shader is actually required for post-processing
 				rval = false;
 				break;
+			} else if (idx == 4) {
+				Cmdline_fxaa = false;
+				fxaa_unavailable = true;
 			} else if ( shader_file->flags & (SDR_POST_FLAG_BLUR|SDR_POST_FLAG_BRIGHT) ) {
 				// disable bloom if we don't have those shaders available
 				Cmdline_bloom_intensity = 0;
