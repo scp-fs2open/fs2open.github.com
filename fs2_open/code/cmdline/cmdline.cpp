@@ -269,6 +269,7 @@ cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL);
 cmdline_parm postprocess_arg("-post_process", NULL);
 cmdline_parm bloom_intensity_arg("-bloom_intensity", NULL);
 cmdline_parm fxaa_arg("-fxaa", NULL);
+cmdline_parm fxaa_preset_arg("-fxaa_preset", NULL);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -289,6 +290,7 @@ int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_postprocess = 0;
 int Cmdline_bloom_intensity = 75;
 bool Cmdline_fxaa = false;
+int Cmdline_fxaa_preset = 3;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -1276,6 +1278,10 @@ bool SetCmdlineParams()
 
 	if (fxaa_arg.found() ) {
 		Cmdline_fxaa = true;
+
+		if (fxaa_preset_arg.found()) {
+			Cmdline_fxaa_preset = fxaa_preset_arg.get_int();
+		}
 	}
 
 	if (no_di_mouse_arg.found() ) {
