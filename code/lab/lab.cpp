@@ -1047,6 +1047,10 @@ void labviewer_do_render(float frametime)
 	} else {
 		gr_string(gr_screen.clip_left + 10, gr_screen.clip_bottom - gr_get_font_height(), "FPS: ?", false);
 	}
+
+	//Print FXAA preset
+	if (Cmdline_fxaa && !PostProcessing_override)
+		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 2) - 3, "FXAA Preset: %i", Cmdline_fxaa_preset);
 }
 
 void labviewer_exit(Button *caller)
@@ -2185,6 +2189,38 @@ void lab_do_frame(float frametime)
 			case KEY_L:
 				Lab_arc_disrupted = !Lab_arc_disrupted;
 				Lab_arc_next_time = -1;
+				break;
+
+			// Adjust FXAA presets
+			case KEY_0:
+				Cmdline_fxaa_preset = 0;
+				break;
+			case KEY_1:
+				Cmdline_fxaa_preset = 1;
+				break;
+			case KEY_2:
+				Cmdline_fxaa_preset = 2;
+				break;
+			case KEY_3:
+				Cmdline_fxaa_preset = 3;
+				break;
+			case KEY_4:
+				Cmdline_fxaa_preset = 4;
+				break;
+			case KEY_5:
+				Cmdline_fxaa_preset = 5;
+				break;
+			case KEY_6:
+				Cmdline_fxaa_preset = 6;
+				break;
+			case KEY_7:
+				Cmdline_fxaa_preset = 7;
+				break;
+			case KEY_8:
+				Cmdline_fxaa_preset = 8;
+				break;
+			case KEY_9:
+				Cmdline_fxaa_preset = 9;
 				break;
 
 			// bail...
