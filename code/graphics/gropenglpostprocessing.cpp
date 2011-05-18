@@ -47,7 +47,7 @@ static opengl_shader_file_t GL_post_shader_files[] = {
 		1, { "tex" } },
 
 	{ "fxaa-v.sdr", "fxaa-f.sdr", NULL, 
-		3, { "tex0", "rt_w", "rt_h"} }
+		4, { "tex0", "rt_w", "rt_h", "fxaa_preset"} }
 };
 
 static const unsigned int Num_post_shader_files = sizeof(GL_post_shader_files) / sizeof(opengl_shader_file_t);
@@ -232,6 +232,7 @@ void opengl_post_pass_fxaa() {
 	vglUniform1iARB( opengl_shader_get_uniform("tex0"), 0 );
 	vglUniform1fARB( opengl_shader_get_uniform("rt_w"), static_cast<float>(Post_texture_width));
 	vglUniform1fARB( opengl_shader_get_uniform("rt_h"), static_cast<float>(Post_texture_height));
+	vglUniform1iARB( opengl_shader_get_uniform("fxaa_preset"), Cmdline_fxaa_preset);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
