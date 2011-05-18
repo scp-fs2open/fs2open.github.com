@@ -759,6 +759,7 @@ static bool opengl_post_init_shader()
 			} else if (idx == 4) {
 				Cmdline_fxaa = false;
 				fxaa_unavailable = true;
+				mprintf(("Error while compiling FXAA shaders. FXAA will be unavailable.\n"));
 			} else if ( shader_file->flags & (SDR_POST_FLAG_BLUR|SDR_POST_FLAG_BRIGHT) ) {
 				// disable bloom if we don't have those shaders available
 				Cmdline_bloom_intensity = 0;
