@@ -4164,10 +4164,13 @@ WE_BSG::WE_BSG(object *n_objp, int n_direction)
 	}
 	//Set radius
 	tube_radius = 0.0f;
+	shockwave_radius = 0.0f;
+
+	//Use the warp radius for shockwave radius, not tube radius
 	if(direction == WD_WARP_IN)
-		tube_radius = sip->warpin_radius;
+		shockwave_radius = sip->warpin_radius;
 	else
-		tube_radius = sip->warpout_radius;
+		shockwave_radius = sip->warpout_radius;
 
 	polymodel *pm = model_get(sip->model_num);
 	if(pm == NULL)
@@ -4178,6 +4181,9 @@ WE_BSG::WE_BSG(object *n_objp, int n_direction)
 
 		if(tube_radius <= 0.0f)
 			tube_radius = objp->radius;
+
+		if(shockwave_radius <= 0.0f)
+			shockwave_radius = objp->radius;	
 	}
 	else
 	{
@@ -4187,6 +4193,9 @@ WE_BSG::WE_BSG(object *n_objp, int n_direction)
 		autocenter = pm->autocenter;
 		z_offset_max = pm->maxs.xyz.z - pm->autocenter.xyz.z;
 		z_offset_min = pm->mins.xyz.z - pm->autocenter.xyz.z;
+
+		if (shockwave_radius <= 0.0f)
+			shockwave_radius = z_offset_max - z_offset_min;
 	}
 
 	//*****Timing
@@ -4254,6 +4263,8 @@ int WE_BSG::warpStart()
 			float y_radius = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Y_AXIS);
 			tube_radius = MAX(x_radius, y_radius);
 		}
+
+		shockwave_radius = z_offset_max - z_offset_min;
 
 		vec3d dock_center;
 		dock_calc_docked_center(&dock_center, objp);
@@ -4429,7 +4440,7 @@ int WE_BSG::warpShipRender()
 				g3_transfer_vertex(&p, &pos);
 			}
 			gr_set_bitmap(shockwave + shockwave_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-			g3_draw_bitmap(&p, 0, tube_radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+			g3_draw_bitmap(&p, 0, shockwave_radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 		}
 	}
 
