@@ -568,7 +568,7 @@ void pilotfile::csg_read_loadout()
 		idx = cfread_int(cfp);
 
 		if (idx > ship_list.size() || idx < 0) {
-			mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), Clamping to valid range.\n", idx));	
+			//mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), Clamping to valid range.\n", idx));	
 			CLAMP(idx, 0, (int)ship_list.size());						
 		}
 
@@ -583,7 +583,7 @@ void pilotfile::csg_read_loadout()
 			idx = cfread_int(cfp);
 
 			if (idx > weapon_list.size() || idx < 0) {
-				mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));	
+				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));	
 				CLAMP(idx, 0, (int)weapon_list.size());
 			}
 
@@ -606,7 +606,7 @@ void pilotfile::csg_read_loadout()
 			idx = cfread_int(cfp);
 
 			if (idx > weapon_list.size() || idx < 0) {
-				mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));
+				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));
 				CLAMP(idx, 0, (int)weapon_list.size());		
 			}
 
