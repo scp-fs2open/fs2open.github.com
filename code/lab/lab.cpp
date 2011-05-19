@@ -1051,6 +1051,14 @@ void labviewer_do_render(float frametime)
 	//Print FXAA preset
 	if (Cmdline_fxaa && !PostProcessing_override)
 		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 2) - 3, "FXAA Preset: %i", Cmdline_fxaa_preset);
+
+	//Print bloom intensity
+	if (Cmdline_bloom_intensity && !PostProcessing_override)
+		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 3) - 3, "Bloom intensity: %i", Cmdline_bloom_intensity);
+
+	//Display helpful text
+	if (!PostProcessing_override)
+		gr_printf_no_resize(gr_screen.clip_left + 70, gr_screen.clip_bottom - gr_get_font_height(), "Use number keys to switch between FXAA presets. B and N can be used to adjust bloom.");
 }
 
 void labviewer_exit(Button *caller)
@@ -2193,34 +2201,60 @@ void lab_do_frame(float frametime)
 
 			// Adjust FXAA presets
 			case KEY_0:
-				Cmdline_fxaa_preset = 0;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 0;
 				break;
 			case KEY_1:
-				Cmdline_fxaa_preset = 1;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 1;
 				break;
 			case KEY_2:
-				Cmdline_fxaa_preset = 2;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 2;
 				break;
 			case KEY_3:
-				Cmdline_fxaa_preset = 3;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 3;
 				break;
 			case KEY_4:
-				Cmdline_fxaa_preset = 4;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 4;
 				break;
 			case KEY_5:
-				Cmdline_fxaa_preset = 5;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 5;
 				break;
 			case KEY_6:
-				Cmdline_fxaa_preset = 6;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 6;
 				break;
 			case KEY_7:
-				Cmdline_fxaa_preset = 7;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 7;
 				break;
 			case KEY_8:
-				Cmdline_fxaa_preset = 8;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 8;
 				break;
 			case KEY_9:
-				Cmdline_fxaa_preset = 9;
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 9;
+				break;
+
+			//adjust bloom intensity
+			case KEY_B:
+				if (!PostProcessing_override) {
+					Cmdline_bloom_intensity++;
+					if (Cmdline_bloom_intensity > 200)
+						Cmdline_bloom_intensity = 200;
+				}
+				break;
+			case KEY_N:
+				if (!PostProcessing_override) {
+					Cmdline_bloom_intensity--;
+					if (Cmdline_bloom_intensity < 0)
+						Cmdline_bloom_intensity = 0;
+				}
 				break;
 
 			// bail...
