@@ -253,6 +253,7 @@ private:
 	float	z_offset_max;
 	float	z_offset_min;
 	float	tube_radius;
+	float   shockwave_radius;
 
 	//*****Per-instance
 	vec3d pos;
