@@ -570,7 +570,8 @@ void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 	}
 
 	for (i = 0; i < SUBSYSTEM_MAX; i++)
-		ras->subsys_aggregate_current_hits[i] = shipp->subsys_info[i].aggregate_current_hits;
+		// Pyro3d - Fixes AP8 Based RA crashes
+		ras->subsys_aggregate_current_hits.push_back(shipp->subsys_info[i].aggregate_current_hits);
 }
 
 
@@ -584,6 +585,10 @@ void red_alert_store_wingman_status()
 
 	// store the mission filename for the red alert precursor mission
 	Red_alert_precursor_mission = Game_current_mission_filename;
+
+	// Pyro3d - Clear list of stored red alert ships 
+	// Probably not the best solution, but it prevents an assertion in change_ship_type()
+	Red_alert_wingman_status.clear();
 
 	// store status for all existing ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
