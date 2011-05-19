@@ -9236,6 +9236,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	//Reassign sound stuff
 	ship_assign_sound(sp);
+	
+	// create new model instance data
+	sp->model_instance_num = model_create_instance(sip->model_num);
 }
 
 #ifndef NDEBUG
