@@ -682,11 +682,6 @@ static bool opengl_post_init_shader()
 
 		mprintf(("  Compiling post-processing shader %d ... \n", idx+1));
 
-		// if we aren't using bloom then don't bother with the shaders for it
-		if ( (Cmdline_bloom_intensity <= 0) && (shader_file->flags & (SDR_POST_FLAG_BRIGHT|SDR_POST_FLAG_BLUR)) ) {
-			continue;
-		}
-
 		// read vertex shader
 		if ( (vert = opengl_post_load_shader(vert_name, shader_file->flags, flags2)) == NULL ) {
 			in_error = true;
