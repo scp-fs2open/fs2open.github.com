@@ -9,6 +9,7 @@
 #include "nebula/neb.h"
 #include "parse/parselo.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/def_files.h"
 
 
 extern bool PostProcessing_override;
@@ -562,7 +563,11 @@ static bool opengl_post_init_table()
 		return false;
 	}
 
-	read_file_text("post_processing.tbl", CF_TYPE_TABLES);
+	if (cf_exists_full("post_processing.tbl", CF_TYPE_TABLES))
+		read_file_text("post_processing.tbl", CF_TYPE_TABLES);
+	else
+		read_file_text_from_array(defaults_get_file("post_processing.tbl"));
+
 	reset_parse();
 
 	required_string("#Effects");
@@ -649,6 +654,17 @@ static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 		memset(shader + flags_len, 0, len + 1);
 		cfread(shader + flags_len, len + 1, 1, cf_shader);
 		cfclose(cf_shader);
+
+		return shader;
+	} else {
+		mprintf(("Loading built-in default shader for: %s\n", filename));
+		char* def_shader = defaults_get_file(filename);
+		size_t len = strlen(def_shader);
+		char *shader = (char*) vm_malloc(len + flags_len + 1);
+
+		strcpy(shader, shader_flags);
+		strcat(shader, def_shader);
+		//memset(shader + flags_len, 0, len + 1);
 
 		return shader;
 	}

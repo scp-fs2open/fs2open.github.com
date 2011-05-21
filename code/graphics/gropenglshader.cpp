@@ -312,7 +312,7 @@ static char *opengl_load_shader(char *filename, int flags, bool unified)
 //		
 //	}
 
-	if (unified) {
+	if (true) {
 		if (flags & SDR_FLAG_DIFFUSE_MAP) {
 			sflags += "#define FLAG_DIFFUSE_MAP\n";
 		}
@@ -361,6 +361,17 @@ static char *opengl_load_shader(char *filename, int flags, bool unified)
 		memset(shader + flags_len, 0, len + 1);
 		cfread(shader + flags_len, len + 1, 1, cf_shader);
 		cfclose(cf_shader);
+
+		return shader;	
+	} else {
+		mprintf(("Loading built-in default shader for: %s\n", filename));
+		char* def_shader = defaults_get_file(filename);
+		size_t len = strlen(def_shader);
+		char *shader = (char*) vm_malloc(len + flags_len + 1);
+
+		strcpy(shader, shader_flags);
+		strcat(shader, def_shader);
+		//memset(shader + flags_len, 0, len + 1);
 
 		return shader;
 	}
@@ -415,11 +426,11 @@ void opengl_shader_init()
 			char *vert_name = shader_file->vert;
 			char *frag_name = shader_file->frag;
 
-			if (main_vert) {
+			if (main_vert || !cf_exists_full(vert_name, CF_TYPE_EFFECTS)) {
 				vert_name = "main-v.sdr";
 			}
 
-			if (main_frag) {
+			if (main_frag || !cf_exists_full(frag_name, CF_TYPE_EFFECTS)) {
 				frag_name = "main-f.sdr";
 			}
 
