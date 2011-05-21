@@ -5833,35 +5833,24 @@ void ship_render(object * obj)
 					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				}
 				
-				if( (pi->flags & PF_GLIDING) || (pi->flags & PF_FORCE_GLIDE) ) {	//Backslash - show thrusters according to thrust amount, not speed
-					if(pi->side_thrust > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-						render_amount = pi->side_thrust;
-					} else if(pi->side_thrust < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-						render_amount = -pi->side_thrust;
-					} else if(pi->vert_thrust > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-						render_amount = pi->vert_thrust;
-					} else if(pi->vert_thrust < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-						render_amount = -pi->vert_thrust;
-					} else if(pi->forward_thrust > 0 && (mtp->use_flags & MT_FORWARD)) {
-						render_amount = pi->forward_thrust;
-					} else if(pi->forward_thrust < 0 && (mtp->use_flags & MT_REVERSE)) {
-						render_amount = -pi->forward_thrust;
-					}		// I'd almost advocate applying the above method to these all the time even without gliding,
-				} else {	// because it looks more realistic, but I don't think the AI uses side_thrust or vert_thrust
-					if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-						render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
-					} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-						render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
-					} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-						render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
-					} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-						render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
-					} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
-						render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
-					} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
-						render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
-					}
+				//Backslash - show thrusters according to thrust amount, not speed
+				if(pi->side_thrust > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+					render_amount = pi->side_thrust;
+				} else if(pi->side_thrust < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+					render_amount = -pi->side_thrust;
+				} else if(pi->vert_thrust > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+					render_amount = pi->vert_thrust;
+				} else if(pi->vert_thrust < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+					render_amount = -pi->vert_thrust;
+				} else if(pi->forward_thrust > 0 && (mtp->use_flags & MT_FORWARD)) {
+					render_amount = pi->forward_thrust;
+				} else if(pi->forward_thrust < 0 && (mtp->use_flags & MT_REVERSE)) {
+					render_amount = -pi->forward_thrust;
 				}
+
+				//Don't render small faraway thrusters (more than 10k * radius away)
+				if (vm_vec_dist(&Eye_position, &obj->pos) > (10000.0f * mtp->radius))
+					render_amount = 0.0f;
 
 				if(render_amount > 0.0f)
 				{
