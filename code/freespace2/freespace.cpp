@@ -7440,6 +7440,7 @@ void game_shutdown(void)
 	// a player, Player will be NULL, in which case we shouldn't write the player file out!
 	if (!(Game_mode & GM_STANDALONE_SERVER) && (Player!=NULL) && !Is_standalone){
 		Pilot.save_player();
+		Pilot.save_savefile();
 	}
 
 	// load up common multiplayer icons
