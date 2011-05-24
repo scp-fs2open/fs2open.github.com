@@ -1049,6 +1049,10 @@ bool HudGauge::canRender()
 		}
 	}
 
+	if (Viewer_mode & (VM_EXTERNAL | VM_OTHER_SHIP)) {
+		return false;
+	}
+
 	return true;
 }
 
