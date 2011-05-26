@@ -1165,7 +1165,7 @@ varying float fogDist;																		\n\
 																							\n\
 varying vec4 position;																		\n\
 varying vec3 lNormal;																		\n\
-																							\n\
+																							\n""\
 void main()																					\n\
 {																							\n\
 	gl_TexCoord[0] = gl_MultiTexCoord0;														\n\
@@ -1252,7 +1252,7 @@ varying vec3 lNormal;															\n\
 #define ENV_ALPHA_FACTOR			0.3											\n\
 #define GLOW_MAP_INTENSITY 			1.5											\n\
 #define AMBIENT_LIGHT_BOOST 		1.0											\n\
-																				\n\
+																				\n""\
 void main()																		\n\
 {																				\n\
 	vec3 eyeDir = vec3(normalize(-position).xyz); // Camera is at (0,0,0) in ModelView space		\n\
@@ -1295,7 +1295,7 @@ void main()																		\n\
 			float dist = distance(gl_LightSource[i].position.xyz, position.xyz);	\n\
 																				\n\
 			float spotEffect = 1.0;												\n\
-																				\n\
+																				\n""\
 		  #if SHADER_MODEL > 2													\n\
 			if (gl_LightSource[i].spotCutoff < 91.0) {							\n\
 				spotEffect = dot(normalize(gl_LightSource[i].spotDirection), normalize(-position.xyz));	\n\
@@ -1339,7 +1339,7 @@ void main()																		\n\
  #else																			\n\
 	vec4 baseColor = gl_Color;													\n\
  #endif																			\n\
-																				\n\
+																				\n""\
 	vec4 fragmentColor;															\n\
 	fragmentColor.rgb = baseColor.rgb * max(lightAmbientDiffuse.rgb * AMBIENT_LIGHT_BOOST, gl_LightModel.ambient.rgb - 0.425);																	\n\
 	fragmentColor.a = baseColor.a;												\n\
@@ -1423,7 +1423,7 @@ int   FXAA_SUBPIX_FASTER       = 0;													\n\
 float FXAA_SUBPIX_CAP          = (3.0/4.0);											\n\
 float FXAA_SUBPIX_TRIM         = (1.0/4.0);											\n\
 float FXAA_SUBPIX_TRIM_SCALE   = (1.0/0.75);										\n\
-																					\n\
+																					\n""\
 void FXAA_set_preset(int preset) {													\n\
 																					\n\
 	if (preset > 6)																	\n\
@@ -1459,7 +1459,7 @@ void FXAA_set_preset(int preset) {													\n\
 		FXAA_SUBPIX_FASTER       = 0;												\n\
 		FXAA_SUBPIX_CAP          = (3.0/4.0);										\n\
 		FXAA_SUBPIX_TRIM         = (1.0/4.0);										\n\
-	} else if (preset == 3) {														\n\
+	} else if (preset == 3) {														\n""\
 		FXAA_EDGE_THRESHOLD      = (1.0/8.0);										\n\
 		FXAA_EDGE_THRESHOLD_MIN  = (1.0/24.0);										\n\
 		FXAA_SEARCH_STEPS        = 16;												\n\
@@ -1503,7 +1503,7 @@ void FXAA_set_preset(int preset) {													\n\
 																					\n\
 	FXAA_SUBPIX_TRIM_SCALE = (1.0/(1.0 - FXAA_SUBPIX_TRIM));						\n\
 }																					\n\
-																					\n\
+																					\n""\
 float FxaaLuma(float3 rgb) { return rgb.y * (0.587/0.299) + rgb.x; }				\n\
 																					\n\
 float3 FxaaLerp3(float3 a, float3 b, float amountOfA) {								\n\
@@ -1541,7 +1541,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 	}																				\n\
 																					\n\
 	float blendL = 0.0;																\n\
-																					\n\
+																					\n""\
 	if (FXAA_SUBPIX > 0) {															\n\
 		float lumaL = (lumaN + lumaW + lumaE + lumaS) * 0.25;						\n\
 		float rangeL = abs(lumaL - lumaM);											\n\
@@ -1578,7 +1578,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 		abs((0.50 * lumaN ) + (-1.0 * lumaM) + (0.50 * lumaS )) +					\n\
 		abs((0.25 * lumaNE) + (-0.5 * lumaE) + (0.25 * lumaSE));					\n\
 	bool horzSpan = edgeHorz >= edgeVert;											\n\
-																					\n\
+																					\n""\
 	float lengthSign = horzSpan ? -rcpFrame.y : -rcpFrame.x;						\n\
 	if(!horzSpan) lumaN = lumaW;													\n\
 	if(!horzSpan) lumaS = lumaE;													\n\
@@ -1624,7 +1624,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 		posP += offNP * FxaaFloat2( 2.5,  2.5);										\n\
 		offNP *= FxaaFloat2(4.0, 4.0);												\n\
 	}																				\n\
-	for(int i = 0; i < FXAA_SEARCH_STEPS; i++) {									\n\
+	for(int i = 0; i < FXAA_SEARCH_STEPS; i++) {									\n""\
 		if (FXAA_SEARCH_ACCELERATION == 1) {										\n\
 			if(!doneN) lumaEndN = 													\n\
 				FxaaLuma(FxaaTexLod0(tex, posN.xy).xyz);							\n\
@@ -1669,7 +1669,7 @@ uniform sampler2D tex0;																\n\
 uniform int fxaa_preset;															\n\
 varying vec2 rcpFrame;																\n\
 noperspective varying vec2 pos;														\n\
-																					\n\
+																					\n""\
 void main() {																		\n\
 	FXAA_set_preset(fxaa_preset);													\n\
 	gl_FragColor.xyz = FxaaPixelShader(pos, tex0, rcpFrame);						\n\
@@ -1771,7 +1771,7 @@ uniform float dither									\n\
 uniform sampler2D blurred_tex;							\n\
 uniform sampler2D depth_tex;							\n\
 														\n\
-void main()												\n\
+void main()												\n""\
 {														\n\
  #ifdef FLAG_DISTORT_NOISE								\n\
  // Distort noise										\n\
@@ -1823,7 +1823,7 @@ void main()												\n\
 														\n\
 	color_out.rgb = mix(color_out.rgb, result, film_grain);	\n\
  #endif													\n\
-														\n\
+														\n""\
  #ifdef FLAG_STRIPES									\n\
  // TV-Stripes (Old School)								\n\
 	vec2 sc;											\n\
