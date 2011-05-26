@@ -487,6 +487,9 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 		weaponp->wi_flags = wi_flags;
 		weaponp->wi_flags2 = wi_flags2;
 	}
+
+	bool set_pierce = false;
+	bool set_nopierce = false;
 	
 	for (int i=0; i<num_strings; i++) {
 		if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
@@ -576,9 +579,9 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 		else if (!stricmp(NOX("ballistic"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_BALLISTIC;
 		else if (!stricmp(NOX("pierce shields"), weapon_strings[i]))
-			weaponp->wi_flags2 |= WIF2_PIERCE_SHIELDS;
+			set_pierce = true;
 		else if (!stricmp(NOX("no pierce shields"), weapon_strings[i]))	// only for beams
-			weaponp->wi_flags2 &= ~WIF2_PIERCE_SHIELDS;
+			set_nopierce = true;
 		else if (!stricmp(NOX("local ssm"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_LOCAL_SSM;
 		else if (!stricmp(NOX("tagged only"), weapon_strings[i]))
@@ -638,7 +641,13 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_DONT_SHOW_ON_RADAR;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
-	}	
+	}
+
+	// Goober5000 - fix up pierce/nopierce flags, per Mantis #2442
+	if (set_pierce)
+		weaponp->wi_flags2 |= WIF2_PIERCE_SHIELDS;
+	if (set_nopierce)
+		weaponp->wi_flags2 &= ~WIF2_PIERCE_SHIELDS;
 
 	// set default tech room status - Goober5000
 	if (weaponp->wi_flags & WIF_IN_TECH_DATABASE)
