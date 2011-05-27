@@ -370,7 +370,7 @@ void team_visibility_update()
 			continue;
 
 		// check if ship if flagged as invisible
-		if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+		if ((shipp->flags & SF_HIDDEN_FROM_SENSORS) || (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS))
 			continue;
 
 		Ship_visibility_by_team[shipp->team][ship_num] = 1;
