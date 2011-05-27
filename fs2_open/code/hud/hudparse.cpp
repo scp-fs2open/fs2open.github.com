@@ -49,7 +49,7 @@ bool Hud_retail = true;
 
 int Hud_font = -1;
 
-int num_default_gauges = 43;
+int num_default_gauges = 44;
 static int retail_gauges[] = {
 	HUD_OBJECT_MESSAGES,
 	HUD_OBJECT_TRAINING_MESSAGES,
