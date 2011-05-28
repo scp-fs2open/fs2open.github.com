@@ -164,10 +164,25 @@ public class InstallerNodeFactory
 				break;
 			
 			case HASH:
-				String filename = readString(reader);
-				String type = readString(reader);
-				String hash = readString(reader);
-				node.addHashTriple(new InstallerNode.HashTriple(filename, type, hash));
+				String line = readString(reader);
+				String type, filename, hash;
+				
+				// could be all on one line or on three lines
+				String[] parts = line.split("[ \t]");
+				if (parts.length == 3)
+				{
+					type = parts[0];
+					filename = parts[1];
+					hash = parts[2];
+				}
+				else
+				{
+					type = line;
+					filename = readString(reader);
+					hash = readString(reader);
+				}
+
+				node.addHashTriple(new InstallerNode.HashTriple(type, filename, hash));
 				break;
 			
 			case VERSION:
@@ -315,7 +330,7 @@ public class InstallerNodeFactory
 		}
 		
 		for (InstallerNode.HashTriple triple: node.getHashList())
-			writeLine(indent, writer, InstallerNodeToken.HASH, triple.getFilename(), triple.getType(), triple.getHash());
+			writeLine(indent, writer, InstallerNodeToken.HASH, triple.getType(), triple.getFilename(), triple.getHash());
 		
 		if (!node.getChildren().isEmpty())
 		{

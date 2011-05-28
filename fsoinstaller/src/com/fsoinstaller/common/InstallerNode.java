@@ -316,31 +316,18 @@ public class InstallerNode
 	
 	public static class HashTriple
 	{
-		private String filename;
 		private String type;
+		private String filename;
 		private String hash;
 		
-		public HashTriple(String filename, String type, String hash)
+		public HashTriple(String type, String filename, String hash)
 		{
-			if (filename == null || type == null || hash == null)
+			if (type == null || filename == null || hash == null)
 				throw new NullPointerException("Arguments cannot be null!");
 			
-			this.filename = filename;
 			this.type = type;
-			this.hash = hash;
-		}
-		
-		public String getFilename()
-		{
-			return filename;
-		}
-		
-		public void setFilename(String filename)
-		{
-			if (filename == null)
-				throw new NullPointerException("The 'filename' field cannot be null!");
-			
 			this.filename = filename;
+			this.hash = hash;
 		}
 		
 		public String getType()
@@ -354,6 +341,19 @@ public class InstallerNode
 				throw new NullPointerException("The 'type' field cannot be null!");
 			
 			this.type = type;
+		}
+		
+		public String getFilename()
+		{
+			return filename;
+		}
+		
+		public void setFilename(String filename)
+		{
+			if (filename == null)
+				throw new NullPointerException("The 'filename' field cannot be null!");
+			
+			this.filename = filename;
 		}
 		
 		public String getHash()
