@@ -322,8 +322,7 @@ void HudGaugeMessages::processMessageBuffer()
 
 		while ((ptr = split_str_once(split_str, Max_width - x - 7)) != NULL) {		// the 7 is a fudge hack
 			// make sure that split went ok, if not then bail
-			if (ptr == msg) {
-				Int3();
+			if (ptr == split_str) {
 				break;
 			}
 
