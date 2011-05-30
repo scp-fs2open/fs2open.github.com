@@ -49,6 +49,7 @@ bool Hud_retail = true;
 
 int Hud_font = -1;
 
+//WARNING: If you add gauges to this array, make sure to bump num_default_gauges!
 int num_default_gauges = 44;
 static int retail_gauges[] = {
 	HUD_OBJECT_MESSAGES,

@@ -198,6 +198,7 @@ char *Cheat_code_skip = NOX("7!ICkSI\"(8n3JesBP");			// skipmemymissionyo
 									  // 666)6=N79+Z45=BE0e
 int Tool_enabled = 0;
 bool Perspective_locked=false;
+bool quit_mission_popup_shown = false;
 
 //int All_movies_enabled = 0;
 
@@ -1488,6 +1489,8 @@ void game_do_end_mission_popup()
 		game_stop_looped_sounds();
 		snd_stop_all();
 
+		quit_mission_popup_shown = true;
+
 		pf_flags = PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON;
 		choice = popup(pf_flags, 3, POPUP_NO, XSTR( "&Yes, Quit", 28), XSTR( "Yes, &Restart", 29), XSTR( "Do you really want to end the mission?", 30));
 
@@ -1515,6 +1518,7 @@ void game_do_end_mission_popup()
 		default:
 			break;  // do nothing
 		}
+		quit_mission_popup_shown = false;
 
 		game_start_time();
 		game_flush();
