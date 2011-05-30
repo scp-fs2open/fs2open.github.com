@@ -810,6 +810,7 @@
 #define IDC_VELOCITY                    1347
 #define IDC_ABBREV_DEBRIEFING           1347
 #define IDC_TVT_WING_NAME_2             1347
+#define IDC_SPECIAL_DEATHROLL_TIME      1347
 #define IDC_SHIELDS                     1348
 #define IDC_ABBREV_MISSION              1348
 #define IDC_SQUADRON_WING_NAME_5        1348
@@ -989,6 +990,7 @@
 #define IDC_SPECIAL_BLAST               1509
 #define IDC_CARGO_NAME                  1509
 #define IDC_RESPAWN_PRIORITY            1510
+#define IDC_ENABLE_DEATHROLL_TIME       1510
 #define IDC_SQUAD_NAME                  1511
 #define IDC_ASTEROID_DEBRIS_FIELD       1512
 #define IDC_PASSIVE_SPECIES_TERRAN      1513

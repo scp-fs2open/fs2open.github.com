@@ -1704,6 +1704,15 @@ int CFred_mission_save::save_objects()
 					else {
 						bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
 					}
+
+					if (shipp->special_exp_deathroll_time > 0) {
+						optional_string_fred("+Special Exp Death Roll Time:"); 
+						parse_comments();
+						fout(" %d", shipp->special_exp_deathroll_time);
+					}
+					else {
+						bypass_comment(";;FSO 3.6.13;; +Special Exp Death Roll Time:");
+					}
 				}
 				else {
 					fso_comment_push(";;FSO 3.6.13;;");
@@ -1726,11 +1735,17 @@ int CFred_mission_save::save_objects()
 						fout(" %f", shipp->special_exp_shockwave_speed);
 					}
 
+					if (shipp->special_exp_deathroll_time > 0) {
+						fout_version("\n+Special Exp Death Roll Time:"); 
+						fout(" %d", shipp->special_exp_deathroll_time);
+					}
+
 					fso_comment_pop();
 				}
 			}
 			else {
 				bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
+				bypass_comment(";;FSO 3.6.13;; +Special Exp Death Roll Time:");
 			}
 		}
 			// retail format special explosions
