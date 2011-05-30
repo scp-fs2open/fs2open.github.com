@@ -9818,6 +9818,11 @@ void sexp_set_explosion_option(int node)
 			shipp->use_shockwave = (val > 0);
 		} else if (option == EO_DEATH_ROLL_TIME) {
 			shipp->special_exp_deathroll_time = val;
+
+			// hmm, it would be cool to modify the explosion in progress
+			if (shipp->flags & SF_DYING && val >= 2) {
+				shipp->final_death_time = timestamp(val);
+			}
 		}
 	}
 
