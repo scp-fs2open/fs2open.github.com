@@ -31,6 +31,7 @@
 #include "graphics/grbatch.h"
 #include "parse/scripting.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
+#include "Io/keycontrol.h" // m!m
 
 
 #if defined(SCP_UNIX) && !defined(__APPLE__)
@@ -1469,12 +1470,16 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 
 void gr_flip()
 {
-	//WMC - Evaluate global hook if not override.
-	Script_system.RunBytecode(Script_globalhook);
-	//WMC - Do conditional hooks. Yippee!
-	Script_system.RunCondition(CHA_ONFRAME);
-	//WMC - Do scripting reset stuff
-	Script_system.EndFrame();
+	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
+	if (!quit_mission_popup_shown)
+	{
+		//WMC - Evaluate global hook if not override.
+		Script_system.RunBytecode(Script_globalhook);
+		//WMC - Do conditional hooks. Yippee!
+		Script_system.RunCondition(CHA_ONFRAME);
+		//WMC - Do scripting reset stuff
+		Script_system.EndFrame();
+	}
 
 	gr_screen.gf_flip();
 }
