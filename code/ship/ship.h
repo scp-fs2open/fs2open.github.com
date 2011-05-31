@@ -540,6 +540,8 @@ typedef struct ship {
 	float special_exp_outer;
 	bool use_shockwave;
 	float special_exp_shockwave_speed;
+	int special_exp_deathroll_time;
+
 	int	special_hitpoints;
 	int	special_shield;
 

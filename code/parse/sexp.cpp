@@ -765,9 +765,10 @@ int hud_gauge_type_lookup(char* name);
 #define EO_INNER_RADIUS		2
 #define EO_OUTER_RADIUS		3
 #define EO_SHOCKWAVE_SPEED	4
+#define EO_DEATH_ROLL_TIME	5
 int sexp_explosion_option_lookup(char *text);
-char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed" };
-int Num_explosion_options = 5;
+char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed", "death roll time" };
+int Num_explosion_options = 6;
 
 int get_sexp(char *token);
 void build_extended_sexp_string(int cur_node, int level, int mode, int max_len);
@@ -9784,6 +9785,7 @@ void sexp_set_explosion_option(int node)
 		shipp->special_exp_inner = sci->inner_rad;
 		shipp->special_exp_outer = sci->outer_rad;
 		shipp->special_exp_shockwave_speed = sci->speed;
+		shipp->special_exp_deathroll_time = 0;
 
 		shipp->use_special_explosion = true;
 		shipp->use_shockwave = (sci->speed > 0);
@@ -9814,12 +9816,19 @@ void sexp_set_explosion_option(int node)
 		} else if (option == EO_SHOCKWAVE_SPEED) {
 			shipp->special_exp_shockwave_speed = (float)val;
 			shipp->use_shockwave = (val > 0);
+		} else if (option == EO_DEATH_ROLL_TIME) {
+			shipp->special_exp_deathroll_time = val;
+
+			// hmm, it would be cool to modify the explosion in progress
+			if (shipp->flags & SF_DYING && val >= 2) {
+				shipp->final_death_time = timestamp(val);
+			}
 		}
 	}
 
 	// if all our values are the same as a standard exp, turn off the special exp
 	if ((shipp->special_exp_damage == sci->damage) && (shipp->special_exp_blast == sci->blast) && (shipp->special_exp_inner == sci->inner_rad)
-		&& (shipp->special_exp_outer == sci->outer_rad) && (shipp->special_exp_shockwave_speed == sci->speed))
+		&& (shipp->special_exp_outer == sci->outer_rad) && (shipp->special_exp_shockwave_speed == sci->speed) && (shipp->special_exp_deathroll_time == 0))
 	{
 		shipp->use_special_explosion = false;
 		shipp->use_shockwave = false;
@@ -9829,6 +9838,7 @@ void sexp_set_explosion_option(int node)
 		shipp->special_exp_inner = -1;
 		shipp->special_exp_outer = -1;
 		shipp->special_exp_shockwave_speed = -1;
+		shipp->special_exp_deathroll_time = 0;
 	}
 }
 
@@ -26136,7 +26146,7 @@ sexp_help_struct Sexp_help[] = {
 		"Sets an explosion option on a particular ship.  Takes 3 or more arguments...\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tExplosion option\r\n"
-		"\t3:\tExplosion value (for shockwave speed, 0 will produce no shockwave)\r\n"
+		"\t3:\tExplosion value (for shockwave speed, 0 will produce no shockwave; for death roll time, 0 will use the default time)\r\n"
 		"Use Add-Data to specify additional explosion options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
 		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
 

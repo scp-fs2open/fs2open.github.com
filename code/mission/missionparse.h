@@ -413,6 +413,8 @@ typedef struct p_object {
 	float special_exp_outer;					// Changed from 'int' to 'float' by Zacam 10/2010
 	bool use_shockwave;
 	float special_exp_shockwave_speed;		// Changed from 'int' to 'float' by Zacam 10/2010
+	int special_exp_deathroll_time;
+
 	int	special_hitpoints;
 	int	special_shield;
 
@@ -506,8 +508,11 @@ typedef struct p_object {
 		special_exp_outer = -1;
 		use_shockwave = false;
 		special_exp_shockwave_speed = -1;
+		special_exp_deathroll_time = 0;
+
 		special_hitpoints = 0;
 		special_shield = -1;
+
 		net_signature = 0;
 		destroy_before_mission_time = 0;
 

@@ -1800,13 +1800,15 @@ int parse_create_object_sub(p_object *p_objp)
 	
 	shipp->use_special_explosion = p_objp->use_special_explosion;
 	shipp->special_exp_damage = p_objp->special_exp_damage;
-	shipp->special_exp_blast = p_objp->special_exp_blast ;
-	shipp->special_exp_inner = p_objp->special_exp_inner ;
-	shipp->special_exp_outer = p_objp->special_exp_outer ;
-	shipp->use_shockwave = p_objp->use_shockwave ;
-	shipp->special_exp_shockwave_speed = p_objp->special_exp_shockwave_speed ;
-	shipp->special_hitpoints = p_objp->special_hitpoints ;
-	shipp->special_shield = p_objp->special_shield ;
+	shipp->special_exp_blast = p_objp->special_exp_blast;
+	shipp->special_exp_inner = p_objp->special_exp_inner;
+	shipp->special_exp_outer = p_objp->special_exp_outer;
+	shipp->use_shockwave = p_objp->use_shockwave;
+	shipp->special_exp_shockwave_speed = p_objp->special_exp_shockwave_speed;
+	shipp->special_exp_deathroll_time = p_objp->special_exp_deathroll_time;
+
+	shipp->special_hitpoints = p_objp->special_hitpoints;
+	shipp->special_shield = p_objp->special_shield;
 
 	for (i=0;i<MAX_IFFS;i++)
 	{
@@ -2473,6 +2475,7 @@ void fix_old_special_explosions(p_object *p_objp, int variable_index)
 	p_objp->special_exp_outer = (float)atoi(Block_variables[variable_index+OUTER_RAD].text);
 	p_objp->use_shockwave = (atoi(Block_variables[variable_index+PROPAGATE].text) ? 1:0);
 	p_objp->special_exp_shockwave_speed = (float)atoi(Block_variables[variable_index+SHOCK_SPEED].text);
+	p_objp->special_exp_deathroll_time = 0;
 }
 
 void fix_old_special_hits(p_object *p_objp, int variable_index)
@@ -2841,6 +2844,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	p_objp->special_exp_outer = -1;
 	p_objp->use_shockwave = false;
 	p_objp->special_exp_shockwave_speed = 0;
+	p_objp->special_exp_deathroll_time = 0;
+
 	p_objp->special_hitpoints = 0;
 	p_objp->special_shield = -1;
 
@@ -2866,6 +2871,10 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		if (optional_string("+Special Exp Shockwave Speed:")) {
 			stuff_float(&p_objp->special_exp_shockwave_speed);
 			p_objp->use_shockwave = true;
+		}
+
+		if (optional_string("+Special Exp Death Roll Time:")) {
+			stuff_int(&p_objp->special_exp_deathroll_time);
 		}
 	}
 
