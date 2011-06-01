@@ -23,7 +23,7 @@
 #endif
 
 int Num_particles = 0;
-static SCP_vector<particle> Particles;
+static SCP_vector<particle*> Particles;
 
 int Anim_bitmap_id_fire = -1;
 int Anim_num_frames_fire = -1;
@@ -37,6 +37,8 @@ int Anim_num_frames_smoke2 = -1;
 static int Particles_enabled = 1;
 
 static const int Min_particle_bump = 200;
+
+uint lastSignature = 0; // 0 is an invalid signature!
 
 
 // Reset everything between levels
@@ -71,7 +73,14 @@ void particle_init()
 // only call from game_shutdown()!!!
 void particle_close()
 {
-	Particles.clear();
+	while (!Particles.empty())
+	{		
+		particle* part = Particles.back();
+		part->signature = 0;
+		delete part;
+
+		Particles.pop_back();
+	}
 }
 
 void particle_page_in()
@@ -99,43 +108,43 @@ DCF(particles,"Turns particles on/off")
 int Num_particles_hwm = 0;
 
 // Creates a single particle. See the PARTICLE_?? defines for types.
-particle* particle_create( particle_info *pinfo )
+particle *particle_create( particle_info *pinfo )
 {
-	particle new_particle;
-	int fps = 1;
-
 	if ( !Particles_enabled )
+	{
 		return NULL;
+	}
 
-	// Init the particle data
-	memset( &new_particle, 0, sizeof(particle) );
-
-	new_particle.pos = pinfo->pos;
-	new_particle.velocity = pinfo->vel;
-	new_particle.age = 0.0f;
-	new_particle.max_life = pinfo->lifetime;
-	new_particle.radius = pinfo->rad;
-	new_particle.type = pinfo->type;
-	new_particle.optional_data = pinfo->optional_data;
-	new_particle.tracer_length = pinfo->tracer_length;
-	new_particle.attached_objnum = pinfo->attached_objnum;
-	new_particle.attached_sig = pinfo->attached_sig;
-	new_particle.reverse = pinfo->reverse;
-	new_particle.particle_index = (int)Particles.size();
+	particle* new_particle = new particle();
+	int fps = 1;
+	
+	new_particle->pos = pinfo->pos;
+	new_particle->velocity = pinfo->vel;
+	new_particle->age = 0.0f;
+	new_particle->max_life = pinfo->lifetime;
+	new_particle->radius = pinfo->rad;
+	new_particle->type = pinfo->type;
+	new_particle->optional_data = pinfo->optional_data;
+	new_particle->tracer_length = pinfo->tracer_length;
+	new_particle->attached_objnum = pinfo->attached_objnum;
+	new_particle->attached_sig = pinfo->attached_sig;
+	new_particle->reverse = pinfo->reverse;
+	new_particle->particle_index = (int)Particles.size();
 
 	switch (pinfo->type) {
 		case PARTICLE_BITMAP:
 		case PARTICLE_BITMAP_PERSISTENT: {
 			if (pinfo->optional_data < 0) {
 				Int3();
+				delete new_particle;
 				return NULL;
 			}
 
-			bm_get_info( pinfo->optional_data, NULL, NULL, NULL, &new_particle.nframes, &fps );
+			bm_get_info( pinfo->optional_data, NULL, NULL, NULL, &new_particle->nframes, &fps );
 
-			if ( new_particle.nframes > 1 )	{
+			if ( new_particle->nframes > 1 )	{
 				// Recalculate max life for ani's
-				new_particle.max_life = i2fl(new_particle.nframes) / i2fl(fps);
+				new_particle->max_life = i2fl(new_particle->nframes) / i2fl(fps);
 			}
 
 			break;
@@ -143,42 +152,46 @@ particle* particle_create( particle_info *pinfo )
 
 		case PARTICLE_FIRE: {
 			if (Anim_bitmap_id_fire < 0) {
+				delete new_particle;
 				return NULL;
 			}
 
-			new_particle.optional_data = Anim_bitmap_id_fire;
-			new_particle.nframes = Anim_num_frames_fire;
+			new_particle->optional_data = Anim_bitmap_id_fire;
+			new_particle->nframes = Anim_num_frames_fire;
 
 			break;
 		}
 
 		case PARTICLE_SMOKE: {
 			if (Anim_bitmap_id_smoke < 0) {
+				delete new_particle;
 				return NULL;
 			}
 
-			new_particle.optional_data = Anim_bitmap_id_smoke;
-			new_particle.nframes = Anim_num_frames_smoke;
+			new_particle->optional_data = Anim_bitmap_id_smoke;
+			new_particle->nframes = Anim_num_frames_smoke;
 
 			break;
 		}
 
 		case PARTICLE_SMOKE2: {
 			if (Anim_bitmap_id_smoke2 < 0) {
+				delete new_particle;
 				return NULL;
 			}
 
-			new_particle.optional_data = Anim_bitmap_id_smoke2;
-			new_particle.nframes = Anim_num_frames_smoke2;
+			new_particle->optional_data = Anim_bitmap_id_smoke2;
+			new_particle->nframes = Anim_num_frames_smoke2;
 
 			break;
 		}
 
 		default:
-			new_particle.nframes = 1;
+			new_particle->nframes = 1;
 			break;
 	}
-
+	
+	new_particle->signature = ++lastSignature;
 	Particles.push_back( new_particle );
 
 	// reallocate to additional space if we need it
@@ -194,10 +207,10 @@ particle* particle_create( particle_info *pinfo )
 	}
 #endif
 
-	return &Particles.back();
+	return Particles.back();
 }
 
-particle* particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data, float tracer_length, object *objp, bool reverse )
+particle *particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data, float tracer_length, object *objp, bool reverse )
 {
 	particle_info pinfo;
 
@@ -244,17 +257,22 @@ void particle_move_all(float frametime)
 	if ( Particles.empty() )
 		return;
 
-	for (SCP_vector<particle>::iterator p = Particles.begin(); p != Particles.end(); ) {	
-		if (p->age == 0.0f) {
-			p->age = 0.00001f;
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ) {	
+		particle* part = *p;
+		if (part->age == 0.0f) {
+			part->age = 0.00001f;
 		} else {
-			p->age += frametime;
+			part->age += frametime;
 		}
 
 		// if it's time expired, remove it
-		if (p->age > p->max_life) {
+		if (part->age > part->max_life) {
 			// special case, if max_life is 0 then we want it to render at least once
-			if ( (p->age > frametime) || (p->max_life > 0.0f) ) {
+			if ( (part->age > frametime) || (part->max_life > 0.0f) ) {
+				part->signature = 0;
+				delete *p;
+				*p = NULL;
+
 				*p = Particles.back();
 				Particles.pop_back();
 				continue;
@@ -262,11 +280,15 @@ void particle_move_all(float frametime)
 		}
 
 		// if the particle is attached to an object which has become invalid, kill it
-		if (p->attached_objnum >= 0) {
+		if (part->attached_objnum >= 0) {
 			// if the signature has changed, or it's bogus, kill it
-			if ( (p->attached_objnum >= MAX_OBJECTS)
-				|| (p->attached_sig != Objects[p->attached_objnum].signature) )
+			if ( (part->attached_objnum >= MAX_OBJECTS)
+				|| (part->attached_sig != Objects[part->attached_objnum].signature) )
 			{
+				part->signature = 0;
+				delete *p;
+				*p = NULL;
+
 				*p = Particles.back();
 				Particles.pop_back();
 				continue;
@@ -274,7 +296,7 @@ void particle_move_all(float frametime)
 		}
 		// move as a regular particle
 		else {
-			vm_vec_scale_add2( &p->pos, &p->velocity, frametime );
+			vm_vec_scale_add2( &part->pos, &part->velocity, frametime );
 		}
 
 		// next particle
@@ -289,7 +311,13 @@ void particle_kill_all()
 	Num_particles = 0;
 	Num_particles_hwm = 0;
 
-	Particles.clear();
+	while (!Particles.empty())
+	{
+		particle* part = Particles.back();
+		part->signature = 0;
+		delete part;
+		Particles.pop_back();
+	}
 }
 
 MONITOR( NumParticlesRend )
@@ -340,15 +368,16 @@ void particle_render_all()
 	if ( Particles.empty() )
 		return;
 
-	for (SCP_vector<particle>::iterator p = Particles.begin(); p != Particles.end(); ++p) {
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {
+		particle* part = *p;
 		// skip back-facing particles (ripped from fullneb code)
 		// Wanderer - add support for attached particles
 		vec3d p_pos;
-		if (p->attached_objnum >= 0) {
-			vm_vec_unrotate(&p_pos, &p->pos, &Objects[p->attached_objnum].orient);
-			vm_vec_add2(&p_pos, &Objects[p->attached_objnum].pos);
+		if (part->attached_objnum >= 0) {
+			vm_vec_unrotate(&p_pos, &part->pos, &Objects[part->attached_objnum].orient);
+			vm_vec_add2(&p_pos, &Objects[part->attached_objnum].pos);
 		} else {
-			p_pos = p->pos;
+			p_pos = part->pos;
 		}
 
 		if ( vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f ) {
@@ -367,11 +396,11 @@ void particle_render_all()
 		rotate = 1;
 
 		// if this is a tracer style particle, calculate tracer vectors
-		if (p->tracer_length > 0.0f) {			
+		if (part->tracer_length > 0.0f) {			
 			ts = p_pos;
-			temp = p->velocity;
+			temp = part->velocity;
 			vm_vec_normalize_quick(&temp);
-			vm_vec_scale_add(&te, &ts, &temp, p->tracer_length);
+			vm_vec_scale_add(&te, &ts, &temp, part->tracer_length);
 
 			// don't bother rotating
 			rotate = 0;
@@ -390,33 +419,33 @@ void particle_render_all()
 		}
 
 		// pct complete for the particle
-		pct_complete = p->age / p->max_life;
+		pct_complete = part->age / part->max_life;
 
 		// figure out which frame we should be using
-		if (p->nframes > 1) {
-			framenum = fl2i(pct_complete * p->nframes + 0.5);
-			CLAMP(framenum, 0, p->nframes-1);
+		if (part->nframes > 1) {
+			framenum = fl2i(pct_complete * part->nframes + 0.5);
+			CLAMP(framenum, 0, part->nframes-1);
 
-			cur_frame = p->reverse ? (p->nframes - framenum - 1) : framenum;
+			cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
 		} else {
 			cur_frame = 0;
 		}
 
-		if (p->type == PARTICLE_DEBUG) {
+		if (part->type == PARTICLE_DEBUG) {
 			gr_set_color( 255, 0, 0 );
-			g3_draw_sphere_ez( &p_pos, p->radius );
+			g3_draw_sphere_ez( &p_pos, part->radius );
 		} else {
-			framenum = p->optional_data;
+			framenum = part->optional_data;
 
-			Assert( cur_frame < p->nframes );
+			Assert( cur_frame < part->nframes );
 
 			// if this is a tracer style particle
-			if (p->tracer_length > 0.0f) {
-				batch_add_laser( framenum + cur_frame, &ts, p->radius, &te, p->radius );
+			if (part->tracer_length > 0.0f) {
+				batch_add_laser( framenum + cur_frame, &ts, part->radius, &te, part->radius );
 			}
 			// draw as a regular bitmap
 			else {
-				batch_add_bitmap( framenum + cur_frame, tmap_flags, &pos, p->particle_index % 8, p->radius, alpha );
+				batch_add_bitmap( framenum + cur_frame, tmap_flags, &pos, part->particle_index % 8, part->radius, alpha );
 			}
 
 			render_batch = true;
@@ -517,3 +546,4 @@ void particle_emit( particle_emitter *pe, int type, int optional_data, float ran
 		particle_create( &pe->pos, &tmp_vel, life, radius, type, optional_data );
 	}
 }
+
