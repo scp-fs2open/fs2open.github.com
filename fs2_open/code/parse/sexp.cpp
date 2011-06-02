@@ -3378,7 +3378,7 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
 
 		int sexp_variables_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
-		Assert(sexp_variables_index != -1);
+		Assertion(sexp_variables_index != -1, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
 		Assert( (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING) );
 
 		// number
