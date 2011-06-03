@@ -31,7 +31,7 @@
 #include "graphics/grbatch.h"
 #include "parse/scripting.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
-#include "Io/keycontrol.h" // m!m
+#include "io/keycontrol.h" // m!m
 
 
 #if defined(SCP_UNIX) && !defined(__APPLE__)

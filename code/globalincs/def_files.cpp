@@ -1600,7 +1600,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 	float2 posP = posN;																\n\
 	float2 offNP = horzSpan ? 														\n\
 		FxaaFloat2(rcpFrame.x, 0.0) :												\n\
-		FxaaFloat2(0.0f, rcpFrame.y);												\n\
+		FxaaFloat2(0.0, rcpFrame.y);												\n\
 	float lumaEndN = lumaN;															\n\
 	float lumaEndP = lumaN;															\n\
 	bool doneN = false;																\n\
