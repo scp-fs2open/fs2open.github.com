@@ -4099,10 +4099,10 @@ float ai_path_1()
 		if (r <= 1.0f) {
 			vec3d midpoint;
 			vm_vec_avg3(&midpoint, &gcvp, &closest_point, &closest_point);
-			ai_turn_towards_vector(&midpoint, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0, &rvec);
+			ai_turn_towards_vector(&midpoint, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0, prvec);
 		}
 		else {
-			ai_turn_towards_vector(&gcvp, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0, &rvec);
+			ai_turn_towards_vector(&gcvp, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0, prvec);
 		}
 	}
 
