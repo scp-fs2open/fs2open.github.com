@@ -103,16 +103,19 @@ void load_shield_hit_bitmap()
 
 	for (i = 0; i < Species_info.size(); i++ )	
     {
-		Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, NULL, 1);
+        if (Species_info[i].shield_anim.filename[0] != '\0')
+        {
+		    Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, NULL, 1);
 
-        // *This is disabled for TBP    -Et1
-		// Changed to an assert by kazan
+            // *This is disabled for TBP    -Et1
+		    // Changed to an assert by kazan
 
-        /*
-		if ( Shield_ani[i].first_frame < 0 )
-			Int3();
-        */
-		Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
+            /*
+		    if ( Shield_ani[i].first_frame < 0 )
+			    Int3();
+            */
+		    Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
+        }
 	}
 
 	#endif
