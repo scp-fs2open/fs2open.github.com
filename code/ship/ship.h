@@ -54,7 +54,7 @@ extern vec3d	Original_vec_to_deader;
 #define	HP_SCALE						1.2			//	1.2 means die when 20% of hits remaining
 #define	MAX_SHIP_HITS				8				// hits to kill a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
-#define	MAX_REINFORCEMENTS		10
+#define	MAX_REINFORCEMENTS		32
 
 
 // defines for 'direction' parameter of ship_select_next_primary()
@@ -454,7 +454,7 @@ extern int TARGET_SHIP_IGNORE_FLAGS;
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
-#define MAX_SHIP_CONTRAILS		12
+#define MAX_SHIP_CONTRAILS		24
 #define MAX_MAN_THRUSTERS	128
 
 typedef struct ship_spark {
