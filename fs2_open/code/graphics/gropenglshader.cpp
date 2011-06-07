@@ -376,7 +376,6 @@ static char *opengl_load_shader(char *filename, int flags, bool unified)
 		return shader;
 	}
 
-	return NULL;
 }
 
 void opengl_shader_init()
