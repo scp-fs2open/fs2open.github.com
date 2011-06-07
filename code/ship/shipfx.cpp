@@ -4394,9 +4394,11 @@ int WE_BSG::warpShipRender()
 	if(anim < 0 && shockwave < 0)
 		return 0;
 
-	// turn off zbuffering	
-	int saved_zbuffer_mode = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
+	// SUSHI: Turning off Zbuffering results in the FTL effect showing up through ship hulls. 
+	// The effect is slightly degraded by leaving it on, but ATM it's worth the tradeoff.
+	//// turn off zbuffering	
+	//int saved_zbuffer_mode = gr_zbuffer_get();
+	//gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	if(anim > -1)
 	{
@@ -4445,7 +4447,7 @@ int WE_BSG::warpShipRender()
 	}
 
 	// restore zbuffer mode
-	gr_zbuffer_set(saved_zbuffer_mode);
+	//gr_zbuffer_set(saved_zbuffer_mode);
 	return 1;
 }
 
