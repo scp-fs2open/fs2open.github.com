@@ -1595,6 +1595,14 @@ int parse_weapon(int subtype, bool replace)
 			wip->free_flight_speed = 0.25f;
 		}
 	}
+	//Optional one-shot sound to play at the beginning of firing
+	parse_sound("$PreLaunchSnd:", &wip->pre_launch_snd, wip->name);
+
+	//Optional delay for Pre-Launch sound
+	if(optional_string("+PreLaunchSnd Min Interval:"))
+	{
+		stuff_int(&wip->pre_launch_snd_min_interval);
+	}
 
 	//Launch sound
 	parse_sound("$LaunchSnd:", &wip->launch_snd, wip->name);
