@@ -6771,7 +6771,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		if( is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
 
 			// if the player is firing it
-			if ( from_player ) {
+			if ( from_player && !(The_mission.ai_profile->flags2 & AIPF2_PLAYER_WEAPON_SCALE_FIX)) {
 				// if it's a laser weapon
 				if(wip->subtype == WP_LASER){
 					total_scale *= 0.01f;
