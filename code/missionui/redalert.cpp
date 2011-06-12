@@ -695,10 +695,18 @@ void red_alert_bash_wingman_status()
 
 				// if necessary, restore correct ship class
 				if ( ras->ship_class != shipp->ship_info_index ) {
-					change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
+					if (ras->ship_class < MAX_SHIP_CLASSES && ras->ship_class > -1) {
+						change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
+					} else {
+						mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
+					}
 				}
 				// restore hull and weapons
-				ship_objp->hull_strength = ras->hull;
+				if (ras->hull >= 0.0f && ras->hull <= ship_objp->hull_strength) {
+					ship_objp->hull_strength = ras->hull;
+				} else {
+					mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
+				}
 				red_alert_bash_weapons(ras, &shipp->weapons);
 				red_alert_bash_subsys_status(ras, shipp);
 			}
