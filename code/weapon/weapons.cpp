@@ -1595,6 +1595,14 @@ int parse_weapon(int subtype, bool replace)
 			wip->free_flight_speed = 0.25f;
 		}
 	}
+	//Optional one-shot sound to play at the beginning of firing
+	parse_sound("$PreLaunchSnd:", &wip->pre_launch_snd, wip->name);
+
+	//Optional delay for Pre-Launch sound
+	if(optional_string("+PreLaunchSnd Min Interval:"))
+	{
+		stuff_int(&wip->pre_launch_snd_min_interval);
+	}
 
 	//Launch sound
 	parse_sound("$LaunchSnd:", &wip->launch_snd, wip->name);
@@ -6763,7 +6771,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		if( is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
 
 			// if the player is firing it
-			if ( from_player ) {
+			if ( from_player && !(The_mission.ai_profile->flags2 & AIPF2_PLAYER_WEAPON_SCALE_FIX)) {
 				// if it's a laser weapon
 				if(wip->subtype == WP_LASER){
 					total_scale *= 0.01f;
