@@ -379,6 +379,8 @@ void debrief_text_init();
 void debrief_accept(int ok_to_post_start_game_event = 1);
 void debrief_kick_selected_player();
 
+int Max_debrief_Lines;
+
 
 // promotion voice selection stuff
 #define NUM_VOLITION_CAMPAIGNS	1
@@ -1687,7 +1689,7 @@ void debrief_button_pressed(int num)
 			break;
 
 		case TEXT_SCROLL_DOWN:
-			if (Text_offset + Debrief_text_wnd_coords[gr_screen.res][3] / gr_get_font_height() < Num_text_lines) {
+			if (Max_debrief_Lines < Num_text_lines) {
 				Text_offset++;
 				gamesnd_play_iface(SND_SCROLL);
 			} else {
@@ -2589,7 +2591,13 @@ void debrief_do_frame(float frametime)
 			break;
 	} // end switch
 
-	if (Text_offset + Debrief_text_wnd_coords[gr_screen.res][3] / gr_get_font_height() < Num_text_lines) {
+	if (gr_screen.res == 1) {
+		Max_debrief_Lines = 450/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
+	} else {
+		Max_debrief_Lines = 230/gr_get_font_height();
+	}
+
+	if (Max_debrief_Lines < Num_text_lines) {
 		int w;
 
 		gr_set_color_fast(&Color_red);
