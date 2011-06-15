@@ -208,6 +208,7 @@ sexp_oper Operators[] = {
 	{ "secondary-ammo-pct",					OP_SECONDARY_AMMO_PCT,				2,	2			},
 	{ "get-primary-ammo",					OP_GET_PRIMARY_AMMO,				2,	2			}, // Karajorma
 	{ "get-secondary-ammo",					OP_GET_SECONDARY_AMMO,				2,	2			}, // Karajorma
+	{ "get-num-countermeasures",			OP_GET_NUM_COUNTERMEASURES,			1,	1			}, // Karajorma
 	{ "is-primary-selected",				OP_IS_PRIMARY_SELECTED,				2,	2			},
 	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
 	{ "afterburner-energy-pct",				OP_AFTERBURNER_LEFT,		1, 1			},
@@ -350,6 +351,7 @@ sexp_oper Operators[] = {
 	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 4 },		// Karajorma
 	{ "set-primary-weapon",			OP_SET_PRIMARY_WEAPON,			3, 5 },		// Karajorma
 	{ "set-secondary-weapon",		OP_SET_SECONDARY_WEAPON,		3, 5 },		// Karajorma
+	{ "set-num-countermeasures",	OP_SET_NUM_COUNTERMEASURES,		2, 2 },		// Karajorma
 	{ "lock-primary-weapon",		OP_LOCK_PRIMARY_WEAPON,			1, INT_MAX },		// Karajorma
 	{ "unlock-primary-weapon",		OP_UNLOCK_PRIMARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
@@ -14450,6 +14452,61 @@ void sexp_set_weapon (int node, bool primary)
 	}
 }
 
+int sexp_get_countermeasures(int node) 
+{
+	ship *shipp;
+
+	shipp = sexp_get_ship_from_node(node);
+
+	if (shipp !=NULL) {
+		return shipp->cmeasure_count;
+	}
+	else {
+		return SEXP_NAN;
+	}
+}
+
+void sexp_set_countermeasures(int node)
+{
+	ship *shipp;
+	int num_cmeasures;
+
+	shipp = sexp_get_ship_from_node(node);
+
+	if (shipp == NULL) {
+		return;
+	}
+	node = CDR(node);
+	num_cmeasures = eval_num(node);
+	if (num_cmeasures < 0) {
+		num_cmeasures = 0;
+	}
+	else if (num_cmeasures > Ship_info[shipp->ship_info_index].cmeasure_max) {
+		num_cmeasures = Ship_info[shipp->ship_info_index].cmeasure_max;
+	}
+
+	shipp->cmeasure_count = num_cmeasures;
+
+	multi_start_packet();
+	multi_send_ship(shipp);
+	multi_send_int(num_cmeasures);
+	multi_end_packet();
+}
+
+void multi_sexp_set_countermeasures()
+{	
+	int num_cmeasures = 0;
+	ship *shipp; 
+
+	multi_get_ship(shipp);
+	if (shipp == NULL) {
+		return;
+	}
+	if (multi_get_int(num_cmeasures)) {
+		shipp->cmeasure_count = num_cmeasures;
+	}
+}
+
 // KeldorKatarn - Locks or unlocks the afterburner on the requested ship
 void sexp_deal_with_afterburner_lock (int node, bool lock)
 {
@@ -20447,6 +20504,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_secondary_ammo(node);
 				break;
 
+			// Karajorma
+			case OP_GET_NUM_COUNTERMEASURES:
+				sexp_val = sexp_get_countermeasures(node);
+				break;
+
 			case OP_IS_SECONDARY_SELECTED:
 				sexp_val = sexp_is_secondary_selected(node);
 				break;
@@ -20544,7 +20606,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_weapon(node, op_num == OP_SET_PRIMARY_WEAPON);
 				sexp_val = SEXP_TRUE;
 				break;
-				
+
+			// Karajorma
+			case OP_SET_NUM_COUNTERMEASURES:
+				sexp_set_countermeasures(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Karajorma
 			case OP_LOCK_PRIMARY_WEAPON:
 			case OP_UNLOCK_PRIMARY_WEAPON:
@@ -21420,6 +21488,7 @@ int query_operator_return_type(int op)
 		case OP_SECONDARY_AMMO_PCT:
 		case OP_GET_PRIMARY_AMMO:
 		case OP_GET_SECONDARY_AMMO:
+		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
@@ -21681,6 +21750,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SECONDARY_AMMO:
 		case OP_SET_PRIMARY_WEAPON:
 		case OP_SET_SECONDARY_WEAPON:
+		case OP_SET_NUM_COUNTERMEASURES:
 		case OP_SCRIPT_EVAL:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
@@ -23118,6 +23188,16 @@ int query_operator_argument_type(int op, int argnum)
 			{
 				return OPF_NUMBER;
 			}
+
+			
+		case OP_GET_NUM_COUNTERMEASURES:
+			return OPF_SHIP;
+
+		case OP_SET_NUM_COUNTERMEASURES:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else 
+				return OPF_POSITIVE;
 
 		// Karajorma	
 		case OP_LOCK_PRIMARY_WEAPON:
@@ -24713,8 +24793,9 @@ int get_subcategory(int sexp_id)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_SET_PRIMARY_AMMO:		// Karajorma
 		case OP_SET_SECONDARY_AMMO:		// Karajorma
-		case OP_SET_PRIMARY_WEAPON:	// Karajorma
+		case OP_SET_PRIMARY_WEAPON:		// Karajorma
 		case OP_SET_SECONDARY_WEAPON:	// Karajorma
+		case OP_SET_NUM_COUNTERMEASURES: // Karajorma
 		case OP_LOCK_PRIMARY_WEAPON:
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
@@ -24961,6 +25042,7 @@ int get_subcategory(int sexp_id)
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_GET_PRIMARY_AMMO:
 		case OP_GET_SECONDARY_AMMO:
+		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_PRIMARY_FIRED_SINCE:
@@ -27358,6 +27440,11 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
+	// Karajorma
+	{ OP_GET_NUM_COUNTERMEASURES, "get-num-countermeasures\r\n"
+		"\tReturns the amount of countermeasures remaining\r\n"
+		"\t1: Ship name\r\n" },
+
 	{ OP_IS_SECONDARY_SELECTED, "is-secondary-selected\r\n"
 		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
 		"\t1: Ship name\r\n"
@@ -27613,6 +27700,16 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Name of the secondary weapon \r\n"
 		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
 		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+	},
+
+
+	
+	// Karajorma
+	{ OP_SET_NUM_COUNTERMEASURES, "set-num-countermeasures\r\n"
+		"\tSets the number of countermeasures the ship has\r\n"
+		"\tValues greater than the maximum a ship can carry are set to the maximum\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Number to set"
 	},
 	
 	// Karajorma
