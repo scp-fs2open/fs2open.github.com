@@ -357,6 +357,8 @@ struct ship;
 #define OP_NAV_ISLINKED						(0x0047 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_IS_FACING						(0x0048 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_DIRECTIVE_IS_VARIABLE			(0x0049 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_GET_NUM_COUNTERMEASURES			(0x004a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+
 
 
 // conditional sexpressions
@@ -654,6 +656,9 @@ struct ship;
 #define OP_NAV_USEAP						(0x00ff | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 // 0x00ff is the last remaining sexp in the CHANGE category!  Future change sexps should go under CHANGE2
+
+#define OP_SET_NUM_COUNTERMEASURES			(0x0000 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Karajorma
+
 
 
 
