@@ -222,6 +222,7 @@ sexp_oper Operators[] = {
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
+	{ "is-in-box",					OP_IS_IN_BOX,					7,	8},	//Sushi
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
 	{ "get-damage-caused",			OP_GET_DAMAGE_CAUSED,		2, INT_MAX	},
 
@@ -18929,6 +18930,87 @@ void sexp_force_glide(int node)
 	return;
 }
 
+int sexp_is_in_box(int n)
+{
+	Assert(n >= 0);
+
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	n = CDR(n);
+
+	// Get box corners
+	float x1 = (float) eval_num(n);
+	n = CDR(n);
+	float x2 = (float) eval_num(n);
+	n = CDR(n);
+	float y1 = (float) eval_num(n);
+	n = CDR(n);
+	float y2 = (float) eval_num(n);
+	n = CDR(n);
+	float z1 = (float) eval_num(n);
+	n = CDR(n);
+	float z2 = (float) eval_num(n);
+	n = CDR(n);	
+	vec3d box_corner_1;
+	box_corner_1.xyz.x = MIN(x1, x2);
+	box_corner_1.xyz.y = MIN(y1, y2);
+	box_corner_1.xyz.z = MIN(z1, z2);
+	vec3d box_corner_2;
+	box_corner_2.xyz.x = MAX(x1, x2);
+	box_corner_2.xyz.y = MAX(y1, y2);
+	box_corner_2.xyz.z = MAX(z1, z2);
+
+	// Ship to define reference frame is optional
+	object* reference_ship_obj = NULL;
+	if (n != -1)
+	{
+		int sindex = ship_name_lookup(CTEXT(n));
+
+		if (sindex < 0 || Ships[sindex].objnum < 0)
+			return SEXP_FALSE;
+
+		reference_ship_obj = &Objects[Ships[sindex].objnum];
+	}
+
+	// Get position of test point
+	vec3d test_point;
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_EXITED:
+			return SEXP_KNOWN_FALSE;
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			test_point = oswpt.objp->pos;
+			break;
+
+		default:
+			return SEXP_FALSE;
+	}
+
+	// If reference_ship is specified, rotate test_point into its reference frame
+	if (reference_ship_obj != NULL) 
+	{
+		vec3d tempv;
+		vm_vec_sub(&tempv, &test_point, &reference_ship_obj->pos);
+		vm_vec_rotate(&test_point, &tempv, &reference_ship_obj->orient);
+	}
+
+	// Check to see if the test point is within the specified box
+	if ((test_point.xyz.x >= box_corner_1.xyz.x && test_point.xyz.x <= box_corner_2.xyz.x) &&
+		(test_point.xyz.y >= box_corner_1.xyz.y && test_point.xyz.y <= box_corner_2.xyz.y) &&
+		(test_point.xyz.z >= box_corner_1.xyz.z && test_point.xyz.z <= box_corner_2.xyz.z))
+	{
+		return SEXP_TRUE;
+	}
+	else
+	{
+		return SEXP_FALSE;
+	}
+}
+
 //Karajorma - Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets> 
 int get_generic_subsys(char *subsys_name) 
 {
@@ -19358,6 +19440,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_NUM_WITHIN_BOX:
 				sexp_val = sexp_num_within_box(node);
+				break;
+
+			case OP_IS_IN_BOX:
+				sexp_val = sexp_is_in_box(node);
 				break;
 
 			case OP_IS_SHIP_VISIBLE:
@@ -21416,6 +21502,7 @@ int query_operator_return_type(int op)
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_IS_BIT_SET:
 		case OP_DIRECTIVE_IS_VARIABLE:
+		case OP_IS_IN_BOX:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -22301,6 +22388,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_IS_IN_BOX:
+			if (argnum == 0) // First arg is a ship/wing
+				return OPF_SHIP_WING_POINT;
+			else if (argnum <= 6) // Next 6 args are coordinates
+				return OPF_NUMBER;
+			else // Next arg is a ship
+				return OPF_SHIP;
 
 		// Sesquipedalian
 		case OP_MISSILE_LOCKED:
@@ -25092,6 +25187,7 @@ int get_subcategory(int sexp_id)
 		case OP_GET_OBJECT_SPEED_Z:
 		case OP_NUM_WITHIN_BOX:
 		case OP_SPECIAL_WARP_DISTANCE:
+		case OP_IS_IN_BOX:
 			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
 			
 		case OP_WAS_PROMOTION_GRANTED:
@@ -25783,6 +25879,17 @@ sexp_help_struct Sexp_help[] = {
 		"\t5: Box height\r\n"
 		"\t6: Box depth\r\n"
 		"\tRest:\tShips or wings to check" },
+
+	{ OP_IS_IN_BOX, "Whether an object is in the box specified. If a second ship is specified, "
+		"the box is relative to that ship's reference frame. \r\n"
+		"\t1: Ships or wings to check\r\n"
+		"\t2: Min X\r\n"
+		"\t3: Max X\r\n"
+		"\t4: Min Y\r\n"
+		"\t5: Max Y\r\n"
+		"\t6: Min Z\r\n"
+		"\t7: Max Z\r\n"
+		"\t8: Ship to use as reference frame (optional)." },
 
 	{ OP_GET_DAMAGE_CAUSED, "Get damage caused (Status operator)\r\n"
 		"\tReturns the amount of damage one or more ships have done to a ship.\r\n\r\n"
