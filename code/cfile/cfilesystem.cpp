@@ -86,14 +86,14 @@ typedef struct cf_file {
 	int		pack_offset;									// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
 } cf_file;
 
-#define CF_NUM_FILES_PER_BLOCK   256
-#define CF_MAX_FILE_BLOCKS			128						// Can store 256*128 = 32768 files
+#define CF_NUM_FILES_PER_BLOCK   512
+#define CF_MAX_FILE_BLOCKS			128						// Can store 512*128 = 65536 files
 
 typedef struct cf_file_block {
 	cf_file						files[CF_NUM_FILES_PER_BLOCK];
 } cf_file_block;
 
-static int Num_files = 0;
+static uint Num_files = 0;
 static cf_file_block  *File_blocks[CF_MAX_FILE_BLOCKS];
 
 
@@ -109,6 +109,8 @@ cf_file *cf_get_file(int index)
 // Create a new file and return a pointer to it.
 cf_file *cf_create_file()
 {
+	Assertion(Num_files < CF_NUM_FILES_PER_BLOCK * CF_MAX_FILE_BLOCKS, "Too many files found. CFile cannot handle more than %d files.\n", CF_NUM_FILES_PER_BLOCK * CF_MAX_FILE_BLOCKS);
+
 	int block = Num_files / CF_NUM_FILES_PER_BLOCK;
 	int offset = Num_files % CF_NUM_FILES_PER_BLOCK;
 	
