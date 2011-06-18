@@ -2632,6 +2632,12 @@ strcpy_s(parse_error_text, temp_error);
 	//Parse the engine sound
 	parse_sound("$EngineSnd:", &sip->engine_snd, sip->name);
 
+	//Parse optional sound to be used for beginning of a glide
+	parse_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
+
+	//Parse optional sound to be used for end of a glide
+	parse_sound("$GlideEndSnd:", &sip->glide_end_snd, sip->name);
+
 	if(optional_string("$Closeup_pos:"))
 	{
 		stuff_vector(&sip->closeup_pos);
