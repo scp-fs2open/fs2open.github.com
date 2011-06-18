@@ -1252,6 +1252,8 @@ typedef struct ship_info {
 	float	sup_subsys_repair_rate;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
+	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
+	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
 	float		closeup_zoom;					// zoom when using ship in closeup view (eg briefing and hud target monitor)
