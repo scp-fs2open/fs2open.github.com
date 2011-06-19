@@ -633,6 +633,12 @@ void red_alert_store_wingman_status()
 			red_alert_store_subsys_status(&ras, NULL);
 
 			Red_alert_wingman_status.push_back( ras );
+			
+			//Clear out all vectors in ras before looping.
+			ras.primary_weapons.clear();
+			ras.secondary_weapons.clear();
+			ras.subsys_current_hits.clear();
+			ras.subsys_aggregate_current_hits.clear();
 		}
 	}
 
