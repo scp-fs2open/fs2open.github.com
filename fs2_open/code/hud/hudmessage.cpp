@@ -1290,7 +1290,7 @@ bool HudGaugeTalkingHead::canRender()
 }
 
 HudGaugeFixedMessages::HudGaugeFixedMessages():
-HudGauge(HUD_OBJECT_FIXED_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_FIXED_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE), 255, 255, 255)
 {
 }
 
