@@ -104,6 +104,11 @@ public class ConfigPage extends InstallerPage
 		portField = new JTextField(usingProxy ? Integer.toString(port) : "none");
 		hostField.setEnabled(usingProxy);
 		portField.setEnabled(usingProxy);
+		
+		// they shouldn't change vertical size
+		directoryField.setMaximumSize(new Dimension((int) directoryField.getMaximumSize().getWidth(), (int) directoryField.getPreferredSize().getHeight()));
+		hostField.setMaximumSize(new Dimension((int) hostField.getMaximumSize().getWidth(), (int) hostField.getPreferredSize().getHeight()));
+		portField.setMaximumSize(new Dimension((int) portField.getMaximumSize().getWidth(), (int) portField.getPreferredSize().getHeight()));
 	}
 	
 	@Override
@@ -181,11 +186,11 @@ public class ConfigPage extends InstallerPage
 		panel.setBorder(BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN));
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		panel.add(text);
-		panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN));
+		panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN * 2));
 		panel.add(outerDirPanel);
-		panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN));
+		panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN * 2));
 		panel.add(outerProxyPanel);
-		panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN));
+		panel.add(Box.createVerticalStrut(GUIConstants.DEFAULT_MARGIN * 2));
 		panel.add(Box.createVerticalGlue());
 		
 		return panel;
