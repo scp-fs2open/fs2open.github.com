@@ -444,10 +444,14 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	weapon_info *wip;
 	wep_t weapons;
 
+	// Make sure there isn't any data from the previous ship.
+	ras->primary_weapons.clear();
+	ras->secondary_weapons.clear();
+
 	if (swp == NULL) {
 		return;
 	}
-
+	
 	// edited to accommodate ballistics - Goober5000
 	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 		weapons.index = swp->primary_bank_weapons[i];
@@ -557,7 +561,11 @@ void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 {
 	ship_subsys *ss;
 	int i;
-
+	
+	// Make sure there isn't any data from the previous ship.
+	ras->subsys_current_hits.clear();
+	ras->subsys_aggregate_current_hits.clear();
+	
 	if (shipp == NULL) {
 		return;
 	}
@@ -633,12 +641,6 @@ void red_alert_store_wingman_status()
 			red_alert_store_subsys_status(&ras, NULL);
 
 			Red_alert_wingman_status.push_back( ras );
-			
-			//Clear out all vectors in ras before looping.
-			ras.primary_weapons.clear();
-			ras.secondary_weapons.clear();
-			ras.subsys_current_hits.clear();
-			ras.subsys_aggregate_current_hits.clear();
 		}
 	}
 
