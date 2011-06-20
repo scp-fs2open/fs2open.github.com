@@ -25,6 +25,9 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
+
+import com.fsoinstaller.utils.Logger;
 
 
 /**
@@ -34,7 +37,11 @@ import java.util.List;
  */
 public class InstallerNodeFactory
 {
+	private static final Logger logger = Logger.getLogger(InstallerNodeFactory.class);
+	
 	private static final String EOL = System.getProperty("line.separator");
+	private static final Pattern SPACE_OR_TAB_PATTERN = Pattern.compile("[ \t]");
+	static final Pattern TOKEN_PATTERN = Pattern.compile("[A-Z_]+");
 	
 	public static InstallerNode readNode(Reader reader) throws InstallerNodeParseException, IOException
 	{
@@ -95,17 +102,29 @@ public class InstallerNodeFactory
 				
 				handleToken(reader, (InstallerNodeToken) object, node, currentInstallUnit);
 			}
-			// an unannotated string means something we install
+			// we have an unannotated string
 			else if (!((String) object).isEmpty())
 			{
-				// so create it if necessary
-				if (currentInstallUnit == null)
-				{
-					currentInstallUnit = new InstallerNode.InstallUnit();
-					node.addInstall(currentInstallUnit);
-				}
+				String string = (String) object;
 				
-				currentInstallUnit.addFile((String) object);
+				// if it's all-caps and has no spaces, it's highly likely to be a token from the future
+				if (TOKEN_PATTERN.matcher(string).matches())
+				{
+					logger.debug("Skipping possible token from a future version: " + string);
+					
+					// clear the install unit and do nothing else, causing us to ignore it until the next recognized token
+					currentInstallUnit = null;
+				}
+				// not in token format, but still unannotated... probably input for a future token
+				else if (currentInstallUnit == null)
+				{
+					logger.debug("Skipping string: " + string);
+				}
+				// an active install unit means we install this string
+				else
+				{
+					currentInstallUnit.addFile((String) object);
+				}
 			}
 		}
 		
@@ -168,7 +187,7 @@ public class InstallerNodeFactory
 				String type, filename, hash;
 				
 				// could be all on one line or on three lines
-				String[] parts = line.split("[ \t]");
+				String[] parts = SPACE_OR_TAB_PATTERN.split(line);
 				if (parts.length == 3)
 				{
 					type = parts[0];
@@ -181,7 +200,7 @@ public class InstallerNodeFactory
 					filename = readString(reader);
 					hash = readString(reader);
 				}
-
+				
 				node.addHashTriple(new InstallerNode.HashTriple(type, filename, hash));
 				break;
 			

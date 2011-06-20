@@ -46,6 +46,9 @@ public enum InstallerNodeToken
 	private InstallerNodeToken(String token)
 	{
 		this.token = token;
+		
+		if (!InstallerNodeFactory.TOKEN_PATTERN.matcher(token).matches())
+			throw new IllegalArgumentException("InstallerNodeToken must match token pattern!");
 	}
 	
 	public String getToken()
