@@ -1409,7 +1409,8 @@ static int cf_file_already_in_list( SCP_vector<SCP_string> &list, char *filename
 int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, int sort, SCP_vector<file_list_info> *info )
 {
 	char *ptr;
-	int i, l, own_flag = 0;
+	uint i;
+	int l, own_flag = 0;
 	SCP_vector<file_list_info> my_info;
 	file_list_info tinfo;
 
