@@ -430,8 +430,8 @@ typedef struct p_object {
 	int		alt_type_index;					// optional alt type index
 	int		callsign_index;					// optional callsign index
 
-	float ship_max_hull_strength;
-	float ship_max_shield_strength;
+	float ship_max_hull_strength_multiplier;			// Needed to deal with special hitpoints
+	float ship_max_shield_strength_multiplier;			//
 
 	// Goober5000
 	int num_texture_replacements;
@@ -525,8 +525,8 @@ typedef struct p_object {
 		alt_type_index = 0;
 		callsign_index = 0;
 
-		ship_max_hull_strength = 0.;
-		ship_max_shield_strength = 0.;
+		ship_max_hull_strength_multiplier = 1.0f;
+		ship_max_shield_strength_multiplier = 1.0f;
 
 		num_texture_replacements = 0;
 		
