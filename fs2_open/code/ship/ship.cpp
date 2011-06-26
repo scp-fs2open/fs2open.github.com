@@ -248,6 +248,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "damage as hull",			MSS_FLAG_DAMAGE_AS_HULL,	0 },
 	{ "starts locked",          MSS_FLAG_TURRET_LOCKED,     0 },
 	{ "no aggregate",			MSS_FLAG_NO_AGGREGATE,		0 },
+	{ "wait for animation",     MSS_FLAG_TURRET_ANIM_WAIT,  0 },
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
