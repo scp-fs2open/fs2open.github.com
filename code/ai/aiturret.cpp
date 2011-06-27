@@ -2353,9 +2353,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 			if ( ok_to_fire )
 			{
-				something_was_ok_to_fire = true;
-				Num_turrets_fired++;
-
 				// starting animation checks
 				if (ss->turret_animation_position == MA_POS_NOT_SET) {
 					if ( model_anim_start_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num, 1) ) {
@@ -2363,7 +2360,19 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 						ss->turret_animation_position = MA_POS_SET;
 					}
 				}
-				
+
+				//Wait until the animation is done to actually fire
+				if (tp->flags & MSS_FLAG_TURRET_ANIM_WAIT && (ss->turret_animation_position != MA_POS_READY))
+				{
+					ok_to_fire = false;
+				}
+			}
+
+			if ( ok_to_fire )
+			{
+				something_was_ok_to_fire = true;
+				Num_turrets_fired++;
+
 				//Pass along which gun we are using
 				if (tp->flags & MSS_FLAG_TURRET_SALVO)
 					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);

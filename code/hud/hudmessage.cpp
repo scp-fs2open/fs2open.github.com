@@ -413,15 +413,18 @@ void HudGaugeMessages::scrollMessages()
 	}
 }
 
+void HudGaugeMessages::preprocess()
+{
+	processMessageBuffer();
+	scrollMessages();
+}
+
 // ---------------------------------------------------------------------------------------
 // HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
 // the messages up when a new message arrives.  
 //
 void HudGaugeMessages::render(float frametime)
 {
-	processMessageBuffer();
-	scrollMessages();
-
 	hud_set_default_color();
 
 	// dependant on max_width, max_lines, and line_height

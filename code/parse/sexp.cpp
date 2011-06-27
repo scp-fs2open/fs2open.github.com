@@ -14750,11 +14750,11 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 
 	// copy hull...
 	target_pobjp->special_hitpoints = source_shipp->special_hitpoints;
-	target_pobjp->ship_max_hull_strength = source_shipp->ship_max_hull_strength;
+	target_pobjp->ship_max_hull_strength_multiplier = source_shipp->ship_max_hull_strength / Ship_info[source_shipp->ship_info_index].max_hull_strength;
 	target_pobjp->initial_hull = fl2i(get_hull_pct(source_objp) * 100.0f);
 
 	// ...and shields
-	target_pobjp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
+	target_pobjp->ship_max_shield_strength_multiplier = source_shipp->ship_max_shield_strength / Ship_info[source_shipp->ship_info_index].max_shield_strength;
 	target_pobjp->initial_shields = fl2i(get_shield_pct(source_objp) * 100.0f);
 
 

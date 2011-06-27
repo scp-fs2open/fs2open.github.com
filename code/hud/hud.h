@@ -287,6 +287,7 @@ public:
 	void startPopUp(int time=4000);
 	int popUpActive();
 
+	virtual void preprocess();
 	virtual void render(float frametime);
 	virtual bool canRender();
 	virtual void pageIn();
