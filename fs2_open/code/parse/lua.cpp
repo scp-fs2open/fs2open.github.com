@@ -12250,6 +12250,11 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 				pi.type = PARTICLE_SMOKE2;
 				break;
 			case LE_PARTICLE_BITMAP:
+				if (pi.optional_data < 0)
+				{
+					LuaError(L, "Invalid texture specified for createParticle()!");
+				}
+
 				pi.type = PARTICLE_BITMAP;
 				break;
 		}
