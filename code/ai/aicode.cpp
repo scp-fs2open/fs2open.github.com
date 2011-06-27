@@ -5768,9 +5768,7 @@ int ai_fire_primary_weapon(object *objp)
 
 //	if (!IS_VEC_NULL(&G_predicted_pos)) {
 	if (!( vm_vec_mag_quick(&G_predicted_pos) < AICODE_SMALL_MAGNITUDE )) {
-		if ( !vm_vec_cmp(&G_predicted_pos, &G_fire_pos) ) {
-			nprintf(("Warning", "Avoid NULL vector assert.. why are G_predicted_pos and G_fire_pos the same?\n"));
-		} else {
+		if ( vm_vec_cmp(&G_predicted_pos, &G_fire_pos) ) {
 			vm_vec_normalized_dir(&v2t, &G_predicted_pos, &G_fire_pos);
 			dot = vm_vec_dot(&v2t, &objp->orient.vec.fvec);
 			if (dot > .998629534f){	//	if within 3.0 degrees of desired heading, bash
