@@ -394,6 +394,9 @@ sexp_oper Operators[] = {
 	{ "never-warp",					OP_WARP_NEVER,					1, INT_MAX, },
 	{ "allow-warp",					OP_WARP_ALLOWED,				1, INT_MAX, },
 	{ "set-armor-type",				OP_SET_ARMOR_TYPE,				4, INT_MAX, },  // FUBAR
+	{ "add-to-collision-group",		OP_ADD_TO_COLGROUP,				2, INT_MAX },	// The E
+	{ "remove-from-collision-group",OP_REMOVE_FROM_COLGROUP,		2, INT_MAX },
+	{ "get-collision-group",		OP_GET_COLGROUP_ID,				1, 1 },
 
 	{ "fire-beam",						OP_BEAM_FIRE,					3, 4		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
@@ -19150,6 +19153,46 @@ int sexp_is_in_box(int n)
 	}
 }
 
+void sexp_manipulate_colgroup(int node, bool add_to_group) {
+	object* objp;
+	ship* shipp;
+	int colgroup_id;
+
+	node = CDR(node);
+
+	shipp = sexp_get_ship_from_node(node);
+
+	objp = &Objects[shipp->objnum];
+	colgroup_id = objp->collision_group_id;
+
+	while (node != -1) {
+
+		int group = eval_num(node);
+		
+		if (group < 0 || group > 31) {
+			WarningEx(LOCATION, "Invalid collision group id %d specified for object %s. Valid IDs range from 1 to 32.\n", group, shipp->ship_name); 
+		} else {
+			if (add_to_group) {
+				colgroup_id |= (1<<group);
+			} else {
+				colgroup_id &= !(1<<group);
+			}
+		}
+
+		node = CDR(node);
+	}
+
+	objp->collision_group_id = colgroup_id;
+}
+
+int sexp_get_colgroup(int node) {
+	ship* shipp;
+
+	shipp = sexp_get_ship_from_node(CDR(node));
+
+	return Objects[shipp->objnum].collision_group_id;
+}
+
 //Karajorma - Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets> 
 int get_generic_subsys(char *subsys_name) 
 {
@@ -21177,6 +21220,20 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_hud_activate_gauge_type(node);
 				break;
 
+			case OP_ADD_TO_COLGROUP:
+				sexp_val = SEXP_TRUE;
+				sexp_manipulate_colgroup(node, true);
+				break;
+
+			case OP_REMOVE_FROM_COLGROUP:
+				sexp_val = SEXP_TRUE;
+				sexp_manipulate_colgroup(node, false);
+				break;
+
+			case OP_GET_COLGROUP_ID:
+				sexp_val = sexp_get_colgroup(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -21687,6 +21744,7 @@ int query_operator_return_type(int op)
 		case OP_STRING_TO_INT:
 		case OP_GET_THROTTLE_SPEED:
 		case OP_GET_VARIABLE_BY_INDEX:
+		case OP_GET_COLGROUP_ID:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -22028,6 +22086,8 @@ int query_operator_return_type(int op)
 		case OP_ENABLE_ETS:
 		case OP_STRING_GET_SUBSTRING:
 		case OP_STRING_SET_SUBSTRING:
+		case OP_ADD_TO_COLGROUP:
+		case OP_REMOVE_FROM_COLGROUP:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -23863,6 +23923,21 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_GET_COLGROUP_ID:
+			return OPF_SHIP;
+
+		case OP_ADD_TO_COLGROUP:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
+
+		case OP_REMOVE_FROM_COLGROUP:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
+
 		default:
 			Int3();
 	}
@@ -25112,6 +25187,9 @@ int get_subcategory(int sexp_id)
 		case OP_FORCE_GLIDE:
 		case OP_DISABLE_ETS:
 		case OP_ENABLE_ETS:
+		case OP_ADD_TO_COLGROUP:
+		case OP_REMOVE_FROM_COLGROUP:
+		case OP_GET_COLGROUP_ID:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
@@ -28626,8 +28704,31 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tGauge Type\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
+	},
+
+	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
+		"\tAdds a ship to the specified collision group(s). Note that there are 32 collision groups,\r"
+		"\tand that an object may be in several collision groups at the same time\r\n"
+		"Takes 2 or more Arguments...\r\n"
+		"\t1:\tObject to add\r\n"
+		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
+	},
+
+	{OP_REMOVE_FROM_COLGROUP, "remove-from-collision-group\r\n"
+		"\tRemoves a ship from the specified collision group(s). Note that there are 32 collision groups,\n"
+		"\tand that an object may be in several collision groups at the same time\r\n"
+		"Takes 2 or more Arguments...\r\n"
+		"\t1:\tObject to add\r\n"
+		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
+	},
+
+	{OP_GET_COLGROUP_ID, "get-collision-group\r\n"
+		"\tReturns an objects' collision group ID. Note that this ID is a bitfield.\r\n"
+		"Takes 1 Argument...\r\n"
+		"\t1:\tObject name\r\n"
 	}
 };
+
 
 
 op_menu_struct op_menu[] =

@@ -165,7 +165,7 @@ typedef struct object {
 	dock_instance	*dock_list;			// Goober5000 - objects this object is docked to
 	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead
 
-	int				collision_group_id;
+	int				collision_group_id; // This is a bitfield. Collision checks will be skipped if A->collision_group_id & B->collision_group_id returns nonzero
 } object;
 
 struct object_h {

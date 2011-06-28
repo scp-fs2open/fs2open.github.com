@@ -4569,7 +4569,7 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
-ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature")
+ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature. NOTE: This is a bitfield, NOT a normal number.")
 {
 	object_h *objh = NULL;
 	int id = 0;
