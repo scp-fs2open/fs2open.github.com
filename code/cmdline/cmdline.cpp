@@ -170,6 +170,7 @@ Flag exe_params[] =
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-disable_glsl_model","Don't use shaders for model rendering", true, 0,		EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-disable_di_mouse",  "Don't use DirectInput for mouse control", true, 0,		EASY_DEFAULT,		"Troubleshoot", "", },
+	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true, 0,	EASY_DEFAULT,		"Troubleshoot", "", },
 
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
@@ -373,6 +374,7 @@ cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
 cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
 cmdline_parm no_di_mouse_arg("-disable_di_mouse", NULL); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
+cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_load_all_weapons = 0;
@@ -388,6 +390,7 @@ int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
 int Cmdline_no_glsl_model_rendering = 0;
 int Cmdline_no_di_mouse = 0;
+int Cmdline_drawelements = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -1373,6 +1376,11 @@ bool SetCmdlineParams()
 	if ( no_vbo_arg.found() )
 	{
 		Cmdline_novbo = 1;
+	}
+
+	if ( no_drawrangeelements.found() )
+	{
+		Cmdline_drawelements = 1;
 	}
 
 	if ( snd_preload_arg.found() )
