@@ -19158,9 +19158,10 @@ void sexp_manipulate_colgroup(int node, bool add_to_group) {
 	ship* shipp;
 	int colgroup_id;
 
-	node = CDR(node);
-
 	shipp = sexp_get_ship_from_node(node);
+
+	if (shipp == NULL)
+		return;
 
 	objp = &Objects[shipp->objnum];
 	colgroup_id = objp->collision_group_id;
