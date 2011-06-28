@@ -504,7 +504,7 @@ void scoring_add_damage(object *ship_obj,object *other_obj,float damage)
 
 		// fill in the slot damage and damager-index
 		if(found_slot){
-			sp->damage_ship[lowest_index] += actual_damage;								
+			sp->damage_ship[lowest_index] += actual_damage;
 		} else {
 			sp->damage_ship[lowest_index] = actual_damage;
 		}
@@ -690,7 +690,7 @@ int scoring_eval_kill(object *ship_obj)
 
 #ifdef SCORING_DEBUG
 					char kill_score_text[1024] = "";
-					sprintf(kill_score_text, "SCORING : %s killed a ship worth %d points and gets %d pts for the kill", plr->callsign, dead_ship->score, kill_score);	
+					sprintf(kill_score_text, "SCORING : %s killed a ship worth %d points and gets %d pts for the kill\n", plr->callsign, dead_ship->score, kill_score);	
 					if (MULTIPLAYER_MASTER) {
 						send_game_chat_packet(Net_player, kill_score_text, MULTI_MSG_ALL);
 					}
@@ -714,7 +714,7 @@ int scoring_eval_kill(object *ship_obj)
 #ifdef SCORING_DEBUG
 									// DEBUG CODE TO TEST NEW SCORING
 									char score_text[1024] = "";
-									sprintf(score_text, "SCORING : All team mates get %d pts for helping kill the capship", assist_score);
+									sprintf(score_text, "SCORING : All team mates get %d pts for helping kill the capship\n", assist_score);
 									send_game_chat_packet(Net_player, score_text, MULTI_MSG_ALL);
 									HUD_printf(score_text);
 									mprintf((score_text));
@@ -864,7 +864,7 @@ void scoring_eval_assists(ship *sp,int killer_sig, bool is_enemy_player)
 
 				// DEBUG CODE TO TEST NEW SCORING
 				char score_text[1024] = "";
-				sprintf(score_text, "SCORING : %s gets %d pts for getting an assist", plr->callsign, assist_score);							
+				sprintf(score_text, "SCORING : %s gets %d pts for getting an assist\n", plr->callsign, assist_score);							
 				if (MULTIPLAYER_MASTER) {		
 					send_game_chat_packet(Net_player, score_text, MULTI_MSG_ALL);								
 				} 
