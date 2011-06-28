@@ -2253,7 +2253,9 @@ int sexp_tree::add_default_operator(int op, int argnum)
 				(argnum == 5 && Operators[op].value == OP_ADD_SUN_BITMAP) ||
 				(argnum == 2 && Operators[op].value == OP_STRING_CONCATENATE) ||
 				(argnum == 0 && Operators[op].value == OP_DIRECTIVE_IS_VARIABLE) ||
-				(argnum == 1 && Operators[op].value == OP_INT_TO_STRING))
+				(argnum == 1 && Operators[op].value == OP_INT_TO_STRING) ||
+				(argnum == 3 && Operators[op].value == OP_STRING_GET_SUBSTRING) ||
+				(argnum == 4 && Operators[op].value == OP_STRING_SET_SUBSTRING))
 			{
 
 				int sexp_var_index = get_index_sexp_variable_name(item.text);
@@ -3294,7 +3296,9 @@ void sexp_tree::verify_and_fix_arguments(int node)
 						(arg_num == 5 && Operators[op].value == OP_ADD_SUN_BITMAP) ||
 						(arg_num == 2 && Operators[op].value == OP_STRING_CONCATENATE) ||
 						(arg_num == 0 && Operators[op].value == OP_DIRECTIVE_IS_VARIABLE) ||
-						(arg_num == 1 && Operators[op].value == OP_INT_TO_STRING))
+						(arg_num == 1 && Operators[op].value == OP_INT_TO_STRING) ||
+						(arg_num == 3 && Operators[op].value == OP_STRING_GET_SUBSTRING) ||
+						(arg_num == 4 && Operators[op].value == OP_STRING_SET_SUBSTRING))
 					{
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
