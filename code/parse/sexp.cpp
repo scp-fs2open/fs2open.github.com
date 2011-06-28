@@ -629,6 +629,9 @@ sexp_oper Operators[] = {
 	{ "string-to-int",				OP_STRING_TO_INT,						1, 1,			}, // Karajorma
 	{ "int-to-string",				OP_INT_TO_STRING,						2, 2,			}, // Goober5000
 	{ "string-concatenate",			OP_STRING_CONCATENATE,					3, 3,			}, // Goober5000
+	{ "string-get-substring",		OP_STRING_GET_SUBSTRING,				4, 4,	}, // Goober5000
+	{ "string-set-substring",		OP_STRING_SET_SUBSTRING,				5, 5,	}, // Goober5000
+	{ "string-get-length",			OP_STRING_GET_LENGTH,					1, 1,	}, // Goober5000
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
 };
@@ -17702,7 +17705,7 @@ void sexp_int_to_string(int n)
 void sexp_string_concatenate(int n)
 {
 	int sexp_variable_index;
-	char new_text[TOKEN_LENGTH];
+	char new_text[TOKEN_LENGTH * 2];
 
 	// Only do single player of multi host
 	if ( MULTIPLAYER_CLIENT )
@@ -17727,16 +17730,152 @@ void sexp_string_concatenate(int n)
 		return;
 	}
 
-	// add first string
-	memset(new_text, 0, TOKEN_LENGTH);
+	// concatenate strings
 	strcpy(new_text, str1);
+	strcat(new_text, str2);
 
 	// check length
-	if (strlen(str1) + strlen(str2) >= TOKEN_LENGTH)
+	if (strlen(new_text) >= TOKEN_LENGTH)
+	{
 		Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+		new_text[TOKEN_LENGTH] = 0;
+	}
 
-	// add second string
-	strncat(new_text, str2, TOKEN_LENGTH - strlen(str1) - 1);
+	// assign to variable
+	sexp_modify_variable(new_text, sexp_variable_index);
+}
+
+// Goober5000
+int sexp_string_get_length(int node)
+{
+	return strlen(CTEXT(node));
+}
+
+// Goober5000
+void sexp_string_get_substring(int node)
+{
+	int n = node;
+	int sexp_variable_index;
+	char new_text[TOKEN_LENGTH];
+
+	// Only do single player of multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	char *parent = CTEXT(n);
+	n = CDR(n);
+	int pos = eval_num(n);
+	n = CDR(n);
+	int len = eval_num(n);
+	n = CDR(n);
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	// check variable type
+	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
+	{
+		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		return;
+	}
+
+	int parent_len = strlen(parent);
+
+	// sanity
+	if (pos >= parent_len)
+	{
+		Warning(LOCATION, "( string-get-substring %s %d %d ) failed: starting position is larger than the string length!", parent, pos, len);
+		return;
+	}
+
+	// sanity
+	if (pos + len > parent_len)
+		len = parent_len - pos;
+
+	// copy substring
+	memset(new_text, 0, TOKEN_LENGTH);
+	strncpy(new_text, &parent[pos], len);
+
+	// assign to variable
+	sexp_modify_variable(new_text, sexp_variable_index);
+}
+
+// Goober5000
+void sexp_string_set_substring(int node)
+{
+	int n = node;
+	int sexp_variable_index;
+	char new_text[TOKEN_LENGTH * 2];
+
+	// Only do single player of multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	char *parent = CTEXT(n);
+	n = CDR(n);
+	int pos = eval_num(n);
+	n = CDR(n);
+	int len = eval_num(n);
+	n = CDR(n);
+	char *new_substring = CTEXT(n);
+	n = CDR(n);
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	// check variable type
+	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
+	{
+		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		return;
+	}
+
+	int parent_len = strlen(parent);
+	int new_len = strlen(new_substring);
+
+	// sanity
+	if (pos >= parent_len)
+	{
+		Warning(LOCATION, "( string-set-substring %s %d %d %s ) failed: starting position is larger than the string length!", parent, pos, len, new_substring);
+		return;
+	}
+
+	// make the common case fast
+	if (len == 1 && new_len == 1)
+	{
+		strcpy(new_text, parent);
+		new_text[pos] = new_substring[0];
+	}
+	else
+	{
+		// sanity
+		if (pos + len > parent_len)
+			len = parent_len - pos;
+
+		// copy parent string up to the substring pos
+		strncpy(new_text, parent, pos);
+
+		// add new substring
+		strcpy(&new_text[pos], new_substring);
+
+		// add rest of parent string
+		strcat(new_text, &parent[pos + len]);
+
+		// check length
+		if (strlen(new_text) >= TOKEN_LENGTH)
+		{
+			Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+			new_text[TOKEN_LENGTH] = 0;
+		}
+	}
 
 	// assign to variable
 	sexp_modify_variable(new_text, sexp_variable_index);
@@ -20353,6 +20492,24 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// Goober5000
+			case OP_STRING_GET_SUBSTRING:
+				sexp_string_get_substring(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
+			case OP_STRING_SET_SUBSTRING:
+				sexp_string_set_substring(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
+			case OP_STRING_GET_LENGTH:
+				sexp_val = sexp_string_get_length(node);
+				break;
+
+
 /*			// debugging operators
 			case OP_INT3:
 				Int3();
@@ -21586,6 +21743,7 @@ int query_operator_return_type(int op)
 		case OP_GET_DAMAGE_CAUSED:
 		case OP_CUTSCENES_GET_FOV:
 		case OP_NUM_VALID_ARGUMENTS:
+		case OP_STRING_GET_LENGTH:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -21868,6 +22026,8 @@ int query_operator_return_type(int op)
 		case OP_INT_TO_STRING:
 		case OP_DISABLE_ETS:
 		case OP_ENABLE_ETS:
+		case OP_STRING_GET_SUBSTRING:
+		case OP_STRING_SET_SUBSTRING:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -21990,6 +22150,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_STRING_GREATER_THAN:
 		case OP_STRING_LESS_THAN:
 		case OP_STRING_TO_INT:		// Karajorma
+		case OP_STRING_GET_LENGTH:	// Goober5000
 			return OPF_STRING;
 
 		case OP_STRING_CONCATENATE:
@@ -22003,6 +22164,26 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0) {
 				return OPF_NUMBER;
 			} else if (argnum == 1) {
+				return OPF_VARIABLE_NAME;
+			}
+
+		case OP_STRING_GET_SUBSTRING:
+			if (argnum == 0) {
+				return OPF_STRING;
+			} else if (argnum == 1 || argnum == 2) {
+				return OPF_POSITIVE;
+			} else if (argnum == 3) {
+				return OPF_VARIABLE_NAME;
+			}
+
+		case OP_STRING_SET_SUBSTRING:
+			if (argnum == 0) {
+				return OPF_STRING;
+			} else if (argnum == 1 || argnum == 2) {
+				return OPF_POSITIVE;
+			} else if (argnum == 3) {
+				return OPF_STRING;
+			} else if (argnum == 4) {
 				return OPF_VARIABLE_NAME;
 			}
 
@@ -26711,6 +26892,10 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tString to convert" },
 
 	// Goober5000
+	{ OP_STRING_GET_LENGTH, "string-get-length\r\n"
+		"\tReturns the length of the specified string.  Takes 1 argument." },
+
+	// Goober5000
 	{ OP_INT_TO_STRING, "int-to-string\r\n"
 		"\tConverts an integer into a string.  The destination must be a string variable.\r\n"
 		"Takes 2 argument...\r\n"
@@ -26725,6 +26910,27 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: First string\r\n"
 		"\t2: Second string\r\n"
 		"\t3: String variable to hold the result\r\n" },
+
+	// Goober5000
+	{ OP_STRING_GET_SUBSTRING, "string-get-substring\r\n"
+		"\tExtracts a substring from a parent string, putting the result into a string variable.  If the length of the string will "
+		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1: Parent string\r\n"
+		"\t2: Index at which the substring begins (0-based)\r\n"
+		"\t3: Length of the substring\r\n"
+		"\t4: String variable to hold the result\r\n" },
+
+	// Goober5000
+	{ OP_STRING_SET_SUBSTRING, "string-set-substring\r\n"
+		"\tReplaces a substring from a parent string with a new string, putting the result into a string variable.  If the length of the string will "
+		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1: Parent string\r\n"
+		"\t2: Index at which the substring begins (0-based)\r\n"
+		"\t3: Length of the substring\r\n"
+		"\t4: New substring (which can be a different length than the old substring)\r\n"
+		"\t5: String variable to hold the result\r\n" },
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
