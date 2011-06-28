@@ -35,6 +35,7 @@
 #include "weapon/weapon.h"
 #include "object/object.h"
 #include "parse/parselo.h"
+#include "mission/missionparse.h"
 
 
 // ------------------------------------------------------------------------------------------------------
@@ -839,11 +840,19 @@ void multi_ts_assign_players_all()
 	// this is valid for coop games as well because the first starting wing
 	// and the first tvt wing must have the same name
 	memset(name_lookup,0,100);
-	if(Netgame.type_flags & NG_TYPE_TEAM){
-		sprintf(name_lookup, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
-	} else {
-		sprintf(name_lookup, "%s 1", TVT_wing_names[0]);
+
+	// To account for cases where <Wingname> 1 is not a player ship
+	for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
+		if(Netgame.type_flags & NG_TYPE_TEAM) {
+			sprintf(name_lookup, "%s %d", TVT_wing_names[Netgame.host->p_info.team], i + 1);
+		} else {
+			sprintf(name_lookup, "%s %d", TVT_wing_names[0], i + 1);
+		}
+
+		if (!stricmp(name_lookup, Player_start_shipname))
+			break;
 	}
+		
 	shipnum = ship_name_lookup(name_lookup);
 	
 	// if we couldn't find the ship for the host
