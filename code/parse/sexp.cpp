@@ -19166,6 +19166,8 @@ void sexp_manipulate_colgroup(int node, bool add_to_group) {
 	objp = &Objects[shipp->objnum];
 	colgroup_id = objp->collision_group_id;
 
+	node = CDR(node);
+
 	while (node != -1) {
 
 		int group = eval_num(node);
