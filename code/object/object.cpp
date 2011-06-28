@@ -304,6 +304,7 @@ void obj_init()
 	for (i=0; i<MAX_OBJECTS; i++)	{
 		objp->type = OBJ_NONE;
 		objp->signature = i + 100;
+		objp->collision_group_id = 0;
 
 		// zero all object sounds
 		for(idx=0; idx<MAX_OBJECT_SOUNDS; idx++){
@@ -464,6 +465,8 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	}
 	obj->num_pairs = 0;
 	obj->net_signature = 0;			// be sure to reset this value so new objects don't take on old signatures.	
+
+	obj->collision_group_id = 0;
 
 	//WMC
 	/*
