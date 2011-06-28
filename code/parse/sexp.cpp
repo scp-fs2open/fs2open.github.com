@@ -19158,19 +19158,22 @@ void sexp_manipulate_colgroup(int node, bool add_to_group) {
 	ship* shipp;
 	int colgroup_id;
 
-	node = CDR(node);
-
 	shipp = sexp_get_ship_from_node(node);
+
+	if (shipp == NULL)
+		return;
 
 	objp = &Objects[shipp->objnum];
 	colgroup_id = objp->collision_group_id;
+
+	node = CDR(node);
 
 	while (node != -1) {
 
 		int group = eval_num(node);
 		
 		if (group < 0 || group > 31) {
-			WarningEx(LOCATION, "Invalid collision group id %d specified for object %s. Valid IDs range from 1 to 32.\n", group, shipp->ship_name); 
+			WarningEx(LOCATION, "Invalid collision group id %d specified for object %s. Valid IDs range from 0 to 31.\n", group, shipp->ship_name); 
 		} else {
 			if (add_to_group) {
 				colgroup_id |= (1<<group);
