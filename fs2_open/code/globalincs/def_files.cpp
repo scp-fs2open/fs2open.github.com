@@ -1354,9 +1354,16 @@ void main()																		\n\
 																				\n\
  #ifdef FLAG_ENV_MAP															\n\
  // Env color																	\n\
+  #ifdef FLAG_NORMAL_MAP														\n\
+	vec3 envReflectNM = envReflect + envOffset;									\n\
+	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;	\n\
+	fragmentColor.a += (dot(textureCube(sEnvmap, envReflectNM).rgb, textureCube(sEnvmap, envReflectNM).rgb) * ENV_ALPHA_FACTOR);	\n\
+	fragmentColor.rgb += textureCube(sEnvmap, envReflectNM).rgb * envIntensity;	\n\
+  #else																			\n\
 	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;	\n\
 	fragmentColor.a += (dot(textureCube(sEnvmap, envReflect).rgb, textureCube(sEnvmap, envReflect).rgb) * ENV_ALPHA_FACTOR);	\n\
 	fragmentColor.rgb += textureCube(sEnvmap, envReflect).rgb * envIntensity;	\n\
+  #endif																		\n\
  #endif																			\n\
 																				\n\
  #ifdef FLAG_GLOW_MAP															\n\
