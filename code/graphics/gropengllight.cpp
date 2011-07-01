@@ -292,7 +292,9 @@ void opengl_change_active_lights(int pos, int d_offset)
 
 	glTranslated(-eyex, -eyey, -eyez);
 	glScalef(1.0f, 1.0f, -1.0f);
-
+	
+	//Valathil: Sort lights by priority
+	opengl_pre_render_init_lights();
 
 	for (i = 0; i < GL_max_lights; i++) {
 		if ( (offset + i) >= Num_active_gl_lights ) {
