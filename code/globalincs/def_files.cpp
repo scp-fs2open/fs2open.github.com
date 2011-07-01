@@ -1690,6 +1690,7 @@ void main() {																		\n\
 char *Default_blur_fragment_shader = "\
 varying float blurSize;											\n\
 																\n\
+#define BLUR_SIZE_DIV 3.0										\n\
 uniform sampler2D tex;											\n\
 																\n\
 // Gaussian Blur												\n\
@@ -1699,28 +1700,29 @@ void main()														\n\
 {																\n\
 	// Echelon9 - Due to Apple not implementing array constructors in OS X's		\n\
 	// GLSL implementation we need to setup the arrays this way as a workaround		\n\
-	float BlurWeights[5];															\n\
-																					\n\
-	BlurWeights[0] = 0.2270270270;													\n\
-	BlurWeights[1] = 0.1945945946;								\n\
-	BlurWeights[2] = 0.1216216216;								\n\
-	BlurWeights[3] = 0.0540540541;								\n\
-	BlurWeights[4] = 0.0162162162;								\n\
+	float BlurWeights[6];										\n\
+																\n\
+	BlurWeights[5] = 0.0402;									\n\
+	BlurWeights[4] = 0.0623;									\n\
+	BlurWeights[3] = 0.0877;									\n\
+	BlurWeights[2] = 0.1120;									\n\
+	BlurWeights[1] = 0.1297;									\n\
+	BlurWeights[0] = 0.1362;									\n\
 																\n\
 																\n\
 	vec4 sum = texture2D(tex, gl_TexCoord[0].xy) * BlurWeights[0];	\n\
 																\n\
 #ifdef PASS_0													\n\
-	for (int i = 1; i < 5; i++) {								\n\
-		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * blurSize, 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
-		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * blurSize, 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
+	for (int i = 1; i < 6; i++) {								\n\
+	sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
+	sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
 	}															\n\
 #endif															\n\
 																\n\
 #ifdef PASS_1													\n\
-	for (int i = 1; i < 5; i++) {								\n\
-		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * blurSize, 0.0, 1.0))) * BlurWeights[i];	\n\
-		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * blurSize, 0.0, 1.0))) * BlurWeights[i];	\n\
+	for (int i = 1; i < 6; i++) {								\n\
+	sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];	\n\
+	sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];	\n\
 	}															\n\
 #endif															\n\
 																\n\
