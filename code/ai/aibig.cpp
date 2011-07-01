@@ -173,7 +173,7 @@ done_1:
 	}
 	
 	mc_info mc;
-	mc.model_instance_num = -1;
+	mc.model_instance_num = Ships[objp->instance].model_instance_num;
 	mc.model_num = sip->model_num;
 	mc.orient = &objp->orient;
 	mc.pos = &objp->pos;
