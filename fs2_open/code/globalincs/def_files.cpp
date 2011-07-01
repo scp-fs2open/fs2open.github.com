@@ -1267,6 +1267,10 @@ void main()																		\n\
 	// Normal map - convert from DXT5nm											\n\
 	vec3 normal;																\n\
 	normal.rg = (texture2D(sNormalmap, texCoord).ag * 2.0) - 1.0;				\n\
+  #ifdef FLAG_ENV_MAP															\n\
+	vec3 envOffset;																\n\
+	envOffset = normal;															\n\
+  #endif																		\n\
 	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));							\n\
 	normal = normalize(tbnMatrix * normal);										\n\
   #else																			\n\
