@@ -105,10 +105,6 @@ SOURCE=..\..\zlib\deflate.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\zlib\gzio.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\zlib\infback.c
 # End Source File
 # Begin Source File
@@ -130,11 +126,6 @@ SOURCE=..\..\zlib\trees.c
 # Begin Source File
 
 SOURCE=..\..\zlib\uncompr.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\zlib\win32\zlib.def
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
@@ -183,41 +174,6 @@ SOURCE=..\..\zlib\zlib.h
 # Begin Source File
 
 SOURCE=..\..\zlib\zutil.h
-# End Source File
-# End Group
-# Begin Group "Resource Files"
-
-# PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
-# Begin Source File
-
-SOURCE=..\..\zlib\win32\zlib1.rc
-# End Source File
-# End Group
-# Begin Group "Assembler Files (Unsupported)"
-
-# PROP Default_Filter "asm;obj;c;cpp;cxx;h;hpp;hxx"
-# Begin Source File
-
-SOURCE=..\..\zlib\contrib\masmx86\gvmat32.asm
-
-!IF  "$(CFG)" == "zlib - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "zlib - Win32 Debug"
-
-# PROP Exclude_From_Build 1
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\zlib\contrib\masmx86\gvmat32c.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\zlib\contrib\masmx86\inffas32.asm
-# PROP Exclude_From_Build 1
 # End Source File
 # End Group
 # End Target

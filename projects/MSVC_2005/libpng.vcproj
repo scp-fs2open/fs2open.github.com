@@ -215,26 +215,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\libpng\scripts\pngw32.def"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>				
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\..\libpng\pngwio.c"
 				>
 			</File>
@@ -263,13 +243,20 @@
 				RelativePath="..\..\libpng\pngconf.h"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
-			>
 			<File
-				RelativePath="..\..\libpng\scripts\pngw32.rc"
+				RelativePath="..\..\libpng\pngdebug.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libpng\pnginfo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libpng\pngpriv.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libpng\pngstruct.h"
 				>
 			</File>
 		</Filter>

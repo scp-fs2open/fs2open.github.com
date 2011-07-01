@@ -206,6 +206,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -241,6 +242,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">
     <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -277,6 +279,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">
     <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -316,7 +319,6 @@
     <ClCompile Include="..\..\zlib\compress.c" />
     <ClCompile Include="..\..\zlib\crc32.c" />
     <ClCompile Include="..\..\zlib\deflate.c" />
-    <ClCompile Include="..\..\zlib\gzio.c" />
     <ClCompile Include="..\..\zlib\infback.c" />
     <ClCompile Include="..\..\zlib\inffast.c" />
     <ClCompile Include="..\..\zlib\inflate.c" />
@@ -336,9 +338,6 @@
     <ClInclude Include="..\..\zlib\zconf.h" />
     <ClInclude Include="..\..\zlib\zlib.h" />
     <ClInclude Include="..\..\zlib\zutil.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\..\zlib\win32\zlib1.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
