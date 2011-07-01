@@ -70,6 +70,9 @@
     <ClInclude Include="..\..\libpng\pnginfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libpng\pnglibconf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\libpng\pngpriv.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -169,6 +169,10 @@ SOURCE=..\..\libpng\pnginfo.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\libpng\pnglibconf.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\libpng\pngpriv.h
 # End Source File
 # Begin Source File

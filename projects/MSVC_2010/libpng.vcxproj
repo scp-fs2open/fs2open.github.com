@@ -360,6 +360,7 @@
     <ClInclude Include="..\..\libpng\pngconf.h" />
     <ClInclude Include="..\..\libpng\pngdebug.h" />
     <ClInclude Include="..\..\libpng\pnginfo.h" />
+    <ClInclude Include="..\..\libpng\pnglibconf.h" />
     <ClInclude Include="..\..\libpng\pngpriv.h" />
     <ClInclude Include="..\..\libpng\pngstruct.h" />
   </ItemGroup>

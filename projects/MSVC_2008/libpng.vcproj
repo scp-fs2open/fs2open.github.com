@@ -671,6 +671,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\libpng\pnglibconf.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\libpng\pngpriv.h"
 				>
 			</File>
