@@ -11876,7 +11876,11 @@ void ship_model_update_instance(object *objp)
 			model_update_instance(model_instance_num, psub->turret_gun_sobj, &pss->submodel_info_2 );
 		}
 	}
+
 	model_instance_dumb_rotation(model_instance_num);
+
+	// preprocess subobject orientations for collision detection
+	model_collide_preprocess(&objp->orient, model_instance_num);
 }
 
 //==========================================================
