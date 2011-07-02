@@ -119,7 +119,6 @@ extern int Cmdline_noibx;
 extern int Cmdline_nomovies;	// WMC Toggles movie playing support
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;
-extern int Cmdline_safeloading;
 extern int Cmdline_no_fbo;
 extern int Cmdline_noglsl;
 extern int Cmdline_ati_color_swap;
