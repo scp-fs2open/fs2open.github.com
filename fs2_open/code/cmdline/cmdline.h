@@ -62,7 +62,6 @@ extern float static_light_factor;
 extern float static_point_factor;
 extern float static_tube_factor;
 extern int Cmdline_ambient_factor;
-extern int Cmdline_cell;
 extern int Cmdline_env;
 extern int Cmdline_mipmap;
 extern int Cmdline_missile_lighting;
@@ -114,7 +113,6 @@ extern char *Cmdline_spew_table_crcs;
 extern int Cmdline_objupd;
 
 // Troubleshooting
-extern int Cmdline_d3d_lesstmem;
 extern int Cmdline_load_all_weapons;
 extern int Cmdline_nohtl;
 extern int Cmdline_noibx;
@@ -140,7 +138,6 @@ extern int Cmdline_extra_warn;
 extern int Cmdline_show_mem_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;
-extern int Cmdline_timerbar;
 extern int Cmdline_save_render_targets;
 extern int Cmdline_debug_window;
 extern int Cmdline_verify_vps;
