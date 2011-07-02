@@ -41,7 +41,6 @@ extern int Cmdline_multi_log;
 extern int Cmdline_multi_stream_chat_to_file;
 extern int Cmdline_network_port;
 extern int Cmdline_restricted_game;
-extern int Cmdline_server_firing;
 extern int Cmdline_spew_pof_info;
 extern int Cmdline_start_netgame;
 extern int Cmdline_timeout;

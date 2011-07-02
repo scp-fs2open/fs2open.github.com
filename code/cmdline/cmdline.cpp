@@ -153,7 +153,6 @@ Flag exe_params[] =
 	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
 	{ "-mpnoreturn",		"Disables flight deck option",				true,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
 
-	{ "-oldfire",			"",											false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-oldfire", },
 	{ "-nohtl",				"Software mode (very slow)",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nohtl", },
 	{ "-no_set_gamma",		"Disable setting of gamma",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
 	{ "-nomovies",			"Disable video playback",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
@@ -212,7 +211,6 @@ cmdline_parm gameclosed_arg("-closed", NULL);		// Cmdline_closed_game
 cmdline_parm gamerestricted_arg("-restricted", NULL);	// Cmdline_restricted_game
 cmdline_parm port_arg("-port", NULL);
 cmdline_parm multilog_arg("-multilog", NULL);		// Cmdline_multi_log
-cmdline_parm server_firing_arg("-oldfire", NULL);	// Cmdline_server_firing
 cmdline_parm client_dodamage("-clientdamage", NULL);	// Cmdline_client_dodamage
 cmdline_parm pof_spew("-pofspew", NULL);			// Cmdline_spew_pof_info
 cmdline_parm mouse_coords("-coords", NULL);			// Cmdline_mouse_coords
@@ -235,7 +233,6 @@ int Cmdline_multi_log = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_network_port = -1;
 int Cmdline_restricted_game = 0;
-int Cmdline_server_firing = 0;
 int Cmdline_spew_pof_info = 0;
 int Cmdline_start_netgame = 0;
 int Cmdline_timeout = -1;
@@ -1035,10 +1032,6 @@ bool SetCmdlineParams()
 		Cmdline_multi_log = 1;
 	}	
 
-	// maybe use old-school server-side firing
-	if (server_firing_arg.found() ){
-		Cmdline_server_firing = 1;
-	}
 
 	// maybe use old-school client damage
 	if(client_dodamage.found()){
