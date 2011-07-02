@@ -135,12 +135,11 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_UNIFORM1F						50
 #define OGL_UNIFORM3F						51
 #define OGL_UNIFORM3FV						52
-#define OGL_UNIFORM4F						53
-#define OGL_UNIFORM4FV						54
-#define OGL_UNIFORM1I						55
-#define OGL_UNIFORM_MATRIX4FV				56
+#define OGL_UNIFORM4FV						53
+#define OGL_UNIFORM1I						54
+#define OGL_UNIFORM_MATRIX4FV				55
 
-#define NUM_OGL_FUNCTIONS					57
+#define NUM_OGL_FUNCTIONS					56
 
 
 // special extensions/functions (OS specific, non-GL stuff)
@@ -290,7 +289,6 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define vglUniform1fARB					GLEXT_CALL( OGL_UNIFORM1F, PFNGLUNIFORM1FARBPROC )
 #define vglUniform3fARB					GLEXT_CALL( OGL_UNIFORM3F, PFNGLUNIFORM3FARBPROC )
 #define vglUniform3fvARB				GLEXT_CALL( OGL_UNIFORM3FV, PFNGLUNIFORM3FVARBPROC )
-#define vglUniform4fARB					GLEXT_CALL( OGL_UNIFORM4F, PFNGLUNIFORM4FARBPROC )
 #define vglUniform4fvARB				GLEXT_CALL( OGL_UNIFORM4FV, PFNGLUNIFORM4FVARBPROC )
 #define vglUniform1iARB					GLEXT_CALL( OGL_UNIFORM1I, PFNGLUNIFORM1IARBPROC )
 #define vglUniformMatrix4fvARB			GLEXT_CALL( OGL_UNIFORM_MATRIX4FV, PFNGLUNIFORMMATRIX4FVARBPROC )
