@@ -134,8 +134,8 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_GET_UNIFORMIV					49
 #define OGL_UNIFORM1F						50
 #define OGL_UNIFORM3F						51
-#define OGL_UNIFORM3FV						52
-#define OGL_UNIFORM4F						53
+#define OGL_UNIFORM4F						52
+#define OGL_UNIFORM3FV						53
 #define OGL_UNIFORM4FV						54
 #define OGL_UNIFORM1I						55
 #define OGL_UNIFORM_MATRIX4FV				56
@@ -227,6 +227,7 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define PFNGLGETUNIFORMIVARBPROC				glGetUniformivARBProcPtr
 #define PFNGLUNIFORM1FARBPROC					glUniform1fARBProcPtr
 #define PFNGLUNIFORM3FARBPROC					glUniform3fARBProcPtr
+#define PFNGLUNIFORM4FARBPROC					glUnifrom4fARBProcPtr
 #define PFNGLUNIFORM3FVARBPROC					glUniform3fvARBProcPtr
 #define PFNGLUNIFORM4FVARBPROC					glUnifrom4fvARBProcPtr
 #define PFNGLUNIFORM1IARBPROC					glUniform1iARBProcPtr
@@ -289,8 +290,8 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define vglGetUniformivARB				GLEXT_CALL( OGL_GET_UNIFORMIV, PFNGLGETUNIFORMIVARBPROC )
 #define vglUniform1fARB					GLEXT_CALL( OGL_UNIFORM1F, PFNGLUNIFORM1FARBPROC )
 #define vglUniform3fARB					GLEXT_CALL( OGL_UNIFORM3F, PFNGLUNIFORM3FARBPROC )
-#define vglUniform3fvARB				GLEXT_CALL( OGL_UNIFORM3FV, PFNGLUNIFORM3FVARBPROC )
 #define vglUniform4fARB					GLEXT_CALL( OGL_UNIFORM4F, PFNGLUNIFORM4FARBPROC )
+#define vglUniform3fvARB				GLEXT_CALL( OGL_UNIFORM3FV, PFNGLUNIFORM3FVARBPROC )
 #define vglUniform4fvARB				GLEXT_CALL( OGL_UNIFORM4FV, PFNGLUNIFORM4FVARBPROC )
 #define vglUniform1iARB					GLEXT_CALL( OGL_UNIFORM1I, PFNGLUNIFORM1IARBPROC )
 #define vglUniformMatrix4fvARB			GLEXT_CALL( OGL_UNIFORM_MATRIX4FV, PFNGLUNIFORMMATRIX4FVARBPROC )
