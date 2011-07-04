@@ -900,23 +900,21 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
 #if defined _WIN32
-			if (!Cmdline_safeloading) {
-				findhandle = _findfirst(longname, &findstruct);
-				if (findhandle != -1) {
-					if (size)
-						*size = findstruct.size;
+			findhandle = _findfirst(longname, &findstruct);
+			if (findhandle != -1) {
+				if (size)
+					*size = findstruct.size;
 
-					_findclose(findhandle);
+				_findclose(findhandle);
 
-					if (offset)
-						*offset = 0;
+				if (offset)
+					*offset = 0;
 
-					if (pack_filename)
-						strncpy( pack_filename, longname, max_out );
+				if (pack_filename)
+					strncpy( pack_filename, longname, max_out );
 
-					return 1;
-				}
-			} else
+				return 1;
+			}
 #endif
 			{
 				FILE *fp = fopen(longname, "rb" );
@@ -1111,23 +1109,21 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
 #if defined _WIN32
-			if (!Cmdline_safeloading) {
-				findhandle = _findfirst(longname, &findstruct);
-				if (findhandle != -1) {
-					if (size)
-						*size = findstruct.size;
+			findhandle = _findfirst(longname, &findstruct);
+			if (findhandle != -1) {
+				if (size)
+					*size = findstruct.size;
 
-					_findclose(findhandle);
+				_findclose(findhandle);
 
-					if (offset)
-						*offset = 0;
+				if (offset)
+					*offset = 0;
 
-					if (pack_filename)
-						strncpy( pack_filename, longname, max_out );
+				if (pack_filename)
+					strncpy( pack_filename, longname, max_out );
 
-					return cur_ext;
-				}
-			} else
+				return cur_ext;
+			}
 #endif
 			{
 				FILE *fp = fopen(longname, "rb" );

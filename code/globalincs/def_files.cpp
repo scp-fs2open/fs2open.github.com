@@ -1134,6 +1134,14 @@ $Default:		0.0								\n\
 $Div:			50								\n\
 $Add:			0								\n\
 												\n\
+$Name:			cutoff							\n\
+$Uniform:		cutoff							\n\
+$Define:		FLAG_CUTOFF						\n\
+$AlwaysOn:		false							\n\
+$Default:		2.0								\n\
+$Div:			50								\n\
+$Add:			0.0								\n\
+												\n\
 $Name:			dithering						\n\
 $Uniform:		dither							\n\
 $Define:		FLAG_DITH						\n\
@@ -1165,7 +1173,7 @@ varying float fogDist;																		\n\
 																							\n\
 varying vec4 position;																		\n\
 varying vec3 lNormal;																		\n\
-																							\n""\
+																							\n\
 void main()																					\n\
 {																							\n\
 	gl_TexCoord[0] = gl_MultiTexCoord0;														\n\
@@ -1255,7 +1263,7 @@ varying vec3 lNormal;															\n\
 																				\n""\
 void main()																		\n\
 {																				\n\
-	vec3 eyeDir = vec3(normalize(-position).xyz); // Camera is at (0,0,0) in ModelView space		\n\
+	vec3 eyeDir = vec3(normalize(-position).xyz); // Camera is at (0,0,0) in ModelView space	\n\
 	vec4 lightAmbientDiffuse = vec4(0.0, 0.0, 0.0, 1.0);						\n\
 	vec4 lightDiffuse = vec4(0.0, 0.0, 0.0, 1.0);								\n\
 	vec4 lightAmbient = vec4(0.0, 0.0, 0.0, 1.0); 								\n\
@@ -1268,8 +1276,8 @@ void main()																		\n\
 	vec3 normal;																\n\
 	normal.rg = (texture2D(sNormalmap, texCoord).ag * 2.0) - 1.0;				\n\
   #ifdef FLAG_ENV_MAP															\n\
-	vec3 envOffset;																\n\
-	envOffset = normal;															\n\
+	vec3 envOffset = vec3(0.0);													\n\
+	envOffset.xy = normal.xy;													\n\
   #endif																		\n\
 	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));							\n\
 	normal = normalize(tbnMatrix * normal);										\n\
@@ -1278,7 +1286,7 @@ void main()																		\n\
   #endif																		\n\
 																				\n\
 	vec3 lightDir;																\n\
-	lightAmbient = gl_FrontMaterial.emission + (gl_LightModel.ambient * gl_FrontMaterial.ambient);		\n\
+	lightAmbient = gl_FrontMaterial.emission + (gl_LightModel.ambient * gl_FrontMaterial.ambient);	\n\
 																				\n\
 	#pragma optionNV unroll all													\n\
 	for (int i = 0; i < MAX_LIGHTS; ++i) {										\n\
@@ -1336,14 +1344,14 @@ void main()																		\n\
 	lightAmbientDiffuse = gl_Color;												\n\
 	lightSpecular = gl_SecondaryColor;											\n\
  #endif																			\n\
-																				\n\
+																				\n""\
  #ifdef FLAG_DIFFUSE_MAP														\n\
  // Base color																	\n\
 	vec4 baseColor = texture2D(sBasemap, texCoord);								\n\
  #else																			\n\
 	vec4 baseColor = gl_Color;													\n\
  #endif																			\n\
-																				\n""\
+																				\n\
 	vec4 fragmentColor;															\n\
 	fragmentColor.rgb = baseColor.rgb * max(lightAmbientDiffuse.rgb * AMBIENT_LIGHT_BOOST, gl_LightModel.ambient.rgb - 0.425);																	\n\
 	fragmentColor.a = baseColor.a;												\n\
@@ -1470,7 +1478,7 @@ void FXAA_set_preset(int preset) {													\n\
 		FXAA_SUBPIX_FASTER       = 0;												\n\
 		FXAA_SUBPIX_CAP          = (3.0/4.0);										\n\
 		FXAA_SUBPIX_TRIM         = (1.0/4.0);										\n\
-	} else if (preset == 3) {														\n""\
+	} else if (preset == 3) {														\n\
 		FXAA_EDGE_THRESHOLD      = (1.0/8.0);										\n\
 		FXAA_EDGE_THRESHOLD_MIN  = (1.0/24.0);										\n\
 		FXAA_SEARCH_STEPS        = 16;												\n\
@@ -1589,7 +1597,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 		abs((0.50 * lumaN ) + (-1.0 * lumaM) + (0.50 * lumaS )) +					\n\
 		abs((0.25 * lumaNE) + (-0.5 * lumaE) + (0.25 * lumaSE));					\n\
 	bool horzSpan = edgeHorz >= edgeVert;											\n\
-																					\n""\
+																					\n\
 	float lengthSign = horzSpan ? -rcpFrame.y : -rcpFrame.x;						\n\
 	if(!horzSpan) lumaN = lumaW;													\n\
 	if(!horzSpan) lumaS = lumaE;													\n\
@@ -1597,7 +1605,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 	float gradientS = abs(lumaS - lumaM);											\n\
 	lumaN = (lumaN + lumaM) * 0.5;													\n\
 	lumaS = (lumaS + lumaM) * 0.5;													\n\
-																					\n\
+																					\n""\
 	bool pairN = gradientN >= gradientS;											\n\
 	if(!pairN) lumaN = lumaS;														\n\
 	if(!pairN) gradientN = gradientS;												\n\
@@ -1635,7 +1643,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 		posP += offNP * FxaaFloat2( 2.5,  2.5);										\n\
 		offNP *= FxaaFloat2(4.0, 4.0);												\n\
 	}																				\n\
-	for(int i = 0; i < FXAA_SEARCH_STEPS; i++) {									\n""\
+	for(int i = 0; i < FXAA_SEARCH_STEPS; i++) {									\n\
 		if (FXAA_SEARCH_ACCELERATION == 1) {										\n\
 			if(!doneN) lumaEndN = 													\n\
 				FxaaLuma(FxaaTexLod0(tex, posN.xy).xyz);							\n\
@@ -1653,7 +1661,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 		if(!doneN) posN -= offNP;													\n\
 		if(!doneP) posP += offNP;													\n\
 	}																				\n\
-																					\n\
+																					\n""\
 	float dstN = horzSpan ? pos.x - posN.x : pos.y - posN.y;						\n\
 	float dstP = horzSpan ? posP.x - pos.x : posP.y - pos.y;						\n\
 	bool directionN = dstN < dstP;													\n\
@@ -1680,7 +1688,7 @@ uniform sampler2D tex0;																\n\
 uniform int fxaa_preset;															\n\
 varying vec2 rcpFrame;																\n\
 noperspective varying vec2 pos;														\n\
-																					\n""\
+																					\n\
 void main() {																		\n\
 	FXAA_set_preset(fxaa_preset);													\n\
 	gl_FragColor.xyz = FxaaPixelShader(pos, tex0, rcpFrame);						\n\
@@ -1692,6 +1700,8 @@ varying float blurSize;											\n\
 																\n\
 uniform sampler2D tex;											\n\
 																\n\
+#define BLUR_SIZE_DIV 3.0										\n\
+																\n\
 // Gaussian Blur												\n\
 // 512x512 and smaller textures give best results				\n\
 // 2 passes required											\n\
@@ -1699,28 +1709,28 @@ void main()														\n\
 {																\n\
 	// Echelon9 - Due to Apple not implementing array constructors in OS X's		\n\
 	// GLSL implementation we need to setup the arrays this way as a workaround		\n\
-	float BlurWeights[5];															\n\
-																					\n\
-	BlurWeights[0] = 0.2270270270;													\n\
-	BlurWeights[1] = 0.1945945946;								\n\
-	BlurWeights[2] = 0.1216216216;								\n\
-	BlurWeights[3] = 0.0540540541;								\n\
-	BlurWeights[4] = 0.0162162162;								\n\
+	float BlurWeights[6];										\n\
 																\n\
+	BlurWeights[5] = 0.0402;									\n\
+	BlurWeights[4] = 0.0623;									\n\
+	BlurWeights[3] = 0.0877;									\n\
+	BlurWeights[2] = 0.1120;									\n\
+	BlurWeights[1] = 0.1297;									\n\
+	BlurWeights[0] = 0.1362;									\n\
 																\n\
 	vec4 sum = texture2D(tex, gl_TexCoord[0].xy) * BlurWeights[0];	\n\
 																\n\
 #ifdef PASS_0													\n\
-	for (int i = 1; i < 5; i++) {								\n\
-		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * blurSize, 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
-		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * blurSize, 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
+	for (int i = 1; i < 6; i++) {								\n\
+		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
+		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
 	}															\n\
 #endif															\n\
 																\n\
 #ifdef PASS_1													\n\
-	for (int i = 1; i < 5; i++) {								\n\
-		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * blurSize, 0.0, 1.0))) * BlurWeights[i];	\n\
-		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * blurSize, 0.0, 1.0))) * BlurWeights[i];	\n\
+	for (int i = 1; i < 6; i++) {								\n\
+		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];	\n\
+		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];	\n\
 	}															\n\
 #endif															\n\
 																\n\
@@ -1775,14 +1785,18 @@ uniform float film_grain;								\n\
 uniform float tv_stripes;								\n\
 #endif													\n\
 														\n\
+#ifdef FLAG_CUTOFF										\n\
+uniform float cutoff;									\n\
+#endif													\n\
+														\n\
 #ifdef FLAG_DITH										\n\
-uniform float dither									\n\
+uniform float dither;									\n\
 #endif													\n\
 														\n\
 uniform sampler2D blurred_tex;							\n\
 uniform sampler2D depth_tex;							\n\
-														\n\
-void main()												\n""\
+														\n""\
+void main()												\n\
 {														\n\
  #ifdef FLAG_DISTORT_NOISE								\n\
  // Distort noise										\n\
@@ -1801,7 +1815,7 @@ void main()												\n""\
 														\n\
  // Bloom												\n\
 	if (bloom_intensity > 0.0) {						\n\
-		color_in = texture2D(tex, gl_TexCoord[0].xy + distort);		\n\
+		color_in = texture2D(tex, gl_TexCoord[0].xy + distort);	\n\
 		vec4 color_bloom = texture2D(bloomed, gl_TexCoord[0].xy + distort);	\n\
 		color_in = mix(color_in,  max(color_in + 0.7 * color_bloom, color_bloom), bloom_intensity);	\n\
 	} else {											\n\
@@ -1843,6 +1857,24 @@ void main()												\n""\
 	vec3 stripes = color_out.rgb + color_out.rgb * vec3(sc.x, sc.y, sc.x) * 0.8;	\n\
 														\n\
 	color_out.rgb = mix(color_out.rgb, stripes, tv_stripes);	\n\
+ #endif													\n\
+														\n\
+ #ifdef FLAG_CUTOFF										\n\
+	// Experimental cutoff shader						\n\
+	if (cutoff > 0.0) {									\n\
+		vec4 color_greyscale;							\n\
+		color_greyscale.rgb = vec3(dot(color_in.rgb, vec3(0.299, 0.587, 0.184)));	\n\
+		vec4 normalized_col;							\n\
+		float col_length = (length(color_out.rgb));		\n\
+		if (col_length > 1.0) {							\n\
+			normalized_col = ((color_out)/col_length);	\n\
+		} else {										\n\
+			normalized_col = color_out;					\n\
+		}												\n\
+		vec3 unit_grey = vec3(0.5773);					\n\
+		float sat = dot(normalized_col.rgb, unit_grey);	\n\
+		color_out = mix(color_greyscale, color_out, sat * cutoff);	\n\
+	}													\n\
  #endif													\n\
 														\n\
  #ifdef FLAG_DITH										\n\
