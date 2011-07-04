@@ -1953,6 +1953,8 @@ bool gr_opengl_init()
 
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
+	GLint maxbuffers;
+	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxbuffers);
 
 	mprintf(( "  Max texture units: %i (%i)\n", GL_supported_texture_units, max_texture_units ));
 	mprintf(( "  Max elements vertices: %i\n", GL_max_elements_vertices ));
@@ -1961,6 +1963,7 @@ bool gr_opengl_init()
 
 	if ( Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
 		mprintf(( "  Max render buffer size: %ix%i\n", GL_max_renderbuffer_size, GL_max_renderbuffer_size ));
+		mprintf(( "  Max number of render targets: %i\n", maxbuffers));
 	}
 
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
