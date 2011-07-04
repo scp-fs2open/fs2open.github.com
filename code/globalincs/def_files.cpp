@@ -1394,14 +1394,9 @@ void main()																		\n\
 char* Default_fxaa_vertex_shader = "\
 #extension GL_EXT_gpu_shader4 : enable				\n\
 noperspective varying vec2 pos;						\n\
-uniform float rt_w;									\n\
-uniform float rt_h;									\n\
-varying vec2 rcpFrame;								\n\
 													\n\
 void main() {										\n\
 	gl_Position = gl_Vertex;						\n\
-													\n\
-	rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);			\n\
 													\n\
 	pos = gl_Vertex.xy*0.5 + 0.5;					\n\
 }													\n\
@@ -1686,12 +1681,12 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 																					\n\
 uniform sampler2D tex0;																\n\
 uniform int fxaa_preset;															\n\
-varying vec2 rcpFrame;																\n\
+uniform vec2 u_rcpFrame;															\n\
 noperspective varying vec2 pos;														\n\
 																					\n\
 void main() {																		\n\
 	FXAA_set_preset(fxaa_preset);													\n\
-	gl_FragColor.xyz = FxaaPixelShader(pos, tex0, rcpFrame);						\n\
+	gl_FragColor.xyz = FxaaPixelShader(pos, tex0, u_rcpFrame);						\n\
 }																					\n\
 ";
 
