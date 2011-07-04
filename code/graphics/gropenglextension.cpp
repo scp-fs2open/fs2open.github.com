@@ -209,7 +209,6 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 	{ "glGetUniformLocationARB", 0 },
 	{ "glGetUniformivARB", 0 },
 	{ "glUniform1fARB", 0 },
-	{ "glUniform2fARB", 0 },
 	{ "glUniform3fARB", 0 },
 	{ "glUniform4fARB", 0 },
 	{ "glUniform3fvARB", 0 },
