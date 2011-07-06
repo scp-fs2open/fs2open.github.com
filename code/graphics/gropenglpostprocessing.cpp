@@ -48,7 +48,10 @@ static opengl_shader_file_t GL_post_shader_files[] = {
 		1, { "tex" } },
 
 	{ "fxaa-v.sdr", "fxaa-f.sdr", NULL, 
-		4, { "tex0", "rt_w", "rt_h", "fxaa_preset"} }
+		4, { "tex0", "rt_w", "rt_h", "fxaa_preset"} },
+
+	{ "post-v.sdr", "fxaapre-f.sdr", NULL,
+		1, { "tex"} }
 };
 
 static const unsigned int Num_post_shader_files = sizeof(GL_post_shader_files) / sizeof(opengl_shader_file_t);
@@ -225,6 +228,32 @@ void gr_opengl_post_process_begin()
 }
 
 void opengl_post_pass_fxaa() {
+
+	// Do a prepass to convert the main shaders' RGBA output into RGBL
+	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id + 1] );
+
+	// basic/default uniforms
+	vglUniform1iARB( opengl_shader_get_uniform("tex"), 0 );
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Post_screen_texture_id);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex2f(-1.0f, -1.0f);
+
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex2f(1.0f, -1.0f);
+
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex2f(1.0f, 1.0f);
+
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex2f(-1.0f, 1.0f);
+	glEnd();
+
+	GL_state.Texture.Disable();
 
 	// set and configure post shader ..
 	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id] );

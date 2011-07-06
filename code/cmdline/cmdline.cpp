@@ -284,7 +284,7 @@ int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_postprocess = 0;
 int Cmdline_bloom_intensity = 75;
 bool Cmdline_fxaa = false;
-int Cmdline_fxaa_preset = 3;
+int Cmdline_fxaa_preset = 6;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
