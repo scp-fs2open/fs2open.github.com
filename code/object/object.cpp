@@ -1260,11 +1260,17 @@ void obj_move_all_post(object *objp, float frametime)
 						p = 1.0f - p;
 
 					p *= 2.0f;
-
-					// P goes from 0 to 1 to 0 over the life of the explosion
 					float rad = p * (1.0f + frand() * 0.05f) * objp->radius;
-
-					light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, 1.0f, r, g, b, -1 );
+					
+					float intensity = 1.0f;
+					if(fireball_is_warp(objp))
+					{
+						intensity = fireball_wormhole_intensity(objp); // Valathil: Get wormhole radius for lighting
+						rad = objp->radius;
+					}
+					// P goes from 0 to 1 to 0 over the life of the explosion
+					
+					light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b, -1 );
 				}
 			}
 

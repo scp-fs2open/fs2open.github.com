@@ -1203,7 +1203,7 @@ void main()																					\n\
  #ifdef FLAG_FOG																			\n\
 	fogDist = clamp((gl_Position.z - gl_Fog.start) * 0.75 * gl_Fog.scale, 0.0, 1.0);		\n\
  #endif																						\n\
-																							\n\
+																							\n""\
  #ifdef __GLSL_CG_DATA_TYPES																\n\
  // Check necessary for ATI specific behavior												\n\
 	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);										\n\
@@ -1382,7 +1382,7 @@ void main()																		\n\
  // Glow color																	\n\
 	fragmentColor.rgb += texture2D(sGlowmap, texCoord).rgb * GLOW_MAP_INTENSITY;\n\
  #endif																			\n\
-																				\n\
+																				\n""\
  #ifdef FLAG_FOG																\n\
 	fragmentColor.rgb = mix(fragmentColor.rgb, gl_Fog.color.rgb, fogDist);		\n\
  #endif																			\n\
@@ -1487,7 +1487,7 @@ void fxaa_choose_preset(int preset) {											\n\
 		EDGE_SHARPNESS = 4.0;													\n\
 		EDGE_THRESHOLD = 1.0/4.0;												\n\
 		EDGE_THRESHOLD_MIN = 0.01;												\n\
-	} else if (preset == 5) {													\n\
+	} else if (preset == 5) {													\n""\
 		EDGE_THRESHOLD = 1.0/3.0;												\n\
 		EDGE_THRESHOLD_MIN = 1.0/16.0;											\n\
 		SUBPIX_CAP = 3.0/4.0;													\n\
@@ -1537,7 +1537,7 @@ void fxaa_choose_preset(int preset) {											\n\
     #define FxaaFloat2 vec2														\n\
     #define FxaaFloat3 vec3														\n\
     #define FxaaFloat4 vec4														\n\
-    #define FxaaDiscard discard													\n\
+    #define FxaaDiscard discard													\n""\
     #define FxaaDot3(a, b) dot(a, b)											\n\
     #define FxaaSat(x) clamp(x, 0.0, 1.0)										\n\
     #define FxaaLerp(x,y,s) mix(x,y,s)											\n\
@@ -1575,7 +1575,7 @@ void fxaa_choose_preset(int preset) {											\n\
 float getLuma(vec4 color) {														\n\
 	return dot(color.rgb, float3(0.299, 0.587, 0.114));							\n\
 }																				\n\
-																				\n\
+																				\n""\
 half4 FxaaPixelShader(float2 pos, float4 posPos, FxaaTex tex, float2 rcpFrame, float4 rcpFrameOpt ) {	\n\
     half4 dir;																	\n\
     dir.y = 0.0;																\n\
@@ -1612,7 +1612,7 @@ half4 FxaaPixelShader(float2 pos, float4 posPos, FxaaTex tex, float2 rcpFrame, f
     dir2_pos.xy = clamp(dir1_pos.xy / dirAbsMinTimesC, half(-2.0), half(2.0));	\n\
     dir1_pos.zw = pos.xy;														\n\
     dir2_pos.zw = pos.xy;														\n\
-    half4 temp1N;																\n\
+    half4 temp1N;																\n""\
     temp1N.xy = dir1_pos.zw - dir1_pos.xy * rcpFrameOpt.zw;						\n\
     temp1N = FxaaTexTop(tex, temp1N.xy); 										\n\
     half4 rgby1;																\n\
@@ -1645,7 +1645,7 @@ float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,fl
 	float lumaM = getLuma(rgbyM);												\n\
     float rangeMin = min(lumaM, min(min(lumaN, lumaW), min(lumaS, lumaE)));		\n\
     float rangeMax = max(lumaM, max(max(lumaN, lumaW), max(lumaS, lumaE)));		\n\
-    float range = rangeMax - rangeMin;											\n\
+    float range = rangeMax - rangeMin;											\n""\
     if(range < max(EDGE_THRESHOLD_MIN, rangeMax * EDGE_THRESHOLD))				\n\
         #if (FXAA_DISCARD == 1)													\n\
             FxaaDiscard;														\n\
@@ -1679,7 +1679,7 @@ float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,fl
     lumaS = (lumaS + lumaM) * 0.5;												\n\
     bool pairN = gradientN >= gradientS;										\n\
     if(!pairN) lumaN = lumaS;													\n\
-    if(!pairN) gradientN = gradientS;											\n\
+    if(!pairN) gradientN = gradientS;											\n""\
     if(!pairN) lengthSign *= -1.0;												\n\
     float2 posN;																\n\
     posN.x = pos.x + (horzSpan ? 0.0 : lengthSign * 0.5);						\n\
@@ -1714,7 +1714,7 @@ float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,fl
     bool directionN = dstN < dstP;												\n\
     lumaEndN = directionN ? lumaEndN : lumaEndP;								\n\
     if(((lumaM - lumaN) < 0.0) == ((lumaEndN - lumaN) < 0.0)) 					\n\
-        lengthSign = 0.0;														\n\
+        lengthSign = 0.0;														\n""\
     float spanLength = (dstP + dstN);											\n\
     dstN = directionN ? dstN : dstP;											\n\
     float subPixelOffset = 0.5 + (dstN * (-1.0/spanLength));					\n\

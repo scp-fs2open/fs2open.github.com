@@ -107,6 +107,9 @@ void fireball_get_color(int idx, float *red, float *green, float *blue);
 // returns the index of the fireball bitmap for this ship. -1 if there is none.
 int fireball_ship_explosion_type(ship_info *sip);
 
+// returns the intensity of a wormhole
+float fireball_wormhole_intensity( object *obj );
+
 // internal function to draw warp grid.
 extern void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );
 
