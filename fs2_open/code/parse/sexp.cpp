@@ -11397,11 +11397,13 @@ void sexp_grant_medal(int n)
 	if ( (Game_mode & GM_NORMAL) && !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
-	Assert(Player->stats.m_medal_earned < 0);  // Mission has problems.  Tried to grant 2 medals in 1 mission.
 	medal_name = CTEXT(n);
-
 	if (medal_name == NULL)
 		return;
+
+	if (Player->stats.m_medal_earned >= 0) {
+		Warning(LOCATION, "Cannot grant more than one medal per mission!  New medal '%s' will replace old medal '%s'!", medal_name, Medals[Player->stats.m_medal_earned].name);
+	}
 
 	for (i = 0; i < Num_medals; i++ ) {
 		if ( !stricmp(medal_name, Medals[i].name) )
