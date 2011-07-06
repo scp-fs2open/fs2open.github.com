@@ -169,9 +169,9 @@ int opengl_sort_active_lights(const void *a, const void *b)
 
 	// directional lights always go first
 	if ( (la->type != LT_DIRECTIONAL) && (lb->type == LT_DIRECTIONAL) )
-		return -1;
-	else if ( (la->type == LT_DIRECTIONAL) && (lb->type != LT_DIRECTIONAL) )
 		return 1;
+	else if ( (la->type == LT_DIRECTIONAL) && (lb->type != LT_DIRECTIONAL) )
+		return -1;
 
 	// tube lights go next, they are generally large and intense
 	if ( (la->type != LT_TUBE) && (lb->type == LT_TUBE) )
