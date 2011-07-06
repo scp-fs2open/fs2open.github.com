@@ -862,7 +862,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	}
 
 	// Search the hard drive for files first.
-	int num_search_dirs = 0;
+	uint num_search_dirs = 0;
 	int search_order[CF_MAX_PATH_TYPES];
 
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
@@ -1057,7 +1057,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	}
 
 	// Search the hard drive for files first.
-	int num_search_dirs = 0;
+	uint num_search_dirs = 0;
 	int search_order[CF_MAX_PATH_TYPES];
 
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
