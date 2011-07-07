@@ -1052,7 +1052,7 @@ float fireball_wormhole_intensity( object *obj )
 
 	num = obj->instance;
 	objnum = OBJ_INDEX(obj);
-	Assert( Fireballs[num].objnum == objnum, "Basic sanity check. Fireballs[num].objnum (%d) should == objnum (%d)", Fireballs[num].objnum, objnum );
+	Assertion( Fireballs[num].objnum == objnum, "Basic sanity check. Fireballs[num].objnum (%d) should == objnum (%d)", Fireballs[num].objnum, objnum );
 
 	fb = &Fireballs[num];
 
