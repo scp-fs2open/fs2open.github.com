@@ -91,7 +91,7 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 	switch (FSLight->type) {
 		case LT_POINT: {
 			// this crap still needs work...
-			GLLight->ConstantAtten = 1.0f;
+			GLLight->ConstantAtten = 0.0f;
 			GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 
 			GLLight->Specular[0] *= static_point_factor;
@@ -106,10 +106,9 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 			GLLight->Specular[1] *= static_tube_factor;
 			GLLight->Specular[2] *= static_tube_factor;
 
-			GLLight->SpotDir[0] = FSLight->vec2.xyz.x;
-			GLLight->SpotDir[1] = FSLight->vec2.xyz.y;
-			GLLight->SpotDir[2] = FSLight->vec2.xyz.z;
-			GLLight->SpotDir[3] = 1.0f;
+			GLLight->SpotDir[0] = FSLight->vec2.xyz.x * 1.5f;
+			GLLight->SpotDir[1] = FSLight->vec2.xyz.y * 1.5f;
+			GLLight->SpotDir[2] = FSLight->vec2.xyz.z * 1.5f;
 			GLLight->SpotCutOff = 90.0f;
 
 			break;
