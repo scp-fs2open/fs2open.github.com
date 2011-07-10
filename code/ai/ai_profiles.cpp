@@ -444,7 +444,19 @@ void parse_ai_profiles_tbl(char *filename)
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
+			{
+				char buf[60];
+				strncpy(buf,Mp,59);
+				for(int i = 0;i < 60; i++)
+					if(buf[i]==':')
+					{
+						buf[i+1]=0;
+						break;
+					}
+				buf[59]=0;
+				mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n",buf));
 				Mp++;
+			}
 
 			// find next valid option
 			skip_to_start_of_string_either("$", "#");
