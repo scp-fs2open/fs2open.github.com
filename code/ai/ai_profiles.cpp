@@ -180,7 +180,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Player Afterburner Recharge Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->afterburner_recharge_scale[i]);
 						profile->afterburner_recharge_scale[i] = 0.0f;
 					}
-					profile->afterburner_recharge_scale[i] /= 100.0;
+					profile->afterburner_recharge_scale[i];
 				}
 			}
 
@@ -191,7 +191,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Max Beam Friendly Fire Damage' should be between 0 and 100.0 (read %f). Setting to 0.", profile->beam_friendly_damage_cap[i]);
 						profile->beam_friendly_damage_cap[i] = 0.0f;
 					}
-					profile->beam_friendly_damage_cap[i] /= 100.0;
+					profile->beam_friendly_damage_cap[i];
 				}
 			}
 
@@ -202,7 +202,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Player Countermeasure Life Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->cmeasure_life_scale[i]);
 						profile->cmeasure_life_scale[i] = 0.0f;
 					}
-					profile->cmeasure_life_scale[i] /= 100.0;
+					profile->cmeasure_life_scale[i];
 				}
 			}
 
@@ -213,7 +213,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Countermeasure Firing Chance' should be between 0 and 100.0 (read %f). Setting to 0.", profile->cmeasure_fire_chance[i]);
 						profile->cmeasure_fire_chance[i] = 0.0f;
 					}
-					profile->cmeasure_fire_chance[i] /= 100.0;
+					profile->cmeasure_fire_chance[i];
 				}
 			}
 
@@ -224,7 +224,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI In Range Time' should be between 0 and 100.0 (read %f). Setting to 0.", profile->in_range_time[i]);
 						profile->in_range_time[i] = 0.0f;
 					}
-					profile->in_range_time[i] /= 100.0;
+					profile->in_range_time[i];
 				}
 			}
 
@@ -235,7 +235,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Always Links Ammo Weapons' should be between 0 and 100.0 (read %f). Setting to 0.", profile->link_ammo_levels_always[i]);
 						profile->link_ammo_levels_always[i] = 0.0f;
 					}
-					profile->link_ammo_levels_always[i] /= 100.0;
+					profile->link_ammo_levels_always[i];
 				}
 			}
 
@@ -246,7 +246,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Maybe Links Ammo Weapons' should be between 0 and 100.0 (read %f). Setting to 0.", profile->link_ammo_levels_maybe[i]);
 						profile->link_ammo_levels_maybe[i] = 0.0f;
 					}
-					profile->link_ammo_levels_maybe[i] /= 100.0;
+					profile->link_ammo_levels_maybe[i];
 				}
 			}
 
@@ -257,7 +257,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Primary Ammo Burst Multiplier' should be between 0 and 100.0 (read %f). Setting to 0.", profile->primary_ammo_burst_mult[i]);
 						profile->primary_ammo_burst_mult[i] = 0.0f;
 					}
-					profile->primary_ammo_burst_mult[i] /= 100.0;
+					profile->primary_ammo_burst_mult[i];
 				}
 			}
 
@@ -268,7 +268,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Always Links Energy Weapons' should be between 0 and 100.0 (read %f). Setting to 0.", profile->link_energy_levels_always[i]);
 						profile->link_energy_levels_always[i] = 0.0f;
 					}
-					profile->link_energy_levels_always[i] /= 100.0;
+					profile->link_energy_levels_always[i];
 				}
 			}
 
@@ -279,7 +279,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Maybe Links Energy Weapons' should be between 0 and 100.0 (read %f). Setting to 0.", profile->link_energy_levels_maybe[i]);
 						profile->link_energy_levels_maybe[i] = 0.0f;
 					}
-					profile->link_energy_levels_maybe[i] /= 100.0;
+					profile->link_energy_levels_maybe[i];
 				}
 			}
 
@@ -323,7 +323,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Player Damage Factor' should be between 0 and 100.0 (read %f). Setting to 0.", profile->player_damage_scale[i]);
 						profile->player_damage_scale[i] = 0.0f;
 					}
-					profile->player_damage_scale[i] /= 100.0;
+					profile->player_damage_scale[i];
 				}
 			} else if (optional_string("$AI Damage Reduction to Player Hull:")) {
 				parse_float_list(profile->player_damage_scale, NUM_SKILL_LEVELS);
@@ -332,7 +332,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Damage Reduction to Player Hull' should be between 0 and 100.0 (read %f). Setting to 0.", profile->player_damage_scale[i]);
 						profile->player_damage_scale[i] = 0.0f;
 					}
-					profile->player_damage_scale[i] /= 100.0;
+					profile->player_damage_scale[i];
 				}
 			}
 
@@ -343,7 +343,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Player Subsys Damage Factor' should be between 0 and 100.0 (read %f). Setting to 0.", profile->subsys_damage_scale[i]);
 						profile->subsys_damage_scale[i] = 0.0f;
 					}
-					profile->subsys_damage_scale[i] /= 100.0;
+					profile->subsys_damage_scale[i];
 				}
 			} else if (optional_string("$AI Damage Reduction to Player Subsys:")) {
 				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
@@ -352,7 +352,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'AI Damage Reduction to Player Subsys' should be between 0 and 100.0 (read %f). Setting to 0.", profile->subsys_damage_scale[i]);
 						profile->subsys_damage_scale[i] = 0.0f;
 					}
-					profile->subsys_damage_scale[i] /= 100.0;
+					profile->subsys_damage_scale[i];
 				}
 			}
 
@@ -376,7 +376,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Shield Manage Delay' should be between 0 and 100.0 (read %f). Setting to 0.", profile->shield_manage_delay[i]);
 						profile->shield_manage_delay[i] = 0.0f;
 					}
-					profile->shield_manage_delay[i] /= 100.0;
+					profile->shield_manage_delay[i];
 				}
 			} else if (optional_string("$AI Shield Manage Delays:")) {
 				parse_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
@@ -385,7 +385,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Shield Manage Delays' should be between 0 and 100.0 (read %f). Setting to 0.", profile->shield_manage_delay[i]);
 						profile->shield_manage_delay[i] = 0.0f;
 					}
-					profile->shield_manage_delay[i] /= 100.0;
+					profile->shield_manage_delay[i];
 				}
 			}
 
@@ -396,7 +396,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Friendly AI Fire Delay Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->ship_fire_delay_scale_friendly[i]);
 						profile->ship_fire_delay_scale_friendly[i] = 0.0f;
 					}
-					profile->ship_fire_delay_scale_friendly[i] /= 100.0;
+					profile->ship_fire_delay_scale_friendly[i];
 				}
 			}
 
@@ -407,7 +407,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Hostile AI Fire Delay Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->ship_fire_delay_scale_hostile[i]);
 						profile->ship_fire_delay_scale_hostile[i] = 0.0f;
 					}
-					profile->ship_fire_delay_scale_hostile[i] /= 100.0;
+					profile->ship_fire_delay_scale_hostile[i];
 				}
 			}
 
@@ -418,7 +418,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Friendly AI Secondary Fire Delay Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->ship_fire_secondary_delay_scale_friendly[i]);
 						profile->ship_fire_secondary_delay_scale_friendly[i] = 0.0f;
 					}
-					profile->ship_fire_secondary_delay_scale_friendly[i] /= 100.0;
+					profile->ship_fire_secondary_delay_scale_friendly[i];
 				}
 			}
 
@@ -429,7 +429,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Hostile AI Secondary Fire Delay Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->ship_fire_secondary_delay_scale_hostile[i]);
 						profile->ship_fire_secondary_delay_scale_hostile[i] = 0.0f;
 					}
-					profile->ship_fire_secondary_delay_scale_hostile[i] /= 100.0;
+					profile->ship_fire_secondary_delay_scale_hostile[i];
 				}
 			}
 
@@ -440,12 +440,14 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$AI Turn Time Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->turn_time_scale[i]);
 						profile->turn_time_scale[i] = 0.0f;
 					}
-					profile->turn_time_scale[i] /= 100.0;
+					profile->turn_time_scale[i];
 				}
 			}
 
 			if (optional_string("$Glide Attack Percent:")) {
 				parse_float_list(profile->glide_attack_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->glide_attack_percent[i] < 0.0f || profile->glide_attack_percent[i] > 100.0f) {
 						Warning(LOCATION, "'$Glide Attack Percent' should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_attack_percent[i]);
@@ -457,6 +459,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$Circle Strafe Percent:")) {
 				parse_float_list(profile->circle_strafe_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->circle_strafe_percent[i] < 0.0f || profile->circle_strafe_percent[i] > 100.0f) {
 						Warning(LOCATION, "'$Circle Strafe Percent' should be between 0 and 100.0 (read %f). Setting to 0.", profile->circle_strafe_percent[i]);
@@ -468,6 +472,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$Glide Strafe Percent:")) {
 				parse_float_list(profile->glide_strafe_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->glide_strafe_percent[i] < 0.0f || profile->glide_strafe_percent[i] > 100.0f) {
 						Warning(LOCATION, "'$Glide Strafe Percent' should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_strafe_percent[i]);
@@ -479,6 +485,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$Random Sidethrust Percent:")) {
 				parse_float_list(profile->random_sidethrust_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
 						Warning(LOCATION, "'$Random Sidethrust Percent' should be between 0 and 100.0 (read %f). Setting to 0.", profile->random_sidethrust_percent[i]);
@@ -495,7 +503,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Stalemate Time Threshold' should be between 0 and 100.0 (read %f). Setting to 0.", profile->stalemate_time_thresh[i]);
 						profile->stalemate_time_thresh[i] = 0.0f;
 					}
-					profile->stalemate_time_thresh[i] /= 100.0;
+					profile->stalemate_time_thresh[i];
 				}
 			}
 
@@ -506,7 +514,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Stalemate Distance Threshold' should be between 0 and 100.0 (read %f). Setting to 0.", profile->stalemate_dist_thresh[i]);
 						profile->stalemate_dist_thresh[i] = 0.0f;
 					}
-					profile->stalemate_dist_thresh[i] /= 100.0;
+					profile->stalemate_dist_thresh[i];
 				}
 			}
 
@@ -517,7 +525,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Player Shield Recharge Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->shield_energy_scale[i]);
 						profile->shield_energy_scale[i] = 0.0f;
 					}
-					profile->shield_energy_scale[i] /= 100.0;
+					profile->shield_energy_scale[i];
 				}
 			}
 
@@ -528,7 +536,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Player Weapon Recharge Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->weapon_energy_scale[i]);
 						profile->weapon_energy_scale[i] = 0.0f;
 					}
-					profile->weapon_energy_scale[i] /= 100.0;
+					profile->weapon_energy_scale[i];
 				}
 			}
 
@@ -605,7 +613,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Delay Before Allowing Bombs to Be Shot Down' should be between 0 and 100.0 (read %f). Setting to 0.", profile->delay_bomb_arm_timer[i]);
 						profile->delay_bomb_arm_timer[i] = 0.0f;
 					}
-					profile->delay_bomb_arm_timer[i] /= 100.0;
+					profile->delay_bomb_arm_timer[i];
 				}
 			}
 
@@ -627,7 +635,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Max Aim Update Delay:' should be between 0 and 100.0 (read %f). Setting to 0.", profile->max_aim_update_delay[i]);
 						profile->max_aim_update_delay[i] = 0.0f;
 					}
-					profile->max_aim_update_delay[i] /= 100.0;
+					profile->max_aim_update_delay[i];
 				}
 			}
 
@@ -638,7 +646,7 @@ void parse_ai_profiles_tbl(char *filename)
 						Warning(LOCATION, "'$Turret Max Aim Update Delay' should be between 0 and 100.0 (read %f). Setting to 0.", profile->turret_max_aim_update_delay[i]);
 						profile->turret_max_aim_update_delay[i] = 0.0f;
 					}
-					profile->turret_max_aim_update_delay[i] /= 100.0;
+					profile->turret_max_aim_update_delay[i];
 				}
 			}
 
@@ -656,7 +664,7 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$smart afterburner management:", AIPF_SMART_AFTERBURNER_MANAGEMENT, AIP_FLAG);
 
 			set_flag(profile, "$allow rapid secondary dumbfire:", AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE, AIP_FLAG);
-
+			
 			set_flag(profile, "$huge turret weapons ignore bombs:", AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS, AIP_FLAG);
 
 			set_flag(profile, "$don't insert random turret fire delay:", AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY, AIP_FLAG);
