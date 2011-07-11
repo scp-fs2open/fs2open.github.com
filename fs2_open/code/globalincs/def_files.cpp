@@ -1479,7 +1479,7 @@ float EDGE_THRESHOLD_MIN = 0.0;													\n\
 																				\n\
 float SUBPIX_CAP = 0.0;															\n\
 float SUBPIX_TRIM = 0.0;														\n\
-																				\n\
+																				\n""\
 void fxaa_choose_preset(int preset) {											\n\
 	if (preset == 0) {															\n\
 		EDGE_SHARPNESS = 8.0;													\n\
@@ -1590,7 +1590,7 @@ void fxaa_choose_preset(int preset) {											\n\
     #define FxaaTexOff(t, p, o, r) textureLodOffset(t, p, 0.0, o)        		\n\
     #if (FXAA_GATHER4_ALPHA == 1)												\n\
         #define FxaaTexAlpha4(t, p, r) textureGather(t, p, 3)					\n\
-        #define FxaaTexOffAlpha4(t, p, o, r) textureGatherOffset(t, p, o, 3)	\n\
+        #define FxaaTexOffAlpha4(t, p, o, r) textureGatherOffset(t, p, o, 3)	\n""\
     #endif																		\n\
 #endif																			\n\
 																				\n\
@@ -1654,7 +1654,7 @@ half4 FxaaPixelShader(float2 pos, float4 posPos, FxaaTex tex, float2 rcpFrame, f
     if(twoTapLt || twoTapGt) rgby2 = rgby1;										\n\
     return rgby2; }																\n\
 																				\n\
-float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,float4 rcpFrameOpt ) { 	\n\
+float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,float4 rcpFrameOpt ) { 	\n""\
    #if (FXAA_GATHER4_ALPHA == 1)												\n\
         float4 luma4A = FxaaTexOffAlpha4(tex, pos.xy, FxaaInt2(-1, -1), rcpFrame.xy); \n\
         #if (FXAA_DISCARD == 0)													\n\
@@ -1703,7 +1703,7 @@ float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,fl
     float rangeL = abs(lumaL - lumaM);											\n\
     float blendL = FxaaSat((rangeL / range) - SUBPIX_TRIM) * SUBPIX_TRIM_SCALE;	\n\
 	blendL = min(SUBPIX_CAP, blendL);								\n\
-/*--------------------------------------------------------------------------*/	\n\
+/*--------------------------------------------------------------------------*/	\n""\
     float edgeVert =															\n\
               abs(lumaNW + (-2.0 * lumaN) + lumaNE) +							\n\
         2.0 * abs(lumaW  + (-2.0 * lumaM) + lumaE ) +							\n\
@@ -1753,7 +1753,7 @@ float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,fl
         if(doneN2 && !doneN) posN += offNP;										\n\
         if(doneP2 && !doneP) posP -= offNP;										\n\
         if(doneN2 && doneP2) break;												\n\
-        doneN = doneN2;															\n\
+        doneN = doneN2;															\n""\
         doneP = doneP2;															\n\
         if(!doneN) posN -= offNP * 2.0;											\n\
         if(!doneP) posP += offNP * 2.0; }										\n\
@@ -1765,7 +1765,7 @@ float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,fl
     lumaEndN = directionN ? lumaEndN : lumaEndP;								\n\
 /*--------------------------------------------------------------------------*/	\n\
     if(((lumaM - lumaN) < 0.0) == ((lumaEndN - lumaN) < 0.0))					\n\
-        lengthSign = 0.0;														\n""\
+        lengthSign = 0.0;														\n\
 /*--------------------------------------------------------------------------*/	\n\
     float spanLength = (dstP + dstN);											\n\
     dstN = directionN ? dstN : dstP;											\n\
