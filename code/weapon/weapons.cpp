@@ -3308,6 +3308,7 @@ void weapon_do_post_parse()
 	weapon_info *wip;
 	int first_cmeasure_index = -1;
 	int i;
+	char *weakp;
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_create_names();
@@ -3332,11 +3333,12 @@ void weapon_do_post_parse()
 			first_cmeasure_index = i;
 
 		// if we are a "#weak" weapon then popup a warning if we don't have the "player allowed" flag set
-		if ( !(wip->wi_flags & WIF_PLAYER_ALLOWED) && stristr(wip->name, "#weak") ) {
+		if ( !(wip->wi_flags & WIF_PLAYER_ALLOWED) && ((weakp = stristr(wip->name, "#weak")) != NULL) ) {
 			int idx = -1;
 			char non_weak[NAME_LENGTH];
+			memset(non_weak, 0, NAME_LENGTH);	// Valathil
 
-			strncpy(non_weak, wip->name, strlen(wip->name) - 5);
+			strncpy(non_weak, wip->name, weakp - wip->name);	// Valathil taking into account the possibility of another suffix after #weak
 			idx = weapon_info_lookup(non_weak);
 
 			// only add the flag if the non-weak version is also player-allowed
