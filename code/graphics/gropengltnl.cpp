@@ -525,9 +525,6 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 
 	int textured = ((flags & TMAP_FLAG_TEXTURED) && (bufferp->flags & VB_FLAG_UV1));
 
-	// init lights
-	opengl_change_active_lights(0);
-
 	// setup shader flags for the things that we want/need
 	if (lighting_is_enabled) {
 		shader_flags |= SDR_FLAG_LIGHT;
@@ -797,8 +794,6 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 
 	render_pass = 0;
 
-	// init lights
-	opengl_change_active_lights(0);
 	opengl_default_light_settings( !GL_center_alpha, (Interp_light > 0.25f), (using_spec) ? 0 : 1 );
 	gr_opengl_set_center_alpha(GL_center_alpha);
 
