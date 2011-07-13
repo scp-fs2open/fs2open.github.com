@@ -30,6 +30,7 @@
 #include "globalincs/linklist.h"
 #include "weapon/shockwave.h"
 #include "parse/parselo.h"	//strextcmp
+#include "graphics/gropengllight.h"
 
 #include <limits.h>
 
@@ -3286,6 +3287,18 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		gr_set_lighting(true, true);
 	}
 
+	// rotate lights
+	if ( !(Interp_flags & MR_NO_LIGHTING) )	{
+		light_rotate_all();
+ 
+		if ( !Cmdline_nohtl ) {
+			light_set_all_relevent();
+		}
+	}
+	if ( !(Interp_flags & MR_NO_LIGHTING) && (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) ) {
+		opengl_change_active_lights(0); // Set up OpenGl lighting;
+	}
+
 	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
 		gr_set_buffer(pm->vertex_buffer_id);
 	}
@@ -3307,15 +3320,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 		i = pm->submodel[i].next_sibling;
 	}	
-
-	// rotate lights for the hull
-	if ( !(Interp_flags & MR_NO_LIGHTING) )	{
-		light_rotate_all();
-
-		if ( !Cmdline_nohtl ) {
-			light_set_all_relevent();
-		}
-	}
 
 	gr_zbias(0);	
 
@@ -4749,14 +4753,6 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
 
 	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
-
-	if ( !(Interp_flags & MR_NO_LIGHTING) ) {
-		light_rotate_all();
-
-		if ( !Cmdline_nohtl ) {
-			light_set_all_relevent();
-		}
-	}
 
 	model_render_buffers(pm, mn, true);
 
