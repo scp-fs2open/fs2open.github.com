@@ -263,7 +263,7 @@ void HudGaugeDirectives::render(float frametime)
 	// gr_aabitmap(Directive_coords[DIRECTIVE_COORDS_TOP][0]+fl2i(HUD_offset_x), Directive_coords[DIRECTIVE_COORDS_TOP][1]+fl2i(HUD_offset_y));
 
 	// print out title
-	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[0], EG_OBJ_TITLE, XSTR( "directives", 422));
+	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, XSTR( "directives", 422));
 	// gr_printf(Directive_coords[DIRECTIVE_COORDS_TITLE][0]+fl2i(HUD_offset_x), Directive_coords[DIRECTIVE_COORDS_TITLE][1]+fl2i(HUD_offset_y), XSTR( "directives", 422));
 	
 	bx = position[0];
