@@ -91,7 +91,7 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 	switch (FSLight->type) {
 		case LT_POINT: {
 			// this crap still needs work...
-			GLLight->ConstantAtten = 0.0f;
+			GLLight->ConstantAtten = 1.0f;
 			GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 
 			GLLight->Specular[0] *= static_point_factor;
@@ -102,15 +102,33 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 		}
 
 		case LT_TUBE: {
+			GLLight->ConstantAtten = 1.0f;
+			GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
+			GLLight->QuadraticAtten = (1.0f / MAX(FSLight->rada_squared, FSLight->radb_squared)) * 1.25f;
+
 			GLLight->Specular[0] *= static_tube_factor;
 			GLLight->Specular[1] *= static_tube_factor;
 			GLLight->Specular[2] *= static_tube_factor;
 
-			GLLight->SpotDir[0] = FSLight->vec2.xyz.x * 1.5f;
-			GLLight->SpotDir[1] = FSLight->vec2.xyz.y * 1.5f;
-			GLLight->SpotDir[2] = FSLight->vec2.xyz.z * 1.5f;
-			GLLight->SpotCutOff = 90.0f;
+			GLLight->Position[0] = FSLight->vec2.xyz.x; // Valathil: Use endpoint of tube as light position
+			GLLight->Position[1] = FSLight->vec2.xyz.y;
+			GLLight->Position[2] = FSLight->vec2.xyz.z;
+			GLLight->Position[3] = 1.0f;
 
+			if ( Use_GLSL > 1 ) {
+				// Valathil: When using shaders pass the beam direction (not normalized IMPORTANT for calculation of tube)
+				vec3d a;
+				vm_vec_sub(&a, &FSLight->vec2, &FSLight->vec);
+				GLLight->SpotDir[0] = a.xyz.x; 
+				GLLight->SpotDir[1] = a.xyz.y;
+				GLLight->SpotDir[2] = a.xyz.z;
+				GLLight->SpotCutOff = 90.0f; // Valathil: So shader dectects tube light
+			} else {
+				GLLight->SpotDir[0] = 1.0f; // Valathil: When not using shaders pass a fake spotdir
+				GLLight->SpotDir[1] = 0.0f;
+				GLLight->SpotDir[2] = 0.0f;
+				GLLight->SpotCutOff = 180.0f; // Valathil: Should be a point light not a spot; using tube only for the light sorting
+			}
 			break;
 		}
 

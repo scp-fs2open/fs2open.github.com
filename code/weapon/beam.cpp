@@ -986,6 +986,9 @@ void beam_move_all_post()
 //				mprintf(("killing beam becase it isn't ok to be fireing\n"));
 				beam_delete(moveup);
 			} else {
+				// add a muzzle light for the shooter
+				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
+
 				// if the warming up timestamp has expired, start firing
 				if(timestamp_elapsed(moveup->warmup_stamp)){							
 					// start firing
@@ -993,9 +996,6 @@ void beam_move_all_post()
 //						mprintf(("killing beam becase it shouldn't have started fireing yet\n"));
 						beam_delete(moveup);												
 					} 			
-					
-					// add a muzzle light for the shooter
-					beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
 				} 
 			}
 
@@ -1013,6 +1013,9 @@ void beam_move_all_post()
 //				mprintf(("killing beam becase it isn't ok to fire\n"));
 				beam_delete(moveup);
 			} else {
+				// add a muzzle light for the shooter
+				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
+
 				// if we're done warming down, the beam is finished
 				if(timestamp_elapsed(moveup->warmdown_stamp)){	
 //					mprintf(("euthaniseing beam\n"));
@@ -1544,7 +1547,10 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	bwi = &wip->b_info;
 
 	// some noise
-	noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
+	if ( (bm->warmup_stamp < 0) && (bm->warmdown_stamp < 0) ) // disable noise when warming up or down
+		noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
+	else
+		noise = 1.0f;
 
 	// widest part of the beam
 	float light_rad = beam_get_widest(bm) * blight * noise;	
@@ -1566,11 +1572,27 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
+	float pct = 0.0f;
+
+	if (bm->warmup_stamp != -1) {	// calculate muzzle light intensity
+		// get warmup pct
+		pct = BEAM_WARMUP_PCT(bm)*0.5f;
+	} else
+	// if the beam is warming down
+	if (bm->warmdown_stamp != -1) {
+		// get warmup pct
+		pct = MAX(1.0f - BEAM_WARMDOWN_PCT(bm)*1.3f,0.0f)*0.5f;
+	} 
+	// otherwise the beam is really firing
+	else {
+		pct = 1.0f;
+	}
 	// add a unique light
 	// noise *= 0.1f;			// a little less noise here, since we want the beam to generally cast a bright light
-	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, 1.0f, fr, fg, fb, OBJ_INDEX(objp));
+	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb, OBJ_INDEX(objp));
 }
 
+extern int Use_GLSL;
 // call to add a light source to a large object
 void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 {
@@ -1607,9 +1629,22 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
-	// add a unique light
-	noise *= 0.1f;			// a little less noise here, since we want the beam to generally cast a bright light
-	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp));
+	vec3d near_pt, a, b;
+	float dist;
+
+	vm_vec_sub(&a, pt1, pt0);
+	vm_vec_normalize_quick(&a);
+	vm_vec_dist_to_line(&objp->pos, pt0, pt1, &near_pt, &dist); // Calculate nearest point for fallback fake tube pointlight
+	vm_vec_scale_add(&b, &near_pt, &a, bwi->beam_muzzle_radius * (-3.0f)); // Valathil: Move the light away from the ship somewhat	
+
+	if ( dist > (light_rad + objp->radius) ) {
+		return; // Too far away
+	}
+
+	if ( Use_GLSL > 1 )
+		light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp)); 
+	else
+		light_add_tube(pt0, &b, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp)); 
 }
 
 // mark an object as being lit
@@ -1675,35 +1710,17 @@ void beam_apply_lighting()
 
 		// from the beam passing by
 		case 1:
-			// object type
-			switch(Objects[l->objnum].type){
-			case OBJ_SHIP:
-				Assert(Objects[l->objnum].instance >= 0);
-
-				// large ships
-				if(Ship_info[Ships[Objects[l->objnum].instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
-					beam_add_light_large(l->bm, &Objects[l->objnum], &l->bm->last_start, &l->bm->last_shot);
-				}
-				// small ships
-				else {
-					beam_add_light_small(l->bm, &Objects[l->objnum]);
-				}
-				break;
-
-			// asteroids get small lights
-			case OBJ_ASTEROID:
-				beam_add_light_small(l->bm, &Objects[l->objnum]);
-				break;
-
-			// debris gets small lights
-			case OBJ_DEBRIS:
-				beam_add_light_small(l->bm, &Objects[l->objnum]);
-				break;
-			}
+			Assert( Objects[l->objnum].instance >= 0 );
+			// Valathil: Everyone gets tube lights now
+			beam_add_light_large(l->bm, &Objects[l->objnum], &l->bm->last_start, &l->bm->last_shot);
 			break;
 
 		// from a collision
 		case 2:
+			// Valathil: Dont render impact lights for shaders, handled by tube lighting
+			if ( Use_GLSL > 1 ) {
+				break;
+			}
 			// a few meters from the collision point			
 			vm_vec_sub(&dir, &l->bm->last_start, &l->c_point);
 			vm_vec_normalize_quick(&dir);
