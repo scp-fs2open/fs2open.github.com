@@ -653,16 +653,20 @@
 		F0AAA8C610FA0ACE0086B1B4 /* png.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B010FA0ACE0086B1B4 /* png.c */; };
 		F0AAA8C710FA0ACE0086B1B4 /* png.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA8B110FA0ACE0086B1B4 /* png.h */; };
 		F0AAA8C810FA0ACE0086B1B4 /* pngconf.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA8B210FA0ACE0086B1B4 /* pngconf.h */; };
+		6066A02213AFEA6700A817AA /* pngdebug.h in Headers */ = {isa = PBXBuildFile; fileRef = 6066A01D13AFEA6700A817AA /* pngdebug.h */; };
 		F0AAA8C910FA0ACE0086B1B4 /* pngerror.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B310FA0ACE0086B1B4 /* pngerror.c */; };
 		F0AAA8CB10FA0ACE0086B1B4 /* pngget.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B510FA0ACE0086B1B4 /* pngget.c */; };
+		6066A02313AFEA6700A817AA /* pnginfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 6066A01E13AFEA6700A817AA /* pnginfo.h */; };
+		6066A02413AFEA6700A817AA /* pnglibconf.h in Headers */ = {isa = PBXBuildFile; fileRef = 6066A01F13AFEA6700A817AA /* pnglibconf.h */; };
 		F0AAA8CC10FA0ACE0086B1B4 /* pngmem.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B610FA0ACE0086B1B4 /* pngmem.c */; };
 		F0AAA8CD10FA0ACE0086B1B4 /* pngpread.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B710FA0ACE0086B1B4 /* pngpread.c */; };
+		6066A02513AFEA6700A817AA /* pngpriv.h in Headers */ = {isa = PBXBuildFile; fileRef = 6066A02013AFEA6700A817AA /* pngpriv.h */; };
 		F0AAA8CE10FA0ACE0086B1B4 /* pngread.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B810FA0ACE0086B1B4 /* pngread.c */; };
 		F0AAA8CF10FA0ACE0086B1B4 /* pngrio.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B910FA0ACE0086B1B4 /* pngrio.c */; };
 		F0AAA8D010FA0ACE0086B1B4 /* pngrtran.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BA10FA0ACE0086B1B4 /* pngrtran.c */; };
 		F0AAA8D110FA0ACE0086B1B4 /* pngrutil.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BB10FA0ACE0086B1B4 /* pngrutil.c */; };
 		F0AAA8D210FA0ACE0086B1B4 /* pngset.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BC10FA0ACE0086B1B4 /* pngset.c */; };
-		F0AAA8D310FA0ACE0086B1B4 /* pngtest.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BD10FA0ACE0086B1B4 /* pngtest.c */; };
+		6066A02613AFEA6700A817AA /* pngstruct.h in Headers */ = {isa = PBXBuildFile; fileRef = 6066A02113AFEA6700A817AA /* pngstruct.h */; };
 		F0AAA8D410FA0ACE0086B1B4 /* pngtrans.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BE10FA0ACE0086B1B4 /* pngtrans.c */; };
 		F0AAA8D610FA0ACE0086B1B4 /* pngwio.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8C010FA0ACE0086B1B4 /* pngwio.c */; };
 		F0AAA8D710FA0ACE0086B1B4 /* pngwrite.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8C110FA0ACE0086B1B4 /* pngwrite.c */; };
@@ -676,8 +680,6 @@
 		F0AAA93A10FA0D060086B1B4 /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA91F10FA0D060086B1B4 /* crc32.h */; };
 		F0AAA93B10FA0D060086B1B4 /* deflate.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92010FA0D060086B1B4 /* deflate.c */; };
 		F0AAA93C10FA0D060086B1B4 /* deflate.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA92110FA0D060086B1B4 /* deflate.h */; };
-		F0AAA93D10FA0D060086B1B4 /* example.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92210FA0D060086B1B4 /* example.c */; };
-		F0AAA93E10FA0D060086B1B4 /* gzio.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92310FA0D060086B1B4 /* gzio.c */; };
 		F0AAA93F10FA0D060086B1B4 /* infback.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92410FA0D060086B1B4 /* infback.c */; };
 		F0AAA94010FA0D060086B1B4 /* inffast.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92510FA0D060086B1B4 /* inffast.c */; };
 		F0AAA94110FA0D060086B1B4 /* inffast.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA92610FA0D060086B1B4 /* inffast.h */; };
@@ -686,12 +688,10 @@
 		F0AAA94410FA0D060086B1B4 /* inflate.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA92910FA0D060086B1B4 /* inflate.h */; };
 		F0AAA94510FA0D060086B1B4 /* inftrees.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92A10FA0D060086B1B4 /* inftrees.c */; };
 		F0AAA94610FA0D060086B1B4 /* inftrees.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA92B10FA0D060086B1B4 /* inftrees.h */; };
-		F0AAA94710FA0D060086B1B4 /* minigzip.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92C10FA0D060086B1B4 /* minigzip.c */; };
 		F0AAA94810FA0D060086B1B4 /* trees.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92D10FA0D060086B1B4 /* trees.c */; };
 		F0AAA94910FA0D060086B1B4 /* trees.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA92E10FA0D060086B1B4 /* trees.h */; };
 		F0AAA94A10FA0D060086B1B4 /* uncompr.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA92F10FA0D060086B1B4 /* uncompr.c */; };
 		F0AAA94B10FA0D060086B1B4 /* zconf.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93210FA0D060086B1B4 /* zconf.h */; };
-		F0AAA94C10FA0D060086B1B4 /* zconf.in.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93310FA0D060086B1B4 /* zconf.in.h */; };
 		F0AAA94D10FA0D060086B1B4 /* zlib.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93410FA0D060086B1B4 /* zlib.h */; };
 		F0AAA94E10FA0D060086B1B4 /* zutil.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA93510FA0D060086B1B4 /* zutil.c */; };
 		F0AAA94F10FA0D060086B1B4 /* zutil.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93610FA0D060086B1B4 /* zutil.h */; };
@@ -1575,22 +1575,25 @@
 		F0AAA8B010FA0ACE0086B1B4 /* png.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = png.c; sourceTree = "<group>"; };
 		F0AAA8B110FA0ACE0086B1B4 /* png.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = png.h; sourceTree = "<group>"; };
 		F0AAA8B210FA0ACE0086B1B4 /* pngconf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngconf.h; sourceTree = "<group>"; };
+		6066A01D13AFEA6700A817AA /* pngdebug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngdebug.h; sourceTree = "<group>"; };
 		F0AAA8B310FA0ACE0086B1B4 /* pngerror.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngerror.c; sourceTree = "<group>"; };
 		F0AAA8B510FA0ACE0086B1B4 /* pngget.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngget.c; sourceTree = "<group>"; };
+		6066A01E13AFEA6700A817AA /* pnginfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pnginfo.h; sourceTree = "<group>"; };
+		6066A01F13AFEA6700A817AA /* pnglibconf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pnglibconf.h; sourceTree = "<group>"; };
 		F0AAA8B610FA0ACE0086B1B4 /* pngmem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngmem.c; sourceTree = "<group>"; };
 		F0AAA8B710FA0ACE0086B1B4 /* pngpread.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngpread.c; sourceTree = "<group>"; };
 		F0AAA8B810FA0ACE0086B1B4 /* pngread.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngread.c; sourceTree = "<group>"; };
+		6066A02013AFEA6700A817AA /* pngpriv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngpriv.h; sourceTree = "<group>"; };
 		F0AAA8B910FA0ACE0086B1B4 /* pngrio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngrio.c; sourceTree = "<group>"; };
 		F0AAA8BA10FA0ACE0086B1B4 /* pngrtran.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngrtran.c; sourceTree = "<group>"; };
 		F0AAA8BB10FA0ACE0086B1B4 /* pngrutil.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngrutil.c; sourceTree = "<group>"; };
 		F0AAA8BC10FA0ACE0086B1B4 /* pngset.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngset.c; sourceTree = "<group>"; };
-		F0AAA8BD10FA0ACE0086B1B4 /* pngtest.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngtest.c; sourceTree = "<group>"; };
+		6066A02113AFEA6700A817AA /* pngstruct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngstruct.h; sourceTree = "<group>"; };
 		F0AAA8BE10FA0ACE0086B1B4 /* pngtrans.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngtrans.c; sourceTree = "<group>"; };
 		F0AAA8C010FA0ACE0086B1B4 /* pngwio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngwio.c; sourceTree = "<group>"; };
 		F0AAA8C110FA0ACE0086B1B4 /* pngwrite.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngwrite.c; sourceTree = "<group>"; };
 		F0AAA8C210FA0ACE0086B1B4 /* pngwtran.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngwtran.c; sourceTree = "<group>"; };
 		F0AAA8C310FA0ACE0086B1B4 /* pngwutil.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngwutil.c; sourceTree = "<group>"; };
-		F0AAA8C510FA0ACE0086B1B4 /* pngw32.rc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pngw32.rc; sourceTree = "<group>"; };
 		F0AAA90F10FA0CAA0086B1B4 /* libzlib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libzlib.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F0AAA91C10FA0D060086B1B4 /* adler32.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = adler32.c; sourceTree = "<group>"; };
 		F0AAA91D10FA0D060086B1B4 /* compress.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = compress.c; sourceTree = "<group>"; };
@@ -1598,8 +1601,6 @@
 		F0AAA91F10FA0D060086B1B4 /* crc32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crc32.h; sourceTree = "<group>"; };
 		F0AAA92010FA0D060086B1B4 /* deflate.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = deflate.c; sourceTree = "<group>"; };
 		F0AAA92110FA0D060086B1B4 /* deflate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = deflate.h; sourceTree = "<group>"; };
-		F0AAA92210FA0D060086B1B4 /* example.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = example.c; sourceTree = "<group>"; };
-		F0AAA92310FA0D060086B1B4 /* gzio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = gzio.c; sourceTree = "<group>"; };
 		F0AAA92410FA0D060086B1B4 /* infback.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = infback.c; sourceTree = "<group>"; };
 		F0AAA92510FA0D060086B1B4 /* inffast.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = inffast.c; sourceTree = "<group>"; };
 		F0AAA92610FA0D060086B1B4 /* inffast.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = inffast.h; sourceTree = "<group>"; };
@@ -1608,13 +1609,10 @@
 		F0AAA92910FA0D060086B1B4 /* inflate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = inflate.h; sourceTree = "<group>"; };
 		F0AAA92A10FA0D060086B1B4 /* inftrees.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = inftrees.c; sourceTree = "<group>"; };
 		F0AAA92B10FA0D060086B1B4 /* inftrees.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = inftrees.h; sourceTree = "<group>"; };
-		F0AAA92C10FA0D060086B1B4 /* minigzip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = minigzip.c; sourceTree = "<group>"; };
 		F0AAA92D10FA0D060086B1B4 /* trees.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = trees.c; sourceTree = "<group>"; };
 		F0AAA92E10FA0D060086B1B4 /* trees.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = trees.h; sourceTree = "<group>"; };
 		F0AAA92F10FA0D060086B1B4 /* uncompr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = uncompr.c; sourceTree = "<group>"; };
-		F0AAA93110FA0D060086B1B4 /* zlib1.rc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = zlib1.rc; sourceTree = "<group>"; };
 		F0AAA93210FA0D060086B1B4 /* zconf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zconf.h; sourceTree = "<group>"; };
-		F0AAA93310FA0D060086B1B4 /* zconf.in.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zconf.in.h; sourceTree = "<group>"; };
 		F0AAA93410FA0D060086B1B4 /* zlib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zlib.h; sourceTree = "<group>"; };
 		F0AAA93510FA0D060086B1B4 /* zutil.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = zutil.c; sourceTree = "<group>"; };
 		F0AAA93610FA0D060086B1B4 /* zutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zutil.h; sourceTree = "<group>"; };
@@ -3142,34 +3140,28 @@
 				F0AAA8B010FA0ACE0086B1B4 /* png.c */,
 				F0AAA8B110FA0ACE0086B1B4 /* png.h */,
 				F0AAA8B210FA0ACE0086B1B4 /* pngconf.h */,
+				F0AAA8B210FA0ACE0086B1B4 /* pngconf.h */,
 				F0AAA8B310FA0ACE0086B1B4 /* pngerror.c */,
 				F0AAA8B510FA0ACE0086B1B4 /* pngget.c */,
+				6066A01E13AFEA6700A817AA /* pnginfo.h */,
 				F0AAA8B610FA0ACE0086B1B4 /* pngmem.c */,
+				6066A01F13AFEA6700A817AA /* pngpriv.h */,
 				F0AAA8B710FA0ACE0086B1B4 /* pngpread.c */,
 				F0AAA8B810FA0ACE0086B1B4 /* pngread.c */,
 				F0AAA8B910FA0ACE0086B1B4 /* pngrio.c */,
 				F0AAA8BA10FA0ACE0086B1B4 /* pngrtran.c */,
 				F0AAA8BB10FA0ACE0086B1B4 /* pngrutil.c */,
 				F0AAA8BC10FA0ACE0086B1B4 /* pngset.c */,
-				F0AAA8BD10FA0ACE0086B1B4 /* pngtest.c */,
+				6066A02013AFEA6700A817AA /* pngstruct.h */,
 				F0AAA8BE10FA0ACE0086B1B4 /* pngtrans.c */,
 				F0AAA8C010FA0ACE0086B1B4 /* pngwio.c */,
 				F0AAA8C110FA0ACE0086B1B4 /* pngwrite.c */,
 				F0AAA8C210FA0ACE0086B1B4 /* pngwtran.c */,
 				F0AAA8C310FA0ACE0086B1B4 /* pngwutil.c */,
-				F0AAA8C410FA0ACE0086B1B4 /* scripts */,
 			);
 			name = libpng;
 			path = ../../libpng;
 			sourceTree = SOURCE_ROOT;
-		};
-		F0AAA8C410FA0ACE0086B1B4 /* scripts */ = {
-			isa = PBXGroup;
-			children = (
-				F0AAA8C510FA0ACE0086B1B4 /* pngw32.rc */,
-			);
-			path = scripts;
-			sourceTree = "<group>";
 		};
 		F0AAA91B10FA0D060086B1B4 /* zlib */ = {
 			isa = PBXGroup;
@@ -3180,8 +3172,6 @@
 				F0AAA91F10FA0D060086B1B4 /* crc32.h */,
 				F0AAA92010FA0D060086B1B4 /* deflate.c */,
 				F0AAA92110FA0D060086B1B4 /* deflate.h */,
-				F0AAA92210FA0D060086B1B4 /* example.c */,
-				F0AAA92310FA0D060086B1B4 /* gzio.c */,
 				F0AAA92410FA0D060086B1B4 /* infback.c */,
 				F0AAA92510FA0D060086B1B4 /* inffast.c */,
 				F0AAA92610FA0D060086B1B4 /* inffast.h */,
@@ -3190,13 +3180,10 @@
 				F0AAA92910FA0D060086B1B4 /* inflate.h */,
 				F0AAA92A10FA0D060086B1B4 /* inftrees.c */,
 				F0AAA92B10FA0D060086B1B4 /* inftrees.h */,
-				F0AAA92C10FA0D060086B1B4 /* minigzip.c */,
 				F0AAA92D10FA0D060086B1B4 /* trees.c */,
 				F0AAA92E10FA0D060086B1B4 /* trees.h */,
 				F0AAA92F10FA0D060086B1B4 /* uncompr.c */,
-				F0AAA93010FA0D060086B1B4 /* win32 */,
 				F0AAA93210FA0D060086B1B4 /* zconf.h */,
-				F0AAA93310FA0D060086B1B4 /* zconf.in.h */,
 				F0AAA93410FA0D060086B1B4 /* zlib.h */,
 				F0AAA93510FA0D060086B1B4 /* zutil.c */,
 				F0AAA93610FA0D060086B1B4 /* zutil.h */,
@@ -3204,14 +3191,6 @@
 			name = zlib;
 			path = ../../zlib;
 			sourceTree = SOURCE_ROOT;
-		};
-		F0AAA93010FA0D060086B1B4 /* win32 */ = {
-			isa = PBXGroup;
-			children = (
-				F0AAA93110FA0D060086B1B4 /* zlib1.rc */,
-			);
-			path = win32;
-			sourceTree = "<group>";
 		};
 		F0B73A8F10FA065F005E1A69 /* pngutils */ = {
 			isa = PBXGroup;
@@ -3544,6 +3523,11 @@
 			files = (
 				F0AAA8C710FA0ACE0086B1B4 /* png.h in Headers */,
 				F0AAA8C810FA0ACE0086B1B4 /* pngconf.h in Headers */,
+				6066A02213AFEA6700A817AA /* pngdebug.h in Headers */,
+				6066A02313AFEA6700A817AA /* pnginfo.h in Headers */,
+				6066A02413AFEA6700A817AA /* pnglibconf.h in Headers */,
+				6066A02513AFEA6700A817AA /* pngpriv.h in Headers */,
+				6066A02613AFEA6700A817AA /* pngstruct.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3559,7 +3543,6 @@
 				F0AAA94610FA0D060086B1B4 /* inftrees.h in Headers */,
 				F0AAA94910FA0D060086B1B4 /* trees.h in Headers */,
 				F0AAA94B10FA0D060086B1B4 /* zconf.h in Headers */,
-				F0AAA94C10FA0D060086B1B4 /* zconf.in.h in Headers */,
 				F0AAA94D10FA0D060086B1B4 /* zlib.h in Headers */,
 				F0AAA94F10FA0D060086B1B4 /* zutil.h in Headers */,
 			);
@@ -4210,7 +4193,6 @@
 				F0AAA8D010FA0ACE0086B1B4 /* pngrtran.c in Sources */,
 				F0AAA8D110FA0ACE0086B1B4 /* pngrutil.c in Sources */,
 				F0AAA8D210FA0ACE0086B1B4 /* pngset.c in Sources */,
-				F0AAA8D310FA0ACE0086B1B4 /* pngtest.c in Sources */,
 				F0AAA8D410FA0ACE0086B1B4 /* pngtrans.c in Sources */,
 				F0AAA8D610FA0ACE0086B1B4 /* pngwio.c in Sources */,
 				F0AAA8D710FA0ACE0086B1B4 /* pngwrite.c in Sources */,
@@ -4227,13 +4209,10 @@
 				F0AAA93810FA0D060086B1B4 /* compress.c in Sources */,
 				F0AAA93910FA0D060086B1B4 /* crc32.c in Sources */,
 				F0AAA93B10FA0D060086B1B4 /* deflate.c in Sources */,
-				F0AAA93D10FA0D060086B1B4 /* example.c in Sources */,
-				F0AAA93E10FA0D060086B1B4 /* gzio.c in Sources */,
 				F0AAA93F10FA0D060086B1B4 /* infback.c in Sources */,
 				F0AAA94010FA0D060086B1B4 /* inffast.c in Sources */,
 				F0AAA94310FA0D060086B1B4 /* inflate.c in Sources */,
 				F0AAA94510FA0D060086B1B4 /* inftrees.c in Sources */,
-				F0AAA94710FA0D060086B1B4 /* minigzip.c in Sources */,
 				F0AAA94810FA0D060086B1B4 /* trees.c in Sources */,
 				F0AAA94A10FA0D060086B1B4 /* uncompr.c in Sources */,
 				F0AAA94E10FA0D060086B1B4 /* zutil.c in Sources */,

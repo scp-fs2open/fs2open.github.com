@@ -1203,114 +1203,6 @@
 				RelativePath="..\..\libpng\pngwutil.c"
 				>
 			</File>
-			<File
-				RelativePath="..\..\libpng\scripts\pngw32.def"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug Inferno|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug Inferno SSE|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug Inferno SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug Inferno|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug SSE|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno SSE|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release SSE|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -1324,134 +1216,25 @@
 				RelativePath="..\..\libpng\pngconf.h"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
-			>
 			<File
-				RelativePath="..\..\libpng\scripts\pngw32.rc"
+				RelativePath="..\..\libpng\pngdebug.h"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug Inferno|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug Inferno SSE|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug Inferno SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug SSE|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno SSE|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release SSE|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\SCP\Builds\Trunk\fs2_open\libpng\scripts"
-					/>
-				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\libpng\pnginfo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libpng\pnglibconf.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libpng\pngpriv.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libpng\pngstruct.h"
+				>
 			</File>
 		</Filter>
 	</Files>
