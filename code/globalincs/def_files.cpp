@@ -1179,7 +1179,7 @@ varying vec3 lNormal;																		\n\
 void main()																					\n\
 {																							\n\
 	gl_TexCoord[0] = gl_MultiTexCoord0;														\n\
-	gl_Position = ftransform();																\n\
+	gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;						\n\
 	gl_FrontColor = gl_Color;																\n\
 	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);										\n\
 																							\n\
@@ -1254,14 +1254,14 @@ varying vec3 lNormal;															\n\
   #define MAX_LIGHTS 8															\n\
 #endif																			\n\
 																				\n\
-#define SPEC_INTENSITY_POINT 		5.3 // Point light							\n\
-#define SPEC_INTENSITY_DIRECTIONAL 	3.0 // Directional light					\n\
-#define SPECULAR_FACTOR 			1.75										\n\
-#define SPECULAR_ALPHA 				0.1											\n\
-#define SPEC_FACTOR_NO_SPEC_MAP 	0.6											\n\
+#define SPEC_INTENSITY_POINT		5.3 // Point light							\n\
+#define SPEC_INTENSITY_DIRECTIONAL	3.0 // Directional light					\n\
+#define SPECULAR_FACTOR				1.75										\n\
+#define SPECULAR_ALPHA				0.1											\n\
+#define SPEC_FACTOR_NO_SPEC_MAP		0.6											\n\
 #define ENV_ALPHA_FACTOR			0.3											\n\
-#define GLOW_MAP_INTENSITY 			1.5											\n\
-#define AMBIENT_LIGHT_BOOST 		1.0											\n\
+#define GLOW_MAP_INTENSITY			1.5											\n\
+#define AMBIENT_LIGHT_BOOST			1.0											\n\
 																				\n""\
 void main()																		\n\
 {																				\n\
@@ -1282,7 +1282,14 @@ void main()																		\n\
 	envOffset.xy = normal.xy;													\n\
   #endif																		\n\
 	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));							\n\
-	normal = normalize(tbnMatrix * normal);										\n\
+	// prevent breaking of normal maps											\n\
+	normal = tbnMatrix * normal;												\n\
+	float norm = length(normal);												\n\
+	if ( length(normal) > 0.0 ) {												\n\
+		normal /= norm ;														\n\
+	} else {																	\n\
+		normal = tbnMatrix * vec3(0.0, 0.0, 1.0);								\n\
+	}																			\n\
   #else																			\n\
 	vec3 normal = lNormal;														\n\
   #endif																		\n\
@@ -1293,9 +1300,11 @@ void main()																		\n\
 	#pragma optionNV unroll all													\n\
 	for (int i = 0; i < MAX_LIGHTS; ++i) {										\n\
 	  #if SHADER_MODEL > 2														\n\
-		if (i > n_lights)														\n\
+		if (i > n_lights) {														\n\
 			break;																\n\
+		}																		\n\
 	  #endif																	\n\
+																				\n\
 		float specularIntensity = 1.0;											\n\
 		float attenuation = 1.0;												\n\
 																				\n\
@@ -1307,28 +1316,29 @@ void main()																		\n\
 	  #endif																	\n\
 			// Positional light source											\n\
 			float dist = distance(gl_LightSource[i].position.xyz, position.xyz);	\n\
-																				\n\
-			float spotEffect = 1.0;												\n\
+			lightDir = gl_LightSource[i].position.xyz - position.xyz;			\n\
 																				\n""\
 		  #if SHADER_MODEL > 2													\n\
-			if (gl_LightSource[i].spotCutoff < 91.0) {							\n\
-				spotEffect = dot(normalize(gl_LightSource[i].spotDirection), normalize(-position.xyz));	\n\
-																				\n\
-				if (spotEffect < gl_LightSource[i].spotCosCutoff) {				\n\
-					spotEffect = 0.0;											\n\
-				}																\n\
+			if (gl_LightSource[i].spotCutoff < 91.0) {  // Tube light			\n\
+				vec3 nearest = gl_LightSource[i].position.xyz;					\n\
+				float beamlength = length(gl_LightSource[i].spotDirection);		\n\
+				vec3 beamDir = normalize(gl_LightSource[i].spotDirection);		\n\
+				// Get nearest point on line									\n\
+				float neardist = dot(position.xyz - gl_LightSource[i].position.xyz , beamDir);	\n\
+				// Move back from the endpoint of the beam along the beam by the distance we calculated	\n\
+				nearest = gl_LightSource[i].position.xyz - beamDir * abs(neardist);	\n\
+				lightDir = nearest - position.xyz;								\n\
+				dist = length(lightDir);										\n\
 			}																	\n\
 		  #endif																\n\
 																				\n\
-			attenuation = spotEffect / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation *	 dist) + (gl_LightSource[i].quadraticAttenuation * dist * dist));	\n\
+			lightDir = normalize(lightDir);										\n\
+			attenuation = 1.0 / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation *	 dist) + (gl_LightSource[i].quadraticAttenuation * dist * dist));	\n\
+			specularIntensity = SPEC_INTENSITY_POINT;							\n\
 																				\n\
-			lightDir = normalize(gl_LightSource[i].position.xyz - position.xyz);	\n\
-																				\n\
-			specularIntensity = SPEC_INTENSITY_POINT; // Point light			\n\
 		} else {																\n\
 			// Directional light source											\n\
 			lightDir = normalize(gl_LightSource[i].position.xyz);				\n\
-																				\n\
 			specularIntensity = SPEC_INTENSITY_DIRECTIONAL; // Directional light	\n\
 		}																		\n\
 																				\n\
