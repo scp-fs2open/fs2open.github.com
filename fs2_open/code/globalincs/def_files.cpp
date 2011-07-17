@@ -1112,11 +1112,19 @@ $Default:		0.9								\n\
 $Div:			50								\n\
 $Add:			0								\n\
 												\n\
+$Name:			brightness						\n\
+$Uniform:		brightness						\n\
+$Define:		FLAG_BRIGHTNESS					\n\
+$AlwaysOn: 		false							\n\
+$Default:		1.11							\n\
+$Div:			50								\n\
+$Add:			0								\n\
+												\n\
 $Name:			contrast						\n\
 $Uniform:		contrast						\n\
 $Define:		FLAG_CONTRAST					\n\
 $AlwaysOn: 		false							\n\
-$Default:		1.1								\n\
+$Default:		1.015							\n\
 $Div:			50								\n\
 $Add:			0								\n\
 												\n\
@@ -1456,30 +1464,30 @@ char* Default_fxaa_fragment_shader = "\
 #define FXAA_LINEAR 0															\n\
 																				\n\
 #ifndef FXAA_FAST_PIXEL_OFFSET													\n\
-    #ifdef GL_EXT_gpu_shader4													\n\
-        #define FXAA_FAST_PIXEL_OFFSET 1										\n\
-    #endif																		\n\
-    #ifdef GL_NV_gpu_shader5													\n\
-        #define FXAA_FAST_PIXEL_OFFSET 1										\n\
-    #endif																		\n\
-    #ifdef GL_ARB_gpu_shader5													\n\
-        #define FXAA_FAST_PIXEL_OFFSET 1										\n\
-    #endif																		\n\
-    #ifndef FXAA_FAST_PIXEL_OFFSET												\n\
-        #define FXAA_FAST_PIXEL_OFFSET 0										\n\
-    #endif																		\n\
+	#ifdef GL_EXT_gpu_shader4													\n\
+		#define FXAA_FAST_PIXEL_OFFSET 1										\n\
+	#endif																		\n\
+	#ifdef GL_NV_gpu_shader5													\n\
+		#define FXAA_FAST_PIXEL_OFFSET 1										\n\
+	#endif																		\n\
+	#ifdef GL_ARB_gpu_shader5													\n\
+		#define FXAA_FAST_PIXEL_OFFSET 1										\n\
+	#endif																		\n\
+	#ifndef FXAA_FAST_PIXEL_OFFSET												\n\
+		#define FXAA_FAST_PIXEL_OFFSET 0										\n\
+	#endif																		\n\
 #endif																			\n\
 																				\n\
 #ifndef FXAA_GATHER4_ALPHA														\n\
-    #ifdef GL_ARB_gpu_shader5													\n\
-        #define FXAA_GATHER4_ALPHA 1											\n\
-    #endif																		\n\
-    #ifdef GL_NV_gpu_shader5													\n\
-        #define FXAA_GATHER4_ALPHA 1											\n\
-    #endif																		\n\
-    #ifndef FXAA_GATHER4_ALPHA													\n\
-        #define FXAA_GATHER4_ALPHA 0											\n\
-    #endif																		\n\
+	#ifdef GL_ARB_gpu_shader5													\n\
+		#define FXAA_GATHER4_ALPHA 1											\n\
+	#endif																		\n\
+	#ifdef GL_NV_gpu_shader5													\n\
+		#define FXAA_GATHER4_ALPHA 1											\n\
+	#endif																		\n\
+	#ifndef FXAA_GATHER4_ALPHA													\n\
+		#define FXAA_GATHER4_ALPHA 0											\n\
+	#endif																		\n\
 #endif																			\n\
 																				\n\
 float EDGE_SHARPNESS = 0.0;														\n\
@@ -1511,7 +1519,7 @@ void fxaa_choose_preset(int preset) {											\n\
 		EDGE_SHARPNESS = 4.0;													\n\
 		EDGE_THRESHOLD = 1.0/4.0;												\n\
 		EDGE_THRESHOLD_MIN = 0.01;												\n\
-	} else if (preset == 5) {													\n""\
+	} else if (preset == 5) {													\n\
 		EDGE_THRESHOLD = 1.0/3.0;												\n\
 		EDGE_THRESHOLD_MIN = 1.0/16.0;											\n\
 		SUBPIX_CAP = 3.0/4.0;													\n\
@@ -1538,262 +1546,262 @@ void fxaa_choose_preset(int preset) {											\n\
 		SUBPIX_TRIM = 0.0;														\n\
 	}																			\n\
 }																				\n\
-																				\n\
+																				\n""\
 #if SHADER_MODEL == 2															\n\
-    #define FXAA_GLSL_120 1														\n\
+	#define FXAA_GLSL_120 1														\n\
 	#define FXAA_GLSL_130 0														\n\
 #endif																			\n\
 #if SHADER_MODEL > 2															\n\
-    #define FXAA_GLSL_130 1														\n\
 	#define FXAA_GLSL_120 0														\n\
+	#define FXAA_GLSL_130 1														\n\
 #endif																			\n\
 																				\n\
 #if FXAA_GLSL_120																\n\
-    #define half float															\n\
-    #define half2 vec2															\n\
-    #define half3 vec3															\n\
-    #define half4 vec4															\n\
-    #define int2 ivec2															\n\
-    #define float2 vec2															\n\
-    #define float3 vec3															\n\
-    #define float4 vec4															\n\
-    #define FxaaInt2 ivec2														\n\
-    #define FxaaFloat2 vec2														\n\
-    #define FxaaFloat3 vec3														\n\
-    #define FxaaFloat4 vec4														\n\
-    #define FxaaDiscard discard													\n""\
-    #define FxaaDot3(a, b) dot(a, b)											\n\
-    #define FxaaSat(x) clamp(x, 0.0, 1.0)										\n\
-    #define FxaaLerp(x,y,s) mix(x,y,s)											\n\
-    #define FxaaTex sampler2D													\n\
-    #define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)							\n\
-    #if (FXAA_FAST_PIXEL_OFFSET == 1)											\n\
-        #define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)			\n\
-    #else																		\n\
-        #define FxaaTexOff(t, p, o, r) texture2DLod(t, p + (o * r), 0.0)		\n\
-    #endif     																	\n\
+	#define half float															\n\
+	#define half2 vec2															\n\
+	#define half3 vec3															\n\
+	#define half4 vec4															\n\
+	#define int2 ivec2															\n\
+	#define float2 vec2															\n\
+	#define float3 vec3															\n\
+	#define float4 vec4															\n\
+	#define FxaaInt2 ivec2														\n\
+	#define FxaaFloat2 vec2														\n\
+	#define FxaaFloat3 vec3														\n\
+	#define FxaaFloat4 vec4														\n\
+	#define FxaaDiscard discard													\n\
+	#define FxaaDot3(a, b) dot(a, b)											\n\
+	#define FxaaSat(x) clamp(x, 0.0, 1.0)										\n\
+	#define FxaaLerp(x,y,s) mix(x,y,s)											\n\
+	#define FxaaTex sampler2D													\n\
+	#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)							\n\
+	#if (FXAA_FAST_PIXEL_OFFSET == 1)											\n\
+		#define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)			\n\
+	#else																		\n\
+		#define FxaaTexOff(t, p, o, r) texture2DLod(t, p + (o * r), 0.0)		\n\
+	#endif     																	\n\
 	#if (FXAA_GATHER4_ALPHA == 1)												\n\
-        #define FxaaTexAlpha4(t, p, r) textureGather(t, p, 3)					\n\
-        #define FxaaTexOffAlpha4(t, p, o, r) textureGatherOffset(t, p, o, 3)	\n\
-    #endif																		\n\
+		#define FxaaTexAlpha4(t, p, r) textureGather(t, p, 3)					\n\
+		#define FxaaTexOffAlpha4(t, p, o, r) textureGatherOffset(t, p, o, 3)	\n\
+	#endif																		\n\
 #endif																			\n\
-																				\n\
+																				\n""\
 #if FXAA_GLSL_130																\n\
-    #define half float															\n\
-    #define half2 vec2															\n\
-    #define half3 vec3															\n\
-    #define half4 vec4															\n\
-    #define int2 ivec2															\n\
-    #define float2 vec2															\n\
-    #define float3 vec3															\n\
-    #define float4 vec4															\n\
-    #define FxaaInt2 ivec2														\n\
-    #define FxaaFloat2 vec2														\n\
-    #define FxaaFloat3 vec3														\n\
-    #define FxaaFloat4 vec4														\n\
-    #define FxaaDiscard discard													\n\
-    #define FxaaDot3(a, b) dot(a, b)											\n\
-    #define FxaaSat(x) clamp(x, 0.0, 1.0)										\n\
-    #define FxaaLerp(x,y,s) mix(x,y,s)											\n\
-    #define FxaaTex sampler2D													\n\
-    #define FxaaTexTop(t, p) textureLod(t, p, 0.0)								\n\
-    #define FxaaTexOff(t, p, o, r) textureLodOffset(t, p, 0.0, o)        		\n\
-    #if (FXAA_GATHER4_ALPHA == 1)												\n\
-        #define FxaaTexAlpha4(t, p, r) textureGather(t, p, 3)					\n\
-        #define FxaaTexOffAlpha4(t, p, o, r) textureGatherOffset(t, p, o, 3)	\n""\
-    #endif																		\n\
+	#define half float															\n\
+	#define half2 vec2															\n\
+	#define half3 vec3															\n\
+	#define half4 vec4															\n\
+	#define int2 ivec2															\n\
+	#define float2 vec2															\n\
+	#define float3 vec3															\n\
+	#define float4 vec4															\n\
+	#define FxaaInt2 ivec2														\n\
+	#define FxaaFloat2 vec2														\n\
+	#define FxaaFloat3 vec3														\n\
+	#define FxaaFloat4 vec4														\n\
+	#define FxaaDiscard discard													\n\
+	#define FxaaDot3(a, b) dot(a, b)											\n\
+	#define FxaaSat(x) clamp(x, 0.0, 1.0)										\n\
+	#define FxaaLerp(x,y,s) mix(x,y,s)											\n\
+	#define FxaaTex sampler2D													\n\
+	#define FxaaTexTop(t, p) textureLod(t, p, 0.0)								\n\
+	#define FxaaTexOff(t, p, o, r) textureLodOffset(t, p, 0.0, o)				\n\
+	#if (FXAA_GATHER4_ALPHA == 1)												\n\
+		#define FxaaTexAlpha4(t, p, r) textureGather(t, p, 3)					\n\
+		#define FxaaTexOffAlpha4(t, p, o, r) textureGatherOffset(t, p, o, 3)	\n\
+	#endif																		\n\
 #endif																			\n\
-																				\n\
+																				\n""\
 half4 FxaaPixelShader(float2 pos, float4 posPos, FxaaTex tex, float2 rcpFrame, float4 rcpFrameOpt ) {	\n\
-    half4 dir;																	\n\
-    dir.y = 0.0;																\n\
-    half4 lumaNe = FxaaTexTop(tex, posPos.zy); 									\n\
-    lumaNe.g += half(1.0/384.0);												\n\
-    dir.x = -lumaNe.w;															\n\
-    dir.z = -lumaNe.w;															\n\
-    half4 lumaSw = FxaaTexTop(tex, posPos.xw);									\n\
-    dir.x += lumaSw.w;															\n\
-    dir.z += lumaSw.w;															\n\
-    half4 lumaNw = FxaaTexTop(tex, posPos.xy);									\n\
-    dir.x -= lumaNw.w;															\n\
-    dir.z += lumaNw.w;															\n\
-    half4 lumaSe = FxaaTexTop(tex, posPos.zw);									\n\
-    dir.x += lumaSe.w;															\n\
-    dir.z -= lumaSe.w;															\n\
-    #if (FXAA_EARLY_EXIT == 1)													\n\
-        half4 rgbyM = FxaaTexTop(tex, pos.xy);									\n\
-        half lumaMin = min(min(lumaNw.w, lumaSw.w), min(lumaNe.w, lumaSe.w));	\n\
-        half lumaMax = max(max(lumaNw.w, lumaSw.w), max(lumaNe.w, lumaSe.w));	\n\
-        half lumaMinM = min(lumaMin, rgbyM.w); 									\n\
-        half lumaMaxM = max(lumaMax, rgbyM.w); 									\n\
-        if((lumaMaxM - lumaMinM) < max(EDGE_THRESHOLD_MIN, lumaMax * EDGE_THRESHOLD))	\n\
-            #if (FXAA_DISCARD == 1)												\n\
-                FxaaDiscard;													\n\
-            #else																\n\
-                return rgbyM;													\n\
-            #endif																\n\
-    #endif																		\n\
-    half4 dir1_pos;																\n\
-    dir1_pos.xy = normalize(dir.xyz).xz;										\n\
-    half dirAbsMinTimesC = min(abs(dir1_pos.x), abs(dir1_pos.y)) * half(EDGE_SHARPNESS);	\n\
-    half4 dir2_pos;																\n\
-    dir2_pos.xy = clamp(dir1_pos.xy / dirAbsMinTimesC, half(-2.0), half(2.0));	\n\
-    dir1_pos.zw = pos.xy;														\n\
-    dir2_pos.zw = pos.xy;														\n\
-    half4 temp1N;																\n""\
-    temp1N.xy = dir1_pos.zw - dir1_pos.xy * rcpFrameOpt.zw;						\n\
-    temp1N = FxaaTexTop(tex, temp1N.xy); 										\n\
-    half4 rgby1;																\n\
-    rgby1.xy = dir1_pos.zw + dir1_pos.xy * rcpFrameOpt.zw;						\n\
-    rgby1 = FxaaTexTop(tex, rgby1.xy); 											\n\
-    rgby1 = (temp1N + rgby1) * 0.5;												\n\
-    half4 temp2N;																\n\
-    temp2N.xy = dir2_pos.zw - dir2_pos.xy * rcpFrameOpt.xy;						\n\
-    temp2N = FxaaTexTop(tex, temp2N.xy); 										\n\
-    half4 rgby2;																\n\
-    rgby2.xy = dir2_pos.zw + dir2_pos.xy * rcpFrameOpt.xy;						\n\
-    rgby2 = FxaaTexTop(tex, rgby2.xy);											\n\
-    rgby2 = (temp2N + rgby2) * 0.5; 											\n\
-    #if (FXAA_EARLY_EXIT == 0)													\n\
-        half lumaMin = min(min(lumaNw.w, lumaSw.w), min(lumaNe.w, lumaSe.w));	\n\
-        half lumaMax = max(max(lumaNw.w, lumaSw.w), max(lumaNe.w, lumaSe.w));	\n\
-    #endif																		\n\
-    rgby2 = (rgby2 + rgby1) * 0.5;												\n\
-    bool twoTapLt = rgby2.w < lumaMin; 											\n\
-    bool twoTapGt = rgby2.w > lumaMax; 											\n\
-    if(twoTapLt || twoTapGt) rgby2 = rgby1;										\n\
-    return rgby2; }																\n\
-																				\n\
+	half4 dir;																	\n\
+	dir.y = 0.0;																\n\
+	half4 lumaNe = FxaaTexTop(tex, posPos.zy); 									\n\
+	lumaNe.g += half(1.0/384.0);												\n\
+	dir.x = -lumaNe.w;															\n\
+	dir.z = -lumaNe.w;															\n\
+	half4 lumaSw = FxaaTexTop(tex, posPos.xw);									\n\
+	dir.x += lumaSw.w;															\n\
+	dir.z += lumaSw.w;															\n\
+	half4 lumaNw = FxaaTexTop(tex, posPos.xy);									\n\
+	dir.x -= lumaNw.w;															\n\
+	dir.z += lumaNw.w;															\n\
+	half4 lumaSe = FxaaTexTop(tex, posPos.zw);									\n\
+	dir.x += lumaSe.w;															\n\
+	dir.z -= lumaSe.w;															\n\
+	#if (FXAA_EARLY_EXIT == 1)													\n\
+		half4 rgbyM = FxaaTexTop(tex, pos.xy);									\n\
+		half lumaMin = min(min(lumaNw.w, lumaSw.w), min(lumaNe.w, lumaSe.w));	\n\
+		half lumaMax = max(max(lumaNw.w, lumaSw.w), max(lumaNe.w, lumaSe.w));	\n\
+		half lumaMinM = min(lumaMin, rgbyM.w); 									\n\
+		half lumaMaxM = max(lumaMax, rgbyM.w); 									\n\
+		if((lumaMaxM - lumaMinM) < max(EDGE_THRESHOLD_MIN, lumaMax * EDGE_THRESHOLD))	\n\
+			#if (FXAA_DISCARD == 1)												\n\
+				FxaaDiscard;													\n\
+			#else																\n\
+				return rgbyM;													\n\
+			#endif																\n\
+	#endif																		\n\
+	half4 dir1_pos;																\n\
+	dir1_pos.xy = normalize(dir.xyz).xz;										\n\
+	half dirAbsMinTimesC = min(abs(dir1_pos.x), abs(dir1_pos.y)) * half(EDGE_SHARPNESS);	\n\
+	half4 dir2_pos;																\n\
+	dir2_pos.xy = clamp(dir1_pos.xy / dirAbsMinTimesC, half(-2.0), half(2.0));	\n\
+	dir1_pos.zw = pos.xy;														\n\
+	dir2_pos.zw = pos.xy;														\n\
+	half4 temp1N;																\n\
+	temp1N.xy = dir1_pos.zw - dir1_pos.xy * rcpFrameOpt.zw;						\n\
+	temp1N = FxaaTexTop(tex, temp1N.xy); 										\n\
+	half4 rgby1;																\n\
+	rgby1.xy = dir1_pos.zw + dir1_pos.xy * rcpFrameOpt.zw;						\n\
+	rgby1 = FxaaTexTop(tex, rgby1.xy); 											\n\
+	rgby1 = (temp1N + rgby1) * 0.5;												\n\
+	half4 temp2N;																\n\
+	temp2N.xy = dir2_pos.zw - dir2_pos.xy * rcpFrameOpt.xy;						\n\
+	temp2N = FxaaTexTop(tex, temp2N.xy); 										\n\
+	half4 rgby2;																\n\
+	rgby2.xy = dir2_pos.zw + dir2_pos.xy * rcpFrameOpt.xy;						\n\
+	rgby2 = FxaaTexTop(tex, rgby2.xy);											\n\
+	rgby2 = (temp2N + rgby2) * 0.5; 											\n\
+	#if (FXAA_EARLY_EXIT == 0)													\n\
+		half lumaMin = min(min(lumaNw.w, lumaSw.w), min(lumaNe.w, lumaSe.w));	\n\
+		half lumaMax = max(max(lumaNw.w, lumaSw.w), max(lumaNe.w, lumaSe.w));	\n\
+	#endif																		\n\
+	rgby2 = (rgby2 + rgby1) * 0.5;												\n\
+	bool twoTapLt = rgby2.w < lumaMin; 											\n\
+	bool twoTapGt = rgby2.w > lumaMax; 											\n\
+	if(twoTapLt || twoTapGt) rgby2 = rgby1;										\n\
+		return rgby2; }															\n\
+																				\n""\
 float4 FxaaPixelShaderPC(float2 pos,float4 posPos,FxaaTex tex,float2 rcpFrame,float4 rcpFrameOpt ) { 	\n""\
-   #if (FXAA_GATHER4_ALPHA == 1)												\n\
-        float4 luma4A = FxaaTexOffAlpha4(tex, pos.xy, FxaaInt2(-1, -1), rcpFrame.xy); \n\
-        #if (FXAA_DISCARD == 0)													\n\
-            float4 rgbyM = FxaaTexTop(tex, pos.xy);								\n\
-        #endif																	\n\
-        float4 luma4B = FxaaTexAlpha4(tex, pos.xy, rcpFrame.xy);				\n\
-        float lumaNE = FxaaTexOff(tex, pos.xy, FxaaInt2(1, -1), rcpFrame.xy).w;	\n\
-        float lumaSW = FxaaTexOff(tex, pos.xy, FxaaInt2(-1, 1), rcpFrame.xy).w;	\n\
-        float lumaNW = luma4A.w;												\n\
-        float lumaN  = luma4A.z;												\n\
-        float lumaW  = luma4A.x;												\n\
-        float lumaM  = luma4A.y;												\n\
-        float lumaE  = luma4B.z;												\n\
-        float lumaS  = luma4B.x;												\n\
-        float lumaSE = luma4B.y;												\n\
-    #else																		\n\
-        float lumaN = FxaaTexOff(tex, pos.xy, FxaaInt2(0, -1), rcpFrame.xy).w;	\n\
-        float lumaW = FxaaTexOff(tex, pos.xy, FxaaInt2(-1, 0), rcpFrame.xy).w;	\n\
-        float4 rgbyM = FxaaTexTop(tex, pos.xy);									\n\
-        float lumaE = FxaaTexOff(tex, pos.xy, FxaaInt2( 1, 0), rcpFrame.xy).w;	\n\
-        float lumaS = FxaaTexOff(tex, pos.xy, FxaaInt2( 0, 1), rcpFrame.xy).w;	\n\
-        float lumaM = rgbyM.w;													\n\
-    #endif																		\n\
+	#if (FXAA_GATHER4_ALPHA == 1)												\n\
+		float4 luma4A = FxaaTexOffAlpha4(tex, pos.xy, FxaaInt2(-1, -1), rcpFrame.xy); \n\
+		#if (FXAA_DISCARD == 0)													\n\
+			float4 rgbyM = FxaaTexTop(tex, pos.xy);								\n\
+		#endif																	\n\
+		float4 luma4B = FxaaTexAlpha4(tex, pos.xy, rcpFrame.xy);				\n\
+		float lumaNE = FxaaTexOff(tex, pos.xy, FxaaInt2(1, -1), rcpFrame.xy).w;	\n\
+		float lumaSW = FxaaTexOff(tex, pos.xy, FxaaInt2(-1, 1), rcpFrame.xy).w;	\n\
+		float lumaNW = luma4A.w;												\n\
+		float lumaN  = luma4A.z;												\n\
+		float lumaW  = luma4A.x;												\n\
+		float lumaM  = luma4A.y;												\n\
+		float lumaE  = luma4B.z;												\n\
+		float lumaS  = luma4B.x;												\n\
+		float lumaSE = luma4B.y;												\n\
+	#else																		\n\
+		float lumaN = FxaaTexOff(tex, pos.xy, FxaaInt2(0, -1), rcpFrame.xy).w;	\n\
+		float lumaW = FxaaTexOff(tex, pos.xy, FxaaInt2(-1, 0), rcpFrame.xy).w;	\n\
+		float4 rgbyM = FxaaTexTop(tex, pos.xy);									\n\
+		float lumaE = FxaaTexOff(tex, pos.xy, FxaaInt2( 1, 0), rcpFrame.xy).w;	\n\
+		float lumaS = FxaaTexOff(tex, pos.xy, FxaaInt2( 0, 1), rcpFrame.xy).w;	\n\
+		float lumaM = rgbyM.w;													\n\
+	#endif																		\n\
 /*--------------------------------------------------------------------------*/	\n\
-    float rangeMin = min(lumaM, min(min(lumaN, lumaW), min(lumaS, lumaE)));		\n\
-    float rangeMax = max(lumaM, max(max(lumaN, lumaW), max(lumaS, lumaE)));		\n\
-    float range = rangeMax - rangeMin;											\n""\
+	float rangeMin = min(lumaM, min(min(lumaN, lumaW), min(lumaS, lumaE)));		\n\
+	float rangeMax = max(lumaM, max(max(lumaN, lumaW), max(lumaS, lumaE)));		\n\
+	float range = rangeMax - rangeMin;											\n""\
 /*--------------------------------------------------------------------------*/	\n\
-    if(range < max(EDGE_THRESHOLD_MIN, rangeMax * EDGE_THRESHOLD))	\n\
-        #if (FXAA_DISCARD == 1)													\n\
-            FxaaDiscard;														\n\
-        #else																	\n\
-            return rgbyM;														\n\
-        #endif																	\n\
+	if(range < max(EDGE_THRESHOLD_MIN, rangeMax * EDGE_THRESHOLD))				\n\
+		#if (FXAA_DISCARD == 1)													\n\
+			FxaaDiscard;														\n\
+		#else																	\n\
+			return rgbyM;														\n\
+		#endif																	\n\
 /*--------------------------------------------------------------------------*/	\n\
-    #if (FXAA_GATHER4_ALPHA == 0)												\n\
-        float lumaNW = FxaaTexOff(tex, pos.xy, FxaaInt2(-1,-1), rcpFrame.xy).w;	\n\
-        float lumaNE = FxaaTexOff(tex, pos.xy, FxaaInt2( 1,-1), rcpFrame.xy).w;	\n\
-        float lumaSW = FxaaTexOff(tex, pos.xy, FxaaInt2(-1, 1), rcpFrame.xy).w;	\n\
-        float lumaSE = FxaaTexOff(tex, pos.xy, FxaaInt2( 1, 1), rcpFrame.xy).w;	\n\
-    #endif																		\n\
+	#if (FXAA_GATHER4_ALPHA == 0)												\n\
+		float lumaNW = FxaaTexOff(tex, pos.xy, FxaaInt2(-1,-1), rcpFrame.xy).w;	\n\
+		float lumaNE = FxaaTexOff(tex, pos.xy, FxaaInt2( 1,-1), rcpFrame.xy).w;	\n\
+		float lumaSW = FxaaTexOff(tex, pos.xy, FxaaInt2(-1, 1), rcpFrame.xy).w;	\n\
+		float lumaSE = FxaaTexOff(tex, pos.xy, FxaaInt2( 1, 1), rcpFrame.xy).w;	\n\
+	#endif																		\n\
 /*--------------------------------------------------------------------------*/	\n\
-    float SUBPIX_TRIM_SCALE = (1.0/(1.0 - SUBPIX_TRIM));	\n\
+	float SUBPIX_TRIM_SCALE = (1.0/(1.0 - SUBPIX_TRIM));						\n\
 /*--------------------------------------------------------------------------*/	\n\
-    float lumaL = (lumaN + lumaW + lumaE + lumaS) * 0.25;						\n\
-    float rangeL = abs(lumaL - lumaM);											\n\
-    float blendL = FxaaSat((rangeL / range) - SUBPIX_TRIM) * SUBPIX_TRIM_SCALE;	\n\
-	blendL = min(SUBPIX_CAP, blendL);								\n\
+	float lumaL = (lumaN + lumaW + lumaE + lumaS) * 0.25;						\n\
+	float rangeL = abs(lumaL - lumaM);											\n\
+	float blendL = FxaaSat((rangeL / range) - SUBPIX_TRIM) * SUBPIX_TRIM_SCALE;	\n\
+	blendL = min(SUBPIX_CAP, blendL);											\n\
 /*--------------------------------------------------------------------------*/	\n""\
-    float edgeVert =															\n\
-              abs(lumaNW + (-2.0 * lumaN) + lumaNE) +							\n\
-        2.0 * abs(lumaW  + (-2.0 * lumaM) + lumaE ) +							\n\
-              abs(lumaSW + (-2.0 * lumaS) + lumaSE);							\n\
-    float edgeHorz =															\n\
-              abs(lumaNW + (-2.0 * lumaW) + lumaSW) +							\n\
-        2.0 * abs(lumaN  + (-2.0 * lumaM) + lumaS ) +							\n\
-              abs(lumaNE + (-2.0 * lumaE) + lumaSE);							\n\
-    bool horzSpan = edgeHorz >= edgeVert;										\n\
+	float edgeVert =															\n\
+			abs(lumaNW + (-2.0 * lumaN) + lumaNE) +								\n\
+		2.0 * abs(lumaW  + (-2.0 * lumaM) + lumaE ) +							\n\
+			abs(lumaSW + (-2.0 * lumaS) + lumaSE);								\n\
+	float edgeHorz =															\n\
+			abs(lumaNW + (-2.0 * lumaW) + lumaSW) +								\n\
+		2.0 * abs(lumaN  + (-2.0 * lumaM) + lumaS ) +							\n\
+			abs(lumaNE + (-2.0 * lumaE) + lumaSE);								\n\
+	bool horzSpan = edgeHorz >= edgeVert;										\n\
 /*--------------------------------------------------------------------------*/	\n\
-    float lengthSign = horzSpan ? -rcpFrame.y : -rcpFrame.x;					\n\
-    if(!horzSpan) lumaN = lumaW;												\n\
-    if(!horzSpan) lumaS = lumaE;												\n\
-    float gradientN = abs(lumaN - lumaM);										\n\
-    float gradientS = abs(lumaS - lumaM);										\n\
-    lumaN = (lumaN + lumaM) * 0.5;												\n\
-    lumaS = (lumaS + lumaM) * 0.5;												\n\
+	float lengthSign = horzSpan ? -rcpFrame.y : -rcpFrame.x;					\n\
+	if(!horzSpan) lumaN = lumaW;												\n\
+	if(!horzSpan) lumaS = lumaE;												\n\
+	float gradientN = abs(lumaN - lumaM);										\n\
+	float gradientS = abs(lumaS - lumaM);										\n\
+	lumaN = (lumaN + lumaM) * 0.5;												\n\
+	lumaS = (lumaS + lumaM) * 0.5;												\n\
 /*--------------------------------------------------------------------------*/	\n\
-    bool pairN = gradientN >= gradientS;										\n\
-    if(!pairN) lumaN = lumaS;													\n\
-    if(!pairN) gradientN = gradientS;											\n""\
-    if(!pairN) lengthSign *= -1.0;												\n\
-    float2 posN;																\n\
-    posN.x = pos.x + (horzSpan ? 0.0 : lengthSign * 0.5);						\n\
-    posN.y = pos.y + (horzSpan ? lengthSign * 0.5 : 0.0);						\n\
+	bool pairN = gradientN >= gradientS;										\n\
+	if(!pairN) lumaN = lumaS;													\n\
+	if(!pairN) gradientN = gradientS;											\n""\
+	if(!pairN) lengthSign *= -1.0;												\n\
+	float2 posN;																\n\
+	posN.x = pos.x + (horzSpan ? 0.0 : lengthSign * 0.5);						\n\
+	posN.y = pos.y + (horzSpan ? lengthSign * 0.5 : 0.0);						\n\
 /*--------------------------------------------------------------------------*/	\n\
-    #define FXAA_SEARCH_STEPS     6												\n\
-    #define FXAA_SEARCH_THRESHOLD (1.0/4.0)										\n\
+	#define FXAA_SEARCH_STEPS     6												\n\
+	#define FXAA_SEARCH_THRESHOLD (1.0/4.0)										\n\
 /*--------------------------------------------------------------------------*/	\n\
-    gradientN *= FXAA_SEARCH_THRESHOLD;											\n\
+	gradientN *= FXAA_SEARCH_THRESHOLD;											\n\
 /*--------------------------------------------------------------------------*/	\n\
-    float2 posP = posN;															\n\
-    float2 offNP = horzSpan ?													\n\
-        FxaaFloat2(rcpFrame.x, 0.0) :											\n\
-        FxaaFloat2(0.0f, rcpFrame.y);											\n\
-    float lumaEndN = 0.0;														\n\
-    float lumaEndP = 0.0;														\n\
-    bool doneN = false;															\n\
-    bool doneP = false;															\n\
-    posN += offNP * (-1.5);														\n\
-    posP += offNP * ( 1.5);														\n\
-    for(int i = 0; i < FXAA_SEARCH_STEPS; i++) {								\n\
-        lumaEndN = FxaaTexTop(tex, posN.xy).w;									\n\
-        lumaEndP = FxaaTexTop(tex, posP.xy).w;									\n\
-        bool doneN2 = abs(lumaEndN - lumaN) >= gradientN;						\n\
-        bool doneP2 = abs(lumaEndP - lumaN) >= gradientN;						\n\
-        if(doneN2 && !doneN) posN += offNP;										\n\
-        if(doneP2 && !doneP) posP -= offNP;										\n\
-        if(doneN2 && doneP2) break;												\n\
-        doneN = doneN2;															\n""\
-        doneP = doneP2;															\n\
-        if(!doneN) posN -= offNP * 2.0;											\n\
-        if(!doneP) posP += offNP * 2.0; }										\n\
+	float2 posP = posN;															\n\
+	float2 offNP = horzSpan ?													\n\
+		FxaaFloat2(rcpFrame.x, 0.0) :											\n\
+		FxaaFloat2(0.0f, rcpFrame.y);											\n\
+	float lumaEndN = 0.0;														\n\
+	float lumaEndP = 0.0;														\n\
+	bool doneN = false;															\n\
+	bool doneP = false;															\n\
+	posN += offNP * (-1.5);														\n\
+	posP += offNP * ( 1.5);														\n\
+	for(int i = 0; i < FXAA_SEARCH_STEPS; i++) {								\n\
+		lumaEndN = FxaaTexTop(tex, posN.xy).w;									\n\
+		lumaEndP = FxaaTexTop(tex, posP.xy).w;									\n\
+		bool doneN2 = abs(lumaEndN - lumaN) >= gradientN;						\n\
+		bool doneP2 = abs(lumaEndP - lumaN) >= gradientN;						\n\
+		if(doneN2 && !doneN) posN += offNP;										\n\
+		if(doneP2 && !doneP) posP -= offNP;										\n\
+		if(doneN2 && doneP2) break;												\n\
+		doneN = doneN2;															\n""\
+		doneP = doneP2;															\n\
+		if(!doneN) posN -= offNP * 2.0;											\n\
+		if(!doneP) posP += offNP * 2.0; }										\n\
 /*--------------------------------------------------------------------------*/	\n\
-    float dstN = horzSpan ? pos.x - posN.x : pos.y - posN.y;					\n\
-    float dstP = horzSpan ? posP.x - pos.x : posP.y - pos.y;					\n\
+	float dstN = horzSpan ? pos.x - posN.x : pos.y - posN.y;					\n\
+	float dstP = horzSpan ? posP.x - pos.x : posP.y - pos.y;					\n\
 /*--------------------------------------------------------------------------*/	\n\
-    bool directionN = dstN < dstP;												\n\
-    lumaEndN = directionN ? lumaEndN : lumaEndP;								\n\
+	bool directionN = dstN < dstP;												\n\
+	lumaEndN = directionN ? lumaEndN : lumaEndP;								\n\
 /*--------------------------------------------------------------------------*/	\n\
-    if(((lumaM - lumaN) < 0.0) == ((lumaEndN - lumaN) < 0.0))					\n\
-        lengthSign = 0.0;														\n\
+	if(((lumaM - lumaN) < 0.0) == ((lumaEndN - lumaN) < 0.0))					\n\
+		lengthSign = 0.0;														\n\
 /*--------------------------------------------------------------------------*/	\n\
-    float spanLength = (dstP + dstN);											\n\
-    dstN = directionN ? dstN : dstP;											\n\
-    float subPixelOffset = 0.5 + (dstN * (-1.0/spanLength));					\n\
-    subPixelOffset += blendL * (1.0/8.0);										\n\
-    subPixelOffset *= lengthSign;												\n\
-    float3 rgbF = FxaaTexTop(tex, FxaaFloat2(									\n\
-        pos.x + (horzSpan ? 0.0 : subPixelOffset),								\n\
-        pos.y + (horzSpan ? subPixelOffset : 0.0))).xyz;						\n\
+	float spanLength = (dstP + dstN);											\n\
+	dstN = directionN ? dstN : dstP;											\n\
+	float subPixelOffset = 0.5 + (dstN * (-1.0/spanLength));					\n\
+	subPixelOffset += blendL * (1.0/8.0);										\n\
+	subPixelOffset *= lengthSign;												\n\
+	float3 rgbF = FxaaTexTop(tex, FxaaFloat2(									\n\
+		pos.x + (horzSpan ? 0.0 : subPixelOffset),								\n\
+		pos.y + (horzSpan ? subPixelOffset : 0.0))).xyz;						\n\
 /*--------------------------------------------------------------------------*/	\n\
-    #if (FXAA_LINEAR == 1)														\n\
-        lumaL *= lumaL;															\n""\
-    #endif																		\n\
-    float lumaF = dot(rgbF, float3(0.299, 0.587, 0.114)) + (1.0/(65536.0*256.0));	\n\
-    float lumaB = FxaaLerp(lumaF, lumaL, blendL);								\n\
-    float scale = min(4.0, lumaB/lumaF);										\n\
-    rgbF *= scale;																\n\
-    return float4(rgbF, lumaM); }												\n\
+	#if (FXAA_LINEAR == 1)														\n\
+		lumaL *= lumaL;															\n""\
+	#endif																		\n\
+	float lumaF = dot(rgbF, float3(0.299, 0.587, 0.114)) + (1.0/(65536.0*256.0));	\n\
+	float lumaB = FxaaLerp(lumaF, lumaL, blendL);								\n\
+	float scale = min(4.0, lumaB/lumaF);										\n\
+	rgbF *= scale;																\n\
+	return float4(rgbF, lumaM); }												\n\
 																				\n\
 uniform sampler2D tex0;															\n\
 uniform int fxaa_preset;														\n\
@@ -1890,6 +1898,10 @@ uniform float noise_amount;								\n\
 uniform float saturation;								\n\
 #endif													\n\
 														\n\
+#ifdef FLAG_BRIGHTNESS									\n\
+uniform float brightness;								\n\
+#endif													\n\
+														\n\
 #ifdef FLAG_CONTRAST									\n\
 uniform float contrast;									\n\
 #endif													\n\
@@ -1948,11 +1960,16 @@ void main()												\n\
 	color_out = color_in;								\n\
  #endif													\n\
 														\n\
+ #ifdef FLAG_BRIGHTNESS									\n\
+ // Brightness											\n\
+	vec3 Afactor = vec3(brightness);					\n\
+	color_out.rgb = color_out.rgb * Afactor;			\n\
+ #endif													\n\
+														\n\
  #ifdef FLAG_CONTRAST									\n\
- // Contrast and brightness								\n\
-	vec3 Afactor = vec3(contrast);						\n\
+ // Contrast											\n\
 	vec3 Bfactor = vec3(0.5 - 0.5 * contrast);			\n\
-	color_out.rgb = color_out.rgb * Afactor + Bfactor;	\n\
+	color_out.rgb = color_out.rgb + Bfactor;			\n\
  #endif													\n\
 														\n\
  #ifdef FLAG_GRAIN										\n\
