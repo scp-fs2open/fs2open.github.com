@@ -88,7 +88,7 @@ void parse_ai_profiles_tbl(char *filename)
 	else
 		read_file_text(filename, CF_TYPE_TABLES);
 
-	reset_parse();
+	reset_parse();		
 
 
 	// start parsing
@@ -104,7 +104,7 @@ void parse_ai_profiles_tbl(char *filename)
 		ai_profile_t *profile = &dummy_profile;
 		ai_profile_t *previous_profile = NULL;
 		bool no_create = false;
-
+		
 		// get the name
 		required_string("$Profile Name:");
 		stuff_string(profile_name, F_NAME, NAME_LENGTH);
@@ -173,188 +173,50 @@ void parse_ai_profiles_tbl(char *filename)
 		// fill in any and all settings; they're all optional and can be in any order
 		while (!check_for_string("$Profile Name:") && !check_for_string("#End"))
 		{
-			if (optional_string("$Player Afterburner Recharge Scale:")) {
+			if (optional_string("$Player Afterburner Recharge Scale:"))
 				parse_float_list(profile->afterburner_recharge_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->afterburner_recharge_scale[i] < 0.0f || profile->afterburner_recharge_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Player Afterburner Recharge Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->afterburner_recharge_scale[i]);
-						profile->afterburner_recharge_scale[i] = 0.0f;
-					}
-					profile->afterburner_recharge_scale[i];
-				}
-			}
 
-			if (optional_string("$Max Beam Friendly Fire Damage:")) {
+			if (optional_string("$Max Beam Friendly Fire Damage:"))
 				parse_float_list(profile->beam_friendly_damage_cap, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->beam_friendly_damage_cap[i] < 0.0f || profile->beam_friendly_damage_cap[i] > 100.0f) {
-						Warning(LOCATION, "'$Max Beam Friendly Fire Damage' should be between 0 and 100.0 (read %f). Setting to 0.", profile->beam_friendly_damage_cap[i]);
-						profile->beam_friendly_damage_cap[i] = 0.0f;
-					}
-					profile->beam_friendly_damage_cap[i];
-				}
-			}
 
-			if (optional_string("$Player Countermeasure Life Scale:")) {
+			if (optional_string("$Player Countermeasure Life Scale:"))
 				parse_float_list(profile->cmeasure_life_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->cmeasure_life_scale[i] < 0.0f || profile->cmeasure_life_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Player Countermeasure Life Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->cmeasure_life_scale[i]);
-						profile->cmeasure_life_scale[i] = 0.0f;
-					}
-					profile->cmeasure_life_scale[i];
-				}
-			}
 
-			if (optional_string("$AI Countermeasure Firing Chance:")) {
+			if (optional_string("$AI Countermeasure Firing Chance:"))
 				parse_float_list(profile->cmeasure_fire_chance, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->cmeasure_fire_chance[i] < 0.0f || profile->cmeasure_fire_chance[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Countermeasure Firing Chance' should be between 0 and 100.0 (read %f). Setting to 0.", profile->cmeasure_fire_chance[i]);
-						profile->cmeasure_fire_chance[i] = 0.0f;
-					}
-					profile->cmeasure_fire_chance[i];
-				}
-			}
 
-			if (optional_string("$AI In Range Time:")) {
+			if (optional_string("$AI In Range Time:"))
 				parse_float_list(profile->in_range_time, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->in_range_time[i] < -100.0f || profile->in_range_time[i] > 100.0f) {
-						Warning(LOCATION, "'$AI In Range Time' should be between 0 and 100.0 (read %f). Setting to 0.", profile->in_range_time[i]);
-						profile->in_range_time[i] = 0.0f;
-					}
-					profile->in_range_time[i];
-				}
-			}
 
-			if (optional_string("$AI Always Links Ammo Weapons:")) {
+			if (optional_string("$AI Always Links Ammo Weapons:"))
 				parse_float_list(profile->link_ammo_levels_always, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->link_ammo_levels_always[i] < 0.0f || profile->link_ammo_levels_always[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Always Links Ammo Weapons' should be between 0 and 100.0 (read %f). Setting to 0.", profile->link_ammo_levels_always[i]);
-						profile->link_ammo_levels_always[i] = 0.0f;
-					}
-					profile->link_ammo_levels_always[i];
-				}
-			}
 
-			if (optional_string("$AI Maybe Links Ammo Weapons:")) {
+			if (optional_string("$AI Maybe Links Ammo Weapons:"))
 				parse_float_list(profile->link_ammo_levels_maybe, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->link_ammo_levels_maybe[i] < 0.0f || profile->link_ammo_levels_maybe[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Maybe Links Ammo Weapons' should be between 0 and 100.0 (read %f). Setting to 0.", profile->link_ammo_levels_maybe[i]);
-						profile->link_ammo_levels_maybe[i] = 0.0f;
-					}
-					profile->link_ammo_levels_maybe[i];
-				}
-			}
 
-			if (optional_string("$Primary Ammo Burst Multiplier:")) {
+			if (optional_string("$Primary Ammo Burst Multiplier:"))
 				parse_float_list(profile->primary_ammo_burst_mult, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->primary_ammo_burst_mult[i] < 0.0f || profile->primary_ammo_burst_mult[i] > 100.0f) {
-						Warning(LOCATION, "'$Primary Ammo Burst Multiplier' should be between 0 and 100.0 (read %f). Setting to 0.", profile->primary_ammo_burst_mult[i]);
-						profile->primary_ammo_burst_mult[i] = 0.0f;
-					}
-					profile->primary_ammo_burst_mult[i];
-				}
-			}
 
-			if (optional_string("$AI Always Links Energy Weapons:")) {
+			if (optional_string("$AI Always Links Energy Weapons:"))
 				parse_float_list(profile->link_energy_levels_always, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->link_energy_levels_always[i] < 0.0f || profile->link_energy_levels_always[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Always Links Energy Weapons' should be between 0 and 100.0 (read %f). Setting to 0.", profile->link_energy_levels_always[i]);
-						profile->link_energy_levels_always[i] = 0.0f;
-					}
-					profile->link_energy_levels_always[i];
-				}
-			}
 
-			if (optional_string("$AI Maybe Links Energy Weapons:")) {
+			if (optional_string("$AI Maybe Links Energy Weapons:"))
 				parse_float_list(profile->link_energy_levels_maybe, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->link_energy_levels_maybe[i] < 0.0f || profile->link_energy_levels_maybe[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Maybe Links Energy Weapons' should be between 0 and 100.0 (read %f). Setting to 0.", profile->link_energy_levels_maybe[i]);
-						profile->link_energy_levels_maybe[i] = 0.0f;
-					}
-					profile->link_energy_levels_maybe[i];
-				}
-			}
 
-			if (optional_string("$Max Missles Locked on Player:")) {
+			if (optional_string("$Max Missles Locked on Player:"))
 				parse_int_list(profile->max_allowed_player_homers, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->max_allowed_player_homers[i] < 0 || profile->max_allowed_player_homers[i] > 255) {
-						Warning(LOCATION, "'$Max Missles Locked on Player' should be between 0 and 255 (read %i). Setting to 0.", profile->max_allowed_player_homers[i]);
-						profile->max_allowed_player_homers[i] = 0;
-					}
-					profile->max_allowed_player_homers[i];
-				}
-			}
 
-			if (optional_string("$Max Player Attackers:")) {
+			if (optional_string("$Max Player Attackers:"))
 				parse_int_list(profile->max_attackers, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->max_attackers[i] < 0 || profile->max_attackers[i] > 255) {
-						Warning(LOCATION, "'$Max Player Attackers' should be between 0 and 255 (read %i). Setting to 0.", profile->max_attackers[i]);
-						profile->max_attackers[i] = 0;
-					}
-					profile->max_attackers[i];
-				}
-			}
 
-			if (optional_string("$Max Incoming Asteroids:")) {
+			if (optional_string("$Max Incoming Asteroids:"))
 				parse_int_list(profile->max_incoming_asteroids, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->max_incoming_asteroids[i] < 0 || profile->max_incoming_asteroids[i] > 128) {
-						Warning(LOCATION, "'$Max Incoming Asteroids' should be between 0 and 128 (read %i). Setting to 0.", profile->max_incoming_asteroids[i]);
-						profile->max_incoming_asteroids[i] = 0;
-					}
-					profile->max_incoming_asteroids[i];
-				}
-			}
 
-			if (optional_string("$Player Damage Factor:")) {
+			if (optional_string("$Player Damage Factor:") || optional_string("$AI Damage Reduction to Player Hull:"))
 				parse_float_list(profile->player_damage_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->player_damage_scale[i] < 0.0f || profile->player_damage_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Player Damage Factor' should be between 0 and 100.0 (read %f). Setting to 0.", profile->player_damage_scale[i]);
-						profile->player_damage_scale[i] = 0.0f;
-					}
-					profile->player_damage_scale[i];
-				}
-			} else if (optional_string("$AI Damage Reduction to Player Hull:")) {
-				parse_float_list(profile->player_damage_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->player_damage_scale[i] < 0.0f || profile->player_damage_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Damage Reduction to Player Hull' should be between 0 and 100.0 (read %f). Setting to 0.", profile->player_damage_scale[i]);
-						profile->player_damage_scale[i] = 0.0f;
-					}
-					profile->player_damage_scale[i];
-				}
-			}
 
-			if (optional_string("$Player Subsys Damage Factor:")) {
+			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->subsys_damage_scale[i] < 0.0f || profile->subsys_damage_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Player Subsys Damage Factor' should be between 0 and 100.0 (read %f). Setting to 0.", profile->subsys_damage_scale[i]);
-						profile->subsys_damage_scale[i] = 0.0f;
-					}
-					profile->subsys_damage_scale[i];
-				}
-			} else if (optional_string("$AI Damage Reduction to Player Subsys:")) {
-				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->subsys_damage_scale[i] < 0.0f || profile->subsys_damage_scale[i] > 100.0f) {
-						Warning(LOCATION, "'AI Damage Reduction to Player Subsys' should be between 0 and 100.0 (read %f). Setting to 0.", profile->subsys_damage_scale[i]);
-						profile->subsys_damage_scale[i] = 0.0f;
-					}
-					profile->subsys_damage_scale[i];
-				}
-			}
 
 			// represented in fractions of F1_0
 			if (optional_string("$Predict Position Delay:"))
@@ -364,85 +226,33 @@ void parse_ai_profiles_tbl(char *filename)
 
 				parse_float_list(temp_list, NUM_SKILL_LEVELS);
 
-				for (iLoop = 0; iLoop < NUM_SKILL_LEVELS; iLoop++) {
+				for (iLoop = 0; iLoop < NUM_SKILL_LEVELS; iLoop++)
 					profile->predict_position_delay[iLoop] = fl2f(temp_list[iLoop]);
-				}
 			}
 
-			if (optional_string("$AI Shield Manage Delay:")) {
-				parse_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->shield_manage_delay[i] < 0.0f || profile->shield_manage_delay[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Shield Manage Delay' should be between 0 and 100.0 (read %f). Setting to 0.", profile->shield_manage_delay[i]);
-						profile->shield_manage_delay[i] = 0.0f;
-					}
-					profile->shield_manage_delay[i];
-				}
-			} else if (optional_string("$AI Shield Manage Delays:")) {
-				parse_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->shield_manage_delay[i] < 0.0f || profile->shield_manage_delay[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Shield Manage Delays' should be between 0 and 100.0 (read %f). Setting to 0.", profile->shield_manage_delay[i]);
-						profile->shield_manage_delay[i] = 0.0f;
-					}
-					profile->shield_manage_delay[i];
-				}
-			}
+			if (optional_string("$Player Shield Recharge Scale:"))
+				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
 
-			if (optional_string("$Friendly AI Fire Delay Scale:")) {
+			if (optional_string("$AI Shield Manage Delay:") || optional_string("$AI Shield Manage Delays:"))
+				parse_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Friendly AI Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_delay_scale_friendly, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->ship_fire_delay_scale_friendly[i] < 0.0f || profile->ship_fire_delay_scale_friendly[i] > 100.0f) {
-						Warning(LOCATION, "'$Friendly AI Fire Delay Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->ship_fire_delay_scale_friendly[i]);
-						profile->ship_fire_delay_scale_friendly[i] = 0.0f;
-					}
-					profile->ship_fire_delay_scale_friendly[i];
-				}
-			}
 
-			if (optional_string("$Hostile AI Fire Delay Scale:")) {
+			if (optional_string("$Hostile AI Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_delay_scale_hostile, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->ship_fire_delay_scale_hostile[i] < 0.0f || profile->ship_fire_delay_scale_hostile[i] > 100.0f) {
-						Warning(LOCATION, "'$Hostile AI Fire Delay Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->ship_fire_delay_scale_hostile[i]);
-						profile->ship_fire_delay_scale_hostile[i] = 0.0f;
-					}
-					profile->ship_fire_delay_scale_hostile[i];
-				}
-			}
 
-			if (optional_string("$Friendly AI Secondary Fire Delay Scale:")) {
+			if (optional_string("$Friendly AI Secondary Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_secondary_delay_scale_friendly, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->ship_fire_secondary_delay_scale_friendly[i] < 0.0f || profile->ship_fire_secondary_delay_scale_friendly[i] > 100.0f) {
-						Warning(LOCATION, "'$Friendly AI Secondary Fire Delay Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->ship_fire_secondary_delay_scale_friendly[i]);
-						profile->ship_fire_secondary_delay_scale_friendly[i] = 0.0f;
-					}
-					profile->ship_fire_secondary_delay_scale_friendly[i];
-				}
-			}
 
-			if (optional_string("$Hostile AI Secondary Fire Delay Scale:")) {
+			if (optional_string("$Hostile AI Secondary Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_secondary_delay_scale_hostile, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->ship_fire_secondary_delay_scale_hostile[i] < 0.0f || profile->ship_fire_secondary_delay_scale_hostile[i] > 100.0f) {
-						Warning(LOCATION, "'$Hostile AI Secondary Fire Delay Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->ship_fire_secondary_delay_scale_hostile[i]);
-						profile->ship_fire_secondary_delay_scale_hostile[i] = 0.0f;
-					}
-					profile->ship_fire_secondary_delay_scale_hostile[i];
-				}
-			}
 
-			if (optional_string("$AI Turn Time Scale:")) {
+			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
+				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
+
+			if (optional_string("$AI Turn Time Scale:"))
 				parse_float_list(profile->turn_time_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->turn_time_scale[i] < 0.0f || profile->turn_time_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$AI Turn Time Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->turn_time_scale[i]);
-						profile->turn_time_scale[i] = 0.0f;
-					}
-					profile->turn_time_scale[i];
-				}
-			}
 
 			if (optional_string("$Glide Attack Percent:")) {
 				parse_float_list(profile->glide_attack_percent, NUM_SKILL_LEVELS);
@@ -450,8 +260,8 @@ void parse_ai_profiles_tbl(char *filename)
 				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->glide_attack_percent[i] < 0.0f || profile->glide_attack_percent[i] > 100.0f) {
-						Warning(LOCATION, "'$Glide Attack Percent' should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_attack_percent[i]);
 						profile->glide_attack_percent[i] = 0.0f;
+						Warning(LOCATION, "$Glide Attack Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_attack_percent[i]);
 					}
 					profile->glide_attack_percent[i] /= 100.0;
 				}
@@ -463,8 +273,8 @@ void parse_ai_profiles_tbl(char *filename)
 				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->circle_strafe_percent[i] < 0.0f || profile->circle_strafe_percent[i] > 100.0f) {
-						Warning(LOCATION, "'$Circle Strafe Percent' should be between 0 and 100.0 (read %f). Setting to 0.", profile->circle_strafe_percent[i]);
 						profile->circle_strafe_percent[i] = 0.0f;
+						Warning(LOCATION, "$Circle Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->circle_strafe_percent[i]);
 					}
 					profile->circle_strafe_percent[i] /= 100.0;
 				}
@@ -476,8 +286,8 @@ void parse_ai_profiles_tbl(char *filename)
 				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->glide_strafe_percent[i] < 0.0f || profile->glide_strafe_percent[i] > 100.0f) {
-						Warning(LOCATION, "'$Glide Strafe Percent' should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_strafe_percent[i]);
 						profile->glide_strafe_percent[i] = 0.0f;
+						Warning(LOCATION, "$Glide Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_strafe_percent[i]);
 					}
 					profile->glide_strafe_percent[i] /= 100.0;
 				}
@@ -489,166 +299,51 @@ void parse_ai_profiles_tbl(char *filename)
 				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
-						Warning(LOCATION, "'$Random Sidethrust Percent' should be between 0 and 100.0 (read %f). Setting to 0.", profile->random_sidethrust_percent[i]);
 						profile->random_sidethrust_percent[i] = 0.0f;
+						Warning(LOCATION, "$Random Sidethrust Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->random_sidethrust_percent[i]);
 					}
 					profile->random_sidethrust_percent[i] /= 100.0;
 				}
 			}
 
-			if (optional_string("$Stalemate Time Threshold:")) {
+			if (optional_string("$Stalemate Time Threshold:"))
 				parse_float_list(profile->stalemate_time_thresh, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->stalemate_time_thresh[i] < 0.0f || profile->stalemate_time_thresh[i] > 100.0f) {
-						Warning(LOCATION, "'$Stalemate Time Threshold' should be between 0 and 100.0 (read %f). Setting to 0.", profile->stalemate_time_thresh[i]);
-						profile->stalemate_time_thresh[i] = 0.0f;
-					}
-					profile->stalemate_time_thresh[i];
-				}
-			}
 
-			if (optional_string("$Stalemate Distance Threshold:")) {
+			if (optional_string("$Stalemate Distance Threshold:"))
 				parse_float_list(profile->stalemate_dist_thresh, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->stalemate_dist_thresh[i] < 0.0f || profile->stalemate_dist_thresh[i] > 100.0f) {
-						Warning(LOCATION, "'$Stalemate Distance Threshold' should be between 0 and 100.0 (read %f). Setting to 0.", profile->stalemate_dist_thresh[i]);
-						profile->stalemate_dist_thresh[i] = 0.0f;
-					}
-					profile->stalemate_dist_thresh[i];
-				}
-			}
 
-			if (optional_string("$Player Shield Recharge Scale:")) {
-				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->shield_energy_scale[i] < 0.0f || profile->shield_energy_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Player Shield Recharge Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->shield_energy_scale[i]);
-						profile->shield_energy_scale[i] = 0.0f;
-					}
-					profile->shield_energy_scale[i];
-				}
-			}
-
-			if (optional_string("$Player Weapon Recharge Scale:")) {
+			if (optional_string("$Player Weapon Recharge Scale:"))
 				parse_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->weapon_energy_scale[i] < 0.0f || profile->weapon_energy_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Player Weapon Recharge Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->weapon_energy_scale[i]);
-						profile->weapon_energy_scale[i] = 0.0f;
-					}
-					profile->weapon_energy_scale[i];
-				}
-			}
 
-			if (optional_string("$Max Turret Target Ownage:")) {
+			if (optional_string("$Max Turret Target Ownage:"))
 				parse_int_list(profile->max_turret_ownage_target, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->max_turret_ownage_target[i] < 0 || profile->max_turret_ownage_target[i] > 255) {
-						Warning(LOCATION, "'$Max Turret Target Ownage' should be between 0 and 255 (read %i). Setting to 0.", profile->max_turret_ownage_target[i]);
-						profile->max_turret_ownage_target[i] = 0;
-					}
-					profile->max_turret_ownage_target[i];
-				}
-			}
 
-			if (optional_string("$Max Turret Player Ownage:")) {
+			if (optional_string("$Max Turret Player Ownage:"))
 				parse_int_list(profile->max_turret_ownage_player, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->max_turret_ownage_player[i] < 0 || profile->max_turret_ownage_player[i] > 255) {
-						Warning(LOCATION, "'$Max Turret Player Ownage' should be between 0 and 255 (read %i). Setting to 0.", profile->max_turret_ownage_player[i]);
-						profile->max_turret_ownage_player[i] = 0;
-					}
-					profile->max_turret_ownage_player[i];
-				}
-			}
 
-			if (optional_string("$Percentage Required For Kill Scale:")) {
+			if (optional_string("$Percentage Required For Kill Scale:"))
 				parse_float_list(profile->kill_percentage_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->kill_percentage_scale[i] < 0.0f || profile->kill_percentage_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Percentage Required For Kill Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->kill_percentage_scale[i]);
-						profile->kill_percentage_scale[i] = 0.0f;
-					}
-					profile->kill_percentage_scale[i] /= 100.0;
-				}
-			}
 
-			if (optional_string("$Percentage Required For Assist Scale:")) {
+			if (optional_string("$Percentage Required For Assist Scale:"))
 				parse_float_list(profile->assist_percentage_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->assist_percentage_scale[i] < 0.0f || profile->assist_percentage_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Percentage Required For Assist Scale' should be between 0 and 100.0 (read %f). Setting to 0.", profile->assist_percentage_scale[i]);
-						profile->assist_percentage_scale[i] = 0.0f;
-					}
-					profile->assist_percentage_scale[i] /= 100.0;
-				}
-			}
 
-			if (optional_string("$Percentage Awarded For Capship Assist:")) {
+			if (optional_string("$Percentage Awarded For Capship Assist:"))
 				parse_float_list(profile->assist_award_percentage_scale, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->assist_award_percentage_scale[i] < 0.0f || profile->assist_award_percentage_scale[i] > 100.0f) {
-						Warning(LOCATION, "'$Percentage Awarded For Capship Assist' should be between 0 and 100.0 (read %f). Setting to 0.", profile->assist_award_percentage_scale[i]);
-						profile->assist_award_percentage_scale[i] = 0.0f;
-					}
-					profile->assist_award_percentage_scale[i] /= 100.0;
-				}
-			}
 
-			if (optional_string("$Repair Penalty:")) {
+			if (optional_string("$Repair Penalty:"))
 				parse_int_list(profile->repair_penalty, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->repair_penalty[i] < 0 ) {
-						Warning(LOCATION, "'$Repair Penalty' should be => 0, (read %i). Setting to 0.", profile->repair_penalty[i]);
-						profile->repair_penalty[i] = 0;
-					}
-					profile->repair_penalty[i];
-				}
-			}
 
-			if (optional_string("$Delay Before Allowing Bombs to Be Shot Down:")) {
+			if (optional_string("$Delay Before Allowing Bombs to Be Shot Down:"))
 				parse_float_list(profile->delay_bomb_arm_timer, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->delay_bomb_arm_timer[i] < 0.0f || profile->delay_bomb_arm_timer[i] > 100.0f) {
-						Warning(LOCATION, "'$Delay Before Allowing Bombs to Be Shot Down' should be between 0 and 100.0 (read %f). Setting to 0.", profile->delay_bomb_arm_timer[i]);
-						profile->delay_bomb_arm_timer[i] = 0.0f;
-					}
-					profile->delay_bomb_arm_timer[i];
-				}
-			}
 
-			if (optional_string("$Chance AI Has to Fire Missiles at Player:")) {
+			if (optional_string("$Chance AI Has to Fire Missiles at Player:"))
 				parse_int_list(profile->chance_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->chance_to_use_missiles_on_plr[i] < 0) {
-						Warning(LOCATION, "'$Chance AI Has to Fire Missiles at Player' should be => to 0, (read %i). Setting to 0.", profile->chance_to_use_missiles_on_plr[i]);
-						profile->chance_to_use_missiles_on_plr[i] = 0;
-					}
-					profile->chance_to_use_missiles_on_plr[i];
-				}
-			}
 
-			if (optional_string("$Max Aim Update Delay:")) {
+			if (optional_string("$Max Aim Update Delay:"))
 				parse_float_list(profile->max_aim_update_delay, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->max_aim_update_delay[i] < 0.0f || profile->max_aim_update_delay[i] > 100.0f) {
-						Warning(LOCATION, "'$Max Aim Update Delay:' should be between 0 and 100.0 (read %f). Setting to 0.", profile->max_aim_update_delay[i]);
-						profile->max_aim_update_delay[i] = 0.0f;
-					}
-					profile->max_aim_update_delay[i];
-				}
-			}
 
-			if (optional_string("$Turret Max Aim Update Delay:")) {
+			if (optional_string("$Turret Max Aim Update Delay:"))
 				parse_float_list(profile->turret_max_aim_update_delay, NUM_SKILL_LEVELS);
-				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
-					if (profile->turret_max_aim_update_delay[i] < 0.0f || profile->turret_max_aim_update_delay[i] > 100.0f) {
-						Warning(LOCATION, "'$Turret Max Aim Update Delay' should be between 0 and 100.0 (read %f). Setting to 0.", profile->turret_max_aim_update_delay[i]);
-						profile->turret_max_aim_update_delay[i] = 0.0f;
-					}
-					profile->turret_max_aim_update_delay[i];
-				}
-			}
 
 			if (optional_string("$Detail Distance Multiplier:"))
 				parse_float_list(profile->detail_distance_mult, NUM_SKILL_LEVELS);
@@ -763,7 +458,7 @@ void parse_ai_profiles_tbl(char *filename)
 			saved_Mp = Mp;
 		}
 	}
-
+	
 	required_string("#End");
 
 	// add tbl/tbm to multiplayer validation list
