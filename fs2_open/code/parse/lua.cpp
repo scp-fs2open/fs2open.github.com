@@ -5351,6 +5351,28 @@ ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this 
 	return ade_set_error(L, "o", l_Shipclass.Set(db->ship_info_index));
 }
 
+ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "number", "The radius of this debris piece or -1 if invalid")
+{
+	object_h *oh;
+	if(!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
+		return ade_set_error(L, "f", -1.0f);
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	debris *db = &Debris[oh->objp->instance];
+
+	polymodel *pm = model_get(db->model_num);
+
+	if (pm == NULL)
+		return ade_set_error(L, "f", -1.0f);
+
+	if (db->submodel_num < 0 || pm->n_models <= db->submodel_num)
+		return ade_set_error(L, "f", -1.0f);
+
+	return ade_set_error(L, "f", pm->submodel[db->submodel_num].rad);
+}
+
 ADE_FUNC(isValid, l_Debris, NULL, "Return if this debris handle is valid", "boolean", "true if valid false otherwise")
 {
 	object_h *oh;
