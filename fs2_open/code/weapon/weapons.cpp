@@ -3343,7 +3343,7 @@ void weapon_do_post_parse()
 
 			// only add the flag if the non-weak version is also player-allowed
 			if ( (idx >= 0) && (Weapon_info[idx].wi_flags & WIF_PLAYER_ALLOWED) ) {
-				Warning(LOCATION, "Weapon '%s' requires the \"player allowed\" flag, but it's not listed!  Adding it by default.\n", wip->name);
+				mprintf(("Weapon '%s' requires the \"player allowed\" flag, but it's not listed!  Adding it by default.\n", wip->name));
 				wip->wi_flags |= WIF_PLAYER_ALLOWED;
 			}
 		}
