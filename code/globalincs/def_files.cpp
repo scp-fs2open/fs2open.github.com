@@ -1824,7 +1824,7 @@ float4 FxaaPixelShaderPC(float2 pos, float4 posPos, FxaaTex tex, float2 rcpFrame
     bool directionN = dstN < dstP;								\n\
     float dst = min(dstN, dstP);								\n\
     bool goodSpan = directionN ? goodSpanN : goodSpanP;			\n\
-    float subpixG = subpixF * subpixF;							\n\
+    float subpixG = subpixF * subpixF;							""\n\
     float pixelOffset = (dst * (-spanLengthRcp)) + 0.5;			\n\
     float subpixH = subpixG * SUBPIX_CAP;						\n\
     float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;		\n\
