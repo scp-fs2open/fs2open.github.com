@@ -1629,13 +1629,15 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
-	vec3d near_pt, a, b;
+	vec3d near_pt, a, b, c;
 	float dist;
 
 	vm_vec_sub(&a, pt1, pt0);
 	vm_vec_normalize_quick(&a);
 	vm_vec_dist_to_line(&objp->pos, pt0, pt1, &near_pt, &dist); // Calculate nearest point for fallback fake tube pointlight
 	vm_vec_scale_add(&b, &near_pt, &a, bwi->beam_muzzle_radius * (-3.0f)); // Valathil: Move the light away from the ship somewhat	
+	vm_vec_sub(&c, &objp->pos, &near_pt);
+	dist = vm_vec_mag_quick(&c);
 
 	if ( dist > (light_rad + objp->radius) ) {
 		return; // Too far away
