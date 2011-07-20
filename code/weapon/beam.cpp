@@ -1636,7 +1636,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	if ( Use_GLSL > 1 )
 		light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp)); 
 	else {
-		vec3d near_pt, a, b;
+		vec3d near_pt, a;
 		float dist,max_dist;
 		vm_vec_sub(&a, pt1, pt0);
 		vm_vec_normalize_quick(&a);
