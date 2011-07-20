@@ -42,13 +42,9 @@ SCP_vector<cutscene_info> Cutscenes;
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 void cutscene_close()
 {
-	for(size_t i = 0; i < Cutscenes.size(); i++)
-    {
-	    if(Cutscenes[i].description)
-        {
-            vm_free(Cutscenes[i].description);
-        }
-    }
+	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++)
+		if(cut->description)
+			vm_free(cut->description);
 }
 
 // initialization stuff for cutscenes
@@ -114,9 +110,9 @@ int cutscenes_get_cd_num( char *filename )
 	return 0;				// only 1 cd for OEM
 #else
 
-	for (size_t i = 0; i < Cutscenes.size(); i++ ) {
-		if ( !stricmp(Cutscenes[i].filename, filename) ) {
-			return (Cutscenes[i].cd - 1);
+	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++) {
+		if ( !stricmp(cut->filename, filename) ) {
+			return (cut->cd - 1);
 		}
 	}
 
@@ -141,10 +137,10 @@ void cutscene_mark_viewable(char *filename)
 
 	// change to lower case
 	strlwr(file);
-
-	for (size_t i = 0; i < Cutscenes.size(); i++ ) {
+	int i = 0;
+	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++) {
 		// change the cutscene file name to lower case
-		strcpy_s(cut_file, Cutscenes[i].filename);
+		strcpy_s(cut_file, cut->filename);
 		strlwr(cut_file);
 
 		// see if the stripped filename matches the cutscene filename
@@ -152,6 +148,7 @@ void cutscene_mark_viewable(char *filename)
 			Cutscenes_viewable |= (1<<i);
 			return;
 		}
+		i++;
 	}
 }
 
@@ -507,7 +504,9 @@ void cutscenes_screen_init()
 //  		Cutscenes_viewable = 0xffffffff;		//	Cheat code enables all movies.
 
     Cutscene_list.clear();
-	for (size_t j = 0; j < Cutscenes.size(); j++ ) {
+	
+	size_t size = Cutscenes.size();
+	for (size_t j=0;j < size;j++) {
 		if ( Cutscenes_viewable & (1<<j) ) {
             Cutscene_list.push_back((int)j);
 		}
@@ -568,7 +567,8 @@ void cutscenes_screen_do_frame()
 		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
 		{
             Cutscene_list.clear();
-			for (size_t t = 0; t < Cutscenes.size(); t++) {
+			size_t size = Cutscenes.size();
+			for (size_t t = 0; t < size; t++) {
                 Cutscene_list.push_back((int)t);
 			}
 

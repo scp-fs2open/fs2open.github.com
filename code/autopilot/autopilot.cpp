@@ -372,8 +372,7 @@ bool StartAutopilot()
 			{
 				capshipPresent = true;
 
-				capIndexes.resize(capIndexes.size()+1);
-				capIndexes[capIndexes.size()-1] = i;
+				capIndexes.push_back(i);
 				// ok.. what size class
 
 				if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
@@ -559,13 +558,13 @@ bool StartAutopilot()
 			// position capships
 
 			vec3d right, front, up, offset;
-			for (i = 0; i < (int)capIndexes.size(); i++)
+			for (SCP_vector<int>::iterator idx = capIndexes.begin(); idx != capIndexes.end(); idx++)
 			{
 				vm_vec_add(&right, &Autopilot_flight_leader->orient.vec.rvec, &zero);
 				vm_vec_add(&front, &Autopilot_flight_leader->orient.vec.fvec, &zero);
 				vm_vec_add(&up, &Autopilot_flight_leader->orient.vec.uvec, &zero);
 				vm_vec_add(&offset, &zero, &zero);
-				if (Ship_info[Ships[capIndexes[i]].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
+				if (Ship_info[Ships[*idx].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
 				{
 					//0 - below - three lines of position
 
@@ -599,7 +598,7 @@ bool StartAutopilot()
 
 					capship_placed[0]++;
 				}
-				else if (Ship_info[Ships[capIndexes[i]].ship_info_index].flags & SIF_CORVETTE)
+				else if (Ship_info[Ships[*idx].ship_info_index].flags & SIF_CORVETTE)
 				{
 					//1 above - 3 lines of position
 					// front/back to zero
@@ -708,7 +707,7 @@ bool StartAutopilot()
 				// global scale the position by 50%
 				//vm_vec_scale(&offset, 1.5);
 
-				vm_vec_add(&Objects[Ships[capIndexes[i]].objnum].pos, &Autopilot_flight_leader->pos, &offset);
+				vm_vec_add(&Objects[Ships[*idx].objnum].pos, &Autopilot_flight_leader->pos, &offset);
 
 				if (vm_vec_dist_quick(&Autopilot_flight_leader->pos, &Objects[Ships[i].objnum].pos) > distance)
 				{
