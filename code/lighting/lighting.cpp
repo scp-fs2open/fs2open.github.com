@@ -392,7 +392,8 @@ void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, f
 	}*/
 }
 
-// for now, tube lights only affect one ship (to keep the filter stuff simple)
+// beams affect every ship except the firing ship
+extern int Use_GLSL;
 void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
 	Assert(r1 >0);
@@ -431,8 +432,8 @@ void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, f
 	l->radb = r2;
 	l->rada_squared = l->rada*l->rada;
 	l->radb_squared = l->radb*l->radb;
-	l->light_ignore_objnum = -1;
-	l->affected_objnum = affected_objnum;
+	l->light_ignore_objnum = Use_GLSL>1 ?affected_objnum : -1;
+	l->affected_objnum = Use_GLSL>1 ? -1 : affected_objnum;
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
@@ -529,9 +530,23 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 
 		// hmm. this could probably be more optimal
 		case LT_TUBE:
-			// all tubes are "unique" light sources for now
-			if((l->affected_objnum >= 0) && (objnum == l->affected_objnum)){
-				Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
+			if(Use_GLSL > 1) {
+				if(l->light_ignore_objnum != objnum){
+					vec3d nearest;
+					float dist_squared, max_dist_squared;
+					vm_vec_dist_squared_to_line(pos,&l->vec,&l->vec2,&nearest,&dist_squared);
+
+					max_dist_squared = l->radb+rad;
+					max_dist_squared *= max_dist_squared;
+					
+					if ( dist_squared < max_dist_squared )
+						Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
+				}
+ 			}
+			else {
+ 				// all tubes are "unique" light sources for now
+				if((l->affected_objnum >= 0) && (objnum == l->affected_objnum))
+					Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
 			}
 			break;
 

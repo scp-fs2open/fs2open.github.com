@@ -1214,17 +1214,10 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 		file_list_index.push_back( f );
 	}
 
-	size_t file_list_size = file_list_index.size();
-
-	// quick exit test
-	if (file_list_size < 1)
-		goto Bail;
-
-
 	// now try and find our preferred match
 	for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-		for (size_t i = 0; i < file_list_size; i++) {
-			cf_file *f = file_list_index[i];
+		for (SCP_vector<cf_file*>::iterator fli = file_list_index.begin(); fli != file_list_index.end(); fli++) {
+			cf_file *f = *fli;
 	
 			strcat_s( filespec, ext_list[cur_ext] );
 
@@ -1302,10 +1295,6 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 				(*p) = 0;
 		}
 	}
-
-Bail:
-	// didn't find anything, bail...
-	file_list_index.clear();
 
 	return -1;
 }

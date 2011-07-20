@@ -241,6 +241,7 @@ float beam_get_ship_damage(beam *b, object *objp);
 // if the beam is likely to tool a given target before its lifetime expires
 int beam_will_tool_target(beam *b, object *objp);
 
+extern int Use_GLSL;
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS
@@ -1052,6 +1053,10 @@ void beam_move_all_post()
 			}
 		}		
 
+		// add tube light for the beam
+		if(Use_GLSL > 1)
+			beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, NULL);
+
 		// stop shooting?
 		if(bf_status <= 0){
 			next_one = GET_NEXT(moveup);
@@ -1592,7 +1597,6 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb, OBJ_INDEX(objp));
 }
 
-extern int Use_GLSL;
 // call to add a light source to a large object
 void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 {
@@ -1629,24 +1633,20 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
-	vec3d near_pt, a, b, c;
-	float dist;
-
-	vm_vec_sub(&a, pt1, pt0);
-	vm_vec_normalize_quick(&a);
-	vm_vec_dist_to_line(&objp->pos, pt0, pt1, &near_pt, &dist); // Calculate nearest point for fallback fake tube pointlight
-	vm_vec_scale_add(&b, &near_pt, &a, bwi->beam_muzzle_radius * (-3.0f)); // Valathil: Move the light away from the ship somewhat	
-	vm_vec_sub(&c, &objp->pos, &near_pt);
-	dist = vm_vec_mag_quick(&c);
-
-	if ( dist > (light_rad + objp->radius) ) {
-		return; // Too far away
-	}
-
 	if ( Use_GLSL > 1 )
 		light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp)); 
-	else
-		light_add_tube(pt0, &b, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp)); 
+	else {
+		vec3d near_pt, a;
+		float dist,max_dist;
+		vm_vec_sub(&a, pt1, pt0);
+		vm_vec_normalize_quick(&a);
+		vm_vec_dist_squared_to_line(&objp->pos, pt0, pt1, &near_pt, &dist); // Calculate nearest point for fallback fake tube pointlight
+		max_dist = light_rad + objp->radius;
+		max_dist *= max_dist;
+		if ( dist > max_dist)
+			return; // Too far away
+		light_add_tube(pt0, &near_pt, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp));
+	}
 }
 
 // mark an object as being lit
@@ -2387,7 +2387,8 @@ int beam_collide_ship(obj_pair *pair)
 	}
 
 	// add this guy to the lighting list
-	beam_add_light(b, OBJ_INDEX(ship_objp), 1, NULL);
+	if(Use_GLSL < 2)
+		beam_add_light(b, OBJ_INDEX(ship_objp), 1, NULL);
 
 	// reset timestamp to timeout immediately
 	pair->next_check_time = timestamp(0);
@@ -2459,7 +2460,8 @@ int beam_collide_asteroid(obj_pair *pair)
 	}	
 
 	// add this guy to the lighting list
-	beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
+	if(Use_GLSL < 2)
+		beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
 
 	// reset timestamp to timeout immediately
 	pair->next_check_time = timestamp(0);
@@ -2596,7 +2598,8 @@ int beam_collide_debris(obj_pair *pair)
 	}	
 
 	// add this guy to the lighting list
-	beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
+	if(Use_GLSL < 2)
+		beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
 
 	// reset timestamp to timeout immediately
 	pair->next_check_time = timestamp(0);
@@ -2801,7 +2804,8 @@ void beam_handle_collisions(beam *b)
 		}
 
 		// add lighting
-		beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
+		if(Use_GLSL < 2)
+			beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
 
 		// add to the recent collision list
 		r_coll[r_coll_count].c_objnum = target;
