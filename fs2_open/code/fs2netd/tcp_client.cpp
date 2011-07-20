@@ -686,7 +686,6 @@ int FS2NetD_ValidateTableList(bool do_send)
 	int buffer_size, buffer_offset;
 	bool my_packet = false;
 	char buffer[4096];
-	uint i;
 	ushort num_tables = 0;
 
 	if (do_send) {
@@ -697,9 +696,9 @@ int FS2NetD_ValidateTableList(bool do_send)
 
 		PXO_ADD_USHORT( num_tables );
 
-		for (i = 0; i < Table_valid_status.size(); i++) {
-			PXO_ADD_STRING( Table_valid_status[i].name );
-			PXO_ADD_UINT( Table_valid_status[i].crc32 );
+		for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); tvs++) {
+			PXO_ADD_STRING(tvs->name );
+			PXO_ADD_UINT( tvs->crc32 );
 		}
 
 		DONE_PACKET();
@@ -761,11 +760,11 @@ int FS2NetD_ValidateTableList(bool do_send)
 			return -1;
 		}
 
-		for (i = 0; i < Table_valid_status.size(); i++) {
+		for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); tvs++) {
 			PXO_GET_DATA( tbl_valid_status );
 			Assert( (tbl_valid_status == 0) || (tbl_valid_status == 1) );
 
-			Table_valid_status[i].valid = tbl_valid_status;
+			tvs->valid = tbl_valid_status;
 		}
 
 		return 2;
