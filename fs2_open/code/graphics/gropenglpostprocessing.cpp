@@ -19,6 +19,7 @@ extern int opengl_check_framebuffer();
 size_t fxaa_shader_id;
 //In case we don't find the shaders at all, this override is needed
 bool fxaa_unavailable = false;
+int Fxaa_preset_last_frame;
 
 
 #define SDR_POST_FLAG_MAIN		(1<<0)
@@ -227,7 +228,54 @@ void gr_opengl_post_process_begin()
 	Post_in_frame = true;
 }
 
+void recompile_fxaa_shader() {
+	char *vert = NULL, *frag = NULL;
+	opengl_shader_t *new_shader = &GL_post_shader[fxaa_shader_id];
+	opengl_shader_file_t *shader_file = &GL_post_shader_files[4];
+
+	// choose appropriate files
+	char *vert_name = shader_file->vert;
+	char *frag_name = shader_file->frag;
+
+	mprintf(("Recompiling FXAA shader with preset %d\n", Cmdline_fxaa_preset));
+
+	// read vertex shader
+	vert = opengl_post_load_shader(vert_name, shader_file->flags, NULL);
+
+	// read fragment shader
+	frag = opengl_post_load_shader(frag_name, shader_file->flags, NULL);
+
+
+	Verify( vert != NULL );
+	Verify( frag != NULL );
+
+	new_shader->program_id = opengl_shader_create(vert, frag);
+
+	if ( !new_shader->program_id ) {
+	}
+
+
+	new_shader->flags = shader_file->flags;
+	new_shader->flags2 = NULL;
+
+	opengl_shader_set_current( new_shader );
+
+	new_shader->uniforms.reserve(shader_file->num_uniforms);
+
+	for (int i = 0; i < shader_file->num_uniforms; i++) {
+		opengl_shader_init_uniform( shader_file->uniforms[i] );
+	}
+
+	opengl_shader_set_current();
+	Fxaa_preset_last_frame = Cmdline_fxaa_preset;
+}
+
 void opengl_post_pass_fxaa() {
+
+	//If the preset changed, recompile the shader
+	if (Fxaa_preset_last_frame != Cmdline_fxaa_preset) {
+		recompile_fxaa_shader();
+	}
 
 	// Do a prepass to convert the main shaders' RGBA output into RGBL
 	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id + 1] );
@@ -668,6 +716,74 @@ static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 		sflags += "#define PASS_0\n";
 	} else if (flags & SDR_POST_FLAG_PASS2) {
 		sflags += "#define PASS_1\n";
+	}
+	
+	switch (Cmdline_fxaa_preset) {
+		case 0:
+			sflags += "#define FXAA_PC_CONSOLE 1\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 8.0\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/2.0)\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
+			break;
+		case 1:
+			sflags += "#define FXAA_PC_CONSOLE 1\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 6.0\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/2.0)\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
+			break;
+		case 2:
+			sflags += "#define FXAA_PC_CONSOLE 1\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 4.0\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/4.0)\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
+			break;
+		case 3:
+			sflags += "#define FXAA_PC_CONSOLE 1\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 3.0\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/6.0)\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
+			break;
+		case 4:
+			sflags += "#define FXAA_PC_CONSOLE 1\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 2.0\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/8.0)\n";
+			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
+			break;
+		case 5:
+			sflags += "#define FXAA_PC 1\n";
+			sflags += "#define FXAA_QUALITY__PRESET 26\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/6.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/12.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (1.0/2.0)\n";
+			break;
+		case 6:
+			sflags += "#define FXAA_PC 1\n";
+			sflags += "#define FXAA_QUALITY__PRESET 27\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/8.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/14.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (2.0/3.0)\n";
+			break;
+		case 7:
+			sflags += "#define FXAA_PC 1\n";
+			sflags += "#define FXAA_QUALITY__PRESET 28\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/10.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/16.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (3.0/4.0)\n";
+			break;
+		case 8:
+			sflags += "#define FXAA_PC 1\n";
+			sflags += "#define FXAA_QUALITY__PRESET 29\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/12.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/18.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (5.0/6.0)\n";
+			break;
+		case 9:
+			sflags += "#define FXAA_PC 1\n";
+			sflags += "#define FXAA_QUALITY__PRESET 39\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/12.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/20.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (7.0/8.0)\n";
+			break;
 	}
 
 	const char *shader_flags = sflags.c_str();

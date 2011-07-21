@@ -285,6 +285,7 @@ int Cmdline_postprocess = 0;
 int Cmdline_bloom_intensity = 75;
 bool Cmdline_fxaa = false;
 int Cmdline_fxaa_preset = 6;
+extern int Fxaa_preset_last_frame;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -1249,6 +1250,8 @@ bool SetCmdlineParams()
 		if (fxaa_preset_arg.found()) {
 			Cmdline_fxaa_preset = fxaa_preset_arg.get_int();
 		}
+
+		Fxaa_preset_last_frame = Cmdline_fxaa_preset;
 	}
 
 	if (no_di_mouse_arg.found() ) {
