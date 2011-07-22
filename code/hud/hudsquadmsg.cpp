@@ -1192,7 +1192,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			ai_mode = AI_GOAL_IGNORE_NEW;
 			ai_submode = 0;
-			message = MESSAGE_YESSIR;
+			message = MESSAGE_IGNORE;
 			break;
 		
 		case FORMATION_ITEM:
@@ -1445,7 +1445,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 			ai_mode = AI_GOAL_IGNORE_NEW;
 			ai_submode = 0;	//	actually, a don't care.
-			message = MESSAGE_YESSIR;
+			message = MESSAGE_IGNORE;
 			break;
 
 		case FORMATION_ITEM:
