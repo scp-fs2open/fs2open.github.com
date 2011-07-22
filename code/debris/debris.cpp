@@ -933,6 +933,8 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 			// Do collision the cool new way
 			if ( debris_hit_info->collide_rotate ) {
+				SCP_vector<int>::iterator smv;
+
 				// We collide with the sphere, find the list of rotating submodels and test one at a time
 				model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
 
@@ -941,7 +943,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				pmi = model_get_instance(Ships[heavy_obj->instance].model_instance_num);
 
 				// turn off all rotating submodels and test for collision
-				for (SCP_vector<int>::iterator smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
+				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
 					pmi->submodel[*smv].collision_checked = true;
 				}
 
@@ -949,7 +951,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
 
 				// check each submodel in turn
-				for (SCP_vector<int>::iterator smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
+				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
 					// turn on submodel for collision test
 					pmi->submodel[*smv].collision_checked = false;
 

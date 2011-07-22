@@ -1314,7 +1314,7 @@ void main()																		\n\
 	  #endif																	\n\
 																				\n\
 		float specularIntensity = 1.0;											\n\
-		float attenuation = 1.0;												\n\
+		float attenuation = 1.0;												\n""\
 																				\n\
 		// Attenuation and light direction										\n\
 	  #if SHADER_MODEL > 2														\n\
@@ -1325,7 +1325,7 @@ void main()																		\n\
 			// Positional light source											\n\
 			float dist = distance(gl_LightSource[i].position.xyz, position.xyz);	\n\
 			lightDir = gl_LightSource[i].position.xyz - position.xyz;			\n\
-																				\n""\
+																				\n\
 		  #if SHADER_MODEL > 2													\n\
 			if (gl_LightSource[i].spotCutoff < 91.0) {  // Tube light			\n\
 				vec3 nearest = gl_LightSource[i].position.xyz;					\n\
@@ -1335,7 +1335,7 @@ void main()																		\n\
 				float neardist = dot(position.xyz - gl_LightSource[i].position.xyz , beamDir);	\n\
 				// Move back from the endpoint of the beam along the beam by the distance we calculated	\n\
 				nearest = gl_LightSource[i].position.xyz - beamDir * abs(neardist);	\n\
-				lightDir = nearest - position.xyz;								\n\
+				lightDir = nearest - position.xyz;								\n""\
 				dist = length(lightDir);										\n\
 			}																	\n\
 		  #endif																\n\
@@ -1646,7 +1646,7 @@ char* Default_fxaa_fragment_shader = "#extension GL_EXT_gpu_shader4 : enable\n"
 "#define FxaaSat(x) clamp(x, 0.0, 1.0)\n"
 "#define FxaaLerp(x,y,s) mix(x,y,s)\n"
 "#define FxaaTex sampler2D\n"
-"#define FxaaTexTop(t, p) textureLod(t, p, 0.0)\n"
+"#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)\n"
 "#define FxaaTexOff(t, p, o, r) textureLodOffset(t, p, 0.0, o)\n"
 "#if (FXAA_GATHER4_ALPHA == 1)\n"
 "// use #extension GL_ARB_gpu_shader5 : enable\n"
@@ -2169,10 +2169,10 @@ void main()												\n\
 	float dx = mod(x, 0.01);							\n\
 														\n\
 	vec3 result = color_out.rgb + color_out.rgb * clamp(0.1 + dx * 100.0, 0.0, 1.0);	\n\
-														\n\
+														\n""\
 	color_out.rgb = mix(color_out.rgb, result, film_grain);	\n\
  #endif													\n\
-														\n""\
+														\n\
  #ifdef FLAG_STRIPES									\n\
  // TV-Stripes (Old School)								\n\
 	vec2 sc;											\n\
