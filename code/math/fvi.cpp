@@ -1057,9 +1057,11 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 		}
 
 		root = fl_sqrt(discriminant);
-		float inv2A = 1.0f/(2*A);
-		root1 = (float) ((-B + root)*inv2A);
-		root2 = (float) ((-B - root)*inv2A);
+		{
+			float inv2A = 1.0f/(2*A);
+			root1 = (float) ((-B + root)*inv2A);
+			root2 = (float) ((-B - root)*inv2A);
+		}
 
 		// given sphere position, find which edge time (position) allows a valid solution
 		if ( (root1 >= 0) && (root1 <= 1) ) {
@@ -1106,9 +1108,11 @@ TryVertex:
 		discriminant = B*B - 4*A*C;
 		if (discriminant > 0) {
 			root = fl_sqrt(discriminant);
-			float inv2A = 1.0f/(2*A);
-			root1 = (float) ((-B + root)*inv2A);
-			root2 = (float) ((-B - root)*inv2A);
+			{
+				float inv2A = 1.0f/(2*A);
+				root1 = (float) ((-B + root)*inv2A);
+				root2 = (float) ((-B - root)*inv2A);
+			}
 
 			if (root1 > root2) {
 				temp = root1;
