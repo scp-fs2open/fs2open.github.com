@@ -49,7 +49,7 @@ static opengl_shader_file_t GL_post_shader_files[] = {
 		1, { "tex" } },
 
 	{ "fxaa-v.sdr", "fxaa-f.sdr", NULL, 
-		4, { "tex0", "rt_w", "rt_h", "fxaa_preset"} },
+		3, { "tex0", "rt_w", "rt_h"} },
 
 	{ "post-v.sdr", "fxaapre-f.sdr", NULL,
 		1, { "tex"} }
@@ -310,7 +310,6 @@ void opengl_post_pass_fxaa() {
 	vglUniform1iARB( opengl_shader_get_uniform("tex0"), 0 );
 	vglUniform1fARB( opengl_shader_get_uniform("rt_w"), static_cast<float>(Post_texture_width));
 	vglUniform1fARB( opengl_shader_get_uniform("rt_h"), static_cast<float>(Post_texture_height));
-	vglUniform1iARB( opengl_shader_get_uniform("fxaa_preset"), Cmdline_fxaa_preset);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -720,69 +719,65 @@ static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 	
 	switch (Cmdline_fxaa_preset) {
 		case 0:
-			sflags += "#define FXAA_PC_CONSOLE 1\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 8.0\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/2.0)\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
-			break;
-		case 1:
-			sflags += "#define FXAA_PC_CONSOLE 1\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 6.0\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/2.0)\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
-			break;
-		case 2:
-			sflags += "#define FXAA_PC_CONSOLE 1\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 4.0\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/4.0)\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
-			break;
-		case 3:
-			sflags += "#define FXAA_PC_CONSOLE 1\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 3.0\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/6.0)\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
-			break;
-		case 4:
-			sflags += "#define FXAA_PC_CONSOLE 1\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_SHARPNESS 2.0\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD (1.0/8.0)\n";
-			sflags += "#define FXAA_CONSOLE__EDGE_THRESHOLD_MIN 0.01\n";
-			break;
-		case 5:
-			sflags += "#define FXAA_PC 1\n";
-			sflags += "#define FXAA_QUALITY__PRESET 26\n";
+			sflags += "#define FXAA_QUALITY__PRESET 10\n";
 			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/6.0)\n";
 			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/12.0)\n";
-			sflags += "#define FXAA_QUALITY__SUBPIX (1.0/2.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (3.0/4.0)\n";
+			break;
+		case 1:
+			sflags += "#define FXAA_QUALITY__PRESET 11\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/7.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/14.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (4.0/5.0)\n";
+			break;
+		case 2:
+			sflags += "#define FXAA_QUALITY__PRESET 12\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/8.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/16.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (5.0/6.0)\n";
+			break;
+		case 3:
+			sflags += "#define FXAA_QUALITY__PRESET 13\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/9.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/18.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (6.0/7.0)\n";
+			break;
+		case 4:
+			sflags += "#define FXAA_QUALITY__PRESET 14\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/10.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/20.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (7.0/8.0)\n";
+			break;
+		case 5:
+			sflags += "#define FXAA_QUALITY__PRESET 25\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/11.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/22.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (8.0/9.0)\n";
 			break;
 		case 6:
-			sflags += "#define FXAA_PC 1\n";
-			sflags += "#define FXAA_QUALITY__PRESET 27\n";
-			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/8.0)\n";
-			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/14.0)\n";
-			sflags += "#define FXAA_QUALITY__SUBPIX (2.0/3.0)\n";
+			sflags += "#define FXAA_QUALITY__PRESET 26\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/12.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/24.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (9.0/10.0)\n";
 			break;
 		case 7:
 			sflags += "#define FXAA_PC 1\n";
-			sflags += "#define FXAA_QUALITY__PRESET 28\n";
-			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/10.0)\n";
-			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/16.0)\n";
-			sflags += "#define FXAA_QUALITY__SUBPIX (3.0/4.0)\n";
+			sflags += "#define FXAA_QUALITY__PRESET 27\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/13.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/26.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (10.0/11.0)\n";
 			break;
 		case 8:
-			sflags += "#define FXAA_PC 1\n";
-			sflags += "#define FXAA_QUALITY__PRESET 29\n";
-			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/12.0)\n";
-			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/18.0)\n";
-			sflags += "#define FXAA_QUALITY__SUBPIX (5.0/6.0)\n";
+			sflags += "#define FXAA_QUALITY__PRESET 28\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/14.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/28.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (11.0/12.0)\n";
 			break;
 		case 9:
-			sflags += "#define FXAA_PC 1\n";
 			sflags += "#define FXAA_QUALITY__PRESET 39\n";
-			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/12.0)\n";
-			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/20.0)\n";
-			sflags += "#define FXAA_QUALITY__SUBPIX (7.0/8.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/15.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/32.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (12.0/13.0)\n";
 			break;
 	}
 
