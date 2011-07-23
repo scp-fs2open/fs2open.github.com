@@ -659,6 +659,7 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 /**
  * @brief Unpack frame
  *
+ * @param ai Animation instance
  * @param ptr Packed data to unpack
  * @param frame Where to store unpacked data to
  * @param size Total number of unpacked pixels requested
@@ -848,7 +849,7 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 /**
  * @brief Unpack frame from file
  *
- * @param ptr Packed data to unpack
+ * @param ai Animation instance
  * @param frame Where to store unpacked data to
  * @param size Total number of unpacked pixels requested
  * @param pal_translate Color translation lookup table (NULL if no palette translation desired)
