@@ -1407,7 +1407,22 @@ void main()																		\n\
 	fragmentColor.rgb = mix(fragmentColor.rgb, gl_Fog.color.rgb, fogDist);		\n\
  #endif																			\n\
 																				\n\
-	gl_FragColor = fragmentColor;												\n\
+#ifdef FLAG_ANIMATED															\n\
+ if(effect_num == 0)															\n\
+	{																			\n\
+		float shinefactor = 1.0/(1.0 + pow((fract(abs(gl_TexCoord[0].x))-anim_timer) * 1000.0, 2.0)) * 1000.0;\n\
+		gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);				\n\
+		gl_FragColor.a = fragmentColor.a * shinefactor * (fract(abs(gl_TexCoord[0].x))-anim_timer) * -10000.0;\n\
+	}																			\n\
+	if(effect_num == 1)															\n\
+	{																			\n\
+		float shinefactor = 1.0/(1.0 + pow((position.y-anim_timer), 2.0));		\n\
+		gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);				\n\
+		gl_FragColor.a = fragmentColor.a;										\n\
+	}																			\n\
+ #else																			\n\
+ 	gl_FragColor = fragmentColor;												\n\
+ #endif																			\n\
 }																				\n\
 ";
 

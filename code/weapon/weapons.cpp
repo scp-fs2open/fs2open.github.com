@@ -100,6 +100,8 @@ char	*Weapon_names[MAX_WEAPON_TYPES];
 int     First_secondary_index = -1;
 int		Default_cmeasure_index = -1;
 
+int Default_weapon_select_effect = 2;
+
 static int *used_weapons = NULL;
 
 int	Num_spawn_types = 0;
@@ -1026,6 +1028,8 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->thruster_glow_factor = 1.0f;
 	wip->target_lead_scaler = 0.0f;
+
+	wip->selection_effect = Default_weapon_select_effect;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -1175,7 +1179,17 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("$Tech Model:")) {
 		stuff_string(wip->tech_model, F_NAME, MAX_FILENAME_LEN);
 	}
-		
+
+	// Weapon fadein effect, used when no ani is specified or weapon_select_3d is active
+	wip->selection_effect = 2; // By default, use the FS2 effect
+	if(optional_string("$Selection Effect:")) {
+		char effect[NAME_LENGTH];
+		stuff_string(effect, F_NAME, NAME_LENGTH);
+		if (!stricmp(effect, "FS1"))
+			wip->selection_effect = 1;
+		if (!stricmp(effect, "off"))
+			wip->selection_effect = 0;
+	}	
 
 	//Check for the HUD image string
 	if(optional_string("$HUD Image:")) {

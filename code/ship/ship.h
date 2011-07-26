@@ -1275,6 +1275,7 @@ typedef struct ship_info {
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in ship selection
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
+	int 	selection_effect;
 
 	int	score;								// default score for this ship
 
@@ -1894,5 +1895,8 @@ int thruster_glow_anim_load(generic_anim *ga);
 
 // Sushi - Path metadata
 void init_path_metadata(path_metadata& metadata);
+
+// Ship select stuff
+extern int Default_ship_select_effect;
 
 #endif

@@ -379,6 +379,9 @@ bool warning_too_many_ship_classes = false;
 
 int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
 
+// Used to set the default effect for real time ship select anis, defaults to the FS2 effect
+int Default_ship_select_effect = 2;
+
 // set the ship_obj struct fields to default values
 void ship_obj_list_reset_slot(int index)
 {
@@ -966,6 +969,8 @@ void init_ship_entry(ship_info *sip)
 	sip->piercing_damage_draw_limit = 0.10f;
 	sip->damage_lightning_type = SLT_DEFAULT;
 	sip->pathMetadata.clear();
+
+	sip->selection_effect = Default_ship_select_effect;
 }
 
 // function to parse the information for a specific ship type.	
@@ -1366,6 +1371,17 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	// End code by SS
+	
+	// Ship fadein effect, used when no ani is specified or ship_select_3d is active
+	sip->selection_effect = 2; //By default, use the FS2 effect
+	if(optional_string("$Selection Effect:")) {
+		char effect[NAME_LENGTH];
+		stuff_string(effect, F_NAME, NAME_LENGTH);
+		if (!stricmp(effect, "FS1"))
+			sip->selection_effect = 1;
+		if (!stricmp(effect, "off"))
+			sip->selection_effect = 0;
+	}
 
 	if(optional_string( "$Cockpit POF file:" ))
 	{

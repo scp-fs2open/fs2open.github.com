@@ -3072,6 +3072,9 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		}
 	}
 
+	if ( Interp_flags & MR_ANIMATED_SHADER )
+		Interp_tmap_flags |= TMAP_ANIMATED_SHADER;
+
 	save_gr_zbuffering_mode = gr_zbuffering_mode;
 	zbuf_mode = gr_zbuffering_mode;
 
