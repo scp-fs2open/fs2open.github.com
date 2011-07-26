@@ -378,6 +378,7 @@ typedef struct weapon_info {
 
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in weapon selection
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in weapon selection
+	int 	selection_effect;
 
 	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
 	float	impact_explosion_radius;		// How big the explosion should be
@@ -550,6 +551,8 @@ extern int Default_cmeasure_index;
 extern int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
 extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
 extern char	*Weapon_names[MAX_WEAPON_TYPES];
+
+extern int Default_weapon_select_effect;
 
 #define WEAPON_INDEX(wp)				(wp-Weapons)
 #define WEAPON_INFO_INDEX(wip)		(wip-Weapon_info)

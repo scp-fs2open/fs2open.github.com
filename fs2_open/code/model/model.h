@@ -778,6 +778,7 @@ void model_set_detail_level(int n);
 #define MR_NO_GLOWMAPS				(1<<27)		// disable rendering of glowmaps - taylor
 #define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
 #define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
+#define MR_ANIMATED_SHADER			(1<<30)		// Use a animated Shader - Valathil
 
 // old/obsolete flags
 //#define MR_SHOW_DAMAGE			(1<<4)		// Show the "destroyed" subobjects
