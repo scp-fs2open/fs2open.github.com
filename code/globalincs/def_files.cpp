@@ -1253,6 +1253,11 @@ varying mat3 tbnMatrix;															\n\
 varying float fogDist;															\n\
 #endif																			\n\
 																				\n\
+#ifdef FLAG_ANIMATED															\n\
+uniform int effect_num;															\n\
+uniform float anim_timer;														\n\
+#endif																			\n\
+																				\n\
 varying vec4 position;															\n\
 varying vec3 lNormal;															\n\
 																				\n\
