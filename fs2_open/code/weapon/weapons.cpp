@@ -1181,7 +1181,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	// Weapon fadein effect, used when no ani is specified or weapon_select_3d is active
-	wip->selection_effect = 2; // By default, use the FS2 effect
+	wip->selection_effect = Default_weapon_select_effect; // By default, use the FS2 effect
 	if(optional_string("$Selection Effect:")) {
 		char effect[NAME_LENGTH];
 		stuff_string(effect, F_NAME, NAME_LENGTH);
