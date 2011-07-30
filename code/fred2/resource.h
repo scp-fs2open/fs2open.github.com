@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -1148,6 +1148,8 @@
 #define IDC_INCLUDE_SENDER              1629
 #define IDC_DISABLE_ETS                 1630
 #define IDC_IMMOBILE                    1631
+#define IDC_DISABLE_ETS2                1632
+#define IDC_CLOAKED                     1632
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
