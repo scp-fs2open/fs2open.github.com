@@ -38,7 +38,7 @@ inline bool sorted_obj::operator < (const sorted_obj &other)
 
 
 std::list<sorted_obj> Sorted_objects;
-
+std::vector<object*> effect_ships; 
 
 // Used to (fairly) quicky find the 8 extreme
 // points around an object.
@@ -224,8 +224,10 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 				continue;
 			}
 		}
-
-		(*render_function)(obj);
+		if( (obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active )
+			effect_ships.push_back(obj);
+		else
+			(*render_function)(obj);
 	}
 
 	Sorted_objects.clear();
