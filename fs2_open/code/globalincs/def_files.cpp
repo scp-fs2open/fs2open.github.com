@@ -1412,22 +1412,19 @@ void main()																		\n\
 	fragmentColor.rgb = mix(fragmentColor.rgb, gl_Fog.color.rgb, fogDist);		\n\
  #endif																			\n\
 																				\n\
-#ifdef FLAG_ANIMATED\n"
-"if(effect_num == 0)\n"
-"{\n"
-"	float shinefactor = 1.0/(1.0 + pow((fract(abs(gl_TexCoord[0].x))-anim_timer) * 1000.0, 2.0)) * 1000.0;\n"
-"	gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);\n"
-"	gl_FragColor.a = fragmentColor.a * shinefactor * (fract(abs(gl_TexCoord[0].x))-anim_timer) * -10000.0;\n"
-"} else if(effect_num == 1)\n"
-"{\n"
-"	float shinefactor = 1.0/(1.0 + pow((position.y-anim_timer), 2.0));\n"
-"	gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);\n"
-"	gl_FragColor.a = fragmentColor.a;\n"
-"} else if(effect_num == 2)\n"
-"{\n"
-"	gl_FragColor.a = 1.0;\n"
-"	gl_FragColor.rgb = texture2D(sFramebuffer, screenPos + anim_timer*0.1*vec2(sin(screenPos.y*50.0))).rgb*(1.0-anim_timer)+anim_timer*fragmentColor.rgb;\n"
-"}\n\
+#ifdef FLAG_ANIMATED															\n\
+ if(effect_num == 0)															\n\
+	{																			\n\
+		float shinefactor = 1.0/(1.0 + pow((fract(abs(gl_TexCoord[0].x))-anim_timer) * 1000.0, 2.0)) * 1000.0;\n\
+		gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);				\n\
+		gl_FragColor.a = fragmentColor.a * shinefactor * (fract(abs(gl_TexCoord[0].x))-anim_timer) * -10000.0;\n\
+	}																			\n\
+	if(effect_num == 1)															\n\
+	{																			\n\
+		float shinefactor = 1.0/(1.0 + pow((position.y-anim_timer), 2.0));		\n\
+		gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);				\n\
+		gl_FragColor.a = fragmentColor.a;										\n\
+	}																			\n\
  #else																			\n\
  	gl_FragColor = fragmentColor;												\n\
  #endif																			\n\
@@ -2161,7 +2158,7 @@ void main()												\n\
 														\n\
 	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;	\n\
  #endif													\n\
-	color_out.a = 1.0f									\n\
+														\n\
 	gl_FragColor = color_out;							\n\
 }														\n\
 ";
