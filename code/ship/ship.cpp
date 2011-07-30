@@ -6167,7 +6167,7 @@ void ship_render(object * obj)
 			}
 			
 			// small ships
-			if(shipp->flags2 & SF2_CLOAKED) {
+			if(!(shipp->flags2 & SF2_CLOAKED)) {
 				if ((The_mission.flags & MISSION_FLAG_FULLNEB) && (sip->flags & SIF_SMALL_SHIP)) {			
 					// force detail levels
  					float fog_val = neb2_get_fog_intensity(obj);
