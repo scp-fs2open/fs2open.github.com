@@ -28911,7 +28911,7 @@ sexp_help_struct Sexp_help[] = {
 	{OP_SHIP_EFFECT, "ship-effect\r\n"
 		"\tPlays an animated shader effect on the ship(s) or wing(s).\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1:\tEffect id number\t(0: Cloak, 1: Decloak)\r\n"
+		"\t1:\tEffect name (as defined in post_processing.tbl)\r\n"
 		"\t2:\tHow long the effect should take in milliseconds\r\n"
 		"\tRest:\tShip or wing name\r\n"
 	}
