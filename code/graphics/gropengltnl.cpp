@@ -506,6 +506,9 @@ int GL_last_shader_index = -1;
 
 static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags);
 
+extern bool Post_in_frame;
+extern GLuint Post_screen_texture_id;
+extern GLuint Post_effect_texture_id;
 static void opengl_render_pipeline_program(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
 {
 	float u_scale, v_scale;
@@ -623,6 +626,8 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	{
 		vglUniform1fARB( opengl_shader_get_uniform("anim_timer"), opengl_shader_get_animated_timer() );
 		vglUniform1iARB( opengl_shader_get_uniform("effect_num"), opengl_shader_get_animated_effect() );
+		vglUniform1fARB( opengl_shader_get_uniform("vpwidth"), 1.0f/gr_screen.max_w );
+		vglUniform1fARB( opengl_shader_get_uniform("vpheight"), 1.0f/gr_screen.max_h );
 	}
 	int n_lights = MIN(Num_active_gl_lights, GL_max_lights) - 1;
 	vglUniform1iARB( opengl_shader_get_uniform("n_lights"), n_lights );
@@ -681,6 +686,15 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		}
 	}
 
+	if ((shader_flags & SDR_FLAG_ANIMATED) && Post_in_frame )
+	{
+		GL_state.Texture.SetActiveUnit(render_pass);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(Post_effect_texture_id);
+		vglUniform1iARB( opengl_shader_get_uniform("sFramebuffer"), render_pass );
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		render_pass++;
+	}
 	// DRAW IT!!
 	DO_RENDER();
 /*
