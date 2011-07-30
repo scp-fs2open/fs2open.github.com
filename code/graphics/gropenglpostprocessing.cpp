@@ -10,7 +10,6 @@
 #include "parse/parselo.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/def_files.h"
-#include "ship/ship.h"
 
 
 extern bool PostProcessing_override;
@@ -81,14 +80,13 @@ SCP_vector<post_effect_t> Post_effects;
 
 static int Post_initialized = 0;
 
-bool Post_in_frame = false;
+static bool Post_in_frame = false;
 
 static int Post_active_shader_index = 0;
 
 static GLuint Post_framebuffer_id[3] = { 0 };
 static GLuint Post_renderbuffer_id = 0;
-GLuint Post_screen_texture_id = 0;
-GLuint Post_effect_texture_id = 0;
+static GLuint Post_screen_texture_id = 0;
 static GLuint Post_bloom_texture_id[3] = { 0 };
 
 static int Post_texture_width = 0;
@@ -223,9 +221,6 @@ void gr_opengl_post_process_begin()
 //	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Post_screen_texture_id, 0);
 
 //	Assert( !opengl_check_framebuffer() );
-
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
-	vglDrawBuffers(2, buffers);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -651,85 +646,43 @@ static bool opengl_post_init_table()
 
 	reset_parse();
 
+	required_string("#Effects");
 
-	if (optional_string("#Effects")) {
-		while ( required_string_either("#End", "$Name:") ) {
-			char tbuf[NAME_LENGTH+1] = { 0 };
-			post_effect_t eff;
+	while ( required_string_either("#End", "$Name:") ) {
+		char tbuf[NAME_LENGTH+1] = { 0 };
+		post_effect_t eff;
 
-			required_string("$Name:");
-			stuff_string(tbuf, F_NAME, NAME_LENGTH);
-			eff.name = tbuf;
+		required_string("$Name:");
+		stuff_string(tbuf, F_NAME, NAME_LENGTH);
+		eff.name = tbuf;
 
-			required_string("$Uniform:");
-			stuff_string(tbuf, F_NAME, NAME_LENGTH);
-			eff.uniform_name = tbuf;
+		required_string("$Uniform:");
+		stuff_string(tbuf, F_NAME, NAME_LENGTH);
+		eff.uniform_name = tbuf;
 
-			required_string("$Define:");
-			stuff_string(tbuf, F_NAME, NAME_LENGTH);
-			eff.define_name = tbuf;
+		required_string("$Define:");
+		stuff_string(tbuf, F_NAME, NAME_LENGTH);
+		eff.define_name = tbuf;
 
-			required_string("$AlwaysOn:");
-			stuff_boolean(&eff.always_on);
+		required_string("$AlwaysOn:");
+		stuff_boolean(&eff.always_on);
 
-			required_string("$Default:");
-			stuff_float(&eff.default_intensity);
-			eff.intensity = eff.default_intensity;
+		required_string("$Default:");
+		stuff_float(&eff.default_intensity);
+		eff.intensity = eff.default_intensity;
 
-			required_string("$Div:");
-			stuff_float(&eff.div);
+		required_string("$Div:");
+		stuff_float(&eff.div);
 
-			required_string("$Add:");
-			stuff_float(&eff.add);
+		required_string("$Add:");
+		stuff_float(&eff.add);
 
-			// Post_effects index is used for flag checks, so we can't have more than 32
-			if (Post_effects.size() < 32) {
-				Post_effects.push_back( eff );
-			} else if ( !warned ) {
-				mprintf(("WARNING: post_processing.tbl can only have a max of 32 effects! Ignoring extra...\n"));
-				warned = true;
-			}
-		}
-	}
-
-	//Built-in per-ship effects
-	ship_effect se1;
-	strcpy_s(se1.name, "FS1 Ship select");
-	se1.shader_effect = 0;
-	se1.disables_rendering = false;
-	se1.invert_timer = false;
-	Ship_effects.push_back(se1);
-
-	ship_effect se2;
-	strcpy_s(se2.name, "FS2 Ship select");
-	se2.shader_effect = 1;
-	se2.disables_rendering = false;
-	se2.invert_timer = false;
-	Ship_effects.push_back(se2);
-
-	if (optional_string("#Ship Effects")) {
-		while ( required_string_either("#End", "$Name:") ) {
-			ship_effect se;
-			char tbuf[NAME_LENGTH] = { 0 };
-
-			required_string("$Name:");
-			stuff_string(tbuf, F_NAME, NAME_LENGTH);
-			strcpy_s(se.name, tbuf);
-
-			required_string("$Shader Effect:");
-			stuff_int(&se.shader_effect);
-			if (se.shader_effect == 0 || se.shader_effect == 1) {
-				WarningEx(LOCATION, "Invalid shader effect specified for effect %s. 0 and 1 are reserved for internal use.\n", se.name);
-				skip_to_start_of_string_either("$Name:", "#End");
-			}
-
-			required_string("$Disables Rendering:");
-			stuff_boolean(&se.disables_rendering);
-
-			required_string("$Invert timer:");
-			stuff_boolean(&se.invert_timer);
-
-			Ship_effects.push_back(se);
+		// Post_effects index is used for flag checks, so we can't have more than 32
+		if (Post_effects.size() < 32) {
+			Post_effects.push_back( eff );
+		} else if ( !warned ) {
+			mprintf(("WARNING: post_processing.tbl can only have a max of 32 effects! Ignoring extra...\n"));
+			warned = true;
 		}
 	}
 
@@ -1000,7 +953,6 @@ static bool opengl_post_init_framebuffer()
 
 	// setup main render texture
 	glGenTextures(1, &Post_screen_texture_id);
-	glGenTextures(1, &Post_effect_texture_id);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -1015,20 +967,6 @@ static bool opengl_post_init_framebuffer()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Post_screen_texture_id, 0);
-
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Post_effect_texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, Post_effect_texture_id, 0);
 
 	if ( opengl_check_framebuffer() ) {
 	//	nprintf(("OpenGL", "Unable to validate FBO!  Disabling post-processing...\n"));
@@ -1200,11 +1138,6 @@ void opengl_post_process_shutdown()
 	if (Post_screen_texture_id) {
 		glDeleteTextures(1, &Post_screen_texture_id);
 		Post_screen_texture_id = 0;
-	}
-
-	if (Post_effect_texture_id) {
-		glDeleteTextures(1, &Post_effect_texture_id);
-		Post_effect_texture_id = 0;
 	}
 
 	if (Post_bloom_texture_id[0]) {

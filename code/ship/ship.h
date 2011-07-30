@@ -447,7 +447,6 @@ typedef struct ship_subsys_info {
 #define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
 #define SF2_FORCE_SHIELDS_ON				(1<<20)
 #define SF2_NO_ETS							(1<<21)		// The E - This ship does not have an ETS
-#define SF2_CLOAKED							(1<<22)		// The E - This ship will not be rendered
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -714,11 +713,13 @@ typedef struct ship {
 	// glow points
 	SCP_vector<bool> glow_point_bank_active;
 
-	//Animated Shader effects
-	int shader_effect_num;
-	int shader_effect_duration;
-	int shader_effect_start_time;
-	bool shader_effect_active;
+	//cloaking stuff
+	vec3d texture_translation_key;		//translate the texture matrix for a cool effect
+	vec3d current_translation;
+	int cloak_stage;
+	fix time_until_full_cloak;
+	int cloak_alpha;
+	fix time_until_uncloak;
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 
@@ -1891,14 +1892,5 @@ void init_path_metadata(path_metadata& metadata);
 
 // Ship select stuff
 extern int Default_ship_select_effect;
-
-typedef struct ship_effect {
-	char name[NAME_LENGTH];
-	bool disables_rendering;
-	bool invert_timer;
-	int shader_effect;
-} ship_effect;
-
-extern SCP_vector<ship_effect> Ship_effects;
 
 #endif
