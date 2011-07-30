@@ -15228,7 +15228,10 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		// Added OBJ_BEAM for traitor detection - FUBAR
 		if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
 			hitter_objnum = hit_objp->parent;
-			Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));
+			Assert((hitter_objnum < MAX_OBJECTS));
+			if (hitter_objnum == -1) {
+				return; // Possible SSM, bail while we still can.
+			}
 			objp_hitter = &Objects[hitter_objnum];
 		} else if (hit_objp->type == OBJ_SHIP) {
 			objp_hitter = hit_objp;
