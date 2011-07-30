@@ -76,6 +76,7 @@
 #include "cmdline/cmdline.h"
 #include "object/objcollide.h"
 #include "parse/scripting.h"
+#include "graphics/gropenglshader.h"
 
 
 
@@ -381,6 +382,8 @@ int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
 
 // Used to set the default effect for real time ship select anis, defaults to the FS2 effect
 int Default_ship_select_effect = 2;
+
+SCP_vector<ship_effect> Ship_effects;
 
 // set the ship_obj struct fields to default values
 void ship_obj_list_reset_slot(int index)
@@ -5003,13 +5006,10 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->glow_point_bank_active.clear();
 
-	// cloak map texture data
-	shipp->cloak_stage = 0;
-	shipp->texture_translation_key=vmd_zero_vector;
-	shipp->current_translation=vmd_zero_vector;
-	shipp->time_until_full_cloak=timestamp(0);
-	shipp->cloak_alpha=255;
-
+	shipp->shader_effect_active = false;
+	shipp->shader_effect_duration = 0;
+	shipp->shader_effect_num = 0;
+	shipp->shader_effect_start_time = 0;
 //	shipp->ab_count = 0;
 
 	// fighter bay door stuff
@@ -6139,18 +6139,47 @@ void ship_render(object * obj)
 				render_flags = save_flags;
 			}
 
+			// Valathil - maybe do a scripting hook here to do some scriptable effects?
+			if(shipp->shader_effect_active && Use_GLSL > 1)
+			{
+				float timer;
+				render_flags |= (MR_ANIMATED_SHADER);
+
+				ship_effect* sep = &Ship_effects[shipp->shader_effect_num];
+				opengl_shader_set_animated_effect(sep->shader_effect);
+				if (sep->invert_timer) {
+					timer = 1.0f - ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+					timer = MAX(timer,0.0f);
+				} else {
+					timer = ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+				}
+
+				opengl_shader_set_animated_timer(timer);
+
+				if (sep->disables_rendering && (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
+					shipp->flags2 |= SF2_CLOAKED;
+					shipp->shader_effect_active = false;
+				} else {
+					shipp->flags2 &= ~SF2_CLOAKED;
+					if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration)
+						shipp->shader_effect_active = false;
+				}
+			}
+			
 			// small ships
-			if ((The_mission.flags & MISSION_FLAG_FULLNEB) && (sip->flags & SIF_SMALL_SHIP)) {			
-				// force detail levels
- 				float fog_val = neb2_get_fog_intensity(obj);
-				if(fog_val >= 0.6f){
-					model_set_detail_level(2);
-					model_render( sip->model_num, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
+			if(shipp->flags2 & SF2_CLOAKED) {
+				if ((The_mission.flags & MISSION_FLAG_FULLNEB) && (sip->flags & SIF_SMALL_SHIP)) {			
+					// force detail levels
+ 					float fog_val = neb2_get_fog_intensity(obj);
+					if(fog_val >= 0.6f){
+						model_set_detail_level(2);
+						model_render( sip->model_num, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
+					} else {
+						model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
+					}
 				} else {
 					model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
 				}
-			} else {
-				model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
 			}
 
 			// always turn off fog after rendering a ship
