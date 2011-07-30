@@ -653,7 +653,7 @@ static bool opengl_post_init_table()
 
 
 	if (optional_string("#Effects")) {
-		while ( required_string_either("#End", "$Name:") ) {
+		while ( !required_string_3("$Name:", "#Ship Effects", "#End") ) {
 			char tbuf[NAME_LENGTH+1] = { 0 };
 			post_effect_t eff;
 
@@ -699,13 +699,6 @@ static bool opengl_post_init_table()
 	se1.disables_rendering = false;
 	se1.invert_timer = false;
 	Ship_effects.push_back(se1);
-
-	ship_effect se2;
-	strcpy_s(se2.name, "FS2 Ship select");
-	se2.shader_effect = 1;
-	se2.disables_rendering = false;
-	se2.invert_timer = false;
-	Ship_effects.push_back(se2);
 
 	if (optional_string("#Ship Effects")) {
 		while ( required_string_either("#End", "$Name:") ) {
