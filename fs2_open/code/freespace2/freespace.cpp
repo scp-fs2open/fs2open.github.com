@@ -3780,6 +3780,7 @@ DCF_BOOL( subspace, Game_subspace_effect )
 void clip_frame_view();
 
 // Does everything needed to render a frame
+extern std::vector<object*> effect_ships; 
 void game_render_frame( camid cid )
 {
 
@@ -3881,6 +3882,11 @@ void game_render_frame( camid cid )
 	// render local player nebula
 	neb2_render_player();
 
+	// render all ships with shader effects on them
+	std::vector<object*>::iterator obji = effect_ships.begin();
+	for(;obji != effect_ships.end();obji++)
+		ship_render(*obji);
+	effect_ships.clear();
 	//Draw the viewer 'cause we didn't before.
 	//This is so we can change the minimum clipping distance without messing everything up.
 	if(draw_viewer_last && Viewer_obj)

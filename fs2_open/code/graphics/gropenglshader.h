@@ -88,7 +88,8 @@ int opengl_shader_get_animated_effect();
 void opengl_shader_set_animated_timer(float timer);
 float opengl_shader_get_animated_timer();
 
-#define ANIMATED_SHADER_LOADOUTSELECT_FS1 0
-#define ANIMATED_SHADER_LOADOUTSELECT_FS2 1
+#define ANIMATED_SHADER_LOADOUTSELECT_FS1	0
+#define ANIMATED_SHADER_LOADOUTSELECT_FS2	1
+#define ANIMATED_SHADER_CLOAK				2
 
 #endif	// _GROPENGLSHADER_H
