@@ -95,6 +95,7 @@
 #include "autopilot/autopilot.h"
 #include "object/objectshield.h"
 #include "network/multi_sexp.h"
+#include "io/keycontrol.h"
 
 
 
@@ -515,6 +516,7 @@ sexp_oper Operators[] = {
 	{ "enable-ets",					OP_ENABLE_ETS,			1, INT_MAX}, // The E
 	{ "set-immobile",		OP_SET_IMMOBILE,			1, INT_MAX	},	// Goober5000
 	{ "set-mobile",			OP_SET_MOBILE,			1, INT_MAX	},	// Goober5000
+	{ "ignore-key",			OP_IGNORE_KEY,			2, INT_MAX	},	// Karajorma
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -13441,6 +13443,45 @@ void sexp_key_reset(int node)
 			Control_config[z].used = 0;
 	}
 }
+				
+void sexp_ignore_key(int node)
+{
+	int ignore_count;
+	int ignored_key;
+
+
+	ignore_count = eval_num(node);
+
+	multi_start_packet();
+	multi_send_int(ignore_count);
+
+	node = CDR(node);
+	while (node > -1) {
+		// get the key
+		ignored_key = translate_key_to_index(CTEXT(node));
+
+		if (ignored_key > -1) {
+			Ignored_keys[ignored_key] = ignore_count;
+		}
+
+		multi_send_int(ignored_key);
+
+		node = CDR(node);
+	}
+
+	multi_end_packet();
+}
+
+void multi_sexp_ignore_key()
+{
+	int ignored_key, ignore_count;
+
+	multi_get_int(ignore_count);
+	
+	while (multi_get_int(ignored_key)) {
+		Ignored_keys[ignored_key] = ignore_count;
+	}
+}
 
 int sexp_targeted(int node)
 {
@@ -20299,6 +20340,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_IGNORE_KEY:
+				sexp_ignore_key(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000 - sigh, was this messed up all along?
 			case OP_WARP_BROKEN:
 			case OP_WARP_NOT_BROKEN:
@@ -21479,6 +21525,10 @@ void multi_sexp_eval()
 				multi_sexp_set_jumpnode_name(op_num == OP_JUMP_NODE_SET_JUMPNODE_NAME);
 				break;
 
+			case OP_IGNORE_KEY:
+				multi_sexp_ignore_key();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -21950,6 +22000,7 @@ int query_operator_return_type(int op)
 		case OP_COLLIDE_INVISIBLE:
 		case OP_SET_MOBILE:
 		case OP_SET_IMMOBILE:
+		case OP_IGNORE_KEY:
 		case OP_CHANGE_SHIP_CLASS:
 		case OP_SHIP_COPY_DAMAGE:
 		case OP_DEACTIVATE_GLOW_POINTS:
@@ -23161,6 +23212,13 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_MOBILE:
 		case OP_SET_IMMOBILE:
 			return OPF_SHIP;
+
+		case OP_IGNORE_KEY:
+			if (argnum == 0) 
+				return OPF_NUMBER;
+			else 
+				return OPF_KEYPRESS;
+
 
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
@@ -25301,6 +25359,7 @@ int get_subcategory(int sexp_id)
 		case OP_FIELD_SET_DAMAGE_TYPE:
 		case OP_SET_MOBILE:
 		case OP_SET_IMMOBILE:
+		case OP_IGNORE_KEY:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -27514,6 +27573,13 @@ sexp_help_struct Sexp_help[] = {
 		"\tPrevents the specified ship(s) from moving in any way.\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tList of ships on which to set the \"immobile\" flag" },
+
+	{ OP_IGNORE_KEY, "ignore-key\r\n"
+		"\tCauses the game to ignore (or stop ignoring) a certain key.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1: Number of times to ignore this key (-1 = forever, 0 = stop ignoring). \r\n"
+		"\tRest: Which key(s) to ignore.\r\n"
+	},
 
 	{ OP_WARP_BROKEN, "break-warp\r\n"
 		"\tBreak the warp drive on the specified ship.  A broken warp drive can be repaired by "
