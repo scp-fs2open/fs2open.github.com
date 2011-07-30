@@ -102,11 +102,11 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_SGIS_generate_mipmap" }, 0, { NULL } },
 
 	// framebuffer object gives us render-to-texture support, among other things
-	{ false, false, 1, { "GL_EXT_framebuffer_object" }, 15, { 
+	{ false, false, 1, { "GL_EXT_framebuffer_object" }, 16, { 
 		"glIsRenderbufferEXT", "glBindRenderbufferEXT", "glDeleteRenderbuffersEXT", "glGenRenderbuffersEXT",
 		"glRenderbufferStorageEXT", "glGetRenderbufferParameterivEXT", "glIsFramebufferEXT", "glBindFramebufferEXT",
 		"glDeleteFramebuffersEXT", "glGenFramebuffersEXT", "glCheckFramebufferStatusEXT", "glFramebufferTexture2DEXT",
-		"glFramebufferRenderbufferEXT", "glGetFramebufferAttachmentParameterivEXT", "glGenerateMipmapEXT" } },
+		"glFramebufferRenderbufferEXT", "glGetFramebufferAttachmentParameterivEXT", "glGenerateMipmapEXT", "glDrawBuffers" } },
 
 	// these next three are almost exactly the same, just different stages of naming.
 	// allows for non-power-of-textures, but at a cost of functionality
@@ -215,7 +215,8 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 	{ "glUniform3fvARB", 0 },
 	{ "glUniform4fvARB", 0 },
 	{ "glUniform1iARB", 0 },
-	{ "glUniformMatrix4fvARB", 0 }
+	{ "glUniformMatrix4fvARB", 0 },
+	{ "glDrawBuffers", 0 }
 };
 
 // special extensions (only special functions are supported at the moment)

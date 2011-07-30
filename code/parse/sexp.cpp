@@ -95,6 +95,7 @@
 #include "autopilot/autopilot.h"
 #include "object/objectshield.h"
 #include "network/multi_sexp.h"
+#include "io/keycontrol.h"
 
 
 
@@ -397,6 +398,7 @@ sexp_oper Operators[] = {
 	{ "add-to-collision-group",		OP_ADD_TO_COLGROUP,				2, INT_MAX },	// The E
 	{ "remove-from-collision-group",OP_REMOVE_FROM_COLGROUP,		2, INT_MAX },
 	{ "get-collision-group",		OP_GET_COLGROUP_ID,				1, 1 },
+	{ "ship-effect",				OP_SHIP_EFFECT,					3, INT_MAX },	// Valathil
 
 	{ "fire-beam",						OP_BEAM_FIRE,					3, 4		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
@@ -515,6 +517,7 @@ sexp_oper Operators[] = {
 	{ "enable-ets",					OP_ENABLE_ETS,			1, INT_MAX}, // The E
 	{ "set-immobile",		OP_SET_IMMOBILE,			1, INT_MAX	},	// Goober5000
 	{ "set-mobile",			OP_SET_MOBILE,			1, INT_MAX	},	// Goober5000
+	{ "ignore-key",			OP_IGNORE_KEY,			2, INT_MAX	},	// Karajorma
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -808,6 +811,8 @@ int get_handler_for_x_of_operator(int node);
 int get_generic_subsys(char *subsy_name);
 bool ship_class_unchanged(int ship_index); 
 void multi_sexp_modify_variable();
+
+int get_effect_from_name(char* name);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -2842,6 +2847,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if ((num_banks >= MAX_SHIP_PRIMARY_BANKS) && (num_banks >= MAX_SHIP_SECONDARY_BANKS)) {
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 					}
+				}
+				break;
+
+			case OPF_SHIP_EFFECT:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (get_effect_from_name(CTEXT(node)) == -1 ) {
+					return SEXP_CHECK_INVALID_SHIP_EFFECT;
 				}
 				break;
 				
@@ -13441,6 +13456,45 @@ void sexp_key_reset(int node)
 			Control_config[z].used = 0;
 	}
 }
+				
+void sexp_ignore_key(int node)
+{
+	int ignore_count;
+	int ignored_key;
+
+
+	ignore_count = eval_num(node);
+
+	multi_start_packet();
+	multi_send_int(ignore_count);
+
+	node = CDR(node);
+	while (node > -1) {
+		// get the key
+		ignored_key = translate_key_to_index(CTEXT(node));
+
+		if (ignored_key > -1) {
+			Ignored_keys[ignored_key] = ignore_count;
+		}
+
+		multi_send_int(ignored_key);
+
+		node = CDR(node);
+	}
+
+	multi_end_packet();
+}
+
+void multi_sexp_ignore_key()
+{
+	int ignored_key, ignore_count;
+
+	multi_get_int(ignore_count);
+	
+	while (multi_get_int(ignored_key)) {
+		Ignored_keys[ignored_key] = ignore_count;
+	}
+}
 
 int sexp_targeted(int node)
 {
@@ -19198,6 +19252,83 @@ int sexp_get_colgroup(int node) {
 	return Objects[shipp->objnum].collision_group_id;
 }
 
+int get_effect_from_name(char* name) {
+	int i = 0;
+	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); sei++) {
+		if (!stricmp(name, sei->name))
+			return i;
+		i++;
+	}
+	return -1;
+}
+
+void sexp_ship_effect(int n)
+{
+	char	*name;
+	int ship_index, wing_index;
+	
+	Assert ( n != -1 );
+	
+	int effect_num = get_effect_from_name(CTEXT(n));
+	if (effect_num == -1) {
+		WarningEx(LOCATION, "Invalid effect name passed to ship-effect\n");
+		return;
+	}
+	n = CDR(n);
+	int effect_duration = eval_num(n);
+	n = CDR(n);
+
+	ship_index = -1;
+	wing_index = -1;
+	while (n != -1) {
+		name = CTEXT(n);
+
+		// check to see if this ship/wing has arrived yet.
+		if (sexp_query_has_yet_to_arrive(name))
+			continue;
+
+		// check to see if this ship/wing has departed.
+		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) )
+			continue;
+
+		// check to see if this ship/wing has been destroyed.
+		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL))
+			continue;
+		ship *sp;
+		if((wing_index = wing_name_lookup(name)) >= 0)
+		{
+			wing *wp = &Wings[wing_index];
+			for(int i = 0; i < 6; i++)
+			{
+				if(wp->ship_index[i] >= 0)
+				{
+					sp = &Ships[wp->ship_index[i]];
+					sp->shader_effect_active = true;
+					sp->shader_effect_num = effect_num;
+					sp->shader_effect_duration = effect_duration;
+					sp->shader_effect_start_time = timer_get_milliseconds();
+				}
+			}
+		}
+		else
+		{
+			if((ship_index = ship_name_lookup(name)) >= 0)
+			{
+				sp = &Ships[ship_index];
+				sp->shader_effect_active = true;
+				sp->shader_effect_num = effect_num;
+				sp->shader_effect_duration = effect_duration;
+				sp->shader_effect_start_time = timer_get_milliseconds();
+			}
+			else
+				mprintf(("Invalid Shipname in SEXP ship-effect\n"));
+		}
+
+		// move to next ship/wing in list
+		n = CDR(n);
+	}
+}
+
 //Karajorma - Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets> 
 int get_generic_subsys(char *subsys_name) 
 {
@@ -20299,6 +20430,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_IGNORE_KEY:
+				sexp_ignore_key(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000 - sigh, was this messed up all along?
 			case OP_WARP_BROKEN:
 			case OP_WARP_NOT_BROKEN:
@@ -21239,6 +21375,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_colgroup(node);
 				break;
 
+			case OP_SHIP_EFFECT:
+				sexp_val = SEXP_TRUE;
+				sexp_ship_effect(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -21477,6 +21618,10 @@ void multi_sexp_eval()
 
 			case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 				multi_sexp_set_jumpnode_name(op_num == OP_JUMP_NODE_SET_JUMPNODE_NAME);
+				break;
+
+			case OP_IGNORE_KEY:
+				multi_sexp_ignore_key();
 				break;
 
 			// bad sexp in the packet
@@ -21950,6 +22095,7 @@ int query_operator_return_type(int op)
 		case OP_COLLIDE_INVISIBLE:
 		case OP_SET_MOBILE:
 		case OP_SET_IMMOBILE:
+		case OP_IGNORE_KEY:
 		case OP_CHANGE_SHIP_CLASS:
 		case OP_SHIP_COPY_DAMAGE:
 		case OP_DEACTIVATE_GLOW_POINTS:
@@ -22093,6 +22239,7 @@ int query_operator_return_type(int op)
 		case OP_STRING_SET_SUBSTRING:
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
+		case OP_SHIP_EFFECT:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -23162,6 +23309,13 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_IMMOBILE:
 			return OPF_SHIP;
 
+		case OP_IGNORE_KEY:
+			if (argnum == 0) 
+				return OPF_NUMBER;
+			else 
+				return OPF_KEYPRESS;
+
+
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
@@ -23943,6 +24097,14 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
+		case OP_SHIP_EFFECT:
+			if (argnum == 0)
+				return OPF_SHIP_EFFECT;
+			else if (argnum == 1)
+				return OPF_NUMBER;
+			else
+				return OPF_SHIP;
+
 		default:
 			Int3();
 	}
@@ -24401,6 +24563,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_EXPLOSION_OPTION:
 			return "Invalid explosion option";
+
+		case SEXP_CHECK_INVALID_SHIP_EFFECT:
+			return "Invalid ship effect name";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -25195,6 +25360,7 @@ int get_subcategory(int sexp_id)
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_GET_COLGROUP_ID:
+		case OP_SHIP_EFFECT:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
@@ -25301,6 +25467,7 @@ int get_subcategory(int sexp_id)
 		case OP_FIELD_SET_DAMAGE_TYPE:
 		case OP_SET_MOBILE:
 		case OP_SET_IMMOBILE:
+		case OP_IGNORE_KEY:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -27515,6 +27682,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tList of ships on which to set the \"immobile\" flag" },
 
+	{ OP_IGNORE_KEY, "ignore-key\r\n"
+		"\tCauses the game to ignore (or stop ignoring) a certain key.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1: Number of times to ignore this key (-1 = forever, 0 = stop ignoring). \r\n"
+		"\tRest: Which key(s) to ignore.\r\n"
+	},
+
 	{ OP_WARP_BROKEN, "break-warp\r\n"
 		"\tBreak the warp drive on the specified ship.  A broken warp drive can be repaired by "
 		"a repair ship.  Takes 1 or more arguments...\r\n"
@@ -28731,6 +28905,15 @@ sexp_help_struct Sexp_help[] = {
 		"\tReturns an objects' collision group ID. Note that this ID is a bitfield.\r\n"
 		"Takes 1 Argument...\r\n"
 		"\t1:\tObject name\r\n"
+	},
+
+	//Valathil
+	{OP_SHIP_EFFECT, "ship-effect\r\n"
+		"\tPlays an animated shader effect on the ship(s) or wing(s).\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tEffect id number\t(0: Cloak, 1: Decloak)\r\n"
+		"\t2:\tHow long the effect should take in milliseconds\r\n"
+		"\tRest:\tShip or wing name\r\n"
 	}
 };
 

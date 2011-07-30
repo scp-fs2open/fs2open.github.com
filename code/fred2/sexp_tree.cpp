@@ -2704,6 +2704,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_WEAPON_BANK_NUMBER:
 		case OPF_MESSAGE_OR_STRING:
 		case OPF_HUD_GAUGE:
+		case OPF_SHIP_EFFECT:
 			return 1;
 
 		case OPF_SHIP:
@@ -4444,6 +4445,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_hud_gauge();
 			break;
 
+		case OPF_SHIP_EFFECT:
+			list = get_listing_ship_effects();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5326,6 +5331,17 @@ sexp_list_item *sexp_tree::get_listing_hud_gauge()
 
 	for (int i = 0; i < Num_hud_gauge_types; i++)
 		head.add_data(Hud_gauge_types[i].name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_ship_effects() 
+{
+	sexp_list_item head;
+	
+	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); sei++) {
+		head.add_data_dup(sei->name);
+	}
 
 	return head.next;
 }

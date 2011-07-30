@@ -461,6 +461,7 @@ int Non_critical_key_set[] = {
 	CYCLE_PRIMARY_WEAPON_SEQUENCE
 };
 
+int Ignored_keys[CCFG_MAX];
 
 // set sizes of the key sets automatically
 int Normal_key_set_size = sizeof(Normal_key_set) / sizeof(int);
@@ -2289,6 +2290,14 @@ int button_function(int n)
 	//mprintf(("got button %d at %s:%d\n", n, __FILE__, __LINE__));
 
 	if ( !button_allowed(n) ) {
+		return 0;
+	}
+
+	// check if the button has been set to be ignored by a SEXP
+	if (Ignored_keys[n]) {
+		if (Ignored_keys[n] > 0) {
+			Ignored_keys[n]--;
+		}
 		return 0;
 	}
 

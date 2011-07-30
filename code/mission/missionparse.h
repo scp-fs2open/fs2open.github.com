@@ -18,6 +18,7 @@
 #include "graphics/2d.h"
 #include "sound/sound.h"
 #include "parse/sexp.h"
+#include "io/keycontrol.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -181,6 +182,7 @@ typedef struct mission {
 		num_players = 0;
 		num_respawns = 0;
 		max_respawn_delay = 0;
+		memset(&Ignored_keys, 0, sizeof(int)*CCFG_MAX);
 		memset( &support_ships, 0, sizeof( support_ships ) );
 		squad_filename[ 0 ] = '\0';
 		squad_name[ 0 ] = '\0';

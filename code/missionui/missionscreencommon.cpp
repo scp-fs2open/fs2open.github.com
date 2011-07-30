@@ -1512,7 +1512,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 	{
 		
 		// rotate the ship as much as required for this frame
-		if(time >= 4.0f) // Phase 4
+		if(time >= 3.6f) // Phase 4
 			*rotation_buffer += PI2 * flFrametime / rev_rate;
 		else
 			*rotation_buffer = PI; // No rotation before Phase 4
@@ -1523,13 +1523,13 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		view_angles.p = -PI_2;
 		if(time >= 3.0f) // Phase 3
 		{
-			if(time >= 4.0f) // done tilting
+			if(time >= 3.6f) // done tilting
 			{
 				view_angles.p = -0.6f; 
 			}
 			else
 			{
-				view_angles.p = (PI_2-0.6f)*(time-3.0f) - PI_2; // Phase 3 Tilt animation
+				view_angles.p = (PI_2-0.6f)*(time-3.0f)*1.66667f - PI_2; // Phase 3 Tilt animation
 			}
 		}
 
@@ -1583,7 +1583,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		vec3d start, stop;
 		float size = pm->rad*0.7f;
 		float start_scale = MIN(time,0.5f)*2.5f;
-		float offset = size*0.5f*MIN(MAX(time-3.0f,0.0f),1.0f);
+		float offset = size*0.5f*MIN(MAX(time-3.0f,0.0f),0.6f)*1.66667f;
 		if(time < 1.5f && time >= 0.5f)  // Clip the grid if were in phase 1
 			g3_start_user_clip_plane(&plane_point,&wire_normal);
 		

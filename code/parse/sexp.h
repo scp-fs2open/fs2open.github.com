@@ -105,6 +105,7 @@ struct ship;
 #define OPF_MESSAGE_OR_STRING	77		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
 #define OPF_HUD_GAUGE			78		// The E
 #define OPF_DAMAGE_TYPES		79		// FUBAR - Damage type or <none>
+#define OPF_SHIP_EFFECT			80		// The E - per-ship effects, as defined in post-processing.tbl
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -665,7 +666,9 @@ struct ship;
 #define OP_ADD_TO_COLGROUP					(0x0003 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_REMOVE_FROM_COLGROUP				(0x0004 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_GET_COLGROUP_ID					(0x0005 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
+#define OP_IGNORE_KEY						(0x0006 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Karajorma
 
+#define OP_SHIP_EFFECT						(0x0007 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Valathil
 
 
 /* made obsolete by Goober5000
@@ -919,6 +922,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT	-144
 #define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION	-145
 #define SEXP_CHECK_INVALID_EXPLOSION_OPTION		-146
+#define SEXP_CHECK_INVALID_SHIP_EFFECT			-147
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
