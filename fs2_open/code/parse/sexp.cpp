@@ -17790,8 +17790,8 @@ void sexp_string_concatenate(int n)
 	}
 
 	// concatenate strings
-	strcpy(new_text, str1);
-	strcat(new_text, str2);
+	strcpy_s(new_text, str1);
+	strcat_s(new_text, str2);
 
 	// check length
 	if (strlen(new_text) >= TOKEN_LENGTH)
@@ -17910,7 +17910,7 @@ void sexp_string_set_substring(int node)
 	// make the common case fast
 	if (len == 1 && new_len == 1)
 	{
-		strcpy(new_text, parent);
+		strcpy_s(new_text, parent);
 		new_text[pos] = new_substring[0];
 	}
 	else
@@ -17926,7 +17926,7 @@ void sexp_string_set_substring(int node)
 		strcpy(&new_text[pos], new_substring);
 
 		// add rest of parent string
-		strcat(new_text, &parent[pos + len]);
+		strcat_s(new_text, &parent[pos + len]);
 
 		// check length
 		if (strlen(new_text) >= TOKEN_LENGTH)
