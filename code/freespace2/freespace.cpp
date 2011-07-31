@@ -2074,9 +2074,9 @@ void game_init()
 	obj_init();	
 	mflash_game_init();	
 	armor_init();
-	weapon_init();	
 	ai_init();
 	ai_profiles_init();		// Goober5000
+	weapon_init();	
 	ship_init();						// read in ships.tbl	
 
 	player_init();	
