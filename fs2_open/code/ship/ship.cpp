@@ -6075,8 +6075,35 @@ void ship_render(object * obj)
 				model_set_fog_level(neb2_get_fog_intensity(obj));
 			}
 
+			// Valathil - maybe do a scripting hook here to do some scriptable effects?
+			if(shipp->shader_effect_active && Use_GLSL > 1)
+			{
+				float timer;
+				render_flags |= (MR_ANIMATED_SHADER);
+
+				ship_effect* sep = &Ship_effects[shipp->shader_effect_num];
+				opengl_shader_set_animated_effect(sep->shader_effect);
+				if (sep->invert_timer) {
+					timer = 1.0f - ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+					timer = MAX(timer,0.0f);
+				} else {
+					timer = ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+				}
+
+				opengl_shader_set_animated_timer(timer);
+
+				if (sep->disables_rendering && (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
+					shipp->flags2 |= SF2_CLOAKED;
+					shipp->shader_effect_active = false;
+				} else {
+					shipp->flags2 &= ~SF2_CLOAKED;
+					if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration)
+						shipp->shader_effect_active = false;
+				}
+			}
+
 			//draw weapon models
-			if (sip->draw_models) {
+			if (sip->draw_models && !(shipp->flags2 & SF2_CLOAKED)) {
 				int i,k;
 				ship_weapon *swp = &shipp->weapons;
 				g3_start_instance_matrix(&obj->pos, &obj->orient, true);
@@ -6139,33 +6166,6 @@ void ship_render(object * obj)
 				render_flags = save_flags;
 			}
 
-			// Valathil - maybe do a scripting hook here to do some scriptable effects?
-			if(shipp->shader_effect_active && Use_GLSL > 1)
-			{
-				float timer;
-				render_flags |= (MR_ANIMATED_SHADER);
-
-				ship_effect* sep = &Ship_effects[shipp->shader_effect_num];
-				opengl_shader_set_animated_effect(sep->shader_effect);
-				if (sep->invert_timer) {
-					timer = 1.0f - ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
-					timer = MAX(timer,0.0f);
-				} else {
-					timer = ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
-				}
-
-				opengl_shader_set_animated_timer(timer);
-
-				if (sep->disables_rendering && (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
-					shipp->flags2 |= SF2_CLOAKED;
-					shipp->shader_effect_active = false;
-				} else {
-					shipp->flags2 &= ~SF2_CLOAKED;
-					if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration)
-						shipp->shader_effect_active = false;
-				}
-			}
-			
 			// small ships
 			if (!(shipp->flags2 & SF2_CLOAKED)) {
 				if ((The_mission.flags & MISSION_FLAG_FULLNEB) && (sip->flags & SIF_SMALL_SHIP)) {			
