@@ -1380,6 +1380,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	if(optional_string("$Selection Effect:")) {
 		char effect[NAME_LENGTH];
 		stuff_string(effect, F_NAME, NAME_LENGTH);
+		if (!stricmp(effect, "FS2"))
+			sip->selection_effect = 2;
 		if (!stricmp(effect, "FS1"))
 			sip->selection_effect = 1;
 		if (!stricmp(effect, "off"))

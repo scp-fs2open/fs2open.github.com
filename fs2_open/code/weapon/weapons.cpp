@@ -1185,6 +1185,8 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("$Selection Effect:")) {
 		char effect[NAME_LENGTH];
 		stuff_string(effect, F_NAME, NAME_LENGTH);
+		if (!stricmp(effect, "FS2"))
+			wip->selection_effect = 2;
 		if (!stricmp(effect, "FS1"))
 			wip->selection_effect = 1;
 		if (!stricmp(effect, "off"))
