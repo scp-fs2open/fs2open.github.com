@@ -1221,218 +1221,208 @@ void main()																					\n\
 }																							\n\
 ";
 
-char *Default_main_fragment_shader = "\
-#ifdef FLAG_LIGHT																\n\
-uniform int n_lights;															\n\
-#endif																			\n\
-																				\n\
-#ifdef FLAG_DIFFUSE_MAP															\n\
-uniform sampler2D sBasemap;														\n\
-#endif																			\n\
-																				\n\
-#ifdef FLAG_GLOW_MAP															\n\
-uniform sampler2D sGlowmap;														\n\
-#endif																			\n\
-																				\n\
-#ifdef FLAG_SPEC_MAP															\n\
-uniform sampler2D sSpecmap;														\n\
-#endif																			\n\
-																				\n\
-#ifdef FLAG_ENV_MAP																\n\
-uniform samplerCube sEnvmap;													\n\
-uniform bool alpha_spec;														\n\
-varying vec3 envReflect;														\n\
-#endif																			\n\
-																				\n\
-#ifdef FLAG_NORMAL_MAP															\n\
-uniform sampler2D sNormalmap;													\n\
-varying mat3 tbnMatrix;															\n\
-#endif																			\n\
-																				\n\
-#ifdef FLAG_FOG																	\n\
-varying float fogDist;															\n\
-#endif																			\n\
-																				\n\
-#ifdef FLAG_ANIMATED															\n\
-uniform int effect_num;															\n\
-uniform float anim_timer;														\n\
-#endif																			\n\
-																				\n\
-varying vec4 position;															\n\
-varying vec3 lNormal;															\n\
-																				\n\
-#if SHADER_MODEL == 2															\n\
-  #define MAX_LIGHTS 2															\n\
-#else																			\n\
-  #define MAX_LIGHTS 8															\n\
-#endif																			\n\
-																				\n\
-#define SPEC_INTENSITY_POINT		5.3 // Point light							\n\
-#define SPEC_INTENSITY_DIRECTIONAL	3.0 // Directional light					\n\
-#define SPECULAR_FACTOR				1.75										\n\
-#define SPECULAR_ALPHA				0.1											\n\
-#define SPEC_FACTOR_NO_SPEC_MAP		0.6											\n\
-#define ENV_ALPHA_FACTOR			0.3											\n\
-#define GLOW_MAP_INTENSITY			1.5											\n\
-#define AMBIENT_LIGHT_BOOST			1.0											\n\
-																				\n""\
-void main()																		\n\
-{																				\n\
-	vec3 eyeDir = vec3(normalize(-position).xyz); // Camera is at (0,0,0) in ModelView space	\n\
-	vec4 lightAmbientDiffuse = vec4(0.0, 0.0, 0.0, 1.0);						\n\
-	vec4 lightDiffuse = vec4(0.0, 0.0, 0.0, 1.0);								\n\
-	vec4 lightAmbient = vec4(0.0, 0.0, 0.0, 1.0); 								\n\
-	vec4 lightSpecular = vec4(0.0, 0.0, 0.0, 1.0);								\n\
-	vec2 texCoord = gl_TexCoord[0].xy;											\n\
-																				\n\
- #ifdef FLAG_LIGHT																\n\
-  #ifdef FLAG_NORMAL_MAP														\n\
-	// Normal map - convert from DXT5nm											\n\
-	vec3 normal;																\n\
-	normal.rg = (texture2D(sNormalmap, texCoord).ag * 2.0) - 1.0;				\n\
-  #ifdef FLAG_ENV_MAP															\n\
-	vec3 envOffset = vec3(0.0);													\n\
-	envOffset.xy = normal.xy;													\n\
-  #endif																		\n\
-	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));							\n\
-	// prevent breaking of normal maps											\n\
-	normal = tbnMatrix * normal;												\n\
-	float norm = length(normal);												\n\
-	if ( length(normal) > 0.0 ) {												\n\
-		normal /= norm ;														\n\
-	} else {																	\n\
-		normal = tbnMatrix * vec3(0.0, 0.0, 1.0);								\n\
-	}																			\n\
-  #else																			\n\
-	vec3 normal = lNormal;														\n\
-  #endif																		\n\
-																				\n\
-	vec3 lightDir;																\n\
-	lightAmbient = gl_FrontMaterial.emission + (gl_LightModel.ambient * gl_FrontMaterial.ambient);	\n\
-																				\n\
-	#pragma optionNV unroll all													\n\
-	for (int i = 0; i < MAX_LIGHTS; ++i) {										\n\
-	  #if SHADER_MODEL > 2														\n\
-		if (i > n_lights) {														\n\
-			break;																\n\
-		}																		\n\
-	  #endif																	\n\
-																				\n\
-		float specularIntensity = 1.0;											\n\
-		float attenuation = 1.0;												\n""\
-																				\n\
-		// Attenuation and light direction										\n\
-	  #if SHADER_MODEL > 2														\n\
-		if (gl_LightSource[i].position.w == 1.0) {								\n\
-	  #else																		\n\
-		if (gl_LightSource[i].position.w == 1.0 && i != 0) {					\n\
-	  #endif																	\n\
-			// Positional light source											\n\
-			float dist = distance(gl_LightSource[i].position.xyz, position.xyz);	\n\
-			lightDir = gl_LightSource[i].position.xyz - position.xyz;			\n\
-																				\n\
-		  #if SHADER_MODEL > 2													\n\
-			if (gl_LightSource[i].spotCutoff < 91.0) {  // Tube light			\n\
-				vec3 nearest = gl_LightSource[i].position.xyz;					\n\
-				float beamlength = length(gl_LightSource[i].spotDirection);		\n\
-				vec3 beamDir = normalize(gl_LightSource[i].spotDirection);		\n\
-				// Get nearest point on line									\n\
-				float neardist = dot(position.xyz - gl_LightSource[i].position.xyz , beamDir);	\n\
-				// Move back from the endpoint of the beam along the beam by the distance we calculated	\n\
-				nearest = gl_LightSource[i].position.xyz - beamDir * abs(neardist);	\n\
-				lightDir = nearest - position.xyz;								\n""\
-				dist = length(lightDir);										\n\
-			}																	\n\
-		  #endif																\n\
-																				\n\
-			lightDir = normalize(lightDir);										\n\
-			attenuation = 1.0 / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation *	 dist) + (gl_LightSource[i].quadraticAttenuation * dist * dist));	\n\
-			specularIntensity = SPEC_INTENSITY_POINT;							\n\
-																				\n\
-		} else {																\n\
-			// Directional light source											\n\
-			lightDir = normalize(gl_LightSource[i].position.xyz);				\n\
-			specularIntensity = SPEC_INTENSITY_DIRECTIONAL; // Directional light	\n\
-		}																		\n\
-																				\n\
-		// Ambient and Diffuse													\n\
-		lightAmbient += (gl_FrontLightProduct[i].ambient * attenuation);		\n\
-		lightDiffuse += ((gl_FrontLightProduct[i].diffuse * max(dot(normal, lightDir), 0.0)) * attenuation); \n\
-																				\n\
-		// Specular																\n\
-		float NdotHV = clamp(dot(normal, normalize(eyeDir + lightDir)), 0.0, 1.0);	\n\
-		lightSpecular += ((gl_FrontLightProduct[i].specular * pow(max(0.0, NdotHV), gl_FrontMaterial.shininess)) * attenuation) * specularIntensity;	\n\
-	}																			\n\
-																				\n\
-	lightAmbientDiffuse = lightAmbient + lightDiffuse;							\n\
- #else																			\n\
-	lightAmbientDiffuse = gl_Color;												\n\
-	lightSpecular = gl_SecondaryColor;											\n\
- #endif																			\n\
-																				\n""\
- #ifdef FLAG_DIFFUSE_MAP														\n\
- // Base color																	\n\
-	vec4 baseColor = texture2D(sBasemap, texCoord);								\n\
- #else																			\n\
-	vec4 baseColor = gl_Color;													\n\
- #endif																			\n\
-																				\n\
-	vec4 fragmentColor;															\n\
-	fragmentColor.rgb = baseColor.rgb * max(lightAmbientDiffuse.rgb * AMBIENT_LIGHT_BOOST, gl_LightModel.ambient.rgb - 0.425);																	\n\
-	fragmentColor.a = baseColor.a;												\n\
-																				\n\
- #ifdef FLAG_SPEC_MAP															\n\
- // Spec color																	\n\
-	fragmentColor.rgb += lightSpecular.rgb * (texture2D(sSpecmap, texCoord).rgb * SPECULAR_FACTOR);	\n\
-	fragmentColor.a += (dot(lightSpecular.a, lightSpecular.a) * SPECULAR_ALPHA);	\n\
- #else																			\n\
-	fragmentColor.rgb += lightSpecular.rgb * (baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP);	\n\
- #endif																			\n\
-																				\n\
- #ifdef FLAG_ENV_MAP															\n\
- // Env color																	\n\
-  #ifdef FLAG_NORMAL_MAP														\n\
-	vec3 envReflectNM = envReflect + envOffset;									\n\
-	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;	\n\
-	fragmentColor.a += (dot(textureCube(sEnvmap, envReflectNM).rgb, textureCube(sEnvmap, envReflectNM).rgb) * ENV_ALPHA_FACTOR);	\n\
-	fragmentColor.rgb += textureCube(sEnvmap, envReflectNM).rgb * envIntensity;	\n\
-  #else																			\n\
-	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;	\n\
-	fragmentColor.a += (dot(textureCube(sEnvmap, envReflect).rgb, textureCube(sEnvmap, envReflect).rgb) * ENV_ALPHA_FACTOR);	\n\
-	fragmentColor.rgb += textureCube(sEnvmap, envReflect).rgb * envIntensity;	\n\
-  #endif																		\n\
- #endif																			\n\
-																				\n\
- #ifdef FLAG_GLOW_MAP															\n\
- // Glow color																	\n\
-	fragmentColor.rgb += texture2D(sGlowmap, texCoord).rgb * GLOW_MAP_INTENSITY;\n\
- #endif																			\n\
-																				\n""\
- #ifdef FLAG_FOG																\n\
-	fragmentColor.rgb = mix(fragmentColor.rgb, gl_Fog.color.rgb, fogDist);		\n\
- #endif																			\n\
-																				\n\
-#ifdef FLAG_ANIMATED\n"
-"if(effect_num == 0)\n"
+char *Default_main_fragment_shader = 
+"#ifdef FLAG_LIGHT\n"
+"uniform int n_lights;\n"
+"#endif\n"
+"#ifdef FLAG_DIFFUSE_MAP\n"
+"uniform sampler2D sBasemap;\n"
+"#endif\n"
+"#ifdef FLAG_GLOW_MAP\n"
+"uniform sampler2D sGlowmap;\n"
+"#endif\n"
+"#ifdef FLAG_SPEC_MAP\n"
+"uniform sampler2D sSpecmap;\n"
+"#endif\n"
+"#ifdef FLAG_ENV_MAP\n"
+"uniform samplerCube sEnvmap;\n"
+"uniform bool alpha_spec;\n"
+"varying vec3 envReflect;\n"
+"#endif\n"
+"#ifdef FLAG_NORMAL_MAP\n"
+"uniform sampler2D sNormalmap;\n"
+"varying mat3 tbnMatrix;\n"
+"#endif\n"
+"#ifdef FLAG_FOG\n"
+"varying float fogDist;\n"
+"#endif\n"
+"#ifdef FLAG_ANIMATED\n"
+"uniform sampler2D sFramebuffer;\n"
+"uniform int effect_num;\n"
+"uniform float anim_timer;\n"
+"uniform float vpwidth;\n"
+"uniform float vpheight;\n"
+"#endif\n"
+"varying vec4 position;\n"
+"varying vec3 lNormal;\n"
+"#if SHADER_MODEL == 2\n"
+"  #define MAX_LIGHTS 2\n"
+"#else\n"
+"  #define MAX_LIGHTS 8\n"
+"#endif\n"
+"#define SPEC_INTENSITY_POINT 		5.3 // Point light\n"
+"#define SPEC_INTENSITY_DIRECTIONAL 	3.0 // Directional light\n"
+"#define SPECULAR_FACTOR 			1.75\n"
+"#define SPECULAR_ALPHA 				0.1\n"
+"#define SPEC_FACTOR_NO_SPEC_MAP 	0.6\n"
+"#define ENV_ALPHA_FACTOR			0.3\n"
+"#define GLOW_MAP_INTENSITY 			1.5\n"
+"#define AMBIENT_LIGHT_BOOST 		1.0\n"
+"void main()\n"
 "{\n"
-"	float shinefactor = 1.0/(1.0 + pow((fract(abs(gl_TexCoord[0].x))-anim_timer) * 1000.0, 2.0)) * 1000.0;\n"
-"	gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);\n"
-"	gl_FragColor.a = fragmentColor.a * shinefactor * (fract(abs(gl_TexCoord[0].x))-anim_timer) * -10000.0;\n"
-"} else if(effect_num == 1)\n"
-"{\n"
-"	float shinefactor = 1.0/(1.0 + pow((position.y-anim_timer), 2.0));\n"
-"	gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);\n"
-"	gl_FragColor.a = fragmentColor.a;\n"
-"} else if(effect_num == 2)\n"
-"{\n"
-"	gl_FragColor.a = 1.0;\n"
-"	gl_FragColor.rgb = texture2D(sFramebuffer, screenPos + anim_timer*0.1*vec2(sin(screenPos.y*50.0))).rgb*(1.0-anim_timer)+anim_timer*fragmentColor.rgb;\n"
-"}\n\
- #else																			\n\
- 	gl_FragColor = fragmentColor;												\n\
- #endif																			\n\
-}																				\n\
-";
+"	vec3 eyeDir = vec3(normalize(-position).xyz); // Camera is at (0,0,0) in ModelView space\n"
+"	vec4 lightAmbientDiffuse = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"	vec4 lightDiffuse = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"	vec4 lightAmbient = vec4(0.0, 0.0, 0.0, 1.0); \n"
+"	vec4 lightSpecular = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"	vec2 texCoord = gl_TexCoord[0].xy;\n"
+" #ifdef FLAG_ANIMATED\n"
+"	vec2 screenPos;\n"
+"	if(effect_num == 2)\n"
+"	{\n"
+"		screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);\n"
+"		texCoord += (1.0-anim_timer)*0.3*vec2(sin(screenPos.y*50.0));\n"
+"	}\n"
+" #endif\n"
+" #ifdef FLAG_LIGHT\n"
+"  #ifdef FLAG_NORMAL_MAP\n"
+"	// Normal map - convert from DXT5nm\n"
+"	vec3 normal;\n"
+"	normal.rg = (texture2D(sNormalmap, texCoord).ag * 2.0) - 1.0;\n"
+"  #ifdef FLAG_ENV_MAP	\n"
+"	vec3 envOffset = vec3(0.0);\n"
+"	envOffset.xy = normal.xy;\n"
+"  #endif\n"
+"	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));\n"
+"	normal = tbnMatrix * normal;\n"
+"	float norm = length(normal);\n"
+"	if( length(normal) > 0.0)  // fix broken normal maps\n"
+"		normal /= norm ;\n"
+"	else\n"
+"		normal = tbnMatrix * vec3(0.0, 0.0, 1.0);\n"
+"  #else\n"
+"	vec3 normal = lNormal;\n"
+"  #endif\n"
+"	\n"
+"	vec3 lightDir;\n"
+"	lightAmbient = gl_FrontMaterial.emission + (gl_LightModel.ambient * gl_FrontMaterial.ambient);\n"
+"	float dist;\n"
+"	#pragma optionNV unroll all\n"
+"	for (int i = 0; i < MAX_LIGHTS; ++i) {\n"
+"	  #if SHADER_MODEL > 2\n"
+"		if (i > n_lights)\n"
+"			break;\n"
+"	  #endif\n"
+"		float specularIntensity = 1.0;\n"
+"		float attenuation = 1.0;\n"
+"		\n"
+"		// Attenuation and light direction\n"
+"	  #if SHADER_MODEL > 2\n"
+"		if (gl_LightSource[i].position.w == 1.0) {\n"
+"	  #else\n"
+"		if (gl_LightSource[i].position.w == 1.0 && i != 0) {\n"
+"	  #endif\n"
+"			// Positional light source\n"
+"			float dist = distance(gl_LightSource[i].position.xyz, position.xyz);\n"
+"			\n"
+"			lightDir = (gl_LightSource[i].position.xyz - position.xyz);			\n"
+"			\n"
+"		  #if SHADER_MODEL > 2\n"
+"			if (gl_LightSource[i].spotCutoff < 91.0) {  // Tube light\n"
+"				float beamlength = length(gl_LightSource[i].spotDirection);\n"
+"				vec3 beamDir = normalize(gl_LightSource[i].spotDirection);\n"
+"				float neardist = dot(position.xyz - gl_LightSource[i].position.xyz , beamDir); // Get nearest point on line\n"
+"				vec3 nearest = gl_LightSource[i].position.xyz - beamDir * abs(neardist); // Move back from the endpoint of the beam along the beam by the distance we calculated\n"
+"				lightDir = nearest - position.xyz; \n"
+"				dist = length(lightDir);\n"
+"			}\n"
+"		  #endif\n"
+"			\n"
+"			lightDir = normalize(lightDir);\n"
+"			\n"
+"			attenuation = 1.0 / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation * dist) + (gl_LightSource[i].quadraticAttenuation * dist * dist));\n"
+"			\n"
+"			specularIntensity = SPEC_INTENSITY_POINT;\n"
+"		} else {\n"
+"			// Directional light source\n"
+"			lightDir = normalize(gl_LightSource[i].position.xyz);\n"
+"			specularIntensity = SPEC_INTENSITY_DIRECTIONAL; // Directional light\n"
+"		}\n"
+"		// Ambient and Diffuse\n"
+"		lightAmbient += (gl_FrontLightProduct[i].ambient * attenuation);\n"
+"		lightDiffuse += (gl_FrontLightProduct[i].diffuse * (max(dot(normal, lightDir), 0.0)) * attenuation);\n"
+"		// Specular\n"
+"		float NdotHV = clamp(dot(normal, normalize(eyeDir + lightDir)), 0.0, 1.0);\n"
+"		lightSpecular += ((gl_FrontLightProduct[i].specular * pow(NdotHV, gl_FrontMaterial.shininess)) * attenuation) * specularIntensity;\n"
+"	}\n"
+"	lightAmbientDiffuse = lightAmbient + lightDiffuse;\n"
+" #else\n"
+"	lightAmbientDiffuse = gl_Color;\n"
+"	lightSpecular = gl_SecondaryColor;\n"
+" #endif\n"
+" #ifdef FLAG_DIFFUSE_MAP\n"
+" // Base color\n"
+"	vec4 baseColor = texture2D(sBasemap, texCoord);\n"
+" #else\n"
+"	vec4 baseColor = gl_Color;\n"
+" #endif\n"
+" \n"
+"	vec4 fragmentColor;\n"
+"	fragmentColor.rgb = baseColor.rgb * max(lightAmbientDiffuse.rgb * AMBIENT_LIGHT_BOOST, gl_LightModel.ambient.rgb - 0.425);\n"
+"	fragmentColor.a = baseColor.a;\n"
+" #ifdef FLAG_SPEC_MAP\n"
+" // Spec color\n"
+"	fragmentColor.rgb += lightSpecular.rgb * (texture2D(sSpecmap, texCoord).rgb * SPECULAR_FACTOR);\n"
+"	fragmentColor.a += (dot(lightSpecular.a, lightSpecular.a) * SPECULAR_ALPHA);\n"
+" #else\n"
+"	fragmentColor.rgb += lightSpecular.rgb * (baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP);\n"
+" #endif\n"
+" #ifdef FLAG_ENV_MAP\n"
+" // Env color\n"
+"  #ifdef FLAG_NORMAL_MAP\n"
+"	vec3 envReflectNM = envReflect + envOffset;\n"
+"	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;\n"
+"	fragmentColor.a += (dot(textureCube(sEnvmap, envReflectNM).rgb, textureCube(sEnvmap, envReflectNM).rgb) * ENV_ALPHA_FACTOR);\n"
+"	fragmentColor.rgb += textureCube(sEnvmap, envReflectNM).rgb * envIntensity;\n"
+"  #else\n"
+"	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;\n"
+"	fragmentColor.a += (dot(textureCube(sEnvmap, envReflect).rgb, textureCube(sEnvmap, envReflect).rgb) * ENV_ALPHA_FACTOR);\n"
+"	fragmentColor.rgb += textureCube(sEnvmap, envReflect).rgb * envIntensity;\n"
+"  #endif\n"
+" #endif\n"
+" #ifdef FLAG_GLOW_MAP\n"
+" // Glow color\n"
+"	fragmentColor.rgb += texture2D(sGlowmap, texCoord).rgb * GLOW_MAP_INTENSITY;\n"
+" #endif\n"
+" #ifdef FLAG_FOG\n"
+"	fragmentColor.rgb = mix(fragmentColor.rgb, gl_Fog.color.rgb, fogDist);\n"
+" #endif\n"
+" #ifdef FLAG_ANIMATED\n"
+"	if(effect_num == 0)\n"
+"	{\n"
+"		float shinefactor = 1.0/(1.0 + pow((fract(abs(gl_TexCoord[0].x))-anim_timer) * 1000.0, 2.0)) * 1000.0;\n"
+"		gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);\n"
+"		gl_FragColor.a = fragmentColor.a * shinefactor * (fract(abs(gl_TexCoord[0].x))-anim_timer) * -10000.0;\n"
+"	}\n"
+"	if(effect_num == 1)\n"
+"	{\n"
+"		float shinefactor = 1.0/(1.0 + pow((position.y-anim_timer), 2.0));\n"
+"		gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);\n"
+" #ifdef FLAG_LIGHT \n"
+"		gl_FragColor.a = fragmentColor.a;\n"
+" #else\n"
+"		gl_FragColor.a = (position.y-anim_timer) * 10000.0; // ATI Wireframe fix *grumble*\n"
+" #endif\n"
+"	}\n"
+"	if(effect_num == 2)\n"
+"	{\n"
+"		gl_FragColor.a = 1.0;\n"
+"		gl_FragColor.rgb = texture2D(sFramebuffer, screenPos + anim_timer*0.1*vec2(sin(screenPos.y*50.0))).rgb*(1.0-anim_timer)+anim_timer*fragmentColor.rgb;\n"
+"	}\n"
+" #else\n"
+"	gl_FragColor = fragmentColor;\n"
+" #endif\n"
+"}\n";
 
 char* Default_fxaa_vertex_shader = 
 "#extension GL_EXT_gpu_shader4 : enable\n"
@@ -2161,7 +2151,7 @@ void main()												\n\
 														\n\
 	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;	\n\
  #endif													\n\
-	color_out.a = 1.0f									\n\
+	color_out.a = 1.0f;									\n\
 	gl_FragColor = color_out;							\n\
 }														\n\
 ";
