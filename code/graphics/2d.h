@@ -541,6 +541,7 @@ extern screen gr_screen;
 #define GR_ZBUFF_FULL	(GR_ZBUFF_WRITE|GR_ZBUFF_READ)
 
 void gr_set_screen_scale(int x, int y);
+void gr_set_screen_scale(int x, int y, int max_x, int max_y);
 void gr_reset_screen_scale();
 bool gr_unsize_screen_pos(int *x, int *y);
 bool gr_resize_screen_pos(int *x, int *y);
