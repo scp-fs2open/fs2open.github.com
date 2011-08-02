@@ -309,6 +309,7 @@ sexp_oper Operators[] = {
 	{ "disable-builtin-messages",	OP_DISABLE_BUILTIN_MESSAGES,	0,	INT_MAX,},	// Karajorma
 	{ "enable-builtin-messages",	OP_ENABLE_BUILTIN_MESSAGES,		0,	INT_MAX,},	// Karajorma
 	{ "set-persona",				OP_SET_PERSONA,					2,	INT_MAX,},	// Karajorma
+	{ "clear-subtitles",			OP_CLEAR_SUBTITLES,				0, 0},
 
 	{ "add-goal",					OP_ADD_GOAL,					2, 2, },
 	{ "remove-goal",				OP_REMOVE_GOAL,					2, 2, },			// Goober5000
@@ -17790,8 +17791,8 @@ void sexp_string_concatenate(int n)
 	}
 
 	// concatenate strings
-	strcpy(new_text, str1);
-	strcat(new_text, str2);
+	strcpy_s(new_text, str1);
+	strcat_s(new_text, str2);
 
 	// check length
 	if (strlen(new_text) >= TOKEN_LENGTH)
@@ -17910,7 +17911,7 @@ void sexp_string_set_substring(int node)
 	// make the common case fast
 	if (len == 1 && new_len == 1)
 	{
-		strcpy(new_text, parent);
+		strcpy_s(new_text, parent);
 		new_text[pos] = new_substring[0];
 	}
 	else
@@ -17926,7 +17927,7 @@ void sexp_string_set_substring(int node)
 		strcpy(&new_text[pos], new_substring);
 
 		// add rest of parent string
-		strcat(new_text, &parent[pos + len]);
+		strcat_s(new_text, &parent[pos + len]);
 
 		// check length
 		if (strlen(new_text) >= TOKEN_LENGTH)
@@ -18635,6 +18636,10 @@ void sexp_show_subtitle(int node)
 
 	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, -1, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
+}
+
+void sexp_clear_subtitles() {
+	Subtitles.clear();
 }
 
 void sexp_show_subtitle_text(int node)
@@ -21380,6 +21385,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_ship_effect(node);
 				break;
 
+			case OP_CLEAR_SUBTITLES:
+				sexp_val = SEXP_TRUE;
+				sexp_clear_subtitles();
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -22240,6 +22250,7 @@ int query_operator_return_type(int op)
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_SHIP_EFFECT:
+		case OP_CLEAR_SUBTITLES:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -24105,6 +24116,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
+		case OP_CLEAR_SUBTITLES:
+			return OPF_NONE;
+
 		default:
 			Int3();
 	}
@@ -25274,6 +25288,7 @@ int get_subcategory(int sexp_id)
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
 		case OP_SET_PERSONA:
+		case OP_CLEAR_SUBTITLES:
 			return CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS;
 			
 		case OP_ADD_GOAL:
@@ -28911,9 +28926,13 @@ sexp_help_struct Sexp_help[] = {
 	{OP_SHIP_EFFECT, "ship-effect\r\n"
 		"\tPlays an animated shader effect on the ship(s) or wing(s).\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1:\tEffect id number\t(0: Cloak, 1: Decloak)\r\n"
+		"\t1:\tEffect name (as defined in post_processing.tbl)\r\n"
 		"\t2:\tHow long the effect should take in milliseconds\r\n"
 		"\tRest:\tShip or wing name\r\n"
+	},
+
+	{OP_CLEAR_SUBTITLES, "clear-subtitles\r\n"
+		"\tClears the subtitle queue completely.\r\n"
 	}
 };
 

@@ -509,6 +509,7 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 extern bool Post_in_frame;
 extern GLuint Post_screen_texture_id;
 extern GLuint Post_effect_texture_id;
+extern GLuint Framebuffer_fallback_texture_id;
 static void opengl_render_pipeline_program(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
 {
 	float u_scale, v_scale;
@@ -686,11 +687,14 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		}
 	}
 
-	if ((shader_flags & SDR_FLAG_ANIMATED) && Post_in_frame )
+	if ((shader_flags & SDR_FLAG_ANIMATED))
 	{
 		GL_state.Texture.SetActiveUnit(render_pass);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		GL_state.Texture.Enable(Post_effect_texture_id);
+		if( Post_in_frame )
+			GL_state.Texture.Enable(Post_effect_texture_id);
+		else
+			GL_state.Texture.Enable(Framebuffer_fallback_texture_id);
 		vglUniform1iARB( opengl_shader_get_uniform("sFramebuffer"), render_pass );
 		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 		render_pass++;

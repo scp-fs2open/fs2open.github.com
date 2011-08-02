@@ -3390,6 +3390,8 @@ void start_weapon_animation(int weapon_class)
 
 	icon = &Wl_icons[weapon_class];
 
+	gamesnd_play_iface(SND_WEAPON_ANIM_START);
+
 	//load a new animation if it's different to what's already playing
 	if(strcmp(Cur_Anim.filename, Weapon_info[weapon_class].anim_filename) != 0) {
 		//unload the previous anim
@@ -3398,7 +3400,6 @@ void start_weapon_animation(int weapon_class)
 		p = strchr( Weapon_info[weapon_class].anim_filename, '.' );
 		if(p)
 			*p = '\0';
-		gamesnd_play_iface(SND_WEAPON_ANIM_START);
 		if (gr_screen.res == GR_1024) {
 			strcpy_s(animation_filename, "2_");
 			strcat_s(animation_filename, Weapon_info[weapon_class].anim_filename);

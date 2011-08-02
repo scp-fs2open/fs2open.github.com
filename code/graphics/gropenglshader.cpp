@@ -22,6 +22,7 @@
 #include "graphics/gropengldraw.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglpostprocessing.h"
+#include "graphics/gropenglstate.h"
 
 #include "math/vecmat.h"
 #include "render/3d.h"
@@ -32,6 +33,7 @@ SCP_vector<opengl_shader_t> GL_shader;
 
 static char *GLshader_info_log = NULL;
 static const int GLshader_info_log_size = 8192;
+GLuint Framebuffer_fallback_texture_id = 0;
 
 static int Effect_num = 0;
 static float Anim_timer = 0.0f;
@@ -477,6 +479,19 @@ void opengl_shader_init()
 	if ( !Use_GLSL ) {
 		return;
 	}
+
+	glGenTextures(1,&Framebuffer_fallback_texture_id);
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Framebuffer_fallback_texture_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	GLuint pixels[4] = {0,0,0,0};
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels);
 
 	if (Cmdline_no_glsl_model_rendering) {
 		Use_GLSL = 1;
