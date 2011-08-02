@@ -291,7 +291,7 @@ static int Damage_flash_timer;
 
 HudGauge::HudGauge():
 base_w(0), base_h(0), gauge_config(-1), config_override(true), reticle_follow(false), active(false), pop_up(false), disabled_views(0), texture_target(-1), 
-target_w(-1), target_h(-1), canvas_w(-1), canvas_h(-1), custom_gauge(false), font_num(FONT1), off_by_default(false), sexp_override(false)
+texture_cache(-1), target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false), font_num(FONT1), off_by_default(false), sexp_override(false)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -312,10 +312,11 @@ target_w(-1), target_h(-1), canvas_w(-1), canvas_h(-1), custom_gauge(false), fon
 	custom_frame_offset = 0;
 }
 
-HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _allow_override, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
+HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _allow_override, bool _slew, bool _message, int _disabled_views, 
+				   int r, int g, int b):
 base_w(0), base_h(0), gauge_object(_gauge_object), gauge_config(_gauge_config), config_override(_allow_override), reticle_follow(_slew), 
-message_gauge(_message), active(false), pop_up(false), disabled_views(_disabled_views), texture_target(-1), target_w(-1), target_h(-1), 
-textoffset_x(0), textoffset_y(0), canvas_w(-1), canvas_h(-1), custom_gauge(false), font_num(FONT1), off_by_default(false), sexp_override(false)
+message_gauge(_message), active(false), pop_up(false), disabled_views(_disabled_views), texture_target(-1), texture_cache(-1), target_x(-1), target_y(-1), 
+target_w(-1), target_h(-1), textoffset_x(0), textoffset_y(0), cache_w(-1), cache_h(-1), custom_gauge(false), font_num(FONT1), off_by_default(false), sexp_override(false)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
 
@@ -349,8 +350,8 @@ textoffset_x(0), textoffset_y(0), canvas_w(-1), canvas_h(-1), custom_gauge(false
 // constructor for custom gauges
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 gauge_object(HUD_OBJECT_CUSTOM), base_w(0), base_h(0), gauge_config(_gauge_config), config_override(true), reticle_follow(_slew), message_gauge(false), 
-active(false), pop_up(false), disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), texture_target(-1), target_w(-1), target_h(-1), 
-textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), canvas_w(-1), canvas_h(-1), custom_gauge(true), font_num(FONT1), off_by_default(false), sexp_override(false)
+active(false), pop_up(false), disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), texture_target(-1), texture_cache(-1), 
+target_x(-1), target_y(-1), target_w(-1), target_h(-1), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), cache_w(-1), cache_h(-1), custom_gauge(true), font_num(FONT1), off_by_default(false), sexp_override(false)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -674,48 +675,46 @@ void HudGauge::renderString(int x, int y, char *str)
 {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
-
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
-		} else {
-			gr_set_screen_scale(base_w, base_h);
-		}
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
 	}
 
-	gr_string(x + nx, y + ny, str);
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
+	}
+
+	gr_set_screen_scale(base_w, base_h);
+	gr_unsize_screen_pos(&nx, &ny);
+	gr_string(x + nx, y + ny, str, resize);
 	gr_reset_screen_scale();
 }
 
 void HudGauge::renderString(int x, int y, int gauge_id, char *str)
 {
-	int nx = 0, ny = 0;
+	int  nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	} 
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
-		} else {
-			gr_set_screen_scale(base_w, base_h);
-		}
+	gr_set_screen_scale(base_w, base_h);
+
+	gr_unsize_screen_pos(&nx, &ny);
+
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
 	}
 
-	if ( gauge_id > -2 ) {
-		emp_hud_string(x + nx, y + ny, gauge_id, str, true);
+	if(gauge_id > -2) {
+		emp_hud_string(x + nx, y + ny, gauge_id, str, resize);
 	} else {
-		gr_string(x + nx, y + ny, str);
+		gr_string(x + nx, y + ny, str, resize);
 	}
 
 	gr_reset_screen_scale();
@@ -757,30 +756,35 @@ void HudGauge::renderPrintf(int x, int y, int gauge_id, char* format, ...)
 
 void HudGauge::renderBitmap(int x, int y)
 {
-	int jx = x, jy = y, nx = 0, ny = 0;
+	int jx, jy, nx = 0, ny = 0;
 
-	if( !emp_should_blit_gauge() ) {
+	if(!emp_should_blit_gauge()) {
 		return;
 	}
 
+	jx = x;
+	jy = y;
 	emp_hud_jitter(&jx, &jy);
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	}
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
-		} else {
-			gr_set_screen_scale(base_w, base_h);
-		}
+	gr_set_screen_scale(base_w, base_h);
+
+	gr_unsize_screen_pos(&nx, &ny);
+	jx += nx;
+	jy += ny;
+
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
 	}
 	
-	gr_aabitmap(jx + nx, jy + ny);
+	gr_aabitmap(jx, jy, resize); 
+
 	gr_reset_screen_scale();
 }
 
@@ -790,34 +794,75 @@ void HudGauge::renderBitmap(int frame, int x, int y)
 	renderBitmap(x, y);
 }
 
-void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy)
+void HudGauge::renderBitmapUv(int frame, int x, int y, int w, int h, float u0, float v0, float u1, float v1)
 {
-	int jx = x, jy = y, nx = 0, ny = 0; 
+	int jx, jy, nx = 0, ny = 0; 
 	
-	if( !emp_should_blit_gauge() ) { 
+	if(!emp_should_blit_gauge()) { 
 		return;
 	}
 
+	jx = x; 
+	jy = y; 
 	emp_hud_jitter(&jx, &jy); 
+
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	}
+
+	gr_set_screen_scale(base_w, base_h);
+
+	gr_unsize_screen_pos(&nx, &ny);
+	jx += nx;
+	jy += ny;
 
 	gr_set_bitmap(frame);
 
-	if( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
-
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
-		} else {
-			gr_set_screen_scale(base_w, base_h);
-		}
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
 	}
 
-	gr_aabitmap_ex(jx + nx, jy + ny, w, h, sx, sy);
+	gr_bitmap_uv(jx, jy, w, h, u0, v0, u1, v1, resize);
+
+	gr_reset_screen_scale();
+}
+
+void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy)
+{
+	int jx, jy, nx = 0, ny = 0; 
+	
+	if(!emp_should_blit_gauge()) { 
+		return;
+	}
+
+	jx = x; 
+	jy = y; 
+	emp_hud_jitter(&jx, &jy); 
+
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	}
+
+	gr_set_screen_scale(base_w, base_h);
+
+	gr_unsize_screen_pos(&nx, &ny);
+	jx += nx;
+	jy += ny;
+
+	gr_set_bitmap(frame);
+
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
+	}
+
+	gr_aabitmap_ex(jx, jy, w, h, sx, sy, resize);
+
 	gr_reset_screen_scale();
 }
 
@@ -825,45 +870,31 @@ void HudGauge::renderLine(int x1, int y1, int x2, int y2)
 {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
-
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
-		} else {
-			gr_set_screen_scale(base_w, base_h);
-		}
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
 	}
 
+	gr_set_screen_scale(base_w, base_h);
+	gr_unsize_screen_pos(&nx, &ny);
 	gr_line(x1+nx, y1+ny, x2+nx, y2+ny);
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderGradientLine(int x1, int y1, int x2, int y2)
+void HudGauge::renderGradientLine(int x1, int y1, int x2, int y2, bool resize)
 {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-	} else {
-		if(reticle_follow) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	} 
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
-		} else {
-			gr_set_screen_scale(base_w, base_h);
-		}
-	}
-
-	gr_gradient(x1+nx, y1+ny, x2+nx, y2+ny);
+	gr_set_screen_scale(base_w, base_h);
+	gr_unsize_screen_pos(&nx, &ny);
+	gr_gradient(x1+nx, y1+ny, x2+nx, y2+ny, resize);
 	gr_reset_screen_scale();
 }
 
@@ -871,101 +902,74 @@ void HudGauge::renderRect(int x, int y, int w, int h)
 {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	} 
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
-		} else {
-			gr_set_screen_scale(base_w, base_h);
-		}
-	}
-
+	gr_set_screen_scale(base_w, base_h);
+	gr_unsize_screen_pos(&nx, &ny);
 	gr_rect(x+nx, y+ny, w, h);
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderCircle(int x, int y, int diameter) 
-{
+void HudGauge::renderCircle(int x, int y, int diameter) {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	} 
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
-		} else {
-			gr_set_screen_scale(base_w, base_h);
-		}
-	}
-	
+	gr_set_screen_scale(base_w, base_h);
+	gr_unsize_screen_pos(&nx, &ny);
 	gr_circle(x+nx, y+ny, diameter);
 	gr_reset_screen_scale();
 }
 
 void HudGauge::setClip(int x, int y, int w, int h)
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
+	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-
-		hx = display_offset_x;
-		hy = display_offset_y;
-
-		gr_set_clip(hx+x, hy+y, w, h, false);
-	} else {
-		if ( reticle_follow ) {
-			hx += HUD_nose_x;
-			hy += HUD_nose_y;
-		}
-
-		gr_resize_screen_pos(&hx, &hy);
-		gr_set_screen_scale(base_w, base_h);
-
-		gr_set_clip(hx+x, hy+y, w, h, true);
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
 	}
+
+	int hx = fl2i(HUD_offset_x) + nx;
+	int hy = fl2i(HUD_offset_y) + ny;
+
+	// bring the HUD shake and nose offsets to the actual resolution scale
+	gr_resize_screen_pos(&hx, &hy);
+
+	gr_set_screen_scale(base_w, base_h);
+
+	if(gr_screen.rendering_to_texture == -1) {
+		// bring the clip coords from base resolution scale to actual resolution scale.
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
+	}
+
+	// clip the screen based on the actual resolution
+	gr_set_clip(hx+x, hy+y, w, h, false);
 
 	gr_reset_screen_scale();
 }
 
 void HudGauge::resetClip()
 {
-	int hx = 0, hy = 0;
-	int w, h;
+	int hx = fl2i(HUD_offset_x);
+	int hy = fl2i(HUD_offset_y);
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
-		
-		hx = display_offset_x;
-		hy = display_offset_y;
+	// bring the HUD shake and nose offsets to the actual resolution scale
+	gr_resize_screen_pos(&hx, &hy);
 
-		w = target_w;
-		h = target_h;
-	} else {
-		hx = fl2i(HUD_offset_x);
-		hy = fl2i(HUD_offset_y);
-
-		gr_resize_screen_pos(&hx, &hy);
-		gr_set_screen_scale(base_w, base_h);
-
-		w = gr_screen.max_w;
-		h = gr_screen.max_h;
-	}
+	gr_set_screen_scale(base_w, base_h);
 
 	// clip the screen based on the actual resolution
-	gr_set_clip(hx, hy, w, h, false);
+	gr_set_clip(hx, hy, gr_screen.max_w, gr_screen.max_h, false);
 
 	gr_reset_screen_scale();
 }
@@ -1060,36 +1064,87 @@ void HudGauge::initCockpitTarget(char* display_name, int _target_x, int _target_
 	}
 
 	strcpy_s(texture_target_fname, display_name);
+	target_x = _target_x;
+	target_y = _target_y;
 	target_w = _target_w;
 	target_h = _target_h;
 
-	if ( _canvas_w > 0 && _canvas_h > 0 ) {
-		canvas_w = _canvas_w;
-		canvas_h = _canvas_h;
+	if ( _canvas_w > 0 || _canvas_h > 0 ) {
+		cache_w = _canvas_w;
+		cache_h = _canvas_h;
 	} else {
-		canvas_w = _target_w;
-		canvas_h = _target_h;
+		cache_w = _target_w;
+		cache_h = _target_h;
 	}
 }
 
-bool HudGauge::setupRenderCanvas(int render_target)
+void HudGauge::createRenderCanvas()
 {
-	if ( strlen(texture_target_fname) > 0 ) {
-		if ( render_target >= 0 && render_target == texture_target ) {
-			return true;
-		}
-	} else {
-		if ( render_target < 0 ) {
-			return true;
-		}
+	if ( strlen(texture_target_fname) <= 0 ) {
+		return;
 	}
 
-	return false;
+	int texture_size;
+
+	// get the bigger of the two
+	if(target_w > target_h) {
+		texture_size = target_w;
+	} else {
+		texture_size = target_h;
+	}
+
+	// create a texture that will fit our gauge
+	// try to find the smallest power of two texture that can accomodate
+	int i = 4; // start at 2^4 (16)
+	while(texture_size > (int)pow(2.0, i)) {
+		i++;
+	}
+
+	texture_size = (int)pow(2.0, i);
+
+	texture_cache = bm_make_render_target(texture_size, texture_size, BMP_FLAG_RENDER_TARGET_DYNAMIC);
+}
+
+void HudGauge::clearRenderCanvas()
+{
+	if ( texture_cache >= 0 ) {
+		bm_release(texture_cache);
+	}
+
+	texture_cache = -1;
+}
+
+bool HudGauge::setupRenderCanvas()
+{
+	// check if we're rendering to a canvas 
+
+	if( texture_cache >= 0) {
+		// have a render canvas so, prep this hud gauge to render to it.
+		bm_set_render_target(texture_cache);
+		gr_clear();
+
+		return true;
+	} else if ( strlen(texture_target_fname) > 0 ) {
+		// we don't have a render canvas but this gauge was intended to be rendered to one.
+		// return false to tell the caller to skip rendering this gauge
+		return false;
+	}
+
+	// don't need to do anything special for this gauge, so tell the caller that everything is fine
+	return true;
+}
+
+void HudGauge::doneRenderCanvas()
+{
+	if( texture_cache >= 0) {
+		//gr_set_cull(1);
+		bm_set_render_target(-1);
+	} 
 }
 
 void HudGauge::setCockpitTarget(cockpit_display *display)
 {
-	if ( display == NULL ) {
+	if ( !display ) {
 		return;
 	}
 
@@ -1098,6 +1153,8 @@ void HudGauge::setCockpitTarget(cockpit_display *display)
 	}
 
 	if ( display->target < 0 ) {
+		texture_cache = -1;
+		texture_target = -1;
 		return;
 	}
 
@@ -1109,6 +1166,44 @@ void HudGauge::setCockpitTarget(cockpit_display *display)
 void HudGauge::resetCockpitTarget()
 {
 	texture_target = -1;
+}
+
+void HudGauge::renderToCockpit()
+{
+	if ( strlen(texture_target_fname) <= 0 ) {
+		return;
+	}
+
+	if ( texture_cache < 0 ) {
+		return;
+	}
+
+	if ( texture_target < 0 ) {
+		return;
+	}
+
+	if( Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0 ) { 
+		return;
+	}
+
+	HUD_reset_clip();
+
+	bm_set_render_target(texture_target);
+
+	int w, h;
+
+	// get texture canvas dimensions so we can generate UVs
+	bm_get_info(texture_cache, &w, &h);
+
+	int cull = gr_set_cull(0);
+
+	// draw it to the cockpit!
+	gr_set_bitmap( texture_cache, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+	gr_bitmap_uv(target_x+display_offset_x, target_y+display_offset_y, target_w, target_h, 0.0f, 0.0f, i2fl(cache_w)/i2fl(w), i2fl(cache_h)/i2fl(h), false);
+
+	gr_set_cull(cull);
+
+	bm_set_render_target(-1);
 }
 
 // ----------------------------------------------------------------------
@@ -1163,6 +1258,7 @@ void HUD_init()
 			num_gauges = Ship_info[i].hud_gauges.size();
 
 			for(j = 0; j < num_gauges; j++) {
+				Ship_info[i].hud_gauges[j]->createRenderCanvas();
 				Ship_info[i].hud_gauges[j]->initialize();
 				Ship_info[i].hud_gauges[j]->resetTimers();
 				Ship_info[i].hud_gauges[j]->updateSexpOverride(false);
@@ -1184,15 +1280,14 @@ void HUD_init()
  */
 void hud_level_close()
 {
-	int i;
 	size_t j, num_gauges;
 
-	for ( i = 0; i < Num_ship_classes; i++ ) {
+	for (int i = 0; i < Num_ship_classes; i++) {
 		if(Ship_info[i].hud_enabled) {
 			num_gauges = Ship_info[i].hud_gauges.size();
 
 			for(j = 0; j < num_gauges; j++) {
-				Ship_info[i].hud_gauges[j]->resetCockpitTarget();
+				Ship_info[i].hud_gauges[j]->clearRenderCanvas();
 			}
 		}
 	}
@@ -1663,94 +1758,54 @@ void hud_maybe_display_supernova()
 }
 
 /**
- * @brief Undertakes main HUD render. 
+ * @brief Undertakes main HUD render. See also ::ship_render_foregrounds_cockpit_display()
  */
 void hud_render_all()
 {
-	size_t i;
-
-	hud_render_gauges();
-
-	// start rendering cockpit dependent gauges if possible
-	for ( i = 0; i < Player_displays.size(); ++i ) {
-		hud_render_gauges(i);
+	if(supernova_active() >= 3) {
+		return;
 	}
 
-	hud_clear_msg_buffer();
-
-	// set font back the way it was
-	gr_set_font(FONT1);
-}
-
-void hud_render_gauges(int cockpit_display_num)
-{
 	size_t j, num_gauges;
+
 	ship_info* sip = &Ship_info[Player_ship->ship_info_index];
-	int render_target = -1;
 
-	if ( cockpit_display_num >= 0 ) {
-		if ( sip->cockpit_model_num < 0 ) {
-			return;
-		}
-
-		if ( !sip->hud_enabled ) {
-			return;
-		}
-
-		render_target = ship_start_render_cockpit_display(cockpit_display_num);
-
-		if ( render_target <= 0 ) {
-			return;
-		}
-	} else {
-		if( supernova_active() >= 3 ) {
-			return;
-		}
-	}
+	ship_render_backgrounds_cockpit_display(Player_ship);
 
 	// Check if this ship has its own HUD gauges. 
-	if ( sip->hud_enabled ) {
+	if(sip->hud_enabled) {
 		num_gauges = sip->hud_gauges.size();
-
 		for(j = 0; j < num_gauges; j++) {
 			sip->hud_gauges[j]->preprocess();
 
-			if ( !sip->hud_gauges[j]->setupRenderCanvas(render_target) ) {
-				continue;
+			if(sip->hud_gauges[j]->canRender()) {
+				sip->hud_gauges[j]->resetClip();
+				sip->hud_gauges[j]->setFont();
+				if ( sip->hud_gauges[j]->setupRenderCanvas() ) {
+					sip->hud_gauges[j]->render(flFrametime);
+					sip->hud_gauges[j]->doneRenderCanvas();
+					sip->hud_gauges[j]->renderToCockpit();
+				}
 			}
-
-			if ( !sip->hud_gauges[j]->canRender() ) {
-				continue;
-			}
-
-			sip->hud_gauges[j]->resetClip();
-			sip->hud_gauges[j]->setFont();
-			sip->hud_gauges[j]->render(flFrametime);
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
-
 		for(j = 0; j < num_gauges; j++) {
 			default_hud_gauges[j]->preprocess();
 
-			if ( !default_hud_gauges[j]->canRender() ) {
-				continue;
+			if(default_hud_gauges[j]->canRender()) {
+				default_hud_gauges[j]->resetClip();
+				default_hud_gauges[j]->setFont();
+				default_hud_gauges[j]->render(flFrametime);
 			}
-
-			default_hud_gauges[j]->resetClip();
-			default_hud_gauges[j]->setFont();
-			default_hud_gauges[j]->render(flFrametime);
 		}
 	}
 
-	if ( cockpit_display_num >= 0 ) {
-		ship_end_render_cockpit_display(cockpit_display_num);
+	hud_clear_msg_buffer();
+	ship_render_foregrounds_cockpit_display(Player_ship);
 
-		if ( gr_screen.rendering_to_texture != -1 ) {
-			// are we still are rendering to a texture at this point? uh oh.
-			bm_set_render_target(-1);
-		}
-	}
+	// set font back the way it was
+	gr_set_font(FONT1);
 }
 
 /**
