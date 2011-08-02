@@ -120,7 +120,6 @@ void hud_level_close();
 void hud_update_frame(float frametime);		// updates hud systems not dependant on rendering
 void hud_render_preprocess(float frametime);			// renders 3d dependant gauges
 void hud_render_all();
-void hud_render_gauges(int cockpit_display_num = -1);
 void hud_stop_looped_engine_sounds();
 
 // set the offset values for this render frame
@@ -232,7 +231,6 @@ protected:
 	bool custom_gauge;
 	hud_frames custom_frame;
 	int custom_frame_offset;
-	int textoffset_x, textoffset_y;
 	char custom_name[NAME_LENGTH];
 	char custom_text[NAME_LENGTH];
 	char default_text[NAME_LENGTH];
@@ -240,8 +238,11 @@ protected:
 	// Render to texture stuff
 	char texture_target_fname[MAX_FILENAME_LEN];
 	int texture_target;
-	int canvas_w, canvas_h;
+	int texture_cache;
+	int cache_w, cache_h;
+	int target_x, target_y;
 	int target_w, target_h;
+	int textoffset_x, textoffset_y;
 	int display_offset_x, display_offset_y;
 public:
 	// constructors
@@ -254,7 +255,7 @@ public:
 	void initBaseResolution(int w, int h);
 	void initSlew(bool slew);
 	void initFont(int font_num);
-	void initCockpitTarget(char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
+	void initCockpitTarget(char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int canvas_w, int canvas_h);
 	void initRenderStatus(bool render);
 
 	int getConfigType();
@@ -292,9 +293,13 @@ public:
 	virtual void pageIn();
 	virtual void initialize();
 
-	bool setupRenderCanvas(int render_target = -1);
+	void createRenderCanvas();
+	void clearRenderCanvas();
+	bool setupRenderCanvas();
+	void doneRenderCanvas();
 	void setCockpitTarget(cockpit_display *display);
 	void resetCockpitTarget();
+	void renderToCockpit();
 	
 	void setFont();
 	void setGaugeColor(int bright_index = -4);
@@ -310,7 +315,7 @@ public:
 	void renderPrintf(int x, int y, char* format, ...);
 	void renderPrintf(int x, int y, int gauge_id, char* format, ...);
 	void renderLine(int x1, int y1, int x2, int y2);
-	void renderGradientLine(int x1, int y1, int x2, int y2);
+	void renderGradientLine(int x1, int y1, int x2, int y2, bool resize = true);
 	void renderRect(int x, int y, int w, int h);
 	void renderCircle(int x, int y, int diameter);
 
