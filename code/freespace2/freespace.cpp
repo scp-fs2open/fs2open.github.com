@@ -4394,8 +4394,6 @@ int game_actually_playing()
 
 void game_render_hud(camid cid)
 {
-	size_t i;
-
 	gr_reset_clip();
 
 	if(cid.isValid()) {
