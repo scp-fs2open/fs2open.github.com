@@ -246,12 +246,12 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float ang
 	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize_safe(&fvec);
 
-	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &fvec);
+	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &View_matrix.vec.fvec);
 //	uvec = View_matrix.vec.uvec;
 
-	vm_vec_crossprod(&rvec, &fvec, &uvec);
+	vm_vec_crossprod(&rvec, &View_matrix.vec.fvec, &uvec);
 	vm_vec_normalize_safe(&rvec);
-	vm_vec_crossprod(&uvec, &fvec, &rvec);
+	vm_vec_crossprod(&uvec, &View_matrix.vec.fvec, &rvec);
 
 	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 	vm_vec_scale_add(&p[0], &PNT, &rvec, rad);
