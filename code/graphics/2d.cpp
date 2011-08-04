@@ -94,6 +94,15 @@ void gr_set_screen_scale(int w, int h)
 	Gr_unsize_Y = (float)h / (float)gr_screen.max_h;
 }
 
+void gr_set_screen_scale(int w, int h, int max_w, int max_h)
+{
+	Gr_resize_X = (float)max_w / (float)w;
+	Gr_resize_Y = (float)max_h / (float)h;
+
+	Gr_unsize_X = (float)w / (float)max_w;
+	Gr_unsize_Y = (float)h / (float)max_h;
+}
+
 void gr_reset_screen_scale()
 {
 	Gr_resize_X = Gr_save_resize_X;

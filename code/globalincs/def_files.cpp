@@ -1277,10 +1277,9 @@ char *Default_main_fragment_shader =
 "	vec4 lightSpecular = vec4(0.0, 0.0, 0.0, 1.0);\n"
 "	vec2 texCoord = gl_TexCoord[0].xy;\n"
 " #ifdef FLAG_ANIMATED\n"
-"	vec2 screenPos;\n"
+"	vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);;\n"
 "	if(effect_num == 2)\n"
 "	{\n"
-"		screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);\n"
 "		texCoord += (1.0-anim_timer)*0.3*vec2(sin(screenPos.y*50.0));\n"
 "	}\n"
 " #endif\n"
@@ -2151,7 +2150,7 @@ void main()												\n\
 														\n\
 	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;	\n\
  #endif													\n\
-	color_out.a = 1.0f;									\n\
+	color_out.a = 1.0;									\n\
 	gl_FragColor = color_out;							\n\
 }														\n\
 ";

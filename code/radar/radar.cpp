@@ -407,10 +407,10 @@ void HudGaugeRadarStd::drawCrosshairs(int x, int y)
 
 	for(i = 0; i < 2; i++) {
 		m = (i * 2) - 1;
-		renderGradientLine(x + m*4,y,x + m*8,y,false);
+		renderGradientLine(x + m*4,y,x + m*8,y);
 	}
 	for(j = 0; j < 2; j++) {
 		m = (j * 2) - 1;
-		renderGradientLine(x,y + m*4,x,y + m*8,false);
+		renderGradientLine(x,y + m*4,x,y + m*8);
 	}
 }

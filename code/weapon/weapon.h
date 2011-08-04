@@ -206,6 +206,8 @@ typedef struct weapon {
 
 	float weapon_max_vel;		// might just as well store the data here
 
+	bool collisionOccured;
+	mc_info collisionInfo; // The last collision of this weapon or NULL if it had none
 } weapon;
 
 

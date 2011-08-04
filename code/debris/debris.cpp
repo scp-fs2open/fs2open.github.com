@@ -28,6 +28,7 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "weapon/weapon.h"
 
 
 
@@ -862,6 +863,10 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		if (model_collide(&mc)) {
 			*hitpos = mc.hit_point_world;
 		}
+
+		weapon *wp = &Weapons[other_obj->instance];
+		wp->collisionOccured = true;
+		wp->collisionInfo = mc_info(mc);
 
 		return mc.num_hits;
 	}
