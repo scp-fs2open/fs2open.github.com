@@ -1174,4 +1174,7 @@ variable:
 */
 extern int Sexp_hud_display_warpout;
 
+//Needed for scripting access to ship effects
+int get_effect_from_name(char* name);
+
 #endif
