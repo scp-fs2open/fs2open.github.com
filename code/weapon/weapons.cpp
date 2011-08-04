@@ -5346,6 +5346,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->alpha_current = -1.0f;
 	wp->alpha_backward = 0;
 
+	wp->collisionOccured = false;
+
 	Num_weapons++;
 	return objnum;
 }

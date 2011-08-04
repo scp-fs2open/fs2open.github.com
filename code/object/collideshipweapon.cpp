@@ -283,6 +283,9 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	if ( valid_hit_occurred )
 	{
+		wp->collisionOccured = true;
+		wp->collisionInfo = mc_info(mc);
+
 		Script_system.SetHookObjects(4, "Ship", ship_objp, "Weapon", weapon_objp, "Self",ship_objp, "Object", weapon_objp);
 		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
 
