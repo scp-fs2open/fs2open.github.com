@@ -2150,7 +2150,7 @@ void main()												\n\
 														\n\
 	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;	\n\
  #endif													\n\
-	color_out.a = 1.0f;									\n\
+	color_out.a = 1.0;									\n\
 	gl_FragColor = color_out;							\n\
 }														\n\
 ";
