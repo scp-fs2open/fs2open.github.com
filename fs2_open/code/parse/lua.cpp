@@ -6411,6 +6411,151 @@ ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
 }
 
+class mc_info_h
+{
+protected:
+	mc_info* info;
+public:
+	mc_info_h(mc_info* val) : info(val) {}
+
+	mc_info_h() : info(NULL) {}
+
+	mc_info *Get()
+	{
+		return info;
+	}
+
+	void deleteInfo()
+	{
+		if (!this->IsValid())
+			return;
+
+		delete info;
+
+		info = NULL;
+	}
+
+	bool IsValid()
+	{
+		return info != NULL;
+	}
+};
+
+//**********HANDLE: Collision info
+ade_obj<mc_info_h> l_ColInfo("collision info", "Information about a collision");
+
+ADE_FUNC(__gc, l_ColInfo, NULL, "Removes the allocated reference of this handle", NULL, NULL)
+{
+	mc_info_h* info;
+
+	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
+		return ADE_RETURN_NIL;
+
+	if (info->IsValid())
+		info->deleteInfo();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about", "model", "The model")
+{	
+	mc_info_h* info;
+	model_h * mh;
+
+	if(!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Model.GetPtr(&mh)))
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	if (!info->IsValid())
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	mc_info *collide = info->Get();
+
+	int modelNum = collide->model_num;
+
+	if (ADE_SETTING_VAR)
+	{
+		if (mh->IsValid())
+		{
+			collide->model_num = mh->GetID();
+		}
+	}
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(modelNum)));
+}
+
+ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point of this information (local to the object if boolean is set to <i>true</i>)", "vector", "The collision point or nil of none")
+{
+	mc_info_h* info;
+	bool local = false;
+
+	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
+		return ADE_RETURN_NIL;
+
+	if (!info->IsValid())
+		return ADE_RETURN_NIL;
+
+	mc_info *collide = info->Get();
+	
+	if (collide->num_hits <= 0) 
+	{
+		return ADE_RETURN_NIL;
+	}
+	else
+	{
+		if (local)
+			return ade_set_args(L, "o", l_Vector.Set(collide->hit_point));
+		else
+			return ade_set_args(L, "o", l_Vector.Set(collide->hit_point_world));
+	}
+}
+
+ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal of this information (local to object if boolean is set to <i>true</i>)", "vector", "The collision normal or nil of none")
+{
+	mc_info_h* info;
+	bool local = false;
+
+	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
+		return ADE_RETURN_NIL;
+
+	if (!info->IsValid())
+		return ADE_RETURN_NIL;
+
+	mc_info *collide = info->Get();
+
+	if (collide->num_hits <= 0) 
+	{
+		return ADE_RETURN_NIL;
+	}
+	else
+	{
+		if (!local)
+		{
+			vec3d normal;
+
+			vm_vec_unrotate(&normal, &collide->hit_normal, collide->orient);
+
+			return ade_set_args(L, "o", l_Vector.Set(normal));
+		}
+		else
+		{
+			return ade_set_args(L, "o", l_Vector.Set(collide->hit_normal));
+		}
+	}
+}
+
+ADE_FUNC(isValid, l_ColInfo, NULL, "Detectes if this handle is valid", "boolean", "true if valid false otherwise")
+{
+	mc_info_h* info;
+
+	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
+		return ADE_RETURN_NIL;
+
+	if (info->IsValid())
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 //**********HANDLE: shiptextures
 ade_obj<object_h> l_ShipTextures("shiptextures", "Ship textures handle");
 
@@ -7817,6 +7962,24 @@ ADE_FUNC(isArmed, l_Weapon, "[boolean Hit target]", "Checks if the weapon is arm
 	return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(getCollisionInformation, l_Weapon, NULL, "Returns the collision information for this weapon", "collision info", "The collision information or invalid handle if none")
+{
+	object_h *oh=NULL;
+	if(!ade_get_args(L, "o", l_Weapon.GetPtr(&oh)))
+		return ADE_RETURN_NIL;
+
+	if(!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+	
+	if (wp->collisionOccured)
+		return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h(new mc_info(wp->collisionInfo))));
+	else
+		return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h()));
+}
+
+
 //**********HANDLE: Beam
 ade_obj<object_h> l_Beam("beam", "Beam handle", &l_Object);
 
@@ -8046,7 +8209,7 @@ ADE_FUNC(getCollisionPosition, l_Beam, "number", "Get the position of the define
 
 	// convert from Lua to C
 	idx--;
-	if ((idx >= 10) || (idx < 0))
+	if ((idx >= MAX_FRAME_COLLISIONS) || (idx < 0))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	beam *bp = NULL;
@@ -8059,23 +8222,45 @@ ADE_FUNC(getCollisionPosition, l_Beam, "number", "Get the position of the define
 	return ade_set_args(L, "o", l_Vector.Set(bp->f_collisions[idx].cinfo.hit_point_world));
 }
 
-ADE_FUNC(getCollisionObject, l_Beam, "number", "Get the target of the defined collision.", "object", "Object the beam collided with")
+ADE_FUNC(getCollisionInformation, l_Beam, "number", "Get the collision information of the specified collision", "collision info", "handle to information or invalid handle on error")
 {
 	object_h *objh;
 	int idx;
 	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+		return ade_set_error(L, "o", l_ColInfo.Set(mc_info_h()));
 
 	// convert from Lua to C
 	idx--;
-	if ((idx >= 10) || (idx < 0))
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	if ((idx >= MAX_FRAME_COLLISIONS) || (idx < 0))
+		return ade_set_error(L, "o", l_ColInfo.Set(mc_info_h()));
 
 	beam *bp = NULL;
 	if(objh->objp->instance > -1)
 		bp = &Beams[objh->objp->instance];
 	else
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+		return ade_set_error(L, "o", l_ColInfo.Set(mc_info_h()));
+
+	// so we have valid beam and valid indexer
+	return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h(new mc_info(bp->f_collisions[idx].cinfo))));
+}
+
+ADE_FUNC(getCollisionObject, l_Beam, "number", "Get the target of the defined collision.", "object", "Object the beam collided with")
+{
+	object_h *objh;
+	int idx;
+	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	// convert from Lua to C
+	idx--;
+	if ((idx >= MAX_FRAME_COLLISIONS) || (idx < 0))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	// so we have valid beam and valid indexer
 	return ade_set_object_with_breed(L, bp->f_collisions[idx].c_objnum);
@@ -8090,7 +8275,7 @@ ADE_FUNC(isExitCollision, l_Beam, "number", "Checks if the defined collision was
 
 	// convert from Lua to C
 	idx--;
-	if ((idx >= 10) || (idx < 0))
+	if ((idx >= MAX_FRAME_COLLISIONS) || (idx < 0))
 		return ADE_RETURN_NIL;
 
 	beam *bp = NULL;
