@@ -7173,7 +7173,7 @@ ADE_FUNC(addShipEffect, l_Ship, "string name, int duration (in milliseconds)", "
 	int duration;
 	int effect_num;
 
-	if (!ade_get_args(L, "o|si", l_Ship.GetPtr(&shiph), effect, &duration))
+	if (!ade_get_args(L, "o|si", l_Ship.GetPtr(&shiph), &effect, &duration))
 		return ade_set_error(L, "b", false);
 
 	if (!shiph->IsValid())
