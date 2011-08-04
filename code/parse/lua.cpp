@@ -7169,11 +7169,11 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 
 ADE_FUNC(addShipEffect, l_Ship, "string name, int duration (in milliseconds)", "Activates an effect for this ship. Effect names are defined in Post_processing.tbl, and need to be implemented in the main shader. This functions analogous to the ship-effect sexp. NOTE: only one effect can be active at any time, adding new effects will override effects already in progress.\n", "boolean", "Returns true if the effect was successfully added, false otherwise") {
 	object_h *shiph;
-	char* effect;
+	char* effect = NULL;
 	int duration;
 	int effect_num;
 
-	if (!ade_get_args(L, "o|si", l_Ship.GetPtr(&shiph), effect, &duration))
+	if (!ade_get_args(L, "o|si", l_Ship.GetPtr(&shiph), &effect, &duration))
 		return ade_set_error(L, "b", false);
 
 	if (!shiph->IsValid())
