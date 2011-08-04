@@ -237,6 +237,8 @@ typedef struct cockpit_display {
 	char name[MAX_FILENAME_LEN];
 } cockpit_display;
 
+extern SCP_vector<cockpit_display> Player_displays;
+
 typedef struct cockpit_display_info {
 	char name[MAX_FILENAME_LEN];
 	char filename[MAX_FILENAME_LEN];
@@ -695,9 +697,6 @@ typedef struct ship {
 	
 	// Goober5000 - revised nameplate implementation
 	int *ship_replacement_textures;
-	int *cockpit_replacement_textures;
-
-	SCP_vector<cockpit_display> displays;
 
 	// Goober5000 - index into pm->view_positions[]
 	// apparently, early in FS1 development, there was a field called current_eye_index
@@ -1862,12 +1861,11 @@ extern int ship_has_engine_power(ship *shipp);
 
 // Swifty - Cockpit displays
 void ship_init_cockpit_displays(ship *shipp);
-void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int cockpit_model_num);
-void ship_clear_cockpit_displays(ship *shipp);
-void ship_set_hud_cockpit_targets(ship *shipp);
-void ship_clear_hud_cockpit_targets(ship *shipp);
-void ship_render_backgrounds_cockpit_display(ship *shipp);
-void ship_render_foregrounds_cockpit_display(ship *shipp);
+void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num);
+void ship_set_hud_cockpit_targets();
+void ship_clear_cockpit_displays();
+int ship_start_render_cockpit_display(int cockpit_display_num);
+void ship_end_render_cockpit_display(int cockpit_display_num);
 
 //WMC - Warptype stuff
 int warptype_match(char *p);
