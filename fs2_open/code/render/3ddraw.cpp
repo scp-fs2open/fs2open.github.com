@@ -630,10 +630,9 @@ int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float
 	vm_vec_normalize(&fvec);
 
 	uvec = View_matrix.vec.uvec;
-
-	vm_vec_crossprod(&rvec, &fvec, &uvec);
+	vm_vec_normalize(&uvec);
+	rvec = View_matrix.vec.rvec;
 	vm_vec_normalize(&rvec);
-	vm_vec_crossprod(&uvec, &fvec, &rvec);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
 //	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
@@ -985,12 +984,11 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	// VECMAT-ERROR: NULL VEC3D (PNT == View_position, multiplayer respawn or death sequence)
 	vm_vec_normalize_safe(&fvec);
 
-	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &fvec);
-//	uvec = View_matrix.vec.uvec;
+	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &View_matrix.vec.fvec);
+	vm_vec_normalize(&uvec);
 
-	vm_vec_crossprod(&rvec, &fvec, &uvec);
+	vm_vec_crossprod(&rvec, &View_matrix.vec.fvec, &uvec);
 	vm_vec_normalize(&rvec);
-	vm_vec_crossprod(&uvec, &fvec, &rvec);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
 //	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
