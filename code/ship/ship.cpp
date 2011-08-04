@@ -122,7 +122,11 @@ extern void render_path_points(object *objp);
 int	Num_wings = 0;
 int	Num_reinforcements = 0;
 ship	Ships[MAX_SHIPS];
+
 ship	*Player_ship;
+int		*Player_cockpit_textures;
+SCP_vector<cockpit_display> Player_displays;
+
 wing	Wings[MAX_WINGS];
 int	ships_inited = 0;
 int armor_inited = 0;
@@ -5003,8 +5007,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// Goober5000 - revised texture replacement
 	shipp->ship_replacement_textures = NULL;
-	shipp->cockpit_replacement_textures = NULL;
-	shipp->displays.clear();
 
 	shipp->glow_point_bank_active.clear();
 
@@ -6377,7 +6379,7 @@ void ship_render_cockpit(object *objp)
 	model_set_detail_level(0);
 	model_clear_instance(sip->cockpit_model_num);
 	//model_render(sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1);
-	model_render(sip->cockpit_model_num, &eye_ori, &pos, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1, shipp->cockpit_replacement_textures/*cockpit_textures*/);
+	model_render(sip->cockpit_model_num, &eye_ori, &pos, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1, Player_cockpit_textures);
 
 	//Zbuffer
 	gr_zbuffer_set(saved_zbuffer_mode);
@@ -6411,7 +6413,9 @@ void ship_render_cockpit(object *objp)
 
 void ship_init_cockpit_displays(ship *shipp)
 {
-	int cockpit_model_num = Ship_info[shipp->ship_info_index].cockpit_model_num;
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	int cockpit_model_num = sip->cockpit_model_num;
 
 	// don't bother creating cockpit texture replacements if this ship has no cockpit
 	if ( cockpit_model_num < 0 ) {
@@ -6419,48 +6423,55 @@ void ship_init_cockpit_displays(ship *shipp)
 	}
 
 	// check if we even have cockpit displays
-	if ( Ship_info[shipp->ship_info_index].displays.size() <= 0 ) {
+	if ( sip->displays.size() <= 0 ) {
+		return;
+	}
+
+	if ( Player_cockpit_textures != NULL) {
 		return;
 	}
 
 	// ship's cockpit texture replacements haven't been setup yet, so do it.
-	if (shipp->cockpit_replacement_textures == NULL) {
-		shipp->cockpit_replacement_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+	Player_cockpit_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
-		int i;
+	int i;
 
-		for ( i = 0; i < MAX_REPLACEMENT_TEXTURES; i++ ) {
-			shipp->cockpit_replacement_textures[i] = -1;
-		}
-
-		for ( i = 0; i < (int)Ship_info[shipp->ship_info_index].displays.size(); i++ ) {
-			ship_add_cockpit_display(shipp, &Ship_info[shipp->ship_info_index].displays[i], cockpit_model_num);
-		}
-
-		ship_set_hud_cockpit_targets(shipp);
+	for ( i = 0; i < MAX_REPLACEMENT_TEXTURES; i++ ) {
+		Player_cockpit_textures[i] = -1;
 	}
+
+	for ( i = 0; i < (int)sip->displays.size(); i++ ) {
+		ship_add_cockpit_display(&sip->displays[i], cockpit_model_num);
+	}
+
+	ship_set_hud_cockpit_targets();
 }
 
-void ship_clear_cockpit_displays(ship *shipp)
+void ship_clear_cockpit_displays()
 {
-	for ( int i = 0; i < (int)shipp->displays.size(); i++ ) {
-		if ( shipp->displays[i].background >= 0 ) {
-			bm_release(shipp->displays[i].background);
+	for ( int i = 0; i < (int)Player_displays.size(); i++ ) {
+		if ( Player_displays[i].background >= 0 ) {
+			bm_release(Player_displays[i].background);
 		}
 
-		if ( shipp->displays[i].foreground >= 0 ) {
-			bm_release(shipp->displays[i].foreground);
+		if ( Player_displays[i].foreground >= 0 ) {
+			bm_release(Player_displays[i].foreground);
 		}
 
-		if ( shipp->displays[i].target >= 0 ) {
-			bm_release(shipp->displays[i].target);
+		if ( Player_displays[i].target >= 0 ) {
+			bm_release(Player_displays[i].target);
 		}
 	}
 
-	ship_clear_hud_cockpit_targets(shipp);
+	Player_displays.clear();
+
+	if ( Player_cockpit_textures != NULL ) {
+		vm_free(Player_cockpit_textures);
+		Player_cockpit_textures = NULL;
+	}
 }
 
-void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int cockpit_model_num)
+void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num)
 {
 	if ( strlen(display->filename) <= 0 ) {
 		return;
@@ -6496,17 +6507,17 @@ void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int co
 
 	if (glow_target != -1 && diffuse_target != -1) {
 		// create a render target for this cockpit texture
-		if ( shipp->cockpit_replacement_textures[diffuse_target] < 0 || shipp->cockpit_replacement_textures[glow_target] < 0) {
+		if ( Player_cockpit_textures[diffuse_target] < 0 || Player_cockpit_textures[glow_target] < 0) {
 
 			bm_get_info(bmp_handle, &w, &h);
-			shipp->cockpit_replacement_textures[diffuse_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
+			Player_cockpit_textures[diffuse_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
 
 			// if no render target was made, bail
-			if ( shipp->cockpit_replacement_textures[diffuse_target] < 0 ) {
+			if ( Player_cockpit_textures[diffuse_target] < 0 ) {
 				return;
 			}
 
-			shipp->cockpit_replacement_textures[glow_target] = shipp->cockpit_replacement_textures[diffuse_target];
+			Player_cockpit_textures[glow_target] = Player_cockpit_textures[diffuse_target];
 		}
 	}
 
@@ -6534,97 +6545,91 @@ void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int co
 	new_display.size[0] = display->size[0];
 	new_display.size[1] = display->size[1];
 	new_display.source = bmp_handle;
-	new_display.target = shipp->cockpit_replacement_textures[diffuse_target];
+	new_display.target = Player_cockpit_textures[diffuse_target];
 
-	shipp->displays.push_back(new_display);
+	Player_displays.push_back(new_display);
 }
 
-void ship_set_hud_cockpit_targets(ship *shipp)
+void ship_set_hud_cockpit_targets()
 {
-	if ( !Ship_info[shipp->ship_info_index].hud_enabled ) {
+	if ( !Ship_info[Player_ship->ship_info_index].hud_enabled ) {
 		return;
 	}
 
-	SCP_vector<HudGauge*> &hud = Ship_info[shipp->ship_info_index].hud_gauges;
+	SCP_vector<HudGauge*> &hud = Ship_info[Player_ship->ship_info_index].hud_gauges;
 
 	for ( int i = 0; i < (int)hud.size(); i++ ) {
-		for ( int j = 0; j < (int)shipp->displays.size(); j++ ) {
-			hud[i]->setCockpitTarget(&shipp->displays[j]);
+		for ( int j = 0; j < (int)Player_displays.size(); j++ ) {
+			hud[i]->setCockpitTarget(&Player_displays[j]);
 		}
 	}
 }
 
-void ship_clear_hud_cockpit_targets(ship *shipp)
-{
-	if ( !Ship_info[shipp->ship_info_index].hud_enabled ) {
-		return;
-	}
-
-	SCP_vector<HudGauge*> &hud = Ship_info[shipp->ship_info_index].hud_gauges;
-
-	for ( int i = 0; i < (int)hud.size(); i++ ) {
-		hud[i]->resetCockpitTarget();
-	}
-}
-
-void ship_render_backgrounds_cockpit_display(ship *shipp)
+int ship_start_render_cockpit_display(int cockpit_display_num)
 {
 	// make sure this thing even has a cockpit
-	if ( Ship_info[shipp->ship_info_index].cockpit_model_num < 0 ) {
-		return;
+	if ( Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0 ) {
+		return -1;
 	}
 
-	if ( !shipp->cockpit_replacement_textures ) {
-		return;
+	if ( Player_cockpit_textures == NULL ) {
+		return -1;
 	}
 
-	int i, cull = gr_set_cull(0);
-	for ( i = 0; i < (int)shipp->displays.size(); i++ ) {
-		if ( !bm_set_render_target(shipp->displays[i].target) ) {
-			continue;
-		}
-		
-		gr_clear();
-		gr_set_bitmap(shipp->displays[i].source);
-		gr_bitmap(0, 0, false);
+	// check sanity of the cockpit display handle
+	if ( cockpit_display_num >= (int)Player_displays.size() || cockpit_display_num < 0 ) {
+		return -1;
 	}
 
-	for ( i = 0; i < (int)shipp->displays.size(); i++ ) {
-		if ( shipp->displays[i].background >= 0 ) {
-			if ( !bm_set_render_target(shipp->displays[i].target) ) {
-				continue;
-			}
+	cockpit_display* display = &Player_displays[cockpit_display_num];
 
-			gr_set_bitmap(shipp->displays[i].background);
-			gr_bitmap_ex(shipp->displays[i].offset[0], shipp->displays[i].offset[1], shipp->displays[i].size[0], shipp->displays[i].size[1], 0, 0, false);
-		}
+	if ( display->target < 0 ) {
+		return -1;
+	}
+
+	if ( !bm_set_render_target(display->target) ) {
+		return -1;
+	}
+	
+	int cull = gr_set_cull(0);
+
+	gr_clear();
+	gr_set_bitmap(display->source);
+	gr_bitmap(0, 0, false);
+
+	if ( display->background >= 0 ) {
+		gr_set_bitmap(display->background);
+		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, false);
 	}
 
 	gr_set_cull(cull);
-	bm_set_render_target(-1);
+
+	return display->target;
 }
 
-void ship_render_foregrounds_cockpit_display(ship *shipp)
+void ship_end_render_cockpit_display(int cockpit_display_num)
 {
 	// make sure this thing even has a cockpit
-	if ( Ship_info[shipp->ship_info_index].cockpit_model_num < 0 ) {
+	if ( Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0 ) {
 		return;
 	}
 
-	if ( !shipp->cockpit_replacement_textures ) {
+	if ( Player_cockpit_textures == NULL ) {
 		return;
 	}
+
+	// check sanity of the cockpit display handle
+	if ( cockpit_display_num >= (int)Player_displays.size() || cockpit_display_num < 0 ) {
+		return;
+	}
+
+	cockpit_display* display = &Player_displays[cockpit_display_num];
 
 	int cull = gr_set_cull(0);
-	for ( int i = 0; i < (int)shipp->displays.size(); i++ ) {
-		if ( shipp->displays[i].foreground >= 0 ) {
-			if ( !bm_set_render_target(shipp->displays[i].target) ) {
-				continue;
-			}
-		
-			gr_set_bitmap(shipp->displays[i].foreground);
-			gr_bitmap_ex(shipp->displays[i].offset[0], shipp->displays[i].offset[1], shipp->displays[i].size[0], shipp->displays[i].size[1], 0, 0, false);
-		}
+	if ( display->foreground >= 0 ) {
+		gr_reset_clip();
+		gr_set_bitmap(display->foreground);
+		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, false);
 	}
 
 	gr_set_cull(cull);
@@ -6682,11 +6687,6 @@ void ship_delete( object * obj )
 		shipp->ship_replacement_textures = NULL;
 	}
 
-	if( shipp->cockpit_replacement_textures != NULL ) {
-		vm_free(shipp->cockpit_replacement_textures);
-		shipp->cockpit_replacement_textures = NULL;
-	}
-
 	// glow point banks
 	shipp->glow_point_bank_active.clear();
 
@@ -6704,7 +6704,6 @@ void ship_delete( object * obj )
 	// remove textures from memory if we are done with them - taylor
 //	ship_page_out_textures(shipp->ship_info_index);
 	
-	ship_clear_cockpit_displays(shipp);
 	model_delete_instance(shipp->model_instance_num);
 }
 
@@ -8915,6 +8914,13 @@ void ship_model_change(int n, int ship_type)
 	if (sip->model_num == -1) {
 		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 	}
+
+	if ( sip->cockpit_model_num == -1 ) {
+		if ( strlen(sip->cockpit_pof_file) ) {
+			sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
+		}
+	}
+
 	pm = model_get(sip->model_num);
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
 

@@ -990,6 +990,7 @@ void game_level_close()
 		cam_close();
 		subtitles_close();
 		trail_level_close();
+		ship_clear_cockpit_displays();
 		hud_level_close();
 		model_instance_free_all();
 
@@ -4393,6 +4394,8 @@ int game_actually_playing()
 
 void game_render_hud(camid cid)
 {
+	size_t i;
+
 	gr_reset_clip();
 
 	if(cid.isValid()) {
