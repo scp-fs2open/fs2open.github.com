@@ -1716,7 +1716,10 @@ void hud_render_gauges(int cockpit_display_num)
 		num_gauges = sip->hud_gauges.size();
 
 		for(j = 0; j < num_gauges; j++) {
-			sip->hud_gauges[j]->preprocess();
+			// only preprocess gauges if we're not rendering to cockpit
+			if ( cockpit_display_num < 0 ) {
+				sip->hud_gauges[j]->preprocess();
+			}
 
 			if ( !sip->hud_gauges[j]->setupRenderCanvas(render_target) ) {
 				continue;
