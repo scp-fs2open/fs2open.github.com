@@ -140,11 +140,11 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float dep
 	uvec = View_matrix.vec.uvec;
 
 	// make a right vector from the f and up vector, this r vec is exactly what we want, so...
-	vm_vec_crossprod(&rvec, &fvec, &uvec);
+	vm_vec_crossprod(&rvec, &View_matrix.vec.fvec, &uvec);
 	vm_vec_normalize_safe(&rvec);
 
 	// fix the u vec with it
-	vm_vec_crossprod(&uvec, &fvec, &rvec);
+	vm_vec_crossprod(&uvec, &View_matrix.vec.fvec, &rvec);
 
 	// move the center of the sprite based on the depth parameter
 	if ( depth != 0.0f )
