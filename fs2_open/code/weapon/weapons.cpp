@@ -1380,6 +1380,10 @@ int parse_weapon(int subtype, bool replace)
 			wip->life_min = 0.0f;
 			Warning(LOCATION, "Lifetime min for weapon '%s' cannot be less than 0. Setting to 0.", wip->name);
 		}
+		else
+		{
+			wip->lifetime = (wip->life_min+wip->life_max)*0.5f;
+		}
 	}
 
 	if(optional_string("$Lifetime Max:")) {
