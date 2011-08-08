@@ -1378,7 +1378,7 @@ int parse_weapon(int subtype, bool replace)
 
 		if(wip->life_min < 0.0f) {
 			wip->life_min = 0.0f;
-			Warning(LOCATION, "Lifetime min for weapon '%s' cannot be less than 0. Setting to 0.", wip->name);
+			Warning(LOCATION, "Lifetime min for weapon '%s' cannot be less than 0. Setting to 0.\n", wip->name);
 		}
 	}
 
@@ -1387,14 +1387,19 @@ int parse_weapon(int subtype, bool replace)
 
 		if(wip->life_max < 0.0f) {
 			wip->life_max = 0.0f;
-			Warning(LOCATION, "Lifetime max for weapon '%s' cannot be less than 0. Setting to 0.", wip->name);
+			Warning(LOCATION, "Lifetime max for weapon '%s' cannot be less than 0. Setting to 0.\n", wip->name);
+		} else if (wip->life_max < wip->life_min) {
+			wip->life_max = wip->life_min + 0.1f;
+			Warning(LOCATION, "Lifetime max for weapon '%s' cannot be less than its Lifetime Min (%d) value. Setting to %d.\n", wip->name, wip->life_min, wip->life_max);
+		} else {
+			wip->lifetime = (wip->life_min+wip->life_max)*0.5f;
 		}
 	}
 
 	if(wip->life_min >= 0.0f && wip->life_max < 0.0f) {
 		wip->lifetime = wip->life_min;
 		wip->life_min = -1.0f;
-		Warning(LOCATION, "Lifetime min, but not lifetime max, specified for weapon %s. Assuming static lifetime of %.2f seconds.", wip->lifetime);
+		Warning(LOCATION, "Lifetime min, but not lifetime max, specified for weapon %s. Assuming static lifetime of %.2f seconds.\n", wip->lifetime);
 	}
 
 	if(optional_string("$Lifetime:")) {

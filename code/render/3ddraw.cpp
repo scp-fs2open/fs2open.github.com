@@ -968,7 +968,7 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 //return 0;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 
-	angle+=Physics_viewer_bank;
+	angle-=Physics_viewer_bank;
 	if ( angle < 0.0f )
 		angle += PI2;
 	else if ( angle > PI2 )
