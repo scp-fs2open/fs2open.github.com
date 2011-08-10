@@ -1823,13 +1823,11 @@ void game_init()
 
 
 #ifndef NDEBUG
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
-		mprintf(("FreeSpace version: %i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR));
-	} else if (FS_VERSION_REVIS == 0) {
+	#if FS_VERSION_REVIS == 0
 		mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
-	} else {
+	#else
 		mprintf(("FreeSpace version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
-	}
+	#endif
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -8119,13 +8117,11 @@ void get_version_string(char *str, int max_size)
 //XSTR:OFF
 	Assert( max_size > 6 );
 
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
-		sprintf(str, "FreeSpace 2 Open v%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
-	} else if (FS_VERSION_REVIS == 0) {
+	#if FS_VERSION_REVIS == 0
 		sprintf(str, "FreeSpace 2 Open v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-	} else {
+	#else
 		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
-	}
+	#endif
 
 #ifndef NDEBUG
 	strcat_s( str, max_size, " Debug" );
