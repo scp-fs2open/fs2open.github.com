@@ -3462,7 +3462,7 @@ strcpy_s(parse_error_text, temp_error);
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.z);
+							current_trigger->angle.xyz.z = fl_radians(current_trigger->angle.xyz.z);
 						}else{
 							current_trigger->absolute = false;
 							if(!optional_string("+relative_angle:"))
@@ -3509,7 +3509,7 @@ strcpy_s(parse_error_text, temp_error);
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.z);
+							current_trigger->angle.xyz.z = fl_radians(current_trigger->angle.xyz.z);
 						}else{
 							current_trigger->absolute = false;
 							required_string("+relative_angle:");
