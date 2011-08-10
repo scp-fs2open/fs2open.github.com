@@ -678,6 +678,8 @@ int Mj_cd_coords[GR_NUM_RESOLUTIONS] = {
 // NOTE : these numbers are completely empirical
 #define MJ_PING_GREEN				160
 #define MJ_PING_YELLOW				300
+#define MJ_PING_RED					700
+#define MJ_PING_ONE_SECOND			1000
 
 int Mj_list_area_coords[GR_NUM_RESOLUTIONS][4] = {
 	{ // GR_640
@@ -1342,12 +1344,12 @@ void multi_join_display_games()
 
 			// display the ping time
 			if(moveup->ping.ping_avg > 0){
-				if(moveup->ping.ping_avg > 1000){
+				if(moveup->ping.ping_avg > MJ_PING_ONE_SECOND){
 					gr_set_color_fast(&Color_bright_red);
 					strcpy_s(str,XSTR("> 1 sec",761));
 				} else {
 					// set the appropriate ping time color indicator
-					if(moveup->ping.ping_avg > MJ_PING_YELLOW){
+					if(moveup->ping.ping_avg > MJ_PING_RED){
 						gr_set_color_fast(&Color_bright_red);
 					} else if(moveup->ping.ping_avg > MJ_PING_YELLOW){
 						gr_set_color_fast(&Color_bright_yellow);
