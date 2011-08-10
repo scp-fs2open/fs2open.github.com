@@ -2838,11 +2838,7 @@ void HudGaugeSupport::render(float frametime)
 				show_time = 1;
 			}		
 
-			if (!show_time) {
-				renderString(position[0] + text_dock_offset_x, position[1] + text_val_offset_y, outstr);
-			} else {			
-				renderString(position[0] + text_dock_offset_x, position[1] + text_val_offset_y, outstr);
-			}
+			renderString(position[0] + text_dock_offset_x, position[1] + text_val_offset_y, outstr);
 		}
 	}
 
