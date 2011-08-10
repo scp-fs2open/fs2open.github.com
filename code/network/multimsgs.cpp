@@ -2966,8 +2966,6 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	ADD_USHORT( starting_sig );
 	
 	// add a couple of bits for swarm missiles and dual fire secondary weapons
-	sinfo = 0;
-
 	sinfo = current_bank;
 
 	if ( allow_swarm ){
