@@ -14502,11 +14502,10 @@ void ai_process( object * obj, int ai_index, float frametime )
 		break;
 	}
 
-	// Wanderer - sexp based override goes here - only if rfc is valid though
-	if (rfc == 1)
-		ai_control_info_check(obj, aip);
-
 	if (rfc == 1) {
+		// Wanderer - sexp based override goes here - only if rfc is valid though
+		ai_control_info_check(obj, aip);
+		
 		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
 		// if obj is in formation and not flight leader, don't update rotvel
