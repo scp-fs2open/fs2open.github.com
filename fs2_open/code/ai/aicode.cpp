@@ -3099,7 +3099,7 @@ void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 		docker_aip->support_ship_objnum = -1;
 		dockee_aip->support_ship_objnum = -1;
 		docker_aip->support_ship_signature = -1;
-		docker_aip->support_ship_signature = -1;
+		dockee_aip->support_ship_signature = -1;
 	}
 
 	// unlink the two objects
