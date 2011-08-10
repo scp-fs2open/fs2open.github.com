@@ -2024,7 +2024,6 @@ void debrief_init()
 	Current_mode = -1;
 	New_mode = DEBRIEF_TAB;
 	Recommend_active = Award_active = 0;
-	Current_stage = 0;
 
 	Current_stage = -1;
 	New_stage = 0;
