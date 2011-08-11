@@ -919,7 +919,7 @@ int camid::getSignature()
 
 bool camid::isValid()
 {
-	if(idx < 0 || idx >= Cameras.size())
+	if(idx >= Cameras.size())
 		return false;
 
 	if(Cameras[idx] == NULL)
@@ -999,7 +999,7 @@ void cam_delete(camid cid)
 
 void cam_do_frame(float frametime)
 {
-	unsigned int i,size=Cameras.size();
+	size_t i,size=Cameras.size();
 	for(i = 0; i < size; i++)
 	{
 		if(Cameras[i] != NULL)
@@ -1009,7 +1009,7 @@ void cam_do_frame(float frametime)
 
 camid cam_get_camera(uint idx)
 {
-	if(idx < 0 || idx >= Cameras.size())
+	if(idx >= Cameras.size())
 		return camid();
 
 	return camid(idx, Cameras[idx]->get_signature());
