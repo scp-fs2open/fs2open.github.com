@@ -50,6 +50,8 @@
 // PXO DEFINES/VARS
 //
 
+#define MAX_PXO_TEXT_LEN					255
+
 // button definitions
 #define MULTI_PXO_NUM_BUTTONS				15
 #define MULTI_PXO_PLIST_UP					0
@@ -261,7 +263,7 @@ int Multi_pxo_status_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 // the status text itself
-char Multi_pxo_status_text[255];
+char Multi_pxo_status_text[MAX_PXO_TEXT_LEN];
 
 // set the status text
 void multi_pxo_set_status_text(char *txt);
@@ -710,13 +712,13 @@ UI_WINDOW Multi_pxo_com_window;
 UI_INPUTBOX Multi_pxo_com_input;
 
 // text on the "top" half of the dialog display area
-char Multi_pxo_com_top_text[255];
+char Multi_pxo_com_top_text[MAX_PXO_TEXT_LEN];
 
 // text on the "middle" portion of the dialog display area
-char Multi_pxo_com_middle_text[255];
+char Multi_pxo_com_middle_text[MAX_PXO_TEXT_LEN];
 
 // text on the "bottom" half of the dialog display area
-char Multi_pxo_com_bottom_text[255];
+char Multi_pxo_com_bottom_text[MAX_PXO_TEXT_LEN];
 
 int Multi_pxo_com_top_text_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
@@ -939,7 +941,7 @@ void multi_pxo_run_medals();
 #define MULTI_PXO_NOTIFY_TIME				4000
 #define MULTI_PXO_NOTIFY_Y					435
 
-char Multi_pxo_notify_text[255];
+char Multi_pxo_notify_text[MAX_PXO_TEXT_LEN];
 int Multi_pxo_notify_stamp = -1;
 
 // add a notification string
@@ -1576,7 +1578,7 @@ void multi_pxo_handle_disconnect()
 // it is safe to pass the same pointer for both parameters
 void multi_pxo_strip_space(char *string1,char *string2)
 {
-	char midway[255];
+	char midway[MAX_PXO_TEXT_LEN];
 	char *tok;
 
 	// copy the original
@@ -1799,7 +1801,7 @@ void multi_pxo_button_pressed(int n)
 		break;
 
 	case MULTI_PXO_PINFO:
-		char stats[255];
+		char stats[MAX_PXO_TEXT_LEN];
 
 		// if we have a guy selected, try and get his info
 		if(Multi_pxo_player_select != NULL){
@@ -1810,7 +1812,7 @@ void multi_pxo_button_pressed(int n)
 			}
 			// if we didn't get stats for this guy.
 			else {
-				memset(stats,0,255);
+				memset(stats,0,MAX_PXO_TEXT_LEN);
 				sprintf(stats,XSTR("Could not get stats for %s\n(May not be a registered pilot)",946),Multi_pxo_player_select->name);
 				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,stats);
 			}
@@ -1846,8 +1848,8 @@ int mpxo_failed = 0;
 int multi_pxo_connect_do()
 {
 	int ret_code;		
-	char id_string[255] = "";
-	char ip_string[255] = "";	
+	char id_string[MAX_PXO_TEXT_LEN] = "";
+	char ip_string[MAX_PXO_TEXT_LEN] = "";	
 
 	// if we already tried and failed, sit around until the user presses cancel
 	if(!mpxo_failed){	
@@ -1855,11 +1857,11 @@ int multi_pxo_connect_do()
 		Assert(Player);		
 
 		// build the tracker id string
-		memset(id_string, 0, 255);
+		memset(id_string, 0, MAX_PXO_TEXT_LEN);
 		sprintf(id_string, "%s %s", Multi_tracker_id_string, Player->callsign);
 
 		// build the ip string
-		memset(ip_string, 0, 255);
+		memset(ip_string, 0, MAX_PXO_TEXT_LEN);
 		sprintf(ip_string, "%s:%d", Multi_options_g.pxo_ip, PXO_CHAT_PORT);
 
 		// connect to the server
@@ -2194,11 +2196,11 @@ void multi_pxo_channel_count_update(char *name, int count)
 void multi_pxo_set_status_text(char *txt)
 {
 	// copy in the text
-	memset(Multi_pxo_status_text, 0, 255);
-	strncpy(Multi_pxo_status_text, txt, 254);
+	memset(Multi_pxo_status_text, 0, MAX_PXO_TEXT_LEN);
+	strncpy(Multi_pxo_status_text, txt, MAX_PXO_TEXT_LEN-1);
 
 	// make sure it fits properly
-	gr_force_fit_string(Multi_pxo_status_text, 254, Multi_pxo_status_coords[gr_screen.res][2]);
+	gr_force_fit_string(Multi_pxo_status_text, MAX_PXO_TEXT_LEN-1, Multi_pxo_status_coords[gr_screen.res][2]);
 }
 
 // blit the status text
@@ -2503,7 +2505,7 @@ void multi_pxo_channel_refresh_current()
 void multi_pxo_blit_channels()
 {
 	pxo_channel *moveup;
-	char chan_name[255];
+	char chan_name[MAX_PXO_TEXT_LEN];
 	char chan_users[15];
 	char chan_servers[15];
 	int user_w,server_w;
@@ -2541,10 +2543,10 @@ void multi_pxo_blit_channels()
 		gr_get_string_size(&server_w, NULL, chan_servers);
 
 		// make sure the name fits
-		memset(chan_name, 0, 10);
+		memset(chan_name, 0, MAX_PXO_TEXT_LEN);
 		Assert(moveup->name);
 		strcpy_s(chan_name,moveup->name);
-		gr_force_fit_string(chan_name, 254, Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_PLAYERS_COLUMN]);
+		gr_force_fit_string(chan_name, MAX_PXO_TEXT_LEN-1, Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_PLAYERS_COLUMN]);
 
 		// blit the strings
 		gr_string(Multi_pxo_chan_coords[gr_screen.res][0], y_start, chan_name + 1);
@@ -2947,7 +2949,7 @@ void multi_pxo_process_players()
 void multi_pxo_blit_players()
 {
 	player_list *moveup;
-	char player_name[255];
+	char player_name[MAX_PXO_TEXT_LEN];
 	int disp_count,y_start;
 
 	// blit as many channels as we can
@@ -2969,7 +2971,7 @@ void multi_pxo_blit_players()
 
 		// make sure the string fits		
 		strcpy_s(player_name,moveup->name);		
-		gr_force_fit_string(player_name, 254, Multi_pxo_player_coords[gr_screen.res][2]);
+		gr_force_fit_string(player_name, MAX_PXO_TEXT_LEN-1, Multi_pxo_player_coords[gr_screen.res][2]);
 
 		// blit the string
 		gr_string(Multi_pxo_player_coords[gr_screen.res][0], y_start, player_name);
@@ -3271,12 +3273,12 @@ void multi_pxo_chat_blit()
 	int y_start;
 	int disp_count,token_width;
 	char piece[100];
-	char title[255];
+	char title[MAX_PXO_TEXT_LEN];
 	char *tok;
 	chat_line *moveup;
 
 	// blit the title line
-	memset(title,0,15);
+	memset(title,0,MAX_PXO_TEXT_LEN);
 	if(ON_CHANNEL()){
 		if(strlen(Multi_pxo_channel_current.name) > 1){
 			sprintf(title, XSTR("%s on %s", 955), Multi_pxo_nick, Multi_pxo_channel_current.name+1);  // [[ <who> on <channel> ]]
@@ -3286,7 +3288,7 @@ void multi_pxo_chat_blit()
 	} else {
 		strcpy_s(title,XSTR("Parallax Online - No Channel", 956));
 	}	
-	gr_force_fit_string(title, 254, Multi_pxo_chat_coords[gr_screen.res][2] - 10);
+	gr_force_fit_string(title, MAX_PXO_TEXT_LEN-1, Multi_pxo_chat_coords[gr_screen.res][2] - 10);
 	gr_get_string_size(&token_width,NULL,title);
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + ((Multi_pxo_chat_coords[gr_screen.res][2] - token_width)/2), Multi_pxo_chat_title_y[gr_screen.res], title);	
@@ -3801,9 +3803,9 @@ void multi_pxo_com_init(int input_len)
 	Multi_pxo_com_input.set_focus();
 
 	// clear all text lines
-	memset(Multi_pxo_com_bottom_text, 0, 255);
-	memset(Multi_pxo_com_middle_text, 0, 255);
-	memset(Multi_pxo_com_top_text, 0, 255);
+	memset(Multi_pxo_com_bottom_text, 0, MAX_PXO_TEXT_LEN);
+	memset(Multi_pxo_com_middle_text, 0, MAX_PXO_TEXT_LEN);
+	memset(Multi_pxo_com_top_text, 0, MAX_PXO_TEXT_LEN);
 }
 
 // close down the common dialog
@@ -3836,7 +3838,7 @@ void multi_pxo_com_set_top_text(char *txt)
 {	
 	if((txt != NULL) && strlen(txt)){
 		strcpy_s(Multi_pxo_com_top_text,txt);
-		gr_force_fit_string(Multi_pxo_com_top_text, 254, Multi_pxo_com_input_coords[gr_screen.res][2]);
+		gr_force_fit_string(Multi_pxo_com_top_text, MAX_PXO_TEXT_LEN-1, Multi_pxo_com_input_coords[gr_screen.res][2]);
 	}	
 }
 
@@ -3845,7 +3847,7 @@ void multi_pxo_com_set_middle_text(char *txt)
 {
 	if((txt != NULL) && strlen(txt)){
 		strcpy_s(Multi_pxo_com_middle_text,txt);
-		gr_force_fit_string(Multi_pxo_com_middle_text, 254, Multi_pxo_com_input_coords[gr_screen.res][2]);
+		gr_force_fit_string(Multi_pxo_com_middle_text, MAX_PXO_TEXT_LEN-1, Multi_pxo_com_input_coords[gr_screen.res][2]);
 	}	
 }
 
@@ -3854,7 +3856,7 @@ void multi_pxo_com_set_bottom_text(char *txt)
 {
 	if((txt != NULL) && strlen(txt)){
 		strcpy_s(Multi_pxo_com_bottom_text,txt);
-		gr_force_fit_string(Multi_pxo_com_bottom_text, 254, Multi_pxo_com_input_coords[gr_screen.res][2]);
+		gr_force_fit_string(Multi_pxo_com_bottom_text, MAX_PXO_TEXT_LEN-1, Multi_pxo_com_input_coords[gr_screen.res][2]);
 	}	
 }
 
@@ -4019,7 +4021,7 @@ void multi_pxo_priv_process_input()
 
 // find player stuff -----------------------------------------
 
-char name_lookup[255];
+char name_lookup[MAX_PXO_TEXT_LEN];
 
 // initialize the popup
 void multi_pxo_find_init()
@@ -4174,8 +4176,8 @@ void multi_pxo_find_process_input()
 		// if we're not already in search mode
 		if(!Multi_pxo_searching){
 			// clear all text
-			memset(Multi_pxo_com_middle_text,0,255);
-			memset(Multi_pxo_com_bottom_text,0,255);
+			memset(Multi_pxo_com_middle_text,0,MAX_PXO_TEXT_LEN);
+			memset(Multi_pxo_com_bottom_text,0,MAX_PXO_TEXT_LEN);
 
 			Multi_pxo_com_input.get_text(name_lookup);
 			multi_pxo_strip_space(name_lookup,name_lookup);
@@ -4197,7 +4199,7 @@ void multi_pxo_find_process_input()
 			}
 			// clear everything
 			else {
-				memset(Multi_pxo_com_top_text,0,255);
+				memset(Multi_pxo_com_top_text,0,MAX_PXO_TEXT_LEN);
 			}
 		}
 	}
@@ -4282,7 +4284,7 @@ int multi_pxo_pinfo_cond()
 		case 0:
 		{
 			char *ret_string;
-			char temp_string[255];
+			char temp_string[MAX_PXO_TEXT_LEN];
 			char *tok;
 
 			// if the thing is non-null, do something		

@@ -3725,7 +3725,7 @@ void HudGaugeMultiMsg::render(float frametime)
 	char txt[MULTI_MSG_MAX_TEXT_LEN+20];
 
 	// clear the text
-	memset(txt,0,MULTI_MSG_MAX_TEXT_LEN+1);
+	memset(txt,0,MULTI_MSG_MAX_TEXT_LEN+20);
 
 	// if there is valid multiplayer message text to be displayed
 	if(multi_msg_message_text(txt)){
