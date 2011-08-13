@@ -376,7 +376,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 				{
 					if(Fred_running)
 					{
-						if(stricmp("FRED2_Open", scp->data.name) && stricmp("FRED2_Open", scp->data.name) && stricmp("FRED 2", scp->data.name) && stricmp("FRED", scp->data.name))
+						if(stricmp("FRED2_Open", scp->data.name) && stricmp("FRED2Open", scp->data.name) && stricmp("FRED 2", scp->data.name) && stricmp("FRED", scp->data.name))
 							return false;
 					}
 					else
