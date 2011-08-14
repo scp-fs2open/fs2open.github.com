@@ -1334,7 +1334,7 @@ void multi_join_display_games()
 			// tack on the actual server name			
 			strcat_s(str," ");
 			strcat_s(str,moveup->name);
-			if(strlen(moveup->mission_name) > 0){
+			if(moveup->mission_name[0] != '\0'){
 				strcat_s(str, " / ");
 				strcat_s(str,moveup->mission_name);
 			} 
@@ -1909,10 +1909,10 @@ void multi_join_send_join_request(int as_observer)
 		
 	// fill out the join request struct	
 	strcpy_s(Multi_join_request.callsign,Player->callsign);
-	if(strlen(Player->image_filename) > 0){
+	if(Player->image_filename[0] != '\0'){
 		strcpy_s(Multi_join_request.image_filename, Player->image_filename);
 	}	
-	if(strlen(Player->squad_filename) > 0){
+	if(Player->squad_filename[0] != '\0'){
 		strcpy_s(Multi_join_request.squad_filename, Player->squad_filename);
 	}
 
@@ -6819,10 +6819,10 @@ void multi_game_client_setup_do_frame()
 
 	// blit the mission filename if possible
 	if(Netgame.campaign_mode){
-		if(strlen(Netgame.campaign_name) > 0){			
+		if(Netgame.campaign_name[0] != '\0'){			
 			strcpy_s(mission_text,Netgame.campaign_name);
 			
-			if(strlen(Netgame.title) > 0){
+			if(Netgame.title[0] != '\0'){
 				strcat_s(mission_text,", ");
 				strcat_s(mission_text,Netgame.title);
 			}
@@ -6831,10 +6831,10 @@ void multi_game_client_setup_do_frame()
 			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text);
 		}								
 	} else {
-		if(strlen(Netgame.mission_name) > 0){			
+		if(Netgame.mission_name[0] != '\0'){			
 			strcpy_s(mission_text,Netgame.mission_name);
 
-			if(strlen(Netgame.title) > 0){
+			if(Netgame.title[0] != '\0'){
 				strcat_s(mission_text,", ");
 				strcat_s(mission_text,Netgame.title);
 			}			

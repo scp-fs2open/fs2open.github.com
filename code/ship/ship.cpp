@@ -1402,7 +1402,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (strlen(sip->cockpit_pof_file) > 0)
+			if (sip->cockpit_pof_file[0] != '\0')
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -1469,7 +1469,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (strlen(sip->pof_file) > 0)
+			if (sip->pof_file[0] != '\0')
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -1532,7 +1532,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (strlen(sip->pof_file) > 0)
+			if (sip->pof_file[0] != '\0')
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -3204,7 +3204,7 @@ strcpy_s(parse_error_text, temp_error);
 					Error(LOCATION, "Malformed $Subsystem entry '%s' %s.\n\n"
 						"Specify a turning rate or remove the trailing comma.",
 						sp->subobj_name,
-						strlen(parse_error_text) >0 ? parse_error_text: "unknown ship");
+						parse_error_text[0] != '\0' ? parse_error_text: "unknown ship");
 				}
 			}
 
@@ -5271,7 +5271,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 
 		// if the table has set an name copy it
-		if (strlen(ship_system->system_info->alt_sub_name) > 0) {
+		if (ship_system->system_info->alt_sub_name[0] != '\0') {
 			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name);
 		}
 		else {
@@ -6522,7 +6522,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	}
 
 	new_display.background = -1;
-	if ( strlen(display->bg_filename) > 0 ) {
+	if ( display->bg_filename[0] != '\0' ) {
 		new_display.background = bm_load(display->bg_filename);
 
 		if ( new_display.background < 0 ) {
@@ -6531,7 +6531,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	}
 
 	new_display.foreground = -1;
-	if ( strlen(display->fg_filename) > 0 ) {
+	if ( display->fg_filename[0] != '\0' ) {
 		new_display.foreground = bm_load(display->fg_filename);
 
 		if ( new_display.foreground < 0 ) {
@@ -14036,7 +14036,7 @@ ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *
 
 char *ship_subsys_get_name(ship_subsys *ss)
 {
-	if(strlen(ss->sub_name) > 0)
+	if( ss->sub_name[0] != '\0' )
 		return ss->sub_name;
 	else
 		return ss->system_info->name;
@@ -14044,7 +14044,7 @@ char *ship_subsys_get_name(ship_subsys *ss)
 
 bool ship_subsys_has_instance_name(ship_subsys *ss)
 {
-	if(strlen(ss->sub_name) > 0)
+	if( ss->sub_name[0] != '\0' )
 		return true;
 	else
 		return false;
@@ -16365,7 +16365,7 @@ void wing_load_squad_bitmap(wing *w)
 	Assert (w->wing_insignia_texture == -1);
 
 	// try and set the new one
-	if(strlen(w->wing_squad_filename) > 0)
+	if( w->wing_squad_filename[0] != '\0' )
 	{
 		// load duplicate because it might be the same as the player's squad,
 		// and we don't want to overlap and breed nasty errors when we unload

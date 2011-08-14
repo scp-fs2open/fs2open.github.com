@@ -3257,7 +3257,7 @@ void weapon_load_bitmaps(int weapon_index)
 			if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE){
 
 				if ((wip->particle_spewers[s].particle_spew_anim.first_frame < 0) 
-					&& (strlen(wip->particle_spewers[s].particle_spew_anim.filename) > 0) ) {
+					&& (wip->particle_spewers[s].particle_spew_anim.filename[0] != '\0') ) {
 
 					wip->particle_spewers[s].particle_spew_anim.first_frame = bm_load(wip->particle_spewers[s].particle_spew_anim.filename);
 

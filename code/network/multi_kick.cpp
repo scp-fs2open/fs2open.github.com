@@ -141,7 +141,7 @@ void multi_dcf_kick()
 	// get the callsign of the player to kick
 	dc_get_arg(ARG_STRING);
 
-	if(strlen(Dc_arg) == 0){
+	if(Dc_arg[0] == '\0'){
 		dc_printf("Invalid player callsign!\n");
 		return ;
 	}
