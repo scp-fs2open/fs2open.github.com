@@ -1167,59 +1167,49 @@ $Add:			0								\n\
 //					DEFAULT SHADERS
 //===========================================================
 
-char* Default_main_vertex_shader = "\
-#ifdef FLAG_ENV_MAP																			\n\
-uniform mat4 envMatrix;																		\n\
-varying vec3 envReflect;																	\n\
-#endif																						\n\
-																							\n\
-#ifdef FLAG_NORMAL_MAP																		\n\
-varying mat3 tbnMatrix;																		\n\
-#endif																						\n\
-																							\n\
-#ifdef FLAG_FOG																				\n\
-varying float fogDist;																		\n\
-#endif																						\n\
-																							\n\
-varying vec4 position;																		\n\
-varying vec3 lNormal;																		\n\
-																							\n\
-void main()																					\n\
-{																							\n\
-	gl_TexCoord[0] = gl_MultiTexCoord0;														\n\
-	gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;						\n\
-	gl_FrontColor = gl_Color;																\n\
-	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);										\n\
-																							\n\
- // Transform the normal into eye space and normalize the result.							\n\
-	position = gl_ModelViewMatrix * gl_Vertex;												\n\
-	vec3 normal = normalize(gl_NormalMatrix * gl_Normal);									\n\
-	lNormal = normal;																		\n\
-																							\n\
- #ifdef FLAG_NORMAL_MAP																		\n\
- // Setup stuff for normal maps																\n\
-	vec3 t = normalize(gl_NormalMatrix * gl_MultiTexCoord1.xyz);							\n\
-	vec3 b = cross(normal, t) * gl_MultiTexCoord1.w;										\n\
-	tbnMatrix = mat3(t, b, normal);															\n\
- #endif																						\n\
-																							\n\
- #ifdef FLAG_ENV_MAP																		\n\
- // Environment mapping reflection vector.													\n\
-	envReflect = reflect(position.xyz, normal);												\n\
-	envReflect = vec3(envMatrix * vec4(envReflect, 0.0));									\n\
-	envReflect = normalize(envReflect);														\n\
- #endif																						\n\
-																							\n\
- #ifdef FLAG_FOG																			\n\
-	fogDist = clamp((gl_Position.z - gl_Fog.start) * 0.75 * gl_Fog.scale, 0.0, 1.0);		\n\
- #endif																						\n\
-																							\n""\
- #ifdef __GLSL_CG_DATA_TYPES																\n\
- // Check necessary for ATI specific behavior												\n\
-	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);										\n\
- #endif																						\n\
-}																							\n\
-";
+char* Default_main_vertex_shader = 
+"#ifdef FLAG_ENV_MAP\n"
+"uniform mat4 envMatrix;\n"
+"varying vec3 envReflect;\n"
+"#endif\n"
+"#ifdef FLAG_NORMAL_MAP\n"
+"varying mat3 tbnMatrix;\n"
+"#endif\n"
+"#ifdef FLAG_FOG\n"
+"varying float fogDist;\n"
+"#endif\n"
+"varying vec4 position;\n"
+"varying vec3 lNormal;\n"
+"void main()\n"
+"{\n"
+"	gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+"	gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n"
+"	gl_FrontColor = gl_Color;\n"
+"	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+" // Transform the normal into eye space and normalize the result.\n"
+"	position = gl_ModelViewMatrix * gl_Vertex;\n"
+"	vec3 normal = normalize(gl_NormalMatrix * gl_Normal);\n"
+"	lNormal = normal;\n"
+" #ifdef FLAG_NORMAL_MAP\n"
+" // Setup stuff for normal maps\n"
+"	vec3 t = normalize(gl_NormalMatrix * gl_MultiTexCoord1.xyz);\n"
+"	vec3 b = cross(normal, t) * gl_MultiTexCoord1.w;\n"
+"	tbnMatrix = mat3(t, b, normal);\n"
+" #endif\n"
+" #ifdef FLAG_ENV_MAP\n"
+" // Environment mapping reflection vector.\n"
+"	envReflect = reflect(position.xyz, normal);\n"
+"	envReflect = vec3(envMatrix * vec4(envReflect, 0.0));\n"
+"	envReflect = normalize(envReflect);\n"
+" #endif\n"
+" #ifdef FLAG_FOG\n"
+"	fogDist = clamp((gl_Position.z - gl_Fog.start) * 0.75 * gl_Fog.scale, 0.0, 1.0);\n"
+" #endif\n"
+" #ifdef __GLSL_CG_DATA_TYPES\n"
+" // Check necessary for ATI specific behavior\n"
+"	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);\n"
+" #endif\n"
+"}\n";
 
 char *Default_main_fragment_shader = 
 "#ifdef FLAG_LIGHT\n"
@@ -1260,49 +1250,42 @@ char *Default_main_fragment_shader =
 "#else\n"
 "  #define MAX_LIGHTS 8\n"
 "#endif\n"
-"#define SPEC_INTENSITY_POINT 		5.3 // Point light\n"
-"#define SPEC_INTENSITY_DIRECTIONAL 	3.0 // Directional light\n"
-"#define SPECULAR_FACTOR 			1.75\n"
-"#define SPECULAR_ALPHA 				0.1\n"
-"#define SPEC_FACTOR_NO_SPEC_MAP 	0.6\n"
+"#define SPEC_INTENSITY_POINT		5.3 // Point light\n"
+"#define SPEC_INTENSITY_DIRECTIONAL	3.0 // Directional light\n"
+"#define SPECULAR_FACTOR				1.75\n"
+"#define SPECULAR_ALPHA				0.1\n"
+"#define SPEC_FACTOR_NO_SPEC_MAP		0.6\n"
 "#define ENV_ALPHA_FACTOR			0.3\n"
-"#define GLOW_MAP_INTENSITY 			1.5\n"
-"#define AMBIENT_LIGHT_BOOST 		1.0\n"
+"#define GLOW_MAP_INTENSITY			1.5\n"
+"#define AMBIENT_LIGHT_BOOST			1.0\n"
 "void main()\n"
 "{\n"
 "	vec3 eyeDir = vec3(normalize(-position).xyz); // Camera is at (0,0,0) in ModelView space\n"
 "	vec4 lightAmbientDiffuse = vec4(0.0, 0.0, 0.0, 1.0);\n"
 "	vec4 lightDiffuse = vec4(0.0, 0.0, 0.0, 1.0);\n"
-"	vec4 lightAmbient = vec4(0.0, 0.0, 0.0, 1.0); \n"
+"	vec4 lightAmbient = vec4(0.0, 0.0, 0.0, 1.0);\n"
 "	vec4 lightSpecular = vec4(0.0, 0.0, 0.0, 1.0);\n"
 "	vec2 texCoord = gl_TexCoord[0].xy;\n"
-" #ifdef FLAG_ANIMATED\n"
-"	vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);;\n"
-"	if(effect_num == 2)\n"
-"	{\n"
-"		texCoord += (1.0-anim_timer)*0.3*vec2(sin(screenPos.y*50.0));\n"
-"	}\n"
-" #endif\n"
 " #ifdef FLAG_LIGHT\n"
 "  #ifdef FLAG_NORMAL_MAP\n"
 "	// Normal map - convert from DXT5nm\n"
 "	vec3 normal;\n"
 "	normal.rg = (texture2D(sNormalmap, texCoord).ag * 2.0) - 1.0;\n"
-"  #ifdef FLAG_ENV_MAP	\n"
+"   #ifdef FLAG_ENV_MAP\n"
 "	vec3 envOffset = vec3(0.0);\n"
 "	envOffset.xy = normal.xy;\n"
-"  #endif\n"
+"   #endif\n"
 "	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));\n"
 "	normal = tbnMatrix * normal;\n"
 "	float norm = length(normal);\n"
-"	if( length(normal) > 0.0)  // fix broken normal maps\n"
+"	// prevent breaking of normal maps\n"
+"	if (length(normal) > 0.0)\n"
 "		normal /= norm ;\n"
 "	else\n"
 "		normal = tbnMatrix * vec3(0.0, 0.0, 1.0);\n"
 "  #else\n"
 "	vec3 normal = lNormal;\n"
 "  #endif\n"
-"	\n"
 "	vec3 lightDir;\n"
 "	lightAmbient = gl_FrontMaterial.emission + (gl_LightModel.ambient * gl_FrontMaterial.ambient);\n"
 "	float dist;\n"
@@ -1314,7 +1297,6 @@ char *Default_main_fragment_shader =
 "	  #endif\n"
 "		float specularIntensity = 1.0;\n"
 "		float attenuation = 1.0;\n"
-"		\n"
 "		// Attenuation and light direction\n"
 "	  #if SHADER_MODEL > 2\n"
 "		if (gl_LightSource[i].position.w == 1.0) {\n"
@@ -1322,30 +1304,27 @@ char *Default_main_fragment_shader =
 "		if (gl_LightSource[i].position.w == 1.0 && i != 0) {\n"
 "	  #endif\n"
 "			// Positional light source\n"
-"			float dist = distance(gl_LightSource[i].position.xyz, position.xyz);\n"
-"			\n"
-"			lightDir = (gl_LightSource[i].position.xyz - position.xyz);			\n"
-"			\n"
+"			dist = distance(gl_LightSource[i].position.xyz, position.xyz);\n"
+"			lightDir = (gl_LightSource[i].position.xyz - position.xyz);\n"
 "		  #if SHADER_MODEL > 2\n"
 "			if (gl_LightSource[i].spotCutoff < 91.0) {  // Tube light\n"
 "				float beamlength = length(gl_LightSource[i].spotDirection);\n"
 "				vec3 beamDir = normalize(gl_LightSource[i].spotDirection);\n"
-"				float neardist = dot(position.xyz - gl_LightSource[i].position.xyz , beamDir); // Get nearest point on line\n"
-"				vec3 nearest = gl_LightSource[i].position.xyz - beamDir * abs(neardist); // Move back from the endpoint of the beam along the beam by the distance we calculated\n"
-"				lightDir = nearest - position.xyz; \n"
+"				// Get nearest point on line\n"
+"				float neardist = dot(position.xyz - gl_LightSource[i].position.xyz , beamDir);\n"
+"				// Move back from the endpoint of the beam along the beam by the distance we calculated\n"
+"				vec3 nearest = gl_LightSource[i].position.xyz - beamDir * abs(neardist);\n"
+"				lightDir = nearest - position.xyz;\n"
 "				dist = length(lightDir);\n"
 "			}\n"
 "		  #endif\n"
-"			\n"
 "			lightDir = normalize(lightDir);\n"
-"			\n"
 "			attenuation = 1.0 / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation * dist) + (gl_LightSource[i].quadraticAttenuation * dist * dist));\n"
-"			\n"
 "			specularIntensity = SPEC_INTENSITY_POINT;\n"
 "		} else {\n"
 "			// Directional light source\n"
 "			lightDir = normalize(gl_LightSource[i].position.xyz);\n"
-"			specularIntensity = SPEC_INTENSITY_DIRECTIONAL; // Directional light\n"
+"			specularIntensity = SPEC_INTENSITY_DIRECTIONAL;\n"
 "		}\n"
 "		// Ambient and Diffuse\n"
 "		lightAmbient += (gl_FrontLightProduct[i].ambient * attenuation);\n"
@@ -1359,13 +1338,24 @@ char *Default_main_fragment_shader =
 "	lightAmbientDiffuse = gl_Color;\n"
 "	lightSpecular = gl_SecondaryColor;\n"
 " #endif\n"
+" #ifdef FLAG_ANIMATED\n"
+"	vec2 distort = vec2(cos(position.x*position.w*0.005+anim_timer*20.0)*sin(position.y*position.w*0.005),sin(position.x*position.w*0.005+anim_timer*20.0)*cos(position.y*position.w*0.005))*0.03;\n"
+" #endif\n"
 " #ifdef FLAG_DIFFUSE_MAP\n"
 " // Base color\n"
+"  #ifdef FLAG_ANIMATED\n"
+"	vec4 baseColor;\n"
+"	if (effect_num == 2) {\n"
+"		baseColor = texture2D(sBasemap, texCoord + distort*(1.0-anim_timer));\n"
+"	} else {\n"
+"		baseColor = texture2D(sBasemap, texCoord);\n"
+"	}\n"
+"  #else\n"
 "	vec4 baseColor = texture2D(sBasemap, texCoord);\n"
+"  #endif\n"
 " #else\n"
 "	vec4 baseColor = gl_Color;\n"
 " #endif\n"
-" \n"
 "	vec4 fragmentColor;\n"
 "	fragmentColor.rgb = baseColor.rgb * max(lightAmbientDiffuse.rgb * AMBIENT_LIGHT_BOOST, gl_LightModel.ambient.rgb - 0.425);\n"
 "	fragmentColor.a = baseColor.a;\n"
@@ -1378,13 +1368,12 @@ char *Default_main_fragment_shader =
 " #endif\n"
 " #ifdef FLAG_ENV_MAP\n"
 " // Env color\n"
+"	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;\n"
 "  #ifdef FLAG_NORMAL_MAP\n"
 "	vec3 envReflectNM = envReflect + envOffset;\n"
-"	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;\n"
 "	fragmentColor.a += (dot(textureCube(sEnvmap, envReflectNM).rgb, textureCube(sEnvmap, envReflectNM).rgb) * ENV_ALPHA_FACTOR);\n"
 "	fragmentColor.rgb += textureCube(sEnvmap, envReflectNM).rgb * envIntensity;\n"
 "  #else\n"
-"	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;\n"
 "	fragmentColor.a += (dot(textureCube(sEnvmap, envReflect).rgb, textureCube(sEnvmap, envReflect).rgb) * ENV_ALPHA_FACTOR);\n"
 "	fragmentColor.rgb += textureCube(sEnvmap, envReflect).rgb * envIntensity;\n"
 "  #endif\n"
@@ -1397,26 +1386,30 @@ char *Default_main_fragment_shader =
 "	fragmentColor.rgb = mix(fragmentColor.rgb, gl_Fog.color.rgb, fogDist);\n"
 " #endif\n"
 " #ifdef FLAG_ANIMATED\n"
-"	if(effect_num == 0)\n"
-"	{\n"
+"	if (effect_num == 0) {\n"
 "		float shinefactor = 1.0/(1.0 + pow((fract(abs(gl_TexCoord[0].x))-anim_timer) * 1000.0, 2.0)) * 1000.0;\n"
 "		gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);\n"
-"		gl_FragColor.a = fragmentColor.a * shinefactor * (fract(abs(gl_TexCoord[0].x))-anim_timer) * -10000.0;\n"
+"		gl_FragColor.a = fragmentColor.a * clamp(shinefactor * (fract(abs(gl_TexCoord[0].x))-anim_timer) * -10000.0,0.0,1.0);\n"
 "	}\n"
-"	if(effect_num == 1)\n"
-"	{\n"
+"	if (effect_num == 1) {\n"
 "		float shinefactor = 1.0/(1.0 + pow((position.y-anim_timer), 2.0));\n"
 "		gl_FragColor.rgb = fragmentColor.rgb + vec3(shinefactor);\n"
-" #ifdef FLAG_LIGHT \n"
+"	 #ifdef FLAG_LIGHT\n"
 "		gl_FragColor.a = fragmentColor.a;\n"
-" #else\n"
-"		gl_FragColor.a = (position.y-anim_timer) * 10000.0; // ATI Wireframe fix *grumble*\n"
-" #endif\n"
+"	 #else\n"
+"		// ATI Wireframe fix *grumble*\n"
+"		gl_FragColor.a = clamp((position.y-anim_timer) * 10000.0,0.0,1.0);\n"
+"	 #endif\n"
 "	}\n"
-"	if(effect_num == 2)\n"
-"	{\n"
-"		gl_FragColor.a = 1.0;\n"
-"		gl_FragColor.rgb = texture2D(sFramebuffer, screenPos + anim_timer*0.1*vec2(sin(screenPos.y*50.0))).rgb*(1.0-anim_timer)+anim_timer*fragmentColor.rgb;\n"
+"	if (effect_num == 2) {\n"
+"		vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);\n"
+"		gl_FragColor.a = fragmentColor.a;\n"
+"		float cloak_interp = (sin(position.x*position.w*0.005+anim_timer*20.0)*sin(position.y*position.w*0.005)*0.5)-0.5;\n"
+"	 #ifdef FLAG_LIGHT\n"
+"		gl_FragColor.rgb = mix(texture2D(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,fragmentColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));\n"
+"	 #else\n"
+"		gl_FragColor.rgb = mix(texture2D(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*lNormal.xy).rgb,fragmentColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));\n"
+"	 #endif\n"
 "	}\n"
 " #else\n"
 "	gl_FragColor = fragmentColor;\n"
@@ -1435,45 +1428,46 @@ char* Default_fxaa_vertex_shader =
 "	v_pos = gl_Vertex.xy*0.5 + 0.5;\n"
 "}\n";
 
-char* Default_fxaa_fragment_shader = "#extension GL_EXT_gpu_shader4 : enable\n"
+char* Default_fxaa_fragment_shader = 
+"#extension GL_EXT_gpu_shader4 : enable\n"
 "#define FXAA_EARLY_EXIT 1\n"
-"#define FXAA_DISCARD 1 \n"
+"#define FXAA_DISCARD 1\n"
 "#if SHADER_MODEL == 2\n"
-"    #define FXAA_GLSL_120 1\n"
+"	#define FXAA_GLSL_120 1\n"
 "	#define FXAA_GLSL_130 0\n"
 "#endif\n"
 "#if SHADER_MODEL > 2\n"
-"    #define FXAA_GLSL_130 1\n"
 "	#define FXAA_GLSL_120 0\n"
+"	#define FXAA_GLSL_130 1\n"
 "#endif\n"
 "#ifndef FXAA_FAST_PIXEL_OFFSET\n"
-"    #ifdef GL_EXT_gpu_shader4\n"
-"        #define FXAA_FAST_PIXEL_OFFSET 1\n"
-"    #endif\n"
-"    #ifdef GL_NV_gpu_shader5\n"
+"	#ifdef GL_EXT_gpu_shader4\n"
+"		#define FXAA_FAST_PIXEL_OFFSET 1\n"
+"	#endif\n"
+"	#ifdef GL_NV_gpu_shader5\n"
 "		#extension GL_NV_gpu_shader5 : enable\n"
-"        #define FXAA_FAST_PIXEL_OFFSET 1\n"
-"    #endif\n"
-"    #ifdef GL_ARB_gpu_shader5\n"
+"		#define FXAA_FAST_PIXEL_OFFSET 1\n"
+"	#endif\n"
+"	#ifdef GL_ARB_gpu_shader5\n"
 "		#extension GL_ARB_gpu_shader5 : enable\n"
-"        #define FXAA_FAST_PIXEL_OFFSET 1\n"
-"    #endif\n"
-"    #ifndef FXAA_FAST_PIXEL_OFFSET\n"
-"        #define FXAA_FAST_PIXEL_OFFSET 0\n"
-"    #endif\n"
+"		#define FXAA_FAST_PIXEL_OFFSET 1\n"
+"	#endif\n"
+"	#ifndef FXAA_FAST_PIXEL_OFFSET\n"
+"		#define FXAA_FAST_PIXEL_OFFSET 0\n"
+"	#endif\n"
 "#endif\n"
 "#ifndef FXAA_GATHER4_ALPHA\n"
-"    #ifdef GL_ARB_gpu_shader5\n"
+"	#ifdef GL_ARB_gpu_shader5\n"
 "		#extension GL_ARB_gpu_shader5 : enable\n"
-"        #define FXAA_GATHER4_ALPHA 1\n"
-"    #endif\n"
-"    #ifdef GL_NV_gpu_shader5\n"
+"		#define FXAA_GATHER4_ALPHA 1\n"
+"	#endif\n"
+"	#ifdef GL_NV_gpu_shader5\n"
 "		#extension GL_NV_gpu_shader5 : enable\n"
-"        #define FXAA_GATHER4_ALPHA 1\n"
-"    #endif\n"
-"    #ifndef FXAA_GATHER4_ALPHA\n"
-"        #define FXAA_GATHER4_ALPHA 0\n"
-"    #endif\n"
+"		#define FXAA_GATHER4_ALPHA 1\n"
+"	#endif\n"
+"	#ifndef FXAA_GATHER4_ALPHA\n"
+"		#define FXAA_GATHER4_ALPHA 0\n"
+"	#endif\n"
 "#endif\n"
 "#if (FXAA_QUALITY__PRESET == 10)\n"
 "	#define FXAA_QUALITY__PS 3\n"
@@ -1580,370 +1574,385 @@ char* Default_fxaa_fragment_shader = "#extension GL_EXT_gpu_shader4 : enable\n"
 "	#define FXAA_QUALITY__P10 4.0\n"
 "	#define FXAA_QUALITY__P11 8.0\n"
 "#endif\n"
-"#define FxaaBool bool\n"
-"#define FxaaDiscard discard\n"
-"#define FxaaFloat float\n"
-"#define FxaaFloat2 vec2\n"
-"#define FxaaFloat3 vec3\n"
-"#define FxaaFloat4 vec4\n"
-"#define FxaaHalf float\n"
-"#define FxaaHalf2 vec2\n"
-"#define FxaaHalf3 vec3\n"
-"#define FxaaHalf4 vec4\n"
-"#define FxaaInt2 ivec2\n"
-"#define FxaaSat(x) clamp(x, 0.0, 1.0)\n"
-"#define FxaaTex sampler2D\n"
-"#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)\n"
-" #if (FXAA_FAST_PIXEL_OFFSET == 1)\n"
-"    #define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)\n"
+"#if (FXAA_GLSL_120 == 1) || (FXAA_GLSL_130 == 1)\n"
+"	#define FxaaBool bool\n"
+"	#define FxaaDiscard discard\n"
+"	#define FxaaFloat float\n"
+"	#define FxaaFloat2 vec2\n"
+"	#define FxaaFloat3 vec3\n"
+"	#define FxaaFloat4 vec4\n"
+"	#define FxaaHalf float\n"
+"	#define FxaaHalf2 vec2\n"
+"	#define FxaaHalf3 vec3\n"
+"	#define FxaaHalf4 vec4\n"
+"	#define FxaaInt2 ivec2\n"
+"	#define FxaaSat(x) clamp(x, 0.0, 1.0)\n"
+"	#define FxaaTex sampler2D\n"
 "#else\n"
-"    #define FxaaTexOff(t, p, o, r) texture2DLod(t, p + (o * r), 0.0)\n"
+"	#define FxaaBool bool\n"
+"	#define FxaaDiscard clip(-1)\n"
+"	#define FxaaFloat float\n"
+"	#define FxaaFloat2 float2\n"
+"	#define FxaaFloat3 float3\n"
+"	#define FxaaFloat4 float4\n"
+"	#define FxaaHalf half\n"
+"	#define FxaaHalf2 half2\n"
+"	#define FxaaHalf3 half3\n"
+"	#define FxaaHalf4 half4\n"
+"	#define FxaaSat(x) saturate(x)\n"
 "#endif\n"
 "#if (FXAA_GLSL_120 == 1)\n"
-"    #if (FXAA_GATHER4_ALPHA == 1)\n"
-"        #define FxaaTexAlpha4(t, p) textureGather(t, p, 3)\n"
-"        #define FxaaTexOffAlpha4(t, p, o) textureGatherOffset(t, p, o, 3)\n"
-"        #define FxaaTexGreen4(t, p) textureGather(t, p, 1)\n"
-"        #define FxaaTexOffGreen4(t, p, o) textureGatherOffset(t, p, o, 1)\n"
-"    #endif\n"
+"	#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)\n"
+"	#if (FXAA_FAST_PIXEL_OFFSET == 1)\n"
+"		#define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)\n"
+"	#else\n"
+"		#define FxaaTexOff(t, p, o, r) texture2DLod(t, p + (o * r), 0.0)\n"
+"	#endif\n"
+"	#if (FXAA_GATHER4_ALPHA == 1)\n"
+"		#define FxaaTexAlpha4(t, p) textureGather(t, p, 3)\n"
+"		#define FxaaTexOffAlpha4(t, p, o) textureGatherOffset(t, p, o, 3)\n"
+"		#define FxaaTexGreen4(t, p) textureGather(t, p, 1)\n"
+"		#define FxaaTexOffGreen4(t, p, o) textureGatherOffset(t, p, o, 1)\n"
+"	#endif\n"
 "#endif\n"
-"/*--------------------------------------------------------------------------*/\n"
 "#if (FXAA_GLSL_130 == 1)\n"
-"    #if (FXAA_GATHER4_ALPHA == 1)\n"
-"        #define FxaaTexAlpha4(t, p) textureGather(t, p, 3)\n"
-"        #define FxaaTexOffAlpha4(t, p, o) textureGatherOffset(t, p, o, 3)\n"
-"        #define FxaaTexGreen4(t, p) textureGather(t, p, 1)\n"
-"        #define FxaaTexOffGreen4(t, p, o) textureGatherOffset(t, p, o, 1)\n"
-"    #endif\n"
+"	#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)\n"
+"	#define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)\n"
+"	#if (FXAA_GATHER4_ALPHA == 1)\n"
+"		#define FxaaTexAlpha4(t, p) textureGather(t, p, 3)\n"
+"		#define FxaaTexOffAlpha4(t, p, o) textureGatherOffset(t, p, o, 3)\n"
+"		#define FxaaTexGreen4(t, p) textureGather(t, p, 1)\n"
+"		#define FxaaTexOffGreen4(t, p, o) textureGatherOffset(t, p, o, 1)\n"
+"	#endif\n"
 "#endif\n"
 "FxaaFloat FxaaLuma(FxaaFloat4 rgba) { return rgba.y; }\n"
 "FxaaFloat4 FxaaPixelShader(\n"
-"    FxaaFloat2 pos,\n"
-"    FxaaTex tex,\n"
-"    FxaaFloat2 fxaaQualityRcpFrame,\n"
-"    FxaaFloat fxaaQualitySubpix,\n"
-"    FxaaFloat fxaaQualityEdgeThreshold,\n"
-"    FxaaFloat fxaaQualityEdgeThresholdMin\n"
+"	FxaaFloat2 pos,\n"
+"	FxaaTex tex,\n"
+"	FxaaFloat2 fxaaQualityRcpFrame,\n"
+"	FxaaFloat fxaaQualitySubpix,\n"
+"	FxaaFloat fxaaQualityEdgeThreshold,\n"
+"	FxaaFloat fxaaQualityEdgeThresholdMin\n"
 ") {\n"
-"    FxaaFloat2 posM;\n"
-"    posM.x = pos.x;\n"
-"    posM.y = pos.y;\n"
-"    #if (FXAA_GATHER4_ALPHA == 1)\n"
-"        #if (FXAA_DISCARD == 0)\n"
-"            FxaaFloat4 rgbyM = FxaaTexTop(tex, posM);\n"
-"            #if (FXAA_GREEN_AS_LUMA == 0)\n"
-"                #define lumaM rgbyM.w\n"
-"            #else\n"
-"                #define lumaM rgbyM.y\n"
-"            #endif\n"
-"        #endif\n"
-"        #if (FXAA_GREEN_AS_LUMA == 0)\n"
-"            FxaaFloat4 luma4A = FxaaTexAlpha4(tex, posM);\n"
-"            FxaaFloat4 luma4B = FxaaTexOffAlpha4(tex, posM, FxaaInt2(-1, -1));\n"
-"        #else\n"
-"            FxaaFloat4 luma4A = FxaaTexGreen4(tex, posM);\n"
-"            FxaaFloat4 luma4B = FxaaTexOffGreen4(tex, posM, FxaaInt2(-1, -1));\n"
-"        #endif\n"
-"        #if (FXAA_DISCARD == 1)\n"
-"            #define lumaM luma4A.w\n"
-"        #endif\n"
-"        #define lumaE luma4A.z\n"
-"        #define lumaS luma4A.x\n"
-"        #define lumaSE luma4A.y\n"
-"        #define lumaNW luma4B.w\n"
-"        #define lumaN luma4B.z\n"
-"        #define lumaW luma4B.x\n"
-"    #else\n"
-"        FxaaFloat4 rgbyM = FxaaTexTop(tex, posM);\n"
-"        #if (FXAA_GREEN_AS_LUMA == 0)\n"
-"            #define lumaM rgbyM.w\n"
-"        #else\n"
-"            #define lumaM rgbyM.y\n"
-"        #endif\n"
-"        FxaaFloat lumaS = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 0, 1), fxaaQualityRcpFrame.xy));\n"
-"        FxaaFloat lumaE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 1, 0), fxaaQualityRcpFrame.xy));\n"
-"        FxaaFloat lumaN = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 0,-1), fxaaQualityRcpFrame.xy));\n"
-"        FxaaFloat lumaW = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(-1, 0), fxaaQualityRcpFrame.xy));\n"
-"    #endif\n"
-"    FxaaFloat maxSM = max(lumaS, lumaM);\n"
-"    FxaaFloat minSM = min(lumaS, lumaM);\n"
-"    FxaaFloat maxESM = max(lumaE, maxSM);\n"
-"    FxaaFloat minESM = min(lumaE, minSM);\n"
-"    FxaaFloat maxWN = max(lumaN, lumaW);\n"
-"    FxaaFloat minWN = min(lumaN, lumaW);\n"
-"    FxaaFloat rangeMax = max(maxWN, maxESM);\n"
-"    FxaaFloat rangeMin = min(minWN, minESM);\n"
-"    FxaaFloat rangeMaxScaled = rangeMax * fxaaQualityEdgeThreshold;\n"
-"    FxaaFloat range = rangeMax - rangeMin;\n"
-"    FxaaFloat rangeMaxClamped = max(fxaaQualityEdgeThresholdMin, rangeMaxScaled);\n"
-"    FxaaBool earlyExit = range < rangeMaxClamped;\n"
-"    if(earlyExit)\n"
-"        #if (FXAA_DISCARD == 1)\n"
-"            FxaaDiscard;\n"
-"        #else\n"
-"            return rgbyM;\n"
-"        #endif\n"
-"    #if (FXAA_GATHER4_ALPHA == 0)\n"
-"        FxaaFloat lumaNW = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(-1,-1), fxaaQualityRcpFrame.xy));\n"
-"        FxaaFloat lumaSE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 1, 1), fxaaQualityRcpFrame.xy));\n"
-"        FxaaFloat lumaNE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 1,-1), fxaaQualityRcpFrame.xy));\n"
-"        FxaaFloat lumaSW = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(-1, 1), fxaaQualityRcpFrame.xy));\n"
-"    #else\n"
-"        FxaaFloat lumaNE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(1, -1), fxaaQualityRcpFrame.xy));\n"
-"        FxaaFloat lumaSW = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(-1, 1), fxaaQualityRcpFrame.xy));\n"
-"    #endif\n"
-"    FxaaFloat lumaNS = lumaN + lumaS;\n"
-"    FxaaFloat lumaWE = lumaW + lumaE;\n"
-"    FxaaFloat subpixRcpRange = 1.0/range;\n"
-"    FxaaFloat subpixNSWE = lumaNS + lumaWE;\n"
-"    FxaaFloat edgeHorz1 = (-2.0 * lumaM) + lumaNS;\n"
-"    FxaaFloat edgeVert1 = (-2.0 * lumaM) + lumaWE;\n"
-"    FxaaFloat lumaNESE = lumaNE + lumaSE;\n"
-"    FxaaFloat lumaNWNE = lumaNW + lumaNE;\n"
-"    FxaaFloat edgeHorz2 = (-2.0 * lumaE) + lumaNESE;\n"
-"    FxaaFloat edgeVert2 = (-2.0 * lumaN) + lumaNWNE;\n"
-"    FxaaFloat lumaNWSW = lumaNW + lumaSW;\n"
-"    FxaaFloat lumaSWSE = lumaSW + lumaSE;\n"
-"    FxaaFloat edgeHorz4 = (abs(edgeHorz1) * 2.0) + abs(edgeHorz2);\n"
-"    FxaaFloat edgeVert4 = (abs(edgeVert1) * 2.0) + abs(edgeVert2);\n"
-"    FxaaFloat edgeHorz3 = (-2.0 * lumaW) + lumaNWSW;\n"
-"    FxaaFloat edgeVert3 = (-2.0 * lumaS) + lumaSWSE;\n"
-"    FxaaFloat edgeHorz = abs(edgeHorz3) + edgeHorz4;\n"
-"    FxaaFloat edgeVert = abs(edgeVert3) + edgeVert4;\n"
-"    FxaaFloat subpixNWSWNESE = lumaNWSW + lumaNESE;\n"
-"    FxaaFloat lengthSign = fxaaQualityRcpFrame.x;\n"
-"    FxaaBool horzSpan = edgeHorz >= edgeVert;\n"
-"    FxaaFloat subpixA = subpixNSWE * 2.0 + subpixNWSWNESE;\n"
-"    if(!horzSpan) lumaN = lumaW;\n"
-"    if(!horzSpan) lumaS = lumaE;\n"
-"    if(horzSpan) lengthSign = fxaaQualityRcpFrame.y;\n"
-"    FxaaFloat subpixB = (subpixA * (1.0/12.0)) - lumaM;\n"
-"    FxaaFloat gradientN = lumaN - lumaM;\n"
-"    FxaaFloat gradientS = lumaS - lumaM;\n"
-"    FxaaFloat lumaNN = lumaN + lumaM;\n"
-"    FxaaFloat lumaSS = lumaS + lumaM;\n"
-"    FxaaBool pairN = abs(gradientN) >= abs(gradientS);\n"
-"    FxaaFloat gradient = max(abs(gradientN), abs(gradientS));\n"
-"    if(pairN) lengthSign = -lengthSign;\n"
-"    FxaaFloat subpixC = FxaaSat(abs(subpixB) * subpixRcpRange);\n"
-"    FxaaFloat2 posB;\n"
-"    posB.x = posM.x;\n"
-"    posB.y = posM.y;\n"
-"    FxaaFloat2 offNP;\n"
-"    offNP.x = (!horzSpan) ? 0.0 : fxaaQualityRcpFrame.x;\n"
-"    offNP.y = ( horzSpan) ? 0.0 : fxaaQualityRcpFrame.y;\n"
-"    if(!horzSpan) posB.x += lengthSign * 0.5;\n"
-"    if( horzSpan) posB.y += lengthSign * 0.5;\n"
-"    FxaaFloat2 posN;\n"
-"    posN.x = posB.x - offNP.x * FXAA_QUALITY__P0;\n"
-"    posN.y = posB.y - offNP.y * FXAA_QUALITY__P0;\n"
-"    FxaaFloat2 posP;\n"
-"    posP.x = posB.x + offNP.x * FXAA_QUALITY__P0;\n"
-"    posP.y = posB.y + offNP.y * FXAA_QUALITY__P0;\n"
-"    FxaaFloat subpixD = ((-2.0)*subpixC) + 3.0;\n"
-"    FxaaFloat lumaEndN = FxaaLuma(FxaaTexTop(tex, posN));\n"
-"    FxaaFloat subpixE = subpixC * subpixC;\n"
-"    FxaaFloat lumaEndP = FxaaLuma(FxaaTexTop(tex, posP));\n"
-"    if(!pairN) lumaNN = lumaSS;\n"
-"    FxaaFloat gradientScaled = gradient * 1.0/4.0;\n"
-"    FxaaFloat lumaMM = lumaM - lumaNN * 0.5;\n"
-"    FxaaFloat subpixF = subpixD * subpixE;\n"
-"    FxaaBool lumaMLTZero = lumaMM < 0.0;\n"
-"    lumaEndN -= lumaNN * 0.5;\n"
-"    lumaEndP -= lumaNN * 0.5;\n"
-"    FxaaBool doneN = abs(lumaEndN) >= gradientScaled;\n"
-"    FxaaBool doneP = abs(lumaEndP) >= gradientScaled;\n"
-"    if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P1;\n"
-"    if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P1;\n"
-"    FxaaBool doneNP = (!doneN) || (!doneP);\n"
-"    if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P1;\n"
-"    if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P1;\n"
-"    if(doneNP) {\n"
-"        if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"        if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"        if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"        if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"        doneN = abs(lumaEndN) >= gradientScaled;\n"
-"        doneP = abs(lumaEndP) >= gradientScaled;\n"
-"        if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P2;\n"
-"        if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P2;\n"
-"        doneNP = (!doneN) || (!doneP);\n"
-"        if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P2;\n"
-"        if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P2;\n"
-"        #if (FXAA_QUALITY__PS > 3)\n"
-"        if(doneNP) {\n"
-"            if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"            if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"            if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"            if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"            doneN = abs(lumaEndN) >= gradientScaled;\n"
-"            doneP = abs(lumaEndP) >= gradientScaled;\n"
-"            if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P3;\n"
-"            if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P3;\n"
-"            doneNP = (!doneN) || (!doneP);\n"
-"            if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P3;\n"
-"            if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P3;\n"
-"            #if (FXAA_QUALITY__PS > 4)\n"
-"            if(doneNP) {\n"
-"                if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"                if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"                if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"                if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"                doneN = abs(lumaEndN) >= gradientScaled;\n"
-"                doneP = abs(lumaEndP) >= gradientScaled;\n"
-"                if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P4;\n"
-"                if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P4;\n"
-"                doneNP = (!doneN) || (!doneP);\n"
-"                if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P4;\n"
-"                if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P4;\n"
-"                #if (FXAA_QUALITY__PS > 5)\n"
-"                if(doneNP) {\n"
-"                    if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"                    if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"                    if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"                    if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"                    doneN = abs(lumaEndN) >= gradientScaled;\n"
-"                    doneP = abs(lumaEndP) >= gradientScaled;\n"
-"                    if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P5;\n"
-"                    if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P5;\n"
-"                    doneNP = (!doneN) || (!doneP);\n"
-"                    if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P5;\n"
-"                    if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P5;\n"
-"                    #if (FXAA_QUALITY__PS > 6)\n"
-"                    if(doneNP) {\n"
-"                        if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"                        if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"                        if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"                        if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"                        doneN = abs(lumaEndN) >= gradientScaled;\n"
-"                        doneP = abs(lumaEndP) >= gradientScaled;\n"
-"                        if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P6;\n"
-"                        if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P6;\n"
-"                        doneNP = (!doneN) || (!doneP);\n"
-"                        if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P6;\n"
-"                        if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P6;\n"
-"                        #if (FXAA_QUALITY__PS > 7)\n"
-"                        if(doneNP) {\n"
-"                            if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"                            if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"                            if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"                            if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"                            doneN = abs(lumaEndN) >= gradientScaled;\n"
-"                            doneP = abs(lumaEndP) >= gradientScaled;\n"
-"                            if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P7;\n"
-"                            if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P7;\n"
-"                            doneNP = (!doneN) || (!doneP);\n"
-"                            if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P7;\n"
-"                            if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P7;\n"
-"    #if (FXAA_QUALITY__PS > 8)\n"
-"    if(doneNP) {\n"
-"        if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"        if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"        if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"        if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"        doneN = abs(lumaEndN) >= gradientScaled;\n"
-"        doneP = abs(lumaEndP) >= gradientScaled;\n"
-"        if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P8;\n"
-"        if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P8;\n"
-"        doneNP = (!doneN) || (!doneP);\n"
-"        if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P8;\n"
-"        if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P8;\n"
-"        #if (FXAA_QUALITY__PS > 9)\n"
-"        if(doneNP) {\n"
-"            if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"            if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"            if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"            if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"            doneN = abs(lumaEndN) >= gradientScaled;\n"
-"            doneP = abs(lumaEndP) >= gradientScaled;\n"
-"            if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P9;\n"
-"            if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P9;\n"
-"            doneNP = (!doneN) || (!doneP);\n"
-"            if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P9;\n"
-"            if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P9;\n"
-"            #if (FXAA_QUALITY__PS > 10)\n"
-"            if(doneNP) {\n"
-"                if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"                if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"                if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"                if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"                doneN = abs(lumaEndN) >= gradientScaled;\n"
-"                doneP = abs(lumaEndP) >= gradientScaled;\n"
-"                if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P10;\n"
-"                if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P10;\n"
-"                doneNP = (!doneN) || (!doneP);\n"
-"                if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P10;\n"
-"                if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P10;\n"
-"                #if (FXAA_QUALITY__PS > 11)\n"
-"                if(doneNP) {\n"
-"                    if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"                    if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"                    if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"                    if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"                    doneN = abs(lumaEndN) >= gradientScaled;\n"
-"                    doneP = abs(lumaEndP) >= gradientScaled;\n"
-"                    if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P11;\n"
-"                    if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P11;\n"
-"                    doneNP = (!doneN) || (!doneP);\n"
-"                    if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P11;\n"
-"                    if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P11;\n"
-"                    #if (FXAA_QUALITY__PS > 12)\n"
-"                    if(doneNP) {\n"
-"                        if(!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
-"                        if(!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
-"                        if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
-"                        if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
-"                        doneN = abs(lumaEndN) >= gradientScaled;\n"
-"                        doneP = abs(lumaEndP) >= gradientScaled;\n"
-"                        if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P12;\n"
-"                        if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P12;\n"
-"                        doneNP = (!doneN) || (!doneP);\n"
-"                        if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P12;\n"
-"                        if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P12;\n"
-"                    }\n"
-"                    #endif\n"
-"                }\n"
-"                #endif\n"
-"            }\n"
-"            #endif\n"
-"        }\n"
-"        #endif\n"
-"    }\n"
-"    #endif\n"
-"                        }\n"
-"                        #endif\n"
-"                    }\n"
-"                    #endif\n"
-"                }\n"
-"                #endif\n"
-"            }\n"
-"            #endif\n"
-"        }\n"
-"        #endif\n"
-"    }\n"
-"    FxaaFloat dstN = posM.x - posN.x;\n"
-"    FxaaFloat dstP = posP.x - posM.x;\n"
-"    if(!horzSpan) dstN = posM.y - posN.y;\n"
-"    if(!horzSpan) dstP = posP.y - posM.y;\n"
-"    FxaaBool goodSpanN = (lumaEndN < 0.0) != lumaMLTZero;\n"
-"    FxaaFloat spanLength = (dstP + dstN);\n"
-"    FxaaBool goodSpanP = (lumaEndP < 0.0) != lumaMLTZero;\n"
-"    FxaaFloat spanLengthRcp = 1.0/spanLength;\n"
-"    FxaaBool directionN = dstN < dstP;\n"
-"    FxaaFloat dst = min(dstN, dstP);\n"
-"    FxaaBool goodSpan = directionN ? goodSpanN : goodSpanP;\n"
-"    FxaaFloat subpixG = subpixF * subpixF;\n"
-"    FxaaFloat pixelOffset = (dst * (-spanLengthRcp)) + 0.5;\n"
-"    FxaaFloat subpixH = subpixG * fxaaQualitySubpix;\n"
-"    FxaaFloat pixelOffsetGood = goodSpan ? pixelOffset : 0.0;\n"
-"    FxaaFloat pixelOffsetSubpix = max(pixelOffsetGood, subpixH);\n"
-"    if(!horzSpan) posM.x += pixelOffsetSubpix * lengthSign;\n"
-"    if( horzSpan) posM.y += pixelOffsetSubpix * lengthSign;\n"
-"    #if (FXAA_DISCARD == 1)\n"
-"        return FxaaTexTop(tex, posM);\n"
-"    #else\n"
-"        return FxaaFloat4(FxaaTexTop(tex, posM).xyz, lumaM);\n"
-"    #endif\n"
+"	FxaaFloat2 posM;\n"
+"	posM.x = pos.x;\n"
+"	posM.y = pos.y;\n"
+"	#if (FXAA_GATHER4_ALPHA == 1)\n"
+"		#if (FXAA_DISCARD == 0)\n"
+"			FxaaFloat4 rgbyM = FxaaTexTop(tex, posM);\n"
+"			#if (FXAA_GREEN_AS_LUMA == 0)\n"
+"				#define lumaM rgbyM.w\n"
+"			#else\n"
+"				#define lumaM rgbyM.y\n"
+"			#endif\n"
+"		#endif\n"
+"		#if (FXAA_GREEN_AS_LUMA == 0)\n"
+"			FxaaFloat4 luma4A = FxaaTexAlpha4(tex, posM);\n"
+"			FxaaFloat4 luma4B = FxaaTexOffAlpha4(tex, posM, FxaaInt2(-1, -1));\n"
+"		#else\n"
+"			FxaaFloat4 luma4A = FxaaTexGreen4(tex, posM);\n"
+"			FxaaFloat4 luma4B = FxaaTexOffGreen4(tex, posM, FxaaInt2(-1, -1));\n"
+"		#endif\n"
+"		#if (FXAA_DISCARD == 1)\n"
+"			#define lumaM luma4A.w\n"
+"		#endif\n"
+"		#define lumaE luma4A.z\n"
+"		#define lumaS luma4A.x\n"
+"		#define lumaSE luma4A.y\n"
+"		#define lumaNW luma4B.w\n"
+"		#define lumaN luma4B.z\n"
+"		#define lumaW luma4B.x\n"
+"	#else\n"
+"		FxaaFloat4 rgbyM = FxaaTexTop(tex, posM);\n"
+"		#if (FXAA_GREEN_AS_LUMA == 0)\n"
+"			#define lumaM rgbyM.w\n"
+"		#else\n"
+"			#define lumaM rgbyM.y\n"
+"		#endif\n"
+"		FxaaFloat lumaS = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 0, 1), fxaaQualityRcpFrame.xy));\n"
+"		FxaaFloat lumaE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 1, 0), fxaaQualityRcpFrame.xy));\n"
+"		FxaaFloat lumaN = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 0,-1), fxaaQualityRcpFrame.xy));\n"
+"		FxaaFloat lumaW = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(-1, 0), fxaaQualityRcpFrame.xy));\n"
+"	#endif\n"
+"	FxaaFloat maxSM = max(lumaS, lumaM);\n"
+"	FxaaFloat minSM = min(lumaS, lumaM);\n"
+"	FxaaFloat maxESM = max(lumaE, maxSM);\n"
+"	FxaaFloat minESM = min(lumaE, minSM);\n"
+"	FxaaFloat maxWN = max(lumaN, lumaW);\n"
+"	FxaaFloat minWN = min(lumaN, lumaW);\n"
+"	FxaaFloat rangeMax = max(maxWN, maxESM);\n"
+"	FxaaFloat rangeMin = min(minWN, minESM);\n"
+"	FxaaFloat rangeMaxScaled = rangeMax * fxaaQualityEdgeThreshold;\n"
+"	FxaaFloat range = rangeMax - rangeMin;\n"
+"	FxaaFloat rangeMaxClamped = max(fxaaQualityEdgeThresholdMin, rangeMaxScaled);\n"
+"	FxaaBool earlyExit = range < rangeMaxClamped;\n"
+"	if (earlyExit)\n"
+"		#if (FXAA_DISCARD == 1)\n"
+"			FxaaDiscard;\n"
+"		#else\n"
+"			return rgbyM;\n"
+"		#endif\n"
+"	#if (FXAA_GATHER4_ALPHA == 0)\n"
+"		FxaaFloat lumaNW = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(-1,-1), fxaaQualityRcpFrame.xy));\n"
+"		FxaaFloat lumaSE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 1, 1), fxaaQualityRcpFrame.xy));\n"
+"		FxaaFloat lumaNE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 1,-1), fxaaQualityRcpFrame.xy));\n"
+"		FxaaFloat lumaSW = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(-1, 1), fxaaQualityRcpFrame.xy));\n"
+"	#else\n"
+"		FxaaFloat lumaNE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(1, -1), fxaaQualityRcpFrame.xy));\n"
+"		FxaaFloat lumaSW = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2(-1, 1), fxaaQualityRcpFrame.xy));\n"
+"	#endif\n"
+"	FxaaFloat lumaNS = lumaN + lumaS;\n"
+"	FxaaFloat lumaWE = lumaW + lumaE;\n"
+"	FxaaFloat subpixRcpRange = 1.0/range;\n"
+"	FxaaFloat subpixNSWE = lumaNS + lumaWE;\n"
+"	FxaaFloat edgeHorz1 = (-2.0 * lumaM) + lumaNS;\n"
+"	FxaaFloat edgeVert1 = (-2.0 * lumaM) + lumaWE;\n"
+"	FxaaFloat lumaNESE = lumaNE + lumaSE;\n"
+"	FxaaFloat lumaNWNE = lumaNW + lumaNE;\n"
+"	FxaaFloat edgeHorz2 = (-2.0 * lumaE) + lumaNESE;\n"
+"	FxaaFloat edgeVert2 = (-2.0 * lumaN) + lumaNWNE;\n"
+"	FxaaFloat lumaNWSW = lumaNW + lumaSW;\n"
+"	FxaaFloat lumaSWSE = lumaSW + lumaSE;\n"
+"	FxaaFloat edgeHorz4 = (abs(edgeHorz1) * 2.0) + abs(edgeHorz2);\n"
+"	FxaaFloat edgeVert4 = (abs(edgeVert1) * 2.0) + abs(edgeVert2);\n"
+"	FxaaFloat edgeHorz3 = (-2.0 * lumaW) + lumaNWSW;\n"
+"	FxaaFloat edgeVert3 = (-2.0 * lumaS) + lumaSWSE;\n"
+"	FxaaFloat edgeHorz = abs(edgeHorz3) + edgeHorz4;\n"
+"	FxaaFloat edgeVert = abs(edgeVert3) + edgeVert4;\n"
+"	FxaaFloat subpixNWSWNESE = lumaNWSW + lumaNESE;\n"
+"	FxaaFloat lengthSign = fxaaQualityRcpFrame.x;\n"
+"	FxaaBool horzSpan = edgeHorz >= edgeVert;\n"
+"	FxaaFloat subpixA = subpixNSWE * 2.0 + subpixNWSWNESE;\n"
+"	if (!horzSpan) lumaN = lumaW;\n"
+"	if (!horzSpan) lumaS = lumaE;\n"
+"	if (horzSpan) lengthSign = fxaaQualityRcpFrame.y;\n"
+"	FxaaFloat subpixB = (subpixA * (1.0/12.0)) - lumaM;\n"
+"	FxaaFloat gradientN = lumaN - lumaM;\n"
+"	FxaaFloat gradientS = lumaS - lumaM;\n"
+"	FxaaFloat lumaNN = lumaN + lumaM;\n"
+"	FxaaFloat lumaSS = lumaS + lumaM;\n"
+"	FxaaBool pairN = abs(gradientN) >= abs(gradientS);\n"
+"	FxaaFloat gradient = max(abs(gradientN), abs(gradientS));\n"
+"	if (pairN) lengthSign = -lengthSign;\n"
+"	FxaaFloat subpixC = FxaaSat(abs(subpixB) * subpixRcpRange);\n"
+"	FxaaFloat2 posB;\n"
+"	posB.x = posM.x;\n"
+"	posB.y = posM.y;\n"
+"	FxaaFloat2 offNP;\n"
+"	offNP.x = (!horzSpan) ? 0.0 : fxaaQualityRcpFrame.x;\n"
+"	offNP.y = ( horzSpan) ? 0.0 : fxaaQualityRcpFrame.y;\n"
+"	if (!horzSpan) posB.x += lengthSign * 0.5;\n"
+"	if (horzSpan) posB.y += lengthSign * 0.5;\n"
+"	FxaaFloat2 posN;\n"
+"	posN.x = posB.x - offNP.x * FXAA_QUALITY__P0;\n"
+"	posN.y = posB.y - offNP.y * FXAA_QUALITY__P0;\n"
+"	FxaaFloat2 posP;\n"
+"	posP.x = posB.x + offNP.x * FXAA_QUALITY__P0;\n"
+"	posP.y = posB.y + offNP.y * FXAA_QUALITY__P0;\n"
+"	FxaaFloat subpixD = ((-2.0)*subpixC) + 3.0;\n"
+"	FxaaFloat lumaEndN = FxaaLuma(FxaaTexTop(tex, posN));\n"
+"	FxaaFloat subpixE = subpixC * subpixC;\n"
+"	FxaaFloat lumaEndP = FxaaLuma(FxaaTexTop(tex, posP));\n"
+"	if (!pairN) lumaNN = lumaSS;\n"
+"	FxaaFloat gradientScaled = gradient * 1.0/4.0;\n"
+"	FxaaFloat lumaMM = lumaM - lumaNN * 0.5;\n"
+"	FxaaFloat subpixF = subpixD * subpixE;\n"
+"	FxaaBool lumaMLTZero = lumaMM < 0.0;\n"
+"	lumaEndN -= lumaNN * 0.5;\n"
+"	lumaEndP -= lumaNN * 0.5;\n"
+"	FxaaBool doneN = abs(lumaEndN) >= gradientScaled;\n"
+"	FxaaBool doneP = abs(lumaEndP) >= gradientScaled;\n"
+"	if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P1;\n"
+"	if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P1;\n"
+"	FxaaBool doneNP = (!doneN) || (!doneP);\n"
+"	if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P1;\n"
+"	if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P1;\n"
+"	if (doneNP) {\n"
+"		if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"		if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"		if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"		if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"		doneN = abs(lumaEndN) >= gradientScaled;\n"
+"		doneP = abs(lumaEndP) >= gradientScaled;\n"
+"		if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P2;\n"
+"		if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P2;\n"
+"		doneNP = (!doneN) || (!doneP);\n"
+"		if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P2;\n"
+"		if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P2;\n"
+"		#if (FXAA_QUALITY__PS > 3)\n"
+"		if (doneNP) {\n"
+"			if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"			if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"			if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"			if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"			doneN = abs(lumaEndN) >= gradientScaled;\n"
+"			doneP = abs(lumaEndP) >= gradientScaled;\n"
+"			if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P3;\n"
+"			if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P3;\n"
+"			doneNP = (!doneN) || (!doneP);\n"
+"			if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P3;\n"
+"			if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P3;\n"
+"			#if (FXAA_QUALITY__PS > 4)\n"
+"			if (doneNP) {\n"
+"				if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"				if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"				if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"				if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"				doneN = abs(lumaEndN) >= gradientScaled;\n"
+"				doneP = abs(lumaEndP) >= gradientScaled;\n"
+"				if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P4;\n"
+"				if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P4;\n"
+"				doneNP = (!doneN) || (!doneP);\n"
+"				if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P4;\n"
+"				if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P4;\n"
+"				#if (FXAA_QUALITY__PS > 5)\n"
+"				if (doneNP) {\n"
+"					if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"					if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"					if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"					if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"					doneN = abs(lumaEndN) >= gradientScaled;\n"
+"					doneP = abs(lumaEndP) >= gradientScaled;\n"
+"					if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P5;\n"
+"					if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P5;\n"
+"					doneNP = (!doneN) || (!doneP);\n"
+"					if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P5;\n"
+"					if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P5;\n"
+"					#if (FXAA_QUALITY__PS > 6)\n"
+"					if (doneNP) {\n"
+"						if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"						if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"						if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"						if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"						doneN = abs(lumaEndN) >= gradientScaled;\n"
+"						doneP = abs(lumaEndP) >= gradientScaled;\n"
+"						if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P6;\n"
+"						if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P6;\n"
+"						doneNP = (!doneN) || (!doneP);\n"
+"						if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P6;\n"
+"						if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P6;\n"
+"						#if (FXAA_QUALITY__PS > 7)\n"
+"						if (doneNP) {\n"
+"							if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"							if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"							if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"							if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"							doneN = abs(lumaEndN) >= gradientScaled;\n"
+"							doneP = abs(lumaEndP) >= gradientScaled;\n"
+"							if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P7;\n"
+"							if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P7;\n"
+"							doneNP = (!doneN) || (!doneP);\n"
+"							if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P7;\n"
+"							if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P7;\n"
+"	#if (FXAA_QUALITY__PS > 8)\n"
+"	if (doneNP) {\n"
+"		if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"		if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"		if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"		if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"		doneN = abs(lumaEndN) >= gradientScaled;\n"
+"		doneP = abs(lumaEndP) >= gradientScaled;\n"
+"		if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P8;\n"
+"		if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P8;\n"
+"		doneNP = (!doneN) || (!doneP);\n"
+"		if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P8;\n"
+"		if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P8;\n"
+"		#if (FXAA_QUALITY__PS > 9)\n"
+"		if (doneNP) {\n"
+"			if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"			if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"			if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"			if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"			doneN = abs(lumaEndN) >= gradientScaled;\n"
+"			doneP = abs(lumaEndP) >= gradientScaled;\n"
+"			if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P9;\n"
+"			if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P9;\n"
+"			doneNP = (!doneN) || (!doneP);\n"
+"			if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P9;\n"
+"			if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P9;\n"
+"			#if (FXAA_QUALITY__PS > 10)\n"
+"			if (doneNP) {\n"
+"				if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"				if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"				if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"				if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"				doneN = abs(lumaEndN) >= gradientScaled;\n"
+"				doneP = abs(lumaEndP) >= gradientScaled;\n"
+"				if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P10;\n"
+"				if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P10;\n"
+"				doneNP = (!doneN) || (!doneP);\n"
+"				if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P10;\n"
+"				if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P10;\n"
+"				#if (FXAA_QUALITY__PS > 11)\n"
+"				if (doneNP) {\n"
+"					if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"					if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"					if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"					if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"					doneN = abs(lumaEndN) >= gradientScaled;\n"
+"					doneP = abs(lumaEndP) >= gradientScaled;\n"
+"					if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P11;\n"
+"					if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P11;\n"
+"					doneNP = (!doneN) || (!doneP);\n"
+"					if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P11;\n"
+"					if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P11;\n"
+"					#if (FXAA_QUALITY__PS > 12)\n"
+"					if (doneNP) {\n"
+"						if (!doneN) lumaEndN = FxaaLuma(FxaaTexTop(tex, posN.xy));\n"
+"						if (!doneP) lumaEndP = FxaaLuma(FxaaTexTop(tex, posP.xy));\n"
+"						if (!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;\n"
+"						if (!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;\n"
+"						doneN = abs(lumaEndN) >= gradientScaled;\n"
+"						doneP = abs(lumaEndP) >= gradientScaled;\n"
+"						if (!doneN) posN.x -= offNP.x * FXAA_QUALITY__P12;\n"
+"						if (!doneN) posN.y -= offNP.y * FXAA_QUALITY__P12;\n"
+"						doneNP = (!doneN) || (!doneP);\n"
+"						if (!doneP) posP.x += offNP.x * FXAA_QUALITY__P12;\n"
+"						if (!doneP) posP.y += offNP.y * FXAA_QUALITY__P12;\n"
+"					}\n"
+"					#endif\n"
+"				}\n"
+"				#endif\n"
+"			}\n"
+"			#endif\n"
+"		}\n"
+"		#endif\n"
+"	}\n"
+"	#endif\n"
+"						}\n"
+"						#endif\n"
+"					}\n"
+"					#endif\n"
+"				}\n"
+"				#endif\n"
+"			}\n"
+"			#endif\n"
+"		}\n"
+"		#endif\n"
+"	}\n"
+"	FxaaFloat dstN = posM.x - posN.x;\n"
+"	FxaaFloat dstP = posP.x - posM.x;\n"
+"	if (!horzSpan) dstN = posM.y - posN.y;\n"
+"	if (!horzSpan) dstP = posP.y - posM.y;\n"
+"	FxaaBool goodSpanN = (lumaEndN < 0.0) != lumaMLTZero;\n"
+"	FxaaFloat spanLength = (dstP + dstN);\n"
+"	FxaaBool goodSpanP = (lumaEndP < 0.0) != lumaMLTZero;\n"
+"	FxaaFloat spanLengthRcp = 1.0/spanLength;\n"
+"	FxaaBool directionN = dstN < dstP;\n"
+"	FxaaFloat dst = min(dstN, dstP);\n"
+"	FxaaBool goodSpan = directionN ? goodSpanN : goodSpanP;\n"
+"	FxaaFloat subpixG = subpixF * subpixF;\n"
+"	FxaaFloat pixelOffset = (dst * (-spanLengthRcp)) + 0.5;\n"
+"	FxaaFloat subpixH = subpixG * fxaaQualitySubpix;\n"
+"	FxaaFloat pixelOffsetGood = goodSpan ? pixelOffset : 0.0;\n"
+"	FxaaFloat pixelOffsetSubpix = max(pixelOffsetGood, subpixH);\n"
+"	if (!horzSpan) posM.x += pixelOffsetSubpix * lengthSign;\n"
+"	if (horzSpan) posM.y += pixelOffsetSubpix * lengthSign;\n"
+"	#if (FXAA_DISCARD == 1)\n"
+"		return FxaaTexTop(tex, posM);\n"
+"	#else\n"
+"		return FxaaFloat4(FxaaTexTop(tex, posM).xyz, lumaM);\n"
+"	#endif\n"
 "}\n"
 "uniform sampler2D tex0;\n"
 "varying vec2 v_rcpFrame;\n"
@@ -1952,236 +1961,188 @@ char* Default_fxaa_fragment_shader = "#extension GL_EXT_gpu_shader4 : enable\n"
 "	gl_FragColor = FxaaPixelShader(v_pos, tex0, v_rcpFrame, FXAA_QUALITY__SUBPIX, FXAA_QUALITY__EDGE_THRESHOLD, FXAA_QUALITY__EDGE_THRESHOLD_MIN);\n"
 "}\n";
 
-char *Default_blur_fragment_shader = "\
-varying float blurSize;											\n\
-																\n\
-uniform sampler2D tex;											\n\
-																\n\
-#define BLUR_SIZE_DIV 3.0										\n\
-																\n\
-// Gaussian Blur												\n\
-// 512x512 and smaller textures give best results				\n\
-// 2 passes required											\n\
-void main()														\n\
-{																\n\
-	// Echelon9 - Due to Apple not implementing array constructors in OS X's		\n\
-	// GLSL implementation we need to setup the arrays this way as a workaround		\n\
-	float BlurWeights[6];										\n\
-																\n\
-	BlurWeights[5] = 0.0402;									\n\
-	BlurWeights[4] = 0.0623;									\n\
-	BlurWeights[3] = 0.0877;									\n\
-	BlurWeights[2] = 0.1120;									\n\
-	BlurWeights[1] = 0.1297;									\n\
-	BlurWeights[0] = 0.1362;									\n\
-																\n\
-	vec4 sum = texture2D(tex, gl_TexCoord[0].xy) * BlurWeights[0];	\n\
-																\n\
-#ifdef PASS_0													\n\
-	for (int i = 1; i < 6; i++) {								\n\
-		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
-		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
-	}															\n\
-#endif															\n\
-																\n\
-#ifdef PASS_1													\n\
-	for (int i = 1; i < 6; i++) {								\n\
-		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];	\n\
-		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];	\n\
-	}															\n\
-#endif															\n\
-																\n\
-	gl_FragColor = sum;											\n\
-}																\n\
-";
+char *Default_blur_fragment_shader = 
+"varying float blurSize;\n"
+"uniform sampler2D tex;\n"
+"#define BLUR_SIZE_DIV 3.0\n"
+"// Gaussian Blur\n"
+"// 512x512 and smaller textures give best results\n"
+"// 2 passes required\n"
+"void main()\n"
+"{\n"
+"	// Echelon9 - Due to Apple not implementing array constructors in OS X's\n"
+"	// GLSL implementation we need to setup the arrays this way as a workaround\n"
+"	float BlurWeights[6];\n"
+"	BlurWeights[5] = 0.0402;\n"
+"	BlurWeights[4] = 0.0623;\n"
+"	BlurWeights[3] = 0.0877;\n"
+"	BlurWeights[2] = 0.1120;\n"
+"	BlurWeights[1] = 0.1297;\n"
+"	BlurWeights[0] = 0.1362;\n"
+"	vec4 sum = texture2D(tex, gl_TexCoord[0].xy) * BlurWeights[0];\n"
+"#ifdef PASS_0\n"
+"	for (int i = 1; i < 6; i++) {\n"
+"		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];\n"
+"		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];\n"
+"	}\n"
+"#endif\n"
+"#ifdef PASS_1\n"
+"	for (int i = 1; i < 6; i++) {\n"
+"		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];\n"
+"		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];\n"
+"	}\n"
+"#endif\n"
+"	gl_FragColor = sum;\n"
+"}\n";
 
-char *Default_brightpass_fragment_shader = "\
-uniform sampler2D tex;									\n\
-														\n\
-const float Luminance = 0.08;							\n\
-const float fMiddleGray = 0.2;							\n\
-const float fWhiteCutoff = 0.4;							\n\
-														\n\
-// High-pass filter										\n\
-void main() {											\n\
-	vec4 ColorOut = texture2D(tex, gl_TexCoord[0].xy);	\n\
-														\n\
-	ColorOut *= fMiddleGray / (Luminance + 0.001);		\n\
-	ColorOut *= (1.0 + (ColorOut / (fWhiteCutoff * fWhiteCutoff)));	\n\
-	ColorOut -= 6.0;									\n\
-														\n\
-	ColorOut /= (10.0 + ColorOut); //25.0;				\n\
-														\n\
-	gl_FragColor = ColorOut;							\n\
-}														\n\
-";
+char *Default_brightpass_fragment_shader = 
+"uniform sampler2D tex;\n"
+"const float Luminance = 0.08;\n"
+"const float fMiddleGray = 0.2;\n"
+"const float fWhiteCutoff = 0.4;\n"
+"// High-pass filter\n"
+"void main() {\n"
+"	vec4 ColorOut = texture2D(tex, gl_TexCoord[0].xy);\n"
+"	ColorOut *= fMiddleGray / (Luminance + 0.001);\n"
+"	ColorOut *= (1.0 + (ColorOut / (fWhiteCutoff * fWhiteCutoff)));\n"
+"	ColorOut -= 6.0;\n"
+"	ColorOut /= (10.0 + ColorOut);\n"
+"	gl_FragColor = ColorOut;\n"
+"}\n";
 
-char *Default_post_fragment_shader = "\
-uniform sampler2D tex;									\n\
-uniform float timer;									\n\
-uniform sampler2D bloomed;								\n\
-uniform float bloom_intensity;							\n\
-														\n\
-#ifdef FLAG_DISTORT_NOISE								\n\
-uniform float noise_amount;								\n\
-#endif													\n\
-														\n\
-#ifdef FLAG_SATURATION									\n\
-uniform float saturation;								\n\
-#endif													\n\
-														\n\
-#ifdef FLAG_BRIGHTNESS									\n\
-uniform float brightness;								\n\
-#endif													\n\
-														\n\
-#ifdef FLAG_CONTRAST									\n\
-uniform float contrast;									\n\
-#endif													\n\
-														\n\
-#ifdef FLAG_GRAIN										\n\
-uniform float film_grain;								\n\
-#endif													\n\
-														\n\
-#ifdef FLAG_STRIPES										\n\
-uniform float tv_stripes;								\n\
-#endif													\n\
-														\n\
-#ifdef FLAG_CUTOFF										\n\
-uniform float cutoff;									\n\
-#endif													\n\
-														\n\
-#ifdef FLAG_DITH										\n\
-uniform float dither;									\n\
-#endif													\n\
-														\n\
-uniform sampler2D blurred_tex;							\n\
-uniform sampler2D depth_tex;							\n\
-														\n""\
-void main()												\n\
-{														\n\
- #ifdef FLAG_DISTORT_NOISE								\n\
- // Distort noise										\n\
-	float distort_factor = timer * sin(gl_TexCoord[0].x * gl_TexCoord[0].y * 100.0 + timer);	\n\
-	distort_factor = mod(distort_factor, 8.0) * mod(distort_factor, 4.0);	\n\
-														\n\
-	vec2 distort;										\n\
-	distort = vec2(mod(distort_factor, noise_amount), mod(distort_factor, noise_amount + 0.002));	\n\
- #else													\n\
-	vec2 distort = vec2(0, 0);							\n\
- #endif													\n\
-														\n\
- // Global constant										\n\
-	vec4 color_in;										\n\
-	vec4 color_out;										\n\
-														\n\
- // Bloom												\n\
-	if (bloom_intensity > 0.0) {						\n\
-		color_in = texture2D(tex, gl_TexCoord[0].xy + distort);	\n\
-		vec4 color_bloom = texture2D(bloomed, gl_TexCoord[0].xy + distort);	\n\
-		color_in = mix(color_in,  max(color_in + 0.7 * color_bloom, color_bloom), bloom_intensity);	\n\
-	} else {											\n\
-		color_in = texture2D(tex, gl_TexCoord[0].xy + distort);	\n\
-	}													\n\
-														\n\
- #ifdef FLAG_SATURATION									\n\
- // Saturation											\n\
-	vec4 color_grayscale = color_in;					\n\
-	color_grayscale.rgb = vec3(dot(color_in.rgb, vec3(0.299, 0.587, 0.184)));	\n\
-	color_out = mix(color_in, color_grayscale, 1.0 - saturation);	\n\
- #else													\n\
-	color_out = color_in;								\n\
- #endif													\n\
-														\n\
- #ifdef FLAG_BRIGHTNESS									\n\
- // Brightness											\n\
-	vec3 Afactor = vec3(brightness);					\n\
-	color_out.rgb = color_out.rgb * Afactor;			\n\
- #endif													\n\
-														\n\
- #ifdef FLAG_CONTRAST									\n\
- // Contrast											\n\
-	vec3 Bfactor = vec3(0.5 - 0.5 * contrast);			\n\
-	color_out.rgb = color_out.rgb + Bfactor;			\n\
- #endif													\n\
-														\n\
- #ifdef FLAG_GRAIN										\n\
- // Film Grain											\n\
-	float x = gl_TexCoord[0].x * gl_TexCoord[0].y * timer * 1000.0;	\n\
-	x = mod(x, 13.0) * mod(x, 123.0);					\n\
-	float dx = mod(x, 0.01);							\n\
-														\n\
-	vec3 result = color_out.rgb + color_out.rgb * clamp(0.1 + dx * 100.0, 0.0, 1.0);	\n\
-														\n""\
-	color_out.rgb = mix(color_out.rgb, result, film_grain);	\n\
- #endif													\n\
-														\n\
- #ifdef FLAG_STRIPES									\n\
- // TV-Stripes (Old School)								\n\
-	vec2 sc;											\n\
-	sc.x = sin(gl_TexCoord[0].y * 2048.0);				\n\
-	sc.y = cos(gl_TexCoord[0].y * 2048.0);				\n\
-	vec3 stripes = color_out.rgb + color_out.rgb * vec3(sc.x, sc.y, sc.x) * 0.8;	\n\
-														\n\
-	color_out.rgb = mix(color_out.rgb, stripes, tv_stripes);	\n\
- #endif													\n\
-														\n\
- #ifdef FLAG_CUTOFF										\n\
-	// Experimental cutoff shader						\n\
-	if (cutoff > 0.0) {									\n\
-		vec4 color_greyscale;							\n\
-		color_greyscale.rgb = vec3(dot(color_in.rgb, vec3(0.299, 0.587, 0.184)));	\n\
-		vec4 normalized_col;							\n\
-		float col_length = (length(color_out.rgb));		\n\
-		if (col_length > 1.0) {							\n\
-			normalized_col = ((color_out)/col_length);	\n\
-		} else {										\n\
-			normalized_col = color_out;					\n\
-		}												\n\
-		vec3 unit_grey = vec3(0.5773);					\n\
-		float sat = dot(normalized_col.rgb, unit_grey);	\n\
-		color_out = mix(color_greyscale, color_out, sat * cutoff);	\n\
-	}													\n\
- #endif													\n\
-														\n\
- #ifdef FLAG_DITH										\n\
- // Dithering											\n\
-	float downsampling_factor = 4;						\n\
-	float bias = 0.5;									\n\
-														\n\
-	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;	\n\
- #endif													\n\
-	color_out.a = 1.0;									\n\
-	gl_FragColor = color_out;							\n\
-}														\n\
-";
+char *Default_post_fragment_shader = 
+"uniform sampler2D tex;\n"
+"uniform float timer;\n"
+"uniform sampler2D bloomed;\n"
+"uniform float bloom_intensity;\n"
+"#ifdef FLAG_DISTORT_NOISE\n"
+"uniform float noise_amount;\n"
+"#endif\n"
+"#ifdef FLAG_SATURATION\n"
+"uniform float saturation;\n"
+"#endif\n"
+"#ifdef FLAG_BRIGHTNESS\n"
+"uniform float brightness;\n"
+"#endif\n"
+"#ifdef FLAG_CONTRAST\n"
+"uniform float contrast;\n"
+"#endif\n"
+"#ifdef FLAG_GRAIN\n"
+"uniform float film_grain;\n"
+"#endif\n"
+"#ifdef FLAG_STRIPES\n"
+"uniform float tv_stripes;\n"
+"#endif\n"
+"#ifdef FLAG_CUTOFF\n"
+"uniform float cutoff;\n"
+"#endif\n"
+"#ifdef FLAG_DITH\n"
+"uniform float dither;\n"
+"#endif\n"
+"uniform sampler2D blurred_tex;\n"
+"uniform sampler2D depth_tex;\n"
+"void main()\n"
+"{\n"
+" #ifdef FLAG_DISTORT_NOISE\n"
+" // Distort noise\n"
+"	float distort_factor = timer * sin(gl_TexCoord[0].x * gl_TexCoord[0].y * 100.0 + timer);\n"
+"	distort_factor = mod(distort_factor, 8.0) * mod(distort_factor, 4.0);\n"
+"	vec2 distort;\n"
+"	distort = vec2(mod(distort_factor, noise_amount), mod(distort_factor, noise_amount + 0.002));\n"
+" #else\n"
+"	vec2 distort = vec2(0, 0);\n"
+" #endif\n"
+" // Global constant\n"
+"	vec4 color_in;\n"
+"	vec4 color_out;\n"
+" // Bloom\n"
+"	if (bloom_intensity > 0.0) {\n"
+"		color_in = texture2D(tex, gl_TexCoord[0].xy + distort);\n"
+"		vec4 color_bloom = texture2D(bloomed, gl_TexCoord[0].xy + distort);\n"
+"		color_in = mix(color_in,  max(color_in + 0.7 * color_bloom, color_bloom), bloom_intensity);\n"
+"	} else {\n"
+"		color_in = texture2D(tex, gl_TexCoord[0].xy + distort);\n"
+"	}\n"
+" #ifdef FLAG_SATURATION\n"
+" // Saturation\n"
+"	vec4 color_grayscale = color_in;\n"
+"	color_grayscale.rgb = vec3(dot(color_in.rgb, vec3(0.299, 0.587, 0.184)));\n"
+"	color_out = mix(color_in, color_grayscale, 1.0 - saturation);\n"
+" #else\n"
+"	color_out = color_in;\n"
+" #endif\n"
+" #ifdef FLAG_BRIGHTNESS\n"
+" // Brightness\n"
+"	vec3 Afactor = vec3(brightness);\n"
+"	color_out.rgb = color_out.rgb * Afactor;\n"
+" #endif\n"
+" #ifdef FLAG_CONTRAST\n"
+" // Contrast\n"
+"	vec3 Bfactor = vec3(0.5 - 0.5 * contrast);\n"
+"	color_out.rgb = color_out.rgb + Bfactor;\n"
+" #endif\n"
+" #ifdef FLAG_GRAIN\n"
+" // Film Grain\n"
+"	float x = gl_TexCoord[0].x * gl_TexCoord[0].y * timer * 1000.0;\n"
+"	x = mod(x, 13.0) * mod(x, 123.0);\n"
+"	float dx = mod(x, 0.01);\n"
+"	vec3 result = color_out.rgb + color_out.rgb * clamp(0.1 + dx * 100.0, 0.0, 1.0);\n"
+"	color_out.rgb = mix(color_out.rgb, result, film_grain);\n"
+" #endif\n"
+" #ifdef FLAG_STRIPES\n"
+" // TV-Stripes (Old School)\n"
+"	vec2 sc;\n"
+"	sc.x = sin(gl_TexCoord[0].y * 2048.0);\n"
+"	sc.y = cos(gl_TexCoord[0].y * 2048.0);\n"
+"	vec3 stripes = color_out.rgb + color_out.rgb * vec3(sc.x, sc.y, sc.x) * 0.8;\n"
+"	color_out.rgb = mix(color_out.rgb, stripes, tv_stripes);\n"
+" #endif\n"
+" #ifdef FLAG_CUTOFF\n"
+"	// Experimental cutoff shader\n"
+"	if (cutoff > 0.0) {\n"
+"		vec4 color_greyscale;\n"
+"		color_greyscale.rgb = vec3(dot(color_in.rgb, vec3(0.299, 0.587, 0.184)));\n"
+"		vec4 normalized_col;\n"
+"		float col_length = (length(color_out.rgb));\n"
+"		if (col_length > 1.0) {\n"
+"			normalized_col = ((color_out)/col_length);\n"
+"		} else {\n"
+"			normalized_col = color_out;\n"
+"		}\n"
+"		vec3 unit_grey = vec3(0.5773);\n"
+"		float sat = dot(normalized_col.rgb, unit_grey);\n"
+"		color_out = mix(color_greyscale, color_out, sat * cutoff);\n"
+"	}\n"
+" #endif\n"
+" #ifdef FLAG_DITH\n"
+" // Dithering\n"
+"	float downsampling_factor = 4;\n"
+"	float bias = 0.5;\n"
+"	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;\n"
+" #endif\n"
+"	color_out.a = 1.0;\n"
+"	gl_FragColor = color_out;\n"
+"}\n";
 
-char *Default_post_vertex_shader = "\
-varying float blurSize;						\n\
-uniform float bsize;						\n\
-											\n\
-void main()									\n\
-{											\n\
-	gl_TexCoord[0] = gl_MultiTexCoord0;		\n\
-	gl_Position = gl_Vertex;				\n\
-											\n\
-	gl_FrontColor = gl_Color;				\n\
-	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);	\n\
-											\n\
-	blurSize = 1.0 / bsize;					\n\
-											\n\
- // Check necessary for ATI specific behavior	\n\
- #ifdef __GLSL_CG_DATA_TYPES				\n\
-	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);	\n\
- #endif										\n\
-}											\n\
-";
+char *Default_post_vertex_shader = 
+"varying float blurSize;\n"
+"uniform float bsize;\n"
+"void main()\n"
+"{\n"
+"	gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+"	gl_Position = gl_Vertex;\n"
+"	gl_FrontColor = gl_Color;\n"
+"	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"	blurSize = 1.0 / bsize;\n"
+"// Check necessary for ATI specific behavior\n"
+" #ifdef __GLSL_CG_DATA_TYPES\n"
+"	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);\n"
+" #endif\n"
+"}\n";
 
-char* Default_fxaa_prepass_shader ="\
-uniform sampler2D tex;											\n\
-																\n\
-void main() {													\n\
-	vec4 color = texture2D(tex, gl_TexCoord[0].xy);				\n\
-																\n\
-	gl_FragColor = vec4(color.rgb, dot(color.rgb, vec3(0.299, 0.587, 0.114)) );	\n\
-}																\n\
-";
+char* Default_fxaa_prepass_shader = 
+"uniform sampler2D tex;\n"
+"void main() {\n"
+"	vec4 color = texture2D(tex, gl_TexCoord[0].xy);\n"
+"	gl_FragColor = vec4(color.rgb, dot(color.rgb, vec3(0.299, 0.587, 0.114)) );\n"
+"}\n";
