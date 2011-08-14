@@ -4350,14 +4350,7 @@ int WE_BSG::getWarpPosition(vec3d *output)
 		return 0;
 
 	vec3d pos;
-	if(direction == WD_WARP_OUT && stage > 0)
-	{
-		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
-	}
-	else
-	{
-		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
-	}
+	vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
 
 	*output = pos;
 	return 1;
