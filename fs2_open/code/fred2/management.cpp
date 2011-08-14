@@ -19,6 +19,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"
 #include "globalincs/linklist.h"
+#include "globalincs/version.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
@@ -333,6 +334,12 @@ bool fred_init()
 	fred2_parse_cmdline(__argc, __argv);
 
 #ifndef NDEBUG
+	#if FS_VERSION_REVIS == 0
+		mprintf(("Fred2 Open version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+	#else
+		mprintf(("Fred2 Open version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
+	#endif
+
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
 #endif
