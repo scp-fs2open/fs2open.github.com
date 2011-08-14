@@ -3071,7 +3071,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
 			{
-				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name);
+				mprintf(("Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name));
 			}
 
 			// *** account for FRED

@@ -1513,7 +1513,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 			if (PLACEHOLDER_new_texture_id < 0)
 			{
-				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", PLACEHOLDER_new_texture, sip->name);
+				mprintf(("Could not load replacement texture %s for ship %s\n", PLACEHOLDER_new_texture, sip->name));
 			}
 
 			// increment
