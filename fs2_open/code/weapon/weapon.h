@@ -140,6 +140,7 @@ extern int Num_weapon_subtypes;
 #define PSPEW_PLUME		4			//spewers arrayed within a radius for thruster style effects, may converge or scatter
 
 #define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
+#define MAX_WEP_DAMAGE_SLOTS	32		//Maximum number of ships which can be counted as killer or assits on destroying this weapon
 
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
@@ -208,6 +209,11 @@ typedef struct weapon {
 
 	bool collisionOccured;
 	mc_info collisionInfo; // The last collision of this weapon or NULL if it had none
+	//Scoring stuff
+	float total_damage_received;        // total damage received (for scoring purposes)
+	float damage_ship[MAX_WEP_DAMAGE_SLOTS];    // damage applied from each player
+	int   damage_ship_id[MAX_WEP_DAMAGE_SLOTS]; // signature of the damager (corresponds to each entry in damage_ship)
+
 } weapon;
 
 
@@ -496,6 +502,8 @@ typedef struct weapon_info {
 	// the optional pattern of weapons that this weapon will fire
 	SCP_vector<int> weapon_substitution_pattern; //weapon_indexs
 	SCP_vector<SCP_string> weapon_substitution_pattern_names; // weapon names so that we can generate the indexs after sort
+
+	int			score; //Optional score for destroying the weapon
 
 } weapon_info;
 
