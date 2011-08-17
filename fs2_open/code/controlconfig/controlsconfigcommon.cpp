@@ -7,13 +7,17 @@
  *
 */ 
 
+#include <stdio.h>
+#include <stdarg.h>
 
-
+#include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"
 #include "io/key.h"
 #include "io/joy.h"
 #include "localization/localize.h"
-
+#include "parse/parselo.h"
+#include "globalincs/systemvars.h"
+#include "globalincs/def_files.h"
 
 #define TARGET_TAB			0
 #define SHIP_TAB				1
@@ -497,9 +501,12 @@ char *textify_scancode(int code)
 }
 //XSTR:ON
 
+void control_config_common_load_overrides();
+
 // initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_init()
 {
+    control_config_common_load_overrides();
 	if(Lcl_gr){
 		Scan_code_text = Scan_code_text_german;
 		Joy_button_text = Joy_button_text_german;
@@ -516,4 +523,232 @@ void control_config_common_init()
 		Scan_code_text = Scan_code_text_english;
 		Joy_button_text = Joy_button_text_english;
 	}
+}
+
+
+
+#include <map>
+#include <string>
+std::map<std::string, int> mEnumNameToVal;
+
+void LoadEnumsIntoMap();
+void control_config_common_load_overrides()
+{
+    LoadEnumsIntoMap();
+    
+    if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES))
+        read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
+    else
+        read_file_text_from_array(defaults_get_file("controlconfigdefaults.tbl"));
+	
+    reset_parse();
+    
+	// start parsing
+	required_string("#ControlConfigOverride");
+
+	// read fonts
+	while (required_string_either("#End","$Bind Name:"))
+    {
+        const int iBufferLength = 64;
+        char szTempBuffer[iBufferLength];
+        
+        required_string("$Bind Name:");
+        stuff_string(szTempBuffer, F_NAME, iBufferLength);
+        
+        const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
+        for (size_t i = 0; i < cCntrlAryLength; ++i)
+        {
+            config_item& r_ccConfig = Control_config[i];
+            
+            if (!strcmp(szTempBuffer, r_ccConfig.text))
+            {
+                /**
+                 * short key_default;
+	             * short joy_default;
+	             * char tab;
+	             * bool hasXSTR;
+	             * char type;
+                 */
+                
+                int iTemp;
+                
+                if (optional_string("$Key Default:"))
+                {stuff_string(szTempBuffer, F_NAME, iBufferLength);
+                 r_ccConfig.key_default = (short)mEnumNameToVal[szTempBuffer];}
+                
+                if (optional_string("$Joy Default:"))
+                {stuff_int(&iTemp); r_ccConfig.joy_default = (short)iTemp;}
+                
+                if (optional_string("$Key Mod Shift:"))
+                {stuff_int(&iTemp); r_ccConfig.key_default |= (iTemp == 1) ? KEY_SHIFTED : 0;}
+                
+                if (optional_string("$Key Mod Alt:"))
+                {stuff_int(&iTemp); r_ccConfig.key_default |= (iTemp == 1) ? KEY_ALTED : 0;}
+                
+                if (optional_string("$Key Mod Ctrl:"))
+                {stuff_int(&iTemp); r_ccConfig.key_default |= (iTemp == 1) ? KEY_CTRLED : 0;}
+                
+                if (optional_string("$Category:"))
+                {stuff_string(szTempBuffer, F_NAME, iBufferLength);
+                 r_ccConfig.tab = (char)mEnumNameToVal[szTempBuffer];}
+                
+                if (optional_string("$Has XStr:"))
+                {stuff_int(&iTemp); r_ccConfig.hasXSTR = (iTemp == 1);}
+                
+                if (optional_string("$Type:"))
+                {stuff_string(szTempBuffer, F_NAME, iBufferLength);
+                 r_ccConfig.type = (char)mEnumNameToVal[szTempBuffer];}
+                
+                // Nerf the buffer now.
+                szTempBuffer[0] = '\0';
+            }
+            else if ((i + 1) == cCntrlAryLength)
+            {
+                error_display(1, "Bind Name not found: %s\n", szTempBuffer);
+		        advance_to_eoln(NULL);
+		        ignore_white_space();
+                return;
+            }
+        }
+    }
+    
+    required_string("#End");
+}
+
+#define ADD_ENUM_TO_ENUM_MAP(Enum) mEnumNameToVal[#Enum] = (Enum);
+
+void LoadEnumsIntoMap()
+{
+    mEnumNameToVal["KEY_SHIFTED"] = KEY_SHIFTED;
+    /*
+    ADD_ENUM_TO_ENUM_MAP(KEY_SHIFTED)
+    ADD_ENUM_TO_ENUM_MAP(KEY_ALTED)
+    ADD_ENUM_TO_ENUM_MAP(KEY_CTRLED)
+    ADD_ENUM_TO_ENUM_MAP(KEY_DEBUGGED)
+    ADD_ENUM_TO_ENUM_MAP(KEY_DEBUGGED1)
+    ADD_ENUM_TO_ENUM_MAP(KEY_MASK)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_DEBUG_KEY)
+    */
+    ADD_ENUM_TO_ENUM_MAP(KEY_0)
+    ADD_ENUM_TO_ENUM_MAP(KEY_1)
+    ADD_ENUM_TO_ENUM_MAP(KEY_2)
+    ADD_ENUM_TO_ENUM_MAP(KEY_3)
+    ADD_ENUM_TO_ENUM_MAP(KEY_4)
+    ADD_ENUM_TO_ENUM_MAP(KEY_5)
+    ADD_ENUM_TO_ENUM_MAP(KEY_6)
+    ADD_ENUM_TO_ENUM_MAP(KEY_7)
+    ADD_ENUM_TO_ENUM_MAP(KEY_8)
+    ADD_ENUM_TO_ENUM_MAP(KEY_9)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_A)
+    ADD_ENUM_TO_ENUM_MAP(KEY_B)
+    ADD_ENUM_TO_ENUM_MAP(KEY_C)
+    ADD_ENUM_TO_ENUM_MAP(KEY_D)
+    ADD_ENUM_TO_ENUM_MAP(KEY_E)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F)
+    ADD_ENUM_TO_ENUM_MAP(KEY_G)
+    ADD_ENUM_TO_ENUM_MAP(KEY_H)
+    ADD_ENUM_TO_ENUM_MAP(KEY_I)
+    ADD_ENUM_TO_ENUM_MAP(KEY_J)
+    ADD_ENUM_TO_ENUM_MAP(KEY_K)
+    ADD_ENUM_TO_ENUM_MAP(KEY_L)
+    ADD_ENUM_TO_ENUM_MAP(KEY_M)
+    ADD_ENUM_TO_ENUM_MAP(KEY_N)
+    ADD_ENUM_TO_ENUM_MAP(KEY_O)
+    ADD_ENUM_TO_ENUM_MAP(KEY_P)
+    ADD_ENUM_TO_ENUM_MAP(KEY_Q)
+    ADD_ENUM_TO_ENUM_MAP(KEY_R)
+    ADD_ENUM_TO_ENUM_MAP(KEY_S)
+    ADD_ENUM_TO_ENUM_MAP(KEY_T)
+    ADD_ENUM_TO_ENUM_MAP(KEY_U)
+    ADD_ENUM_TO_ENUM_MAP(KEY_V)
+    ADD_ENUM_TO_ENUM_MAP(KEY_W)
+    ADD_ENUM_TO_ENUM_MAP(KEY_X)
+    ADD_ENUM_TO_ENUM_MAP(KEY_Y)
+    ADD_ENUM_TO_ENUM_MAP(KEY_Z)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_MINUS)
+    ADD_ENUM_TO_ENUM_MAP(KEY_EQUAL)
+    ADD_ENUM_TO_ENUM_MAP(KEY_DIVIDE)
+    ADD_ENUM_TO_ENUM_MAP(KEY_SLASH)
+    ADD_ENUM_TO_ENUM_MAP(KEY_SLASH_UK)
+    ADD_ENUM_TO_ENUM_MAP(KEY_COMMA)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PERIOD)
+    ADD_ENUM_TO_ENUM_MAP(KEY_SEMICOL)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_LBRACKET)
+    ADD_ENUM_TO_ENUM_MAP(KEY_RBRACKET)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_RAPOSTRO)
+    ADD_ENUM_TO_ENUM_MAP(KEY_LAPOSTRO)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_ESC)
+    ADD_ENUM_TO_ENUM_MAP(KEY_ENTER)
+    ADD_ENUM_TO_ENUM_MAP(KEY_BACKSP)
+    ADD_ENUM_TO_ENUM_MAP(KEY_TAB)
+    ADD_ENUM_TO_ENUM_MAP(KEY_SPACEBAR)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_NUMLOCK)
+    ADD_ENUM_TO_ENUM_MAP(KEY_SCROLLOCK)
+    ADD_ENUM_TO_ENUM_MAP(KEY_CAPSLOCK)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_LSHIFT)
+    ADD_ENUM_TO_ENUM_MAP(KEY_RSHIFT)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_LALT)
+    ADD_ENUM_TO_ENUM_MAP(KEY_RALT)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_LCTRL)
+    ADD_ENUM_TO_ENUM_MAP(KEY_RCTRL)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_F1)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F2)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F3)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F4)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F5)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F6)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F7)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F8)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F9)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F10)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F11)
+    ADD_ENUM_TO_ENUM_MAP(KEY_F12)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD0)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD1)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD2)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD3)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD4)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD5)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD6)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD7)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD8)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAD9)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PADMINUS)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PADPLUS)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PADPERIOD)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PADDIVIDE)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PADMULTIPLY)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PADENTER)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_INSERT)
+    ADD_ENUM_TO_ENUM_MAP(KEY_HOME)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAGEUP)
+    ADD_ENUM_TO_ENUM_MAP(KEY_DELETE)
+    ADD_ENUM_TO_ENUM_MAP(KEY_END)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAGEDOWN)
+    ADD_ENUM_TO_ENUM_MAP(KEY_UP)
+    ADD_ENUM_TO_ENUM_MAP(KEY_DOWN)
+    ADD_ENUM_TO_ENUM_MAP(KEY_LEFT)
+    ADD_ENUM_TO_ENUM_MAP(KEY_RIGHT)
+    
+    ADD_ENUM_TO_ENUM_MAP(KEY_PRINT_SCRN)
+    ADD_ENUM_TO_ENUM_MAP(KEY_PAUSE)
+    ADD_ENUM_TO_ENUM_MAP(KEY_BREAK)
+    
+    ADD_ENUM_TO_ENUM_MAP(TARGET_TAB)
+    ADD_ENUM_TO_ENUM_MAP(SHIP_TAB)
+    ADD_ENUM_TO_ENUM_MAP(WEAPON_TAB)
+    ADD_ENUM_TO_ENUM_MAP(COMPUTER_TAB)
 }
