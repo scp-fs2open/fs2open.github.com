@@ -26,6 +26,7 @@ extern char *Default_shiptypes_table;
 extern char *Default_ai_profiles_table;
 extern char *Default_autopilot_table;
 extern char *Default_fonts_table;
+extern char *Default_controlconfig_table;
 extern char *Default_post_processing_table;
 extern char* Default_main_vertex_shader;
 extern char* Default_main_fragment_shader;
@@ -48,6 +49,7 @@ def_file Default_files[] =
 	{ "ai_profiles.tbl",		Default_ai_profiles_table },
 	{ "autopilot.tbl",			Default_autopilot_table },
 	{ "fonts.tbl",				Default_fonts_table },
+	{ "controlconfigdefaults.tbl",  Default_controlconfig_table },
 	{ "post_processing.tbl",	Default_post_processing_table},
 	{ "main-f.sdr",				Default_main_fragment_shader},
 	{ "main-v.sdr",				Default_main_vertex_shader},
@@ -1086,6 +1088,19 @@ $Font: font03.vf														\n\
 																		\n\
 #End																	\n\
 ";
+
+//=========================================================================
+
+// This is the default table.
+// Please note that the {\n\}s should be removed from the end of each line
+// if you intend to use this to format your own table.
+
+char *Default_controlconfig_table = "\
+                                    #ControlConfigOverride \n\
+                                    \
+                                    #End\n\
+                                    ";
+
 
 //=========================================================================
 
