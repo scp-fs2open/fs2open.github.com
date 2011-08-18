@@ -10,8 +10,9 @@
 extern int Multi_sexp_bytes_left; 
 
 void initalise_sexp_packet();
-void multi_start_packet();
-void multi_end_packet();
+void multi_start_callback();
+void multi_end_callback();
+void multi_do_callback(); // starts and ends a callback, used when there is no data to be written
 void multi_sexp_flush_packet();
 
 // server side packet fillers

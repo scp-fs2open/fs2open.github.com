@@ -5333,7 +5333,7 @@ void sexp_set_energy_pct (int node, int op_num)
 	
 	// only need to send a packet for afterburners because shields and weapon energy are sent from server to clients
 	if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_float(new_pct); 
 	}
 
@@ -5384,7 +5384,7 @@ void sexp_set_energy_pct (int node, int op_num)
 	}
 
 	if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
-		multi_end_packet(); 
+		multi_end_callback(); 
 	}
 }
 
@@ -9183,9 +9183,9 @@ void sexp_hud_disable(int n)
 	int disable_hud = eval_num(n);
 	hud_set_draw(!disable_hud);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(disable_hud);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_hud_disable()
@@ -9203,9 +9203,9 @@ void sexp_hud_disable_except_messages(int n)
 	int disable_hud = eval_num(n);
 	hud_disable_except_messages(disable_hud);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(disable_hud);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_hud_disable_except_messages()
@@ -9427,9 +9427,9 @@ void sexp_change_soundtrack(int n)
 	event_sexp_change_soundtrack(CTEXT(n));
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet(); 
+		multi_start_callback(); 
 		multi_send_string(CTEXT(n));
-		multi_end_packet(); 
+		multi_end_callback(); 
 	}
 }
 
@@ -9520,12 +9520,12 @@ void sexp_play_sound_from_table(int n)
 	}
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_float(origin.xyz.x);
 		multi_send_float(origin.xyz.y);
 		multi_send_float(origin.xyz.z);
 		multi_send_int(sound_index);
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -9553,9 +9553,9 @@ void sexp_close_sound_from_file(int n)
 	sexp_stop_music(fade);
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_bool(fade ? true : false); 
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -9589,7 +9589,7 @@ void sexp_play_sound_from_file(int n)
 	sexp_load_music(CTEXT(n), type);
 	
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_string(CTEXT(n));
 	}
 
@@ -9603,7 +9603,7 @@ void sexp_play_sound_from_file(int n)
 
 	if (MULTIPLAYER_MASTER) {
 		multi_send_bool(loop ? true : false); 
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -11641,7 +11641,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 	int n = node;
 
 	if (send_multiplayer && MULTIPLAYER_MASTER) {
-		multi_start_packet(); 
+		multi_start_callback(); 
 		multi_send_int(object_flag); 
 		/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until object_flag2
 		is actually used by the engine 
@@ -11765,7 +11765,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 	}
 
 	if (send_multiplayer && MULTIPLAYER_MASTER) {
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -11995,7 +11995,7 @@ void sexp_set_persona (int node)
 	Assert (node >=0);
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_int(persona_index); 
 	}
 
@@ -12019,7 +12019,7 @@ void sexp_set_persona (int node)
 	}
 
 	if (MULTIPLAYER_MASTER) {
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -12653,7 +12653,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 	//multiplayer packet start
 	if (sendit)
 	{
-		multi_start_packet(); 
+		multi_start_callback(); 
 		multi_send_ship(shipp);
 		multi_send_bool(setit);
 	}
@@ -12700,7 +12700,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 
 	// mulitplayer end of packet
 	if (sendit)
-		multi_end_packet();
+		multi_end_callback();
 }
 void multi_sexp_deal_with_subsys_flag(int ss_flag)
 {
@@ -13352,7 +13352,7 @@ void sexp_ship_change_callsign(int node)
 	}
 
 	// packets for multi
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(new_callsign); 
 
 	while ( node >= 0 )
@@ -13367,7 +13367,7 @@ void sexp_ship_change_callsign(int node)
 		node = CDR(node);
 	}
 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_ship_change_callsign()
@@ -13466,7 +13466,7 @@ void sexp_ignore_key(int node)
 
 	ignore_count = eval_num(node);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(ignore_count);
 
 	node = CDR(node);
@@ -13483,7 +13483,7 @@ void sexp_ignore_key(int node)
 		node = CDR(node);
 	}
 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_ignore_key()
@@ -13886,7 +13886,7 @@ void sexp_send_training_message(int node)
 		}
 	}
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(t);
 	multi_send_int(delay);
 
@@ -13897,7 +13897,7 @@ void sexp_send_training_message(int node)
 		message_training_queue(CTEXT(CDR(node)), timestamp(delay), t);
 		multi_send_string(CTEXT(CDR(node)));
 	}
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_send_training_message()
@@ -14551,10 +14551,10 @@ void sexp_set_countermeasures(int node)
 
 	shipp->cmeasure_count = num_cmeasures;
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_ship(shipp);
 	multi_send_int(num_cmeasures);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_set_countermeasures()
@@ -14620,7 +14620,7 @@ void sexp_change_subsystem_name(int node)
 	node = CDR(node);
 	
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_ship(shipp); 
 		multi_send_string(new_name); 
 	}
@@ -14642,7 +14642,7 @@ void sexp_change_subsystem_name(int node)
 	}
 	
 	if (MULTIPLAYER_MASTER) {
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -14672,7 +14672,7 @@ void sexp_change_ship_class(int n)
 	n = CDR(n);
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_int(class_num);
 	}
 
@@ -14727,7 +14727,7 @@ void sexp_change_ship_class(int n)
 	}
 
 	if (MULTIPLAYER_MASTER) {
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -14973,9 +14973,9 @@ void sexp_set_ambient_light(int node)
 
 	// do the multiplayer callback
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_int(level);
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -16214,10 +16214,10 @@ void sexp_add_remove_escort(int node)
 		hud_remove_ship_from_escort(Ships[sindex].objnum);
 	}
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(sindex);
 	multi_send_int(flag); 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_add_remove_escort()
@@ -16753,7 +16753,7 @@ void add_nav_waypoint(int node)
 
 	add_nav_waypoint(nav_name, way_name, vert, oswpt_name);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(nav_name);
 	multi_send_string(way_name);
 	multi_send_int(vert);
@@ -16762,7 +16762,7 @@ void add_nav_waypoint(int node)
 		multi_send_string(oswpt_name);
 	}
 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_add_nav_waypoint()
@@ -16803,10 +16803,10 @@ void add_nav_ship(int node)
 	char *ship_name = CTEXT(CDR(node));
 	AddNav_Ship(nav_name, ship_name, 0);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(nav_name);
 	multi_send_string(ship_name);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_add_nav_ship()
@@ -16833,9 +16833,9 @@ void del_nav(int node)
 	char *nav_name = CTEXT(node);
 	DelNavPoint(nav_name);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(nav_name);
-	multi_end_packet();
+	multi_end_callback();
 
 }
 
@@ -17121,7 +17121,7 @@ void sexp_set_respawns(int node)
 	node = CDR(node);
 
 	// send the information to clients
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(num_respawns); 
 
 	while (node != -1) {
@@ -17136,7 +17136,7 @@ void sexp_set_respawns(int node)
 		node = CDR(node);
 	}
 	
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_set_respawns()
@@ -17188,9 +17188,9 @@ void sexp_remove_weapons(int node)
 	actually_remove_weapons(weapon_info_index); 
 	
 	// send the information to clients
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(weapon_info_index); 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_remove_weapons()
@@ -17967,9 +17967,9 @@ void sexp_flash_hud_gauge( int node )
 		if ( !stricmp(HUD_gauge_text[i], name) ) {
 			hud_gauge_start_flash(i);	// call HUD function to flash gauge
 
-			multi_start_packet();
+			multi_start_callback();
 			multi_send_int(i);
-			multi_end_packet();
+			multi_end_callback();
 
 			break;
 		}
@@ -18045,9 +18045,9 @@ void sexp_toggle_cutscene_bars(int node, int set)
 
 	toggle_cutscene_bars(delta_speed, set);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_float(delta_speed);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_toggle_cutscene_bars(int set)
@@ -18078,9 +18078,9 @@ void sexp_fade_in(int n)
 	}
 
 	// multiplayer callback
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_float(delta_time);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_fade_in()
@@ -18153,12 +18153,12 @@ void sexp_fade_out(int n)
 
 	sexp_fade_out(delta_time, R, G, B);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_float(delta_time);
 	multi_send_int(R);
 	multi_send_int(G);
 	multi_send_int(B);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_fade_out()
@@ -18753,7 +18753,7 @@ void sexp_show_subtitle_text(int node)
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(x_pos);
 	multi_send_int(y_pos);
 	multi_send_string(text);
@@ -18767,7 +18767,7 @@ void sexp_show_subtitle_text(int node)
 	multi_send_bool(center_y);
 	multi_send_int(width);
 	multi_send_bool(post_shaded);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_show_subtitle_text()
@@ -18872,7 +18872,7 @@ void sexp_show_subtitle_image(int node)
 	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
 	Subtitles.push_back(new_subtitle);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(x_pos);
 	multi_send_int(y_pos);
 	multi_send_string(image);
@@ -18883,7 +18883,7 @@ void sexp_show_subtitle_image(int node)
 	multi_send_int(width);
 	multi_send_int(height);
 	multi_send_bool(post_shaded);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_show_subtitle_image()
@@ -18972,10 +18972,10 @@ void sexp_set_camera_shudder(int n)
 
 	game_shudder_apply(time, intensity);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(time);
 	multi_send_float(intensity); 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_set_camera_shudder()
@@ -19005,10 +19005,10 @@ void sexp_set_jumpnode_name(int n) //CommanderDJ
 	char *new_name = CTEXT(n); //for multi
 
 	//multiplayer callback
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(old_name);
 	multi_send_string(new_name);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_set_jumpnode_name(int n) //CommanderDJ
@@ -21477,7 +21477,7 @@ void multi_sexp_eval()
 		Assert (Multi_sexp_bytes_left); 
 
 		if (op_num < 0) {
-			Warning(LOCATION, "Received invalid SEXP packet from host. Entire packet may be corrupt. Discarding packet"); 
+			Warning(LOCATION, "Received invalid operator number from host in multi_sexp_eval(). Entire packet may be corrupt. Discarding packet"); 
 			Int3(); 
 			return; 	
 		}
@@ -24797,10 +24797,10 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 	// do multi_callback_here
 	// if we're called from the sexp code send a SEXP packet (more efficient) 
 	if( MULTIPLAYER_MASTER && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) && sexp_callback) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_int(index);
 		multi_send_string(Sexp_variables[index].text);
-		multi_end_packet();
+		multi_end_callback();
 	}
 	// otherwise send a SEXP variable packet
 	else if ( (Game_mode & GM_MULTIPLAYER) && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) ) {
