@@ -29,7 +29,7 @@ int multi_sexp_get_next_operator();
 int multi_sexp_get_operator();
 bool multi_sexp_discard_operator();
 
-void multi_discard_remaining_packet();
+void multi_discard_remaining_callback_data();
 
 // client side packet emptiers
 bool multi_get_int(int &value);
