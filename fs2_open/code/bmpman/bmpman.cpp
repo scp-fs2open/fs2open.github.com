@@ -677,8 +677,8 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	int frames = 0, fps = 30, keyframe = 0, rval;
 	char ext[8];
 	ubyte c_type = BM_TYPE_NONE;
-	char file_text[50];
-	char file_text_raw[50];
+	char file_text[1024];
+	char file_text_raw[1024];
 
 	memset( ext, 0, sizeof(ext) );
 	memset( file_text, 0, sizeof(file_text) );
