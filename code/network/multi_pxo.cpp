@@ -30,7 +30,6 @@
 #include "network/multiui.h"
 #include "network/multi_log.h"
 #include "stats/medals.h"
-//#include "network/multi_update.h"
 #include "globalincs/alphacolors.h"
 #include "graphics/2d.h"
 #include "graphics/generic.h"
@@ -108,7 +107,6 @@ ui_button_info Multi_pxo_buttons[GR_NUM_RESOLUTIONS][MULTI_PXO_NUM_BUTTONS] = {
 	},
 };
 
-// define MULTI_PXO_NUM_TEXT			18
 #define MULTI_PXO_NUM_TEXT			16
 UI_XSTR Multi_pxo_text[GR_NUM_RESOLUTIONS][MULTI_PXO_NUM_TEXT] = {
 	{ // GR_640		
@@ -126,8 +124,6 @@ UI_XSTR Multi_pxo_text[GR_NUM_RESOLUTIONS][MULTI_PXO_NUM_TEXT] = {
 		{"Help",								928,	535,	416,	UI_XSTR_COLOR_GREEN,	-1, &Multi_pxo_buttons[0][MULTI_PXO_HELP].button},
 		{"Games",							1319,	579,	416,	UI_XSTR_COLOR_PINK, -1, &Multi_pxo_buttons[0][MULTI_PXO_GAMES].button},
 		{"Players",							1269,	29,	102,	UI_XSTR_COLOR_GREEN,	-1, NULL},
-		// {"Squad",							1320,	110,	101,	UI_XSTR_COLOR_GREEN, -1, NULL},
-		// {"Channels",						1321,	369,	76,	UI_XSTR_COLOR_GREEN, -1, NULL},
 		{"Players",							1269,	507,	90,	UI_XSTR_COLOR_GREEN,	-1, NULL},		
 		{"Games",							1319,	568,	90,	UI_XSTR_COLOR_GREEN, -1, NULL}
 	},
@@ -146,8 +142,6 @@ UI_XSTR Multi_pxo_text[GR_NUM_RESOLUTIONS][MULTI_PXO_NUM_TEXT] = {
 		{"Help",								928,	857,	667,	UI_XSTR_COLOR_GREEN,	-1, &Multi_pxo_buttons[1][MULTI_PXO_HELP].button},
 		{"Games",							1319,	917,	667,	UI_XSTR_COLOR_PINK, -1, &Multi_pxo_buttons[1][MULTI_PXO_GAMES].button},
 		{"Players",							1269,	47,	163,	UI_XSTR_COLOR_GREEN,	-1, NULL},
-		// {"Squad",							1320,	176,	163,	UI_XSTR_COLOR_GREEN, -1, NULL},
-		// {"Channels",						1321,	591,	86,	UI_XSTR_COLOR_GREEN, -1, NULL},
 		{"Players",							1269,	852,	109,	UI_XSTR_COLOR_GREEN,	-1, NULL},		
 		{"Games",							1319,	926,	109,	UI_XSTR_COLOR_GREEN, -1, NULL}
 	}
@@ -414,8 +408,6 @@ int Multi_pxo_max_player_display[GR_NUM_RESOLUTIONS] = {
 	41		// GR_1024
 };
 UI_BUTTON Multi_pxo_player_button;
-
-// UI_SLIDER2 Multi_pxo_player_slider;
 
 // slider coords
 int Multi_pxo_player_slider_coords[GR_NUM_RESOLUTIONS][4] = {
@@ -881,29 +873,6 @@ int Multi_pxo_pinfo_val_x[GR_NUM_RESOLUTIONS] = {
 
 char *Multi_pxo_pinfo_stats_labels[MULTI_PXO_PINFO_NUM_LABELS];
 
-/* = {
-	"Name",
-	"Rank",
-	"Kills",
-	"Assists",
-	"Friendly kills",
-	"Missions flown",
-	"Flight time",
-	"Last flown",
-	"Primary shots fired",
-	"Primary shots hit",
-	"Primary hit %",
-	"Secondary shots fired",
-	"Secondary shots hit",
-	"Secondary hit %",
-	"Primary friendly hits",
-	"Primary friendly hit %",
-	"Secondary friendly hits",
-	"Secondary friendly hit %"	
-};
-*/
-//XSTR:ON
-
 char Multi_pxo_pinfo_vals[MULTI_PXO_PINFO_NUM_LABELS][50];
 
 int Multi_pxo_pinfo_stats_spacing[MULTI_PXO_PINFO_NUM_LABELS] = {
@@ -1021,7 +990,6 @@ typedef struct help_page {
 } help_page;
 
 help_page Multi_pxo_help_pages[MULTI_PXO_MAX_PAGES];
-// int Multi_pxo_help_loaded = 0;
 
 int Multi_pxo_help_num_pages = 0;
 
@@ -1187,9 +1155,6 @@ void multi_pxo_init(int use_last_channel)
 	// create the banner button and hide it
 	Multi_pxo_ban_button.create(&Multi_pxo_window, "", Pxo_ban_coords[gr_screen.res][0], Pxo_ban_coords[gr_screen.res][1], Pxo_ban_coords[gr_screen.res][2], Pxo_ban_coords[gr_screen.res][3], 0, 1);
 	Multi_pxo_ban_button.hide();
-
-	// create the player list slider
-	// Multi_pxo_player_slider.create(&Multi_pxo_window, Multi_pxo_player_slider_coords[gr_screen.res][0], Multi_pxo_player_slider_coords[gr_screen.res][1], Multi_pxo_player_slider_coords[gr_screen.res][2], Multi_pxo_player_slider_coords[gr_screen.res][3], 0, Multi_pxo_player_slider_name[gr_screen.res], multi_pxo_scroll_players_up, multi_pxo_scroll_players_down, NULL);
 
 	// create the chat slider
 	Multi_pxo_chat_slider.create(&Multi_pxo_window, Multi_pxo_chat_slider_coords[gr_screen.res][0], Multi_pxo_chat_slider_coords[gr_screen.res][1], Multi_pxo_chat_slider_coords[gr_screen.res][2], Multi_pxo_chat_slider_coords[gr_screen.res][3], 0, Multi_pxo_chat_slider_name[gr_screen.res], multi_pxo_scroll_chat_up, multi_pxo_scroll_chat_down, NULL);
@@ -1628,7 +1593,9 @@ void multi_pxo_load_palette()
 #endif
 }
 
-// unload the palette
+/**
+ * Unload the palette
+ */
 void multi_pxo_unload_palette()
 {
 	// unload the palette if it exists
@@ -1638,7 +1605,9 @@ void multi_pxo_unload_palette()
 	}
 }
 
-// if we're currently on a private channel
+/**
+ * If we're currently on a private channel
+ */
 int multi_pxo_on_private_channel()
 {
 	// if we're connected to a channel with the "+" symbol on front
@@ -1650,7 +1619,9 @@ int multi_pxo_on_private_channel()
 	return 0;
 }
 
-// convert string 1 into string 2, substituting underscores for spaces
+/**
+ * Convert string 1 into string 2, substituting underscores for spaces
+ */
 void multi_pxo_underscore_nick(char *string1,char *string2)
 {
 	char nick_temp[512];
@@ -1685,7 +1656,9 @@ void multi_pxo_underscore_nick(char *string1,char *string2)
 	}
 }
 
-// if the command is a potential "nick" command
+/**
+ * If the command is a potential "nick" command
+ */
 int multi_pxo_is_nick_command(char *msg)
 {
 	char *tok;
@@ -1703,7 +1676,9 @@ int multi_pxo_is_nick_command(char *msg)
 	return !stricmp(tok,NOX("/nick"));
 }
 
-// check for button presses
+/**
+ * Check for button presses
+ */
 void multi_pxo_check_buttons()
 {
 	int idx;
@@ -1717,7 +1692,9 @@ void multi_pxo_check_buttons()
 	}
 }
 
-// handle a button press
+/**
+ * Handle a button press
+ */
 void multi_pxo_button_pressed(int n)
 {
 	switch(n){
@@ -1843,7 +1820,9 @@ void multi_pxo_button_pressed(int n)
 	}
 }
 
-// condition function for popup_do_with_condition for connected to Parallax Online
+/**
+ * Condition function for popup_do_with_condition for connected to Parallax Online
+ */
 int mpxo_failed = 0;
 int multi_pxo_connect_do()
 {
@@ -1893,7 +1872,11 @@ int multi_pxo_connect_do()
 	return 0;
 }
 
-// popup loop which does an autojoin of a public channel.  Returns when the autojoin process is complete
+/**
+ * Popup loop which does an autojoin of a public channel.
+ *
+ * Returns when the autojoin process is complete
+ */
 int multi_pxo_autojoin_do()
 {
 	pxo_channel last_channel;
@@ -1938,7 +1921,9 @@ int multi_pxo_autojoin_do()
 	return 1;
 }
 
-// attempt to connect to Parallax Online, return success or fail
+/**
+ * Attempt to connect to Parallax Online, return success or fail
+ */
 int multi_pxo_connect()
 {
 	char join_str[256];	
@@ -2000,7 +1985,9 @@ int multi_pxo_connect()
 	return 0;
 }
 
-// run the networking functions for the PXO API
+/**
+ * Run the networking functions for the PXO API
+ */
 void multi_pxo_api_process()
 {
 	char *p;
@@ -2029,7 +2016,6 @@ void multi_pxo_api_process()
 	p = GetChannelList();
 
 	if (p) {
-		// nprintf(("Network","%s\n",p));
 		multi_pxo_make_channels(p);
 	}	
 	
@@ -2111,8 +2097,6 @@ void multi_pxo_api_process()
 				// refresh current channel server count
 				multi_pxo_channel_refresh_current();
 
-				// clear the chat area
-				// multi_pxo_chat_clear();		
 				break;
 		
 			default:
@@ -2126,7 +2110,9 @@ void multi_pxo_api_process()
 	multi_pxo_handle_channel_change();
 }
 
-// process a "nick" change event
+/**
+ * Process a "nick" change event
+ */
 void multi_pxo_process_nick_change(char *data)
 {
 	char *from, *to;
@@ -2148,7 +2134,9 @@ void multi_pxo_process_nick_change(char *data)
 	}	
 }
 
-// autojoin an appropriate channel
+/**
+ * Autojoin an appropriate channel
+ */
 void multi_pxo_autojoin()
 {
 	pxo_channel sw;
@@ -2161,7 +2149,9 @@ void multi_pxo_autojoin()
 	multi_pxo_join_channel(&sw);		
 }
 
-// does the string match the "autojoin" prefic
+/**
+ * Does the string match the "autojoin" prefix
+ */
 int multi_pxo_is_autojoin(char *name)
 {
 	// check to see if the name is long enough
@@ -2172,7 +2162,9 @@ int multi_pxo_is_autojoin(char *name)
 	return !strnicmp(name, MULTI_PXO_AUTOJOIN_PREFIX, strlen(MULTI_PXO_AUTOJOIN_PREFIX));
 }
 
-// called from the game tracker API - server count update for a channel
+/**
+ * Called from the game tracker API - server count update for a channel
+ */
 void multi_pxo_channel_count_update(char *name, int count)
 {
 	pxo_channel *lookup;
@@ -2192,7 +2184,9 @@ void multi_pxo_channel_count_update(char *name, int count)
 
 // status bar stuff -----------------------------------------------
 
-// set the status text
+/**
+ * Set the status text
+ */
 void multi_pxo_set_status_text(char *txt)
 {
 	// copy in the text
@@ -2203,7 +2197,9 @@ void multi_pxo_set_status_text(char *txt)
 	gr_force_fit_string(Multi_pxo_status_text, MAX_PXO_TEXT_LEN-1, Multi_pxo_status_coords[gr_screen.res][2]);
 }
 
-// blit the status text
+/**
+ * Blit the status text
+ */
 void multi_pxo_blit_status_text()
 {
 	int w;
@@ -2219,13 +2215,17 @@ void multi_pxo_blit_status_text()
 
 // channel related stuff -------------------------------------------
 
-// get a list of channels on the server
+/**
+ * Get a list of channels on the server
+ */
 void multi_pxo_get_channels()
 {		
 	SendChatString(NOX("/list"));
 }
 
-// clear the old channel list
+/**
+ * Clear the old channel list
+ */
 void multi_pxo_clear_channels()
 {
 	pxo_channel *moveup,*backup;
@@ -2260,7 +2260,9 @@ void multi_pxo_clear_channels()
 	}	
 }
 
-// parse the input string and make a list of new channels
+/**
+ * Parse the input string and make a list of new channels
+ */
 void multi_pxo_make_channels(char *chan_str)
 {	
 	char *name_tok,*user_tok,*desc_tok;
@@ -2269,9 +2271,6 @@ void multi_pxo_make_channels(char *chan_str)
 	int num_users;
 	
 	nprintf(("Network","Making some channels!\n"));
-
-	// clear the channel list
- 	// multi_pxo_clear_channels();	
 
 	// set the last get time
 	Multi_pxo_channel_last_refresh = f2fl(timer_get_fixed_seconds());
@@ -2308,7 +2307,6 @@ void multi_pxo_make_channels(char *chan_str)
 			else {
 				res = multi_pxo_add_channel(name_tok,&Multi_pxo_channels);
 				if(res != NULL){
-					//Multi_pxo_channel_count++;
 					res->num_users = (short)num_users;
 					strcpy_s(res->desc,desc_tok);
 				}		
@@ -2318,13 +2316,6 @@ void multi_pxo_make_channels(char *chan_str)
 		// get the next name token
 		name_tok = strtok(NULL," ");
 	} while(name_tok != NULL);
-		
-	// if we need to autojoin, do so now
-	//if(Multi_pxo_must_autojoin){
-	//	Multi_pxo_must_autojoin = 0;
-	//	
-	//	multi_pxo_autojoin();
-	//}
 
 	// refresh channels
 	multi_pxo_set_status_text(XSTR("Connected to Parallax Online",951));	
@@ -2344,7 +2335,9 @@ void multi_pxo_make_channels(char *chan_str)
 	}
 }
 
-// create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
+/**
+ * Create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
+ */
 pxo_channel *multi_pxo_add_channel(char *name,pxo_channel **list)
 {
 	pxo_channel *new_channel;
@@ -2374,7 +2367,9 @@ pxo_channel *multi_pxo_add_channel(char *name,pxo_channel **list)
 	return new_channel;
 }
 
-// lookup a channel with the specified name
+/**
+ * Lookup a channel with the specified name
+ */
 pxo_channel *multi_pxo_find_channel(char *name,pxo_channel *list)
 {
 	pxo_channel *moveup;
@@ -2395,7 +2390,9 @@ pxo_channel *multi_pxo_find_channel(char *name,pxo_channel *list)
 	return NULL;
 }
 
-// process the channel list (select, etc)
+/**
+ * Process the channel list (select, etc)
+ */
 void multi_pxo_process_channels()
 {
 	int item_index,my;
@@ -2456,15 +2453,15 @@ void multi_pxo_process_channels()
 	// if we haven't updated our server channel counts in a while, do so again
 	// last refresh time
 	if((Multi_pxo_channel_server_refresh > 0.0f) && ((f2fl(timer_get_fixed_seconds()) - Multi_pxo_channel_server_refresh) > CHANNEL_SERVER_REFRESH_TIME) ){
-		// refresh server counts
-		// multi_pxo_set_status_text("Refreshing Public Channel Server Counts");
 
 		// do it _NOW_ I"M RIGHT HERE KILL ME WHAT ARE YOU WAITING FOR DO IT KILL ME DO IT NOW!
 		multi_pxo_channel_refresh_servers();		
 	}	
 }
 
-// send a request to refresh our channel server counts
+/**
+ * Send a request to refresh our channel server counts
+ */
 void multi_pxo_channel_refresh_servers()
 {
 	pxo_channel *lookup;
@@ -2490,7 +2487,9 @@ void multi_pxo_channel_refresh_servers()
 	Multi_pxo_channel_server_refresh = f2fl(timer_get_fixed_seconds());
 }
 
-// refresh current channel server count
+/**
+ * Refresh current channel server count
+ */
 void multi_pxo_channel_refresh_current()
 {
 	// send a request for a server count on this channel
@@ -2500,7 +2499,9 @@ void multi_pxo_channel_refresh_current()
 	}		
 }
 
-// display the channel list
+/**
+ * Display the channel list
+ */
 void multi_pxo_blit_channels()
 {
 	pxo_channel *moveup;
@@ -2562,7 +2563,9 @@ void multi_pxo_blit_channels()
 	} while((moveup != Multi_pxo_channels) && (disp_count < Multi_pxo_max_chan_display[gr_screen.res]));
 }
 
-// scroll channel list up
+/**
+ * Scroll channel list up
+ */
 void multi_pxo_scroll_channels_up()
 {		
 	// if we're already at the head of the list, do nothing
@@ -2577,7 +2580,9 @@ void multi_pxo_scroll_channels_up()
 	gamesnd_play_iface(SND_USER_SELECT);
 }
 
-// scroll channel list down
+/**
+ * Scroll channel list down
+ */
 void multi_pxo_scroll_channels_down()
 {
 	// if we're already at the tail of the list, do nothing
@@ -2598,7 +2603,9 @@ void multi_pxo_scroll_channels_down()
 	gamesnd_play_iface(SND_USER_SELECT);
 }
 
-// attempt to join a channel
+/**
+ * Attempt to join a channel
+ */
 void multi_pxo_join_channel(pxo_channel *chan)
 {	
 	char switch_msg[256];
@@ -2656,7 +2663,9 @@ void multi_pxo_join_channel(pxo_channel *chan)
 	}	
 }
 
-// handle any processing details if we're currently trying to join a channel
+/**
+ * Handle any processing details if we're currently trying to join a channel
+ */
 void multi_pxo_handle_channel_change()
 {			
 	// if we're not switching channels, do nothing
@@ -2705,9 +2714,6 @@ void multi_pxo_handle_channel_change()
 			lookup->num_users = 1;
 		}
 
-		// clear the chat area
-		// multi_pxo_chat_clear();		
-
 		// set the "switch" delay timestamp
 		Multi_pxo_switch_delay = timestamp(MULTI_PXO_SWITCH_DELAY_TIME);
 
@@ -2720,7 +2726,9 @@ void multi_pxo_handle_channel_change()
 
 // player related stuff -------------------------------------------
 
-// clear the old player list
+/**
+ * Clear the old player list
+ */
 void multi_pxo_clear_players()
 {
 	player_list *moveup,*backup;
@@ -2744,23 +2752,12 @@ void multi_pxo_clear_players()
 	}
 
 	Multi_pxo_player_start = NULL;	
-	// Multi_pxo_player_start_index = -1;
 	Multi_pxo_player_select = NULL;
-
-	// reset the slider
-	// Multi_pxo_player_slider.set_numberItems(0);
-
-	// add a bunch of bogus players
-	/*
-	char str[50];
-	for(int idx=0;idx<30;idx++){
-		sprintf(str,"player%d",idx);
-		multi_pxo_add_player(str);
-	}
-	*/
 }
 
-// create a new player with the given name and place it on the player list, return a pointer or NULL on fail
+/**
+ * Create a new player with the given name and place it on the player list, return a pointer or NULL on fail
+ */
 player_list *multi_pxo_add_player(char *name)
 {
 	player_list *new_player;
@@ -2785,21 +2782,15 @@ player_list *multi_pxo_add_player(char *name)
 		Multi_pxo_players->next = Multi_pxo_players->prev = Multi_pxo_players;
 	}
 
-	// increment the start position
-	if(Multi_pxo_player_start != NULL){
-		// Multi_pxo_player_start_index++;
-	}
-
 	// new player
 	Multi_pxo_player_count++;
-
-	// update the count on the slider
-	// Multi_pxo_player_slider.set_numberItems(Multi_pxo_player_count);
 		
 	return new_player;
 }
 
-// remove a player with the given name
+/**
+ * Remove a player with the given name
+ */
 void multi_pxo_del_player(char *name)
 {
 	player_list *lookup;
@@ -2839,7 +2830,6 @@ void multi_pxo_del_player(char *name)
 					// otherwise move back
 					else {
 						Multi_pxo_player_start = Multi_pxo_player_start->prev;
-						// Multi_pxo_player_start_index++;
 					}
 				}
 
@@ -2857,10 +2847,6 @@ void multi_pxo_del_player(char *name)
 			// new player
 			Multi_pxo_player_count--;
 			Assert(Multi_pxo_player_count >= 0);
-
-			// update the count on the slider
-			// Multi_pxo_player_slider.set_numberItems(Multi_pxo_player_count);
-			// Multi_pxo_player_slider.force_currentItem(Multi_pxo_player_start_index);
 				
 			// we're done now
 			return;
@@ -2871,7 +2857,9 @@ void multi_pxo_del_player(char *name)
 	} while((lookup != NULL) && (lookup != Multi_pxo_players));
 }
 
-// try and find a player with the given name, return a pointer to his entry (or NULL)
+/**
+ * Try and find a player with the given name, return a pointer to his entry (or NULL)
+ */
 player_list *multi_pxo_find_player(char *name)
 {
 	player_list *lookup;
@@ -2893,7 +2881,9 @@ player_list *multi_pxo_find_player(char *name)
 	return NULL;
 }
 
-// process the player list (select, etc)
+/**
+ * Process the player list (select, etc)
+ */
 void multi_pxo_process_players()
 {
 	int item_index,my;
@@ -2902,10 +2892,6 @@ void multi_pxo_process_players()
 	// if we don't have a start item, but the list is non-null
 	if((Multi_pxo_player_start == NULL) && (Multi_pxo_players != NULL)){
 		Multi_pxo_player_start = Multi_pxo_players;		
-		// Multi_pxo_player_start_index = 0;
-
-		// update the slider
-		// Multi_pxo_player_slider.set_currentItem(Multi_pxo_player_start_index);
 	} 
 
 	// if we don't have a selected item, but the list is non-null
@@ -2944,7 +2930,9 @@ void multi_pxo_process_players()
 	}
 }
 
-// display the player list
+/**
+ * Display the player list
+ */
 void multi_pxo_blit_players()
 {
 	player_list *moveup;
@@ -2984,7 +2972,9 @@ void multi_pxo_blit_players()
 	} while((moveup != Multi_pxo_players) && (disp_count < Multi_pxo_max_player_display[gr_screen.res]));
 }
 
-// scroll player list up
+/**
+ * Scroll player list up
+ */
 void multi_pxo_scroll_players_up()
 {
 	// if we're already at the head of the list, do nothing
@@ -2995,13 +2985,13 @@ void multi_pxo_scroll_players_up()
 	
 	// otherwise move up one
 	Multi_pxo_player_start = Multi_pxo_player_start->prev;	
-	// Multi_pxo_player_start_index--;
-	// Assert(Multi_pxo_player_start_index >= 0);
 
 	gamesnd_play_iface(SND_USER_SELECT);
 }
 
-// scroll player list down
+/**
+ * Scroll player list down
+ */
 void multi_pxo_scroll_players_down()
 {
 	player_list *lookup;
@@ -3022,9 +3012,6 @@ void multi_pxo_scroll_players_down()
 	// if we can move down
 	if(count >= Multi_pxo_max_player_display[gr_screen.res]){
 		Multi_pxo_player_start = Multi_pxo_player_start->next;
-
-		// Multi_pxo_player_start_index++;
-
 		gamesnd_play_iface(SND_USER_SELECT);
 	} else {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -3034,7 +3021,9 @@ void multi_pxo_scroll_players_down()
 
 // chat text stuff -----------------------------------------
 
-// initialize and create the chat text linked list
+/**
+ * Initialize and create the chat text linked list
+ */
 void multi_pxo_chat_init()
 {
 	int idx;
@@ -3075,7 +3064,9 @@ void multi_pxo_chat_init()
 	Multi_pxo_chat_add = Multi_pxo_chat;
 }
 
-// free up all chat list stuff
+/**
+ * Free up all chat list stuff
+ */
 void multi_pxo_chat_free()
 {
 	chat_line *moveup, *backup;	
@@ -3098,7 +3089,9 @@ void multi_pxo_chat_free()
 	Multi_pxo_chat_slider.set_numberItems(0);	
 }
 
-// clear all lines of chat text in the chat area
+/**
+ * Clear all lines of chat text in the chat area
+ */
 void multi_pxo_chat_clear()
 {
 	chat_line *moveup;
@@ -3117,7 +3110,9 @@ void multi_pxo_chat_clear()
 	Multi_pxo_chat_add = Multi_pxo_chat;
 }
 
-// add a line of text
+/**
+ * Add a line of text
+ */
 void multi_pxo_chat_add_line(char *txt, int mode)
 {
 	chat_line *temp;
@@ -3160,25 +3155,12 @@ void multi_pxo_chat_add_line(char *txt, int mode)
 	// set the count
 	Multi_pxo_chat_slider.set_numberItems(Multi_pxo_chat_count > Multi_pxo_max_chat_display[gr_screen.res] ? Multi_pxo_chat_count - Multi_pxo_max_chat_display[gr_screen.res] : 0, 0);		// the 0 means don't reset
 
-	// force the position, in case we arent at the bottom of the list
-
-
-	// move to the bottom of the chat area
-	/*
-	if(from_self){
-		multi_pxo_goto_bottom();
-	}	
-	else {		
-		// if we have more than the # of lines displayable
-		if(Multi_pxo_chat_count >= MULTI_PXO_MAX_CHAT_DISPLAY){
-		}
-		multi_pxo_goto_bottom();
-	}
-	*/
 	multi_pxo_goto_bottom();
 }
 
-// process an incoming line of text
+/**
+ * Process an incoming line of text
+ */
 void multi_pxo_chat_process_incoming(char *txt,int mode)
 {
 	char msg_total[512],line[512];
@@ -3215,8 +3197,6 @@ void multi_pxo_chat_process_incoming(char *txt,int mode)
 		}
 		// if this is a MOTD
 		else if(multi_pxo_is_motd_text(txt)){
-			// mode = CHAT_MODE_MOTD;
-			// stuff the motd
 			multi_pxo_motd_add_text(txt);
 			return;
 		} 
@@ -3237,13 +3217,6 @@ void multi_pxo_chat_process_incoming(char *txt,int mode)
 	// if the string fits on one line
 	if(n_lines == 1) {
 		multi_pxo_chat_add_line(msg_total,mode);
-
-		// don't pad with extra spaces if its from the server
-		/*
-		if(mode != CHAT_MODE_SERVER){
-			multi_pxo_chat_add_line("",CHAT_MODE_NORMAL);
-		}
-		*/
 	}
 	// if the string was split into multiple lines
 	else {
@@ -3266,7 +3239,9 @@ void multi_pxo_chat_process_incoming(char *txt,int mode)
 	}	
 }
 
-// blit the chat text
+/**
+ * Blit the chat text
+ */
 void multi_pxo_chat_blit()
 {
 	int y_start;
@@ -3358,7 +3333,9 @@ void multi_pxo_chat_blit()
 	}
 }
 
-// scroll to the very bottom of the chat area
+/**
+ * Scroll to the very bottom of the chat area
+ */
 void multi_pxo_goto_bottom()
 {
 	chat_line *backup;
@@ -3393,7 +3370,9 @@ void multi_pxo_goto_bottom()
 	}
 }
 
-// scroll the text up
+/**
+ * Scroll the text up
+ */
 void multi_pxo_scroll_chat_up()
 {
 	// if we're already at the top of the list, don't do anything	
@@ -3410,7 +3389,9 @@ void multi_pxo_scroll_chat_up()
 	gamesnd_play_iface(SND_USER_SELECT);
 }
 
-// returns 1 if we can scroll down, 0 otherwise
+/**
+ * Returns 1 if we can scroll down, 0 otherwise
+ */
 int multi_pxo_can_scroll_down()
 {
 	chat_line *lookup;
@@ -3419,7 +3400,6 @@ int multi_pxo_can_scroll_down()
 	// see if its okay to scroll down
 	lookup = Multi_pxo_chat_start;
 	if (lookup == NULL) {
-	//	gamesnd_play_iface(SND_GENERAL_FAIL);
 		return 0;
 	}
 	count = 0;
@@ -3436,7 +3416,9 @@ int multi_pxo_can_scroll_down()
 	}
 }
 
-// scroll the text down
+/**
+ * Scroll the text down
+ */
 void multi_pxo_scroll_chat_down()
 {
 	// if we can move down
@@ -3449,7 +3431,9 @@ void multi_pxo_scroll_chat_down()
 	}
 }
 
-// process chat controls
+/**
+ * Process chat controls
+ */
 void multi_pxo_chat_process()
 {
 	char *remainder;
@@ -3466,7 +3450,6 @@ void multi_pxo_chat_process()
 	// determine if the width of the string in pixels is > than the inputbox width -- if so,
 	// then send the message
 	gr_get_string_size(&msg_pixel_width, NULL, msg);
-	// if ( msg_pixel_width >= (Chatbox_inputbox_w - Player->short_callsign_width) ) {
 	if ( msg_pixel_width >= (Multi_pxo_input_coords[gr_screen.res][2])) {
 		remainder = strrchr(msg, ' ');
 		if ( remainder ) {
@@ -3558,7 +3541,9 @@ char *multi_pxo_chat_is_private(char *txt)
 }
 //XSTR:ON
 
-// if the text came from the server
+/**
+ * If the text came from the server
+ */
 int multi_pxo_is_server_text(char *txt)
 {		
 	// if the message is prefaced by a ***
@@ -3569,7 +3554,9 @@ int multi_pxo_is_server_text(char *txt)
 	return 0;
 }
 
-// if the text is message of the day text
+/**
+ * If the text is message of the day text
+ */
 int multi_pxo_is_motd_text(char *txt)
 {
 	// if we're not on a channel, and this is not a channel switching message assume its coming from a server
@@ -3580,7 +3567,9 @@ int multi_pxo_is_motd_text(char *txt)
 	return 0;
 }
 
-// if the text is the end of motd text
+/**
+ * If the text is the end of motd text
+ */
 int multi_pxo_is_end_of_motd_text(char *txt)
 {
 	// if we're not on a channel, and this is not a channel switching message assume its coming from a server
@@ -3591,7 +3580,9 @@ int multi_pxo_is_end_of_motd_text(char *txt)
 	return 0;
 }
 
-// if the text is a "has left message" from the server
+/**
+ * If the text is a "has left message" from the server
+ */
 int multi_pxo_chat_is_left_message(char *txt)
 {
 	char last_portion[100];
@@ -3611,7 +3602,9 @@ int multi_pxo_chat_is_left_message(char *txt)
 	return 0;
 }
 
-// recalculate the chat start index, and adjust the slider properly
+/**
+ * Recalculate the chat start index, and adjust the slider properly
+ */
 void multi_pxo_chat_adjust_start()
 {
 	chat_line *moveup;
@@ -3636,7 +3629,9 @@ void multi_pxo_chat_adjust_start()
 
 // motd stuff ---------------------------------------------------------
 
-// initialize motd when going into this screen
+/**
+ * Initialize motd when going into this screen
+ */
 void multi_pxo_motd_init()
 {
 	// zero the motd string
@@ -3649,7 +3644,9 @@ void multi_pxo_motd_init()
 	Pxo_motd_read = 0;
 }
 
-// set the motd text
+/**
+ * Set the motd text
+ */
 void multi_pxo_motd_add_text(char *text)
 {
 	int cur_len = strlen(Pxo_motd);
@@ -3680,7 +3677,9 @@ void multi_pxo_motd_add_text(char *text)
 	}
 }
 
-// set end of motd
+/**
+ * Set end of motd
+ */
 void multi_pxo_set_end_of_motd()
 {
 	int blink = 1;
@@ -3735,7 +3734,9 @@ void multi_pxo_set_end_of_motd()
 	Pxo_motd_blinked_already = 1;
 }
 
-// display the motd dialog
+/**
+ * Display the motd dialog
+ */
 void multi_pxo_motd_dialog()
 {
 	// mark the motd as read
@@ -3745,7 +3746,9 @@ void multi_pxo_motd_dialog()
 	popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, Pxo_motd);
 }
 
-// call to maybe blink the motd button
+/**
+ * Call to maybe blink the motd button
+ */
 void multi_pxo_motd_maybe_blit()
 {
 	// if we got the end of the motd, and he hasn't read it yet
@@ -3768,7 +3771,9 @@ void multi_pxo_motd_maybe_blit()
 
 int Multi_pxo_searching = 0; 
 
-// initialize the common dialog with the passed max input length
+/**
+ * Initialize the common dialog with the passed max input length
+ */
 void multi_pxo_com_init(int input_len)
 {
 	int idx;
@@ -3807,14 +3812,18 @@ void multi_pxo_com_init(int input_len)
 	memset(Multi_pxo_com_top_text, 0, MAX_PXO_TEXT_LEN);
 }
 
-// close down the common dialog
+/**
+ * Close down the common dialog
+ */
 void multi_pxo_com_close()
 {
 	// destroy the UI_WINDOW
 	Multi_pxo_com_window.destroy();
 }
 
-// blit all text lines, top, middle, bottoms
+/**
+ * Blit all text lines, top, middle, bottoms
+ */
 void multi_pxo_com_blit_text()
 {
 	// blit top, middle and bottom text if possible
@@ -3832,7 +3841,9 @@ void multi_pxo_com_blit_text()
 	}
 }
 
-// set the top text, shortening as necessary
+/**
+ * Set the top text, shortening as necessary
+ */
 void multi_pxo_com_set_top_text(char *txt)
 {	
 	if((txt != NULL) && strlen(txt)){
@@ -3841,7 +3852,9 @@ void multi_pxo_com_set_top_text(char *txt)
 	}	
 }
 
-// set the middle text, shortening as necessary
+/**
+ * Set the middle text, shortening as necessary
+ */
 void multi_pxo_com_set_middle_text(char *txt)
 {
 	if((txt != NULL) && strlen(txt)){
@@ -3850,7 +3863,9 @@ void multi_pxo_com_set_middle_text(char *txt)
 	}	
 }
 
-// set the bottom text, shortening as necessary
+/**
+ * Set the bottom text, shortening as necessary
+ */
 void multi_pxo_com_set_bottom_text(char *txt)
 {
 	if((txt != NULL) && strlen(txt)){
@@ -3862,7 +3877,9 @@ void multi_pxo_com_set_bottom_text(char *txt)
 
 // private channel join stuff -----------------------------------------
 
-// initialize the popup
+/**
+ * Initialize the popup
+ */
 void multi_pxo_priv_init()
 {
 	Assert(Multi_pxo_mode != MULTI_PXO_MODE_PRIVATE);
@@ -3880,7 +3897,9 @@ void multi_pxo_priv_init()
 	multi_pxo_com_set_middle_text(XSTR("Type the name of the channel to join/create",961));	
 }
 
-// close down the popup
+/**
+ * Close down the popup
+ */
 void multi_pxo_priv_close()
 {	
 	// close down the common dialog
@@ -3890,7 +3909,9 @@ void multi_pxo_priv_close()
 	Multi_pxo_mode = MULTI_PXO_MODE_NORMAL;
 }
 
-// run the popup, 0 if still running, -1 if cancel, 1 if ok 
+/**
+ * Run the popup, 0 if still running, -1 if cancel, 1 if ok
+ */
 int multi_pxo_priv_popup()
 {
 	int k;
@@ -3954,7 +3975,9 @@ int multi_pxo_priv_popup()
 	return 0;
 }
 
-// process button presses
+/**
+ * Process button presses
+ */
 void multi_pxo_priv_process_buttons()
 {
 	int idx;
@@ -3968,7 +3991,9 @@ void multi_pxo_priv_process_buttons()
 	}
 }
 
-// handle a button press
+/**
+ * Handle a button press
+ */
 void multi_pxo_priv_button_pressed(int n)
 {
 	char priv_chan_name[128];
@@ -3993,7 +4018,9 @@ void multi_pxo_priv_button_pressed(int n)
 	}	
 }
 
-// process the inputbox
+/**
+ * Process the inputbox
+ */
 void multi_pxo_priv_process_input()
 {
 	char priv_chan_name[128];
@@ -4022,7 +4049,9 @@ void multi_pxo_priv_process_input()
 
 char name_lookup[MAX_PXO_TEXT_LEN];
 
-// initialize the popup
+/**
+ * Initialize the popup
+ */
 void multi_pxo_find_init()
 {
 	Assert(Multi_pxo_mode != MULTI_PXO_MODE_FIND);
@@ -4049,7 +4078,9 @@ void multi_pxo_find_init()
 	strcpy_s(name_lookup,"");
 }
 
-// close down the popup
+/**
+ * Close down the popup
+ */
 void multi_pxo_find_close()
 {
 	// close down the common dialog
@@ -4059,7 +4090,9 @@ void multi_pxo_find_close()
 	Multi_pxo_mode = MULTI_PXO_MODE_NORMAL;
 }
 
-// run the popup, 0 if still running, -1 if cancel, 1 if ok 
+/**
+ * Run the popup, 0 if still running, -1 if cancel, 1 if ok
+ */
 int multi_pxo_find_popup()
 {
 	int k;
@@ -4139,7 +4172,9 @@ int multi_pxo_find_popup()
 	return 0;
 }
 
-// process button presses
+/**
+ * Process button presses
+ */
 void multi_pxo_find_process_buttons()
 {
 	int idx;
@@ -4153,7 +4188,9 @@ void multi_pxo_find_process_buttons()
 	}
 }
 
-// handle a button press
+/**
+ * Handle a button press
+ */
 void multi_pxo_find_button_pressed(int n)
 {
 	switch(n){	
@@ -4167,7 +4204,9 @@ void multi_pxo_find_button_pressed(int n)
 	}	
 }
 
-// process the inputbox
+/**
+ * Process the inputbox
+ */
 void multi_pxo_find_process_input()
 {		
 	// see if the user has pressed enter
@@ -4204,7 +4243,9 @@ void multi_pxo_find_process_input()
 	}
 }
 
-// process search mode if applicable
+/**
+ * Process search mode if applicable
+ */
 void multi_pxo_find_search_process()
 {
 	char *channel;
@@ -4267,7 +4308,9 @@ void multi_pxo_find_search_process()
 
 // player info stuff -----------------------------------------
 
-// popup conditional functions, returns 10 on successful get of stats
+/**
+ * Popup conditional functions, returns 10 on successful get of stats
+ */
 int multi_pxo_pinfo_cond()
 {
 	// process common stuff
@@ -4383,7 +4426,9 @@ int multi_pxo_pinfo_cond()
 	return 0;
 }
 
-// return 1 if Multi_pxo_pinfo was successfully filled in, 0 otherwise
+/**
+ * Return 1 if Multi_pxo_pinfo was successfully filled in, 0 otherwise
+ */
 int multi_pxo_pinfo_get(char *name)
 {
 	// run the popup	
@@ -4409,7 +4454,9 @@ int multi_pxo_pinfo_get(char *name)
 	return 0;
 }
 
-// fire up the stats view popup
+/**
+ * Fire up the stats view popup
+ */
 void multi_pxo_pinfo_show()
 {
 	// initialize the popup
@@ -4424,7 +4471,9 @@ void multi_pxo_pinfo_show()
 	multi_pxo_pinfo_close();
 }
 
-// build the stats labels values
+/**
+ * Build the stats labels values
+ */
 void multi_pxo_pinfo_build_vals()
 {
 	player *fs = &Multi_pxo_pinfo_player;	
@@ -4529,7 +4578,9 @@ void multi_pxo_pinfo_build_vals()
 	}
 }
 
-// initialize the popup
+/**
+ * Initialize the popup
+ */
 void multi_pxo_pinfo_init()
 {
 	int idx;
@@ -4585,7 +4636,9 @@ void multi_pxo_pinfo_init()
 	multi_pxo_pinfo_build_vals();
 }
 
-// do frame
+/**
+ * Do frame
+ */
 int multi_pxo_pinfo_do()
 {
 	int k = Multi_pxo_pinfo_window.process();
@@ -4632,7 +4685,9 @@ int multi_pxo_pinfo_do()
 	return 0;
 }
 
-// close
+/**
+ * Close
+ */
 void multi_pxo_pinfo_close()
 {
 	int i;
@@ -4651,7 +4706,9 @@ void multi_pxo_pinfo_close()
 	}
 }
 
-// blit all the stats on this screen
+/**
+ * Blit all the stats on this screen
+ */
 void multi_pxo_pinfo_blit()
 {
 	int idx;
@@ -4673,7 +4730,9 @@ void multi_pxo_pinfo_blit()
 	}
 }
 
-// run the medals screen
+/**
+ * Run the medals screen
+ */
 void multi_pxo_run_medals()
 {
 	int ret_code;
@@ -4707,7 +4766,9 @@ void multi_pxo_run_medals()
 
 // notify stuff stuff -----------------------------------------
 
-// add a notification string
+/**
+ * Add a notification string
+ */
 void multi_pxo_notify_add(char *txt)
 {
 	// copy the text
@@ -4717,7 +4778,9 @@ void multi_pxo_notify_add(char *txt)
 	Multi_pxo_notify_stamp = timestamp(MULTI_PXO_NOTIFY_TIME);
 }
 
-// blit and process the notification string
+/**
+ * Blit and process the notification string
+ */
 void multi_pxo_notify_blit()
 {
 	int w;
@@ -4739,7 +4802,9 @@ void multi_pxo_notify_blit()
 }
 
 
-// initialize the PXO help screen
+/**
+ * Initialize the PXO help screen
+ */
 void multi_pxo_help_init()
 {
 	int idx;
@@ -4750,11 +4815,12 @@ void multi_pxo_help_init()
 		// we failed to load the bitmap - this is very bad
 		Int3();
 	}
-		// create the interface window
+	
+	// create the interface window
 	Multi_pxo_help_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
 	Multi_pxo_help_window.set_mask_bmap(Multi_pxo_help_mask_fname[gr_screen.res]);
 
-		// create the interface buttons
+	// create the interface buttons
 	for(idx=0; idx<MULTI_PXO_HELP_NUM_BUTTONS; idx++){
 		// create the object
 		Multi_pxo_help_buttons[gr_screen.res][idx].button.create(&Multi_pxo_help_window, "", Multi_pxo_help_buttons[gr_screen.res][idx].x, Multi_pxo_help_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
@@ -4774,16 +4840,15 @@ void multi_pxo_help_init()
 		Multi_pxo_help_window.add_XSTR(&Multi_pxo_help_text[gr_screen.res][idx]);
 	}
 
-	// if we haven't already loaded in the text, do so
-	// if(!Multi_pxo_help_loaded){
-		multi_pxo_help_load();
-	// }
+	multi_pxo_help_load();
 
 	// set the current page to 0
 	Multi_pxo_help_cur = 0;
 }
 
-// do frame for PXO help
+/**
+ * Do frame for PXO help
+ */
 void multi_pxo_help_do()
 {
 	// run api stuff	
@@ -4823,7 +4888,9 @@ void multi_pxo_help_do()
 	gr_flip();
 }
 
-// close the pxo screen
+/**
+ * Close the pxo screen
+ */
 void multi_pxo_help_close()
 {
 	int idx, idx2;
@@ -4846,16 +4913,13 @@ void multi_pxo_help_close()
 	}
 }
 
-// load the help file up
+/**
+ * Load the help file up
+ */
 void multi_pxo_help_load()
 {
 	CFILE *in;	
 	help_page *cp;	
-	
-	// if its already loaded, do nothing
-	// if(Multi_pxo_help_loaded){
-		// return;
-	// }
 
 	// read in the text file
 	in = NULL;
@@ -4896,12 +4960,11 @@ void multi_pxo_help_load()
 
 	// close the file
 	cfclose(in);
-
-	// mark the help as having been loaded
-	// Multi_pxo_help_loaded = 1;
 }
 
-// blit the current page
+/**
+ * Blit the current page
+ */
 void multi_pxo_help_blit_page()
 {
 	int idx;
@@ -4929,7 +4992,9 @@ void multi_pxo_help_blit_page()
 	}
 }
 
-// process button presses
+/**
+ * Process button presses
+ */
 void multi_pxo_help_process_buttons()
 {
 	int idx;
@@ -4943,7 +5008,9 @@ void multi_pxo_help_process_buttons()
 	}
 }
 
-// button pressed
+/**
+ * Button pressed
+ */
 void multi_pxo_help_button_pressed(int n)
 {	
 	switch(n){
@@ -4976,7 +5043,9 @@ void multi_pxo_help_button_pressed(int n)
 
 // http banner stuff ---------------------------------------------
 
-// init
+/**
+ * Initialisation
+ */
 void multi_pxo_ban_init()
 {
 	// zero the active banner bitmap
@@ -5006,7 +5075,9 @@ void multi_pxo_ban_init()
 	strcpy_s(Multi_pxo_banner.ban_url, "");	
 }
 
-// process http download details
+/**
+ * Process http download details
+ */
 void multi_pxo_ban_process()
 {
 	char url_string[512] = "";
@@ -5017,13 +5088,13 @@ void multi_pxo_ban_process()
 	// start downloading list
 	case PXO_BAN_MODE_LIST_STARTUP:		
 		// remote file
-		sprintf(url_string, /*"%s/%s"*/ "http://www.pxo.net/files/%s", /*Multi_options_g.pxo_banner_url,*/ PXO_BANNERS_CONFIG_FILE);
+		sprintf(url_string, "http://www.pxo.net/files/%s", PXO_BANNERS_CONFIG_FILE);
 
 		// local file
 		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, PXO_BANNERS_CONFIG_FILE);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = NULL;//new InetGetFile(url_string, local_file);
+		Multi_pxo_ban_get = NULL;
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5078,7 +5149,7 @@ void multi_pxo_ban_process()
 		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, Multi_pxo_banner.ban_file);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = NULL;//new InetGetFile(Multi_pxo_banner.ban_file_url, local_file);
+		Multi_pxo_ban_get = NULL;
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5115,7 +5186,7 @@ void multi_pxo_ban_process()
 	// done downloading - maybe load an image
 	case PXO_BAN_MODE_IMAGES_DONE:
 		// make sure we have a valid filename
-		if (Multi_pxo_banner.ban_file[0] != '\0')
+		if ( strlen(Multi_pxo_banner.ban_file) > 0 )
 			Multi_pxo_banner.ban_bitmap = bm_load(Multi_pxo_banner.ban_file);
 
 		// now we're idle
@@ -5138,7 +5209,9 @@ void multi_pxo_ban_process()
 	}
 }
 
-// close
+/**
+ * Close
+ */
 void multi_pxo_ban_close()
 {
 	// if we have a currently active transfer
@@ -5155,7 +5228,9 @@ void multi_pxo_ban_close()
 	}
 }
 
-// parse the banners file and maybe fill in Multi_pxo_dl_file
+/**
+ * Parse the banners file and maybe fill in Multi_pxo_dl_file
+ */
 void multi_pxo_ban_parse_banner_file(int choose_existing)
 {
 	char file_url[512] = "";
@@ -5293,12 +5368,11 @@ void multi_pxo_ban_parse_banner_file(int choose_existing)
 		// url of where to go to when clicked
 		strncpy(Multi_pxo_banner.ban_url, urls[idx], MULTI_OPTIONS_STRING_LEN);		
 	}
-
-	// delete the banner config file
-	// cf_delete(PXO_BANNERS_CONFIG_FILE, CF_TYPE_MULTI_CACHE);
 }
 
-// any bitmap or info or whatever
+/**
+ * Any bitmap or info or whatever
+ */
 void multi_pxo_ban_draw()
 {	
 	// if we have a valid bitmap
@@ -5315,7 +5389,9 @@ void multi_pxo_ban_draw()
 	}
 }
 
-// called when the URL button is clicked
+/**
+ * Called when the URL button is clicked
+ */
 void multi_pxo_ban_clicked()
 {
 	// if we have a valid bitmap and URL, launch the URL

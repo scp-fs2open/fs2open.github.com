@@ -48,6 +48,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "parse/scripting.h"
+#include "stats/scoring.h"
 
 
 #ifndef NDEBUG
@@ -2621,6 +2622,11 @@ int parse_weapon(int subtype, bool replace)
 
 			wip->weapon_substitution_pattern_names[index] = subname;
 		}
+	}
+
+	//Optional score for destroying this weapon.
+	if (optional_string("$Score:")) {
+		stuff_int(&wip->score);
 	}
 
 	return WEAPON_INFO_INDEX(wip);
@@ -5355,6 +5361,15 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->collisionOccured = false;
 
 	Num_weapons++;
+
+	// reset the damage record fields (for scoring purposes)
+	wp->total_damage_received = 0.0f;
+	for(int i=0;i<MAX_WEP_DAMAGE_SLOTS;i++)
+	{
+		wp->damage_ship[i] = 0.0f;
+		wp->damage_ship_id[i] = -1;
+	}
+
 	return objnum;
 }
 //	Spawn child weapons from object *objp.
@@ -6025,6 +6040,14 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 					particle_emit(&pe, PARTICLE_BITMAP, expl_ani_handle, 10.0f);
 				}
 			}
+		}
+	}
+
+	// single player and multiplayer masters evaluate the scoring and kill stuff
+	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
+		//If this is a bomb, set it up for scoring. -Halleck
+		if (wip->wi_flags & WIF_BOMB) {
+			scoring_eval_kill_on_weapon(weapon_obj, other_obj);
 		}
 	}
 

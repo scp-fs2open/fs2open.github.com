@@ -11,7 +11,7 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 
-#define PACKET_TERMINATOR	255
+#define CALLBACK_TERMINATOR	255
 int TEMP_DATA_SIZE = -1;
 
 #define TYPE_NOT_DATA			-1
@@ -37,6 +37,8 @@ ubyte data[MAX_PACKET_SIZE];
 int packet_size = 0;
 int offset = 0; 
 
+bool callback_started = false;
+
 int Multi_sexp_bytes_left = 0;			// number of bytes in incoming packet that still require processing
 
 int op_num = -1;
@@ -60,11 +62,13 @@ void initalise_sexp_packet()
 	current_argument_count = 0;
 }
 
-void multi_start_packet() 
+void multi_start_callback() 
 {
 	if (!MULTIPLAYER_MASTER) {
 		return;
 	}
+
+	callback_started = true;
 
 	//Write OP into the Type buffer.
 	type[packet_size] = TYPE_SEXP_OPERATOR; 
@@ -79,11 +83,13 @@ void multi_start_packet()
 	ADD_INT(TEMP_DATA_SIZE); 
 }
 
-void multi_end_packet() 
+void multi_end_callback() 
 {
 	if (!MULTIPLAYER_MASTER) {
 		return;
 	}	
+
+	callback_started = false;
 
 	// something is wrong with the packet, blast it clean and start again
 	if (packet_flagged_invalid) {
@@ -94,7 +100,7 @@ void multi_end_packet()
 
 	//write TERMINATOR into the Type and data buffers
 	type[packet_size] = TYPE_DATA_TERMINATES; 
-	ubyte b = PACKET_TERMINATOR; 
+	ubyte b = CALLBACK_TERMINATOR; 
 	ADD_DATA(b); 
 
 	//Write the COUNT into the data buffer at the index we saved earlier.
@@ -104,6 +110,13 @@ void multi_end_packet()
 	packet_size = temp_packet_size; 
 
 	current_argument_count = 0; 
+}
+
+// convenience function that simply calls the two functions above
+void multi_do_callback()
+{
+	multi_start_callback();
+	multi_end_callback();
 }
 
 void multi_sexp_ensure_space_remains(int data_size) 
@@ -185,6 +198,19 @@ void multi_sexp_flush_packet()
 	initalise_sexp_packet(); 
 }
 
+bool cannot_send_data()
+{
+	if (!MULTIPLAYER_MASTER || packet_flagged_invalid ) {
+		return true;
+	}
+
+	if (!callback_started) {
+		Warning (LOCATION, "Attempt to send data in multi_sexp.cpp without first starting a callback");
+		return true;
+	}
+
+	return false;
+}
 
 /********************************
  HOST SIDE DATA WRAPPER FUNCTIONS
@@ -192,7 +218,7 @@ void multi_sexp_flush_packet()
 
 void multi_send_int(int value) 
 {
-	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
+	if (cannot_send_data()) {
 		return;
 	}
 
@@ -208,7 +234,7 @@ void multi_send_int(int value)
 
 void multi_send_ship(int shipnum) 
 {
-	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
+	if (cannot_send_data()) {
 		return;
 	}
 
@@ -219,7 +245,7 @@ void multi_send_ship(int shipnum)
 
 void multi_send_ship(ship *shipp) 
 {
-	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
+	if (cannot_send_data()) {
 		return;
 	}
 
@@ -234,7 +260,7 @@ void multi_send_ship(ship *shipp)
 
 void multi_send_parse_object(p_object *pobjp) 
 {
-	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
+	if (cannot_send_data()) {
 		return;
 	}
 
@@ -249,7 +275,7 @@ void multi_send_parse_object(p_object *pobjp)
 
 void multi_send_string(char *string) 
 {
-	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
+	if (cannot_send_data()) {
 		return;
 	}
 
@@ -265,7 +291,7 @@ void multi_send_string(char *string)
 
 void multi_send_bool(bool value) 
 {
-	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
+	if (cannot_send_data()) {
 		return;
 	}
 
@@ -281,7 +307,7 @@ void multi_send_bool(bool value)
 
 void multi_send_float(float value) 
 {
-	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
+	if (cannot_send_data()) {
 		return;
 	}
 
@@ -318,6 +344,39 @@ void sexp_packet_received(ubyte *received_packet, int num_ubytes)
 
 int multi_sexp_get_next_operator()
 {
+	if (current_argument_count != 0) {
+		// we have a problem here, either the argument count is wrong or the last SEXP didn't remove all its data from the packet		
+		ubyte possible_terminator;
+		bool terminator_found = false;
+		for (int i=0; i < current_argument_count ; i++) {			
+			GET_DATA(possible_terminator); 
+			Multi_sexp_bytes_left--; 
+
+			if (possible_terminator == CALLBACK_TERMINATOR) {
+				Warning(LOCATION, "%s has returned to multi_sexp_eval() claiming %d arguments left. %d actually found. Trace out and fix this!"), Operators[op_num].text, current_argument_count, i; 
+				terminator_found = true;
+				break;
+			}
+		}
+
+		// if we still haven't found the terminator it probably means the last SEXP didn't remove all its data from the packet
+		if (!terminator_found) {
+			GET_DATA(possible_terminator); 
+			Multi_sexp_bytes_left--;
+
+			if (possible_terminator != CALLBACK_TERMINATOR) {
+				// discard remainder of packet if we still haven't found the terminator as it is hopelessly corrupt
+				Warning(LOCATION, "%s has returned to multi_sexp_eval() without finding the terminator. Discarding packet! Trace out and fix this!", Operators[op_num].text);
+				Multi_sexp_bytes_left = 0; 
+				return -1;
+			}
+			else {
+				Warning(LOCATION, "%s has returned to multi_sexp_eval() without removing all the data the server wrote during its callback. Trace out and fix this!", Operators[op_num].text);
+				op_num = -1;
+			}
+		}
+	}
+
 	GET_INT(op_num);
 	Multi_sexp_bytes_left -= sizeof(int); 
 	GET_INT(current_argument_count);
@@ -346,8 +405,8 @@ void multi_reduce_counts(int amount)
 	if (current_argument_count == 0) {
 		// read in the terminator
 		GET_DATA(terminator); 
-		if (terminator != PACKET_TERMINATOR) {
-			Warning(LOCATION, "multi_get_x function call has been called on an improperly terminated packet. Trace out and fix this!"); 
+		if (terminator != CALLBACK_TERMINATOR) {
+			Warning(LOCATION, "multi_get_x function call has been called on an improperly terminated callback. Trace out and fix this!"); 
 			// discard remainder of packet
 			Multi_sexp_bytes_left = 0; 
 			return;
@@ -374,7 +433,7 @@ bool multi_sexp_discard_operator()
 	op_num = -1;
 
 	// the operation terminated correctly, probably a new SEXP that this version doesn't support. 
-	if (terminator == PACKET_TERMINATOR) 
+	if (terminator == CALLBACK_TERMINATOR) 
 		return true; 
 
 	// packet is probably corrupt
@@ -492,4 +551,11 @@ bool multi_get_float(float &value)
 	multi_reduce_counts(sizeof(float)); 
 
 	return true; 
+}
+
+void multi_discard_remaining_callback_data()
+{
+	if (!multi_sexp_discard_operator()) {
+		Warning(LOCATION, "Attempt to discard remaining data failed! Callback for operator %d lacks proper termination. Entire packet may be corrupt. Discarding remaining packet"); 
+	}
 }
