@@ -14,7 +14,7 @@ void multi_start_packet();
 void multi_end_packet();
 void multi_sexp_flush_packet();
 
-// data fillers
+// server side packet fillers
 void multi_send_int(int value);
 void multi_send_ship(ship *shipp);
 void multi_send_ship(int shipnum);
@@ -28,6 +28,9 @@ int multi_sexp_get_next_operator();
 int multi_sexp_get_operator();
 bool multi_sexp_discard_operator();
 
+void multi_discard_remaining_packet();
+
+// client side packet emptiers
 bool multi_get_int(int &value);
 bool multi_get_ship(int &value);
 bool multi_get_ship(ship*& shipp);

@@ -318,6 +318,39 @@ void sexp_packet_received(ubyte *received_packet, int num_ubytes)
 
 int multi_sexp_get_next_operator()
 {
+	if (current_argument_count != 0) {
+		// we have a problem here, either the argument count is wrong or the last SEXP didn't remove all its data from the packet		
+		ubyte possible_terminator;
+		bool terminator_found = false;
+		for (int i=0; i < current_argument_count ; i++) {			
+			GET_DATA(possible_terminator); 
+			Multi_sexp_bytes_left--; 
+
+			if (possible_terminator == PACKET_TERMINATOR) {
+				Warning(LOCATION, "%s has returned to multi_sexp_eval() claiming %d arguments left. %d actually found. Trace out and fix this!"), Operators[op_num].text, current_argument_count, i; 
+				terminator_found = true;
+				break;
+			}
+		}
+
+		// if we still haven't found the terminator it probably means the last SEXP didn't remove all its data from the packet
+		if (!terminator_found) {
+			GET_DATA(possible_terminator); 
+			Multi_sexp_bytes_left--;
+
+			if (possible_terminator != PACKET_TERMINATOR) {
+				// discard remainder of packet if we still haven't found the terminator as it is hopelessly corrupt
+				Warning(LOCATION, "%s has returned to multi_sexp_eval() without finding the terminator. Discarding packet! Trace out and fix this!", Operators[op_num].text);
+				Multi_sexp_bytes_left = 0; 
+				return -1;
+			}
+			else {
+				Warning(LOCATION, "%s has returned to multi_sexp_eval() without removing all its data from the packet. Trace out and fix this!", Operators[op_num].text);
+				op_num = -1;
+			}
+		}
+	}
+
 	GET_INT(op_num);
 	Multi_sexp_bytes_left -= sizeof(int); 
 	GET_INT(current_argument_count);
@@ -492,4 +525,11 @@ bool multi_get_float(float &value)
 	multi_reduce_counts(sizeof(float)); 
 
 	return true; 
+}
+
+void multi_discard_remaining_packet()
+{
+	if (!multi_sexp_discard_operator()) {
+		Warning(LOCATION, "Attempt to discard SEXP packet failed! Operator %d packet lacks proper termination. Entire packet may be corrupt. Discarding remaining packet"); 
+	}
 }
