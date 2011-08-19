@@ -825,6 +825,10 @@ void sexp_tree::right_clicked(int mode)
 									if (op_type == OPF_NAV_POINT)
 										flag &= ~MF_GRAYED;
 
+									if (!( (idx + 3) % 30)) {
+										flag |= MF_MENUBARBREAK;
+									}
+
 									char buf[128];
 									// append list of variable names and values
 									// set id as ID_VARIABLE_MENU + idx
