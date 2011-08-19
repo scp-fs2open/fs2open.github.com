@@ -24,6 +24,10 @@ int TEMP_DATA_SIZE = -1;
 #define TYPE_PARSE_OBJECT		6
 #define TYPE_BOOLEAN			7
 #define TYPE_FLOAT				8
+#define TYPE_SHORT				9
+#define TYPE_USHORT				10
+#define TYPE_OBJECT				11
+
 
 // the type array holds information on the type of date held at the same index of the data array
 // types are not sent to the client and the entire array could be replaced with a couple of variables indexing the end of 
@@ -258,6 +262,21 @@ void multi_send_ship(ship *shipp)
 	current_argument_count += sizeof(ushort); 
 }
 
+void multi_send_object(object *objp) 
+{
+	if (cannot_send_data()) {
+		return;
+	}
+
+	multi_sexp_ensure_space_remains(sizeof(ushort)); 
+
+	//write into the Type buffer.
+	type[packet_size] = TYPE_OBJECT; 
+	//write the into the data buffer
+	ADD_USHORT(objp->net_signature); 
+	current_argument_count += sizeof(ushort); 
+}
+
 void multi_send_parse_object(p_object *pobjp) 
 {
 	if (cannot_send_data()) {
@@ -297,7 +316,7 @@ void multi_send_bool(bool value)
 
 	multi_sexp_ensure_space_remains(sizeof(value)); 
 
-	//Write INT into the Type buffer.
+	//write into the Type buffer.
 	type[packet_size] = TYPE_BOOLEAN; 
 	//Write the value into the data buffer
 	ADD_DATA(value); 
@@ -313,12 +332,44 @@ void multi_send_float(float value)
 
 	multi_sexp_ensure_space_remains(sizeof(value)); 
 
-	//Write INT into the Type buffer.
+	//write into the Type buffer.
 	type[packet_size] = TYPE_FLOAT; 
 	//Write the value into the data buffer
 	ADD_FLOAT(value); 
 	//Increment the COUNT 
 	current_argument_count += sizeof(float); 
+}
+
+void multi_send_short(short value) 
+{
+	if (cannot_send_data()) {
+		return;
+	}
+
+	multi_sexp_ensure_space_remains(sizeof(value)); 
+
+	//Write the type into the Type buffer.
+	type[packet_size] = TYPE_SHORT; 
+	//Write the value into the data buffer
+	ADD_SHORT(value); 
+	//Increment the COUNT 
+	current_argument_count += sizeof(short); 
+}
+
+void multi_send_ushort(ushort value) 
+{
+	if (cannot_send_data()) {
+		return;
+	}
+
+	multi_sexp_ensure_space_remains(sizeof(value)); 
+
+	//Write the type into the Type buffer.
+	type[packet_size] = TYPE_USHORT; 
+	//Write the value into the data buffer
+	ADD_USHORT(value); 
+	//Increment the COUNT 
+	current_argument_count += sizeof(ushort); 
 }
 
 
@@ -494,6 +545,29 @@ bool multi_get_ship(ship* &shipp)
 	return false; 
 }
 
+bool multi_get_object(object*& objp)
+{
+	ushort netsig; 
+
+	if (!Multi_sexp_bytes_left || !current_argument_count) {
+		return false; 
+	}
+
+	// get the net signature of the ship
+	GET_USHORT(netsig);
+	multi_reduce_counts(sizeof(ushort)); 
+
+	// lookup the object
+	objp = multi_get_network_object(netsig);
+	if((objp != NULL) && (objp->instance >=0)){
+		return true;
+	}
+
+	Warning(LOCATION, "multi_get_object called for non-existent object"); 
+	return false; 
+}
+
+
 bool multi_get_parse_object(p_object*& pobjp)
 {
 	ushort netsig; 
@@ -549,6 +623,30 @@ bool multi_get_float(float &value)
 
 	GET_FLOAT(value);
 	multi_reduce_counts(sizeof(float)); 
+
+	return true; 
+}
+
+bool multi_get_short(short &value)
+{
+	if (!Multi_sexp_bytes_left || !current_argument_count) {
+		return false; 
+	}
+
+	GET_SHORT(value);
+	multi_reduce_counts(sizeof(short)); 
+
+	return true; 
+}
+
+bool multi_get_ushort(ushort &value)
+{
+	if (!Multi_sexp_bytes_left || !current_argument_count) {
+		return false; 
+	}
+
+	GET_USHORT(value);
+	multi_reduce_counts(sizeof(ushort)); 
 
 	return true; 
 }
