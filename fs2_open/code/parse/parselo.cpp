@@ -2183,7 +2183,12 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 		}
 		//Assert ( *Mp == '\"' );					// should always be enclosed in quotes
 
-		get_string( slp[count++] );
+		if (count < max_strings) {
+			get_string( slp[count++] );
+		} else {
+			char trash[NAME_LENGTH];
+			get_string( trash );
+		}
 		ignore_white_space();
 	}
 
@@ -2266,11 +2271,13 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 				if (num < 0)  // other negatives used to bypass the above error trap, but should be -1
 					num = -1;
 
-				ilp[count++] = num;
+				if (count < max_ints) {
+					ilp[count++] = num;
+				}
 			}
 
 		} else {
-			if (ok_flag)
+			if (ok_flag && (count < max_ints))
 				stuff_int(&ilp[count++]);
 			else
 				stuff_int(&dummy);
@@ -2372,7 +2379,9 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		}
 		
 		// we've found a real item. Add its index to the list.
-		ilp[count++] = index;
+		if (count < max_ints) {
+			ilp[count++] = index;
+		}
 		
 		ignore_white_space();
 
@@ -2382,7 +2391,9 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		}
 		
 		// record the index of the variable that gave us this item if any
-		ilp[count++] = sexp_variable_index;
+		if (count < max_ints) {
+			ilp[count++] = sexp_variable_index;
+		}
 
 		// Now read in the number of this type available. The number must be positive
 		count = stuff_int_or_variable(ilp, count, true);
@@ -2410,7 +2421,12 @@ int stuff_float_list(float* flp, int max_floats)
 	while(*Mp != ')')
 	{
 		Assert(count < max_floats);
-		stuff_float(&flp[count++]);
+		if (count < max_floats) {
+			stuff_float(&flp[count++]);
+		} else {
+			float dummy;
+			stuff_float(&dummy);
+		}
 		ignore_white_space();
 	}
 
@@ -2470,7 +2486,9 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 
 			stuff_int(&tval);
 			Assert((tval >= 0) && (tval < max_ints));
-			ilp[tval] = 1;
+			if (tval >= 0 && tval < max_ints) {
+				ilp[tval] = 1;
+			}
 		}
 		
 		ignore_white_space();
@@ -2531,7 +2549,12 @@ int stuff_vector_list(vec3d *vlp, int max_vecs)
 
 	while (*Mp != ')') {
 		Assert(count < max_vecs);
-		stuff_parenthesized_vector(&vlp[count++]);
+		if (count < max_vecs) {
+			stuff_parenthesized_vector(&vlp[count++]);
+		} else {
+			vec3d temp;
+			stuff_parenthesized_vector(&temp);
+		}
 		
 		ignore_white_space();
 	}
