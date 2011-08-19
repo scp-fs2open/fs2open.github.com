@@ -19303,7 +19303,7 @@ void sexp_ship_effect(int n)
 		if((wing_index = wing_name_lookup(name)) >= 0)
 		{
 			wing *wp = &Wings[wing_index];
-			for(int i = 0; i < 6; i++)
+			for(int i = 0; i < wp->current_count; i++)
 			{
 				if(wp->ship_index[i] >= 0)
 				{
