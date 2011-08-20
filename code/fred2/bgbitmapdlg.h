@@ -85,6 +85,8 @@ public:
 	int m_sky_flag_6;
 	CString m_skybox_model;
 	CString m_envmap;
+	float m_neb_near_multi;
+	float m_neb_far_multi;
 	//}}AFX_DATA
 
 // Overrides

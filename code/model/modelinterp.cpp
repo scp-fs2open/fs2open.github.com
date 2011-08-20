@@ -3238,7 +3238,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
 	{
 		float fog_near = 10.0f, fog_far = 1000.0f;
-		neb2_get_fog_values(&fog_near, &fog_far, objp);
+		neb2_get_adjusted_fog_values(&fog_near, &fog_far, objp);
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 		gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
@@ -3536,7 +3536,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 			if (objnum >= 0)
 				obj = &Objects[objnum];
 
-			neb2_get_fog_values(&fog_near, &fog_far, obj);
+			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 			unsigned char r, g, b;
 			neb2_get_fog_color(&r, &g, &b);
 			gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
