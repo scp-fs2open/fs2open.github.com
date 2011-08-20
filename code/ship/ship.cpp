@@ -11760,6 +11760,7 @@ int ship_query_state(char *name)
 	int i;
 
 	// bogus
+	Assert(name != NULL);
 	if(name == NULL){
 		return -1;
 	}

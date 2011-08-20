@@ -13654,26 +13654,32 @@ int sexp_secondaries_depleted(int node)
 
 int sexp_facing(int node)
 {
-	int obj, sh;
 	float a1, a2;
 	vec3d v1, v2;
 
-	if (ship_query_state(CTEXT(node)) < 0){
-		return SEXP_KNOWN_FALSE;
-	}
-
-	sh = ship_name_lookup(CTEXT(node));
-	if ((sh < 0) || !Player_obj){
+	if (!Player_obj) {
 		return SEXP_FALSE;
 	}
 
-	obj = Ships[sh].objnum;
+	ship *target_shipp = sexp_get_ship_from_node(node);
+	if (target_shipp == NULL) {
+		// hasn't arrived yet
+		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
+			return SEXP_CANT_EVAL;
+		}
+		// not found and won't arrive: invalid
+		return SEXP_KNOWN_FALSE;
+	}
+	float angle = atof(CTEXT(CDR(node)));
+
 	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
-	vm_vec_sub(&v2, &Objects[obj].pos, &Player_obj->pos);
+
+	vm_vec_sub(&v2, &Objects[target_shipp->objnum].pos, &Player_obj->pos);
 	vm_vec_normalize(&v2);
+
 	a1 = vm_vec_dotprod(&v1, &v2);
-	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
+	a2 = (float) cos(ANG_TO_RAD(angle));
 	if (a1 >= a2){
 		return SEXP_TRUE;
 	}
@@ -13681,52 +13687,53 @@ int sexp_facing(int node)
 	return SEXP_FALSE;
 }
 
-
 int sexp_is_facing(int node)
 {
-	int sh;
-	object *obj1, *obj2;
+	object *origin_objp, *target_objp;
 	float a1, a2;
-	vec3d v1, v2; 
-
-	if (sexp_query_has_yet_to_arrive(CTEXT(node)))
-		return SEXP_CANT_EVAL;
-
-	sh = ship_name_lookup(CTEXT(node));
-	if (sh < 0) {
-		return SEXP_FALSE;
+	vec3d v1, v2;
+	
+	ship *origin_shipp = sexp_get_ship_from_node(node);
+	if (origin_shipp == NULL) {
+		// hasn't arrived yet
+		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
+			return SEXP_CANT_EVAL;
+		}
+		// not found and won't arrive: invalid
+		return SEXP_KNOWN_FALSE;
 	}
-	obj1 = &Objects[Ships[sh].objnum];
-
 	node = CDR(node);
 
-	if (sexp_query_has_yet_to_arrive(CTEXT(node)))
-		return SEXP_CANT_EVAL;
+	ship *target_shipp = sexp_get_ship_from_node(node);
+	if (target_shipp == NULL) {
+		// hasn't arrived yet
+		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
+			return SEXP_CANT_EVAL;
+		}
+		// not found and won't arrive: invalid
+		return SEXP_KNOWN_FALSE;
+	}
+	node = CDR(node);
 
-	sh = ship_name_lookup(CTEXT(node));
-	if (sh < 0) {
+	float angle = atof(CTEXT(node));
+	node = CDR(node);
+
+	origin_objp = &Objects[origin_shipp->objnum];
+	target_objp = &Objects[target_shipp->objnum];
+
+	// check optional distance argument
+	if (node > 0 && (sexp_distance3(origin_objp, target_objp) > eval_num(node))) {
 		return SEXP_FALSE;
 	}
 
-	obj2 = &Objects[Ships[sh].objnum];
-	
-	v1 = obj1->orient.vec.fvec;
-	
+	v1 = origin_objp->orient.vec.fvec;	
 	vm_vec_normalize(&v1);
-	vm_vec_sub(&v2, &obj2->pos, &obj1->pos);
+
+	vm_vec_sub(&v2, &target_objp->pos, &origin_objp->pos);
 	vm_vec_normalize(&v2);
+
 	a1 = vm_vec_dotprod(&v1, &v2);
-
-	node = CDR(node);
-	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(node))));
-
-	node = CDR(node);
-
-	if (node > 0) {
-		if (sexp_distance3(obj1, obj2) > eval_num(node))
-			return SEXP_FALSE;
-	}
-
+	a2 = (float) cos(ANG_TO_RAD(angle));
 	if (a1 >= a2){
 		return SEXP_TRUE;
 	}
@@ -27066,7 +27073,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tIs true as long as the second ship is within the first ship's specified "
 		"forward cone.  A forward cone is defined as any point that the angle between the "
 		"vector of the point and the player, and the forward facing vector is within the "
-		"given angle. If the distance between the two ships is greather than"
+		"given angle. If the distance between the two ships is greather than "
 		"the fourth parameter, this will return false.\r\n\r\n"
 		"Returns a boolean value.  Takes 3 or 4 argument...\r\n"
 		"\t1:\tShip to check from.\r\n"
