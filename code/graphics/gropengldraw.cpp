@@ -32,11 +32,16 @@
 #include "nebula/neb.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglpostprocessing.h"
+#include "freespace2/freespace.h"
 
 GLuint Scene_framebuffer;
 GLuint Scene_color_texture;
 GLuint Scene_effect_texture;
 GLuint Scene_depth_texture;
+
+GLuint Distortion_framebuffer;
+GLuint Distortion_texture[2];
+int Distortion_switch = 0;
 
 int Scene_texture_initialized;
 bool Scene_framebuffer_in_frame;
@@ -1278,8 +1283,36 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 
 	if ( flags & TMAP_FLAG_TEXTURED ) {
 		if ( flags & TMAP_FLAG_SOFT_QUAD ) {
-			int sdr_index = opengl_shader_get_index(SDR_FLAG_SOFT_QUAD);
-			opengl_shader_set_current(&GL_shader[sdr_index]);
+			int sdr_index;
+			if( (flags & TMAP_FLAG_DISTORTION) || (flags & TMAP_FLAG_DISTORTION_THRUSTER) )
+			{
+				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+				sdr_index = opengl_shader_get_index(SDR_FLAG_SOFT_QUAD|SDR_FLAG_DISTORTION);
+				opengl_shader_set_current(&GL_shader[sdr_index]);
+				
+				vglUniform1iARB(opengl_shader_get_uniform("frameBuffer"), 2);
+				
+				GL_state.Texture.SetActiveUnit(2);
+				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+				GL_state.Texture.Enable(Scene_effect_texture);
+				GL_state.Texture.SetActiveUnit(3);
+				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+				if(flags & TMAP_FLAG_DISTORTION_THRUSTER)
+				{
+					vglUniform1iARB(opengl_shader_get_uniform("distMap"), 3);
+					GL_state.Texture.Enable(Distortion_texture[!Distortion_switch]);
+				}
+				else
+				{
+					vglUniform1iARB(opengl_shader_get_uniform("distMap"), 0);
+					GL_state.Texture.Disable();
+				}
+			}
+			else
+			{
+				sdr_index = opengl_shader_get_index(SDR_FLAG_SOFT_QUAD);
+				opengl_shader_set_current(&GL_shader[sdr_index]);
+			}
 
 			vglUniform1iARB(opengl_shader_get_uniform("baseMap"), 0);
 			vglUniform1iARB(opengl_shader_get_uniform("depthMap"), 1);
@@ -1308,6 +1341,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
 	GLboolean lighting = GL_state.Lighting(GL_FALSE);
+	GLboolean mask = GL_state.DepthMask(GL_FALSE);
 
 	if (flags & TMAP_FLAG_TRILIST) {
 		gl_mode = GL_TRIANGLES;
@@ -1338,6 +1372,12 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 	GL_state.Texture.SetActiveUnit(1);
 	GL_state.Texture.Disable();
 
+	GL_state.Texture.SetActiveUnit(2);
+	GL_state.Texture.Disable();
+
+	GL_state.Texture.SetActiveUnit(3);
+	GL_state.Texture.Disable();
+
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
@@ -1348,6 +1388,10 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 
 	GL_state.CullFace(cull_face);
 	GL_state.Lighting(lighting);
+	GL_state.DepthMask(mask);
+
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
+	vglDrawBuffers(2, buffers);
 
 	GL_CHECK_FOR_ERRORS("end of render3d()");
 }
@@ -2045,6 +2089,50 @@ void opengl_setup_scene_textures()
 		return;
 	}
 
+	//Setup thruster distortion framebuffer
+	vglGenFramebuffersEXT(1, &Distortion_framebuffer);
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
+
+	glGenTextures(2, Distortion_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Distortion_texture[0]);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 32, 32, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+	GL_state.Texture.Enable(Distortion_texture[1]);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 32, 32, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Distortion_texture[0], 0);
+	
+	
+	
+	if ( opengl_check_framebuffer() ) {
+		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		vglDeleteFramebuffersEXT(1, &Distortion_framebuffer);
+		Distortion_framebuffer = 0;
+
+		GL_state.Texture.Disable();
+
+		glDeleteTextures(2, Distortion_texture);
+		Scene_color_texture = 0;
+		return;
+	}
+
 	if ( opengl_check_for_errors("post_init_framebuffer()") ) {
 		Scene_color_texture = 0;
 		Scene_depth_texture = 0;
@@ -2086,6 +2174,17 @@ void opengl_scene_texture_shutdown()
 		Scene_framebuffer = 0;
 	}
 
+	if ( Distortion_texture ) {
+		glDeleteTextures(2, Distortion_texture);
+		Distortion_texture[0] = 0;
+		Distortion_texture[1] = 0;
+	}
+
+	if ( Distortion_framebuffer ) {
+		vglDeleteFramebuffersEXT(1, &Distortion_framebuffer);
+		Distortion_framebuffer = 0;
+	}
+
 	Scene_texture_initialized = 0;
 	Scene_framebuffer_in_frame = false;
 }
@@ -2111,8 +2210,16 @@ void gr_opengl_scene_texture_begin()
 	Scene_framebuffer_in_frame = true;
 }
 
+float time_buffer = 0.0f;
 void gr_opengl_scene_texture_end()
 {
+	time_buffer+=flFrametime;
+	if(time_buffer>0.03f)
+	{
+		gr_opengl_update_distortion();
+		time_buffer = 0.0f;
+	}
+
 	if ( !Scene_framebuffer_in_frame ) {
 		return;
 	}
@@ -2162,4 +2269,63 @@ void gr_opengl_scene_texture_end()
 	}
 
 	Scene_framebuffer_in_frame = false;
+}
+
+void gr_opengl_update_distortion()
+{
+	GLboolean depth = GL_state.DepthTest(GL_FALSE);
+	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
+	GLboolean light = GL_state.Lighting(GL_FALSE);
+	GLboolean blend = GL_state.Blend(GL_FALSE);
+	GLboolean cull = GL_state.CullFace(GL_FALSE);
+
+	opengl_shader_set_current();
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Distortion_texture[!Distortion_switch], 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+
+	glViewport(0,0,32,32);
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Distortion_texture[Distortion_switch]);
+	glClearColor(0.5f, 0.5f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex2f(0.03f*(float)gr_screen.max_w,(float)gr_screen.max_h);
+
+		glTexCoord2f(0.96875f, 0.0f);
+		glVertex2f((float)gr_screen.max_w, (float)gr_screen.max_h);
+
+		glTexCoord2f(0.96875f, 1.0f);
+		glVertex2f((float)gr_screen.max_w, 0.0f);
+
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex2f(0.03f*(float)gr_screen.max_w, 0.0f);
+	glEnd();
+	GL_state.Texture.Disable();
+	glBegin(GL_POINTS);
+		for(int i = 0; i < 33; i++)
+		{
+			glColor4ub(rand()%256, rand()%256 ,255, 255);
+			glVertex2f(0.04f, (float)gr_screen.max_h*0.03125f*i);
+		}
+	glEnd();
+	Distortion_switch = !Distortion_switch;
+
+	// reset state
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+
+	glViewport(0,0,gr_screen.max_w,gr_screen.max_h);
+
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
+	vglDrawBuffers(2, buffers);
+
+	GL_state.DepthTest(depth);
+	GL_state.DepthMask(depth_mask);
+	GL_state.Lighting(light);
+	GL_state.Blend(blend);
+	GL_state.CullFace(cull);
 }
