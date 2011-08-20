@@ -356,6 +356,8 @@ typedef struct screen {
 	// Texture maps the current bitmap.  See TMAP_FLAG_?? defines for flag values
 	void (*gf_render)(int nv, vertex *verts, uint flags);
 
+	void (*gf_render_effect)(int nv, vertex *verts, float *radius_list, uint flags);
+
 	// dumps the current screen to a file
 	void (*gf_print_screen)(char * filename);
 
@@ -478,6 +480,9 @@ typedef struct screen {
 	void (*gf_post_process_begin)();
 	void (*gf_post_process_end)();
 	void (*gf_post_process_save_zbuffer)();
+
+	void (*gf_scene_texture_begin)();
+	void (*gf_scene_texture_end)();
 
 	void (*gf_lighting)(bool,bool);
 	void (*gf_center_alpha)(int);
@@ -664,6 +669,7 @@ __inline void gr_pixel(int x, int y, bool resize = true)
 #define gr_aascaler			GR_CALL(gr_screen.gf_aascaler)
 #define gr_tmapper			GR_CALL(gr_screen.gf_tmapper)
 #define gr_render			GR_CALL(gr_screen.gf_render)
+#define gr_render_effect	GR_CALL(gr_screen.gf_render_effect)
 
 //#define gr_gradient			GR_CALL(gr_screen.gf_gradient)
 __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
@@ -768,6 +774,9 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 #define	gr_set_light					GR_CALL(*gr_screen.gf_set_light)
 #define gr_reset_lighting				GR_CALL(*gr_screen.gf_reset_lighting)
 #define gr_set_ambient_light			GR_CALL(*gr_screen.gf_set_ambient_light)
+
+#define gr_scene_texture_begin			GR_CALL(*gr_screen.gf_scene_texture_begin)
+#define gr_scene_texture_end			GR_CALL(*gr_screen.gf_scene_texture_end)
 
 #define gr_post_process_set_effect		GR_CALL(*gr_screen.gf_post_process_set_effect)
 #define gr_post_process_set_defaults	GR_CALL(*gr_screen.gf_post_process_set_defaults)

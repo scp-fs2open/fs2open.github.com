@@ -30,8 +30,19 @@
 #include "graphics/gropengldraw.h"
 #include "debugconsole/timerbar.h"
 #include "nebula/neb.h"
+#include "graphics/gropenglshader.h"
+#include "graphics/gropenglpostprocessing.h"
 
+GLuint Scene_framebuffer;
+GLuint Scene_color_texture;
+GLuint Scene_effect_texture;
+GLuint Scene_depth_texture;
 
+int Scene_texture_initialized;
+bool Scene_framebuffer_in_frame;
+
+int Scene_texture_width;
+int Scene_texture_height;
 
 void gr_opengl_pixel(int x, int y, bool resize)
 {
@@ -1251,6 +1262,96 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 	GL_CHECK_FOR_ERRORS("end of render3d()");
 }
 
+
+void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint flags)
+{
+	int alpha, tmap_type, r, g, b;
+	float u_scale = 1.0f, v_scale = 1.0f;
+	GLenum gl_mode = GL_TRIANGLE_FAN;
+	int attrib_index = -1;
+
+	GL_CHECK_FOR_ERRORS("start of render3d()");
+
+	Assert(Scene_depth_texture != 0);
+
+	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
+
+	if ( flags & TMAP_FLAG_TEXTURED ) {
+		if ( flags & TMAP_FLAG_SOFT_QUAD ) {
+			int sdr_index = opengl_shader_get_index(SDR_FLAG_SOFT_QUAD);
+			opengl_shader_set_current(&GL_shader[sdr_index]);
+
+			vglUniform1iARB(opengl_shader_get_uniform("baseMap"), 0);
+			vglUniform1iARB(opengl_shader_get_uniform("depthMap"), 1);
+			vglUniform1fARB(opengl_shader_get_uniform("window_width"), (float)gr_screen.max_w);
+			vglUniform1fARB(opengl_shader_get_uniform("window_height"), (float)gr_screen.max_h);
+			vglUniform1fARB(opengl_shader_get_uniform("nearZ"), Min_draw_distance);
+			vglUniform1fARB(opengl_shader_get_uniform("farZ"), Max_draw_distance);
+
+			attrib_index = opengl_shader_get_attribute("radius_in");
+			vglVertexAttribPointerARB(attrib_index, 1, GL_FLOAT, GL_FALSE, 0, radius_list);
+
+			vglEnableVertexAttribArrayARB(attrib_index);
+
+			GL_state.Texture.SetActiveUnit(1);
+			GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+			GL_state.Texture.Enable(Scene_depth_texture);
+		}
+		
+		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale) ) {
+			return;
+		}
+
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].u);
+	}
+
+	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
+	GLboolean lighting = GL_state.Lighting(GL_FALSE);
+
+	if (flags & TMAP_FLAG_TRILIST) {
+		gl_mode = GL_TRIANGLES;
+	} else if (flags & TMAP_FLAG_TRISTRIP) {
+		gl_mode = GL_TRIANGLE_STRIP;
+	} else if (flags & TMAP_FLAG_QUADLIST) {
+		gl_mode = GL_QUADS;
+	} else if (flags & TMAP_FLAG_QUADSTRIP) {
+		gl_mode = GL_QUAD_STRIP;
+	}
+
+	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
+	}
+	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
+	else {
+		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+	}
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, sizeof(vertex), &verts[0].x);
+
+	glDrawArrays(gl_mode, 0, nverts);
+
+	opengl_shader_set_current();
+
+	GL_state.Texture.SetActiveUnit(1);
+	GL_state.Texture.Disable();
+
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+
+	if ( attrib_index >= 0 ) {
+		vglDisableVertexAttribArrayARB(attrib_index);
+	}
+
+	GL_state.CullFace(cull_face);
+	GL_state.Lighting(lighting);
+
+	GL_CHECK_FOR_ERRORS("end of render3d()");
+}
+
 void gr_opengl_render(int nverts, vertex *verts, uint flags)
 {
 	if ( !Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT) ) {
@@ -1817,4 +1918,248 @@ void gr_opengl_draw_line_list(colored_vector *lines, int num)
 	if (Cmdline_nohtl) {
 		return;
 	}
+}
+extern int opengl_check_framebuffer();
+void opengl_setup_scene_textures()
+{
+	Scene_texture_initialized = 0;
+
+	if ( !Cmdline_postprocess && !Cmdline_softparticles ) {
+		Scene_color_texture = 0;
+		Scene_effect_texture = 0;
+		Scene_depth_texture = 0;
+		return;
+	}
+
+	if ( !Use_GLSL || Cmdline_no_fbo || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+		Cmdline_postprocess = 0;
+		Cmdline_softparticles = 0;
+
+		Scene_color_texture = 0;
+		Scene_effect_texture = 0;
+		Scene_depth_texture = 0;
+		return;
+	}
+
+	// for ease of use we require support for non-power-of-2 textures in one
+	// form or another:
+	//    - the NPOT extension
+	//    - GL version 2.0+ (which should work for non-reporting ATI cards since we don't use mipmaps)
+	if ( !(Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) || (GL_version >= 20)) ) {
+		Cmdline_postprocess = 0;
+		Cmdline_softparticles = 0;
+
+		Scene_color_texture = 0;
+		Scene_effect_texture = 0;
+		Scene_depth_texture = 0;
+		return;
+	}
+
+	// clamp size, if needed
+	int Scene_texture_width = gr_screen.max_w;
+	int Scene_texture_height = gr_screen.max_h;
+
+	if ( Scene_texture_width > GL_max_renderbuffer_size ) {
+		Scene_texture_width = GL_max_renderbuffer_size;
+	}
+
+	if ( Scene_texture_height > GL_max_renderbuffer_size) {
+		Scene_texture_height = GL_max_renderbuffer_size;
+	}
+
+	// create framebuffer
+	vglGenFramebuffersEXT(1, &Scene_framebuffer);
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+
+	// setup main render texture
+	glGenTextures(1, &Scene_color_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_color_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
+
+	// setup effect texture
+
+	glGenTextures(1, &Scene_effect_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_effect_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, Scene_effect_texture, 0);
+
+	// setup main depth texture
+	glGenTextures(1, &Scene_depth_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_depth_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+
+	if ( opengl_check_framebuffer() ) {
+		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		vglDeleteFramebuffersEXT(1, &Scene_framebuffer);
+		Scene_framebuffer = 0;
+
+		GL_state.Texture.Disable();
+
+		glDeleteTextures(1, &Scene_color_texture);
+		Scene_color_texture = 0;
+
+		glDeleteTextures(1, &Scene_effect_texture);
+		Scene_color_texture = 0;
+
+		glDeleteTextures(1, &Scene_depth_texture);
+		Scene_depth_texture = 0;
+
+		Cmdline_postprocess = 0;
+		Cmdline_softparticles = 0;
+		return;
+	}
+
+	if ( opengl_check_for_errors("post_init_framebuffer()") ) {
+		Scene_color_texture = 0;
+		Scene_depth_texture = 0;
+
+		Cmdline_postprocess = 0;
+		Cmdline_softparticles = 0;
+		return;
+	}
+
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+	Scene_texture_initialized = 1;
+	Scene_framebuffer_in_frame = false;
+}
+
+void opengl_scene_texture_shutdown()
+{
+	if ( !Scene_texture_initialized ) {
+		return;
+	}
+
+	if ( Scene_color_texture ) {
+		glDeleteTextures(1, &Scene_color_texture);
+		Scene_color_texture = 0;
+	}
+
+	if ( Scene_effect_texture ) {
+		glDeleteTextures(1, &Scene_effect_texture);
+		Scene_effect_texture = 0;
+	}
+
+	if ( Scene_depth_texture ) {
+		glDeleteTextures(1, &Scene_depth_texture);
+		Scene_depth_texture = 0;
+	}
+
+	if ( Scene_framebuffer ) {
+		vglDeleteFramebuffersEXT(1, &Scene_framebuffer);
+		Scene_framebuffer = 0;
+	}
+
+	Scene_texture_initialized = 0;
+	Scene_framebuffer_in_frame = false;
+}
+
+void gr_opengl_scene_texture_begin()
+{
+	if ( !Scene_texture_initialized ) {
+		return;
+	}
+
+	if ( Scene_framebuffer_in_frame ) {
+		return;
+	}
+
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
+	vglDrawBuffers(2, buffers);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	Scene_framebuffer_in_frame = true;
+}
+
+void gr_opengl_scene_texture_end()
+{
+	if ( !Scene_framebuffer_in_frame ) {
+		return;
+	}
+
+	if ( Cmdline_postprocess && !PostProcessing_override ) {
+		gr_post_process_end();
+	} else {
+		GLboolean depth = GL_state.DepthTest(GL_FALSE);
+		GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
+		GLboolean light = GL_state.Lighting(GL_FALSE);
+		GLboolean blend = GL_state.Blend(GL_FALSE);
+		GLboolean cull = GL_state.CullFace(GL_FALSE);
+
+		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(Scene_color_texture);
+
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex2f(0.0f, (float)gr_screen.max_h);
+
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex2f((float)gr_screen.max_w, (float)gr_screen.max_h);
+
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex2f((float)gr_screen.max_w, 0.0f);
+
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex2f(0.0f, 0.0f);
+		glEnd();
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.Disable();
+
+		// reset state
+		GL_state.DepthTest(depth);
+		GL_state.DepthMask(depth_mask);
+		GL_state.Lighting(light);
+		GL_state.Blend(blend);
+		GL_state.CullFace(cull);
+	}
+
+	Scene_framebuffer_in_frame = false;
 }

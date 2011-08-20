@@ -3834,7 +3834,7 @@ void game_render_frame( camid cid )
 	}
 	gr_zbuffer_clear(TRUE);
 
-	gr_post_process_begin();
+	gr_scene_texture_begin();
 
 	neb2_render_setup(cid);
 
@@ -3924,7 +3924,7 @@ void game_render_frame( camid cid )
 	}
 	//================ END OF 3D RENDERING STUFF ====================
 
-	gr_post_process_end();
+	gr_scene_texture_end();
 
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
