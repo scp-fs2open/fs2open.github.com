@@ -344,6 +344,10 @@ void gr_stub_render( int nverts, vertex *verts, uint flags )
 {
 }
 
+void gr_stub_render_effect( int nverts, vertex *verts, float *radius_list, uint flag)
+{
+}
+
 void gr_stub_translate_texture_matrix(int unit, vec3d *shift)
 {
 }
@@ -377,6 +381,14 @@ void gr_stub_post_process_begin()
 }
 
 void gr_stub_post_process_end()
+{
+}
+
+void gr_stub_scene_texture_begin()
+{
+}
+
+void gr_stub_scene_texture_end()
 {
 }
 
@@ -683,6 +695,7 @@ bool gr_stub_init()
 	gr_screen.gf_scaler				= gr_stub_scaler;
 	gr_screen.gf_tmapper			= gr_stub_tmapper;
 	gr_screen.gf_render				= gr_stub_render;
+	gr_screen.gf_render_effect		= gr_stub_render_effect;
 
 	gr_screen.gf_gradient			= gr_stub_gradient;
 
@@ -766,6 +779,9 @@ bool gr_stub_init()
 	gr_screen.gf_post_process_begin		= gr_stub_post_process_begin;
 	gr_screen.gf_post_process_end		= gr_stub_post_process_end;
 	gr_screen.gf_post_process_save_zbuffer	= gr_stub_post_process_save_zbuffer;
+
+	gr_screen.gf_scene_texture_begin = gr_stub_scene_texture_begin;
+	gr_screen.gf_scene_texture_end = gr_stub_scene_texture_end;
 
 	gr_screen.gf_start_clip_plane	= gr_stub_start_clip_plane;
 	gr_screen.gf_end_clip_plane		= gr_stub_end_clip_plane;
