@@ -471,8 +471,13 @@ void shockwave_render(object *objp)
 			g3_rotate_vertex(&p, &sw->pos);
 		}
 	
-		gr_set_bitmap(sw->current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-		g3_draw_rotated_bitmap(&p, fl_radians(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
+		batch_add_bitmap_rotated(
+			sw->current_bitmap, 
+			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+			&p, 
+			fl_radians(sw->rot_angles.p), 
+			sw->radius
+		);
 	}
 }
 

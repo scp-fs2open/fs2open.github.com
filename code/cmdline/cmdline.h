@@ -71,6 +71,7 @@ extern int Cmdline_spec;
 extern int Cmdline_normal;
 extern int Cmdline_height;
 extern int Cmdline_enable_3d_shockwave;
+extern int Cmdline_softparticles;
 extern int Cmdline_postprocess;
 extern int Cmdline_bloom_intensity;
 extern bool Cmdline_fxaa;

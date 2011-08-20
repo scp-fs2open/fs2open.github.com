@@ -75,6 +75,9 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 // use animated Shader - Valathil
 #define TMAP_ANIMATED_SHADER		(1<<19)
 
+// use soft particle shader - Swifty
+#define TMAP_FLAG_SOFT_QUAD			(1<<20)
+
 #define TMAP_ADDRESS_WRAP			1
 #define TMAP_ADDRESS_MIRROR			2
 #define TMAP_ADDRESS_CLAMP			3

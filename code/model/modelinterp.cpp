@@ -2608,11 +2608,18 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			float d, D;
 			vec3d tempv;
 			glow_point *gpt = &bank->points[j];
+			vec3d world_pnt;
+			vec3d world_norm;
 
-			vm_vec_sub(&tempv, &View_position, &gpt->pnt);
+			vm_vec_unrotate(&world_pnt, &gpt->pnt, orient);
+			vm_vec_add2(&world_pnt, pos);
+
+			vm_vec_sub(&tempv, &View_position, &world_pnt);
 			vm_vec_normalize(&tempv);
 
-			D = d = vm_vec_dot(&tempv, &gpt->norm);
+			vm_vec_unrotate(&world_norm, &gpt->norm, orient);
+
+			D = d = vm_vec_dot(&tempv, &world_norm);
 
 			//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
 			#define NOISE_SCALE 0.5f
@@ -2625,8 +2632,8 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// normalize banks, in case of incredibly big normals
 			// VECMAT-ERROR: NULL VEC3D (norm == nul)
-			if ( !IS_VEC_NULL_SQ_SAFE(&gpt->norm) )
-				vm_vec_copy_normalize(&scale_vec, &gpt->norm);
+			if ( !IS_VEC_NULL_SQ_SAFE(&world_norm) )
+				vm_vec_copy_normalize(&scale_vec, &world_norm);
 
 			// adjust for thrust
 			(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
@@ -2674,15 +2681,24 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// these lines are used by the tertiary glows, thus we will need to project this all of the time
 			if (Cmdline_nohtl) {
-				g3_rotate_vertex( &p, &gpt->pnt );
+				g3_rotate_vertex( &p, &world_pnt );
 			} else {
-				g3_transfer_vertex( &p, &gpt->pnt );
+				g3_transfer_vertex( &p, &world_pnt );
 			}
 
 			if ( (Interp_thrust_glow_bitmap >= 0) && (d > 0.0f) ) {
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
 
-				primary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.5f * Interp_thrust_glow_rad_factor), (w * 0.325f) );
+				//primary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.5f * Interp_thrust_glow_rad_factor), (w * 0.325f) );
+				batch_add_bitmap(
+					Interp_thrust_glow_bitmap, 
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+					&p,
+					0,
+					(w * 0.5f * Interp_thrust_glow_rad_factor),
+					1.0f,
+					(w * 0.325f)
+				);
 			}
 			// end primary thruster glows
 
@@ -2694,7 +2710,16 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
 
-				tertiary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.6f * Interp_tertiary_thrust_glow_rad_factor), (magnitude * 4), (-(D > 0) ? D : -D) );
+				//tertiary_thruster_batcher.draw_bitmap( &p, (w * 0.6f * Interp_tertiary_thrust_glow_rad_factor), (magnitude * 4), (-(D > 0) ? D : -D) );
+				batch_add_bitmap_rotated(
+					Interp_tertiary_thrust_glow_bitmap,
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
+					&p,
+					(magnitude * 4),
+					(w * 0.6f * Interp_tertiary_thrust_glow_rad_factor),
+					1.0f,
+					(-(D > 0) ? D : -D)
+				);
 			}
 			// end tertiary thruster glows
 
@@ -2705,11 +2730,13 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				// ok, how's this there suposed to look cool! hows that, 
 				// it that scientific enough for you!! you anti-asthetic basturds!!!
 				// AAAHHhhhh!!!!
-				pnt = gpt->pnt;
+				pnt = world_pnt;
 
 				scale = magnitude * (MAX_SCALE - (MIN_SCALE / 2)) + (MIN_SCALE / 2);
 
-				d = vm_vec_dot(&tempv, &norm);
+				vm_vec_unrotate(&world_norm, &norm, orient);
+
+				d = vm_vec_dot(&tempv, &world_norm);
 				d += 0.75f;
 				d *= 3.0f;
 
@@ -2717,7 +2744,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					d = 1.0f;
 
 				if (d > 0.0f) {
-					vm_vec_add(&norm2, &norm, &pnt);
+					vm_vec_add(&norm2, &world_norm, &pnt);
 					vm_vec_sub(&fvec, &norm2, &pnt);
 					vm_vec_normalize(&fvec);
 
@@ -2785,20 +2812,20 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	int zbuff_save = gr_zbuffering_mode;
 	gr_zbuffer_set(GR_ZBUFF_READ);
 
-	if (Interp_thrust_glow_bitmap >= 0) {
+	/*if (Interp_thrust_glow_bitmap >= 0) {
 		gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 		primary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-	}
+	}*/
 
 	if (Interp_secondary_thrust_glow_bitmap >= 0) {
 		gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
 		secondary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 	}
 
-	if (Interp_tertiary_thrust_glow_bitmap >= 0) {
+	/*if (Interp_tertiary_thrust_glow_bitmap >= 0) {
 		gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 		tertiary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-	}
+	}*/
 
 	// reset zbuffer to original setting
 	gr_zbuffer_set(zbuff_save);
@@ -3405,16 +3432,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		model_render_glow_points(pm, shipp, orient, pos);
 	}
 
-	// Draw the thruster glow
-	if ( !is_outlines_only && !is_outlines_only_htl ) {
-		model_render_thrusters( pm, objnum, shipp, orient, pos );
-	}
-
-/*
-	cull = gr_set_cull(0);
-
-*/
-	
 	if ( Interp_flags & MR_SHOW_PATHS ){
 		if (Cmdline_nohtl) model_draw_paths(model_num);
 		else model_draw_paths_htl(model_num);
@@ -3429,9 +3446,19 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		g3_done_instance(use_api);
 	}
 
-//	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-
 	g3_done_instance(use_api);
+
+	// Draw the thruster glow
+	if ( !is_outlines_only && !is_outlines_only_htl ) {
+		model_render_thrusters( pm, objnum, shipp, orient, pos );
+	}
+
+/*
+	cull = gr_set_cull(0);
+
+*/
+
+//	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 
