@@ -211,7 +211,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		// if we're fullneb, fire up the fog - this also generates a fog table
 		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
 			// get the fog values
-			neb2_get_fog_values(&fog_near, &fog_far, obj);
+			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 
 			// only reset fog if the fog mode has changed - since regenerating a fog table takes
 			// a bit of time
