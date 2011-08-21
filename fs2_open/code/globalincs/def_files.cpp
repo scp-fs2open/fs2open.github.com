@@ -2237,7 +2237,7 @@ void main()																	\n\
 	float backDepth = fragDepthLinear + depthOffset;						\n\
 																			\n\
 	float ds = min(sceneDepthLinear, backDepth) - max(nearZ, frontDepth);	\n\
-																			\n\
+																			\n""\
 	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a;	\n\
 	fragmentColor = fragmentColor * ( ds / (depthOffset*2.0) );				\n\
 																			\n\
