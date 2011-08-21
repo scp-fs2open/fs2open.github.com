@@ -1689,14 +1689,14 @@ int brief_text_colorize(char *src, int instance)
 //				w			=>		max width of line in pixels
 //				instance	=>		optional parameter, used when multiple text streams are required
 //									(default value is 0)
-int brief_color_text_init(char *src, int w, int instance, int max_lines)
+int brief_color_text_init(const char* src, int w, int instance, int max_lines)
 {
 	int i, n_lines, len;
 	SCP_vector<int> n_chars;
-	SCP_vector<char*> p_str;
+	SCP_vector<const char*> p_str;
 	char brief_line[MAX_BRIEF_LINE_LEN];
 
-	Assert(src);
+	Assert(src != NULL);
 	n_lines = split_str(src, w, &n_chars, &p_str, BRIEF_META_CHAR);
 	Assert(n_lines >= 0);
 
