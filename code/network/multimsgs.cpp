@@ -7928,7 +7928,6 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.target = multi_get_network_object(target_sig);
 	fire_info.beam_info_override = &b_info;
 	fire_info.accuracy = 1.0f;
-	fire_info.fighter_beam = /*(fighter_beam) ? true :*/ false;
 
 	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance > MAX_SHIPS)){
 		nprintf(("Network", "Couldn't get shooter info for BEAM weapon!\n"));
@@ -7942,17 +7941,17 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		// make sure the beam is a primary weapon and not attached to a turret or something
 		for (i = 0; i < shipp->weapons.num_primary_banks; i++) {
 			if ( shipp->weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
-				fire_info.fighter_beam = true;
+				fire_info.bfi_flags |= BFIF_IS_FIGHTER_BEAM;
 			}
 		}
 	}
 
-	if ( !fire_info.fighter_beam && (fire_info.target == NULL) ) {
+	if ( !(fire_info.bfi_flags & BFIF_IS_FIGHTER_BEAM) && (fire_info.target == NULL) ) {
 		nprintf(("Network", "Couldn't get target info for BEAM weapon!\n"));
 		return;
 	}
 
-	if (fire_info.fighter_beam) {
+	if (fire_info.bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
 		float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
 

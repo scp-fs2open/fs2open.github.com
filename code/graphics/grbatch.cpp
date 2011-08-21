@@ -405,7 +405,6 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 {
 	vec3d p[4];
 	vertex *P = &vert[n_to_render * 3];
-	float *R = &radius_list[n_to_render * 3];
 
 	vec3d fvec, uvecs, uvece, evec;
 
@@ -457,11 +456,10 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 
 	for(int i = 0; i < 6; i++){
 		P[i].r = P[i].g = P[i].b = P[i].a = _color;
-		R[i] = width;
 	}
 
 	n_to_render += 2;
-	use_radius = true;
+	use_radius = false;
 }
 
 float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
@@ -716,14 +714,7 @@ void batch_render_bitmaps()
 			continue;
 
 		Assert( bi->texture >= 0 );
-		if(bi->tmap_flags & TMAP_FLAG_DISTORTION)
-		{
-			gr_set_bitmap(bi->texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, bi->alpha);
-		}
-		else
-		{
-			gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, bi->alpha);
-		}
+		gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, bi->alpha);
 		bi->batch.render( bi->tmap_flags);
 	}
 }

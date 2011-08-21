@@ -76,7 +76,6 @@ extern int Cmdline_postprocess;
 extern int Cmdline_bloom_intensity;
 extern bool Cmdline_fxaa;
 extern int Cmdline_fxaa_preset;
-extern bool Cmdline_fb_explosions;
 
 // Game Speed related
 extern int Cmdline_cache_bitmaps;

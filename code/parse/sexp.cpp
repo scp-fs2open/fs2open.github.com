@@ -401,7 +401,7 @@ sexp_oper Operators[] = {
 	{ "get-collision-group",		OP_GET_COLGROUP_ID,				1, 1 },
 	{ "ship-effect",				OP_SHIP_EFFECT,					3, INT_MAX },	// Valathil
 
-	{ "fire-beam",						OP_BEAM_FIRE,					3, 4		},
+	{ "fire-beam",						OP_BEAM_FIRE,					3, 5		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
 	{ "beam-free-all",					OP_BEAM_FREE_ALL,				1, INT_MAX	},
 	{ "beam-lock",						OP_BEAM_LOCK,					2, INT_MAX	},
@@ -1913,7 +1913,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				// check for the special "hull" value
-				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) || (Operators[op].value == OP_SET_ARMOR_TYPE)) {
+				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) || (Operators[op].value == OP_SET_ARMOR_TYPE) || (Operators[op].value == OP_BEAM_FIRE)) {
 					if ( !stricmp( CTEXT(node), SEXP_HULL_STRING) || !stricmp( CTEXT(node), SEXP_SIM_HULL_STRING) ){
 						break;
 					}
@@ -13670,7 +13670,7 @@ int sexp_facing(int node)
 		// not found and won't arrive: invalid
 		return SEXP_KNOWN_FALSE;
 	}
-	float angle = atof(CTEXT(CDR(node)));
+	double angle = atof(CTEXT(CDR(node)));
 
 	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
@@ -13715,7 +13715,7 @@ int sexp_is_facing(int node)
 	}
 	node = CDR(node);
 
-	float angle = atof(CTEXT(node));
+	double angle = atof(CTEXT(node));
 	node = CDR(node);
 
 	origin_objp = &Objects[origin_shipp->objnum];
@@ -15045,70 +15045,77 @@ void sexp_set_skybox_model_preload(char *name)
 
 void sexp_beam_fire(int node)
 {
-	int sindex, n;
+	int sindex, n = node;
 	beam_fire_info fire_info;		
-	int idx;	
+	int idx;
 
 	// zero stuff out
 	memset(&fire_info, 0, sizeof(beam_fire_info));
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
 
 	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	sindex = ship_name_lookup(CTEXT(n));
+	n = CDR(n);
+	if (sindex < 0) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0){
+	if (Ships[sindex].objnum < 0) {
 		return;
 	}
 	fire_info.shooter = &Objects[Ships[sindex].objnum];
 
 	// get the subsystem
-	fire_info.turret = ship_get_subsys(&Ships[sindex], CTEXT(CDR(node)));
-	if(fire_info.turret == NULL){
+	fire_info.turret = ship_get_subsys(&Ships[sindex], CTEXT(n));
+	n = CDR(n);
+	if (fire_info.turret == NULL) {
 		return;
 	}
 
 	// get the target
-	sindex = ship_name_lookup(CTEXT(CDR(CDR(node))));
-	if(sindex < 0){
+	sindex = ship_name_lookup(CTEXT(n));
+	n = CDR(n);
+	if (sindex < 0) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0){
+	if (Ships[sindex].objnum < 0) {
 		return;
 	}
 	fire_info.target = &Objects[Ships[sindex].objnum];
 
 	// see if the optional subsystem can be found	
 	fire_info.target_subsys = NULL;
-	n = CDDDR(node);
-	if (n != -1) {
-		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));	
+	if (n >= 0) {
+		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+		n = CDR(n);
+	}
+
+	// optionally force firing
+	if (n >= 0 && is_sexp_true(n)) {
+		fire_info.bfi_flags |= BFIF_FORCE_FIRING;
 	}
 
 	// if it has no primary weapons
-	if(fire_info.turret->weapons.num_primary_banks <= 0){
+	if (fire_info.turret->weapons.num_primary_banks <= 0) {
 		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no primary weapons", CTEXT(node), CTEXT(CDR(node)));
 		return;
 	}
 
 	// if the turret is destroyed
-	if(fire_info.turret->current_hits <= 0.0f){
+	if (!(fire_info.bfi_flags & BFIF_FORCE_FIRING) && fire_info.turret->current_hits <= 0.0f) {
 		return;
 	}
 
 	// hmm, this could be wacky. Let's just simply select the first beam weapon in the turret
 	fire_info.beam_info_index = -1;	
-	for(idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++){
+	for (idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++) {
 		// store the weapon info index
-		if(Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags & WIF_BEAM){
+		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags & WIF_BEAM) {
 			fire_info.beam_info_index = fire_info.turret->weapons.primary_bank_weapons[idx];
 		}
 	}
 
 	// fire the beam
-	if(fire_info.beam_info_index != -1){
-		fire_info.fighter_beam = false;
+	if (fire_info.beam_info_index != -1) {
 		beam_fire(&fire_info);
 	} else {
 		// it would appear the turret doesn't have any beam weapons
@@ -23412,6 +23419,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			case 3:
 				return OPF_SUBSYSTEM;
+			case 4:
+				return OPF_BOOL;
 			}
 
 		case OP_IS_TAGGED:
@@ -27742,7 +27751,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tShip which will be firing\r\n"
 		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
 		"\t3:\tShip which will be targeted\r\n"
-		"Use add-data to add a specific subsystem to target on the specified target ship"},
+		"\t4:\tSubsystem to target (optional)\r\n"
+		"\t5:\tWhether to force the beam to fire (disregarding FOV and subsystem status) (optional)\r\n" },
 
 	{ OP_IS_TAGGED, "is-tagged\r\n"
 		"\tReturns whether a given ship is tagged or not\r\n"},

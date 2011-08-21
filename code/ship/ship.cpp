@@ -9965,7 +9965,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					fbfire_info.target = NULL;
 				}
 				fbfire_info.turret = &shipp->fighter_beam_turret_data;
-				fbfire_info.fighter_beam = true;
+				fbfire_info.bfi_flags |= BFIF_IS_FIGHTER_BEAM;
 				fbfire_info.bank = bank_to_fire;
 
 				for ( v = 0; v < points; v++ ){
