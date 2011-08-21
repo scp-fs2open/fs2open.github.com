@@ -15,10 +15,9 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug\Profile\code"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
@@ -40,17 +39,20 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../lua,../../openal/include,../../speech/include,../../libpng,../../zlib"
-				PreprocessorDefinitions="_DEBUG;_WINDOWS;WIN32;FS2_SPEECH;FS2_VOICER;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				PrecompiledHeaderFile=".\Debug\Profile\code/code.pch"
-				AssemblerListingLocation=".\Debug\Profile\code/"
-				ObjectFile=".\Debug\Profile\code/"
-				ProgramDataBaseFileName=".\Debug\Profile\code/"
-				BrowseInformation="1"
-				WarningLevel="3"
+				BufferSecurityCheck="true"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\"
+				ProgramDataBaseFileName="$(IntDir)\"
+				BrowseInformation="0"
+				BrowseInformationFile="$(IntDir)\"
+				WarningLevel="4"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
 				UndefinePreprocessorDefinitions="NDEBUG"
@@ -68,7 +70,8 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile=".\Debug\code.lib"
+				LinkLibraryDependencies="true"
+				OutputFile="$(OutDir)\code.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -79,8 +82,9 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
+				AdditionalOptions="&#x0D;&#x0A;"
 				SuppressStartupBanner="true"
-				OutputFile="Debug\Profile\code.bsc"
+				OutputFile="$(IntDir)\$(ProjectName).bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -91,12 +95,12 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release\Profile\code"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -115,21 +119,30 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="2"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../lua,../../openal/include,../../speech/include,../../libpng,../../zlib"
-				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;FS2_SPEECH;FS2_VOICER;"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				StringPooling="true"
+				ExceptionHandling="1"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\Release\Profile\code/code.pch"
-				AssemblerListingLocation=".\Release\Profile\code/"
-				ObjectFile=".\Release\Profile\code/"
-				ProgramDataBaseFileName=".\Release\Profile\code/"
-				BrowseInformation="1"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
+				FloatingPointModel="2"
+				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\"
+				ProgramDataBaseFileName="$(IntDir)\"
+				BrowseInformation="0"
+				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				UndefinePreprocessorDefinitions="_DEBUG"
 			/>
 			<Tool
@@ -145,7 +158,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile=".\Release\code.lib"
+				OutputFile="$(OutDir)\code.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -157,7 +170,7 @@
 			<Tool
 				Name="VCBscMakeTool"
 				SuppressStartupBanner="true"
-				OutputFile="Release\Profile\code.bsc"
+				OutputFile="$(IntDir)\$(ProjectName).bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
