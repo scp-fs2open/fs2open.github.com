@@ -172,6 +172,7 @@ Flag exe_params[] =
 
 	{ "-ingame_join",		"Allow in-game joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
+	{ "-fb_explosions",		"Enable Framebuffer Shockwaves",			true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
@@ -267,6 +268,7 @@ cmdline_parm postprocess_arg("-post_process", NULL);
 cmdline_parm bloom_intensity_arg("-bloom_intensity", NULL);
 cmdline_parm fxaa_arg("-fxaa", NULL);
 cmdline_parm fxaa_preset_arg("-fxaa_preset", NULL);
+cmdline_parm fb_explosions_arg("-fb_explosions", NULL);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -289,6 +291,7 @@ int Cmdline_bloom_intensity = 75;
 bool Cmdline_fxaa = false;
 int Cmdline_fxaa_preset = 6;
 extern int Fxaa_preset_last_frame;
+bool Cmdline_fb_explosions = 0;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -1427,6 +1430,11 @@ bool SetCmdlineParams()
 	if ( softparticles_arg.found() )
 	{
 		Cmdline_softparticles = 1;
+	}
+
+	if ( fb_explosions_arg.found() )
+	{
+		Cmdline_fb_explosions = 1;
 	}
 
 	if ( postprocess_arg.found() )

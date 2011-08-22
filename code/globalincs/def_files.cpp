@@ -2194,10 +2194,16 @@ uniform float window_height;	\n\
 uniform float nearZ;			\n\
 uniform float farZ;				\n\
 								\n\
-varying float radius;				\n\
+varying float radius;			\n\
+								\n\
+#ifdef FLAG_DISTORTION			\n\
+uniform sampler2D distMap;		\n\
+uniform sampler2D frameBuffer;	\n\
+#endif							\n\
 																			\n\
 void main()																	\n\
 {																			\n\
+	#ifndef FLAG_DISTORTION													\n\
 	vec2 offset = vec2(														\n\
 		radius * abs(0.5 - gl_TexCoord[0].x) * 2.0,							\n\
 		radius * abs(0.5 - gl_TexCoord[0].y) * 2.0							\n\
@@ -2236,5 +2242,17 @@ void main()																	\n\
 	fragmentColor = fragmentColor * ( ds / (depthOffset*2.0) );				\n\
 																			\n\
 	gl_FragColor = fragmentColor;											\n\
+	#else																	\n\
+	vec2 depthCoord = vec2(													\n\
+		gl_FragCoord.x / window_width,										\n\
+		gl_FragCoord.y / window_height										\n\
+	);																		\n\
+	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a;	\n\
+	vec2 distortion = texture2D(distMap, gl_TexCoord[0].xy).rg;				\n\
+	float alpha = clamp(dot(fragmentColor.rgb,vec3(0.3333))*10.0,0.0,1.0);	\n\
+	distortion = ((distortion - 0.5) * 0.01) * alpha;						\n\
+	gl_FragColor = texture2D(frameBuffer,depthCoord+distortion);			\n\
+	gl_FragColor.a = alpha;													\n\
+	#endif																	\n\
 }																			\n\
 ";
