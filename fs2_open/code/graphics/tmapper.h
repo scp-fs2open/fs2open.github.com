@@ -78,6 +78,12 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 // use soft particle shader - Swifty
 #define TMAP_FLAG_SOFT_QUAD			(1<<20)
 
+// use framebuffer distortion mapping with generated distortion map - Valathil
+#define TMAP_FLAG_DISTORTION_THRUSTER	(1<<21)
+
+// use framebuffer distortion mapping  - Valathil
+#define TMAP_FLAG_DISTORTION		(1<<22)
+
 #define TMAP_ADDRESS_WRAP			1
 #define TMAP_ADDRESS_MIRROR			2
 #define TMAP_ADDRESS_CLAMP			3

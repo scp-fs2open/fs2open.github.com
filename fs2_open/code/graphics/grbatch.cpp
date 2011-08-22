@@ -405,6 +405,7 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 {
 	vec3d p[4];
 	vertex *P = &vert[n_to_render * 3];
+	float *R = &radius_list[n_to_render * 3];
 
 	vec3d fvec, uvecs, uvece, evec;
 
@@ -456,10 +457,11 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 
 	for(int i = 0; i < 6; i++){
 		P[i].r = P[i].g = P[i].b = P[i].a = _color;
+		R[i] = width;
 	}
 
 	n_to_render += 2;
-	use_radius = false;
+	use_radius = true;
 }
 
 float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
@@ -559,10 +561,8 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 void geometry_batcher::render(int flags, float radius)
 {
 	if (n_to_render) {
-		if ( (flags & TMAP_FLAG_SOFT_QUAD) && Cmdline_softparticles && use_radius ) {
-			int zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
+		if ( (((flags & TMAP_FLAG_SOFT_QUAD) && Cmdline_softparticles)) || (flags & TMAP_FLAG_DISTORTION) || (flags & TMAP_FLAG_DISTORTION_THRUSTER) && use_radius ) {
 			gr_render_effect(n_to_render * 3, vert, radius_list, flags | TMAP_FLAG_TRILIST);
-			gr_zbuffer_set(zbuff);
 		} else {
 			gr_render(n_to_render * 3, vert, flags | TMAP_FLAG_TRILIST);
 		}
@@ -589,6 +589,7 @@ struct batch_item {
 };
 
 static SCP_vector<batch_item> geometry_map;
+static SCP_vector<batch_item> distortion_map;
 
 static int find_good_batch_item(int texture)
 {
@@ -607,6 +608,25 @@ static int find_good_batch_item(int texture)
 	geometry_map.push_back(new_item);
 
 	return (int)(geometry_map.size() - 1);
+}
+
+static int find_good_distortion_item(int texture)
+{
+	uint max_size = distortion_map.size();
+
+	for (uint i = 0; i < max_size; i++) {
+		if (distortion_map[i].texture == texture)
+			return (int)i;
+	}
+
+	// don't have an existing match so add a new entry
+	batch_item new_item;
+
+	new_item.texture = texture;
+
+	distortion_map.push_back(new_item);
+
+	return (int)(distortion_map.size() - 1);
 }
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
@@ -679,6 +699,31 @@ int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float ang
 	return 0;
 }
 
+int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity)
+{
+	if (texture < 0) {
+		Int3();
+		return 1;
+	}
+
+	geometry_batcher *item = NULL;
+	int index = find_good_batch_item(texture);
+	Assert( index >= 0 );
+
+	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+
+	geometry_map[index].tmap_flags = tmap_flags;
+	geometry_map[index].alpha = intensity;
+
+	item = &geometry_map[index].batch;
+
+	item->add_allocate(1);
+
+	item->draw_beam(start, end, width, intensity);
+
+	return 0;
+}
+
 void batch_render_lasers()
 {
 	uint map_size = geometry_map.size();
@@ -728,4 +773,74 @@ void batch_render_all()
 void batch_reset()
 {
 	geometry_map.clear();
+}
+
+int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha, float depth)
+{
+	if (texture < 0) {
+		Int3();
+		return 1;
+	}
+
+	geometry_batcher *item = NULL;
+	int index = find_good_distortion_item(texture);
+	Assert( index >= 0 );
+
+	Assertion( (distortion_map[index].laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+
+	distortion_map[index].tmap_flags = tmap_flags;
+	distortion_map[index].alpha = alpha;
+
+	item = &distortion_map[index].batch;
+
+	item->add_allocate(1);
+
+	item->draw_bitmap(pnt, rad, angle, depth);
+
+	return 0;
+}
+
+int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity)
+{
+	if (texture < 0) {
+		Int3();
+		return 1;
+	}
+
+	geometry_batcher *item = NULL;
+	int index = find_good_distortion_item(texture);
+	Assert( index >= 0 );
+
+	Assertion( (distortion_map[index].laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+
+	distortion_map[index].tmap_flags = tmap_flags;
+	distortion_map[index].alpha = intensity;
+
+	item = &distortion_map[index].batch;
+
+	item->add_allocate(1);
+
+	item->draw_beam(start,end,width,intensity);
+
+	return 0;
+}
+
+void distortion_render_bitmaps()
+{
+	uint map_size = distortion_map.size();
+	batch_item *bi;
+
+	for (uint i = 0; i < map_size; i++) {
+		bi = &distortion_map[i];
+
+		if ( bi->laser )
+			continue;
+
+		if ( !bi->batch.need_to_render() )
+			continue;
+
+		Assert( bi->texture >= 0 );
+		gr_set_bitmap(bi->texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, bi->alpha);
+		bi->batch.render( bi->tmap_flags);
+	}
 }
