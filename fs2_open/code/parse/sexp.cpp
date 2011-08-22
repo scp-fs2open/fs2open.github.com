@@ -149,15 +149,17 @@ sexp_oper Operators[] = {
 	{ "is-goal-incomplete",					OP_GOAL_INCOMPLETE,				1, 1,	},
 	{ "is-event-true",						OP_EVENT_TRUE,							1, 1,			},
 	{ "is-event-true-delay",				OP_EVENT_TRUE_DELAY,				2, 3,	},
+	{ "is-event-true-msecs-delay",			OP_EVENT_TRUE_MSECS_DELAY,			2, 3,	},
 	{ "is-event-false",						OP_EVENT_FALSE,						1, 1,			},
 	{ "is-event-false-delay",				OP_EVENT_FALSE_DELAY,			2, 3,	},
+	{ "is-event-false-msecs-delay",			OP_EVENT_FALSE_MSECS_DELAY,		2, 3,	},
 	{ "is-event-incomplete",				OP_EVENT_INCOMPLETE,				1, 1,	},
 	{ "is-previous-goal-true",				OP_PREVIOUS_GOAL_TRUE,			2, 3,	},
-	{ "is-previous-goal-false",			OP_PREVIOUS_GOAL_FALSE,			2, 3,	},
+	{ "is-previous-goal-false",				OP_PREVIOUS_GOAL_FALSE,			2, 3,	},
 	{ "is-previous-goal-incomplete",		OP_PREVIOUS_GOAL_INCOMPLETE,	2, 3,	},
-	{ "is-previous-event-true",			OP_PREVIOUS_EVENT_TRUE,			2, 3,	},
+	{ "is-previous-event-true",				OP_PREVIOUS_EVENT_TRUE,			2, 3,	},
 	{ "is-previous-event-false",			OP_PREVIOUS_EVENT_FALSE,		2, 3,	},
-	{ "is-previous-event-incomplete",	OP_PREVIOUS_EVENT_INCOMPLETE,	2, 3,	},
+	{ "is-previous-event-incomplete",		OP_PREVIOUS_EVENT_INCOMPLETE,	2, 3,	},
 
 	{ "is-destroyed",							OP_IS_DESTROYED,						1,	INT_MAX,	},
 	{ "is-destroyed-delay",					OP_IS_DESTROYED_DELAY,				2,	INT_MAX,	},
@@ -12379,7 +12381,7 @@ int sexp_event_status( int n, int want_true )
 
 // function to return the status of an event N seconds after the event is true or false.  Similar
 // to above function but waits N seconds before returning true
-int sexp_event_delay_status( int n, int want_true )
+int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 {
 	char *name;
 	int i, result;
@@ -12395,6 +12397,11 @@ int sexp_event_delay_status( int n, int want_true )
 	}
 
 	delay = i2f(eval_num(CDR(n)));
+
+	if (use_msecs) {
+		delay = delay / 1000l;
+	}
+
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name, name) ) {
@@ -19579,6 +19586,13 @@ int eval_sexp(int cur_node, int referenced_node)
 			//		Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
+			case OP_EVENT_TRUE_MSECS_DELAY:
+			case OP_EVENT_FALSE_MSECS_DELAY:
+				sexp_val = sexp_event_delay_status( node, (op_num == OP_EVENT_TRUE_MSECS_DELAY?1:0), true );
+			//	if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
+			//		Sexp_useful_number = 0;  // indicate sexp isn't current yet
+				break;
+
 			case OP_GOAL_TRUE_DELAY:
 			case OP_GOAL_FALSE_DELAY:
 				sexp_val = sexp_goal_delay_status( node, (op_num == OP_GOAL_TRUE_DELAY?1:0) );
@@ -21831,6 +21845,8 @@ int query_operator_return_type(int op)
 		case OP_GOAL_FALSE_DELAY:
 		case OP_EVENT_INCOMPLETE:
 		case OP_EVENT_TRUE_DELAY:
+		case OP_EVENT_FALSE_MSECS_DELAY:
+		case OP_EVENT_TRUE_MSECS_DELAY:
 		case OP_EVENT_FALSE_DELAY:
 		case OP_PREVIOUS_EVENT_TRUE:
 		case OP_PREVIOUS_EVENT_FALSE:
@@ -23230,6 +23246,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EVENT_INCOMPLETE:
 		case OP_EVENT_TRUE_DELAY:
 		case OP_EVENT_FALSE_DELAY:
+		case OP_EVENT_TRUE_MSECS_DELAY:
+		case OP_EVENT_FALSE_MSECS_DELAY:
 			if (argnum == 0)
 				return OPF_EVENT_NAME;
 			else if (argnum == 1)
@@ -26119,6 +26137,23 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true.\r\n"
 		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+
+	{ OP_EVENT_TRUE_MSECS_DELAY, "Mission Event True (Boolean operator)\r\n"
+		"\tReturns true N milliseconds after the specified event in the this mission is true "
+		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the event in the mission.\r\n"
+		"\t2:\tNumber of milliseconds to delay before returning true.\r\n"
+		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+
+	{ OP_EVENT_FALSE_MSECS_DELAY, "Mission Event False (Boolean operator)\r\n"
+		"\tReturns true N milliseconds after the specified event in the this mission is false "
+		"(or failed).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the event in the mission.\r\n"
+		"\t2:\tNumber of milliseconds to delay before returning true.\r\n"
+		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+
 
 	{ OP_EVENT_INCOMPLETE, "Mission Event Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the this mission is incomplete.  This "
