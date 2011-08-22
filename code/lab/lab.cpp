@@ -818,7 +818,7 @@ void labviewer_render_model(float frametime)
 	}
 
 	batch_render_bitmaps();
-
+	distortion_render_bitmaps();
 	if ( !Cmdline_nohtl ) {
 		gr_end_view_matrix();
 		gr_end_proj_matrix();

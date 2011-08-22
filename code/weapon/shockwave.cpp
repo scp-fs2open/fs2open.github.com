@@ -92,6 +92,7 @@ int shockwave_load(char *s_name, bool shock_3D = false);
 extern int Show_area_effect;
 extern int Cmdline_nohtl;
 extern int Cmdline_enable_3d_shockwave;
+extern bool Cmdline_fb_explosions;
 
 
 // ------------------------------------------------------------------------------------
@@ -464,16 +465,39 @@ void shockwave_render(object *objp)
 		model_render( sw->model_id, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL, sw->objnum);
 
 		model_set_warp_globals();
+		if(Cmdline_fb_explosions)
+		{
+			g3_transfer_vertex(&p, &sw->pos);
+				
+			distortion_add_bitmap_rotated(
+				Shockwave_info[1].bitmap_id+shockwave_get_framenum(objp->instance, 94), 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
+				&p, 
+				fl_radians(sw->rot_angles.p), 
+				sw->radius,
+				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
+			);
+		}
 	}else{
 		if (!Cmdline_nohtl) {
 			g3_transfer_vertex(&p, &sw->pos);
 		} else {
 			g3_rotate_vertex(&p, &sw->pos);
 		}
-	
+		if(Cmdline_fb_explosions)
+		{
+			distortion_add_bitmap_rotated(
+				sw->current_bitmap, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
+				&p, 
+				fl_radians(sw->rot_angles.p), 
+				sw->radius,
+				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
+			);
+		}
 		batch_add_bitmap_rotated(
 			sw->current_bitmap, 
-			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
 			&p, 
 			fl_radians(sw->rot_angles.p), 
 			sw->radius

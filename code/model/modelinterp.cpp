@@ -2527,8 +2527,8 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 //	Int3();
 }
 
-geometry_batcher primary_thruster_batcher, secondary_thruster_batcher, tertiary_thruster_batcher;
-
+//geometry_batcher primary_thruster_batcher, secondary_thruster_batcher, tertiary_thruster_batcher;
+extern bool Scene_framebuffer_in_frame;
 // maybe draw mode thruster glows
 void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)
 {
@@ -2560,17 +2560,17 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	}
 
 	if (Interp_thrust_glow_bitmap >= 0) {
-		primary_thruster_batcher.allocate(n_q);
+		//primary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
 	if (Interp_secondary_thrust_glow_bitmap >= 0) {
-		secondary_thruster_batcher.allocate(n_q);
+		//secondary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
 	if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-		tertiary_thruster_batcher.allocate(n_q);
+		//tertiary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
@@ -2757,7 +2757,18 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 						d *= fog_int;
 					}
 
-					secondary_thruster_batcher.draw_beam(&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor*0.5f, d);
+					batch_add_beam(Interp_secondary_thrust_glow_bitmap,
+							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT,
+							&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor*0.5f, d
+					);
+					if(Scene_framebuffer_in_frame)
+					{
+						vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 4 * Interp_thrust_glow_len_factor);
+						distortion_add_beam(Interp_secondary_thrust_glow_bitmap,
+							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_DISTORTION_THRUSTER | TMAP_FLAG_SOFT_QUAD,
+							&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor, 1.0f
+						);
+					}
 				}
 			}
 			// end secondary glows
@@ -2817,10 +2828,10 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		primary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 	}*/
 
-	if (Interp_secondary_thrust_glow_bitmap >= 0) {
-		gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+	/*if (Interp_secondary_thrust_glow_bitmap >= 0) {
+		gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
 		secondary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
-	}
+	}*/
 
 	/*if (Interp_tertiary_thrust_glow_bitmap >= 0) {
 		gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );

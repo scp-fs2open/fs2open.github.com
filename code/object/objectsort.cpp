@@ -245,7 +245,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	// lasers have to be drawn without fog! - taylor
 	batch_render_lasers();
 	batch_render_bitmaps();
-
+	distortion_render_bitmaps();
 /*	Show spheres where wingmen should be flying
 	{
 		extern void render_wing_phantoms_all();
