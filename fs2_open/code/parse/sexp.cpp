@@ -16120,7 +16120,7 @@ void sexp_reverse_rotating_subsystem(int node)
 void sexp_rotating_subsys_set_turn_time(int node)
 {
 	int ship_num;
-	float turn_time, turn_accel;
+	float turn_time;
 	ship_subsys *rotate;
 
 	// get the ship
@@ -16142,7 +16142,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 
 	// maybe get and set the turn accel
 	if (CDDDR(node) != -1)
-		turn_accel = ((float) atoi(CTEXT(CDDDR(node)))) / 1000.0f;
+		rotate->submodel_info_1.turn_accel = ((float) atoi(CTEXT(CDDDR(node)))) / 1000.0f;
 	else
 		rotate->submodel_info_1.cur_turn_rate = PI2 / turn_time;
 }
