@@ -1659,19 +1659,10 @@ char* Default_fxaa_fragment_shader =
 "	#if (FXAA_GATHER4_ALPHA == 1)\n"
 "		#if (FXAA_DISCARD == 0)\n"
 "			FxaaFloat4 rgbyM = FxaaTexTop(tex, posM);\n"
-"			#if (FXAA_GREEN_AS_LUMA == 0)\n"
-"				#define lumaM rgbyM.w\n"
-"			#else\n"
-"				#define lumaM rgbyM.y\n"
-"			#endif\n"
+"			#define lumaM rgbyM.y\n"
 "		#endif\n"
-"		#if (FXAA_GREEN_AS_LUMA == 0)\n"
-"			FxaaFloat4 luma4A = FxaaTexAlpha4(tex, posM);\n"
-"			FxaaFloat4 luma4B = FxaaTexOffAlpha4(tex, posM, FxaaInt2(-1, -1));\n"
-"		#else\n"
-"			FxaaFloat4 luma4A = FxaaTexGreen4(tex, posM);\n"
-"			FxaaFloat4 luma4B = FxaaTexOffGreen4(tex, posM, FxaaInt2(-1, -1));\n"
-"		#endif\n"
+"		FxaaFloat4 luma4A = FxaaTexAlpha4(tex, posM);\n"
+"		FxaaFloat4 luma4B = FxaaTexOffAlpha4(tex, posM, FxaaInt2(-1, -1));\n"
 "		#if (FXAA_DISCARD == 1)\n"
 "			#define lumaM luma4A.w\n"
 "		#endif\n"
@@ -1683,11 +1674,7 @@ char* Default_fxaa_fragment_shader =
 "		#define lumaW luma4B.x\n"
 "	#else\n"
 "		FxaaFloat4 rgbyM = FxaaTexTop(tex, posM);\n"
-"		#if (FXAA_GREEN_AS_LUMA == 0)\n"
-"			#define lumaM rgbyM.w\n"
-"		#else\n"
-"			#define lumaM rgbyM.y\n"
-"		#endif\n"
+"		#define lumaM rgbyM.w\n"
 "		FxaaFloat lumaS = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 0, 1), fxaaQualityRcpFrame.xy));\n"
 "		FxaaFloat lumaE = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 1, 0), fxaaQualityRcpFrame.xy));\n"
 "		FxaaFloat lumaN = FxaaLuma(FxaaTexOff(tex, posM, FxaaInt2( 0,-1), fxaaQualityRcpFrame.xy));\n"
@@ -2166,74 +2153,93 @@ char* Default_fxaa_prepass_shader =
 "	gl_FragColor = vec4(color.rgb, dot(color.rgb, vec3(0.299, 0.587, 0.114)) );\n"
 "}\n";
 
-char* Default_particle_vertex_shader = 
-"attribute float radius_in;\n"
-"varying float radius;\n"
-"void main()\n"
-"{\n"
-"	radius = radius_in;\n"
-"	gl_TexCoord[0] = gl_MultiTexCoord0;\n"
-"	gl_Position = ftransform();\n"
-"	gl_FrontColor = gl_Color;\n"
-"	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
-" #ifdef __GLSL_CG_DATA_TYPES\n"
-"	// Check necessary for ATI specific behavior\n"
-"	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);\n"
-" #endif\n"
-"}\n";
+char* Default_particle_vertex_shader = "\
+attribute float radius_in;								\n\
+														\n\
+varying float radius;									\n\
+														\n\
+void main()												\n\
+{														\n\
+	radius = radius_in;									\n\
+	gl_TexCoord[0] = gl_MultiTexCoord0;					\n\
+	gl_Position = ftransform();							\n\
+	gl_FrontColor = gl_Color;							\n\
+	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);	\n\
+														\n\
+#ifdef  __GLSL_CG_DATA_TYPES							\n\
+	// Check necessary for ATI specific behavior		\n\
+	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);	\n\
+#endif													\n\
+}														\n\
+";
 
-char* Default_particle_fragment_shader = 
-"uniform sampler2D baseMap;\n"
-"uniform sampler2D depthMap;\n"
-"uniform float window_width;\n"
-"uniform float window_height;\n"
-"uniform float nearZ;\n"
-"uniform float farZ;\n"
-"varying float radius;\n"
-" #ifdef FLAG_DISTORTION\n"
-"uniform sampler2D distMap;\n"
-"uniform sampler2D frameBuffer;\n"
-" #endif\n"
-"void main()\n"
-"{\n"
-"  #ifndef FLAG_DISTORTION\n"
-"	vec2 offset = vec2(\n"
-"		radius * abs(0.5 - gl_TexCoord[0].x) * 2.0, \n"
-"		radius * abs(0.5 - gl_TexCoord[0].y) * 2.0\n"
-"	);\n"
-"	float offset_len = length(offset);\n"
-"	if (offset_len > radius) {\n"
-"		gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);\n"
-"		return;\n"
-"	}\n"
-"	vec2 depthCoord = vec2(\n"
-"		gl_FragCoord.x / window_width, \n"
-"		gl_FragCoord.y / window_height\n"
-"	);\n"
-"	vec4 sceneDepth = texture2D(depthMap, depthCoord);\n"
-"	float sceneDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - sceneDepth.x * (farZ-nearZ) );\n"
-"	float fragDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - gl_FragCoord.z * (farZ-nearZ) );\n"
-"	// assume UV of 0.5, 0.5 is the centroid of this sphere volume\n"
-"	float depthOffset = sqrt(\n"
-"		pow(radius, 2.0) - \n"
-"		pow(offset_len, 2.0)\n"
-"	);\n"
-"	float frontDepth = fragDepthLinear - depthOffset;\n"
-"	float backDepth = fragDepthLinear + depthOffset;\n"
-"	float ds = min(sceneDepthLinear, backDepth) - max(nearZ, frontDepth);\n"
-"	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a;\n"
-"	fragmentColor = fragmentColor * ( ds / (depthOffset*2.0) );\n"
-"	gl_FragColor = fragmentColor;\n"
-"  #else\n"
-"	vec2 depthCoord = vec2(\n"
-"		gl_FragCoord.x / window_width, \n"
-"		gl_FragCoord.y / window_height\n"
-"	);\n"
-"	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a;\n"
-"	vec2 distortion = texture2D(distMap, gl_TexCoord[0].xy).rg;\n"
-"	float alpha = clamp(dot(fragmentColor.rgb,vec3(0.3333))*10.0,0.0,1.0);\n"
-"	distortion = ((distortion - 0.5) * 0.01) * alpha;\n"
-"	gl_FragColor = texture2D(frameBuffer,depthCoord+distortion);\n"
-"	gl_FragColor.a = alpha;\n"
-"  #endif\n"
-"}\n";
+char* Default_particle_fragment_shader = "\
+uniform sampler2D baseMap;		\n\
+uniform sampler2D depthMap;		\n\
+uniform float window_width;		\n\
+uniform float window_height;	\n\
+uniform float nearZ;			\n\
+uniform float farZ;				\n\
+								\n\
+varying float radius;			\n\
+								\n\
+#ifdef FLAG_DISTORTION			\n\
+uniform sampler2D distMap;		\n\
+uniform sampler2D frameBuffer;	\n\
+#endif							\n\
+																			\n\
+void main()																	\n\
+{																			\n\
+	#ifndef FLAG_DISTORTION													\n\
+	vec2 offset = vec2(														\n\
+		radius * abs(0.5 - gl_TexCoord[0].x) * 2.0,							\n\
+		radius * abs(0.5 - gl_TexCoord[0].y) * 2.0							\n\
+	);																		\n\
+																			\n\
+	float offset_len = length(offset);										\n\
+																			\n\
+	if(offset_len > radius)													\n\
+	{																		\n\
+		gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);							\n\
+		return;																\n\
+	}																		\n\
+																			\n\
+	vec2 depthCoord = vec2(													\n\
+		gl_FragCoord.x / window_width,										\n\
+		gl_FragCoord.y / window_height										\n\
+	);																		\n\
+																			\n\
+	vec4 sceneDepth = texture2D(depthMap, depthCoord);						\n\
+																			\n\
+	float sceneDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - sceneDepth.x * (farZ-nearZ) );	\n\
+	float fragDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - gl_FragCoord.z * (farZ-nearZ) );	\n\
+																			\n\
+	// assume UV of 0.5, 0.5 is the centroid of this sphere volume			\n\
+	float depthOffset = sqrt(												\n\
+		pow(radius, 2.0) -													\n\
+		pow(offset_len, 2.0)												\n\
+	);																		\n\
+																			\n\
+	float frontDepth = fragDepthLinear - depthOffset;						\n\
+	float backDepth = fragDepthLinear + depthOffset;						\n\
+																			\n\
+	float ds = min(sceneDepthLinear, backDepth) - max(nearZ, frontDepth);	\n\
+																			\n""\
+	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a;	\n\
+	fragmentColor = fragmentColor * ( ds / (depthOffset*2.0) );				\n\
+																			\n\
+	gl_FragColor = fragmentColor;											\n\
+	#else																	\n\
+	vec2 depthCoord = vec2(													\n\
+		gl_FragCoord.x / window_width,										\n\
+		gl_FragCoord.y / window_height										\n\
+	);																		\n\
+	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a;	\n\
+	vec2 distortion = texture2D(distMap, gl_TexCoord[0].xy).rg;				\n\
+	float alpha = clamp(dot(fragmentColor.rgb,vec3(0.3333))*10.0,0.0,1.0);	\n\
+	distortion = ((distortion - 0.5) * 0.01) * alpha;						\n\
+	gl_FragColor = texture2D(frameBuffer,depthCoord+distortion);			\n\
+	gl_FragColor.a = alpha;													\n\
+	#endif																	\n\
+}																			\n\
+";
