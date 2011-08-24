@@ -113,23 +113,9 @@ inline bool vec3d::operator == (const vec3d &other)
 	return ( (a1d[0] == other.a1d[0]) && (a1d[1] == other.a1d[1]) && (a1d[2] == other.a1d[2]) );
 }
 
-/*
-// A vector referenced as an array
-typedef struct vectora {
-	float xyz[3];
-} vectora;
-*/
-
 typedef struct vec2d {
 	float x, y;
 } vec2d;
-
-/*
-// Used for some 2d primitives, like gr_poly
-typedef struct vert2df {
-	float x, y;
-} vert2df;
-*/
 
 typedef struct angles {
 	float	p, b, h;
@@ -155,8 +141,6 @@ typedef struct vertex {
 	float		x, y, z;			// world space position
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
 	float		u, v;				// texture position
-//	float		u2, v2, u3, v3, u4, v4;	// texture position
-//	vec3d		real_pos;			// _real_ world position
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
 	ubyte		spec_r, spec_g, spec_b, spec_a;	//specular highlights -Bobboau
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
@@ -179,6 +163,7 @@ inline bool vertex::operator == (const vertex &other)
 inline void vec3d::operator= (vertex&vert) {
 	memcpy(this,&vert.x,sizeof(vec3d));
 }
+
 //set the vector to the vertex screen position
 inline void vec3d::set_screen_vert(vertex&vert) {
 	memcpy(this,&vert.sx,sizeof(vec3d));
