@@ -975,7 +975,7 @@ void game_level_close()
 		anim_level_close();						// stop and clean up any anim instances
 		message_mission_shutdown();			// called after anim_level_close() to make sure instances are clear
 		shockwave_level_close();
-		fireball_level_close();	
+		fireball_close();	
 		shield_hit_close();
 		mission_event_shutdown();
 		asteroid_level_close();
