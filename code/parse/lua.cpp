@@ -9433,17 +9433,20 @@ public:
 
 ade_obj<track_h> l_Track("track", "Music track");
 */
-ADE_FUNC(playMusic, l_Audio, "string Filename", "Plays a music file using FS2Open's builtin music system", "number", "Audiohandle of the created audiostream, or -1 on failure")
+ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0]", "Plays a music file using FS2Open's builtin music system. Volume should be in the 0.0 - 1.0 range, and is capped at 1.0.", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
 	char *s;
-	if(!ade_get_args(L, "s", &s))
+	float volume = 1.0f;
+	if(!ade_get_args(L, "s|f", &s, &volume))
 		return ade_set_error(L, "i", -1);
 
 	int ah = audiostream_open(s, ASF_MENUMUSIC);
 	if(ah < 0)
 		return ade_set_error(L, "i", -1);
 
-	audiostream_play(ah);
+	CLAMP(volume, 0.0f, 1.0f);
+
+	audiostream_play(ah, volume);
 	return ade_set_args(L, "i", ah);
 }
 
