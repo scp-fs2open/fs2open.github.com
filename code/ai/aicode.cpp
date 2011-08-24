@@ -4636,7 +4636,7 @@ void ai_fly_to_ship()
 		return;
 	}
 	Assert( aip->goals[aip->active_goal].ship_name != NULL );
-	if ( strlen(aip->goals[aip->active_goal].ship_name) == 0 ) {
+	if ( aip->goals[aip->active_goal].ship_name[0] == '\0' ) {
 		Warning(LOCATION,
 			"'%s' is trying to fly-to a ship without a name for the ship",
 			Ships[Pl_objp->instance].ship_name);

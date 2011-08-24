@@ -1502,7 +1502,7 @@ void player_set_squad_bitmap(player *p, char *fname)
 		strncpy(p->squad_filename, fname, MAX_FILENAME_LEN);
 	}
 
-	if (strlen(p->squad_filename) > 0) {
+	if (p->squad_filename[0] != '\0') {
 		p->insignia_texture = bm_load_duplicate(fname);
 		
 		// lock is as a transparent texture

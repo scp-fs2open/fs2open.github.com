@@ -2259,8 +2259,8 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 				if (num == -1) {
 					Error(LOCATION, "Unable to find string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 				} else if (num == -2) {
-					if (strlen(str) > 0) {
-						if(strlen(parse_error_text) > 0){
+					if (str[0] != '\0') {
+						if(parse_error_text[0] != '\0'){
 							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" %s.\n", str, parse_error_text);
 						}else{
 							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);

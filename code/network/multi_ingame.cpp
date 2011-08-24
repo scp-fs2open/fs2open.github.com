@@ -563,7 +563,7 @@ void multi_ingame_load_icons()
 	// traverse through all ship types
 	for(idx=0;idx<Num_ship_classes;idx++){
 		// if there is a valid icon for this ship
-		if((strlen(Ship_info[idx].icon_filename) > 0) && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)){
+		if((Ship_info[idx].icon_filename[0] != '\0') && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)){
 			// set the ship class
 			Multi_ingame_ship_icon[Multi_ingame_num_ship_icons].ship_class = idx;
 

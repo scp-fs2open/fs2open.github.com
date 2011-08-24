@@ -693,7 +693,7 @@ int mission_campaign_load_by_name( char *filename )
 	int type,max_players;
 
 	// make sure to tack on .fsc on the end if its not there already
-	if(strlen(filename) > 0){
+	if(filename[0] != '\0'){
 		if(strlen(filename) > 4){
 			strcpy_s(test,filename+(strlen(filename)-4));
 			if(strcmp(test, FS_CAMPAIGN_FILE_EXT)!=0){
@@ -1695,7 +1695,7 @@ void campaign_savefile_load(char *fname, char *pname)
 // set successfully
 int mission_campaign_next_mission()
 {
-	if ( (Campaign.next_mission == -1) || (strlen(Campaign.name) == 0)) // will be set to -1 when there is no next mission
+	if ( (Campaign.next_mission == -1) || (Campaign.name[0] == '\0')) // will be set to -1 when there is no next mission
 		return -1;
 
 	if(Campaign.num_missions < 1)
@@ -1957,7 +1957,7 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 	// copy the needed info from the Mission_goal struct to our internal structure
 	for (i = 0; i < Num_goals; i++ ) {
-		if ( strlen(Mission_goals[i].name) == 0 ) {
+		if (Mission_goals[i].name[0] == '\0') {
 			char goal_name[NAME_LENGTH];
 
 			sprintf(goal_name, NOX("Goal #%d"), i);
@@ -1984,7 +1984,7 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 	// copy the needed info from the Mission_goal struct to our internal structure
 	for (i = 0; i < Num_mission_events; i++ ) {
- 		if ( strlen(Mission_events[i].name) == 0 ) {
+ 		if (Mission_events[i].name[0] == '\0') {
 			char event_name[NAME_LENGTH];
 
 			sprintf(event_name, NOX("Event #%d"), i);

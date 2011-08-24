@@ -640,7 +640,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 	// reassign the player
 	else {		
-		if(!Fred_running && (Player != NULL) && (strlen(pm->squad_name) > 0) && (Game_mode & GM_CAMPAIGN_MODE)){
+		if(!Fred_running && (Player != NULL) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE)){
 			mprintf(("Reassigning player to squadron %s\n", pm->squad_name));
 			player_set_squad(Player, pm->squad_name);
 			player_set_squad_bitmap(Player, pm->squad_filename);

@@ -2181,7 +2181,7 @@ int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *t
 
 		EFXREVERBPROPERTIES n_prop;
 
-		if ( (template_name != NULL) && (strlen(template_name) > 0) ) {
+		if ( (template_name != NULL) && (template_name[0] != '\0') ) {
 			template_id = ds_eax_get_preset_id(template_name);
 		}
 

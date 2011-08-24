@@ -339,7 +339,7 @@ void multi_xfer_abort(int handle)
 		xe->file = NULL;
 
 		// delete it if there isn't some problem with the filename
-		if((xe->flags & MULTI_XFER_FLAG_RECV) && (strlen(xe->filename) > 0)){
+		if((xe->flags & MULTI_XFER_FLAG_RECV) && (xe->filename[0] != '\0')){
 			cf_delete(xe->ex_filename, xe->force_dir);
 		}
 	}
@@ -370,7 +370,7 @@ void multi_xfer_release_handle(int handle)
 		xe->file = NULL;
 
 		// delete it if the file was not successfully received
-		if(!(xe->flags & MULTI_XFER_FLAG_SUCCESS) && (xe->flags & MULTI_XFER_FLAG_RECV) && (strlen(xe->filename) > 0)){
+		if(!(xe->flags & MULTI_XFER_FLAG_SUCCESS) && (xe->flags & MULTI_XFER_FLAG_RECV) && (xe->filename[0] != '\0')){
 			cf_delete(xe->ex_filename,xe->force_dir);
 		}
 	}
@@ -627,7 +627,7 @@ void multi_xfer_fail_entry(xfer_entry *xe)
 	}
 
 	// delete the file
-	if((xe->flags & MULTI_XFER_FLAG_RECV) && (strlen(xe->filename) > 0)){
+	if((xe->flags & MULTI_XFER_FLAG_RECV) && (xe->filename[0] != '\0')){
 		cf_delete(xe->ex_filename,xe->force_dir);
 	}
 		

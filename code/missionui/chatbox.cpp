@@ -465,7 +465,7 @@ void chatbox_autosplit_line()
 			// display any remainder of text on the next line
 			Chat_inputbox.set_text(remainder);
 		}
-	} else if((Chat_inputbox.pressed() && (strlen(msg) > 0)) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
+	} else if((Chat_inputbox.pressed() && (msg[0] != '\0')) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
 		// tack on the null terminator in the boundary case
 		int x = strlen(msg);
 		if(x >= CHATBOX_MAX_LEN){
@@ -864,7 +864,7 @@ void chatbox_add_line(char *msg, int pid, int add_id)
 	}
 			
 	// COMMAND LINE OPTION
-	if(Cmdline_multi_stream_chat_to_file && Multi_chat_stream!=NULL && strlen(msg)>0){ // stream to the file if we're supposed to
+	if(Cmdline_multi_stream_chat_to_file && Multi_chat_stream!=NULL && msg[0] != '\0'){ // stream to the file if we're supposed to
 		cfwrite_string(msg,Multi_chat_stream);
 		cfwrite_char('\n',Multi_chat_stream);
 	}	
