@@ -18124,8 +18124,31 @@ void multi_sexp_fade_in()
 	}
 }
 
-void sexp_fade_out(float delta_time, ubyte R, ubyte G, ubyte B) 
+void sexp_fade_out(float delta_time, int fade_type) 
 {
+	ubyte R = 0;
+	ubyte G = 0;
+	ubyte B = 0;
+
+	switch(fade_type)
+	{
+		//White out
+		case 1:
+			gr_create_shader(&Viewer_shader, 255, 255, 255, Viewer_shader.c);
+			break;
+		//Red out
+		case 2:
+			gr_create_shader(&Viewer_shader, 255, 0, 0, Viewer_shader.c);
+			break;
+		//Black out
+		default:
+			gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
+	}
+
+	R = Viewer_shader.r;
+	G = Viewer_shader.g;
+	B = Viewer_shader.b;
+
 	if(delta_time > 0.0f) {
 		Fade_type = FI_FADEOUT;
 		Fade_delta_time = delta_time;
@@ -18140,9 +18163,7 @@ void sexp_fade_out(float delta_time, ubyte R, ubyte G, ubyte B)
 void sexp_fade_out(int n)
 {
 	float delta_time = 0.0f;
-	ubyte R = 0;
-	ubyte G = 0;
-	ubyte B = 0;
+	int fade_type = 0;
 
 	if(n != -1)
 	{
@@ -18151,57 +18172,30 @@ void sexp_fade_out(int n)
 		n = CDR(n);
 		if(n != -1)
 		{
-			switch(eval_num(n))
-			{
-				//White out
-				case 1:
-					gr_create_shader(&Viewer_shader, 255, 255, 255, Viewer_shader.c);
-					break;
-				//Red out
-				case 2:
-					gr_create_shader(&Viewer_shader, 255, 0, 0, Viewer_shader.c);
-					break;
-				//Black out
-				default:
-					gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
-			}
-
-			R = Viewer_shader.r;
-			G = Viewer_shader.g;
-			B = Viewer_shader.b;
+			fade_type = eval_num(n);			
 		}
-		else
-		{
-			gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
-		}		
 	}
 
-	sexp_fade_out(delta_time, R, G, B);
+	sexp_fade_out(delta_time, fade_type);
 
 	multi_start_callback();
 	multi_send_float(delta_time);
-	multi_send_int(R);
-	multi_send_int(G);
-	multi_send_int(B);
+	multi_send_int(fade_type);
 	multi_end_callback();
 }
 
 void multi_sexp_fade_out()
 {
 	float delta_time = 0.0f;
-	int R = 0;
-	int G = 0;
-	int B = 0;
+	int fade_type;
 
 	multi_get_float(delta_time);
-	multi_get_int(R);
-	multi_get_int(G);
-	if (!multi_get_int(B)){
+	if (!multi_get_int(fade_type)){
 		Int3();	// misformed packet
 		return;
 	}
 
-	sexp_fade_out(delta_time, (ubyte)R, (ubyte)G, (ubyte)B);
+	sexp_fade_out(delta_time, fade_type);
 }
 
 camera* sexp_get_set_camera(bool reset = false)
@@ -18278,6 +18272,41 @@ void sexp_set_camera_position(int n)
 	}
 
 	cam->set_position(&camera_vec, camera_time, camera_acc_time, camera_dec_time);
+
+	//multiplayer callback
+	multi_start_callback();
+	multi_send_float(camera_vec.xyz.x);
+	multi_send_float(camera_vec.xyz.y);
+	multi_send_float(camera_vec.xyz.z);
+	multi_send_float(camera_time);
+	multi_send_float(camera_acc_time);
+	multi_send_float(camera_dec_time);
+	multi_end_callback();
+}
+
+//CommanderDJ
+void multi_sexp_set_camera_position()
+{
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL) {
+		Int3();
+		return;
+	}
+
+	vec3d camera_vec;
+	float camera_time = 0.0f;
+	float camera_acc_time = 0.0f;
+	float camera_dec_time = 0.0f;
+
+	multi_get_float(camera_vec.xyz.x);
+	multi_get_float(camera_vec.xyz.y);
+	multi_get_float(camera_vec.xyz.z);
+	multi_get_float(camera_time);
+	multi_get_float(camera_acc_time);
+	multi_get_float(camera_dec_time);
+
+	cam->set_position(&camera_vec, camera_time, camera_acc_time, camera_dec_time);
 }
 
 void sexp_set_camera_rotation(int n)
@@ -18312,6 +18341,36 @@ void sexp_set_camera_rotation(int n)
 			}
 		}
 	}
+
+	cam->set_rotation(&rot_angles, rot_time, rot_acc_time, rot_dec_time);
+
+	multi_start_callback();
+	multi_send_float(rot_angles.b);
+	multi_send_float(rot_angles.h);
+	multi_send_float(rot_angles.p);
+	multi_send_float(rot_time);
+	multi_send_float(rot_acc_time);
+	multi_send_float(rot_dec_time);
+	multi_end_callback();
+}
+
+void multi_sexp_set_camera_rotation()
+{
+	camera *cam = sexp_get_set_camera();
+	if(cam == NULL)
+		return;
+
+	angles rot_angles;
+	float rot_time = 0.0f;
+	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
+
+	multi_get_float(rot_angles.b);
+	multi_get_float(rot_angles.h);
+	multi_get_float(rot_angles.p);
+	multi_get_float(rot_time);
+	multi_get_float(rot_acc_time);
+	multi_get_float(rot_dec_time);
 
 	cam->set_rotation(&rot_angles, rot_time, rot_acc_time, rot_dec_time);
 }
@@ -18349,6 +18408,66 @@ void sexp_set_camera_facing(int n)
 	}
 
 	cam->set_rotation_facing(&location, rot_time, rot_acc_time, rot_dec_time);
+
+	//multiplayer callback
+	multi_start_callback();
+	multi_send_float(location.xyz.x);
+	multi_send_float(location.xyz.y);
+	multi_send_float(location.xyz.z);
+	multi_send_float(rot_time);
+	multi_send_float(rot_acc_time);
+	multi_send_float(rot_dec_time);
+	multi_end_callback();
+}
+
+void multi_sexp_set_camera_facing()
+{
+	camera *cam = sexp_get_set_camera();
+	if(cam == NULL)
+		return;
+
+	vec3d location;
+	float rot_time = 0.0f;
+	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
+
+	multi_get_float(location.xyz.x);
+	multi_get_float(location.xyz.y);
+	multi_get_float(location.xyz.z);
+	multi_get_float(rot_time);
+	multi_get_float(rot_acc_time);
+	multi_get_float(rot_dec_time);
+ 
+	cam->set_rotation_facing(&location, rot_time, rot_acc_time, rot_dec_time);
+}
+
+//CommanderDJ
+//helper function for set_camera_facing_object
+void actually_set_camera_facing_object(char *object_name, float rot_time, float rot_acc_time, float rot_dec_time)
+{
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, object_name);
+
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_EXITED:
+		{
+			Warning(LOCATION, "Camera tried to face destroyed/departed object %s", object_name);
+			return;
+		}
+
+		case OSWPT_TYPE_TEAM:
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		{
+			camera *cam = sexp_get_set_camera();
+			if(cam == NULL)
+				return;
+			cam->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time, rot_dec_time);
+			return;
+		}
+	}
 }
 
 void sexp_set_camera_facing_object(int n)
@@ -18374,30 +18493,31 @@ void sexp_set_camera_facing_object(int n)
 			}
 		}
 	}
+	actually_set_camera_facing_object(object_name, rot_time, rot_acc_time, rot_dec_time);
 
-	object_ship_wing_point_team oswpt;
-	sexp_get_object_ship_wing_point_team(&oswpt, object_name);
+	//multiplayer callback
+	multi_start_callback();
+	multi_send_string(object_name);
+	multi_send_float(rot_time);
+	multi_send_float(rot_acc_time);
+	multi_send_float(rot_dec_time);
+	multi_end_callback();
+}
 
-	switch (oswpt.type)
-	{
-		case OSWPT_TYPE_EXITED:
-		{
-			Warning(LOCATION, "Camera tried to face destroyed/departed object %s", object_name);
-			return;
-		}
-
-		case OSWPT_TYPE_TEAM:
-		case OSWPT_TYPE_SHIP:
-		case OSWPT_TYPE_WING:
-		case OSWPT_TYPE_WAYPOINT:
-		{
-			camera *cam = sexp_get_set_camera();
-			if(cam == NULL)
-				return;
-			cam->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time, rot_dec_time);
-			return;
-		}
-	}
+//CommanderDJ
+void multi_sexp_set_camera_facing_object()
+{
+	char object_name[TOKEN_LENGTH];
+	float rot_time = 0.0f;
+	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
+	
+	multi_get_string(object_name);
+	multi_get_float(rot_time);
+	multi_get_float(rot_acc_time);
+	multi_get_float(rot_dec_time);
+	
+	actually_set_camera_facing_object(object_name, rot_time, rot_acc_time, rot_dec_time);
 }
 
 extern float VIEWER_ZOOM_DEFAULT;
@@ -18430,6 +18550,35 @@ void sexp_set_camera_fov(int n)
 			}
 		}
 	}
+
+	cam->set_fov(camera_fov, camera_time, camera_acc_time, camera_dec_time);
+
+
+	multi_start_callback();
+	multi_send_float(camera_fov);
+	multi_send_float(camera_time);
+	multi_send_float(camera_acc_time);
+	multi_send_float(camera_dec_time);
+	multi_end_callback();
+}
+
+//CommanderDJ
+void multi_sexp_set_camera_fov()
+{
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
+
+	float camera_fov = VIEWER_ZOOM_DEFAULT;
+	float camera_time = 0.0f;
+	float camera_acc_time = 0.0f;
+	float camera_dec_time = 0.0f;
+
+	multi_get_float(camera_fov);
+	multi_get_float(camera_time);
+	multi_get_float(camera_acc_time);
+	multi_get_float(camera_dec_time);
 
 	cam->set_fov(camera_fov, camera_time, camera_acc_time, camera_dec_time);
 }
@@ -18517,6 +18666,28 @@ void sexp_set_camera_target(int node)
 	
 	//*****Set
 	cam->set_object_target(objp, submodel);
+
+	multi_start_callback();
+	multi_send_object(objp);
+	multi_send_int(submodel);
+	multi_end_callback();
+}
+
+void multi_sexp_set_camera_target()
+{
+	int submodel;
+	object *objp;
+	
+	//Try to get current camera
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
+
+	multi_get_object(objp);
+	multi_get_int(submodel);
+	
+	cam->set_object_target(objp, submodel);
 }
 
 void sexp_set_fov(int n)
@@ -18531,6 +18702,22 @@ void sexp_set_fov(int n)
 
 	Sexp_fov = (new_fov * (PI/180.0f));
 	//cam->set_fov(eval_num(n) * (PI/180.0f));
+
+	multi_start_callback();
+	multi_send_float(new_fov);
+	multi_end_callback();
+}
+
+void multi_sexp_set_fov()
+{
+	float new_fov;
+
+	camera *cam = Main_camera.getCamera();
+	if(cam == NULL)
+		return;
+
+	multi_get_float(new_fov);
+	Sexp_fov = (new_fov * (PI/180.0f));
 }
 
 int sexp_get_fov()
@@ -18553,17 +18740,45 @@ void sexp_reset_fov()
 
 	Sexp_fov = 0.0;
 	//cam->set_fov(VIEWER_ZOOM_DEFAULT);
+
+	multi_do_callback();
+}
+
+void multi_sexp_reset_fov()
+{
+	camera *cam = Main_camera.getCamera();
+	if(cam == NULL)
+		return;
+
+	Sexp_fov = 0.0;
 }
 
 void sexp_reset_camera(int node)
 {
+	bool cam_reset = false; 
 	camera *cam = cam_get_current().getCamera();
 	if(cam != NULL)
 	{
 		if(is_sexp_true(node))
 		{
 			cam->reset();
+			cam_reset = true;
 		}
+	}
+	cam_reset_camera();
+	multi_start_callback();
+	multi_send_bool(cam_reset);
+	multi_end_callback();
+}
+
+void multi_sexp_reset_camera()
+{
+	camera *cam = cam_get_current().getCamera();
+	bool cam_reset = false;
+
+	multi_get_bool(cam_reset);
+	if((cam != NULL) && cam_reset) {
+		cam->reset();
 	}
 	cam_reset_camera();
 }
@@ -18663,7 +18878,15 @@ void sexp_show_subtitle(int node)
 	Subtitles.push_back(new_subtitle);
 }
 
-void sexp_clear_subtitles() {
+void sexp_clear_subtitles() 
+{
+	Subtitles.clear();
+
+	multi_do_callback();
+}
+
+void multi_sexp_clear_subtitles() 
+{
 	Subtitles.clear();
 }
 
@@ -18927,6 +19150,7 @@ void multi_sexp_show_subtitle_image()
 	multi_get_bool(center_x);
 	multi_get_bool(center_y);
 	multi_get_int(width);
+	multi_get_int(height);
 	multi_get_bool(post_shaded);
 
 	// add the subtitle
@@ -19016,18 +19240,17 @@ void multi_sexp_set_camera_shudder()
 
 void sexp_set_jumpnode_name(int n) //CommanderDJ
 {
-	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
-	
 	char *old_name = CTEXT(n); //for multi
 
-	if(jnp==NULL) 
+	jump_node *jnp = jumpnode_get_by_name(old_name);
+
+	if(jnp==NULL) {
 		return;
+	}
 
 	n=CDR(n);
-
-	jnp->set_name(CTEXT(n));
-
 	char *new_name = CTEXT(n); //for multi
+	jnp->set_name(new_name);
 
 	//multiplayer callback
 	multi_start_callback();
@@ -19036,14 +19259,12 @@ void sexp_set_jumpnode_name(int n) //CommanderDJ
 	multi_end_callback();
 }
 
-void multi_sexp_set_jumpnode_name(int n) //CommanderDJ
+void multi_sexp_set_jumpnode_name() //CommanderDJ
 {
-	char *old_name = "\0";
+	char old_name[TOKEN_LENGTH];
+	char new_name[TOKEN_LENGTH];
 	
 	multi_get_string(old_name);
-
-	char *new_name = "\0";
-
 	multi_get_string(new_name);
 
 	jump_node *jnp = jumpnode_get_by_name(old_name);
@@ -19061,21 +19282,89 @@ void sexp_set_jumpnode_color(int n)
 	if(jnp==NULL)
 		return;
 
+	char* jumpnode_name = CTEXT(n); //for multi
+
 	n=CDR(n);
 
-	jnp->set_alphacolor(eval_num(n),eval_num(CDR(n)),eval_num(CDR(CDR(n))),eval_num(CDR(CDR(CDR(n)))));
+	int red = eval_num(n);
+	int green = eval_num(CDR(n));
+	int blue = eval_num(CDR(CDR(n)));
+	int alpha = eval_num(CDR(CDR(CDR(n))));
+
+	jnp->set_alphacolor(red, green, blue, alpha);
+
+	multi_start_callback();
+	multi_send_string(jumpnode_name);
+	multi_send_int(red);
+	multi_send_int(green);
+	multi_send_int(blue);
+	multi_send_int(alpha);
+	multi_end_callback();
+}
+
+//CommanderDJ
+void multi_sexp_set_jumpnode_color()
+{
+	char jumpnode_name[TOKEN_LENGTH];
+	int red, blue, green, alpha;
+
+	multi_get_string(jumpnode_name);
+	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+
+	if(jnp==NULL) {
+		multi_discard_remaining_callback_data();
+		return;
+	}
+
+	multi_get_int(red);
+	multi_get_int(green);
+	multi_get_int(blue);
+	multi_get_int(alpha);
+
+	jnp->set_alphacolor(red, green, blue, alpha);
 }
 
 void sexp_set_jumpnode_model(int n)
 {
-	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+	char* jumpnode_name = CTEXT(n);
+	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
 
 	if(jnp==NULL)
 		return;
 
 	n=CDR(n);
+	char* model_name = CTEXT(n);
+	n=CDR(n);
+	bool show_polys = (is_sexp_true(n) != 0);
 
-	jnp->set_model(CTEXT(n), is_sexp_true(CDR(n)) != 0);
+	jnp->set_model(model_name, show_polys);
+
+	multi_start_callback();
+	multi_send_string(jumpnode_name);
+	multi_send_string(model_name);
+	multi_send_bool(show_polys);
+	multi_end_callback();
+}
+
+void multi_sexp_set_jumpnode_model()
+{
+	char jumpnode_name[TOKEN_LENGTH];
+	char model_name[TOKEN_LENGTH];
+	bool show_polys;
+
+	multi_get_string(jumpnode_name);
+	multi_get_string(model_name);
+
+	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+
+	if(jnp==NULL) {
+		multi_discard_remaining_callback_data();		
+		return;
+	}
+
+	show_polys = multi_get_bool(show_polys);
+
+	jnp->set_model(model_name, show_polys);
 }
 
 void sexp_show_jumpnode(int n)
@@ -19084,11 +19373,43 @@ void sexp_show_jumpnode(int n)
 
 	if(jnp!=NULL)
 		jnp->show(true);
+
+	multi_start_callback();
+	multi_send_string(CTEXT(n));
+	multi_end_callback();
+}
+
+void multi_sexp_show_jumpnode()
+{
+	char jumpnode_name[TOKEN_LENGTH];
+
+	multi_get_string(jumpnode_name);
+
+	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+
+	if(jnp!=NULL)
+		jnp->show(true);
 }
 
 void sexp_hide_jumpnode(int n)
 {
 	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+
+	if(jnp!=NULL)
+		jnp->show(false);
+
+	multi_start_callback();
+	multi_send_string(CTEXT(n));
+	multi_end_callback();
+}
+
+void multi_sexp_hide_jumpnode()
+{
+	char jumpnode_name[TOKEN_LENGTH];
+
+	multi_get_string(jumpnode_name);
+
+	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
 
 	if(jnp!=NULL)
 		jnp->show(false);
@@ -21630,6 +21951,10 @@ void multi_sexp_eval()
 				 multi_sexp_show_subtitle_text();
 				 break;
 
+			case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
+				 multi_sexp_show_subtitle_image();
+				 break;
+
 			case OP_TRAINING_MSG:
 				multi_sexp_send_training_message(); 
 				break;
@@ -21651,19 +21976,76 @@ void multi_sexp_eval()
 				break;
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
+			case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
 				multi_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
+				break;
+
+			case OP_CUTSCENES_SET_CAMERA_FACING:
+				multi_sexp_set_camera_facing();
+				break;
+
+			case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+				multi_sexp_set_camera_facing_object();
+				break;
+
+			case OP_CUTSCENES_SET_CAMERA_TARGET :
+				multi_sexp_set_camera_target();
+				break;
+
+			case OP_CUTSCENES_SET_CAMERA_ROTATION:
+				multi_sexp_set_camera_rotation();
+				break;
+
+			case OP_CUTSCENES_SET_CAMERA_FOV:
+				multi_sexp_set_camera_fov();
+				break;
+
+			case OP_CUTSCENES_SET_CAMERA_POSITION:
+				multi_sexp_set_camera_position();
 				break;
 
 			case OP_SET_CAMERA_SHUDDER:
 				multi_sexp_set_camera_shudder();
 				break;
 
+			case OP_CUTSCENES_RESET_CAMERA:
+				multi_sexp_reset_camera();
+				break;
+
+			case OP_CUTSCENES_SET_FOV:
+				multi_sexp_set_fov();
+				break;
+
+			case OP_CUTSCENES_RESET_FOV:
+				multi_sexp_reset_fov();
+				break;
+
 			case OP_JUMP_NODE_SET_JUMPNODE_NAME:
-				multi_sexp_set_jumpnode_name(op_num == OP_JUMP_NODE_SET_JUMPNODE_NAME);
+				multi_sexp_set_jumpnode_name();
 				break;
 
 			case OP_IGNORE_KEY:
 				multi_sexp_ignore_key();
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
+				multi_sexp_set_jumpnode_color();
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
+				multi_sexp_set_jumpnode_model();
+				break;
+
+			case OP_JUMP_NODE_SHOW_JUMPNODE:
+				multi_sexp_show_jumpnode();
+				break;
+
+			case OP_JUMP_NODE_HIDE_JUMPNODE:
+				multi_sexp_hide_jumpnode();
+				break;
+
+			case OP_CLEAR_SUBTITLES:
+				multi_sexp_clear_subtitles();
 				break;
 
 			// bad sexp in the packet
@@ -21674,11 +22056,13 @@ void multi_sexp_eval()
 				}
 				// a more major problem
 				else {
-					Warning(LOCATION, "Received invalid SEXP packet from host. Function involving operator %d lacks termination. Entire packet may be corrupt. Discarding remaining packet"); 
+					Warning(LOCATION, "Received invalid SEXP packet from host. Function involving operator %d lacks termination. Entire packet may be corrupt. Discarding remaining packet", op_num); 
 					Int3(); 
 					return; 
 				}			
 		}
+
+		multi_finished_callback();
 	}
 }
 
