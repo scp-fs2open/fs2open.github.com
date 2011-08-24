@@ -30,6 +30,7 @@ void multi_send_ushort(ushort value);
 void sexp_packet_received(ubyte *received_packet, int num_ubytes);
 int multi_sexp_get_next_operator(); 
 int multi_sexp_get_operator();
+void multi_finished_callback();
 bool multi_sexp_discard_operator();
 
 void multi_discard_remaining_callback_data();
