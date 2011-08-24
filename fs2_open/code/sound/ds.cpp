@@ -2096,21 +2096,6 @@ int ds_eax_set_environment(unsigned long envid)
 }
 
 /**
- * Set up a predefined environment for EAX
- *
- * @param envid Value from the EAX_ENVIRONMENT_* enumeration.
- * @return Always returns 0.
- * @todo Proper error reporting, otherwise make a void return type.
- */
-int ds_eax_set_preset(unsigned long envid)
-{
-	al_efx_load_preset(envid);
-
-	return 0;
-}
-
-
-/**
  * Set up all the parameters for an environment
  *
  * @param id Value from the EAX_ENVIRONMENT_* enumeration
