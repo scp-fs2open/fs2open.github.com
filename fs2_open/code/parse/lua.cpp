@@ -11398,7 +11398,7 @@ ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not s
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "o", l_Model.Set(-1));
 
-	if (strlen(s) == 0)
+	if (s[0] == '\0')
 		return ade_set_error(L, "o", l_Model.Set(-1));
 
 	model_num = model_load(s, 0, NULL);

@@ -1058,7 +1058,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 			hud_anim *ha = &bi->highlight_anim;
 			if ( ha->first_frame >= 0 ) {
 				ha->sx = bi->hold_x;
-				if ( strlen(bi->label) > 0 ) {
+				if (bi->label[0] != '\0') {
 					ha->sy = bi->hold_y - fl2i(gr_get_font_height()/2.0f +0.5) - 2;
 				} else {
 					ha->sy = bi->hold_y;

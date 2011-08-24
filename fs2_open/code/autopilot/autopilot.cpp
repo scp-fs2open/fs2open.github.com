@@ -1218,11 +1218,11 @@ void send_autopilot_msg(char *msg, char *snd)
 		audio_handle = -1;
 	}
 
-	if (strlen(msg) != 0 && strcmp(msg, "none"))
+	if (msg[0] != '\0' && strcmp(msg, "none"))
 		change_message("autopilot builtin message", msg, -1, 0);
 
 	// load sound
-	if (snd != NULL || strlen(snd) == 0 || !strcmp(snd, "none"))
+	if (snd != NULL || snd[0] == '\0' || !strcmp(snd, "none"))
 	{
 		audio_handle = audiostream_open(snd, ASF_MENUMUSIC );
 	}
@@ -1233,7 +1233,7 @@ void send_autopilot_msg(char *msg, char *snd)
 		audiostream_play(audio_handle, (Master_event_music_volume * aav_music_volume), 0);
 	}
 
-	if (strlen(msg) != 0 && strcmp(msg, "none"))
+	if (msg[0] != '\0' && strcmp(msg, "none"))
 		message_training_queue("autopilot builtin message", timestamp(0), 5); // display message for five seconds
 }
 

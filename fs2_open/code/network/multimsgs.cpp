@@ -1115,7 +1115,7 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 		}
 
 		// copy in the filename
-		if(strlen(new_player_image) > 0){
+		if(new_player_image[0] != '\0'){
 			strcpy_s(Net_players[new_player_num].m_player->image_filename, new_player_image);
 		} else {
 			strcpy_s(Net_players[new_player_num].m_player->image_filename, "");

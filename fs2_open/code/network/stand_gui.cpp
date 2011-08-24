@@ -473,7 +473,7 @@ int std_connect_lindex_to_npindex(int index)
 			psnet_addr_to_string(addr_text,&Net_players[idx].p_info.addr);
 
 			// if we found the match
-			if((strlen(addr_text) != 0) && (strstr(list_text,addr_text) != NULL)){
+			if((addr_text[0] != '\0') && (strstr(list_text,addr_text) != NULL)){
 				ret = idx;
 				break;
 			}
@@ -1270,7 +1270,7 @@ int std_pinfo_player_is_active(net_player *p)
 	SendMessage(Player_name_list,CB_GETLBTEXT,(WPARAM)sel,(LPARAM)player);
 	
 	// if there is a valid player selected and he's the guy we want
-	return ((strlen(player) != 0) && (strcmp(p->m_player->callsign,player) == 0)) ? 1 : 0;
+	return ((player[0] != '\0') && (strcmp(p->m_player->callsign,player) == 0)) ? 1 : 0;
 }
 
 // message handler for the player info tab
@@ -1388,7 +1388,7 @@ void std_gs_send_godstuff_message()
 	SendMessage(Godstuff_broadcast_text,EM_GETLINE,(WPARAM)0,(LPARAM)&txt[0]);
 	
 	// if the string is not zero length
-	if(strlen(txt) > 0){		
+	if( txt[0] != '\0' ){		
 		// send a game chat packet
 		send_game_chat_packet(Net_player, txt, MULTI_MSG_ALL,NULL);		
 
@@ -1857,7 +1857,7 @@ void std_add_chat_text(char *text,int player_index,int add_id)
 // if the standalone is host password protected
 int std_is_host_passwd()
 {
-	return (strlen(Multi_options_g.std_passwd) > 0) ? 1 : 0;
+	return (Multi_options_g.std_passwd[0] != '\0') ? 1 : 0;
 }
 
 // change the default property sheet interface into something more useful

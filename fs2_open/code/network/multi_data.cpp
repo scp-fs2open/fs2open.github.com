@@ -271,7 +271,7 @@ void multi_data_send_my_junk()
 		}
 
 		// host should put his own pic file in the list now
-		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (strlen(Net_player->m_player->image_filename) > 0)){
+		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (Net_player->m_player->image_filename[0] != '\0')){
 			multi_data_add_new(Net_player->m_player->image_filename, MY_NET_PLAYER_NUM);
 		}
 		// otherwise clients should just queue up a send
@@ -318,7 +318,7 @@ void multi_data_send_my_junk()
 		}
 
 		// host should put his own pic file in the list now
-		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (strlen(Net_player->m_player->squad_filename) > 0)){
+		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (Net_player->m_player->squad_filename[0] != '\0')){
 			multi_data_add_new(Net_player->m_player->squad_filename, MY_NET_PLAYER_NUM);
 		}
 		// otherwise clients should just queue up a send

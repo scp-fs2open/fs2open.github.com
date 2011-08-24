@@ -659,7 +659,7 @@ void HudGauge::render(float frametime)
 	setGaugeColor();
 
 	if(custom_text) {
-		if(strlen(custom_text) > 0) {
+		if(custom_text[0] != '\0') {
 			hud_num_make_mono(custom_text);
 			renderString(position[0] + textoffset_x, position[1] + textoffset_y, custom_text);
 		}
@@ -1077,7 +1077,7 @@ void HudGauge::initCockpitTarget(char* display_name, int _target_x, int _target_
 
 bool HudGauge::setupRenderCanvas(int render_target)
 {
-	if ( strlen(texture_target_fname) > 0 ) {
+	if (texture_target_fname[0] != '\0') {
 		if ( render_target >= 0 && render_target == texture_target ) {
 			return true;
 		}

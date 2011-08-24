@@ -28,7 +28,7 @@ void UI_BUTTON::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int 
 	text = NULL;
 
 	if (_text) {
-		if ( strlen(_text) > 0 ) {
+		if ( _text[0] != '\0' ) {
 			text = vm_strdup(_text);
 		}
 	}
