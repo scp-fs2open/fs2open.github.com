@@ -16126,30 +16126,34 @@ void sexp_reverse_rotating_subsystem(int node)
 // Goober5000
 void sexp_rotating_subsys_set_turn_time(int node)
 {
-	int ship_num;
-	float turn_time;
+	int ship_num, n = node;
+	float turn_time, turn_accel;
 	ship_subsys *rotate;
 
 	// get the ship
-	ship_num = ship_name_lookup(CTEXT(node));
+	ship_num = ship_name_lookup(CTEXT(n));
 	if (ship_num < 0)
 		return;
-	
 	if (Ships[ship_num].objnum < 0)
 		return;
+	n = CDR(n);
 
 	// get the rotating subsystem
-	rotate = ship_get_subsys(&Ships[ship_num], CTEXT(CDR(node)));
+	rotate = ship_get_subsys(&Ships[ship_num], CTEXT(n));
 	if (rotate == NULL)
 		return;
+	n = CDR(n);
 
 	// get and set the turn time
-	turn_time = ((float) atoi(CTEXT(CDDR(node)))) / 1000.0f;
+	turn_time = ((float) atoi(CTEXT(n))) / 1000.0f;
 	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
 
 	// maybe get and set the turn accel
-	if (CDDDR(node) != -1)
-		rotate->submodel_info_1.turn_accel = ((float) atoi(CTEXT(CDDDR(node)))) / 1000.0f;
+	if (n != -1)
+	{
+		turn_accel = ((float) atoi(CTEXT(n))) / 1000.0f;
+		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
+	}
 	else
 		rotate->submodel_info_1.cur_turn_rate = PI2 / turn_time;
 }
@@ -28297,7 +28301,10 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tName of the rotating subsystem to configure\r\n"
 		"\t3:\tThe time for one complete rotation, in milliseconds (positive is counterclockwise, negative is clockwise)\r\n"
 		"\t4:\tThe acceleration (x1000, just as #3 is seconds x1000) to change from the current turn rate to the desired turn rate.  "
-		"Not sure of the units on this one.  (FS2 defaults to 0.5, which would be 500 in this sexp.)  Omit this argument if you want an instantaneous change."
+		"This is actually the time to complete one rotation that changes in one second, or the reciprocal of what you might expect, "
+		"meaning that larger numbers cause slower acceleration.  (FS2 defaults to 2pi/0.5, or about 12.566, which would be 12566 in this sexp.)  "
+		"The advantage of this method is so that this argument can be directly compared to the previous argument using a ratio, without worrying about pi.  "
+		"Omit this argument if you want an instantaneous change."
 	},
 
 	// Karajorma
