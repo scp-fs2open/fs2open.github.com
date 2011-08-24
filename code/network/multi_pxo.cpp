@@ -5186,7 +5186,7 @@ void multi_pxo_ban_process()
 	// done downloading - maybe load an image
 	case PXO_BAN_MODE_IMAGES_DONE:
 		// make sure we have a valid filename
-		if ( strlen(Multi_pxo_banner.ban_file) > 0 )
+		if (Multi_pxo_banner.ban_file[0] != '\0')
 			Multi_pxo_banner.ban_bitmap = bm_load(Multi_pxo_banner.ban_file);
 
 		// now we're idle

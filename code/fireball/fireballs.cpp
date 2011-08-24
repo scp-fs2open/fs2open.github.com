@@ -975,20 +975,6 @@ void fireball_close()
 	fireball_delete_all();
 }
 
-// -----------------------------------------------------------------
-//	fireball_level_close()
-//
-//	Called when a mission ends... frees up any animations that might
-// be partially played
-//
-void fireball_level_close()
-{
-	if ( !fireballs_inited )
-		return;
-
-	fireball_delete_all();
-}
-
 void fireballs_page_in()
 {
 	int				i, idx;

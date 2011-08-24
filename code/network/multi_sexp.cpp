@@ -444,27 +444,30 @@ int multi_sexp_get_operator()
 
 void multi_reduce_counts(int amount)
 {
-	ubyte terminator; 
-
 	Multi_sexp_bytes_left -= amount; 
 	current_argument_count -= amount; 
 
 	if (Multi_sexp_bytes_left < 0 || current_argument_count < 0) {
 		Warning(LOCATION, "multi_get_x function call has read an invalid amount of data. Trace out and fix this!"); 
 	}
+}
 
-	if (current_argument_count == 0) {
-		// read in the terminator
-		GET_DATA(terminator); 
-		if (terminator != CALLBACK_TERMINATOR) {
-			Warning(LOCATION, "multi_get_x function call has been called on an improperly terminated callback. Trace out and fix this!"); 
-			// discard remainder of packet
-			Multi_sexp_bytes_left = 0; 
-			return;
-		}
-		Multi_sexp_bytes_left--;
-		op_num = -1;
+void multi_finished_callback()
+{
+	ubyte terminator; 
+
+	Assert(current_argument_count == 0);
+
+	// read in the terminator
+	GET_DATA(terminator); 
+	if (terminator != CALLBACK_TERMINATOR) {
+		Warning(LOCATION, "multi_get_x function call has been called on an improperly terminated callback. Trace out and fix this!"); 
+		// discard remainder of packet
+		Multi_sexp_bytes_left = 0; 
+		return;
 	}
+	Multi_sexp_bytes_left--;
+	op_num = -1;
 }
 
 bool multi_sexp_discard_operator()
