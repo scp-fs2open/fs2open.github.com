@@ -4788,7 +4788,7 @@ ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current
 		return ADE_RETURN_NIL;
 
 	obj = objh->objp;
-	vec3d v1 = obj->orient.vec.fvec;
+	vec3d v1 = obj->orient.vec.rvec;
 	if (normalize)
 		vm_vec_normalize(&v1);
 
