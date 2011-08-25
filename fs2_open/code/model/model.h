@@ -227,6 +227,10 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	float	favor_current_facing;
 
 	float	turret_rof_scaler;
+
+	//Per-turret ownage settings - SUSHI
+	int turret_max_bomb_ownage; 
+	int turret_max_target_ownage; 
 } model_subsystem;
 
 typedef struct model_special {

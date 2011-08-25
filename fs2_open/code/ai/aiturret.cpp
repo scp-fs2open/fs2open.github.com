@@ -597,6 +597,14 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	}
 
 	if ((objp->type == OBJ_WEAPON) && check_weapon) {
+		//Maybe restrict the number of turrets attacking this bomb
+		if (ss->turret_max_bomb_ownage != -1) {	
+			int num_att_turrets = num_turrets_attacking(turret_parent_obj, OBJ_INDEX(objp));
+			if (num_att_turrets > ss->system_info->turret_max_bomb_ownage) {
+				return;
+			}
+		}
+
 		if ( Weapons[objp->instance].homing_object == &Objects[eeo->turret_parent_objnum] ) {
 			if ( dist_comp < eeo->nearest_homing_bomb_dist ) {
 				if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
@@ -641,6 +649,10 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		int max_turrets = The_mission.ai_profile->max_turret_ownage_target[Game_skill_level];
 		if (objp->flags & OF_PLAYER_SHIP) {
 			max_turrets = The_mission.ai_profile->max_turret_ownage_player[Game_skill_level];
+		}
+		// Apply the per-turret limit, if there is one
+		if (ss->turret_max_target_ownage != -1) {
+			max_turrets = MIN(max_turrets, ss->system_info->turret_max_target_ownage);
 		}
 		if (num_att_turrets > max_turrets) {
 			return;
