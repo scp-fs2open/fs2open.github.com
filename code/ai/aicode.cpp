@@ -2164,7 +2164,7 @@ int num_turrets_attacking(object *turret_parent, int target_objnum)
 	shipp = &Ships[turret_parent->instance];
 
 	Assert(turret_parent->type == OBJ_SHIP);
-	Assert(Objects[target_objnum].type == OBJ_SHIP);
+	//Assert(Objects[target_objnum].type == OBJ_SHIP); //SUSHI: Not needed, and undesirable since we want to use this for bombs too
 
 	for (ss=GET_FIRST(&shipp->subsys_list); ss!=END_OF_LIST(&shipp->subsys_list); ss=GET_NEXT(ss)) {
 		// check if subsys is alive
