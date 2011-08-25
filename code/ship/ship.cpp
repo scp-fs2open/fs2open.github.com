@@ -3180,6 +3180,9 @@ strcpy_s(parse_error_text, temp_error);
 				sp->favor_current_facing = 0.0f;
 
 				sp->turret_rof_scaler = 1.0f;
+
+				sp->turret_max_bomb_ownage = -1;
+				sp->turret_max_target_ownage = -1;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -3341,6 +3344,14 @@ strcpy_s(parse_error_text, temp_error);
 						Warning(LOCATION, "Unidentified target priority '%s' set for\nsubsystem '%s' in ship class '%s'.", tgt_priorities[i].c_str(), sp->subobj_name, sip->name);
 					}
 				}
+			}
+
+			if (optional_string("$Max Turrets per Bomb:")) {
+				stuff_int(&sp->turret_max_bomb_ownage);
+			}
+
+			if (optional_string("$Max Turrets per Target:")) {
+				stuff_int(&sp->turret_max_target_ownage);
 			}
 
 			if (optional_string("$ROF:")) {
@@ -5386,6 +5397,9 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->weapons.current_secondary_bank = -1;
 		
 		ship_system->next_aim_pos_time = 0;
+
+		ship_system->turret_max_bomb_ownage = model_system->turret_max_bomb_ownage;
+		ship_system->turret_max_target_ownage = model_system->turret_max_target_ownage;
 
 		// Make turret flag checks and warnings
 

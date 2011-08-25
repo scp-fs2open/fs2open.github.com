@@ -369,6 +369,10 @@ typedef	struct ship_subsys {
 	//scaler for setting adjusted turret rof
 	float	rof_scaler;
 	float	turn_rate;
+
+	//Per-turret ownage settings - SUSHI
+	int turret_max_bomb_ownage; 
+	int turret_max_target_ownage; 
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
