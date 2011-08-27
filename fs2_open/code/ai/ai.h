@@ -507,7 +507,7 @@ typedef struct ai_info {
 	int		self_destruct_timestamp;		//	Time at which to self-destruct, probably due to being disabled.
 	int		ok_to_target_timestamp;			//	Time at which this ship can dynamically target.
 
-	float		kamikaze_damage;					// some damage value used to produce a shockwave from a kamikaze ship
+	int		kamikaze_damage;					// some damage value used to produce a shockwave from a kamikaze ship
 	vec3d	big_attack_point;					//	Global point this ship is attacking on a big ship.
 	vec3d	big_attack_surface_normal;		// Surface normal at ship at big_attack_point;
 	int		pick_big_attack_point_timestamp; //	timestamp at which to pick a new point to attack on a big ship.

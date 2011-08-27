@@ -7005,20 +7005,20 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 
 
 	if ((exp_objp->hull_strength <= KAMIKAZE_HULL_ON_DEATH) && (Ai_info[Ships[exp_objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (shipp->special_exp_damage == -1)) {
-		float override = Ai_info[shipp->ai_index].kamikaze_damage;
+		int override = Ai_info[shipp->ai_index].kamikaze_damage;
 
 		inner_rad = exp_objp->radius*2.0f;
 		outer_rad = exp_objp->radius*4.0f; // + (override * 0.3f);
-		max_damage = override;
+		max_damage = i2fl(override);
 		max_blast = override * 5.0f;
 		shockwave_speed = 100.0f;
 	} else {
 		if (shipp->use_special_explosion) {
-			inner_rad = shipp->special_exp_inner;
-			outer_rad = shipp->special_exp_outer;
-			max_damage = shipp->special_exp_damage;
-			max_blast = shipp->special_exp_blast;
-			shockwave_speed = shipp->special_exp_shockwave_speed;
+			inner_rad = i2fl(shipp->special_exp_inner);
+			outer_rad = i2fl(shipp->special_exp_outer);
+			max_damage = i2fl(shipp->special_exp_damage);
+			max_blast = i2fl(shipp->special_exp_blast);
+			shockwave_speed = i2fl(shipp->special_exp_shockwave_speed);
 		} else {
 			inner_rad = sip->shockwave.inner_rad;
 			outer_rad = sip->shockwave.outer_rad;
@@ -15932,7 +15932,7 @@ float ship_get_exp_damage(object* objp)
 	ship *shipp = &Ships[objp->instance];
 
 	if (shipp->special_exp_damage >= 0) {
-		damage = shipp->special_exp_damage;
+		damage = i2fl(shipp->special_exp_damage);
 	} else {
 		damage = Ship_info[shipp->ship_info_index].shockwave.damage;
 	}

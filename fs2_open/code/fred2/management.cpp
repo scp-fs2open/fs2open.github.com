@@ -620,7 +620,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 		temp_max_hull_strength = sip->max_hull_strength;
 	}
 
-	Ai_info[shipp->ai_index].kamikaze_damage = min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+	Ai_info[shipp->ai_index].kamikaze_damage = (int) min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
 
 	return obj;
 }
