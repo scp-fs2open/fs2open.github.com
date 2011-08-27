@@ -3373,12 +3373,12 @@ bool generate_special_explosion_block_variables()
 
 		//if we haven't added this entry already, do so
 		if (!already_added) {
-			sprintf(Block_variables[current_index+INNER_RAD].text, "%d", (int) shipp->special_exp_inner);
-			sprintf(Block_variables[current_index+OUTER_RAD].text, "%d", (int) shipp->special_exp_outer);
-			sprintf(Block_variables[current_index+DAMAGE].text, "%d", (int) shipp->special_exp_damage);
-			sprintf(Block_variables[current_index+BLAST].text, "%d", (int) shipp->special_exp_blast);
+			sprintf(Block_variables[current_index+INNER_RAD].text, "%d", shipp->special_exp_inner);
+			sprintf(Block_variables[current_index+OUTER_RAD].text, "%d", shipp->special_exp_outer);
+			sprintf(Block_variables[current_index+DAMAGE].text, "%d", shipp->special_exp_damage);
+			sprintf(Block_variables[current_index+BLAST].text, "%d", shipp->special_exp_blast);
 			sprintf(Block_variables[current_index+PROPAGATE].text, "%d", (shipp->use_shockwave ? 1:0) );
-			sprintf(Block_variables[current_index+SHOCK_SPEED].text, "%d", (int) shipp->special_exp_shockwave_speed);
+			sprintf(Block_variables[current_index+SHOCK_SPEED].text, "%d", shipp->special_exp_shockwave_speed);
 
 			// add the names
 			for (i = current_index; i < (current_index + BLOCK_EXP_SIZE); i++ ) {
@@ -9807,11 +9807,11 @@ void sexp_set_explosion_option(int node)
 	// if we haven't changed anything yet, create a new special-exp with the same values as a standard exp
 	if (!shipp->use_special_explosion)
 	{
-		shipp->special_exp_damage = sci->damage;
-		shipp->special_exp_blast = sci->blast;
-		shipp->special_exp_inner = sci->inner_rad;
-		shipp->special_exp_outer = sci->outer_rad;
-		shipp->special_exp_shockwave_speed = sci->speed;
+		shipp->special_exp_damage = fl2i(sci->damage);
+		shipp->special_exp_blast = fl2i(sci->blast);
+		shipp->special_exp_inner = fl2i(sci->inner_rad);
+		shipp->special_exp_outer = fl2i(sci->outer_rad);
+		shipp->special_exp_shockwave_speed = fl2i(sci->speed);
 		shipp->special_exp_deathroll_time = 0;
 
 		shipp->use_special_explosion = true;
@@ -9833,15 +9833,15 @@ void sexp_set_explosion_option(int node)
 		n = CDR(n);
 
 		if (option == EO_DAMAGE) {
-			shipp->special_exp_damage = (float)val;
+			shipp->special_exp_damage = val;
 		} else if (option == EO_BLAST) {
-			shipp->special_exp_blast = (float)val;
+			shipp->special_exp_blast = val;
 		} else if (option == EO_INNER_RADIUS) {
-			shipp->special_exp_inner = (float)val;
+			shipp->special_exp_inner = val;
 		} else if (option == EO_OUTER_RADIUS) {
-			shipp->special_exp_outer = (float)val;
+			shipp->special_exp_outer = val;
 		} else if (option == EO_SHOCKWAVE_SPEED) {
-			shipp->special_exp_shockwave_speed = (float)val;
+			shipp->special_exp_shockwave_speed = val;
 			shipp->use_shockwave = (val > 0);
 		} else if (option == EO_DEATH_ROLL_TIME) {
 			shipp->special_exp_deathroll_time = val;
@@ -13161,12 +13161,12 @@ void sexp_ingame_ship_kamikaze(ship *shipp, int kdamage)
 	if (kdamage > 0)
 	{
 		aip->ai_flags |= AIF_KAMIKAZE;
-		aip->kamikaze_damage = i2fl(kdamage); 
+		aip->kamikaze_damage = kdamage;
 	}
 	else
 	{
 		aip->ai_flags &= ~AIF_KAMIKAZE;
-		aip->kamikaze_damage = 0.0f;
+		aip->kamikaze_damage = 0;
 	}
 }
 
@@ -13178,12 +13178,12 @@ void sexp_parse_ship_kamikaze(p_object *parse_obj, int kdamage)
 	if (kdamage > 0)
 	{
 		parse_obj->flags |= P_AIF_KAMIKAZE;
-		parse_obj->kamikaze_damage = i2fl(kdamage);
+		parse_obj->kamikaze_damage = kdamage;
 	}
 	else
 	{
 		parse_obj->flags &= ~P_AIF_KAMIKAZE;
-		parse_obj->kamikaze_damage = 0.0f;
+		parse_obj->kamikaze_damage = 0;
 	}
 }
 

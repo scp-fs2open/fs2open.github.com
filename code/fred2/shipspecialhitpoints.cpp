@@ -212,9 +212,7 @@ void ShipSpecialHitpoints::OnOk()
 			temp_max_hull_strength = Ship_info[Ships[m_selected_ships[i]].ship_info_index].max_hull_strength;
 		}
 
-		Ai_info[Ships[m_selected_ships[i]].ai_index].kamikaze_damage = min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
-
-
+		Ai_info[Ships[m_selected_ships[i]].ai_index].kamikaze_damage = min(1000, 200 + (int)(temp_max_hull_strength / 4.0f));
 	}
 
 	

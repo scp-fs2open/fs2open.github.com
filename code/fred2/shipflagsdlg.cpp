@@ -212,7 +212,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					m_destroy_value.init(shipp->final_death_time);
 
 					kamikaze = (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) ? 1 : 0;
-					m_kdamage.init( (int) Ai_info[shipp->ai_index].kamikaze_damage );
+					m_kdamage.init( Ai_info[shipp->ai_index].kamikaze_damage );
 
 					escort = (shipp->flags & SF_ESCORT) ? 1 : 0;
 					m_escort_value.init(shipp->escort_priority);
@@ -274,7 +274,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					m_destroy_value.set(shipp->final_death_time);
 
 					kamikaze = tristate_set( Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE, kamikaze );
-					m_kdamage.set( (int) Ai_info[shipp->ai_index].kamikaze_damage );
+					m_kdamage.set( Ai_info[shipp->ai_index].kamikaze_damage );
 
 					escort = tristate_set(shipp->flags & SF_ESCORT, escort);
 					m_escort_value.init(shipp->escort_priority);
@@ -786,7 +786,7 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 			Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
 			m_kdamage.save(&damage);
-			Ai_info[shipp->ai_index].kamikaze_damage = i2fl(damage);
+			Ai_info[shipp->ai_index].kamikaze_damage = damage;
 			break;
 		}
 
@@ -795,7 +795,7 @@ void ship_flags_dlg::update_ship(int shipnum)
 				set_modified();
 
 			Ai_info[shipp->ai_index].ai_flags &= ~AIF_KAMIKAZE;
-			Ai_info[shipp->ai_index].kamikaze_damage = 0.0f;
+			Ai_info[shipp->ai_index].kamikaze_damage = 0;
 			break;
 	}
 
