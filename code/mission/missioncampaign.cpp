@@ -583,25 +583,26 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				}
 			}
 
-			// Do mission looping stuff
-			cm->has_mission_loop = 0;
+			// Do mission branching stuff
 			if ( optional_string("+Mission Loop:") ) {
-				cm->has_mission_loop = 1;
+				cm->flags |= CMISSION_FLAG_HAS_LOOP;
+			} else if ( optional_string("+Mission Fork:") ) {
+				cm->flags |= CMISSION_FLAG_HAS_FORK;
 			}
 
-			cm->mission_loop_desc = NULL;
-			if ( optional_string("+Mission Loop Text:")) {
-				cm->mission_loop_desc = stuff_and_malloc_string(F_MULTITEXT, NULL, MISSION_DESC_LENGTH);
+			cm->mission_branch_desc = NULL;
+			if ( optional_string("+Mission Loop Text:") || optional_string("+Mission Fork Text:") ) {
+				cm->mission_branch_desc = stuff_and_malloc_string(F_MULTITEXT, NULL, MISSION_DESC_LENGTH);
 			}
 
-			cm->mission_loop_brief_anim = NULL;
-			if ( optional_string("+Mission Loop Brief Anim:")) {
-				cm->mission_loop_brief_anim = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_FILENAME_LEN);
+			cm->mission_branch_brief_anim = NULL;
+			if ( optional_string("+Mission Loop Brief Anim:") || optional_string("+Mission Fork Brief Anim:") ) {
+				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_FILENAME_LEN);
 			}
 
-			cm->mission_loop_brief_sound = NULL;
-			if ( optional_string("+Mission Loop Brief Sound:")) {
-				cm->mission_loop_brief_sound = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_FILENAME_LEN);
+			cm->mission_branch_brief_sound = NULL;
+			if ( optional_string("+Mission Loop Brief Sound:") || optional_string("+Mission Fork Brief Sound:") ) {
+				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_FILENAME_LEN);
 			}
 
 			cm->mission_loop_formula = -1;
@@ -1906,7 +1907,7 @@ void mission_campaign_eval_next_mission()
 	}
 
 	// evaluate mission loop mission (if any) so it can be used if chosen
-	if ( Campaign.missions[cur].has_mission_loop ) {
+	if ( Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP ) {
 		int copy_next_mission = Campaign.next_mission;
 		// Set temporarily to -1 so we know if loop formula fails to assign
 		Campaign.next_mission = -1;
@@ -2168,19 +2169,19 @@ void mission_campaign_close()
 		}
 
 		// the next three are strdup'd return values from parselo.cpp - taylor
-		if (Campaign.missions[i].mission_loop_desc != NULL) {
-			vm_free(Campaign.missions[i].mission_loop_desc);
-			Campaign.missions[i].mission_loop_desc = NULL;
+		if (Campaign.missions[i].mission_branch_desc != NULL) {
+			vm_free(Campaign.missions[i].mission_branch_desc);
+			Campaign.missions[i].mission_branch_desc = NULL;
 		}
 
-		if (Campaign.missions[i].mission_loop_brief_anim != NULL) {
-			vm_free(Campaign.missions[i].mission_loop_brief_anim);
-			Campaign.missions[i].mission_loop_brief_anim = NULL;
+		if (Campaign.missions[i].mission_branch_brief_anim != NULL) {
+			vm_free(Campaign.missions[i].mission_branch_brief_anim);
+			Campaign.missions[i].mission_branch_brief_anim = NULL;
 		}
 
-		if (Campaign.missions[i].mission_loop_brief_sound != NULL) {
-			vm_free(Campaign.missions[i].mission_loop_brief_sound);
-			Campaign.missions[i].mission_loop_brief_sound = NULL;
+		if (Campaign.missions[i].mission_branch_brief_sound != NULL) {
+			vm_free(Campaign.missions[i].mission_branch_brief_sound);
+			Campaign.missions[i].mission_branch_brief_sound = NULL;
  		}
 
 		if ( !Fred_running ){
@@ -2560,7 +2561,7 @@ void mission_campaign_skip_to_next(int start_game)
 
 	if (start_game) {
 		// proceed to next mission or main hall
-		if ((Campaign.missions[Campaign.current_mission].has_mission_loop) && (Campaign.loop_mission != -1)) {
+		if ((Campaign.missions[Campaign.current_mission].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1)) {
 			// go to loop solicitation
 			gameseq_post_event(GS_EVENT_LOOP_BRIEF);
 		} else {

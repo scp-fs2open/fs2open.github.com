@@ -3922,6 +3922,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 
 		// save campaign link sexp
 		bool mission_loop = false;
+		bool mission_fork = false;
 		flag = 0;
 		for (j=0; j<Total_links; j++) {
 			if (Links[j].from == m) {
@@ -3936,8 +3937,10 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 				}
 
 				//save_campaign_sexp(Links[j].sexp, Campaign.missions[Links[j].to].name);
-				if (Links[j].mission_loop) {
+				if (Links[j].is_mission_loop) {
 					mission_loop = true;
+				} else if (Links[j].is_mission_fork) {
+					mission_fork = true;
 				} else {
 					save_campaign_sexp(Links[j].sexp, Links[j].to);
 				}
@@ -3949,50 +3952,62 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 		}
 
 		// now save campaign loop sexp
-		if (mission_loop) {
-			required_string_fred("\n+Mission Loop:");
+		if (mission_loop || mission_fork) {
+			if (mission_loop)
+				required_string_fred("\n+Mission Loop:");
+			else
+				required_string_fred("\n+Mission Fork:");
 			parse_comments();
 
-			int num_mission_loop = 0;
+			int num_mission_special = 0;
 			for (j=0; j<Total_links; j++) {
-				if ( (Links[j].from == m) && (Links[j].mission_loop) ) {
+				if ( (Links[j].from == m) && (Links[j].is_mission_loop || Links[j].is_mission_fork) ) {
 
-					num_mission_loop++;
+					num_mission_special++;
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_txt) {
-						required_string_fred("+Mission Loop Text:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_txt) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Text:");
+						else
+							required_string_fred("+Mission Fork Text:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_txt);
+						fout_ext("\n", "%s", Links[j].mission_branch_txt);
 						fout("\n$end_multi_text");
 					}
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_brief_anim) {
-						required_string_fred("+Mission Loop Brief Anim:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_brief_anim) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Brief Anim:");
+						else
+							required_string_fred("+Mission Fork Brief Anim:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_brief_anim);
+						fout_ext("\n", "%s", Links[j].mission_branch_brief_anim);
 						fout("\n$end_multi_text");
 					}
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_brief_sound) {
-						required_string_fred("+Mission Loop Brief Sound:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_brief_sound) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Brief Sound:");
+						else
+							required_string_fred("+Mission Fork Brief Sound:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_brief_sound);
+						fout_ext("\n", "%s", Links[j].mission_branch_brief_sound);
 						fout("\n$end_multi_text");
 					}
 
-					if (num_mission_loop == 1) {
+					if (num_mission_special == 1) {
 						// write out mission loop formula
 						fout("\n+Formula:");
 						fout(" ( cond\n");
 						save_campaign_sexp(Links[j].sexp, Links[j].to);
 						fout(")");
 					}
+					if (mission_fork) {
+						fout("Option: ", Campaign.missions[Links[j].to].name);
+					}
 				}
 			}
-			if (num_mission_loop > 1) {
+			if (mission_loop && num_mission_special > 1) {
 				char buffer[1024];
 				sprintf(buffer, "Multiple branching loop error from mission %s\nEdit campaign for *at most* 1 loop from each mission.", Campaign.missions[m].name);
 				MessageBox((HWND)os_get_window(), buffer, "Error", MB_OK);

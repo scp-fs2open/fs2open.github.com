@@ -8751,16 +8751,16 @@ void multi_debrief_close()
 void multi_maybe_set_mission_loop()
 {
 	int cur = Campaign.current_mission;
-	if (Campaign.missions[cur].has_mission_loop) {
+	if (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) {
 		Assert(Campaign.loop_mission != CAMPAIGN_LOOP_MISSION_UNINITIALIZED);
 	}
 	bool require_repeat_mission = (Campaign.current_mission == Campaign.next_mission);
 
 	// check for (1) mission loop available, (2) don't have to repeat last mission
-	if ( (Campaign.missions[cur].has_mission_loop && (Campaign.loop_mission != -1)) && !require_repeat_mission ) {
+	if ( (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1) && !require_repeat_mission ) {
 
 		char buffer[512];
-		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_loop_desc);
+		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_branch_desc);
 
 		int choice = popup(0 , 2, POPUP_NO, POPUP_YES, buffer);
 		if (choice == 1) {
