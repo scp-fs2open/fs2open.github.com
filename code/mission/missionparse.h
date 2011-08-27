@@ -408,15 +408,15 @@ typedef struct p_object {
 	object *created_object;					// Goober5000
 	int	group;								// group object is within or -1 if none.
 	int	persona_index;
-	float	kamikaze_damage;					// base damage for a kamikaze attack
+	int	kamikaze_damage;					// base damage for a kamikaze attack
 
 	bool use_special_explosion;				// new special explosion/hitpoints system 
-	float special_exp_damage;					// Changed from 'int' to 'float' by Zacam 10/2010
-	float special_exp_blast;					// Changed from 'int' to 'float' by Zacam 10/2010
-	float special_exp_inner;					// Changed from 'int' to 'float' by Zacam 10/2010
-	float special_exp_outer;					// Changed from 'int' to 'float' by Zacam 10/2010
+	int special_exp_damage;
+	int special_exp_blast;
+	int special_exp_inner;
+	int special_exp_outer;
 	bool use_shockwave;
-	float special_exp_shockwave_speed;		// Changed from 'int' to 'float' by Zacam 10/2010
+	int special_exp_shockwave_speed;
 	int special_exp_deathroll_time;
 
 	int	special_hitpoints;
@@ -504,7 +504,7 @@ typedef struct p_object {
 		created_object = NULL;
 		group = 0;
 		persona_index = 0;
-		kamikaze_damage = 0.;
+		kamikaze_damage = 0;
 		use_special_explosion = false;
 		special_exp_damage = -1;
 		special_exp_blast = -1;

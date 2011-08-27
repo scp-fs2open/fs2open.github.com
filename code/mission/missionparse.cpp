@@ -2477,12 +2477,12 @@ void fix_old_special_explosions(p_object *p_objp, int variable_index)
 
 	p_objp->use_special_explosion = true;
 
-	p_objp->special_exp_damage = (float)atoi(Block_variables[variable_index+DAMAGE].text);
-	p_objp->special_exp_blast = (float)atoi(Block_variables[variable_index+BLAST].text);
-	p_objp->special_exp_inner = (float)atoi(Block_variables[variable_index+INNER_RAD].text);
-	p_objp->special_exp_outer = (float)atoi(Block_variables[variable_index+OUTER_RAD].text);
+	p_objp->special_exp_damage = atoi(Block_variables[variable_index+DAMAGE].text);
+	p_objp->special_exp_blast = atoi(Block_variables[variable_index+BLAST].text);
+	p_objp->special_exp_inner = atoi(Block_variables[variable_index+INNER_RAD].text);
+	p_objp->special_exp_outer = atoi(Block_variables[variable_index+OUTER_RAD].text);
 	p_objp->use_shockwave = (atoi(Block_variables[variable_index+PROPAGATE].text) ? 1:0);
-	p_objp->special_exp_shockwave_speed = (float)atoi(Block_variables[variable_index+SHOCK_SPEED].text);
+	p_objp->special_exp_shockwave_speed = atoi(Block_variables[variable_index+SHOCK_SPEED].text);
 	p_objp->special_exp_deathroll_time = 0;
 }
 
@@ -2861,24 +2861,49 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		p_objp->use_special_explosion = true;
 
 		if (required_string("+Special Exp Damage:")) {
-			stuff_float(&p_objp->special_exp_damage);
+			stuff_int(&p_objp->special_exp_damage);
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion damage has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (required_string("+Special Exp Blast:")) {
-			stuff_float(&p_objp->special_exp_blast);
+			stuff_int(&p_objp->special_exp_blast);
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion blast has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (required_string("+Special Exp Inner Radius:")) {
-			stuff_float(&p_objp->special_exp_inner);
+			stuff_int(&p_objp->special_exp_inner);
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion inner radius has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (required_string("+Special Exp Outer Radius:")) {
-			stuff_float(&p_objp->special_exp_outer);
+			stuff_int(&p_objp->special_exp_outer);
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion outer radius has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (optional_string("+Special Exp Shockwave Speed:")) {
-			stuff_float(&p_objp->special_exp_shockwave_speed);
+			stuff_int(&p_objp->special_exp_shockwave_speed);
 			p_objp->use_shockwave = true;
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion shockwave speed has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (optional_string("+Special Exp Death Roll Time:")) {
@@ -2933,7 +2958,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		int damage;
 
 		stuff_int(&damage);
-		p_objp->kamikaze_damage = i2fl(damage);
+		p_objp->kamikaze_damage = damage;
 	}
 
 	p_objp->hotkey = -1;

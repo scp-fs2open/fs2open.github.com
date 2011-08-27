@@ -1686,24 +1686,24 @@ int CFred_mission_save::save_objects()
 
 					required_string_fred("+Special Exp Damage:"); 
 					parse_comments();
-					fout(" %f", shipp->special_exp_damage);
+					fout(" %d", shipp->special_exp_damage);
 
 					required_string_fred("+Special Exp Blast:"); 
 					parse_comments();
-					fout(" %f", shipp->special_exp_blast);
+					fout(" %d", shipp->special_exp_blast);
 
 					required_string_fred("+Special Exp Inner Radius:"); 
 					parse_comments();
-					fout(" %f", shipp->special_exp_inner);
+					fout(" %d", shipp->special_exp_inner);
 
 					required_string_fred("+Special Exp Outer Radius:"); 
 					parse_comments();
-					fout(" %f", shipp->special_exp_outer);
+					fout(" %d", shipp->special_exp_outer);
 
 					if (shipp->use_shockwave && (shipp->special_exp_shockwave_speed > 0)) {
 						optional_string_fred("+Special Exp Shockwave Speed:"); 
 						parse_comments();
-						fout(" %f", shipp->special_exp_shockwave_speed);
+						fout(" %d", shipp->special_exp_shockwave_speed);
 					}
 					else {
 						bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
@@ -1723,20 +1723,20 @@ int CFred_mission_save::save_objects()
 					fout_version("\n$Special Explosion:");
 
 					fout_version("\n+Special Exp Damage:"); 
-					fout(" %f", shipp->special_exp_damage);
+					fout(" %d", shipp->special_exp_damage);
 
 					fout_version("\n+Special Exp Blast:"); 
-					fout(" %f", shipp->special_exp_blast);
+					fout(" %d", shipp->special_exp_blast);
 
 					fout_version("\n+Special Exp Inner Radius:"); 
-					fout(" %f", shipp->special_exp_inner);
+					fout(" %d", shipp->special_exp_inner);
 
 					fout_version("\n+Special Exp Outer Radius:"); 
-					fout(" %f", shipp->special_exp_outer);
+					fout(" %d", shipp->special_exp_outer);
 
 					if (shipp->use_shockwave && (shipp->special_exp_shockwave_speed > 0)) {
 						fout_version("\n+Special Exp Shockwave Speed:"); 
-						fout(" %f", shipp->special_exp_shockwave_speed);
+						fout(" %d", shipp->special_exp_shockwave_speed);
 					}
 
 					if (shipp->special_exp_deathroll_time > 0) {
@@ -1815,7 +1815,7 @@ int CFred_mission_save::save_objects()
 				fout("\n+Kamikaze Damage:");
 			}
 
-			fout(" %d", (int)(Ai_info[shipp->ai_index].kamikaze_damage) );
+			fout(" %d", Ai_info[shipp->ai_index].kamikaze_damage);
 		}
 
 		if (shipp->hotkey != -1) {
@@ -3922,6 +3922,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 
 		// save campaign link sexp
 		bool mission_loop = false;
+		bool mission_fork = false;
 		flag = 0;
 		for (j=0; j<Total_links; j++) {
 			if (Links[j].from == m) {
@@ -3936,8 +3937,10 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 				}
 
 				//save_campaign_sexp(Links[j].sexp, Campaign.missions[Links[j].to].name);
-				if (Links[j].mission_loop) {
+				if (Links[j].is_mission_loop) {
 					mission_loop = true;
+				} else if (Links[j].is_mission_fork) {
+					mission_fork = true;
 				} else {
 					save_campaign_sexp(Links[j].sexp, Links[j].to);
 				}
@@ -3949,50 +3952,62 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 		}
 
 		// now save campaign loop sexp
-		if (mission_loop) {
-			required_string_fred("\n+Mission Loop:");
+		if (mission_loop || mission_fork) {
+			if (mission_loop)
+				required_string_fred("\n+Mission Loop:");
+			else
+				required_string_fred("\n+Mission Fork:");
 			parse_comments();
 
-			int num_mission_loop = 0;
+			int num_mission_special = 0;
 			for (j=0; j<Total_links; j++) {
-				if ( (Links[j].from == m) && (Links[j].mission_loop) ) {
+				if ( (Links[j].from == m) && (Links[j].is_mission_loop || Links[j].is_mission_fork) ) {
 
-					num_mission_loop++;
+					num_mission_special++;
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_txt) {
-						required_string_fred("+Mission Loop Text:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_txt) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Text:");
+						else
+							required_string_fred("+Mission Fork Text:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_txt);
+						fout_ext("\n", "%s", Links[j].mission_branch_txt);
 						fout("\n$end_multi_text");
 					}
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_brief_anim) {
-						required_string_fred("+Mission Loop Brief Anim:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_brief_anim) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Brief Anim:");
+						else
+							required_string_fred("+Mission Fork Brief Anim:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_brief_anim);
+						fout_ext("\n", "%s", Links[j].mission_branch_brief_anim);
 						fout("\n$end_multi_text");
 					}
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_brief_sound) {
-						required_string_fred("+Mission Loop Brief Sound:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_brief_sound) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Brief Sound:");
+						else
+							required_string_fred("+Mission Fork Brief Sound:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_brief_sound);
+						fout_ext("\n", "%s", Links[j].mission_branch_brief_sound);
 						fout("\n$end_multi_text");
 					}
 
-					if (num_mission_loop == 1) {
+					if (num_mission_special == 1) {
 						// write out mission loop formula
 						fout("\n+Formula:");
 						fout(" ( cond\n");
 						save_campaign_sexp(Links[j].sexp, Links[j].to);
 						fout(")");
 					}
+					if (mission_fork) {
+						fout("Option: ", Campaign.missions[Links[j].to].name);
+					}
 				}
 			}
-			if (num_mission_loop > 1) {
+			if (mission_loop && num_mission_special > 1) {
 				char buffer[1024];
 				sprintf(buffer, "Multiple branching loop error from mission %s\nEdit campaign for *at most* 1 loop from each mission.", Campaign.missions[m].name);
 				MessageBox((HWND)os_get_window(), buffer, "Error", MB_OK);

@@ -542,12 +542,12 @@ typedef struct ship {
 	ship_spark	sparks[MAX_SHIP_HITS];
 	
 	bool use_special_explosion; 
-	float special_exp_damage;					// new special explosion/hitpoints system
-	float special_exp_blast;
-	float special_exp_inner;
-	float special_exp_outer;
+	int special_exp_damage;					// new special explosion/hitpoints system
+	int special_exp_blast;
+	int special_exp_inner;
+	int special_exp_outer;
 	bool use_shockwave;
-	float special_exp_shockwave_speed;
+	int special_exp_shockwave_speed;
 	int special_exp_deathroll_time;
 
 	int	special_hitpoints;

@@ -428,7 +428,7 @@ sexp_oper Operators[] = {
 
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
-	{ "end-mission",					OP_END_MISSION,					0, 1 }, //-Sesquipedalian
+	{ "end-mission",					OP_END_MISSION,					0, 2 }, //-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
@@ -3373,12 +3373,12 @@ bool generate_special_explosion_block_variables()
 
 		//if we haven't added this entry already, do so
 		if (!already_added) {
-			sprintf(Block_variables[current_index+INNER_RAD].text, "%d", (int) shipp->special_exp_inner);
-			sprintf(Block_variables[current_index+OUTER_RAD].text, "%d", (int) shipp->special_exp_outer);
-			sprintf(Block_variables[current_index+DAMAGE].text, "%d", (int) shipp->special_exp_damage);
-			sprintf(Block_variables[current_index+BLAST].text, "%d", (int) shipp->special_exp_blast);
+			sprintf(Block_variables[current_index+INNER_RAD].text, "%d", shipp->special_exp_inner);
+			sprintf(Block_variables[current_index+OUTER_RAD].text, "%d", shipp->special_exp_outer);
+			sprintf(Block_variables[current_index+DAMAGE].text, "%d", shipp->special_exp_damage);
+			sprintf(Block_variables[current_index+BLAST].text, "%d", shipp->special_exp_blast);
 			sprintf(Block_variables[current_index+PROPAGATE].text, "%d", (shipp->use_shockwave ? 1:0) );
-			sprintf(Block_variables[current_index+SHOCK_SPEED].text, "%d", (int) shipp->special_exp_shockwave_speed);
+			sprintf(Block_variables[current_index+SHOCK_SPEED].text, "%d", shipp->special_exp_shockwave_speed);
 
 			// add the names
 			for (i = current_index; i < (current_index + BLOCK_EXP_SIZE); i++ ) {
@@ -9807,11 +9807,11 @@ void sexp_set_explosion_option(int node)
 	// if we haven't changed anything yet, create a new special-exp with the same values as a standard exp
 	if (!shipp->use_special_explosion)
 	{
-		shipp->special_exp_damage = sci->damage;
-		shipp->special_exp_blast = sci->blast;
-		shipp->special_exp_inner = sci->inner_rad;
-		shipp->special_exp_outer = sci->outer_rad;
-		shipp->special_exp_shockwave_speed = sci->speed;
+		shipp->special_exp_damage = fl2i(sci->damage);
+		shipp->special_exp_blast = fl2i(sci->blast);
+		shipp->special_exp_inner = fl2i(sci->inner_rad);
+		shipp->special_exp_outer = fl2i(sci->outer_rad);
+		shipp->special_exp_shockwave_speed = fl2i(sci->speed);
 		shipp->special_exp_deathroll_time = 0;
 
 		shipp->use_special_explosion = true;
@@ -9833,15 +9833,15 @@ void sexp_set_explosion_option(int node)
 		n = CDR(n);
 
 		if (option == EO_DAMAGE) {
-			shipp->special_exp_damage = (float)val;
+			shipp->special_exp_damage = val;
 		} else if (option == EO_BLAST) {
-			shipp->special_exp_blast = (float)val;
+			shipp->special_exp_blast = val;
 		} else if (option == EO_INNER_RADIUS) {
-			shipp->special_exp_inner = (float)val;
+			shipp->special_exp_inner = val;
 		} else if (option == EO_OUTER_RADIUS) {
-			shipp->special_exp_outer = (float)val;
+			shipp->special_exp_outer = val;
 		} else if (option == EO_SHOCKWAVE_SPEED) {
-			shipp->special_exp_shockwave_speed = (float)val;
+			shipp->special_exp_shockwave_speed = val;
 			shipp->use_shockwave = (val > 0);
 		} else if (option == EO_DEATH_ROLL_TIME) {
 			shipp->special_exp_deathroll_time = val;
@@ -11353,13 +11353,19 @@ void sexp_nebula_toggle_poof(int n)
 	neb2_eye_changed();
 }
 
-// sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
+// sexpression to end the mission!  Implemented by Sesquipedalian; fixed by EdrickV; enhanced by others
 void sexp_end_mission(int n)
 {
 	int ignore_player_mortality = 1;
+	int boot_to_main_hall = 0;
 
 	if (n != -1) {
 		ignore_player_mortality = is_sexp_true(n);
+		n = CDR(n);
+	}
+	if (n != -1) {
+		boot_to_main_hall = is_sexp_true(n);
+		n = CDR(n);
 	}
 
 	// if the player is dead we may want to let the death screen handle things
@@ -11367,7 +11373,12 @@ void sexp_end_mission(int n)
 		return;
 	}
 
-	send_debrief_event();
+	// if we go straight to the main hall we have to clean up the mission without entering the debriefing
+	if (boot_to_main_hall && !(Game_mode & GM_MULTIPLAYER)) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	} else {
+		send_debrief_event();
+	}
 
 	// Karajorma - callback all the clients here. 
 	if (MULTIPLAYER_MASTER)
@@ -13150,12 +13161,12 @@ void sexp_ingame_ship_kamikaze(ship *shipp, int kdamage)
 	if (kdamage > 0)
 	{
 		aip->ai_flags |= AIF_KAMIKAZE;
-		aip->kamikaze_damage = i2fl(kdamage); 
+		aip->kamikaze_damage = kdamage;
 	}
 	else
 	{
 		aip->ai_flags &= ~AIF_KAMIKAZE;
-		aip->kamikaze_damage = 0.0f;
+		aip->kamikaze_damage = 0;
 	}
 }
 
@@ -13167,12 +13178,12 @@ void sexp_parse_ship_kamikaze(p_object *parse_obj, int kdamage)
 	if (kdamage > 0)
 	{
 		parse_obj->flags |= P_AIF_KAMIKAZE;
-		parse_obj->kamikaze_damage = i2fl(kdamage);
+		parse_obj->kamikaze_damage = kdamage;
 	}
 	else
 	{
 		parse_obj->flags &= ~P_AIF_KAMIKAZE;
-		parse_obj->kamikaze_damage = 0.0f;
+		parse_obj->kamikaze_damage = 0;
 	}
 }
 
@@ -22747,7 +22758,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GRANT_PROMOTION:
 		case OP_WAS_PROMOTION_GRANTED:
 		case OP_RED_ALERT:
-		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
 		case OP_RESET_ORDERS:
 		case OP_INVALIDATE_ALL_ARGUMENTS:
@@ -23416,6 +23426,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_ALLOW_TREASON:
+		case OP_END_MISSION:
 			return OPF_BOOL;
 
 		case OP_SET_SOUND_ENVIRONMENT:
@@ -23484,9 +23496,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 			return OPF_NONE;
-
-		case OP_ALLOW_TREASON:
-			return OPF_BOOL; 
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -28047,7 +28056,9 @@ sexp_help_struct Sexp_help[] = {
 	//-Sesquipedalian
 	{ OP_END_MISSION, "end-mission\r\n" 
 		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
-		"\t1:\t(optional)End Mission even if the player is dead (defaults to true)" },
+		"\t1:\tEnd Mission even if the player is dead (optional; defaults to true)\r\n"
+		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)"
+	},
 
 	// Goober5000
 	{ OP_FORCE_JUMP, "force-jump\r\n"

@@ -846,7 +846,7 @@ int readyroom_continue_campaign()
 	if ( !(Game_mode & GM_MULTIPLAYER) && !Campaign.loop_enabled && (Campaign.current_mission == -1) &&
 		(Campaign.prev_mission != -1) && (Campaign.next_mission != -1) )
 	{
-		if (Campaign.missions[Campaign.prev_mission].has_mission_loop) {
+		if (Campaign.missions[Campaign.prev_mission].flags & CMISSION_FLAG_HAS_LOOP) {
 			// NOTE: the order of these calls is *very* important
 
 			// we must manually set the current mission to the *previous* mission and the mission name.
