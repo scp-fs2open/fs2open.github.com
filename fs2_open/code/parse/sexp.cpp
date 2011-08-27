@@ -428,7 +428,7 @@ sexp_oper Operators[] = {
 
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
-	{ "end-mission",					OP_END_MISSION,					0, 1 }, //-Sesquipedalian
+	{ "end-mission",					OP_END_MISSION,					0, 2 }, //-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
@@ -11353,13 +11353,19 @@ void sexp_nebula_toggle_poof(int n)
 	neb2_eye_changed();
 }
 
-// sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
+// sexpression to end the mission!  Implemented by Sesquipedalian; fixed by EdrickV; enhanced by others
 void sexp_end_mission(int n)
 {
 	int ignore_player_mortality = 1;
+	int boot_to_main_hall = 0;
 
 	if (n != -1) {
 		ignore_player_mortality = is_sexp_true(n);
+		n = CDR(n);
+	}
+	if (n != -1) {
+		boot_to_main_hall = is_sexp_true(n);
+		n = CDR(n);
 	}
 
 	// if the player is dead we may want to let the death screen handle things
@@ -11367,7 +11373,12 @@ void sexp_end_mission(int n)
 		return;
 	}
 
-	send_debrief_event();
+	// if we go straight to the main hall we have to clean up the mission without entering the debriefing
+	if (boot_to_main_hall && !(Game_mode & GM_MULTIPLAYER)) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	} else {
+		send_debrief_event();
+	}
 
 	// Karajorma - callback all the clients here. 
 	if (MULTIPLAYER_MASTER)
@@ -22747,7 +22758,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GRANT_PROMOTION:
 		case OP_WAS_PROMOTION_GRANTED:
 		case OP_RED_ALERT:
-		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
 		case OP_RESET_ORDERS:
 		case OP_INVALIDATE_ALL_ARGUMENTS:
@@ -23416,6 +23426,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_ALLOW_TREASON:
+		case OP_END_MISSION:
 			return OPF_BOOL;
 
 		case OP_SET_SOUND_ENVIRONMENT:
@@ -23484,9 +23496,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 			return OPF_NONE;
-
-		case OP_ALLOW_TREASON:
-			return OPF_BOOL; 
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -28047,7 +28056,9 @@ sexp_help_struct Sexp_help[] = {
 	//-Sesquipedalian
 	{ OP_END_MISSION, "end-mission\r\n" 
 		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
-		"\t1:\t(optional)End Mission even if the player is dead (defaults to true)" },
+		"\t1:\tEnd Mission even if the player is dead (optional; defaults to true)\r\n"
+		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)"
+	},
 
 	// Goober5000
 	{ OP_FORCE_JUMP, "force-jump\r\n"
