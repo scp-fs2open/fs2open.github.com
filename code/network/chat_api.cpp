@@ -1048,10 +1048,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 		return szResponse;
 	}
 	if((stricmp(szCmd,"377")==0)||
-		(stricmp(szCmd,"372")==0)||
-		(stricmp(szCmd,"372")==0)
-		
-		)
+		(stricmp(szCmd,"372")==0))
 	{
 		//Stip the message, and display it.
 		pszTempStr=GetWordNum(3,Line);		
@@ -1102,8 +1099,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 	   (stricmp(szCmd,"255")==0)||
 	   (stricmp(szCmd,"265")==0)||
 	   (stricmp(szCmd,"375")==0)||
-	   (stricmp(szCmd,"372")==0)|| 
-	   (stricmp(szCmd,"375")==0)
+	   (stricmp(szCmd,"372")==0)
 	   )
 	{
 		return NULL;
