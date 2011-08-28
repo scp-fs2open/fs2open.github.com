@@ -558,7 +558,7 @@ bool StartAutopilot()
 			// position capships
 
 			vec3d right, front, up, offset;
-			for (SCP_vector<int>::iterator idx = capIndexes.begin(); idx != capIndexes.end(); idx++)
+			for (SCP_vector<int>::iterator idx = capIndexes.begin(); idx != capIndexes.end(); ++idx)
 			{
 				vm_vec_add(&right, &Autopilot_flight_leader->orient.vec.rvec, &zero);
 				vm_vec_add(&front, &Autopilot_flight_leader->orient.vec.fvec, &zero);

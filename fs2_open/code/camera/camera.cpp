@@ -792,7 +792,7 @@ void subtitle::do_frame(float frametime)
 	int y = text_pos.y;
 
 
-	for(SCP_vector<std::string>::iterator line = text_lines.begin(); line != text_lines.end(); line++)
+	for(SCP_vector<std::string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
 	{
 		gr_string(x, y, (char*)line->c_str(), false);
 		y += font_height;
@@ -1105,7 +1105,7 @@ void subtitles_close()
 void subtitles_do_frame(float frametime)
 {
 	SCP_vector<subtitle>::iterator sub;
-	for(sub = Subtitles.begin(); sub != Subtitles.end(); sub++)
+	for(sub = Subtitles.begin(); sub != Subtitles.end(); ++sub)
 	{
 		if ( !sub->is_post_shaded( ) )
 			sub->do_frame(frametime);
@@ -1115,7 +1115,7 @@ void subtitles_do_frame(float frametime)
 void subtitles_do_frame_post_shaded(float frametime)
 {
 	SCP_vector<subtitle>::iterator sub;
-	for(sub = Subtitles.begin(); sub != Subtitles.end(); sub++)
+	for(sub = Subtitles.begin(); sub != Subtitles.end(); ++sub)
 	{
 		if ( sub->is_post_shaded( ) )
 			sub->do_frame(frametime);

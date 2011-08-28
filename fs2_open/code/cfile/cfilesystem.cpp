@@ -1215,7 +1215,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 
 	// now try and find our preferred match
 	for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-		for (SCP_vector<cf_file*>::iterator fli = file_list_index.begin(); fli != file_list_index.end(); fli++) {
+		for (SCP_vector<cf_file*>::iterator fli = file_list_index.begin(); fli != file_list_index.end(); ++fli) {
 			cf_file *f = *fli;
 	
 			strcat_s( filespec, ext_list[cur_ext] );
