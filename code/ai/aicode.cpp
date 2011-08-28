@@ -12779,8 +12779,6 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	}
 
 	// try to find a bay path that is not taken
-	path_index = -1;
-
 	// Goober5000 - choose from among allowed paths
 	if (allowed_path_mask != 0)
 	{
