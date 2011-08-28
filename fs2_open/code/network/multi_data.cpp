@@ -31,9 +31,9 @@
 
 // player data struct
 typedef struct np_data {
+	ushort player_id;									// id of the player who sent the file
 	char filename[MAX_FILENAME_LEN+1];			// filename
 	ubyte status[MAX_PLAYERS];						// status for all players (0 == don't have it, 1 == have or sending, 2 == i sent it originally)
-	ushort player_id;									// id of the player who sent the file
 	ubyte used;											// in use or not
 } np_data;
 
