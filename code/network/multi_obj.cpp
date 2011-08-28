@@ -1385,16 +1385,10 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	net_player *pl = NULL;	
 
-	// if this is processed on the server, its a client object update packet
-	player_index = -1;
-//	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		// determine what player this came from 
-		player_index = find_player_id(hinfo->id);
-		if(player_index != -1){						
-			pl = &Net_players[player_index];
-//		} else {			
-//			pl = NULL;
-//		}
+	// determine what player this came from 
+	player_index = find_player_id(hinfo->id);
+	if(player_index != -1){						
+		pl = &Net_players[player_index];
 	}
 	// otherwise its a "regular" object update packet on a client from the server. use "myself" as the reference player
 	else {						
