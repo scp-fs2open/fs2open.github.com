@@ -19616,7 +19616,7 @@ int sexp_get_colgroup(int node) {
 
 int get_effect_from_name(char* name) {
 	int i = 0;
-	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); sei++) {
+	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); ++sei) {
 		if (!stricmp(name, sei->name))
 			return i;
 		i++;

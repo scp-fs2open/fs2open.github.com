@@ -398,7 +398,7 @@ bool ConditionedHook::Run(script_state *sys, int action, char format, void *data
 	Assert(sys != NULL);
 
 	//Do the actions
-	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); sap++)
+	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
 		if(sap->action_type == action)
 			sys->RunBytecode(sap->hook, format, data);
@@ -413,7 +413,7 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 	//bool b = false;
 
 	//Do the actions
-	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); sap++)
+	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
 		if(sap->action_type == action)
 		{
@@ -802,7 +802,7 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 int script_state::RunCondition(int action, char format, void *data, object *objp)
 {
 	int num = 0;
-	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); chp++) 
+	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
 		if(chp->ConditionsValid(action, objp))
 		{
@@ -816,7 +816,7 @@ int script_state::RunCondition(int action, char format, void *data, object *objp
 bool script_state::IsConditionOverride(int action, object *objp)
 {
 	//bool b = false;
-	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); chp++)
+	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp)
 	{
 		if(chp->ConditionsValid(action, objp))
 		{
