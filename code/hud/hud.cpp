@@ -1213,7 +1213,7 @@ void hud_close()
 		num_gauges = Ship_info[i].hud_gauges.size();
 
 		for(j = 0; j < num_gauges; j++) {
-			delete Ship_info[i].hud_gauges[j];
+			vm_free(Ship_info[i].hud_gauges[j]);
 			Ship_info[i].hud_gauges[j] = NULL;
 		}
 		Ship_info[i].hud_gauges.clear();
@@ -1222,7 +1222,7 @@ void hud_close()
 	num_gauges = default_hud_gauges.size();
 
 	for(j = 0; j < num_gauges; j++) {
-		delete default_hud_gauges[j];
+		vm_free(default_hud_gauges[j]);
 		default_hud_gauges[j] = NULL;
 	}
 	default_hud_gauges.clear();
