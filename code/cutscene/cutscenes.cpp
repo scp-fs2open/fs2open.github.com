@@ -42,7 +42,7 @@ SCP_vector<cutscene_info> Cutscenes;
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 void cutscene_close()
 {
-	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++)
+	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut)
 		if(cut->description)
 			vm_free(cut->description);
 }
@@ -106,7 +106,7 @@ void cutscene_init()
 // returns -1 on failure.
 int cutscenes_get_cd_num( char *filename )
 {
-	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++) {
+	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if ( !stricmp(cut->filename, filename) ) {
 			return (cut->cd - 1);
 		}
@@ -133,7 +133,7 @@ void cutscene_mark_viewable(char *filename)
 	// change to lower case
 	strlwr(file);
 	int i = 0;
-	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++) {
+	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		// change the cutscene file name to lower case
 		strcpy_s(cut_file, cut->filename);
 		strlwr(cut_file);

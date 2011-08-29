@@ -252,7 +252,7 @@ void fireball_parse_tbl()
 
 	// we've got our list so pass it off for final checking and loading.
 	// we assume that entries in fireball.tbl are in the correct order
-	for (lod = LOD_checker.begin(); lod != LOD_checker.end(); lod++) {
+	for (lod = LOD_checker.begin(); lod != LOD_checker.end(); ++lod) {
 		if ( (i < MAX_FIREBALL_TYPES) && (lod->override < 0) ) {
 			strcpy_s( Fireball_info[i].lod[0].filename, lod->filename );
 			Fireball_info[i].lod_count = lod->num_lods;
@@ -272,7 +272,7 @@ void fireball_parse_tbl()
 	// having to do this twice is less than optimal, but less error prone too.
 	// this handles (and should only have to handle) TBM related entries
 	i = 0;
-	for (lod = LOD_checker.begin(); lod != LOD_checker.end(); lod++) {
+	for (lod = LOD_checker.begin(); lod != LOD_checker.end(); ++lod) {
 		// try entry replacement
 		if ( (lod->override >= 0) && (lod->override < Num_fireball_types) ) {
 			strcpy_s( Fireball_info[lod->override].lod[0].filename, lod->filename );

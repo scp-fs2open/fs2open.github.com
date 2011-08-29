@@ -696,7 +696,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 
 		PXO_ADD_USHORT( num_tables );
 
-		for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); tvs++) {
+		for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); ++tvs) {
 			PXO_ADD_STRING(tvs->name );
 			PXO_ADD_UINT( tvs->crc32 );
 		}
@@ -760,7 +760,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 			return -1;
 		}
 
-		for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); tvs++) {
+		for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); ++tvs) {
 			PXO_GET_DATA( tbl_valid_status );
 			Assert( (tbl_valid_status == 0) || (tbl_valid_status == 1) );
 

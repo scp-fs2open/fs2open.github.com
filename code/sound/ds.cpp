@@ -1407,24 +1407,25 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 		}
 	}
 
+	// Make sure that we are not going to play more copies of this sound than we should be
+	if ( (instance_count >= limit) && (lowest_instance_vol_index >= 0) ) {
+		// If there is a lower volume duplicate, stop it.... otherwise, don't play the sound
+		if (lowest_instance_vol <= new_volume) {
+			ds_close_channel_fast(lowest_instance_vol_index);
+			first_free_channel = lowest_instance_vol_index;
+		}
+	}
+
 	if (first_free_channel < 0) {
-		// If we've exceeded the limit, then maybe stop the duplicate if it is lower volume
-		if ( (instance_count >= limit) && (lowest_instance_vol_index >= 0) ) {
-			// If there is a lower volume duplicate, stop it.... otherwise, don't play the sound
-			if (lowest_instance_vol <= new_volume) {
-				ds_close_channel_fast(lowest_instance_vol_index);
-				first_free_channel = lowest_instance_vol_index;
-			}
-		} else {
-			// there is no limit barrier to play the sound, so see if we've ran out of channels
-			// stop the lowest volume instance to play our sound if priority demands it
-			if ( (lowest_vol_index != -1) && (priority == DS_MUST_PLAY) ) {
-				// Check if the lowest volume playing is less than the volume of the requested sound.
-				// If so, then we are going to trash the lowest volume sound.
-				if ( Channels[lowest_vol_index].vol <= new_volume ) {
-					ds_close_channel_fast(lowest_vol_index);
-					first_free_channel = lowest_vol_index;
-				}
+		// still don't have a channel and
+		// there is no limit barrier to play the sound, so see if we've ran out of channels
+		// stop the lowest volume instance to play our sound if priority demands it
+		if ( (lowest_vol_index != -1) && (priority == DS_MUST_PLAY) ) {
+			// Check if the lowest volume playing is less than the volume of the requested sound.
+			// If so, then we are going to trash the lowest volume sound.
+			if ( Channels[lowest_vol_index].vol <= new_volume ) {
+				ds_close_channel_fast(lowest_vol_index);
+				first_free_channel = lowest_vol_index;
 			}
 		}
 	}
