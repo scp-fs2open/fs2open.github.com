@@ -2545,14 +2545,13 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		return;
 	}
 
-	if ( !(Interp_flags & MR_SHOW_THRUSTERS) /*|| !(Detail.engine_glows)*/ )
+	if ( !(Interp_flags & MR_SHOW_THRUSTERS) ) {
 		return;
-
+	}
 
 	// get an initial count to figure out how man geo batchers we need allocated
 	for (i = 0; i < pm->n_thrusters; i++ ) {
 		bank = &pm->thrusters[i];
-
 		n_q += bank->num_points;
 	}
 
@@ -2560,18 +2559,18 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		return;
 	}
 
+	// primary_thruster_batcher
 	if (Interp_thrust_glow_bitmap >= 0) {
-		//primary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
+	// secondary_thruster_batcher
 	if (Interp_secondary_thrust_glow_bitmap >= 0) {
-		//secondary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
+	// tertiary_thruster_batcher
 	if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-		//tertiary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
@@ -2581,16 +2580,12 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 	// this is used for the secondary thruster glows 
 	// it only needs to be calculated once so I'm doing it here -Bobboau
-	/* norm = bank->norm[j] */;
 	norm.xyz.z = -1.0f;
 	norm.xyz.x = 1.0f;
 	norm.xyz.y = -1.0f;
-
 	norm.xyz.x *= Interp_thrust_rotvel.xyz.y/2;
 	norm.xyz.y *= Interp_thrust_rotvel.xyz.x/2;
-
 	vm_vec_normalize(&norm);
-
 
 	// we need to disable fogging
 	if (The_mission.flags & MISSION_FLAG_FULLNEB)
@@ -2615,34 +2610,32 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			vm_vec_unrotate(&world_pnt, &gpt->pnt, orient);
 			vm_vec_add2(&world_pnt, pos);
 
-			// if ship is warping out, check position of the engine glow to the warp plane
-			if ( (shipp->flags & (SF_ARRIVING|SF_DEPART_WARP) ) && (shipp->warpout_effect) ) {
-				vec3d warp_pnt, tmp;
-				matrix warp_orient;
+			if (shipp) {
+				// if ship is warping out, check position of the engine glow to the warp plane
+				if ( (shipp->flags & (SF_ARRIVING|SF_DEPART_WARP) ) && (shipp->warpout_effect) ) {
+					vec3d warp_pnt, tmp;
+					matrix warp_orient;
 
-				shipp->warpout_effect->getWarpPosition(&warp_pnt);
-				shipp->warpout_effect->getWarpOrientation(&warp_orient);
+					shipp->warpout_effect->getWarpPosition(&warp_pnt);
+					shipp->warpout_effect->getWarpOrientation(&warp_orient);
+					vm_vec_sub( &tmp, &world_pnt, &warp_pnt );
 
-				vm_vec_sub( &tmp, &world_pnt, &warp_pnt );
-
-				if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
-				{
-					if (shipp->flags & SF_ARRIVING)// if in front of warp plane, don't create.
-						break;
-				} else {
-					if (shipp->flags & SF_DEPART_WARP)
-						break;
+					if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f ) {
+						if (shipp->flags & SF_ARRIVING)// if in front of warp plane, don't create.
+							break;
+					} else {
+						if (shipp->flags & SF_DEPART_WARP)
+							break;
+					}
 				}
 			}
 
 			vm_vec_sub(&tempv, &View_position, &world_pnt);
 			vm_vec_normalize(&tempv);
-
 			vm_vec_unrotate(&world_norm, &gpt->norm, orient);
-
 			D = d = vm_vec_dot(&tempv, &world_norm);
 
-			//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
+			// ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
 			#define NOISE_SCALE 0.5f
 			#define MIN_SCALE 3.4f
 			#define MAX_SCALE 4.7f
@@ -2652,7 +2645,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
 			// normalize banks, in case of incredibly big normals
-			// VECMAT-ERROR: NULL VEC3D (norm == nul)
 			if ( !IS_VEC_NULL_SQ_SAFE(&world_norm) )
 				vm_vec_copy_normalize(&scale_vec, &world_norm);
 
@@ -2669,7 +2661,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				magnitude *= -1.0f;
 
 			scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
-		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 			if (d > 0.0f){
 				// Make glow bitmap fade in/out quicker from sides.
@@ -2697,7 +2688,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					d = 1.0f;
 			}
 
-
 			float w = gpt->radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
 
 			// these lines are used by the tertiary glows, thus we will need to project this all of the time
@@ -2707,10 +2697,9 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				g3_transfer_vertex( &p, &world_pnt );
 			}
 
+			// start primary thruster glows
 			if ( (Interp_thrust_glow_bitmap >= 0) && (d > 0.0f) ) {
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
-
-				//primary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.5f * Interp_thrust_glow_rad_factor), (w * 0.325f) );
 				batch_add_bitmap(
 					Interp_thrust_glow_bitmap, 
 					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
@@ -2721,17 +2710,11 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					(w * 0.325f)
 				);
 			}
-			// end primary thruster glows
 
 			// start tertiary thruster glows
 			if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-				// tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
-				// thus is mostly for haveing a glow that is visable from the front
 				p.sw -= w;
-
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
-
-				//tertiary_thruster_batcher.draw_bitmap( &p, (w * 0.6f * Interp_tertiary_thrust_glow_rad_factor), (magnitude * 4), (-(D > 0) ? D : -D) );
 				batch_add_bitmap_rotated(
 					Interp_tertiary_thrust_glow_bitmap,
 					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
@@ -2742,21 +2725,12 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					(-(D > 0) ? D : -D)
 				);
 			}
-			// end tertiary thruster glows
 
-			// begin secondary glows ....
+			// begin secondary glows
 			if (Interp_secondary_thrust_glow_bitmap >= 0) {
-				// secondary thruster glows, they are based on the beam rendering code
-				// they are suposed to simulate... an ion wake... or... something
-				// ok, how's this there suposed to look cool! hows that, 
-				// it that scientific enough for you!! you anti-asthetic basturds!!!
-				// AAAHHhhhh!!!!
 				pnt = world_pnt;
-
 				scale = magnitude * (MAX_SCALE - (MIN_SCALE / 2)) + (MIN_SCALE / 2);
-
 				vm_vec_unrotate(&world_norm, &norm, orient);
-
 				d = vm_vec_dot(&tempv, &world_norm);
 				d += 0.75f;
 				d *= 3.0f;
@@ -2782,8 +2756,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT,
 							&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor*0.5f, d
 					);
-					if(Scene_framebuffer_in_frame)
-					{
+					if (Scene_framebuffer_in_frame) {
 						vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 4 * Interp_thrust_glow_len_factor);
 						distortion_add_beam(Interp_secondary_thrust_glow_bitmap,
 							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_DISTORTION_THRUSTER | TMAP_FLAG_SOFT_QUAD,
@@ -2792,12 +2765,11 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					}
 				}
 			}
-			// end secondary glows
 
 			// begin particles
 			if (shipp) {
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
-				particle_emitter	pe;
+				particle_emitter pe;
 				thruster_particles *tp;
 				int num_particles = 0;
 
@@ -2817,25 +2789,27 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 					vm_vec_add2(&npnt, pos);
 
-					pe.pos = npnt;				// Where the particles emit from
-					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
+					// Where the particles emit from
+					pe.pos = npnt;
+					// Initial velocity of all the particles
+					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;
 					pe.min_vel = v * 0.75f;
 					pe.max_vel =  v * 1.25f;
-	
-					pe.normal = orient->vec.fvec;	// What normal the particle emit around
+					// What normal the particle emit around
+					pe.normal = orient->vec.fvec;
 					vm_vec_negate(&pe.normal);
 
-					pe.num_low = tp->n_low;								// Lowest number of particles to create
-					pe.num_high = tp->n_high;							// Highest number of particles to create
-					pe.min_rad = gpt->radius * tp->min_rad; // * objp->radius;
-					pe.max_rad = gpt->radius * tp->max_rad; // * objp->radius;
-					pe.normal_variance = tp->variance;					//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+					// Lowest number of particles to create
+					pe.num_low = tp->n_low;
+					// Highest number of particles to create
+					pe.num_high = tp->n_high;
+					pe.min_rad = gpt->radius * tp->min_rad;
+					pe.max_rad = gpt->radius * tp->max_rad;
+					// How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+					pe.normal_variance = tp->variance;
 
 					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
-				// end particles
-
-				// do sound - maybe start a random sound, if it has played far enough.
 			}
 		}
 	}
@@ -2843,23 +2817,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	// save current zbuffer, and set the correct mode for us
 	int zbuff_save = gr_zbuffering_mode;
 	gr_zbuffer_set(GR_ZBUFF_READ);
-
-	/*if (Interp_thrust_glow_bitmap >= 0) {
-		gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-		primary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-	}*/
-
-	/*if (Interp_secondary_thrust_glow_bitmap >= 0) {
-		gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
-		secondary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
-	}*/
-
-	/*if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-		gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-		tertiary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-	}*/
-
-	// reset zbuffer to original setting
 	gr_zbuffer_set(zbuff_save);
 }
 
