@@ -258,9 +258,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 	int cd_mve_is_on;
 	char volume_name[128];
 
-#ifdef RELEASE_REAL
 	int num_attempts = 0;
-#endif
 
 	while(1) {
 		int path_set_ok;
@@ -286,7 +284,6 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 			break;
 		}
 
-#ifdef RELEASE_REAL
 		if ( !prompt_for_cd ) {
 			cd_present = 0;
 			break;
@@ -312,11 +309,6 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 			cd_present = 0;
 			break;
 		}													   
-#else
-		cd_present = 0;
-		break;
-#endif
-
 	}
 
 	return cd_present;   

@@ -5314,12 +5314,10 @@ int multi_create_ok_to_commit()
 		if(MULTI_IS_TRACKER_GAME){
 			// don't allow squad war matches to continue
 			if(Netgame.type_flags & NG_TYPE_SW){
-#ifdef RELEASE_REAL
 				// if this is squad war, don't allow it to continue			
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("One or more players has hacked data files. You cannot play a SquadWar match unless all clients have legal data", 1272));
 
 				return 0;
-#endif
 			}
 			// otherwise, warn the players that stats will not saved
 			else {

@@ -870,25 +870,6 @@ void main_hall_do(float frametime)
 
 		// load mission key was pressed
 		case LOAD_MISSION_REGION:
-#ifdef RELEASE_REAL
-#else
-	#if !(defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO))
-	//#if !defined(NDEBUG) || defined(INTERPLAYQA)
-				if (Player->flags & PLAYER_FLAGS_IS_MULTI){
-					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-					main_hall_set_notify_string(XSTR( "Load Mission not valid for multiplayer pilots", 368));
-				} else {
-	#ifdef GAME_CD_CHECK
-					// if ( !game_do_cd_check() ) {
-						// break;
-					// }
-	#endif
-					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-					gameseq_post_event( GS_EVENT_LOAD_MISSION_MENU );
-				}
-	//#endif
-	#endif
-#endif
 			break;
 
 		// quick start a game region
