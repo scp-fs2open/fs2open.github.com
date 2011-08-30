@@ -7838,7 +7838,7 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	ship_launch_countermeasure( objp, rand_val );			
 }
 
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam, int bank_point)
+void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, int bfi_flags, int bank_point)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;	
@@ -7858,7 +7858,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 		return;
 	}
 
-	if (!fighter_beam) {
+	if (!(bfi_flags & BFIF_IS_FIGHTER_BEAM)) {
 		Assert(target != NULL);
 		if (target == NULL) {
 			return;
@@ -7869,7 +7869,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 
 	u_beam_info = (short)beam_info_index;
 
-	if (fighter_beam) {
+	if (bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		Assert( (bank_point >= 0) && (bank_point < UCHAR_MAX) );
 		subsys_index = (char)bank_point;
 	} else {
@@ -7904,7 +7904,8 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	ADD_USHORT(target_sig);
 	ADD_SHORT(u_beam_info);
 	ADD_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
-//	ADD_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
+//	ADD_DATA(bfi_flags);	// this breaks the protocol but is here in case we decided to do that in the future - taylor
+//	ADD_DATA(target_pos);	// ditto - Goober5000
 
 	// send to all clients	
 	multi_io_send_to_all_reliable(data, packet_size);

@@ -4827,6 +4827,10 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			}
 			break;
 
+		case OP_BEAM_FIRE_COORDS:
+			special_subsys = OPS_BEAM_TURRET;
+			break;
+
 		// these sexps check the subsystem of the *second entry* on the list, not the first
 		case OP_DISTANCE_SUBSYSTEM:
 		case OP_SET_CARGO:

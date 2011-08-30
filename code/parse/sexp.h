@@ -681,6 +681,7 @@ class waypoint_list;
 #define OP_NAV_USEAP						(0x00ff | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 // 0x00ff is the last remaining sexp in the CHANGE category!  Future change sexps should go under CHANGE2
+
 #define OP_STRING_GET_SUBSTRING				(0x0000 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_STRING_SET_SUBSTRING				(0x0001 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_NUM_COUNTERMEASURES			(0x0002 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Karajorma
@@ -689,11 +690,8 @@ class waypoint_list;
 #define OP_GET_COLGROUP_ID					(0x0005 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_SHIP_EFFECT						(0x0006 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Valathil
 #define OP_CLEAR_SUBTITLES					(0x0007 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
+#define OP_BEAM_FIRE_COORDS					(0x0008 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
-/* made obsolete by Goober5000
-// debugging sexpressions
-#define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
-*/
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)

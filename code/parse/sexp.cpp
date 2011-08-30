@@ -404,6 +404,7 @@ sexp_oper Operators[] = {
 	{ "ship-effect",				OP_SHIP_EFFECT,					3, INT_MAX },	// Valathil
 
 	{ "fire-beam",						OP_BEAM_FIRE,					3, 5		},
+	{ "fire-beam-at-coordinates",		OP_BEAM_FIRE_COORDS,			5, 9		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
 	{ "beam-free-all",					OP_BEAM_FREE_ALL,				1, INT_MAX	},
 	{ "beam-lock",						OP_BEAM_LOCK,					2, INT_MAX	},
@@ -15192,7 +15193,7 @@ void sexp_set_skybox_model_preload(char *name)
 	}
 }
 
-void sexp_beam_fire(int node)
+void sexp_beam_fire(int node, bool at_coords)
 {
 	int sindex, n = node;
 	beam_fire_info fire_info;		
@@ -15220,28 +15221,60 @@ void sexp_beam_fire(int node)
 		return;
 	}
 
-	// get the target
-	sindex = ship_name_lookup(CTEXT(n));
-	n = CDR(n);
-	if (sindex < 0) {
-		return;
-	}
-	if (Ships[sindex].objnum < 0) {
-		return;
-	}
-	fire_info.target = &Objects[Ships[sindex].objnum];
-
-	// see if the optional subsystem can be found	
-	fire_info.target_subsys = NULL;
-	if (n >= 0) {
-		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+	if (at_coords) {
+		// get the target coordinates
+		fire_info.target_pos1.xyz.x = fire_info.target_pos2.xyz.x = static_cast<float>(eval_num(n));
 		n = CDR(n);
+		fire_info.target_pos1.xyz.y = fire_info.target_pos2.xyz.y = static_cast<float>(eval_num(n));
+		n = CDR(n);
+		fire_info.target_pos1.xyz.z = fire_info.target_pos2.xyz.z = static_cast<float>(eval_num(n));
+		n = CDR(n);
+		fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
+		fire_info.target = NULL;
+		fire_info.target_subsys = NULL;
+	} else {
+		// get the target
+		sindex = ship_name_lookup(CTEXT(n));
+		n = CDR(n);
+		if (sindex < 0) {
+			return;
+		}
+		if (Ships[sindex].objnum < 0) {
+			return;
+		}
+		fire_info.target = &Objects[Ships[sindex].objnum];
+
+		// see if the optional subsystem can be found	
+		fire_info.target_subsys = NULL;
+		if (n >= 0) {
+			fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+			n = CDR(n);
+		}
 	}
 
 	// optionally force firing
 	if (n >= 0 && is_sexp_true(n)) {
 		fire_info.bfi_flags |= BFIF_FORCE_FIRING;
+		n = CDR(n);
 	}
+
+	// get the second set of coordinates
+	if (at_coords) {
+		if (n >= 0) {
+			fire_info.target_pos2.xyz.x = static_cast<float>(eval_num(n));
+			n = CDR(n);
+		}
+		if (n >= 0) {
+			fire_info.target_pos2.xyz.y = static_cast<float>(eval_num(n));
+			n = CDR(n);
+		}
+		if (n >= 0) {
+			fire_info.target_pos2.xyz.z = static_cast<float>(eval_num(n));
+			n = CDR(n);
+		}
+	}
+
+	// --- done getting arguments ---
 
 	// if it has no primary weapons
 	if (fire_info.turret->weapons.num_primary_banks <= 0) {
@@ -21189,7 +21222,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_BEAM_FIRE:
-				sexp_beam_fire(node);
+			case OP_BEAM_FIRE_COORDS:
+				sexp_beam_fire(node, op_num == OP_BEAM_FIRE_COORDS);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -22606,6 +22640,7 @@ int query_operator_return_type(int op)
 		case OP_MODIFY_VARIABLE:
 		case OP_SET_VARIABLE_BY_INDEX:
 		case OP_BEAM_FIRE:
+		case OP_BEAM_FIRE_COORDS:
 		case OP_BEAM_FREE:
 		case OP_BEAM_FREE_ALL:
 		case OP_BEAM_LOCK:
@@ -23941,17 +23976,29 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_BEAM_FIRE:
-			switch(argnum){
-			case 0:
-				return OPF_SHIP;
-			case 1:
-				return OPF_SUBSYSTEM;
-			case 2:
-				return OPF_SHIP;
-			case 3:
-				return OPF_SUBSYSTEM;
-			case 4:
-				return OPF_BOOL;
+			switch(argnum) {
+				case 0:
+					return OPF_SHIP;
+				case 1:
+					return OPF_SUBSYSTEM;
+				case 2:
+					return OPF_SHIP;
+				case 3:
+					return OPF_SUBSYSTEM;
+				case 4:
+					return OPF_BOOL;
+			}
+
+		case OP_BEAM_FIRE_COORDS:
+			switch(argnum) {
+				case 0:
+					return OPF_SHIP;
+				case 1:
+					return OPF_SUBSYSTEM;
+				case 5:
+					return OPF_BOOL;
+				default:
+					return OPF_NUMBER;
 			}
 
 		case OP_IS_TAGGED:
@@ -25923,6 +25970,7 @@ int get_subcategory(int sexp_id)
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
+		case OP_BEAM_FIRE_COORDS:
 		case OP_BEAM_FREE:
 		case OP_BEAM_FREE_ALL:
 		case OP_BEAM_LOCK:
@@ -28294,13 +28342,25 @@ sexp_help_struct Sexp_help[] = {
 		"\tRest (optional): Cargo to jettison.  If no optional arguments are specified, the ship jettisons all cargo.\r\n"
 	},
 
-	{ OP_BEAM_FIRE, "beam-fire\r\n"
+	{ OP_BEAM_FIRE, "fire-beam\r\n"
 		"\tFire a beam weapon from a specified subsystem\r\n"
 		"\t1:\tShip which will be firing\r\n"
 		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
 		"\t3:\tShip which will be targeted\r\n"
 		"\t4:\tSubsystem to target (optional)\r\n"
 		"\t5:\tWhether to force the beam to fire (disregarding FOV and subsystem status) (optional)\r\n" },
+
+	{ OP_BEAM_FIRE_COORDS, "fire-beam-at-coordinates\r\n"
+		"\tFire a beam weapon from a specified subsystem at a set of coordinates.  Not compatible with multiplayer.\r\n"
+		"\t1:\tShip which will be firing\r\n"
+		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
+		"\t3:\tx coordinate to be targeted\r\n"
+		"\t4:\ty coordinate to be targeted\r\n"
+		"\t5:\tz coordinate to be targeted\r\n"
+		"\t6:\tWhether to force the beam to fire (disregarding FOV and subsystem status) (optional)\r\n"
+		"\t7:\tsecond x coordinate to be targeted (optional; only used for slash beams)\r\n"
+		"\t8:\tsecond y coordinate to be targeted (optional; only used for slash beams)\r\n"
+		"\t9:\tsecond z coordinate to be targeted (optional; only used for slash beams)\r\n" },
 
 	{ OP_IS_TAGGED, "is-tagged\r\n"
 		"\tReturns whether a given ship is tagged or not\r\n"},
