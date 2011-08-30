@@ -21956,7 +21956,10 @@ int eval_sexp(int cur_node, int referenced_node)
 	}
 }
 
-
+/**
+ * Only runs on the client machines not the server. Evaluates the contents of a SEXP packet and calls the relevent multi_sexp_x 
+ * function(s). 
+ */
 void multi_sexp_eval()
 {
 	int op_num; 
