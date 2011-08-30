@@ -878,7 +878,7 @@ void std_multi_update_netgame_info_controls()
 	SetWindowText(Std_ng_security,buf);
 
 	// update the netgame respawns # control
-	sprintf(buf,"%d",Netgame.respawn);
+	sprintf(buf,"%u",Netgame.respawn);
 	SetWindowText(Std_ng_respawns,buf);
 }
 

@@ -335,17 +335,17 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon shots:", 51));
-	sprintf(Stats[Num_stat_lines], "%d", stats->p_shots_fired);
+	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_fired);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon hits:", 52));
-	sprintf(Stats[Num_stat_lines], "%d", stats->p_shots_hit);
+	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_hit);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hits:", 53));
-	sprintf(Stats[Num_stat_lines], "%d", stats->p_bonehead_hits);
+	sprintf(Stats[Num_stat_lines], "%u", stats->p_bonehead_hits);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -375,17 +375,17 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon shots:", 57));
-	sprintf(Stats[Num_stat_lines], "%d", stats->s_shots_fired);
+	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_fired);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon hits:", 58));
-	sprintf(Stats[Num_stat_lines], "%d", stats->s_shots_hit);
+	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_hit);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hits:", 59));
-	sprintf(Stats[Num_stat_lines], "%d", stats->s_bonehead_hits);
+	sprintf(Stats[Num_stat_lines], "%u", stats->s_bonehead_hits);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
