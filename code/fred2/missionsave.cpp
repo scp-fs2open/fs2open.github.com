@@ -3911,7 +3911,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall > 0) ? CMISSION_FLAG_BASTION : 0));
 		}
 
-		if ( (Campaign.missions[m].debrief_persona_index >= 0) && (Campaign.missions[m].debrief_persona_index <= 0xff) ) {
+		if ( Campaign.missions[m].debrief_persona_index <= 0xff ) {
 			if (optional_string_fred("+Debriefing Persona Index:")) {
 				parse_comments(1);
 				fout(" %d", Campaign.missions[m].debrief_persona_index);
