@@ -29668,7 +29668,7 @@ bool output_sexps(char *filepath)
 	}
 
 	//Header
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0)
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) //-V547
 	{
 		fprintf(fp, "<html>\n<head>\n\t<title>SEXP Output - FSO v%i.%i</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 		fputs("<body>", fp);

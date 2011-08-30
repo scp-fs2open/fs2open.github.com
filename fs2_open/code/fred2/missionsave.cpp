@@ -3911,17 +3911,13 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall > 0) ? CMISSION_FLAG_BASTION : 0));
 		}
 
-		if ( Campaign.missions[m].debrief_persona_index <= 0xff ) {
-			if (optional_string_fred("+Debriefing Persona Index:")) {
-				parse_comments(1);
-				fout(" %d", Campaign.missions[m].debrief_persona_index);
-			} else {
-				fso_comment_push(";;FSO 3.6.8;;");
-				fout_version("\n+Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
-				fso_comment_pop();
-			}
+		if (optional_string_fred("+Debriefing Persona Index:")) {
+			parse_comments(1);
+			fout(" %d", Campaign.missions[m].debrief_persona_index);
 		} else {
-			bypass_comment(";;FSO 3.6.8;; +Debriefing Persona Index:");
+			fso_comment_push(";;FSO 3.6.8;;");
+			fout_version("\n+Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
+			fso_comment_pop();
 		}
 
 		// save campaign link sexp
