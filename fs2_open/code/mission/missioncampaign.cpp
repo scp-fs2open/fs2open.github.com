@@ -782,7 +782,7 @@ int mission_campaign_savefile_save()
 		return 0;
 
 	// catch a case where the campaign hasn't been switched yet after being unavailable
-	if ( strlen(Campaign.filename) == 0 )
+	if ( Campaign.filename[0] == '\0' )
 		return 0;
 
 	// make sure that we don't try to save if the campaign is missing since it's
