@@ -702,7 +702,9 @@ void init_medal_bitmaps()
 			if ( num_medals > 1 ) {
 				// append the proper character onto the end of the medal filename.  Base version
 				// has no character. next version is a, then b, etc.
-				sprintf( base, "%s%c", base, (num_medals-2)+'a');
+				char temp[NAME_LENGTH];
+				strcpy_s(temp, base);
+				sprintf( base, "%s%c", temp, (num_medals-2)+'a');
 			}
 
 			// hi-res support

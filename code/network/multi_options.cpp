@@ -404,12 +404,12 @@ void get_server_options(ubyte *data, int *size, multi_server_options *mso)
 
 	GET_DATA(*mso);
 
-	mso->flags = INTEL_INT(mso->flags);
-	mso->respawn = INTEL_INT(mso->respawn);
-	mso->voice_token_wait = INTEL_INT(mso->voice_token_wait);
-	mso->voice_record_time = INTEL_INT(mso->voice_record_time);
+	mso->flags = INTEL_INT(mso->flags); //-V570
+	mso->respawn = INTEL_INT(mso->respawn); //-V570
+	mso->voice_token_wait = INTEL_INT(mso->voice_token_wait); //-V570
+	mso->voice_record_time = INTEL_INT(mso->voice_record_time); //-V570
 //	mso->mission_time_limit = INTEL_INT(mso->mission_time_limit);
-	mso->kill_limit = INTEL_INT(mso->kill_limit);
+	mso->kill_limit = INTEL_INT(mso->kill_limit); //-V570
 
 	*size = offset;
 }
@@ -421,8 +421,8 @@ void get_local_options(ubyte *data, int *size, multi_local_options *mlo)
 
 	GET_DATA(*mlo);
 
-	mlo->flags = INTEL_INT(mlo->flags);
-	mlo->obj_update_level = INTEL_INT(mlo->obj_update_level);
+	mlo->flags = INTEL_INT(mlo->flags); //-V570
+	mlo->obj_update_level = INTEL_INT(mlo->obj_update_level); //-V570
 
 	*size = offset;
 }

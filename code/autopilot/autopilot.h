@@ -16,8 +16,8 @@
 
 #define MAX_NAVPOINTS	8
 
-#define NP_WAYPOINT		0x0001 // Nav Point is bound to the poistion of a single node of a waypoint path
-#define NP_SHIP			0x0002 // Nav Point is bound to the poisiton of a certain ship 
+#define NP_WAYPOINT		0x0001 // Nav Point is bound to the position of a single node of a waypoint path
+#define NP_SHIP			0x0002 // Nav Point is bound to the position of a certain ship 
 #define NP_HIDDEN		0x0004 // Nav Point doesn't show on map and isn't selectable
 #define NP_NOACCESS		0x0008 // Nav Point isn't selectable
 #define NP_VISITED		0x0100 // Whether we've been within 1,000 meters of this waypoint

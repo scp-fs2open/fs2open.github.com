@@ -336,17 +336,17 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon shots:", 51));
-	sprintf(Stats[Num_stat_lines], "%d", stats->p_shots_fired);
+	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_fired);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon hits:", 52));
-	sprintf(Stats[Num_stat_lines], "%d", stats->p_shots_hit);
+	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_hit);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hits:", 53));
-	sprintf(Stats[Num_stat_lines], "%d", stats->p_bonehead_hits);
+	sprintf(Stats[Num_stat_lines], "%u", stats->p_bonehead_hits);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -376,17 +376,17 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon shots:", 57));
-	sprintf(Stats[Num_stat_lines], "%d", stats->s_shots_fired);
+	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_fired);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon hits:", 58));
-	sprintf(Stats[Num_stat_lines], "%d", stats->s_shots_hit);
+	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_hit);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hits:", 59));
-	sprintf(Stats[Num_stat_lines], "%d", stats->s_bonehead_hits);
+	sprintf(Stats[Num_stat_lines], "%u", stats->s_bonehead_hits);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -1106,11 +1106,12 @@ void barracks_display_pilot_callsigns(int prospective_pilot)
 			break;
 
 		if (!stricmp(Cur_pilot->callsign, Pilots[cur_pilot_idx]) && multi) {
-			if ((cur_pilot_idx == Selected_line) || (cur_pilot_idx == prospective_pilot)) {
+			/*if ((cur_pilot_idx == Selected_line) || (cur_pilot_idx == prospective_pilot)) {
 				gr_set_color_fast(&Color_text_active_hi);
 			} else {
 				gr_set_color_fast(&Color_text_active);
-			}
+			}*/
+			gr_set_color_fast(&Color_text_active);
 		} else {
 			if (cur_pilot_idx == Selected_line) {
 				gr_set_color_fast(&Color_text_selected);

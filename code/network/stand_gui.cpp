@@ -878,7 +878,7 @@ void std_multi_update_netgame_info_controls()
 	SetWindowText(Std_ng_security,buf);
 
 	// update the netgame respawns # control
-	sprintf(buf,"%d",Netgame.respawn);
+	sprintf(buf,"%u",Netgame.respawn);
 	SetWindowText(Std_ng_respawns,buf);
 }
 
@@ -2040,7 +2040,7 @@ void std_build_title_string(char *str)
 	// build the version #
 	memset(ver_str, 0, sizeof(ver_str));
 
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) { //-V547
 		snprintf(ver_str, sizeof(ver_str)-1, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 	} else if (FS_VERSION_REVIS == 0) {
 		snprintf(ver_str, sizeof(ver_str)-1, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);

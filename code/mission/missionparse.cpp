@@ -4691,20 +4691,17 @@ void parse_goals(mission *pm)
 
 void parse_waypoint_list(mission *pm)
 {
-	waypoint_list	*wpl;
-
-
-	Assert(Num_waypoint_lists < MAX_WAYPOINT_LISTS);
 	Assert(pm != NULL);
-	wpl = &Waypoint_lists[Num_waypoint_lists];
 
+	char name_buf[NAME_LENGTH];
 	required_string("$Name:");
-	stuff_string(wpl->name, F_NAME, NAME_LENGTH);
+	stuff_string(name_buf, F_NAME, NAME_LENGTH);
 
+	SCP_vector<vec3d> vec_list;
 	required_string("$List:");
-	wpl->count = stuff_vector_list(wpl->waypoints, MAX_WAYPOINTS_PER_LIST);
+	stuff_vector_list(vec_list);
 
-	Num_waypoint_lists++;
+	waypoint_add_list(name_buf, vec_list);
 }
 
 void parse_waypoints(mission *pm)
@@ -5274,7 +5271,9 @@ int parse_mission(mission *pm, int flags)
 
 	int i;
 
-	Player_starts = Num_cargo = Num_waypoint_lists = Num_goals = Num_wings = 0;
+	waypoint_parse_init();
+
+	Player_starts = Num_cargo = Num_goals = Num_wings = 0;
 	Player_start_shipnum = -1;
 	*Player_start_shipname = 0;		// make the string 0 length for checking later
 	Player_start_pobject.Reset( );
@@ -5454,7 +5453,7 @@ void post_process_mission()
 
 	init_ai_system();
 
-	create_waypoints();
+	waypoint_create_game_objects();
 
 	// Goober5000 - this needs to be called only once after parsing of objects and wings is complete
 	// (for individual invalidation, see mission_parse_mark_non_arrival)
@@ -5694,7 +5693,7 @@ void parse_init(bool basic)
 	for (int i = 0; i < MAX_CARGO; i++)
 		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
 
-	Total_goal_ship_names = 0;
+	Total_goal_target_names = 0;
 
 	// if we are just wanting basic info then we shouldn't need sexps
 	// (prevents memory fragmentation with the now dynamic Sexp_nodes[])

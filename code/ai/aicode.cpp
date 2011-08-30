@@ -339,6 +339,7 @@ int ai_good_time_to_rearm(object *objp)
 // this function is entry point from sexpression code to set internal data for use by ai code.
 void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, char *shipname )
 {
+	Assert(shipname != NULL);
 	int index;
 	huge_fire_info new_info; 
 
@@ -346,7 +347,7 @@ void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, cha
 	new_info.team = team;
 	new_info.max_fire_count = max_fire_count;
 
-	new_info.shipname = ai_get_goal_ship_name( shipname, &index );
+	new_info.shipname = ai_get_goal_target_name( shipname, &index );
 
 	Ai_huge_fire_info.push_back(new_info);
 }
@@ -3230,17 +3231,23 @@ void ai_start_fly_to_ship(object *objp, int shipnum)
 //	Cause a ship to fly its waypoints.
 //	flags tells:
 //		WPF_REPEAT	Set -> repeat waypoints.
-void ai_start_waypoints(object *objp, int waypoint_list_index, int wp_flags)
+void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 {
 	ai_info	*aip;
-
-	Assert(waypoint_list_index < Num_waypoint_lists);
+	Assert(wp_list != NULL);
 
 	//nprintf(("AI", "Frame %i: Ship %s instructed to fly waypoint list #%i\n", AI_FrameCount, Ships[objp->instance].ship_name, waypoint_list_index));
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
-	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_index == waypoint_list_index) )
+	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_list == wp_list) )
+	{
+		if (aip->wp_index == INVALID_WAYPOINT_POSITION)
+		{
+			Warning(LOCATION, "aip->wp_index should have been assigned already!");
+			aip->wp_index = aip->wp_list->get_waypoints().begin();
+		}
 		return;
+	}
 
 	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS && AutoPilotEngaged)
 	{
@@ -3253,8 +3260,8 @@ void ai_start_waypoints(object *objp, int waypoint_list_index, int wp_flags)
 		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
 	}
 
-	aip->wp_list = waypoint_list_index;
-	aip->wp_index = 0;
+	aip->wp_list = wp_list;
+	aip->wp_index = wp_list->get_waypoints().begin();
 	aip->wp_flags = wp_flags;
 	aip->mode = AIM_WAYPOINTS;
 
@@ -3544,39 +3551,6 @@ void ai_update_aim(ai_info *aip, object* En_Objp)
 		//Update the position based on the velocity (assume no velocity vector change)
 		vm_vec_scale_add2(&aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, flFrametime);
 	}
-}
-
-//	--------------------------------------------------------------------------
-int find_nearest_waypoint(object *objp)
-{
-	int	i;
-	float	dist, min_dist, dot;
-	int	min_ind;
-	ship	*shipp;
-	int	wp_listnum;
-	waypoint_list	*wpl;
-
-	shipp = &Ships[objp->instance];
-	wp_listnum = Ai_info[Ships[objp->instance].ai_index].wp_list;
-	Assert(wp_listnum > 0);
-	wpl = &Waypoint_lists[wp_listnum];
-
-	min_dist = 999999.0f;
-	min_ind = -1;
-
-	for (i=0; i<wpl->count; i++) {
-		dist = vm_vec_dist_quick(&objp->pos, &wpl->waypoints[i]);
-		dot = vm_vec_dot_to_point(&objp->orient.vec.fvec, &objp->pos, &wpl->waypoints[i]);
-		dist = (float) (dist * (1.25 - dot));
-		if (dist < min_dist) {
-			min_dist = dist;
-			min_ind = i;
-		}
-	}
-
-	Assert(min_ind != -1);
-
-	return min_ind;
 }
 
 //	Given an ai_info struct, by reading current goal and path information,
@@ -4563,45 +4537,46 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 //	make Pl_objp fly waypoints.
 void ai_waypoints()
 {
-	int		wp_index;
-	ai_info	*aip;
-	waypoint_list	*wpl;
+	ai_info	*aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
-	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
-
-	wp_index = aip->wp_index;
-
-	if (wp_index == -1) {
-		ai_start_waypoints(Pl_objp, 0, WPF_REPEAT);
-		wp_index = aip->wp_index;
-		aip->wp_dir = 1;
+	// sanity checking for stuff that should never happen
+	if (aip->wp_index == INVALID_WAYPOINT_POSITION) {
+		if (aip->wp_list == NULL) {
+			Warning(LOCATION, "Waypoints should have been assigned already!");
+			ai_start_waypoints(Pl_objp, &Waypoint_lists.front(), WPF_REPEAT);
+		} else {
+			Warning(LOCATION, "Waypoints should have been started already!");
+			ai_start_waypoints(Pl_objp, aip->wp_list, WPF_REPEAT);
+		}
 	}
-
-	wpl = &Waypoint_lists[aip->wp_list];
-
-	Assert(wpl->count > 0);	// What? Is this zero? Probably wp_index never got initialized!
+	Assert(!aip->wp_list->get_waypoints().empty());	// What? Is this zero? Probably never got initialized!
 
 	bool done, treat_as_ship;
-	ai_fly_to_target_position(&(wpl->waypoints[wp_index]), &done, &treat_as_ship);
+	ai_fly_to_target_position(aip->wp_index->get_pos(), &done, &treat_as_ship);
 
 	if ( done ) {
-		aip->wp_index++; // go on to next waypoint in path
-		if ( (aip->wp_index >= wpl->count) ) {
-			// have reached the last waypoint.  Do I?
-			if ( ((aip->wp_flags & WPF_REPEAT) > 0) ) {
-				aip->wp_index = 0; // go back to the start.
+		// go on to next waypoint in path
+		++aip->wp_index;
+
+		if ( aip->wp_index == aip->wp_list->get_waypoints().end() ) {
+			// have reached the last waypoint.  Do I repeat?
+			if ( aip->wp_flags & WPF_REPEAT ) {
+				 // go back to the start.
+				aip->wp_index = aip->wp_list->get_waypoints().begin();
 			} else {
-				aip->wp_index = (wpl->count - 1); // stay on the last waypoint
+				// stay on the last waypoint.
+				--aip->wp_index;
+
 				// Log a message that the wing or ship reached his waypoint and
 				// remove the goal from the AI goals of the ship pr wing, respectively.
 				// Whether we should treat this as a ship or a wing is determined by
 				// ai_fly_to_target_position when it marks the AI directive as complete
 				if ( treat_as_ship ) {
 					ai_mission_goal_complete( aip );					// this call should reset the AI mode
-					mission_log_add_entry( LOG_WAYPOINTS_DONE, Ships[Pl_objp->instance].ship_name, wpl->name, -1 );
+					mission_log_add_entry( LOG_WAYPOINTS_DONE, Ships[Pl_objp->instance].ship_name, aip->wp_list->get_name(), -1 );
 				} else {
 					ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
-					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, wpl->name, -1 );
+					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, aip->wp_list->get_name(), -1 );
 				}
 			}
 		}
@@ -4634,11 +4609,9 @@ void ai_fly_to_ship()
 		aip->mode = AIM_NONE;
 		return;
 	}
-	Assert( aip->goals[aip->active_goal].ship_name != NULL );
-	if ( aip->goals[aip->active_goal].ship_name[0] == '\0' ) {
-		Warning(LOCATION,
-			"'%s' is trying to fly-to a ship without a name for the ship",
-			Ships[Pl_objp->instance].ship_name);
+	Assert( aip->goals[aip->active_goal].target_name != NULL );
+	if ( aip->goals[aip->active_goal].target_name[0] == '\0' ) {
+		Warning(LOCATION, "'%s' is trying to fly-to-ship without a name for the ship", Ships[Pl_objp->instance].ship_name);
 		aip->mode = AIM_NONE;
 		ai_remove_ship_goal( aip, aip->active_goal ); // function sets aip->active_goal to NONE for me
 		return;
@@ -4646,7 +4619,7 @@ void ai_fly_to_ship()
 
 	for (int j = 0; j < MAX_SHIPS; j++)
 	{
-		if (Ships[j].objnum != -1 && !stricmp(aip->goals[aip->active_goal].ship_name, Ships[j].ship_name))
+		if (Ships[j].objnum != -1 && !stricmp(aip->goals[aip->active_goal].target_name, Ships[j].ship_name))
 		{
 			target_p = &Objects[Ships[j].objnum];
 			break;
@@ -4661,7 +4634,7 @@ void ai_fly_to_ship()
 			{
 				mprintf(("Ship '%s' told to fly to target ship '%s'",
 					Ships[Pl_objp->instance].ship_name,
-					aip->goals[i].ship_name));
+					aip->goals[i].target_name));
 			}
 		}
 		#endif
@@ -11892,12 +11865,11 @@ int ai_formation()
 	
 	if (aip->mode == AIM_WAYPOINTS) {
 		aip->wp_list = laip->wp_list;
-		if (laip->wp_index < Waypoint_lists[laip->wp_list].count)
-			aip->wp_index = laip->wp_index;
-		else
-			aip->wp_index = Waypoint_lists[laip->wp_list].count - 1;
+		aip->wp_index = laip->wp_index;
 		aip->wp_flags = laip->wp_flags;
-		aip->wp_dir = laip->wp_dir;
+
+		if (aip->wp_index == aip->wp_list->get_waypoints().end())
+			--aip->wp_index;
 	}
 
 	#ifndef NDEBUG
@@ -14592,8 +14564,8 @@ void init_ai_object(int objnum)
 	//Init stuff from ai class and ai profiles
 	init_aip_from_class_and_profile(aip, &Ai_classes[Ship_info[ship_type].ai_class], The_mission.ai_profile);
 
-	aip->wp_index = -1;
-	aip->wp_list = -1;
+	aip->wp_list = NULL;
+	aip->wp_index = INVALID_WAYPOINT_POSITION;
 
 	aip->attacker_objnum = -1;
 	aip->goal_signature = -1;

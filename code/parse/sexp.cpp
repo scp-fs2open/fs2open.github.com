@@ -404,6 +404,7 @@ sexp_oper Operators[] = {
 	{ "ship-effect",				OP_SHIP_EFFECT,					3, INT_MAX },	// Valathil
 
 	{ "fire-beam",						OP_BEAM_FIRE,					3, 5		},
+	{ "fire-beam-at-coordinates",		OP_BEAM_FIRE_COORDS,			5, 9		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
 	{ "beam-free-all",					OP_BEAM_FREE_ALL,				1, INT_MAX	},
 	{ "beam-lock",						OP_BEAM_LOCK,					2, INT_MAX	},
@@ -724,9 +725,9 @@ int	Training_context_speed_set;
 int	Training_context_speed_min;
 int	Training_context_speed_max;
 int	Training_context_speed_timestamp;
-int	Training_context_path;
-int	Training_context_goal_waypoint;
-int	Training_context_at_waypoint;
+waypoint_list *Training_context_path;
+int Training_context_goal_waypoint;
+int Training_context_at_waypoint;
 float	Training_context_distance;
 char	Sexp_error_text[MAX_SEXP_TEXT];
 char	*Sexp_string; //[1024] = {0};
@@ -1794,7 +1795,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							return SEXP_CHECK_INVALID_SHIP;
 						}
 
-						if (waypoint_lookup(CTEXT(node)) < 0)
+						if (find_matching_waypoint(CTEXT(node)) == NULL)
 						{
 							if (verify_vector(CTEXT(node)))					// verify return non-zero on invalid point
 							{
@@ -1849,7 +1850,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							return SEXP_CHECK_INVALID_SHIP_WING;
 						}
 
-						if (waypoint_lookup(CTEXT(node)) < 0){
+						if (find_matching_waypoint(CTEXT(node)) == NULL){
 							if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
 								if (sexp_determine_team(CTEXT(node)) < 0){
 									return SEXP_CHECK_INVALID_POINT;
@@ -2011,7 +2012,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (waypoint_lookup(CTEXT(node)) < 0)
+				if (find_matching_waypoint(CTEXT(node)) == NULL)
 				{
 					if (verify_vector(CTEXT(node)))
 					{
@@ -2322,13 +2323,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_WAYPOINT_PATH:
-				for (i=0; i<Num_waypoint_lists; i++){
-					if (!stricmp(Waypoint_lists[i].name, CTEXT(node))){
-						break;
-					}
-				}
-
-				if (i == Num_waypoint_lists){
+				if (find_matching_waypoint_list(CTEXT(node)) == NULL) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
@@ -4340,7 +4335,7 @@ typedef struct object_ship_wing_point_team
 	object *objp;
 	ship *shipp;
 	wing *wingp;
-	object *waypointp;
+	waypoint *waypointp;
 	int team;
 }
 object_ship_wing_point_team;
@@ -4348,7 +4343,8 @@ object_ship_wing_point_team;
 // Goober5000
 void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, char *object_name)
 {
-	int team, ship_num, wing_num, object_num;
+	int team, ship_num, wing_num;
+	waypoint *wpt;
 	p_object *p_objp;
 
 	Assert(oswpt != NULL);
@@ -4458,12 +4454,13 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 
 
 	// at this point, we must have a point for a target
-	object_num = waypoint_lookup(object_name);
-	if (object_num >= 0)
+	wpt = find_matching_waypoint(object_name);
+	if (wpt != NULL)
 	{
 		oswpt->type = OSWPT_TYPE_WAYPOINT;
 
-		oswpt->waypointp = oswpt->objp = &Objects[object_num];
+		oswpt->waypointp = wpt;
+		oswpt->objp = &Objects[wpt->get_objnum()];
 
 		return;
 	}
@@ -9183,7 +9180,7 @@ void sexp_add_wing_goal(int n)
 }
 
 /**
- * Adds a goal to the specified entiry (ships and wings have unique names between the two sets).
+ * Adds a goal to the specified entry (ships and wings have unique names between the two sets).
  */
 void sexp_add_goal(int n)
 {
@@ -13906,7 +13903,6 @@ int sexp_is_facing(int node)
 // is ship facing first waypoint in waypoint path
 int sexp_facing2(int node)
 {
-	int i;
 	float a1, a2;
 	vec3d v1, v2;
 
@@ -13923,21 +13919,13 @@ int sexp_facing2(int node)
 	char *waypoint_name = CTEXT(node);
 
 	// get position of first waypoint
-	int wp_index = -1;
-	for (i=0; i<Num_waypoint_lists; i++) {
-		if (!stricmp(waypoint_name, Waypoint_lists[i].name)) {
-			wp_index = i;
-			break;
-		}
-	}
+	waypoint_list *wp_list = find_matching_waypoint_list(waypoint_name);
 
-	if (wp_index == -1) {
+	if (wp_list == NULL) {
 		return SEXP_CANT_EVAL;
 	}
 
-	// Waypoint_lists[wp_index].waypoints[0]
-
-	vm_vec_sub(&v2, &Waypoint_lists[wp_index].waypoints[0], &Player_obj->pos);
+	vm_vec_sub(&v2, wp_list->get_waypoints().front().get_pos(), &Player_obj->pos);
 	vm_vec_normalize(&v2);
 	a1 = vm_vec_dotprod(&v1, &v2);
 	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
@@ -14028,7 +14016,7 @@ int sexp_waypoint_twice()
 int sexp_path_flown()
 {
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
-		if (Training_context_goal_waypoint == Waypoint_lists[Training_context_path].count){
+		if ((uint) Training_context_goal_waypoint == Training_context_path->get_waypoints().size()){
 			return SEXP_TRUE;
 		}
 	}
@@ -15205,7 +15193,7 @@ void sexp_set_skybox_model_preload(char *name)
 	}
 }
 
-void sexp_beam_fire(int node)
+void sexp_beam_fire(int node, bool at_coords)
 {
 	int sindex, n = node;
 	beam_fire_info fire_info;		
@@ -15233,28 +15221,60 @@ void sexp_beam_fire(int node)
 		return;
 	}
 
-	// get the target
-	sindex = ship_name_lookup(CTEXT(n));
-	n = CDR(n);
-	if (sindex < 0) {
-		return;
-	}
-	if (Ships[sindex].objnum < 0) {
-		return;
-	}
-	fire_info.target = &Objects[Ships[sindex].objnum];
-
-	// see if the optional subsystem can be found	
-	fire_info.target_subsys = NULL;
-	if (n >= 0) {
-		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+	if (at_coords) {
+		// get the target coordinates
+		fire_info.target_pos1.xyz.x = fire_info.target_pos2.xyz.x = static_cast<float>(eval_num(n));
 		n = CDR(n);
+		fire_info.target_pos1.xyz.y = fire_info.target_pos2.xyz.y = static_cast<float>(eval_num(n));
+		n = CDR(n);
+		fire_info.target_pos1.xyz.z = fire_info.target_pos2.xyz.z = static_cast<float>(eval_num(n));
+		n = CDR(n);
+		fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
+		fire_info.target = NULL;
+		fire_info.target_subsys = NULL;
+	} else {
+		// get the target
+		sindex = ship_name_lookup(CTEXT(n));
+		n = CDR(n);
+		if (sindex < 0) {
+			return;
+		}
+		if (Ships[sindex].objnum < 0) {
+			return;
+		}
+		fire_info.target = &Objects[Ships[sindex].objnum];
+
+		// see if the optional subsystem can be found	
+		fire_info.target_subsys = NULL;
+		if (n >= 0) {
+			fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+			n = CDR(n);
+		}
 	}
 
 	// optionally force firing
 	if (n >= 0 && is_sexp_true(n)) {
 		fire_info.bfi_flags |= BFIF_FORCE_FIRING;
+		n = CDR(n);
 	}
+
+	// get the second set of coordinates
+	if (at_coords) {
+		if (n >= 0) {
+			fire_info.target_pos2.xyz.x = static_cast<float>(eval_num(n));
+			n = CDR(n);
+		}
+		if (n >= 0) {
+			fire_info.target_pos2.xyz.y = static_cast<float>(eval_num(n));
+			n = CDR(n);
+		}
+		if (n >= 0) {
+			fire_info.target_pos2.xyz.z = static_cast<float>(eval_num(n));
+			n = CDR(n);
+		}
+	}
+
+	// --- done getting arguments ---
 
 	// if it has no primary weapons
 	if (fire_info.turret->weapons.num_primary_banks <= 0) {
@@ -18155,19 +18175,15 @@ void multi_sexp_flash_hud_gauge()
 
 void sexp_set_training_context_fly_path(int node)
 {
-	int i;
+	waypoint_list *wp_list = find_matching_waypoint_list(CTEXT(node));
+	if (wp_list == NULL)
+		return;
 
-	for (i=0; i<Num_waypoint_lists; i++)
-		if (!stricmp(CTEXT(node), Waypoint_lists[i].name))
-			break;
-
-	if (i < Num_waypoint_lists) {
-		Training_context |= TRAINING_CONTEXT_FLY_PATH;
-		Training_context_path = i;
-		Training_context_distance = (float) atof(CTEXT(CDR(node)));
-		Training_context_goal_waypoint = 0;
-		Training_context_at_waypoint = -1;
-	}
+	Training_context |= TRAINING_CONTEXT_FLY_PATH;
+	Training_context_path = wp_list;
+	Training_context_distance = (float) atof(CTEXT(CDR(node)));
+	Training_context_goal_waypoint = 0;
+	Training_context_at_waypoint = -1;
 }
 
 void sexp_set_training_context_speed(int node)
@@ -21206,7 +21222,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_BEAM_FIRE:
-				sexp_beam_fire(node);
+			case OP_BEAM_FIRE_COORDS:
+				sexp_beam_fire(node, op_num == OP_BEAM_FIRE_COORDS);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -21956,7 +21973,10 @@ int eval_sexp(int cur_node, int referenced_node)
 	}
 }
 
-
+/**
+ * Only runs on the client machines not the server. Evaluates the contents of a SEXP packet and calls the relevent multi_sexp_x 
+ * function(s). 
+ */
 void multi_sexp_eval()
 {
 	int op_num; 
@@ -22620,6 +22640,7 @@ int query_operator_return_type(int op)
 		case OP_MODIFY_VARIABLE:
 		case OP_SET_VARIABLE_BY_INDEX:
 		case OP_BEAM_FIRE:
+		case OP_BEAM_FIRE_COORDS:
 		case OP_BEAM_FREE:
 		case OP_BEAM_FREE_ALL:
 		case OP_BEAM_LOCK:
@@ -23955,17 +23976,29 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_BEAM_FIRE:
-			switch(argnum){
-			case 0:
-				return OPF_SHIP;
-			case 1:
-				return OPF_SUBSYSTEM;
-			case 2:
-				return OPF_SHIP;
-			case 3:
-				return OPF_SUBSYSTEM;
-			case 4:
-				return OPF_BOOL;
+			switch(argnum) {
+				case 0:
+					return OPF_SHIP;
+				case 1:
+					return OPF_SUBSYSTEM;
+				case 2:
+					return OPF_SHIP;
+				case 3:
+					return OPF_SUBSYSTEM;
+				case 4:
+					return OPF_BOOL;
+			}
+
+		case OP_BEAM_FIRE_COORDS:
+			switch(argnum) {
+				case 0:
+					return OPF_SHIP;
+				case 1:
+					return OPF_SUBSYSTEM;
+				case 5:
+					return OPF_BOOL;
+				default:
+					return OPF_NUMBER;
 			}
 
 		case OP_IS_TAGGED:
@@ -24840,39 +24873,10 @@ int query_referenced_in_sexp(int mode, char *name, int *node)
 int verify_vector(char *text)
 {
 	char *str;
-	int i, z, len = 0;
+	int len = 0;
 
 	if (text == NULL)
 		return -1;
-
-	for (i=0; i<Num_waypoint_lists; i++) {
-		len = strlen(str = Waypoint_lists[i].name);
-		if (!strnicmp(str, text, len)){
-			if (!text[len] || text[len] == ':'){
-				break;
-			}
-		}
-	}
-
-	if (i < Num_waypoint_lists) {
-		if (!text[len]){
-			return 0;  // a valid waypoint path
-		}
-
-		str = &text[len + 1];
-		while (*str){
-			if (!isdigit(*str++)){
-				return -1;  // not a valid number
-			}
-		}
-
-		z = atoi(&text[len + 1]);
-		if (z < 1 || z > Waypoint_lists[i].count){
-			return -1;  // out of range
-		}
-
-		return 0;  // a valid waypoint
-	}
 
 	len = strlen(text);
 	if (text[0] != '(' || text[len - 1] != ')'){
@@ -25966,6 +25970,7 @@ int get_subcategory(int sexp_id)
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
+		case OP_BEAM_FIRE_COORDS:
 		case OP_BEAM_FREE:
 		case OP_BEAM_FREE_ALL:
 		case OP_BEAM_LOCK:
@@ -27685,7 +27690,7 @@ sexp_help_struct Sexp_help[] = {
 		"vector of the point and the player, and the forward facing vector is within the "
 		"given angle.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 argument...\r\n"
-		"\t1:\tName of waypoint path whose first point is withing forward cone.\r\n"
+		"\t1:\tName of waypoint path whose first point is within forward cone.\r\n"
 		"\t2:\tAngle in degrees of the forward cone." },
 
 	// fixed by Goober5000 and then deprecated by Karajorma
@@ -28337,13 +28342,25 @@ sexp_help_struct Sexp_help[] = {
 		"\tRest (optional): Cargo to jettison.  If no optional arguments are specified, the ship jettisons all cargo.\r\n"
 	},
 
-	{ OP_BEAM_FIRE, "beam-fire\r\n"
+	{ OP_BEAM_FIRE, "fire-beam\r\n"
 		"\tFire a beam weapon from a specified subsystem\r\n"
 		"\t1:\tShip which will be firing\r\n"
 		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
 		"\t3:\tShip which will be targeted\r\n"
 		"\t4:\tSubsystem to target (optional)\r\n"
 		"\t5:\tWhether to force the beam to fire (disregarding FOV and subsystem status) (optional)\r\n" },
+
+	{ OP_BEAM_FIRE_COORDS, "fire-beam-at-coordinates\r\n"
+		"\tFire a beam weapon from a specified subsystem at a set of coordinates.  Not compatible with multiplayer.\r\n"
+		"\t1:\tShip which will be firing\r\n"
+		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
+		"\t3:\tx coordinate to be targeted\r\n"
+		"\t4:\ty coordinate to be targeted\r\n"
+		"\t5:\tz coordinate to be targeted\r\n"
+		"\t6:\tWhether to force the beam to fire (disregarding FOV and subsystem status) (optional)\r\n"
+		"\t7:\tsecond x coordinate to be targeted (optional; only used for slash beams)\r\n"
+		"\t8:\tsecond y coordinate to be targeted (optional; only used for slash beams)\r\n"
+		"\t9:\tsecond z coordinate to be targeted (optional; only used for slash beams)\r\n" },
 
 	{ OP_IS_TAGGED, "is-tagged\r\n"
 		"\tReturns whether a given ship is tagged or not\r\n"},
@@ -29651,7 +29668,7 @@ bool output_sexps(char *filepath)
 	}
 
 	//Header
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0)
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) //-V547
 	{
 		fprintf(fp, "<html>\n<head>\n\t<title>SEXP Output - FSO v%i.%i</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 		fputs("<body>", fp);

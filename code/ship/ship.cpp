@@ -14272,8 +14272,8 @@ char *ship_return_orders(char *outbuf, ship *sp)
 
 	strcpy(outbuf, order_text);
 
-	if ( aigp->ship_name ) {
-		strcpy_s(ship_name, aigp->ship_name);
+	if ( aigp->target_name ) {
+		strcpy_s(ship_name, aigp->target_name);
 		end_string_at_first_hash_symbol(ship_name);
 	}
 	switch (aigp->ai_mode ) {
@@ -14281,7 +14281,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_GUARD_WING:
 		case AI_GOAL_CHASE_WING:
-			if ( aigp->ship_name ) {
+			if ( aigp->target_name ) {
 				strcat(outbuf, ship_name);
 				strcat(outbuf, XSTR( "'s Wing", 494));
 			} else {
@@ -14297,7 +14297,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_DISARM_SHIP:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_REARM_REPAIR:
-			if ( aigp->ship_name ) {
+			if ( aigp->target_name ) {
 				strcat(outbuf, ship_name);
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495));
@@ -14363,13 +14363,18 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		max_speed = sp->current_max_speed;
 
 	if ( aip->mode == AIM_WAYPOINTS ) {
-		waypoint_list	*wpl;
 		min_speed = 0.9f * max_speed;
-		if (aip->wp_list >= 0) {
-			wpl = &Waypoint_lists[aip->wp_list];
-			dist += vm_vec_dist_quick(&objp->pos, &wpl->waypoints[aip->wp_index]);
-			for (int i=aip->wp_index; i<wpl->count-1; i++) {
-				dist += vm_vec_dist_quick(&wpl->waypoints[i], &wpl->waypoints[i+1]);
+		if (aip->wp_list != NULL) {
+			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
+			dist += vm_vec_dist_quick(&objp->pos, aip->wp_index->get_pos());
+
+			SCP_list<waypoint>::iterator ii;
+			vec3d *prev_vec = NULL;
+			for (ii = aip->wp_index; ii != aip->wp_list->get_waypoints().end(); ++ii) {
+				if (prev_vec != NULL) {
+					dist += vm_vec_dist_quick(ii->get_pos(), prev_vec);
+				}
+				prev_vec = ii->get_pos();
 			}
 		}
 

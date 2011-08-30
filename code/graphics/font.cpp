@@ -591,16 +591,16 @@ int gr_create_font(char * typeface)
 	cfread( &fnt->char_data_size, sizeof(int), 1, fp );
 	cfread( &fnt->pixel_data_size, sizeof(int), 1, fp );
 
-	fnt->id = INTEL_SHORT( fnt->id );
-	fnt->version = INTEL_INT( fnt->version );
-	fnt->num_chars = INTEL_INT( fnt->num_chars );
-	fnt->first_ascii = INTEL_INT( fnt->first_ascii );
-	fnt->w = INTEL_INT( fnt->w );
-	fnt->h = INTEL_INT( fnt->h );
-	fnt->num_kern_pairs = INTEL_INT( fnt->num_kern_pairs );
-	fnt->kern_data_size = INTEL_INT( fnt->kern_data_size );
-	fnt->char_data_size = INTEL_INT( fnt->char_data_size );
-	fnt->pixel_data_size = INTEL_INT( fnt->pixel_data_size );
+	fnt->id = INTEL_SHORT( fnt->id ); //-V570
+	fnt->version = INTEL_INT( fnt->version ); //-V570
+	fnt->num_chars = INTEL_INT( fnt->num_chars ); //-V570
+	fnt->first_ascii = INTEL_INT( fnt->first_ascii ); //-V570
+	fnt->w = INTEL_INT( fnt->w ); //-V570
+	fnt->h = INTEL_INT( fnt->h ); //-V570
+	fnt->num_kern_pairs = INTEL_INT( fnt->num_kern_pairs ); //-V570
+	fnt->kern_data_size = INTEL_INT( fnt->kern_data_size ); //-V570
+	fnt->char_data_size = INTEL_INT( fnt->char_data_size ); //-V570
+	fnt->pixel_data_size = INTEL_INT( fnt->pixel_data_size ); //-V570
 
 	if ( fnt->kern_data_size )	{
 		fnt->kern_data = (font_kernpair *)vm_malloc( fnt->kern_data_size );
@@ -615,11 +615,11 @@ int gr_create_font(char * typeface)
 		cfread( fnt->char_data, fnt->char_data_size, 1, fp );
 
 		for (int i=0; i<fnt->num_chars; i++) {
-			fnt->char_data[i].spacing = INTEL_INT( fnt->char_data[i].spacing );
-			fnt->char_data[i].byte_width = INTEL_INT( fnt->char_data[i].byte_width );
-			fnt->char_data[i].offset = INTEL_INT( fnt->char_data[i].offset );
-			fnt->char_data[i].kerning_entry = INTEL_INT( fnt->char_data[i].kerning_entry );
-			fnt->char_data[i].user_data = INTEL_SHORT( fnt->char_data[i].user_data );
+			fnt->char_data[i].spacing = INTEL_INT( fnt->char_data[i].spacing ); //-V570
+			fnt->char_data[i].byte_width = INTEL_INT( fnt->char_data[i].byte_width ); //-V570
+			fnt->char_data[i].offset = INTEL_INT( fnt->char_data[i].offset ); //-V570
+			fnt->char_data[i].kerning_entry = INTEL_INT( fnt->char_data[i].kerning_entry ); //-V570
+			fnt->char_data[i].user_data = INTEL_SHORT( fnt->char_data[i].user_data ); //-V570
 		}
 	} else {
 		fnt->char_data = NULL;

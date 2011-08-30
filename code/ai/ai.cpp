@@ -18,8 +18,8 @@
 #include "ship/ship.h"
 
 
-int Total_goal_ship_names = 0;
-char Goal_ship_names[MAX_GOAL_SHIP_NAMES][NAME_LENGTH];
+int Total_goal_target_names = 0;
+char Goal_target_names[MAX_GOAL_TARGET_NAMES][NAME_LENGTH];
 ai_info Ai_info[MAX_AI_INFO];
 ai_info *Player_ai;
 
@@ -82,20 +82,22 @@ void set_wingnum(int objnum, int wingnum)
 	Ai_info[ai_index].wing = wingnum;
 }
 
-char *ai_get_goal_ship_name(char *name, int *index)
+char *ai_get_goal_target_name(char *name, int *index)
 {
+	Assert(name != NULL);
+	Assert(index != NULL);
 	int i;
 
-	for (i=0; i < Total_goal_ship_names; i++)
-		if (!stricmp(name, Goal_ship_names[i])) {
+	for (i=0; i < Total_goal_target_names; i++)
+		if (!stricmp(name, Goal_target_names[i])) {
 			*index = i;
-			return Goal_ship_names[i];
+			return Goal_target_names[i];
 		}
 
-	Assert(Total_goal_ship_names < MAX_GOAL_SHIP_NAMES);
-	Assertion(strlen(name) < NAME_LENGTH - 1, "Ship name %s is too long. Needs to be 31 characters or less.", name);
-	i = Total_goal_ship_names++;
-	strcpy_s(Goal_ship_names[i], name);
+	Assert(Total_goal_target_names < MAX_GOAL_TARGET_NAMES);
+	Assertion(strlen(name) < NAME_LENGTH - 1, "Goal target name %s is too long. Needs to be 31 characters or less.", name);
+	i = Total_goal_target_names++;
+	strcpy_s(Goal_target_names[i], name);
 	*index = i;
-	return Goal_ship_names[i];
+	return Goal_target_names[i];
 }

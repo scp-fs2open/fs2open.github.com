@@ -886,7 +886,7 @@ void campaign_editor::OnChangeDebriefingPersona()
 		if (persona < 0 || persona > 0xff)
 			persona = 0;
 
-		Campaign.missions[Cur_campaign_mission].debrief_persona_index = persona;
+		Campaign.missions[Cur_campaign_mission].debrief_persona_index = (ubyte) persona;
 	}
 }
 

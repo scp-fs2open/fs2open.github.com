@@ -704,6 +704,29 @@ void mission_campaign_init()
 	Campaign_file_missing = 0;
 }
 
+// Fill in the root of the campaign save filename
+void mission_campaign_savefile_generate_root(char *filename, player *pl)
+{
+	char base[_MAX_FNAME];
+
+	Assert ( strlen(Campaign.filename) != 0 );
+
+	if (pl == NULL) {
+		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
+		pl = &Players[Player_num];
+	}
+
+	Assert( pl != NULL );
+
+	// build up the filename for the save file.  There could be a problem with filename length,
+	// but this problem can get fixed in several ways -- ignore the problem for now though.
+	_splitpath( Campaign.filename, NULL, NULL, base, NULL );
+
+	Assert ( (strlen(base) + strlen(pl->callsign) + 1) < _MAX_FNAME );
+
+	sprintf( filename, NOX("%s.%s."), pl->callsign, base );
+}
+
 // The following function always only ever ever ever called by CSFE!!!!!
 int campaign_savefile_save(char *pname)
 {
@@ -774,6 +797,8 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 		vm_free(names[i]);
 	}
 }
+
+
 
 // the following code only ever called by CSFE!!!!
 void campaign_savefile_load(char *fname, char *pname)

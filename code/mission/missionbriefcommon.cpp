@@ -1628,7 +1628,7 @@ bool is_a_word_separator(char character){
 		|| (character == 47)				//  1 character  /
 		|| (59<=character && character<=64)	//  6 characters ;<=>?@
 		|| (91<=character && character<=95)	//  5 characters [\]^_
-		|| (123<=character&&character<=127);//  5 characters {|}~
+		|| (123<=character);				//  5 characters {|}~
 }
 
 // Builds a vector of colored characters from a string containing color markups

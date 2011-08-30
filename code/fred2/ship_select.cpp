@@ -77,6 +77,9 @@ ship_select::ship_select(CWnd* pParent /*=NULL*/)
 		m_filter_iff[i] = filter_iff[i];
 
 	activity = 0;
+
+	wing_index.reserve(MAX_WINGS);
+	wing_sel_last.reserve(MAX_WINGS);
 }
 
 void ship_select::DoDataExchange(CDataExchange* pDX)
@@ -135,7 +138,6 @@ BOOL ship_select::OnInitDialog()
 	int i, flags;
 	object *ptr;
 
-	wlist_size = wplist_size = 0;
 	CDialog::OnInitDialog();
 
 	ptr = GET_FIRST(&obj_used_list);
@@ -168,21 +170,30 @@ BOOL ship_select::OnInitDialog()
 	for (i = 0; i < Num_iffs; i++)
 		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->EnableWindow(m_filter_ships);
 
+	wlist_size = wplist_size = 0;
+	wing_index.clear();
+	wing_sel_last.clear();
+
 	// Elements 0 - wlist_size are wings, and elements wlist_size - wplist_size are waypoint paths
 	m_wing_list.ResetContent();
 	wlist_size = 0;
-	for (i=0; i<MAX_WINGS; i++)
+	for (i=0; i<MAX_WINGS; i++) {
 		if (Wings[i].wave_count) {
 			m_wing_list.AddString(Wings[i].name);
-			wing_sel_last[wlist_size] = 0;
-			wing_index[wlist_size++] = i;
+			wing_sel_last.push_back(0);
+			wing_index.push_back(i);
+			wlist_size++;
 		}
+	}
 
 	wplist_size = wlist_size;
-	for (i=0; i<Num_waypoint_lists; i++) {
-		m_wing_list.AddString(Waypoint_lists[i].name);
-		wing_sel_last[wplist_size] = 0;
-		wing_index[wplist_size++] = i;
+
+	SCP_list<waypoint_list>::iterator ii;
+	for (i = 0, ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++i, ++ii) {
+		m_wing_list.AddString(ii->get_name());
+		wing_sel_last.push_back(0);
+		wing_index.push_back(i);
+		wplist_size++;
 	}
 
 	return TRUE;
@@ -240,8 +251,10 @@ void ship_select::create_list()
 		{
 			if (ptr->type == OBJ_WAYPOINT)
 			{
-				sprintf(text, "%s:%d", Waypoint_lists[ptr->instance / 65536].name,
-					(ptr->instance & 0xffff) + 1);
+				int waypoint_num;
+				waypoint_list *wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
+				Assert(wp_list != NULL);
+				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
 				m_ship_list.AddString(text);
 				obj_index[list_size++] = ptr;
 				if (ptr->flags & OF_TEMP_MARKED)
@@ -456,12 +469,17 @@ void ship_select::OnSelchangeWingList()
 	for (i=wlist_size; i<wplist_size; i++) {
 		z = (m_wing_list.GetSel(i) > 0) ? 1 : 0;
 		if (z != wing_sel_last[i]) {
-			for (j=0; j<Waypoint_lists[wing_index[i]].count; j++)
-				for (k=0; k<list_size; k++)
-					if ((obj_index[k]->type == OBJ_WAYPOINT) && (obj_index[k]->instance == wing_index[i] * 65536 + j)) {
+			waypoint_list *wp_list = find_waypoint_list_at_index(wing_index[i]);
+			Assert(wp_list != NULL);
+			SCP_list<waypoint>::iterator jj;
+			for (j = 0, jj = wp_list->get_waypoints().begin(); jj != wp_list->get_waypoints().end(); ++j, ++jj) {
+				for (k=0; k<list_size; k++) {
+					if ((obj_index[k]->type == OBJ_WAYPOINT) && (obj_index[k]->instance == calc_waypoint_instance(wing_index[i], j))) {
 						m_ship_list.SetSel(k, z ? TRUE : FALSE);
 						break;
 					}
+				}
+			}
 
 			wing_sel_last[i] = z;
 		}
@@ -498,17 +516,23 @@ void ship_select::OnSelchangeShipList()
 	}
 
 	for (i=wlist_size; i<wplist_size; i++) {
+		waypoint_list *wp_list = find_waypoint_list_at_index(wing_index[i]);
+		Assert(wp_list != NULL);
+		SCP_list<waypoint>::iterator jj;
+
 		count = 0;
-		for (j=0; j<Waypoint_lists[wing_index[i]].count; j++)
-			for (k=0; k<list_size; k++)
-				if ((obj_index[k]->type == OBJ_WAYPOINT) && (obj_index[k]->instance == wing_index[i] * 65536 + j)) {
+		for (j = 0, jj = wp_list->get_waypoints().begin(); jj != wp_list->get_waypoints().end(); ++j, ++jj) {
+			for (k=0; k<list_size; k++) {
+				if ((obj_index[k]->type == OBJ_WAYPOINT) && (obj_index[k]->instance == calc_waypoint_instance(wing_index[i], j))) {
 					if (m_ship_list.GetSel(k))
 						count++;
 
 					break;
 				}
+			}
+		}
 
-		if (count == Waypoint_lists[wing_index[i]].count)
+		if ((uint) count == wp_list->get_waypoints().size())
 			wing_sel_last[i] = 1;
 		else
 			wing_sel_last[i] = 0;

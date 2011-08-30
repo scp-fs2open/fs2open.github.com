@@ -1040,7 +1040,7 @@ void message_play_anim( message_q *q )
 {
 	message_extra	*anim_info;
 	int				is_death_scream=0, persona_index=-1, rand_index=0;
-	char				ani_name[MAX_FILENAME_LEN], *p;
+	char				ani_name[MAX_FILENAME_LEN], temp[MAX_FILENAME_LEN], *p;
 	MissionMessage	*m;
 
 	// don't even bother with this stuff if the gauge is disabled - taylor
@@ -1093,7 +1093,8 @@ void message_play_anim( message_q *q )
 				} else {
 					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
 				}
-				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
+				strcpy_s(temp, ani_name);
+				sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
 				subhead_selected = TRUE;
 			} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
 				// get a random head
@@ -1106,7 +1107,8 @@ void message_play_anim( message_q *q )
 					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
 				}
 
-				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
+				strcpy_s(temp, ani_name);
+				sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
 				subhead_selected = TRUE;
 			} else {
 				mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
@@ -1116,7 +1118,8 @@ void message_play_anim( message_q *q )
 		if (!subhead_selected) {
 			// choose between a and b
 			rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-			sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
+			strcpy_s(temp, ani_name);
+			sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
 			mprintf(("message '%s' with invalid head.  Fix by assigning persona to the message.\n", m->name));
 		}
 		nprintf(("Messaging", "playing head %s for %s\n", ani_name, q->who_from));

@@ -14,6 +14,7 @@
 
 struct ship_subsys;
 struct ship;
+class waypoint_list;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -661,6 +662,7 @@ struct ship;
 #define OP_NAV_USEAP						(0x00ff | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 // 0x00ff is the last remaining sexp in the CHANGE category!  Future change sexps should go under CHANGE2
+
 #define OP_STRING_GET_SUBSTRING				(0x0000 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_STRING_SET_SUBSTRING				(0x0001 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_NUM_COUNTERMEASURES			(0x0002 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Karajorma
@@ -669,11 +671,8 @@ struct ship;
 #define OP_GET_COLGROUP_ID					(0x0005 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_SHIP_EFFECT						(0x0006 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Valathil
 #define OP_CLEAR_SUBTITLES					(0x0007 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
+#define OP_BEAM_FIRE_COORDS					(0x0008 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
-/* made obsolete by Goober5000
-// debugging sexpressions
-#define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
-*/
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1010,7 +1009,7 @@ extern int Training_context_speed_min;
 extern int Training_context_speed_max;
 extern int Training_context_speed_set;
 extern int Training_context_speed_timestamp;
-extern int Training_context_path;
+extern waypoint_list *Training_context_path;
 extern int Training_context_goal_waypoint;
 extern int Training_context_at_waypoint;
 extern float Training_context_distance;
@@ -1066,7 +1065,6 @@ int special_argument_appears_in_sexp_list(int node);
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );
 extern void sexp_mark_persistent( int n );
-extern int waypoint_lookup(char *name);
 extern int verify_sexp_tree(int node);
 extern int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship);
 int query_node_in_sexp(int node, int sexp);

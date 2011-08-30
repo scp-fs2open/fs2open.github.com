@@ -614,7 +614,7 @@ void tech_scroll_info_down()
 	if (Text_offset + h / gr_get_font_height() < Text_size) {
 		Text_offset++;
 		gamesnd_play_iface(SND_SCROLL);
-	} else {
+	} else { //-V523
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 	}
 }

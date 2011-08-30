@@ -311,9 +311,9 @@ void get_join_request(ubyte *data, int *size, join_request *jr)
 
 	GET_DATA(*jr);
 
-	jr->tracker_id = INTEL_INT(jr->tracker_id);
-	jr->player_options.flags = INTEL_INT(jr->player_options.flags);
-	jr->player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level);
+	jr->tracker_id = INTEL_INT(jr->tracker_id); //-V570
+	jr->player_options.flags = INTEL_INT(jr->player_options.flags); //-V570
+	jr->player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level); //-V570
 
 	*size = offset;
 }
@@ -339,8 +339,8 @@ void get_net_addr(ubyte *data, int *size, net_addr *addr)
 
 	GET_DATA(*addr);
 
-	addr->type = INTEL_INT(addr->type);
-	addr->port = INTEL_SHORT(addr->port);
+	addr->type = INTEL_INT(addr->type); //-V570
+	addr->port = INTEL_SHORT(addr->port); //-V570
 
 	*size = offset;
 }
@@ -5005,8 +5005,8 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 		ADD_INT( aigp->ai_submode );
 
 		shipnum = -1;
-		if ( aigp->ship_name != NULL )
-			shipnum = ship_name_lookup( aigp->ship_name );
+		if ( aigp->target_name != NULL )
+			shipnum = ship_name_lookup( aigp->target_name );
 
 		// the ship_name member of the goals structure may or may not contain a real shipname.  If we don't
 		// have a valid shipnum, then don't sweat it since it may not really be a ship.
@@ -5121,7 +5121,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 			// get a pointer to the shipname in question.  Use the ship_name value in the
 			// ship.  We are only using this for HUD display, so I think that using this
 			// method will be fine.
-			aigp->ship_name = Ships[other_objp->instance].ship_name;
+			aigp->target_name = ai_get_goal_target_name(Ships[other_objp->instance].ship_name, &aigp->target_name_index);
 
 			// special case for destroy subsystem -- get the ai_info pointer to our target ship
 			// so that we can properly set up what subsystem this ship is attacking.
@@ -7805,7 +7805,7 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	ship_launch_countermeasure( objp, rand_val );			
 }
 
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam, int bank_point)
+void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, int bfi_flags, int bank_point)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;	
@@ -7825,7 +7825,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 		return;
 	}
 
-	if (!fighter_beam) {
+	if (!(bfi_flags & BFIF_IS_FIGHTER_BEAM)) {
 		Assert(target != NULL);
 		if (target == NULL) {
 			return;
@@ -7836,7 +7836,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 
 	u_beam_info = (short)beam_info_index;
 
-	if (fighter_beam) {
+	if (bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		Assert( (bank_point >= 0) && (bank_point < UCHAR_MAX) );
 		subsys_index = (char)bank_point;
 	} else {
@@ -7871,7 +7871,8 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	ADD_USHORT(target_sig);
 	ADD_SHORT(u_beam_info);
 	ADD_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
-//	ADD_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
+//	ADD_DATA(bfi_flags);	// this breaks the protocol but is here in case we decided to do that in the future - taylor
+//	ADD_DATA(target_pos);	// ditto - Goober5000
 
 	// send to all clients	
 	multi_io_send_to_all_reliable(data, packet_size);

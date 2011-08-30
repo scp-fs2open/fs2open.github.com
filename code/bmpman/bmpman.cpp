@@ -896,8 +896,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 				the_anim.keys[i].frame_num = 0;
 				cfread(&the_anim.keys[i].frame_num, 2, 1, img_cfp);
 				cfread(&the_anim.keys[i].offset, 4, 1, img_cfp);
-				the_anim.keys[i].frame_num = INTEL_INT( the_anim.keys[i].frame_num );
-				the_anim.keys[i].offset = INTEL_INT( the_anim.keys[i].offset );
+				the_anim.keys[i].frame_num = INTEL_INT( the_anim.keys[i].frame_num ); //-V570
+				the_anim.keys[i].offset = INTEL_INT( the_anim.keys[i].offset ); //-V570
 			}
 			//some retail anis have their keyframes reversed
 			key = MAX(the_anim.keys[0].frame_num, the_anim.keys[1].frame_num);
@@ -954,8 +954,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 				anim_frames = i;
 
 				// update all previous frames with the new count
-				for (i=0; i<anim_frames; i++)
-					bm_bitmaps[n+i].info.ani.num_frames = anim_frames;
+				for (int j=0; j<anim_frames; j++)
+					bm_bitmaps[n+j].info.ani.num_frames = anim_frames;
 
 				break;
 			}

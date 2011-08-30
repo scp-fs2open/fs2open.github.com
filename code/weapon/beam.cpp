@@ -304,7 +304,10 @@ int beam_fire(beam_fire_info *fire_info)
 
 	// for now, only allow ship targets
 	if (!(fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM)) {
-		if((fire_info->target == NULL) || ((fire_info->target->type != OBJ_SHIP) && (fire_info->target->type != OBJ_ASTEROID) && (fire_info->target->type != OBJ_DEBRIS) && (fire_info->target->type != OBJ_WEAPON))){
+		if (
+			((fire_info->target == NULL) && !(fire_info->bfi_flags & BFIF_TARGETING_COORDS)) ||
+			((fire_info->target != NULL) && (fire_info->target->type != OBJ_SHIP) && (fire_info->target->type != OBJ_ASTEROID) && (fire_info->target->type != OBJ_DEBRIS) && (fire_info->target->type != OBJ_WEAPON))
+		) {
 			return -1;
 		}
 	}
@@ -382,6 +385,15 @@ int beam_fire(beam_fire_info *fire_info)
 	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM)
 		new_item->flags |= BF_IS_FIGHTER_BEAM;
 
+	if (fire_info->bfi_flags & BFIF_TARGETING_COORDS) {
+		new_item->flags |= BF_TARGETING_COORDS;
+		new_item->target_pos1 = fire_info->target_pos1;
+		new_item->target_pos2 = fire_info->target_pos2;
+	} else {
+		vm_vec_zero(&new_item->target_pos1);
+		vm_vec_zero(&new_item->target_pos2);
+	}
+
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
 		new_item->beam_secion_frame[i] = 0.0f;
 	
@@ -449,7 +461,7 @@ int beam_fire(beam_fire_info *fire_info)
 			bank_point = (fire_info->point * 10) + fire_info->bank;
 		}
 
-		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo, (ubyte) ((fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) > 0), bank_point);
+		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo, fire_info->bfi_flags, bank_point);
 	}
 
 	// start the warmup phase
@@ -1968,7 +1980,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 
 	// get a model # to work with
 	model_num = beam_get_model(b->target);
-	if(model_num < 0){
+	if ((model_num < 0) && !(b->flags & BF_TARGETING_COORDS)) {
 		return;
 	}
 
@@ -1998,13 +2010,25 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + miss_factor * accuracy);
 		b->binfo.shot_count = 1;
 
-		// get random model points, this is useful for big ships, because we never miss when shooting at them
-		submodel_get_two_random_points(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b);
+		if (b->flags & BF_TARGETING_COORDS) {
+			// these aren't used for type A beams, so zero them out
+			vm_vec_zero(&b->binfo.dir_a);
+			vm_vec_zero(&b->binfo.dir_b);
+		} else {
+			// get random model points, this is useful for big ships, because we never miss when shooting at them
+			submodel_get_two_random_points(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b);
+		}
 		break;
 
 	// just 2 points in the "slash"
 	case BEAM_TYPE_B:
-		beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);
+		if (b->flags & BF_TARGETING_COORDS) {
+			// slash between the two
+			oct1 = b->target_pos1;
+			oct2 = b->target_pos2;
+		} else {
+			beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);
+		}
 
 		// point 1
 		vm_vec_sub(&b->binfo.dir_a, &oct1, &turret_point);
@@ -2013,7 +2037,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		// point 2
 		vm_vec_sub(&b->binfo.dir_b, &oct2, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_b);
-		
+
 		// delta angle
 		b->binfo.delta_ang = fl_abs(vm_vec_delta_ang_norm(&b->binfo.dir_a, &b->binfo.dir_b, NULL));
 		break;
@@ -2054,21 +2078,23 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 void beam_aim(beam *b)
 {
 	vec3d temp, p2;
-	int model_num;	
 	
-	// type C beam weapons have no target
-	if(b->target == NULL){
-		Assert(b->type == BEAM_TYPE_C);
-		if(b->type != BEAM_TYPE_C){
-			return;
+	if (!(b->flags & BF_TARGETING_COORDS)) {
+		// type C beam weapons have no target
+		if (b->target == NULL) {
+			Assert(b->type == BEAM_TYPE_C);
+			if(b->type != BEAM_TYPE_C){
+				return;
+			}
 		}
-	}
-	// get a model # to work with
-	else {
-		model_num = beam_get_model(b->target);	
-		if(model_num < 0){
-			return;
-		}	
+		// get a model # to work with
+		else {
+			int model_num = beam_get_model(b->target);
+			Assert(model_num >= 0);
+			if (model_num < 0) {
+				return;
+			}	
+		}
 	}
 
 	int temp_int = b->subsys->turret_next_fire_pos;
@@ -2095,7 +2121,7 @@ void beam_aim(beam *b)
 		}
 
 		// if we're shooting at a big ship - shoot directly at the model
-		if((b->target->type == OBJ_SHIP) && (Ship_info[Ships[b->target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))){
+		if((b->target != NULL) && (b->target->type == OBJ_SHIP) && (Ship_info[Ships[b->target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))){
 			// rotate into world coords
 			vm_vec_unrotate(&temp, &b->binfo.dir_a, &b->target->orient);
 			vm_vec_add2(&temp, &b->target->pos);
@@ -2106,9 +2132,14 @@ void beam_aim(beam *b)
 			break;
 		}
 		
-		// point at the center of the target, then jitter based on shot_aim
-		b->last_shot = b->target->pos;		
-		beam_jitter_aim(b, b->binfo.shot_aim[0]);
+		// point at the center of the target...
+		if (b->flags & BF_TARGETING_COORDS) {
+			b->last_shot = b->target_pos1;
+		} else {
+			b->last_shot = b->target->pos;
+			// ...then jitter based on shot_aim (requires target)
+			beam_jitter_aim(b, b->binfo.shot_aim[0]);
+		}
 		break;	
 
 	case BEAM_TYPE_B:		
@@ -2132,9 +2163,14 @@ void beam_aim(beam *b)
 		// where the shot is originating from (b->last_start gets filled in)
 		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);		
 		
-		// point at the center of the target, then jitter based on shot_aim
-		b->last_shot = b->target->pos;		
-		beam_jitter_aim(b, b->binfo.shot_aim[b->shot_index]);
+		// point at the center of the target...
+		if (b->flags & BF_TARGETING_COORDS) {
+			b->last_shot = b->target_pos1;
+		} else {
+			b->last_shot = b->target->pos;
+			// ...then jitter based on shot_aim (requires target)
+			beam_jitter_aim(b, b->binfo.shot_aim[b->shot_index]);
+		}
 		nprintf(("AI", "Frame %i: FIRING\n", Framecount));
 		break;
 
@@ -2185,6 +2221,7 @@ void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_a
 // throw some jitter into the aim - based upon shot_aim
 void beam_jitter_aim(beam *b, float aim)
 {
+	Assert(b->target != NULL);
 	vec3d forward, circle;
 	matrix m;
 	float subsys_strength;
