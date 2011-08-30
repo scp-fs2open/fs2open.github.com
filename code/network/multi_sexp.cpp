@@ -32,7 +32,7 @@ int TEMP_DATA_SIZE = -1;
 // the type array holds information on the type of date held at the same index of the data array
 // types are not sent to the client and the entire array could be replaced with a couple of variables indexing the end of 
 // the previous SEXP. However it is much more helpful when debugging to have the array
-int type[MAX_PACKET_SIZE];
+ubyte type[MAX_PACKET_SIZE];
 int argument_count_index = -1;			// index in the type and data arrays for the argument count
 int current_argument_count = 0;			// number of bytes the data for this SEXP currently takes up
 
