@@ -56,8 +56,15 @@ void multi_sexp_ensure_space_remains(int data_size);
  HOST SIDE PACKET FUNCTIONS
  *************************/
 
+/**
+* Set up the SEXP packet every frame when the game starts processing SEXPs.
+*/
 void initalise_sexp_packet() 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	memset(data, 0, MAX_PACKET_SIZE); 
 	memset(type, -1, MAX_PACKET_SIZE); 
 	
@@ -66,6 +73,9 @@ void initalise_sexp_packet()
 	current_argument_count = 0;
 }
 
+/**
+* Called when a server is currently processing a SEXP that needs to send an update to the clients.
+*/
 void multi_start_callback() 
 {
 	if (!MULTIPLAYER_MASTER) {
@@ -87,6 +97,9 @@ void multi_start_callback()
 	ADD_INT(TEMP_DATA_SIZE); 
 }
 
+/**
+* Called when a server has written all the data it needs to write for this SEXP.
+*/
 void multi_end_callback() 
 {
 	if (!MULTIPLAYER_MASTER) {
@@ -115,14 +128,22 @@ void multi_end_callback()
 
 	current_argument_count = 0; 
 }
-
-// convenience function that simply calls the two functions above
+/**
+* Convenience function that simply calls the two functions above. Used when the server merely needs to signal the clients that a 
+* SEXP has been processed but no additional data needs to be sent.
+*/
 void multi_do_callback()
 {
 	multi_start_callback();
 	multi_end_callback();
 }
 
+/**
+* Checks if there is enough space in the packet currently being stuffed for the data that is about to be written into it
+* 
+* If there is not enough space, it will send everything in the packet apart from any data from the SEXP currently being processed 
+* and then create a new packet containing the data for this SEXP only.
+*/
 void multi_sexp_ensure_space_remains(int data_size) 
 {
 	if (!MULTIPLAYER_MASTER) {
@@ -179,11 +200,11 @@ void multi_sexp_ensure_space_remains(int data_size)
 	}
 
 	Assert(argument_count_index >=0);
-
-
 }
 
-// flushes out the packet and sends any data still in there
+/**
+* Flushes out the SEXP packet and sends any data still in there. Called when the game finishes processing SEXPs.
+*/
 void multi_sexp_flush_packet() 
 {
 	if (!MULTIPLAYER_MASTER) {
@@ -202,6 +223,9 @@ void multi_sexp_flush_packet()
 	initalise_sexp_packet(); 
 }
 
+/**
+* Checks if the SEXP packet is ready to recieve data. 
+*/
 bool cannot_send_data()
 {
 	if (!MULTIPLAYER_MASTER || packet_flagged_invalid ) {
@@ -220,6 +244,9 @@ bool cannot_send_data()
  HOST SIDE DATA WRAPPER FUNCTIONS
  *******************************/
 
+/**
+* Add an int to the SEXP packet.
+*/
 void multi_send_int(int value) 
 {
 	if (cannot_send_data()) {
@@ -236,6 +263,9 @@ void multi_send_int(int value)
 	current_argument_count += sizeof(int); 
 }
 
+/**
+* Adds a ship's net sig to the SEXP packet.
+*/
 void multi_send_ship(int shipnum) 
 {
 	if (cannot_send_data()) {
@@ -247,6 +277,9 @@ void multi_send_ship(int shipnum)
 	multi_send_ship(&Ships[shipnum]);
 }
 
+/**
+* Adds a ship's net sig to the SEXP packet.
+*/
 void multi_send_ship(ship *shipp) 
 {
 	if (cannot_send_data()) {
@@ -262,6 +295,9 @@ void multi_send_ship(ship *shipp)
 	current_argument_count += sizeof(ushort); 
 }
 
+/**
+* Add the net sig of an object to the SEXP packet.
+*/
 void multi_send_object(object *objp) 
 {
 	if (cannot_send_data()) {
@@ -277,6 +313,9 @@ void multi_send_object(object *objp)
 	current_argument_count += sizeof(ushort); 
 }
 
+/**
+* Add the net sig of a parse object to the SEXP packet.
+*/
 void multi_send_parse_object(p_object *pobjp) 
 {
 	if (cannot_send_data()) {
@@ -292,6 +331,9 @@ void multi_send_parse_object(p_object *pobjp)
 	current_argument_count += sizeof(ushort); 
 }
 
+/**
+* Add a string to the SEXP packet. Should only be used for strings TOKEN_LENGTH in size or smaller. 
+*/
 void multi_send_string(char *string) 
 {
 	if (cannot_send_data()) {
@@ -308,6 +350,9 @@ void multi_send_string(char *string)
 	current_argument_count += packet_size - start_size; 
 }
 
+/**
+* Add a boolean to the SEXP packet.
+*/
 void multi_send_bool(bool value) 
 {
 	if (cannot_send_data()) {
@@ -324,6 +369,9 @@ void multi_send_bool(bool value)
 	current_argument_count += sizeof(value); 
 }
 
+/**
+* Add a float to the SEXP packet.
+*/
 void multi_send_float(float value) 
 {
 	if (cannot_send_data()) {
@@ -340,6 +388,9 @@ void multi_send_float(float value)
 	current_argument_count += sizeof(float); 
 }
 
+/**
+* Add a short to the SEXP packet.
+*/
 void multi_send_short(short value) 
 {
 	if (cannot_send_data()) {
@@ -356,6 +407,9 @@ void multi_send_short(short value)
 	current_argument_count += sizeof(short); 
 }
 
+/**
+* Add an unsigned short to the SEXP packet.
+*/
 void multi_send_ushort(ushort value) 
 {
 	if (cannot_send_data()) {
@@ -377,6 +431,10 @@ void multi_send_ushort(ushort value)
  CLIENT SIDE PACKET FUNCTIONS
  ***************************/
 
+/**
+* Called when the client recieves a SEXP packet from the server. Removes the data from the packet that underlying code uses and puts
+* into a new array that will work with the rest of the client-side code.
+*/
 void sexp_packet_received(ubyte *received_packet, int num_ubytes)
 {	
 	int i; 
@@ -393,7 +451,10 @@ void sexp_packet_received(ubyte *received_packet, int num_ubytes)
 	multi_sexp_eval();
 }
 
-int multi_sexp_get_next_operator()
+/**
+* Checks that the previous SEXP in the packet has correctly removed all its data from the packet. Attempts to fix it if it hasn't.
+*/
+bool argument_count_is_valid()
 {
 	if (current_argument_count != 0) {
 		// we have a problem here, either the argument count is wrong or the last SEXP didn't remove all its data from the packet		
@@ -419,13 +480,27 @@ int multi_sexp_get_next_operator()
 				// discard remainder of packet if we still haven't found the terminator as it is hopelessly corrupt
 				Warning(LOCATION, "%s has returned to multi_sexp_eval() without finding the terminator. Discarding packet! Trace out and fix this!", Operators[op_num].text);
 				Multi_sexp_bytes_left = 0; 
-				return -1;
+				return false;
 			}
 			else {
+				// the previous SEXP hasn't removed all it's data from the packet correctly but it appears we've managed to fix it
 				Warning(LOCATION, "%s has returned to multi_sexp_eval() without removing all the data the server wrote during its callback. Trace out and fix this!", Operators[op_num].text);
 				op_num = -1;
 			}
 		}
+	}
+
+	return true;
+}
+
+/**
+* Gets the next operator from the SEXP packet. Returns the number of the operator or -1 if there are no more operators because the 
+* packet is corrupt.
+*/
+int multi_sexp_get_next_operator()
+{
+	if (!argument_count_is_valid()) {
+		return -1;
 	}
 
 	GET_INT(op_num);
@@ -437,11 +512,17 @@ int multi_sexp_get_next_operator()
 	return op_num; 
 }
 
+/**
+* Returns the current operator number but does not touch the SEXP packet.
+*/
 int multi_sexp_get_operator()
 {
 	return op_num; 
 }
 
+/**
+* Ensures that the variables tracking how much data is left in the packet are updated correctly when data is removed.
+*/
 void multi_reduce_counts(int amount)
 {
 	Multi_sexp_bytes_left -= amount; 
@@ -452,6 +533,9 @@ void multi_reduce_counts(int amount)
 	}
 }
 
+/**
+* Called when the SEXP code has finished processing the current SEXP.
+*/ 
 void multi_finished_callback()
 {
 	ubyte terminator; 
@@ -470,6 +554,9 @@ void multi_finished_callback()
 	op_num = -1;
 }
 
+/**
+* Used to discard the rest of a callback on the client machine. 
+*/ 
 bool multi_sexp_discard_operator()
 {
 	int i; 
@@ -500,6 +587,9 @@ bool multi_sexp_discard_operator()
  CLIENT SIDE DATA WRAPPER FUNCTIONS
  *********************************/
 
+/**
+* Attempts to remove an int from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so. 
+*/
 bool multi_get_int(int &value)
 {
 	if (!Multi_sexp_bytes_left || !current_argument_count) {
@@ -512,6 +602,10 @@ bool multi_get_int(int &value)
 	return true; 
 }
 
+/**
+* Attempts to get an index for the Ships array based on the net sig it removes from the SEXP packet. Returns it as the value 
+* parameter. Returns false if unable to do so.  
+*/
 bool multi_get_ship(int &value)
 {
 	ushort netsig; 
@@ -536,6 +630,10 @@ bool multi_get_ship(int &value)
 	return false; 
 }
 
+/**
+* Attempts to get a ship pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter. 
+* Returns false if unable to do so.  
+*/
 bool multi_get_ship(ship* &shipp)
 {
 	int shipnum;
@@ -548,6 +646,10 @@ bool multi_get_ship(ship* &shipp)
 	return false; 
 }
 
+/**
+* Attempts to get an object pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter. 
+* Returns false if unable to do so.  
+*/
 bool multi_get_object(object*& objp)
 {
 	ushort netsig; 
@@ -570,7 +672,10 @@ bool multi_get_object(object*& objp)
 	return false; 
 }
 
-
+/**
+* Attempts to get a parse objects pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter. 
+* Returns false if unable to do so.  
+*/
 bool multi_get_parse_object(p_object*& pobjp)
 {
 	ushort netsig; 
@@ -592,6 +697,9 @@ bool multi_get_parse_object(p_object*& pobjp)
 	return false; 
 }
 
+/**
+* Attempts to remove a string from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so. 
+*/
 bool multi_get_string(char *buffer)
 {
 	int starting_offset = offset; 
@@ -606,6 +714,9 @@ bool multi_get_string(char *buffer)
 	return true; 
 }
 
+/**
+* Attempts to remove a boolean from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so. 
+*/
 bool multi_get_bool(bool &value)
 {
 	if (!Multi_sexp_bytes_left || !current_argument_count) {
@@ -618,6 +729,9 @@ bool multi_get_bool(bool &value)
 	return true; 
 }
 
+/**
+* Attempts to remove a float from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so. 
+*/
 bool multi_get_float(float &value)
 {
 	if (!Multi_sexp_bytes_left || !current_argument_count) {
@@ -630,6 +744,9 @@ bool multi_get_float(float &value)
 	return true; 
 }
 
+/**
+* Attempts to remove a short from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so. 
+*/
 bool multi_get_short(short &value)
 {
 	if (!Multi_sexp_bytes_left || !current_argument_count) {
@@ -642,6 +759,9 @@ bool multi_get_short(short &value)
 	return true; 
 }
 
+/**
+* Attempts to remove an unsigned short from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so. 
+*/
 bool multi_get_ushort(ushort &value)
 {
 	if (!Multi_sexp_bytes_left || !current_argument_count) {
@@ -654,6 +774,9 @@ bool multi_get_ushort(ushort &value)
 	return true; 
 }
 
+/**
+* attempts to remove all remaining data for the current operator.
+*/
 void multi_discard_remaining_callback_data()
 {
 	if (!multi_sexp_discard_operator()) {
