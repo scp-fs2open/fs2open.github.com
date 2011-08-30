@@ -4557,7 +4557,7 @@ void ai_waypoints()
 
 	if ( done ) {
 		// go on to next waypoint in path
-		aip->wp_index++;
+		++aip->wp_index;
 
 		if ( aip->wp_index == aip->wp_list->get_waypoints().end() ) {
 			// have reached the last waypoint.  Do I repeat?
@@ -4566,7 +4566,7 @@ void ai_waypoints()
 				aip->wp_index = aip->wp_list->get_waypoints().begin();
 			} else {
 				// stay on the last waypoint.
-				aip->wp_index--;
+				--aip->wp_index;
 
 				// Log a message that the wing or ship reached his waypoint and
 				// remove the goal from the AI goals of the ship pr wing, respectively.
@@ -11870,7 +11870,7 @@ int ai_formation()
 		aip->wp_flags = laip->wp_flags;
 
 		if (aip->wp_index == aip->wp_list->get_waypoints().end())
-			aip->wp_index--;
+			--aip->wp_index;
 	}
 
 	#ifndef NDEBUG
