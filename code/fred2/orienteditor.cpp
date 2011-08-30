@@ -100,8 +100,10 @@ BOOL orient_editor::OnInitDialog()
 				index[total++] = OBJ_INDEX(ptr);
 
 			} else if (ptr->type == OBJ_WAYPOINT) {
-				sprintf(text, "%s:%d", Waypoint_lists[ptr->instance / 65536].name,
-					(ptr->instance & 0xffff) + 1);
+				int waypoint_num;
+				waypoint_list *wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
+				Assert(wp_list != NULL);
+				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
 
 				box->AddString(text);
 				index[total++] = OBJ_INDEX(ptr);

@@ -14,6 +14,7 @@
 
 struct ship_subsys;
 struct ship;
+class waypoint_list;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -1029,7 +1030,7 @@ extern int Training_context_speed_min;
 extern int Training_context_speed_max;
 extern int Training_context_speed_set;
 extern int Training_context_speed_timestamp;
-extern int Training_context_path;
+extern waypoint_list *Training_context_path;
 extern int Training_context_goal_waypoint;
 extern int Training_context_at_waypoint;
 extern float Training_context_distance;
@@ -1085,7 +1086,6 @@ int special_argument_appears_in_sexp_list(int node);
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );
 extern void sexp_mark_persistent( int n );
-extern int waypoint_lookup(char *name);
 extern int verify_sexp_tree(int node);
 extern int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship);
 int query_node_in_sexp(int node, int sexp);

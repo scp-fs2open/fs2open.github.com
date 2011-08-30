@@ -385,11 +385,12 @@ void DumpStats::get_object_stats(CString &buffer)
 	// Waypoints
 	int total_waypoints = 0;
 	buffer += "\r\nWAYPOINTS\r\n";
-	for (i=0; i<Num_waypoint_lists; i++) {
-		temp.Format("\tWaypoint: %s, count: %d\r\n", Waypoint_lists[i].name, Waypoint_lists[i].count);
-		buffer += temp;
-		total_waypoints += Waypoint_lists[i].count;
 
+	SCP_list<waypoint_list>::iterator ii;
+	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
+		temp.Format("\tWaypoint: %s, count: %d\r\n", ii->get_name(), ii->get_waypoints().size());
+		buffer += temp;
+		total_waypoints += ii->get_waypoints().size();
 	}
 
 	if (total_waypoints > 0) {
@@ -569,15 +570,14 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 {
 	CString temp;
 	int i;
-	uint species;
+	int species;
 	object *objp;
 	ship *shipp;
 
 	buffer += "\r\nSHIP SPECIES BREAKDOWN\r\n";
 
 
-
-	for (species=0; species < Species_info.size(); species++) {
+	for (species=0; (uint) species < Species_info.size(); species++) {
 		buffer += Species_info[species].species_name;
 		buffer += "\r\n";
 
@@ -750,7 +750,7 @@ void dump_loadout(ship *shipp, CString &loadout)
 void DumpStats::get_default_ship_loadouts(CString &buffer)
 {
 	int i;
-	uint species;
+	int species;
 	object *objp;
 	ship *shipp;
 	CString temp, loadout;
@@ -758,7 +758,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 	buffer += "\r\nSHIP SPECIES BREAKDOWN\r\n";
 
 
-	for (species=0; species < Species_info.size(); species++) {
+	for (species=0; (uint) species < Species_info.size(); species++) {
 		buffer += Species_info[species].species_name;
 		buffer += "\r\n";
 

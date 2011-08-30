@@ -48,7 +48,7 @@ private:
 	int save_wings();
 	int save_goals();
 	int save_waypoints();
-	int save_waypoint_list(waypoint_list &w);
+	int save_waypoint_list(waypoint_list *w);
 	int save_vector(vec3d &v);
 	int save_matrix(matrix &m);
 	int save_messages();

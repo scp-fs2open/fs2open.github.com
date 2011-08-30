@@ -2636,8 +2636,8 @@ int hud_support_find_closest( int objnum )
 					// we can use == in the next statement (and should) since a ship will only ever be
 					// following one order at a time.
 					if ( aip->goals[i].ai_mode == AI_GOAL_REARM_REPAIR ) {
-						Assert( aip->goals[i].ship_name );
-						sindex = ship_name_lookup( aip->goals[i].ship_name );
+						Assert( aip->goals[i].target_name );
+						sindex = ship_name_lookup( aip->goals[i].target_name );
 						if ( sindex == pship_index )
 							return sop->objnum;
 					}

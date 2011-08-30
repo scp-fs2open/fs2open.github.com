@@ -1571,7 +1571,7 @@ static void split_ship_init( ship* shipp, split_ship* split_ship )
 {
 	object* parent_ship_obj = &Objects[shipp->objnum];
 	matrix* orient = &parent_ship_obj->orient;
-	for (int ii=0; ii<NUM_SUB_EXPL_HANDLES; ii++) {
+	for (int ii=0; ii<NUM_SUB_EXPL_HANDLES; ++ii) {
 		split_ship->sound_handle[ii] = shipp->sub_expl_sound_handle[ii];
 	}
 
