@@ -493,7 +493,7 @@ void send_NEW_countermeasure_fired_packet(object *objp, int cmeasure_count, int 
 void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo);
 
 // beam weapon packet
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam, int bank_point);
+void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, int bfi_flags, int bank_point);
 void process_beam_fired_packet(ubyte *data, header *hinfo);
 
 // sw std query packet
