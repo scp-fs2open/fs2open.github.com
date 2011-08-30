@@ -945,8 +945,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 				anim_frames = i;
 
 				// update all previous frames with the new count
-				for (i=0; i<anim_frames; i++)
-					bm_bitmaps[n+i].info.ani.num_frames = anim_frames;
+				for (int j=0; j<anim_frames; j++)
+					bm_bitmaps[n+j].info.ani.num_frames = anim_frames;
 
 				break;
 			}
