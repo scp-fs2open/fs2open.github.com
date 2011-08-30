@@ -67,14 +67,7 @@ int start_dist;
 void autopilot_ai_waypoint_goal_fixup(ai_goal* aigp)
 {
 	// this function sets wp_index properly;
-	for (int i = 0; i < Num_waypoint_lists; i++)
-	{
-		if (!stricmp(aigp->ship_name, Waypoint_lists[i].name))
-		{
-			aigp->wp_index = i;
-			return;
-		}
-	}
+	aigp->wp_list = find_matching_waypoint_list(aigp->target_name);
 }
 
 
@@ -119,7 +112,9 @@ vec3d *NavPoint::GetPosition()
 {
 	if (flags & NP_WAYPOINT)
 	{
-		return &((waypoint_list*) target_obj)->waypoints[waypoint_num-1];
+		waypoint *wpt = find_waypoint_at_index((waypoint_list*) target_obj, waypoint_num-1);
+		Assert(wpt != NULL);
+		return wpt->get_pos();
 	}
 	else
 	{
@@ -134,9 +129,9 @@ char* NavPoint::GetInternalName()
 
 	if (flags & NP_WAYPOINT)
 	{
-		NavName = new char[strlen(((waypoint_list*)target_obj)->name)+5];
-		memset(NavName, 0, strlen(((waypoint_list*)target_obj)->name)+5);
-		strcpy(NavName, ((waypoint_list*)target_obj)->name);
+		NavName = new char[strlen(((waypoint_list*)target_obj)->get_name())+5];
+		memset(NavName, 0, strlen(((waypoint_list*)target_obj)->get_name())+5);
+		strcpy(NavName, ((waypoint_list*)target_obj)->get_name());
 
 		strcat(NavName, ":");
 		sprintf(strtmp, "%d", waypoint_num);
@@ -477,7 +472,7 @@ bool StartAutopilot()
 			{ 
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name(), &Ai_info[Ships[i].ai_index] );
 					//fixup has to wait until after wing goals
 				}
 				else
@@ -506,7 +501,7 @@ bool StartAutopilot()
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					
-					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, i );
+					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name(), i );
 
 					// "fix up" the goal
 					for (j = 0; j < MAX_AI_GOALS; j++)
@@ -889,7 +884,7 @@ void EndAutoPilot()
 	if (Navs[CurrentNav].flags & NP_WAYPOINT)
 	{
 		goal = AI_GOAL_WAYPOINTS_ONCE;
-		goal_name = ((waypoint_list*)Navs[CurrentNav].target_obj)->name;
+		goal_name = ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name();
 	}
 	else
 	{
@@ -922,7 +917,7 @@ void EndAutoPilot()
 			{
 				ai_goal *aigp = &Ai_info[Ships[i].ai_index].goals[j];
 	
-				if ( ((aigp->ship_name != NULL) && !stricmp(aigp->ship_name, goal_name))
+				if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 				{
 					ai_remove_ship_goal(&Ai_info[Ships[i].ai_index], j);
@@ -935,7 +930,7 @@ void EndAutoPilot()
 				{
 					ai_goal *aigp = &Wings[Ships[i].wingnum].ai_goals[j];
 
-					if ( ((aigp->ship_name != NULL) && !stricmp(aigp->ship_name, goal_name))
+					if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 					{
 						aigp->ai_mode = AI_GOAL_NONE;
@@ -959,7 +954,7 @@ void EndAutoPilot()
 				{
 					ai_goal *aigp = &Wings[i].ai_goals[j];
 
-					if ( ((aigp->ship_name != NULL) && !stricmp(aigp->ship_name, goal_name))
+					if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 					{
 						aigp->ai_mode = AI_GOAL_NONE;
@@ -1453,15 +1448,7 @@ bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
 
 	Assert(!(tnav.flags & NP_SHIP));
 
-
-	for (i = 0; i < Num_waypoint_lists; i++)
-	{
-		if (!stricmp(WP_Path, Waypoint_lists[i].name))
-		{
-			tnav.target_obj = (void *)&Waypoint_lists[i];		
-		}
-	}
-
+	tnav.target_obj = find_matching_waypoint_list(WP_Path);
 	tnav.waypoint_num = node;
 
 	// copy it into it's location

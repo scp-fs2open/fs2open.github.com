@@ -980,6 +980,7 @@ void game_level_close()
 		mission_event_shutdown();
 		asteroid_level_close();
 		jumpnode_level_close();
+		waypoint_level_close();
 	//	model_cache_reset();						// Reset/free all the model caching stuff
 		flak_level_close();						// unload flak stuff
 		neb2_level_close();						// shutdown gaseous nebula stuff
@@ -7926,11 +7927,14 @@ void game_do_training_checks()
 	}
 
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
-		wplp = &Waypoint_lists[Training_context_path];
-		if (wplp->count > Training_context_goal_waypoint) {
+		wplp = Training_context_path;
+		if (wplp->get_waypoints().size() > (uint) Training_context_goal_waypoint) {
 			i = Training_context_goal_waypoint;
+			Warning(LOCATION, "The following is very inefficient with the new waypoint code!  Contact Goober5000 if you need to use it.");
 			do {
-				d = vm_vec_dist(&wplp->waypoints[i], &Player_obj->pos);
+				waypoint *wpt = find_waypoint_at_index(wplp, i);
+				Assert(wpt != NULL);
+				d = vm_vec_dist(wpt->get_pos(), &Player_obj->pos);
 				if (d <= Training_context_distance) {
 					Training_context_at_waypoint = i;
 					if (Training_context_goal_waypoint == i) {
@@ -7942,7 +7946,7 @@ void game_do_training_checks()
 				}
 
 				i++;
-				if (i == wplp->count)
+				if ((uint) i == wplp->get_waypoints().size())
 					i = 0;
 
 			} while (i != Training_context_goal_waypoint);

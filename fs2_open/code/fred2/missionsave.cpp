@@ -2508,13 +2508,12 @@ int CFred_mission_save::save_goals()
 
 int CFred_mission_save::save_waypoints()
 {
-	int i;
 	//object *ptr;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Waypoints");
 	parse_comments(2);
-	fout("\t\t;! %d lists total\n", Num_waypoint_lists);
+	fout("\t\t;! %d lists total\n", Waypoint_lists.size());
 
 	for ( jump_node *jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() )
 	{
@@ -2567,18 +2566,19 @@ int CFred_mission_save::save_waypoints()
 		fso_comment_pop();
 	}
 
-	for (i=0; i<Num_waypoint_lists; i++)
+	SCP_list<waypoint_list>::iterator ii;
+	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
 	{
 		required_string_either_fred("$Name:", "#Messages");
 		required_string_fred("$Name:");
-		parse_comments(i ? 2 : 1);
-		fout(" %s", Waypoint_lists[i].name);
+		parse_comments((ii == Waypoint_lists.begin()) ? 1 : 2);
+		fout(" %s", ii->get_name());
 
 		required_string_fred("$List:");
 		parse_comments();
-		fout(" (\t\t;! %d points in list\n", Waypoint_lists[i].count);
+		fout(" (\t\t;! %d points in list\n", ii->get_waypoints().size());
 
-		save_waypoint_list(Waypoint_lists[i]);
+		save_waypoint_list(&(*ii));
 		fout(")");
 
 		fso_comment_pop();
@@ -2589,12 +2589,16 @@ int CFred_mission_save::save_waypoints()
 	return err;
 }
 
-int CFred_mission_save::save_waypoint_list(waypoint_list &w)
+int CFred_mission_save::save_waypoint_list(waypoint_list *wp_list)
 {
-	int i;
+	Assert(wp_list != NULL);
+	SCP_list<waypoint>::iterator ii;
 
-	for (i=0; i<w.count; i++)
-		fout("\t( %f, %f, %f )\n", w.waypoints[i].xyz.x, w.waypoints[i].xyz.y, w.waypoints[i].xyz.z);
+	for (ii = wp_list->get_waypoints().begin(); ii != wp_list->get_waypoints().end(); ++ii)
+	{
+		vec3d *pos = ii->get_pos();
+		fout("\t( %f, %f, %f )\n", pos->xyz.x, pos->xyz.y, pos->xyz.z);
+	}
 
 	return 0;
 }
@@ -3097,11 +3101,11 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 		
 		} else {
 			valid = 1;
-			if (!goalp[i].ship_name) {
+			if (!goalp[i].target_name) {
 				Warning(LOCATION, "Ai goal has no target where one is required");
 
 			} else {
-				sprintf(buf, "\"%s\"", goalp[i].ship_name);
+				sprintf(buf, "\"%s\"", goalp[i].target_name);
 				switch (goalp[i].ai_mode) {
 					case AI_GOAL_WAYPOINTS:
 						str = "ai-waypoints";
@@ -3117,7 +3121,7 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 							Warning(LOCATION, "AI destroy subsystem goal invalid subsystem name\n");
 
 						} else {
-							sprintf(buf, "\"%s\" \"%s\"", goalp[i].ship_name, goalp[i].docker.name);
+							sprintf(buf, "\"%s\" \"%s\"", goalp[i].target_name, goalp[i].docker.name);
 							str = "ai-destroy-subsystem";
 						}
 
@@ -3131,15 +3135,15 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 						} else if (goalp[i].docker.index == -1 || !goalp[i].docker.index) {
 							valid = 0;
 							Warning(LOCATION, "AI dock goal for \"%s\" has invalid docker point "
-								"(docking with \"%s\")\n", Ships[ship].ship_name, goalp[i].ship_name);
+								"(docking with \"%s\")\n", Ships[ship].ship_name, goalp[i].target_name);
 
 						} else if (goalp[i].dockee.index == -1 || !goalp[i].dockee.index) {
 							valid = 0;
 							Warning(LOCATION, "AI dock goal for \"%s\" has invalid dockee point "
-								"(docking with \"%s\")\n", Ships[ship].ship_name, goalp[i].ship_name);
+								"(docking with \"%s\")\n", Ships[ship].ship_name, goalp[i].target_name);
 
 						} else {
-							sprintf(buf, "\"%s\" \"%s\" \"%s\"", goalp[i].ship_name,
+							sprintf(buf, "\"%s\" \"%s\" \"%s\"", goalp[i].target_name,
 								goalp[i].docker.name, goalp[i].dockee.name);
 
 							str = "ai-dock";

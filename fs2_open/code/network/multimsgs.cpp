@@ -5005,8 +5005,8 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 		ADD_INT( aigp->ai_submode );
 
 		shipnum = -1;
-		if ( aigp->ship_name != NULL )
-			shipnum = ship_name_lookup( aigp->ship_name );
+		if ( aigp->target_name != NULL )
+			shipnum = ship_name_lookup( aigp->target_name );
 
 		// the ship_name member of the goals structure may or may not contain a real shipname.  If we don't
 		// have a valid shipnum, then don't sweat it since it may not really be a ship.
@@ -5121,7 +5121,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 			// get a pointer to the shipname in question.  Use the ship_name value in the
 			// ship.  We are only using this for HUD display, so I think that using this
 			// method will be fine.
-			aigp->ship_name = Ships[other_objp->instance].ship_name;
+			aigp->target_name = ai_get_goal_target_name(Ships[other_objp->instance].ship_name, &aigp->target_name_index);
 
 			// special case for destroy subsystem -- get the ai_info pointer to our target ship
 			// so that we can properly set up what subsystem this ship is attacking.

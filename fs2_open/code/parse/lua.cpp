@@ -5204,22 +5204,17 @@ struct waypointlist_h
 	waypointlist_h(waypoint_list *n_wlp){
 		wlp = n_wlp;
 		if(n_wlp != NULL)
-			strcpy_s(name, wlp->name);
+			strcpy_s(name, wlp->get_name());
 	}
 	waypointlist_h(char wlname[NAME_LENGTH]) {
 		wlp = NULL;
 		if ( wlname != NULL ) {
 			strcpy_s(name, wlname);
-			for ( int i = 0; i < Num_waypoint_lists; i++ ) {
-				if ( !stricmp( Waypoint_lists[i].name, wlname ) ) {
-					wlp = &Waypoint_lists[i];
-					return;
-				}
-			}
+			wlp = find_matching_waypoint_list(wlname);
 		}
 	}
 	bool IsValid() {
-		return (this != NULL && wlp != NULL && !strcmp(wlp->name, name));
+		return (this != NULL && wlp != NULL && !strcmp(wlp->get_name(), name));
 	}
 };
 
@@ -5240,10 +5235,10 @@ ADE_INDEXER(l_WaypointList, "number Index", "Array of waypoints that are part of
 	idx--;
 
 	//Get waypoint name
-	sprintf(wpname, "%s:%d", wlh->wlp->name, (idx & 0xffff) + 1);
-	int i = waypoint_lookup( wpname );
-	if( idx > -1 && idx < wlh->wlp->count && i != -1 ) {
-		return ade_set_args( L, "o", l_Waypoint.Set( object_h( &Objects[i] ), Objects[i].signature ) );
+	sprintf(wpname, "%s:%d", wlh->wlp->get_name(), calc_waypoint_index(idx) + 1);
+	waypoint *wpt = find_matching_waypoint( wpname );
+	if( idx >= 0 && (uint) idx < wlh->wlp->get_waypoints().size() && wpt != NULL ) {
+		return ade_set_args( L, "o", l_Waypoint.Set( object_h( &Objects[wpt->get_objnum()] ), Objects[wpt->get_objnum()].signature ) );
 	}
 
 	return ade_set_error(L, "o", l_Waypoint.Set( object_h() ) );
@@ -5260,7 +5255,7 @@ ADE_FUNC(__len, l_WaypointList,
 	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
 		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
 	}
-	return ade_set_args(L, "i", wlh->wlp->count);
+	return ade_set_args(L, "i", wlh->wlp->get_waypoints().size());
 }
 
 ADE_VIRTVAR(Name, l_WaypointList, "string", "Name of WaypointList", "string", "Waypointlist name, or empty string if handle is invalid")
@@ -7002,9 +6997,9 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			if(tgh_valid && tgh->objp->type == OBJ_WAYPOINT)
 			{
 				ai_mode = AI_GOAL_WAYPOINTS;
-				int wp_index = waypoint_get_list(tgh->objp);
-				if(wp_index > -1)
-					ai_shipname = Waypoint_lists[wp_index].name;
+				waypoint_list *wp_list = find_waypoint_list_with_instance(tgh->objp->instance);
+				if(wp_list != NULL)
+					ai_shipname = wp_list->get_name();
 			}
 			break;
 		}
@@ -7013,9 +7008,9 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			if(tgh_valid && tgh->objp->type == OBJ_WAYPOINT)
 			{
 				ai_mode = AI_GOAL_WAYPOINTS_ONCE;
-				int wp_index = waypoint_get_list(tgh->objp);
-				if(wp_index > -1)
-					ai_shipname = Waypoint_lists[wp_index].name;
+				waypoint_list *wp_list = find_waypoint_list_with_instance(tgh->objp->instance);
+				if(wp_list != NULL)
+					ai_shipname = wp_list->get_name();
 			}
 			break;
 		}
@@ -11076,9 +11071,7 @@ ADE_INDEXER(l_Mission_WaypointLists, "number Index/string WaypointListName", "Ar
 
 	if (!wpl.IsValid()) {
 		int idx = atoi(name) - 1;
-		if(idx > -1 && idx < Num_waypoint_lists) {
-			wpl = waypointlist_h(&Waypoint_lists[idx]);
-		}
+		wpl = waypointlist_h(find_waypoint_list_at_index(idx));
 	}
 
 	if (wpl.IsValid()) {
@@ -11090,7 +11083,7 @@ ADE_INDEXER(l_Mission_WaypointLists, "number Index/string WaypointListName", "Ar
 
 ADE_FUNC(__len, l_Mission_WaypointLists, NULL, "Number of waypoint lists in mission. Note that this is only accurate for one frame.", "number", "Number of waypoint lists in the mission")
 {
-	return ade_set_args(L, "i", Num_waypoint_lists);
+	return ade_set_args(L, "i", Waypoint_lists.size());
 }
 
 //****SUBLIBRARY: Mission/Weapons
@@ -11215,9 +11208,17 @@ ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
 	if(!ade_get_args(L, "|oo", l_Vector.GetPtr(&v3), l_WaypointList.GetPtr(&wlh)))
 		return ade_set_error(L, "o", l_Waypoint.Set(object_h()));
 
-	int obj_idx = waypoint_create(v3 != NULL ? v3 : &vmd_zero_vector, wlh->IsValid() ? WAYPOINTLIST_INDEX(wlh->wlp) : -1);
+	// determine where we need to create it - it looks like we were given a waypoint list but not a waypoint itself
+	int waypoint_instance = -1;
+	if (wlh->IsValid())
+	{
+		int wp_list_index = find_index_of_waypoint_list(wlh->wlp);
+		int wp_index = (int) wlh->wlp->get_waypoints().size() - 1;
+		waypoint_instance = calc_waypoint_instance(wp_list_index, wp_index);
+	}
+	int obj_idx = waypoint_add(v3 != NULL ? v3 : &vmd_zero_vector, waypoint_instance);
 
-	if(obj_idx > -1)
+	if(obj_idx >= 0)
 		return ade_set_args(L, "o", l_Waypoint.Set(object_h(&Objects[obj_idx])));
 	else
 		return ade_set_args(L, "o", l_Waypoint.Set(object_h()));

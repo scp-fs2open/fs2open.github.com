@@ -724,9 +724,9 @@ int	Training_context_speed_set;
 int	Training_context_speed_min;
 int	Training_context_speed_max;
 int	Training_context_speed_timestamp;
-int	Training_context_path;
-int	Training_context_goal_waypoint;
-int	Training_context_at_waypoint;
+waypoint_list *Training_context_path;
+int Training_context_goal_waypoint;
+int Training_context_at_waypoint;
 float	Training_context_distance;
 char	Sexp_error_text[MAX_SEXP_TEXT];
 char	*Sexp_string; //[1024] = {0};
@@ -1794,7 +1794,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							return SEXP_CHECK_INVALID_SHIP;
 						}
 
-						if (waypoint_lookup(CTEXT(node)) < 0)
+						if (find_matching_waypoint(CTEXT(node)) == NULL)
 						{
 							if (verify_vector(CTEXT(node)))					// verify return non-zero on invalid point
 							{
@@ -1849,7 +1849,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							return SEXP_CHECK_INVALID_SHIP_WING;
 						}
 
-						if (waypoint_lookup(CTEXT(node)) < 0){
+						if (find_matching_waypoint(CTEXT(node)) == NULL){
 							if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
 								if (sexp_determine_team(CTEXT(node)) < 0){
 									return SEXP_CHECK_INVALID_POINT;
@@ -2011,7 +2011,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (waypoint_lookup(CTEXT(node)) < 0)
+				if (find_matching_waypoint(CTEXT(node)) == NULL)
 				{
 					if (verify_vector(CTEXT(node)))
 					{
@@ -2322,13 +2322,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_WAYPOINT_PATH:
-				for (i=0; i<Num_waypoint_lists; i++){
-					if (!stricmp(Waypoint_lists[i].name, CTEXT(node))){
-						break;
-					}
-				}
-
-				if (i == Num_waypoint_lists){
+				if (find_matching_waypoint_list(CTEXT(node)) == NULL) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
@@ -4340,7 +4334,7 @@ typedef struct object_ship_wing_point_team
 	object *objp;
 	ship *shipp;
 	wing *wingp;
-	object *waypointp;
+	waypoint *waypointp;
 	int team;
 }
 object_ship_wing_point_team;
@@ -4348,7 +4342,8 @@ object_ship_wing_point_team;
 // Goober5000
 void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, char *object_name)
 {
-	int team, ship_num, wing_num, object_num;
+	int team, ship_num, wing_num;
+	waypoint *wpt;
 	p_object *p_objp;
 
 	Assert(oswpt != NULL);
@@ -4458,12 +4453,13 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 
 
 	// at this point, we must have a point for a target
-	object_num = waypoint_lookup(object_name);
-	if (object_num >= 0)
+	wpt = find_matching_waypoint(object_name);
+	if (wpt != NULL)
 	{
 		oswpt->type = OSWPT_TYPE_WAYPOINT;
 
-		oswpt->waypointp = oswpt->objp = &Objects[object_num];
+		oswpt->waypointp = wpt;
+		oswpt->objp = &Objects[wpt->get_objnum()];
 
 		return;
 	}
@@ -9183,7 +9179,7 @@ void sexp_add_wing_goal(int n)
 }
 
 /**
- * Adds a goal to the specified entiry (ships and wings have unique names between the two sets).
+ * Adds a goal to the specified entry (ships and wings have unique names between the two sets).
  */
 void sexp_add_goal(int n)
 {
@@ -13906,7 +13902,6 @@ int sexp_is_facing(int node)
 // is ship facing first waypoint in waypoint path
 int sexp_facing2(int node)
 {
-	int i;
 	float a1, a2;
 	vec3d v1, v2;
 
@@ -13923,21 +13918,13 @@ int sexp_facing2(int node)
 	char *waypoint_name = CTEXT(node);
 
 	// get position of first waypoint
-	int wp_index = -1;
-	for (i=0; i<Num_waypoint_lists; i++) {
-		if (!stricmp(waypoint_name, Waypoint_lists[i].name)) {
-			wp_index = i;
-			break;
-		}
-	}
+	waypoint_list *wp_list = find_matching_waypoint_list(waypoint_name);
 
-	if (wp_index == -1) {
+	if (wp_list == NULL) {
 		return SEXP_CANT_EVAL;
 	}
 
-	// Waypoint_lists[wp_index].waypoints[0]
-
-	vm_vec_sub(&v2, &Waypoint_lists[wp_index].waypoints[0], &Player_obj->pos);
+	vm_vec_sub(&v2, wp_list->get_waypoints().front().get_pos(), &Player_obj->pos);
 	vm_vec_normalize(&v2);
 	a1 = vm_vec_dotprod(&v1, &v2);
 	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
@@ -14028,7 +14015,7 @@ int sexp_waypoint_twice()
 int sexp_path_flown()
 {
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
-		if (Training_context_goal_waypoint == Waypoint_lists[Training_context_path].count){
+		if ((uint) Training_context_goal_waypoint == Training_context_path->get_waypoints().size()){
 			return SEXP_TRUE;
 		}
 	}
@@ -18155,19 +18142,15 @@ void multi_sexp_flash_hud_gauge()
 
 void sexp_set_training_context_fly_path(int node)
 {
-	int i;
+	waypoint_list *wp_list = find_matching_waypoint_list(CTEXT(node));
+	if (wp_list == NULL)
+		return;
 
-	for (i=0; i<Num_waypoint_lists; i++)
-		if (!stricmp(CTEXT(node), Waypoint_lists[i].name))
-			break;
-
-	if (i < Num_waypoint_lists) {
-		Training_context |= TRAINING_CONTEXT_FLY_PATH;
-		Training_context_path = i;
-		Training_context_distance = (float) atof(CTEXT(CDR(node)));
-		Training_context_goal_waypoint = 0;
-		Training_context_at_waypoint = -1;
-	}
+	Training_context |= TRAINING_CONTEXT_FLY_PATH;
+	Training_context_path = wp_list;
+	Training_context_distance = (float) atof(CTEXT(CDR(node)));
+	Training_context_goal_waypoint = 0;
+	Training_context_at_waypoint = -1;
 }
 
 void sexp_set_training_context_speed(int node)
@@ -24843,39 +24826,10 @@ int query_referenced_in_sexp(int mode, char *name, int *node)
 int verify_vector(char *text)
 {
 	char *str;
-	int i, z, len = 0;
+	int len = 0;
 
 	if (text == NULL)
 		return -1;
-
-	for (i=0; i<Num_waypoint_lists; i++) {
-		len = strlen(str = Waypoint_lists[i].name);
-		if (!strnicmp(str, text, len)){
-			if (!text[len] || text[len] == ':'){
-				break;
-			}
-		}
-	}
-
-	if (i < Num_waypoint_lists) {
-		if (!text[len]){
-			return 0;  // a valid waypoint path
-		}
-
-		str = &text[len + 1];
-		while (*str){
-			if (!isdigit(*str++)){
-				return -1;  // not a valid number
-			}
-		}
-
-		z = atoi(&text[len + 1]);
-		if (z < 1 || z > Waypoint_lists[i].count){
-			return -1;  // out of range
-		}
-
-		return 0;  // a valid waypoint
-	}
 
 	len = strlen(text);
 	if (text[0] != '(' || text[len - 1] != ')'){
@@ -27688,7 +27642,7 @@ sexp_help_struct Sexp_help[] = {
 		"vector of the point and the player, and the forward facing vector is within the "
 		"given angle.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 argument...\r\n"
-		"\t1:\tName of waypoint path whose first point is withing forward cone.\r\n"
+		"\t1:\tName of waypoint path whose first point is within forward cone.\r\n"
 		"\t2:\tAngle in degrees of the forward cone." },
 
 	// fixed by Goober5000 and then deprecated by Karajorma

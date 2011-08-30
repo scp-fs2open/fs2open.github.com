@@ -2753,9 +2753,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 
 		case OPF_POINT:
 		case OPF_WAYPOINT_PATH:
-			if (Num_waypoint_lists)
-				return 1;
-			return 0;
+			return Waypoint_lists.empty() ? 0 : 1;
 
 		case OPF_MISSION_NAME:
 			if (m_mode != MODE_CAMPAIGN) {
@@ -4979,14 +4977,18 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_type(int parent_node)
 sexp_list_item *sexp_tree::get_listing_opf_point()
 {
 	char buf[NAME_LENGTH+8];
-	int i, j;
+	SCP_list<waypoint_list>::iterator ii;
+	int j;
 	sexp_list_item head;
 
-	for (i=0; i<Num_waypoint_lists; i++)
-		for (j=0; j<Waypoint_lists[i].count; j++) {
-			sprintf(buf, "%s:%d", Waypoint_lists[i].name, j + 1);
+	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
+	{
+		for (j = 0; (uint) j < ii->get_waypoints().size(); ++j)
+		{
+			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
 			head.add_data_dup(buf);
 		}
+	}
 
 	return head.next;
 }
@@ -5364,11 +5366,11 @@ sexp_list_item *sexp_tree::get_listing_opf_explosion_option()
 
 sexp_list_item *sexp_tree::get_listing_opf_waypoint_path()
 {
-	int i;
+	SCP_list<waypoint_list>::iterator ii;
 	sexp_list_item head;
 
-	for (i=0; i<Num_waypoint_lists; i++)
-		head.add_data(Waypoint_lists[i].name);
+	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
+		head.add_data(ii->get_name());
 
 	return head.next;
 }
