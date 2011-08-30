@@ -1437,8 +1437,8 @@ void psnet_rel_work()
 			memset(&d3_rcv_addr,0,sizeof(net_addr));
 			memset(&rcv_addr,0,sizeof(SOCKADDR));
 			bytesin = RECVFROM(Unreliable_socket, (char *)&rcv_buff,sizeof(reliable_header), 0, (SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
-			rcv_buff.seq = INTEL_SHORT( rcv_buff.seq );
-			rcv_buff.data_len = INTEL_SHORT( rcv_buff.data_len );
+			rcv_buff.seq = INTEL_SHORT( rcv_buff.seq ); //-V570
+			rcv_buff.data_len = INTEL_SHORT( rcv_buff.data_len ); //-V570
 			rcv_buff.send_time = INTEL_FLOAT( &rcv_buff.send_time );
 			memcpy(d3_rcv_addr.addr, &tcp_addr->sin_addr.s_addr, 4);
 			d3_rcv_addr.port = tcp_addr->sin_port;

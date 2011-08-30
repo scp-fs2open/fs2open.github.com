@@ -666,9 +666,9 @@ void cf_search_root_pack(int root_index)
 	Assert( sizeof(VP_header) == 16 );
 	fread(&VP_header, 1, sizeof(VP_header), fp);
 
-	VP_header.version = INTEL_INT( VP_header.version );
-	VP_header.index_offset = INTEL_INT( VP_header.index_offset );
-	VP_header.num_files = INTEL_INT( VP_header.num_files );
+	VP_header.version = INTEL_INT( VP_header.version ); //-V570
+	VP_header.index_offset = INTEL_INT( VP_header.index_offset ); //-V570
+	VP_header.num_files = INTEL_INT( VP_header.num_files ); //-V570
 
 	mprintf(( "Searching root pack '%s' ... ", root->path ));
 
@@ -686,9 +686,9 @@ void cf_search_root_pack(int root_index)
 
 		fread( &find, sizeof(VP_FILE), 1, fp );
 
-		find.offset = INTEL_INT( find.offset );
-		find.size = INTEL_INT( find.size );
-		find.write_time = INTEL_INT( find.write_time );
+		find.offset = INTEL_INT( find.offset ); //-V570
+		find.size = INTEL_INT( find.size ); //-V570
+		find.write_time = INTEL_INT( find.write_time ); //-V570
 
 		if ( find.size == 0 )	{
 			if ( !stricmp( find.filename, ".." ))	{

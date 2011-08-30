@@ -64,23 +64,23 @@ int pcx_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 		return PCX_ERROR_NO_HEADER;
 	}
 
-	header.Xmin = INTEL_SHORT( header.Xmin );
-	header.Ymin = INTEL_SHORT( header.Ymin );
-	header.Xmax = INTEL_SHORT( header.Xmax );
-	header.Ymax = INTEL_SHORT( header.Ymax );
-	header.Hdpi = INTEL_SHORT( header.Hdpi );
-	header.Vdpi = INTEL_SHORT( header.Vdpi );
+	header.Xmin = INTEL_SHORT( header.Xmin ); //-V570
+	header.Ymin = INTEL_SHORT( header.Ymin ); //-V570
+	header.Xmax = INTEL_SHORT( header.Xmax ); //-V570
+	header.Ymax = INTEL_SHORT( header.Ymax ); //-V570
+	header.Hdpi = INTEL_SHORT( header.Hdpi ); //-V570
+	header.Vdpi = INTEL_SHORT( header.Vdpi ); //-V570
 
 	for (i=0; i<16; i++ ){
 		for (j=0; j<3; j++){
-			header.ColorMap[i][j] = INTEL_INT( header.ColorMap[i][j] );
+			header.ColorMap[i][j] = INTEL_INT( header.ColorMap[i][j] ); //-V570
 		}
 	}
 
-	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine );
+	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine ); //-V570
 
 	for (i=0; i<60; i++ ){
-		header.filler[i] = INTEL_INT( header.filler[i] );
+		header.filler[i] = INTEL_INT( header.filler[i] ); //-V570
 	}
 
 	// Is it a 256 color PCX file?
@@ -248,13 +248,13 @@ int pcx_read_bitmap( char * real_filename, ubyte *org_data, ubyte *pal, int byte
 		return PCX_ERROR_NO_HEADER;
 	}
 
-	header.Xmin = INTEL_SHORT( header.Xmin );
-	header.Ymin = INTEL_SHORT( header.Ymin );
-	header.Xmax = INTEL_SHORT( header.Xmax );
-	header.Ymax = INTEL_SHORT( header.Ymax );
-	header.Hdpi = INTEL_SHORT( header.Hdpi );
-	header.Vdpi = INTEL_SHORT( header.Vdpi );
-	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine );
+	header.Xmin = INTEL_SHORT( header.Xmin ); //-V570
+	header.Ymin = INTEL_SHORT( header.Ymin ); //-V570
+	header.Xmax = INTEL_SHORT( header.Xmax ); //-V570
+	header.Ymax = INTEL_SHORT( header.Ymax ); //-V570
+	header.Hdpi = INTEL_SHORT( header.Hdpi ); //-V570
+	header.Vdpi = INTEL_SHORT( header.Vdpi ); //-V570
+	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine ); //-V570
 
 	// Is it a 256 color PCX file?
 	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{

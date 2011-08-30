@@ -311,9 +311,9 @@ void get_join_request(ubyte *data, int *size, join_request *jr)
 
 	GET_DATA(*jr);
 
-	jr->tracker_id = INTEL_INT(jr->tracker_id);
-	jr->player_options.flags = INTEL_INT(jr->player_options.flags);
-	jr->player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level);
+	jr->tracker_id = INTEL_INT(jr->tracker_id); //-V570
+	jr->player_options.flags = INTEL_INT(jr->player_options.flags); //-V570
+	jr->player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level); //-V570
 
 	*size = offset;
 }
@@ -339,8 +339,8 @@ void get_net_addr(ubyte *data, int *size, net_addr *addr)
 
 	GET_DATA(*addr);
 
-	addr->type = INTEL_INT(addr->type);
-	addr->port = INTEL_SHORT(addr->port);
+	addr->type = INTEL_INT(addr->type); //-V570
+	addr->port = INTEL_SHORT(addr->port); //-V570
 
 	*size = offset;
 }

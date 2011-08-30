@@ -564,7 +564,7 @@ void script_state::SetHookVar(char *name, char format, void *data)
 				if(format == 's')
 					ade_set_args(LuaState, fmt, data);
 				else
-					ade_set_args(LuaState, fmt, *(ade_odata*)data);
+					ade_set_args(LuaState, fmt, *(ade_odata*)data); //-V510
 			}
 			//--------------------
 			//WMC - This was a separate function
@@ -893,7 +893,7 @@ int script_state::OutputMeta(char *filename)
 		return 0; 
 	}
 
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0)
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) //-V547
 	{
 		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
 		fputs("<body>", fp);
