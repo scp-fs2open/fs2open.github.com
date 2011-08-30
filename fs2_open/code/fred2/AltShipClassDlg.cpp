@@ -298,13 +298,14 @@ void AltShipClassDlg::OnMoveUp()
 void AltShipClassDlg::OnMoveDown() 
 {
 	int index = m_alt_class_list.GetCurSel();
+	int inext = index + 1;
 	
 	// Nothing selected or already at the bottom
 	if (index == -1 || (index >= m_alt_class_list.GetCount() - 1)  ) {
 		return;
 	}
 
-	std::swap(alt_class_pool[index], alt_class_pool[index++]);
+	std::swap(alt_class_pool[index], alt_class_pool[inext]);
 	alt_class_list_rebuild(); 
 	m_alt_class_list.SetCurSel(index); 
 }
