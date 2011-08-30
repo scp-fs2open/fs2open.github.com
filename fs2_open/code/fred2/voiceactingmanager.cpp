@@ -370,7 +370,7 @@ void VoiceActingManager::OnGenerateFileNames()
 		MMessage *message = &Messages[i + Num_builtin_messages];
 
 		// generate only if we're replacing or if it has a replaceable name
-		if (!m_no_replace || !strlen(filename) || !strlen(filename) || message_filename_is_generic(filename))
+		if (!m_no_replace || !strlen(filename) || message_filename_is_generic(filename))
 		{
 			// free existing filename
 			if (filename != NULL)
