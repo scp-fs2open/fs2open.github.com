@@ -483,7 +483,7 @@ void DumpStats::get_objectives_and_goals(CString &buffer)
 
 	// goals
 	for (i=0; i<Num_goals; i++) {
-		temp.Format("\tGoal: %s, text: ", Mission_goals[i].name, Mission_goals[i].message);
+		temp.Format("\tGoal: %s, text: %s", Mission_goals[i].name, Mission_goals[i].message);
 		buffer += temp;
 
 		switch(Mission_goals[i].type & GOAL_TYPE_MASK) {
