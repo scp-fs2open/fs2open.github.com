@@ -3899,13 +3899,6 @@ void game_render_frame( camid cid )
 
 #ifndef NDEBUG
 	ai_debug_render_stuff();
-#endif
-
-#ifndef RELEASE_REAL
-//	game_framerate_check();
-#endif
-
-#ifndef NDEBUG
 	extern void snd_spew_debug_info();
 	snd_spew_debug_info();
 #endif
@@ -8947,31 +8940,23 @@ int find_freespace_cd(char *volume_name)
 				}
 				
 				// here's where we make sure that CD's 2 and 3 are not just ripped - check to make sure its capacity is > 697,000,000 bytes				
-				if ( volume_match ){
-#ifdef RELEASE_REAL					
+				if ( volume_match ){				
 					// we don't care about CD1 though. let it be whatever size it wants, since the game will demand CD's 2 and 3 at the proper time
 					if(volume2_present || volume3_present) {
 						// first step - check to make sure its a cdrom
 						if(GetDriveType(path) != DRIVE_CDROM){							
 							break;
 						}
-
-#if !defined(OEM_BUILD)
 						// oem not on 80 min cds, so don't check tha size
 						// check its size
 						uint used_space = game_get_cd_used_space(path);											
 						if(used_space < CD_SIZE_72_MINUTE_MAX){							
 							break;
 						}
-#endif // !defined(OEM_BUILD)
 					}					
 
 					cdrom_drive = i;
 					break;
-#else
-					cdrom_drive = i;
-					break;
-#endif // RELEASE_REAL
 				}
 			}
 		}
@@ -9198,92 +9183,7 @@ int game_do_cd_check_specific(char *volume_name, int cdnum)
 // only need to do this in RELEASE_REAL
 int game_do_cd_mission_check(char *filename)
 {	
-#ifdef RELEASE_REAL
-/*	int cd_num;
-	int cd_present = 0;
-	int cd_drive_num;
-	fs_builtin_mission *m = game_find_builtin_mission(filename);
-
-	// check for changed CD
-	if(game_cd_changed()){
-		cfile_refresh();
-	}
-
-	// multiplayer
-	if((Game_mode & GM_MULTIPLAYER) || Is_standalone){
-		return 1;
-	}
-
-	// not builtin, so do a general check (any FS2 CD will do)
-	if(m == NULL){
-		return game_do_cd_check();
-	}
-
-	// does not have any CD requirement, do a general check
-	if(strlen(m->cd_volume) <= 0){
-		return game_do_cd_check();
-	}
-
-	// get the volume
-	if(!stricmp(m->cd_volume, FS_CDROM_VOLUME_1)){
-		cd_num = 1;
-	} else if(!stricmp(m->cd_volume, FS_CDROM_VOLUME_2)){
-		cd_num = 2;
-	} else if(!stricmp(m->cd_volume, FS_CDROM_VOLUME_3)){
-		cd_num = 3; 
-	} else {
-		return game_do_cd_check();
-	}
-
-	// did we find the cd?
-	if(find_freespace_cd(m->cd_volume) >= 0){
-		return 1;
-	}
-
-	// make sure the volume exists
-	int num_attempts = 0;
-	int refresh_files = 0;
-	while(1){
-		int path_set_ok, popup_rval;
-
-		cd_drive_num = find_freespace_cd(m->cd_volume);
-		path_set_ok = set_cdrom_path(cd_drive_num);
-		if ( path_set_ok ) {
-			cd_present = 1;
-			if ( refresh_files ) {
-				cfile_refresh();
-				refresh_files = 0;
-			}
-			break;
-		}
-
-		// no CD found, so prompt user
-#if defined(DVD_MESSAGE_HACK)
-		popup_rval = popup(PF_BODY_BIG, 1, POPUP_OK, XSTR("Please insert DVD", 1468));
-#else
-		popup_rval = popup(PF_BODY_BIG, 1, POPUP_OK, XSTR("Please insert CD %d", 1468), cd_num);
-#endif
-
-		refresh_files = 1;
-		if ( popup_rval != 1 ) {
-			cd_present = 0;
-			break;
-		}
-
-		if ( num_attempts++ > 5 ) {
-			cd_present = 0;
-			break;
-		}
-	}	
-
-	return cd_present;
-*/
-
 	return 1;
-
-#else
-	return 1;
-#endif // RELEASE_REAL
 }
 
 // ----------------------------------------------------------------

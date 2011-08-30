@@ -13,25 +13,6 @@
 #define _PSTYPES_H
 
 
-// Build defines.  Comment in/out for whatever build is necessary:
-// #define OEM_BUILD				// enable for OEM builds
-// #define MULTIPLAYER_BETA_BUILD	// enable for multiplayer beta build
-// #define E3_BUILD					// enable for 3dfx E3 build
-// #define PRESS_TOUR_BUILD			// enable for press tour build
-// #define FS2_DEMO					// enable demo build for FS2
-// #define PD_BUILD					// fred documentation/evaluation build
-// #define FRENCH_BUILD			// build for French (obsolete)
-// #define GERMAN_BUILD				// build for German (this is now used)
-#define RELEASE_REAL				// this means that it is an actual release candidate, not just an optimized/release build
-
-// uncomment this #define for DVD version (makes popups say DVD instead of CD 2 or whatever): JCF 5/10/2000
-// #define DVD_MESSAGE_HACK
-
-
-//  #if defined(MULTIPLAYER_BETA_BUILD) || defined(E3_BUILD) || defined(RELEASE_REAL)
-//  	#define GAME_CD_CHECK
-//  #endif
-
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
 #include <memory.h>
