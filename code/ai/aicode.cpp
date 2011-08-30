@@ -3242,7 +3242,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 
 	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_list == wp_list) )
 	{
-		if (aip->wp_index == NULL)
+		if (aip->wp_index == INVALID_WAYPOINT_POSITION)
 		{
 			Warning(LOCATION, "aip->wp_index should have been assigned already!");
 			aip->wp_index = aip->wp_list->get_waypoints().begin();
@@ -4541,7 +4541,7 @@ void ai_waypoints()
 	ai_info	*aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	// sanity checking for stuff that should never happen
-	if (aip->wp_index == NULL) {
+	if (aip->wp_index == INVALID_WAYPOINT_POSITION) {
 		if (aip->wp_list == NULL) {
 			Warning(LOCATION, "Waypoints should have been assigned already!");
 			ai_start_waypoints(Pl_objp, &Waypoint_lists.front(), WPF_REPEAT);
@@ -14566,8 +14566,8 @@ void init_ai_object(int objnum)
 	//Init stuff from ai class and ai profiles
 	init_aip_from_class_and_profile(aip, &Ai_classes[Ship_info[ship_type].ai_class], The_mission.ai_profile);
 
-	aip->wp_index = NULL;
 	aip->wp_list = NULL;
+	aip->wp_index = INVALID_WAYPOINT_POSITION;
 
 	aip->attacker_objnum = -1;
 	aip->goal_signature = -1;

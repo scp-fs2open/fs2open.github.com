@@ -5,6 +5,9 @@
 //********************GLOBALS********************
 SCP_list<waypoint_list> Waypoint_lists;
 
+SCP_list<waypoint> dummy_waypoint;
+const SCP_list<waypoint>::iterator INVALID_WAYPOINT_POSITION = dummy_waypoint.end();
+
 //********************CLASS MEMBERS********************
 waypoint::waypoint()
 {

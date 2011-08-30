@@ -14363,7 +14363,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 	if ( aip->mode == AIM_WAYPOINTS ) {
 		min_speed = 0.9f * max_speed;
 		if (aip->wp_list != NULL) {
-			Assert(aip->wp_index != NULL);
+			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
 			dist += vm_vec_dist_quick(&objp->pos, aip->wp_index->get_pos());
 
 			SCP_list<waypoint>::iterator ii;

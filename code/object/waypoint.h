@@ -52,6 +52,9 @@ class waypoint_list
 //********************GLOBALS********************
 extern SCP_list<waypoint_list> Waypoint_lists;
 
+// bah
+extern const SCP_list<waypoint>::iterator INVALID_WAYPOINT_POSITION;
+
 //********************FUNCTIONS********************
 void waypoint_parse_init();
 void waypoint_level_close();
