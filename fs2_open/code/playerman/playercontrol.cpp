@@ -60,6 +60,9 @@ physics_info Descent_physics;			// used when we want to control the player like 
 angles chase_slew_angles;
 int view_centering = 0;
 
+int toggle_glide = 0;
+int press_glide = 0;
+
 ////////////////////////////////////////////////////////////
 // Module data
 ////////////////////////////////////////////////////////////
@@ -726,9 +729,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		// new gliding systems combining code by Backslash, Turey, Kazan, and WMCoolmon
 
-		// Make these static so that we keep them from frame to frame.
-		static int toggle_glide = 0;
-		static int press_glide = 0;
 		// Check for toggle button pressed.
 		if ( button_info_query(&Player->bi, TOGGLE_GLIDING) ) {
 			control_used(TOGGLE_GLIDING);
@@ -1182,6 +1182,8 @@ void player_restore_target_and_weapon_link_prefs()
  */
 void player_level_init()
 {
+	toggle_glide = 0;
+	press_glide = 0;
 	memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
 
 	Viewer_slew_angles.p = 0.0f;	Viewer_slew_angles.b = 0.0f;	Viewer_slew_angles.h = 0.0f;
