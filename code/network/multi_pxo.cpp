@@ -4555,7 +4555,7 @@ void multi_pxo_pinfo_build_vals()
 
 	// primary friendly hits
 	memset(Multi_pxo_pinfo_vals[14], 0, 50);
-	sprintf(Multi_pxo_pinfo_vals[14], "%d", fs->stats.p_bonehead_hits);
+	sprintf(Multi_pxo_pinfo_vals[14], "%u", fs->stats.p_bonehead_hits);
 
 	// primary friendly hit %
 	memset(Multi_pxo_pinfo_vals[15], 0, 50);
@@ -4567,7 +4567,7 @@ void multi_pxo_pinfo_build_vals()
 
 	// secondary friendly hits
 	memset(Multi_pxo_pinfo_vals[16], 0, 50);
-	sprintf(Multi_pxo_pinfo_vals[16], "%d", fs->stats.s_bonehead_hits);
+	sprintf(Multi_pxo_pinfo_vals[16], "%u", fs->stats.s_bonehead_hits);
 
 	// secondary friendly hit %
 	memset(Multi_pxo_pinfo_vals[17], 0, 50);

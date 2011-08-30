@@ -6376,7 +6376,7 @@ void multi_ho_get_options()
 	// set the respawn count
 	if(Netgame.campaign_mode == MP_SINGLE){
 		memset(resp_str,0,10);
-		sprintf(resp_str,"%d",Netgame.respawn);
+		sprintf(resp_str,"%u",Netgame.respawn);
 		Multi_ho_respawns.set_text(resp_str);	
 	}
 

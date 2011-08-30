@@ -725,7 +725,7 @@ void multi_pinfo_build_stats()
 	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK],Ranks[sc->rank].name);
 
 	// primary shots fired
-	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%d",sc->p_shots_fired);
+	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%u",sc->p_shots_fired);
 
 	// primary shots hit
 	// sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_HIT],"%d",sc->p_shots_hit);
@@ -737,7 +737,7 @@ void multi_pinfo_build_stats()
 		sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], "%d%%", 0);
 	}
 	// primary shots fired
-	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%d",sc->s_shots_fired);
+	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%u",sc->s_shots_fired);
 
 	// primary shots hit
 	// sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_HIT],"%d",sc->s_shots_hit);
