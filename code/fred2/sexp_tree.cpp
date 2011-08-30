@@ -284,9 +284,6 @@ int sexp_tree::save_branch(int cur, int at_root)
 			} else {
 				node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			}
-		} else if (tree_nodes[cur].type & SEXPT_STRING) {
-			Assert( !(tree_nodes[cur].type & SEXPT_VARIABLE) );
-			Int3();
 		} else {
 			Assert(0); // unknown and/or invalid type
 		}
