@@ -31,6 +31,7 @@
 #include "weapon/shockwave.h"
 #include "parse/parselo.h"	//strextcmp
 #include "graphics/gropengllight.h"
+#include "ship/shipfx.h"
 
 #include <limits.h>
 
@@ -2613,6 +2614,26 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			vm_vec_unrotate(&world_pnt, &gpt->pnt, orient);
 			vm_vec_add2(&world_pnt, pos);
+
+			// if ship is warping out, check position of the engine glow to the warp plane
+			if ( (shipp->flags & (SF_ARRIVING|SF_DEPART_WARP) ) && (shipp->warpout_effect) ) {
+				vec3d warp_pnt, tmp;
+				matrix warp_orient;
+
+				shipp->warpout_effect->getWarpPosition(&warp_pnt);
+				shipp->warpout_effect->getWarpOrientation(&warp_orient);
+
+				vm_vec_sub( &tmp, &world_pnt, &warp_pnt );
+
+				if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
+				{
+					if (shipp->flags & SF_ARRIVING)// if in front of warp plane, don't create.
+						break;
+				} else {
+					if (shipp->flags & SF_DEPART_WARP)
+						break;
+				}
+			}
 
 			vm_vec_sub(&tempv, &View_position, &world_pnt);
 			vm_vec_normalize(&tempv);
