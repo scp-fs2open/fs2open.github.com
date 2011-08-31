@@ -1621,13 +1621,7 @@ void psnet_rel_work()
 				if(savepacket){
 					for(i=0; i<MAXNETBUFFERS; i++){
 						if(NULL == rsocket->rbuffers[i]){							
-							if(rcv_buff.data_len>max_len){
-								ml_string("Received oversized reliable packet!");
-								//don't ack it, which will mean we will get it again soon.
-								continue;
-							} else {
-								rsocket->recv_len[i] = rcv_buff.data_len; 
-							}
+							rsocket->recv_len[i] = rcv_buff.data_len;
 							rsocket->rbuffers[i] = (reliable_net_rcvbuffer *)vm_malloc(sizeof(reliable_net_rcvbuffer));
 							memcpy(rsocket->rbuffers[i]->buffer,rcv_buff.data,rsocket->recv_len[i]);	
 							rsocket->rsequence[i] = rcv_buff.seq;							
