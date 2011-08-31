@@ -5495,7 +5495,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 	// Fix up animation code references
 	for (i = 0; i < sinfo->n_subsystems; i++) {
-		for (int j = 0; j < sinfo->subsystems[i].n_triggers; j++) {
+		for (j = 0; j < sinfo->subsystems[i].n_triggers; j++) {
 			if (subsystem_stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>")) {
 				int idx = ship_get_subobj_model_num(sinfo, sinfo->subsystems[i].triggers[j].sub_name);
 				if (idx != -1) {
@@ -11045,9 +11045,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	if ( obj == Player_obj ) {
 		if ( Weapon_info[weapon].launch_snd != -1 ) {
-			weapon_info *wip;
-			ship_weapon *swp;
-
 			snd_play( &Snds[Weapon_info[weapon].launch_snd], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 			swp = &Player_ship->weapons;
 			if (swp->current_secondary_bank >= 0) {
@@ -11359,7 +11356,7 @@ int ship_select_next_primary(object *objp, int direction)
 				snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
 			}
 			ship_primary_changed(shipp);
-			object* objp = &Objects[shipp->objnum];
+			objp = &Objects[shipp->objnum];
 			object* target;
 			if (Ai_info[shipp->ai_index].target_objnum != -1)
 				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
@@ -11476,7 +11473,7 @@ int ship_select_next_secondary(object *objp)
 			}
 			ship_secondary_changed(shipp);
 
-			object* objp = &Objects[shipp->objnum];
+			objp = &Objects[shipp->objnum];
 			object* target;
 			if (Ai_info[shipp->ai_index].target_objnum != -1)
 				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
