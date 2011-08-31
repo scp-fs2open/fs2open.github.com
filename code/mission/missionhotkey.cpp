@@ -1217,10 +1217,6 @@ void mission_hotkey_do_frame(float frametime)
 			List_buttons[line - Scroll_offset].update_dimensions(Hotkey_list_coords[gr_screen.res][0], y, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_list_coords[gr_screen.res][0], font_height);
 			List_buttons[line - Scroll_offset].enable();
 			if (hotkeys & (1 << Cur_hotkey)) {
-				/*if (line == Selected_line)
-					gr_set_color_fast(&Color_text_active_hi);
-				else
-					gr_set_color_fast(&Color_text_active);*/
 				gr_set_color_fast(&Color_text_active);
 
 			} else {
