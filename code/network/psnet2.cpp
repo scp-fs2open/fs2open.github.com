@@ -1625,7 +1625,7 @@ void psnet_rel_work()
 							if(rcv_buff.data_len>max_len){
 								rsocket->recv_len[i] = rcv_buff.data_len;
 							} else {
-								rsocket->recv_len[i] = rcv_buff.data_len; 
+								Error(LOCATION, "Attempted memory corruption over network");
 							}
 							rsocket->rbuffers[i] = (reliable_net_rcvbuffer *)vm_malloc(sizeof(reliable_net_rcvbuffer));
 							memcpy(rsocket->rbuffers[i]->buffer,rcv_buff.data,rsocket->recv_len[i]);	
