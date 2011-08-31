@@ -1909,17 +1909,17 @@ void hud_target_auto_target_next()
 	}
 
 	// if none, try targeting closest hostile fighter/bomber
-	if ( Player_ai->target_objnum == -1 ) {
+	if ( Player_ai->target_objnum == -1 ) { //-V581
 		hud_target_closest(valid_team_mask, -1, FALSE, TRUE);
 	}
 
 	// No fighter/bombers exists, so go ahead an target the closest hostile
-	if ( Player_ai->target_objnum == -1 ) {
+	if ( Player_ai->target_objnum == -1 ) { //-V581
 		hud_target_closest(valid_team_mask, -1, FALSE);
 	}
 
 	// um, ok.  Try targeting asteroids that are on a collision course for an escort ship
-	if ( Player_ai->target_objnum == -1 ) {
+	if ( Player_ai->target_objnum == -1 ) { //-V581
 		asteroid_target_closest_danger();
 	}
 }
@@ -2574,7 +2574,7 @@ void hud_target_subsystem_in_reticle()
 		hud_target_in_reticle_old();
 	}
 
-	if ( Player_ai->target_objnum == -1) {
+	if ( Player_ai->target_objnum == -1) { //-V581
 		snd_play( &Snds[SND_TARGET_FAIL]);
 		return;
 	}
