@@ -191,7 +191,7 @@ void multi_sexp_ensure_space_remains(int data_size)
 
 	// flush the remaining type buffer
 	for (i = j ; i < MAX_PACKET_SIZE ; i++) {
-		type[i] = -1;
+		type[i] = (ubyte) -1;
 	}
 
 	// if we have an existing argument count we need to update where to put it too
