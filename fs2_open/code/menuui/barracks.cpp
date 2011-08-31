@@ -1187,11 +1187,6 @@ void barracks_display_pilot_callsigns(int prospective_pilot)
 			break;
 
 		if (!stricmp(Cur_pilot->callsign, Pilots[cur_pilot_idx]) && (is_pilot_multi(Cur_pilot) == multi)) {
-			/*if ((cur_pilot_idx == Selected_line) || (cur_pilot_idx == prospective_pilot)) {
-				gr_set_color_fast(&Color_text_active_hi);
-			} else {
-				gr_set_color_fast(&Color_text_active);
-			}*/
 			gr_set_color_fast(&Color_text_active);
 		} else {
 			if (cur_pilot_idx == Selected_line) {
