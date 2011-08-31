@@ -337,6 +337,12 @@ void brief_parse_icon_tbl()
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "icons.tbl", rval));
 		lcl_ext_close();
+
+		// Ensure no memory leak
+		delete[] temp_icon_bitmaps;
+		delete[] temp_icon_fade_anims;
+		delete[] temp_icon_highlight_anims;
+
 		return;
 	}
 
