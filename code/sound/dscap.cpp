@@ -186,7 +186,8 @@ int dscap_max_buffersize()
 		dscap_init();
 	}
 
-	if ( !dscap_inited ) {
+	//Just in case we're still not initialized
+	if ( !dscap_inited ) { //-V581
 		return -1;
 	}
 

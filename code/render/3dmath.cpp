@@ -119,7 +119,7 @@ ubyte g3_rotate_vertex(vertex *dest,vec3d *src)
 
 	y = tx * View_matrix.vec.uvec.xyz.x;
 	y += ty * View_matrix.vec.uvec.xyz.y;
-	y += tz * View_matrix.vec.uvec.xyz.z;
+	y += tz * View_matrix.vec.uvec.xyz.z; //-V537
 
 	z = tx * View_matrix.vec.fvec.xyz.x;
 	z += ty * View_matrix.vec.fvec.xyz.y;
