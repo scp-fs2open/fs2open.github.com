@@ -9804,19 +9804,22 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 	}
 }
 
-ADE_FUNC(clearScreen, l_Graphics, "[number Red, number green, number blue]", "Clears the screen to black, or the color specified.", NULL, NULL)
+ADE_FUNC(clearScreen, l_Graphics, "[number Red, number green, number blue, number alpha]", "Clears the screen to black, or the color specified.", NULL, NULL)
 {
-	int r,g,b;
+	int r,g,b,a;
 	r=g=b=0;
-	ade_get_args(L, "|iii", &r, &g, &b);
+	a=255;
+	ade_get_args(L, "|iiii", &r, &g, &b, &a);
 
 	//WMC - Set to valid values
-	if(r != 0 || g != 0 || b != 0)
+	if(r != 0 || g != 0 || b != 0 || a!= 255)
 	{
 		CAP(r,0,255);
 		CAP(g,0,255);
 		CAP(b,0,255);
+		CAP(a,0,255);
 		gr_set_clear_color(r,g,b);
+		gr_screen.current_clear_color.alpha = (ubyte)a;
 		gr_clear();
 		gr_set_clear_color(0,0,0);
 
@@ -10460,7 +10463,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	return ade_set_args(L, "o", l_Texture.Set(idx)); //-V510
 }
 
-ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 = 0.0, number UVX2=1.0, number UVY2=1.0]",
+ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 = 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
 		 "Draws an image or texture. Any image extension passed will be ignored."
 		 "The UV variables specify the UV value for each corner of the image. "
 		 "In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right.",
@@ -10479,11 +10482,12 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 	float uv_y1=0.0f;
 	float uv_x2=1.0f;
 	float uv_y2=1.0f;
+	float alpha=1.0f;
 
 	if(lua_isstring(L, 1))
 	{
 		char *s = NULL;
-		if(!ade_get_args(L, "s|iiiiffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
+		if(!ade_get_args(L, "s|iiiifffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha))
 			return ade_set_error(L, "b", false);
 
 		idx = Script_system.LoadBm(s);
@@ -10493,7 +10497,7 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 	}
 	else
 	{
-		if(!ade_get_args(L, "o|iiiiffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2)) //-V510
+		if(!ade_get_args(L, "o|iiiifffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha)) //-V510
 			return ade_set_error(L, "b", false);
 	}
 
@@ -10510,14 +10514,14 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 	if(y2!=INT_MAX)
 		h = y2-y1;
 
-	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, lua_Opacity);
+	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, alpha);
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 	gr_bitmap_list(&brl, 1, false);
 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, number X1, number Y1, [number X2, number Y2]", "Draws a monochrome image using the current color", "boolean", "Whether image was drawn")
+ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, number X1, number Y1, [number X2, number Y2, number alpha=1.0]", "Draws a monochrome image using the current color", "boolean", "Whether image was drawn")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
@@ -10529,11 +10533,12 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 	int sx=0;
 	int sy=0;
 	bool m = false;
+	float alpha=1.0;
 
 	if(lua_isstring(L, 1))
 	{
 		char *s = NULL;
-		if(!ade_get_args(L, "sii|ii", &s,&x,&y,&x2,&y2))
+		if(!ade_get_args(L, "sii|iif", &s,&x,&y,&x2,&y2,&alpha))
 			return ade_set_error(L, "b", false);
 
 		idx = Script_system.LoadBm(s);
@@ -10543,7 +10548,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 	}
 	else
 	{
-		if(!ade_get_args(L, "oii|ii", l_Texture.Get(&idx),&x,&y,&x2,&y2)) //-V510
+		if(!ade_get_args(L, "oii|iif", l_Texture.Get(&idx),&x,&y,&x2,&y2,&alpha)) //-V510
 			return ade_set_error(L, "b", false);
 	}
 
@@ -10566,7 +10571,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 	if(y2!=INT_MAX)
 		h = y2-y;
 
-	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
+	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,alpha);
 	gr_aabitmap_ex(x, y, w, h, sx, sy, false, m);
 
 	return ADE_RETURN_TRUE;
