@@ -322,7 +322,7 @@ void gr_opengl_clear()
 {
 	glClearColor(gr_screen.current_clear_color.red / 255.0f, 
 		gr_screen.current_clear_color.green / 255.0f, 
-		gr_screen.current_clear_color.blue / 255.0f, 1.0f);
+		gr_screen.current_clear_color.blue / 255.0f, gr_screen.current_clear_color.alpha / 255.0f);
 
 	glClear ( GL_COLOR_BUFFER_BIT );
 }
