@@ -3852,9 +3852,6 @@ void game_render_frame( camid cid )
 		stars_draw(1,1,1,0,0);
 	}
 
-	// Do the sunspot
-	game_sunspot_process(flFrametime);
-
 	bool draw_viewer_last = false;
 	obj_render_all(obj_render, &draw_viewer_last);
 	
@@ -3875,6 +3872,9 @@ void game_render_frame( camid cid )
 
 	beam_render_all();						// render all beam weapons
 	trail_render_all();						// render missilie trails after everything else.	
+
+	// Do the sunspot
+	game_sunspot_process(flFrametime);
 
 	// render nebula lightning
 	nebl_render_all();
