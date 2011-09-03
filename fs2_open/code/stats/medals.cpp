@@ -297,13 +297,6 @@ void parse_medal_tbl()
 	lcl_ext_close();
 }
 
-//WMC - not needed anymore
-//badge_stuff has a deconstructor
-/*
-void medal_close(){
-	for(int i = 0; i<MAX_BADGES; i++)if(Badge_info[i].promotion_text)vm_free(Badge_info[i].promotion_text);
-}*/
-
 // replacement for -gimmemedals
 DCF(medals, "Grant or revoke medals")
 {

@@ -2080,78 +2080,6 @@ MONITOR( NumHiModelsRend )
 MONITOR( NumMedModelsRend )
 MONITOR( NumLowModelsRend )
 
-/*
-typedef struct model_cache {
-	int		model_num;
-	//matrix	orient;
-	vec3d	pos;
-	int		num_lights;
-
-	float		last_dot;
-
-	float		cr;
-
-	int		w, h;
-	ubyte		*data;
-	int		cached_valid;
-	int		bitmap_id;
-
-	angles	angs;
-
-	// thrust stuff
-	float		thrust_scale;
-	int		thrust_bitmap;
-	int		thrust_glow_bitmap;
-	float		thrust_glow_noise;
-
-	int		last_frame_rendered;		//	last frame in which this model was rendered not from the cache
-} model_cache;
-
-#define MAX_MODEL_CACHE MAX_OBJECTS
-model_cache Model_cache[MAX_MODEL_CACHE];		// Indexed by objnum
-int Model_cache_inited = 0;
-
-
-// Returns 0 if not valid points
-int model_cache_calc_coords(vec3d *pnt,float rad, float *cx, float *cy, float *cr)
-{
-	vertex pt;
-	ubyte flags;
-
-	flags = g3_rotate_vertex(&pt,pnt);
-
-	if (flags == 0) {
-
-		g3_project_vertex(&pt);
-
-		if (!(pt.flags & (PF_OVERFLOW|CC_BEHIND)))	{
-
-			*cx = pt.sx;
-			*cy = pt.sy;
-			*cr = rad*Matrix_scale.xyz.x*Canv_w2/pt.z;
-
-			if ( *cr < 1.0f )	{
-				*cr = 1.0f;
-			}
-
-			int x1, x2, y1, y2;
-
-			x1 = fl2i(*cx-*cr); 
-			if ( x1 < gr_screen.clip_left ) return 0;
-			x2 = fl2i(*cx+*cr);
-			if ( x2 > gr_screen.clip_right ) return 0;
-			y1 = fl2i(*cy-*cr);
-			if ( y1 < gr_screen.clip_top ) return 0;
-			y2 = fl2i(*cy+*cr);
-			if ( y2 > gr_screen.clip_bottom ) return 0;
-
-			return 1;
-		}
-	}
-	return 0;
-}
-*/
-
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if not
 int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *v)
@@ -2160,10 +2088,6 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 	int i;
 
 	Assert( G3_count == 1 );
-
-
-
-//	angle = 0.0f;
 		
 	sa = (float)sin(angle);
 	ca = (float)cos(angle);

@@ -114,8 +114,6 @@ void pause_init()
 	// pause all game music
 	audiostream_pause_all();
 
-	//JAS: REMOVED CALL TO SET INTERFACE PALETTE TO GET RID OF SCREEN CLEAR WHEN PAUSING
-	//common_set_interface_palette();  // set the interface palette
 	Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
 
 	Pause_background_bitmap = bm_load(Pause_bmp_name[gr_screen.res]);

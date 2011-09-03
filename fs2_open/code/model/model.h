@@ -1152,18 +1152,6 @@ typedef struct mst_info {
 // Only enabled if MR_SHOW_THRUSTERS is on
 void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
 
-//=========================================================
-// model caching
-
-// Call once to init the model caching stuff
-//void model_cache_init();
-
-// Call before every level to clean up the model caching stuff
-//void model_cache_reset();
-
-// If TRUE, then model caching is enabled
-//extern int Model_caching;
-
 
 //=======================================================================================
 // Finds the closest point on a model to a point in space.  Actually only finds a point

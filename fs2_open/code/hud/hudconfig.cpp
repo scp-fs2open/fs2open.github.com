@@ -701,7 +701,6 @@ void hud_config_init_ui()
 	struct HC_gauge_region	*hg;
 	struct ui_button_info			*hb;
 
-//	common_set_interface_palette("HUDConfigPalette");  // set the interface palette
 	hud_config_synch_ui();
 	HC_background_bitmap = bm_load(Hud_config_fname[gr_screen.res]);
 

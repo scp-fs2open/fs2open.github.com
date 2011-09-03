@@ -119,35 +119,6 @@ static shield_hit_info	Shield_hit_data[2];
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
 ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
 
-/*void hud_shield_game_init()
-{
-	int rval;
-	char name[MAX_FILENAME_LEN+1] = "";
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "hud.tbl", rval));
-		return;
-	}
-
-	// read in hud.tbl
-	read_file_text("hud.tbl");
-	reset_parse();
-
-	Hud_shield_filename_count = 0;
-	required_string("#Shield Icons Begin");
-	while(!optional_string("#End")){
-		required_string("$Shield:");
-
-		stuff_string(name, F_NAME, NULL);
-
-		// maybe store
-		Assert(Hud_shield_filename_count < MAX_SHIELD_ICONS);
-		if(Hud_shield_filename_count < MAX_SHIELD_ICONS){
-			strcpy_s(Hud_shield_filenames[Hud_shield_filename_count++], name);
-		}
-	}
-}*/
-
 // called at the start of each level from HUD_init.  Use Hud_shield_init so we only init Shield_gauges[] once.
 void hud_shield_level_init()
 {

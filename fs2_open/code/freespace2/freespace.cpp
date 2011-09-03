@@ -84,7 +84,6 @@
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionhotkey.h"
-//#include "mission/missionlist.h"
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
@@ -290,11 +289,9 @@ int Game_ships_tbl_valid = 0;
 // if the weapons.tbl the player has is valid
 int Game_weapons_tbl_valid = 0;
 
-//#ifndef NDEBUG
 int Test_begin = 0;
 extern int	Player_attacking_enabled;
 int Show_net_stats;
-//#endif
 
 int Pre_player_entry;
 
@@ -309,7 +306,6 @@ int game_single_step = 0;
 int last_single_step=0;
 
 int game_zbuffer = 1;
-//static int Game_music_paused;
 static int Game_paused;
 
 int Game_level_seed;
@@ -338,7 +334,6 @@ int Debug_dump_frame_num = 0;
 // amount of time to wait after the player has died before we display the death died popup
 #define PLAYER_DIED_POPUP_WAIT		2500
 int Player_died_popup_wait = -1;
-//int Player_multi_died_check = -1;
 
 int Multi_ping_timestamp = -1;
 
@@ -602,11 +597,6 @@ sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f 
 int Game_sound_env_update_timestamp;
 
 
-// WARPIN CRAP BEGIN --------------------------------------------------------------------------------------------
-
-
-// WARPIN CRAP END --------------------------------------------------------------------------------------------
-
 fs_builtin_mission *game_find_builtin_mission(char *filename)
 {
 	int idx;
@@ -694,9 +684,16 @@ void game_framerate_check()
 }
 
 
-// Adds a flash effect.  These can be positive or negative.
-// The range will get capped at around -1 to 1, so stick 
-// with a range like that.
+/**
+ * Adds a flash effect.  
+ *
+ * These can be positive or negative. The range will get capped at around -1 to 1, so stick 
+ * with a range like that.
+ *
+ * @param r red colour value
+ * @param g green colour value
+ * @param b blue colour value
+ */
 void game_flash( float r, float g, float b )
 {
 	Game_flash_red += r;
@@ -723,18 +720,15 @@ void game_flash( float r, float g, float b )
 
 }
 
-// Adds a flash for Big Ship explosions
-// cap range from 0 to 1
+/**
+ * Adds a flash for Big Ship explosions
+ * @param flash flash intensity. Range capped from 0 to 1.
+ */
 void big_explosion_flash(float flash)
 {
+	CLAMP(flash, 0.0f, 1.0f);
+
 	Big_expl_flash.flash_start = timestamp(1);
-
-	if (flash > 1.0f) {
-		flash = 1.0f;
-	} else if (flash < 0.0f) {
-		flash = 0.0f;
-	}
-
 	Big_expl_flash.max_flash_intensity = flash;
 	Big_expl_flash.cur_flash_intensity = 0.0f;
 }
@@ -827,7 +821,6 @@ void game_sunspot_process(float frametime)
 
 			// check
 			for(idx=0; idx<n_lights; idx++){
-				//(vec3d *eye_pos, matrix *eye_orient)
 				if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
 
 					vec3d light_dir;				
@@ -866,8 +859,10 @@ void game_sunspot_process(float frametime)
 }
 
 
-// Call once a frame to diminish the
-// flash effect to 0.
+/**
+ * Call once a frame to diminish the flash effect to 0.
+ * @param frametime Period over which to dimish at ::DIMINISH_RATE
+ */
 void game_flash_diminish(float frametime)
 {
 	float dec_amount = frametime*DIMINISH_RATE;
@@ -945,8 +940,6 @@ void game_flash_diminish(float frametime)
 		if ( (r!=0) || (g!=0) || (b!=0) ) {
 			gr_flash( r, g, b );
 
-			//mprintf(( "Flash! %d,%d,%d\n", r, g, b ));
-
 			o_r = r;
 			o_g = g;
 			o_b = b;
@@ -981,7 +974,6 @@ void game_level_close()
 		asteroid_level_close();
 		jumpnode_level_close();
 		waypoint_level_close();
-	//	model_cache_reset();						// Reset/free all the model caching stuff
 		flak_level_close();						// unload flak stuff
 		neb2_level_close();						// shutdown gaseous nebula stuff
 		ct_level_close();
@@ -1023,11 +1015,13 @@ void game_level_close()
 uint load_gl_init;
 uint load_mission_load;
 uint load_post_level_init;
-//uint load_mission_stuff;
 
-// intializes game stuff and loads the mission.  Returns 0 on failure, 1 on success
-// input: seed =>	DEFAULT PARAMETER (value -1).  Only set by demo playback code.
-//WMC - I see no mission loading.
+/**
+ * Intializes game stuff.  
+ *
+ * @param seed Only set by demo playback code.
+ * @return 0 on failure, 1 on success
+ */
 void game_level_init(int seed)
 {
 	game_busy( NOX("** starting game_level_init() **") );
@@ -1043,7 +1037,6 @@ void game_level_init(int seed)
 			Game_level_seed = Netgame.security;
 		}
 	} else {
-		// mwa 9/17/98 -- maybe this assert isn't needed????
 		Assert( !(Game_mode & GM_MULTIPLAYER) );
 		Game_level_seed = seed;
 	}
@@ -1069,7 +1062,6 @@ void game_level_init(int seed)
 	batch_reset();
 
 	// Initialize the game subsystems
-//	timestamp_reset();			// Must be inited before everything else
 	if(!Is_standalone){
 		game_reset_time();			// resets time, and resets saved time too
 	}
@@ -1099,7 +1091,6 @@ void game_level_init(int seed)
 	particle_init();				// Reset the particle system
 	fireball_init();
 	debris_init();
-//	cmeasure_init();			//WMC - cmeasures are now weapons
 	shield_hit_init();				//	Initialize system for showing shield hits
 
 	mission_init_goals();
@@ -1120,7 +1111,7 @@ void game_level_init(int seed)
 	fireball_preload();				//	page in warphole bitmaps
 	observer_init();
 	flak_level_init();				// initialize flak - bitmaps, etc
-	ct_level_init();					// initialize ships contrails, etc
+	ct_level_init();				// initialize ships contrails, etc
 	awacs_level_init();				// initialize AWACS
 	beam_level_init();				// initialize beam weapons
 	mflash_level_init();
@@ -1160,14 +1151,18 @@ void game_level_init(int seed)
 	}
 }
 
-// called when a mission is over -- does server specific stuff.
+/**
+ * Called when a mission is over -- does server specific stuff.
+ */
 void freespace_stop_mission()
 {	
 	game_level_close();
 	Game_mode &= ~GM_IN_MISSION;
 }
 
-// called at frame interval to process networking stuff
+/**
+ * Called at frame interval to process networking stuff
+ */
 void game_do_networking()
 {
 	Assert( Net_player != NULL );
@@ -1195,19 +1190,10 @@ void game_do_networking()
 // load a level.   You can find this value by looking at the return value
 // of game_busy_callback(NULL), which I conveniently print out to the
 // debug output window with the '=== ENDING LOAD ==' stuff.   
-//#define COUNT_ESTIMATE 3706
-//#define COUNT_ESTIMATE 1111
-//#define COUNT_ESTIMATE 2311
-//#define COUNT_ESTIMATE 1250
 #define COUNT_ESTIMATE 425
 
 int Game_loading_callback_inited = 0;
-
 int Game_loading_background = -1;
-//static int last_cbitmap = -1;
-//anim * Game_loading_ani = NULL;
-//anim_instance	*Game_loading_ani_instance;
-//int Game_loading_frame=-1;
 generic_anim Game_loading_ani;
 
 static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -1225,9 +1211,11 @@ static int busy_shader_created = 0;
 shader busy_shader;
 #endif
 static int framenum;
-// This gets called 10x per second and count is the number of times 
-// game_busy() has been called since the current callback function
-// was set.
+
+/**
+ * This gets called 10x per second and count is the number of times ::game_busy() has been 
+ * called since the current callback function was set.
+ */
 void game_loading_callback(int count)
 {	
 	int new_framenum;
@@ -1254,7 +1242,6 @@ void game_loading_callback(int count)
 			gr_bitmap(0,0);
 		}
 
-		//mprintf(( "Showing frame %d/%d [ Bitmap=%d ]\n", Game_loading_frame ,  Game_loading_ani->total_frames, cbitmap ));
 		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
 		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 
@@ -1272,18 +1259,6 @@ void game_loading_callback(int count)
 	}
 
 	if (Processing_filename[0] != '\0') {
-		/*
-		//do we still need this with the new EFF code?
-		if ( cbitmap == -1 && last_cbitmap >-1 ){
-			if ( Game_loading_background > -1 )	{
-				gr_set_bitmap( Game_loading_background );
-				gr_bitmap(0,0);
-			}
-			gr_set_bitmap( last_cbitmap );
-			gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
-		}
-		*/
-
 		gr_set_shader(&busy_shader);
 		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17); // make sure it goes across the entire width
 
@@ -1331,9 +1306,8 @@ void game_loading_callback(int count)
 	}
 #endif	// !NDEBUG
 
-	if (do_flip) {
+	if (do_flip)
 		gr_flip();
-	}
 }
 
 void game_loading_callback_init()
@@ -1343,10 +1317,7 @@ void game_loading_callback_init()
 	Game_loading_background = bm_load(The_mission.loading_screen[gr_screen.res]);
 	
 	if (Game_loading_background < 0)
-	{
 		Game_loading_background = bm_load(Game_loading_bground_fname[gr_screen.res]);
-	}
-	//common_set_interface_palette("InterfacePalette");  // set the interface palette
 
 	strcpy_s(Game_loading_ani.filename, Game_loading_ani_fname[gr_screen.res]);
 	generic_anim_init(&Game_loading_ani, Game_loading_ani.filename);
@@ -1391,35 +1362,19 @@ void game_loading_callback_close()
 	gr_set_font( FONT1 );
 }
 
-// Update the sound environment (ie change EAX settings based on proximity to large ships)
-//
+/**
+ * Update the sound environment (ie change EAX settings based on proximity to large ships)
+ */
 void game_maybe_update_sound_environment()
 {
 	// do nothing for now
 }
 
-// Assign the sound environment for the game, based on the current mission
-//
+/**
+ * Assign the sound environment for the game, based on the current mission
+ */
 void game_assign_sound_environment()
 {
-/*
-	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
-		Game_sound_env.id = SND_ENV_DRUGGED;
-		Game_sound_env.volume = 0.800f;
-		Game_sound_env.damping = 1.188f;
-		Game_sound_env.decay = 6.392f;
-#ifndef FS2_DEMO
-	} else if (Num_asteroids > 30) {
-		Game_sound_env.id = SND_ENV_AUDITORIUM;
-		Game_sound_env.volume = 0.603f;
-		Game_sound_env.damping = 0.5f;
-		Game_sound_env.decay = 4.279f;
-#endif
-	} else {
-		Game_sound_env = Game_default_sound_env;
-	}
-	*/
-
 	if (The_mission.sound_environment.id >= 0) {
 		Game_sound_env = The_mission.sound_environment;
 	} else if (SND_ENV_DEFAULT > 0) {
@@ -1431,10 +1386,9 @@ void game_assign_sound_environment()
 	Game_sound_env_update_timestamp = timestamp(1);
 }
 
-// function which gets called before actually entering the mission.  It is broken down into a funciton
-// since it will get called in one place from a single player game and from another place for
-// a multiplayer game
-//WMC - Actually, it isn't. So I moved it into post_level_init
+/**
+ * Function which gets called before actually entering the mission.
+ */
 void freespace_mission_load_stuff()
 {
 	// called if we're not on a freespace dedicated (non rendering, no pilot) server
@@ -1442,8 +1396,6 @@ void freespace_mission_load_stuff()
 	if(!(Game_mode & GM_STANDALONE_SERVER)){	
 	
 		mprintf(( "=================== STARTING LEVEL DATA LOAD ==================\n" ));
-
-	//	game_loading_callback_init();
 
 		game_busy( NOX("** setting up event music **") );
 		event_music_level_init(-1);	// preloads the first 2 seconds for each event music track
@@ -1489,11 +1441,13 @@ void freespace_mission_load_stuff()
 	}
 }
 
+/**
+ * Called after mission is loaded.
+ *
+ * Because player isn't created until after mission loads, some things must get initted after the level loads
+ */
 void game_post_level_init()
 {
-	// Stuff which gets called after mission is loaded.  Because player isn't created until
-	// after mission loads, some things must get initted after the level loads
-
 	extern void game_environment_map_gen();
 	game_environment_map_gen();
 
@@ -1529,14 +1483,14 @@ void game_post_level_init()
 		red_alert_bash_wingman_status();
 	}
 
-	//load_mission_stuff = time(NULL);
 	freespace_mission_load_stuff();
-	//load_mission_stuff = time(NULL) - load_mission_stuff;
 
 	Script_system.RunCondition(CHA_MISSIONSTART);
 }
 
-// tells the server to load the mission and initialize structures
+/**
+ * Tells the server to load the mission and initialize structures
+ */
 int game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
@@ -1593,26 +1547,8 @@ int game_start_mission()
 		Do_model_timings_test();	
 	}
 #endif
-	//set the initial animation positions
-/*
-		ship_obj *moveup = GET_FIRST(&Ship_obj_list);
-		ship *shipp;
-		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != NULL)){
-			// bogus
-			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= Num_ship_classes)){
-				moveup = GET_NEXT(moveup);
-				continue;
-			}
-			shipp = &Ships[Objects[moveup->objnum].instance];
-
-			model_anim_set_initial_states(shipp);
-
-			moveup = GET_NEXT(moveup);
-		}
-*/
 
 	bm_print_bitmaps();
-
 	return 1;
 }
 
@@ -1836,41 +1772,6 @@ void run_launcher()
 
 	// This now crashes the launcher since fs2_open is still open
 	return;
-
-	// fire up the UpdateLauncher executable
-	/*  ------------ This code was reported unreachable by the compiler for obvious reasons ------------
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-
-	memset( &si, 0, sizeof(STARTUPINFO) );
-	si.cb = sizeof(si);
-
-	BOOL launcher_ran = CreateProcess(	LAUNCHER_FNAME,	// pointer to name of executable module 
-								NULL,							// pointer to command line string
-								NULL,							// pointer to process security attributes 
-								NULL,							// pointer to thread security attributes 
-								FALSE,							// handle inheritance flag 
-								CREATE_DEFAULT_ERROR_MODE,		// creation flags 
-								NULL,							// pointer to new environment block 
-								NULL,	// pointer to current directory name 
-								&si,	// pointer to STARTUPINFO 
-								&pi 	// pointer to PROCESS_INFORMATION  
-							);			
-
-	// If the Launcher could not be started up, let the user know and give them the option of downloading it
-	if (!launcher_ran) 
-	{
-		download = MessageBox((HWND)os_get_window(), 
-			"The Launcher could not be started. You cannot run fs2_open without it. "
-			"Would you like to download it?", "FS2_Open Startup Error", MB_YESNO | MB_ICONQUESTION);
-
-		if(download == IDYES)
-		{
-			// Someone should change this to the offical link
-			WinExec(launcher_link, SW_SHOW);
-		}
-	}
-	*/
 #endif
 }
 
@@ -1878,15 +1779,16 @@ void run_launcher()
 char full_path[1024];
 #endif
 
+/**
+ * Game initialisation
+ */
 void game_init()
 {
 	int s1, e1;
-//	int s2, e2;
 	char *ptr;
 	char whee[MAX_PATH_LEN];
 
 	Game_current_mission_filename[0] = 0;
-
 
 	// seed the random number generator
 	Game_init_seed = (int) time(NULL);
@@ -1908,7 +1810,6 @@ void game_init()
 	if ( !Is_standalone ) {		
 		os_init( Osreg_class_name, Osreg_app_name );
 	}
-
 
 #ifndef NDEBUG
 	#if FS_VERSION_REVIS == 0
@@ -1970,8 +1871,7 @@ void game_init()
 	verify_weapons_tbl();
 
 
-	Use_joy_mouse = 0;		//os_config_read_uint( NULL, NOX("JoystickMovesCursor"), 1 );
-	//Use_palette_flash = os_config_read_uint( NULL, NOX("PaletteFlash"), 0 );
+	Use_joy_mouse = 0;
 	Use_low_mem = os_config_read_uint( NULL, NOX("LowMem"), 0 );
 
 #ifndef NDEBUG
@@ -2011,9 +1911,6 @@ void game_init()
 		fsspeech_play(-1,"Welcome to FS2 open");
 		MessageBox((HWND)os_get_window(), "Speech is compiled and initialised and should be working", "FS2_Open Info", MB_OK);
 	}
-	
-//FS2_Voicer Init moved to after os_set_title() 
- 
 
 /////////////////////////////
 // SOUND INIT END
@@ -2056,32 +1953,15 @@ void game_init()
 #endif
 
 	// Set the gamma
-//	if( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) )
 	{
 		// D3D's gamma system now works differently. 1.0 is the default value
 		ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
 		FreeSpace_gamma = (float)atof(ptr);
 	}
-/*	else
-	{
-		ptr = os_config_read_string(NULL, NOX("Gamma"), NOX("1.80"));
-		FreeSpace_gamma = (float)atof(ptr);
-		
-		// Keep the old system for the benifit of OGL
-		if ( FreeSpace_gamma < 0.1f )	{
-			FreeSpace_gamma = 0.1f;
-		} else if ( FreeSpace_gamma > 5.0f )	{
-			FreeSpace_gamma = 5.0f;
-		}
-		char tmp_gamma_string[32];
-		sprintf( tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma );
-		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
-	}*/
 
 	script_init();			//WMC
-
-//#if defined(FS2_DEMO) || defined(OEM_BUILD)
 	gr_font_init();					// loads up all fonts
+	
 	// add title screen
 	if(!Is_standalone){
 		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
@@ -2089,7 +1969,6 @@ void game_init()
 		gr_set_gamma(FreeSpace_gamma);
 		game_title_screen_display();
 	}
-//#endif
 	
 	// attempt to load up master tracker registry info (login and password)
 	Multi_tracker_id = -1;		
@@ -2148,11 +2027,6 @@ void game_init()
 
 	brief_parse_icon_tbl();
 
-//	mission_list_init();			// init the list of builtin missions
-
-	// hud shield icon stuff
-	//hud_shield_game_init(); No longer needed; see ships.tbl -C
-
 	hud_init_comm_orders();	// Goober5000
 
 	control_config_common_init();				// sets up localization stuff in the control config
@@ -2160,11 +2034,6 @@ void game_init()
 	parse_rank_tbl();
 #ifndef FS2_DEMO
 	parse_medal_tbl();
-	//WMC - gave badge_stuff a deconstructor
-/*
-	void medal_close();
-	atexit(medal_close);
-*/
 #endif
 	cutscene_init();
 	key_init();
@@ -2175,7 +2044,7 @@ void game_init()
 
 	multi_init();	
 
-	// standalone's don't use hte joystick and it seems to sometimes cause them to not get shutdown properly
+	// standalone's don't use the joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
 		joy_init();
 	}
@@ -2228,7 +2097,6 @@ void game_init()
 	}
 
 	Viewer_mode = 0;
-//	Game_music_paused = 0;
 	Game_paused = 0;
 
 	Script_system.RunBytecode(Script_gameinithook);
@@ -2243,8 +2111,7 @@ void game_init()
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
-	mprintf(("cfile_init() took %d\n", e1 - s1));
-	// mprintf(("1000 cfopens() took %d\n", e2 - s2));	
+	mprintf(("cfile_init() took %d\n", e1 - s1));	
 	Script_system.RunBytecode(Script_gameinithook);
 }
 
@@ -2298,6 +2165,9 @@ void game_get_framerate()
 	Framecount++;
 }
 
+/**
+ * Show FPS within game
+ */
 void game_show_framerate()
 {	
 	float	cur_time;
@@ -2307,13 +2177,6 @@ void game_show_framerate()
 		mprintf(("%i frames executed in %7.3f seconds, %7.3f frames per second.\n", Framecount, cur_time - Start_time, Framecount/(cur_time - Start_time)));
 		Start_time += 1000.0f;
 	}
-
-	//mprintf(( "%s\n", text ));
-/*	if(frame_rate_display && (flFrametime != 0.0f)){
-		gr_set_color( 128, 255, 192 );
-		gr_printf(15, 500, "fps: %f", 1.0f / flFrametime);
-	}
-*/
 
 #ifdef WMC
 	//WMC - this code spits out the target of all turrets
@@ -2341,7 +2204,7 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate /* && HUD_draw*/ )	{
+	if (Show_framerate)	{
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (frametotal != 0.0f)
@@ -2357,10 +2220,6 @@ void game_show_framerate()
 
 	// possibly show control checking info
 	control_check_indicate();
-
-//	int bitmaps_used_this_frame, bitmaps_new_this_frame;
-//	MONITOR_INC(BmpUsed, bitmaps_used_this_frame);
-// MONITOR_INC(BmpNew, bitmaps_new_this_frame);
 
 #ifdef _WIN32
 	if (Cmdline_show_stats && HUD_draw) {
@@ -2404,8 +2263,6 @@ void game_show_framerate()
 
 		gr_set_color_fast(&HUD_color_debug);
 
-//		gr_printf( sx, sy, "BPP: %d", gr_screen.bits_per_pixel );
-//		sy += dy;
 		gr_printf( sx, sy, NOX("DMA: %s"), transfer_text );
 		sy += dy;
 		gr_printf( sx, sy, NOX("POLYP: %d"), modelstats_num_polys );
@@ -2524,7 +2381,6 @@ void game_show_framerate()
 	}
 #endif
 
-
 	MONITOR_INC(NumPolys, modelstats_num_polys);
 	MONITOR_INC(NumPolysDrawn, modelstats_num_polys_drawn );
 	MONITOR_INC(NumVerts, modelstats_num_verts );
@@ -2594,24 +2450,24 @@ void game_show_standalone_framerate()
 	Framecount++;
 }
 
-// function to show the time remaining in a mission.  Used only when the end-mission sexpression is used
+/**
+ * Show the time remaining in a mission.  Used only when the end-mission sexpression is used
+ *
+ * ::mission_end_time is a global from missionparse.cpp that contains the mission time at which the
+ * mission should end (in fixed seconds).  There is code in missionparse.cpp which actually handles
+ * checking how much time is left.
+ */
 void game_show_time_left()
 {
 	int diff;
 
-	// mission_end_time is a global from missionparse.cpp that contains the mission time at which the
-	// mission should end (in fixed seconds).  There is code in missionparse.cpp which actually handles
-	// checking how much time is left
-
-	if ( Mission_end_time == -1 ){
+	if (Mission_end_time == -1)
 		return;
-	}
 
 	diff = f2i(Mission_end_time - Missiontime);
 	// be sure to bash to 0.  diff could be negative on frame that we quit mission
-	if ( diff < 0 ){
+	if (diff < 0)
 		diff = 0;
-	}
 
 	hud_set_default_color();
 	gr_printf( 5, 40, XSTR( "Mission time remaining: %d seconds", 179), diff );
@@ -2718,7 +2574,9 @@ DCF(view, "Sets the percent of the 3d view to render.")
 }
 
 
-// Set the clip region for the 3d rendering window
+/**
+ * Set the clip region for the 3d rendering window
+ */
 void game_reset_view_clip()
 {
 	Cutscene_bar_flags = CUB_NONE;
@@ -2989,8 +2847,6 @@ void player_repair_frame(float frametime)
 	}
 }
 
-
-//#ifndef NDEBUG
 #define NUM_FRAMES_TEST		300
 #define NUM_MIXED_SOUNDS	16
 void do_timing_test(float frame_time)
@@ -3029,7 +2885,6 @@ void do_timing_test(float frame_time)
 	
 
 }
-//#endif
 
 DCF(dcf_fov, "Change the field of view of the main camera")
 {
@@ -5457,19 +5312,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_DEBRIEF:
-			// This IF block isn't needed because it's not part of the end-campaign logic.
-			// The supernova code and end-campaign sexp handle it all. - G5K
-			//
-			//	// did we end the campaign in the middle of a mission?
-			//	if (Campaign_ended_in_mission && (Game_mode & GM_CAMPAIGN_MODE) /*&& !stricmp(Campaign.filename, "freespace2")*/) {
-			//		gameseq_post_event(GS_EVENT_END_CAMPAIGN);
-			//	} else {
-			//		gameseq_set_state(GS_STATE_DEBRIEF);
-			//	}
-			//
 			gameseq_set_state(GS_STATE_DEBRIEF);
-
-			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_SHIP_SELECTION:
@@ -5499,8 +5342,6 @@ void game_process_event( int current_state, int event )
 				gameseq_set_state(GS_STATE_GAME_PLAY, 1);
 			}
 
-			//Player_multi_died_check = -1;
-
 			// clear multiplayer button info			
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
@@ -5518,15 +5359,12 @@ void game_process_event( int current_state, int event )
 			} else
 				Int3();
 
-			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_QUIT_GAME:
 			main_hall_stop_music();
 			main_hall_stop_ambient();
 			gameseq_set_state(GS_STATE_QUIT_GAME);
-
-			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_GAMEPLAY_HELP:
@@ -5572,13 +5410,7 @@ void game_process_event( int current_state, int event )
 		case GS_EVENT_DEATH_BLEW_UP:
 			if (  current_state == GS_STATE_DEATH_DIED )	{
 				gameseq_set_state( GS_STATE_DEATH_BLEW_UP );
-				event_music_player_death();
-				
-				/* multiplayer clients set their extra check here
-				if(Game_mode & GM_MULTIPLAYER){
-					// set the multi died absolute last chance check					
-					Player_multi_died_check = time(NULL);
-				}*/	
+				event_music_player_death();	
 			} else {
 				mprintf(( "Ignoring GS_EVENT_DEATH_BLEW_UP because we're in state %d\n", current_state ));
 			}
@@ -5588,32 +5420,12 @@ void game_process_event( int current_state, int event )
 			if (!mission_load_up_campaign()){
 				readyroom_continue_campaign();
 			}
-
-			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_CAMPAIGN_CHEAT:
 			if (!mission_load_up_campaign()){
-				/*
-				// bash campaign value
-				extern char Main_hall_campaign_cheat[512];
-				int idx;
-				
-				// look for the mission
-				for(idx=0; idx<Campaign.num_missions; idx++){
-					if(!stricmp(Campaign.missions[idx].name, Main_hall_campaign_cheat)){
-						Campaign.next_mission = idx;
-						Campaign.prev_mission = idx - 1;
-						break;
-					}
-				}
-				*/
-
-				// continue
 				readyroom_continue_campaign();
 			}
-
-			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_CAMPAIGN_ROOM:
