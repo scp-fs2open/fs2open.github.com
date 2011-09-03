@@ -714,8 +714,8 @@ int mission_campaign_load_by_name( char *filename )
 	}
 
 	Num_campaigns = 0;
-	Campaign_file_names[Num_campaigns] = filename;
-	Campaign_names[Num_campaigns] = name;
+	Campaign_file_names[Num_campaigns] = vm_strdup(filename);
+	Campaign_names[Num_campaigns] = vm_strdup(name);
 	Num_campaigns++;
 	mission_campaign_load(filename);		
 	return 0;
