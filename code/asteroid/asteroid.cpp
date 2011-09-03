@@ -1534,6 +1534,9 @@ void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, 
 	mc->radius = asteroid_obj->radius;
 
 	model_collide(mc);
+
+	// PVS-Studio says that mc->p1 will become invalid... on the one hand, it will; on the other hand, we won't use it again; on the *other* other hand, we should keep things proper in case of future changes
+	mc->p1 = NULL;
 }
 
 // Return !0 is the asteroid will collide with the escort ship within ASTEROID_MIN_COLLIDE_TIME
