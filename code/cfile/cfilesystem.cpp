@@ -428,8 +428,7 @@ void cf_build_root_list(char *cdrom_dir)
 
 	if(Cmdline_mod) {
 		// stackable Mod support -- Kazan
-		//This for statement is a work of art :D
-		for (cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
+		for (cur_pos=Cmdline_mod; *cur_pos != '\0'; cur_pos+= (strlen(cur_pos)+1))
 		{
 			memset(str_temp, 0, CF_MAX_PATHNAME_LENGTH);
 			strncpy(str_temp, cur_pos, CF_MAX_PATHNAME_LENGTH-1);
