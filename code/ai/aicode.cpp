@@ -8182,7 +8182,7 @@ void ai_cruiser_chase()
 						// get separation
 						ai_chase_big_get_separations(Pl_objp, En_objp, &temp, &desired_sep, &cur_sep);
 						// and the separation is > 0.9 desired
-						if (cur_sep > 0.9 * desired_sep) {
+						if (cur_sep > (0.9f * desired_sep)) {
 							aip->submode = SM_BIG_PARALLEL;
 							aip->submode_start_time = Missiontime;
 						}
@@ -8198,8 +8198,8 @@ void ai_cruiser_chase()
 					if (vm_vec_dotprod(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) > 0) {
 						// get separation
 						ai_chase_big_get_separations(Pl_objp, En_objp, &temp, &desired_sep, &cur_sep);
-						//and the separation is [0.9 to 1.1] desired
-						if ( (cur_sep > 0.9f * desired_sep) ) {
+						// and the separation is > 0.9 desired
+						if (cur_sep > (0.9f * desired_sep)) {
 							aip->submode = SM_BIG_PARALLEL;
 							aip->submode_start_time = Missiontime;
 						}
@@ -8211,8 +8211,8 @@ void ai_cruiser_chase()
 					if (vm_vec_dotprod(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) < 0) {
 						// get separation
 						ai_chase_big_get_separations(Pl_objp, En_objp, &temp, &desired_sep, &cur_sep);
-						//and the separation is [0.9 to 1.1] desired
-						if ( (cur_sep > 0.9f * desired_sep) ) {
+						// and the separation is > 0.9 desired
+						if (cur_sep > (0.9f * desired_sep)) {
 							aip->submode = SM_BIG_PARALLEL;
 							aip->submode_start_time = Missiontime;
 						}
