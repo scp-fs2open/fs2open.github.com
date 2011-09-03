@@ -372,6 +372,7 @@ void cf_build_root_list(char *cdrom_dir)
 
 	cf_root	*root;
 	char str_temp[CF_MAX_PATHNAME_LENGTH], *cur_pos;
+	int path_len;
 
 #ifdef SCP_UNIX
 	// =========================================================================
@@ -445,12 +446,15 @@ void cf_build_root_list(char *cdrom_dir)
 				Int3();
 			}
 
+			path_len = strlen(root->path);
+
 			// do we already have a slash? as in the case of a root directory install
-			if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
+			if ( (path_len < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[path_len-1] != DIR_SEPARATOR_CHAR) ) {
 				strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+				path_len++;
 			}
 
-			strncat(root->path, str_temp, (CF_MAX_PATHNAME_LENGTH - strlen(root->path) - 1));
+			strncat(root->path, str_temp, (CF_MAX_PATHNAME_LENGTH - path_len - 1));
 			root->roottype = CF_ROOTTYPE_PATH;
 			cf_build_pack_list(root);
 		}
@@ -462,8 +466,10 @@ void cf_build_root_list(char *cdrom_dir)
 		Error(LOCATION, "Can't get current working directory -- %d", errno );
 	}
 
+	path_len = strlen(root->path);
+
 	// do we already have a slash? as in the case of a root directory install
-	if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
+	if ( (path_len < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[path_len-1] != DIR_SEPARATOR_CHAR) ) {
 		strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
 
@@ -690,16 +696,16 @@ void cf_search_root_pack(int root_index)
 		find.write_time = INTEL_INT( find.write_time ); //-V570
 
 		if ( find.size == 0 )	{
+			int search_path_len = strlen(search_path);
 			if ( !stricmp( find.filename, ".." ))	{
-				int l = strlen(search_path);
-				char *p = &search_path[l-1];
+				char *p = &search_path[search_path_len-1];
 				while( (p > search_path) && (*p != DIR_SEPARATOR_CHAR) )	{
 					p--;
 				}
 				*p = 0;
 			} else {
-				if ( strlen(search_path) && (search_path[strlen(search_path)-1] != DIR_SEPARATOR_CHAR) ) {
-						strcat_s( search_path, DIR_SEPARATOR_STR );
+				if ( search_path_len && (search_path[search_path_len-1] != DIR_SEPARATOR_CHAR) ) {
+					strcat_s( search_path, DIR_SEPARATOR_STR );
 				}
 				strcat_s( search_path, find.filename );
 			}
