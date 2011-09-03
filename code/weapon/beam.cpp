@@ -250,9 +250,7 @@ extern int Use_GLSL;
 // init at game startup
 void beam_init()
 {
-	// clear the beams
-	list_init( &Beam_free_list );
-	list_init( &Beam_used_list );
+	beam_level_close();
 }
 
 // initialize beam weapons for this level

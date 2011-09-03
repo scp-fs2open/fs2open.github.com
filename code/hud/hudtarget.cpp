@@ -962,17 +962,14 @@ color HUD_color_homing_indicator;
 
 void hud_make_shader(shader *sh, ubyte r, ubyte g, ubyte b, float dimmer = 1000.0f)
 {
-//	float rf,gf,bf,cf;
-	ubyte R = 255, G = 255, B = 255, A = 255;
-
 	// The m matrix converts all colors to shades of green
 	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
 	float tmp = 0.025f * i2fl(HUD_color_alpha+1.0f);
 
-	R = ubyte(r * tmp);
-	G = ubyte(r * tmp);
-	B = ubyte(r * tmp);
-	A = ubyte((float(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
+	ubyte R = ubyte(r * tmp);
+	ubyte G = ubyte(r * tmp);
+	ubyte B = ubyte(r * tmp);
+	ubyte A = ubyte((float(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
 
 	gr_create_shader( sh, R, G, B, A );
 }

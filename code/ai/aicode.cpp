@@ -7364,7 +7364,6 @@ void ai_chase_es(ai_info *aip, ship_info *sip)
 	vec3d	tvec;
 	fix		timeslice;
 	fix		scale;
-	float		bank_override = 0.0f;
 
 	tvec = Pl_objp->pos;
 
@@ -7385,7 +7384,7 @@ void ai_chase_es(ai_info *aip, ship_info *sip)
 		tvec.xyz.y += frand();
 	}
 
-	bank_override = Pl_objp->phys_info.speed;
+	float bank_override = Pl_objp->phys_info.speed;
 
 	ai_turn_towards_vector(&tvec, Pl_objp, flFrametime/2, sip->srotation_time, NULL, NULL, bank_override, 0);
 	accelerate_ship(aip, 1.0f);

@@ -17234,10 +17234,10 @@ int sexp_missile_locked(int node)
 
 int sexp_is_player (int node) 
 {
-	int sindex, standard_check = 1, np_index;
+	int sindex, np_index;
 	p_object *p_objp;
 
-	standard_check = is_sexp_true(node);
+	int standard_check = is_sexp_true(node);
 
 	if (!(Game_mode & GM_MULTIPLAYER)){	
 		sindex = ship_name_lookup(CTEXT(CDR(node)));
@@ -18689,12 +18689,11 @@ void sexp_set_camera_fov(int n)
 	if(cam == NULL)
 		return;
 
-	float camera_fov = VIEWER_ZOOM_DEFAULT;
 	float camera_time = 0.0f;
 	float camera_acc_time = 0.0f;
 	float camera_dec_time = 0.0f;
 
-	camera_fov = i2fl(eval_num(n)) * (PI/180.0f);
+	float camera_fov = i2fl(eval_num(n)) * (PI/180.0f);
 	n = CDR(n);
 
 	if(n != -1)
@@ -22292,11 +22291,10 @@ DCF(sexpc, "Always runs the given sexp command ")
 {
 	if ( Dc_command )       {
 		if (Dc_command_line != NULL) {
-			int sexp_val = UNINITIALIZED;
 			char buf[8192];
-
 			snprintf(buf, 8191, "( when ( true ) ( %s ) )", Dc_command_line);
-			sexp_val = run_sexp( buf );
+
+			int sexp_val = run_sexp( buf );
 			dc_printf("SEXP '%s' run, sexp_val = %d\n", buf, sexp_val);
 			do {
 				dc_get_arg(ARG_ANY);
@@ -22313,8 +22311,7 @@ DCF(sexp,"Runs the given sexp")
 {
 	if ( Dc_command )       {
 		if (Dc_command_line != NULL) {
-			int sexp_val = UNINITIALIZED;
-			sexp_val = run_sexp( Dc_command_line );
+			int sexp_val = run_sexp( Dc_command_line );
 			dc_printf("SEXP '%s' run, sexp_val = %d\n", Dc_command_line, sexp_val);
 			do {
 				dc_get_arg(ARG_ANY);
