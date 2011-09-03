@@ -7328,7 +7328,7 @@ int sexp_depart_node_delay(int n)
 
 	Assert( n >= 0 );
 
-	delay = atoi( CTEXT(n) );
+	delay = eval_num(n);
 	n = CDR(n);
 	jump_node_name = CTEXT(n);
 
@@ -16326,14 +16326,14 @@ void sexp_rotating_subsys_set_turn_time(int node)
 	n = CDR(n);
 
 	// get and set the turn time
-	turn_time = ((float) atoi(CTEXT(n))) / 1000.0f;
+	turn_time = eval_num(n) / 1000.0f;
 	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
 	n = CDR(n);
 
 	// maybe get and set the turn accel
 	if (n != -1)
 	{
-		turn_accel = ((float) atoi(CTEXT(n))) / 1000.0f;
+		turn_accel = eval_num(n) / 1000.0f;
 		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
 	}
 	else
