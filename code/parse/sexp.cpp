@@ -16322,6 +16322,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 	// get and set the turn time
 	turn_time = ((float) atoi(CTEXT(n))) / 1000.0f;
 	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
+	n = CDR(n);
 
 	// maybe get and set the turn accel
 	if (n != -1)
