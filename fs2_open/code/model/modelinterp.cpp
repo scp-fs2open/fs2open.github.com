@@ -2639,7 +2639,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			#define NOISE_SCALE 0.5f
 			#define MIN_SCALE 3.4f
 			#define MAX_SCALE 4.7f
-			float scale = MIN_SCALE;
 
 			float magnitude;
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
@@ -2660,7 +2659,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			if (magnitude < 0.0f)
 				magnitude *= -1.0f;
 
-			scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
+			float scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
 
 			if (d > 0.0f){
 				// Make glow bitmap fade in/out quicker from sides.
