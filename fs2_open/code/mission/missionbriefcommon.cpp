@@ -1628,7 +1628,7 @@ bool is_a_word_separator(char character){
  * and stores it to Colored_stream table.
  *
  * A color markup is made of a minimum of three characters: 
- *   '$' + a char standing for a color + contigous multiple spaces (chars \t \n and ' ')
+ *   '$' + a char standing for a color + contigous multiple spaces (chars t n and ' ')
  * The markup is completely removed from the resulting character sequence.
  *
  * @param src a not null pointer to a C string terminated by a /0 char.
@@ -1683,6 +1683,7 @@ int brief_text_colorize(char *src, int instance)
  * @param src paragraph of text to process
  * @param w	max width of line in pixels
  * @param instance optional parameter, used when multiple text streams are required (default value is 0)
+ * @param max_lines maximum number of lines
  */
 int brief_color_text_init(char *src, int w, int instance, int max_lines)
 {
