@@ -3541,18 +3541,22 @@ char *multi_pxo_chat_is_private(char *txt)
 }
 //XSTR:ON
 
+static const size_t pxo_prefix_len = strlen(MULTI_PXO_SERVER_PREFIX);
+
 /**
  * If the text came from the server
  */
 int multi_pxo_is_server_text(char *txt)
-{		
+{
 	// if the message is prefaced by a ***
-	if((strlen(txt) >= strlen(MULTI_PXO_SERVER_PREFIX)) && !strncmp(txt, MULTI_PXO_SERVER_PREFIX, strlen(MULTI_PXO_SERVER_PREFIX))){
+	if((strlen(txt) >= pxo_prefix_len) && !strncmp(txt, MULTI_PXO_SERVER_PREFIX, pxo_prefix_len)){
 		return 1;
 	}
 
 	return 0;
 }
+
+static const size_t motd_prefix_len = strlen(PXO_CHAT_MOTD_PREFIX);
 
 /**
  * If the text is message of the day text
@@ -3560,12 +3564,14 @@ int multi_pxo_is_server_text(char *txt)
 int multi_pxo_is_motd_text(char *txt)
 {
 	// if we're not on a channel, and this is not a channel switching message assume its coming from a server
-	if((strlen(txt) >= strlen(PXO_CHAT_MOTD_PREFIX)) && !strncmp(txt, PXO_CHAT_MOTD_PREFIX, strlen(PXO_CHAT_MOTD_PREFIX))){
+	if((strlen(txt) >= motd_prefix_len) && !strncmp(txt, PXO_CHAT_MOTD_PREFIX, motd_prefix_len)){
 		return 1;
 	}	
 	
 	return 0;
 }
+
+static const size_t end_motd_prefix_len = strlen(PXO_CHAT_END_OF_MOTD_PREFIX);
 
 /**
  * If the text is the end of motd text
@@ -3573,7 +3579,7 @@ int multi_pxo_is_motd_text(char *txt)
 int multi_pxo_is_end_of_motd_text(char *txt)
 {
 	// if we're not on a channel, and this is not a channel switching message assume its coming from a server
-	if((strlen(txt) >= strlen(PXO_CHAT_END_OF_MOTD_PREFIX)) && !strncmp(txt, PXO_CHAT_END_OF_MOTD_PREFIX, strlen(PXO_CHAT_END_OF_MOTD_PREFIX))){
+	if((strlen(txt) >= end_motd_prefix_len) && !strncmp(txt, PXO_CHAT_END_OF_MOTD_PREFIX, end_motd_prefix_len)){
 		return 1;
 	}	
 	
@@ -3664,14 +3670,14 @@ void multi_pxo_motd_add_text(char *text)
 	}
 	
 	// if its a 0 line motd
-	if(strlen(text) <= strlen(PXO_CHAT_MOTD_PREFIX)){
+	if(strlen(text) <= motd_prefix_len){
 		return;
 	}
 
 	// add text to the motd
-	new_len = strlen(text + strlen(PXO_CHAT_MOTD_PREFIX)) - 1;
+	new_len = strlen(text + motd_prefix_len) - 1;
 	if((cur_len + new_len + 1) < MAX_PXO_MOTD_LEN){
-		strcat_s(Pxo_motd, text + strlen(PXO_CHAT_MOTD_PREFIX) + 1);
+		strcat_s(Pxo_motd, text + motd_prefix_len + 1);
 		strcat_s(Pxo_motd, "\n");
 		mprintf(("MOTD ADD : %s\n", Pxo_motd));
 	}

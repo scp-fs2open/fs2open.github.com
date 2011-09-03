@@ -584,10 +584,12 @@ void os_parse_parms(char *cmdline)
 				if ( !cmdline_offset )
 					break;
 
-				// the new offset should be our currently location + the length of the current option
-				get_new_offset = (strlen(cmdline) - strlen(cmdline_offset) + strlen(parmp->name));
+				int parmp_len = strlen(parmp->name);
 
-				if ( (*(cmdline_offset + strlen(parmp->name))) && !is_extra_space(*(cmdline_offset + strlen(parmp->name))) ) {
+				// the new offset should be our currently location + the length of the current option
+				get_new_offset = (strlen(cmdline) - strlen(cmdline_offset) + parmp_len);
+
+				if ( (*(cmdline_offset + parmp_len)) && !is_extra_space(*(cmdline_offset + parmp_len)) ) {
 					// we found a similar, but not exact, match for this option, continue checking for the correct one
 				} else {
 					// we found what we were looking for so break out and process it

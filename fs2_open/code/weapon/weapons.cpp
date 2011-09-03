@@ -476,6 +476,9 @@ int weapon_info_lookup(const char *name)
 //	Parse the weapon flags.
 void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 {
+	const char *spawn_str = NOX("Spawn");
+	const size_t spawn_str_len = strlen(spawn_str);
+
 	//Make sure we HAVE flags :p
 	if(!optional_string("$Flags:"))
 		return;
@@ -495,7 +498,7 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 	bool set_nopierce = false;
 	
 	for (int i=0; i<num_strings; i++) {
-		if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
+		if (!strnicmp(spawn_str, weapon_strings[i], 5))
 		{
             if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 			{
@@ -512,7 +515,7 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 
 				weaponp->wi_flags |= WIF_SPAWN;
 				weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
-				skip_length = strlen(NOX("Spawn")) + strspn(&temp_string[strlen(NOX("Spawn"))], NOX(" \t"));
+				skip_length = spawn_str_len + strspn(&temp_string[spawn_str_len], NOX(" \t"));
 				char *num_start = strchr(&temp_string[skip_length], ',');
 				if (num_start == NULL) {
 					weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
