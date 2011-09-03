@@ -34,8 +34,6 @@ struct player;
 struct object;
 struct ship_info;
 
-//Not needed, info is taken from ships.tbl. Dunno why Volition did it this way in the first place.
-//void hud_shield_game_init();
 void hud_shield_level_init();
 void hud_shield_equalize(object *objp, player *pl);
 void hud_augment_shield_quadrant(object *objp, int direction);

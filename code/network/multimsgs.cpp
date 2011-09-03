@@ -4795,9 +4795,6 @@ void process_jump_into_mission_packet(ubyte *data, header *hinfo)
 		}		
 	}
 
-	//extern int Player_multi_died_check;
-	//Player_multi_died_check = -1;
-
 	// recalc all object pairs now	
 	extern void obj_reset_all_collisions();
 	obj_reset_all_collisions();

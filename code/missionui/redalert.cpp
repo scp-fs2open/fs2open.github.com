@@ -313,7 +313,6 @@ void red_alert_init()
 		return;
 	}
 
-	// common_set_interface_palette("ControlConfigPalette");  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Red_alert_mask[gr_screen.res]);
 

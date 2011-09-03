@@ -1708,7 +1708,6 @@ void campaign_room_init()
 
 	list_h = Mission_list_coords[gr_screen.res][3];
 
-	// common_set_interface_palette("InterfacePalette");  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Campaign_mask_filename[gr_screen.res]);
 
