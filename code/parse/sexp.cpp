@@ -1469,7 +1469,7 @@ int get_operator_index(int node)
 
 
 /**
- * From an operator name, return its constant (the number it was #define'd with)
+ * From an operator name, return its constant (the number it was define'd with)
  */
 int get_operator_const(char *token)
 {
@@ -12313,6 +12313,7 @@ int sexp_has_weapon(int node, int op_num)
 /**
  * Gets status of goals for previous missions (in the current campaign).
  *
+ * @param n Sexp node number
  * @param status tell this function if we are looking for a goal_satisfied, goal_failed, or goal incomplete event
  */
 int sexp_previous_goal_status( int n, int status )
@@ -12472,6 +12473,7 @@ int sexp_previous_event_status( int n, int status )
 /**
  * Return the status of an event in the current mission.  
  *
+ * @param n Sexp node number
  * @param want_true indicates if we are checking whether the event is true or the event is false.
  */
 int sexp_event_status( int n, int want_true )
@@ -12656,6 +12658,7 @@ int sexp_goal_incomplete(int n)
 /**
  * Protects/unprotects a ship.
  *
+ * @param n Sexp node number
  * @param flag Whether or not the protect bit should be set (flag==true) or cleared (flag==false)
  */
 void sexp_protect_ships(int n, bool flag)
@@ -12666,6 +12669,7 @@ void sexp_protect_ships(int n, bool flag)
 /**
  * Protects/unprotects a ship from beams.
  *
+ * @param n Sexp node number
  * @param flag Whether or not the protect bit should be set (flag==true) or cleared (flag==false)
  */
 void sexp_beam_protect_ships(int n, bool flag)
@@ -12676,6 +12680,7 @@ void sexp_beam_protect_ships(int n, bool flag)
 /**
  * Protects/unprotects a ship from various turrets.
  *
+ * @param n Sexp node number
  * @param flag Whether or not the protect bit should be set (flag==true) or cleared (flag==false)
  */
 void sexp_turret_protect_ships(int n, bool flag)
@@ -12722,6 +12727,7 @@ void sexp_ships_vaporize(int n, bool vaporize)
 /**
  * Make ships "visible" and "invisible" to sensors.
  *
+ * @param n Sexp node number
  * @param visible Is true when making ships visible, false otherwise
  */
 void sexp_ships_visible(int n, bool visible)
@@ -22871,6 +22877,7 @@ int query_operator_return_type(int op)
 /**
  * Return the data type of a specified argument to an operator.  
  *
+ * @param op operator index
  * @param argnum is 0 indexed.
  */
 int query_operator_argument_type(int op, int argnum)
