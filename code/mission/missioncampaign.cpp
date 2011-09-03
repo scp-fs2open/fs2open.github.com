@@ -118,10 +118,12 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 	Assert( type != NULL );
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
-	if ((strlen(fname) < 4) || stricmp(fname + strlen(fname) - 4, FS_CAMPAIGN_FILE_EXT)){
+	int fname_len = strlen(fname);
+	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT)){
 		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);
+		fname_len += 4;
 	}
-	Assert(strlen(fname) < MAX_FILENAME_LEN);
+	Assert(fname_len < MAX_FILENAME_LEN);
 
 	// open localization
 	lcl_ext_open();
