@@ -15729,14 +15729,7 @@ void sexp_set_armor_type(int node)
 	if (!stricmp(SEXP_NONE_STRING, CTEXT(node)))
 		armor = -1;
 	else {
-		for(t = 0; t < Armor_types.size(); t++) 
-		{
-			if ( !stricmp(Armor_types[t].GetNamePtr(), CTEXT(node)))  
-				break;
-		}
-		if (t == Armor_types.size()) 
-			return;
-		armor = (int)t;
+		armor = armor_type_get_idx(CTEXT(node));
 	}
 	
 	//Set armor

@@ -1998,7 +1998,6 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
 		int	weapon_info_index;
-		bool apply_shield_armor = true;
 
 		weapon_info_index = shiphit_get_damage_weapon(other_obj);
 		if ( weapon_info_index >= 0 ) {
@@ -2016,26 +2015,23 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			int dmg_type_idx = -1;
 
 			//Do armor stuff
-			if (apply_shield_armor)
-			{
-				if(other_obj_is_weapon) {
-					dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
-				} else if(other_obj_is_beam) {
-					dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
-				} else if(other_obj_is_shockwave) {
-					dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
-				} else if(other_obj_is_asteroid) {
-					dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
-				} else if(other_obj_is_debris) {
-					dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
-				} else if(other_obj_is_ship) {
-					dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
-				}
+			if(other_obj_is_weapon) {
+				dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+			} else if(other_obj_is_beam) {
+				dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+			} else if(other_obj_is_shockwave) {
+				dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+			} else if(other_obj_is_asteroid) {
+				dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+			} else if(other_obj_is_debris) {
+				dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
+			} else if(other_obj_is_ship) {
+				dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
+			}
 				
-				if(shipp->shield_armor_type_idx != -1)
-				{
-					piercing_pct = Armor_types[shipp->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
-				}
+			if(shipp->shield_armor_type_idx != -1)
+			{
+				piercing_pct = Armor_types[shipp->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
 			}
 			
 			float pre_shield = damage;
@@ -2045,12 +2041,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				damage = pre_shield * (1.0f - piercing_pct);
 			}
 
-			if (apply_shield_armor)
+			if(shipp->shield_armor_type_idx != -1)
 			{
-				if(shipp->shield_armor_type_idx != -1)
-				{
-					damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx);
-				}
+				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx);
 			}
 
 			damage = apply_damage_to_shield(ship_obj, quadrant, damage);
