@@ -2087,9 +2087,8 @@ void beam_aim(beam *b)
 		}
 		// get a model # to work with
 		else {
-			int model_num = beam_get_model(b->target);
-			Assert(model_num >= 0);
-			if (model_num < 0) {
+			// this can happen if we fire at a target that was just destroyed
+			if (beam_get_model(b->target) < 0) {
 				return;
 			}	
 		}
