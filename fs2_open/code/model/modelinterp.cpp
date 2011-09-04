@@ -3151,9 +3151,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			break;
 	}
 
+	vec3d auto_back = ZERO_VECTOR;
 	if (Interp_flags & MR_AUTOCENTER) {
-		vec3d auto_back = ZERO_VECTOR;
-
 		// standard autocenter using data in model
 		if (pm->flags & PM_FLAG_AUTOCEN) {
 			auto_back = pm->autocenter;
@@ -3362,7 +3361,16 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	// Draw the thruster glow
 	if ( !is_outlines_only && !is_outlines_only_htl ) {
-		model_render_thrusters( pm, objnum, shipp, orient, pos );
+		if ( ( Interp_flags & MR_AUTOCENTER ) && set_autocen ) {
+			vec3d autoback_rotated;
+
+			vm_vec_unrotate(&autoback_rotated, &auto_back, orient);
+			vm_vec_add2(&autoback_rotated, pos);
+
+			model_render_thrusters( pm, objnum, shipp, orient, &autoback_rotated );
+		} else {
+			model_render_thrusters( pm, objnum, shipp, orient, pos );
+		}
 	}
 
 /*
