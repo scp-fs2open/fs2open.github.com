@@ -7311,7 +7311,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		*p = 0;
 		
 		// Set directory
-		if ( strlen(exe_dir) > 0 )	{
+		if ( strlen(exe_dir) > 0 )	{ //-V805
 			SetCurrentDirectory(exe_dir);
 		}
 	}
@@ -8843,11 +8843,11 @@ int game_cd_changed()
 	int found;
 	int changed = 0;
 	
-	if ( strlen(Game_CDROM_dir) == 0 ) {
+	if ( strlen(Game_CDROM_dir) == 0 ) { //-V805
 		init_cdrom();
 	}
 
-	if ( strlen(Game_CDROM_dir) == 0 ) {
+	if ( strlen(Game_CDROM_dir) == 0 ) { //-V805
 		return 0;
 	}
 

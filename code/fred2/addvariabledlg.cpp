@@ -153,7 +153,7 @@ void CAddVariableDlg::validate_variable_name(int set_focus)
 
 	// Check if any change and not already in list
 	if ( stricmp(temp_name, "<Variable Name>") ) {
-		if ( (strlen(temp_name) > 0) && (get_index_sexp_variable_name(LPCTSTR(temp_name)) == -1) ) { //not already in list and length > 0 {
+		if ( (strlen(temp_name) > 0) && (get_index_sexp_variable_name(LPCTSTR(temp_name)) == -1) ) { //not already in list and length > 0 { //-V805
 			// Goober5000 - replace spaces with hyphens
 			if (strchr(temp_name, ' ') != NULL)
 			{
@@ -174,7 +174,7 @@ void CAddVariableDlg::validate_variable_name(int set_focus)
 			m_name_validated = true;
 		} else {
 			// conflicting variable name
-			if (strlen(temp_name) == 0) {
+			if (strlen(temp_name) == 0) { //-V805
 				edit->SetWindowText("<Variable Name>");
 			}
 			m_name_validated = false;
@@ -204,7 +204,7 @@ void CAddVariableDlg::validate_data(int set_focus)
 	edit->GetWindowText(temp_data);
 
 	// check for 0 string length
-	if (strlen(temp_data) == 0) {
+	if (strlen(temp_data) == 0) { //-V805
 		m_data_validated = false;
 	} else {
 		if (m_type_number) {

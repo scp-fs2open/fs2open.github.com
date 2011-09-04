@@ -185,7 +185,7 @@ BOOL CFolderDialog::SetSelectedFolder( IN LPCTSTR pszPath )
 
 VOID CFolderDialog::OnInitialized( VOID )
 {
-	if( ::lstrlen( m_szSelPath ) > 0 )
+	if( ::lstrlen( m_szSelPath ) > 0 ) //-V805
 		SetSelection( m_szSelPath );
 }
 

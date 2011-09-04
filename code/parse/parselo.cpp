@@ -2610,7 +2610,7 @@ int string_lookup(char *str1, char *strlist[], int max, char *description, int s
 	int	i;
 
 	for (i=0; i<max; i++) {
-		Assert(strlen(strlist[i]) != 0);
+		Assert(strlen(strlist[i]) != 0); //-V805
 
 		if (!stricmp(str1, strlist[i]))
 			return i;

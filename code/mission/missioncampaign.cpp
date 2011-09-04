@@ -742,7 +742,7 @@ void mission_campaign_savefile_generate_root(char *filename, player *pl)
 {
 	char base[_MAX_FNAME];
 
-	Assert ( strlen(Campaign.filename) != 0 );
+	Assert ( strlen(Campaign.filename) != 0 ); //-V805
 
 	if (pl == NULL) {
 		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
@@ -1109,7 +1109,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 	int sid = -1, wid = -1;
 	int set_defaults = 1; // should we zero out tech values or not (yes by default)
 
-	Assert ( strlen(cfilename) != 0 );
+	Assert ( strlen(cfilename) != 0 ); //-V805
 
 	if ( !strlen(cfilename) )
 		return 0;

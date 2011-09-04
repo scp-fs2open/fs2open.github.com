@@ -780,7 +780,7 @@ void red_alert_write_wingman_status(CFILE *fp)
 		return;
 	}
 
-	Assert(strlen(Red_alert_precursor_mission) > 0 );
+	Assert(strlen(Red_alert_precursor_mission) > 0 ); //-V805
 	cfwrite_string(Red_alert_precursor_mission, fp);
 
 	for ( i = 0; i < Red_alert_num_slots_used; i++ ) {
@@ -816,7 +816,7 @@ void red_alert_write_wingman_status_campaign(CFILE *fp)
 		return;
 	}
 
-	Assert(strlen(Red_alert_precursor_mission) > 0 );
+	Assert(strlen(Red_alert_precursor_mission) > 0 ); //-V805
 	cfwrite_string(Red_alert_precursor_mission, fp);
 
 	for ( i = 0; i < Red_alert_num_slots_used; i++ ) {

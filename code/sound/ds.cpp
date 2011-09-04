@@ -2153,7 +2153,7 @@ int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *t
 {
 	Assert( props != NULL );
 	Assert( name != NULL );
-	Assert( strlen(name) > 0 );
+	Assert( strlen(name) > 0 ); //-V805
 
 	int template_id = -1;
 

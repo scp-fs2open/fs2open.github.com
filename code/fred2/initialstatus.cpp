@@ -572,7 +572,7 @@ void initial_status::change_subsys()
 		MODIFY(ptr -> current_hits, 100.0f - (float) m_damage);
 
 		// update cargo name
-		if (strlen(m_cargo_name) > 0) {
+		if (strlen(m_cargo_name) > 0) { //-V805
 			cargo_index = string_lookup(m_cargo_name, Cargo_names, Num_cargo);
 			if (cargo_index == -1) {
 				if (Num_cargo < MAX_CARGO);
