@@ -837,7 +837,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	_finddata_t findstruct;
 #endif
 
-	Assert( (filespec != NULL) && (strlen(filespec) > 0) );
+	Assert( (filespec != NULL) && (strlen(filespec) > 0) ); //-V805
 	Assert( (pack_filename == NULL) || (max_out > 1) );
 
 	// see if we have something other than just a filename

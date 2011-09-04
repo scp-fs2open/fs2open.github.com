@@ -478,7 +478,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	}
 
 	// squad info
-	if(strlen(The_mission.squad_name) > 0){
+	if(strlen(The_mission.squad_name) > 0){ //-V805
 		m_squad_name = _T(The_mission.squad_name);
 		m_squad_filename = _T(The_mission.squad_filename);
 	} else {

@@ -472,12 +472,12 @@ int CFred_mission_save::save_mission_info()
 	save_matrix(view_orient);
 
 	// squadron info
-	if(!(The_mission.game_type & MISSION_TYPE_MULTI) && (strlen(The_mission.squad_name) > 0)){
+	if(!(The_mission.game_type & MISSION_TYPE_MULTI) && (strlen(The_mission.squad_name) > 0)){ //-V805
 		// squad name
 		fout("\n+SquadReassignName: %s", The_mission.squad_name);
 
 		// maybe squad logo
-		if(strlen(The_mission.squad_filename) > 0){
+		if(strlen(The_mission.squad_filename) > 0){ //-V805
 			fout("\n+SquadReassignLogo: %s", The_mission.squad_filename);
 		}
 	}
@@ -531,19 +531,19 @@ int CFred_mission_save::save_mission_info()
 	// Phreak's loading screen stuff
 	if (Format_fs2_open != FSO_FORMAT_RETAIL) //-V581
 	{
-		if (strlen(The_mission.loading_screen[GR_640]) > 0)
+		if (strlen(The_mission.loading_screen[GR_640]) > 0) //-V805
 		{
 			fout("\n\n$Load Screen 640:\t%s",The_mission.loading_screen[GR_640]);
 		}
 
-		if (strlen(The_mission.loading_screen[GR_1024]) > 0)
+		if (strlen(The_mission.loading_screen[GR_1024]) > 0) //-V805
 		{
 			fout("\n$Load Screen 1024:\t%s",The_mission.loading_screen[GR_1024]);
 		}
 	}
 
 	// Phreak's skybox stuff
-	if (strlen(The_mission.skybox_model) > 0)
+	if (strlen(The_mission.skybox_model) > 0) //-V805
 	{
 		char out_str[NAME_LENGTH];
 		char *period;
@@ -761,7 +761,7 @@ int CFred_mission_save::save_fiction()
 			fout(" %s", fiction_file());
 
 			// save font
-			if (strlen(fiction_font()) > 0)
+			if (strlen(fiction_font()) > 0) //-V805
 			{
 				if (optional_string_fred("$Font:"))
 					parse_comments();
@@ -2193,7 +2193,7 @@ int CFred_mission_save::save_wings()
 		// squad logo - Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
-			if (strlen(Wings[i].wing_squad_filename) > 0)
+			if (strlen(Wings[i].wing_squad_filename) > 0) //-V805
 			{
 				if (optional_string_fred("+Squad Logo:", "$Name:"))
 					parse_comments();
@@ -3525,7 +3525,7 @@ int CFred_mission_save::save_bitmaps()
  	}
 
 	// taylor's environment map thingy
-	if (strlen(The_mission.envmap_name) > 0) {
+	if (strlen(The_mission.envmap_name) > 0) { //-V805
 		if (optional_string_fred("$Environment Map:")) {
 			parse_comments(2);
 			fout(" %s", The_mission.envmap_name);

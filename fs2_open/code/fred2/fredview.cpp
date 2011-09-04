@@ -2492,7 +2492,7 @@ int CFREDView::global_error_check()
 				}
 
 				// wing squad logo check - Goober5000
-				if (strlen(Wings[wing].wing_squad_filename) > 0)
+				if (strlen(Wings[wing].wing_squad_filename) > 0) //-V805
 				{
 					if (The_mission.game_type & MISSION_TYPE_MULTI)
 					{
