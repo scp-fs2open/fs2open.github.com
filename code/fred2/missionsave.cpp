@@ -402,7 +402,7 @@ int CFred_mission_save::save_mission_info()
 		fout(" %d", (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0);
 	}
 
-	if ( Format_fs2_open == FSO_FORMAT_RETAIL )
+	if ( Format_fs2_open == FSO_FORMAT_RETAIL ) //-V581
 	{
 		if ( optional_string_fred("+Scramble:"))
 			parse_comments(2);
@@ -529,7 +529,7 @@ int CFred_mission_save::save_mission_info()
 	}
 
 	// Phreak's loading screen stuff
-	if (Format_fs2_open != FSO_FORMAT_RETAIL)
+	if (Format_fs2_open != FSO_FORMAT_RETAIL) //-V581
 	{
 		if (strlen(The_mission.loading_screen[GR_640]) > 0)
 		{
