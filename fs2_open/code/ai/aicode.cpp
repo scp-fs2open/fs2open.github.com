@@ -11868,7 +11868,7 @@ int ai_formation()
 		aip->wp_index = laip->wp_index;
 		aip->wp_flags = laip->wp_flags;
 
-		if (aip->wp_index == aip->wp_list->get_waypoints().end())
+		if ((aip->wp_list != NULL) && (aip->wp_index == aip->wp_list->get_waypoints().end()))
 			--aip->wp_index;
 	}
 
