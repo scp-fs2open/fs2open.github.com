@@ -3728,9 +3728,6 @@ void game_render_frame( camid cid )
 	beam_render_all();						// render all beam weapons
 	trail_render_all();						// render missilie trails after everything else.	
 
-	// Do the sunspot
-	game_sunspot_process(flFrametime);
-
 	// render nebula lightning
 	nebl_render_all();
 
@@ -3771,6 +3768,18 @@ void game_render_frame( camid cid )
 		gr_zbuffer_clear(TRUE);
 		ship_render_cockpit(Viewer_obj);
 	}
+
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+		// Do the sunspot
+		game_sunspot_process(flFrametime);
+
+		gr_end_proj_matrix();
+		gr_end_view_matrix();
+	}
+
 	//================ END OF 3D RENDERING STUFF ====================
 
 	gr_scene_texture_end();
