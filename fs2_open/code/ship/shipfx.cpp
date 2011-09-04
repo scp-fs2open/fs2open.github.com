@@ -1063,7 +1063,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
 			if(sip->cockpit_model_num > 0)
 			{
-				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
+				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*2.0f );
 				vec3d pos,eye_posi;
 				matrix eye_ori;
 				ship_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
@@ -1075,14 +1075,14 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 				mc.pos = &pos;
 				mc.p0 = &rp0;
 				mc.p1 = &rp1;
-				mc.flags = MC_CHECK_MODEL|MC_CHECK_RAY;
+				mc.flags = MC_CHECK_MODEL;
 				if(model_collide(&mc))
 				{
 					if(mc.t_poly)
 					{
 						polymodel *pm = model_get(sip->cockpit_model_num);
 						int tmap_num = w(mc.t_poly+40);
-						if(!(pm->maps[tmap_num].is_transparent)&&strcmp(bm_get_filename(mc.hit_bitmap),"glass"))
+						if(!(pm->maps[tmap_num].is_transparent)&&strcmp(bm_get_filename(mc.hit_bitmap),"glass.dds"))
 						{
 							return 1;
 						}
@@ -1099,14 +1099,14 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 				mc.pos = &Viewer_obj->pos;
 				mc.p0 = &rp0;
 				mc.p1 = &rp1;
-				mc.flags = MC_CHECK_MODEL|MC_CHECK_RAY;
+				mc.flags = MC_CHECK_MODEL;
 				if(model_collide(&mc))
 				{
 					if(mc.t_poly)
 					{
 						polymodel *pm = model_get(sip->model_num);
 						int tmap_num = w(mc.t_poly+40);
-						if(!(pm->maps[tmap_num].is_transparent)&&strcmp(bm_get_filename(mc.hit_bitmap),"glass"))
+						if(!(pm->maps[tmap_num].is_transparent)&&strcmp(bm_get_filename(mc.hit_bitmap),"glass.dds"))
 						{
 							return 1;
 						}
