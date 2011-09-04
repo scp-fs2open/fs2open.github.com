@@ -1289,8 +1289,8 @@ matrix	objp_orient_copy;
 vel_in_copy = vel_in;
 objp_orient_copy = objp->orient;
 
-vel_in = vel_in_copy;	//	HERE
-objp->orient = objp_orient_copy;
+vel_in = vel_in_copy;	//	HERE //-V587
+objp->orient = objp_orient_copy; //-V587
 #endif
 	if (rvec != NULL) {
 		matrix	out_orient, goal_orient;
