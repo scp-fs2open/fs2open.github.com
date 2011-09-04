@@ -3263,7 +3263,6 @@ void sexp_tree::verify_and_fix_arguments(int node)
 		return;
 
 	tmp = item_index;
-	item_index = node;
 
 	arg_num = 0;
 	item_index = tree_nodes[node].child;
