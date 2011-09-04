@@ -5348,7 +5348,7 @@ sexp_list_item *sexp_tree::get_listing_ship_effects()
 {
 	sexp_list_item head;
 	
-	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); sei++) {
+	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); ++sei) {
 		head.add_data_dup(sei->name);
 	}
 

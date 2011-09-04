@@ -3739,7 +3739,7 @@ void game_render_frame( camid cid )
 
 	// render all ships with shader effects on them
 	std::vector<object*>::iterator obji = effect_ships.begin();
-	for(;obji != effect_ships.end();obji++)
+	for(;obji != effect_ships.end();++obji)
 		ship_render(*obji);
 	effect_ships.clear();
 	//Draw the viewer 'cause we didn't before.
