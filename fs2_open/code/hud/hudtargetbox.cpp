@@ -1616,8 +1616,8 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 				break;
 			case AIM_WAYPOINTS:
 //				gr_printf(sx, sy, "Wpnum: %i",aip->wp_index);
-				sprintf(outstr2," / Wpnum: %i",aip->wp_index);
-				strcat_s(outstr,outstr2);
+				//sprintf(outstr2," / Wpnum: %i",aip->wp_index); -> This is invalid, since wp_index now is a full-blown iterator
+				//strcat_s(outstr,outstr2);
 				break;
 			default:
 				break;
