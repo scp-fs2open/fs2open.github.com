@@ -1562,8 +1562,8 @@ void control_config_do_frame(float frametime)
 						for (i=0; i<CCFG_MAX; i++)
 							if (Control_config[i].joy_id == j) {
 								z = i;
-								for (j=0; j<NUM_BUTTONS; j++){
-									CC_Buttons[gr_screen.res][j].button.reset();
+								for (int k=0; k<NUM_BUTTONS; k++){
+									CC_Buttons[gr_screen.res][k].button.reset();
 								}
 								break;
 							}
