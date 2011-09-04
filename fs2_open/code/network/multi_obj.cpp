@@ -2002,7 +2002,7 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_or
 
 	// get the spline representing where this new point tells us we'd be heading
 	a = oo_interp_points[ship_index][0];
-	b = oo_interp_points[ship_index][1];
+	b = oo_interp_points[ship_index][1]; //-V519
 	c = oo_interp_points[ship_index][1];
 	m_copy = *new_orient;
 	p_copy = *new_phys_info;
