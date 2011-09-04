@@ -726,11 +726,7 @@ int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float 
 
 void batch_render_lasers()
 {
-	uint map_size = geometry_map.size();
-	batch_item *bi;
-
-	for (uint i = 0; i < map_size; i++) {
-		bi = &geometry_map[i];
+	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
 		if ( !bi->laser )
 			continue;
@@ -746,11 +742,7 @@ void batch_render_lasers()
 
 void batch_render_bitmaps()
 {
-	uint map_size = geometry_map.size();
-	batch_item *bi;
-
-	for (uint i = 0; i < map_size; i++) {
-		bi = &geometry_map[i];
+	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
 		if ( bi->laser )
 			continue;
