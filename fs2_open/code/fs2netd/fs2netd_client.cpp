@@ -1378,7 +1378,7 @@ bool fs2netd_get_valid_missions()
 	In_process = false;
 	Local_timeout = -1;
 
-	FS2NetD_file_list.clear();
+	FS2NetD_file_list.clear(); //-V586
 
 	switch (rc) {
 		// canceled by popup
