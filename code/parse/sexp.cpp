@@ -1035,7 +1035,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 		nprintf(("SEXP", "Bumping dynamic sexp node limit from %d to %d...\n", old_size, Num_sexp_nodes));
 
 		// clear all the new sexp nodes we just allocated
-		memset(&Sexp_nodes[old_size], 0, sizeof(sexp_node) * SEXP_NODE_INCREMENT);
+		memset(&Sexp_nodes[old_size], 0, sizeof(sexp_node) * SEXP_NODE_INCREMENT); //-V512
 
 		// our new sexp is the first out of the ones we just created
 		node = old_size;
