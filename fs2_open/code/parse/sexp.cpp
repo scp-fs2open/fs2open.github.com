@@ -15703,18 +15703,17 @@ void sexp_turret_change_weapon(int node)
 void sexp_set_armor_type(int node)
 {	
 	int sindex;
-	int armor, rset; 
-	size_t t;
+	int armor, rset;
 	ship_subsys *ss = NULL;
 	ship *shipp = NULL;
 	ship_info *sip = NULL;
 
 	// get ship
 	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	if(sindex < 0) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0){
+	if(Ships[sindex].objnum < 0) {
 		return;
 	}
 	shipp = &Ships[sindex];
@@ -15726,14 +15725,15 @@ void sexp_set_armor_type(int node)
 
 	// get armor
 	node = CDR(node);
-	if (!stricmp(SEXP_NONE_STRING, CTEXT(node)))
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node))) {
 		armor = -1;
-	else {
+	} else {
 		armor = armor_type_get_idx(CTEXT(node));
 	}
 	
 	//Set armor
-	while(node != -1){
+	while(node != -1)
+	{
 		if (!stricmp(SEXP_HULL_STRING, CTEXT(node)))
 		{
 			// we are setting the ship itself
