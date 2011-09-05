@@ -2780,7 +2780,7 @@ void send_ship_depart_packet( object *objp, int method )
 
 	BUILD_HEADER(SHIP_DEPART);
 	ADD_USHORT( signature );
-	ADD_SHORT( (short) method); 
+	ADD_INT( method ); 
 	
 	multi_io_send_to_all_reliable(data, packet_size);
 }
@@ -2791,11 +2791,11 @@ void process_ship_depart_packet( ubyte *data, header *hinfo )
 	int offset;
 	object *objp;
 	ushort signature;
-	short s_method; 
+	int s_method; 
 
 	offset = HEADER_LENGTH;
 	GET_USHORT( signature );
-	GET_SHORT(s_method); 
+	GET_INT(s_method); 
 	PACKET_SET_SIZE();
 
 	// find the object which is departing
