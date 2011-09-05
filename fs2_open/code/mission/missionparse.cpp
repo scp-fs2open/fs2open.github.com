@@ -308,6 +308,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"force-shields-on",
 	"immobile",
 	"no-ets",
+	"cloaked",
 };
 
 
@@ -2464,6 +2465,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_NO_ETS)
 		shipp->flags2 |= SF2_NO_ETS;
+
+	if (parse_flags2 & P2_SF2_CLOAKED)
+		shipp->flags2 |= SF2_CLOAKED;
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 

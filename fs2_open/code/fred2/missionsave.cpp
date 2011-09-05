@@ -1662,6 +1662,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"immobile\"");
 			if (shipp->flags2 & SF2_NO_ETS)
 				fout(" \"no-ets\"");
+			if (shipp->flags2 & SF2_CLOAKED)
+				fout(" \"cloaked\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
