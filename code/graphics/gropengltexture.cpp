@@ -1693,13 +1693,13 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		if (flags & BMP_FLAG_CUBEMAP) {
 			// if a cubemap then we have to initalize each face
 			for (int i = 0; i < 6; i++) {
-				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 			}
 
 			ts->texture_target = GL_TEXTURE_CUBE_MAP;
 		} else {
 			// non-cubemap so just do the normal thing
-			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 			ts->texture_target = GL_state.Texture.GetTarget();
 		}
 
@@ -1766,11 +1766,11 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	if (flags & BMP_FLAG_CUBEMAP) {
 		// if a cubemap then we have to initalize each face
 		for (int i = 0; i < 6; i++) {
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 		}
 	} else {
 		// non-cubemap so just do the normal thing
-		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 	}
 
 /*	if (Cmdline_mipmap) {
@@ -1842,6 +1842,10 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	if (mm_lvl) {
 		*mm_lvl = ts->mipmap_levels;
 	}
+
+	// Clear the new Texture to black with alpha 1.0
+	glClearColor(0.0f,0.0f,0.0f,1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 

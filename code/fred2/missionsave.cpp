@@ -402,7 +402,7 @@ int CFred_mission_save::save_mission_info()
 		fout(" %d", (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0);
 	}
 
-	if ( Format_fs2_open == FSO_FORMAT_RETAIL )
+	if ( Format_fs2_open == FSO_FORMAT_RETAIL ) //-V581
 	{
 		if ( optional_string_fred("+Scramble:"))
 			parse_comments(2);
@@ -472,12 +472,12 @@ int CFred_mission_save::save_mission_info()
 	save_matrix(view_orient);
 
 	// squadron info
-	if(!(The_mission.game_type & MISSION_TYPE_MULTI) && (strlen(The_mission.squad_name) > 0)){
+	if(!(The_mission.game_type & MISSION_TYPE_MULTI) && (strlen(The_mission.squad_name) > 0)){ //-V805
 		// squad name
 		fout("\n+SquadReassignName: %s", The_mission.squad_name);
 
 		// maybe squad logo
-		if(strlen(The_mission.squad_filename) > 0){
+		if(strlen(The_mission.squad_filename) > 0){ //-V805
 			fout("\n+SquadReassignLogo: %s", The_mission.squad_filename);
 		}
 	}
@@ -529,21 +529,21 @@ int CFred_mission_save::save_mission_info()
 	}
 
 	// Phreak's loading screen stuff
-	if (Format_fs2_open != FSO_FORMAT_RETAIL)
+	if (Format_fs2_open != FSO_FORMAT_RETAIL) //-V581
 	{
-		if (strlen(The_mission.loading_screen[GR_640]) > 0)
+		if (strlen(The_mission.loading_screen[GR_640]) > 0) //-V805
 		{
 			fout("\n\n$Load Screen 640:\t%s",The_mission.loading_screen[GR_640]);
 		}
 
-		if (strlen(The_mission.loading_screen[GR_1024]) > 0)
+		if (strlen(The_mission.loading_screen[GR_1024]) > 0) //-V805
 		{
 			fout("\n$Load Screen 1024:\t%s",The_mission.loading_screen[GR_1024]);
 		}
 	}
 
 	// Phreak's skybox stuff
-	if (strlen(The_mission.skybox_model) > 0)
+	if (strlen(The_mission.skybox_model) > 0) //-V805
 	{
 		char out_str[NAME_LENGTH];
 		char *period;
@@ -761,7 +761,7 @@ int CFred_mission_save::save_fiction()
 			fout(" %s", fiction_file());
 
 			// save font
-			if (strlen(fiction_font()) > 0)
+			if (strlen(fiction_font()) > 0) //-V805
 			{
 				if (optional_string_fred("$Font:"))
 					parse_comments();
@@ -1662,6 +1662,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"immobile\"");
 			if (shipp->flags2 & SF2_NO_ETS)
 				fout(" \"no-ets\"");
+			if (shipp->flags2 & SF2_CLOAKED)
+				fout(" \"cloaked\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -2193,7 +2195,7 @@ int CFred_mission_save::save_wings()
 		// squad logo - Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
-			if (strlen(Wings[i].wing_squad_filename) > 0)
+			if (strlen(Wings[i].wing_squad_filename) > 0) //-V805
 			{
 				if (optional_string_fred("+Squad Logo:", "$Name:"))
 					parse_comments();
@@ -3525,7 +3527,7 @@ int CFred_mission_save::save_bitmaps()
  	}
 
 	// taylor's environment map thingy
-	if (strlen(The_mission.envmap_name) > 0) {
+	if (strlen(The_mission.envmap_name) > 0) { //-V805
 		if (optional_string_fred("$Environment Map:")) {
 			parse_comments(2);
 			fout(" %s", The_mission.envmap_name);
@@ -3911,13 +3913,17 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall > 0) ? CMISSION_FLAG_BASTION : 0));
 		}
 
-		if (optional_string_fred("+Debriefing Persona Index:")) {
-			parse_comments(1);
-			fout(" %d", Campaign.missions[m].debrief_persona_index);
+		if ( Campaign.missions[m].debrief_persona_index > 0 ) {
+			if (optional_string_fred("+Debriefing Persona Index:")) {
+				parse_comments(1);
+				fout(" %d", Campaign.missions[m].debrief_persona_index);
+			} else {
+				fso_comment_push(";;FSO 3.6.8;;");
+				fout_version("\n+Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
+				fso_comment_pop();
+			}
 		} else {
-			fso_comment_push(";;FSO 3.6.8;;");
-			fout_version("\n+Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
-			fso_comment_pop();
+			bypass_comment(";;FSO 3.6.8;; +Debriefing Persona Index:");
 		}
 
 		// save campaign link sexp

@@ -114,6 +114,7 @@ int Brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
 };
 
 #define LOOKAT_DIST	500.0f
+#define STAGE_ADVANCE_DELAY	1000		// time in ms to wait after voice stops before advancing stage
 
 // --------------------------------------------------------------------------------------
 // Game-wide global data
@@ -133,8 +134,6 @@ static int Last_new_stage;
 int	Cur_brief_id;
 
 const char BRIEF_META_CHAR = '$';
-
-// static int Brief_voice_ask_for_cd;
 
 // camera related
 static vec3d	Current_cam_pos;		// current camera position
@@ -446,9 +445,10 @@ void brief_move_icon_reset()
 }
 
 
-// --------------------------------------------------------------------------------------
-// Does one time initialization of the briefing and debriefing structures.
-// Namely setting all malloc'ble pointers to NULL.  Called once at game startup.
+/**
+ * Does one time initialization of the briefing and debriefing structures.
+ * Namely setting all malloc'ble pointers to NULL.  Called once at game startup.
+ */
 void mission_brief_common_init()
 {
 	int i,j;
@@ -527,9 +527,9 @@ void mission_brief_common_init()
 	}
 }
 
-//--------------------------------------------------------------------------------------
-// Frees all the memory allocated in the briefing and debriefing structures
-// and sets all pointers to NULL.
+/**
+ * Frees all the memory allocated in the briefing and debriefing structures and sets all pointers to NULL.
+ */
 void mission_brief_common_reset()
 {
 	int i, j;
@@ -574,7 +574,10 @@ void mission_brief_common_reset()
 	}
 }
 
-// split from above since we need to clear them separately - taylor
+/**
+ * Split from above since we need to clear them separately
+ * @see mission_brief_common_reset()
+ */
 void mission_debrief_common_reset()
 {
 	int i, j;
@@ -635,36 +638,15 @@ void debrief_reset()
 	Debrief_multi_stages_loaded = 0;
 }
 
-// --------------------------------------------------------------------------------------
-//	brief_init_screen()
-//
-//	Set up the screen regions.  A mulitplayer briefing will look different than a single player
-// briefing.
-//
+/**
+ * Set up the screen regions.  A mulitplayer briefing will look different than a single player briefing.
+ */
 void brief_init_screen(int multiplayer_flag)
 {
 	bscreen.map_x1			= Brief_grid_coords[gr_screen.res][0];
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
 	bscreen.map_y1			= Brief_grid_coords[gr_screen.res][1];
 	bscreen.map_y2			= Brief_grid_coords[gr_screen.res][1] + Brief_grid_coords[gr_screen.res][3];
-	/*
-	bscreen.map_x1			= BRIEF_GRID3_X1;
-	bscreen.map_x2			= BRIEF_GRID0_X2;
-	bscreen.map_y1			= BRIEF_GRID3_Y1;
-	bscreen.map_y2			= BRIEF_GRID0_Y2+4;
-	bscreen.btext_x1		= BRIEF_TEXT_X1;
-	bscreen.btext_x2		= BRIEF_TEXT_X2;
-	bscreen.btext_y1		= BRIEF_TEXT_Y1;
-	bscreen.btext_y2		= BRIEF_TEXT_Y2;
-	bscreen.cup_x1			= BRIEF_CUP_X1;
-	bscreen.cup_y1			= BRIEF_CUP_Y1;
-	bscreen.cup_x2			= BRIEF_CUP_X2;
-	bscreen.cup_y2			= BRIEF_CUP_Y2;
-	bscreen.cupinfo_x1	= BRIEF_CUPINFO_X1;
-	bscreen.cupinfo_y1	= BRIEF_CUPINFO_Y1;
-	bscreen.cupinfo_x2	= BRIEF_CUPINFO_X2;
-	bscreen.cupinfo_y2	= BRIEF_CUPINFO_Y2;
-	*/
 }
 
 // --------------------------------------------------------------------------------------
@@ -746,7 +728,9 @@ void brief_preload_highlight_anim(brief_icon *bi)
 	gr_aabitmap(0, 0);
 }
 
-// preload highlight, fadein and fadeout animations that are used in each stage
+/**
+ * Preload highlight, fadein and fadeout animations that are used in each stage
+ */
 void brief_preload_anims()
 {
 	int			num_icons, num_stages, i, j;
@@ -802,9 +786,6 @@ void brief_init_map()
 
 #pragma optimize("", off)
 
-// render fade-out anim frame
-//static int Fade_frame_count[128];			// for debug
-
 void brief_render_fade_outs(float frametime)
 {
 	int			i,bx,by,w,h;
@@ -847,7 +828,9 @@ void brief_render_fade_outs(float frametime)
 	}
 }
 
-// figure out how far an icon should move based on the elapsed time
+/**
+ * Figure out how far an icon should move based on the elapsed time
+ */
 float brief_icon_get_dist_moved(icon_move_info *mi, float elapsed_time)
 {
 	float time, dist_moved=0.0f;
@@ -864,7 +847,9 @@ float brief_icon_get_dist_moved(icon_move_info *mi, float elapsed_time)
 	return dist_moved;
 }
 
-// Draw a line between two icons on the briefing screen
+/**
+ * Draw a line between two icons on the briefing screen
+ */
 void brief_render_icon_line(int stage_num, int line_num)
 {
 	brief_line	*bl;
@@ -928,15 +913,16 @@ void brief_render_icon_line(int stage_num, int line_num)
 	gr_line(fl2i(icon_x[0]), fl2i(icon_y[0]), fl2i(icon_x[1]), fl2i(icon_y[1]), false);
 }
 
-// -------------------------------------------------------------------------------------
-// Draw a briefing icon
-//
-// parameters:		stage_num		=>		briefing stage number (start at 0)
-//						icon_num			=>		icon number in stage
-//						frametime		=>		time elapsed in seconds
-//						selected			=>		FRED only (will be 0 or non-zero)
-//						w_scale_factor	=>		scale icon in width by this amount (default 1.0f)
-//						h_scale_factor	=>		scale icon in height by this amount (default 1.0f)
+/**
+ * Draw a briefing icon
+ *
+ * @param stage_num	briefing stage number (start at 0)
+ * @param icon_num icon number in stage
+ * @param frametime	time elapsed in seconds
+ * @param selected FRED only (will be 0 or non-zero)
+ * @param w_scale_factor scale icon in width by this amount (default 1.0f)
+ * @param h_scale_factor scale icon in height by this amount (default 1.0f)
+ */
 void brief_render_icon(int stage_num, int icon_num, float frametime, int selected, float w_scale_factor, float h_scale_factor)
 {
 	brief_icon	*bi, *closeup_icon;
@@ -1637,15 +1623,18 @@ bool is_a_word_separator(char character){
 		|| (123<=character);				//  5 characters {|}~
 }
 
-// Builds a vector of colored characters from a string containing color markups
-// and stores it to Colored_stream table.
-// A color markup is made of a minimum of three characters: 
-//   '$' + a char standing for a color + contigous multiple spaces (chars \t \n and ' ')
-// The markup is completely removed from the resulting character sequence.
-// @param src a not null pointer to a C string terminated by a /0 char.
-// @param instance index into Colored_stream where the result should be placed.
-//	  			   Value is 0 unless multiple text streams are required.
-// @return number of character of the resulting sequence.
+/**
+ * Builds a vector of colored characters from a string containing color markups
+ * and stores it to Colored_stream table.
+ *
+ * A color markup is made of a minimum of three characters: 
+ *   '$' + a char standing for a color + contigous multiple spaces (chars t n and ' ')
+ * The markup is completely removed from the resulting character sequence.
+ *
+ * @param src a not null pointer to a C string terminated by a /0 char.
+ * @param instance index into Colored_stream where the result should be placed. Value is 0 unless multiple text streams are required.
+ * @return number of character of the resulting sequence.
+ */
 int brief_text_colorize(char *src, int instance)
 {
 	Assert(src);
@@ -1659,7 +1648,7 @@ int brief_text_colorize(char *src, int instance)
 		// Is the character a color markup?
 		// text markup consists of a '$' plus a character plus an optional space
 		if ( (i < src_len - 1)  && (src[i] == BRIEF_META_CHAR) ) {
-			i++;   //Consume the $ character
+			i++;   // Consume the $ character
 			active_color_index = brief_return_color_index(src[i]);
 			i++; // Consume the color identifier and focus on the white character (if any)
  
@@ -1688,13 +1677,14 @@ int brief_text_colorize(char *src, int instance)
 	return dest_line.size();
 }
 
-// ------------------------------------------------------------------------------------
-// brief_color_text_init()
-//
-//	input:	src		=>		paragraph of text to process
-//				w			=>		max width of line in pixels
-//				instance	=>		optional parameter, used when multiple text streams are required
-//									(default value is 0)
+/**
+ * Initialise briefing coloured text
+ *
+ * @param src paragraph of text to process
+ * @param w	max width of line in pixels
+ * @param instance optional parameter, used when multiple text streams are required (default value is 0)
+ * @param max_lines maximum number of lines
+ */
 int brief_color_text_init(char *src, int w, int instance, int max_lines)
 {
 	int i, n_lines, len;
@@ -1730,12 +1720,11 @@ int brief_color_text_init(char *src, int w, int instance, int max_lines)
 	return n_lines;
 }
 
-// ------------------------------------------------------------------------------------
-// brief_get_free_move_icon()
-//
-//	returns:		failure	=>		-1
-//					success	=>		handle to a free move icon struct
-//
+/**
+ * Get free handle to a move icon
+ *
+ * @return -1 on failure, a handle to a free move icon struct on success
+ */
 int brief_get_free_move_icon()
 {
 	int i;
@@ -1752,14 +1741,13 @@ int brief_get_free_move_icon()
 	return i;
 }
 
-
-// ------------------------------------------------------------------------------------
-// brief_set_move_list()
-//
-//	input:	new_stage		=>		new stage number that briefing is now moving to
-//				current_stage	=>		current stage that the briefing is on
-//				time				=>		time in seconds
-//
+/**
+ * Set move list in briefing 
+ *
+ * @param new_stage new stage number that briefing is now moving to
+ * @param current_stage	current stage that the briefing is on
+ * @param time	time in seconds
+ */
 int brief_set_move_list(int new_stage, int current_stage, float time)
 {
 	brief_stage		*newb, *cb;	
@@ -1780,7 +1768,7 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 			if ( ( cb->icons[i].id != 0 ) && ( cb->icons[i].id == newb->icons[j].id ) ) {
 				is_gone=0;
 				if ( vm_vec_cmp(&cb->icons[i].pos, &newb->icons[j].pos) ) {
-					//nprintf(("Alan","We found a match in icon %s\n", cb->icons[i].label));
+
 					k = brief_get_free_move_icon();				
 					if ( k == -1 ) {
 						Int3();	// should never happen, get Alan
@@ -1860,15 +1848,14 @@ void brief_clear_fade_out_icons()
 }
 
 
-// ------------------------------------------------------------------------------------
-// brief_set_new_stage()
-//
-//	input:	pos			=>		target position for the camera
-//				orient		=>		target orientation for the camera
-//				time			=>		time in ms to reach target
-//				stage_num	=>		stage number of briefing (start numbering at 0)
-//
-
+/**
+ * Set new stage in briefing
+ *
+ * @param pos target position for the camera
+ * @param orient target orientation for the camera
+ * @param time time in ms to reach target
+ * @param stage_num	stage number of briefing (start numbering at 0)
+ */
 void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 {
 	char msg[MAX_BRIEF_LEN];
@@ -1962,10 +1949,10 @@ int camera_pos_past_target(vec3d *start, vec3d *current, vec3d *dest)
 	return FALSE;
 }
 
-// ------------------------------------------------------------------------------------
-// Interpolate between matrices.
-// elapsed_time/total_time gives percentage of interpolation between cur
-// and goal.
+/**
+ * Interpolate between matrices.
+ * elapsed_time/total_time gives percentage of interpolation between cur and goal.
+ */
 void interpolate_matrix(matrix *result, matrix *goal, matrix *start, float elapsed_time, float total_time)
 {
 	vec3d fvec, rvec;
@@ -1987,7 +1974,9 @@ void interpolate_matrix(matrix *result, matrix *goal, matrix *start, float elaps
 	vm_vector_2_matrix(result, &fvec, NULL, &rvec);
  }
 
-// calculate how far the camera should have moved
+/**
+ * Calculate how far the camera should have moved
+ */
 float brief_camera_get_dist_moved(float elapsed_time)
 {
 	float time, dist_moved=0.0f;
@@ -2005,8 +1994,9 @@ float brief_camera_get_dist_moved(float elapsed_time)
 
 }
 
-// ------------------------------------------------------------------------------------
-// Update the camera position
+/**
+ * Update the camera position
+ */
 void brief_camera_move(float frametime, int stage_num)
 {
 	vec3d	dist_moved;
@@ -2016,36 +2006,15 @@ void brief_camera_move(float frametime, int stage_num)
 
 	Elapsed_time += frametime;
 
-	if ( Cam_target_reached ) { 
-//		Current_cam_pos = Target_cam_pos;
-//		Current_lookat_pos = Target_lookat_pos;
-//		Current_cam_orient = Target_cam_orient;
+	if ( Cam_target_reached )
 		return;
-	}
 
 	// Update orientation
 	if ( (Elapsed_time < Total_move_time) ) {
-//		interpolate_matrix(&Current_cam_orient, &Target_cam_orient, &Start_cam_orient, Elapsed_time, Total_move_time );
 		vm_matrix_interpolate(&Target_cam_orient, &Current_cam_orient, &W_init, frametime, &result, &w_out, &Vel_limit, &Acc_limit);
 		Current_cam_orient = result;
 		W_init = w_out;
 	}
-
-	/*
-	// interpolate lookat position
-	if ( vm_vec_cmp( &Current_lookat_pos, &Target_lookat_pos ) ) {
-		vm_vec_copy_scale(&dist_moved, &Lookat_vel, Elapsed_time);
-		vm_vec_add(&Current_lookat_pos, &Start_lookat_pos, &dist_moved);
-
-		if ( camera_pos_past_target(&Start_lookat_pos, &Current_lookat_pos, &Target_lookat_pos) ) {
-			Current_lookat_pos = Target_lookat_pos;
-		}
-	}
-
-	cur_dist = Start_dist + Dist_change_rate * Elapsed_time;
-	vm_vec_copy_scale(&dist_moved, &Current_cam_orient.vec.fvec, -cur_dist);
-	vm_vec_add(&Current_cam_pos, &Current_lookat_pos, &dist_moved);
-	*/
 
 	// use absolute pos to update position
 	if ( vm_vec_cmp( &Current_cam_pos, &Target_cam_pos ) ) {
@@ -2073,8 +2042,10 @@ void brief_camera_move(float frametime, int stage_num)
 	}
 }
 
-//	Project the viewer's position onto the grid plane.  If more than threshold distance
-//	from grid center, move grid center.
+/**
+ * Project the viewer's position onto the grid plane.
+ * If more than threshold distance from grid center, move grid center.
+ */
 void brief_maybe_create_new_grid(grid* gridp, vec3d *pos, matrix *orient, int force)
 {
 	int roundoff;
@@ -2238,7 +2209,10 @@ grid *brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center
 	return gridp;
 }
 
-//	Create a nice grid -- centered at origin, 10x10, 10.0 size squares, in xz plane.
+/**
+ * Create a nice default grid.
+ * Centered at origin, 10x10, 10.0 size squares, in xz plane.
+ */
 grid *brief_create_default_grid(void)
 {
 	grid	*rgrid;
@@ -2255,26 +2229,24 @@ grid *brief_create_default_grid(void)
 	return rgrid;
 }
 
-//	Rotate and project points and draw a line.
+/**
+ * Rotate and project points and draw a line.
+ */
 void brief_rpd_line(vec3d *v0, vec3d *v1)
 {
 	vertex	tv0, tv1;
 	g3_rotate_vertex(&tv0, v0);
 	g3_rotate_vertex(&tv1, v1);
 
-/*
-	g3_project_vertex(&tv0);	
-	g3_project_vertex(&tv1);
-
-	if ( (tv0.flags & PF_OVERFLOW) || (tv1.flags & PF_OVERFLOW) )
-		return;
-*/
-
 	gr_set_color_fast(&Color_grey);
 	g3_draw_line(&tv0, &tv1);
 }
 
-//	Renders a grid defined in a grid struct
+/**
+ * Renders a grid 
+ *
+ * @param gridp Grid defined in a grid struct to render
+ */
 void brief_render_grid(grid *gridp)
 {
 	int	i, ncols, nrows;
@@ -2288,7 +2260,6 @@ void brief_render_grid(grid *gridp)
 	}
 
 	gr_set_color(30,30,30);
-//	SET_DARK;
 
 	//	Draw the column lines.
 	for (i=0; i<=ncols; i++)
@@ -2300,16 +2271,6 @@ void brief_render_grid(grid *gridp)
 
 	ncols = gridp->ncols / 2;
 	nrows = gridp->nrows / 2;
-
-	// now draw the larger, brighter gridlines that is x10 the scale of smaller one.
-//	SET_MEDIUM;
-/*
-	for (i=0; i<=ncols; i++)
-		brief_rpd_line(&gridp->gpoints5[i], &gridp->gpoints6[i]);
-
-	for (i=0; i<=nrows; i++)
-		brief_rpd_line(&gridp->gpoints7[i], &gridp->gpoints8[i]);
-*/
 }
 
 void brief_modify_grid(grid *gridp)
@@ -2363,7 +2324,9 @@ void brief_restart_text_wipe()
 	Brief_text_wipe_time_elapsed = 0.0f;
 }
 
-// initialize the array of handles to the different voice streams
+/**
+ * Initialize the array of handles to the different voice streams
+ */
 void brief_voice_init()
 {
 	int i;
@@ -2390,36 +2353,29 @@ void brief_load_voice_file(int voice_num, char *name)
 		if ( Game_mode & GM_MULTIPLAYER ) {
 			break;
 		}
-
-		// couldn't load animation, ask user to insert CD (if necessary)
-		// if ( Brief_voice_ask_for_cd ) {
-			// if ( game_do_cd_check() == 0 ) {
-				// Brief_voice_ask_for_cd = 0;
-				// break;
-			// }
-		// }
 	}
 }
 
-// open and pre-load the stream buffers for the different voice streams
+/**
+ * Open and pre-load the stream buffers for the different voice streams
+ */
 void brief_voice_load_all()
 {
 	int			i;
 	brief_stage	*bs;
-
-	// Brief_voice_ask_for_cd = 1;
 
 	Assert( Briefing != NULL );
 	for ( i = 0; i < Briefing->num_stages; i++ ) {
 		bs = &Briefing->stages[i];
 		if ( strnicmp(bs->voice, NOX("none"), 4) ) {
 			brief_load_voice_file(i, bs->voice);
-//			Brief_voices[i] = audiostream_open( bs->voice, ASF_VOICE );
 		}
 	}
 }
 
-// close all the briefing voice streams
+/**
+ * Close all the briefing voice streams
+ */
 void brief_voice_unload_all()
 {
 	int i;
@@ -2432,7 +2388,9 @@ void brief_voice_unload_all()
 	}
 }
 
-// start playback of the voice for a particular briefing stage
+/**
+ * Start playback of the voice for a particular briefing stage
+ */
 void brief_voice_play(int stage_num)
 {
 	if ( Brief_voices[stage_num] == -1 )
@@ -2449,7 +2407,9 @@ void brief_voice_play(int stage_num)
 	Brief_voice_started = 1;
 }
 
-// stop playback of the voice for a particular briefing stage
+/**
+ * Stop playback of the voice for a particular briefing stage
+ */
 void brief_voice_stop(int stage_num)
 {
 	if ( Brief_voices[stage_num] == -1 )
@@ -2458,8 +2418,10 @@ void brief_voice_stop(int stage_num)
 	audiostream_stop(Brief_voices[stage_num], 1, 0);	// stream is automatically rewound
 }
 
-// pause playback of the voice for a particular briefing stage, to resume just
-// call brief_voice_unpause() again
+/**
+ * Pause playback of the voice for a particular briefing stage, to resume just
+ * call brief_voice_unpause() again
+ */
 void brief_voice_pause(int stage_num)
 {
 	if ( Brief_voices[stage_num] == -1 )
@@ -2481,7 +2443,9 @@ void brief_reset_last_new_stage()
 	Last_new_stage = -1;
 }
 
-// get the dimensions for a briefing icon
+/**
+ * Get the dimensions for a briefing icon
+ */
 void brief_common_get_icon_dimensions(int *w, int *h, int type, int ship_class)
 {
 	Assert(type >= 0 && type < MAX_BRIEF_ICONS);
@@ -2522,9 +2486,9 @@ void cmd_brief_reset()
 		Cmd_briefs[i].num_stages = 0;
 }
 
-#define STAGE_ADVANCE_DELAY	1000		// time in ms to wait after voice stops before advancing stage
-
-// should briefing advance to the next stage?
+/**
+ * Should briefing advance to the next stage?
+ */
 int brief_time_to_advance(int stage_num, float frametime)
 {
 	int voice_active, advance = 0;

@@ -100,10 +100,12 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 	Assert( type != NULL );
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
-	if ((strlen(fname) < 4) || stricmp(fname + strlen(fname) - 4, FS_CAMPAIGN_FILE_EXT)){
+	int fname_len = strlen(fname);
+	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT)){
 		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);
+		fname_len += 4;
 	}
-	Assert(strlen(fname) < MAX_FILENAME_LEN);
+	Assert(fname_len < MAX_FILENAME_LEN);
 
 	// open localization
 	lcl_ext_open();
@@ -681,8 +683,8 @@ int mission_campaign_load_by_name( char *filename )
 	}
 
 	Num_campaigns = 0;
-	Campaign_file_names[Num_campaigns] = filename;
-	Campaign_names[Num_campaigns] = name;
+	Campaign_file_names[Num_campaigns] = vm_strdup(filename);
+	Campaign_names[Num_campaigns] = vm_strdup(name);
 	Num_campaigns++;
 	mission_campaign_load(filename);		
 	return 0;
@@ -709,7 +711,7 @@ void mission_campaign_savefile_generate_root(char *filename, player *pl)
 {
 	char base[_MAX_FNAME];
 
-	Assert ( strlen(Campaign.filename) != 0 );
+	Assert ( strlen(Campaign.filename) != 0 ); //-V805
 
 	if (pl == NULL) {
 		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
@@ -799,6 +801,7 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 }
 
 
+	Assert ( strlen(cfilename) != 0 ); //-V805
 
 // the following code only ever called by CSFE!!!!
 void campaign_savefile_load(char *fname, char *pname)

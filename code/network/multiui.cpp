@@ -843,9 +843,6 @@ void multi_join_game_init()
 
 	game_flush();
 
-	// set the palette
-	// common_set_interface_palette(MULTI_JOIN_PALETTE);
-
 	// destroy any chatbox contents which previously existed (from another game)
 	chatbox_clear();
 
@@ -7447,9 +7444,6 @@ void multi_sync_init()
 	// reset all timestamp
 	multi_reset_timestamps();
 
-	//extern int Player_multi_died_check;
-	//Player_multi_died_check = -1;
-
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
 		multi_sync_common_init();
 	}
@@ -7652,9 +7646,6 @@ void multi_sync_common_close()
 	if(!bm_unload(Multi_sync_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_sync_bitmap_fname[gr_screen.res]));
 	}	
-
-	//extern int Player_multi_died_check;
-	//Player_multi_died_check = -1;
 	
 	// destroy the UI_WINDOW
 	Multi_sync_window.destroy();

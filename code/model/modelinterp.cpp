@@ -180,7 +180,8 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child = false);
 void model_render_children_buffers(polymodel * pm, int mn, int detail_level);
 int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
-
+//Valathil - Transparent object buffer
+std::vector<transparent_submodel> transparent_submodels;
 
 void model_deallocate_interp_data()
 {
@@ -2080,78 +2081,6 @@ MONITOR( NumHiModelsRend )
 MONITOR( NumMedModelsRend )
 MONITOR( NumLowModelsRend )
 
-/*
-typedef struct model_cache {
-	int		model_num;
-	//matrix	orient;
-	vec3d	pos;
-	int		num_lights;
-
-	float		last_dot;
-
-	float		cr;
-
-	int		w, h;
-	ubyte		*data;
-	int		cached_valid;
-	int		bitmap_id;
-
-	angles	angs;
-
-	// thrust stuff
-	float		thrust_scale;
-	int		thrust_bitmap;
-	int		thrust_glow_bitmap;
-	float		thrust_glow_noise;
-
-	int		last_frame_rendered;		//	last frame in which this model was rendered not from the cache
-} model_cache;
-
-#define MAX_MODEL_CACHE MAX_OBJECTS
-model_cache Model_cache[MAX_MODEL_CACHE];		// Indexed by objnum
-int Model_cache_inited = 0;
-
-
-// Returns 0 if not valid points
-int model_cache_calc_coords(vec3d *pnt,float rad, float *cx, float *cy, float *cr)
-{
-	vertex pt;
-	ubyte flags;
-
-	flags = g3_rotate_vertex(&pt,pnt);
-
-	if (flags == 0) {
-
-		g3_project_vertex(&pt);
-
-		if (!(pt.flags & (PF_OVERFLOW|CC_BEHIND)))	{
-
-			*cx = pt.sx;
-			*cy = pt.sy;
-			*cr = rad*Matrix_scale.xyz.x*Canv_w2/pt.z;
-
-			if ( *cr < 1.0f )	{
-				*cr = 1.0f;
-			}
-
-			int x1, x2, y1, y2;
-
-			x1 = fl2i(*cx-*cr); 
-			if ( x1 < gr_screen.clip_left ) return 0;
-			x2 = fl2i(*cx+*cr);
-			if ( x2 > gr_screen.clip_right ) return 0;
-			y1 = fl2i(*cy-*cr);
-			if ( y1 < gr_screen.clip_top ) return 0;
-			y2 = fl2i(*cy+*cr);
-			if ( y2 > gr_screen.clip_bottom ) return 0;
-
-			return 1;
-		}
-	}
-	return 0;
-}
-*/
-
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if not
 int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *v)
@@ -2160,10 +2089,6 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 	int i;
 
 	Assert( G3_count == 1 );
-
-
-
-//	angle = 0.0f;
 		
 	sa = (float)sin(angle);
 	ca = (float)cos(angle);
@@ -2639,7 +2564,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			#define NOISE_SCALE 0.5f
 			#define MIN_SCALE 3.4f
 			#define MAX_SCALE 4.7f
-			float scale = MIN_SCALE;
 
 			float magnitude;
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
@@ -2660,7 +2584,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			if (magnitude < 0.0f)
 				magnitude *= -1.0f;
 
-			scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
+			float scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
 
 			if (d > 0.0f){
 				// Make glow bitmap fade in/out quicker from sides.
@@ -3228,9 +3152,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			break;
 	}
 
+	vec3d auto_back = ZERO_VECTOR;
 	if (Interp_flags & MR_AUTOCENTER) {
-		vec3d auto_back = ZERO_VECTOR;
-
 		// standard autocenter using data in model
 		if (pm->flags & PM_FLAG_AUTOCEN) {
 			auto_back = pm->autocenter;
@@ -3348,10 +3271,51 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	// When in htl mode render with htl method unless its a jump node
 	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+		transparent_submodel ts;
+		ts.is_submodel = false;
+		transparent_submodels.push_back(ts);
 		model_render_buffers(pm, pm->detail[Interp_detail_level]);
 	} else {
 		model_interp_subcall(pm, pm->detail[Interp_detail_level], Interp_detail_level);
 	}
+
+	// Valathil - now draw the saved transparent objects
+	std::vector<transparent_submodel>::iterator ts;
+	std::vector<transparent_object>::iterator obj;
+
+	for(ts = transparent_submodels.begin(); ts != transparent_submodels.end(); ++ts)
+	{
+		if(ts->is_submodel)
+			g3_start_instance_matrix(&ts->model->offset, &ts->orient, true);
+
+		for(obj = ts->transparent_objects.begin(); obj != ts->transparent_objects.end(); ++obj)
+		{
+			GLOWMAP = obj->glow_map;
+			SPECMAP = obj->spec_map;
+			NORMMAP = obj->norm_map;
+			HEIGHTMAP = obj->height_map;
+
+			gr_push_scale_matrix(&obj->scale);
+			gr_set_bitmap(obj->texture, obj->blend_filter, GR_BITBLT_MODE_NORMAL, obj->alpha);
+
+			int zbuff = gr_zbuffer_set(GR_ZBUFF_READ);
+		
+			gr_render_buffer(0, obj->buffer, obj->i, obj->tmap_flags);
+		
+			gr_zbuffer_set(zbuff);
+			gr_pop_scale_matrix();
+
+			GLOWMAP = -1;
+			SPECMAP = -1;
+			NORMMAP = -1;
+			HEIGHTMAP = -1;
+		}
+		ts->transparent_objects.clear();
+		
+		if(ts->is_submodel)
+			g3_done_instance(true);
+	}
+	transparent_submodels.clear();
 
 	// Draw the thruster subobjects	
 	if (draw_thrusters) {
@@ -3439,7 +3403,16 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	// Draw the thruster glow
 	if ( !is_outlines_only && !is_outlines_only_htl ) {
-		model_render_thrusters( pm, objnum, shipp, orient, pos );
+		if ( ( Interp_flags & MR_AUTOCENTER ) && set_autocen ) {
+			vec3d autoback_rotated;
+
+			vm_vec_unrotate(&autoback_rotated, &auto_back, orient);
+			vm_vec_add2(&autoback_rotated, pos);
+
+			model_render_thrusters( pm, objnum, shipp, orient, &autoback_rotated );
+		} else {
+			model_render_thrusters( pm, objnum, shipp, orient, pos );
+		}
 	}
 
 /*
@@ -4772,7 +4745,11 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
 
 	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
-
+	transparent_submodel ts;
+	ts.is_submodel = true;
+	ts.model = model;
+	memcpy(&ts.orient,&submodel_matrix,sizeof(matrix));
+	transparent_submodels.push_back(ts);
 	model_render_buffers(pm, mn, true);
 
 	if (Interp_flags & MR_SHOW_PIVOTS)
@@ -4955,16 +4932,33 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 			// for special shockwave/warpmap usage
 			alpha = (Interp_warp_alpha != -1.0f) ? Interp_warp_alpha : 0.8f;
 			blend_filter = GR_ALPHABLEND_FILTER;
-			gr_zbuffer_set(GR_ZBUFF_READ);
+
+			//Valathil - Save the object for later rendering
+			transparent_object tobj;
+			tobj.alpha=alpha;
+			tobj.blend_filter = blend_filter;
+			tobj.buffer = &model->buffer;
+			tobj.glow_map = GLOWMAP;
+			tobj.height_map = HEIGHTMAP;
+			tobj.i = i;
+			tobj.norm_map = NORMMAP;
+			tobj.spec_map = SPECMAP;
+			tobj.texture = texture;
+			tobj.tmap_flags = Interp_tmap_flags;
+			memcpy(&tobj.scale,&scale,sizeof(vec3d));
+			transparent_submodels.back().transparent_objects.push_back(tobj);
+			//gr_zbuffer_set(GR_ZBUFF_READ);
 		}
+		else
+		{
+			if (forced_blend_filter != GR_ALPHABLEND_NONE) {
+				blend_filter = forced_blend_filter;
+			}
 
-		if (forced_blend_filter != GR_ALPHABLEND_NONE) {
-			blend_filter = forced_blend_filter;
+			gr_set_bitmap(texture, blend_filter, GR_BITBLT_MODE_NORMAL, alpha);
+
+			gr_render_buffer(0, &model->buffer, i, Interp_tmap_flags);
 		}
-
-		gr_set_bitmap(texture, blend_filter, GR_BITBLT_MODE_NORMAL, alpha);
-
-		gr_render_buffer(0, &model->buffer, i, Interp_tmap_flags);
 
 		GLOWMAP = -1;
 		SPECMAP = -1;
@@ -4972,9 +4966,9 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		HEIGHTMAP = -1;
 
 		// reset z-buffer
-		if (tmap->is_transparent || Interp_thrust_scale_subobj) {
+		/*if (tmap->is_transparent || Interp_thrust_scale_subobj) {
 			gr_zbuffer_set(zbuffer_save);
-		}
+		}*/
 	}
 
 	gr_pop_scale_matrix();

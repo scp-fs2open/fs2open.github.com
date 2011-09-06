@@ -1148,21 +1148,31 @@ typedef struct mst_info {
 				{}
 } mst_info;
 
+
+//Valathil - Buffer struct for transparent object sorting
+typedef struct transparent_object {
+	int blend_filter;
+	float alpha;
+	int texture;
+	int glow_map;
+	int spec_map;
+	int norm_map;
+	int height_map;
+	vertex_buffer *buffer;
+	unsigned int tmap_flags;
+	int i;
+	vec3d scale;
+} transparent_object;
+
+typedef struct transparent_submodel {
+	bsp_info *model;
+	matrix orient;
+	bool is_submodel;
+	std::vector<transparent_object> transparent_objects;
+} transparent_submodel;
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
 void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
-
-//=========================================================
-// model caching
-
-// Call once to init the model caching stuff
-//void model_cache_init();
-
-// Call before every level to clean up the model caching stuff
-//void model_cache_reset();
-
-// If TRUE, then model caching is enabled
-//extern int Model_caching;
 
 
 //=======================================================================================

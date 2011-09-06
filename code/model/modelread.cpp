@@ -359,9 +359,6 @@ void model_init()
 		Polygon_models[i] = NULL;
 	}
 
-	// Init the model caching system
-//	model_cache_init();
-
 	atexit( model_free_all );
 	model_initted = 1;
 }

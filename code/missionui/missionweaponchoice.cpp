@@ -458,24 +458,6 @@ int wl_icon_being_carried();
 void wl_set_carried_icon(int from_bank, int from_slot, int weapon_class);
 
 
-// Determine hack offset for how to draw fury missile icon. 
-int wl_fury_missile_offset_hack(int weapon_class, int num_missiles)
-{
-	if ( weapon_class < 0 ) {
-		return 0;
-	}
-
-	if ( num_missiles < 100 ) {
-		return 0 ;
-	} 			
-
-	if ( !strnicmp(Weapon_info[weapon_class].name, NOX("fury"), 4) ) {
-		return 3;
-	}
-
-	return 0;
-}
-
 char *wl_tooltip_handler(char *str)
 {
 	if (Selected_wl_class < 0)
@@ -3111,9 +3093,7 @@ void wl_draw_ship_weapons(int index)
 
 		if ( (wep[i] != -1) && (wep_count[i] > 0) )
 		{
-			int x_offset = wl_fury_missile_offset_hack(wep[i], wep_count[i]);
-			x_offset = 0;
-			wl_render_icon( wep[i], Wl_bank_coords[gr_screen.res][i][0]+x_offset, Wl_bank_coords[gr_screen.res][i][1], wep_count[i], Wl_bank_count_draw_flags[i], -1, i, wep[i]);
+			wl_render_icon( wep[i], Wl_bank_coords[gr_screen.res][i][0], Wl_bank_coords[gr_screen.res][i][1], wep_count[i], Wl_bank_count_draw_flags[i], -1, i, wep[i]);
 		}
 	}
 }
@@ -3249,8 +3229,7 @@ void pick_from_ship_slot(int num)
 			
 	mouse_get_pos_unscaled( &mx, &my );
 
-	int x_offset = wl_fury_missile_offset_hack(wep[num], wep_count[num]);
-	Wl_delta_x = Wl_bank_coords[gr_screen.res][num][0] - mx + x_offset;
+	Wl_delta_x = Wl_bank_coords[gr_screen.res][num][0] - mx;
 	Wl_delta_y = Wl_bank_coords[gr_screen.res][num][1] - my;
 
 	Carried_wl_icon.from_x = mx;

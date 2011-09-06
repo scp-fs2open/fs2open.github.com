@@ -306,6 +306,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"afterburners-locked",
 	"force-shields-on",
 	"no-ets",
+	"cloaked",
 	"immobile",
 };
 
@@ -2456,6 +2457,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_NO_ETS)
 		shipp->flags2 |= SF2_NO_ETS;
+
+	if (parse_flags2 & P2_SF2_CLOAKED)
+		shipp->flags2 |= SF2_CLOAKED;
 
 	if (parse_flags2 & P2_OF_IMMOBILE)
 		objp->flags |= OF_IMMOBILE;
@@ -5359,7 +5363,7 @@ int parse_mission(mission *pm, int flags)
 			if (Cmdline_mod == NULL || *Cmdline_mod == 0) {
 				strcat_s(text, "<retail default> ");
 			} else {
-				for (char *mod_token = Cmdline_mod; strlen(mod_token) != 0; mod_token += strlen(mod_token) + 1) {
+				for (char *mod_token = Cmdline_mod; *mod_token != '\0'; mod_token += strlen(mod_token) + 1) {
 					strcat_s(text, mod_token);
 					strcat_s(text, " ");
 				}

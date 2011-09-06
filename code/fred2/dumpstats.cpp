@@ -281,7 +281,7 @@ void DumpStats::get_background_stats(CString &buffer)
 		}
 
 		// nebula texture
-		if (strlen(Neb2_texture_name) > 0) {
+		if (strlen(Neb2_texture_name) > 0) { //-V805
 			temp.Format("\tNebula texture: %s\r\n", Neb2_texture_name);
 			buffer += temp;
 		}

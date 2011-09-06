@@ -37,6 +37,7 @@
 #include "network/multimsgs.h"
 #include "parse/scripting.h"
 #include "asteroid/asteroid.h"
+#include "bmpman/bmpman.h"
 
 
 
@@ -969,6 +970,7 @@ int shipfx_in_shadow( object * src_obj )
 	return 0;
 }
 
+#define w(p)	(*((int *) (p)))
 /**
  * Given world point see if it is in a shadow.
  */
@@ -1036,6 +1038,71 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
 		if (model_collide(&mc))	{
 			return 1;
+		}
+	}
+
+	// check cockpit model
+	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
+	{
+		if(Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0)
+		{
+			ship *shipp = &Ships[Viewer_obj->instance];
+			ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+			if(sip->cockpit_model_num > 0)
+			{
+				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*2.0f );
+				vec3d pos,eye_posi;
+				matrix eye_ori;
+				ship_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
+				vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
+				vm_vec_add2(&pos, &eye_posi);
+
+				mc.model_num = sip->cockpit_model_num;
+				mc.orient = &Eye_matrix;
+				mc.pos = &pos;
+				mc.p0 = &rp0;
+				mc.p1 = &rp1;
+				mc.flags = MC_CHECK_MODEL;
+				if(model_collide(&mc))
+				{
+					if(mc.t_poly)
+					{
+						polymodel *pm = model_get(sip->cockpit_model_num);
+						int tmap_num = w(mc.t_poly+40);
+						if(!(pm->maps[tmap_num].is_transparent)&&strcmp(bm_get_filename(mc.hit_bitmap),"glass.dds"))
+						{
+							return 1;
+						}
+					}
+					if(mc.f_poly)
+						 return 1;
+				}
+			}
+			if(sip->flags2 & SIF2_SHOW_SHIP_MODEL)
+			{
+				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
+				mc.model_num = sip->model_num;
+				mc.orient = &Viewer_obj->orient;
+				mc.pos = &Viewer_obj->pos;
+				mc.p0 = &rp0;
+				mc.p1 = &rp1;
+				mc.flags = MC_CHECK_MODEL;
+				if(model_collide(&mc))
+				{
+					if(mc.t_poly)
+					{
+						polymodel *pm = model_get(sip->model_num);
+						int tmap_num = w(mc.t_poly+40);
+						if(!(pm->maps[tmap_num].is_transparent)&&strcmp(bm_get_filename(mc.hit_bitmap),"glass.dds"))
+						{
+							return 1;
+						}
+					}
+					if(mc.f_poly)
+						 return 1;
+				}
+			}
 		}
 	}
 
