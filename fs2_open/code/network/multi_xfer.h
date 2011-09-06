@@ -50,9 +50,6 @@ void multi_xfer_init(void (*multi_xfer_recv_callback)(int handle));
 // do frame for all file xfers, call in multi_do_frame()
 void multi_xfer_do();
 
-// close down the file xfer system
-void multi_xfer_close();
-
 // reset the xfer system, including shutting down/killing all active xfers
 void multi_xfer_reset();
 

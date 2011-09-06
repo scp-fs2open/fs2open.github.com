@@ -181,22 +181,6 @@ void multi_xfer_do()
 	}
 }
 
-// close down the file xfer system
-void multi_xfer_close()
-{
-	int idx;
-
-	// go through all active entries and abort them
-	for(idx=0;idx<MAX_XFER_ENTRIES;idx++){
-		if(Multi_xfer_entry[idx].flags & MULTI_XFER_FLAG_USED){
-			multi_xfer_abort(idx);
-		}
-	}
-
-	// now blast all the memory free
-	memset(Multi_xfer_entry,0,sizeof(xfer_entry) * MAX_XFER_ENTRIES);
-}
-
 // reset the xfer system, including shutting down/killing all active xfers
 void multi_xfer_reset()
 {
