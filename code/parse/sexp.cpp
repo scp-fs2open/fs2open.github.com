@@ -28631,7 +28631,7 @@ sexp_help_struct Sexp_help[] = {
 
 	// Karajorma
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
-		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
+		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
@@ -28643,7 +28643,7 @@ sexp_help_struct Sexp_help[] = {
 
 	// Karajorma
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
-		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
+		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
