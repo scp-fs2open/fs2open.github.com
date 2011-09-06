@@ -560,7 +560,9 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				}
 				break;
 			case OBJ_JUMP_NODE:
-				tinfo_name = t_objp->jnp->get_name_ptr();
+				strcpy_s(temp_name, t_objp->jnp->get_name_ptr());
+				end_string_at_first_hash_symbol(temp_name);
+				tinfo_name = temp_name;
 				break;
 		}
 
@@ -899,7 +901,9 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 				}
 				break;
 			case OBJ_JUMP_NODE:
-				tinfo_name = t_objp->jnp->get_name_ptr();
+				strcpy_s(temp_name, t_objp->jnp->get_name_ptr());
+				end_string_at_first_hash_symbol(temp_name);
+				tinfo_name = temp_name;
 				break;
 		}
 
