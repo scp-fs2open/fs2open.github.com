@@ -1334,6 +1334,7 @@ void psnet_rel_work()
 {
 	int i,j;
 	int rcode = -1;
+	int max_len = NETBUFFERSIZE;
 	fd_set read_fds;	           
 	TIMEVAL timeout; 
 	static reliable_header rcv_buff;
@@ -1737,7 +1738,6 @@ void psnet_rel_work()
 		}
 	}	
 }
-
 // get the status of a reliable socket, see RNF_* defines above
 int psnet_rel_get_status(PSNET_SOCKET_RELIABLE socketid)
 {	
