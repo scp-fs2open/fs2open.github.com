@@ -875,7 +875,9 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	// hud_set_default_color();
 	setGaugeColor();
 
-	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, target_objp->jnp->get_name_ptr());	
+	strcpy_s(outstr, target_objp->jnp->get_name_ptr());
+	end_string_at_first_hash_symbol(outstr);
+	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
 
 	dist = vm_vec_dist_quick(&target_objp->pos, &Player_obj->pos);
 	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
