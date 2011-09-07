@@ -78,6 +78,8 @@ const float Default_max_draw_distance = 1e10;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
 
+static int GL_cursor_nframes = 0;
+
 // Pre-computed screen resize vars
 static float Gr_resize_X = 1.0f, Gr_resize_Y = 1.0f;
 static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
@@ -275,7 +277,9 @@ DCF(gr,"Changes graphics mode")
 }
 //XSTR:ON
 
-// set screen clear color
+/**
+ * Set screen clear color
+ */
 DCF(clear_color, "set clear color r, g, b")
 {
 	ubyte r, g, b;
@@ -457,11 +461,9 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 		case GR_OPENGL:
 			rc = gr_opengl_init();
 			break;
-
 		case GR_STUB: 
 			rc = gr_stub_init();
 			break;
-
 		default:
 			Int3();		// Invalid graphics mode
 	}
@@ -649,9 +651,8 @@ void gr_force_windowed()
 	switch( gr_screen.mode ) {
 		case GR_OPENGL:
 			break;
-
-		case GR_STUB: break;
-
+		case GR_STUB: 
+			break;
 		default:
 			Int3();		// Invalid graphics mode
 	}
@@ -679,9 +680,8 @@ void gr_activate(int active)
 			extern void gr_opengl_activate(int active);
 			gr_opengl_activate(active);
 			break;
-
-		case GR_STUB: break;
-
+		case GR_STUB: 
+			break;
 		default:
 			Int3();		// Invalid graphics mode
 	}
@@ -772,18 +772,16 @@ void gr_set_shader(shader *shade)
 	}
 }
 
-// -----------------------------------------------------------------------
-// gr_set_cursor_bitmap()
-//
-// Set the bitmap for the mouse pointer.  This is called by the animating mouse
-// pointer code.
-//
-// The lock parameter just locks basically disables the next call of this function that doesn't
-// have an unlock feature.  If adding in more cursor-changing situations, be aware of
-// unexpected results. You have been warned.
-//
-// TODO: investigate memory leak of original Gr_cursor bitmap when this is called
-static int GL_cursor_nframes = 0;
+/**
+ * Set the bitmap for the mouse pointer.  This is called by the animating mouse
+ * pointer code.
+ *
+ * The lock parameter just locks basically disables the next call of this function that doesn't
+ * have an unlock feature.  If adding in more cursor-changing situations, be aware of
+ * unexpected results. You have been warned.
+ *
+ * @todo investigate memory leak of original Gr_cursor bitmap when this is called
+ */
 void gr_set_cursor_bitmap(int n, int lock)
 {
 	int w, h;
@@ -835,8 +833,10 @@ void gr_unset_cursor_bitmap(int n)
 	}
 }
 
-// retrieves the current bitmap
-// used in UI_GADGET to save/restore current cursor state
+/**
+ * Retrieves the current bitmap
+ * Used in UI_GADGET to save/restore current cursor state
+ */
 int gr_get_cursor_bitmap()
 {
 	return Gr_cursor;
@@ -987,7 +987,9 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 }
 
 
-// given endpoints, and thickness, calculate coords of the endpoint
+/**
+ * Given endpoints, and thickness, calculate coords of the endpoint
+ */
 void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 {
 	vec3d slope;
@@ -1006,9 +1008,13 @@ void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 	vm_vec_scale_add(out, in1, &slope, (float)thickness);
 }
 
-// special function for drawing polylines. this function is specifically intended for
-// polylines where each section is no more than 90 degrees away from a previous section.
-// Moreover, it is _really_ intended for use with 45 degree angles. 
+/**
+ * Special function for drawing polylines.
+ *
+ * This function is specifically intended for polylines where each section 
+ * is no more than 90 degrees away from a previous section.
+ * Moreover, it is _really_ intended for use with 45 degree angles. 
+ */
 void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 {
 	vec3d s1, s2, e1, e2, dir;
@@ -1186,7 +1192,9 @@ int poly_list::find_first_vertex(int idx)
 	return idx;
 }
 
-//given a list (plist) find the index within the indexed list that the vert at position idx within list is at 
+/**
+ * Given a list (plist) find the index within the indexed list that the vert at position idx within list is at
+ */
 int poly_list::find_index(poly_list *plist, int idx)
 {
 	vec3d *o_norm = &plist->norm[idx];
