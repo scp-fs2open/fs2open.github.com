@@ -730,7 +730,7 @@ int psnet_use_protocol( int protocol )
 #else
 			if ( (custom_address.sin_addr.s_addr = inet_addr(custom_ip)) != INADDR_NONE ) {
 #endif
-				memcpy(&ip_addr.sin_addr, &custom_address.sin_addr, 6);
+				memcpy(&ip_addr.sin_addr, &custom_address.sin_addr, sizeof(custom_address.sin_addr));
 			} else {
 				ml_printf("WARNING  =>  psnet_get_ip() custom IP is invalid: %s", custom_ip);
 			}
