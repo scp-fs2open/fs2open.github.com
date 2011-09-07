@@ -800,9 +800,6 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 	}
 }
 
-
-	Assert ( strlen(cfilename) != 0 ); //-V805
-
 // the following code only ever called by CSFE!!!!
 void campaign_savefile_load(char *fname, char *pname)
 {
