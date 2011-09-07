@@ -1997,8 +1997,8 @@ void opengl_setup_scene_textures()
 	}
 
 	// clamp size, if needed
-	int Scene_texture_width = gr_screen.max_w;
-	int Scene_texture_height = gr_screen.max_h;
+	Scene_texture_width = gr_screen.max_w;
+	Scene_texture_height = gr_screen.max_h;
 
 	if ( Scene_texture_width > GL_max_renderbuffer_size ) {
 		Scene_texture_width = GL_max_renderbuffer_size;
