@@ -4818,7 +4818,6 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 	texture_info tex_replace[TM_NUM_TYPES];
 
 	int no_texturing = (Interp_flags & MR_NO_TEXTURING);
-	int zbuffer_save = gr_zbuffering_mode;
 
 	int forced_texture = -2;
 	float forced_alpha = 1.0f;
