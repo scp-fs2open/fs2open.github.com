@@ -451,9 +451,9 @@ void PSNET_TOP_LAYER_PROCESS()
 			from_addr.port = ntohs( ip_addr.sin_port );			
 			memset(from_addr.addr, 0x00, 6);
 #ifdef _WIN32
-			memcpy(from_addr.addr, &ip_addr.sin_addr.S_un.S_addr, 4);
+			memcpy(from_addr.addr, &ip_addr.sin_addr.S_un.S_addr, 4); //-V512
 #else
-			memcpy(from_addr.addr, &ip_addr.sin_addr.s_addr, 4);
+			memcpy(from_addr.addr, &ip_addr.sin_addr.s_addr, 4); //-V512
 #endif
 			break;
 
@@ -872,7 +872,7 @@ void psnet_string_to_addr( net_addr * address, char * text )
 			}
 
 			memset(address->addr, 0x00, 6);
-			memcpy(address->addr, &addr.s_addr, 4);
+			memcpy(address->addr, &addr.s_addr, 4); //-V512
 			if ( port ){
 				address->port = (ushort)(atoi(port));
 			}
@@ -1440,7 +1440,7 @@ void psnet_rel_work()
 			rcv_buff.seq = INTEL_SHORT( rcv_buff.seq ); //-V570
 			rcv_buff.data_len = INTEL_SHORT( rcv_buff.data_len ); //-V570
 			rcv_buff.send_time = INTEL_FLOAT( &rcv_buff.send_time );
-			memcpy(d3_rcv_addr.addr, &tcp_addr->sin_addr.s_addr, 4);
+			memcpy(d3_rcv_addr.addr, &tcp_addr->sin_addr.s_addr, 4); //-V512
 			d3_rcv_addr.port = tcp_addr->sin_port;
 			d3_rcv_addr.type = NET_TCP;
 			link_type = NET_TCP;
@@ -1784,9 +1784,9 @@ int psnet_rel_check_for_listen(net_addr *from_addr)
 				from_addr->port = ntohs( ip_addr->sin_port );
 				from_addr->type = NET_TCP;
 #ifdef _WIN32
-				memcpy(from_addr->addr, &ip_addr->sin_addr.S_un.S_addr, 4);
+				memcpy(from_addr->addr, &ip_addr->sin_addr.S_un.S_addr, 4); //-V512
 #else
-				memcpy(from_addr->addr, &ip_addr->sin_addr.s_addr, 4);
+				memcpy(from_addr->addr, &ip_addr->sin_addr.s_addr, 4); //-V512
 #endif
 				break;
 			
@@ -1925,7 +1925,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 				ml_printf("Unable to send UDP packet in nw_ConnectToServer()! -- %d",WSAGetLastError());
 				return;
 			}
-			memcpy(d3_rcv_addr.addr, &sockaddr.sin_addr.s_addr, 4);
+			memcpy(d3_rcv_addr.addr, &sockaddr.sin_addr.s_addr, 4); //-V512
 			d3_rcv_addr.port = sockaddr.sin_port;
 			d3_rcv_addr.type = NET_TCP;
 			typeless_sock = Unreliable_socket;
