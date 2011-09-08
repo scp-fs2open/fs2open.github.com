@@ -57,10 +57,13 @@ public:
 #define ODATA_PTR_SIZE		-1
 #define ODATA_SIG_TYPE		uint						//WMC - Please don't touch.
 #define ODATA_SIG_DEFAULT	0
-//ade_odata Used for internal object->lua_set and lua_get->object communication
-class ade_odata
+/** Used for internal object->lua_set and lua_get->object communication.
+
+Must remain a struct and only contain POD datatypes because this is passed via
+variable args.
+*/
+struct ade_odata
 {
-public:
 	//ade_id aid;
 	uint idx;
 	ODATA_SIG_TYPE *sig;
