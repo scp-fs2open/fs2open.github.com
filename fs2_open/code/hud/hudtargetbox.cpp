@@ -1415,8 +1415,8 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 
 		g3_rotate_vertex(&subobj_vertex, &subobj_pos);
 		g3_project_vertex(&subobj_vertex);
-		*sx = (int) subobj_vertex.sx;
-		*sy = (int) subobj_vertex.sy;
+		*sx = (int) subobj_vertex.screen.xyw.x;
+		*sy = (int) subobj_vertex.screen.xyw.y;
 	}
 
 	return rval;

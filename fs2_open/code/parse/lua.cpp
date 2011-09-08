@@ -3268,7 +3268,7 @@ ADE_FUNC(getScreenCoords, l_Vector, NULL, "Gets screen cordinates of a world vec
 	if(vtx.flags & PF_OVERFLOW)
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "ff", vtx.sx, vtx.sy);
+	return ade_set_args(L, "ff", vtx.screen.xyw.x, vtx.screen.xyw.y);
 }
 
 ADE_FUNC(getNormalized, l_Vector, NULL, "Returns a normalized version of the vector", "vector", "Normalized Vector, or NIL if invalid")
@@ -10100,7 +10100,7 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		g3_start_frame(0);
 
 	vertex vtx;
-	vm_vec2vert(&pos, &vtx);
+	vtx.world = pos;
 	g3_rotate_vertex(&vtx, &pos);
 	g3_draw_sphere(&vtx, rad);
 
