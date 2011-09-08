@@ -479,7 +479,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 16, mode = GR_OPENGL;
 	char *ptr = NULL;
-
+	char *Default_video_settings = "OGL -(1024x768)x16 bit";
 
 	if ( !Gr_inited ) {
 		atexit(gr_close);
@@ -505,8 +505,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	// if we don't have a config string then construct one, using OpenGL 1024x768 16-bit as the default
 	if (ptr == NULL) {
-		char Default_video_settings[] = "OGL -(1024x768)x16 bit";
-		ptr = &Default_video_settings[0];
+		ptr = Default_video_settings;
 	}
 
 	Assert( ptr != NULL );
