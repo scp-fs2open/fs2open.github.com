@@ -3284,6 +3284,26 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		model_interp_subcall(pm, pm->detail[Interp_detail_level], Interp_detail_level);
 	}
 
+	// Draw the thruster subobjects
+	if (draw_thrusters) {
+		i = pm->submodel[pm->detail[Interp_detail_level]].first_child;
+
+		while( i >= 0 ) {
+			if (pm->submodel[i].is_thruster) {
+				// When in htl mode render with htl method unless its a jump node
+				if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+					transparent_submodel ts;
+					ts.is_submodel = false;
+					transparent_submodels.push_back(ts);
+					model_render_children_buffers( pm, i, Interp_detail_level );
+				} else {
+					model_interp_subcall( pm, i, Interp_detail_level );
+				}
+			}
+			i = pm->submodel[i].next_sibling;
+		}
+	}
+
 	// Valathil - now draw the saved transparent objects
 	std::vector<transparent_submodel>::iterator ts;
 	std::vector<transparent_object>::iterator obj;
@@ -3321,24 +3341,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			g3_done_instance(true);
 	}
 	transparent_submodels.clear();
-
-	// Draw the thruster subobjects	
-	if (draw_thrusters) {
-		i = pm->submodel[pm->detail[Interp_detail_level]].first_child;
-
-		while( i >= 0 )	{
-			if (pm->submodel[i].is_thruster) {
-				// When in htl mode render with htl method unless its a jump node
-				if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
-					model_render_children_buffers( pm, i, Interp_detail_level );
-				} else {
-					model_interp_subcall( pm, i, Interp_detail_level );
-				}
-			}
-
-			i = pm->submodel[i].next_sibling;
-		}
-	}
 
 	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
 		gr_set_buffer(-1);
