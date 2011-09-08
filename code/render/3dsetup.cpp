@@ -234,7 +234,7 @@ ubyte g3_rotate_vertex_popped(vertex *dest,vec3d *src)
 	Assert( instance_depth > 0 );
 
 	vm_vec_sub(&tempv,src,&instance_stack[0].p);
-	vm_vec_rotate( (vec3d *)&dest->x, &tempv, &instance_stack[0].m );
+	vm_vec_rotate( &dest->world, &tempv, &instance_stack[0].m );
 	dest->flags = 0;	//not projected
 	return g3_code_vertex(dest);
 }	

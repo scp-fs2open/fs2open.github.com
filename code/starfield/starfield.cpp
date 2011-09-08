@@ -318,17 +318,17 @@ static void starfield_create_bitmap_buffer(const int si_idx)
 	for (idx = 0; idx < div_x; idx++) {
 		for (s_idx = 0; s_idx < div_y; s_idx++) {
 			// stuff texture coords
-			v[0].u = ui * float(idx);
-			v[0].v = vi * float(s_idx);
+			v[0].texture_position.u = ui * float(idx);
+			v[0].texture_position.v = vi * float(s_idx);
 
-			v[1].u = ui * float(idx+1);
-			v[1].v = vi * float(s_idx);
+			v[1].texture_position.u = ui * float(idx+1);
+			v[1].texture_position.v = vi * float(s_idx);
 
-			v[2].u = ui * float(idx+1);
-			v[2].v = vi * float(s_idx+1);
+			v[2].texture_position.u = ui * float(idx+1);
+			v[2].texture_position.v = vi * float(s_idx+1);
 
-			v[3].u = ui * float(idx);
-			v[3].v = vi * float(s_idx+1);
+			v[3].texture_position.u = ui * float(idx);
+			v[3].texture_position.v = vi * float(s_idx+1);
 
 			g3_transfer_vertex(&v[0], &s_points[idx][s_idx]);
 			g3_transfer_vertex(&v[1], &s_points[idx+1][s_idx]);
@@ -1092,8 +1092,11 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 	if (!bm->flare)
 		return;
 	
-	dx = 2.0f*(i2fl(gr_screen.clip_right-gr_screen.clip_left)*0.5f - sun_vex->sx); // (dx,dy) is a 2d vector equal to two times the vector from the sun's position to the center fo the screen
-	dy = 2.0f*(i2fl(gr_screen.clip_bottom-gr_screen.clip_top)*0.5f - sun_vex->sy); // meaning it is the vector to the opposite position on the screen
+	/* (dx,dy) is a 2d vector equal to two times the vector from the sun's
+	position to the center fo the screen meaning it is the vector to the 
+	opposite position on the screen. */
+	dx = 2.0f*(i2fl(gr_screen.clip_right-gr_screen.clip_left)*0.5f - sun_vex->screen.xyw.x);
+	dy = 2.0f*(i2fl(gr_screen.clip_bottom-gr_screen.clip_top)*0.5f - sun_vex->screen.xyw.y);
 
 	for (j = 0; j < bm->n_flare_bitmaps; j++)
 	{
@@ -1107,8 +1110,8 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 			// draw sorted by texture, to minimize texture changes. not the most efficient way, but better than non-sorted
 			if (bm->flare_infos[i].tex_num == j) {
 //				gr_set_bitmap(bm->flare_bitmaps[bm->flare_infos[i].tex_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
-				flare_vex.sx = sun_vex->sx + dx * bm->flare_infos[i].pos;
-				flare_vex.sy = sun_vex->sy + dy * bm->flare_infos[i].pos;
+				flare_vex.screen.xyw.x = sun_vex->screen.xyw.x + dx * bm->flare_infos[i].pos;
+				flare_vex.screen.xyw.y = sun_vex->screen.xyw.y + dy * bm->flare_infos[i].pos;
 				g3_draw_bitmap(&flare_vex, 0, 0.05f * bm->flare_infos[i].scale, TMAP_FLAG_TEXTURED);
 			}
 		}
@@ -1603,9 +1606,7 @@ void stars_draw_stars()
 	if ( !last_stars_filled ) {
 		for (i = 0; i < Num_stars; i++) {
 			g3_rotate_faraway_vertex(&p2, &Stars[i].pos);
-			Stars[i].last_star_pos.xyz.x = p2.x;
-			Stars[i].last_star_pos.xyz.y = p2.y;
-			Stars[i].last_star_pos.xyz.z = p2.z;
+			Stars[i].last_star_pos = p2.world;
 		}
 	}
 
@@ -1637,7 +1638,7 @@ void stars_draw_stars()
 		}
 
 		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) ) {
-			dist = vm_vec_dist_quick( &sp->last_star_pos, (vec3d *)&p2.x );
+			dist = vm_vec_dist_quick( &sp->last_star_pos, &p2.world );
 
 			if ( dist > Star_max_length ) {
  				ratio = Star_max_length / dist;
@@ -1648,9 +1649,9 @@ void stars_draw_stars()
 			
 			ratio *= Star_amount;
 
-			p1.x = p2.x + (sp->last_star_pos.xyz.x-p2.x)*ratio;
-			p1.y = p2.y + (sp->last_star_pos.xyz.y-p2.y)*ratio;
-			p1.z = p2.z + (sp->last_star_pos.xyz.z-p2.z)*ratio;
+			vm_vec_sub(&p1.world, &sp->last_star_pos, &p2.world);
+			vm_vec_scale(&p1.world, ratio);
+			vm_vec_add2(&p1.world, &p2.world);
 
 			p1.flags = 0;	// not projected
 			g3_code_vertex( &p1 );
@@ -1665,21 +1666,19 @@ void stars_draw_stars()
 			}
 		}
 
-		sp->last_star_pos.xyz.x = p2.x;
-		sp->last_star_pos.xyz.y = p2.y;
-		sp->last_star_pos.xyz.z = p2.z;
+		sp->last_star_pos = p2.world;
 
 		if ( !can_draw )
 			continue;
 
 		gr_set_color_fast( &sp->col );
 
-		vDst.x = fl2i(p1.sx) - fl2i(p2.sx);
-		vDst.y = fl2i(p1.sy) - fl2i(p2.sy);
+		vDst.x = fl2i(p1.screen.xyw.x) - fl2i(p2.screen.xyw.x);
+		vDst.y = fl2i(p1.screen.xyw.y) - fl2i(p2.screen.xyw.y);
 
 		if ( ((vDst.x * vDst.x) + (vDst.y * vDst.y)) <= 4 ) {
-			p1.sx = p2.sx + 1.0f;
-			p1.sy = p2.sy;
+			p1.screen.xyw.x = p2.screen.xyw.x + 1.0f;
+			p1.screen.xyw.y = p2.screen.xyw.y;
 		}
 
 		gr_aaline(&p1, &p2);

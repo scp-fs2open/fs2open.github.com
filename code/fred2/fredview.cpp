@@ -1313,8 +1313,8 @@ void select_objects()
 		g3_rotate_vertex(&v, &ptr->pos);
 		if (!(v.codes & CC_BEHIND) && valid)
 			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-				x = (int) v.sx;
-				y = (int) v.sy;
+				x = (int) v.screen.xyw.x;
+				y = (int) v.screen.xyw.y;
 
 				if (x >= marking_box.x1 && x <= marking_box.x2 && y >= marking_box.y1 && y <= marking_box.y2) {
 					if (ptr->flags & OF_MARKED)

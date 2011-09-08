@@ -322,8 +322,8 @@ void draw_bounding_brackets_subobject()
 			if (subobj_vertex.flags & PF_OVERFLOW)  // if overflow, no point in drawing brackets
 				return;
 
-			int subobj_x = fl2i(subobj_vertex.sx + 0.5f);
-			int subobj_y = fl2i(subobj_vertex.sy + 0.5f);
+			int subobj_x = fl2i(subobj_vertex.screen.xyw.x + 0.5f);
+			int subobj_y = fl2i(subobj_vertex.screen.xyw.y + 0.5f);
 			int hud_subtarget_w, hud_subtarget_h, bound_rc;
 
 			bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &targetp->orient, &subobj_pos, &x1,&y1,&x2,&y2);
@@ -672,8 +672,8 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 				vertex vtx;
 				g3_rotate_vertex(&vtx,&targetp->pos);
 				g3_project_vertex(&vtx);
-				x1 = x2 = (int) vtx.sx;
-				y1 = y2 = (int) vtx.sy;
+				x1 = x2 = (int) vtx.screen.xyw.x;
+				y1 = y2 = (int) vtx.screen.xyw.y;
 			}
 
 			break;
@@ -741,8 +741,8 @@ void HudGaugeBrackets::renderNavBrackets(vec3d* nav_pos, vertex* nav_point, colo
 	int box_scale = 15;
 	int x, y;
 
-	x = int(nav_point->sx);
-	y = int(nav_point->sy);
+	x = int(nav_point->screen.xyw.x);
+	y = int(nav_point->screen.xyw.y);
 
 	// draw this nav bracket based on this gauge's base resolution
 	gr_set_screen_scale(base_w, base_h);
@@ -949,8 +949,8 @@ void HudGaugeBrackets::renderBoundingBracketsSubobject()
 			if (subobj_vertex.flags & PF_OVERFLOW)  // if overflow, no point in drawing brackets
 				return;
 
-			int subobj_x = fl2i(subobj_vertex.sx + 0.5f);
-			int subobj_y = fl2i(subobj_vertex.sy + 0.5f);
+			int subobj_x = fl2i(subobj_vertex.screen.xyw.x + 0.5f);
+			int subobj_y = fl2i(subobj_vertex.screen.xyw.y + 0.5f);
 			int hud_subtarget_w, hud_subtarget_h, bound_rc;
 
 			bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &targetp->orient, &subobj_pos, &x1,&y1,&x2,&y2);

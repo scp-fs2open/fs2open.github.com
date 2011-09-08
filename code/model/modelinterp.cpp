@@ -955,8 +955,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			float salpha = 1.0f - splode_level;
 			for (i=0;i<nv;i++){
 				Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
-				Interp_list[i]->u = verts[i].u*2;
-				Interp_list[i]->v = verts[i].v*2;
+				Interp_list[i]->texture_position.u = verts[i].u*2;
+				Interp_list[i]->texture_position.v = verts[i].v*2;
 				Interp_list[i]->r = (unsigned char)(255*salpha);
 				Interp_list[i]->g = (unsigned char)(250*salpha);
 				Interp_list[i]->b = (unsigned char)(200*salpha);
@@ -975,12 +975,12 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	for (i=0;i<nv;i++)	{
 		Interp_list[i] = &Interp_points[verts[i].vertnum];
 
-		Interp_list[i]->u = verts[i].u;
-		Interp_list[i]->v = verts[i].v;
+		Interp_list[i]->texture_position.u = verts[i].u;
+		Interp_list[i]->texture_position.v = verts[i].v;
 		
 		if ( Interp_subspace )	{
-			Interp_list[i]->v += Interp_subspace_offset_u;
-			Interp_list[i]->u += Interp_subspace_offset_v;
+			Interp_list[i]->texture_position.v += Interp_subspace_offset_u;
+			Interp_list[i]->texture_position.u += Interp_subspace_offset_v;
 			Interp_list[i]->r = Interp_subspace_r;
 			Interp_list[i]->g = Interp_subspace_g;
 			Interp_list[i]->b = Interp_subspace_b;
@@ -2053,9 +2053,14 @@ void model_render_insignias(polymodel *pm, int detail_level)
 			}
 
 			// setup texture coords
-			vecs[0].u = pm->ins[idx].u[s_idx][0];  vecs[0].v = pm->ins[idx].v[s_idx][0];
-			vecs[1].u = pm->ins[idx].u[s_idx][1];  vecs[1].v = pm->ins[idx].v[s_idx][1];
-			vecs[2].u = pm->ins[idx].u[s_idx][2];  vecs[2].v = pm->ins[idx].v[s_idx][2];
+			vecs[0].texture_position.u = pm->ins[idx].u[s_idx][0];
+			vecs[0].texture_position.v = pm->ins[idx].v[s_idx][0];
+
+			vecs[1].texture_position.u = pm->ins[idx].u[s_idx][1];
+			vecs[1].texture_position.v = pm->ins[idx].v[s_idx][1];
+
+			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
+			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
 
 			if (!Cmdline_nohtl) {
 				light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
@@ -2097,38 +2102,38 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 
 	width = height = rad;
 
-	v[0].x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[0].y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[0].z = pnt->z;
-	v[0].sw = 0.0f;
-	v[0].u = 0.0f;
-	v[0].v = 0.0f;
+	v[0].world.xyz.x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[0].world.xyz.y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[0].world.xyz.z = pnt->world.xyz.z;
+	v[0].screen.xyw.w = 0.0f;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 0.0f;
 
-	v[1].x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[1].y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[1].z = pnt->z;
-	v[1].sw = 0.0f;
-	v[1].u = 1.0f;
-	v[1].v = 0.0f;
+	v[1].world.xyz.x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[1].world.xyz.y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[1].world.xyz.z = pnt->world.xyz.z;
+	v[1].screen.xyw.w = 0.0f;
+	v[1].texture_position.u = 1.0f;
+	v[1].texture_position.v = 0.0f;
 
-	v[2].x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[2].y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[2].z = pnt->z;
-	v[2].sw = 0.0f;
-	v[2].u = 1.0f;
-	v[2].v = 1.0f;
+	v[2].world.xyz.x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[2].world.xyz.y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[2].world.xyz.z = pnt->world.xyz.z;
+	v[2].screen.xyw.w = 0.0f;
+	v[2].texture_position.u = 1.0f;
+	v[2].texture_position.v = 1.0f;
 
-	v[3].x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[3].y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[3].z = pnt->z;
-	v[3].sw = 0.0f;
-	v[3].u = 0.0f;
-	v[3].v = 1.0f;
+	v[3].world.xyz.x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[3].world.xyz.y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[3].world.xyz.z = pnt->world.xyz.z;
+	v[3].screen.xyw.w = 0.0f;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 1.0f;
 
 	ubyte codes_and=0xff;
 
 	float sw,z;
-	z = pnt->z - rad / 4.0f;
+	z = pnt->world.xyz.z - rad / 4.0f;
 	if ( z < 0.0f ) z = 0.0f;
 	sw = 1.0f / z;
 
@@ -2137,7 +2142,7 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 		codes_and &= g3_code_vertex(&v[i]);
 		v[i].flags = 0;		// mark as not yet projected
 		g3_project_vertex(&v[i]);
-		v[i].sw = sw;
+		v[i].screen.xyw.w = sw;
 	}
 
 	if (codes_and)
@@ -2637,7 +2642,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// start tertiary thruster glows
 			if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-				p.sw -= w;
+				p.screen.xyw.w -= w;
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
 				batch_add_bitmap_rotated(
 					Interp_tertiary_thrust_glow_bitmap,
@@ -2894,17 +2899,17 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 								g3_transfer_vertex(&verts[3], &top1);
 							}
 
-							verts[0].u = 0.0f;
-							verts[0].v = 0.0f;
+							verts[0].texture_position.u = 0.0f;
+							verts[0].texture_position.v = 0.0f;
 
-							verts[1].u = 1.0f;
-							verts[1].v = 0.0f;
+							verts[1].texture_position.u = 1.0f;
+							verts[1].texture_position.v = 0.0f;
 
-							verts[2].u = 1.0f;
-							verts[2].v = 1.0f;
+							verts[2].texture_position.u = 1.0f;
+							verts[2].texture_position.v = 1.0f;
 
-							verts[3].u = 0.0f;
-							verts[3].v = 1.0f;
+							verts[3].texture_position.u = 0.0f;
+							verts[3].texture_position.v = 1.0f;
 
 							vm_vec_sub(&tempv,&View_position,&pnt);
 							vm_vec_normalize(&tempv);
@@ -4097,11 +4102,11 @@ void parse_tmap(int offset, ubyte *bsp_data)
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
 		v = Interp_verts[(int)tverts[0].vertnum];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = tverts[0].u;
-		V->v = tverts[0].v;
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[0].u;
+		V->texture_position.v = tverts[0].v;
 
 		*N = *Interp_norms[(int)tverts[0].normnum];
 
@@ -4116,11 +4121,11 @@ void parse_tmap(int offset, ubyte *bsp_data)
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
 		v = Interp_verts[(int)tverts[i].vertnum];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = tverts[i].u;
-		V->v = tverts[i].v;
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[i].u;
+		V->texture_position.v = tverts[i].v;
 
 		*N = *Interp_norms[(int)tverts[i].normnum];
 
@@ -4135,11 +4140,11 @@ void parse_tmap(int offset, ubyte *bsp_data)
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
 		v = Interp_verts[(int)tverts[i+1].vertnum];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = tverts[i+1].u;
-		V->v = tverts[i+1].v;
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[i+1].u;
+		V->texture_position.v = tverts[i+1].v;
 
 		*N = *Interp_norms[(int)tverts[i+1].normnum];
 

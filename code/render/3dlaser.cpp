@@ -62,14 +62,14 @@ float g3_draw_laser_htl(vec3d *p0,float width1,vec3d *p1,float width2, int r, in
 	for (i=0; i<4; i++ )	{
 		g3_transfer_vertex( &pts[i], &vecs[i] );
 	}
-	ptlist[0]->u = 0.0f;
-	ptlist[0]->v = 0.0f;
-	ptlist[1]->u = 1.0f;
-	ptlist[1]->v = 0.0f;
-	ptlist[2]->u = 1.0f;
-	ptlist[2]->v = 1.0f;
-	ptlist[3]->u = 0.0f;
-	ptlist[3]->v = 1.0f;
+	ptlist[0]->texture_position.u = 0.0f;
+	ptlist[0]->texture_position.v = 0.0f;
+	ptlist[1]->texture_position.u = 1.0f;
+	ptlist[1]->texture_position.v = 0.0f;
+	ptlist[2]->texture_position.u = 1.0f;
+	ptlist[2]->texture_position.v = 1.0f;
+	ptlist[3]->texture_position.u = 0.0f;
+	ptlist[3]->texture_position.v = 1.0f;
 	ptlist[0]->r = (ubyte)r;
 	ptlist[0]->g = (ubyte)g;
 	ptlist[0]->b = (ubyte)b;
@@ -131,13 +131,13 @@ float g3_draw_laser(vec3d *headp, float head_width, vec3d *tailp, float tail_wid
 		return 0.0f;
 	}
 
-	headx = pt1.sx;
-	heady = pt1.sy;
-	headr = (head_width*Matrix_scale.xyz.x*Canv_w2*pt1.sw);
+	headx = pt1.screen.xyw.x;
+	heady = pt1.screen.xyw.y;
+	headr = (head_width*Matrix_scale.xyz.x*Canv_w2*pt1.screen.xyw.w);
 
-	tailx = pt2.sx;
-	taily = pt2.sy;
-	tailr = (tail_width*Matrix_scale.xyz.x*Canv_w2*pt2.sw);
+	tailx = pt2.screen.xyw.x;
+	taily = pt2.screen.xyw.y;
+	tailr = (tail_width*Matrix_scale.xyz.x*Canv_w2*pt2.screen.xyw.w);
 
 	float len_2d = fl_sqrt( (tailx-headx)*(tailx-headx) + (taily-heady)*(taily-heady) );
 
@@ -152,7 +152,7 @@ float g3_draw_laser(vec3d *headp, float head_width, vec3d *tailp, float tail_wid
 		len_2d = fl_sqrt( (tailx-headx)*(tailx-headx) + (taily-heady)*(taily-heady) );
 	}
 
-	depth = (pt1.z+pt2.z)*0.5f;
+	depth = (pt1.world.xyz.z+pt2.world.xyz.z)*0.5f;
 
 	float max_r  = headr;
 	float a;
@@ -213,36 +213,36 @@ float g3_draw_laser(vec3d *headp, float head_width, vec3d *tailp, float tail_wid
 	if ( depth < 0.0f ) depth = 0.0f;
 	sw = 1.0f / depth;
 	
-	v[0].sx = (-w/2.0f)*ca + (-h1/2.0f)*sa + mx;
-	v[0].sy = (-w/2.0f)*sa - (-h1/2.0f)*ca + my;
-	v[0].z = pt1.z;
-	v[0].sw = pt1.sw;
-	v[0].u = 0.0f;
-	v[0].v = 0.0f;
+	v[0].screen.xyw.x = (-w/2.0f)*ca + (-h1/2.0f)*sa + mx;
+	v[0].screen.xyw.y = (-w/2.0f)*sa - (-h1/2.0f)*ca + my;
+	v[0].world.xyz.z = pt1.world.xyz.z;
+	v[0].screen.xyw.w = pt1.screen.xyw.w;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 0.0f;
 	v[0].b = 191;
 
-	v[1].sx = (w/2.0f)*ca + (-h2/2.0f)*sa + mx;
-	v[1].sy = (w/2.0f)*sa - (-h2/2.0f)*ca + my;
-	v[1].z = pt2.z;
-	v[1].sw = pt2.sw;
-	v[1].u = 1.0f;
-	v[1].v = 0.0f;
+	v[1].screen.xyw.x = (w/2.0f)*ca + (-h2/2.0f)*sa + mx;
+	v[1].screen.xyw.y = (w/2.0f)*sa - (-h2/2.0f)*ca + my;
+	v[1].world.xyz.z = pt2.world.xyz.z;
+	v[1].screen.xyw.w = pt2.screen.xyw.w;
+	v[1].texture_position.u = 1.0f;
+	v[1].texture_position.v = 0.0f;
 	v[1].b = 191;
 
-	v[2].sx = (w/2.0f)*ca + (h2/2.0f)*sa + mx;
-	v[2].sy = (w/2.0f)*sa - (h2/2.0f)*ca + my;
-	v[2].z = pt2.z;
-	v[2].sw = pt2.sw;
-	v[2].u = 1.0f;
-	v[2].v = 1.0f;
+	v[2].screen.xyw.x = (w/2.0f)*ca + (h2/2.0f)*sa + mx;
+	v[2].screen.xyw.y = (w/2.0f)*sa - (h2/2.0f)*ca + my;
+	v[2].world.xyz.z = pt2.world.xyz.z;
+	v[2].screen.xyw.w = pt2.screen.xyw.w;
+	v[2].texture_position.u = 1.0f;
+	v[2].texture_position.v = 1.0f;
 	v[2].b = 191;
 
-	v[3].sx = (-w/2.0f)*ca + (h1/2.0f)*sa + mx;
-	v[3].sy = (-w/2.0f)*sa - (h1/2.0f)*ca + my;
-	v[3].z = pt1.z;
-	v[3].sw = pt1.sw;
-	v[3].u = 0.0f;
-	v[3].v = 1.0f;
+	v[3].screen.xyw.x = (-w/2.0f)*ca + (h1/2.0f)*sa + mx;
+	v[3].screen.xyw.y = (-w/2.0f)*sa - (h1/2.0f)*ca + my;
+	v[3].world.xyz.z = pt1.world.xyz.z;
+	v[3].screen.xyw.w = pt1.screen.xyw.w;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 1.0f;
 	v[3].b = 191;
 
 	gr_tmapper(4, vertlist, tmap_flags | TMAP_FLAG_CORRECT);	
@@ -285,13 +285,13 @@ float g3_draw_laser_rgb(vec3d *headp, float head_width, vec3d *tailp, float tail
 		return 0.0f;
 	}
 
-	headx = pt1.sx;
-	heady = pt1.sy;
-	headr = (head_width*Matrix_scale.xyz.x*Canv_w2*pt1.sw);
+	headx = pt1.screen.xyw.x;
+	heady = pt1.screen.xyw.y;
+	headr = (head_width*Matrix_scale.xyz.x*Canv_w2*pt1.screen.xyw.w);
 
-	tailx = pt2.sx;
-	taily = pt2.sy;
-	tailr = (tail_width*Matrix_scale.xyz.x*Canv_w2*pt2.sw);
+	tailx = pt2.screen.xyw.x;
+	taily = pt2.screen.xyw.y;
+	tailr = (tail_width*Matrix_scale.xyz.x*Canv_w2*pt2.screen.xyw.w);
 
 	float len_2d = fl_sqrt( (tailx-headx)*(tailx-headx) + (taily-heady)*(taily-heady) );
 
@@ -306,7 +306,7 @@ float g3_draw_laser_rgb(vec3d *headp, float head_width, vec3d *tailp, float tail
 		len_2d = fl_sqrt( (tailx-headx)*(tailx-headx) + (taily-heady)*(taily-heady) );
 	}
 
-	depth = (pt1.z+pt2.z)*0.5f;
+	depth = (pt1.world.xyz.z+pt2.world.xyz.z)*0.5f;
 
 	float max_r  = headr;
 	float a;
@@ -367,45 +367,45 @@ float g3_draw_laser_rgb(vec3d *headp, float head_width, vec3d *tailp, float tail
 	if ( depth < 0.0f ) depth = 0.0f;
 	sw = 1.0f / depth;
 	
-	v[0].sx = (-w/2.0f)*ca + (-h1/2.0f)*sa + mx;
-	v[0].sy = (-w/2.0f)*sa - (-h1/2.0f)*ca + my;
-	v[0].z = pt1.z;
-	v[0].sw = pt1.sw;
-	v[0].u = 0.0f;
-	v[0].v = 0.0f;
+	v[0].screen.xyw.x = (-w/2.0f)*ca + (-h1/2.0f)*sa + mx;
+	v[0].screen.xyw.y = (-w/2.0f)*sa - (-h1/2.0f)*ca + my;
+	v[0].world.xyz.z = pt1.world.xyz.z;
+	v[0].screen.xyw.w = pt1.screen.xyw.w;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 0.0f;
 	v[0].r = (ubyte)r;
 	v[0].g = (ubyte)g;
 	v[0].b = (ubyte)b;
 	v[0].a = 255;
 
-	v[1].sx = (w/2.0f)*ca + (-h2/2.0f)*sa + mx;
-	v[1].sy = (w/2.0f)*sa - (-h2/2.0f)*ca + my;
-	v[1].z = pt2.z;
-	v[1].sw = pt2.sw;
-	v[1].u = 1.0f;
-	v[1].v = 0.0f;
+	v[1].screen.xyw.x = (w/2.0f)*ca + (-h2/2.0f)*sa + mx;
+	v[1].screen.xyw.y = (w/2.0f)*sa - (-h2/2.0f)*ca + my;
+	v[1].world.xyz.z = pt2.world.xyz.z;
+	v[1].screen.xyw.w = pt2.screen.xyw.w;
+	v[1].texture_position.u = 1.0f;
+	v[1].texture_position.v = 0.0f;
 	v[1].r = (ubyte)r;
 	v[1].g = (ubyte)g;
 	v[1].b = (ubyte)b;
 	v[1].a = 255;
 
-	v[2].sx = (w/2.0f)*ca + (h2/2.0f)*sa + mx;
-	v[2].sy = (w/2.0f)*sa - (h2/2.0f)*ca + my;
-	v[2].z = pt2.z;
-	v[2].sw = pt2.sw;
-	v[2].u = 1.0f;
-	v[2].v = 1.0f;
+	v[2].screen.xyw.x = (w/2.0f)*ca + (h2/2.0f)*sa + mx;
+	v[2].screen.xyw.y = (w/2.0f)*sa - (h2/2.0f)*ca + my;
+	v[2].world.xyz.z = pt2.world.xyz.z;
+	v[2].screen.xyw.w = pt2.screen.xyw.w;
+	v[2].texture_position.u = 1.0f;
+	v[2].texture_position.v = 1.0f;
 	v[2].r = (ubyte)r;
 	v[2].g = (ubyte)g;
 	v[2].b = (ubyte)b;
 	v[2].a = 255;
 
-	v[3].sx = (-w/2.0f)*ca + (h1/2.0f)*sa + mx;
-	v[3].sy = (-w/2.0f)*sa - (h1/2.0f)*ca + my;
-	v[3].z = pt1.z;
-	v[3].sw = pt1.sw;
-	v[3].u = 0.0f;
-	v[3].v = 1.0f;
+	v[3].screen.xyw.x = (-w/2.0f)*ca + (h1/2.0f)*sa + mx;
+	v[3].screen.xyw.y = (-w/2.0f)*sa - (h1/2.0f)*ca + my;
+	v[3].world.xyz.z = pt1.world.xyz.z;
+	v[3].screen.xyw.w = pt1.screen.xyw.w;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 1.0f;
 	v[3].r = (ubyte)r;
 	v[3].g = (ubyte)g;
 	v[3].b = (ubyte)b;

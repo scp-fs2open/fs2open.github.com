@@ -55,24 +55,24 @@ ubyte g3_code_vertex(vertex *p)
 {
 	ubyte cc=0;
 
-	if (p->x > p->z)
+	if (p->world.xyz.x > p->world.xyz.z)
 		cc |= CC_OFF_RIGHT;
 
-	if (p->y > p->z)
+	if (p->world.xyz.y > p->world.xyz.z)
 		cc |= CC_OFF_TOP;
 
-	if (p->x < -p->z)
+	if (p->world.xyz.x < -p->world.xyz.z)
 		cc |= CC_OFF_LEFT;
 
-	if (p->y < -p->z)
+	if (p->world.xyz.y < -p->world.xyz.z)
 		cc |= CC_OFF_BOT;
 
-	if (p->z < MIN_Z )
+	if (p->world.xyz.z < MIN_Z )
 		cc |= CC_BEHIND;
 
 	if ( G3_user_clip )	{
 		// Check if behind user plane
-		if ( g3_point_behind_user_plane((vec3d *)&p->x))	{
+		if ( g3_point_behind_user_plane(&p->world))	{
 			cc |= CC_OFF_USER;
 		}
 	}
@@ -83,9 +83,7 @@ ubyte g3_code_vertex(vertex *p)
 
 ubyte g3_transfer_vertex(vertex *dest,vec3d *src)
 {
-	dest->x = src->xyz.x;
-	dest->y = src->xyz.y;
-	dest->z = src->xyz.z;
+	dest->world = *src;
 
 	dest->codes = 0;
 	dest->flags |= PF_PROJECTED;
@@ -133,15 +131,15 @@ ubyte g3_rotate_vertex(vertex *dest,vec3d *src)
 	if (x < -z)			codes |= CC_OFF_LEFT;
 	if (y > z)			codes |= CC_OFF_TOP;
 	if (y < -z)			codes |= CC_OFF_BOT;
-	if (z < MIN_Z )	codes |= CC_BEHIND;
+	if (z < MIN_Z )		codes |= CC_BEHIND;
 
-	dest->x = x;
-	dest->y = y;
-	dest->z = z;
+	dest->world.xyz.x = x;
+	dest->world.xyz.y = y;
+	dest->world.xyz.z = z;
 
 	if ( G3_user_clip )	{
 		// Check if behind user plane
-		if ( g3_point_behind_user_plane((vec3d *)&dest->x))	{
+		if ( g3_point_behind_user_plane(&dest->world))	{
 			codes |= CC_OFF_USER;
 		}
 	}
@@ -161,7 +159,7 @@ ubyte g3_rotate_faraway_vertex(vertex *dest,vec3d *src)
 
 	MONITOR_INC( NumRotations, 1 );	
 
-	vm_vec_rotate( (vec3d *)&dest->x, src, &View_matrix );
+	vm_vec_rotate( &dest->world, src, &View_matrix );
 	dest->flags = 0;	//not projected
 	return g3_code_vertex(dest);
 }	
@@ -210,16 +208,16 @@ int g3_project_vertex(vertex *p)
 	if ( p->flags & PF_PROJECTED )
 		return p->flags;
 
-	if ( p->z <= MIN_Z ) {
+	if ( p->world.xyz.z <= MIN_Z ) {
 		p->flags |= PF_OVERFLOW;
 	} else {
-		w = 1.0f / p->z;
-		p->sx = (Canvas_width + (p->x*Canvas_width*w))*0.5f;
-		p->sy = (Canvas_height - (p->y*Canvas_height*w))*0.5f;
+		w = 1.0f / p->world.xyz.z;
+		p->screen.xyw.x = (Canvas_width + (p->world.xyz.x*Canvas_width*w))*0.5f;
+		p->screen.xyw.y = (Canvas_height - (p->world.xyz.y*Canvas_height*w))*0.5f;
 
 		if ( w > 1.0f ) w = 1.0f;		
 		
-		p->sw = w;
+		p->screen.xyw.w = w;
 		p->flags |= PF_PROJECTED;
 	}
 	

@@ -2666,7 +2666,13 @@ void game_tst_frame_pre()
 		g3_project_vertex(&v);	
 	
 		// offscreen
-		if(!((v.sx >= 0) && (v.sx <= gr_screen.max_w) && (v.sy >= 0) && (v.sy <= gr_screen.max_h))){
+		if(!(
+				(v.screen.xyw.x >= 0)
+				&& (v.screen.xyw.x <= gr_screen.max_w)
+				&& (v.screen.xyw.y >= 0)
+				&& (v.screen.xyw.y <= gr_screen.max_h)
+			))
+		{
 			return;
 		}	
 

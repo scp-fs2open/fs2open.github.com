@@ -868,25 +868,25 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 
 	memset(verts, 0, sizeof(verts));
 
-	verts[0].sx = x;
-	verts[0].sy = y;
-	verts[0].u = 0.0f;
-	verts[0].v = 0.0f;
+	verts[0].screen.xyw.x = x;
+	verts[0].screen.xyw.y = y;
+	verts[0].texture_position.u = 0.0f;
+	verts[0].texture_position.v = 0.0f;
 
-	verts[1].sx = x + w;
-	verts[1].sy = y;
-	verts[1].u = 1.0f;
-	verts[1].v = 0.0f;
+	verts[1].screen.xyw.x = x + w;
+	verts[1].screen.xyw.y = y;
+	verts[1].texture_position.u = 1.0f;
+	verts[1].texture_position.v = 0.0f;
 
-	verts[2].sx = x + w;
-	verts[2].sy = y + h;
-	verts[2].u = 1.0f;
-	verts[2].v = 1.0f;
+	verts[2].screen.xyw.x = x + w;
+	verts[2].screen.xyw.y = y + h;
+	verts[2].texture_position.u = 1.0f;
+	verts[2].texture_position.v = 1.0f;
 
-	verts[3].sx = x;
-	verts[3].sy = y + h;
-	verts[3].u = 0.0f;
-	verts[3].v = 1.0f;
+	verts[3].screen.xyw.x = x;
+	verts[3].screen.xyw.y = y + h;
+	verts[3].texture_position.u = 0.0f;
+	verts[3].texture_position.v = 1.0f;
 
 	// turn off zbuffering
 	int saved_zbuffer_mode = gr_zbuffer_get();
@@ -919,25 +919,25 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 
 	memset(verts, 0, sizeof(verts));
 
-	verts[0].sx = x;
-	verts[0].sy = y;
-	verts[0].u = _u0;
-	verts[0].v = _v0;
+	verts[0].screen.xyw.x = x;
+	verts[0].screen.xyw.y = y;
+	verts[0].texture_position.u = _u0;
+	verts[0].texture_position.v = _v0;
 
-	verts[1].sx = x + w;
-	verts[1].sy = y;
-	verts[1].u = _u1;
-	verts[1].v = _v0;
+	verts[1].screen.xyw.x = x + w;
+	verts[1].screen.xyw.y = y;
+	verts[1].texture_position.u = _u1;
+	verts[1].texture_position.v = _v0;
 
-	verts[2].sx = x + w;
-	verts[2].sy = y + h;
-	verts[2].u = _u1;
-	verts[2].v = _v1;
+	verts[2].screen.xyw.x = x + w;
+	verts[2].screen.xyw.y = y + h;
+	verts[2].texture_position.u = _u1;
+	verts[2].texture_position.v = _v1;
 
-	verts[3].sx = x;
-	verts[3].sy = y + h;
-	verts[3].u = _u0;
-	verts[3].v = _v1;
+	verts[3].screen.xyw.x = x;
+	verts[3].screen.xyw.y = y + h;
+	verts[3].texture_position.u = _u0;
+	verts[3].texture_position.v = _v1;
 
 	// turn off zbuffering
 	int saved_zbuffer_mode = gr_zbuffer_get();
@@ -1055,44 +1055,44 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 		vm_vec_add(&e2, &s2, &dir);								// end 2
 		
 		// stuff coords
-		v[0].sx = (float)ceil(s1.xyz.x);
-		v[0].sy = (float)ceil(s1.xyz.y);
-		v[0].sw = 0.0f;
-		v[0].u = 0.5f;
-		v[0].v = 0.5f;
+		v[0].screen.xyw.x = (float)ceil(s1.xyz.x);
+		v[0].screen.xyw.y = (float)ceil(s1.xyz.y);
+		v[0].screen.xyw.w = 0.0f;
+		v[0].texture_position.u = 0.5f;
+		v[0].texture_position.v = 0.5f;
 		v[0].flags = PF_PROJECTED;
 		v[0].codes = 0;
 		v[0].r = gr_screen.current_color.red;
 		v[0].g = gr_screen.current_color.green;
 		v[0].b = gr_screen.current_color.blue;
 
-		v[1].sx = (float)ceil(s2.xyz.x);
-		v[1].sy = (float)ceil(s2.xyz.y);
-		v[1].sw = 0.0f;
-		v[1].u = 0.5f;
-		v[1].v = 0.5f;
+		v[1].screen.xyw.x = (float)ceil(s2.xyz.x);
+		v[1].screen.xyw.y = (float)ceil(s2.xyz.y);
+		v[1].screen.xyw.w = 0.0f;
+		v[1].texture_position.u = 0.5f;
+		v[1].texture_position.v = 0.5f;
 		v[1].flags = PF_PROJECTED;
 		v[1].codes = 0;
 		v[1].r = gr_screen.current_color.red;
 		v[1].g = gr_screen.current_color.green;
 		v[1].b = gr_screen.current_color.blue;
 
-		v[2].sx = (float)ceil(e2.xyz.x);
-		v[2].sy = (float)ceil(e2.xyz.y);
-		v[2].sw = 0.0f;
-		v[2].u = 0.5f;
-		v[2].v = 0.5f;
+		v[2].screen.xyw.x = (float)ceil(e2.xyz.x);
+		v[2].screen.xyw.y = (float)ceil(e2.xyz.y);
+		v[2].screen.xyw.w = 0.0f;
+		v[2].texture_position.u = 0.5f;
+		v[2].texture_position.v = 0.5f;
 		v[2].flags = PF_PROJECTED;
 		v[2].codes = 0;
 		v[2].r = gr_screen.current_color.red;
 		v[2].g = gr_screen.current_color.green;
 		v[2].b = gr_screen.current_color.blue;
 
-		v[3].sx = (float)ceil(e1.xyz.x);
-		v[3].sy = (float)ceil(e1.xyz.y);
-		v[3].sw = 0.0f;
-		v[3].u = 0.5f;
-		v[3].v = 0.5f;
+		v[3].screen.xyw.x = (float)ceil(e1.xyz.x);
+		v[3].screen.xyw.y = (float)ceil(e1.xyz.y);
+		v[3].screen.xyw.w = 0.0f;
+		v[3].texture_position.u = 0.5f;
+		v[3].texture_position.v = 0.5f;
 		v[3].flags = PF_PROJECTED;
 		v[3].codes = 0;
 		v[3].r = gr_screen.current_color.red;
@@ -1102,7 +1102,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 		//We could really do this better...but oh well. _WMC
 		if(resize) {
 			for(j=0;j<4;j++) {
-				gr_resize_screen_posf(&v[j].sx,&v[j].sy);
+				gr_resize_screen_posf(&v[j].screen.xyw.x,&v[j].screen.xyw.y);
 			}
 		}
 
@@ -1112,22 +1112,22 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 		// if we're past the first section, draw a "patch" triangle to fill any gaps
 		if(idx > 0) {
 			// stuff coords
-			v[0].sx = (float)ceil(s1.xyz.x);
-			v[0].sy = (float)ceil(s1.xyz.y);
-			v[0].sw = 0.0f;
-			v[0].u = 0.5f;
-			v[0].v = 0.5f;
+			v[0].screen.xyw.x = (float)ceil(s1.xyz.x);
+			v[0].screen.xyw.y = (float)ceil(s1.xyz.y);
+			v[0].screen.xyw.w = 0.0f;
+			v[0].texture_position.u = 0.5f;
+			v[0].texture_position.v = 0.5f;
 			v[0].flags = PF_PROJECTED;
 			v[0].codes = 0;
 			v[0].r = gr_screen.current_color.red;
 			v[0].g = gr_screen.current_color.green;
 			v[0].b = gr_screen.current_color.blue;
 
-			v[1].sx = (float)ceil(s2.xyz.x);
-			v[1].sy = (float)ceil(s2.xyz.y);
-			v[1].sw = 0.0f;
-			v[1].u = 0.5f;
-			v[1].v = 0.5f;
+			v[1].screen.xyw.x = (float)ceil(s2.xyz.x);
+			v[1].screen.xyw.y = (float)ceil(s2.xyz.y);
+			v[1].screen.xyw.w = 0.0f;
+			v[1].texture_position.u = 0.5f;
+			v[1].texture_position.v = 0.5f;
 			v[1].flags = PF_PROJECTED;
 			v[1].codes = 0;
 			v[1].r = gr_screen.current_color.red;
@@ -1135,11 +1135,11 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 			v[1].b = gr_screen.current_color.blue;
 
 
-			v[2].sx = (float)ceil(last_e2.xyz.x);
-			v[2].sy = (float)ceil(last_e2.xyz.y);
-			v[2].sw = 0.0f;
-			v[2].u = 0.5f;
-			v[2].v = 0.5f;
+			v[2].screen.xyw.x = (float)ceil(last_e2.xyz.x);
+			v[2].screen.xyw.y = (float)ceil(last_e2.xyz.y);
+			v[2].screen.xyw.w = 0.0f;
+			v[2].texture_position.u = 0.5f;
+			v[2].texture_position.v = 0.5f;
 			v[2].flags = PF_PROJECTED;
 			v[2].codes = 0;
 			v[2].r = gr_screen.current_color.red;
@@ -1149,7 +1149,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 			//Inefficiency or flexibility? you be the judge -WMC
 			if(resize) {
 				for(j=0;j<3;j++) {
-					gr_resize_screen_posf(&v[j].sx,&v[j].sy);
+					gr_resize_screen_posf(&v[j].screen.xyw.x,&v[j].screen.xyw.y);
 				}
 			}
 
@@ -1181,7 +1181,7 @@ int poly_list::find_first_vertex(int idx)
 
 	// we should always equal ourselves, so just use that as the stopping point
 	for (int i = 0; i < idx; i++) {
-		if ( (*p_norm == *o_norm) && (*p_vert == *o_vert) ) {
+		if ( (*p_norm == *o_norm) && (p_vert->world == o_vert->world) ) {
 			return i;
 		}
 
@@ -1203,7 +1203,7 @@ int poly_list::find_index(poly_list *plist, int idx)
 	vertex *p_vert = &vert[0];
 
 	for (int i = 0; i < n_verts; i++) {
-		if ( (*p_norm == *o_norm) && (*p_vert == *o_vert) ) {
+		if ( (*p_norm == *o_norm) && (p_vert->world == o_vert->world) ) {
 			return i;
 		}
 
@@ -1293,11 +1293,11 @@ void poly_list::calculate_tangent()
 		t2 = &tsb[i+2].tangent;
 
 
-		deltaU0 = v1->u - v0->u;
-		deltaV0 = v1->v - v0->v;
+		deltaU0 = v1->texture_position.u - v0->texture_position.u;
+		deltaV0 = v1->texture_position.v - v0->texture_position.v;
 
-		deltaU1 = v2->u - v0->u;
-		deltaV1 = v2->v - v0->v;
+		deltaU1 = v2->texture_position.u - v0->texture_position.u;
+		deltaV1 = v2->texture_position.v - v0->texture_position.v;
 
 		// quick short circuit for NULL case
 		float n = (deltaU0 * deltaV1) - (deltaU1 * deltaV0);
@@ -1309,13 +1309,8 @@ void poly_list::calculate_tangent()
 		} else {
 			float blah = 1.0f / n;
 
-			side0.xyz.x = v1->x - v0->x;
-			side0.xyz.y = v1->y - v0->y;
-			side0.xyz.z = v1->z - v0->z;
-
-			side1.xyz.x = v2->x - v0->x;
-			side1.xyz.y = v2->y - v0->y;
-			side1.xyz.z = v2->z - v0->z;
+			vm_vec_sub(&side0, &v1->world, &v0->world);
+			vm_vec_sub(&side1, &v2->world, &v0->world);
 
 			// tangent
 			vm_vec_copy_scale(&vt0, &side0, deltaV1);

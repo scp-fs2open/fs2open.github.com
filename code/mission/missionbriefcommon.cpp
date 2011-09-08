@@ -814,8 +814,8 @@ void brief_render_fade_outs(float frametime)
 
 			gr_resize_screen_pos( &w, &h );
 
-			bxf = tv.sx - w / 2.0f + 0.5f;
-			byf = tv.sy - h / 2.0f + 0.5f;
+			bxf = tv.screen.xyw.x - w / 2.0f + 0.5f;
+			byf = tv.screen.xyw.y - h / 2.0f + 0.5f;
 			bx = fl2i(bxf);
 			by = fl2i(byf);
 
@@ -904,8 +904,8 @@ void brief_render_icon_line(int stage_num, int line_num)
 	// get screen (x,y) for icons
 	for (i=0; i<2; i++) {
 		brief_common_get_icon_dimensions(&icon_w, &icon_h, icon[i]->type, icon[i]->ship_class);
-		icon_x[i] = icon_vertex[i].sx;
-		icon_y[i] = icon_vertex[i].sy;
+		icon_x[i] = icon_vertex[i].screen.xyw.x;
+		icon_y[i] = icon_vertex[i].screen.xyw.y;
 	}
 
 	brief_set_icon_color(icon[0]->team);
@@ -1016,8 +1016,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		float scaled_w, scaled_h;
 
-		float sx = tv.sx;
-		float sy = tv.sy;
+		float sx = tv.screen.xyw.x;
+		float sy = tv.screen.xyw.y;
 		gr_unsize_screen_posf( &sx, &sy );
 	
 		scaled_w = icon_w * w_scale_factor;
