@@ -280,8 +280,8 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *p
 		// Pnt is now the x,y,z world coordinates of this vert.
 		if(!Cmdline_nohtl) g3_transfer_vertex(&verts[j], &pnt);
 		else g3_rotate_vertex(&verts[j], &pnt);
-		verts[j].u = trip->verts[j].u;
-		verts[j].v = trip->verts[j].v;
+		verts[j].texture_position.u = trip->verts[j].u;
+		verts[j].texture_position.v = trip->verts[j].v;
 	}	
 
 	verts[0].r = r;
@@ -344,8 +344,8 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 	 	if (!Cmdline_nohtl) g3_transfer_vertex(&points[j],&pnt);
 	 	else g3_rotate_vertex(&points[j], &pnt);
 			
-		points[j].u = trip->verts[j].u;
-		points[j].v = trip->verts[j].v;
+		points[j].texture_position.u = trip->verts[j].u;
+		points[j].texture_position.v = trip->verts[j].v;
 		Assert((trip->verts[j].u >= 0.0f) && (trip->verts[j].u <= UV_MAX));
 		Assert((trip->verts[j].v >= 0.0f) && (trip->verts[j].v <= UV_MAX));
 		verts[j] = &points[j];
@@ -363,12 +363,12 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 
 	vec3d	norm;
 	Poly_count++;
-	vm_vec_perp(&norm,(vec3d *)&verts[0]->x,(vec3d *)&verts[1]->x,(vec3d*)&verts[2]->x);
+	vm_vec_perp(&norm,&verts[0]->world,&verts[1]->world,&verts[2]->world);
 
 	int flags=TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD;
 	if (!Cmdline_nohtl) flags |= TMAP_HTL_3D_UNLIT;
 
-	if ( vm_vec_dot(&norm,(vec3d *)&verts[1]->x ) >= 0.0 )	{
+	if ( vm_vec_dot(&norm,&verts[1]->world ) >= 0.0 )	{
 		vertex	*vertlist[3];
 		vertlist[0] = verts[2]; 
 		vertlist[1] = verts[1]; 

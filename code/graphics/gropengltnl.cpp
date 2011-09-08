@@ -331,8 +331,8 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 
 		// tex coords
 		if (vb->flags & VB_FLAG_UV1) {
-			array[arsize++] = vl->u;
-			array[arsize++] = vl->v;
+			array[arsize++] = vl->texture_position.u;
+			array[arsize++] = vl->texture_position.v;
 		}
 
 		// normals
@@ -353,9 +353,9 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 		}
 
 		// verts
-		array[arsize++] = vl->x;
-		array[arsize++] = vl->y;
-		array[arsize++] = vl->z;
+		array[arsize++] = vl->world.xyz.x;
+		array[arsize++] = vl->world.xyz.y;
+		array[arsize++] = vl->world.xyz.z;
 	}
 
 	// generate the index array

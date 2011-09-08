@@ -941,10 +941,10 @@ void wl_render_overhead_view(float frametime)
 						vm_vec_unrotate(&subobj_pos,&pm->gun_banks[x].pnt[y],&object_orient);
 						g3_rotate_vertex(&draw_point, &subobj_pos);
 						g3_project_vertex(&draw_point);
-						gr_unsize_screen_posf(&draw_point.sx, &draw_point.sy);
+						gr_unsize_screen_posf(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y);
 
-						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
-						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
+						xc = fl2i(draw_point.screen.xyw.x + Wl_overhead_coords[gr_screen.res][0]);
+						yc = fl2i(draw_point.screen.xyw.y +Wl_overhead_coords[gr_screen.res][1]);
 
 						//get the curve right.
 						int curve;
@@ -1036,10 +1036,10 @@ void wl_render_overhead_view(float frametime)
 						vm_vec_unrotate(&subobj_pos,&pm->missile_banks[x].pnt[y],&object_orient);
 						g3_rotate_vertex(&draw_point, &subobj_pos);
 						g3_project_vertex(&draw_point);
-						gr_unsize_screen_posf(&draw_point.sx, &draw_point.sy);
+						gr_unsize_screen_posf(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y);
 
-						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
-						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
+						xc = fl2i(draw_point.screen.xyw.x + Wl_overhead_coords[gr_screen.res][0]);
+						yc = fl2i(draw_point.screen.xyw.y +Wl_overhead_coords[gr_screen.res][1]);
 
 						//get the curve right.
 						int curve;

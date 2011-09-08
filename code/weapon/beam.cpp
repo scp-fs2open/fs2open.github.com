@@ -1167,8 +1167,22 @@ void beam_move_all_post()
 // -----------------------------===========================------------------------------
 
 // render a beam weapon
-#define STUFF_VERTICES()	do { verts[0]->u = 0.0f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.0f; verts[3]->v = 1.0f; } while(0);
-#define P_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
+#define STUFF_VERTICES()	do {\
+	verts[0]->texture_position.u = 0.0f;\
+	verts[0]->texture_position.v = 0.0f;\
+	verts[1]->texture_position.u = 1.0f;\
+	verts[1]->texture_position.v = 0.0f;\
+	verts[2]->texture_position.u = 1.0f;\
+	verts[2]->texture_position.v = 1.0f;\
+	verts[3]->texture_position.u = 0.0f;\
+	verts[3]->texture_position.v = 1.0f;\
+} while(0);
+
+#define P_VERTICES()		do {\
+	for(idx=0; idx<4; idx++){\
+		g3_project_vertex(verts[idx]);\
+	}\
+} while(0);
 
 void beam_render(beam *b, float u_offset)
 {	
@@ -1235,10 +1249,10 @@ void beam_render(beam *b, float u_offset)
 		else
 			u_scale = bwsi->tile_factor;
 
-		verts[1]->u = (u_scale + (u_offset * bwsi->translation));				// beam tileing -Bobboau
-		verts[2]->u = (u_scale + (u_offset * bwsi->translation));				// beam tileing -Bobboau
-		verts[3]->u = (0 + (u_offset * bwsi->translation));
-		verts[0]->u = (0 + (u_offset * bwsi->translation));
+		verts[1]->texture_position.u = (u_scale + (u_offset * bwsi->translation));	// beam tileing -Bobboau
+		verts[2]->texture_position.u = (u_scale + (u_offset * bwsi->translation));	// beam tileing -Bobboau
+		verts[3]->texture_position.u = (0 + (u_offset * bwsi->translation));
+		verts[0]->texture_position.u = (0 + (u_offset * bwsi->translation));
 
 		float per = 1.0f;
 		if (bwi->range)
