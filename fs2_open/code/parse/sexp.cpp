@@ -626,8 +626,8 @@ sexp_oper Operators[] = {
 	{ "set-jumpnode-name",			OP_JUMP_NODE_SET_JUMPNODE_NAME,			2, 2, }, //CommanderDJ
 	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
 	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
-	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, 1, },
-	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, 1, },
+	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, INT_MAX, },
+	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, INT_MAX, },
 
 	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
 	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
@@ -19529,52 +19529,33 @@ void multi_sexp_set_jumpnode_model()
 	jnp->set_model(model_name, show_polys);
 }
 
-void sexp_show_jumpnode(int n)
+void sexp_show_hide_jumpnode(int node, bool show)
 {
-	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
-
-	if(jnp!=NULL)
-		jnp->show(true);
-
 	multi_start_callback();
-	multi_send_string(CTEXT(n));
+
+	for (int n = node; n >= 0; n = CDR(n))
+	{
+		jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+		if (jnp != NULL)
+		{
+			jnp->show(show);
+			multi_send_string(CTEXT(n));
+		}
+	}
+
 	multi_end_callback();
 }
 
-void multi_sexp_show_jumpnode()
+void multi_sexp_show_hide_jumpnode(bool show)
 {
 	char jumpnode_name[TOKEN_LENGTH];
 
-	multi_get_string(jumpnode_name);
-
-	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
-
-	if(jnp!=NULL)
-		jnp->show(true);
-}
-
-void sexp_hide_jumpnode(int n)
-{
-	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
-
-	if(jnp!=NULL)
-		jnp->show(false);
-
-	multi_start_callback();
-	multi_send_string(CTEXT(n));
-	multi_end_callback();
-}
-
-void multi_sexp_hide_jumpnode()
-{
-	char jumpnode_name[TOKEN_LENGTH];
-
-	multi_get_string(jumpnode_name);
-
-	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
-
-	if(jnp!=NULL)
-		jnp->show(false);
+	while (multi_get_string(jumpnode_name))
+	{
+		jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+		if (jnp != NULL)
+			jnp->show(show);
+	}
 }
 
 //WMC - This is a bit of a hack, however, it's easier than
@@ -21823,12 +21804,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_jumpnode_model(node);
 				break;
 			case OP_JUMP_NODE_SHOW_JUMPNODE:
-				sexp_val = SEXP_TRUE;
-				sexp_show_jumpnode(node);
-				break;
 			case OP_JUMP_NODE_HIDE_JUMPNODE:
+				sexp_show_hide_jumpnode(node, op_num == OP_JUMP_NODE_SHOW_JUMPNODE);
 				sexp_val = SEXP_TRUE;
-				sexp_hide_jumpnode(node);
 				break;
 
 			case OP_SCRIPT_EVAL_NUM:
@@ -22195,11 +22173,8 @@ void multi_sexp_eval()
 				break;
 
 			case OP_JUMP_NODE_SHOW_JUMPNODE:
-				multi_sexp_show_jumpnode();
-				break;
-
 			case OP_JUMP_NODE_HIDE_JUMPNODE:
-				multi_sexp_hide_jumpnode();
+				multi_sexp_show_hide_jumpnode(op_num == OP_JUMP_NODE_SHOW_JUMPNODE);
 				break;
 
 			case OP_CLEAR_SUBTITLES:
@@ -29395,15 +29370,13 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_JUMP_NODE_SHOW_JUMPNODE, "show-jumpnode\r\n"
-		"\tSets the model of a jump node.  "
-		"Takes 1 arguments..\r\n"
-		"\t1:\tJump node to show\r\n"
+		"\tSets a jump node to display on the screen.\r\n"
+		"\tAny:\tJump node to show\r\n"
 	},
 
 	{ OP_JUMP_NODE_HIDE_JUMPNODE, "hide-jumpnode\r\n"
-		"\tSets the model of a jump node.  "
-		"Takes 1 arguments...\r\n"
-		"\t1:\tJump node to hide\r\n"
+		"\tSets a jump node to not display on the screen.\r\n"
+		"\tAny:\tJump node to hide\r\n"
 	},
 
 	// taylor
