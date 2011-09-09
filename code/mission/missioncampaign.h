@@ -17,19 +17,8 @@
 struct sexp_variable;
 
 // name of the builtin campaign.
-#if defined(FS2_DEMO)
-	#define BUILTIN_CAMPAIGN		"demo"
-	#define BUILTIN_CAMPAIGN_NAME	"DEMO Campaign"
-#elif defined(OEM_BUILD)
-	#define BUILTIN_CAMPAIGN		"FreeSpace2OEM"
-	#define BUILTIN_CAMPAIGN_NAME	"OEM Campaign"
-#elif defined(E3_BUILD)
-	#define BUILTIN_CAMPAIGN		"E3"
-	#define BUILTIN_CAMPAIGN_NAME	"E3 Campaign"
-#else
-	#define BUILTIN_CAMPAIGN		"FreeSpace2"
-	#define BUILTIN_CAMPAIGN_NAME	"The Main FreeSpace2 Campaign"
-#endif
+#define BUILTIN_CAMPAIGN		"FreeSpace2"
+#define BUILTIN_CAMPAIGN_NAME	"The Main FreeSpace2 Campaign"
 
 #define MAX_CAMPAIGN_MISSIONS	100			// maximum number of missions in a campaign
 

@@ -2525,11 +2525,7 @@ void mission_campaign_end_do()
 		common_maybe_play_cutscene(MOVIE_END_CAMPAIGN);
 	}
 
-#ifdef FS2_DEMO
-	gameseq_post_event( GS_EVENT_END_DEMO );
-#else	
 	gameseq_post_event( GS_EVENT_MAIN_MENU );
-#endif
 }
 
 void mission_campaign_end_close()
