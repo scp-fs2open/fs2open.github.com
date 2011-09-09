@@ -3653,7 +3653,23 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 {
 	int nv = submodel_get_points_internal(model_num, submodel_num);
 
-	Assert(nv > 0);	// Goober5000 - to avoid div-0 error
+	// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+	if (nv <= 0) {
+		polymodel *pm = model_get(model_num);
+		Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+
+		// in case people ignore the error...
+		vm_vec_zero(v1);
+		vm_vec_zero(v2);
+		if (n1 != NULL) {
+			vm_vec_zero(n1);
+		}
+		if (n2 != NULL) {
+			vm_vec_zero(n2);
+		}
+		return;
+	}
+
 	int vn1 = (myrand()>>5) % nv;
 	int vn2 = (myrand()>>5) % nv;
 
