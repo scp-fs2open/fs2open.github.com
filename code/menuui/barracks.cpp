@@ -1064,9 +1064,6 @@ void barracks_button_pressed(int n)
 			break;
 
 		case B_PILOT_CONVERT_BUTTON: {
-#if defined(DEMO) || defined(OEM_BUILD)
-			game_feature_not_in_demo_popup();
-#else
 			char temp[256], *str;
 			char old_pic[256] = "";
 			char old_squad_pic[256] = "";
@@ -1113,7 +1110,6 @@ void barracks_button_pressed(int n)
 			} else {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			}
-#endif
 			break;
 		}
 
@@ -1133,12 +1129,8 @@ void barracks_button_pressed(int n)
 			break;
 
 		case B_STATS_MEDAL_BUTTON:
-#ifdef FS2_DEMO
-			game_feature_not_in_demo_popup();
-#else
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_VIEW_MEDALS);
-#endif
 			break;
 
 		case B_PILOT_DELETE_BUTTON:
@@ -1153,9 +1145,6 @@ void barracks_button_pressed(int n)
 			break;
 
 		case B_PILOT_MULTI_MODE_BUTTON:
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-			game_feature_not_in_demo_popup();
-#else
 			if ( Networking_disabled ) {
 				game_feature_disabled_popup();
 				break;
@@ -1165,7 +1154,6 @@ void barracks_button_pressed(int n)
 				gamesnd_play_iface(SND_USER_SELECT);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 			}
-#endif
 			break;
 	}
 }
@@ -1477,35 +1465,9 @@ void barracks_init()
 	
 	// init stats
 	barracks_init_stats(&Cur_pilot->stats);
-
-	// disable some buttons for the multiplayer beta and e3 build
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)
-	Buttons[gr_screen.res][B_PILOT_CLONE_BUTTON].button.hide();
-	Buttons[gr_screen.res][B_PILOT_CONVERT_BUTTON].button.hide();	
-	Buttons[gr_screen.res][B_PILOT_CLONE_BUTTON].button.disable();	
-	Buttons[gr_screen.res][B_PILOT_CONVERT_BUTTON].button.disable();	
-#endif
-
-	// multiplayer beta build
-#ifdef MULTIPLAYER_BETA_BUILD
-	Buttons[gr_screen.res][B_PILOT_SINGLE_MODE_BUTTON].button.hide();
-	Buttons[gr_screen.res][B_PILOT_SINGLE_MODE_BUTTON].button.disable();
-#endif
-
-	// e3 build
-#if defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)
-	Buttons[gr_screen.res][B_PILOT_MULTI_MODE_BUTTON].button.hide();
-	Buttons[gr_screen.res][B_PILOT_MULTI_MODE_BUTTON].button.disable();
-#endif
 	
 	// base the mode we're in (single or multi) on the status of the currently selected pilot
-#ifdef MULTIPLAYER_BETA_BUILD
-	barracks_init_player_stuff(1);
-#elif defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)
-	barracks_init_player_stuff(0);
-#else
-	barracks_init_player_stuff(is_pilot_multi(Player));	
-#endif
+	barracks_init_player_stuff(is_pilot_multi(Player));
 }
 
 // -----------------------------------------------------------------------------
@@ -1570,9 +1532,6 @@ void barracks_do_frame(float frametime)
 				break;
 
 			case KEY_TAB:  // switch mode (simgle/multi)
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-				game_feature_not_in_demo_popup();
-#else
 				if ( Networking_disabled ) {
 					game_feature_disabled_popup();
 					break;
@@ -1585,7 +1544,6 @@ void barracks_do_frame(float frametime)
 				}
 
 				gamesnd_play_iface(SND_USER_SELECT);
-#endif
 				break;
 
 			case KEY_F1:  // show help overlay

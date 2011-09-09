@@ -27,11 +27,7 @@
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
 
-#if defined(DEMO) || defined(OEM_BUILD) // no change for FS2_DEMO
-	#define MAX_PLAYERS	1
-#else
-	#define MAX_PLAYERS	12
-#endif
+#define MAX_PLAYERS	12
 
 #define USE_INLINE_ASM 1		// Define this to use inline assembly
 #define STRUCT_CMP(a, b) memcmp((void *) &a, (void *) &b, sizeof(a))
@@ -247,29 +243,15 @@ extern int Global_error_count;
 
 //#define Int3() _asm { int 3 }
 
-#ifdef INTERPLAYQA
-	// Interplay QA version of Int3
+#if defined(NDEBUG)
+	// No debug version of Int3
 	#define Int3() do { } while (0) 
-
-	// define to call from Warning function above since it calls Int3, so without this, we
-	// get put into infinite dialog boxes
-	#ifdef _WIN32
-		#define AsmInt3() _asm { int 3 }
-	#else
-		#define AsmInt3() exit(EXIT_FAILURE)
-	#endif
-
 #else
-	#if defined(NDEBUG)
-		// No debug version of Int3
-		#define Int3() do { } while (0) 
-	#else
-		void debug_int3(char *file, int line);
+	void debug_int3(char *file, int line);
 
-		// Debug version of Int3
-		#define Int3() debug_int3(__FILE__, __LINE__)
-	#endif	// NDEBUG && DEMO
-#endif	// INTERPLAYQA
+	// Debug version of Int3
+	#define Int3() debug_int3(__FILE__, __LINE__)
+#endif	// NDEBUG
 
 #ifndef MIN
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))

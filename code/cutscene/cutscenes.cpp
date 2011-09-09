@@ -106,10 +106,6 @@ void cutscene_init()
 // returns -1 on failure.
 int cutscenes_get_cd_num( char *filename )
 {
-#if defined(OEM_BUILD)
-	return 0;				// only 1 cd for OEM
-#else
-
 	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if ( !stricmp(cut->filename, filename) ) {
 			return (cut->cd - 1);
@@ -117,7 +113,6 @@ int cutscenes_get_cd_num( char *filename )
 	}
 
 	return -1;
-#endif // defined(OEM_BUILD)
 }
 
 // marks a cutscene as viewable
@@ -269,12 +264,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 			break;
 		}
 
-#if defined(OEM_BUILD)
-		sprintf(volume_name, NOX("FS2_OEM"));
-#else
 		sprintf(volume_name, NOX("FREESPACE2_%c"), '1' + cd_mve_is_on);
-#endif
-
 
 		cd_drive_num = find_freespace_cd(volume_name);
 		path_set_ok = set_cdrom_path(cd_drive_num);
@@ -293,11 +283,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 		char popup_msg[256];
 		int popup_rval;
 
-#if defined(DVD_MESSAGE_HACK)
-		sprintf(popup_msg, XSTR( "Movie not found\n\nInsert FreeSpace DVD to continue", 203));
-#else 
 		sprintf(popup_msg, XSTR( "Movie not found\n\nInsert FreeSpace CD #%d to continue", 203), cd_mve_is_on+1);
-#endif
 
 		popup_rval = popup(PF_BODY_BIG, 2, POPUP_CANCEL, POPUP_OK, popup_msg);
 		if ( popup_rval != 1 ) {

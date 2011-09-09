@@ -26,7 +26,6 @@
 #include "globalincs/linklist.h"
 #include "particle/particle.h"
 #include "weapon/muzzleflash.h"
-#include "demo/demo.h"
 #include "ship/shiphit.h"
 #include "object/objectsnd.h"
 #include "playerman/player.h"
@@ -575,12 +574,6 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
-	// post a warpin event
-	if(Game_mode & GM_DEMO_RECORD)
-	{
-		demo_POST_warpin(objp->signature, shipp->flags);
-	}
-
 	// docked ships who are not dock leaders don't use the warp effect code
 	// (the dock leader takes care of the whole group)
 	if (object_is_docked(objp) && !(shipp->flags & SF_DOCK_LEADER))
@@ -831,11 +824,6 @@ void shipfx_warpout_start( object *objp )
 	// if we're HUGE, keep alive - set guardian
 	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
-	}
-
-	// post a warpin event
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_warpout(objp->signature, shipp->flags);
 	}
 
 	// don't send ship depart packets for player ships
@@ -2125,16 +2113,8 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 			pe.pos = model_clip_plane_pt;	// Where the particles emit from
 			pe.vel = half_ship->phys_info.vel;		// Initial velocity of all the particles
 
-#ifdef FS2_DEMO
-			float range = 1.0f + 0.002f*half_ship->parent_obj->radius * 5.0f;
-#else 
 			float range = 1.0f + 0.002f*half_ship->parent_obj->radius;
-#endif
 
-#ifdef FS2_DEMO
-			pe.min_life = 2.0f*range;				// How long the particles live
-			pe.max_life = 10.0f*range;				// How long the particles live
-#else
 			if (pef.max_life > 0.0f) {
 				pe.min_life = pef.min_life;
 				pe.max_life = pef.max_life;
@@ -2142,7 +2122,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 				pe.min_life = 0.5f*range;				// How long the particles live
 				pe.max_life = 6.0f*range;				// How long the particles live
 			}
-#endif
+
 			pe.normal = vmd_x_vector;		// What normal the particle emit around
 			pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 
@@ -2153,13 +2133,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 				pe.min_vel = 0.0f;									// How fast the slowest particle can move
 				pe.max_vel = half_ship->explosion_vel;				// How fast the fastest particle can move
 			}
-
-
-#ifdef FS2_DEMO
-			float scale = half_ship->parent_obj->radius * 0.02f;
-#else
 			float scale = half_ship->parent_obj->radius * 0.01f;
-#endif
 			if (pef.max_rad > 0.0f) {
 				pe.min_rad = pef.min_rad;
 				pe.max_rad = pef.max_rad;

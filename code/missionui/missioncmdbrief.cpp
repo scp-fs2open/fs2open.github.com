@@ -509,8 +509,6 @@ void cmd_brief_init(int team)
 {
 	common_music_init(SCORE_BRIEFING);
 
-//#ifndef FS2_DEMO
-
 	int i;
 	ui_button_info *b;
 
@@ -597,8 +595,6 @@ void cmd_brief_init(int team)
 	cmd_brief_new_stage(0);
 	Cmd_brief_paused = 0;
 	Cmd_brief_inited = 1;
-
-//#endif
 }
 
 void cmd_brief_close()

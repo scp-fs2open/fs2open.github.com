@@ -1396,19 +1396,10 @@ void debrief_accept(int ok_to_post_start_game_event)
 
 				// check if campaign is over
 				if ( Campaign.next_mission == -1 ) {
-	#if defined(FS2_DEMO) || defined(OEM_BUILD)
-					gameseq_post_event(GS_EVENT_END_DEMO);
-	#else
 					gameseq_post_event(GS_EVENT_MAIN_MENU);
-	#endif
 				} else {
 					if ( ok_to_post_start_game_event ) {
-						// CD CHECK
-						if(game_do_cd_mission_check(Game_current_mission_filename)){
-							gameseq_post_event(GS_EVENT_START_GAME);
-						} else {
-							gameseq_post_event(GS_EVENT_MAIN_MENU);
-						}
+						gameseq_post_event(GS_EVENT_START_GAME);
 					} else {
 						play_commit_sound = 0;
 					}
@@ -2575,7 +2566,7 @@ void debrief_do_frame(float frametime)
 	gr_force_fit_string(buf, 255, Debrief_title_coords[gr_screen.res][2]);
 	gr_string(Debrief_title_coords[gr_screen.res][0], Debrief_title_coords[gr_screen.res][1], buf);	
 
-#if !defined(NDEBUG) || defined(INTERPLAYQA)
+#if !defined(NDEBUG)
 	gr_set_color_fast(&Color_normal);
 	gr_printf(Debrief_title_coords[gr_screen.res][0], Debrief_title_coords[gr_screen.res][1] - 10, NOX("[name: %s, mod: %s]"), Mission_filename, The_mission.modified);
 #endif

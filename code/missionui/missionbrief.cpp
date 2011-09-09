@@ -357,17 +357,9 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	// CD CHECK
-	if(game_do_cd_mission_check(Game_current_mission_filename)){
-		gameseq_post_event( GS_EVENT_START_GAME );
-	} else {
-		gameseq_post_event( GS_EVENT_MAIN_MENU );
-	}
+	gameseq_post_event( GS_EVENT_START_GAME );
 }
 
-#ifdef FS2_DEMO
-	extern void demo_reset_trailer_timer();
-#endif
 // --------------------------------------------------------------------------------------
 //	brief_do_next_pressed()
 //
@@ -380,10 +372,6 @@ void brief_do_next_pressed(int play_sound)
 	if ( (now - Brief_last_auto_advance) < 500 ) {
 		return;
 	}
-
-#ifdef FS2_DEMO
-	demo_reset_trailer_timer();
-#endif
 
 	Current_brief_stage++;
 	if ( Current_brief_stage >= Num_brief_stages ) {
@@ -859,12 +847,6 @@ void brief_init()
 {
 	int i;
 
-	// Since first stage of briefing can take some time to arrive and play, 
-	// reset the trailer timer on briefing init.
-#ifdef FS2_DEMO
-	demo_reset_trailer_timer();
-#endif
-
 	// for multiplayer, change the state in my netplayer structure
 	// and initialize the briefing chat area thingy
 	if ( Game_mode & GM_MULTIPLAYER ){
@@ -925,10 +907,8 @@ void brief_init()
 	// init the scene-cut data
 	brief_transition_reset();
 
-#ifndef FS2_DEMO	
 	hud_anim_init(&Fade_anim, Brief_static_coords[gr_screen.res][0], Brief_static_coords[gr_screen.res][1], Brief_static_name[gr_screen.res]);
 	hud_anim_load(&Fade_anim);
-#endif
 
 	nprintf(("Alan","Entering brief_init()\n"));
 	common_select_init();
@@ -1190,7 +1170,7 @@ void brief_render(float frametime)
 
 	brief_maybe_blit_scene_cut(frametime);	
 
-#if !defined(NDEBUG) || defined(INTERPLAYQA)
+#if !defined(NDEBUG)
 	gr_set_color_fast(&Color_normal);
 	int title_y_offset = (Game_mode & GM_MULTIPLAYER) ? 20 : 10;
 	gr_printf(Brief_bmap_coords[gr_screen.res][0], Brief_bmap_coords[gr_screen.res][1]-title_y_offset, NOX("[name: %s, mod: %s]"), Mission_filename, The_mission.modified);
@@ -1278,12 +1258,10 @@ int brief_setup_closeup(brief_icon *bi)
 		*/
 		break;
 	case ICON_ASTEROID_FIELD:
-#ifndef FS2_DEMO
 		strcpy_s(pof_filename, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);
 		strcpy_s(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -334.0f);
 		Closeup_zoom = 0.5f;
-#endif
 		break;
 	case ICON_JUMP_NODE:
 		strcpy_s(pof_filename, NOX("subspacenode.pof"));
@@ -1463,18 +1441,12 @@ void brief_maybe_flash_button()
 
 	if ( common_flash_bright() ) {
 		if ( Current_brief_stage == (Num_brief_stages-1) ) {
-
-			// AL 4-4-98: Don't flash ship selection button on briefing in demo build
-#ifdef FS2_DEMO
-				return;
-#else
 			// AL 30-3-98: Don't flash ship selection button if in a training mission, 
 			if ( brief_only_allow_briefing() ) {
 				return;
 			}
 
 			b = &Common_buttons[Current_screen-1][gr_screen.res][1].button;		// ship select button
-#endif
 		} else {
 			b = &Brief_buttons[gr_screen.res][1].button;		// next stage button
 		}
@@ -1867,9 +1839,7 @@ void brief_close()
 	// unload the audio streams used for voice playback
 	brief_voice_unload_all();
 
-#ifndef FS2_DEMO
 	bm_unload(Fade_anim.first_frame);
-#endif
 
 	Brief_ui_window.destroy();
 
@@ -1951,19 +1921,6 @@ void brief_unpause()
 void brief_maybe_blit_scene_cut(float frametime)
 {
 	if ( Start_fade_up_anim ) {
-
-#ifdef FS2_DEMO
-		Fade_anim.time_elapsed = 0.0f;
-		Start_fade_up_anim = 0;
-		Start_fade_down_anim = 1;
-		Current_brief_stage = Quick_transition_stage;
-
-		if ( Current_brief_stage < 0 ) {
-			brief_transition_reset();
-			Current_brief_stage = Last_brief_stage;
-		}
-		goto Fade_down_anim_start;
-#else
 		int framenum;
 
 		Fade_anim.time_elapsed += frametime;
@@ -1998,20 +1955,11 @@ void brief_maybe_blit_scene_cut(float frametime)
 		// Blit the bitmap for this frame
 		gr_set_bitmap(Fade_anim.first_frame + framenum);
 		gr_bitmap(Fade_anim.sx, Fade_anim.sy);
-#endif
 	}
 
 
 	Fade_down_anim_start:
 	if ( Start_fade_down_anim ) {
-
-#ifdef FS2_DEMO
-		Fade_anim.time_elapsed = 0.0f;
-		Start_fade_up_anim = 0;
-		Start_fade_down_anim = 0;
-		return;
-#else
-
 		int framenum;
 
 		Fade_anim.time_elapsed += frametime;
@@ -2033,8 +1981,6 @@ void brief_maybe_blit_scene_cut(float frametime)
 		// Blit the bitmap for this frame
 		gr_set_bitmap(Fade_anim.first_frame + (Fade_anim.num_frames-1) - framenum);
 		gr_bitmap(Fade_anim.sx, Fade_anim.sy);
-
-#endif
 	}
 }
 

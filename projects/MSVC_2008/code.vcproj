@@ -3174,18 +3174,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Demo"
-			>
-			<File
-				RelativePath="..\..\code\Demo\demo.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Demo\demo.h"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="InetFile"
 			>
 			<File

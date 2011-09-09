@@ -557,13 +557,7 @@ void options_tab_setup(int set_palette)
 	// do other special processing
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_select();
-
-			// need to hide the hud config and control config buttons
-			// Buttons[gr_screen.res][CONTROL_CONFIG_BUTTON].button.hide();
-			// Buttons[gr_screen.res][HUD_CONFIG_BUTTON].button.hide();
-#endif // DEMO
 			break;
 
 		case DETAIL_LEVELS_TAB:
@@ -577,9 +571,7 @@ void options_tab_close()
 {
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_unselect();		
-#endif
 			break;
 
 		case DETAIL_LEVELS_TAB:
@@ -592,13 +584,6 @@ void options_change_tab(int n)
 {
 	int idx;
 
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-	if (n == MULTIPLAYER_TAB) {
-		game_feature_not_in_demo_popup();
-		return;
-	}
-#endif
-
 	switch (n) {
 		case MULTIPLAYER_TAB:
 			if ( Networking_disabled ) {
@@ -608,10 +593,8 @@ void options_change_tab(int n)
 
 			if ( !Options_multi_inited ) {
 				// init multiplayer
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 				options_multi_init(&Ui_window);
 				options_multi_unselect();
-#endif
 				Options_multi_inited = 1;
 			}
 
@@ -746,10 +729,6 @@ void options_button_pressed(int n)
 			break;				
 
 		case HUD_CONFIG_BUTTON:
-#ifdef FS2_DEMO
-			game_feature_not_in_demo_popup();
-#else
-
 			// can't go to the hud config screen when a multiplayer observer
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 				gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -759,7 +738,6 @@ void options_button_pressed(int n)
 
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_HUD_CONFIG);
-#endif
 			break;
 
 		case ACCEPT_BUTTON:
@@ -909,9 +887,7 @@ void options_accept()
 {
 	// apply the selected multiplayer options
 	if ( Options_multi_inited ) {
-		#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 		options_multi_accept();
-		#endif
 	}
 
 	// If music is zero volume, disable
@@ -1068,9 +1044,7 @@ void options_menu_close()
 		Voice_vol_handle = -1;
 	}
 
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 	options_multi_close();
-#endif
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
@@ -1249,9 +1223,7 @@ void options_menu_do_frame(float frametime)
 	// do specific processing for the multiplayer tab
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_do(k);
-#endif
 			break;
 
 		case DETAIL_LEVELS_TAB:

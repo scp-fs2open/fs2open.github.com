@@ -161,22 +161,6 @@ void mouse_mark_button( uint flags, int set)
 
 		if ( (flags & MOUSE_LEFT_BUTTON) && (set == 1) ) {
 			mouse_left_pressed++;
-
-////////////////////////////
-/// SOMETHING TERRIBLE IS ABOUT TO HAPPEN.  I FEEL THIS IS NECESSARY FOR THE DEMO, SINCE
-/// I DON'T WANT TO CALL CRITICAL SECTION CODE EACH FRAME TO CHECK THE LEFT MOUSE BUTTON.
-/// PLEASE SEE ALAN FOR MORE INFORMATION.
-////////////////////////////
-#ifdef FS2_DEMO
-					{
-					extern void demo_reset_trailer_timer();
-					demo_reset_trailer_timer();
-					}
-#endif
-////////////////////////////
-/// IT'S OVER.  SEE, IT WASN'T SO BAD RIGHT?  IT'S IS VERY UGLY LOOKING, I KNOW.
-////////////////////////////
-
 		}
 	}
 	else {

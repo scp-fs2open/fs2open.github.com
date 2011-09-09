@@ -646,18 +646,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Demo"
-			>
-			<File
-				RelativePath="..\..\code\Demo\Demo.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Demo\Demo.h"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="DirectX"
 			>
 			<File

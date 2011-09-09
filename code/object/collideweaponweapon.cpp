@@ -147,7 +147,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			}
 
 			// single player and multiplayer masters evaluate the scoring and kill stuff
-			if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
+			if (!MULTIPLAYER_CLIENT) {
 
 				//Save damage for bomb so we can do scoring once it's destroyed. -Halleck
 				if (wipA->wi_flags & WIF_BOMB) {

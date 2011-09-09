@@ -20,25 +20,6 @@ class waypoint_list;
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
 #define	TOKEN_LENGTH		32
 
-/*
-#ifdef FS2_DEMO
-	#define	MAX_SEXP_NODES	1600
-#else
-	#define	MAX_SEXP_NODES	4000			// Reduced from 2000 to 1200 by MK on 4/1/98.
-											// Most used nodes is 698 in sm1-10a.  Sandeep thinks that's the most complex mission.
-											// AL 2-4-98: upped to 1600, btm03 ran out of sexps, since campaign took a bunch
-											// DA 12/15 bumped up to 2000 - Dan ran out
-											// DaveB 9/02/99 bumped to 2200
-											// Goober5000 01/20/2004 bumped to 3000
-											// WMCoolmon 06/15/2004 bumped to 3500
-											// Goober5000 04/14/2005 bumped to 4000 for WCS
-											// Goober5000 04/17/2005 reduced to 3000, now that we solved the root problem
-											// taylor 03/11/2006 bumped to 4000, it's going dynamic soon so it should be ok to leave it this high
-											//                                   until then.
-											// Goober5000 10/8/2006 made dynamic :)
-#endif
-*/
-
 #define MAX_SEXP_VARIABLES 250
 
 #define	MAX_SEXP_TEXT	2000
