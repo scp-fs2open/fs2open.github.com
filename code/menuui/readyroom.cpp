@@ -901,7 +901,7 @@ void sim_room_commit()
 	strncpy(Game_current_mission_filename, sim_room_lines[Selected_line].filename, MAX_FILENAME_LEN);
 
 	Game_mode &= ~(GM_CAMPAIGN_MODE);						// be sure this bit is clear
-	
+
 	gameseq_post_event(GS_EVENT_START_GAME);
 	gamesnd_play_iface(SND_COMMIT_PRESSED);
 }

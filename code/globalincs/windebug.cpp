@@ -1145,9 +1145,7 @@ void _cdecl Error( const char * filename, int line, const char * format, ... )
 			exit(1);
 
 		default:
-
 			Int3();
-
 			break;
 	}
 

@@ -257,7 +257,7 @@ extern int Global_error_count;
 
 	// Debug version of Int3
 	#define Int3() debug_int3(__FILE__, __LINE__)
-#endif	// NDEBUG && DEMO
+#endif	// NDEBUG
 
 #ifndef MIN
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))

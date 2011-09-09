@@ -4000,7 +4000,7 @@ void game_simulation_frame()
 
 		// we don't want to evaluate mission stuff when any ingame joiner in multiplayer is receiving
 		// ships/wing packets.
-		if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.flags & NG_FLAG_INGAME_JOINING_CRITICAL))){
+		if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.flags & NG_FLAG_INGAME_JOINING_CRITICAL))) {
 			mission_parse_eval_stuff();
 		}
 
@@ -4092,7 +4092,7 @@ void game_maybe_do_dead_popup(float frametime)
 		if ( Game_mode & GM_NORMAL ) {
 			switch(choice) {
 			case 0:
-				gameseq_post_event(GS_EVENT_ENTER_GAME);				
+				gameseq_post_event(GS_EVENT_ENTER_GAME);
 				break;
 
 			case 1:
@@ -4100,7 +4100,7 @@ void game_maybe_do_dead_popup(float frametime)
 				break;
 
 			case 2:
-				gameseq_post_event(GS_EVENT_START_GAME);									
+				gameseq_post_event(GS_EVENT_START_GAME);
 				break;
 
 			// this should only happen during a red alert mission
@@ -4116,7 +4116,7 @@ void game_maybe_do_dead_popup(float frametime)
 					Int3();
 				}
 
-				gameseq_post_event(GS_EVENT_START_GAME);			
+				gameseq_post_event(GS_EVENT_START_GAME);
 				break;
 
 			default:
@@ -4996,10 +4996,10 @@ int game_poll()
 
 			// hotkey selection screen -- only valid from briefing and beyond.
 		case KEY_F3:	
-				if ( (state == GS_STATE_TEAM_SELECT) || (state == GS_STATE_BRIEFING) || (state == GS_STATE_SHIP_SELECT) || (state == GS_STATE_WEAPON_SELECT) || (state == GS_STATE_GAME_PLAY) || (state == GS_STATE_GAME_PAUSED) ) {
-					gameseq_post_event( GS_EVENT_HOTKEY_SCREEN );
-					k = 0;
-				}
+			if ( (state == GS_STATE_TEAM_SELECT) || (state == GS_STATE_BRIEFING) || (state == GS_STATE_SHIP_SELECT) || (state == GS_STATE_WEAPON_SELECT) || (state == GS_STATE_GAME_PLAY) || (state == GS_STATE_GAME_PAUSED) ) {
+				gameseq_post_event( GS_EVENT_HOTKEY_SCREEN );
+				k = 0;
+			}
 			break;
 
 		case KEY_DEBUGGED + KEY_F3:
@@ -5423,7 +5423,7 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_INITIAL_PLAYER_SELECT);
 			break;
 
-		case GS_EVENT_GAME_INIT:		
+		case GS_EVENT_GAME_INIT:
 			// see if the command line option has been set to use the last pilot, and act acoordingly
 			if( player_select_get_last_pilot() ) {	
 				// always enter the main menu -- do the automatic network startup stuff elsewhere

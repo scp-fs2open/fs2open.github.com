@@ -263,7 +263,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 			cd_present = 0;
 			break;
 		}
-		
+
 		sprintf(volume_name, NOX("FREESPACE2_%c"), '1' + cd_mve_is_on);
 
 		cd_drive_num = find_freespace_cd(volume_name);

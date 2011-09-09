@@ -1445,20 +1445,6 @@ void obj_move_all(float frametime)
 		objp = GET_NEXT(objp);
 	}
 
-	// Now that all objects have moved, we should calculate the
-	// velocities from how far they moved.
-	// DA: Commented out 2/23, unnecessary since colliding objects calculate their post collision velocities through physics.
-	/*
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
-		if ( !(objp->flags&OF_SHOULD_BE_DEAD) && (objp->type != OBJ_OBSERVER) && (objp->type != OBJ_ASTEROID) && (objp->type != OBJ_DEBRIS))	{
-			objp->phys_info.vel.x = (objp->pos.x - objp->last_pos.x) / frametime;
-			objp->phys_info.vel.y = (objp->pos.y - objp->last_pos.y) / frametime;
-			objp->phys_info.vel.z = (objp->pos.z - objp->last_pos.z) / frametime;
-		}
-		objp = GET_NEXT(objp);
-	} */
-
 	find_homing_object_cmeasures();	//	If any cmeasures fired, maybe steer away homing missiles	
 
 	// do pre-collision stuff for beam weapons
