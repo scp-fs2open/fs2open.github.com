@@ -2459,10 +2459,10 @@ int parse_weapon(int subtype, bool replace)
 		}
 
 		float bogus;
-		
+
 		required_string("+radius:");
 		stuff_float(&bogus);
-		
+
 		if ( optional_string("+burn time:") ) {
 			stuff_float(&bogus);
 		}

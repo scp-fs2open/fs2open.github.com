@@ -17,6 +17,8 @@
 #include <windows.h>	// for MAX_PATH
 #endif
 
+#include <limits.h>		// for MAX_INT
+
 #include "bmpman/bmpman.h"
 #include "pcxutils/pcxutils.h"
 #include "palman/palman.h"
@@ -60,7 +62,7 @@ int Bm_paging = 0;
 
 // locals
 static unsigned int Bm_next_signature = 0x1234;
-static int bm_next_handle = 0;
+static int bm_next_handle = 1;
 int Bm_low_mem = 0;
 // Bm_max_ram - How much RAM bmpman can use for textures.
 // Set to <1 to make it use all it wants.
@@ -85,12 +87,19 @@ void bm_set_low_mem( int mode )
 
 int bm_get_next_handle()
 {
-	int n = bm_next_handle;
+	//bm_next_handle used to wrap around to 1 if it was over 30000. Now, believe it or not, but that is actually not uncommon;
+	//as bitmaps get allocated and released, bm_next_handle could get there far more often than you'd think.
+	//The check introduced below is intended to replace this behaviour with one that ensures we won't be seeing handle collisions
+	//for a very long time.
+
 	bm_next_handle++;
-	if ( bm_next_handle > 30000 )	{
+
+	//Due to the way bm_next_handle is used to generate the /actual/ bitmap handles ( (bm_next_handle * MAX_BITMAPS) + free slot index in bm_bitmaps[]),
+	//this check is necessary to ensure we don't start giving out negative handles all of a sudden.
+	if (( (bm_next_handle + 1) * MAX_BITMAPS) > INT_MAX)
 		bm_next_handle = 1;
-	}
-	return n;
+
+	return bm_next_handle;
 }
 
 // Frees a bitmaps data if it should, and
@@ -154,7 +163,7 @@ SkipFree:
 #ifdef BMPMAN_NDEBUG
 	be->data_size = 0;
 #endif
-	be->signature = Bm_next_signature++; 
+	be->signature = Bm_next_signature++;
 }
 
 // a special version of bm_free_data() that can be safely used in gr_*_texture

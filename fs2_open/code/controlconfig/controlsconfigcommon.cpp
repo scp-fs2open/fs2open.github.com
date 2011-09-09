@@ -449,21 +449,48 @@ int translate_key_to_index(char *key)
 // or there is no key current bound to the function, NULL is returned.
 char *translate_key(char *key)
 {
-	int index = -1, code = -1;
+	int index = -1, key_code = -1, joy_code = -1;
+	char *key_text = NULL;
+	char *joy_text = NULL;
+
+	static char text[40] = {"None"};
 
 	index = translate_key_to_index(key);
-	if (index < 0)
+	if (index < 0) {
 		return NULL;
-
-	code = Control_config[index].key_id;
-	Failed_key_index = index;
-	if (code < 0) {
-		code = Control_config[index].joy_id;
-		if (code >= 0)
-			return Joy_button_text[code];
 	}
 
-	return textify_scancode(code);
+	key_code = Control_config[index].key_id;
+	joy_code = Control_config[index].joy_id;
+
+	Failed_key_index = index;
+
+	if (key_code >= 0) {
+		key_text = textify_scancode(key_code);
+	}
+
+	if (joy_code >= 0) {
+		joy_text = Joy_button_text[joy_code];
+	}
+
+	// both key and joystick button are mapped to this control
+	if ((key_code >= 0 ) && (joy_code >= 0) ) {
+		strcpy_s(text, key_text);
+		strcat_s(text, " or ");
+		strcat_s(text, joy_text);
+	}
+	// if we only have one
+	else if (key_code >= 0 ) {
+		strcpy_s(text, key_text);
+	}
+	else if (joy_code >= 0) {
+		strcpy_s(text, joy_text);
+	}
+	else {
+		strcpy_s(text, "None");
+	}
+
+	return text;
 }
 
 char *textify_scancode(int code)

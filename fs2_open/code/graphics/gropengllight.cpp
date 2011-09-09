@@ -85,7 +85,7 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 	GLLight->Position[0] = FSLight->vec.xyz.x;
 	GLLight->Position[1] = FSLight->vec.xyz.y;
 	GLLight->Position[2] = FSLight->vec.xyz.z; // flipped axis for FS2
-	GLLight->Position[3] = 1.0f;	
+	GLLight->Position[3] = 1.0f;
 
 
 	switch (FSLight->type) {
@@ -108,7 +108,7 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 
 			GLLight->Specular[0] *= static_tube_factor;
 			GLLight->Specular[1] *= static_tube_factor;
-			GLLight->Specular[2] *= static_tube_factor;	
+			GLLight->Specular[2] *= static_tube_factor;
 
 			GLLight->Position[0] = FSLight->vec2.xyz.x; // Valathil: Use endpoint of tube as light position
 			GLLight->Position[1] = FSLight->vec2.xyz.y;

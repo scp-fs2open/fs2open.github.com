@@ -388,7 +388,6 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 	// update world position from local to world coords using orient
 	vec3d world_disp;
 	vm_vec_unrotate (&world_disp, &local_disp, orient);
-
 	vm_vec_add2 (position, &world_disp);
 
 	// update world velocity

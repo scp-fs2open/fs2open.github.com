@@ -1092,7 +1092,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 {
 	int rc = 0;
 
-	if (bitmap_handle < 0) {
+	if (bitmap_handle <= 0) {
 		return 0;
 	}
 

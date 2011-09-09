@@ -1098,8 +1098,8 @@ char * ParseIRCMessage(char *Line, int iMode)
 	   (stricmp(szCmd,"254")==0)||
 	   (stricmp(szCmd,"255")==0)||
 	   (stricmp(szCmd,"265")==0)||
-	   (stricmp(szCmd,"375")==0)||
-	   (stricmp(szCmd,"372")==0)
+	   (stricmp(szCmd,"372")==0)||
+	   (stricmp(szCmd,"375")==0)
 	   )
 	{
 		return NULL;

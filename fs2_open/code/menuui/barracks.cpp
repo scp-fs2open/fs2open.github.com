@@ -136,7 +136,7 @@ int Barracks_squad_number_coords[GR_NUM_RESOLUTIONS][2] = {
 #define BARRACKS_NUM_BUTTONS		19
 
 // pilot selection buttons
-#define B_PILOT_CREATE_BOTTON			0	// B_PILOT_CREATE_BOTTON
+#define B_PILOT_CREATE_BUTTON			0	// B_PILOT_CREATE_BUTTON
 #define B_PILOT_SCROLL_UP_BUTTON		1	// B_PILOT_SCROLL_UP_BUTTON
 #define B_PILOT_SCROLL_DOWN_BUTTON	2	// B_PILOT_SCROLL_DOWN_BUTTON
 #define B_PILOT_DELETE_BUTTON			11	// B_PILOT_B_PILOT_DELETE_BUTTON
@@ -484,7 +484,7 @@ void barracks_set_hotkeys(bool pilot_text_enter_mode)
 	Buttons[gr_screen.res][B_PILOT_SCROLL_UP_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_UP : -1);
 	Buttons[gr_screen.res][B_PILOT_SCROLL_DOWN_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_DOWN : -1);
 
-	Buttons[gr_screen.res][B_PILOT_CREATE_BOTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_C : -1);
+	Buttons[gr_screen.res][B_PILOT_CREATE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_C : -1);
 	Buttons[gr_screen.res][B_PILOT_SET_ACTIVE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_ENTER : -1);
 	Buttons[gr_screen.res][B_PILOT_DELETE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_DELETE : -1);
 
@@ -765,19 +765,19 @@ void barracks_next_pic()
 // show previous squad pic
 void barracks_prev_squad_pic()
 {
-	// check if no pilot images or no pilot selected
+	// check if no squad images or no pilot selected
 	if ((Num_pilot_squad_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		return;
 	}
 
-	// reset pilot pic number
+	// reset squad pic number
 	Pic_squad_number--;
 	if (Pic_squad_number < 0) {
 		Pic_squad_number = Num_pilot_squad_images - 1;
 	}
 
-	// copy pilot pic filename into pilot struct
+	// copy squad pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)) {
 		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
 	}
@@ -786,22 +786,22 @@ void barracks_prev_squad_pic()
 	gamesnd_play_iface(SND_SCROLL);
 }
 
-// show next pilot pic
+// show next squad pic
 void barracks_next_squad_pic()
 {
-	// check if no pilot images or no pilot selected
+	// check if no squad images or no pilot selected
 	if ((Num_pilot_squad_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		return;
 	}
 
-	// reset pilot pic number
+	// reset squad pic number
 	Pic_squad_number++;
 	if (Pic_squad_number >= Num_pilot_squad_images){
 		Pic_squad_number = 0;
 	}
 
-	// copy pilot pic filename into pilot struct
+	// copy squad pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)){
 		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
 	}
@@ -1027,7 +1027,7 @@ void barracks_button_pressed(int n)
 			}
 			break;
 
-		case B_ACCEPT_BUTTON:			
+		case B_ACCEPT_BUTTON:
 			if (Num_pilots && !barracks_pilot_accepted()) {
 				gamesnd_play_iface(SND_COMMIT_PRESSED);
 
@@ -1117,7 +1117,7 @@ void barracks_button_pressed(int n)
 			break;
 		}
 
-		case B_PILOT_CREATE_BOTTON:
+		case B_PILOT_CREATE_BUTTON:
 			Clone_flag = 0;
 			barracks_create_new_pilot();
 			break;
