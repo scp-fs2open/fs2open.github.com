@@ -835,7 +835,7 @@ int CFred_mission_save::save_cmd_briefs()
 int CFred_mission_save::save_briefing()
 {
 	int			i,j,k, nb;
-	char			out[MAX_EVENT_SIZE];
+	char		out[MAX_EVENT_SIZE];
 	brief_stage	*bs;
 	brief_icon	*bi;
 

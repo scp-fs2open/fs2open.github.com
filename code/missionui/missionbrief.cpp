@@ -906,7 +906,7 @@ void brief_init()
 
 	// init the scene-cut data
 	brief_transition_reset();
-	
+
 	hud_anim_init(&Fade_anim, Brief_static_coords[gr_screen.res][0], Brief_static_coords[gr_screen.res][1], Brief_static_name[gr_screen.res]);
 	hud_anim_load(&Fade_anim);
 
@@ -1151,7 +1151,7 @@ void brief_render(float frametime)
 		if (gr_screen.res == 1) {
 			Max_brief_Lines = 110/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
 		} else {
-			Max_brief_Lines = 55/gr_get_font_height();
+			Max_brief_Lines = 60/gr_get_font_height();
 		}
 
 		// maybe output the "more" indicator

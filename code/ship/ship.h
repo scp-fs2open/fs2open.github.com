@@ -120,6 +120,7 @@ typedef struct ship_weapon {
 	int primary_bank_ammo[MAX_SHIP_PRIMARY_BANKS];			// Number of missiles left in primary bank
 	int primary_bank_start_ammo[MAX_SHIP_PRIMARY_BANKS];	// Number of missiles starting in primary bank
 	int primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// Max number of projectiles in bank
+	int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
 	int primary_bank_rearm_time[MAX_SHIP_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
 	// end ballistic primary support
 
@@ -457,8 +458,8 @@ typedef struct ship_subsys_info {
 #define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
 #define SF2_FORCE_SHIELDS_ON				(1<<20)
 #define SF2_NO_ETS							(1<<21)		// The E - This ship does not have an ETS
-#define SF2_SHIP_SELECTIVE_LINKING			(1<<22)		// RSAXVC - Allow pilot to pick firing configuration
-#define SF2_CLOAKED							(1<<23)		// The E - This ship will not be rendered
+#define SF2_CLOAKED							(1<<22)		// The E - This ship will not be rendered
+#define SF2_SHIP_SELECTIVE_LINKING			(1<<23)		// RSAXVC - Allow pilot to pick firing configuration
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -999,8 +1000,8 @@ typedef struct ship_type_info {
 	SCP_vector<SCP_string> ai_cripple_ignores_temp;
 
 	ship_type_info( )
-		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), debris_max_speed( 0.f ),
-		  weapon_bools( 0 ), ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), weapon_bools( 0 ),
+		  debris_max_speed( 0.f ), ff_multiplier( 0.f ), emp_multiplier( 0.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
 		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_bools( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  vaporize_chance( 0.f )

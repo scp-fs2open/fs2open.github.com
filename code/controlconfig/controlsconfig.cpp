@@ -1592,7 +1592,7 @@ void control_config_do_frame(float frametime)
 			for (i=0; i<JOY_TOTAL_BUTTONS; i++) {
 				if (joy_down_count(i, 1)) {
 					j = i;
-					for (i=0; i<CCFG_MAX; i++) {
+					for (i=0; i<CCFG_MAX; i++) { //-V535
 						if (Control_config[i].joy_id == j) {
 							z = i;
 							break;

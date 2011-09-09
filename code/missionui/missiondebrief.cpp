@@ -359,6 +359,8 @@ static int Debrief_first_voice_flag = 1;	// used to delay the first voice playba
 
 static int Debriefing_paused = 0;
 
+int Max_debrief_Lines;
+
 // pointer used for getting to debriefing information
 debriefing	Traitor_debriefing;				// used when player is a traitor
 
@@ -378,8 +380,6 @@ static int Debrief_skip_popup_already_shown = 0;
 void debrief_text_init();
 void debrief_accept(int ok_to_post_start_game_event = 1);
 void debrief_kick_selected_player();
-
-int Max_debrief_Lines;
 
 
 // promotion voice selection stuff
@@ -2593,7 +2593,7 @@ void debrief_do_frame(float frametime)
 	if (gr_screen.res == 1) {
 		Max_debrief_Lines = 450/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
 	} else {
-		Max_debrief_Lines = 230/gr_get_font_height();
+		Max_debrief_Lines = 340/gr_get_font_height();
 	}
 
 	if (Max_debrief_Lines < Num_text_lines) {

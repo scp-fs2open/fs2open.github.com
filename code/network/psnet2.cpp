@@ -1767,6 +1767,7 @@ void psnet_rel_work()
 		}
 	}	
 }
+
 /**
  * Get the status of a reliable socket, see RNF_* defines above
  */

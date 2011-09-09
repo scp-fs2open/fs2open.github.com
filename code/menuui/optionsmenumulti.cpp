@@ -1119,6 +1119,8 @@ void options_multi_protocol_button_pressed(int n)
 
 	// ipx mode
 	case OM_PRO_IPX:
+		Om_protocol = NET_IPX;
+		gamesnd_play_iface(SND_USER_SELECT);
 		break;
 	}
 }

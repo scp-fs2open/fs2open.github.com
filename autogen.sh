@@ -128,6 +128,8 @@ done
 
 #conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
 
+# to not run configure, call autogen.sh as,
+# NOCONFIGURE=1 ./autogen.sh
 if test x$NOCONFIGURE = x; then
   echo Running $srcdir/configure $conf_flags "$@" ...
   $srcdir/configure $conf_flags "$@" \

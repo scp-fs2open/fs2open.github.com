@@ -742,19 +742,19 @@ void barracks_next_pic()
 // show previous squad pic
 void barracks_prev_squad_pic()
 {
-	// check if no pilot images or no pilot selected
+	// check if no squad images or no pilot selected
 	if ((Num_pilot_squad_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		return;
 	}
 
-	// reset pilot pic number
+	// reset squad pic number
 	Pic_squad_number--;
 	if (Pic_squad_number < 0) {
 		Pic_squad_number = Num_pilot_squad_images - 1;
 	}
 
-	// copy pilot pic filename into pilot struct
+	// copy squad pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)) {
 		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
 	}
@@ -766,19 +766,19 @@ void barracks_prev_squad_pic()
 // show next squad pic
 void barracks_next_squad_pic()
 {
-	// check if no pilot images or no pilot selected
+	// check if no squad images or no pilot selected
 	if ((Num_pilot_squad_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		return;
 	}
 
-	// reset pilot pic number
+	// reset squad pic number
 	Pic_squad_number++;
 	if (Pic_squad_number >= Num_pilot_squad_images){
 		Pic_squad_number = 0;
 	}
 
-	// copy pilot pic filename into pilot struct
+	// copy squad pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)){
 		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
 	}
