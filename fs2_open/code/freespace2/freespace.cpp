@@ -7216,6 +7216,9 @@ int main(int argc, char *argv[])
 			free(argptr);
 			argptr = NULL;
 		}
+	} catch (std::exception &ex) {
+		fprintf(stderr, "Caught std::exception in main(): '%s'!\n", ex.what());
+		result = EXIT_FAILURE;
 	} catch ( ... ) {
 		fprintf(stderr, "Caught exception in main()!\n");
 		result = EXIT_FAILURE;

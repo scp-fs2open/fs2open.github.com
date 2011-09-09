@@ -961,6 +961,7 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 		cfbp->data = NULL;
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
+		cfbp->max_read_len = 0;
 		
 		int pos = ftell(fp);
 		if(pos == -1L)
@@ -998,6 +999,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 		cfbp->data = NULL;
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
+		cfbp->max_read_len = 0;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
 
@@ -1035,6 +1037,8 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 
 		cfp = &Cfile_list[cfile_block_index];
 		cfp->id = cfile_block_index;
+		cfp->version = 0;
+		cfbp->max_read_len = 0;
 		cfbp->fp = NULL;
 #if defined _WIN32
 		cfbp->hInFile = hFile;
@@ -1096,6 +1100,22 @@ void cf_set_version( CFILE * cfile, int version )
 	Assert(cfile != NULL);
 
 	cfile->version = version;
+}
+
+// cutoff point where cfread() will throw an error when it hits this limit
+// if 'len' is 0 then this check will be disabled
+void cf_set_max_read_len( CFILE * cfile, size_t len )
+{
+	Assert( cfile != NULL );
+	Assert( (cfile->id >= 0) && (cfile->id < MAX_CFILE_BLOCKS) );
+
+	Cfile_block *cb = &Cfile_block_list[cfile->id];
+
+	if (len) {
+		cb->max_read_len = cb->raw_position + len;
+	} else {
+		cb->max_read_len = 0;
+	}
 }
 
 // routines to read basic data types from CFILE's.  Put here to
@@ -1329,7 +1349,7 @@ int cfwrite_string(char *buf, CFILE *file)
 	return cfwrite_char(0, file);			// write out NULL termination			
 }
 
-int cfwrite_string_len(char *buf, CFILE *file)
+int cfwrite_string_len(const char *buf, CFILE *file)
 {
 	int len = strlen(buf);
 
@@ -1365,7 +1385,7 @@ int cfilelength( CFILE * cfile )
 // returns:   number of full elements actually written
 //            
 //
-int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
+int cfwrite(const void *buf, int elsize, int nelem, CFILE *cfile)
 {
 	if(!cf_is_valid(cfile))
 		return 0;
@@ -1387,18 +1407,22 @@ int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
 		return EOF;
 	}
 
-	int result = 0;
+	size_t bytes_written = 0;
+	size_t size = elsize * nelem;
 
-	result = fwrite(buf, elsize, nelem, cb->fp);
+	bytes_written = fwrite(buf, 1, size, cb->fp);
 
 	//WMC - update filesize and position
-	if(result > 0)
-	{
-		cb->size = filelength(fileno(cb->fp));
-		cb->raw_position += result;
+	if (bytes_written > 0) {
+		cb->size += bytes_written;
+		cb->raw_position += bytes_written;
 	}
 
-	return result;	
+#if defined(CHECK_SIZE) && !defined(NDEBUG)
+	Assert( cb->size == filelength(fileno(cb->fp)) );
+#endif
+
+	return ((int)bytes_written / elsize);
 }
 
 
@@ -1434,9 +1458,13 @@ int cfputc(int c, CFILE *cfile)
 	//WMC - update filesize and position
 	if(result != EOF)
 	{
-		cb->size = filelength(fileno(cb->fp));
+		cb->size += 1;
 		cb->raw_position += 1;
 	}
+
+#if defined(CHECK_SIZE) && !defined(NDEBUG)
+	Assert( cb->size == filelength(fileno(cb->fp)) );
+#endif
 
 	return result;	
 }
@@ -1474,9 +1502,13 @@ int cfputs(char *str, CFILE *cfile)
 	//WMC - update filesize and position
 	if(result != EOF)
 	{
-		cb->size = filelength(fileno(cb->fp));
+		cb->size += strlen(str);
 		cb->raw_position += strlen(str);
 	}
+
+#if defined(CHECK_SIZE) && !defined(NDEBUG)
+	Assert( cb->size == filelength(fileno(cb->fp)) );
+#endif
 
 	return result;	
 }
