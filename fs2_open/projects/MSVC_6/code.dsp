@@ -428,18 +428,6 @@ SOURCE=..\..\code\debugconsole\timerbar.cpp
 SOURCE=..\..\code\debugconsole\timerbar.h
 # End Source File
 # End Group
-# Begin Group "Demo"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Demo\Demo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Demo\Demo.h
-# End Source File
-# End Group
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""

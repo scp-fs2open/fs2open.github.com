@@ -26,8 +26,6 @@
 
 int	Show_shield_mesh = 0;
 
-#ifndef DEMO // not for FS2_DEMO
-
 //	One unit in 3d means this in the shield hit texture map.
 #define	SHIELD_HIT_SCALE	0.15f			// Note, larger constant means smaller effect
 #define	MAX_TRIS_PER_HIT	40					//	Number of triangles per shield hit, maximum.
@@ -91,8 +89,6 @@ extern void create_shield_from_triangle(int trinum, matrix *orient, shield_info 
 
 void load_shield_hit_bitmap()
 {
-	#ifndef DEMO // not for FS2_DEMO
-
 	size_t i;
 	// Check if we've already allocated the shield effect bitmaps
 	if ( Shield_bitmaps_loaded )
@@ -108,8 +104,6 @@ void load_shield_hit_bitmap()
 		    Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
         }
 	}
-
-	#endif
 }
 
 void shield_hit_page_in()
@@ -990,24 +984,6 @@ int ship_is_shield_up( object *obj, int quadrant )
 	}
 	return 0;	// no shield strength
 }
-#else 
-
-// stub out shield functions for the demo
-void shield_hit_init() {}
-void create_shield_explosion_all(object *objp) {}
-void shield_frame_init() {}
-void add_shield_point(int objnum, int tri_num, vec3d *hit_pos) {}
-void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos) {}
-void shield_point_multi_setup() {}
-void shield_hit_close() {}
-void ship_draw_shield( object *objp) {}
-void shield_hit_page_in() {}
-void render_shields() {}
-float apply_damage_to_shield(object *objp, int quadrant, float damage) {return damage;} 
-int ship_is_shield_up( object *obj, int quadrant ) {return 0;}
-
-#endif // DEMO
-
 
 //	return quadrant containing hit_pnt.
 //	\  1  /.

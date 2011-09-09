@@ -58,7 +58,6 @@
 #include "localization/localize.h"
 #include "nebula/neb.h"
 #include "ship/shipcontrails.h"
-#include "demo/demo.h"
 #include "weapon/beam.h"
 #include "math/staticrand.h"
 #include "missionui/missionshipchoice.h"
@@ -7224,12 +7223,6 @@ void ship_init_thrusters()
 	{
 		species_info *species = &Species_info[i];
 
-		// AL 29-3-98: Don't want to include Shivan thrusters in the demo build
-#ifdef DEMO // N/A FS2_DEMO
-		if (!stricmp(species->species_name, "Shivan"))
-			continue;
-#endif
-
 		generic_anim_load(&species->thruster_info.flames.normal);
 		generic_anim_load(&species->thruster_info.flames.afterburn);
 
@@ -9948,11 +9941,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if(!(MULTIPLAYER_CLIENT && (shipp != Player_ship))){
 			send_NEW_primary_fired_packet( shipp, banks_fired );
 		}
-	}
-
-	// post a primary fired event
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_primary_fired(obj, swp->current_primary_bank, shipp->flags & SF_PRIMARY_LINKED);
 	}
 
    // STATS
@@ -15464,9 +15452,6 @@ DCF(art, "")
 }
 void ship_update_artillery_lock()
 {
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-	return;
-#else
 	ai_info *aip = NULL;
 	weapon_info *tlaser = NULL;
 	mc_info *cinfo = NULL;
@@ -15555,7 +15540,6 @@ void ship_update_artillery_lock()
 			aip->artillery_lock_time = 0.0f;			
 		}
 	}
-#endif
 }
 
 /**

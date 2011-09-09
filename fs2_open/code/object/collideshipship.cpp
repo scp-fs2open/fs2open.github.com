@@ -564,7 +564,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 // returns 1 if modified mass is larger than given mass, 0 otherwise 
 int check_special_cruiser_asteroid_collision(object *heavy, object *light, float *cruiser_mass, int *cruiser_light)
 {
-#ifndef FS2_DEMO
 	int asteroid_type;
 
 	if (heavy->type == OBJ_ASTEROID) {
@@ -604,7 +603,6 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *light, float
 			}
 		}
 	}
-#endif
 	return 0;
 }
 

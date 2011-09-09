@@ -68,11 +68,7 @@ typedef struct wl_bitmap_group
 	int num_frames;
 } wl_bitmap_group;
 
-#ifdef FS2_DEMO
-#define WEAPON_ANIM_LOOP_FRAME				1
-#else
 #define WEAPON_ANIM_LOOP_FRAME				52			// frame (from 0) to loop weapon anim
-#endif
 
 #define WEAPON_ICON_FRAME_NORMAL				0
 #define WEAPON_ICON_FRAME_HOT					1
@@ -443,7 +439,6 @@ void wl_pick_icon_from_list(int index);
 void pick_from_ship_slot(int num);
 void start_weapon_animation(int weapon_class);
 void stop_weapon_animation();
-void wl_start_slot_animation(int n);
 int wl_get_pilot_subsys_index(p_object *pobjp);
 
 void wl_reset_to_defaults();
@@ -1125,13 +1120,11 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
 {
 	int	rval = 0;
 
-#if !defined FS2_DEMO
 	if (MULTI_DOGFIGHT) {
 		if (weapon_flags & DOGFIGHT_WEAPON)
 			rval = 1;
 	}
 	else
-#endif
 		if (weapon_flags & REGULAR_WEAPON)
 			rval  = 1;
 
@@ -1336,7 +1329,6 @@ void wl_load_icons(int weapon_class)
 // load all the icons for weapons in the pool
 void wl_load_all_icons()
 {
-	#ifndef DEMO // not for FS2_DEMO
 
 	int i, j;
 
@@ -1355,8 +1347,6 @@ void wl_load_all_icons()
 			wl_load_icons(i);
 		}
 	}
-
-	#endif
 }
 
 //	wl_unload_icons() frees the bitmaps used for weapon icons 
@@ -1519,73 +1509,9 @@ void wl_maybe_reset_selected_weapon_class()
 	}
 }
 
-// start an overhead animation, since selected slot has changed
-void wl_start_slot_animation(int n)
-{
-	#ifndef DEMO // not for FS2_DEMO
-
-	// don't use ani's
-	// fallback code in wl_render_overhead_view() will 
-	// use the .pcx files
-	// should prolly scrub out the 1e06 lines of dead code this leaves
-	return;
-
-/*
-
-	int						ship_class;
-	wl_ship_class_info	*wl_ship;
-	anim_play_struct		aps;
-
-	if ( n < 0 ) {
-		return;
-	}
-
-	ship_class = Wss_slots[n].ship_class;
-	
-	if ( ship_class < 0 ) {
-		Int3();
-		return;
-	}
-
-	wl_ship = &Wl_ships[ship_class];
-
-	// maybe this animation is already playing?
-	if ( wl_ship->anim_instance ) {
-		anim_stop_playing(wl_ship->anim_instance);
-		wl_ship->anim_instance = NULL;
-	}
-	
-	// maybe we have to load this animation
-	if ( wl_ship->anim == NULL ) {
-		wl_ship->anim = anim_load(Ship_info[ship_class].overhead_filename, CF_TYPE_ANY, 1);
-		if ( wl_ship->anim == NULL ) {
-			Int3();		// couldn't load anim filename.. get Alan
-			return;
-		}
-	}
-
-	anim_play_init(&aps, wl_ship->anim, Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1]);
-	aps.screen_id = ON_WEAPON_SELECT;
-	aps.framerate_independent = 1;
-	aps.skip_frames = 0;
-	wl_ship->anim_instance = anim_play(&aps);
-*/
-	#endif
-}
-
 // Call when Selected_wl_slot needs to be changed
 void wl_set_selected_slot(int slot_num)
 {
-	if ( (slot_num >= 0) && (slot_num != Selected_wl_slot) ) {
-		// slot has changed.... start an animation
-		wl_start_slot_animation(slot_num);
-/*
-		if ( Current_screen == ON_WEAPON_SELECT ) {
-			gamesnd_play_iface(SND_OVERHEAD_SHIP_ANIM);
-		}
-*/
-  }
-
 	Selected_wl_slot = slot_num;
 	if ( Selected_wl_slot >= 0 ) {
 		Assert( Wss_slots != NULL );
@@ -2048,7 +1974,6 @@ void weapon_select_init()
 
 	if ( Weapon_select_open ) {
 		wl_maybe_reset_selected_weapon_class();
-		wl_start_slot_animation(Selected_wl_slot);
 		common_buttons_maybe_reload(&Weapon_ui_window);	// AL 11-21-97: this is necessary since we may returning from the hotkey
 																		// screen, which can release common button bitmaps.
 		common_reset_buttons();

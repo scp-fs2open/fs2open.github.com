@@ -42,10 +42,6 @@
 #include "parse/scripting.h"
 
 
-
-//WMC - we want asteroid ability with demo!!
-//#ifndef FS2_DEMO
-
 #define			ASTEROID_OBJ_USED	(1<<0)				// flag used in asteroid_obj struct
 #define			MAX_ASTEROID_OBJS	MAX_ASTEROIDS		// max number of asteroids tracked in asteroid list
 asteroid_obj	Asteroid_objs[MAX_ASTEROID_OBJS];	// array used to store asteroid object indexes
@@ -2031,30 +2027,4 @@ void asteroid_page_in()
 		} 
 	}
 }
-/*
-#else
 
-// stubbed out functions not used in the demo
-void	asteroid_init() {}
-void	asteroid_level_init() {}
-void	asteroid_level_close() {}
-void	asteroid_create_all() {}
-void	asteroid_render( object *asteroid_objp ) {}
-void	asteroid_delete( object *asteroid_objp ) {}
-void	asteroid_process_pre( object *asteroid_objp, float frame_time) {}
-void	asteroid_process_post( object *asteroid_objp, float frame_time) {}
-int	asteroid_check_collision( object *asteroid_objp, object * other_obj, vec3d * hitpos, collision_info_struct *asteroid_hit_info ) {return 0;}
-void	asteroid_hit( object *asteroid_objp, object *other_objp, vec3d *hitpos, float damage ) {}
-void	asteroid_save_restore(CFILE *fp) {}
-int	asteroid_count() {return 0;}
-int	asteroid_collide_objnum(object *asteroid_objp) {return 0;}
-float asteroid_time_to_impact(object *asteroid_objp) {return 0.0f;}
-void	asteroid_show_brackets() {}
-void	asteroid_target_closest_danger() {}
-void	asteroid_page_in() {}
-void	asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec) {}
-void	asteroid_frame() {}
-
-
-#endif
-*/

@@ -211,11 +211,9 @@ int last_single_step;
 void get_version_string_short(char *){}
 void game_tst_mark(struct object *, struct ship *){}
 int tst;
-int game_do_cd_mission_check(char *){return 1;}
 //int Player_multi_died_check;
 int Show_framerate = 0;
 
-void game_feature_not_in_demo_popup() {}
 void alt_tab_pause(){}
 
 void game_feature_disabled_popup() {}
