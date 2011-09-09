@@ -607,8 +607,8 @@ typedef struct p_object {
 #define P2_SF2_LOCK_ALL_TURRETS_INITIALLY	(1<<14)		
 #define P2_SF2_AFTERBURNER_LOCKED			(1<<15)	
 #define P2_OF_FORCE_SHIELDS_ON				(1<<16)
-#define P2_SF2_NO_ETS						(1<<17)
-#define P2_OF_IMMOBILE						(1<<18)
+#define P2_OF_IMMOBILE						(1<<17)
+#define P2_SF2_NO_ETS						(1<<18)
 #define P2_SF2_CLOAKED						(1<<19)
 
 // and again: these flags do not appear in the array

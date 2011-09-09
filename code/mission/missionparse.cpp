@@ -305,9 +305,9 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"lock-all-turrets",
 	"afterburners-locked",
 	"force-shields-on",
+	"immobile",
 	"no-ets",
 	"cloaked",
-	"immobile",
 };
 
 
@@ -2455,14 +2455,14 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags2 & P2_OF_FORCE_SHIELDS_ON) 
 		shipp->flags2 |= SF2_FORCE_SHIELDS_ON;
 
+	if (parse_flags2 & P2_OF_IMMOBILE)
+		objp->flags |= OF_IMMOBILE;
+
 	if (parse_flags2 & P2_SF2_NO_ETS)
 		shipp->flags2 |= SF2_NO_ETS;
 
 	if (parse_flags2 & P2_SF2_CLOAKED)
 		shipp->flags2 |= SF2_CLOAKED;
-
-	if (parse_flags2 & P2_OF_IMMOBILE)
-		objp->flags |= OF_IMMOBILE;
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
