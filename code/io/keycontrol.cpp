@@ -1835,12 +1835,16 @@ int button_function_critical(int n, net_player *p = NULL)
 		// cycle num primaries to fire at once
 		case CYCLE_PRIMARY_WEAPON_SEQUENCE:
 			{
-			ship * shipp = &Ships[objp->instance];
-			ship_weapon *swp = &shipp->weapons;
-			ship_info	*sip = &Ship_info[shipp->ship_info_index];
-			polymodel *pm = model_get( sip->model_num );
-			shipp->last_fired_point[ swp->current_primary_bank ] = ( shipp->last_fired_point[ swp->current_primary_bank ] + 1 ) % ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
-			swp->primary_bank_slot_count[ swp->current_primary_bank ]  = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+				uint32_t count;
+				ship * shipp = &Ships[objp->instance];
+				ship_weapon *swp = &shipp->weapons;
+				ship_info *sip = &Ship_info[shipp->ship_info_index];
+				polymodel *pm = model_get( sip->model_num );
+				count = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+				swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
+				shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
+				shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
+				shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
 			}
 			break;
 
