@@ -52,7 +52,6 @@
 #include "jumpnode/jumpnode.h"
 #include "localization/localize.h"
 #include "nebula/neb.h"
-#include "demo/demo.h"
 #include "nebula/neblightning.h"
 #include "math/fvi.h"
 #include "weapon/weapon.h"
@@ -2324,10 +2323,6 @@ int parse_create_object_sub(p_object *p_objp)
 		if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
 			send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
 	}
-
-	// if recording a demo, post the event
-	if(Game_mode & GM_DEMO_RECORD)
-		demo_POST_obj_create(p_objp->name, Objects[objnum].signature);
 
 	return objnum;
 }
@@ -5513,9 +5508,9 @@ void post_process_mission()
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()
 			if ( result ) {
-				char sexp_str[4096], text[4500];
+				char sexp_str[MAX_EVENT_SIZE], text[4500];
 
-				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE, 4096);
+				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
 				sprintf(text, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)",
 					sexp_error_message(result), sexp_str, Sexp_nodes[bad_node].text);
 
