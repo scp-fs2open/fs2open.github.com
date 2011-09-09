@@ -117,7 +117,7 @@ int Cmd_image_center_coords[GR_NUM_RESOLUTIONS][2] =
 
 int Top_cmd_brief_text_line;
 
-int Max_cmdbrief_Lines;
+int Max_cmdbrief_Lines; // Maximum number of lines to be displayed
 
 #define MAX_CMD_BRIEF_BUTTONS	10
 #define MIN_CMD_BRIEF_BUTTONS	8

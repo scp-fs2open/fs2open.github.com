@@ -2292,8 +2292,8 @@ void multi_pxo_make_channels(char *chan_str)
 			return;
 		}
 
-		// get the # of users	
-		num_users = (ubyte)atoi(user_tok);		
+		// get the # of users
+		num_users = (ubyte)atoi(user_tok);
 
 		// if the # of users is > 0, or its not an autojoin, place it on the display list
 		if((num_users > 0) || !multi_pxo_is_autojoin(name_tok)){
@@ -2712,7 +2712,7 @@ void multi_pxo_handle_channel_change()
 		// set the user count to be 1 (just me)
 		if(lookup != NULL){
 			lookup->num_users = 1;
-		}	
+		}
 
 		// set the "switch" delay timestamp
 		Multi_pxo_switch_delay = timestamp(MULTI_PXO_SWITCH_DELAY_TIME);

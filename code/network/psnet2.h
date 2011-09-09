@@ -36,7 +36,6 @@
 
 #define DEFAULT_GAME_PORT 7808
 
-
 typedef struct net_addr	{
 	uint	type;			// See NET_ defines above
 	ubyte	net_id[4];	// used for IPX only

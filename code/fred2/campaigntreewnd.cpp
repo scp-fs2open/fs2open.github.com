@@ -410,7 +410,7 @@ int campaign_tree_wnd::internal_error(char *msg, ...)
 
 int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 {
-	char buf[512], buf2[2048], buf3[4096];
+	char buf[512], buf2[2048], buf3[MAX_EVENT_SIZE];
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -425,7 +425,7 @@ int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 	if (!z)
 		return 0;
 
-	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE, 2048);
+	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
 	sprintf(buf3, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)",
 		buf, sexp_error_message(z), buf2, Sexp_nodes[faulty_node].text);
 
