@@ -564,7 +564,7 @@ void script_state::SetHookVar(char *name, char format, void *data)
 				if(format == 's')
 					ade_set_args(LuaState, fmt, data);
 				else
-					ade_set_args(LuaState, fmt, *(ade_odata*)data); //-V510
+					ade_set_args(LuaState, fmt, *(ade_odata*)data);
 			}
 			//--------------------
 			//WMC - This was a separate function
