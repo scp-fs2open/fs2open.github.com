@@ -1835,7 +1835,7 @@ int button_function_critical(int n, net_player *p = NULL)
 		// cycle num primaries to fire at once
 		case CYCLE_PRIMARY_WEAPON_SEQUENCE:
 			{
-				uint32_t count;
+				int count;
 				ship * shipp = &Ships[objp->instance];
 				ship_weapon *swp = &shipp->weapons;
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
