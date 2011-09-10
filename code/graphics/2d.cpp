@@ -1180,7 +1180,10 @@ int poly_list::find_first_vertex(int idx)
 
 	// we should always equal ourselves, so just use that as the stopping point
 	for (int i = 0; i < idx; i++) {
-		if ( (*p_norm == *o_norm) && (p_vert->world == o_vert->world) ) {
+		if ( (*p_norm == *o_norm)
+			&& (p_vert->world == o_vert->world)
+			&& (p_vert->texture_position == o_vert->texture_position) )
+		{
 			return i;
 		}
 
@@ -1202,7 +1205,10 @@ int poly_list::find_index(poly_list *plist, int idx)
 	vertex *p_vert = &vert[0];
 
 	for (int i = 0; i < n_verts; i++) {
-		if ( (*p_norm == *o_norm) && (p_vert->world == o_vert->world) ) {
+		if ( (*p_norm == *o_norm)
+			&& (p_vert->world == o_vert->world)
+			&& (p_vert->texture_position == o_vert->texture_position))
+		{
 			return i;
 		}
 
