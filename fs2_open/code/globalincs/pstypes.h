@@ -115,6 +115,12 @@ typedef struct uv_pair {
 	float u,v;
 } uv_pair;
 
+/** Compares two uv_pairs */
+inline bool operator==(const uv_pair &left, const uv_pair &right)
+{
+	return (left.u == right.u) && (left.v == right.v);
+}
+
 /** Represents a point in 3d screen space. 'w' is 1/z.
 
 Like vec3d but for screens.
