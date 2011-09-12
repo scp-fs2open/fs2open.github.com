@@ -29,11 +29,6 @@ struct collision_info_struct;
 #define	ASTEROID_TYPE_MEDIUM	1
 #define	ASTEROID_TYPE_LARGE		2
 
-// This is for the asteroid types plus DEBRIS_X_Y
-// (X is each species and Y is SMALL, MEDIUM, and LARGE)
-// 20060826 - made dynamic -- taylor
-//#define	MAX_DEBRIS_TYPES	((MAX_SPECIES + 1) * NUM_DEBRIS_SIZES)
-
 // these should always be equal for the benefit of generic asteroids (c.f. asteroid_page_in)
 #define	MAX_ACTIVE_DEBRIS_TYPES		NUM_DEBRIS_SIZES
 
