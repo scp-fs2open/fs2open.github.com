@@ -32,8 +32,11 @@ typedef struct ship_weapon_debris_struct {
 } ship_weapon_debris_struct;
 
 
-// Checks debris-weapon collisions.  pair->a is debris and pair->b is weapon.
-// Returns 1 if all future collisions between these can be ignored
+/**
+ * Checks debris-weapon collisions.  
+ * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is weapon.
+ * @return 1 if all future collisions between these can be ignored
+ */
 int collide_debris_weapon( obj_pair * pair )
 {
 	vec3d	hitpos;
@@ -81,8 +84,11 @@ int collide_debris_weapon( obj_pair * pair )
 
 
 
-// Checks debris-weapon collisions.  pair->a is debris and pair->b is weapon.
-// Returns 1 if all future collisions between these can be ignored
+/**
+ * Checks debris-weapon collisions.  
+ * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is weapon.
+ * @return 1 if all future collisions between these can be ignored
+ */
 int collide_asteroid_weapon( obj_pair * pair )
 {
 	if (!Asteroids_enabled)

@@ -9,7 +9,6 @@
 
 
 
-
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "weapon/weapon.h"
@@ -33,8 +32,10 @@ float estimate_ship_speed_upper_limit( object *ship, float time );
 extern float flFrametime;
 
 
-//	If weapon_obj is likely to hit ship_obj sooner than current aip->danger_weapon_objnum,
-//	then update danger_weapon_objnum.
+/**
+ * If weapon_obj is likely to hit ship_obj sooner than current aip->danger_weapon_objnum,
+ * then update danger_weapon_objnum.
+ */
 void update_danger_weapon(object *ship_obj, object *weapon_obj)
 {
 	ai_info	*aip;
@@ -59,8 +60,10 @@ void update_danger_weapon(object *ship_obj, object *weapon_obj)
 	}
 }
 
-// function to actually deal with weapon-ship hit stuff.  separated from check_collision routine below
-// because of multiplayer reasons.
+/** 
+ * Deal with weapon-ship hit stuff.  
+ * Separated from check_collision routine below because of multiplayer reasons.
+ */
 void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, vec3d /*not a pointer intentionaly*/ hit_dir)
 {
 	weapon	*wp = &Weapons[weapon_obj->instance];
@@ -137,11 +140,6 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	// Make ships that are warping in not get collision detection done
 	if ( shipp->flags & SF_ARRIVING ) return 0;
-
-	// if one object is a capital, only check player and player weapons with
-	// the capital -- too slow for now otherwise.
-//	if ( Polygon_models[Ships[num].modelnum].use_grid && !( (other_objp == Player_obj) || (&Objects[other_objp->parent] == Player_obj)) )
-//		return 0;
 
 	//	If either of these objects doesn't get collision checks, abort.
 	if (Ship_info[shipp->ship_info_index].flags & SIF_NO_COLLIDE)
@@ -250,9 +248,6 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		valid_hit_occurred = 1;
 	}
 
-
-	//nprintf(("AI", "Frame %i, Hit tri = %i\n", Framecount, mc.shield_hit_tri));
-
     // check if the hit point is beyond the clip plane when warping out.
     if ((shipp->flags & SF_DEPART_WARP) &&
         (shipp->warpout_effect) &&
@@ -305,23 +300,6 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 			Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, weapon_objp);
 
 		Script_system.RemHookVars(4, "Ship", "Weapon", "Self","Object");
-		/*
-		if(!Script_system.IsOverride(wip->sc_collide_ship)) {
-			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
-		}
-
-		if(wip->sc_collide_ship.IsValid()) {
-			ade_odata lua_self_obj = l_Weapon.Set(object_h(weapon_objp));
-			ade_odata lua_ship_obj = l_Ship.Set(object_h(ship_objp));
-			
-			Script_system.SetHookVar("Self", 'o', &lua_self_obj);
-			Script_system.SetHookVar("Ship", 'o', &lua_ship_obj);
-
-			Script_system.RunBytecode(wip->sc_collide_ship);
-
-			Script_system.RemHookVar("Self");
-			Script_system.RemHookVar("Ship");
-		}*/
 	}
 	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_objp)) {
 		if (dist < wip->shockwave.inner_rad) {
@@ -346,8 +324,11 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 }
 
 
-// Checks ship-weapon collisions.  pair->a is ship and pair->b is weapon.
-// Returns 1 if all future collisions between these can be ignored
+/**
+ * Checks ship-weapon collisions.  
+ * @param pair obj_pair pointer to the two objects. pair->a is ship and pair->b is weapon.
+ * @return 1 if all future collisions between these can be ignored
+ */
 int collide_ship_weapon( obj_pair * pair )
 {
 	int		did_hit;
@@ -371,7 +352,6 @@ int collide_ship_weapon( obj_pair * pair )
 	// If it does not hit and is within error tolerance, cull the pair.
 
 	if ( (Ship_info[Ships[ship->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) && (Weapon_info[Weapons[weapon->instance].weapon_info_index].subtype == WP_LASER) ) {
-//	if (  (ship->radius > 50) && (Weapon_info[Weapons[weapon->instance].weapon_info_index].subtype == WP_LASER) ) {
 		// Check when within ~1.1 radii.  
 		// This allows good transition between sphere checking (leaving the laser about 200 ms from radius) and checking
 		// within the sphere with little time between.  There may be some time for "small" big ships
@@ -380,10 +360,8 @@ int collide_ship_weapon( obj_pair * pair )
 		}
 	}
 
-
-//	demo_do_rand_test();
 	did_hit = ship_weapon_check_collision( ship, weapon );
-//	demo_do_rand_test();
+
 	if ( !did_hit )	{
 		// Since we didn't hit, check to see if we can disable all future collisions
 		// between these two.
@@ -393,8 +371,9 @@ int collide_ship_weapon( obj_pair * pair )
 	return 0;
 }
 
-// ----------------------------------------------------------------------------
-// upper limit estimate ship speed at end of time
+/**
+ * Upper limit estimate ship speed at end of time
+ */
 float estimate_ship_speed_upper_limit( object *ship, float time ) 
 {
 	float exponent;
@@ -402,12 +381,12 @@ float estimate_ship_speed_upper_limit( object *ship, float time )
 	float factor;
 
 	delta_v = Ship_info[Ships[ship->instance].ship_info_index].max_vel.xyz.z - ship->phys_info.speed;
+	
 	if (ship->phys_info.forward_accel_time_const == 0) {
 		return ship->phys_info.speed;
 	}
+	
 	exponent = time / ship->phys_info.forward_accel_time_const;
-	//Assert( exponent >= 0);
-
 
 	factor = 1.0f - (float)exp( -exponent );
 	return ship->phys_info.speed + factor*delta_v;
@@ -418,12 +397,11 @@ float estimate_ship_speed_upper_limit( object *ship, float time )
 // to the ration of radii, but is never less than 2 m
 #define ERROR_STD	2	
 
-// ----------------------------------------------------------------------------							
-// check_inside_radius_for_big_ships()							
-// when inside radius of big ship, check if we can cull collision pair
-// determine the time when pair should next be checked
-// return 1 if pair can be culled
-// return 0 if pair can not be culled
+/**
+ * When inside radius of big ship, check if we can cull collision pair determine the time when pair should next be checked
+ * @return 1 if pair can be culled
+ * @return 0 if pair can not be culled
+ */
 int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *pair )
 {
 	vec3d error_vel;		// vel perpendicular to laser
