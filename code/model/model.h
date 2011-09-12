@@ -1131,6 +1131,7 @@ typedef struct mst_info {
 	int primary_glow_bitmap;
 	int secondary_glow_bitmap;
 	int tertiary_glow_bitmap;
+	int distortion_bitmap;
 
 	bool use_ab;
 	float glow_noise;
@@ -1141,10 +1142,13 @@ typedef struct mst_info {
 	float secondary_glow_rad_factor;
 	float tertiary_glow_rad_factor;
 	float glow_length_factor;
+	float distortion_rad_factor;
+	float distortion_length_factor;
+	bool draw_distortion;
 
 	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1),
 					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
-					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f)
+					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f), distortion_rad_factor(1.0f), distortion_length_factor(1.0f)
 				{}
 } mst_info;
 

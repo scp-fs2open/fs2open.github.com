@@ -37,6 +37,8 @@ void parse_thrust_anims(species_info *species, bool no_create)
 		generic_bitmap_init(&species->thruster_secondary_glow_info.afterburn, NULL);
 		generic_bitmap_init(&species->thruster_tertiary_glow_info.normal, NULL);
 		generic_bitmap_init(&species->thruster_tertiary_glow_info.afterburn, NULL);
+		generic_bitmap_init(&species->thruster_distortion_info.normal, NULL);
+		generic_bitmap_init(&species->thruster_distortion_info.afterburn, NULL);
 	}
 	else if (!optional_string("$ThrustAnims:"))
 	{
@@ -94,6 +96,14 @@ void parse_thrust_anims(species_info *species, bool no_create)
 	// etc.
 	if (optional_string("+Ter_Afterburn:"))
 		stuff_string(species->thruster_tertiary_glow_info.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
+	
+	// etc.
+	if (optional_string("+Dist_Normal:"))
+		stuff_string(species->thruster_distortion_info.normal.filename, F_NAME, MAX_FILENAME_LEN);
+
+	// etc.
+	if (optional_string("+Dist_Afterburn:"))
+		stuff_string(species->thruster_distortion_info.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
 }
 
 void parse_thrust_glows(species_info *species, bool no_create)

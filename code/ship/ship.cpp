@@ -859,6 +859,10 @@ void init_ship_entry(ship_info *sip)
 	sip->thruster02_glow_rad_factor = 1.0f;
 	sip->thruster03_glow_rad_factor = 1.0f;
 	sip->thruster02_glow_len_factor = 1.0f;
+	sip->thruster_dist_len_factor = 2.0f;
+	sip->thruster_dist_rad_factor = 2.0f;
+
+	sip->draw_distortion = true;
 
 	sip->splodeing_texture = -1;
 	strcpy_s(sip->splodeing_texture_name, "boom");
@@ -2688,6 +2692,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->thruster_glow_info = species->thruster_info.glow;
 		sip->thruster_secondary_glow_info = species->thruster_secondary_glow_info;
 		sip->thruster_tertiary_glow_info = species->thruster_tertiary_glow_info;
+		sip->thruster_distortion_info = species->thruster_distortion_info;
 	}
 
 	if ( optional_string("$Thruster Normal Flame:") ) {
@@ -2769,6 +2774,33 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if ( optional_string("$Thruster03 Radius factor:") ) {
 		stuff_float(&sip->thruster03_glow_rad_factor);
+	}
+
+	// Valathil - Custom Thruster Distortion
+	if ( optional_string("$Thruster Bitmap Distortion:") ) {
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
+
+		if ( VALID_FNAME(name_tmp) )
+			generic_bitmap_init( &sip->thruster_distortion_info.normal, name_tmp );
+	}
+
+	if ( optional_string("$Thruster Bitmap Distortion a:") ) {
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
+
+		if ( VALID_FNAME(name_tmp) )
+			generic_bitmap_init( &sip->thruster_distortion_info.afterburn, name_tmp );
+	}
+
+	if ( optional_string("$Thruster Distortion Radius factor:") ) {
+		stuff_float(&sip->thruster_dist_rad_factor);
+	}
+
+	if ( optional_string("$Thruster Distortion Length factor:") ) {
+		stuff_float(&sip->thruster_dist_len_factor);
+	}
+
+	if ( optional_string("$Thruster Distortion:") ) {
+		stuff_boolean(&sip->draw_distortion);
 	}
 
 	while ( optional_string("$Thruster Particles:") ) {
@@ -5777,6 +5809,7 @@ void ship_render(object * obj)
 				mst.primary_glow_bitmap = shipp->thruster_glow_bitmap;
 				mst.secondary_glow_bitmap = shipp->thruster_secondary_glow_bitmap;
 				mst.tertiary_glow_bitmap = shipp->thruster_tertiary_glow_bitmap;
+				mst.distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 				mst.use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
 				mst.glow_noise = shipp->thruster_glow_noise;
@@ -5786,6 +5819,10 @@ void ship_render(object * obj)
 				mst.secondary_glow_rad_factor = sip->thruster02_glow_rad_factor;
 				mst.tertiary_glow_rad_factor = sip->thruster03_glow_rad_factor;
 				mst.glow_length_factor = sip->thruster02_glow_len_factor;
+				mst.distortion_length_factor = sip->thruster_dist_len_factor;
+				mst.distortion_rad_factor = sip->thruster_dist_rad_factor;
+
+				mst.draw_distortion = sip->draw_distortion;
 
 				model_set_thrust(sip->model_num, &mst);
 
@@ -7232,6 +7269,8 @@ void ship_init_thrusters()
 			generic_bitmap_load(&species->thruster_secondary_glow_info.afterburn);
 			generic_bitmap_load(&species->thruster_tertiary_glow_info.normal);
 			generic_bitmap_load(&species->thruster_tertiary_glow_info.afterburn);
+			generic_bitmap_load(&species->thruster_distortion_info.normal);
+			generic_bitmap_load(&species->thruster_distortion_info.afterburn);
 		}
 
 		// glows are handled a bit strangely
@@ -7253,7 +7292,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 {
 	float rate;
 	int framenum;
-	int secondary_glow_bitmap, tertiary_glow_bitmap;
+	int secondary_glow_bitmap, tertiary_glow_bitmap, distortion_bitmap;
 	generic_anim *flame_anim, *glow_anim;
 	ship_info	*sinfo = &Ship_info[shipp->ship_info_index];
 
@@ -7266,6 +7305,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 		glow_anim = &sinfo->thruster_glow_info.afterburn;			// select afterburner glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap_id;
 		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap_id;
+		distortion_bitmap = sinfo->thruster_distortion_info.afterburn.bitmap_id;
 
 		rate = 1.5f;		// go at 1.5x faster when afterburners on
 	} else if (objp->phys_info.flags & PF_BOOSTER_ON) {
@@ -7273,6 +7313,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 		glow_anim = &sinfo->thruster_glow_info.afterburn;			// select afterburner glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap_id;
 		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap_id;
+		distortion_bitmap = sinfo->thruster_distortion_info.afterburn.bitmap_id;
 
 		rate = 2.5f;		// go at 2.5x faster when boosters on
 	} else {
@@ -7280,6 +7321,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 		glow_anim = &sinfo->thruster_glow_info.normal;				// select normal glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.normal.bitmap_id;
 		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.normal.bitmap_id;
+		distortion_bitmap = sinfo->thruster_distortion_info.normal.bitmap_id;
 
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.67 to 1.67, depending on thrust from 0 to 1
@@ -7344,6 +7386,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	// add extra thruster effects
 	shipp->thruster_secondary_glow_bitmap = secondary_glow_bitmap;
 	shipp->thruster_tertiary_glow_bitmap = tertiary_glow_bitmap;
+	shipp->thruster_distortion_bitmap = distortion_bitmap;
 }
 
 

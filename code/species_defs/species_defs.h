@@ -73,6 +73,7 @@ typedef struct species_info {
 	// Bobboau's thruster stuff
 	thrust_pair_bitmap thruster_secondary_glow_info;
 	thrust_pair_bitmap thruster_tertiary_glow_info;
+	thrust_pair_bitmap thruster_distortion_info;
 
 	// the members below this comment are not parsed in species_defs.tbl
 
