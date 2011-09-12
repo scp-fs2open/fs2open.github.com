@@ -35,12 +35,15 @@ font Fonts[MAX_FONTS];
 font *Current_font = NULL;
 
 
-// crops a string if required to force it to not exceed max_width pixels when printed.
-// Does this by dropping characters at the end of the string and adding '...' to the end.
-//    str = string to crop.  Modifies this string directly
-//    max_str = max characters allowed in str
-//    max_width = number of pixels to limit string to (less than or equal to).
-//    Returns: returns same pointer passed in for str.
+/**
+ * Crops a string if required to force it to not exceed max_width pixels when printed.
+ * Does this by dropping characters at the end of the string and adding '...' to the end.
+ *
+ * @param str		string to crop.  Modifies this string directly
+ * @param max_str	max characters allowed in str
+ * @param max_width number of pixels to limit string to (less than or equal to).
+ * @return			Returns same pointer passed in for str.
+ */
 char *gr_force_fit_string(char *str, int max_str, int max_width)
 {
 	int w;
@@ -64,8 +67,10 @@ char *gr_force_fit_string(char *str, int max_str, int max_width)
 	return str;
 }
 
-//takes the character BEFORE being offset into current font
-// Returns the letter code
+/**
+ * Takes the character BEFORE being offset into current font
+ * @return the letter code
+ */
 int get_char_width(ubyte c1,ubyte c2,int *width,int *spacing)
 {
 	int i, letter;
@@ -117,7 +122,9 @@ int get_centered_x(char *s)
 	return ((gr_screen.clip_width_unscaled - w) / 2);
 }
 
-// draws a character centered on x
+/**
+ * Draws a character centered on x
+ */
 void gr_char_centered(int x, int y, char chr)
 {
 	char str[2];
@@ -227,206 +234,6 @@ void gr_get_string_size(int *w1, int *h1, char *text, int len)
 
 
 MONITOR( FontChars )
-
-
-/*
-
-void gr8_char(int x,int y,int letter)
-{
-	font_char *ch;
-	
-	ch = &Current_font->char_data[letter];
-
-	gr_aabitmap_ex( x, y, ch->byte_width, Current_font->h, Current_font->u[letter], Current_font->v[letter] );
-
-//	mprintf(( "String = %s\n", text ));
-}
-
-
-void gr8_string( int sx, int sy, char *s )
-{
-	int width, spacing, letter;
-	int x, y;
-
-	if ( !Current_font ) return;
-	if ( !s ) return;
-	
-	gr_set_bitmap(Current_font->bitmap);
-
-	x = sx;
-	y = sy;
-
-	if (sx==0x8000) {			//centered
-		x = get_centered_x(s);
-	} else {
-		x = sx;
-	}
-
-	while (*s)	{
-		while (*s== '\n' )	{
-			s++;
-			y += Current_font->h;
-			if (sx==0x8000) {			//centered
-				x = get_centered_x(s);
-			} else {
-				x = sx;
-			}
-		}
-		if (*s == 0 ) break;
-
-		letter = get_char_width(s[0],s[1],&width,&spacing);
-
-		if (letter<0) {	//not in font, draw as space
-			x += spacing;
-			s++;
-			continue;
-		}
-		gr8_char( x, y, letter );
-	
-		x += spacing;
-		s++;
-	}
-}
-*/
-/*
-void gr8_string(int sx, int sy, char *s )
-{
-	int row,width, spacing, letter;
-	int x, y;
-
-	if ( !Current_font ) return;
-	if ( !s ) return;
-
-	x = sx;
-	y = sy;
-
-	if (sx==0x8000) {			//centered
-		x = get_centered_x(s);
-	} else {
-		x = sx;
-	}
-
-	spacing = 0;
-
-	gr_lock();
-
-
-	while (*s)	{
-		MONITOR_INC( FontChars, 1 );	
-
-		x += spacing;
-		while (*s== '\n' )	{
-			s++;
-			y += Current_font->h;
-			if (sx==0x8000) {			//centered
-				x = get_centered_x(s);
-			} else {
-				x = sx;
-			}
-		}
-		if (*s == 0 ) break;
-
-		letter = get_char_width(s[0],s[1],&width,&spacing);
-		s++;
-
-		//If not in font, draw as space
-		if (letter<0) continue;
-
-		int xd, yd, xc, yc;
-		int wc, hc;
-
-		// Check if this character is totally clipped
-		if ( x + width < gr_screen.clip_left ) continue;
-		if ( y + Current_font->h < gr_screen.clip_top ) continue;
-		if ( x > gr_screen.clip_right ) continue;
-		if ( y > gr_screen.clip_bottom ) continue;
-
-		xd = yd = 0;
-		if ( x < gr_screen.clip_left ) xd = gr_screen.clip_left - x;
-		if ( y < gr_screen.clip_top ) yd = gr_screen.clip_top - y;
-		xc = x+xd;
-		yc = y+yd;
-
-		wc = width - xd; hc = Current_font->h - yd;
-		if ( xc + wc > gr_screen.clip_right ) wc = gr_screen.clip_right - xc;
-		if ( yc + hc > gr_screen.clip_bottom ) hc = gr_screen.clip_bottom - yc;
-
-		if ( wc < 1 ) continue;
-		if ( hc < 1 ) continue;
-
-		ubyte *fp = Current_font->pixel_data + Current_font->char_data[letter].offset + xd + yd*width;
-		ubyte *dptr = GR_SCREEN_PTR(ubyte, xc, yc);			
-
-#ifndef HARDWARE_ONLY
-		if ( Current_alphacolor )	{
-			for (row=0; row<hc; row++)	{
-				#ifdef USE_INLINE_ASM
-					ubyte *lookup = &Current_alphacolor->table.lookup[0][0];
-						_asm mov edx, lookup
-						_asm xor eax, eax
-						_asm mov ecx, wc
-						_asm xor ebx, ebx
-						_asm mov edi, dptr
-						_asm mov esi, fp
-						_asm shr ecx, 1
-						_asm jz  OnlyOne
-						_asm pushf
-					InnerFontLoop:
-						_asm mov al, [edi]
-						_asm mov bl, [edi+1]
-						_asm add edi,2
-
-						_asm mov ah, [esi]
-						_asm mov bh, [esi+1]
-						_asm add esi,2
-
-						_asm mov al, [edx+eax]
-						_asm mov ah, [edx+ebx]
-
-						_asm mov [edi-2], ax
-
-						_asm dec ecx
-						_asm jnz InnerFontLoop
-
-						_asm popf
-						_asm jnc NotOdd
-
-					OnlyOne:
-						_asm mov al, [edi]
-						_asm mov ah, [esi]
-						_asm mov al, [edx+eax]
-						_asm mov [edi], al
-
-					NotOdd:
-					dptr += gr_screen.rowsize;
-					fp += width;
-				#else
-					int i;
-					for (i=0; i< wc; i++ )	{
-						*dptr++ = Current_alphacolor->table.lookup[*fp++][*dptr];
-					}
-					fp += width - wc;
-					dptr += gr_screen.rowsize - wc;
-				#endif
-			}
-		} else {		// No alpha color
-#endif
-			for (row=0; row<hc; row++)	{
-				int i;
-				for (i=0; i< wc; i++ )	{
-					if (*fp > 5 )
-						*dptr = gr_screen.current_color.raw8;
-					dptr++;
-					fp++;
-				}
-				fp += width - wc;
-				dptr += gr_screen.rowsize - wc;
-			}
-		// }
-	}
-	gr_unlock();
-}
-*/
 
 #ifdef _WIN32
 HFONT MyhFont = NULL;
@@ -542,8 +349,9 @@ void gr_font_close()
 	}
 }
 
-// Returns -1 if couldn't init font, otherwise returns the
-// font id number.
+/**
+ * @return -1 if couldn't init font, otherwise returns the font id number.
+ */
 int gr_create_font(char * typeface)
 {
 	CFILE *fp;
@@ -743,7 +551,6 @@ void parse_fonts_tbl(char *only_parse_first_font, size_t only_parse_first_font_s
 	}
 
 	reset_parse();		
-
 
 	// start parsing
 	required_string("#Fonts");

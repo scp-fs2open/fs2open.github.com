@@ -33,7 +33,6 @@ typedef struct font_kernpair {
 	signed char		offset;
 } font_kernpair;
 
-
 typedef struct font {
 	char				filename[MAX_FILENAME_LEN];
 	int				id;			// Should be 'VFNT'
@@ -72,7 +71,6 @@ extern void gr_stuff_first_font(char *first_font, size_t first_font_size);
 extern int gr_get_current_fontnum();
 extern int gr_get_fontnum(char *filename);
 extern void gr_set_font(int fontnum);
-extern void gr8_string(int x,int y,char * text);
 
 void gr_print_timestamp(int x, int y, int timestamp);
 char *gr_force_fit_string(char *str, int max_str, int max_width);
