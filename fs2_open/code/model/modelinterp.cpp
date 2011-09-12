@@ -129,11 +129,15 @@ static bool Interp_afterburner = false;
 // Bobboau's thruster stuff
 static int Interp_secondary_thrust_glow_bitmap = -1;
 static int Interp_tertiary_thrust_glow_bitmap = -1;
+static int Interp_distortion_thrust_bitmap = -1;
 static float Interp_thrust_glow_rad_factor = 1.0f;
 static float Interp_secondary_thrust_glow_rad_factor = 1.0f;
 static float Interp_tertiary_thrust_glow_rad_factor = 1.0f;
+static float Interp_distortion_thrust_rad_factor = 1.0f;
+static float Interp_distortion_thrust_length_factor = 1.0f;
 static float Interp_thrust_glow_len_factor = 1.0f;
 static vec3d Interp_thrust_rotvel = ZERO_VECTOR;
+static bool Interp_draw_distortion = true;
 
 // Bobboau's warp stuff
 static float Interp_warp_scale_x = 1.0f;
@@ -492,6 +496,7 @@ void model_set_thrust(int model_num, mst_info *mst)
 	Interp_thrust_glow_bitmap = mst->primary_glow_bitmap;
 	Interp_secondary_thrust_glow_bitmap = mst->secondary_glow_bitmap;
 	Interp_tertiary_thrust_glow_bitmap = mst->tertiary_glow_bitmap;
+	Interp_distortion_thrust_bitmap = mst->distortion_bitmap;
 
 	Interp_thrust_glow_noise = mst->glow_noise;
 	Interp_afterburner = mst->use_ab;
@@ -506,6 +511,10 @@ void model_set_thrust(int model_num, mst_info *mst)
 	Interp_secondary_thrust_glow_rad_factor = mst->secondary_glow_rad_factor;
 	Interp_tertiary_thrust_glow_rad_factor = mst->tertiary_glow_rad_factor;
 	Interp_thrust_glow_len_factor = mst->glow_length_factor;
+	Interp_distortion_thrust_rad_factor = mst->distortion_rad_factor;
+	Interp_distortion_thrust_length_factor = mst->distortion_length_factor;
+
+	Interp_draw_distortion = mst->draw_distortion;
 
 	//this isn't used
 /*
@@ -2685,11 +2694,18 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT,
 							&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor*0.5f, d
 					);
-					if (Scene_framebuffer_in_frame) {
-						vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 4 * Interp_thrust_glow_len_factor);
-						distortion_add_beam(Interp_secondary_thrust_glow_bitmap,
+					if (Scene_framebuffer_in_frame && Interp_draw_distortion) {
+						vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * Interp_distortion_thrust_length_factor);
+						int dist_bitmap;
+						if (Interp_distortion_thrust_bitmap > 0) {
+							dist_bitmap = Interp_distortion_thrust_bitmap;
+						}
+						else {
+							dist_bitmap = Interp_secondary_thrust_glow_bitmap;
+						}
+						distortion_add_beam(dist_bitmap,
 							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_DISTORTION_THRUSTER | TMAP_FLAG_SOFT_QUAD,
-							&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor, 1.0f
+							&pnt, &norm2, wVal*Interp_distortion_thrust_rad_factor*0.5f, 1.0f
 						);
 					}
 				}
