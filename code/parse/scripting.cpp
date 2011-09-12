@@ -291,20 +291,22 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 						ship* shipp = &Ships[objp->instance];
 						switch (action) {
 							case CHA_ONWPSELECTED:
-								if( !((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name == scp->data.name) || (Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name == scp->data.name)) )
+								if (! ((stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0) 
+									|| (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0)))
 									return false;
 								break;
 							case CHA_ONWPDESELECTED:
-								if ( !( ((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name == scp->data.name) && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name != scp->data.name)) || ((Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name == scp->data.name) && (Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name != scp->data.name)) ))
+								if (! (((stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name, scp->data.name) == 0) 
+									&&  ( stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) != 0)) 
+									|| ((stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name, scp->data.name) == 0) 
+									&&  (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) != 0)) ))
 									return false;
 								break;
 							case CHA_ONWPEQUIPPED: {
 								bool equipped = false;
 								for(int j = 0; j < 3; j++) {
 									if (!equipped) {
-										if ( !stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[j]].name, scp->data.name) )
-											equipped = false;
-										else {
+										if ( !stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[j]].name, scp->data.name) ) {
 											equipped = true;
 											break;
 										}
@@ -314,9 +316,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 								if (!equipped) {
 									for(int j = 0; j < 4; j++) {
 										if (!equipped) {
-											if ( !stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[j]].name, scp->data.name) )
-												equipped = false;
-											else {
+											if ( !stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[j]].name, scp->data.name) ) {
 												equipped = true;
 												break;
 											}
