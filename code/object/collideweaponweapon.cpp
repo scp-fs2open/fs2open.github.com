@@ -9,7 +9,6 @@
 
 
 
-
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "weapon/weapon.h"
@@ -21,11 +20,11 @@
 #include "network/multi.h"
 
 
-// moved to ai_profiles.tbl
-//#define	BOMB_ARM_TIME	1.5f
-
-// Checks weapon-weapon collisions.  pair->a and pair->b are weapons.
-// Returns 1 if all future collisions between these can be ignored
+/**
+ * Checks weapon-weapon collisions.  
+ * @param pair obj_pair pointer to the two objects. pair->a and pair->b are weapons.
+ * @return 1 if all future collisions between these can be ignored
+ */
 int collide_weapon_weapon( obj_pair * pair )
 {
 	float A_radius, B_radius;
@@ -55,10 +54,6 @@ int collide_weapon_weapon( obj_pair * pair )
 
 	A_radius = A->radius;
 	B_radius = B->radius;
-
-	// UnknownPlayer : Should we even be bothering with collision detection is neither one of these is a bomb?
-
-	//WMC - Here's a reason why...scripting now!
 
 	if (wipA->weapon_hitpoints > 0) {
 		if (!(wipA->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
@@ -94,9 +89,6 @@ int collide_weapon_weapon( obj_pair * pair )
 			sap = &Ships[Objects[A->parent].instance];
 			sbp = &Ships[Objects[B->parent].instance];
 
-			// MWA -- commented out next line because it was too long for output window on occation.
-			// Yes -- I should fix the output window, but I don't have time to do it now.
-			//nprintf(("AI", "[%s] %s's missile %i shot down by [%s] %s's laser %i\n", Iff_info[sbp->team].iff_name, sbp->ship_name, B->instance, Iff_info[sap->team].iff_name, sap->ship_name, A->instance));
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
 					if ((wipA->wi_flags & WIF_BOMB) && (wipB->wi_flags & WIF_BOMB)) {
@@ -167,11 +159,9 @@ int collide_weapon_weapon( obj_pair * pair )
 
 			if (Weapons[A->instance].lifeleft == 0.01f) {
 				dist = vm_vec_dist_quick(&A->pos, &wpA->homing_pos);
-				//nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipA->name, dist, wipA->inner_radius, wipA->outer_radius));
 			}
 			if (Weapons[B->instance].lifeleft == 0.01f) {
 				dist = vm_vec_dist_quick(&A->pos, &wpB->homing_pos);
-				//nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipB->name, dist, wipB->inner_radius, wipB->outer_radius));
 			}
 	#endif
 		}
@@ -183,7 +173,7 @@ int collide_weapon_weapon( obj_pair * pair )
 		}
 		if((b_override && !a_override) || (!b_override && !a_override))
 		{
-			//SHould be reversed
+			//Should be reversed
 			Script_system.SetHookObjects(4, "Weapon", B, "WeaponB", A, "Self",B, "Object", A);
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, B);
 		}

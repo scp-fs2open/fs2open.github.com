@@ -33,17 +33,9 @@ protected:
 	void (*func_custom_orientation)(camera *cam, matrix *ori);
 
 	avd_movement fov;
-
 	avd_movement pos_x;
 	avd_movement pos_y;
 	avd_movement pos_z;
-
-	//avd_movement ori_p;
-	//avd_movement ori_b;
-	//avd_movement ori_h;
-	//avd_movement ori_progress;
-	//matrix ori_initial;
-	//matrix ori_final;
 	avd_movement ori[9];
 
 	//Cache stuff
@@ -176,7 +168,6 @@ camid cam_get_camera(uint index);
 camid cam_get_current();
 uint cam_get_num();
 
-void subtitles_init();
 void subtitles_close();
 void subtitles_do_frame(float frametime);
 void subtitles_do_frame_post_shaded(float frametime);
