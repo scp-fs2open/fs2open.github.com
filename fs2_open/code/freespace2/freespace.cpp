@@ -1046,7 +1046,6 @@ void game_level_init(int seed)
 	ssm_level_init();	
 	supernova_level_init();
 	cam_init();
-	subtitles_init();
 	snd_aav_init();
 
 	// multiplayer dogfight hack
