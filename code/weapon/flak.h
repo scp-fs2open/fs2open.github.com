@@ -32,12 +32,6 @@ void flak_level_init();
 // close down flak stuff
 void flak_level_close();
 
-// given a newly created weapon, turn it into a flak weapon
-//void flak_create(weapon *wp);
-
-// free up a flak object
-//void flak_delete(int flak_index);
-
 // given a just fired flak shell, pick a detonating distance for it
 void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_pos, float weapon_subsys_strength);
 
@@ -48,14 +42,10 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 // create a muzzle flash from a flak gun based upon firing position and weapon type
 void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_weapon_class);
 
-// maybe detonate a flak shell early/late (call from weapon_process_pre(...))
-//void flak_maybe_detonate(object *obj);
-
 // set the range on a flak object
 void flak_set_range(object *objp, float range);
 
 // get the current range for the flak object
 float flak_get_range(object *objp);
-
 
 #endif
