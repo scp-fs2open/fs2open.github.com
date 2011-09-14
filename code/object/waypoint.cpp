@@ -161,7 +161,7 @@ waypoint_list *find_matching_waypoint_list(char *name)
 
 	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
 	{
-		if (!strcmp(ii->get_name(), name))
+		if (!stricmp(ii->get_name(), name))
 			return &(*ii);
 	}
 
