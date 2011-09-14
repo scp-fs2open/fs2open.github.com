@@ -70,30 +70,30 @@ static int retail_gauges[] = {
 	HUD_OBJECT_PLAYER_SHIELD,
 	HUD_OBJECT_TARGET_SHIELD,
 	HUD_OBJECT_ESCORT,
-	HUD_OBJECT_AFTERBURNER,
 	HUD_OBJECT_MISSION_TIME,
 	HUD_OBJECT_ETS_WEAPONS,
 	HUD_OBJECT_ETS_SHIELDS,
 	HUD_OBJECT_ETS_ENGINES,
-	HUD_OBJECT_EXTRA_TARGET_DATA,
 	HUD_OBJECT_TARGET_MONITOR,
+	HUD_OBJECT_EXTRA_TARGET_DATA,
+	HUD_OBJECT_AFTERBURNER,
 	HUD_OBJECT_WEAPON_ENERGY,
 	HUD_OBJECT_TEXT_WARNINGS,
-	HUD_OBJECT_MULTI_MSG,
-	HUD_OBJECT_VOICE_STATUS,
-	HUD_OBJECT_PING,
-	HUD_OBJECT_SUPERNOVA,
 	HUD_OBJECT_CENTER_RETICLE,
 	HUD_OBJECT_THROTTLE,
 	HUD_OBJECT_THREAT,
 	HUD_OBJECT_LEAD,
 	HUD_OBJECT_LOCK,
-	HUD_OBJECT_MISSILE_TRI,
-	HUD_OBJECT_TARGET_TRI,
-	HUD_OBJECT_HOSTILE_TRI,
-	HUD_OBJECT_ORIENTATION_TEE,
-	HUD_OBJECT_BRACKETS,
+	HUD_OBJECT_MULTI_MSG,
+	HUD_OBJECT_VOICE_STATUS,
+	HUD_OBJECT_PING,
+	HUD_OBJECT_SUPERNOVA,
 	HUD_OBJECT_OFFSCREEN,
+	HUD_OBJECT_BRACKETS,
+	HUD_OBJECT_ORIENTATION_TEE,
+	HUD_OBJECT_HOSTILE_TRI,
+	HUD_OBJECT_TARGET_TRI,
+	HUD_OBJECT_MISSILE_TRI,
 	HUD_OBJECT_KILLS,
 	HUD_OBJECT_FIXED_MESSAGES
 };
@@ -117,29 +117,35 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Player shield",		HUD_OBJECT_PLAYER_SHIELD,		0},
 	{ "Target shield",		HUD_OBJECT_TARGET_SHIELD,		0},
 	{ "Escort list",		HUD_OBJECT_ESCORT,				0},
-	{ "Afterburner energy", HUD_OBJECT_AFTERBURNER,			0},
 	{ "Mission time",		HUD_OBJECT_MISSION_TIME,		0},
 	{ "Ets weapons",		HUD_OBJECT_ETS_WEAPONS,			0},
 	{ "Ets shields",		HUD_OBJECT_ETS_SHIELDS,			0},
 	{ "Ets engines",		HUD_OBJECT_ETS_ENGINES,			0},
-	{ "Extra target data",	HUD_OBJECT_EXTRA_TARGET_DATA,	0},
 	{ "Target monitor",		HUD_OBJECT_TARGET_MONITOR,		0},
+	{ "Extra target data",	HUD_OBJECT_EXTRA_TARGET_DATA,	0},
+	{ "Radar",				HUD_OBJECT_RADAR_STD,			0},
+	{ "Radar orb",			HUD_OBJECT_RADAR_ORB,			0},
+	{ "Radar BSG",			HUD_OBJECT_RADAR_BSG,			0},
+	{ "Afterburner energy",	HUD_OBJECT_AFTERBURNER,			0},
 	{ "Weapon energy",		HUD_OBJECT_WEAPON_ENERGY,		0},
 	{ "Text warnings",		HUD_OBJECT_TEXT_WARNINGS,		0},
-	{ "Multiplayer messages", HUD_OBJECT_MULTI_MSG,			0},
-	{ "Voice status",		HUD_OBJECT_VOICE_STATUS,		0},
-	{ "Supernova",			HUD_OBJECT_SUPERNOVA,			0},
 	{ "Center reticle",		HUD_OBJECT_CENTER_RETICLE,		0},
 	{ "Throttle",			HUD_OBJECT_THROTTLE,			0},
 	{ "Threat indicator",	HUD_OBJECT_THREAT,				0},
 	{ "Lead indicator",		HUD_OBJECT_LEAD,				0},
+	{ "Lead sight",			HUD_OBJECT_LEAD_SIGHT,			0},
 	{ "Lock indicator",		HUD_OBJECT_LOCK,				0},
-	{ "Missile indicator",	HUD_OBJECT_MISSILE_TRI,			0},
-	{ "Target direction",	HUD_OBJECT_TARGET_TRI,			0},
-	{ "Hostile direction",	HUD_OBJECT_HOSTILE_TRI,			0},
-	{ "Orientation",		HUD_OBJECT_ORIENTATION_TEE,		0},
+	{ "Weapon linking",		HUD_OBJECT_WEAPON_LINKING,		0},
+	{ "Multiplayer messages",	HUD_OBJECT_MULTI_MSG,			0},
+	{ "Voice status",		HUD_OBJECT_VOICE_STATUS,		0},
+	{ "Ping",				HUD_OBJECT_PING,				0},
+	{ "Supernova",			HUD_OBJECT_SUPERNOVA,			0},
+	{ "Offscreen indicator",	HUD_OBJECT_OFFSCREEN,			0},
 	{ "Targeting brackets",	HUD_OBJECT_BRACKETS,			0},
-	{ "Offscreen indicator", HUD_OBJECT_OFFSCREEN,			0},
+	{ "Orientation",		HUD_OBJECT_ORIENTATION_TEE,		0},
+	{ "Hostile direction",	HUD_OBJECT_HOSTILE_TRI,			0},
+	{ "Target direction",	HUD_OBJECT_TARGET_TRI,			0},
+	{ "Missile indicator",	HUD_OBJECT_MISSILE_TRI,			0},
 	{ "Kills",				HUD_OBJECT_KILLS,				0},
 	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0}
 };
@@ -710,6 +716,18 @@ int parse_gauge_type()
 	if(optional_string("+Threat Indicator:")) 
 		return HUD_OBJECT_THREAT;
 	
+	if(optional_string("+Lead Indicator:"))
+		return HUD_OBJECT_LEAD;
+
+	if(optional_string("+Lead Sight:"))
+		return HUD_OBJECT_LEAD_SIGHT;
+
+	if(optional_string("+Lock Indicator:"))
+		return HUD_OBJECT_LOCK;
+
+	if(optional_string("+Weapon Linking:"))
+		return HUD_OBJECT_WEAPON_LINKING;
+
 	if(optional_string("+Multiplayer Messages:"))
 		return HUD_OBJECT_MULTI_MSG;
 
@@ -722,8 +740,8 @@ int parse_gauge_type()
 	if(optional_string("+Supernova:"))
 		return HUD_OBJECT_SUPERNOVA;
 
-	if(optional_string("+Lock Indicator:"))
-		return HUD_OBJECT_LOCK;
+	if(optional_string("+Orientation Tee:"))
+		return HUD_OBJECT_ORIENTATION_TEE;
 
 	if(optional_string("+Offscreen Indicator:"))
 		return HUD_OBJECT_OFFSCREEN;
@@ -740,20 +758,8 @@ int parse_gauge_type()
 	if(optional_string("+Missile Triangles:"))
 		return HUD_OBJECT_MISSILE_TRI;
 
-	if(optional_string("+Lead Indicator:"))
-		return HUD_OBJECT_LEAD;
-
-	if(optional_string("+Orientation Tee:"))
-		return HUD_OBJECT_ORIENTATION_TEE;
-
-	if(optional_string("+Lead Sight:"))
-		return HUD_OBJECT_LEAD_SIGHT;
-
 	if(optional_string("+Kills:"))
 		return HUD_OBJECT_KILLS;
-
-	if(optional_string("+Weapon Linking:"))
-		return HUD_OBJECT_WEAPON_LINKING;
 
 	if(optional_string("+Fixed Messages:"))
 		return HUD_OBJECT_FIXED_MESSAGES;
@@ -769,9 +775,6 @@ void load_gauge(int gauge, int base_w, int base_h, int font, int ship_idx)
 		break;
 	case HUD_OBJECT_MESSAGES:
 		load_gauge_messages(base_w, base_h, font, ship_idx);
-		break;
-	case HUD_OBJECT_FIXED_MESSAGES:
-		load_gauge_fixed_messages(base_w, base_h, font, ship_idx);
 		break;
 	case HUD_OBJECT_TRAINING_MESSAGES:
 		load_gauge_training_messages(base_w, base_h, font, ship_idx);
@@ -824,23 +827,8 @@ void load_gauge(int gauge, int base_w, int base_h, int font, int ship_idx)
 	case HUD_OBJECT_ESCORT:
 		load_gauge_escort_view(base_w, base_h, font, ship_idx);
 		break;
-	case HUD_OBJECT_AFTERBURNER:
-		load_gauge_afterburner(base_w, base_h, font, ship_idx);
-		break;
-	case HUD_OBJECT_WEAPON_ENERGY:
-		load_gauge_weapon_energy(base_w, base_h, font, ship_idx);
-		break;
 	case HUD_OBJECT_MISSION_TIME:
 		load_gauge_mission_time(base_w, base_h, font, ship_idx);
-		break;
-	case HUD_OBJECT_CENTER_RETICLE:
-		load_gauge_center_reticle(base_w, base_h, font, ship_idx);
-		break;
-	case HUD_OBJECT_THROTTLE:
-		load_gauge_throttle(base_w, base_h, font, ship_idx);
-		break;
-	case HUD_OBJECT_THREAT:
-		load_gauge_threat_indicator(base_w, base_h, font, ship_idx);
 		break;
 	case HUD_OBJECT_ETS_WEAPONS:
 		load_gauge_ets_weapons(base_w, base_h, font, ship_idx);
@@ -851,14 +839,11 @@ void load_gauge(int gauge, int base_w, int base_h, int font, int ship_idx)
 	case HUD_OBJECT_ETS_ENGINES:
 		load_gauge_ets_engines(base_w, base_h, font, ship_idx);
 		break;
-	case HUD_OBJECT_EXTRA_TARGET_DATA:
-		load_gauge_extra_target_data(base_w, base_h, font, ship_idx);
-		break;
 	case HUD_OBJECT_TARGET_MONITOR:
 		load_gauge_target_monitor(base_w, base_h, font, ship_idx);
 		break;
-	case HUD_OBJECT_TEXT_WARNINGS:
-		load_gauge_text_warnings(base_w, base_h, font, ship_idx);
+	case HUD_OBJECT_EXTRA_TARGET_DATA:
+		load_gauge_extra_target_data(base_w, base_h, font, ship_idx);
 		break;
 	case HUD_OBJECT_RADAR_STD:
 		load_gauge_radar_std(base_w, base_h, font, ship_idx);
@@ -868,6 +853,33 @@ void load_gauge(int gauge, int base_w, int base_h, int font, int ship_idx)
 		break;
 	case HUD_OBJECT_RADAR_BSG:
 		load_gauge_radar_dradis(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_AFTERBURNER:
+		load_gauge_afterburner(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_WEAPON_ENERGY:
+		load_gauge_weapon_energy(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_TEXT_WARNINGS:
+		load_gauge_text_warnings(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_CENTER_RETICLE:
+		load_gauge_center_reticle(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_THROTTLE:
+		load_gauge_throttle(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_THREAT:
+		load_gauge_threat_indicator(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_LEAD:
+		load_gauge_lead(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_LEAD_SIGHT:
+		load_gauge_lead_sight(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_LOCK:
+		load_gauge_lock(base_w, base_h, font, ship_idx);
 		break;
 	case HUD_OBJECT_WEAPON_LINKING:
 		load_gauge_weapon_linking(base_w, base_h, font, ship_idx);
@@ -884,14 +896,14 @@ void load_gauge(int gauge, int base_w, int base_h, int font, int ship_idx)
 	case HUD_OBJECT_SUPERNOVA:
 		load_gauge_supernova(base_w, base_h, font, ship_idx);
 		break;
-	case HUD_OBJECT_LOCK:
-		load_gauge_lock(base_w, base_h, font, ship_idx);
-		break;
 	case HUD_OBJECT_OFFSCREEN:
 		load_gauge_offscreen(base_w, base_h, font, ship_idx);
 		break;
 	case HUD_OBJECT_BRACKETS:
 		load_gauge_brackets(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_ORIENTATION_TEE:
+		load_gauge_orientation_tee(base_w, base_h, font, ship_idx);
 		break;
 	case HUD_OBJECT_HOSTILE_TRI:
 		load_gauge_hostile_tri(base_w, base_h, font, ship_idx);
@@ -902,17 +914,11 @@ void load_gauge(int gauge, int base_w, int base_h, int font, int ship_idx)
 	case HUD_OBJECT_MISSILE_TRI:
 		load_gauge_missile_tri(base_w, base_h, font, ship_idx);
 		break;
-	case HUD_OBJECT_LEAD:
-		load_gauge_lead(base_w, base_h, font, ship_idx);
-		break;
-	case HUD_OBJECT_ORIENTATION_TEE:
-		load_gauge_orientation_tee(base_w, base_h, font, ship_idx);
-		break;
-	case HUD_OBJECT_LEAD_SIGHT:
-		load_gauge_lead_sight(base_w, base_h, font, ship_idx);
-		break;
 	case HUD_OBJECT_KILLS:
 		load_gauge_kills(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_FIXED_MESSAGES:
+		load_gauge_fixed_messages(base_w, base_h, font, ship_idx);
 		break;
 	default:
 		Warning(LOCATION, "Invalid gauge found in hud_gauges.tbl");

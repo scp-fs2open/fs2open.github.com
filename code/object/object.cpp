@@ -1269,8 +1269,9 @@ void obj_move_all_post(object *objp, float frametime)
 						rad = objp->radius;
 					}
 					// P goes from 0 to 1 to 0 over the life of the explosion
-					
-					light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b, -1 );
+					// Only do this if rad is > 0.0000001f
+					if (rad > 0.0001f)
+						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b, -1 );
 				}
 			}
 

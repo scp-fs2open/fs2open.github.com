@@ -3,8 +3,9 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="code" />
+		<Option pch_mode="2" />
 		<Option compiler="gcc" />
-		<Option virtualFolders="ai/;anim/;autopilot/;asteroid/;bmpman/;camera/;cfile/;cmdline/;cmeasure/;controlconfig/;cutscene/;ddsutils/;debris/;debugconsole/;exceptionhandler/;fireball/;fs2netd/;gamehelp/;gamesequence/;gamesnd/;globalincs/;graphics/;hud/;iff_defs/;inetfile/;io/;jpegutils/;jumpnode/;lab/;lighting/;localization/;math/;menuui/;mission/;missionui/;model/;nebula/;network/;object/;observer/;osapi/;palman/;parse/;particle/;pcxutils/;physics/;playerman/;popup/;radar/;render/;ship/;sound/;species_defs/;starfield/;stats/;tgautils/;ui/;vcodec/;weapon/;windows_stub/;sound/ogg/;graphics/OpenGL Headers/;graphics/OpenGL Sources/;" />
+		<Option virtualFolders="ai/;anim/;autopilot/;asteroid/;bmpman/;camera/;cfile/;cmdline/;cmeasure/;controlconfig/;cutscene/;ddsutils/;debris/;debugconsole/;exceptionhandler/;fireball/;fs2netd/;gamehelp/;gamesequence/;gamesnd/;globalincs/;graphics/;hud/;iff_defs/;inetfile/;io/;jpegutils/;jumpnode/;lab/;lighting/;localization/;math/;menuui/;mission/;missionui/;model/;nebula/;network/;object/;observer/;osapi/;palman/;parse/;particle/;pcxutils/;physics/;playerman/;popup/;radar/;render/;ship/;sound/;species_defs/;starfield/;stats/;tgautils/;ui/;weapon/;windows_stub/;sound/ogg/;graphics/OpenGL Headers/;graphics/OpenGL Sources/;" />
 		<Build>
 			<Target title="Debug">
 				<Option output="../Debug/code/lib/libcode" prefix_auto="1" extension_auto="1" />
@@ -143,6 +144,8 @@
 		<Unit filename="../../../code/cfile/cfilesystem.h">
 			<Option virtualFolder="cfile/" />
 		</Unit>
+		<Unit filename="../../../code/cfilearchiver/cfilearchiver.cpp" />
+		<Unit filename="../../../code/cfileextractor/cfileextractor.cpp" />
 		<Unit filename="../../../code/cmdline/cmdline.cpp">
 			<Option virtualFolder="cmdline/" />
 		</Unit>
@@ -215,6 +218,8 @@
 		<Unit filename="../../../code/debugconsole/console.cpp">
 			<Option virtualFolder="debugconsole/" />
 		</Unit>
+		<Unit filename="../../../code/debugconsole/dbugfile.cpp" />
+		<Unit filename="../../../code/debugconsole/dbugfile.h" />
 		<Unit filename="../../../code/debugconsole/timerbar.cpp">
 			<Option virtualFolder="debugconsole/" />
 		</Unit>
@@ -227,6 +232,9 @@
 		<Unit filename="../../../code/exceptionhandler/exceptionhandler.h">
 			<Option virtualFolder="exceptionhandler/" />
 		</Unit>
+		<Unit filename="../../../code/external_dll/externalcode.h" />
+		<Unit filename="../../../code/external_dll/trackirglobal.cpp" />
+		<Unit filename="../../../code/external_dll/trackirpublic.h" />
 		<Unit filename="../../../code/fireball/fireballs.cpp">
 			<Option virtualFolder="fireball/" />
 		</Unit>
@@ -317,7 +325,22 @@
 		<Unit filename="../../../code/globalincs/linklist.h">
 			<Option virtualFolder="globalincs/" />
 		</Unit>
+		<Unit filename="../../../code/globalincs/mspdb_callstack.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/mspdb_callstack.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
 		<Unit filename="../../../code/globalincs/pstypes.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/safe_strings.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/safe_strings.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/safe_strings_test.cpp">
 			<Option virtualFolder="globalincs/" />
 		</Unit>
 		<Unit filename="../../../code/globalincs/systemvars.cpp">
@@ -330,6 +353,9 @@
 			<Option virtualFolder="globalincs/" />
 		</Unit>
 		<Unit filename="../../../code/globalincs/version.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/vmallocator.h">
 			<Option virtualFolder="globalincs/" />
 		</Unit>
 		<Unit filename="../../../code/graphics/2d.cpp">
@@ -350,6 +376,11 @@
 		<Unit filename="../../../code/graphics/generic.h">
 			<Option virtualFolder="graphics/" />
 		</Unit>
+		<Unit filename="../../../code/graphics/gl/GLAUX.H" />
+		<Unit filename="../../../code/graphics/gl/GLU.H" />
+		<Unit filename="../../../code/graphics/gl/Gl.h" />
+		<Unit filename="../../../code/graphics/gl/Glext.h" />
+		<Unit filename="../../../code/graphics/gl/wglext.h" />
 		<Unit filename="../../../code/graphics/grbatch.cpp">
 			<Option virtualFolder="graphics/" />
 		</Unit>
@@ -594,12 +625,6 @@
 			<Option virtualFolder="io/" />
 		</Unit>
 		<Unit filename="../../../code/io/timer.h">
-			<Option virtualFolder="io/" />
-		</Unit>
-		<Unit filename="../../../code/io/trackir.cpp">
-			<Option virtualFolder="io/" />
-		</Unit>
-		<Unit filename="../../../code/io/trackir.h">
 			<Option virtualFolder="io/" />
 		</Unit>
 		<Unit filename="../../../code/jpgutils/jpgutils.cpp">
@@ -893,6 +918,8 @@
 		<Unit filename="../../../code/missionui/redalert.h">
 			<Option virtualFolder="missionui/" />
 		</Unit>
+		<Unit filename="../../../code/mm/mmreg.h" />
+		<Unit filename="../../../code/mm/msacm.h" />
 		<Unit filename="../../../code/model/model.h">
 			<Option virtualFolder="model/" />
 		</Unit>
@@ -1043,6 +1070,12 @@
 		<Unit filename="../../../code/network/multi_respawn.h">
 			<Option virtualFolder="network/" />
 		</Unit>
+		<Unit filename="../../../code/network/multi_sexp.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_sexp.h">
+			<Option virtualFolder="network/" />
+		</Unit>
 		<Unit filename="../../../code/network/multi_team.cpp">
 			<Option virtualFolder="network/" />
 		</Unit>
@@ -1104,6 +1137,9 @@
 			<Option virtualFolder="network/" />
 		</Unit>
 		<Unit filename="../../../code/network/stand_gui-unix.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/stand_gui.cpp">
 			<Option virtualFolder="network/" />
 		</Unit>
 		<Unit filename="../../../code/network/stand_gui.h">
@@ -1226,12 +1262,6 @@
 		<Unit filename="../../../code/parse/parselo.h">
 			<Option virtualFolder="parse/" />
 		</Unit>
-		<Unit filename="../../../code/parse/python.cpp">
-			<Option virtualFolder="parse/" />
-		</Unit>
-		<Unit filename="../../../code/parse/python.h">
-			<Option virtualFolder="parse/" />
-		</Unit>
 		<Unit filename="../../../code/parse/scripting.cpp">
 			<Option virtualFolder="parse/" />
 		</Unit>
@@ -1298,6 +1328,8 @@
 		<Unit filename="../../../code/playerman/playercontrol.cpp">
 			<Option virtualFolder="playerman/" />
 		</Unit>
+		<Unit filename="../../../code/pngutils/pngutils.cpp" />
+		<Unit filename="../../../code/pngutils/pngutils.h" />
 		<Unit filename="../../../code/popup/popup.cpp">
 			<Option virtualFolder="popup/" />
 		</Unit>
@@ -1397,13 +1429,13 @@
 		<Unit filename="../../../code/ship/subsysdamage.h">
 			<Option virtualFolder="ship/" />
 		</Unit>
-		<Unit filename="../../../code/sound/acm-openal.cpp">
+		<Unit filename="../../../code/sound/acm.cpp">
 			<Option virtualFolder="sound/" />
 		</Unit>
 		<Unit filename="../../../code/sound/acm.h">
 			<Option virtualFolder="sound/" />
 		</Unit>
-		<Unit filename="../../../code/sound/audiostr-openal.cpp">
+		<Unit filename="../../../code/sound/audiostr.cpp">
 			<Option virtualFolder="sound/" />
 		</Unit>
 		<Unit filename="../../../code/sound/audiostr.h">
@@ -1436,25 +1468,16 @@
 		<Unit filename="../../../code/sound/fsspeech.h">
 			<Option virtualFolder="sound/" />
 		</Unit>
-		<Unit filename="../../../code/sound/midifile.cpp">
-			<Option virtualFolder="sound/" />
-		</Unit>
-		<Unit filename="../../../code/sound/midifile.h">
-			<Option virtualFolder="sound/" />
-		</Unit>
-		<Unit filename="../../../code/sound/midiseq.h">
-			<Option virtualFolder="sound/" />
-		</Unit>
 		<Unit filename="../../../code/sound/ogg/ogg.cpp">
 			<Option virtualFolder="sound/ogg/" />
 		</Unit>
 		<Unit filename="../../../code/sound/ogg/ogg.h">
 			<Option virtualFolder="sound/ogg/" />
 		</Unit>
-		<Unit filename="../../../code/sound/rbaudio.cpp">
+		<Unit filename="../../../code/sound/openal.cpp">
 			<Option virtualFolder="sound/" />
 		</Unit>
-		<Unit filename="../../../code/sound/rbaudio.h">
+		<Unit filename="../../../code/sound/openal.h">
 			<Option virtualFolder="sound/" />
 		</Unit>
 		<Unit filename="../../../code/sound/rtvoice.cpp">
@@ -1577,12 +1600,6 @@
 		<Unit filename="../../../code/ui/window.cpp">
 			<Option virtualFolder="ui/" />
 		</Unit>
-		<Unit filename="../../../code/vcodec/codec1.cpp">
-			<Option virtualFolder="vcodec/" />
-		</Unit>
-		<Unit filename="../../../code/vcodec/codec1.h">
-			<Option virtualFolder="vcodec/" />
-		</Unit>
 		<Unit filename="../../../code/weapon/beam.cpp">
 			<Option virtualFolder="weapon/" />
 		</Unit>
@@ -1643,6 +1660,101 @@
 		<Unit filename="../../../code/windows_stub/stubs.cpp">
 			<Option virtualFolder="windows_stub/" />
 		</Unit>
+		<Unit filename="../../../libpng/png.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/png.h" />
+		<Unit filename="../../../libpng/pngconf.h" />
+		<Unit filename="../../../libpng/pngdebug.h" />
+		<Unit filename="../../../libpng/pngerror.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngget.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pnginfo.h" />
+		<Unit filename="../../../libpng/pnglibconf.h" />
+		<Unit filename="../../../libpng/pngmem.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngpread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngpriv.h" />
+		<Unit filename="../../../libpng/pngread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngrio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngrtran.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngrutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngset.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngstruct.h" />
+		<Unit filename="../../../libpng/pngtrans.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngwio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngwrite.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngwtran.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libpng/pngwutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/adler32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/compress.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/crc32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/crc32.h" />
+		<Unit filename="../../../zlib/deflate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/deflate.h" />
+		<Unit filename="../../../zlib/infback.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/inffast.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/inffast.h" />
+		<Unit filename="../../../zlib/inffixed.h" />
+		<Unit filename="../../../zlib/inflate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/inflate.h" />
+		<Unit filename="../../../zlib/inftrees.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/inftrees.h" />
+		<Unit filename="../../../zlib/trees.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/trees.h" />
+		<Unit filename="../../../zlib/uncompr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/zconf.h" />
+		<Unit filename="../../../zlib/zlib.h" />
+		<Unit filename="../../../zlib/zutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../zlib/zutil.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
