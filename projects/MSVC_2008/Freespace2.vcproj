@@ -51,8 +51,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -75,7 +75,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_VC08;"
+				PreprocessorDefinitions="_DEBUG;_VC08;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -163,8 +163,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -186,7 +186,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_VC08;"
+				PreprocessorDefinitions="_DEBUG;_VC08;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -274,8 +274,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -299,7 +299,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_VC08;"
+				PreprocessorDefinitions="_DEBUG;_VC08;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -387,8 +387,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -412,7 +412,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_VC08;_SSE2;"
+				PreprocessorDefinitions="_DEBUG;_VC08;_SSE2;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -500,8 +500,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -525,7 +525,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_VC08;"
+				PreprocessorDefinitions="_DEBUG;_VC08;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -613,8 +613,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -638,7 +638,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_VC08;_SSE2;"
+				PreprocessorDefinitions="_DEBUG;_VC08;_SSE2;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -733,8 +733,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -756,7 +756,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_VC08;"
+				PreprocessorDefinitions="NDEBUG;_VC08;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -850,8 +850,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -873,7 +873,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_VC08;"
+				PreprocessorDefinitions="NDEBUG;_VC08;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -967,8 +967,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -991,7 +991,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_VC08;"
+				PreprocessorDefinitions="NDEBUG;_VC08;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -1085,8 +1085,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -1109,7 +1109,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_VC08;_SSE2;"
+				PreprocessorDefinitions="NDEBUG;_VC08;_SSE2;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -1203,8 +1203,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -1227,7 +1227,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_VC08;"
+				PreprocessorDefinitions="NDEBUG;_VC08;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
@@ -1321,8 +1321,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../speech/include;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -1345,7 +1345,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_VC08;_SSE2;"
+				PreprocessorDefinitions="NDEBUG;_VC08;_SSE2;FS2_VOICER;"
 				Culture="1033"
 			/>
 			<Tool
