@@ -329,6 +329,11 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 							
 								break;
 							}
+							case CHA_ONWPFIRED: {
+								if (! (stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0 || (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0)))
+									return false;
+							}
+
 						}
 					} // case CHC_WEAPONCLASS
 					break;
