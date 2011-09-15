@@ -9288,6 +9288,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	int			banks_fired, have_timeout;				// used for multiplayer to help determine whether or not to send packet
 	have_timeout = 0;			// used to help tell us whether or not we need to send a packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
+	bool has_fired = false;		// used to determine whether we should fire the scripting hook
 
 	int			sound_played;	// used to track what sound is played.  If the player is firing two banks
 										// of the same laser, we only want to play one sound
@@ -9580,6 +9581,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					fbfire_info.point = j;
 
 					beam_fire(&fbfire_info);
+					has_fired = true;
 					num_fired++;
 				}
 			}
@@ -9856,6 +9858,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							// of weapon_create
 
 							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id );
+							has_fired = true;
 
 							weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 
@@ -10005,16 +10008,18 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 	}
 
-	object *objp = &Objects[shipp->objnum];
-	object* target;
-	if (Ai_info[shipp->ai_index].target_objnum != -1)
-		target = &Objects[Ai_info[shipp->ai_index].target_objnum];
-	else
-		target = NULL;
-	if (objp == Player_obj && Player_ai->target_objnum != -1)
-		target = &Objects[Player_ai->target_objnum]; 
-	Script_system.SetHookObjects(2, "User", objp, "Target", target);
-	Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
+	if (has_fired) {
+		object *objp = &Objects[shipp->objnum];
+		object* target;
+		if (Ai_info[shipp->ai_index].target_objnum != -1)
+			target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+		else
+			target = NULL;
+		if (objp == Player_obj && Player_ai->target_objnum != -1)
+			target = &Objects[Player_ai->target_objnum]; 
+		Script_system.SetHookObjects(2, "User", objp, "Target", target);
+		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
+	}
 
 	return num_fired;
 }
@@ -10255,6 +10260,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	ai_info		*aip;
 	polymodel	*pm;
 	vec3d		missile_point, pnt, firing_pos;
+	bool has_fired = false;		// Used to determine whether to fire the scripting hook
 
 	Assert( obj != NULL );
 
@@ -10573,6 +10579,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
 			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
+			has_fired = true;
 
 
 			// create the muzzle flash effect
@@ -10693,16 +10700,18 @@ done_secondary:
 
 	}	
 
-	object *objp = &Objects[shipp->objnum];
-	object* target;
-	if (Ai_info[shipp->ai_index].target_objnum != -1)
-		target = &Objects[Ai_info[shipp->ai_index].target_objnum];
-	else
-		target = NULL;
-	if (objp == Player_obj && Player_ai->target_objnum != -1)
-		target = &Objects[Player_ai->target_objnum]; 
-	Script_system.SetHookObjects(2, "User", objp, "Target", target);
-	Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
+	if (has_fired) {
+		object *objp = &Objects[shipp->objnum];
+		object* target;
+		if (Ai_info[shipp->ai_index].target_objnum != -1)
+			target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+		else
+			target = NULL;
+		if (objp == Player_obj && Player_ai->target_objnum != -1)
+			target = &Objects[Player_ai->target_objnum]; 
+		Script_system.SetHookObjects(2, "User", objp, "Target", target);
+		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
+	}
 
 	return num_fired;
 }
