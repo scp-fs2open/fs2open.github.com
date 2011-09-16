@@ -21,7 +21,6 @@
 #include "ai/aiinternal.h"	//Included last, so less includes are needed
 #include "iff_defs/iff_defs.h"
 #include "weapon/muzzleflash.h"
-#include "parse/scripting.h"
 
 #include <limits.h>
 
@@ -1778,17 +1777,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		turret->turret_next_fire_stamp = timestamp((int) wait);
 	}
 
-	objp = &Objects[parent_objnum];
-	object* target;
-	if (Ai_info[Ships[Objects[parent_objnum].instance].ai_index].target_objnum != -1)
-		target = &Objects[Ai_info[Ships[Objects[parent_objnum].instance].ai_index].target_objnum];
-	else
-		target = NULL;
-	if (objp == Player_obj && Player_ai->target_objnum != -1)
-		target = &Objects[turret->turret_enemy_objnum]; 
-	Script_system.SetHookObjects(2, "User", objp, "Target", target);
-	Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
-
 	turret->flags |= SSF_HAS_FIRED; //set has fired flag for scriptng - nuke
 	return true;
 }
@@ -1855,17 +1843,6 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum );
 		}
 	}
-
-	object *objp = &Objects[tsi->parent_objnum];
-	object* target;
-	if (Ai_info[Ships[Objects[tsi->parent_objnum].instance].ai_index].target_objnum != -1)
-		target = &Objects[Ai_info[Ships[Objects[tsi->target_objnum].instance].ai_index].target_objnum];
-	else
-		target = NULL;
-	if (objp == Player_obj && Player_ai->target_objnum != -1)
-		target = &Objects[tsi->target_objnum]; 
-	Script_system.SetHookObjects(2, "User", objp, "Target", target);
-	Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
 }
 
 int Num_ai_firing = 0;
