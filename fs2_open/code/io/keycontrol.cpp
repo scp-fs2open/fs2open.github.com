@@ -69,18 +69,35 @@
 #define MAX_TIME_MULTIPLIER		64
 #define MAX_TIME_DIVIDER		4
 
-#define CHEAT_BUFFER_LEN	20
-#define CHEATSPOT				(CHEAT_BUFFER_LEN - 1)
-
+#define CHEAT_BUFFER_LEN	17
 char CheatBuffer[CHEAT_BUFFER_LEN+1];
 
-char *Cheat_code = NOX("33BE^(8]C01(:=BHt");					// www.freespace2.com
-char *Cheat_code_fish = NOX("bDc9y+$;#AIDRoouM");			// vasudanswuvfishes
-char *Cheat_code_headz = NOX("!;:::@>F7L?@@2:@A");			// humanheadsinside.
-char *Cheat_code_tooled = NOX("sipp-^rM@L!U^usjX");		// tooledworkedowned
-char *Cheat_code_pirate = NOX("MAP4YP[4=-2uC(yJ^");		// arrrrwalktheplank	
-char *Cheat_code_skip = NOX("7!ICkSI\"(8n3JesBP");			// skipmemymissionyo
-									  // 666)6=N79+Z45=BE0e
+enum cheatCode {
+	CHEAT_CODE_NONE = 0,
+	CHEAT_CODE_FREESPACE,
+	CHEAT_CODE_FISH,
+	CHEAT_CODE_HEADZ,
+	CHEAT_CODE_TOOLED,
+	CHEAT_CODE_PIRATE,
+	CHEAT_CODE_SKIP
+};
+
+struct Cheat {
+	cheatCode code;
+	char* data;
+};
+
+static struct Cheat cheatsTable[] = {
+  { CHEAT_CODE_FREESPACE, "www.freespace2.com" },
+  { CHEAT_CODE_FISH,      "vasudanswuvfishes" },
+  { CHEAT_CODE_HEADZ,     "humanheadsinside." },
+  { CHEAT_CODE_TOOLED,    "tooledworkedowned" },
+  { CHEAT_CODE_PIRATE,    "arrrrwalktheplank" },
+  { CHEAT_CODE_SKIP,      "skipmemymissionyo" }
+};
+
+#define CHEATS_TABLE_LEN	6
+
 int Tool_enabled = 0;
 bool Perspective_locked=false;
 bool quit_mission_popup_shown = false;
@@ -1424,37 +1441,9 @@ void game_process_pause_key()
 	}
 }
 
-#define CRYPT_STRING_LENGTH 17
-
-char *jcrypt (char *plainstring)
-{
-	int i,t,len;
-	static char cryptstring[CRYPT_STRING_LENGTH + 1];
-
-	len=strlen (plainstring);
-	if (len > CRYPT_STRING_LENGTH)
-		len = CRYPT_STRING_LENGTH;
-   
-	for (i = 0;i < len; i++) {
-		cryptstring[i]=0; 
-
-		for (t = 0; t < len; t++) {
-			cryptstring[i]^=(plainstring[t] ^ plainstring[i%(t+1)]);
-			cryptstring[i]%=90;
-			cryptstring[i]+=33;
-		}
-	}
-
-	cryptstring[i]=0;
-	return ((char *)cryptstring);
-}
-
-
 // process cheat codes
 void game_process_cheats(int k)
 {
-	char *cryptstring;
-
 	if ( k == 0 ){
 		return;
 	}
@@ -1465,17 +1454,25 @@ void game_process_cheats(int k)
 		return;
 	}
 
-	k = key_to_ascii(k);
-
 	for (size_t i = 0; i < CHEAT_BUFFER_LEN; i++){
 		CheatBuffer[i]=CheatBuffer[i+1];
 	}
 
-	CheatBuffer[CHEATSPOT]=(char)k;
-
-	cryptstring=jcrypt(&CheatBuffer[CHEAT_BUFFER_LEN - CRYPT_STRING_LENGTH]);		
+	CheatBuffer[CHEAT_BUFFER_LEN - 1] = (char)key_to_ascii(k);
 	
-	if( !strcmp(Cheat_code, cryptstring) && !(Game_mode & GM_MULTIPLAYER)){
+	cheatCode detectedCheatCode = CHEAT_CODE_NONE;
+	int i=0;
+
+	for(i=0; i < CHEATS_TABLE_LEN; i++) {
+		Cheat cheat = cheatsTable[i];
+
+		if(!strncmp(cheat.data, CheatBuffer, CHEAT_BUFFER_LEN)){
+			detectedCheatCode = cheat.code;
+			break;
+		}
+	}
+
+	if(detectedCheatCode == CHEAT_CODE_FREESPACE){
 		Cheats_enabled = 1;
 
 		// cheating allows the changing of weapons so we have to grab anything
@@ -1485,28 +1482,28 @@ void game_process_cheats(int k)
 
 		HUD_printf("Cheats enabled");
 	}
-	if( !strcmp(Cheat_code_fish, cryptstring) ){
+	if(detectedCheatCode == CHEAT_CODE_FISH){
 		// only enable in the Vasudan main hall
 		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
 			extern void fishtank_start();
 			fishtank_start();
 		}
 	}
-	if( !strcmp(Cheat_code_headz, cryptstring) ){
+	if(detectedCheatCode == CHEAT_CODE_HEADZ){
 		// only enable in the Vasudan main hall
 		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
 			main_hall_vasudan_funny();
 		}
 	}
-	if( !strcmp(Cheat_code_skip, cryptstring) && (gameseq_get_state() == GS_STATE_MAIN_MENU)){
+	if(detectedCheatCode ==  CHEAT_CODE_SKIP && (gameseq_get_state() == GS_STATE_MAIN_MENU)){
 		extern void main_hall_campaign_cheat();
 		main_hall_campaign_cheat();
 	}
-	if( !strcmp(Cheat_code_tooled, cryptstring) && (Game_mode & GM_IN_MISSION)){
+	if(detectedCheatCode == CHEAT_CODE_TOOLED && (Game_mode & GM_IN_MISSION)){
 		Tool_enabled = 1;
 		HUD_printf("Prepare to be taken to school");
 	}
-	if( !strcmp(Cheat_code_pirate, cryptstring) && (Game_mode & GM_IN_MISSION) && (Player_obj != NULL)){
+	if(detectedCheatCode == CHEAT_CODE_PIRATE && (Game_mode & GM_IN_MISSION) && (Player_obj != NULL)){
 		extern void prevent_spawning_collision(object *new_obj);
 		ship_subsys *ptr;
 		char name[NAME_LENGTH];
