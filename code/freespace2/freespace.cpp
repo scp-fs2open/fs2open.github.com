@@ -1415,7 +1415,17 @@ void game_post_level_init()
 
 	freespace_mission_load_stuff();
 
+	// m!m Make hv.Player available in "On Mission Start" hook
+	if(Player_obj)
+		Script_system.SetHookObject("Player", Player_obj);
+
+	// HACK: That scripting hook should be in mission so GM_IN_MISSION has to be set
+	Game_mode |= GM_IN_MISSION;
 	Script_system.RunCondition(CHA_MISSIONSTART);
+	Game_mode &= ~GM_IN_MISSION;
+
+	if (Player_obj)
+		Script_system.RemHookVar("Player");
 }
 
 /**
