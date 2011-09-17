@@ -882,8 +882,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_NO_PAIN_FLASH					(1 << 11)	// The E - disable red pain flash
 #define SIF2_ALLOW_LANDINGS					(1 << 12)	// SUSHI: Automatically set if any subsystems allow landings (as a shortcut)
 #define SIF2_NO_ETS							(1 << 13)	// The E - No ETS on this ship class
+#define SIF2_NO_LIGHTING					(1 << 14)	// Valathil - No lighting for this ship
 // !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
-#define	MAX_SHIP_FLAGS	14		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	15		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
