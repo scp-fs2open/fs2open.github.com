@@ -179,7 +179,7 @@ waypoint *find_matching_waypoint(char *name)
 		uint len = strlen(ii->get_name());
 
 		// the first half (before the :) matches
-		if (!strncmp(ii->get_name(), name, len))
+		if (!strnicmp(ii->get_name(), name, len))
 		{
 			// this is ok because it could be "Waypoint path 1" vs. "Waypoint path 10"
 			if (*(name + len) != ':')
