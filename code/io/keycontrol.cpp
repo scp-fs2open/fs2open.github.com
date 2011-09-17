@@ -41,7 +41,6 @@
 #include "hud/hudconfig.h"
 #include "hud/hudmessage.h"
 #include "network/multi_pmsg.h"
-#include "globalincs/crypt.h"
 #include "starfield/supernova.h"
 #include "mission/missionmessage.h"
 #include "menuui/mainhallmenu.h"
@@ -1540,6 +1539,32 @@ void game_process_pause_key()
 		gameseq_post_event( GS_EVENT_PAUSE_GAME );
 	}
 }
+
+#define CRYPT_STRING_LENGTH 17
+
+char *jcrypt (char *plainstring)
+{
+	int i,t,len;
+	static char cryptstring[CRYPT_STRING_LENGTH + 1];
+
+	len=strlen (plainstring);
+	if (len > CRYPT_STRING_LENGTH)
+		len = CRYPT_STRING_LENGTH;
+   
+	for (i = 0;i < len; i++) {
+		cryptstring[i]=0; 
+
+		for (t = 0; t < len; t++) {
+			cryptstring[i]^=(plainstring[t] ^ plainstring[i%(t+1)]);
+			cryptstring[i]%=90;
+			cryptstring[i]+=33;
+		}
+	}
+
+	cryptstring[i]=0;
+	return ((char *)cryptstring);
+}
+
 
 // process cheat codes
 void game_process_cheats(int k)

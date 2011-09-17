@@ -295,6 +295,7 @@ flag_def_list Ship_flags[] = {
 	{ "no primary linking",			SIF2_NO_PRIMARY_LINKING,	1 },
 	{ "no pain flash",				SIF2_NO_PAIN_FLASH,			1 },
 	{ "no ets",						SIF2_NO_ETS,				1 },
+	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -5914,6 +5915,9 @@ void ship_render(object * obj)
 						shipp->shader_effect_active = false;
 				}
 			}
+
+			if(sip->flags2 & SIF2_NO_LIGHTING)
+				render_flags |= MR_NO_LIGHTING;
 
 			//draw weapon models
 			if (sip->draw_models && !(shipp->flags2 & SF2_CLOAKED)) {
