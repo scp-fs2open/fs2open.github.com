@@ -2376,6 +2376,31 @@ ADE_VIRTVAR(VerticalThrust, l_Physics, "number", "Vertical thrust amount (0-1), 
 	return ade_set_args(L, "f", pih->pi->vert_thrust);
 }
 
+ADE_VIRTVAR(AfterburnerActive, l_Physics, "boolean", "Specifies if the afterburner is active or not", "boolean", "true if afterburner is active false otherwise")
+{
+	physics_info_h *pih;
+	bool set = false;
+
+	if(!ade_get_args(L, "o|b", l_Physics.GetPtr(&pih), &set))
+		return ade_set_error(L, "b", false);
+
+	if(!pih->IsValid())
+		return ade_set_error(L, "b", false);
+	
+	if (ADE_SETTING_VAR)
+	{
+		if(set)
+			pih->pi->flags |= PF_AFTERBURNER_ON;
+		else
+			pih->pi->flags &= ~PF_AFTERBURNER_ON;
+	}
+
+	if (pih->pi->flags & PF_AFTERBURNER_ON)
+		return ade_set_args(L, "b",  true);
+	else
+		return ade_set_args(L, "b",  false);
+}
+
 ADE_FUNC(isValid, l_Physics, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
 	physics_info_h *pih;
@@ -6062,6 +6087,18 @@ ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boo
 		return ADE_RETURN_TRUE;}
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isTurret, l_Subsystem, NULL, "Determines if this subsystem is a turret", "boolean", "true if subsystem is turret, false otherwise or nil on error")
+{
+	ship_subsys_h *sso;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if (!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", sso->ss->system_info->type == SUBSYSTEM_TURRET);
 }
 
 ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
