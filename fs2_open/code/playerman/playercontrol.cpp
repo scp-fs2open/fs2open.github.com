@@ -1853,27 +1853,27 @@ void player_maybe_play_all_alone_msg()
 
 void player_set_padlock_state()
 {
-	if ( check_control_timef(PADLOCK_UP) ) {
+	if ( check_control(PADLOCK_UP) ) {
 		chase_slew_angles.h = 0.0f;
 		chase_slew_angles.p = -PI_2;
 		Viewer_mode |= VM_PADLOCK_UP;
 		return;
 	}
-	if ( check_control_timef(PADLOCK_DOWN) ) {
+	if ( check_control(PADLOCK_DOWN) ) {
 		chase_slew_angles.h = -PI;
 		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= VM_PADLOCK_REAR;
 		return;
 	}
 
-	if ( check_control_timef(PADLOCK_RIGHT) ) {
+	if ( check_control(PADLOCK_RIGHT) ) {
 		chase_slew_angles.h = PI_2;
 		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= VM_PADLOCK_RIGHT;
 		return;
 	}
 
-	if ( check_control_timef(PADLOCK_LEFT) ) {
+	if ( check_control(PADLOCK_LEFT) ) {
 		chase_slew_angles.h = -PI_2;
 		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= VM_PADLOCK_LEFT;
