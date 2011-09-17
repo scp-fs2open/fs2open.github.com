@@ -8626,6 +8626,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip;
 	ship_info	*sip_orig;
 	ship			*sp;
+	ship		sp_orig;
 	ship_weapon *swp;
 	ship_subsys *ss;
 	object		*objp;
@@ -8635,6 +8636,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
+	sp_orig = Ships[n];
 	sip = &(Ship_info[ship_type]);
 	swp = &sp->weapons;
 	sip_orig = &Ship_info[sp->ship_info_index];
@@ -8917,6 +8919,22 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Valathil - Reinitialize collision checks
 	obj_remove_pairs(objp);
 	obj_add_pairs(objp->instance);
+
+	// The E - If we're switching during gameplay, make sure we get valid primary/secondary selections
+	if ( by_sexp ) {
+		if (sip_orig->num_primary_banks > sip->num_primary_banks) {
+			sp->weapons.current_primary_bank = 0;
+		}
+
+		if (sip_orig->num_secondary_banks > sip->num_secondary_banks) {
+			sp->weapons.current_secondary_bank = 0;
+		}
+
+		// While we're at it, let's copy over the ETS settings too
+		sp->weapon_recharge_index = sp_orig.weapon_recharge_index;
+		sp->shield_recharge_index = sp_orig.shield_recharge_index;
+		sp->engine_recharge_index = sp_orig.engine_recharge_index;
+	}
 }
 
 #ifndef NDEBUG
