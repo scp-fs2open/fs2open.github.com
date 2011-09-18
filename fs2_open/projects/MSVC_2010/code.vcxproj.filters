@@ -315,9 +315,6 @@
     <ClCompile Include="..\..\code\globalincs\alphacolors.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\globalincs\crypt.cpp">
-      <Filter>GlobalIncs</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\globalincs\def_files.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
@@ -1146,9 +1143,6 @@
       <Filter>GameSnd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\globalincs\alphacolors.h">
-      <Filter>GlobalIncs</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\globalincs\crypt.h">
       <Filter>GlobalIncs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\globalincs\def_files.h">

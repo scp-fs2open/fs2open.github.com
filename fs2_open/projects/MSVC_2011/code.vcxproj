@@ -780,7 +780,6 @@
     <ClCompile Include="..\..\code\gamesnd\eventmusic.cpp" />
     <ClCompile Include="..\..\code\gamesnd\gamesnd.cpp" />
     <ClCompile Include="..\..\code\globalincs\alphacolors.cpp" />
-    <ClCompile Include="..\..\code\globalincs\crypt.cpp" />
     <ClCompile Include="..\..\code\globalincs\def_files.cpp" />
     <ClCompile Include="..\..\code\globalincs\fsmemory.cpp" />
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp" />
@@ -1059,7 +1058,6 @@
     <ClInclude Include="..\..\code\gamesnd\eventmusic.h" />
     <ClInclude Include="..\..\code\gamesnd\gamesnd.h" />
     <ClInclude Include="..\..\code\globalincs\alphacolors.h" />
-    <ClInclude Include="..\..\code\globalincs\crypt.h" />
     <ClInclude Include="..\..\code\globalincs\def_files.h" />
     <ClInclude Include="..\..\code\globalincs\fsmemory.h" />
     <ClInclude Include="..\..\code\globalincs\globals.h" />

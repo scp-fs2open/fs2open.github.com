@@ -1413,14 +1413,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\globalincs\crypt.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\globalincs\crypt.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\globalincs\def_files.cpp"
 				>
 			</File>
