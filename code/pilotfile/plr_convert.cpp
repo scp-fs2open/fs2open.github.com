@@ -13,7 +13,7 @@
 
 // this struct isn't well packed, and is written whole to the pilot file, so
 // we can't easily just get the RGBA that we need and instead must retain this
-typedef struct conv_color {
+typedef struct conv_color { //-V802
 	uint		screen_sig;
 	ubyte		red;
 	ubyte		green;
