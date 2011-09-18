@@ -301,12 +301,6 @@
 		<Unit filename="../../../code/globalincs/alphacolors.h">
 			<Option virtualFolder="globalincs/" />
 		</Unit>
-		<Unit filename="../../../code/globalincs/crypt.cpp">
-			<Option virtualFolder="globalincs/" />
-		</Unit>
-		<Unit filename="../../../code/globalincs/crypt.h">
-			<Option virtualFolder="globalincs/" />
-		</Unit>
 		<Unit filename="../../../code/globalincs/def_files.cpp">
 			<Option virtualFolder="globalincs/" />
 		</Unit>

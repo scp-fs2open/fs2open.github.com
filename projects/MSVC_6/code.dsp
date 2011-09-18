@@ -558,14 +558,6 @@ SOURCE=..\..\code\GlobalIncs\AlphaColors.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\GlobalIncs\crypt.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\GlobalIncs\crypt.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\globalincs\def_files.cpp
 # End Source File
 # Begin Source File

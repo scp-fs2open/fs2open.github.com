@@ -32,7 +32,7 @@ EXTRA_DIST =	\
 AM_CXXFLAGS = -I./code @D_CFLAGS@
 AM_LDFLAGS = @D_LDFLAGS@
 
-EXTRA_PROGRAMS = cfilearchiver cfileextractor cryptstring scramble
+EXTRA_PROGRAMS = cfilearchiver cfileextractor
 
 ###############################################################################
 ##
@@ -47,20 +47,8 @@ cfilearchiver_SOURCES =	\
 cfileextractor_SOURCES = \
 	code/cfileextractor/cfileextractor.cpp
 
-# cryptstring -- to encrypt strings that are used as cheat codes
-cryptstring_SOURCES =	\
-	code/cryptstring/cryptstring.cpp
-
-# scramble -- to encrypt tables
-scramble_SOURCES =	\
-	code/parse/encrypt.cpp	\
-	code/scramble/scramble.cpp	\
-	code/scramble/scramble.h
-
-
 # catch all to build utilitites
-tools: cfilearchiver cfileextractor cryptstring scramble
-
+tools: cfilearchiver cfileextractor
 
 # cleaning
 clean-tools:
