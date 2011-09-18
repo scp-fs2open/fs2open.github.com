@@ -825,14 +825,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\GlobalIncs\crypt.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\GlobalIncs\crypt.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\globalincs\def_files.cpp"
 				>
 			</File>

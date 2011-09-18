@@ -285,8 +285,6 @@ FS2_SOURCES =	\
 	gamesnd/gamesnd.h	\
 	globalincs/alphacolors.cpp	\
 	globalincs/alphacolors.h	\
-	globalincs/crypt.cpp	\
-	globalincs/crypt.h	\
 	globalincs/def_files.cpp	\
 	globalincs/def_files.h	\
 	globalincs/fsmemory.cpp	\
