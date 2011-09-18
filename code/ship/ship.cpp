@@ -8762,6 +8762,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
 
+	// niffiwan: set new armor types
+	sp->armor_type_idx = sip->armor_type_idx;
+	sp->shield_armor_type_idx = sip->shield_armor_type_idx;
+	sp->collision_damage_type_idx = sip->collision_damage_type_idx;
+	sp->debris_damage_type_idx = sip->debris_damage_type_idx;
+
 	// subsys stuff done only after hull stuff is set
 	// if the subsystem list is not currently empty, then we need to clear it out first.
 	ship_subsystems_delete(sp);
