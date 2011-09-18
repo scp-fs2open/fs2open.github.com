@@ -2004,34 +2004,6 @@ int button_function_critical(int n, net_player *p = NULL)
 	return 1;
 }
 
-// return !0 if the action is allowed, otherwise return 0
-int button_allowed(int n)
-{
-	// RT Commented this out cos it was disabling use of keys when HUD is off
-#if 0
-	if ( hud_disabled() ) {
-		switch (n) {
-		case SHOW_GOALS:
-		case END_MISSION:
-		case CYCLE_NEXT_PRIMARY:
-		case CYCLE_PREV_PRIMARY:
-		case CYCLE_SECONDARY:
-		case ONE_THIRD_THROTTLE:
-		case TWO_THIRDS_THROTTLE:
-		case PLUS_5_PERCENT_THROTTLE:
-		case MINUS_5_PERCENT_THROTTLE:
-		case ZERO_THROTTLE:
-		case MAX_THROTTLE:
-			return 1;
-		default:
-			return 0;
-		}
-	}
-#endif
-
-	return 1;
-}
-
 // execute function corresponding to action n
 // basically, these are actions which don't affect demo playback at all
 int button_function_demo_valid(int n)
@@ -2182,10 +2154,6 @@ int button_function(int n)
 	Assert(n >= 0);
 
 	//mprintf(("got button %d at %s:%d\n", n, __FILE__, __LINE__));
-
-	if ( !button_allowed(n) ) {
-		return 0;
-	}
 
 	// check if the button has been set to be ignored by a SEXP
 	if (Ignored_keys[n]) {
