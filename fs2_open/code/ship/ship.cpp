@@ -169,7 +169,7 @@ flag_def_list Armor_flags[] = {
 	{ "ignore subsystem armor",		SAF_IGNORE_SS_ARMOR,	0 }
 };
 
-int Num_armor_flags = sizeof(Armor_flags)/sizeof(flag_def_list);
+const int Num_armor_flags = sizeof(Armor_flags)/sizeof(flag_def_list);
 
 flag_def_list Man_types[] = {
 	{ "Bank right",		MT_BANK_RIGHT,	0 },
@@ -186,7 +186,7 @@ flag_def_list Man_types[] = {
 	{ "Reverse",		MT_REVERSE,		0 }
 };
 
-int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
+const int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
 
 // Goober5000 - I figured we should keep this separate
 // from Comm_orders, considering how I redid it :p
@@ -220,8 +220,9 @@ flag_def_list Player_orders[] = {
 	{ "keep safe dist",		KEEP_SAFE_DIST_ITEM,	0 }
 };
 
-int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
+const int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 
+// Use the last parameter here to tell the parser whether to stuff the flag into flags or flags2
 flag_def_list Subsystem_flags[] = {
 	{ "untargetable",			MSS_FLAG_UNTARGETABLE,		0 },
 	{ "carry no damage",		MSS_FLAG_CARRY_NO_DAMAGE,	0 },
@@ -245,9 +246,10 @@ flag_def_list Subsystem_flags[] = {
 	{ "starts locked",          MSS_FLAG_TURRET_LOCKED,     0 },
 	{ "no aggregate",			MSS_FLAG_NO_AGGREGATE,		0 },
 	{ "wait for animation",     MSS_FLAG_TURRET_ANIM_WAIT,  0 },
+	{ "play fire sound for player", MSS_FLAG2_PLAYER_TURRET_SOUND, 1}
 };
 
-int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
+const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
 
 
 // NOTE: a var of:
@@ -315,14 +317,14 @@ flag_def_list ai_tgt_objects[] = {
 	{ "weapon",		OBJ_WEAPON,		0 }
 };
 
-int num_ai_tgt_objects = sizeof(ai_tgt_objects) / sizeof(flag_def_list);
+const int num_ai_tgt_objects = sizeof(ai_tgt_objects) / sizeof(flag_def_list);
 
 flag_def_list ai_tgt_obj_flags[] = {
 	{ "no shields",			OF_NO_SHIELDS,			0 },
 	{ "targetable as bomb",	OF_TARGETABLE_AS_BOMB,	0 }
 };
 
-int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list);
+const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list);
 
 flag_def_list ai_tgt_ship_flags[] = {
 	{ "afterburners",	SIF_AFTERBURNER,	0 },
@@ -330,7 +332,7 @@ flag_def_list ai_tgt_ship_flags[] = {
 	{ "has awacs",		SIF_HAS_AWACS,		0 }
 };
 
-int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list);
+const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list);
 
 flag_def_list ai_tgt_weapon_flags[] = {
 	{ "bomb",				WIF_BOMB,				0 },
@@ -348,7 +350,7 @@ flag_def_list ai_tgt_weapon_flags[] = {
 	{ "capital+",			WIF2_CAPITAL_PLUS,		1 }
 };
 
-int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
+const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
 
 SCP_vector <ai_target_priority> Ai_tp_list;
 
@@ -3153,6 +3155,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				sp->turret_base_rotation_snd_mult = 1.0f;
 				
 				sp->flags = 0;
+				sp->flags2 = 0;
 				
 				sp->n_triggers = 0;
 				sp->triggers = NULL;
@@ -3368,7 +3371,35 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			}
 
 			if (optional_string("$Flags:")) {
-				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);
+				char flag_strings[Num_subsystem_flags][NAME_LENGTH];
+				int num_strings = stuff_string_list(flag_strings, NUM_SUBSYSTEM_FLAGS);
+				int ship_type_index = -1;
+
+				for (i = 0; i < num_strings; i++)
+				{
+					if (!optional_string("+noreplace")) {
+						// clear flags since we might have a modular table
+						// clear only those which are actually set in the flags
+						sp->flags = 0;
+						sp->flags2 = 0;
+					}
+
+					bool flag_found = false;
+					// check various subsystem flags
+					for (int idx = 0; idx < Num_subsystem_flags; idx++) {
+						if ( !stricmp(Subsystem_flags[idx].name, flag_strings[i]) ) {
+							flag_found = true;
+							
+							if (Subsystem_flags[idx].var == 0)
+								sp->flags |= Subsystem_flags[idx].def;
+							else if (Subsystem_flags[idx].var == 1)
+								sp->flags2 |= Subsystem_flags[idx].def;
+						}
+					}
+
+					if ( !flag_found )
+						Warning(LOCATION, "Bogus string in subsystem flags: %s\n", flag_strings[i]);
+				}
 
 				//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
 				if (sp->flags & MSS_FLAG_ALLOW_LANDING)
@@ -5167,6 +5198,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags |= SSF_NO_AGGREGATE;
 		if (model_system->flags & MSS_FLAG_ROTATES)
 			ship_system->flags |= SSF_ROTATES;
+		if (model_system->flags2 & MSS_FLAG2_PLAYER_TURRET_SOUND)
+			ship_system->flags |= SSF_PLAY_SOUND_FOR_PLAYER;
 
 		ship_system->turn_rate = model_system->turn_rate;
 
