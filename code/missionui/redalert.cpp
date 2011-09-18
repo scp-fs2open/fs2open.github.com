@@ -618,6 +618,8 @@ void red_alert_store_wingman_status()
 		red_alert_store_subsys_status(&ras, shipp);
 
 		Red_alert_wingman_status.push_back( ras );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Assert( (Red_alert_wingman_status.size() <= MAX_SHIPS) );
 	}
 
 	// store exited ships that did not die
@@ -640,6 +642,8 @@ void red_alert_store_wingman_status()
 			red_alert_store_subsys_status(&ras, NULL);
 
 			Red_alert_wingman_status.push_back( ras );
+			// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+			Assert( (Red_alert_wingman_status.size() <= MAX_SHIPS) );
 		}
 	}
 
