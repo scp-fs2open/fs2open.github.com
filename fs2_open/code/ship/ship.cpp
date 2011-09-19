@@ -3375,14 +3375,15 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				int num_strings = stuff_string_list(flag_strings, NUM_SUBSYSTEM_FLAGS);
 				int ship_type_index = -1;
 
+				if (!optional_string("+noreplace")) {
+					// clear flags since we might have a modular table
+					// clear only those which are actually set in the flags
+					sp->flags = 0;
+					sp->flags2 = 0;
+				}
+
 				for (i = 0; i < num_strings; i++)
 				{
-					if (!optional_string("+noreplace")) {
-						// clear flags since we might have a modular table
-						// clear only those which are actually set in the flags
-						sp->flags = 0;
-						sp->flags2 = 0;
-					}
 
 					bool flag_found = false;
 					// check various subsystem flags
