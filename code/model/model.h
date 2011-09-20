@@ -133,6 +133,10 @@ typedef struct polymodel_instance {
 #define MSS_FLAG_NO_AGGREGATE		(1 << 30)		// Don't include with aggregate subsystem types - Goober5000
 #define MSS_FLAG_TURRET_ANIM_WAIT   (1 << 31)		// Turret won't fire until animation is complete - Sushi
 
+#define MSS_FLAG2_PLAYER_TURRET_SOUND (1 << 0)
+
+#define NUM_SUBSYSTEM_FLAGS			33
+
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
 	int num_steps;				// number of steps in complete revolution
@@ -157,6 +161,7 @@ struct queued_animation;
 typedef struct model_subsystem {					/* contains rotation rate info */
 
 	uint		flags;									// See MSS_FLAG_* defines above
+	uint		flags2;
 	char		name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
 	char		subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
 	char		alt_sub_name[NAME_LENGTH];					//Karajorma - Name that overrides name of original

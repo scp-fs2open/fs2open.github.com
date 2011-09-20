@@ -1757,7 +1757,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 					if ( wip->launch_snd != -1 ) {
 						// Don't play turret firing sound if turret sits on player ship... it gets annoying.
-						if ( parent_objnum != OBJ_INDEX(Player_obj) ) {						
+						if ( parent_objnum != OBJ_INDEX(Player_obj) || (turret->flags & SSF_PLAY_SOUND_FOR_PLAYER) ) {						
 							snd_play_3d( &Snds[wip->launch_snd], turret_pos, &View_position );						
 						}
 					}
