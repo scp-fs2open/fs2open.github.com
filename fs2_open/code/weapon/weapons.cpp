@@ -2557,24 +2557,24 @@ int parse_weapon(int subtype, bool replace)
 
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that is calculates the lowest common demoniator as being all of
-	the freqencies multiplied together.
+	the periods multiplied together.
 	*/
 	while ( optional_string("$substitute:") ) {
 		char subname[NAME_LENGTH];
-		int frequency = 0;
+		int period = 0;
 		int index = 0;
 		int offset = 0;
 		stuff_string(subname, F_NAME, NAME_LENGTH);
-		if ( optional_string("+frequency:") ) {
-			stuff_int(&frequency);
-			if ( frequency <= 0 ) {
-				Warning(LOCATION, "Substitution '%s' for weapon '%s' requires a frequency greater than 0. Setting frequency to 1.", subname, wip->name);
-				frequency = 1;
+		if ( optional_string("+period:") ) {
+			stuff_int(&period);
+			if ( period <= 0 ) {
+				Warning(LOCATION, "Substitution '%s' for weapon '%s' requires a period greater than 0. Setting period to 1.", subname, wip->name);
+				period = 1;
 			}
 			if ( optional_string("+offset:") ) {
 				stuff_int(&offset);
 				if ( offset <= 0 ) {
-					Warning(LOCATION, "Frequency offset for substitution '%s' of weapon '%s' has to be greater than 0. Setting offset to 1.", subname, wip->name);
+					Warning(LOCATION, "Period offset for substitution '%s' of weapon '%s' has to be greater than 0. Setting offset to 1.", subname, wip->name);
 					offset = 1;
 				}
 			}
@@ -2584,24 +2584,21 @@ int parse_weapon(int subtype, bool replace)
 				Warning(LOCATION, "Substitution '%s' for weapon '%s' requires an index greater than 0. Setting index to 0.", subname, wip->name);
 				index = 0;
 			}
-		} else {
-			Warning(LOCATION, "Substitution '%s' for weapon '%s' requires either '+index:' or '+frequency:' to follow. Skipping substitution.", subname, wip->name);
-			continue;
 		}
 
-		// we are going to use weapon subistution so, make sure that the pattern array has at least one element
+		// we are going to use weapon substition so, make sure that the pattern array has at least one element
 		if ( wip->weapon_substitution_pattern_names.empty() ) {
 			// pattern is empty, initialize pattern with the weapon being currently parsed.
 			wip->weapon_substitution_pattern_names.push_back(wip->name);
 		}
 
-		// if tbler specifies a frequency then determine if we can fit the resulting pattern
+		// if tbler specifies a period then determine if we can fit the resulting pattern
 		// neatly into the pattern array.
-		if ( frequency > 0 ) {
-			if ( (wip->weapon_substitution_pattern_names.size() % frequency) > 0 ) {
+		if ( period > 0 ) {
+			if ( (wip->weapon_substitution_pattern_names.size() % period) > 0 ) {
 				// not neat, need to expand the pattern so that our freqency pattern fits completly.
 				size_t current_size = wip->weapon_substitution_pattern_names.size();
-				wip->weapon_substitution_pattern_names.resize(current_size*frequency);
+				wip->weapon_substitution_pattern_names.resize(current_size*period);
 
 				// now duplicate the current pattern into the new area so the current pattern holds
 				for ( size_t i = current_size; i < wip->weapon_substitution_pattern_names.size(); i++) {
@@ -2609,14 +2606,12 @@ int parse_weapon(int subtype, bool replace)
 				}
 			}
 
-			/* Apply the substituted weapon as the requested freqency, barrel
+			/* Apply the substituted weapon at the requested period, barrel
 			shifted by offset if needed.*/
-			for ( size_t pos = (frequency + offset - 1) % frequency;
-				pos < wip->weapon_substitution_pattern_names.size(); pos += frequency )
+			for ( size_t pos = (period + offset - 1) % period;
+				pos < wip->weapon_substitution_pattern_names.size(); pos += period )
 			{
-				if ( pos > 0 ) {
-					wip->weapon_substitution_pattern_names[pos] = subname;
-				}
+				wip->weapon_substitution_pattern_names[pos] = subname;
 			}
 		} else {
 			// assume that tbler wanted to specify a index for the new weapon.
