@@ -186,7 +186,7 @@ DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv )
 
 	/* Initialise the stackframe */
 	STACKFRAME64 stackFrame;
-	memset( &stackFrame, 0, sizeof( STACKFRAME ) );
+	memset( &stackFrame, 0, sizeof( STACKFRAME64 ) );
 	stackFrame.AddrPC.Mode = AddrModeFlat;
 	stackFrame.AddrFrame.Mode = AddrModeFlat;
 	stackFrame.AddrStack.Mode = AddrModeFlat;
