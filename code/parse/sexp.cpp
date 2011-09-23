@@ -1973,18 +1973,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_INVALID_SUBSYS;
 				}
 
-				// if we're checking for an AWACS subsystem and this is not an awacs subsystem
 				if(Fred_running)
 				{
+					// if we're checking for an AWACS subsystem and this is not an awacs subsystem
 					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_AWACS))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
-				}
 
-				// rotating subsystem, like above - Goober5000
-				if (Fred_running)
-				{
+					// rotating subsystem, like above - Goober5000
 					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_ROTATES))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
