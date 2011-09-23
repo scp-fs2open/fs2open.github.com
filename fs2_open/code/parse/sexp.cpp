@@ -2175,13 +2175,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if (p_objp == NULL)
 						return SEXP_CHECK_INVALID_SHIP;
 				}
-
 				// ship exists at this point
-
-				// Goober5000 - since we can't check POFs for ships which haven't arrived
-				// (not without a bit of work anyway), just assume they're okay
-				if (shipnum < 0)
-					break;
 
 				// now determine if this ship has a docking bay
 				if (!ship_has_dock_bay(shipnum))
