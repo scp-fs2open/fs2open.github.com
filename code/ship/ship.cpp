@@ -818,10 +818,11 @@ void init_ship_entry(ship_info *sip)
 	
 	vm_vec_zero(&sip->afterburner_max_vel);
 	sip->afterburner_forward_accel = 0.0f;
+	sip->afterburner_max_reverse_vel = 0.0f;
+	sip->afterburner_reverse_accel = 0.0f;
 	sip->afterburner_fuel_capacity = 0.0f;
 	sip->afterburner_burn_rate = 0.0f;
 	sip->afterburner_recover_rate = 0.0f;
-	sip->afterburner_max_reverse_vel = 0.0f;
 
 	generic_bitmap_init(&sip->afterburner_trail, NULL);
 	sip->afterburner_trail_width_factor = 1.0f;
