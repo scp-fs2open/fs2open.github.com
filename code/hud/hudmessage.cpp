@@ -415,6 +415,7 @@ void HudGaugeMessages::scrollMessages()
 
 void HudGaugeMessages::preprocess()
 {
+	setFont();
 	processMessageBuffer();
 	scrollMessages();
 }
