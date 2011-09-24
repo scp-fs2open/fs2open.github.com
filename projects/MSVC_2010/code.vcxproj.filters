@@ -675,6 +675,9 @@
     <ClCompile Include="..\..\code\Palman\palman.cpp">
       <Filter>Palman</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\parse\encrypt.cpp">
+      <Filter>Parse</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\code\parse\lua.cpp">
       <Filter>Parse</Filter>
     </ClCompile>
@@ -1513,6 +1516,9 @@
     </ClInclude>
     <ClInclude Include="..\..\code\Palman\palman.h">
       <Filter>Palman</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\parse\encrypt.h">
+      <Filter>Parse</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\parse\lua.h">
       <Filter>Parse</Filter>

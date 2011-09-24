@@ -122,6 +122,7 @@
 #include "observer/observer.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
+#include "parse/encrypt.h"
 #include "parse/lua.h"
 #include "parse/parselo.h"
 #include "parse/scripting.h"
@@ -1738,6 +1739,9 @@ void game_init()
 #ifndef NDEBUG
 	load_filter_info();
 #endif
+
+	// encrypt stuff
+	encrypt_init();
 
 	// Initialize the timer before the os
 	timer_init();
