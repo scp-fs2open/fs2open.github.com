@@ -732,7 +732,6 @@ int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, floa
 
 	geometry_batcher *item = NULL;
 	size_t index = find_good_distortion_item(texture);
-	Assert( index >= 0 );
 
 	Assertion( (distortion_map[index].laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
@@ -757,7 +756,6 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 
 	geometry_batcher *item = NULL;
 	size_t index = find_good_distortion_item(texture);
-	Assert( index >= 0 );
 
 	Assertion( (distortion_map[index].laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
