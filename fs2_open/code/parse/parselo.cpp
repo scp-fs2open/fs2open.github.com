@@ -18,6 +18,7 @@
 #include "parse/sexp.h"
 #include "mission/missionparse.h"
 #include "ctype.h"
+#include "parse/encrypt.h"
 #include "localization/localize.h"
 #include "localization/fhash.h"
 #include "cfile/cfile.h"
@@ -1615,6 +1616,7 @@ void allocate_mission_text(int size)
 void read_raw_file_text(char *filename, int mode, char *raw_text)
 {
 	CFILE	*mf;
+	int	file_is_encrypted;
 	int file_is_unicode;
 
 	Assert(filename);
@@ -1641,6 +1643,11 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 	if (raw_text == NULL)
 		raw_text = Mission_text_raw;
 
+	// read first 10 bytes to determine if file is encrypted
+	cfread(raw_text, MIN(file_len, 10), 1, mf);
+	file_is_encrypted = is_encrypted(raw_text);
+	cfseek(mf, 0, CF_SEEK_SET);
+
 	// Goober5000 - also determine if file is Unicode
 	file_is_unicode = is_unicode(raw_text);
 	if ( file_is_unicode )
@@ -1649,7 +1656,22 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 		longjmp(parse_abort, 5);
 	}
 
-	cfread(raw_text, file_len, 1, mf);
+	if ( file_is_encrypted )
+	{
+		int	unscrambled_len;
+		char	*scrambled_text;
+		scrambled_text = (char*)vm_malloc(file_len+1);
+		Assert(scrambled_text);
+		cfread(scrambled_text, file_len, 1, mf);
+		// unscramble text
+		unencrypt(scrambled_text, file_len, raw_text, &unscrambled_len);
+		file_len = unscrambled_len;
+		vm_free(scrambled_text);
+	}
+	else
+	{
+		cfread(raw_text, file_len, 1, mf);
+	}
 
 	//WMC - Slap a NULL character on here for the odd error where we forgot a #End
 	raw_text[file_len] = '\0';

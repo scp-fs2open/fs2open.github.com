@@ -160,6 +160,9 @@ void lcl_init(int lang_init)
 	char *ret;
 	int lang, idx;
 
+	// initialize encryption
+	encrypt_init();
+
 	// read the language from the registry
 	if(lang_init < 0){
 		memset(lang_string, 0, 128);
