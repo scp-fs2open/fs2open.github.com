@@ -2815,31 +2815,26 @@ int button_function(int n)
 	return 1;
 }
 
-// Call functions for when buttons are pressed
+/**
+ * Calls multiple event handlers for each active button
+ * @param bi currently active buttons
+ */
 void button_info_do(button_info *bi)
 {
-	int i, j;
-
-	for (i=0; i<NUM_BUTTON_FIELDS; i++) {
-		if ( bi->status[i] == 0 ){
-			continue;
-		}
-
-		// at least one bit is set in the status integer
-		for (j=0; j<32; j++) {
-
-			// check if the bit is set. If button_function returns 1 (implying the action was taken), then unset the bit
-			if ( bi->status[i] & (1 << j) ) {
-				// always process buttons which are valid for demo playback
-				if(button_function_demo_valid(32 * i + j)){
-					bi->status[i] &= ~(1 << j);
-				}
-				// other buttons
-				else {
-					if (button_function(32 * i + j)) {
-						bi->status[i] &= ~(1 << j);					
-					}
-				}
+	for (int i = 0; i < CCFG_MAX; i++) {
+		if( button_info_query(bi, i) ) {
+			int keyHasBeenUsed = FALSE;
+			
+			if( !keyHasBeenUsed ) {
+				keyHasBeenUsed = button_function_demo_valid(i);
+			}
+			
+			if( !keyHasBeenUsed ) {
+				keyHasBeenUsed = button_function(i);
+			}
+			
+			if( keyHasBeenUsed ) {
+				button_info_unset(bi, i);
 			}
 		}
 	}
