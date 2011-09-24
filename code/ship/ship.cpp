@@ -3375,7 +3375,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			if (optional_string("$Flags:")) {
 				char flag_strings[Num_subsystem_flags][NAME_LENGTH];
 				int num_strings = stuff_string_list(flag_strings, NUM_SUBSYSTEM_FLAGS);
-				int ship_type_index = -1;
 
 				if (!optional_string("+noreplace")) {
 					// clear flags since we might have a modular table

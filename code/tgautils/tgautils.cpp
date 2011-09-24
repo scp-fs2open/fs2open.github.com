@@ -41,20 +41,19 @@ const char *Xfile_ID = "TRUEVISION-XFILE.";
 // -----------------
 
 typedef struct targa_header {
-	ubyte id_length;
-	ubyte color_map_type;
-	ubyte image_type;
-	short cmap_start;
-	short cmap_length;
-	ubyte cmap_depth;
 	short xoffset;
 	short yoffset;
 	short width;
 	short height;
+	short cmap_start;
+	short cmap_length;
+	ubyte id_length;
+	ubyte color_map_type;
+	ubyte image_type;
+	ubyte cmap_depth;
 	ubyte pixel_depth;
 	ubyte image_descriptor;
 } targa_header;
-
 
 typedef struct targa_footer {
 	uint ext_offset;		// file offset to extension area (we ignore it)

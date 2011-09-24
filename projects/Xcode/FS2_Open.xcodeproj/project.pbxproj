@@ -576,7 +576,6 @@
 		34C71D6808C4556800459F5B /* rtvoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459550608C3D6A0003B1351 /* rtvoice.h */; };
 		34DCF83608CFA6D200A528A0 /* cfilearchiver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF83008CFA68700A528A0 /* cfilearchiver.cpp */; };
 		34DCF86308CFAFEE00A528A0 /* cfileextractor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF86208CFAFEE00A528A0 /* cfileextractor.cpp */; };
-		34DCF88208CFB29E00A528A0 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954B208C3D6A0003B1351 /* encrypt.cpp */; };
 		60584F4C11347FE10080E50C /* audiostr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F208C3D6A0003B1351 /* audiostr.cpp */; };
 		606034471134822A0032BB9A /* dscap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F908C3D6A0003B1351 /* dscap.cpp */; };
 		6066A02313AFEA6700A817AA /* pnginfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 6066A01E13AFEA6700A817AA /* pnginfo.h */; };
@@ -1681,20 +1680,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		34DCF85A08CFAE8A00A528A0 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		34DCF86708CFB0BA00A528A0 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		34DCF87808CFB21600A528A0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (

@@ -29,7 +29,6 @@
 #endif
 
 #include "cfile/cfile.h"
-#include "parse/encrypt.h"
 #include "cfile/cfilesystem.h"
 #include "cfile/cfilearchive.h"
 #include "osapi/osapi.h"
@@ -172,9 +171,6 @@ int cfile_in_root_dir(char *exe_path)
 int cfile_init(char *exe_dir, char *cdrom_dir)
 {
 	int i;
-
-	// initialize encryption
-	encrypt_init();	
 
 	if ( !cfile_inited ) {
 		char buf[CFILE_ROOT_DIRECTORY_LEN];
