@@ -4338,7 +4338,7 @@ void game_frame(int paused)
 	fix clear_time1=0, clear_time2=0;
 #endif
 	int actually_playing;
-	camid cid;
+
 	//vec3d eye_pos;
 	//matrix eye_orient;
 
@@ -4419,7 +4419,7 @@ void game_frame(int paused)
 			return;
 		}
 		
-		cid = game_render_frame_setup(); //We need to do this here, as some sexps require a valid main camera
+		
 		game_simulation_frame(); 
 		
 		// if not actually in a game play state, then return.  This condition could only be true in 
@@ -4447,7 +4447,8 @@ void game_frame(int paused)
 
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
-
+			
+			camid cid = game_render_frame_setup();
 			game_render_frame( cid );
 
 			// save the eye position and orientation

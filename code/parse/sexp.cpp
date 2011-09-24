@@ -18844,8 +18844,10 @@ void multi_sexp_set_camera_target()
 void sexp_set_fov(int n)
 {
 	camera *cam = Main_camera.getCamera();
-	if(cam == NULL)
-		return;
+	if(cam == NULL) {
+		game_render_frame_setup();
+		cam = Main_camera.getCamera();
+	}
 
 	//Cap FOV to something reasonable.
 	float new_fov = (float)eval_num(n);
@@ -18863,8 +18865,10 @@ void multi_sexp_set_fov()
 	float new_fov;
 
 	camera *cam = Main_camera.getCamera();
-	if(cam == NULL)
-		return;
+	if(cam == NULL) {
+		game_render_frame_setup();
+		cam = Main_camera.getCamera();
+	}
 
 	multi_get_float(new_fov);
 	Sexp_fov = (new_fov * (PI/180.0f));
