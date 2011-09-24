@@ -1903,8 +1903,7 @@ int beam_start_firing(beam *b)
 		// "shot" sound
 		if (Weapon_info[b->weapon_info_index].launch_snd >= 0)
 			snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].launch_snd], &b->last_start, &View_position);
-		else
-			snd_play_3d(&Snds[SND_BEAM_SHOT], &b->last_start, &View_position);
+		// niffwan - if launch_snd < 0, don't play any sound
 	}	
 
 	// success
