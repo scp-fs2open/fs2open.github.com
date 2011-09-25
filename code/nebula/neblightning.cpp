@@ -21,9 +21,7 @@
 #include "weapon/emp.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-
-
-extern int Cmdline_nohtl;
+#include "cmdline/cmdline.h"
 
 // ------------------------------------------------------------------------------------------------------
 // NEBULA LIGHTNING DEFINES/VARS
@@ -439,24 +437,27 @@ void nebl_render_all()
 
 					// do some special stuff on the very first strike of the bolt
 					if(b->strikes_left == bi->num_strikes){					
-						// play a sound						
-						float bang;
-						if(Nebl_bang < 40.0f){
-							bang = 1.0f;
-						} else if(Nebl_bang > 400.0f){
-							bang = 0.0f;
-						} else {
-							bang = 1.0f - (Nebl_bang / 400.0f);
-						}
-						if(frand_range(0.0f, 1.0f) < 0.5f){
-							snd_play(&Snds[SND_LIGHTNING_2], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
-						} else {
-							snd_play(&Snds[SND_LIGHTNING_1], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
-						}						
+						// play a sound
+						if (frand_range(0.0f, 100.0f) < Cmdline_percentflashtobang)
+						{
+							float bang;
+							if (Nebl_bang < 40.0f) {
+								bang = 1.0f;
+							} else if (Nebl_bang > 400.0f) {
+								bang = 0.0f;
+							} else {
+								bang = 1.0f - (Nebl_bang / 400.0f);
+							}
+							if (frand_range(0.0f, 1.0f) < 0.5f) {
+								snd_play(&Snds[SND_LIGHTNING_2], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
+							} else {
+								snd_play(&Snds[SND_LIGHTNING_1], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
+							}
 
-						// apply em pulse
-						if(bi->emp_intensity > 0.0f){
-							emp_apply(&b->midpoint, 0.0f, vm_vec_dist(&b->start, &b->strike), bi->emp_intensity, bi->emp_time);
+							// apply em pulse
+							if (bi->emp_intensity > 0.0f) {
+								emp_apply(&b->midpoint, 0.0f, vm_vec_dist(&b->start, &b->strike), bi->emp_intensity, bi->emp_time);
+							}
 						}
 					}
 				}				

@@ -670,27 +670,10 @@ void multi_pinfo_set_palette()
 // build the stats value strings for this player
 void multi_pinfo_build_stats()
 {
-	// int idx;
-	// int fighter_kills,other_kills;
 	scoring_struct *sc = &Multi_pinfo_popup_player->m_player->stats;
 
 	// build alltime fighter and non-fighter kills
-	/*
-	fighter_kills = 0;
-	other_kills = 0;
-	for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
-		if(sc->kills[idx] > 0){
-			if(Ship_info[idx].flags & SIF_FIGHTER){
-				fighter_kills += sc->kills[idx];
-			} else {
-				other_kills += sc->kills[idx];
-			}
-		}
-	}	
-	*/
 	sprintf(Multi_pinfo_stats_vals[MPI_FIGHTER_KILLS], "%d", sc->kill_count);
-	
-	// sprintf(Multi_pinfo_stats_vals[MPI_OTHER_KILLS],"%d",other_kills);
 
 	// missions flown
 	sprintf(Multi_pinfo_stats_vals[MPI_MISSIONS_FLOWN],"%d",(int)sc->missions_flown);
@@ -716,9 +699,6 @@ void multi_pinfo_build_stats()
 
 	// primary shots fired
 	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%u",sc->p_shots_fired);
-
-	// primary shots hit
-	// sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_HIT],"%d",sc->p_shots_hit);
 	
 	// primary hit pct
 	if (sc->p_shots_fired > 0) {
@@ -728,9 +708,6 @@ void multi_pinfo_build_stats()
 	}
 	// primary shots fired
 	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%u",sc->s_shots_fired);
-
-	// primary shots hit
-	// sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_HIT],"%d",sc->s_shots_hit);
 	
 	// primary hit pct
 	if (sc->s_shots_fired > 0) {
