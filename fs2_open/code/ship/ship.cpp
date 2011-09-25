@@ -3378,7 +3378,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				if (!optional_string("+noreplace")) {
 					// clear flags since we might have a modular table
 					// clear only those which are actually set in the flags
-					sp->flags = 0;
+					// Note that we do NOT clear sp->flags here, as those may be influenced by code above this. See $Turret Base FOV for example.
 					sp->flags2 = 0;
 				}
 
