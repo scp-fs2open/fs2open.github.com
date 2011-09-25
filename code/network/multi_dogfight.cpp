@@ -469,29 +469,6 @@ void multi_df_blit_kill_matrix()
 
 		cy += 10;
 	}
-
-	/*
-	// blit totals
-	int column_total;
-	cx = top_x_start;
-	cy += 3;
-	for(idx=0; idx<Multi_df_score_count; idx++){
-		// add up this column
-		column_total = 0;
-		for(s_idx=0; s_idx<Multi_df_score_count; s_idx++){
-			// add			
-			column_total += Multi_df_score[idx].stats.m_dogfight_kills[s_idx];
-		}
-
-		// draw
-		sprintf(squashed_string, "%d", column_total);
-		gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
-		gr_string(cx, cy, squashed_string);
-
-		// next item
-		cx += (int)max_item_width;
-	}
-	*/
 }
 
 // stuff a string representing the # of kills, player X had on player Y (where X and Y are indices into Multi_df_score)
