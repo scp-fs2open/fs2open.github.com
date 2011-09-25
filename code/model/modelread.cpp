@@ -559,17 +559,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 
 		// CASE OF NORMAL CONTINUOUS ROTATION
 		else {
-			// commented by Goober5000 to allow faster than 1sec rotation
-/*			if ( fabs(turn_time) < 1 )
-			{
-				// Warning(LOCATION, "%s has subsystem %s with rotation time less than 1 sec", dname, Global_filename );
-				subsystemp->flags &= ~MSS_FLAG_ROTATES;
-				subsystemp->turn_rate = 0.0f;
-			}
-			else */
-			{
-				subsystemp->turn_rate = PI2 / turn_time;
-			}
+			subsystemp->turn_rate = PI2 / turn_time;
 		}
 	}
 }
@@ -3393,30 +3383,37 @@ void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	float delta = (sii->cur_turn_rate + final_turn_rate) * 0.5f * flFrametime;
 	sii->cur_turn_rate = final_turn_rate;
 
-
-	//float delta = psub->turn_rate * flFrametime;
-
+	// Apply rotation in the axis of movement
+	// then normalize the angle angle so that we are within a valid range:
+	//  greater than or equal to 0
+	//  less than PI2
 	switch( sm->movement_axis )	{
-	case MOVEMENT_AXIS_X:	
+	case MOVEMENT_AXIS_X:
 		sii->angs.p += delta;
-		if (sii->angs.p > PI2 )
+
+		while (sii->angs.p > PI2)
 			sii->angs.p -= PI2;
-		else if (sii->angs.p < 0.0f )
+		while (sii->angs.p < 0.0f)
 			sii->angs.p += PI2;
+
 		break;
-	case MOVEMENT_AXIS_Y:	
+	case MOVEMENT_AXIS_Y:
 		sii->angs.h += delta;
-		if (sii->angs.h > PI2 )
+
+		while (sii->angs.h > PI2)
 			sii->angs.h -= PI2;
-		else if (sii->angs.h < 0.0f )
+		while (sii->angs.h < 0.0f)
 			sii->angs.h += PI2;
+
 		break;
-	case MOVEMENT_AXIS_Z:	
+	case MOVEMENT_AXIS_Z:
 		sii->angs.b += delta;
-		if (sii->angs.b > PI2 )
+
+		while (sii->angs.b > PI2)
 			sii->angs.b -= PI2;
-		else if (sii->angs.b < 0.0f )
+		while (sii->angs.b < 0.0f)
 			sii->angs.b += PI2;
+
 		break;
 	}
 }
