@@ -3383,9 +3383,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					sp->flags2 = 0;
 				}
 
-				if (turret_has_base_fov)
-					sp->flags |= MSS_FLAG_TURRET_ALT_MATH;
-
 				for (i = 0; i < num_strings; i++)
 				{
 
@@ -3410,6 +3407,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				if (sp->flags & MSS_FLAG_ALLOW_LANDING)
 					sip->flags2 |= SIF2_ALLOW_LANDINGS;
 			}
+
+			if (turret_has_base_fov)
+				sp->flags |= MSS_FLAG_TURRET_ALT_MATH;
 
 			if (optional_string("+non-targetable")) {
 				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
