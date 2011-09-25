@@ -325,10 +325,14 @@ void opengl_change_active_lights(int pos, int d_offset)
 			GL_state.Light(i, GL_TRUE);
 		}
 	}
+	opengl_light zero;
+	memset(&zero,0,sizeof(opengl_light));
+	zero.Position[0] = 1.0f;
 
 	// make sure that we turn off any lights that we aren't using right now
 	for ( ; i < GL_max_lights; i++) {
 		GL_state.Light(i, GL_FALSE);
+		opengl_set_light(i, &zero);
 	}
 
 	glPopMatrix();

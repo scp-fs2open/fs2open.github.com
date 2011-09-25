@@ -4667,11 +4667,7 @@ int multi_pxo_pinfo_do()
 
 	// if he pressed the medals buttons, run the medals screen
 	if(Multi_pxo_pinfo_buttons[gr_screen.res][MULTI_PXO_PINFO_MEDALS].button.pressed()){
-#ifdef FS2_DEMO
-		game_feature_not_in_demo_popup();
-#else
 		multi_pxo_run_medals();
-#endif
 	}
 	
 	// draw stuff

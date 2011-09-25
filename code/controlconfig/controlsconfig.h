@@ -138,7 +138,7 @@ enum IoActionId  {
 	END_MISSION										=66,	//!< end the mission
 	TARGET_TARGETS_TARGET							=67,	//!< target your target's target
 	AFTERBURNER										=68,	//!< AFTERBURNER
- 
+
 	INCREASE_WEAPON									=69,	//!< increase weapon recharge rate
 	DECREASE_WEAPON									=70,	//!< decrease weapon recharge rate
 	INCREASE_SHIELD									=71,	//!< increase shield recharge rate
@@ -154,7 +154,7 @@ enum IoActionId  {
 
 	XFER_SHIELD										=81,	//!< transfer energy to shield from weapons
 	XFER_LASER										=82,	//!< transfer energy to weapons from shield
-	
+
 	//Backslash -- this was a convenient place for Glide When Pressed, since Show Damage Popup isn't used
 	GLIDE_WHEN_PRESSED								=83, 	//!< GLIDE_WHEN_PRESSED
 	BANK_WHEN_PRESSED								=84,	//!< BANK_WHEN_PRESSED
