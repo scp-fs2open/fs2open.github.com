@@ -133,46 +133,6 @@ Assert( 0 );
 return 1;
 }
 
-//Dynamic weapon link tables
-/*
-static const ftable ftables[]=
-{
-	{ 0, { }            },  //Alignment placeholder
-	{ 1, { 1 }          },  //1 gun
-	{ 2, { 1, 2 }       },  //2 guns
-	{ 2, { 1, 3 }       },  //3 guns
-	{ 3, { 1, 2, 4}     },  //4 guns
-	{ 2, { 1, 5 }       },  //5 guns
-	{ 4, { 1, 2, 3, 6 } }   //6 guns
-};*/
-
-/*
-char getNextSlots( char slots_on_ship, char cur_slots )
-{
-Assert( slots_on_ship <= MAX_NUM_SLOTS );
-Assert( slots_on_ship >= 0 );
-
-for( int i = 0; i < ftables[ slots_on_ship ].count; ++i )
-	{
-	if( ftables[ slots_on_ship ].table[ i ] == cur_slots )
-		{
-		if( ftables[ slots_on_ship ].count == i + 1 )
-			{
-			//Overflow back to 0
-			return 0;
-			}
-		else
-			{
-			//Next block in the table
-			return ftables[ slots_on_ship ].table[ i + 1 ];
-			}
-		}
-	}
-//Did not find cur_slots, try and get back on track
-Assert( 0 );
-return 0;
-}*/
-
 // --------------------------------------------------------------
 // Global to file 
 // --------------------------------------------------------------

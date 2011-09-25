@@ -48,13 +48,6 @@ AC_ARG_ENABLE(debug,
 		[fs2_debug=no],
 )
 
-AC_ARG_ENABLE(demo,
-	AC_HELP_STRING([--enable-demo],
-		[Build DEMO version (default = no)]),
-		[fs2_demo=$enableval],
-		[fs2_demo=no],
-)
-
 AC_ARG_ENABLE(wxfred2,
 	AC_HELP_STRING([--enable-wxfred2],
 		[Build wxFRED2 rather than the normal game (default = no)]),
@@ -149,10 +142,6 @@ esac
 
 
 dnl define compiler switches
-
-if test "fs2_demo" = "yes" ; then
-	AC_DEFINE([FS2_DEMO])
-fi
 
 if test "$fs2_speech" = "yes" ; then
 	AC_DEFINE([FS2_SPEECH])

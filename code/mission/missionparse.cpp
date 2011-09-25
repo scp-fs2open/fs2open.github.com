@@ -5238,8 +5238,7 @@ void parse_variables()
 					Sexp_variables[j].type = Campaign.variables[i].type;
 					strcpy_s(Sexp_variables[j].text, Campaign.variables[i].text);
 					break;
-				}
-				else {
+				} else {
 					WarningEx(LOCATION, "Variable %s has the same name as a campaign persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 			}
@@ -5259,8 +5258,7 @@ void parse_variables()
 					Sexp_variables[j].type = Player->variables[i].type;
 					strcpy_s(Sexp_variables[j].text, Player->variables[i].text);
 					break;
-				}
-				else {
+				} else {
 					WarningEx(LOCATION, "Variable %s has the same name as a player persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 			}

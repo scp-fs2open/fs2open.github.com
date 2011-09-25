@@ -115,8 +115,6 @@ CFILE *cf_open_mapped_fill_cfblock(HANDLE hFile, int type);
 CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type);
 #endif
 
-//#define CHECK_SIZE
-
 void cf_chksum_long_init();
 
 void cfile_close()

@@ -2107,24 +2107,6 @@ int cf_create_default_path_string( SCP_string &path, int pathtype, char *filenam
 		// add filename
 		if (filename) {
 			s_path << filename;
-/*
-			// localize filename
-			if (localize) {
-				// create copy of path
-				char path_tmp[MAX_PATH_LEN] = { 0 };
-				strncpy( path_tmp, path, MAX_PATH_LEN - 1 );
-
-				// localize the path
-				if(lcl_add_dir_to_path_with_filename(path_tmp, MAX_PATH_LEN - 1)) {
-					// verify localized path
-					FILE *fp = fopen(path, "rb");
-					if (fp) {
-						fclose(fp);
-						return 1;
-					}
-				}
-			}
-*/
 		}
 
 		path = s_path.str().c_str();
@@ -2132,6 +2114,7 @@ int cf_create_default_path_string( SCP_string &path, int pathtype, char *filenam
 
 	return 1;
 }
+
 void cfile_spew_pack_file_crcs()
 {
 	int i;

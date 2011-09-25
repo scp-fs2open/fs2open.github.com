@@ -116,7 +116,6 @@ enum IoActionId  {
 	COVER_MESSAGE									=47,	//!< wingman message: cover me
 	WARP_MESSAGE									=48,	//!< wingman message: warp out
 	REARM_MESSAGE									=49,	//!< REARM_MESSAGE
-
 	TARGET_CLOSEST_SHIP_ATTACKING_SELF				=50,	//!< target closest ship that is attacking player
 
 	// Views
@@ -132,7 +131,6 @@ enum IoActionId  {
 	PADLOCK_DOWN									=60,	//!< PADLOCK_DOWN
 	PADLOCK_LEFT									=61,	//!< PADLOCK_LEFT
 	PADLOCK_RIGHT									=62,	//!< PADLOCK_RIGHT
-
 
 	RADAR_RANGE_CYCLE								=63,	//!< cycle to next radar range
 	SQUADMSG_MENU									=64,	//!< toggle the squadmate messaging menu
@@ -157,17 +155,13 @@ enum IoActionId  {
 	XFER_SHIELD										=81,	//!< transfer energy to shield from weapons
 	XFER_LASER										=82,	//!< transfer energy to weapons from shield
 
-	// AL: this binding should be removing next time the controls are reorganized
-	//SHOW_DAMAGE_POPUP								83
 	//Backslash -- this was a convenient place for Glide When Pressed, since Show Damage Popup isn't used
 	GLIDE_WHEN_PRESSED								=83, 	//!< GLIDE_WHEN_PRESSED
-
 	BANK_WHEN_PRESSED								=84,	//!< BANK_WHEN_PRESSED
 	SHOW_NAVMAP										=85,	//!< SHOW_NAVMAP
 	ADD_REMOVE_ESCORT								=86,	//!< ADD_REMOVE_ESCORT
 	ESCORT_CLEAR									=87,	//!< ESCORT_CLEAR
 	TARGET_NEXT_ESCORT_SHIP							=88,	//!< TARGET_NEXT_ESCORT_SHIP
-
 	TARGET_CLOSEST_REPAIR_SHIP						=89,	//!< target the closest repair ship
 	TARGET_NEXT_UNINSPECTED_CARGO					=90,	//!< TARGET_NEXT_UNINSPECTED_CARGO
 	TARGET_PREV_UNINSPECTED_CARGO					=91,	//!< TARGET_PREV_UNINSPECTED_CARGO
@@ -220,8 +214,6 @@ enum IoActionId  {
 	 */
 	CCFG_MAX                                  //!<  The total number of defined control actions (or last define + 1)
 };
-
-
 
 extern int Failed_key_index;
 extern int Invert_heading;
