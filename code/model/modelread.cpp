@@ -1743,6 +1743,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						{
 							nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
 						}
+					} 
+					else 
+					{
+						// niffiwan: no "props" string found - ensure we don't have a random texture assigned!
+						bank->glow_bitmap = -1;
+						bank->glow_neb_bitmap = -1;
+						Warning( LOCATION, "No Glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 					}
 
 					for (j = 0; j < bank->num_points; j++)
