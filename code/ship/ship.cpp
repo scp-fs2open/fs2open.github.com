@@ -3106,6 +3106,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		{
 			float	turning_rate;
 			float	percentage_of_hits;
+			bool turret_has_base_fov = false;
 			model_subsystem *sp = NULL;			// to append on the ships list of subsystems
 			
 			int sfo_return;
@@ -3299,7 +3300,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				CAP(value, 0, 359);
 				float angle = ANG_TO_RAD((float) value)/2.0f;
 				sp->turret_y_fov = (float)cos(angle);
-				sp->flags |= MSS_FLAG_TURRET_ALT_MATH;
+				turret_has_base_fov = true;
 			}
 
 			if (optional_string("$Turret Reset Delay:"))
@@ -3407,6 +3408,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				if (sp->flags & MSS_FLAG_ALLOW_LANDING)
 					sip->flags2 |= SIF2_ALLOW_LANDINGS;
 			}
+
+			if (turret_has_base_fov)
+				sp->flags |= MSS_FLAG_TURRET_ALT_MATH;
 
 			if (optional_string("+non-targetable")) {
 				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
