@@ -2027,7 +2027,10 @@ void game_init()
 	load_animating_pointer(NOX("cursor"), 0, 0);	
 
 	// initialize alpha colors
-	alpha_colors_init();	
+	// CommanderDJ: try with colors.tbl first, then use the old way if that doesn't work
+	if (!new_alpha_colors_init()) {
+		old_alpha_colors_init();
+	}
 
 	if (Cmdline_env) {
 		ENVMAP = Default_env_map = bm_load("cubemap");
