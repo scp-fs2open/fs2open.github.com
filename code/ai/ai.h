@@ -539,6 +539,17 @@ typedef struct ai_info {
 	int		ai_override_timestamp;		// mark for when to end the current override
 } ai_info;
 
+// Goober5000
+typedef struct {
+	vec3d docker_point;
+	vec3d dockee_point;
+	int dock_mode;
+	int submodel;
+	vec3d submodel_pos;
+	float submodel_r;
+	float submodel_w;
+} rotating_dockpoint_info;
+
 #define	MAX_AI_INFO	 MAX_SHIPS
 
 // SUBSYS_PATH_DIST is used as the distance that a subsystem path should terminate from the actual
@@ -680,6 +691,10 @@ extern void ai_good_secondary_time( int team, int weapon_index, int num_weapons,
 extern void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point, bool update_clients = true);
 extern void ai_do_objects_undocked_stuff( object *docker, object *dockee );
 extern void ai_do_objects_repairing_stuff( object *repaired_obj, object *repair_obj, int how );
+
+// Goober5000
+//	Move to a position relative to a dock bay using thrusters.
+extern float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, rotating_dockpoint_info *rdinfo = NULL);
 
 extern int find_danger_weapon(object *sobjp, float dtime, float *atime, float dot_threshhold);
 
