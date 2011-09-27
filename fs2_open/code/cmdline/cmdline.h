@@ -145,9 +145,7 @@ extern int Cmdline_verify_vps;
 extern int Cmdline_no_grab;
 #endif
 
-// Temp, only for evaluating new defaults
-extern float Cmdline_percentflashtobang;
-extern int Cmdline_enforce_concurrent_sound_count;
+
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif
