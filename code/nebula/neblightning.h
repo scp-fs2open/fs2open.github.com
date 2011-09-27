@@ -85,7 +85,9 @@ typedef struct storm_type {
 	
 	int			min, max;								// min and max delay between bolt firing.	
 	int			min_count, max_count;					// # of bolts spewed
-	
+
+	float		flash_to_bang_percent;
+
 	storm_type() : num_bolt_types(0) {}
 } storm_type;
 
