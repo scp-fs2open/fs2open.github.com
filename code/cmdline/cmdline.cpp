@@ -437,12 +437,6 @@ cmdline_parm get_flags_arg("-get_flags", NULL);
 cmdline_parm output_sexp_arg("-output_sexps", NULL); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL);	//WMC
 
-float Cmdline_percentflashtobang = -1.0;
-int Cmdline_enforce_concurrent_sound_count = 1;
-
-cmdline_parm percent_flashtobang_arg("-percent_flashtobang", NULL);
-cmdline_parm do_not_enforce_concurrent_sound("-donotenforce", NULL);
-
 
 
 #ifndef NDEBUG
@@ -1456,16 +1450,6 @@ bool SetCmdlineParams()
 	if ( bloom_intensity_arg.found() )
 	{
 		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
-	}
-
-	if ( percent_flashtobang_arg.found() )
-	{
-		Cmdline_percentflashtobang = percent_flashtobang_arg.get_float();
-	}
-
-	if ( do_not_enforce_concurrent_sound.found() )
-	{
-		Cmdline_enforce_concurrent_sound_count = 0;
 	}
 
 	return true; 
