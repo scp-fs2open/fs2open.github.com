@@ -18,7 +18,7 @@
 #include "sound/acm.h"
 #include "osapi/osapi.h"
 #include "sound/dscap.h"
-
+#include "cmdline/cmdline.h"
 
 typedef struct sound_buffer
 {
@@ -1129,6 +1129,7 @@ int ds_init()
 	// this is needed for 2D pan
 	OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
 	OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
+	OpenAL_ErrorPrint( alListenerf(AL_GAIN, 0.65f) );
 
 	// disable doppler (FIXME)
 	OpenAL_ErrorPrint( alDopplerFactor(0.0f) );
@@ -1404,6 +1405,15 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 				lowest_vol_index = i;
 				lowest_vol = chp->vol;
 			}
+		}
+	}
+
+	// Make sure that we are not going to play more copies of this sound than we should be
+	if ( Cmdline_enforce_concurrent_sound_count && (instance_count >= limit) && (lowest_instance_vol_index >= 0) ) {
+		// If there is a lower volume duplicate, stop it.... otherwise, don't play the sound
+		if (lowest_instance_vol <= new_volume) {
+			ds_close_channel_fast(lowest_instance_vol_index);
+			first_free_channel = lowest_instance_vol_index;
 		}
 	}
 
