@@ -180,7 +180,6 @@ extern SCP_vector<game_snd> Snds_iface;
 #define	SND_BEAM_LOOP						121
 #define	SND_BEAM_UP							122
 #define	SND_BEAM_DOWN						123
-#define	SND_BEAM_SHOT						124
 #define	SND_BEAM_VAPORIZE					125
 
 // Ship engine sounds
