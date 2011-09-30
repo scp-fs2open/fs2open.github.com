@@ -54,7 +54,6 @@
 #include "VoiceActingManager.h"
 #include "FictionViewerDlg.h"
 #include "cmdline/cmdline.h"
-#include "debugconsole/dbugfile.h"
 #include "object/objectdock.h"
 #include "species_defs/species_defs.h"
 #include "sound/audiostr.h"
@@ -4593,7 +4592,6 @@ void CFREDView::OnDestroy()
 {
 	audiostream_close();
 	snd_close();
-	DBUGFILE_OUTPUT_0("About to gr_close");
  	gr_close();
    	os_set_window(NULL);	 
 
