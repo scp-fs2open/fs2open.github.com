@@ -21,7 +21,7 @@
 #include "weapon/emp.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-
+extern int Cmdline_nohtl;
 
 // ------------------------------------------------------------------------------------------------------
 // NEBULA LIGHTNING DEFINES/VARS
