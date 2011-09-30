@@ -9024,7 +9024,7 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping
 	char *s;
 	float volume = 1.0f;
 	bool loop = true;
-	if(!ade_get_args(L, "s|fb", &s, &volume, &loop))
+	if(!ade_get_args(L, "s|fb", &s, &volume))
 		return ade_set_error(L, "i", -1);
 
 	int ah = audiostream_open(s, ASF_MENUMUSIC);
@@ -9033,8 +9033,8 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping
 
 	CLAMP(volume, 0.0f, 1.0f);
 
-	audiostream_play(ah, volume);
-	return ade_set_args(L, "i", loop ? 1 : 0);
+	audiostream_play(ah, volume, loop ? 1 : 0);
+	return ade_set_args(L, "i", ah);
 }
 
 ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false]", "Stops a playing music file, provided audiohandle is valid", NULL, NULL)
