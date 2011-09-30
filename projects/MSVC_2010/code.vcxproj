@@ -757,7 +757,6 @@
     <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
     <ClCompile Include="..\..\code\Debris\debris.cpp" />
     <ClCompile Include="..\..\code\DebugConsole\console.cpp" />
-    <ClCompile Include="..\..\code\debugconsole\dbugfile.cpp" />
     <ClCompile Include="..\..\code\debugconsole\timerbar.cpp" />
     <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
     <ClCompile Include="..\..\code\fireball\warpineffect.cpp" />
@@ -1030,7 +1029,6 @@
     <ClInclude Include="..\..\code\cutscene\mvelib.h" />
     <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
     <ClInclude Include="..\..\code\Debris\debris.h" />
-    <ClInclude Include="..\..\code\debugconsole\dbugfile.h" />
     <ClInclude Include="..\..\code\debugconsole\timerbar.h" />
     <ClInclude Include="..\..\code\DirectX\vasync.h" />
     <ClInclude Include="..\..\code\DirectX\vdinput.h" />
