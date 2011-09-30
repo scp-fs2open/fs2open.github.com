@@ -9019,11 +9019,12 @@ ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interf
 	return ade_set_args(L, "b", idx > -1);
 }
 
-ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0]", "Plays a music file using FS2Open's builtin music system. Volume should be in the 0.0 - 1.0 range, and is capped at 1.0.", "number", "Audiohandle of the created audiostream, or -1 on failure")
+ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping = true]", "Plays a music file using FS2Open's builtin music system. Volume should be in the 0.0 - 1.0 range, and is capped at 1.0. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
 	char *s;
 	float volume = 1.0f;
-	if(!ade_get_args(L, "s|f", &s, &volume))
+	bool loop = true;
+	if(!ade_get_args(L, "s|fb", &s, &volume, &loop))
 		return ade_set_error(L, "i", -1);
 
 	int ah = audiostream_open(s, ASF_MENUMUSIC);
@@ -9033,7 +9034,7 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0]", "Plays a m
 	CLAMP(volume, 0.0f, 1.0f);
 
 	audiostream_play(ah, volume);
-	return ade_set_args(L, "i", ah);
+	return ade_set_args(L, "i", loop ? 1 : 0);
 }
 
 ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false]", "Stops a playing music file, provided audiohandle is valid", NULL, NULL)
