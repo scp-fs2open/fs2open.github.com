@@ -6475,7 +6475,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_SHORT(offset);
 		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
 		{
-			ADD_USHORT((ushort)sc->m_okKills[idx]);			
+			ADD_INT(sc->m_okKills[idx]);			
 		}
 		break;
 		
@@ -6483,7 +6483,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_SHORT(offset);
 		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
 		{
-			ADD_USHORT((ushort)sc->kills[idx]);			
+			ADD_INT(sc->kills[idx]);			
 		}
 		break;
 	}
@@ -6541,8 +6541,8 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		GET_SHORT(si_offset);
 		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
 		{
-			GET_USHORT(u_tmp);
-			sc->kills[idx] = u_tmp;
+			GET_INT(i_tmp);
+			sc->kills[idx] = i_tmp;
 		}
 		break;
 
@@ -6550,8 +6550,8 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		GET_SHORT(si_offset);
 		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
 		{
-			GET_USHORT(u_tmp);
-			sc->m_okKills[idx] = u_tmp;
+			GET_INT(i_tmp);
+			sc->m_okKills[idx] = i_tmp;
 		}
 		break;
 
