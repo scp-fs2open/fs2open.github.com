@@ -1389,8 +1389,6 @@
 		3459553108C3D6A0003B1351 /* uidraw.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = uidraw.cpp; sourceTree = "<group>"; };
 		3459553208C3D6A0003B1351 /* uimouse.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = uimouse.cpp; sourceTree = "<group>"; };
 		3459553308C3D6A0003B1351 /* window.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = window.cpp; sourceTree = "<group>"; };
-		3459553508C3D6A0003B1351 /* variables.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = variables.cpp; sourceTree = "<group>"; };
-		3459553608C3D6A0003B1351 /* variables.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = variables.h; sourceTree = "<group>"; };
 		3459553B08C3D6A0003B1351 /* beam.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = beam.cpp; sourceTree = "<group>"; };
 		3459553D08C3D6A0003B1351 /* beam.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = beam.h; sourceTree = "<group>"; };
 		3459553E08C3D6A0003B1351 /* corkscrew.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = corkscrew.cpp; sourceTree = "<group>"; };
@@ -1912,7 +1910,6 @@
 				3459551808C3D6A0003B1351 /* stats */,
 				3459552008C3D6A0003B1351 /* tgautils */,
 				3459552308C3D6A0003B1351 /* ui */,
-				3459553408C3D6A0003B1351 /* variables */,
 				3459553A08C3D6A0003B1351 /* weapon */,
 				3459554E08C3D6A0003B1351 /* windows_stub */,
 				3459555108C3D6A0003B1351 /* wxfred2 */,
@@ -2855,15 +2852,6 @@
 				3459553308C3D6A0003B1351 /* window.cpp */,
 			);
 			path = ui;
-			sourceTree = "<group>";
-		};
-		3459553408C3D6A0003B1351 /* variables */ = {
-			isa = PBXGroup;
-			children = (
-				3459553508C3D6A0003B1351 /* variables.cpp */,
-				3459553608C3D6A0003B1351 /* variables.h */,
-			);
-			path = variables;
 			sourceTree = "<group>";
 		};
 		3459553A08C3D6A0003B1351 /* weapon */ = {
