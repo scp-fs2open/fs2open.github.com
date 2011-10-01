@@ -56,10 +56,6 @@ int key_check(int key);
 //	Put "key" back in the input buffer.
 void key_outkey(int key);
 
-// used to restrict keys that are read into keyboard buffer
-void key_set_filter(int *filter_array, int num);
-void key_clear_filter();
-
 extern int Cheats_enabled;
 extern int Key_normal_game;
 

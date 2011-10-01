@@ -90,11 +90,6 @@ int shifted_ascii_table[128] =
   255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
   255,255,255,255,255,255,255,255 };
 
-// used to limit the keypresses that are accepted from the keyboard
-#define MAX_FILTER_KEYS 64
-int Num_filter_keys;
-int Key_filter[MAX_FILTER_KEYS];
-
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
 static int Key_running_NT = 0;		// NT is the OS
 
@@ -815,22 +810,9 @@ void key_mark( uint code, int state, uint latency )
 				if ( temp >= KEY_BUFFER_SIZE ) temp=0;
 
 				if (temp!=key_data.keyhead)	{
-					int i, accept_key = 1;
-					// Num_filter_keys will only be non-zero when a key filter has
-					// been explicity set up via key_set_filter()
-					for ( i = 0; i < Num_filter_keys; i++ ) {
-						accept_key = 0;
-						if ( Key_filter[i] == keycode ) {
-							accept_key = 1;
-							break;
-						}
-					}
-
-					if ( accept_key ) {
-						key_data.keybuffer[key_data.keytail] = keycode;
-						key_data.time_pressed[key_data.keytail] = keyd_time_when_last_pressed;
-						key_data.keytail = temp;
-					}
+					key_data.keybuffer[key_data.keytail] = keycode;
+					key_data.time_pressed[key_data.keytail] = keyd_time_when_last_pressed;
+					key_data.keytail = temp;
 				}
 			}
 		}
@@ -884,9 +866,6 @@ void key_init()
 	// Clear the keyboard array
 	key_flush();
 
-	// Clear key filter
-	key_clear_filter();
-
 	LEAVE_CRITICAL_SECTION( key_lock );
 
 #ifdef _WIN32
@@ -932,40 +911,6 @@ void key_got_focus()
 	
 	key_flush();	
 }
-
-// Restricts the keys that are accepted from the keyboard
-//
-//	filter_array	=>		array of keys to act as a filter
-//	num				=>		number of keys in filter_array
-//
-void key_set_filter(int *filter_array, int num)
-{
-	int i;
-
-	if ( num >= MAX_FILTER_KEYS ) {
-		Int3();
-		num = MAX_FILTER_KEYS;
-	}
-
-	Num_filter_keys = num;
-
-	for ( i = 0; i < num; i++ ) {
-		Key_filter[i] = filter_array[i];
-	}
-}
-
-// Clear the key filter, so all keypresses are accepted from keyboard 
-//
-void key_clear_filter()
-{
-	int i;
-
-	Num_filter_keys = 0;
-	for ( i = 0; i < MAX_FILTER_KEYS; i++ ) {
-		Key_filter[i] = -1;
-	}
-}
-
 
 #ifdef USE_DIRECTINPUT
 

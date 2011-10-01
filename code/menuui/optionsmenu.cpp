@@ -1016,8 +1016,6 @@ void options_menu_init()
 
 	Gamma_colors_inited = 0;
 
-	// used to allow all keystrokes, even when called from a demo playback
-	key_clear_filter();
 	Options_menu_inited = 1;
 
 	// hide options crap
