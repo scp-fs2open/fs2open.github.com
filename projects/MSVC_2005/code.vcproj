@@ -463,14 +463,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\debugconsole\dbugfile.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\debugconsole\dbugfile.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\debugconsole\timerbar.cpp"
 				>
 			</File>

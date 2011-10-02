@@ -288,9 +288,6 @@
     <ClCompile Include="..\..\code\DebugConsole\console.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\dbugfile.cpp">
-      <Filter>DebugConsole</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\debugconsole\timerbar.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
@@ -1120,9 +1117,6 @@
     </ClInclude>
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\dbugfile.h">
-      <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\debugconsole\timerbar.h">
       <Filter>DebugConsole</Filter>
