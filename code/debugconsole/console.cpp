@@ -21,7 +21,6 @@
 #include "io/key.h"
 #include "globalincs/alphacolors.h"
 #include "osapi/osapi.h"
-#include "debugconsole/dbugfile.h"
 
 
 #define MAX_COMMANDS 300

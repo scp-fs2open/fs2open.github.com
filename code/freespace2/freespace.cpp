@@ -33,7 +33,6 @@
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "debris/debris.h"
-#include "debugconsole/dbugfile.h"
 #include "exceptionhandler/exceptionhandler.h"
 #include "fireball/fireballs.h"
 #include "freespace2/freespace.h"
@@ -7133,8 +7132,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 	atexit(memblockinfo_output_memleak);
 #endif
 
-	DBUGFILE_INIT();
-
 	//=====================================================
 	// Make sure we're running in the right directory.
 	char exe_dir[1024];
@@ -7175,8 +7172,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 
 	SCP_mspdbcs_Cleanup( );
 
-	DBUGFILE_DEINIT();
-
 	::CoUninitialize();
 
 #ifndef _MINGW
@@ -7201,8 +7196,6 @@ int main(int argc, char *argv[])
 	// to find out where on the disk we should be running from for CFILE's sake.
 	strncpy(full_path, *argv, 1024);
 #endif
-
-	DBUGFILE_INIT();
 
 	// create user's directory	
 	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
@@ -7243,8 +7236,6 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Caught exception in main()!\n");
 		result = EXIT_FAILURE;
 	}
-
-	DBUGFILE_DEINIT();
 
 	return result;
 }
