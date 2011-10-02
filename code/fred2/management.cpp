@@ -58,7 +58,6 @@
 #include "species_defs/species_defs.h"
 #include "osapi/osapi.h"
 #include "graphics/font.h"
-#include "debugconsole/dbugfile.h"
 #include "object/objectdock.h"
 #include "gamesnd/gamesnd.h"
 #include "iff_defs/iff_defs.h"
@@ -345,7 +344,6 @@ bool fred_init()
 #endif
 
 	// d'oh
-	DBUGFILE_OUTPUT_0("About to cfile_init");
 	if(cfile_init(Fred_exe_dir)){
 		exit(1);
 	}
@@ -394,13 +392,11 @@ bool fred_init()
   //	Cmdline_nospec = 1;
  // 	Cmdline_noglow = 1;
  	Cmdline_window = 1;
-	DBUGFILE_OUTPUT_0("About to gr_init");
 
 	gr_init(GR_OPENGL, 640, 480, 32);
 
 	Mouse_hidden = 1;
 
-	DBUGFILE_OUTPUT_0("About to init everything");
 	gr_font_init();					// loads up all fonts  
 
 	gr_set_gamma(3.0f);

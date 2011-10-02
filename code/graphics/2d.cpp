@@ -27,7 +27,6 @@
 #include "graphics/grinternal.h"
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
-#include "debugconsole/dbugfile.h"
 #include "graphics/grbatch.h"
 #include "parse/scripting.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()

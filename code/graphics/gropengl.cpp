@@ -23,7 +23,6 @@
 #include "ddsutils/ddsutils.h"
 #include "model/model.h"
 #include "debugconsole/timerbar.h"
-#include "debugconsole/dbugfile.h"
 #include "graphics/gropenglbmpman.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropengltexture.h"
@@ -610,16 +609,12 @@ void gr_opengl_cleanup(int minimize)
 #ifdef _WIN32
 	HWND wnd = (HWND)os_get_window();
 
-	DBUGFILE_OUTPUT_0("");
-
 	if (GL_render_context) {
 		if ( !wglMakeCurrent(NULL, NULL) ) {
-			DBUGFILE_OUTPUT_0("");
 			MessageBox(wnd, "SHUTDOWN ERROR", "error", MB_OK);
 		}
 
 		if ( !wglDeleteContext(GL_render_context) ) {
-			DBUGFILE_OUTPUT_0("");
 			MessageBox(wnd, "Unable to delete rendering context", "error", MB_OK);
 		}
 
@@ -627,7 +622,6 @@ void gr_opengl_cleanup(int minimize)
 	}
 #endif
 
-	DBUGFILE_OUTPUT_0("opengl_minimize");
 	opengl_minimize();
 
 	if (minimize) {

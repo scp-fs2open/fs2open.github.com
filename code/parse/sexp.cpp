@@ -11223,6 +11223,10 @@ void sexp_cargo_no_deplete(int n)
 // Goober5000
 void sexp_force_jump()
 {
+	// Shouldn't be gliding now....
+	Player_obj->phys_info.flags &= ~PF_GLIDING;
+	Player_obj->phys_info.flags &= ~PF_FORCE_GLIDE;
+
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_handle_end_mission_request(); 
 	}
