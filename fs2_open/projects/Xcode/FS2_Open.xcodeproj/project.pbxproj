@@ -182,7 +182,6 @@
 		34C71B0108C41AAD00459F5B /* debris.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459530D08C3D69F003B1351 /* debris.cpp */; };
 		34C71B0208C41AB000459F5B /* timerbar.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531408C3D69F003B1351 /* timerbar.h */; };
 		34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531308C3D69F003B1351 /* timerbar.cpp */; };
-		34C71B0408C41AB100459F5B /* dbugfile.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531208C3D69F003B1351 /* dbugfile.h */; };
 		34C71B0608C41AB200459F5B /* console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531008C3D69F003B1351 /* console.cpp */; };
 		34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459532D08C3D6A0003B1351 /* exceptionhandler.h */; };
 		34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459532C08C3D6A0003B1351 /* exceptionhandler.cpp */; };
@@ -962,7 +961,6 @@
 		3459530D08C3D69F003B1351 /* debris.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = debris.cpp; sourceTree = "<group>"; };
 		3459530E08C3D69F003B1351 /* debris.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debris.h; sourceTree = "<group>"; };
 		3459531008C3D69F003B1351 /* console.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = console.cpp; sourceTree = "<group>"; };
-		3459531208C3D69F003B1351 /* dbugfile.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = dbugfile.h; sourceTree = "<group>"; };
 		3459531308C3D69F003B1351 /* timerbar.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = timerbar.cpp; sourceTree = "<group>"; };
 		3459531408C3D69F003B1351 /* timerbar.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = timerbar.h; sourceTree = "<group>"; };
 		3459531E08C3D69F003B1351 /* dxguid.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = dxguid.lib; sourceTree = "<group>"; };
@@ -1435,7 +1433,6 @@
 		3459556C08C3D6A0003B1351 /* wxfred2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wxfred2.h; sourceTree = "<group>"; };
 		3459556D08C3D6A0003B1351 /* wxfred_xrc.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = wxfred_xrc.cpp; sourceTree = "<group>"; };
 		3459556E08C3D6A0003B1351 /* wxfred_xrc.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wxfred_xrc.h; sourceTree = "<group>"; };
-		345957C808C3D70B003B1351 /* dbugfile.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = dbugfile.cpp; sourceTree = "<group>"; };
 		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		34595A7508C3D8CB003B1351 /* FS2_Open-Inferno (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open-Inferno (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		345A81150B4941D700282E7A /* grstub.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grstub.cpp; sourceTree = "<group>"; };
@@ -2067,9 +2064,7 @@
 		3459530F08C3D69F003B1351 /* debugconsole */ = {
 			isa = PBXGroup;
 			children = (
-				345957C808C3D70B003B1351 /* dbugfile.cpp */,
 				3459531008C3D69F003B1351 /* console.cpp */,
-				3459531208C3D69F003B1351 /* dbugfile.h */,
 				3459531308C3D69F003B1351 /* timerbar.cpp */,
 				3459531408C3D69F003B1351 /* timerbar.h */,
 			);
@@ -3203,7 +3198,6 @@
 				34C71AFE08C41AAA00459F5B /* ddsutils.h in Headers */,
 				34C71B0008C41AAD00459F5B /* debris.h in Headers */,
 				34C71B0208C41AB000459F5B /* timerbar.h in Headers */,
-				34C71B0408C41AB100459F5B /* dbugfile.h in Headers */,
 				34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */,
 				34C71B0E08C41AC100459F5B /* fireballs.h in Headers */,
 				34C71B1808C41ACB00459F5B /* gameplayhelp.h in Headers */,

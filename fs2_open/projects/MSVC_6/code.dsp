@@ -413,14 +413,6 @@ SOURCE=..\..\code\DebugConsole\Console.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\debugconsole\dbugfile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\debugconsole\dbugfile.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\debugconsole\timerbar.cpp
 # End Source File
 # Begin Source File

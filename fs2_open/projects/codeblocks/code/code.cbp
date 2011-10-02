@@ -218,8 +218,6 @@
 		<Unit filename="../../../code/debugconsole/console.cpp">
 			<Option virtualFolder="debugconsole/" />
 		</Unit>
-		<Unit filename="../../../code/debugconsole/dbugfile.cpp" />
-		<Unit filename="../../../code/debugconsole/dbugfile.h" />
 		<Unit filename="../../../code/debugconsole/timerbar.cpp">
 			<Option virtualFolder="debugconsole/" />
 		</Unit>
