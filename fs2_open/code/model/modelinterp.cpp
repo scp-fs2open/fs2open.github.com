@@ -178,7 +178,7 @@ void model_render_children_buffers(polymodel * pm, int mn, int detail_level);
 int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
 //Valathil - Transparent object buffer
-std::vector<transparent_submodel> transparent_submodels;
+SCP_vector<transparent_submodel> transparent_submodels;
 
 void model_deallocate_interp_data()
 {
@@ -2965,8 +2965,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 
 	// Valathil - now draw the saved transparent objects
-	std::vector<transparent_submodel>::iterator ts;
-	std::vector<transparent_object>::iterator obj;
+	SCP_vector<transparent_submodel>::iterator ts;
+	SCP_vector<transparent_object>::iterator obj;
 
 	for(ts = transparent_submodels.begin(); ts != transparent_submodels.end(); ++ts)
 	{

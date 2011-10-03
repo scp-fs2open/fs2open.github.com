@@ -71,7 +71,7 @@ static int Last_activity = -1;
 static int Login_retry_time = -1;
 
 static SCP_vector<file_record> FS2NetD_file_list;
-static SCP_vector<std::string> FS2NetD_ban_list;
+static SCP_vector<SCP_string> FS2NetD_ban_list;
 
 SCP_vector<crc_valid_status> Table_valid_status;
 
@@ -1183,7 +1183,7 @@ void fs2netd_update_ban_list()
 		CFILE *banlist_cfg = cfopen("banlist.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
 
 		if (banlist_cfg != NULL) {
-			for (SCP_vector<std::string>::iterator bl = FS2NetD_ban_list.begin(); bl != FS2NetD_ban_list.end(); ++bl) {
+			for (SCP_vector<SCP_string>::iterator bl = FS2NetD_ban_list.begin(); bl != FS2NetD_ban_list.end(); ++bl) {
 				cfputs( const_cast<char*>(bl->c_str()), banlist_cfg );
 			}
 

@@ -313,7 +313,7 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 	return -1;
 }
 
-int FS2NetD_GetBanList(SCP_vector<std::string> &mask_list, bool do_send)
+int FS2NetD_GetBanList(SCP_vector<SCP_string> &mask_list, bool do_send)
 {
 	int buffer_size, buffer_offset;
 	bool my_packet = false;

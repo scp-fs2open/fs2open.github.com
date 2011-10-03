@@ -12,8 +12,8 @@
 #endif
 
 
-static std::string Playback_device;
-static std::string Capture_device;
+static SCP_string Playback_device;
+static SCP_string Capture_device;
 
 
 enum {
@@ -23,7 +23,7 @@ enum {
 };
 
 typedef struct OALdevice {
-	std::string device_name;
+	SCP_string device_name;
 	int type;
 	bool usable;
 
@@ -320,7 +320,7 @@ static void find_capture_device()
 }
 
 // initializes hardware device from perferred/default/enumerated list
-bool openal_init_device(std::string *playback, std::string *capture)
+bool openal_init_device(SCP_string *playback, SCP_string *capture)
 {
 	if ( !Playback_device.empty() ) {
 		if (playback) {

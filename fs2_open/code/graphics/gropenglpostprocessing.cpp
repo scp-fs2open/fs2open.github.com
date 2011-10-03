@@ -725,7 +725,7 @@ static bool opengl_post_init_table()
 
 static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 {
-	std::string sflags;
+	SCP_string sflags;
 
 	if (Use_GLSL >= 4) {
 		sflags += "#define SHADER_MODEL 4\n";

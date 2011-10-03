@@ -54,7 +54,7 @@ int camMovingTime;
 //float CameraSpeed;
 bool CinematicStarted, CameraMoving;
 vec3d cameraPos, cameraTarget;
-std::map<int,int> autopilot_wings;
+SCP_map<int,int> autopilot_wings;
 
 int AutopilotMinEnemyDistance;
 int AutopilotMinAsteroidDistance;
@@ -1255,7 +1255,7 @@ void NavSystem_Init()
 void parse_autopilot_table(char *filename)
 {
 	int rval;
-	SCP_vector<std::string> lines;
+	SCP_vector<SCP_string> lines;
 
 	// open localization
 	lcl_ext_open();

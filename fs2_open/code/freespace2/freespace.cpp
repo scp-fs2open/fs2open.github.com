@@ -3575,7 +3575,7 @@ DCF_BOOL( subspace, Game_subspace_effect )
 void clip_frame_view();
 
 // Does everything needed to render a frame
-extern std::vector<object*> effect_ships; 
+extern SCP_vector<object*> effect_ships; 
 void game_render_frame( camid cid )
 {
 
@@ -3675,7 +3675,7 @@ void game_render_frame( camid cid )
 	neb2_render_player();
 
 	// render all ships with shader effects on them
-	std::vector<object*>::iterator obji = effect_ships.begin();
+	SCP_vector<object*>::iterator obji = effect_ships.begin();
 	for(;obji != effect_ships.end();++obji)
 		ship_render(*obji);
 	effect_ships.clear();
