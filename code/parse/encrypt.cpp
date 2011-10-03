@@ -327,7 +327,7 @@ void encrypt_new(char *text, int text_len, char *scrambled_text, int *scrambled_
 		}
 		// if we have at least one full block left
 		else {
-			memcpy(lvl1_block, text + *scrambled_len, NUM_LVL1_KEYS * 2);
+			memcpy(lvl1_block, text + *scrambled_len, NUM_LVL1_KEYS * 2); //-V512
 			block_size = NUM_LVL1_KEYS * 2;			
 		}
 
@@ -383,7 +383,7 @@ void unencrypt_new(char *scrambled_text, int scrambled_len, char *text, int *tex
 		}
 		// if we have at least one full block left
 		else {
-			memcpy(lvl1_block, scrambled_text + *text_len, NUM_LVL1_KEYS * 2);
+			memcpy(lvl1_block, scrambled_text + *text_len, NUM_LVL1_KEYS * 2); //-V512
 			block_size = NUM_LVL1_KEYS * 2;			
 		}		
 		

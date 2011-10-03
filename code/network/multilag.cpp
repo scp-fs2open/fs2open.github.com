@@ -262,7 +262,7 @@ int multi_lag_recvfrom(uint s, char *buf, int len, int flags, struct sockaddr *f
 	if(Tcp_active){
 		memcpy(from, &item->ip_addr, sizeof(SOCKADDR_IN));
 	} else {
-		memcpy(from, &item->ipx_addr, sizeof(SOCKADDR_IPX));
+		memcpy(from, &item->ipx_addr, sizeof(SOCKADDR_IPX)); //-V512
 	}
 
 	// stick the item back on the free list

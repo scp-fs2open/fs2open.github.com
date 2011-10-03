@@ -6655,10 +6655,10 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
 		jump_node *jnp = jumpnode_get_which_in(&Objects[shipp->objnum]);
-		if(jnp)
-			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->get_name_ptr(), shipp->wingnum);
-		else
+		if(jnp==NULL)
 			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, NULL, shipp->wingnum);
+		else
+			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->get_name_ptr(), shipp->wingnum);
 	}
 
 #ifndef NDEBUG

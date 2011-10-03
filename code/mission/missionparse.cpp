@@ -4745,6 +4745,8 @@ void parse_waypoints(mission *pm)
 			stuff_boolean(&hide);
 			jnp->show(!hide);
 		}
+
+		Jump_nodes.push_back(*jnp);
 	}
 
 	while (required_string_either("#Messages", "$Name:"))
