@@ -1112,9 +1112,7 @@ void obj_move_all_pre(object *objp, float frametime)
 		// all shockwaves are moved via shockwave_move_all()
 		break;
 	case OBJ_DEBRIS:
-		if (!physics_paused){
-			debris_process_pre(objp,frametime);
-		}
+		// all debris are moved via debris_process_post()
 		break;
 	case OBJ_ASTEROID:
 		if (!physics_paused){
