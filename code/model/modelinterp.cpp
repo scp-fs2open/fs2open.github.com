@@ -29,7 +29,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "weapon/shockwave.h"
-#include "parse/parselo.h"	//strextcmp
+#include "parse/parselo.h"
 #include "graphics/gropengllight.h"
 #include "ship/shipfx.h"
 
@@ -84,14 +84,7 @@ static vec3d Interp_render_box_max = ZERO_VECTOR;
 // -------------------------------------------------------------------
 // lighting save stuff 
 //
-#define MAX_MODEL_LIGHTING_SAVE			30
-int hack_skip_max = 1;
-DCF(skip, "")
-{
-	dc_get_arg(ARG_INT);
-	hack_skip_max = Dc_arg_int;
-}
-// model_light_object Interp_lighting_save[MAX_MODEL_LIGHTING_SAVE];
+
 model_light_object Interp_lighting_temp;
 model_light_object *Interp_lighting = &Interp_lighting_temp;
 int Interp_use_saved_lighting = 0;
@@ -338,115 +331,6 @@ void model_finish_cloak(int full_cloak)
 	FULLCLOAK=-1;
 }
 
-
-// call at the beginning of a level. after the level has been loaded
-void model_level_post_init()
-{
-	/*
-	int idx;
-
-	// reset lighting stuff	
-	for(idx=0; idx<MAX_MODEL_LIGHTING_SAVE; idx++){
-		Interp_lighting_save[idx].objnum = -1;
-		Interp_lighting_save[idx].skip = 0;
-	}
-
-	// saved lighting is not full
-	Interp_saved_lighting_full = 0;
-	*/
-}
-
-// call to select an object for using "saved" lighting
-void model_set_saved_lighting(int objnum, int skip_max)
-{
-	/*
-	int idx;
-
-	// always set to not using saved light to start with
-	Interp_use_saved_lighting = 0;
-	Interp_lighting = &Interp_lighting_temp;
-
-	// if he passed a -1 for either value, no saved lighting
-	if((objnum == -1) || (skip_max == -1)){
-		return;
-	}
-
-	// see if the object is already on the list
-	for(idx=0; idx<MAX_MODEL_LIGHTING_SAVE; idx++){
-		// ahha, he is on the list
-		if(Interp_lighting_save[idx].objnum == objnum){
-			// if he's entered a new skip max
-			if(Interp_lighting_save[idx].skip_max != skip_max){
-				Interp_lighting_save[idx].skip = 0;
-				Interp_lighting_save[idx].skip_max = skip_max;
-				Interp_use_saved_lighting = 0;
-				Interp_lighting = &Interp_lighting_save[idx];
-			} 
-			// if we're reached the "skip" frame, re-render lighting for this guy
-			else if(Interp_lighting_save[idx].skip == Interp_lighting_save[idx].skip_max){
-				Interp_lighting_save[idx].skip = 0;
-				Interp_use_saved_lighting = 0;
-				Interp_lighting = &Interp_lighting_save[idx];
-			}
-			// otherwise, use his saved lighting values
-			else {
-				Interp_lighting_save[idx].skip++;
-				Interp_use_saved_lighting = 1;
-				Interp_lighting = &Interp_lighting_save[idx];
-			}
-
-			// duh
-			return;
-		}
-	}
-
-	// no free saved lighting slots
-	if(Interp_saved_lighting_full){
-		return;
-	}
-	
-	// find a free slot
-	int found = 0;
-	for(idx=0; idx<MAX_MODEL_LIGHTING_SAVE; idx++){
-		// got one
-		if(Interp_lighting_save[idx].objnum == -1){
-			Interp_lighting_save[idx].objnum = objnum;
-			Interp_lighting_save[idx].skip = 0;
-			Interp_lighting_save[idx].skip_max = skip_max;
-
-			Interp_use_saved_lighting = 0;
-			Interp_lighting = &Interp_lighting_save[idx];
-
-			found = 1;
-			break;
-		}
-	}
-
-	// oops. out of free slots
-	if(!found){
-		Interp_saved_lighting_full = 1;
-	}
-	*/
-}
-
-// notify the model system that a ship has died
-void model_notify_dead_ship(int objnum)
-{
-	/*
-	int idx;
-
-	// see if this guy was on the lighting list
-	for(idx=0; idx<MAX_MODEL_LIGHTING_SAVE; idx++){
-		// free him up
-		if(objnum == Interp_lighting_save[idx].objnum){
-			Interp_lighting_save[idx].objnum = -1;
-			Interp_saved_lighting_full = 0;
-			return;
-		}
-	}
-	*/
-}
-
 void interp_clear_instance()
 {
 	Interp_thrust_scale = 0.1f;
@@ -478,7 +362,9 @@ void interp_clear_instance()
 	Interp_render_box_max = vmd_zero_vector;
 }
 
-// Scales the engines thrusters by this much
+/**
+ * Scales the engines thrusters by this much
+ */
 void model_set_thrust(int model_num, mst_info *mst)
 {
 	if (mst == NULL) {
@@ -515,21 +401,6 @@ void model_set_thrust(int model_num, mst_info *mst)
 	Interp_distortion_thrust_length_factor = mst->distortion_length_factor;
 
 	Interp_draw_distortion = mst->draw_distortion;
-
-	//this isn't used
-/*
-	polymodel * pm = model_get( model_num );
-	int i;
-
-	// If thrust is set up, use it.
-	for (i=0; i<pm->num_lights; i++ )	{
-		if ( pm->lights[i].type == BSP_LIGHT_TYPE_THRUSTER )	{
-			float scale = (Interp_thrust_scale-0.1f)*0.5f;
-
-			pm->lights[i].value += (scale+Interp_thrust_glow_noise*0.2f) / 255.0f;
-		}
-	}
-	*/
 }
 
 bool splodeing = false;
@@ -671,8 +542,6 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 			dest++;
 		} 
 	} else if ( (Interp_warp_scale_x != 1.0f) || (Interp_warp_scale_y != 1.0f) || (Interp_warp_scale_z != 1.0f)) {
-		// SHUT UP! -- Kazan -- This is massively slowing debug builds down
-		//mprintf(("warp model being scaled by %f %f %f\n", Interp_warp_scale_x, Interp_warp_scale_y, Interp_warp_scale_z));
 		for (n=0; n<nverts; n++ )	{
 			vec3d tmp;
 
@@ -716,32 +585,9 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 				}
 			}
 			else {
-	
-				Interp_verts[n] = src; 	 
-				 /* 	                                 
-				 vec3d tmp = *src; 	 
-				 // TEST 	                                 ;
-				 if(Interp_thrust_twist > 0.0f){ 	                                 
-						 float theta; 	                                 
-						 float st, ct; 	                                 
+				Interp_verts[n] = src; 	 	 
 
-						 // determine theta for this vertex 	                                 
-						 theta = fl_radian(20.0f + Interp_thrust_twist2); 	                         
-						 st = sin(theta); 	                                 
-						 ct = cos(theta); 	                                 
-  					 }
-						 // twist 	 
-						 tmp.xyz.z = (src->xyz.z * ct) - (src->xyz.y * st); 	 
-						 tmp.xyz.y = (src->xyz.z * st) + (src->xyz.y * ct); 	 
-
-						 // scale the z a bit 	 
-						 tmp.xyz.z += Interp_thrust_twist; 	 
-				 } 	 
-
-				 g3_rotate_vertex(dest, &tmp); 	 
-				 */ 	 
-
-				 g3_rotate_vertex(dest, src);
+				g3_rotate_vertex(dest, src);
 			}
 
 			src++;		// move to normal
@@ -758,7 +604,6 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 	}
 
 	Interp_num_norms = next_norm;
-
 }
 
 matrix *Interp_orient;
@@ -905,8 +750,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	texture_info *tbase = &tmap->textures[TM_BASE_TYPE];
 	texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
 	int rt_begin_index = tmap_num*TM_NUM_TYPES;
-	//mprintf(("model_interp_tmappoly tmap_num: %d\n", tmap_num));
-	//Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
 	// Goober5000
 	Interp_base_frametime = 0;
@@ -929,10 +772,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 		}
 	}
 
-
 	nv = w(p+36);
-
-//	Tmap_show_layers = 1;
 
 	#ifndef NDEBUG
 	modelstats_num_polys++;
@@ -973,8 +813,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			}
 			cull = gr_set_cull(0);
 			gr_set_bitmap( splodeingtexture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, salpha );
-		//	gr_set_color( 255, 250, 200 );
-		//	g3_draw_poly( nv, Interp_list, 0 );
 			g3_draw_poly( nv, Interp_list,  TMAP_FLAG_TEXTURED|TMAP_FLAG_GOURAUD);
 			gr_set_cull(cull);
 			return;
@@ -994,13 +832,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			Interp_list[i]->g = Interp_subspace_g;
 			Interp_list[i]->b = Interp_subspace_b;
 		} else {
-
-	//		if ( !(pm->flags & PM_FLAG_ALLOW_TILING) )	{
-	//			Assert(verts[i].u <= 1.0f );
-	//			Assert(verts[i].v <= 1.0f );
-	//		}
-
-	//		Assert( verts[i].normnum == verts[i].vertnum );
 			if ( (Interp_flags & MR_NO_LIGHTING) || (tmap->is_ambient))	{	//gets the ambient glow to work
 				Interp_list[i]->r = 191;
 				Interp_list[i]->g = 191;
@@ -1039,9 +870,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 							light_apply_specular( &Interp_lighting->lights[norm].spec_r, &Interp_lighting->lights[norm].spec_g, &Interp_lighting->lights[norm].spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 
 						Interp_light_applied[norm] = 1;
-					}else if(Interp_light_applied[norm]){
-					//	if((Detail.lighting > 2) && (Interp_detail_level < 2))
-					//		light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 					}
 
 					Interp_list[i]->spec_r = Interp_lighting->lights[norm].spec_r;
@@ -1051,15 +879,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					Interp_list[i]->r = Interp_lighting->lights[norm].r;
 					Interp_list[i]->g = Interp_lighting->lights[norm].g;
 					Interp_list[i]->b = Interp_lighting->lights[norm].b;
-//					if((Detail.lighting > 2) && (Interp_detail_level < 2))
-//						light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 				}
 			}
 		}
-
-//		Assert(verts[i].u >= 0.0f );
-//		Assert(verts[i].v >= 0.0f );
-
 	}
 
 	#ifndef NDEBUG
@@ -1208,45 +1030,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 }
 
-void interp_draw_box( vec3d *min, vec3d *max )
-{
-/*
-	int i;
-	vec3d bounding_box[8];
-	vertex pts[8];
-	vertex *l[4];
-
-	model_calc_bound_box(bounding_box,min,max);
-
-	for (i=0; i<8; i++ )	{
-		g3_rotate_vertex( &pts[i], &bounding_box[i] );
-	}
-
-	gr_set_color(128,0,0);
-
-	Tmap_show_layers = 1;
-
-	l[3] = &pts[0];  l[2] = &pts[1]; l[1] = &pts[2];  l[0] = &pts[3];
-	g3_draw_poly( 4, l, 0 );
-
-	l[3] = &pts[3];  l[2] = &pts[2]; l[1] = &pts[6];  l[0] = &pts[7];
-	g3_draw_poly( 4, l, 0 );
-
-	l[3] = &pts[2];  l[2] = &pts[1]; l[1] = &pts[5];  l[0] = &pts[6];
-	g3_draw_poly( 4, l, 0 );
-
-	l[3] = &pts[1];  l[2] = &pts[0]; l[1] = &pts[4];  l[0] = &pts[5];
-	g3_draw_poly( 4, l, 0 );
-
-	l[3] = &pts[0];  l[2] = &pts[3]; l[1] = &pts[7];  l[0] = &pts[4];
-	g3_draw_poly( 4, l, 0 );
-
-	l[3] = &pts[4];  l[2] = &pts[7]; l[1] = &pts[6];  l[0] = &pts[5];
-	g3_draw_poly( 4, l, 0 );
-*/
-}
-
-
 // Sortnorms
 // +0      int         id
 // +4      int         size 
@@ -1263,8 +1046,6 @@ void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_bo
 	#ifndef NDEBUG
 	modelstats_num_sortnorms++;
 	#endif
-
-//	Assert( w(p+4) == 56 );
 
 	int frontlist = w(p+36);
 	int backlist = w(p+40);
@@ -1296,7 +1077,6 @@ void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_bo
 	if (postlist) model_interp_sub(p+postlist,pm,sm,do_box_check);		// postlist
 
 }
-
 
 // Sortnorms
 // +0      int         id
@@ -1315,8 +1095,6 @@ void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_bo
 	modelstats_num_sortnorms++;
 	#endif
 
-//	Assert( w(p+4) == 56 );
-
 	int frontlist = w(p+36);
 	int backlist = w(p+40);
 	int prelist = w(p+44);
@@ -1326,8 +1104,6 @@ void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_bo
 	if (postlist) model_interp_sub(p+postlist,pm,sm,do_box_check);		// postlist
 
 	if (g3_check_normal_facing(vp(p+20),vp(p+8))) {		//facing
-
-		// 
 
 		if (frontlist) model_interp_sub(p+frontlist,pm,sm,do_box_check);
 
@@ -1350,20 +1126,11 @@ void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_bo
 	if (prelist) model_interp_sub(p+prelist,pm,sm,do_box_check);		// prelist
 }
 
-
-
-
 void model_draw_debug_points( polymodel *pm, bsp_info * submodel )
 {
 	if ( Interp_flags & MR_SHOW_OUTLINE_PRESET )	{
 		return;
 	}
-
-	// Draw the brown "core" mass
-//	if ( submodel && (submodel->parent==-1) )	{
-//		gr_set_color(128,128,0);
-//		g3_draw_sphere_ez( &vmd_zero_vector, pm->core_radius );
-//	}
 
 	// Draw a red pivot point
 	gr_set_color(128,0,0);
@@ -1405,9 +1172,6 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel )
 		g3_draw_line( &pts[2], &pts[6] );
 		g3_draw_line( &pts[3], &pts[7] );
 	} else {
-		//for (i=0; i<8; i++ )	{
-		//	g3_rotate_vertex( &pts[i], &pm->bounding_box[i] );
-		//}
 		gr_set_color(0,255,0);
 
 		int j;
@@ -1438,7 +1202,9 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel )
 	}
 }
 
-// Debug code to show all the paths of a model
+/**
+ * Debug code to show all the paths of a model
+ */
 void model_draw_paths( int model_num )
 {
 	int i,j;
@@ -1487,7 +1253,9 @@ void model_draw_paths( int model_num )
 	}
 }
 
-// Debug code to show all the paths of a model
+/**
+ * Debug code to show all the paths of a model
+ */
 void model_draw_paths_htl( int model_num )
 {
 	int i,j;
@@ -1539,7 +1307,9 @@ void model_draw_paths_htl( int model_num )
 	gr_set_cull(cull);
 }
 
-// docking bay and fighter bay paths
+/**
+ * Docking bay and fighter bay paths
+ */
 void model_draw_bay_paths_htl(int model_num)
 {
 	int idx, s_idx;
@@ -1582,8 +1352,9 @@ void model_draw_bay_paths_htl(int model_num)
 	gr_set_cull(cull);
 }
 
-
-// docking bay and fighter bay paths
+/**
+ * Docking bay and fighter bay paths
+ */
 void model_draw_bay_paths(int model_num)
 {
 	int idx, s_idx;
@@ -1860,12 +1631,7 @@ int interp_box_offscreen( vec3d *min, vec3d *max )
 	for (i=0; i<8; i++ )	{
 		vertex tmp;
 		ubyte codes=g3_rotate_vertex( &tmp, &v[i] );
-// Early out which we cannot do because we want to differentiate btwn
-// IBOX_SOME_ON_SOME_OFF and IBOX_ALL_ON
-//		if ( !codes )	{
-//			//mprintf(( "A point is inside, so render it.\n" ));
-//			return 0;		// this point is in, so return 0
-//		}
+
 		or_codes |= codes;
 		and_codes &= codes;
 	}
@@ -1873,7 +1639,6 @@ int interp_box_offscreen( vec3d *min, vec3d *max )
 	// If and_codes is set this means that all points lie off to the
 	// same side of the screen.
 	if (and_codes)	{
-		//mprintf(( "All points offscreen, so don't render it.\n" ));
 		return IBOX_ALL_OFF;	//all points off screen
 	}
 
@@ -1888,8 +1653,10 @@ int interp_box_offscreen( vec3d *min, vec3d *max )
 }
 
 
-//calls the object interpreter to render an object.  
-//returns true if drew
+/**
+ * Calls the object interpreter to render an object.  
+ * @return true if drawn
+ */
 int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check )
 {
 	ubyte *p = (ubyte *)model_ptr;
@@ -1901,8 +1668,6 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 
 	
 	while ( chunk_type != OP_EOF )	{
-
-//		mprintf(( "Processing chunk type %d, len=%d\n", chunk_type, chunk_size ));
 
 		switch (chunk_type) {
 		case OP_EOF: return 1;
@@ -1932,12 +1697,10 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 				}
 			}
 
-
 			if (Interp_flags & MR_SHOW_PIVOTS )	{
 				#ifndef NDEBUG
 				modelstats_num_boxes++;
 				#endif
-				interp_draw_box( vp(p+8), vp(p+20) );
 			}
 
 			if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
@@ -2018,7 +1781,6 @@ void model_render_insignias(polymodel *pm, int detail_level)
 	if ( (pm->num_ins <= 0) || (Interp_insignia_bitmap < 0) )
 		return;
 
-
 	int idx, s_idx;
 	vertex vecs[3];
 	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
@@ -2095,8 +1857,10 @@ MONITOR( NumHiModelsRend )
 MONITOR( NumMedModelsRend )
 MONITOR( NumLowModelsRend )
 
-//draws a bitmap with the specified 3d width & height 
-//returns 1 if off screen, 0 if not
+/**
+ * Draws a bitmap with the specified 3d width & height 
+ * @return 1 if off screen, 0 if not
+ */
 int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *v)
 {
 	float sa, ca;
@@ -2160,51 +1924,6 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 	return 0;
 }
 
-/*
-int Model_caching = 1;
-DCF_BOOL( model_caching, Model_caching )
-
-extern int Tmap_scan_read;		// 0 = normal mapper, 1=read, 2=write
-
-#define MODEL_MAX_BITMAP_SIZE 128
-ubyte tmp_bitmap[MODEL_MAX_BITMAP_SIZE*MODEL_MAX_BITMAP_SIZE];
-
-void mc_get_bmp( ubyte *data, int x, int y, int w, int h )
-{
-	gr_lock();
-
-	int i,j;
-
-	for (i = 0; i < h; i++)	{
-		ubyte *dptr = GR_SCREEN_PTR(ubyte,x,i+y);
-		ubyte *sptr = data+(i*w);
-		for (j=0; j<w; j++ )	{
-			*sptr++ = *dptr;
-			*dptr++ = 255;				// XPARENT!
-		}
-	}
-
-	gr_unlock();
-}
-
-void mc_put_bmp( ubyte *data, int x, int y, int w, int h )
-{
-	gr_lock();
-
-	int i,j;
-
-	for (i = 0; i < h; i++)	{
-		ubyte *dptr = GR_SCREEN_PTR(ubyte,x,i+y);
-		ubyte *sptr = data+(i*w);
-		for (j=0; j<w; j++ )	{
-			*dptr++ = *sptr++;
-		}
-	}
-
-	gr_unlock();
-}
-*/
-
 float Interp_depth_scale = 1500.0f;
 
 DCF(model_darkening,"Makes models darker with distance")
@@ -2223,26 +1942,6 @@ DCF(model_darkening,"Makes models darker with distance")
 		dc_printf( "model_darkening = %.1f\n", Interp_depth_scale );
 	}
 }
-
-
-		// Compare it to 999.75f at R = 64.0f
-		//               0.0000f at R = 4.0f
-		
-		//float cmp_val = 999.75f;		// old
-/*
-// Return a number from 'min' to 'max' where it is
-// 'v' is between v1 and v2.
-float scale_it( float min, float max, float v, float v1, float v2 )
-{
-	if ( v < v1 ) return min;
-	if ( v > v2 ) return max;
-
-	v = (v - v1)/(v2-v1);
-	v = v*(max-min)+min;
-
-	return v;
-}
-*/
 
 void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
 {
@@ -2264,7 +1963,6 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 		if (bank->glow_timestamp == 0)
 			bank->glow_timestamp=time;
 		if(bank->off_time){
-		//	time += bank->disp_time;
 			if(bank->is_on){
 				if( (bank->on_time) > ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ){
 					bank->glow_timestamp=time;
@@ -2279,7 +1977,6 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 		}
 	}
 
-
 	// maybe turn off (hardware) culling
 	if(flags & MR_NO_CULL){
 		cull = gr_set_cull(0);
@@ -2287,33 +1984,8 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 
 	Interp_objnum = objnum;
 
-
-/*
-	vec3d thruster_pnt=vmd_zero_vector;
-	vec3d rotated_thruster;
-	//maybe add lights by engine glows
-	if (Interp_flags & MR_SHOW_THRUSTERS) 
-	{
-		for (int thruster_num=0; thruster_num < pm->n_thrusters; thruster_num++)
-		{
-			for (int slot_num=0; slot_num < pm->thrusters[thruster_num].num_slots; slot_num++)
-			{
-				thruster_pnt=pm->thrusters[thruster_num].pnt[slot_num];
-				//vm_vec_rotate(&rotated_thruster,&thruster_pnt,orient);
-				
-				light_add_point(&rotated_thruster,pm->thrusters[thruster_num].radius[slot_num]*5,pm->thrusters[thruster_num].radius[slot_num]*10,1.0f,0.0f,0.0f,1.0f,-1);
-
-		//		gr_set_color(255,255,255);
-			//	g3_draw_sphere_ez(&rotated_thruster,pm->thrusters[thruster_num].radius[slot_num]*15);
-			}
-		}
-	}*/
-
 	if ( flags & MR_NO_LIGHTING )	{
 		Interp_light = 1.0f;
-
-		// never use saved lighitng for this object
-		model_set_saved_lighting(-1, -1);
 	} else if ( flags & MR_IS_ASTEROID ) {
 		// Dim it based on distance
 		float depth = vm_vec_dist_quick( pos, &Eye_position );
@@ -2329,14 +2001,8 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 		} else {
 			Interp_light = 1.0f;
 		}
-
-		// never use saved lighitng for this object
-		model_set_saved_lighting(-1, -1);
 	} else {
 		Interp_light = 1.0f;
-
-		// maybe use saved lighting
-		model_set_saved_lighting(objnum, hack_skip_max);
 	}
 
 	int num_lights = 0;
@@ -2377,8 +2043,10 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 #endif
 
 
-// Find the distance from p0 to the closest point on a box.
-// The box's dimensions from 'min' to 'max'.
+/**
+ * Find the distance from p0 to the closest point on a box.
+ * The box's dimensions from 'min' to 'max'.
+ */
 float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *max )
 {
 	float *origin = (float *)&p0->xyz.x;
@@ -2454,7 +2122,6 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 
 	temp = *pos;
 
-//	vm_vec_sub( &rvec, &View, &temp );
 	vm_vec_sub( &rvec, Eyeposition, &temp );
 	vm_vec_normalize( &rvec );	
 
@@ -2463,13 +2130,13 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 
 	vm_vec_scale_add( top, &temp, &uvec, w/2.0f );
 	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
-
-//	Int3();
 }
 
-//geometry_batcher primary_thruster_batcher, secondary_thruster_batcher, tertiary_thruster_batcher;
 extern bool Scene_framebuffer_in_frame;
-// maybe draw mode thruster glows
+
+/**
+ * Maybe draw mode thruster glows
+ */
 void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)
 {
 	int i, j, k;
@@ -2873,10 +2540,8 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 								}
 
 								gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
-							//	mprintf(( "rendering glow with texture %d\n", bank->glow_bitmap ));
 								g3_draw_bitmap(&p, 0, (w * 0.5f), TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w);
-								//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
-							}//d>0
+							} //d>0.0f
 
 							break;
 						}
@@ -2950,11 +2615,6 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 }
 
 void light_set_all_relevent();
-
-//#define mSTUFF_VERTICES()	do { verts[0]->u = 0.0f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.0f; verts[3]->v = 1.0f; } while(0);
-//#define mR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
-//#define mP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
-
 extern int Warp_model;
 
 void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum )
@@ -2994,10 +2654,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	Interp_pos = pos;
 
 	int tmp_detail_level = Game_detail_level;
-	
-	//	Tmap_show_layers = 1;
-//	model_set_detail_level(0);
-//	flags |= MR_LOCK_DETAIL|MR_NO_TEXTURING|MR_NO_LIGHTING;		//MR_LOCK_DETAIL |	|MR_NO_LIGHTING|MR_NO_SMOOTHINGMR_NO_TEXTURING | 
 
 	// Turn off engine effect
 	Interp_thrust_scale_subobj=0;
@@ -3021,7 +2677,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		Interp_tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
-
 	if ( !(Interp_flags & MR_NO_TEXTURING) )	{
 		Interp_tmap_flags |= TMAP_FLAG_TEXTURED;
 
@@ -3042,15 +2697,12 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if (!(Game_detail_flags & DETAIL_FLAG_MODELS) )	{
 		gr_set_color(0,128,0);
 		g3_draw_sphere_ez( pos, pm->rad );
-	//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 		return;
 	}
-
 
 	bool is_outlines_only = (flags & MR_NO_POLYS) && ((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));
 	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
 	bool use_api = !is_outlines_only_htl || (gr_screen.mode == GR_OPENGL);
-
 
 	g3_start_instance_matrix(pos, orient, use_api);
 
@@ -3070,9 +2722,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		if ( Interp_flags & MR_LOCK_DETAIL )	{
 			i = Interp_detail_level_locked+1;
 		} else {
-
-			//gr_set_color(0,128,0);
-			//g3_draw_sphere_ez( &closest_pos, 2.0f );
 
 			#if MAX_DETAIL_LEVEL != 4
 			#error Code in modelInterp.cpp assumes MAX_DETAIL_LEVEL == 4
@@ -3113,22 +2762,17 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			}
 		}
 
-
 		// maybe force lower detail
 		if (Interp_flags & MR_FORCE_LOWER_DETAIL) {
 			i++;
 		}
 
-		//Interp_detail_level = fl2i(depth/10.0f);		
-		//Interp_detail_level = 0;
 		Interp_detail_level = i-1-tmp_detail_level;
 
 		if ( Interp_detail_level < 0 ) 
 			Interp_detail_level = 0;
 		else if (Interp_detail_level >= pm->n_detail_levels ) 
 			Interp_detail_level = pm->n_detail_levels-1;
-
-		//mprintf(( "Depth = %.2f, detail = %d\n", depth, Interp_detail_level ));
 
 	} else {
 		Interp_detail_level = 0;
@@ -3438,13 +3082,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		}
 	}
 
-/*
-	cull = gr_set_cull(0);
-
-*/
-
-//	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 
 	gr_set_cull(cull);
@@ -3557,7 +3194,6 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		gr_set_buffer(pm->vertex_buffer_id);
 
 		model_render_buffers(pm, submodel_num);
-			//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 
 		gr_set_buffer(-1);
 	} else {
@@ -3586,17 +3222,11 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 
 	g3_done_instance(true);
 
-
 	// turn off fog after each model renders, RT This fixes HUD being fogged when debris is in target box
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
-
-//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
-
 }
-
-
 
 // Fills in an array with points from a model.
 // Only gets up to max_num verts;
@@ -3664,7 +3294,9 @@ static int submodel_get_points_internal(int model_num, int submodel_num)
 	return 0;		// Couldn't find 'em
 }
 
-// Gets two random points on a model
+/**
+ * Gets two random points on a model
+ */
 void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1, vec3d *n2 )
 {
 	int nv = submodel_get_points_internal(model_num, submodel_num);
@@ -3722,8 +3354,9 @@ void model_set_detail_level(int n)
 	Interp_detail_level_locked = n;
 }
 
-
-// Returns number of verts in a submodel;
+/**
+ * Returns number of verts in a submodel;
+ */
 int submodel_get_num_verts(int model_num, int submodel_num )
 {
 	polymodel * pm;
@@ -3760,7 +3393,9 @@ int submodel_get_num_verts(int model_num, int submodel_num )
 	return 0;		// Couldn't find 'em
 }
 
-// Returns number of tmaps & flat polys in a submodel;
+/**
+ * Returns number of tmaps & flat polys in a submodel;
+ */
 int submodel_get_num_polys_sub( ubyte *p )
 {
 	int chunk_type = w(p);
@@ -3799,7 +3434,9 @@ int submodel_get_num_polys_sub( ubyte *p )
 	return n;		
 }
 
-// Returns number of tmaps & flat polys in a submodel;
+/**
+ * Returns number of tmaps & flat polys in a submodel
+ */
 int submodel_get_num_polys(int model_num, int submodel_num )
 {
 	polymodel * pm;
@@ -3807,7 +3444,6 @@ int submodel_get_num_polys(int model_num, int submodel_num )
 	pm = model_get(model_num);
 
 	return submodel_get_num_polys_sub( pm->submodel[submodel_num].bsp_data );
-
 }
 
 // Sets the submodel instance data in a submodel
@@ -3845,7 +3481,9 @@ void model_show_damaged(int model_num, int show_damaged )
 	}
 }
 
-// set the insignia bitmap to be used when rendering a ship with an insignia (-1 switches it off altogether)
+/**
+ * Set the insignia bitmap to be used when rendering a ship with an insignia (-1 switches it off altogether)
+ */
 void model_set_insignia_bitmap(int bmap)
 {
 	Interp_insignia_bitmap = bmap;
@@ -3853,22 +3491,28 @@ void model_set_insignia_bitmap(int bmap)
 
 void model_set_replacement_textures(int *replacement_textures)
 {
-	Interp_new_replacement_textures = replacement_textures;	//replacement_textures;
+	Interp_new_replacement_textures = replacement_textures;
 }
 
-// set the forces bitmap
+/**
+ * Set the forces bitmap
+ */
 void model_set_forced_texture(int bmap)
 {
 	Interp_forced_bitmap = bmap;
 }
 
-// set model transparency for use with MR_ALL_XPARENT
+/**
+ * Set model transparency for use with MR_ALL_XPARENT
+ */
 void model_set_alpha(float alpha)
 {
 	Interp_xparent_alpha = alpha;
 }
 
-// see if the given texture is used by the passed model. 0 if not used, 1 if used, -1 on error
+/**
+ * See if the given texture is used by the passed model. 0 if not used, 1 if used, -1 on error
+ */
 int model_find_texture(int model_num, int bitmap)
 {
 	polymodel * pm;	
@@ -3979,7 +3623,9 @@ void model_set_fog_level(float l)
 	Interp_fog_level = l;
 }
 
-// given a newly loaded model, page in all textures
+/**
+ * Given a newly loaded model, page in all textures
+ */
 void model_page_in_textures(int modelnum, int ship_info_index)
 {
 	int i, idx;
@@ -4054,25 +3700,15 @@ void model_page_out_textures(int model_num, bool release)
 //**********vertex buffer stuff**********//
 int tri_count[MAX_MODEL_TEXTURES];
 poly_list polygon_list[MAX_MODEL_TEXTURES];
-//poly_list flat_list;
-//line_list flat_line_list;
-
-//#define parseF(dest, f, off)	{memcpy(&dest, &f[off], sizeof(float)); off += sizeof(float);}
-//#define parseI(dest, f, off)	{memcpy(&dest, &f[off], sizeof(int)); off += sizeof(int);}
-//#define parseV(dest, f, off)	{parseF(dest.x, f, off); parseF(dest.y, f, off); parseF(dest.z, f, off); }
-//#define parseS(dest, f, off)	{memset(dest.str, 0, STRLEN); memcpy(&dest.n_char, &f[off], sizeof(int)); off += sizeof(int); memcpy(&dest.str, &f[off], dest.n_char); off += dest.n_char;}
-
 
 void parse_defpoint(int off, ubyte *bsp_data)
 {
 	int i, n;
-//	off+=4;
 	int nverts = w(off+bsp_data+8);	
 	int offset = w(off+bsp_data+16);
 	int next_norm = 0;
 
 	ubyte *normcount = off+bsp_data+20;
-//	vertex *dest = Interp_points;
 	vec3d *src = vp(off+bsp_data+offset);
 
 	// Get pointer to lights
@@ -4118,13 +3754,11 @@ void parse_tmap(int offset, ubyte *bsp_data)
 {
 	int pof_tex = w(bsp_data+offset+40);
 	int n_vert = w(bsp_data+offset+36);
-	//int n_tri = n_vert - 2;
-//	ubyte *temp_verts;
+	
 	ubyte *p = &bsp_data[offset+8];
 	model_tmap_vert *tverts;
 
 	tverts = (model_tmap_vert *)&bsp_data[offset+44];
-//	temp_verts = &bsp_data[offset+44];
 
 	vertex *V;
 	vec3d *v;
@@ -4148,9 +3782,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 			*N = *vp(p);
 
 	  	problem_count += check_values(N);
-		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
 		vm_vec_normalize_safe(N);
-//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
@@ -4167,9 +3799,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 			*N = *vp(p);
 
 	 	problem_count += check_values(N);
-		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
 		vm_vec_normalize_safe(N);
-//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
@@ -4186,113 +3816,13 @@ void parse_tmap(int offset, ubyte *bsp_data)
 			*N = *vp(p);
 
 		problem_count += check_values(N);
-		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
 		vm_vec_normalize_safe(N);
-//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		polygon_list[pof_tex].n_verts += 3;
 	}
 
 	Parse_normal_problem_count += problem_count;
 }
-
-// Flat Poly
-// +0      int         id
-// +4      int         size 
-// +8      vec3d      normal
-// +20     vec3d      center
-// +32     float       radius
-// +36     int         nverts
-// +40     byte        red
-// +41     byte        green
-// +42     byte        blue
-// +43     byte        pad
-// +44     nverts*short*short  vertlist, smoothlist
-void parse_flat_poly(int offset, ubyte *bsp_data)
-{
-/* Goober5000 - if this function was commented out, the variables should be also
-	int nv = w(bsp_data+offset+36);
-	short *verts = (short *)(&bsp_data[offset+44]);
-
-	vertex *V;
-	vec3d *v;
-	vec3d *N;
-	int i = 0;
-
-	for( i = 1; i<nv-1; i++){
-		V = &flat_list.vert[flat_list.n_poly][0];
-		N = &flat_list.norm[flat_list.n_poly][0];
-		v = Interp_verts[verts[i*2]];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = 0.0f;
-		V->v = 0.0f;
-		*N = *(vec3d*)&bsp_data[offset+8];
-		V->r = bsp_data[offset+40];
-		V->g = bsp_data[offset+41];
-		V->b = bsp_data[offset+42];
-		vm_vec_normalize(N);
-
-		V = &flat_list.vert[flat_list.n_poly][1];
-		N = &flat_list.norm[flat_list.n_poly][1];
-		v = Interp_verts[verts[i*2]];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = 0.0f;
-		V->v = 0.0f;
-		*N = *(vec3d*)&bsp_data[offset+8];
-		V->r = bsp_data[offset+40];
-		V->g = bsp_data[offset+41];
-		V->b = bsp_data[offset+42];
-		vm_vec_normalize(N);
-
-		V = &flat_list.vert[flat_list.n_poly][2];
-		N = &flat_list.norm[flat_list.n_poly][2];
-		v = Interp_verts[verts[i*2]];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = 0.0f;
-		V->v = 0.0f;
-		*N = *(vec3d*)&bsp_data[offset+8];
-		V->r = bsp_data[offset+40];
-		V->g = bsp_data[offset+41];
-		V->b = bsp_data[offset+42];
-		vm_vec_normalize(N);
-
-		flat_list.n_poly++;
-	}
-
-	//we don't need this
-	for(i = 0; i<nv; i++){
-		V = &flat_line_list.vert[flat_line_list.n_line][0];
-		v = Interp_verts[verts[(i%nv*2)]];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = 0.0f;
-		V->v = 0.0f;
-		V->r = bsp_data[offset+40];
-		V->g = bsp_data[offset+41];
-		V->b = bsp_data[offset+42];
-
-		V = &flat_line_list.vert[flat_line_list.n_line][1];
-		v = Interp_verts[verts[(((i+1)%nv)*2)]];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = 0.0f;
-		V->v = 0.0f;
-		V->r = bsp_data[offset+40];
-		V->g = bsp_data[offset+41];
-		V->b = bsp_data[offset+42];
-
-		flat_line_list.n_line++;
-	}*/
-}
-//flat_list
 
 void parse_sortnorm(int offset, ubyte *bsp_data);
 
@@ -4316,7 +3846,6 @@ void parse_bsp(int offset, ubyte *bsp_data)
 				break;
 
 			case OP_FLATPOLY:
-			//	parse_flat_poly(offset, bsp_data);
 				break;
 
 			case OP_TMAPPOLY:
@@ -4367,12 +3896,9 @@ void find_tmap(int offset, ubyte *bsp_data)
 void find_defpoint(int off, ubyte *bsp_data)
 {
 	int n;
-//	off+=4;
 	int nverts = w(off+bsp_data+8);	
-//	int offset = w(off+bsp_data+16);
 
 	ubyte * normcount = off+bsp_data+20;
-//	vec3d *src = vp(off+bsp_data+offset);
 
 	// Get pointer to lights
 	Interp_lights = off+bsp_data+20+nverts;
@@ -4462,12 +3988,6 @@ static void allocate_poly_list()
 
 	model_allocate_interp_data(Interp_num_verts, Interp_num_norms);
 }
-
-int recode_check = 0;
-//void recode_bsp(int offset, ubyte *bsp_data);
-//void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer);
-//poly_list model_list;
-
 
 void interp_pack_vertex_buffers(polymodel *pm, int mn)
 {
@@ -4646,9 +4166,6 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 	model->buffer.flags = vertex_flags;
 
-	recode_check = 0;
-//	recode_bsp(0, model->bsp_data);
-
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		if ( !polygon_list[i].n_verts )
 			continue;
@@ -4669,9 +4186,6 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 				Assert(first_index != -1);
 
 				new_buffer.index[j] = (uint)first_index;
-
-			//	Assert( same_vert(&model_list->vert[new_buffer.index_buffer.ibuffer[j]], &polygon_list[i].vert[j], &model_list->norm[new_buffer.index_buffer.ibuffer[j]], &polygon_list[i].norm[j]) );
-			//	Assert(find_first_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
 
 				if (ibuffer_info.write != NULL) {
 					cfwrite_int(first_index, ibuffer_info.write);
@@ -4730,7 +4244,6 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 	if (model->blown_off)
 		return;
 
-
 	uint fl = Interp_flags;
 
 	if (model->is_thruster) {
@@ -4784,9 +4297,11 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
 
 	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
+	
 	transparent_submodel ts;
 	ts.is_submodel = true;
 	ts.model = model;
+	
 	memcpy(&ts.orient,&submodel_matrix,sizeof(matrix));
 	transparent_submodels.push_back(ts);
 	model_render_buffers(pm, mn, true);
@@ -4796,7 +4311,6 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 
 	if (model->num_arcs)
 		interp_render_lightning( pm, &pm->submodel[mn]);
-
 
 	i = model->first_child;
 
@@ -4882,15 +4396,11 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		forced_blend_filter = GR_ALPHABLEND_FILTER;
 	}
 
-	if (Interp_thrust_scale_subobj) {
-//		gr_zbuffer_set(GR_ZBUFF_READ);
-	}
-
 	gr_push_scale_matrix(&scale);
 
-	uint buffer_size = model->buffer.tex_buf.size();
+	size_t buffer_size = model->buffer.tex_buf.size();
 
-	for (uint i = 0; i < buffer_size; i++) {
+	for (size_t i = 0; i < buffer_size; i++) {
 		int texture = -1;
 		int tmap_num = model->buffer.tex_buf[i].texture;
 		texture_map *tmap = &pm->maps[tmap_num];
@@ -4985,7 +4495,6 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 			tobj.tmap_flags = Interp_tmap_flags;
 			memcpy(&tobj.scale,&scale,sizeof(vec3d));
 			transparent_submodels.back().transparent_objects.push_back(tobj);
-			//gr_zbuffer_set(GR_ZBUFF_READ);
 		}
 		else
 		{
@@ -5002,323 +4511,10 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		SPECMAP = -1;
 		NORMMAP = -1;
 		HEIGHTMAP = -1;
-
-		// reset z-buffer
-		/*if (tmap->is_transparent || Interp_thrust_scale_subobj) {
-			gr_zbuffer_set(zbuffer_save);
-		}*/
 	}
 
 	gr_pop_scale_matrix();
 }
-
-/*
-//int recode_check = 0;
-void recode_tmap(int offset, ubyte *bsp_data){
-
-//	int pof_tex = w(bsp_data+offset+40);
-	int n_vert = w(bsp_data+offset+36);
-
-//	if(pof_tex == 4){
-//		1;
-//	}
-
-	//int n_tri = n_vert - 2;
-	ubyte *temp_verts;
-	//ubyte *p = &bsp_data[offset];
-
-	model_tmap_vert *tverts;
-	tverts = (model_tmap_vert *)&bsp_data[offset+44];
-	temp_verts = &bsp_data[offset+44];
-
-	//int problem_count = 0;
-
-	for(int i = 0; i<n_vert; i++){	
-		vertex vert;
-		vm_vec2vert(Interp_verts[(int)tverts[i].vertnum], &vert);
-		vec3d norm = *Interp_norms[(int)tverts[i].normnum];
-		vm_vec_normalize(&norm);
-
-		vert.u = tverts[i].u;
-		vert.v = tverts[i].v;
-
-		for(int k = 0; k<model_list.n_verts; k++){
-			if(same_vert(&model_list.vert[k], &vert, &model_list.norm[k], &norm)){
-				tverts[i].normnum = (short)k;
-				recode_check++;
-				break;
-			}
-			if(k == model_list.n_verts -1){
-				Warning(LOCATION, "recode error");
-			//	tverts[i].normnum = (short)0;
-			}
-		}
-	}
-
-}
-
-void recode_sortnorm(int offset, ubyte *bsp_data);
-
-void recode_bsp(int offset, ubyte *bsp_data){
-	int id = w(bsp_data+offset);
-	int size = w(bsp_data+offset+4);
-
-	while(id!=0){
-		switch(id){
-		case OP_EOF:	
-			return;
-			break;
-		case OP_DEFPOINTS: parse_defpoint(offset, bsp_data);
-			break;
-		case OP_SORTNORM:	recode_sortnorm(offset, bsp_data);
-			break;
-		case OP_FLATPOLY:
-			break;
-		case OP_TMAPPOLY:	recode_tmap(offset, bsp_data);
-			break;
-		case OP_BOUNDBOX:
-			break;
-		default:
-			return;
-		}
-		offset += size;
-		id = w(bsp_data+offset);
-		size = w(bsp_data+offset+4);
-
-		if(size < 1) id=OP_EOF;
-	}
-}
-
-int model_resort_index_buffer_n_verts = 0;
-void recode_sortnorm(int offset, ubyte *bsp_data){
-
-	int frontlist, backlist, prelist, postlist, onlist;
-	frontlist = w(bsp_data+offset+36);
-	backlist = w(bsp_data+offset+40);
-	prelist = w(bsp_data+offset+44);
-	postlist = w(bsp_data+offset+48);
-	onlist = w(bsp_data+offset+52);
-
-	if (prelist) recode_bsp(offset+prelist,bsp_data);
-	if (backlist) recode_bsp(offset+backlist, bsp_data);
-	if (onlist) recode_bsp(offset+onlist, bsp_data);
-	if (frontlist) recode_bsp(offset+frontlist, bsp_data);
-	if (postlist) recode_bsp(offset+postlist, bsp_data);
-}
-
-void model_resort_index_buffer_tmap(int offset, ubyte *bsp_data, short* index_buffer, int texture){
-	if(texture != w(bsp_data+offset+40))return;
-
-	int n_vert = w(bsp_data+offset+36);
-	//int n_tri = n_vert - 2;
-	ubyte *temp_verts;
-	//ubyte *p = &bsp_data[offset];
-
-	model_tmap_vert *tverts;
-	tverts = (model_tmap_vert *)&bsp_data[offset+44];
-	temp_verts = &bsp_data[offset+44];
-	for(int i = 1; i<n_vert-1; i++){	
-		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[0].normnum;
-		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[i].normnum;
-		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[i+1].normnum;
-	}
-
-}
-
-void model_resort_index_buffer_bsp(int offset, ubyte *bsp_data, bool f2b, int texture, short* index_buffer);
-
-void model_resort_index_buffer_sortnorm_nonsorted(int offset, ubyte *bsp_info, int texture, short* index_buffer){
-
-	int frontlist, backlist, prelist, postlist, onlist;
-	frontlist = w(bsp_info+offset+36);
-	backlist = w(bsp_info+offset+40);
-	prelist = w(bsp_info+offset+44);
-	postlist = w(bsp_info+offset+48);
-	onlist = w(bsp_info+offset+52);
-
-	if (prelist) model_resort_index_buffer_bsp(offset+prelist,bsp_info, false, texture, index_buffer);
-	if (backlist) model_resort_index_buffer_bsp(offset+backlist, bsp_info, false, texture, index_buffer);
-	if (onlist) model_resort_index_buffer_bsp(offset+onlist, bsp_info, false, texture, index_buffer);
-	if (frontlist) model_resort_index_buffer_bsp(offset+frontlist, bsp_info, false, texture, index_buffer);
-	if (postlist) model_resort_index_buffer_bsp(offset+postlist, bsp_info, false, texture, index_buffer);
-}
-
-// Sortnorms
-// +0      int         id
-// +4      int         size 
-// +8      vec3d      normal
-// +20     vec3d      normal_point
-// +32     int         tmp=0
-// 36     int     front offset
-// 40     int     back offset
-// 44     int     prelist offset
-// 48     int     postlist offset
-// 52     int     online offset
-void model_resort_index_buffer_sortnorm_b2f(int offset, ubyte *bsp_info, int texture, short* index_buffer)
-{
-	#ifndef NDEBUG
-	modelstats_num_sortnorms++;
-	#endif
-
-//	Assert( w(p+4) == 56 );
-
-	int frontlist, backlist, prelist, postlist, onlist;
-	frontlist = w(bsp_info+offset+36);
-	backlist = w(bsp_info+offset+40);
-	prelist = w(bsp_info+offset+44);
-	postlist = w(bsp_info+offset+48);
-	onlist = w(bsp_info+offset+52);
-
-	if (prelist) model_resort_index_buffer_bsp(offset+prelist,bsp_info, false, texture, index_buffer);		// prelist
-
-	if (g3_check_normal_facing(vp(bsp_info+offset+20),vp(bsp_info+offset+8))) {		//facing
-
-		//draw back then front
-
-		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, false, texture, index_buffer);
-
-		if (onlist) model_resort_index_buffer_bsp(offset+onlist,bsp_info, false, texture, index_buffer);			//onlist
-
-		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, false, texture, index_buffer);
-
-	}	else {			//not facing.  draw front then back
-
-		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, false, texture, index_buffer);
-
-		if (onlist) model_resort_index_buffer_bsp(offset+onlist,bsp_info, false, texture, index_buffer);			//onlist
-
-		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, false, texture, index_buffer);
-	}
-
-	if (postlist) model_resort_index_buffer_bsp(offset+postlist,bsp_info, false, texture, index_buffer);		// postlist
-
-}
-
-
-// Sortnorms
-// +0      int         id
-// +4      int         size 
-// +8      vec3d      normal
-// +20     vec3d      normal_point
-// +32     int         tmp=0
-// 36     int     front offset
-// 40     int     back offset
-// 44     int     prelist offset
-// 48     int     postlist offset
-// 52     int     online offset
-void model_resort_index_buffer_sortnorm_f2b(int offset, ubyte *bsp_info, int texture, short* index_buffer)
-{
-	#ifndef NDEBUG
-	modelstats_num_sortnorms++;
-	#endif
-
-//	Assert( w(p+4) == 56 );
-
-	int frontlist, backlist, prelist, postlist, onlist;
-	frontlist = w(bsp_info+offset+36);
-	backlist = w(bsp_info+offset+40);
-	prelist = w(bsp_info+offset+44);
-	postlist = w(bsp_info+offset+48);
-	onlist = w(bsp_info+offset+52);
-
-	if (postlist) model_resort_index_buffer_bsp(offset+postlist,bsp_info, true, texture, index_buffer);		// postlist
-
-	if (g3_check_normal_facing(vp(bsp_info+offset+20),vp(bsp_info+offset+8))) {		//facing
-
-		//draw front then back
-
-		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, true, texture, index_buffer);
-
-		if (onlist) model_resort_index_buffer_bsp(offset+onlist,bsp_info, true, texture, index_buffer);			//onlist
-
-		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, true, texture, index_buffer);
-
-	} else {
-
-		//draw back then front
-
-		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, true, texture, index_buffer);
-
-		if (onlist) model_resort_index_buffer_bsp(offset+onlist,bsp_info, true, texture, index_buffer);			//onlist
-
-		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, true, texture, index_buffer);
-
-	}
-
-	if (prelist) model_resort_index_buffer_bsp(offset+prelist,bsp_info, true, texture, index_buffer);		// prelist
-}
-
-
-void model_resort_index_buffer_bsp(int offset, ubyte *bsp_data, bool f2b, int texture, short* index_buffer){
-	int id = w(bsp_data+offset);
-	int size = w(bsp_data+offset+4);
-
-	while(id!=0){
-		switch(id){
-		case OP_EOF:	
-			return;
-			break;
-		case OP_DEFPOINTS:
-			break;
-		case OP_SORTNORM:	if(f2b)model_resort_index_buffer_sortnorm_f2b(offset, bsp_data, texture, index_buffer); else model_resort_index_buffer_sortnorm_b2f(offset, bsp_data, texture, index_buffer);
-//			model_resort_index_buffer_sortnorm_nonsorted(offset, bsp_data, texture, index_buffer);
-			break;
-		case OP_FLATPOLY:
-			break;
-		case OP_TMAPPOLY:	model_resort_index_buffer_tmap(offset, bsp_data, index_buffer, texture);
-			break;
-		case OP_BOUNDBOX:
-			break;
-		default:
-			return;
-		}
-		offset += size;
-		id = w(bsp_data+offset);
-		size = w(bsp_data+offset+4);
-
-		if(size < 1) id=OP_EOF;
-	}
-}
-
-
-void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer){
-	model_resort_index_buffer_n_verts = 0;
-	model_resort_index_buffer_bsp(0, bsp_data, f2b, texture, index_buffer);
-}
-*/
-
-/*
-struct silhouette_index{
-	short* silhouette_index;
-	int silhouette_n_allocated;
-	int n_in_list;
-	void allocate(int size){
-		if(size <= silhouette_n_allocated)return;
-		short* new_buffer = (short*)vm_malloc(sizeof(short)* size);
-		if(silhouette_n_allocated){memcpy(new_buffer, silhouette_index, sizeof(short)*silhouette_n_allocated );}
-		silhouette_n_allocated = size;
-	};
-	void add_line(short one, short two){
-		for(int i = 0; i<n_in_list; i+=2){
-			if(silhouette_index[i] == one && silhouette_index[i+1] = two ||
-				silhouette_index[i] == two && silhouette_index[i+1] = one){
-				memcpy(&silhouette_index[i+2], &silhouette_index[i], n_in_list - i - 2);
-				return;
-			}else{
-				allocate(n_in_list+2);
-				silhouette_index[n_in_list] = one;
-				silhouette_index[n_in_list+1] = two;
-			}
-		}
-	};
-	silhouette_index(){silhouette_n_allocated=0; n_in_list=0;};
-	~silhouette_index(){vm_free(silhouette_index);};
-};
-
-
-void get_silhouette_from_point(vec3d *point_list, ubyte *bsp_data, vec3d* point){
-}
-*/
 
 // returns 1 if the thruster should be drawn
 //         0 if it shouldn't
@@ -5409,36 +4605,7 @@ void model_set_warp_globals(float scale_x, float scale_y, float scale_z, int bit
 	Interp_warp_bitmap = bitmap_id;
 	Interp_warp_alpha = alpha;
 }
-/*
-void index_list::allocate(int size, bool large_buf)
-{
-	if (ibuffer)
-		vm_free(ibuffer);
 
-	if (sbuffer)
-		vm_free(sbuffer);
-
-	ibuffer = NULL;
-	sbuffer = NULL;
-
-	if (large_buf)
-		ibuffer = (uint *) vm_malloc( sizeof(uint) * size );
-	else
-		sbuffer = (ushort *) vm_malloc( sizeof(ushort) * size );
-}
-
-void index_list::release()
-{
-	if (ibuffer)
-		vm_free(ibuffer);
-
-	if (sbuffer)
-		vm_free(sbuffer);
-
-	ibuffer = NULL;
-	sbuffer = NULL;
-}
-*/
 //********************-----CLASS: texture_info-----********************//
 texture_info::texture_info()
 {
