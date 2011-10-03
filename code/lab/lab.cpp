@@ -1359,7 +1359,7 @@ void labviewer_variables_add(int *Y, char *var_name)
 	// variable
 	Lab_variables_window->AddChild(new Text((var_name), (var_name), 0, y, VAR_POS_LEFTWIDTH));
 	// edit box
-	new_text = (Text*)Lab_variables_window->AddChild(new Text(std::string((var_name)) + std::string("Editbox"), "", VAR_POS_RIGHTX, y, VAR_POS_RIGHTWIDTH, 12, T_EDITTABLE));
+	new_text = (Text*)Lab_variables_window->AddChild(new Text(SCP_string((var_name)) + SCP_string("Editbox"), "", VAR_POS_RIGHTX, y, VAR_POS_RIGHTWIDTH, 12, T_EDITTABLE));
 
 	if (Y) {
 		*Y += new_text->GetHeight() + 2;
@@ -1835,7 +1835,7 @@ void labviewer_make_ship_window(Button *caller)
 	Lab_species_nodes[Species_info.size()] = cmp->AddItem(NULL, "Other", 0, false);
 
 	// Now add the ships
-	std::string lod_name;
+	SCP_string lod_name;
 	char buf[33];
 
 	for (idx = 0; idx < Num_ship_classes; idx++) {

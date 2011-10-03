@@ -31,7 +31,7 @@ int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, bool do_send);
 int FS2NetD_SendPlayerData(const char *player_name, player *pl, bool do_send);
 int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, bool do_send);
 
-int FS2NetD_GetBanList(SCP_vector<std::string> &mask_list, bool do_send);
+int FS2NetD_GetBanList(SCP_vector<SCP_string> &mask_list, bool do_send);
 
 int FS2NetD_GetMissionsList(SCP_vector<file_record> &m_list, bool do_send);
 

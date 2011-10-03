@@ -522,7 +522,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 		int split_width = (in_width > 0) ? in_width : 200;
 
 		num_text_lines = split_str(in_text, split_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
-		std::string temp_str;
+		SCP_string temp_str;
 		for(int i = 0; i < num_text_lines; i++)
 		{
 			temp_str.assign(text_line_ptrs[i], text_line_lens[i]);
@@ -669,7 +669,7 @@ void subtitle::do_frame(float frametime)
 	int y = text_pos.y;
 
 
-	for(SCP_vector<std::string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
+	for(SCP_vector<SCP_string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
 	{
 		gr_string(x, y, (char*)line->c_str(), false);
 		y += font_height;

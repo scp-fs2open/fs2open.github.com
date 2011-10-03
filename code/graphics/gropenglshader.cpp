@@ -391,9 +391,7 @@ void opengl_shader_shutdown()
 
 static char *opengl_load_shader(char *filename, int flags, bool unified)
 {
-	std::string sflags;
-
-	//sflags += "#version 120\n";
+	SCP_string sflags;
 
 	if (Use_GLSL >= 4) {
 		sflags += "#define SHADER_MODEL 4\n";
@@ -449,8 +447,6 @@ static char *opengl_load_shader(char *filename, int flags, bool unified)
 		}
 	}
 
-
-
 	const char *shader_flags = sflags.c_str();
 	int flags_len = strlen(shader_flags);
 
@@ -474,11 +470,9 @@ static char *opengl_load_shader(char *filename, int flags, bool unified)
 
 		strcpy(shader, shader_flags);
 		strcat(shader, def_shader);
-		//memset(shader + flags_len, 0, len + 1);
 
 		return shader;
 	}
-
 }
 
 void opengl_shader_init()

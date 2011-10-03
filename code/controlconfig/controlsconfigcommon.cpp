@@ -557,7 +557,7 @@ void control_config_common_init()
 
 #include <map>
 #include <string>
-std::map<std::string, int> mEnumNameToVal;
+SCP_map<SCP_string, int> mEnumNameToVal;
 
 void LoadEnumsIntoMap();
 void control_config_common_load_overrides()

@@ -712,9 +712,6 @@ typedef struct polymodel {
 // Call once to initialize the model system
 void model_init();
 
-// call at the beginning of a level. after the level has been loaded
-void model_level_post_init();
-
 // call to unload a model (works like bm_unload()), "force" SHOULD NEVER BE SET outside of modelread.cpp!!!!
 void model_unload(int modelnum, int force = 0);
 
@@ -730,9 +727,6 @@ void model_delete_instance(int model_instance_num);
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
-
-// notify the model system that a ship has died
-void model_notify_dead_ship(int objnum);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
@@ -1177,7 +1171,7 @@ typedef struct transparent_submodel {
 	bsp_info *model;
 	matrix orient;
 	bool is_submodel;
-	std::vector<transparent_object> transparent_objects;
+	SCP_vector<transparent_object> transparent_objects;
 } transparent_submodel;
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on

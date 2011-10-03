@@ -24,34 +24,6 @@ extern int Ade_get_args_skip;
 extern bool Ade_get_args_lfunction;
 
 //*************************Lua types*************************
-//WMC - These should really all be internal, but I needed ade_obj
-/*
-class ade_id
-{
-private:
-	std::vector<uint> Path;
-public:
-	ade_id(){Path.clear();}
-	ade_id(int n){Path.clear();Path.push_back(n);}
-	ade_id(ade_id &id, int n){
-		Path.resize(id.Path.size());
-		memcpy(&Path[0], &id.Path[0], sizeof(uint) * Path.size());
-		Path.push_back(n);
-	}
-
-	//Operators
-	ade_id &operator = (const ade_id &n_aid);
-	bool operator == (ade_id &n_aid);
-
-	//Get
-	class ade_table_entry *GetATE();
-	bool IsUsed(){return (Path.size() > 0);}
-	size_t GetSizeInBytes(){return Path.size() * sizeof(uint);}
-
-	//Set
-	void Copy(void *dest){memcpy(dest, &Path[0], Path.size() * sizeof(uint));}
-};
-*/
 
 //WMC - Define to say that this is to store just a pointer.
 #define ODATA_PTR_SIZE		-1
@@ -137,9 +109,7 @@ public:
 	char *ReturnType;
 	char *ReturnDescription;
 
-	//Subentries, of course.
-	//std::vector<ade_table_entry> Subentries;
-	//std::vector<uint> Subentries;
+	//Subentries, of course
 	//WMC - I have HAD it with these motherfriendly vectors
 	//on this motherfriendly class.
 	uint Num_subentries;

@@ -97,7 +97,7 @@ void snd_update_3d_pos(int soudnnum, game_snd *gs, vec3d *new_pos, float radius 
 // Use these for looping sounds.
 // Returns the handle of the sound. -1 if failed.
 // If startloop or stoploop are not -1, then then are used.
-int	snd_play_looping( game_snd *gs, float pan=0.0f, int start_loop=-1, int stop_loop=-1, float vol_scale=1.0f, int priority = SND_PRIORITY_MUST_PLAY, int force = 0 );
+int	snd_play_looping( game_snd *gs, float pan=0.0f, int start_loop=-1, int stop_loop=-1, float vol_scale=1.0f, int scriptingUpdateVolume = 1);
 
 void	snd_stop( int snd_handle );
 

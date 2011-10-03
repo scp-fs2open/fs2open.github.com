@@ -58,7 +58,7 @@ struct opengl_shader_file_t {
 };
 
 typedef struct opengl_shader_uniform_t {
-	std::string text_id;
+	SCP_string text_id;
 	GLint location;
 
 	opengl_shader_uniform_t() : location(-1) {}

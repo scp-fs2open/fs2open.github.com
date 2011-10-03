@@ -1060,8 +1060,8 @@ int ds_init()
 
 	sample_rate = os_config_read_uint("Sound", "SampleRate", sample_rate);
 	attrList[1] = sample_rate;
-	std::string playback_device;
-	std::string capture_device;
+	SCP_string playback_device;
+	SCP_string capture_device;
 
 	if ( openal_init_device(&playback_device, &capture_device) == false ) {
 		mprintf(("\n  ERROR: Unable to find suitable playback device!\n\n"));
