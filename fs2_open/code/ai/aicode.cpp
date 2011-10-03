@@ -4001,6 +4001,7 @@ float ai_path()
 	}
 }
 
+// Only needed because CLAMP() doesn't handle pointers
 void update_min_max(float val, float *min, float *max)
 {
 	if (val < *min)
