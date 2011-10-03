@@ -59,7 +59,7 @@ extern int CurrentNav;
 extern NavPoint Navs[MAX_NAVPOINTS];
 extern NavMessage NavMsgs[NP_NUM_MESSAGES];
 extern int LockAPConv;
-extern std::map<int,int> autopilot_wings;
+extern SCP_map<int,int> autopilot_wings;
 
 // Cycles through the NavPoint List
 bool Sel_NextNav();

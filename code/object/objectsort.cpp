@@ -37,8 +37,8 @@ inline bool sorted_obj::operator < (const sorted_obj &other)
 }
 
 
-std::list<sorted_obj> Sorted_objects;
-std::vector<object*> effect_ships; 
+SCP_list<sorted_obj> Sorted_objects;
+SCP_vector<object*> effect_ships; 
 
 // Used to (fairly) quicky find the 8 extreme
 // points around an object.
@@ -192,7 +192,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	gr_zbuffer_set( GR_ZBUFF_FULL );	
 
 	// now draw them
-	std::list<sorted_obj>::iterator os;
+	SCP_list<sorted_obj>::iterator os;
 	for (os = Sorted_objects.begin(); os != Sorted_objects.end(); ++os) {
 		object *obj = os->obj;
 

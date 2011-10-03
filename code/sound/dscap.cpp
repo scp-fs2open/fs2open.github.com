@@ -31,7 +31,7 @@ typedef struct ALcapture_t {
 static ALcapture_t ALCaptureInfo;
 
 static ALCdevice *ds_capture_device = NULL;
-static std::string capture_dev_name;
+static SCP_string capture_dev_name;
 
 
 // init the capture system

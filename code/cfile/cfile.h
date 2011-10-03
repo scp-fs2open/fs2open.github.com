@@ -289,7 +289,7 @@ int cfwrite_angles(angles *ang, CFILE *file);
 // writes variable length, null-termined string.
 int cfwrite_string(char *buf, CFILE *file);
 
-// write a fixed length that is null-terminatedm, and has the length
+// write a fixed length that is null-terminated, and has the length
 // stored in file
 int cfwrite_string_len(const char *buf, CFILE *file);
 
@@ -347,7 +347,7 @@ namespace cfile
 			{
 			}
 
-			cfile_error(const std::string &excuse) : m_excuse(excuse)
+		cfile_error(const std::string &excuse) : m_excuse(excuse)
 			{
 			}
 
@@ -367,7 +367,7 @@ namespace cfile
 	class max_read_length : public cfile_error
 	{
 		public:
-			max_read_length(const std::string &excuse) : cfile_error(excuse)
+		max_read_length(const std::string &excuse) : cfile_error(excuse)
 			{
 			}
 
