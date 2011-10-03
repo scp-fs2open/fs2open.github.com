@@ -1377,8 +1377,6 @@ void game_post_level_init()
 	extern void game_environment_map_gen();
 	game_environment_map_gen();
 
-	model_level_post_init();
-
  	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
