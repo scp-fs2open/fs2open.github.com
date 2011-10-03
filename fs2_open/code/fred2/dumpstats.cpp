@@ -400,13 +400,15 @@ void DumpStats::get_object_stats(CString &buffer)
 
 	// Jumpnodes
 	buffer += "\r\nJUMPNODES\r\n";
-	for ( jump_node *jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() ) {
+
+	SCP_list<jump_node>::iterator jnp;
+	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 		temp.Format("\tJumpnode: %s\r\n", jnp->get_name_ptr());
 		buffer += temp;
 	}
 
-	if (Jump_nodes.get_num_elements() > 0) {
-		temp.Format("\ttotal_jumpnodes: %d\r\n", Jump_nodes.get_num_elements());
+	if (Jump_nodes.size() > 0) {
+		temp.Format("\ttotal_jumpnodes: %d\r\n", Jump_nodes.size());
 		buffer += temp;
 	}
 

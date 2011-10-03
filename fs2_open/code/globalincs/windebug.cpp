@@ -157,7 +157,7 @@ public:
 		UNREFERENCED_PARAMETER( error );
 	}
 
-	std::string DumpToString( )
+	SCP_string DumpToString( )
 	{
 		SCP_string callstack;
 		for ( size_t i = 0; i < m_stackFrames.size( ); i++ )

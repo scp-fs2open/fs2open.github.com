@@ -73,6 +73,7 @@ void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 {
 	int i;
 	SCP_list<waypoint_list>::iterator ii;
+	SCP_list<jump_node>::iterator jnp;
 	CMenu *m;
 
 	m = pMenu->GetSubMenu(0);
@@ -83,7 +84,7 @@ void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 	}
 
 	i = 0; 
-	for ( jump_node *jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() ) {
+	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 		m->AppendMenu(MF_ENABLED | MF_STRING, ID_JUMP_NODE_MENU + i, jnp->get_name_ptr());
 		if (jnp->get_objnum() == cur_object_index) {
 			m->CheckMenuItem(ID_JUMP_NODE_MENU + i,  MF_BYCOMMAND | MF_CHECKED);
@@ -466,7 +467,7 @@ BOOL waypoint_path_dlg::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 	}
 
-	if ((id >= ID_JUMP_NODE_MENU) && (id < ID_JUMP_NODE_MENU + Jump_nodes.get_num_elements())) {
+	if ((id >= ID_JUMP_NODE_MENU) && (id < ID_JUMP_NODE_MENU + Jump_nodes.size())) {
 		if (!update_data()) {
 			point = id - ID_JUMP_NODE_MENU;
 			unmark_all();
