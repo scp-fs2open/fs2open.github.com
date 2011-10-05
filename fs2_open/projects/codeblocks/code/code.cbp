@@ -523,12 +523,6 @@
 		<Unit filename="../../../code/hud/hudparse.h">
 			<Option virtualFolder="hud/" />
 		</Unit>
-		<Unit filename="../../../code/hud/hudresource.cpp">
-			<Option virtualFolder="hud/" />
-		</Unit>
-		<Unit filename="../../../code/hud/hudresource.h">
-			<Option virtualFolder="hud/" />
-		</Unit>
 		<Unit filename="../../../code/hud/hudreticle.cpp">
 			<Option virtualFolder="hud/" />
 		</Unit>
