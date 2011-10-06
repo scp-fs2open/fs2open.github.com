@@ -417,9 +417,6 @@
     <ClCompile Include="..\..\code\hud\hudparse.cpp">
       <Filter>Hud</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\hud\hudresource.cpp">
-      <Filter>Hud</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\hud\hudreticle.cpp">
       <Filter>Hud</Filter>
     </ClCompile>
@@ -1275,9 +1272,6 @@
       <Filter>Hud</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\hud\hudparse.h">
-      <Filter>Hud</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\hud\hudresource.h">
       <Filter>Hud</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\hud\hudreticle.h">

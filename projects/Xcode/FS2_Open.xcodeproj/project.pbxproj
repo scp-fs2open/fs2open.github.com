@@ -241,8 +241,6 @@
 		34C71B4F08C41B0A00459F5B /* hudshield.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345953AF08C3D6A0003B1351 /* hudshield.cpp */; };
 		34C71B5008C41B0B00459F5B /* hudreticle.h in Headers */ = {isa = PBXBuildFile; fileRef = 345953AE08C3D6A0003B1351 /* hudreticle.h */; };
 		34C71B5108C41B0B00459F5B /* hudreticle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345953AD08C3D6A0003B1351 /* hudreticle.cpp */; };
-		34C71B5208C41B0C00459F5B /* hudresource.h in Headers */ = {isa = PBXBuildFile; fileRef = 345953AC08C3D6A0003B1351 /* hudresource.h */; };
-		34C71B5308C41B0C00459F5B /* hudresource.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345953AB08C3D6A0003B1351 /* hudresource.cpp */; };
 		34C71B5408C41B0E00459F5B /* hudparse.h in Headers */ = {isa = PBXBuildFile; fileRef = 345953AA08C3D6A0003B1351 /* hudparse.h */; };
 		34C71B5508C41B0E00459F5B /* hudparse.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345953A908C3D6A0003B1351 /* hudparse.cpp */; };
 		34C71B5608C41B0F00459F5B /* hudobserver.h in Headers */ = {isa = PBXBuildFile; fileRef = 345953A808C3D6A0003B1351 /* hudobserver.h */; };
@@ -1068,8 +1066,6 @@
 		345953A808C3D6A0003B1351 /* hudobserver.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = hudobserver.h; sourceTree = "<group>"; };
 		345953A908C3D6A0003B1351 /* hudparse.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = hudparse.cpp; sourceTree = "<group>"; };
 		345953AA08C3D6A0003B1351 /* hudparse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = hudparse.h; sourceTree = "<group>"; };
-		345953AB08C3D6A0003B1351 /* hudresource.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = hudresource.cpp; sourceTree = "<group>"; };
-		345953AC08C3D6A0003B1351 /* hudresource.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = hudresource.h; sourceTree = "<group>"; };
 		345953AD08C3D6A0003B1351 /* hudreticle.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = hudreticle.cpp; sourceTree = "<group>"; };
 		345953AE08C3D6A0003B1351 /* hudreticle.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = hudreticle.h; sourceTree = "<group>"; };
 		345953AF08C3D6A0003B1351 /* hudshield.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = hudshield.cpp; sourceTree = "<group>"; };
@@ -2259,8 +2255,6 @@
 				345953A808C3D6A0003B1351 /* hudobserver.h */,
 				345953A908C3D6A0003B1351 /* hudparse.cpp */,
 				345953AA08C3D6A0003B1351 /* hudparse.h */,
-				345953AB08C3D6A0003B1351 /* hudresource.cpp */,
-				345953AC08C3D6A0003B1351 /* hudresource.h */,
 				345953AD08C3D6A0003B1351 /* hudreticle.cpp */,
 				345953AE08C3D6A0003B1351 /* hudreticle.h */,
 				345953AF08C3D6A0003B1351 /* hudshield.cpp */,
@@ -3264,7 +3258,6 @@
 				34C71B4C08C41B0900459F5B /* hudsquadmsg.h in Headers */,
 				34C71B4E08C41B0A00459F5B /* hudshield.h in Headers */,
 				34C71B5008C41B0B00459F5B /* hudreticle.h in Headers */,
-				34C71B5208C41B0C00459F5B /* hudresource.h in Headers */,
 				34C71B5408C41B0E00459F5B /* hudparse.h in Headers */,
 				34C71B5608C41B0F00459F5B /* hudobserver.h in Headers */,
 				34C71B5808C41B1000459F5B /* hudnavigation.h in Headers */,
@@ -3812,7 +3805,6 @@
 				34C71B4D08C41B0A00459F5B /* hudsquadmsg.cpp in Sources */,
 				34C71B4F08C41B0A00459F5B /* hudshield.cpp in Sources */,
 				34C71B5108C41B0B00459F5B /* hudreticle.cpp in Sources */,
-				34C71B5308C41B0C00459F5B /* hudresource.cpp in Sources */,
 				34C71B5508C41B0E00459F5B /* hudparse.cpp in Sources */,
 				34C71B5708C41B0F00459F5B /* hudobserver.cpp in Sources */,
 				34C71B5908C41B1100459F5B /* hudnavigation.cpp in Sources */,

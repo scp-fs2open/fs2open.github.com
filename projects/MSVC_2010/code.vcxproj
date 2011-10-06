@@ -443,7 +443,6 @@
     <ClCompile Include="..\..\code\hud\hudnavigation.cpp" />
     <ClCompile Include="..\..\code\hud\hudobserver.cpp" />
     <ClCompile Include="..\..\code\hud\hudparse.cpp" />
-    <ClCompile Include="..\..\code\hud\hudresource.cpp" />
     <ClCompile Include="..\..\code\hud\hudreticle.cpp" />
     <ClCompile Include="..\..\code\hud\hudshield.cpp" />
     <ClCompile Include="..\..\code\hud\hudsquadmsg.cpp" />
@@ -732,7 +731,6 @@
     <ClInclude Include="..\..\code\hud\hudnavigation.h" />
     <ClInclude Include="..\..\code\hud\hudobserver.h" />
     <ClInclude Include="..\..\code\hud\hudparse.h" />
-    <ClInclude Include="..\..\code\hud\hudresource.h" />
     <ClInclude Include="..\..\code\hud\hudreticle.h" />
     <ClInclude Include="..\..\code\hud\hudshield.h" />
     <ClInclude Include="..\..\code\hud\hudsquadmsg.h" />

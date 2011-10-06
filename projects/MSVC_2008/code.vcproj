@@ -1218,14 +1218,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\hud\hudresource.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\hud\hudresource.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\hud\hudreticle.cpp"
 				>
 			</File>

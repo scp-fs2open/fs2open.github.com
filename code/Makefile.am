@@ -355,7 +355,6 @@ FS2_SOURCES =	\
 	hud/hudobserver.h	\
 	hud/hudparse.cpp	\
 	hud/hudparse.h	\
-	hud/hudresource.h	\
 	hud/hudreticle.cpp	\
 	hud/hudreticle.h	\
 	hud/hudshield.cpp	\
