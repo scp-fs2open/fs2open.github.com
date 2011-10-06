@@ -334,7 +334,7 @@ public:
 };
 ade_obj<matrix_h> l_Matrix("orientation", "Orientation matrix object");
 
-ADE_INDEXER(l_Matrix, "p,b,h or 0-9", "Orientation component - pitch, bank, heading, or index into 3x3 matrix (1-9)", "number", "Number at the specified index, or 0 if index is invalid.")
+ADE_INDEXER(l_Matrix, "p,b,h or 1-9", "Orientation component - pitch, bank, heading, or index into 3x3 matrix (1-9)", "number", "Number at the specified index, or 0 if index is invalid.")
 {
 	matrix_h *mh;
 	char *s = NULL;
@@ -10858,6 +10858,7 @@ ADE_INDEXER(l_Mission_Asteroids, "number Index", "Gets asteroid", "asteroid", "A
 		return ade_set_error( L, "o", l_Asteroid.Set( object_h() ) );
 	}
 	if( idx > -1 && idx < asteroid_count() ) {
+		idx--; //Convert from Lua to C, as lua indices start from 1, not 0
 		return ade_set_args( L, "o", l_Asteroid.Set( object_h( &Objects[Asteroids[idx].objnum] ), Objects[Asteroids[idx].objnum].signature ) );
 	}
 
@@ -10885,6 +10886,7 @@ ADE_INDEXER(l_Mission_Debris, "number Index", "Array of debris in the current mi
 		return ade_set_error(L, "o", l_Debris.Set(object_h()));
 	}
 	if( idx > -1 && idx < Num_debris_pieces ) {
+		idx--; // Lua -> C
 		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum]), Objects[Debris[idx].objnum].signature));
 	}
 
