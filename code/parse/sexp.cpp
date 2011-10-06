@@ -6318,9 +6318,34 @@ void sexp_set_object_speed(int n, int axis)
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
 		case OSWPT_TYPE_TEAM:
+		{
 			sexp_set_object_speed(oswpt.objp, speed, axis, subjective);
+
+			//CommanderDJ - we put the multiplayer callback stuff in here to prevent doing unnecessary checks clientside
+			multi_start_callback();
+			multi_send_object(oswpt.objp);
+			multi_send_int(speed);
+			multi_send_int(axis);
+			multi_send_int(subjective);
+			multi_end_callback();
+
 			break;
+		}
 	}
+}
+
+//CommanderDJ
+void multi_sexp_set_object_speed()
+{
+	object *objp;
+	int speed = 0, axis = 0, subjective = 0;
+
+	multi_get_object(objp);
+	multi_get_int(speed);
+	multi_get_int(axis);
+	multi_get_int(subjective);
+
+	sexp_set_object_speed(objp, speed, axis, subjective);
 }
 
 int sexp_get_object_speed(object *objp, int axis, int subjective)
@@ -13548,7 +13573,7 @@ void multi_sexp_ship_change_callsign()
 	ship *shipp = NULL;
 
 	multi_get_string(new_callsign);
-	if (!new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
+	if (!new_callsign[0] || !stricmp(new_callsign, SEXP_ANY_STRING))
 	{
 		cindex = -1;
 	}
@@ -22191,6 +22216,12 @@ void multi_sexp_eval()
 				multi_sexp_clear_subtitles();
 				break;
 
+			case OP_SET_OBJECT_SPEED_X:
+			case OP_SET_OBJECT_SPEED_Y:
+			case OP_SET_OBJECT_SPEED_Z:
+				multi_sexp_set_object_speed();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -22752,7 +22783,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_SET_CAMERA_SHUDDER:
-		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
