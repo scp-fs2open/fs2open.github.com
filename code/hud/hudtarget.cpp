@@ -1694,6 +1694,10 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 	for (A=GET_FIRST(&target_shipp->subsys_list); A!=END_OF_LIST(&target_shipp->subsys_list); A=GET_NEXT(A))  {
 		// get a turret
 		if (A->system_info->type == SUBSYSTEM_TURRET) {
+			// niffiwan: ignore untargetable turrets 
+			if ( A->flags & SSF_UNTARGETABLE ) {
+				continue;
+			}
 			// check turret has hit points and has a weapon
 			if ( (A->current_hits > 0) && (A->weapons.num_primary_banks > 0 || A->weapons.num_secondary_banks > 0) ) {
 				if ( !only_player_target || (A->turret_enemy_objnum == OBJ_INDEX(Player_obj)) ) {
