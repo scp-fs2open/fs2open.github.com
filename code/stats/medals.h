@@ -18,8 +18,8 @@
 struct scoring_struct;
 struct player;
 
-#define MAX_BADGES	3
-#define MAX_ASSIGNABLE_MEDALS		12				// index into Medals array of the first medal which cannot be assigned
+#define MAX_BADGES				3
+#define MAX_ASSIGNABLE_MEDALS	12		// index into Medals array of the first medal which cannot be assigned
 
 extern scoring_struct *Player_score;
 
@@ -61,25 +61,13 @@ private:
 
 } medal_stuff;
 
-/*
-typedef struct badge_stuff {
-	char voice_base[MAX_FILENAME_LEN];
-	char *promotion_text;
-
-	badge_stuff(){voice_base[0]='\0';promotion_text=NULL;}
-	~badge_stuff(){if(promotion_text != NULL)vm_free(promotion_text);};
-} badge_stuff;
-*/
-
 extern SCP_vector<medal_stuff> Medals;
-//extern badge_stuff Badge_info[MAX_BADGES];
-//extern int Badge_index[MAX_BADGES];				// array which contains indices into Medals to indicate which medals are badges
 
 extern void parse_medal_tbl();
 
 // modes for this screen
-#define MM_NORMAL							0			// normal - run through the state code
-#define MM_POPUP							1			// called from within some other tight loop (don't use gameseq_ functions)
+#define MM_NORMAL				0		// normal - run through the state code
+#define MM_POPUP				1		// called from within some other tight loop (don't use gameseq_ functions)
 
 // main medals screen
 void medal_main_init(player *pl,int mode = MM_NORMAL);
@@ -88,19 +76,13 @@ void medal_main_init(player *pl,int mode = MM_NORMAL);
 int medal_main_do();
 void medal_main_close();
 
-//void init_medal_palette();
 void init_medal_bitmaps();
 void init_snazzy_regions();
 void blit_medals();
 void blit_label(char *label,int *coords);
 void blit_callsign();
 
-// individual medals 
-
-extern int Medal_ID;       // ID of the medal to display in this screen. Should be set by the caller
-
-void blit_text();
-
+// individual medals
 void medals_translate_name(char *name, int max_len);
 
 int medals_info_lookup(const char *name);
