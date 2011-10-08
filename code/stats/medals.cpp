@@ -630,7 +630,6 @@ int medal_main_do()
 
 void medal_main_close()
 {
-	int idx;
 	if (Init_flags & MEDAL_BITMAP_INIT)
 		bm_release(Medals_bitmap);
 
@@ -639,14 +638,14 @@ void medal_main_close()
 		bm_release(Medals_bitmap_mask);
 	}
 
-   for (idx=Medal_bitmaps.size()-1; idx >= 0; idx--) {
-		if (Medal_bitmaps[idx] > -1){
-			bm_release(Medal_bitmaps[idx]);
+	for (SCP_vector<int>::iterator idx = Medal_bitmaps.begin(); idx != Medal_bitmaps.end(); ++idx) {
+		if (*idx > -1){
+			bm_release(*idx);
 		}
-		Medal_bitmaps.pop_back();
 	}
 
-   Player_score = NULL;
+	Medal_bitmaps.clear();
+	Player_score = NULL;
 	Medals_window.destroy();
 	snazzy_menu_close();
 	palette_restore_palette();
