@@ -496,7 +496,6 @@ void palette_flush()
 // Pass NULL to flush current palette.
 void palette_update(char *name_with_extension, int restrict_font_to_128)
 {
-//	int i;
 	uint tmp_checksum;
 	char name[128];
 
@@ -520,17 +519,13 @@ void palette_update(char *name_with_extension, int restrict_font_to_128)
 
 	// For "none" palettes, don't calculate tables
 	if ( !stricmp( name, "none" ) ) {
-		bm_update();			// update the bitmap palette's
 		return;
 	}
 
 	// Read in the cached info if there is any.
 	if ( palette_read_cached( name ) )	{
-		bm_update();			// update the bitmap palette's
 		return;
 	}
-	
-	bm_update();			// update the bitmap palette's
 }
 
 ubyte *palette_get_fade_table()
