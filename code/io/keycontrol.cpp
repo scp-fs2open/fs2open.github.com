@@ -2449,7 +2449,10 @@ int button_function(int n)
 
 			control_used(END_MISSION);
 			
-			if (collide_predict_large_ship(Player_obj, 200.0f)) {
+			if (collide_predict_large_ship(Player_obj, 200.0f) 
+			|| (Ship_info[Ships[Player_obj->instance].ship_info_index].warpout_type == WT_HYPERSPACE 
+			&& collide_predict_large_ship(Player_obj, 100000.0f)))
+			{
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 				HUD_printf(XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
 			} else if (!ship_engine_ok_to_warp(Player_ship)) {
