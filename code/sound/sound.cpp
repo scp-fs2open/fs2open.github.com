@@ -56,7 +56,20 @@ float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playbac
 
 unsigned int SND_ENV_DEFAULT = 0;
 
-SCP_list<int> currentlyLoopingSoundHandles;
+struct LoopingSoundInfo {
+	int dsHandle;
+	float defaultVolume;	//!< The default volume of this sound (from game_snd)
+	float dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
+
+	LoopingSoundInfo(int dsHandle, float defaultVolume, float dynamicVolume):
+		dsHandle(dsHandle),
+		defaultVolume(defaultVolume),
+		dynamicVolume(dynamicVolume)
+	{
+	}
+};
+
+SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
 
 //For the adjust-audio-volume sexp
 float aav_voice_volume = 1.0f;
@@ -811,7 +824,7 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 		handle = ds_play( snd->sid, gs->id_sig, DS_MUST_PLAY, volume, pan, 1);
 
 		if(handle != -1 && scriptingUpdateVolume) {
-			currentlyLoopingSoundHandles.push_back(handle);
+			currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, gs->default_volume, vol_scale));
 		}
 	}
 
@@ -834,12 +847,11 @@ void snd_stop( int sig )
 	if ( channel == -1 )
 		return;
 	
-	SCP_list<int>::iterator iter = currentlyLoopingSoundHandles.begin();
-	while (iter != currentlyLoopingSoundHandles.end())
+	SCP_list<LoopingSoundInfo>::iterator iter = currentlyLoopingSoundInfos.begin();
+	while (iter != currentlyLoopingSoundInfos.end())
 	{
-		int handle = *iter;
-		if(handle == sig) {
-			iter = currentlyLoopingSoundHandles.erase(iter);
+		if(iter->dsHandle == sig) {
+			iter = currentlyLoopingSoundInfos.erase(iter);
 		} else {
 			++iter;
 		}
@@ -859,18 +871,16 @@ void snd_stop_all()
 	if (!ds_initialized)
 		return;
 
-	currentlyLoopingSoundHandles.clear();
+	currentlyLoopingSoundInfos.clear();
 	ds_stop_channel_all();
 }
 
-// ---------------------------------------------------------------------------------------
-// snd_set_volume()
-//
-// Set the volume of a currently playing sound
-//
-// parameters:		sig		=> handle to sound, what is returned from snd_play()
-//						volume	=> volume of sound (range: 0.0 -> 1.0)
-//
+/**
+ * Set the volume of a currently playing sound
+ *
+ * @param sig		handle to sound, what is returned from snd_play()
+ * @param volume	volume of sound (range: 0.0 -> 1.0)
+ */
 void snd_set_volume( int sig, float volume )
 {
 	int	channel;
@@ -888,8 +898,23 @@ void snd_set_volume( int sig, float volume )
 		return;
 	}
 
-	new_volume = volume * (Master_sound_volume * aav_effect_volume);
-	ds_set_volume( channel, new_volume );
+	bool isLoopingSound = false;
+
+	SCP_list<LoopingSoundInfo>::iterator iter;
+	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
+		if(iter->dsHandle == sig) {
+			iter->dynamicVolume = volume;
+
+			isLoopingSound = true;
+			break;
+		}
+	}
+
+	//looping sound volumes are updated in snd_do_frame
+	if(!isLoopingSound) {
+		new_volume = volume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume( channel, new_volume );
+	}
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1345,10 +1370,11 @@ void snd_do_frame()
 	adjust_volume_on_frame(&aav_voice_volume, &aav_data[AAV_VOICE]);
 	adjust_volume_on_frame(&aav_effect_volume, &aav_data[AAV_EFFECTS]);
 
-	SCP_list<int>::iterator iter;
-	for (iter = currentlyLoopingSoundHandles.begin(); iter != currentlyLoopingSoundHandles.end(); ++iter) {
-		int handle = *iter;
-		snd_set_volume(handle, 1.0f);
+	SCP_list<LoopingSoundInfo>::iterator iter;
+	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
+
+		float new_volume = iter->defaultVolume * iter->dynamicVolume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume(ds_get_channel(iter->dsHandle), new_volume);
 	}
 
 	ds_do_frame();
