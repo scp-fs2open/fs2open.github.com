@@ -14,7 +14,10 @@
 #include "DebriefingEditorDlg.h"
 #include "FREDDoc.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missionparse.h"
+#include "globalincs/linklist.h"
 #include "parse/sexp.h"
+#include "gamesnd/eventmusic.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
 #include "localization/localize.h"
@@ -35,6 +38,9 @@ debriefing_editor_dlg::debriefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_voice = _T("");
 	m_stage_title = _T("");
 	m_rec_text = _T("");
+	m_debriefPass_music = 0;
+	m_debriefAvg_music = 0;
+	m_debriefFail_music = 0;
 	m_current_debriefing = -1;
 	//}}AFX_DATA_INIT
 
@@ -54,6 +60,9 @@ void debriefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_VOICE, m_voice);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_REC_TEXT, m_rec_text);
+	DDX_CBIndex(pDX, IDC_SUCCESSFUL_MISSION_TRACK, m_debriefPass_music);
+	DDX_CBIndex(pDX, IDC_DEBRIEFING_TRACK, m_debriefAvg_music);
+	DDX_CBIndex(pDX, IDC_FAILED_MISSION_TRACK, m_debriefFail_music);
 	//}}AFX_DATA_MAP
 
 	DDV_MaxChars(pDX, m_text, MAX_BRIEF_LEN - 1);
@@ -115,11 +124,32 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 	CDialog::OnInitDialog();
 	m_play_bm.LoadBitmap(IDB_PLAY);
 	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	CComboBox *box;
+	box = (CComboBox *) GetDlgItem(IDC_ICON_IMAGE);
 
 	m_current_debriefing = 0;
 	UpdateData(FALSE);
 
 	Debriefing = &Debriefings[m_current_debriefing];
+
+	box = (CComboBox *) GetDlgItem(IDC_SUCCESSFUL_MISSION_TRACK);
+	box->AddString("None");
+	for (i=0; i<Num_music_files; i++)
+		box->AddString(Spooled_music[i].name);
+
+	box = (CComboBox *) GetDlgItem(IDC_DEBRIEFING_TRACK);
+	box->AddString("None");
+	for (i=0; i<Num_music_files; i++)
+		box->AddString(Spooled_music[i].name);
+
+	box = (CComboBox *) GetDlgItem(IDC_FAILED_MISSION_TRACK);
+	box->AddString("None");
+	for (i=0; i<Num_music_files; i++)
+		box->AddString(Spooled_music[i].name);
+
+	m_debriefPass_music = Mission_music[SCORE_DEBRIEF_SUCCESS] + 1;
+	m_debriefAvg_music = Mission_music[SCORE_DEBRIEF_AVERAGE] + 1;
+	m_debriefFail_music = Mission_music[SCORE_DEBRIEF_FAIL] + 1;
 
 	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
 	n = m_tree.select_sexp_node = select_sexp_node;
@@ -139,6 +169,7 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 		}
 	}
 
+	CDialog::OnInitDialog();
 	update_data();
 	set_modified();
 
@@ -402,6 +433,11 @@ void debriefing_editor_dlg::OnClose()
 	m_voice_id = -1;
 	m_cur_stage = -1;
 	update_data(1);
+
+	Mission_music[SCORE_DEBRIEF_SUCCESS] = m_debriefPass_music - 1;
+	Mission_music[SCORE_DEBRIEF_AVERAGE] = m_debriefAvg_music - 1;
+	Mission_music[SCORE_DEBRIEF_FAIL] = m_debriefFail_music - 1;
+
 	CDialog::OnClose();
 }
 
