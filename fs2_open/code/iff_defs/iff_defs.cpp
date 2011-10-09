@@ -36,7 +36,11 @@ flag_def_list rti_flags[] = {
 
 int Num_rti_flags = sizeof(rti_flags)/sizeof(flag_def_list);
 
-// borrowed from ship.cpp, ship_iff_init_colors
+/**
+ * Borrowed from ship.cpp, ship_iff_init_colors
+ *
+ * @param is_bright Whether set to bright
+ */
 int iff_get_alpha_value(bool is_bright)
 {
 	if (is_bright == false)
@@ -45,7 +49,15 @@ int iff_get_alpha_value(bool is_bright)
 		return HUD_COLOR_ALPHA_MAX * 16;
 }
 
-// init a color and add it to the Iff_colors array
+/**
+ * Init a color and add it to the ::Iff_colors array
+ *
+ * @param r Red
+ * @param g Green
+ * @param b Blue
+ *
+ * @return The new IFF colour slot in ::Iff_colors array
+ */
 int iff_init_color(int r, int g, int b)
 {
 	typedef struct temp_color_t {
@@ -60,11 +72,9 @@ int iff_init_color(int r, int g, int b)
 	static int num_iff_colors = 0;
 	static temp_color_t temp_colors[MAX_IFF_COLORS];
 
-
 	Assert(r >= 0 && r <= 255);
 	Assert(g >= 0 && g <= 255);
 	Assert(b >= 0 && b <= 255);
-
 
 	// make sure we're under the limit
 	if (num_iff_colors >= MAX_IFF_COLORS)
@@ -72,7 +82,6 @@ int iff_init_color(int r, int g, int b)
 		Warning(LOCATION, "Too many iff colors!  Ignoring the rest...\n");
 		return 0;
 	}
-
 
 	// find out if this color is in use
 	for (i = 0; i < num_iff_colors; i++)
@@ -82,7 +91,6 @@ int iff_init_color(int r, int g, int b)
 		if (c->r == r && c->g == g && c->b == b)
 			return i;
 	}
-
 
 	// not in use, so add a new slot
 	idx = num_iff_colors;
@@ -98,12 +106,13 @@ int iff_init_color(int r, int g, int b)
 	gr_init_alphacolor(&Iff_colors[idx][0], r, g, b, iff_get_alpha_value(false));
 	gr_init_alphacolor(&Iff_colors[idx][1], r, g, b, iff_get_alpha_value(true));
 
-
 	// return the new slot
 	return idx;
 }
 
-// parse the table
+/**
+ * Parse the table
+ */
 void iff_init()
 {
 	char traitor_name[NAME_LENGTH];
@@ -140,13 +149,6 @@ void iff_init()
 	// get the traitor
 	required_string("$Traitor IFF:");
 	stuff_string(traitor_name, F_NAME, NAME_LENGTH);
-	
-	// before parsing any further... Wanderer
-	// before parsing, set up the predefined colors
-	// NOTE: THESE MUST OCCUR IN THE ORDER DEFINED IN IFF_DEFS.H!!
-	// iff_init_color(0xff, 0xff, 0xff);	// IFF_COLOR_SELECTION
-	// iff_init_color(0x7f, 0x7f, 0x7f);	// IFF_COLOR_MESSAGE
-	// iff_init_color(0xff, 0xff, 0x00);	// IFF_COLOR_TAGGED
 
 	int rgb[3];
 
@@ -177,7 +179,6 @@ void iff_init()
 	}
 	else
 		iff_init_color(0xff, 0xff, 0x00);
-
 
 	// init radar blips colour table
 	int a_bright,a_dim;
@@ -525,11 +526,17 @@ void iff_init()
 	fs2netd_add_table_validation("iff_defs.tbl");
 }
 
-// find the iff name
+/**
+ * Find the iff name
+ *
+ * @param iff_name Pointer to name as a string
+ * @return Index into ::Iff_info array
+ */
 int iff_lookup(char *iff_name)
 {
 	// bogus
 	Assert(iff_name);
+	
 	if(iff_name == NULL)
 		return -1;
 
@@ -540,7 +547,12 @@ int iff_lookup(char *iff_name)
 	return -1;
 }
 
-// get the mask, taking All Teams At War into account
+/**
+ * Get the mask, taking All Teams At War into account
+ *
+ * @param attacker_team Team of attacker
+ * @return Bitmask
+ */
 int iff_get_attackee_mask(int attacker_team)
 {
 	Assert(attacker_team >= 0 && attacker_team < Num_iffs);
@@ -557,7 +569,12 @@ int iff_get_attackee_mask(int attacker_team)
 	}
 }
 
-// rather slower, since it has to construct a mask
+/**
+ * Rather slower, since it has to construct a mask
+ *
+ * @param attacker_team Team of attacker
+ * @return Bitmask
+ */
 int iff_get_attacker_mask(int attackee_team)
 {
 	Assert(attackee_team >= 0 && attackee_team < Num_iffs);
@@ -572,31 +589,53 @@ int iff_get_attacker_mask(int attackee_team)
 	return attacker_bitmask;
 }
 
-// similar to above; >0 if true, 0 if false
+/**
+ * Similar to above
+ *
+ * @param team_x Team of attacker
+ * @param team_x Team of attackee
+ *
+ * @return >0 if true, 0 if false
+ */
 int iff_x_attacks_y(int team_x, int team_y)
 {
 	return iff_matches_mask(team_y, iff_get_attackee_mask(team_x));
 }
 
-// generate a mask for a team
+/**
+ * Generate a mask for a team
+ *
+ * @param team Team to generate mask for
+ */
 int iff_get_mask(int team)
 {
 	return (1 << team);
 }
 
-// see if the mask contains the team
+/**
+ * See if the mask contains the team
+ *
+ * @param team Team to test
+ * @param mask Mask
+ *
+ * @return 1 if matches, 0 if does not match
+ */
 int iff_matches_mask(int team, int mask)
 {
 	return (iff_get_mask(team) & mask) ? 1 : 0;
 }
 
-// get the color from the color index
+/**
+ * Get the color from the color index
+ */
 color *iff_get_color(int color_index, int is_bright)
 {
 	return &Iff_colors[color_index][is_bright];
 }
 
-// get the color index, taking objective vs. subjective into account
+/**
+ * Get the color index, taking objective vs. subjective into account
+ */
 color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 {
 	Assert(team >= 0 && team < Num_iffs);
@@ -607,7 +646,6 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 	// is this guy being seen by anyone?
 	if (seen_from_team < 0)
 		return &Iff_colors[Iff_info[team].color_index][is_bright];
-
 
 	// Goober5000 - base the following on "sees X as" from iff code
 	// c.f. AL's comment:
@@ -627,8 +665,11 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 	return &Iff_colors[color_index][is_bright];
 }
 
-// get the color index, taking objective vs. subjective into account
-// this one for the function calls that include some - any - of object
+/**
+ * Get the color index, taking objective vs. subjective into account
+ * 
+ * this one for the function calls that include some - any - of object
+ */
 color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp)
 {
 	Assert(team >= 0 && team < Num_iffs);
@@ -636,7 +677,6 @@ color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bri
 	Assert(is_bright == 0 || is_bright == 1);
 
 	int alt_color_index = -1;
-
 
 	// is this guy being seen by anyone?
 	if (seen_from_team < 0)

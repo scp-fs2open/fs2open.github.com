@@ -6,7 +6,6 @@
 
 
 
-
 #ifndef _IFF_DEFS_H_
 #define _IFF_DEFS_H_
 
@@ -16,13 +15,11 @@
 
 struct object;
 
-
 // Goober5000 - new IFF color system
 #define IFF_COLOR_SELECTION			0
 #define IFF_COLOR_MESSAGE			1
 #define IFF_COLOR_TAGGED			2
 #define MAX_IFF_COLORS				(MAX_IFFS + 3)
-
 
 // iff flags
 #define IFFF_SUPPORT_ALLOWED				(1 << 0)	// this IFF can call for support
@@ -65,7 +62,6 @@ typedef struct iff_info {
 
 } iff_info;
 
-
 extern int Num_iffs;
 extern iff_info Iff_info[MAX_IFFS];
 
@@ -74,18 +70,15 @@ extern int Iff_traitor;
 // radar blip stuff
 extern int radar_iff_color[5][2][4];
 
+// color stuff
+extern int iff_get_alpha_value(bool is_bright);
+extern int iff_init_color(int r, int g, int b);
+
 // load the iff table
 extern void iff_init();
 
 // search for iff
 extern int iff_lookup(char *iff_name);
-
-// color stuff
-extern int iff_get_alpha_value(bool is_bright);
-extern int iff_init_color(int r, int g, int b);
-extern color *iff_get_color(int color_index, int is_bright);
-extern color *iff_get_color_by_team(int team, int seen_from_team, int is_bright);
-extern color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp);
 
 // attack stuff
 // NB: As far as the differences between I attack him and he attacks me, think of a hidden traitor on your own team.
@@ -98,5 +91,9 @@ extern int iff_x_attacks_y(int team_x, int team_y);
 extern int iff_get_mask(int team);
 extern int iff_matches_mask(int team, int mask);
 
+// get color stuff
+extern color *iff_get_color(int color_index, int is_bright);
+extern color *iff_get_color_by_team(int team, int seen_from_team, int is_bright);
+extern color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp);
 
 #endif
