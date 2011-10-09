@@ -18,7 +18,6 @@
 #define	TIME_LENGTH				16
 #define	DATE_TIME_LENGTH		48
 #define	NOTES_LENGTH			1024
-// Kazan - this used to be 1024, now 4096
 #define	MULTITEXT_LENGTH		4096
 #define	FILESPEC_LENGTH			64
 #define	MESSAGE_LENGTH			512
@@ -27,19 +26,11 @@
 // from missionparse.h
 #define MISSION_DESC_LENGTH		512
 
-
 // from player.h
 #define CALLSIGN_LEN					28		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN
 #define SHORT_CALLSIGN_PIXEL_W	80		// max width of short_callsign[] in pixels
 
-// from missionparse.h
-// This must be less than or equal to the number of bits in an int!  If you really must have that many species,
-// then please update the support_ship_info struct.
-// 20060826 - made it dynamic -- taylor
-//#define	MAX_SPECIES		8
-
 #define MAX_IFFS		10
-
 
 // from ship.h
 #define MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
@@ -57,9 +48,6 @@
 #define MAX_SHIP_CLASSES		130
 #endif
 
-
-
-
 #define MAX_WINGS				75
 
 #define MAX_SHIPS_PER_WING			6
@@ -76,14 +64,11 @@
 #define MAX_SHIP_SECONDARY_BANKS	4
 #define MAX_SHIP_WEAPONS			(MAX_SHIP_PRIMARY_BANKS+MAX_SHIP_SECONDARY_BANKS)
 
-
 // Goober5000 - moved from hudescort.cpp
 // size of complete escort list, including all those wanting to get onto list but without space
 #define MAX_COMPLETE_ESCORT_LIST	20
              
-
 // from weapon.h
-// upped 5/6/98 from 200 - DB
 #define MAX_WEAPONS	700
 
 #ifdef INF_BUILD
@@ -91,7 +76,6 @@
 #else
 #define MAX_WEAPON_TYPES				200
 #endif
-
 
 // from model.h
 
@@ -103,11 +87,9 @@
 	#define MAX_POLYGON_MODELS  128 //DTP reset from 198 to original value of 128
 #endif
 
-
 // from scoring.h
 // ARGH. IMPORTANT : do not change NUM_MEDALS without talking to DaveB first. It will affect the size of the scoring struct and hence, will break
 // a lot of PXO related stuff. SEE ALSO : MAX_SHIP_CLASSES
-
 #define MAX_MEDALS			18
 #define NUM_MEDALS_FS1		16
 extern int Num_medals;
