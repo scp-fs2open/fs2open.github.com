@@ -2241,8 +2241,9 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 
 		// initial velocities now do not apply to ships which warp in after mission starts
-		//WMC - Make it apply for ships with IN_PLACE_ANIM type
-		if (!(Game_mode & GM_IN_MISSION) || sip->warpin_type == WT_IN_PLACE_ANIM)
+		// WMC - Make it apply for ships with IN_PLACE_ANIM type
+		// zookeeper - Also make it apply for hyperspace warps
+		if (!(Game_mode & GM_IN_MISSION) || (sip->warpin_type == WT_IN_PLACE_ANIM || sip->warpin_type == WT_HYPERSPACE))
 		{
 			Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 			Objects[objnum].phys_info.vel.xyz.z = Objects[objnum].phys_info.speed;
