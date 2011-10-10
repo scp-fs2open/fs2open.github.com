@@ -1161,6 +1161,7 @@ typedef struct ship_info {
 	int			warpin_snd_end;
 	float		warpin_speed;
 	int			warpin_time;	//in ms
+	float		warpin_decel_exp;
 	int			warpin_type;
 
 	char		warpout_anim[MAX_FILENAME_LEN];
@@ -1169,6 +1170,7 @@ typedef struct ship_info {
 	int			warpout_snd_end;
 	float		warpout_speed;
 	int			warpout_time;	//in ms
+	float		warpout_accel_exp;
 	int			warpout_type;
 
 	float		warpout_player_speed;

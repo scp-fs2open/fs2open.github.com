@@ -337,6 +337,8 @@ private:
 	int total_time_start;
 	int total_duration;
 	int total_time_end;
+	float accel_exp;
+	float decel_exp;
 
 	//sweeper polygon and clip effect
 	vec3d	pos_final;
