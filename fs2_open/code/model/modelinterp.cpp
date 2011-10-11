@@ -3193,7 +3193,39 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 
 		gr_set_buffer(pm->vertex_buffer_id);
 
+		transparent_submodel ts;
+		ts.is_submodel = false;
+		transparent_submodels.push_back(ts);
+
 		model_render_buffers(pm, submodel_num);
+
+		SCP_vector<transparent_submodel>::iterator ts_i = transparent_submodels.begin();
+		SCP_vector<transparent_object>::iterator obj;
+			
+		for(obj = ts_i->transparent_objects.begin(); obj != ts_i->transparent_objects.end(); ++obj)
+		{
+			GLOWMAP = obj->glow_map;
+			SPECMAP = obj->spec_map;
+			NORMMAP = obj->norm_map;
+			HEIGHTMAP = obj->height_map;
+
+			gr_push_scale_matrix(&obj->scale);
+			gr_set_bitmap(obj->texture, obj->blend_filter, GR_BITBLT_MODE_NORMAL, obj->alpha);
+
+			int zbuff = gr_zbuffer_set(GR_ZBUFF_READ);
+		
+			gr_render_buffer(0, obj->buffer, obj->i, obj->tmap_flags);
+		
+			gr_zbuffer_set(zbuff);
+			gr_pop_scale_matrix();
+
+			GLOWMAP = -1;
+			SPECMAP = -1;
+			NORMMAP = -1;
+			HEIGHTMAP = -1;
+		}
+		ts_i->transparent_objects.clear();
+		transparent_submodels.clear();
 
 		gr_set_buffer(-1);
 	} else {
