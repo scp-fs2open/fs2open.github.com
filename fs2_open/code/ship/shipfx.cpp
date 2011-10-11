@@ -4268,7 +4268,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 			// Makes sure that the velocity won't drop below the ship's initial
 			// velocity during the warpin. Ideally it should be done more
 			// smoothly than this.
-			scale = min(scale, (objp->phys_info.vel.xyz.z * (total_duration / 1000) * -(1.0f - progress)));
+			scale = MIN(scale, (objp->phys_info.vel.xyz.z * (total_duration / 1000) * -(1.0f - progress)));
 		}
 		else
 		{
