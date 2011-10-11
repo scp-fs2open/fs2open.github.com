@@ -1766,6 +1766,8 @@ void bm_get_palette(int handle, ubyte *pal, char *name)
 
 int bm_release(int handle, int clear_render_targets)
 {
+	Assert(handle >= 0);
+		   
 	bitmap_entry *be;
 
 	int n = handle % MAX_BITMAPS;

@@ -698,7 +698,9 @@ void init_ship_entry(ship_info *sip)
 	sip->warpin_radius = 0.0f;
 	sip->warpout_radius = 0.0f;
 	sip->warpin_time = 0;
+	sip->warpin_decel_exp = 1;
 	sip->warpout_time = 0;
+	sip->warpout_accel_exp = 1;
 	sip->warpin_type = WT_DEFAULT;
 	sip->warpout_type = WT_DEFAULT;
 	sip->warpout_player_speed = 0.0f;
@@ -1900,6 +1902,15 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 	}
 
+	if(optional_string("$Warpin decel exp:"))
+	{
+		stuff_float(&sip->warpin_decel_exp);
+		if (sip->warpin_decel_exp < 0.0f) {
+			Warning(LOCATION, "Warp-in deceleration exponent specified as less than 0 on ship '%s'; value ignored", sip->name);
+			sip->warpin_decel_exp = 1.0f;
+		}
+	}
+
 	if(optional_string("$Warpin radius:"))
 	{
 		stuff_float(&sip->warpin_radius);
@@ -1940,6 +1951,15 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->warpout_time = fl2i(t_time*1000.0f);
 		if(sip->warpout_time <= 0) {
 			Warning(LOCATION, "Warp-out time specified as 0 or less on ship '%s'; value ignored", sip->name);
+		}
+	}
+
+	if(optional_string("$Warpout accel exp:"))
+	{
+		stuff_float(&sip->warpout_accel_exp);
+		if (sip->warpout_accel_exp < 0.0f) {
+			Warning(LOCATION, "Warp-out acceleration exponent specified as less than 0 on ship '%s'; value ignored", sip->name);
+			sip->warpout_accel_exp = 1.0f;
 		}
 	}
 
@@ -2297,16 +2317,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		strcat_s(parse_error_text,"'s default secondary banks");
 		sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
 		strcpy_s(parse_error_text, temp_error);
-
-		// error checking
-		for ( i = 0; i < sip->num_secondary_banks; i++ )
-		{
-			if(sip->secondary_bank_weapons[i] < 0)
-			{
-				Warning(LOCATION, "%s has no secondary weapons, this cannot be!", sip->name);
-			}
-			// Assert(sip->secondary_bank_weapons[i] >= 0);
-		}
 
 		// Get the capacity of each secondary bank
 		required_string("$SBank Capacity:");
@@ -15795,6 +15805,13 @@ float ship_get_warpout_speed(object *objp)
 	else if(sip->warpout_type == WT_SWEEPER || sip->warpout_type == WT_IN_PLACE_ANIM)
 	{
 		return sip->warpout_speed;
+	}
+	else if(sip->warpout_type == WT_HYPERSPACE)
+	{
+		if (objp->phys_info.speed > sip->warpout_speed)
+			return objp->phys_info.speed;
+		else
+			return sip->warpout_speed;
 	}
 
 	return shipfx_calculate_warp_dist(objp) / shipfx_calculate_warp_time(objp, WD_WARP_OUT);
