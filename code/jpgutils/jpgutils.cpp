@@ -230,12 +230,10 @@ int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int
 			// multiple lines are read this needs updating
 			// also note that this doesn't deal with jpegs that are greyscale
 			JSAMPLE tmp;
-			for (int k = 0; k < size; k++) {
-				if ( k % 3 == 2) {
-					tmp = buffer[0][k - 2];
-					buffer[0][k - 2] = buffer[0][k];
-					buffer[0][k] = tmp;
-				}
+			for (int k = 2; k < size; k += 3) {
+				tmp = buffer[0][k - 2];
+				buffer[0][k - 2] = buffer[0][k];
+				buffer[0][k] = tmp;
 			}
 
 			memcpy(image_data, *buffer, size);
