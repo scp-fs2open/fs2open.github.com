@@ -3563,8 +3563,8 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		model_render_buffers(pm, submodel_num);
 			//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 
-		SCP_vector<transparent_submodel>::iterator ts_i = transparent_submodels.begin();
-		SCP_vector<transparent_object>::iterator obj;
+		std::vector<transparent_submodel>::iterator ts_i = transparent_submodels.begin();
+		std::vector<transparent_object>::iterator obj;
 			
 		for(obj = ts_i->transparent_objects.begin(); obj != ts_i->transparent_objects.end(); ++obj)
 		{
