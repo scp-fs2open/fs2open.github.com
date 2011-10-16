@@ -824,8 +824,8 @@ void labviewer_render_model(float frametime)
 		model_render(Lab_model_num, &Lab_viewer_orient, &vmd_zero_vector, /*Lab_model_flags*/flagggs, -1, -1);
 	}
 
-	batch_render_bitmaps();
-	distortion_render_bitmaps();
+	batch_render_all();
+	
 	if ( !Cmdline_nohtl ) {
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
