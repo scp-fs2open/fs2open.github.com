@@ -696,7 +696,7 @@ void batch_render_lasers()
 	}
 }
 
-void batch_render_bitmaps()
+void batch_render_geometry_map_bitmaps()
 {
 	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
@@ -715,12 +715,14 @@ void batch_render_bitmaps()
 void batch_render_all()
 {
 	batch_render_lasers();
-	batch_render_bitmaps();
+	batch_render_geometry_map_bitmaps();
+	batch_render_distortion_map_bitmaps();
 }
 
 void batch_reset()
 {
 	geometry_map.clear();
+	distortion_map.clear();
 }
 
 int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha, float depth)
@@ -771,13 +773,9 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 	return 0;
 }
 
-void distortion_render_bitmaps()
+void batch_render_distortion_map_bitmaps()
 {
-	size_t map_size = distortion_map.size();
-	batch_item *bi;
-
-	for (size_t i = 0; i < map_size; i++) {
-		bi = &distortion_map[i];
+	for (SCP_vector<batch_item>::iterator bi = distortion_map.begin(); bi != distortion_map.end(); ++bi) {
 
 		if ( bi->laser )
 			continue;

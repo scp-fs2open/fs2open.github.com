@@ -76,9 +76,9 @@ int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float 
 int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
 int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity = 1.0f);
 void batch_render_all();
-void batch_render_bitmaps();
+void batch_render_geometry_map_bitmaps();
 void batch_render_lasers();
 void batch_reset();
-void distortion_render_bitmaps();
+void batch_render_distortion_map_bitmaps();
 
 #endif

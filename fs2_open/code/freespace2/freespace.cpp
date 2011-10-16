@@ -985,7 +985,7 @@ void game_level_init(int seed)
 
 	Perspective_locked = false;
 
-	// reset the geometry batcher, this should to be done pretty soon in this mission load process (though it's not required)
+	// reset the geometry map and distortion map batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
 
 	// Initialize the game subsystems
