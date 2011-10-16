@@ -146,7 +146,4 @@ extern int Cmdline_verify_vps;
 extern int Cmdline_no_grab;
 #endif
 
-
-
-//extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif
