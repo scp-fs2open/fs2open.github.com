@@ -548,13 +548,13 @@ struct batch_item {
 static SCP_vector<batch_item> geometry_map;
 static SCP_vector<batch_item> distortion_map;
 
-static int find_good_batch_item(int texture)
+static size_t find_good_batch_item(int texture)
 {
 	size_t max_size = geometry_map.size();
 
 	for (size_t i = 0; i < max_size; i++) {
 		if (geometry_map[i].texture == texture)
-			return (int)i;
+			return i;
 	}
 
 	// don't have an existing match so add a new entry
@@ -564,7 +564,7 @@ static int find_good_batch_item(int texture)
 
 	geometry_map.push_back(new_item);
 
-	return (int)(geometry_map.size() - 1);
+	return (geometry_map.size() - 1);
 }
 
 static size_t find_good_distortion_item(int texture)
@@ -594,8 +594,7 @@ float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float wid
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_batch_item(texture);
-	Assert( index >= 0 );
+	size_t index = find_good_batch_item(texture);
 
 	geometry_map[index].laser = true;
 	item = &geometry_map[index].batch;
@@ -613,8 +612,7 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_batch_item(texture);
-	Assert( index >= 0 );
+	size_t index = find_good_batch_item(texture);
 
 	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
@@ -638,8 +636,7 @@ int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float ang
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_batch_item(texture);
-	Assert( index >= 0 );
+	size_t index = find_good_batch_item(texture);
 
 	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
@@ -663,8 +660,7 @@ int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float 
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_batch_item(texture);
-	Assert( index >= 0 );
+	size_t index = find_good_batch_item(texture);
 
 	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
