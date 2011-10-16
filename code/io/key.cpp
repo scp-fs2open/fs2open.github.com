@@ -114,8 +114,8 @@ enum KeyboardLayout {
 void FillSDLArray ()
 {
 	KeyboardLayout layout = KEYBOARD_LAYOUT_DEFAULT;
-
-	if (!strcmp(Cmdline_keyboard_layout, "qwertz")) {
+	
+	if ((Cmdline_keyboard_layout) && !strcmp(Cmdline_keyboard_layout, "qwertz")) {
 		layout = KEYBOARD_LAYOUT_QWERTZ;
 	}
 
