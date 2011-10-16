@@ -453,7 +453,7 @@ void particle_render_all()
 	}
 
 	if (render_batch) {
-		batch_render_bitmaps();
+		batch_render_all();
 	}
 }
 
