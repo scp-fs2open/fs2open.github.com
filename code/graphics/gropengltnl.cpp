@@ -194,11 +194,6 @@ int gr_opengl_create_buffer()
 
 	opengl_vertex_buffer vbuffer;
 
-	// allocate additional blocks if we need them to prevent memory fragmentation, 15 at a time
-	if ( GL_vertex_buffers.size() >= GL_vertex_buffers.capacity() ) {
-		GL_vertex_buffers.reserve( GL_vertex_buffers.size() + 15 );
-	}
-
 	GL_vertex_buffers.push_back( vbuffer );
 	GL_vertex_buffers_in_use++;
 

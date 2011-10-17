@@ -311,11 +311,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		new_sound.flags &= ~SND_F_USED;
 
 		Sounds.push_back( new_sound );
-
-		if ( Sounds.capacity() == Sounds.size() ) {
-			const size_t Min_sounds_bump = 10;
-			Sounds.reserve( Sounds.size() + Min_sounds_bump );
-		}
 	}
 
 	snd = &Sounds[n];
