@@ -16319,8 +16319,6 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx)
 	{
 		//How many calculations do we have to do?
 		num = adtp->Calculations.size();
-		//This would be a problem
-		Assert(num == adtp->Arguments.size());
 
 		//Used for instant cutoffs, to instantly end the loop
 		bool end_now = false;
