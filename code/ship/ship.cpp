@@ -4431,9 +4431,6 @@ void ship_add_exited_ship( ship *sp, int reason )
 		entry.damage_ship[i] = sp->damage_ship[i] ;
 	}
 	
-	if ( (Ships_exited.capacity() - Ships_exited.size() ) < 5u ) {
-		Ships_exited.reserve((int)(Ships_exited.capacity() + 100)); 
-	}
 	Ships_exited.push_back(entry);
 }
 
