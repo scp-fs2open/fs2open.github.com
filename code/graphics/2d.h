@@ -152,8 +152,8 @@ struct vertex_buffer {
 			model_list = NULL;
 		}
 
-		for (size_t i = 0; i < tex_buf.size(); i++) {
-			tex_buf[i].release();
+		for (SCP_vector<buffer_data>::iterator tbi = tex_buf.begin(); tbi != tex_buf.end(); ++tbi) {
+			tbi->release();
 		}
 	}
 
