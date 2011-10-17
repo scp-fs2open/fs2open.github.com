@@ -504,8 +504,6 @@ void opengl_shader_init()
 		bool main_vert = cf_exists_full("main-v.sdr", CF_TYPE_EFFECTS) != 0;
 		bool main_frag = cf_exists_full("main-f.sdr", CF_TYPE_EFFECTS) != 0;
 
-		GL_shader.reserve(Num_shader_files+1);
-
 		for (idx = 0; idx < Num_shader_files; idx++) {
 			bool in_error = false;
 			opengl_shader_t new_shader;

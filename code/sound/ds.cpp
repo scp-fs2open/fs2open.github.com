@@ -651,11 +651,6 @@ int ds_get_sid()
 		}
 	}
 
-	// if we need to, bump the reserve limit (helps prevent memory fragmentation)
-	if ( sound_buffers.size() == sound_buffers.capacity() ) {
-		sound_buffers.reserve( sound_buffers.size() + BUFFER_BUMP );
-	}
-
 	sound_buffers.push_back( new_buffer );
 
 	return (int)(sound_buffers.size() - 1);
