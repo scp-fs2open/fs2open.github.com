@@ -975,7 +975,7 @@ class arg_item
 		int flags;
 		int nesting_level;
 
-		arg_item() : flags(0), nesting_level(0), text(NULL), next(NULL) {}
+		arg_item() : text(NULL), next(NULL), flags(0), nesting_level(0) {}
 		void add_data(char *str);
 		void add_data_dup(char *str);
 		void add_data_set_dup(char *str);

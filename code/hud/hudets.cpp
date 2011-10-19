@@ -657,14 +657,14 @@ void transfer_energy_to_weapons(object* obj)
 }
 
 HudGaugeEts::HudGaugeEts():
-System_type(0), 
-HudGauge(HUD_OBJECT_ETS_ENGINES, HUD_ETS_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_ETS_ENGINES, HUD_ETS_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255),
+System_type(0)
 {
 }
 
 HudGaugeEts::HudGaugeEts(int _gauge_object, int _system_type):
-System_type(_system_type), 
-HudGauge(_gauge_object, HUD_ETS_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(_gauge_object, HUD_ETS_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255),
+System_type(_system_type)
 {
 }
 
