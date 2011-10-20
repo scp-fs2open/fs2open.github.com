@@ -49,6 +49,7 @@ anim_instance *init_anim_instance(anim *ptr, int bpp)
 	ptr->instance_count++;
 	inst = (anim_instance *) vm_malloc(sizeof(anim_instance));
 	Assert(inst);
+	memset(inst, 0, sizeof(anim_instance));
 	inst->frame_num = -1;
 	inst->last_frame_num = -1;
 	inst->parent = ptr;
