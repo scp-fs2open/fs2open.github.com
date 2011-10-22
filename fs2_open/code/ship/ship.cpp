@@ -962,15 +962,6 @@ void init_ship_entry(ship_info *sip)
 	sip->pathMetadata.clear();
 
 	sip->selection_effect = Default_ship_select_effect;
-	
-	sip->engine_snd_cockpit = SND_ENGINE;
-	sip->full_throttle_snd = SND_FULL_THROTTLE;
-	sip->zero_throttle_snd = SND_ZERO_THROTTLE;
-	sip->throttle_up_snd = SND_THROTTLE_UP;
-	sip->throttle_down_snd = SND_THROTTLE_DOWN;
-	sip->afterburner_engage_snd = SND_ABURN_ENGAGE;
-	sip->afterburner_loop_snd = SND_ABURN_LOOP;
-	sip->afterburner_fail_snd = SND_ABURN_FAIL;
 }
 
 /**
@@ -1177,6 +1168,44 @@ int parse_ship_template()
 	
 	return rtn;
 }
+
+void parse_ship_sound(char *name, int id, ship_info *sip)
+{
+	Assert( name != NULL );
+
+	int temp_index = -1;
+
+	parse_sound(name, &temp_index, sip->name);
+
+	if (temp_index >= 0)
+		sip->ship_sounds.insert(std::pair<int, int>(id, temp_index));
+}
+
+void parse_ship_sounds(ship_info *sip)
+{
+	parse_ship_sound("$CockpitEngineSnd:",                SND_ENGINE, sip);
+	parse_ship_sound("$FullThrottleSnd:",                 SND_FULL_THROTTLE, sip);
+	parse_ship_sound("$FullThrottleSnd:",                 SND_ZERO_THROTTLE, sip);
+	parse_ship_sound("$ThrottleUpSnd:",                   SND_THROTTLE_UP, sip);
+	parse_ship_sound("$ThrottleDownSnd:",                 SND_THROTTLE_DOWN, sip);
+	parse_ship_sound("$AfterburnerSnd:",                  SND_ABURN_ENGAGE, sip);
+	parse_ship_sound("$AfterburnerEngageSnd:",            SND_ABURN_LOOP, sip);
+	parse_ship_sound("$AfterburnerFailedSnd:",            SND_ABURN_FAIL, sip);
+	parse_ship_sound("$MissileTrackingSnd:",              SND_MISSILE_TRACKING, sip);
+	parse_ship_sound("$MissileLockedSnd:",                SND_MISSILE_LOCK, sip);
+	parse_ship_sound("$PrimaryCycleSnd:",                 SND_PRIMARY_CYCLE, sip);
+	parse_ship_sound("$SecondaryCycleSnd:",               SND_SECONDARY_CYCLE, sip);
+	parse_ship_sound("$TargetAcquiredSnd:",               SND_TARGET_ACQUIRE, sip);
+	parse_ship_sound("$PrimaryFireFailedSnd:",            SND_OUT_OF_WEAPON_ENERGY, sip);
+	parse_ship_sound("$SecondaryFireFailedSnd:",          SND_OUT_OF_MISSLES, sip);
+	parse_ship_sound("$HeatSeekerLaunchWarningSnd:",      SND_HEATLOCK_WARN, sip);
+	parse_ship_sound("$AspectSeekerLaunchWarningSnd:",    SND_ASPECTLOCK_WARN, sip);
+	parse_ship_sound("$MissileLockWarningSnd:",           SND_THREAT_FLASH, sip);
+	parse_ship_sound("$HeatSeekerProximityWarningSnd:",   SND_PROXIMITY_WARNING, sip);
+	parse_ship_sound("$AspectSeekerProximityWarningSnd:", SND_PROXIMITY_ASPECT_WARNING, sip);
+	parse_ship_sound("$MissileEvadedSnd:",                SND_MISSILE_EVADED_POPUP, sip);
+	parse_ship_sound("$CargoScanningSnd:",                SND_CARGO_SCAN, sip);
+} 
 
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string)
 {
@@ -2650,32 +2679,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	//Parse optional sound to be used for end of a glide
 	parse_sound("$GlideEndSnd:", &sip->glide_end_snd, sip->name);
+
+	parse_ship_sounds(sip);
 	
-	//Parse optional sound to be used for looping engine sound heard in the cockpit
-	parse_sound("$CockpitEngineSnd:", &sip->engine_snd_cockpit, sip->name);
-
-	//Parse optional sound to be used for the sound heard when setting throttle to full power
-	parse_sound("$FullThrottleSnd:", &sip->full_throttle_snd, sip->name);
-
-	//Parse optional sound to be used for the sound heard when setting throttle to zero power
-	parse_sound("$ZeroThrottleSnd:", &sip->full_throttle_snd, sip->name);
-
-	//Parse optional sound to be used for the sound heard when increasing throttle power by 1/3
-	parse_sound("$ThrottleUpSnd:", &sip->throttle_up_snd, sip->name);
-
-	//Parse optional sound to be used for the sound heard when decreasing throttle power by 1/3
-	parse_sound("$ThrottleDownSnd:", &sip->throttle_down_snd, sip->name);
-
-	//Parse optional sound to be used for the looping sound heard when the afterburner is active
-	parse_sound("$AfterburnerSnd:", &sip->afterburner_loop_snd, sip->name);
-
-	//Parse optional sound to be used for the sound heard when the afterburner is engaged
-	parse_sound("$AfterburnerEngageSnd:", &sip->afterburner_engage_snd, sip->name);
-
-	//Parse optional sound to be used for the sound heard when the activation of the afterburner failed
-	parse_sound("$AfterburnerFailedSnd:", &sip->afterburner_fail_snd, sip->name);
-
-
 	if(optional_string("$Closeup_pos:"))
 	{
 		stuff_vector(&sip->closeup_pos);
@@ -9123,7 +9129,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 			} else if(shipp->cmeasure_count <= 0) {
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No more countermeasure charges.", 485));
 			}
-			snd_play( &Snds[SND_OUT_OF_MISSLES], 0.0f );
+			snd_play( &Snds[ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)], 0.0f );
 		}
 
 		// if we have a player ship, then send the fired packet anyway so that the player
@@ -9185,7 +9191,7 @@ int ship_maybe_play_primary_fail_sound()
 			stampval = 50;
 		}
 		Laser_energy_out_snd_timer = timestamp(stampval);
-		snd_play( &Snds[SND_OUT_OF_WEAPON_ENERGY]);
+		snd_play( &Snds[ship_get_sound(Player_obj, SND_OUT_OF_WEAPON_ENERGY)]);
 		return 1;
 	}
 	return 0;
@@ -9205,7 +9211,7 @@ int ship_maybe_play_secondary_fail_sound(weapon_info *wip)
 		} else {
 			Missile_out_snd_timer = timestamp(50);
 		}
-		snd_play( &Snds[SND_OUT_OF_MISSLES] );
+		snd_play( &Snds[ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)] );
 		return 1;
 	}
 	return 0;
@@ -10504,7 +10510,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
 					}
 
-					snd_play( &Snds[SND_OUT_OF_MISSLES] );
+					snd_play( &Snds[ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)] );
 					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
 					return 0;
 				}
@@ -10527,7 +10533,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				if ( !Weapon_energy_cheat )
 				{
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"),wip->name);
-					snd_play( &Snds[SND_OUT_OF_MISSLES] );
+					snd_play( &Snds[ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)] );
 					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
 					return 0;
 				}
@@ -10810,7 +10816,7 @@ done_secondary:
 			}
 						
 			if ( obj == Player_obj ) {
-				snd_play( &Snds[SND_SECONDARY_CYCLE] );		
+				snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );		
 			}
 		}
 
@@ -11028,7 +11034,7 @@ int ship_select_next_primary(object *objp, int direction)
 		{
 			if ( objp == Player_obj )
 			{
-				snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
+				snd_play( &Snds[ship_get_sound(objp, SND_PRIMARY_CYCLE)], 0.0f );
 			}
 			ship_primary_changed(shipp);
 			objp = &Objects[shipp->objnum];
@@ -11056,7 +11062,7 @@ int ship_select_next_primary(object *objp, int direction)
 
 	if ( objp == Player_obj )
 	{
-		snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
+		snd_play( &Snds[ship_get_sound(objp, SND_PRIMARY_CYCLE)], 0.0f );
 	}
 
 	ship_primary_changed(shipp);
@@ -11144,7 +11150,7 @@ int ship_select_next_secondary(object *objp)
 				swp->previous_primary_bank = swp->current_primary_bank;
 			if ( objp == Player_obj )
 			{
-				snd_play( &Snds[SND_SECONDARY_CYCLE], 0.0f );
+				snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)], 0.0f );
 			}
 			ship_secondary_changed(shipp);
 
@@ -16839,4 +16845,22 @@ int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 void init_path_metadata(path_metadata& metadata)
 {
 	vm_vec_zero(&metadata.departure_rvec);
+}
+
+int ship_get_sound(object *objp, int id)
+{
+	Assert( objp != NULL );
+	Assert( id >= 0 && id < (int) Snds.size() );
+
+	Assert( objp->type == OBJ_SHIP );
+
+	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	SCP_map<int, int>::iterator element = sip->ship_sounds.find(id);
+
+	if (element == sip->ship_sounds.end())
+		return id;
+	else
+		return (*element).second;
 }

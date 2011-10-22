@@ -91,7 +91,7 @@ void cmeasure_maybe_alert_success(object *objp)
 
 	if ( objp->parent == OBJ_INDEX(Player_obj) ) {
 		hud_start_text_flash(XSTR("Evaded", 1430), 800);
-		snd_play(&Snds[SND_MISSILE_EVADED_POPUP]);
+		snd_play(&Snds[ship_get_sound(Player_obj, SND_MISSILE_EVADED_POPUP)]);
 	} else if ( Objects[objp->parent].flags & OF_PLAYER_SHIP ) {
 		send_countermeasure_success_packet( objp->parent );
 	}
