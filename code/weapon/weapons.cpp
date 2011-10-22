@@ -3794,10 +3794,10 @@ void weapon_maybe_play_warning(weapon *wp)
 			// Possibly add an additional third sound later
 			if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_HEAT ||
 				 Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_JAVELIN ) {
-				snd_play(&Snds[SND_HEATLOCK_WARN]);
+				snd_play(&Snds[ship_get_sound(Player_obj, SND_HEATLOCK_WARN)]);
 			} else {
 				Assert(Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_ASPECT);
-				snd_play(&Snds[SND_ASPECTLOCK_WARN]);
+				snd_play(&Snds[ship_get_sound(Player_obj, SND_ASPECTLOCK_WARN)]);
 			}
 		}
 	}
