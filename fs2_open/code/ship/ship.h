@@ -1923,7 +1923,7 @@ extern SCP_vector<ship_effect> Ship_effects;
  *  @param objp An object pointer. Has to be of type OBJ_SHIP
  *  @param id A sound id as defined in gamsesnd.h. If the given id is unknown then the game_snd with the id as index is returned.
  *  
- *  @return An index into the Snds vector, if the specified index could not be found then the id itself will be returnes
+ *  @return An index into the Snds vector, if the specified index could not be found then the id itself will be returned
  */
 int ship_get_sound(object *objp, int id);
 
