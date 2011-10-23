@@ -1804,14 +1804,14 @@ int button_function_critical(int n, net_player *p = NULL)
 				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
-					snd_play( &Snds[SND_SECONDARY_CYCLE] );
+					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			} else {
 				Ships[objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to dual fire mode", 35));
-					snd_play( &Snds[SND_SECONDARY_CYCLE] );
+					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			}

@@ -7316,8 +7316,7 @@ void game_shutdown(void)
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();
-	hud_close();
-	shockwave_close();			// release any memory used by shockwave system	
+	hud_close();	
 	fireball_close();				// free fireball system
 	particle_close();			// close out the particle system
 	weapon_close();					// free any memory that was allocated for the weapons

@@ -3039,9 +3039,9 @@ void hud_process_homing_missiles()
 			}
 
 			if ( closest_is_aspect ) {
-				Homing_beep.snd_handle = snd_play(&Snds[SND_PROXIMITY_ASPECT_WARNING]);
+				Homing_beep.snd_handle = snd_play(&Snds[ship_get_sound(Player_obj, SND_PROXIMITY_ASPECT_WARNING)]);
 			} else {
-				Homing_beep.snd_handle = snd_play(&Snds[SND_PROXIMITY_WARNING]);
+				Homing_beep.snd_handle = snd_play(&Snds[ship_get_sound(Player_obj, SND_PROXIMITY_WARNING)]);
 			}
 		}
 	}
@@ -4402,7 +4402,7 @@ void hud_target_change_check()
 	if (Player_ai->last_target != Player_ai->target_objnum) {
 
 		if ( Player_ai->target_objnum != -1){
-			snd_play( &Snds[SND_TARGET_ACQUIRE], 0.0f );
+			snd_play( &Snds[ship_get_sound(Player_obj, SND_TARGET_ACQUIRE)], 0.0f );
 		}
 
 		// if we have a hotkey set active, see if new target is in set.  If not in

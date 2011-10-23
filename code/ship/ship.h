@@ -1265,19 +1265,6 @@ typedef struct ship_info {
 	float	sup_shield_repair_rate;
 	float	sup_subsys_repair_rate;
 
-	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
-	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
-	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
-	
-	int engine_snd_cockpit;					// handle to engine sound heard in cockpit
-	int full_throttle_snd;					// handle to sound played when throttle is set to full power
-	int zero_throttle_snd;					// handle to sound played when throttle is set to zero power
-	int throttle_up_snd;					// handle to sound played when throttle power is increaded by 1/3
-	int throttle_down_snd;					// handle to sound played when throttle power is decreased by 1/3
-	int afterburner_engage_snd;				// handle to sound played when afterburner is engaged
-	int afterburner_loop_snd;				// handle to sound played when afterburner is active
-	int afterburner_fail_snd;				// handle to sound player when afterburner activation failed
-
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
 	float		closeup_zoom;					// zoom when using ship in closeup view (eg briefing and hud target monitor)
 
@@ -1358,6 +1345,12 @@ typedef struct ship_info {
 
 	bool topdown_offset_def;
 	vec3d topdown_offset;
+
+	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
+	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
+	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
+
+	SCP_map<int, int> ship_sounds;			// specifies ship-specific sound indexes
 
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
@@ -1929,5 +1922,15 @@ typedef struct ship_effect {
 } ship_effect;
 
 extern SCP_vector<ship_effect> Ship_effects;
+
+/**
+ *  @brief Returns a ship-specific sound index
+ *  
+ *  @param objp An object pointer. Has to be of type OBJ_SHIP
+ *  @param id A sound id as defined in gamsesnd.h. If the given id is unknown then the game_snd with the id as index is returned.
+ *  
+ *  @return An index into the Snds vector, if the specified index could not be found then the id itself will be returned
+ */
+int ship_get_sound(object *objp, int id);
 
 #endif
