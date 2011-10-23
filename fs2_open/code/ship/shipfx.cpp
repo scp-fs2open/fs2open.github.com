@@ -4205,6 +4205,11 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, int n_direction)
 	total_time_start = total_time_end = timestamp();
 	pos_final = vmd_zero_vector;
 	scale_factor = 750.0f * objp->radius;
+	
+	initial_velocity = 1.0f;
+	p_object *p_objp = mission_parse_get_parse_object(shipp->ship_name);
+	if (p_objp != NULL)
+		initial_velocity = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 }
 
 int WE_Hyperspace::warpStart()
@@ -4219,6 +4224,7 @@ int WE_Hyperspace::warpStart()
 	{
 		shipp->flags |= SF_ARRIVING_STAGE_2;
 		objp->phys_info.flags |= PF_WARP_IN;
+		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
 		objp->flags &= ~OF_PHYSICS;
 	}
 	else if(direction == WD_WARP_OUT)
@@ -4249,7 +4255,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 		{
 			vec3d vel;
 			vel = objp->orient.vec.fvec;
-			vm_vec_scale( &vel, objp->phys_info.vel.xyz.z );
+			vm_vec_scale( &vel, initial_velocity );
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
 		}
@@ -4268,7 +4274,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 			// Makes sure that the velocity won't drop below the ship's initial
 			// velocity during the warpin. Ideally it should be done more
 			// smoothly than this.
-			scale = MIN(scale, (objp->phys_info.vel.xyz.z * (total_duration / 1000) * -(1.0f - progress)));
+			scale = MIN(scale, (initial_velocity * (total_duration / 1000) * -(1.0f - progress)));
 		}
 		else
 		{
@@ -4276,7 +4282,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 
 			// Makes sure the warpout velocity won't drop below the ship's last
 			// known real velocity.
-			scale += objp->phys_info.vel.xyz.z * (total_duration / 1000) * progress;
+			scale += initial_velocity * (total_duration / 1000) * progress;
 		}
 		vm_vec_scale_add(&objp->pos, &pos_final, &objp->orient.vec.fvec, scale);
 	}
