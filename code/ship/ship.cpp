@@ -973,7 +973,6 @@ int parse_ship(char *filename, bool replace)
 	ship_info *sip;
 	bool create_if_not_found  = true;
 	int rtn = 0;
-	char name_tmp[NAME_LENGTH];
 
 	required_string("$Name:");
 	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -1075,30 +1074,7 @@ int parse_ship(char *filename, bool replace)
 
 	rtn = parse_ship_values(sip, false, first_time, replace);
 
-	// if we have a ship copy, then check to be sure that our base ship exists
-	// This should really be moved -C
-	// Goober5000 - made nonfatal and a bit clearer
-	if (sip->flags & SIF_SHIP_COPY)
-	{
-		strcpy_s(name_tmp, sip->name);
-
-		if (end_string_at_first_hash_symbol(name_tmp))
-		{
-			if (ship_info_lookup(name_tmp) < 0)
-			{
-				Warning(LOCATION, "Ship %s is a copy, but base ship %s couldn't be found.", sip->name, name_tmp);
-				sip->flags &= ~SIF_SHIP_COPY;
-			}
-		}
-		else
-		{
-			Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
-			sip->flags &= ~SIF_SHIP_COPY;
-		}
-	}
-
 	strcpy_s(parse_error_text, "");
-
 
 	return rtn;	//0 for success
 }
@@ -4112,9 +4088,11 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 void ship_parse_post_cleanup()
 {
 	int i, j;
+	char name_tmp[NAME_LENGTH];
 	ship_info *sip;
 
-	for (i = 0; i < Num_ship_classes; i++) {
+	for (i = 0; i < Num_ship_classes; i++)
+	{
 		sip = &Ship_info[i];
 
 		// ballistic primary fixage...
@@ -4147,7 +4125,7 @@ void ship_parse_post_cleanup()
 					}
 				}
 			}
-		} // ... ballistic primaries
+		}
 
 		// ultra stupid compatbility handling for the once broken "generate hud" flag.
 		// it was previously testing the afterburner flag, so that's what we check for that
@@ -4156,6 +4134,26 @@ void ship_parse_post_cleanup()
 		{
 			Warning(LOCATION, "Compatibility warning:\nNo shield icon specified for '%s' but the \"generate icon\" flag is not specified.\nEnabling flag by default.\n", sip->name);
 			sip->flags2 |= SIF2_GENERATE_HUD_ICON;
+		}
+
+		// if we have a ship copy, then check to be sure that our base ship exists
+		if (sip->flags & SIF_SHIP_COPY)
+		{
+			strcpy_s(name_tmp, sip->name);
+
+			if (end_string_at_first_hash_symbol(name_tmp))
+			{
+				if (ship_info_lookup(name_tmp) < 0)
+				{
+					Warning(LOCATION, "Ship %s is a copy, but base ship %s couldn't be found.", sip->name, name_tmp);
+					sip->flags &= ~SIF_SHIP_COPY;
+				}
+			}
+			else
+			{
+				Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
+				sip->flags &= ~SIF_SHIP_COPY;
+			}
 		}
 	}
 
