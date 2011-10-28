@@ -192,7 +192,7 @@ void pilot_set_start_campaign(player* p)
 	// NOTE: we don't do sorting here, but we assume CF_SORT_NAME, and do it manually below
 	rc = cf_get_file_list(MAX_CAMPAIGNS, campaign_file_list, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
 
-	for (i = 0; i < MAX_CAMPAIGNS; i++) 
+	for (i = 0; i < rc; i++) 
 	{
 		if (!stricmp(campaign_file_list[i], "FreeSpace2"))
 		{
