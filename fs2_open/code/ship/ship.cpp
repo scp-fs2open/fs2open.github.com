@@ -1161,11 +1161,11 @@ void parse_ship_sounds(ship_info *sip)
 {
 	parse_ship_sound("$CockpitEngineSnd:",                SND_ENGINE, sip);
 	parse_ship_sound("$FullThrottleSnd:",                 SND_FULL_THROTTLE, sip);
-	parse_ship_sound("$FullThrottleSnd:",                 SND_ZERO_THROTTLE, sip);
+	parse_ship_sound("$ZeroThrottleSnd:",                 SND_ZERO_THROTTLE, sip);
 	parse_ship_sound("$ThrottleUpSnd:",                   SND_THROTTLE_UP, sip);
 	parse_ship_sound("$ThrottleDownSnd:",                 SND_THROTTLE_DOWN, sip);
-	parse_ship_sound("$AfterburnerSnd:",                  SND_ABURN_ENGAGE, sip);
-	parse_ship_sound("$AfterburnerEngageSnd:",            SND_ABURN_LOOP, sip);
+	parse_ship_sound("$AfterburnerSnd:",                  SND_ABURN_LOOP, sip);
+	parse_ship_sound("$AfterburnerEngageSnd:",            SND_ABURN_ENGAGE, sip);
 	parse_ship_sound("$AfterburnerFailedSnd:",            SND_ABURN_FAIL, sip);
 	parse_ship_sound("$MissileTrackingSnd:",              SND_MISSILE_TRACKING, sip);
 	parse_ship_sound("$MissileLockedSnd:",                SND_MISSILE_LOCK, sip);
