@@ -552,7 +552,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			control_used(ZERO_THROTTLE);
 			player_clear_speed_matching();
 			if ( ci->forward_cruise_percent > 0.0f && Player_obj->phys_info.fspeed > 0.5) {
-				snd_play( &Snds[ship_get_sound(Player_obj, SND_FULL_THROTTLE)], 0.0f );
+				snd_play( &Snds[ship_get_sound(Player_obj, SND_ZERO_THROTTLE)], 0.0f );
 			}
 
 			ci->forward_cruise_percent = 0.0f;

@@ -4627,9 +4627,32 @@ ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object
 
 }
 
+ADE_FUNC(kill, l_Asteroid, "[ship killer=nil, wvector hitpos=nil]", "Kills the asteroid. Set \"killer\" to designate a specific ship as having been the killer, and \"hitpos\" to specify the world position of the hit location; if nil, the asteroid center is used.", "boolean", "True if successful, false or nil otherwise")
+{
+	object_h *victim,*killer=NULL;
+	vec3d *hitpos=NULL;
+	if(!ade_get_args(L, "o|oo", l_Asteroid.GetPtr(&victim), l_Ship.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
+		return ADE_RETURN_NIL;
+
+	if(!victim->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(killer != NULL && !killer->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (!hitpos)
+		hitpos = &victim->objp->pos;
+
+	if (killer)
+		asteroid_hit(victim->objp, killer->objp, hitpos, victim->objp->hull_strength + 1);
+	else
+		asteroid_hit(victim->objp, NULL,         hitpos, victim->objp->hull_strength + 1);
+
+	return ADE_RETURN_TRUE;
+}
+
 //**********HANDLE: Shipclass
 ade_obj<int> l_Shipclass("shipclass", "Ship class handle");
-extern int ships_inited;
 
 ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
@@ -5058,10 +5081,8 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	//Handle light
 	light_reset();
@@ -5076,11 +5097,8 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	model_render(sip->model_num, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 
 	//OK we're done
-	if (!Cmdline_nohtl) 
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	//Bye!!
 	g3_end_frame();
@@ -5123,10 +5141,8 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	//Handle light
 	light_reset();
@@ -5141,11 +5157,8 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	model_render(sip->model_num, orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 
 	//OK we're done
-	if (!Cmdline_nohtl) 
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	//Bye!!
 	g3_end_frame();
@@ -8456,16 +8469,129 @@ struct sound_entry_h
 	int type;
 	int idx;
 
-	sound_entry_h(){type=idx=-1;}
-	sound_entry_h(int n_type, int n_idx){type=n_type;idx=n_idx;}
+	sound_entry_h()
+	{
+		type =- 1;
+		idx = -1;
+	}
+
+	sound_entry_h(int n_type, int n_idx)
+	{
+		type = n_type;
+		idx = n_idx;
+	}
+
+	game_snd *Get()
+	{
+		if (!this->IsValid())
+			return NULL;
+
+		return &Snds[idx];
+	}
+
 	bool IsValid()
 	{
-		//WMC - sound stuff is under construction
-		return false;
+		if (idx < 0 || idx > (int) Snds.size())
+			return false;
+
+		return true;
 	}
+
+	int getId() 
+	{
+		if (!IsValid())
+			return -1;
+
+		game_snd *snd = Get();
+
+		if (snd == NULL)
+			return -1;
+
+		return snd->id;
+	}
+
 };
 
 ade_obj<sound_entry_h> l_SoundEntry("soundentry", "sounds.tbl table entry handle");
+
+ADE_VIRTVAR(DefaultVolume, l_SoundEntry, "number", "The default volume of this game sound", "number", "Volume in the range from 1 to 0 or -1 on error")
+{
+	sound_entry_h *seh = NULL;
+	float newVal = -1.0f;
+
+	if (!ade_get_args(L, "o|f", l_SoundEntry.GetPtr(&seh), &newVal))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (seh->Get() != NULL)
+		{
+			CAP(newVal, 0.0f, 1.0f);
+
+			seh->Get()->default_volume = newVal;
+		}
+	}
+
+	return ade_set_args(L, "f", seh->Get()->default_volume);
+}
+
+ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound", "string", "filename or empty string on error")
+{
+	sound_entry_h *seh = NULL;
+
+	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
+		return ade_set_error(L, "s", "");
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", seh->Get()->filename);
+}
+
+ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seconds.", "number", "the length, or -1 on error")
+{
+	sound_entry_h *seh = NULL;
+
+	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	return ade_set_args(L, "f", (i2fl(snd_get_duration(seh->getId())) / 1000.0f));
+}
+
+ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]", "Computes the volume and the panning of the sound when it would be played from the specified position.<br>"
+	"If range is given then the volume will diminish when the listener is withing that distance to the source.<br>"
+	"The position of the listener is always the the current viewing position.", "number, number", "The volume and the panning, in that sequence, or both -1 on error")
+{
+	sound_entry_h *seh = NULL;
+	vec3d *sourcePos = NULL;
+	float radius = 0.0f;
+
+	float vol = 0.0f;
+	float pan = 0.0f;
+
+	if (!ade_get_args(L, "oo|f", l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&sourcePos), &radius))
+		return ade_set_error(L, "ff", -1.0f, -1.0f);
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "ff", -1.0f, -1.0f);
+
+	int result = snd_get_3d_vol_and_pan(seh->Get(), sourcePos, &vol, &pan, radius);
+
+	if (result < 0)
+	{
+		return ade_set_args(L, "ff", -1.0f, -1.0f);
+	}
+	else
+	{
+		return ade_set_args(L, "ff", vol, pan);
+	}
+}
 
 ADE_FUNC(isValid, l_SoundEntry, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
@@ -8480,8 +8606,25 @@ ADE_FUNC(isValid, l_SoundEntry, NULL, "Detects whether handle is valid", "boolea
 struct sound_h : public sound_entry_h
 {
 	int sig;
-	sound_h():sound_entry_h(){sig=-1;}
-	sound_h(int n_gs_type, int n_gs_idx, int n_sig):sound_entry_h(n_gs_type, n_gs_idx){sig=n_sig;}
+
+	sound_h():sound_entry_h()
+	{
+		sig=-1;
+	}
+
+	sound_h(int n_gs_type, int n_gs_idx, int n_sig) : sound_entry_h(n_gs_type, n_gs_idx)
+	{
+		sig=n_sig;
+	}
+
+	int getSignature()
+	{
+		if (!IsValid())
+			return -1;
+
+		return sig;
+	}
+
 	bool IsValid()
 	{
 		if(!sound_entry_h::IsValid())
@@ -8496,11 +8639,14 @@ struct sound_h : public sound_entry_h
 
 ade_obj<sound_h> l_Sound("sound", "sound instance handle");
 
-ADE_VIRTVAR(Pitch, l_Sound, "number", "Panning of sound, from 100 to 100000", "number", "Pitch, or 0 if handle is invalid")
+ADE_VIRTVAR(Pitch, l_Sound, "number", "Pitch of sound, from 100 to 100000", "number", "Pitch, or 0 if handle is invalid")
 {
 	sound_h *sh;
 	int newpitch = 100;
 	if(!ade_get_args(L, "o|i", l_Sound.GetPtr(&sh), &newpitch))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!sh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR)
@@ -8516,6 +8662,136 @@ ADE_VIRTVAR(Pitch, l_Sound, "number", "Panning of sound, from 100 to 100000", "n
 	return ade_set_args(L, "f", snd_get_pitch(sh->sig));
 }
 
+ADE_FUNC(getRemainingTime, l_Sound, NULL, "The remaining time of this sound handle", "number", "Remaining time, or -1 on error")
+{
+	sound_h *sh;
+	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!sh->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	int remaining = snd_time_remaining(sh->getSignature());
+
+	return ade_set_args(L, "f", i2fl(remaining) / 1000.0f);
+}
+
+ADE_FUNC(setVolume, l_Sound, "number", "Sets the volume of this sound instance", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	float newVol = -1.0f;
+	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newVol))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	CAP(newVol, 0.0f, 1.0f);
+
+	snd_set_volume(sh->getSignature(), newVol);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setPanning, l_Sound, "number", "Sets the panning of this sound. Argument ranges from -1 for left to 1 for right", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	float newPan = -1.0f;
+	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newPan))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	CAP(newPan, -1.0f, 1.0f);
+
+	snd_set_pan(sh->getSignature(), newPan);
+
+	return ADE_RETURN_TRUE;
+}
+
+
+ADE_FUNC(setPosition, l_Sound, "number[,boolean = true]", "Sets the absolute position of the sound. If boolean argument is true then the value is given as a percentage", "boolean", "true if successfull, false otherwise")
+{
+	sound_h *sh;
+	float val = -1.0f;
+	bool percent = true;
+	if(!ade_get_args(L, "of|b", l_Sound.GetPtr(&sh), &val, &percent))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	if (val <= 0.0f)
+		return ADE_RETURN_FALSE;
+
+	snd_set_pos(sh->getSignature(), sh->Get(), val, percent);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(rewind, l_Sound, "number", "Rewinds the sound by the given number of seconds", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	float val = -1.0f;
+	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	if (val <= 0.0f)
+		return ADE_RETURN_FALSE;
+
+	snd_rewind(sh->getSignature(), sh->Get(), val);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(skip, l_Sound, "number", "Skips the given number of seconds of the sound", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	float val = -1.0f;
+	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	if (val <= 0.0f)
+		return ADE_RETURN_FALSE;
+
+	snd_ffwd(sh->getSignature(), sh->Get(), val);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(isPlaying, l_Sound, NULL, "Specifies if this handle is currently playing", "boolean", "true if playing, false if otherwise")
+{
+	sound_h *sh;
+	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ade_set_error(L, "b", false);
+
+	if (!sh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	return ade_set_args(L, "b", snd_is_playing(sh->getSignature()) == 1);
+}
+
+ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ade_set_error(L, "b", false);
+
+	if (!sh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	snd_stop(sh->getSignature());
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(isValid, l_Sound, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	sound_h *sh;
@@ -8523,6 +8799,25 @@ ADE_FUNC(isValid, l_Sound, NULL, "Detects whether handle is valid", "boolean", "
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "b", sh->IsValid());
+}
+
+ade_obj<sound_h> l_Sound3D("3Dsound", "3D sound instance handle", &l_Sound);
+
+ADE_FUNC(updatePosition, l_Sound3D, "vector Position[, number radius = 0.0]", "Updates the given 3D sound with the specified position and an optional range value", "boolean", "true if succeesed, false otherwise")
+{
+	sound_h *sh;
+	vec3d *newPos = NULL;
+	float radius = 0.0f;
+
+	if(!ade_get_args(L, "oo|f", l_Sound.GetPtr(&sh), l_Vector.GetPtr(&newPos), &radius))
+		return ade_set_error(L, "b", false);
+
+	if (!sh->IsValid() || newPos == NULL)
+		return ade_set_error(L, "b", false);
+
+	snd_update_3d_pos(sh->getSignature(), sh->Get(), newPos, radius);
+
+	return ADE_RETURN_TRUE;
 }
 
 //**********HANDLE: Control Info
@@ -9022,6 +9317,108 @@ ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boo
 
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
+
+ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching the specified index or name. If you are using a number then the first valid index is 1", "soundentry", "soundentry or invalid handle on error")
+{
+	int index = -1;
+
+	if (lua_isnumber(L, 1))
+	{
+		int idx = -1;
+		if(!ade_get_args(L, "i", &idx))
+			return ade_set_error(L, "o", l_SoundEntry.Set(sound_entry_h()));
+		
+		index = gamesnd_get_by_tbl_index(idx);
+	}
+	else
+	{
+		char *s = NULL;
+		if(!ade_get_args(L, "s", &s))
+			return ade_set_error(L, "o", l_SoundEntry.Set(sound_entry_h()));
+
+		if (s == NULL)
+			return ade_set_error(L, "o", l_SoundEntry.Set(sound_entry_h()));
+
+		index = gamesnd_get_by_name(s);
+	}
+
+	if (index < 0)
+	{
+		return ade_set_args(L, "o", l_SoundEntry.Set(sound_entry_h()));
+	}
+	else
+	{
+		return ade_set_args(L, "o", l_SoundEntry.Set(sound_entry_h(0, index)));
+	}
+}
+
+ADE_FUNC(playSound, l_Audio, "soundentry", "Plays the specified sound entry handle", "sound", "A handle to the playing sound")
+{
+	sound_entry_h *seh = NULL;
+
+	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
+		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
+
+	int handle = snd_play(seh->Get());
+
+	if (handle < 0)
+	{
+		return ade_set_args(L, "o", l_Sound.Set(sound_h()));
+	}
+	else
+	{
+		return ade_set_args(L, "o", l_Sound.Set(sound_h(0, seh->idx, handle)));
+	}
+}
+
+ADE_FUNC(playLoopingSound, l_Audio, "soundentry", "Plays the specified sound as a looping sound", "sound", "A handle to the playing sound or invalid handle if playback failed")
+{
+	sound_entry_h *seh = NULL;
+
+	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
+		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
+
+	int handle = snd_play_looping(seh->Get());
+
+	if (handle < 0)
+	{
+		return ade_set_args(L, "o", l_Sound.Set(sound_h()));
+	}
+	else
+	{
+		return ade_set_args(L, "o", l_Sound.Set(sound_h(0, seh->idx, handle)));
+	}
+}
+
+ADE_FUNC(play3DSound, l_Audio, "soundentry", "Plays the specified sound entry handle", "3Dsound", "A handle to the playing sound")
+{
+	sound_entry_h *seh = NULL;
+	vec3d *source = &vmd_zero_vector;
+	vec3d *listener = &View_position;
+
+	if (!ade_get_args(L, "o|oo", l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&source), l_Vector.GetPtr(&listener)))
+		return ade_set_error(L, "o", l_Sound3D.Set(sound_h()));
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "o", l_Sound3D.Set(sound_h()));
+
+	int handle = snd_play_3d(seh->Get(), source, listener);
+
+	if (handle < 0)
+	{
+		return ade_set_args(L, "o", l_Sound3D.Set(sound_h()));
+	}
+	else
+	{
+		return ade_set_args(L, "o", l_Sound3D.Set(sound_h(0, seh->idx, handle)));
+	}
+}
 
 ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
@@ -10231,10 +10628,8 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 		g3_set_view_matrix(&Eye_position, &Eye_matrix, View_zoom);
 	}
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	//Draw the ship!!
 	model_clear_instance(model_num);
@@ -10242,10 +10637,8 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	model_render(model_num, orient, v, MR_NORMAL);
 
 	//OK we're done
-	if (!Cmdline_nohtl) {
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	//Bye!!
 	g3_end_frame();
@@ -11176,6 +11569,7 @@ ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "S
 	return ade_set_error(L, "o", l_Ship.Set(object_h()));
 }
 
+extern int ships_inited;
 ADE_FUNC(__len, l_Mission_Ships, NULL,
 		 "Number of ships in the mission. "
 		 "This function is somewhat slow, and should be set to a variable for use in looping situations. "
@@ -11651,7 +12045,6 @@ ade_lib l_Tables("Tables", NULL, "tb", "Tables library");
 
 //*****SUBLIBRARY: Tables/ShipClasses
 ade_lib l_Tables_ShipClasses("ShipClasses", &l_Tables, NULL, NULL);
-
 ADE_INDEXER(l_Tables_ShipClasses, "number Index/string Name", "Array of ship classes", "ship", "Ship handle, or invalid ship handle if index is invalid")
 {
 	if(!ships_inited)

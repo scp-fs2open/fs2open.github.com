@@ -4222,7 +4222,7 @@ int WE_Hyperspace::warpStart()
 
 	if(direction == WD_WARP_IN)
 	{
-		shipp->flags |= SF_ARRIVING_STAGE_2;
+		shipp->flags |= SF_ARRIVING_STAGE_1;
 		objp->phys_info.flags |= PF_WARP_IN;
 		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
 		objp->flags &= ~OF_PHYSICS;
@@ -4258,6 +4258,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 			vm_vec_scale( &vel, initial_velocity );
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
+			shipp->flags |= SF_ARRIVING_STAGE_2;
 		}
 		objp->flags |= OF_PHYSICS;
 		this->warpEnd();
