@@ -17,13 +17,14 @@
 
 
 void gamesnd_parse_soundstbl();	// Loads in general game sounds from sounds.tbl
-void gamesnd_init_sounds();		// Initializes the Snds and Snds_iface STL vectors
 void gamesnd_close();	// close out gamesnd... only call from game_shutdown()!
 void gamesnd_load_gameplay_sounds();
 void gamesnd_unload_gameplay_sounds();
 void gamesnd_load_interface_sounds();
 void gamesnd_unload_interface_sounds();
 void gamesnd_preload_common_sounds();
+void gamesnd_load_gameplay_sounds();
+void gamesnd_unload_gameplay_sounds();
 void gamesnd_play_iface(int n);
 void gamesnd_play_error_beep();
 int gamesnd_get_by_name(char* name);
