@@ -74,7 +74,7 @@ int gamesnd_get_by_iface_tbl_index(int index)
 	Assert( Snds_iface.size() <= INT_MAX );
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 	int i = 0;
-	for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); ++snd) {
+	for(SCP_vector<game_snd>::iterator snd = Snds_iface.begin(); snd != Snds_iface.end(); ++snd) {
 		if ( snd->sig == index )
 		{
 			return i;
