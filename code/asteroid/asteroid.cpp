@@ -1792,7 +1792,7 @@ void asteroid_parse_tbl()
 
 		Assert( Species_info.size() );
 		// sanity check for debris type sizes
-		for (i = Species_info.size(); i >= 0; i--) {
+		for (i = (int)Species_info.size(); i >= 0; i--) {
 			// must remain in proper order
 			//   0 - generic debris types
 			// > 0 - species specific debris types

@@ -2871,44 +2871,6 @@ polymodel_instance* model_get_instance(int model_instance_num)
 	return Polygon_model_instances[model_instance_num];
 }
 
-/*
-// Finds the 3d bounding box of a model.  If submodel_num is -1,
-// then it starts from the root object.   If inc_children is non-zero, 
-// then this will recurse and find the bounding box for all children
-// also.
-void model_find_bound_box_3d(int model_num,int submodel_num, int inc_children, matrix *orient, vec3d * pos, vec3d * box )
-{
-	polymodel * pm;
-	vec3d to_root_xlat;
-	matrix to_root_rotate;
-	int n_steps, steps[16];
-	int tmp_sobj;
-	
-	if ( (model_num < 0) || (model_num >= N_polygon_models) ) return;
-
-	pm = &Polygon_models[model_num];
-
-	if ( submodel_num < 0 ) submodel_num = pm->detail[0];
-
-	// traverse up the model tree to a root object.
-	// Store this path in n_steps,
-	n_steps = 0;
-	tmp_sobj = submodel_num;
-	while( tmp_sobj > -1 )	{
-		steps[n_steps++] = tmp_sobj;
-		tmp_sobj = pm->submodel[tmp_sobj].parent;
-	}
-	
-	
-
-//	vm_copy_transpose_matrix(&to_world_rotate, orient );
-//	to_world_xlat = *pos;
-
-}
-*/
-
-
-
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!

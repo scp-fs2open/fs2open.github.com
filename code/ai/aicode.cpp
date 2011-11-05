@@ -7987,8 +7987,8 @@ void ai_chase()
 		if (esip->class_type > -1)
 		{
 			ship_type_info *stp = &Ship_types[sip->class_type];
-			uint ap_size = stp->ai_actively_pursues.size();
-			for(uint i = 0; i < ap_size; i++)
+			size_t ap_size = stp->ai_actively_pursues.size();
+			for(size_t i = 0; i < ap_size; i++)
 			{
 				if(stp->ai_actively_pursues[i] == esip->class_type) {
 					go_after_it = true;

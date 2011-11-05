@@ -8284,7 +8284,7 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 	*num_known_false = 0;
 
 	// loop through all arguments
-	for (unsigned int i = 0; i < argument_vector.size(); i++)
+	for (size_t i = 0; i < argument_vector.size(); i++)
 	{
 		// since we can't see or modify the validity, assume all are valid
 		{
@@ -9551,16 +9551,16 @@ void sexp_hud_activate_gauge_type(int n) {
 	
 	if (config_type != -1) { 
 		if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
-			int num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
+			size_t num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
-			for(int i = 0; i < num_gauges; i++) {
+			for(size_t i = 0; i < num_gauges; i++) {
 				if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getObjectType() == config_type)
 					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateSexpOverride(!active);
 			}
 		} else {
-			int num_gauges = default_hud_gauges.size();
+			size_t num_gauges = default_hud_gauges.size();
 
-			for(int i = 0; i < num_gauges; i++) {
+			for(size_t i = 0; i < num_gauges; i++) {
 				if (default_hud_gauges[i]->getObjectType() == config_type)
 					default_hud_gauges[i]->updateSexpOverride(!active);
 			}
@@ -15167,7 +15167,7 @@ void sexp_ship_copy_damage(int node)
 void sexp_activate_deactivate_glow_points(int n, bool activate)
 {
 	int sindex;
-	uint i;
+	size_t i;
 
 	for ( ; n != -1; n = CDR(n))
 	{
