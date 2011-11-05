@@ -150,9 +150,9 @@ int weapon_explosions::GetIndex(char *filename)
 		return -1;
 	}
 
-	for (uint i = 0; i < ExplosionInfo.size(); i++) {
+	for (size_t i = 0; i < ExplosionInfo.size(); i++) {
 		if ( !stricmp(ExplosionInfo[i].lod[0].filename, filename)) {
-			return i;
+			return (int)i;
 		}
 	}
 

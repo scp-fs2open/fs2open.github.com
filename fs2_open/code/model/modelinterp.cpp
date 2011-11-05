@@ -2383,12 +2383,12 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
 				particle_emitter pe;
 				thruster_particles *tp;
-				int num_particles = 0;
+				size_t num_particles = 0;
 
 				if (Interp_afterburner)
-					num_particles = (int)sip->afterburner_thruster_particles.size();
+					num_particles = sip->afterburner_thruster_particles.size();
 				else
-					num_particles = (int)sip->normal_thruster_particles.size();
+					num_particles = sip->normal_thruster_particles.size();
 
 				for (k = 0; k < num_particles; k++) {
 					if (Interp_afterburner)

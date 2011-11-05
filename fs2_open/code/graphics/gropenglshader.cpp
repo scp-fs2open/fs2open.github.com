@@ -353,7 +353,7 @@ void opengl_shader_set_current(opengl_shader_t *shader_obj)
 
 int opengl_shader_get_index(int flags)
 {
-	uint idx;
+	size_t idx;
 
 	for (idx = 0; idx < GL_shader.size(); idx++) {
 		if (GL_shader[idx].flags == flags) {
@@ -366,7 +366,7 @@ int opengl_shader_get_index(int flags)
 
 void opengl_shader_shutdown()
 {
-	uint i;
+	size_t i;
 
 	if ( !Use_GLSL ) {
 		return;

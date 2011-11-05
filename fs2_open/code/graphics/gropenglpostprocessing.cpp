@@ -443,9 +443,9 @@ void gr_opengl_post_process_end()
 
 void get_post_process_effect_names(SCP_vector<SCP_string> &names) 
 {
-	int idx;
+	size_t idx;
 
-	for (idx = 0; idx < (int)Post_effects.size(); idx++) {
+	for (idx = 0; idx < Post_effects.size(); idx++) {
 		names.push_back(Post_effects[idx].name);
 	}
 }
