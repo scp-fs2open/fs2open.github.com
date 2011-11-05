@@ -445,7 +445,7 @@ void shockwave_render(object *objp)
  */
 int shockwave_load(char *s_name, bool shock_3D)
 {
-	uint i;
+	size_t i;
 	int s_index = -1;
 	shockwave_info *si = NULL;
 
@@ -584,7 +584,7 @@ void shockwave_level_close()
 
 	shockwave_delete_all();
 	
-	uint i;
+	size_t i;
 
 	// unload default shockwave, and erase all others
 	for (i = 0; i < Shockwave_info.size(); i++) {
@@ -699,7 +699,7 @@ int shockwave_get_flags(int index)
 
 void shockwave_page_in()
 {
-	uint i;
+	size_t i;
 
 	// load in shockwaves
 	for (i = 0; i < Shockwave_info.size(); i++) {

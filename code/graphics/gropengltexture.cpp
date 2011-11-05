@@ -1467,9 +1467,9 @@ int opengl_check_framebuffer()
 
 static fbo_t *opengl_get_fbo(int width, int height)
 {
-	uint rt_size = RenderTarget.size();
+	size_t rt_size = RenderTarget.size();
 
-	for (uint i = 0; i < rt_size; i++) {
+	for (size_t i = 0; i < rt_size; i++) {
 		if ( (RenderTarget[i].width == width) && (RenderTarget[i].height == height) ) {
 			return &RenderTarget[i];
 		}
@@ -1491,7 +1491,7 @@ void opengl_kill_render_target(int slot)
 	}
 
 	tcache_slot_opengl *ts = &Textures[slot];
-	uint idx = 0;
+	size_t idx = 0;
 
 	for (idx = 0; idx < RenderTarget.size(); idx++) {
 		if ( (RenderTarget[idx].width == ts->w) && (RenderTarget[idx].height == ts->h) ) {
@@ -1527,7 +1527,7 @@ void opengl_kill_render_target(int slot)
 
 void opengl_kill_all_render_targets()
 {
-	for (uint i = 0; i < RenderTarget.size(); i++) {
+	for (size_t i = 0; i < RenderTarget.size(); i++) {
 		fbo_t *fbo = &RenderTarget[i];
 
 		if (fbo->framebuffer_id) {

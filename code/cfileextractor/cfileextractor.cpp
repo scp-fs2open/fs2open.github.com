@@ -261,7 +261,7 @@ void extract_all_files(char *file)
 
 	printf("Extracting: %s...\n", file);
 
-	for (uint i = 0; i < VP_FileInfo.size(); i++) {
+	for (size_t i = 0; i < VP_FileInfo.size(); i++) {
 		// save the file path to a temp location and recursively make the needed directories
 		if (have_outdir) {
 			if ( (out_len + 1 + strlen(path)) > MAX_PATH-1 )
@@ -365,7 +365,7 @@ void list_all_files(char *file)
 
 	printf("  Name                          Size     Offset      Date/Time         Path\n");
 	printf("-------------------------------------------------------------------------------\n");
-	for (uint i = 0; i < VP_FileInfo.size(); i++) {
+	for (size_t i = 0; i < VP_FileInfo.size(); i++) {
 		plat_time = VP_FileInfo[i].write_time;  // gets rid of some platform strangeness this way
 		strftime(out_time, 32, "%F %H:%M", localtime(&plat_time)); // YYYY-mm-dd HH:mm  (ISO 8601 date format, 24-hr time)
 
