@@ -662,7 +662,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	if (shader_flags & SDR_FLAG_SPEC_MAP) {
 		vglUniform1iARB( opengl_shader_get_uniform("sSpecmap"), render_pass );
 
-		if (Specmap_cache = SPECMAP) {
+		if (Specmap_cache != SPECMAP) {
 			gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
 			Specmap_cache = SPECMAP;
 		}
