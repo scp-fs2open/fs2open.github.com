@@ -46,7 +46,6 @@ typedef struct sound	{
 	int				duration;
 } sound;
 
-//sound	Sounds[MAX_SOUNDS];
 SCP_vector<sound> Sounds;
 
 int Sound_enabled = FALSE;				// global flag to turn sound on/off
