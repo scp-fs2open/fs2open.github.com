@@ -51,14 +51,14 @@ typedef struct game_snd
 	game_snd( )
 		: sig ( -1 ),
 		  default_volume( 0 ),
-		  min( 0 ),
-		  max( 0 ),
 		  preload( 0 ),
 		  id( -1 ),
 		  id_sig( -1 ),
 		  flags( 0 )
 	{
 		filename[0] = 0;
+		min = 0;
+		max = 0;
 	}
 } game_snd;
 
