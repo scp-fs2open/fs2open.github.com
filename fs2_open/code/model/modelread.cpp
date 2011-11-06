@@ -2305,13 +2305,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	if ( !model_initted )
 		model_init();
 
-//	int Model_ram = 0;
-
 #ifndef NDEBUG
 	int ram_before = TotalRam;
 #endif
-
-	//Assert(strlen(filename) <= 12);
 
 	num = -1;
 
@@ -2392,12 +2388,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	}
 #endif
 
-
-//mprintf(( "Loading model '%s'\n", filename ));
-//key_getch();
-
-//=============================
-// Find the destroyed replacement models
+	//=============================
+	// Find the destroyed replacement models
 
 	// Set up the default values
 	for (i=0; i<pm->n_models; i++ )	{
@@ -2414,7 +2406,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		strcat_s( destroyed_name, "-destroyed" );
 		for (j=0; j<pm->n_models; j++ )	{
 			if ( !stricmp( pm->submodel[j].name, destroyed_name ))	{
-				// mprintf(( "Found destroyed model for '%s'\n", pm->submodel[i].name ));
 				pm->submodel[i].my_replacement = j;
 				pm->submodel[j].i_replace = i;
 			}
@@ -2426,7 +2417,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 		strcpy_s( live_debris_name, "debris-" );
 		strcat_s( live_debris_name, pm->submodel[i].name );
-
 
 		pm->submodel[i].num_live_debris = 0;
 		for (j=0; j<pm->n_models; j++ ) {
@@ -2442,13 +2432,12 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	}
 
 	create_family_tree(pm);
-//	dump_object_tree(pm);
 
 	// maybe generate vertex buffers
 	create_vertex_buffer(pm);
 
-//==============================
-// Find all the lower detail versions of the hires model
+	//==============================
+	// Find all the lower detail versions of the hires model
 	for (i=0; i<pm->n_models; i++ )	{
 		int j, l1;
 		bsp_info * sm1 = &pm->submodel[i];
@@ -2536,7 +2525,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 		for (j=0; j<sm1->num_details; j++ )	{
 			if ( sm1->details[j] == -1 )	{
-			//	Warning( LOCATION, "Model '%s' could find all detail levels for submodel '%s'", pm->filename, sm1->name );
 				sm1->num_details = 0;
 			}
 		}
@@ -2561,7 +2549,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			d += 0.1f;		// Make the eye 1/10th of a meter inside the sphere.
 
 			if ( d > pm->core_radius )	{
-				//mprintf(( "Model %s core radius increased from %.1f to %.1f to fit eye\n", pm->filename, pm->core_radius, d ));
 				pm->core_radius = d;
 			}		
 		}
@@ -2572,7 +2559,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	pm->ram_used = ram_after - ram_before;
 	Model_ram += pm->ram_used;
-	//mprintf(( "Model RAM = %d KB\n", Model_ram ));
 #endif
 
 	// Goober5000 - originally done in ship_create for no apparent reason
