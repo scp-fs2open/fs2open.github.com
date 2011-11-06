@@ -12650,12 +12650,10 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 		return SEXP_FALSE;
 	}
 
-	int tempDelay = eval_num(CDR(n));
+	delay = i2f(eval_num(CDR(n)));
 
 	if (use_msecs) {
-		delay = i2f(tempDelay / 1000, tempDelay % 1000);
-	} else {
-		delay = i2f(tempDelay);
+		delay = delay / 1000l;
 	}
 
 	for (i = 0; i < Num_mission_events; i++ ) {

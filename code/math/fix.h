@@ -21,12 +21,7 @@ fix fixmul(fix a, fix b);
 fix fixdiv(fix a, fix b);
 fix fixmuldiv(fix a, fix b, fix c);
 
-static inline int f2i(const fix value) { return (value >> 16); }
-static inline fix i2f(const int value) { return (value << 16); }
-
-static inline fix i2f(const unsigned short value, const unsigned short fractionalPart)
-{
-	return i2f(value) + fractionalPart;
-}
+#define f2i(a) ((int)((a)>>16))
+#define i2f(a) ((fix)((a)<<16))
 
 #endif
