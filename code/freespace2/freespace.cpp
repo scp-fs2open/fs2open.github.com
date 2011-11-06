@@ -1035,7 +1035,6 @@ void game_level_init(int seed)
 	Missiontime = 0;
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
-	fireball_preload();				//	page in warphole bitmaps
 	observer_init();
 	flak_level_init();				// initialize flak - bitmaps, etc
 	ct_level_init();				// initialize ships contrails, etc

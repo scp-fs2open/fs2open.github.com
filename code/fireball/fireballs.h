@@ -77,7 +77,6 @@ typedef struct fireball {
 void fireball_init();
 void fireball_render(object * obj);
 void fireball_delete( object * obj );
-void fireball_process_pre(object * obj, float frame_time);
 void fireball_process_post(object * obj, float frame_time);
 
 // reversed is for warp_in/out effects
@@ -86,7 +85,6 @@ void fireball_process_post(object * obj, float frame_time);
 int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, int warp_open_sound=-1, int warp_close_sound=-1); 
 void fireball_render_plane(int plane);
 void fireball_close();
-void fireball_preload();		// page in warpout effect data
 
 // Returns 1 if you can remove this fireball
 int fireball_is_perishable(object * obj);
