@@ -347,6 +347,9 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Turret Max Aim Update Delay:"))
 				parse_float_list(profile->turret_max_aim_update_delay, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Player Autoaim FOV:"))
+				parse_float_list(profile->player_autoaim_fov, NUM_SKILL_LEVELS);
+
 			if (optional_string("$Detail Distance Multiplier:"))
 				parse_float_list(profile->detail_distance_mult, NUM_SKILL_LEVELS);
 
