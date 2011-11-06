@@ -1104,9 +1104,7 @@ void obj_move_all_pre(object *objp, float frametime)
 		}
 		break;
 	case OBJ_FIREBALL:
-		if (!physics_paused){
-			fireball_process_pre(objp,frametime);
-		}
+		// all fireballs are moved via fireball_process_post()
 		break;
 	case OBJ_SHOCKWAVE:
 		// all shockwaves are moved via shockwave_move_all()
@@ -1473,7 +1471,6 @@ extern int Cmdline_dis_weapons;
 void obj_render(object *obj)
 {
 	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
-//	if ( obj == Viewer_obj ) return;
 
 	MONITOR_INC( NumObjectsRend, 1 );	
 
@@ -1512,11 +1509,9 @@ void obj_render(object *obj)
 			break;*/
 		case OBJ_JUMP_NODE:
 			obj->jnp->render(&obj->pos, &Eye_position);
-	//		jumpnode_render(obj, &obj->pos, &Eye_position);
 			break;
 		case OBJ_WAYPOINT:
 			if (Show_waypoints)	{
-				//ship_render(obj);
 				gr_set_color( 128, 128, 128 );
 				g3_draw_sphere_ez( &obj->pos, 5.0f );
 			}
