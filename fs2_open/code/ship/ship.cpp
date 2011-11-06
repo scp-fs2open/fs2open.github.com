@@ -9846,7 +9846,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							matrix firing_orient;
 							if (!(sip->flags2 & SIF2_GUN_CONVERGENCE))
 							{
-								if ((sip->aiming_flags & AIM_FLAG_AUTOAIM) &&
+								bool player_has_autoaim = (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f);
+								float autoaim_fov = sip->autoaim_fov;
+								if (player_has_autoaim)
+									autoaim_fov = MAX(autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+
+								if ((sip->aiming_flags & AIM_FLAG_AUTOAIM || player_has_autoaim) &&
 									aip->target_objnum != -1)
 								{
 									// Fire weapon in target direction
@@ -9888,7 +9893,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 									}
 									
 									// setting to autoaim to converge on to the target.
-									if (sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE)
+									if (sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || player_has_autoaim)
 										vm_vec_sub(&firing_vec, &predicted_target_pos, &firing_pos);
 									else
 										vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
@@ -9898,7 +9903,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 									player_forward_vec = obj->orient.vec.fvec;
 									angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
 
-									if (angle_to_target < sip->autoaim_fov)
+									if (angle_to_target < autoaim_fov)
 									{
 										vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
 									}
