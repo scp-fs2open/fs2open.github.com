@@ -503,12 +503,6 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 
 extern bool Scene_framebuffer_in_frame;
 extern GLuint Framebuffer_fallback_texture_id;
-
-int Basemap_cache = -1;
-int Glowmap_cache = -1;
-int Specmap_cache = -1;
-int Normmap_cache = -1;
-
 static void opengl_render_pipeline_program(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
 {
 	float u_scale, v_scale;
@@ -636,36 +630,23 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	if (shader_flags & SDR_FLAG_DIFFUSE_MAP) {
 		vglUniform1iARB( opengl_shader_get_uniform("sBasemap"), render_pass );
 
-		if (Basemap_cache != gr_screen.current_bitmap) {
-			gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
-			Basemap_cache = gr_screen.current_bitmap;
-		}
-
+		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
+	
 		render_pass++; // bump!
-	} else {
-		Basemap_cache = -1;
 	}
 
 	if (shader_flags & SDR_FLAG_GLOW_MAP) {
 		vglUniform1iARB( opengl_shader_get_uniform("sGlowmap"), render_pass );
 
-		if (Glowmap_cache != GLOWMAP) {
-			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
-			Glowmap_cache = GLOWMAP;
-		}
+		gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
 		render_pass++; // bump!
-	} else {
-		Glowmap_cache = -1;
 	}
 
 	if (shader_flags & SDR_FLAG_SPEC_MAP) {
 		vglUniform1iARB( opengl_shader_get_uniform("sSpecmap"), render_pass );
 
-		if (Specmap_cache != SPECMAP) {
-			gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
-			Specmap_cache = SPECMAP;
-		}
+		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
 		render_pass++;
 
@@ -681,17 +662,12 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	
 			render_pass++;
 		}
-	} else {
-		Specmap_cache = -1;
 	}
 
 	if (shader_flags & SDR_FLAG_NORMAL_MAP) {
 		vglUniform1iARB( opengl_shader_get_uniform("sNormalmap"), render_pass );
 
-		if (Normmap_cache != NORMMAP) {
-			gr_opengl_tcache_set(NORMMAP, tmap_type, &u_scale, &v_scale, render_pass);
-			Normmap_cache = NORMMAP;
-		}
+		gr_opengl_tcache_set(NORMMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
 		render_pass++; // bump!
 
@@ -702,8 +678,6 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 
 			render_pass++;
 		}
-	} else {
-		Normmap_cache = -1;
 	}
 
 	if ((shader_flags & SDR_FLAG_ANIMATED))
