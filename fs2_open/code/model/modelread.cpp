@@ -1302,7 +1302,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				else
 					pm->submodel[n].collide_invisible = false;
 
-				if ( (p = strstr(props, "$gun_rotation:")) == NULL )
+				if ( (p = strstr(props, "$gun_rotation:")) != NULL )
 					pm->submodel[n].gun_rotation = true;
 				else
 					pm->submodel[n].gun_rotation = false;
