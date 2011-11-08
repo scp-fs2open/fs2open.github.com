@@ -882,8 +882,14 @@ $Max Aim Update Delay: 0, 0, 0, 0, 0									\n\
 ;; aim. Applies for turrets vs small ships								\n\
 $Turret Max Aim Update Delay: 0, 0, 0, 0, 0								\n\
 																		\n\
-;; The maximum amount of delay allowed before turret AI will update its	\n\
-;; aim. Applies for turrets vs small ships								\n\
+;; Size of the player autoaim cone for each difficulty level  			\n\
+;; Only affects the player. If the ship has autoaim, the wider FOV value\n\
+;; will be used. Uses convergence.										\n\
+$Player Autoaim FOV: 0, 0, 0, 0, 0										\n\
+																		\n\
+;; The multiplier that affects at what range LOD switching will occur.	\n\
+;; NOTE THAT THIS IS NOT BY DIFFICULTY LEVEL (it's by model detail level\n\
+;; in the Options menu)                                                 \n\
 $Detail Distance Multiplier: 0.125, 0.25, 1.0, 4.0, 8.0					\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\

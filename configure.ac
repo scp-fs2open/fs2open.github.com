@@ -179,8 +179,8 @@ if test "$fs2_debug" = "yes" ; then
 	fi
 else
 	AC_DEFINE([NDEBUG])
-	D_CFLAGS="$D_CFLAGS -g -Os -Wall -funroll-loops"
-	D_LDFLAGS="$D_LDFLAGS -g"
+	D_CFLAGS="$D_CFLAGS -O2 -Wall -funroll-loops"
+	D_LDFLAGS="$D_LDFLAGS "
 
 	if test "$fs2_fred" = "yes" ; then
 		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
