@@ -83,7 +83,6 @@ int Granted_ships[MAX_SHIP_CLASSES];
 int Granted_weapons[MAX_WEAPON_TYPES];
 
 // variables to control the UI stuff for loading campaigns
-//LOCAL int Campaign_ui_active = 0;
 LOCAL UI_WINDOW Campaign_window;
 LOCAL UI_LISTBOX Campaign_listbox;
 LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
@@ -96,7 +95,6 @@ campaign Campaign;
 // bumped to 14 by taylor for ship/weapon table handling
 // bumped to 15 by taylor to move stuff from pilot file
 #define CAMPAIGN_FILE_VERSION							15
-//#define CAMPAIGN_FILE_COMPATIBLE_VERSION		CAMPAIGN_INITIAL_RELEASE_FILE_VERSION
 #define CAMPAIGN_FILE_COMPATIBLE_VERSION				12  // 12 is the version of the original FS2
 #define CAMPAIGN_FILE_ID								0xbeefcafe
 
@@ -106,9 +104,11 @@ campaign Campaign;
 #define CAMPAIGN_STATS_FILE_COMPATIBLE_VERSION	1
 #define CAMPAIGN_STATS_FILE_ID						0xabbadaad
 
-// mission_campaign_get_name returns a string (which is malloced in this routine) of the name
-// of the given freespace campaign file.  In the type field, we return if the campaign is a single
-// player or multiplayer campaign.  The type field will only be valid if the name returned is non-NULL
+/**
+ * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
+ * In the type field, we return if the campaign is a single player or multiplayer campaign.  
+ * The type field will only be valid if the name returned is non-NULL
+ */
 int mission_campaign_get_info(char *filename, char *name, int *type, int *max_players, char **desc)
 {
 	int rval, i, success = 0;
@@ -186,9 +186,11 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 	return success;
 }
 
-// parses campaign and returns a list of missions in it.  Returns number of missions added to
-// the 'list', and up to 'max' missions may be added to 'list'.  Returns negative on error.
-//
+/**
+ * Parses campaign and returns a list of missions in it.  
+ * @return Number of missions added to the 'list', and up to 'max' missions may be added to 'list'.  
+ * @return Negative on error.
+ */
 int mission_campaign_get_mission_list(char *filename, char **list, int max)
 {
 	int rval, i, num = 0;
@@ -250,22 +252,6 @@ void mission_campaign_free_list()
 	Campaign_names_inited = 0;
 }
 
-void mission_campaign_maybe_add( char *filename, int multiplayer )
-{
-	Int3();
-
-/*	char name[NAME_LENGTH];
-	int type, max_players;
-
-	if ( mission_campaign_get_info( filename, name, &type, &max_players) ) {
-		if ( !multiplayer && ( type == CAMPAIGN_TYPE_SINGLE) ) {
-			Campaign_names[Num_campaigns] = vm_strdup(name);
-			Campaign_file_names[Num_campaigns] = vm_strdup(filename);
-			Num_campaigns++;
-		}
-	}*/
-}
-
 int mission_campaign_maybe_add(char *filename)
 {
 	char name[NAME_LENGTH];
@@ -291,10 +277,11 @@ int mission_campaign_maybe_add(char *filename)
 	return 0;
 }
 
-// mission_campaign_build_list() builds up the list of campaigns that the user might
-// be able to pick from.  It uses the multiplayer flag to tell if we should display a list
-// of single or multiplayer campaigns.  This routine sets the Num_campaigns and Campaign_names
-// global variables
+/**
+ * Builds up the list of campaigns that the user might be able to pick from.
+ * It uses the multiplayer flag to tell if we should display a list of single or multiplayer campaigns.
+ * This routine sets the Num_campaigns and Campaign_names global variables
+ */
 void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 {
 	char wild_card[10];
@@ -320,12 +307,10 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 	if (Get_file_list_filter == NULL)
 		Get_file_list_filter = mission_campaign_maybe_add;
 
-
 	// now get the list of all mission names
 	// NOTE: we don't do sorting here, but we assume CF_SORT_NAME, and do it manually below
 	rc = cf_get_file_list(MAX_CAMPAIGNS, Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
 	Assert( rc == Num_campaigns );
-
 
 	// now sort everything, if we are supposed to
 	if (sort) {
@@ -385,7 +370,9 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 }
 
 
-// gets optional ship/weapon information
+/**
+ * Gets optional ship/weapon information
+ */
 void mission_campaign_get_sw_info()
 {
 	int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
@@ -425,12 +412,14 @@ void mission_campaign_get_sw_info()
 	}
 }
 
-// mission_campaign_load starts a new campaign.  It reads in the mission information in the campaign file
-// It also sets up all variables needed inside of the game to deal with starting mission numbers, etc
-//
-// Note: Due to difficulties in generalizing this function, parts of it are duplicated throughout
-// this file.  If you change the format of the campaign file, you should be sure these related
-// functions work properly and update them if it breaks them.
+/**
+ * Starts a new campaign.  It reads in the mission information in the campaign file
+ * It also sets up all variables needed inside of the game to deal with starting mission numbers, etc
+ *
+ * Note: Due to difficulties in generalizing this function, parts of it are duplicated throughout
+ * this file.  If you change the format of the campaign file, you should be sure these related
+ * functions work properly and update them if it breaks them.
+ */
 int mission_campaign_load( char *filename, player *pl, int load_savefile )
 {
 	int len, rval, i;
@@ -687,9 +676,11 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	return 0;
 }
 
-// mission_campaign_load_by_name() loads up a freespace campaign given the filename.  This routine
-// is used to load up campaigns when a pilot file is loaded.  Generally, the
-// filename will probably be the freespace campaign file, but not necessarily.
+/**
+ * Loads up a freespace campaign given the filename.  
+ * This routine is used to load up campaigns when a pilot file is loaded.  
+ * Generally, the filename will probably be the freespace campaign file, but not necessarily.
+ */
 int mission_campaign_load_by_name( char *filename )
 {
 	char name[NAME_LENGTH],test[5];
@@ -729,7 +720,9 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
 }
 
 
-// mission_campaign_init initializes some variables then loads the default FreeSpace single player campaign.
+/**
+ * Initializes some variables then loads the default FreeSpace single player campaign.
+ */
 void mission_campaign_init()
 {
 	memset(&Campaign, 0, sizeof(Campaign) );
@@ -737,7 +730,9 @@ void mission_campaign_init()
 	Campaign_file_missing = 0;
 }
 
-// Fill in the root of the campaign save filename
+/**
+ * Fill in the root of the campaign save filename
+ */
 void mission_campaign_savefile_generate_root(char *filename, player *pl)
 {
 	char base[_MAX_FNAME];
@@ -760,9 +755,12 @@ void mission_campaign_savefile_generate_root(char *filename, player *pl)
 	sprintf( filename, NOX("%s.%s."), pl->callsign, base );
 }
 
-// mission_campaign_savefile_save saves the state of the campaign.  This function will probably always be called
-// then the player is done flying a mission in the campaign path.  It will save the missions played, the
-// state of the goals, etc.
+/** 
+ * Saves the state of the campaign.  This function will probably always be called
+ * then the player is done flying a mission in the campaign path.  
+ *
+ * It will save the missions played, the state of the goals, etc.
+ */
 int mission_campaign_savefile_save()
 {
 	char filename[_MAX_FNAME];
@@ -973,7 +971,6 @@ int mission_campaign_savefile_save()
 	cfwrite_int(total, fp);
 	for (i=0; i<total; i++){
 		cfwrite_ushort((ushort)pl->stats.kills[i], fp);
-	//	cfwrite_string_len(Ship_info[i].name, fp);
 	}
 
 	cfwrite_int(pl->stats.kill_count, fp);
@@ -997,7 +994,9 @@ int mission_campaign_savefile_save()
 }
 
 
-// The following function always only ever ever ever called by CSFE!!!!!
+/**
+ * The following function always only ever ever ever called by CSFE!!!!!
+ */
 int campaign_savefile_save(char *pname)
 {
 	if (Campaign.type == CAMPAIGN_TYPE_SINGLE)
@@ -1006,7 +1005,7 @@ int campaign_savefile_save(char *pname)
 		Game_mode |= GM_MULTIPLAYER;
 
 	strcpy_s(Player->callsign, pname);
-	//memcpy(&Campaign, camp, sizeof(campaign));
+	
 	return mission_campaign_savefile_save();
 }
 
@@ -1015,8 +1014,10 @@ int campaign_savefile_save(char *pname)
 // functions together.
 //
 
-// mission_campaign_savefile_delete deletes any save file in the players directory for the given
-// campaign filename
+/**
+ * Deletes any save file in the players directory for the given
+ * campaign filename
+ */
 void mission_campaign_savefile_delete( char *cfilename, int is_multi )
 {
 	char filename[_MAX_FNAME], base[_MAX_FNAME];
@@ -1032,7 +1033,9 @@ void mission_campaign_savefile_delete( char *cfilename, int is_multi )
 	cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
 }
 
-// same as mission_campaign_savefile_delete() except that it deletes old format .csg and .css
+/**
+ * Same as ::mission_campaign_savefile_delete() except that it deletes old format .csg and .css
+ */
 void mission_campaign_savefile_delete_old( char *cfilename)
 {
 	char filename[_MAX_FNAME], base[_MAX_FNAME];
@@ -1057,9 +1060,13 @@ void campaign_delete_save( char *cfn, char *pname)
 	mission_campaign_savefile_delete(cfn);
 }
 
-// next function deletes all the save files for this particular pilot.  Just call cfile function
-// which will delete multiple files
-// Player_select_mode tells us whether we are deleting single or multiplayer files
+/**
+ * Deletes all the save files for this particular pilot.  
+ * Just call cfile function which will delete multiple files
+ *
+ * @param pilot_name Name of pilot
+ * @param is_multi Whether we are deleting single or multiplayer files
+ */
 void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi )
 {
 	int dir_type, num_files, i;
@@ -1091,8 +1098,10 @@ void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi )
 	}
 }
 
-// mission_campaign_savefile_load takes a filename of a campaign file as a parameter and loads all
-// of the information stored in the campaign file.
+/**
+ * Takes a filename of a campaign file as a parameter and loads all
+ * of the information stored in the campaign file.
+ */
 int mission_campaign_savefile_load( char *cfilename, player *pl )
 {
 	char filename[_MAX_FNAME], base[_MAX_FNAME];
@@ -1131,9 +1140,6 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 	if (!Player_select_screen_active && !strcmp(cfilename, pl->current_campaign)) {
 		set_defaults = 0;
 	}
-
-	// probably only called from single player games anymore!!! should be anyway
-//	Assert( Game_mode & GM_NORMAL );		// get allender or DaveB.  trying to save campaign in multiplayer
 
 	// build up the filename for the save file.  There could be a problem with filename length,
 	// but this problem can get fixed in several ways -- ignore the problem for now though.
@@ -1193,11 +1199,6 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 	// we are reading data that really belongs to this campaign.  I think that this check
 	// is redundant.
 	cfread_string_len( filename, _MAX_FNAME, fp );
-	/*if ( stricmp( filename, cfilename) ) {	//	Used to be !stricmp.  How did this ever work? --MK, 11/9/97
-		Warning(LOCATION, "Campaign save file appears corrupt because of mismatching filenames.");
-		cfclose(fp);
-		return;
-	}*/
 
 	Campaign.prev_mission = cfread_int( fp );
 	Campaign.next_mission = cfread_int( fp );
@@ -1679,7 +1680,9 @@ Done:
 }
 
 
-// the following code only ever called by CSFE!!!!
+/**
+ * The following code only ever called by CSFE!!!!
+ */
 void campaign_savefile_load(char *fname, char *pname)
 {
 	if (Campaign.type==CAMPAIGN_TYPE_SINGLE) {
@@ -1692,10 +1695,11 @@ void campaign_savefile_load(char *fname, char *pname)
 	mission_campaign_savefile_load(fname);
 }
 
-// mission_campaign_next_mission sets up the internal veriables of the campaign
-// structure so the player can play the next mission.  If there are no more missions
-// available in the campaign, this function returns -1, else 0 if the mission was
-// set successfully
+/**
+ * Sets up the internal veriables of the campaign structure so the player can play the next mission.
+ * If there are no more missions available in the campaign, this function returns -1, else 0 if the mission was
+ * set successfully
+ */
 int mission_campaign_next_mission()
 {
 	if ( (Campaign.next_mission == -1) || (Campaign.name[0] == '\0')) // will be set to -1 when there is no next mission
@@ -1718,8 +1722,9 @@ int mission_campaign_next_mission()
 	return 0;
 }
 
-// mission_campaign_previous_mission() gets called to go to the previous mission in
-// the campaign.  Used only for Red Alert missions
+/**
+ * Called to go to the previous mission in the campaign.  Used only for Red Alert missions
+ */
 int mission_campaign_previous_mission()
 {
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
@@ -1744,159 +1749,9 @@ int mission_campaign_previous_mission()
 	return 1;
 }
 
-/*
-// determine what the next mission is after the current one.  Because this evaluates an sexp,
-// and that could check just about anything, the results are only going to be valid in
-// certain places.
-// DA 12/09/98 -- To allow for mission loops, need to maintain call with store stats
-int mission_campaign_eval_next_mission( int store_stats )
-{
-	char *name;
-	int cur, i, j;
-	cmission *mission;
-
-	Campaign.next_mission = -1;
-	cur = Campaign.current_mission;
-	name = Campaign.missions[cur].name;
-
-	mission = &Campaign.missions[cur];
-
-	// first we must save the status of the current missions goals in the campaign mission structure.
-	// After that, we can determine which mission is tagged as the next mission.  Finally, we
-	// can save the campaign save file
-	// we might have goal and event status if the player replayed a mission
-	if ( mission->num_goals > 0 ) {
-		vm_free( mission->goals );
-	}
-
-	mission->num_goals = Num_goals;
-	if ( mission->num_goals > 0 ) {
-		mission->goals = (mgoal *)vm_malloc( sizeof(mgoal) * Num_goals );
-		Assert( mission->goals != NULL );
-	}
-
-	// copy the needed info from the Mission_goal struct to our internal structure
-	for (i = 0; i < Num_goals; i++ ) {
-		if ( strlen(Mission_goals[i].name) == 0 ) {
-			char name[NAME_LENGTH];
-
-			sprintf(name, NOX("Goal #%d"), i);
-			//Warning(LOCATION, "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission->name, name);
-			strcpy_s( mission->goals[i].name, name);
-		} else
-			strcpy_s( mission->goals[i].name, Mission_goals[i].name );
-		Assert ( Mission_goals[i].satisfied != GOAL_INCOMPLETE );		// should be true or false at this point!!!
-		mission->goals[i].status = (char)Mission_goals[i].satisfied;
-	}
-
-	// do the same thing for events as we did for goals
-	// we might have goal and event status if the player replayed a mission
-	if ( mission->num_events > 0 ) {
-		vm_free( mission->events );
-	}
-
-	mission->num_events = Num_mission_events;
-	if ( mission->num_events > 0 ) {
-		mission->events = (mevent *)vm_malloc( sizeof(mevent) * Num_mission_events );
-		Assert( mission->events != NULL );
-	}
-
-	// copy the needed info from the Mission_goal struct to our internal structure
-	for (i = 0; i < Num_mission_events; i++ ) {
-		if ( strlen(Mission_events[i].name) == 0 ) {
-			char name[NAME_LENGTH];
-
-			sprintf(name, NOX("Event #%d"), i);
-			nprintf(("Warning", "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission->name, name));
-			strcpy_s( mission->events[i].name, name);
-		} else
-			strcpy_s( mission->events[i].name, Mission_events[i].name );
-
-		// getting status for the events is a little different.  If the formula value for the event entry
-		// is -1, then we know the value of the result field will never change.  If the formula is
-		// not -1 (i.e. still being evaluated at mission end time), we will write "incomplete" for the
-		// event evaluation
-		if ( Mission_events[i].formula == -1 ) {
-			if ( Mission_events[i].result )
-				mission->events[i].status = EVENT_SATISFIED;
-			else
-				mission->events[i].status = EVENT_FAILED;
-		} else
-			Int3();
-	}
-
-	// Goober5000 - handle campaign-persistent variables -------------------------------------
-	if (mission->num_saved_variables > 0) {
-		vm_free( mission->saved_variables );
-	}
-
-	mission->num_saved_variables = sexp_campaign_persistent_variable_count();
-	if ( mission->num_saved_variables > 0) {
-		mission->saved_variables = (sexp_variable *)vm_malloc( sizeof(sexp_variable) * mission->num_saved_variables);
-		Assert( mission->saved_variables != NULL );
-	}
-
-	// copy the needed variable info
-	j=0;
-	for (i = 0; i < sexp_variable_count(); i++) {
-		if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT)
-		{
-			mission->saved_variables[j].type = Sexp_variables[i].type;
-			strcpy_s(mission->saved_variables[j].text, Sexp_variables[i].text);
-			strcpy_s(mission->saved_variables[j].variable_name, Sexp_variables[i].variable_name);
-			j++;
-		}
-	}
-	// --------------------------------------------------------------------------
-
-	// maybe store the alltime stats which would be current at the end of this mission
-	if ( store_stats ) {
-		memcpy( &mission->stats, &Player->stats, sizeof(Player->stats) );
-		scoring_backout_accept( &mission->stats );
-	}
-
-	if ( store_stats ) {	// second (last) time through, so use choose loop_mission if chosen
-		if ( Campaign.loop_enabled ) {
-			Campaign.next_mission = Campaign.loop_mission;
-		} else {
-			// evaluate next mission (straight path)
-			if (Campaign.missions[cur].formula != -1) {
-				flush_sexp_tree(Campaign.missions[cur].formula);  // force formula to be re-evaluated
-				eval_sexp(Campaign.missions[cur].formula);  // this should reset Campaign.next_mission to proper value
-			}
-		}
-	} else {
-
-		// evaluate next mission (straight path)
-		if (Campaign.missions[cur].formula != -1) {
-			flush_sexp_tree(Campaign.missions[cur].formula);  // force formula to be re-evaluated
-			eval_sexp(Campaign.missions[cur].formula);  // this should reset Campaign.next_mission to proper value
-		}
-
-		// evaluate mission loop mission (if any) so it can be used if chosen
-		if ( Campaign.missions[cur].has_mission_loop ) {
-			int copy_next_mission = Campaign.next_mission;
-			// Set temporarily to -1 so we know if loop formula fails to assign
-			Campaign.next_mission = -1;  // Cannot exit campaign from loop
-			if (Campaign.missions[cur].mission_loop_formula != -1) {
-				flush_sexp_tree(Campaign.missions[cur].mission_loop_formula);  // force formula to be re-evaluated
-				eval_sexp(Campaign.missions[cur].mission_loop_formula);  // this should reset Campaign.next_mission to proper value
-			}
-
-			Campaign.loop_mission = Campaign.next_mission;
-			Campaign.next_mission = copy_next_mission;
-		}
-	}
-
-	if (Campaign.next_mission == -1)
-		nprintf(("allender", "No next mission to proceed to.\n"));
-	else
-		nprintf(("allender", "Next mission is number %d [%s]\n", Campaign.next_mission, Campaign.missions[Campaign.next_mission].name));
-
-	return Campaign.next_mission;
-} */
-
-// Evaluate next campaign mission - set as Campaign.next_mission.  Also set Campaign.loop_mission
+/**
+ * Evaluate next campaign mission - set as Campaign.next_mission.  Also set Campaign.loop_mission
+ */
 void mission_campaign_eval_next_mission()
 {
 	Campaign.next_mission = -1;
@@ -1930,8 +1785,9 @@ void mission_campaign_eval_next_mission()
 
 }
 
-// Store mission's goals and events in Campaign struct
-// Goober5000 - added variables
+/**
+ * Store mission's goals and events in Campaign struct
+ */
 void mission_campaign_store_goals_and_events_and_variables()
 {
 	char *name;
@@ -1964,7 +1820,6 @@ void mission_campaign_store_goals_and_events_and_variables()
 			char goal_name[NAME_LENGTH];
 
 			sprintf(goal_name, NOX("Goal #%d"), i);
-			//Warning(LOCATION, "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission->name, name);
 			strcpy_s( mission->goals[i].name, goal_name);
 		} else
 			strcpy_s( mission->goals[i].name, Mission_goals[i].name );
@@ -2035,9 +1890,11 @@ void mission_campaign_store_goals_and_events_and_variables()
 	// --------------------------------------------------------------------------
 }
 
-// this function is called when the player's mission is over.  It updates the internal store of goals
-// and their status then saves the state of the campaign in the campaign file.  This gets called
-// after player accepts mission results in debriefing.
+/**
+ * Called when the player's mission is over.  It updates the internal store of goals
+ * and their status then saves the state of the campaign in the campaign file.  
+ * This gets called after player accepts mission results in debriefing.
+ */
 void mission_campaign_mission_over(bool do_next_mission)
 {
 	int mission_num, i;
@@ -2065,10 +1922,6 @@ void mission_campaign_mission_over(bool do_next_mission)
 	// Goober5000 - player-persistent variables are handled when the mission is
 	// over, not necessarily when the mission is accepted
 	Player->failures_this_session = 0;
-
-	// DKA 12/11/98 - Unneeded already evaluated and stored
-	// determine what new mission we are moving to.
-	//	mission_campaign_eval_next_mission(1);
 
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
@@ -2131,7 +1984,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
 
-// called when the game closes -- to get rid of memory errors for Bounds checker
+/**
+ * Called when the game closes -- to get rid of memory errors for Bounds checker
+ */
 void mission_campaign_close()
 {
 	int i;
@@ -2198,13 +2053,15 @@ void mission_campaign_close()
 	Campaign.num_missions = 0;
 }
 
-// extract the mission filenames for a campaign.  
-//
-// filename	=>	name of campaign file
-//	dest		=> storage for the mission filename, must be already allocated
-// num		=> output parameter for the number of mission filenames in the campaign
-//
-// note that dest should allocate at least dest[MAX_CAMPAIGN_MISSIONS][NAME_LENGTH]
+/**
+ * Extract the mission filenames for a campaign.  
+ *
+ * @param filename	Name of campaign file
+ * @param dest		Storage for the mission filename, must be already allocated
+ * @param num		Output parameter for the number of mission filenames in the campaign
+ *
+ * note that dest should allocate at least dest[MAX_CAMPAIGN_MISSIONS][NAME_LENGTH]
+ */
 int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int *num)
 {
 	int	rval;
@@ -2236,8 +2093,10 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 	return 0;
 }
 
-// function to read the goals and events from a mission in a campaign file and store that information
-// in the campaign structure for use in the campaign editor, error checking, etc
+/**
+ * Read the goals and events from a mission in a campaign file and store that information
+ * in the campaign structure for use in the campaign editor, error checking, etc
+ */
 void read_mission_goal_list(int num)
 {
 	char *filename, notes[NOTES_LENGTH], goals[MAX_GOALS][NAME_LENGTH];
@@ -2355,10 +2214,15 @@ void read_mission_goal_list(int num)
 	lcl_ext_close();
 }
 
-// function to return index into Campaign's list of missions of the mission with the given
-// filename.  This function tried to be a little smart about filename looking for the .fsm
-// extension since filenames are stored with the extension in the campaign file.  Returns
-// index of mission in campaign structure.  -1 if mission name not found.
+/**
+ * Return index into Campaign's list of missions of the mission with the given
+ * filename.  
+ *
+ * This function tried to be a little smart about filename looking for the .fsm
+ * extension since filenames are stored with the extension in the campaign file.
+ *
+ * @return index of mission in campaign structure.  -1 if mission name not found.
+ */
 int mission_campaign_find_mission( char *name )
 {
 	int i;
@@ -2418,7 +2282,9 @@ void mission_campaign_maybe_play_movie(int type)
 	cutscene_mark_viewable( filename );
 }
 
-// return the type of campaign of the passed filename
+/**
+ * Return the type of campaign of the passed filename
+ */
 int mission_campaign_parse_is_multi(char *filename, char *name)
 {	
 	int i, rval;
@@ -2450,8 +2316,10 @@ int mission_campaign_parse_is_multi(char *filename, char *name)
 	return -1;
 }
 
-// functions to save persistent information during a mission -- which then might or might not get
-// saved out when the mission is over depending on whether player replays mission or commits.
+/** 
+ * Save persistent information during a mission -- which then might or might not get
+ * saved out when the mission is over depending on whether player replays mission or commits.
+ */
 void mission_campaign_save_persistent( int type, int sindex )
 {
 	// based on the type of information, save it off for possible saving into the campsign
@@ -2494,9 +2362,10 @@ int mission_load_up_campaign( player *pl )
 	}
 }
 
-// for end of campaign in the single player game.  Called when the end of campaign state is
-// entered, which is triggered when the end-campaign sexpression is hit
-
+/**
+ * For end of campaign in the single player game.  Called when the end of campaign state is
+ * entered, which is triggered when the end-campaign sexpression is hit
+ */
 void mission_campaign_end_init()
 {
 	// no need to do any initialization.
@@ -2530,12 +2399,14 @@ void mission_campaign_end_do()
 
 void mission_campaign_end_close()
 {
-	// nothing to do here.
+	// no need to do any initialization.
 }
 
 
-// skip to the next mission in the campaign
-// this also posts the state change by default.  pass 0 to override that
+/**
+ * Skip to the next mission in the campaign
+ * this also posts the state change by default.  pass 0 to override that
+ */
 void mission_campaign_skip_to_next(int start_game)
 {
 	// mark all goals/events complete
@@ -2577,9 +2448,10 @@ void mission_campaign_skip_to_next(int start_game)
 	}
 }
 
-
-// breaks your ass out of the loop
-// this also posts the state change
+/**
+ * Breaks your ass out of the loop
+ * this also posts the state change
+ */
 void mission_campaign_exit_loop()
 {
 	// set campaign to loop reentry point
@@ -2593,9 +2465,11 @@ void mission_campaign_exit_loop()
 }
 
 
-// used for jumping to a particular campaign mission
-// all pvs missions marked skipped
-// this relies on correct mission ordering in the campaign file
+/**
+ * Used for jumping to a particular campaign mission
+ * all previous missions marked skipped
+ * this relies on correct mission ordering in the campaign file
+ */
 void mission_campaign_jump_to_mission(char *name)
 {
 	int i = 0, mission_num = -1;
