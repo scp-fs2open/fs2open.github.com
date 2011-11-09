@@ -72,7 +72,6 @@ void opengl_set_additive_tex_env();
 void opengl_set_modulate_tex_env();
 void opengl_preload_init();
 GLfloat opengl_get_max_anisotropy();
-//void opengl_set_anisotropy(GLfloat aniso_value = GL_anisotropy);
 void opengl_kill_render_target(int slot);
 int opengl_make_render_target(int handle, int slot, int *w, int *h, ubyte *bpp, int *mm_lvl, int flags);
 int opengl_set_render_target(int slot, int face = -1, int is_static = 0);
