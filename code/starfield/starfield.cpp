@@ -1388,7 +1388,7 @@ void subspace_render()
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
-	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT; // | MR_ALWAYS_REDRAW;
+	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT;
 
 	Interp_subspace = 1;
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
