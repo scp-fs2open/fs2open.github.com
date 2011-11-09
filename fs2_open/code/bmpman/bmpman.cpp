@@ -2557,9 +2557,6 @@ int bm_get_tcache_type(int num)
 	if ( bm_is_compressed(num) )
 		return TCACHE_TYPE_COMPRESSED;
 
-//	if ( bm_is_render_target(num) )
-//		return TCACHE_TYPE_RENDER_TARGET;
-
 	return TCACHE_TYPE_NORMAL;
 }
 
