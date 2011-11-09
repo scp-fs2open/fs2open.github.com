@@ -20,6 +20,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <limits.h>
+#include <stdint.h>
 
 #include "parse/parselo.h"
 #include "parse/sexp.h"
