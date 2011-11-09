@@ -12720,6 +12720,18 @@ void ship_close()
 
 	// free info from parsed table data
 	for (i=0; i<MAX_SHIP_CLASSES; i++) {
+		if ( Ship_info[i].subsystems != NULL ) {
+			for(n = 0; n < Ship_info[i].n_subsystems; n++) {
+				if (Ship_info[i].subsystems[n].triggers != NULL) {
+					vm_free(Ship_info[i].subsystems[n].triggers);
+					Ship_info[i].subsystems[n].triggers = NULL;
+				}
+			}
+			
+			vm_free(Ship_info[i].subsystems);
+			Ship_info[i].subsystems = NULL;
+		}
+		
 		if(Ship_info[i].type_str != NULL){
 			vm_free(Ship_info[i].type_str);
 			Ship_info[i].type_str = NULL;
