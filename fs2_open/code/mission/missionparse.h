@@ -384,7 +384,6 @@ typedef struct p_object {
 	int	arrival_cue;						//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay;
 
-
 	int	departure_location;
 	int	departure_anchor;
 	int departure_path_mask;				// Goober5000
@@ -648,7 +647,6 @@ typedef struct {
 #define TOKEN_LENGTH	32
 
 extern team_data Team_data[MAX_TVT_TEAMS];
-//extern subsys_status Subsys_status[MAX_SUBSYS_STATUS]; // it's dynamic now - taylor
 extern subsys_status *Subsys_status;
 extern int Subsys_index;
 
