@@ -3367,7 +3367,7 @@ void update_loadout_totals(team_data *current_team, int loadout_index)
  */
 bool is_ship_assignable(p_object *p_objp)
 {
-	int loadout_index = -1, i;
+	int loadout_index = -1;
 
 	team_data *data_for_team = &Team_data[p_objp->team];
 
@@ -3384,14 +3384,14 @@ bool is_ship_assignable(p_object *p_objp)
 	}
 
 	// Now we check the alt_classes (if there are any)
-	for (i = 0; i < (int)p_objp->alt_classes.size(); i++) {
+	for (SCP_vector<alt_class>::iterator pac = p_objp->alt_classes.begin(); pac != p_objp->alt_classes.end(); ++pac) {
 		// we don't check availability unless we are asked to
-		if (p_objp->alt_classes[i].default_to_this_class == false) {
-			loadout_index = p_objp->alt_classes[i].ship_class;
+		if (pac->default_to_this_class == false) {
+			loadout_index = pac->ship_class;
 			break;
 		}
 		else {
-			loadout_index = get_reassigned_index(data_for_team, p_objp->alt_classes[i].ship_class);
+			loadout_index = get_reassigned_index(data_for_team, pac->ship_class);
 			if (loadout_index != -1 ) {
 				update_loadout_totals(data_for_team, loadout_index);
 				break;
@@ -3417,10 +3417,10 @@ bool is_ship_assignable(p_object *p_objp)
  */
 void process_loadout_objects() 
 {	
-	SCP_vector<int> reassignments;
+	SCP_vector<size_t> reassignments;
 	
 	// Loop through all the Parse_objects looking for ships that should be affected by the loadout code.
-	for (int i=0; i < (int)Parse_objects.size(); i++)
+	for (size_t i=0; i < Parse_objects.size(); i++)
 	{
 		p_object *p_objp = &Parse_objects[i];
 		if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
@@ -3435,7 +3435,7 @@ void process_loadout_objects()
 		
 	// Now we go though the ships we were unable to assign earlier and reassign them on a first come first 
 	// served basis.
-	for (int m=0; m < (int)reassignments.size(); m++)
+	for (size_t m=0; m < reassignments.size(); m++)
 	{
 		p_object *p_objp = &Parse_objects[reassignments[m]];
 		team_data *current_team = &Team_data[p_objp->team];
@@ -5651,7 +5651,7 @@ void mission_parse_close()
 	}
 
 	// free parse object dock lists
-	for (int i = 0; i < (int)Parse_objects.size(); i++)
+	for (size_t i = 0; i < Parse_objects.size(); i++)
 	{
 		dock_free_instances(&Parse_objects[i]);
 	}
@@ -5833,7 +5833,7 @@ void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_inf
 void parse_object_clear_all_handled_flags()
 {
 	// clear flag for all ships
-	for (int i = 0; i < (int)Parse_objects.size(); i++)
+	for (size_t i = 0; i < Parse_objects.size(); i++)
 	{
 		p_object *pobjp = &Parse_objects[i];
 		p_dock_function_info dfi;
