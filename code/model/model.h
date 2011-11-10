@@ -94,7 +94,6 @@ typedef struct polymodel_instance {
 	int model_num;
 	int root_submodel_num;
 	submodel_instance *submodel;
-	//float gun_submodel_rotation;
 } polymodel_instance;
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
@@ -147,14 +146,6 @@ typedef struct stepped_rotation {
 	float max_turn_accel;	// max accel going between steps
 } stepped_rotation_t;
 
-/*typedef struct ai_rotation {
-//	void *p_rotation;
-	uint type;			//flags for what animation type
-	float max;
-	float min;
-	int time;
-} ai_rotation_t;*/
-
 struct queued_animation;
 
 // definition for model subsystems.
@@ -204,7 +195,6 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	float		turn_rate;							// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
 	stepped_rotation_t	*stepped_rotation;			// turn rotation struct
-//	ai_rotation_t		ai_rotation;				// ai controlled rotation struct - by Bobboau
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
@@ -311,9 +301,6 @@ typedef struct bsp_info {
 	
 	// buffers used by HT&L
 	vertex_buffer buffer;
-	
-//	int flat_buffer;
-//	int flat_line_buffer;
 
 	vec3d	render_box_min;
 	vec3d	render_box_max;
@@ -779,10 +766,6 @@ void model_set_detail_level(int n);
 #define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
 #define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
 #define MR_ANIMATED_SHADER			(1<<30)		// Use a animated Shader - Valathil
-
-// old/obsolete flags
-//#define MR_SHOW_DAMAGE			(1<<4)		// Show the "destroyed" subobjects
-//#define MR_ALWAYS_REDRAW			(1<<13)		// Don't do any model caching; redraw this model each frame!
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags

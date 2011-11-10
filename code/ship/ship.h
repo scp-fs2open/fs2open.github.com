@@ -301,9 +301,6 @@ typedef	struct ship_subsys {
 	//or higher, an index into the turret weapons is considered to be an index into the secondary weapons
 	//for much of the code. See turret_next_weap_fire_stamp.
 
-	//Note that turret_next_weap_fire_stamp is officially a hack, because turrets use all this crap
-	//ideally, they should make use of the ship_weapon structure below
-	//int		turret_next_weap_fire_stamp[MAX_SHIP_WEAPONS];	//Fire stamps for all weapons on this turret
 	int		turret_best_weapon;				// best weapon for current target; index into prim/secondary banks
 	vec3d	turret_last_fire_direction;		//	direction pointing last time this turret fired
 	int		turret_next_enemy_check_stamp;	//	time at which to next look for a new enemy.
@@ -398,7 +395,6 @@ typedef struct ship_subsys_info {
 #define	SF_NO_ARRIVAL_WARP		(1 << 4)		// no arrival warp in effect
 #define	SF_NO_DEPARTURE_WARP		(1 << 5)		// no departure warp in effect
 #define	SF_LOCKED					(1 << 6)		// can't manipulate ship in loadout screens
-//#define	SF_INVULNERABLE			(1 << 7)
 
 // high bits are for internal flags not saved to mission files
 // Go from bit 31 down to bit 3
@@ -524,19 +520,7 @@ typedef struct ship {
 
 	WarpEffect *warpin_effect;
 	WarpEffect *warpout_effect;
-/*
-	int start_warp_time;
-	int	final_warp_time;	// pops when ship is completely warped out or warped in.  Used for both warp in and out.
-	int warp_anim;
-	int warp_anim_nframes;
-	int warp_anim_fps;
-	vec3d	warp_effect_pos;		// where the warp in effect comes in at
-	vec3d	warp_effect_fvec;		// The warp in effect's forward vector
-	float warp_radius;
-	int warp_stage;			//WMC - stage for warp, used by WT_SWEEPER
-	float warp_width;
-	float warp_height;
-*/
+
 	int	next_fireball;
 
 	int	next_hit_spark;
@@ -622,9 +606,6 @@ typedef struct ship {
 	float		wash_intensity;
 	vec3d	wash_rot_axis;
 	int		wash_timestamp;
-
-	// store blast information about shockwaves that hit the ship
-//	ship_shockwave	sw;
 
 	int	num_swarm_missiles_to_fire;	// number of swarm missiles that need to be launched
 	int	next_swarm_fire;					// timestamp of next swarm missile to fire
@@ -715,9 +696,6 @@ typedef struct ship {
 	// that had this same functionality
 	int current_viewpoint;
 
-	//WMC - this one
-	//camid ship_camera;
-
 	trail *ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
@@ -749,12 +727,6 @@ typedef struct ship {
 
 	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
 	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
-/*
-	flash_ball	*debris_flare;
-	int n_debris_flare;
-	float flare_life;
-	int flare_bm;
-	*/
 
 	SCP_vector<alt_class> s_alt_classes;	
 
