@@ -20,7 +20,11 @@
 #include <ctype.h>
 #include <assert.h>
 #include <limits.h>
-#include <stdint.h>
+#ifdef _MSC_VER
+	#include "globalincs/stdint.h"
+#else
+	#include <stdint.h>
+#endif
 
 #include "parse/parselo.h"
 #include "parse/sexp.h"
