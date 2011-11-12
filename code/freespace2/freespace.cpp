@@ -5393,10 +5393,12 @@ void game_process_event( int current_state, int event )
 				mprintf(( "Hit target speed.  Starting warp effect and moving to stage 2!\n" ));
 				shipfx_warpout_start( Player_obj );
 				Player->control_mode = PCM_WARPOUT_STAGE2;
-				Player->saved_viewer_mode = Viewer_mode;
-				Viewer_mode |= VM_WARP_CHASE;
-				
-				Warp_camera = warp_camera(Player_obj);
+
+				if (!(The_mission.ai_profile->flags2 & AIPF2_NO_WARP_CAMERA)) {
+					Player->saved_viewer_mode = Viewer_mode;
+					Viewer_mode |= VM_WARP_CHASE;
+					Warp_camera = warp_camera(Player_obj);
+				}
 			}
 			break;
 
