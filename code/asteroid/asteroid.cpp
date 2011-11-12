@@ -1191,15 +1191,20 @@ void asc_get_relvec(vec3d *relvec, object *other_obj, vec3d *hitpos)
 float asteroid_get_fireball_scale_multiplier(int num)
 {
 	if (Asteroids[num].flags & AF_USED) {
+		asteroid_info *asip = &Asteroid_info[Asteroids[num].asteroid_type];
+		
+		if (asip->fireball_radius_multiplier >= 0) {
+			return asip->fireball_radius_multiplier;
+		} else {
+			switch(Asteroids[num].asteroid_type) {
+			case ASTEROID_TYPE_LARGE:
+				return 1.5f;
+				break;
 
-		switch(Asteroids[num].asteroid_type) {
-		case ASTEROID_TYPE_LARGE:
-			return 1.5f;
-			break;
-
-		default:
-			return 1.0f;
-			break;
+			default:
+				return 1.0f;
+				break;
+			}
 		}
 	}
 
@@ -1216,10 +1221,22 @@ float asteroid_create_explosion(object *objp)
 {
 	int	fireball_objnum;
 	float	explosion_life, fireball_scale_multiplier;
+	asteroid_info *asip = &Asteroid_info[Asteroids[objp->instance].asteroid_type];
+
+	int fireball_type = fireball_asteroid_explosion_type(asip);
+	if (fireball_type < 0) {
+		fireball_type = FIREBALL_ASTEROID;
+	}
+
+	if (fireball_type >= Num_fireball_types) {
+		Warning(LOCATION, "Invalid fireball type %i specified for an asteroid, only %i fireball types are defined.", fireball_type, Num_fireball_types);
+
+		return 0;
+	}
 
 	fireball_scale_multiplier = asteroid_get_fireball_scale_multiplier(objp->instance);
 
-	fireball_objnum = fireball_create( &objp->pos, FIREBALL_ASTEROID, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), objp->radius*fireball_scale_multiplier, 0, &objp->phys_info.vel );
+	fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), objp->radius*fireball_scale_multiplier, 0, &objp->phys_info.vel );
 	if ( fireball_objnum > -1 )	{
 		explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
 	} else {
@@ -1793,6 +1810,16 @@ void asteroid_parse_section(asteroid_info *asip)
 		asip->damage_type_idx_sav = damage_type_add(buf);
 		asip->damage_type_idx = asip->damage_type_idx_sav;
 	}
+	
+	if(optional_string("$Explosion Animations:")){
+		int temp[MAX_FIREBALL_TYPES];
+		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
+		asip->explosion_bitmap_anims.clear();
+		asip->explosion_bitmap_anims.insert(asip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
+	}
+
+	if(optional_string("$Explosion Radius Mult:"))
+		stuff_float(&asip->fireball_radius_multiplier);
 
 	required_string("$Expl inner rad:");
 	stuff_float(&asip->inner_rad);
