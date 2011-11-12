@@ -433,3 +433,16 @@ int gameseq_get_state_idx(char *s)
 
 	return -1;
 }
+
+// If the given state exists in the stack then return the index, -1 if not
+int gameseq_get_state_idx(int state)
+{
+	for(int i = 0; i <= gs_current_stack; i++)
+	{
+		if (gs[i].current_state == state) {
+			return i;
+		}
+	}
+
+	return -1;
+}
