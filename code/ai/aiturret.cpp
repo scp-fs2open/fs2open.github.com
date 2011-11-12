@@ -1707,7 +1707,11 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		// now do anything else
 		else {
 			for (int i=0; i < wip->shots; i++)
-			{		
+			{
+				// zookeeper - Firepoints should cycle normally between shots, 
+				// so we need to get the position info separately for each shot
+				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, turret_fvec, 1, NULL);
+
 				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
 			
@@ -1762,6 +1766,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 					}
 				}
+
+				turret->turret_next_fire_pos++;
 			}
 
 			// reset any animations if we need to
@@ -2396,8 +2402,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					turret_set_next_fire_timestamp(valid_weapons[0], wip, ss, parent_aip);
 				}
 			}
-			// moved this here so we increment the fire pos only after we have fired and not during it
-			ss->turret_next_fire_pos++;
 		}
 
 		if(!something_was_ok_to_fire)
