@@ -20,6 +20,7 @@
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
 #include "globalincs/pstypes.h"
+#include "asteroid/asteroid.h"
 
 #include <stdlib.h>
 
@@ -1004,6 +1005,23 @@ int fireball_ship_explosion_type(ship_info *sip)
 		index = sip->explosion_bitmap_anims[rand()%ship_fireballs];
 	} else if(objecttype_fireballs > 0){
 		index = Ship_types[sip->class_type].explosion_bitmap_anims[rand()%objecttype_fireballs];
+	}
+
+	return index;
+}
+
+int fireball_asteroid_explosion_type(asteroid_info *aip)
+{
+	Assert( aip != NULL );
+
+	if (aip->explosion_bitmap_anims.empty())
+		return -1;
+
+	int index = -1;
+	int roid_fireballs = (int)aip->explosion_bitmap_anims.size();
+
+	if (roid_fireballs > 0) {
+		index = aip->explosion_bitmap_anims[rand()%roid_fireballs];
 	}
 
 	return index;

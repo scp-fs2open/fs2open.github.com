@@ -68,10 +68,13 @@ typedef struct asteroid_info {
 	SCP_vector< asteroid_split_info > split_info;
 	polymodel	*modelp[NUM_DEBRIS_POFS];
 	int			model_num[NUM_DEBRIS_POFS];
+	SCP_vector<int> explosion_bitmap_anims;
+	float		fireball_radius_multiplier;					// the model radius is multiplied by this to determine the fireball size
 	asteroid_info( )
 		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( 0 ),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
-		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 )
+		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 ),
+		  fireball_radius_multiplier( -1 )
 	{ 
 		name[ 0 ] = NULL;
 		memset( pof_files, 0, sizeof( pof_files ) );
