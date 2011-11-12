@@ -1433,8 +1433,10 @@ int asteroid_count()
 void asteroid_maybe_break_up(object *asteroid_obj)
 {
 	asteroid *asp;
+	asteroid_info *asip;
 
 	asp = &Asteroids[asteroid_obj->instance];
+	asip = &Asteroid_info[asp->asteroid_type];
 
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
@@ -1446,10 +1448,9 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 
 			// multiplayer clients won't go through the following code.  asteroid_sub_create will send
 			// a create packet to the client in the above named function
-			if ( !MULTIPLAYER_CLIENT ) {
-				// if this isn't true it's just debris, and debris doesn't break up
-				if (asp->asteroid_type <= ASTEROID_TYPE_LARGE)
-				{
+			// if the second condition isn't true it's just debris, and debris doesn't break up
+			if ( !MULTIPLAYER_CLIENT && (asp->asteroid_type <= ASTEROID_TYPE_LARGE)) {
+				if (asip->split_info.empty()) {
 					switch (asp->asteroid_type) {
 						case ASTEROID_TYPE_SMALL:
 							break;
@@ -1482,6 +1483,61 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 
 						default: // this isn't going to happen.. really
 							break;
+					}
+				} else {
+					SCP_vector<int> roids_to_create;
+					SCP_vector<asteroid_split_info>::iterator split;
+					for (split = asip->split_info.begin(); split != asip->split_info.end(); ++split) {
+						int num_roids = split->min;
+						int num_roids_var = split->max - split->min;
+
+						if (num_roids_var > 0)
+							num_roids += rand() % num_roids_var;
+
+						if (num_roids > 0)
+							for (int i=0; i<num_roids; i++)
+								roids_to_create.push_back(split->asteroid_type);
+					}
+
+					random_shuffle(roids_to_create.begin(), roids_to_create.end());
+
+					int total_roids = roids_to_create.size();
+					for (int i = 0; i < total_roids; i++) {
+						vec3d dir_vec,final_vec;
+						vec3d parent_vel,hit_rel_vec;
+
+						// The roid directions are picked from the so-called
+						// "golden section spiral" to prevent them from
+						// clustering and thus clipping
+
+						float inc = PI * (3.0f - sqrt(5.0f));
+						float offset = 2.0f / total_roids;
+
+						float y = i * offset - 1 + (offset / 2);
+						float r = sqrt(1.0f - y*y);
+						float phi = i * inc;
+
+						dir_vec.xyz.x = cos(phi)*r;
+						dir_vec.xyz.y = sin(phi)*r;
+						dir_vec.xyz.z = y;
+
+						// Randomize the direction a bit
+						vec3d tempv = dir_vec;
+						vm_vec_random_cone(&dir_vec, &tempv, (360.0f / total_roids / 2));
+
+						// Make the roid inherit half of the parent's velocity
+						vm_vec_copy_normalize(&parent_vel, &asteroid_obj->phys_info.vel);
+						vm_vec_scale(&parent_vel, 0.5f);
+
+						// Make the hit position affect the direction, but only a little
+						vm_vec_sub(&hit_rel_vec, &asteroid_obj->pos, &asp->death_hit_pos);
+						vm_vec_normalize(&hit_rel_vec);
+						vm_vec_scale(&hit_rel_vec, 0.25f);
+
+						vm_vec_avg3(&final_vec, &parent_vel, &hit_rel_vec, &dir_vec);
+						vm_vec_normalize(&final_vec);
+
+						asteroid_sub_create(asteroid_obj, roids_to_create[i], &final_vec);
 					}
 				}
 			}
@@ -1752,6 +1808,31 @@ void asteroid_parse_section(asteroid_info *asip)
 
 	required_string("$Hitpoints:");
 	stuff_float(&asip->initial_asteroid_strength);
+
+	while(optional_string("$Split:")) {
+		int split_type;
+
+		stuff_int(&split_type);
+
+		if (split_type>=0 && split_type<NUM_DEBRIS_SIZES) {
+			asteroid_split_info new_split;
+
+			new_split.asteroid_type = split_type;
+
+			if(optional_string("+Min:"))
+				stuff_int(&new_split.min);
+			else
+				new_split.min = 0;
+
+			if(optional_string("+Max:"))
+				stuff_int(&new_split.max);
+			else
+				new_split.max = 0;
+
+			asip->split_info.push_back( new_split );
+		} else
+			Warning(LOCATION, "Invalid asteroid reference %i used for $Split in asteroids table, ignoring.", split_type);
+	}
 }
 
 /**
