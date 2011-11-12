@@ -38,6 +38,7 @@
 #include "parse/scripting.h"
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
+#include "model/model.h"
 
 
 
@@ -2697,7 +2698,6 @@ void engine_wash_ship_process(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	ship_obj *so;
 
-	vec3d world_thruster_pos, world_thruster_norm, apex, thruster_to_ship, apex_to_ship, temp;
 	float dist_sqr, inset_depth, dot_to_ship, max_ship_intensity;
 	polymodel *pm;
 
@@ -2766,6 +2766,8 @@ void engine_wash_ship_process(ship *shipp)
 
 		for (idx = 0; idx < pm->n_thrusters; idx++) {
 			thruster_bank *bank = &pm->thrusters[idx];
+			vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
+			bool submodel_rotation = false;
 
 			// make sure this engine is functional before we try to process a wash from it
 			if ( !model_should_render_engine_glow(OBJ_INDEX(wash_objp), bank->obj_num) ) {
@@ -2787,13 +2789,38 @@ void engine_wash_ship_process(ship *shipp)
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 
+
+			// If bank is attached to a submodel, prepare to account for rotations
+			//
+			// TODO: This won't work in the ship lab, because the lab code doesn't
+			// set the the necessary submodel instance info needed here. The second
+			// condition is thus a hack to disable the feature while in the lab, and
+			// can be removed if the lab is re-structured accordingly. -zookeeper
+			if ( bank->submodel_num > -1 && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+				model_find_submodel_offset(&submodel_static_offset, wash_sip->model_num, bank->submodel_num);
+
+				submodel_rotation = true;
+			}
+
 			for (j=0; j<bank->num_points; j++) {
+				vec3d world_thruster_pos, world_thruster_norm, apex, thruster_to_ship, apex_to_ship, temp;
+				vec3d loc_pos = bank->points[j].pnt;
+				vec3d loc_norm = bank->points[j].norm;
+
+				if ( submodel_rotation ) {
+					vm_vec_sub(&loc_pos, &bank->points[j].pnt, &submodel_static_offset);
+
+					// Gets the final offset and normal in the ship's frame of reference
+					temp = loc_pos;
+					find_submodel_instance_point_normal(&loc_pos, &loc_norm, wash_objp, bank->submodel_num, &temp, &loc_norm);
+				}
+
 				// get world pos of thruster
-				vm_vec_unrotate(&world_thruster_pos, &bank->points[j].pnt, &wash_objp->orient);
+				vm_vec_unrotate(&world_thruster_pos, &loc_pos, &wash_objp->orient);
 				vm_vec_add2(&world_thruster_pos, &wash_objp->pos);
 				
 				// get world norm of thruster;
-				vm_vec_unrotate(&world_thruster_norm, &bank->points[j].norm, &wash_objp->orient);
+				vm_vec_unrotate(&world_thruster_norm, &loc_norm, &wash_objp->orient);
 
 				// get vector from thruster to ship
 				vm_vec_sub(&thruster_to_ship, &objp->pos, &world_thruster_pos);

@@ -193,4 +193,7 @@ bool GameState_Stack_Valid();
 int gameseq_get_event_idx(char *s);
 int gameseq_get_state_idx(char *s);
 
+//zookeeper
+int gameseq_get_state_idx(int state);
+
 #endif /* __GAMESEQUENCE_H__ */

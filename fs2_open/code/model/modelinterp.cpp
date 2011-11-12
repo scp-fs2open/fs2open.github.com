@@ -32,6 +32,7 @@
 #include "parse/parselo.h"
 #include "graphics/gropengllight.h"
 #include "ship/shipfx.h"
+#include "gamesequence/gamesequence.h"
 
 #include <limits.h>
 
@@ -2139,8 +2140,9 @@ extern bool Scene_framebuffer_in_frame;
  */
 void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)
 {
-	int i, j, k;
+	int i, j;
 	int n_q = 0;
+	size_t 	k;
 	vec3d norm, norm2, fvec, pnt, npnt;
 	thruster_bank *bank = NULL;
 	vertex p;
@@ -2198,11 +2200,26 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 	for (i = 0; i < pm->n_thrusters; i++ ) {
+		vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
+		bool submodel_rotation = false;
+
 		bank = &pm->thrusters[i];
 
 		// don't draw this thruster if the engine is destroyed or just not on
 		if ( !model_should_render_engine_glow(objnum, bank->obj_num) )
 			continue;
+
+		// If bank is attached to a submodel, prepare to account for rotations
+		//
+		// TODO: This won't work in the ship lab, because the lab code doesn't
+		// set the the necessary submodel instance info needed here. The second
+		// condition is thus a hack to disable the feature while in the lab, and
+		// can be removed if the lab is re-structured accordingly. -zookeeper
+		if ( bank->submodel_num > -1 && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+			model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_num);
+
+			submodel_rotation = true;
+		}
 
 		for (j = 0; j < bank->num_points; j++) {
 			Assert( bank->points != NULL );
@@ -2210,10 +2227,19 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			float d, D;
 			vec3d tempv;
 			glow_point *gpt = &bank->points[j];
+			vec3d loc_offset = gpt->pnt;
+			vec3d loc_norm = gpt->norm;
 			vec3d world_pnt;
 			vec3d world_norm;
 
-			vm_vec_unrotate(&world_pnt, &gpt->pnt, orient);
+			if ( submodel_rotation ) {
+				vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
+
+				tempv = loc_offset;
+				find_submodel_instance_point_normal(&loc_offset, &loc_norm, &Objects[objnum], bank->submodel_num, &tempv, &loc_norm);
+			}
+
+			vm_vec_unrotate(&world_pnt, &loc_offset, orient);
 			vm_vec_add2(&world_pnt, pos);
 
 			if (shipp) {
@@ -2238,7 +2264,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			vm_vec_sub(&tempv, &View_position, &world_pnt);
 			vm_vec_normalize(&tempv);
-			vm_vec_unrotate(&world_norm, &gpt->norm, orient);
+			vm_vec_unrotate(&world_norm, &loc_norm, orient);
 			D = d = vm_vec_dot(&tempv, &world_norm);
 
 			// ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
