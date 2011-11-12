@@ -44,6 +44,14 @@ typedef struct asteroid_obj {
 extern asteroid_obj Asteroid_obj_list;
 
 
+// Data structure for determining a type and amount of other asteroids an
+// asteroid will split to when destroyed.
+typedef struct asteroid_split_info {
+	int		asteroid_type;
+	int		min;
+	int		max;
+} asteroid_split_info;
+
 typedef struct asteroid_info {
 	char			name[NAME_LENGTH];								// name for the asteroid
 	char			pof_files[NUM_DEBRIS_POFS][MAX_FILENAME_LEN];		// POF files to load/associate with ship
@@ -57,9 +65,9 @@ typedef struct asteroid_info {
 	float			damage;													// maximum damage applied from area effect explosion
 	float			blast;													// maximum blast impulse from area effect explosion									
 	float			initial_asteroid_strength;								// starting strength of asteroid
+	SCP_vector< asteroid_split_info > split_info;
 	polymodel	*modelp[NUM_DEBRIS_POFS];
 	int			model_num[NUM_DEBRIS_POFS];
-
 	asteroid_info( )
 		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( 0 ),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
