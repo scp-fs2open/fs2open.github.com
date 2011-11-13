@@ -271,8 +271,15 @@ void cfread_angles(angles *ang, CFILE *file, int ver = 0, angles *deflt = NULL);
 // Reads variable length, null-termined string.   Will only read up
 // to n characters.
 void cfread_string(char *buf,int n, CFILE *file);
-// Read a fixed length that is null-terminatedm, and has the length
-// stored in file
+/**
+ * @brief Read a fixed length string that is not null-terminated, with the length stored in file
+ *
+ * @param buf Pre-allocated array to store string
+ * @param n Size of pre-allocated array
+ * @param file File to read from
+ *
+ * @note Appends NULL character to string (buf)
+ */
 void cfread_string_len(char *buf,int n, CFILE *file);
 
 // functions for writing cfiles
@@ -289,8 +296,12 @@ int cfwrite_angles(angles *ang, CFILE *file);
 // writes variable length, null-termined string.
 int cfwrite_string(char *buf, CFILE *file);
 
-// write a fixed length that is null-terminated, and has the length
-// stored in file
+/**
+ * @brief Write a fixed length string (not including its null terminator), with the length stored in file
+ *
+ * @param buf String to write to file
+ * @param file File to write to
+ */
 int cfwrite_string_len(const char *buf, CFILE *file);
 
 int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, int sort = CF_SORT_NONE, SCP_vector<file_list_info> *info = NULL );
