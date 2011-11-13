@@ -208,6 +208,7 @@ sexp_oper Operators[] = {
 	{ "is-ship-type",					OP_IS_SHIP_TYPE,					2, INT_MAX,	},
 	{ "is-ship-class",					OP_IS_SHIP_CLASS,					2, INT_MAX,	},
 	{ "is-facing",						OP_IS_FACING,						3, 4, },
+	{ "is-in-mission",					OP_IS_IN_MISSION,					1, INT_MAX, },	// Goober5000
 	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
 	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
 	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
@@ -19837,6 +19838,15 @@ int sexp_is_in_box(int n)
 	}
 }
 
+int sexp_is_in_mission(int node)
+{
+	for (int n = node; n != -1; n = CDR(n))
+		if (ship_name_lookup(CTEXT(n)) < 0)
+			return SEXP_FALSE;
+
+	return SEXP_TRUE;
+}
+
 void sexp_manipulate_colgroup(int node, bool add_to_group) {
 	object* objp;
 	ship* shipp;
@@ -20397,6 +20407,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_IS_IN_BOX:
 				sexp_val = sexp_is_in_box(node);
+				break;
+
+			case OP_IS_IN_MISSION:
+				sexp_val = sexp_is_in_mission(node);
 				break;
 
 			case OP_IS_SHIP_VISIBLE:
@@ -22571,6 +22585,7 @@ int query_operator_return_type(int op)
 		case OP_IS_BIT_SET:
 		case OP_DIRECTIVE_IS_VARIABLE:
 		case OP_IS_IN_BOX:
+		case OP_IS_IN_MISSION:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -23498,6 +23513,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			else // Next arg is a ship
 				return OPF_SHIP;
+
+		case OP_IS_IN_MISSION:
+			return OPF_STRING;
 
 		// Sesquipedalian
 		case OP_MISSILE_LOCKED:
@@ -26332,6 +26350,7 @@ int get_subcategory(int sexp_id)
 		case OP_CURRENT_SPEED:
 		case OP_GET_THROTTLE_SPEED:
 		case OP_IS_FACING:
+		case OP_IS_IN_MISSION:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_SHIELDS_LEFT:
@@ -27077,6 +27096,11 @@ sexp_help_struct Sexp_help[] = {
 		"\t6: Min Z\r\n"
 		"\t7: Max Z\r\n"
 		"\t8: Ship to use as reference frame (optional)." },
+
+	{ OP_IS_IN_MISSION, "Checks whether a given ship is presently in the mission.  This sexp doesn't check the arrival list or exited status; it only tests to see if the "
+		"ship is active.  This means that internally the sexp only returns SEXP_TRUE or SEXP_FALSE and does not use any of the special shortcut values.  This is useful "
+		"for ships created with ship-create, as those ships will not have used the conventional ship arrival list.\r\n\r\n"
+		"Takes 1 or more string arguments, which are checked against the ship list." },
 
 	{ OP_GET_DAMAGE_CAUSED, "Get damage caused (Status operator)\r\n"
 		"\tReturns the amount of damage one or more ships have done to a ship.\r\n\r\n"
