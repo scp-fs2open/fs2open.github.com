@@ -1944,6 +1944,18 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	parse_sound("$Warpout Start Sound:", &sip->warpout_snd_start, sip->name);
 	parse_sound("$Warpout End Sound:", &sip->warpout_snd_end, sip->name);
 
+	if(optional_string("$Warpout engage time:"))
+	{
+		float t_time;
+		stuff_float(&t_time);
+		if (t_time >= 0)
+			sip->warpout_engage_time = fl2i(t_time*1000.0f);
+		else
+			Warning(LOCATION, "Warp-out engage time specified as 0 or less on ship '%s'; value ignored", sip->name);
+	} else {
+		sip->warpout_engage_time = -1;
+	}
+
 	if(optional_string("$Warpout speed:"))
 	{
 		stuff_float(&sip->warpout_speed);

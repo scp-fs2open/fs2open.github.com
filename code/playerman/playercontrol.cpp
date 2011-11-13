@@ -919,8 +919,16 @@ void read_player_controls(object *objp, float frametime)
 			
 				if ( Player->control_mode == PCM_WARPOUT_STAGE1 )
 				{
+					float warpout_delay;
+					ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+
+					if (sip->warpout_engage_time >= 0)
+						warpout_delay = sip->warpout_engage_time / 1000.0f;
+					else
+						warpout_delay = MINIMUM_PLAYER_WARPOUT_TIME;
+
 					// Wait at least 3 seconds before making sure warp speed is set.
-					if ( Warpout_time > MINIMUM_PLAYER_WARPOUT_TIME )	{
+					if ( Warpout_time > warpout_delay) {
 						// If we are going around 5% of the target speed, progress to next stage
 						float diffSpeed = objp->phys_info.fspeed;
 						if(target_warpout_speed != 0.0f) {

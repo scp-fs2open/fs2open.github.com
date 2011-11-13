@@ -1146,6 +1146,7 @@ typedef struct ship_info {
 	float		warpout_radius;
 	int			warpout_snd_start;
 	int			warpout_snd_end;
+	int			warpout_engage_time;	//in ms
 	float		warpout_speed;
 	int			warpout_time;	//in ms
 	float		warpout_accel_exp;

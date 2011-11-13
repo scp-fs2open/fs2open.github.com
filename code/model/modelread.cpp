@@ -1310,6 +1310,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				if ( (p = strstr(props, "$lod0_name")) != NULL)
 					get_user_prop_value(p+10, pm->submodel[n].lod_name);
 
+				if (strstr(props, "$attach_thrusters") != NULL )
+					pm->submodel[n].attach_thrusters = true;
+				else
+					pm->submodel[n].attach_thrusters = false;
+
 				if ( (p = strstr(props, "$detail_box:")) != NULL ) {
 					p += 12;
 					while (*p == ' ') p++;
@@ -1786,7 +1791,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						if (bank->num_points > 0)
 							bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
 
-						bank ->obj_num = -1;
+						bank->obj_num = -1;
+						bank->submodel_num = -1;
 
 						if (pm->version < 2117) {
 							bank->wash_info_pointer = NULL;
@@ -1810,6 +1816,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 								bank->wash_info_pointer = NULL;
 								for (int k=0; k<n_subsystems; k++) {
 									if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
+										bank->submodel_num = subsystems[k].subobj_num;
+
 										bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
 										if (bank->wash_info_pointer != NULL) {
 											table_error = 0;
@@ -3824,6 +3832,72 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm,
 	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
 	vm_vec_rotate(out, &tempv2, &m);
+}
+
+/**
+ * Finds the current location and rotation of a submodel point, taking into account the
+ * rotations of the submodel and any parent submodels it might have.
+ *  
+ * @param *outpnt Output point
+ * @param *outnorm Output normal
+ * @param *ship_obj Ship object
+ * @param submodel_num The number of the submodel we're interested in
+ * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
+ * @param *submodel_norm The normal which's current direction we want, in the ship's frame of reference
+ */
+void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *ship_obj, int submodel_num, vec3d *submodel_pnt, vec3d *submodel_norm)
+{
+	Assert(ship_obj->type == OBJ_SHIP);
+
+	outnorm = submodel_norm;
+	vm_vec_zero(outpnt);
+	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
+
+	polymodel_instance *pmi = model_get_instance(Ships[ship_obj->instance].model_instance_num);
+	polymodel *pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+
+	int mn = submodel_num;
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		vec3d offset = pm->submodel[mn].offset;
+
+		if ( mn == submodel_num) {
+			vec3d submodel_pnt_offset = *submodel_pnt;
+
+			rotation_matrix = pm->submodel[submodel_num].orientation;
+			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
+
+			vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
+
+			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
+
+			vec3d tvec = submodel_pnt_offset;
+			vm_vec_unrotate(&submodel_pnt_offset, &tvec, &submodel_instance_matrix);
+
+			vec3d tnorm = *outnorm;
+			vm_vec_unrotate(outnorm, &tnorm, &submodel_instance_matrix);
+
+			vm_vec_add2(&offset, &submodel_pnt_offset);
+		}
+
+		int parent_model_num = pm->submodel[mn].parent;
+
+		rotation_matrix = pm->submodel[parent_model_num].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_model_num].angs);
+
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[parent_model_num].orientation);
+
+		vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
+
+		vec3d tvec = offset;
+		vm_vec_unrotate(&offset, &tvec, &submodel_instance_matrix);
+
+		vec3d tnorm = *outnorm;
+		vm_vec_unrotate(outnorm, &tnorm, &submodel_instance_matrix);
+
+		vm_vec_add2(outpnt, &offset);
+
+		mn = pm->submodel[mn].parent;
+	}
 }
 
 // Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle

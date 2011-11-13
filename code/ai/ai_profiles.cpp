@@ -480,6 +480,8 @@ void parse_ai_profiles_tbl(char *filename)
 					Default_ship_select_effect = 0;
 			}
 
+			set_flag(profile, "$no warp camera:", AIPF2_NO_WARP_CAMERA, AIP_FLAG2);
+
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
 			{

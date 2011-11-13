@@ -41,8 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
-# SUBTRACT CPP /Z<none>
+# ADD CPP /nologo /G5 /MT /W3 /GX /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../libjpeg" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -65,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../libjpeg" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -2291,7 +2290,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2310,7 +2309,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 

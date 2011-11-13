@@ -90,10 +90,11 @@ typedef struct submodel_instance {
 	bool blown_off;
 } submodel_instance;
 
+// Data specific to a particular instance of a model.
 typedef struct polymodel_instance {
-	int model_num;
-	int root_submodel_num;
-	submodel_instance *submodel;
+	int model_num;					// global model num index, same as polymodel->id
+	int root_submodel_num;			// unused?
+	submodel_instance *submodel;	// array of submodel instances; mirrors the polymodel->submodel array
 } polymodel_instance;
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
@@ -151,19 +152,19 @@ struct queued_animation;
 // definition for model subsystems.
 typedef struct model_subsystem {					/* contains rotation rate info */
 
-	uint		flags;									// See MSS_FLAG_* defines above
-	uint		flags2;
-	char		name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
-	char		subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
-	char		alt_sub_name[NAME_LENGTH];					//Karajorma - Name that overrides name of original
-	char		alt_dmg_sub_name[NAME_LENGTH];      // Name for the damage popup subsystems, allows for translation
-	int		subobj_num;								// subobject number (from bspgen) -- used to match subobjects of subsystems to these entries
-	int		model_num;								// Which model this is attached to (i.e. the polymodel[] index)
-	int		type;										// type. see SUBSYSTEM_* types above.  A generic type thing
-	vec3d	pnt;										// center point of this subsystem
-	float		radius;									// the extent of the subsystem
-	float		max_subsys_strength;					// maximum hits of this subsystem
-	int armor_type_idx;								//Armor type on teh subsystem -C
+	uint	flags;								// See MSS_FLAG_* defines above
+	uint	flags2;
+	char	name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
+	char	subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
+	char	alt_sub_name[NAME_LENGTH];			// Karajorma - Name that overrides name of original
+	char	alt_dmg_sub_name[NAME_LENGTH];		// Name for the damage popup subsystems, allows for translation
+	int		subobj_num;							// subobject number (from bspgen) -- used to match subobjects of subsystems to these entries; index to polymodel->submodel
+	int		model_num;							// Which model this is attached to (i.e. the polymodel[] index); same as polymodel->id
+	int		type;								// type. see SUBSYSTEM_* types above.  A generic type thing
+	vec3d	pnt;								// center point of this subsystem
+	float	radius;								// the extent of the subsystem
+	float	max_subsys_strength;				// maximum hits of this subsystem
+	int		armor_type_idx;						// Armor type on teh subsystem -C
 
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
@@ -304,14 +305,14 @@ typedef struct bsp_info {
 
 	vec3d	render_box_min;
 	vec3d	render_box_max;
-	int		use_render_box;	//0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
-	bool	gun_rotation;//for animated weapon models
-	bool	no_collisions; // for $no_collisions property - kazan
-	bool	nocollide_this_only; //SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
-	bool	collide_invisible; //SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
-	bool	force_turret_normal; //Wanderer: Sets the turret uvec to override any input of for turret normal.
+	int		use_render_box;			// 0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
+	bool	gun_rotation;			// for animated weapon models
+	bool	no_collisions;			// for $no_collisions property - kazan
+	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
+	bool	collide_invisible;		//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
+	bool	force_turret_normal;	//Wanderer: Sets the turret uvec to override any input of for turret normal.
 	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
-
+	bool	attach_thrusters;		//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
 	float		dumb_turn_rate;
 
 	/* If you've got a better way to do this, please implement it! */
@@ -345,7 +346,8 @@ typedef struct bsp_info {
 		dumb_turn_rate = 0.f;
 		bsp_data = NULL;
 		rad = 0.f;
-		lod_name[ 0 ] = '\0';  
+		lod_name[ 0 ] = '\0';
+		attach_thrusters = false;
 
 		/* Compound types */
 		memset( live_debris, 0, sizeof( live_debris ) );
@@ -420,9 +422,9 @@ typedef struct thruster_bank {
 	glow_point *points;
 
 	// Engine wash info
-	struct engine_wash_info	*wash_info_pointer;			// index into Engine_wash_info
-
-	int		obj_num;		// what subsystem number this thruster is on
+	struct engine_wash_info	*wash_info_pointer;		// index into Engine_wash_info
+	int		obj_num;		// what subsystem number this bank is on; index to ship_info->subsystems
+	int		submodel_num;	// what submodel number this bank is on; index to polymodel->submodel/polymodel_instance->submodel
 } thruster_bank;
 
 typedef struct glow_point_bank {  // glow bank structure -Bobboau
@@ -852,6 +854,8 @@ void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num,
 void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos);
 
 void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos);
+
+extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *ship_obj, int submodel_num, vec3d *submodel_pnt, vec3d *submodel_norm);
 
 // Given a polygon model index, find a list of rotating submodels to be used for collision
 void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp);
