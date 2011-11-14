@@ -39,7 +39,7 @@
 #include "network/multimsgs.h"
 #include "network/multi.h"
 #include "parse/scripting.h"
-
+#include <algorithm>
 
 #define			ASTEROID_OBJ_USED	(1<<0)				// flag used in asteroid_obj struct
 #define			MAX_ASTEROID_OBJS	MAX_ASTEROIDS		// max number of asteroids tracked in asteroid list
