@@ -7013,7 +7013,7 @@ ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time
 		return ADE_RETURN_FALSE;
 
 	int time_ms = model_anim_get_time_type(&Ships[objh->objp->instance], type, subtype);
-	float time_s = (float)time_ms * 1000.0f;
+	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
 }
