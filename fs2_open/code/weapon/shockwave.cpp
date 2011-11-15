@@ -331,6 +331,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			sw->num_objs_hit--;
 		}
 
+		weapon_info* wip = NULL;
+
 		switch(objp->type) {
 		case OBJ_SHIP:
 			sw->obj_sig_hitlist[sw->num_objs_hit++] = objp->signature;
@@ -341,6 +343,10 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			asteroid_hit(objp, NULL, NULL, damage);
 			break;
 		case OBJ_WEAPON:
+			wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+			if (wip->armor_type_idx >= 0)
+				damage = Armor_types[wip->armor_type_idx].GetDamage(damage, shockwave_get_damage_type_idx(shockwave_objp->instance));
+
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
 				Weapons[objp->instance].lifeleft = 0.01f;
