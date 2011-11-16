@@ -2466,18 +2466,11 @@ void HudGaugeLag::render(float frametime)
 }
 
 /**
- * @brief Load in ::Kills_gauge if required
+ * @brief Obsolete initializer for the kills gauge. Now superseded by the new HUD code.
  */
 void hud_init_kills_gauge()
 {
-	if ( !Kills_gauge_loaded ) {
-		Kills_gauge.first_frame = bm_load_animation(Kills_fname[gr_screen.res], &Kills_gauge.num_frames);
-		if ( Kills_gauge.first_frame == -1 ) {
-			Warning(LOCATION, "Could not load in the kills ani: Kills_fname[gr_screen.res]\n");
-			return;
-		}
-		Kills_gauge_loaded = 1;
-	}
+	Kills_gauge_loaded = 1;
 }
 
 /**
@@ -3655,11 +3648,6 @@ extern void hudtarget_page_in();
  */
 void hud_page_in()
 {
-	bm_page_in_aabitmap( Kills_gauge.first_frame, Kills_gauge.num_frames );
-
-	// Paging functions for the rest of the hud code
-	hudtarget_page_in();
-
 	// Go through all hud gauges to page them in 
 	int i;
 	size_t j, num_gauges = 0;

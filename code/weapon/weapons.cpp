@@ -834,6 +834,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->damage_type_idx = -1;
 	wip->damage_type_idx_sav = -1;
 
+	wip->armor_type_idx = -1;
+
 	wip->arm_time = 0;
 	wip->arm_dist = 0.0f;
 	wip->arm_radius = 0.0f;
@@ -2507,6 +2509,14 @@ int parse_weapon(int subtype, bool replace)
 	// making sure bombs get their hitpoints assigned
 	if ((wip->wi_flags & WIF_BOMB) && (wip->weapon_hitpoints == 0)) {
 		wip->weapon_hitpoints = 50;
+	}
+
+	if(optional_string("$Armor Type:")) {
+		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
+		wip->armor_type_idx = armor_type_get_idx(buf);
+
+		if(wip->armor_type_idx == -1)
+			Warning(LOCATION,"Invalid armor name %s specified for weapon %s", buf, wip->name);
 	}
 
 	if (optional_string("$Burst Shots:")) {
@@ -5840,6 +5850,8 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		// scale damage
 		damage *= weapon_get_damage_scale(wip, wobjp, other_obj);		
 
+		weapon_info* target_wip;
+
 		switch ( objp->type ) {
 		case OBJ_SHIP:
 			ship_apply_global_damage(objp, wobjp, pos, damage);
@@ -5849,6 +5861,10 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			asteroid_hit(objp, NULL, NULL, damage);
 			break;
 		case OBJ_WEAPON:
+			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+			if (target_wip->armor_type_idx >= 0)
+				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->damage_type_idx);
+
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
 				Weapons[objp->instance].lifeleft = 0.01f;

@@ -475,6 +475,9 @@ typedef struct weapon_info {
 	int damage_type_idx;
 	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx
 
+	int armor_type_idx;	// Weapon armor type
+
+
 	// transparency/alpha info
 	float alpha_max;			// maximum alpha value to use
 	float alpha_min;			// minimum alpha value to use

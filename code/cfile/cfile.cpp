@@ -1266,7 +1266,7 @@ void cfread_string_len(char *buf,int n, CFILE *file)
 {
 	int len;
 	len = cfread_int(file);
-	Assert( len < n );
+	Assertion( (len < n), "len: %i, n: %i", len, n );
 	if (len)
 		cfread(buf, len, 1, file);
 

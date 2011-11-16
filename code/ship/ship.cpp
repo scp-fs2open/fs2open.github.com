@@ -246,7 +246,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "starts locked",          MSS_FLAG_TURRET_LOCKED,     0 },
 	{ "no aggregate",			MSS_FLAG_NO_AGGREGATE,		0 },
 	{ "wait for animation",     MSS_FLAG_TURRET_ANIM_WAIT,  0 },
-	{ "play fire sound for player", MSS_FLAG2_PLAYER_TURRET_SOUND, 1}
+	{ "play fire sound for player", MSS_FLAG2_PLAYER_TURRET_SOUND, 1},
+	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1}
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
