@@ -372,17 +372,9 @@ void training_mission_init()
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
 		Training_message_queue[i].special_message = NULL;
 
-	if ( !Directive_frames_loaded ) {
-		for ( i = 0; i < NUM_DIRECTIVE_GAUGES; i++ ) {
-			Directive_gauge[i].first_frame = bm_load_animation(Directive_fnames[i], &Directive_gauge[i].num_frames);
-			if ( Directive_gauge[i].first_frame < 0 ) {
-				Warning(LOCATION,"Cannot load hud ani: %s\n", Directive_fnames[i]);
-			}
-		}
-
-		Directive_frames_loaded = 1;
-	}
-
+	// The E: This is now handled by the new HUD code. No need to check here.
+	Directive_frames_loaded = 1;
+	
 	// only clear player flags if this is actually a training mission
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );

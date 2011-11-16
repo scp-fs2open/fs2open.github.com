@@ -1002,82 +1002,14 @@ void hud_keyed_targets_clear()
 // Init data used for the weapons display on the HUD
 void hud_weapons_init()
 {
-	int i, j, k, hud_index, gauge_index, hud_warned;
-
 	Weapon_flash_info.is_bright = 0;
-	for ( i = 0; i < MAX_WEAPON_FLASH_LINES; i++ ) {
+	for ( int i = 0; i < MAX_WEAPON_FLASH_LINES; i++ ) {
 		Weapon_flash_info.flash_duration[i] = 1;
 		Weapon_flash_info.flash_next[i] = 1;
 	}
 
-	if ( !Weapon_gauges_loaded )
-	{
-		hud_warned = 0;
-		New_weapon.first_frame = bm_load("weapon6");
-
-		for (hud_index = 0; hud_index < NUM_HUD_SETTINGS; hud_index++)
-		{
-			for ( gauge_index = 0; gauge_index < NUM_WEAPON_GAUGES; gauge_index++ )
-			{
-				Weapon_gauges[hud_index][gauge_index].first_frame = bm_load_animation(Weapon_gauge_fnames[hud_index][gr_screen.res][gauge_index], &Weapon_gauges[hud_index][gauge_index].num_frames);
-
-				// file not found?
-				if ( Weapon_gauges[hud_index][gauge_index].first_frame < 0 )
-				{
-					// if this is the ballistic hud setting, load the conventional ani
-					if (hud_index)
-					{
-						// give a single warning
-						if (!hud_warned)
-						{
-							// commented because it gets annoying, and the warning really isn't needed anyway - Goober5000
-							//Warning(LOCATION, "Warning: Ballistic HUD graphics not found.  Defaulting to original graphics.\n");
-							hud_warned = 1;
-						}
-
-						Weapon_gauges[hud_index][gauge_index].first_frame = bm_load_animation(Weapon_gauge_fnames[0][gr_screen.res][gauge_index], &Weapon_gauges[hud_index][gauge_index].num_frames);
-
-						// and test again
-						if ( Weapon_gauges[hud_index][gauge_index].first_frame < 0 )
-						{
-							Warning(LOCATION,"Cannot load hud ani: %s\n",Weapon_gauge_fnames[hud_index][gr_screen.res][gauge_index]);
-						}
-					}
-					// otherwise, display the regular warning
-					else
-					{
-						Warning(LOCATION,"Cannot load hud ani: %s\n",Weapon_gauge_fnames[hud_index][gr_screen.res][gauge_index]);
-					}
-				}
-			}
-		}
-
-		// reset the old coordinates if hud_warned
-		if (hud_warned)
-		{
-			// don't reset the first one, but reset all others
-			for (hud_index = 1; hud_index < NUM_HUD_SETTINGS; hud_index++)
-			{
-				for (i = 0; i < GR_NUM_RESOLUTIONS; i++)
-				{
-					for (k = 0; k < 2; k++)
-					{
-						for (j = 0; j < 3; j++)
-						{
-							Weapon_gauge_primary_coords[hud_index][i][j][k] = Weapon_gauge_primary_coords[0][i][j][k];
-						}
-						for (j = 0; j < 5; j++)
-						{
-							Weapon_gauge_secondary_coords[hud_index][i][j][k] = Weapon_gauge_secondary_coords[0][i][j][k];
-						}
-						Weapon_title_coords[hud_index][i][k] = Weapon_title_coords[0][i][k];
-					}
-				}
-			}
-		}
-
-		Weapon_gauges_loaded = 1;
-	}
+	// The E: There used to be a number of checks here. They are no longer needed, as the new HUD code handles it on its own.
+	Weapon_gauges_loaded = 1;
 }
 
 // init data used to play the homing "proximity warning" sound
