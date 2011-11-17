@@ -1053,7 +1053,6 @@ void obj_set_flags( object *obj, uint new_flags )
 
 		// sanity checks
 		if ( (obj->type != OBJ_SHIP) || (obj->instance < 0) ) {
-			// Int3();
 			return;				// return because we really don't want to set the flag
 		}
 

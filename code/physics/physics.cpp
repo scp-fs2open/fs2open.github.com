@@ -489,17 +489,9 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	vec3d goal_vel;		// goal velocity in local coords, *not* accounting for ramping of velcity
 	float ramp_time_const;		// time constant for velocity ramping
 
-
-//	if ( keyd_pressed[KEY_LSHIFT] ) {
-//		keyd_pressed[KEY_LSHIFT] = 0;
-//		Int3();
-//	}
-
 	// apply throttle, unless reverse thrusters are held down
 	if (ci->forward != -1.0f)
 		ci->forward += (ci->forward_cruise_percent / 100.0f);
-
-//	mprintf(("ci->forward == %7.3f\n", ci->forward));
 
 	// give control input to cause rotation in engine wash
 	extern int Wash_on;
@@ -593,9 +585,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		} else {
 			reduced_damp_ramp_time_expansion = 1.0f;
 		}
-
-//	if ( !use_descent && (Player_obj->phys_info.forward_accel_time_const < 0.1) && !(Ships[Player_obj->instance].flags & SF_DYING) && (Player_obj->type != OBJ_OBSERVER) )
-//			Int3();	// Get dave A
 
 		if (pi->flags & PF_SLIDE_ENABLED)  {
 			// determine the local velocity
@@ -835,7 +824,6 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_apply_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
-//		Int3();
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
@@ -1022,7 +1010,6 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_apply_shock [speed: %f]\n", vm_vec_mag(&pi->vel)));
-//		Int3();
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
@@ -1071,7 +1058,6 @@ void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_i
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_collide_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
-//		Int3();
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}

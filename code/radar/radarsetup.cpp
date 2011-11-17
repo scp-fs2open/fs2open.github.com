@@ -262,9 +262,6 @@ void radar_plot_object( object *objp )
 
 	if (N_blips >= MAX_BLIPS)
 	{
-		// out of blips, don't plot
-		//Gahhh, this is bloody annoying -WMC
-		//Int3();
 		return;
 	}
 

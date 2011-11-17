@@ -1307,7 +1307,6 @@ void wl_load_icons(int weapon_class)
 
 	if ( first_frame == -1 && icon->model_index == -1)
 	{
-	//	Int3();	// Could not load in icon frames.. get Alan
 		if(strlen(wip->tech_model))
 		{
 			icon->model_index = model_load(wip->tech_model, 0, NULL, 0);
@@ -1316,13 +1315,6 @@ void wl_load_icons(int weapon_class)
 		{
 			icon->model_index = model_load(wip->pofbitmap_name, 0, NULL);
 		}
-		//This looks really crappy, so don't do it for now.
-		/*
-		if(icon->model_index == -1)
-		{
-			icon->laser_bmap = bm_load(wip->laser_bitmap.filename);
-		}
-		*/
 	}
 }
 

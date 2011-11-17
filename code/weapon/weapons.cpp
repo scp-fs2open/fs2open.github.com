@@ -4438,9 +4438,6 @@ void weapon_home(object *obj, int num, float frame_time)
 			} else	//	Subtract out life based on how far from target this missile points.
 				if ((wip->fov < 0.95f) && !(wip->wi_flags2 & WIF2_NO_LIFE_LOST_IF_MISSED)) {
 					wp->lifeleft -= flFrametime * (0.95f - old_dot);
-					//Should only happen when time is compressed.
-					//if (flFrametime * (1.0f - old_dot) > 1.0f)
-					//	Int3();
 				}
 		} else if (wip->wi_flags & WIF_LOCKED_HOMING) {	//	subtract life as if max turn is 90 degrees.
 			if ((wip->fov < 0.95f) && !(wip->wi_flags2 & WIF2_NO_LIFE_LOST_IF_MISSED))

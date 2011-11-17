@@ -640,7 +640,6 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 
 			default:
 				nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n", m_pwfmt_original->wFormatTag));
-				//Int3();
 				goto OPEN_ERROR;
 				break;
 
