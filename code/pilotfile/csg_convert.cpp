@@ -153,7 +153,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 		ubyte allowed = cfread_ubyte(cfp);
 		csg->ships_allowed.push_back( (allowed != 0) );
 
-		cfread_string_len(name, sizeof(name) - 1, cfp);
+		cfread_string_len(name, sizeof(name), cfp);
 
 		ilist.name = name;
 		ilist.index = ship_info_lookup(name);
@@ -169,7 +169,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 		ubyte allowed = cfread_ubyte(cfp);
 		csg->weapons_allowed.push_back( allowed != 0 );
 
-		cfread_string_len(name, sizeof(name) - 1, cfp);
+		cfread_string_len(name, sizeof(name), cfp);
 
 		ilist.name = name;
 		ilist.index = weapon_info_lookup(name);
@@ -246,7 +246,7 @@ void pilotfile_convert::csg_import_missions()
 			for (j = 0; j < count; j++) {
 				memset(&n_goal, 0, sizeof(mgoal));
 
-				cfread_string_len(n_goal.name, sizeof(n_goal.name) - 1, cfp);
+				cfread_string_len(n_goal.name, sizeof(n_goal.name), cfp);
 				n_goal.status = cfread_char(cfp);
 
 				miss.goals.push_back( n_goal );
@@ -264,7 +264,7 @@ void pilotfile_convert::csg_import_missions()
 			for (j = 0; j < count; j++) {
 				memset(&n_event, 0, sizeof(mevent));
 
-				cfread_string_len(n_event.name, sizeof(n_event.name) - 1, cfp);
+				cfread_string_len(n_event.name, sizeof(n_event.name), cfp);
 				n_event.status = cfread_char(cfp);
 
 				miss.events.push_back( n_event );
@@ -283,8 +283,8 @@ void pilotfile_convert::csg_import_missions()
 				memset(&n_variable, 0, sizeof(sexp_variable));
 
 				n_variable.type = cfread_int(cfp);
-				cfread_string_len(n_variable.text, sizeof(n_variable.text) - 1, cfp);
-				cfread_string_len(n_variable.variable_name, sizeof(n_variable.variable_name) - 1, cfp);
+				cfread_string_len(n_variable.text, sizeof(n_variable.text), cfp);
+				cfread_string_len(n_variable.variable_name, sizeof(n_variable.variable_name), cfp);
 
 				miss.variables.push_back( n_variable );
 			}
@@ -531,10 +531,10 @@ void pilotfile_convert::csg_import_loadout()
 	char t_string[50] = { '\0' };
 
 	// mission name/status
-	cfread_string_len(t_string, sizeof(t_string)-1, cfp);
+	cfread_string_len(t_string, sizeof(t_string), cfp);
 	csg->loadout.filename = t_string;
 
-	cfread_string_len(t_string, sizeof(t_string)-1, cfp);
+	cfread_string_len(t_string, sizeof(t_string), cfp);
 	csg->loadout.last_modified = t_string;
 
 	// ship pool
@@ -631,7 +631,7 @@ void pilotfile_convert::csg_import()
 	csg->sig = cfread_int(cfp);
 
 	// trash
-	cfread_string_len(name, sizeof(name) - 1, cfp);
+	cfread_string_len(name, sizeof(name), cfp);
 
 	csg->prev_mission = cfread_int(cfp);
 	csg->next_mission = cfread_int(cfp);

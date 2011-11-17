@@ -259,7 +259,7 @@ void pilotfile_convert::plr_import_stats()
 
 	for (idx = 0; idx < count; idx++) {
 		cfread_ushort(cfp);
-		cfread_string_len(name, sizeof(name) - 1, cfp);
+		cfread_string_len(name, sizeof(name), cfp);
 	}
 
 	cfread_int(cfp);	// kill_count
@@ -287,8 +287,8 @@ void pilotfile_convert::plr_import_loadout()
 
 	// have to read it, but don't need any of it ...
 
-	cfread_string_len(name, sizeof(name) - 1, cfp);	// filename
-	cfread_string_len(name, sizeof(name) - 1, cfp);	// last_modified
+	cfread_string_len(name, sizeof(name), cfp);	// filename
+	cfread_string_len(name, sizeof(name), cfp);	// last_modified
 
 	s_count = cfread_int(cfp);	// num ships
 	w_count = cfread_int(cfp);	// num weapons
@@ -296,24 +296,24 @@ void pilotfile_convert::plr_import_loadout()
 	// ships
 	for (idx = 0; idx < s_count; idx++) {
 		cfread_int(cfp);	// count
-		cfread_string_len(name, sizeof(name) - 1, cfp);	// name
+		cfread_string_len(name, sizeof(name), cfp);	// name
 	}
 
 	// weapons
 	for (idx = 0; idx < w_count; idx++) {
 		cfread_int(cfp);	// count
-		cfread_string_len(name, sizeof(name) - 1, cfp);	// name
+		cfread_string_len(name, sizeof(name), cfp);	// name
 	}
 
 	// loadout info
 	for (idx = 0; idx < 12; idx++) {
 		cfread_int(cfp);	// ship class
-		cfread_string_len(name, sizeof(name) - 1, cfp);	// ship name
+		cfread_string_len(name, sizeof(name), cfp);	// ship name
 
 		for (j = 0; j < 12; j++) {
 			cfread_int(cfp);	// weapon type
 			cfread_int(cfp);	// weapon count
-			cfread_string_len(name, sizeof(name) - 1, cfp);	// weapon name
+			cfread_string_len(name, sizeof(name), cfp);	// weapon name
 		}
 	}
 }
@@ -361,7 +361,7 @@ void pilotfile_convert::plr_import_red_alert()
 		cfread_string(name, sizeof(name) - 1, cfp);
 		cfread_float(cfp);
 
-		cfread_string_len(name, sizeof(name) - 1, cfp);
+		cfread_string_len(name, sizeof(name), cfp);
 
 		// subsystem hits
 		for (j = 0; j < 64; j++) {
@@ -375,7 +375,7 @@ void pilotfile_convert::plr_import_red_alert()
 
 		// weapons
 		for (j = 0; j < 12; j++) {
-			cfread_string_len(name, sizeof(name) - 1, cfp);
+			cfread_string_len(name, sizeof(name), cfp);
 			cfread_int(cfp);
 		}
 	}
@@ -396,8 +396,8 @@ void pilotfile_convert::plr_import_variables()
 
 	for (idx = 0; idx < num_variables; idx++) {
 		nvar.type = cfread_int(cfp);
-		cfread_string_len(nvar.text, sizeof(nvar.text) - 1, cfp);
-		cfread_string_len(nvar.variable_name, sizeof(nvar.variable_name) - 1, cfp);
+		cfread_string_len(nvar.text, sizeof(nvar.text), cfp);
+		cfread_string_len(nvar.variable_name, sizeof(nvar.variable_name), cfp);
 
 		plr->variables.push_back( nvar );
 	}
@@ -437,15 +437,11 @@ void pilotfile_convert::plr_import()
 		throw "Data check failure!";
 	}
 
-	cfread_string_len(plr->image_filename, sizeof(plr->image_filename) - 1, cfp);
-
-	cfread_string_len(plr->squad_name, sizeof(plr->squad_name) - 1, cfp);
-
-	cfread_string_len(plr->squad_filename, sizeof(plr->squad_filename) - 1, cfp);
-
-	cfread_string_len(plr->current_campaign, sizeof(plr->current_campaign) - 1, cfp);
-
-	cfread_string_len(plr->last_ship_flown, sizeof(plr->last_ship_flown) - 1, cfp);
+	cfread_string_len(plr->image_filename, sizeof(plr->image_filename), cfp);
+	cfread_string_len(plr->squad_name, sizeof(plr->squad_name), cfp);
+	cfread_string_len(plr->squad_filename, sizeof(plr->squad_filename), cfp);
+	cfread_string_len(plr->current_campaign, sizeof(plr->current_campaign), cfp);
+	cfread_string_len(plr->last_ship_flown, sizeof(plr->last_ship_flown), cfp);
 
 	// controls
 	plr_import_controls();
@@ -470,7 +466,7 @@ void pilotfile_convert::plr_import()
 	int num_missions = cfread_int(cfp);
 
 	for (idx = 0; idx < num_missions; idx++) {
-		cfread_string_len(name, sizeof(name) - 1, cfp);
+		cfread_string_len(name, sizeof(name), cfp);
 	}
 
 	// stats, will skip if fver < 242

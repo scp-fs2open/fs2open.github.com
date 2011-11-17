@@ -75,16 +75,16 @@ void pilotfile::plr_read_info()
 	}
 
 	// pilot image
-	cfread_string_len(p->image_filename, MAX_FILENAME_LEN - 1, cfp);
+	cfread_string_len(p->image_filename, MAX_FILENAME_LEN, cfp);
 
 	// squad name
-	cfread_string_len(p->squad_name, MAX_FILENAME_LEN - 1, cfp);
+	cfread_string_len(p->squad_name, NAME_LENGTH, cfp);
 
 	// squad image
-	cfread_string_len(p->squad_filename, MAX_FILENAME_LEN - 1, cfp);
+	cfread_string_len(p->squad_filename, MAX_FILENAME_LEN, cfp);
 
 	// active campaign
-	cfread_string_len(p->current_campaign, MAX_FILENAME_LEN - 1, cfp);
+	cfread_string_len(p->current_campaign, MAX_FILENAME_LEN, cfp);
 }
 
 void pilotfile::plr_write_info()
