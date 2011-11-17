@@ -762,12 +762,6 @@ void key_mark( uint code, int state, uint latency )
 			key_data.NumDowns[scancode]++;
 			key_data.down_check[scancode]++;
 
-//			mprintf(( "Scancode = %x\n", scancode ));
-
-//			if ( scancode == KEY_BREAK )
-//				Int3();
-
-
 			//WMC - For scripting
 			Current_key_down = scancode;
 			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
@@ -801,12 +795,6 @@ void key_mark( uint code, int state, uint latency )
 #ifndef NDEBUG
 			if ( keyd_pressed[KEY_DEBUG_KEY] )
 				keycode |= KEY_DEBUGGED;
-//			if ( keycode == (KEY_BACKSP + KEY_DEBUGGED) )	{
-//				keycode = 0;
-//				keyd_pressed[KEY_DEBUG_KEY] = 0;
-//				keyd_pressed[KEY_BACKSP] = 0;
-//				Int3();
-//			}
 #else
 			if ( keyd_pressed[KEY_DEBUG_KEY] ) {
 				mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
