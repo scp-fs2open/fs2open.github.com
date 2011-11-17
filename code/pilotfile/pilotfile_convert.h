@@ -259,7 +259,6 @@ class pilotfile_convert {
 	private:
 		CFILE *cfp;
 		unsigned int fver;
-		bool m_inferno;
 
 		scoring_special_t all_time_stats;
 		scoring_special_t multi_stats;
@@ -321,12 +320,12 @@ class pilotfile_convert {
 		// --------------------------------------------------------------------
 		csg_data *csg;
 
-		void csg_import();
+		void csg_import(bool inferno);
 		void csg_import_loadout();
 		void csg_import_stats();
 		void csg_import_techroom();
 		void csg_import_red_alert();
-		void csg_import_missions();
+		void csg_import_missions(bool inferno);
 		void csg_import_ships_weapons();
 
 		void csg_export();

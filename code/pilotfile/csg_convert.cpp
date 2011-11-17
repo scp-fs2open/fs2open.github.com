@@ -214,7 +214,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 	}
 }
 
-void pilotfile_convert::csg_import_missions()
+void pilotfile_convert::csg_import_missions(bool inferno)
 {
 	cmission_conv_t miss;
 	int idx, j;
@@ -294,7 +294,7 @@ void pilotfile_convert::csg_import_missions()
 		miss.stats.ship_kills = csg->ship_list;
 		miss.stats.medals_earned = csg->medals_list;
 
-		if (m_inferno) {
+		if (inferno) {
 			cfread(&t_inf_score, sizeof(scoring_conv_INF_t), 1, cfp);
 
 			for (j = 0; j < ship_list_size; j++) {
@@ -609,7 +609,7 @@ void pilotfile_convert::csg_import_stats()
 	csg->stats.bonehead_kills = cfread_uint(cfp);
 }
 
-void pilotfile_convert::csg_import()
+void pilotfile_convert::csg_import(bool inferno)
 {
 	Assert( cfp != NULL );
 
@@ -640,7 +640,7 @@ void pilotfile_convert::csg_import()
 
 	csg_import_ships_weapons();
 
-	csg_import_missions();
+	csg_import_missions(inferno);
 
 	csg->main_hall = cfread_ubyte(cfp);
 
@@ -1151,7 +1151,7 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 	}
 
 	try {
-		csg_import();
+		csg_import(inferno);
 	} catch (const char *err) {
 		mprintf(("    CS2 => Import ERROR: %s\n", err));
 		rval = false;
