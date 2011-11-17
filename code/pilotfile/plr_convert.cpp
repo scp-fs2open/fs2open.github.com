@@ -9,6 +9,7 @@
 #include "pilotfile/pilotfile_convert.h"
 #include "network/psnet2.h"
 #include "cfile/cfilesystem.h"
+#include "mission/missionbriefcommon.h"
 
 
 // this struct isn't well packed, and is written whole to the pilot file, so
@@ -492,6 +493,10 @@ void pilotfile_convert::plr_import()
 
 	// multiplayer
 	plr_import_multiplayer();
+
+	// two briefing related values
+	plr->readyroom_listing_mode = cfread_int(cfp);
+	Briefing_voice_enabled = cfread_int(cfp);
 
 	plr->net_protocol = cfread_int(cfp);
 
