@@ -2297,16 +2297,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
 		strcpy_s(parse_error_text, temp_error);
 
-		// error checking
-		for ( i = 0; i < sip->num_secondary_banks; i++ )
-		{
-			if(sip->secondary_bank_weapons[i] < 0)
-			{
-				Warning(LOCATION, "%s has no secondary weapons, this cannot be!", sip->name);
-			}
-			// Assert(sip->secondary_bank_weapons[i] >= 0);
-		}
-
 		// Get the capacity of each secondary bank
 		required_string("$SBank Capacity:");
 		strcat_s(parse_error_text,"'s secondary banks capacities");
