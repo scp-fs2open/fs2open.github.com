@@ -486,7 +486,7 @@ ADE_FUNC(unrotateVector, l_Matrix, "vector Input", "Returns unrotated version of
 //that any new enumerations have indexes of NEXT INDEX (see below)
 //or after. Don't forget to increment NEXT INDEX after you're done.
 //=====================================
-static const int ENUM_NEXT_INDEX = 54; // <<<<<<<<<<<<<<<<<<<<<<
+static const int ENUM_NEXT_INDEX = 69; // <<<<<<<<<<<<<<<<<<<<<<
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
@@ -647,6 +647,51 @@ static flag_def_list Enumerations[] = {
 
 	#define LE_LUA_OVERRIDE_BUTTON_CONTROL	53
 	{		"LUA_OVERRIDE_BUTTON_CONTROL",	LE_LUA_OVERRIDE_BUTTON_CONTROL,	0},
+
+	#define LE_VM_INTERNAL					54
+	{		"VM_INTERNAL",					LE_VM_INTERNAL,					0},
+
+	#define LE_VM_EXTERNAL					55
+	{		"VM_EXTERNAL",					LE_VM_EXTERNAL,					0},
+
+	#define LE_VM_TRACK						56
+	{		"VM_TRACK",						LE_VM_TRACK,					0},
+
+	#define LE_VM_DEAD_VIEW					57
+	{		"VM_DEAD_VIEW",					LE_VM_DEAD_VIEW,				0},
+
+	#define LE_VM_CHASE						58
+	{		"VM_CHASE",						LE_VM_CHASE,					0},
+
+	#define LE_VM_OTHER_SHIP				59
+	{		"VM_OTHER_SHIP",				LE_VM_OTHER_SHIP,				0},
+
+	#define LE_VM_EXTERNAL_CAMERA_LOCKED	60
+	{		"VM_EXTERNAL_CAMERA_LOCKED",	LE_VM_EXTERNAL_CAMERA_LOCKED,	0},
+
+	#define LE_VM_WARP_CHASE				61
+	{		"VM_WARP_CHASE",				LE_VM_WARP_CHASE,				0},
+
+	#define LE_VM_PADLOCK_UP				62
+	{		"VM_PADLOCK_UP",				LE_VM_PADLOCK_UP,				0},
+
+	#define LE_VM_PADLOCK_REAR				63
+	{		"VM_PADLOCK_REAR",				LE_VM_PADLOCK_REAR,				0},
+
+	#define LE_VM_PADLOCK_LEFT				64
+	{		"VM_PADLOCK_LEFT",				LE_VM_PADLOCK_LEFT,				0},
+
+	#define LE_VM_PADLOCK_RIGHT				65
+	{		"VM_PADLOCK_RIGHT",				LE_VM_PADLOCK_RIGHT,			0},
+
+	#define LE_VM_WARPIN_ANCHOR				66
+	{		"VM_WARPIN_ANCHOR",				LE_VM_WARPIN_ANCHOR,			0},
+
+	#define LE_VM_TOPDOWN					67
+	{		"VM_TOPDOWN",					LE_VM_TOPDOWN,					0},
+
+	#define LE_VM_FREECAMERA				68
+	{		"VM_FREECAMERA",				LE_VM_FREECAMERA,				0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
@@ -10680,6 +10725,88 @@ ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not s
 	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
 }
 
+ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemode has the specified flag, see VM_* enumeration", "boolean", "true if flag is present, false otherwise")
+{
+	enum_h *type = NULL;
+
+	if (!ade_get_args(L, "o", l_Enum.GetPtr(&type)))
+		return ade_set_error(L, "b", false);
+
+	if (type == NULL || !type->IsValid())
+		return ade_set_error(L, "b", false);
+
+	int bit = 0;
+
+	switch(type->index)
+	{
+	case LE_VM_INTERNAL:
+		return ade_set_args(L, "b", Viewer_mode == 0);
+		break;
+
+	case LE_VM_EXTERNAL:
+		bit = VM_EXTERNAL;
+		break;
+
+	case LE_VM_OTHER_SHIP:
+		bit = VM_OTHER_SHIP;
+		break;
+
+	case LE_VM_CHASE:
+		bit = VM_CHASE;
+		break;
+
+	case LE_VM_DEAD_VIEW:
+		bit = VM_DEAD_VIEW;
+		break;
+
+	case LE_VM_EXTERNAL_CAMERA_LOCKED:
+		bit = VM_EXTERNAL_CAMERA_LOCKED;
+		break;
+
+	case LE_VM_FREECAMERA:
+		bit = VM_FREECAMERA;
+		break;
+
+	case LE_VM_PADLOCK_LEFT:
+		bit = VM_PADLOCK_LEFT;
+		break;
+
+	case LE_VM_PADLOCK_REAR:
+		bit = VM_PADLOCK_REAR;
+		break;
+
+	case LE_VM_PADLOCK_RIGHT:
+		bit = VM_PADLOCK_RIGHT;
+		break;
+
+	case LE_VM_PADLOCK_UP:
+		bit = VM_PADLOCK_UP;
+		break;
+
+	case LE_VM_TOPDOWN:
+		bit = VM_TOPDOWN;
+		break;
+
+	case LE_VM_TRACK:
+		bit = VM_TRACK;
+		break;
+
+	case LE_VM_WARP_CHASE:
+		bit = VM_WARP_CHASE;
+		break;
+
+	case LE_VM_WARPIN_ANCHOR:
+		bit = VM_WARPIN_ANCHOR;
+		break;
+
+	default:
+		LuaError(L, "Attempted to use hasViewmode with an invalid enumeration! Only VM_* enumerations are allowed!");
+		return ade_set_error(L, "b", false);
+		break;
+	}
+
+	return ade_set_args(L, "b", (Viewer_mode & bit) != 0);
+}
 
 //**********LIBRARY: Scripting Variables
 ade_lib l_HookVar("HookVariables", NULL, "hv", "Hook variables repository");
