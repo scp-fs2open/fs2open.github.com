@@ -4632,6 +4632,7 @@ void parse_waypoints(mission *pm)
 
 	jump_node *jnp;
 	char file_name[MAX_FILENAME_LEN] = { 0 };
+	char jump_name[NAME_LENGTH] = { 0 };
 
 	while (optional_string("$Jump Node:")) {
 		stuff_vector(&pos);
@@ -4639,7 +4640,8 @@ void parse_waypoints(mission *pm)
 		Assert(jnp != NULL);
 
 		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
-			stuff_string(jnp->get_name_ptr(), F_NAME, NAME_LENGTH);
+			stuff_string(jump_name, F_NAME, NAME_LENGTH);
+			jnp->set_name(jump_name);
 		}
 
 		if(optional_string("+Model File:")){
