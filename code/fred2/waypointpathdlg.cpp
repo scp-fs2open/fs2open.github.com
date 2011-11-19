@@ -138,7 +138,7 @@ void waypoint_path_dlg::initialize_data(int full_update)
 
 	} else if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->get_obj() == Objects[cur_object_index])
+			if(jnp->get_obj() == &Objects[cur_object_index])
 				break;
 		}
 		
@@ -311,7 +311,7 @@ int waypoint_path_dlg::update_data(int redraw)
 
 	} else if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->get_obj() == Objects[cur_object_index])
+			if(jnp->get_obj() == &Objects[cur_object_index])
 				break;
 		}
 
@@ -477,7 +477,7 @@ BOOL waypoint_path_dlg::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 	}
 
-	if ((id >= ID_JUMP_NODE_MENU) && (id < ID_JUMP_NODE_MENU + Jump_nodes.size())) {
+	if ((id >= ID_JUMP_NODE_MENU) && (id < ID_JUMP_NODE_MENU + (int) Jump_nodes.size())) {
 		if (!update_data()) {
 			point = id - ID_JUMP_NODE_MENU;
 			unmark_all();

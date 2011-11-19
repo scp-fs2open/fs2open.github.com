@@ -1381,7 +1381,7 @@ int common_object_delete(int obj)
 
 	} else if (type == OBJ_JUMP_NODE) {
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->get_obj() == Objects[obj])
+			if(jnp->get_obj() == &Objects[obj])
 				break;
 		}
 		
