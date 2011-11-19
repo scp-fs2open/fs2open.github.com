@@ -514,6 +514,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
+		SCP_list<jump_node>::iterator jnp;
 
 		switch(t_objp->type)
 		{
@@ -560,7 +561,12 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				}
 				break;
 			case OBJ_JUMP_NODE:
-				strcpy_s(temp_name, t_objp->jnp->get_name_ptr());
+				for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+					if(jnp->get_obj() == t_objp)
+						break;
+				}
+				
+				strcpy_s(temp_name, jnp->get_name_ptr());
 				end_string_at_first_hash_symbol(temp_name);
 				tinfo_name = temp_name;
 				break;
@@ -642,6 +648,7 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 	int x1,x2,y1,y2;
 	int draw_box = true;
 	int bound_rc;
+	SCP_list<jump_node>::iterator jnp;
 
 	if ( Player->target_is_dying <= 0 ) {
 		int modelnum;
@@ -664,7 +671,6 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			break;
 
 		case OBJ_WEAPON:
-			//Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
 			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
 			if (modelnum != -1)
 				bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
@@ -688,7 +694,12 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			break;
 
 		case OBJ_JUMP_NODE:
-			modelnum = targetp->jnp->get_modelnum();
+			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+				if(jnp->get_obj() == targetp)
+					break;
+			}	
+				
+			modelnum = jnp->get_modelnum();
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
 
@@ -861,6 +872,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 		char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
+		SCP_list<jump_node>::iterator jnp;
 
 		switch(t_objp->type) {
 			case OBJ_SHIP:
@@ -901,7 +913,12 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 				}
 				break;
 			case OBJ_JUMP_NODE:
-				strcpy_s(temp_name, t_objp->jnp->get_name_ptr());
+				for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+					if(jnp->get_obj() == t_objp)
+						break;
+				}
+				
+				strcpy_s(temp_name, jnp->get_name_ptr());
 				end_string_at_first_hash_symbol(temp_name);
 				tinfo_name = temp_name;
 				break;
@@ -913,9 +930,6 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 		if(tinfo_class && (flags & TARGET_DISPLAY_CLASS)) {
 			gr_string(x2+3, y1+9, tinfo_class);
 		}
-	/*	if(tinfo_callsign) {
-			gr_string(x2+3, y1+18, tinfo_callsign);
-		} */
 	}
 
 	// we're done, so bring the scale back to normal

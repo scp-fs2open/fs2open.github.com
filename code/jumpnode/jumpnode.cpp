@@ -42,8 +42,6 @@ jump_node::jump_node(vec3d *pos)
 	
 	// Create the object
 	this->m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, pos, this->m_radius, OF_RENDERS);
-	if (this->m_objnum >= 0)
-		Objects[this->m_objnum].jnp = this;
 }
 
 jump_node::~jump_node()

@@ -842,54 +842,60 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	vec3d		orient_vec, up_vector;
 	float			factor, dist;
 	int			hx, hy, w, h;
-
-	if ( target_objp->jnp->is_hidden() ) {
-		set_target_objnum( Player_ai, -1 );
-		return;
-	}
-
-	if ( Detail.targetview_model )	{
-		// take the forward orientation to be the vector from the player to the current target
-		vm_vec_sub(&orient_vec, &target_objp->pos, &Player_obj->pos);
-		vm_vec_normalize(&orient_vec);
-
-		factor = target_objp->radius*4.0f;
-
-		// use the player's up vector, and construct the viewers orientation matrix
-		up_vector = Player_obj->orient.vec.uvec;
-		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
-
-		// normalize the vector from the player to the current target, and scale by a factor to calculate
-		// the objects position
-		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
-
-		renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
-		target_objp->jnp->render( &obj_pos );
-		renderTargetClose();
-	}
-
-	renderTargetForeground();
-	renderTargetIntegrity(1);
-	setGaugeColor();
-
-	strcpy_s(outstr, target_objp->jnp->get_name_ptr());
-	end_string_at_first_hash_symbol(outstr);
-	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
-
-	dist = vm_vec_dist_quick(&target_objp->pos, &Player_obj->pos);
-	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
-		dist = dist * Hud_unit_multiplier;
-	}
-
-	// account for hud shaking
-	hx = fl2i(HUD_offset_x);
-	hy = fl2i(HUD_offset_y);
-
-	sprintf(outstr,XSTR( "d: %.0f", 340), dist);
-	hud_num_make_mono(outstr);
-	gr_get_string_size(&w,&h,outstr);
+	SCP_list<jump_node>::iterator jnp;
 	
-	renderPrintf(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, outstr);	
+	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+		if(jnp->get_obj() != target_objp)
+			continue;
+	
+		if ( jnp->is_hidden() ) {
+			set_target_objnum( Player_ai, -1 );
+			return;
+		}
+
+		if ( Detail.targetview_model )	{
+			// take the forward orientation to be the vector from the player to the current target
+			vm_vec_sub(&orient_vec, &target_objp->pos, &Player_obj->pos);
+			vm_vec_normalize(&orient_vec);
+
+			factor = target_objp->radius*4.0f;
+
+			// use the player's up vector, and construct the viewers orientation matrix
+			up_vector = Player_obj->orient.vec.uvec;
+			vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
+
+			// normalize the vector from the player to the current target, and scale by a factor to calculate
+			// the objects position
+			vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
+
+			renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
+			jnp->render( &obj_pos );
+			renderTargetClose();
+		}
+
+		renderTargetForeground();
+		renderTargetIntegrity(1);
+		setGaugeColor();
+
+		strcpy_s(outstr, jnp->get_name_ptr());
+		end_string_at_first_hash_symbol(outstr);
+		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
+
+		dist = vm_vec_dist_quick(&target_objp->pos, &Player_obj->pos);
+		if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
+			dist = dist * Hud_unit_multiplier;
+		}
+
+		// account for hud shaking
+		hx = fl2i(HUD_offset_x);
+		hy = fl2i(HUD_offset_y);
+
+		sprintf(outstr,XSTR( "d: %.0f", 340), dist);
+		hud_num_make_mono(outstr);
+		gr_get_string_size(&w,&h,outstr);
+	
+		renderPrintf(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, outstr);
+	}
 }
 
 /**
