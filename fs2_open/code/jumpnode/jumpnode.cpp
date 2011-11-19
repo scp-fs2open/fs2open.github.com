@@ -151,9 +151,16 @@ void jump_node::set_name(char *new_name)
 void jump_node::show(bool enabled)
 {
 	if(enabled)
+	{
 		m_flags&=~JN_HIDE;
+	}
 	else
+	{
+		// Untarget this node if it is already targeted
+		if ( Player_ai->target_objnum == m_objnum )
+			Player_ai->target_objnum = -1;
 		m_flags|=JN_HIDE;
+	}
 }
 
 /**
