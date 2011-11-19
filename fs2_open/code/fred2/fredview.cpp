@@ -1422,7 +1422,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
 					id = ID_EDITORS_WAYPOINT;
 					for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-						if(jnp->get_obj() == Objects[objnum])
+						if(jnp->get_obj() == &Objects[objnum])
 							break;
 					}
 					str.Format("Edit %s", jnp->get_name_ptr());
