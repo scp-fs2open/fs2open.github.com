@@ -159,9 +159,6 @@ typedef struct object {
 		class jump_node *jnp;		// WMC - Direct pointer to the object. Used only for jump nodes as of now
 	};
 
-	//camid core_camera;				//WMC - Core camera for the object
-	//camid topdown_camera;			//WMC - Top down camera
-
 	dock_instance	*dock_list;			// Goober5000 - objects this object is docked to
 	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead
 
