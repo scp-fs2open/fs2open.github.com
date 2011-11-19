@@ -628,10 +628,16 @@ void hud_reticle_list_update(object *objp, float measure, int dot_flag)
 {
 	reticle_list	*rl, *new_rl;
 	int				i;
-
+	SCP_list<jump_node>::iterator jnp;
+	
 	if (objp->type == OBJ_JUMP_NODE) {
-		if ( objp->jnp->is_hidden() )
-			return;
+		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+			if( jnp->get_obj() != objp )
+				continue;
+			
+			if( jnp->is_hidden() )
+				return;
+		}
 	}
 
 	for ( rl = GET_FIRST(&Reticle_cur_list); rl != END_OF_LIST(&Reticle_cur_list); rl = GET_NEXT(rl) ) {
@@ -1160,7 +1166,8 @@ void hud_target_common(int team_mask, int next_flag)
 {
 	object	*A, *start, *start2;
 	ship		*shipp;
-	int		is_ship, target_found = FALSE;	
+	int		is_ship, target_found = FALSE;
+	SCP_list<jump_node>::iterator jnp;
 
 	if (Player_ai->target_objnum == -1)
 		start = &obj_used_list;
@@ -1198,7 +1205,12 @@ void hud_target_common(int team_mask, int next_flag)
 		}
 
 		if (A->type == OBJ_JUMP_NODE) {
-			if ( A->jnp->is_hidden() )
+			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+				if( jnp->get_obj() == A )
+					break;
+			}
+			
+			if( jnp->is_hidden() )
 				continue;
 		}
 
@@ -2280,16 +2292,26 @@ void hud_target_targets_target()
 int object_targetable_in_reticle(object *target_objp)
 {
 	int obj_type;
+	SCP_list<jump_node>::iterator jnp;
+	
 	if (target_objp == Player_obj ) {
 		return 0;
 	}
 
 	obj_type = target_objp->type;
 
-	if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_DEBRIS) || (obj_type == OBJ_WEAPON) || (obj_type == OBJ_ASTEROID)
-			|| ((obj_type == OBJ_JUMP_NODE) && !target_objp->jnp->is_hidden()) )
+	if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_DEBRIS) || (obj_type == OBJ_WEAPON) || (obj_type == OBJ_ASTEROID) )
 	{
 		return 1;
+	} else if ( (obj_type == OBJ_JUMP_NODE) )
+	{
+		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+			if(jnp->get_obj() == target_objp)
+				break;
+		}
+		
+		if (!jnp->is_hidden())
+			return 1;
 	}
 
 	return 0;
@@ -2316,6 +2338,7 @@ void hud_target_in_reticle_new()
 	object	*A;
 	mc_info	mc;
 	float		dist;
+	SCP_list<jump_node>::iterator jnp;
 
 	hud_reticle_clear_list(&Reticle_cur_list);
 	Reticle_save_timestamp = timestamp(RESET_TARGET_IN_RETICLE);
@@ -2370,7 +2393,12 @@ void hud_target_in_reticle_new()
 			}
 			break;
 		case OBJ_JUMP_NODE:
-			mc.model_num = A->jnp->get_modelnum();
+			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+				if(jnp->get_obj() == A)
+					break;
+			}	
+			
+			mc.model_num = jnp->get_modelnum();
 			break;
 		default:
 			Int3();	//	Illegal object type.
@@ -3288,6 +3316,7 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 	int x1,x2,y1,y2;
 	int draw_box = TRUE;
 	int bound_rc;
+	SCP_list<jump_node>::iterator jnp;
 
 	if ( Player->target_is_dying <= 0 ) {
 		int modelnum;
@@ -3310,7 +3339,6 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 			break;
 
 		case OBJ_WEAPON:
-			//Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
 			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
 			if (modelnum != -1)
 				bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
@@ -3334,7 +3362,12 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 			break;
 
 		case OBJ_JUMP_NODE:
-			modelnum = targetp->jnp->get_modelnum();
+			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+				if(jnp->get_obj() == targetp)
+					break;
+			}
+				
+			modelnum = jnp->get_modelnum();
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
 
