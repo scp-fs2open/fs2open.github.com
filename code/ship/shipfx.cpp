@@ -2796,7 +2796,7 @@ void engine_wash_ship_process(ship *shipp)
 			// set the the necessary submodel instance info needed here. The second
 			// condition is thus a hack to disable the feature while in the lab, and
 			// can be removed if the lab is re-structured accordingly. -zookeeper
-			if ( bank->submodel_num > -1 && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+			if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
 				model_find_submodel_offset(&submodel_static_offset, wash_sip->model_num, bank->submodel_num);
 
 				submodel_rotation = true;
