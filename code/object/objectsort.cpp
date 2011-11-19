@@ -66,52 +66,26 @@ int obj_in_view_cone( object * objp )
 	vec3d tmp,pt; 
 	ubyte codes;
 
-// Use this to hack out player for testing.
-// if ( objp == Player_obj ) return 0;
-
-// OLD INCORRECT CODE!!!
-//	g3_rotate_vector(&tmp,&objp->pos);
-//	codes=g3_code_vector_radius(&tmp, objp->radius);
-//	if ( !codes )	{
-//		return 1;		// center is in, so return 1
-//	}
-//	return 0;
-
-// This I commented out because it will quickly out for
-// objects in the center, but cause one more rotation
-// for objects outside the center.  So I figured it
-// would be best to slow down objects inside by a bit
-// and not penalize the offscreen ones, which require
-// 8 rotatations to throw out.
-//	g3_rotate_vector(&tmp,&objp->pos);
-//	codes=g3_code_vector(&tmp);
-//	if ( !codes )	{
-//		//mprintf(( "Center is in, so render it\n" ));
-//		return 1;		// center is in, so return 1
-//	}
-
 	// Center isn't in... are other points?
-
 	ubyte and_codes = 0xff;
 
-	for (i=0; i<8; i++ )	{
+	for (i=0; i<8; i++ ) {
 		vm_vec_scale_add( &pt, &objp->pos, &check_offsets[i], objp->radius );
-		g3_rotate_vector(&tmp,&pt);
-		codes=g3_code_vector(&tmp);
-		if ( !codes )	{
+		codes=g3_rotate_vector(&tmp,&pt);
+		if ( !codes ) {
 			//mprintf(( "A point is inside, so render it.\n" ));
 			return 1;		// this point is in, so return 1
 		}
 		and_codes &= codes;
 	}
 
-	if (and_codes)	{
+	if (and_codes) {
 		//mprintf(( "All points offscreen, so don't render it.\n" ));
 		return 0;	//all points off screen
 	}
 
 	//mprintf(( "All points inside, so render it, but doesn't need clipping.\n" ));
-	return 1;	
+	return 1;
 }
 
 
