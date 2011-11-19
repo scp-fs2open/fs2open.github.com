@@ -29,7 +29,7 @@ struct object;
 class jump_node
 {
 	char m_name[NAME_LENGTH];
-	float radius;
+	float m_radius;
 
 	int	m_modelnum;
 	int	m_objnum;						// objnum of this jump node
