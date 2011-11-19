@@ -1811,14 +1811,13 @@ void update_throttle_sound()
 
 			if ( percent_throttle < ZERO_PERCENT ) {
 				if ( Player_engine_snd_loop > -1 )	{
-					snd_chg_loop_status(Player_engine_snd_loop, 0);
 					snd_stop(Player_engine_snd_loop); // Backslash - otherwise, long engine loops keep playing
 					Player_engine_snd_loop = -1;
 				}
 			}
 			else {
 				if ( Player_engine_snd_loop == -1 ){
-					Player_engine_snd_loop = snd_play_looping( &Snds[Ship_info[Ships[Player_obj->instance].ship_info_index].engine_snd_cockpit], 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL );
+					Player_engine_snd_loop = snd_play_looping( &Snds[Ship_info[Ships[Player_obj->instance].ship_info_index].engine_snd_cockpit], 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL, FALSE);
 				} else {
 					// The sound may have been trashed at the low-level if sound channel overflow.
 					// TODO: implement system where certain sounds cannot be interrupted (priority?)
