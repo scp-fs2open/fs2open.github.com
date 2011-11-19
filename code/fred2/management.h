@@ -16,6 +16,8 @@
 #include "globalincs/pstypes.h"
 #include "ship/ship.h"
 #include "ai/aigoals.h"
+#include "jumpnode/jumpnode.h"
+
 
 #define SHIP_FILTER_PLAYERS	(1<<0)  // set: add players to list as well
 #define SHIP_FILTER_FLYABLE	(1<<1)  // set: filter out non-flyable ships

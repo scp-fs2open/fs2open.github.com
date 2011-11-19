@@ -1053,7 +1053,6 @@ void obj_set_flags( object *obj, uint new_flags )
 
 		// sanity checks
 		if ( (obj->type != OBJ_SHIP) || (obj->instance < 0) ) {
-			// Int3();
 			return;				// return because we really don't want to set the flag
 		}
 
@@ -1470,6 +1469,8 @@ MONITOR( NumObjectsRend )
 extern int Cmdline_dis_weapons;
 void obj_render(object *obj)
 {
+	SCP_list<jump_node>::iterator jnp;
+	
 	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
 
 	MONITOR_INC( NumObjectsRend, 1 );	
@@ -1508,7 +1509,11 @@ void obj_render(object *obj)
 			cmeasure_render(obj);
 			break;*/
 		case OBJ_JUMP_NODE:
-			obj->jnp->render(&obj->pos, &Eye_position);
+			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+				if(jnp->get_obj() != obj)
+					continue;
+				jnp->render(&obj->pos, &Eye_position);
+			}
 			break;
 		case OBJ_WAYPOINT:
 			if (Show_waypoints)	{

@@ -1394,6 +1394,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 	CMenu menu;
 	int	objnum;
 	CPoint local = point;
+	SCP_list<jump_node>::iterator jnp;
 
 	if (button_down) {
 		cancel_drag();
@@ -1420,7 +1421,11 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
 					id = ID_EDITORS_WAYPOINT;
-					str.Format("Edit %s", Objects[objnum].jnp->get_name_ptr());
+					for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+						if(jnp->get_obj() == &Objects[objnum])
+							break;
+					}
+					str.Format("Edit %s", jnp->get_name_ptr());
 
 				} else if (Objects[objnum].type == OBJ_WAYPOINT) {
 					int idx;

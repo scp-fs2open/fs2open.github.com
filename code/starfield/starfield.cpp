@@ -2510,7 +2510,6 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 	// this shouldn't ever happen from FRED since you select the name from a list of those available
 	if (idx == -1)
 		return;
-//		Int3();
 
 	sbi.star_bitmap_index = idx;
 

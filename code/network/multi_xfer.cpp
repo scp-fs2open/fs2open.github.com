@@ -727,7 +727,6 @@ int multi_xfer_process_packet(unsigned char *data, PSNET_SOCKET_RELIABLE who)
 			}
 #endif
 #endif
-		//	Int3();
 			return offset;
 		}
 	}

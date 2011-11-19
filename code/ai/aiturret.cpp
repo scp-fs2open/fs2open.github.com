@@ -1675,8 +1675,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		if (wip->wi_flags & WIF_BEAM) {
 			// if this beam isn't free to fire
 			if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE)) {
-				//WMC - remove this
-				//Int3();	// should never get this far
 				return false;
 			}
 			beam_fire_info fire_info;

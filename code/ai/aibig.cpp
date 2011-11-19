@@ -472,7 +472,6 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 					// for now, only follow the path to the first point
 					if ( aip->path_cur < (aip->path_start+aip->path_length-1) ) {
 						if ( aip->goal_objnum != aip->target_objnum ) {
-							//Int3();	// what is going on here? - Get Alan
 							aip->previous_mode = aip->mode;
 							aip->mode = AIM_NONE;
 							aip->submode = -1;

@@ -1533,8 +1533,6 @@ void multi_eval_socket_error(PSNET_SOCKET sock, int error)
 		// mwa -- don't go back to main menu.  You don't want host to do this.  Maybe we can ignore it
 		// because of a leaving player.
 		return;
-		//gameseq_post_event(GS_EVENT_MAIN_MENU);
-		// Int3();							// get allender -- something happened to socket connection!!!
 	}
 
 	if ( (error != WSAECONNRESET) && (error != WSAECONNABORTED) && (error != WSAESHUTDOWN) ) {
@@ -2536,7 +2534,6 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		
 		// flag him appropriately if he's doing an ingame join
 		if(MULTI_IN_MISSION){
-	//		Int3(); //-C Ingame stuff
 			Net_players[net_player_num].flags |= NETINFO_FLAG_INGAME_JOIN;
 			Net_players[net_player_num].s_info.ingame_join_flags = 0;
 		}		
@@ -2603,7 +2600,6 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 	// set my ingame joining flag if the new guy is joining ingame
 	if ( Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN ){
-//		Int3(); //-C Ingame stuff
 		Netgame.flags |= NG_FLAG_INGAME_JOINING;
 	}	
 	

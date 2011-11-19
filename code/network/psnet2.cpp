@@ -1225,7 +1225,6 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 			break;
 		default:
 			ml_string("Unknown protocol type in nw_CloseSocket()!");			
-			// Int3();
 			break;
 	}
 	memset(&Reliable_sockets[*sockp],0,sizeof(reliable_socket));

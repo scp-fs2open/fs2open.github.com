@@ -2911,7 +2911,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
-				//Int3();  // currently unhandled argument format (so add it now)
 		}
 
 		node = Sexp_nodes[node].rest;
@@ -11134,7 +11133,7 @@ void sexp_cap_waypoint_speed(int n)
 	shipnum = ship_name_lookup(shipname);
 
 	if (shipnum == -1) {
-	//	Int3();	// trying to set waypoint speed of ship not already in game
+		// trying to set waypoint speed of ship not already in game
 		return;
 	}
 
