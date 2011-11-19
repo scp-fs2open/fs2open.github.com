@@ -1241,6 +1241,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
+				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
+				if ((pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
+					|| strstr(props, "$triggered:") || strstr(props, "$rotate") || strstr(props, "$dumb_rotate:") || strstr(props, "$gun_rotation:")) {
+					pm->submodel[n].can_move = true;
+				} else if (pm->submodel[n].parent > -1 && pm->submodel[pm->submodel[n].parent].can_move) {
+					pm->submodel[n].can_move = true;
+				}
+
 				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){ //Iyojj skybox 4
 					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
