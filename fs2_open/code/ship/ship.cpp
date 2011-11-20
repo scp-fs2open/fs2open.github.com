@@ -8742,6 +8742,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	swp = &sp->weapons;
 	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
+	p_objp = mission_parse_get_parse_object(sp->ship_name);
 	ph_inf = objp->phys_info;
 
 
@@ -8808,7 +8809,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
 	if (!Fred_running) {
-		p_objp = mission_parse_get_parse_object(sp->ship_name);
 		if ((p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sp->ship_max_shield_strength > 0.0f)) {
 			objp->flags &= ~OF_NO_SHIELDS;
 		} else if ((p_objp->flags & P_OF_NO_SHIELDS) || (sp->ship_max_shield_strength == 0.0f)) {
@@ -9041,6 +9041,14 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		sp->weapon_recharge_index = sp_orig.weapon_recharge_index;
 		sp->shield_recharge_index = sp_orig.shield_recharge_index;
 		sp->engine_recharge_index = sp_orig.engine_recharge_index;
+	}
+
+	// zookeeper - If we're switching in the loadout screen, make sure we retain initial velocity set in FRED
+	if (!(Game_mode & GM_IN_MISSION) && !(Fred_running)) {
+		Objects[sp->objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
+		Objects[sp->objnum].phys_info.vel.xyz.z = Objects[sp->objnum].phys_info.speed;
+		Objects[sp->objnum].phys_info.prev_ramp_vel = Objects[sp->objnum].phys_info.vel;
+		Objects[sp->objnum].phys_info.desired_vel = Objects[sp->objnum].phys_info.vel;
 	}
 }
 
