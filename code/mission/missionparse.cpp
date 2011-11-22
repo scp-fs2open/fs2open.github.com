@@ -6312,8 +6312,12 @@ void mission_parse_mark_reinforcement_available(char *name)
 	Assert ( i < Num_reinforcements );
 }
 
-// mission_did_ship_arrive takes a parse object and checked the arrival cue and delay and
-// creates the object if necessary.  Returns -1 if not created.  objnum of created ship otherwise
+/**
+ * Takes a parse object and checks the arrival cue, delay and destruction of object it is arriving from then creates the object if necessary.  
+ *
+ * @return -1 if not created.  
+ * @return objnum of created ship otherwise
+ */
 int mission_did_ship_arrive(p_object *objp)
 {
 	int should_arrive;
@@ -6335,8 +6339,6 @@ int mission_did_ship_arrive(p_object *objp)
 
 	if ( should_arrive ) { 		// has the arrival criteria been met?
 		int object_num;		
-
-		Assert ( !(objp->flags & P_SF_CANNOT_ARRIVE) );		// get allender
 
 		// check to see if the delay field <= 0.  if so, then create a timestamp and then maybe
 		// create the object
@@ -6367,12 +6369,19 @@ int mission_did_ship_arrive(p_object *objp)
 			shipnum = ship_name_lookup( name );
 			if ( shipnum == -1 ) {
 				mission_parse_mark_non_arrival(objp);	// Goober5000
+				mprintf(("Warning: Ship %s cannot arrive from docking bay of destroyed or departed %s.\n", objp->name, name));
 				return -1;
 			}
 
 			// Goober5000: aha - also don't create if fighterbay is destroyed
 			if (ship_fighterbays_all_destroyed(&Ships[shipnum]))
+				mprintf(("Warning: Ship %s cannot arrive from destroyed docking bay of %s.\n", objp->name, name));
 				return -1;
+		}
+		
+		if ( objp->flags & P_SF_CANNOT_ARRIVE ) {
+			mprintf(("Warning: Ship %s cannot arrive. Ship not created.\n", objp->name));
+			return -1;
 		}
 
 		// create the ship
@@ -6390,18 +6399,8 @@ int mission_did_ship_arrive(p_object *objp)
 			}
 		return object_num;
 	}
-	/* Goober5000 - this is redundant, especially with the streamlined marking
-	else
-	{
-		// check to see if the arrival cue of this ship is known false -- if so, then remove
-		// the parse object from the ship
-		if ( Sexp_nodes[objp->arrival_cue].value == SEXP_KNOWN_FALSE )
-			objp->flags |= P_SF_CANNOT_ARRIVE;
-	}
-	*/
 
 	return -1;
-
 }
 
 // Goober5000
