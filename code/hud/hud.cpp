@@ -290,8 +290,9 @@ static int Damage_flash_bright;
 static int Damage_flash_timer;
 
 HudGauge::HudGauge():
-base_w(0), base_h(0), gauge_config(-1), config_override(true), reticle_follow(false), active(false), pop_up(false), disabled_views(0), texture_target(-1), 
-target_w(-1), target_h(-1), canvas_w(-1), canvas_h(-1), custom_gauge(false), font_num(FONT1), off_by_default(false), sexp_override(false)
+base_w(0), base_h(0), gauge_config(-1), font_num(FONT1), config_override(true), reticle_follow(false),
+active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), custom_gauge(false),
+texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -313,9 +314,10 @@ target_w(-1), target_h(-1), canvas_w(-1), canvas_h(-1), custom_gauge(false), fon
 }
 
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _allow_override, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
-base_w(0), base_h(0), gauge_object(_gauge_object), gauge_config(_gauge_config), config_override(_allow_override), reticle_follow(_slew), 
-message_gauge(_message), active(false), pop_up(false), disabled_views(_disabled_views), texture_target(-1), target_w(-1), target_h(-1), 
-textoffset_x(0), textoffset_y(0), canvas_w(-1), canvas_h(-1), custom_gauge(false), font_num(FONT1), off_by_default(false), sexp_override(false)
+base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(FONT1), config_override(_allow_override),
+reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
+disabled_views(_disabled_views), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
+canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
 
@@ -348,9 +350,10 @@ textoffset_x(0), textoffset_y(0), canvas_w(-1), canvas_h(-1), custom_gauge(false
 
 // constructor for custom gauges
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
-gauge_object(HUD_OBJECT_CUSTOM), base_w(0), base_h(0), gauge_config(_gauge_config), config_override(true), reticle_follow(_slew), message_gauge(false), 
-active(false), pop_up(false), disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), texture_target(-1), target_w(-1), target_h(-1), 
-textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), canvas_w(-1), canvas_h(-1), custom_gauge(true), font_num(FONT1), off_by_default(false), sexp_override(false)
+base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(FONT1), config_override(true),
+reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
+disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), custom_gauge(true), textoffset_x(txtoffset_x),
+ textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
 	position[1] = 0;

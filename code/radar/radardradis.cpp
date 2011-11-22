@@ -38,8 +38,7 @@
 
 HudGaugeRadarDradis::HudGaugeRadarDradis():
 HudGaugeRadar(HUD_OBJECT_RADAR_BSG, true, 255, 255, 255), 
-xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_contact_icon(-1), sweep_duration(6.0), sweep_percent(0.0), sub_y_clip(false),
-scale(1.20f)
+xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_contact_icon(-1), sweep_duration(6.0), sweep_percent(0.0), scale(1.20f), sub_y_clip(false)
 {
 	vm_vec_copy_scale(&sweep_normal_x, &vmd_zero_vector, 1.0f);
 	vm_vec_copy_scale(&sweep_normal_y, &vmd_zero_vector, 1.0f);

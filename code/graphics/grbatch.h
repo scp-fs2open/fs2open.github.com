@@ -27,7 +27,7 @@ private:
 	void clone(const geometry_batcher &geo);
 
 public:
-	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), radius_list(NULL), use_radius(true) {};
+	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), use_radius(true), radius_list(NULL) {};
 	~geometry_batcher();
 
     geometry_batcher(const geometry_batcher &geo) { clone(geo); }
