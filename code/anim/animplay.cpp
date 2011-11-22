@@ -840,14 +840,14 @@ int anim_free(anim *ptr)
 
 	if ( ptr->flags & (ANF_MEM_MAPPED|ANF_STREAMED) ) {
 		cfclose(ptr->cfile_ptr);
-		if ( ptr->cache ) {
+		if (ptr->cache != NULL) {
 			vm_free(ptr->cache);
 			ptr->cache = NULL;
 		}
 	}
 	else {
 		Assert(ptr->data);
-		if ( ptr->data ) {
+		if (ptr->data != NULL) {
 			vm_free(ptr->data);
 			ptr->data = NULL;
 		}
