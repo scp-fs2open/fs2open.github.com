@@ -619,6 +619,10 @@ SOURCE=..\..\code\globalincs\globals.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\inttypes.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\GlobalIncs\LinkList.h
 # End Source File
 # Begin Source File
@@ -644,6 +648,10 @@ SOURCE=..\..\code\globalincs\safe_strings.h
 # Begin Source File
 
 SOURCE=..\..\code\globalincs\safe_strings_test.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\stdint.h
 # End Source File
 # Begin Source File
 
