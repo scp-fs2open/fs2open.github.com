@@ -6258,11 +6258,12 @@ int mission_did_ship_arrive(p_object *objp)
 			}
 
 			// Goober5000: aha - also don't create if fighterbay is destroyed
-			if (ship_fighterbays_all_destroyed(&Ships[shipnum]))
+			if (ship_fighterbays_all_destroyed(&Ships[shipnum])) {
 				WarningEx(LOCATION, "Warning: Ship %s cannot arrive from destroyed docking bay of %s.\n", objp->name, name);
 				return -1;
+			}
 		}
-		
+
 		if ( objp->flags & P_SF_CANNOT_ARRIVE ) {
 			WarningEx(LOCATION, "Warning: Ship %s cannot arrive. Ship not created.\n", objp->name);
 			return -1;
