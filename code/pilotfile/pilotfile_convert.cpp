@@ -97,7 +97,7 @@ void convert_pilot_files()
 			if ( !stricmp(fname, old_files[j].c_str()) ) {
 				// NOTE: we just clear the name here to avoid the fragmentation
 				//       from resizing the vector
-				old_files[j].clear();
+				old_files[j] = "";
 				++i;
 			}
 		}

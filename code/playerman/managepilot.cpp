@@ -502,7 +502,7 @@ void player::reset()
 
 	variables.clear();
 
-	death_message.clear();
+	death_message = "";
 
 	memset(&lua_ci, 0, sizeof(control_info));
 	memset(&lua_bi, 0, sizeof(button_info));

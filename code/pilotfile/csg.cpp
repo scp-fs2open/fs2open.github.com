@@ -1221,7 +1221,7 @@ void pilotfile::csg_close()
 	}
 
 	p = NULL;
-	filename.clear();
+	filename = "";
 
 	ship_list.clear();
 	weapon_list.clear();
