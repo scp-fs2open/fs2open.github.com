@@ -599,6 +599,14 @@ SOURCE=..\..\code\GlobalIncs\AlphaColors.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\compatibility.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\compatibility.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\globalincs\def_files.cpp
 # End Source File
 # Begin Source File
