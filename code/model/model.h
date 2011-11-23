@@ -257,6 +257,7 @@ typedef struct bsp_info {
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
 	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
 	int		movement_axis;			// which axis this subobject moves or rotates on.
+	bool	can_move;				// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
 
 	vec3d	offset;					// 3d offset from parent object
 	matrix	orientation;			// 3d orientation relative to parent object
@@ -322,6 +323,7 @@ typedef struct bsp_info {
 		name[ 0 ] = '\0';
 		movement_type = 0;
 		movement_axis = 0;
+		can_move = false;
 		
 		bsp_data_size = 0;
 		blown_off = 0;

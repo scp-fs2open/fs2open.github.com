@@ -2215,12 +2215,10 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		// set the the necessary submodel instance info needed here. The second
 		// condition is thus a hack to disable the feature while in the lab, and
 		// can be removed if the lab is re-structured accordingly. -zookeeper
-		if ( bank->submodel_num > -1 && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+		if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
 			model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_num);
 
-			// The E: Only do this whole "account for rotation" bit if the subsystem actually is rotating
-			ship_subsys* subsys = ship_get_subsys(shipp, pm->submodel[bank->submodel_num].name);
-			submodel_rotation = (subsys->flags & SSF_ROTATES) > 0;
+			submodel_rotation = true;
 		}
 
 		for (j = 0; j < bank->num_points; j++) {
