@@ -47,7 +47,7 @@
 // or compiler give many errors like this:
 //   error C2733: second C linkage of overloaded function 'wmemchr' not allowed
 #ifdef __cplusplus
-extern "C" {
+extern "C++" {
 #endif
 #  include <wchar.h>
 #ifdef __cplusplus
