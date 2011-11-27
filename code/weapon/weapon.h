@@ -220,8 +220,6 @@ typedef struct weapon {
 // info specific to beam weapons
 typedef struct beam_weapon_section_info {
 	float width;							// width of the section
-	ubyte rgba_inner[4];					// for non-textured beams
-	ubyte rgba_outer[4];					// for non-textured beams
 	float flicker;							// how much it flickers (0.0 to 1.0)
 	float z_add;							// is this necessary?
 	float tile_factor;						// texture tile factor -Bobboau

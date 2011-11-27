@@ -974,11 +974,6 @@ void init_weapon_entry(int weap_info_index)
 
 		generic_anim_init(&bsip->texture, NULL);
 
-		for (j = 0; j < 4; j++) {
-			bsip->rgba_inner[j] = 0;
-			bsip->rgba_outer[j] = 255;
-		}
-
 		bsip->width = 1.0f;
 		bsip->flicker = 0.1f;
 		bsip->z_add = i2fl(MAX_BEAM_SECTIONS - i - 1);
@@ -2221,18 +2216,20 @@ int parse_weapon(int subtype, bool replace)
 
 			// rgba inner
 			if ( optional_string("+RGBA Inner:") ) {
-				stuff_ubyte(&bsip->rgba_inner[0]);
-				stuff_ubyte(&bsip->rgba_inner[1]);
-				stuff_ubyte(&bsip->rgba_inner[2]);
-				stuff_ubyte(&bsip->rgba_inner[3]);
+				ubyte dummy;
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
 			}
 
 			// rgba outer
 			if ( optional_string("+RGBA Outer:") ) {
-				stuff_ubyte(&bsip->rgba_outer[0]);
-				stuff_ubyte(&bsip->rgba_outer[1]);
-				stuff_ubyte(&bsip->rgba_outer[2]);
-				stuff_ubyte(&bsip->rgba_outer[3]);
+				ubyte dummy;
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
 			}
 
 			// flicker
