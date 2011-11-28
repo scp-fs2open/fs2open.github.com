@@ -5380,7 +5380,7 @@ extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 /**
  * Distrupt any subsystems that fall into damage sphere of this Electronics missile
  *
- * @param ship_obj	Pointer to ship that holds subsystem
+ * @param ship_objp	Pointer to ship that holds subsystem
  * @param blast_pos	World pos of weapon blast
  * @param wi_index	Weapon info index of weapon causing blast
  */
@@ -5548,6 +5548,7 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
  * Do the area effect for a weapon
  *
  * @param wobjp		Object pointer to weapon causing explosion
+ * @param sci		Shockwave info
  * @param pos		World pos of explosion center
  * @param other_obj	Object pointer to ship that weapon impacted on (can be NULL)
  */
