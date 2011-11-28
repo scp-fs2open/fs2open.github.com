@@ -572,7 +572,7 @@ int iff_get_attackee_mask(int attacker_team)
 /**
  * Rather slower, since it has to construct a mask
  *
- * @param attacker_team Team of attacker
+ * @param attackee_team Team of attacker
  * @return Bitmask
  */
 int iff_get_attacker_mask(int attackee_team)
@@ -593,7 +593,7 @@ int iff_get_attacker_mask(int attackee_team)
  * Similar to above
  *
  * @param team_x Team of attacker
- * @param team_x Team of attackee
+ * @param team_y Team of attackee
  *
  * @return >0 if true, 0 if false
  */

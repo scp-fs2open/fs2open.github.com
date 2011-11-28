@@ -410,7 +410,7 @@ int ship_in_my_squadron(ship *shipp)
 }
 
 /**
- * Initialise ::ship_obj_list
+ * Initialise Ship_obj_list
  */
 void ship_obj_list_init()
 {
@@ -5185,7 +5185,8 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 /**
  * Set subsystem
  *
- * @param ignore_subsys_info default parameter with value of 0.  This is only set to 1 by the save/restore code
+ * @param objnum				Object number (used as index into Objects[])
+ * @param ignore_subsys_info	Default parameter with value of 0.  This is only set to 1 by the save/restore code
  */
 int subsys_set(int objnum, int ignore_subsys_info)
 {	
@@ -6745,6 +6746,8 @@ void ship_cleanup(int shipnum, int cleanup_mode)
  * @param outer_rad		distance from ship center for which no damage is applied
  * @param max_damage	maximum damage applied
  * @param max_blast		maximum impulse applied from blast
+ * @param damage		damage applied
+ * @param blast			impulse applied from blast
  */
 int ship_explode_area_calc_damage( vec3d *pos1, vec3d *pos2, float inner_rad, float outer_rad, float max_damage, float max_blast, float *damage, float *blast )
 {
@@ -6884,7 +6887,7 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 /**
  * Only ever called once for any ship that dies
  *
- * This function relies on the "dead dock" list, which replaces the ::dock_objnum_when_dead
+ * This function relies on the "dead dock" list, which replaces the dock_objnum_when_dead
  * used in retail.
  */
 void do_dying_undock_physics(object *dying_objp, ship *dying_shipp) 
@@ -8720,6 +8723,7 @@ void ship_model_change(int n, int ship_type)
  *
  * @param n			index of ship in ::Ships[] array
  * @param ship_type	ship class (index into ::Ship_info[])
+ * @param by_sexp	SEXP reference
  */
 void change_ship_type(int n, int ship_type, int by_sexp)
 {
@@ -10272,10 +10276,12 @@ void ship_process_targeting_lasers()
 	}}
 
 /**
- * Attempt to detonate weapon last fired by *shipp.
+ * Attempt to detonate weapon last fired by *src.
  * Only used for weapons that support remote detonation.
  * 
- * @param Return true if detonated, else return false.
+ * @param swp	Ship weapon
+ * @param src	Source of weapon
+ * @return true if detonated, else return false.
  * 
  *	Calls ::weapon_hit() to detonate weapon.
  *	If it's a weapon that spawns particles, those will be released.
@@ -12023,7 +12029,7 @@ float ship_get_subsystem_strength( ship *shipp, int type )
  *
  * The strength passed as a parameter is between 0.0 and 1.0
  *
- * NOTE: this function was made to be called by the debug function ::dcf_set_subsys().  If
+ * NOTE: this function was made to be called by the debug function dcf_set_subsys().  If
  * you want to use this, be sure that you test it for all cases.
  */
 void ship_set_subsystem_strength( ship *shipp, int type, float strength )

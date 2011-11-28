@@ -2386,7 +2386,7 @@ void game_show_standalone_framerate()
 /**
  * Show the time remaining in a mission.  Used only when the end-mission sexpression is used
  *
- * ::mission_end_time is a global from missionparse.cpp that contains the mission time at which the
+ * mission_end_time is a global from missionparse.cpp that contains the mission time at which the
  * mission should end (in fixed seconds).  There is code in missionparse.cpp which actually handles
  * checking how much time is left.
  */

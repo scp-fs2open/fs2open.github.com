@@ -1979,6 +1979,9 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
  * Given an object and an enemy team, return the index of the nearest enemy object.
  * Unless aip->targeted_subsys != NULL, don't allow to attack objects with OF_PROTECTED bit set.
  *
+ * @param objnum			Object number
+ * @param enemy_team_mask	Mask to apply to enemy team
+ * @param enemy_wing		Enemy wing chosen
  * @param range				Ship must be within range "range".
  * @param max_attackers		Don't attack a ship that already has at least max_attackers attacking it.
  */
@@ -2137,6 +2140,9 @@ int get_enemy_timestamp()
 
 /**
  * Return objnum if enemy found, else return -1;
+ *
+ * @param objnum		Object number
+ * @param range			Range within which to look
  * @param max_attackers Don't attack a ship that already has at least max_attackers attacking it.
  */
 int find_enemy(int objnum, float range, int max_attackers)
@@ -2338,7 +2344,8 @@ void ai_evade_object(object *evader, object *evaded)
 /**
  * Returns total number of ignored objects.
  *
- * @param "force" means we forget the oldest object
+ * @param aip		AI info
+ * @param force		Means we forget the oldest object
  */
 int compact_ignore_new_objects(ai_info *aip, int force = 0)
 {
@@ -2458,6 +2465,9 @@ void ai_ignore_wing(object *ignorer, int wingnum, int priority)
  * If modify_index == -1, then create a new point.
  * If a new point is created (ie, modify_index == -1), then Ppfp is updated.
  *
+ * @param pos			Position in vector space
+ * @param path_num		Path numbers
+ * @param path_index	Index into path
  * @param modify_index	Index in Path_points at which to store path point.
  */
 void add_path_point(vec3d *pos, int path_num, int path_index, int modify_index)
@@ -2513,7 +2523,11 @@ void bisect_chord(vec3d *p0, vec3d *p1, vec3d *centerp, float radius)
  * It is ok to intersect the current object, but not the goal object.
  * This function is useful for creating a path to an initial point near a large object.
  *
- * @param subsys_path	optional param (default 0), indicates this is a path to a subsystem
+ * @param curpos		Current position in vector space
+ * @param goalpos		Goal position in vector space
+ * @param curobjp		Current object pointer
+ * @param goalobjp		Goal object pointer
+ * @param subsys_path	Optional param (default 0), indicates this is a path to a subsystem
  */
 void create_path_to_point(vec3d *curpos, vec3d *goalpos, object *curobjp, object *goalobjp, int subsys_path)
 {
@@ -2557,7 +2571,13 @@ void create_path_to_point(vec3d *curpos, vec3d *goalpos, object *curobjp, object
  * Given an object and a model path, globalize the points on the model and copy into the global path list.
  * If pnp != NULL, then modify, in place, the path points.  This is used to create new globalized points when the base object has moved.
  *
- * @param randomize_pnt	optional parameter (default value -1), add random vector in sphere to this path point
+ * @param objp			Object pointer
+ * @param mp			Model path
+ * @param dir			Directory type
+ * @param count			Count of items
+ * @param path_num		Path number
+ * @param pnp			Node on a path
+ * @param randomize_pnt	Optional parameter (default value -1), add random vector in sphere to this path point
  */
 void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int count, int path_num, pnode *pnp, int randomize_pnt)
 {
@@ -2647,7 +2667,10 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
  * The tricky part of this problem is creating the entry to the first point on the predefined path.  
  * The points on this entry path are based on the location of Pl_objp relative to the start of the path.
  *
- * @param subsys_path optional param (default 0), indicating this is a path to a subsystem
+ * @param pl_objp		Player object
+ * @param mobjp			Model object
+ * @param path_num		Number of path
+ * @param subsys_path	Optional param (default 0), indicating this is a path to a subsystem
  */
 void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_path)
 {	

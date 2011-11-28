@@ -798,7 +798,7 @@ void maybe_throw_asteroid(int count)
 }
 
 /**
- * Delete asteroid from ::Asteroid_used_list
+ * Delete asteroid from Asteroid_used_list
  */
 void asteroid_delete( object * obj )
 {
