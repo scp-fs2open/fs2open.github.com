@@ -308,7 +308,7 @@ void neb2_set_detail_level(int level)
 	Nd = &Neb2_detail[level];
 
 	// regen the player neb
-	Neb2_regen = 1;
+	neb2_eye_changed();
 }
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
@@ -1594,7 +1594,7 @@ DCF(neb2_slices, "")
 {
 	dc_get_arg(ARG_INT);
 	Neb2_slices = Dc_arg_int;
-	Neb2_regen = 1;
+	neb2_eye_changed();
 }
 
 DCF(neb2_background, "")
