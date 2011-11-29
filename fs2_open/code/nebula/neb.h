@@ -70,6 +70,19 @@ typedef struct cube_poof {
 #define MAX_CPTS		5		// should always be <= slices
 extern cube_poof Neb2_cubes[MAX_CPTS][MAX_CPTS][MAX_CPTS];
 
+// nebula detail level
+typedef struct neb2_detail {
+	float max_alpha_glide;		// max alpha for this detail level in Glide
+	float max_alpha_d3d;		// max alpha for this detail level in D3d
+	float break_alpha;			// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+	float break_x, break_y;		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen
+	float cube_dim;				// total dimension of player poof cube
+	float cube_inner;			// inner radius of the player poof cube
+	float cube_outer;			// outer radius of the player pood cube
+	float prad;					// radius of the poofs
+	float wj, hj, dj;			// width, height, depth jittering. best left at 1.0
+} neb2_detail;
+
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA FUNCTIONS
