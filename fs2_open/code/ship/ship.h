@@ -881,6 +881,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define AIM_FLAG_AUTO_CONVERGENCE		(1 << 1)	// has automatic convergence
 #define AIM_FLAG_STD_CONVERGENCE		(1 << 2)	// has standard - ie. non-automatic - convergence
 #define AIM_FLAG_AUTOAIM_CONVERGENCE	(1 << 3)	// has autoaim with convergence
+#define AIM_FLAG_CONVERGENCE_OFFSET		(1 << 4)	// marks that convergence has offset value
 
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
