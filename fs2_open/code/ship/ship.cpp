@@ -11511,30 +11511,28 @@ int ship_query_state(char *name)
 	return 1;
 }
 
-//	Note: This is not a general purpose routine.
-//	It is specifically used for targeting.
-//	It only returns a subsystem position if it has shields.
-//	Return true/false for subsystem found/not found.
-//	Stuff vector *pos with absolute position.
+// Finds the world position of a subsystem.
+// Return true/false for subsystem found/not found.
+// Stuff vector *pos with absolute position.
 // subsysp is a pointer to the subsystem.
 int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 {
-	model_subsystem	*psub;
-	vec3d	pnt;
-	ship		*shipp;
+	if (subsysp == NULL) {
+		*pos = objp->pos;
+		return 0;
+	}
 
-	Assert(objp->type == OBJ_SHIP);
-	shipp = &Ships[objp->instance];
+	model_subsystem *mss = subsysp->system_info;
 
-	Assert ( subsysp != NULL );
+	if (mss->subobj_num == -1) {
+		// If it's a special point subsys, we can use its offset directly
 
-	psub = subsysp->system_info;
+		vm_vec_unrotate(pos, &subsysp->system_info->pnt, &objp->orient);
+		vm_vec_add2(pos, &objp->pos);
+	} else {
+		// Submodel subsystems may require a more complicated calculation
 
-	vm_vec_unrotate(&pnt, &psub->pnt, &objp->orient);
-	vm_vec_add2(&pnt, &objp->pos);
-
-	if ( pos ){
-		*pos = pnt;
+		find_submodel_instance_world_point(pos, objp, mss->subobj_num);
 	}
 
 	return 1;
