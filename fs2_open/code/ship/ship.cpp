@@ -9526,7 +9526,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
 			vm_vec_sub2(&target_velocity_vec, &obj->phys_info.vel);
 
-		dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
+		dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
 	}
 
 	for ( i = 0; i < num_primary_banks; i++ ) {		
