@@ -1280,6 +1280,52 @@ void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_st
 }
 
 /**
+ * Common method for parsing ship/subsystem primary/secondary weapons so that the parser doesn't flip out in the event of a problem.
+ *
+ */
+void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *bank_default_weapons, int *bank_capacities)
+{
+	Assert(sip != NULL);
+	Assert(bank_default_weapons != NULL);
+	Assert(bank_capacities != NULL);
+	const int max_banks = is_primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS;
+
+	// we initialize to the previous parse, which presumably worked
+	int num_bank_capacities = num_banks != NULL ? *num_banks : 0;
+
+	if (optional_string(is_primary ? "$Default PBanks:" : "$Default SBanks:"))
+	{
+		// get weapon list
+		if (num_banks != NULL)
+			*num_banks = stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+		else
+			stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+	}
+
+	if (optional_string(is_primary ? "$PBank Capacity:" : "$SBank Capacity:"))
+	{
+		// get capacity list
+		num_bank_capacities = stuff_int_list(bank_capacities, max_banks, RAW_INTEGER_TYPE);
+	}
+
+	// num_banks can be null if we're parsing weapons for a turret
+	if ((num_banks != NULL) && (*num_banks != num_bank_capacities))
+	{
+		// okay for a ship to have 0 primary capacities, since it won't be ammo-enabled
+		if (is_primary && num_bank_capacities != 0)
+		{
+			Warning(LOCATION, "Ship class '%s' has %d primary banks, but %d primary capacities... fix this!!", sip->name, *num_banks, num_bank_capacities);
+		}
+
+		// secondaries have no excuse!
+		if (!is_primary)
+		{
+			Warning(LOCATION, "Ship class '%s' has %d secondary banks, but %d secondary capacities... fix this!!", sip->name, *num_banks, num_bank_capacities);
+		}
+	}
+}
+
+/**
  * Puts values into a ship_info.
  */
 int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace)
@@ -1288,7 +1334,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	char* info_type_name;
 	int i, j, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
-	int pbank_capacity_count, sbank_capacity_count;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 	
@@ -2175,31 +2220,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 	}
 
-	// Get default primary bank weapons
-	if(optional_string("$Default PBanks:"))
-	{
-		strcat_s(parse_error_text,"'s default primary banks");
-		sip->num_primary_banks = stuff_int_list(sip->primary_bank_weapons, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
-		strcpy_s(parse_error_text, temp_error);
-
-		// error checking
-		for ( i = 0; i < sip->num_primary_banks; i++ ) {
-			Assertion((sip->primary_bank_weapons[i] >= 0), "%s. No $Default PBanks supplied for bank %d", parse_error_text, i);
-		}
-	}
-
-	// optional ballistic primary imformation (Goober5000)......
-	if(optional_string("$PBank Capacity:"))
-	{
-		// get the capacity of each primary bank
-		strcat_s(parse_error_text,"'s default primary banks' ammo");
-		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
-		strcpy_s(parse_error_text, temp_error);
-		if (pbank_capacity_count != sip->num_primary_banks)
-		{
-			Warning(LOCATION, "Primary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
-		}
-	}
+	// Get primary bank weapons
+	parse_weapon_bank(sip, true, &sip->num_primary_banks, sip->primary_bank_weapons, sip->primary_bank_ammo_capacity);
 
 	if(optional_string("$Show Primary Models:"))
 	{
@@ -2289,24 +2311,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 	}
 
-	// Get default secondary bank weapons
-
-	if(optional_string("$Default SBanks:"))
-	{
-		strcat_s(parse_error_text,"'s default secondary banks");
-		sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
-		strcpy_s(parse_error_text, temp_error);
-
-		// Get the capacity of each secondary bank
-		required_string("$SBank Capacity:");
-		strcat_s(parse_error_text,"'s secondary banks capacities");
-		sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
-		strcpy_s(parse_error_text, temp_error);
-		if ( sbank_capacity_count != sip->num_secondary_banks )
-		{
-			Warning(LOCATION, "Secondary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
-		}
-	}
+	// Get secondary bank weapons
+	parse_weapon_bank(sip, false, &sip->num_secondary_banks, sip->secondary_bank_weapons, sip->secondary_bank_ammo_capacity);
     
 	if(optional_string("$Show Secondary Models:"))
 	{
@@ -3250,33 +3256,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					WarningEx(LOCATION, "Ship %s, subsystem %s\nInvalid armor type %s!", sip->name, sp->subobj_name, buf);
 			}
 
-			//	Get default primary bank weapons
-			if (optional_string("$Default PBanks:")){
-				strcat_s(parse_error_text,"'s default primary banks");
-				stuff_int_list(sp->primary_banks, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
-				strcpy_s(parse_error_text, temp_error);
-			}
+			//	Get primary bank weapons
+			parse_weapon_bank(sip, true, NULL, sp->primary_banks, sp->primary_bank_capacity);
 
-			// get capacity of each primary bank - Goober5000
-			if (optional_string("$PBank Capacity:")){
-				strcat_s(parse_error_text,"'s primary banks capacities");
-				stuff_int_list(sp->primary_bank_capacity, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
-				strcpy_s(parse_error_text, temp_error);
-			}
-
-			//	Get default secondary bank weapons
-			if (optional_string("$Default SBanks:")){
-				strcat_s(parse_error_text,"'s default secondary banks");
-				stuff_int_list(sp->secondary_banks, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
-				strcpy_s(parse_error_text, temp_error);
-			}
-
-			// Get the capacity of each secondary bank
-			if (optional_string("$SBank Capacity:")){
-				strcat_s(parse_error_text,"'s secondary banks capacities");
-				stuff_int_list(sp->secondary_bank_capacity, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
-				strcpy_s(parse_error_text, temp_error);
-			}
+			//	Get secondary bank weapons
+			parse_weapon_bank(sip, false, NULL, sp->secondary_banks, sp->secondary_bank_capacity);
 
 			// Get optional engine wake info
 			if (optional_string("$Engine Wash:")) {
