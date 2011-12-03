@@ -107,28 +107,49 @@ int Key_normal_game = 0;
  * Keyboard layouts
  */
 enum KeyboardLayout {
-	KEYBOARD_LAYOUT_DEFAULT,//!< American
-	KEYBOARD_LAYOUT_QWERTZ  //!< German
+	KEYBOARD_LAYOUT_DEFAULT, //!< American
+	KEYBOARD_LAYOUT_QWERTZ,  //!< German
+	KEYBOARD_LAYOUT_AZERTY   //!< French
 };
 
 void FillSDLArray ()
 {
 	KeyboardLayout layout = KEYBOARD_LAYOUT_DEFAULT;
 	
-	if ((Cmdline_keyboard_layout) && !strcmp(Cmdline_keyboard_layout, "qwertz")) {
-		layout = KEYBOARD_LAYOUT_QWERTZ;
+	if (Cmdline_keyboard_layout) {
+		if (!strcmp(Cmdline_keyboard_layout, "qwertz")) {
+			layout = KEYBOARD_LAYOUT_QWERTZ;
+		}
+		
+		if (!strcmp(Cmdline_keyboard_layout, "azerty")) {
+			layout = KEYBOARD_LAYOUT_AZERTY;
+		}
+
 	}
 
-	SDLtoFS2[SDLK_0] = KEY_0;
-	SDLtoFS2[SDLK_1] = KEY_1;
-	SDLtoFS2[SDLK_2] = KEY_2;
-	SDLtoFS2[SDLK_3] = KEY_3;
-	SDLtoFS2[SDLK_4] = KEY_4;
-	SDLtoFS2[SDLK_5] = KEY_5;
-	SDLtoFS2[SDLK_6] = KEY_6;
-	SDLtoFS2[SDLK_7] = KEY_7;
-	SDLtoFS2[SDLK_8] = KEY_8;
-	SDLtoFS2[SDLK_9] = KEY_9;
+	if(layout == KEYBOARD_LAYOUT_AZERTY) {
+		SDLtoFS2[SDLK_WORLD_64] = KEY_0;
+		SDLtoFS2[SDLK_AMPERSAND] = KEY_1;
+		SDLtoFS2[SDLK_WORLD_73] = KEY_2;
+		SDLtoFS2[SDLK_QUOTEDBL] = KEY_3;
+		SDLtoFS2[SDLK_QUOTE] = KEY_4;
+		SDLtoFS2[SDLK_LEFTPAREN] = KEY_5;
+		SDLtoFS2[SDLK_MINUS] = KEY_6;
+		SDLtoFS2[SDLK_WORLD_72] = KEY_7;
+		SDLtoFS2[SDLK_UNDERSCORE] = KEY_8;
+		SDLtoFS2[SDLK_WORLD_71] = KEY_9;
+	} else {
+		SDLtoFS2[SDLK_0] = KEY_0;
+		SDLtoFS2[SDLK_1] = KEY_1;
+		SDLtoFS2[SDLK_2] = KEY_2;
+		SDLtoFS2[SDLK_3] = KEY_3;
+		SDLtoFS2[SDLK_4] = KEY_4;
+		SDLtoFS2[SDLK_5] = KEY_5;
+		SDLtoFS2[SDLK_6] = KEY_6;
+		SDLtoFS2[SDLK_7] = KEY_7;
+		SDLtoFS2[SDLK_8] = KEY_8;
+		SDLtoFS2[SDLK_9] = KEY_9;
+	}
 
 	SDLtoFS2[SDLK_a] = KEY_A;
 	SDLtoFS2[SDLK_b] = KEY_B;
@@ -188,6 +209,22 @@ void FillSDLArray ()
 
 		SDLtoFS2[SDLK_CARET] = KEY_LAPOSTRO;
 		SDLtoFS2[SDLK_WORLD_68] = KEY_RAPOSTRO;
+	}
+
+	if(layout == KEYBOARD_LAYOUT_AZERTY) {
+		SDLtoFS2[SDLK_RIGHTPAREN] = KEY_MINUS;
+		SDLtoFS2[SDLK_EQUALS] = KEY_EQUAL;
+		SDLtoFS2[SDLK_EXCLAIM] = KEY_DIVIDE;
+		SDLtoFS2[SDLK_ASTERISK] = KEY_SLASH;
+		SDLtoFS2[SDLK_COMMA] = KEY_COMMA;
+		SDLtoFS2[SDLK_COLON] = KEY_PERIOD;
+		SDLtoFS2[SDLK_SEMICOLON] = KEY_SEMICOL;
+
+		SDLtoFS2[SDLK_CARET] = KEY_LBRACKET;
+		SDLtoFS2[SDLK_DOLLAR] = KEY_RBRACKET;
+
+		SDLtoFS2[SDLK_WORLD_18] = KEY_LAPOSTRO;
+		SDLtoFS2[SDLK_WORLD_89] = KEY_RAPOSTRO;
 	}
 
 	SDLtoFS2[SDLK_ESCAPE] = KEY_ESC;
@@ -674,37 +711,6 @@ void key_mark( uint code, int state, uint latency )
 	}
 
 #ifndef SCP_UNIX
-	if(Lcl_fr){
-		switch (code) {
-		case KEY_A:
-			code = KEY_Q;
-			break;
-
-		case KEY_M:
-			code = KEY_COMMA;
-			break;
-
-		case KEY_Q:
-			code = KEY_A;
-			break;
-
-		case KEY_W:
-			code = KEY_Z;
-			break;
-
-		case KEY_Z:
-			code = KEY_W;
-			break;
-
-		case KEY_SEMICOL:
-			code = KEY_M;
-			break;
-
-		case KEY_COMMA:
-			code = KEY_SEMICOL;
-			break;
-		}
-	}
 
 	if ( (code == 0xc5) && !Key_running_NT ) {
 		key_turn_off_numlock();
