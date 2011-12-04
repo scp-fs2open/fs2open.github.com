@@ -481,6 +481,7 @@ sexp_oper Operators[] = {
 	{ "activate-glow-maps",			OP_ACTIVATE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
 	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
 	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
+	{ "set-thrusters-status",		OP_SET_THRUSTERS,				2, INT_MAX },	// The E
 
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
@@ -15408,6 +15409,29 @@ void sexp_beam_free(int node)
 	}
 }
 
+void sexp_set_thrusters(int node) 
+{
+	bool activate = is_sexp_true(node);
+	node = CDR(node);
+
+	for(; node >= 0; CDR(node)) {
+		int sindex = ship_name_lookup(CTEXT(node));
+		
+		if (sindex < 0) {
+			continue;
+		}
+
+		if (Ships[sindex].objnum < 0) {
+			continue;
+		}
+
+		if (activate)
+			Ships[sindex].flags2 &= ~SF2_NO_THRUSTERS;
+		else
+			Ships[sindex].flags2 |= SF2_NO_THRUSTERS;
+	}
+}
+
 void sexp_beam_free_all(int node)
 {
 	ship_subsys *subsys;
@@ -21956,6 +21980,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_clear_subtitles();
 				break;
 
+			case OP_SET_THRUSTERS:
+				sexp_val = SEXP_TRUE;
+				sexp_set_thrusters(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -22888,6 +22917,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
+		case OP_SET_THRUSTERS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -24784,6 +24814,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CLEAR_SUBTITLES:
 			return OPF_NONE;
 
+		case OP_SET_THRUSTERS:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_SHIP;
+
 		default:
 			Int3();
 	}
@@ -26096,6 +26132,7 @@ int get_subcategory(int sexp_id)
 		case OP_ACTIVATE_GLOW_MAPS:
 		case OP_DEACTIVATE_GLOW_POINT_BANK:
 		case OP_ACTIVATE_GLOW_POINT_BANK:
+		case OP_SET_THRUSTERS:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -29653,6 +29690,13 @@ sexp_help_struct Sexp_help[] = {
 
 	{OP_CLEAR_SUBTITLES, "clear-subtitles\r\n"
 		"\tClears the subtitle queue completely.\r\n"
+	},
+
+	{OP_SET_THRUSTERS, "set-thrusters-status\r\n"
+		"\tManipulates the thrusters on a ship.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tBoolean, true sets thrusters to visible, false deactivates them.\r\n"
+		"\t2:\tRest: List of ships this sexp will work on.\r\n"
 	}
 };
 

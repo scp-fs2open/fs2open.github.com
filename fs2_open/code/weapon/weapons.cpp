@@ -2214,7 +2214,7 @@ int parse_weapon(int subtype, bool replace)
 				generic_anim_init(&bsip->texture, fname);
 			}
 
-			// rgba inner
+			// The E -- Dummied out due to not being used anywhere
 			if ( optional_string("+RGBA Inner:") ) {
 				ubyte dummy;
 				stuff_ubyte(&dummy);
@@ -2223,7 +2223,7 @@ int parse_weapon(int subtype, bool replace)
 				stuff_ubyte(&dummy);
 			}
 
-			// rgba outer
+			// The E -- Dummied out due to not being used anywhere
 			if ( optional_string("+RGBA Outer:") ) {
 				ubyte dummy;
 				stuff_ubyte(&dummy);
