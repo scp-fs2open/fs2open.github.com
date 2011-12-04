@@ -301,7 +301,6 @@ void parse_species_tbl(char *filename)
 
 
 		// Shield Hit Animation
-		//if ((!no_create && required_string("+Shield_Hit_ani:")) || optional_string("+Shield_Hit_ani:"))
         if (optional_string("+Shield_Hit_ani:")) // Shouldn't be required -- LPine
 		{
 			generic_anim_init(&species->shield_anim, NULL);
