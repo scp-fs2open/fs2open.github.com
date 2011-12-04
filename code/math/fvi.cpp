@@ -511,7 +511,7 @@ int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, fl
  * @param plane_normal			normal to the colliding plane
  * @param plane_point			point in the colliding plane
  * @param hit_time				time surface of sphere first hits plane
- * @param delta_t				time for sphere to cross plane (first to last contact)
+ * @param crossing_time			time for sphere to cross plane (first to last contact)
  *
  * @return 1 if sphere may be in contact with plane in time range [0-1], 0 otherwise
  */
@@ -953,6 +953,8 @@ void fvi_closest_point_on_line_segment(vec3d *closest_point, vec3d *fixed_point,
  * @param x_s1		other sphere, end point
  * @param radius_p	radius of polymodel sphere
  * @param radius_s	radius of other sphere
+ * @param t1		time pointer 1
+ * @param t2		time pointer 2
  *
  * @return 1 if spheres overlap, 0 otherwise
  */

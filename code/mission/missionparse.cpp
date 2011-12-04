@@ -5662,6 +5662,7 @@ void mission_parse_close()
 /**
  * Sets the arrival location of the ships in wingp.  
  *
+ * @param wingp Pointer to wing
  * @param num_to_set The threshold value for wings may have us create more ships in the wing when there are still some remaining
  */
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set )

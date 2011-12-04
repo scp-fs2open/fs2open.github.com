@@ -757,15 +757,18 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	return 0;
 }
 
-// ------------------------------------------------------------------
-// bm_load_animation()
-//
-//	input:		filename		=>		filename of animation
-//					nframes		=>		OUTPUT parameter:	number of frames in the animation
-//					fps			=>		OUTPUT/OPTIONAL parameter: intended fps for the animation
-//
-// returns:		bitmap number of first frame in the animation
-//
+/**
+ * Load animation
+ * 
+ * @param real_filename		filename of animation
+ * @param nframes			OUTPUT parameter:	number of frames in the animation
+ * @param fps				OUTPUT/OPTIONAL parameter: intended fps for the animation
+ * @param keyframe			Keyframe number
+ * @param can_drop_frames	Toggle to allow dropped frames
+ * @param dir_type			Directory type
+ *
+ * @returns	Bitmap number of first frame in the animation
+ */
 int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type)
 {
 	int	i, n;
@@ -1691,11 +1694,12 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	return bmp;
 }
 
-// Unlocks a bitmap
-//
-// Decrements the ref_count member of the bitmap_entry struct.  A bitmap can only be unloaded
-// when the ref_count is 0.
-//
+/**
+ * Unlocks a bitmap
+ * 
+ * Decrements the ref_count member of the bitmap_entry struct.  A bitmap can only be unloaded
+ * when the ref_count is 0.
+ */
 void bm_unlock( int handle )
 {
 	bitmap_entry	*be;

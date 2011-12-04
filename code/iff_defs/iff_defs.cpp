@@ -557,7 +557,12 @@ int iff_get_attackee_mask(int attacker_team)
 	}
 }
 
-// rather slower, since it has to construct a mask
+/**
+ * Rather slower, since it has to construct a mask
+ *
+ * @param attackee_team Team of attacker
+ * @return Bitmask
+ */
 int iff_get_attacker_mask(int attackee_team)
 {
 	Assert(attackee_team >= 0 && attackee_team < Num_iffs);
@@ -572,7 +577,14 @@ int iff_get_attacker_mask(int attackee_team)
 	return attacker_bitmask;
 }
 
-// similar to above; >0 if true, 0 if false
+/**
+ * Similar to above
+ *
+ * @param team_x Team of attacker
+ * @param team_y Team of attackee
+ *
+ * @return >0 if true, 0 if false
+ */
 int iff_x_attacks_y(int team_x, int team_y)
 {
 	return iff_matches_mask(team_y, iff_get_attackee_mask(team_x));

@@ -1851,7 +1851,7 @@ void hud_update_ship_status(object *targetp)
 /**
  * Start the targetbox item flashing for duration ms
  *
- * @param index		TBOX_FLASH_ #define
+ * @param index		TBOX_FLASH_ define
  * @param duration	optional param (default value TBOX_FLASH_DURATION), how long to flash in ms
  */
 void hud_targetbox_start_flash(int index, int duration)

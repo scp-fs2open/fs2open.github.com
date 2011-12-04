@@ -2392,7 +2392,7 @@ void game_show_standalone_framerate()
 /**
  * Show the time remaining in a mission.  Used only when the end-mission sexpression is used
  *
- * ::mission_end_time is a global from missionparse.cpp that contains the mission time at which the
+ * mission_end_time is a global from missionparse.cpp that contains the mission time at which the
  * mission should end (in fixed seconds).  There is code in missionparse.cpp which actually handles
  * checking how much time is left.
  */
@@ -5204,6 +5204,8 @@ void game_process_event( int current_state, int event )
 			// clear multiplayer button info			
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
+
+			Script_system.RunCondition(CHA_GAMEPLAYSTART);
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			//Framecount = 0;

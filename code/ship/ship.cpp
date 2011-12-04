@@ -411,7 +411,7 @@ int ship_in_my_squadron(ship *shipp)
 }
 
 /**
- * Initialise ::ship_obj_list
+ * Initialise Ship_obj_list
  */
 void ship_obj_list_init()
 {
@@ -1289,6 +1289,52 @@ void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_st
 }
 
 /**
+ * Common method for parsing ship/subsystem primary/secondary weapons so that the parser doesn't flip out in the event of a problem.
+ *
+ */
+void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *bank_default_weapons, int *bank_capacities)
+{
+	Assert(sip != NULL);
+	Assert(bank_default_weapons != NULL);
+	Assert(bank_capacities != NULL);
+	const int max_banks = is_primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS;
+
+	// we initialize to the previous parse, which presumably worked
+	int num_bank_capacities = num_banks != NULL ? *num_banks : 0;
+
+	if (optional_string(const_cast<char*>(is_primary ? "$Default PBanks:" : "$Default SBanks:")))
+	{
+		// get weapon list
+		if (num_banks != NULL)
+			*num_banks = stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+		else
+			stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+	}
+
+	if (optional_string(const_cast<char*>(is_primary ? "$PBank Capacity:" : "$SBank Capacity:")))
+	{
+		// get capacity list
+		num_bank_capacities = stuff_int_list(bank_capacities, max_banks, RAW_INTEGER_TYPE);
+	}
+
+	// num_banks can be null if we're parsing weapons for a turret
+	if ((num_banks != NULL) && (*num_banks != num_bank_capacities))
+	{
+		// okay for a ship to have 0 primary capacities, since it won't be ammo-enabled
+		if (is_primary && num_bank_capacities != 0)
+		{
+			Warning(LOCATION, "Ship class '%s' has %d primary banks, but %d primary capacities... fix this!!", sip->name, *num_banks, num_bank_capacities);
+		}
+
+		// secondaries have no excuse!
+		if (!is_primary)
+		{
+			Warning(LOCATION, "Ship class '%s' has %d secondary banks, but %d secondary capacities... fix this!!", sip->name, *num_banks, num_bank_capacities);
+		}
+	}
+}
+
+/**
  * Puts values into a ship_info.
  */
 int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace)
@@ -1297,7 +1343,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	char* info_type_name;
 	int i, j, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
-	int pbank_capacity_count, sbank_capacity_count;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 	
@@ -1874,8 +1919,14 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			if(required_string("+Distance:"))
 				stuff_float(&sip->convergence_distance);
 		}
-		if(optional_string("+Offset:"))
+		if(optional_string("+Offset:")) {
 			stuff_vector(&sip->convergence_offset);
+
+			if (IS_VEC_NULL(&sip->convergence_offset))
+				sip->aiming_flags &= ~AIM_FLAG_CONVERGENCE_OFFSET;
+			else
+				sip->aiming_flags |= AIM_FLAG_CONVERGENCE_OFFSET;				
+		}
 	}
 
 	if(optional_string("$Warpin type:"))
@@ -2214,31 +2265,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 	}
 
-	// Get default primary bank weapons
-	if(optional_string("$Default PBanks:"))
-	{
-		strcat_s(parse_error_text,"'s default primary banks");
-		sip->num_primary_banks = stuff_int_list(sip->primary_bank_weapons, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
-		strcpy_s(parse_error_text, temp_error);
-
-		// error checking
-		for ( i = 0; i < sip->num_primary_banks; i++ ) {
-			Assertion((sip->primary_bank_weapons[i] >= 0), "%s. No $Default PBanks supplied for bank %d", parse_error_text, i);
-		}
-	}
-
-	// optional ballistic primary imformation (Goober5000)......
-	if(optional_string("$PBank Capacity:"))
-	{
-		// get the capacity of each primary bank
-		strcat_s(parse_error_text,"'s default primary banks' ammo");
-		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
-		strcpy_s(parse_error_text, temp_error);
-		if (pbank_capacity_count != sip->num_primary_banks)
-		{
-			Warning(LOCATION, "Primary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
-		}
-	}
+	// Get primary bank weapons
+	parse_weapon_bank(sip, true, &sip->num_primary_banks, sip->primary_bank_weapons, sip->primary_bank_ammo_capacity);
 
 	if(optional_string("$Show Primary Models:"))
 	{
@@ -2328,24 +2356,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 	}
 
-	// Get default secondary bank weapons
-
-	if(optional_string("$Default SBanks:"))
-	{
-		strcat_s(parse_error_text,"'s default secondary banks");
-		sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
-		strcpy_s(parse_error_text, temp_error);
-
-		// Get the capacity of each secondary bank
-		required_string("$SBank Capacity:");
-		strcat_s(parse_error_text,"'s secondary banks capacities");
-		sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
-		strcpy_s(parse_error_text, temp_error);
-		if ( sbank_capacity_count != sip->num_secondary_banks )
-		{
-			Warning(LOCATION, "Secondary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
-		}
-	}
+	// Get secondary bank weapons
+	parse_weapon_bank(sip, false, &sip->num_secondary_banks, sip->secondary_bank_weapons, sip->secondary_bank_ammo_capacity);
     
 	if(optional_string("$Show Secondary Models:"))
 	{
@@ -3266,33 +3278,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					WarningEx(LOCATION, "Ship %s, subsystem %s\nInvalid armor type %s!", sip->name, sp->subobj_name, buf);
 			}
 
-			//	Get default primary bank weapons
-			if (optional_string("$Default PBanks:")){
-				strcat_s(parse_error_text,"'s default primary banks");
-				stuff_int_list(sp->primary_banks, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
-				strcpy_s(parse_error_text, temp_error);
-			}
+			//	Get primary bank weapons
+			parse_weapon_bank(sip, true, NULL, sp->primary_banks, sp->primary_bank_capacity);
 
-			// get capacity of each primary bank - Goober5000
-			if (optional_string("$PBank Capacity:")){
-				strcat_s(parse_error_text,"'s primary banks capacities");
-				stuff_int_list(sp->primary_bank_capacity, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
-				strcpy_s(parse_error_text, temp_error);
-			}
-
-			//	Get default secondary bank weapons
-			if (optional_string("$Default SBanks:")){
-				strcat_s(parse_error_text,"'s default secondary banks");
-				stuff_int_list(sp->secondary_banks, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
-				strcpy_s(parse_error_text, temp_error);
-			}
-
-			// Get the capacity of each secondary bank
-			if (optional_string("$SBank Capacity:")){
-				strcat_s(parse_error_text,"'s secondary banks capacities");
-				stuff_int_list(sp->secondary_bank_capacity, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
-				strcpy_s(parse_error_text, temp_error);
-			}
+			//	Get secondary bank weapons
+			parse_weapon_bank(sip, false, NULL, sp->secondary_banks, sp->secondary_bank_capacity);
 
 			// Get optional engine wake info
 			if (optional_string("$Engine Wash:")) {
@@ -5186,7 +5176,8 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 /**
  * Set subsystem
  *
- * @param ignore_subsys_info default parameter with value of 0.  This is only set to 1 by the save/restore code
+ * @param objnum				Object number (used as index into Objects[])
+ * @param ignore_subsys_info	Default parameter with value of 0.  This is only set to 1 by the save/restore code
  */
 int subsys_set(int objnum, int ignore_subsys_info)
 {	
@@ -5646,6 +5637,7 @@ void ship_render(object * obj)
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 	bool reset_proj_when_done = false;
 	bool is_first_stage_arrival = false;
+	bool show_thrusters = (shipp->flags2 & SF2_NO_THRUSTERS) == 0;
 	dock_function_info dfi;
 
 
@@ -5761,7 +5753,7 @@ void ship_render(object * obj)
 
 		if ( shipp->large_ship_blowup_index >= 0 )	{
 			shipfx_large_blowup_render(shipp);
-		} else {
+		} else if (show_thrusters) {
 			//WMC - I suppose this is a bit hackish.
 			physics_info *pi = &Objects[shipp->objnum].phys_info;
 			float render_amount;
@@ -6746,6 +6738,8 @@ void ship_cleanup(int shipnum, int cleanup_mode)
  * @param outer_rad		distance from ship center for which no damage is applied
  * @param max_damage	maximum damage applied
  * @param max_blast		maximum impulse applied from blast
+ * @param damage		damage applied
+ * @param blast			impulse applied from blast
  */
 int ship_explode_area_calc_damage( vec3d *pos1, vec3d *pos2, float inner_rad, float outer_rad, float max_damage, float max_blast, float *damage, float *blast )
 {
@@ -6885,7 +6879,7 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 /**
  * Only ever called once for any ship that dies
  *
- * This function relies on the "dead dock" list, which replaces the ::dock_objnum_when_dead
+ * This function relies on the "dead dock" list, which replaces the dock_objnum_when_dead
  * used in retail.
  */
 void do_dying_undock_physics(object *dying_objp, ship *dying_shipp) 
@@ -8722,6 +8716,7 @@ void ship_model_change(int n, int ship_type)
  *
  * @param n			index of ship in ::Ships[] array
  * @param ship_type	ship class (index into ::Ship_info[])
+ * @param by_sexp	SEXP reference
  */
 void change_ship_type(int n, int ship_type, int by_sexp)
 {
@@ -9420,7 +9415,7 @@ float ship_get_subsystem_strength( ship *shipp, int type );
 // primary.
 int ship_fire_primary(object * obj, int stream_weapons, int force)
 {
-	vec3d		gun_point, pnt, firing_pos;
+	vec3d		gun_point, pnt, firing_pos, target_position, target_velocity_vec;
 	int			n = obj->instance;
 	ship			*shipp;
 	ship_weapon	*swp;
@@ -9432,6 +9427,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	have_timeout = 0;			// used to help tell us whether or not we need to send a packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
 	bool has_fired = false;		// used to determine whether we should fire the scripting hook
+	bool has_autoaim, has_converging_autoaim, needs_target_pos;	// used to flag weapon/ship as having autoaim
+	float autoaim_fov = 0;			// autoaim limit
+	float dist_to_target = 0;		// distance to target, for autoaim & automatic convergence
 
 	int			sound_played;	// used to track what sound is played.  If the player is firing two banks
 										// of the same laser, we only want to play one sound
@@ -9506,6 +9504,33 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		for(i = 0; i<swp->num_primary_banks; i++){
 			if(i!=swp->current_primary_bank)ship_stop_fire_primary_bank(obj, i);
 		}
+
+	// lets start gun convergence / autoaim code from here - Wanderer
+	has_converging_autoaim = ((sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f)) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags & AIM_FLAG_AUTOAIM)) && aip->target_objnum != -1);
+	needs_target_pos = ((has_autoaim || (sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE)) && aip->target_objnum != -1);
+	
+	if (needs_target_pos) {
+		if (has_autoaim) {
+			autoaim_fov = MAX(sip->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+		}
+
+		// If a subsystem is targeted, fire in that direction instead
+		if (aip->targeted_subsys != NULL)
+		{
+			get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+		}
+		else
+		{
+			target_position = Objects[aip->target_objnum].pos;
+		}
+
+		target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
+		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+			vm_vec_sub2(&target_velocity_vec, &obj->phys_info.vel);
+
+		dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
+	}
 
 	for ( i = 0; i < num_primary_banks; i++ ) {		
 		// Goober5000 - allow more than two banks
@@ -9646,6 +9671,43 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		if ( pm->n_guns > 0 ) {
 			int num_slots = pm->gun_banks[bank_to_fire].num_slots;
+			vec3d predicted_target_pos, plr_to_target_vec;
+			vec3d player_forward_vec = obj->orient.vec.fvec;
+			bool in_automatic_aim_fov = false;
+			float dist_to_aim = 0;
+
+			// more autoaim stuff here - Wanderer
+			// needs weapon speed
+			if (needs_target_pos) {
+				float time_to_target, angle_to_target;
+				vec3d last_delta_vec;
+
+				time_to_target = 0.0f;
+
+				if (winfo_p->max_speed != 0)
+				{
+					time_to_target = dist_to_target / winfo_p->max_speed;
+				}
+
+				vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
+				polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
+				vm_vec_sub(&plr_to_target_vec, &predicted_target_pos, &obj->pos);
+
+				if (has_autoaim) {
+					angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
+					if (angle_to_target < autoaim_fov)
+						in_automatic_aim_fov = true;
+				}
+
+				dist_to_aim = vm_vec_mag_quick(&plr_to_target_vec);
+
+				// minimum convergence distance
+				if (sip->minimum_convergence_distance > dist_to_aim) {
+					float dist_mult;
+					dist_mult = sip->minimum_convergence_distance / dist_to_aim;
+					vm_vec_scale_add(&predicted_target_pos, &obj->pos, &plr_to_target_vec, dist_mult);
+				}
+			}
 			
 			if(winfo_p->wi_flags & WIF_BEAM){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
 				float t;
@@ -9874,141 +9936,80 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
 
 							matrix firing_orient;
-							if (!(sip->flags2 & SIF2_GUN_CONVERGENCE))
-							{
-								bool player_has_autoaim = (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f);
-								float autoaim_fov = sip->autoaim_fov;
-								if (player_has_autoaim)
-									autoaim_fov = MAX(autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+							
+							/*	I AIM autoaim convergence
+								II AIM autoaim
+								III AIM auto convergence
+								IV AIM std convergence
+								V SIF convergence
+								no convergence or autoaim
+							*/
+							if (has_autoaim && in_automatic_aim_fov) {
+								vec3d firing_vec;
 
-								if ((sip->aiming_flags & AIM_FLAG_AUTOAIM || player_has_autoaim) &&
-									aip->target_objnum != -1)
-								{
-									// Fire weapon in target direction
-									vec3d target_position, target_velocity_vec, predicted_target_pos;
-									vec3d firing_vec, last_delta_vec, player_forward_vec, plr_to_target_vec;
-									float dist_to_target, time_to_target, angle_to_target;
-
-									// If a subsystem is targeted, fire in that direction instead
-									if (aip->targeted_subsys != NULL)
-									{
-										get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
-									}
-									else
-									{
-										target_position = Objects[aip->target_objnum].pos;
-									}
-
-									target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
-									if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
-										vm_vec_sub2(&target_velocity_vec, &obj->phys_info.vel);
-
-									dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
-									time_to_target = 0.0f;
-
-									if (winfo_p->max_speed != 0)
-									{
-										time_to_target = dist_to_target / winfo_p->max_speed;
-									}
-
-									vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
-									polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
-									vm_vec_sub(&plr_to_target_vec, &predicted_target_pos, &obj->pos);
-
-									// minimum convergence distance
-									if (sip->minimum_convergence_distance > dist_to_target) {
-										float dist_mult;
-										dist_mult = sip->minimum_convergence_distance / dist_to_target;
-										vm_vec_scale_add(&predicted_target_pos, &obj->pos, &plr_to_target_vec, dist_mult);
-									}
-									
-									// setting to autoaim to converge on to the target.
-									if (sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || player_has_autoaim)
-										vm_vec_sub(&firing_vec, &predicted_target_pos, &firing_pos);
-									else
-										vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
-
-
-									// Deactivate autoaiming if the target leaves the autoaim-FOV cone
-									player_forward_vec = obj->orient.vec.fvec;
-									angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
-
-									if (angle_to_target < autoaim_fov)
-									{
-										vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-									}
-									else
-									{
-										firing_orient = obj->orient;
-									}
+								if (has_converging_autoaim) {
+									// converging autoaim
+									vm_vec_sub(&firing_vec, &predicted_target_pos, &firing_pos);
+								} else {
+									// autoaim
+									vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
 								}
-								else if ((sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) && (aip->target_objnum != -1))
-								{
-									//Write automatic convergence code here!
-									//If set, switch to manual if automatic fails
-									//better idea.. mix it with the above... assume autoaim takes precedence
-									
-									// Fire weapon in target direction
-									vec3d target_position, target_vec;
-									vec3d firing_vec, player_forward_vec, convergence_offset;
-									float dist_to_target;
-	
-									// If a subsystem is targeted, fire in that direction instead
-									if (aip->targeted_subsys != NULL)
-									{
-										get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
-									}
-									else
-									{
-										target_position = Objects[aip->target_objnum].pos;
-									}
 
-									dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
-
-									if (sip->minimum_convergence_distance > dist_to_target)
-										dist_to_target = sip->minimum_convergence_distance;
-
-									player_forward_vec = obj->orient.vec.fvec;
-									// make sure vector is of the set length
-									vm_vec_copy_normalize(&target_vec, &player_forward_vec);
-									vm_vec_scale(&target_vec, dist_to_target);
-									// if there is convergence offset then make use of it)
-									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
-									vm_vec_add2(&target_vec, &convergence_offset);
-									vm_vec_add2(&target_vec, &obj->pos);
-									vm_vec_sub(&firing_vec, &target_vec, &firing_pos);
-
-									// set orientation
-									vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+							} else if ((sip->aiming_flags & AIM_FLAG_STD_CONVERGENCE) || ((sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) && (aip->target_objnum != -1))) {
+								// std & auto convergence
+								vec3d target_vec, firing_vec, convergence_offset;
 								
-								}
-								else if (sip->aiming_flags & AIM_FLAG_STD_CONVERGENCE)
-								{
-									vec3d player_forward_vec, target_vec, firing_vec, convergence_offset;
-									player_forward_vec = obj->orient.vec.fvec;
-									// make sure vector is of the set length
-									vm_vec_copy_normalize(&target_vec, &player_forward_vec);
+								// make sure vector is of the set length
+								vm_vec_copy_normalize(&target_vec, &player_forward_vec);
+								if ((sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) && (aip->target_objnum != -1)) {
+									// auto convergence
+									vm_vec_scale(&target_vec, dist_to_aim);
+								} else {
+									// std convergence
 									vm_vec_scale(&target_vec, sip->convergence_distance);
-									// if there is convergence offset then make use of it)
+								}
+								
+								// if there is convergence offset then make use of it)
+								if (sip->aiming_flags & AIM_FLAG_CONVERGENCE_OFFSET) {
 									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
 									vm_vec_add2(&target_vec, &convergence_offset);
-									vm_vec_add2(&target_vec, &obj->pos);
-									vm_vec_sub(&firing_vec, &target_vec, &firing_pos);
+								}
 
-									// set orientation
-									vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+								vm_vec_add2(&target_vec, &obj->pos);
+								vm_vec_sub(&firing_vec, &target_vec, &firing_pos);
+
+								// set orientation
+								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+							} else if (sip->aiming_flags & AIM_FLAG_STD_CONVERGENCE) {
+								// fixed distance convergence
+								vec3d target_vec, firing_vec, convergence_offset;
+																
+								// make sure vector is of the set length
+								vm_vec_copy_normalize(&target_vec, &player_forward_vec);
+								vm_vec_scale(&target_vec, sip->convergence_distance);
+								
+								// if there is convergence offset then make use of it)
+								if (sip->aiming_flags & AIM_FLAG_CONVERGENCE_OFFSET) {
+									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
+									vm_vec_add2(&target_vec, &convergence_offset);
 								}
-								else
-								{
-									firing_orient = obj->orient;
-								}
-							}
-							else
-							{
+
+								vm_vec_add2(&target_vec, &obj->pos);
+								vm_vec_sub(&firing_vec, &target_vec, &firing_pos);
+
+								// set orientation
+								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+							} else if (sip->flags2 & SIF2_GUN_CONVERGENCE) {
+								// model file defined convergence
 								vec3d firing_vec;
 								vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+							} else {
+								// no autoaim or convergence
+								firing_orient = obj->orient;
 							}
+							
 							// create the weapon -- the network signature for multiplayer is created inside
 							// of weapon_create
 
@@ -10281,10 +10282,12 @@ void ship_process_targeting_lasers()
 	}}
 
 /**
- * Attempt to detonate weapon last fired by *shipp.
+ * Attempt to detonate weapon last fired by *src.
  * Only used for weapons that support remote detonation.
  * 
- * @param Return true if detonated, else return false.
+ * @param swp	Ship weapon
+ * @param src	Source of weapon
+ * @return true if detonated, else return false.
  * 
  *	Calls ::weapon_hit() to detonate weapon.
  *	If it's a weapon that spawns particles, those will be released.
@@ -11523,30 +11526,28 @@ int ship_query_state(char *name)
 	return 1;
 }
 
-//	Note: This is not a general purpose routine.
-//	It is specifically used for targeting.
-//	It only returns a subsystem position if it has shields.
-//	Return true/false for subsystem found/not found.
-//	Stuff vector *pos with absolute position.
+// Finds the world position of a subsystem.
+// Return true/false for subsystem found/not found.
+// Stuff vector *pos with absolute position.
 // subsysp is a pointer to the subsystem.
 int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 {
-	model_subsystem	*psub;
-	vec3d	pnt;
-	ship		*shipp;
+	if (subsysp == NULL) {
+		*pos = objp->pos;
+		return 0;
+	}
 
-	Assert(objp->type == OBJ_SHIP);
-	shipp = &Ships[objp->instance];
+	model_subsystem *mss = subsysp->system_info;
 
-	Assert ( subsysp != NULL );
+	if (mss->subobj_num == -1) {
+		// If it's a special point subsys, we can use its offset directly
 
-	psub = subsysp->system_info;
+		vm_vec_unrotate(pos, &subsysp->system_info->pnt, &objp->orient);
+		vm_vec_add2(pos, &objp->pos);
+	} else {
+		// Submodel subsystems may require a more complicated calculation
 
-	vm_vec_unrotate(&pnt, &psub->pnt, &objp->orient);
-	vm_vec_add2(&pnt, &objp->pos);
-
-	if ( pos ){
-		*pos = pnt;
+		find_submodel_instance_world_point(pos, objp, mss->subobj_num);
 	}
 
 	return 1;
@@ -12037,7 +12038,7 @@ float ship_get_subsystem_strength( ship *shipp, int type )
  *
  * The strength passed as a parameter is between 0.0 and 1.0
  *
- * NOTE: this function was made to be called by the debug function ::dcf_set_subsys().  If
+ * NOTE: this function was made to be called by the debug function dcf_set_subsys().  If
  * you want to use this, be sure that you test it for all cases.
  */
 void ship_set_subsystem_strength( ship *shipp, int type, float strength )

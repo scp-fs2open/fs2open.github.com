@@ -974,11 +974,6 @@ void init_weapon_entry(int weap_info_index)
 
 		generic_anim_init(&bsip->texture, NULL);
 
-		for (j = 0; j < 4; j++) {
-			bsip->rgba_inner[j] = 0;
-			bsip->rgba_outer[j] = 255;
-		}
-
 		bsip->width = 1.0f;
 		bsip->flicker = 0.1f;
 		bsip->z_add = i2fl(MAX_BEAM_SECTIONS - i - 1);
@@ -2219,20 +2214,22 @@ int parse_weapon(int subtype, bool replace)
 				generic_anim_init(&bsip->texture, fname);
 			}
 
-			// rgba inner
+			// The E -- Dummied out due to not being used anywhere
 			if ( optional_string("+RGBA Inner:") ) {
-				stuff_ubyte(&bsip->rgba_inner[0]);
-				stuff_ubyte(&bsip->rgba_inner[1]);
-				stuff_ubyte(&bsip->rgba_inner[2]);
-				stuff_ubyte(&bsip->rgba_inner[3]);
+				ubyte dummy;
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
 			}
 
-			// rgba outer
+			// The E -- Dummied out due to not being used anywhere
 			if ( optional_string("+RGBA Outer:") ) {
-				stuff_ubyte(&bsip->rgba_outer[0]);
-				stuff_ubyte(&bsip->rgba_outer[1]);
-				stuff_ubyte(&bsip->rgba_outer[2]);
-				stuff_ubyte(&bsip->rgba_outer[3]);
+				ubyte dummy;
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
+				stuff_ubyte(&dummy);
 			}
 
 			// flicker
@@ -5383,7 +5380,7 @@ extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 /**
  * Distrupt any subsystems that fall into damage sphere of this Electronics missile
  *
- * @param ship_obj	Pointer to ship that holds subsystem
+ * @param ship_objp	Pointer to ship that holds subsystem
  * @param blast_pos	World pos of weapon blast
  * @param wi_index	Weapon info index of weapon causing blast
  */
@@ -5551,6 +5548,7 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
  * Do the area effect for a weapon
  *
  * @param wobjp		Object pointer to weapon causing explosion
+ * @param sci		Shockwave info
  * @param pos		World pos of explosion center
  * @param other_obj	Object pointer to ship that weapon impacted on (can be NULL)
  */

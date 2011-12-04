@@ -2125,7 +2125,7 @@ int button_function_demo_valid(int n)
 }
 
 /**
- * Execute function corresponding to action n (BUTTON_ #define from KeyControl.h)
+ * Execute function corresponding to action n (BUTTON_ from KeyControl.h)
  * @return 1 when action was taken
  */
 int button_function(int n)
@@ -2670,6 +2670,43 @@ int button_function(int n)
 			gameseq_post_event( GS_EVENT_SHOW_GOALS );
 			break;
 
+		// end the mission
+		case END_MISSION:
+			// in multiplayer, all end mission requests should go through the server
+			if(Game_mode & GM_MULTIPLAYER){				
+				multi_handle_end_mission_request();
+				break;
+			}
+
+			control_used(END_MISSION);
+			
+			if (collide_predict_large_ship(Player_obj, 200.0f) 
+			|| (Ship_info[Ships[Player_obj->instance].ship_info_index].warpout_type == WT_HYPERSPACE 
+			&& collide_predict_large_ship(Player_obj, 100000.0f)))
+			{
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
+			} else if (!ship_engine_ok_to_warp(Player_ship)) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR("Engine failure.  Cannot engage subspace drive.", 40));
+			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", 1572));
+			} else if (Player_obj != NULL && object_get_gliding(Player_obj)) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", 1573));			
+			} else {
+				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
+			}			
+			break;
+
+		case ADD_REMOVE_ESCORT:
+			if ( Player_ai->target_objnum >= 0 ) {
+				control_used(ADD_REMOVE_ESCORT);
+				hud_add_remove_ship_escort(Player_ai->target_objnum);
+			}
+			break;
+
 		case ESCORT_CLEAR:
 			hud_escort_clear_all();
 			break;
@@ -2722,7 +2759,7 @@ void button_info_do(button_info *bi)
 
 
 /**
- * Set the bit for the corresponding action n (BUTTON_ #define from KeyControl.h)
+ * Set the bit for the corresponding action n (BUTTON_ from KeyControl.h)
  */
 void button_info_set(button_info *bi, int n)
 {
@@ -2735,7 +2772,7 @@ void button_info_set(button_info *bi, int n)
 }
 
 /**
- * Unset the bit for the corresponding action n (BUTTON_ #define from KeyControl.h)
+ * Unset the bit for the corresponding action n (BUTTON_ from KeyControl.h)
  */
 void button_info_unset(button_info *bi, int n)
 {

@@ -45,6 +45,7 @@
 #include "network/multi.h"
 #include "graphics/font.h"
 #include "network/multiutil.h"
+#include "model/model.h"
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);
@@ -4334,17 +4335,11 @@ void hud_restore_subsystem_target(ship* shipp)
 }
  
 // --------------------------------------------------------------------------------
-// get_subsystem_world_pos() returns the world position for a given subobject on a ship
+// get_subsystem_world_pos() returns the world position for a given subsystem on a ship
 //
 vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos)
 {
-	if (subsys == NULL) {
-		*world_pos = parent_obj->pos;
-		return world_pos;
-	}
-	
-	vm_vec_unrotate(world_pos, &subsys->system_info->pnt, &parent_obj->orient);
-	vm_vec_add2(world_pos, &parent_obj->pos);
+	get_subsystem_pos(world_pos, parent_obj, subsys);
 
 	return world_pos;
 }
