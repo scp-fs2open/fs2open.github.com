@@ -5636,6 +5636,7 @@ void ship_render(object * obj)
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 	bool reset_proj_when_done = false;
 	bool is_first_stage_arrival = false;
+	bool show_thrusters = (shipp->flags2 & SF2_NO_THRUSTERS) == 0;
 	dock_function_info dfi;
 
 
@@ -5751,7 +5752,7 @@ void ship_render(object * obj)
 
 		if ( shipp->large_ship_blowup_index >= 0 )	{
 			shipfx_large_blowup_render(shipp);
-		} else {
+		} else if (show_thrusters) {
 			//WMC - I suppose this is a bit hackish.
 			physics_info *pi = &Objects[shipp->objnum].phys_info;
 			float render_amount;

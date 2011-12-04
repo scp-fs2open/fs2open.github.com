@@ -452,6 +452,7 @@ typedef struct ship_subsys_info {
 #define SF2_FORCE_SHIELDS_ON				(1<<20)
 #define SF2_NO_ETS							(1<<21)		// The E - This ship does not have an ETS
 #define SF2_CLOAKED							(1<<22)		// The E - This ship will not be rendered
+#define SF2_NO_THRUSTERS					(1<<23)		// The E - Thrusters on this ship are not rendered.
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
