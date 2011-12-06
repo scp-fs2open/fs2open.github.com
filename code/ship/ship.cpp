@@ -5752,7 +5752,7 @@ void ship_render(object * obj)
 
 		if ( shipp->large_ship_blowup_index >= 0 )	{
 			shipfx_large_blowup_render(shipp);
-		} else if (show_thrusters) {
+		} else {
 			//WMC - I suppose this is a bit hackish.
 			physics_info *pi = &Objects[shipp->objnum].phys_info;
 			float render_amount;
@@ -5881,7 +5881,7 @@ void ship_render(object * obj)
 				}
 			}
 
-			if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
 				mst_info mst;
 
 				mst.length.xyz.z = obj->phys_info.forward_thrust;
