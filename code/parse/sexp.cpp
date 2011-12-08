@@ -21,7 +21,7 @@
 #include <assert.h>
 #include <limits.h>
 #ifdef _MSC_VER
-	#include "globalincs/stdint.h"
+	#include "globalincs/msvc/stdint.h"
 #else
 	#include <stdint.h>
 #endif
