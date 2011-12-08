@@ -125,6 +125,7 @@ Flag exe_params[] =
 	{ "-post_process",		"Enable post processing",					true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
 	{ "-soft_particles",	"Enable soft particles",					true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-soft_particles" },
 	{ "-fxaa",				"Enable FXAA anti-aliasing",				true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fxaa" },
+	{ "-flightshaftsoff",	"Force Lightshafts off",					true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-flightshaftsoff"},
 
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
@@ -272,6 +273,7 @@ cmdline_parm bloom_intensity_arg("-bloom_intensity", NULL);
 cmdline_parm fxaa_arg("-fxaa", NULL);
 cmdline_parm fxaa_preset_arg("-fxaa_preset", NULL);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL);
+cmdline_parm flightshaftsoff_arg("-flightshaftsoff", NULL);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -295,6 +297,7 @@ bool Cmdline_fxaa = false;
 int Cmdline_fxaa_preset = 6;
 extern int Fxaa_preset_last_frame;
 bool Cmdline_fb_explosions = 0;
+extern bool ls_force_off;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -1457,6 +1460,11 @@ bool SetCmdlineParams()
 	if ( bloom_intensity_arg.found() )
 	{
 		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
+	}
+
+	if ( flightshaftsoff_arg.found() )
+	{
+		ls_force_off = true;
 	}
 
 	return true; 

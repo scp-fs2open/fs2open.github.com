@@ -130,10 +130,10 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_ARB_shading_language_100" }, 0, { NULL } },
 
 	// shader objects and program object management
-	{ false, false, 1, { "GL_ARB_shader_objects" }, 17, { "glDeleteObjectARB", "glCreateShaderObjectARB", "glShaderSourceARB",
+	{ false, false, 1, { "GL_ARB_shader_objects" }, 18, { "glDeleteObjectARB", "glCreateShaderObjectARB", "glShaderSourceARB",
 		"glCompileShaderARB", "glGetObjectParameterivARB", "glGetInfoLogARB", "glCreateProgramObjectARB",
 		"glAttachObjectARB", "glLinkProgramARB", "glUseProgramObjectARB", "glValidateProgramARB", "glGetUniformLocationARB",
-		"glGetUniformivARB", "glUniform1fARB", "glUniform3fARB", "glUniform1iARB", "glUniformMatrix4fvARB" } },
+		"glGetUniformivARB", "glUniform1fARB", "glUniform2fARB", "glUniform3fARB", "glUniform1iARB", "glUniformMatrix4fvARB" } },
 
 	// programmable vertex level processing
 	// some of functions are provided by GL_ARB_vertex_program
