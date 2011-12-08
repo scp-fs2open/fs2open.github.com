@@ -527,7 +527,7 @@ void shockwave_level_init()
 
 		// next, try the 2d shockwave effect, unless the 3d effect was loaded
 		// chief1983 - added some messages similar to those for the 3d shockwave
-		if (i < 0) {
+		if (i < 0 || Cmdline_fb_explosions) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave animation... \n"));
 
 			i = shockwave_load( Default_shockwave_2D_filename );
