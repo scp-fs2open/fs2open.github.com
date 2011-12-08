@@ -39,6 +39,7 @@ extern char* Default_post_vertex_shader;
 extern char* Default_fxaa_prepass_shader;
 extern char* Default_particle_vertex_shader;
 extern char* Default_particle_fragment_shader;
+extern char* Default_lightshaft_fragment_shader;
 //**********
 
 //:PART 2:
@@ -63,7 +64,8 @@ def_file Default_files[] =
 	{ "post-v.sdr",				Default_post_vertex_shader},
 	{ "fxaapre-f.sdr",			Default_fxaa_prepass_shader},
 	{ "soft-v.sdr",				Default_particle_vertex_shader},
-	{ "soft-f.sdr",				Default_particle_fragment_shader}
+	{ "soft-f.sdr",				Default_particle_fragment_shader},
+	{ "ls-f.sdr",				Default_lightshaft_fragment_shader}
 };
 
 static int Num_default_files = sizeof(Default_files) / sizeof(def_file);
@@ -2247,3 +2249,38 @@ void main()																	\n\
 	#endif																	\n\
 }																			\n\
 ";
+
+char* Default_lightshaft_fragment_shader =
+"uniform sampler2D scene;\n"
+"uniform sampler2D cockpit;\n"
+"uniform vec2 sun_pos;\n"
+"uniform float density;\n"
+"uniform float weight;\n"
+"uniform float falloff;\n"
+"uniform float intensity;\n"
+"uniform float cp_intensity;\n"
+"void main()\n"
+"{														\n"
+"	vec2 step = vec2( gl_TexCoord[0].st - sun_pos.xy );	\n"
+"	vec2 pos = gl_TexCoord[0].st;						\n"
+"	step *= 1.0 / float(SAMPLE_NUM) * density;			\n"
+"	float decay = 1.0;									\n"
+"	vec4 sum = vec4(0.0);								\n"
+"														\n"
+"	vec4 mask = texture2D(cockpit, gl_TexCoord[0].st);	\n"
+"	if(mask.r < 1.0)									\n"
+"	{													\n"
+"		gl_FragColor = vec4(cp_intensity);				\n"
+"		return;											\n"
+"	}													\n"
+"	for(int i=0; i < SAMPLE_NUM ; i++)					\n"
+"	{													\n"
+"		pos.st -= step;									\n"
+"		vec4 sample = texture2D(scene, pos);			\n"
+"		if(sample.r == 1.0)								\n"
+"			sum += decay * weight;						\n"
+"		decay *= falloff;								\n"
+"	}													\n"
+"	gl_FragColor = sum * intensity;						\n"
+"	gl_FragColor.a = 1.0;								\n"
+"}";

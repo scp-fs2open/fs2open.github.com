@@ -12,6 +12,8 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/def_files.h"
 #include "ship/ship.h"
+#include "freespace2/freespace.h"
+#include "lighting/lighting.h"
 
 
 extern bool PostProcessing_override;
@@ -22,18 +24,29 @@ size_t fxaa_shader_id;
 //In case we don't find the shaders at all, this override is needed
 bool fxaa_unavailable = false;
 int Fxaa_preset_last_frame;
+bool zbuffer_saved = false;
 
+// lightshaft parameters
+bool ls_on = false;
+bool ls_force_off = false;
+float ls_density = 0.5f;
+float ls_weight = 0.02f;
+float ls_falloff = 1.0f;
+float ls_intensity = 0.5f;
+float ls_cpintensity = 0.5f * 50 * 0.02f;
+int ls_samplenum = 50;
 
 #define SDR_POST_FLAG_MAIN		(1<<0)
 #define SDR_POST_FLAG_BRIGHT	(1<<1)
 #define SDR_POST_FLAG_BLUR		(1<<2)
 #define SDR_POST_FLAG_PASS1		(1<<3)
 #define SDR_POST_FLAG_PASS2		(1<<4)
+#define SDR_POST_FLAG_LIGHTSHAFT (1<<5)
 
 static SCP_vector<opengl_shader_t> GL_post_shader;
 
 // NOTE: The order of this list *must* be preserved!  Additional shaders can be
-//       added, but the first 5 are used with magic numbers so their position
+//       added, but the first 7 are used with magic numbers so their position
 //       is assumed to never change.
 static opengl_shader_file_t GL_post_shader_files[] = {
 	// NOTE: the main post-processing shader has any number of uniforms, but
@@ -54,7 +67,10 @@ static opengl_shader_file_t GL_post_shader_files[] = {
 		3, { "tex0", "rt_w", "rt_h"} },
 
 	{ "post-v.sdr", "fxaapre-f.sdr", NULL,
-		1, { "tex"} }
+		1, { "tex"} },
+
+	{ "post-v.sdr", "ls-f.sdr", SDR_POST_FLAG_LIGHTSHAFT,
+		8, { "scene", "cockpit", "sun_pos", "weight", "intensity", "falloff", "density", "cp_intensity" } }
 };
 
 static const unsigned int Num_post_shader_files = sizeof(GL_post_shader_files) / sizeof(opengl_shader_file_t);
@@ -336,6 +352,11 @@ void opengl_post_pass_fxaa() {
 	opengl_shader_set_current();
 }
 
+extern GLuint shadow_map[2];
+extern GLuint Scene_depth_texture;
+extern GLuint Cockpit_depth_texture;
+extern bool stars_sun_has_glare(int index);
+extern float Sun_spot;
 void gr_opengl_post_process_end()
 {
 	// state switch just the once (for bloom pass and final render-to-screen)
@@ -351,9 +372,75 @@ void gr_opengl_post_process_end()
 	if (Cmdline_fxaa && !fxaa_unavailable) {
 		opengl_post_pass_fxaa();
 	}
-
+	
 	// done with screen render framebuffer
 	//vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+	
+	opengl_shader_set_current( &GL_post_shader[6] );
+	float x,y;
+	// should we even be here?
+	if (!Game_subspace_effect && ls_on && !ls_force_off)
+	{	
+		int n_lights = light_get_global_count();
+		
+		for(int idx=0; idx<n_lights; idx++)
+		{
+			vec3d light_dir;
+			vec3d local_light_dir;
+			light_get_global_dir(&light_dir, idx);
+			vm_vec_rotate(&local_light_dir, &light_dir, &Eye_matrix);
+			if (!stars_sun_has_glare(idx))
+				continue;
+			float dot;
+			if((dot=vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )) > 0.7f)
+			{
+				
+				x = asin(vm_vec_dot( &light_dir, &Eye_matrix.vec.rvec ))/PI*1.5f+0.5f; //cant get the coordinates right but this works for the limited glare fov
+				y = asin(vm_vec_dot( &light_dir, &Eye_matrix.vec.uvec ))/PI*1.5f*gr_screen.clip_aspect+0.5f;
+				vglUniform2fARB( opengl_shader_get_uniform("sun_pos"), x, y);
+				vglUniform1iARB( opengl_shader_get_uniform("scene"), 0);
+				vglUniform1iARB( opengl_shader_get_uniform("cockpit"), 1);
+				vglUniform1fARB( opengl_shader_get_uniform("density"), ls_density);
+				vglUniform1fARB( opengl_shader_get_uniform("falloff"), ls_falloff);
+				vglUniform1fARB( opengl_shader_get_uniform("weight"), ls_weight);
+				vglUniform1fARB( opengl_shader_get_uniform("intensity"), Sun_spot * ls_intensity);
+				vglUniform1fARB( opengl_shader_get_uniform("cp_intensity"), Sun_spot * ls_cpintensity);
+
+				GL_state.Texture.SetActiveUnit(0);
+				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+				GL_state.Texture.Enable(Scene_depth_texture);
+				GL_state.Texture.SetActiveUnit(1);
+				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+				GL_state.Texture.Enable(Cockpit_depth_texture);
+				glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+				GL_state.Blend(GL_TRUE);
+				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
+				glBegin(GL_QUADS);
+					glTexCoord2f(0.0f, 0.0f);
+					glVertex2f(-1.0f, -1.0f);
+
+					glTexCoord2f(1.0f, 0.0f);
+					glVertex2f(1.0f, -1.0f);
+
+					glTexCoord2f(1.0f, 1.0f);
+					glVertex2f(1.0f, 1.0f);
+
+					glTexCoord2f(0.0f, 1.0f);
+					glVertex2f(-1.0f, 1.0f);
+				glEnd();
+				GL_state.Blend(GL_FALSE);
+				break;
+			}
+		}
+	}
+	if(zbuffer_saved)
+	{
+		zbuffer_saved = false;
+		gr_zbuffer_set(GR_ZBUFF_FULL);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		gr_zbuffer_set(GR_ZBUFF_NONE);
+		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+	}
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
 	// do bloom, hopefully ;)
@@ -419,7 +506,6 @@ void gr_opengl_post_process_end()
 		glVertex2f(-1.0f, 1.0f);
 	glEnd();
 
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	// Done!
 
 	GL_state.Texture.SetActiveUnit(1);
@@ -544,6 +630,13 @@ void gr_opengl_post_process_set_effect(const char *name, int value)
 	int sflags = 0;
 	bool need_change = true;
 
+	if(!stricmp("lightshafts",name))
+	{
+		ls_intensity = value / 100.0f;
+		ls_on = !!value;
+		return;
+	}
+
 	for (idx = 0; idx < Post_effects.size(); idx++) {
 		const char *eff_name = Post_effects[idx].name.c_str();
 
@@ -618,11 +711,15 @@ void gr_opengl_post_process_set_defaults()
 	Post_active_shader_index = 0;
 }
 
+extern GLuint Cockpit_depth_texture;
 void gr_opengl_post_process_save_zbuffer()
 {
 	if ( !Post_initialized ) {
 		return;
 	}
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+	gr_zbuffer_clear(TRUE);
+	zbuffer_saved = true;
 }
 
 
@@ -693,7 +790,7 @@ static bool opengl_post_init_table()
 	Ship_effects.push_back(se1);
 
 	if (optional_string("#Ship Effects")) {
-		while ( required_string_either("#End", "$Name:") ) {
+		while ( !required_string_3("$Name:", "#Light Shafts", "#End") ) {
 			ship_effect se;
 			char tbuf[NAME_LENGTH] = { 0 };
 
@@ -718,6 +815,30 @@ static bool opengl_post_init_table()
 		}
 	}
 
+	if (optional_string("#Light Shafts")) {
+		required_string("$AlwaysOn:");
+		stuff_boolean(&ls_on);
+		required_string("$Density:");
+		stuff_float(&ls_density);
+		required_string("$Falloff:");
+		stuff_float(&ls_falloff);
+		required_string("$Weight:");
+		stuff_float(&ls_weight);
+		required_string("$Intensity:");
+		stuff_float(&ls_intensity);
+		required_string("$Sample Number:");
+		stuff_int(&ls_samplenum);
+
+		if(ls_falloff < 1.0)
+		{
+			ls_cpintensity = ls_weight;
+			for(int i = 1; i < 50; i++)
+				ls_cpintensity += ls_weight * pow(ls_falloff, i);
+			ls_cpintensity *= ls_intensity;
+		}
+
+	}
+	
 	required_string("#End");
 
 	return true;
@@ -747,6 +868,12 @@ static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 		sflags += "#define PASS_0\n";
 	} else if (flags & SDR_POST_FLAG_PASS2) {
 		sflags += "#define PASS_1\n";
+	}
+
+	if (flags & SDR_POST_FLAG_LIGHTSHAFT) {
+		char temp[42];
+		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_samplenum);
+		sflags += temp;
 	}
 	
 	switch (Cmdline_fxaa_preset) {
