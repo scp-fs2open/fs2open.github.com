@@ -108,7 +108,7 @@ typedef struct main_hall_defines {
 	float misc_anim_sound_pan[MAX_MISC_ANIMATIONS];
 
 	//sounds for each of the misc anims
-	SCP_vector<SCP_vector<int>> misc_anim_special_sounds;
+	SCP_vector<SCP_vector<int> > misc_anim_special_sounds;
 
 	// [N][0] == # of triggers, [N][1-9] >= frame num
 	int misc_anim_special_trigger[MAX_MISC_ANIMATIONS][10];
@@ -133,7 +133,7 @@ typedef struct main_hall_defines {
 	int door_anim_coords[MAX_DOOR_ANIMATIONS][4];
 
 	// sounds for each region (open/close)
-	SCP_vector<SCP_vector<int>> door_sounds;
+	SCP_vector<SCP_vector<int> > door_sounds;
 
 	// pan values for the door sounds
 	float door_sound_pan[MAX_DOOR_ANIMATIONS];
