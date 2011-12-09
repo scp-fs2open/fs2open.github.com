@@ -228,6 +228,7 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define PFNGLGETUNIFORMLOCATIONARBPROC			glGetUniformLocationARBProcPtr
 #define PFNGLGETUNIFORMIVARBPROC				glGetUniformivARBProcPtr
 #define PFNGLUNIFORM1FARBPROC					glUniform1fARBProcPtr
+#define PFNGLUNIFORM2FARBPROC					glUniform2fARBProcPtr
 #define PFNGLUNIFORM3FARBPROC					glUniform3fARBProcPtr
 #define PFNGLUNIFORM4FARBPROC					glUnifrom4fARBProcPtr
 #define PFNGLUNIFORM3FVARBPROC					glUniform3fvARBProcPtr
