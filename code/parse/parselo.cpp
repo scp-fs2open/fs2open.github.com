@@ -430,6 +430,18 @@ int check_for_eof()
 	return 0;
 }
 
+/**
+Returns 1 if it finds a newline character precded by any amount of grayspace.
+*/
+int check_for_eoln()
+{
+	ignore_gray_space();
+
+	if(*Mp == EOLN)
+		return 1;
+	else
+		return 0;
+}
 // similar to optional_string, but just checks if next token is a match.
 // It doesn't advance Mp except to skip past white space.
 //
