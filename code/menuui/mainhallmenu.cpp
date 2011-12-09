@@ -107,8 +107,8 @@ typedef struct main_hall_defines {
 	// panning values for each of the misc anims
 	float misc_anim_sound_pan[MAX_MISC_ANIMATIONS];
 
-	// [N][0] == # of sounds, [N][1-9] sound index
-	int misc_anim_special_sounds[MAX_MISC_ANIMATIONS][10];
+	//sounds for each of the misc anims
+	SCP_vector<SCP_vector<int>> misc_anim_special_sounds;
 
 	// [N][0] == # of triggers, [N][1-9] >= frame num
 	int misc_anim_special_trigger[MAX_MISC_ANIMATIONS][10];
@@ -133,7 +133,7 @@ typedef struct main_hall_defines {
 	int door_anim_coords[MAX_DOOR_ANIMATIONS][4];
 
 	// sounds for each region (open/close)
-	int door_sounds[MAX_DOOR_ANIMATIONS][2];
+	SCP_vector<SCP_vector<int>> door_sounds;
 
 	// pan values for the door sounds
 	float door_sound_pan[MAX_DOOR_ANIMATIONS];
@@ -1182,7 +1182,7 @@ void main_hall_render_misc_anims(float frametime)
 			}
 			// animation is not paused
 			else {
-				for (s_idx = Main_hall->misc_anim_special_sounds[idx][0]; s_idx > 0; s_idx--) {
+				for (s_idx = 0; (unsigned)s_idx < Main_hall->misc_anim_special_sounds.at(idx).size(); s_idx++) {
 					// if we've passed the trigger point, then play the sound and break out of the loop
 					if ((Main_hall_misc_anim[idx].current_frame >= Main_hall->misc_anim_special_trigger[idx][s_idx]) && !Main_hall->misc_anim_sound_flag[idx][s_idx]) {
 						Main_hall->misc_anim_sound_flag[idx][s_idx] = 1;
@@ -1195,7 +1195,7 @@ void main_hall_render_misc_anims(float frametime)
 						}
 
 						// play the sound
-						Main_hall->misc_anim_sound_handles[idx][s_idx] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds[idx][s_idx]],Main_hall->misc_anim_sound_pan[idx]);					
+						Main_hall->misc_anim_sound_handles[idx][s_idx] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds.at(idx).at(s_idx)],Main_hall->misc_anim_sound_pan[idx]);
 						break;
 					}
 				}
@@ -1308,7 +1308,7 @@ void main_hall_mouse_release_region(int region)
 		if (Main_hall_door_sound_handles[region] != -1) {
 			snd_stop(Main_hall_door_sound_handles[region]);
 		}
-		Main_hall_door_sound_handles[region] = snd_play(&Snds_iface[Main_hall->door_sounds[region][1]], Main_hall->door_sound_pan[region]);
+		Main_hall_door_sound_handles[region] = snd_play(&Snds_iface[Main_hall->door_sounds.at(region).at(1)], Main_hall->door_sound_pan[region]);
 
 		//TODO: track current frame
 		snd_set_pos(Main_hall_door_sound_handles[region], &Snds_iface[SND_MAIN_HALL_DOOR_CLOSE],
@@ -1334,7 +1334,7 @@ void main_hall_mouse_grab_region(int region)
 	if(Main_hall_door_sound_handles[region] != -1){			
 		snd_stop(Main_hall_door_sound_handles[region]);
 	}	
-	Main_hall_door_sound_handles[region] = snd_play(&Snds_iface[Main_hall->door_sounds[region][0]],Main_hall->door_sound_pan[region]);				
+	Main_hall_door_sound_handles[region] = snd_play(&Snds_iface[Main_hall->door_sounds.at(region).at(0)],Main_hall->door_sound_pan[region]);
 
 	// start the sound playing at the right spot relative to the completion of the animation		
 	if( (Main_hall_door_anim[region].num_frames > 0) && (Main_hall_door_anim[region].current_frame != -1) ) {
@@ -1660,8 +1660,7 @@ void main_hall_read_table()
 			}
 			for(idx=0; idx<m->num_random_intercom_sounds; idx++){
 				// intercom sound id
-				required_string("+Intercom sound:");
-				stuff_int(&m->intercom_sounds[idx]);			
+				parse_sound("+Intercom sound:", &m->intercom_sounds[idx], "+Intercom sound:", PARSE_SOUND_INTERFACE_SOUND);
 			}			
 			for(idx=0; idx<m->num_random_intercom_sounds; idx++){
 				// intercom pan
@@ -1714,11 +1713,9 @@ void main_hall_read_table()
 			}
 			for(idx=0; idx<m->num_misc_animations; idx++){
 				// anim sound id
-				required_string("+Misc anim sounds:");
-				stuff_int(&m->misc_anim_special_sounds[idx][0]);
-				for(s_idx=0; s_idx<m->misc_anim_special_sounds[idx][0]; s_idx++){
-					stuff_int(&m->misc_anim_special_sounds[idx][s_idx + 1]);
-				}
+				SCP_vector<int> temp; //this is a short term hack and will be properly fixed when main_hall_defines is vectorised
+				m->misc_anim_special_sounds.push_back(temp);
+				parse_sound_list("+Misc anim sounds:", m->misc_anim_special_sounds.at(idx), "+Misc anim sounds:", PARSE_SOUND_INTERFACE_SOUND);
 			}
 			for(idx=0; idx<m->num_misc_animations; idx++){
 				// anim sound triggers
@@ -1761,9 +1758,9 @@ void main_hall_read_table()
 			}
 			for(idx=0; idx<m->num_door_animations; idx++){
 				// door open and close sounds
-				required_string("+Door sounds:");
-				stuff_int(&m->door_sounds[idx][0]);
-				stuff_int(&m->door_sounds[idx][1]);			
+				SCP_vector<int> temp; //this is a short term hack and will be properly fixed when main_hall_defines is vectorised
+				m->door_sounds.push_back(temp);
+				parse_sound_list("+Door sounds:", m->door_sounds.at(idx), "+Door sounds:", (parse_sound_flags)(PARSE_SOUND_INTERFACE_SOUND | PARSE_SOUND_SCP_SOUND_LIST));
 			}
 			for(idx=0; idx<m->num_door_animations; idx++){
 				// door pan value
@@ -1790,13 +1787,12 @@ void main_hall_read_table()
 	if(Vasudan_funny){
 		int hall = main_hall_id();
 
-		Main_hall_defines[GR_640][hall].door_sounds[OPTIONS_REGION][0] = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_640][hall].door_sounds[OPTIONS_REGION][1] = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_1024][hall].door_sounds[OPTIONS_REGION][0] = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_1024][hall].door_sounds[OPTIONS_REGION][1] = SND_VASUDAN_BUP;
+		Main_hall_defines[GR_640][hall].door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
+		Main_hall_defines[GR_640][hall].door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+		Main_hall_defines[GR_1024][hall].door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
+		Main_hall_defines[GR_1024][hall].door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
 
 		// set head anim. hehe
-		strcpy_s(Main_hall_defines[GR_640][hall].door_anim_name[OPTIONS_REGION], "vhallheads");
 		strcpy_s(Main_hall_defines[GR_1024][hall].door_anim_name[OPTIONS_REGION], "2_vhallheads");
 
 		// set the background
