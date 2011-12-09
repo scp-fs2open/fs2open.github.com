@@ -28,12 +28,23 @@ void gamesnd_unload_gameplay_sounds();
 void gamesnd_play_iface(int n);
 void gamesnd_play_error_beep();
 int gamesnd_get_by_name(char* name);
+int gamesnd_get_by_iface_name(char* name);
 int gamesnd_get_by_tbl_index(int index);
 int gamesnd_get_by_iface_tbl_index(int index);
 
+//flags for parse_sound and parse_sound_list
+enum parse_sound_flags
+{
+	PARSE_SOUND_GENERAL_SOUND = 0,				//!< search for sound in the general table in sound.tbl
+	PARSE_SOUND_INTERFACE_SOUND = (1 << 0),		//!< Search for sound in the interface part of sounds.tbl
+	PARSE_SOUND_SCP_SOUND_LIST = (1 << 1),		//!< Parse the list of sounds SCP style (just indexes and/or files names, no count first)
+	PARSE_SOUND_MAX
+};
+
 //This should handle NO_SOUND just fine since it doesn't directly access lowlevel code
 //Does all parsing for a sound
-void parse_sound(char* tag, int *idx_dest, char* object_name);
+void parse_sound(char* tag, int* idx_dest, char* object_name, parse_sound_flags = PARSE_SOUND_GENERAL_SOUND);
+void parse_sound_list(char* tag, SCP_vector<int>& destination, char* object_name, parse_sound_flags = PARSE_SOUND_GENERAL_SOUND);
 
 // this is a callback, so it needs to be a real function
 void common_play_highlight_sound();

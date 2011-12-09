@@ -52,6 +52,30 @@ int gamesnd_get_by_name(char* name)
 	return -1;
 }
 
+int gamesnd_get_by_iface_name(char* name)
+{
+	Assert( Snds_iface.size() <= INT_MAX );
+	Assert( Snds_iface.size() == Snds_iface_handle.size() );
+	int i = 0;
+	for(SCP_vector<game_snd>::iterator snd = Snds_iface.begin(); snd != Snds_iface.end(); ++snd)
+	{
+		char *p = strrchr( snd->filename, '.' );
+		if(p == NULL)
+		{
+			if(!stricmp(snd->filename, name))
+			{
+				return i;
+			}
+		}
+		else if(!strnicmp(snd->filename, name, p-snd->filename))
+		{
+			return i;
+		}
+		i++;
+	}
+	return -1;
+}
+
 int gamesnd_get_by_tbl_index(int index)
 {
 	//if we get passed -1, don't bother trying to look it up.
@@ -71,6 +95,9 @@ int gamesnd_get_by_tbl_index(int index)
 
 int gamesnd_get_by_iface_tbl_index(int index)
 {
+	//if we get passed -1, don't bother trying to look it up.
+	if (index == -1)
+		return -1;
 	Assert( Snds_iface.size() <= INT_MAX );
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 	int i = 0;
@@ -85,40 +112,127 @@ int gamesnd_get_by_iface_tbl_index(int index)
 }
 
 /**
- * Parse a sound
+ * Helper function for parse_sound and parse_sound_list. Do not use directly.
+ * 
+ * @param tag Tag 
+ * @param idx_dest Sound index destination
+ * @param object_name Object name being parsed
+ * @param buf Buffer holding string to be parsed
+ * @param flags See the parse_sound_flags enum
+ *
+ */
+void parse_sound_core(char* tag, int *idx_dest, char* object_name, char* buf, parse_sound_flags flags)
+{
+	int idx;
+
+	if(flags & PARSE_SOUND_INTERFACE_SOUND)
+		idx = gamesnd_get_by_iface_name(buf);
+	else
+		idx = gamesnd_get_by_name(buf);
+
+	if(idx != -1)
+	{
+		(*idx_dest) = idx;
+	}
+	else
+	{
+		if(flags & PARSE_SOUND_INTERFACE_SOUND)
+			idx = gamesnd_get_by_iface_tbl_index(atoi(buf));
+		else
+			idx = gamesnd_get_by_tbl_index(atoi(buf));
+
+		if (idx != -1)
+			(*idx_dest) = idx;
+	}
+
+	int size_to_check = 0;
+	
+	if(flags & PARSE_SOUND_INTERFACE_SOUND)
+	{
+		size_to_check = Snds_iface.size();
+		Assert( Snds_iface.size() == Snds_iface_handle.size() );
+	}
+	else
+	{
+		size_to_check = Snds.size();
+	}
+
+	Assert( size_to_check <= INT_MAX );
+
+	//Ensure sound is in range
+	if((*idx_dest) < -1 || (*idx_dest) >= (int)size_to_check)
+	{
+		(*idx_dest) = -1;
+		Warning(LOCATION, "%s sound index out of range on '%s'. Must be between 0 and %d. Forcing to -1 (Nonexistent sound).\n", tag, object_name, size_to_check);
+	}
+}
+
+/**
+ * Parse a sound. When using this function for a table entry, 
+ * required_string and optional_string aren't needed, as this function deals with 
+ * that as its tag parameter, just make sure that the destination sound index can 
+ * handle -1 if things don't work out.
  *
  * @param tag Tag 
  * @param idx_dest Sound index destination
  * @param object_name Object name being parsed
+ * @param flags See the parse_sound_flags enum
  *
- * This also means you shouldn't use optional_string or required_string,
- * just make sure the destination sound index can handle -1 if things
- * don't work out.
  */
-void parse_sound(char* tag, int *idx_dest, char* object_name)
+void parse_sound(char* tag, int *idx_dest, char* object_name, parse_sound_flags flags)
 {
-	char buf[MAX_FILENAME_LEN];
-	int idx;
-
 	if(optional_string(tag))
 	{
+		char buf[MAX_FILENAME_LEN];
 		stuff_string(buf, F_NAME, MAX_FILENAME_LEN);
-		idx = gamesnd_get_by_name(buf);
-		if(idx != -1)
-			(*idx_dest) = idx;
-		else
+
+		parse_sound_core(tag, idx_dest, object_name, buf, flags);
+	}
+}
+
+/**
+ * CommanderDJ - Parse a list of sounds. When using this function for a table entry, 
+ * required_string and optional_string aren't needed, as this function deals with 
+ * that as its tag parameter, just make sure that the destination sound index(es) can 
+ * handle -1 if things don't work out.
+ *
+ * @param destination Vector where sound indexes are to be stored
+ * @param tag Tag 
+ * @param object_name Name of object being parsed
+ * @param flags See the parse_sound_flags enum
+ *
+ */
+void parse_sound_list(char* tag, SCP_vector<int>& destination, char* object_name, parse_sound_flags flags)
+{
+	if(optional_string(tag))
+	{
+		int check=0;
+
+		//if we're using the old format, parse the first entry separately
+		if(!(flags & PARSE_SOUND_SCP_SOUND_LIST))
 		{
-			idx = gamesnd_get_by_tbl_index(atoi(buf));
-			if (idx != -1)
-				(*idx_dest) = idx;
+			stuff_int(&check);
 		}
 
-		Assert( Snds.size() <= INT_MAX );
-		//Ensure sound is in range
-		if((*idx_dest) < -1 || (*idx_dest) >= (int)Snds.size())
+		//now read the rest of the entries on the line
+		for(int i=0;!check_for_eoln();i++)
 		{
-			(*idx_dest) = -1;
-			Warning(LOCATION, "%s sound index out of range on '%s'. Must be between 0 and %d. Forcing to -1 (Nonexistant sound).\n", tag, object_name, Snds.size());
+			char buf[MAX_FILENAME_LEN];
+			stuff_string_white(buf, MAX_FILENAME_LEN);
+
+			//we do this conditionally to avoid adding needless entries when reparsing
+			if(destination.size() <= (unsigned)i)
+			{
+				destination.push_back(-1);
+			}
+
+			parse_sound_core(tag, &destination.at(i), object_name, buf, flags);
+		}
+
+		//if we're using the old format, double check the size)
+		if(!(flags & PARSE_SOUND_SCP_SOUND_LIST) && (destination.size() != (unsigned)check))
+		{
+			mprintf(("%s in '%s' has %i entries. This does not match entered size of %i.", tag, object_name, destination.size(), check));
 		}
 	}
 }
