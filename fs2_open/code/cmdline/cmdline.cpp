@@ -199,6 +199,7 @@ Flag exe_params[] =
  #ifdef SCP_UNIX
 	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
  #endif
+	{ "-reparse_mainhall", "Reparse mainhall.tbl when loading halls", false, 0, EASY_DEFAULT, "Dev Tool", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -417,6 +418,7 @@ cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, NULL);
 #ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
+cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL); //Cmdline_reparse_mainhall
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_dis_collisions = 0;
@@ -436,6 +438,7 @@ int Cmdline_verify_vps = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
 #endif
+int Cmdline_reparse_mainhall = 0;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", NULL);
@@ -1465,6 +1468,11 @@ bool SetCmdlineParams()
 	if ( flightshaftsoff_arg.found() )
 	{
 		ls_force_off = true;
+	}
+
+	if( reparse_mainhall_arg.found() )
+	{
+		Cmdline_reparse_mainhall = 1;
 	}
 
 	return true; 

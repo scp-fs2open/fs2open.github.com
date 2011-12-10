@@ -369,9 +369,6 @@ static int Main_hall_tooltip_padding[GR_NUM_RESOLUTIONS] = {
 static int Main_hall_f1_text_frame = 0;
 static int F1_text_done = 0;
 
-// read in main hall table
-void main_hall_read_table();
-
 // "press f1" for help stuff
 #define MAIN_HALL_HELP_TIME		5000
 int Main_hall_help_stamp = -1;
@@ -509,8 +506,11 @@ void main_hall_init(int main_hall_num)
 	int idx,s_idx;
 	char temp[100], whee[100];	
 
-	// read in the main hall table
-	main_hall_read_table();
+	//reparse the table here if the relevant cmdline flag is set
+	if(Cmdline_reparse_mainhall)
+	{
+		main_hall_read_table();
+	}
 
 	if(!Num_main_halls) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
