@@ -2025,6 +2025,11 @@ void game_init()
 		old_alpha_colors_init();
 	}
 
+	if(!Cmdline_reparse_mainhall)
+	{
+		main_hall_read_table();
+	}
+
 	if (Cmdline_env) {
 		ENVMAP = Default_env_map = bm_load("cubemap");
 	}
