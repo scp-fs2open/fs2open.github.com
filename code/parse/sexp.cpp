@@ -15411,10 +15411,10 @@ void sexp_beam_free(int node)
 
 void sexp_set_thrusters(int node) 
 {
-	bool activate = is_sexp_true(node);
+	bool activate = is_sexp_true(node) != 0;
 	node = CDR(node);
 
-	for(; node >= 0; CDR(node)) {
+	for(; node >= 0; node = CDR(node)) {
 		int sindex = ship_name_lookup(CTEXT(node));
 		
 		if (sindex < 0) {
