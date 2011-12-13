@@ -145,5 +145,6 @@ extern int Cmdline_verify_vps;
 #ifdef SCP_UNIX
 extern int Cmdline_no_grab;
 #endif
+extern int Cmdline_reparse_mainhall;
 
 #endif

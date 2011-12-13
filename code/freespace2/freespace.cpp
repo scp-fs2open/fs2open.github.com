@@ -678,6 +678,8 @@ DCF(sn_glare, "")
 
 float Supernova_last_glare = 0.0f;
 bool stars_sun_has_glare(int index);
+extern bool ls_on;
+extern bool ls_force_off;
 void game_sunspot_process(float frametime)
 {
 	int n_lights, idx;
@@ -750,22 +752,20 @@ void game_sunspot_process(float frametime)
 			n_lights = light_get_global_count();
 
 			// check
-			for(idx=0; idx<n_lights; idx++){
-				if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
-
+			for(idx=0; idx<n_lights; idx++)	{
+				if ( (ls_on && !ls_force_off) || !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
 					//only do sunglare stuff if this sun has one
-					if (stars_sun_has_glare(idx))
-					{
+					if (stars_sun_has_glare(idx))	{
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
-
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
-
+					if ( (!ls_on || ls_force_off) && !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
 					// draw the glow for this sun
 					stars_draw_sun_glow(idx);				
+					}
 				}
 			}
 
@@ -851,7 +851,7 @@ void game_flash_diminish(float frametime)
 		g = fl2i( Game_flash_green*128.0f );   
 		b = fl2i( Game_flash_blue*128.0f );  
 
-		if ( Sun_spot > 0.0f )	{
+		if ( Sun_spot > 0.0f && !ls_on || ls_force_off)	{
 			r += fl2i(Sun_spot*128.0f);
 			g += fl2i(Sun_spot*128.0f);
 			b += fl2i(Sun_spot*128.0f);
@@ -2026,6 +2026,11 @@ void game_init()
 	// CommanderDJ: try with colors.tbl first, then use the old way if that doesn't work
 	if (!new_alpha_colors_init()) {
 		old_alpha_colors_init();
+	}
+
+	if(!Cmdline_reparse_mainhall)
+	{
+		main_hall_read_table();
 	}
 
 	if (Cmdline_env) {
@@ -3689,7 +3694,6 @@ void game_render_frame( camid cid )
 	if(draw_viewer_last && Viewer_obj)
 	{
 		gr_post_process_save_zbuffer();
-		gr_zbuffer_clear(TRUE);
 		ship_render(Viewer_obj);
 	}
 
@@ -3707,10 +3711,9 @@ void game_render_frame( camid cid )
 	}
 
 	//Draw viewer cockpit
-	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
+	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
 	{
 		gr_post_process_save_zbuffer();
-		gr_zbuffer_clear(TRUE);
 		ship_render_cockpit(Viewer_obj);
 	}
 
