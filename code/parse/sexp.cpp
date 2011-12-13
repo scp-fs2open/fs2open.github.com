@@ -19846,16 +19846,23 @@ void sexp_ship_effect(int n)
 		name = CTEXT(n);
 
 		// check to see if this ship/wing has arrived yet.
-		if (sexp_query_has_yet_to_arrive(name))
+		if (sexp_query_has_yet_to_arrive(name)) {
+			n = CDR(n);
 			continue;
+		}
 
 		// check to see if this ship/wing has departed.
-		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) )
+		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) ) {
+			n = CDR(n);
 			continue;
+		}
 
 		// check to see if this ship/wing has been destroyed.
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL))
+		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL)) {
+			n = CDR(n);
 			continue;
+		}
+
 		ship *sp;
 		if((wing_index = wing_name_lookup(name)) >= 0)
 		{
