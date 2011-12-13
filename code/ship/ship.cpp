@@ -5595,6 +5595,7 @@ void ship_render(object * obj)
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 	bool reset_proj_when_done = false;
 	bool is_first_stage_arrival = false;
+	bool show_thrusters = (shipp->flags2 & SF2_NO_THRUSTERS) == 0;
 	dock_function_info dfi;
 
 
@@ -5839,7 +5840,7 @@ void ship_render(object * obj)
 				}
 			}
 
-			if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
 				mst_info mst;
 
 				mst.length.xyz.z = obj->phys_info.forward_thrust;
