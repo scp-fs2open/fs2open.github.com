@@ -717,7 +717,7 @@ void cmd_brief_do_frame(float frametime)
 	}
 
 	if (gr_screen.res == 1) {
-		Max_cmdbrief_Lines = 180/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
+		Max_cmdbrief_Lines = 166/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
 	} else {
 		Max_cmdbrief_Lines = 116/gr_get_font_height();
 	}
