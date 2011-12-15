@@ -1198,6 +1198,7 @@ void main_hall_render_misc_anims(float frametime)
 						Main_hall->misc_anim_sound_handles[idx][s_idx+1] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds.at(idx).at(s_idx)],Main_hall->misc_anim_sound_pan[idx]);
 						break;
 					}
+				}
 
 				// animation has reached the last frame
 				if (Main_hall_misc_anim[idx].current_frame == Main_hall_misc_anim[idx].num_frames - 1) {
