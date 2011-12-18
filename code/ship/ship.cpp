@@ -3972,6 +3972,21 @@ void parse_shiptype_tbl(char *filename)
 	lcl_ext_close();
 }
 
+// The E - Simple lookup function for FRED.
+int get_default_player_ship_index() 
+{
+	if (strlen(default_player_ship)) 
+	{
+		for (int i = 0; i < Num_ship_classes; i++) 
+		{
+			if (stricmp(default_player_ship, Ship_info[i].name) == 0)
+				return i;
+		}
+		return 0;
+	} else
+		return 0;
+}
+
 // Goober5000 - this works better in its own function
 void ship_set_default_player_ship()
 {
