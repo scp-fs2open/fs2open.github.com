@@ -93,10 +93,10 @@ char *Object_type_names[MAX_OBJECT_TYPES] = {
 	"Point",
 	"Shockwave",
 	"Wing",
-	"Ghost Save",
 	"Observer",
 	"Asteroid",
 	"Jump Node",
+	"Beam",
 //XSTR:ON
 };
 
