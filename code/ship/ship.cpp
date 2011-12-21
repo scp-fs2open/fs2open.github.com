@@ -1374,8 +1374,24 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 	diag_printf ("Ship short name -- %s\n", sip->short_name);
 
-	Assert( tspecies_names );
-	find_and_stuff_optional("$Species:", &sip->species, F_NAME, tspecies_names, Species_info.size(), "species names");
+	if (optional_string("$Species:")) {
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		int i = 0;
+		
+		bool found = false;
+		for (SCP_vector<species_info>::iterator sii = Species_info.begin(); sii != Species_info.end(); ++sii, ++i) {
+			if (!stricmp(temp, sii->species_name)) {
+				sip->species = i;
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			Error(LOCATION, "Invalid Species %s defined in table entry for ship %s.\n", temp, sip->name);
+		}
+	}
 
 	diag_printf ("Ship species -- %s\n", Species_info[sip->species].species_name);
 
