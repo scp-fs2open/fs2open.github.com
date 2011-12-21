@@ -90,7 +90,7 @@ int Multi_common_text_max_display[GR_NUM_RESOLUTIONS] = {
 };
 
 #define MULTI_COMMON_TEXT_META_CHAR				'$'
-#define MULTI_COMMON_TEXT_MAX_LINE_LENGTH		100
+#define MULTI_COMMON_TEXT_MAX_LINE_LENGTH		200
 #define MULTI_COMMON_TEXT_MAX_LINES				20
 #define MULTI_COMMON_MAX_TEXT						(MULTI_COMMON_TEXT_MAX_LINES * MULTI_COMMON_TEXT_MAX_LINE_LENGTH)
 
@@ -192,7 +192,9 @@ void multi_common_split_text()
 	Assert(n_lines != -1);
 
 	for ( i = 0; i < n_lines; i++ ) {
-		Assert(n_chars[i] < MULTI_COMMON_TEXT_MAX_LINE_LENGTH);
+		//The E -- This check is unnecessary, and will break when fonts that aren't bank gothic are used
+		//split_str already ensured that everything will fit in the text window for us already.
+		//Assert(n_chars[i] < MULTI_COMMON_TEXT_MAX_LINE_LENGTH); 
 		strncpy(Multi_common_text[i], p_str[i], n_chars[i]);
 		Multi_common_text[i][n_chars[i]] = 0;
 		drop_leading_white_space(Multi_common_text[i]);		

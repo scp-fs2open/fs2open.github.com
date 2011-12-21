@@ -19881,16 +19881,23 @@ void sexp_ship_effect(int n)
 		name = CTEXT(n);
 
 		// check to see if this ship/wing has arrived yet.
-		if (sexp_query_has_yet_to_arrive(name))
+		if (sexp_query_has_yet_to_arrive(name)) {
+			n = CDR(n);
 			continue;
+		}
 
 		// check to see if this ship/wing has departed.
-		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) )
+		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) ) {
+			n = CDR(n);
 			continue;
+		}
 
 		// check to see if this ship/wing has been destroyed.
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL))
+		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL)) {
+			n = CDR(n);
 			continue;
+		}
+
 		ship *sp;
 		if((wing_index = wing_name_lookup(name)) >= 0)
 		{
@@ -24809,7 +24816,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 1)
 				return OPF_NUMBER;
 			else
-				return OPF_SHIP;
+				return OPF_SHIP_WING;
 
 		case OP_CLEAR_SUBTITLES:
 			return OPF_NONE;
@@ -25974,6 +25981,41 @@ int eval_num(int n)
 		return eval_sexp(CAR(n));
 	else
 		return atoi(CTEXT(n));		// otherwise, just get the number
+}
+
+// Goober5000
+int get_sexp_id(char *sexp_name)
+{
+	for (int i = 0; i < Num_operators; i++)
+	{
+		if (!stricmp(sexp_name, Operators[i].text))
+			return Operators[i].value;
+	}
+	return -1;
+}
+
+// Goober5000
+int get_category(int sexp_id)
+{
+	int category = (sexp_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
+}
+
+// Goober5000
+int category_of_subcategory(int subcategory_id)
+{
+	int category = (subcategory_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
 }
 
 // Goober5000 - for FRED2 menu subcategories
@@ -29858,7 +29900,7 @@ bool output_sexps(char *filepath)
 				fputs("<dl>", fp);
 				for(z = 0; z < Num_operators; z++)
 				{
-					if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+					if((get_category(Operators[z].value) == op_menu[x].id)
 						&& (get_subcategory(Operators[z].value) != -1)
 						&& (get_subcategory(Operators[z].value) == op_submenu[y].id))
 					{
@@ -29871,7 +29913,7 @@ bool output_sexps(char *filepath)
 		}
 		for(z = 0; z < Num_operators; z++)
 		{
-			if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+			if((get_category(Operators[z].value) == op_menu[x].id)
 				&& (get_subcategory(Operators[z].value) == -1))
 			{
 				output_sexp_html(z, fp);
@@ -29882,7 +29924,7 @@ bool output_sexps(char *filepath)
 	}
 	for(z = 0; z < Num_operators; z++)
 	{
-		if(!(Operators[z].value & OP_CATEGORY_MASK))
+		if(!get_category(Operators[z].value))
 		{
 			output_sexp_html(z, fp);
 		}

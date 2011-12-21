@@ -1177,18 +1177,18 @@ void main_hall_render_misc_anims(float frametime)
 			else {
 				for (s_idx = 0; (unsigned)s_idx < Main_hall->misc_anim_special_sounds.at(idx).size(); s_idx++) {
 					// if we've passed the trigger point, then play the sound and break out of the loop
-					if ((Main_hall_misc_anim[idx].current_frame >= Main_hall->misc_anim_special_trigger[idx][s_idx]) && !Main_hall->misc_anim_sound_flag[idx][s_idx]) {
-						Main_hall->misc_anim_sound_flag[idx][s_idx] = 1;
+					if ((Main_hall_misc_anim[idx].current_frame >= Main_hall->misc_anim_special_trigger[idx][s_idx+1]) && !Main_hall->misc_anim_sound_flag[idx][s_idx+1]) {
+						Main_hall->misc_anim_sound_flag[idx][s_idx+1] = 1;
 
 						// if the sound is already playing, then kill it. This is a pretty safe thing to do since we can assume that
 						// by the time we get to this point again, the sound will have been long finished
-						if (snd_is_playing(Main_hall->misc_anim_sound_handles[idx][s_idx])) {
-							snd_stop(Main_hall->misc_anim_sound_handles[idx][s_idx]);
-							Main_hall->misc_anim_sound_handles[idx][s_idx] = -1;
+						if (snd_is_playing(Main_hall->misc_anim_sound_handles[idx][s_idx+1])) {
+							snd_stop(Main_hall->misc_anim_sound_handles[idx][s_idx+1]);
+							Main_hall->misc_anim_sound_handles[idx][s_idx+1] = -1;
 						}
 
 						// play the sound
-						Main_hall->misc_anim_sound_handles[idx][s_idx] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds.at(idx).at(s_idx)],Main_hall->misc_anim_sound_pan[idx]);
+						Main_hall->misc_anim_sound_handles[idx][s_idx+1] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds.at(idx).at(s_idx)],Main_hall->misc_anim_sound_pan[idx]);
 						break;
 					}
 				}

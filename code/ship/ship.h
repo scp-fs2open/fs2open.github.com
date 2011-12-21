@@ -1908,4 +1908,11 @@ extern SCP_vector<ship_effect> Ship_effects;
  */
 int ship_get_sound(object *objp, int id);
 
+/**
+ * @brief Returns the index of the default player ship
+ *
+ * @return An index into Ship_info[], location of the default player ship.
+ */
+int get_default_player_ship_index();
+
 #endif

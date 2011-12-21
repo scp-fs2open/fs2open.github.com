@@ -762,11 +762,11 @@ void game_sunspot_process(float frametime)
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
-					if ( (!ls_on || ls_force_off) && !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
-					// draw the glow for this sun
-					stars_draw_sun_glow(idx);				
-					}
 				}
+			if (!shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
+			// draw the glow for this sun
+			stars_draw_sun_glow(idx);				
+			}
 			}
 
 			Sun_drew = 0;
@@ -5208,7 +5208,14 @@ void game_process_event( int current_state, int event )
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 
+			// Make hv.Player available in "On Gameplay Start" hook -zookeeper
+			if(Player_obj)
+				Script_system.SetHookObject("Player", Player_obj);
+
 			Script_system.RunCondition(CHA_GAMEPLAYSTART);
+
+			if (Player_obj)
+				Script_system.RemHookVar("Player");
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			//Framecount = 0;
