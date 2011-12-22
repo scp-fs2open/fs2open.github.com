@@ -23,6 +23,7 @@ void main_hall_read_table();
 
 // do a frame for the main hall
 void main_hall_do(float frametime);
+
 // close the main hall proper
 void main_hall_close();
 
