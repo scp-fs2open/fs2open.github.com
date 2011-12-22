@@ -800,10 +800,6 @@ static bool opengl_post_init_table()
 
 			required_string("$Shader Effect:");
 			stuff_int(&se.shader_effect);
-			if (se.shader_effect == 0 || se.shader_effect == 1) {
-				WarningEx(LOCATION, "Invalid shader effect specified for effect %s. 0 and 1 are reserved for internal use.\n", se.name);
-				skip_to_start_of_string_either("$Name:", "#End");
-			}
 
 			required_string("$Disables Rendering:");
 			stuff_boolean(&se.disables_rendering);
