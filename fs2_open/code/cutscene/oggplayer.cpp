@@ -382,7 +382,7 @@ static void OGG_video_init(theora_info *tinfo)
 				cfread(vert, len + 1, 1, cf_shader);
 				cfclose(cf_shader);
 			} else {
-				mprintf(("Loading built-in default shader for: %s\n", vert_name));
+				mprintf(("   Loading built-in default shader for: %s\n", vert_name));
 				vert = defaults_get_file(vert_name);
 			}
 
@@ -398,7 +398,7 @@ static void OGG_video_init(theora_info *tinfo)
 				cfread(frag, len + 1, 1, cf_shader);
 				cfclose(cf_shader);
 			} else {
-				mprintf(("Loading built-in default shader for: %s\n", frag_name));
+				mprintf(("   Loading built-in default shader for: %s\n", frag_name));
 				frag = defaults_get_file(frag_name);
 			}
 
