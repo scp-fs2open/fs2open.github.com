@@ -956,7 +956,7 @@ static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 
 		return shader;
 	} else {
-		mprintf(("Loading built-in default shader for: %s\n", filename));
+		mprintf(("   Loading built-in default shader for: %s\n", filename));
 		char* def_shader = defaults_get_file(filename);
 		size_t len = strlen(def_shader);
 		char *shader = (char*) vm_malloc(len + flags_len + 1);
