@@ -582,7 +582,11 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 		MIN(*width, *height) = MAX(*width, *height);
 	}
 
-	Assert( is_power_of_two(*width, *height) );
+	// Only enforce power of two size if not supported
+	if (!(Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO)))
+	{
+		Assert( is_power_of_two(*width, *height) );
+	}
 
 	if ( opengl_make_render_target(bm_bitmaps[n].handle, n, width, height, bpp, mm_lvl, flags) ) {
 		return 1;

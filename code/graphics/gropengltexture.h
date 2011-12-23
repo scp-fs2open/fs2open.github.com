@@ -59,7 +59,7 @@ extern int GL_mipmap_filter;
 extern GLenum GL_texture_target;
 extern GLenum GL_texture_face;
 extern GLfloat GL_anisotropy;
-extern bool GL_rendering_to_framebuffer;
+extern bool GL_rendering_to_texture;
 extern GLint GL_max_renderbuffer_size;
 
 void opengl_switch_arb(int unit, int state);
@@ -83,5 +83,6 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_set_texture_panning(float u, float v, bool enable);
 void gr_opengl_set_texture_addressing(int mode);
+GLuint opengl_get_rtt_framebuffer();
 
 #endif	//_GROPENGLTEXTURE_H
