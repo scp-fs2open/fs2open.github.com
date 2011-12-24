@@ -446,7 +446,7 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 	}
 
 	GL_state.ScissorTest(GL_TRUE);
-	if(GL_rendering_to_framebuffer) {
+	if(GL_rendering_to_texture) {
 		glScissor(x, y, w, h);
 	} else {
 		glScissor(x, gr_screen.max_h-y-h, w, h);
@@ -1339,7 +1339,7 @@ void opengl_setup_viewport()
 	glLoadIdentity();
 
 	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
-	if (GL_rendering_to_framebuffer) {
+	if (GL_rendering_to_texture) {
 		glOrtho(0, gr_screen.max_w, 0, gr_screen.max_h, -1.0, 1.0);
 	} else {
 		glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);

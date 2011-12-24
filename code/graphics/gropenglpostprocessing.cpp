@@ -210,7 +210,7 @@ static bool opengl_post_pass_bloom()
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 	GL_state.ScissorTest(scissor_test);
 
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
 
 	return true;
 }
@@ -301,6 +301,8 @@ void opengl_post_pass_fxaa() {
 	// basic/default uniforms
 	vglUniform1iARB( opengl_shader_get_uniform("tex"), 0 );
 
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_luminance_texture, 0);
+
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_color_texture);
@@ -309,13 +311,13 @@ void opengl_post_pass_fxaa() {
 		glTexCoord2f(0.0f, 0.0f);
 		glVertex2f(-1.0f, -1.0f);
 
-		glTexCoord2f(1.0f, 0.0f);
+		glTexCoord2f(Scene_texture_u_scale, 0.0f);
 		glVertex2f(1.0f, -1.0f);
 
-		glTexCoord2f(1.0f, 1.0f);
+		glTexCoord2f(Scene_texture_u_scale, Scene_texture_v_scale);
 		glVertex2f(1.0f, 1.0f);
 
-		glTexCoord2f(0.0f, 1.0f);
+		glTexCoord2f(0.0f, Scene_texture_v_scale);
 		glVertex2f(-1.0f, 1.0f);
 	glEnd();
 
@@ -324,6 +326,8 @@ void opengl_post_pass_fxaa() {
 	// set and configure post shader ..
 	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id] );
 
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
+
 	// basic/default uniforms
 	vglUniform1iARB( opengl_shader_get_uniform("tex0"), 0 );
 	vglUniform1fARB( opengl_shader_get_uniform("rt_w"), static_cast<float>(Post_texture_width));
@@ -331,19 +335,19 @@ void opengl_post_pass_fxaa() {
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_color_texture);
+	GL_state.Texture.Enable(Scene_luminance_texture);
 
 	glBegin(GL_QUADS);
 		glTexCoord2f(0.0f, 0.0f);
 		glVertex2f(-1.0f, -1.0f);
 
-		glTexCoord2f(1.0f, 0.0f);
+		glTexCoord2f(Scene_texture_u_scale, 0.0f);
 		glVertex2f(1.0f, -1.0f);
 
-		glTexCoord2f(1.0f, 1.0f);
+		glTexCoord2f(Scene_texture_u_scale, Scene_texture_v_scale);
 		glVertex2f(1.0f, 1.0f);
 
-		glTexCoord2f(0.0f, 1.0f);
+		glTexCoord2f(0.0f, Scene_texture_v_scale);
 		glVertex2f(-1.0f, 1.0f);
 	glEnd();
 
@@ -369,12 +373,12 @@ void gr_opengl_post_process_end()
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
 	// Do FXAA
-	if (Cmdline_fxaa && !fxaa_unavailable) {
+	if (Cmdline_fxaa && !fxaa_unavailable && !GL_rendering_to_texture) {
 		opengl_post_pass_fxaa();
 	}
 	
-	// done with screen render framebuffer
-	//vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+	// Bind the correct framebuffer. opengl_get_rtt_framebuffer returns 0 if not doing RTT
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());	
 	
 	opengl_shader_set_current( &GL_post_shader[6] );
 	float x,y;
@@ -419,13 +423,13 @@ void gr_opengl_post_process_end()
 					glTexCoord2f(0.0f, 0.0f);
 					glVertex2f(-1.0f, -1.0f);
 
-					glTexCoord2f(1.0f, 0.0f);
+					glTexCoord2f(Scene_texture_u_scale, 0.0f);
 					glVertex2f(1.0f, -1.0f);
 
-					glTexCoord2f(1.0f, 1.0f);
+					glTexCoord2f(Scene_texture_u_scale, Scene_texture_v_scale);
 					glVertex2f(1.0f, 1.0f);
 
-					glTexCoord2f(0.0f, 1.0f);
+					glTexCoord2f(0.0f, Scene_texture_v_scale);
 					glVertex2f(-1.0f, 1.0f);
 				glEnd();
 				GL_state.Blend(GL_FALSE);
@@ -496,13 +500,13 @@ void gr_opengl_post_process_end()
 		glTexCoord2f(0.0f, 0.0f);
 		glVertex2f(-1.0f, -1.0f);
 
-		glTexCoord2f(1.0f, 0.0f);
+		glTexCoord2f(Scene_texture_u_scale, 0.0f);
 		glVertex2f(1.0f, -1.0f);
 
-		glTexCoord2f(1.0f, 1.0f);
+		glTexCoord2f(Scene_texture_u_scale, Scene_texture_v_scale);
 		glVertex2f(1.0f, 1.0f);
 
-		glTexCoord2f(0.0f, 1.0f);
+		glTexCoord2f(0.0f, Scene_texture_v_scale);
 		glVertex2f(-1.0f, 1.0f);
 	glEnd();
 
@@ -800,10 +804,6 @@ static bool opengl_post_init_table()
 
 			required_string("$Shader Effect:");
 			stuff_int(&se.shader_effect);
-			if (se.shader_effect == 0 || se.shader_effect == 1) {
-				WarningEx(LOCATION, "Invalid shader effect specified for effect %s. 0 and 1 are reserved for internal use.\n", se.name);
-				skip_to_start_of_string_either("$Name:", "#End");
-			}
 
 			required_string("$Disables Rendering:");
 			stuff_boolean(&se.disables_rendering);
@@ -956,7 +956,7 @@ static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 
 		return shader;
 	} else {
-		mprintf(("Loading built-in default shader for: %s\n", filename));
+		mprintf(("   Loading built-in default shader for: %s\n", filename));
 		char* def_shader = defaults_get_file(filename);
 		size_t len = strlen(def_shader);
 		char *shader = (char*) vm_malloc(len + flags_len + 1);

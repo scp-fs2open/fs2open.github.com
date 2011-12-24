@@ -10,6 +10,7 @@
 #endif
 
 #include "globalincs/pstypes.h"
+#include "globalincs/def_files.h"
 #include "cfile/cfile.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropengltexture.h"
@@ -42,6 +43,9 @@ static int g_screenX = 0;
 static int g_screenY = 0;
 
 static GLuint GLtex = 0;
+static GLuint ytex = 0;
+static GLuint utex = 0;
+static GLuint vtex = 0;
 static GLint gl_screenYH = 0;
 static GLint gl_screenXW = 0;
 static GLfloat gl_screenU = 0;
@@ -74,7 +78,7 @@ static int audiofd_fragsize = 0;
 static longlong videobuf_granulepos = -1;
 static double videobuf_time = 0;
 
-
+static bool use_shaders = true;
 // -----------------------------------------------------------------------------
 //  Utility items
 //
@@ -82,8 +86,8 @@ static double videobuf_time = 0;
 // helper; just grab some more compressed bitstream and sync it for page extraction
 static int OGG_buffer_data(THEORAFILE *movie)
 {
-	char *buffer = ogg_sync_buffer(&movie->osyncstate, 4096);
-	int bytes = cfread(buffer, 1, 4096, movie->cfp);
+	char *buffer = ogg_sync_buffer(&movie->osyncstate, 8192); // Doubled read size to fix choppy audio with high bitrate movies - Valathil
+	int bytes = cfread(buffer, 1, 8192, movie->cfp);
 
 	ogg_sync_wrote(&movie->osyncstate, bytes);
 
@@ -326,6 +330,8 @@ static void OGG_video_init(theora_info *tinfo)
 {
 	float scale_by = 0.0f;
 
+	GLhandleARB shader_id = 0;
+
 	if (video_inited)
 		return;
 
@@ -339,35 +345,137 @@ static void OGG_video_init(theora_info *tinfo)
 		opengl_set_texture_target(GL_TEXTURE_2D);
 		opengl_tcache_get_adjusted_texture_size(g_screenWidth, g_screenHeight, &wp2, &hp2);
 
-		glGenTextures(1, &GLtex);
+		if(!Use_GLSL)
+			use_shaders = false;
 
-		Assert( GLtex != 0 );
+		if(use_shaders) {
+			glGenTextures(1, &ytex);
+			glGenTextures(1, &utex);
+			glGenTextures(1, &vtex);
 
-		if ( GLtex == 0 ) {
-			nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
-			video_inited = 1;
-			return;
+			Assert( ytex != 0 );
+			Assert( utex != 0 );
+			Assert( vtex != 0 );
+
+
+			if ( ytex + utex + vtex == 0 ) {
+				nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
+				video_inited = 1;
+				return;
+			}
+
+			char *vert = NULL, *frag = NULL;
+			opengl_shader_t new_shader;
+			
+			// choose appropriate files
+			char *vert_name = "video-v.sdr";
+			char *frag_name = "video-f.sdr";
+
+			mprintf(("Compiling video-processing shader ... \n"));
+
+			// read vertex shader
+			CFILE *cf_shader = cfopen(vert_name, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+	
+			if (cf_shader != NULL) {
+				int len = cfilelength(cf_shader);
+				vert = (char*) vm_malloc(len + 1);
+				cfread(vert, len + 1, 1, cf_shader);
+				cfclose(cf_shader);
+			} else {
+				mprintf(("   Loading built-in default shader for: %s\n", vert_name));
+				vert = defaults_get_file(vert_name);
+			}
+
+			if(!vert)
+				use_shaders = false;
+
+			// read fragment shader
+			cf_shader = cfopen(frag_name, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+	
+			if (cf_shader != NULL) {
+				int len = cfilelength(cf_shader);
+				frag = (char*) vm_malloc(len + 1);
+				cfread(frag, len + 1, 1, cf_shader);
+				cfclose(cf_shader);
+			} else {
+				mprintf(("   Loading built-in default shader for: %s\n", frag_name));
+				frag = defaults_get_file(frag_name);
+			}
+
+			if(!vert)
+				use_shaders = false;
+			Verify( vert != NULL );
+			Verify( frag != NULL );
+
+			shader_id = opengl_shader_create(vert, frag);
+			vglUseProgramObjectARB(shader_id);
+			if (!shader_id)
+				use_shaders = false;
+		} 
+
+		if(!use_shaders) {
+			glGenTextures(1, &GLtex);
+
+			Assert( GLtex != 0 );
+
+			if ( GLtex == 0 ) {
+				nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
+				video_inited = 1;
+				return;
+			}
 		}
 
 		gr_set_lighting(false, false);
 		GL_state.Texture.DisableAll();
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_texture_target);
-		GL_state.Texture.Enable(GLtex);
-
+		if(!use_shaders) {
+			GL_state.Texture.SetActiveUnit(0);
+			GL_state.Texture.SetTarget(GL_texture_target);
+			GL_state.Texture.Enable(GLtex);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+		}
 		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+		
+		if(use_shaders) {
+			GL_state.Texture.SetActiveUnit(0);
+			GL_state.Texture.SetTarget(GL_texture_target);
+			GL_state.Texture.Enable(ytex);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 2048, 2048, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
 
-		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+			GL_state.Texture.SetActiveUnit(1);
+			GL_state.Texture.SetTarget(GL_texture_target);
+			GL_state.Texture.Enable(utex);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+
+			GL_state.Texture.SetActiveUnit(2);
+			GL_state.Texture.SetTarget(GL_texture_target);
+			GL_state.Texture.Enable(vtex);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+		}
 		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
 		float movie_ratio = (float)g_screenWidth / (float)g_screenHeight;
 
@@ -390,15 +498,17 @@ static void OGG_video_init(theora_info *tinfo)
 		glColor3f(1.0f, 1.0f, 1.0f);
 	}
 
-	pixelbuf = (ubyte *) vm_malloc_q(g_screenWidth * g_screenHeight * 3);
+	if(!use_shaders) {
+		pixelbuf = (ubyte *) vm_malloc_q(g_screenWidth * g_screenHeight * 3);
 
-	if (pixelbuf == NULL) {
-		nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
-		video_inited = 1;
-		return;
+		if (pixelbuf == NULL) {
+			nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
+			video_inited = 1;
+			return;
+		}
+		memset( pixelbuf, 0, g_screenWidth * g_screenHeight * 3 );
 	}
-
-	memset( pixelbuf, 0, g_screenWidth * g_screenHeight * 3 );
+	
 
 	if (scale_video) {
 		g_screenX = ((fl2i(gr_screen.max_w / scale_by + 0.5f) - g_screenWidth) / 2);
@@ -416,8 +526,19 @@ static void OGG_video_init(theora_info *tinfo)
 
 		gl_screenU = i2fl(g_screenWidth) / i2fl(wp2);
 		gl_screenV = i2fl(g_screenHeight) / i2fl(hp2);
-	}
 
+		if(use_shaders) {
+			gl_screenU = i2fl(tinfo->frame_width-1) / i2fl(2048) ;
+			gl_screenV = i2fl(tinfo->frame_height-1) / i2fl(2048);
+			GL_state.Texture.SetShaderMode(GL_TRUE);
+			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "ytex"), 0 );
+			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "utex"), 1 );
+			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "vtex"), 2 );
+		}
+	}
+	if(!use_shaders && tinfo->frame_height > 450) {
+		mprintf(("VIDEO: No shader support and hd video is beeing played this can get choppy."));
+	}
 	video_inited = 1;
 }
 
@@ -434,12 +555,23 @@ static void OGG_video_close()
 		}
 
 		GL_state.Texture.Disable();
-		GL_state.Texture.Delete(GLtex);
-		glDeleteTextures(1, &GLtex);
-
+		if(use_shaders) {
+			GL_state.Texture.Delete(ytex);
+			GL_state.Texture.Delete(utex);
+			GL_state.Texture.Delete(vtex);
+			glDeleteTextures(1, &ytex);
+			glDeleteTextures(1, &utex);
+			glDeleteTextures(1, &vtex);
+		} else {
+			GL_state.Texture.Delete(GLtex);
+			glDeleteTextures(1, &GLtex);
+		}
 		opengl_set_texture_target();
 
+		ytex = utex = vtex = 0;
 		GLtex = 0;
+		GL_state.Texture.SetShaderMode(GL_FALSE);
+		opengl_shader_set_current( 0 );
 	}
 
 	if (pixelbuf != NULL) {
@@ -455,7 +587,6 @@ static void OGG_video_close()
 	g_screenX = 0;
 	g_screenY = 0;
 
-	GLtex = 0;
 	gl_screenYH = 0;
 	gl_screenXW = 0;
 	gl_screenU = 0;
@@ -530,16 +661,25 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 	}
 }
 
+extern int Mouse_hidden;
 static void OGG_video_draw(theora_state *tstate)
 {
 	yuv_buffer yuv;
 
 	theora_decode_YUVout(tstate, &yuv);
-	convert_YUV_to_RGB(&yuv);
-
+	if(!use_shaders)
+		convert_YUV_to_RGB(&yuv);
 	if (gr_screen.mode == GR_OPENGL) {
-		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixelbuf);
-
+		if(use_shaders) {
+			GL_state.Texture.SetActiveUnit(0);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.y_stride, yuv.y_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.y);
+			GL_state.Texture.SetActiveUnit(1);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.u);
+			GL_state.Texture.SetActiveUnit(2);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.v);
+		} else {
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixelbuf);
+		}
 		glBegin(GL_QUADS);
 			glTexCoord2f(0, 0);
 				glVertex2i(g_screenX, g_screenY);
@@ -554,7 +694,7 @@ static void OGG_video_draw(theora_state *tstate)
 				glVertex2i(gl_screenXW, g_screenY);
 		glEnd();
 	}
-
+	Mouse_hidden = 1;
 	gr_flip();
 	os_poll();
 

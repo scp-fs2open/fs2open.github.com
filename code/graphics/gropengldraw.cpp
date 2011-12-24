@@ -36,6 +36,7 @@
 
 GLuint Scene_framebuffer;
 GLuint Scene_color_texture;
+GLuint Scene_luminance_texture;
 GLuint Scene_effect_texture;
 GLuint Scene_depth_texture;
 GLuint Cockpit_depth_texture;
@@ -49,6 +50,9 @@ bool Scene_framebuffer_in_frame;
 
 int Scene_texture_width;
 int Scene_texture_height;
+
+GLfloat Scene_texture_u_scale = 1.0f;
+GLfloat Scene_texture_v_scale = 1.0f;
 
 void gr_opengl_pixel(int x, int y, bool resize)
 {
@@ -2030,6 +2034,21 @@ void opengl_setup_scene_textures()
 
 	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
 
+	//Set up luminance texture (used as input for FXAA)
+	glGenTextures(1, &Scene_luminance_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_luminance_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
 	// setup effect texture
 
 	glGenTextures(1, &Scene_effect_texture);
@@ -2083,24 +2102,6 @@ void opengl_setup_scene_textures()
 	gr_zbuffer_set(GR_ZBUFF_FULL);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-	// setup main depth texture
-	glGenTextures(1, &Scene_depth_texture);
-
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_depth_texture);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-
 	if ( opengl_check_framebuffer() ) {
 		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 		vglDeleteFramebuffersEXT(1, &Scene_framebuffer);
@@ -2116,6 +2117,12 @@ void opengl_setup_scene_textures()
 
 		glDeleteTextures(1, &Scene_depth_texture);
 		Scene_depth_texture = 0;
+
+		glDeleteTextures(1, &Scene_luminance_texture);
+		Scene_luminance_texture = 0;
+
+		//glDeleteTextures(1, &Scene_fxaa_output_texture);
+		//Scene_fxaa_output_texture = 0;
 
 		Cmdline_postprocess = 0;
 		Cmdline_softparticles = 0;
@@ -2234,6 +2241,20 @@ void gr_opengl_scene_texture_begin()
 
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
 
+	if (GL_rendering_to_texture)
+	{
+		Scene_texture_u_scale = i2fl(gr_screen.max_w) / i2fl(Scene_texture_width);
+		Scene_texture_v_scale = i2fl(gr_screen.max_h) / i2fl(Scene_texture_height);
+
+		CLAMP(Scene_texture_u_scale, 0.0f, 1.0f);
+		CLAMP(Scene_texture_v_scale, 0.0f, 1.0f);
+	}
+	else
+	{
+		Scene_texture_u_scale = 1.0f;
+		Scene_texture_v_scale = 1.0f;
+	}
+
 	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
 	vglDrawBuffers(2, buffers);
 
@@ -2266,7 +2287,7 @@ void gr_opengl_scene_texture_end()
 		GLboolean blend = GL_state.Blend(GL_FALSE);
 		GLboolean cull = GL_state.CullFace(GL_FALSE);
 
-		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -2276,19 +2297,38 @@ void gr_opengl_scene_texture_end()
 		glClear(GL_COLOR_BUFFER_BIT);
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-		glBegin(GL_QUADS);
-		glTexCoord2f(0.0f, 0.0f);
-		glVertex2f(0.0f, (float)gr_screen.max_h);
+		if (GL_rendering_to_texture)
+		{
+			glBegin(GL_QUADS);
+				glTexCoord2f(Scene_texture_u_scale, 0.0f);
+				glVertex2f(0.0f, (float)gr_screen.max_h);
+				
+				glTexCoord2f(0.0f, 0.0f);
+				glVertex2f((float)gr_screen.max_w, (float)gr_screen.max_h);
+				
+				glTexCoord2f(0.0f, Scene_texture_v_scale);
+				glVertex2f((float)gr_screen.max_w, 0.0f);
+				
+				glTexCoord2f(Scene_texture_u_scale, Scene_texture_v_scale);
+				glVertex2f(0.0f, 0.0f);
+			glEnd();
+		}
+		else
+		{
+			glBegin(GL_QUADS);
+				glTexCoord2f(0.0f, 0.0f);
+				glVertex2f(0.0f, (float)gr_screen.max_h);
 
-		glTexCoord2f(1.0f, 0.0f);
-		glVertex2f((float)gr_screen.max_w, (float)gr_screen.max_h);
+				glTexCoord2f(Scene_texture_u_scale, 0.0f);
+				glVertex2f((float)gr_screen.max_w, (float)gr_screen.max_h);
 
-		glTexCoord2f(1.0f, 1.0f);
-		glVertex2f((float)gr_screen.max_w, 0.0f);
+				glTexCoord2f(Scene_texture_u_scale, Scene_texture_v_scale);
+				glVertex2f((float)gr_screen.max_w, 0.0f);
 
-		glTexCoord2f(0.0f, 1.0f);
-		glVertex2f(0.0f, 0.0f);
-		glEnd();
+				glTexCoord2f(0.0f, Scene_texture_v_scale);
+				glVertex2f(0.0f, 0.0f);
+			glEnd();
+		}
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.Disable();
@@ -2300,6 +2340,11 @@ void gr_opengl_scene_texture_end()
 		GL_state.Blend(blend);
 		GL_state.CullFace(cull);
 	}
+
+	// Reset the UV scale values
+	
+	Scene_texture_u_scale = 1.0f;
+	Scene_texture_v_scale = 1.0f;
 
 	Scene_framebuffer_in_frame = false;
 }
