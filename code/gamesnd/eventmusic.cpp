@@ -1778,7 +1778,7 @@ int event_music_get_soundtrack_index(char *name)
 	return -1;
 }
 
-int event_music_get_spooled_music_index(char *name)
+int event_music_get_spooled_music_index(const char *name)
 {
 	// find the correct index for the event music
 	for ( int i = 0; i < Num_music_files; i++ ) {
@@ -1789,6 +1789,11 @@ int event_music_get_spooled_music_index(char *name)
 
 	return -1;
 }
+
+int event_music_get_spooled_music_index(const SCP_string& name)
+{
+	return event_music_get_spooled_music_index(name.c_str());
+	}
 
 // set a score based on name
 void event_music_set_score(int score_index, char *name)
