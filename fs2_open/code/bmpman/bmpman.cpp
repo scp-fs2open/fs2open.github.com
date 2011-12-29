@@ -605,6 +605,14 @@ Done:
 }
 
 /**
+ * Same as bm_load above, just with an SCP_string 
+ */
+int bm_load(const SCP_string& filename)
+{
+	return bm_load(const_cast<char*> (filename.c_str()));
+}
+
+/**
  * Special load function. Basically allows you to load a bitmap which already exists (by filename). 
  *
  * This is useful because in some cases we need to have a bitmap which is locked in screen format
