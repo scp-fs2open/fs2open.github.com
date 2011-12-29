@@ -5750,6 +5750,14 @@ void ship_render(object * obj)
 		warp_shipp = &Ships[dfi.maintained_variables.objp_value->instance];
 
 		is_first_stage_arrival = ((warp_shipp->flags & SF_ARRIVING_STAGE_1) > 0);
+
+		// This is a hack to make ships using the hyperspace warpin type to
+		// render even in stage 1, which is used for collision detection
+		// purposes -zookeeper
+		if (Ship_info[warp_shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+			warp_shipp = NULL;
+			is_first_stage_arrival = false;
+		}
 	}
 
 
