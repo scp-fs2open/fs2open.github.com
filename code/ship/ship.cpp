@@ -5754,7 +5754,7 @@ void ship_render(object * obj)
 		// This is a hack to make ships using the hyperspace warpin type to
 		// render even in stage 1, which is used for collision detection
 		// purposes -zookeeper
-		if (Ship_info[warp_shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+		if (Ship_info[warp_shipp->ship_info_index].warpin_type == WT_HYPERSPACE) {
 			warp_shipp = NULL;
 			is_first_stage_arrival = false;
 		}
