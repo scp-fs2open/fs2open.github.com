@@ -530,6 +530,8 @@ void sort_training_objectives()
 	}
 }
 
+#define DIRECTIVE_WAIT	0
+
 /**
  * Maintains the objectives listing, adding, removing and updating items
  *
@@ -542,7 +544,7 @@ void training_check_objectives()
 	Training_obj_num_lines = 0;
 	for (event_idx=0; event_idx<Num_mission_events; event_idx++) {
 		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + 3000) ) {
+		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + DIRECTIVE_WAIT) ) {
 			if (!Training_failure || !strnicmp(Mission_events[event_idx].name, XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective
