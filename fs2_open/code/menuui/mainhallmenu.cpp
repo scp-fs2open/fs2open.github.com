@@ -557,9 +557,9 @@ void main_hall_init(int main_hall_num)
 	if (Main_hall_mask < 0) {
 		nprintf(("General","WARNING! Couldn't load main hall background mask %s\n", Main_hall->mask.c_str()));
 		if (gr_screen.res == 0) {
-			Error(LOCATION,"Could not load in main hall mask '%s'!\n\n(This error most likely means that you are missing required 640x480 interface art.)", Main_hall->mask);
+			Error(LOCATION,"Could not load in main hall mask '%s'!\n\n(This error most likely means that you are missing required 640x480 interface art.)", Main_hall->mask.c_str());
 		} else {
-			Error(LOCATION,"Could not load in main hall mask '%s'!\n\n(This error most likely means that you are missing required 1024x768 interface art.)", Main_hall->mask);
+			Error(LOCATION,"Could not load in main hall mask '%s'!\n\n(This error most likely means that you are missing required 1024x768 interface art.)", Main_hall->mask.c_str());
 		}
 	} else {
 		// get a pointer to bitmap by using bm_lock(), so we can feed it to he snazzy menu system
