@@ -8,7 +8,7 @@
 */ 
 
 
-
+#include <limits.h>
 
 #include "menuui/mainhallmenu.h"
 #include "palman/palman.h"
