@@ -483,28 +483,37 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		renderTargetSetup(&camera_eye, &camera_orient, target_sip->closeup_zoom);
 		ship_model_start( target_objp );
 
-		if (Targetbox_wire!=0)
-		{
-			int is_bright = 1;
+		switch (Targetbox_wire) {
+			case 0:
+				flags |= MR_NO_LIGHTING;
 
-			if (ship_is_tagged(target_objp))
-				model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, is_bright));
-			else
-			{
-				model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, is_bright, target_objp));
-			}
+				break;
+			case 1:
+				if (ship_is_tagged(target_objp))
+					model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, true));
+				else
+					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, true, target_objp));
 
-			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
 
-			if (Targetbox_wire==1)
-				flags |=MR_NO_POLYS;
+				break;
+			case 2:
+				break;
+			case 3:
+				if (ship_is_tagged(target_objp))
+					model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, true));
+				else
+					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, true, target_objp));
+
+				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+				break;
 		}
 
 		if (target_sip->hud_target_lod >= 0) {
 			model_set_detail_level(target_sip->hud_target_lod);
 		}
-
-		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
 
 		if(Targetbox_shader_effect > -1) {
 			flags |= MR_ANIMATED_SHADER;
@@ -593,18 +602,30 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		// the objects position
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
-		if (Targetbox_wire!=0)
-		{
-			model_set_outline_color(255,255,255);
-			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
-
-			if (Targetbox_wire==1)
-				flags |=MR_NO_POLYS;
-		}
 		renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(debrisp->model_num);
 
-		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
+		switch (Targetbox_wire) {
+			case 0:
+				flags |= MR_NO_LIGHTING;
+
+				break;
+			case 1:
+				model_set_outline_color(255,255,255);
+
+				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+
+				break;
+			case 2:
+				break;
+			case 3:
+				model_set_outline_color(255,255,255);
+
+				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+				break;
+		}
 
 		if(Targetbox_shader_effect > -1) {
 			flags |= MR_ANIMATED_SHADER;
@@ -686,19 +707,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			hud_target_lod		= homing_sip->hud_target_lod;
 		}
 
-		if (Targetbox_wire!=0)
-		{
-			int is_bright = 0;
-
-			model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, is_bright, target_objp));
-
-			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
-
-			if (Targetbox_wire==1)
-				flags |=MR_NO_POLYS;
-		}
-			
-
 		// take the forward orientation to be the vector from the player to the current target
 		vm_vec_sub(&orient_vec, &viewed_obj->pos, &viewer_obj->pos);
 		vm_vec_normalize(&orient_vec);
@@ -719,11 +727,31 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		renderTargetSetup(&camera_eye, &camera_orient, View_zoom/3);
 		model_clear_instance(viewed_model_num);
 
+		switch (Targetbox_wire) {
+			case 0:
+				flags |= MR_NO_LIGHTING;
+
+				break;
+			case 1:
+				model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+
+				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+
+				break;
+			case 2:
+				break;
+			case 3:
+				model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+
+				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+				break;
+		}
+
 		if (hud_target_lod >= 0) {
 			model_set_detail_level(hud_target_lod);
 		}
-
-		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
 
 		if(Targetbox_shader_effect > -1) {
 			flags |= MR_ANIMATED_SHADER;
@@ -805,20 +833,33 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(Asteroid_info[asteroidp->asteroid_type].model_num[pof]);
 		
-		if (Targetbox_wire!=0)
-		{
-			if (time_to_impact>=0)
-				model_set_outline_color(255,255,255);
-			else
-				model_set_outline_color(64,64,0);
+		switch (Targetbox_wire) {
+			case 0:
+				flags |= MR_NO_LIGHTING;
 
-			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				break;
+			case 1:
+				if (time_to_impact>=0)
+					model_set_outline_color(255,255,255);
+				else
+					model_set_outline_color(64,64,0);
 
-			if (Targetbox_wire==1)
-				flags |=MR_NO_POLYS;
+				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+
+				break;
+			case 2:
+				break;
+			case 3:
+				if (time_to_impact>=0)
+					model_set_outline_color(255,255,255);
+				else
+					model_set_outline_color(64,64,0);
+
+				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+				break;
 		}
-
-		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
 
 		if(Targetbox_shader_effect > -1) {
 			flags |= MR_ANIMATED_SHADER;
