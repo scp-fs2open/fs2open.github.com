@@ -89,6 +89,14 @@ int collide_weapon_weapon( obj_pair * pair )
 			sap = &Ships[Objects[A->parent].instance];
 			sbp = &Ships[Objects[B->parent].instance];
 
+			float aDamage = wipA->damage;
+			if (wipB->armor_type_idx >= 0)
+				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx);
+
+			float bDamage = wipB->damage;
+			if (wipA->armor_type_idx >= 0)
+				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx);
+
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
 					if ((wipA->wi_flags & WIF_BOMB) && (wipB->wi_flags & WIF_BOMB)) {
@@ -97,8 +105,8 @@ int collide_weapon_weapon( obj_pair * pair )
 						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 						Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 					} else {
-						A->hull_strength -= wipB->damage;
-						B->hull_strength -= wipA->damage;
+						A->hull_strength -= bDamage;
+						B->hull_strength -= aDamage;
 
 						// safety to make sure either of the weapons die - allow 'bulkier' to keep going
 						if ((A->hull_strength > 0.0f) && (B->hull_strength > 0.0f)) {
@@ -113,14 +121,13 @@ int collide_weapon_weapon( obj_pair * pair )
 							Weapons[A->instance].lifeleft = 0.01f;
 							Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 						}
-						B->hull_strength -= wipA->damage; //Why is the damage applied twice to B? -Halleck
 						if (B->hull_strength < 0.0f) {
 							Weapons[B->instance].lifeleft = 0.01f;
 							Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 						}
 					}
 				} else {
-					A->hull_strength -= wipB->damage;
+					A->hull_strength -= bDamage;
 					Weapons[B->instance].lifeleft = 0.01f;
 					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 					if (A->hull_strength < 0.0f) {
@@ -129,7 +136,7 @@ int collide_weapon_weapon( obj_pair * pair )
 					}
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
-				B->hull_strength -= wipA->damage;
+				B->hull_strength -= aDamage;
 				Weapons[A->instance].lifeleft = 0.01f;
 				Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 				if (B->hull_strength < 0.0f) {
