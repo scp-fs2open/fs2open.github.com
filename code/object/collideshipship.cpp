@@ -724,7 +724,10 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// calculate the effect on the velocity of the collison point per unit impulse
 	// first find the effect thru change in rotvel
 	// then find the change in the cm vel
-	if (light == Player_obj) {
+	// SUSHI: If on a landing surface, use the same shortcut the player gets
+	// This is a bit of a hack, but gets around some nasty unpredictable collision behavior
+	// when trying to do AI landings for certain ships
+	if (light == Player_obj || subsys_landing_allowed) {
 		vm_vec_zero( &delta_rotvel_light );
 		light_denom = 1.0f / light->phys_info.mass;
 	} else {
