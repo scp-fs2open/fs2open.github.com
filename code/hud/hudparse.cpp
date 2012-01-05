@@ -218,8 +218,15 @@ void parse_hud_gauges_tbl(char *filename)
 
 	if (optional_string("$Wireframe Targetbox:")) {
 		stuff_int(&Targetbox_wire);
-		if ((Targetbox_wire < 0) || (Targetbox_wire > 2)) {
+		if ((Targetbox_wire < 0) || (Targetbox_wire > 3)) {
 			Targetbox_wire = 0;
+		}
+	}
+
+	if (optional_string("$Targetbox Shader Effect:")) {
+		stuff_int(&Targetbox_shader_effect);
+		if (Targetbox_shader_effect < 0) {
+			Targetbox_shader_effect = 0;
 		}
 	}
 

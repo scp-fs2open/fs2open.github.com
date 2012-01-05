@@ -1561,12 +1561,6 @@ extern int wing_name_lookup(char *name, int ignore_count = 0);
 
 extern int Player_ship_class;
 
-#define MAX_PLAYER_SHIP_CHOICES	15
-/*
-extern int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
-extern int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship types, precedence list for player ship/wing selection
-*/
-
 //	Do the special effect for energy dissipating into the shield for a hit.
 //	model_num	= index in Polygon_models[]
 //	centerp		= pos of object, sort of the center of the shield

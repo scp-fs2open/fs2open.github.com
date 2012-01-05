@@ -530,7 +530,7 @@ void sort_training_objectives()
 	}
 }
 
-#define DIRECTIVE_WAIT	3000
+#define DIRECTIVE_WAIT	0
 
 /**
  * Maintains the objectives listing, adding, removing and updating items

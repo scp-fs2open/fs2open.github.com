@@ -3155,6 +3155,9 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		}
 	}
 
+	if ( Interp_flags & MR_ANIMATED_SHADER )
+		Interp_tmap_flags |= TMAP_ANIMATED_SHADER;
+
 	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
 
 	//set to true since D3d and OGL need the api matrices set
