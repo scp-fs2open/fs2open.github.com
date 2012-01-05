@@ -26,6 +26,7 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "parse/scripting.h"
+#include "cmdline/cmdline.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -102,8 +103,22 @@ int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
 #ifdef SCP_UNIX
+/**
+ * Keyboard layouts
+ */
+enum KeyboardLayout {
+	KEYBOARD_LAYOUT_DEFAULT,//!< American
+	KEYBOARD_LAYOUT_QWERTZ  //!< German
+};
+
 void FillSDLArray ()
 {
+	KeyboardLayout layout = KEYBOARD_LAYOUT_DEFAULT;
+	
+	if ((Cmdline_keyboard_layout) && !strcmp(Cmdline_keyboard_layout, "qwertz")) {
+		layout = KEYBOARD_LAYOUT_QWERTZ;
+	}
+
 	SDLtoFS2[SDLK_0] = KEY_0;
 	SDLtoFS2[SDLK_1] = KEY_1;
 	SDLtoFS2[SDLK_2] = KEY_2;
@@ -142,21 +157,7 @@ void FillSDLArray ()
 	SDLtoFS2[SDLK_y] = KEY_Y;
 	SDLtoFS2[SDLK_z] = KEY_Z;
 
-	if (Lcl_gr) {
-		SDLtoFS2[SDLK_WORLD_63] = KEY_MINUS;
-		SDLtoFS2[SDLK_WORLD_20] = KEY_EQUAL;
-		SDLtoFS2[SDLK_MINUS] = KEY_DIVIDE;
-		SDLtoFS2[SDLK_HASH] = KEY_SLASH;
-		SDLtoFS2[SDLK_COMMA] = KEY_COMMA;
-		SDLtoFS2[SDLK_PERIOD] = KEY_PERIOD;
-		SDLtoFS2[SDLK_WORLD_86] = KEY_SEMICOL;
-
-		SDLtoFS2[SDLK_WORLD_92] = KEY_LBRACKET;
-		SDLtoFS2[SDLK_PLUS] = KEY_RBRACKET;
-
-		SDLtoFS2[SDLK_CARET] = KEY_LAPOSTRO;
-		SDLtoFS2[SDLK_WORLD_68] = KEY_RAPOSTRO;
-	} else {
+	if(layout == KEYBOARD_LAYOUT_DEFAULT) {
 		SDLtoFS2[SDLK_MINUS] = KEY_MINUS;
 		SDLtoFS2[SDLK_EQUALS] = KEY_EQUAL;
 		SDLtoFS2[SDLK_SLASH] = KEY_DIVIDE; // No idea - DDOI
@@ -171,6 +172,22 @@ void FillSDLArray ()
 
 		SDLtoFS2[SDLK_BACKQUOTE] = KEY_LAPOSTRO;
 		SDLtoFS2[SDLK_QUOTE] = KEY_RAPOSTRO;
+	}
+
+	if(layout == KEYBOARD_LAYOUT_QWERTZ) {
+		SDLtoFS2[SDLK_WORLD_63] = KEY_MINUS;
+		SDLtoFS2[SDLK_WORLD_20] = KEY_EQUAL;
+		SDLtoFS2[SDLK_MINUS] = KEY_DIVIDE;
+		SDLtoFS2[SDLK_HASH] = KEY_SLASH;
+		SDLtoFS2[SDLK_COMMA] = KEY_COMMA;
+		SDLtoFS2[SDLK_PERIOD] = KEY_PERIOD;
+		SDLtoFS2[SDLK_WORLD_86] = KEY_SEMICOL;
+
+		SDLtoFS2[SDLK_WORLD_92] = KEY_LBRACKET;
+		SDLtoFS2[SDLK_PLUS] = KEY_RBRACKET;
+
+		SDLtoFS2[SDLK_CARET] = KEY_LAPOSTRO;
+		SDLtoFS2[SDLK_WORLD_68] = KEY_RAPOSTRO;
 	}
 
 	SDLtoFS2[SDLK_ESCAPE] = KEY_ESC;
@@ -656,6 +673,7 @@ void key_mark( uint code, int state, uint latency )
 		code = KEY_SLASH;
 	}
 
+#ifndef SCP_UNIX
 	if(Lcl_fr){
 		switch (code) {
 		case KEY_A:
@@ -686,23 +704,12 @@ void key_mark( uint code, int state, uint latency )
 			code = KEY_SEMICOL;
 			break;
 		}
-#if defined(SCP_UNIX) && !defined(__APPLE__)
-	} else if(Lcl_gr){
-		switch (code) {
-		case KEY_Y:
-			code = KEY_Z;
-			break;
-
-		case KEY_Z:
-			code = KEY_Y;
-			break;
-		}
-#endif
 	}
 
 	if ( (code == 0xc5) && !Key_running_NT ) {
 		key_turn_off_numlock();
 	}
+#endif
 
 	Assert( code < NUM_KEYS );	
 
