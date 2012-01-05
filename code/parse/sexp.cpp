@@ -24734,7 +24734,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 1)
 				return OPF_NUMBER;
 			else
-				return OPF_SHIP;
+				return OPF_SHIP_WING;
 
 		case OP_CLEAR_SUBTITLES:
 			return OPF_NONE;
