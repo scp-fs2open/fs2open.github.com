@@ -471,12 +471,9 @@ bool fred_init()
 	gr_reset_clip();
 	g3_start_frame(0);
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
-
-	for (i=0; i<Num_ship_classes; i++)
-		if (Ship_info[i].flags & SIF_DEFAULT_PLAYER_SHIP) {
-			Default_player_model = cur_model_index = i;
-			break;
-		}
+	
+	// Get the default player ship
+	Default_player_model = cur_model_index = get_default_player_ship_index();
 
 	Id_select_type_start = Num_ship_classes + 2;
 	Id_select_type_jump_node = Num_ship_classes + 1;

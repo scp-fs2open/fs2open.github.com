@@ -1923,4 +1923,11 @@ typedef struct ship_effect {
 
 extern SCP_vector<ship_effect> Ship_effects;
 
+/**
+ * @brief Returns the index of the default player ship
+ *
+ * @return An index into Ship_info[], location of the default player ship.
+ */
+int get_default_player_ship_index();
+
 #endif
