@@ -1099,6 +1099,9 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 
 
 // menu and category stuff
+extern int get_sexp_id(char *sexp_name);
+extern int get_category(int sexp_id);
+extern int category_of_subcategory(int subcategory_id);
 extern int get_subcategory(int sexp_id);
 
 // Goober5000

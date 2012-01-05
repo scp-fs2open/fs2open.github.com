@@ -25901,6 +25901,41 @@ int eval_num(int n)
 		return atoi(CTEXT(n));		// otherwise, just get the number
 }
 
+// Goober5000
+int get_sexp_id(char *sexp_name)
+{
+	for (int i = 0; i < Num_operators; i++)
+	{
+		if (!stricmp(sexp_name, Operators[i].text))
+			return Operators[i].value;
+	}
+	return -1;
+}
+
+// Goober5000
+int get_category(int sexp_id)
+{
+	int category = (sexp_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
+}
+
+// Goober5000
+int category_of_subcategory(int subcategory_id)
+{
+	int category = (subcategory_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
+}
+
 // Goober5000 - for FRED2 menu subcategories
 int get_subcategory(int sexp_id)
 {
@@ -29774,7 +29809,7 @@ bool output_sexps(char *filepath)
 				fputs("<dl>", fp);
 				for(z = 0; z < Num_operators; z++)
 				{
-					if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+					if((get_category(Operators[z].value) == op_menu[x].id)
 						&& (get_subcategory(Operators[z].value) != -1)
 						&& (get_subcategory(Operators[z].value) == op_submenu[y].id))
 					{
@@ -29787,7 +29822,7 @@ bool output_sexps(char *filepath)
 		}
 		for(z = 0; z < Num_operators; z++)
 		{
-			if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+			if((get_category(Operators[z].value) == op_menu[x].id)
 				&& (get_subcategory(Operators[z].value) == -1))
 			{
 				output_sexp_html(z, fp);
@@ -29798,7 +29833,7 @@ bool output_sexps(char *filepath)
 	}
 	for(z = 0; z < Num_operators; z++)
 	{
-		if(!(Operators[z].value & OP_CATEGORY_MASK))
+		if(!get_category(Operators[z].value))
 		{
 			output_sexp_html(z, fp);
 		}
