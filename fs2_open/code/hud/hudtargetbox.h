@@ -37,6 +37,7 @@ extern int Target_window_coords[GR_NUM_RESOLUTIONS][4];
 
 //used to track if the player has wireframe hud target box turned on
 extern int Targetbox_wire;
+extern int Targetbox_shader_effect;
 extern bool Lock_targetbox_mode;
 
 class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR

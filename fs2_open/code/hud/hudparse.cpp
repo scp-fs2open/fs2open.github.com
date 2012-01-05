@@ -223,6 +223,13 @@ void parse_hud_gauges_tbl(char *filename)
 		}
 	}
 
+	if (optional_string("$Targetbox Shader Effect:")) {
+		stuff_int(&Targetbox_shader_effect);
+		if (Targetbox_shader_effect < 0) {
+			Targetbox_shader_effect = 0;
+		}
+	}
+
 	if (optional_string("$Lock Wireframe Mode:")) {
 		stuff_boolean(&Lock_targetbox_mode);
 	}

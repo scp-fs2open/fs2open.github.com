@@ -34,6 +34,7 @@
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
+#include "graphics/gropenglshader.h"
 
 #ifndef NDEBUG
 #include "hud/hudets.h"
@@ -102,6 +103,7 @@ int Cargo_scan_coords[GR_NUM_RESOLUTIONS][4] = {
 int Targetbox_flash_timers[NUM_TBOX_FLASH_TIMERS];
 
 int Targetbox_wire = 0;
+int Targetbox_shader_effect = -1;
 bool Lock_targetbox_mode = false;
 
 // Different target states.  This drives the text display right below the hull integrity on the targetbox.
@@ -503,7 +505,13 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		}
 
 		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
-		
+
+		if(Targetbox_shader_effect > -1) {
+			flags |= MR_ANIMATED_SHADER;
+
+			opengl_shader_set_animated_effect(Targetbox_shader_effect);
+		}
+
 		// maybe render a special hud-target-only model
 		if(target_sip->model_num_hud >= 0){
 			model_render( target_sip->model_num_hud, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
@@ -597,7 +605,13 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		model_clear_instance(debrisp->model_num);
 
 		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
-		
+
+		if(Targetbox_shader_effect > -1) {
+			flags |= MR_ANIMATED_SHADER;
+
+			opengl_shader_set_animated_effect(Targetbox_shader_effect);
+		}
+
 		// This calls the colour that doesn't get reset
 		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
 		renderTargetClose();
@@ -710,7 +724,13 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		}
 
 		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
-		
+
+		if(Targetbox_shader_effect > -1) {
+			flags |= MR_ANIMATED_SHADER;
+
+			opengl_shader_set_animated_effect(Targetbox_shader_effect);
+		}
+
 		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
 		renderTargetClose();
 	}
@@ -799,7 +819,13 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		}
 
 		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
-		
+
+		if(Targetbox_shader_effect > -1) {
+			flags |= MR_ANIMATED_SHADER;
+
+			opengl_shader_set_animated_effect(Targetbox_shader_effect);
+		}
+
 		model_render(Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
 		renderTargetClose();
 	}
