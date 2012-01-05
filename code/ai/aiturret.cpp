@@ -2136,7 +2136,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		ss->turret_enemy_objnum = -1;
 
 	//	Maybe pick a new enemy, unless targeting has been taken over by scripting
-	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override) {
+	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override ) {
 		Num_find_turret_enemy++;
 		int objnum = find_turret_enemy(ss, parent_objnum, &gpos, &gvec, ss->turret_enemy_objnum);
 		//Assert(objnum < 0 || is_target_beam_valid(tp, objnum));
@@ -2406,6 +2406,14 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
 			turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);
 			ss->turret_next_fire_stamp = timestamp(500);
+
+			// If nothing is OK to fire (lost track of the target?) 
+			// reset the target (so we don't continue to track what we can't hit)
+			if (tp->flags2 & MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE)
+			{
+				ss->turret_enemy_objnum = -1;		//	Reset enemy objnum, find a new one next frame.
+				ss->turret_time_enemy_in_range = 0.0f;
+			}
 		}
 		else
 		{
