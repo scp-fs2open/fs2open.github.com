@@ -377,9 +377,6 @@ void gr_opengl_post_process_end()
 		opengl_post_pass_fxaa();
 	}
 	
-	// Bind the correct framebuffer. opengl_get_rtt_framebuffer returns 0 if not doing RTT
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());	
-	
 	opengl_shader_set_current( &GL_post_shader[6] );
 	float x,y;
 	// should we even be here?
@@ -445,7 +442,9 @@ void gr_opengl_post_process_end()
 		gr_zbuffer_set(GR_ZBUFF_NONE);
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 	}
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	
+	// Bind the correct framebuffer. opengl_get_rtt_framebuffer returns 0 if not doing RTT
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());	
 
 	// do bloom, hopefully ;)
 	bool bloomed = opengl_post_pass_bloom();
