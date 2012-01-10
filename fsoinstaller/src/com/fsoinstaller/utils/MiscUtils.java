@@ -58,6 +58,12 @@ public class MiscUtils
 		int x = (int) ((screenSize.getWidth() - window.getWidth()) / 2.0 + 0.5);
 		int y = (int) ((screenSize.getHeight() - window.getHeight()) / 2.0 + 0.5);
 		
+		// ensure the window isn't partially off the top left of the screen
+		if (x < 0)
+			x = 0;
+		if (y < 0)
+			y = 0;
+		
 		// center it
 		window.setLocation(x, y);
 	}
@@ -73,6 +79,12 @@ public class MiscUtils
 		// find the coordinates to center the whole window
 		int x = (int) (parent.getX() + ((parent.getWidth() - window.getWidth()) / 2.0 + 0.5));
 		int y = (int) (parent.getY() + ((parent.getHeight() - window.getHeight()) / 2.0 + 0.5));
+		
+		// ensure the window isn't partially off the top left of the screen
+		if (x < 0)
+			x = 0;
+		if (y < 0)
+			y = 0;
 		
 		// center it
 		window.setLocation(x, y);

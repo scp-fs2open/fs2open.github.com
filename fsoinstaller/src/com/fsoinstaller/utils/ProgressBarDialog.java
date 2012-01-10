@@ -238,9 +238,18 @@ public class ProgressBarDialog
 			}
 			catch (ExecutionException ee)
 			{
-				logger.error("The task aborted because of an exception!", ee.getCause());
-				if (callback != null)
-					callback.handleException((Exception) ee.getCause());
+				Throwable cause = ee.getCause();
+				logger.error("The task aborted because of an exception!", cause);
+				
+				// we don't handle errors in the callback
+				if (cause instanceof Error)
+					throw (Error) cause;
+				// it's not an Error, but it's not an Exception either?
+				else if (!(cause instanceof Exception))
+					throw new Error("The task threw a Throwable that was not an Exception or an Error", cause);
+				// at this point it must be an exception, so check for a callback
+				else if (callback != null)
+					callback.handleException((Exception) cause);
 			}
 		}
 	}

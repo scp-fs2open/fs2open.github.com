@@ -49,7 +49,7 @@ public class InstallerGUI extends JFrame
 			new ConfigPage(),
 			new ChoicePage(),
 			new ModSelectPage(),
-			new BlankPage()
+			new InstallPage()
 		};
 		activePageIndex = 0;
 		activePage = pages[activePageIndex];

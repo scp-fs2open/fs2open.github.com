@@ -210,7 +210,7 @@ public class InputStreamInStream implements IInStream
 			case SEEK_SET:
 				return seek(offset - overallPos, SEEK_CUR);
 
-				// seek from the current position
+			// seek from the current position
 			case SEEK_CUR:
 				bufferPos += offset;
 				overallPos += offset;
@@ -218,7 +218,7 @@ public class InputStreamInStream implements IInStream
 					throw new SevenZipException("Can't read a negative stream position!");
 				return overallPos;
 
-				// seek from the end of the stream
+			// seek from the end of the stream
 			case SEEK_END:
 				return seek(overallCount + offset - overallPos, SEEK_CUR);
 
