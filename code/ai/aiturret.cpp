@@ -2084,6 +2084,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					}
 				}
 
+				if ( wip->wi_flags2 & WIF2_SMALL_ONLY ) {
+					if ( (lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+						continue;
+					}
+				}
+
 				if (lep->type == OBJ_SHIP) {
 					// Check if we're targeting a protected ship
 					if (lep->flags & OF_PROTECTED) {
