@@ -43,7 +43,8 @@ initial_status::initial_status(CWnd* pParent /*=NULL*/)
 	m_hull = 0;
 	m_has_shields = FALSE;
 	m_force_shields = FALSE;
-	m_locked = FALSE;
+	m_ship_locked = FALSE;
+	m_weapons_locked = FALSE;
 	m_primaries_locked = FALSE;
 	m_secondaries_locked = FALSE;
 	m_turrets_locked = FALSE;
@@ -83,7 +84,8 @@ void initial_status::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_damage, 0, 100);
 	DDX_Check(pDX, IDC_HAS_SHIELDS, m_has_shields);
 	DDX_Check(pDX, IDC_FORCE_SHIELDS, m_force_shields);
-	DDX_Check(pDX, IDC_LOCKED, m_locked);
+	DDX_Check(pDX, IDC_SHIP_LOCKED, m_ship_locked);
+	DDX_Check(pDX, IDC_WEAPONS_LOCKED, m_weapons_locked);
 	DDX_Check(pDX, IDC_PRIMARIES_LOCKED, m_primaries_locked);
 	DDX_Check(pDX, IDC_SECONDARIES_LOCKED, m_secondaries_locked);
 	DDX_Check(pDX, IDC_TURRETS_LOCKED, m_turrets_locked);
@@ -124,7 +126,8 @@ BEGIN_MESSAGE_MAP(initial_status, CDialog)
 	ON_CBN_SELCHANGE(IDC_DOCKEE_POINT, OnSelchangeDockeePoint)
 	ON_BN_CLICKED(IDC_HAS_SHIELDS, OnHasShields)
 	ON_BN_CLICKED(IDC_FORCE_SHIELDS, OnForceShields)
-	ON_BN_CLICKED(IDC_LOCKED, OnLocked)
+	ON_BN_CLICKED(IDC_SHIP_LOCKED, OnShipLocked)
+	ON_BN_CLICKED(IDC_WEAPONS_LOCKED, OnWeaponsLocked)
 	ON_BN_CLICKED(IDC_PRIMARIES_LOCKED, OnPrimariesLocked)
 	ON_BN_CLICKED(IDC_SECONDARIES_LOCKED, OnSecondariesLocked)
 	ON_BN_CLICKED(IDC_TURRETS_LOCKED, OnTurretsLocked)
@@ -185,10 +188,15 @@ BOOL initial_status::OnInitDialog()
 	else
 		m_force_shields = 0;
 
-	if (Ships[m_ship].flags & SF_LOCKED)
-		m_locked = 1;
+	if (Ships[m_ship].flags2 & SF2_SHIP_LOCKED)
+		m_ship_locked = 1;
 	else
-		m_locked = 0;
+		m_ship_locked = 0;
+
+	if (Ships[m_ship].flags2 & SF2_WEAPONS_LOCKED)
+		m_weapons_locked = 1;
+	else
+		m_weapons_locked = 0;
 
 	// Lock primaries
 	if (Ships[m_ship].flags2 & SF2_PRIMARIES_LOCKED) {
@@ -252,13 +260,23 @@ BOOL initial_status::OnInitDialog()
 					if (m_force_shields)
 						m_force_shields = 2;
 				}
-				if (Ships[get_ship_from_obj(objp)].flags & SF_LOCKED) {
-					if (!m_locked)
-						m_locked = 2;
+
+				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_SHIP_LOCKED) {
+					if (!m_ship_locked)
+						m_ship_locked = 2;
 
 				} else {
-					if (m_locked)
-						m_locked = 2;
+					if (m_ship_locked)
+						m_ship_locked = 2;
+				}
+
+				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_WEAPONS_LOCKED) {
+					if (!m_weapons_locked)
+						m_weapons_locked = 2;
+
+				} else {
+					if (m_weapons_locked)
+						m_weapons_locked = 2;
 				}
 
 				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_PRIMARIES_LOCKED){
@@ -403,10 +421,15 @@ void initial_status::OnOK()
 					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_FORCE_SHIELDS_ON;
 				}
 				
-				if (m_locked == 1)
-					Ships[get_ship_from_obj(objp)].flags |= SF_LOCKED;
-				else if (!m_locked)
-					Ships[get_ship_from_obj(objp)].flags &= ~SF_LOCKED;
+				if (m_ship_locked == 1)
+					Ships[get_ship_from_obj(objp)].flags2 |= SF2_SHIP_LOCKED;
+				else if (!m_ship_locked)
+					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_SHIP_LOCKED;
+				
+				if (m_weapons_locked == 1)
+					Ships[get_ship_from_obj(objp)].flags2 |= SF2_WEAPONS_LOCKED;
+				else if (!m_weapons_locked)
+					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_WEAPONS_LOCKED;
 
 				if (m_primaries_locked == 1) {
 					Ships[get_ship_from_obj(objp)].flags2 |= SF2_PRIMARIES_LOCKED;
@@ -454,10 +477,15 @@ void initial_status::OnOK()
 		else if (!m_force_shields)
 			Ships[m_ship].flags2 &= ~SF2_FORCE_SHIELDS_ON;		
 
-		if (m_locked == 1)
-			Ships[m_ship].flags |= SF_LOCKED;
-		else if (!m_locked)
-			Ships[m_ship].flags &= ~SF_LOCKED;		
+		if (m_ship_locked == 1)
+			Ships[m_ship].flags2 |= SF2_SHIP_LOCKED;
+		else if (!m_ship_locked)
+			Ships[m_ship].flags2 &= ~SF2_SHIP_LOCKED;		
+
+		if (m_weapons_locked == 1)
+			Ships[m_ship].flags2 |= SF2_WEAPONS_LOCKED;
+		else if (!m_weapons_locked)
+			Ships[m_ship].flags2 &= ~SF2_WEAPONS_LOCKED;				
 
 		if (m_primaries_locked == 1)
 			Ships[m_ship].flags2 |= SF2_PRIMARIES_LOCKED;
@@ -534,14 +562,24 @@ void initial_status::OnForceShields()
 	((CButton *) GetDlgItem(IDC_FORCE_SHIELDS))->SetCheck(m_force_shields);
 }
 
-void initial_status::OnLocked() 
+void initial_status::OnShipLocked() 
 {
-	if (m_locked == 1)
-		m_locked = 0;
+	if (m_ship_locked == 1)
+		m_ship_locked = 0;
 	else
-		m_locked = 1;
+		m_ship_locked = 1;
 
-	((CButton *) GetDlgItem(IDC_LOCKED))->SetCheck(m_locked);
+	((CButton *) GetDlgItem(IDC_SHIP_LOCKED))->SetCheck(m_ship_locked);
+}
+
+void initial_status::OnWeaponsLocked() 
+{
+	if (m_weapons_locked == 1)
+		m_weapons_locked = 0;
+	else
+		m_weapons_locked = 1;
+
+	((CButton *) GetDlgItem(IDC_WEAPONS_LOCKED))->SetCheck(m_weapons_locked);
 }
 
 void initial_status::OnSelchangeSubsys() 

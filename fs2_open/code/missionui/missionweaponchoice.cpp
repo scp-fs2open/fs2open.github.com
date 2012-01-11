@@ -1426,7 +1426,7 @@ void wl_reset_selected_slot()
 	}
 
 	for ( i=0; i<MAX_WSS_SLOTS; i++ ) {
-		if ( !ss_disabled_slot(i) ) {
+		if ( !ss_disabled_slot(i, false) ) {
 			if ( ss_wing_slot_is_console_player(i) && (Wss_slots[i].ship_class >= 0) ) {
 				wl_set_selected_slot(i);
 				return;
@@ -2116,7 +2116,7 @@ int drop_icon_on_slot(int bank_num)
 			return 0;
 		}
 	} else {
-		if ( ss_disabled_slot( Selected_wl_slot ) ){
+		if ( ss_disabled_slot( Selected_wl_slot, false ) ){
 			return 0;
 		}
 	}
@@ -2210,7 +2210,7 @@ int do_mouse_over_ship_weapon(int index)
 	Assert(Selected_wl_slot >= 0);
 	Assert(Wss_slots != NULL);
 
-	if ( ss_disabled_slot( Selected_wl_slot ) )
+	if ( ss_disabled_slot( Selected_wl_slot , false) )
 		return 0;
 
 	Hot_weapon_bank_icon = index;	// bank icon will be drawn highlighted
@@ -2716,7 +2716,7 @@ void weapon_select_do(float frametime)
 		wl_render_overhead_view(frametime);
 		wl_draw_ship_weapons(Selected_wl_slot);
 		for ( int i = 0; i < MAX_WING_BLOCKS; i++ ) {
-			draw_wing_block(i, Hot_wl_slot, Selected_wl_slot, -1);
+			draw_wing_block(i, Hot_wl_slot, Selected_wl_slot, -1, false);
 		}
 		common_render_selected_screen_button();
 	}
@@ -3201,7 +3201,7 @@ void pick_from_ship_slot(int num)
 	if ( wl_icon_being_carried() )
 		return;
 
-	if ( ss_disabled_slot( Selected_wl_slot ) )
+	if ( ss_disabled_slot( Selected_wl_slot, false ) )
 		return;
 
 	Assert( (Wss_slots != NULL) && (Wl_icons != NULL) );

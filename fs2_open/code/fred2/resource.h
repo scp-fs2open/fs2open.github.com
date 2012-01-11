@@ -915,9 +915,10 @@
 #define IDC_EXACT_PLAYERS               1455
 #define IDC_HEADING                     1456
 #define IDC_NO_ARRIVAL_MESSAGE          1457
-#define IDC_LOCKED                      1458
 #define IDC_NO_MUSIC                    1459
 #define ID_UPDATE                       1460
+#define IDC_SHIP_LOCKED                 1461
+#define IDC_WEAPONS_LOCKED              1462
 #define IDC_INITIAL_LIST                1464
 #define IDC_FULL_WAR                    1465
 #define IDC_NEW_MSG                     1466
