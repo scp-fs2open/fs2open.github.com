@@ -307,6 +307,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"immobile",
 	"no-ets",
 	"cloaked",
+	"ship-locked",
+	"weapons-locked",
 };
 
 
@@ -2321,8 +2323,10 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags & P_SF_NO_DEPARTURE_WARP)
 		shipp->flags |= SF_NO_DEPARTURE_WARP;
 
-	if (parse_flags & P_SF_LOCKED)
-		shipp->flags |= SF_LOCKED;
+	if (parse_flags & P_SF_LOCKED) {
+		shipp->flags2 |= SF2_SHIP_LOCKED;
+		shipp->flags2 |= SF2_WEAPONS_LOCKED;
+	}
 
 	if (parse_flags & P_OF_INVULNERABLE)
 		objp->flags |= OF_INVULNERABLE;
@@ -2421,6 +2425,12 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_CLOAKED)
 		shipp->flags2 |= SF2_CLOAKED;
+
+	if (parse_flags2 & P2_SF2_SHIP_LOCKED)
+		shipp->flags2 |= SF2_SHIP_LOCKED;
+
+	if (parse_flags2 & P2_SF2_WEAPONS_LOCKED)
+		shipp->flags2 |= SF2_WEAPONS_LOCKED;
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 

@@ -18,11 +18,13 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (United States) resources
+// English (U.S.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
+#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -1439,7 +1441,7 @@ BEGIN
     EDITTEXT        IDC_HULL,57,24,40,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Spin1",IDC_HULL_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,98,24,11,14
     CONTROL         "Has Shield System",IDC_HAS_SHIELDS,"Button",BS_3STATE | WS_TABSTOP,7,43,75,10
-    CONTROL         "Locked",IDC_LOCKED,"Button",BS_3STATE | WS_TABSTOP,7,78,40,10
+    CONTROL         "Ship Locked",IDC_SHIP_LOCKED,"Button",BS_3STATE | WS_TABSTOP,7,78,56,10
     EDITTEXT        IDC_SHIELDS,57,55,40,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Spin3",IDC_SHIELDS_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,99,56,9,14
     COMBOBOX        IDC_DOCKEE,103,142,80,106,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -1464,6 +1466,7 @@ BEGIN
     CONTROL         "Turrets Locked",IDC_TURRETS_LOCKED,"Button",BS_3STATE | WS_TABSTOP,7,101,81,8
     CONTROL         "Afterburner Locked",IDC_AFTERBURNER_LOCKED,"Button",BS_3STATE | WS_TABSTOP,93,101,83,10
     CONTROL         "Force Shields On",IDC_FORCE_SHIELDS,"Button",BS_3STATE | WS_TABSTOP,86,43,84,8
+    CONTROL         "Weapon Locked",IDC_WEAPONS_LOCKED,"Button",BS_3STATE | WS_TABSTOP,93,79,69,10
 END
 
 IDD_ASTEROID_EDITOR DIALOG  0, 0, 376, 210
@@ -2953,16 +2956,18 @@ BEGIN
     ID_FORMAT_FS1_RETAIL    "Save missions compatible with FS1 retail"
 END
 
-#endif    // English (United States) resources
+#endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (United Kingdom) resources
+// English (U.K.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 #pragma code_page(1252)
+#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3008,7 +3013,7 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (United Kingdom) resources
+#endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

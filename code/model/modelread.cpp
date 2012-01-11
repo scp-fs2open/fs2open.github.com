@@ -1249,7 +1249,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->submodel[n].can_move = true;
 				}
 
-				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){ //Iyojj skybox 4
+				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){
 					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
 				}else{

@@ -722,6 +722,10 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 	sprintf(buf, "%sInner Radius:", pre_char);
 	if(optional_string(buf)) {
 		stuff_float(&sci->inner_rad);
+		if (!sci->inner_rad != 0.0f) {
+			WarningEx(LOCATION, "Invalid inner Radius for Shockwave. Must be greater than 0.\n");
+			sci->inner_rad = 0.1f;
+		}
 	}
 
 	sprintf(buf, "%sOuter Radius:", pre_char);
@@ -5561,7 +5565,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 	wip = &Weapon_info[Weapons[wobjp->instance].weapon_info_index];	
 	wp = &Weapons[wobjp->instance];
-	Assert(sci->inner_rad != 0);	
+	Assertion(sci->inner_rad != 0, "Shockwave info for weapon %s is invalid. Inner Radius needs to be greater than 0./n", wip->name);	
 
 	// only blast ships and asteroids
 	// And (some) weapons
