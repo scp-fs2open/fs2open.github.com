@@ -59,7 +59,7 @@ extern int Select_default_ship;
 extern float ShipSelectScreenShipRot;
 extern int	 ShipSelectModelNum;
 
-void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select);
+void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection = true);
 void ship_select_init();
 void ship_select_do(float frametime);
 void ship_select_close();
@@ -75,7 +75,7 @@ int	ss_return_ship(int wing_block, int wing_slot, int *ship_index, p_object **pp
 void	ss_return_name(int wing_block, int wing_slot, char *name);
 int	ss_return_original_ship_class(int slot_num);
 int	ss_return_saindex(int slot_num);
-int	ss_disabled_slot(int slot_num);
+int	ss_disabled_slot(int slot_num, bool ship_selection = true);
 int	ss_valid_slot(int slot_num);
 int	ss_wing_slot_is_console_player(int index);
 
