@@ -478,8 +478,8 @@ void gr_opengl_string(int sx, int sy, char *s, bool resize)
 		u0 = u_scale * (i2fl(u+xd) / bw);
 		v0 = v_scale * (i2fl(v+yd) / bh);
 
-		u1 = u_scale * (i2fl((u+xd)+wc) / bw);
-		v1 = v_scale * (i2fl((v+yd)+hc) / bh);
+		u1 = u_scale * (i2fl((u+xd)+wc) / bw)*(do_resize?0.99f:1.0f);
+		v1 = v_scale * (i2fl((v+yd)+hc) / bh)*(do_resize?0.99f:1.0f);
 
 		glTexCoord2f(u0, v1);
 		glVertex2i(x1, y2);
