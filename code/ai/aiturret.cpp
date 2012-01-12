@@ -835,9 +835,9 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 			else
 				tt = &Ai_tp_list[Weapon_info[priority_weapon_idx].targeting_priorities[i]];
 
-			int n_types = tt->ship_type.size();
-			int n_s_classes = tt->ship_class.size();
-			int n_w_classes = tt->weapon_class.size();
+			int n_types = (int)tt->ship_type.size();
+			int n_s_classes = (int)tt->ship_class.size();
+			int n_w_classes = (int)tt->weapon_class.size();
 			
 			bool found_something;
 			object *ptr = GET_FIRST(&obj_used_list);
@@ -1675,8 +1675,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		if (wip->wi_flags & WIF_BEAM) {
 			// if this beam isn't free to fire
 			if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE)) {
-				//WMC - remove this
-				//Int3();	// should never get this far
 				return false;
 			}
 			beam_fire_info fire_info;

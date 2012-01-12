@@ -619,7 +619,7 @@ void HudGaugeBrackets::render(float frametime)
 	if(!in_frame)
 		g3_start_frame(0);
 
-	for(int i = 0; i < (int)target_display_list.size(); i++) {
+	for(size_t i = 0; i < target_display_list.size(); i++) {
 		// make sure this point is projected. Otherwise, skip.
 		if( !(target_display_list[i].target_point.flags & PF_OVERFLOW) ) {
 			if ( target_display_list[i].objp ) {

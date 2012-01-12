@@ -2033,7 +2033,7 @@ int button_function_demo_valid(int n)
 }
 
 /**
- * Execute function corresponding to action n (BUTTON_ #define from KeyControl.h)
+ * Execute function corresponding to action n (BUTTON_ from KeyControl.h)
  * @return 1 when action was taken
  */
 int button_function(int n)
@@ -2721,7 +2721,7 @@ void button_info_do(button_info *bi)
 
 
 /**
- * Set the bit for the corresponding action n (BUTTON_ #define from KeyControl.h)
+ * Set the bit for the corresponding action n (BUTTON_ from KeyControl.h)
  */
 void button_info_set(button_info *bi, int n)
 {
@@ -2734,7 +2734,7 @@ void button_info_set(button_info *bi, int n)
 }
 
 /**
- * Unset the bit for the corresponding action n (BUTTON_ #define from KeyControl.h)
+ * Unset the bit for the corresponding action n (BUTTON_ from KeyControl.h)
  */
 void button_info_unset(button_info *bi, int n)
 {

@@ -247,8 +247,6 @@ extern int Global_error_count;
 #	endif
 #endif
 
-//#define Int3() _asm { int 3 }
-
 #if defined(NDEBUG)
 	// No debug version of Int3
 	#define Int3() do { } while (0) 

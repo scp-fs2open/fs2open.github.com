@@ -53,7 +53,9 @@ int get_num_mipmap_levels(int w, int h)
 	return (levels > 1) ? levels : 1;
 }
 
-// anything API specific to freeing bm data
+/**
+ * Anything API specific to freeing bm data
+ */
 void gr_opengl_bm_free_data(int n, bool release)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
@@ -68,7 +70,9 @@ void gr_opengl_bm_free_data(int n, bool release)
 		opengl_kill_render_target( n );
 }
 
-// API specifics for creating a user bitmap
+/**
+ * API specifics for creating a user bitmap
+ */
 void gr_opengl_bm_create(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
@@ -176,13 +180,17 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 	return 0;
 }
 
-// API specific init instructions
+/**
+ * API specific init instructions
+ */
 void gr_opengl_bm_init(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 }
 
-// specific instructions for setting up the start of a page-in session
+/**
+ * Specific instructions for setting up the start of a page-in session
+ */
 void gr_opengl_bm_page_in_start()
 {
 	opengl_preload_init();
@@ -306,7 +314,6 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 	int alpha = 1;
 	int num_mipmaps = 1;
 
-
 	// don't use for EFFs, if they were wanting to be DDS then they should already be that way
 	if ( be->type == BM_TYPE_EFF ) {
 		return 1;
@@ -408,7 +415,9 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 
 extern bool opengl_texture_slot_valid(int n, int handle);
 
-// Lock an image files data into memory
+/**
+ * Lock an image files data into memory
+ */
 int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags )
 {
 	ubyte c_type = BM_TYPE_NONE;

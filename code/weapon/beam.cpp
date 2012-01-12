@@ -1684,7 +1684,6 @@ void beam_add_light(beam *b, int objnum, int source, vec3d *c_point)
 
 	// if we're out of light slots!
 	if(Beam_light_count >= MAX_BEAM_LIGHT_INFO){
-		// Int3();
 		return;
 	}
 
@@ -2314,7 +2313,6 @@ int beam_collide_ship(obj_pair *pair)
 	// try and get a model
 	model_num = beam_get_model(pair->b);
 	if (model_num < 0) {
-		// Int3();
 		return 1;
 	}
 	
@@ -2556,7 +2554,6 @@ int beam_collide_missile(obj_pair *pair)
 	// try and get a model
 	model_num = beam_get_model(pair->b);
 	if(model_num < 0){
-		//Int3();
 		return 1;
 	}
 
@@ -2623,7 +2620,6 @@ int beam_collide_debris(obj_pair *pair)
 	// try and get a model
 	model_num = beam_get_model(pair->b);
 	if(model_num < 0){
-		// Int3();
 		return 1;
 	}	
 

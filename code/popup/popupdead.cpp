@@ -132,7 +132,6 @@ void popupdead_start()
 	UI_BUTTON	*b;
 
 	if ( Popupdead_active ) {
-		// Int3();
 		return;
 	}
 

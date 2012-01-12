@@ -3783,7 +3783,7 @@ void HudGaugeLeadIndicator::render(float frametime)
 	renderLeadCurrentTarget();
 
 	// if extra targetting info is enabled, render lead indicators for objects in the target display list.
-	for(int i = 0; i < (int)target_display_list.size(); i++) {
+	for(size_t i = 0; i < target_display_list.size(); i++) {
 		if ( (target_display_list[i].flags & TARGET_DISPLAY_LEAD) && target_display_list[i].objp ) {
 
 			// set the color
@@ -6359,7 +6359,7 @@ void HudGaugeOffscreen::render(float frametime)
 		g3_start_frame(0);
 	gr_set_screen_scale(base_w, base_h);
 
-	for(int i = 0; i < (int)target_display_list.size(); i++) {
+	for(size_t i = 0; i < target_display_list.size(); i++) {
 		if(target_display_list[i].target_point.codes != 0) {
 			float dist = 0.0f;
 

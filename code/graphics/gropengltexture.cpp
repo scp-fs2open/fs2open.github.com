@@ -273,8 +273,10 @@ void opengl_free_texture_slot( int n )
 	opengl_free_texture( &Textures[n] );
 }
 
-// determine if a bitmap is in API memory, so that we can just reuse it rather
-// that having to load it from disk again
+/**
+ * Determine if a bitmap is in API memory, so that we can just reuse it rather
+ * that having to load it from disk again
+ */
 bool opengl_texture_slot_valid(int n, int handle)
 {
 	tcache_slot_opengl *t = &Textures[n];
@@ -297,10 +299,10 @@ bool opengl_texture_slot_valid(int n, int handle)
 int opengl_free_texture(tcache_slot_opengl *t)
 {
 	// Bitmap changed!!     
-	if (/*t->bitmap_handle > -1*/t->texture_id) {
+	if (t->texture_id) {
 		// if I, or any of my children have been used this frame, bail  
 		// can't use bm_get_cache_slot() here since bitmap_id probably isn't valid
-		if ( (t->bitmap_handle >= 0) && Tex_used_this_frame[t->bitmap_handle % MAX_BITMAPS] /*&& (t->bpp == 8)*/ ) {
+		if ( (t->bitmap_handle >= 0) && Tex_used_this_frame[t->bitmap_handle % MAX_BITMAPS] ) {
 			return 0;
 		}
 
@@ -1047,8 +1049,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 
 	GL_state.Texture.SetActiveUnit(tex_unit);
 
-	if ( /*(bm_is_render_target(bitmap_handle) != RENDER_TARGET_DYNAMIC) &&*/
-		!bm_is_render_target(bitmap_handle) &&
+	if (!bm_is_render_target(bitmap_handle) &&
 		((t->bitmap_handle < 0) || (bitmap_handle != t->bitmap_handle)) )
 	{
 		ret_val = opengl_create_texture( bitmap_handle, bitmap_type, t );
@@ -1076,7 +1077,6 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	}
 	// gah
 	else {
-		//Int3();
 		mprintf(("Texturing disabled for texture %s due to internal error.\n", bm_get_filename(bitmap_handle)));
 		GL_state.Texture.Disable();
 
@@ -1467,9 +1467,9 @@ int opengl_check_framebuffer()
 
 static fbo_t *opengl_get_fbo(int width, int height)
 {
-	uint rt_size = RenderTarget.size();
+	size_t rt_size = RenderTarget.size();
 
-	for (uint i = 0; i < rt_size; i++) {
+	for (size_t i = 0; i < rt_size; i++) {
 		if ( (RenderTarget[i].width == width) && (RenderTarget[i].height == height) ) {
 			return &RenderTarget[i];
 		}
@@ -1491,7 +1491,7 @@ void opengl_kill_render_target(int slot)
 	}
 
 	tcache_slot_opengl *ts = &Textures[slot];
-	uint idx = 0;
+	size_t idx = 0;
 
 	for (idx = 0; idx < RenderTarget.size(); idx++) {
 		if ( (RenderTarget[idx].width == ts->w) && (RenderTarget[idx].height == ts->h) ) {
@@ -1527,7 +1527,7 @@ void opengl_kill_render_target(int slot)
 
 void opengl_kill_all_render_targets()
 {
-	for (uint i = 0; i < RenderTarget.size(); i++) {
+	for (size_t i = 0; i < RenderTarget.size(); i++) {
 		fbo_t *fbo = &RenderTarget[i];
 
 		if (fbo->framebuffer_id) {
@@ -1553,14 +1553,6 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 	if (slot < 0) {
 		if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
-		//	if (Cmdline_mipmap) {
-		//		ts = &Textures[render_target->working_slot];
-
-		//		glBindTexture(ts->texture_target, ts->texture_id);
-		//		vglGenerateMipmapEXT(ts->texture_target);
-		//		glBindTexture(ts->texture_target, 0);
-		//	}
-
 			if (render_target->is_static) {
 				extern void gr_opengl_bm_save_render_target(int slot);
 				gr_opengl_bm_save_render_target(render_target->working_slot);

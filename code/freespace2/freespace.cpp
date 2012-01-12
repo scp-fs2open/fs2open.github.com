@@ -1035,7 +1035,6 @@ void game_level_init(int seed)
 	Missiontime = 0;
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
-	fireball_preload();				//	page in warphole bitmaps
 	observer_init();
 	flak_level_init();				// initialize flak - bitmaps, etc
 	ct_level_init();				// initialize ships contrails, etc
@@ -1376,8 +1375,6 @@ void game_post_level_init()
 {
 	extern void game_environment_map_gen();
 	game_environment_map_gen();
-
-	model_level_post_init();
 
  	HUD_init();
 	hud_setup_escort_list();
@@ -2389,7 +2386,7 @@ void game_show_standalone_framerate()
 /**
  * Show the time remaining in a mission.  Used only when the end-mission sexpression is used
  *
- * ::mission_end_time is a global from missionparse.cpp that contains the mission time at which the
+ * mission_end_time is a global from missionparse.cpp that contains the mission time at which the
  * mission should end (in fixed seconds).  There is code in missionparse.cpp which actually handles
  * checking how much time is left.
  */
@@ -7322,7 +7319,6 @@ void game_shutdown(void)
 	// load up common multiplayer icons
 	multi_unload_common_icons();
 	hud_close();
-	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
 	particle_close();			// close out the particle system
 	weapon_close();					// free any memory that was allocated for the weapons

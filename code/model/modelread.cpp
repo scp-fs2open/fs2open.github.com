@@ -1234,7 +1234,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					if ( strstr(pm->submodel[n].name, "turret") || strstr(pm->submodel[n].name, "gun") || strstr(pm->submodel[n].name, "cannon")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
 					} else if (strstr(pm->submodel[n].name, "thruster")) {
-						// Int3();
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
 					}else if(strstr(props, "$triggered:")){
@@ -2305,13 +2304,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	if ( !model_initted )
 		model_init();
 
-//	int Model_ram = 0;
-
 #ifndef NDEBUG
 	int ram_before = TotalRam;
 #endif
-
-	//Assert(strlen(filename) <= 12);
 
 	num = -1;
 
@@ -2392,12 +2387,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	}
 #endif
 
-
-//mprintf(( "Loading model '%s'\n", filename ));
-//key_getch();
-
-//=============================
-// Find the destroyed replacement models
+	//=============================
+	// Find the destroyed replacement models
 
 	// Set up the default values
 	for (i=0; i<pm->n_models; i++ )	{
@@ -2414,7 +2405,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		strcat_s( destroyed_name, "-destroyed" );
 		for (j=0; j<pm->n_models; j++ )	{
 			if ( !stricmp( pm->submodel[j].name, destroyed_name ))	{
-				// mprintf(( "Found destroyed model for '%s'\n", pm->submodel[i].name ));
 				pm->submodel[i].my_replacement = j;
 				pm->submodel[j].i_replace = i;
 			}
@@ -2426,7 +2416,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 		strcpy_s( live_debris_name, "debris-" );
 		strcat_s( live_debris_name, pm->submodel[i].name );
-
 
 		pm->submodel[i].num_live_debris = 0;
 		for (j=0; j<pm->n_models; j++ ) {
@@ -2442,13 +2431,12 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	}
 
 	create_family_tree(pm);
-//	dump_object_tree(pm);
 
 	// maybe generate vertex buffers
 	create_vertex_buffer(pm);
 
-//==============================
-// Find all the lower detail versions of the hires model
+	//==============================
+	// Find all the lower detail versions of the hires model
 	for (i=0; i<pm->n_models; i++ )	{
 		int j, l1;
 		bsp_info * sm1 = &pm->submodel[i];
@@ -2536,7 +2524,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 		for (j=0; j<sm1->num_details; j++ )	{
 			if ( sm1->details[j] == -1 )	{
-			//	Warning( LOCATION, "Model '%s' could find all detail levels for submodel '%s'", pm->filename, sm1->name );
 				sm1->num_details = 0;
 			}
 		}
@@ -2561,7 +2548,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			d += 0.1f;		// Make the eye 1/10th of a meter inside the sphere.
 
 			if ( d > pm->core_radius )	{
-				//mprintf(( "Model %s core radius increased from %.1f to %.1f to fit eye\n", pm->filename, pm->core_radius, d ));
 				pm->core_radius = d;
 			}		
 		}
@@ -2572,7 +2558,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	pm->ram_used = ram_after - ram_before;
 	Model_ram += pm->ram_used;
-	//mprintf(( "Model RAM = %d KB\n", Model_ram ));
 #endif
 
 	// Goober5000 - originally done in ship_create for no apparent reason
@@ -2870,44 +2855,6 @@ polymodel_instance* model_get_instance(int model_instance_num)
 
 	return Polygon_model_instances[model_instance_num];
 }
-
-/*
-// Finds the 3d bounding box of a model.  If submodel_num is -1,
-// then it starts from the root object.   If inc_children is non-zero, 
-// then this will recurse and find the bounding box for all children
-// also.
-void model_find_bound_box_3d(int model_num,int submodel_num, int inc_children, matrix *orient, vec3d * pos, vec3d * box )
-{
-	polymodel * pm;
-	vec3d to_root_xlat;
-	matrix to_root_rotate;
-	int n_steps, steps[16];
-	int tmp_sobj;
-	
-	if ( (model_num < 0) || (model_num >= N_polygon_models) ) return;
-
-	pm = &Polygon_models[model_num];
-
-	if ( submodel_num < 0 ) submodel_num = pm->detail[0];
-
-	// traverse up the model tree to a root object.
-	// Store this path in n_steps,
-	n_steps = 0;
-	tmp_sobj = submodel_num;
-	while( tmp_sobj > -1 )	{
-		steps[n_steps++] = tmp_sobj;
-		tmp_sobj = pm->submodel[tmp_sobj].parent;
-	}
-	
-	
-
-//	vm_copy_transpose_matrix(&to_world_rotate, orient );
-//	to_world_xlat = *pos;
-
-}
-*/
-
-
 
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.

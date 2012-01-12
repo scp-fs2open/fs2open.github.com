@@ -495,7 +495,6 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	if ( hitpos_dist > ship_obj->radius * 2.0f )	{
 		mprintf(( "BOGUS HITPOS PASSED TO DO_SUBOBJ_HIT_STUFF (%.1f > %.1f)!\n", hitpos_dist, ship_obj->radius * 2.0f ));
 		Error(LOCATION, "BOGUS HITPOS PASSED TO DO_SUBOBJ_HIT_STUFF (%.1f > %.1f)!\n", hitpos_dist, ship_obj->radius * 2.0f );
-		// Int3();	// Get John ASAP!!!!  Someone passed a local coordinate instead of world for hitpos probably.
 	}
 #endif
 
@@ -878,7 +877,6 @@ void show_dead_message(object *ship_obj, object *other_obj)
 		// in multiplayer, get a pointer to the player that died.
 		int pnum = multi_find_player_by_object( ship_obj );
 		if ( pnum == -1 ) {
-			//Int3();				// this condition is bad bad bad -- get Allender
 			return;
 		}
 		player_p = Net_players[pnum].m_player;
