@@ -70,7 +70,8 @@ flag_def_list Script_actions[] =
 	{"On Weapon Equipped",		CHA_ONWPEQUIPPED,	0},
 	{"On Weapon Fired",			CHA_ONWPFIRED,		0},
 	{"On Weapon Selected",		CHA_ONWPSELECTED,	0},
-	{"On Weapon Deselected",	CHA_ONWPDESELECTED,	0}
+	{"On Weapon Deselected",	CHA_ONWPDESELECTED,	0},
+	{"On Gameplay Start",		CHA_GAMEPLAYSTART,	0}
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
