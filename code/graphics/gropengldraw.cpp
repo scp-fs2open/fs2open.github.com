@@ -36,6 +36,7 @@
 
 GLuint Scene_framebuffer;
 GLuint Scene_color_texture;
+GLuint Scene_luminance_texture;
 GLuint Scene_effect_texture;
 GLuint Scene_depth_texture;
 
@@ -2029,6 +2030,21 @@ void opengl_setup_scene_textures()
 
 	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
 
+	//Set up luminance texture (used as input for FXAA)
+	glGenTextures(1, &Scene_luminance_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_luminance_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
 	// setup effect texture
 
 	glGenTextures(1, &Scene_effect_texture);
@@ -2080,6 +2096,12 @@ void opengl_setup_scene_textures()
 
 		glDeleteTextures(1, &Scene_depth_texture);
 		Scene_depth_texture = 0;
+
+		glDeleteTextures(1, &Scene_luminance_texture);
+		Scene_luminance_texture = 0;
+
+		//glDeleteTextures(1, &Scene_fxaa_output_texture);
+		//Scene_fxaa_output_texture = 0;
 
 		Cmdline_postprocess = 0;
 		Cmdline_softparticles = 0;

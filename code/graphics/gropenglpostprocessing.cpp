@@ -285,6 +285,8 @@ void opengl_post_pass_fxaa() {
 	// basic/default uniforms
 	vglUniform1iARB( opengl_shader_get_uniform("tex"), 0 );
 
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_luminance_texture, 0);
+
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_color_texture);
@@ -308,6 +310,8 @@ void opengl_post_pass_fxaa() {
 	// set and configure post shader ..
 	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id] );
 
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
+
 	// basic/default uniforms
 	vglUniform1iARB( opengl_shader_get_uniform("tex0"), 0 );
 	vglUniform1fARB( opengl_shader_get_uniform("rt_w"), static_cast<float>(Post_texture_width));
@@ -315,7 +319,7 @@ void opengl_post_pass_fxaa() {
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_color_texture);
+	GL_state.Texture.Enable(Scene_luminance_texture);
 
 	glBegin(GL_QUADS);
 		glTexCoord2f(0.0f, 0.0f);
