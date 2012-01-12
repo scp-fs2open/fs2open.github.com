@@ -279,6 +279,9 @@ void opengl_post_pass_fxaa() {
 		recompile_fxaa_shader();
 	}
 
+	// We only want to draw to ATTACHMENT0
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+
 	// Do a prepass to convert the main shaders' RGBA output into RGBL
 	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id + 1] );
 
