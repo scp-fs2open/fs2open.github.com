@@ -360,8 +360,7 @@ void gr_opengl_post_process_end()
 	}
 
 	// Bind the correct framebuffer. opengl_get_rtt_framebuffer returns 0 if not doing RTT
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());	
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
 
 	// do bloom, hopefully ;)
 	bool bloomed = opengl_post_pass_bloom();

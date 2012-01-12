@@ -802,7 +802,6 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 	net_player *dead_plr = NULL;
 	float scoring_scale_by_damage = 1;	// percentage to scale the killer's score by if we score based on the amount of damage caused
 	int kill_score; 
-	bool is_enemy_player = false;		// true if the player just killed an enemy player weapon
 
 	weapon *dead_wp;						// the weapon that was killed
 	weapon_info *dead_wip;				// info on the weapon that was killed

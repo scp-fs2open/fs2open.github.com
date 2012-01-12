@@ -2139,8 +2139,9 @@ extern bool Scene_framebuffer_in_frame;
  */
 void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)
 {
-	int i, j, k;
+	int i, j;
 	int n_q = 0;
+	size_t 	k;
 	vec3d norm, norm2, fvec, pnt, npnt;
 	thruster_bank *bank = NULL;
 	vertex p;

@@ -8987,15 +8987,6 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	rdinfo->submodel_r = submodel_radius;
 	rdinfo->submodel_w = submodel_omega;
 
-
-	//	If dockee has moved much, then path will be recreated.
-	//	Might need to change state if moved too far.
-	if ((dock_mode != DOA_DOCK_STAY) && (dock_mode != DOA_DOCK)) {
-		// Goober5000 - maybe force recreate
-		int force_recreate = (dockee_rotating_submodel >= 0) && ((dock_mode == DOA_APPROACH) || (dock_mode == DOA_UNDOCK_1));
-	}
-
-
 	float speed_scale = 1.0f;
 	if (sip0->flags & SIF_SUPPORT) {
 		speed_scale = 3.0f;
