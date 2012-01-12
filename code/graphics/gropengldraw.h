@@ -57,4 +57,7 @@ extern GLuint Scene_effect_texture;
 extern int Scene_texture_width;
 extern int Scene_texture_height;
 
+extern float Scene_texture_u_scale;
+extern float Scene_texture_v_scale;
+
 #endif	// !GR_OPENGLDRAW_H

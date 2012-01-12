@@ -45,7 +45,7 @@ int GL_mipmap_filter = 0;
 GLenum GL_texture_target = GL_TEXTURE_2D;
 GLenum GL_texture_face = GL_TEXTURE_2D;
 GLenum GL_texture_addressing = GL_REPEAT;
-bool GL_rendering_to_framebuffer = false;
+bool GL_rendering_to_texture = false;
 GLint GL_max_renderbuffer_size = 0;
 
 extern int GLOWMAP;
@@ -1580,7 +1580,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		// done with this render target so lets move on
 		render_target = NULL;
 
-		GL_rendering_to_framebuffer = false;
+		GL_rendering_to_texture = false;
 
 		GL_CHECK_FOR_ERRORS("end of set_render_target(0)");
 
@@ -1631,7 +1631,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	// save current fbo for later use
 	render_target = fbo;
 
-	GL_rendering_to_framebuffer = true;
+	GL_rendering_to_texture = true;
 
 	GL_CHECK_FOR_ERRORS("end of set_render_target()");
 
@@ -1640,7 +1640,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp, int *mm_lvl, int flags )
 {
-	Assert( !GL_rendering_to_framebuffer );
+	Assert( !GL_rendering_to_texture );
 
 	if (slot < 0) {
 		Int3();
@@ -1861,6 +1861,30 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	GL_CHECK_FOR_ERRORS("end of make_render_target()");
 
 	return 1;
+}
+
+/**
+ * @fn	GLuint opengl_get_rtt_framebuffer()
+ *
+ * @brief	Gets the current RTT framebuffer.
+ * 
+ * Gets the OpenGL framebuffer ID of the currently in use RTT framebuffer.
+ * If there is currently none such framebuffer in use then this function returns
+ * 0 so it can be used in any place where the framebuffer should be reset to the
+ * default drawing surface.
+ *
+ * @author	m!m
+ * @date	14.12.2011
+ *
+ * @return	The current RTT FBO ID or 0 when not doing RTT.
+ */
+
+GLuint opengl_get_rtt_framebuffer()
+{
+	if (render_target == NULL || render_target->working_slot < 0)
+		return 0;
+	else
+		return render_target->framebuffer_id;
 }
 
 //
