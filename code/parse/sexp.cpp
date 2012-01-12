@@ -351,6 +351,7 @@ sexp_oper Operators[] = {
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
 	{ "set-cargo",					OP_SET_CARGO,					2, 3,			},
 	{ "jettison-cargo-delay",		OP_JETTISON_CARGO,				2, INT_MAX,		},
+	{ "set-docked",					OP_SET_DOCKED,					4, 4 },				// Sushi
 	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,			1,	2			},
 	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
 	{ "set-unscanned",				OP_SET_UNSCANNED,				1, 2 },
@@ -2483,14 +2484,23 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
+				// This makes massive assumptions about the structure of the SEXP using it. If you add any 
+				// new SEXPs that use this OPF, you will probably need to edit this section to accommodate them.
 				if (Fred_running) {
 					int ship_num, model;
 
-					z = find_parent_operator(op_node);
+					// Look for the node containing the docker ship as its first argument. For set-docked, we want 
+					// the current SEXP. Otherwise (for ai-dock), we want its parent.
+					if (get_operator_const(Sexp_nodes[op_node].text) == OP_SET_DOCKED) {
+						z = op_node;
+					}
+					else {
+						z = find_parent_operator(op_node);
 					
-					// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
-					if (get_operator_const(Sexp_nodes[z].text) == OP_GOALS_ID) {
-						break;
+						// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
+						if (get_operator_const(Sexp_nodes[z].text) == OP_GOALS_ID) {
+							break;
+						}
 					}
 
 					// look for the ship this goal is being assigned to
@@ -2518,10 +2528,24 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
+				// This makes massive assumptions about the structure of the SEXP using it. If you add any 
+				// new SEXPs that use this OPF, you will probably need to edit this section to accommodate them.
 				if (Fred_running) {
 					int ship_num, model;
 
-					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);
+					// If we're using set-docked, we want to look up the ship from the third SEXP argument.
+					if (get_operator_const(Sexp_nodes[op_node].text) == OP_SET_DOCKED) {
+						//Navigate to the third argument
+						z = op_node;
+						for (i = 0; i < 3; i++)
+							z = Sexp_nodes[z].rest;
+
+						ship_num = ship_name_lookup(Sexp_nodes[z].text, 1);
+					}
+					else {
+						ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);
+					}
+
 					if (ship_num < 0) {
 						if (bad_node)
 							*bad_node = Sexp_nodes[op_node].rest;
@@ -11163,6 +11187,48 @@ void sexp_jettison_cargo(int n)
 			object_jettison_cargo(parent_objp, &Objects[Ships[ship_index].objnum]);			
 		}
 	}
+}
+
+void sexp_set_docked(int n)
+{
+	// get some data
+	char* docker_ship_name = CTEXT(n);
+	n = CDR(n);
+	char* docker_point_name = CTEXT(n);
+	n = CDR(n);
+	char* dockee_ship_name = CTEXT(n);
+	n = CDR(n);
+	char* dockee_point_name = CTEXT(n);
+	n = CDR(n);
+
+	// lookup the ships
+	int docker_ship_index = ship_name_lookup(docker_ship_name);
+	int dockee_ship_index = ship_name_lookup(dockee_ship_name);
+	if(docker_ship_index < 0 || dockee_ship_index < 0)
+		return;
+
+	ship* docker_ship = &Ships[docker_ship_index];
+	ship* dockee_ship = &Ships[dockee_ship_index];
+	object* docker_objp = &Objects[docker_ship->objnum];
+	object* dockee_objp = &Objects[dockee_ship->objnum];
+
+	//Get dockpoints by name
+	int docker_point_index = model_find_dock_name_index(Ship_info[docker_ship->ship_info_index].model_num, docker_point_name);
+	int dockee_point_index = model_find_dock_name_index(Ship_info[dockee_ship->ship_info_index].model_num, dockee_point_name);
+
+	Assertion(docker_point_index >= 0, "Docker point '%s' not found on docker ship '%s'", docker_point_name, docker_ship_name);
+	Assertion(dockee_point_index >= 0, "Dockee point '%s' not found on dockee ship '%s'", dockee_point_name, dockee_ship_name);
+
+	//Make sure that the specified dockpoints are all free (if not, do nothing)
+	if (dock_find_object_at_dockpoint(docker_objp, docker_point_index) != NULL || 
+		dock_find_object_at_dockpoint(dockee_objp, dockee_point_index) != NULL)
+	{
+		return;
+	}
+
+	//Set docked
+	dock_orient_and_approach(docker_objp, docker_point_index, dockee_objp, dockee_point_index, DOA_DOCK_STAY);
+	ai_do_objects_docked_stuff(docker_objp, docker_point_index, dockee_objp, dockee_point_index, true);
 }
 
 void sexp_cargo_no_deplete(int n)
@@ -20862,6 +20928,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_DOCKED:
+				sexp_set_docked(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_CARGO_NO_DEPLETE:
 				sexp_cargo_no_deplete(node);
 				sexp_val = SEXP_TRUE;
@@ -22594,6 +22665,7 @@ int query_operator_return_type(int op)
 		case OP_EXCHANGE_CARGO:
 		case OP_SET_CARGO:
 		case OP_JETTISON_CARGO:
+		case OP_SET_DOCKED:
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SCANNED:
 		case OP_SET_UNSCANNED:
@@ -23982,6 +24054,17 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			} else {
 				return OPF_SHIP;
+			}
+
+		case OP_SET_DOCKED:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			} else if (argnum == 1) {
+				return OPF_DOCKER_POINT;
+			} else if (argnum == 2) {
+				return OPF_SHIP;
+			} else {
+				return OPF_DOCKEE_POINT;
 			}
 
 		case OP_CARGO_NO_DEPLETE:
@@ -25968,6 +26051,7 @@ int get_subcategory(int sexp_id)
 		case OP_EXCHANGE_CARGO:
 		case OP_SET_CARGO:
 		case OP_JETTISON_CARGO:
+		case OP_SET_DOCKED:
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SCANNED:
 		case OP_SET_UNSCANNED:
@@ -28409,6 +28493,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship to jettison cargo\r\n"
 		"\t2: Delay after which to jettison cargo (note that this isn't actually used)\r\n"
 		"\tRest (optional): Cargo to jettison.  If no optional arguments are specified, the ship jettisons all cargo.\r\n"
+	},
+
+	{ OP_SET_DOCKED, "set-docked\r\n"
+		"\tCauses one ship to become instantly docked to another at the specified docking ports.Takes 4 arguments...\r\n"
+		"\t1: Docker ship\r\n"
+		"\t1: Docker point\r\n"
+		"\t1: Dockee ship\r\n"
+		"\t1: Dockee point\r\n"
 	},
 
 	{ OP_BEAM_FIRE, "fire-beam\r\n"

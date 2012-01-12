@@ -5058,10 +5058,8 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	//Handle light
 	light_reset();
@@ -5076,11 +5074,8 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	model_render(sip->model_num, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 
 	//OK we're done
-	if (!Cmdline_nohtl) 
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	//Bye!!
 	g3_end_frame();
@@ -5123,10 +5118,8 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	//Handle light
 	light_reset();
@@ -5141,11 +5134,8 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	model_render(sip->model_num, orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 
 	//OK we're done
-	if (!Cmdline_nohtl) 
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	//Bye!!
 	g3_end_frame();
@@ -7000,7 +6990,7 @@ ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time
 		return ADE_RETURN_FALSE;
 
 	int time_ms = model_anim_get_time_type(&Ships[objh->objp->instance], type, subtype);
-	float time_s = (float)time_ms * 1000.0f;
+	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
 }
@@ -10231,10 +10221,8 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 		g3_set_view_matrix(&Eye_position, &Eye_matrix, View_zoom);
 	}
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	//Draw the ship!!
 	model_clear_instance(model_num);
@@ -10242,10 +10230,8 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	model_render(model_num, orient, v, MR_NORMAL);
 
 	//OK we're done
-	if (!Cmdline_nohtl) {
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	//Bye!!
 	g3_end_frame();
