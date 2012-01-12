@@ -100,7 +100,7 @@ struct player;
 
 // netgame defines
 // #define RESPAWN_ANARCHY						(0xffffffff)// respawn setting for an "anarchy" style game
-#define MP_SINGLE								0				// not playing a campaign - single mission
+#define MP_SINGLE_MISSION								0				// not playing a campaign - single mission
 #define MP_CAMPAIGN							1				// playing a campaign
 
 // respawn defines
