@@ -63,7 +63,7 @@ vec3d check_offsets[8] = {
 int obj_in_view_cone( object * objp )
 {
 	int i;
-	vec3d tmp,pt; 
+	vec3d tmp,pt;
 	ubyte codes;
 
 	// Center isn't in... are other points?

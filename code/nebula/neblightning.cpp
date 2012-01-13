@@ -21,8 +21,6 @@
 #include "weapon/emp.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-
-
 extern int Cmdline_nohtl;
 
 // ------------------------------------------------------------------------------------------------------
@@ -439,7 +437,7 @@ void nebl_render_all()
 
 					// do some special stuff on the very first strike of the bolt
 					if(b->strikes_left == bi->num_strikes){					
-						// play a sound						
+						// play a sound
 						float bang;
 						if(Nebl_bang < 40.0f){
 							bang = 1.0f;
@@ -452,7 +450,7 @@ void nebl_render_all()
 							snd_play(&Snds[SND_LIGHTNING_2], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
 						} else {
 							snd_play(&Snds[SND_LIGHTNING_1], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
-						}						
+						}
 
 						// apply em pulse
 						if(bi->emp_intensity > 0.0f){
