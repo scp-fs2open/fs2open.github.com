@@ -25,6 +25,7 @@
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
+#include "mission/missionlog.h"
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -1475,6 +1476,75 @@ ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Cust
 	return ade_set_args(L, "s", gauge->getCustomGaugeText());
 }
 
+//**********HANDLE: Eyepoint
+struct eye_h
+{
+	int model;
+	int eye_idx;
+
+	eye_h(){model=-1;eye_idx=-1;}
+	eye_h(int n_m, int n_e){model=n_m; eye_idx=n_e;}
+	bool IsValid(){
+		polymodel *pm = NULL;
+		return (model > -1
+			&& (pm = model_get(model)) != NULL
+			&& eye_idx > -1
+			&& eye_idx < pm->n_view_positions);
+	}
+};
+ade_obj<eye_h> l_Eyepoint("eyepoint", "Eyepoint handle");
+
+ADE_VIRTVAR(Normal, l_Eyepoint, "vector", "Eyepoint normal", "vector", "Eyepoint normal, or null vector if handle is invalid")
+{
+	eye_h *eh;
+	vec3d *v;
+	if(!ade_get_args(L, "o|o", l_Eyepoint.GetPtr(&eh), l_Vector.GetPtr(&v)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!eh->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	polymodel *pm = model_get(eh->model);
+
+	if(ADE_SETTING_VAR && v != NULL)
+	{
+		pm->view_positions[eh->eye_idx].norm = *v;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(pm->view_positions[eh->eye_idx].norm));
+}
+
+ADE_VIRTVAR(Position, l_Eyepoint, "vector", "Eyepoint location (Local vector)", "vector", "Eyepoint location, or null vector if handle is invalid")
+{
+	eye_h *eh;
+	vec3d *v;
+	if(!ade_get_args(L, "o|o", l_Eyepoint.GetPtr(&eh), l_Vector.GetPtr(&v)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!eh->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	polymodel *pm = model_get(eh->model);
+
+	if(ADE_SETTING_VAR && v != NULL)
+	{
+		pm->view_positions[eh->eye_idx].pnt = *v;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(pm->view_positions[eh->eye_idx].pnt));
+}
+
+ADE_FUNC(IsValid, l_Eyepoint, NULL, "Detect whether this handle is valid", "boolean", "true if valid false otherwise")
+{
+	eye_h *eh = NULL;
+	if (!ade_get_args(L, "o", l_Eyepoint.GetPtr(&eh)))
+	{
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", eh->IsValid());
+}
+
 //**********HANDLE: model
 class model_h
 {
@@ -1530,6 +1600,15 @@ public:
 ade_obj<model_h> l_Model("model", "3D Model (POF) handle");
 
 ade_obj<modeltextures_h> l_ModelTextures("modeltextures_h", "Array of materials");
+
+class eyepoints_h : public model_h
+{
+public:
+	eyepoints_h(polymodel *pm) : model_h(pm){}
+	eyepoints_h() : model_h(){}
+};
+
+ade_obj<eyepoints_h> l_Eyepoints("eyepoints", "Array of model eye points");
 
 // Thrusters:
 class thrusters_h : public model_h 
@@ -1639,6 +1718,24 @@ ADE_VIRTVAR(Thrusters, l_Model, "thrusters", "Model thrusters", "thrusters", "Th
 	}
 
 	return ade_set_args(L, "o", l_Thrusters.Set(thrusters_h(pm)));
+}
+
+ADE_VIRTVAR(Eyepoints, l_Model, "eyepoints", "Model eyepoints", "eyepoints", "Array of eyepoints or invalid handle on error")
+{
+	model_h *mdl = NULL;
+	eyepoints_h *eph = NULL;
+	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_Eyepoints.GetPtr(&eph)))
+		return ade_set_error(L, "o", l_Eyepoints.Set(eyepoints_h()));
+
+	polymodel *pm = mdl->Get();
+	if(pm == NULL)
+		return ade_set_error(L, "o", l_Eyepoints.Set(eyepoints_h()));
+
+	if(ADE_SETTING_VAR && eph->IsValid()) {
+		LuaError(L, "Attempt to use Incomplete Feature: Eyepoints copy");
+	}
+
+	return ade_set_args(L, "o", l_Eyepoints.Set(eyepoints_h(pm)));
 }
 
 extern void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
@@ -1771,6 +1868,77 @@ ADE_FUNC(isValid, l_Model, NULL, "True if valid, false or nil if not", "boolean"
 		return ADE_RETURN_NIL;
 
 	return mdl->IsValid();
+}
+
+//**********HANDLE: eyepoints
+ADE_FUNC(__len, l_Eyepoints, NULL, "Gets the number of eyepoints on this model", "number", "Number of eyepoints on this model or 0 on error")
+{
+	eyepoints_h *eph = NULL;
+	if (!ade_get_args(L, "o", l_Eyepoints.GetPtr(&eph)))
+	{
+		return ade_set_error(L, "i", 0);
+	}
+
+	if (!eph->IsValid())
+	{
+		return ade_set_error(L, "i", 0);
+	}
+
+	polymodel *pm = eph->Get();
+
+	if (pm == NULL)
+	{
+		return ade_set_error(L, "i", 0);
+	}
+
+	return ade_set_args(L, "i", pm->n_view_positions);
+}
+
+ADE_INDEXER(l_Eyepoints, "eyepoint", "Gets en eyepoint handle", "eyepoint", "eye handle or invalid handle on error")
+{
+	eyepoints_h *eph = NULL;
+	int index = -1;
+	eye_h *eh = NULL;
+
+	if (!ade_get_args(L, "oi|o", l_Eyepoints.GetPtr(&eph), &index, l_Eyepoint.GetPtr(&eh)))
+	{
+		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
+	}
+
+	if (!eph->IsValid())
+	{
+		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
+	}
+
+	polymodel *pm = eph->Get();
+
+	if (pm == NULL)
+	{
+		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
+	}
+
+	index--; // Lua -> FS2
+
+	if (index < 0 || index >= pm->n_view_positions)
+	{
+		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
+	}
+
+	if (ADE_SETTING_VAR && eh->IsValid())
+	{
+		LuaError(L, "Attempted to use incomplete feature: Eyepoint copy");
+	}
+
+	return ade_set_args(L, "o", l_Eyepoint.Set(eye_h(eph->GetID(), index)));
+}
+
+ADE_FUNC(isValid, l_Eyepoints, NULL, "Detects whether handle is valid or not", "boolean", "true if valid false otherwise")
+{
+	eyepoints_h *eph;
+	if(!ade_get_args(L, "o", l_Eyepoints.GetPtr(&eph)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", eph->IsValid());
 }
 
 //**********HANDLE: thrusters
@@ -4008,6 +4176,28 @@ ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about",
 	return ade_set_args(L, "o", l_Model.Set(model_h(modelNum)));
 }
 
+ADE_FUNC(getCollisionDistance, l_ColInfo, NULL, "The distance to the closest collision point", "number", "distance or -1 on error")
+{
+	mc_info_h* info;
+
+	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!info->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	mc_info *collide = info->Get();
+
+	if (collide->num_hits <= 0) 
+	{
+		return ade_set_args(L, "f", -1.0f);;
+	}
+	else
+	{
+		return ade_set_args(L, "f", collide->hit_dist);
+	}
+}
+
 ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point of this information (local to the object if boolean is set to <i>true</i>)", "vector", "The collision point or nil of none")
 {
 	mc_info_h* info;
@@ -4079,64 +4269,6 @@ ADE_FUNC(isValid, l_ColInfo, NULL, "Detectes if this handle is valid", "boolean"
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
-}
-
-//**********HANDLE: Eyepoint
-struct eye_h
-{
-	int model;
-	int eye_idx;
-
-	eye_h(){model=-1;eye_idx=-1;}
-	eye_h(int n_m, int n_e){model=n_m; eye_idx=n_e;}
-	bool IsValid(){
-		polymodel *pm = NULL;
-		return (model > -1
-			&& (pm = model_get(model)) != NULL
-			&& eye_idx > -1
-			&& eye_idx < pm->n_view_positions);
-	}
-};
-ade_obj<eye_h> l_Eyepoint("eyepoint", "Eyepoint handle");
-
-ADE_VIRTVAR(Normal, l_Eyepoint, "vector", "Eyepoint normal", "vector", "Eyepoint normal, or null vector if handle is invalid")
-{
-	eye_h *eh;
-	vec3d *v;
-	if(!ade_get_args(L, "o|o", l_Eyepoint.GetPtr(&eh), l_Vector.GetPtr(&v)))
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	if(!eh->IsValid())
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	polymodel *pm = model_get(eh->model);
-
-	if(ADE_SETTING_VAR && v != NULL)
-	{
-		pm->view_positions[eh->eye_idx].norm = *v;
-	}
-
-	return ade_set_args(L, "o", l_Vector.Set(pm->view_positions[eh->eye_idx].norm));
-}
-
-ADE_VIRTVAR(Position, l_Eyepoint, "vector", "Eyepoint location (Local vector)", "vector", "Eyepoint location, or null vector if handle is invalid")
-{
-	eye_h *eh;
-	vec3d *v;
-	if(!ade_get_args(L, "o|o", l_Eyepoint.GetPtr(&eh), l_Vector.GetPtr(&v)))
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	if(!eh->IsValid())
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	polymodel *pm = model_get(eh->model);
-
-	if(ADE_SETTING_VAR && v != NULL)
-	{
-		pm->view_positions[eh->eye_idx].pnt = *v;
-	}
-
-	return ade_set_args(L, "o", l_Vector.Set(pm->view_positions[eh->eye_idx].pnt));
 }
 
 //**********HANDLE: modeltextures
@@ -6883,6 +7015,39 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 		return ADE_RETURN_FALSE;
 }
 
+extern void ship_reset_disabled_physics(object *objp, int ship_class);
+ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boolean", "true if ship is diabled, false otherwise")
+{
+	object_h *objh=NULL;
+	bool set = false;
+
+	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &set))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR)
+	{
+		if(set)
+		{
+			mission_log_add_entry(LOG_SHIP_DISABLED, shipp->ship_name, NULL );
+			shipp->flags |= SF_DISABLED;
+		}
+		else
+		{
+			shipp->flags &= ~SF_DISABLED;
+			ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
+		}
+	}
+
+	if (shipp->flags & SF_DISABLED)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
 
 ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct", "boolean", "True if successful, false or nil otherwise")
 {
@@ -7414,6 +7579,29 @@ ADE_FUNC(getEMP, l_Ship, NULL, "Returns the current emp effect strength acting o
 	ship *shipp = &Ships[obj->instance];
 
 	return ade_set_args(L, "f", shipp->emp_intensity);
+}
+
+ADE_FUNC(getTimeUntilExplosion, l_Ship, NULL, "Returns the time in seconds until the ship explodes", "number", "Time until explosion or -1, if invalid handle or ship isn't exploding")
+{
+	object_h *objh = NULL;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+		return ade_set_error(L, "f", -1.0f);
+	}
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (!timestamp_valid(shipp->final_death_time))
+	{
+		return ade_set_args(L, "f", -1.0f);
+	}
+
+	int time_until = timestamp_until(shipp->final_death_time);
+
+	return ade_set_args(L, "f", (i2fl(time_until) / 1000.0f));
 }
 
 //**********HANDLE: Weapon
@@ -9396,7 +9584,7 @@ ADE_FUNC(playLoopingSound, l_Audio, "soundentry", "Plays the specified sound as 
 	}
 }
 
-ADE_FUNC(play3DSound, l_Audio, "soundentry", "Plays the specified sound entry handle", "3Dsound", "A handle to the playing sound")
+ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]", "Plays the specified sound entry handle. Source if by default 0, 0, 0 and listener is by default the current viewposition", "3Dsound", "A handle to the playing sound")
 {
 	sound_entry_h *seh = NULL;
 	vec3d *source = &vmd_zero_vector;
