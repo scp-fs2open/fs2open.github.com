@@ -11,7 +11,6 @@
 
 #include "globalincs/pstypes.h"
 
-//struct CFILE;
 struct player;
 
 #define VALID_PILOT_CHARS	" _-"

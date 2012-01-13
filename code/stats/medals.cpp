@@ -38,54 +38,54 @@ SCP_vector<medal_stuff> Medals;
 static int Medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 	{				// GR_640
 		{ 89, 47 },			// eps. peg. lib
-		{ 486, 47 },			// imp. order o' vasuda
-		{ 129, 130 },			// dist flying cross
-		{ 208, 132 },			// soc service
-		{ 361, 131 },			// dist intel cross
-		{ 439, 130 },			// order of galatea
-		{ 64, 234 },			// meritorious unit comm.
-		{ 153, 234 },			// medal of valor
-		{ 239, 241 },			// gtva leg of honor
-		{ 326, 240 },			// allied defense citation
-		{ 411, 234 },			// neb campaign victory
-		{ 494, 234 },			// ntf campaign victory
-		{ 189, 80 },			// rank
-		{ 283, 91 },			// wings
-		{ 372, 76 },			// bronze kills badge
-		{ 403, 76 },			// silver kills badge
-		{ 435, 76 },			// gold kills badge
-		{ 300, 152 },			// SOC unit crest
+		{ 486, 47 },		// imp. order o' vasuda
+		{ 129, 130 },		// dist flying cross
+		{ 208, 132 },		// soc service
+		{ 361, 131 },		// dist intel cross
+		{ 439, 130 },		// order of galatea
+		{ 64, 234 },		// meritorious unit comm.
+		{ 153, 234 },		// medal of valor
+		{ 239, 241 },		// gtva leg of honor
+		{ 326, 240 },		// allied defense citation
+		{ 411, 234 },		// neb campaign victory
+		{ 494, 234 },		// ntf campaign victory
+		{ 189, 80 },		// rank
+		{ 283, 91 },		// wings
+		{ 372, 76 },		// bronze kills badge
+		{ 403, 76 },		// silver kills badge
+		{ 435, 76 },		// gold kills badge
+		{ 300, 152 },		// SOC unit crest
 	},
 	{				// GR_1024
-		{ 143, 75 },			// eps. peg. lib
-		{ 777, 75 },			// imp. order o' vasuda
-		{ 206, 208 },			// dist flying cross
-		{ 333, 212 },			// soc service
-		{ 578, 210 },			// dist intel cross
-		{ 703, 208 },			// order of galatea
-		{ 103, 374 },			// meritorious unit comm.
-		{ 245, 374 },			// medal of valor
-		{ 383, 386 },			// gtva leg of honor
-		{ 522, 384 },			// allied defense citation
-		{ 658, 374 },			// neb campaign victory
-		{ 790, 374 },			// ntf campaign victory
-		{ 302, 128 },			// rank
-		{ 453, 146 },			// wings
-		{ 595, 121 },			// bronze kills badge
-		{ 646, 121 },			// silver kills badge
-		{ 696, 121 },			// gold kills badge
-		{ 480, 244 },			// SOC unit crest
+		{ 143, 75 },		// eps. peg. lib
+		{ 777, 75 },		// imp. order o' vasuda
+		{ 206, 208 },		// dist flying cross
+		{ 333, 212 },		// soc service
+		{ 578, 210 },		// dist intel cross
+		{ 703, 208 },		// order of galatea
+		{ 103, 374 },		// meritorious unit comm.
+		{ 245, 374 },		// medal of valor
+		{ 383, 386 },		// gtva leg of honor
+		{ 522, 384 },		// allied defense citation
+		{ 658, 374 },		// neb campaign victory
+		{ 790, 374 },		// ntf campaign victory
+		{ 302, 128 },		// rank
+		{ 453, 146 },		// wings
+		{ 595, 121 },		// bronze kills badge
+		{ 646, 121 },		// silver kills badge
+		{ 696, 121 },		// gold kills badge
+		{ 480, 244 },		// SOC unit crest
 	}
 };
 
 // coords for the medal title
 static int Medals_label_coords[GR_NUM_RESOLUTIONS][3] = {
 	{ 241, 458, 300 },			// GR_640 x, y, w
-	{ 386, 734, 480 }			// GR_1024 x, y, w
+	{ 386, 734, 480 }		// GR_1024 x, y, w
 };
 
-#define MEDALS_NUM_BUTTONS		1
-#define MEDALS_EXIT				0
+#define MEDALS_NUM_BUTTONS	1
+#define MEDALS_EXIT			0
 ui_button_info Medals_buttons[GR_NUM_RESOLUTIONS][MEDALS_NUM_BUTTONS] = {
 	{ // GR_640
 		ui_button_info("MEB_18",	574,	432,	-1,	-1,	18),
@@ -95,7 +95,7 @@ ui_button_info Medals_buttons[GR_NUM_RESOLUTIONS][MEDALS_NUM_BUTTONS] = {
 	}
 };
 
-#define MEDALS_NUM_TEXT			1
+#define MEDALS_NUM_TEXT		1
 UI_XSTR Medals_text[GR_NUM_RESOLUTIONS][MEDALS_NUM_TEXT] = {
 	{	// GR_640
 		{"Exit",		1466,		587,	416,	UI_XSTR_COLOR_PINK, -1,	&Medals_buttons[GR_640][MEDALS_EXIT].button },
@@ -127,7 +127,7 @@ player *Medals_player;
 // -----------------------------------------------------------------------------
 // Main medals screen state
 //
-#define NUM_MEDAL_REGIONS		MAX_MEDALS + 1		// the extra one is for the rank medal
+#define NUM_MEDAL_REGIONS	MAX_MEDALS + 1	// the extra one is for the rank medal
 
 static bitmap *Medals_mask;
 int Medals_mask_w, Medals_mask_h;

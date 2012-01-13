@@ -15400,7 +15400,7 @@ void sexp_beam_free(int node)
 
 void sexp_set_thrusters(int node) 
 {
-	bool activate = is_sexp_true(node) != 0;
+	bool activate = is_sexp_true(node) > 0;
 	node = CDR(node);
 
 	for(; node >= 0; node = CDR(node)) {
