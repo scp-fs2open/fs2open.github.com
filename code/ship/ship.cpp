@@ -5432,7 +5432,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		for (k = 0; k < MAX_TFP; k++)
 			ship_system->turret_swarm_info_index[k] = -1;
 
-		ship_system->turret_swarm_num;
+		ship_system->turret_swarm_num = 0;
 
 		// AWACS stuff
 		ship_system->awacs_intensity = model_system->awacs_intensity;
