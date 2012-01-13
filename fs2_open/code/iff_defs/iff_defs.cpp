@@ -536,7 +536,7 @@ int iff_lookup(char *iff_name)
 {
 	// bogus
 	Assert(iff_name);
-	
+
 	if(iff_name == NULL)
 		return -1;
 

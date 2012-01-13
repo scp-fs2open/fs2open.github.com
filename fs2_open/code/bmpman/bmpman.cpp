@@ -81,7 +81,7 @@ static int Bm_ignore_load_count = 0;
 void bm_set_low_mem( int mode )
 {
 	Assert( (mode >= 0) && (mode<=2) );
-	
+
 	CLAMP(mode, 0, 2);
 	Bm_low_mem = mode;
 }
@@ -2454,7 +2454,7 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 			*r = ubyte(( ( ((unsigned short*)pixel)[0] & Gr_current_red->mask)>>Gr_current_red->shift)*Gr_current_red->scale);
 		}
 	}
-	
+
 	if(g != NULL){
 		if(bit_32){
 			*g = ubyte(( (*((unsigned int*)pixel) & Gr_current_green->mask) >>Gr_current_green->shift)*Gr_current_green->scale);
@@ -2462,7 +2462,7 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 			*g = ubyte(( ( ((unsigned short*)pixel)[0] & Gr_current_green->mask) >>Gr_current_green->shift)*Gr_current_green->scale);
 		}
 	}
-	
+
 	if(b != NULL){
 		if(bit_32){
 			*b = ubyte(( (*((unsigned int*)pixel) & Gr_current_blue->mask)>>Gr_current_blue->shift)*Gr_current_blue->scale);

@@ -32,60 +32,60 @@ int Num_medals = 0;
 SCP_vector<medal_stuff> Medals;
 
 // the rank section of the screen
-#define RANK_MEDAL_REGION		12			// region number of the rank medal
+#define RANK_MEDAL_REGION		12		// region number of the rank medal
 
 // coords for indiv medal bitmaps
 static int Medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 	{				// GR_640
-		{ 89, 47 },					// eps. peg. lib
-		{ 486, 47 },				// imp. order o' vasuda
-		{ 129, 130 },				// dist flying cross
-		{ 208, 132 },				// soc service
-		{ 361, 131 },				// dist intel cross
-		{ 439, 130 },				// order of galatea
-		{ 64, 234 },				// meritorious unit comm.
-		{ 153, 234 },				// medal of valor
-		{ 239, 241 },				// gtva leg of honor
-		{ 326, 240 },				// allied defense citation
-		{ 411, 234 },				// neb campaign victory
-		{ 494, 234 },				// ntf campaign victory
-		{ 189, 80 },				// rank
-		{ 283, 91 },				// wings
-		{ 372, 76 },				// bronze kills badge
-		{ 403, 76 },				// silver kills badge
-		{ 435, 76 },				// gold kills badge
-		{ 300, 152 },				// SOC unit crest
+		{ 89, 47 },			// eps. peg. lib
+		{ 486, 47 },		// imp. order o' vasuda
+		{ 129, 130 },		// dist flying cross
+		{ 208, 132 },		// soc service
+		{ 361, 131 },		// dist intel cross
+		{ 439, 130 },		// order of galatea
+		{ 64, 234 },		// meritorious unit comm.
+		{ 153, 234 },		// medal of valor
+		{ 239, 241 },		// gtva leg of honor
+		{ 326, 240 },		// allied defense citation
+		{ 411, 234 },		// neb campaign victory
+		{ 494, 234 },		// ntf campaign victory
+		{ 189, 80 },		// rank
+		{ 283, 91 },		// wings
+		{ 372, 76 },		// bronze kills badge
+		{ 403, 76 },		// silver kills badge
+		{ 435, 76 },		// gold kills badge
+		{ 300, 152 },		// SOC unit crest
 	},
 	{				// GR_1024
-		{ 143, 75 },				// eps. peg. lib
-		{ 777, 75 },				// imp. order o' vasuda
-		{ 206, 208 },				// dist flying cross
-		{ 333, 212 },				// soc service
-		{ 578, 210 },				// dist intel cross
-		{ 703, 208 },				// order of galatea
-		{ 103, 374 },				// meritorious unit comm.
-		{ 245, 374 },				// medal of valor
-		{ 383, 386 },				// gtva leg of honor
-		{ 522, 384 },				// allied defense citation
-		{ 658, 374 },				// neb campaign victory
-		{ 790, 374 },				// ntf campaign victory
-		{ 302, 128 },				// rank
-		{ 453, 146 },				// wings
-		{ 595, 121 },				// bronze kills badge
-		{ 646, 121 },				// silver kills badge
-		{ 696, 121 },				// gold kills badge
-		{ 480, 244 },				// SOC unit crest
+		{ 143, 75 },		// eps. peg. lib
+		{ 777, 75 },		// imp. order o' vasuda
+		{ 206, 208 },		// dist flying cross
+		{ 333, 212 },		// soc service
+		{ 578, 210 },		// dist intel cross
+		{ 703, 208 },		// order of galatea
+		{ 103, 374 },		// meritorious unit comm.
+		{ 245, 374 },		// medal of valor
+		{ 383, 386 },		// gtva leg of honor
+		{ 522, 384 },		// allied defense citation
+		{ 658, 374 },		// neb campaign victory
+		{ 790, 374 },		// ntf campaign victory
+		{ 302, 128 },		// rank
+		{ 453, 146 },		// wings
+		{ 595, 121 },		// bronze kills badge
+		{ 646, 121 },		// silver kills badge
+		{ 696, 121 },		// gold kills badge
+		{ 480, 244 },		// SOC unit crest
 	}
 };
 
 // coords for the medal title
 static int Medals_label_coords[GR_NUM_RESOLUTIONS][3] = {
 	{ 241, 458, 300 },			// GR_640 x, y, w
-	{ 386, 734, 480 }				// GR_1024 x, y, w
+	{ 386, 734, 480 }		// GR_1024 x, y, w
 };
 
-#define MEDALS_NUM_BUTTONS			1
-#define MEDALS_EXIT					0	
+#define MEDALS_NUM_BUTTONS	1
+#define MEDALS_EXIT			0
 ui_button_info Medals_buttons[GR_NUM_RESOLUTIONS][MEDALS_NUM_BUTTONS] = {
 	{ // GR_640
 		ui_button_info("MEB_18",	574,	432,	-1,	-1,	18),
@@ -95,7 +95,7 @@ ui_button_info Medals_buttons[GR_NUM_RESOLUTIONS][MEDALS_NUM_BUTTONS] = {
 	}
 };
 
-#define MEDALS_NUM_TEXT				1
+#define MEDALS_NUM_TEXT		1
 UI_XSTR Medals_text[GR_NUM_RESOLUTIONS][MEDALS_NUM_TEXT] = {
 	{	// GR_640
 		{"Exit",		1466,		587,	416,	UI_XSTR_COLOR_PINK, -1,	&Medals_buttons[GR_640][MEDALS_EXIT].button },
@@ -127,19 +127,18 @@ player *Medals_player;
 // -----------------------------------------------------------------------------
 // Main medals screen state
 //
-#define NUM_MEDAL_REGIONS			MAX_MEDALS + 1				// the extra one is for the rank medal
+#define NUM_MEDAL_REGIONS	MAX_MEDALS + 1	// the extra one is for the rank medal
 
 static bitmap *Medals_mask;
 int Medals_mask_w, Medals_mask_h;
-static int Medals_bitmap_mask;         // the mask for the medal case
-static int Medals_bitmap;              // the medal case itself
-static SCP_vector<int> Medal_bitmaps;  // bitmaps for the individual medals
-static int Rank_bm;							// bitmap for the rank medal
+static int Medals_bitmap_mask;			// the mask for the medal case
+static int Medals_bitmap;				// the medal case itself
+static SCP_vector<int> Medal_bitmaps;	// bitmaps for the individual medals
+static int Rank_bm;						// bitmap for the rank medal
 
 static MENU_REGION Medal_regions[NUM_MEDAL_REGIONS]; // a semi-hack for now because we only have 4 medals, but we also include the close button
 
 static UI_WINDOW Medals_window;
-
 
 #define MEDAL_BITMAP_INIT (1<<0)
 #define MASK_BITMAP_INIT  (1<<1)
@@ -173,7 +172,6 @@ const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
 
 	return *this;
 }
-
 
 void parse_medal_tbl()
 {
@@ -212,15 +210,15 @@ void parse_medal_tbl()
 		// this medal is a badge and should be treated specially
 		if ( optional_string("+Num Kills:") ) {
 			char buf[MULTITEXT_LENGTH];
-
 			stuff_int( &temp_medal.kills_needed );
 
-			if(optional_string("$Wavefile 1:"))
-				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
-			if(optional_string("$Wavefile 2:"))
+			if (optional_string("$Wavefile 1:"))
 				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
 
-			if(optional_string("$Wavefile Base:"))
+			if (optional_string("$Wavefile 2:"))
+				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
+
+			if (optional_string("$Wavefile Base:"))
 				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
 
 			required_string("$Promotion Text:");
@@ -248,7 +246,7 @@ void parse_medal_tbl()
 		if ( Medals[i].kills_needed < prev_badge_kills && Medals[i].kills_needed != 0)
 			Error(LOCATION, "Badges must appear sorted by lowest kill # first in medals.tbl\nFind Allender for most information.");
 
-		if(Medals[i].kills_needed > 0)
+		if (Medals[i].kills_needed > 0)
 			prev_badge_kills = Medals[i].kills_needed;
 	}
 
@@ -348,24 +346,21 @@ DCF(medals, "Grant or revoke medals")
 void medal_main_init(player *pl, int mode)
 {
 	int idx;
-
 	Assert(pl != NULL);
 	Medals_player = pl;
-
-   Player_score = &Medals_player->stats;
+	Player_score = &Medals_player->stats;
 
 #ifndef NDEBUG
-	if(Cmdline_gimme_all_medals){
-		for(idx=0; idx < MAX_MEDALS; idx++){
-			Medals_player->stats.medals[idx] = 1;		
+	if (Cmdline_gimme_all_medals){
+		for (idx=0; idx < MAX_MEDALS; idx++){
+			Medals_player->stats.medals[idx] = 1;
 		}
 	}
 #endif
 
 	Medals_mode = mode;
-
 	snazzy_menu_init();
-	Medals_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );	
+	Medals_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 
 	// create the interface buttons
 	for (idx=0; idx<MEDALS_NUM_BUTTONS; idx++) {
@@ -380,7 +375,7 @@ void medal_main_init(player *pl, int mode)
 
 		// set the hotspot
 		Medals_buttons[gr_screen.res][idx].button.link_hotspot(Medals_buttons[gr_screen.res][idx].hotspot);
-	}	
+	}
 
 	// add all xstrs
 	for (idx=0; idx<MEDALS_NUM_TEXT; idx++) {
@@ -388,19 +383,19 @@ void medal_main_init(player *pl, int mode)
 	}
 
 	Init_flags = 0;	
-	
+
 	Medals_bitmap = bm_load(Medals_background_filename[gr_screen.res]);
 	if (Medals_bitmap < 0) {
-	   Error(LOCATION, "Error loading medal background bitmap %s", Medals_background_filename[gr_screen.res]);
+		Error(LOCATION, "Error loading medal background bitmap %s", Medals_background_filename[gr_screen.res]);
 	} else {
 		Init_flags |= MEDAL_BITMAP_INIT;
 	}
 
 	Medals_mask_w = -1;
 	Medals_mask_h = -1;
-      
+
 	Medals_bitmap_mask = bm_load(Medals_mask_filename[gr_screen.res]);
-	if(Medals_bitmap_mask < 0){
+	if (Medals_bitmap_mask < 0) {
 		Error(LOCATION, "Error loading medal mask file %s", Medals_mask_filename[gr_screen.res]);
 	} else {
 		Init_flags |= MASK_BITMAP_INIT;
@@ -462,7 +457,7 @@ void medals_translate_name(char *name, int max_len)
 		strncpy(name, "Fliegerspange", max_len);
 
 	} else if (!strcmp(name, "Ace")) {
-		strncpy(name, "Flieger-As", max_len);	
+		strncpy(name, "Flieger-As", max_len);
 
 	} else if (!strcmp(name, "Double Ace")) {
 		strncpy(name, "Doppel-As ", max_len);
@@ -471,7 +466,7 @@ void medals_translate_name(char *name, int max_len)
 		strncpy(name, "Dreifach-As ", max_len);
 		
 	} else if (!strcmp(name, "SOC Unit Crest")) {
-		strncpy(name, "SEK-Abzeichen ", max_len);	
+		strncpy(name, "SEK-Abzeichen ", max_len);
 	}
 }
 
@@ -494,7 +489,7 @@ void blit_label(char *label, int *coords, int num)
 			sprintf( text, NOX("%s (%d)"), translated_label, num );
 		} else {
 			sprintf( text, "%s", translated_label );
-		}		
+		}
 	} else {
 		// set correct string
 		if ( num > 1 ) {
@@ -523,38 +518,37 @@ void blit_callsign()
 
 int medal_main_do()
 {
-   int region,selected, k;
-
-	k = Medals_window.process();	
+	int region,selected, k;
+	k = Medals_window.process();
 
 	// process an exit command
-	if ((k == KEY_ESC) && (Medals_mode == MM_NORMAL)) {
+	if ( (k == KEY_ESC) && (Medals_mode == MM_NORMAL) ) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
 
 	// draw the background medal display case
 	gr_reset_clip();
 	GR_MAYBE_CLEAR_RES(Medals_bitmap);
-	if(Medals_bitmap != -1){
+	if (Medals_bitmap != -1) {
 		gr_set_bitmap(Medals_bitmap);
 		gr_bitmap(0,0);
 	}
 
 	// check to see if a button was pressed
-	if( (k == (KEY_CTRLED|KEY_ENTER)) || (Medals_buttons[gr_screen.res][MEDALS_EXIT].button.pressed()) ) {	
+	if ( (k == (KEY_CTRLED|KEY_ENTER)) || (Medals_buttons[gr_screen.res][MEDALS_EXIT].button.pressed()) ) {
 		gamesnd_play_iface(SND_COMMIT_PRESSED);
-		if(Medals_mode == MM_NORMAL){
+		if (Medals_mode == MM_NORMAL) {
 			gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 		} else {
 			// any calling popup function will know to close the screen down
 			return 0;
-		}		
+		}
 	}
 
 	// blit medals also takes care of blitting the rank insignia
-	blit_medals(); 
-	blit_callsign();	
-	
+	blit_medals();
+	blit_callsign();
+
 	region = snazzy_menu_do((ubyte*)Medals_mask->data, Medals_mask_w, Medals_mask_h, NUM_MEDAL_REGIONS, Medal_regions, &selected);
 	switch (region) {
 		case ESC_PRESSED:
@@ -574,7 +568,7 @@ int medal_main_do()
 			break;
 
 		default :
-      	if (Player_score->medals[region] > 0){
+		if (Player_score->medals[region] > 0){
 				blit_label(Medals[region].name, &Medal_coords[gr_screen.res][region][0], Player_score->medals[region] );
 			}
 			break;
@@ -602,7 +596,7 @@ void medal_main_close()
 			bm_release(*idx);
 		}
 	}
-	
+
 	Medal_bitmaps.clear();
 	Player_score = NULL;
 	Medals_window.destroy();
@@ -623,7 +617,7 @@ void init_medal_bitmaps()
 		if (Player_score->medals[idx] > 0) {
 			int num_medals;
 			char filename[NAME_LENGTH], base[NAME_LENGTH];
-			
+
 			// possibly load a different filename that is specified by the bitmap filename
 			// for this medal.  if the player has > 1 of these types of medals, then determien
 			// which of the possible version to use based on the player's count of this medal
