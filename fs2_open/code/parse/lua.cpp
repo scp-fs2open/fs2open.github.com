@@ -3315,8 +3315,8 @@ ADE_FUNC(__add, l_Vector, "number/vector", "Adds vector by another vector, or ad
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
-		if(lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3))
-			|| lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f))
+		if((lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3)))
+			|| (lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f)))
 		{
 			v3.xyz.x += f;
 			v3.xyz.y += f;
@@ -3341,8 +3341,8 @@ ADE_FUNC(__sub, l_Vector, "number/vector", "Subtracts vector from another vector
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
-		if(lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3))
-			|| lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f))
+		if((lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3)))
+			|| (lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f)))
 		{
 			v3.xyz.x += f;
 			v3.xyz.y += f;
@@ -3368,8 +3368,8 @@ ADE_FUNC(__mul, l_Vector, "number/vector", "Scales vector object (Multiplies all
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
-		if(lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3))
-			|| lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f))
+		if((lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3)))
+			|| (lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f)))
 		{
 			vm_vec_scale(&v3, f);
 		}
@@ -3395,8 +3395,8 @@ ADE_FUNC(__div, l_Vector, "number/vector", "Scales vector object (Divide all axe
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
-		if(lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3))
-			|| lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f))
+		if((lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3)))
+			|| (lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f)))
 		{
 			vm_vec_scale(&v3, 1.0f/f);
 		}
