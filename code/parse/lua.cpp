@@ -8659,7 +8659,7 @@ struct sound_entry_h
 
 	sound_entry_h()
 	{
-		type =- 1;
+		type = -1;
 		idx = -1;
 	}
 
