@@ -347,13 +347,13 @@ int CFred_mission_save::save_mission_info()
 		fout("\n+Storm: %s\n", Mission_parse_storm_name);
 	}
 
-	// write out the nebula clipping multipliers
-	fout("\n+Fog Near Mult: %f\n", Neb2_fog_near_mult);
-	fout("\n+Fog Far Mult: %f\n", Neb2_fog_far_mult);
-
 	// Goober5000
 	if (Format_fs2_open != FSO_FORMAT_RETAIL)
 	{
+		// write out the nebula clipping multipliers
+		fout("\n+Fog Near Mult: %f\n", Neb2_fog_near_mult);
+		fout("\n+Fog Far Mult: %f\n", Neb2_fog_far_mult);
+		
 		if (The_mission.contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT)
 		{
 			fout("\n$Contrail Speed Threshold: %d\n", The_mission.contrail_threshold);
