@@ -12489,7 +12489,7 @@ void ade_debug_call(lua_State *L, lua_Debug *ar)
 	}
 
 	for (n = 0; n < 4; n++) {
-		if (lua_getstack(L,n+1, ar) == NULL)
+		if (lua_getstack(L,n+1, ar) == 0)
 			break;
 		lua_getinfo(L,"n", ar);
 		if (ar->name == NULL)
@@ -12512,7 +12512,7 @@ void ade_debug_ret(lua_State *L, lua_Debug *ar)
 	}
 
 	for (n = 0; n < 4; n++) {
-		if (lua_getstack(L,n+1, ar) == NULL)
+		if (lua_getstack(L,n+1, ar) == 0)
 			break;
 		lua_getinfo(L,"n", ar);
 		if (ar->name == NULL)
