@@ -4198,7 +4198,7 @@ void ship_parse_post_cleanup()
 		for(i = 0; i < n_tgt_groups; i++) {
 			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].sif2_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
 				//had none of these, check next
-				if ((Ai_tp_list[i].obj_type == -1)) {
+				if (Ai_tp_list[i].obj_type == -1) {
 					//didn't have this one
 					if (!(Ai_tp_list[i].ship_class.size() || Ai_tp_list[i].ship_type.size() || Ai_tp_list[i].weapon_class.size())) {
 						// had nothing - time to issue a warning
