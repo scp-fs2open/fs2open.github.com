@@ -10128,7 +10128,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 
 						//Check for pre-launch sound and play if relevant
-						if( (winfo_p->pre_launch_snd != NULL)									//If this weapon type has a pre-fire sound
+						if( (winfo_p->pre_launch_snd != -1)									//If this weapon type has a pre-fire sound
 							&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
 							&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
 						){ 
