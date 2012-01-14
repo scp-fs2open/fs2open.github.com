@@ -4199,7 +4199,7 @@ void ship_parse_post_cleanup()
 		for(i = 0; i < n_tgt_groups; i++) {
 			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].sif2_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
 				//had none of these, check next
-				if ((Ai_tp_list[i].obj_type == -1)) {
+				if (Ai_tp_list[i].obj_type == -1) {
 					//didn't have this one
 					if (!(Ai_tp_list[i].ship_class.size() || Ai_tp_list[i].ship_type.size() || Ai_tp_list[i].weapon_class.size())) {
 						// had nothing - time to issue a warning
@@ -5433,7 +5433,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		for (k = 0; k < MAX_TFP; k++)
 			ship_system->turret_swarm_info_index[k] = -1;
 
-		ship_system->turret_swarm_num;
+		ship_system->turret_swarm_num = 0;
 
 		// AWACS stuff
 		ship_system->awacs_intensity = model_system->awacs_intensity;
@@ -10137,7 +10137,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 
 						//Check for pre-launch sound and play if relevant
-						if( (winfo_p->pre_launch_snd != NULL)									//If this weapon type has a pre-fire sound
+						if( (winfo_p->pre_launch_snd != -1)									//If this weapon type has a pre-fire sound
 							&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
 							&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
 						){ 
