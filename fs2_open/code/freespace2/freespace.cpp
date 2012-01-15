@@ -4289,6 +4289,7 @@ void bars_do_frame(float frametime)
 
 		if (g3_in_frame() == 0) {
 			gr_set_color(0,0,0);
+			gr_set_bitmap(0); // Valathil - Dont ask me why this has to be here but otherwise the black bars dont draw
 			gr_rect(0, 0, gr_screen.max_w, yborder, false);
 			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		} else {
