@@ -149,10 +149,6 @@ void UI_SCROLLBAR::draw()
 		else
 			gr_set_color_fast(&CGRAY);
 
-	/*
-		ui_rect( 0, 0, w-1, bar_position-1 );
-		ui_rect( 0, bar_position+bar_size, w-1, h-1);
-	*/
 		ui_rect( 0, 0, w-1, h-1 );
 		ui_draw_box_out( 0, bar_position, w - 1, bar_position + bar_size - 1 );
 	}
@@ -193,23 +189,6 @@ void UI_SCROLLBAR::process(int focus)
 		bar_position /= stop - start;
 		set_focus();
 	}
-/*
-	if ( (up_button.position != 0) || (focus && keyd_pressed[KEY_UP]) ) {
-		if ( (timer_get_milliseconds() > last_scrolled + 50) || up_button.just_pressed() ) {
-			if ( up_button.just_pressed() ) {
-				last_scrolled = timer_get_milliseconds() + 300;
-			} else
-				last_scrolled = timer_get_milliseconds();
-
-			position--;
-			if (position < start)
-				position = start;
-
-			bar_position = position - start;
-			bar_position *= h - bar_size;
-			bar_position /= stop - start;
-		}
-	}*/
 
 	if (down_button.pressed()) {
 		position++;
@@ -221,23 +200,6 @@ void UI_SCROLLBAR::process(int focus)
 		bar_position /= stop - start;
 		set_focus();
 	}
-
-/*	if ( down_button.position || (keyfocus && keyd_pressed[KEY_DOWN]) ) {
-		if ( (timer_get_milliseconds() > last_scrolled + 50) || down_button.just_pressed() ) {
-			if ( down_button.just_pressed() )
-				last_scrolled = timer_get_milliseconds() + 300;
-			else
-				last_scrolled = timer_get_milliseconds();
-
-			position++;
-			if (position > stop )
-				position = stop;
-
-			bar_position = position-start;
-			bar_position *= h-bar_size;
-			bar_position /= (stop-start);
-		}
-	}*/
 
 	OnMe = is_mouse_on();
 

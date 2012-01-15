@@ -465,7 +465,7 @@ bool argument_count_is_valid()
 			Multi_sexp_bytes_left--; 
 
 			if (possible_terminator == CALLBACK_TERMINATOR) {
-				Warning(LOCATION, "%s has returned to multi_sexp_eval() claiming %d arguments left. %d actually found. Trace out and fix this!"), Operators[op_num].text, current_argument_count, i; 
+				Warning(LOCATION, "%s has returned to multi_sexp_eval() claiming %d arguments left. %d actually found. Trace out and fix this!", Operators[op_num].text, current_argument_count, i); 
 				terminator_found = true;
 				break;
 			}

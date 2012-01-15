@@ -19,7 +19,6 @@ void UI_RADIO::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _state, i
 {
 	int _w, _h;
 
-//	gr_get_string_size( &_w, &_h, "X" );
 	_w = 18;
 	_h = 18;
 
@@ -115,10 +114,6 @@ void UI_RADIO::draw()
 		else 
 			gr_set_color_fast(&CGREEN);
 
-	//	if (flag)
-	//		ui_string_centered(  Middle(w)+offset, Middle(h)+offset, "*" );
-	//	else
-	//		ui_string_centered(  Middle(w)+offset, Middle(h)+offset, "o" );
 		if (flag)	{
 			gr_circle( Middle(w)+offset, Middle(h)+offset, 8 );
 		} else {

@@ -2304,7 +2304,7 @@ int object_targetable_in_reticle(object *target_objp)
 	if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_DEBRIS) || (obj_type == OBJ_WEAPON) || (obj_type == OBJ_ASTEROID) )
 	{
 		return 1;
-	} else if ( (obj_type == OBJ_JUMP_NODE) )
+	} else if ( obj_type == OBJ_JUMP_NODE )
 	{
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 			if(jnp->get_obj() == target_objp)

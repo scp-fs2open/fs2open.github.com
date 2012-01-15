@@ -1621,7 +1621,8 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 
 /**
- * get the maximum weapon range for the player (of both primary and secondary)
+ * Get the maximum weapon range for the player (of both primary and secondary)
+ * @return Maximum weapon range
  */
 float	player_farthest_weapon_range()
 {

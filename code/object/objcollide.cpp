@@ -756,7 +756,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		//Assumes that weapons which don't home don't change speed, which is currently the case.
 		if (!(wip->wi_flags & WIF_TURNS))
 			max_vel_weapon = obj_weapon->phys_info.speed;
-		else if ((wp->lssm_stage==5))
+		else if (wp->lssm_stage==5)
 			max_vel_weapon = wip->lssm_stage5_vel;
 		else
 			max_vel_weapon = wp->weapon_max_vel;
