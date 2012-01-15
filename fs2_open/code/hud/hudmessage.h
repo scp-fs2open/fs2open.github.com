@@ -68,7 +68,7 @@ void HUD_printf(char *format, ...);
 void hud_sourced_print(int source, char *msg);
 void HUD_sourced_printf(int source, char *format, ...);  // send hud message from specified source
 void HUD_ship_sent_printf(int sh, char *format, ...);  // send hud message from a specific ship
-void HUD_fixed_printf(float duration, char *format, ...);		//	Display a single message for duration seconds.
+void HUD_fixed_printf(float duration, color col, char *format, ...);		//	Display a single message for duration seconds.
 void HUD_init_fixed_text();			//	Clear all pending fixed text.
 
 void HUD_add_to_scrollback(char *text, int source);
