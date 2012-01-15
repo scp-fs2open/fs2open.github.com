@@ -856,11 +856,14 @@ void init_weapon_entry(int weap_info_index)
 	wip->catchup_pixels_per_sec = 50;
 	wip->catchup_pixel_penalty = 50;
 	wip->seeker_strength = 1.0f;
-	
+
 	wip->swarm_count = -1;
 	// *Default is 150  -Et1
 	wip->SwarmWait = SWARM_MISSILE_DELAY;
 	
+	wip->pre_launch_snd = -1;
+	wip->pre_launch_snd_min_interval = 0;
+
 	wip->launch_snd = -1;
 	wip->impact_snd = -1;
 	wip->disarmed_impact_snd = -1;
