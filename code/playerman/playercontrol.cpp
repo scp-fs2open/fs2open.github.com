@@ -1785,9 +1785,10 @@ void player_show_death_message()
 			player_generate_death_message(Player);
 		}
 	}
-
+	color col;
+	gr_init_color(&col, 255, 0, 0);
 	// display the message
-	HUD_fixed_printf(30.0f, const_cast<char *>(msg.c_str()));
+	HUD_fixed_printf(30.0f, col, const_cast<char *>(msg.c_str()));
 }
 
 void player_set_next_all_alone_msg_timestamp()
@@ -1951,8 +1952,9 @@ void player_display_packlock_view()
 		case 3:
 			strcpy_s(str, XSTR( "right view", 104));	break;
 			}
-
-		HUD_fixed_printf(0.01f, str);
+		color col;
+		gr_init_color(&col, 0, 255, 0);
+		HUD_fixed_printf(0.01f, col, str);
 	}
 }
 
