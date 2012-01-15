@@ -2538,6 +2538,7 @@ void game_set_view_clip(float frametime)
 		if (g3_in_frame() == 0) {
 			// Ensure that the bars are black
 			gr_set_color(0,0,0);
+			gr_set_bitmap(0); // Valathil - Dont ask me why this has to be here but otherwise the black bars dont draw
 			gr_rect(0, 0, gr_screen.max_w, yborder, false);
 			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		} else {
@@ -2952,16 +2953,19 @@ void say_view_target()
 
 			end_string_at_first_hash_symbol(view_target_name);
 			if ( strlen(view_target_name) ) {
-				HUD_fixed_printf(0.0f, XSTR( "Viewing %s%s\n", 185), (Viewer_mode & VM_OTHER_SHIP) ? XSTR( "from ", 186) : "", view_target_name);
+				hud_set_iff_color(&Objects[Player_ai->target_objnum], 1);
+				HUD_fixed_printf(0.0f, gr_screen.current_color, XSTR( "Viewing %s%s\n", 185), (Viewer_mode & VM_OTHER_SHIP) ? XSTR( "from ", 186) : "", view_target_name);
 				Show_viewing_from_self = 1;
 			}
 		} else {
+			color col;
+			gr_init_color(&col, 0, 255, 0);
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER) && (Player_obj->type == OBJ_OBSERVER)){
-				HUD_fixed_printf(2.0f,XSTR( "Viewing from observer\n", 187));
+				HUD_fixed_printf(2.0f, col, XSTR( "Viewing from observer\n", 187));
 				Show_viewing_from_self = 1;
 			} else {
 				if (Show_viewing_from_self)
-					HUD_fixed_printf(2.0f, XSTR( "Viewing from self\n", 188));
+					HUD_fixed_printf(2.0f, col, XSTR( "Viewing from self\n", 188));
 			}
 		}
 	}
@@ -4276,6 +4280,7 @@ void bars_do_frame(float frametime)
 		if (g3_in_frame() == 0) {
 			//Set rectangles
 			gr_set_color(0,0,0);
+			gr_set_bitmap(0); // Valathil - Dont ask me why this has to be here but otherwise the black bars dont draw
 			gr_rect(0, 0, gr_screen.max_w, yborder, false);
 			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		} else {
@@ -4458,6 +4463,9 @@ void game_frame(int paused)
 			
 			camid cid = game_render_frame_setup();
 			game_render_frame( cid );
+			
+			//Cutscene bars
+			clip_frame_view();
 
 			// save the eye position and orientation
 			if ( Game_mode & GM_MULTIPLAYER ) {
@@ -4505,9 +4513,6 @@ void game_frame(int paused)
 					}
 				}
 			}
-
-			//Cutscene bars
-			clip_frame_view();
 
 			DEBUG_GET_TIME( render3_time2 )
 			DEBUG_GET_TIME( render2_time1 )
