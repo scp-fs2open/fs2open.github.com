@@ -22,21 +22,6 @@
 
 
 int cell_shaded_lightmap = -1;
-/*typedef struct light {
-	int		type;							// What type of light this is
-	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
-	vec3d	vec2;							// second point on a tube light
-	vec3d	local_vec;					// rotated light vector
-	vec3d	local_vec2;					// rotated 2nd light vector for a tube light
-	float		intensity;					// How bright the light is.
-	float		rada, rada_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		r,g,b;						// The color components of the light
-	float		spec_r,spec_g,spec_b;		// The specular color components of the light
-	int		light_ignore_objnum;			// Don't light this object.  Used to optimize weapons casting light on parents.
-	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
-	int instance;
-} light;*/
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
