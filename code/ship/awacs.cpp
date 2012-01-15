@@ -436,6 +436,9 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	Assert(viewer);
 	Assert(target->type == OBJ_SHIP);
 
+	int ship_num = target->instance;
+	int team = viewer->team;
+
 	// not visible if viewer has primitive sensors
 	if (viewer->flags2 & SF2_PRIMITIVE_SENSORS)
 		return 0;
@@ -443,10 +446,11 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	// not visible if out of range
 	if ((Hud_max_targeting_range > 0) && (vm_vec_dist_quick(&target->pos, &Objects[viewer->objnum].pos) > Hud_max_targeting_range))
 		return 0;
+	
+	// not visible if same team and SF2_FRIENDLY_STEALTH_INVIS is in effect
+	if (team == Ships[ship_num].team && Ships[ship_num].flags2 & SF2_FRIENDLY_STEALTH_INVIS && Ships[ship_num].flags2 & SF2_STEALTH)
+		return 0;
 
 	// now evaluate this the old way
-	int ship_num = target->instance;
-	int team = viewer->team;
-
 	return (int)Ship_visibility_by_team[team][ship_num];
 }
