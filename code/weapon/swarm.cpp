@@ -545,7 +545,7 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 				wip = &Weapon_info[tsi->weapon_class];
 
 				// check if parent ship is valid (via signature)
-				if ( (tsi->parent_sig == parent_obj->signature) ) {
+				if ( tsi->parent_sig == parent_obj->signature ) {
 
 					// make sure we have the right turret.
 					Assert(tsi->turret == subsys);

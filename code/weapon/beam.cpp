@@ -3323,7 +3323,7 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 	// don't whack docked ships
 	// Goober5000 - whacking docked ships should work now, so whack them
 	// Goober5000 - weapons with no mass don't whack (bypass the calculations)
-	if(/*object_is_docked(objp) ||*/ (wip->mass == 0.0f)) {
+	if(wip->mass == 0.0f) {
 		return;
 	}
 
