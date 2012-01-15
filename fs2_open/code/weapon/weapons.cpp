@@ -93,8 +93,6 @@ int laser_model_outer = -1;
 
 int missile_model = -1;
 
-char	*Weapon_names[MAX_WEAPON_TYPES];
-
 int     First_secondary_index = -1;
 int		Default_cmeasure_index = -1;
 
@@ -2745,14 +2743,6 @@ void parse_weaponstbl(char *filename)
 	lcl_ext_close();
 }
 
-void weapon_create_names()
-{
-	int	i;
-
-	for (i = 0; i < Num_weapon_types; i++)
-		Weapon_names[i] = Weapon_info[i].name;
-}
-
 //uses a simple bucket sort to sort weapons, order of importance is:
 //Lasers
 //Beams
@@ -3205,7 +3195,6 @@ void weapon_do_post_parse()
 	char *weakp;
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
-	weapon_create_names();
 	weapon_clean_entries();
 	weapon_generate_indexes_for_substitution();
 

@@ -561,7 +561,6 @@ extern int Default_cmeasure_index;
 
 extern int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
 extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
-extern char	*Weapon_names[MAX_WEAPON_TYPES];
 
 extern int Default_weapon_select_effect;
 
