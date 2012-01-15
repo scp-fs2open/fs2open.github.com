@@ -2532,6 +2532,7 @@ void game_set_view_clip(float frametime)
 		if (g3_in_frame() == 0) {
 			// Ensure that the bars are black
 			gr_set_color(0,0,0);
+			gr_set_bitmap(0); // Valathil - Dont ask me why this has to be here but otherwise the black bars dont draw
 			gr_rect(0, 0, gr_screen.max_w, yborder, false);
 			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		} else {
@@ -4270,6 +4271,7 @@ void bars_do_frame(float frametime)
 		if (g3_in_frame() == 0) {
 			//Set rectangles
 			gr_set_color(0,0,0);
+			gr_set_bitmap(0); // Valathil - Dont ask me why this has to be here but otherwise the black bars dont draw
 			gr_rect(0, 0, gr_screen.max_w, yborder, false);
 			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		} else {
@@ -4452,6 +4454,9 @@ void game_frame(int paused)
 			
 			camid cid = game_render_frame_setup();
 			game_render_frame( cid );
+			
+			//Cutscene bars
+			clip_frame_view();
 
 			// save the eye position and orientation
 			if ( Game_mode & GM_MULTIPLAYER ) {
@@ -4499,9 +4504,6 @@ void game_frame(int paused)
 					}
 				}
 			}
-
-			//Cutscene bars
-			clip_frame_view();
 
 			DEBUG_GET_TIME( render3_time2 )
 			DEBUG_GET_TIME( render2_time1 )
