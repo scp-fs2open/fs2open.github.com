@@ -90,7 +90,6 @@ int Num_cargo = 0;
 int Num_status_names = MAX_STATUS_NAMES;
 int Num_arrival_names = MAX_ARRIVAL_NAMES;
 int Num_goal_type_names = MAX_GOAL_TYPE_NAMES;
-int Num_team_names = MAX_TEAM_NAMES;
 int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;

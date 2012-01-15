@@ -401,7 +401,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		return 1;
 	}
 
-	if ( (objp->type == OBJ_SHIP) ) {
+	if ( objp->type == OBJ_SHIP ) {
 		Assert( objp->instance >= 0 );
 		ship *shipp;
 		ship_info *sip;

@@ -31,8 +31,6 @@ void ui_string_centered( int x, int y, char * s )
 
 	gr_get_string_size( &width, &height, s );
 
-	//baseline = height-grd_curcanv->cv_font->ft_baseline;
-
 	gr_string(x-((width-1)/2), y-((height-1)/2), s );
 }
 
@@ -67,8 +65,6 @@ void ui_rect( int x1, int y1, int x2, int y2 )
 {
 	gr_rect( x1, y1, x2-x1+1, y2-y1+1 );
 }
-
-
 
 void ui_draw_box_out( int x1, int y1, int x2, int y2 )
 {

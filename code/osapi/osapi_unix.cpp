@@ -36,7 +36,6 @@
 static int			fAppActive = 1;
 static char			szWinTitle[128];
 static char			szWinClass[128];
-//static int			WinX, WinY, WinW, WinH;
 static int			Os_inited = 0;
 
 static CRITICAL_SECTION Os_lock;

@@ -48,14 +48,6 @@
 #include "missionui/chatbox.h"
 
 
-
-/*
-#define OBJECTIVES_X	65
-#define OBJECTIVES_Y	137
-#define OBJECTIVES_W	508
-#define OBJECTIVES_H	233
-*/
-
 static int Brief_goals_coords[GR_NUM_RESOLUTIONS][4] = {
 	{
 		65,152,508,211		// GR_640

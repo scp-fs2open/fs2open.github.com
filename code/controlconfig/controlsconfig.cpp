@@ -454,7 +454,7 @@ void control_config_list_prepare()
 
 	Num_cc_lines = y = z = 0;
 	while (z < CCFG_MAX) {
-		if ((Control_config[z].tab == Tab)) {
+		if (Control_config[z].tab == Tab) {
 			k = Control_config[z].key_id;
 			j = Control_config[z].joy_id;
 
