@@ -1172,8 +1172,16 @@ void stars_draw_sun_glow(int sun_n)
 	int zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
 	g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
 
-	if ( bm->flare ) //if the sun is visible (since stars_draw_sun_glow() is called only if it is) then draw the lens-flare
-		stars_draw_lens_flare(&sun_vex, sun_n);
+	if (bm->flare) {
+		vec3d light_dir;
+		vec3d local_light_dir;
+		light_get_global_dir(&light_dir, sun_n);
+		vm_vec_rotate(&local_light_dir, &light_dir, &Eye_matrix);
+		float dot=vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec );
+		if (dot > 0.7f) // Only render the flares if the sun is reasonably near the center of the screen
+			stars_draw_lens_flare(&sun_vex, sun_n);
+	}
+
 	gr_zbuffer_set(zbuff);
 }
 
