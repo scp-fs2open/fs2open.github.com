@@ -480,7 +480,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	}
 
 
-	if ( (bitmap_type == TCACHE_TYPE_CUBEMAP) ) {
+	if ( bitmap_type == TCACHE_TYPE_CUBEMAP ) {
 		t->texture_target = GL_TEXTURE_CUBE_MAP;
 	}
 

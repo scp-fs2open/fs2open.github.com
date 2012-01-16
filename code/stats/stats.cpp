@@ -26,30 +26,11 @@
 #define ALLTIME_STATS_START_Y 270
 #define MULTIPLAYER_LIST_START 20
 
-/*
-static int Mission_stats_start_y[GR_NUM_RESOLUTIONS] = {
-	80,	// GR_640
-	80		// GR_1024
-};
-
-static int Alltime_stats_start_y[GR_NUM_RESOLUTIONS] = {
-	270,	// GR_640
-	270	// GR_1024
-};
-
-static int Multiplayer_list_start[GR_NUM_RESOLUTIONS] = {
-	20,	// GR_640
-	20		// GR_1024
-};
-*/
-
-// static UI_WINDOW Player_stats_window;
 
 player *Active_player;
 
 void show_stats_init()
 {
-	// Player_stats_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 	if (Game_mode & GM_MULTIPLAYER) {				
 		set_player_stats(MY_NET_PLAYER_NUM);
 	} else {
@@ -158,7 +139,6 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
          // mission kills stats
 			sprintf(text,"%d",Active_player->stats.m_kill_count_ok);
 			gr_printf(sx,sy,text);
-			// stats_underline_text(sx,sy,text);
 			sy += 2*dy;
          // mission primary weapon stats
 			sprintf(text,"%u",Active_player->stats.mp_shots_fired);
@@ -244,7 +224,6 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			sprintf(text,"%d",Active_player->stats.kill_count_ok + add.kill_count_ok);
 			hud_num_make_mono(text);
 			gr_printf(sx,sy,text);
-			// stats_underline_text(sx,sy,text);
 			sy += 2*dy;
          // alltime primary weapon stats
 			sprintf(text,"%u",Active_player->stats.p_shots_fired + add.p_shots_fired);

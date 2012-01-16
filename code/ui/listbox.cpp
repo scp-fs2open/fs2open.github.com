@@ -18,8 +18,6 @@
 
 #define KEY_BUFFER_TIMEOUT		1000		// time to clear buffer in milliseconds
 
-// bumped up by kazan
-//#define DEFAULT_LISTBOX_ITEM_LENGTH 40
 #define DEFAULT_LISTBOX_ITEM_LENGTH 128
 
 // --------------------------------------------------------------------

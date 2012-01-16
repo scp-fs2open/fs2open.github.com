@@ -281,7 +281,7 @@ void generic_render_ani_stream(generic_anim *ga)
 		int start_time = timer_get_fixed_seconds();
 	#endif
 
-	if((ga->current_frame == ga->previous_frame))
+	if(ga->current_frame == ga->previous_frame)
 		return;
 
 	#ifdef TIMER

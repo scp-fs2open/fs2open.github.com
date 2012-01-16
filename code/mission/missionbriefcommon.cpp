@@ -1033,18 +1033,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 			bi->y = by;
 			return;
 		}
-/*
-		vertex va, vb;
-		va.sx = bxf;
-		va.sy = byf;
-		va.u = 0.0f;
-		va.v = 0.0f;
 
-		vb.sx = bxf+scaled_w-1;
-		vb.sy = byf+scaled_h-1;
-		vb.u = 1.0f;
-		vb.v = 1.0f;
-*/
 		// render highlight anim frame
 		if ( (bi->flags&BI_SHOWHIGHLIGHT) && (bi->flags&BI_HIGHLIGHT) ) {
 			hud_anim *ha = &bi->highlight_anim;

@@ -1644,7 +1644,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	}
 
 	// if the player is dying, have wingman lament
-	if ( (ship_obj == Player_obj) ) {
+	if ( ship_obj == Player_obj ) {
 		ship_maybe_lament();
 	}
 

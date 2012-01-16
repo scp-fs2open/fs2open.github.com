@@ -2163,7 +2163,7 @@ int find_enemy(int objnum, float range, int max_attackers)
 
 			// DKA don't undo object as target in nebula missions.
 			// This could cause attack on ship on fringe on nebula to stop if attackee moves our of nebula range.  (BAD)
-			if ( (Objects[target_objnum].signature == aip->target_signature) ) {
+			if ( Objects[target_objnum].signature == aip->target_signature ) {
 				if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
 					if (!(Objects[target_objnum].flags & OF_PROTECTED)) {
 						return target_objnum;

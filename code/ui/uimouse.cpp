@@ -65,7 +65,7 @@ void ui_mouse_process()
 
 	// check for double clicks
 	if ((ui_mouse.b1_status & BUTTON_PRESSED) && (ui_mouse.b1_last_status & BUTTON_RELEASED) ) {
-		if ( timer_get_milliseconds() <= ui_mouse.b1_time_lastpressed + 250 )  //&& (ui_mouse.moved==0)
+		if ( timer_get_milliseconds() <= ui_mouse.b1_time_lastpressed + 250 )
 			ui_mouse.b1_status |= BUTTON_DOUBLE_CLICKED;
 
 		ui_mouse.b1_time_lastpressed = timer_get_milliseconds();
@@ -75,7 +75,7 @@ void ui_mouse_process()
 		ui_mouse.b1_status |= BUTTON_JUST_RELEASED;
 
 	if ((ui_mouse.b2_status & BUTTON_PRESSED) && (ui_mouse.b2_last_status & BUTTON_RELEASED) ) {
-		if ( timer_get_milliseconds() <= ui_mouse.b2_time_lastpressed + 250 )  //&& (ui_mouse.moved==0)
+		if ( timer_get_milliseconds() <= ui_mouse.b2_time_lastpressed + 250 )
 			ui_mouse.b2_status |= BUTTON_DOUBLE_CLICKED;
 
 		ui_mouse.b2_time_lastpressed = timer_get_milliseconds();
