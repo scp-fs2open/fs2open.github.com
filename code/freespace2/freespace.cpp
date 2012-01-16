@@ -2942,16 +2942,19 @@ void say_view_target()
 
 			end_string_at_first_hash_symbol(view_target_name);
 			if ( strlen(view_target_name) ) {
-				HUD_fixed_printf(0.0f, XSTR( "Viewing %s%s\n", 185), (Viewer_mode & VM_OTHER_SHIP) ? XSTR( "from ", 186) : "", view_target_name);
+				hud_set_iff_color(&Objects[Player_ai->target_objnum], 1);
+				HUD_fixed_printf(0.0f, gr_screen.current_color, XSTR( "Viewing %s%s\n", 185), (Viewer_mode & VM_OTHER_SHIP) ? XSTR( "from ", 186) : "", view_target_name);
 				Show_viewing_from_self = 1;
 			}
 		} else {
+			color col;
+			gr_init_color(&col, 0, 255, 0);
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER) && (Player_obj->type == OBJ_OBSERVER)){
-				HUD_fixed_printf(2.0f,XSTR( "Viewing from observer\n", 187));
+				HUD_fixed_printf(2.0f, col, XSTR( "Viewing from observer\n", 187));
 				Show_viewing_from_self = 1;
 			} else {
 				if (Show_viewing_from_self)
-					HUD_fixed_printf(2.0f, XSTR( "Viewing from self\n", 188));
+					HUD_fixed_printf(2.0f, col, XSTR( "Viewing from self\n", 188));
 			}
 		}
 	}
