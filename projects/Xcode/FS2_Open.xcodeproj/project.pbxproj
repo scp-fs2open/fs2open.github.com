@@ -4339,7 +4339,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
-					"$(SRCROOT)/build/Debug",
+					"$(SRCROOT)/build/Release",
 				);
 				OTHER_LDFLAGS = (
 					"-framework",
