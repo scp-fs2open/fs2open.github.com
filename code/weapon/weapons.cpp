@@ -1292,9 +1292,9 @@ int parse_weapon(int subtype, bool replace)
 
 		// Goober5000 - hack in order to make the beam whack behavior of these three beams match all other beams
 		// this relies on Bobboau's beam whack hack in beam_apply_whack()
-		if (!strcmp(wip->name, "SAAA") && (wip->mass == 4.0f)
-			|| !strcmp(wip->name, "MjolnirBeam") && (wip->mass == 1000.0f)
-			|| !strcmp(wip->name, "MjolnirBeam#home") && (wip->mass == 1000.0f))
+		if ((!strcmp(wip->name, "SAAA") && (wip->mass == 4.0f))
+			|| (!strcmp(wip->name, "MjolnirBeam") && (wip->mass == 1000.0f))
+			|| (!strcmp(wip->name, "MjolnirBeam#home") && (wip->mass == 1000.0f)))
 		{
 			wip->mass = 100.0f;
 		}
@@ -3563,7 +3563,7 @@ void weapon_render(object *obj)
 			int clip_plane=0;
 				
 			//start a clip plane
-			if ((wp->lssm_stage==2))
+			if (wp->lssm_stage==2)
 			{
 				object *wobj=&Objects[wp->lssm_warp_idx];		//warphole object
 				clip_plane=1;
