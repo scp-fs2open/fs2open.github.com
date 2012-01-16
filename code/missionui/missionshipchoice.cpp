@@ -1781,7 +1781,7 @@ void start_ship_animation(int ship_class, int play_sound)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
 		
 		if (sip->model_num < 0) {
-			mprintf(("Couldn't load model file in missionshipchoice.cpp\n"));
+			mprintf(("Couldn't load model file %s in missionshipchoice.cpp\n", sip->pof_file));
 		}
 	} else {
 		ss_icon_info *ss_icon;
