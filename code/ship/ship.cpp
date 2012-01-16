@@ -9539,10 +9539,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		// only non-multiplayer clients (single, multi-host) need to do timestamp checking
 		if ( !timestamp_elapsed(swp->next_primary_fire_stamp[bank_to_fire]) ) {
-			if (timestamp_until(swp->next_primary_fire_stamp[bank_to_fire]) > 5000){
-				swp->next_primary_fire_stamp[bank_to_fire] = timestamp(1000);
-			}
-
 			have_timeout = 1;
 			continue;
 		}
