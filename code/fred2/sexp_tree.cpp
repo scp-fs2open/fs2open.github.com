@@ -3023,12 +3023,12 @@ int sexp_tree::verify_tree(int node, int *bypass)
 
 			case OPF_IFF:
 				if (type2 == SEXP_ATOM_STRING) {
-					for (i=0; i<Num_team_names; i++)
+					for (i=0; i<Num_iffs; i++)
 						if (!stricmp(Team_names[i], tree_nodes[node].text))
 							break;
 				}
 
-				if (i == Num_team_names)
+				if (i == Num_iffs)
 					return node_error(node, "Iff team type expected here", bypass);
 
 				break;
