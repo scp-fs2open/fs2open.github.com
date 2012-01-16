@@ -690,11 +690,13 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		GL_state.Texture.SetActiveUnit(render_pass);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		if( Scene_framebuffer_in_frame )
+		{
 			GL_state.Texture.Enable(Scene_effect_texture);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		}
 		else
 			GL_state.Texture.Enable(Framebuffer_fallback_texture_id);
 		vglUniform1iARB( opengl_shader_get_uniform("sFramebuffer"), render_pass );
-		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 		render_pass++;
 	}
 	// DRAW IT!!
