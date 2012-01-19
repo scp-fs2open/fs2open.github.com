@@ -451,8 +451,15 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 					continue;
 				}
 
-				if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
-					found = 1;
+				// if we are looking for a subsystem entry, the subsystem names must be compared
+				if ((type == LOG_SHIP_SUBSYS_DESTROYED || type == LOG_CAP_SUBSYS_CARGO_REVEALED)) {
+					if ( (sname == NULL) || !subsystem_stricmp(sname, entry->sname) ) {
+						found = 1;
+					}
+				} else {
+					if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
+						found = 1;
+					}
 				}
 			}
 
