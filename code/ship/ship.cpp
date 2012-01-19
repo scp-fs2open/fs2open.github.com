@@ -5052,6 +5052,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
 	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
 	sip->shockwave.damage_type_idx = sip->shockwave.damage_type_idx_sav;
+
+	// Reset special hitpoints to zero. Fixes Mantis issue 2573
+	shipp->special_hitpoints = 0;
 }
 
 /**
@@ -10404,6 +10407,8 @@ int ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 
 /**
  * Try to switch to a secondary bank that has ammo
+ *
+ * @note: not currently used - mark for removal?
  */
 int ship_select_next_valid_secondary_bank(ship_weapon *swp)
 {
@@ -10878,8 +10883,11 @@ done_secondary:
 	//then it would have no firedelay. and then add 250 ms of delay. in effect, this way there is no penalty if there is any firedelay remaning in
 	//the next valid bank. the delay is there to prevent things like Trible/Quad Fire Trebuchets.
 	//
-	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) ) {
-		if ( ship_select_next_valid_secondary_bank(swp) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
+	// niffiwan: only try to switch banks if object has multiple banks
+	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) ) {
+		// niffiwan: call ship_select_next_secondary instead of ship_select_next_valid_secondary_bank
+		// ensures all "extras" are dealt with, like animations, scripting hooks, etc
+		if (ship_select_next_secondary(obj) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
 
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
 				shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(1000);	//Bumped from 250 to 1000 because some people seem to be to triggerhappy :).
@@ -10890,7 +10898,6 @@ done_secondary:
 				snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );		
 			}
 		}
-
 	}	
 
 	if (has_fired) {

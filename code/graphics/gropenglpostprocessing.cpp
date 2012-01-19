@@ -831,14 +831,10 @@ static bool opengl_post_init_table()
 		required_string("$Sample Number:");
 		stuff_int(&ls_samplenum);
 
-		if(ls_falloff < 1.0)
-		{
-			ls_cpintensity = ls_weight;
-			for(int i = 1; i < 50; i++)
-				ls_cpintensity += ls_weight * pow(ls_falloff, i);
-			ls_cpintensity *= ls_intensity;
-		}
-
+		ls_cpintensity = ls_weight;
+		for(int i = 1; i < ls_samplenum; i++)
+			ls_cpintensity += ls_weight * pow(ls_falloff, i);
+		ls_cpintensity *= ls_intensity;
 	}
 	
 	required_string("#End");
