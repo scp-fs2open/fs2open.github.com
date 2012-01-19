@@ -1379,18 +1379,10 @@ void subspace_render()
 
 	matrix tmp;
 	angles angs = { 0.0f, 0.0f, 0.0f };
-	mst_info mst;
 
 	angs.b = subspace_offset_v * PI2;
 
 	vm_angles_2_matrix(&tmp,&angs);
-
-	mst.length.xyz.x = 1.0f;
-	mst.length.xyz.y = 1.0f;
-	mst.length.xyz.z = 1.0f;
-	mst.primary_bitmap = -1;
-	mst.primary_glow_bitmap = Subspace_glow_bitmap;
-	mst.glow_noise = Noise[framenum];
 
 	int saved_gr_zbuffering = gr_zbuffer_get();
 
@@ -1402,9 +1394,6 @@ void subspace_render()
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
 	Interp_subspace_offset_v = 0.0f;
 
-	model_set_thrust( Subspace_model_inner, &mst );
-
-	render_flags |= MR_SHOW_THRUSTERS;
 	model_set_alpha(1.0f);
 
 	if (!Cmdline_nohtl)
@@ -1425,9 +1414,6 @@ void subspace_render()
 
 	model_set_outline_color(255,255,255);
 
-	model_set_thrust( Subspace_model_inner, &mst );
-
-	render_flags |= MR_SHOW_THRUSTERS;
 	model_set_alpha(1.0f);
 
 	if (!Cmdline_nohtl)
@@ -1437,6 +1423,23 @@ void subspace_render()
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(0, 0, false);
+
+	//Render subspace glows here and not as thrusters - Valathil 
+	vec3d glow_pos;
+	vertex glow_vex;	
+
+	glow_pos.xyz.x = 0.0f;
+	glow_pos.xyz.y = 0.0f;
+	glow_pos.xyz.z = 100.0f;
+
+	gr_set_bitmap(Subspace_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
+	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
+	g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
+
+	glow_pos.xyz.z = -100.0f;
+
+	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
+	g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);
