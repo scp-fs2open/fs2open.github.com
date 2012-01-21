@@ -851,7 +851,7 @@ void game_flash_diminish(float frametime)
 		g = fl2i( Game_flash_green*128.0f );   
 		b = fl2i( Game_flash_blue*128.0f );  
 
-		if ( Sun_spot > 0.0f && !ls_on || ls_force_off)	{
+		if ( Sun_spot > 0.0f && (!ls_on || ls_force_off))	{
 			r += fl2i(Sun_spot*128.0f);
 			g += fl2i(Sun_spot*128.0f);
 			b += fl2i(Sun_spot*128.0f);
