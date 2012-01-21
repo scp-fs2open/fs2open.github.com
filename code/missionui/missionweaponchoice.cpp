@@ -1568,13 +1568,11 @@ void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count)
 void wl_get_ship_weapons(int ship_index, int *wep, int *wep_count)
 {
 	int			i;
-	wing			*wp;
 	ship_weapon	*swp;
 
 	Assert(ship_index >= 0);
 
 	Assert(Ships[ship_index].wingnum >= 0);
-	wp = &Wings[Ships[ship_index].wingnum];
 	swp = &Ships[ship_index].weapons;
 
 	for ( i = 0; i < swp->num_primary_banks; i++ )
@@ -1694,7 +1692,6 @@ void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_cou
 			wl_get_parseobj_weapons(sa_index, ship_class, wep, wep_count);
 		} else {
 			// ship has been created
-//			wl_get_ship_weapons(slot_num/MAX_WING_SLOTS, slot_num%MAX_WING_SLOTS, wep, wep_count);
 			int ship_index = -1;
 			p_object *pobjp;
 			ss_return_ship(slot_num/MAX_WING_SLOTS, slot_num%MAX_WING_SLOTS, &ship_index, &pobjp);
@@ -3281,10 +3278,8 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 {
 	int				i,	j, sidx, pilot_index, max_count;
 	subsys_status	*ss;
-	ship_info		*sip;
 
 	Assert(slot->ship_class >= 0);
-	sip = &Ship_info[slot->ship_class];
 
 	pilot_index = wl_get_pilot_subsys_index(pobjp);
 
@@ -3349,7 +3344,6 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 //
 void start_weapon_animation(int weapon_class) 
 {
-	wl_icon_info	*icon;
 	char *p;
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
 
@@ -3358,8 +3352,6 @@ void start_weapon_animation(int weapon_class)
 
 	if ( weapon_class == Weapon_anim_class ) 
 		return;
-
-	icon = &Wl_icons[weapon_class];
 
 	gamesnd_play_iface(SND_WEAPON_ANIM_START);
 
@@ -3388,7 +3380,6 @@ void start_weapon_animation(int weapon_class)
 				Cur_Anim.num_frames = 1;
 			}
 		}
-		//mprintf(("%d %d %d\n", Cur_Anim.first_frame, Cur_Anim.keyframe, Cur_Anim.num_frames));
 	}
 
 	// start the text wipe
@@ -3952,6 +3943,7 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 	common_flash_button_init();
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_HOST ) {
 		if(MULTI_TEAM){
+            Assert(pl != NULL);
 			// set the global pointers to the right pools
 			common_set_team_pointers(pl->p_info.team);
 		}
