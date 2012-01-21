@@ -1435,6 +1435,43 @@ void obj_move_all(float frametime)
 	while( objp !=END_OF_LIST(&obj_used_list) )	{
 		dock_move_docked_objects(objp);
 
+		//Valathil - Move the screen rotation calculation for billboards here to get the updated orientation matrices caused by docking interpolation
+		angles tangles;
+		vm_extract_angles_matrix(&tangles, &objp->orient);
+
+		// If this is the viewer_object, keep track of the
+		// changes in banking so that rotated bitmaps look correct.
+		// This is used by the g3_draw_rotated_bitmap function.
+		extern physics_info *Viewer_physics_info;
+		extern int Physics_viewer_direction;
+		if ( &objp->phys_info == Viewer_physics_info )	{
+			switch(Physics_viewer_direction){
+			case PHYSICS_VIEWER_FRONT:
+				Physics_viewer_bank = -tangles.b;
+				break;
+
+			case PHYSICS_VIEWER_UP:
+				Physics_viewer_bank = -tangles.h;
+				break;
+
+			case PHYSICS_VIEWER_REAR:
+				Physics_viewer_bank = tangles.b;
+				break;
+
+			case PHYSICS_VIEWER_LEFT:
+				Physics_viewer_bank = tangles.p;
+				break;
+
+			case PHYSICS_VIEWER_RIGHT:
+				Physics_viewer_bank = -tangles.p;
+				break;
+
+			default:
+				Physics_viewer_bank = -tangles.b;
+				break;
+			}
+		}
+
 		// unflag all objects as being updates
 		objp->flags &= ~OF_JUST_UPDATED;
 
