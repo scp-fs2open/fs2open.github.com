@@ -21,6 +21,7 @@
 #include "ai/aiinternal.h"	//Included last, so less includes are needed
 #include "iff_defs/iff_defs.h"
 #include "weapon/muzzleflash.h"
+#include "parse/scripting.h"
 
 #include <limits.h>
 
@@ -1716,6 +1717,12 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 				objp=&Objects[weapon_objnum];
 				wp=&Weapons[objp->instance];
+
+				parent_ship->last_fired_turret = turret;
+				turret->last_fired_weapon_info_index = wp->weapon_info_index;
+
+				Script_system.SetHookObjects(3, "Ship", &Objects[parent_objnum], "Weapon", objp, "Target", &Objects[turret->turret_enemy_objnum]);
+				Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
 
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {

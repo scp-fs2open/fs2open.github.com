@@ -66,6 +66,7 @@ struct image_desc
 #define CHA_ONWPSELECTED	24
 #define CHA_ONWPDESELECTED	25
 #define CHA_GAMEPLAYSTART	26
+#define CHA_ONTURRETFIRED	27
 
 // management stuff
 void scripting_state_init();
