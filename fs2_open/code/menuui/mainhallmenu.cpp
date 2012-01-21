@@ -1713,6 +1713,8 @@ void misc_anim_init(main_hall_defines &m)
 //to be called after num_door_animations has been parsed
 void door_anim_init(main_hall_defines &m)
 {
+	int idx;
+
 	if (Cmdline_reparse_mainhall) {
 		/* since we could be reparsing with a different number of door
 		 anims, clear these and reinitialise. */
@@ -1726,7 +1728,7 @@ void door_anim_init(main_hall_defines &m)
 	SCP_vector<int> temp;
 	SCP_string temp_string;
 
-	for(int idx=0; idx<m.num_door_animations; idx++)
+	for(idx=0; idx<m.num_door_animations; idx++)
 	{
 		//door_anim_name
 		m.door_anim_name.push_back(temp_string);
@@ -1748,7 +1750,7 @@ void door_anim_init(main_hall_defines &m)
 	}
 
 	//region_descript
-	for (int idx=0; idx<NUM_REGIONS; idx++) {
+	for (idx=0; idx<NUM_REGIONS; idx++) {
 		m.region_descript.push_back(NULL);
 	}
 
