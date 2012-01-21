@@ -530,6 +530,7 @@ void parse_msgtbl()
 	lcl_ext_close();
 }
 
+extern bool Sexp_Messages_Scrambled;
 // this is called at the start of each level
 void messages_init()
 {
@@ -603,7 +604,10 @@ void messages_init()
 	//wipe all the non-builtin messages
 	Messages.erase((Messages.begin()+Num_builtin_messages), Messages.end()); 
 	Message_avis.erase((Message_avis.begin()+Num_builtin_avis), Message_avis.end()); 
-	Message_waves.erase((Message_waves.begin()+Num_builtin_waves), Message_waves.end()); 
+	Message_waves.erase((Message_waves.begin()+Num_builtin_waves), Message_waves.end());
+
+	// stop scrambling messages
+	Sexp_Messages_Scrambled = false;
 }
 
 // free a loaded avi
@@ -1981,7 +1985,6 @@ int message_persona_name_lookup( char *name )
 	return -1;
 }
 
-extern bool Sexp_Messages_Scrambled;
 // Blank out portions of the audio playback for the sound identified by Message_wave
 // This works by using the same Distort_pattern[][] that was used to distort the associated text
 void message_maybe_distort()
@@ -2003,9 +2006,7 @@ void message_maybe_distort()
 
 		was_muted = 0;
 
-		// added check to see if EMP effect was active
-		// 8/24/98 - DB
-		if ( (hud_communications_state(Player_ship) != COMM_OK) || emp_active_local() || Sexp_Messages_Scrambled ) {
+		if ( (hud_communications_state(Player_ship) != COMM_OK) ) {
 			was_muted = Message_wave_muted;
 			if ( timestamp_elapsed(Next_mute_time) ) {
 				Next_mute_time = fl2i(Distort_patterns[Distort_num][Distort_next++] * Message_wave_duration);
@@ -2040,7 +2041,7 @@ void message_maybe_distort_text(char *text)
 {
 	int i, j, len, run, curr_offset, voice_duration, next_distort;
 
-	if ( (hud_communications_state(Player_ship) == COMM_OK) && !emp_active_local() && !Sexp_Messages_Scrambled ) { 
+	if ( (hud_communications_state(Player_ship) == COMM_OK) ) { 
 		return;
 	}
 
