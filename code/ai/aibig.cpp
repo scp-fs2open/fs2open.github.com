@@ -826,14 +826,11 @@ void ai_big_chase()
 	ship_info	*sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	ship			*shipp = &Ships[Pl_objp->instance];	
 	ai_info		*aip = &Ai_info[shipp->ai_index];
-	int			enemy_ship_type;
 	vec3d		predicted_enemy_pos;
 
 	Assert(aip->mode == AIM_CHASE);
 
 	maybe_cheat_fire_synaptic(Pl_objp, aip);
-
-	enemy_ship_type = Ship_info[Ships[En_objp->instance].ship_info_index].flags;
 
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 
