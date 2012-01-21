@@ -3329,7 +3329,6 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 
 	// determine how big of a whack to apply
 	float whack;
-	float dist;
 
 	// this if block was added by Bobboau to make beams whack properly while preserving reverse compatibility
 	if(wip->mass == 100.0f){
@@ -3343,9 +3342,8 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 	}
 
 	// whack direction
-	vec3d whack_dir, temp;
-	vm_vec_dist_to_line(&objp->pos, &b->last_start, &b->last_shot, &temp, &dist);
-	vm_vec_sub(&whack_dir, &objp->pos, &temp);
+	vec3d whack_dir;
+	vm_vec_sub(&whack_dir, &b->last_shot, &b->last_start); // Valathil - use the beam direction as the force direction (like a high pressure water jet)
 	vm_vec_normalize(&whack_dir);
 	vm_vec_scale(&whack_dir, whack);
 
