@@ -1683,7 +1683,7 @@ struct glowpoint_h
 ade_obj<glowpoint_h> l_Glowpoint("glowpoint", "A model glowpoint");
 
 
-ADE_VIRTVAR(Textures, l_Model, "modeltextures", "Model textures", "modeltextures", "Model textures, or an invalid modeltextures handle if the model handle is invalid")
+ADE_VIRTVAR(Textures, l_Model, "modeltextures_h", "Model textures", "modeltextures_h", "Model textures, or an invalid modeltextures handle if the model handle is invalid")
 {
 	model_h *mdl = NULL;
 	modeltextures_h *oth = NULL;
