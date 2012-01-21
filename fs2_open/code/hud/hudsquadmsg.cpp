@@ -26,6 +26,7 @@
 #include "gamesnd/gamesnd.h"
 #include "hud/hudsquadmsg.h"
 #include "hud/hudtargetbox.h"
+#include "hud/hudmessage.h"
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
@@ -2190,7 +2191,8 @@ void hud_enemymsg_toggle()
 void hud_squadmsg_shortcut( int command )
 {
 	// check if the communications system is capable of sending a message
-	if ( (hud_communications_state(Player_ship, 1) != COMM_OK) && (command != REARM_REPAIR_ME_ITEM) ) {
+	if ( (hud_communications_state(Player_ship) != COMM_OK) && (command != REARM_REPAIR_ME_ITEM) ) {
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Messaging is restricted due to communications damage", 331));
 		return;
 	}
 

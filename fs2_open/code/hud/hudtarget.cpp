@@ -4457,35 +4457,34 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	}
 }
 
-int hud_communications_state(ship *sp, int show_msg)
+extern bool Sexp_Messages_Scrambled;
+int hud_communications_state(ship *sp)
 {
 	float str;
-	int	comm_state = COMM_OK;
 
 	// If playing on the lowest skill level, communications always ok
 	// If dead, still allow player to communicate, despite any subsystem damage
 	if ( Game_skill_level == 0 || (Game_mode & GM_DEAD) ) {
-		return comm_state;
+		return COMM_OK;
 	}
 
 	// Goober5000 - if the ship is the player, and he's dying, return OK (so laments can be played)
 	if ((sp == Player_ship) && (sp->flags & SF_DYING))
-		return comm_state;
+		return COMM_OK;
+
+	// Goober5000 - check for scrambled communications
+	if ( Sexp_Messages_Scrambled || emp_active_local() )
+		return COMM_SCRAMBLED;
 
 	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );
-//	str = 1.0f; // DEBUG CODE! MK, change, 11/12/97, comm system could be taken out by one laser, too frustrating.
-					//	Change this back when comm systems have been better placed.
 	
 	if ( (str <= 0.01) || ship_subsys_disrupted(sp, SUBSYSTEM_COMMUNICATION) ) {
-		if ( show_msg ) {
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Messaging is restricted due to communications damage", 331));
-		}
-		comm_state = COMM_DESTROYED;
+		return COMM_DESTROYED;
 	} else if ( str < MIN_COMM_STR_TO_MESSAGE ) {
-		comm_state = COMM_DAMAGED;
+		return COMM_DAMAGED;
 	}
 
-	return comm_state;
+	return COMM_OK;
 }
 
 // target the next or previous hostile/friendly ship
