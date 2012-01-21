@@ -6097,8 +6097,6 @@ void HudGaugeWeapons::pageIn()
 void HudGaugeWeapons::render(float frametime)
 {
 	ship_weapon	*sw;
-	int ship_is_ballistic;
-
 	int			np, ns;		// np == num primary, ns == num secondary
 	char			name[NAME_LENGTH];	
 
@@ -6109,15 +6107,8 @@ void HudGaugeWeapons::render(float frametime)
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
 
 	sw = &Ships[Player_obj->instance].weapons;
-	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags & SIF_BALLISTIC_PRIMARIES);
-
 	np = sw->num_primary_banks;
 	ns = sw->num_secondary_banks;
-
-	// NOTE:  I hate to hard-code numbers, but there is no clean way to organize these coords... they
-	//        are all over the place.  UGLY.
-
-	// BAH. You're a moron, above guy. :)
 
 	setGaugeColor();
 
@@ -6193,9 +6184,6 @@ void HudGaugeWeapons::render(float frametime)
 		}
 		name_y += primary_text_h;
 	}
-
-	//name_y = gr_screen.res==0 ? 309 : 561;
-	//y = gr_screen.res==0 ? 318 : 570;
 
 	weapon_info	*wip;
 	char	weapon_name[NAME_LENGTH + 10];
