@@ -45,8 +45,8 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /YX /FD /c
-# SUBTRACT CPP /Z<none> /Fr
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "../../code" /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /YX /FD /c
+# SUBTRACT CPP /Fr
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -89,7 +89,7 @@ BuildCmds= \
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "../../code" /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -134,8 +134,8 @@ BuildCmds= \
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MD /W3 /GX /Zi /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /YX /FD /c
 # SUBTRACT BASE CPP /Fr
-# ADD CPP /nologo /MD /W3 /GX /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /D "INF_BUILD" /U "_DEBUG" /YX /FD /c
-# SUBTRACT CPP /Z<none> /Fr
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "../../code" /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /D "INF_BUILD" /U "_DEBUG" /YX /FD /c
+# SUBTRACT CPP /Fr
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /i "../../code/wxfred2/res" /i "$(WXWIN)/include" /i "$(WXWIN)/contrib/include" /d "NDEBUG"
@@ -180,7 +180,7 @@ BuildCmds= \
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "INF_BUILD" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "../../code" /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "INF_BUILD" /U "NDEBUG" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /i "../../code/wxfred2/res" /i "$(WXWIN)/include" /i "$(WXWIN)/contrib/include" /d "_DEBUG"
@@ -260,10 +260,6 @@ SOURCE=..\..\code\wxfred2\shieldsystemeditor.cpp
 # Begin Source File
 
 SOURCE=..\..\code\wxfred2\voiceactingmanagereditor.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\wxfred2\voicefilemanager.cpp
 # End Source File
 # Begin Source File
 
