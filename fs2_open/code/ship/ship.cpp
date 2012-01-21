@@ -5052,8 +5052,12 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
 	sip->shockwave.damage_type_idx = sip->shockwave.damage_type_idx_sav;
 
-	// Reset special hitpoints to zero. Fixes Mantis issue 2573
+	// Reset special hitpoints. Fixes Mantis issue 2573
 	shipp->special_hitpoints = 0;
+	shipp->special_shield = -1;
+
+	// Reset special explosion too.
+	shipp->use_special_explosion = false;
 }
 
 /**
