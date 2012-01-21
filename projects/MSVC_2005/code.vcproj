@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="code"
 	ProjectGUID="{7CB3701E-F723-424B-82D5-2F7AA4169498}"
+	RootNamespace="code"
 	>
 	<Platforms>
 		<Platform
@@ -39,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../SDL/include/SDL13"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -817,6 +818,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\globalincs\compatibility.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\compatibility.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\globalincs\def_files.cpp"
 				>
 			</File>
@@ -862,6 +871,10 @@
 			</File>
 			<File
 				RelativePath="..\..\code\globalincs\safe_strings_test.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\stdint.h"
 				>
 			</File>
 			<File
@@ -2500,15 +2513,6 @@
 				RelativePath="..\..\code\sound\phrases.xml"
 				>
 				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
-						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug Inferno|Win32"
 					>
 					<Tool
@@ -2518,7 +2522,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32"
+					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCCustomBuildTool"
@@ -2528,6 +2532,15 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCustomBuildTool"

@@ -63,7 +63,6 @@ Global
 		{434E4D48-3078-406D-871F-E69869AA487E}.Release|Win32.ActiveCfg = Release|Win32
 		{434E4D48-3078-406D-871F-E69869AA487E}.Release|Win32.Build.0 = Release|Win32
 		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
-		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
 		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Debug|Win32.ActiveCfg = Debug|Win32
 		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Debug|Win32.Build.0 = Debug|Win32
 		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
