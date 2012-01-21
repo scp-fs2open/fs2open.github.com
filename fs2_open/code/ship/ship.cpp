@@ -4447,7 +4447,6 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.obj_signature = Objects[sp->objnum].signature;
 	entry.ship_class = sp->ship_info_index;
 	entry.team = sp->team;
-	entry.ship_class = sp->ship_info_index;
 	entry.flags = reason;
 	// if ship is red alert, flag as such
 	if (sp->flags & SF_RED_ALERT_STORE_STATUS) {
