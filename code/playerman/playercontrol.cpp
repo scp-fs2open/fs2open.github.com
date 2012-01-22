@@ -1923,7 +1923,7 @@ void player_get_padlock_orient(matrix *eye_orient)
 	}
 }
 
-void player_display_packlock_view()
+void player_display_padlock_view()
 {
 	int padlock_view_index=0;
 
