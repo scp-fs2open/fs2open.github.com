@@ -437,7 +437,13 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *min, vec3d *max );
 /**
  * Create debris from an object
  *
- * @param exp_force	Explosion force, used to assign velocity to pieces. 1.0f assigns velocity like before. 2.0f assigns twice as much to non-inherited part of velocity
+ * @param source_obj	Source object
+ * @param model_num		Model number
+ * @param submodel_num	Sub-model number
+ * @param pos			Position in vector space
+ * @param exp_center	Explosion center in vector space
+ * @param hull_flag		Hull flag settings
+ * @param exp_force		Explosion force, used to assign velocity to pieces. 1.0f assigns velocity like before. 2.0f assigns twice as much to non-inherited part of velocity
  */
 object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force)
 {

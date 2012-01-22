@@ -599,6 +599,14 @@ SOURCE=..\..\code\GlobalIncs\AlphaColors.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\compatibility.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\compatibility.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\globalincs\def_files.cpp
 # End Source File
 # Begin Source File
@@ -616,6 +624,10 @@ SOURCE=..\..\code\globalincs\fsmemory.h
 # Begin Source File
 
 SOURCE=..\..\code\globalincs\globals.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\inttypes.h
 # End Source File
 # Begin Source File
 
@@ -644,6 +656,10 @@ SOURCE=..\..\code\globalincs\safe_strings.h
 # Begin Source File
 
 SOURCE=..\..\code\globalincs\safe_strings_test.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\stdint.h
 # End Source File
 # Begin Source File
 

@@ -100,6 +100,13 @@ void generic_anim_init(generic_anim *ga, char *filename)
 	ga->width = 0;
 	ga->bitmap_id = -1;
 }
+/**
+ * CommanderDJ - same as generic_anim_init, just with an SCP_string 
+ */
+void generic_anim_init(generic_anim *ga, const SCP_string& filename)
+{
+	generic_anim_init(ga, const_cast<char*> (filename.c_str()));
+}
 
 // Goober5000
 void generic_bitmap_init(generic_bitmap *gb, char *filename)

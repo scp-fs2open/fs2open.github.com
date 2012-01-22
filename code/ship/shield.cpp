@@ -322,6 +322,9 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *p
  * @param trip		pointer to triangle in global array
  * @param orient	orientation of object shield is associated with
  * @param pos		center point of object
+ * @param r			Red colour
+ * @param g			Green colour
+ * @param b			Blue colour
  */
 void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte r, ubyte g, ubyte b)
 {
@@ -581,7 +584,7 @@ void create_shield_from_triangle(int trinum, matrix *orient, shield_info *shield
 }
 
 /**
- * Copy information from ::Current_tris to ::Global_tris, stuffing information
+ * Copy information from Current_tris to ::Global_tris, stuffing information
  * in a slot in ::Shield_hits.  
  *
  * The Global_tris array is not a shield_tri structure.

@@ -452,6 +452,7 @@ typedef struct ship_subsys_info {
 #define SF2_FORCE_SHIELDS_ON				(1<<20)
 #define SF2_NO_ETS							(1<<21)		// The E - This ship does not have an ETS
 #define SF2_CLOAKED							(1<<22)		// The E - This ship will not be rendered
+#define SF2_NO_THRUSTERS					(1<<23)		// The E - Thrusters on this ship are not rendered.
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -884,6 +885,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define AIM_FLAG_AUTO_CONVERGENCE		(1 << 1)	// has automatic convergence
 #define AIM_FLAG_STD_CONVERGENCE		(1 << 2)	// has standard - ie. non-automatic - convergence
 #define AIM_FLAG_AUTOAIM_CONVERGENCE	(1 << 3)	// has autoaim with convergence
+#define AIM_FLAG_CONVERGENCE_OFFSET		(1 << 4)	// marks that convergence has offset value
 
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
@@ -1907,5 +1909,12 @@ extern SCP_vector<ship_effect> Ship_effects;
  *  @return An index into the Snds vector, if the specified index could not be found then the id itself will be returned
  */
 int ship_get_sound(object *objp, int id);
+
+/**
+ * @brief Returns the index of the default player ship
+ *
+ * @return An index into Ship_info[], location of the default player ship.
+ */
+int get_default_player_ship_index();
 
 #endif

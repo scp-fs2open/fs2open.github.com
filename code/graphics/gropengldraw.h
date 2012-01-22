@@ -51,9 +51,13 @@ void gr_opengl_scene_texture_end();
 extern int Scene_texture_initialized;
 
 extern GLuint Scene_color_texture;
+extern GLuint Scene_luminance_texture;
 extern GLuint Scene_effect_texture;
 
 extern int Scene_texture_width;
 extern int Scene_texture_height;
+
+extern float Scene_texture_u_scale;
+extern float Scene_texture_v_scale;
 
 #endif	// !GR_OPENGLDRAW_H

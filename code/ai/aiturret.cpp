@@ -1764,10 +1764,9 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 					}
 				}
-
 				turret->turret_next_fire_pos++;
 			}
-
+			turret->turret_next_fire_pos--;
 			// reset any animations if we need to
 			// (I'm not sure how accurate this timestamp would be in practice - taylor)
 			if (turret->turret_animation_position == MA_POS_READY)
@@ -2400,6 +2399,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					turret_set_next_fire_timestamp(valid_weapons[0], wip, ss, parent_aip);
 				}
 			}
+			ss->turret_next_fire_pos++;
 		}
 
 		if(!something_was_ok_to_fire)

@@ -605,6 +605,14 @@ Done:
 }
 
 /**
+ * Same as bm_load above, just with an SCP_string 
+ */
+int bm_load(const SCP_string& filename)
+{
+	return bm_load(const_cast<char*> (filename.c_str()));
+}
+
+/**
  * Special load function. Basically allows you to load a bitmap which already exists (by filename). 
  *
  * This is useful because in some cases we need to have a bitmap which is locked in screen format
@@ -778,6 +786,9 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
  * @param real_filename		filename of animation
  * @param nframes			OUTPUT parameter:	number of frames in the animation
  * @param fps				OUTPUT/OPTIONAL parameter: intended fps for the animation
+ * @param keyframe			Keyframe number
+ * @param can_drop_frames	Toggle to allow dropped frames
+ * @param dir_type			Directory type
  *
  * @returns	Bitmap number of first frame in the animation
  */
@@ -1707,7 +1718,7 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 /**
  * Unlocks a bitmap
  * 
- * Decrements the ref_count member of the ::bitmap_entry struct.  A bitmap can only be unloaded
+ * Decrements the ref_count member of the bitmap_entry struct.  A bitmap can only be unloaded
  * when the ref_count is 0.
  */
 void bm_unlock( int handle )

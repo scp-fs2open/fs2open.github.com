@@ -1336,7 +1336,9 @@ void parse_menumusic()
 			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files - 1].name, MAX_SPOOLED_MUSIC);
 		}
 
-		Assertion(skip_to_start_of_string_either("$Name:", "#Menu Music End"), "Couldn't find $Name or #Menu Music End. Music.tbl or -mus.tbm is invalid.\n");
+		if (!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
+			Error(LOCATION, "Couldn't find $Name or #Menu Music End. Music.tbl or -mus.tbm is invalid.\n");
+		}
 
 		return;
 	}
@@ -1401,11 +1403,10 @@ void event_music_parse_musictbl(char *filename)
 			}
 			if ( optional_string("#Menu Music Start") )
 			{
-				while ( check_for_string( "$Name:" ) )
+				while ( required_string_either("$Name", "#Menu Music End") == 0 )
 				{
 					parse_menumusic( );
 				}
-				required_string("#Menu Music End");
 			}
 		}
 
@@ -1777,7 +1778,7 @@ int event_music_get_soundtrack_index(char *name)
 	return -1;
 }
 
-int event_music_get_spooled_music_index(char *name)
+int event_music_get_spooled_music_index(const char *name)
 {
 	// find the correct index for the event music
 	for ( int i = 0; i < Num_music_files; i++ ) {
@@ -1788,6 +1789,11 @@ int event_music_get_spooled_music_index(char *name)
 
 	return -1;
 }
+
+int event_music_get_spooled_music_index(const SCP_string& name)
+{
+	return event_music_get_spooled_music_index(name.c_str());
+	}
 
 // set a score based on name
 void event_music_set_score(int score_index, char *name)

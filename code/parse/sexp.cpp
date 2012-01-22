@@ -21,7 +21,7 @@
 #include <assert.h>
 #include <limits.h>
 #ifdef _MSC_VER
-	#include "globalincs/stdint.h"
+	#include "globalincs/msvc/stdint.h"
 #else
 	#include <stdint.h>
 #endif
@@ -481,6 +481,7 @@ sexp_oper Operators[] = {
 	{ "activate-glow-maps",			OP_ACTIVATE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
 	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
 	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
+	{ "set-thrusters-status",		OP_SET_THRUSTERS,				2, INT_MAX },	// The E
 
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
@@ -6623,16 +6624,16 @@ void sexp_set_object_position(int n)
 	// retime all collision checks so they're performed
 	obj_all_collisions_retime();
 
-	//CommanderDJ: if the thing being moved is a player and this is a nebula mission, regenerate the nebula
-	
-	//I also wanted to check if the player has moved further than his inner neb cube radius,
-	//but couldn't figure out a way to access neb2_detail::cube_inner.
-	//if it can be done, just put it in the second half of the comparison below and add the line to the if statement
+	// if this is a nebula mission and a player is being moved far enough,
+	// regenerate the nebula
+	extern neb2_detail *Nd;
 
-	//&& (vm_vec_dist(&oswpt.objp->pos, &target_vec) >= (inner cube radius here)
-
-	if((oswpt.objp == Player_obj) && (The_mission.flags & MISSION_FLAG_FULLNEB))
+	if ( (oswpt.objp == Player_obj) 
+		&& (The_mission.flags & MISSION_FLAG_FULLNEB) 
+		&& (vm_vec_dist(&oswpt.objp->pos, &target_vec) >= Nd->cube_inner) )
+	{
 		neb2_eye_changed();
+	}
 
 	switch (oswpt.type)
 	{
@@ -15410,6 +15411,29 @@ void sexp_beam_free(int node)
 	}
 }
 
+void sexp_set_thrusters(int node) 
+{
+	bool activate = is_sexp_true(node) > 0;
+	node = CDR(node);
+
+	for(; node >= 0; node = CDR(node)) {
+		int sindex = ship_name_lookup(CTEXT(node));
+		
+		if (sindex < 0) {
+			continue;
+		}
+
+		if (Ships[sindex].objnum < 0) {
+			continue;
+		}
+
+		if (activate)
+			Ships[sindex].flags2 &= ~SF2_NO_THRUSTERS;
+		else
+			Ships[sindex].flags2 |= SF2_NO_THRUSTERS;
+	}
+}
+
 void sexp_beam_free_all(int node)
 {
 	ship_subsys *subsys;
@@ -19859,16 +19883,23 @@ void sexp_ship_effect(int n)
 		name = CTEXT(n);
 
 		// check to see if this ship/wing has arrived yet.
-		if (sexp_query_has_yet_to_arrive(name))
+		if (sexp_query_has_yet_to_arrive(name)) {
+			n = CDR(n);
 			continue;
+		}
 
 		// check to see if this ship/wing has departed.
-		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) )
+		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) ) {
+			n = CDR(n);
 			continue;
+		}
 
 		// check to see if this ship/wing has been destroyed.
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL))
+		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL)) {
+			n = CDR(n);
 			continue;
+		}
+
 		ship *sp;
 		if((wing_index = wing_name_lookup(name)) >= 0)
 		{
@@ -21958,6 +21989,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_clear_subtitles();
 				break;
 
+			case OP_SET_THRUSTERS:
+				sexp_val = SEXP_TRUE;
+				sexp_set_thrusters(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -22890,6 +22926,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
+		case OP_SET_THRUSTERS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -24781,10 +24818,16 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 1)
 				return OPF_NUMBER;
 			else
-				return OPF_SHIP;
+				return OPF_SHIP_WING;
 
 		case OP_CLEAR_SUBTITLES:
 			return OPF_NONE;
+
+		case OP_SET_THRUSTERS:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_SHIP;
 
 		default:
 			Int3();
@@ -25942,6 +25985,41 @@ int eval_num(int n)
 		return atoi(CTEXT(n));		// otherwise, just get the number
 }
 
+// Goober5000
+int get_sexp_id(char *sexp_name)
+{
+	for (int i = 0; i < Num_operators; i++)
+	{
+		if (!stricmp(sexp_name, Operators[i].text))
+			return Operators[i].value;
+	}
+	return -1;
+}
+
+// Goober5000
+int get_category(int sexp_id)
+{
+	int category = (sexp_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
+}
+
+// Goober5000
+int category_of_subcategory(int subcategory_id)
+{
+	int category = (subcategory_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
+}
+
 // Goober5000 - for FRED2 menu subcategories
 int get_subcategory(int sexp_id)
 {
@@ -26098,6 +26176,7 @@ int get_subcategory(int sexp_id)
 		case OP_ACTIVATE_GLOW_MAPS:
 		case OP_DEACTIVATE_GLOW_POINT_BANK:
 		case OP_ACTIVATE_GLOW_POINT_BANK:
+		case OP_SET_THRUSTERS:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -29655,6 +29734,13 @@ sexp_help_struct Sexp_help[] = {
 
 	{OP_CLEAR_SUBTITLES, "clear-subtitles\r\n"
 		"\tClears the subtitle queue completely.\r\n"
+	},
+
+	{OP_SET_THRUSTERS, "set-thrusters-status\r\n"
+		"\tManipulates the thrusters on a ship.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tBoolean, true sets thrusters to visible, false deactivates them.\r\n"
+		"\t2:\tRest: List of ships this sexp will work on.\r\n"
 	}
 };
 
@@ -29816,7 +29902,7 @@ bool output_sexps(char *filepath)
 				fputs("<dl>", fp);
 				for(z = 0; z < Num_operators; z++)
 				{
-					if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+					if((get_category(Operators[z].value) == op_menu[x].id)
 						&& (get_subcategory(Operators[z].value) != -1)
 						&& (get_subcategory(Operators[z].value) == op_submenu[y].id))
 					{
@@ -29829,7 +29915,7 @@ bool output_sexps(char *filepath)
 		}
 		for(z = 0; z < Num_operators; z++)
 		{
-			if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+			if((get_category(Operators[z].value) == op_menu[x].id)
 				&& (get_subcategory(Operators[z].value) == -1))
 			{
 				output_sexp_html(z, fp);
@@ -29840,7 +29926,7 @@ bool output_sexps(char *filepath)
 	}
 	for(z = 0; z < Num_operators; z++)
 	{
-		if(!(Operators[z].value & OP_CATEGORY_MASK))
+		if(!get_category(Operators[z].value))
 		{
 			output_sexp_html(z, fp);
 		}

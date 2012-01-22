@@ -54,12 +54,8 @@ extern bool Cmdline_fb_explosions;
  *
  * @param parent_objnum	object number of object spawning the shockwave
  * @param pos			vector specifing global position of shockwave center
- * @param speed			speed at which shockwave expands (m/s)
- * @param inner_radius	radius at which damage applied is at maximum
- * @param outer_radius	damage decreases linearly to zero from inner_radius to outer_radius.  Outside outer_radius, damage is 0.
- * @param damage		the maximum damage (ie within inner_radius)
- * @param blast			the maximux blast (within inner_radius)
- * @param sw_flag		indicates whether shockwave is from weapon or ship explosion
+ * @param sci			Shockwave info
+ * @param flag			Flag settings
  * @param delay         delay in ms before the shockwave actually starts
  *
  * @return success		object number of shockwave
@@ -531,7 +527,7 @@ void shockwave_level_init()
 
 		// next, try the 2d shockwave effect, unless the 3d effect was loaded
 		// chief1983 - added some messages similar to those for the 3d shockwave
-		if (i < 0) {
+		if (i < 0 || Cmdline_fb_explosions) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave animation... \n"));
 
 			i = shockwave_load( Default_shockwave_2D_filename );

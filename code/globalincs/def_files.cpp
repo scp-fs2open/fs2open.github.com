@@ -39,6 +39,9 @@ extern char* Default_post_vertex_shader;
 extern char* Default_fxaa_prepass_shader;
 extern char* Default_particle_vertex_shader;
 extern char* Default_particle_fragment_shader;
+extern char* Default_lightshaft_fragment_shader;
+extern char* Default_video_vertex_shader;
+extern char* Default_video_fragment_shader;
 //**********
 
 //:PART 2:
@@ -63,7 +66,10 @@ def_file Default_files[] =
 	{ "post-v.sdr",				Default_post_vertex_shader},
 	{ "fxaapre-f.sdr",			Default_fxaa_prepass_shader},
 	{ "soft-v.sdr",				Default_particle_vertex_shader},
-	{ "soft-f.sdr",				Default_particle_fragment_shader}
+	{ "soft-f.sdr",				Default_particle_fragment_shader},
+	{ "ls-f.sdr",				Default_lightshaft_fragment_shader},
+	{ "video-v.sdr",			Default_video_vertex_shader},
+	{ "video-f.sdr",			Default_video_fragment_shader}
 };
 
 static int Num_default_files = sizeof(Default_files) / sizeof(def_file);
@@ -2247,3 +2253,60 @@ void main()																	\n\
 	#endif																	\n\
 }																			\n\
 ";
+
+char* Default_lightshaft_fragment_shader =
+"uniform sampler2D scene;\n"
+"uniform sampler2D cockpit;\n"
+"uniform vec2 sun_pos;\n"
+"uniform float density;\n"
+"uniform float weight;\n"
+"uniform float falloff;\n"
+"uniform float intensity;\n"
+"uniform float cp_intensity;\n"
+"void main()\n"
+"{														\n"
+"	vec2 step = vec2( gl_TexCoord[0].st - sun_pos.xy );	\n"
+"	vec2 pos = gl_TexCoord[0].st;						\n"
+"	step *= 1.0 / float(SAMPLE_NUM) * density;			\n"
+"	float decay = 1.0;									\n"
+"	vec4 sum = vec4(0.0);								\n"
+"														\n"
+"	vec4 mask = texture2D(cockpit, gl_TexCoord[0].st);	\n"
+"	if(mask.r < 1.0)									\n"
+"	{													\n"
+"		gl_FragColor = vec4(cp_intensity);				\n"
+"		return;											\n"
+"	}													\n"
+"	for(int i=0; i < SAMPLE_NUM ; i++)					\n"
+"	{													\n"
+"		pos.st -= step;									\n"
+"		vec4 sample = texture2D(scene, pos);			\n"
+"		if(sample.r == 1.0)								\n"
+"			sum += decay * weight;						\n"
+"		decay *= falloff;								\n"
+"	}													\n"
+"	gl_FragColor = sum * intensity;						\n"
+"	gl_FragColor.a = 1.0;								\n"
+"}";
+
+char *Default_video_vertex_shader = 
+"void main()\n"
+"{\n"
+"	gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+"	gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n"
+"	gl_FrontColor = vec4(1.0);\n"
+"	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"}\n";
+
+char * Default_video_fragment_shader =
+"uniform sampler2D ytex;\n"
+"uniform sampler2D utex;\n"
+"uniform sampler2D vtex;\n"
+"void main()\n"
+"{\n"
+"	vec3 val = vec3(texture2D(ytex, gl_TexCoord[0].st).r - 0.0625, texture2D(utex, gl_TexCoord[0].st).r - 0.5, texture2D(vtex, gl_TexCoord[0].st).r - 0.5);\n"
+"	gl_FragColor.r = dot(val, vec3(1.1640625, 0.0, 1.59765625));\n"
+"	gl_FragColor.g = dot(val, vec3(1.1640625, -0.390625, -0.8125));\n"
+"	gl_FragColor.b = dot(val, vec3(1.1640625, 2.015625, 0.0));\n"
+"	gl_FragColor.a = 1.0;\n"
+"}";

@@ -675,6 +675,8 @@ DCF(sn_glare, "")
 
 float Supernova_last_glare = 0.0f;
 bool stars_sun_has_glare(int index);
+extern bool ls_on;
+extern bool ls_force_off;
 void game_sunspot_process(float frametime)
 {
 	int n_lights, idx;
@@ -747,23 +749,21 @@ void game_sunspot_process(float frametime)
 			n_lights = light_get_global_count();
 
 			// check
-			for(idx=0; idx<n_lights; idx++){
-				if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
-
+			for(idx=0; idx<n_lights; idx++)	{
+				if ( (ls_on && !ls_force_off) || !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
 					//only do sunglare stuff if this sun has one
-					if (stars_sun_has_glare(idx))
-					{
+					if (stars_sun_has_glare(idx))	{
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
-
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
-
-					// draw the glow for this sun
-					stars_draw_sun_glow(idx);				
 				}
+			if (!shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
+			// draw the glow for this sun
+			stars_draw_sun_glow(idx);				
+			}
 			}
 
 			Sun_drew = 0;
@@ -848,7 +848,7 @@ void game_flash_diminish(float frametime)
 		g = fl2i( Game_flash_green*128.0f );   
 		b = fl2i( Game_flash_blue*128.0f );  
 
-		if ( Sun_spot > 0.0f )	{
+		if ( Sun_spot > 0.0f && !ls_on || ls_force_off)	{
 			r += fl2i(Sun_spot*128.0f);
 			g += fl2i(Sun_spot*128.0f);
 			b += fl2i(Sun_spot*128.0f);
@@ -2025,6 +2025,11 @@ void game_init()
 		old_alpha_colors_init();
 	}
 
+	if(!Cmdline_reparse_mainhall)
+	{
+		main_hall_read_table();
+	}
+
 	if (Cmdline_env) {
 		ENVMAP = Default_env_map = bm_load("cubemap");
 	}
@@ -2386,7 +2391,7 @@ void game_show_standalone_framerate()
 /**
  * Show the time remaining in a mission.  Used only when the end-mission sexpression is used
  *
- * ::mission_end_time is a global from missionparse.cpp that contains the mission time at which the
+ * mission_end_time is a global from missionparse.cpp that contains the mission time at which the
  * mission should end (in fixed seconds).  There is code in missionparse.cpp which actually handles
  * checking how much time is left.
  */
@@ -3683,7 +3688,6 @@ void game_render_frame( camid cid )
 	if(draw_viewer_last && Viewer_obj)
 	{
 		gr_post_process_save_zbuffer();
-		gr_zbuffer_clear(TRUE);
 		ship_render(Viewer_obj);
 	}
 
@@ -3701,10 +3705,9 @@ void game_render_frame( camid cid )
 	}
 
 	//Draw viewer cockpit
-	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
+	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
 	{
 		gr_post_process_save_zbuffer();
-		gr_zbuffer_clear(TRUE);
 		ship_render_cockpit(Viewer_obj);
 	}
 
@@ -5198,6 +5201,15 @@ void game_process_event( int current_state, int event )
 			// clear multiplayer button info			
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
+
+			// Make hv.Player available in "On Gameplay Start" hook -zookeeper
+			if(Player_obj)
+				Script_system.SetHookObject("Player", Player_obj);
+
+			Script_system.RunCondition(CHA_GAMEPLAYSTART);
+
+			if (Player_obj)
+				Script_system.RemHookVar("Player");
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			//Framecount = 0;

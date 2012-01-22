@@ -155,6 +155,7 @@ extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern int check_for_string(char *pstr);
 extern int check_for_string_raw(char *pstr);
 extern int check_for_eof();
+extern int check_for_eoln();
 
 // from aicode.cpp
 extern void parse_float_list(float *plist, int size);

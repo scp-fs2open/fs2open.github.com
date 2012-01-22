@@ -674,6 +674,7 @@ class waypoint_list;
 #define OP_CLEAR_SUBTITLES					(0x0007 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_BEAM_FIRE_COORDS					(0x0008 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_DOCKED						(0x0009 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Sushi
+#define OP_SET_THRUSTERS					(0x000a	| OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
 
 
 // defined for AI goals
@@ -1099,6 +1100,9 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 
 
 // menu and category stuff
+extern int get_sexp_id(char *sexp_name);
+extern int get_category(int sexp_id);
+extern int category_of_subcategory(int subcategory_id);
 extern int get_subcategory(int sexp_id);
 
 // Goober5000
