@@ -778,14 +778,6 @@ object *hud_reticle_pick_target()
 			list_append(&Reticle_save_list, new_rl);
 	}
 
-	// Deal with SF2_STEALTH and SF2_FRIENDLY_STEALTH_INVIS
-	if (return_objp != NULL) {
-		if (return_objp->type == OBJ_SHIP) {
-			if (Ships[return_objp->instance].team == Player_ship->team && (Ships[return_objp->instance].flags2 & SF2_STEALTH) && (Ships[return_objp->instance].flags2 & SF2_FRIENDLY_STEALTH_INVIS))
-				return NULL;
-		}
-	}
-
 	return return_objp;
 }
 
@@ -1208,9 +1200,6 @@ void hud_target_common(int team_mask, int next_flag)
 
 		if (A->type == OBJ_SHIP) {
 			if (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS)
-				continue;
-
-			if ((Ships[A->instance].flags2 & SF2_STEALTH) && (Ships[A->instance].flags2 & SF2_FRIENDLY_STEALTH_INVIS) && Ships[A->instance].team == Player_ship->team)
 				continue;
 
 			is_ship = 1;
