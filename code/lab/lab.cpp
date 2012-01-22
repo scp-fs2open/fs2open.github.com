@@ -1254,7 +1254,7 @@ void labviewer_populate_flags_window()
 
 void labviewer_update_flags_window()
 {
-	uint i;
+	size_t i;
 
 	if ( (Lab_selected_index < 0) || (Lab_mode == LAB_MODE_NONE) ) {
 		return;
@@ -1386,7 +1386,8 @@ void labviewer_populate_variables_window()
 
 	y = 0;
 
-	// ship variables ...
+	// IMPORTANT NOTE: If you add something here, make sure you add it to labviewer_update_variables_window() as well!
+	// ship vFEWfe<ariables ...
 	if (Lab_mode == LAB_MODE_SHIP) {
 		labviewer_variables_add(&y, "Name");
 		labviewer_variables_add(&y, "Species");
@@ -1512,7 +1513,7 @@ void labviewer_update_variables_window()
 		return;
 	}
 
-
+	// IMPORTANT NOTE: If you add something here, make sure you add it to labviewer_populate_variables_window() as well!
 	// ship variables ...
 	if (Lab_mode == LAB_MODE_SHIP) {
 		Assert( Lab_selected_index < Num_ship_classes );
@@ -1582,7 +1583,6 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(wip->subsystem_factor, 0);
 	
 		VAR_SET_VALUE_SAVE(wip->damage_type_idx, 0);
-		VAR_SET_VALUE_SAVE(wip->damage_type_idx_sav, 0);
 	
 		VAR_SET_VALUE_SAVE(wip->shockwave.speed, 0);
 	

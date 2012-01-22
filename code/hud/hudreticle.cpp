@@ -914,7 +914,7 @@ void hud_update_reticle( player *pp )
 				Threat_lock_frame = 1;
 			}
 			if ( (Threat_lock_frame == 2) && (Player->threat_flags & THREAT_ATTEMPT_LOCK ) ) {
-				snd_play( &Snds[SND_THREAT_FLASH]);
+				snd_play( &Snds[ship_get_sound(Player_obj, SND_THREAT_FLASH)]);
 			}
 		}
 	} 

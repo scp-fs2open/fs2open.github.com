@@ -33,22 +33,30 @@
 #define AAV_VOICE		1
 #define AAV_EFFECTS		2
 
+/**
+ * Game level sound entities
+ */
 typedef struct game_snd
 {
-	int	sig;						// index number of sound in as specified in sounds.tbl
-	char	filename[MAX_FILENAME_LEN];
-	float	default_volume;		// range: 0.0 -> 1.0
-	int	min, max;				// min: distance at which sound will stop getting louder  max: distance at which sound is inaudible
-	int	preload;					// preload sound (ie read from disk before mission starts)
-	int	id;						// index into Sounds[], where sound data is stored
-	int	id_sig;					// signature of Sounds[] element
+	int	sig;						//!< index number of sound in as specified in sounds.tbl
+	char filename[MAX_FILENAME_LEN];
+	float default_volume;			//!<range: 0.0 -> 1.0
+	int	min;						//!<distance at which sound will stop getting louder
+	int max;						//!<distance at which sound is inaudible
+	int	preload;					//!< preload sound (ie read from disk before mission starts)
+	int	id;							//!< index into Sounds[], where sound data is stored
+	int	id_sig;						//!< signature of Sounds[] element
 	int	flags;
 
 	game_snd( )
-		: sig ( 0 ), default_volume( 0 ),
-		  preload( 0 ), id( 0 ), id_sig( 0 ), flags( 0 )
+		: sig ( -1 ),
+		  default_volume( 0 ),
+		  preload( 0 ),
+		  id( -1 ),
+		  id_sig( -1 ),
+		  flags( 0 )
 	{
-		filename[ 0 ] = NULL;
+		filename[0] = 0;
 		min = 0;
 		max = 0;
 	}
@@ -157,12 +165,8 @@ int snd_time_remaining(int handle);
 
 int snd_get_samples_per_measure(char *filename, float num_measures);
 
-
 // sound environment
-
-
 extern unsigned int SND_ENV_DEFAULT;
-
 
 int sound_env_set(sound_env *se);
 int sound_env_get(sound_env *se, int preset = -1);

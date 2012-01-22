@@ -494,9 +494,6 @@ void mission_show_goals_init()
 	Goal_incomplete_bitmap = bm_load("ObjIncomp");
 	Goal_failed_bitmap = bm_load("ObjFail");
 
-
-	// if (Goal_incomplete_bitmap < 0) Int3();
-
 	if (Goals_screen_bg_bitmap < 0) {
 		Warning(LOCATION, "Could not load the background bitmap: ObjectivesBG.pcx");
 	}
@@ -655,8 +652,6 @@ int ML_objectives_init(int x, int y, int w, int h)
 	Goal_complete_bitmap = bm_load("ObjComp");
 	Goal_incomplete_bitmap = bm_load("ObjIncomp");
 	Goal_failed_bitmap = bm_load("ObjFail");
-
-	// if (Goal_incomplete_bitmap < 0) Int3();
 
 	return Goal_text.m_num_lines;
 }

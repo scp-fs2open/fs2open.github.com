@@ -679,7 +679,6 @@ l_node *nebl_new()
 
 	// if we're out of nodes
 	if(Num_lnodes >= MAX_LIGHTNING_NODES){
-		// Int3();
 		nprintf(("lightning", "Out of lightning nodes!\n"));
 		return NULL;
 	}

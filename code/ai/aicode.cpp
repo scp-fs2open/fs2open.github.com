@@ -7987,8 +7987,8 @@ void ai_chase()
 		if (esip->class_type > -1)
 		{
 			ship_type_info *stp = &Ship_types[sip->class_type];
-			uint ap_size = stp->ai_actively_pursues.size();
-			for(uint i = 0; i < ap_size; i++)
+			size_t ap_size = stp->ai_actively_pursues.size();
+			for(size_t i = 0; i < ap_size; i++)
 			{
 				if(stp->ai_actively_pursues[i] == esip->class_type) {
 					go_after_it = true;
@@ -12897,7 +12897,10 @@ void ai_warp_out(object *objp)
 		aip->submode_start_time = Missiontime;
 		break;
 	case AIS_WARP_2:			//	Make sure won't collide with any object.
-		if (timestamp_elapsed(aip->force_warp_time) || !collide_predict_large_ship(objp, objp->radius*2.0f + 100.0f)) {
+		if (timestamp_elapsed(aip->force_warp_time)
+			|| (!collide_predict_large_ship(objp, objp->radius*2.0f + 100.0f)
+			|| (Ship_info[shipp->ship_info_index].warpout_type == WT_HYPERSPACE
+				&& !collide_predict_large_ship(objp, 100000.0f)))) {
 			aip->submode = AIS_WARP_3;
 			aip->submode_start_time = Missiontime;
 
@@ -12938,9 +12941,12 @@ void ai_warp_out(object *objp)
 		}
 		break;
 	case AIS_WARP_4: {
-		shipfx_warpout_start(objp);
-		aip->submode = AIS_WARP_5;
-		aip->submode_start_time = Missiontime;
+		// Only lets the ship warp after waiting for the warpout engage time
+		if ( (Missiontime / 100) >= (aip->submode_start_time / 100 + Ship_info[shipp->ship_info_index].warpout_engage_time) ) {
+			shipfx_warpout_start(objp);
+			aip->submode = AIS_WARP_5;
+			aip->submode_start_time = Missiontime;
+		}
 		break;
 	}
 	case AIS_WARP_5:

@@ -34,14 +34,6 @@ extern void mflash_page_in(bool);
 // loaded mission.  Call game_busy() occasionally...
 void level_page_in()
 {
-
-	// moved to freespace.cpp on 2005/04/18 - taylor
-//	mprintf(( "Beginning level bitmap paging...\n" ));
-//
-//	if(!(Game_mode & GM_STANDALONE_SERVER)){		
-//		bm_page_in_start();
-//	}
-
 	// Most important ones first
 	game_busy( NOX("*** paging in ships ***") );
 	ship_page_in();
@@ -53,7 +45,6 @@ void level_page_in()
 	particle_page_in();
 	debris_page_in();
 	hud_page_in();
-	training_mission_page_in();
 	stars_page_in();
 	shockwave_page_in();
 	shield_hit_page_in();

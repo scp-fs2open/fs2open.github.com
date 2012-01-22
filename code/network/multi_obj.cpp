@@ -380,7 +380,6 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 	// no flags -> do nothing
 	if(oo_flags == 0){
-		// Int3();
 		return 0;
 	}
 

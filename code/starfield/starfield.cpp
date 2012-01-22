@@ -1388,7 +1388,7 @@ void subspace_render()
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
-	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT; // | MR_ALWAYS_REDRAW;
+	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT;
 
 	Interp_subspace = 1;
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
@@ -2510,7 +2510,6 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 	// this shouldn't ever happen from FRED since you select the name from a list of those available
 	if (idx == -1)
 		return;
-//		Int3();
 
 	sbi.star_bitmap_index = idx;
 

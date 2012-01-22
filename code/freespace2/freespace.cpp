@@ -1035,7 +1035,6 @@ void game_level_init(int seed)
 	Missiontime = 0;
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
-	fireball_preload();				//	page in warphole bitmaps
 	observer_init();
 	flak_level_init();				// initialize flak - bitmaps, etc
 	ct_level_init();				// initialize ships contrails, etc
@@ -5394,10 +5393,12 @@ void game_process_event( int current_state, int event )
 				mprintf(( "Hit target speed.  Starting warp effect and moving to stage 2!\n" ));
 				shipfx_warpout_start( Player_obj );
 				Player->control_mode = PCM_WARPOUT_STAGE2;
-				Player->saved_viewer_mode = Viewer_mode;
-				Viewer_mode |= VM_WARP_CHASE;
-				
-				Warp_camera = warp_camera(Player_obj);
+
+				if (!(The_mission.ai_profile->flags2 & AIPF2_NO_WARP_CAMERA)) {
+					Player->saved_viewer_mode = Viewer_mode;
+					Viewer_mode |= VM_WARP_CHASE;
+					Warp_camera = warp_camera(Player_obj);
+				}
 			}
 			break;
 
@@ -7310,8 +7311,7 @@ void game_shutdown(void)
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();
-	hud_close();
-	shockwave_close();			// release any memory used by shockwave system	
+	hud_close();	
 	fireball_close();				// free fireball system
 	particle_close();			// close out the particle system
 	weapon_close();					// free any memory that was allocated for the weapons

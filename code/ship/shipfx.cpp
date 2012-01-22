@@ -38,6 +38,7 @@
 #include "parse/scripting.h"
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
+#include "model/model.h"
 
 
 
@@ -2697,7 +2698,6 @@ void engine_wash_ship_process(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	ship_obj *so;
 
-	vec3d world_thruster_pos, world_thruster_norm, apex, thruster_to_ship, apex_to_ship, temp;
 	float dist_sqr, inset_depth, dot_to_ship, max_ship_intensity;
 	polymodel *pm;
 
@@ -2766,6 +2766,8 @@ void engine_wash_ship_process(ship *shipp)
 
 		for (idx = 0; idx < pm->n_thrusters; idx++) {
 			thruster_bank *bank = &pm->thrusters[idx];
+			vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
+			bool submodel_rotation = false;
 
 			// make sure this engine is functional before we try to process a wash from it
 			if ( !model_should_render_engine_glow(OBJ_INDEX(wash_objp), bank->obj_num) ) {
@@ -2787,13 +2789,38 @@ void engine_wash_ship_process(ship *shipp)
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 
+
+			// If bank is attached to a submodel, prepare to account for rotations
+			//
+			// TODO: This won't work in the ship lab, because the lab code doesn't
+			// set the the necessary submodel instance info needed here. The second
+			// condition is thus a hack to disable the feature while in the lab, and
+			// can be removed if the lab is re-structured accordingly. -zookeeper
+			if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+				model_find_submodel_offset(&submodel_static_offset, wash_sip->model_num, bank->submodel_num);
+
+				submodel_rotation = true;
+			}
+
 			for (j=0; j<bank->num_points; j++) {
+				vec3d world_thruster_pos, world_thruster_norm, apex, thruster_to_ship, apex_to_ship, temp;
+				vec3d loc_pos = bank->points[j].pnt;
+				vec3d loc_norm = bank->points[j].norm;
+
+				if ( submodel_rotation ) {
+					vm_vec_sub(&loc_pos, &bank->points[j].pnt, &submodel_static_offset);
+
+					// Gets the final offset and normal in the ship's frame of reference
+					temp = loc_pos;
+					find_submodel_instance_point_normal(&loc_pos, &loc_norm, wash_objp, bank->submodel_num, &temp, &loc_norm);
+				}
+
 				// get world pos of thruster
-				vm_vec_unrotate(&world_thruster_pos, &bank->points[j].pnt, &wash_objp->orient);
+				vm_vec_unrotate(&world_thruster_pos, &loc_pos, &wash_objp->orient);
 				vm_vec_add2(&world_thruster_pos, &wash_objp->pos);
 				
 				// get world norm of thruster;
-				vm_vec_unrotate(&world_thruster_norm, &bank->points[j].norm, &wash_objp->orient);
+				vm_vec_unrotate(&world_thruster_norm, &loc_norm, &wash_objp->orient);
 
 				// get vector from thruster to ship
 				vm_vec_sub(&thruster_to_ship, &objp->pos, &world_thruster_pos);
@@ -4205,6 +4232,11 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, int n_direction)
 	total_time_start = total_time_end = timestamp();
 	pos_final = vmd_zero_vector;
 	scale_factor = 750.0f * objp->radius;
+	
+	initial_velocity = 1.0f;
+	p_object *p_objp = mission_parse_get_parse_object(shipp->ship_name);
+	if (p_objp != NULL)
+		initial_velocity = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 }
 
 int WE_Hyperspace::warpStart()
@@ -4217,8 +4249,9 @@ int WE_Hyperspace::warpStart()
 
 	if(direction == WD_WARP_IN)
 	{
-		shipp->flags |= SF_ARRIVING_STAGE_2;
+		shipp->flags |= SF_ARRIVING_STAGE_1;
 		objp->phys_info.flags |= PF_WARP_IN;
+		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
 		objp->flags &= ~OF_PHYSICS;
 	}
 	else if(direction == WD_WARP_OUT)
@@ -4249,9 +4282,10 @@ int WE_Hyperspace::warpFrame(float frametime)
 		{
 			vec3d vel;
 			vel = objp->orient.vec.fvec;
-			vm_vec_scale( &vel, objp->phys_info.vel.xyz.z );
+			vm_vec_scale( &vel, initial_velocity );
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
+			shipp->flags |= SF_ARRIVING_STAGE_2;
 		}
 		objp->flags |= OF_PHYSICS;
 		this->warpEnd();
@@ -4268,7 +4302,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 			// Makes sure that the velocity won't drop below the ship's initial
 			// velocity during the warpin. Ideally it should be done more
 			// smoothly than this.
-			scale = MIN(scale, (objp->phys_info.vel.xyz.z * (total_duration / 1000) * -(1.0f - progress)));
+			scale = MIN(scale, (initial_velocity * (total_duration / 1000) * -(1.0f - progress)));
 		}
 		else
 		{
@@ -4276,7 +4310,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 
 			// Makes sure the warpout velocity won't drop below the ship's last
 			// known real velocity.
-			scale += objp->phys_info.vel.xyz.z * (total_duration / 1000) * progress;
+			scale += initial_velocity * (total_duration / 1000) * progress;
 		}
 		vm_vec_scale_add(&objp->pos, &pos_final, &objp->orient.vec.fvec, scale);
 	}

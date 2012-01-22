@@ -198,8 +198,8 @@ if test "$fs2_debug" = "yes" ; then
 	fi
 else
 	AC_DEFINE([NDEBUG])
-	D_CFLAGS="$D_CFLAGS -g -Os -Wall -funroll-loops"
-	D_LDFLAGS="$D_LDFLAGS -g"
+	D_CFLAGS="$D_CFLAGS -O2 -Wall -funroll-loops"
+	D_LDFLAGS="$D_LDFLAGS "
 
 	if test "$fs2_fred" = "yes" ; then
 		if test "$fs2_inferno" = "yes" ; then
@@ -316,7 +316,7 @@ fi
 
 dnl add SDL settings to our flags, only CFLAGS are default, libs are game specific
 D_CFLAGS=$D_CFLAGS" $SDL_CFLAGS"
-FS2_LDFLAGS=$FS2_LDFLAGS" $SDL_LIBS"
+FS2_LIBS=$FS2_LIBS" $SDL_LIBS"
 
 dnl OGG/Vorbis/Theora check
 if test "$fs2_os_unix" = "yes" ; then
@@ -328,17 +328,17 @@ fi
 
 dnl add OGG settings to our flags, only CFLAGS are default, libs are game specific
 D_CFLAGS=$D_CFLAGS" $VORBIS_CFLAGS $VORBISFILE_CFLAGS"
-FS2_LDFLAGS=$FS2_LDFLAGS" $VORBIS_LIBS $VORBISFILE_LIBS"
+FS2_LIBS=$FS2_LIBS" $VORBIS_LIBS $VORBISFILE_LIBS"
 D_CFLAGS=$D_CFLAGS" $THEORA_CFLAGS"
-FS2_LDFLAGS=$FS2_LDFLAGS" $THEORA_LIBS"
+FS2_LIBS=$FS2_LIBS" $THEORA_LIBS"
 D_CFLAGS=$D_CFLAGS" $OGG_CFLAGS"
-FS2_LDFLAGS=$FS2_LDFLAGS" $OGG_LIBS"
+FS2_LIBS=$FS2_LIBS" $OGG_LIBS"
 
 dnl OpenAL
 if test "$fs2_os_unix" = "yes" ; then
 	AM_PATH_OPENAL(:,AC_MSG_ERROR([*** OpenAL installation not found!]))
 	D_CFLAGS=$D_CFLAGS" $OPENAL_CFLAGS"
-	FS2_LDFLAGS=$FS2_LDFLAGS" $OPENAL_LIBS"
+	FS2_LIBS=$FS2_LIBS" $OPENAL_LIBS"
 elif test "$fs2_os_osx" = "yes" ; then
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenAL"
 	AC_CHECK_HEADER(/Library/Frameworks/OpenAL.framework/Headers/al.h,
@@ -357,7 +357,7 @@ if test "$fs2_os_win32" = "yes" ; then
 fi
 
 dnl libpng
-FS2_LDFLAGS="$FS2_LDFLAGS -lpng"
+FS2_LIBS="$FS2_LIBS -lpng"
 
 dnl OpenGL libs and CFLAGS
 if test "$fs2_os_win32" = "yes" ; then
@@ -369,7 +369,7 @@ if test "$fs2_os_win32" = "yes" ; then
 elif test "$fs2_os_unix" = "yes" ; then
 	AM_PATH_OPENGL(:,AC_MSG_ERROR([*** OpenGL installation not found!]))
 	D_CFLAGS=$D_CFLAGS" $OPENGL_CFLAGS"
-	FS2_LDFLAGS=$FS2_LDFLAGS" $OPENGL_LIBS"
+	FS2_LIBS=$FS2_LIBS" $OPENGL_LIBS"
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
 elif test "$fs2_os_osx" = "yes" ; then
@@ -383,7 +383,7 @@ fi
 dnl PNG libs
 PKG_CHECK_MODULES([PNG], [libpng >= 1.2.20])
 D_CFLAGS=$D_CFLAGS" $PNG_CFLAGS"
-FS2_LDFLAGS=$FS2_LDFLAGS" $PNG_LIBS"
+FS2_LIBS=$FS2_LIBS" $PNG_LIBS"
 
 dnl LUA
 ## Checking for lua.pc and if that fails lua5.1.pc
@@ -393,7 +393,7 @@ PKG_CHECK_MODULES(
 	[], ## do nothing special
 	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [])])
 D_CFLAGS=$D_CFLAGS" $LUA_CFLAGS"
-FS2_LDFLAGS=$FS2_LDFLAGS" $LUA_LIBS"
+FS2_LIBS=$FS2_LIBS" $LUA_LIBS"
 
 dnl JPEG
 AC_CHECK_LIB(jpeg, jpeg_start_decompress,
@@ -403,7 +403,7 @@ AC_CHECK_LIB(jpeg, jpeg_start_decompress,
 	)],
 	AC_MSG_ERROR([*** JPEG installation missing or broken!])
 )
-FS2_LDFLAGS=$FS2_LDFLAGS" -ljpeg"
+FS2_LIBS=$FS2_LIBS" -ljpeg"
 
 
 dnl OGG Vorbis/Theora (static libs)

@@ -21,6 +21,8 @@
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
 #include "localization/localize.h"
+#include "jumpnode/jumpnode.h"
+
 
 #ifdef _DEBUG
 #undef THIS_FILE

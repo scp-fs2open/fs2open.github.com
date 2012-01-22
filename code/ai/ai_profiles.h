@@ -61,6 +61,7 @@
 #define AIPF2_ALLOW_PRIMARY_LINK_DELAY								(1 << 7)
 #define	AIPF2_BEAMS_DAMAGE_WEAPONS									(1 << 8)
 #define AIPF2_PLAYER_WEAPON_SCALE_FIX								(1 << 9)
+#define AIPF2_NO_WARP_CAMERA										(1 << 10)
 
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0
@@ -138,6 +139,9 @@ typedef struct ai_profile_t {
 
 	// the chance (x/7) that ship is allowed to fire missiles at player ship.
 	int chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+
+	// Player-specific autoaim FOV override
+	float player_autoaim_fov[NUM_SKILL_LEVELS];
 
 	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
 

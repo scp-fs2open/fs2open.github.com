@@ -627,7 +627,7 @@ void hud_do_lock_indicator(float frametime)
 		if ( Missile_track_loop > -1 )	{
 			snd_stop(Missile_track_loop);
 			Missile_track_loop = -1;
-			Missile_lock_loop = snd_play(&Snds[SND_MISSILE_LOCK]);
+			Missile_lock_loop = snd_play(&Snds[ship_get_sound(Player_obj, SND_MISSILE_LOCK)]);
 		}
 	}
 	else {
@@ -847,7 +847,7 @@ void hud_calculate_lock_position(float frametime)
 		}
 
 		if ( Missile_track_loop == -1 ) {	
-			Missile_track_loop = snd_play_looping( &Snds[SND_MISSILE_TRACKING], 0.0f , -1, -1);
+			Missile_track_loop = snd_play_looping( &Snds[ship_get_sound(Player_obj, SND_MISSILE_TRACKING)], 0.0f , -1, -1);
 		}
 
 		if (!Players[Player_num].lock_time_to_target) {

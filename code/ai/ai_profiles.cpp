@@ -347,6 +347,24 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Turret Max Aim Update Delay:"))
 				parse_float_list(profile->turret_max_aim_update_delay, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Player Autoaim FOV:"))
+			{
+				float fov_list[NUM_SKILL_LEVELS];
+				parse_float_list(fov_list, NUM_SKILL_LEVELS);
+				for (i = 0; i < NUM_SKILL_LEVELS; i++)
+				{
+					//Enforce range
+					if (fov_list[i] < 0.0f || fov_list[i] >= 360.0f)
+					{
+						Warning(LOCATION, "$Player Autoaim FOV should be >= 0 and < 360.0 (read %f). Setting to 0.", fov_list[i]);
+						fov_list[i] = 0.0f;
+					}
+
+					//Convert units
+					profile->player_autoaim_fov[i] = fov_list[i] * PI / 180.0f;
+				}
+			}
+
 			if (optional_string("$Detail Distance Multiplier:"))
 				parse_float_list(profile->detail_distance_mult, NUM_SKILL_LEVELS);
 
@@ -461,6 +479,8 @@ void parse_ai_profiles_tbl(char *filename)
 				if (!stricmp(effect, "off"))
 					Default_ship_select_effect = 0;
 			}
+
+			set_flag(profile, "$no warp camera:", AIPF2_NO_WARP_CAMERA, AIP_FLAG2);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

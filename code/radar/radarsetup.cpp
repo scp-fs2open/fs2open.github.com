@@ -154,6 +154,7 @@ void radar_plot_object( object *objp )
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
 	vec3d world_pos = objp->pos;
+	SCP_list<jump_node>::iterator jnp;
 
 		// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
@@ -196,8 +197,13 @@ void radar_plot_object( object *objp )
 		
 		case OBJ_JUMP_NODE:
 		{
+			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+				if(jnp->get_obj() == objp)
+					break;
+			}
+			
 			// don't plot hidden jump nodes
-			if ( objp->jnp->is_hidden() )
+			if ( jnp->is_hidden() )
 				return;
 
 			// filter jump nodes here if required
@@ -262,9 +268,6 @@ void radar_plot_object( object *objp )
 
 	if (N_blips >= MAX_BLIPS)
 	{
-		// out of blips, don't plot
-		//Gahhh, this is bloody annoying -WMC
-		//Int3();
 		return;
 	}
 

@@ -1819,7 +1819,6 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 			// test code!!!
 			if ( aip->goal_objnum == -1 ) {
-				// -- MK, 11/9/97 -- I was always hitting this: Int3();
 				return AI_GOAL_ACHIEVABLE;
 			}
 
@@ -2163,7 +2162,6 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		}
 
 		if ( other_obj == NULL ) {
-			//Int3();
 			// assume that the guy he was docked with doesn't exist anymore.  (i.e. a cargo containuer
 			// can get destroyed while docked with a freighter.)  We should just remove this goal and
 			// let this ship pick up it's next goal.

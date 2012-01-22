@@ -724,7 +724,10 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// calculate the effect on the velocity of the collison point per unit impulse
 	// first find the effect thru change in rotvel
 	// then find the change in the cm vel
-	if (light == Player_obj) {
+	// SUSHI: If on a landing surface, use the same shortcut the player gets
+	// This is a bit of a hack, but gets around some nasty unpredictable collision behavior
+	// when trying to do AI landings for certain ships
+	if (light == Player_obj || subsys_landing_allowed) {
 		vm_vec_zero( &delta_rotvel_light );
 		light_denom = 1.0f / light->phys_info.mass;
 	} else {
@@ -871,7 +874,7 @@ void mcp_1(object *player_objp, object *planet_objp)
 	if ((Missiontime - Last_planet_damage_time > F1_0) || (Missiontime < Last_planet_damage_time)) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Too close to planet.  Taking damage!", 465));
 		Last_planet_damage_time = Missiontime;
-		snd_play_3d( &Snds[Ship_info[Ships[Player_obj->instance].ship_info_index].afterburner_engage_snd], &player_objp->pos, &View_position );
+		snd_play_3d( &Snds[ship_get_sound(player_objp, SND_ABURN_ENGAGE)], &player_objp->pos, &View_position );
 	}
 
 }

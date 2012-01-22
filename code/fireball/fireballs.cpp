@@ -20,6 +20,7 @@
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
 #include "globalincs/pstypes.h"
+#include "asteroid/asteroid.h"
 
 #include <stdlib.h>
 
@@ -47,7 +48,6 @@ fireball_info Fireball_info[MAX_FIREBALL_TYPES];
 int fireball_used[MAX_FIREBALL_TYPES];
 
 int Num_fireballs = 0;
-
 int Num_fireball_types = 0;
 
 int fireballs_inited = 0;
@@ -57,7 +57,9 @@ int Warp_ball_bitmap = -1;
 
 #define FB_INDEX(fb)	(fb-Fireballs)
 
-// play warp in sound for warp effect
+/**
+ * Play warp in sound for warp effect
+ */
 void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 {
 	int		sound_index;
@@ -87,7 +89,9 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 	snd_play_3d(&Snds[sound_index], &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0f, SND_PRIORITY_DOUBLE_INSTANCE, NULL, range_multiplier); // play warp sound effect
 }
 
-// play warp out sound for warp effect
+/**
+ * Play warp out sound for warp effect
+ */
 void fireball_play_warphole_close_sound(fireball *fb)
 {
 	int	sound_index;	
@@ -103,14 +107,15 @@ void fireball_play_warphole_close_sound(fireball *fb)
 	} else if ( fb->flags & FBF_WARP_CAPITAL_SIZE ) {
 		sound_index = SND_CAPITAL_WARP_OUT;
 	} else {
-		// AL 27-3-98: Decided that warphole closing is only required for capital ship sized warp effects.
 		return;
 	}
 
 	snd_play_3d(&Snds[sound_index], &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
 }
 
-// set default colors for each explosion type (original values from object.cpp)
+/**
+ * Set default colors for each explosion type (original values from object.cpp)
+ */
 static void fireball_set_default_color(int idx)
 {
 	Assert( (idx >= 0) && (idx < MAX_FIREBALL_TYPES) );
@@ -147,7 +152,11 @@ static void fireball_set_default_color(int idx)
 	}
 }
 
-// NOTE: we can't be too trusting here so a tbm will only modify the LOD count, not add an entry
+/**
+ * Parse fireball tbl
+ *
+ * NOTE: we can't be too trusting here so a tbm will only modify the LOD count, not add an entry
+ */
 void parse_fireball_tbl(char *filename)
 {
 	int rval;
@@ -326,15 +335,6 @@ void fireball_load_data()
 	if ( Warp_ball_bitmap == -1 )	{
 		Warp_ball_bitmap = bm_load( NOX("warpball01") );
 	}
-	
-//	polymodel Warp_pm;
-
-}
-
-void fireball_preload()
-{
-	// Do nothing.  Called before level init, this used to page in warp effect.
-	// Not needed with new BmpMan system.
 }
 
 // This will get called at the start of each level.
@@ -375,8 +375,6 @@ MONITOR( NumFireballsRend )
 
 void fireball_render(object * obj)
 {
-//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
-
 	int		num;
 	vertex	p;
 	fireball	*fb;
@@ -390,10 +388,6 @@ void fireball_render(object * obj)
 
 	if ( Fireballs[num].current_bitmap < 0 )
 		return;
-
-//	gr_set_color( 0, 100, 0 );
-//	g3_draw_sphere_ez( &obj->pos, obj->radius );
-//	return;
 
 	// turn off fogging
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
@@ -440,17 +434,11 @@ void fireball_render(object * obj)
 			
 				if ( t < WARPHOLE_GROW_TIME )	{
 					rad = (float)pow(t/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
-					//rad = t*obj->radius/WARPHOLE_GROW_TIME;
-					//mprintf(( "T=%.2f, Rad = %.2f\n", t, rad ));
 				} else if ( t < fb->total_time - WARPHOLE_GROW_TIME )	{
 					rad = obj->radius;
 				} else {
 					rad = (float)pow((fb->total_time - t)/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
-					//rad = (fb->total_time - t )*obj->radius/WARPHOLE_GROW_TIME;
 				}
-				//rad = obj->radius;
-//				obj->alt_rad = rad;
-
 
 				warpin_render(obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_3D) );
 			}
@@ -462,12 +450,10 @@ void fireball_render(object * obj)
 	}
 }
 
-// -----------------------------------------------------------------
-//	fireball_delete()
-//
-//	Delete a fireball.  Called by object_delete() code... do not call
-// directly.
-//
+/**
+ * Delete a fireball.  
+ * Called by object_delete() code... do not call directly.
+ */
 void fireball_delete( object * obj )
 {
 	int	num;
@@ -483,11 +469,9 @@ void fireball_delete( object * obj )
 	Assert( Num_fireballs >= 0 );
 }
 
-// -----------------------------------------------------------------
-//	fireball_delete_all()
-//
-//	Delete all active fireballs, by calling obj_delete directly.
-//
+/**
+ * Delete all active fireballs, by calling obj_delete directly.
+ */
 void fireball_delete_all()
 {
 	fireball	*fb;
@@ -577,12 +561,12 @@ int fireball_is_perishable(object * obj)
 }
 
 
-// -----------------------------------------------------------------
-//	fireball_free_one()
-//
-//	There are too many fireballs, so delete the oldest small one
-// to free up a slot.  Returns the fireball slot freed.
-//
+/**
+ * There are too many fireballs, so delete the oldest small one
+ * to free up a slot.  
+ *
+ * @return The fireball slot freed.
+ */
 int fireball_free_one()
 {
 	fireball	*fb;
@@ -611,12 +595,6 @@ int fireball_free_one()
 		obj_delete(oldest_objnum);
 	}
 	return oldest_slotnum;
-}
-
-// broke fireball_move into fireball_process_pre and fireball_process_post as was done
-// with all *_move functions on 8/13 by Mike K. and Mark A.
-void fireball_process_pre( object *objp, float frame_time)
-{
 }
 
 int fireball_is_warp(object * obj)
@@ -684,7 +662,9 @@ void fireball_process_post(object * obj, float frame_time)
 	fireball_set_framenum(num);
 }
 
-// Returns life left of a fireball in seconds
+/**
+ * Returns life left of a fireball in seconds
+ */
 float fireball_lifeleft( object *obj )
 {
 	int			num, objnum;
@@ -699,7 +679,9 @@ float fireball_lifeleft( object *obj )
 	return fb->total_time - fb->time_elapsed;
 }
 
-// Returns life left of a fireball in percent
+/**
+ * Returns life left of a fireball in percent
+ */
 float fireball_lifeleft_percent( object *obj )
 {
 	int			num, objnum;
@@ -711,14 +693,14 @@ float fireball_lifeleft_percent( object *obj )
 
 	fb = &Fireballs[num];
 
-//	Assert((fb->total_time - fb->time_elapsed) / fb->total_time >=0);
-
 	float p = (fb->total_time - fb->time_elapsed) / fb->total_time;
 	if (p < 0)p=0.0f;
 	return p;
 }
 
-// determine LOD to use
+/**
+ * Determine LOD to use
+ */
 int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 {
 	vertex v;
@@ -799,7 +781,9 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 	return MIN(ret_lod, fd->lod_count - 1);
 }
 
-//	Create a fireball, return object index.
+/**
+ * Create a fireball, return object index.
+ */
 int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, int warp_open_sound, int warp_close_sound)
 {
 	int				n, objnum, fb_lod;
@@ -824,22 +808,11 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 	}
 
 	if ( (Num_fireballs >= MAX_FIREBALLS) || (Num_objects >= MAX_OBJECTS) )	{
-		// who cares if we don't create a spark.
-		// JAS - Should this code be in?  Is it better to remove an old spark
-		// and start a new one, or just not start the new one?
-		//if ( fd->type == FIREBALL_TYPE_SMALL )	{
-		//	return -1;
-		//}
 
-		//mprintf(( "Out of fireball slots, trying to free one up!\n" ));
 		// out of slots, so free one up.
 		n = fireball_free_one();
-		if ( n < 0 )	{
-			// If there's still no free slots, then exit
-			//mprintf(( "ERROR: Couldn't free one up!!\n" ));
+		if ( n < 0 ) {
 			return -1;
-		} else {
-			//mprintf(( "Freed one up just fine!!\n" ));
 		}
 	} else {
 		for ( n = 0; n < MAX_FIREBALLS; n++ )	{
@@ -863,11 +836,6 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 
 	// if this is a warpout fireball, never go higher than LOD 1
 	if(fireball_type == FIREBALL_WARP){
-		/*
-		if(fb_lod > 1){
-			fb_lod = 1;
-		}
-		*/
 		fb_lod = MAX_WARP_LOD;
 	}
 	fl = &fd->lod[fb_lod];
@@ -962,11 +930,9 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 	return objnum;
 }
 
-// -----------------------------------------------------------------
-//	fireball_close()
-//
-//	Called at game shutdown to clean up the fireball system
-//
+/**
+ * Called at game shutdown to clean up the fireball system
+ */
 void fireball_close()
 {
 	if ( !fireballs_inited )
@@ -1039,6 +1005,23 @@ int fireball_ship_explosion_type(ship_info *sip)
 		index = sip->explosion_bitmap_anims[rand()%ship_fireballs];
 	} else if(objecttype_fireballs > 0){
 		index = Ship_types[sip->class_type].explosion_bitmap_anims[rand()%objecttype_fireballs];
+	}
+
+	return index;
+}
+
+int fireball_asteroid_explosion_type(asteroid_info *aip)
+{
+	Assert( aip != NULL );
+
+	if (aip->explosion_bitmap_anims.empty())
+		return -1;
+
+	int index = -1;
+	int roid_fireballs = (int)aip->explosion_bitmap_anims.size();
+
+	if (roid_fireballs > 0) {
+		index = aip->explosion_bitmap_anims[rand()%roid_fireballs];
 	}
 
 	return index;

@@ -835,9 +835,9 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 			else
 				tt = &Ai_tp_list[Weapon_info[priority_weapon_idx].targeting_priorities[i]];
 
-			int n_types = tt->ship_type.size();
-			int n_s_classes = tt->ship_class.size();
-			int n_w_classes = tt->weapon_class.size();
+			int n_types = (int)tt->ship_type.size();
+			int n_s_classes = (int)tt->ship_class.size();
+			int n_w_classes = (int)tt->weapon_class.size();
 			
 			bool found_something;
 			object *ptr = GET_FIRST(&obj_used_list);
@@ -1675,8 +1675,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		if (wip->wi_flags & WIF_BEAM) {
 			// if this beam isn't free to fire
 			if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE)) {
-				//WMC - remove this
-				//Int3();	// should never get this far
 				return false;
 			}
 			beam_fire_info fire_info;
@@ -1707,7 +1705,11 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		// now do anything else
 		else {
 			for (int i=0; i < wip->shots; i++)
-			{		
+			{
+				// zookeeper - Firepoints should cycle normally between shots, 
+				// so we need to get the position info separately for each shot
+				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, turret_fvec, 1, NULL);
+
 				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
 			
@@ -1762,6 +1764,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 					}
 				}
+
+				turret->turret_next_fire_pos++;
 			}
 
 			// reset any animations if we need to
@@ -2136,7 +2140,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		ss->turret_enemy_objnum = -1;
 
 	//	Maybe pick a new enemy, unless targeting has been taken over by scripting
-	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override) {
+	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override ) {
 		Num_find_turret_enemy++;
 		int objnum = find_turret_enemy(ss, parent_objnum, &gpos, &gvec, ss->turret_enemy_objnum);
 		//Assert(objnum < 0 || is_target_beam_valid(tp, objnum));
@@ -2396,8 +2400,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					turret_set_next_fire_timestamp(valid_weapons[0], wip, ss, parent_aip);
 				}
 			}
-			// moved this here so we increment the fire pos only after we have fired and not during it
-			ss->turret_next_fire_pos++;
 		}
 
 		if(!something_was_ok_to_fire)
@@ -2406,6 +2408,14 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
 			turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);
 			ss->turret_next_fire_stamp = timestamp(500);
+
+			// If nothing is OK to fire (lost track of the target?) 
+			// reset the target (so we don't continue to track what we can't hit)
+			if (tp->flags2 & MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE)
+			{
+				ss->turret_enemy_objnum = -1;		//	Reset enemy objnum, find a new one next frame.
+				ss->turret_time_enemy_in_range = 0.0f;
+			}
 		}
 		else
 		{

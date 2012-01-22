@@ -1354,6 +1354,8 @@ void game_process_pause_key()
  */
 void game_process_cheats(int k)
 {
+	size_t i;
+
 	if ( k == 0 ){
 		return;
 	}
@@ -1364,14 +1366,13 @@ void game_process_cheats(int k)
 		return;
 	}
 
-	for (size_t i = 0; i < CHEAT_BUFFER_LEN; i++){
+	for (i = 0; i < CHEAT_BUFFER_LEN; i++){
 		CheatBuffer[i]=CheatBuffer[i+1];
 	}
 
 	CheatBuffer[CHEAT_BUFFER_LEN - 1] = (char)key_to_ascii(k);
 	
 	cheatCode detectedCheatCode = CHEAT_CODE_NONE;
-	int i=0;
 
 	for(i=0; i < CHEATS_TABLE_LEN; i++) {
 		Cheat cheat = cheatsTable[i];
@@ -1712,14 +1713,14 @@ int button_function_critical(int n, net_player *p = NULL)
 				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
-					snd_play( &Snds[SND_SECONDARY_CYCLE] );
+					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			} else {
 				Ships[objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to dual fire mode", 35));
-					snd_play( &Snds[SND_SECONDARY_CYCLE] );
+					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			}

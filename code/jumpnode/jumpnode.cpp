@@ -9,8 +9,6 @@
 
 
 
-int Num_jump_nodes = 0;
-
 #include "object/object.h"
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
@@ -26,7 +24,7 @@ jump_node::jump_node(vec3d *pos)
 {	
 	Assert(pos != NULL);
 	
-	this->radius = 0.0f;
+	this->m_radius = 0.0f;
 	this->m_modelnum = -1;
 	this->m_objnum = -1;
 	this->m_flags = 0;
@@ -40,12 +38,10 @@ jump_node::jump_node(vec3d *pos)
 	if (this->m_modelnum < 0)
 		Warning(LOCATION, "Could not load default model for %s", this->m_name);
 	else
-		this->radius = model_get_radius(this->m_modelnum);
+		this->m_radius = model_get_radius(this->m_modelnum);
 	
 	// Create the object
-	this->m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, pos, this->radius, OF_RENDERS);
-	if (this->m_objnum >= 0)
-		Objects[this->m_objnum].jnp = this;
+	this->m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, pos, this->m_radius, OF_RENDERS);
 }
 
 jump_node::~jump_node()
@@ -114,7 +110,7 @@ void jump_node::set_model(char *model_name, bool show_polys)
 	
 	//Try to load the new model; if we can't, then we can't set it
 	int new_model = model_load(model_name, 0, NULL, 0);
-
+	
 	if(new_model == -1)
 	{
 		Warning(LOCATION, "Couldn't load model file %s for jump node %s", model_name, m_name);
@@ -128,6 +124,7 @@ void jump_node::set_model(char *model_name, bool show_polys)
 	//Now actually set stuff
 	m_modelnum = new_model;
 	m_flags |= JN_SPECIAL_MODEL;
+	m_radius = model_get_radius(m_modelnum);
 
 	//Do we want to change poly showing?
 	if(show_polys)
@@ -145,7 +142,7 @@ void jump_node::set_name(char *new_name)
 {
 	Assert(new_name != NULL);
 	
-	strcpy_s(this->m_name, new_name);
+	strcpy_s(m_name, new_name);
 }
 
 /**
@@ -214,6 +211,7 @@ void jump_node::render(vec3d *pos, vec3d *view_pos)
 		} else {
 			gr_set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		}
+		
 		model_render(m_modelnum, &node_orient, pos, mr_flags );
 	}
 	

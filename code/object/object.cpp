@@ -1064,7 +1064,6 @@ void obj_set_flags( object *obj, uint new_flags )
 
 		// sanity checks
 		if ( (obj->type != OBJ_SHIP) || (obj->instance < 0) ) {
-			// Int3();
 			return;				// return because we really don't want to set the flag
 		}
 
@@ -1115,9 +1114,7 @@ void obj_move_all_pre(object *objp, float frametime)
 		}
 		break;
 	case OBJ_FIREBALL:
-		if (!physics_paused){
-			fireball_process_pre(objp,frametime);
-		}
+		// all fireballs are moved via fireball_process_post()
 		break;
 	case OBJ_SHOCKWAVE:
 		// all shockwaves are moved via shockwave_move_all()
@@ -1483,8 +1480,9 @@ MONITOR( NumObjectsRend )
 extern int Cmdline_dis_weapons;
 void obj_render(object *obj)
 {
+	SCP_list<jump_node>::iterator jnp;
+	
 	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
-//	if ( obj == Viewer_obj ) return;
 
 	MONITOR_INC( NumObjectsRend, 1 );	
 
@@ -1522,12 +1520,14 @@ void obj_render(object *obj)
 			cmeasure_render(obj);
 			break;*/
 		case OBJ_JUMP_NODE:
-			obj->jnp->render(&obj->pos, &Eye_position);
-	//		jumpnode_render(obj, &obj->pos, &Eye_position);
+			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+				if(jnp->get_obj() != obj)
+					continue;
+				jnp->render(&obj->pos, &Eye_position);
+			}
 			break;
 		case OBJ_WAYPOINT:
 			if (Show_waypoints)	{
-				//ship_render(obj);
 				gr_set_color( 128, 128, 128 );
 				g3_draw_sphere_ez( &obj->pos, 5.0f );
 			}

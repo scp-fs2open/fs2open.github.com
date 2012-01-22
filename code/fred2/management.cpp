@@ -1259,6 +1259,7 @@ int common_object_delete(int obj)
 	char msg[255], *name;
 	int i, z, r, type;
 	object *objp;
+	SCP_list<jump_node>::iterator jnp;
 
 	type = Objects[obj].type;
 	if (type == OBJ_START) {
@@ -1379,7 +1380,12 @@ int common_object_delete(int obj)
 		return 0;
 
 	} else if (type == OBJ_JUMP_NODE) {
-		delete Objects[obj].jnp;
+		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+			if(jnp->get_obj() == &Objects[obj])
+				break;
+		}
+		
+		Jump_nodes.erase(jnp);
 	}
 
 	unmark_object(obj);
