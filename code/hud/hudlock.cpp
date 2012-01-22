@@ -1093,7 +1093,7 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	target_objp = &Objects[Player_ai->target_objnum];
 
 	Player->current_target_sx = -1;
-	Player->current_target_sx = -1;
+	Player->current_target_sy = -1;
 
 	swp = &Player_ship->weapons;
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];

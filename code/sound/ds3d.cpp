@@ -16,6 +16,7 @@
 #include "sound/channel.h"
 #include "sound/sound.h"
 #include "object/object.h"
+#include "cmdline/cmdline.h"
 
 
 // ---------------------------------------------------------------------------------------
@@ -33,6 +34,11 @@
 //
 int ds3d_update_buffer(int channel, float min, float max, vec3d *pos, vec3d *vel)
 {
+	if (Cmdline_no_3d_sound) {
+		nprintf(("Sound", "Aborting ds3d_update_buffer due to Cmdline_no_3d_sound..."));
+		return -1;
+	}
+
 	if (channel < 0) {
 		return 0;
 	}
@@ -81,6 +87,11 @@ int ds3d_update_buffer(int channel, float min, float max, vec3d *pos, vec3d *vel
 //
 int ds3d_update_listener(vec3d *pos, vec3d *vel, matrix *orient)
 {
+	if (Cmdline_no_3d_sound) {
+		nprintf(("Sound", "Aborting ds3d_update_buffer due to Cmdline_no_3d_sound..."));
+		return -1;
+	}
+
 	if (pos) {
 		OpenAL_ErrorPrint( alListener3f(AL_POSITION, pos->xyz.x, pos->xyz.y, -pos->xyz.z) );
 	}

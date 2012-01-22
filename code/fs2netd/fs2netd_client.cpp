@@ -1580,9 +1580,7 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 		Local_timeout = timer_get_seconds() + 30;
 
 		In_process = true;
-	}
 
-	if (first_call) {
 		ml_printf("FS2NetD MSG: Requesting pilot stats for '%s' ...", callsign);
 	}
 

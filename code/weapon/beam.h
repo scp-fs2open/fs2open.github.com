@@ -47,6 +47,9 @@ typedef struct beam_info {
 	float				shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit	
 } beam_info;
 
+#define BFIF_IS_FIGHTER_BEAM	(1<<0)
+#define BFIF_FORCE_FIRING		(1<<1)
+
 // pass to beam fire 
 typedef struct beam_fire_info {
 	int				beam_info_index;				// weapon info index 
@@ -58,9 +61,9 @@ typedef struct beam_fire_info {
 	ship_subsys		*target_subsys;				// (optional), specific subsystem to be targeted on the target 
 	beam_info		*beam_info_override;			// (optional), pass this in to override all beam movement info (for multiplayer)
 	int				num_shots;						// (optional), only used for type D weapons
-	bool fighter_beam;
 	int bank;									// for fighters, which bank of the primary weapons are they in
 	int point;									// for fighters, which point on the bank it is from
+	int bfi_flags;
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {
@@ -96,6 +99,8 @@ typedef struct beam_collision {
 // beam flag defines
 #define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
 #define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
+#define BF_FORCE_FIRING					(1<<2)
+#define BF_IS_FIGHTER_BEAM				(1<<3)
 
 // beam struct (the actual weapon/object)
 typedef struct beam {
@@ -150,7 +155,6 @@ typedef struct beam {
 	// exactly how the beam will behave. by passing this is multiplayer from server to client, we can ensure that
 	// everything looks the same
 	beam_info binfo;
-	bool fighter_beam;
 	int bank;
 
 	int Beam_muzzle_stamp;

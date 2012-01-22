@@ -3099,7 +3099,7 @@ void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 		docker_aip->support_ship_objnum = -1;
 		dockee_aip->support_ship_objnum = -1;
 		docker_aip->support_ship_signature = -1;
-		docker_aip->support_ship_signature = -1;
+		dockee_aip->support_ship_signature = -1;
 	}
 
 	// unlink the two objects
@@ -4523,7 +4523,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 
 		r = find_nearest_point_on_line(&nearest_point, &Pl_objp->last_pos, &Pl_objp->pos, target_pos);
 
-		if ( (vm_vec_dist_quick(&Pl_objp->pos, target_pos) < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius) + vm_vec_dist_quick(&Pl_objp->pos, &Pl_objp->last_pos)))
+		if ( (dist_to_goal < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius) + vm_vec_dist_quick(&Pl_objp->pos, &Pl_objp->last_pos)))
 			|| (((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, target_pos) < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius)))))
 		{
 				int treat_as_ship;
@@ -4595,7 +4595,7 @@ void ai_waypoints()
 				aip->wp_index = (wpl->count - 1); // stay on the last waypoint
 				// Log a message that the wing or ship reached his waypoint and
 				// remove the goal from the AI goals of the ship pr wing, respectively.
-				// Wether or not we should treat this as a ship or a wing is determined by
+				// Whether we should treat this as a ship or a wing is determined by
 				// ai_fly_to_target_position when it marks the AI directive as complete
 				if ( treat_as_ship ) {
 					ai_mission_goal_complete( aip );					// this call should reset the AI mode
@@ -14509,11 +14509,10 @@ void ai_process( object * obj, int ai_index, float frametime )
 		break;
 	}
 
-	// Wanderer - sexp based override goes here - only if rfc is valid though
-	if (rfc == 1)
-		ai_control_info_check(obj, aip);
-
 	if (rfc == 1) {
+		// Wanderer - sexp based override goes here - only if rfc is valid though
+		ai_control_info_check(obj, aip);
+		
 		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
 		// if obj is in formation and not flight leader, don't update rotvel

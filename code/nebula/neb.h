@@ -38,6 +38,10 @@ extern int Neb2_render_mode;
 // the AWACS suppresion level for the nebula
 extern float Neb2_awacs;
 
+// The visual render distance multipliers for the nebula
+extern float Neb2_fog_near_mult;
+extern float Neb2_fog_far_mult;
+
 #define MAX_NEB2_POOFS				6
 
 // poof names and flags (for fred)
@@ -116,6 +120,9 @@ void neb2_eye_changed();
 
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
+
+// get adjusted near and far fog values (allows mission-specific fog adjustments)
+void neb2_get_adjusted_fog_values(float *fnear, float *ffar, object *obj = NULL);
 
 // given a position in space, return a value from 0.0 to 1.0 representing the fog level 
 float neb2_get_fog_intensity(object *obj);

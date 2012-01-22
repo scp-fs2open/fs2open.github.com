@@ -1716,7 +1716,10 @@ void hud_render_gauges(int cockpit_display_num)
 		num_gauges = sip->hud_gauges.size();
 
 		for(j = 0; j < num_gauges; j++) {
-			sip->hud_gauges[j]->preprocess();
+			// only preprocess gauges if we're not rendering to cockpit
+			if ( cockpit_display_num < 0 ) {
+				sip->hud_gauges[j]->preprocess();
+			}
 
 			if ( !sip->hud_gauges[j]->setupRenderCanvas(render_target) ) {
 				continue;
@@ -2835,11 +2838,7 @@ void HudGaugeSupport::render(float frametime)
 				show_time = 1;
 			}		
 
-			if (!show_time) {
-				renderString(position[0] + text_dock_offset_x, position[1] + text_val_offset_y, outstr);
-			} else {			
-				renderString(position[0] + text_dock_offset_x, position[1] + text_val_offset_y, outstr);
-			}
+			renderString(position[0] + text_dock_offset_x, position[1] + text_val_offset_y, outstr);
 		}
 	}
 
@@ -3726,7 +3725,7 @@ void HudGaugeMultiMsg::render(float frametime)
 	char txt[MULTI_MSG_MAX_TEXT_LEN+20];
 
 	// clear the text
-	memset(txt,0,MULTI_MSG_MAX_TEXT_LEN+1);
+	memset(txt,0,MULTI_MSG_MAX_TEXT_LEN+20);
 
 	// if there is valid multiplayer message text to be displayed
 	if(multi_msg_message_text(txt)){

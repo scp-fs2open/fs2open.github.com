@@ -63,7 +63,7 @@ void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 
 void UI_SLIDER2::draw() {
 	Assert((currentPosition >= 0) && (currentPosition <= numberPositions));
-	if (uses_bmaps & !disabled_flag) {
+	if (uses_bmaps && !disabled_flag) {
 		gr_reset_clip();
 		switch (slider_mode) {
 		case S2M_ON_ME:

@@ -7,9 +7,11 @@
  *
 */
 
-// The code in here is just for bookeeping, allocating
-// ai slots and linking them to ships.
-// See AiCode.cpp for the actual AI code.
+/**
+ * @file 
+ * The code in here is just for bookeeping, allocating AI slots and linking them to ships.
+ * See AiCode.cpp for the actual AI code.
+ */
 
 #include "ai/ai.h"
 #include "object/object.h"
@@ -22,7 +24,7 @@ ai_info Ai_info[MAX_AI_INFO];
 ai_info *Player_ai;
 
 /**
- * @brief Return index of free AI slot.
+ * @brief Returns index of free AI slot.
  * @return Return -1 if no free slot.
  */
 int ai_get_slot(int shipnum)
@@ -42,8 +44,8 @@ int ai_get_slot(int shipnum)
 }
 
 /**
- * @brief Releases an AI slot to be used by someone else.
- * @details Only modifies in ::Ai_info struct.  Does not modify hook in ship.
+ * @brief Frees a currently used AI slot.
+ * @details Only modifies in ::Ai_info struct. Does not modify hook in ship.
  */
 void ai_free_slot(int ai_index)
 {

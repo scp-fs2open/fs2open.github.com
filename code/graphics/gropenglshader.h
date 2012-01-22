@@ -35,8 +35,14 @@
 #define SDR_FLAG_HEIGHT_MAP		(1<<14)
 #define SDR_FLAG_ENV_MAP		(1<<15)
 #define SDR_FLAG_ANIMATED		(1<<16)
+#define SDR_FLAG_SOFT_QUAD		(1<<17)
+#define SDR_FLAG_DISTORTION		(1<<18)
 
 #define MAX_SHADER_UNIFORMS		15
+
+#define SDR_ATTRIB_RADIUS		0
+
+#define MAX_SDR_ATTRIBUTES		1
 
 struct opengl_shader_file_t {
 	char *vert;
@@ -46,6 +52,9 @@ struct opengl_shader_file_t {
 
 	int num_uniforms;
 	char *uniforms[MAX_SHADER_UNIFORMS];
+
+	int num_attributes;
+	char *attributes[MAX_SDR_ATTRIBUTES];
 };
 
 typedef struct opengl_shader_uniform_t {
@@ -61,6 +70,7 @@ typedef struct opengl_shader_t {
 	int flags2;
 
 	SCP_vector<opengl_shader_uniform_t> uniforms;
+	SCP_vector<opengl_shader_uniform_t> attributes; // using the uniform data structure to keep track of vert attribs
 
 	opengl_shader_t() :
 		program_id(0), flags(0), flags2(0)
@@ -79,6 +89,9 @@ void opengl_shader_init();
 void opengl_shader_shutdown();
 
 GLhandleARB opengl_shader_create(const char *vs, const char *fs);
+
+void opengl_shader_init_attribute(const char *attribute_text);
+GLint opengl_shader_get_attribute(const char *attribute_text);
 
 void opengl_shader_init_uniform(const char *uniform_text);
 GLint opengl_shader_get_uniform(const char *uniform_text);

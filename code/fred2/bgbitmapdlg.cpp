@@ -129,6 +129,8 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_CULL, m_sky_flag_4);
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_GLOW, m_sky_flag_5);
 	DDX_Check(pDX, IDC_SKY_FLAG_CLAMP, m_sky_flag_6);
+	DDX_Text(pDX, IDC_NEB_FAR_MULTIPLIER, m_neb_far_multi);
+	DDX_Text(pDX, IDC_NEB_NEAR_MULTIPLIER, m_neb_near_multi);
 	//}}AFX_DATA_MAP
 }
 
@@ -298,7 +300,9 @@ void bg_bitmap_dlg::create()
 	GetDlgItem(IDC_AMBIENT_G_TEXT)->SetWindowText(buf);
 	sprintf(buf, "Blue: %d", m_amb_blue.GetPos());
 	GetDlgItem(IDC_AMBIENT_B_TEXT)->SetWindowText(buf);
-	
+
+	m_neb_near_multi = Neb2_fog_near_mult;
+	m_neb_far_multi = Neb2_fog_far_mult;
 
 	UpdateData(FALSE);
 	OnFullNeb();
@@ -419,6 +423,9 @@ void bg_bitmap_dlg::OnClose()
 	if(m_sky_flag_6) {
 		The_mission.skybox_flags |= MR_FORCE_CLAMP;
 	}
+
+	Neb2_fog_near_mult = m_neb_near_multi;
+	Neb2_fog_far_mult = m_neb_far_multi;
 
 	// close sun data
 	sun_data_close();

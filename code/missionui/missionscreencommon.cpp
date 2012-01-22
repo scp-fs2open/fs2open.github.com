@@ -1650,6 +1650,8 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		gr_zbuffer_set(false); // Turn of Depthbuffer so we dont get gridlines over the ship or a disappearing scanline 
 		if( time >= 0.5f) // Phase 1 onward draw the grid
 		{
+			int i;
+
 			start.xyz.y = -offset;
 			start.xyz.z = size+offset*0.5f;
 			stop.xyz.y = -offset;
@@ -1658,7 +1660,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 			gr_set_color(0,200,0);
 		
 			g3_start_instance_angles(&vmd_zero_vector,&view_angles);
-			for(int i = -3; i < 4; i++)
+			for(i = -3; i < 4; i++)
 			{
 				start.xyz.x = stop.xyz.x = size*0.333f*i;
 				g3_draw_htl_line(&start,&stop);
@@ -1666,7 +1668,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		
 			start.xyz.x = size;
 			stop.xyz.x = -size;
-			for(int i = -3; i < 4; i++)
+			for(i = -3; i < 4; i++)
 			{
 				start.xyz.z = stop.xyz.z = size*0.333f*i+offset*0.5f;
 				g3_draw_htl_line(&start,&stop);

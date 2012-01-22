@@ -825,6 +825,10 @@ void sexp_tree::right_clicked(int mode)
 									if (op_type == OPF_NAV_POINT)
 										flag &= ~MF_GRAYED;
 
+									if (!( (idx + 3) % 30)) {
+										flag |= MF_MENUBARBREAK;
+									}
+
 									char buf[128];
 									// append list of variable names and values
 									// set id as ID_VARIABLE_MENU + idx
@@ -4813,6 +4817,8 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			// if this is arg index 3 (targeted ship)
 			if(arg_index == 3)
 			{
+				special_subsys = OPS_STRENGTH;
+
 				child = tree_nodes[child].next;
 				Assert(child >= 0);			
 				child = tree_nodes[child].next;			
@@ -4863,7 +4869,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			Assert(child >= 0);
 			child = tree_nodes[child].next;
 			break;
-	}			
+	}
 
 	// now find the ship and add all relevant subsystems
 	Assert(child >= 0);

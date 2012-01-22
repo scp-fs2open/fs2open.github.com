@@ -471,6 +471,14 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if (!basic)
 			nebl_set_storm(Mission_parse_storm_name);
 	}
+	Neb2_fog_near_mult = 1.0f;
+	Neb2_fog_far_mult = 1.0f;
+	if(optional_string("+Fog Near Mult:")){
+		stuff_float(&Neb2_fog_near_mult);
+	}
+	if(optional_string("+Fog Far Mult:")){
+		stuff_float(&Neb2_fog_far_mult);
+	}
 
 	// Goober5000 - ship contrail speed threshold
 	pm->contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -3083,7 +3091,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
 			{
-				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name);
+				mprintf(("Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name));
 			}
 
 			// *** account for FRED

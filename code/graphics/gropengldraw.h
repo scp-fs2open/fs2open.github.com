@@ -30,7 +30,9 @@ void gr_opengl_fade_in(int instantaneous);
 void gr_opengl_fade_out(int instantaneous);
 void gr_opengl_tmapper(int nverts, vertex **verts, uint flags);
 void gr_opengl_render(int nverts, vertex *verts, uint flags);
+void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint flags);
 void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize);
+void gr_opengl_update_distortion();
 
 void opengl_render_timer_bar(int colour, float x, float y, float w, float h);
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0);
@@ -40,5 +42,18 @@ void gr_opengl_line_htl(vec3d *start, vec3d *end);
 void gr_opengl_sphere_htl(float rad);
 
 void gr_opengl_draw_line_list(colored_vector *lines, int num);
+
+void opengl_setup_scene_textures();
+void opengl_scene_texture_shutdown();
+void gr_opengl_scene_texture_begin();
+void gr_opengl_scene_texture_end();
+
+extern int Scene_texture_initialized;
+
+extern GLuint Scene_color_texture;
+extern GLuint Scene_effect_texture;
+
+extern int Scene_texture_width;
+extern int Scene_texture_height;
 
 #endif	// !GR_OPENGLDRAW_H

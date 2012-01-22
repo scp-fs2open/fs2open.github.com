@@ -17,6 +17,8 @@
 #include "parse/lua.h"
 #include "parse/scripting.h"
 #include "freespace2/freespace.h"
+#include "stats/scoring.h"
+#include "network/multi.h"
 
 
 // moved to ai_profiles.tbl
@@ -119,7 +121,7 @@ int collide_weapon_weapon( obj_pair * pair )
 							Weapons[A->instance].lifeleft = 0.01f;
 							Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 						}
-						B->hull_strength -= wipA->damage;
+						B->hull_strength -= wipA->damage; //Why is the damage applied twice to B? -Halleck
 						if (B->hull_strength < 0.0f) {
 							Weapons[B->instance].lifeleft = 0.01f;
 							Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
@@ -143,6 +145,23 @@ int collide_weapon_weapon( obj_pair * pair )
 					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 				}
 			}
+
+			// single player and multiplayer masters evaluate the scoring and kill stuff
+			if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
+
+				//Save damage for bomb so we can do scoring once it's destroyed. -Halleck
+				if (wipA->wi_flags & WIF_BOMB) {
+					scoring_add_damage_to_weapon(A, B, wipB->damage);
+					//Update stats. -Halleck
+					scoring_eval_hit(A, B, 0);
+				}
+				if (wipB->wi_flags & WIF_BOMB) {
+					scoring_add_damage_to_weapon(B, A, wipA->damage);
+					//Update stats. -Halleck
+					scoring_eval_hit(B, A, 0);
+				}
+			}
+
 	#ifndef NDEBUG
 			float dist = 0.0f;
 

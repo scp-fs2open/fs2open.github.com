@@ -359,7 +359,7 @@ void nebl_render_all()
 				b->used = 0;
 				continue;
 			}
-			if( (b->type < 0) || (b->type >= Bolt_types.size()) ){
+			if( b->type >= Bolt_types.size() ){
 				b->used = 0;
 				continue;
 			}
@@ -598,7 +598,7 @@ void nebl_bolt(size_t type, vec3d *start, vec3d *strike)
 		return;
 	}
 
-	if( (type < 0) || (type >= Bolt_types.size()) ){
+	if( type >= Bolt_types.size() ){
 		return;
 	}
 	bi = &Bolt_types[type];	
@@ -1114,7 +1114,7 @@ void nebl_jitter(l_bolt *b)
 	if(b == NULL){
 		return;
 	}
-	if( (b->type < 0) || (b->type >= Bolt_types.size()) ){
+	if( b->type >= Bolt_types.size() ){
 		return;		
 	}
 	bi = &Bolt_types[b->type];

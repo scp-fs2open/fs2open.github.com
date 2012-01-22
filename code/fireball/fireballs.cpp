@@ -409,14 +409,24 @@ void fireball_render(object * obj)
 	switch( fb->fireball_render_type )	{
 
 		case FIREBALL_MEDIUM_EXPLOSION:
-			gr_set_bitmap(Fireballs[num].current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-			g3_draw_bitmap(&p, fb->orient, obj->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+			batch_add_bitmap (
+				Fireballs[num].current_bitmap, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				&p, 
+				fb->orient, 
+				obj->radius
+			);
 			break;
 
 		case FIREBALL_LARGE_EXPLOSION:
 			// Make the big explosions rotate with the viewer.
-			gr_set_bitmap(Fireballs[num].current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-			g3_draw_rotated_bitmap(&p, (i2fl(fb->orient)*PI)/180.0f, obj->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+			batch_add_bitmap_rotated ( 
+				Fireballs[num].current_bitmap, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				&p, 
+				(i2fl(fb->orient)*PI)/180.0f,
+				obj->radius
+			);
 			break;
 
 		case FIREBALL_WARP_EFFECT: {

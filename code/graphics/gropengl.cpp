@@ -734,10 +734,13 @@ int gr_opengl_zbuffer_set(int mode)
 
 	if (gr_zbuffering_mode == GR_ZBUFF_NONE) {
 		gr_zbuffering = 0;
-		GL_state.DepthTest(GL_FALSE);
+		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+	} else if ( gr_zbuffering_mode == GR_ZBUFF_READ ) {
+		gr_zbuffering = 1;
+		GL_state.SetZbufferType(ZBUFFER_TYPE_READ);
 	} else {
 		gr_zbuffering = 1;
-		GL_state.DepthTest(GL_TRUE);
+		GL_state.SetZbufferType(ZBUFFER_TYPE_FULL);
 	}
 
 	return tmp;
@@ -1368,6 +1371,7 @@ void gr_opengl_shutdown()
 	opengl_tcache_shutdown();
 	opengl_light_shutdown();
 	opengl_tnl_shutdown();
+	opengl_scene_texture_shutdown();
 	opengl_post_process_shutdown();
 	opengl_shader_shutdown();
 
@@ -1721,6 +1725,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_scaler				= gr_opengl_scaler;
 	gr_screen.gf_tmapper			= gr_opengl_tmapper;
 	gr_screen.gf_render				= gr_opengl_render;
+	gr_screen.gf_render_effect		= gr_opengl_render_effect;
 
 	gr_screen.gf_gradient			= gr_opengl_gradient;
 
@@ -1804,6 +1809,9 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_post_process_begin		= gr_opengl_post_process_begin;
 	gr_screen.gf_post_process_end		= gr_opengl_post_process_end;
 	gr_screen.gf_post_process_save_zbuffer	= gr_opengl_post_process_save_zbuffer;
+
+	gr_screen.gf_scene_texture_begin = gr_opengl_scene_texture_begin;
+	gr_screen.gf_scene_texture_end = gr_opengl_scene_texture_end;
 
 	gr_screen.gf_start_clip_plane	= gr_opengl_start_clip_plane;
 	gr_screen.gf_end_clip_plane		= gr_opengl_end_clip_plane;
@@ -1916,6 +1924,7 @@ bool gr_opengl_init()
 	opengl_shader_init();
 
 	// post processing effects, after shaders are initialized
+	opengl_setup_scene_textures();
 	opengl_post_process_init();
 
 	// must be called after extensions are setup

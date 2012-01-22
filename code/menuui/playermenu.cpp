@@ -270,11 +270,7 @@ void player_select_init()
 		b = &Player_select_buttons[gr_screen.res][i];
 
 		// create the button
-		if ( (i == SCROLL_LIST_UP_BUTTON) || (i == SCROLL_LIST_DOWN_BUTTON) ) {
-			b->button.create(&Player_select_window, NULL, b->x, b->y, 60, 30, 1, 1);
-		} else {
-			b->button.create(&Player_select_window, NULL, b->x, b->y, 60, 30, 1, 1);
-		}
+		b->button.create(&Player_select_window, NULL, b->x, b->y, 60, 30, 1, 1);
 
 		// set its highlight action
 		b->button.set_highlight_action(common_play_highlight_sound);

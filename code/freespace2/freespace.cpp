@@ -1910,13 +1910,11 @@ void game_init()
 
 
 #ifndef NDEBUG
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
-		mprintf(("FreeSpace version: %i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR));
-	} else if (FS_VERSION_REVIS == 0) {
-		mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
-	} else {
-		mprintf(("FreeSpace version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
-	}
+	#if FS_VERSION_REVIS == 0
+		mprintf(("FreeSpace 2 Open version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+	#else
+		mprintf(("FreeSpace 2 Open version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
+	#endif
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -3836,7 +3834,7 @@ void game_render_frame( camid cid )
 	}
 	gr_zbuffer_clear(TRUE);
 
-	gr_post_process_begin();
+	gr_scene_texture_begin();
 
 	neb2_render_setup(cid);
 
@@ -3926,7 +3924,7 @@ void game_render_frame( camid cid )
 	}
 	//================ END OF 3D RENDERING STUFF ====================
 
-	gr_post_process_end();
+	gr_scene_texture_end();
 
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
@@ -4394,8 +4392,6 @@ int game_actually_playing()
 
 void game_render_hud(camid cid)
 {
-	size_t i;
-
 	gr_reset_clip();
 
 	if(cid.isValid()) {
@@ -8364,13 +8360,11 @@ void get_version_string(char *str, int max_size)
 //XSTR:OFF
 	Assert( max_size > 6 );
 
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
-		sprintf(str, "FreeSpace 2 Open v%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
-	} else if (FS_VERSION_REVIS == 0) {
+	#if FS_VERSION_REVIS == 0
 		sprintf(str, "FreeSpace 2 Open v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-	} else {
+	#else
 		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
-	}
+	#endif
 
 #ifdef INF_BUILD
 	strcat_s( str, max_size, " Inferno" );

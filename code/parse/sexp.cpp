@@ -149,15 +149,17 @@ sexp_oper Operators[] = {
 	{ "is-goal-incomplete",					OP_GOAL_INCOMPLETE,				1, 1,	},
 	{ "is-event-true",						OP_EVENT_TRUE,							1, 1,			},
 	{ "is-event-true-delay",				OP_EVENT_TRUE_DELAY,				2, 3,	},
+	{ "is-event-true-msecs-delay",			OP_EVENT_TRUE_MSECS_DELAY,			2, 3,	},
 	{ "is-event-false",						OP_EVENT_FALSE,						1, 1,			},
 	{ "is-event-false-delay",				OP_EVENT_FALSE_DELAY,			2, 3,	},
+	{ "is-event-false-msecs-delay",			OP_EVENT_FALSE_MSECS_DELAY,		2, 3,	},
 	{ "is-event-incomplete",				OP_EVENT_INCOMPLETE,				1, 1,	},
 	{ "is-previous-goal-true",				OP_PREVIOUS_GOAL_TRUE,			2, 3,	},
-	{ "is-previous-goal-false",			OP_PREVIOUS_GOAL_FALSE,			2, 3,	},
+	{ "is-previous-goal-false",				OP_PREVIOUS_GOAL_FALSE,			2, 3,	},
 	{ "is-previous-goal-incomplete",		OP_PREVIOUS_GOAL_INCOMPLETE,	2, 3,	},
-	{ "is-previous-event-true",			OP_PREVIOUS_EVENT_TRUE,			2, 3,	},
+	{ "is-previous-event-true",				OP_PREVIOUS_EVENT_TRUE,			2, 3,	},
 	{ "is-previous-event-false",			OP_PREVIOUS_EVENT_FALSE,		2, 3,	},
-	{ "is-previous-event-incomplete",	OP_PREVIOUS_EVENT_INCOMPLETE,	2, 3,	},
+	{ "is-previous-event-incomplete",		OP_PREVIOUS_EVENT_INCOMPLETE,	2, 3,	},
 
 	{ "is-destroyed",							OP_IS_DESTROYED,						1,	INT_MAX,	},
 	{ "is-destroyed-delay",					OP_IS_DESTROYED_DELAY,				2,	INT_MAX,	},
@@ -401,7 +403,7 @@ sexp_oper Operators[] = {
 	{ "get-collision-group",		OP_GET_COLGROUP_ID,				1, 1 },
 	{ "ship-effect",				OP_SHIP_EFFECT,					3, INT_MAX },	// Valathil
 
-	{ "fire-beam",						OP_BEAM_FIRE,					3, 4		},
+	{ "fire-beam",						OP_BEAM_FIRE,					3, 5		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
 	{ "beam-free-all",					OP_BEAM_FREE_ALL,				1, INT_MAX	},
 	{ "beam-lock",						OP_BEAM_LOCK,					2, INT_MAX	},
@@ -518,7 +520,6 @@ sexp_oper Operators[] = {
 	{ "enable-ets",					OP_ENABLE_ETS,			1, INT_MAX}, // The E
 	{ "set-immobile",		OP_SET_IMMOBILE,			1, INT_MAX	},	// Goober5000
 	{ "set-mobile",			OP_SET_MOBILE,			1, INT_MAX	},	// Goober5000
-	{ "ignore-key",			OP_IGNORE_KEY,			2, INT_MAX	},	// Karajorma
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -578,6 +579,7 @@ sexp_oper Operators[] = {
 	{ "key-pressed",				OP_KEY_PRESSED,				1,	2,			},
 	{ "key-reset",					OP_KEY_RESET,					1, INT_MAX,	},
 	{ "key-reset-multiple",			OP_KEY_RESET_MULTIPLE,			1, INT_MAX,	},
+	{ "ignore-key",			OP_IGNORE_KEY,			2, INT_MAX	},	// Karajorma
 	{ "targeted",					OP_TARGETED,					1, 3,			},
 	{ "node-targeted",				OP_NODE_TARGETED,					1, 2,		}, // FUBAR
 	{ "missile-locked",				OP_MISSILE_LOCKED,			1,	3	},	// Sesquipedalian
@@ -1913,7 +1915,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				// check for the special "hull" value
-				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) || (Operators[op].value == OP_SET_ARMOR_TYPE)) {
+				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) || (Operators[op].value == OP_SET_ARMOR_TYPE) || (Operators[op].value == OP_BEAM_FIRE)) {
 					if ( !stricmp( CTEXT(node), SEXP_HULL_STRING) || !stricmp( CTEXT(node), SEXP_SIM_HULL_STRING) ){
 						break;
 					}
@@ -5333,7 +5335,7 @@ void sexp_set_energy_pct (int node, int op_num)
 	
 	// only need to send a packet for afterburners because shields and weapon energy are sent from server to clients
 	if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_float(new_pct); 
 	}
 
@@ -5384,7 +5386,7 @@ void sexp_set_energy_pct (int node, int op_num)
 	}
 
 	if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
-		multi_end_packet(); 
+		multi_end_callback(); 
 	}
 }
 
@@ -9183,9 +9185,9 @@ void sexp_hud_disable(int n)
 	int disable_hud = eval_num(n);
 	hud_set_draw(!disable_hud);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(disable_hud);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_hud_disable()
@@ -9203,9 +9205,9 @@ void sexp_hud_disable_except_messages(int n)
 	int disable_hud = eval_num(n);
 	hud_disable_except_messages(disable_hud);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(disable_hud);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_hud_disable_except_messages()
@@ -9427,9 +9429,9 @@ void sexp_change_soundtrack(int n)
 	event_sexp_change_soundtrack(CTEXT(n));
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet(); 
+		multi_start_callback(); 
 		multi_send_string(CTEXT(n));
-		multi_end_packet(); 
+		multi_end_callback(); 
 	}
 }
 
@@ -9520,12 +9522,12 @@ void sexp_play_sound_from_table(int n)
 	}
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_float(origin.xyz.x);
 		multi_send_float(origin.xyz.y);
 		multi_send_float(origin.xyz.z);
 		multi_send_int(sound_index);
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -9553,9 +9555,9 @@ void sexp_close_sound_from_file(int n)
 	sexp_stop_music(fade);
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_bool(fade ? true : false); 
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -9589,7 +9591,7 @@ void sexp_play_sound_from_file(int n)
 	sexp_load_music(CTEXT(n), type);
 	
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_string(CTEXT(n));
 	}
 
@@ -9603,7 +9605,7 @@ void sexp_play_sound_from_file(int n)
 
 	if (MULTIPLAYER_MASTER) {
 		multi_send_bool(loop ? true : false); 
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -11641,7 +11643,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 	int n = node;
 
 	if (send_multiplayer && MULTIPLAYER_MASTER) {
-		multi_start_packet(); 
+		multi_start_callback(); 
 		multi_send_int(object_flag); 
 		/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until object_flag2
 		is actually used by the engine 
@@ -11765,7 +11767,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 	}
 
 	if (send_multiplayer && MULTIPLAYER_MASTER) {
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -11995,7 +11997,7 @@ void sexp_set_persona (int node)
 	Assert (node >=0);
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_int(persona_index); 
 	}
 
@@ -12019,7 +12021,7 @@ void sexp_set_persona (int node)
 	}
 
 	if (MULTIPLAYER_MASTER) {
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -12379,7 +12381,7 @@ int sexp_event_status( int n, int want_true )
 
 // function to return the status of an event N seconds after the event is true or false.  Similar
 // to above function but waits N seconds before returning true
-int sexp_event_delay_status( int n, int want_true )
+int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 {
 	char *name;
 	int i, result;
@@ -12395,6 +12397,11 @@ int sexp_event_delay_status( int n, int want_true )
 	}
 
 	delay = i2f(eval_num(CDR(n)));
+
+	if (use_msecs) {
+		delay = delay / 1000l;
+	}
+
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name, name) ) {
@@ -12653,7 +12660,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 	//multiplayer packet start
 	if (sendit)
 	{
-		multi_start_packet(); 
+		multi_start_callback(); 
 		multi_send_ship(shipp);
 		multi_send_bool(setit);
 	}
@@ -12700,7 +12707,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 
 	// mulitplayer end of packet
 	if (sendit)
-		multi_end_packet();
+		multi_end_callback();
 }
 void multi_sexp_deal_with_subsys_flag(int ss_flag)
 {
@@ -13352,7 +13359,7 @@ void sexp_ship_change_callsign(int node)
 	}
 
 	// packets for multi
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(new_callsign); 
 
 	while ( node >= 0 )
@@ -13367,7 +13374,7 @@ void sexp_ship_change_callsign(int node)
 		node = CDR(node);
 	}
 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_ship_change_callsign()
@@ -13466,7 +13473,7 @@ void sexp_ignore_key(int node)
 
 	ignore_count = eval_num(node);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(ignore_count);
 
 	node = CDR(node);
@@ -13483,7 +13490,7 @@ void sexp_ignore_key(int node)
 		node = CDR(node);
 	}
 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_ignore_key()
@@ -13654,26 +13661,32 @@ int sexp_secondaries_depleted(int node)
 
 int sexp_facing(int node)
 {
-	int obj, sh;
 	float a1, a2;
 	vec3d v1, v2;
 
-	if (ship_query_state(CTEXT(node)) < 0){
-		return SEXP_KNOWN_FALSE;
-	}
-
-	sh = ship_name_lookup(CTEXT(node));
-	if ((sh < 0) || !Player_obj){
+	if (!Player_obj) {
 		return SEXP_FALSE;
 	}
 
-	obj = Ships[sh].objnum;
+	ship *target_shipp = sexp_get_ship_from_node(node);
+	if (target_shipp == NULL) {
+		// hasn't arrived yet
+		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
+			return SEXP_CANT_EVAL;
+		}
+		// not found and won't arrive: invalid
+		return SEXP_KNOWN_FALSE;
+	}
+	double angle = atof(CTEXT(CDR(node)));
+
 	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
-	vm_vec_sub(&v2, &Objects[obj].pos, &Player_obj->pos);
+
+	vm_vec_sub(&v2, &Objects[target_shipp->objnum].pos, &Player_obj->pos);
 	vm_vec_normalize(&v2);
+
 	a1 = vm_vec_dotprod(&v1, &v2);
-	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
+	a2 = (float) cos(ANG_TO_RAD(angle));
 	if (a1 >= a2){
 		return SEXP_TRUE;
 	}
@@ -13681,52 +13694,53 @@ int sexp_facing(int node)
 	return SEXP_FALSE;
 }
 
-
 int sexp_is_facing(int node)
 {
-	int sh;
-	object *obj1, *obj2;
+	object *origin_objp, *target_objp;
 	float a1, a2;
-	vec3d v1, v2; 
-
-	if (sexp_query_has_yet_to_arrive(CTEXT(node)))
-		return SEXP_CANT_EVAL;
-
-	sh = ship_name_lookup(CTEXT(node));
-	if (sh < 0) {
-		return SEXP_FALSE;
+	vec3d v1, v2;
+	
+	ship *origin_shipp = sexp_get_ship_from_node(node);
+	if (origin_shipp == NULL) {
+		// hasn't arrived yet
+		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
+			return SEXP_CANT_EVAL;
+		}
+		// not found and won't arrive: invalid
+		return SEXP_KNOWN_FALSE;
 	}
-	obj1 = &Objects[Ships[sh].objnum];
-
 	node = CDR(node);
 
-	if (sexp_query_has_yet_to_arrive(CTEXT(node)))
-		return SEXP_CANT_EVAL;
+	ship *target_shipp = sexp_get_ship_from_node(node);
+	if (target_shipp == NULL) {
+		// hasn't arrived yet
+		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
+			return SEXP_CANT_EVAL;
+		}
+		// not found and won't arrive: invalid
+		return SEXP_KNOWN_FALSE;
+	}
+	node = CDR(node);
 
-	sh = ship_name_lookup(CTEXT(node));
-	if (sh < 0) {
+	double angle = atof(CTEXT(node));
+	node = CDR(node);
+
+	origin_objp = &Objects[origin_shipp->objnum];
+	target_objp = &Objects[target_shipp->objnum];
+
+	// check optional distance argument
+	if (node > 0 && (sexp_distance3(origin_objp, target_objp) > eval_num(node))) {
 		return SEXP_FALSE;
 	}
 
-	obj2 = &Objects[Ships[sh].objnum];
-	
-	v1 = obj1->orient.vec.fvec;
-	
+	v1 = origin_objp->orient.vec.fvec;	
 	vm_vec_normalize(&v1);
-	vm_vec_sub(&v2, &obj2->pos, &obj1->pos);
+
+	vm_vec_sub(&v2, &target_objp->pos, &origin_objp->pos);
 	vm_vec_normalize(&v2);
+
 	a1 = vm_vec_dotprod(&v1, &v2);
-
-	node = CDR(node);
-	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(node))));
-
-	node = CDR(node);
-
-	if (node > 0) {
-		if (sexp_distance3(obj1, obj2) > eval_num(node))
-			return SEXP_FALSE;
-	}
-
+	a2 = (float) cos(ANG_TO_RAD(angle));
 	if (a1 >= a2){
 		return SEXP_TRUE;
 	}
@@ -13886,7 +13900,7 @@ void sexp_send_training_message(int node)
 		}
 	}
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(t);
 	multi_send_int(delay);
 
@@ -13897,7 +13911,7 @@ void sexp_send_training_message(int node)
 		message_training_queue(CTEXT(CDR(node)), timestamp(delay), t);
 		multi_send_string(CTEXT(CDR(node)));
 	}
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_send_training_message()
@@ -14551,10 +14565,10 @@ void sexp_set_countermeasures(int node)
 
 	shipp->cmeasure_count = num_cmeasures;
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_ship(shipp);
 	multi_send_int(num_cmeasures);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_set_countermeasures()
@@ -14620,7 +14634,7 @@ void sexp_change_subsystem_name(int node)
 	node = CDR(node);
 	
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_ship(shipp); 
 		multi_send_string(new_name); 
 	}
@@ -14642,7 +14656,7 @@ void sexp_change_subsystem_name(int node)
 	}
 	
 	if (MULTIPLAYER_MASTER) {
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -14672,7 +14686,7 @@ void sexp_change_ship_class(int n)
 	n = CDR(n);
 
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_int(class_num);
 	}
 
@@ -14727,7 +14741,7 @@ void sexp_change_ship_class(int n)
 	}
 
 	if (MULTIPLAYER_MASTER) {
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -14975,9 +14989,9 @@ void sexp_set_ambient_light(int node)
 
 	// do the multiplayer callback
 	if (MULTIPLAYER_MASTER) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_int(level);
-		multi_end_packet();
+		multi_end_callback();
 	}
 }
 
@@ -15040,70 +15054,77 @@ void sexp_set_skybox_model_preload(char *name)
 
 void sexp_beam_fire(int node)
 {
-	int sindex, n;
+	int sindex, n = node;
 	beam_fire_info fire_info;		
-	int idx;	
+	int idx;
 
 	// zero stuff out
 	memset(&fire_info, 0, sizeof(beam_fire_info));
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
 
 	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	sindex = ship_name_lookup(CTEXT(n));
+	n = CDR(n);
+	if (sindex < 0) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0){
+	if (Ships[sindex].objnum < 0) {
 		return;
 	}
 	fire_info.shooter = &Objects[Ships[sindex].objnum];
 
 	// get the subsystem
-	fire_info.turret = ship_get_subsys(&Ships[sindex], CTEXT(CDR(node)));
-	if(fire_info.turret == NULL){
+	fire_info.turret = ship_get_subsys(&Ships[sindex], CTEXT(n));
+	n = CDR(n);
+	if (fire_info.turret == NULL) {
 		return;
 	}
 
 	// get the target
-	sindex = ship_name_lookup(CTEXT(CDR(CDR(node))));
-	if(sindex < 0){
+	sindex = ship_name_lookup(CTEXT(n));
+	n = CDR(n);
+	if (sindex < 0) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0){
+	if (Ships[sindex].objnum < 0) {
 		return;
 	}
 	fire_info.target = &Objects[Ships[sindex].objnum];
 
 	// see if the optional subsystem can be found	
 	fire_info.target_subsys = NULL;
-	n = CDDDR(node);
-	if (n != -1) {
-		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));	
+	if (n >= 0) {
+		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+		n = CDR(n);
+	}
+
+	// optionally force firing
+	if (n >= 0 && is_sexp_true(n)) {
+		fire_info.bfi_flags |= BFIF_FORCE_FIRING;
 	}
 
 	// if it has no primary weapons
-	if(fire_info.turret->weapons.num_primary_banks <= 0){
+	if (fire_info.turret->weapons.num_primary_banks <= 0) {
 		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no primary weapons", CTEXT(node), CTEXT(CDR(node)));
 		return;
 	}
 
 	// if the turret is destroyed
-	if(fire_info.turret->current_hits <= 0.0f){
+	if (!(fire_info.bfi_flags & BFIF_FORCE_FIRING) && fire_info.turret->current_hits <= 0.0f) {
 		return;
 	}
 
 	// hmm, this could be wacky. Let's just simply select the first beam weapon in the turret
 	fire_info.beam_info_index = -1;	
-	for(idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++){
+	for (idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++) {
 		// store the weapon info index
-		if(Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags & WIF_BEAM){
+		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags & WIF_BEAM) {
 			fire_info.beam_info_index = fire_info.turret->weapons.primary_bank_weapons[idx];
 		}
 	}
 
 	// fire the beam
-	if(fire_info.beam_info_index != -1){
-		fire_info.fighter_beam = false;
+	if (fire_info.beam_info_index != -1) {
 		beam_fire(&fire_info);
 	} else {
 		// it would appear the turret doesn't have any beam weapons
@@ -16108,7 +16129,7 @@ void sexp_reverse_rotating_subsystem(int node)
 void sexp_rotating_subsys_set_turn_time(int node)
 {
 	int ship_num;
-	float turn_time, turn_accel;
+	float turn_time;
 	ship_subsys *rotate;
 
 	// get the ship
@@ -16130,7 +16151,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 
 	// maybe get and set the turn accel
 	if (CDDDR(node) != -1)
-		turn_accel = ((float) atoi(CTEXT(CDDDR(node)))) / 1000.0f;
+		rotate->submodel_info_1.turn_accel = ((float) atoi(CTEXT(CDDDR(node)))) / 1000.0f;
 	else
 		rotate->submodel_info_1.cur_turn_rate = PI2 / turn_time;
 }
@@ -16216,10 +16237,10 @@ void sexp_add_remove_escort(int node)
 		hud_remove_ship_from_escort(Ships[sindex].objnum);
 	}
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(sindex);
 	multi_send_int(flag); 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_add_remove_escort()
@@ -16755,7 +16776,7 @@ void add_nav_waypoint(int node)
 
 	add_nav_waypoint(nav_name, way_name, vert, oswpt_name);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(nav_name);
 	multi_send_string(way_name);
 	multi_send_int(vert);
@@ -16764,7 +16785,7 @@ void add_nav_waypoint(int node)
 		multi_send_string(oswpt_name);
 	}
 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_add_nav_waypoint()
@@ -16805,10 +16826,10 @@ void add_nav_ship(int node)
 	char *ship_name = CTEXT(CDR(node));
 	AddNav_Ship(nav_name, ship_name, 0);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(nav_name);
 	multi_send_string(ship_name);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_add_nav_ship()
@@ -16835,9 +16856,9 @@ void del_nav(int node)
 	char *nav_name = CTEXT(node);
 	DelNavPoint(nav_name);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(nav_name);
-	multi_end_packet();
+	multi_end_callback();
 
 }
 
@@ -17123,7 +17144,7 @@ void sexp_set_respawns(int node)
 	node = CDR(node);
 
 	// send the information to clients
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(num_respawns); 
 
 	while (node != -1) {
@@ -17138,7 +17159,7 @@ void sexp_set_respawns(int node)
 		node = CDR(node);
 	}
 	
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_set_respawns()
@@ -17190,9 +17211,9 @@ void sexp_remove_weapons(int node)
 	actually_remove_weapons(weapon_info_index); 
 	
 	// send the information to clients
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(weapon_info_index); 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_remove_weapons()
@@ -17969,9 +17990,9 @@ void sexp_flash_hud_gauge( int node )
 		if ( !stricmp(HUD_gauge_text[i], name) ) {
 			hud_gauge_start_flash(i);	// call HUD function to flash gauge
 
-			multi_start_packet();
+			multi_start_callback();
 			multi_send_int(i);
-			multi_end_packet();
+			multi_end_callback();
 
 			break;
 		}
@@ -18047,9 +18068,9 @@ void sexp_toggle_cutscene_bars(int node, int set)
 
 	toggle_cutscene_bars(delta_speed, set);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_float(delta_speed);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_toggle_cutscene_bars(int set)
@@ -18080,9 +18101,9 @@ void sexp_fade_in(int n)
 	}
 
 	// multiplayer callback
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_float(delta_time);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_fade_in()
@@ -18155,12 +18176,12 @@ void sexp_fade_out(int n)
 
 	sexp_fade_out(delta_time, R, G, B);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_float(delta_time);
 	multi_send_int(R);
 	multi_send_int(G);
 	multi_send_int(B);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_fade_out()
@@ -18755,7 +18776,7 @@ void sexp_show_subtitle_text(int node)
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(x_pos);
 	multi_send_int(y_pos);
 	multi_send_string(text);
@@ -18769,7 +18790,7 @@ void sexp_show_subtitle_text(int node)
 	multi_send_bool(center_y);
 	multi_send_int(width);
 	multi_send_bool(post_shaded);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_show_subtitle_text()
@@ -18874,7 +18895,7 @@ void sexp_show_subtitle_image(int node)
 	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
 	Subtitles.push_back(new_subtitle);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(x_pos);
 	multi_send_int(y_pos);
 	multi_send_string(image);
@@ -18885,7 +18906,7 @@ void sexp_show_subtitle_image(int node)
 	multi_send_int(width);
 	multi_send_int(height);
 	multi_send_bool(post_shaded);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_show_subtitle_image()
@@ -18974,10 +18995,10 @@ void sexp_set_camera_shudder(int n)
 
 	game_shudder_apply(time, intensity);
 
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_int(time);
 	multi_send_float(intensity); 
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_set_camera_shudder()
@@ -19007,10 +19028,10 @@ void sexp_set_jumpnode_name(int n) //CommanderDJ
 	char *new_name = CTEXT(n); //for multi
 
 	//multiplayer callback
-	multi_start_packet();
+	multi_start_callback();
 	multi_send_string(old_name);
 	multi_send_string(new_name);
-	multi_end_packet();
+	multi_end_callback();
 }
 
 void multi_sexp_set_jumpnode_name(int n) //CommanderDJ
@@ -19305,7 +19326,7 @@ void sexp_ship_effect(int n)
 		if((wing_index = wing_name_lookup(name)) >= 0)
 		{
 			wing *wp = &Wings[wing_index];
-			for(int i = 0; i < 6; i++)
+			for(int i = 0; i < wp->current_count; i++)
 			{
 				if(wp->ship_index[i] >= 0)
 				{
@@ -19563,6 +19584,13 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_EVENT_TRUE_DELAY:
 			case OP_EVENT_FALSE_DELAY:
 				sexp_val = sexp_event_delay_status( node, (op_num == OP_EVENT_TRUE_DELAY?1:0) );
+			//	if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
+			//		Sexp_useful_number = 0;  // indicate sexp isn't current yet
+				break;
+
+			case OP_EVENT_TRUE_MSECS_DELAY:
+			case OP_EVENT_FALSE_MSECS_DELAY:
+				sexp_val = sexp_event_delay_status( node, (op_num == OP_EVENT_TRUE_MSECS_DELAY?1:0), true );
 			//	if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
 			//		Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
@@ -21479,7 +21507,7 @@ void multi_sexp_eval()
 		Assert (Multi_sexp_bytes_left); 
 
 		if (op_num < 0) {
-			Warning(LOCATION, "Received invalid SEXP packet from host. Entire packet may be corrupt. Discarding packet"); 
+			Warning(LOCATION, "Received invalid operator number from host in multi_sexp_eval(). Entire packet may be corrupt. Discarding packet"); 
 			Int3(); 
 			return; 	
 		}
@@ -21819,6 +21847,8 @@ int query_operator_return_type(int op)
 		case OP_GOAL_FALSE_DELAY:
 		case OP_EVENT_INCOMPLETE:
 		case OP_EVENT_TRUE_DELAY:
+		case OP_EVENT_FALSE_MSECS_DELAY:
+		case OP_EVENT_TRUE_MSECS_DELAY:
 		case OP_EVENT_FALSE_DELAY:
 		case OP_PREVIOUS_EVENT_TRUE:
 		case OP_PREVIOUS_EVENT_FALSE:
@@ -23218,6 +23248,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EVENT_INCOMPLETE:
 		case OP_EVENT_TRUE_DELAY:
 		case OP_EVENT_FALSE_DELAY:
+		case OP_EVENT_TRUE_MSECS_DELAY:
+		case OP_EVENT_FALSE_MSECS_DELAY:
 			if (argnum == 0)
 				return OPF_EVENT_NAME;
 			else if (argnum == 1)
@@ -23407,6 +23439,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			case 3:
 				return OPF_SUBSYSTEM;
+			case 4:
+				return OPF_BOOL;
 			}
 
 		case OP_IS_TAGGED:
@@ -24799,10 +24833,10 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 	// do multi_callback_here
 	// if we're called from the sexp code send a SEXP packet (more efficient) 
 	if( MULTIPLAYER_MASTER && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) && sexp_callback) {
-		multi_start_packet();
+		multi_start_callback();
 		multi_send_int(index);
 		multi_send_string(Sexp_variables[index].text);
-		multi_end_packet();
+		multi_end_callback();
 	}
 	// otherwise send a SEXP variable packet
 	else if ( (Game_mode & GM_MULTIPLAYER) && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) ) {
@@ -25483,7 +25517,6 @@ int get_subcategory(int sexp_id)
 		case OP_FIELD_SET_DAMAGE_TYPE:
 		case OP_SET_MOBILE:
 		case OP_SET_IMMOBILE:
-		case OP_IGNORE_KEY:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -26106,6 +26139,23 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true.\r\n"
 		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+
+	{ OP_EVENT_TRUE_MSECS_DELAY, "Mission Event True (Boolean operator)\r\n"
+		"\tReturns true N milliseconds after the specified event in the this mission is true "
+		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the event in the mission.\r\n"
+		"\t2:\tNumber of milliseconds to delay before returning true.\r\n"
+		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+
+	{ OP_EVENT_FALSE_MSECS_DELAY, "Mission Event False (Boolean operator)\r\n"
+		"\tReturns true N milliseconds after the specified event in the this mission is false "
+		"(or failed).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the event in the mission.\r\n"
+		"\t2:\tNumber of milliseconds to delay before returning true.\r\n"
+		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+
 
 	{ OP_EVENT_INCOMPLETE, "Mission Event Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the this mission is incomplete.  This "
@@ -27069,7 +27119,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tIs true as long as the second ship is within the first ship's specified "
 		"forward cone.  A forward cone is defined as any point that the angle between the "
 		"vector of the point and the player, and the forward facing vector is within the "
-		"given angle. If the distance between the two ships is greather than"
+		"given angle. If the distance between the two ships is greather than "
 		"the fourth parameter, this will return false.\r\n\r\n"
 		"Returns a boolean value.  Takes 3 or 4 argument...\r\n"
 		"\t1:\tShip to check from.\r\n"
@@ -27738,7 +27788,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tShip which will be firing\r\n"
 		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
 		"\t3:\tShip which will be targeted\r\n"
-		"Use add-data to add a specific subsystem to target on the specified target ship"},
+		"\t4:\tSubsystem to target (optional)\r\n"
+		"\t5:\tWhether to force the beam to fire (disregarding FOV and subsystem status) (optional)\r\n" },
 
 	{ OP_IS_TAGGED, "is-tagged\r\n"
 		"\tReturns whether a given ship is tagged or not\r\n"},

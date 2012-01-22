@@ -17,6 +17,9 @@ private:
 	int n_allocated;		// the number of verts allocated
 	vertex *vert;
 
+	bool use_radius;
+	float *radius_list;		// radiuses associated with the vertices in vert
+
 	// makes sure we have enough space in the memory buffer for the geometry we are about to put into it
 	// you need to figure out how many verts are going to be required
 	void allocate_internal(int n_verts);
@@ -24,7 +27,7 @@ private:
 	void clone(const geometry_batcher &geo);
 
 public:
-	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL) {};
+	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), radius_list(NULL), use_radius(true) {};
 	~geometry_batcher();
 
     geometry_batcher(const geometry_batcher &geo) { clone(geo); }
@@ -41,7 +44,7 @@ public:
 	void draw_bitmap(vertex *position, int orient, float rad, float depth = 0);
 
 	// draw a rotated bitmap
-	void draw_bitmap(vertex *position, int orient, float rad, float angle, float depth);
+	void draw_bitmap(vertex *position, float rad, float angle, float depth);
 
 	// draw a simple 3 vert polygon
 	void draw_tri(vertex *verts);
@@ -57,7 +60,7 @@ public:
 
 	// draw all of the batched geometry to the back buffer and flushes the cache
 	// accepts tmap flags so you can use anything you want really
-	void render(int flags);
+	void render(int flags, float radius = 0.0f);
 
 	// determine if we even need to try and render this (helpful for particle system)
 	int need_to_render() { return n_to_render; };
@@ -68,9 +71,14 @@ public:
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r = 255, int g = 255, int b = 255);
 int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
+int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
+int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity = 1.0f);
+int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
+int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity = 1.0f);
 void batch_render_all();
 void batch_render_bitmaps();
 void batch_render_lasers();
 void batch_reset();
+void distortion_render_bitmaps();
 
 #endif

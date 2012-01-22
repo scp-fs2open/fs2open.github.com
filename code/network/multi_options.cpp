@@ -83,8 +83,8 @@ void multi_options_read_config()
 	Multi_options_g.std_max_players = -1;
 	Multi_options_g.std_datarate = OBJ_UPDATE_HIGH;
 	Multi_options_g.std_voice = 1;
-	memset(Multi_options_g.std_passwd, 0, STD_PASSWD_LEN);
-	memset(Multi_options_g.std_pname, 0, STD_NAME_LEN);
+	memset(Multi_options_g.std_passwd, 0, STD_PASSWD_LEN+1);
+	memset(Multi_options_g.std_pname, 0, STD_NAME_LEN+1);
 	Multi_options_g.std_framecap = 30;
 
 	// read in the config file

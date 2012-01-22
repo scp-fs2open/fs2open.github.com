@@ -1150,6 +1150,9 @@
 #define IDC_IMMOBILE                    1631
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
+#define IDC_NEB_NEAR_MULTIPLIER         1632
+#define IDC_EDIT6                       1633
+#define IDC_NEB_FAR_MULTIPLIER          1634
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1443,7 +1446,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        320
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1632
+#define _APS_NEXT_CONTROL_VALUE         1635
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

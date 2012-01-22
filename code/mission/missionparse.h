@@ -150,6 +150,8 @@ typedef struct mission {
 	int		skybox_flags;
 	int		contrail_threshold;
 	int		ambient_light_level;
+	float	neb_far_multi;
+	float	neb_near_multi;
 	sound_env	sound_environment;
 
 	// Goober5000

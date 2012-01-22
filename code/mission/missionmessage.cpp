@@ -477,7 +477,7 @@ void parse_msgtbl()
 	Num_builtin_waves = Num_message_waves;
 
 	
-	memset(Valid_builtin_message_types, 0, sizeof(int)); 
+	memset(Valid_builtin_message_types, 0, sizeof(int)*MAX_BUILTIN_MESSAGE_TYPES); 
 	// now cycle through the messages to determine which type of builtins we have messages for
 	for (i = 0; i < Num_builtin_messages; i++) {
 		for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {

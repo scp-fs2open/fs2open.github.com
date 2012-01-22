@@ -1678,7 +1678,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			fire_info.target = &Objects[turret->turret_enemy_objnum];
 			fire_info.target_subsys = NULL;
 			fire_info.turret = turret;
-			fire_info.fighter_beam = false;
 
 			// fire a beam weapon
 			beam_fire(&fire_info);

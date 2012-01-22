@@ -4197,6 +4197,151 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 		return ADE_RETURN_FALSE;
 }
 
+class mc_info_h
+{
+protected:
+	mc_info* info;
+public:
+	mc_info_h(mc_info* val) : info(val) {}
+
+	mc_info_h() : info(NULL) {}
+
+	mc_info *Get()
+	{
+		return info;
+	}
+
+	void deleteInfo()
+	{
+		if (!this->IsValid())
+			return;
+
+		delete info;
+
+		info = NULL;
+	}
+
+	bool IsValid()
+	{
+		return info != NULL;
+	}
+};
+
+//**********HANDLE: Collision info
+ade_obj<mc_info_h> l_ColInfo("collision info", "Information about a collision");
+
+ADE_FUNC(__gc, l_ColInfo, NULL, "Removes the allocated reference of this handle", NULL, NULL)
+{
+	mc_info_h* info;
+
+	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
+		return ADE_RETURN_NIL;
+
+	if (info->IsValid())
+		info->deleteInfo();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about", "model", "The model")
+{	
+	mc_info_h* info;
+	model_h * mh;
+
+	if(!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Model.GetPtr(&mh)))
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	if (!info->IsValid())
+		return ade_set_error(L, "o", l_Model.Set(model_h()));
+
+	mc_info *collide = info->Get();
+
+	int modelNum = collide->model_num;
+
+	if (ADE_SETTING_VAR)
+	{
+		if (mh->IsValid())
+		{
+			collide->model_num = mh->GetID();
+		}
+	}
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(modelNum)));
+}
+
+ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point of this information (local to the object if boolean is set to <i>true</i>)", "vector", "The collision point or nil of none")
+{
+	mc_info_h* info;
+	bool local = false;
+
+	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
+		return ADE_RETURN_NIL;
+
+	if (!info->IsValid())
+		return ADE_RETURN_NIL;
+
+	mc_info *collide = info->Get();
+	
+	if (collide->num_hits <= 0) 
+	{
+		return ADE_RETURN_NIL;
+	}
+	else
+	{
+		if (local)
+			return ade_set_args(L, "o", l_Vector.Set(collide->hit_point));
+		else
+			return ade_set_args(L, "o", l_Vector.Set(collide->hit_point_world));
+	}
+}
+
+ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal of this information (local to object if boolean is set to <i>true</i>)", "vector", "The collision normal or nil of none")
+{
+	mc_info_h* info;
+	bool local = false;
+
+	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
+		return ADE_RETURN_NIL;
+
+	if (!info->IsValid())
+		return ADE_RETURN_NIL;
+
+	mc_info *collide = info->Get();
+
+	if (collide->num_hits <= 0) 
+	{
+		return ADE_RETURN_NIL;
+	}
+	else
+	{
+		if (!local)
+		{
+			vec3d normal;
+
+			vm_vec_unrotate(&normal, &collide->hit_normal, collide->orient);
+
+			return ade_set_args(L, "o", l_Vector.Set(normal));
+		}
+		else
+		{
+			return ade_set_args(L, "o", l_Vector.Set(collide->hit_normal));
+		}
+	}
+}
+
+ADE_FUNC(isValid, l_ColInfo, NULL, "Detectes if this handle is valid", "boolean", "true if valid false otherwise")
+{
+	mc_info_h* info;
+
+	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
+		return ADE_RETURN_NIL;
+
+	if (info->IsValid())
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 //**********HANDLE: Eyepoint
 struct eye_h
 {
@@ -4650,7 +4795,7 @@ ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current
 	return ade_set_args(L, "o", l_Vector.Set(v1));
 }
 
-ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [boolean Local]", "Checks the collisions between the polygons of the current object and a ray", "vector Position", "World collision point (local if boolean is set to true), nil if no collisions")
+ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [boolean Local]", "Checks the collisions between the polygons of the current object and a ray", "vector, collision info", "World collision point (local if boolean is set to true) and the specific collsision info, nil if no collisions")
 {
 	object_h *objh = NULL;
 	object *obj = NULL;
@@ -4713,9 +4858,9 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	}
 
 	if (local)
-		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point));
+		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point), l_ColInfo.Set(mc_info_h(new mc_info(hull_check))));
 	else
-		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point_world));
+		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point_world),  l_ColInfo.Set(mc_info_h(new mc_info(hull_check))));
 }
 
 //**********HANDLE: Asteroid
@@ -6411,151 +6556,6 @@ ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
 }
 
-class mc_info_h
-{
-protected:
-	mc_info* info;
-public:
-	mc_info_h(mc_info* val) : info(val) {}
-
-	mc_info_h() : info(NULL) {}
-
-	mc_info *Get()
-	{
-		return info;
-	}
-
-	void deleteInfo()
-	{
-		if (!this->IsValid())
-			return;
-
-		delete info;
-
-		info = NULL;
-	}
-
-	bool IsValid()
-	{
-		return info != NULL;
-	}
-};
-
-//**********HANDLE: Collision info
-ade_obj<mc_info_h> l_ColInfo("collision info", "Information about a collision");
-
-ADE_FUNC(__gc, l_ColInfo, NULL, "Removes the allocated reference of this handle", NULL, NULL)
-{
-	mc_info_h* info;
-
-	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
-		return ADE_RETURN_NIL;
-
-	if (info->IsValid())
-		info->deleteInfo();
-
-	return ADE_RETURN_NIL;
-}
-
-ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about", "model", "The model")
-{	
-	mc_info_h* info;
-	model_h * mh;
-
-	if(!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Model.GetPtr(&mh)))
-		return ade_set_error(L, "o", l_Model.Set(model_h()));
-
-	if (!info->IsValid())
-		return ade_set_error(L, "o", l_Model.Set(model_h()));
-
-	mc_info *collide = info->Get();
-
-	int modelNum = collide->model_num;
-
-	if (ADE_SETTING_VAR)
-	{
-		if (mh->IsValid())
-		{
-			collide->model_num = mh->GetID();
-		}
-	}
-
-	return ade_set_args(L, "o", l_Model.Set(model_h(modelNum)));
-}
-
-ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point of this information (local to the object if boolean is set to <i>true</i>)", "vector", "The collision point or nil of none")
-{
-	mc_info_h* info;
-	bool local = false;
-
-	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
-		return ADE_RETURN_NIL;
-
-	if (!info->IsValid())
-		return ADE_RETURN_NIL;
-
-	mc_info *collide = info->Get();
-	
-	if (collide->num_hits <= 0) 
-	{
-		return ADE_RETURN_NIL;
-	}
-	else
-	{
-		if (local)
-			return ade_set_args(L, "o", l_Vector.Set(collide->hit_point));
-		else
-			return ade_set_args(L, "o", l_Vector.Set(collide->hit_point_world));
-	}
-}
-
-ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal of this information (local to object if boolean is set to <i>true</i>)", "vector", "The collision normal or nil of none")
-{
-	mc_info_h* info;
-	bool local = false;
-
-	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
-		return ADE_RETURN_NIL;
-
-	if (!info->IsValid())
-		return ADE_RETURN_NIL;
-
-	mc_info *collide = info->Get();
-
-	if (collide->num_hits <= 0) 
-	{
-		return ADE_RETURN_NIL;
-	}
-	else
-	{
-		if (!local)
-		{
-			vec3d normal;
-
-			vm_vec_unrotate(&normal, &collide->hit_normal, collide->orient);
-
-			return ade_set_args(L, "o", l_Vector.Set(normal));
-		}
-		else
-		{
-			return ade_set_args(L, "o", l_Vector.Set(collide->hit_normal));
-		}
-	}
-}
-
-ADE_FUNC(isValid, l_ColInfo, NULL, "Detectes if this handle is valid", "boolean", "true if valid false otherwise")
-{
-	mc_info_h* info;
-
-	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
-		return ADE_RETURN_NIL;
-
-	if (info->IsValid())
-		return ADE_RETURN_TRUE;
-	else
-		return ADE_RETURN_FALSE;
-}
-
 //**********HANDLE: shiptextures
 ade_obj<object_h> l_ShipTextures("shiptextures", "Ship textures handle");
 
@@ -7169,11 +7169,11 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 
 ADE_FUNC(addShipEffect, l_Ship, "string name, int duration (in milliseconds)", "Activates an effect for this ship. Effect names are defined in Post_processing.tbl, and need to be implemented in the main shader. This functions analogous to the ship-effect sexp. NOTE: only one effect can be active at any time, adding new effects will override effects already in progress.\n", "boolean", "Returns true if the effect was successfully added, false otherwise") {
 	object_h *shiph;
-	char* effect;
+	char* effect = NULL;
 	int duration;
 	int effect_num;
 
-	if (!ade_get_args(L, "o|si", l_Ship.GetPtr(&shiph), effect, &duration))
+	if (!ade_get_args(L, "o|si", l_Ship.GetPtr(&shiph), &effect, &duration))
 		return ade_set_error(L, "b", false);
 
 	if (!shiph->IsValid())
@@ -9887,7 +9887,7 @@ int l_cf_get_path_id(char* n_path)
 
 	//Remove trailing slashes
 	i = path_len -1;
-	while(i >= 0 && (buf[i] == '\\' || buf[i] == '/'))
+	while(buf[i] == '\\' || buf[i] == '/')
 		buf[i--] = '\0';
 
 	//Remove leading slashes
