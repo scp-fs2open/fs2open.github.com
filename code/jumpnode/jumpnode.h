@@ -28,6 +28,7 @@ struct object;
 
 class jump_node
 {
+private:
 	char m_name[NAME_LENGTH];
 	float m_radius;
 
@@ -36,20 +37,25 @@ class jump_node
 
 	int m_flags;
 	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
+    vec3d pos;
 public:
-	//Construction
-	jump_node(vec3d *pos);
+	//Constructors
+    jump_node();
+	jump_node(vec3d *position);
+    
+    //Destructor
 	~jump_node();
 	
 	//Getting
-	color get_color();
+    char *get_name_ptr();
 	int get_modelnum();
 	int get_objnum();
 	object *get_obj();
-	char *get_name_ptr();
 	bool is_hidden();
 	bool is_colored();
 	bool is_special_model();
+    color get_color();
+    vec3d *get_pos();
 
 	//Setting
 	void set_alphacolor(int r, int g, int b, int alpha);
@@ -70,7 +76,5 @@ jump_node *jumpnode_get_which_in(object *objp);
 
 void jumpnode_render_all();
 void jumpnode_level_close();
-
-bool jumpnode_check_for_duplicates();
 
 #endif
