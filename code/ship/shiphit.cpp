@@ -1396,6 +1396,17 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		delta_time = 7000 + (int)(frand() * 3000.0f);
 		Ship_info[sp->ship_info_index].explosion_propagates = 0;
 	}
+
+	// Goober5000 - ship-specific deathroll time, woot
+	if (sp->special_exp_deathroll_time > 0)
+	{
+		delta_time = sp->special_exp_deathroll_time;
+
+		// prevent bogus timestamps, per comment several lines up
+		if (delta_time < 2)
+			delta_time = 2;
+	}
+
 	sp->death_time = sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
 
 	//SUSHI: What are the chances of an instant vaporization? Check the ship type first (objecttypes.tbl), then the ship (ships.tbl)

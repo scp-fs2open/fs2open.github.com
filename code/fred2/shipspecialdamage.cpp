@@ -39,6 +39,7 @@ void ShipSpecialDamage::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(ShipSpecialDamage)
 	DDX_Check(pDX, IDC_ENABLE_SHOCKWAVE, m_shock_enabled);
+	DDX_Check(pDX, IDC_ENABLE_DEATHROLL_TIME, m_duration_enabled);
 	DDX_Check(pDX, IDC_ENABLE_SPECIAL_EXP, m_special_exp_enabled);
 	DDX_Text(pDX, IDC_SPECIAL_INNER_RAD, m_inner_rad);
 	DDV_MinMaxInt(pDX, m_inner_rad, 1, INT_MAX);
@@ -48,6 +49,8 @@ void ShipSpecialDamage::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_damage, 0, INT_MAX);
 	DDX_Text(pDX, IDC_SPECIAL_SHOCK_SPEED, m_shock_speed);
 	DDV_MinMaxInt(pDX, m_shock_speed, 0, INT_MAX);
+	DDX_Text(pDX, IDC_SPECIAL_DEATHROLL_TIME, m_duration);
+	DDV_MinMaxInt(pDX, m_duration, 0, INT_MAX);
 	DDX_Text(pDX, IDC_SPECIAL_BLAST, m_blast);
 	DDV_MinMaxInt(pDX, m_blast, 0, INT_MAX);
 	//}}AFX_DATA_MAP
@@ -57,6 +60,7 @@ void ShipSpecialDamage::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(ShipSpecialDamage, CDialog)
 	//{{AFX_MSG_MAP(ShipSpecialDamage)
 	ON_BN_CLICKED(IDC_ENABLE_SHOCKWAVE, OnEnableShockwave)
+	ON_BN_CLICKED(IDC_ENABLE_DEATHROLL_TIME, OnEnableDeathrollTime)
 	ON_BN_CLICKED(IDC_ENABLE_SPECIAL_EXP, OnEnableSpecialExp)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -70,6 +74,19 @@ void ShipSpecialDamage::OnEnableShockwave()
 	UpdateData(TRUE);
 
 	// enable/disable shock speed
+	DoGray();
+}
+
+void ShipSpecialDamage::OnEnableDeathrollTime()
+{
+	// TODO: Add your control notification handler code here
+	UpdateData(TRUE);
+
+	// set delay
+	m_duration = m_duration_enabled ? 2 : 0;
+	UpdateData(FALSE);
+
+	// enable/disable deathroll time
 	DoGray();
 }
 
@@ -116,6 +133,8 @@ BOOL ShipSpecialDamage::OnInitDialog()
 		m_blast = (int) sip->shockwave.blast;
 		m_shock_enabled = (int) sip->explosion_propagates;
 		m_shock_speed = (int) sip->shockwave.speed;
+		m_duration_enabled = FALSE;
+		m_duration = 0;
 		m_special_exp_enabled = FALSE;
 
 		if (m_inner_rad < 1) {
@@ -135,6 +154,8 @@ BOOL ShipSpecialDamage::OnInitDialog()
 		m_blast = Ships[m_ship_num].special_exp_blast;
 		m_shock_enabled = Ships[m_ship_num].use_shockwave;
 		m_shock_speed = Ships[m_ship_num].special_exp_shockwave_speed;
+		m_duration_enabled = (Ships[m_ship_num].special_exp_deathroll_time > 0);
+		m_duration = Ships[m_ship_num].special_exp_deathroll_time;
 		m_special_exp_enabled = TRUE;
 	}
 
@@ -155,7 +176,9 @@ void ShipSpecialDamage::DoGray()
 	GetDlgItem(IDC_SPECIAL_INNER_RAD)->EnableWindow(m_special_exp_enabled);
 	GetDlgItem(IDC_SPECIAL_OUTER_RAD)->EnableWindow(m_special_exp_enabled);
 	GetDlgItem(IDC_ENABLE_SHOCKWAVE)->EnableWindow(m_special_exp_enabled);
+	GetDlgItem(IDC_ENABLE_DEATHROLL_TIME)->EnableWindow(m_special_exp_enabled);
 	GetDlgItem(IDC_SPECIAL_SHOCK_SPEED)->EnableWindow(m_special_exp_enabled && m_shock_enabled);
+	GetDlgItem(IDC_SPECIAL_DEATHROLL_TIME)->EnableWindow(m_special_exp_enabled && m_duration_enabled);
 }
 
 
@@ -206,6 +229,13 @@ void ShipSpecialDamage::update_ship(int shipnum)
 			}
 			shipp->special_exp_shockwave_speed = m_shock_speed;
 		}
+		if (m_duration) {
+			if (m_duration < 2) {
+				m_duration = 2;
+				MessageBox("Death roll time must be at least 2 milliseconds!");
+			}
+			shipp->special_exp_deathroll_time = m_duration;
+		}
 	} else {
 		shipp->use_special_explosion = false;
 		shipp->special_exp_inner = -1;
@@ -214,6 +244,7 @@ void ShipSpecialDamage::update_ship(int shipnum)
 		shipp->special_exp_blast = -1;
 		shipp->use_shockwave = false;
 		shipp->special_exp_shockwave_speed = -1;
+		shipp->special_exp_deathroll_time = 0;
 	}
 }
 

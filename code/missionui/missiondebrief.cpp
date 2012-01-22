@@ -359,6 +359,8 @@ static int Debrief_first_voice_flag = 1;	// used to delay the first voice playba
 
 static int Debriefing_paused = 0;
 
+int Max_debrief_Lines;
+
 // pointer used for getting to debriefing information
 debriefing	Traitor_debriefing;				// used when player is a traitor
 
@@ -1696,7 +1698,7 @@ void debrief_button_pressed(int num)
 			break;
 
 		case TEXT_SCROLL_DOWN:
-			if (Text_offset + Debrief_text_wnd_coords[gr_screen.res][3] / gr_get_font_height() < Num_text_lines) {
+			if (Max_debrief_Lines < Num_text_lines) {
 				Text_offset++;
 				gamesnd_play_iface(SND_SCROLL);
 			} else {
@@ -2598,7 +2600,13 @@ void debrief_do_frame(float frametime)
 			break;
 	} // end switch
 
-	if (Text_offset + Debrief_text_wnd_coords[gr_screen.res][3] / gr_get_font_height() < Num_text_lines) {
+	if (gr_screen.res == 1) {
+		Max_debrief_Lines = 450/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
+	} else {
+		Max_debrief_Lines = 340/gr_get_font_height();
+	}
+
+	if (Max_debrief_Lines < Num_text_lines) {
 		int w;
 
 		gr_set_color_fast(&Color_red);

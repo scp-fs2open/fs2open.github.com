@@ -1267,6 +1267,10 @@ void main()																		\n\
 	// Normal map - convert from DXT5nm											\n\
 	vec3 normal;																\n\
 	normal.rg = (texture2D(sNormalmap, texCoord).ag * 2.0) - 1.0;				\n\
+  #ifdef FLAG_ENV_MAP															\n\
+	vec3 envOffset;																\n\
+	envOffset = normal;															\n\
+  #endif																		\n\
 	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));							\n\
 	normal = normalize(tbnMatrix * normal);										\n\
   #else																			\n\
@@ -1354,9 +1358,16 @@ void main()																		\n\
 																				\n\
  #ifdef FLAG_ENV_MAP															\n\
  // Env color																	\n\
+  #ifdef FLAG_NORMAL_MAP														\n\
+	vec3 envReflectNM = envReflect + envOffset;									\n\
+	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;	\n\
+	fragmentColor.a += (dot(textureCube(sEnvmap, envReflectNM).rgb, textureCube(sEnvmap, envReflectNM).rgb) * ENV_ALPHA_FACTOR);	\n\
+	fragmentColor.rgb += textureCube(sEnvmap, envReflectNM).rgb * envIntensity;	\n\
+  #else																			\n\
 	vec3 envIntensity = (alpha_spec) ? vec3(texture2D(sSpecmap, texCoord).a) : texture2D(sSpecmap, texCoord).rgb;	\n\
 	fragmentColor.a += (dot(textureCube(sEnvmap, envReflect).rgb, textureCube(sEnvmap, envReflect).rgb) * ENV_ALPHA_FACTOR);	\n\
 	fragmentColor.rgb += textureCube(sEnvmap, envReflect).rgb * envIntensity;	\n\
+  #endif																		\n\
  #endif																			\n\
 																				\n\
  #ifdef FLAG_GLOW_MAP															\n\
@@ -1600,7 +1611,7 @@ float3 FxaaPixelShader(float2 pos, FxaaTex tex, float2 rcpFrame) {					\n\
 	float2 posP = posN;																\n\
 	float2 offNP = horzSpan ? 														\n\
 		FxaaFloat2(rcpFrame.x, 0.0) :												\n\
-		FxaaFloat2(0.0f, rcpFrame.y);												\n\
+		FxaaFloat2(0.0, rcpFrame.y);												\n\
 	float lumaEndN = lumaN;															\n\
 	float lumaEndP = lumaN;															\n\
 	bool doneN = false;																\n\
@@ -1679,6 +1690,7 @@ void main() {																		\n\
 char *Default_blur_fragment_shader = "\
 varying float blurSize;											\n\
 																\n\
+#define BLUR_SIZE_DIV 3.0										\n\
 uniform sampler2D tex;											\n\
 																\n\
 // Gaussian Blur												\n\
@@ -1688,28 +1700,29 @@ void main()														\n\
 {																\n\
 	// Echelon9 - Due to Apple not implementing array constructors in OS X's		\n\
 	// GLSL implementation we need to setup the arrays this way as a workaround		\n\
-	float BlurWeights[5];															\n\
-																					\n\
-	BlurWeights[0] = 0.2270270270;													\n\
-	BlurWeights[1] = 0.1945945946;								\n\
-	BlurWeights[2] = 0.1216216216;								\n\
-	BlurWeights[3] = 0.0540540541;								\n\
-	BlurWeights[4] = 0.0162162162;								\n\
+	float BlurWeights[6];										\n\
+																\n\
+	BlurWeights[5] = 0.0402;									\n\
+	BlurWeights[4] = 0.0623;									\n\
+	BlurWeights[3] = 0.0877;									\n\
+	BlurWeights[2] = 0.1120;									\n\
+	BlurWeights[1] = 0.1297;									\n\
+	BlurWeights[0] = 0.1362;									\n\
 																\n\
 																\n\
 	vec4 sum = texture2D(tex, gl_TexCoord[0].xy) * BlurWeights[0];	\n\
 																\n\
 #ifdef PASS_0													\n\
-	for (int i = 1; i < 5; i++) {								\n\
-		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * blurSize, 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
-		sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * blurSize, 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
+	for (int i = 1; i < 6; i++) {								\n\
+	sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
+	sum += texture2D(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0), gl_TexCoord[0].y)) * BlurWeights[i];	\n\
 	}															\n\
 #endif															\n\
 																\n\
 #ifdef PASS_1													\n\
-	for (int i = 1; i < 5; i++) {								\n\
-		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * blurSize, 0.0, 1.0))) * BlurWeights[i];	\n\
-		sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * blurSize, 0.0, 1.0))) * BlurWeights[i];	\n\
+	for (int i = 1; i < 6; i++) {								\n\
+	sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];	\n\
+	sum += texture2D(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * (blurSize/BLUR_SIZE_DIV), 0.0, 1.0))) * BlurWeights[i];	\n\
 	}															\n\
 #endif															\n\
 																\n\

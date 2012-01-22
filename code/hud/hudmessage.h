@@ -109,6 +109,7 @@ public:
 	void processMessageBuffer();
 	void addPending(char *text, int source, int x = 0);
 	void scrollMessages();
+	void preprocess();
 	void render(float frametime);
 	void initialize();
 	void pageIn();

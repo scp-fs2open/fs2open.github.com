@@ -138,11 +138,10 @@ int reject_obj_pair_on_parent(object *A, object *B)
 
 int reject_due_collision_groups(object *A, object *B)
 {
-	if(A->collision_group_id != 0) {
-		if(A->collision_group_id & B->collision_group_id)
-			return 1;
-	}
-	return 0;
+	if (A->collision_group_id == 0 || B->collision_group_id == 0)
+		return 0;
+
+	return (A->collision_group_id & B->collision_group_id);
 }
 
 // Adds the pair to the pair list

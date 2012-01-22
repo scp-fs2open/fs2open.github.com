@@ -26,13 +26,5 @@ void timerbar_pop();
 // This function shouldnt not be used any more or it will break push and pop calls
 void timerbar_switch_type(int num);
 
-#define TIMERBAR_SET_DRAW_FUNC(f) if (Cmdline_timerbar) timerbar_set_draw_func(f);
-#define TIMERBAR_START_FRAME()    if (Cmdline_timerbar) timerbar_start_frame();
-#define TIMERBAR_END_FRAME()      if (Cmdline_timerbar) timerbar_end_frame();
-#define TIMERBAR_SWITCH_TYPE(n)   if (Cmdline_timerbar) timerbar_switch_type(n);
-
-#define TIMERBAR_PUSH(v) if (Cmdline_timerbar) timerbar_push(v);
-#define TIMERBAR_POP()   if (Cmdline_timerbar) timerbar_pop();
-
 #endif
 

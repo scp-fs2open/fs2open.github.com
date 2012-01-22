@@ -85,14 +85,14 @@ typedef struct cf_file {
 	int		pack_offset;									// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
 } cf_file;
 
-#define CF_NUM_FILES_PER_BLOCK   256
-#define CF_MAX_FILE_BLOCKS			128						// Can store 256*128 = 32768 files
+#define CF_NUM_FILES_PER_BLOCK   512
+#define CF_MAX_FILE_BLOCKS			128						// Can store 512*128 = 65536 files
 
 typedef struct cf_file_block {
 	cf_file						files[CF_NUM_FILES_PER_BLOCK];
 } cf_file_block;
 
-static int Num_files = 0;
+static uint Num_files = 0;
 static cf_file_block  *File_blocks[CF_MAX_FILE_BLOCKS];
 
 
@@ -108,8 +108,10 @@ cf_file *cf_get_file(int index)
 // Create a new file and return a pointer to it.
 cf_file *cf_create_file()
 {
-	int block = Num_files / CF_NUM_FILES_PER_BLOCK;
-	int offset = Num_files % CF_NUM_FILES_PER_BLOCK;
+	Assertion(Num_files < CF_NUM_FILES_PER_BLOCK * CF_MAX_FILE_BLOCKS, "Too many files found. CFile cannot handle more than %d files.\n", CF_NUM_FILES_PER_BLOCK * CF_MAX_FILE_BLOCKS);
+
+	uint block = Num_files / CF_NUM_FILES_PER_BLOCK;
+	uint offset = Num_files % CF_NUM_FILES_PER_BLOCK;
 	
 	if ( File_blocks[block] == NULL )	{
 		File_blocks[block] = (cf_file_block *)vm_malloc( sizeof(cf_file_block) );
@@ -821,7 +823,6 @@ void cf_free_secondary_filelist()
 // Returns: If not found returns 0.
 int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
-	int i;
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
 
@@ -866,7 +867,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
 		search_order[num_search_dirs++] = pathtype;
 	} else {
-		for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
+		for (int i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
 			if (i != pathtype)
 				search_order[num_search_dirs++] = i;
 		}
@@ -875,7 +876,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	memset( longname, 0, sizeof(longname) );
 
 
-	for (i=0; i<num_search_dirs; i++ )	{
+	for (int i=0; i<num_search_dirs; i++ )	{
 		switch (search_order[i])
 		{
 			case CF_TYPE_ROOT:
@@ -898,23 +899,21 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
 #if defined _WIN32
-			if (!Cmdline_safeloading) {
-				findhandle = _findfirst(longname, &findstruct);
-				if (findhandle != -1) {
-					if (size)
-						*size = findstruct.size;
+			findhandle = _findfirst(longname, &findstruct);
+			if (findhandle != -1) {
+				if (size)
+					*size = findstruct.size;
 
-					_findclose(findhandle);
+				_findclose(findhandle);
 
-					if (offset)
-						*offset = 0;
+				if (offset)
+					*offset = 0;
 
-					if (pack_filename)
-						strncpy( pack_filename, longname, max_out );
+				if (pack_filename)
+					strncpy( pack_filename, longname, max_out );
 
-					return 1;
-				}
-			} else
+				return 1;
+			}
 #endif
 			{
 				FILE *fp = fopen(longname, "rb" );
@@ -939,7 +938,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 
 	// Search the pak files and CD-ROM.
 
-	for (i = 0; i < Num_files; i++ )	{
+	for (uint i = 0; i < Num_files; i++ )	{
 		cf_file *f = cf_get_file(i);
 
 		// only search paths we're supposed to...
@@ -1028,7 +1027,7 @@ extern char *stristr(const char *str, const char *substr);
 // (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
 int cf_find_file_location_ext( char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
-	int i, cur_ext;
+	int cur_ext;
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
 	char filespec[MAX_FILENAME_LEN];
@@ -1062,7 +1061,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
 		search_order[num_search_dirs++] = pathtype;
 	} else {
-		for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++)
+		for (int i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++)
 			search_order[num_search_dirs++] = i;
 	}
 
@@ -1072,7 +1071,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	// strip any existing extension
 	strncpy(filespec, filename, MAX_FILENAME_LEN-1);
 
-	for (i = 0; i < num_search_dirs; i++) {
+	for (int i = 0; i < num_search_dirs; i++) {
 		// always hit the disk if we are looking in only one path
 		if (num_search_dirs == 1) {
 			cfs_slow_search = 1;
@@ -1109,23 +1108,21 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
 #if defined _WIN32
-			if (!Cmdline_safeloading) {
-				findhandle = _findfirst(longname, &findstruct);
-				if (findhandle != -1) {
-					if (size)
-						*size = findstruct.size;
+			findhandle = _findfirst(longname, &findstruct);
+			if (findhandle != -1) {
+				if (size)
+					*size = findstruct.size;
 
-					_findclose(findhandle);
+				_findclose(findhandle);
 
-					if (offset)
-						*offset = 0;
+				if (offset)
+					*offset = 0;
 
-					if (pack_filename)
-						strncpy( pack_filename, longname, max_out );
+				if (pack_filename)
+					strncpy( pack_filename, longname, max_out );
 
-					return cur_ext;
-				}
-			} else
+				return cur_ext;
+			}
 #endif
 			{
 				FILE *fp = fopen(longname, "rb" );
@@ -1168,10 +1165,10 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	int last_root_index = -1;
 	int last_path_index = -1;
 
-	file_list_index.reserve( MIN(ext_num * 4, Num_files) );
+	file_list_index.reserve( MIN(ext_num * 4, (int)Num_files) );
 
 	// next, run though and pick out base matches
-	for (i = 0; i < Num_files; i++) {
+	for (uint i = 0; i < Num_files; i++) {
 		cf_file *f = cf_get_file(i);
 
 		// ... only search paths that we're supposed to
@@ -1214,7 +1211,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 		file_list_index.push_back( f );
 	}
 
-	int file_list_size = (int)file_list_index.size();
+	size_t file_list_size = file_list_index.size();
 
 	// quick exit test
 	if (file_list_size < 1)
@@ -1223,7 +1220,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 
 	// now try and find our preferred match
 	for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-		for (i = 0; i < file_list_size; i++) {
+		for (size_t i = 0; i < file_list_size; i++) {
 			cf_file *f = file_list_index[i];
 	
 			strcat_s( filespec, ext_list[cur_ext] );
@@ -1377,7 +1374,8 @@ int cf_file_already_in_list( int num_files, char **list, char *filename )
 int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort, file_list_info *info )
 {
 	char *ptr;
-	int i, l, num_files = 0, own_flag = 0;
+	uint i;
+	int l, num_files = 0, own_flag = 0;
 
 	if (max < 1) {
 		Get_file_list_filter = NULL;
@@ -1574,7 +1572,7 @@ int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME
 // See above descriptions of cf_get_file_list() for more information about how it all works.
 int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char **list, int pathtype, char *filter, int sort, file_list_info *info )
 {
-	int i, num_files = 0, own_flag = 0;
+	int num_files = 0, own_flag = 0;
 
 	if (max < 1) {
 		Get_file_list_filter = NULL;
@@ -1583,7 +1581,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	}
 
 	if (list) {
-		for (i=0; i<max; i++)	{
+		for (int i=0; i<max; i++)	{
 			list[i] = arr[i];
 		}
 	} else {
@@ -1695,7 +1693,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 	// Search all the packfiles and CD.
 	if ( !Skip_packfile_search )	{
-		for (i=0; i<Num_files; i++ )	{
+		for (uint i=0; i<Num_files; i++ )	{
 			cf_file * f = cf_get_file(i);
 
 			// only search paths we're supposed to...

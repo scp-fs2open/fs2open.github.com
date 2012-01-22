@@ -480,6 +480,11 @@ void nebl_process()
 		return;
 	}
 
+	// standalones shouldn't be doing this either
+	if (Is_standalone) {
+		return;
+	}
+
 	// if there's no chosen storm
 	if(Storm == NULL){
 		return;

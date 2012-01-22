@@ -677,11 +677,11 @@ void print_family_tree( polymodel *obj, int modelnum, char * ident, int islast )
 		mprintf(( " %s", obj->submodel[modelnum].name ));
 		sprintf( temp, " " );
 	} else if ( islast ) 	{
-		mprintf(( "%sÀÄ%s", ident, obj->submodel[modelnum].name ));
+		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
 		sprintf( temp, "%s  ", ident );
 	} else {
-		mprintf(( "%sÃÄ%s", ident, obj->submodel[modelnum].name ));
-		sprintf( temp, "%s³ ", ident );
+		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
+		sprintf( temp, "%s ", ident );
 	}
 
 	mprintf(( "\n" ));

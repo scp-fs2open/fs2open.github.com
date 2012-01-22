@@ -520,8 +520,6 @@ void model_set_thrust(int model_num, mst_info *mst)
 	*/
 }
 
-extern int Cmdline_cell;
-
 bool splodeing = false;
 int splodeingtexture = -1;
 float splode_level = 0.0f;
@@ -589,7 +587,6 @@ void model_interp_splode_defpoints(ubyte * p, polymodel *pm, bsp_info *sm, float
 // +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
 void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 {
-	if(Cmdline_cell)model_interp_splode_defpoints(p, pm, sm, model_radius/100);
 	if(splodeing)model_interp_splode_defpoints(p, pm, sm, splode_level*model_radius);
 
 	int i, n;
@@ -804,11 +801,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 				Interp_list[i]->r = 191;
 				Interp_list[i]->g = 191;
 				Interp_list[i]->b = 191;
-		} else if(Cmdline_cell){
-			Interp_list[i]->r = 0;
-			Interp_list[i]->g = 0;
-			Interp_list[i]->b = 0;
-		}else{
+		} else {
 			int vertnum = verts[i*2+0];
 			int norm = verts[i*2+1];
 	
@@ -951,22 +944,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	if ( !Cmdline_nohtl ) {
 		if (Interp_warp_bitmap < 0) {
 			if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
-				if(Cmdline_cell){
-					for (i=0;i<nv;i++){
-						Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
-						Interp_list[i]->u = verts[i].u;
-						Interp_list[i]->v = verts[i].v;
-						Interp_list[i]->r = 250;
-						Interp_list[i]->g = 250;
-						Interp_list[i]->b = 250;
-		
-					}
-					cull = gr_set_cull(0);
-					gr_set_color( 0, 0, 0 );
-					g3_draw_poly( nv, Interp_list, 0 );
-					gr_set_cull(cull);
-				}
-				if(!splodeing)return;
+				if(!splodeing) return;
 			}
 		}
 
@@ -1038,14 +1016,14 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 		
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-					if((Detail.lighting > 2) && (Interp_detail_level < 2) && !Cmdline_cell && Cmdline_spec )
+					if((Detail.lighting > 2) && (Interp_detail_level < 2) && Cmdline_spec )
 						light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
 				} else {					
 					// if we're applying lighting as normal, and not using saved lighting
 					if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
 
 						light_apply_rgb( &Interp_lighting->lights[norm].r, &Interp_lighting->lights[norm].g, &Interp_lighting->lights[norm].b, Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-						if((Detail.lighting > 2) && (Interp_detail_level < 2) && !Cmdline_cell && Cmdline_spec )
+						if((Detail.lighting > 2) && (Interp_detail_level < 2) && Cmdline_spec )
 							light_apply_specular( &Interp_lighting->lights[norm].spec_r, &Interp_lighting->lights[norm].spec_g, &Interp_lighting->lights[norm].spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 
 						Interp_light_applied[norm] = 1;

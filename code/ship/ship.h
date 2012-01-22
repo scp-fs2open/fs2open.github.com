@@ -54,7 +54,7 @@ extern vec3d	Original_vec_to_deader;
 #define	HP_SCALE						1.2			//	1.2 means die when 20% of hits remaining
 #define	MAX_SHIP_HITS				8				// hits to kill a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
-#define	MAX_REINFORCEMENTS		10
+#define	MAX_REINFORCEMENTS		32
 
 
 // defines for 'direction' parameter of ship_select_next_primary()
@@ -114,6 +114,7 @@ typedef struct ship_weapon {
 	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// next time this secondary bank can fire
 	int last_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// last time this secondary bank fired (mostly used by SEXPs)
 	int next_tertiary_fire_stamp;
+	int last_primary_fire_sound_stamp[MAX_SHIP_PRIMARY_BANKS];		// trailing end of the last time this primary bank was fired, for purposes of timing the pre-launch sound
 
 	// ballistic primary support - by Goober5000
 	int primary_bank_ammo[MAX_SHIP_PRIMARY_BANKS];			// Number of missiles left in primary bank
@@ -454,7 +455,7 @@ extern int TARGET_SHIP_IGNORE_FLAGS;
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
-#define MAX_SHIP_CONTRAILS		12
+#define MAX_SHIP_CONTRAILS		24
 #define MAX_MAN_THRUSTERS	128
 
 typedef struct ship_spark {
@@ -535,6 +536,8 @@ typedef struct ship {
 	float special_exp_outer;
 	bool use_shockwave;
 	float special_exp_shockwave_speed;
+	int special_exp_deathroll_time;
+
 	int	special_hitpoints;
 	int	special_shield;
 
@@ -1255,6 +1258,8 @@ typedef struct ship_info {
 	float	sup_subsys_repair_rate;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
+	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
+	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
 	float		closeup_zoom;					// zoom when using ship in closeup view (eg briefing and hud target monitor)

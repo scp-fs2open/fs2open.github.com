@@ -301,6 +301,9 @@ void credits_init()
 	Credit_text = NULL;
 	Credit_text_malloced = 0;
 
+	// this is moved up here so we can override it if desired
+	Credits_artwork_index = rand() % NUM_IMAGES;
+
 	// allocate enough space for credits text
 	CFILE *fp = cfopen( NOX("credits.tbl"), "rb" );
 	if(fp != NULL){
@@ -326,7 +329,21 @@ void credits_init()
 		read_file_text("credits.tbl", CF_TYPE_TABLES);
 		reset_parse();
 
-		// keep reading everything in
+		// any metadata?
+		if (optional_string("$Start Image Index:")) {
+			stuff_int(&Credits_artwork_index);
+
+			// bounds check
+			if (Credits_artwork_index < 0) {
+				Credits_artwork_index = 0;
+			} else if (Credits_artwork_index >= NUM_IMAGES) {
+				Credits_artwork_index = NUM_IMAGES - 1;
+			}
+		}
+
+		ignore_white_space();
+
+		// prepend the SCP credits to what's in the table
 		strcpy(Credit_text, fs2_open_credit_text); 
 	   
 		bool first_run = true;
@@ -505,7 +522,6 @@ void credits_init()
 	Buttons[EXIT_BUTTON][gr_screen.res].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
 
 	Background_bitmap = bm_load(Credits_bitmap_fname[gr_screen.res]);
-	Credits_artwork_index = rand() % NUM_IMAGES;
 	for (i=0; i<NUM_IMAGES; i++){
 		Credits_bmps[i] = -1;
 	}

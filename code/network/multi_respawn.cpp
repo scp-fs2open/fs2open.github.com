@@ -350,8 +350,10 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	}
 
 	// change the ship type and the weapons
-	change_ship_type(objp->instance, Wss_slots_teams[team][slot_index].ship_class);
-	wl_bash_ship_weapons(&shipp->weapons,&Wss_slots_teams[team][slot_index]);
+	if (team != -1 && slot_index != -1) {
+		change_ship_type(objp->instance, Wss_slots_teams[team][slot_index].ship_class);
+		wl_bash_ship_weapons(&shipp->weapons,&Wss_slots_teams[team][slot_index]);
+	}
 	multi_respawn_wing_stuff( shipp );
 
 	if(Netgame.type_flags & NG_TYPE_TEAM){

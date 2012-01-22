@@ -771,7 +771,13 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					savedspeed = ci->forward_cruise_percent;
 					ci->forward_cruise_percent = 0.0f;
 					override_analog_throttle = 1;
-					snd_play( &Snds[SND_THROTTLE_DOWN], 0.0f );
+					if (Ship_info[Player_ship->ship_info_index].glide_start_snd > 0) {
+						//If a custom glide start sound was specified, play it
+						snd_play( &Snds[Ship_info[Player_ship->ship_info_index].glide_start_snd], 0.0f );
+					} else {
+						//If glide_start_snd wasn't set (probably == 0), use the default throttle down sound
+						snd_play( &Snds[SND_THROTTLE_DOWN], 0.0f );
+					}
 				}
 			}
 		} else {
@@ -781,7 +787,13 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				if ( object_get_gliding(Player_obj) && !object_glide_forced(Player_obj) ) {
 					object_set_gliding(Player_obj, false);
 					ci->forward_cruise_percent = savedspeed;
-					snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
+					if (Ship_info[Player_ship->ship_info_index].glide_end_snd > 0) {
+						//If a custom glide end sound was specified, play it
+						snd_play( &Snds[Ship_info[Player_ship->ship_info_index].glide_end_snd], 0.0f );
+					} else {
+						//If glide_end_snd wasn't set (probably == 0), use the default throttle up sound
+						snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
+					}
 				}
 			}
 		}

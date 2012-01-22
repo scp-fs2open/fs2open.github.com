@@ -2223,10 +2223,6 @@ void game_init()
 	// initialize alpha colors
 	alpha_colors_init();	
 
-	if (Cmdline_cell) {
-		cell_shaded_lightmap = bm_load("cellmap");
-	}
-
 	if (Cmdline_env) {
 		ENVMAP = Default_env_map = bm_load("cubemap");
 	}

@@ -60,6 +60,7 @@
 #define AIPF2_AI_AIMS_FROM_SHIP_CENTER								(1 << 6)
 #define AIPF2_ALLOW_PRIMARY_LINK_DELAY								(1 << 7)
 #define	AIPF2_BEAMS_DAMAGE_WEAPONS									(1 << 8)
+#define AIPF2_PLAYER_WEAPON_SCALE_FIX								(1 << 9)
 
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0

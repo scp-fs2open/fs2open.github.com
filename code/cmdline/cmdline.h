@@ -41,7 +41,6 @@ extern int Cmdline_multi_log;
 extern int Cmdline_multi_stream_chat_to_file;
 extern int Cmdline_network_port;
 extern int Cmdline_restricted_game;
-extern int Cmdline_server_firing;
 extern int Cmdline_spew_pof_info;
 extern int Cmdline_start_netgame;
 extern int Cmdline_timeout;
@@ -62,7 +61,6 @@ extern float static_light_factor;
 extern float static_point_factor;
 extern float static_tube_factor;
 extern int Cmdline_ambient_factor;
-extern int Cmdline_cell;
 extern int Cmdline_env;
 extern int Cmdline_mipmap;
 extern int Cmdline_missile_lighting;
@@ -114,20 +112,19 @@ extern char *Cmdline_spew_table_crcs;
 extern int Cmdline_objupd;
 
 // Troubleshooting
-extern int Cmdline_d3d_lesstmem;
 extern int Cmdline_load_all_weapons;
 extern int Cmdline_nohtl;
 extern int Cmdline_noibx;
 extern int Cmdline_nomovies;	// WMC Toggles movie playing support
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;
-extern int Cmdline_safeloading;
 extern int Cmdline_no_fbo;
 extern int Cmdline_noglsl;
 extern int Cmdline_ati_color_swap;
 extern int Cmdline_no_3d_sound;
 extern int Cmdline_no_glsl_model_rendering;
 extern int Cmdline_no_di_mouse;
+extern int Cmdline_drawelements;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
@@ -139,7 +136,6 @@ extern int Cmdline_extra_warn;
 extern int Cmdline_show_mem_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;
-extern int Cmdline_timerbar;
 extern int Cmdline_save_render_targets;
 extern int Cmdline_debug_window;
 extern int Cmdline_verify_vps;

@@ -167,7 +167,7 @@ typedef struct object {
 
 	int n_shield_segments;			// for Wanderer's 1 and 2 seg shield code
 
-	int				collision_group_id;
+	int				collision_group_id; // This is a bitfield. Collision checks will be skipped if A->collision_group_id & B->collision_group_id returns nonzero
 } object;
 
 struct object_h {

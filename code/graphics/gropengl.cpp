@@ -352,9 +352,6 @@ void gr_opengl_flip()
 		}
 	}
 
-	TIMERBAR_END_FRAME();
-	TIMERBAR_START_FRAME();
-
 #ifdef _WIN32
 	SwapBuffers(GL_device_context);
 #else
@@ -1981,8 +1978,6 @@ bool gr_opengl_init()
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
-
-	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);
 
 	mprintf(("... OpenGL init is complete!\n"));
 

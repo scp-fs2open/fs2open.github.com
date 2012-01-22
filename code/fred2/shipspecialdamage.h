@@ -30,11 +30,13 @@ public:
 	//{{AFX_DATA(ShipSpecialDamage)
 	enum { IDD = IDD_SPECIAL_DAMAGE };
 	int		m_shock_enabled;
+	int		m_duration_enabled;
 	BOOL	m_special_exp_enabled;
 	int		m_inner_rad;
 	int		m_outer_rad;
 	int		m_damage;
 	int		m_shock_speed;
+	int		m_duration;
 	int		m_blast;
 	int		m_ship_num;
 
@@ -59,6 +61,7 @@ protected:
 	// Generated message map functions
 	//{{AFX_MSG(ShipSpecialDamage)
 	afx_msg void OnEnableShockwave();
+	afx_msg void OnEnableDeathrollTime();
 	afx_msg void OnEnableSpecialExp();
 	virtual BOOL OnInitDialog();
 	afx_msg void DoGray();

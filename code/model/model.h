@@ -88,6 +88,9 @@ typedef struct submodel_instance {
 	//int num_arcs;
 	bool collision_checked;
 	//submodel_instance_info *sii;
+
+	vec3d mc_base;
+	matrix mc_orient;
 } submodel_instance;
 
 typedef struct polymodel_instance {
@@ -131,6 +134,7 @@ typedef struct polymodel_instance {
 #define MSS_FLAG_DAMAGE_AS_HULL		(1 << 28)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
 #define MSS_FLAG_TURRET_LOCKED      (1 << 29)       // Turret starts locked by default - Sushi
 #define MSS_FLAG_NO_AGGREGATE		(1 << 30)		// Don't include with aggregate subsystem types - Goober5000
+#define MSS_FLAG_TURRET_ANIM_WAIT   (1 << 31)		// Turret won't fire until animation is complete - Sushi
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -1037,6 +1041,8 @@ typedef struct mc_info {
 */
 
 int model_collide(mc_info * mc_info);
+
+void model_collide_preprocess(matrix *orient, int model_instance_num);
 
 // Sets the submodel instance data in a submodel
 // If show_damaged is true it shows only damaged submodels.

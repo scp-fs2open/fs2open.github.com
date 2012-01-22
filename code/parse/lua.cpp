@@ -4569,7 +4569,7 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
-ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature")
+ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature. NOTE: This is a bitfield, NOT a normal number.")
 {
 	object_h *objh = NULL;
 	int id = 0;
@@ -4744,29 +4744,6 @@ ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object
 		return ade_set_object_with_breed(L, asp->target_objnum);
 	else
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
-
-}
-
-//**********HANDLE: Debris
-ade_obj<object_h> l_Debris("debris", "Debris handle", &l_Object);
-
-ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hull", "boolean", "Whether debris is a hull fragment, or false if handle is invalid")
-{
-	object_h *oh;
-	bool b=false;
-	if(!ade_get_args(L, "o|b", l_Debris.GetPtr(&oh), &b))
-		return ade_set_error(L, "b", false);
-
-	if(!oh->IsValid())
-		return ade_set_error(L, "b", false);
-
-	debris *db = &Debris[oh->objp->instance];
-
-	if(ADE_SETTING_VAR) {
-		db->is_hull = b ? 1 : 0;
-	}
-
-	return ade_set_args(L, "b", db->is_hull ? true : false);
 
 }
 
@@ -5329,6 +5306,58 @@ ADE_FUNC(getShipClassIndex, l_Shipclass, NULL, "Gets the index valus of the ship
 		return ade_set_args(L, "i", -1);
 
 	return ade_set_args(L, "i", idx);
+}
+
+//**********HANDLE: Debris
+ade_obj<object_h> l_Debris("debris", "Debris handle", &l_Object);
+
+ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hull", "boolean", "Whether debris is a hull fragment, or false if handle is invalid")
+{
+	object_h *oh;
+	bool b=false;
+	if(!ade_get_args(L, "o|b", l_Debris.GetPtr(&oh), &b))
+		return ade_set_error(L, "b", false);
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	debris *db = &Debris[oh->objp->instance];
+
+	if(ADE_SETTING_VAR) {
+		db->is_hull = b ? 1 : 0;
+	}
+
+	return ade_set_args(L, "b", db->is_hull ? true : false);
+
+}
+
+ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this debris originates from", "shipclass", "The shipclass of the ship that created this debris")
+{
+	object_h *oh;
+	int shipIdx = -1;
+	if(!ade_get_args(L, "o|o", l_Debris.GetPtr(&oh), &shipIdx))
+		return ade_set_error(L, "o", l_Shipclass.Set(-1));
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "o", l_Shipclass.Set(-1));
+
+	debris *db = &Debris[oh->objp->instance];
+
+	if(ADE_SETTING_VAR) {
+		if (shipIdx < 0 || shipIdx > MAX_SHIP_CLASSES)
+			db->ship_info_index = shipIdx;
+	}
+
+	return ade_set_error(L, "o", l_Shipclass.Set(db->ship_info_index));
+}
+
+ADE_FUNC(isValid, l_Debris, NULL, "Return if this debris handle is valid", "boolean", "true if valid false otherwise")
+{
+	object_h *oh;
+	if(!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", oh != NULL && oh->IsValid());
 }
 
 //**********HANDLE: Waypoint
@@ -8912,6 +8941,7 @@ class particle_h
 {
 protected:
 	particle *part;
+	uint sig;
 public:
 	particle_h()
 	{
@@ -8921,6 +8951,8 @@ public:
 	particle_h(particle *particle)
 	{
 		this->part = particle;
+		if (particle != NULL)
+			this->sig = particle->signature;
 	}
 
 	particle* Get()
@@ -8930,7 +8962,14 @@ public:
 
 	bool isValid()
 	{
-		return this != NULL && part != NULL;
+		if (this != NULL && part != NULL && part->signature != 0 && part->signature == this->sig)
+			return true;
+		else
+			return false;
+	}
+
+	~particle_h()
+	{
 	}
 };
 
@@ -8942,6 +8981,9 @@ ADE_VIRTVAR(Position, l_Particle, "vector", "The current position of the particl
 	particle_h *ph = NULL;
 	vec3d newVec = vmd_zero_vector;
 	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Vector.Get(&newVec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ph == NULL)
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if (!ph->isValid())
@@ -8961,6 +9003,9 @@ ADE_VIRTVAR(Velocity, l_Particle, "vector", "The current velocity of the particl
 	vec3d newVec = vmd_zero_vector;
 	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Vector.Get(&newVec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	
+	if (ph == NULL)
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if (!ph->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -8978,6 +9023,9 @@ ADE_VIRTVAR(Age, l_Particle, "number", "The time this particle already lives", "
 	particle_h *ph = NULL;
 	float newAge = -1.0f;
 	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newAge))
+		return ade_set_error(L, "f", -1.0f);
+	
+	if (ph == NULL)
 		return ade_set_error(L, "f", -1.0f);
 
 	if (!ph->isValid())
@@ -8998,6 +9046,9 @@ ADE_VIRTVAR(MaximumLife, l_Particle, "number", "The time this particle can live"
 	float newLife = -1.0f;
 	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newLife))
 		return ade_set_error(L, "f", -1.0f);
+	
+	if (ph == NULL)
+		return ade_set_error(L, "f", -1.0f);
 
 	if (!ph->isValid())
 		return ade_set_error(L, "f", -1.0f);
@@ -9016,6 +9067,9 @@ ADE_VIRTVAR(Radius, l_Particle, "number", "The radius of the particle", "number"
 	particle_h *ph = NULL;
 	float newRadius = -1.0f;
 	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newRadius))
+		return ade_set_error(L, "f", -1.0f);
+	
+	if (ph == NULL)
 		return ade_set_error(L, "f", -1.0f);
 
 	if (!ph->isValid())
@@ -9036,6 +9090,9 @@ ADE_VIRTVAR(TracerLength, l_Particle, "number", "The tracer legth of the particl
 	float newTracer = -1.0f;
 	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newTracer))
 		return ade_set_error(L, "f", -1.0f);
+	
+	if (ph == NULL)
+		return ade_set_error(L, "f", -1.0f);
 
 	if (!ph->isValid())
 		return ade_set_error(L, "f", -1.0f);
@@ -9055,6 +9112,9 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 	object_h *newObj;
 	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Object.GetPtr(&newObj)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
+	
+	if (ph == NULL)
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	if (!ph->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
@@ -9072,6 +9132,9 @@ ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boo
 {
 	particle_h *ph = NULL;
 	if (!ade_get_args(L, "o", l_Particle.GetPtr(&ph)))
+		return ADE_RETURN_FALSE;
+	
+	if (ph == NULL)
 		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", ph->isValid());
@@ -12187,6 +12250,11 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 				pi.type = PARTICLE_SMOKE2;
 				break;
 			case LE_PARTICLE_BITMAP:
+				if (pi.optional_data < 0)
+				{
+					LuaError(L, "Invalid texture specified for createParticle()!");
+				}
+
 				pi.type = PARTICLE_BITMAP;
 				break;
 		}

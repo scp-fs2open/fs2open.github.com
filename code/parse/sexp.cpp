@@ -208,6 +208,7 @@ sexp_oper Operators[] = {
 	{ "secondary-ammo-pct",					OP_SECONDARY_AMMO_PCT,				2,	2			},
 	{ "get-primary-ammo",					OP_GET_PRIMARY_AMMO,				2,	2			}, // Karajorma
 	{ "get-secondary-ammo",					OP_GET_SECONDARY_AMMO,				2,	2			}, // Karajorma
+	{ "get-num-countermeasures",			OP_GET_NUM_COUNTERMEASURES,			1,	1			}, // Karajorma
 	{ "is-primary-selected",				OP_IS_PRIMARY_SELECTED,				2,	2			},
 	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
 	{ "afterburner-energy-pct",				OP_AFTERBURNER_LEFT,		1, 1			},
@@ -221,6 +222,7 @@ sexp_oper Operators[] = {
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
+	{ "is-in-box",					OP_IS_IN_BOX,					7,	8},	//Sushi
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
 	{ "get-damage-caused",			OP_GET_DAMAGE_CAUSED,		2, INT_MAX	},
 
@@ -350,6 +352,7 @@ sexp_oper Operators[] = {
 	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 4 },		// Karajorma
 	{ "set-primary-weapon",			OP_SET_PRIMARY_WEAPON,			3, 5 },		// Karajorma
 	{ "set-secondary-weapon",		OP_SET_SECONDARY_WEAPON,		3, 5 },		// Karajorma
+	{ "set-num-countermeasures",	OP_SET_NUM_COUNTERMEASURES,		2, 2 },		// Karajorma
 	{ "lock-primary-weapon",		OP_LOCK_PRIMARY_WEAPON,			1, INT_MAX },		// Karajorma
 	{ "unlock-primary-weapon",		OP_UNLOCK_PRIMARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
@@ -391,6 +394,9 @@ sexp_oper Operators[] = {
 	{ "never-warp",					OP_WARP_NEVER,					1, INT_MAX, },
 	{ "allow-warp",					OP_WARP_ALLOWED,				1, INT_MAX, },
 	{ "set-armor-type",				OP_SET_ARMOR_TYPE,				4, INT_MAX, },  // FUBAR
+	{ "add-to-collision-group",		OP_ADD_TO_COLGROUP,				2, INT_MAX },	// The E
+	{ "remove-from-collision-group",OP_REMOVE_FROM_COLGROUP,		2, INT_MAX },
+	{ "get-collision-group",		OP_GET_COLGROUP_ID,				1, 1 },
 
 	{ "fire-beam",						OP_BEAM_FIRE,					3, 4		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
@@ -626,6 +632,9 @@ sexp_oper Operators[] = {
 	{ "string-to-int",				OP_STRING_TO_INT,						1, 1,			}, // Karajorma
 	{ "int-to-string",				OP_INT_TO_STRING,						2, 2,			}, // Goober5000
 	{ "string-concatenate",			OP_STRING_CONCATENATE,					3, 3,			}, // Goober5000
+	{ "string-get-substring",		OP_STRING_GET_SUBSTRING,				4, 4,	}, // Goober5000
+	{ "string-set-substring",		OP_STRING_SET_SUBSTRING,				5, 5,	}, // Goober5000
+	{ "string-get-length",			OP_STRING_GET_LENGTH,					1, 1,	}, // Goober5000
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
 };
@@ -765,9 +774,10 @@ int hud_gauge_type_lookup(char* name);
 #define EO_INNER_RADIUS		2
 #define EO_OUTER_RADIUS		3
 #define EO_SHOCKWAVE_SPEED	4
+#define EO_DEATH_ROLL_TIME	5
 int sexp_explosion_option_lookup(char *text);
-char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed" };
-int Num_explosion_options = 5;
+char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed", "death roll time" };
+int Num_explosion_options = 6;
 
 int get_sexp(char *token);
 void build_extended_sexp_string(int cur_node, int level, int mode, int max_len);
@@ -3377,7 +3387,7 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
 
 		int sexp_variables_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
-		Assert(sexp_variables_index != -1);
+		Assertion(sexp_variables_index != -1, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
 		Assert( (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING) );
 
 		// number
@@ -9784,6 +9794,7 @@ void sexp_set_explosion_option(int node)
 		shipp->special_exp_inner = sci->inner_rad;
 		shipp->special_exp_outer = sci->outer_rad;
 		shipp->special_exp_shockwave_speed = sci->speed;
+		shipp->special_exp_deathroll_time = 0;
 
 		shipp->use_special_explosion = true;
 		shipp->use_shockwave = (sci->speed > 0);
@@ -9814,12 +9825,19 @@ void sexp_set_explosion_option(int node)
 		} else if (option == EO_SHOCKWAVE_SPEED) {
 			shipp->special_exp_shockwave_speed = (float)val;
 			shipp->use_shockwave = (val > 0);
+		} else if (option == EO_DEATH_ROLL_TIME) {
+			shipp->special_exp_deathroll_time = val;
+
+			// hmm, it would be cool to modify the explosion in progress
+			if (shipp->flags & SF_DYING && val >= 2) {
+				shipp->final_death_time = timestamp(val);
+			}
 		}
 	}
 
 	// if all our values are the same as a standard exp, turn off the special exp
 	if ((shipp->special_exp_damage == sci->damage) && (shipp->special_exp_blast == sci->blast) && (shipp->special_exp_inner == sci->inner_rad)
-		&& (shipp->special_exp_outer == sci->outer_rad) && (shipp->special_exp_shockwave_speed == sci->speed))
+		&& (shipp->special_exp_outer == sci->outer_rad) && (shipp->special_exp_shockwave_speed == sci->speed) && (shipp->special_exp_deathroll_time == 0))
 	{
 		shipp->use_special_explosion = false;
 		shipp->use_shockwave = false;
@@ -9829,6 +9847,7 @@ void sexp_set_explosion_option(int node)
 		shipp->special_exp_inner = -1;
 		shipp->special_exp_outer = -1;
 		shipp->special_exp_shockwave_speed = -1;
+		shipp->special_exp_deathroll_time = 0;
 	}
 }
 
@@ -14440,6 +14459,61 @@ void sexp_set_weapon (int node, bool primary)
 	}
 }
 
+int sexp_get_countermeasures(int node) 
+{
+	ship *shipp;
+
+	shipp = sexp_get_ship_from_node(node);
+
+	if (shipp !=NULL) {
+		return shipp->cmeasure_count;
+	}
+	else {
+		return SEXP_NAN;
+	}
+}
+
+void sexp_set_countermeasures(int node)
+{
+	ship *shipp;
+	int num_cmeasures;
+
+	shipp = sexp_get_ship_from_node(node);
+
+	if (shipp == NULL) {
+		return;
+	}
+	node = CDR(node);
+	num_cmeasures = eval_num(node);
+	if (num_cmeasures < 0) {
+		num_cmeasures = 0;
+	}
+	else if (num_cmeasures > Ship_info[shipp->ship_info_index].cmeasure_max) {
+		num_cmeasures = Ship_info[shipp->ship_info_index].cmeasure_max;
+	}
+
+	shipp->cmeasure_count = num_cmeasures;
+
+	multi_start_packet();
+	multi_send_ship(shipp);
+	multi_send_int(num_cmeasures);
+	multi_end_packet();
+}
+
+void multi_sexp_set_countermeasures()
+{	
+	int num_cmeasures = 0;
+	ship *shipp; 
+
+	multi_get_ship(shipp);
+	if (shipp == NULL) {
+		return;
+	}
+	if (multi_get_int(num_cmeasures)) {
+		shipp->cmeasure_count = num_cmeasures;
+	}
+}
+
 // KeldorKatarn - Locks or unlocks the afterburner on the requested ship
 void sexp_deal_with_afterburner_lock (int node, bool lock)
 {
@@ -14683,11 +14757,11 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 
 	// copy hull...
 	target_pobjp->special_hitpoints = source_shipp->special_hitpoints;
-	target_pobjp->ship_max_hull_strength = source_shipp->ship_max_hull_strength;
+	target_pobjp->ship_max_hull_strength_multiplier = source_shipp->ship_max_hull_strength / Ship_info[source_shipp->ship_info_index].max_hull_strength;
 	target_pobjp->initial_hull = fl2i(get_hull_pct(source_objp) * 100.0f);
 
 	// ...and shields
-	target_pobjp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
+	target_pobjp->ship_max_shield_strength_multiplier = source_shipp->ship_max_shield_strength / Ship_info[source_shipp->ship_info_index].max_shield_strength;
 	target_pobjp->initial_shields = fl2i(get_shield_pct(source_objp) * 100.0f);
 	target_pobjp->max_shield_recharge_percent = source_shipp->max_shield_recharge_pct;
 
@@ -17636,7 +17710,7 @@ void sexp_int_to_string(int n)
 void sexp_string_concatenate(int n)
 {
 	int sexp_variable_index;
-	char new_text[TOKEN_LENGTH];
+	char new_text[TOKEN_LENGTH * 2];
 
 	// Only do single player of multi host
 	if ( MULTIPLAYER_CLIENT )
@@ -17661,16 +17735,152 @@ void sexp_string_concatenate(int n)
 		return;
 	}
 
-	// add first string
-	memset(new_text, 0, TOKEN_LENGTH);
+	// concatenate strings
 	strcpy(new_text, str1);
+	strcat(new_text, str2);
 
 	// check length
-	if (strlen(str1) + strlen(str2) >= TOKEN_LENGTH)
+	if (strlen(new_text) >= TOKEN_LENGTH)
+	{
 		Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+		new_text[TOKEN_LENGTH] = 0;
+	}
 
-	// add second string
-	strncat(new_text, str2, TOKEN_LENGTH - strlen(str1) - 1);
+	// assign to variable
+	sexp_modify_variable(new_text, sexp_variable_index);
+}
+
+// Goober5000
+int sexp_string_get_length(int node)
+{
+	return strlen(CTEXT(node));
+}
+
+// Goober5000
+void sexp_string_get_substring(int node)
+{
+	int n = node;
+	int sexp_variable_index;
+	char new_text[TOKEN_LENGTH];
+
+	// Only do single player of multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	char *parent = CTEXT(n);
+	n = CDR(n);
+	int pos = eval_num(n);
+	n = CDR(n);
+	int len = eval_num(n);
+	n = CDR(n);
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	// check variable type
+	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
+	{
+		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		return;
+	}
+
+	int parent_len = strlen(parent);
+
+	// sanity
+	if (pos >= parent_len)
+	{
+		Warning(LOCATION, "( string-get-substring %s %d %d ) failed: starting position is larger than the string length!", parent, pos, len);
+		return;
+	}
+
+	// sanity
+	if (pos + len > parent_len)
+		len = parent_len - pos;
+
+	// copy substring
+	memset(new_text, 0, TOKEN_LENGTH);
+	strncpy(new_text, &parent[pos], len);
+
+	// assign to variable
+	sexp_modify_variable(new_text, sexp_variable_index);
+}
+
+// Goober5000
+void sexp_string_set_substring(int node)
+{
+	int n = node;
+	int sexp_variable_index;
+	char new_text[TOKEN_LENGTH * 2];
+
+	// Only do single player of multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	char *parent = CTEXT(n);
+	n = CDR(n);
+	int pos = eval_num(n);
+	n = CDR(n);
+	int len = eval_num(n);
+	n = CDR(n);
+	char *new_substring = CTEXT(n);
+	n = CDR(n);
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	// check variable type
+	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
+	{
+		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		return;
+	}
+
+	int parent_len = strlen(parent);
+	int new_len = strlen(new_substring);
+
+	// sanity
+	if (pos >= parent_len)
+	{
+		Warning(LOCATION, "( string-set-substring %s %d %d %s ) failed: starting position is larger than the string length!", parent, pos, len, new_substring);
+		return;
+	}
+
+	// make the common case fast
+	if (len == 1 && new_len == 1)
+	{
+		strcpy(new_text, parent);
+		new_text[pos] = new_substring[0];
+	}
+	else
+	{
+		// sanity
+		if (pos + len > parent_len)
+			len = parent_len - pos;
+
+		// copy parent string up to the substring pos
+		strncpy(new_text, parent, pos);
+
+		// add new substring
+		strcpy(&new_text[pos], new_substring);
+
+		// add rest of parent string
+		strcat(new_text, &parent[pos + len]);
+
+		// check length
+		if (strlen(new_text) >= TOKEN_LENGTH)
+		{
+			Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+			new_text[TOKEN_LENGTH] = 0;
+		}
+	}
 
 	// assign to variable
 	sexp_modify_variable(new_text, sexp_variable_index);
@@ -18864,6 +19074,130 @@ void sexp_force_glide(int node)
 	return;
 }
 
+int sexp_is_in_box(int n)
+{
+	Assert(n >= 0);
+
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	n = CDR(n);
+
+	// Get box corners
+	float x1 = (float) eval_num(n);
+	n = CDR(n);
+	float x2 = (float) eval_num(n);
+	n = CDR(n);
+	float y1 = (float) eval_num(n);
+	n = CDR(n);
+	float y2 = (float) eval_num(n);
+	n = CDR(n);
+	float z1 = (float) eval_num(n);
+	n = CDR(n);
+	float z2 = (float) eval_num(n);
+	n = CDR(n);	
+	vec3d box_corner_1;
+	box_corner_1.xyz.x = MIN(x1, x2);
+	box_corner_1.xyz.y = MIN(y1, y2);
+	box_corner_1.xyz.z = MIN(z1, z2);
+	vec3d box_corner_2;
+	box_corner_2.xyz.x = MAX(x1, x2);
+	box_corner_2.xyz.y = MAX(y1, y2);
+	box_corner_2.xyz.z = MAX(z1, z2);
+
+	// Ship to define reference frame is optional
+	object* reference_ship_obj = NULL;
+	if (n != -1)
+	{
+		int sindex = ship_name_lookup(CTEXT(n));
+
+		if (sindex < 0 || Ships[sindex].objnum < 0)
+			return SEXP_FALSE;
+
+		reference_ship_obj = &Objects[Ships[sindex].objnum];
+	}
+
+	// Get position of test point
+	vec3d test_point;
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_EXITED:
+			return SEXP_KNOWN_FALSE;
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			test_point = oswpt.objp->pos;
+			break;
+
+		default:
+			return SEXP_FALSE;
+	}
+
+	// If reference_ship is specified, rotate test_point into its reference frame
+	if (reference_ship_obj != NULL) 
+	{
+		vec3d tempv;
+		vm_vec_sub(&tempv, &test_point, &reference_ship_obj->pos);
+		vm_vec_rotate(&test_point, &tempv, &reference_ship_obj->orient);
+	}
+
+	// Check to see if the test point is within the specified box
+	if ((test_point.xyz.x >= box_corner_1.xyz.x && test_point.xyz.x <= box_corner_2.xyz.x) &&
+		(test_point.xyz.y >= box_corner_1.xyz.y && test_point.xyz.y <= box_corner_2.xyz.y) &&
+		(test_point.xyz.z >= box_corner_1.xyz.z && test_point.xyz.z <= box_corner_2.xyz.z))
+	{
+		return SEXP_TRUE;
+	}
+	else
+	{
+		return SEXP_FALSE;
+	}
+}
+
+void sexp_manipulate_colgroup(int node, bool add_to_group) {
+	object* objp;
+	ship* shipp;
+	int colgroup_id;
+
+	shipp = sexp_get_ship_from_node(node);
+
+	if (shipp == NULL)
+		return;
+
+	objp = &Objects[shipp->objnum];
+	colgroup_id = objp->collision_group_id;
+
+	node = CDR(node);
+
+	while (node != -1) {
+
+		int group = eval_num(node);
+		
+		if (group < 0 || group > 31) {
+			WarningEx(LOCATION, "Invalid collision group id %d specified for object %s. Valid IDs range from 0 to 31.\n", group, shipp->ship_name); 
+		} else {
+			if (add_to_group) {
+				colgroup_id |= (1<<group);
+			} else {
+				colgroup_id &= !(1<<group);
+			}
+		}
+
+		node = CDR(node);
+	}
+
+	objp->collision_group_id = colgroup_id;
+}
+
+int sexp_get_colgroup(int node) {
+	ship* shipp;
+
+	shipp = sexp_get_ship_from_node(CDR(node));
+
+	return Objects[shipp->objnum].collision_group_id;
+}
+
 //Karajorma - Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets> 
 int get_generic_subsys(char *subsys_name) 
 {
@@ -19293,6 +19627,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_NUM_WITHIN_BOX:
 				sexp_val = sexp_num_within_box(node);
+				break;
+
+			case OP_IS_IN_BOX:
+				sexp_val = sexp_is_in_box(node);
 				break;
 
 			case OP_IS_SHIP_VISIBLE:
@@ -20202,6 +20540,24 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// Goober5000
+			case OP_STRING_GET_SUBSTRING:
+				sexp_string_get_substring(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
+			case OP_STRING_SET_SUBSTRING:
+				sexp_string_set_substring(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
+			case OP_STRING_GET_LENGTH:
+				sexp_val = sexp_string_get_length(node);
+				break;
+
+
 /*			// debugging operators
 			case OP_INT3:
 				Int3();
@@ -20439,6 +20795,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_secondary_ammo(node);
 				break;
 
+			// Karajorma
+			case OP_GET_NUM_COUNTERMEASURES:
+				sexp_val = sexp_get_countermeasures(node);
+				break;
+
 			case OP_IS_SECONDARY_SELECTED:
 				sexp_val = sexp_is_secondary_selected(node);
 				break;
@@ -20536,7 +20897,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_weapon(node, op_num == OP_SET_PRIMARY_WEAPON);
 				sexp_val = SEXP_TRUE;
 				break;
-				
+
+			// Karajorma
+			case OP_SET_NUM_COUNTERMEASURES:
+				sexp_set_countermeasures(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Karajorma
 			case OP_LOCK_PRIMARY_WEAPON:
 			case OP_UNLOCK_PRIMARY_WEAPON:
@@ -20856,6 +21223,20 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_HUD_ACTIVATE_GAUGE_TYPE:
 				sexp_val = SEXP_TRUE;
 				sexp_hud_activate_gauge_type(node);
+				break;
+
+			case OP_ADD_TO_COLGROUP:
+				sexp_val = SEXP_TRUE;
+				sexp_manipulate_colgroup(node, true);
+				break;
+
+			case OP_REMOVE_FROM_COLGROUP:
+				sexp_val = SEXP_TRUE;
+				sexp_manipulate_colgroup(node, false);
+				break;
+
+			case OP_GET_COLGROUP_ID:
+				sexp_val = sexp_get_colgroup(node);
 				break;
 
 			default:
@@ -21340,6 +21721,7 @@ int query_operator_return_type(int op)
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_IS_BIT_SET:
 		case OP_DIRECTIVE_IS_VARIABLE:
+		case OP_IS_IN_BOX:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -21367,6 +21749,7 @@ int query_operator_return_type(int op)
 		case OP_STRING_TO_INT:
 		case OP_GET_THROTTLE_SPEED:
 		case OP_GET_VARIABLE_BY_INDEX:
+		case OP_GET_COLGROUP_ID:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -21412,6 +21795,7 @@ int query_operator_return_type(int op)
 		case OP_SECONDARY_AMMO_PCT:
 		case OP_GET_PRIMARY_AMMO:
 		case OP_GET_SECONDARY_AMMO:
+		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
@@ -21422,6 +21806,7 @@ int query_operator_return_type(int op)
 		case OP_GET_DAMAGE_CAUSED:
 		case OP_CUTSCENES_GET_FOV:
 		case OP_NUM_VALID_ARGUMENTS:
+		case OP_STRING_GET_LENGTH:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -21673,6 +22058,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SECONDARY_AMMO:
 		case OP_SET_PRIMARY_WEAPON:
 		case OP_SET_SECONDARY_WEAPON:
+		case OP_SET_NUM_COUNTERMEASURES:
 		case OP_SCRIPT_EVAL:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
@@ -21703,6 +22089,10 @@ int query_operator_return_type(int op)
 		case OP_INT_TO_STRING:
 		case OP_DISABLE_ETS:
 		case OP_ENABLE_ETS:
+		case OP_STRING_GET_SUBSTRING:
+		case OP_STRING_SET_SUBSTRING:
+		case OP_ADD_TO_COLGROUP:
+		case OP_REMOVE_FROM_COLGROUP:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -21825,6 +22215,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_STRING_GREATER_THAN:
 		case OP_STRING_LESS_THAN:
 		case OP_STRING_TO_INT:		// Karajorma
+		case OP_STRING_GET_LENGTH:	// Goober5000
 			return OPF_STRING;
 
 		case OP_STRING_CONCATENATE:
@@ -21838,6 +22229,26 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0) {
 				return OPF_NUMBER;
 			} else if (argnum == 1) {
+				return OPF_VARIABLE_NAME;
+			}
+
+		case OP_STRING_GET_SUBSTRING:
+			if (argnum == 0) {
+				return OPF_STRING;
+			} else if (argnum == 1 || argnum == 2) {
+				return OPF_POSITIVE;
+			} else if (argnum == 3) {
+				return OPF_VARIABLE_NAME;
+			}
+
+		case OP_STRING_SET_SUBSTRING:
+			if (argnum == 0) {
+				return OPF_STRING;
+			} else if (argnum == 1 || argnum == 2) {
+				return OPF_POSITIVE;
+			} else if (argnum == 3) {
+				return OPF_STRING;
+			} else if (argnum == 4) {
 				return OPF_VARIABLE_NAME;
 			}
 
@@ -22223,6 +22634,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_IS_IN_BOX:
+			if (argnum == 0) // First arg is a ship/wing
+				return OPF_SHIP_WING_POINT;
+			else if (argnum <= 6) // Next 6 args are coordinates
+				return OPF_NUMBER;
+			else // Next arg is a ship
+				return OPF_SHIP;
 
 		// Sesquipedalian
 		case OP_MISSILE_LOCKED:
@@ -23111,6 +23530,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			}
 
+			
+		case OP_GET_NUM_COUNTERMEASURES:
+			return OPF_SHIP;
+
+		case OP_SET_NUM_COUNTERMEASURES:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else 
+				return OPF_POSITIVE;
+
 		// Karajorma	
 		case OP_LOCK_PRIMARY_WEAPON:
 		case OP_UNLOCK_PRIMARY_WEAPON:
@@ -23498,6 +23927,21 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_HUD_GAUGE;
 			else
 				return OPF_BOOL;
+
+		case OP_GET_COLGROUP_ID:
+			return OPF_SHIP;
+
+		case OP_ADD_TO_COLGROUP:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
+
+		case OP_REMOVE_FROM_COLGROUP:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
 
 		default:
 			Int3();
@@ -24705,8 +25149,9 @@ int get_subcategory(int sexp_id)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_SET_PRIMARY_AMMO:		// Karajorma
 		case OP_SET_SECONDARY_AMMO:		// Karajorma
-		case OP_SET_PRIMARY_WEAPON:	// Karajorma
+		case OP_SET_PRIMARY_WEAPON:		// Karajorma
 		case OP_SET_SECONDARY_WEAPON:	// Karajorma
+		case OP_SET_NUM_COUNTERMEASURES: // Karajorma
 		case OP_LOCK_PRIMARY_WEAPON:
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
@@ -24747,6 +25192,9 @@ int get_subcategory(int sexp_id)
 		case OP_FORCE_GLIDE:
 		case OP_DISABLE_ETS:
 		case OP_ENABLE_ETS:
+		case OP_ADD_TO_COLGROUP:
+		case OP_REMOVE_FROM_COLGROUP:
+		case OP_GET_COLGROUP_ID:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
@@ -24953,6 +25401,7 @@ int get_subcategory(int sexp_id)
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_GET_PRIMARY_AMMO:
 		case OP_GET_SECONDARY_AMMO:
+		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_PRIMARY_FIRED_SINCE:
@@ -25002,6 +25451,7 @@ int get_subcategory(int sexp_id)
 		case OP_GET_OBJECT_SPEED_Z:
 		case OP_NUM_WITHIN_BOX:
 		case OP_SPECIAL_WARP_DISTANCE:
+		case OP_IS_IN_BOX:
 			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
 			
 		case OP_WAS_PROMOTION_GRANTED:
@@ -25694,6 +26144,17 @@ sexp_help_struct Sexp_help[] = {
 		"\t6: Box depth\r\n"
 		"\tRest:\tShips or wings to check" },
 
+	{ OP_IS_IN_BOX, "Whether an object is in the box specified. If a second ship is specified, "
+		"the box is relative to that ship's reference frame. \r\n"
+		"\t1: Ships or wings to check\r\n"
+		"\t2: Min X\r\n"
+		"\t3: Max X\r\n"
+		"\t4: Min Y\r\n"
+		"\t5: Max Y\r\n"
+		"\t6: Min Z\r\n"
+		"\t7: Max Z\r\n"
+		"\t8: Ship to use as reference frame (optional)." },
+
 	{ OP_GET_DAMAGE_CAUSED, "Get damage caused (Status operator)\r\n"
 		"\tReturns the amount of damage one or more ships have done to a ship.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
@@ -26138,7 +26599,7 @@ sexp_help_struct Sexp_help[] = {
 		"Sets an explosion option on a particular ship.  Takes 3 or more arguments...\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tExplosion option\r\n"
-		"\t3:\tExplosion value (for shockwave speed, 0 will produce no shockwave)\r\n"
+		"\t3:\tExplosion value (for shockwave speed, 0 will produce no shockwave; for death roll time, 0 will use the default time)\r\n"
 		"Use Add-Data to specify additional explosion options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
 		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
 
@@ -26514,6 +26975,10 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tString to convert" },
 
 	// Goober5000
+	{ OP_STRING_GET_LENGTH, "string-get-length\r\n"
+		"\tReturns the length of the specified string.  Takes 1 argument." },
+
+	// Goober5000
 	{ OP_INT_TO_STRING, "int-to-string\r\n"
 		"\tConverts an integer into a string.  The destination must be a string variable.\r\n"
 		"Takes 2 argument...\r\n"
@@ -26528,6 +26993,27 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: First string\r\n"
 		"\t2: Second string\r\n"
 		"\t3: String variable to hold the result\r\n" },
+
+	// Goober5000
+	{ OP_STRING_GET_SUBSTRING, "string-get-substring\r\n"
+		"\tExtracts a substring from a parent string, putting the result into a string variable.  If the length of the string will "
+		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1: Parent string\r\n"
+		"\t2: Index at which the substring begins (0-based)\r\n"
+		"\t3: Length of the substring\r\n"
+		"\t4: String variable to hold the result\r\n" },
+
+	// Goober5000
+	{ OP_STRING_SET_SUBSTRING, "string-set-substring\r\n"
+		"\tReplaces a substring from a parent string with a new string, putting the result into a string variable.  If the length of the string will "
+		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1: Parent string\r\n"
+		"\t2: Index at which the substring begins (0-based)\r\n"
+		"\t3: Length of the substring\r\n"
+		"\t4: New substring (which can be a different length than the old substring)\r\n"
+		"\t5: String variable to hold the result\r\n" },
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
@@ -27350,6 +27836,11 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
+	// Karajorma
+	{ OP_GET_NUM_COUNTERMEASURES, "get-num-countermeasures\r\n"
+		"\tReturns the amount of countermeasures remaining\r\n"
+		"\t1: Ship name\r\n" },
+
 	{ OP_IS_SECONDARY_SELECTED, "is-secondary-selected\r\n"
 		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
 		"\t1: Ship name\r\n"
@@ -27605,6 +28096,16 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Name of the secondary weapon \r\n"
 		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
 		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+	},
+
+
+	
+	// Karajorma
+	{ OP_SET_NUM_COUNTERMEASURES, "set-num-countermeasures\r\n"
+		"\tSets the number of countermeasures the ship has\r\n"
+		"\tValues greater than the maximum a ship can carry are set to the maximum\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Number to set"
 	},
 	
 	// Karajorma
@@ -28208,8 +28709,31 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tGauge Type\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
+	},
+
+	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
+		"\tAdds a ship to the specified collision group(s). Note that there are 32 collision groups,\r"
+		"\tand that an object may be in several collision groups at the same time\r\n"
+		"Takes 2 or more Arguments...\r\n"
+		"\t1:\tObject to add\r\n"
+		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
+	},
+
+	{OP_REMOVE_FROM_COLGROUP, "remove-from-collision-group\r\n"
+		"\tRemoves a ship from the specified collision group(s). Note that there are 32 collision groups,\n"
+		"\tand that an object may be in several collision groups at the same time\r\n"
+		"Takes 2 or more Arguments...\r\n"
+		"\t1:\tObject to add\r\n"
+		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
+	},
+
+	{OP_GET_COLGROUP_ID, "get-collision-group\r\n"
+		"\tReturns an objects' collision group ID. Note that this ID is a bitfield.\r\n"
+		"Takes 1 Argument...\r\n"
+		"\t1:\tObject name\r\n"
 	}
 };
+
 
 
 op_menu_struct op_menu[] =

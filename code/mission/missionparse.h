@@ -413,6 +413,8 @@ typedef struct p_object {
 	float special_exp_outer;					// Changed from 'int' to 'float' by Zacam 10/2010
 	bool use_shockwave;
 	float special_exp_shockwave_speed;		// Changed from 'int' to 'float' by Zacam 10/2010
+	int special_exp_deathroll_time;
+
 	int	special_hitpoints;
 	int	special_shield;
 
@@ -428,8 +430,8 @@ typedef struct p_object {
 	int		alt_type_index;					// optional alt type index
 	int		callsign_index;					// optional callsign index
 
-	float ship_max_hull_strength;
-	float ship_max_shield_strength;
+	float ship_max_hull_strength_multiplier;			// Needed to deal with special hitpoints
+	float ship_max_shield_strength_multiplier;			//
 
 	float max_shield_recharge_percent;
 	float max_shield_segment_strength[MAX_SHIELD_SECTIONS];
@@ -509,8 +511,11 @@ typedef struct p_object {
 		special_exp_outer = -1;
 		use_shockwave = false;
 		special_exp_shockwave_speed = -1;
+		special_exp_deathroll_time = 0;
+
 		special_hitpoints = 0;
 		special_shield = -1;
+
 		net_signature = 0;
 		destroy_before_mission_time = 0;
 
@@ -523,8 +528,8 @@ typedef struct p_object {
 		alt_type_index = 0;
 		callsign_index = 0;
 
-		ship_max_hull_strength = 0.;
-		ship_max_shield_strength = 0.;
+		ship_max_hull_strength_multiplier = 1.0f;
+		ship_max_shield_strength_multiplier = 1.0f;
 
 		num_texture_replacements = 0;
 		

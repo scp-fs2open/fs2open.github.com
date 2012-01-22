@@ -291,11 +291,17 @@ void parse_species_tbl(char *filename)
 
 
 		// Shield Hit Animation
-		if ((!no_create && required_string("+Shield_Hit_ani:")) || optional_string("+Shield_Hit_ani:"))
+		//if ((!no_create && required_string("+Shield_Hit_ani:")) || optional_string("+Shield_Hit_ani:"))
+        if (optional_string("+Shield_Hit_ani:")) // Shouldn't be required -- LPine
 		{
 			generic_anim_init(&species->shield_anim, NULL);
 			stuff_string(species->shield_anim.filename, F_NAME, MAX_FILENAME_LEN);
 		}
+        else
+        {
+            species->shield_anim.filename[0] = '\0';
+            species->shield_anim.first_frame = -1; // Landmine to trip up anyone who does end up using this
+        }
 
 
 		// Thruster Anims

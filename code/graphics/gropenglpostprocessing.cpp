@@ -669,7 +669,6 @@ static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 		return shader;
 	}
 
-	return NULL;
 }
 
 static bool opengl_post_init_shader()

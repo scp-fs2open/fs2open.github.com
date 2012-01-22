@@ -1205,7 +1205,14 @@ void outwnd_init(int display_under_freespace_window)
 		char pathname[MAX_PATH_LEN];
 
 		/* Set where the log file is going to go */
-		FreeSpace_logfilename = (Fred_running) ? "fred2_open.log" : "fs2_open.log";
+		// Zacam: Set various conditions based on what type of log to generate.
+		if (Fred_running) {
+			FreeSpace_logfilename = "fred2_open.log";
+		} else if (Is_standalone) {
+			FreeSpace_logfilename = "fs2_standalone.log";
+		} else {
+			FreeSpace_logfilename = "fs2_open.log";
+		}
 
 		memset( pathname, 0, sizeof(pathname) );
 		snprintf(pathname, MAX_PATH_LEN-1, "%s\\%s\\%s", detect_home(), Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);

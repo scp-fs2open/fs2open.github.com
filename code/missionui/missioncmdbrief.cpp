@@ -116,10 +116,8 @@ int Cmd_image_center_coords[GR_NUM_RESOLUTIONS][2] =
 };
 
 int Top_cmd_brief_text_line;
-int Cmd_brief_text_max_lines[GR_NUM_RESOLUTIONS] =
-{
-	10, 17
-};
+
+int Max_cmdbrief_Lines;
 
 #define MAX_CMD_BRIEF_BUTTONS	10
 #define MIN_CMD_BRIEF_BUTTONS	8
@@ -485,7 +483,7 @@ void cmd_brief_button_pressed(int n)
 
 		case CMD_BRIEF_BUTTON_SCROLL_DOWN:
 			Top_cmd_brief_text_line++;
-			if ( (Num_brief_text_lines[0] - Top_cmd_brief_text_line) < Cmd_brief_text_max_lines[gr_screen.res]) {
+			if ( (Num_brief_text_lines[0] - Top_cmd_brief_text_line) < Max_cmdbrief_Lines) {
 				Top_cmd_brief_text_line--;
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			} else {
@@ -722,8 +720,14 @@ void cmd_brief_do_frame(float frametime)
 		Voice_good_to_go = 1;
 	}
 
+	if (gr_screen.res == 1) {
+		Max_cmdbrief_Lines = 180/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
+	} else {
+		Max_cmdbrief_Lines = 116/gr_get_font_height();
+	}
+
 	// maybe output the "more" indicator
-	if ( (Cmd_brief_text_max_lines[gr_screen.res] + Top_cmd_brief_text_line) < Num_brief_text_lines[0] ) {
+	if ( Max_cmdbrief_Lines < Num_brief_text_lines[0] ) {
 		// can be scrolled down
 		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2) - 10;
 		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered

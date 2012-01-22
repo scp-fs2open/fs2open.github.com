@@ -1801,13 +1801,15 @@ int parse_create_object_sub(p_object *p_objp)
 	
 	shipp->use_special_explosion = p_objp->use_special_explosion;
 	shipp->special_exp_damage = p_objp->special_exp_damage;
-	shipp->special_exp_blast = p_objp->special_exp_blast ;
-	shipp->special_exp_inner = p_objp->special_exp_inner ;
-	shipp->special_exp_outer = p_objp->special_exp_outer ;
-	shipp->use_shockwave = p_objp->use_shockwave ;
-	shipp->special_exp_shockwave_speed = p_objp->special_exp_shockwave_speed ;
-	shipp->special_hitpoints = p_objp->special_hitpoints ;
-	shipp->special_shield = p_objp->special_shield ;
+	shipp->special_exp_blast = p_objp->special_exp_blast;
+	shipp->special_exp_inner = p_objp->special_exp_inner;
+	shipp->special_exp_outer = p_objp->special_exp_outer;
+	shipp->use_shockwave = p_objp->use_shockwave;
+	shipp->special_exp_shockwave_speed = p_objp->special_exp_shockwave_speed;
+	shipp->special_exp_deathroll_time = p_objp->special_exp_deathroll_time;
+
+	shipp->special_hitpoints = p_objp->special_hitpoints;
+	shipp->special_shield = p_objp->special_shield;
 
 	for (i=0;i<MAX_IFFS;i++)
 	{
@@ -1818,8 +1820,8 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// Goober5000
-	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
-	shipp->ship_max_hull_strength = p_objp->ship_max_hull_strength;
+	shipp->ship_max_shield_strength = Ship_info[shipp->ship_info_index].max_shield_strength * p_objp->ship_max_shield_strength_multiplier;
+	shipp->ship_max_hull_strength =  Ship_info[shipp->ship_info_index].max_hull_strength * p_objp->ship_max_hull_strength_multiplier;
 	shipp->max_shield_recharge_pct = p_objp->max_shield_recharge_percent;
 
 	for (i=0;i<MAX_SHIELD_SECTIONS;i++)
@@ -1951,9 +1953,9 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// other flag checks
 ////////////////////////
-	if (p_objp->ship_max_shield_strength == 0.0f || (!Fred_running && !(p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)))
+	if (p_objp->ship_max_shield_strength_multiplier == 0.0f || (!Fred_running && !(p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)))
 		Objects[objnum].flags |= OF_NO_SHIELDS;
-	else if ((p_objp->ship_max_shield_strength > 0.0f) && (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON))
+	else if ((p_objp->ship_max_shield_strength_multiplier > 0.0f) && (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON))
 		Objects[objnum].flags &= ~OF_NO_SHIELDS;
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
@@ -2482,6 +2484,7 @@ void fix_old_special_explosions(p_object *p_objp, int variable_index)
 	p_objp->special_exp_outer = (float)atoi(Block_variables[variable_index+OUTER_RAD].text);
 	p_objp->use_shockwave = (atoi(Block_variables[variable_index+PROPAGATE].text) ? 1:0);
 	p_objp->special_exp_shockwave_speed = (float)atoi(Block_variables[variable_index+SHOCK_SPEED].text);
+	p_objp->special_exp_deathroll_time = 0;
 }
 
 void fix_old_special_hits(p_object *p_objp, int variable_index)
@@ -2850,6 +2853,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	p_objp->special_exp_outer = -1;
 	p_objp->use_shockwave = false;
 	p_objp->special_exp_shockwave_speed = 0;
+	p_objp->special_exp_deathroll_time = 0;
+
 	p_objp->special_hitpoints = 0;
 	p_objp->special_shield = -1;
 
@@ -2876,6 +2881,10 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_float(&p_objp->special_exp_shockwave_speed);
 			p_objp->use_shockwave = true;
 		}
+
+		if (optional_string("+Special Exp Death Roll Time:")) {
+			stuff_int(&p_objp->special_exp_deathroll_time);
+		}
 	}
 
 	if (optional_string("+Special Hitpoints:")) {
@@ -2900,17 +2909,21 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	// set max hitpoint and shield values		
 	if (p_objp->special_shield != -1) {
-		p_objp->ship_max_shield_strength = (float) p_objp->special_shield; 
+		if (Ship_info[p_objp->ship_class].max_shield_strength > 0.0f) {
+			p_objp->ship_max_shield_strength_multiplier = (float) p_objp->special_shield / Ship_info[p_objp->ship_class].max_shield_strength;
+		} else {
+			p_objp->ship_max_shield_strength_multiplier = 0.0f;
+		}
 	}
 	else {
-		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
+		p_objp->ship_max_shield_strength_multiplier = 1.0f;
 	}
 		
 	if (p_objp->special_hitpoints > 0) {
-		p_objp->ship_max_hull_strength = (float) p_objp->special_hitpoints; 
+		p_objp->ship_max_hull_strength_multiplier = (float) p_objp->special_hitpoints / Ship_info[p_objp->ship_class].max_hull_strength; 
 	}
 	else {
-		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
+		p_objp->ship_max_hull_strength_multiplier = 1.0f;
 	}
 
 	p_objp->max_shield_recharge_percent = Ship_info[p_objp->ship_class].max_shield_recharge;
@@ -2921,7 +2934,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			p_objp->max_shield_segment_strength[i] = Ship_info[p_objp->ship_class].max_shield_segment_strength[i] * shield_mult;
 	}
 
-	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	Assert(p_objp->ship_max_hull_strength_multiplier > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
 
 	// if the kamikaze flag is set, we should have the next flag
 	if (optional_string("+Kamikaze Damage:"))
@@ -3542,33 +3555,33 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	// Hitpoints
 	// We need to take into account that the ship might have been assigned special hitpoints so we can't 
 	// simply swap old for new. 
-	Assert (p_obj->ship_max_hull_strength > 0);
-	Assert (old_ship_info->max_hull_strength > 0);
+	Assert (p_obj->ship_max_hull_strength_multiplier > 0.0f);
+	Assert (old_ship_info->max_hull_strength > 0.0f);
 	
-	float hp_multiplier = p_obj->ship_max_hull_strength / old_ship_info->max_hull_strength;
-	p_obj->ship_max_hull_strength = new_ship_info->max_hull_strength * hp_multiplier;
+	float hp_multiplier = (Ship_info[p_obj->ship_class].max_hull_strength * p_obj->ship_max_hull_strength_multiplier) / old_ship_info->max_hull_strength;
+	p_obj->ship_max_hull_strength_multiplier = (new_ship_info->max_hull_strength * hp_multiplier) / new_ship_info->max_hull_strength;
 
 
-	// Shields
-	int i;
-	p_obj->max_shield_recharge_percent = new_ship_info->max_shield_recharge;
-	// Again we have to watch out for special hitpoints but this time we can't assume that there will be a 
-	// shield. So first lets see if there is one. 
-	if ((p_obj->ship_max_shield_strength != old_ship_info->max_shield_strength) && 
-		(p_obj->ship_max_shield_strength > 0) &&
-		(new_ship_info->max_shield_strength > 0))
-	{
-		// This ship is using special hitpoints to alter the shield strength
-		float shield_multiplier = p_obj->ship_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
-		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
-			p_obj->max_shield_segment_strength[i] = new_ship_info->max_shield_segment_strength[i] * shield_multiplier;
-	}
-	// Not using special hitpoints or a class which has a shield strength of zero
-	else
-	{
-		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength;
-	}
+	//// Shields
+	//int i;
+	//p_obj->max_shield_recharge_percent = new_ship_info->max_shield_recharge;
+	//// Again we have to watch out for special hitpoints but this time we can't assume that there will be a 
+	//// shield. So first lets see if there is one. 
+	//if ((p_obj->ship_max_shield_strength != old_ship_info->max_shield_strength) && 
+	//	(p_obj->ship_max_shield_strength > 0) &&
+	//	(new_ship_info->max_shield_strength > 0))
+	//{
+	//	// This ship is using special hitpoints to alter the shield strength
+	//	float shield_multiplier = p_obj->ship_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
+	//	p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
+	//	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+	//		p_obj->max_shield_segment_strength[i] = new_ship_info->max_shield_segment_strength[i] * shield_multiplier;
+	//}
+	//// Not using special hitpoints or a class which has a shield strength of zero
+	//else
+	//{
+	//	p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength;
+	//}
 	
 	// Primary weapons
 	// First find out what is the correct number for a ship of this class
@@ -6099,7 +6112,7 @@ p_object *mission_parse_get_arrival_ship(char *name)
 
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
-		if (!stricmp(p_objp->name, name))
+		if (!stricmp(p_objp->name, name)) 
 			return p_objp;	// still on the arrival list
 	}
 
@@ -7252,8 +7265,8 @@ void mission_bring_in_support_ship( object *requester_objp )
 	}
 
 	// set support ship hitpoints
-	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
-	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
+	pobj->ship_max_hull_strength_multiplier = 1.0f;
+	pobj->ship_max_shield_strength_multiplier = 1.0f;
 	pobj->max_shield_recharge_percent = Ship_info[i].max_shield_recharge;
 	for (j = 0; j < MAX_SHIELD_SECTIONS; j++)
 		pobj->max_shield_segment_strength[j] = Ship_info[i].max_shield_segment_strength[j];

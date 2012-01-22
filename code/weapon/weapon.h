@@ -366,6 +366,8 @@ typedef struct weapon_info {
 	// Seeker strength - for countermeasures overhaul.
 	float seeker_strength;
 
+	int pre_launch_snd;
+	int	pre_launch_snd_min_interval;	//Minimum interval in ms between the last time the pre-launch sound was played and the next time it can play, as a limiter in case the player is pumping the trigger
 	int	launch_snd;
 	int	impact_snd;
 	int disarmed_impact_snd;

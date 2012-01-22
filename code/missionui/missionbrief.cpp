@@ -209,6 +209,8 @@ int Brief_inited = FALSE;
 
 int Briefing_paused = 0;	// for stopping audio and stage progression
 
+int Max_brief_Lines;
+
 // --------------------------------------------------------------------------------------
 // Briefing specific UI
 // --------------------------------------------------------------------------------------
@@ -467,7 +469,7 @@ void brief_scroll_up_text()
 void brief_scroll_down_text()
 {
 	Top_brief_text_line++;
-	if ( (Num_brief_text_lines[0] - Top_brief_text_line) < Brief_text_max_lines[gr_screen.res]) {
+	if ( (Num_brief_text_lines[0] - Top_brief_text_line) < Max_brief_Lines) {
 		Top_brief_text_line--;
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 	} else {
@@ -1166,8 +1168,14 @@ void brief_render(float frametime)
 			brief_voice_play(Current_brief_stage);
 		}
 
+		if (gr_screen.res == 1) {
+			Max_brief_Lines = 110/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
+		} else {
+			Max_brief_Lines = 60/gr_get_font_height();
+		}
+
 		// maybe output the "more" indicator
-		if ( (Brief_text_max_lines[gr_screen.res] + Top_brief_text_line) < Num_brief_text_lines[0] ) {
+		if ( Max_brief_Lines < Num_brief_text_lines[0] ) {
 			// can be scrolled down
 			int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
 			int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered

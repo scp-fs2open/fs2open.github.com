@@ -646,6 +646,11 @@ int HudGauge::maybeFlashSexp()
 	return -1;
 }
 
+void HudGauge::preprocess()
+{
+
+}
+
 void HudGauge::render(float frametime)
 {
 	if(!custom_gauge) {
@@ -1771,6 +1776,8 @@ void hud_render_all()
 	if(sip->hud_enabled) {
 		num_gauges = sip->hud_gauges.size();
 		for(j = 0; j < num_gauges; j++) {
+			sip->hud_gauges[j]->preprocess();
+
 			if(sip->hud_gauges[j]->canRender()) {
 				sip->hud_gauges[j]->resetClip();
 				sip->hud_gauges[j]->setFont();
@@ -1784,6 +1791,8 @@ void hud_render_all()
 	} else {
 		num_gauges = default_hud_gauges.size();
 		for(j = 0; j < num_gauges; j++) {
+			default_hud_gauges[j]->preprocess();
+
 			if(default_hud_gauges[j]->canRender()) {
 				default_hud_gauges[j]->resetClip();
 				default_hud_gauges[j]->setFont();
