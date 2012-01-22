@@ -411,61 +411,48 @@ int hud_squadmsg_count_ships(int add_to_menu)
 // routine to return true if a wing should be put onto the messaging menu
 int hud_squadmsg_wing_valid(wing *wingp)
 {
-	// int player_count, j;
-	int special_ship_index;
+	int idx, ship_num;
 
-	// a couple of special cases to account for before adding to count (or to menu).  The wing gone
-	// flags is firm indication to skip this particular wing.  Also, skip if enemy wing
-	if ( (wingp->flags  & WF_WING_GONE) || (wingp->current_count == 0) )
+	// a couple of special cases to account for before adding to count (or to menu).  Don't count
+	// wings that are leaving or left.
+	if ( wingp->flags & (WF_WING_GONE|WF_WING_DEPARTING) )
 		return 0;
 
-	// departing wings don't get attention either
-	if ( wingp->flags & WF_WING_DEPARTING )
-		return 0;
+	// Goober5000 - instead of checking wing leader, let's check all ships in wing;
+	// there are several significant cases when e.g. wings contain ships of different IFFs
+	for (idx = 0; idx < wingp->current_count; idx++)
+	{
+		ship_num = wingp->ship_index[idx];
+		Assert(ship_num >= 0);
 
-	// sanity check on ship_index field -- if check is successful, then check the team.
-	special_ship_index = wingp->ship_index[wingp->special_ship];
+		// don't check player
+		if (ship_num == SHIP_INDEX(Player_ship))
+			continue;
 
-	// if there is no wing leader then don't bother continuing
-	if (special_ship_index < 0)
-		return 0;
-
-	// be sure ship is on same team
+		// be sure ship is on same team
 #ifdef NDEBUG
-	if (Ships[special_ship_index].team != Player_ship->team)
-		return 0;
+		if (Ships[ship_num].team != Player_ship->team)
+			continue;
 #else
-	if (!Msg_enemies && (Ships[special_ship_index].team != Player_ship->team))
-		return 0;
+		if (!Msg_enemies && (Ships[ship_num].team != Player_ship->team))
+			continue;
 #endif
 
-	// if this wing is the players wing, and there is only one ship in the wing, then skip past it
-	if ( (Ships[Player_obj->instance].wingnum == WING_INDEX(wingp)) && (wingp->current_count == 1) )
-		return 0;
+		// check if ship is accepting orders
+		if (Ships[ship_num].orders_accepted == 0)
+			continue;
 
-	// check if wing commander is accepting orders
-	if ( Ships[special_ship_index].orders_accepted == 0)
-		return 0;
-
-	// if doing a message shortcut is being used, be sure the wing can "accept" the command.  Only need
-	// to look at the wing commander
-	if ( Msg_shortcut_command != -1 ) {
-		if ( !(Ships[special_ship_index].orders_accepted & Msg_shortcut_command) )
+		// if doing a message shortcut is being used, be sure the ship can "accept" the command.
+		if ( Msg_shortcut_command >= 0 && !(Ships[ship_num].orders_accepted & Msg_shortcut_command) )
 			return 0;
-	}
-	// MULTI - changed to allow messaging of netplayers
-	// don't count wings where all ships are player ships		
-	/*
-	player_count = 0;
-	for ( j = 0; j < wingp->current_count; j++ ) {
-		if ( Objects[Ships[wingp->ship_index[j]].objnum].flags & OF_PLAYER_SHIP )
-			player_count++;
-	}
-	if ( player_count == wingp->current_count )
-		return 0;
-	*/
 
-	return 1;
+
+		// at least one ship in this wing is valid, and that's all we need
+		return 1;
+	}
+
+	// no ships in the wing were valid
+	return 0;
 }
 
 // function like above, except for wings

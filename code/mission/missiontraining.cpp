@@ -194,7 +194,7 @@ void HudGaugeDirectives::initBitmaps(char *fname_top, char *fname_middle, char *
 
 bool HudGaugeDirectives::canRender()
 {
-	if(hud_disabled_except_messages() && !message_gauge) {
+	if(hud_disabled_except_messages()) {
 		return false;
 	}
 

@@ -562,7 +562,7 @@ int wl_get_pilot_subsys_index(p_object *pobjp)
 	end_index = start_index + pobjp->subsys_count;
 	pilot_index = -1;
 	for ( i = start_index; i < end_index; i++ ) {
-		if ( !stricmp(Subsys_status[i].name, NOX("pilot") ) ) {
+		if ( !subsystem_stricmp(Subsys_status[i].name, NOX("pilot") ) ) {
 			pilot_index = i;
 			break;
 		}
@@ -3571,7 +3571,7 @@ void wl_swap_weapons(int ship_slot, int from_bank, int to_bank)
 
 	slot = &Wss_slots[ship_slot];
 
-	if ( from_bank == to_bank ) {
+	if ( from_bank == to_bank || (from_bank >= MAX_SHIP_WEAPONS || from_bank < 0 ) || (to_bank >= MAX_SHIP_WEAPONS || to_bank < 0 ) ) {
 		return;
 	}
 

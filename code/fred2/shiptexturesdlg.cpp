@@ -339,7 +339,7 @@ void CShipTexturesDlg::OnSelchangeOldTextureList()
 // bubble sort
 void CShipTexturesDlg::sort_textures(int test)
 {
-	int i, j, str_check;
+	int i, j, str_check = 0;
 
 	for (i = 0; i < texture_count; i++)
 	{

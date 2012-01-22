@@ -452,6 +452,7 @@ class HudGaugeMultiMsg: public HudGauge
 protected:
 public:
 	HudGaugeMultiMsg();
+	bool canRender();
 	void render(float frametime);
 };
 

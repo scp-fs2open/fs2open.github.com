@@ -14,11 +14,12 @@
 #include "math/vecmat.h"
 
 
-
 int Semirand_inited = 0;
 int Semirand[SEMIRAND_MAX];
 
-//	Initialize Semirand array.
+/**
+ * @brief Initialize Semirand array. Doesn't have to be called.
+ */
 void init_semirand()
 {
 	int	i;
@@ -29,8 +30,12 @@ void init_semirand()
 		Semirand[i] = (myrand() << 15) + myrand();
 }
 
-
-//	Return a fairly random 32 bit value given a reasonably small number.
+/**
+ * @brief Return a pseudo random 32 bit value given a reasonably small number.
+ *
+ * @param num Seed input number
+ * @return Pseudo random 32 bit value
+ */
 int static_rand(int num)
 {
 	int	a, b, c;
@@ -48,7 +53,12 @@ int static_rand(int num)
 	return Semirand[a] ^ Semirand[b] ^ Semirand[c];
 }
 
-//	Return a random value in 0.0f .. 1.0f- (ie, it will never return 1.0f).
+/**
+ * @brief Return a random float in 0.0f .. 1.0f- (ie, it will never return 1.0f).
+ *
+ * @param num Seed input number
+ * @return Random value in 0.0f .. 1.0f- (ie, it will never return 1.0f).
+ */
 float static_randf(int num)
 {
 	int	a;
@@ -58,7 +68,14 @@ float static_randf(int num)
 	return (a & 0xffff) / 65536.0f;
 }
 
-// Note: min and max are inclusive
+/**
+ * @brief Return a random integer within a range. Note: min and max are inclusive
+ *
+ * @param num Seed input number
+ * @param min Minimum range integer to return
+ * @param max Maximum range integer to return
+ * @return Random integer within the range
+ */
 int static_rand_range(int num, int min, int max)
 {
 	int	rval = static_rand(num);
@@ -67,7 +84,15 @@ int static_rand_range(int num, int min, int max)
 	return rval;
 }
 
-
+/**
+ * @brief Return a random float within a range.
+ * Note: min and max are inclusive
+ *
+ * @param num Seed input number
+ * @param min Minimum range float to return
+ * @param max Maximum range float to return
+ * @return Random float within the range
+ */
 float static_randf_range(int num, float min, float max)
 {
 	float	rval;
@@ -78,7 +103,12 @@ float static_randf_range(int num, float min, float max)
 	return rval;
 }
 
-
+/**
+ * @brief [To be described]
+ *
+ * @param num Seed input number
+ * @param vp Vector
+ */
 void static_randvec(int num, vec3d *vp)
 {
 	vp->xyz.x = static_randf(num) - 0.5f;
@@ -88,7 +118,15 @@ void static_randvec(int num, vec3d *vp)
 	vm_vec_normalize_quick(vp);
 }
 
-// randomly perturb a vector around a given (normalized vector) or optional orientation matrix
+/**
+ * @brief Randomly perturb a vector around a given (normalized vector) or optional orientation matrix.
+ *
+ * @param num
+ * @param out
+ * @param in
+ * @param max_angle
+ * @param orient
+ */
 void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient)
 {
 	vec3d t1, t2;
@@ -120,14 +158,23 @@ void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *o
 #define RND_MAX	0x7fff
 int Rnd_seed = 1;
 
-// Seed the random number generator.  Doesn't have to be called.
-void srand_alt(int seed)
+/** 
+ * @brief Seed the alternative random number generator. 
+ * Doesn't have to be called.
+ *
+ * @param seed Seed input number
+ */
+void init_static_rand_alt(int seed)
 {
 	Rnd_seed = seed;
 }
 
-// Get a random integer between 1 and RND_MAX
-int rand_alt()
+/**
+ * @brief Get a random integer between 1 and RND_MAX.
+ *
+ * @return Random integer between 1 and RND_MAX
+ */
+int static_rand_alt()
 {
 	static int x=Rnd_seed;
 	int old_x;
@@ -139,9 +186,13 @@ int rand_alt()
 	return x;
 }
 
-// Get a random float between 0 and 1.0
-float frand_alt()
+/**
+ * @brief Get a random integer between 0 and 1.0.
+ *
+ * @return Random float between 0 and 1.0
+ */
+float static_randf_alt()
 {
-	int r = rand_alt();
+	int r = static_rand_alt();
 	return i2fl(r)/RND_MAX;
 }

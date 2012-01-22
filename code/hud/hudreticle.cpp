@@ -430,8 +430,11 @@ void HudGaugeThrottle::render(float frametime)
 
 	desired_y_pos = position[1] + Bottom_offset_y - fl2i(throttle_h*desired_speed/max_speed+0.5f) - 1;
 
-	Assert(max_speed != 0);
-	percent_max = current_speed / max_speed;
+	if (max_speed <= 0) {
+		percent_max = 0.0f;
+	} else {
+		percent_max = current_speed / max_speed;
+	}
 
 	percent_aburn_max = 0.0f;
 	if ( percent_max > 1 ) {

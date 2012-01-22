@@ -1231,7 +1231,7 @@ void labviewer_update_flags_window()
 	}
 
 	// no flags? then don't bother
-	if (Lab_flags.size() == 0) {
+	if (Lab_flags.empty()) {
 		return;
 	}
 

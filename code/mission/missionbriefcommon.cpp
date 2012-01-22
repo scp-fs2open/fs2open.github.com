@@ -1272,14 +1272,16 @@ void brief_blit_stage_num(int stage_num, int stage_max)
 	*/
 }
 
-// Render a line of text for the briefings.  Lines are drawn in as a wipe, with leading bright
-// white characters.  Have to jump through some hoops since we support colored words.  This means
-// that we need to process the line one character at a time.
-//
-// @param line_num number of the line of the briefing page to be drawn
-// @x     horizontal position where the text is drawn
-// @y     vertical position where the text is drawn
-// @instance index of Colored_stream of the text page to display
+/**
+ * Render a line of text for the briefings.  Lines are drawn in as a wipe, with leading bright
+ * white characters.  Have to jump through some hoops since we support colored words.  This means
+ * that we need to process the line one character at a time.
+ *
+ * @param line_num number of the line of the briefing page to be drawn
+ * @param x horizontal position where the text is drawn
+ * @param y vertical position where the text is drawn
+ * @param instance index of Colored_stream of the text page to display
+ */
 void brief_render_line(int line_num, int x, int y, int instance)
 {
 	Assert( 0<=instance && instance < (sizeof(Colored_stream)/sizeof(*Colored_stream)) );
@@ -1375,12 +1377,18 @@ int brief_text_wipe_finished()
 	return 0;
 }
 
-// -------------------------------------------------------------------------------------
-// brief_render_text()
-//
-// input:	frametime	=>	Time in seconds of previous frame
-//				instance		=>	Optional parameter.  Used to indicate which text stream is used.
-//									This value is 0 unless multiple text streams are required
+/**
+ * brief_render_text()
+ *
+ * @param line_offset
+ * @param x
+ * @param y
+ * @param h
+ * @param frametime	time in seconds of previous frame
+ * @param instance optional parameter.  Used to indicate which text stream is used. This value is 0 unless multiple text streams are required
+ * @param line_spacing
+ * @return
+ */
 int brief_render_text(int line_offset, int x, int y, int h, float frametime, int instance, int line_spacing)
 {
 	int fh, line, yy;
@@ -1416,11 +1424,10 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 	return 0;
 }
 
-// ------------------------------------------------------------------------------------
-// brief_render_elements()
-//
-// Draw the lines that show objects positions on the grid
-//
+/** 
+ * Draw the lines that show objects positions on the grid
+ *
+ */
 void brief_render_elements(vec3d *pos, grid* gridp)
 {
 	vec3d	gpos;	//	Location of point on grid.
@@ -1446,26 +1453,6 @@ void brief_render_elements(vec3d *pos, grid* gridp)
 		gr_set_color(127, 127, 127);
 	else
 		gr_set_color(255, 255, 255);   // white
-
-// AL 11-20-97: don't draw elevation lines.. they are confusing
-/*
-	brief_rpd_line(&gpos, pos);	//	Line from grid to object center.
-
-	tpos = gpos;
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, -dxz/2);
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.fvec, -dxz/2);
-	
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, dxz/2);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.fvec, dxz/2);
-	
-	brief_rpd_line(&gpos, &tpos);
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, dxz);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, -dxz);
-
-	brief_rpd_line(&gpos, &tpos);
-*/
 }
 
 
@@ -1487,13 +1474,14 @@ void brief_reset_icons(int stage_num)
 	}
 }
 
-// ------------------------------------------------------------------------------------
-// brief_set_camera_target()
-//
-//	input:	pos		=>		target position for the camera
-//				orient	=>		target orientation for the camera
-//				time		=>		time in ms to reach target
-//
+
+/**
+ * Direct camera to look at target
+ *
+ * @param pos target position for the camera
+ * @param orient target orientation for the camera
+ * @param time time in ms to reach target
+ */
 void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 {
 	float time_in_seconds;
@@ -1523,7 +1511,7 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 	
 	// calculate camera velocity
 	vm_vec_sub(&Cam_vel, pos, &Current_cam_pos);
-//	vm_vec_scale(&Cam_vel, 1.0f/time_in_seconds);
+	
 	if ( !IS_VEC_NULL_SQ_SAFE(&Cam_vel) ) {
 		vm_vec_normalize(&Cam_vel);
 	}
@@ -1537,9 +1525,6 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 	Dist_change_rate = (End_dist - Start_dist) / time_in_seconds;
 
 	Total_dist=vm_vec_dist(&Start_cam_pos, &Target_cam_pos);
-
-//	Peak_speed=Total_dist/Total_move_time*1.5f;
-//	Cam_accel = Peak_speed/Total_move_time*3.0f;
 
 	Peak_speed=Total_dist/Total_move_time*2.0f;
 	Cam_accel = 4*Total_dist/(Total_move_time*Total_move_time);
@@ -1631,9 +1616,11 @@ void brief_set_text_color(int color_index)
 	gr_set_color_fast(Brief_text_colors[color_index]);
 }
 
-// Returns true when a character is a word separator.
-// @param character is the character to be analysed.
-// @return true when the given character is a word separator, and false when the character is part of a word.
+/**
+ * Checks if a character is a word separator
+ * @param character the character to be analysed.
+ * @return true when the given character is a word separator, and false when the character is part of a word.
+ */
 bool is_a_word_separator(char character){
 	return character<=33					//  2 characters including (space) and !
 		|| (35<=character && character<=38)	//  4 characters #$%&

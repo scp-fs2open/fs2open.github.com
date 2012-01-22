@@ -991,6 +991,7 @@ void game_level_close()
 		subtitles_close();
 		trail_level_close();
 		hud_level_close();
+		model_instance_free_all();
 
 		// be sure to not only reset the time but the lock as well
 		set_time_compression(1.0f, 0.0f);
@@ -3134,6 +3135,11 @@ void say_view_target()
 				break;
 			case OBJ_JUMP_NODE: {
 				strcpy_s(view_target_name, XSTR( "jump node", 184));
+				Viewer_mode &= ~VM_OTHER_SHIP;
+				break;
+				}
+			case OBJ_DEBRIS: {
+				strcpy_s(view_target_name, "Debris");
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 				}

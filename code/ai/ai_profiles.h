@@ -134,6 +134,7 @@ typedef struct ai_profile_t {
 	// the chance (x/7) that ship is allowed to fire missiles at player ship.
 	int chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 
+	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
 
 } ai_profile_t;
 

@@ -1990,7 +1990,7 @@ ADE_VIRTVAR(Mass, l_Model, "number", "Model mass", "number", "Model mass, or 0 i
 	return ade_set_args(L, "f", pm->mass);
 }
 
-ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", "orientation", NULL)
+ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", "orientation", "Moment of Inertia matrix or identity matrix if invalid" )
 {
 	model_h *mdl = NULL;
 	matrix_h *mh = NULL;
@@ -2010,7 +2010,7 @@ ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&pm->moment_of_inertia)));
 }
 
-ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culling detection)", "number", NULL)
+ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culling detection)", "number", "Model Radius or 0 if invalid")
 {
 	model_h *mdl = NULL;
 	float nr = 0.0f;
@@ -2731,6 +2731,22 @@ ADE_FUNC(isAfterburnerActive, l_Physics, NULL, "True if Afterburners are on, fal
 		return ade_set_error(L, "b", false);
 
 	if (pih->pi->flags & PF_AFTERBURNER_ON)
+		return ade_set_args(L, "b",  true);
+	else
+		return ade_set_args(L, "b",  false);
+}
+
+//nukes glide function
+ADE_FUNC(isGliding, l_Physics, NULL, "True if glide mode is on, false or nil if not", "boolean", "Detects if ship is gliding")
+{
+	physics_info_h *pih;
+	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
+		return ADE_RETURN_NIL;
+
+	if(!pih->IsValid())
+		return ade_set_error(L, "b", false);
+
+	if (pih->pi->flags & (PF_GLIDING|PF_FORCE_GLIDE))
 		return ade_set_args(L, "b",  true);
 	else
 		return ade_set_args(L, "b",  false);
@@ -4414,6 +4430,23 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->pos));
 }
 
+ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last frame (World vector)", "vector", "World position, or null vector if handle is invalid")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(ADE_SETTING_VAR && v3 != NULL) {
+		objh->objp->last_pos = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp->last_pos));
+}
+
 ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
 {
 	object_h *objh;
@@ -4429,6 +4462,23 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->orient)));
+}
+
+ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation as of last frame (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
+{
+	object_h *objh;
+	matrix_h *mh=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Matrix.GetPtr(&mh)))
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+
+	if(ADE_SETTING_VAR && mh != NULL) {
+		objh->objp->last_orient = *mh->GetMatrix();
+	}
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->last_orient)));
 }
 
 ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship between frames", "physics", "Physics data, or invalid physics handle if object handle is invalid")
@@ -6192,35 +6242,32 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	//Get default turret info
 	vec3d gpos, gvec;
 	model_subsystem *tp = sso->ss->system_info;
-	//ship_get_global_turret_info(sso->objp, sso->ss->system_info, &gpos, &gvec);
 
-	//Rotate turret position with ship
-	vm_vec_unrotate(&gpos, &tp->pnt, &sso->objp->orient);
-	//Add turret position to appropriate world space
-	vm_vec_add2(&gpos, &sso->objp->pos);
+	vec3d * gun_pos;
 
-	//Rotate turret heading with turret base and gun
-	//Now rotate a matrix by angles
-	vec3d turret_heading = vmd_zero_vector;
-	matrix m = IDENTITY_MATRIX;
-	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_1.angs);
-	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_2.angs);
-	vm_vec_unrotate(&turret_heading, &tp->turret_norm, &m);
+	//ship_model_start(sso->objp);
 
-	//Rotate into world space
-	vm_vec_unrotate(&gvec, &turret_heading, &sso->objp->orient);	
+	gun_pos = &tp->turret_firing_point[sso->ss->turret_next_fire_pos % tp->turret_num_firing_points];
+
+	model_instance_find_world_point(&gpos, gun_pos, tp->model_num, Ships[sso->objp->instance].model_instance_num , tp->turret_gun_sobj, &sso->objp->orient, &sso->objp->pos );
+
+	model_find_world_dir(&gvec, &tp->turret_norm, tp->model_num, tp->turret_gun_sobj, &sso->objp->orient, &sso->objp->pos );
+
+	//ship_model_stop(sso->objp);
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
+	
+	sso->ss->turret_next_fire_pos++;
 
 	return ade_set_args(L, "b", rtn);
 }
 
-ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "number", "Something")
+ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "boolean", "true on success false otherwise")
 {
 	ship_subsys_h *sso;
 	vec3d pos = vmd_zero_vector;
 	bool reset = false;
-	if (!ade_get_args(L, "oo|o", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
+	if (!ade_get_args(L, "oo|b", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
 		return ADE_RETURN_NIL;
 
 	//Get default turret info
@@ -6246,7 +6293,10 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates
 	
 	int ret_val = model_rotate_gun(Ship_info[(&Ships[sso->objp->instance])->ship_info_index].model_num, sso->ss->system_info, &Objects[sso->objp->instance].orient, &sso->ss->submodel_info_1.angs, &sso->ss->submodel_info_2.angs, &Objects[sso->objp->instance].pos, &pos, (&Ships[sso->objp->instance])->objnum, reset);
 
-	return ade_set_args(L, "i", ret_val);
+	if (ret_val)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector or null vector on error")
@@ -8858,6 +8908,175 @@ ADE_FUNC(pollAllButtons, l_Control_Info, NULL, "Access the four bitfields contai
 	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
 }
 
+class particle_h
+{
+protected:
+	particle *part;
+public:
+	particle_h()
+	{
+		part = NULL;
+	}
+
+	particle_h(particle *particle)
+	{
+		this->part = particle;
+	}
+
+	particle* Get()
+	{
+		return this->part;
+	}
+
+	bool isValid()
+	{
+		return this != NULL && part != NULL;
+	}
+};
+
+//**********HANDLE: Particle
+ade_obj<particle_h> l_Particle("particle", "Handle to a particle");
+
+ADE_VIRTVAR(Position, l_Particle, "vector", "The current position of the particle (world vector)", "vector", "The current position")
+{
+	particle_h *ph = NULL;
+	vec3d newVec = vmd_zero_vector;
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Vector.Get(&newVec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!ph->isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR)
+	{
+		ph->Get()->pos = newVec;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(ph->Get()->pos));
+}
+
+ADE_VIRTVAR(Velocity, l_Particle, "vector", "The current velocity of the particle (world vector)", "vector", "The current velocity")
+{
+	particle_h *ph = NULL;
+	vec3d newVec = vmd_zero_vector;
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Vector.Get(&newVec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!ph->isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR)
+	{
+		ph->Get()->velocity = newVec;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(ph->Get()->velocity));
+}
+
+ADE_VIRTVAR(Age, l_Particle, "number", "The time this particle already lives", "number", "The current age or -1 on error")
+{
+	particle_h *ph = NULL;
+	float newAge = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newAge))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!ph->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newAge >= 0)
+			ph->Get()->age = newAge;
+	}
+
+	return ade_set_args(L, "f", ph->Get()->age);
+}
+
+ADE_VIRTVAR(MaximumLife, l_Particle, "number", "The time this particle can live", "number", "The maximal life or -1 on error")
+{
+	particle_h *ph = NULL;
+	float newLife = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newLife))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!ph->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newLife >= 0)
+			ph->Get()->max_life = newLife;
+	}
+
+	return ade_set_args(L, "f", ph->Get()->max_life);
+}
+
+ADE_VIRTVAR(Radius, l_Particle, "number", "The radius of the particle", "number", "The radius or -1 on error")
+{
+	particle_h *ph = NULL;
+	float newRadius = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newRadius))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!ph->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newRadius >= 0)
+			ph->Get()->radius = newRadius;
+	}
+
+	return ade_set_args(L, "f", ph->Get()->radius);
+}
+
+ADE_VIRTVAR(TracerLength, l_Particle, "number", "The tracer legth of the particle", "number", "The radius or -1 on error")
+{
+	particle_h *ph = NULL;
+	float newTracer = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newTracer))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!ph->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newTracer >= 0) 
+			ph->Get()->tracer_length = newTracer;
+	}
+
+	return ade_set_args(L, "f", ph->Get()->tracer_length);
+}
+
+ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is attached to. If valid the position will be relativ to this object and the velocity will be ignored.", "object", "Attached object or invalid object handle on error")
+{
+	particle_h *ph = NULL;
+	object_h *newObj;
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Object.GetPtr(&newObj)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if (!ph->isValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if (ADE_SETTING_VAR)
+	{
+		if (newObj->IsValid())
+			ph->Get()->attached_objnum = newObj->objp->signature;
+	}
+
+	return ade_set_args(L, "o", l_Object.Set(object_h(&Objects[ph->Get()->attached_objnum])));
+}
+
+ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boolean", "true if valid false if not")
+{
+	particle_h *ph = NULL;
+	if (!ade_get_args(L, "o", l_Particle.GetPtr(&ph)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", ph->isValid());
+}
+
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
 
@@ -9656,7 +9875,8 @@ ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using
 	if( !gTirDll_TrackIR.Enabled( ) )
 		return ADE_RETURN_FALSE;
 
-	gTirDll_TrackIR.Query( );
+	if (gTirDll_TrackIR.Query( ) == 0)
+		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", true);
 }
@@ -11933,8 +12153,8 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		 "Creates a particle. Use PARTICLE_* enumerations for type."
 		 "Reverse reverse animation, if one is specified"
 		 "Attached object specifies object that Position will be (and always be) relative to.",
-		 NULL,
-		 NULL)
+		 "particle",
+		 "Handle to the created particle")
 {
 	particle_info pi;
 	pi.type = PARTICLE_DEBUG;
@@ -11957,7 +12177,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 			case LE_PARTICLE_DEBUG:
 				pi.type = PARTICLE_DEBUG;
 				break;
-			/*case LE_PARTICLE_FIRE:
+			case LE_PARTICLE_FIRE:
 				pi.type = PARTICLE_FIRE;
 				break;
 			case LE_PARTICLE_SMOKE:
@@ -11965,7 +12185,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 				break;
 			case LE_PARTICLE_SMOKE2:
 				pi.type = PARTICLE_SMOKE2;
-				break;*/
+				break;
 			case LE_PARTICLE_BITMAP:
 				pi.type = PARTICLE_BITMAP;
 				break;
@@ -11981,9 +12201,12 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		pi.attached_sig = objh->objp->signature;
 	}
 
-	particle_create(&pi);
+	particle *p = particle_create(&pi);
 
-	return ADE_RETURN_NIL;
+	if (p != NULL)
+		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
+	else
+		return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getStack, l_Testing, NULL, "Generates an ADE stackdump", "string", "Current Lua stack")

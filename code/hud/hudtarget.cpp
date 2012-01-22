@@ -4820,7 +4820,9 @@ void hud_maybe_flash_weapon(int index)
 	}
 }
 
-// check if targeting is possible based on sensors strength
+/**
+ * @brief Check if targeting is possible based on sensors strength
+ */
 int hud_sensors_ok(ship *sp, int show_msg)
 {
 	float	sensors_str;

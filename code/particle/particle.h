@@ -73,9 +73,28 @@ typedef struct particle_info {
 	ubyte	reverse;						// play any animations in reverse
 } particle_info;
 
+typedef struct particle {
+	// old style data
+	vec3d	pos;				// position
+	vec3d	velocity;			// velocity
+	float	age;				// How long it's been alive
+	float	max_life;			// How much life we had
+	float	radius;				// radius
+	int		type;				// type										// -1 = None
+	int		optional_data;		// depends on type
+	int		nframes;			// If an ani, how many frames?	
+
+	// new style data
+	float	tracer_length;		// if this is set, draw as a rod to simulate a "tracer" effect
+	int		attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
+	int		attached_sig;		// to check for dead/nonexistent objects
+	ubyte	reverse;			// play any animations in reverse
+	int		particle_index;		// used to keep particle offset in dynamic array for orient usage
+} particle;
+
 // Creates a single particle. See the PARTICLE_?? defines for types.
-void particle_create( particle_info *pinfo );
-void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data = -1, float tracer_length=-1.0f, struct object *objp=NULL, bool reverse=false );
+particle* particle_create( particle_info *pinfo );
+particle* particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data = -1, float tracer_length=-1.0f, struct object *objp=NULL, bool reverse=false );
 
 
 //============================================================================

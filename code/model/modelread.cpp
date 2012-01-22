@@ -284,12 +284,26 @@ void model_free_all()
 	}
 
 	mprintf(( "Freeing all existing models...\n" ));
+	model_instance_free_all();
 
 	for (i=0;i<MAX_POLYGON_MODELS;i++) {
 		// forcefully unload all loaded models (be careful with this)
 		model_unload(i, 1);		
 	}
+}
 
+void model_instance_free_all()
+{
+	size_t i;
+
+	// free any outstanding model instances
+	for ( i = 0; i < Polygon_model_instances.size(); ++i ) {
+		if ( Polygon_model_instances[i] ) {
+			model_delete_instance(i);
+		}
+	}
+
+	Polygon_model_instances.clear();
 }
 
 void model_page_in_start()
@@ -605,10 +619,8 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		// Goober5000 - notify if there's a mismatch
 		if ( stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
 		{
-			Warning(LOCATION, "Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  "
-				"Although FS2_OPEN 3.6 and later will catch and correct this error, earlier "
-				"versions (as well as retail FS2) will not.  You are advised to fix this if "
-				"you plan to support earlier versions of FreeSpace.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name);
+			nprintf(("Model", "NOTE: Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  This works fine in FSO v3.6 and up, "
+				"but is not compatible with FS2 retail.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name));
 
 		}
 #endif
@@ -2616,6 +2628,23 @@ int model_create_instance(int model_num, int submodel_num)
 	}
 
 	return open_slot;
+}
+
+void model_delete_instance(int model_instance_num)
+{
+	Assert(model_instance_num >= 0);
+	Assert(model_instance_num < (int)Polygon_model_instances.size());
+	Assert(Polygon_model_instances[model_instance_num] != NULL);
+
+	polymodel_instance *pmi = Polygon_model_instances[model_instance_num];
+
+	if ( pmi->submodel ) {
+		vm_free(pmi->submodel);
+	}
+
+	vm_free(pmi);
+
+	Polygon_model_instances[model_instance_num] = NULL;
 }
 
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 

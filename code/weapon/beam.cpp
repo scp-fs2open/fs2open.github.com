@@ -2268,7 +2268,6 @@ int beam_collide_ship(obj_pair *pair)
 	bwi = &Weapon_info[b->weapon_info_index];
 
 	polymodel *pm = model_get(model_num);
-	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 
 	// get the widest portion of the beam
 	widest = beam_get_widest(b);
