@@ -1458,7 +1458,6 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		{
 			weap_closeup.xyz.z = bs->min.xyz.x;
 		}
-//		weap_closeup.xyz.x = bs->min.xyz.x + (bs->max.xyz.x - bs->min.xyz.x)/2.0f;
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
 
 		if (!Cmdline_nohtl) {
@@ -1480,9 +1479,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		light_dir.xyz.y = 2.0f;
 		light_dir.xyz.z = -2.0f;	
 		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		// light_filter_reset();
 		light_rotate_all();
-		// lighting for techroom
 	}
 
 	model_clear_instance(model_id);
