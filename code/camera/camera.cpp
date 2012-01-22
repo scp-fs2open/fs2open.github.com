@@ -791,9 +791,10 @@ void subtitle::do_frame(float frametime)
 	int x = text_pos.x;
 	int y = text_pos.y;
 
-	for(unsigned int i = 0; i < text_lines.size(); i++)
+
+	for(SCP_vector<std::string>::iterator line = text_lines.begin(); line != text_lines.end(); line++)
 	{
-		gr_string(x, y, (char*)text_lines[i].c_str(), false);
+		gr_string(x, y, (char*)line->c_str(), false);
 		y += font_height;
 	}
 
@@ -843,11 +844,8 @@ subtitle::~subtitle()
 
 void subtitle::clone(const subtitle &sub)
 {
-	uint i = 0;
 
-	for (i = 0; i < sub.text_lines.size(); i++) {
-		text_lines.push_back(sub.text_lines[i]);
-	}
+	text_lines = sub.text_lines;
 	text_fontnum = sub.text_fontnum;
 
 	// copy the structs
@@ -944,14 +942,6 @@ void cam_close()
 {
 	//Set Current_camera to nothing
 	Current_camera = camid();
-	for(unsigned int i = 0; i < Cameras.size(); i++)
-	{
-		if(Cameras[i] != NULL)
-		{
-			delete Cameras[i];
-			Cameras[i] = NULL;
-		}
-	}
 	Cameras.clear();
 }
 
@@ -984,29 +974,9 @@ camid cam_create(char *n_name, vec3d *n_pos, matrix *n_ori, object *n_object, in
 		strncpy(buf, n_name, NAME_LENGTH-1);
 
 	//Find a free slot
-	for(uint i = 0; i < Cameras.size(); i++)
-	{
-		if(Cameras[i] == NULL)
-		{
-			cam = new camera(buf, sig);
-			cid = camid(i, sig);
-			Cameras[i] = cam;
-			break;
-		}
-		else if(Cameras[i]->is_empty())
-		{
-			delete Cameras[i];
-			cam = new camera(buf, sig);
-			cid = camid(i, sig);
-			Cameras[i] = cam;
-		}
-	}
-	if(cam == NULL)
-	{
-		cam = new camera(buf, sig);
-		cid = camid(Cameras.size(), sig);
-		Cameras.push_back(cam);
-	}
+	cam = new camera(buf, sig);
+	cid = camid(Cameras.size(), sig);
+	Cameras.push_back(cam);
 
 	//Set attributes
 	if(n_pos != NULL)
@@ -1134,20 +1104,20 @@ void subtitles_close()
 
 void subtitles_do_frame(float frametime)
 {
-	unsigned int i,size=Subtitles.size();
-	for(i = 0; i < size; i++)
+	SCP_vector<subtitle>::iterator sub;
+	for(sub = Subtitles.begin(); sub != Subtitles.end(); sub++)
 	{
-		if ( !Subtitles[i].is_post_shaded( ) )
-			Subtitles[i].do_frame(frametime);
+		if ( !sub->is_post_shaded( ) )
+			sub->do_frame(frametime);
 	}
 }
 
 void subtitles_do_frame_post_shaded(float frametime)
 {
-	unsigned int i,size=Subtitles.size();
-	for(i = 0; i < size; i++)
+	SCP_vector<subtitle>::iterator sub;
+	for(sub = Subtitles.begin(); sub != Subtitles.end(); sub++)
 	{
-		if ( Subtitles[i].is_post_shaded( ) )
-			Subtitles[i].do_frame(frametime);
+		if ( sub->is_post_shaded( ) )
+			sub->do_frame(frametime);
 	}
 }

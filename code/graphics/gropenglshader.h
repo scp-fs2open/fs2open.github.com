@@ -34,7 +34,7 @@
 #define SDR_FLAG_NORMAL_MAP		(1<<13)
 #define SDR_FLAG_HEIGHT_MAP		(1<<14)
 #define SDR_FLAG_ENV_MAP		(1<<15)
-
+#define SDR_FLAG_ANIMATED		(1<<16)
 
 #define MAX_SHADER_UNIFORMS		15
 
@@ -82,5 +82,14 @@ GLhandleARB opengl_shader_create(const char *vs, const char *fs);
 
 void opengl_shader_init_uniform(const char *uniform_text);
 GLint opengl_shader_get_uniform(const char *uniform_text);
+
+void opengl_shader_set_animated_effect(int effect);
+int opengl_shader_get_animated_effect();
+void opengl_shader_set_animated_timer(float timer);
+float opengl_shader_get_animated_timer();
+
+#define ANIMATED_SHADER_LOADOUTSELECT_FS1	0
+#define ANIMATED_SHADER_LOADOUTSELECT_FS2	1
+#define ANIMATED_SHADER_CLOAK				2
 
 #endif	// _GROPENGLSHADER_H

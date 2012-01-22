@@ -10,6 +10,7 @@
 #include "parse/parselo.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/def_files.h"
+#include "ship/ship.h"
 
 
 extern bool PostProcessing_override;
@@ -19,6 +20,7 @@ extern int opengl_check_framebuffer();
 size_t fxaa_shader_id;
 //In case we don't find the shaders at all, this override is needed
 bool fxaa_unavailable = false;
+int Fxaa_preset_last_frame;
 
 
 #define SDR_POST_FLAG_MAIN		(1<<0)
@@ -48,7 +50,10 @@ static opengl_shader_file_t GL_post_shader_files[] = {
 		1, { "tex" } },
 
 	{ "fxaa-v.sdr", "fxaa-f.sdr", NULL, 
-		4, { "tex0", "rt_w", "rt_h", "fxaa_preset"} }
+		3, { "tex0", "rt_w", "rt_h"} },
+
+	{ "post-v.sdr", "fxaapre-f.sdr", NULL,
+		1, { "tex"} }
 };
 
 static const unsigned int Num_post_shader_files = sizeof(GL_post_shader_files) / sizeof(opengl_shader_file_t);
@@ -76,13 +81,14 @@ SCP_vector<post_effect_t> Post_effects;
 
 static int Post_initialized = 0;
 
-static bool Post_in_frame = false;
+bool Post_in_frame = false;
 
 static int Post_active_shader_index = 0;
 
 static GLuint Post_framebuffer_id[3] = { 0 };
 static GLuint Post_renderbuffer_id = 0;
-static GLuint Post_screen_texture_id = 0;
+GLuint Post_screen_texture_id = 0;
+GLuint Post_effect_texture_id = 0;
 static GLuint Post_bloom_texture_id[3] = { 0 };
 
 static int Post_texture_width = 0;
@@ -218,13 +224,89 @@ void gr_opengl_post_process_begin()
 
 //	Assert( !opengl_check_framebuffer() );
 
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
+	vglDrawBuffers(2, buffers);
+
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	Post_in_frame = true;
 }
 
+void recompile_fxaa_shader() {
+	char *vert = NULL, *frag = NULL;
+	opengl_shader_t *new_shader = &GL_post_shader[fxaa_shader_id];
+	opengl_shader_file_t *shader_file = &GL_post_shader_files[4];
+
+	// choose appropriate files
+	char *vert_name = shader_file->vert;
+	char *frag_name = shader_file->frag;
+
+	mprintf(("Recompiling FXAA shader with preset %d\n", Cmdline_fxaa_preset));
+
+	// read vertex shader
+	vert = opengl_post_load_shader(vert_name, shader_file->flags, NULL);
+
+	// read fragment shader
+	frag = opengl_post_load_shader(frag_name, shader_file->flags, NULL);
+
+
+	Verify( vert != NULL );
+	Verify( frag != NULL );
+
+	new_shader->program_id = opengl_shader_create(vert, frag);
+
+	if ( !new_shader->program_id ) {
+	}
+
+
+	new_shader->flags = shader_file->flags;
+	new_shader->flags2 = NULL;
+
+	opengl_shader_set_current( new_shader );
+
+	new_shader->uniforms.reserve(shader_file->num_uniforms);
+
+	for (int i = 0; i < shader_file->num_uniforms; i++) {
+		opengl_shader_init_uniform( shader_file->uniforms[i] );
+	}
+
+	opengl_shader_set_current();
+	Fxaa_preset_last_frame = Cmdline_fxaa_preset;
+}
+
 void opengl_post_pass_fxaa() {
+
+	//If the preset changed, recompile the shader
+	if (Fxaa_preset_last_frame != Cmdline_fxaa_preset) {
+		recompile_fxaa_shader();
+	}
+
+	// Do a prepass to convert the main shaders' RGBA output into RGBL
+	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id + 1] );
+
+	// basic/default uniforms
+	vglUniform1iARB( opengl_shader_get_uniform("tex"), 0 );
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Post_screen_texture_id);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex2f(-1.0f, -1.0f);
+
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex2f(1.0f, -1.0f);
+
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex2f(1.0f, 1.0f);
+
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex2f(-1.0f, 1.0f);
+	glEnd();
+
+	GL_state.Texture.Disable();
 
 	// set and configure post shader ..
 	opengl_shader_set_current( &GL_post_shader[fxaa_shader_id] );
@@ -233,7 +315,6 @@ void opengl_post_pass_fxaa() {
 	vglUniform1iARB( opengl_shader_get_uniform("tex0"), 0 );
 	vglUniform1fARB( opengl_shader_get_uniform("rt_w"), static_cast<float>(Post_texture_width));
 	vglUniform1fARB( opengl_shader_get_uniform("rt_h"), static_cast<float>(Post_texture_height));
-	vglUniform1iARB( opengl_shader_get_uniform("fxaa_preset"), Cmdline_fxaa_preset);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -570,43 +651,78 @@ static bool opengl_post_init_table()
 
 	reset_parse();
 
-	required_string("#Effects");
 
-	while ( required_string_either("#End", "$Name:") ) {
-		char tbuf[NAME_LENGTH+1] = { 0 };
-		post_effect_t eff;
+	if (optional_string("#Effects")) {
+		while ( !required_string_3("$Name:", "#Ship Effects", "#End") ) {
+			char tbuf[NAME_LENGTH+1] = { 0 };
+			post_effect_t eff;
 
-		required_string("$Name:");
-		stuff_string(tbuf, F_NAME, NAME_LENGTH);
-		eff.name = tbuf;
+			required_string("$Name:");
+			stuff_string(tbuf, F_NAME, NAME_LENGTH);
+			eff.name = tbuf;
 
-		required_string("$Uniform:");
-		stuff_string(tbuf, F_NAME, NAME_LENGTH);
-		eff.uniform_name = tbuf;
+			required_string("$Uniform:");
+			stuff_string(tbuf, F_NAME, NAME_LENGTH);
+			eff.uniform_name = tbuf;
 
-		required_string("$Define:");
-		stuff_string(tbuf, F_NAME, NAME_LENGTH);
-		eff.define_name = tbuf;
+			required_string("$Define:");
+			stuff_string(tbuf, F_NAME, NAME_LENGTH);
+			eff.define_name = tbuf;
 
-		required_string("$AlwaysOn:");
-		stuff_boolean(&eff.always_on);
+			required_string("$AlwaysOn:");
+			stuff_boolean(&eff.always_on);
 
-		required_string("$Default:");
-		stuff_float(&eff.default_intensity);
-		eff.intensity = eff.default_intensity;
+			required_string("$Default:");
+			stuff_float(&eff.default_intensity);
+			eff.intensity = eff.default_intensity;
 
-		required_string("$Div:");
-		stuff_float(&eff.div);
+			required_string("$Div:");
+			stuff_float(&eff.div);
 
-		required_string("$Add:");
-		stuff_float(&eff.add);
+			required_string("$Add:");
+			stuff_float(&eff.add);
 
-		// Post_effects index is used for flag checks, so we can't have more than 32
-		if (Post_effects.size() < 32) {
-			Post_effects.push_back( eff );
-		} else if ( !warned ) {
-			mprintf(("WARNING: post_processing.tbl can only have a max of 32 effects! Ignoring extra...\n"));
-			warned = true;
+			// Post_effects index is used for flag checks, so we can't have more than 32
+			if (Post_effects.size() < 32) {
+				Post_effects.push_back( eff );
+			} else if ( !warned ) {
+				mprintf(("WARNING: post_processing.tbl can only have a max of 32 effects! Ignoring extra...\n"));
+				warned = true;
+			}
+		}
+	}
+
+	//Built-in per-ship effects
+	ship_effect se1;
+	strcpy_s(se1.name, "FS1 Ship select");
+	se1.shader_effect = 0;
+	se1.disables_rendering = false;
+	se1.invert_timer = false;
+	Ship_effects.push_back(se1);
+
+	if (optional_string("#Ship Effects")) {
+		while ( required_string_either("#End", "$Name:") ) {
+			ship_effect se;
+			char tbuf[NAME_LENGTH] = { 0 };
+
+			required_string("$Name:");
+			stuff_string(tbuf, F_NAME, NAME_LENGTH);
+			strcpy_s(se.name, tbuf);
+
+			required_string("$Shader Effect:");
+			stuff_int(&se.shader_effect);
+			if (se.shader_effect == 0 || se.shader_effect == 1) {
+				WarningEx(LOCATION, "Invalid shader effect specified for effect %s. 0 and 1 are reserved for internal use.\n", se.name);
+				skip_to_start_of_string_either("$Name:", "#End");
+			}
+
+			required_string("$Disables Rendering:");
+			stuff_boolean(&se.disables_rendering);
+
+			required_string("$Invert timer:");
+			stuff_boolean(&se.invert_timer);
+
+			Ship_effects.push_back(se);
 		}
 	}
 
@@ -639,6 +755,70 @@ static char *opengl_post_load_shader(char *filename, int flags, int flags2)
 		sflags += "#define PASS_0\n";
 	} else if (flags & SDR_POST_FLAG_PASS2) {
 		sflags += "#define PASS_1\n";
+	}
+	
+	switch (Cmdline_fxaa_preset) {
+		case 0:
+			sflags += "#define FXAA_QUALITY__PRESET 10\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/6.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/12.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (3.0/4.0)\n";
+			break;
+		case 1:
+			sflags += "#define FXAA_QUALITY__PRESET 11\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/7.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/14.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (4.0/5.0)\n";
+			break;
+		case 2:
+			sflags += "#define FXAA_QUALITY__PRESET 12\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/8.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/16.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (5.0/6.0)\n";
+			break;
+		case 3:
+			sflags += "#define FXAA_QUALITY__PRESET 13\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/9.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/18.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (6.0/7.0)\n";
+			break;
+		case 4:
+			sflags += "#define FXAA_QUALITY__PRESET 14\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/10.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/20.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (7.0/8.0)\n";
+			break;
+		case 5:
+			sflags += "#define FXAA_QUALITY__PRESET 25\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/11.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/22.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (8.0/9.0)\n";
+			break;
+		case 6:
+			sflags += "#define FXAA_QUALITY__PRESET 26\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/12.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/24.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (9.0/10.0)\n";
+			break;
+		case 7:
+			sflags += "#define FXAA_PC 1\n";
+			sflags += "#define FXAA_QUALITY__PRESET 27\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/13.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/26.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (10.0/11.0)\n";
+			break;
+		case 8:
+			sflags += "#define FXAA_QUALITY__PRESET 28\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/14.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/28.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (11.0/12.0)\n";
+			break;
+		case 9:
+			sflags += "#define FXAA_QUALITY__PRESET 39\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD (1.0/15.0)\n";
+			sflags += "#define FXAA_QUALITY__EDGE_THRESHOLD_MIN (1.0/32.0)\n";
+			sflags += "#define FXAA_QUALITY__SUBPIX (12.0/13.0)\n";
+			break;
 	}
 
 	const char *shader_flags = sflags.c_str();
@@ -813,6 +993,7 @@ static bool opengl_post_init_framebuffer()
 
 	// setup main render texture
 	glGenTextures(1, &Post_screen_texture_id);
+	glGenTextures(1, &Post_effect_texture_id);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -827,6 +1008,20 @@ static bool opengl_post_init_framebuffer()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Post_screen_texture_id, 0);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Post_effect_texture_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, Post_effect_texture_id, 0);
 
 	if ( opengl_check_framebuffer() ) {
 	//	nprintf(("OpenGL", "Unable to validate FBO!  Disabling post-processing...\n"));
@@ -998,6 +1193,11 @@ void opengl_post_process_shutdown()
 	if (Post_screen_texture_id) {
 		glDeleteTextures(1, &Post_screen_texture_id);
 		Post_screen_texture_id = 0;
+	}
+
+	if (Post_effect_texture_id) {
+		glDeleteTextures(1, &Post_effect_texture_id);
+		Post_effect_texture_id = 0;
 	}
 
 	if (Post_bloom_texture_id[0]) {

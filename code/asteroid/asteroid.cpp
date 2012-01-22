@@ -607,8 +607,9 @@ void asteroid_level_init()
 	Num_asteroids = 0;
 	Next_asteroid_throw = timestamp(1);
 	asteroid_obj_list_init();
-	for (size_t t=0; t<Asteroid_info.size(); t++)
-		Asteroid_info[t].damage_type_idx = Asteroid_info[t].damage_type_idx_sav;
+	SCP_vector<asteroid_info>::iterator ast;
+	for (ast = Asteroid_info.begin(); ast != Asteroid_info.end(); ++ast)
+		ast->damage_type_idx = ast->damage_type_idx_sav;
 }
 
 // return !0 if asteroid should be wrapped, 0 otherwise.  Multiplayer clients will always return

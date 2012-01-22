@@ -28,6 +28,7 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "weapon/weapon.h"
 
 
 
@@ -863,6 +864,10 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 			*hitpos = mc.hit_point_world;
 		}
 
+		weapon *wp = &Weapons[other_obj->instance];
+		wp->collisionOccured = true;
+		wp->collisionInfo = mc_info(mc);
+
 		return mc.num_hits;
 	}
 	
@@ -933,6 +938,8 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 			// Do collision the cool new way
 			if ( debris_hit_info->collide_rotate ) {
+				SCP_vector<int>::iterator smv;
+
 				// We collide with the sphere, find the list of rotating submodels and test one at a time
 				model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
 
@@ -941,34 +948,34 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				pmi = model_get_instance(Ships[heavy_obj->instance].model_instance_num);
 
 				// turn off all rotating submodels and test for collision
-				for (size_t j=0; j<submodel_vector.size(); j++) {
-					pmi->submodel[submodel_vector[j]].collision_checked = true;
+				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
+					pmi->submodel[*smv].collision_checked = true;
 				}
 
 				// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
 				mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
 
 				// check each submodel in turn
-				for (size_t i=0; i<submodel_vector.size(); i++) {
+				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
 					// turn on submodel for collision test
-					pmi->submodel[submodel_vector[i]].collision_checked = false;
+					pmi->submodel[*smv].collision_checked = false;
 
 					// set angles for last frame (need to set to prev to get p0)
-					angles copy_angles = pmi->submodel[submodel_vector[i]].angs;
+					angles copy_angles = pmi->submodel[*smv].angs;
 
 					// find the start and end positions of the sphere in submodel RF
-					pmi->submodel[submodel_vector[i]].angs = pmi->submodel[submodel_vector[i]].prev_angs;
-					world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, submodel_vector[i], &heavy_obj->last_orient, &heavy_obj->last_pos);
+					pmi->submodel[*smv].angs = pmi->submodel[*smv].prev_angs;
+					world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, *smv, &heavy_obj->last_orient, &heavy_obj->last_pos);
 
-					pmi->submodel[submodel_vector[i]].angs = copy_angles;
-					world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, submodel_vector[i], &heavy_obj->orient, &heavy_obj->pos);
+					pmi->submodel[*smv].angs = copy_angles;
+					world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, *smv, &heavy_obj->orient, &heavy_obj->pos);
 
 					mc.p0 = &p0;
 					mc.p1 = &p1;
 					// mc.pos = zero	// in submodel RF
 
 					mc.orient = &vmd_identity_matrix;
-					mc.submodel_num = submodel_vector[i];
+					mc.submodel_num = *smv;
 
 					if ( model_collide(&mc) ) {
 						if ( mc.hit_dist < debris_hit_info->hit_time ) {
@@ -991,7 +998,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 						}
 					}
 					// Don't look at this submodel again
-					pmi->submodel[submodel_vector[i]].collision_checked = true;
+					pmi->submodel[*smv].collision_checked = true;
 				}
 
 			}

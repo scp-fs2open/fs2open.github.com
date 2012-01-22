@@ -187,11 +187,6 @@ SOURCE=..\..\libpng\pngtrans.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\libpng\scripts\pngw32.def
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\libpng\pngwio.c
 # End Source File
 # Begin Source File
@@ -218,14 +213,25 @@ SOURCE=..\..\libpng\png.h
 
 SOURCE=..\..\libpng\pngconf.h
 # End Source File
-# End Group
-# Begin Group "Resource Files"
-
-# PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 # Begin Source File
 
-SOURCE=..\..\libpng\scripts\pngw32.rc
-# PROP Exclude_From_Build 1
+SOURCE=..\..\libpng\pngdebug.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\libpng\pnginfo.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\libpng\pnglibconf.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\libpng\pngpriv.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\libpng\pngstruct.h
 # End Source File
 # End Group
 # End Target

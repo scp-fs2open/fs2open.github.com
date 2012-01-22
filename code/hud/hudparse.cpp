@@ -2701,14 +2701,6 @@ void load_gauge_radar_dradis(int base_w, int base_h, int font, int ship_index)
 	char sweep_fname[MAX_FILENAME_LEN] = "dradis_sweep";
 	char target_fname[MAX_FILENAME_LEN] = "dradis_target";
 	char unknown_fname[MAX_FILENAME_LEN] = "dradis_unknown";
-	
-	// parameters for background
-	char background_fname[MAX_FILENAME_LEN] = "";
-	int background_size[2] = {0, 0};
-
-	// parameters for foreground image
-	char foreground_fname[MAX_FILENAME_LEN] = "";
-	int foreground_size[2] = {0, 0};
 
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
@@ -2788,8 +2780,6 @@ void load_gauge_radar_dradis(int base_w, int base_h, int font, int ship_index)
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
 	hud_gauge->initBitmaps(xy_fname, xz_yz_fname, sweep_fname, target_fname, unknown_fname);
-	hud_gauge->initBackground(background_fname, background_size[0], background_size[1]);
-	hud_gauge->initForeground(foreground_fname, foreground_size[0], foreground_size[1]);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	hud_gauge->initFont(font_num);
 

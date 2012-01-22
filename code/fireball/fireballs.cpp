@@ -239,7 +239,8 @@ void parse_fireball_tbl(char *filename)
 
 void fireball_parse_tbl()
 {
-	int i, j;
+	int i = 0, j;
+	SCP_vector<lod_checker>::iterator lod;
 
 	memset( &Fireball_info, 0, sizeof(fireball_info) * MAX_FIREBALL_TYPES );
 
@@ -251,10 +252,10 @@ void fireball_parse_tbl()
 
 	// we've got our list so pass it off for final checking and loading.
 	// we assume that entries in fireball.tbl are in the correct order
-	for (i = 0; i < (int)LOD_checker.size(); i++) {
-		if ( (i < MAX_FIREBALL_TYPES) && (LOD_checker[i].override < 0) ) {
-			strcpy_s( Fireball_info[i].lod[0].filename, LOD_checker[i].filename );
-			Fireball_info[i].lod_count = LOD_checker[i].num_lods;
+	for (lod = LOD_checker.begin(); lod != LOD_checker.end(); lod++) {
+		if ( (i < MAX_FIREBALL_TYPES) && (lod->override < 0) ) {
+			strcpy_s( Fireball_info[i].lod[0].filename, lod->filename );
+			Fireball_info[i].lod_count = lod->num_lods;
 			Num_fireball_types++;
 
 			if (LOD_color[i].alpha == 255) {
@@ -265,22 +266,24 @@ void fireball_parse_tbl()
 				fireball_set_default_color(i);
 			}
 		}
+		i++;
 	}
 
 	// having to do this twice is less than optimal, but less error prone too.
 	// this handles (and should only have to handle) TBM related entries
-	for (i = 0; i < (int)LOD_checker.size(); i++) {
+	i = 0;
+	for (lod = LOD_checker.begin(); lod != LOD_checker.end(); lod++) {
 		// try entry replacement
-		if ( (LOD_checker[i].override >= 0) && (LOD_checker[i].override < Num_fireball_types) ) {
-			strcpy_s( Fireball_info[LOD_checker[i].override].lod[0].filename, LOD_checker[i].filename );
-			Fireball_info[LOD_checker[i].override].lod_count = LOD_checker[i].num_lods;
+		if ( (lod->override >= 0) && (lod->override < Num_fireball_types) ) {
+			strcpy_s( Fireball_info[lod->override].lod[0].filename, lod->filename );
+			Fireball_info[lod->override].lod_count = lod->num_lods;
 
 			if (LOD_color[i].alpha == 255) {
-				Fireball_info[LOD_checker[i].override].exp_color[0] = (LOD_color[i].red / 255.0f);
-				Fireball_info[LOD_checker[i].override].exp_color[1] = (LOD_color[i].green / 255.0f);
-				Fireball_info[LOD_checker[i].override].exp_color[2] = (LOD_color[i].blue / 255.0f);
+				Fireball_info[lod->override].exp_color[0] = (LOD_color[i].red / 255.0f);
+				Fireball_info[lod->override].exp_color[1] = (LOD_color[i].green / 255.0f);
+				Fireball_info[lod->override].exp_color[2] = (LOD_color[i].blue / 255.0f);
 			} else {
-				fireball_set_default_color(LOD_checker[i].override);
+				fireball_set_default_color(lod->override);
 			}
 		}
 	}
@@ -1044,3 +1047,27 @@ int fireball_ship_explosion_type(ship_info *sip)
 
 	return index;
 }
+
+float fireball_wormhole_intensity( object *obj )
+{
+	int			num, objnum;
+	fireball		*fb;
+
+	num = obj->instance;
+	objnum = OBJ_INDEX(obj);
+	Assertion( Fireballs[num].objnum == objnum, "Basic sanity check. Fireballs[num].objnum (%d) should == objnum (%d)", Fireballs[num].objnum, objnum );
+
+	fb = &Fireballs[num];
+
+	float t = fb->time_elapsed;
+	float rad;
+
+	if ( t < WARPHOLE_GROW_TIME )	{
+		rad = (float)pow(t/WARPHOLE_GROW_TIME,0.4f);
+	} else if ( t < fb->total_time - WARPHOLE_GROW_TIME )	{
+		rad = 1;
+	} else {
+		rad = (float)pow((fb->total_time - t)/WARPHOLE_GROW_TIME,0.4f);
+	}
+	return rad;
+} 

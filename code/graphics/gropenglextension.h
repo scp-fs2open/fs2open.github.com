@@ -133,14 +133,16 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_GET_UNIFORM_LOCATION			48
 #define OGL_GET_UNIFORMIV					49
 #define OGL_UNIFORM1F						50
-#define OGL_UNIFORM3F						51
-#define OGL_UNIFORM4F						52
-#define OGL_UNIFORM3FV						53
-#define OGL_UNIFORM4FV						54
-#define OGL_UNIFORM1I						55
-#define OGL_UNIFORM_MATRIX4FV				56
+#define OGL_UNIFORM2F						51
+#define OGL_UNIFORM3F						52
+#define OGL_UNIFORM4F						53
+#define OGL_UNIFORM3FV						54
+#define OGL_UNIFORM4FV						55
+#define OGL_UNIFORM1I						56
+#define OGL_UNIFORM_MATRIX4FV				57
+#define OGL_DRAWBUFFERS						58
 
-#define NUM_OGL_FUNCTIONS					57
+#define NUM_OGL_FUNCTIONS					59
 
 
 // special extensions/functions (OS specific, non-GL stuff)
@@ -232,6 +234,7 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define PFNGLUNIFORM4FVARBPROC					glUnifrom4fvARBProcPtr
 #define PFNGLUNIFORM1IARBPROC					glUniform1iARBProcPtr
 #define PFNGLUNIFORMMATRIX4FVARBPROC			glUniformMatrix4fvARBProcPtr
+#define PFNGLDRAWBUFFERSPROC					glDrawBuffersARBProcPtr
 #endif	// __APPLE__
 
 #define vglFogCoordfEXT					GLEXT_CALL( OGL_FOG_COORDF, PFNGLFOGCOORDFEXTPROC )
@@ -289,13 +292,14 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define vglGetUniformLocationARB		GLEXT_CALL2( OGL_GET_UNIFORM_LOCATION, PFNGLGETUNIFORMLOCATIONARBPROC )
 #define vglGetUniformivARB				GLEXT_CALL( OGL_GET_UNIFORMIV, PFNGLGETUNIFORMIVARBPROC )
 #define vglUniform1fARB					GLEXT_CALL( OGL_UNIFORM1F, PFNGLUNIFORM1FARBPROC )
+#define vglUniform2fARB					GLEXT_CALL( OGL_UNIFORM2F, PFNGLUNIFORM2FARBPROC )
 #define vglUniform3fARB					GLEXT_CALL( OGL_UNIFORM3F, PFNGLUNIFORM3FARBPROC )
 #define vglUniform4fARB					GLEXT_CALL( OGL_UNIFORM4F, PFNGLUNIFORM4FARBPROC )
 #define vglUniform3fvARB				GLEXT_CALL( OGL_UNIFORM3FV, PFNGLUNIFORM3FVARBPROC )
 #define vglUniform4fvARB				GLEXT_CALL( OGL_UNIFORM4FV, PFNGLUNIFORM4FVARBPROC )
 #define vglUniform1iARB					GLEXT_CALL( OGL_UNIFORM1I, PFNGLUNIFORM1IARBPROC )
 #define vglUniformMatrix4fvARB			GLEXT_CALL( OGL_UNIFORM_MATRIX4FV, PFNGLUNIFORMMATRIX4FVARBPROC )
-
+#define vglDrawBuffers					GLEXT_CALL( OGL_DRAWBUFFERS, PFNGLDRAWBUFFERSPROC )
 
 // special extensions
 #define vwglSwapIntervalEXT			GLEXT_SPC_CALL( OGL_SPC_WGL_SWAP_INTERVAL, PFNWGLSWAPINTERVALEXTPROC )

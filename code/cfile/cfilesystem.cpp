@@ -823,6 +823,7 @@ void cf_free_secondary_filelist()
 // Returns: If not found returns 0.
 int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
+	uint i;
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
 
@@ -861,7 +862,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	}
 
 	// Search the hard drive for files first.
-	int num_search_dirs = 0;
+	uint num_search_dirs = 0;
 	int search_order[CF_MAX_PATH_TYPES];
 
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
@@ -876,7 +877,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	memset( longname, 0, sizeof(longname) );
 
 
-	for (int i=0; i<num_search_dirs; i++ )	{
+	for (i=0; i<num_search_dirs; i++ )	{
 		switch (search_order[i])
 		{
 			case CF_TYPE_ROOT:
@@ -938,7 +939,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 
 	// Search the pak files and CD-ROM.
 
-	for (uint i = 0; i < Num_files; i++ )	{
+	for (i = 0; i < Num_files; i++ )	{
 		cf_file *f = cf_get_file(i);
 
 		// only search paths we're supposed to...
@@ -1027,6 +1028,7 @@ extern char *stristr(const char *str, const char *substr);
 // (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
 int cf_find_file_location_ext( char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
+	uint i;
 	int cur_ext;
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
@@ -1055,7 +1057,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	}
 
 	// Search the hard drive for files first.
-	int num_search_dirs = 0;
+	uint num_search_dirs = 0;
 	int search_order[CF_MAX_PATH_TYPES];
 
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
@@ -1071,7 +1073,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	// strip any existing extension
 	strncpy(filespec, filename, MAX_FILENAME_LEN-1);
 
-	for (int i = 0; i < num_search_dirs; i++) {
+	for (i = 0; i < num_search_dirs; i++) {
 		// always hit the disk if we are looking in only one path
 		if (num_search_dirs == 1) {
 			cfs_slow_search = 1;
@@ -1168,7 +1170,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	file_list_index.reserve( MIN(ext_num * 4, (int)Num_files) );
 
 	// next, run though and pick out base matches
-	for (uint i = 0; i < Num_files; i++) {
+	for (i = 0; i < Num_files; i++) {
 		cf_file *f = cf_get_file(i);
 
 		// ... only search paths that we're supposed to
@@ -1211,17 +1213,10 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 		file_list_index.push_back( f );
 	}
 
-	size_t file_list_size = file_list_index.size();
-
-	// quick exit test
-	if (file_list_size < 1)
-		goto Bail;
-
-
 	// now try and find our preferred match
 	for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-		for (size_t i = 0; i < file_list_size; i++) {
-			cf_file *f = file_list_index[i];
+		for (SCP_vector<cf_file*>::iterator fli = file_list_index.begin(); fli != file_list_index.end(); fli++) {
+			cf_file *f = *fli;
 	
 			strcat_s( filespec, ext_list[cur_ext] );
 
@@ -1299,10 +1294,6 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 				(*p) = 0;
 		}
 	}
-
-Bail:
-	// didn't find anything, bail...
-	file_list_index.clear();
 
 	return -1;
 }

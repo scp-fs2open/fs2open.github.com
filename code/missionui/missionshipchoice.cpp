@@ -46,7 +46,7 @@
 #include "network/multiteamselect.h"
 #include "network/multiutil.h"
 #include "ai/aigoals.h"
-
+#include "io/timer.h"
 
 
 //////////////////////////////////////////////////////
@@ -72,6 +72,7 @@ static int Ss_delta_x, Ss_delta_y;	// used to offset the carried icon to make it
 float ShipSelectScreenShipRot = 0.0f;
 int ShipSelectModelNum = -1;
 
+int anim_timer_start = 0;
 //static matrix ShipScreenOrient = IDENTITY_MATRIX;
 
 //////////////////////////////////////////////////////
@@ -1555,7 +1556,10 @@ void ship_select_do(float frametime)
 				&ShipSelectScreenShipRot,
 				&sip->closeup_pos,
 				sip->closeup_zoom * 1.3f,
-				rev_rate);
+				rev_rate,
+				MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
+				true,
+				sip->selection_effect);
 		}
 	}
 
@@ -1758,6 +1762,8 @@ void start_ship_animation(int ship_class, int play_sound)
 	ship_info *sip = &Ship_info[ship_class];
 	char *p;
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
+
+	anim_timer_start = timer_get_milliseconds();
 
 	if ( Cmdline_ship_choice_3d || !strlen(sip->anim_filename) ) {
 		if (ship_class < 0) {

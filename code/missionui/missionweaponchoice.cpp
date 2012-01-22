@@ -38,7 +38,7 @@
 #include "missionui/chatbox.h"
 #include "network/multi_pmsg.h"
 #include "parse/parselo.h"
-
+#include "io/timer.h"
 
 
 #define IS_BANK_PRIMARY(x)			(x < MAX_SHIP_PRIMARY_BANKS)
@@ -96,6 +96,7 @@ typedef struct wl_bitmap_group
 #define WL_BUTTON_MULTI_LOCK				6
 #define WL_BUTTON_APPLY_ALL					7
 
+extern int anim_timer_start;
 
 // convenient struct for handling all button controls
 struct wl_buttons {
@@ -1221,6 +1222,8 @@ void maybe_select_new_weapon(int index)
 {
 	int weapon_class;
 
+	anim_timer_start = timer_get_milliseconds();
+
 	// if a weapon is being carried, do nothing
 	if ( wl_icon_being_carried() ) {
 		return;
@@ -1256,6 +1259,8 @@ void maybe_select_new_weapon(int index)
 void maybe_select_new_ship_weapon(int index)
 {
 	int *wep, *wep_count;
+	
+	anim_timer_start = timer_get_milliseconds();
 
 	if ( Selected_wl_slot == -1 )
 		return;
@@ -2782,16 +2787,19 @@ void weapon_select_do(float frametime)
 	if(Wl_icons[Selected_wl_class].model_index != -1) {
 		static float WeapSelectScreenWeapRot = 0.0f;
 		wl_icon_info *sel_icon					= &Wl_icons[Selected_wl_class];
+		weapon_info *wip = &Weapon_info[Selected_wl_class];
 		draw_model_rotating(sel_icon->model_index,
 			weapon_ani_coords[0],
 			weapon_ani_coords[1],
 			gr_screen.res == 0 ? 202 : 332,
-			gr_screen.res == 0 ? 185 : 304,
+			gr_screen.res == 0 ? 185 : 260,
 			&WeapSelectScreenWeapRot,
 			NULL,
 			.65f,
 			REVOLUTION_RATE,
-			MR_IS_MISSILE | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+			MR_IS_MISSILE | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
+			true,
+			wip->selection_effect);
 	}
 
 	else if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
@@ -3457,6 +3465,8 @@ void start_weapon_animation(int weapon_class)
 
 	icon = &Wl_icons[weapon_class];
 
+	gamesnd_play_iface(SND_WEAPON_ANIM_START);
+
 	//load a new animation if it's different to what's already playing
 	if(strcmp(Cur_Anim.filename, Weapon_info[weapon_class].anim_filename) != 0) {
 		//unload the previous anim
@@ -3465,7 +3475,6 @@ void start_weapon_animation(int weapon_class)
 		p = strchr( Weapon_info[weapon_class].anim_filename, '.' );
 		if(p)
 			*p = '\0';
-		gamesnd_play_iface(SND_WEAPON_ANIM_START);
 		if (gr_screen.res == GR_1024) {
 			strcpy_s(animation_filename, "2_");
 			strcat_s(animation_filename, Weapon_info[weapon_class].anim_filename);

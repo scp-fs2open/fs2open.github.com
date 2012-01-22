@@ -1183,8 +1183,8 @@ void fs2netd_update_ban_list()
 		CFILE *banlist_cfg = cfopen("banlist.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
 
 		if (banlist_cfg != NULL) {
-			for (uint i = 0; i < FS2NetD_ban_list.size(); i++) {
-				cfputs( const_cast<char*>(FS2NetD_ban_list[i].c_str()), banlist_cfg );
+			for (SCP_vector<std::string>::iterator bl = FS2NetD_ban_list.begin(); bl != FS2NetD_ban_list.end(); bl++) {
+				cfputs( const_cast<char*>(bl->c_str()), banlist_cfg );
 			}
 
 			cfclose(banlist_cfg);
@@ -1267,7 +1267,6 @@ int fs2netd_get_valid_missions_do()
 		char valid_status = MVALID_STATUS_UNKNOWN;
 		char full_name[MAX_FILENAME_LEN], wild_card[10];
 		char val_text[MAX_FILENAME_LEN+15];
-		int i;
 		uint checksum = 0;
 
 		if (file_names == NULL) {
@@ -1332,9 +1331,9 @@ int fs2netd_get_valid_missions_do()
 		found = false;
 
 		if (file_index >= 0) {
-			for (i = 0; (i < (int)FS2NetD_file_list.size()) && (!found); i++) {
-				if ( !stricmp(full_name, FS2NetD_file_list[i].name) ) {
-					if (FS2NetD_file_list[i].crc32 == checksum) {
+			for (SCP_vector<file_record>::iterator fr = FS2NetD_file_list.begin(); fr != FS2NetD_file_list.end() && !found; fr++) {
+				if ( !stricmp(full_name, fr->name) ) {
+					if (fr->crc32 == checksum) {
 						found = true;
 						valid_status = MVALID_STATUS_VALID;
 					} else {
@@ -1512,11 +1511,11 @@ int fs2netd_update_valid_tables()
 	}
 
 	// output the status of table validity to multi.log
-	for (uint i = 0; i < Table_valid_status.size(); i++) {
-		if (Table_valid_status[i].valid) {
-			ml_printf("FS2NetD Table Check: '%s' -- Valid!", Table_valid_status[i].name);
+	for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); tvs++) {
+		if (tvs->valid) {
+			ml_printf("FS2NetD Table Check: '%s' -- Valid!", tvs->name);
 		} else {
-			ml_printf("FS2NetD Table Check: '%s' -- INVALID (0x%x)!", Table_valid_status[i].name, Table_valid_status[i].crc32);
+			ml_printf("FS2NetD Table Check: '%s' -- INVALID (0x%x)!", tvs->name, tvs->crc32);
 			hacked = 1;
 		}
 	}
@@ -1645,7 +1644,7 @@ void fs2netd_update_game_count(char *chan_name)
 void fs2netd_spew_table_checksums(char *outfile)
 {
 	char full_name[MAX_PATH_LEN];
-	int count, idx;
+	int count;
 	FILE *out = NULL;
 	char description[512] = { 0 };
 	char filename[65] = { 0 };
@@ -1684,9 +1683,9 @@ void fs2netd_spew_table_checksums(char *outfile)
 	count = (int)Table_valid_status.size();
 
 	// do all the checksums
-	for (idx = 0; idx < count; idx++) {
+	for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); tvs++) {
 		offset = 0;
-		p = Table_valid_status[idx].name;
+		p = tvs->name;
 
 		while (*p && (offset < sizeof(filename))) {
 			if (*p == '"') {
@@ -1701,7 +1700,7 @@ void fs2netd_spew_table_checksums(char *outfile)
 
 		filename[offset] = '\0';
 
-		fprintf(out, "\"%s\",%u,\"%s\"\r\n", filename, Table_valid_status[idx].crc32, description);
+		fprintf(out, "\"%s\",%u,\"%s\"\r\n", filename, tvs->crc32, description);
 	}
 
 	fflush(out);

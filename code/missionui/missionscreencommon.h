@@ -200,7 +200,7 @@ int restore_wss_data(ubyte *block);
 
 struct ship_info;
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip=NULL, bool resize=true);
-void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos=NULL, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, int flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, bool resize=true);
+void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos=NULL, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, int flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, bool resize=true, int effect = 2);
 
 void common_set_team_pointers(int team);
 void common_reset_team_pointers();

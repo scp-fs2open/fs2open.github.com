@@ -38,8 +38,7 @@
 
 HudGaugeRadarDradis::HudGaugeRadarDradis():
 HudGaugeRadar(HUD_OBJECT_RADAR_BSG, true, 255, 255, 255), 
-xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_contact_icon(-1), background(-1), background_w(-1), background_h(-1), 
-foreground(-1), foreground_w(-1), foreground_h(-1), sweep_duration(6.0), sweep_percent(0.0), sub_y_clip(false),
+xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_contact_icon(-1), sweep_duration(6.0), sweep_percent(0.0), sub_y_clip(false),
 scale(1.20f)
 {
 	vm_vec_copy_scale(&sweep_normal_x, &vmd_zero_vector, 1.0f);
@@ -115,50 +114,6 @@ void HudGaugeRadarDradis::initBitmaps(char* fname_xy, char* fname_xz_yz, char* f
 	unknown_contact_icon = bm_load(fname_unknown);
 	if ( unknown_contact_icon < 0 ) {
 		Warning(LOCATION,"Cannot load hud bitmap: %s\n", fname_unknown);
-	}
-}
-
-void HudGaugeRadarDradis::initBackground(char* fname_background, int _background_w, int _background_h)
-{
-	if( !(strlen(fname_background) > 0) ) {
-		return;
-	}
-
-	background = bm_load(fname_background);
-	if(background < 0) {
-		Warning(LOCATION,"Cannot load hud bitmap: %s\n", fname_background);
-		return;
-	}
-
-	background_w = _background_w;
-	background_h = _background_h;
-	
-	if(background_w <= 0 || background_h <= 0) {
-
-		// no dimensions given for our background bitmap so let's figure it out.
-		bm_get_info(background, &background_w, &background_h);
-	}
-}
-
-void HudGaugeRadarDradis::initForeground(char* fname_foreground, int _foreground_w, int _foreground_h)
-{
-	if( !(strlen(fname_foreground) > 0) ) {
-		return;
-	}
-
-	foreground = bm_load(fname_foreground);
-	if(foreground < 0) {
-		Warning(LOCATION,"Cannot load hud bitmap: %s\n", fname_foreground);
-		return;
-	}
-
-	foreground_w = _foreground_w;
-	foreground_h = _foreground_h;
-	
-	if(foreground_w <= 0 || foreground_h <= 0) {
-
-		// no dimensions given for our foreground bitmap so let's figure it out.
-		bm_get_info(foreground, &foreground_w, &foreground_h);
 	}
 }
 
@@ -352,13 +307,6 @@ void HudGaugeRadarDradis::doneDrawingHtl()
 {
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
-
-	if(foreground >= 0) {
-		int w, h;
-
-		bm_get_info(foreground, &w, &h);
-		renderBitmapUv(foreground, position[0], position[1], Radar_radius[0], Radar_radius[1], 0.0f, 0.0f, i2fl(foreground_w)/i2fl(w), i2fl(foreground_h)/i2fl(h));
-	}
 	
 	//hud_save_restore_camera_data(0);
 
@@ -422,8 +370,20 @@ void HudGaugeRadarDradis::drawSweeps()
 		g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 		g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 		g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+
+		float rotation = sweep_percent;
+
+		vm_rot_point_around_line(&sweep_a, &vmd_y_vector, rotation, &vmd_zero_vector, &vmd_z_vector); // Sweep line: XZ
+		vm_rot_point_around_line(&sweep_b, &vmd_y_vector, rotation, &vmd_zero_vector, &vmd_x_vector); // Sweep line: YZ
+		vm_rot_point_around_line(&sweep_c, &vmd_x_vector,sweep_perc_z, &vmd_zero_vector, &vmd_y_vector); // Sweep line: YZ
 		
-		int dist = 90;
+		gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL);
+
+		g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: XZ
+		g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: YZ
+		g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+
+		/*int dist = 90;
 
 		for(int i = 1; i < dist; i++)
 		{
@@ -446,7 +406,7 @@ void HudGaugeRadarDradis::drawSweeps()
 				vm_rot_point_around_line(&sweep_c, &vmd_x_vector,sweep_perc_z + (i * RADIANS_PER_DEGREE), &vmd_zero_vector, &vmd_y_vector); // Sweep line: YZ
 				g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 			}
-		}
+		}*/
 		
 	g3_done_instance(true);
 }
@@ -526,13 +486,6 @@ void HudGaugeRadarDradis::render(float frametime)
 		ok_to_blit_radar = 0;
 
 	setupViewHtl();
-
-	if(background >= 0) {
-		int w, h;
-
-		bm_get_info(background, &w, &h);
-		renderBitmapUv(background, position[0], position[1], Radar_radius[0], Radar_radius[1], 0.0f, 0.0f, i2fl(background_w)/i2fl(w), i2fl(background_h)/i2fl(h));
-	}
 
 	//WMC - This strikes me as a bit hackish
 	bool g3_yourself = !g3_in_frame();

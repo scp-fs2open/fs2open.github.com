@@ -25,15 +25,6 @@ void png_scp_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
 	check = (png_size_t)cfread(data, (png_size_t)1, length, png_file);
 	if (check != length)
 		png_error(png_ptr, "Read Error");
-
-	/*
-	//debug for dumping data read
-	if (length <= 16) {
-		for(i = 0; i < length; i++)
-			mprintf(("%02x", data[i]));
-		mprintf(("\n"));
-	}
-	*/
 }
 
 // Reads header information from the PNG file into the bitmap pointer
@@ -118,10 +109,10 @@ int png_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 
 	png_read_info(png_ptr, info_ptr);
 
-	if (w) *w = info_ptr->width;
-	if (h) *h = info_ptr->height;
-	//this turns out to be near useless, but meh
-	if (bpp) *bpp = (info_ptr->pixel_depth);
+	if (w) *w = png_get_image_width(png_ptr, info_ptr);
+	if (h) *h = png_get_image_height(png_ptr, info_ptr);
+	// this turns out to be near useless, but meh
+	if (bpp) *bpp = (png_get_channels(png_ptr, info_ptr) * png_get_bit_depth(png_ptr, info_ptr));
 
 	if (img_cfp == NULL) {
 		cfclose(png_file);
@@ -149,8 +140,6 @@ int png_read_bitmap(char *real_filename, ubyte *image_data, ubyte *bpp, int dest
 	unsigned int i, len;
 
 	png_file = NULL;
-
-	//mprintf(("png_read_bitmap: %s\n", real_filename));
 
 	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
@@ -205,10 +194,11 @@ int png_read_bitmap(char *real_filename, ubyte *image_data, ubyte *bpp, int dest
 	row_pointers = png_get_rows(png_ptr, info_ptr);
 
 	if(bpp)
-		*bpp = (ubyte)(len / info_ptr->width) << 3;
+		*bpp = (ubyte)(len / png_get_image_width(png_ptr, info_ptr)) << 3;
 
 	//copy row data to image
-	for(i = 0; i < info_ptr->height; i++) {
+	unsigned int height = png_get_image_height(png_ptr, info_ptr);
+	for (i = 0; i < height; i++) {
 		memcpy(&image_data[i * len], row_pointers[i], len);
 	}
 

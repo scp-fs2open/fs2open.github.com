@@ -359,9 +359,9 @@ void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, cha
 //           which can be fired on target_objp
 int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 {
-	int i, firer_team, target_signature;
+	int firer_team, target_signature;
 	ship *firer_ship;
-	huge_fire_info *hfi = NULL;
+	SCP_vector<huge_fire_info>::iterator hfi;
 
 	Assert( firer_objp->type == OBJ_SHIP );
 	firer_ship = &Ships[firer_objp->instance];
@@ -369,10 +369,9 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 
 	// get target object's signature and try to find it in the list.
 	target_signature = target_objp->signature;
-	for ( i = 0; i < (int)Ai_huge_fire_info.size(); i++ ) {
+	for (hfi = Ai_huge_fire_info.begin();hfi != Ai_huge_fire_info.end(); ++hfi ) {
 		int ship_index, signature;
 
-		hfi = &Ai_huge_fire_info[i];
 		if ( hfi->weapon_index == -1 )
 			continue;
 
@@ -388,7 +387,7 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 	}
 
 	// return -1 if not found
-	if ( i == (int)Ai_huge_fire_info.size() )
+	if ( hfi == Ai_huge_fire_info.end() )
 		return -1;
 
 	// otherwise, we can return the max number of weapons we can fire against target_objps
@@ -15236,7 +15235,10 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		// Added OBJ_BEAM for traitor detection - FUBAR
 		if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
 			hitter_objnum = hit_objp->parent;
-			Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));
+			Assert((hitter_objnum < MAX_OBJECTS));
+			if (hitter_objnum == -1) {
+				return; // Possible SSM, bail while we still can.
+			}
 			objp_hitter = &Objects[hitter_objnum];
 		} else if (hit_objp->type == OBJ_SHIP) {
 			objp_hitter = hit_objp;

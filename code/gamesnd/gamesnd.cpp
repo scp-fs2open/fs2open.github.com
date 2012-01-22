@@ -39,20 +39,22 @@ void gamesnd_play_iface(int n)
 int gamesnd_get_by_name(char* name)
 {
 	Assert( Snds.size() <= INT_MAX );
-	for(int i = 0; i < (int)Snds.size(); i++)
+	int i = 0;
+	for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); snd++)
 	{
-		char *p = strrchr( Snds[i].filename, '.' );
+		char *p = strrchr( snd->filename, '.' );
 		if(p == NULL)
 		{
-			if(!stricmp(Snds[i].filename, name))
+			if(!stricmp(snd->filename, name))
 			{
 				return i;
 			}
 		}
-		else if(!strnicmp(Snds[i].filename, name, p-Snds[i].filename))
+		else if(!strnicmp(snd->filename, name, p-snd->filename))
 		{
 			return i;
 		}
+		i++;
 	}
 	return -1;
 }
@@ -63,11 +65,13 @@ int gamesnd_get_by_tbl_index(int index)
 	if (index == -1)
 		return -1;
 	Assert( Snds.size() <= INT_MAX );
-	for(int i = 0; i < (int)Snds.size(); i++) {
-		if ( Snds[i].sig == index )
+	int i = 0;
+	for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); snd++) {
+		if ( snd->sig == index )
 		{
 			return i;
 		}
+		i++;
 	}
 	return -1;
 }
@@ -76,11 +80,13 @@ int gamesnd_get_by_iface_tbl_index(int index)
 {
 	Assert( Snds_iface.size() <= INT_MAX );
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
-	for(int i = 0; i < (int)Snds_iface.size(); i++) {
-		if ( Snds_iface[i].sig == index )
+	int i = 0;
+	for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); snd++) {
+		if ( snd->sig == index )
 		{
 			return i;
 		}
+		i++;
 	}
 	return -1;
 }
@@ -125,19 +131,15 @@ void parse_sound(char* tag, int *idx_dest, char* object_name)
 // fly (too slow).
 void gamesnd_preload_common_sounds()
 {
-	int		i;
-	game_snd	*gs;
-
 	if ( !Sound_enabled )
 		return;
 
 	Assert( Snds.size() <= INT_MAX );
-	for ( i = 0; i < (int)Snds.size(); i++ ) {
-		gs = &Snds[i];
+	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); gs++) {
 		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			if ( gs->preload ) {
 				game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
-				gs->id = snd_load(gs);
+				gs->id = snd_load(&(*gs));
 			}
 		}
 	}
@@ -150,19 +152,15 @@ void gamesnd_preload_common_sounds()
 //
 void gamesnd_load_gameplay_sounds()
 {
-	int		i;
-	game_snd	*gs;
-
 	if ( !Sound_enabled )
 		return;
 
 	Assert( Snds.size() <= INT_MAX );
-	for ( i = 0; i < (int)Snds.size(); i++ ) {
-		gs = &Snds[i];
+	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); gs++) {
 		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			if ( !gs->preload ) { // don't try to load anything that's already preloaded
 				game_busy( NOX("** preloading gameplay sounds **") );		// Animate loading cursor... does nothing if loading screen not active.
-				gs->id = snd_load(gs);
+				gs->id = snd_load(&(*gs));
 			}
 		}
 	}
@@ -175,12 +173,8 @@ void gamesnd_load_gameplay_sounds()
 //
 void gamesnd_unload_gameplay_sounds()
 {
-	int		i;
-	game_snd	*gs;
-
 	Assert( Snds.size() <= INT_MAX );
-	for ( i = 0; i < (int)Snds.size(); i++ ) {
-		gs = &Snds[i];
+	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); gs++) {
 		if ( gs->id != -1 ) {
 			snd_unload( gs->id );
 			gs->id = -1;
@@ -195,17 +189,13 @@ void gamesnd_unload_gameplay_sounds()
 //
 void gamesnd_load_interface_sounds()
 {
-	int		i;
-	game_snd	*gs;
-
 	if ( !Sound_enabled )
 		return;
 
 	Assert( Snds_iface.size() < INT_MAX );
-	for ( i = 0; i < (int)Snds_iface.size(); i++ ) {
-		gs = &Snds_iface[i];
-		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
-			gs->id = snd_load(gs);
+	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); si++) {
+		if ( si->filename[0] != 0 && strnicmp(si->filename, NOX("none.wav"), 4) ) {
+			si->id = snd_load(&(*si));
 		}
 	}
 }
@@ -217,16 +207,12 @@ void gamesnd_load_interface_sounds()
 //
 void gamesnd_unload_interface_sounds()
 {
-	int		i;
-	game_snd	*gs;
-
 	Assert( Snds_iface.size() < INT_MAX );
-	for ( i = 0; i < (int)Snds_iface.size(); i++ ) {
-		gs = &Snds_iface[i];
-		if ( gs->id != -1 ) {
-			snd_unload( gs->id );
-			gs->id = -1;
-			gs->id_sig = -1;
+	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); si++) {
+		if ( si->id != -1 ) {
+			snd_unload( si->id );
+			si->id = -1;
+			si->id_sig = -1;
 		}
 	}
 }
@@ -522,7 +508,7 @@ void gamesnd_init_struct(game_snd *gs)
 //
 void gamesnd_init_sounds()
 {
-	int		i;
+	int		i = 0;
 
 	Snds.clear();
 	Snds.resize(MIN_GAME_SOUNDS);
@@ -531,8 +517,8 @@ void gamesnd_init_sounds()
 
 	Assert( Snds.size() <= INT_MAX );
 	// init the gameplay sounds
-	for ( i = 0; i < (int)Snds.size(); i++ ) {
-		gamesnd_init_struct(&Snds[i]);
+	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); gs++) {
+		gamesnd_init_struct(&(*gs));
 	}
 
 	Snds_iface.clear();
@@ -543,9 +529,11 @@ void gamesnd_init_sounds()
 
 	Assert( Snds_iface.size() < INT_MAX );
 	// init the interface sounds
-	for ( i = 0; i < (int)Snds_iface.size(); i++ ) {
-		gamesnd_init_struct(&Snds_iface[i]);
+
+	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); si++) {
+		gamesnd_init_struct(&(*si));
 		Snds_iface_handle[i] = -1;
+		i++;
 	}
 }
 

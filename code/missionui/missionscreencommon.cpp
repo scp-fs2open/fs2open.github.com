@@ -42,7 +42,8 @@
 #include "cutscene/movie.h"
 #include "cutscene/cutscenes.h"
 #include "parse/sexp.h"
-
+#include "graphics/2d.h"
+#include "graphics/gropenglshader.h"
 
 //////////////////////////////////////////////////////////////////
 // Game Globals
@@ -96,6 +97,7 @@ extern void ss_set_team_pointers(int team);
 extern void ss_reset_team_pointers();
 extern void wl_set_team_pointers(int team);
 extern void wl_reset_team_pointers();
+extern int anim_timer_start;
 
 //////////////////////////////////////////////////////////////////
 // UI 
@@ -1542,71 +1544,263 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	gr_reset_clip();
 }
 
-void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, bool resize)
+void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, bool resize, int effect)
 {
 	//WMC - Can't draw a non-model
 	if(model_id < 0)
 		return;
-
+	
+	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
 	matrix model_orient;
-
-	// rotate the ship as much as required for this frame
-	*rotation_buffer += PI2 * flFrametime / rev_rate;
-	while (*rotation_buffer > PI2){
-		*rotation_buffer -= PI2;
-	}
-
-	view_angles.p = -0.6f;
-	view_angles.b = 0.0f;
-	view_angles.h = 0.0f;
-	vm_angles_2_matrix(&model_orient, &view_angles);
-
-	rot_angles.p = 0.0f;
-	rot_angles.b = 0.0f;
-	rot_angles.h = *rotation_buffer;
-	vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
 	
-	gr_set_clip(x1, y1, x2, y2, resize);
-
-	// render the ship
-	g3_start_frame(1);
-	if(closeup_pos != NULL)
+	if(effect == 2)  // FS2 Effect; Phase 0 Expand scanline, Phase 1 scan the grid and wireframe, Phase 2 scan up and reveal the ship, Phase 3 tilt the camera, Phase 4 start rotating the ship
 	{
-		g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
+		
+		// rotate the ship as much as required for this frame
+		if(time >= 3.6f) // Phase 4
+			*rotation_buffer += PI2 * flFrametime / rev_rate;
+		else
+			*rotation_buffer = PI; // No rotation before Phase 4
+		while (*rotation_buffer > PI2){
+			*rotation_buffer -= PI2;
+		}
+
+		view_angles.p = -PI_2;
+		if(time >= 3.0f) // Phase 3
+		{
+			if(time >= 3.6f) // done tilting
+			{
+				view_angles.p = -0.6f; 
+			}
+			else
+			{
+				view_angles.p = (PI_2-0.6f)*(time-3.0f)*1.66667f - PI_2; // Phase 3 Tilt animation
+			}
+		}
+
+		view_angles.b = 0.0f;
+		view_angles.h = 0.0f;
+		vm_angles_2_matrix(&model_orient, &view_angles);
+
+		rot_angles.p = 0.0f;
+		rot_angles.b = 0.0f;
+		rot_angles.h = *rotation_buffer;
+		vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
+	
+		gr_set_clip(x1, y1, x2, y2, resize);
+		vec3d wire_normal,ship_normal,plane_point;
+		// Clip the wireframe below the scanline
+		wire_normal.xyz.x = 0.0f;
+		wire_normal.xyz.y = 1.0f;
+		wire_normal.xyz.z = 0.0f;
+		
+		// Clip the ship above the scanline 
+		ship_normal.xyz.x = 0.0f;
+		ship_normal.xyz.y = -1.0f;
+		ship_normal.xyz.z = 0.0f;
+
+		polymodel *pm = model_get(model_id);
+		
+		//Make the clipping plane
+		float clip = -pm->rad*0.7f;
+		if(time < 1.5f && time >= 0.5f) // Phase 1 Move down
+			clip = pm->rad*(time-1.0f)*1.4f;
+		if(time >= 1.5f)
+			clip = pm->rad*(time-2.0f)*(-1.4f); // Phase 2 Move up
+		vm_vec_scale_sub(&plane_point,&vmd_zero_vector,&wire_normal,clip);
+		
+		g3_start_frame(1);
+		if(closeup_pos != NULL)
+		{
+			g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
+		}
+		else
+		{
+			vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
+			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
+		}
+
+		if (!Cmdline_nohtl) {
+			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+			gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		}
+
+		vec3d start, stop;
+		float size = pm->rad*0.7f;
+		float start_scale = MIN(time,0.5f)*2.5f;
+		float offset = size*0.5f*MIN(MAX(time-3.0f,0.0f),0.6f)*1.66667f;
+		if(time < 1.5f && time >= 0.5f)  // Clip the grid if were in phase 1
+			g3_start_user_clip_plane(&plane_point,&wire_normal);
+		
+		g3_start_instance_angles(&vmd_zero_vector,&view_angles);
+		if( time < 0.5f ) // Do the expanding scanline in phase 0
+		{
+			gr_set_color(0,255,0);
+			start.xyz.x = size*start_scale;
+			start.xyz.y = 0.0f;
+			start.xyz.z = -clip;
+			stop.xyz.x = -size*start_scale;
+			stop.xyz.y = 0.0f;
+			stop.xyz.z = -clip;
+			g3_draw_htl_line(&start,&stop);
+		}
+		g3_done_instance(true);
+
+		gr_zbuffer_set(false); // Turn of Depthbuffer so we dont get gridlines over the ship or a disappearing scanline 
+		if( time >= 0.5f) // Phase 1 onward draw the grid
+		{
+			start.xyz.y = -offset;
+			start.xyz.z = size+offset*0.5f;
+			stop.xyz.y = -offset;
+			stop.xyz.z = -size+offset*0.5f;
+		
+			gr_set_color(0,200,0);
+		
+			g3_start_instance_angles(&vmd_zero_vector,&view_angles);
+			for(int i = -3; i < 4; i++)
+			{
+				start.xyz.x = stop.xyz.x = size*0.333f*i;
+				g3_draw_htl_line(&start,&stop);
+			}
+		
+			start.xyz.x = size;
+			stop.xyz.x = -size;
+			for(int i = -3; i < 4; i++)
+			{
+				start.xyz.z = stop.xyz.z = size*0.333f*i+offset*0.5f;
+				g3_draw_htl_line(&start,&stop);
+			}
+		
+			g3_done_instance(true);
+			
+			
+			// lighting for techroom
+			light_reset();
+			vec3d light_dir = vmd_zero_vector;
+			light_dir.xyz.y = 1.0f;	
+			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+			light_rotate_all();
+			// lighting for techroom
+
+			// render the ships
+			model_clear_instance(model_id);
+			model_set_detail_level(0);
+			gr_set_color(80,49,160);
+			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2);
+			opengl_shader_set_animated_timer(-clip);
+			if(time < 2.5f && time >= 0.5f) // Phase 1 and 2 render the wireframe
+			{
+				if(time >= 1.5f) // Just clip the wireframe after Phase 1
+					g3_start_user_clip_plane(&plane_point,&wire_normal);
+				
+				model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_ANIMATED_SHADER);
+				g3_stop_user_clip_plane();
+			}
+			if(time >= 1.5f) // Render the ship in Phase 2 onwards
+			{
+				
+				g3_start_user_clip_plane(&plane_point,&ship_normal);
+				model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_ANIMATED_SHADER);
+				g3_stop_user_clip_plane();
+			}
+			
+			if( time < 2.5f ) // Render the scanline in Phase 1 and 2
+			{
+				gr_set_color(0,255,0);
+				start.xyz.x = size*1.25f;
+				start.xyz.y = 0.0f;
+				start.xyz.z = -clip;
+				stop.xyz.x = -size*1.25f;
+				stop.xyz.y = 0.0f;
+				stop.xyz.z = -clip;
+				g3_start_instance_angles(&vmd_zero_vector,&view_angles);
+				g3_draw_htl_line(&start,&stop);
+				g3_done_instance(true);
+			}
+		
+		}
+		gr_zbuffer_set(true); // Turn of depthbuffer again
+		if (!Cmdline_nohtl) 
+		{
+			gr_end_view_matrix();
+			gr_end_proj_matrix();
+		}
+
+		g3_end_frame();
+		gr_reset_clip();
 	}
 	else
 	{
-		polymodel *pm = model_get(model_id);
-		vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
-		g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
+		// rotate the ship as much as required for this frame
+		*rotation_buffer += PI2 * flFrametime / rev_rate;
+		while (*rotation_buffer > PI2){
+			*rotation_buffer -= PI2;
+		}
+
+		view_angles.p = -0.6f;
+		view_angles.b = 0.0f;
+		view_angles.h = 0.0f;
+		vm_angles_2_matrix(&model_orient, &view_angles);
+
+		rot_angles.p = 0.0f;
+		rot_angles.b = 0.0f;
+		rot_angles.h = *rotation_buffer;
+		vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
+	
+		gr_set_clip(x1, y1, x2, y2, resize);
+		vec3d normal;
+		normal.xyz.x = 0.0f;
+		normal.xyz.y = 1.0f;
+		normal.xyz.z = 0.0f;
+		g3_start_frame(1);
+		// render the ship
+		
+		if(closeup_pos != NULL)
+		{
+			g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
+		}
+		else
+		{
+			polymodel *pm = model_get(model_id);
+			vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
+			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
+		}
+
+		if (!Cmdline_nohtl) {
+			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+			gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		}
+
+		// lighting for techroom
+		light_reset();
+		vec3d light_dir = vmd_zero_vector;
+		light_dir.xyz.y = 1.0f;	
+		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+		light_rotate_all();
+		// lighting for techroom
+
+		model_clear_instance(model_id);
+		model_set_detail_level(0);
+		gr_set_color(0,128,0);
+		if(effect == 1) // FS1 effect
+		{
+			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS1);
+			opengl_shader_set_animated_timer(MIN(time*0.5f,2.0f));
+			model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_ANIMATED_SHADER);
+		}
+		else
+			model_render(model_id, &model_orient, &vmd_zero_vector, flags);
+
+		if (!Cmdline_nohtl) 
+		{
+			gr_end_view_matrix();
+			gr_end_proj_matrix();
+		}
+
+		g3_end_frame();
+		gr_reset_clip();
 	}
-
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
-
-	// lighting for techroom
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;	
-	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-	light_rotate_all();
-	// lighting for techroom
-
-	model_clear_instance(model_id);
-	model_set_detail_level(0);
-	model_render(model_id, &model_orient, &vmd_zero_vector, flags);
-
-	if (!Cmdline_nohtl) 
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
-
-	g3_end_frame();
-	gr_reset_clip();
 }
 
 // NEWSTUFF END

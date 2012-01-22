@@ -377,8 +377,7 @@ int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap
 	v[3].u = 1.0f;
 	v[3].v = 1.0f;
 
-	vertex *ptlist[4] = { &v[3], &v[2], &v[1], &v[0] };	
-	g3_draw_poly(NUM_VERTICES, ptlist, tmap_flags);
+	gr_render(NUM_VERTICES, v, tmap_flags);
 
 	return 0;
 }

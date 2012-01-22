@@ -27,12 +27,6 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 	int target_brackets;
 	int unknown_contact_icon;
 
-	int background;
-	int background_w, background_h;
-
-	int foreground;
-	int foreground_w, foreground_h;
-
 	float sweep_duration; // in seconds
 	float sweep_percent;
 
@@ -60,8 +54,6 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 public:
 	HudGaugeRadarDradis();
 	void initBitmaps(char* fname_xy, char* fname_xz_yz, char* fname_sweep, char* fname_target_brackets, char* fname_unknown);
-	void initBackground(char* fname_background, int _background_w, int _background_h);
-	void initForeground(char* fname_foreground, int n_foreground_w, int n_foreground_h);
 
 	void blipDrawDistorted(blip *b, vec3d *pos, float alpha);
 	void blipDrawFlicker(blip *b, vec3d *pos, float alpha);

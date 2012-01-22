@@ -9,10 +9,6 @@
       <UniqueIdentifier>{a1c58bbc-e5ba-4f24-8640-14c9d28aa381}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{a4a51874-693d-43c0-97d7-3ea3b3462f28}</UniqueIdentifier>
-      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\zlib\adler32.c">
@@ -25,9 +21,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\zlib\deflate.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\zlib\gzio.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\zlib\infback.c">
@@ -83,10 +76,5 @@
     <ClInclude Include="..\..\zlib\zutil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\..\zlib\win32\zlib1.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

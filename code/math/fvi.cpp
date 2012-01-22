@@ -970,12 +970,12 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 	vec3d ve;						// edge velocity
 	float best_sphere_time;		// earliest time sphere hits edge
 	vec3d delta_x;
-	float	delta_x_dot_ve, delta_x_dot_vs, ve_dot_vs, ve_sqr, vs_sqr, delta_x_sqr;
+	float delta_x_dot_ve, delta_x_dot_vs, ve_dot_vs, ve_sqr, vs_sqr, delta_x_sqr, inv2A;
 	vec3d temp_edge_hit, temp_sphere_hit;
 
 	best_sphere_time = FLT_MAX;
 
-	for (i=0; i<nv; i++) {
+	for (i = 0; i < nv; i++) {
 		// Get vertices of edge to check
 		v0 = *verts[i];
 		if (i+1 != nv) {
@@ -1010,9 +1010,9 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 		discriminant = B*B - 4*A*C;
 		if (discriminant > 0) {
 			root = fl_sqrt(discriminant);
-			root1 = (float) ((-B + root)/(2*A));
-			root2 = (float) ((-B - root)/(2*A));
-
+			inv2A = 1.0f/(2*A);
+			root1 = (float) ((-B + root)*inv2A);
+			root2 = (float) ((-B - root)*inv2A);
 
 			// sort root1 and root2
 			if (root2 < root1) {
@@ -1021,7 +1021,7 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 				root2 = temp;
 			}
 
-			if (root1 >= -0.05f && root1 < 0.0f) {
+			if ( (root1 >= -0.05f) && (root1 < 0.0f) ) {
 				root1 = 0.000001f;
 			}
 
@@ -1051,13 +1051,14 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 		discriminant = B*B - 4*A*C;
 
 		// guard against nearly perpendicular sphere edge velocities
-		if ( (discriminant < 0)  ) {
+		if ( (discriminant < 0) ) {
 			discriminant = 0;
 		}
 
 		root = fl_sqrt(discriminant);
-		root1 = (float) ((-B + root)/(2*A));
-		root2 = (float) ((-B - root)/(2*A));
+		inv2A = 1.0f/(2*A);
+		root1 = (float) ((-B + root)*inv2A);
+		root2 = (float) ((-B - root)*inv2A);
 
 		// given sphere position, find which edge time (position) allows a valid solution
 		if ( (root1 >= 0) && (root1 <= 1) ) {
@@ -1068,7 +1069,7 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 				goto Hit;
 			}
 		}
-		
+
 		if ( (root2 >= 0) && (root2 <= 1) ) {
 			// try edge root2
 			vm_vec_scale_add( &temp_edge_hit, &v0, &ve, root2 );
@@ -1080,7 +1081,7 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 			// both root1 and root2 out of range so we have to check vertices
 			goto TryVertex;
 		}
-				
+
 		// Misses EDGE, so try ENDPOINTS
 		// Not exactly sure about this part (ie, which endpoint to check)
 
@@ -1104,8 +1105,9 @@ TryVertex:
 		discriminant = B*B - 4*A*C;
 		if (discriminant > 0) {
 			root = fl_sqrt(discriminant);
-			root1 = (float) ((-B + root)/(2*A));
-			root2 = (float) ((-B - root)/(2*A));
+			inv2A = 1.0f/(2*A);
+			root1 = (float) ((-B + root)*inv2A);
+			root2 = (float) ((-B - root)*inv2A);
 
 			if (root1 > root2) {
 				temp = root1;
@@ -1118,9 +1120,6 @@ TryVertex:
 				v0_hit = 1;
 				sphere_v0 = root1;
 				vm_vec_scale_add( &temp_sphere_hit, xs0, vs, root1 );
-			//	q = vm_vec_dist_squared( &v0, &temp_sphere_hit );	// debug
-			//	if ( fl_abs(q - Rs*Rs) > 2*WARN_DIST*Rs )
-			//		mprintf(("Estimated radius error: Estimate %f, actual %f  Get Dave A.\n", fl_sqrt(q), Rs));
 			}
 		}
 
@@ -1129,7 +1128,7 @@ TryVertex:
 		delta_x_sqr = vm_vec_mag_squared( &delta_x );
 		delta_x_dot_vs = vm_vec_dotprod( &delta_x, vs );
 		int v1_hit;
-		
+
 		B = 2*delta_x_dot_vs;
 		C = delta_x_sqr - Rs*Rs;
 
@@ -1137,8 +1136,9 @@ TryVertex:
 		discriminant = B*B - 4*A*C;
 		if (discriminant > 0) {
 			root = fl_sqrt(discriminant);
-			root1 = (float) ((-B + root)/(2*A));
-			root2 = (float) ((-B - root)/(2*A));
+			inv2A = 1.0f/(2*A);
+			root1 = (float) ((-B + root)*inv2A);
+			root2 = (float) ((-B - root)*inv2A);
 
 			if (root1 > root2) {
 				temp = root1;
@@ -1151,9 +1151,6 @@ TryVertex:
 				v1_hit = 1;
 				sphere_v1 = root1;
 				vm_vec_scale_add( &temp_sphere_hit, xs0, vs, root1 );
-			//	q = vm_vec_dist_squared( &v1, &temp_sphere_hit );
-			//	if ( fl_abs(q - Rs*Rs) > 2*WARN_DIST*Rs )
-			//		mprintf(("Estimated radius error: Estimate %f, actual %f  Get Dave A.\n", fl_sqrt(q), Rs));
 			}
 		}
 
@@ -1164,7 +1161,7 @@ TryVertex:
 			temp_edge_hit = v0;
 
 			if (v1_hit) {
-				Assert(sphere_v1 != UNINITIALIZED_VALUE);
+				Assert( sphere_v1 != UNINITIALIZED_VALUE );
 				if (sphere_v1 < sphere_v0) {
 					t_sphere_hit = sphere_v1;
 					temp_edge_hit = v1;
@@ -1180,17 +1177,10 @@ TryVertex:
 
 		vm_vec_scale_add( &temp_sphere_hit, xs0, vs, t_sphere_hit );
 		q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
-		// if ( fl_abs(q - Rs*Rs) > 2*WARN_DIST*Rs ) {
-		//	mprintf(("Estimated radius error: Estimate %f, actual %f  Get Dave A.\n", fl_sqrt(q), Rs));
-		// } 
+
 
 Hit:
-//		vec3d temp;
-//		vm_vec_scale_add( &temp, xs0, vs, time_s);
-//		float q = vm_vec_dist( &temp, &temp_edge_hit );
-//		if (q > Rs + .003 || q < Rs - .003) {
-//			Int3();
-//		}
+
 		if (t_sphere_hit < best_sphere_time) {
 			best_sphere_time = t_sphere_hit;
 			*hit_point = temp_edge_hit;

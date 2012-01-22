@@ -12,6 +12,8 @@
 #include "ai/ai_profiles.h"
 #include "parse/parselo.h"
 #include "localization/localize.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
 
 
 // global stuff
@@ -260,8 +262,8 @@ void parse_ai_profiles_tbl(char *filename)
 				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->glide_attack_percent[i] < 0.0f || profile->glide_attack_percent[i] > 100.0f) {
-						profile->glide_attack_percent[i] = 0.0f;
 						Warning(LOCATION, "$Glide Attack Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_attack_percent[i]);
+						profile->glide_attack_percent[i] = 0.0f;
 					}
 					profile->glide_attack_percent[i] /= 100.0;
 				}
@@ -273,8 +275,8 @@ void parse_ai_profiles_tbl(char *filename)
 				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->circle_strafe_percent[i] < 0.0f || profile->circle_strafe_percent[i] > 100.0f) {
-						profile->circle_strafe_percent[i] = 0.0f;
 						Warning(LOCATION, "$Circle Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->circle_strafe_percent[i]);
+						profile->circle_strafe_percent[i] = 0.0f;
 					}
 					profile->circle_strafe_percent[i] /= 100.0;
 				}
@@ -286,8 +288,8 @@ void parse_ai_profiles_tbl(char *filename)
 				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->glide_strafe_percent[i] < 0.0f || profile->glide_strafe_percent[i] > 100.0f) {
-						profile->glide_strafe_percent[i] = 0.0f;
 						Warning(LOCATION, "$Glide Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_strafe_percent[i]);
+						profile->glide_strafe_percent[i] = 0.0f;
 					}
 					profile->glide_strafe_percent[i] /= 100.0;
 				}
@@ -299,8 +301,8 @@ void parse_ai_profiles_tbl(char *filename)
 				//While we're at it, verify the range
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
-						profile->random_sidethrust_percent[i] = 0.0f;
 						Warning(LOCATION, "$Random Sidethrust Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->random_sidethrust_percent[i]);
+						profile->random_sidethrust_percent[i] = 0.0f;
 					}
 					profile->random_sidethrust_percent[i] /= 100.0;
 				}
@@ -442,9 +444,34 @@ void parse_ai_profiles_tbl(char *filename)
 				}
 			}
 
+			if (optional_string("$Default weapon select effect:")) {
+				char effect[NAME_LENGTH];
+				stuff_string(effect, F_NAME, NAME_LENGTH);
+				if (!stricmp(effect, "FS1"))
+					Default_weapon_select_effect = 1;
+				if (!stricmp(effect, "off"))
+					Default_weapon_select_effect = 0;
+			}
+
+			if (optional_string("$Default ship select effect:")) {
+				char effect[NAME_LENGTH];
+				stuff_string(effect, F_NAME, NAME_LENGTH);
+				if (!stricmp(effect, "FS1"))
+					Default_ship_select_effect = 1;
+				if (!stricmp(effect, "off"))
+					Default_ship_select_effect = 0;
+			}
+
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
+			{
+				char buf[60];
+				memset(buf, 0, 60);
+				strncpy(buf, Mp, 59);
+				mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n", buf));
+
 				Mp++;
+			}
 
 			// find next valid option
 			skip_to_start_of_string_either("$", "#");

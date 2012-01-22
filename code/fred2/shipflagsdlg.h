@@ -64,6 +64,7 @@ public:
 	CButton m_nav_needslink;
 	CButton m_hide_ship_name;
 	CButton m_disable_ets;
+	CButton m_cloaked;
 	CButton	m_set_class_dynamically;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
@@ -121,6 +122,7 @@ protected:
 	afx_msg void OnHideShipName();
 	afx_msg void OnSetClassDynamically();
 	afx_msg void OnDisableETS();
+	afx_msg void OnCloaked();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

@@ -167,11 +167,39 @@ int verify_pilot_file(char *filename, int single, int *rank)
 	int type;
 	char pname[MAX_FILENAME_LEN];
 
-	Assert( strlen(filename) < MAX_FILENAME_LEN - 4 );
 	strcpy_s(pname, filename);
 
 	char *p = strchr( pname, '.' );
 	if ( p ) *p = 0;
+
+	/* strlen doesn't count the null but MAX_FILENAME_LEN has
+	to include the null so its (32-1) = 31 < pilot_filename_length*/
+	if (strlen(pname) > ((MAX_FILENAME_LEN - 1) - 1 - 4))
+	{
+		char popup_txt[] = 
+			"Pilot name is too long\n\n"
+			"Pilot file '%s' is %d characters long, which is more than %d characters.\n\n"
+			"Please locate the file in %s/data/players/%s%s and shorten the name. "
+			"This pilot will be excluded from the select list.";
+
+		char popup_str[sizeof(popup_txt) + 64];
+		snprintf(popup_str, sizeof(popup_str), popup_txt,
+			pname, strlen(pname), (MAX_FILENAME_LEN - 1) - 1 - 4,
+#if SCP_UNIX
+			"~",
+#else
+			"<freespace dir>",
+#endif
+			(single)?"single":"multi",
+#ifdef INF_BUILD
+			"/inferno"
+#else
+			""
+#endif
+		);
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, popup_str);
+		return -1;
+	}
 
 	if (single)
 		strcat_s(pname, ".pl2");

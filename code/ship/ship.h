@@ -237,6 +237,8 @@ typedef struct cockpit_display {
 	char name[MAX_FILENAME_LEN];
 } cockpit_display;
 
+extern SCP_vector<cockpit_display> Player_displays;
+
 typedef struct cockpit_display_info {
 	char name[MAX_FILENAME_LEN];
 	char filename[MAX_FILENAME_LEN];
@@ -447,6 +449,7 @@ typedef struct ship_subsys_info {
 #define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
 #define SF2_FORCE_SHIELDS_ON				(1<<20)
 #define SF2_NO_ETS							(1<<21)		// The E - This ship does not have an ETS
+#define SF2_CLOAKED							(1<<22)		// The E - This ship will not be rendered
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -697,9 +700,6 @@ typedef struct ship {
 	
 	// Goober5000 - revised nameplate implementation
 	int *ship_replacement_textures;
-	int *cockpit_replacement_textures;
-
-	SCP_vector<cockpit_display> displays;
 
 	// Goober5000 - index into pm->view_positions[]
 	// apparently, early in FS1 development, there was a field called current_eye_index
@@ -716,13 +716,11 @@ typedef struct ship {
 	// glow points
 	SCP_vector<bool> glow_point_bank_active;
 
-	//cloaking stuff
-	vec3d texture_translation_key;		//translate the texture matrix for a cool effect
-	vec3d current_translation;
-	int cloak_stage;
-	fix time_until_full_cloak;
-	int cloak_alpha;
-	fix time_until_uncloak;
+	//Animated Shader effects
+	int shader_effect_num;
+	int shader_effect_duration;
+	int shader_effect_start_time;
+	bool shader_effect_active;
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 
@@ -1275,6 +1273,7 @@ typedef struct ship_info {
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in ship selection
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
+	int 	selection_effect;
 
 	int	score;								// default score for this ship
 
@@ -1870,12 +1869,11 @@ extern int ship_has_engine_power(ship *shipp);
 
 // Swifty - Cockpit displays
 void ship_init_cockpit_displays(ship *shipp);
-void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int cockpit_model_num);
-void ship_clear_cockpit_displays(ship *shipp);
-void ship_set_hud_cockpit_targets(ship *shipp);
-void ship_clear_hud_cockpit_targets(ship *shipp);
-void ship_render_backgrounds_cockpit_display(ship *shipp);
-void ship_render_foregrounds_cockpit_display(ship *shipp);
+void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num);
+void ship_set_hud_cockpit_targets();
+void ship_clear_cockpit_displays();
+int ship_start_render_cockpit_display(int cockpit_display_num);
+void ship_end_render_cockpit_display(int cockpit_display_num);
 
 //WMC - Warptype stuff
 int warptype_match(char *p);
@@ -1896,5 +1894,17 @@ int thruster_glow_anim_load(generic_anim *ga);
 
 // Sushi - Path metadata
 void init_path_metadata(path_metadata& metadata);
+
+// Ship select stuff
+extern int Default_ship_select_effect;
+
+typedef struct ship_effect {
+	char name[NAME_LENGTH];
+	bool disables_rendering;
+	bool invert_timer;
+	int shader_effect;
+} ship_effect;
+
+extern SCP_vector<ship_effect> Ship_effects;
 
 #endif

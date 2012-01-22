@@ -11,10 +11,12 @@
 
 #include <stdio.h>
 #include <math.h>
+#if _M_IX86_FP >= 1
+	#include <xmmintrin.h>
+#endif
 
 #include "math/vecmat.h"
 #include "math/floating.h"
-
 
 
 #define	SMALL_NUM	1e-7
@@ -341,12 +343,7 @@ float vm_vec_mag(vec3d *v)
 
 	mag1 = x+y+z;
 
-	if ( mag1 < 0.0 )
-		return 0;
-
 	mag2 = fl_sqrt(mag1);
-	if ( mag2 < 0.0 )
-		Int3();
 	return mag2;
 }
 
@@ -510,8 +507,16 @@ float vm_vec_normalize_safe(vec3d *v)
 //returns approximation of 1/magnitude of a vector
 float vm_vec_imag(vec3d *v)
 {
-//	return 1.0f / sqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );	
-	return fl_isqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );
+#if _M_IX86_FP < 1
+	return 1.0f / sqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );
+#else
+	float x = (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z);
+	__m128  xx = _mm_load_ss( & x );
+	xx = _mm_rsqrt_ss( xx );
+	_mm_store_ss( & x, xx );
+
+	return x;
+#endif
 }
 
 //normalize a vector. returns 1/mag of source vec. uses approx 1/mag
@@ -809,6 +814,31 @@ matrix *vm_vec_ang_2_matrix(matrix *m,vec3d *v,float a)
 	return t;
 }
 
+//generate the vectors for the vm_vector_2_matrix() an vm_vector_2_matrix_norm() functions so we can avoid goto
+void vm_vector_2_matrix_gen_vectors(matrix *m)
+{
+	vec3d *xvec=&m->vec.rvec;
+	vec3d *yvec=&m->vec.uvec;
+	vec3d *zvec=&m->vec.fvec;
+	
+	if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
+		m->vec.rvec.xyz.x = 1.0f;
+		m->vec.uvec.xyz.z = (zvec->xyz.y<0.0f)?1.0f:-1.0f;
+
+		m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
+	}
+	else { 		//not straight up or down
+
+		xvec->xyz.x = zvec->xyz.z;
+		xvec->xyz.y = 0.0f;
+		xvec->xyz.z = -zvec->xyz.x;
+
+		vm_vec_normalize(xvec);
+
+		vm_vec_crossprod(yvec,zvec,xvec);
+
+	}
+}
 
 //computes a matrix from one or more vectors. The forward vector is required,
 //with the other two being optional.  If both up & right vectors are passed,
@@ -819,72 +849,44 @@ matrix *vm_vector_2_matrix(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
 {
 	vec3d *xvec=&m->vec.rvec,*yvec=&m->vec.uvec,*zvec=&m->vec.fvec;
 
-
 	Assert(fvec != NULL);
 
-	//	This had been commented out, but that's bogus.  Code below relies on a valid zvec.
+	//  This had been commented out, but that's bogus.  Code below relies on a valid zvec.
 	if (vm_vec_copy_normalize(zvec,fvec) == 0.0f) {
 		Assert(0);
 		return m;
 	}
 
 	if (uvec == NULL) {
-
-		if (rvec == NULL) {		//just forward vec
-
-bad_vector2:
-	;
-
-			if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
-
-				m->vec.rvec.xyz.x = 1.0f;
-				m->vec.uvec.xyz.z = (zvec->xyz.y<0.0)?1.0f:-1.0f;
-
-				m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
-			}
-			else { 		//not straight up or down
-
-				xvec->xyz.x = zvec->xyz.z;
-				xvec->xyz.y = 0.0f;
-				xvec->xyz.z = -zvec->xyz.x;
-
-				vm_vec_normalize(xvec);
-
-				vm_vec_crossprod(yvec,zvec,xvec);
-
-			}
-
+		if (rvec == NULL) {     //just forward vec
+			vm_vector_2_matrix_gen_vectors(m);
 		}
-		else {						//use right vec
-
+		else {                      //use right vec
 			if (vm_vec_copy_normalize(xvec,rvec) == 0.0f)
-				goto bad_vector2;
+				vm_vector_2_matrix_gen_vectors(m);
 
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
 			if (vm_vec_normalize(yvec) == 0.0f)
-				goto bad_vector2;
+				vm_vector_2_matrix_gen_vectors(m);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_crossprod(xvec,yvec,zvec);
-
 		}
 	}
-	else {		//use up vec
-
+	else {      //use up vec
 		if (vm_vec_copy_normalize(yvec,uvec) == 0.0f)
-			goto bad_vector2;
+			vm_vector_2_matrix_gen_vectors(m);
 
 		vm_vec_crossprod(xvec,yvec,zvec);
-		
+
 		//normalize new perpendicular vector
 		if (vm_vec_normalize(xvec) == 0.0f)
-			goto bad_vector2;
+			vm_vector_2_matrix_gen_vectors(m);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
 		vm_vec_crossprod(yvec,zvec,xvec);
-
 	}
 	return m;
 }
@@ -896,65 +898,35 @@ matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
 	vec3d *yvec=&m->vec.uvec;
 	vec3d *zvec=&m->vec.fvec;
 
-
 	Assert(fvec != NULL);
 
 	*zvec = *fvec;
 
 	if (uvec == NULL) {
-
-		if (rvec == NULL) {		//just forward vec
-
-bad_vector2:
-	;
-
-			if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
-
-				m->vec.rvec.xyz.x = 1.0f;
-				m->vec.uvec.xyz.z = (zvec->xyz.y<0.0f)?1.0f:-1.0f;
-
-				m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
-			}
-			else { 		//not straight up or down
-
-				xvec->xyz.x = zvec->xyz.z;
-				xvec->xyz.y = 0.0f;
-				xvec->xyz.z = -zvec->xyz.x;
-
-				vm_vec_normalize(xvec);
-
-				vm_vec_crossprod(yvec,zvec,xvec);
-
-			}
-
+		if (rvec == NULL) {     //just forward vec
+			vm_vector_2_matrix_gen_vectors(m);
 		}
-		else {						//use right vec
-
+		else {                      //use right vec
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
 			if (vm_vec_normalize(yvec) == 0.0f)
-				goto bad_vector2;
+				vm_vector_2_matrix_gen_vectors(m);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_crossprod(xvec,yvec,zvec);
-
 		}
 	}
-	else {		//use up vec
-
+	else {      //use up vec
 		vm_vec_crossprod(xvec,yvec,zvec);
-		
+
 		//normalize new perpendicular vector
 		if (vm_vec_normalize(xvec) == 0.0f)
-			goto bad_vector2;
+			vm_vector_2_matrix_gen_vectors(m);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
 		vm_vec_crossprod(yvec,zvec,xvec);
-
 	}
-
-
 	return m;
 }
 

@@ -1756,7 +1756,7 @@ void stars_draw_debris()
 void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env)
 {
 	int gr_zbuffering_save = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
+	gr_zbuffer_set(GR_ZBUFF_NONE); 
 
 	Rendering_to_env = env;
 

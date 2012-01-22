@@ -976,10 +976,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\zlib\gzio.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\zlib\infback.c"
 				>
 			</File>
@@ -1050,15 +1046,6 @@
 			</File>
 			<File
 				RelativePath="..\..\zlib\zutil.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
-			>
-			<File
-				RelativePath="..\..\zlib\win32\zlib1.rc"
 				>
 			</File>
 		</Filter>
