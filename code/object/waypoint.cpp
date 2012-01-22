@@ -161,7 +161,7 @@ waypoint_list *find_matching_waypoint_list(char *name)
 
 	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
 	{
-		if (!strcmp(ii->get_name(), name))
+		if (!stricmp(ii->get_name(), name))
 			return &(*ii);
 	}
 
@@ -179,7 +179,7 @@ waypoint *find_matching_waypoint(char *name)
 		uint len = strlen(ii->get_name());
 
 		// the first half (before the :) matches
-		if (!strncmp(ii->get_name(), name, len))
+		if (!strnicmp(ii->get_name(), name, len))
 		{
 			// this is ok because it could be "Waypoint path 1" vs. "Waypoint path 10"
 			if (*(name + len) != ':')

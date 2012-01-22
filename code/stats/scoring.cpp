@@ -924,10 +924,6 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 				if(MULTI_DOGFIGHT && (multi_find_player_by_object(weapon_obj) < 0)){
 					// don't add a kill for dogfight kills on non-players
 				} else {
-					/* This isn't really a kill... -Halleck
-					plr->stats.m_okKills[si_index]++;		
-					plr->stats.m_kill_count_ok++;
-					*/
 
 					// only computer controlled enemies should scale with difficulty
 					if (is_enemy_player) {
@@ -936,7 +932,6 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 					else {
 						kill_score = (int)(dead_wip->score * scoring_get_scale_factor() * scoring_scale_by_damage);
 					}
-
 
 					plr->stats.m_score += kill_score;  					
 					hud_gauge_popup_start(HUD_KILLS_GAUGE);

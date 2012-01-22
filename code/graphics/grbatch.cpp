@@ -26,11 +26,14 @@ geometry_batcher::~geometry_batcher()
 	}
 }
 
+/**
+ * Called to start a batch, you make sure you have enough memory 
+ * to store all the geometry, then you clear out the memory and set the
+ * number of primitives to 0
+ */
 void geometry_batcher::allocate_internal(int n_verts)
 {
-	// this is called to start a batch, you make sure you have enough memory 
-	// to store all the geometry, then you clear out the memory and set the
-	// number of primitives to 0
+
 	if (n_verts > n_allocated) {
 		if (vert != NULL) {
 			vm_free(vert);
@@ -278,7 +281,6 @@ void geometry_batcher::draw_bitmap(vertex *pnt, float rad, float angle, float de
 	vm_vec_normalize_safe(&fvec);
 
 	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &View_matrix.vec.fvec);
-//	uvec = View_matrix.vec.uvec;
 
 	vm_vec_crossprod(&rvec, &View_matrix.vec.fvec, &uvec);
 	vm_vec_normalize_safe(&rvec);
@@ -304,49 +306,6 @@ void geometry_batcher::draw_bitmap(vertex *pnt, float rad, float angle, float de
 	g3_transfer_vertex(&P[2], &p[3]);
 	g3_transfer_vertex(&P[1], &p[1]);
 	g3_transfer_vertex(&P[0], &p[0]);
-
-	// set up the UV coords
-	/*
-	if ( orient & 1 ) {
-		// tri 1
-		P[5].u = 1.0f;
-		P[4].u = 0.0f;
-		P[3].u = 0.0f;
-		// tri 2
-		P[2].u = 1.0f;
-		P[1].u = 0.0f;
-		P[0].u = 1.0f;
-	} else {
-		// tri 1
-		P[5].u = 0.0f;
-		P[4].u = 1.0f;
-		P[3].u = 1.0f;
-		// tri 2
-		P[2].u = 0.0f;
-		P[1].u = 1.0f;
-		P[0].u = 0.0f;
-	}
-
-	if ( orient & 2 ) {
-		// tri 1
-		P[5].v = 1.0f;
-		P[4].v = 1.0f;
-		P[3].v = 0.0f;
-		// tri 2
-		P[2].v = 1.0f;
-		P[1].v = 0.0f;
-		P[0].v = 0.0f;
-	} else {
-		// tri 1
-		P[5].v = 0.0f;
-		P[4].v = 0.0f;
-		P[3].v = 1.0f;
-		// tri 2
-		P[2].v = 0.0f;
-		P[1].v = 1.0f;
-		P[0].v = 1.0f;
-	}
-	*/
 
 	//tri 1
 	P[5].texture_position.u = 0.0f;	P[5].texture_position.v = 0.0f;
@@ -571,8 +530,9 @@ void geometry_batcher::render(int flags, float radius)
 
 
 
-// laser batcher
-
+/**
+ * Laser batcher
+ */
 struct batch_item {
 	batch_item(): texture(-1), tmap_flags(0), alpha(1.0f), laser(false) {};
 
@@ -590,9 +550,9 @@ static SCP_vector<batch_item> distortion_map;
 
 static int find_good_batch_item(int texture)
 {
-	uint max_size = geometry_map.size();
+	size_t max_size = geometry_map.size();
 
-	for (uint i = 0; i < max_size; i++) {
+	for (size_t i = 0; i < max_size; i++) {
 		if (geometry_map[i].texture == texture)
 			return (int)i;
 	}
@@ -607,13 +567,13 @@ static int find_good_batch_item(int texture)
 	return (int)(geometry_map.size() - 1);
 }
 
-static int find_good_distortion_item(int texture)
+static size_t find_good_distortion_item(int texture)
 {
-	uint max_size = distortion_map.size();
+	size_t max_size = distortion_map.size();
 
-	for (uint i = 0; i < max_size; i++) {
+	for (size_t i = 0; i < max_size; i++) {
 		if (distortion_map[i].texture == texture)
-			return (int)i;
+			return i;
 	}
 
 	// don't have an existing match so add a new entry
@@ -623,7 +583,7 @@ static int find_good_distortion_item(int texture)
 
 	distortion_map.push_back(new_item);
 
-	return (int)(distortion_map.size() - 1);
+	return (distortion_map.size() - 1);
 }
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
@@ -666,7 +626,6 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	item->add_allocate(1);
 
 	item->draw_bitmap(pnt, orient, rad, depth);
-	//void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float angle, float depth)
 
 	return 0;
 }
@@ -772,8 +731,7 @@ int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, floa
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_distortion_item(texture);
-	Assert( index >= 0 );
+	size_t index = find_good_distortion_item(texture);
 
 	Assertion( (distortion_map[index].laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
@@ -797,8 +755,7 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_distortion_item(texture);
-	Assert( index >= 0 );
+	size_t index = find_good_distortion_item(texture);
 
 	Assertion( (distortion_map[index].laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
@@ -816,10 +773,10 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 
 void distortion_render_bitmaps()
 {
-	uint map_size = distortion_map.size();
+	size_t map_size = distortion_map.size();
 	batch_item *bi;
 
-	for (uint i = 0; i < map_size; i++) {
+	for (size_t i = 0; i < map_size; i++) {
 		bi = &distortion_map[i];
 
 		if ( bi->laser )

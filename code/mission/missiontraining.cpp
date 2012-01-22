@@ -189,11 +189,15 @@ void HudGaugeDirectives::initBitmaps(char *fname_top, char *fname_middle, char *
 
 bool HudGaugeDirectives::canRender()
 {
-	if(hud_disabled_except_messages()) {
+	if (sexp_override) {
 		return false;
 	}
 
-	if (hud_disabled()) {
+	if(hud_disabled_except_messages() && !message_gauge) {
+		return false;
+	}
+
+	if (hud_disabled() && !hud_disabled_except_messages()) {
 		return false;
 	}
 
@@ -211,6 +215,12 @@ bool HudGaugeDirectives::canRender()
 
 	if(pop_up) {
 		if(!popUpActive()) {
+			return false;
+		}
+	}
+
+	if (gauge_config == HUD_ETS_GAUGE) {
+		if (Ships[Player_obj->instance].flags2 & SF2_NO_ETS) {
 			return false;
 		}
 	}

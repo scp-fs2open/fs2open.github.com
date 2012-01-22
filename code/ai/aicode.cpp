@@ -289,21 +289,6 @@ void ai_cleanup_rearm_mode(object *objp);
 void ai_cleanup_dock_mode_subjective(object *objp);
 void ai_cleanup_dock_mode_objective(object *objp);
 
-// Goober5000
-typedef struct {
-	vec3d docker_point;
-	vec3d dockee_point;
-	int dock_mode;
-	int submodel;
-	vec3d submodel_pos;
-	float submodel_r;
-	float submodel_w;
-} rotating_dockpoint_info;
-
-// Goober5000
-//	Move to a position relative to a dock bay using thrusters.
-float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, rotating_dockpoint_info *rdinfo = NULL);
-
 // The object that is declared to be the leader of the group formation for
 // the "autopilot"
 object *Autopilot_flight_leader = NULL;

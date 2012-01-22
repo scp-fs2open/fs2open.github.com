@@ -1412,7 +1412,17 @@ void game_post_level_init()
 
 	freespace_mission_load_stuff();
 
+	// m!m Make hv.Player available in "On Mission Start" hook
+	if(Player_obj)
+		Script_system.SetHookObject("Player", Player_obj);
+
+	// HACK: That scripting hook should be in mission so GM_IN_MISSION has to be set
+	Game_mode |= GM_IN_MISSION;
 	Script_system.RunCondition(CHA_MISSIONSTART);
+	Game_mode &= ~GM_IN_MISSION;
+
+	if (Player_obj)
+		Script_system.RemHookVar("Player");
 }
 
 /**
@@ -2014,7 +2024,10 @@ void game_init()
 	load_animating_pointer(NOX("cursor"), 0, 0);	
 
 	// initialize alpha colors
-	alpha_colors_init();	
+	// CommanderDJ: try with colors.tbl first, then use the old way if that doesn't work
+	if (!new_alpha_colors_init()) {
+		old_alpha_colors_init();
+	}
 
 	if (Cmdline_env) {
 		ENVMAP = Default_env_map = bm_load("cubemap");
@@ -4328,6 +4341,7 @@ void game_frame(int paused)
 	fix clear_time1=0, clear_time2=0;
 #endif
 	int actually_playing;
+
 	//vec3d eye_pos;
 	//matrix eye_orient;
 
@@ -4408,6 +4422,7 @@ void game_frame(int paused)
 			return;
 		}
 		
+		
 		game_simulation_frame(); 
 		
 		// if not actually in a game play state, then return.  This condition could only be true in 
@@ -4435,8 +4450,8 @@ void game_frame(int paused)
 
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
+			
 			camid cid = game_render_frame_setup();
-
 			game_render_frame( cid );
 
 			// save the eye position and orientation

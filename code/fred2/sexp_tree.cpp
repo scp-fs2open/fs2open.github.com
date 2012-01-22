@@ -5176,21 +5176,33 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 
 sexp_list_item *sexp_tree::get_listing_opf_docker_point(int parent_node)
 {
-	int i, z, sh;
+	int i, z;
 	sexp_list_item head;
+	int sh = -1;
 
 	Assert(parent_node >= 0);
-	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock"));
+	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock") || !stricmp(tree_nodes[parent_node].text, "set-docked"));
 
-	z = tree_nodes[parent_node].parent;
-	Assert(z >= 0);
-	Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal") || !stricmp(tree_nodes[z].text, "add-goal"));
+	if (!stricmp(tree_nodes[parent_node].text, "ai-dock"))
+	{
+		z = tree_nodes[parent_node].parent;
+		Assert(z >= 0);
+		Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal") || !stricmp(tree_nodes[z].text, "add-goal"));
 
-	z = tree_nodes[z].child;
-	Assert(z >= 0);
+		z = tree_nodes[z].child;
+		Assert(z >= 0);
 
-	sh = ship_name_lookup(tree_nodes[z].text, 1);
-	if (sh >= 0) {
+		sh = ship_name_lookup(tree_nodes[z].text, 1);
+	}
+	else if (!stricmp(tree_nodes[parent_node].text, "set-docked"))
+	{
+		//Docker ship should be the first child node
+		z = tree_nodes[parent_node].child;
+		sh = ship_name_lookup(tree_nodes[z].text, 1);
+	}
+
+	if (sh >= 0) 
+	{
 		z = get_docking_list(Ship_info[Ships[sh].ship_info_index].model_num);
 		for (i=0; i<z; i++)
 			head.add_data(Docking_bay_list[i]);
@@ -5201,17 +5213,32 @@ sexp_list_item *sexp_tree::get_listing_opf_docker_point(int parent_node)
 
 sexp_list_item *sexp_tree::get_listing_opf_dockee_point(int parent_node)
 {
-	int i, z, sh;
+	int i, z;
 	sexp_list_item head;
+	int sh = -1;
 
 	Assert(parent_node >= 0);
-	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock"));
+	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock") || !stricmp(tree_nodes[parent_node].text, "set-docked"));
 
-	z = tree_nodes[parent_node].child;
-	Assert(z >= 0);
+	if (!stricmp(tree_nodes[parent_node].text, "ai-dock"))
+	{
+		z = tree_nodes[parent_node].child;
+		Assert(z >= 0);
 
-	sh = ship_name_lookup(tree_nodes[z].text, 1);
-	if (sh >= 0) {
+		sh = ship_name_lookup(tree_nodes[z].text, 1);
+	}
+	else if (!stricmp(tree_nodes[parent_node].text, "set-docked"))
+	{
+		//Dockee ship should be the third child node
+		z = tree_nodes[parent_node].child;	// 1
+		z = tree_nodes[z].next;				// 2
+		z = tree_nodes[z].next;				// 3
+
+		sh = ship_name_lookup(tree_nodes[z].text, 1);
+	}
+
+	if (sh >= 0) 
+{
 		z = get_docking_list(Ship_info[Ships[sh].ship_info_index].model_num);
 		for (i=0; i<z; i++)
 			head.add_data(Docking_bay_list[i]);

@@ -2039,11 +2039,6 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 		if(Multi_ts_team[pl->p_info.team].multi_ts_flag[to_index] == MULTI_TS_FLAG_NONE){
 			return 0;
 		}
-
-		// if the slot he's trying to drop it on is "permanently" empty
-		if(Multi_ts_team[pl->p_info.team].multi_ts_flag[to_index] == MULTI_TS_FLAG_NONE){
-			return 0;
-		}
 		break;
 
 	case TS_SWAP_SLOT_SLOT:
@@ -2053,11 +2048,6 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 		}
 
 		// if the slot we're taking from is invalid
-		if(Multi_ts_team[pl->p_info.team].multi_ts_flag[to_index] == MULTI_TS_FLAG_NONE){
-			return 0;
-		}
-
-		// if the slot he's trying to drop it on is "permanently" empty
 		if(Multi_ts_team[pl->p_info.team].multi_ts_flag[to_index] == MULTI_TS_FLAG_NONE){
 			return 0;
 		}

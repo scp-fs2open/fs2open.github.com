@@ -1462,13 +1462,6 @@ void standalone_main_init()
 #endif // ifdef _WIN32
 
 	// set the protocol
-#ifdef MULTIPLAYER_BETA_BUILD
-	Multi_options_g.protocol = NET_TCP;
-	psnet_use_protocol(Multi_options_g.protocol);	
-
-	ADDRESS_LENGTH = IP_ADDRESS_LENGTH;		
-	PORT_LENGTH = IP_PORT_LENGTH;			
-#else
 	psnet_use_protocol(Multi_options_g.protocol);
 	switch (Multi_options_g.protocol) {
 	case NET_IPX:
@@ -1484,7 +1477,6 @@ void standalone_main_init()
 	default:
 		Int3();
 	} // end switch
-#endif
 
 	HEADER_LENGTH = 1;		
 	

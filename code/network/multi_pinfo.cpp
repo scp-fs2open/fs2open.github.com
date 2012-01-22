@@ -346,12 +346,6 @@ void multi_pinfo_popup_init(net_player *np)
 		Multi_pinfo_window.add_XSTR(&Multi_pinfo_text[gr_screen.res][idx]);
 	}
 
-	// disable medals button for the demo
-#ifdef FS2_DEMO
-	Multi_pinfo_buttons[gr_screen.res][MPI_MEDALS].button.hide();
-	Multi_pinfo_buttons[gr_screen.res][MPI_MEDALS].button.disable();
-#endif
-
 	// initialize strings	
 	Multi_pinfo_stats_labels[0] = vm_strdup(XSTR("Rank", 1007));
 	Multi_pinfo_stats_labels[1] = vm_strdup(XSTR("Missions Flown", 1008));
@@ -643,9 +637,6 @@ void multi_pinfo_popup_button_pressed(int n)
 // display the medals screen for this player
 void multi_pinfo_do_medals()
 {
-#ifdef FS2DEMO
-	game_feature_not_in_demo_popup();
-#else
 	int ret_code;
 
 	// initialize the medals screen
@@ -666,7 +657,6 @@ void multi_pinfo_do_medals()
 
 	// restore the proper palette
 	multi_pinfo_set_palette();
-#endif
 }
 
 // load up and use the proper palette
@@ -680,27 +670,10 @@ void multi_pinfo_set_palette()
 // build the stats value strings for this player
 void multi_pinfo_build_stats()
 {
-	// int idx;
-	// int fighter_kills,other_kills;
 	scoring_struct *sc = &Multi_pinfo_popup_player->m_player->stats;
 
 	// build alltime fighter and non-fighter kills
-	/*
-	fighter_kills = 0;
-	other_kills = 0;
-	for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
-		if(sc->kills[idx] > 0){
-			if(Ship_info[idx].flags & SIF_FIGHTER){
-				fighter_kills += sc->kills[idx];
-			} else {
-				other_kills += sc->kills[idx];
-			}
-		}
-	}	
-	*/
 	sprintf(Multi_pinfo_stats_vals[MPI_FIGHTER_KILLS], "%d", sc->kill_count);
-	
-	// sprintf(Multi_pinfo_stats_vals[MPI_OTHER_KILLS],"%d",other_kills);
 
 	// missions flown
 	sprintf(Multi_pinfo_stats_vals[MPI_MISSIONS_FLOWN],"%d",(int)sc->missions_flown);
@@ -726,9 +699,6 @@ void multi_pinfo_build_stats()
 
 	// primary shots fired
 	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%u",sc->p_shots_fired);
-
-	// primary shots hit
-	// sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_HIT],"%d",sc->p_shots_hit);
 	
 	// primary hit pct
 	if (sc->p_shots_fired > 0) {
@@ -738,9 +708,6 @@ void multi_pinfo_build_stats()
 	}
 	// primary shots fired
 	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%u",sc->s_shots_fired);
-
-	// primary shots hit
-	// sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_HIT],"%d",sc->s_shots_hit);
 	
 	// primary hit pct
 	if (sc->s_shots_fired > 0) {

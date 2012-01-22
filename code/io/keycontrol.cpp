@@ -41,7 +41,6 @@
 #include "hud/hudconfig.h"
 #include "hud/hudmessage.h"
 #include "network/multi_pmsg.h"
-#include "globalincs/crypt.h"
 #include "starfield/supernova.h"
 #include "mission/missionmessage.h"
 #include "menuui/mainhallmenu.h"
@@ -70,27 +69,38 @@
 #define MAX_TIME_MULTIPLIER		64
 #define MAX_TIME_DIVIDER		4
 
-#define CHEAT_BUFFER_LEN	20
-#define CHEATSPOT				(CHEAT_BUFFER_LEN - 1)
-
+#define CHEAT_BUFFER_LEN	17
 char CheatBuffer[CHEAT_BUFFER_LEN+1];
 
-char *Cheat_code = NOX("33BE^(8]C01(:=BHt");					// www.freespace2.com
-char *Cheat_code_fish = NOX("bDc9y+$;#AIDRoouM");			// vasudanswuvfishes
-char *Cheat_code_headz = NOX("!;:::@>F7L?@@2:@A");			// humanheadsinside.
-char *Cheat_code_tooled = NOX("sipp-^rM@L!U^usjX");		// tooledworkedowned
-char *Cheat_code_pirate = NOX("MAP4YP[4=-2uC(yJ^");		// arrrrwalktheplank	
-char *Cheat_code_skip = NOX("7!ICkSI\"(8n3JesBP");			// skipmemymissionyo
-									  // 666)6=N79+Z45=BE0e
+enum cheatCode {
+	CHEAT_CODE_NONE = 0,
+	CHEAT_CODE_FREESPACE,
+	CHEAT_CODE_FISH,
+	CHEAT_CODE_HEADZ,
+	CHEAT_CODE_TOOLED,
+	CHEAT_CODE_PIRATE,
+	CHEAT_CODE_SKIP
+};
+
+struct Cheat {
+	cheatCode code;
+	char* data;
+};
+
+static struct Cheat cheatsTable[] = {
+  { CHEAT_CODE_FREESPACE, "www.freespace2.com" },
+  { CHEAT_CODE_FISH,      "vasudanswuvfishes" },
+  { CHEAT_CODE_HEADZ,     "humanheadsinside." },
+  { CHEAT_CODE_TOOLED,    "tooledworkedowned" },
+  { CHEAT_CODE_PIRATE,    "arrrrwalktheplank" },
+  { CHEAT_CODE_SKIP,      "skipmemymissionyo" }
+};
+
+#define CHEATS_TABLE_LEN	6
+
 int Tool_enabled = 0;
 bool Perspective_locked=false;
 bool quit_mission_popup_shown = false;
-
-//int All_movies_enabled = 0;
-
-//int Debug_allowed = 0;
-
-//#endif
 
 extern int AI_watch_object;
 extern int Countermeasures_enabled;
@@ -356,7 +366,6 @@ int Non_critical_key_set_size = sizeof(Non_critical_key_set) / sizeof(int);
 // --------------------------------------------------------------
 // routine to process keys used only for debugging
 // --------------------------------------------------------------
-//#ifndef NDEBUG
 
 void debug_cycle_player_ship(int delta)
 {
@@ -390,7 +399,10 @@ void debug_cycle_player_ship(int delta)
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player ship changed to %s", 0), Ship_info[si_index].name);			
 }
 
-// cycle targeted ship to next ship in that species
+/**
+ * Cycle targeted ship to next ship in that species
+ * @param delta Increment
+ */
 void debug_cycle_targeted_ship(int delta)
 {
 	object		*objp;
@@ -491,8 +503,6 @@ void debug_change_song(int delta)
 	}
 }
 
-//extern void set_global_ignore_object(int objnum);
-
 extern void hud_target_asteroid();
 extern int Framerate_delay;
 
@@ -540,15 +550,12 @@ int get_next_weapon_looped(int current_weapon, int subtype)
 
 void process_debug_keys(int k)
 {
-
-	// Kazan -- NO CHEATS IN MULTIb
+	// Kazan -- NO CHEATS IN MULTI
 	if (Game_mode & GM_MULTIPLAYER)
 	{
+		Cheats_enabled = 0;
 		return;
 	}
-
-	// if ( (k & KEY_DEBUGGED) && (Game_mode & GM_RECORDING_DEMO) )
-		// return;
 
 	switch (k) {
 		case KEY_DEBUGGED + KEY_H:
@@ -556,12 +563,6 @@ void process_debug_keys(int k)
 			break;
 
 		case KEY_DEBUGGED + KEY_F: 
-			/*
-			int i;
-			for (i=0; i<NUM_HUD_GAUGES; i++) {
-				hud_gauge_start_flash(i);
-			}
-			*/
 			extern int wacky_scheme;
 			if(wacky_scheme == 3){
 				wacky_scheme = 0;
@@ -590,7 +591,6 @@ void process_debug_keys(int k)
 
 		case KEY_DEBUGGED + KEY_C:
 		case KEY_DEBUGGED1 + KEY_C:
-			// hud_enemymsg_toggle();
 			if(Player_obj->flags & OF_COLLIDES){
 				obj_set_flags(Player_obj, Player_obj->flags & ~(OF_COLLIDES));
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player no longer collides");
@@ -749,7 +749,6 @@ void process_debug_keys(int k)
 
 					if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
-						// sp->flags |= SF_DISARMED;				// add the disarmed flag
 					}
 				}
 			}
@@ -786,12 +785,6 @@ void process_debug_keys(int k)
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags & OF_INVULNERABLE ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			}
 			break;
-/*
-		case KEY_DEBUGGED + KEY_ALTED + KEY_I:
-			if (Player_ai->target_objnum != -1)
-				set_global_ignore_object(Player_ai->target_objnum);
-			break;
-*/
 
 		case KEY_DEBUGGED + KEY_N:
 			AI_watch_object++;
@@ -895,7 +888,6 @@ void process_debug_keys(int k)
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
 			objp->pos = Player_obj->pos;
-			//mission_goal_mark_all_true( PRIMARY_GOAL );
 			break;
 		}
 
@@ -980,7 +972,7 @@ void process_debug_keys(int k)
 			break;
 		}
 #endif
-		case KEY_DEBUGGED  + KEY_A:	{
+		case KEY_DEBUGGED + KEY_A:	{
 
 			HUD_printf("frame rate currently is %0.2 FPS", 1/flFrametime);
 
@@ -1053,45 +1045,6 @@ void process_debug_keys(int k)
 			game_increase_skill_level();
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Skill level set to %s.", 25), Skill_level_names(Game_skill_level));
 			break;
-
-		/*// kill all missiles
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_1:
-			beam_test(1);
-			break;				
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_2:
-			beam_test(2);
-			break;		
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_3:
-			beam_test(3);
-			break;				
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_4:
-			beam_test(4);
-			break;		
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_5:
-			beam_test(5);
-			break;				
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_6:
-			beam_test(6);
-			break;		
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_7:
-			beam_test(7);
-			break;				
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_8:
-			beam_test(8);
-			break;		
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_9:
-			beam_test(9);
-			break;				
-
-		case KEY_DEBUGGED + KEY_CTRLED + KEY_1:
-			beam_test_new(1);
-			break;				
-		case KEY_DEBUGGED + KEY_CTRLED + KEY_2:
-			beam_test_new(2);
-			break;		
-		case KEY_DEBUGGED + KEY_CTRLED + KEY_3:
-			beam_test_new(3);
-			break;*/
 					
 		case KEY_DEBUGGED + KEY_T: {
 			char buf[256];
@@ -1135,15 +1088,6 @@ void process_debug_keys(int k)
 		}
 		
 		case KEY_DEBUGGED + KEY_Y:
-			/*
-			// blast a debug lightning bolt in front of the player
-			vec3d start, strike;
-			
-			vm_vec_scale_add(&start, &Player_obj->pos, &Player_obj->orient.fvec, 300.0f);
-			vm_vec_scale_add2(&start, &Player_obj->orient.rvec, -300.0f);
-			vm_vec_scale_add(&strike, &start, &Player_obj->orient.rvec, 600.0f);
-			nebl_bolt(DEBUG_BOLT, &start, &strike);
-			*/
 			extern int tst;
 			tst = 2;
 			break;
@@ -1206,9 +1150,7 @@ void process_debug_keys(int k)
 			break;
 
 	}	// end switch
-
 }
-//#endif
 
 void ppsk_hotkeys(int k)
 {
@@ -1273,19 +1215,6 @@ void ppsk_hotkeys(int k)
 				HUD_init_colors();
 			}
 			break;
-/*		case KEY_SHIFTED + KEY_U:
-			{
-			object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force);
-
-			object *temp = debris_create(Player_obj, Ships[0].modelnum, model_get(Ships[0].modelnum)->debris_objects[0], &Player_obj->pos, &Player_obj->pos, 1, 1.0f);
-			if (temp) {
-				temp->hull_strength = 5000.0f;
-				int objnum = temp - Objects;
-				vm_vec_copy_scale(&Objects[objnum].phys_info.vel, &Player_obj->orient.fvec, 30.0f);
-			}
-			}
-			break;
-*/
 
 		case KEY_SHIFTED + KEY_EQUAL:
 			if ( HUD_color_alpha < HUD_COLOR_ALPHA_USER_MAX ) {
@@ -1296,12 +1225,14 @@ void ppsk_hotkeys(int k)
 	}	// end switch
 }
 
-// check keypress 'key' against a set of valid controls and mark the match in the
-// player's button info bitfield.  Also checks joystick controls in the set.
-//
-// key = scancode (plus modifiers).
-// count = total size of the list
-// list = list of Control_config struct action indices to check for
+/**
+ * Check keypress 'key' against a set of valid controls and mark the match in the
+ * player's button info bitfield.  Also checks joystick controls in the set.
+ *
+ * @param key Scancode (plus modifiers).
+ * @param count Total size of the list
+ * @param list List of ::Control_config struct action indices to check for
+ */
 void process_set_of_keys(int key, int count, int *list)
 {
 	int i;
@@ -1311,7 +1242,9 @@ void process_set_of_keys(int key, int count, int *list)
 			button_info_set(&Player->bi, list[i]);
 }
 
-// routine to process keys used for player ship stuff (*not* ship movement).
+/**
+ * Routine to process keys used for player ship stuff (*not* ship movement).
+ */
 void process_player_ship_keys(int k)
 {
 	int masked_k;
@@ -1358,11 +1291,12 @@ void process_player_ship_keys(int k)
 	}
 }
 
-// Handler for when player hits 'ESC' during the game
+/**
+ * Handler for when player hits 'ESC' during the game
+ */
 void game_do_end_mission_popup()
 {
 	int	pf_flags, choice;
-//	char	savegame_filename[_MAX_FNAME];
 
 	// do the multiplayer version of this
 	if(Game_mode & GM_MULTIPLAYER){
@@ -1381,18 +1315,6 @@ void game_do_end_mission_popup()
 
 		switch (choice) {
 		case 1:
-			// save the game before quitting if in campaign mode
-			// MWA -- 3/26/98 -- no more save/restore!!!!
-/*
-			if ( Game_mode & GM_CAMPAIGN_MODE ) {
-				memset(savegame_filename, 0, _MAX_FNAME);
-				mission_campaign_savefile_generate_root(savegame_filename);
-				strcat_s(savegame_filename, NOX("svg"));
-				if ( state_save_all(savegame_filename) ) {
-					Int3();	// could not save this game
-				}
-			}
-*/
 			gameseq_post_event(GS_EVENT_END_GAME);
 			break;
 
@@ -1410,7 +1332,9 @@ void game_do_end_mission_popup()
 	}
 }
 
-// handle pause keypress
+/**
+ * Handle pause keypress
+ */
 void game_process_pause_key()
 {
 	// special processing for multiplayer
@@ -1425,11 +1349,11 @@ void game_process_pause_key()
 	}
 }
 
-// process cheat codes
+/**
+ * Process cheat codes
+ */
 void game_process_cheats(int k)
 {
-	char *cryptstring;
-
 	if ( k == 0 ){
 		return;
 	}
@@ -1440,17 +1364,25 @@ void game_process_cheats(int k)
 		return;
 	}
 
-	k = key_to_ascii(k);
-
 	for (size_t i = 0; i < CHEAT_BUFFER_LEN; i++){
 		CheatBuffer[i]=CheatBuffer[i+1];
 	}
 
-	CheatBuffer[CHEATSPOT]=(char)k;
-
-	cryptstring=jcrypt(&CheatBuffer[CHEAT_BUFFER_LEN - CRYPT_STRING_LENGTH]);		
+	CheatBuffer[CHEAT_BUFFER_LEN - 1] = (char)key_to_ascii(k);
 	
-	if( !strcmp(Cheat_code, cryptstring) && !(Game_mode & GM_MULTIPLAYER)){
+	cheatCode detectedCheatCode = CHEAT_CODE_NONE;
+	int i=0;
+
+	for(i=0; i < CHEATS_TABLE_LEN; i++) {
+		Cheat cheat = cheatsTable[i];
+
+		if(!strncmp(cheat.data, CheatBuffer, CHEAT_BUFFER_LEN)){
+			detectedCheatCode = cheat.code;
+			break;
+		}
+	}
+
+	if(detectedCheatCode == CHEAT_CODE_FREESPACE){
 		Cheats_enabled = 1;
 
 		// cheating allows the changing of weapons so we have to grab anything
@@ -1460,28 +1392,28 @@ void game_process_cheats(int k)
 
 		HUD_printf("Cheats enabled");
 	}
-	if( !strcmp(Cheat_code_fish, cryptstring) ){
+	if(detectedCheatCode == CHEAT_CODE_FISH){
 		// only enable in the Vasudan main hall
 		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
 			extern void fishtank_start();
 			fishtank_start();
 		}
 	}
-	if( !strcmp(Cheat_code_headz, cryptstring) ){
+	if(detectedCheatCode == CHEAT_CODE_HEADZ){
 		// only enable in the Vasudan main hall
 		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
 			main_hall_vasudan_funny();
 		}
 	}
-	if( !strcmp(Cheat_code_skip, cryptstring) && (gameseq_get_state() == GS_STATE_MAIN_MENU)){
+	if(detectedCheatCode ==  CHEAT_CODE_SKIP && (gameseq_get_state() == GS_STATE_MAIN_MENU)){
 		extern void main_hall_campaign_cheat();
 		main_hall_campaign_cheat();
 	}
-	if( !strcmp(Cheat_code_tooled, cryptstring) && (Game_mode & GM_IN_MISSION)){
+	if(detectedCheatCode == CHEAT_CODE_TOOLED && (Game_mode & GM_IN_MISSION)){
 		Tool_enabled = 1;
 		HUD_printf("Prepare to be taken to school");
 	}
-	if( !strcmp(Cheat_code_pirate, cryptstring) && (Game_mode & GM_IN_MISSION) && (Player_obj != NULL)){
+	if(detectedCheatCode == CHEAT_CODE_PIRATE && (Game_mode & GM_IN_MISSION) && (Player_obj != NULL)){
 		extern void prevent_spawning_collision(object *new_obj);
 		ship_subsys *ptr;
 		char name[NAME_LENGTH];
@@ -1553,27 +1485,14 @@ void game_process_keys()
 	{		
 		k = game_poll();
 
-		//if (k)
-		//	mprintf(("got key %d at %s:%d\n", k, __FILE__, __LINE__));
-	
-		// AL 12-10-97: Scan for keys used to leave the dead state	(don't process any)
-		// DB 1-13-98 : New popup code will run the game do state, so we must skip 
-		//              all key processing in this function, since everything should be run through the popup dialog
 		if ( Game_mode & GM_DEAD_BLEW_UP ) {
 			continue;
 		}
 
 		game_process_cheats( k );
-
-		// mwa -- 4/5/97 Moved these two function calls before the switch statement.  I don't think
-		// that this has adverse affect on anything and is acutally desireable because of the
-		// ESC key being used to quit any HUD message/input mode that might be currently in use
 		process_player_ship_keys(k);
-
-//		#ifndef NDEBUG
-		process_debug_keys(k);		//	Note, also processed for cheats.
-//		#endif		
-
+		process_debug_keys(k);
+		
 		switch (k) {
 			case 0:
 				// No key
@@ -1646,8 +1565,6 @@ void game_process_keys()
 				break;
 
 		} // end switch
-
-		
 	}
 	while (k);
 
@@ -1982,36 +1899,11 @@ int button_function_critical(int n, net_player *p = NULL)
 	return 1;
 }
 
-// return !0 if the action is allowed, otherwise return 0
-int button_allowed(int n)
-{
-	// RT Commented this out cos it was disabling use of keys when HUD is off
-#if 0
-	if ( hud_disabled() ) {
-		switch (n) {
-		case SHOW_GOALS:
-		case END_MISSION:
-		case CYCLE_NEXT_PRIMARY:
-		case CYCLE_PREV_PRIMARY:
-		case CYCLE_SECONDARY:
-		case ONE_THIRD_THROTTLE:
-		case TWO_THIRDS_THROTTLE:
-		case PLUS_5_PERCENT_THROTTLE:
-		case MINUS_5_PERCENT_THROTTLE:
-		case ZERO_THROTTLE:
-		case MAX_THROTTLE:
-			return 1;
-		default:
-			return 0;
-		}
-	}
-#endif
-
-	return 1;
-}
-
-// execute function corresponding to action n
-// basically, these are actions which don't affect demo playback at all
+/**
+ * Execute function corresponding to action n
+ * Basically, these are actions which don't affect demo playback at all
+ * @param n Action number
+ */
 int button_function_demo_valid(int n)
 {
 	// by default, we'll return "not processed". ret will get set to 1, if this is one of the keys which is always allowed, even in demo
@@ -2030,13 +1922,6 @@ int button_function_demo_valid(int n)
 		if(!Perspective_locked)
 		{
 			Viewer_mode ^= VM_CHASE;
-
-			// Goober5000 -- Mantis #1087
-			/*
-			if ( Viewer_mode & VM_CHASE ) {
-				Viewer_mode &= ~VM_EXTERNAL;
-			}
-			*/
 		}
 		else
 		{
@@ -2065,13 +1950,6 @@ int button_function_demo_valid(int n)
 		{
 			Viewer_mode ^= VM_EXTERNAL;
 			Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leaving/entering external view
-
-			// Goober5000 -- Mantis #1087
-			/*
-			if ( Viewer_mode & VM_EXTERNAL ) {
-				Viewer_mode &= ~VM_CHASE;
-			}
-			*/
 		}
 		else
 		{
@@ -2153,17 +2031,13 @@ int button_function_demo_valid(int n)
 	return ret;
 }
 
-// execute function corresponding to action n (BUTTON_ #define from KeyControl.h)
-// Goober5000: function returns 1 when action was taken
+/**
+ * Execute function corresponding to action n (BUTTON_ #define from KeyControl.h)
+ * @return 1 when action was taken
+ */
 int button_function(int n)
 {
 	Assert(n >= 0);
-
-	//mprintf(("got button %d at %s:%d\n", n, __FILE__, __LINE__));
-
-	if ( !button_allowed(n) ) {
-		return 0;
-	}
 
 	// check if the button has been set to be ignored by a SEXP
 	if (Ignored_keys[n]) {
@@ -2177,7 +2051,6 @@ int button_function(int n)
 	if (Game_mode & GM_DEAD_DIED){
 		return 0;
 	}
-
 
 	// Goober5000 - if the ship doesn't have subspace drive, jump key doesn't work: so test and exit early
 	if (Player_ship->flags2 & SF2_NO_SUBSPACE_DRIVE)
@@ -2274,14 +2147,12 @@ int button_function(int n)
 			hud_gauge_popup_start(HUD_AUTO_SPEED);
 			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
 				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
-//				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto match target speed activated", -1));
 				if ( !(Player->flags & PLAYER_FLAGS_MATCH_TARGET) ) {
 					player_match_target_speed();
 				}
 			}
 			else
 			{
-//				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto match target deactivated", -1));
 				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
 				player_match_target_speed();
 			}			
@@ -2328,13 +2199,11 @@ int button_function(int n)
 				if (hud_sensors_ok(Player_ship)) {
 					hud_target_closest(iff_get_attackee_mask(Player_ship->team), -1, FALSE, TRUE );
 					snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
-//					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto targeting activated", -1));
 				} else {
 					Players[Player_num].flags ^= PLAYER_FLAGS_AUTO_TARGETING;
 				}
 			} else {
 				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
-//				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto targeting deactivated", -1));
 			}
 			break;
 
@@ -2818,45 +2687,41 @@ int button_function(int n)
 
 		default:
 			mprintf(("Unknown key %d at %s:%u\n", n, __FILE__, __LINE__));
-//  			Int3();
 			break;
 	} // end switch
 
 	return 1;
 }
 
-// Call functions for when buttons are pressed
+/**
+ * Calls multiple event handlers for each active button
+ * @param bi currently active buttons
+ */
 void button_info_do(button_info *bi)
 {
-	int i, j;
-
-	for (i=0; i<NUM_BUTTON_FIELDS; i++) {
-		if ( bi->status[i] == 0 ){
-			continue;
-		}
-
-		// at least one bit is set in the status integer
-		for (j=0; j<32; j++) {
-
-			// check if the bit is set. If button_function returns 1 (implying the action was taken), then unset the bit
-			if ( bi->status[i] & (1 << j) ) {
-				// always process buttons which are valid for demo playback
-				if(button_function_demo_valid(32 * i + j)){
-					bi->status[i] &= ~(1 << j);
-				}
-				// other buttons
-				else {
-					if (button_function(32 * i + j)) {
-						bi->status[i] &= ~(1 << j);					
-					}
-				}
+	for (int i = 0; i < CCFG_MAX; i++) {
+		if( button_info_query(bi, i) ) {
+			int keyHasBeenUsed = FALSE;
+			
+			if( !keyHasBeenUsed ) {
+				keyHasBeenUsed = button_function_demo_valid(i);
+			}
+			
+			if( !keyHasBeenUsed ) {
+				keyHasBeenUsed = button_function(i);
+			}
+			
+			if( keyHasBeenUsed ) {
+				button_info_unset(bi, i);
 			}
 		}
 	}
 }
 
 
-// set the bit for the corresponding action n (BUTTON_ #define from KeyControl.h)
+/**
+ * Set the bit for the corresponding action n (BUTTON_ #define from KeyControl.h)
+ */
 void button_info_set(button_info *bi, int n)
 {
 	int field_num, bit_num;
@@ -2867,7 +2732,9 @@ void button_info_set(button_info *bi, int n)
 	bi->status[field_num] |= (1 << bit_num);	
 }
 
-// unset the bit for the corresponding action n (BUTTON_ #define from KeyControl.h)
+/**
+ * Unset the bit for the corresponding action n (BUTTON_ #define from KeyControl.h)
+ */
 void button_info_unset(button_info *bi, int n)
 {
 	int field_num, bit_num;
@@ -2883,7 +2750,9 @@ int button_info_query(button_info *bi, int n)
 	return bi->status[n / 32] & (1 << (n % 32));
 }
 
-// clear out the button_info struct
+/**
+ * Clear out the ::button_info struct
+ */
 void button_info_clear(button_info *bi)
 {
 	int i;
@@ -2893,7 +2762,9 @@ void button_info_clear(button_info *bi)
 	}
 }
 
-// strip out all noncritical keys from the button info struct
+/**
+ * Strip out all noncritical keys from the ::button_info struct
+ */
 void button_strip_noncritical_keys(button_info *bi)
 {
 	int idx;

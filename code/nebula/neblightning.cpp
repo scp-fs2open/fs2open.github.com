@@ -21,9 +21,7 @@
 #include "weapon/emp.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-
-
-extern int Cmdline_nohtl;
+#include "cmdline/cmdline.h"
 
 // ------------------------------------------------------------------------------------------------------
 // NEBULA LIGHTNING DEFINES/VARS
@@ -283,6 +281,25 @@ void nebl_init()
 		stuff_int(&new_storm_type.min_count);
 		stuff_int(&new_storm_type.max_count);
 
+		// Temparary tweaks to help with the flash to bang percent
+		if (optional_string("+flash_to_bang_percent:"))
+		{
+			stuff_float(&new_storm_type.flash_to_bang_percent);
+		}
+		else
+		{
+			/* TEMPHACK - remove before final release */
+			if (Cmdline_percentflashtobang > 0)
+			{
+				new_storm_type.flash_to_bang_percent = Cmdline_percentflashtobang;
+			}
+			else
+			{
+				new_storm_type.flash_to_bang_percent = 50.0f; // don't remove this line
+			}
+			// END OF TEMPHACK
+		}
+
 		Storm_types.push_back(new_storm_type);
 	}
 }
@@ -439,24 +456,27 @@ void nebl_render_all()
 
 					// do some special stuff on the very first strike of the bolt
 					if(b->strikes_left == bi->num_strikes){					
-						// play a sound						
-						float bang;
-						if(Nebl_bang < 40.0f){
-							bang = 1.0f;
-						} else if(Nebl_bang > 400.0f){
-							bang = 0.0f;
-						} else {
-							bang = 1.0f - (Nebl_bang / 400.0f);
-						}
-						if(frand_range(0.0f, 1.0f) < 0.5f){
-							snd_play(&Snds[SND_LIGHTNING_2], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
-						} else {
-							snd_play(&Snds[SND_LIGHTNING_1], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
-						}						
+						// play a sound
+						if (frand_range(0.0f, 100.0f) < Storm->flash_to_bang_percent)
+						{
+							float bang;
+							if(Nebl_bang < 40.0f){
+								bang = 1.0f;
+							} else if(Nebl_bang > 400.0f){
+								bang = 0.0f;
+							} else {
+								bang = 1.0f - (Nebl_bang / 400.0f);
+							}
+							if(frand_range(0.0f, 1.0f) < 0.5f){
+								snd_play(&Snds[SND_LIGHTNING_2], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
+							} else {
+								snd_play(&Snds[SND_LIGHTNING_1], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
+							}						
 
-						// apply em pulse
-						if(bi->emp_intensity > 0.0f){
-							emp_apply(&b->midpoint, 0.0f, vm_vec_dist(&b->start, &b->strike), bi->emp_intensity, bi->emp_time);
+							// apply em pulse
+							if(bi->emp_intensity > 0.0f){
+								emp_apply(&b->midpoint, 0.0f, vm_vec_dist(&b->start, &b->strike), bi->emp_intensity, bi->emp_time);
+							}
 						}
 					}
 				}				

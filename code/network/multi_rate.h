@@ -13,7 +13,7 @@
 #define _FS2_MULTI_DATA_RATE_HEADER_FILE
 
 // keep this defined to compile in rate checking
-#if !defined(NDEBUG) || defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
+#if !defined(NDEBUG)
 	#define MULTI_RATE
 #endif
 
