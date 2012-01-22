@@ -33,7 +33,6 @@
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "debris/debris.h"
-#include "debugconsole/dbugfile.h"
 #include "exceptionhandler/exceptionhandler.h"
 #include "fireball/fireballs.h"
 #include "freespace2/freespace.h"
@@ -986,7 +985,7 @@ void game_level_init(int seed)
 
 	Perspective_locked = false;
 
-	// reset the geometry batcher, this should to be done pretty soon in this mission load process (though it's not required)
+	// reset the geometry map and distortion map batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
 
 	// Initialize the game subsystems
@@ -1377,8 +1376,6 @@ void game_post_level_init()
 {
 	extern void game_environment_map_gen();
 	game_environment_map_gen();
-
-	model_level_post_init();
 
  	HUD_init();
 	hud_setup_escort_list();
@@ -3578,7 +3575,7 @@ DCF_BOOL( subspace, Game_subspace_effect )
 void clip_frame_view();
 
 // Does everything needed to render a frame
-extern std::vector<object*> effect_ships; 
+extern SCP_vector<object*> effect_ships; 
 void game_render_frame( camid cid )
 {
 
@@ -3678,7 +3675,7 @@ void game_render_frame( camid cid )
 	neb2_render_player();
 
 	// render all ships with shader effects on them
-	std::vector<object*>::iterator obji = effect_ships.begin();
+	SCP_vector<object*>::iterator obji = effect_ships.begin();
 	for(;obji != effect_ships.end();++obji)
 		ship_render(*obji);
 	effect_ships.clear();
@@ -7127,8 +7124,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 	atexit(memblockinfo_output_memleak);
 #endif
 
-	DBUGFILE_INIT();
-
 	//=====================================================
 	// Make sure we're running in the right directory.
 	char exe_dir[1024];
@@ -7169,8 +7164,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 
 	SCP_mspdbcs_Cleanup( );
 
-	DBUGFILE_DEINIT();
-
 	::CoUninitialize();
 
 #ifndef _MINGW
@@ -7195,8 +7188,6 @@ int main(int argc, char *argv[])
 	// to find out where on the disk we should be running from for CFILE's sake.
 	strncpy(full_path, *argv, 1024);
 #endif
-
-	DBUGFILE_INIT();
 
 	// create user's directory	
 	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
@@ -7237,8 +7228,6 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Caught exception in main()!\n");
 		result = EXIT_FAILURE;
 	}
-
-	DBUGFILE_DEINIT();
 
 	return result;
 }

@@ -97,7 +97,7 @@ typedef struct vp_fileinfo {
    ~vp_fileinfo() {}
 } vp_fileinfo;
 
-std::vector<vp_fileinfo> VP_FileInfo;
+SCP_vector<vp_fileinfo> VP_FileInfo;
 
 // just like strlwr() but without actually including it here
 void lowercase(char *s)

@@ -56,6 +56,21 @@ float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playbac
 
 unsigned int SND_ENV_DEFAULT = 0;
 
+struct LoopingSoundInfo {
+	int dsHandle;
+	float defaultVolume;	//!< The default volume of this sound (from game_snd)
+	float dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
+
+	LoopingSoundInfo(int dsHandle, float defaultVolume, float dynamicVolume):
+		dsHandle(dsHandle),
+		defaultVolume(defaultVolume),
+		dynamicVolume(dynamicVolume)
+	{
+	}
+};
+
+SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
+
 //For the adjust-audio-volume sexp
 float aav_voice_volume = 1.0f;
 float aav_music_volume = 1.0f;
@@ -296,11 +311,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		new_sound.flags &= ~SND_F_USED;
 
 		Sounds.push_back( new_sound );
-
-		if ( Sounds.capacity() == Sounds.size() ) {
-			const size_t Min_sounds_bump = 10;
-			Sounds.reserve( Sounds.size() + Min_sounds_bump );
-		}
 	}
 
 	snd = &Sounds[n];
@@ -757,28 +767,18 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	return 0;
 }
 
-// ---------------------------------------------------------------------------------------
-// volume 0 to 1.0.  Returns the handle of the sound. -1 if failed.
-// If startloop or stoploop are not -1, then then are used.
-//
-//	NOTE: vol_scale parameter is the multiplicative scaling applied to the default volume
-//       (vol_scale is a default parameter with a default value of 1.0f)
-//
-// input:	gs				=>	game-level sound description
-//				source_pos	=>	global pos of where the sound is
-//				listen_pos	=>	global pos of where listener is
-//				source_vel	=>	velocity of the source playing the sound (used for DirectSound3D only)
-//				looping		=>	flag to indicate the sound should loop (default value 0)
-//				vol_scale	=>	factor to scale the static volume by (applied before attenuation)
-//				priority		=> SND_PRIORITY_MUST_PLAY			(default value)
-//									SND_PRIORITY_SINGLE_INSTANCE
-//									SND_PRIORITY_DOUBLE_INSTANCE
-//									SND_PRIORITY_TRIPLE_INSTANCE
-//
-// returns:		-1		=>		sound could not be played
-//					n		=>		handle for instance of sound
-//
-int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, float vol_scale, int priority, int force )
+/**
+ * Starts looping a game sound
+ *
+ * @param gs game-level sound description
+ * @param pan -1.0 (full left) to 1.0 (full right)
+ * @param start_loop TODO remove this parameter
+ * @param stop_loop TODO remove this parameter
+ * @param vol_scale factor to scale the static volume by (applied before attenuation)
+ * @param scriptingUpdateVolume if true the looping sound value is updated default is TRUE
+ * @return -1 on error, else the handle for this playing sound
+ */
+int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, float vol_scale, int scriptingUpdateVolume)
 {	
 	float volume;
 	int	handle = -1;
@@ -815,20 +815,22 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 	if ( volume > 1.0f )
 		volume = 1.0f;
 
-	if ( (volume > MIN_SOUND_VOLUME) || force) {
-		handle = ds_play( snd->sid, gs->id_sig, ds_priority(priority), volume, pan, 1);
+	if (volume > MIN_SOUND_VOLUME) {
+		handle = ds_play( snd->sid, gs->id_sig, DS_MUST_PLAY, volume, pan, 1);
+
+		if(handle != -1 && scriptingUpdateVolume) {
+			currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, gs->default_volume, vol_scale));
+		}
 	}
 
 	return handle;
 }
 
-// ---------------------------------------------------------------------------------------
-// snd_stop()
-//
-// Stop a sound from playing.
-//
-// parameters:		sig => handle to sound, what is returned from snd_play()
-//
+/**
+ * Stop a sound from playing.
+ *
+ * @param sig handle to sound, what is returned from snd_play()
+ */
 void snd_stop( int sig )
 {
 	int channel;
@@ -840,17 +842,40 @@ void snd_stop( int sig )
 	if ( channel == -1 )
 		return;
 	
+	SCP_list<LoopingSoundInfo>::iterator iter = currentlyLoopingSoundInfos.begin();
+	while (iter != currentlyLoopingSoundInfos.end())
+	{
+		if(iter->dsHandle == sig) {
+			iter = currentlyLoopingSoundInfos.erase(iter);
+		} else {
+			++iter;
+		}
+	}
+
 	ds_stop_channel(channel);
 }
 
-// ---------------------------------------------------------------------------------------
-// snd_set_volume()
-//
-// Set the volume of a currently playing sound
-//
-// parameters:		sig		=> handle to sound, what is returned from snd_play()
-//						volume	=> volume of sound (range: 0.0 -> 1.0)
-//
+/**
+ * Stop all playing sound channels (including looping sounds)
+ *
+ * NOTE: This stops all sounds that are playing from Channels[] sound buffers.
+ * It doesn't stop every secondary sound buffer in existance.
+ */
+void snd_stop_all()
+{
+	if (!ds_initialized)
+		return;
+
+	currentlyLoopingSoundInfos.clear();
+	ds_stop_channel_all();
+}
+
+/**
+ * Set the volume of a currently playing sound
+ *
+ * @param sig		handle to sound, what is returned from snd_play()
+ * @param volume	volume of sound (range: 0.0 -> 1.0)
+ */
 void snd_set_volume( int sig, float volume )
 {
 	int	channel;
@@ -868,8 +893,23 @@ void snd_set_volume( int sig, float volume )
 		return;
 	}
 
-	new_volume = volume * (Master_sound_volume * aav_effect_volume);
-	ds_set_volume( channel, new_volume );
+	bool isLoopingSound = false;
+
+	SCP_list<LoopingSoundInfo>::iterator iter;
+	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
+		if(iter->dsHandle == sig) {
+			iter->dynamicVolume = volume;
+
+			isLoopingSound = true;
+			break;
+		}
+	}
+
+	//looping sound volumes are updated in snd_do_frame
+	if(!isLoopingSound) {
+		new_volume = volume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume( channel, new_volume );
+	}
 }
 
 // ---------------------------------------------------------------------------------------
@@ -983,50 +1023,6 @@ int snd_is_playing( int sig )
 	}
 
 	return 0;
-}
-
-
-// ---------------------------------------------------------------------------------------
-// snd_chg_loop_status()
-//
-// Change whether a currently playing song is looping or not
-//
-// parameters:		sig			=> handle to sound, what is returned from snd_play()
-//						loop			=> whether to start (1) or stop (0) looping
-//
-void snd_chg_loop_status(int sig, int loop)
-{
-	int channel;
-
-	if (!ds_initialized)
-		return;
-
-	if ( sig < 0 )
-		return;
-
-	channel = ds_get_channel(sig);
-	if ( channel == -1 ) {
-		nprintf(( "Sound", "WARNING: Trying to change loop status of a non-playing sound!\n" ));
-		return;
-	}
-
-	ds_chg_loop_status(channel, loop);
-}
-
-// ---------------------------------------------------------------------------------------
-// snd_stop_all()
-//
-// Stop all playing sound channels (including looping sounds)
-//
-// NOTE: This stops all sounds that are playing from Channels[] sound buffers.  It doesn't
-//			stop every secondary sound buffer in existance
-//
-void snd_stop_all()
-{
-	if (!ds_initialized)
-		return;
-
-	ds_stop_channel_all();
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1368,6 +1364,14 @@ void snd_do_frame()
 	adjust_volume_on_frame(&aav_music_volume, &aav_data[AAV_MUSIC]);
 	adjust_volume_on_frame(&aav_voice_volume, &aav_data[AAV_VOICE]);
 	adjust_volume_on_frame(&aav_effect_volume, &aav_data[AAV_EFFECTS]);
+
+	SCP_list<LoopingSoundInfo>::iterator iter;
+	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
+
+		float new_volume = iter->defaultVolume * iter->dynamicVolume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume(ds_get_channel(iter->dsHandle), new_volume);
+	}
+
 	ds_do_frame();
 }
 

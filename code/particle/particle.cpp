@@ -36,8 +36,6 @@ int Anim_num_frames_smoke2 = -1;
 
 static int Particles_enabled = 1;
 
-static const int Min_particle_bump = 200;
-
 uint lastSignature = 0; // 0 is an invalid signature!
 
 
@@ -46,13 +44,11 @@ void particle_init()
 {
 	int fps;
 
-//	Particles_enabled = os_config_read_uint( NULL, "UseParticles", 0 );
 	Particles_enabled = (Detail.num_particles > 0);
 
 	Num_particles = 0;
 
 	Particles.clear();
-	Particles.reserve(Min_particle_bump);
 
 	// FIRE!!!
 	if ( Anim_bitmap_id_fire == -1 )	{
@@ -100,8 +96,6 @@ DCF(particles,"Turns particles on/off")
 	}	
 	if ( Dc_help )	dc_printf( "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n" );	
 	if ( Dc_status )	dc_printf( "particles are %s\n", (Particles_enabled?"ON":"OFF") );	
-
-//	os_config_write_uint( NULL, "UseParticles", Particles_enabled );
 }
 
 
@@ -193,11 +187,6 @@ particle *particle_create( particle_info *pinfo )
 	
 	new_particle->signature = ++lastSignature;
 	Particles.push_back( new_particle );
-
-	// reallocate to additional space if we need it
-	if (Particles.capacity() <= Particles.size()) {
-		Particles.reserve( Particles.size() + Min_particle_bump );
-	}
 
 #ifndef NDEBUG
 	if (Particles.size() > (uint)Num_particles_hwm) {
@@ -453,7 +442,7 @@ void particle_render_all()
 	}
 
 	if (render_batch) {
-		batch_render_bitmaps();
+		batch_render_all();
 	}
 }
 

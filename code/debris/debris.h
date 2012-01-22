@@ -52,7 +52,6 @@ typedef struct debris {
 #define	DEBRIS_USED				(1<<0)
 #define	DEBRIS_EXPIRE			(1<<1)	// debris can expire (ie hull chunks from small ships)
 
-
 #define	MAX_DEBRIS_PIECES	64
 
 extern	debris Debris[MAX_DEBRIS_PIECES];
@@ -64,7 +63,6 @@ struct collision_info_struct;
 void debris_init();
 void debris_render( object * obj );
 void debris_delete( object * obj );
-void debris_process_pre( object * obj, float frame_time);
 void debris_process_post( object * obj, float frame_time);
 object *debris_create( object * source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force );
 int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL );

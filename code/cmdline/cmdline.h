@@ -127,6 +127,7 @@ extern int Cmdline_no_3d_sound;
 extern int Cmdline_no_glsl_model_rendering;
 extern int Cmdline_no_di_mouse;
 extern int Cmdline_drawelements;
+extern char* Cmdline_keyboard_layout;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
@@ -145,9 +146,4 @@ extern int Cmdline_verify_vps;
 extern int Cmdline_no_grab;
 #endif
 
-// Temp, only for evaluating new defaults
-extern float Cmdline_percentflashtobang;
-extern int Cmdline_enforce_concurrent_sound_count;
-
-//extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif

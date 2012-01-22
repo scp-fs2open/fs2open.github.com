@@ -1000,8 +1000,8 @@ typedef struct ship_type_info {
 	SCP_vector<SCP_string> ai_cripple_ignores_temp;
 
 	ship_type_info( )
-		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), weapon_bools( 0 ),
-		  debris_max_speed( 0.f ), ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), debris_max_speed( 0.f ),
+		  weapon_bools( 0 ), ff_multiplier( 0.f ), emp_multiplier( 0.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
 		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_bools( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  vaporize_chance( 0.f )
@@ -1164,6 +1164,7 @@ typedef struct ship_info {
 	int			warpin_snd_end;
 	float		warpin_speed;
 	int			warpin_time;	//in ms
+	float		warpin_decel_exp;
 	int			warpin_type;
 
 	char		warpout_anim[MAX_FILENAME_LEN];
@@ -1172,6 +1173,7 @@ typedef struct ship_info {
 	int			warpout_snd_end;
 	float		warpout_speed;
 	int			warpout_time;	//in ms
+	float		warpout_accel_exp;
 	int			warpout_type;
 
 	float		warpout_player_speed;
@@ -1266,6 +1268,15 @@ typedef struct ship_info {
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
 	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
+	
+	int engine_snd_cockpit;					// handle to engine sound heard in cockpit
+	int full_throttle_snd;					// handle to sound played when throttle is set to full power
+	int zero_throttle_snd;					// handle to sound played when throttle is set to zero power
+	int throttle_up_snd;					// handle to sound played when throttle power is increaded by 1/3
+	int throttle_down_snd;					// handle to sound played when throttle power is decreased by 1/3
+	int afterburner_engage_snd;				// handle to sound played when afterburner is engaged
+	int afterburner_loop_snd;				// handle to sound played when afterburner is active
+	int afterburner_fail_snd;				// handle to sound player when afterburner activation failed
 
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
 	float		closeup_zoom;					// zoom when using ship in closeup view (eg briefing and hud target monitor)

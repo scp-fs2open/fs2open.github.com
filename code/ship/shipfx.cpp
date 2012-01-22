@@ -4190,9 +4190,15 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, int n_direction)
 {
 	total_duration = 0;
 	if(direction == WD_WARP_IN)
+	{
 		total_duration = sip->warpin_time;
+		decel_exp = sip->warpin_decel_exp;
+	}
 	else if(direction == WD_WARP_OUT)
+	{
 		total_duration = sip->warpout_time;
+		accel_exp = sip->warpout_accel_exp;
+	}
 	if(total_duration <= 0)
 		total_duration = 1000;
 	
@@ -4213,7 +4219,6 @@ int WE_Hyperspace::warpStart()
 	{
 		shipp->flags |= SF_ARRIVING_STAGE_2;
 		objp->phys_info.flags |= PF_WARP_IN;
-		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
 		objp->flags &= ~OF_PHYSICS;
 	}
 	else if(direction == WD_WARP_OUT)
@@ -4238,18 +4243,41 @@ int WE_Hyperspace::warpFrame(float frametime)
 	if(timestamp_elapsed(total_time_end))
 	{
 		objp->pos = pos_final;
-		objp->phys_info.vel.xyz.z = 0.0f;
+		if(direction == WD_WARP_OUT)
+			objp->phys_info.vel.xyz.z = 0.0f;
+		else
+		{
+			vec3d vel;
+			vel = objp->orient.vec.fvec;
+			vm_vec_scale( &vel, objp->phys_info.vel.xyz.z );
+			objp->phys_info.vel = vel;
+			objp->phys_info.desired_vel = vel;
+		}
 		objp->flags |= OF_PHYSICS;
 		this->warpEnd();
 	}
 	else
 	{
+		// How far along in the effect we are, in range of 0.0..1.0.
 		float progress = ((float)timestamp() - (float)total_time_start)/(float)total_duration;
 		float scale = 0.0f;
 		if(direction == WD_WARP_IN)
-			scale = -scale_factor*cos(progress*PI_2);
+		{
+			scale = scale_factor*(1.0f-pow((1.0f-progress), decel_exp))-scale_factor;
+
+			// Makes sure that the velocity won't drop below the ship's initial
+			// velocity during the warpin. Ideally it should be done more
+			// smoothly than this.
+			scale = MIN(scale, (objp->phys_info.vel.xyz.z * (total_duration / 1000) * -(1.0f - progress)));
+		}
 		else
-			scale = scale_factor*sin(progress*PI_2);
+		{
+			scale = scale_factor*pow(progress, accel_exp);
+
+			// Makes sure the warpout velocity won't drop below the ship's last
+			// known real velocity.
+			scale += objp->phys_info.vel.xyz.z * (total_duration / 1000) * progress;
+		}
 		vm_vec_scale_add(&objp->pos, &pos_final, &objp->orient.vec.fvec, scale);
 	}
 	return 1;

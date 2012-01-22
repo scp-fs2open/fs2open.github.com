@@ -625,7 +625,7 @@ void hud_do_lock_indicator(float frametime)
 
 	if (Player_ai->current_target_is_locked) {
 		if ( Missile_track_loop > -1 )	{
-			snd_chg_loop_status(Missile_track_loop, 0);
+			snd_stop(Missile_track_loop);
 			Missile_track_loop = -1;
 			Missile_lock_loop = snd_play(&Snds[SND_MISSILE_LOCK]);
 		}
@@ -863,7 +863,7 @@ void hud_calculate_lock_position(float frametime)
 	} else {
 
 		if ( Missile_track_loop > -1 )	{
-			snd_chg_loop_status(Missile_track_loop, 0);
+			snd_stop(Missile_track_loop);
 			Missile_track_loop = -1;
 		}
 

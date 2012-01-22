@@ -54,7 +54,6 @@
 #include "VoiceActingManager.h"
 #include "FictionViewerDlg.h"
 #include "cmdline/cmdline.h"
-#include "debugconsole/dbugfile.h"
 #include "object/objectdock.h"
 #include "species_defs/species_defs.h"
 #include "sound/audiostr.h"
@@ -2453,12 +2452,6 @@ int CFREDView::global_error_check()
 						count++;
 					}
 				}
-
-				if (!count && Ships[i].weapons.num_secondary_banks > 0){
-					if (error("Player \"%s\" has no secondary weapons.  Should have at least 1", Ships[i].ship_name)){
-						return 1;
-					}
-				}
 			}
 
 			if (Ships[i].objnum != OBJ_INDEX(ptr)){
@@ -4593,7 +4586,6 @@ void CFREDView::OnDestroy()
 {
 	audiostream_close();
 	snd_close();
-	DBUGFILE_OUTPUT_0("About to gr_close");
  	gr_close();
    	os_set_window(NULL);	 
 

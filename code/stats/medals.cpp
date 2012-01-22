@@ -28,27 +28,14 @@
 
 int Num_medals = 0;
 
-//#define MAX_MEDAL_TYPES 63 // the # of medals which exist so far
-
-/*
-#define CALLSIGN_X 198
-#define CALLSIGN_Y 80
-#define CALLSIGN_W (439-CALLSIGN_X)
-#define CALLSIGN_H (116-CALLSIGN_Y)
-*/
-
 // define for the medal information
 SCP_vector<medal_stuff> Medals;
-//badge_stuff Badge_info[MAX_BADGES];
-
-// holds indices into Medals array of the badges for # kills
-int Badge_index[MAX_BADGES];
 
 // the rank section of the screen
 #define RANK_MEDAL_REGION		12			// region number of the rank medal
 
 // coords for indiv medal bitmaps
-int Medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
+static int Medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 	{				// GR_640
 		{ 89, 47 },					// eps. peg. lib
 		{ 486, 47 },				// imp. order o' vasuda
@@ -144,7 +131,6 @@ player *Medals_player;
 
 static bitmap *Medals_mask;
 int Medals_mask_w, Medals_mask_h;
-//static int Medal_palette;              // Medal palette bitmap
 static int Medals_bitmap_mask;         // the mask for the medal case
 static int Medals_bitmap;              // the medal case itself
 static SCP_vector<int> Medal_bitmaps;  // bitmaps for the individual medals
@@ -153,25 +139,6 @@ static int Rank_bm;							// bitmap for the rank medal
 static MENU_REGION Medal_regions[NUM_MEDAL_REGIONS]; // a semi-hack for now because we only have 4 medals, but we also include the close button
 
 static UI_WINDOW Medals_window;
-
-//#define MAX_MEDALS_BUTTONS						1
-//#define MEDAL_BUTTON_EXIT						0
-//static UI_BUTTON Medal_buttons[MAX_MEDALS_BUTTONS];
-
-/*static char *Medal_button_names[MAX_MEDALS_BUTTONS] = {
-//XSTR:OFF
-	"MX_17"
-//XSTR:ON
-};
-*/
-/*
-static int Medal_button_coords[MAX_MEDALS_BUTTONS][2] = {
-	{561,411}
-};
-static int Medal_button_masks[MAX_MEDALS_BUTTONS] = {
-	17
-};
-*/
 
 
 #define MEDAL_BITMAP_INIT (1<<0)
@@ -252,13 +219,9 @@ void parse_medal_tbl()
 				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
 			if(optional_string("$Wavefile 2:"))
 				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
-			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
 
 			if(optional_string("$Wavefile Base:"))
 				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
-
-			//required_string("$Wavefile 2:");
-			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
 
 			required_string("$Promotion Text:");
 			stuff_string(buf, F_MULTITEXT, sizeof(buf));
@@ -393,7 +356,6 @@ void medal_main_init(player *pl, int mode)
 
 #ifndef NDEBUG
 	if(Cmdline_gimme_all_medals){
-		//int idx;
 		for(idx=0; idx < MAX_MEDALS; idx++){
 			Medals_player->stats.medals[idx] = 1;		
 		}
@@ -425,10 +387,7 @@ void medal_main_init(player *pl, int mode)
 		Medals_window.add_XSTR(&Medals_text[gr_screen.res][idx]);
 	}
 
-
 	Init_flags = 0;	
-
-	//init_medal_palette();
 	
 	Medals_bitmap = bm_load(Medals_background_filename[gr_screen.res]);
 	if (Medals_bitmap < 0) {
@@ -630,7 +589,6 @@ int medal_main_do()
 
 void medal_main_close()
 {
-	int idx;
 	if (Init_flags & MEDAL_BITMAP_INIT)
 		bm_release(Medals_bitmap);
 
@@ -639,35 +597,22 @@ void medal_main_close()
 		bm_release(Medals_bitmap_mask);
 	}
 
-   for (idx=Medal_bitmaps.size()-1; idx >= 0; idx--) {
-		if (Medal_bitmaps[idx] > -1){
-			bm_release(Medal_bitmaps[idx]);
+	for (SCP_vector<int>::iterator idx = Medal_bitmaps.begin(); idx != Medal_bitmaps.end(); ++idx) {
+		if (*idx > -1){
+			bm_release(*idx);
 		}
-		Medal_bitmaps.pop_back();
 	}
-
-   Player_score = NULL;
+	
+	Medal_bitmaps.clear();
+	Player_score = NULL;
 	Medals_window.destroy();
 	snazzy_menu_close();
 	palette_restore_palette();
 }
 
-/*
-void init_medal_palette()
-{
-	Medal_palette = bm_load("MedalsPalette.pcx");
-	if(Medal_palette > -1){
-#ifndef HARDWARE_ONLY
-		palette_use_bm_palette(Medal_palette);
-#endif
-	}
-}
-*/
-
 // function to load in the medals for this player.  It loads medals that the player has (known
 // by whether or not a non-zero number is present in the player's medal array), then loads the
 // rank bitmap
-
 void init_medal_bitmaps()
 {
 	int idx;

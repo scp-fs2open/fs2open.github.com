@@ -697,7 +697,9 @@ void init_ship_entry(ship_info *sip)
 	sip->warpin_radius = 0.0f;
 	sip->warpout_radius = 0.0f;
 	sip->warpin_time = 0;
+	sip->warpin_decel_exp = 1;
 	sip->warpout_time = 0;
+	sip->warpout_accel_exp = 1;
 	sip->warpin_type = WT_DEFAULT;
 	sip->warpout_type = WT_DEFAULT;
 	sip->warpout_player_speed = 0.0f;
@@ -965,6 +967,15 @@ void init_ship_entry(ship_info *sip)
 	sip->pathMetadata.clear();
 
 	sip->selection_effect = Default_ship_select_effect;
+	
+	sip->engine_snd_cockpit = SND_ENGINE;
+	sip->full_throttle_snd = SND_FULL_THROTTLE;
+	sip->zero_throttle_snd = SND_ZERO_THROTTLE;
+	sip->throttle_up_snd = SND_THROTTLE_UP;
+	sip->throttle_down_snd = SND_THROTTLE_DOWN;
+	sip->afterburner_engage_snd = SND_ABURN_ENGAGE;
+	sip->afterburner_loop_snd = SND_ABURN_LOOP;
+	sip->afterburner_fail_snd = SND_ABURN_FAIL;
 }
 
 /**
@@ -1895,6 +1906,15 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 	}
 
+	if(optional_string("$Warpin decel exp:"))
+	{
+		stuff_float(&sip->warpin_decel_exp);
+		if (sip->warpin_decel_exp < 0.0f) {
+			Warning(LOCATION, "Warp-in deceleration exponent specified as less than 0 on ship '%s'; value ignored", sip->name);
+			sip->warpin_decel_exp = 1.0f;
+		}
+	}
+
 	if(optional_string("$Warpin radius:"))
 	{
 		stuff_float(&sip->warpin_radius);
@@ -1935,6 +1955,15 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->warpout_time = fl2i(t_time*1000.0f);
 		if(sip->warpout_time <= 0) {
 			Warning(LOCATION, "Warp-out time specified as 0 or less on ship '%s'; value ignored", sip->name);
+		}
+	}
+
+	if(optional_string("$Warpout accel exp:"))
+	{
+		stuff_float(&sip->warpout_accel_exp);
+		if (sip->warpout_accel_exp < 0.0f) {
+			Warning(LOCATION, "Warp-out acceleration exponent specified as less than 0 on ship '%s'; value ignored", sip->name);
+			sip->warpout_accel_exp = 1.0f;
 		}
 	}
 
@@ -2292,16 +2321,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		strcat_s(parse_error_text,"'s default secondary banks");
 		sip->num_secondary_banks = stuff_int_list(sip->secondary_bank_weapons, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
 		strcpy_s(parse_error_text, temp_error);
-
-		// error checking
-		for ( i = 0; i < sip->num_secondary_banks; i++ )
-		{
-			if(sip->secondary_bank_weapons[i] < 0)
-			{
-				Warning(LOCATION, "%s has no secondary weapons, this cannot be!", sip->name);
-			}
-			// Assert(sip->secondary_bank_weapons[i] >= 0);
-		}
 
 		// Get the capacity of each secondary bank
 		required_string("$SBank Capacity:");
@@ -2698,6 +2717,31 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	//Parse optional sound to be used for end of a glide
 	parse_sound("$GlideEndSnd:", &sip->glide_end_snd, sip->name);
+	
+	//Parse optional sound to be used for looping engine sound heard in the cockpit
+	parse_sound("$CockpitEngineSnd:", &sip->engine_snd_cockpit, sip->name);
+
+	//Parse optional sound to be used for the sound heard when setting throttle to full power
+	parse_sound("$FullThrottleSnd:", &sip->full_throttle_snd, sip->name);
+
+	//Parse optional sound to be used for the sound heard when setting throttle to zero power
+	parse_sound("$ZeroThrottleSnd:", &sip->full_throttle_snd, sip->name);
+
+	//Parse optional sound to be used for the sound heard when increasing throttle power by 1/3
+	parse_sound("$ThrottleUpSnd:", &sip->throttle_up_snd, sip->name);
+
+	//Parse optional sound to be used for the sound heard when decreasing throttle power by 1/3
+	parse_sound("$ThrottleDownSnd:", &sip->throttle_down_snd, sip->name);
+
+	//Parse optional sound to be used for the looping sound heard when the afterburner is active
+	parse_sound("$AfterburnerSnd:", &sip->afterburner_loop_snd, sip->name);
+
+	//Parse optional sound to be used for the sound heard when the afterburner is engaged
+	parse_sound("$AfterburnerEngageSnd:", &sip->afterburner_engage_snd, sip->name);
+
+	//Parse optional sound to be used for the sound heard when the activation of the afterburner failed
+	parse_sound("$AfterburnerFailedSnd:", &sip->afterburner_fail_snd, sip->name);
+
 
 	if(optional_string("$Closeup_pos:"))
 	{
@@ -3526,6 +3570,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					queued_animation *current_trigger;
 
 					sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
+					
+					// Echelon9 - horrible, direct memory management (works for now)
+					Verify(sp->triggers != NULL);
+					memset(&sp->triggers[sp->n_triggers], 0, sizeof(queued_animation));
+					
 					current_trigger = &sp->triggers[sp->n_triggers];
 					sp->n_triggers++;
 					//add a new trigger
@@ -4454,9 +4503,6 @@ void ship_add_exited_ship( ship *sp, int reason )
 		entry.damage_ship[i] = sp->damage_ship[i] ;
 	}
 	
-	if ( (Ships_exited.capacity() - Ships_exited.size() ) < 5u ) {
-		Ships_exited.reserve((int)(Ships_exited.capacity() + 100)); 
-	}
 	Ships_exited.push_back(entry);
 }
 
@@ -6694,10 +6740,10 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
 		jump_node *jnp = jumpnode_get_which_in(&Objects[shipp->objnum]);
-		if(jnp)
-			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->get_name_ptr(), shipp->wingnum);
-		else
+		if(jnp==NULL)
 			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, NULL, shipp->wingnum);
+		else
+			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->get_name_ptr(), shipp->wingnum);
 	}
 
 #ifndef NDEBUG
@@ -15834,6 +15880,13 @@ float ship_get_warpout_speed(object *objp)
 	{
 		return sip->warpout_speed;
 	}
+	else if(sip->warpout_type == WT_HYPERSPACE)
+	{
+		if (objp->phys_info.speed > sip->warpout_speed)
+			return objp->phys_info.speed;
+		else
+			return sip->warpout_speed;
+	}
 
 	return shipfx_calculate_warp_dist(objp) / shipfx_calculate_warp_time(objp, WD_WARP_OUT);
 }
@@ -16357,8 +16410,6 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx)
 	{
 		//How many calculations do we have to do?
 		num = adtp->Calculations.size();
-		//This would be a problem
-		Assert(num == adtp->Arguments.size());
 
 		//Used for instant cutoffs, to instantly end the loop
 		bool end_now = false;

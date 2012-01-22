@@ -285,9 +285,6 @@
     <ClCompile Include="..\..\code\DebugConsole\console.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\dbugfile.cpp">
-      <Filter>DebugConsole</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\debugconsole\timerbar.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
@@ -415,9 +412,6 @@
       <Filter>Hud</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\hud\hudparse.cpp">
-      <Filter>Hud</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\hud\hudresource.cpp">
       <Filter>Hud</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\hud\hudreticle.cpp">
@@ -1100,9 +1094,6 @@
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\dbugfile.h">
-      <Filter>DebugConsole</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\code\debugconsole\timerbar.h">
       <Filter>DebugConsole</Filter>
     </ClInclude>
@@ -1260,9 +1251,6 @@
       <Filter>Hud</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\hud\hudparse.h">
-      <Filter>Hud</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\hud\hudresource.h">
       <Filter>Hud</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\hud\hudreticle.h">

@@ -1277,14 +1277,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\debugconsole\dbugfile.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\debugconsole\dbugfile.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\debugconsole\timerbar.cpp"
 				>
 			</File>
@@ -1730,14 +1722,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\hud\hudparse.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\hud\hudresource.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\hud\hudresource.h"
 				>
 			</File>
 			<File

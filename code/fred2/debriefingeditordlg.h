@@ -8,6 +8,7 @@
 */
 
 
+#include "mission/missionbriefcommon.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // debriefing_editor_dlg dialog
@@ -29,6 +30,9 @@ public:
 	CString	m_voice;
 	CString	m_stage_title;
 	CString	m_rec_text;
+	int		m_debriefPass_music;
+	int		m_debriefAvg_music;
+	int		m_debriefFail_music;
 	int		m_current_debriefing;
 	//}}AFX_DATA
 

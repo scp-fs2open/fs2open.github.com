@@ -80,7 +80,9 @@ static int Bm_ignore_load_count = 0;
 //       2 = Debug low memory ( only use first frame of each ani )
 void bm_set_low_mem( int mode )
 {
-	Assert( (mode >= 0)  && (mode<=2 ));
+	Assert( (mode >= 0) && (mode<=2) );
+	
+	CLAMP(mode, 0, 2);
 	Bm_low_mem = mode;
 }
 
@@ -102,8 +104,9 @@ int bm_get_next_handle()
 	return bm_next_handle;
 }
 
-// Frees a bitmaps data if it should, and
-// Returns true if bitmap n can free it's data.
+/**
+ * Frees a bitmaps data if it can
+ */
 static void bm_free_data(int n, bool release = false)
 {
 	bitmap_entry *be;
@@ -118,12 +121,12 @@ static void bm_free_data(int n, bool release = false)
 
 	// If there isn't a bitmap in this structure, don't
 	// do anything but clear out the bitmap info
-	if ( be->type==BM_TYPE_NONE) 
+	if (be->type==BM_TYPE_NONE) 
 		goto SkipFree;
 
 	// Don't free up memory for user defined bitmaps, since
 	// BmpMan isn't the one in charge of allocating/deallocing them.
-	if ( ( be->type==BM_TYPE_USER ) ) {
+	if (be->type==BM_TYPE_USER) {
 #ifdef BMPMAN_NDEBUG
 		if ( be->data_size != 0 )
 			bm_texture_ram -= be->data_size;
@@ -133,7 +136,7 @@ static void bm_free_data(int n, bool release = false)
 
 	// If this bitmap doesn't have any data to free, skip
 	// the freeing it part of this.
-	if ( (bmp->data == 0) ) {
+	if (bmp->data == 0) {
 #ifdef BMPMAN_NDEBUG
 		if ( be->data_size != 0 )
 			bm_texture_ram -= be->data_size;
@@ -142,8 +145,6 @@ static void bm_free_data(int n, bool release = false)
 	}
 
 	// Free up the data now!
-
-	//	mprintf(( "Bitmap %d freed %d bytes\n", n, bm_bitmaps[n].data_size ));
 #ifdef BMPMAN_NDEBUG
 	bm_texture_ram -= be->data_size;
 #endif
@@ -166,10 +167,13 @@ SkipFree:
 	be->signature = Bm_next_signature++;
 }
 
-// a special version of bm_free_data() that can be safely used in gr_*_texture
-// to save system memory once textures have been transfered to API memory
-// it doesn't restore the slot to a pristine state, it only releases the data
-// NOTE: THIS SHOULD ONLY BE USED FROM bm_unload_fast()!!!
+/**
+ * A special version of bm_free_data() that can be safely used in gr_*_texture
+ * to save system memory once textures have been transfered to API memory
+ * it doesn't restore the slot to a pristine state, it only releases the data
+ *
+ * NOTE: THIS SHOULD ONLY BE USED FROM bm_unload_fast()!!!
+ */
 static void bm_free_data_fast(int n)
 {
 	bitmap_entry *be;
@@ -182,12 +186,12 @@ static void bm_free_data_fast(int n)
 
 	// If there isn't a bitmap in this structure, don't
 	// do anything but clear out the bitmap info
-	if ( be->type == BM_TYPE_NONE) 
+	if (be->type == BM_TYPE_NONE) 
 		return;
 
 	// Don't free up memory for user defined bitmaps, since
 	// BmpMan isn't the one in charge of allocating/deallocing them.
-	if ( ( be->type == BM_TYPE_USER ) ) {
+	if (be->type == BM_TYPE_USER) {
 #ifdef BMPMAN_NDEBUG
 		if ( be->data_size != 0 )
 			bm_texture_ram -= be->data_size;
@@ -197,7 +201,7 @@ static void bm_free_data_fast(int n)
 
 	// If this bitmap doesn't have any data to free, skip
 	// the freeing it part of this.
-	if ( (bmp->data == 0) ) {
+	if (bmp->data == 0) {
 #ifdef BMPMAN_NDEBUG
 		if ( be->data_size != 0 ) {
 			bm_texture_ram -= be->data_size;
@@ -208,8 +212,6 @@ static void bm_free_data_fast(int n)
 	}
 
 	// Free up the data now!
-
-	//	mprintf(( "Bitmap %d freed %d bytes\n", n, bm_bitmaps[n].data_size ));
 #ifdef BMPMAN_NDEBUG
 	bm_texture_ram -= be->data_size;
 	be->data_size = 0;
@@ -238,11 +240,12 @@ void *bm_malloc( int n, int size )
 	bm_texture_ram += size;
 #endif
 
-//	mprintf(( "Bitmap %d allocated %d bytes\n", n, size ));
 	return vm_malloc(size);
 }
 
-// kinda like bm_malloc but only keeps track of how much memory is getting used
+/**
+ * Like bm_malloc but only keeps track of how much memory is getting used
+ */
 void bm_update_memory_used( int n, int size )
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
@@ -303,9 +306,11 @@ void bm_init()
 	}
 }
 
-// Returns number of bytes of bitmaps locked this frame
-// ntotal = number of bytes of bitmaps locked this frame
-// nnew = number of bytes of bitmaps locked this frame that weren't locked last frame
+/**
+ * Returns number of bytes of bitmaps locked this frame
+ * @param ntotal	number of bytes of bitmaps locked this frame
+ * @param nnew		number of bytes of bitmaps locked this frame that weren't locked last frame
+ */
 void bm_get_frame_usage(int *ntotal, int *nnew)
 {
 #ifdef BMPMAN_NDEBUG
@@ -327,12 +332,17 @@ void bm_get_frame_usage(int *ntotal, int *nnew)
 #endif
 }
 
-// Creates a bitmap that exists in RAM somewhere, instead
-// of coming from a disk file.  You pass in a pointer to a
-// block of 32 (or 8)-bit-per-pixel data.  Right now, the only
-// bpp you can pass in is 32 or 8.  On success, it returns the
-// bitmap number.  You cannot free that RAM until bm_release
-// is called on that bitmap.
+/**
+ * Creates a bitmap that exists in RAM somewhere, instead
+ * of coming from a disk file.  
+ *
+ * You pass in a pointer to a block of 32 (or 8)-bit-per-pixel data.  
+ * Right now, the only bpp you can pass in is 32 or 8.  
+ *
+ * On success, it returns the bitmap number.  
+ *
+ * You cannot free that RAM until bm_release is called on that bitmap.
+ */
 int bm_create( int bpp, int w, int h, void *data, int flags )
 {
 	if (bpp == 8) {
@@ -398,10 +408,12 @@ int bm_create( int bpp, int w, int h, void *data, int flags )
 	return bm_bitmaps[n].handle;
 }
 
-// slow sub helper function. Given a raw filename and an extension set, try and find the bitmap
-// that isn't already loaded and may exist somewhere on the disk
-// returns  -1 if it could not be found
-//          index into ext_list[] if it was found as a file, fills img_cfg if available
+/**
+ * Given a raw filename and an extension set, try and find the bitmap
+ * that isn't already loaded and may exist somewhere on the disk
+ *
+ * @return  -1 if it could not be found index into ext_list[] if it was found as a file, fills img_cfg if available
+ */
 int bm_load_sub_slow(char *real_filename, const int num_ext, const char **ext_list, CFILE **img_cfp = NULL, int dir_type = CF_TYPE_ANY)
 {	
 	char full_path[MAX_PATH];
@@ -427,10 +439,10 @@ int bm_load_sub_slow(char *real_filename, const int num_ext, const char **ext_li
 	return -1;
 }
 
-// fast sub helper function. Given a raw filename, try and find a bitmap
-// that's already loaded
-// returns  0 if it could not be found
-//          1 if it already exists, fills in handle
+/**
+ * Given a raw filename, try and find a bitmap that's already loaded
+ * @return  0 if it could not be found, 1 if it already exists, fills in handle
+ */
 int bm_load_sub_fast(char *real_filename, int *handle, int dir_type = CF_TYPE_ANY, bool animated_type = false)
 {
 	if (Bm_ignore_duplicates)
@@ -464,11 +476,13 @@ int bm_load_sub_fast(char *real_filename, int *handle, int dir_type = CF_TYPE_AN
 	return 0;
 }
 
-// This loads a bitmap so we can draw with it later.
-// It returns a negative number if it couldn't load
-// the bitmap.   On success, it returns the bitmap
-// number.  Function doesn't actually load the data, only
-// width, height, and possibly flags.
+/**
+ * Loads a bitmap so we can draw with it later.
+ * Function doesn't actually load the data, only width, height, and possibly flags.
+ *
+ * @return A negative number if it couldn't load the bitmap.
+ * @return On success, it returns the bitmap number.
+ */
 int bm_load( char *real_filename )
 {
 	int i, free_slot = -1;
@@ -494,7 +508,6 @@ int bm_load( char *real_filename )
 	char *p = strrchr( filename, '.' );
 	if ( p ) {
 		mprintf(( "Someone passed an extension to bm_load for file '%s'\n", real_filename ));
-		//Int3();
 		*p = 0;
 	}
 
@@ -591,9 +604,12 @@ Done:
 	return handle;
 }
 
-// special load function. basically allows you to load a bitmap which already exists (by filename). 
-// this is useful because in some cases we need to have a bitmap which is locked in screen format
-// _and_ texture format, such as pilot pics and squad logos
+/**
+ * Special load function. Basically allows you to load a bitmap which already exists (by filename). 
+ *
+ * This is useful because in some cases we need to have a bitmap which is locked in screen format
+ * _and_ texture format, such as pilot pics and squad logos
+ */
 int bm_load_duplicate(char *filename)
 {
 	int ret;
@@ -677,7 +693,6 @@ static int find_block_of(int n)
 			return nstart;
 	}
 
-	// Error( LOCATION, "Couldn't find block of %d frames\n", n );
 	return -1;
 }
 
@@ -757,15 +772,15 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	return 0;
 }
 
-// ------------------------------------------------------------------
-// bm_load_animation()
-//
-//	input:		filename		=>		filename of animation
-//					nframes		=>		OUTPUT parameter:	number of frames in the animation
-//					fps			=>		OUTPUT/OPTIONAL parameter: intended fps for the animation
-//
-// returns:		bitmap number of first frame in the animation
-//
+/**
+ * Load animation
+ * 
+ * @param real_filename		filename of animation
+ * @param nframes			OUTPUT parameter:	number of frames in the animation
+ * @param fps				OUTPUT/OPTIONAL parameter: intended fps for the animation
+ *
+ * @returns	Bitmap number of first frame in the animation
+ */
 int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type)
 {
 	int	i, n;
@@ -800,7 +815,6 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 	char *p = strchr( filename, '.' );
 	if ( p ) {
 		mprintf(( "Someone passed an extension to bm_load_animation for file '%s'\n", real_filename ));
-		//Int3();
 		*p = 0;
 	}
 
@@ -1040,7 +1054,10 @@ int bm_is_valid(int handle)
 	return (bm_bitmaps[handle % MAX_BITMAPS].handle == handle);
 }
 
-// Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
+/**
+ * Gets info.  
+ * w,h,flags,nframes or fps can be NULL if you don't care.
+ */
 int bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *fps)
 {
 	bitmap * bmp;
@@ -1103,7 +1120,9 @@ unsigned int bm_get_signature(int handle)
 	return bm_bitmaps[bitmapnum].signature;
 }
 
-//gets the image type
+/**
+ * Gets the image type
+ */
 ubyte bm_get_type(int handle)
 {
 	if ( !bm_inited ) bm_init();
@@ -1114,7 +1133,6 @@ ubyte bm_get_type(int handle)
 	return bm_bitmaps[bitmapnum].type;
 }
 
-extern int palman_is_nondarkening(int r,int g, int b);
 static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flags )
 {
 	int idx;
@@ -1246,11 +1264,7 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 		bm->data = (ptr_u)bm_malloc(first_frame + i, size);
 
-		frame_data = anim_get_next_raw_buffer(the_anim_instance, 0 ,flags & BMP_AABITMAP ? 1 : 0, bm->bpp);
-
-		if ( frame_data == NULL ) {
-			// Error(LOCATION,"Fatal error locking .ani file: %s\n", be->filename);
-		}		
+		frame_data = anim_get_next_raw_buffer(the_anim_instance, 0 ,flags & BMP_AABITMAP ? 1 : 0, bm->bpp);	
 		
 		ubyte *dptr, *sptr;
 
@@ -1259,8 +1273,6 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 		if ( (bm->w!=the_anim->width) || (bm->h!=the_anim->height) )	{
 			// Scale it down
-			// Int3();			// not ready yet - should only be ingame
-	
 			// 8 bit
 			if(bpp == 8){
 				int w,h;
@@ -1318,8 +1330,6 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		if ( (i < nframes-1)  && can_drop_frames )	{
 			frame_data = anim_get_next_raw_buffer(the_anim_instance, 0, flags & BMP_AABITMAP ? 1 : 0, bm->bpp);
 		}
-
-		//mprintf(( "Checksum = %d\n", be->palette_checksum ));
 	}
 
 	free_anim_instance(the_anim_instance);
@@ -1362,9 +1372,8 @@ void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, uby
 			break;
 		
 		 default:
-			Int3();
+			Error( LOCATION, "Unhandled user bitmap conversion from %d to %d bpp", be->info.user.bpp, bmp->bpp );
 			break;
-			// Error( LOCATION, "Unhandled user bitmap conversion from %d to %d bpp", be->info.user.bpp, bmp->bpp );
 	}
 
 	bm_convert_format( bitmapnum, bmp, bpp, flags );
@@ -1429,7 +1438,9 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	bm_convert_format( bitmapnum, bmp, bpp, flags );
 }
 
-//lock a dds file
+/**
+ * Lock a DDS file
+ */
 void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
 {
 	ubyte *data = NULL;
@@ -1493,7 +1504,9 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 #endif
 }
 
-// lock a PNG file
+/**
+ * Lock a PNG file
+ */
 void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
 {
 	ubyte *data = NULL;
@@ -1501,7 +1514,6 @@ void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	int d_size;
 	int png_error = PNG_ERROR_INVALID;
 	char filename[MAX_FILENAME_LEN];
-	//int size = bmp->w * bmp->h * d_size;
 
 	// Unload any existing data
 	bm_free_data( bitmapnum );
@@ -1539,7 +1551,9 @@ void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 #endif
 }
 
-// lock a JPEG file
+/**
+ * Lock a JPEG file
+ */
 void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
 {
 	ubyte *data = NULL;
@@ -1586,10 +1600,11 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 MONITOR( NumBitmapPage )
 MONITOR( SizeBitmapPage )
 
-// This locks down a bitmap and returns a pointer to a bitmap
-// that can be accessed until you call bm_unlock.   Only lock
-// a bitmap when you need it!  This will convert it into the 
-// appropriate format also.
+/**
+ * This locks down a bitmap and returns a pointer to a bitmap that can be accessed until you call bm_unlock.
+ *
+ * Only lock a bitmap when you need it! This will convert it into the appropriate format also.
+ */
 bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 {
 	bitmap			*bmp;
@@ -1600,8 +1615,6 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	int bitmapnum = handle % MAX_BITMAPS;
 
 	Assertion( bm_bitmaps[bitmapnum].handle == handle, "Invalid handle %d passed to bm_lock. This might be due to an animation elsewhere in the code being too short.\n", handle );		// INVALID BITMAP HANDLE
-
-//	flags &= (~BMP_RLE);
 
 	// to fix a couple of OGL bpp passes, force 8bit on AABITMAP - taylor
 	if (flags & BMP_AABITMAP)
@@ -1691,11 +1704,12 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	return bmp;
 }
 
-// Unlocks a bitmap
-//
-// Decrements the ref_count member of the bitmap_entry struct.  A bitmap can only be unloaded
-// when the ref_count is 0.
-//
+/**
+ * Unlocks a bitmap
+ * 
+ * Decrements the ref_count member of the ::bitmap_entry struct.  A bitmap can only be unloaded
+ * when the ref_count is 0.
+ */
 void bm_unlock( int handle )
 {
 	bitmap_entry	*be;
@@ -1720,11 +1734,6 @@ void bm_unlock( int handle )
 
 	be->ref_count--;
 	Assert(be->ref_count >= 0);		// Trying to unlock data more times than lock was called!!!
-}
-
-
-void bm_update()
-{
 }
 
 char *bm_get_filename(int handle)
@@ -1756,16 +1765,19 @@ void bm_get_palette(int handle, ubyte *pal, char *name)
 	}
 }
 
-// --------------------------------------------------------------------------------------
-// bm_release()  - unloads the bitmap's data and entire slot, so bitmap 'n' won't be valid anymore
-//                 NOTE: this releases the slot of EVERY frame in an ANI so don't pass any frame but the first
-//
-// parameters:		n		=>		index into bm_bitmaps ( index returned from bm_load() or bm_create() )
-//
-// returns:			1 on successful release, 0 otherwise
-
+/**
+ * Unloads the bitmap's data and entire slot, so bitmap 'handle' won't be valid anymore
+ * NOTE: this releases the slot of EVERY frame in an ANI so don't pass any frame but the first
+ * 
+ * @param handle				index into ::bm_bitmaps ( index returned from bm_load() or bm_create() )
+ * @param clear_render_targets	Whether to release a render target
+ *
+ * @return	1 on successful release, 0 otherwise
+ */
 int bm_release(int handle, int clear_render_targets)
 {
+	Assert(handle >= 0);
+		   
 	bitmap_entry *be;
 
 	int n = handle % MAX_BITMAPS;
@@ -1859,14 +1871,14 @@ int bm_release(int handle, int clear_render_targets)
 	return 1;
 }
 
-// --------------------------------------------------------------------------------------
-// bm_unload()  - unloads the data, but not the bitmap info.
-//
-// parameters:		n		=>		index into bm_bitmaps ( index returned from bm_load() or bm_create() )
-//
-// returns:			0		=>		unload failed
-//						1		=>		unload successful
-//
+/**
+ * Unloads the data, but not the bitmap info.
+ *
+ * @param handle				index into ::bm_bitmaps ( index returned from bm_load() or bm_create() )
+ * @param clear_render_targets	Whether to release a render target
+ *
+ * @return	1 on successful release, 0 otherwise
+ */
 int bm_unload( int handle, int clear_render_targets )
 {
 	bitmap_entry *be;
@@ -1928,16 +1940,18 @@ int bm_unload( int handle, int clear_render_targets )
 	return 1;
 }
 
-// just like bm_unload() except that it doesn't care about what load_count is
-// and will just plow through and release the data anyway
-// (NOTE that bm_free_data_fast() is used here and NOT bm_free_data()!)
+/**
+ * Just like bm_unload() except that it doesn't care about what load_count is
+ * and will just plow through and release the data anyway
+ *
+ * NOTE: that bm_free_data_fast() is used here and NOT bm_free_data()!
+ */
 int bm_unload_fast( int handle, int clear_render_targets )
 {
 	bitmap_entry *be;
 	bitmap *bmp;
 
 	int n = handle % MAX_BITMAPS;
-
 
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 	be = &bm_bitmaps[n];
@@ -1970,7 +1984,9 @@ int bm_unload_fast( int handle, int clear_render_targets )
 	return 1;
 }
 
-// unload all used bitmaps
+/**
+ * Unload all used bitmaps
+ */
 void bm_unload_all()
 {
 	int i;
@@ -2036,7 +2052,9 @@ DCF(bmpman,"Shows/changes bitmap caching parameters and usage")
 	}
 }
 
-// Marks a texture as being used for this level
+/**
+ * Marks a texture as being used for this level
+ */
 void bm_page_in_texture( int bitmapnum, int nframes )
 {
 	int i;
@@ -2088,9 +2106,12 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 	}
 }
 
-// marks a texture as being a transparent textyre used for this level
-// Marks a texture as being used for this level
-// If num_frames is passed, assume this is an animation
+/**
+ * Marks a texture as being a transparent texture used for this level
+ *
+ * @param bitmapnum	Index into ::bm_bitmaps ( index returned from bm_load() or bm_create() )
+ * @param nframes	Animation number of frames
+ */
 void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 {
 	int i;
@@ -2135,7 +2156,12 @@ void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 	}
 }
 
-// Marks an aabitmap as being used for this level
+/**
+ * Marks an aabitmap as being used for this level
+ *
+ * @param bitmapnum	Index into ::bm_bitmaps ( index returned from bm_load() or bm_create() )
+ * @param nframes	Animation number of frames
+ */
 void bm_page_in_aabitmap( int bitmapnum, int nframes )
 {
 	int i;
@@ -2155,9 +2181,9 @@ void bm_page_in_aabitmap( int bitmapnum, int nframes )
 	}
 }
 
-
-
-// Tell the bitmap manager to start keeping track of what bitmaps are used where.
+/**
+ * Tell the bitmap manager to start keeping track of what bitmaps are used where.
+ */
 void bm_page_in_start()
 {
 	int i;
@@ -2255,12 +2281,13 @@ void bm_page_in_stop()
 	}	
 
 	mprintf(( "Bmpman: %d/%d bitmap slots in use.\n", total_bitmaps, MAX_BITMAPS ));
-	//mprintf(( "Bmpman: Usage went from %d KB to %d KB.\n", usage_before/1024, usage_after/1024 ));
 
 	Bm_paging = 0;
 }
 
-// for unloading bitmaps while a mission is going
+/**
+ * For unloading bitmaps while a mission is going
+ */
 int bm_page_out( int bitmap_id )
 {
 	int n = bitmap_id % MAX_BITMAPS;
@@ -2270,7 +2297,6 @@ int bm_page_out( int bitmap_id )
 	// in case it's already been released
 	if ( bm_bitmaps[n].type == BM_TYPE_NONE )
 		return 0;
-
 
 	Assert( bm_bitmaps[n].handle == bitmap_id );	// INVALID BITMAP HANDLE
 
@@ -2357,7 +2383,9 @@ void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv
 	*((unsigned int*)pixel) |= (unsigned int)(Gr_current_alpha->mask);
 }
 
-// for selecting pixel formats
+/**
+ * For selecting pixel formats
+ */
 void BM_SELECT_SCREEN_FORMAT()
 {
 	Gr_current_red = &Gr_red;
@@ -2397,7 +2425,9 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 	bm_set_components = bm_set_components_argb_16_tex;
 }
 
-// get the rgba components of a pixel, any of the parameters can be NULL
+/**
+ * Get the rgba components of a pixel, any of the parameters can be NULL
+ */
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 {
 	int bit_32 = 0;
@@ -2406,7 +2436,6 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 		bit_32 = 1;
 	}
 
-
 	if(r != NULL){
 		if(bit_32){
 			*r = ubyte(( (*((unsigned int*)pixel) & Gr_current_red->mask)>>Gr_current_red->shift)*Gr_current_red->scale);
@@ -2414,6 +2443,7 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 			*r = ubyte(( ( ((unsigned short*)pixel)[0] & Gr_current_red->mask)>>Gr_current_red->shift)*Gr_current_red->scale);
 		}
 	}
+	
 	if(g != NULL){
 		if(bit_32){
 			*g = ubyte(( (*((unsigned int*)pixel) & Gr_current_green->mask) >>Gr_current_green->shift)*Gr_current_green->scale);
@@ -2421,6 +2451,7 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 			*g = ubyte(( ( ((unsigned short*)pixel)[0] & Gr_current_green->mask) >>Gr_current_green->shift)*Gr_current_green->scale);
 		}
 	}
+	
 	if(b != NULL){
 		if(bit_32){
 			*b = ubyte(( (*((unsigned int*)pixel) & Gr_current_blue->mask)>>Gr_current_blue->shift)*Gr_current_blue->scale);
@@ -2440,7 +2471,9 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 	}
 }
 
-// get filename
+/**
+ * Get filename
+ */
 void bm_get_filename(int bitmapnum, char *filename)
 {
 	if(!bm_is_valid(bitmapnum))
@@ -2455,7 +2488,9 @@ void bm_get_filename(int bitmapnum, char *filename)
 	strcpy(filename, bm_bitmaps[n].filename);
 }
 
-// needed only for compressed bitmaps
+/**
+ * Needed only for compressed bitmaps
+ */
 int bm_is_compressed(int num)
 {
 	int n = num % MAX_BITMAPS;
@@ -2511,9 +2546,12 @@ int bm_has_alpha_channel(int handle)
 	return (bm_bitmaps[n].bm.true_bpp == 32);
 }
 
-// the only real purpose for this is to return the correct TCACHE_TYPE for compressed graphics,
-// uncompressed graphics are assumed to be of type NORMAL.  The only other real format to check
-// for is TCACHE_TYPE_SECTIONED - taylor
+/**
+ * Purpose for this is to return the correct TCACHE_TYPE for compressed graphics,
+ * uncompressed graphics are assumed to be of type NORMAL.  
+ *
+ * The only other real format to check for is TCACHE_TYPE_SECTIONED - taylor
+ */
 int bm_get_tcache_type(int num)
 {
 	if ( bm_is_compressed(num) )
@@ -2548,7 +2586,9 @@ int bm_get_num_mipmaps(int num)
 	return bm_bitmaps[n].num_mipmaps;
 }
 
-// convert an 8-bit (256 color) image to a 24-bit BGR image sending new bitmap data to "out_data"
+/**
+ * Convert an 8-bit (256 color) image to a 24-bit BGR image sending new bitmap data to "out_data"
+ */
 int bm_convert_color_index_to_BGR(int num, ubyte **out_data)
 {
 	int n = num % MAX_BITMAPS;
@@ -2631,8 +2671,10 @@ int bm_convert_color_index_to_BGR(int num, ubyte **out_data)
 	return 0;
 }
 
-// list of all bitmaps loaded, but not necessarily in memory
-// used to debug bmpman after a mission load
+/**
+ * List of all bitmaps loaded, but not necessarily in memory
+ * used to debug bmpman after a mission load
+ */
 void bm_print_bitmaps()
 {
 #ifdef BMPMAN_NDEBUG
@@ -2651,12 +2693,11 @@ void bm_print_bitmaps()
 #endif
 }
 
-// this will create a render target as close to the desiered resolution as posable of the following base types:
+// this will create a render target as close to the desired resolution as possable of the following base types:
 //  - BMP_FLAG_RENDER_TARGET_STATIC
 //      static render targets are ones that you intend to draw to once or not very often in game
 //  - BMP_FLAG_RENDER_TARGET_DYNAMIC
 //     dynamic render targets are ones that you will be drawing to all the time (like once per frame)
-
 int bm_make_render_target( int width, int height, int flags )
 {
 	int i, n;
@@ -2681,10 +2722,8 @@ int bm_make_render_target( int width, int height, int flags )
 	if ( n == -1 )
 		return -1;
 
-
 	if ( !gr_bm_make_render_target(n, &w, &h, &bpp, &mm_lvl, flags) )
 		return -1;
-
 
 	Assert( mm_lvl > 0 );
 
@@ -2728,7 +2767,6 @@ int bm_make_render_target( int width, int height, int flags )
 	if (bm_bitmaps[n].mem_taken) {
 		bm_bitmaps[n].bm.data = (ptr_u) bm_malloc(n, bm_bitmaps[n].mem_taken);
 	}
-	//	bm_update_memory_used( n, bm_bitmaps[n].mem_taken );
 
 	return bm_bitmaps[n].handle;
 }
@@ -2762,7 +2800,7 @@ int bm_set_render_target(int handle, int face)
 
 	if ( gr_bm_set_render_target(n, face) ) {
 		if (gr_screen.rendering_to_texture == -1) {
-			//if we are moveing from the back buffer to a texture save whatever the current settings are
+			//if we are moving from the back buffer to a texture save whatever the current settings are
 			gr_screen.save_max_w = gr_screen.max_w;
 			gr_screen.save_max_h = gr_screen.max_h;
 		}

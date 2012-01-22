@@ -141,7 +141,7 @@ class ObjectClassInfoEntry
 	friend class GUIScreen;
 private:
 	int Object;
-	std::string Name;	//Do we want this to only apply to a specific object?
+	SCP_string Name;	//Do we want this to only apply to a specific object?
 						//If so, set name
 	int Coords[4];
 
@@ -161,12 +161,12 @@ class ScreenClassInfoEntry : public LinkedList
 {
 	friend class GUIScreen;
 private:
-	std::string Name;
+	SCP_string Name;
 	SCP_vector<ObjectClassInfoEntry> Entries;
 public:
 	bool Parse();
 
-	std::string GetName(){return Name;}
+	SCP_string GetName(){return Name;}
 };
 
 //*****************************GUIObject*******************************
@@ -228,7 +228,7 @@ private:
 	int	ChildCoords[4];				//Coordinates where children may frolick
 
 	int Type;
-	std::string Name;
+	SCP_string Name;
 
 	int LastStatus;
 	int Status;
@@ -277,7 +277,7 @@ protected:
 public:
 	//CONSTRUCTION/DESTRUCTION
 	//Derive your class's constructer from the GUIObject one
-	GUIObject(std::string in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
+	GUIObject(SCP_string in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
 	~GUIObject();
 	void Delete();
 
@@ -302,7 +302,7 @@ class GUIScreen : public LinkedList
 {
 	friend class GUISystem;
 private:
-	std::string Name;
+	SCP_string Name;
 
 	GUISystem* OwnerSystem;
 
@@ -312,7 +312,7 @@ private:
 	GUIObject Guiobjects;
 	SCP_vector<GUIObject*> DeletionCache;
 public:
-	GUIScreen(std::string in_Name="");
+	GUIScreen(SCP_string in_Name="");
 	~GUIScreen();
 
 	ObjectClassInfoEntry *GetObjectClassInfo(GUIObject *cgp);
@@ -358,7 +358,7 @@ public:
 	GUIScreen* PushScreen(GUIScreen *csp);
 	void PullScreen(GUIScreen *in_screen);
 	ScreenClassInfoEntry *GetClassInfo(){return &ScreenClassInfo;}
-	ScreenClassInfoEntry *GetScreenClassInfo(const std::string & screen_name);
+	ScreenClassInfoEntry *GetScreenClassInfo(const SCP_string & screen_name);
 	//-----
 
 	//Set stuff
@@ -396,7 +396,7 @@ public:
 
 class Window : public GUIObject
 {
-	std::string Caption;
+	SCP_string Caption;
 
 	//Close
 	bool CloseHighlight;
@@ -431,8 +431,8 @@ protected:
 	bool HasChildren(){return NOT_EMPTY(&Children);}
 
 public:
-	Window(std::string in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
-	void SetCaption(std::string in_caption){Caption = in_caption;}
+	Window(SCP_string in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
+	void SetCaption(SCP_string in_caption){Caption = in_caption;}
 	void ClearContent();
 };
 
@@ -450,7 +450,7 @@ public:
 
 class Button : public GUIObject
 {
-	std::string Caption;
+	SCP_string Caption;
 	void (*function)(Button *caller);
 
 	bool IsDown;	//Does it look pressed?
@@ -462,7 +462,7 @@ protected:
 	int DoMouseUp(float frametime);
 	int DoMouseOut(float frametime);
 public:
-	Button(std::string in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller) = NULL, int x_width = -1, int y_height = -1, int in_style = 0);
+	Button(SCP_string in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller) = NULL, int x_width = -1, int y_height = -1, int in_style = 0);
 
 	void SetPressed(bool in_isdown){IsDown = in_isdown;}
 };
@@ -484,7 +484,7 @@ struct TreeItem : public LinkedList
 {
 	friend class Tree;
 private:
-	std::string Name;
+	SCP_string Name;
 	void (*Function)(Tree *caller);
 	int Data;
 
@@ -530,10 +530,10 @@ protected:
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
 public:
-	Tree(std::string in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
+	Tree(SCP_string in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//void LoadItemList(TreeItem *in_list, unsigned int count);
-	TreeItem* AddItem(TreeItem *parent, std::string in_name, int in_data = 0, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
+	TreeItem* AddItem(TreeItem *parent, SCP_string in_name, int in_data = 0, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
 	void ClearItems();
 
 	TreeItem* GetSelectedItem(){return SelectedItem;}
@@ -562,7 +562,7 @@ public:
 
 class Text : public GUIObject
 {
-	std::string Content;
+	SCP_string Content;
 
 	//Used to display stuff; change only from calculate func
 	int NumLines;
@@ -590,10 +590,10 @@ protected:
 	int DoMouseDown(float frametime);
 	int DoKeyPress(float frametime);
 public:
-	Text(std::string in_name, std::string in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
+	Text(SCP_string in_name, SCP_string in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//Set
-	void SetText(std::string in_content);
+	void SetText(SCP_string in_content);
 	void SetText(int the_int);
 	void SetText(float the_float);
 	void SetSaveLoc(int *ptr, int save_method, int max_value=INT_MAX, int min_value=INT_MIN);
@@ -602,7 +602,7 @@ public:
 	void SetSaveLoc(char *ptr, int save_method, uint max_len=UINT_MAX, uint min_len = 0);
 	void SetSaveLoc(ubyte *ptr, int save_method, int max_value=UCHAR_MAX, int min_value=0);
 	void SetSaveStringAlloc(char **ptr, int save_method, int mem_flags, uint max_len=UINT_MAX, uint min_len = 0);
-	void AddLine(std::string in_line);
+	void AddLine(SCP_string in_line);
 
 	//Get?
 	bool Save();
@@ -614,7 +614,7 @@ public:
 
 class Checkbox : public GUIObject
 {
-	std::string Label;
+	SCP_string Label;
 	void (*function)(Checkbox *caller);
 
 	//For toggling flags with this thing
@@ -637,13 +637,13 @@ protected:
 	int DoMouseOut(float frametime);
 
 public:
-	Checkbox(std::string in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
+	Checkbox(SCP_string in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
 
 	bool GetChecked() {
 		return IsChecked;
 	}
 
-	void SetLabel(std::string in_label) {
+	void SetLabel(SCP_string in_label) {
 		Label = in_label;
 	}
 
@@ -682,7 +682,7 @@ public:
 
 class ImageAnim : public GUIObject
 {
-	std::string ImageAnimName;
+	SCP_string ImageAnimName;
 
 	IMG_HANDLE ImageHandle;
 	int TotalFrames;
@@ -700,9 +700,9 @@ protected:
 	void DoDraw(float frametime);
 	int DoRefreshSize();
 public:
-	ImageAnim(std::string in_name, std::string in_imagename, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
+	ImageAnim(SCP_string in_name, SCP_string in_imagename, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
-	void SetImage(std::string in_imagename);
+	void SetImage(SCP_string in_imagename);
 	void Play(bool in_isreversed);
 	void Pause();
 	void Stop();

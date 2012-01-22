@@ -103,6 +103,8 @@ int Standalone_ng_stamp;
 char Standalone_ban_list[STANDALONE_MAX_BAN][CALLSIGN_LEN+1];
 int Standalone_ban_count = 0;
 
+char title_str[512];
+
 // ----------------------------------------------------------------------------------------
 // mission validation dialog
 //
@@ -1543,7 +1545,7 @@ void std_debug_set_standalone_state_string(char *str)
 
 void std_debug_multilog_add_line(const char *str)
 {
-	std::string log_str;
+	SCP_string log_str;
 
 	if ( !str || !strlen(str) ) {
 		return;
@@ -1558,7 +1560,7 @@ void std_debug_multilog_add_line(const char *str)
 	// parse the string, adding each new line to the list
 	size_t nline = log_str.find('\n');
 
-	while (nline != std::string::npos) {
+	while (nline != SCP_string::npos) {
 		log_str[nline] = '\0';
 
 		SendMessage(Standalone_multilog_string, LB_ADDSTRING, 0, (LPARAM)log_str.c_str());
@@ -2079,7 +2081,6 @@ HWND std_init_property_sheet(HWND hwndDlg)
 	Sheet.nPages = MAX_STANDALONE_PAGES;
 
 	// set the title bar appropriately
-	char title_str[512];
 	memset(title_str, 0, 512);
 	std_build_title_string(title_str);
 	Sheet.pszCaption = title_str;

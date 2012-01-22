@@ -279,15 +279,15 @@ void HudGaugeReticle::render(float frametime)
 			int centerX = position[0] + (ax / 2);
 			int centerY = position[1] + (ay / 2);
 
-			for (uint i = 0; i < fp.size(); i++) {
-				if (fp[i].active == 2)
+			for (SCP_vector<firepoint>::iterator fpi = fp.begin(); fpi != fp.end(); ++fpi) {
+				if (fpi->active == 2)
 					setGaugeColor(HUD_C_BRIGHT);
-				else if (fp[i].active == 1)
+				else if (fpi->active == 1)
 					setGaugeColor(HUD_C_NORMAL);
 				else
 					setGaugeColor(HUD_C_DIM);
 			
-				renderCircle((int) (centerX + (fp[i].xy.x * firepoint_scale_x)), (int) (centerY + (fp[i].xy.y * firepoint_scale_y)), firepoint_size);
+				renderCircle((int) (centerX + (fpi->xy.x * firepoint_scale_x)), (int) (centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size);
 			}
 		}
 	}

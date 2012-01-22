@@ -13,7 +13,7 @@
 #include <string.h>
 #include <setjmp.h>
 
-#include "../../libjpeg/jpeglib.h"
+#include "jpeglib.h"
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again
 
@@ -223,6 +223,18 @@ int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int
 		// read each scanline and output to previously allocated 'image_data'
 		while (jpeg_info.output_scanline < jpeg_info.output_height) {
 			jpeg_read_scanlines(&jpeg_info, buffer, 1);
+
+			// niffiwan: swap some bytes (FSO uses BGR, not RGB) so that libjpeg
+			// code is used in its original state
+			// NOTE: assumes only one scanline is being read at a time. If
+			// multiple lines are read this needs updating
+			// also note that this doesn't deal with jpegs that are greyscale
+			JSAMPLE tmp;
+			for (int k = 2; k < size; k += 3) {
+				tmp = buffer[0][k - 2];
+				buffer[0][k - 2] = buffer[0][k];
+				buffer[0][k] = tmp;
+			}
 
 			memcpy(image_data, *buffer, size);
 			image_data += size;

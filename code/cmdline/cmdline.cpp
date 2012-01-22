@@ -376,6 +376,7 @@ cmdline_parm no3dsound_arg("-no_3d_sound", NULL);		// Cmdline_no_3d_sound - Disa
 cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
 cmdline_parm no_di_mouse_arg("-disable_di_mouse", NULL); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
 cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
+cmdline_parm keyboard_layout("-keyboard_layout", NULL);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
@@ -390,6 +391,7 @@ int Cmdline_no_3d_sound = 0;
 int Cmdline_no_glsl_model_rendering = 0;
 int Cmdline_no_di_mouse = 0;
 int Cmdline_drawelements = 0;
+char* Cmdline_keyboard_layout = NULL;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -436,12 +438,6 @@ int Cmdline_no_grab = 0;
 cmdline_parm get_flags_arg("-get_flags", NULL);
 cmdline_parm output_sexp_arg("-output_sexps", NULL); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL);	//WMC
-
-float Cmdline_percentflashtobang = -1.0;
-int Cmdline_enforce_concurrent_sound_count = 1;
-
-cmdline_parm percent_flashtobang_arg("-percent_flashtobang", NULL);
-cmdline_parm do_not_enforce_concurrent_sound("-donotenforce", NULL);
 
 
 
@@ -1365,6 +1361,11 @@ bool SetCmdlineParams()
 		Cmdline_drawelements = 1;
 	}
 
+	if( keyboard_layout.found())
+	{
+		Cmdline_keyboard_layout = keyboard_layout.str();
+	}
+
 	if ( snd_preload_arg.found() )
 	{
 		Cmdline_snd_preload = 1;
@@ -1456,16 +1457,6 @@ bool SetCmdlineParams()
 	if ( bloom_intensity_arg.found() )
 	{
 		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
-	}
-
-	if ( percent_flashtobang_arg.found() )
-	{
-		Cmdline_percentflashtobang = percent_flashtobang_arg.get_float();
-	}
-
-	if ( do_not_enforce_concurrent_sound.found() )
-	{
-		Cmdline_enforce_concurrent_sound_count = 0;
 	}
 
 	return true; 

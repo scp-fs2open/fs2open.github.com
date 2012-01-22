@@ -1736,7 +1736,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						if (bank->glow_neb_bitmap < 0)
 						{
 							bank->glow_neb_bitmap = bank->glow_bitmap;
-							nprintf(( "Model", "Glow point bank texture not found for '%s', setting as the normal one num\n", pm->filename));
+							nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
 						//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
 						}
 						else

@@ -178,7 +178,7 @@ sexp_oper Operators[] = {
 	{ "has-departed",							OP_HAS_DEPARTED,						1, INT_MAX,	},
 	{ "has-departed-delay",					OP_HAS_DEPARTED_DELAY,				2, INT_MAX,	},
 	{ "are-waypoints-done",					OP_WAYPOINTS_DONE,					2, 2,			},
-	{ "are-waypoints-done-delay",			OP_WAYPOINTS_DONE_DELAY,			3, 3,			},
+	{ "are-waypoints-done-delay",			OP_WAYPOINTS_DONE_DELAY,			3, 4,			},
 	{ "is-nav-visited",					OP_NAV_IS_VISITED,				1, 1 }, // Kazan
 	{ "ship-type-destroyed",				OP_SHIP_TYPE_DESTROYED,				2, 2,			},
 	{ "percent-ships-destroyed",			OP_PERCENT_SHIPS_DESTROYED,		2, INT_MAX,	},
@@ -2175,7 +2175,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					p_objp = mission_parse_get_arrival_ship(name);
 					if (p_objp == NULL)
 						return SEXP_CHECK_INVALID_SHIP;
+
+					// Goober5000 - since we can't check POFs for ships which have yet to arrive
+					// (not without a bit of work anyway), just assume they're okay
+					break;
 				}
+
 				// ship exists at this point
 
 				// now determine if this ship has a docking bay
@@ -5016,8 +5021,12 @@ int sexp_has_docked_delay(int n)
 	int count = eval_num(CDR(CDR(n)));		// count of times that we should look for
 	fix delay = i2f(eval_num(CDR(CDR(CDR(n)))));
 	fix time;
+	if (count <= 0)
+	{
+		Warning(LOCATION, "Has-docked-delay count should be at least 1!  This has been automatically adjusted.");
+		count = 1;
+	}
 
-	Assert ( count > 0 );
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
 		return SEXP_KNOWN_FALSE;
 
@@ -5043,6 +5052,11 @@ int sexp_has_undocked_delay(int n)
 	int count = eval_num(CDR(CDR(n)));
 	fix delay = i2f(eval_num(CDR(CDR(CDR(n)))));
 	fix time;
+	if (count <= 0)
+	{
+		Warning(LOCATION, "Has-undocked-delay count should be at least 1!  This has been automatically adjusted.");
+		count = 1;
+	}
 
 	if (sexp_query_has_yet_to_arrive(docker))
 		return SEXP_CANT_EVAL;
@@ -5050,7 +5064,6 @@ int sexp_has_undocked_delay(int n)
 	if (sexp_query_has_yet_to_arrive(dockee))
 		return SEXP_CANT_EVAL;
 
-	Assert ( count > 0 );
 	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCKED, docker, dockee, count, &time) ) {
 		// if either ship destroyed before they dock, then sexp is known false
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
@@ -5121,14 +5134,24 @@ int sexp_has_departed_delay(int n)
 /**
  * Determine if a ship is done flying waypoints after N seconds
  */
-int sexp_are_waypoints_done_delay(int n)
+int sexp_are_waypoints_done_delay(int node)
 {
 	char *ship_name, *waypoint_name;
+	int count, n = node;
 	fix time, delay;
 
 	ship_name = CTEXT(n);
-	waypoint_name = CTEXT(CDR(n));
-	delay = i2f(eval_num(CDR(CDR(n))));
+	n = CDR(n);
+	waypoint_name = CTEXT(n);
+	n = CDR(n);
+	delay = i2f(eval_num(n));
+	n = CDR(n);
+	count = (n >= 0) ? eval_num(n) : 1;
+	if (count <= 0)
+	{
+		Warning(LOCATION, "Are-waypoints-done-delay count should be at least 1!  This has been automatically adjusted.");
+		count = 1;
+	}
 
 	if (sexp_query_has_yet_to_arrive(ship_name))
 		return SEXP_CANT_EVAL;
@@ -5140,7 +5163,7 @@ int sexp_are_waypoints_done_delay(int n)
 	// marked false!!!!
 
 	// now check the log for the waypoints done entry
-	if ( mission_log_get_time(LOG_WAYPOINTS_DONE, ship_name, waypoint_name, &time) ) {
+	if ( mission_log_get_time_indexed(LOG_WAYPOINTS_DONE, ship_name, waypoint_name, count, &time) ) {
 		if ( (Missiontime - time) >= delay )
 			return SEXP_KNOWN_TRUE;
 	} else {
@@ -6342,9 +6365,34 @@ void sexp_set_object_speed(int n, int axis)
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
 		case OSWPT_TYPE_TEAM:
+		{
 			sexp_set_object_speed(oswpt.objp, speed, axis, subjective);
+
+			//CommanderDJ - we put the multiplayer callback stuff in here to prevent doing unnecessary checks clientside
+			multi_start_callback();
+			multi_send_object(oswpt.objp);
+			multi_send_int(speed);
+			multi_send_int(axis);
+			multi_send_int(subjective);
+			multi_end_callback();
+
 			break;
+		}
 	}
+}
+
+//CommanderDJ
+void multi_sexp_set_object_speed()
+{
+	object *objp;
+	int speed = 0, axis = 0, subjective = 0;
+
+	multi_get_object(objp);
+	multi_get_int(speed);
+	multi_get_int(axis);
+	multi_get_int(subjective);
+
+	sexp_set_object_speed(objp, speed, axis, subjective);
 }
 
 int sexp_get_object_speed(object *objp, int axis, int subjective)
@@ -11289,6 +11337,10 @@ void sexp_cargo_no_deplete(int n)
 // Goober5000
 void sexp_force_jump()
 {
+	// Shouldn't be gliding now....
+	Player_obj->phys_info.flags &= ~PF_GLIDING;
+	Player_obj->phys_info.flags &= ~PF_FORCE_GLIDE;
+
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_handle_end_mission_request(); 
 	}
@@ -13610,7 +13662,7 @@ void multi_sexp_ship_change_callsign()
 	ship *shipp = NULL;
 
 	multi_get_string(new_callsign);
-	if (!new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
+	if (!new_callsign[0] || !stricmp(new_callsign, SEXP_ANY_STRING))
 	{
 		cindex = -1;
 	}
@@ -22260,6 +22312,12 @@ void multi_sexp_eval()
 				multi_sexp_clear_subtitles();
 				break;
 
+			case OP_SET_OBJECT_SPEED_X:
+			case OP_SET_OBJECT_SPEED_Y:
+			case OP_SET_OBJECT_SPEED_Z:
+				multi_sexp_set_object_speed();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -22822,7 +22880,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_SET_CAMERA_SHUDDER:
-		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -26851,10 +26909,11 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_WAYPOINTS_DONE_DELAY, "Waypoints done delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified ship has completed flying the "
 		"specified waypoint path.\r\n\r\n"
-		"Returns a boolean value.  Takes 3 arguments...\r\n"
+		"Returns a boolean value.  Takes 3 or 4 arguments...\r\n"
 		"\t1:\tName of ship we are checking.\r\n"
 		"\t2:\tWaypoint path we want to check if ship has flown.\r\n"
-		"\t3:\tTime delay in seconds (see above)." },
+		"\t3:\tTime delay in seconds (see above).\r\n"
+		"\t4:\tHow many times the ship has completed the waypoint path (optional)." },
 
 	{ OP_SHIP_TYPE_DESTROYED, "Ship Type Destroyed (Boolean operator)\r\n"
 		"\tBecomes true when the specified percentage of ship types in this mission "
