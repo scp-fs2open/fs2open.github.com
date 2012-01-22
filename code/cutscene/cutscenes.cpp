@@ -42,7 +42,7 @@ SCP_vector<cutscene_info> Cutscenes;
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 void cutscene_close()
 {
-	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++)
+	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut)
 		if(cut->description)
 			vm_free(cut->description);
 }
@@ -110,7 +110,7 @@ int cutscenes_get_cd_num( char *filename )
 	return 0;				// only 1 cd for OEM
 #else
 
-	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++) {
+	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if ( !stricmp(cut->filename, filename) ) {
 			return (cut->cd - 1);
 		}
@@ -138,7 +138,7 @@ void cutscene_mark_viewable(char *filename)
 	// change to lower case
 	strlwr(file);
 	int i = 0;
-	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); cut++) {
+	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		// change the cutscene file name to lower case
 		strcpy_s(cut_file, cut->filename);
 		strlwr(cut_file);
@@ -258,9 +258,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 	int cd_mve_is_on;
 	char volume_name[128];
 
-#ifdef RELEASE_REAL
 	int num_attempts = 0;
-#endif
 
 	while(1) {
 		int path_set_ok;
@@ -286,7 +284,6 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 			break;
 		}
 
-#ifdef RELEASE_REAL
 		if ( !prompt_for_cd ) {
 			cd_present = 0;
 			break;
@@ -312,11 +309,6 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 			cd_present = 0;
 			break;
 		}													   
-#else
-		cd_present = 0;
-		break;
-#endif
-
 	}
 
 	return cd_present;   

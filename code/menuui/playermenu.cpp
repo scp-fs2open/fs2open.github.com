@@ -521,11 +521,6 @@ void player_select_do()
 	
 	// draw any pending messages on the bottom or middle of the screen
 	player_select_display_all_text();
-
-#ifndef RELEASE_REAL
-	// gr_set_color_fast(&Color_bright_green);
-	// gr_string(0x8000, 10, "Development version - DO NOT RELEASE");
-#endif
 	
 	/*
 	gr_set_color(255, 0, 0);

@@ -403,44 +403,47 @@ void process_system_keys(int key)
 
 void render_waypoints(void)
 {
-	int i, j;
 	vertex v;
-	waypoint_list *ptr;
 
-	for (i=0; i<Num_waypoint_lists; i++)
+	SCP_list<waypoint_list>::iterator ii;
+	SCP_list<waypoint>::iterator jj;
+
+	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
 	{
-		ptr = &Waypoint_lists[i];
-		for (j=0; j<ptr->count; j++)
+		vec3d *prev_vec = NULL;
+		for (jj = ii->get_waypoints().begin(); jj != ii->get_waypoints().end(); ++jj)
 		{
-			g3_rotate_vertex(&v, &ptr->waypoints[j]);
+			g3_rotate_vertex(&v, jj->get_pos());
 			if (!(v.codes & CC_BEHIND))
+			{
 				if (!(g3_project_vertex(&v) & PF_OVERFLOW))
 				{
-					if (cur_waypoint_list == i && cur_waypoint == j)
+					if (cur_waypoint_list == &(*ii) && cur_waypoint == &(*jj))
 						gr_set_color(255, 255, 255);
-					else if (Waypoint_lists[i].flags[j] & WL_MARKED)
+					else if (Objects[jj->get_objnum()].flags & OF_MARKED)
 						gr_set_color(160, 255, 0);
 					else
 						gr_set_color(160, 96, 0);
 
 					g3_draw_sphere(&v, LOLLIPOP_SIZE);
-					if (j)
-						gr_set_color(0, 0, 0);
-					else
+					if (prev_vec == NULL)
 						gr_set_color(160, 96, 0);
+					else
+						gr_set_color(0, 0, 0);
 
 					g3_draw_sphere(&v, LOLLIPOP_SIZE * 0.66667f);
 					gr_set_color(160, 96, 0);
 					g3_draw_sphere(&v, LOLLIPOP_SIZE * 0.33333f);
 				}
+			}
+
+			render_model_x(jj->get_pos(), The_grid, 1);
+
+			gr_set_color(160, 96, 0);
+			if (prev_vec != NULL)
+				rpd_line(prev_vec, jj->get_pos());
+			prev_vec = jj->get_pos();
 		}
-
-		for (j=0; j<ptr->count; j++)
-			render_model_x(&ptr->waypoints[j], The_grid, 1);
-
-		gr_set_color(160, 96, 0);
-		for (j=1; j<ptr->count; j++)
-			rpd_line(&ptr->waypoints[j-1], &ptr->waypoints[j]);
 	}
 }
 
@@ -1065,9 +1068,10 @@ void display_ship_info()
 						sprintf(buf, "%s\n%s", shipp->ship_name, Ship_info[ship_type].short_name);
 
 					} else if (objp->type == OBJ_WAYPOINT) {
-						sprintf(buf, "%s\nWaypoint %d",
-							Waypoint_lists[objp->instance / 65536].name,
-							(objp->instance & 0xffff) + 1);
+						int idx;
+						waypoint_list *wp_list = find_waypoint_list_with_instance(objp->instance, &idx);
+						Assert(wp_list != NULL);
+						sprintf(buf, "%s\nWaypoint %d", wp_list->get_name(), idx + 1);
 
 					} else if (objp->type == OBJ_POINT) {
 						if (objp->instance == BRIEFING_LOOKAT_POINT_ID)
@@ -1531,8 +1535,10 @@ void render_frame()
 				pos.xyz.x, pos.xyz.y, pos.xyz.z, a.h, a.p, a.b);
 
 		} else if (Objects[Cursor_over].type == OBJ_WAYPOINT) {
-			sprintf(buf, "%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ",
-				Waypoint_lists[inst / 65536].name, (inst & 0xffff) + 1, pos.xyz.x, pos.xyz.y, pos.xyz.z);
+			int idx;
+			waypoint_list *wp_list = find_waypoint_list_with_instance(inst, &idx);
+			Assert(wp_list != NULL);
+			sprintf(buf, "%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ", wp_list->get_name(), idx + 1, pos.xyz.x, pos.xyz.y, pos.xyz.z);
 
 		} else if (Objects[Cursor_over].type == OBJ_POINT) {
 			sprintf(buf, "Briefing icon\n( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);

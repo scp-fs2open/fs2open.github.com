@@ -628,7 +628,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 		return;
 
 	char text_buf[256];
-	if (in_text != NULL && strlen(in_text) > 0)
+	if (in_text != NULL && in_text[0] != '\0')
 	{
 		strcpy_s(text_buf, in_text);
 		sexp_replace_variable_names_with_values(text_buf, 256);
@@ -641,7 +641,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 	int text_line_lens[MAX_SUBTITLE_LINES];
 
 	//Setup text
-	if ( (in_text != NULL) && (strlen(in_text) > 0) ) {
+	if ( (in_text != NULL) && (in_text[0] != '\0') ) {
 		int split_width = (in_width > 0) ? in_width : 200;
 
 		num_text_lines = split_str(in_text, split_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
@@ -665,7 +665,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 	fade_time = fl_abs(in_fade_time);
 
 	//Setup image
-	if ( (in_imageanim != NULL) && (strlen(in_imageanim) > 0) )
+	if ( (in_imageanim != NULL) && (in_imageanim[0] != '\0') )
 	{
 		image_id = bm_load(in_imageanim);
 
@@ -792,7 +792,7 @@ void subtitle::do_frame(float frametime)
 	int y = text_pos.y;
 
 
-	for(SCP_vector<std::string>::iterator line = text_lines.begin(); line != text_lines.end(); line++)
+	for(SCP_vector<std::string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
 	{
 		gr_string(x, y, (char*)line->c_str(), false);
 		y += font_height;
@@ -1105,7 +1105,7 @@ void subtitles_close()
 void subtitles_do_frame(float frametime)
 {
 	SCP_vector<subtitle>::iterator sub;
-	for(sub = Subtitles.begin(); sub != Subtitles.end(); sub++)
+	for(sub = Subtitles.begin(); sub != Subtitles.end(); ++sub)
 	{
 		if ( !sub->is_post_shaded( ) )
 			sub->do_frame(frametime);
@@ -1115,7 +1115,7 @@ void subtitles_do_frame(float frametime)
 void subtitles_do_frame_post_shaded(float frametime)
 {
 	SCP_vector<subtitle>::iterator sub;
-	for(sub = Subtitles.begin(); sub != Subtitles.end(); sub++)
+	for(sub = Subtitles.begin(); sub != Subtitles.end(); ++sub)
 	{
 		if ( sub->is_post_shaded( ) )
 			sub->do_frame(frametime);

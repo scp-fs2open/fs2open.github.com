@@ -62,6 +62,8 @@ struct sexp_variable;
 #define CMISSION_FLAG_BASTION	(1<<0)	// set if stationed on Bastion, else Galatea
 
 #define CMISSION_FLAG_SKIPPED	(1<<1)	// set if skipped, else not
+#define CMISSION_FLAG_HAS_LOOP	(1<<2)	// mission loop, e.g. FS2 SOC loops
+#define CMISSION_FLAG_HAS_FORK	(1<<3)	// campaign fork, e.g. Scroll or BWO (mutually exclusive with loop)
 
 #define CAMPAIGN_LOOP_MISSION_UNINITIALIZED	-2
 
@@ -97,13 +99,12 @@ typedef struct cmission {
 	mevent			*events;				// malloced array of mevents (of num_events size) which has event completion status
 	int				num_saved_variables;	// number of variables this mission had - Goober5000
 	sexp_variable	*saved_variables;		// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
-	int				has_mission_loop;		// whether current mission has side loop
-	int				mission_loop_formula;// formula to determine whether to allow a side loop
-	char			*mission_loop_desc;	// message in popup
-	char			*mission_loop_brief_anim;
-	char			*mission_loop_brief_sound;
+	int				mission_loop_formula;	// formula to determine whether to allow a side loop
+	char			*mission_branch_desc;	// message in popup
+	char			*mission_branch_brief_anim;
+	char			*mission_branch_brief_sound;
 	int				level;					// what level of the tree it's on (Fred)
-	int				pos;						// what x position on level it's on (Fred)
+	int				pos;					// what x position on level it's on (Fred)
 	int				flags;
 	ubyte			main_hall;				// which main hall the player is in - Goober5000
 	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000

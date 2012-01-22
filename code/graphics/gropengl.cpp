@@ -322,7 +322,7 @@ void gr_opengl_clear()
 {
 	glClearColor(gr_screen.current_clear_color.red / 255.0f, 
 		gr_screen.current_clear_color.green / 255.0f, 
-		gr_screen.current_clear_color.blue / 255.0f, 1.0f);
+		gr_screen.current_clear_color.blue / 255.0f, gr_screen.current_clear_color.alpha / 255.0f);
 
 	glClear ( GL_COLOR_BUFFER_BIT );
 }
@@ -1619,15 +1619,14 @@ int opengl_init_display_device()
 	mprintf(("  Requested WGL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, GL_pfd.cColorBits, (GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0));
 
 	// now report back as to what we ended up getting
-	int r = 0, g = 0, b = 0, depth = 0, db = 1;
 
 	DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &GL_pfd);
 
-	r = GL_pfd.cRedBits;
-	g = GL_pfd.cGreenBits;
-	b = GL_pfd.cBlueBits;
-	depth = GL_pfd.cColorBits;
-	db = ((GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
+	int r = GL_pfd.cRedBits;
+	int g = GL_pfd.cGreenBits;
+	int b = GL_pfd.cBlueBits;
+	int depth = GL_pfd.cColorBits;
+	int db = ((GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
 
 	mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", r, g, b, depth, db));
 

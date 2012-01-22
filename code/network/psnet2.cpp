@@ -1437,8 +1437,8 @@ void psnet_rel_work()
 			memset(&d3_rcv_addr,0,sizeof(net_addr));
 			memset(&rcv_addr,0,sizeof(SOCKADDR));
 			bytesin = RECVFROM(Unreliable_socket, (char *)&rcv_buff,sizeof(reliable_header), 0, (SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
-			rcv_buff.seq = INTEL_SHORT( rcv_buff.seq );
-			rcv_buff.data_len = INTEL_SHORT( rcv_buff.data_len );
+			rcv_buff.seq = INTEL_SHORT( rcv_buff.seq ); //-V570
+			rcv_buff.data_len = INTEL_SHORT( rcv_buff.data_len ); //-V570
 			rcv_buff.send_time = INTEL_FLOAT( &rcv_buff.send_time );
 			memcpy(d3_rcv_addr.addr, &tcp_addr->sin_addr.s_addr, 4);
 			d3_rcv_addr.port = tcp_addr->sin_port;
@@ -1620,13 +1620,14 @@ void psnet_rel_work()
 					}
 				}
 				if(savepacket){
+					if(rcv_buff.data_len>max_len){
+						ml_string("Received oversized reliable packet!");
+						//don't ack it, which will mean we will get it again soon.
+						continue;
+					} 
 					for(i=0; i<MAXNETBUFFERS; i++){
 						if(NULL == rsocket->rbuffers[i]){							
-							if(rcv_buff.data_len>max_len){
-								rsocket->recv_len[i] = rcv_buff.data_len;
-							} else {
-								rsocket->recv_len[i] = rcv_buff.data_len; 
-							}
+							rsocket->recv_len[i] = rcv_buff.data_len; 
 							rsocket->rbuffers[i] = (reliable_net_rcvbuffer *)vm_malloc(sizeof(reliable_net_rcvbuffer));
 							memcpy(rsocket->rbuffers[i]->buffer,rcv_buff.data,rsocket->recv_len[i]);	
 							rsocket->rsequence[i] = rcv_buff.seq;							

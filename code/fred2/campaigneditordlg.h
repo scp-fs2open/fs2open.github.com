@@ -56,9 +56,9 @@ public:
 	int		m_type;
 	CString	m_num_players;
 	CString	m_desc;
-	CString	m_loop_desc;
-	CString	m_loop_brief_anim;
-	CString	m_loop_brief_sound;
+	CString	m_branch_desc;
+	CString	m_branch_brief_anim;
+	CString	m_branch_brief_sound;
 	BOOL	m_custom_tech_db;
 	//}}AFX_DATA
 

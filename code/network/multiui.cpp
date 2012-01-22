@@ -1333,7 +1333,7 @@ void multi_join_display_games()
 			// tack on the actual server name			
 			strcat_s(str," ");
 			strcat_s(str,moveup->name);
-			if(strlen(moveup->mission_name) > 0){
+			if(moveup->mission_name[0] != '\0'){
 				strcat_s(str, " / ");
 				strcat_s(str,moveup->mission_name);
 			} 
@@ -1908,10 +1908,10 @@ void multi_join_send_join_request(int as_observer)
 		
 	// fill out the join request struct	
 	strcpy_s(Multi_join_request.callsign,Player->callsign);
-	if(strlen(Player->image_filename) > 0){
+	if(Player->image_filename[0] != '\0'){
 		strcpy_s(Multi_join_request.image_filename, Player->image_filename);
 	}	
-	if(strlen(Player->squad_filename) > 0){
+	if(Player->squad_filename[0] != '\0'){
 		strcpy_s(Multi_join_request.squad_filename, Player->squad_filename);
 	}
 
@@ -5314,12 +5314,10 @@ int multi_create_ok_to_commit()
 		if(MULTI_IS_TRACKER_GAME){
 			// don't allow squad war matches to continue
 			if(Netgame.type_flags & NG_TYPE_SW){
-#ifdef RELEASE_REAL
 				// if this is squad war, don't allow it to continue			
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("One or more players has hacked data files. You cannot play a SquadWar match unless all clients have legal data", 1272));
 
 				return 0;
-#endif
 			}
 			// otherwise, warn the players that stats will not saved
 			else {
@@ -6376,7 +6374,7 @@ void multi_ho_get_options()
 	// set the respawn count
 	if(Netgame.campaign_mode == MP_SINGLE){
 		memset(resp_str,0,10);
-		sprintf(resp_str,"%d",Netgame.respawn);
+		sprintf(resp_str,"%u",Netgame.respawn);
 		Multi_ho_respawns.set_text(resp_str);	
 	}
 
@@ -6862,10 +6860,10 @@ void multi_game_client_setup_do_frame()
 
 	// blit the mission filename if possible
 	if(Netgame.campaign_mode){
-		if(strlen(Netgame.campaign_name) > 0){			
+		if(Netgame.campaign_name[0] != '\0'){			
 			strcpy_s(mission_text,Netgame.campaign_name);
 			
-			if(strlen(Netgame.title) > 0){
+			if(Netgame.title[0] != '\0'){
 				strcat_s(mission_text,", ");
 				strcat_s(mission_text,Netgame.title);
 			}
@@ -6874,10 +6872,10 @@ void multi_game_client_setup_do_frame()
 			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text);
 		}								
 	} else {
-		if(strlen(Netgame.mission_name) > 0){			
+		if(Netgame.mission_name[0] != '\0'){			
 			strcpy_s(mission_text,Netgame.mission_name);
 
-			if(strlen(Netgame.title) > 0){
+			if(Netgame.title[0] != '\0'){
 				strcat_s(mission_text,", ");
 				strcat_s(mission_text,Netgame.title);
 			}			
@@ -8751,16 +8749,16 @@ void multi_debrief_close()
 void multi_maybe_set_mission_loop()
 {
 	int cur = Campaign.current_mission;
-	if (Campaign.missions[cur].has_mission_loop) {
+	if (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) {
 		Assert(Campaign.loop_mission != CAMPAIGN_LOOP_MISSION_UNINITIALIZED);
 	}
 	bool require_repeat_mission = (Campaign.current_mission == Campaign.next_mission);
 
 	// check for (1) mission loop available, (2) don't have to repeat last mission
-	if ( (Campaign.missions[cur].has_mission_loop && (Campaign.loop_mission != -1)) && !require_repeat_mission ) {
+	if ( (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1) && !require_repeat_mission ) {
 
 		char buffer[512];
-		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_loop_desc);
+		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_branch_desc);
 
 		int choice = popup(0 , 2, POPUP_NO, POPUP_YES, buffer);
 		if (choice == 1) {

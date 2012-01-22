@@ -1571,7 +1571,7 @@ static void split_ship_init( ship* shipp, split_ship* split_ship )
 {
 	object* parent_ship_obj = &Objects[shipp->objnum];
 	matrix* orient = &parent_ship_obj->orient;
-	for (int ii=0; ii<NUM_SUB_EXPL_HANDLES; ii++) {
+	for (int ii=0; ii<NUM_SUB_EXPL_HANDLES; ++ii) {
 		split_ship->sound_handle[ii] = shipp->sub_expl_sound_handle[ii];
 	}
 
@@ -3705,9 +3705,6 @@ int WE_BSG::warpStart()
 		return 0;
 	}
 
-	//Base is 100m long/diameter ship
-	//WMC - Leave this as 1.0f
-	//snd_range_factor = objp->radius / 50.0f;
 	if(gs_start_index > -1)
 	{
 		snd_start_gs = &Snds[gs_start_index];
@@ -3803,14 +3800,13 @@ int WE_BSG::warpShipRender()
 
 	// SUSHI: Turning off Zbuffering results in the FTL effect showing up through ship hulls. 
 	// The effect is slightly degraded by leaving it on, but ATM it's worth the tradeoff.
-	//// turn off zbuffering	
+	// turn off zbuffering	
 	//int saved_zbuffer_mode = gr_zbuffer_get();
 	//gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	if(anim > -1)
 	{
 		//Figure out which frame we're on
-		//int anim_frame = fl2i( (((float)timestamp() - (float)total_time_start) / ((float) anim_total_time)) * (float)(anim_nframes-1) + 0.5f);
 		int anim_frame = fl2i( ((float)(timestamp() - total_time_start)/1000.0f) * (float)anim_fps);
 
 		if ( anim_frame < anim_nframes )
@@ -3823,9 +3819,6 @@ int WE_BSG::warpShipRender()
 			vm_vec_scale_add(&start, &pos, &objp->orient.vec.fvec, z_offset_min);
 			vm_vec_scale_add(&end, &pos, &objp->orient.vec.fvec, z_offset_max);
 
-			//vm_vec_scale_add(&start, &objp->pos, &objp->orient.vec.fvec, z_offset_min);
-			//vm_vec_scale_add(&end, &objp->pos, &objp->orient.vec.fvec, z_offset_max);
-
 			batcher.draw_beam(&start, &end, tube_radius*2.0f, 1.0f);	
 
 			//Render the warpout effect
@@ -3835,13 +3828,11 @@ int WE_BSG::warpShipRender()
 
 	if(stage == 1 && shockwave > -1)
 	{
-		//int shockwave_frame = fl2i( (((float)timestamp() - (float)stage_time_start) / ((float) shockwave_total_time)) * (float)(shockwave_nframes-1) + 0.5f);
 		int shockwave_frame = fl2i( ((float)(timestamp() - stage_time_start)/1000.0f) * (float)shockwave_fps);
 
 		if(shockwave_frame < shockwave_nframes)
 		{
 			vertex p;
-			//vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, (z_offset_max - z_offset_min)/2.0f);
 			extern int Cmdline_nohtl;
 			if(Cmdline_nohtl) {
 				g3_rotate_vertex(&p, &pos );
@@ -3876,14 +3867,7 @@ int WE_BSG::getWarpPosition(vec3d *output)
 		return 0;
 
 	vec3d pos;
-	if(direction == WD_WARP_OUT && stage > 0)
-	{
-		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
-	}
-	else
-	{
-		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
-	}
+	vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
 
 	*output = pos;
 	return 1;

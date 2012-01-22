@@ -398,7 +398,7 @@ bool ConditionedHook::Run(script_state *sys, int action, char format, void *data
 	Assert(sys != NULL);
 
 	//Do the actions
-	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); sap++)
+	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
 		if(sap->action_type == action)
 			sys->RunBytecode(sap->hook, format, data);
@@ -413,7 +413,7 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 	//bool b = false;
 
 	//Do the actions
-	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); sap++)
+	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
 		if(sap->action_type == action)
 		{
@@ -564,7 +564,7 @@ void script_state::SetHookVar(char *name, char format, void *data)
 				if(format == 's')
 					ade_set_args(LuaState, fmt, data);
 				else
-					ade_set_args(LuaState, fmt, *(ade_odata*)data);
+					ade_set_args(LuaState, fmt, *(ade_odata*)data); //-V510
 			}
 			//--------------------
 			//WMC - This was a separate function
@@ -802,7 +802,7 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 int script_state::RunCondition(int action, char format, void *data, object *objp)
 {
 	int num = 0;
-	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); chp++) 
+	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
 		if(chp->ConditionsValid(action, objp))
 		{
@@ -816,7 +816,7 @@ int script_state::RunCondition(int action, char format, void *data, object *objp
 bool script_state::IsConditionOverride(int action, object *objp)
 {
 	//bool b = false;
-	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); chp++)
+	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp)
 	{
 		if(chp->ConditionsValid(action, objp))
 		{
@@ -893,7 +893,7 @@ int script_state::OutputMeta(char *filename)
 		return 0; 
 	}
 
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0)
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) //-V547
 	{
 		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
 		fputs("<body>", fp);

@@ -76,7 +76,8 @@ int dscap_create_buffer(int freq, int bits_per_sample, int nchannels, int nsecon
 		dscap_init();
 	}
 
-	if ( !dscap_inited ) {
+	//Just in case we couldn't init for whatever reason
+	if ( !dscap_inited ) { //-V581
 		return -1;
 	}
 
@@ -185,7 +186,8 @@ int dscap_max_buffersize()
 		dscap_init();
 	}
 
-	if ( !dscap_inited ) {
+	//Just in case we're still not initialized
+	if ( !dscap_inited ) { //-V581
 		return -1;
 	}
 
@@ -203,7 +205,8 @@ int dscap_get_raw_data(unsigned char *outbuf, unsigned int max_size)
 		dscap_init();
 	}
 
-	if ( !dscap_inited ) {
+	//Just in case we're still not initialized
+	if ( !dscap_inited ) { //-V581
 		return 0;
 	}
 

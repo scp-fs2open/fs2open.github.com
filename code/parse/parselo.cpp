@@ -2259,8 +2259,8 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 				if (num == -1) {
 					Error(LOCATION, "Unable to find string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 				} else if (num == -2) {
-					if (strlen(str) > 0) {
-						if(strlen(parse_error_text) > 0){
+					if (str[0] != '\0') {
+						if(parse_error_text[0] != '\0'){
 							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" %s.\n", str, parse_error_text);
 						}else{
 							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
@@ -2539,7 +2539,7 @@ int stuff_vector_list(vec3d *vlp, int max_vecs)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading integer list.  Found [%c].  Expecting '('.\n", *Mp);
+		error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
 		longjmp(parse_abort, 6);
 	}
 
@@ -2564,6 +2564,32 @@ int stuff_vector_list(vec3d *vlp, int max_vecs)
 	return count;
 }
 
+// ditto the above, but a vector of vectors...
+int stuff_vector_list(SCP_vector<vec3d> &vec_list)
+{
+	ignore_white_space();
+
+	if (*Mp != '(') {
+		error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
+		longjmp(parse_abort, 6);
+	}
+
+	Mp++;
+
+	ignore_white_space();
+
+	while (*Mp != ')') {
+		vec3d temp;
+		stuff_parenthesized_vector(&temp);
+		vec_list.push_back(temp);
+		
+		ignore_white_space();
+	}
+
+	Mp++;
+
+	return vec_list.size();
+}
 
 //	Stuff a matrix, which is 3 vectors.
 void stuff_matrix(matrix *mp)

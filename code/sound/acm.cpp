@@ -81,7 +81,7 @@ static int read_ushort(HMMIO rw, ushort *i)
 {
 	int rc = mmioRead( rw, (char *)i, sizeof(ushort) );
 	IF_ERR(rc != sizeof(ushort), 0);
-	*i = INTEL_SHORT(*i);
+	*i = INTEL_SHORT(*i); //-V570
 	return 1;
 }
 
@@ -97,7 +97,7 @@ static int read_word_s(HMMIO rw, WORD *i)
 {
 	int rc = mmioRead( rw, (char *)i, sizeof(WORD) );
 	IF_ERR(rc != sizeof(WORD), 0);
-	*i = INTEL_SHORT(*i);
+	*i = INTEL_SHORT(*i); //-V570
 	return 1;
 }
 
@@ -105,7 +105,7 @@ static int read_short(HMMIO rw, short *i)
 {
 	int rc = mmioRead( rw, (char *)i, sizeof(short) );
 	IF_ERR(rc != sizeof(short), 0);
-	*i = INTEL_SHORT(*i);
+	*i = INTEL_SHORT(*i); //-V570
 	return 1;
 }
 
@@ -438,7 +438,7 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 
 	// really fix and REMOVE
 	if (fmt->adpcm.wav.wBitsPerSample != 4) {
-		fmt->adpcm.wav.wBitsPerSample = INTEL_SHORT(fmt->adpcm.wav.wBitsPerSample);
+		fmt->adpcm.wav.wBitsPerSample = INTEL_SHORT(fmt->adpcm.wav.wBitsPerSample); //-V570
 	}
 
 	// sanity check, should always be 4

@@ -119,11 +119,10 @@ void create_wing_dlg::OnOK()
 		}
 	}
 
-	for (i=0; i<MAX_WAYPOINT_LISTS; i++) {
-		if (Waypoint_lists[i].count && !stricmp(Waypoint_lists[i].name, m_name)) {
-			MessageBox("This wing name is already being used by a waypoint path");
-			return;
-		}
+	if (find_matching_waypoint_list(const_cast<char *>((const char *) m_name)) != NULL)
+	{
+		MessageBox("This wing name is already being used by a waypoint path");
+		return;
 	}
 	
 	if (!stricmp(m_name.Left(1), "<")) {

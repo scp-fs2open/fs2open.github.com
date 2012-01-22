@@ -2073,7 +2073,7 @@ void opengl_setup_scene_textures()
 		Scene_color_texture = 0;
 
 		glDeleteTextures(1, &Scene_effect_texture);
-		Scene_color_texture = 0;
+		Scene_effect_texture = 0;
 
 		glDeleteTextures(1, &Scene_depth_texture);
 		Scene_depth_texture = 0;

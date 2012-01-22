@@ -372,7 +372,7 @@ void CMissionNotesDlg::OnOK()
 	MODIFY(Current_soundtrack_num, m_event_music - 1);
 	strcpy_s(The_mission.substitute_event_music_name, m_substitute_event_music);
 
-	MODIFY(The_mission.command_persona, ((CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA))->GetItemData(m_command_persona));
+	MODIFY(The_mission.command_persona, (int) ((CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA))->GetItemData(m_command_persona));
 	if (m_command_sender.GetAt(0) == '#')
 		strcpy_s(The_mission.command_sender, m_command_sender.Mid(1));
 	else

@@ -49,16 +49,19 @@ typedef struct beam_info {
 
 #define BFIF_IS_FIGHTER_BEAM	(1<<0)
 #define BFIF_FORCE_FIRING		(1<<1)
+#define BFIF_TARGETING_COORDS	(1<<2)
 
 // pass to beam fire 
 typedef struct beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
 	vec3d			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
-	ship_subsys		*turret;							// where he's shooting from
-	float				accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
-	object			*target;							// whos getting shot
-	ship_subsys		*target_subsys;				// (optional), specific subsystem to be targeted on the target 
+	ship_subsys		*turret;						// where he's shooting from
+	float			accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
+	object			*target;							// who's getting shot
+	ship_subsys		*target_subsys;						// (optional), specific subsystem to be targeted on the target 
+	vec3d			target_pos1;							// if we're shooting off into space
+	vec3d			target_pos2;							// if we're shooting off into space (optional second point)
 	beam_info		*beam_info_override;			// (optional), pass this in to override all beam movement info (for multiplayer)
 	int				num_shots;						// (optional), only used for type D weapons
 	int bank;									// for fighters, which bank of the primary weapons are they in
@@ -101,6 +104,7 @@ typedef struct beam_collision {
 #define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
 #define BF_FORCE_FIRING					(1<<2)
 #define BF_IS_FIGHTER_BEAM				(1<<3)
+#define BF_TARGETING_COORDS				(1<<4)
 
 // beam struct (the actual weapon/object)
 typedef struct beam {
@@ -111,6 +115,8 @@ typedef struct beam {
 	object	*objp;					// the shooting object (who owns the turret that I am being fired from)
 	object	*target;					// target object
 	ship_subsys *target_subsys;	// targeted subsys
+	vec3d	target_pos1;				// if we're targeting a location in space
+	vec3d	target_pos2;				// if we're targeting a location in space (optional second point)
 	int		target_sig;				// target sig
 	ship_subsys *subsys;				// subsys its being fired from
 	beam		*next, *prev;			// link list stuff

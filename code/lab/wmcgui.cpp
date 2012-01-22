@@ -513,8 +513,7 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 		}
 	}
 
-	for (uint i = DeletionCache.size(); i > 0; i--) {
-		delete DeletionCache[i-1];
+	for (size_t i = DeletionCache.size(); i > 0; i--) {
 		DeletionCache.pop_back();
 	}
 

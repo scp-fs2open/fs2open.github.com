@@ -261,13 +261,7 @@ BOOL ShipGoalsDlg::OnInitDialog()
 		}
 	}
 
-	for (i=0; i<MAX_WAYPOINT_LISTS; i++){
-		if (Waypoint_lists[i].count){
-			break;
-		}
-	}
-
-	if (i == MAX_WAYPOINT_LISTS){
+	if (Waypoint_lists.empty()) {
 		for (i=0; i<Ai_goal_list_size; i++){
 			switch (Ai_goal_list[i].def) {
 				case AI_GOAL_WAYPOINTS:
@@ -466,7 +460,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 				break;
 
 			case AI_GOAL_DESTROY_SUBSYSTEM:
-				num = ship_name_lookup(goalp[item].ship_name, 1);
+				num = ship_name_lookup(goalp[item].target_name, 1);
 				if (num != -1)
 					m_subsys[item] = ship_get_subsys_index(&Ships[num], goalp[item].docker.name, 1);
 
@@ -501,14 +495,14 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 					inst = ptr->instance;
 					if (ptr->type == OBJ_SHIP) {
 						Assert(inst >= 0 && inst < MAX_SHIPS);
-						if (!stricmp(goalp[item].ship_name, Ships[inst].ship_name)) {
+						if (!stricmp(goalp[item].target_name, Ships[inst].ship_name)) {
 							m_data[item] = inst | TYPE_SHIP;
 							break;
 						}
 
 					} else {
 						Assert(inst >= 0 && inst < MAX_SHIPS);
-						if (!stricmp(goalp[item].ship_name, Ships[inst].ship_name)) {
+						if (!stricmp(goalp[item].target_name, Ships[inst].ship_name)) {
 							m_data[item] = inst | TYPE_PLAYER;
 							break;
 						}
@@ -522,7 +516,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 		if (flag & 0x2) {
 			for (i=0; i<MAX_WINGS; i++)
 				if (Wings[i].wave_count) {
-					if (!stricmp(goalp[item].ship_name, Wings[i].name)) {
+					if (!stricmp(goalp[item].target_name, Wings[i].name)) {
 						m_data[item] = i | TYPE_WING;
 						break;
 					}
@@ -530,17 +524,19 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 		}
 
 		if (flag & 0x4) {  // data is a waypoint path name
-			for (i=0; i<Num_waypoint_lists; i++)
-				if (!stricmp(goalp[item].ship_name, Waypoint_lists[i].name)) {
+			SCP_list<waypoint_list>::iterator ii;
+			for (i = 0, ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++i, ++ii) {
+				if (!stricmp(goalp[item].target_name, ii->get_name())) {
 					m_data[item] = i | TYPE_PATH;
 					break;
 				}
+			}
 		}
 
 		if (flag & 0x8) {  // data is a waypoint name
-			i = waypoint_lookup(goalp[item].ship_name);
-			if (i >= 0)
-				m_data[item] = i | TYPE_WAYPOINT;
+			waypoint *wpt = find_matching_waypoint(goalp[item].target_name);
+			if (wpt != NULL)
+				m_data[item] = wpt->get_objnum() | TYPE_WAYPOINT;
 		}
 
 		switch (mode) {
@@ -568,6 +564,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 
 void ShipGoalsDlg::set_item(int item, int init)
 {
+	SCP_list<waypoint_list>::iterator ii;
 	int i, t, z, num, inst, mode;
 	object *ptr;
 
@@ -606,13 +603,12 @@ void ShipGoalsDlg::set_item(int item, int init)
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
 		//case AI_GOAL_WARP:
-			for (i=0; i<MAX_WAYPOINT_LISTS; i++)
-				if (Waypoint_lists[i].count) {
-					z = m_object_box[item] -> AddString(Waypoint_lists[i].name);
-					m_object_box[item] -> SetItemData(z, i | TYPE_PATH);
-					if (init && (m_data[item] == (i | TYPE_PATH)))
-						m_object[item] = z;
-				}
+			for (i = 0, ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++i, ++ii) {
+				z = m_object_box[item] -> AddString(ii->get_name());
+				m_object_box[item] -> SetItemData(z, i | TYPE_PATH);
+				if (init && (m_data[item] == (i | TYPE_PATH)))
+					m_object[item] = z;
+			}
 
 			break;
 
@@ -878,6 +874,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 	char *docker, *dockee, *subsys;
 	int mode;
 	char buf[512], save[80];
+	waypoint_list *wp_list;
 
 	if (item >= MAX_AI_GOALS)
 		return;
@@ -1009,27 +1006,29 @@ void ShipGoalsDlg::update_item(int item, int multi)
 	MODIFY(goalp[item].ai_mode, mode);
 
 	*save = 0;
-	if (goalp[item].ship_name)
-		strcpy_s(save, goalp[item].ship_name);
+	if (goalp[item].target_name)
+		strcpy_s(save, goalp[item].target_name);
 
 	switch (m_data[item] & TYPE_MASK) {
 		int not_used;
 
 		case TYPE_SHIP:
 		case TYPE_PLAYER:
-			goalp[item].ship_name = ai_get_goal_ship_name(Ships[m_data[item] & DATA_MASK].ship_name, &not_used);
+			goalp[item].target_name = ai_get_goal_target_name(Ships[m_data[item] & DATA_MASK].ship_name, &not_used);
 			break;
 
 		case TYPE_WING:
-			goalp[item].ship_name = ai_get_goal_ship_name(Wings[m_data[item] & DATA_MASK].name, &not_used);
+			goalp[item].target_name = ai_get_goal_target_name(Wings[m_data[item] & DATA_MASK].name, &not_used);
 			break;
 
 		case TYPE_PATH:
-			goalp[item].ship_name = ai_get_goal_ship_name(Waypoint_lists[m_data[item] & DATA_MASK].name, &not_used);
+			wp_list = find_waypoint_list_at_index(m_data[item] & DATA_MASK);
+			Assert(wp_list != NULL);
+			goalp[item].target_name = ai_get_goal_target_name(wp_list->get_name(), &not_used);
 			break;
 
 		case TYPE_WAYPOINT:
-			goalp[item].ship_name = ai_get_goal_ship_name(object_name(m_data[item] & DATA_MASK), &not_used);
+			goalp[item].target_name = ai_get_goal_target_name(object_name(m_data[item] & DATA_MASK), &not_used);
 			break;
 
 		case 0:
@@ -1047,7 +1046,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			Assert(0);
 	}
 
-	if (stricmp(save, goalp[item].ship_name))
+	if (stricmp(save, goalp[item].target_name))
 		set_modified();
 }
 
@@ -1171,7 +1170,7 @@ void ShipGoalsDlg::set_object(int item)
 			for (i=0; i<num; i++) {
 				Assert(Docking_bay_list[i]);
 				z = m_dock2_box[item] -> AddString(Docking_bay_list[i]);
-				str = ai_get_goal_ship_name(Docking_bay_list[i], &not_used);
+				str = ai_get_goal_target_name(Docking_bay_list[i], &not_used);
 				m_dock2_box[item] -> SetItemDataPtr(z, str);
 			}
 

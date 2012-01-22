@@ -476,6 +476,9 @@ int weapon_info_lookup(const char *name)
 //	Parse the weapon flags.
 void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 {
+	const char *spawn_str = NOX("Spawn");
+	const size_t spawn_str_len = strlen(spawn_str);
+
 	//Make sure we HAVE flags :p
 	if(!optional_string("$Flags:"))
 		return;
@@ -495,7 +498,7 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 	bool set_nopierce = false;
 	
 	for (int i=0; i<num_strings; i++) {
-		if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
+		if (!strnicmp(spawn_str, weapon_strings[i], 5))
 		{
             if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 			{
@@ -512,7 +515,7 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 
 				weaponp->wi_flags |= WIF_SPAWN;
 				weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
-				skip_length = strlen(NOX("Spawn")) + strspn(&temp_string[strlen(NOX("Spawn"))], NOX(" \t"));
+				skip_length = spawn_str_len + strspn(&temp_string[spawn_str_len], NOX(" \t"));
 				char *num_start = strchr(&temp_string[skip_length], ',');
 				if (num_start == NULL) {
 					weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
@@ -696,6 +699,11 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 	if ((weaponp->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (!(weaponp->wi_flags & WIF_CHILD)))
 	{
 		Warning(LOCATION,"Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
+	}
+
+	if (!(weaponp->wi_flags & WIF_HOMING_HEAT) && (weaponp->wi_flags2 & WIF2_UNTARGETED_HEAT_SEEKER))
+	{
+		Warning(LOCATION,"Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
 	}
 }
 
@@ -3270,7 +3278,7 @@ void weapon_load_bitmaps(int weapon_index)
 			if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE){
 
 				if ((wip->particle_spewers[s].particle_spew_anim.first_frame < 0) 
-					&& (strlen(wip->particle_spewers[s].particle_spew_anim.filename) > 0) ) {
+					&& (wip->particle_spewers[s].particle_spew_anim.filename[0] != '\0') ) {
 
 					wip->particle_spewers[s].particle_spew_anim.first_frame = bm_load(wip->particle_spewers[s].particle_spew_anim.filename);
 
@@ -3883,7 +3891,9 @@ void find_homing_object(object *weapon_objp, int num)
 			}*/
 
 			//WMC - Spawn weapons shouldn't go for protected ships
-			if((objp->flags & OF_PROTECTED) && (wp->weapon_flags & WF_SPAWNED))
+			// ditto for untargeted heat seekers - niffiwan
+			if ( (objp->flags & OF_PROTECTED) &&
+				((wp->weapon_flags & WF_SPAWNED) || (wip->wi_flags2 & WIF2_UNTARGETED_HEAT_SEEKER)) )
 				continue;
 
 			// Spawned weapons should never home in on their parent - even in multiplayer dogfights where they would pass the iff test below

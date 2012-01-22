@@ -484,7 +484,7 @@ void sort_training_objectives()
 			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
-				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
+				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		}
 	}

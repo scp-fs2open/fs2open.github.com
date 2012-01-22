@@ -2096,21 +2096,6 @@ int ds_eax_set_environment(unsigned long envid)
 }
 
 /**
- * Set up a predefined environment for EAX
- *
- * @param envid Value from the EAX_ENVIRONMENT_* enumeration.
- * @return Always returns 0.
- * @todo Proper error reporting, otherwise make a void return type.
- */
-int ds_eax_set_preset(unsigned long envid)
-{
-	al_efx_load_preset(envid);
-
-	return 0;
-}
-
-
-/**
  * Set up all the parameters for an environment
  *
  * @param id Value from the EAX_ENVIRONMENT_* enumeration
@@ -2181,7 +2166,7 @@ int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *t
 
 		EFXREVERBPROPERTIES n_prop;
 
-		if ( (template_name != NULL) && (strlen(template_name) > 0) ) {
+		if ( (template_name != NULL) && (template_name[0] != '\0') ) {
 			template_id = ds_eax_get_preset_id(template_name);
 		}
 

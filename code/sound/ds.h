@@ -217,8 +217,6 @@ void ds_eax_close();
 int ds_eax_get_preset_id(const char *name);
 int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *template_name = NULL);
 
-int ds_eax_set_preset(unsigned long envid);
-
 int ds_eax_set_volume(float volume);
 int ds_eax_set_decay_time(float seconds);
 int ds_eax_set_damping(float damp);

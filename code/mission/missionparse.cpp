@@ -640,7 +640,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 	// reassign the player
 	else {		
-		if(!Fred_running && (Player != NULL) && (strlen(pm->squad_name) > 0) && (Game_mode & GM_CAMPAIGN_MODE)){
+		if(!Fred_running && (Player != NULL) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE)){
 			mprintf(("Reassigning player to squadron %s\n", pm->squad_name));
 			player_set_squad(Player, pm->squad_name);
 			player_set_squad_bitmap(Player, pm->squad_filename);
@@ -2486,12 +2486,12 @@ void fix_old_special_explosions(p_object *p_objp, int variable_index)
 
 	p_objp->use_special_explosion = true;
 
-	p_objp->special_exp_damage = (float)atoi(Block_variables[variable_index+DAMAGE].text);
-	p_objp->special_exp_blast = (float)atoi(Block_variables[variable_index+BLAST].text);
-	p_objp->special_exp_inner = (float)atoi(Block_variables[variable_index+INNER_RAD].text);
-	p_objp->special_exp_outer = (float)atoi(Block_variables[variable_index+OUTER_RAD].text);
+	p_objp->special_exp_damage = atoi(Block_variables[variable_index+DAMAGE].text);
+	p_objp->special_exp_blast = atoi(Block_variables[variable_index+BLAST].text);
+	p_objp->special_exp_inner = atoi(Block_variables[variable_index+INNER_RAD].text);
+	p_objp->special_exp_outer = atoi(Block_variables[variable_index+OUTER_RAD].text);
 	p_objp->use_shockwave = (atoi(Block_variables[variable_index+PROPAGATE].text) ? 1:0);
-	p_objp->special_exp_shockwave_speed = (float)atoi(Block_variables[variable_index+SHOCK_SPEED].text);
+	p_objp->special_exp_shockwave_speed = atoi(Block_variables[variable_index+SHOCK_SPEED].text);
 	p_objp->special_exp_deathroll_time = 0;
 }
 
@@ -2870,24 +2870,49 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		p_objp->use_special_explosion = true;
 
 		if (required_string("+Special Exp Damage:")) {
-			stuff_float(&p_objp->special_exp_damage);
+			stuff_int(&p_objp->special_exp_damage);
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion damage has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (required_string("+Special Exp Blast:")) {
-			stuff_float(&p_objp->special_exp_blast);
+			stuff_int(&p_objp->special_exp_blast);
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion blast has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (required_string("+Special Exp Inner Radius:")) {
-			stuff_float(&p_objp->special_exp_inner);
+			stuff_int(&p_objp->special_exp_inner);
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion inner radius has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (required_string("+Special Exp Outer Radius:")) {
-			stuff_float(&p_objp->special_exp_outer);
+			stuff_int(&p_objp->special_exp_outer);
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion outer radius has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (optional_string("+Special Exp Shockwave Speed:")) {
-			stuff_float(&p_objp->special_exp_shockwave_speed);
+			stuff_int(&p_objp->special_exp_shockwave_speed);
 			p_objp->use_shockwave = true;
+
+			if (*Mp == '.') {
+				Warning(LOCATION, "Special explosion shockwave speed has been returned to integer format");
+				advance_to_eoln(NULL);
+			}
 		}
 
 		if (optional_string("+Special Exp Death Roll Time:")) {
@@ -2950,7 +2975,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		int damage;
 
 		stuff_int(&damage);
-		p_objp->kamikaze_damage = i2fl(damage);
+		p_objp->kamikaze_damage = damage;
 	}
 
 	p_objp->hotkey = -1;
@@ -4687,20 +4712,17 @@ void parse_goals(mission *pm)
 
 void parse_waypoint_list(mission *pm)
 {
-	waypoint_list	*wpl;
-
-
-	Assert(Num_waypoint_lists < MAX_WAYPOINT_LISTS);
 	Assert(pm != NULL);
-	wpl = &Waypoint_lists[Num_waypoint_lists];
 
+	char name_buf[NAME_LENGTH];
 	required_string("$Name:");
-	stuff_string(wpl->name, F_NAME, NAME_LENGTH);
+	stuff_string(name_buf, F_NAME, NAME_LENGTH);
 
+	SCP_vector<vec3d> vec_list;
 	required_string("$List:");
-	wpl->count = stuff_vector_list(wpl->waypoints, MAX_WAYPOINTS_PER_LIST);
+	stuff_vector_list(vec_list);
 
-	Num_waypoint_lists++;
+	waypoint_add_list(name_buf, vec_list);
 }
 
 void parse_waypoints(mission *pm)
@@ -5268,7 +5290,9 @@ int parse_mission(mission *pm, int flags)
 
 	int i;
 
-	Player_starts = Num_cargo = Num_waypoint_lists = Num_goals = Num_wings = 0;
+	waypoint_parse_init();
+
+	Player_starts = Num_cargo = Num_goals = Num_wings = 0;
 	Player_start_shipnum = -1;
 	*Player_start_shipname = 0;		// make the string 0 length for checking later
 	Player_start_pobject.Reset( );
@@ -5354,7 +5378,7 @@ int parse_mission(mission *pm, int flags)
 			if (Cmdline_mod == NULL || *Cmdline_mod == 0) {
 				strcat_s(text, "<retail default> ");
 			} else {
-				for (char *mod_token = Cmdline_mod; strlen(mod_token) != 0; mod_token += strlen(mod_token) + 1) {
+				for (char *mod_token = Cmdline_mod; *mod_token != '\0'; mod_token += strlen(mod_token) + 1) {
 					strcat_s(text, mod_token);
 					strcat_s(text, " ");
 				}
@@ -5448,7 +5472,7 @@ void post_process_mission()
 
 	init_ai_system();
 
-	create_waypoints();
+	waypoint_create_game_objects();
 
 	// Goober5000 - this needs to be called only once after parsing of objects and wings is complete
 	// (for individual invalidation, see mission_parse_mark_non_arrival)
@@ -5688,7 +5712,7 @@ void parse_init(bool basic)
 	for (int i = 0; i < MAX_CARGO; i++)
 		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
 
-	Total_goal_ship_names = 0;
+	Total_goal_target_names = 0;
 
 	// if we are just wanting basic info then we shouldn't need sexps
 	// (prevents memory fragmentation with the now dynamic Sexp_nodes[])

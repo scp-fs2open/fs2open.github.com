@@ -594,8 +594,6 @@ void gr_opengl_post_process_set_defaults()
 	}
 
 	// reset all effects to their default values
-	list_size = Post_effects.size();
-
 	for (idx = 0; idx < Post_effects.size(); idx++) {
 		Post_effects[idx].intensity = Post_effects[idx].default_intensity;
 	}

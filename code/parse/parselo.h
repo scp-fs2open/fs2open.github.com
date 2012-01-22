@@ -137,6 +137,7 @@ extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern int stuff_float_list(float* flp, int max_floats);
 extern int stuff_vector_list(vec3d *vlp, int max_vecs);
+extern int stuff_vector_list(SCP_vector<vec3d> &vec_list);
 extern int stuff_bool_list(bool *blp, int max_bools);
 extern void stuff_vector(vec3d *vp);
 extern void stuff_matrix(matrix *mp);

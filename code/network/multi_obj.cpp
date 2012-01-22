@@ -1385,16 +1385,10 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	net_player *pl = NULL;	
 
-	// if this is processed on the server, its a client object update packet
-	player_index = -1;
-//	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		// determine what player this came from 
-		player_index = find_player_id(hinfo->id);
-		if(player_index != -1){						
-			pl = &Net_players[player_index];
-//		} else {			
-//			pl = NULL;
-//		}
+	// determine what player this came from 
+	player_index = find_player_id(hinfo->id);
+	if(player_index != -1){						
+		pl = &Net_players[player_index];
 	}
 	// otherwise its a "regular" object update packet on a client from the server. use "myself" as the reference player
 	else {						
@@ -1978,11 +1972,9 @@ DCF(oo_error, "")
 void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info)
 {
 	vec3d a, b, c;
-	// vec3d da, db, dc;
 	matrix m_copy;
 	physics_info p_copy;
 	vec3d *pts[3] = {&a, &b, &c};	
-	// vec3d *d_pts[3] = {&da, &db, &dc};
 	
 	// average time between packets
 	float avg_diff = oo_arrive_time_avg_diff[ship_index];	
@@ -2016,22 +2008,6 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_or
 	p_copy = *new_phys_info;
 	physics_sim(&c, &m_copy, &p_copy, avg_diff);			// next point, given this new info
 	oo_interp_splines[ship_index][1].bez_set_points(3, pts);	
-
-	// get the spline for our "bad" movement
-	/*
-	a = oo_interp_points[ship_index][0];
-	b = *cur_pos;
-	da = oo_interp_vel[ship_index][0];
-	db = cur_phys_info->vel;
-	oo_interp_splines[ship_index][0].herm_set_points(2, pts, d_pts);
-
-	// get the spline for our "good" movement
-	a = oo_interp_points[ship_index][0];
-	b = oo_interp_points[ship_index][1];
-	da = oo_interp_vel[ship_index][0];
-	db = oo_interp_vel[ship_index][1];
-	oo_interp_splines[ship_index][1].herm_set_points(2, pts, d_pts);
-	*/
 
 	// now we've got a spline representing our "new" path and where we would've gone had we been perfect before
 	// we'll modify our velocity to move along a blend of these splines.

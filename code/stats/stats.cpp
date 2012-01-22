@@ -161,13 +161,13 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			// stats_underline_text(sx,sy,text);
 			sy += 2*dy;
          // mission primary weapon stats
-			sprintf(text,"%d",Active_player->stats.mp_shots_fired);
+			sprintf(text,"%u",Active_player->stats.mp_shots_fired);
 			gr_printf(sx,sy,text);
 			sy += dy;
-			sprintf(text,"%d",Active_player->stats.mp_shots_hit);
+			sprintf(text,"%u",Active_player->stats.mp_shots_hit);
 			gr_printf(sx,sy,text);
 			sy += dy;
-			sprintf(text,"%d",Active_player->stats.mp_bonehead_hits);
+			sprintf(text,"%u",Active_player->stats.mp_bonehead_hits);
 			gr_printf(sx,sy,text);
 			sy += dy;
 			if(Active_player->stats.mp_shots_fired>0)
@@ -184,13 +184,13 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			sy += 2*dy;
 
 			// mission secondary weapon stats
-			sprintf(text,"%d",Active_player->stats.ms_shots_fired);
+			sprintf(text,"%u",Active_player->stats.ms_shots_fired);
 			gr_printf(sx,sy,text);
 			sy += dy;
-			sprintf(text,"%d",Active_player->stats.ms_shots_hit);
+			sprintf(text,"%u",Active_player->stats.ms_shots_hit);
 			gr_printf(sx,sy,text);
 			sy += dy;
-			sprintf(text,"%d",Active_player->stats.ms_bonehead_hits);
+			sprintf(text,"%u",Active_player->stats.ms_bonehead_hits);
 			gr_printf(sx,sy,text);
 			sy += dy;
 			if(Active_player->stats.ms_shots_fired>0)
@@ -247,13 +247,13 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			// stats_underline_text(sx,sy,text);
 			sy += 2*dy;
          // alltime primary weapon stats
-			sprintf(text,"%d",Active_player->stats.p_shots_fired + add.p_shots_fired);
+			sprintf(text,"%u",Active_player->stats.p_shots_fired + add.p_shots_fired);
 			gr_printf(sx,sy,text);
 			sy += dy;
-			sprintf(text,"%d",Active_player->stats.p_shots_hit + add.p_shots_hit);
+			sprintf(text,"%u",Active_player->stats.p_shots_hit + add.p_shots_hit);
 			gr_printf(sx,sy,text);
 			sy += dy;
-			sprintf(text,"%d",Active_player->stats.p_bonehead_hits + add.p_bonehead_hits);
+			sprintf(text,"%u",Active_player->stats.p_bonehead_hits + add.p_bonehead_hits);
 			gr_printf(sx,sy,text);
 			sy += dy;
 			if((Active_player->stats.p_shots_fired + add.p_shots_fired)>0)
@@ -270,13 +270,13 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			sy += 2*dy;
 
 			// alltime secondary weapon stats
-			sprintf(text,"%d",Active_player->stats.s_shots_fired + add.s_shots_fired);
+			sprintf(text,"%u",Active_player->stats.s_shots_fired + add.s_shots_fired);
 			gr_printf(sx,sy,text);
 			sy += dy;
-			sprintf(text,"%d",Active_player->stats.s_shots_hit + add.s_shots_hit);
+			sprintf(text,"%u",Active_player->stats.s_shots_hit + add.s_shots_hit);
 			gr_printf(sx,sy,text);
 			sy += dy;
-			sprintf(text,"%d",Active_player->stats.s_bonehead_hits + add.s_bonehead_hits);
+			sprintf(text,"%u",Active_player->stats.s_bonehead_hits + add.s_bonehead_hits);
 			gr_printf(sx,sy,text);
 			sy += dy;
 			if((Active_player->stats.s_shots_fired+add.s_shots_fired)>0)

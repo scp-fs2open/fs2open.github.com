@@ -919,18 +919,18 @@ void read_detail_settings(CFILE *file, int pfile_version)
 	cfread( &Detail, sizeof(detail_levels), 1, file );
 
 	// swap, swap, swap
-	Detail.setting = INTEL_INT(Detail.setting);
-	Detail.nebula_detail = INTEL_INT(Detail.nebula_detail);
-	Detail.detail_distance = INTEL_INT(Detail.detail_distance);
-	Detail.hardware_textures = INTEL_INT(Detail.hardware_textures);
-	Detail.num_small_debris = INTEL_INT(Detail.num_small_debris);
-	Detail.num_particles = INTEL_INT(Detail.num_particles);
-	Detail.num_stars = INTEL_INT(Detail.num_stars);
-	Detail.shield_effects = INTEL_INT(Detail.shield_effects);
-	Detail.lighting = INTEL_INT(Detail.lighting);
-	Detail.targetview_model = INTEL_INT(Detail.targetview_model);
-	Detail.planets_suns = INTEL_INT(Detail.planets_suns);
-	Detail.weapon_extras = INTEL_INT(Detail.weapon_extras);
+	Detail.setting = INTEL_INT(Detail.setting); //-V570
+	Detail.nebula_detail = INTEL_INT(Detail.nebula_detail); //-V570
+	Detail.detail_distance = INTEL_INT(Detail.detail_distance); //-V570
+	Detail.hardware_textures = INTEL_INT(Detail.hardware_textures); //-V570
+	Detail.num_small_debris = INTEL_INT(Detail.num_small_debris); //-V570
+	Detail.num_particles = INTEL_INT(Detail.num_particles); //-V570
+	Detail.num_stars = INTEL_INT(Detail.num_stars); //-V570
+	Detail.shield_effects = INTEL_INT(Detail.shield_effects); //-V570
+	Detail.lighting = INTEL_INT(Detail.lighting); //-V570
+	Detail.targetview_model = INTEL_INT(Detail.targetview_model); //-V570
+	Detail.planets_suns = INTEL_INT(Detail.planets_suns); //-V570
+	Detail.weapon_extras = INTEL_INT(Detail.weapon_extras); //-V570
 }
 
 // Will write the pilot file in the most current format
@@ -1217,18 +1217,18 @@ void write_detail_settings(CFILE *file)
 	memcpy(&Detail_tmp, &Detail, sizeof(detail_levels));
 
 	// swap, swap, swap - on big-endian this will convert back to little-endian
-	Detail_tmp.setting = INTEL_INT(Detail_tmp.setting);
-	Detail_tmp.nebula_detail = INTEL_INT(Detail_tmp.nebula_detail);
-	Detail_tmp.detail_distance = INTEL_INT(Detail_tmp.detail_distance);
-	Detail_tmp.hardware_textures = INTEL_INT(Detail_tmp.hardware_textures);
-	Detail_tmp.num_small_debris = INTEL_INT(Detail_tmp.num_small_debris);
-	Detail_tmp.num_particles = INTEL_INT(Detail_tmp.num_particles);
-	Detail_tmp.num_stars = INTEL_INT(Detail_tmp.num_stars);
-	Detail_tmp.shield_effects = INTEL_INT(Detail_tmp.shield_effects);
-	Detail_tmp.lighting = INTEL_INT(Detail_tmp.lighting);
-	Detail_tmp.targetview_model = INTEL_INT(Detail_tmp.targetview_model);
-	Detail_tmp.planets_suns = INTEL_INT(Detail_tmp.planets_suns);
-	Detail_tmp.weapon_extras = INTEL_INT(Detail_tmp.weapon_extras);
+	Detail_tmp.setting = INTEL_INT(Detail_tmp.setting); //-V570
+	Detail_tmp.nebula_detail = INTEL_INT(Detail_tmp.nebula_detail); //-V570
+	Detail_tmp.detail_distance = INTEL_INT(Detail_tmp.detail_distance); //-V570
+	Detail_tmp.hardware_textures = INTEL_INT(Detail_tmp.hardware_textures); //-V570
+	Detail_tmp.num_small_debris = INTEL_INT(Detail_tmp.num_small_debris); //-V570
+	Detail_tmp.num_particles = INTEL_INT(Detail_tmp.num_particles); //-V570
+	Detail_tmp.num_stars = INTEL_INT(Detail_tmp.num_stars); //-V570
+	Detail_tmp.shield_effects = INTEL_INT(Detail_tmp.shield_effects); //-V570
+	Detail_tmp.lighting = INTEL_INT(Detail_tmp.lighting); //-V570
+	Detail_tmp.targetview_model = INTEL_INT(Detail_tmp.targetview_model); //-V570
+	Detail_tmp.planets_suns = INTEL_INT(Detail_tmp.planets_suns); //-V570
+	Detail_tmp.weapon_extras = INTEL_INT(Detail_tmp.weapon_extras); //-V570
 
 	cfwrite( &Detail_tmp, sizeof(detail_levels), 1, file );
 }
@@ -1502,7 +1502,7 @@ void player_set_squad_bitmap(player *p, char *fname)
 		strncpy(p->squad_filename, fname, MAX_FILENAME_LEN);
 	}
 
-	if (strlen(p->squad_filename) > 0) {
+	if (p->squad_filename[0] != '\0') {
 		p->insignia_texture = bm_load_duplicate(fname);
 		
 		// lock is as a transparent texture

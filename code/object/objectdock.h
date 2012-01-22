@@ -30,15 +30,14 @@ typedef struct dock_function_info {
 	// The following were originally unions, but it became necessary to use structs
 	// for certain functions that need to maintain two or more values.
 	struct {
-		bool		bool_value;
-		char		char_value;
-		int			int_value;
-		float		float_value;
 		double		double_value;
-
 		object*		objp_value;
 		vec3d*		vecp_value;
 		vec3d*		vecp_value2;
+		float		float_value;
+		int			int_value;
+		bool		bool_value;
+		char		char_value;
 	} parameter_variables, maintained_variables;
 
 

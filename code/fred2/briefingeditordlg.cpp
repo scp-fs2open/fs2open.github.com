@@ -988,7 +988,11 @@ void briefing_editor_dlg::OnMakeIcon()
 	if (ship >= 0)
 		name = Ships[ship].ship_name;
 	else if (waypoint >= 0)
-		name = Waypoint_lists[waypoint / 65536].name;
+	{
+		waypoint_list *wp_list = find_waypoint_list_with_instance(waypoint);
+		Assert(wp_list != NULL);
+		name = wp_list->get_name();
+	}
 	else if (jnp != NULL)
 		name = jnp->get_name_ptr();
 	else

@@ -1686,24 +1686,24 @@ int CFred_mission_save::save_objects()
 
 					required_string_fred("+Special Exp Damage:"); 
 					parse_comments();
-					fout(" %f", shipp->special_exp_damage);
+					fout(" %d", shipp->special_exp_damage);
 
 					required_string_fred("+Special Exp Blast:"); 
 					parse_comments();
-					fout(" %f", shipp->special_exp_blast);
+					fout(" %d", shipp->special_exp_blast);
 
 					required_string_fred("+Special Exp Inner Radius:"); 
 					parse_comments();
-					fout(" %f", shipp->special_exp_inner);
+					fout(" %d", shipp->special_exp_inner);
 
 					required_string_fred("+Special Exp Outer Radius:"); 
 					parse_comments();
-					fout(" %f", shipp->special_exp_outer);
+					fout(" %d", shipp->special_exp_outer);
 
 					if (shipp->use_shockwave && (shipp->special_exp_shockwave_speed > 0)) {
 						optional_string_fred("+Special Exp Shockwave Speed:"); 
 						parse_comments();
-						fout(" %f", shipp->special_exp_shockwave_speed);
+						fout(" %d", shipp->special_exp_shockwave_speed);
 					}
 					else {
 						bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
@@ -1723,20 +1723,20 @@ int CFred_mission_save::save_objects()
 					fout_version("\n$Special Explosion:");
 
 					fout_version("\n+Special Exp Damage:"); 
-					fout(" %f", shipp->special_exp_damage);
+					fout(" %d", shipp->special_exp_damage);
 
 					fout_version("\n+Special Exp Blast:"); 
-					fout(" %f", shipp->special_exp_blast);
+					fout(" %d", shipp->special_exp_blast);
 
 					fout_version("\n+Special Exp Inner Radius:"); 
-					fout(" %f", shipp->special_exp_inner);
+					fout(" %d", shipp->special_exp_inner);
 
 					fout_version("\n+Special Exp Outer Radius:"); 
-					fout(" %f", shipp->special_exp_outer);
+					fout(" %d", shipp->special_exp_outer);
 
 					if (shipp->use_shockwave && (shipp->special_exp_shockwave_speed > 0)) {
 						fout_version("\n+Special Exp Shockwave Speed:"); 
-						fout(" %f", shipp->special_exp_shockwave_speed);
+						fout(" %d", shipp->special_exp_shockwave_speed);
 					}
 
 					if (shipp->special_exp_deathroll_time > 0) {
@@ -1815,7 +1815,7 @@ int CFred_mission_save::save_objects()
 				fout("\n+Kamikaze Damage:");
 			}
 
-			fout(" %d", (int)(Ai_info[shipp->ai_index].kamikaze_damage) );
+			fout(" %d", Ai_info[shipp->ai_index].kamikaze_damage);
 		}
 
 		if (shipp->hotkey != -1) {
@@ -2508,13 +2508,12 @@ int CFred_mission_save::save_goals()
 
 int CFred_mission_save::save_waypoints()
 {
-	int i;
 	//object *ptr;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Waypoints");
 	parse_comments(2);
-	fout("\t\t;! %d lists total\n", Num_waypoint_lists);
+	fout("\t\t;! %d lists total\n", Waypoint_lists.size());
 
 	for ( jump_node *jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() )
 	{
@@ -2567,18 +2566,19 @@ int CFred_mission_save::save_waypoints()
 		fso_comment_pop();
 	}
 
-	for (i=0; i<Num_waypoint_lists; i++)
+	SCP_list<waypoint_list>::iterator ii;
+	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
 	{
 		required_string_either_fred("$Name:", "#Messages");
 		required_string_fred("$Name:");
-		parse_comments(i ? 2 : 1);
-		fout(" %s", Waypoint_lists[i].name);
+		parse_comments((ii == Waypoint_lists.begin()) ? 1 : 2);
+		fout(" %s", ii->get_name());
 
 		required_string_fred("$List:");
 		parse_comments();
-		fout(" (\t\t;! %d points in list\n", Waypoint_lists[i].count);
+		fout(" (\t\t;! %d points in list\n", ii->get_waypoints().size());
 
-		save_waypoint_list(Waypoint_lists[i]);
+		save_waypoint_list(&(*ii));
 		fout(")");
 
 		fso_comment_pop();
@@ -2589,12 +2589,16 @@ int CFred_mission_save::save_waypoints()
 	return err;
 }
 
-int CFred_mission_save::save_waypoint_list(waypoint_list &w)
+int CFred_mission_save::save_waypoint_list(waypoint_list *wp_list)
 {
-	int i;
+	Assert(wp_list != NULL);
+	SCP_list<waypoint>::iterator ii;
 
-	for (i=0; i<w.count; i++)
-		fout("\t( %f, %f, %f )\n", w.waypoints[i].xyz.x, w.waypoints[i].xyz.y, w.waypoints[i].xyz.z);
+	for (ii = wp_list->get_waypoints().begin(); ii != wp_list->get_waypoints().end(); ++ii)
+	{
+		vec3d *pos = ii->get_pos();
+		fout("\t( %f, %f, %f )\n", pos->xyz.x, pos->xyz.y, pos->xyz.z);
+	}
 
 	return 0;
 }
@@ -3097,11 +3101,11 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 		
 		} else {
 			valid = 1;
-			if (!goalp[i].ship_name) {
+			if (!goalp[i].target_name) {
 				Warning(LOCATION, "Ai goal has no target where one is required");
 
 			} else {
-				sprintf(buf, "\"%s\"", goalp[i].ship_name);
+				sprintf(buf, "\"%s\"", goalp[i].target_name);
 				switch (goalp[i].ai_mode) {
 					case AI_GOAL_WAYPOINTS:
 						str = "ai-waypoints";
@@ -3117,7 +3121,7 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 							Warning(LOCATION, "AI destroy subsystem goal invalid subsystem name\n");
 
 						} else {
-							sprintf(buf, "\"%s\" \"%s\"", goalp[i].ship_name, goalp[i].docker.name);
+							sprintf(buf, "\"%s\" \"%s\"", goalp[i].target_name, goalp[i].docker.name);
 							str = "ai-destroy-subsystem";
 						}
 
@@ -3131,15 +3135,15 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 						} else if (goalp[i].docker.index == -1 || !goalp[i].docker.index) {
 							valid = 0;
 							Warning(LOCATION, "AI dock goal for \"%s\" has invalid docker point "
-								"(docking with \"%s\")\n", Ships[ship].ship_name, goalp[i].ship_name);
+								"(docking with \"%s\")\n", Ships[ship].ship_name, goalp[i].target_name);
 
 						} else if (goalp[i].dockee.index == -1 || !goalp[i].dockee.index) {
 							valid = 0;
 							Warning(LOCATION, "AI dock goal for \"%s\" has invalid dockee point "
-								"(docking with \"%s\")\n", Ships[ship].ship_name, goalp[i].ship_name);
+								"(docking with \"%s\")\n", Ships[ship].ship_name, goalp[i].target_name);
 
 						} else {
-							sprintf(buf, "\"%s\" \"%s\" \"%s\"", goalp[i].ship_name,
+							sprintf(buf, "\"%s\" \"%s\" \"%s\"", goalp[i].target_name,
 								goalp[i].docker.name, goalp[i].dockee.name);
 
 							str = "ai-dock";
@@ -3907,21 +3911,18 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall > 0) ? CMISSION_FLAG_BASTION : 0));
 		}
 
-		if ( (Campaign.missions[m].debrief_persona_index >= 0) && (Campaign.missions[m].debrief_persona_index <= 0xff) ) {
-			if (optional_string_fred("+Debriefing Persona Index:")) {
-				parse_comments(1);
-				fout(" %d", Campaign.missions[m].debrief_persona_index);
-			} else {
-				fso_comment_push(";;FSO 3.6.8;;");
-				fout_version("\n+Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
-				fso_comment_pop();
-			}
+		if (optional_string_fred("+Debriefing Persona Index:")) {
+			parse_comments(1);
+			fout(" %d", Campaign.missions[m].debrief_persona_index);
 		} else {
-			bypass_comment(";;FSO 3.6.8;; +Debriefing Persona Index:");
+			fso_comment_push(";;FSO 3.6.8;;");
+			fout_version("\n+Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
+			fso_comment_pop();
 		}
 
 		// save campaign link sexp
 		bool mission_loop = false;
+		bool mission_fork = false;
 		flag = 0;
 		for (j=0; j<Total_links; j++) {
 			if (Links[j].from == m) {
@@ -3936,8 +3937,10 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 				}
 
 				//save_campaign_sexp(Links[j].sexp, Campaign.missions[Links[j].to].name);
-				if (Links[j].mission_loop) {
+				if (Links[j].is_mission_loop) {
 					mission_loop = true;
+				} else if (Links[j].is_mission_fork) {
+					mission_fork = true;
 				} else {
 					save_campaign_sexp(Links[j].sexp, Links[j].to);
 				}
@@ -3949,50 +3952,62 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 		}
 
 		// now save campaign loop sexp
-		if (mission_loop) {
-			required_string_fred("\n+Mission Loop:");
+		if (mission_loop || mission_fork) {
+			if (mission_loop)
+				required_string_fred("\n+Mission Loop:");
+			else
+				required_string_fred("\n+Mission Fork:");
 			parse_comments();
 
-			int num_mission_loop = 0;
+			int num_mission_special = 0;
 			for (j=0; j<Total_links; j++) {
-				if ( (Links[j].from == m) && (Links[j].mission_loop) ) {
+				if ( (Links[j].from == m) && (Links[j].is_mission_loop || Links[j].is_mission_fork) ) {
 
-					num_mission_loop++;
+					num_mission_special++;
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_txt) {
-						required_string_fred("+Mission Loop Text:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_txt) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Text:");
+						else
+							required_string_fred("+Mission Fork Text:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_txt);
+						fout_ext("\n", "%s", Links[j].mission_branch_txt);
 						fout("\n$end_multi_text");
 					}
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_brief_anim) {
-						required_string_fred("+Mission Loop Brief Anim:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_brief_anim) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Brief Anim:");
+						else
+							required_string_fred("+Mission Fork Brief Anim:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_brief_anim);
+						fout_ext("\n", "%s", Links[j].mission_branch_brief_anim);
 						fout("\n$end_multi_text");
 					}
 
-					// maybe write out mission loop descript
-					if ((num_mission_loop == 1) && Links[j].mission_loop_brief_sound) {
-						required_string_fred("+Mission Loop Brief Sound:");
+					if ((num_mission_special == 1) && Links[j].mission_branch_brief_sound) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Brief Sound:");
+						else
+							required_string_fred("+Mission Fork Brief Sound:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_loop_brief_sound);
+						fout_ext("\n", "%s", Links[j].mission_branch_brief_sound);
 						fout("\n$end_multi_text");
 					}
 
-					if (num_mission_loop == 1) {
+					if (num_mission_special == 1) {
 						// write out mission loop formula
 						fout("\n+Formula:");
 						fout(" ( cond\n");
 						save_campaign_sexp(Links[j].sexp, Links[j].to);
 						fout(")");
 					}
+					if (mission_fork) {
+						fout("Option: ", Campaign.missions[Links[j].to].name);
+					}
 				}
 			}
-			if (num_mission_loop > 1) {
+			if (mission_loop && num_mission_special > 1) {
 				char buffer[1024];
 				sprintf(buffer, "Multiple branching loop error from mission %s\nEdit campaign for *at most* 1 loop from each mission.", Campaign.missions[m].name);
 				MessageBox((HWND)os_get_window(), buffer, "Error", MB_OK);

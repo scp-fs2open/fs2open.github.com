@@ -657,7 +657,7 @@ float joy_down_time(int btn)
 		bi->down_time += joy_pollrate;
 	}
 
-	if ( (now - bi->last_down_check) > 0)
+	if (now > bi->last_down_check)
 		rval = i2fl(bi->down_time) / (now - bi->last_down_check);
 	else
 		rval = 0.0f;

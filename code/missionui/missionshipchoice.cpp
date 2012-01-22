@@ -1252,7 +1252,7 @@ void ship_select_blit_ship_info()
 		}
 	}
 	
-	if(strlen(Ship_select_ship_info_text) > 0){
+	if(Ship_select_ship_info_text[0] != '\0'){
 		// split the string into multiple lines
 		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 128 : 350, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, 0);
 

@@ -1407,7 +1407,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (strlen(sip->cockpit_pof_file) > 0)
+			if (sip->cockpit_pof_file[0] != '\0')
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -1474,7 +1474,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (strlen(sip->pof_file) > 0)
+			if (sip->pof_file[0] != '\0')
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -1537,7 +1537,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (strlen(sip->pof_file) > 0)
+			if (sip->pof_file[0] != '\0')
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -3247,6 +3247,9 @@ strcpy_s(parse_error_text, temp_error);
 				sp->favor_current_facing = 0.0f;
 
 				sp->turret_rof_scaler = 1.0f;
+
+				sp->turret_max_bomb_ownage = -1;
+				sp->turret_max_target_ownage = -1;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -3271,7 +3274,7 @@ strcpy_s(parse_error_text, temp_error);
 					Error(LOCATION, "Malformed $Subsystem entry '%s' %s.\n\n"
 						"Specify a turning rate or remove the trailing comma.",
 						sp->subobj_name,
-						strlen(parse_error_text) >0 ? parse_error_text: "unknown ship");
+						parse_error_text[0] != '\0' ? parse_error_text: "unknown ship");
 				}
 			}
 
@@ -3408,6 +3411,14 @@ strcpy_s(parse_error_text, temp_error);
 						Warning(LOCATION, "Unidentified target priority '%s' set for\nsubsystem '%s' in ship class '%s'.", tgt_priorities[i].c_str(), sp->subobj_name, sip->name);
 					}
 				}
+			}
+
+			if (optional_string("$Max Turrets per Bomb:")) {
+				stuff_int(&sp->turret_max_bomb_ownage);
+			}
+
+			if (optional_string("$Max Turrets per Target:")) {
+				stuff_int(&sp->turret_max_target_ownage);
 			}
 
 			if (optional_string("$ROF:")) {
@@ -5345,7 +5356,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 
 		// if the table has set an name copy it
-		if (strlen(ship_system->system_info->alt_sub_name) > 0) {
+		if (ship_system->system_info->alt_sub_name[0] != '\0') {
 			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name);
 		}
 		else {
@@ -5461,6 +5472,9 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		
 		ship_system->next_aim_pos_time = 0;
 
+		ship_system->turret_max_bomb_ownage = model_system->turret_max_bomb_ownage;
+		ship_system->turret_max_target_ownage = model_system->turret_max_target_ownage;
+
 		// Make turret flag checks and warnings
 
 		
@@ -5555,7 +5569,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 	// Fix up animation code references
 	for (i = 0; i < sinfo->n_subsystems; i++) {
-		for (int j = 0; j < sinfo->subsystems[i].n_triggers; j++) {
+		for (j = 0; j < sinfo->subsystems[i].n_triggers; j++) {
 			if (subsystem_stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>")) {
 				int idx = ship_get_subobj_model_num(sinfo, sinfo->subsystems[i].triggers[j].sub_name);
 				if (idx != -1) {
@@ -6596,7 +6610,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	}
 
 	new_display.background = -1;
-	if ( strlen(display->bg_filename) > 0 ) {
+	if ( display->bg_filename[0] != '\0' ) {
 		new_display.background = bm_load(display->bg_filename);
 
 		if ( new_display.background < 0 ) {
@@ -6605,7 +6619,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	}
 
 	new_display.foreground = -1;
-	if ( strlen(display->fg_filename) > 0 ) {
+	if ( display->fg_filename[0] != '\0' ) {
 		new_display.foreground = bm_load(display->fg_filename);
 
 		if ( new_display.foreground < 0 ) {
@@ -7065,20 +7079,20 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 
 
 	if ((exp_objp->hull_strength <= KAMIKAZE_HULL_ON_DEATH) && (Ai_info[Ships[exp_objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (shipp->special_exp_damage == -1)) {
-		float override = Ai_info[shipp->ai_index].kamikaze_damage;
+		int override = Ai_info[shipp->ai_index].kamikaze_damage;
 
 		inner_rad = exp_objp->radius*2.0f;
 		outer_rad = exp_objp->radius*4.0f; // + (override * 0.3f);
-		max_damage = override;
+		max_damage = i2fl(override);
 		max_blast = override * 5.0f;
 		shockwave_speed = 100.0f;
 	} else {
 		if (shipp->use_special_explosion) {
-			inner_rad = shipp->special_exp_inner;
-			outer_rad = shipp->special_exp_outer;
-			max_damage = shipp->special_exp_damage;
-			max_blast = shipp->special_exp_blast;
-			shockwave_speed = shipp->special_exp_shockwave_speed;
+			inner_rad = i2fl(shipp->special_exp_inner);
+			outer_rad = i2fl(shipp->special_exp_outer);
+			max_damage = i2fl(shipp->special_exp_damage);
+			max_blast = i2fl(shipp->special_exp_blast);
+			shockwave_speed = i2fl(shipp->special_exp_shockwave_speed);
 		} else {
 			inner_rad = sip->shockwave.inner_rad;
 			outer_rad = sip->shockwave.outer_rad;
@@ -11116,9 +11130,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	if ( obj == Player_obj ) {
 		if ( Weapon_info[weapon].launch_snd != -1 ) {
-			weapon_info *wip;
-			ship_weapon *swp;
-
 			snd_play( &Snds[Weapon_info[weapon].launch_snd], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 			swp = &Player_ship->weapons;
 			if (swp->current_secondary_bank >= 0) {
@@ -11430,7 +11441,7 @@ int ship_select_next_primary(object *objp, int direction)
 				snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
 			}
 			ship_primary_changed(shipp);
-			object* objp = &Objects[shipp->objnum];
+			objp = &Objects[shipp->objnum];
 			object* target;
 			if (Ai_info[shipp->ai_index].target_objnum != -1)
 				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
@@ -11547,7 +11558,7 @@ int ship_select_next_secondary(object *objp)
 			}
 			ship_secondary_changed(shipp);
 
-			object* objp = &Objects[shipp->objnum];
+			objp = &Objects[shipp->objnum];
 			object* target;
 			if (Ai_info[shipp->ai_index].target_objnum != -1)
 				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
@@ -14120,7 +14131,7 @@ ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *
 
 char *ship_subsys_get_name(ship_subsys *ss)
 {
-	if(strlen(ss->sub_name) > 0)
+	if( ss->sub_name[0] != '\0' )
 		return ss->sub_name;
 	else
 		return ss->system_info->name;
@@ -14128,7 +14139,7 @@ char *ship_subsys_get_name(ship_subsys *ss)
 
 bool ship_subsys_has_instance_name(ship_subsys *ss)
 {
-	if(strlen(ss->sub_name) > 0)
+	if( ss->sub_name[0] != '\0' )
 		return true;
 	else
 		return false;
@@ -14341,8 +14352,8 @@ char *ship_return_orders(char *outbuf, ship *sp)
 
 	strcpy(outbuf, order_text);
 
-	if ( aigp->ship_name ) {
-		strcpy_s(ship_name, aigp->ship_name);
+	if ( aigp->target_name ) {
+		strcpy_s(ship_name, aigp->target_name);
 		end_string_at_first_hash_symbol(ship_name);
 	}
 	switch (aigp->ai_mode ) {
@@ -14350,7 +14361,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_GUARD_WING:
 		case AI_GOAL_CHASE_WING:
-			if ( aigp->ship_name ) {
+			if ( aigp->target_name ) {
 				strcat(outbuf, ship_name);
 				strcat(outbuf, XSTR( "'s Wing", 494));
 			} else {
@@ -14366,7 +14377,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_DISARM_SHIP:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_REARM_REPAIR:
-			if ( aigp->ship_name ) {
+			if ( aigp->target_name ) {
 				strcat(outbuf, ship_name);
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495));
@@ -14432,13 +14443,18 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		max_speed = sp->current_max_speed;
 
 	if ( aip->mode == AIM_WAYPOINTS ) {
-		waypoint_list	*wpl;
 		min_speed = 0.9f * max_speed;
-		if (aip->wp_list >= 0) {
-			wpl = &Waypoint_lists[aip->wp_list];
-			dist += vm_vec_dist_quick(&objp->pos, &wpl->waypoints[aip->wp_index]);
-			for (int i=aip->wp_index; i<wpl->count-1; i++) {
-				dist += vm_vec_dist_quick(&wpl->waypoints[i], &wpl->waypoints[i+1]);
+		if (aip->wp_list != NULL) {
+			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
+			dist += vm_vec_dist_quick(&objp->pos, aip->wp_index->get_pos());
+
+			SCP_list<waypoint>::iterator ii;
+			vec3d *prev_vec = NULL;
+			for (ii = aip->wp_index; ii != aip->wp_list->get_waypoints().end(); ++ii) {
+				if (prev_vec != NULL) {
+					dist += vm_vec_dist_quick(ii->get_pos(), prev_vec);
+				}
+				prev_vec = ii->get_pos();
 			}
 		}
 
@@ -16003,7 +16019,7 @@ float ship_get_exp_damage(object* objp)
 	ship *shipp = &Ships[objp->instance];
 
 	if (shipp->special_exp_damage >= 0) {
-		damage = shipp->special_exp_damage;
+		damage = i2fl(shipp->special_exp_damage);
 	} else {
 		damage = Ship_info[shipp->ship_info_index].shockwave.damage;
 	}
@@ -16453,7 +16469,7 @@ void wing_load_squad_bitmap(wing *w)
 	Assert (w->wing_insignia_texture == -1);
 
 	// try and set the new one
-	if(strlen(w->wing_squad_filename) > 0)
+	if( w->wing_squad_filename[0] != '\0' )
 	{
 		// load duplicate because it might be the same as the player's squad,
 		// and we don't want to overlap and breed nasty errors when we unload

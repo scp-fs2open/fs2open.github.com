@@ -877,7 +877,7 @@ int readyroom_continue_campaign()
 	if ( !(Game_mode & GM_MULTIPLAYER) && !Campaign.loop_enabled && (Campaign.current_mission == -1) &&
 		(Campaign.prev_mission != -1) && (Campaign.next_mission != -1) )
 	{
-		if (Campaign.missions[Campaign.prev_mission].has_mission_loop) {
+		if (Campaign.missions[Campaign.prev_mission].flags & CMISSION_FLAG_HAS_LOOP) {
 			// NOTE: the order of these calls is *very* important
 
 			// we must manually set the current mission to the *previous* mission and the mission name.
@@ -1358,7 +1358,7 @@ void sim_room_do_frame(float frametime)
 		gr_force_fit_string(buf, 255, list_w1);
 		gr_printf(list_x1, Mission_list_coords[gr_screen.res][1], buf);
 
-		if ( strlen(Campaign.filename) > 0 ) {			
+		if (Campaign.filename[0] != '\0') {			
 			sprintf(buf, NOX("%s%s"), Campaign.filename, FS_CAMPAIGN_FILE_EXT);
 			gr_force_fit_string(buf, 255, list_w2);
 			gr_printf(list_x2, Mission_list_coords[gr_screen.res][1], buf);		

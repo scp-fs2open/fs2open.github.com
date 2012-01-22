@@ -365,6 +365,10 @@ typedef	struct ship_subsys {
 	//scaler for setting adjusted turret rof
 	float	rof_scaler;
 	float	turn_rate;
+
+	//Per-turret ownage settings - SUSHI
+	int turret_max_bomb_ownage; 
+	int turret_max_target_ownage; 
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -533,12 +537,12 @@ typedef struct ship {
 	ship_spark	sparks[MAX_SHIP_HITS];
 	
 	bool use_special_explosion; 
-	float special_exp_damage;					// new special explosion/hitpoints system
-	float special_exp_blast;
-	float special_exp_inner;
-	float special_exp_outer;
+	int special_exp_damage;					// new special explosion/hitpoints system
+	int special_exp_blast;
+	int special_exp_inner;
+	int special_exp_outer;
 	bool use_shockwave;
-	float special_exp_shockwave_speed;
+	int special_exp_shockwave_speed;
 	int special_exp_deathroll_time;
 
 	int	special_hitpoints;

@@ -28,10 +28,11 @@ typedef struct campaign_tree_link {
 	int node;	// node tracker when link is in sexp tree window
 	int from_pos;	// from link drawing offset
 	int to_pos;	// to link drawing offset
-	bool mission_loop;	// whether link leads to mission loop
-	char *mission_loop_txt;	// text describing mission loop
-	char *mission_loop_brief_anim;	// filename of anim to play in the brief
-	char *mission_loop_brief_sound;	// filename of anim to play in the brief
+	bool is_mission_loop;	// whether link leads to mission loop
+	bool is_mission_fork;	// whether link leads to mission fork
+	char *mission_branch_txt;	// text describing mission loop
+	char *mission_branch_brief_anim;	// filename of anim to play in the brief
+	char *mission_branch_brief_sound;	// filename of anim to play in the brief
 	CPoint p1;	// coordinates of line last draw for link, from p1 to p2
 	CPoint p2;
 } campaign_tree_link;

@@ -211,7 +211,7 @@ void snd_spew_debug_info()
 		done = 0;
 
 		// what kind of sound is this
-		for(SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); gs++){
+		for(SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs){
 			if(!stricmp(gs->filename, Sounds[idx].filename)){
 				game_sounds++;
 				done = 1;
@@ -219,7 +219,7 @@ void snd_spew_debug_info()
 		}
 
 		if(!done){
-			for(SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); gs++){
+			for(SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs){
 				if(!stricmp(gs->filename, Sounds[idx].filename)){
 					interface_sounds++;
 					done = 1;

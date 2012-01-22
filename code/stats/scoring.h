@@ -89,7 +89,7 @@ typedef struct scoring_struct {
 
 	unsigned int p_bonehead_hits;		// alltime primary friendly hits
 	unsigned int s_bonehead_hits;		// alltime secondary friendly hits
-   int          bonehead_kills;		// alltime friendly kills
+    int          bonehead_kills;		// alltime friendly kills
 
 	unsigned int missions_flown;		// total # of missions flown
 	unsigned int flight_time;			// total # of flight hours the player has
@@ -109,7 +109,7 @@ typedef struct scoring_struct {
 	int m_kill_count;						// total kills for this mission
 	int m_kill_count_ok;             // total (non-friendly) kills for this mission
 	int m_assists;							// player assits for the mission
-   unsigned int mp_shots_fired;		// primary shots fired for the mission
+    unsigned int mp_shots_fired;		// primary shots fired for the mission
 	unsigned int ms_shots_fired;		// secondary shots fired for the mission
 	unsigned int mp_shots_hit;			// primary shots hit for the mission
 	unsigned int ms_shots_hit;			// secondary shots hit for the mission

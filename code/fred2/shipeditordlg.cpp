@@ -1104,21 +1104,21 @@ int CShipEditorDlg::update_data(int redraw)
 			}
 		}
 
-		for (i=0; i<MAX_WAYPOINT_LISTS; i++)
-			if (Waypoint_lists[i].count && !stricmp(Waypoint_lists[i].name, m_ship_name)) {
-				if (bypass_errors)
-					return 0;
+		if (find_matching_waypoint_list(const_cast<char*>((const char *) m_ship_name)) != NULL)
+		{
+			if (bypass_errors)
+				return 0;
 
-				bypass_errors = 1;
-				z = MessageBox("This ship name is already being used by a waypoint path\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+			bypass_errors = 1;
+			z = MessageBox("This ship name is already being used by a waypoint path\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
 
-				if (z == IDCANCEL)
-					return -1;
+			if (z == IDCANCEL)
+				return -1;
 
-				m_ship_name = _T(Ships[single_ship].ship_name);
-				UpdateData(FALSE);
-			}
+			m_ship_name = _T(Ships[single_ship].ship_name);
+			UpdateData(FALSE);
+		}
 
 		if(jumpnode_get_by_name(m_ship_name) != NULL)
 		{

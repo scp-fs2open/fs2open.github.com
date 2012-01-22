@@ -13,25 +13,6 @@
 #define _PSTYPES_H
 
 
-// Build defines.  Comment in/out for whatever build is necessary:
-// #define OEM_BUILD				// enable for OEM builds
-// #define MULTIPLAYER_BETA_BUILD	// enable for multiplayer beta build
-// #define E3_BUILD					// enable for 3dfx E3 build
-// #define PRESS_TOUR_BUILD			// enable for press tour build
-// #define FS2_DEMO					// enable demo build for FS2
-// #define PD_BUILD					// fred documentation/evaluation build
-// #define FRENCH_BUILD			// build for French (obsolete)
-// #define GERMAN_BUILD				// build for German (this is now used)
-#define RELEASE_REAL				// this means that it is an actual release candidate, not just an optimized/release build
-
-// uncomment this #define for DVD version (makes popups say DVD instead of CD 2 or whatever): JCF 5/10/2000
-// #define DVD_MESSAGE_HACK
-
-
-//  #if defined(MULTIPLAYER_BETA_BUILD) || defined(E3_BUILD) || defined(RELEASE_REAL)
-//  	#define GAME_CD_CHECK
-//  #endif
-
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
 #include <memory.h>
@@ -113,23 +94,9 @@ inline bool vec3d::operator == (const vec3d &other)
 	return ( (a1d[0] == other.a1d[0]) && (a1d[1] == other.a1d[1]) && (a1d[2] == other.a1d[2]) );
 }
 
-/*
-// A vector referenced as an array
-typedef struct vectora {
-	float xyz[3];
-} vectora;
-*/
-
 typedef struct vec2d {
 	float x, y;
 } vec2d;
-
-/*
-// Used for some 2d primitives, like gr_poly
-typedef struct vert2df {
-	float x, y;
-} vert2df;
-*/
 
 typedef struct angles {
 	float	p, b, h;
@@ -155,8 +122,6 @@ typedef struct vertex {
 	float		x, y, z;			// world space position
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
 	float		u, v;				// texture position
-//	float		u2, v2, u3, v3, u4, v4;	// texture position
-//	vec3d		real_pos;			// _real_ world position
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
 	ubyte		spec_r, spec_g, spec_b, spec_a;	//specular highlights -Bobboau
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
@@ -179,6 +144,7 @@ inline bool vertex::operator == (const vertex &other)
 inline void vec3d::operator= (vertex&vert) {
 	memcpy(this,&vert.x,sizeof(vec3d));
 }
+
 //set the vector to the vertex screen position
 inline void vec3d::set_screen_vert(vertex&vert) {
 	memcpy(this,&vert.sx,sizeof(vec3d));
@@ -223,7 +189,7 @@ extern int Global_error_count;
 
 /*******************NEVER UNCOMMENT Assert ************************************************/
 // Please never uncomment the functionality of Assert in debug
-// The code, as with all developement like this is littered with Asserts which are designed to throw
+// The code, as with all development like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
 
 #define ASSUME(x)

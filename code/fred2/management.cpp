@@ -77,8 +77,8 @@ int cur_wing_index;
 int cur_object_index = -1;
 int cur_ship = -1;
 int cur_model_index = 0;
-int cur_waypoint = -1;
-int cur_waypoint_list = -1;
+waypoint *cur_waypoint = NULL;
+waypoint_list *cur_waypoint_list = NULL;
 int delete_flag;
 int bypass_update = 0;
 int Default_player_model = 0;
@@ -127,7 +127,7 @@ int Ai_goal_list_size = sizeof(Ai_goal_list) / sizeof(ai_goal_list);
 // internal function prototypes
 void set_cur_indices(int obj);
 int common_object_delete(int obj);
-int create_waypoint(vec3d *pos, int list);
+int create_waypoint(vec3d *pos, int waypoint_instance);
 int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
@@ -504,7 +504,7 @@ void set_physics_controls()
 	theApp.write_ini_file(1);
 }
 
-int create_object_on_grid(int list)
+int create_object_on_grid(int waypoint_instance)
 {
 	int obj = -1;
 	float rval;
@@ -516,7 +516,7 @@ int create_object_on_grid(int list)
 
 	if (rval>=0.0f) {
 		unmark_all();
-		obj = create_object(&pos, list);
+		obj = create_object(&pos, waypoint_instance);
 		if (obj >= 0) {
 			mark_object(obj);
 			FREDDoc_ptr->autosave("object create");
@@ -620,7 +620,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 		temp_max_hull_strength = sip->max_hull_strength;
 	}
 
-	Ai_info[shipp->ai_index].kamikaze_damage = min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+	Ai_info[shipp->ai_index].kamikaze_damage = (int) min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
 
 	return obj;
 }
@@ -649,10 +649,10 @@ int dup_object(object *objp)
 	ai_info *aip1, *aip2;
 	object *objp1, *objp2;
 	ship_subsys *subp1, *subp2;
-	static int list;
+	static int waypoint_instance(-1);
 
 	if (!objp) {
-		list = -1;
+		waypoint_instance = -1;
 		return 0;
 	}
 
@@ -717,8 +717,8 @@ int dup_object(object *objp)
 			}
 
 	} else if (objp->type == OBJ_WAYPOINT) {
-		obj = create_waypoint(&objp->pos, list);
-		list = Objects[obj].instance;
+		obj = create_waypoint(&objp->pos, waypoint_instance);
+		waypoint_instance = Objects[obj].instance;
 	}
 
 	if (obj == -1)
@@ -730,12 +730,12 @@ int dup_object(object *objp)
 	return obj;
 }
 
-int create_object(vec3d *pos, int list)
+int create_object(vec3d *pos, int waypoint_instance)
 {
 	int obj, n;
 
 	if (cur_model_index == Id_select_type_waypoint)
-		obj = create_waypoint(pos, list);
+		obj = create_waypoint(pos, waypoint_instance);
 
 	else if (cur_model_index == Id_select_type_start) {
 		if (Player_starts >= MAX_PLAYERS) {
@@ -802,88 +802,9 @@ int create_player(int num, vec3d *pos, matrix *orient, int type, int init)
 	return obj;
 }
 
-int query_waypoint_path_name_duplicate(int list)
+int create_waypoint(vec3d *pos, int waypoint_instance)
 {
-	int i;
-
-	for (i=0; i<Num_waypoint_lists; i++)
-		if (i != list)
-			if (!stricmp(Waypoint_lists[i].name, Waypoint_lists[list].name))
-				return 1;
-
-	return 0;
-}
-
-void get_unique_waypoint_path_name(int list)
-{
-	int i = 1;
-
-	sprintf(Waypoint_lists[list].name, "Waypoint path %d", list + 1);
-	while (query_waypoint_path_name_duplicate(list)) {
-		sprintf(Waypoint_lists[list].name, "Waypoint path U%d", i++);
-	}
-}
-
-int create_waypoint(vec3d *pos, int list)
-{
-	int i, obj, index = 0;
-	object *ptr;
-
-	if (list == -1) {  // find a new list to start.
-		for (list=0; list<MAX_WAYPOINT_LISTS; list++){
-			if (!Waypoint_lists[list].count) {
-				get_unique_waypoint_path_name(list);
-				break;
-			}
-		}
-	} else {
-		index = (list & 0xffff) + 1;
-		list /= 65536;
-	}
-
-	if (list == MAX_WAYPOINT_LISTS) {
-		Fred_main_wnd->MessageBox("Unable to create new waypoint path.  You\n"
-			"have reached the maximum limit.", NULL, MB_OK | MB_ICONEXCLAMATION);
-		return -1;
-	}
-
-	Assert((list >= 0) && (list < MAX_WAYPOINT_LISTS));  // illegal index or out of lists.
-	if (Waypoint_lists[list].count >= MAX_WAYPOINTS_PER_LIST) {
-		Fred_main_wnd->MessageBox("Unable to create new waypoint.  You have\n"
-			"reached the maximum limit on waypoints per list.", NULL, MB_OK | MB_ICONEXCLAMATION);
-		return -1;
-	}
-
-	if (Waypoint_lists[list].count > index) {
-		i = Waypoint_lists[list].count;
-		while (i > index) {
-			Waypoint_lists[list].waypoints[i] = Waypoint_lists[list].waypoints[i - 1];
-			Waypoint_lists[list].flags[i] = Waypoint_lists[list].flags[i - 1];
-			i--;
-		}
-	}
-
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		Assert(ptr->type != OBJ_NONE);
-		if (ptr->type == OBJ_WAYPOINT) {
-			i = ptr->instance;
-			if ((i / 65536 == list) && ((i & 0xffff) >= index)){
-				ptr->instance++;
-			}
-		}
-
-		ptr = GET_NEXT(ptr);
-	}
-
-	Waypoint_lists[list].count++;
-	Waypoint_lists[list].flags[index] = 0;
-	Waypoint_lists[list].waypoints[index] = *pos;
-	if (list >= Num_waypoint_lists){
-		Num_waypoint_lists = list + 1;
-	}
-
-	obj = obj_create(OBJ_WAYPOINT, -1, list * 65536 + index, NULL, pos, 0.0f, OF_RENDERS);
+	int obj = waypoint_add(pos, waypoint_instance);
 	set_modified();
 	return obj;
 }
@@ -941,17 +862,14 @@ void clear_mission()
 	ai_init();
 	ai_profiles_init();
 	ship_init();
-	Num_ai_dock_names = 0;
 	jumpnode_level_close();
+	waypoint_level_close();
+
 	Num_wings = 0;
 	for (i=0; i<MAX_WINGS; i++){
 		Wings[i].wave_count = 0;
 		Wings[i].wing_squad_filename[0] = '\0';
 		Wings[i].wing_insignia_texture = -1;
-	}
-
-	for (i=0; i<MAX_WAYPOINT_LISTS; i++){
-		Waypoint_lists[i].count = 0;
 	}
 
 	for (i=0; i<MAX_IFFS; i++){
@@ -962,6 +880,7 @@ void clear_mission()
 		Shield_sys_types[i] = 0;
 	}
 
+	Num_ai_dock_names = 0;
 	Num_reinforcements = 0;
 	set_cur_indices(-1);
 
@@ -1032,7 +951,7 @@ void clear_mission()
 	*Mission_text = *Mission_text_raw = EOF_CHAR;
 	Mission_text[1] = Mission_text_raw[1] = 0;
 
-	Num_waypoint_lists = 0;
+	waypoint_parse_init();
 	Num_mission_events = 0;
 	Num_goals = 0;
 	unmark_all();
@@ -1210,7 +1129,10 @@ void set_cur_indices(int obj)
 	sync.Lock();  // Don't modify until it's unlocked (if it's locked elsewhere).
 	if (query_valid_object(obj)) {
 		cur_object_index = obj;
-		cur_ship = cur_wing = cur_waypoint_list = cur_waypoint = -1;
+		cur_ship = cur_wing = -1;
+		cur_waypoint_list = NULL;
+		cur_waypoint = NULL;
+
 		if ((Objects[obj].type == OBJ_SHIP) || (Objects[obj].type == OBJ_START)) {
 			cur_ship = Objects[obj].instance;
 			cur_wing = Ships[cur_ship].wingnum;
@@ -1222,15 +1144,18 @@ void set_cur_indices(int obj)
 					}
 
 		} else if (Objects[obj].type == OBJ_WAYPOINT) {
-			cur_waypoint_list = Objects[obj].instance / 65536;
-			cur_waypoint = Objects[obj].instance & 0xffff;
+			cur_waypoint = find_waypoint_with_instance(Objects[obj].instance);
+			Assert(cur_waypoint != NULL);
+			cur_waypoint_list = cur_waypoint->get_parent_list();
 		}
 
 		return;
 	}
 
 	if (obj == -1 || !Num_objects) {
-		cur_object_index = cur_ship = cur_wing = cur_waypoint_list = cur_waypoint = -1;
+		cur_object_index = cur_ship = cur_wing = -1;
+		cur_waypoint_list = NULL;
+		cur_waypoint = NULL;
 		return;
 	}
 
@@ -1245,7 +1170,10 @@ void set_cur_indices(int obj)
 	Assert(ptr != END_OF_LIST(&obj_used_list));
 	cur_object_index = OBJ_INDEX(ptr);
 	Assert(ptr->type != OBJ_NONE);
-	cur_ship = cur_wing = cur_waypoint_list = cur_waypoint = -1;
+	cur_ship = cur_wing = -1;
+	cur_waypoint_list = NULL;
+	cur_waypoint = NULL;
+
 	if (ptr->type == OBJ_SHIP) {
 		cur_ship = ptr->instance;
 		cur_wing = Ships[cur_ship].wingnum;
@@ -1256,8 +1184,9 @@ void set_cur_indices(int obj)
 			}
 
 	} else if (ptr->type == OBJ_WAYPOINT) {
-		cur_waypoint_list = ptr->instance / 65536;
-		cur_waypoint = ptr->instance & 0xffff;
+		cur_waypoint = find_waypoint_with_instance(ptr->instance);
+		Assert(cur_waypoint != NULL);
+		cur_waypoint_list = cur_waypoint->get_parent_list();
 	}
 }
 
@@ -1383,61 +1312,36 @@ int common_object_delete(int obj)
 		Player_starts--;
 
 	} else if (type == OBJ_WAYPOINT) {
-		int list, count;
+		waypoint *wpt = find_waypoint_with_instance(Objects[obj].instance);
+		Assert(wpt != NULL);
+		waypoint_list *wp_list = wpt->get_parent_list();
+		int index = calc_waypoint_list_index(Objects[obj].instance);
+		int count = (int) wp_list->get_waypoints().size();
 
-		list = Objects[obj].instance / 65536;
-		i = Objects[obj].instance & 0xffff;
-		Assert(list >= 0 && list < MAX_WAYPOINT_LISTS);
-		count = Waypoint_lists[list].count;
-		Assert(i >= 0 && i < count);
-
-		if (Waypoint_lists[list].count == 1) {
-			name = Waypoint_lists[list].name;
+		// we'll end up deleting the path, so check for path references
+		if (count == 1) {
+			name = wp_list->get_name();
 			r = reference_handler(name, REF_TYPE_PATH, obj);
 			if (r)
 				return r;
 		}
 
-		sprintf(msg, "%s:%d", Waypoint_lists[list].name, i + 1);
+		// check for waypoint references
+		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
 		name = msg;
 		r = reference_handler(name, REF_TYPE_WAYPOINT, obj);
 		if (r)
 			return r;
 
+		// at this point we've confirmed we want to delete it
+
 		invalidate_references(name, REF_TYPE_WAYPOINT);
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if ((objp->type == OBJ_WAYPOINT) && ((objp->instance / 65536) == list))
-				if ((objp->instance & 0xffff) > i)
-					objp->instance--;
-
-			objp = GET_NEXT(objp);
+		if (count == 1) {
+			invalidate_references(wp_list->get_name(), REF_TYPE_PATH);
 		}
 
-		while (i < count - 1) {
-			Waypoint_lists[list].waypoints[i] = Waypoint_lists[list].waypoints[i + 1];
-			i++;
-		}
-
-		Waypoint_lists[list].count--;
-		if (!Waypoint_lists[list].count) {
-			invalidate_references(Waypoint_lists[list].name, REF_TYPE_PATH);
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				if ((objp->type == OBJ_WAYPOINT) && ((objp->instance / 65536) > list))
-					objp->instance -= 65536;
-
-				objp = GET_NEXT(objp);
-			}
-
-			while (list < Num_waypoint_lists - 1) {
-				Waypoint_lists[list] = Waypoint_lists[list + 1];
-				list++;
-			}
-
-			Num_waypoint_lists--;
-			Waypoint_lists[list].count = 0;
-		}
+		// the actual removal code has been moved to this function in waypoints.cpp
+		waypoint_remove(wpt);
 
 	} else if (type == OBJ_SHIP) {
 		name = Ships[Objects[obj].instance].ship_name;
@@ -2419,19 +2323,21 @@ int sexp_reference_handler(int node, int code, char *msg)
 char *object_name(int obj)
 {
 	static char text[80];
-	int i;
+	waypoint_list *wp_list;
+	int waypoint_num;
 
 	if (!query_valid_object(obj))
 		return "*none*";
 
-	i = Objects[obj].instance;
 	switch (Objects[obj].type) {
 		case OBJ_SHIP:
 		case OBJ_START:
-			return Ships[i].ship_name;
+			return Ships[Objects[obj].instance].ship_name;
 
 		case OBJ_WAYPOINT:
-			sprintf(text, "%s:%d", Waypoint_lists[i / 65536].name, (i & 0xffff) + 1);
+			wp_list = find_waypoint_list_with_instance(Objects[obj].instance, &waypoint_num);
+			Assert(wp_list != NULL);
+			sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
 			return text;
 
 		case OBJ_POINT:
@@ -2458,7 +2364,11 @@ char *get_order_name(int order)
 void object_moved(object *objp)
 {
 	if (objp->type == OBJ_WAYPOINT)
-		Waypoint_lists[objp->instance / 65536].waypoints[objp->instance & 0xffff] = objp->pos;
+	{
+		waypoint *wpt = find_waypoint_with_instance(objp->instance);
+		Assert(wpt != NULL);
+		wpt->set_pos(&objp->pos);
+	}
 
 	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) // do we have a ship?
 	{

@@ -725,7 +725,7 @@ void multi_pinfo_build_stats()
 	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK],Ranks[sc->rank].name);
 
 	// primary shots fired
-	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%d",sc->p_shots_fired);
+	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%u",sc->p_shots_fired);
 
 	// primary shots hit
 	// sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_HIT],"%d",sc->p_shots_hit);
@@ -737,7 +737,7 @@ void multi_pinfo_build_stats()
 		sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], "%d%%", 0);
 	}
 	// primary shots fired
-	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%d",sc->s_shots_fired);
+	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%u",sc->s_shots_fired);
 
 	// primary shots hit
 	// sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_HIT],"%d",sc->s_shots_hit);
@@ -830,11 +830,11 @@ void multi_pinfo_reset_player(net_player *np)
 	}	
 	
 	// try and load pilot pic/squad logo
-	if(strlen(np->m_player->image_filename) > 0){
+	if(np->m_player->image_filename[0] != '\0'){
 		strcpy_s(Mp_pilot.filename, np->m_player->image_filename);
 		Mp_pilot.bitmap = bm_load_duplicate(Mp_pilot.filename);
 	}
-	if(strlen(np->m_player->squad_filename) > 0){
+	if(np->m_player->squad_filename[0] != '\0'){
 		strcpy_s(Mp_squad.filename, np->m_player->squad_filename);
 		Mp_squad.bitmap = bm_load_duplicate(Mp_squad.filename);
 	}

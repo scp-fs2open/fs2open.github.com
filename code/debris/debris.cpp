@@ -948,7 +948,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				pmi = model_get_instance(Ships[heavy_obj->instance].model_instance_num);
 
 				// turn off all rotating submodels and test for collision
-				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
+				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); ++smv) {
 					pmi->submodel[*smv].collision_checked = true;
 				}
 
@@ -956,7 +956,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
 
 				// check each submodel in turn
-				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
+				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); ++smv) {
 					// turn on submodel for collision test
 					pmi->submodel[*smv].collision_checked = false;
 

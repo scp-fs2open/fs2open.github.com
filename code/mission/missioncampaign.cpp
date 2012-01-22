@@ -118,10 +118,12 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 	Assert( type != NULL );
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
-	if ((strlen(fname) < 4) || stricmp(fname + strlen(fname) - 4, FS_CAMPAIGN_FILE_EXT)){
+	int fname_len = strlen(fname);
+	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT)){
 		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);
+		fname_len += 4;
 	}
-	Assert(strlen(fname) < MAX_FILENAME_LEN);
+	Assert(fname_len < MAX_FILENAME_LEN);
 
 	// open localization
 	lcl_ext_open();
@@ -583,25 +585,26 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				}
 			}
 
-			// Do mission looping stuff
-			cm->has_mission_loop = 0;
+			// Do mission branching stuff
 			if ( optional_string("+Mission Loop:") ) {
-				cm->has_mission_loop = 1;
+				cm->flags |= CMISSION_FLAG_HAS_LOOP;
+			} else if ( optional_string("+Mission Fork:") ) {
+				cm->flags |= CMISSION_FLAG_HAS_FORK;
 			}
 
-			cm->mission_loop_desc = NULL;
-			if ( optional_string("+Mission Loop Text:")) {
-				cm->mission_loop_desc = stuff_and_malloc_string(F_MULTITEXT, NULL, MISSION_DESC_LENGTH);
+			cm->mission_branch_desc = NULL;
+			if ( optional_string("+Mission Loop Text:") || optional_string("+Mission Fork Text:") ) {
+				cm->mission_branch_desc = stuff_and_malloc_string(F_MULTITEXT, NULL, MISSION_DESC_LENGTH);
 			}
 
-			cm->mission_loop_brief_anim = NULL;
-			if ( optional_string("+Mission Loop Brief Anim:")) {
-				cm->mission_loop_brief_anim = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_FILENAME_LEN);
+			cm->mission_branch_brief_anim = NULL;
+			if ( optional_string("+Mission Loop Brief Anim:") || optional_string("+Mission Fork Brief Anim:") ) {
+				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_FILENAME_LEN);
 			}
 
-			cm->mission_loop_brief_sound = NULL;
-			if ( optional_string("+Mission Loop Brief Sound:")) {
-				cm->mission_loop_brief_sound = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_FILENAME_LEN);
+			cm->mission_branch_brief_sound = NULL;
+			if ( optional_string("+Mission Loop Brief Sound:") || optional_string("+Mission Fork Brief Sound:") ) {
+				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_FILENAME_LEN);
 			}
 
 			cm->mission_loop_formula = -1;
@@ -693,7 +696,7 @@ int mission_campaign_load_by_name( char *filename )
 	int type,max_players;
 
 	// make sure to tack on .fsc on the end if its not there already
-	if(strlen(filename) > 0){
+	if(filename[0] != '\0'){
 		if(strlen(filename) > 4){
 			strcpy_s(test,filename+(strlen(filename)-4));
 			if(strcmp(test, FS_CAMPAIGN_FILE_EXT)!=0){
@@ -711,8 +714,8 @@ int mission_campaign_load_by_name( char *filename )
 	}
 
 	Num_campaigns = 0;
-	Campaign_file_names[Num_campaigns] = filename;
-	Campaign_names[Num_campaigns] = name;
+	Campaign_file_names[Num_campaigns] = vm_strdup(filename);
+	Campaign_names[Num_campaigns] = vm_strdup(name);
 	Num_campaigns++;
 	mission_campaign_load(filename);		
 	return 0;
@@ -781,7 +784,7 @@ int mission_campaign_savefile_save()
 		return 0;
 
 	// catch a case where the campaign hasn't been switched yet after being unavailable
-	if ( strlen(Campaign.filename) == 0 )
+	if ( Campaign.filename[0] == '\0' )
 		return 0;
 
 	// make sure that we don't try to save if the campaign is missing since it's
@@ -1331,21 +1334,21 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			}
 
 			// swap values
-			Campaign.missions[num].stats.score = INTEL_INT(Campaign.missions[num].stats.score);
-			Campaign.missions[num].stats.rank = INTEL_INT(Campaign.missions[num].stats.rank);
-			Campaign.missions[num].stats.assists = INTEL_INT(Campaign.missions[num].stats.assists);
-			Campaign.missions[num].stats.kill_count = INTEL_INT(Campaign.missions[num].stats.kill_count);
-			Campaign.missions[num].stats.kill_count_ok = INTEL_INT(Campaign.missions[num].stats.kill_count_ok);
-			Campaign.missions[num].stats.p_shots_fired = INTEL_INT(Campaign.missions[num].stats.p_shots_fired);
-			Campaign.missions[num].stats.s_shots_fired = INTEL_INT(Campaign.missions[num].stats.s_shots_fired);
-			Campaign.missions[num].stats.p_shots_hit = INTEL_INT(Campaign.missions[num].stats.p_shots_hit);
-			Campaign.missions[num].stats.s_shots_hit = INTEL_INT(Campaign.missions[num].stats.s_shots_hit);
-			Campaign.missions[num].stats.p_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.p_bonehead_hits);
-			Campaign.missions[num].stats.s_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.s_bonehead_hits);
-			Campaign.missions[num].stats.bonehead_kills = INTEL_INT(Campaign.missions[num].stats.bonehead_kills);
+			Campaign.missions[num].stats.score = INTEL_INT(Campaign.missions[num].stats.score); //-V570
+			Campaign.missions[num].stats.rank = INTEL_INT(Campaign.missions[num].stats.rank); //-V570
+			Campaign.missions[num].stats.assists = INTEL_INT(Campaign.missions[num].stats.assists); //-V570
+			Campaign.missions[num].stats.kill_count = INTEL_INT(Campaign.missions[num].stats.kill_count); //-V570
+			Campaign.missions[num].stats.kill_count_ok = INTEL_INT(Campaign.missions[num].stats.kill_count_ok); //-V570
+			Campaign.missions[num].stats.p_shots_fired = INTEL_INT(Campaign.missions[num].stats.p_shots_fired); //-V570
+			Campaign.missions[num].stats.s_shots_fired = INTEL_INT(Campaign.missions[num].stats.s_shots_fired); //-V570
+			Campaign.missions[num].stats.p_shots_hit = INTEL_INT(Campaign.missions[num].stats.p_shots_hit); //-V570
+			Campaign.missions[num].stats.s_shots_hit = INTEL_INT(Campaign.missions[num].stats.s_shots_hit); //-V570
+			Campaign.missions[num].stats.p_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.p_bonehead_hits); //-V570
+			Campaign.missions[num].stats.s_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.s_bonehead_hits); //-V570
+			Campaign.missions[num].stats.bonehead_kills = INTEL_INT(Campaign.missions[num].stats.bonehead_kills); //-V570
 
 			for (j=0; j < MAX_MEDALS; j++) {
-				Campaign.missions[num].stats.medals[j] = INTEL_INT(Campaign.missions[num].stats.medals[j]);
+				Campaign.missions[num].stats.medals[j] = INTEL_INT(Campaign.missions[num].stats.medals[j]); //-V570
 			}
 		}
 
@@ -1637,21 +1640,21 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			}
 
 			// swap values
-			Campaign.missions[num].stats.score = INTEL_INT(Campaign.missions[num].stats.score);
-			Campaign.missions[num].stats.rank = INTEL_INT(Campaign.missions[num].stats.rank);
-			Campaign.missions[num].stats.assists = INTEL_INT(Campaign.missions[num].stats.assists);
-			Campaign.missions[num].stats.kill_count = INTEL_INT(Campaign.missions[num].stats.kill_count);
-			Campaign.missions[num].stats.kill_count_ok = INTEL_INT(Campaign.missions[num].stats.kill_count_ok);
-			Campaign.missions[num].stats.p_shots_fired = INTEL_INT(Campaign.missions[num].stats.p_shots_fired);
-			Campaign.missions[num].stats.s_shots_fired = INTEL_INT(Campaign.missions[num].stats.s_shots_fired);
-			Campaign.missions[num].stats.p_shots_hit = INTEL_INT(Campaign.missions[num].stats.p_shots_hit);
-			Campaign.missions[num].stats.s_shots_hit = INTEL_INT(Campaign.missions[num].stats.s_shots_hit);
-			Campaign.missions[num].stats.p_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.p_bonehead_hits);
-			Campaign.missions[num].stats.s_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.s_bonehead_hits);
-			Campaign.missions[num].stats.bonehead_kills = INTEL_INT(Campaign.missions[num].stats.bonehead_kills);
+			Campaign.missions[num].stats.score = INTEL_INT(Campaign.missions[num].stats.score); //-V570
+			Campaign.missions[num].stats.rank = INTEL_INT(Campaign.missions[num].stats.rank); //-V570
+			Campaign.missions[num].stats.assists = INTEL_INT(Campaign.missions[num].stats.assists); //-V570
+			Campaign.missions[num].stats.kill_count = INTEL_INT(Campaign.missions[num].stats.kill_count); //-V570
+			Campaign.missions[num].stats.kill_count_ok = INTEL_INT(Campaign.missions[num].stats.kill_count_ok); //-V570
+			Campaign.missions[num].stats.p_shots_fired = INTEL_INT(Campaign.missions[num].stats.p_shots_fired); //-V570
+			Campaign.missions[num].stats.s_shots_fired = INTEL_INT(Campaign.missions[num].stats.s_shots_fired); //-V570
+			Campaign.missions[num].stats.p_shots_hit = INTEL_INT(Campaign.missions[num].stats.p_shots_hit); //-V570
+			Campaign.missions[num].stats.s_shots_hit = INTEL_INT(Campaign.missions[num].stats.s_shots_hit); //-V570
+			Campaign.missions[num].stats.p_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.p_bonehead_hits); //-V570
+			Campaign.missions[num].stats.s_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.s_bonehead_hits); //-V570
+			Campaign.missions[num].stats.bonehead_kills = INTEL_INT(Campaign.missions[num].stats.bonehead_kills); //-V570
 
 			for (j=0; j < MAX_MEDALS; j++) {
-				Campaign.missions[num].stats.medals[j] = INTEL_INT(Campaign.missions[num].stats.medals[j]);
+				Campaign.missions[num].stats.medals[j] = INTEL_INT(Campaign.missions[num].stats.medals[j]); //-V570
 			}
 		}
 
@@ -1695,7 +1698,7 @@ void campaign_savefile_load(char *fname, char *pname)
 // set successfully
 int mission_campaign_next_mission()
 {
-	if ( (Campaign.next_mission == -1) || (strlen(Campaign.name) == 0)) // will be set to -1 when there is no next mission
+	if ( (Campaign.next_mission == -1) || (Campaign.name[0] == '\0')) // will be set to -1 when there is no next mission
 		return -1;
 
 	if(Campaign.num_missions < 1)
@@ -1906,7 +1909,7 @@ void mission_campaign_eval_next_mission()
 	}
 
 	// evaluate mission loop mission (if any) so it can be used if chosen
-	if ( Campaign.missions[cur].has_mission_loop ) {
+	if ( Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP ) {
 		int copy_next_mission = Campaign.next_mission;
 		// Set temporarily to -1 so we know if loop formula fails to assign
 		Campaign.next_mission = -1;
@@ -1957,7 +1960,7 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 	// copy the needed info from the Mission_goal struct to our internal structure
 	for (i = 0; i < Num_goals; i++ ) {
-		if ( strlen(Mission_goals[i].name) == 0 ) {
+		if (Mission_goals[i].name[0] == '\0') {
 			char goal_name[NAME_LENGTH];
 
 			sprintf(goal_name, NOX("Goal #%d"), i);
@@ -1984,7 +1987,7 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 	// copy the needed info from the Mission_goal struct to our internal structure
 	for (i = 0; i < Num_mission_events; i++ ) {
- 		if ( strlen(Mission_events[i].name) == 0 ) {
+ 		if (Mission_events[i].name[0] == '\0') {
 			char event_name[NAME_LENGTH];
 
 			sprintf(event_name, NOX("Event #%d"), i);
@@ -2168,19 +2171,19 @@ void mission_campaign_close()
 		}
 
 		// the next three are strdup'd return values from parselo.cpp - taylor
-		if (Campaign.missions[i].mission_loop_desc != NULL) {
-			vm_free(Campaign.missions[i].mission_loop_desc);
-			Campaign.missions[i].mission_loop_desc = NULL;
+		if (Campaign.missions[i].mission_branch_desc != NULL) {
+			vm_free(Campaign.missions[i].mission_branch_desc);
+			Campaign.missions[i].mission_branch_desc = NULL;
 		}
 
-		if (Campaign.missions[i].mission_loop_brief_anim != NULL) {
-			vm_free(Campaign.missions[i].mission_loop_brief_anim);
-			Campaign.missions[i].mission_loop_brief_anim = NULL;
+		if (Campaign.missions[i].mission_branch_brief_anim != NULL) {
+			vm_free(Campaign.missions[i].mission_branch_brief_anim);
+			Campaign.missions[i].mission_branch_brief_anim = NULL;
 		}
 
-		if (Campaign.missions[i].mission_loop_brief_sound != NULL) {
-			vm_free(Campaign.missions[i].mission_loop_brief_sound);
-			Campaign.missions[i].mission_loop_brief_sound = NULL;
+		if (Campaign.missions[i].mission_branch_brief_sound != NULL) {
+			vm_free(Campaign.missions[i].mission_branch_brief_sound);
+			Campaign.missions[i].mission_branch_brief_sound = NULL;
  		}
 
 		if ( !Fred_running ){
@@ -2560,7 +2563,7 @@ void mission_campaign_skip_to_next(int start_game)
 
 	if (start_game) {
 		// proceed to next mission or main hall
-		if ((Campaign.missions[Campaign.current_mission].has_mission_loop) && (Campaign.loop_mission != -1)) {
+		if ((Campaign.missions[Campaign.current_mission].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1)) {
 			// go to loop solicitation
 			gameseq_post_event(GS_EVENT_LOOP_BRIEF);
 		} else {

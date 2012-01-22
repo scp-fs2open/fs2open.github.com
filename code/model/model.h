@@ -82,15 +82,12 @@ typedef struct submodel_instance_info {
 } submodel_instance_info;
 
 typedef struct submodel_instance {
-	bool blown_off;
 	angles angs;
 	angles prev_angs;
-	//int num_arcs;
-	bool collision_checked;
-	//submodel_instance_info *sii;
-
 	vec3d mc_base;
 	matrix mc_orient;
+	bool collision_checked;
+	bool blown_off;
 } submodel_instance;
 
 typedef struct polymodel_instance {
@@ -227,6 +224,10 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	float	favor_current_facing;
 
 	float	turret_rof_scaler;
+
+	//Per-turret ownage settings - SUSHI
+	int turret_max_bomb_ownage; 
+	int turret_max_target_ownage; 
 } model_subsystem;
 
 typedef struct model_special {

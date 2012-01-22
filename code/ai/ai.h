@@ -17,6 +17,7 @@
 #include "globalincs/systemvars.h"
 #include "ai/ai_profiles.h"
 #include "physics/physics.h"
+#include "object/waypoint.h"
 
 struct ship_weapon;
 struct ship_subsys;
@@ -126,10 +127,12 @@ typedef struct ai_goal {
 	int	flags;				// one of the AIGF_* values above
 	fix	time;					// time at which this goal was issued.
 	int	priority;			// how important is this goal -- number 0 - 100
-	char	*ship_name;			// name of the ship that this goal acts upon
-	int	ship_name_index;	// index of ship_name in Goal_ship_names[][]
-	int	wp_index;			// index into waypoints list of waypoints that this ship might fly.
-	int	weapon_signature;	// signature of weapon this ship might be chasing.  Paired with above value to get target.
+
+	char	*target_name;		// name of the thing that this goal acts upon
+	int		target_name_index;	// index of goal_target_name in Goal_target_names[][]
+	waypoint_list *wp_list;		// waypoints that this ship might fly.
+	int target_instance;		// instance of thing this ship might be chasing (currently only used for weapons; note, not the same as objnum!)
+	int	target_signature;		// signature of object this ship might be chasing (currently only used for weapons; paired with above value to confirm target)
 
 	// unions for docking stuff.
 	// (AIGF_DOCKER_INDEX_VALID and AIGF_DOCKEE_INDEX_VALID tell us to use indexes; otherwise we use names)
@@ -146,7 +149,7 @@ typedef struct ai_goal {
 
 } ai_goal;
 
-#define	MAX_GOAL_SHIP_NAMES	100
+#define	MAX_GOAL_TARGET_NAMES	100
 
 #define	AIM_CHASE				0
 #define	AIM_EVADE				1
@@ -355,10 +358,9 @@ typedef struct ai_info {
 	int		ai_class;				//	Class.  Might be override of default.
 
 	//	Probably become obsolete, to be replaced by path_start, path_cur, etc.
-	int		wp_list;					// waypoint list index
-	int		wp_index;				// waypoint index in list
+	waypoint_list				*wp_list;		// waypoint list being followed
+	SCP_list<waypoint>::iterator wp_index;	// waypoint index in list
 	int		wp_flags;				//	waypoint flags, see WPF_xxxx
-	int		wp_dir;					//	1 or -1, amount to add to get to next waypoint index.
 	int		waypoint_speed_cap;	// -1 no cap, otherwise cap - changed to int by Goober5000
 
 	//	Path following information
@@ -507,7 +509,7 @@ typedef struct ai_info {
 	int		self_destruct_timestamp;		//	Time at which to self-destruct, probably due to being disabled.
 	int		ok_to_target_timestamp;			//	Time at which this ship can dynamically target.
 
-	float		kamikaze_damage;					// some damage value used to produce a shockwave from a kamikaze ship
+	int		kamikaze_damage;					// some damage value used to produce a shockwave from a kamikaze ship
 	vec3d	big_attack_point;					//	Global point this ship is attacking on a big ship.
 	vec3d	big_attack_surface_normal;		// Surface normal at ship at big_attack_point;
 	int		pick_big_attack_point_timestamp; //	timestamp at which to pick a new point to attack on a big ship.
@@ -549,8 +551,8 @@ typedef struct ai_info {
 #define BURST_DURATION		500	// decay time over which Player->damage_this_burst falls from MAX_BURST_DAMAGE to 0
 
 extern int Mission_all_attack;	//	!0 means all teams attack all teams.
-extern int Total_goal_ship_names;
-extern char Goal_ship_names[MAX_GOAL_SHIP_NAMES][NAME_LENGTH];
+extern int Total_goal_target_names;
+extern char Goal_target_names[MAX_GOAL_TARGET_NAMES][NAME_LENGTH];
 
 extern void update_ai_info_for_hit(int hitter_obj, int hit_obj);
 extern void ai_frame_all(void);
@@ -592,7 +594,7 @@ void ai_process( object * obj, int ai_index, float frametime );
 int get_wingnum(int objnum);
 
 void set_wingnum(int objnum, int wingnum);
-char *ai_get_goal_ship_name(char *name, int *index);
+char *ai_get_goal_target_name(char *name, int *index);
 
 extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp);
@@ -603,7 +605,7 @@ extern void ai_dock_with_object(object *docker, int docker_index, object *dockee
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_set_default_behavior(object *obj, int classnum);
 extern void ai_do_default_behavior(object *obj);
-extern void ai_start_waypoints(object *objp, int waypoint_list_index, int wp_flags);
+extern void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags);
 extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum, int method);
 extern void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec = NULL, int sexp_flags = 0);

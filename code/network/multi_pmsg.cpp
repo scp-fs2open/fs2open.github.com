@@ -232,7 +232,7 @@ int multi_msg_text_process(int k)
 
 	// backspace
 	case KEY_BACKSP:
-		if(strlen(Multi_msg_text) > 0){
+		if(Multi_msg_text[0] != '\0'){
 			Multi_msg_text[strlen(Multi_msg_text)-1] = '\0';
 		}
 		break;

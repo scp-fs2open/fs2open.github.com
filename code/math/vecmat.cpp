@@ -992,12 +992,12 @@ matrix *vm_copy_transpose_matrix(matrix *dest,matrix *src)
 	dest->vec.rvec.xyz.y = src->vec.uvec.xyz.x;
 	dest->vec.rvec.xyz.z = src->vec.fvec.xyz.x;
 
-	dest->vec.uvec.xyz.x = src->vec.rvec.xyz.y;
+	dest->vec.uvec.xyz.x = src->vec.rvec.xyz.y; //-V537
 	dest->vec.uvec.xyz.y = src->vec.uvec.xyz.y;
-	dest->vec.uvec.xyz.z = src->vec.fvec.xyz.y;
+	dest->vec.uvec.xyz.z = src->vec.fvec.xyz.y; //-V537
 
 	dest->vec.fvec.xyz.x = src->vec.rvec.xyz.z;
-	dest->vec.fvec.xyz.y = src->vec.uvec.xyz.z;
+	dest->vec.fvec.xyz.y = src->vec.uvec.xyz.z; //-V537
 	dest->vec.fvec.xyz.z = src->vec.fvec.xyz.z;
 
 
@@ -1172,12 +1172,12 @@ void vm_vec_outer_product(matrix *mat, vec3d *vec)
 	mat->vec.rvec.xyz.y = vec->xyz.x * vec->xyz.y;
 	mat->vec.rvec.xyz.z = vec->xyz.x * vec->xyz.z;
 
-	mat->vec.uvec.xyz.x = vec->xyz.y * vec->xyz.x;
+	mat->vec.uvec.xyz.x = vec->xyz.y * vec->xyz.x; //-V537
 	mat->vec.uvec.xyz.y = vec->xyz.y * vec->xyz.y;
-	mat->vec.uvec.xyz.z = vec->xyz.y * vec->xyz.z;
+	mat->vec.uvec.xyz.z = vec->xyz.y * vec->xyz.z; //-V537
 
 	mat->vec.fvec.xyz.x = vec->xyz.z * vec->xyz.x;
-	mat->vec.fvec.xyz.y = vec->xyz.z * vec->xyz.y;
+	mat->vec.fvec.xyz.y = vec->xyz.z * vec->xyz.y; //-V537
 	mat->vec.fvec.xyz.z = vec->xyz.z * vec->xyz.z;
 }
 

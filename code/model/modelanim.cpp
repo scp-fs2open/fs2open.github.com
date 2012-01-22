@@ -89,10 +89,7 @@ void triggered_rotation::start(queued_animation *q)
 		if (direction.a1d[axis])
 			direction.a1d[axis] /= fabs(direction.a1d[axis]);
 
-		if (q->absolute) {
-			end_angle.a1d[axis] = end_angle.a1d[axis]; //- (2.0f * PI2 * (end_angle.a1d[axis] / (2.0f * PI2)));
-			current_ang.a1d[axis] = current_ang.a1d[axis]; //- (2.0f * PI2 * (current_ang.a1d[axis] / (2.0f * PI2)));
-		} else {
+		if (!q->absolute) {
 			end_angle.a1d[axis] = q->angle.a1d[axis] + end_angle.a1d[axis];
 		}
 

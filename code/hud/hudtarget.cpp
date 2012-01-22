@@ -962,17 +962,14 @@ color HUD_color_homing_indicator;
 
 void hud_make_shader(shader *sh, ubyte r, ubyte g, ubyte b, float dimmer = 1000.0f)
 {
-//	float rf,gf,bf,cf;
-	ubyte R = 255, G = 255, B = 255, A = 255;
-
 	// The m matrix converts all colors to shades of green
 	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
 	float tmp = 0.025f * i2fl(HUD_color_alpha+1.0f);
 
-	R = ubyte(r * tmp);
-	G = ubyte(r * tmp);
-	B = ubyte(r * tmp);
-	A = ubyte((float(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
+	ubyte R = ubyte(r * tmp);
+	ubyte G = ubyte(r * tmp);
+	ubyte B = ubyte(r * tmp);
+	ubyte A = ubyte((float(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
 
 	gr_create_shader( sh, R, G, B, A );
 }
@@ -1909,17 +1906,17 @@ void hud_target_auto_target_next()
 	}
 
 	// if none, try targeting closest hostile fighter/bomber
-	if ( Player_ai->target_objnum == -1 ) {
+	if ( Player_ai->target_objnum == -1 ) { //-V581
 		hud_target_closest(valid_team_mask, -1, FALSE, TRUE);
 	}
 
 	// No fighter/bombers exists, so go ahead an target the closest hostile
-	if ( Player_ai->target_objnum == -1 ) {
+	if ( Player_ai->target_objnum == -1 ) { //-V581
 		hud_target_closest(valid_team_mask, -1, FALSE);
 	}
 
 	// um, ok.  Try targeting asteroids that are on a collision course for an escort ship
-	if ( Player_ai->target_objnum == -1 ) {
+	if ( Player_ai->target_objnum == -1 ) { //-V581
 		asteroid_target_closest_danger();
 	}
 }
@@ -2574,7 +2571,7 @@ void hud_target_subsystem_in_reticle()
 		hud_target_in_reticle_old();
 	}
 
-	if ( Player_ai->target_objnum == -1) {
+	if ( Player_ai->target_objnum == -1) { //-V581
 		snd_play( &Snds[SND_TARGET_FAIL]);
 		return;
 	}

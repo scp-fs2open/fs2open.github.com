@@ -673,7 +673,7 @@ void print_family_tree( polymodel *obj, int modelnum, char * ident, int islast )
 	if ( modelnum < 0 ) return;
 	if (obj==NULL) return;
 
-	if (strlen(ident)==0 )	{
+	if (ident[0] == '\0')	{
 		mprintf(( " %s", obj->submodel[modelnum].name ));
 		sprintf( temp, " " );
 	} else if ( islast ) 	{
@@ -2466,7 +2466,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 		sm1->num_details = 0;
 		// If a backward compatibility LOD name is declared use it
-		if (strlen(sm1->lod_name) != 0) {
+		if (sm1->lod_name[0] != '\0') {
 			l1=strlen(sm1->lod_name);
 		}
 		// otherwise use the name for LOD comparision
@@ -2503,7 +2503,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			int first_diff = 0;
 			for ( k=0; k<l1; k++)	{
 				// If a backward compatibility LOD name is declared use it
-				if (strlen(sm1->lod_name) != 0) {
+				if (sm1->lod_name[0] != '\0') {
 					if (sm1->lod_name[k] != sm2->name[k] )	{
 						if (ndiff==0) first_diff = k;
 						ndiff++;
@@ -2520,7 +2520,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			if (ndiff==1)	{		// They only differ by one character!
 				int dl1, dl2;
 				// If a backward compatibility LOD name is declared use it
-				if (strlen(sm1->lod_name) != 0) {
+				if (sm1->lod_name[0] != '\0') {
 					dl1 = tolower(sm1->lod_name[first_diff]) - 'a';
 				}
 				// otherwise do the standard LOD comparision

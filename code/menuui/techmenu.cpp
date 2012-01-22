@@ -609,16 +609,12 @@ void tech_scroll_info_down()
 {
 	int h;
 
-	if (Tab == SHIPS_DATA_TAB){
-		h = Tech_desc_coords[gr_screen.res][SHIP_H_COORD];
-	} else {
-		h = Tech_desc_coords[gr_screen.res][3];
-	}
+	h = Tech_desc_coords[gr_screen.res][SHIP_H_COORD];
 
 	if (Text_offset + h / gr_get_font_height() < Text_size) {
 		Text_offset++;
 		gamesnd_play_iface(SND_SCROLL);
-	} else {
+	} else { //-V523
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 	}
 }

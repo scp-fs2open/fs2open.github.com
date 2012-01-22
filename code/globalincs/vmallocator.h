@@ -4,6 +4,7 @@
 /* SCP_vm_allocator - maintained by portej05 (i.e. please don't patch this one yourself!) */
 
 #include <vector>
+#include <list>
 #include <map>
 #include <string>
 #include <queue>
@@ -90,6 +91,9 @@ public:
 template< typename T >
 class SCP_vector : public std::vector< T, SCP_vm_allocator< T > > { };
 
+template< typename T >
+class SCP_list : public std::list< T, SCP_vm_allocator< T > > { };
+
 typedef std::basic_string<char, std::char_traits<char>, SCP_vm_allocator<char> > SCP_string;
 
 typedef std::basic_stringstream<char, std::char_traits<char>, SCP_vm_allocator<char> > SCP_stringstream;
@@ -124,6 +128,7 @@ bool operator!=(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw(
 #define SCP_multimap std::multimap
 #define SCP_queue std::queue
 #define SCP_vector std::vector
+#define SCP_list std::list
 
 #endif
 

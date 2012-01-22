@@ -183,14 +183,14 @@ void campaign_tree_view::OnDraw(CDC* pDC)
 		Links[i].p2.x = Elements[t].box.left + Links[i].to_pos * Bx / (Elements[t].to_links + 1);
 		Links[i].p2.y = Elements[t].box.top;
 
-		// if mission_loop link, select blue pen
-		if (Links[i].mission_loop) {
+		// if special mission link, select blue pen
+		if (Links[i].is_mission_loop || Links[i].is_mission_fork) {
 			pDC->SelectObject(&blue_pen);
 		}
 
-		// if active link, select highlight pen (red - normal, green - mission loop)
+		// if active link, select highlight pen (red - normal, green - special)
 		if (i == Cur_campaign_link) {
-			if (Links[i].mission_loop) {
+			if (Links[i].is_mission_loop || Links[i].is_mission_fork) {
 				pDC->SelectObject(&green_pen);
 			} else {
 				pDC->SelectObject(&red_pen);
@@ -248,9 +248,9 @@ void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
 				node2 = CAR(node);
 				Links[*link_idx].from = mission_num;
 				Links[*link_idx].sexp = CAR(node2);
-				Links[*link_idx].mission_loop_txt = NULL;
-				Links[*link_idx].mission_loop_brief_anim = NULL;
-				Links[*link_idx].mission_loop_brief_sound = NULL;
+				Links[*link_idx].mission_branch_txt = NULL;
+				Links[*link_idx].mission_branch_brief_anim = NULL;
+				Links[*link_idx].mission_branch_brief_sound = NULL;
 				sexp_mark_persistent(CAR(node2));
 				free_one_sexp(node2);
 				node3 = CADR(node2);
@@ -300,13 +300,20 @@ void campaign_tree_view::construct_tree()
 		// do main campaign path
 		stuff_link_with_formula(&link_idx, Campaign.missions[i].formula, i);
 
-		// do mission loop path
-		if ( Campaign.missions[i].has_mission_loop ) {
+		// do special mission path
+		if ( Campaign.missions[i].flags & CMISSION_FLAG_HAS_LOOP ) {
 			stuff_link_with_formula(&link_idx, Campaign.missions[i].mission_loop_formula, i);
-			Links[link_idx-1].mission_loop_txt = Campaign.missions[i].mission_loop_desc;
-			Links[link_idx-1].mission_loop_brief_anim = Campaign.missions[i].mission_loop_brief_anim;
-			Links[link_idx-1].mission_loop_brief_sound = Campaign.missions[i].mission_loop_brief_sound;
-			Links[link_idx-1].mission_loop = 1;
+			Links[link_idx-1].mission_branch_txt = Campaign.missions[i].mission_branch_desc;
+			Links[link_idx-1].mission_branch_brief_anim = Campaign.missions[i].mission_branch_brief_anim;
+			Links[link_idx-1].mission_branch_brief_sound = Campaign.missions[i].mission_branch_brief_sound;
+			Links[link_idx-1].is_mission_loop = true;
+		}
+		else if ( Campaign.missions[i].flags & CMISSION_FLAG_HAS_FORK ) {
+			Campaign.missions[i].mission_loop_formula = -1;
+			Links[link_idx-1].mission_branch_txt = Campaign.missions[i].mission_branch_desc;
+			Links[link_idx-1].mission_branch_brief_anim = Campaign.missions[i].mission_branch_brief_anim;
+			Links[link_idx-1].mission_branch_brief_sound = Campaign.missions[i].mission_branch_brief_sound;
+			Links[link_idx-1].is_mission_fork = true;
 		}
 	}
 
@@ -510,45 +517,45 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 		dc.DrawDragRect(Dragging_rect, Last_draw_size, NULL, CSize(0, 0));
 
 	} else {
-		if ( (Cur_campaign_link >= 0) && Links[Cur_campaign_link].mission_loop) {
-			// HACK!!  UPDATE mission loop desc before changing selections
-			// save mission loop desc
+		if ( (Cur_campaign_link >= 0) && (Links[Cur_campaign_link].is_mission_loop || Links[Cur_campaign_link].is_mission_fork)) {
+			// HACK!!  UPDATE mission loop/fork desc before changing selections
+			// save mission loop/fork desc
 			char buffer[MISSION_DESC_LENGTH];
 			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_MISSISON_LOOP_DESC);
 			box->GetWindowText(buffer, MISSION_DESC_LENGTH);
 			if (strlen(buffer)) {
-				if (Links[Cur_campaign_link].mission_loop_txt) {
-					free(Links[Cur_campaign_link].mission_loop_txt);
+				if (Links[Cur_campaign_link].mission_branch_txt) {
+					free(Links[Cur_campaign_link].mission_branch_txt);
 				}
-				Links[Cur_campaign_link].mission_loop_txt = strdup(buffer);
+				Links[Cur_campaign_link].mission_branch_txt = strdup(buffer);
 			} else {
-				Links[Cur_campaign_link].mission_loop_txt = NULL;
+				Links[Cur_campaign_link].mission_branch_txt = NULL;
 			}
 
-			// HACK!!  UPDATE mission loop desc before changing selections
-			// save mission loop desc			
+			// HACK!!  UPDATE mission loop/fork desc before changing selections
+			// save mission loop/fork desc			
 			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_LOOP_BRIEF_ANIM);
 			box->GetWindowText(buffer, MISSION_DESC_LENGTH);
 			if (strlen(buffer)) {
-				if (Links[Cur_campaign_link].mission_loop_brief_anim) {
-					free(Links[Cur_campaign_link].mission_loop_brief_anim);
+				if (Links[Cur_campaign_link].mission_branch_brief_anim) {
+					free(Links[Cur_campaign_link].mission_branch_brief_anim);
 				}
-				Links[Cur_campaign_link].mission_loop_brief_anim = strdup(buffer);
+				Links[Cur_campaign_link].mission_branch_brief_anim = strdup(buffer);
 			} else {
-				Links[Cur_campaign_link].mission_loop_brief_anim = NULL;
+				Links[Cur_campaign_link].mission_branch_brief_anim = NULL;
 			}
 
-			// HACK!!  UPDATE mission loop desc before changing selections
-			// save mission loop desc			
+			// HACK!!  UPDATE mission loop/fork desc before changing selections
+			// save mission loop/fork desc			
 			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_LOOP_BRIEF_SOUND);
 			box->GetWindowText(buffer, MISSION_DESC_LENGTH);
 			if (strlen(buffer)) {
-				if (Links[Cur_campaign_link].mission_loop_brief_sound) {
-					free(Links[Cur_campaign_link].mission_loop_brief_sound);
+				if (Links[Cur_campaign_link].mission_branch_brief_sound) {
+					free(Links[Cur_campaign_link].mission_branch_brief_sound);
 				}
-				Links[Cur_campaign_link].mission_loop_brief_sound = strdup(buffer);
+				Links[Cur_campaign_link].mission_branch_brief_sound = strdup(buffer);
 			} else {
-				Links[Cur_campaign_link].mission_loop_brief_sound = NULL;
+				Links[Cur_campaign_link].mission_branch_brief_sound = NULL;
 			}
 		}
 		Mission_dragging = Cur_campaign_mission = Cur_campaign_link = -1;
@@ -744,10 +751,11 @@ int campaign_tree_view::add_link(int from, int to)
 	Links[Total_links].from = from;
 	Links[Total_links].to = to;
 	Links[Total_links].sexp = Locked_sexp_true;
-	Links[Total_links].mission_loop = false;
-	Links[Total_links].mission_loop_txt = NULL;
-	Links[Total_links].mission_loop_brief_anim = NULL;
-	Links[Total_links].mission_loop_brief_sound = NULL;
+	Links[Total_links].is_mission_loop = false;
+	Links[Total_links].is_mission_fork = false;
+	Links[Total_links].mission_branch_txt = NULL;
+	Links[Total_links].mission_branch_brief_anim = NULL;
+	Links[Total_links].mission_branch_brief_sound = NULL;
 	Total_links++;
 	if (from != to) {
 		Elements[from].from_links++;

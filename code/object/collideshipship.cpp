@@ -272,7 +272,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 			pmi = model_get_instance(heavy_shipp->model_instance_num);
 
 			// turn off all rotating submodels and test for collision
-			for (smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
+			for (smv = submodel_vector.begin(); smv != submodel_vector.end(); ++smv) {
 				pmi->submodel[*smv].collision_checked = true;
 			}
 
@@ -280,7 +280,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 			mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
 
 			// check each submodel in turn
-			for (smv = submodel_vector.begin(); smv != submodel_vector.end(); smv++) {
+			for (smv = submodel_vector.begin(); smv != submodel_vector.end(); ++smv) {
 				// turn on submodel for collision test
 				pmi->submodel[*smv].collision_checked = false;
 
