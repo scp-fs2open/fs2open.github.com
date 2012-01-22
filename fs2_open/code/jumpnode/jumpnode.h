@@ -77,6 +77,4 @@ jump_node *jumpnode_get_which_in(object *objp);
 void jumpnode_render_all();
 void jumpnode_level_close();
 
-bool jumpnode_check_for_duplicates();
-
 #endif
