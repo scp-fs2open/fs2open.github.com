@@ -385,6 +385,8 @@ void gr_opengl_set_center_alpha(int type)
 	if (!type || Cmdline_nohtl)
 		return;
 
+	if(Num_active_gl_lights == MAX_LIGHTS)
+		return;
 	opengl_light glight;
 
 	vec3d dir;

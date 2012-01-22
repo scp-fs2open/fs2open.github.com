@@ -2464,7 +2464,7 @@ void hud_target_in_reticle_new()
 void hud_target_in_reticle_old()
 {
 	object	*A, *target_obj;
-	float		dist, dot;
+	float	dot;
 	vec3d	vec_to_target;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
@@ -2538,7 +2538,7 @@ void hud_target_subsystem_in_reticle()
 	ship_subsys *nearest_subsys = NULL;
 	vec3d subobj_pos;
 
-	float dist, dot, best_dot;
+	float dot, best_dot;
 	vec3d vec_to_target;
 	best_dot = -1.0f;
 
@@ -3631,8 +3631,6 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 	float		time_to_enemy;
 	vec3d	last_predicted_enemy_pos = *predicted_enemy_pos;
 
-	ship *shipp;
-
 	float	weapon_speed = wip->max_speed;
 
 	vm_vec_zero(last_delta_vec);
@@ -4459,35 +4457,34 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	}
 }
 
-int hud_communications_state(ship *sp, int show_msg)
+extern bool Sexp_Messages_Scrambled;
+int hud_communications_state(ship *sp)
 {
 	float str;
-	int	comm_state = COMM_OK;
 
 	// If playing on the lowest skill level, communications always ok
 	// If dead, still allow player to communicate, despite any subsystem damage
 	if ( Game_skill_level == 0 || (Game_mode & GM_DEAD) ) {
-		return comm_state;
+		return COMM_OK;
 	}
 
 	// Goober5000 - if the ship is the player, and he's dying, return OK (so laments can be played)
 	if ((sp == Player_ship) && (sp->flags & SF_DYING))
-		return comm_state;
+		return COMM_OK;
+
+	// Goober5000 - check for scrambled communications
+	if ( Sexp_Messages_Scrambled || emp_active_local() )
+		return COMM_SCRAMBLED;
 
 	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );
-//	str = 1.0f; // DEBUG CODE! MK, change, 11/12/97, comm system could be taken out by one laser, too frustrating.
-					//	Change this back when comm systems have been better placed.
 	
 	if ( (str <= 0.01) || ship_subsys_disrupted(sp, SUBSYSTEM_COMMUNICATION) ) {
-		if ( show_msg ) {
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Messaging is restricted due to communications damage", 331));
-		}
-		comm_state = COMM_DESTROYED;
+		return COMM_DESTROYED;
 	} else if ( str < MIN_COMM_STR_TO_MESSAGE ) {
-		comm_state = COMM_DAMAGED;
+		return COMM_DAMAGED;
 	}
 
-	return comm_state;
+	return COMM_OK;
 }
 
 // target the next or previous hostile/friendly ship

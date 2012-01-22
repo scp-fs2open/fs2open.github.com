@@ -47,8 +47,9 @@
 #define MIN_COMM_STR_TO_MESSAGE			0.3f	// % strength of communications at which player
 												// is unable to use squadmate messaging
 #define COMM_DESTROYED	0
-#define COMM_DAMAGED		1
-#define COMM_OK			2
+#define COMM_DAMAGED	1
+#define COMM_SCRAMBLED	2
+#define COMM_OK			3
 
 
 /////////////////////////////////////////

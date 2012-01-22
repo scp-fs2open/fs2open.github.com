@@ -314,6 +314,7 @@ typedef	struct ship_subsys {
 	float	favor_current_facing;					        
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 	bool	scripting_target_override;
+	int		last_fired_weapon_info_index;		// which weapon class was last fired
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
@@ -713,6 +714,7 @@ typedef struct ship {
 	bool shader_effect_active;
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
+	ship_subsys *last_fired_turret; // which turret has fired last
 
 	// fighter bay door stuff, parent side
 	int bay_doors_anim_done_time;		// ammount of time to transition from one animation state to another
