@@ -109,10 +109,10 @@ const float WIDTHF = ((float) WIDTH) * 1.01f;
 /**
  * Internal conversion function to convert draw data into bars for the screen
  *
- * @param int colour - colour index (>=0)
- * @param int xpos   - x position to start bar on
- * @param int xwidth - width of bar
- * @param int yrow	 - Index of row bar belongs to
+ * @param colour Colour index (>=0)
+ * @param xpos   X position to start bar on
+ * @param xwidth Width of bar
+ * @param yrow	 Index of row bar belongs to
  */
 void timerbar_conv_and_draw(int colour, int xpos, int xwidth, int yrow)
 {
@@ -212,7 +212,7 @@ void timerbar_switch_type(int num)
 }
 
 /**
- * @param void (*new_draw_func_ptr)(int colour, float x, float y, float w, float h) - pointer to draw function
+ * @param (*new_draw_func_ptr)(int colour, float x, float y, float w, float h) Pointer to draw function
  *
  * Sets the draw function used to output the timer data, designed to be generic allowing any API
  * to take advantage of this module. Set to NULL to disable drawing.

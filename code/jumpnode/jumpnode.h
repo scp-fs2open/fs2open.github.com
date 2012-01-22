@@ -57,6 +57,7 @@ public:
 	//Setting
 	void set_alphacolor(int r, int g, int b, int alpha);
 	void set_model(char *model_name, bool show_polys=false);
+	void set_name(char *new_name);
 	void show(bool enabled){if(enabled){m_flags&=~JN_HIDE;}else{m_flags|=JN_HIDE;}}
 
 	//Rendering

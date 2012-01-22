@@ -183,7 +183,7 @@ static void *al_load_function(const char *func_name)
 	return func;
 }
 
-static void al_efx_load_preset(unsigned int presetid)
+static void al_efx_load_preset(size_t presetid)
 {
 	if ( !Ds_eax_inited ) {
 		return;
@@ -225,23 +225,21 @@ static void al_efx_load_preset(unsigned int presetid)
 
 int ds_initialized = FALSE;
 
-// ---------------------------------------------------------------------------------------
-// ds_parse_sound() 
-//
-// Parse a wave file.
-//
-// parameters:		filename			=> file of sound to parse
-//						dest			=> address of pointer of where to store raw sound data (output parm)
-//						dest_size		=> number of bytes of sound data stored (output parm)
-//						header			=> address of pointer to a WAVEFORMATEX struct (output parm)
-//						ovf				=> pointer to a OggVorbis_File struct, OGG vorbis only (output parm)
-//
-// returns:			0					=> wave file successfully parsed
-//					-1					=> error
-//
-//	NOTE: memory is malloced for the header and dest (if not OGG) in this function.  It is the responsibility
-//			of the caller to free this memory later.
-//
+/**
+ * @brief Parse a wave file.
+ *
+ * @param fp File of sound to parse
+ * @param dest Address of pointer of where to store raw sound data (output parm)
+ * @param dest_size Number of bytes of sound data stored (output parm)
+ * @param header Address of pointer to a WAVEFORMATEX struct (output parm)
+ * @param ogg Boolean to indicate OGG vorbis file, if false assume Wave file
+ * @param ovf Pointer to a OggVorbis_File struct, OGG vorbis only (output parm)
+ *
+ * @return 0 if wave file successfully parsed, -1 if an error occurred
+ *
+ *	NOTE: memory is malloced for the header and dest (if not OGG) in this function.  It is the responsibility
+ *	of the caller to free this memory later.
+ */
 int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, bool ogg, OggVorbis_File *ovf)
 {
 	PCMWAVEFORMAT	PCM_header;
@@ -256,7 +254,6 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 	if (fp == NULL) {
 		return -1;
 	}
-
 
 	// if we should have a Vorbis file then try for it
 	if (ogg) {
@@ -298,7 +295,7 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 				(*header)->nBlockAlign = (ushort)(((*header)->wBitsPerSample / 8) * ovf->vi->channels);
 				(*header)->nAvgBytesPerSec = ovf->vi->rate * (*header)->nBlockAlign;
 
-				//WMC - Total samples * channels * bits/sample
+				// WMC - Total samples * channels * bits/sample
 
 				ogg_int64_t pcm_total_size = ov_pcm_total(ovf, -1);
 				if (pcm_total_size > 0) {
@@ -315,7 +312,8 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 			// we're all good, can leave now
 			return 0;
 		}
-	} else { // otherwise we assime Wave format
+	} else { 
+		// Otherwise we assime Wave format
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
 		// IMPORTANT!! Look at snd_load before even THINKING about changing this.
@@ -339,7 +337,6 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 
 			switch (tag) {
 				case 0x20746d66: { // The 'fmt ' tag
-					//nprintf(("Sound", "SOUND => size of fmt block: %d\n", size));
 					PCM_header.wf.wFormatTag		= cfread_ushort(fp);
 					PCM_header.wf.nChannels			= cfread_ushort(fp);
 					PCM_header.wf.nSamplesPerSec	= cfread_uint(fp);
@@ -448,11 +445,12 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 	return -1;
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_parse_sound_info() 
-//
-// Parse a a sound file, any format, and store the info in "s_info".
-//
+/**
+ * Parse a sound file, any format, and store the info in s_info.
+ *
+ * @param real_filename Filename to parse
+ * @param s_info Storage for the sound file info
+ */
 int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 {
 	PCMWAVEFORMAT	PCM_header;
@@ -539,7 +537,6 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 		cfseek( fp, 12, CF_SEEK_SET );
 
 		// Now read RIFF tags until the end of file
-
 		while (1) {
 			if ( cfread( &tag, sizeof(uint), 1, fp ) != 1 ) {
 				break;
@@ -640,10 +637,9 @@ Done:
 	return rval;
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_get_sid()
-//
-//
+/**
+ * 
+ */
 int ds_get_sid()
 {
 	sound_buffer new_buffer;
@@ -665,26 +661,22 @@ int ds_get_sid()
 	return (int)(sound_buffers.size() - 1);
 }
 
-// ---------------------------------------------------------------------------------------
-// Load a DirectSound secondary buffer with sound data.  The sounds data for
-// game sounds are stored in the DirectSound secondary buffers, and are 
-// duplicated as needed and placed in the Channels[] array to be played.
-// 
-//
-// parameters:
-//	sid				=> pointer to software id for sound ( output parm)
-//	final_size		=> pointer to storage to receive uncompressed sound size (output parm)
-//	header			=> pointer to a WAVEFORMATEX structure
-//	si				=> sound_info structure, contains details on the sound format
-//	flags			=> buffer properties ( DS_HARDWARE , DS_3D )
-//
-// returns:
-//	1				=> sound effect could not loaded into a secondary buffer
-//	0				=> sound effect successfully loaded into a secondary buffer
-//
-// NOTE: this function is slow, especially when sounds are loaded into hardware.  Don't call this
-// function from within gameplay.
-//
+/**
+ * @brief Load a secondary buffer with sound data.
+ * @details The sounds data for game sounds are stored in the DirectSound secondary buffers, 
+ * and are duplicated as needed and placed in the Channels[] array to be played.
+ * 
+ * @param sid Pointer to software id for sound ( output parm)
+ * @param final_size Pointer to storage to receive uncompressed sound size (output parm)
+ * @param header Pointer to a WAVEFORMATEX structure
+ * @param si ::sound_info structure, contains details on the sound format
+ * @param flags	Buffer properties ( DS_HARDWARE , DS_3D )
+ *
+ * @return 1 if sound effect could not loaded into a secondary buffer, 0 if sound effect successfully loaded into a secondary buffer
+ *
+ * NOTE: this function is slow, especially when sounds are loaded into hardware.  Don't call this
+ * function from within gameplay.
+ */
 int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int flags)
 {
 	Assert( final_size != NULL );
@@ -696,7 +688,6 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 	}
 
 	// All sounds are required to have a software buffer
-
 	*sid = ds_get_sid();
 	if ( *sid == -1 ) {
 		nprintf(("Sound","SOUND ==> No more sound buffers available\n"));
@@ -975,7 +966,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 		nprintf(("Sound", "SOUND ==> Converted 3D sound from stereo to mono\n"));
 	}
 
-	/* format is now in pcm */
+	// format is now in pcm
 	frequency = si->sample_rate;
 	format = openal_get_format(bits, n_channels);
 
@@ -1015,11 +1006,9 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 	return 0;
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_init_channels()
-//
-// init the Channels[] array
-//
+/**
+ * Initialise the ::Channels[] array
+ */
 void ds_init_channels()
 {
 	try {
@@ -1029,11 +1018,9 @@ void ds_init_channels()
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_init_buffers()
-//
-// init the both the software and hardware buffers
-//
+/**
+ * Initialise the both the software and hardware buffers
+ */
 void ds_init_buffers()
 {
 	sound_buffers.clear();
@@ -1042,11 +1029,10 @@ void ds_init_buffers()
 	sound_buffers.reserve( BUFFER_BUMP );
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_init()
-//
-// returns:     -1           => init failed
-//               0           => init success
+/**
+ * Sound initialisation
+ * @return -1 if init failed, 0 if init success
+ */
 int ds_init()
 {
 	ALfloat list_orien[] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
@@ -1134,7 +1120,7 @@ int ds_init()
 	if ( !Ds_use_eax && Fred_running ) {
 		EFX_presets.reserve(EAX_ENVIRONMENT_COUNT);
 
-		for (int i = 0; i < EAX_ENVIRONMENT_COUNT; i++) {
+		for (size_t i = 0; i < EAX_ENVIRONMENT_COUNT; i++) {
 			EFX_presets.push_back( EFX_Reverb_Defaults[i] );
 		}
 	}
@@ -1152,14 +1138,15 @@ int ds_init()
 
 	mprintf(("\n"));
 
-	ALCint freq;
+	{
+	ALCint freq = 0;
 	OpenAL_ErrorPrint( alcGetIntegerv(ds_sound_device, ALC_FREQUENCY, sizeof(ALCint), &freq) );
 
 	mprintf(("  Sample rate: %d (%d)\n", freq, sample_rate));
+	}
 
 	if (Ds_use_eax) {
-		ALCint major = 0, minor = 0;
-		ALCint max_sends = 0;
+		ALCint major = 0, minor = 0, max_sends = 0;
 
 		alcGetIntegerv(ds_sound_device, ALC_EFX_MAJOR_VERSION, 1, &major);
 		alcGetIntegerv(ds_sound_device, ALC_EFX_MINOR_VERSION, 1, &minor);
@@ -1200,11 +1187,9 @@ AL_InitError:
 	return -1;
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_close_channel()
-//
-// Free a single channel
-//
+/**
+ * Free a single channel
+ */
 void ds_close_channel(int i)
 {
 	if ( (i < 0) || (i >= MAX_CHANNELS) ) {
@@ -1256,11 +1241,9 @@ void ds_close_channel_fast(int i)
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_close_all_channels()
-//
-// Free all the channel buffers
-//
+/**
+ * Free all the channel buffers
+ */
 void ds_close_all_channels()
 {
 	int i;
@@ -1270,10 +1253,9 @@ void ds_close_all_channels()
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_unload_buffer()
-//
-//
+/**
+ * Unload a buffer
+ */
 void ds_unload_buffer(int sid)
 {
 	if ( (sid < 0) || ((size_t)sid >= sound_buffers.size()) ) {
@@ -1294,14 +1276,12 @@ void ds_unload_buffer(int sid)
 	sound_buffers[sid].buf_id = 0;
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_close_buffers()
-//
-// Free the channel buffers
-//
+/**
+ * Unload all the channel buffers
+ */
 void ds_close_buffers()
 {
-	uint i;
+	size_t i;
 
 	for (i = 0; i < sound_buffers.size(); i++) {
 		ds_unload_buffer(i);
@@ -1310,11 +1290,9 @@ void ds_close_buffers()
 	sound_buffers.clear();
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_close()
-//
-// Close the DirectSound system
-//
+/**
+ * Close the sound system
+ */
 void ds_close()
 {
 	ds_close_all_channels();
@@ -1339,26 +1317,17 @@ void ds_close()
 }
 
 
-// ---------------------------------------------------------------------------------------
-// ds_get_free_channel()
-// 
-// Find a free channel to play a sound on.  If no free channels exists, free up one based
-// on volume levels.
-//
-//	input:		new_volume	=>		volume for sound to play at
-//				snd_id		=>		which kind of sound to play
-//				priority	=>		DS_MUST_PLAY
-//									DS_LIMIT_ONE
-//									DS_LIMIT_TWO
-//									DS_LIMIT_THREE
-//
-//	returns:		channel number to play sound on
-//					-1 if no channel could be found
-//
-// NOTE:	snd_id is needed since we limit the number of concurrent samples
-//
-//
-
+/**
+ * Find a free channel to play a sound on.  If no free channels exists, free up one based on volume levels.
+ *
+ * @param new_volume Volume for sound to play at
+ * @param snd_id Which kind of sound to play
+ * @param priority ::DS_MUST_PLAY, ::DS_LIMIT_ONE, ::DS_LIMIT_TWO, ::DS_LIMIT_THREE
+ *
+ * @returns	Channel number to play sound on, or -1 if no channel could be found
+ *
+ * NOTE: snd_id is needed since we limit the number of concurrent samples
+ */
 int ds_get_free_channel(float new_volume, int snd_id, int priority)
 {
 	int			i, first_free_channel, limit = 100;
@@ -1466,7 +1435,9 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 	return first_free_channel;
 }
 
-// Create a direct sound buffer in software, without locking any data in
+/**
+ * Create a sound buffer in software, without locking any data in
+ */
 int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nseconds)
 {
 	ALuint i;
@@ -1495,7 +1466,9 @@ int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nsec
 	return sid;
 }
 
-// Lock data into an existing buffer
+/**
+ * Lock data into an existing buffer
+ */
 int ds_lock_data(int sid, unsigned char *data, int size)
 {
 	if ( (sid < 0) || ((size_t)sid >= sound_buffers.size()) ) {
@@ -1515,7 +1488,9 @@ int ds_lock_data(int sid, unsigned char *data, int size)
 	return 0;
 }
 
-// Stop a buffer from playing directly
+/**
+ * Stop a buffer from playing directly
+ */
 void ds_stop_easy(int sid)
 {
 	Assert(sid >= 0);
@@ -1528,11 +1503,12 @@ void ds_stop_easy(int sid)
 	}
 }
 
-//	Play a sound without the usual baggage (used for playing back real-time voice)
-//
-// parameters:  
-//		sid			=> software id of sound
-//		volume		=> volume of sound effect in linear scale
+/**
+ * Play a sound without the usual baggage (used for playing back real-time voice)
+ *  
+ * @param sid Software id of sound
+ * @param volume Volume of sound effect in linear scale
+ */
 int ds_play_easy(int sid, float volume)
 {
 	if (!ds_initialized) {
@@ -1571,27 +1547,19 @@ int ds_play_easy(int sid, float volume)
 	return 0;
 }
 
-//extern void HUD_add_to_scrollback(char *text, int source);
-//extern void HUD_printf(char *format, ...);
-
-// ---------------------------------------------------------------------------------------
-// Play a DirectSound secondary buffer.  
-// 
-//
-// parameters:
-//		sid			=> software id of sound
-//		snd_id		=>	what kind of sound this is
-//		priority	=>		DS_MUST_PLAY
-//							DS_LIMIT_ONE
-//							DS_LIMIT_TWO
-//							DS_LIMIT_THREE
-//		volume		=> volume of sound effect in DirectSound units
-//		pan			=> pan of sound in DirectSound units
-//		looping		=> whether the sound effect is looping or not
-//
-// returns:		1		=> sound effect could not be started
-//				>=0		=> sig for sound effect successfully started
-//
+/**
+ * Play a sound secondary buffer.  
+ *
+ * @param sid Software id of sound
+ * @param snd_id What kind of sound this is
+ * @param priority ::DS_MUST_PLAY, ::DS_LIMIT_ONE, ::DS_LIMIT_TWO, ::DS_LIMIT_THREE
+ * @param volume Volume of sound effect in DirectSound units
+ * @param pan Pan of sound in sound units
+ * @param looping Whether the sound effect is looping or not
+ * @param is_voice_msg If a voice message
+ * 
+ * @return 1 if sound effect could not be started, >=0 sig for sound effect successfully started
+ */
 int ds_play(int sid, int snd_id, int priority, float volume, float pan, int looping, bool is_voice_msg)
 {
 	int ch_idx;
@@ -1657,12 +1625,10 @@ int ds_play(int sid, int snd_id, int priority, float volume, float pan, int loop
 }
 
 
-// ---------------------------------------------------------------------------------------
-// ds_get_channel()
-//
-// Return the channel number that is playing the sound identified by sig.  If that sound is
-// not playing, return -1.
-//
+/**
+ * Return the channel number that is playing the sound identified by sig.
+ * @return Channel number, if not playing, return -1.
+ */
 int ds_get_channel(int sig)
 {
 	int i;
@@ -1678,10 +1644,9 @@ int ds_get_channel(int sig)
 	return -1;
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_is_channel_playing()
-//
-//
+/**
+ * @todo Documentation
+ */
 int ds_is_channel_playing(int channel)
 {
 	if ( Channels[channel].source_id != 0 ) {
@@ -1695,10 +1660,9 @@ int ds_is_channel_playing(int channel)
 	return 0;
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_stop_channel()
-//
-//
+/**
+ * @todo Documentation
+ */
 void ds_stop_channel(int channel)
 {
 	if ( Channels[channel].source_id != 0 ) {
@@ -1706,10 +1670,9 @@ void ds_stop_channel(int channel)
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_stop_channel_all()
-//
-//	
+/**
+ * @todo Documentation
+ */
 void ds_stop_channel_all()
 {
 	int i;
@@ -1721,14 +1684,10 @@ void ds_stop_channel_all()
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_set_volume()
-//
-// Set the volume for a channel.  The volume is expected to be in linear scale
-//
-// If the sound is a 3D sound buffer, this is like re-establishing the maximum 
-// volume.
-//
+/**
+ * @brief Set the volume for a channel.  The volume is expected to be in linear scale
+ * @details If the sound is a 3D sound buffer, this is like re-establishing the maximum volume.
+ */
 void ds_set_volume( int channel, float vol )
 {
 	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
@@ -1743,11 +1702,9 @@ void ds_set_volume( int channel, float vol )
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_set_pan()
-//
-//	Set the pan for a channel.  The pan is expected to be in DirectSound units
-//
+/**
+ * Set the pan for a channel.  The pan is expected to be in DirectSound units
+ */
 void ds_set_pan( int channel, float pan )
 {
 	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
@@ -1764,11 +1721,9 @@ void ds_set_pan( int channel, float pan )
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_get_pitch()
-//
-//	Get the pitch of a channel
-//
+/**
+ * Get the pitch of a channel
+ */
 int ds_get_pitch(int channel)
 {
 	ALint status;
@@ -1791,11 +1746,9 @@ int ds_get_pitch(int channel)
 	return pitch;
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_set_pitch()
-//
-//	Set the pitch of a channel
-//
+/**
+ * Set the pitch of a channel
+ */
 void ds_set_pitch(int channel, int pitch)
 {
 	ALint status;
@@ -1820,10 +1773,9 @@ void ds_set_pitch(int channel, int pitch)
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// ds_chg_loop_status()
-//
-//
+/**
+ * @todo Documentation
+ */
 void ds_chg_loop_status(int channel, int loop)
 {
 	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
@@ -1835,29 +1787,22 @@ void ds_chg_loop_status(int channel, int loop)
 	OpenAL_ErrorPrint( alSourcei(source_id, AL_LOOPING, loop ? AL_TRUE : AL_FALSE) );
 }
 
-// ---------------------------------------------------------------------------------------
-// ds3d_play()
-//
-// Starts a ds3d sound playing
-// 
-//	input:
-//		sid				=>	software id for sound to play
-//		snd_id			=> identifies what type of sound is playing
-//		pos				=>	world pos of sound
-//		vel				=>	velocity of object emitting sound
-//		min				=>	distance at which sound doesn't get any louder
-//		max				=>	distance at which sound becomes inaudible
-//		looping			=>	boolean, whether to loop the sound or not
-//		max_volume		=>	volume (0 to 1) for 3d sound at maximum
-//		estimated_vol	=>	manual estimated volume
-//		priority		=>		DS_MUST_PLAY
-//								DS_LIMIT_ONE
-//								DS_LIMIT_TWO
-//								DS_LIMIT_THREE
-//
-//	returns:	0		=> sound started successfully
-//				-1		=> sound could not be played
-//
+/**
+ * Starts a ds3d sound playing
+ *
+ * @param sid Software id for sound to play
+ * @param snd_id Identifies what type of sound is playing
+ * @param pos World pos of sound
+ * @param vel Velocity of object emitting sound
+ * @param min Distance at which sound doesn't get any louder
+ * @param max Distance at which sound becomes inaudible
+ * @param looping Whether to loop the sound or not
+ * @param max_volume Volume (0 to 1) for 3d sound at maximum
+ * @param estimated_vol	Manual estimated volume
+ * @param priority ::DS_MUST_PLAY, ::DS_LIMIT_ONE, ::DS_LIMIT_TWO, ::DS_LIMIT_THREE
+ *
+ * @return 0 if sound started successfully, -1 if sound could not be played
+ */
 int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, int priority )
 {
 	int channel;
@@ -1923,6 +1868,9 @@ int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max,
 	return Channels[channel].sig;
 }
 
+/**
+ * @todo Documentation
+ */
 void ds_set_position(int channel, unsigned int offset)
 {
 	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
@@ -1932,6 +1880,9 @@ void ds_set_position(int channel, unsigned int offset)
 	OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_BYTE_OFFSET, offset) );
 }
 
+/**
+ * @todo Documentation
+ */
 unsigned int ds_get_play_position(int channel)
 {
 	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
@@ -1971,11 +1922,17 @@ unsigned int ds_get_play_position(int channel)
 	return (unsigned int) pos;
 }
 
+/**
+ * @todo Documentation
+ */
 unsigned int ds_get_write_position(int channel)
 {
 	return 0;
 }
 
+/**
+ * @todo Documentation
+ */
 int ds_get_channel_size(int channel)
 {
 	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
@@ -1998,7 +1955,9 @@ int ds_get_channel_size(int channel)
 	return (int) data_size;
 }
 
-// Returns the number of channels that are actually playing
+/** 
+ * Returns the number of channels that are actually playing
+ */
 int ds_get_number_channels()
 {
 	int i,n;
@@ -2019,13 +1978,17 @@ int ds_get_number_channels()
 	return n;
 }
 
-// retreive raw data from a sound buffer
+/**
+ * Retreive raw data from a sound buffer
+ */
 int ds_get_data(int sid, char *data)
 {
 	return -1;
 }
 
-// return the size of the raw sound data
+/**
+ * Return the size of the raw sound data
+ */
 int ds_get_size(int sid, int *size)
 {
 	Assert(sid >= 0);
@@ -2055,12 +2018,12 @@ int ds_get_size(int sid, int *size)
 //
 // --------------------
 
-// Set the master volume for the reverb added to all sound sources.
-//
-// volume: volume, range from 0 to 1.0
-//
-// returns: 0 if the volume is set successfully, otherwise return -1
-//
+/**
+ * Set the master volume for the reverb added to all sound sources.
+ *
+ * @param volume Volume, range from 0 to 1.0
+ * @returns 0 if the volume is set successfully, otherwise return -1
+ */
 int ds_eax_set_volume(float volume)
 {
 	if ( !Ds_eax_inited ) {
@@ -2076,12 +2039,12 @@ int ds_eax_set_volume(float volume)
 	return 0;
 }
 
-// Set the decay time for the EAX environment (ie all sound sources)
-//
-// seconds: decay time in seconds
-//
-// returns: 0 if decay time is successfully set, otherwise return -1
-//
+/**
+ * Set the decay time for the EAX environment (ie all sound sources)
+ *
+ * @param seconds Decay time in seconds
+ * @return 0 if decay time is successfully set, otherwise return -1
+ */
 int ds_eax_set_decay_time(float seconds)
 {
 	if ( !Ds_eax_inited ) {
@@ -2097,12 +2060,12 @@ int ds_eax_set_decay_time(float seconds)
 	return 0;
 }
 
-// Set the damping value for the EAX environment (ie all sound sources)
-//
-// damp: damp value from 0 to 2.0
-//
-// returns: 0 if the damp value is successfully set, otherwise return -1
-//
+/**
+ * Set the damping value for the EAX environment (ie all sound sources)
+ *
+ * @param damp Damp value from 0 to 2.0
+ * @return 0 if the damp value is successfully set, otherwise return -1
+ */
 int ds_eax_set_damping(float damp)
 {
 	if ( !Ds_eax_inited ) {
@@ -2118,12 +2081,13 @@ int ds_eax_set_damping(float damp)
 	return 0;
 }
 
-// Set up the environment type for all sound sources.
-//
-// envid: value from the EAX_ENVIRONMENT_* enumeration in ds_eax.h
-//
-// returns: 0 if the environment is set successfully, otherwise return -1
-//
+/** 
+ * Set up the environment type for all sound sources.
+ *
+ * @param envid Value from the EAX_ENVIRONMENT_* enumeration in ds_eax.h
+ * @return Always returns 0.
+ * @todo Proper error reporting, otherwise make a void return type.
+ */
 int ds_eax_set_environment(unsigned long envid)
 {
 	al_efx_load_preset(envid);
@@ -2131,12 +2095,13 @@ int ds_eax_set_environment(unsigned long envid)
 	return 0;
 }
 
-// Set up a predefined environment for EAX
-//
-// envid: value from teh EAX_ENVIRONMENT_* enumeration
-//
-// returns: 0 if successful, otherwise return -1
-//
+/**
+ * Set up a predefined environment for EAX
+ *
+ * @param envid Value from the EAX_ENVIRONMENT_* enumeration.
+ * @return Always returns 0.
+ * @todo Proper error reporting, otherwise make a void return type.
+ */
 int ds_eax_set_preset(unsigned long envid)
 {
 	al_efx_load_preset(envid);
@@ -2145,15 +2110,15 @@ int ds_eax_set_preset(unsigned long envid)
 }
 
 
-// Set up all the parameters for an environment
-//
-// id: value from teh EAX_ENVIRONMENT_* enumeration
-// volume: volume for the environment (0 to 1.0)
-// damping: damp value for the environment (0 to 2.0)
-// decay: decay time in seconds (0.1 to 20.0)
-//
-// returns: 0 if successful, otherwise return -1
-//
+/**
+ * Set up all the parameters for an environment
+ *
+ * @param id Value from the EAX_ENVIRONMENT_* enumeration
+ * @param vol Volume for the environment (0 to 1.0)
+ * @param damping Damp value for the environment (0 to 2.0)
+ * @param decay Decay time in seconds (0.1 to 20.0)
+ * @return 0 if successful, otherwise return -1
+ */
 int ds_eax_set_all(unsigned long id, float vol, float damping, float decay)
 {
 	if ( !Ds_eax_inited ) {
@@ -2267,13 +2232,13 @@ int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *t
 	return 0;
 }
 
-// Get up the parameters for the current environment
-//
-// er: (output) hold environment parameters
-// id: if set will get specified preset env, otherwise current env
-//
-// returns: 0 if successful, otherwise return -1
-//
+/**
+ * Get up the parameters for the current environment
+ *
+ * @param er (output) Hold environment parameters
+ * @param id If set will get specified preset env, otherwise current env
+ * @return 0 if successful, otherwise return -1
+ */
 int ds_eax_get_all(EAX_REVERBPROPERTIES *er, int id)
 {
 	if ( !er ) {
@@ -2303,8 +2268,9 @@ int ds_eax_get_all(EAX_REVERBPROPERTIES *er, int id)
 	return 0;
 }
 
-// Close down EAX, freeing any allocated resources
-//
+/**
+ * Close down EAX, freeing any allocated resources
+ */
 void ds_eax_close()
 {
 	if (Ds_eax_inited == 0) {
@@ -2322,10 +2288,10 @@ void ds_eax_close()
 	Ds_eax_inited = 0;
 }
 
-// Initialize EAX
-//
-// returns: 0 if initialization is successful, otherwise return -1
-//
+/**
+ * Initialize EAX
+ * @return 0 if initialization is successful, otherwise return -1
+ */
 int ds_eax_init()
 {
 	if (Ds_eax_inited) {
@@ -2400,13 +2366,17 @@ int ds_eax_init()
 	return 0;
 }
 
+/**
+ * @todo Documentation
+ */
 int ds_eax_is_inited()
 {
 	return Ds_eax_inited;
 }
 
-// Called once per game frame to make sure voice messages aren't looping
-//
+/**
+ * Called once per game frame to make sure voice messages aren't looping
+ */
 void ds_do_frame()
 {
 	if (!ds_initialized) {
@@ -2437,7 +2407,9 @@ void ds_do_frame()
 	}
 }
 
-// given a valid channel return the sound id
+/**
+ * Given a valid channel return the sound id
+ */
 int ds_get_sound_id(int channel)
 {
 	Assert( channel >= 0 );

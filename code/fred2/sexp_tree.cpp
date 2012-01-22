@@ -2252,6 +2252,7 @@ int sexp_tree::add_default_operator(int op, int argnum)
 				(argnum == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
 				(argnum == 5 && Operators[op].value == OP_ADD_SUN_BITMAP) ||
 				(argnum == 2 && Operators[op].value == OP_STRING_CONCATENATE) ||
+				(argnum == 0 && Operators[op].value == OP_DIRECTIVE_IS_VARIABLE) ||
 				(argnum == 1 && Operators[op].value == OP_INT_TO_STRING))
 			{
 
@@ -3292,6 +3293,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 						(arg_num == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
 						(arg_num == 5 && Operators[op].value == OP_ADD_SUN_BITMAP) ||
 						(arg_num == 2 && Operators[op].value == OP_STRING_CONCATENATE) ||
+						(arg_num == 0 && Operators[op].value == OP_DIRECTIVE_IS_VARIABLE) ||
 						(arg_num == 1 && Operators[op].value == OP_INT_TO_STRING))
 					{
 						// make text_ptr to start - before '('

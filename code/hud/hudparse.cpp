@@ -49,7 +49,8 @@ bool Hud_retail = true;
 
 int Hud_font = -1;
 
-int num_default_gauges = 43;
+//WARNING: If you add gauges to this array, make sure to bump num_default_gauges!
+int num_default_gauges = 44;
 static int retail_gauges[] = {
 	HUD_OBJECT_MESSAGES,
 	HUD_OBJECT_TRAINING_MESSAGES,
@@ -2548,22 +2549,25 @@ void load_gauge_radar_std(int base_w, int base_h, int font, int ship_index)
 		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
 
-	HudGaugeRadarStd* hud_gauge = new HudGaugeRadarStd();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBitmaps(fname);
-	hud_gauge->initBlipRadius(Radar_blip_radius_normal, Radar_blip_radius_target);
-	hud_gauge->initCenterOffsets(Radar_center_offsets[0], Radar_center_offsets[1]);
-	hud_gauge->initDistanceInfinityOffsets(Radar_dist_offsets[2][0], Radar_dist_offsets[2][1]);
-	hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
-	hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
-	hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
-	hud_gauge->initFont(font_num);
+	// Only load this if the user hasn't specified a preference
+	if (Cmdline_orb_radar == 0) {
+		HudGaugeRadarStd* hud_gauge = new HudGaugeRadarStd();
+		hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+		hud_gauge->initPosition(coords[0], coords[1]);
+		hud_gauge->initBitmaps(fname);
+		hud_gauge->initBlipRadius(Radar_blip_radius_normal, Radar_blip_radius_target);
+		hud_gauge->initCenterOffsets(Radar_center_offsets[0], Radar_center_offsets[1]);
+		hud_gauge->initDistanceInfinityOffsets(Radar_dist_offsets[2][0], Radar_dist_offsets[2][1]);
+		hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
+		hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
+		hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
+		hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
-	} else {
-		default_hud_gauges.push_back(hud_gauge);
+		if(ship_index >= 0) {
+			Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+		} else {
+			default_hud_gauges.push_back(hud_gauge);
+		}
 	}
 }
 
@@ -2662,22 +2666,25 @@ void load_gauge_radar_orb(int base_w, int base_h, int font, int ship_index)
 		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
 
-	HudGaugeRadarOrb* hud_gauge = new HudGaugeRadarOrb();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBitmaps(fname);
-	hud_gauge->initBlipRadius(Radar_blip_radius_normal, Radar_blip_radius_target);
-	hud_gauge->initCenterOffsets(Radar_center_offsets[0], Radar_center_offsets[1]);
-	hud_gauge->initDistanceInfinityOffsets(Radar_dist_offsets[2][0], Radar_dist_offsets[2][1]);
-	hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
-	hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
-	hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
-	hud_gauge->initFont(font_num);
+	//only load this if the user actually wants to use the orb radar.
+	if (Cmdline_orb_radar == 1) {
+		HudGaugeRadarOrb* hud_gauge = new HudGaugeRadarOrb();
+		hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+		hud_gauge->initPosition(coords[0], coords[1]);
+		hud_gauge->initBitmaps(fname);
+		hud_gauge->initBlipRadius(Radar_blip_radius_normal, Radar_blip_radius_target);
+		hud_gauge->initCenterOffsets(Radar_center_offsets[0], Radar_center_offsets[1]);
+		hud_gauge->initDistanceInfinityOffsets(Radar_dist_offsets[2][0], Radar_dist_offsets[2][1]);
+		hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
+		hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
+		hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
+		hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
-	} else {
-		default_hud_gauges.push_back(hud_gauge);
+		if(ship_index >= 0) {
+			Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+		} else {
+			default_hud_gauges.push_back(hud_gauge);
+		}
 	}
 }
 

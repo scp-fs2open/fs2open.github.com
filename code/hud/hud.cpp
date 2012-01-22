@@ -8,8 +8,6 @@
 */ 
 
 
-
-
 #include "hud/hud.h"
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
@@ -67,8 +65,8 @@ SCP_vector<HudGauge*> default_hud_gauges;
 
 // high contrast
 #define HUD_NEW_ALPHA_DIM_HI			130
-#define HUD_NEW_ALPHA_NORMAL_HI		190
-#define HUD_NEW_ALPHA_BRIGHT_HI		255
+#define HUD_NEW_ALPHA_NORMAL_HI			190
+#define HUD_NEW_ALPHA_BRIGHT_HI			255
 
 // Externals not related to the HUD code itself
 extern float View_zoom;
@@ -209,30 +207,12 @@ int HUD_gauge_flash_duration[NUM_HUD_GAUGES];
 int HUD_gauge_flash_next[NUM_HUD_GAUGES];
 int HUD_gauge_bright;
 
-// Objective display
-typedef struct objective_display_info
-{
-	int display_timer;
-	int goal_type;
-	int goal_status;
-	int goal_ntotal;
-	int goal_nresolved;
-
-} objective_display_info;
-
 static objective_display_info Objective_display;
 
 // Subspace notify display
 static int Subspace_notify_active;
 static int Objective_notify_active;
 static int HUD_abort_subspace_timer = 1;
-
-// used to track how player subsystems are getting damaged
-typedef struct hud_subsys_info
-{
-	float	last_str;
-	int	flash_duration_timestamp;
-} hud_subsys_info;
 
 static hud_subsys_info	Pl_hud_subsys_info[SUBSYSTEM_MAX];
 static int					Pl_hud_next_flash_timestamp;
@@ -305,14 +285,6 @@ static float last_percent_throttle;
 #define THROTTLE_SOUND_CHECK_INTERVAL	50	// in ms
 static int throttle_sound_check_id;
 
-// used for the display of damaged subsystems
-typedef struct hud_subsys_damage
-{
-	int	str;
-	int	type;
-	char	*name;
-} hud_subsys_damage;
-
 #define DAMAGE_FLASH_TIME 150
 static int Damage_flash_bright;
 static int Damage_flash_timer;
@@ -369,6 +341,7 @@ target_w(-1), target_h(-1), textoffset_x(0), textoffset_y(0), cache_w(-1), cache
 
 	custom_name[0] = '\0';
 	custom_text[0] = '\0';
+	default_text[0] = '\0';
 	custom_frame.first_frame = -1;
 	custom_frame.num_frames = 0;
 	custom_frame_offset = 0;
@@ -405,8 +378,10 @@ target_x(-1), target_y(-1), target_w(-1), target_h(-1), textoffset_x(txtoffset_x
 
 	if(_custom_text) {
 		strcpy_s(custom_text, _custom_text);
+		strcpy_s(default_text, _custom_text);
 	} else {
 		custom_text[0] = '\0';
+		default_text[0] = '\0';
 	}
 
 	custom_frame.first_frame = -1;
@@ -1033,6 +1008,8 @@ void HudGauge::pageIn()
 
 void HudGauge::initialize()
 {
+	//Reset text to default
+	strcpy_s(custom_text, default_text);
 }
 
 bool HudGauge::canRender()
@@ -1138,16 +1115,13 @@ bool HudGauge::setupRenderCanvas()
 
 	if( texture_cache >= 0) {
 		// have a render canvas so, prep this hud gauge to render to it.
-
 		bm_set_render_target(texture_cache);
-		//gr_set_cull(0);
 		gr_clear();
 
 		return true;
 	} else if ( strlen(texture_target_fname) > 0 ) {
 		// we don't have a render canvas but this gauge was intended to be rendered to one.
 		// return false to tell the caller to skip rendering this gauge
-
 		return false;
 	}
 
@@ -1228,10 +1202,9 @@ void HudGauge::renderToCockpit()
 }
 
 // ----------------------------------------------------------------------
-// HUD_init()
-//
-// Called each level to initialize HUD systems
-//
+/**
+ * @brief Called each level to initialize HUD systems
+ */
 void HUD_init()
 {
 	HUD_init_colors();
@@ -1271,14 +1244,15 @@ void HUD_init()
 	// reset to infinite
 	Hud_max_targeting_range = 0;
 
-	int i, num_gauges;
+	int i;
+	size_t j, num_gauges;
 
 	// go through all HUD gauges and call their initialization functions
 	for (i = 0; i < Num_ship_classes; i++) {
 		if(Ship_info[i].hud_enabled) {
 			num_gauges = Ship_info[i].hud_gauges.size();
 
-			for(int j = 0; j < num_gauges; j++) {
+			for(j = 0; j < num_gauges; j++) {
 				Ship_info[i].hud_gauges[j]->createRenderCanvas();
 				Ship_info[i].hud_gauges[j]->initialize();
 				Ship_info[i].hud_gauges[j]->resetTimers();
@@ -1289,49 +1263,54 @@ void HUD_init()
 
 	num_gauges = default_hud_gauges.size();
 
-	for(i = 0; i < num_gauges; i++) {
-		default_hud_gauges[i]->initialize();
-		default_hud_gauges[i]->resetTimers();
-		default_hud_gauges[i]->updateSexpOverride(false);
+	for(j = 0; j < num_gauges; j++) {
+		default_hud_gauges[j]->initialize();
+		default_hud_gauges[j]->resetTimers();
+		default_hud_gauges[j]->updateSexpOverride(false);
 	}
 }
 
+/**
+ * @brief Do post mission cleanup of HUD
+ */
 void hud_level_close()
 {
-	int num_gauges;
+	size_t j, num_gauges;
 
-	// do post mission cleanup for HUD
 	for (int i = 0; i < Num_ship_classes; i++) {
 		if(Ship_info[i].hud_enabled) {
 			num_gauges = Ship_info[i].hud_gauges.size();
 
-			for(int j = 0; j < num_gauges; j++) {
+			for(j = 0; j < num_gauges; j++) {
 				Ship_info[i].hud_gauges[j]->clearRenderCanvas();
 			}
 		}
 	}
 }
 
+/**
+ * @brief Delete all HUD gauge objects, for all ships 
+ */
 void hud_close()
 {
-	int i, num_gauges = 0;
+	int i;
+	size_t j, num_gauges = 0;
 
-	// for all ships, delete all hud gauge objects
 	for (i = 0; i < Num_ship_classes; i++) {
-		num_gauges = (int)Ship_info[i].hud_gauges.size();
+		num_gauges = Ship_info[i].hud_gauges.size();
 
-		for(int j = 0; j < num_gauges; j++) {
+		for(j = 0; j < num_gauges; j++) {
 			delete Ship_info[i].hud_gauges[j];
 			Ship_info[i].hud_gauges[j] = NULL;
 		}
 		Ship_info[i].hud_gauges.clear();
 	}
 
-	num_gauges = (int)default_hud_gauges.size();
+	num_gauges = default_hud_gauges.size();
 
-	for(i = 0; i < num_gauges; i++) {
-		delete default_hud_gauges[i];
-		default_hud_gauges[i] = NULL;
+	for(j = 0; j < num_gauges; j++) {
+		delete default_hud_gauges[j];
+		default_hud_gauges[j] = NULL;
 	}
 	default_hud_gauges.clear();
 }
@@ -1360,19 +1339,26 @@ void hud_disable_except_messages(int disable)
 }
 
 // Goober5000
-// like hud_disabled, except messages are still drawn
+/**
+ * @brief Like ::hud_disabled(), except messages are still drawn
+ */
 int hud_disabled_except_messages()
 {
 	return HUD_disable_except_messages;
 }
 
-// return !0 if HUD is disabled (ie no gauges are shown/usable), otherwise return 0
+/**
+ * @brief Checks if HUD disabled
+ * @return !0 if HUD is disabled (ie no gauges are shown/usable), otherwise return 0
+ */
 int hud_disabled()
 {
 	return !HUD_draw;
 }
 
-// Determine if we should popup the weapons gauge on the HUD.
+/**
+ * @brief Determine if we should popup the weapons gauge on the HUD.
+ */
 void hud_maybe_popup_weapons_gauge()
 {
 	if ( hud_gauge_is_popup(HUD_WEAPONS_GAUGE) ) {
@@ -1390,10 +1376,11 @@ void hud_maybe_popup_weapons_gauge()
 	}
 }
 
-// hud_update_frame() will update hud systems
-//
-// This function updates those parts of the hud that are not dependant on the
-// rendering of the hud.
+/**
+ * @brief Updates HUD systems each frame
+ *
+ * @details This function updates those parts of the HUD that are not dependant on the rendering of the HUD.
+ */
 void hud_update_frame(float frametime)
 {
 	object	*targetp;
@@ -1479,8 +1466,6 @@ void hud_update_frame(float frametime)
 
 	if (retarget_turret && can_target) {
 		Assert(!retarget);
-		// get closest weighted live turret
-		// hud_target_closest(OBJ_INDEX(Player_obj), FALSE, FALSE);
 		void hud_update_closest_turret();
 		hud_update_closest_turret();
 	}
@@ -1597,7 +1582,7 @@ void hud_update_frame(float frametime)
 		}
 	}
 
-	//make sure that the player isn't targeting a 3rd stage local ssm
+	// Make sure that the player isn't targeting a 3rd stage local ssm
 	if (Objects[Player_ai->target_objnum].type == OBJ_WEAPON)
 	{
 		if (Weapons[Objects[Player_ai->target_objnum].instance].lssm_stage==3)
@@ -1613,7 +1598,7 @@ void hud_update_frame(float frametime)
 		Pl_target_integrity = get_hull_pct(targetp);
 	}
 
-	// update cargo scanning
+	// Update cargo scanning
 	hud_update_cargo_scan_sound();
 
 	if ( Viewer_mode & ( VM_EXTERNAL | VM_WARP_CHASE ) ) {
@@ -1625,7 +1610,9 @@ void hud_update_frame(float frametime)
 	hud_update_ship_status(targetp);
 }
 
-// Draw white brackets around asteroids which has the AF_DRAW_BRACKETS flag set
+/**
+ * @brief Draw white brackets around asteroids which has the AF_DRAW_BRACKETS flag set
+ */
 void hud_show_asteroid_brackets()
 {
 	if ( hud_sensors_ok(Player_ship, 0) ) {
@@ -1633,7 +1620,9 @@ void hud_show_asteroid_brackets()
 	}
 }
 
-// Render gauges that need to be between a g3_start_frame() and a g3_end_frame()
+/**
+ * @brief Render gauges that need to be between a ::g3_start_frame() and a ::g3_end_frame()
+ */
 void hud_render_preprocess(float frametime)
 {
 	Player->subsys_in_view = -1;
@@ -1747,11 +1736,13 @@ void HudGaugeMissionTime::render(float frametime)
 	}
 }
 
+/**
+ * @brief Show supernova warning it there's a supernova coming
+ */
 void hud_maybe_display_supernova()
 {
 	float time_left;
 
-	// if there's a supernova coming
 	time_left = supernova_time_left();
 	if(time_left < 0.0f){
 		return;
@@ -1761,39 +1752,42 @@ void hud_maybe_display_supernova()
 	gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
 }
 
+/**
+ * @brief Undertakes main HUD render. See also ::ship_render_foregrounds_cockpit_display()
+ */
 void hud_render_all()
 {
 	if(supernova_active() >= 3) {
 		return;
 	}
 
-	int num_gauges;
+	size_t j, num_gauges;
 
 	ship_info* sip = &Ship_info[Player_ship->ship_info_index];
 
 	ship_render_backgrounds_cockpit_display(Player_ship);
 
-	// check if this ship has its own hud gauges. 
+	// Check if this ship has its own HUD gauges. 
 	if(sip->hud_enabled) {
-		num_gauges = (int)sip->hud_gauges.size();
-		for(int i = 0; i < num_gauges; i++) {
-			if(sip->hud_gauges[i]->canRender()) {
-				sip->hud_gauges[i]->resetClip();
-				sip->hud_gauges[i]->setFont();
-				if ( sip->hud_gauges[i]->setupRenderCanvas() ) {
-					sip->hud_gauges[i]->render(flFrametime);
-					sip->hud_gauges[i]->doneRenderCanvas();
-					sip->hud_gauges[i]->renderToCockpit();
+		num_gauges = sip->hud_gauges.size();
+		for(j = 0; j < num_gauges; j++) {
+			if(sip->hud_gauges[j]->canRender()) {
+				sip->hud_gauges[j]->resetClip();
+				sip->hud_gauges[j]->setFont();
+				if ( sip->hud_gauges[j]->setupRenderCanvas() ) {
+					sip->hud_gauges[j]->render(flFrametime);
+					sip->hud_gauges[j]->doneRenderCanvas();
+					sip->hud_gauges[j]->renderToCockpit();
 				}
 			}
 		}
 	} else {
-		num_gauges = (int)default_hud_gauges.size();
-		for(int i = 0; i < num_gauges; i++) {
-			if(default_hud_gauges[i]->canRender()) {
-				default_hud_gauges[i]->resetClip();
-				default_hud_gauges[i]->setFont();
-				default_hud_gauges[i]->render(flFrametime);
+		num_gauges = default_hud_gauges.size();
+		for(j = 0; j < num_gauges; j++) {
+			if(default_hud_gauges[j]->canRender()) {
+				default_hud_gauges[j]->resetClip();
+				default_hud_gauges[j]->setFont();
+				default_hud_gauges[j]->render(flFrametime);
 			}
 		}
 	}
@@ -1805,18 +1799,15 @@ void hud_render_all()
 	gr_set_font(FONT1);
 }
 
-// hud_stop_looped_engine_sounds()
-//
-// This function will set the loop id's for the engine noises to -1, this will force any
-// looping engine sounds to stop.  This should only be called when the game decides to
-// stop all looping sounds
-//
-
+/**
+ * @brief Called when the game decides to stop all looping sounds
+ *
+ * @details This function will set the loop id's for the engine noises to -1, this will force any looping engine sounds to stop. 
+ */
 void hud_stop_looped_engine_sounds()
 {
 	if ( Player_engine_snd_loop > -1 )	{
 		snd_stop(Player_engine_snd_loop);
-		//snd_chg_loop_status(Player_engine_snd_loop, 0);
 		Player_engine_snd_loop = -1;
 	}
 }
@@ -1825,21 +1816,22 @@ void hud_stop_looped_engine_sounds()
 #define ENGINE_MAX_VOL		1.0f
 #define ENGINE_MAX_PITCH	44100
 
+/**
+ * @brief If the throttle has changed, modify the sound
+ *
+ * @details Determine what engine sound to play, based upon the percentage throttle set. 
+ * If we're a multiplayer observer, stop any engine sounds from playing and return.
+ */
 void update_throttle_sound()
 {
-	// determine what engine sound to play
 	float percent_throttle;
-//	int	throttle_pitch;
 
-	// if we're a multiplayer observer, stop any engine sounds from playing and return
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
-		// stop engine sound if it is playing
 		if(Player_engine_snd_loop != -1){
 			snd_stop(Player_engine_snd_loop);
 			Player_engine_snd_loop = -1;
 		}
 
-		// return
 		return;
 	}
 
@@ -1855,7 +1847,6 @@ void update_throttle_sound()
 			percent_throttle = Player_obj->phys_info.fspeed / Ships[Player_obj->instance].current_max_speed;
 		}
 
-		// If the throttle has changed, modify the sound
 		if ( percent_throttle != last_percent_throttle || Player_engine_snd_loop == -1 ) {
 
 			if ( percent_throttle < ZERO_PERCENT ) {
@@ -1879,12 +1870,6 @@ void update_throttle_sound()
 					}
 				}
 			}
-
-//			throttle_pitch = snd_get_pitch(Player_engine_snd_loop);
-//			if ( percent_throttle > 0.5 ) {
-//				snd_set_pitch(Player_engine_snd_loop, fl2i(22050 + (percent_throttle-0.5f)*1000));
-//			}
-
 		}	// end if (percent_throttle != last_percent_throttle)
 
 		last_percent_throttle = percent_throttle;
@@ -1892,8 +1877,10 @@ void update_throttle_sound()
 	}	// end if ( timestamp_elapsed(throttle_sound_check_id) )
 }
 
-// called at the beginning of each level.  Loads frame data in once, and initializes any damage
-// gauge specific data
+/**
+ * @brief Called at the beginning of each level. Loads frame data in once, and initializes any damage
+ * gauge specific data.
+ */
 void hud_damage_popup_init()
 {
 	int i;
@@ -2024,11 +2011,11 @@ void HudGaugeDamage::render(float frametime)
 
 	setGaugeColor();
 
-	// draw the top of the damage pop-up
+	// Draw the top of the damage pop-up
 	renderBitmap(damage_top.first_frame, position[0], position[1]);	
 	renderString(position[0] + header_offsets[0], position[1] + header_offsets[1], XSTR( "damage", 218));
 
-	// show hull integrity
+	// Show hull integrity
 	if ( screen_integrity < 100 ) {		
 		if ( screen_integrity == 0 ) {
 			screen_integrity = 1;
@@ -2043,7 +2030,7 @@ void HudGaugeDamage::render(float frametime)
 		renderString(position[0] + hull_integ_val_offset_x - w, position[1] + hull_integ_offsets[1], buf);
 	} 
 
-	// show damaged subsystems
+	// Show damaged subsystems
 	sx = position[0] + subsys_integ_start_offsets[0];
 	sy = position[1] + subsys_integ_start_offsets[1];
 	bx = position[0];
@@ -2076,7 +2063,7 @@ void HudGaugeDamage::render(float frametime)
 			}
 			Pl_hud_subsys_info[psub->type].last_str = strength;
 
-			//Don't display more than the max number of damaged subsystems.
+			// Don't display more than the max number of damaged subsystems.
 			if (num >= SUBSYSTEM_MAX)
 			{
 				break;
@@ -2098,9 +2085,6 @@ void HudGaugeDamage::render(float frametime)
 		Assert(best_index >= 0);
 		Assert(best_str >= 0);
 
-		// display strongest subsystem left in list
-		// draw the bitmap
-		// hud_set_default_color();
 		setGaugeColor();
 
 		renderBitmap(damage_middle.first_frame, bx, by);
@@ -2114,17 +2098,14 @@ void HudGaugeDamage::render(float frametime)
 			}
 			
 			if ( flash_status ) {
-				int alpha_color;
-				alpha_color = MIN(HUD_COLOR_ALPHA_MAX,HUD_color_alpha+HUD_BRIGHT_DELTA);
-				// gr_set_color_fast(&HUD_color_defaults[alpha_color]);
-
+				int alpha_color = MIN(HUD_COLOR_ALPHA_MAX,HUD_color_alpha+HUD_BRIGHT_DELTA);
 				setGaugeColor(alpha_color);
 			} else {				
 				setGaugeColor();
 			}
 		}
 
-		// draw the text
+		// Draw the text
 		if ( best_str < 30 ) {
 			if ( best_str <= 0 ) {
 				if ( Damage_flash_bright ) {
@@ -2143,7 +2124,7 @@ void HudGaugeDamage::render(float frametime)
 		char *n_firstline;
 		n_firstline = strrchr(hud_subsys_list[best_index].name, '|');
 		if (n_firstline) {
-			// print only the last line
+			// Print only the last line
 			n_firstline++;
 			renderString(sx, sy, n_firstline);
 		} else {
@@ -2159,20 +2140,19 @@ void HudGaugeDamage::render(float frametime)
 		renderString(position[0] + subsys_integ_val_offset_x - w, sy, buf);
 		sy += line_h;
 
-		// remove it from hud_subsys_list
+		// Remove it from hud_subsys_list
 		if ( best_index < (num-i-1) ) {
 			hud_subsys_list[best_index] = hud_subsys_list[num-i-1];
 		}
 	}
 
-	// draw the bottom of the gauge
-	// hud_set_default_color();
 	setGaugeColor();
-
 	renderBitmap(damage_bottom.first_frame, bx, by);		
 }
 
-// init the members of the hud_anim struct to default values
+/** 
+ * @brief Initialise the members of the ::hud_anim struct to default values
+ */
 void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename)
 {
 	ha->first_frame		= -1;
@@ -2184,15 +2164,19 @@ void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename)
 	strcpy_s(ha->filename, filename);
 }
 
-// init the members of the hud_frames struct to default values
+/**
+ * @brief Initialise the members of the ::hud_frames struct to default values
+ */
 void hud_frames_init(hud_frames *hf)
 {
 	hf->first_frame		= -1;
 	hf->num_frames		= 0;
 }
 
-// load a hud_anim
-// return 0 is successful, otherwise return -1
+/**
+ * @brief Load a ::hud_anim
+ * @return If successful return 0, otherwise return -1
+ */
 int hud_anim_load(hud_anim *ha)
 {
 	int		fps;
@@ -2216,17 +2200,19 @@ int hud_anim_load(hud_anim *ha)
 	return 0;
 }
 
-// render out a frame of the targetbox static animation, based on how much time has
-// elapsed
-// input:	ha				=>	pointer to hud anim info
-//				frametime	=>	seconds elapsed since last frame
-//				draw_alpha	=>	draw bitmap as alpha-bitmap (default 0)
-//				loop			=>	anim should loop (default 1)
-//				hold_last	=>	should last frame be held (default 0)
-//				reverse		=>	play animation in reverse (default 0)
-//				resize		=>  resize for non-standard resolutions
-//				mirror		=>	mirror along y-axis so icon points left instead of right
-int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse,bool resize,bool mirror)
+/**
+ * @brief Render out a frame of the targetbox static animation, based on how much time has elapsed 
+ *
+ * @param ha			Pointer to ::hud_anim info
+ * @param frametime		Seconds elapsed since last frame
+ * @param draw_alpha	Draw bitmap as alpha-bitmap (default 0)
+ * @param loop			Anim should loop (default 1)
+ * @param hold_last		Should last frame be held (default 0)
+ * @param reverse		Play animation in reverse (default 0)
+ * @param resize		Resize for non-standard resolutions
+ * @param mirror		Mirror along y-axis so icon points left instead of right
+ */
+int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse, bool resize, bool mirror)
 {
 	int framenum;
 
@@ -2246,7 +2232,7 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 		}
 	}
 
-	// draw the correct frame of animation
+	// Draw the correct frame of animation
 	framenum = fl2i( (ha->time_elapsed * ha->num_frames) / ha->total_time );
 	if (reverse) {
 		framenum = (ha->num_frames-1) - framenum;
@@ -2261,16 +2247,18 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 	if(emp_should_blit_gauge()){
 		gr_set_bitmap(ha->first_frame + framenum);
 		if ( draw_alpha ){
-			gr_aabitmap(ha->sx, ha->sy,resize,mirror);
+			gr_aabitmap(ha->sx, ha->sy, resize, mirror);
 		} else {
-			gr_bitmap(ha->sx, ha->sy,resize);
+			gr_bitmap(ha->sx, ha->sy, resize);
 		}
 	}
 
 	return 1;
 }
 
-// convert a number string to use mono-spaced 1 character
+/**
+ * @brief Convert a number string to use mono-spaced 1 character
+ */
 void hud_num_make_mono(char *num_str)
 {
 	int len, i, sc;
@@ -2284,7 +2272,9 @@ void hud_num_make_mono(char *num_str)
 	}
 }
 
-// flashing text gauge
+/**
+ * @brief Flashing text gauge
+ */
 void hud_init_text_flash_gauge()
 {
 	strcpy_s(Hud_text_flash, "");
@@ -2395,23 +2385,23 @@ void HudGaugeKills::pageIn()
 	bm_page_in_aabitmap(Kills_gauge.first_frame, Kills_gauge.num_frames);
 }
 
-// maybe display the kills gauge on the HUD
+/**
+ * @brief Display the kills gauge on the HUD
+ */
 void HudGaugeKills::render(float frametime)
 {
 	if ( Kills_gauge.first_frame < 0 ) {
 		return;
 	}
 
-	// hud_set_default_color();
 	setGaugeColor();
 
-	// draw background
+	// Draw background
 	renderBitmap(Kills_gauge.first_frame, position[0], position[1]);	
-
 	renderString(position[0] + text_offsets[0], position[1] + text_offsets[1], XSTR( "kills:", 223));
 
-	// display how many kills the player has so far
-	char	num_kills_string[32];
+	// Display how many kills the player has so far
+	char num_kills_string[32];
 	int	w,h;
 
 	if ( !Player ) {
@@ -2489,7 +2479,7 @@ void HudGaugeLag::render(float frametime)
 
 	switch(lag_status) {
 	case 0:
-		// draw the net lag icon flashing
+		// Draw the net lag icon flashing
 		startFlashLag();
 		if(maybeFlashLag()){
 			setGaugeColor(HUD_C_BRIGHT);
@@ -2499,7 +2489,7 @@ void HudGaugeLag::render(float frametime)
 		renderBitmap(Netlag_icon.first_frame, position[0], position[1]);
 		break;
 	case 1:
-		// draw the disconnected icon flashing fast
+		// Draw the disconnected icon flashing fast
 		if(maybeFlashLag(true)){
 			setGaugeColor(HUD_C_BRIGHT);
 		} else {
@@ -2508,12 +2498,14 @@ void HudGaugeLag::render(float frametime)
 		renderBitmap(Netlag_icon.first_frame+1, position[0], position[1]);
 		break;
 	default:
-		// nothing to draw
+		// Nothing to draw
 		return;
 	}
 }
 
-// load in kills gauge if required
+/**
+ * @brief Load in ::Kills_gauge if required
+ */
 void hud_init_kills_gauge()
 {
 	if ( !Kills_gauge_loaded ) {
@@ -2526,7 +2518,9 @@ void hud_init_kills_gauge()
 	}
 }
 
-// called at mission start to init data, and load support view bitmap if required
+/**
+ * @brief Called at mission start to init data, and load support view bitmap if required
+ */
 void hud_support_view_init()
 {
 	Hud_support_view_fade = 1;
@@ -2537,15 +2531,20 @@ void hud_support_view_init()
 	Hud_support_view_abort = 0;
 }
 
-// start displaying the support view pop-up.  This will remain up until hud_support_view_stop is called.
-// input:	objnum	=>		object number for the support ship
+/**
+ * @brief Start displaying the support view pop-up. This will remain up until ::hud_support_view_stop() is called.
+ */
 void hud_support_view_start()
 {
 	Hud_support_view_active = 1;
 	Hud_support_view_fade = 1;
 }
 
-// stop displaying the support view pop-up
+/**
+ * @brief Stop displaying the support view pop-up.
+ *
+ * @param stop_now If set, stop now, otherwise in 2 seconds.
+ */
 void hud_support_view_stop(int stop_now)
 {
 	if ( stop_now ) {
@@ -2567,13 +2566,16 @@ void hud_support_view_abort()
 	Hud_support_view_abort = 1;
 }
 
-// return the number of seconds until repair ship will dock with player, return -1 if error
-// 
-// mwa made this function more general purpose
-// Goober5000 made clearer
-//
-// NOTE: This function is pretty stupid now.  It just assumes the dockee is sitting still, and
-//		   the docker is moving directly to the dockee.
+/**
+ * @brief Get the number of seconds until repair ship will dock with ther player
+ * @details mwa made this function more general purpose. Goober5000 made clearer
+ *
+ * @param docker_objp The object which is attempting to dock with the player
+ * @return The number of seconds, 0 if already docked, -1 if error
+ *
+ * @todo This function is pretty stupid now.  It just assumes the dockee is sitting still, and
+ * the docker is moving directly to the dockee.
+ */
 int hud_get_dock_time( object *docker_objp )
 {
 	ai_info	*aip;
@@ -2583,18 +2585,17 @@ int hud_get_dock_time( object *docker_objp )
 
 	aip = &Ai_info[Ships[docker_objp->instance].ai_index];
 
-	// get the dockee object pointer
+	// Get the dockee object pointer
 	if (aip->goal_objnum == -1) {
-		// this can happen when you target a support ship as it warps in
+		// This can happen when you target a support ship as it warps in
 		// just give a debug warning instead of a fault - taylor
-	//	Int3();	//	Shouldn't happen, but let's recover gracefully.
 		mprintf(("'aip->goal_objnum == -1' in hud_get_dock_time(), line %i\n", __LINE__));
 		return 0;
 	}
 
 	dockee_objp = &Objects[aip->goal_objnum];
 
-	// if the ship is docked, return 0
+	// If the ship is docked, return 0
 	if ( dock_check_find_direct_docked_object(docker_objp, dockee_objp) )
 		return 0;
 
@@ -2605,7 +2606,7 @@ int hud_get_dock_time( object *docker_objp )
 
 	docker_speed = docker_objp->phys_info.speed;
 
-	if ( rel_speed <= docker_speed/2.0f) {	//	This means the player is moving away fast from the support ship.
+	if ( rel_speed <= docker_speed/2.0f) {	// This means the player is moving away fast from the support ship.
 		return (int) (dist/docker_speed);
 	} else {
 		float	d1;
@@ -2615,26 +2616,26 @@ int hud_get_dock_time( object *docker_objp )
 		if (rel_speed < 20.0f)
 			rel_speed = 20.0f;
 
-		//	When faraway, use max speed, not current speed.  Might not have sped up yet.
+		// When far away, use max speed, not current speed.  Might not have sped up yet.
 		if (d > 100.0f) {
 			time += (d - 100.0f)/docker_objp->phys_info.max_vel.xyz.z;
 		}
 
-		//	For mid-range, use current speed.
+		// For mid-range, use current speed.
 		if (d > 60.0f) {
 			d1 = MIN(d, 100.0f);
 
 			time += (d1 - 60.0f)/rel_speed;
 		}
 
-		//	For nearby, ship will have to slow down a bit for docking maneuver.
+		// For nearby, ship will have to slow down a bit for docking maneuver.
 		if (d > 30.0f) {
 			d1 = MIN(d, 60.0f);
 
 			time += (d1 - 30.0f)/5.0f;
 		}
 
-		//	For very nearby, ship moves quite slowly.
+		// For very nearby, ship moves quite slowly.
 		d1 = MIN(d, 30.0f);
 		time += d1/7.5f;
 
@@ -2642,9 +2643,12 @@ int hud_get_dock_time( object *docker_objp )
 	}
 }
 
-// Locate the closest support ship which is trying to dock with player, return -1 if there is no support
-// ship currently trying to dock with the player
-// MA:  4/22/98 -- pass in objp to find support ship trying to dock with objp
+/**
+ * @brief Locate the closest support ship which is trying to dock with player
+ * 
+ * @param objnum Object number of player
+ * @return Number of support ship, -1 if there is no support ship currently trying to dock
+ */
 int hud_support_find_closest( int objnum )
 {
 	ship_obj		*sop;
@@ -2704,7 +2708,7 @@ void hud_support_view_update()
 			Hud_support_target_sig = Player_obj->signature;
 		}
 	} else {
-		// check to see if support ship is still alive
+		// Check to see if support ship is still alive
 		if ( (Objects[Hud_support_objnum].signature != Hud_support_obj_sig) || (Hud_support_target_sig != Player_obj->signature) ) {
 			hud_support_view_stop(1);
 			return;
@@ -2770,13 +2774,13 @@ void HudGaugeSupport::render(float frametime)
 		return;
 	}
 
-	// don't render this gauge for multiplayer observers
+	// Don't render this gauge for multiplayer observers
 	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))){
 		return;
 	}
 
 	if ( Hud_support_objnum >= 0 ) {
-		// check to see if support ship is still alive
+		// Check to see if support ship is still alive
 		if ( (Objects[Hud_support_objnum].signature != Hud_support_obj_sig) || (Hud_support_target_sig != Player_obj->signature) ) {
 			return;
 		}
@@ -2784,7 +2788,7 @@ void HudGaugeSupport::render(float frametime)
 
 	bm_get_info(background.first_frame, &w, &h);
 
-	// set hud color
+	// Set hud color
 	setGaugeColor();
 
 	renderBitmap(background.first_frame, position[0], position[1]);	
@@ -2863,7 +2867,7 @@ void HudGaugeSupport::render(float frametime)
 		} else {
 			ai_info *aip;
 
-			// display "busy" when support ship isn't actually enroute to me
+			// Display "busy" when support ship isn't actually enroute to me
 			aip = &Ai_info[Ships[Objects[Hud_support_objnum].instance].ai_index];
 			if ( aip->goal_objnum != OBJ_INDEX(Player_obj) ) {
 				sprintf(outstr, XSTR( "busy", 231));
@@ -2887,7 +2891,7 @@ void HudGaugeSupport::render(float frametime)
 
 		Assert( Hud_support_objnum != -1 );
 
-		// ensure support ship is still alive
+		// Ensure support ship is still alive
 		if ( (Objects[Hud_support_objnum].signature != Hud_support_obj_sig) || (Hud_support_target_sig != Player_obj->signature) ) {
 			seconds = 0;
 		} else {
@@ -2909,14 +2913,18 @@ void HudGaugeSupport::render(float frametime)
 	}
 }
 
-// Set the current color to the default HUD color (with default alpha)
+/**
+ * @brief Set the current color to the default HUD color (with default alpha)
+ */
 void hud_set_default_color()
 {
 	Assert(HUD_color_alpha >= 0 && HUD_color_alpha < HUD_NUM_COLOR_LEVELS);
 	gr_set_color_fast(&HUD_color_defaults[HUD_color_alpha]);
 }
 
-// Set the current color to a bright HUD color (ie high alpha)
+/**
+ * @brief Set the current color to a bright HUD color (ie high alpha)
+ */
 void hud_set_bright_color()
 {
 	int alpha_color;
@@ -2924,7 +2932,9 @@ void hud_set_bright_color()
 	gr_set_color_fast(&HUD_color_defaults[alpha_color]);
 }
 
-// Set the current color to a dim HUD color (ie low alpha)
+/**
+ * @brief Set the current color to a dim HUD color (ie low alpha)
+ */
 void hud_set_dim_color()
 {
 	if ( HUD_color_alpha > 2 ) {
@@ -2932,10 +2942,12 @@ void hud_set_dim_color()
 	}
 }
 
-// hud_set_iff_color() will set the color to the IFF color based on the team
-//
-// input:		team		=>		team to base color on
-//				is_bright	=>		default parameter (value 0) which uses bright version of IFF color
+/**
+ * @brief Will set the color to the IFF color based on the team
+ *
+ * @param objp			Object to test for team color to base on
+ * @param is_bright		Default parameter (value 0) which uses bright version of IFF color
+ */
 void hud_set_iff_color(object *objp, int is_bright)
 {
 	color *use_color;
@@ -2946,7 +2958,6 @@ void hud_set_iff_color(object *objp, int is_bright)
 	}
 	else
 	{
-		// figure out how we get the team
 		if (objp->type == OBJ_ASTEROID)
 		{
 			if (OBJ_INDEX(objp) == Player_ai->target_objnum)
@@ -2967,7 +2978,9 @@ void hud_set_iff_color(object *objp, int is_bright)
 	gr_set_color_fast(use_color);
 }
 
-// reset gauge flashing data
+/**
+ * @brief Reset gauge flashing data
+ */
 void hud_gauge_flash_init()
 {
 	int i;
@@ -2988,7 +3001,9 @@ static int Vm_other_ship_gauges[NUM_VM_OTHER_SHIP_GAUGES] =
 	HUD_TALKING_HEAD
 };
 
-// determine if the specified HUD gauge should be displayed
+/**
+ * @brief Determine if the specified HUD gauge should be displayed
+ */
 int hud_gauge_active(int gauge_index)
 {
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
@@ -3006,14 +3021,19 @@ int hud_gauge_active(int gauge_index)
 	return hud_config_show_flag_is_set(gauge_index);
 }
 
-// determine if gauge is in pop-up mode or not
+/**
+ * @brief Determine if gauge is in pop-up mode or not
+ */
 int hud_gauge_is_popup(int gauge_index)
 {
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
 	return hud_config_popup_flag_is_set(gauge_index);
 }
 
-// start a gauge to popup
+/**
+ * @brief Start a gauge to pop-up
+ * @details Load gauge properties defined in the HUD config if gauge is not customized.
+ */
 void hud_gauge_popup_start(int gauge_index, int time) 
 {
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
@@ -3021,73 +3041,65 @@ void hud_gauge_popup_start(int gauge_index, int time)
 		return;
 	}
 
-	int num_gauges, i, gauge_type;
+	size_t num_gauges, i;
 
-	// go through all HUD gauges. Load gauge properties defined in the HUD config if gauge is not customized.
 	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
-			gauge_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
-
-			if(gauge_type == gauge_index) {
+			if(Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType() == gauge_index)
 				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->startPopUp(time);
-			}
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
-			gauge_type = default_hud_gauges[i]->getConfigType();
-
-			if(gauge_type == gauge_index)
+			if(default_hud_gauges[i]->getConfigType() == gauge_index)
 				default_hud_gauges[i]->startPopUp(time);
 		}
 	}
 }
 
-// call HUD function to flash gauge
+/**
+ * @brief Call HUD function to flash gauge
+ * @details Load gauge properties defined in the HUD config if gauge is not customized.
+ */
 void hud_gauge_start_flash(int gauge_index)
 {
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
 
-	int i, num_gauges, gauge_type;
+	size_t num_gauges, i; 
 
 	HUD_gauge_flash_duration[gauge_index] = timestamp(HUD_GAUGE_FLASH_DURATION);
 	HUD_gauge_flash_next[gauge_index] = 1;
-
-	// go through all HUD gauges. Load gauge properties defined in the HUD config if gauge is not customized.
+ 
 	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
-			gauge_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
-
-			if(gauge_type == gauge_index) {
+			if(Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType() == gauge_index)
 				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->startFlashSexp();
-			}
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
-			gauge_type = default_hud_gauges[i]->getConfigType();
-
-			if(gauge_type == gauge_index)
+			if(default_hud_gauges[i]->getConfigType() == gauge_index)
 				default_hud_gauges[i]->startFlashSexp();
 		}
 	}
 }
 
-// Set the HUD color for the gauge, based on whether it is flashing or not
+/**
+ * @brief Set the HUD color for the gauge, based on whether it is flashing or not
+ */
 void hud_set_gauge_color(int gauge_index, int bright_index)
 {
-//	color use_color;
 	int flash_status = hud_gauge_maybe_flash(gauge_index);
 	color *use_color = &HUD_config.clr[gauge_index];
 	int alpha;
 
-	// if we're drawing it as bright
+	// If we're drawing it as bright
 	if(bright_index != HUD_C_NONE){
 		switch(bright_index){
 		case HUD_C_DIM:
@@ -3105,7 +3117,7 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
-		// intensity
+		// Intensity
 		default: 
 			Assert((bright_index >= 0) && (bright_index < HUD_NUM_COLOR_LEVELS));
 			if(bright_index < 0){
@@ -3148,10 +3160,11 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 	gr_set_color_fast(use_color);	
 }
 
-// set the color for a gauge that may be flashing
-// exit:	-1	=>	gauge is not flashing
-//			0	=>	gauge is flashing, draw dim
-//			1	=>	gauge is flashing, draw bright
+/**
+ * @brief Set the color for a gauge that may be flashing
+ * @param gauge_index Gauge to test
+ * @return Gauge is not flashing -1; gauge is flashing, draw dim 0; gauge is flashing, draw bright 1
+ */
 int hud_gauge_maybe_flash(int gauge_index)
 {
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
@@ -3171,7 +3184,9 @@ int hud_gauge_maybe_flash(int gauge_index)
 	return flash_status;
 }
 
-// Init the objective message display data
+/**
+ * @brief Initialise the objective message display data
+ */
 void hud_objective_message_init()
 {
 	Objective_display.display_timer=timestamp(0);
@@ -3179,11 +3194,11 @@ void hud_objective_message_init()
 
 void hud_update_objective_message()
 {
-	// find out if we should display the subspace status notification
+	// Find out if we should display the subspace status notification
 	if ( (Player->control_mode == PCM_WARPOUT_STAGE1) || (Player->control_mode == PCM_WARPOUT_STAGE2) || (Player->control_mode == PCM_WARPOUT_STAGE3) 
 		|| (Sexp_hud_display_warpout > 0) ) {
 		if (!hud_subspace_notify_active()) {
-			// keep sound from being played 1e06 times
+			// Keep sound from being played 1e06 times
 			hud_start_subspace_notify();
 		}
 	} else {
@@ -3198,7 +3213,7 @@ void hud_update_objective_message()
 		}
 	}
 	
-	// find out if we should display the objective status notification
+	// Find out if we should display the objective status notification
 	if ( timestamp_elapsed(Objective_display.display_timer) ) {
 		hud_stop_objective_notify();
 	} else if (!hud_objective_notify_active() && !hud_subspace_notify_active()) {
@@ -3206,15 +3221,13 @@ void hud_update_objective_message()
 	}
 }
 
-// Display objective status on the HUD
-// input:	type			=>	type of goal, one of:	PRIMARY_GOAL
-//																	SECONDARY_GOAL
-//																	BONUS_GOAL
-//
-//				status		=> status of goal, one of:	GOAL_FAILED
-//																	GOAL_COMPLETE
-//																	GOAL_INCOMPLETE
-//
+/**
+ * @brief Add objective status on the HUD
+ *
+ * @param type		Type of goal, one of: ::PRIMARY_GOAL, ::SECONDARY_GOAL, ::BONUS_GOAL
+ * @param status	Status of goal, one of:	::GOAL_FAILED, ::GOAL_COMPLETE, ::GOAL_INCOMPLETE
+ * @todo Play a sound?
+ */
 void hud_add_objective_messsage(int type, int status)
 {
 	Objective_display.display_timer=timestamp(7000);
@@ -3341,16 +3354,12 @@ void HudGaugeObjectiveNotify::renderSubspace()
 		return;
 	}
 
-	// blit the background	
+	// Blit the background	
 	setGaugeColor();
 	renderBitmap(Objective_display_gauge.first_frame, position[0], position[1]);
 
 	startFlashNotify();
-	if(maybeFlashNotify()){
-		setGaugeColor(HUD_C_BRIGHT);
-	} else {
-		setGaugeColor();
-	}
+	maybeFlashNotify() ? setGaugeColor(HUD_C_BRIGHT) : setGaugeColor();
 
 	bm_get_info(Objective_display_gauge.first_frame, &w, &h);
 
@@ -3362,6 +3371,9 @@ void HudGaugeObjectiveNotify::renderSubspace()
 	}
 }
 
+/**
+ * @todo Play a sound?
+ */
 void HudGaugeObjectiveNotify::renderRedAlert()
 {
 	int w, h;
@@ -3382,8 +3394,8 @@ void HudGaugeObjectiveNotify::renderRedAlert()
 		return;
 	}
 
-	// blit the background
-	gr_set_color_fast(&Color_red);		// color box red, cuz its an emergency for cryin out loud
+	// Blit the background
+	gr_set_color_fast(&Color_red);		// Color box red, because it's an emergency
 
 	GR_AABITMAP(Objective_display_gauge.first_frame, position[0], position[1]);	
 
@@ -3419,7 +3431,7 @@ void HudGaugeObjectiveNotify::renderObjective()
 		return;
 	}
 	
-	// blit the background
+	// Blit the background
 	setGaugeColor();
 	renderBitmap(Objective_display_gauge.first_frame, position[0], position[1]);	
 
@@ -3432,7 +3444,7 @@ void HudGaugeObjectiveNotify::renderObjective()
 
 	bm_get_info(Objective_display_gauge.first_frame, &w, &h);
 
-	// draw the correct goal type
+	// Draw the correct goal type
 	switch(Objective_display.goal_type) {
 	case PRIMARY_GOAL:
 		renderStringAlignCenter(position[0], position[1] + Objective_text_offset_y, w, XSTR( "primary objective", 237));
@@ -3445,7 +3457,7 @@ void HudGaugeObjectiveNotify::renderObjective()
 		break;
 	}
 
-	// show the status
+	// Show the status
 	switch(Objective_display.goal_type) {
 	case PRIMARY_GOAL:
 	case SECONDARY_GOAL:
@@ -3510,7 +3522,16 @@ int hud_objective_notify_active()
 	return Objective_notify_active;
 }
 
-// set the offset values for this render frame
+/** 
+ * @brief Set the offset values for this render frame
+ * @details Since the player's view vector may be different from the ship's forward vector,
+ * we calculate the offset of those two in pixels and store the x and y offsets in
+ * variables HUD_nose_x and HUD_nose_y (Swifty)
+ *
+ * @param viewer_obj Object, likely to be player
+ * @param wiggedy_wack
+ * @param eye_orient 
+ */
 void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 {
 	if ( (viewer_obj == Player_obj) && wiggedy_wack ){		
@@ -3548,9 +3569,6 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 		HUD_offset_y = 0.0f;
 	}
 
-	// Since the player's view vector may be different from the ship's forward vector, 
-	// we calculate the offset of those two in pixels and store the x and y offsets in 
-	// variables HUD_nose_x and HUD_nose_y (Swifty)
 	if ( Viewer_mode & VM_TOPDOWN ) {
 		HUD_nose_x = 0;
 		HUD_nose_y = 0;
@@ -3558,8 +3576,10 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 		HUD_get_nose_coordinates(&HUD_nose_x, &HUD_nose_y);
 	}
 }
-// Function returns the offset between the player's view vector and the forward vector of the ship in pixels
-// (Swifty)
+
+/**
+ * @brief Returns the offset between the player's view vector and the forward vector of the ship in pixels (Swifty)
+ */
 void HUD_get_nose_coordinates(int *x, int *y)
 {
 	vertex	v0;
@@ -3607,7 +3627,9 @@ void HUD_get_nose_coordinates(int *x, int *y)
 	return;
 }
 
-// Basically like gr_reset_clip only it accounts for hud jittering
+/**
+ * @brief Like ::gr_reset_clip() only it accounts for HUD jittering
+ */
 void HUD_reset_clip()
 {
 	int hx = fl2i(HUD_offset_x);
@@ -3616,7 +3638,9 @@ void HUD_reset_clip()
 	gr_set_clip(hx, hy, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled);
 }
 
-// Basically like gr_set_clip only it accounts for hud jittering
+/**
+ * @brief Like ::gr_set_clip() only it accounts for HUD jittering
+ */
 void HUD_set_clip(int x, int y, int w, int h)
 {
 	int hx = fl2i(HUD_offset_x);
@@ -3625,11 +3649,10 @@ void HUD_set_clip(int x, int y, int w, int h)
 	gr_set_clip(hx+x, hy+y, w, h);
 }
 
-// -------------------------------------------------------------------------------------
-// hud_save_restore_camera_data()
-//
-//	Called to save and restore the 3D camera settings.
-//
+/**
+ * @brief Called to save and restore the 3D camera settings.
+ * @param save Save global view variables if 1, restore them if not 1 
+ */
 void hud_save_restore_camera_data(int save)
 {
 	static vec3d	save_view_position;
@@ -3638,12 +3661,11 @@ void hud_save_restore_camera_data(int save)
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;
 
-	// save global view variables, so we can restore them
 	if ( save ) {
-		save_view_position	= View_position;
+		save_view_position		= View_position;
 		save_view_zoom			= View_zoom;
 		save_view_matrix		= View_matrix;
-		save_eye_matrix		= Eye_matrix;
+		save_eye_matrix			= Eye_matrix;
 		save_eye_position		= Eye_position;
 	}
 	else {
@@ -3667,10 +3689,12 @@ void hud_set_contrast(int high)
 	HUD_contrast = high;
 }
 
-// Paging functions for the rest of the hud code
+// Paging functions for the rest of the HUD code
 extern void hudtarget_page_in();
 
-// Page in all hud bitmaps
+/**
+ * @brief Page in all HUD bitmaps
+ */
 void hud_page_in()
 {
 	bm_page_in_aabitmap( Kills_gauge.first_frame, Kills_gauge.num_frames );
@@ -3678,14 +3702,15 @@ void hud_page_in()
 	// Paging functions for the rest of the hud code
 	hudtarget_page_in();
 
-	// go through all hud gauges to page them in 
-	int i, num_gauges = 0;
+	// Go through all hud gauges to page them in 
+	int i;
+	size_t j, num_gauges = 0;
 	for (i = 0; i < Num_ship_classes; i++) {
 		if(Ship_info[i].hud_enabled) {
 			if(Ship_info[i].hud_gauges.size() > 0) {
 				num_gauges = Ship_info[i].hud_gauges.size();
 
-				for(int j = 0; j < num_gauges; j++) {
+				for(j = 0; j < num_gauges; j++) {
 					Ship_info[i].hud_gauges[j]->pageIn();
 				}
 			}
@@ -3694,30 +3719,31 @@ void hud_page_in()
 
 	num_gauges = default_hud_gauges.size();
 
-	for(i = 0; i < num_gauges; i++) {
-		default_hud_gauges[i]->pageIn();
+	for(j = 0; j < num_gauges; j++) {
+		default_hud_gauges[j]->pageIn();
 	}
 }
 
 HudGauge* hud_get_gauge(char* name)
 {
 	char* gauge_name;
+	size_t j;
 
 	// go through all gauges and return the gauge that matches
 	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
-		for(int i = 0; i < (int)Ship_info[Player_ship->ship_info_index].hud_gauges.size(); i++) {
+		for(j = 0; j < Ship_info[Player_ship->ship_info_index].hud_gauges.size(); j++) {
 
-			gauge_name = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getCustomGaugeName();
+			gauge_name = Ship_info[Player_ship->ship_info_index].hud_gauges[j]->getCustomGaugeName();
 			if(!strcmp(name, gauge_name)) {
-				return Ship_info[Player_ship->ship_info_index].hud_gauges[i];
+				return Ship_info[Player_ship->ship_info_index].hud_gauges[j];
 			}
 		}
 	} else {
-		for(int i = 0; i < (int)default_hud_gauges.size(); i++) {
+		for(j = 0; j < default_hud_gauges.size(); j++) {
 
-			gauge_name = default_hud_gauges[i]->getCustomGaugeName();
+			gauge_name = default_hud_gauges[j]->getCustomGaugeName();
 			if(!strcmp(name, gauge_name)) {
-				return default_hud_gauges[i];
+				return default_hud_gauges[j];
 			}
 		}
 	}
@@ -3735,7 +3761,9 @@ bool HudGaugeMultiMsg::canRender()
 	return true;
 }
 
-// render multiplayer text message currently being entered if any
+/**
+ * @brief Render multiplayer text message currently being entered, if any
+ */
 void HudGaugeMultiMsg::render(float frametime)
 {
 	char txt[MULTI_MSG_MAX_TEXT_LEN+20];
@@ -3795,29 +3823,31 @@ HudGauge(HUD_OBJECT_PING, HUD_LAG_GAUGE, true, false, false, 0, 255, 255, 255)
 
 }
 
-// render multiplayer ping time to the server if appropriate
+/**
+ * @brief Render multiplayer ping time to the server, if appropriate
+ */
 void HudGaugePing::render(float frametime)
 {
-	// if we shouldn't be displaying a ping time, return here
+	// If we shouldn't be displaying a ping time, return here
 	if(!multi_show_ingame_ping()){
 		return;
 	}
 	
-	// if we're in multiplayer mode, display our ping time to the server
+	// If we're in multiplayer mode, display our ping time to the server
 	if(MULTIPLAYER_CLIENT && (Net_player != NULL)){
 		char ping_str[50];
 		memset(ping_str,0,50);
 
-		// if our ping is positive, display it
+		// If our ping is positive, display it
 		if((Netgame.server != NULL) && (Netgame.server->s_info.ping.ping_avg > 0)){
-			// get the string
+			// Get the string
 			if(Netgame.server->s_info.ping.ping_avg >= 1000){
 				sprintf(ping_str,XSTR("> 1 sec",628));
 			} else {
 				sprintf(ping_str,XSTR("%d ms",629),Netgame.server->s_info.ping.ping_avg);
 			}
 
-			// blit the string out
+			// Blit the string out
 			hud_set_default_color();
 			renderString(position[0], position[1], ping_str);
 		}

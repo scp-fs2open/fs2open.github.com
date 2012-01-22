@@ -46,12 +46,32 @@ void set_flag(ai_profile_t *profile, char *name, int flag, int type)
 	}
 }
 
+char *AI_path_types[] = {
+	"normal",
+	"alt1",
+};
+
+int Num_ai_path_types = sizeof(AI_path_types)/sizeof(char*);
+
+int ai_path_type_match(char *p)
+{
+	int i;
+	for(i = 0; i < Num_ai_path_types; i++)
+	{
+		if(!stricmp(AI_path_types[i], p))
+			return i;
+	}
+
+	return -1;
+}
+
 void parse_ai_profiles_tbl(char *filename)
 {
 	int i, rval;
 	char profile_name[NAME_LENGTH];
 	ai_profile_t dummy_profile;
 	char *saved_Mp = NULL;
+	char buf[NAME_LENGTH];
 
 	// open localization
 	lcl_ext_open();
@@ -405,6 +425,20 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$ai aims from ship center:", AIPF2_AI_AIMS_FROM_SHIP_CENTER, AIP_FLAG2);
 
 			set_flag(profile, "$allow primary link delay:", AIPF2_ALLOW_PRIMARY_LINK_DELAY, AIP_FLAG2);
+
+			set_flag(profile, "$allow beams to damage bombs:", AIPF2_BEAMS_DAMAGE_WEAPONS, AIP_FLAG2);
+
+			profile->ai_path_mode = AI_PATH_MODE_NORMAL;
+			if(optional_string("$ai path mode:"))
+			{
+				stuff_string(buf, F_NAME, NAME_LENGTH);
+				int j = ai_path_type_match(buf);
+				if(j >= 0) {
+					profile->ai_path_mode = j;
+				} else {
+					Warning(LOCATION, "Invalid ai path mode '%s' specified", buf);
+				}
+			}
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

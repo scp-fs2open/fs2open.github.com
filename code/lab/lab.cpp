@@ -1047,6 +1047,18 @@ void labviewer_do_render(float frametime)
 	} else {
 		gr_string(gr_screen.clip_left + 10, gr_screen.clip_bottom - gr_get_font_height(), "FPS: ?", false);
 	}
+
+	//Print FXAA preset
+	if (Cmdline_fxaa && !PostProcessing_override)
+		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 2) - 3, "FXAA Preset: %i", Cmdline_fxaa_preset);
+
+	//Print bloom intensity
+	if (Cmdline_bloom_intensity && !PostProcessing_override)
+		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 3) - 3, "Bloom intensity: %i", Cmdline_bloom_intensity);
+
+	//Display helpful text
+	if (!PostProcessing_override)
+		gr_printf_no_resize(gr_screen.clip_left + 70, gr_screen.clip_bottom - gr_get_font_height(), "Use number keys to switch between FXAA presets. B and N can be used to adjust bloom.");
 }
 
 void labviewer_exit(Button *caller)
@@ -1643,7 +1655,10 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Rotate Subsystems", Lab_viewer_flags, LAB_FLAG_SUBMODEL_ROTATE);
 	if (Use_GLSL) {
 		ADD_RENDER_BOOL("Fixed Render Pipeline", GLSL_override);
-		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
+		if (Cmdline_postprocess) {
+			ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
+			ADD_RENDER_BOOL("Use FXAA", Cmdline_fxaa);
+		}
 	}
 	// map related flags
 	ADD_RENDER_BOOL("No Diffuse Map", Basemap_override);
@@ -2182,6 +2197,64 @@ void lab_do_frame(float frametime)
 			case KEY_L:
 				Lab_arc_disrupted = !Lab_arc_disrupted;
 				Lab_arc_next_time = -1;
+				break;
+
+			// Adjust FXAA presets
+			case KEY_0:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 0;
+				break;
+			case KEY_1:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 1;
+				break;
+			case KEY_2:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 2;
+				break;
+			case KEY_3:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 3;
+				break;
+			case KEY_4:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 4;
+				break;
+			case KEY_5:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 5;
+				break;
+			case KEY_6:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 6;
+				break;
+			case KEY_7:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 7;
+				break;
+			case KEY_8:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 8;
+				break;
+			case KEY_9:
+				if (!PostProcessing_override)
+					Cmdline_fxaa_preset = 9;
+				break;
+
+			//adjust bloom intensity
+			case KEY_B:
+				if (!PostProcessing_override) {
+					Cmdline_bloom_intensity++;
+					if (Cmdline_bloom_intensity > 200)
+						Cmdline_bloom_intensity = 200;
+				}
+				break;
+			case KEY_N:
+				if (!PostProcessing_override) {
+					Cmdline_bloom_intensity--;
+					if (Cmdline_bloom_intensity < 0)
+						Cmdline_bloom_intensity = 0;
+				}
 				break;
 
 			// bail...

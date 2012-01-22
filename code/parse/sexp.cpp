@@ -263,6 +263,7 @@ sexp_oper Operators[] = {
 	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
 	{ "has-primary-weapon",			OP_HAS_PRIMARY_WEAPON,		3,	INT_MAX},	// Karajorma
 	{ "has-secondary-weapon",		OP_HAS_SECONDARY_WEAPON,	3,	INT_MAX},	// Karajorma
+	{ "directive-is-variable",		OP_DIRECTIVE_IS_VARIABLE,	1,	2},	// Karajorma
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
@@ -560,6 +561,7 @@ sexp_oper Operators[] = {
 	{ "ai-keep-safe-distance",	OP_AI_KEEP_SAFE_DISTANCE,	1, 1, },
 	{ "ai-stay-still",			OP_AI_STAY_STILL,				2, 2, },
 	{ "ai-play-dead",				OP_AI_PLAY_DEAD,				1, 1, },
+	{ "ai-form-on-wing",		OP_AI_FORM_ON_WING,			1,	1 },
 
 	{ "goals",	OP_GOALS_ID,	1, INT_MAX, },
 
@@ -612,6 +614,7 @@ sexp_oper Operators[] = {
 	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
 	{ "set-camera-shudder",			OP_SET_CAMERA_SHUDDER,					2, 2, },
 
+	{ "set-jumpnode-name",			OP_JUMP_NODE_SET_JUMPNODE_NAME,			2, 2, }, //CommanderDJ
 	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
 	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
 	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, 1, },
@@ -649,6 +652,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_IGNORE_NEW, OP_AI_IGNORE_NEW },
 	{ AI_GOAL_STAY_STILL, OP_AI_STAY_STILL },
 	{ AI_GOAL_PLAY_DEAD, OP_AI_PLAY_DEAD },
+	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING }
 };
 
 char *HUD_gauge_text[NUM_HUD_GAUGES] = 
@@ -5764,6 +5768,48 @@ int sexp_hits_left_subsystem_specific(int node)
 		Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
 	}
 	return SEXP_NAN;
+}
+
+int sexp_directive_is_variable(int n)
+{
+	int sexp_variable_index;
+	int sexp_variable_value = 0;
+	int replace_current_value = SEXP_TRUE; 
+
+	Assert(n >= 0);
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER)
+	{
+		// get new numerical value
+		sexp_variable_value = atoi(Sexp_variables[sexp_variable_index].text);
+	}
+	else
+	{
+		Warning(LOCATION, "Invalid variable type. Directive variables must be a number!\n");
+		return SEXP_KNOWN_FALSE;
+	}
+
+	n = CDR(n);
+	if (n > -1) {
+		replace_current_value = eval_sexp(n);
+	}
+
+	if ((replace_current_value == SEXP_KNOWN_FALSE) || (replace_current_value == SEXP_FALSE) ) {
+		Directive_count += sexp_variable_value;
+	}
+	else {
+		Directive_count = sexp_variable_value;
+	}
+
+		
+	return SEXP_TRUE;
 }
 
 int sexp_determine_team(char *subj)
@@ -17739,7 +17785,7 @@ void sexp_toggle_cutscene_bars(int node, int set)
 	multi_end_packet();
 }
 
-void muli_sexp_toggle_cutscene_bars(int set)
+void multi_sexp_toggle_cutscene_bars(int set)
 {
 	float delta_speed;
 
@@ -18674,6 +18720,46 @@ void multi_sexp_set_camera_shudder()
 	}
 }
 
+void sexp_set_jumpnode_name(int n) //CommanderDJ
+{
+	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+	
+	char *old_name = CTEXT(n); //for multi
+
+	if(jnp==NULL) 
+		return;
+
+	n=CDR(n);
+
+	jnp->set_name(CTEXT(n));
+
+	char *new_name = CTEXT(n); //for multi
+
+	//multiplayer callback
+	multi_start_packet();
+	multi_send_string(old_name);
+	multi_send_string(new_name);
+	multi_end_packet();
+}
+
+void multi_sexp_set_jumpnode_name(int n) //CommanderDJ
+{
+	char *old_name = "\0";
+	
+	multi_get_string(old_name);
+
+	char *new_name = "\0";
+
+	multi_get_string(new_name);
+
+	jump_node *jnp = jumpnode_get_by_name(old_name);
+
+	if(jnp==NULL) 
+		return;
+
+	jnp->set_name(new_name);
+}
+
 void sexp_set_jumpnode_color(int n)
 {
 	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
@@ -18695,7 +18781,7 @@ void sexp_set_jumpnode_model(int n)
 
 	n=CDR(n);
 
-	jnp->set_model(CTEXT(n),(CDR(n)==SEXP_KNOWN_TRUE));
+	jnp->set_model(CTEXT(n), is_sexp_true(CDR(n)) != 0);
 }
 
 void sexp_show_jumpnode(int n)
@@ -20498,6 +20584,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_has_weapon(node, op_num);
 				break;
 
+			case OP_DIRECTIVE_IS_VARIABLE:
+				sexp_val = sexp_directive_is_variable(node);
+				break;
+
+
+
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -20698,6 +20791,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_SET_CAMERA_SHUDDER:
 				sexp_val = SEXP_TRUE;
 				sexp_set_camera_shudder(node);
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+				sexp_val = SEXP_TRUE;
+				sexp_set_jumpnode_name(node);
 				break;
 
 			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
@@ -20989,11 +21087,15 @@ void multi_sexp_eval()
 				break;
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
-				muli_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
+				multi_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
 				break;
 
 			case OP_SET_CAMERA_SHUDDER:
 				multi_sexp_set_camera_shudder();
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+				multi_sexp_set_jumpnode_name(op_num == OP_JUMP_NODE_SET_JUMPNODE_NAME);
 				break;
 
 			// bad sexp in the packet
@@ -21237,6 +21339,7 @@ int query_operator_return_type(int op)
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_IS_BIT_SET:
+		case OP_DIRECTIVE_IS_VARIABLE:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -21549,6 +21652,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_SET_CAMERA_SHUDDER:
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -21622,6 +21726,7 @@ int query_operator_return_type(int op)
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_STAY_STILL:
 		case OP_AI_PLAY_DEAD:
+		case OP_AI_FORM_ON_WING:
 			return OPR_AI_GOAL;
 
 		case OP_ANY_OF:
@@ -22559,6 +22664,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
+		case OP_AI_FORM_ON_WING:
+			return OPF_SHIP;
+
 		case OP_GOOD_REARM_TIME:
 			if ( argnum == 0 )
 				return OPF_IFF;
@@ -23136,6 +23244,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_WEAPON_BANK_NUMBER;
 			else 
 				return OPF_WEAPON_NAME;
+			
+		case OP_DIRECTIVE_IS_VARIABLE:
+			if (argnum == 0)
+				return OPF_VARIABLE_NAME;
+			else 
+				return OPF_BOOL;			
 
 		case OP_NAV_IS_VISITED:		//Kazan
 		case OP_NAV_DISTANCE:		//kazan
@@ -23286,6 +23400,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		//</Cutscenes>
 
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+			if(argnum==0)
+				return OPF_JUMP_NODE_NAME;
+			else if (argnum==1)
+				return OPF_STRING;
+
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 			if(argnum==0)
 				return OPF_JUMP_NODE_NAME;
@@ -23295,8 +23415,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 			if(argnum==0)
 				return OPF_JUMP_NODE_NAME;
-			else
+			else if (argnum == 1)
 				return OPF_STRING;
+			else
+				return OPF_BOOL;
 
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
@@ -24787,6 +24909,7 @@ int get_subcategory(int sexp_id)
 		case OP_SUPERNOVA_START:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -26586,6 +26709,12 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 argument...\r\n"
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
+	{ OP_AI_FORM_ON_WING, "Ai-form-on-wing (Ship Goal)\r\n"
+		"\tCauses the ship to form on the specified ship's wing. This works analogous to the "
+		"player order, and will cause all other goals specified for the ship to be purged.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tShip to form on." },
+
 	{ OP_FLASH_HUD_GAUGE, "Ai-flash hud gauge (Training goal)\r\n"
 		"\tCauses the specified hud gauge to flash to draw the player's attention to it.\r\n\r\n"
 		"Takes 1 argument...\r\n"
@@ -27700,6 +27829,14 @@ sexp_help_struct Sexp_help[] = {
 		"\tRest:\tWeapon name\r\n"
 	},
 
+	// Karajora
+	{ OP_DIRECTIVE_IS_VARIABLE, "directive-is-variable\r\n"
+		"\tCauses the variable to appear in the directive count\r\n"
+		"\tAlways returns true. Takes 1 or more arguments...\r\n\r\n"
+		"\t1:\tVariable name\r\n"
+		"\t2:\t(Optional) Reset the directive count set by any earlier SEXPs in the event.\r\n"
+	},
+
 	//phreak
 	{ OP_SCRAMBLE_MESSAGES, "scramble-messages\r\n"
 		"\tCauses messages to be sent as if the player has sustained communications subsystem or EMP damage.  Takes no arguments.\r\n"
@@ -27917,6 +28054,13 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440."
 	},
 
+	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name\r\n"
+		"\tSets the name of a jump node. Takes 2 arguments...\r\n"
+		"\t1: Name of jump node to change name for\r\n"
+		"\t2: New name for jump node\r\n\r\n"
+		"\tNote: SEXPs referencing the old name will not work after the name change.\r\n"
+	},
+
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
 		"\tSets the color of a jump node.  "
 		"Takes 5 arguments...\r\n"
@@ -27932,7 +28076,7 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 3 arguments...\r\n"
 		"\t1:\tJump node to change model for\r\n"
 		"\t2:\tModel filename\r\n"
-		"\t3:\tShow as normal model\r\n"
+		"\t3:\tShow as normal model. When this is true, the jumpnode will be rendered like a normal model.\r\n"
 	},
 
 	{ OP_JUMP_NODE_SHOW_JUMPNODE, "show-jumpnode\r\n"

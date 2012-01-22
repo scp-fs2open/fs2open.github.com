@@ -652,7 +652,7 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 
 	// any stereo sounds will not play in proper 3D, but they should have
 	// been converted to mono already!
-	Assert( snd->info.n_channels == 1 );
+	Assertion( snd->info.n_channels == 1, "Sound should be mono! Sound file: %s", snd->filename );
 
 	if (Cmdline_no_3d_sound) {
 		if (distance <= 0.0f) {

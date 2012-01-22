@@ -31,16 +31,17 @@ anim_instance anim_render_list;
 #define MAX_ANIM_INSTANCES 25
 anim_instance anim_render_instance[MAX_ANIM_INSTANCES];
 
-int Anim_paused;	// global variable to pause the playing back of anims
+int Anim_paused;	/// Global variable to pause the playing back of anims
 int Anim_inited = FALSE;
 
 fix t1,t2;
 
 int Anim_ignore_frametime=0;	// flag used to ignore frametime... useful when need to avoid saturated frametimes
 
-// -------------------------------------------------------------------------------------------------
-// anim_init() will queue all the anim_render_instance[] elements onto the anim_free_list
-//
+/**
+ * @brief Initialise animation
+ * @details Queue all the ::anim_render_instance[] elements onto the ::anim_free_list
+ */
 void anim_init()
 {
 	int i;
@@ -60,9 +61,9 @@ void anim_init()
 	Anim_inited = TRUE;
 }
 
-// -------------------------------------------------------------------------------------------------
-// anim_render_all() will display the frames for the currently playing anims
-//
+/**
+ * @brief Display the frames for the currently playing anims
+ */
 void anim_render_all(int screen_id, float frametime)
 {
 	anim_instance* A;
@@ -85,10 +86,10 @@ void anim_render_all(int screen_id, float frametime)
 	}
 }
 
-// -------------------------------------------------------------------------------------------------
-// anim_render_one() will display the frames for the passed animation, it will ignore animations which
-// do not have the same id as the passed screen_id
-//
+/**
+ * @brief Display the frames for the passed animation
+ * @details It will ignore animations which do not have the same id as the passed screen_id
+ */
 void anim_render_one(int screen_id, anim_instance *ani, float frametime)
 {
 	// make sure this guy's screen id matches the passed one
@@ -109,9 +110,10 @@ void anim_render_one(int screen_id, anim_instance *ani, float frametime)
 
 MONITOR(NumANIPlayed)
 
-// Setup an anim_play_struct for passing into anim_play().  Will fill in default values, which you
-// can then change before calling anim_play().
-//
+/**
+ * @brief Setup an anim_play_struct for passing into ::anim_play().  
+ * @details Will fill in default values, which you can then change before calling ::anim_play().
+ */
 void anim_play_init(anim_play_struct *aps, anim *a_info, int x, int y, int base_w, int base_h)
 {
 	aps->anim_info = a_info;
@@ -131,49 +133,21 @@ void anim_play_init(anim_play_struct *aps, anim *a_info, int x, int y, int base_
 	aps->ping_pong = 0;
 }
 
-// -------------------------------------------------------------------------------------------------
-// anim_play() will add an anim instance to the anim_render_list.  This will cause the
-// anim to be played at the x,y position specified in the parameter list.
-//
-// input:
-//
-//		anim_info	=>	the compressed animation that we should make an instance from
-//		x				=>	x position of animation to play at (top left corner)
-//		y				=>	y position of animation to play at ( top left corner)
-//		start_at		=>	frame number to start at (note: numbering is from 0->num_frames-1)
-//		stop_at		=>	frame number to stop at (note: numbering is from 0->num_frames-1)
-//		screen_id	=>	OPTIONAL (default value 0): screen signature so animation only plays when
-//							anim_render_all() called with that same signature
-//		world_pos	=>	OPTIONAL (default value NULL): only give a world pos when you want to
-//							play the animation at a 3D location.  You must specify radius when
-//							this is non-null.
-//		radius		=>	OPTIONAL (default value 0): only needed when the animation is playing
-//							as a 3D animation (this is only when world_pos in not NULL).
-//		fi				=>	OPTIONAL (default value 0): framerate indepentdent flag, when set TRUE
-//							the animation will skip frames if necessary to maintain the fps value
-//							associated with the animation
-//		color			=>	OPTIONAL (default value NULL) address of an alpha color struct.  Only
-//							required when the animation should be drawn with an alpha color.
-//		skip_frames	=> OPTIONAL (default value 1) should anim skip frames when doing framerate
-//                   independent playback
-//		looped		=>	OPTIONAL (default value 0) should anim play looped (ie forever)
-//
-// returns:
-//
-//		pointer to instance	=> success
-//		NULL						=> if anim anim could not be played
-//
+/**
+ * @brief Will add an anim instance to the anim_render_list.  
+ * This will cause the anim to be played at the x,y position specified in the parameter list.
+ *
+ * @param aps Compressed animation that we should make an instance from
+ * @return If success pointer to instance, NULL if anim anim could not be played
+ */
 anim_instance *anim_play(anim_play_struct *aps)
 {
 	Assert( aps->anim_info != NULL );
 	Assert( aps->start_at >= 0 );
 	Assert( aps->stop_at < aps->anim_info->total_frames );
-	// Assert( aps->stop_at >= aps->start_at );
 	Assert( !(aps->looped && aps->ping_pong) );  // shouldn't have these both set at once
 
 	MONITOR_INC(NumANIPlayed, 1);
-	
-	// if (aps->ping_pong && !(aps->anim_info->flags & ANF_ALL_KEYFRAMES));
 
 	anim_instance *instance;
 
@@ -253,16 +227,6 @@ anim_instance *anim_play(anim_play_struct *aps)
 
 			idx++;
 		}
-		/*while (keyp) {
-			if (( (keyp->frame_num-1) <= frame_num) && ( (keyp->frame_num-1) > key)) {  // find closest key
-				key = keyp->frame_num-1;
-				offset = keyp->offset;
-				if ( key == frame_num )
-					break;
-			}
-
-			keyp = keyp->next;
-		}*/
 
 		if (key > instance->frame_num) {  // best key is closer than current position
 			instance->frame_num = key;
@@ -280,20 +244,17 @@ anim_instance *anim_play(anim_play_struct *aps)
 	return instance;
 }
 
-// -----------------------------------------------------------------------------
-//	anim_show_next_frame()
-//
-//	This function is called to blit the next frame of an anim instance to the 
-// screen.  This is normally called by the anim_render_all() function.
-//
-//	input:	instance		=>		pointer to animation instance
-//				frametime	=>		time elapsed since last call, in seconds
-//
-
+/**
+ * @brief This function is called to blit the next frame of an anim instance to the screen.
+ * This is normally called by the anim_render_all() function.
+ *
+ * @param instance Pointer to animation instance
+ * @param frametime	Time elapsed since last call, in seconds
+ */
 int anim_show_next_frame(anim_instance *instance, float frametime)
 {
-	int		bitmap_id, bitmap_flags=0, new_frame_num, frame_diff=0, i, n_frames=0,frame_save;
-	float		percent_through, decompress_time, render_time, time;
+	int	bitmap_id, bitmap_flags=0, new_frame_num, frame_diff=0, i, n_frames=0,frame_save;
+	float percent_through, decompress_time, render_time, time;
 	vertex	image_vertex;
 	int aabitmap = 0;
 	int bpp = 16;
@@ -375,7 +336,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 				instance->time_elapsed = 0.0f;
 			} else if(instance->ping_pong) {							// pingponged animations
 				instance->frame_num = instance->stop_at;
-				// instance->time_elapsed = 0.0f;
 				anim_reverse_direction(instance);
 			} else {															// one-shot animations
 				instance->frame_num = instance->stop_at;
@@ -390,7 +350,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 				instance->time_elapsed = 0.0f;
 			} else if(instance->ping_pong) {							// pingponged animations
 				instance->frame_num = instance->stop_at;
-				// instance->time_elapsed = 0.0f;
 				anim_reverse_direction(instance);
 			} else {															// one-shot animations
 				instance->frame_num = instance->stop_at+1;
@@ -414,7 +373,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		}
 	}		
 	Assert(frame_diff >= 0);
-	//	nprintf(("Alan","FRAME DIFF: %d\n",frame_diff));
 	Assert( instance->frame_num >= 0 && instance->frame_num < instance->parent->total_frames );
 
 	// if the anim is paused, ignore all the above changes and still display this frame
@@ -425,7 +383,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 	}
 
 	if (instance->parent->flags & ANF_XPARENT){
-		// bitmap_flags = BMP_XPARENT;
 		bitmap_flags = 0;
 	} 
 	bpp = 16;
@@ -549,23 +506,18 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 			g3_draw_bitmap(&image_vertex, 0, instance->radius*1.5f, TMAP_FLAG_TEXTURED | TMAP_HTL_2D);
 		}
 									  
-		//bm_release(bitmap_id);
 		instance->last_bitmap = bitmap_id;
 	}
 
 	t2 = timer_get_fixed_seconds();
 	render_time = f2fl(t2-t1);
 
-//	nprintf(("Alan","DECOMPRESS: %.3fms  RENDER: %.3fms\n", decompress_time*1000, render_time*1000));
-
 	return 0;
 }
 
-// -----------------------------------------------------------------------------
-//	anim_stop_playing()
-//
-//	Stop an anim instance that is on the anim_render_list from playing
-//
+/**
+ * @brief Stop an anim instance that is on the anim_render_list from playing
+ */
 int anim_stop_playing(anim_instance* instance)
 {
 	Assert(instance != NULL);
@@ -576,14 +528,12 @@ int anim_stop_playing(anim_instance* instance)
 	return 0;
 }
 
-// -----------------------------------------------------------------------------
-//	anim_release_render_instance()
-//
-//	Free a particular animation instance that is on the anim_render_list.  Do
-// not call this function to free an animation instance in general (use 
-// free_anim_instance() for that), only when you want to free an instance
-// that is on the anim_render_list
-//
+/**
+ * @brief Free a particular animation instance that is on the anim_render_list.  
+ * Do not call this function to free an animation instance in general (use 
+ * free_anim_instance() for that), only when you want to free an instance
+ * that is on the anim_render_list
+ */
 void anim_release_render_instance(anim_instance* instance)
 {
 	Assert( instance != NULL );
@@ -606,16 +556,13 @@ void anim_release_render_instance(anim_instance* instance)
 	list_append( &anim_free_list, instance );
 }
 
-// -----------------------------------------------------------------------------
-//	anim_release_all_instances()
-//
-//	Free all anim instances that are on the anim_render_list.
-//
-//	input:	screen_id	=>		optional parameter that lets you only free a subset
-//										of the anim instances.	A screen_id of 0 is the default
-//										value, and this is used for animations that always play
-//										when they are placed on the aim_render_list.
-//
+/**
+ * @brief Free all anim instances that are on the anim_render_list.
+ *
+ * @param screen_id	Optional parameter that lets you only free a subset of the anim instances.	
+ * A screen_id of 0 is the default value, and this is used for animations that always play when 
+ * they are placed on the aim_render_list.
+ */
 void anim_release_all_instances(int screen_id)
 {
 	anim_instance* A;
@@ -639,18 +586,18 @@ void anim_release_all_instances(int screen_id)
 //
 // Read the header of a .ani file.  Below is the format of a .ani header
 //
-//	#bytes	|	description
+//	#bytes		|	description
 //	2			|	obsolete, kept for compatibility with old versions
 //	2			|	version number
 //	2			|	fps
 //	1			|	transparent red value
-// 1			|	transparent green value
+//  1			|	transparent green value
 //	1			|	transparent blue value
 //	2			|	width
 //	2			|	height
 //	2			|	number of frames
 //	1			|	packer code
-//	763		|	palette
+//	763			|	palette
 //	2			|	number of key frames
 //	2			|	key frame number	}		repeats
 //	4			|	key frame offset	}		repeats
@@ -660,7 +607,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 {
 	ptr->width = cfread_short(fp);
 	// If first 2 bytes are zero, this means we are using a new format, which includes
-	// a version, and fps values.  This is only done since a version number was not included
+	// a version, and fps values. This is only done since a version number was not included
 	// in the original header.
 
 	// default
@@ -725,20 +672,17 @@ void anim_read_header(anim *ptr, CFILE *fp)
 	}
 }
 
-// -----------------------------------------------------------------------------
-//	anim_load()
-//
-// Load an animation.  This stores the compressed data, which instances
-// of the animation can reference.  Must be free'ed later with anim_free()
-//
-// input:	name				=>		filename of animation
-//				file_mapped		=>		boolean, whether to use memory-mapped file or not.
-//											Memory-mapped files will page in the animation from disk
-//											as it is needed, but performance is not as good
-//
-//	returns:	pointer to anim that is loaded	=> sucess
-//				NULL										=>	failure
-//
+/**
+ * @brief Load an animation.  This stores the compressed data, which instances of the animation can reference.  
+ * Must be free'ed later with anim_free().
+ * 
+ * @param real_filename Filename of animation
+ * @param cf_dir_type 
+ * @param file_mapped Whether to use memory-mapped file or not.
+ * 
+ * @details Memory-mapped files will page in the animation from disk as it is needed, but performance is not as good.
+ * @return Pointer to anim that is loaded if sucess, NULL if failure.
+ */
 anim *anim_load(char *real_filename, int cf_dir_type, int file_mapped)
 {
 	anim			*ptr;
@@ -746,7 +690,7 @@ anim *anim_load(char *real_filename, int cf_dir_type, int file_mapped)
 	int			count,idx;
 	char name[_MAX_PATH];
 
-	Assert ( real_filename != NULL );
+	Assert( real_filename != NULL );
 
 	strcpy_s( name, real_filename );
 	char *p = strchr( name, '.' );
@@ -801,18 +745,6 @@ anim *anim_load(char *real_filename, int cf_dir_type, int file_mapped)
 			ptr->keys[idx].offset = INTEL_INT( ptr->keys[idx].offset );
 		}
 
-		/*prev_keyp = &ptr->keys;
-		count = ptr->num_keys;
-		while (count--) {
-			keyp = (key_frame *) vm_malloc(sizeof(key_frame));
-			keyp->next = *prev_keyp;
-			*prev_keyp = keyp;
-			prev_keyp = &keyp->next;
-
-			keyp->frame_num = 0;
-			cfread(&keyp->frame_num, 2, 1, fp);
-			cfread(&keyp->offset, 4, 1, fp);
-		}*/
 		cfread(&count, 4, 1, fp);	// size of compressed data
 		count = INTEL_INT( count );
 
@@ -873,12 +805,10 @@ anim *anim_load(char *real_filename, int cf_dir_type, int file_mapped)
 	return ptr;
 }
 
-// ---------------------------------------------------
-//	anim_free()
-//
-// Free an animation that was loaded with anim_load().  All instances
-// referencing this animation must be free'ed or get an assert.
-//
+/**
+ * @brief Free an animation that was loaded with anim_load().  
+ * @details All instances referencing this animation must be free'ed or get an assert.
+ */
 int anim_free(anim *ptr)
 {
 	Assert ( ptr != NULL );
@@ -929,11 +859,9 @@ int anim_free(anim *ptr)
 }
 
 
-// ---------------------------------------------------------------------
-// anim_playing()
-//
-// Return if an anim is playing or not.  
-//
+/**
+ * @brief Return if an anim is playing or not.  
+ */
 int anim_playing(anim_instance *ai)
 {
 	Assert(ai != NULL);
@@ -944,36 +872,28 @@ int anim_playing(anim_instance *ai)
 }
 
 
-// ---------------------------------------------------------------------
-// anim_level_init()
-//
-// Called at the beginning of a mission to initialize any mission dependent
-// anim data.
-//
+/**
+ * @brief Called at the beginning of a mission to initialize any mission dependent anim data.
+ * @todo Redundant?
+ */
 void anim_level_init()
 {
 }
 
-// ---------------------------------------------------------------------
-// anim_level_close()
-//
-// Called after the end of a mission to clean up any mission dependent 
-// anim data. 
-//
+/**
+ * @brief Called after the end of a mission to clean up any mission dependent anim data. 
+ */
 void anim_level_close()
 {
 	anim_release_all_instances();
 }
 
-// ---------------------------------------------------
-//	anim_write_frames_out()
-//
-//	Write the frames of a .ani file out to disk as .pcx files.
-// Use naming convention: filename0000.pcx, filename0001.pcx etc.
-//
-// return:		0	=>		success
-//					-1	=>		failed
-//
+/**
+ * @brief Write the frames of a .ani file out to disk as .pcx files.
+ * @details Use naming convention: filename0000.pcx, filename0001.pcx etc.
+ *
+ * @return If success 0, or if failed -1
+ */
 int anim_write_frames_out(char *filename)
 {
 	anim				*source_anim;
@@ -1019,12 +939,10 @@ int anim_write_frames_out(char *filename)
 	return 0;
 }
 
-// ---------------------------------------------------
-//	anim_display_info()
-//
-//	Display information and statistics about a .ani file.
-//	This is called when -i switch is on when running ac.exe
-//
+/**
+ * @brief Display information and statistics about a .ani file.
+ * @details This is called when -i switch is on when running ac.exe
+ */
 void anim_display_info(char *real_filename)
 {
 	CFILE				*fp;
@@ -1054,7 +972,6 @@ void anim_display_info(char *real_filename)
 		key_frame_nums[i] = 0;
 		cfread(&key_frame_nums[i], 2, 1, fp);
 		cfread(&tmp, 4, 1, fp);
-//printf("key frame num: %d,%d\n", key_frame_nums[i],tmp);
 	}
 
 	cfread(&compressed, 4, 1, fp);

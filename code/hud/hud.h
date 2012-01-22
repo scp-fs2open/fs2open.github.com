@@ -7,8 +7,6 @@
  *
 */ 
 
-
-
 #ifndef __HUD_H__
 #define __HUD_H__
 
@@ -22,7 +20,7 @@ struct cockpit_display;
 typedef struct hud_anim {
 	char filename[MAX_FILENAME_LEN];
 	int first_frame;	// the bitmap id for the first frame in the animation... note that
-							// all bitmap id's following this frame are numbered sequentially
+						// all bitmap id's following this frame are numbered sequentially
 	int num_frames;		// number of frames in the animation
 	int sx, sy;			// screen (x,y) of top-left corner of animation
 	float total_time;	// total time in seconds for the animation (depends on animation fps)
@@ -40,6 +38,32 @@ typedef struct hud_frames {
 	int	first_frame;
 	int	num_frames;
 } hud_frames;
+
+// Objective display
+typedef struct objective_display_info
+{
+	int display_timer;
+	int goal_type;
+	int goal_status;
+	int goal_ntotal;
+	int goal_nresolved;
+	
+} objective_display_info;
+
+// used to track how player subsystems are getting damaged
+typedef struct hud_subsys_info
+{
+	float	last_str;
+	int	flash_duration_timestamp;
+} hud_subsys_info;
+
+// used for the display of damaged subsystems
+typedef struct hud_subsys_damage
+{
+	int	str;
+	int	type;
+	char	*name;
+} hud_subsys_damage;
 
 extern int HUD_draw;
 extern int HUD_contrast;
@@ -138,7 +162,7 @@ void hud_set_bright_color();
 void hud_set_dim_color();
 
 // HUD gauge functions
-#define HUD_C_NONE			-4
+#define HUD_C_NONE				-4
 #define HUD_C_BRIGHT			-3
 #define HUD_C_DIM				-2
 #define HUD_C_NORMAL			-1
@@ -209,6 +233,7 @@ protected:
 	int custom_frame_offset;
 	char custom_name[NAME_LENGTH];
 	char custom_text[NAME_LENGTH];
+	char default_text[NAME_LENGTH];
 
 	// Render to texture stuff
 	char texture_target_fname[MAX_FILENAME_LEN];

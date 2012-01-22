@@ -969,6 +969,7 @@ void init_ship_entry(ship_info *sip)
 	sip->hud_retail = false;
 	sip->piercing_damage_draw_limit = 0.10f;
 	sip->damage_lightning_type = SLT_DEFAULT;
+	sip->pathMetadata.clear();
 }
 
 // function to parse the information for a specific ship type.	
@@ -3100,6 +3101,25 @@ strcpy_s(parse_error_text, temp_error);
 		sip->piercing_damage_draw_limit = tempf / 100.0f;
 	}
 
+	while(optional_string("$Path Metadata:")) 
+	{
+		char path_name[64];
+		stuff_string(path_name, F_NAME, sizeof(path_name));
+
+		path_metadata metadata;
+		init_path_metadata(metadata);
+
+		//Get +departure rvec and store on the path_metadata object
+		if (optional_string("+departure rvec:"))
+		{
+			stuff_vector(&metadata.departure_rvec);
+		}
+
+		//Add the new path_metadata to sip->pathMetadata keyed by path name
+		SCP_string pathName(path_name);
+		sip->pathMetadata[pathName] = metadata;
+	}
+
 	int n_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems
@@ -3216,7 +3236,10 @@ strcpy_s(parse_error_text, temp_error);
 				}
 				else
 				{
-					Error(LOCATION, "Optional not working");
+					Error(LOCATION, "Malformed $Subsystem entry '%s' %s.\n\n"
+						"Specify a turning rate or remove the trailing comma.",
+						sp->subobj_name,
+						strlen(parse_error_text) >0 ? parse_error_text: "unknown ship");
 				}
 			}
 
@@ -3416,12 +3439,6 @@ strcpy_s(parse_error_text, temp_error);
 			}
 
 			if (old_flags) {
-			/*	Warning(LOCATION, "Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
-				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
-				"\t+untargetable\n" \
-				"\t+carry-no-damage\n" \
-				"\t+use-multiple-guns\n" \
-				"\t+fire-down-normals\n", sip->name, sp->name); */
 				mprintf(("Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
 				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
 				"\t+untargetable\n" \
@@ -3580,6 +3597,7 @@ strcpy_s(parse_error_text, temp_error);
 					mprintf(("TODO: set up linked animation\n"));
 				}
 			}
+
 		}
 		break;
 		case 2:
@@ -5889,35 +5907,24 @@ void ship_render(object * obj)
 					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				}
 				
-				if( (pi->flags & PF_GLIDING) || (pi->flags & PF_FORCE_GLIDE) ) {	//Backslash - show thrusters according to thrust amount, not speed
-					if(pi->side_thrust > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-						render_amount = pi->side_thrust;
-					} else if(pi->side_thrust < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-						render_amount = -pi->side_thrust;
-					} else if(pi->vert_thrust > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-						render_amount = pi->vert_thrust;
-					} else if(pi->vert_thrust < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-						render_amount = -pi->vert_thrust;
-					} else if(pi->forward_thrust > 0 && (mtp->use_flags & MT_FORWARD)) {
-						render_amount = pi->forward_thrust;
-					} else if(pi->forward_thrust < 0 && (mtp->use_flags & MT_REVERSE)) {
-						render_amount = -pi->forward_thrust;
-					}		// I'd almost advocate applying the above method to these all the time even without gliding,
-				} else {	// because it looks more realistic, but I don't think the AI uses side_thrust or vert_thrust
-					if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-						render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
-					} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-						render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
-					} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-						render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
-					} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-						render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
-					} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
-						render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
-					} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
-						render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
-					}
+				//Backslash - show thrusters according to thrust amount, not speed
+				if(pi->side_thrust > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+					render_amount = pi->side_thrust;
+				} else if(pi->side_thrust < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+					render_amount = -pi->side_thrust;
+				} else if(pi->vert_thrust > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+					render_amount = pi->vert_thrust;
+				} else if(pi->vert_thrust < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+					render_amount = -pi->vert_thrust;
+				} else if(pi->forward_thrust > 0 && (mtp->use_flags & MT_FORWARD)) {
+					render_amount = pi->forward_thrust;
+				} else if(pi->forward_thrust < 0 && (mtp->use_flags & MT_REVERSE)) {
+					render_amount = -pi->forward_thrust;
 				}
+
+				//Don't render small faraway thrusters (more than 10k * radius away)
+				if (vm_vec_dist(&Eye_position, &obj->pos) > (10000.0f * mtp->radius))
+					render_amount = 0.0f;
 
 				if(render_amount > 0.0f)
 				{
@@ -9303,6 +9310,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	//Reassign sound stuff
 	ship_assign_sound(sp);
+	
+	// create new model instance data
+	sp->model_instance_num = model_create_instance(sip->model_num);
 }
 
 #ifndef NDEBUG
@@ -17292,4 +17302,9 @@ int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 	}
 
 	return -1;
+}
+
+void init_path_metadata(path_metadata& metadata)
+{
+	vm_vec_zero(&metadata.departure_rvec);
 }

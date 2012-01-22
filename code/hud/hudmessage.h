@@ -133,6 +133,7 @@ public:
 	void pageIn();
 	void render(float frametime);
 	void initialize();
+	bool canRender();
 	anim_instance* createAnim(int anim_start_frame, anim* anim_data);
 };
 

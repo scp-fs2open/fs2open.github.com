@@ -21,6 +21,8 @@ extern int Dead_key_set[];
 extern int Dead_key_set_size;
 extern bool Perspective_locked;
 
+extern bool quit_mission_popup_shown;
+
 typedef struct button_info
 {
 	int status[NUM_BUTTON_FIELDS];

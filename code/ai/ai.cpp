@@ -16,14 +16,15 @@
 #include "ship/ship.h"
 
 
-
 int Total_goal_ship_names = 0;
 char Goal_ship_names[MAX_GOAL_SHIP_NAMES][NAME_LENGTH];
 ai_info Ai_info[MAX_AI_INFO];
 ai_info *Player_ai;
 
-// Return index of free AI slot.
-// Return -1 if no free slot.
+/**
+ * @brief Return index of free AI slot.
+ * @return Return -1 if no free slot.
+ */
 int ai_get_slot(int shipnum)
 {
 	int	i;
@@ -40,8 +41,10 @@ int ai_get_slot(int shipnum)
 	return -1;
 }
 
-// Releases an AI slot to be used by someone else.
-// Only modifies in Ai_info struct.  Does not modify hook in ship.
+/**
+ * @brief Releases an AI slot to be used by someone else.
+ * @details Only modifies in ::Ai_info struct.  Does not modify hook in ship.
+ */
 void ai_free_slot(int ai_index)
 {
 	Assert( (ai_index >= 0) && (ai_index < MAX_AI_INFO) );

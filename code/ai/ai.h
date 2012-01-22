@@ -32,11 +32,11 @@ struct ship_info;
 #define	AIF_SEEK_LOCK						(1 << 4)	//	set if should focus on gaining aspect lock, not hitting with lasers
 #define	AIF_FORMATION_OBJECT				(1 << 5)	//	Fly in formation off a specific object.
 #define	AIF_TEMPORARY_IGNORE				(1 << 6)	//	Means current ignore_objnum is only temporary, not an order from the player.
-#define	AIF_USE_EXIT_PATH					(1 << 7)	// Used by path code, to flag path as an exit path
-#define	AIF_USE_STATIC_PATH					(1 << 8)	// Used by path code, use fixed path, don't try to recreate
+#define	AIF_USE_EXIT_PATH					(1 << 7)	//  Used by path code, to flag path as an exit path
+#define	AIF_USE_STATIC_PATH					(1 << 8)	//  Used by path code, use fixed path, don't try to recreate
 #define	AIF_TARGET_COLLISION				(1 << 9)	//	Collided with aip->target_objnum last frame.  Avoid that ship for half a second or so.
 #define	AIF_UNLOAD_SECONDARIES				(1 << 10)	//	Fire secondaries as fast as possible!
-#define	AIF_ON_SUBSYS_PATH					(1 << 11)	// Current path leads to a subsystem
+#define	AIF_ON_SUBSYS_PATH					(1 << 11)	//  Current path leads to a subsystem
 #define	AIF_AVOID_SHOCKWAVE_SHIP			(1 << 12)	//	Avoid an existing shockwave from a ship.
 #define	AIF_AVOID_SHOCKWAVE_WEAPON			(1 << 13)	//	Avoid an expected shockwave from a weapon.  shockwave_object field contains object index.
 #define	AIF_AVOID_SHOCKWAVE_STARTED			(1 << 14)	//	Already started avoiding shockwave, don't keep deciding whether to avoid.
@@ -48,7 +48,7 @@ struct ship_info;
 #define	AIF_AVOIDING_BIG_SHIP				(1 << 20)	//	Avoiding a large ship.
 #define	AIF_BIG_SHIP_COLLIDE_RECOVER_1		(1 << 21)	//	Collided into a big ship.  Recovering by flying away.
 #define	AIF_BIG_SHIP_COLLIDE_RECOVER_2		(1 << 22)	//	Collided into a big ship.  Fly towards big ship sphere perimeter.
-#define	AIF_STEALTH_PURSUIT					(1 << 23)	// Ai is trying to fight stealth ship
+#define	AIF_STEALTH_PURSUIT					(1 << 23)	//  AI is trying to fight stealth ship
 
 // Goober5000
 #define	AIF_UNLOAD_PRIMARIES				(1 << 24)	//	Fire primaries as fast as possible!
@@ -59,7 +59,7 @@ struct ship_info;
 
 //	dock_orient_and_approach() modes.
 #define	DOA_APPROACH	1		//	Approach the current point on the path (aip->path_cur)
-#define	DOA_DOCK			2		//	Dock with goal object.
+#define	DOA_DOCK		2		//	Dock with goal object.
 #define	DOA_UNDOCK_1	3		//	Begin undocking with goal object.  Just move away.
 #define	DOA_UNDOCK_2	4		//	Secondary undocking.  Move away.
 #define	DOA_UNDOCK_3	5		//	Tertiary undocking.  Move away and orient away.
@@ -73,7 +73,7 @@ struct ship_info;
 //	Submodes for seeking safety.
 #define	AISS_1	41				//	Pick a spot to fly to.
 #define	AISS_2	42				//	Flying to spot.
-#define	AISS_3	43				// Gotten near spot, fly about there.
+#define	AISS_3	43				//  Gotten near spot, fly about there.
 #define	AISS_1a	44				//	Pick a new nearby spot because we are endangered, then go to AISS_2
 
 #define MAX_AI_GOALS	5
@@ -82,8 +82,8 @@ struct ship_info;
 // have priority over others (i.e. when a player issues a goal to a wing, then a seperate
 // goal to a ship in that wing).  We would probably use this type in conjunction with
 // goal priority to establish which goal to follow
-#define AIG_TYPE_EVENT_SHIP		1		// from mission event direct to ship
-#define AIG_TYPE_EVENT_WING		2		// from mission event direct to wing
+#define AIG_TYPE_EVENT_SHIP			1		// from mission event direct to ship
+#define AIG_TYPE_EVENT_WING			2		// from mission event direct to wing
 #define AIG_TYPE_PLAYER_SHIP		3		// from player direct to ship
 #define AIG_TYPE_PLAYER_WING		4		// from player direct to wing
 #define AIG_TYPE_DYNAMIC			5		// created on the fly
@@ -156,25 +156,25 @@ typedef struct ai_goal {
 #define	AIM_GUARD				5		//	Guard an object
 #define	AIM_AVOID				6		//	Avoid an object
 #define	AIM_WAYPOINTS			7		//	Fly waypoints
-#define	AIM_DOCK					8		//	Dock with ship.
-#define	AIM_NONE					9		//	Uh, do nothing.
+#define	AIM_DOCK				8		//	Dock with ship.
+#define	AIM_NONE				9		//	Uh, do nothing.
 #define	AIM_BIGSHIP				10		//	Like a capital ship, doesn't focus on one ship.
-#define	AIM_PATH					11		//	Follow path on ship
+#define	AIM_PATH				11		//	Follow path on ship
 #define	AIM_BE_REARMED			12		//	Allow self to be rearmed
 #define	AIM_SAFETY				13		//	Seek safety at periphery of battle
 #define	AIM_EVADE_WEAPON		14		//	Evade a weapon.
-#define	AIM_STRAFE				15		// attack a big ship by strafing it
+#define	AIM_STRAFE				15		//  Attack a big ship by strafing it
 #define	AIM_PLAY_DEAD			16		//	Play dead.  Get it?  Don't move, fire, etc.
-#define	AIM_BAY_EMERGE			17		// Emerging from a fighter bay, following path to do so
-#define	AIM_BAY_DEPART			18		// Departing to a fighter bay, following path to do so
-#define	AIM_SENTRYGUN			19		// AI mode for sentry guns only (floating turrets)
+#define	AIM_BAY_EMERGE			17		//  Emerging from a fighter bay, following path to do so
+#define	AIM_BAY_DEPART			18		//  Departing to a fighter bay, following path to do so
+#define	AIM_SENTRYGUN			19		//  AI mode for sentry guns only (floating turrets)
 #define	AIM_WARP_OUT			20		//	Commence warp out sequence.  Point in legal direction.  Then call John's code.
-#define AIM_FLY_TO_SHIP			21		// [Kazan] Fly to a ship, doesn't matter if it's hostile or friendly -- for Autopilot usage
+#define AIM_FLY_TO_SHIP			21		//  [Kazan] Fly to a ship, doesn't matter if it's hostile or friendly -- for Autopilot usage
 
-#define	MAX_AI_BEHAVIORS		22	//	Number of AIM_xxxx types
+#define	MAX_AI_BEHAVIORS		22		//	Number of AIM_xxxx types
 
 #define	MAX_WAYPOINTS_PER_LIST	20
-#define	MAX_ENEMY_DISTANCE	2500.0f			//	maximum distance from which a ship will pursue an enemy.
+#define	MAX_ENEMY_DISTANCE	2500.0f		//	Maximum distance from which a ship will pursue an enemy.
 
 #define AI_GOAL_NONE				-1
 
@@ -376,6 +376,7 @@ typedef struct ai_info {
 	fix		path_next_check_time;	//	Last time checked to see if would collide with model.
 	int		path_goal_dist;		// minimum distance to first path point to consider path reached
 	int		path_subsystem_next_check;	// timestamp to next check if subsystem is still visible
+	vec3d	path_depart_orient;		//Rotational orientation associated with the path
 
 	int		submode;
 	int		previous_submode;		// previous submode, get it?
@@ -460,9 +461,6 @@ typedef struct ai_info {
 	int				targeted_subsys_parent;	//	Parent objnum of subobject, not necessarily targeted
 
 	float		aspect_locked_time;				//	Time towards acquiring lock for current_target
-
-//	ship_subsys	*targeted_subobject;			//	subsystem to attack
-//	int		attack_subsystem_parent;		//	objnum of the object containing the attack_subsystem
 
 	// Goober5000
 	int		support_ship_objnum;			// objnum of support ship docking with us, or (if we're a support ship) object we're docking to

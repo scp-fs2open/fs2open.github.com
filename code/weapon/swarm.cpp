@@ -515,6 +515,7 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 	object *parent_obj, *target_obj;
 	int target_objnum, num_turret_swarm_turrets_left;
 	int k, j;
+	weapon_info *wip;
 
 	// check if ship has any turrets ready to fire
 	if (shipp->num_turret_swarm_info <= 0) {
@@ -541,6 +542,7 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 				// get turret_swarm_info
 				Assert( (turret_tsi >= 0) && (turret_tsi < MAX_TURRET_SWARM_INFO) );
 				tsi = &Turret_swarm_info[turret_tsi];
+				wip = &Weapon_info[tsi->weapon_class];
 
 				// check if parent ship is valid (via signature)
 				if ( (tsi->parent_sig == parent_obj->signature) ) {
@@ -571,7 +573,11 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 						}
 
 	                    // *Get timestamp from weapon info's -Et1
-						tsi->time_to_fire = timestamp( Weapon_info[tsi->weapon_class].SwarmWait );
+						if (wip->wi_flags & WIF_SWARM) {
+							tsi->time_to_fire = timestamp( wip->SwarmWait );
+						} else {
+							tsi->time_to_fire = timestamp( wip->cs_delay );
+						}
 
 						// do book keeping
 						tsi->num_to_launch--;

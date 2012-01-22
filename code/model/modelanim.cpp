@@ -66,9 +66,11 @@ int model_anim_match_type(char *p)
 }
 
 
-// this calculates the angle at wich the rotation should start to slow down
-// and basicly fills in a bunch of other crap
-// if anyone wants the calculus behind these numbers I'll provide it
+/**
+ * Calculates the angle at wich the rotation should start to slow down
+ * and fills in a bunch of other crap. If anyone wants the calculus behind 
+ * these numbers I'll provide it.
+ */
 void triggered_rotation::start(queued_animation *q)
 {
 	instance = q->instance;
@@ -153,27 +155,25 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 
 	if (n_queue > 0) {
 		//remove any items on the queue that are the opposite of what we are thinking about doing
-	//	if (direction = -1) {
-			// if we are reverseing an animation see if the forward animation is on the queue already, and remove it
-			for (i = 0; i < n_queue && (i < MAX_TRIGGERED_ANIMATIONS); i++) {
-				if ( (new_queue.type == queue_tmp[i].type) && (new_queue.subtype == queue_tmp[i].subtype) ) {
-					// same type, if they have the same values (direction reversed) then get replace it
-					if (new_queue.instance == queue_tmp[i].instance)
-						break;
-				}
+		// if we are reversing an animation see if the forward animation is on the queue already, and remove it
+		for (i = 0; i < n_queue && (i < MAX_TRIGGERED_ANIMATIONS); i++) {
+			if ( (new_queue.type == queue_tmp[i].type) && (new_queue.subtype == queue_tmp[i].subtype) ) {
+				// same type, if they have the same values (direction reversed) then replace it
+				if (new_queue.instance == queue_tmp[i].instance)
+					break;
 			}
+		}
 
-			if (i != n_queue) {
-				// replace if it's not the last item on the list
-				if ( i != (MAX_TRIGGERED_ANIMATIONS-1) )
-					memcpy( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
+		if (i != n_queue) {
+			// replace if it's not the last item on the list
+			if ( i != (MAX_TRIGGERED_ANIMATIONS-1) )
+				memcpy( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
 
-				// ok these two animations basicly caceled each other out, so he doesn't get on the queue
-				n_queue--;
+			// ok these two animations cancelled each other out, so he doesn't get on the queue
+			n_queue--;
 
-				return;
-			}
-	//	}
+			return;
+		}
 	}
 
 	if (new_queue.start == 0) {
@@ -193,7 +193,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 				(direction.xyz.z * rot_vel.xyz.z) == new_queue.vel.xyz.z)
 		{
 			// they're going in opposite directions, one of them is a reversal!
-			// so this means thata there is some sort of delay that's getting fubared becase of other queue items getting removed due to reversal
+			// so this means that there is some sort of delay that's getting fubared becase of other queue items getting removed due to reversal
 			// this animation needs to be started now!
 			new_queue.start_time = timestamp();
 			new_queue.end_time = timestamp( new_queue.end );
@@ -239,8 +239,10 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 	n_queue++;
 }
 
-//look at the queue and see if any of the items on it need to be started
-//remove items from the queue that you just executed
+/**
+ * Look at the queue and see if any of the items on it need to be started
+ * remove items from the queue that you just executed
+ */
 void triggered_rotation::process_queue()
 {
 	int i;
@@ -249,7 +251,7 @@ void triggered_rotation::process_queue()
 	if ( !n_queue )
 		return;
 
-	// all items on the queue are in cronological order (or at least they should be)
+	// all items on the queue are in chronological order (or at least they should be)
 	// so execute all items who's starting timestamps are less than the current time
 	for (i = 0; (i < n_queue) && timestamp_elapsed(queue[i].start_time); i++)
 		start( &queue[i] );
@@ -261,11 +263,9 @@ void triggered_rotation::process_queue()
 	// all the triggered animations associated with this object
 	memcpy( queue_tmp, queue, sizeof(queued_animation) * MAX_TRIGGERED_ANIMATIONS );
 
-//	if(n_queue > i){
-		// if there are more items on the queue than we just executed reallocate the queue.
-		// copy all the items after the last one we executed
-		memcpy( queue, &queue_tmp[i], sizeof(queued_animation) * (n_queue-i) );
-//	}
+	// if there are more items on the queue than we just executed reallocate the queue.
+	// copy all the items after the last one we executed
+	memcpy( queue, &queue_tmp[i], sizeof(queued_animation) * (n_queue-i) );
 
 	// then erase the old queue
 	n_queue -= i;
@@ -317,10 +317,10 @@ void queued_animation::correct()
 /*
 ok a triggered animation works like this, at some point a subobject will be triggered to rotate 
 when this happens the following phases of rotation will happen
-1) it will accelerate at a constant rate untill it reaches a 
+1) it will accelerate at a constant rate until it reaches a 
 quasi-arbitrary (there are limitations on what it can be) velocity
-2) it will maintain a constant rotational velocity untill it reaches the angle at wich it 
-needs to start slowing down in order to stop a the right end angle
+2) it will maintain a constant rotational velocity untill it reaches the angle at which it 
+needs to start slowing down in order to stop at the right end angle
 3)it will slow down at the same rate it has sped up earlier, when the rotational velocity
 starts going in the wrong direction it'll be locked at 0 and the angle of the submodel will 
 be locked at the angle it's suposed to end at
@@ -351,27 +351,17 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	if ( !trigger->has_started )
 		return;
 
-/*
-	polymodel *pm = model_get(psub->model_num);
-
-	if (pm == NULL)
-		return;
-
-	if ( pm->submodel[psub->subobj_num].movement_type != MOVEMENT_TYPE_TRIGGERED )
-		return;
-*/
-
 	// save last angles
 	sii->prev_angs = sii->angs;
 
 	// process velocity and position
-	// first you accelerate, then you maintain a speed, then you slowdown, then you stay put
+	// first you accelerate, then you maintain a speed, then you slow down, then you stay put
 	for (int i = 0; i < 3; i++) {
 		// are we moving?
 		if ( (trigger->current_vel.a1d[i] != 0.0f) || ((trigger->current_ang.a1d[i] * trigger->direction.a1d[i]) <= (trigger->slow_angle.a1d[i] * trigger->direction.a1d[i])) ) {
 			// yep...
 
-			// our velocity is something other than 0 or we are in the acceleration phase (were velocity starts out at 0)
+			// our velocity is something other than 0 or we are in the acceleration phase (where velocity starts out at 0)
 
 			// while you are not slowing down...
 			if ( (trigger->current_ang.a1d[i] * trigger->direction.a1d[i]) <= (trigger->slow_angle.a1d[i] * trigger->direction.a1d[i]) ) {
@@ -397,7 +387,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 					// this can happen if we have decelerated too long or if an animation was reversed quickly
 					// the way to tell the difference between these two cases is the acceleration
 
-					// if the curent velocity is in the opposite direction as the accelleration then it was interupted
+					// if the curent velocity is in the opposite direction as the acceleration then it was interupted
 					if ( (trigger->current_vel.a1d[i] / fabs(trigger->current_vel.a1d[i])) != (trigger->rot_accel.a1d[i] / fabs(trigger->rot_accel.a1d[i])) ) {
 						// this is gona be some messy stuff in here to figure out when it should start to slow down again
 						// it'll have to make a new slow angle I guess
@@ -412,7 +402,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 
 						// it might hit exactly 0 every now and then, but it will be before the slow angle so it will be fine
 						// this assumes that the reversed animation is the same exact animation only played in reverse, 
-						// if the speeds or accelerations are diferent then might not work
+						// if the speeds or accelerations are diferent then it might not work
 					} else {
 						// our velocity has gone in the opposite direction because we decelerated too long
 						trigger->current_vel.a1d[i] = 0.0f;
@@ -441,7 +431,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	}
 
 	// objects can be animated along several axes at the same time
-	// I'm prety sure using the magnatude of the vectors is at least pretty close for any code that might be using it
+	// I'm prety sure using the magnitude of the vectors is at least pretty close for any code that might be using it
 	sii->cur_turn_rate = vm_vec_mag(&trigger->current_vel);
 	sii->desired_turn_rate = vm_vec_mag(&trigger->rot_vel);
 	sii->turn_accel = vm_vec_mag(&trigger->rot_accel);
@@ -511,17 +501,17 @@ bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int dir
 	return retval;
 }
 
-//this finds the actual amount of time that motion of an animation type will take to stop, 
-//not for gameplay purposes but for stuff that is involved in coordinating the animation itself
-
-//the time it takes to speed up or slow down is v/a
-//in this time the animation covers an angle = to (v^2)/(2a) (for both directions so v^2/a)
-//so wee need the time it takes for the angle moveing at a constant velosity to cover theda - v^2/a
-//v*t = theda - (v^2)/(2*a) => t = -(v^2 - 2*a*theda)/(2*a*v)
-//so finaly v/a * 2 - (v^2 - 2*a*theda)/(2*a*v) => (3*v^2 + 2*a*theda)/(2*a*v)
-
-//time = (3*v^2 + 2*a*theda)/(2*a*v)
-
+/**
+ * @brief Finds the actual amount of time that motion of an animation type will take to stop, 
+ * not for gameplay purposes but for stuff that is involved in coordinating the animation itself.
+ *
+ * @details The time it takes to speed up or slow down is v/a in this time the animation covers 
+ * an angle = to (v^2)/(2a) (for both directions so v^2/a) so wee need the time it takes for the 
+ * angle moving at a constant velosity to cover theda - v^2/a
+ * v*t = theda - (v^2)/(2*a) => t = -(v^2 - 2*a*theda)/(2*a*v)
+ * so finally v/a * 2 - (v^2 - 2*a*theda)/(2*a*v) => (3*v^2 + 2*a*theda)/(2*a*v)
+ * time = (3*v^2 + 2*a*theda)/(2*a*v)
+ */
 int model_anim_instance_get_actual_time(queued_animation *properties)
 {
 	int ret = 0;
@@ -570,7 +560,6 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 
 	return ret;
 }
-
 
 int model_anim_get_actual_time_type(ship_info *sip, int animation_type, int subtype)
 {
@@ -627,7 +616,9 @@ void model_anim_fix_reverse_times(ship_info *sip)
 	}
 }
 
-// this needs to always return a valid timestamp, even if it's just the current one
+/**
+ * Needs to always return a valid timestamp, even if it's just the current one
+ */
 int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 {
 	Assert( pss != NULL );
@@ -654,43 +645,6 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 				int pad = real_time - psub->triggers[i].end;
 
 				for (int a = 0; a < 3; a++) {
-					/*
-					float direction = pss->trigger.direction.a1d[a];
-
-					// if it's in the final slowdown phase then it really isn't _that_ bad
-					if ( (pss->trigger.current_ang.a1d[a] * direction) > (pss->trigger.slow_angle.a1d[a] * direction) ) {
-						a_time = fl2i( ((fl_sqrt(2.0f * pss->trigger.rot_accel.a1d[a] * (pss->trigger.end_angle.a1d[a] - pss->trigger.current_ang.a1d[a]) +
-												pss->trigger.current_vel.a1d[a] * pss->trigger.current_vel.a1d[a]) -pss->trigger.current_vel.a1d[a])
-										/ pss->trigger.rot_accel.a1d[a]) * 1000.0f);
-
-						if (ani_time < a_time)
-							ani_time = a_time;
-					} else {
-						//if vi is > v
-						if ( (pss->trigger.current_vel.a1d[a] * direction) > (pss->trigger.rot_vel.a1d[a] * direction) ) {
-							a_time = fl2i( (pss->trigger.current_vel.a1d[a] * (pss->trigger.current_vel.a1d[a] + 2))
-											/ (2.0f * pss->trigger.rot_accel.a1d[a]) * 1000.0f);
-
-							if (ani_time < a_time)
-								ani_time = a_time;
-						}
-						// if vi is <= to v
-						else {
-							a_time = fl2i( ((3.0f * pss->trigger.rot_vel.a1d[a]) / (2.0f * pss->trigger.rot_accel.a1d[a])
-											+ (pss->trigger.current_vel.a1d[a] * pss->trigger.current_vel.a1d[a])
-											/ (4.0f * pss->trigger.rot_accel.a1d[a] * pss->trigger.rot_vel.a1d[a])
-											+ (pss->trigger.end_angle.a1d[a] - pss->trigger.current_ang.a1d[a])
-											/ (pss->trigger.current_vel.a1d[a] * direction)
-											- (pss->trigger.current_vel.a1d[a] / (pss->trigger.rot_accel.a1d[a] * direction)))
-											* 1000.0f);
-
-							if (ani_time < a_time)
-								ani_time = a_time;
-						}
-					}
-					*/
-					// Wanderer Way -- START
-					// end_angle = S(2)
 					triggered_rotation tr = pss->trigger;
 					float end_angle = (tr.current_ang.a1d[a]  + (((tr.rot_vel.a1d[a]*tr.rot_vel.a1d[a]) - (tr.current_vel.a1d[a]*tr.current_vel.a1d[a])) / (2*tr.rot_accel.a1d[a])));
 
@@ -705,11 +659,7 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 						if (ani_time < a_time)
 							ani_time = a_time;
 					}
-
-					// Wanderer Way -- END
-					
 				}
-
 
 				if (ani_time)
 					ani_time += pad;
@@ -727,9 +677,14 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 	return timestamp(ret);
 }
 
-// this tells you how long an animation is going to take to complete
-// this is for things that can't happen until animations are done
-// this is for gameplay purposes, this isn't the actual time
+/** 
+ * @brief How long an animation is going to take to complete.
+ * @details For things that can't happen until animations are done this is for gameplay purposes, this isn't the actual time
+ * @param shipp
+ * @param animation_type
+ * @param subtype
+ * @return Should already be a valid timestamp
+ */
 int model_anim_get_time_type(ship *shipp, int animation_type, int subtype)
 {
 	ship_subsys	*pss;
@@ -743,7 +698,6 @@ int model_anim_get_time_type(ship *shipp, int animation_type, int subtype)
 			ret = ani_time;
 	}
 
-	// "ret" should already be a valid timestamp
 	return ret;
 }
 
@@ -779,7 +733,9 @@ void model_anim_set_initial_states(ship *shipp)
 	}
 }
 
-// this is for handling multiplayer-safe, client-side, animations
+/**
+ * Handles multiplayer-safe, client-side, animations
+ */
 void model_anim_handle_multiplayer(ship *shipp)
 {
 	Assert( shipp != NULL );

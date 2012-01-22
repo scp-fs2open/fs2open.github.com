@@ -2855,10 +2855,13 @@ polymodel * model_get(int model_num)
 
 	int num = model_num % MAX_POLYGON_MODELS;
 	
-	Assert( num >= 0 );
-	Assert( num < MAX_POLYGON_MODELS );
-	Assert( Polygon_models[num] );
-	Assert( Polygon_models[num]->id == model_num );
+	Assertion( num >= 0, "Model id %d is invalid. Please backtrace and investigate.\n", num);
+	Assertion( num < MAX_POLYGON_MODELS, "Model id %d is larger than MAX_POLYGON_MODELS (%d). This is impossible, thus we have to conclude that math as we know it has ceased to work.\n", num, MAX_POLYGON_MODELS );
+	Assertion( Polygon_models[num], "No model with id %d found. Please backtrace and investigate.\n", num );
+	Assertion( Polygon_models[num]->id == model_num, "Index collision between model %s and requested model %d. Please backtrace and investigate.\n", Polygon_models[num]->filename, model_num );
+
+	if (num < 0 || num > MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
+		return NULL;
 
 	return Polygon_models[num];
 }
@@ -3976,6 +3979,43 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 		// to the parent - KeldorKatarn
 		matrix rotation_matrix = pm->submodel[mn].orientation;
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
+
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+		vm_vec_unrotate(&tpnt, &pnt, &m);
+		pnt = tpnt;
+
+		mn = pm->submodel[mn].parent;
+	}
+
+	//now instance for the entire object
+	vm_vec_unrotate(out_dir,&pnt,objorient);
+}
+
+// the same as above - just taking model instance data into account
+// model_find_world_dir
+void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+{
+	vec3d pnt;
+	vec3d tpnt;
+	matrix m;
+	int mn;
+	polymodel *pm = model_get(model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+
+	pnt = *in_dir;
+	mn = sub_model_num;
+
+	//instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
 
 		matrix inv_orientation;
 		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);

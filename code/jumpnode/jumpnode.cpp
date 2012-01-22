@@ -130,6 +130,13 @@ void jump_node::set_alphacolor(int r, int g, int b, int alpha)
 	gr_init_alphacolor(&m_display_color, r, g, b, alpha);
 }
 
+//CommanderDJ
+void jump_node::set_name(char *new_name)
+{
+	strcpy_s(m_name, new_name);
+}
+	
+
 // create a jump node object and return pointer to it.
 jump_node::jump_node(vec3d *pos)
 {

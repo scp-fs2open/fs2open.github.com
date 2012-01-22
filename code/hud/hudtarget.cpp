@@ -6383,7 +6383,7 @@ void hud_target_clear_display_list()
 }
 
 HudGaugeOffscreen::HudGaugeOffscreen():
-HudGauge(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, true, false, true, VM_DEAD_VIEW, 255, 255, 255)
+HudGauge(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, true, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 

@@ -248,7 +248,7 @@ void hud_clear_msg_buffer()
 }
 
 HudGaugeMessages::HudGaugeMessages():
-HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE), 255, 255, 255)
 {
 }
 
@@ -322,8 +322,7 @@ void HudGaugeMessages::processMessageBuffer()
 
 		while ((ptr = split_str_once(split_str, Max_width - x - 7)) != NULL) {		// the 7 is a fudge hack
 			// make sure that split went ok, if not then bail
-			if (ptr == msg) {
-				Int3();
+			if (ptr == split_str) {
 				break;
 			}
 
@@ -1258,6 +1257,36 @@ void HudGaugeTalkingHead::render(float frametime)
 void HudGaugeTalkingHead::pageIn()
 {
 	bm_page_in_aabitmap( Head_frame.first_frame, Head_frame.num_frames );
+}
+
+bool HudGaugeTalkingHead::canRender()
+{
+	if (sexp_override) {
+		return false;
+	}
+
+	if (hud_disabled()) {
+		return false;
+	}
+
+	if(!active)
+		return false;
+	
+	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
+		return false;
+	}
+
+	if ((Viewer_mode & disabled_views)) {
+		return false;
+	}
+
+	if(pop_up) {
+		if(!popUpActive()) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 HudGaugeFixedMessages::HudGaugeFixedMessages():

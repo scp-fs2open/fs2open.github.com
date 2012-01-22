@@ -38,6 +38,7 @@ vertex *get_temp_point()
 	return p;
 }
 
+
 void free_temp_point(vertex *p)
 {
 	Assert(p->flags & PF_TEMP_POINT);
@@ -47,7 +48,10 @@ void free_temp_point(vertex *p)
 	p->flags &= ~PF_TEMP_POINT;
 }
 
-//clips an edge against one plane.
+
+/**
+ * @brief Clips an edge against one plane.
+ */
 vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 {
 	float ratio;
@@ -121,9 +125,6 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 	if (flags & TMAP_FLAG_TEXTURED) {
 		tmp->u = on_pnt->u + (off_pnt->u-on_pnt->u) * ratio;
 		tmp->v = on_pnt->v + (off_pnt->v-on_pnt->v) * ratio;
-
-	//	tmp->u2 = on_pnt->u2 + (off_pnt->u2-on_pnt->u2) * ratio;
-	//	tmp->v2 = on_pnt->v2 + (off_pnt->v2-on_pnt->v2) * ratio;
 	}
 
 	if (flags & TMAP_FLAG_GOURAUD ) {
@@ -189,7 +190,10 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 	return tmp;	
 }
 
-//clips a line to the viewing pyramid.
+
+/**
+ * @brief Clips a line to the viewing pyramid.
+ */
 void clip_line(vertex **p0,vertex **p1,ubyte codes_or, uint flags)
 {
 	int plane_flag;
@@ -212,6 +216,9 @@ void clip_line(vertex **p0,vertex **p1,ubyte codes_or, uint flags)
 
 }
 
+/**
+ * @brief Clips a plane to the viewing pyramid.
+ */
 int clip_plane(int plane_flag,vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
 {
 	int i;
@@ -261,7 +268,9 @@ int clip_plane(int plane_flag,vertex **src,vertex **dest,int *nv,ccodes *cc,uint
 	return (dest-save_dest);
 }
 
-
+/**
+ * @brief Clips a polygon to the viewing pyramid.
+ */
 vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
 {
 	int plane_flag;
@@ -282,11 +291,3 @@ vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
 
 	return src;		//we swapped after we copied
 }
-
-
-
-
-
-
-
-
