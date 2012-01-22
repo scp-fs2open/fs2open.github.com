@@ -390,7 +390,7 @@ typedef struct ship_subsys_info {
 #define	SF_NO_ARRIVAL_MUSIC		(1 << 3)		// don't play arrival music when ship arrives
 #define	SF_NO_ARRIVAL_WARP		(1 << 4)		// no arrival warp in effect
 #define	SF_NO_DEPARTURE_WARP		(1 << 5)		// no departure warp in effect
-#define	SF_LOCKED					(1 << 6)		// can't manipulate ship in loadout screens
+//#define	SF_LOCKED					(1 << 6)		// can't manipulate ship in loadout screens
 
 // high bits are for internal flags not saved to mission files
 // Go from bit 31 down to bit 3
@@ -453,6 +453,8 @@ typedef struct ship_subsys_info {
 #define SF2_NO_ETS							(1<<21)		// The E - This ship does not have an ETS
 #define SF2_CLOAKED							(1<<22)		// The E - This ship will not be rendered
 #define SF2_NO_THRUSTERS					(1<<23)		// The E - Thrusters on this ship are not rendered.
+#define SF2_SHIP_LOCKED						(1<<24)		// Karajorma - Prevents the player from changing the ship class on loadout screen
+#define SF2_WEAPONS_LOCKED					(1<<25)		// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -1562,12 +1564,6 @@ extern int wing_has_conflicting_teams(int wing_index);
 extern int wing_name_lookup(char *name, int ignore_count = 0);
 
 extern int Player_ship_class;
-
-#define MAX_PLAYER_SHIP_CHOICES	15
-/*
-extern int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
-extern int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship types, precedence list for player ship/wing selection
-*/
 
 //	Do the special effect for energy dissipating into the shield for a hit.
 //	model_num	= index in Polygon_models[]

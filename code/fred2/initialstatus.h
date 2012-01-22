@@ -51,7 +51,8 @@ public:
 	int		m_velocity;
 	int		m_hull;
 	BOOL	m_has_shields;
-	int		m_locked;
+	int		m_ship_locked;
+	int		m_weapons_locked;
 	CString	m_cargo_name;
 	int		m_primaries_locked;
 	int		m_secondaries_locked;
@@ -80,7 +81,8 @@ protected:
 	afx_msg void OnSelchangeDockeePoint();
 	afx_msg void OnHasShields();
 	afx_msg void OnForceShields();
-	afx_msg void OnLocked();
+	afx_msg void OnShipLocked();
+	afx_msg void OnWeaponsLocked();
 	afx_msg void OnPrimariesLocked();
 	afx_msg void OnSecondariesLocked();
 	afx_msg void OnTurretsLocked();
