@@ -543,7 +543,7 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 				}
 			} else {
 				// stuff the 24 bit value
-				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
+				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3); //-V512
 
 				// convert to 16 bit
 				convert_24_to_16(bit_24, &bit_16);
@@ -627,7 +627,7 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 				}
 			} else {
 				// stuff the 24 bit value
-				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
+				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3); //-V512
 				
 				// convert to 16 bit
 				convert_24_to_16(bit_24, &bit_16);

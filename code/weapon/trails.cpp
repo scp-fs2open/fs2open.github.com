@@ -273,32 +273,32 @@ void trail_render( trail * trailp )
 				Trail_v_list[nv].a = l;	
 
 				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->u = U;
-				Trail_vlist[nv]->v = 1.0f; 
+				Trail_vlist[nv]->texture_position.u = U;
+				Trail_vlist[nv]->texture_position.v = 1.0f; 
 				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
 				nv++;
 
 				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->u = U;
-				Trail_vlist[nv]->v = 0.0f; 
+				Trail_vlist[nv]->texture_position.u = U;
+				Trail_vlist[nv]->texture_position.v = 0.0f; 
 				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
 				nv++;
 
 				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->u = U + 1.0f;
-				Trail_vlist[nv]->v = 0.5f;
+				Trail_vlist[nv]->texture_position.u = U + 1.0f;
+				Trail_vlist[nv]->texture_position.v = 0.5f;
 				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = 0;
 				nv++;
 			} else {
 				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->u = U;
-				Trail_vlist[nv]->v = 1.0f; 
+				Trail_vlist[nv]->texture_position.u = U;
+				Trail_vlist[nv]->texture_position.v = 1.0f; 
 				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
 				nv++;
 
 				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->u = U;
-				Trail_vlist[nv]->v = 0.0f; 
+				Trail_vlist[nv]->texture_position.u = U;
+				Trail_vlist[nv]->texture_position.v = 0.0f; 
 				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
 				nv++;
 			}

@@ -9,7 +9,6 @@
 
 
 
-
 #include "object/objcollide.h"
 #include "ship/ship.h"
 #include "debris/debris.h"
@@ -22,23 +21,20 @@
 #include "parse/scripting.h"
 
 
-
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 
-/*
-extern int Framecount;
-int Debris_ship_count = 0;
-*/
-
-// Checks debris-ship collisions.  pair->a is debris and pair->b is ship.
-// Returns 1 if all future collisions between these can be ignored
+/**
+ * Checks debris-ship collisions.  
+ * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is ship.
+ * @return 1 if all future collisions between these can be ignored
+ */
 int collide_debris_ship( obj_pair * pair )
 {
 	float dist;
 	object *pdebris = pair->a;
 	object *pship = pair->b;
 
-		// Don't check collisions for warping out player
+	// Don't check collisions for warping out player
 	if ( Player->control_mode != PCM_NORMAL )	{
 		if ( pship == Player_obj )
 			return 0;
@@ -51,10 +47,6 @@ int collide_debris_ship( obj_pair * pair )
 	if ( (pdebris->parent == OBJ_INDEX(pship)) && (Ships[pship->instance].flags & SF_DYING) )
 		return 0;
 
-/*	Debris_ship_count++;
-	if (Debris_ship_count % 100 == 0)
-		nprintf(("AI", "Done %i debris:ship checks in %i frames = %.2f checks/frame\n", Debris_ship_count, Framecount, (float) Debris_ship_count/Framecount));
-*/
 	dist = vm_vec_dist( &pdebris->pos, &pship->pos );
 	if ( dist < pdebris->radius + pship->radius )	{
 		int hit;
@@ -118,7 +110,6 @@ int collide_debris_ship( obj_pair * pair )
 				int quadrant_num, apply_ship_damage;
 
 				// apply damage to ship unless 1) debris is from ship
-				// apply_ship_damage = !((pship->signature == pdebris->parent_sig) && ship_is_beginning_warpout_speedup(pship));
 				apply_ship_damage = !(pship->signature == pdebris->parent_sig);
 
 				if ( debris_hit_info.heavy == pship ) {
@@ -177,7 +168,6 @@ int collide_debris_ship( obj_pair * pair )
 		time -= 200.0f;		// allow one frame slow frame at ~5 fps
 
 		if (time > 100) {
-			//nprintf(("AI", "Ship %s debris #%i delay time = %.1f seconds\n", Ships[pship->instance].ship_name, pdebris-Objects, time/1000.0f));
 			pair->next_check_time = timestamp( fl2i(time) );
 		} else {
 			pair->next_check_time = timestamp(0);	// check next time
@@ -187,12 +177,13 @@ int collide_debris_ship( obj_pair * pair )
 	return 0;
 }
 
-// Checks asteroid-ship collisions.  pair->a is asteroid and pair->b is ship.
-// Returns 1 if all future collisions between these can be ignored
+/**
+ * Checks asteroid-ship collisions.  
+ * @param pair obj_pair pointer to the two objects. pair->a is asteroid and pair->b is ship.
+ * @return 1 if all future collisions between these can be ignored
+ */
 int collide_asteroid_ship( obj_pair * pair )
 {
-#ifndef FS2_DEMO
-
 	if (!Asteroids_enabled)
 		return 0;
 
@@ -200,7 +191,7 @@ int collide_asteroid_ship( obj_pair * pair )
 	object	*pasteroid = pair->a;
 	object	*pship = pair->b;
 
-		// Don't check collisions for warping out player
+	// Don't check collisions for warping out player
 	if ( Player->control_mode != PCM_NORMAL )	{
 		if ( pship == Player_obj ) return 0;
 	}
@@ -274,8 +265,6 @@ int collide_asteroid_ship( obj_pair * pair )
 				if (Ai_info[Ships[pship->instance].ai_index].mode == AIM_WARP_OUT)
 					ship_damage /= 3.0f;
 
-				//nprintf(("AI", "Asteroid damage on %s = %7.3f (%6.2f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_max_hull_strength));
-
 				// calculate asteroid damage and set asteroid damage to greater or asteroid and ship
 				// asteroid damage is needed since we can really whack some small asteroid with afterburner and not do
 				// significant damage to ship but the asteroid goes off faster than afterburner speed.
@@ -294,15 +283,9 @@ int collide_asteroid_ship( obj_pair * pair )
 						quadrant_num = -1;
 					}
 					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, asteroid_hit_info.submodel_num);
-					//if (asteroid_hit_info.heavy->type == OBJ_SHIP) {
-					//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.heavy->instance].ship_name));
-					//}
 				} else {
 					// don't draw sparks (using sphere hitpos)
 					ship_apply_local_damage(asteroid_hit_info.light, asteroid_hit_info.heavy, &hitpos, ship_damage, MISS_SHIELDS, NO_SPARKS);
-					//if (asteroid_hit_info.light->type == OBJ_SHIP) {
-					//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.light->instance].ship_name));
-					//}
 				}
 
 				// maybe print Collision on HUD
@@ -354,7 +337,4 @@ int collide_asteroid_ship( obj_pair * pair )
 		}
 		return 0;
 	}
-#else
-	return 0;	// no asteroids in demo version
-#endif
 }

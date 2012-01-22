@@ -136,7 +136,7 @@ int Barracks_squad_number_coords[GR_NUM_RESOLUTIONS][2] = {
 #define BARRACKS_NUM_BUTTONS		19
 
 // pilot selection buttons
-#define B_PILOT_CREATE_BOTTON			0	// B_PILOT_CREATE_BOTTON
+#define B_PILOT_CREATE_BUTTON			0	// B_PILOT_CREATE_BUTTON
 #define B_PILOT_SCROLL_UP_BUTTON		1	// B_PILOT_SCROLL_UP_BUTTON
 #define B_PILOT_SCROLL_DOWN_BUTTON	2	// B_PILOT_SCROLL_DOWN_BUTTON
 #define B_PILOT_DELETE_BUTTON			11	// B_PILOT_B_PILOT_DELETE_BUTTON
@@ -484,7 +484,7 @@ void barracks_set_hotkeys(bool pilot_text_enter_mode)
 	Buttons[gr_screen.res][B_PILOT_SCROLL_UP_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_UP : -1);
 	Buttons[gr_screen.res][B_PILOT_SCROLL_DOWN_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_DOWN : -1);
 
-	Buttons[gr_screen.res][B_PILOT_CREATE_BOTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_C : -1);
+	Buttons[gr_screen.res][B_PILOT_CREATE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_C : -1);
 	Buttons[gr_screen.res][B_PILOT_SET_ACTIVE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_ENTER : -1);
 	Buttons[gr_screen.res][B_PILOT_DELETE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_DELETE : -1);
 
@@ -765,19 +765,19 @@ void barracks_next_pic()
 // show previous squad pic
 void barracks_prev_squad_pic()
 {
-	// check if no pilot images or no pilot selected
+	// check if no squad images or no pilot selected
 	if ((Num_pilot_squad_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		return;
 	}
 
-	// reset pilot pic number
+	// reset squad pic number
 	Pic_squad_number--;
 	if (Pic_squad_number < 0) {
 		Pic_squad_number = Num_pilot_squad_images - 1;
 	}
 
-	// copy pilot pic filename into pilot struct
+	// copy squad pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)) {
 		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
 	}
@@ -786,22 +786,22 @@ void barracks_prev_squad_pic()
 	gamesnd_play_iface(SND_SCROLL);
 }
 
-// show next pilot pic
+// show next squad pic
 void barracks_next_squad_pic()
 {
-	// check if no pilot images or no pilot selected
+	// check if no squad images or no pilot selected
 	if ((Num_pilot_squad_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		return;
 	}
 
-	// reset pilot pic number
+	// reset squad pic number
 	Pic_squad_number++;
 	if (Pic_squad_number >= Num_pilot_squad_images){
 		Pic_squad_number = 0;
 	}
 
-	// copy pilot pic filename into pilot struct
+	// copy squad pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)){
 		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
 	}
@@ -1027,7 +1027,7 @@ void barracks_button_pressed(int n)
 			}
 			break;
 
-		case B_ACCEPT_BUTTON:			
+		case B_ACCEPT_BUTTON:
 			if (Num_pilots && !barracks_pilot_accepted()) {
 				gamesnd_play_iface(SND_COMMIT_PRESSED);
 
@@ -1064,9 +1064,6 @@ void barracks_button_pressed(int n)
 			break;
 
 		case B_PILOT_CONVERT_BUTTON: {
-#if defined(DEMO) || defined(OEM_BUILD)
-			game_feature_not_in_demo_popup();
-#else
 			char temp[256], *str;
 			char old_pic[256] = "";
 			char old_squad_pic[256] = "";
@@ -1113,11 +1110,10 @@ void barracks_button_pressed(int n)
 			} else {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			}
-#endif
 			break;
 		}
 
-		case B_PILOT_CREATE_BOTTON:
+		case B_PILOT_CREATE_BUTTON:
 			Clone_flag = 0;
 			barracks_create_new_pilot();
 			break;
@@ -1133,12 +1129,8 @@ void barracks_button_pressed(int n)
 			break;
 
 		case B_STATS_MEDAL_BUTTON:
-#ifdef FS2_DEMO
-			game_feature_not_in_demo_popup();
-#else
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_VIEW_MEDALS);
-#endif
 			break;
 
 		case B_PILOT_DELETE_BUTTON:
@@ -1153,9 +1145,6 @@ void barracks_button_pressed(int n)
 			break;
 
 		case B_PILOT_MULTI_MODE_BUTTON:
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-			game_feature_not_in_demo_popup();
-#else
 			if ( Networking_disabled ) {
 				game_feature_disabled_popup();
 				break;
@@ -1165,7 +1154,6 @@ void barracks_button_pressed(int n)
 				gamesnd_play_iface(SND_USER_SELECT);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 			}
-#endif
 			break;
 	}
 }
@@ -1477,35 +1465,9 @@ void barracks_init()
 	
 	// init stats
 	barracks_init_stats(&Cur_pilot->stats);
-
-	// disable some buttons for the multiplayer beta and e3 build
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)
-	Buttons[gr_screen.res][B_PILOT_CLONE_BUTTON].button.hide();
-	Buttons[gr_screen.res][B_PILOT_CONVERT_BUTTON].button.hide();	
-	Buttons[gr_screen.res][B_PILOT_CLONE_BUTTON].button.disable();	
-	Buttons[gr_screen.res][B_PILOT_CONVERT_BUTTON].button.disable();	
-#endif
-
-	// multiplayer beta build
-#ifdef MULTIPLAYER_BETA_BUILD
-	Buttons[gr_screen.res][B_PILOT_SINGLE_MODE_BUTTON].button.hide();
-	Buttons[gr_screen.res][B_PILOT_SINGLE_MODE_BUTTON].button.disable();
-#endif
-
-	// e3 build
-#if defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)
-	Buttons[gr_screen.res][B_PILOT_MULTI_MODE_BUTTON].button.hide();
-	Buttons[gr_screen.res][B_PILOT_MULTI_MODE_BUTTON].button.disable();
-#endif
 	
 	// base the mode we're in (single or multi) on the status of the currently selected pilot
-#ifdef MULTIPLAYER_BETA_BUILD
-	barracks_init_player_stuff(1);
-#elif defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)
-	barracks_init_player_stuff(0);
-#else
-	barracks_init_player_stuff(is_pilot_multi(Player));	
-#endif
+	barracks_init_player_stuff(is_pilot_multi(Player));
 }
 
 // -----------------------------------------------------------------------------
@@ -1570,9 +1532,6 @@ void barracks_do_frame(float frametime)
 				break;
 
 			case KEY_TAB:  // switch mode (simgle/multi)
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-				game_feature_not_in_demo_popup();
-#else
 				if ( Networking_disabled ) {
 					game_feature_disabled_popup();
 					break;
@@ -1585,7 +1544,6 @@ void barracks_do_frame(float frametime)
 				}
 
 				gamesnd_play_iface(SND_USER_SELECT);
-#endif
 				break;
 
 			case KEY_F1:  // show help overlay

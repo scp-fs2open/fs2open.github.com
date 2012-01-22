@@ -231,17 +231,13 @@ void red_alert_button_pressed(int n)
 		// warp the mouse cursor the the middle of the screen for those who control with a mouse
 		mouse_set_pos( gr_screen.max_w/2, gr_screen.max_h/2 );
 
-		if(game_do_cd_mission_check(Game_current_mission_filename)){
-			if(Game_mode & GM_MULTIPLAYER){	
-				// process the initial orders now (moved from post_process_mission()in missionparse) 
-				mission_parse_fixup_players();
-				ai_post_process_mission();
-			}
-
-			gameseq_post_event(GS_EVENT_ENTER_GAME);
-		} else {
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+		if(Game_mode & GM_MULTIPLAYER){	
+			// process the initial orders now (moved from post_process_mission()in missionparse) 
+			mission_parse_fixup_players();
+			ai_post_process_mission();
 		}
+
+		gameseq_post_event(GS_EVENT_ENTER_GAME);
 		break;
 
 	case RA_REPLAY_MISSION:
@@ -253,12 +249,7 @@ void red_alert_button_pressed(int n)
 				break;
 			}
 
-			// CD CHECK
-			if(game_do_cd_mission_check(Game_current_mission_filename)){
-				gameseq_post_event(GS_EVENT_START_GAME);
-			} else {
-				gameseq_post_event(GS_EVENT_MAIN_MENU);
-			}
+			gameseq_post_event(GS_EVENT_START_GAME);
 		} else {
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
@@ -313,7 +304,6 @@ void red_alert_init()
 		return;
 	}
 
-	// common_set_interface_palette("ControlConfigPalette");  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Red_alert_mask[gr_screen.res]);
 
@@ -781,7 +771,7 @@ void red_alert_write_wingman_status(CFILE *fp)
 		return;
 	}
 
-	Assert(strlen(Red_alert_precursor_mission) > 0 );
+	Assert(strlen(Red_alert_precursor_mission) > 0 ); //-V805
 	cfwrite_string(Red_alert_precursor_mission, fp);
 
 	for ( i = 0; i < Red_alert_num_slots_used; i++ ) {
@@ -817,7 +807,7 @@ void red_alert_write_wingman_status_campaign(CFILE *fp)
 		return;
 	}
 
-	Assert(strlen(Red_alert_precursor_mission) > 0 );
+	Assert(strlen(Red_alert_precursor_mission) > 0 ); //-V805
 	cfwrite_string(Red_alert_precursor_mission, fp);
 
 	for ( i = 0; i < Red_alert_num_slots_used; i++ ) {

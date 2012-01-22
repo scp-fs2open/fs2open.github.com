@@ -75,35 +75,16 @@
 
 char CheatBuffer[CHEAT_BUFFER_LEN+1];
 
-#ifdef FS2_DEMO
-	char *Cheat_code_demo = NOX("33BE^(8]C01(:=BHt");
-#else
-	char *Cheat_code = NOX("33BE^(8]C01(:=BHt");					// www.freespace2.com
-	char *Cheat_code_fish = NOX("bDc9y+$;#AIDRoouM");			// vasudanswuvfishes
-	char *Cheat_code_headz = NOX("!;:::@>F7L?@@2:@A");			// humanheadsinside.
-	char *Cheat_code_tooled = NOX("sipp-^rM@L!U^usjX");		// tooledworkedowned
-	char *Cheat_code_pirate = NOX("MAP4YP[4=-2uC(yJ^");		// arrrrwalktheplank	
-	char *Cheat_code_skip = NOX("7!ICkSI\"(8n3JesBP");			// skipmemymissionyo
-#endif
+char *Cheat_code = NOX("33BE^(8]C01(:=BHt");					// www.freespace2.com
+char *Cheat_code_fish = NOX("bDc9y+$;#AIDRoouM");			// vasudanswuvfishes
+char *Cheat_code_headz = NOX("!;:::@>F7L?@@2:@A");			// humanheadsinside.
+char *Cheat_code_tooled = NOX("sipp-^rM@L!U^usjX");		// tooledworkedowned
+char *Cheat_code_pirate = NOX("MAP4YP[4=-2uC(yJ^");		// arrrrwalktheplank	
+char *Cheat_code_skip = NOX("7!ICkSI\"(8n3JesBP");			// skipmemymissionyo
 									  // 666)6=N79+Z45=BE0e
 int Tool_enabled = 0;
 bool Perspective_locked=false;
 bool quit_mission_popup_shown = false;
-
-	/*
-#else 
-	// list of the cheat codes
-	//#ifdef INTERPLAYQA
-	// "DavidPerry" NOX("0!XZQ*K.pu");
-	// NOX("&BvWJe=a?$VP*=@2W,2Y");	// Super-secret 20 character string!
-	//NOX("STs`nHqW\\lv#KD_aCSWN");	//	solveditonceandforall (note double \\ as string contains \.
-	//XSTR:OFF
-	char *Cheat_code_in_game = NOX("///FES)P<A5=7CCB!n10");	//	www.volition-inc.com
-	char *Cheat_code_movies =  NOX("&BvWJe=a?$VP*=@2W,2Y");	// freespacestandsalone
-	char *Cheat_code_pirate = NOX("%,sPzoE>\\+_(Qs#+h-8o");				// arrwalktheplankmatey
-	//XSTR:ON
-#endif
-	*/
 
 //int All_movies_enabled = 0;
 
@@ -226,7 +207,7 @@ int Normal_key_set[] = {
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
-	
+
 	TOGGLE_GLIDING
 };
 
@@ -559,10 +540,6 @@ int get_next_weapon_looped(int current_weapon, int subtype)
 
 void process_debug_keys(int k)
 {
-#ifdef INTERPLAYQA
-	if ( !Debug_allowed )
-		return;
-#endif
 
 	// Kazan -- NO CHEATS IN MULTIb
 	if (Game_mode & GM_MULTIPLAYER)
@@ -908,8 +885,6 @@ void process_debug_keys(int k)
 			break;
 		}
 		
-
-#ifndef FS2_DEMO
 		case KEY_DEBUGGED + KEY_U: {
 		case KEY_DEBUGGED1 + KEY_U:
 			// launch asteroid
@@ -923,7 +898,6 @@ void process_debug_keys(int k)
 			//mission_goal_mark_all_true( PRIMARY_GOAL );
 			break;
 		}
-#endif
 
 		case KEY_DEBUGGED + KEY_0: {
 		case KEY_DEBUGGED1 + KEY_0:
@@ -1238,9 +1212,6 @@ void process_debug_keys(int k)
 
 void ppsk_hotkeys(int k)
 {
-
-#ifndef FS2_DEMO
-
 	// use k to check for keys that can have Shift,Ctrl,Alt,Del status
 	int hotkey_set;
 
@@ -1323,9 +1294,6 @@ void ppsk_hotkeys(int k)
 			}
 			break;
 	}	// end switch
-
-#endif
-
 }
 
 // check keypress 'key' against a set of valid controls and mark the match in the
@@ -1481,17 +1449,7 @@ void game_process_cheats(int k)
 	CheatBuffer[CHEATSPOT]=(char)k;
 
 	cryptstring=jcrypt(&CheatBuffer[CHEAT_BUFFER_LEN - CRYPT_STRING_LENGTH]);		
-
-#ifdef FS2_DEMO	
-	if ( !strcmp(Cheat_code_demo, cryptstring) ) {
-		HUD_printf(XSTR( "Cheats enabled.", 31));
-		Cheats_enabled = 1;
-		if (Player->flags & PLAYER_FLAGS_MSG_MODE){
-			hud_squadmsg_toggle();
-		}
-	}
 	
-#else
 	if( !strcmp(Cheat_code, cryptstring) && !(Game_mode & GM_MULTIPLAYER)){
 		Cheats_enabled = 1;
 
@@ -1584,7 +1542,6 @@ void game_process_cheats(int k)
 		// warpin
 		shipfx_warpin_start(&Objects[objnum]);
 	}
-#endif
 }
 
 void game_process_keys()
@@ -2889,12 +2846,7 @@ void button_info_do(button_info *bi)
 				}
 				// other buttons
 				else {
-					// if we're in demo playback, always clear the bits
-					if(Game_mode & GM_DEMO_PLAYBACK){
-						bi->status[i] &= ~(1 << j);
-					}
-					// otherwise check as normal
-					else if (button_function(32 * i + j)) {
+					if (button_function(32 * i + j)) {
 						bi->status[i] &= ~(1 << j);					
 					}
 				}

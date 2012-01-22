@@ -276,11 +276,6 @@ void common_buttons_init(UI_WINDOW *ui_window)
 		Common_buttons[Current_screen-1][gr_screen.res][COMMON_SS_REGION].button.disable();
 		Common_buttons[Current_screen-1][gr_screen.res][COMMON_WEAPON_REGION].button.disable();
 	}
-
-	#ifdef DEMO // allow for FS2_DEMO
-		Common_buttons[Current_screen-1][gr_screen.res][COMMON_SS_REGION].button.disable();
-		Common_buttons[Current_screen-1][gr_screen.res][COMMON_WEAPON_REGION].button.disable();
-	#endif
 }
 
 void set_active_ui(UI_WINDOW *ui_window)
@@ -468,35 +463,10 @@ void common_select_init()
 	Background_playing = 0;
 	Background_anim = NULL;
 
-	#ifndef DEMO // not for FS2_DEMO
-
-	/*
-	if ( current_detail_level() >= (NUM_DEFAULT_DETAIL_LEVELS-2) ) {
-
-		anim_play_struct aps;
-
-		// Load in the background transition anim
-		if ( Game_mode & GM_MULTIPLAYER )
-			Background_anim = anim_load("BriefTransMulti", CF_TYPE_ANY, 1);	// 1 as last parm means file is mem-mapped
-		else  {
-			Background_anim = anim_load("BriefTrans", CF_TYPE_ANY, 1);	// 1 as last parm means file is mem-mapped
-		}
-
-		Assert( Background_anim != NULL );
-		anim_play_init(&aps, Background_anim, 0, 0);
-		aps.framerate_independent = 1;
-		aps.skip_frames = 0;
-		Background_anim_instance = anim_play(&aps);
-		Background_playing = 1;		// start playing the Background anim
-	}
-	*/
 	Current_screen = Next_screen = ON_BRIEFING_SELECT;
 
 	// load in the icons for the wing slots
 	load_wing_icons(NOX("iconwing01"));
-
-
-	#endif
 
 	Current_screen = Next_screen = ON_BRIEFING_SELECT;
 	
@@ -818,17 +788,13 @@ void common_check_keys(int k)
 				break;
 			}
 
-			#ifndef DEMO // not for FS2_DEMO
-				if ( Current_screen != ON_WEAPON_SELECT && !Background_playing ) {
-					if ( !wss_slots_all_empty() ) {
-						Next_screen = ON_WEAPON_SELECT;
-					} else {
-						common_show_no_ship_error();
-					}
+			if ( Current_screen != ON_WEAPON_SELECT && !Background_playing ) {
+				if ( !wss_slots_all_empty() ) {
+					Next_screen = ON_WEAPON_SELECT;
+				} else {
+					common_show_no_ship_error();
 				}
-			#else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			#endif
+			}
 
 			break;
 
@@ -839,13 +805,9 @@ void common_check_keys(int k)
 				break;
 			}
 
-			#ifndef DEMO // not for FS2_DEMO
-				if ( Current_screen != ON_SHIP_SELECT && !Background_playing ) {
-					Next_screen = ON_SHIP_SELECT;
-				}
-			#else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			#endif
+			if ( Current_screen != ON_SHIP_SELECT && !Background_playing ) {
+				Next_screen = ON_SHIP_SELECT;
+			}
 
 			break;
 
@@ -856,32 +818,28 @@ void common_check_keys(int k)
 				break;
 			}
 
-			#ifndef DEMO // not for FS2_DEMO
-				if ( !Background_playing ) {
-					switch ( Current_screen ) {
-						case ON_BRIEFING_SELECT:
-							if ( !wss_slots_all_empty() ) {
-								Next_screen = ON_WEAPON_SELECT;
-							} else {
-								common_show_no_ship_error();
-							}
-							break;
+			if ( !Background_playing ) {
+				switch ( Current_screen ) {
+					case ON_BRIEFING_SELECT:
+						if ( !wss_slots_all_empty() ) {
+							Next_screen = ON_WEAPON_SELECT;
+						} else {
+							common_show_no_ship_error();
+						}
+						break;
 
-						case ON_SHIP_SELECT:
-							Next_screen = ON_BRIEFING_SELECT;
-							break;
+					case ON_SHIP_SELECT:
+						Next_screen = ON_BRIEFING_SELECT;
+						break;
 
-						case ON_WEAPON_SELECT:
-							Next_screen = ON_SHIP_SELECT;
-							break;
-						default:
-							Int3();
-							break;
-					}	// end switch
-				}
-			#else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			#endif
+					case ON_WEAPON_SELECT:
+						Next_screen = ON_SHIP_SELECT;
+						break;
+					default:
+						Int3();
+						break;
+				}	// end switch
+			}
 
 			break;
 
@@ -892,32 +850,28 @@ void common_check_keys(int k)
 				break;
 			}
 
-			#ifndef DEMO // not for FS2_DEMO
-				if ( !Background_playing ) {
-					switch ( Current_screen ) {
-						case ON_BRIEFING_SELECT:
-							Next_screen = ON_SHIP_SELECT;
-							break;
+			if ( !Background_playing ) {
+				switch ( Current_screen ) {
+					case ON_BRIEFING_SELECT:
+						Next_screen = ON_SHIP_SELECT;
+						break;
 
-						case ON_SHIP_SELECT:
-							if ( !wss_slots_all_empty() ) {
-								Next_screen = ON_WEAPON_SELECT;
-							} else {
-								common_show_no_ship_error();
-							}
-							break;
+					case ON_SHIP_SELECT:
+						if ( !wss_slots_all_empty() ) {
+							Next_screen = ON_WEAPON_SELECT;
+						} else {
+							common_show_no_ship_error();
+						}
+						break;
 
-						case ON_WEAPON_SELECT:
-							Next_screen = ON_BRIEFING_SELECT;
-							break;
-						default:
-							Int3();
-							break;
-					}	// end switch
-				}
-			#else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			#endif
+					case ON_WEAPON_SELECT:
+						Next_screen = ON_BRIEFING_SELECT;
+						break;
+					default:
+						Int3();
+						break;
+				}	// end switch
+			}
 
 			break;
 

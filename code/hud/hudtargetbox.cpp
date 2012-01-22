@@ -875,7 +875,9 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	// hud_set_default_color();
 	setGaugeColor();
 
-	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, target_objp->jnp->get_name_ptr());	
+	strcpy_s(outstr, target_objp->jnp->get_name_ptr());
+	end_string_at_first_hash_symbol(outstr);
+	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
 
 	dist = vm_vec_dist_quick(&target_objp->pos, &Player_obj->pos);
 	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
@@ -1413,8 +1415,8 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 
 		g3_rotate_vertex(&subobj_vertex, &subobj_pos);
 		g3_project_vertex(&subobj_vertex);
-		*sx = (int) subobj_vertex.sx;
-		*sy = (int) subobj_vertex.sy;
+		*sx = (int) subobj_vertex.screen.xyw.x;
+		*sy = (int) subobj_vertex.screen.xyw.y;
 	}
 
 	return rval;
@@ -1616,8 +1618,8 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 				break;
 			case AIM_WAYPOINTS:
 //				gr_printf(sx, sy, "Wpnum: %i",aip->wp_index);
-				sprintf(outstr2," / Wpnum: %i",aip->wp_index);
-				strcat_s(outstr,outstr2);
+				//sprintf(outstr2," / Wpnum: %i",aip->wp_index); -> This is invalid, since wp_index now is a full-blown iterator
+				//strcat_s(outstr,outstr2);
 				break;
 			default:
 				break;

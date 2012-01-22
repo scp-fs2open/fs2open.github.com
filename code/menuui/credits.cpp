@@ -171,12 +171,6 @@ struct credits_screen_buttons {
 };
 
 static int Background_bitmap;
-/*
-static int CreditsWin01 = -1;
-static int CreditsWin02 = -1;
-static int CreditsWin03 = -1;
-static int CreditsWin04 = -1;
-*/
 static UI_WINDOW Ui_window;
 
 static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
@@ -525,35 +519,11 @@ void credits_init()
 	for (i=0; i<NUM_IMAGES; i++){
 		Credits_bmps[i] = -1;
 	}
-
-	// CreditsWin01 = bm_load(NOX("CreditsWin01"));
-	// CreditsWin02 = bm_load(NOX("CreditsWin02"));
-	// CreditsWin03 = bm_load(NOX("CreditsWin03"));
-	// CreditsWin04 = bm_load(NOX("CreditsWin04"));
 }
 
 void credits_close()
 {	
 	int i;
-
-	/*
-	if (CreditsWin01 != -1){
-		bm_unload(CreditsWin01);
-		CreditsWin01 = -1;
-	}
-	if (CreditsWin02 != -1){
-		bm_unload(CreditsWin02);
-		CreditsWin02 = -1;
-	}
-	if (CreditsWin03 != -1){
-		bm_unload(CreditsWin03);
-		CreditsWin03 = -1;
-	}
-	if (CreditsWin04 != -1){
-		bm_unload(CreditsWin04);
-		CreditsWin04 = -1;
-	}
-	*/
 
 	for (i=0; i<NUM_IMAGES; i++){
 		if (Credits_bmps[i] >= 0){
@@ -681,28 +651,6 @@ void credits_do_frame(float frametime)
 
 		gr_cross_fade(bm1, bm2, bx1, by1, bx2, by2, (float)percent / 100.0f);
 	}
-
-	/*
-	if (CreditsWin01 != -1) {
-		gr_set_bitmap(CreditsWin01);
-		gr_bitmap(233, 5);
-	}
-
-	if (CreditsWin02 != -1) {
-		gr_set_bitmap(CreditsWin02);
-		gr_bitmap(616, 8);
-	}
-
-	if (CreditsWin03 != -1) {
-		gr_set_bitmap(CreditsWin03);
-		gr_bitmap(233, 299);
-	}
-
-	if (CreditsWin04 != -1) {
-		gr_set_bitmap(CreditsWin04);
-		gr_bitmap(215, 8);
-	}
-	*/
 
 	Ui_window.draw();
 

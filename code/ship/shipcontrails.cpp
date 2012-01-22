@@ -108,10 +108,6 @@ void ct_ship_process(ship *shipp)
 	if (shipp->ab_info->texture.bitmap_id != -1)
 		ct_ship_process_ABtrails(shipp);
 
-#ifdef MULTIPLAYER_BETA_BUILD
-	return;
-#else
-
 	Assert(shipp != NULL);
 	Assert(shipp->objnum >= 0);
 	
@@ -152,8 +148,6 @@ void ct_ship_process(ship *shipp)
 	else {
 		ct_create_contrails(shipp);
 	}
-
-#endif
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -184,10 +178,6 @@ int ct_has_contrails(ship *shipp)
 // update active contrails - moving existing ones, adding new ones where necessary
 void ct_update_contrails(ship *shipp)
 {
-#ifdef MULTIPLAYER_BETA_BUILD
-	return;
-#else
-
 	// if trails aren't enabled, return
 	if (!ct_display_contrails()) {
 		return;
@@ -222,7 +212,6 @@ void ct_update_contrails(ship *shipp)
 				}			
 			}
 	}
-#endif
 }
 
 // create new contrails

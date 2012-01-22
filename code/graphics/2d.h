@@ -12,52 +12,11 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
-
-
-/* ========================= pixel plotters =========================
-In the 2d/texture mapper, bitmaps to be drawn will be passed by number.
-The 2d function will call a bmpman function to get the bitmap into whatever
-format it needs.  Then it will render.   The only pixels that will ever 
-get drawn go thru the 2d/texture mapper libraries only.   This will make
-supporting accelerators and psx easier.   Colors will always be set with
-the color set functions.
-
-gr_surface_flip()	switch onscreen, offscreen
-
-gr_set_clip(x,y,w,h)	// sets the clipping region
-gr_reset_clip(x,y,w,h)	// sets the clipping region
-gr_set_color --? 8bpp, 15bpp?
-gr_set_font(int fontnum)
-// see GR_ALPHABLEND defines for values for alphablend_mode
-// see GR_BITBLT_MODE defines for bitblt_mode.
-// Alpha = scaler for intensity
-gr_set_bitmap( int bitmap_num, int alphblend_mode, int bitblt_mode, float alpha )	
-gr_set_shader( int value )  0=normal -256=darken, 256=brighten
-gr_set_palette( ubyte * palette ) 
-
-gr_clear()	// clears entire clipping region
-gr_bitmap(x,y)
-gr_bitmap_ex(x,y,w,h,sx,sy)
-gr_rect(x,y,w,h)
-gr_shade(x,y,w,h)
-gr_string(x,y,char * text)
-gr_line(x1,y1,x2,y2)
-
- 
-*/
-
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
 #include "cfile/cfile.h"
 #include "bmpman/bmpman.h"
 
-
-//#define MATRIX_TRANSFORM_TYPE_WORLD 0
-//#define MATRIX_TRANSFORM_TYPE_VIEW 1
-
-
-//MAX_POLYGON_NORMS
-//#define MAX_POLYGON_TRI_POINTS 15000
 extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
 extern float Min_draw_distance;
@@ -68,8 +27,10 @@ extern int Gr_inited;
 extern int gr_zbuffering, gr_zbuffering_mode;
 extern int gr_global_zbuffering;
 
-// This is a structure used by the shader to keep track
-// of the values you want to use in the shade primitive.
+/**
+ * This is a structure used by the shader to keep track
+ * of the values you want to use in the shade primitive.
+ */
 typedef struct shader {
 	uint	screen_sig;					// current mode this is in
 	ubyte	r,g,b,c;						// factors and constant
@@ -102,8 +63,10 @@ typedef struct tsb_t {
 	float scaler;
 } tsb_t;
 
-// this should be basicly just like it is in the VB
-// a list of triangles and their associated normals
+/**
+ * This should be basicly just like it is in the VB
+ * a list of triangles and their associated normals
+ */
 struct poly_list {
 	poly_list(): n_verts(0), vert(NULL), norm(NULL), tsb(NULL), currently_allocated(0) {}
 	~poly_list();
@@ -250,8 +213,6 @@ typedef struct screen {
 	color		current_clear_color;				// current clear color
 	shader	current_shader;
 	float		current_alpha;
-//	void		*offscreen_buffer;				// NEVER ACCESS!  This+rowsize*y = screen offset
-//	void		*offscreen_buffer_base;			// Pointer to lowest address of offscreen buffer
 
 	bool custom_size;
 	int		rendering_to_texture;		//wich texture we are rendering to, -1 if the back buffer
@@ -286,33 +247,6 @@ typedef struct screen {
 	// resets the clipping region to entire screen
 	void (*gf_reset_clip)();
 
-	//void (*gf_set_color)( int r, int g, int b );
-	//void (*gf_get_color)( int * r, int * g, int * b );
-	//void (*gf_init_color)( color * dst, int r, int g, int b );
-
-	//void (*gf_init_alphacolor)( color * dst, int r, int g, int b, int alpha, int type );
-	//void (*gf_set_color_fast)( color * dst );
-
-	//void (*gf_set_font)(int fontnum);
-
-	// Call this to create a shader.   
-	// This function takes a while, so don't call it once a frame!
-	// r,g,b, and c should be between -1.0 and 1.0f
-
-	// The matrix is used as follows:
-	// Dest(r) = Src(r)*r + Src(g)*r + Src(b)*r + c;
-	// Dest(g) = Src(r)*g + Src(g)*g + Src(b)*g + c;
-	// Dest(b) = Src(r)*b + Src(g)*b + Src(b)*b + c;
-	// For instance, to convert to greyscale, use
-	// .3 .3 .3  0
-	// To turn everything green, use:
-	//  0 .3  0  0
-	//void (*gf_create_shader)(shader * shade, float r, float g, float b, float c );
-
-	// Initialize the "shader" by calling gr_create_shader()
-	// Passing a NULL makes a shader that turns everything black.
-	//void (*gf_set_shader)( shader * shade );
-
 	// clears entire clipping region to current color
 	void (*gf_clear)();
 
@@ -322,8 +256,6 @@ typedef struct screen {
 	void (*gf_aabitmap)(int x, int y, bool resize, bool mirror);
 	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror);
 
-//	void (*gf_rect)(int x, int y, int w, int h,bool resize);
-//	void (*gf_shade)(int x, int y, int w, int h);
 	void (*gf_string)(int x, int y, char * text,bool resize);
 
 	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
@@ -502,14 +434,6 @@ typedef struct screen {
 
 	void (*gf_line_htl)(vec3d *start, vec3d* end);
 	void (*gf_sphere_htl)(float rad);
-
-//	void (*gf_set_environment_mapping)(int i);
-
-/*	void (*gf_begin_sprites)();//does prep work for sprites
-	void (*gf_draw_sprite)(vec3d*);//draws a sprite
-	void (*gf_display_sprites))();//actualy darws the drawen sprites
-	void (*gf_end_sprites)();//clears the lists and stuff
-*/
 } screen;
 
 // handy macro
@@ -600,36 +524,20 @@ __inline void gr_set_clip(int x, int y, int w, int h, bool resize=true)
 	(*gr_screen.gf_set_clip)(x,y,w,h,resize);
 }
 #define gr_reset_clip		GR_CALL(gr_screen.gf_reset_clip)
-//#define gr_set_font			GR_CALL(gr_screen.gf_set_font)
 
-//#define gr_init_color		GR_CALL(gr_screen.gf_init_color)
-//#define gr_init_alphacolor	GR_CALL(gr_screen.gf_init_alphacolor)
-//__inline void gr_init_alphacolor( color * dst, int r, int g, int b, int alpha, int type=AC_TYPE_HUD )
-//{
-//	(*gr_screen.gf_init_alphacolor)(dst, r, g, b, alpha,type );
-//}
-
-//#define gr_set_color			GR_CALL(gr_screen.gf_set_color)
-//#define gr_get_color			GR_CALL(gr_screen.gf_get_color)
-//#define gr_set_color_fast	GR_CALL(gr_screen.gf_set_color_fast)
-
-//#define gr_set_bitmap			GR_CALL(gr_screen.gf_set_bitmap)
 void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitbltmode = GR_BITBLT_MODE_NORMAL, float alpha = 1.0f);
 
-//#define gr_create_shader	GR_CALL(gr_screen.gf_create_shader)
-//#define gr_set_shader		GR_CALL(gr_screen.gf_set_shader)
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
-//#define gr_aabitmap			GR_CALL(gr_screen.gf_aabitmap)
 __inline void gr_aabitmap(int x, int y, bool resize = true, bool mirror = false)
 {
 	(*gr_screen.gf_aabitmap)(x,y,resize,mirror);
 }
-//#define gr_aabitmap_ex		GR_CALL(gr_screen.gf_aabitmap_ex)
+
 __inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize = true, bool mirror = false)
 {
 	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize,mirror);
 }
-//#define gr_bitmap_ex		GR_CALL(gr_screen.gf_bitmap_ex)
+
 __inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize = true)
 {
 	(*gr_screen.gf_bitmap_ex)(x, y, w, h, sx, sy, resize);
@@ -638,21 +546,17 @@ __inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resi
 void gr_rect(int x, int y, int w, int h, bool resize = true);
 void gr_shade(int x, int y, int w, int h, bool resize = true);
 
-//#define gr_shade				GR_CALL(gr_screen.gf_shade)
-//#define gr_string				GR_CALL(gr_screen.gf_string)
 __inline void gr_string(int x, int y, char* string, bool resize = true)
 {
 	(*gr_screen.gf_string)(x,y,string,resize);
 }
 
-//#define gr_circle				GR_CALL(gr_screen.gf_circle)
 __inline void gr_circle(int xc, int yc, int d, bool resize = true)
 {
 	(*gr_screen.gf_circle)(xc,yc,d,resize);
 }
 #define gr_curve				GR_CALL(gr_screen.gf_curve)
 
-//#define gr_line				GR_CALL(gr_screen.gf_line)
 __inline void gr_line(int x1, int y1, int x2, int y2, bool resize = true)
 {
 	(*gr_screen.gf_line)(x1, y1, x2, y2, resize);
@@ -660,7 +564,6 @@ __inline void gr_line(int x1, int y1, int x2, int y2, bool resize = true)
 
 #define gr_aaline				GR_CALL(gr_screen.gf_aaline)
 
-//#define gr_pixel				GR_CALL(gr_screen.gf_pixel)
 __inline void gr_pixel(int x, int y, bool resize = true)
 {
 	(*gr_screen.gf_pixel)(x, y, resize);
@@ -671,12 +574,10 @@ __inline void gr_pixel(int x, int y, bool resize = true)
 #define gr_render			GR_CALL(gr_screen.gf_render)
 #define gr_render_effect	GR_CALL(gr_screen.gf_render_effect)
 
-//#define gr_gradient			GR_CALL(gr_screen.gf_gradient)
 __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
 {
 	(*gr_screen.gf_gradient)(x1, y1, x2, y2, resize);
 }
-
 
 #define gr_fade_in			GR_CALL(gr_screen.gf_fade_in)
 #define gr_fade_out			GR_CALL(gr_screen.gf_fade_out)
@@ -699,7 +600,6 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
 
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
 
-//#define gr_fog_set			GR_CALL(gr_screen.gf_fog_set)
 __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.0f, float fog_far = -1.0f)
 {
 	(*gr_screen.gf_fog_set)(fog_mode, r, g, b, fog_near, fog_far);
@@ -709,7 +609,6 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 
 #define gr_cross_fade		GR_CALL(gr_screen.gf_cross_fade)
 
-//#define gr_tcache_set		GR_CALL(gr_screen.gf_tcache_set)
 __inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage = 0)
 {
 	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, stage);
@@ -736,7 +635,7 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 #define gr_bm_lock					GR_CALL(*gr_screen.gf_bm_lock)          
 
 #define gr_bm_make_render_target					GR_CALL(*gr_screen.gf_bm_make_render_target)          
-//#define gr_bm_set_render_target					GR_CALL(*gr_screen.gf_bm_set_render_target)          
+        
 __inline int gr_bm_set_render_target(int n, int face = -1)
 {
 	return (*gr_screen.gf_bm_set_render_target)(n, face);
@@ -798,8 +697,6 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 #define	gr_end_state_block				GR_CALL(*gr_screen.gf_end_state_block)
 #define	gr_set_state_block				GR_CALL(*gr_screen.gf_set_state_block)
 
-//#define	gr_set_environment_mapping	GR_CALL(*gr_screen.gf_set_environment_mapping)
-
 #define gr_setup_background_fog			GR_CALL(*gr_screen.gf_setup_background_fog)
 
 #define gr_draw_line_list				GR_CALL(*gr_screen.gf_draw_line_list)
@@ -808,13 +705,6 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 
 #define gr_line_htl						GR_CALL(*gr_screen.gf_line_htl)
 #define gr_sphere_htl					GR_CALL(*gr_screen.gf_sphere_htl)
-
-/*
-#define	gr_begin_sprites				GR_CALL(*gr_screen.gf_begin_sprites)
-#define	gr_draw_sprites					GR_CALL(*gr_screen.gf_draw_sprites)
-#define	gr_end sprites					GR_CALL(*gr_screen.gf_end_sprites)
-#define	gr_display_sprites				GR_CALL(*gr_screen.gf_display_sprites)
-*/
 
 // color functions
 void gr_get_color( int *r, int *g, int  b );

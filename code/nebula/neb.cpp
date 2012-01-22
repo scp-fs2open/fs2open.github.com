@@ -1057,8 +1057,15 @@ void neb2_render_player()
 
 				// drop poly's which are offscreen at all
 				// if the poly's are offscreen
-				if ( (ptemp.sx < 0.0f) || (ptemp.sx > (float)gr_screen.max_w) || (ptemp.sy < 0.0f) || (ptemp.sy > (float)gr_screen.max_h) ) {
-					alpha = neb2_get_alpha_offscreen(ptemp.sx, ptemp.sy, alpha);
+				if ( (ptemp.screen.xyw.x < 0.0f)
+					|| (ptemp.screen.xyw.x > (float)gr_screen.max_w)
+					|| (ptemp.screen.xyw.y < 0.0f)
+					|| (ptemp.screen.xyw.y > (float)gr_screen.max_h) )
+				{
+					alpha = neb2_get_alpha_offscreen(
+						ptemp.screen.xyw.x,
+						ptemp.screen.xyw.y,
+						alpha);
 				}
 
 				// optimization 2 - don't draw 0.0f or less poly's

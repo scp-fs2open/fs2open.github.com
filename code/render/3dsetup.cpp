@@ -16,8 +16,6 @@
 #include "lighting/lighting.h"
 
 
-
-
 matrix		View_matrix;		// The matrix to convert local coordinates to screen
 vec3d		View_position;		// The offset to convert local coordinates to screen
 matrix		Unscaled_matrix;	// View_matrix before scaling
@@ -29,8 +27,8 @@ matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
 float		Eye_fov;			// What the viewer's FOV is
 
-float			View_zoom;			// The zoom factor
-float			Proj_fov;			// The fov (for HTL projection matrix)
+float			View_zoom;		// The zoom factor
+float			Proj_fov;		// The fov (for HTL projection matrix)
 
 vec3d		Window_scale;		// Scaling for window aspect
 vec3d		Matrix_scale;		// How the matrix is scaled, window_scale * zoom
@@ -38,8 +36,8 @@ vec3d		Matrix_scale;		// How the matrix is scaled, window_scale * zoom
 int			Canvas_width;		// The actual width
 int			Canvas_height;		// The actual height
 
-float			Canv_w2;				// Canvas_width / 2
-float			Canv_h2;				// Canvas_height / 2
+float			Canv_w2;		// Canvas_width / 2
+float			Canv_h2;		// Canvas_height / 2
 
 vec3d Object_position;
 matrix	Object_matrix;			// Where the opject is pointing in World coordinates
@@ -62,23 +60,23 @@ int G3_count = 0;
 int G3_frame_count = 0;
 extern int Cmdline_nohtl;
 
-// check if in frame
+/**
+ * Check if in frame
+ */
 int g3_in_frame()
 {
 	return G3_count;
 }
 
-//start the frame
-// Pass true for zbuffer_flag to turn on zbuffering
+/**
+ * Start the frame
+ * Pass true for zbuffer_flag to turn on zbuffering
+ */
 void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 {
 	float s;
 	int width, height;
 	float aspect;
-
-//Uncomment this to figure out who called g3_start_frame without calling g3_end_frame.
-
-//	mprintf(( "g3_start_frame called from %s, line %d\n", filename, lineno ));
 
  	Assert( G3_count == 0 );
 	G3_count++;
@@ -98,7 +96,6 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 	Canv_h2 = (float)height / 2.0f;
 	
 	//compute aspect ratio for this canvas
-
 	s = aspect*(float)Canvas_height/(float)Canvas_width;
 
 	if ( !Cmdline_nohtl || (s <= 0.0f) ) {		//scale x
@@ -121,21 +118,17 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 	}
 
 	G3_frame_count++;
-
-	//init_interface_vars_to_assembler();		//for the texture-mapper
-
 }
 
-//this doesn't do anything, but is here for completeness
+/**
+ * This doesn't do anything, but is here for completeness
+ */
 void g3_end_frame_func(char *filename, int lineno)
 {
-//	mprintf(( "g3_end_frame called from %s, line %d\n", filename, lineno ));
-
 	G3_count--;
 	Assert( G3_count == 0 );
 
 	free_point_num = 0;
-//	Assert(free_point_num==0);
 }
 
 
@@ -153,7 +146,9 @@ void g3_set_view(camera *cam)
 		g3_set_view_matrix(&pos, &ori, Sexp_fov);
 }
 
-//set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
+/**
+ * Set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
+ */
 void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 {
 	Assert( G3_count == 1 );
@@ -163,7 +158,6 @@ void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 
 	View_matrix = *view_matrix;
 
-//	Proj_fov = (4.0f/9.0f) * PI * View_zoom;
 	Proj_fov = 1.39626348f * View_zoom;
 
 	Eye_matrix = View_matrix;
@@ -182,7 +176,9 @@ void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 }
 
 
-//set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
+/**
+ * Set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
+ */
 void g3_set_view_angles(vec3d *view_pos,angles *view_orient,float zoom)
 {
 	matrix tmp;
@@ -194,7 +190,9 @@ void g3_set_view_angles(vec3d *view_pos,angles *view_orient,float zoom)
 }
 
 
-//performs aspect scaling on global view matrix
+/**
+ * Performs aspect scaling on global view matrix
+ */
 void scale_matrix(void)
 {
 	Unscaled_matrix = View_matrix;		//so we can use unscaled if we want
@@ -236,15 +234,18 @@ ubyte g3_rotate_vertex_popped(vertex *dest,vec3d *src)
 	Assert( instance_depth > 0 );
 
 	vm_vec_sub(&tempv,src,&instance_stack[0].p);
-	vm_vec_rotate( (vec3d *)&dest->x, &tempv, &instance_stack[0].m );
+	vm_vec_rotate( &dest->world, &tempv, &instance_stack[0].m );
 	dest->flags = 0;	//not projected
 	return g3_code_vertex(dest);
 }	
 
 
-//instance at specified point with specified orientation
-//if matrix==NULL, don't modify matrix.  This will be like doing an offset   
-//if pos==NULL, no position change
+/**
+ * nstance at specified point with specified orientation
+ *
+ * if matrix==NULL, don't modify matrix.  This will be like doing an offset   
+ * if pos==NULL, no position change
+ */
 void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 {
 	vec3d tempv;
@@ -267,7 +268,6 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 		orient = &vmd_identity_matrix;		// Assume no change in orient
 	}
 
-
 	if ( pos )	{
 		//step 1: subtract object position from view position
 		vm_vec_sub2(&View_position,pos);
@@ -289,7 +289,6 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 	View_matrix = tempm;
 
 	vm_matrix_x_matrix(&Object_matrix,orient,&instance_stack[instance_depth-1].om);
-//	Object_matrix = tempm;
 
 	// Update the lighting matrix
 	matrix saved_orient = Light_matrix;
@@ -310,8 +309,11 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 }
 
 
-//instance at specified point with specified orientation
-//if angles==NULL, don't modify matrix.  This will be like doing an offset
+/**
+ * Instance at specified point with specified orientation
+ *
+ * If angles==NULL, don't modify matrix.  This will be like doing an offset
+ */
 void g3_start_instance_angles(vec3d *pos,angles *orient)
 {
 	matrix tm;
@@ -332,7 +334,9 @@ void g3_start_instance_angles(vec3d *pos,angles *orient)
 }
 
 
-//pops the old context
+/**
+ * Pops the old context
+ */
 void g3_done_instance(bool use_api)
 {
 	Assert( G3_count == 1 );
@@ -356,21 +360,23 @@ int G3_user_clip = 0;
 vec3d G3_user_clip_normal;
 vec3d G3_user_clip_point;
 
-// Enables clipping with an arbritary plane.   This will be on
-// until g3_stop_clip_plane is called or until next frame.
-// The points passed should be relative to the instance.  Probably
-// that means world coordinates.
-/*
-  This works like any other clip plane... if this is enabled and you
-rotate a point, the CC_OFF_USER bit will be set in the clipping codes.
-It is completely handled by most g3_draw primitives, except maybe lines.
-
-  As far as performance, when enabled, it will slow down each point
-rotation (or g3_code_vertex call) by a vec3d subtraction and dot
-product.   It won't slow anything down for polys that are completely
-clipped on or off by the plane, and will slow each clipped polygon by
-not much more than any other clipping we do.
-*/
+/**
+ * Enables clipping with an arbritary plane.   
+ *
+ * This will be on until g3_stop_clip_plane is called or until next frame.
+ * The points passed should be relative to the instance. Probably
+ * that means world coordinates.
+ * 
+ * This works like any other clip plane... if this is enabled and you
+ * rotate a point, the CC_OFF_USER bit will be set in the clipping codes.
+ * It is completely handled by most g3_draw primitives, except maybe lines.
+ *
+ * As far as performance, when enabled, it will slow down each point
+ * rotation (or g3_code_vertex call) by a vec3d subtraction and dot
+ * product.   It won't slow anything down for polys that are completely
+ * clipped on or off by the plane, and will slow each clipped polygon by
+ * not much more than any other clipping we do.
+ */
 void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 {
 	float mag = vm_vec_mag( plane_normal );
@@ -385,9 +391,6 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 	if(!Cmdline_nohtl) {
 		G3_user_clip_normal = *plane_normal;
 		G3_user_clip_point = *plane_point;
-//	return;
-
-
 		gr_start_clip();
 	}
 	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &View_matrix );
@@ -398,7 +401,9 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 	vm_vec_rotate(&G3_user_clip_point,&tempv,&View_matrix );
 }
 
-// Stops arbritary plane clipping
+/**
+ * Stops arbritary plane clipping
+ */
 void g3_stop_user_clip_plane()
 {
 	G3_user_clip = 0;
@@ -407,7 +412,9 @@ void g3_stop_user_clip_plane()
 	}
 }
 
-// Returns TRUE if point is behind user plane
+/**
+ * Returns TRUE if point is behind user plane
+ */
 int g3_point_behind_user_plane( vec3d *pnt )
 {
 	if ( G3_user_clip ) {

@@ -40,7 +40,6 @@
 
 #ifndef NDEBUG
 #include "cutscene/movie.h"
-#include "demo/demo.h"
 #include "mission/missionload.h"
 #endif
 
@@ -448,11 +447,6 @@ void main_hall_do_multi_ready()
 	}
 
 	// go to parallax online
-#ifdef MULTIPLAYER_BETA_BUILD // do we want this for FS2_DEMO
-	Multi_options_g.pxo = 1;
-	Multi_options_g.protocol = NET_TCP;	
-	gameseq_post_event( GS_EVENT_PXO );
-#else
 	if (Om_tracker_flag) {
 		Multi_options_g.protocol = NET_TCP;
 		gameseq_post_event(GS_EVENT_PXO);
@@ -460,7 +454,6 @@ void main_hall_do_multi_ready()
 		// go to the regular join game screen 	
 		gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
 	}
-#endif	//MULTIPLAYER_BETA_BUILD
 
 	// select protocol
 	psnet_use_protocol(Multi_options_g.protocol);
@@ -682,7 +675,7 @@ void main_hall_init(int main_hall_num)
 
 void main_hall_exit_game()
 {
-#if defined(NDEBUG) || defined(INTERPLAYQA)
+#if defined(NDEBUG)
 	int choice;
 
 	// stop music first
@@ -747,9 +740,6 @@ void main_hall_do(float frametime)
 	case KEY_3:		
 		main_hall_campaign_cheat();	
 		break;	
-	case KEY_DEBUGGED + KEY_D:
-		demo_start_playback("test.fsd");
-		break;
 	}
 #else 
 	}
@@ -781,14 +771,6 @@ void main_hall_do(float frametime)
 				break;
 			}
 
-#ifdef MULTIPLAYER_BETA_BUILD
-			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-			Player->flags |= PLAYER_FLAGS_IS_MULTI;
-			main_hall_do_multi_ready();
-#elif defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)									
-			gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);			
-#else
-
 			if (Player->flags & PLAYER_FLAGS_IS_MULTI){
 				gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 				main_hall_do_multi_ready();
@@ -800,23 +782,12 @@ void main_hall_do(float frametime)
 				}
 				gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);				
 			}
-#endif
 			break;
 
 		// clicked on the tech room region
 		case TECH_ROOM_REGION:
-#if defined(FS2_DEMO)
-			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-			game_feature_not_in_demo_popup();
-#else
-		//	if (Campaign_file_missing) {
-		//		// error popup for a missing campaign file, don't try to enter tech room in this case
-		//		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
-		//		break;
-		//	}
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			gameseq_post_event( GS_EVENT_TECH_MENU );
-#endif
 			break;
 
 		// clicked on the options region
@@ -827,21 +798,6 @@ void main_hall_do(float frametime)
 
 		// clicked on the campaign toom region
 		case CAMPAIGN_ROOM_REGION:
-#if !defined(MULTIPLAYER_BETA_BUILD) && !defined(E3_BUILD) && !defined(PRESS_TOUR_BUILD)
-
-#ifdef FS2_DEMO
-			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-			{
-			//game_feature_not_in_demo_popup();
-			int reset_campaign = popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 2, "Exit", "Restart Campaign", "Campaign Room only available in full version. However, you may restart the campaign.");
-			if (reset_campaign == 1) {
-				mission_campaign_savefile_delete(Campaign.filename);
-				mission_campaign_load(Campaign.filename);
-				mission_campaign_next_mission();
-			}
-			}
-
-#else
 			if(Player->flags & PLAYER_FLAGS_IS_MULTI){
 				gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 				main_hall_set_notify_string(XSTR( "Campaign Room not valid for multiplayer pilots", 366));
@@ -849,23 +805,16 @@ void main_hall_do(float frametime)
 				gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 				gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);			
 			}
-#endif
-
-#endif
 			break;
 
 		// clicked on the multiplayer region
 		case MULTIPLAYER_REGION:
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-			game_feature_not_in_demo_popup();
-#else
 			if (Player->flags & PLAYER_FLAGS_IS_MULTI){
 				// NOTE : this isn't a great thing to be calling this anymore. But we'll leave it for now
 				gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );
 			} else {
 				main_hall_set_notify_string(XSTR( "Not a valid multiplayer pilot!!", 367));
 			}
-#endif
 			break;
 
 		// load mission key was pressed
@@ -874,7 +823,7 @@ void main_hall_do(float frametime)
 
 		// quick start a game region
 		case QUICK_START_REGION:
-#if !defined(NDEBUG) && !defined(FS2_DEMO)
+#if !defined(NDEBUG)
 			if (Player->flags & PLAYER_FLAGS_IS_MULTI){
 				main_hall_set_notify_string(XSTR( "Quick Start not valid for multiplayer pilots", 369));
 			} else {
@@ -1009,9 +958,7 @@ void main_hall_do(float frametime)
 	}
 
 	// maybe run the player tips popup
-// #if defined(FS2_DEMO) && defined(NDEBUG)
 	player_tips_popup();
-// #endif
 
 	// if we were supposed to skip a frame, then stop doing it after 1 frame
 	if(Main_hall_frame_skip){
@@ -1691,15 +1638,12 @@ void main_hall_read_table()
 			stuff_string(m->bitmap, F_NAME, MAX_FILENAME_LEN);
 			required_string("+Mask:");
 			stuff_string(m->mask, F_NAME, MAX_FILENAME_LEN);
-
-#ifndef FS2_DEMO
 			required_string("+Music:");
 			stuff_string(m->music_name, F_NAME, MAX_FILENAME_LEN);
 
 			// Goober5000
 			if (optional_string("+Substitute Music:"))
 				stuff_string(m->substitute_music_name, F_NAME, MAX_FILENAME_LEN);
-#endif
 
 			// intercom sounds
 			required_string("+Num Intercom Sounds:");

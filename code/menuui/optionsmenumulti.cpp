@@ -714,10 +714,8 @@ void options_multi_load_protocol_controls()
 	Om_ip_input.disable();
 	
 	// disable IPX button in demo
-#ifdef FS2_DEMO
 	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.disable();
 	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.hide();
-#endif
 
 	// bogus control
 	Om_pro_bogus.base_create(Om_window, UI_KIND_ICON, 0, 0, 0, 0);
@@ -1047,9 +1045,6 @@ void options_multi_protocol_button_pressed(int n)
 	// the vmt button
 	case OM_PRO_VMT:
 		// for the multiplayer beta, always force tracker mode
-#ifdef MULTIPLAYER_BETA_BUILD // do we want this for FS2_DEMO
-		Om_tracker_flag = 1;
-#else
 		// don't process if we're in input mode
 		if(Om_input_mode){
 			break;
@@ -1071,7 +1066,6 @@ void options_multi_protocol_button_pressed(int n)
 
 		// play a sound
 		gamesnd_play_iface(SND_USER_SELECT);
-#endif
 		break;
 
 	// general tab button 
@@ -1125,10 +1119,8 @@ void options_multi_protocol_button_pressed(int n)
 
 	// ipx mode
 	case OM_PRO_IPX:
-#ifndef FS2_DEMO
 		Om_protocol = NET_IPX;
 		gamesnd_play_iface(SND_USER_SELECT);
-#endif
 		break;
 	}
 }

@@ -255,15 +255,15 @@ void HudGaugeLock::render(float frametime)
 	// We have the coordinates of the lock indicator relative to the target in our "virtual frame" 
 	// so, we calculate where it should be drawn based on the player's viewpoint.
 	if (Player_ai->current_target_is_locked) {
-		sx = fl2i(lock_point.sx); 
-		sy = fl2i(lock_point.sy);
+		sx = fl2i(lock_point.screen.xyw.x); 
+		sy = fl2i(lock_point.screen.xyw.y);
 		gr_unsize_screen_pos(&sx, &sy);
 
 		// show the rotating triangles if target is locked
 		renderLockTriangles(sx, sy, frametime);
 	} else {
-		sx = fl2i(lock_point.sx) - (Player->current_target_sx - Players[Player_num].lock_indicator_x); 
-		sy = fl2i(lock_point.sy) - (Player->current_target_sy - Players[Player_num].lock_indicator_y);
+		sx = fl2i(lock_point.screen.xyw.x) - (Player->current_target_sx - Players[Player_num].lock_indicator_x); 
+		sy = fl2i(lock_point.screen.xyw.y) - (Player->current_target_sy - Players[Player_num].lock_indicator_y);
 		gr_unsize_screen_pos(&sx, &sy);
 	}
 

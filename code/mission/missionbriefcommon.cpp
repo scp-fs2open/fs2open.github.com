@@ -814,8 +814,8 @@ void brief_render_fade_outs(float frametime)
 
 			gr_resize_screen_pos( &w, &h );
 
-			bxf = tv.sx - w / 2.0f + 0.5f;
-			byf = tv.sy - h / 2.0f + 0.5f;
+			bxf = tv.screen.xyw.x - w / 2.0f + 0.5f;
+			byf = tv.screen.xyw.y - h / 2.0f + 0.5f;
 			bx = fl2i(bxf);
 			by = fl2i(byf);
 
@@ -904,8 +904,8 @@ void brief_render_icon_line(int stage_num, int line_num)
 	// get screen (x,y) for icons
 	for (i=0; i<2; i++) {
 		brief_common_get_icon_dimensions(&icon_w, &icon_h, icon[i]->type, icon[i]->ship_class);
-		icon_x[i] = icon_vertex[i].sx;
-		icon_y[i] = icon_vertex[i].sy;
+		icon_x[i] = icon_vertex[i].screen.xyw.x;
+		icon_y[i] = icon_vertex[i].screen.xyw.y;
 	}
 
 	brief_set_icon_color(icon[0]->team);
@@ -1016,8 +1016,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		float scaled_w, scaled_h;
 
-		float sx = tv.sx;
-		float sy = tv.sy;
+		float sx = tv.screen.xyw.x;
+		float sy = tv.screen.xyw.y;
 		gr_unsize_screen_posf( &sx, &sy );
 	
 		scaled_w = icon_w * w_scale_factor;
@@ -1628,7 +1628,7 @@ bool is_a_word_separator(char character){
  * and stores it to Colored_stream table.
  *
  * A color markup is made of a minimum of three characters: 
- *   '$' + a char standing for a color + contigous multiple spaces (chars \t \n and ' ')
+ *   '$' + a char standing for a color + contigous multiple spaces (chars t n and ' ')
  * The markup is completely removed from the resulting character sequence.
  *
  * @param src a not null pointer to a C string terminated by a /0 char.
@@ -1683,15 +1683,16 @@ int brief_text_colorize(char *src, int instance)
  * @param src paragraph of text to process
  * @param w	max width of line in pixels
  * @param instance optional parameter, used when multiple text streams are required (default value is 0)
+ * @param max_lines maximum number of lines
  */
-int brief_color_text_init(char *src, int w, int instance, int max_lines)
+int brief_color_text_init(const char* src, int w, int instance, int max_lines)
 {
 	int i, n_lines, len;
 	SCP_vector<int> n_chars;
-	SCP_vector<char*> p_str;
+	SCP_vector<const char*> p_str;
 	char brief_line[MAX_BRIEF_LINE_LEN];
 
-	Assert(src);
+	Assert(src != NULL);
 	n_lines = split_str(src, w, &n_chars, &p_str, BRIEF_META_CHAR);
 	Assert(n_lines >= 0);
 

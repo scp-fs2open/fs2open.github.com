@@ -129,11 +129,15 @@ static bool Interp_afterburner = false;
 // Bobboau's thruster stuff
 static int Interp_secondary_thrust_glow_bitmap = -1;
 static int Interp_tertiary_thrust_glow_bitmap = -1;
+static int Interp_distortion_thrust_bitmap = -1;
 static float Interp_thrust_glow_rad_factor = 1.0f;
 static float Interp_secondary_thrust_glow_rad_factor = 1.0f;
 static float Interp_tertiary_thrust_glow_rad_factor = 1.0f;
+static float Interp_distortion_thrust_rad_factor = 1.0f;
+static float Interp_distortion_thrust_length_factor = 1.0f;
 static float Interp_thrust_glow_len_factor = 1.0f;
 static vec3d Interp_thrust_rotvel = ZERO_VECTOR;
+static bool Interp_draw_distortion = true;
 
 // Bobboau's warp stuff
 static float Interp_warp_scale_x = 1.0f;
@@ -180,7 +184,8 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child = false);
 void model_render_children_buffers(polymodel * pm, int mn, int detail_level);
 int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
-
+//Valathil - Transparent object buffer
+std::vector<transparent_submodel> transparent_submodels;
 
 void model_deallocate_interp_data()
 {
@@ -491,6 +496,7 @@ void model_set_thrust(int model_num, mst_info *mst)
 	Interp_thrust_glow_bitmap = mst->primary_glow_bitmap;
 	Interp_secondary_thrust_glow_bitmap = mst->secondary_glow_bitmap;
 	Interp_tertiary_thrust_glow_bitmap = mst->tertiary_glow_bitmap;
+	Interp_distortion_thrust_bitmap = mst->distortion_bitmap;
 
 	Interp_thrust_glow_noise = mst->glow_noise;
 	Interp_afterburner = mst->use_ab;
@@ -505,6 +511,10 @@ void model_set_thrust(int model_num, mst_info *mst)
 	Interp_secondary_thrust_glow_rad_factor = mst->secondary_glow_rad_factor;
 	Interp_tertiary_thrust_glow_rad_factor = mst->tertiary_glow_rad_factor;
 	Interp_thrust_glow_len_factor = mst->glow_length_factor;
+	Interp_distortion_thrust_rad_factor = mst->distortion_rad_factor;
+	Interp_distortion_thrust_length_factor = mst->distortion_length_factor;
+
+	Interp_draw_distortion = mst->draw_distortion;
 
 	//this isn't used
 /*
@@ -954,8 +964,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			float salpha = 1.0f - splode_level;
 			for (i=0;i<nv;i++){
 				Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
-				Interp_list[i]->u = verts[i].u*2;
-				Interp_list[i]->v = verts[i].v*2;
+				Interp_list[i]->texture_position.u = verts[i].u*2;
+				Interp_list[i]->texture_position.v = verts[i].v*2;
 				Interp_list[i]->r = (unsigned char)(255*salpha);
 				Interp_list[i]->g = (unsigned char)(250*salpha);
 				Interp_list[i]->b = (unsigned char)(200*salpha);
@@ -974,12 +984,12 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	for (i=0;i<nv;i++)	{
 		Interp_list[i] = &Interp_points[verts[i].vertnum];
 
-		Interp_list[i]->u = verts[i].u;
-		Interp_list[i]->v = verts[i].v;
+		Interp_list[i]->texture_position.u = verts[i].u;
+		Interp_list[i]->texture_position.v = verts[i].v;
 		
 		if ( Interp_subspace )	{
-			Interp_list[i]->v += Interp_subspace_offset_u;
-			Interp_list[i]->u += Interp_subspace_offset_v;
+			Interp_list[i]->texture_position.v += Interp_subspace_offset_u;
+			Interp_list[i]->texture_position.u += Interp_subspace_offset_v;
 			Interp_list[i]->r = Interp_subspace_r;
 			Interp_list[i]->g = Interp_subspace_g;
 			Interp_list[i]->b = Interp_subspace_b;
@@ -2052,9 +2062,14 @@ void model_render_insignias(polymodel *pm, int detail_level)
 			}
 
 			// setup texture coords
-			vecs[0].u = pm->ins[idx].u[s_idx][0];  vecs[0].v = pm->ins[idx].v[s_idx][0];
-			vecs[1].u = pm->ins[idx].u[s_idx][1];  vecs[1].v = pm->ins[idx].v[s_idx][1];
-			vecs[2].u = pm->ins[idx].u[s_idx][2];  vecs[2].v = pm->ins[idx].v[s_idx][2];
+			vecs[0].texture_position.u = pm->ins[idx].u[s_idx][0];
+			vecs[0].texture_position.v = pm->ins[idx].v[s_idx][0];
+
+			vecs[1].texture_position.u = pm->ins[idx].u[s_idx][1];
+			vecs[1].texture_position.v = pm->ins[idx].v[s_idx][1];
+
+			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
+			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
 
 			if (!Cmdline_nohtl) {
 				light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
@@ -2080,78 +2095,6 @@ MONITOR( NumHiModelsRend )
 MONITOR( NumMedModelsRend )
 MONITOR( NumLowModelsRend )
 
-/*
-typedef struct model_cache {
-	int		model_num;
-	//matrix	orient;
-	vec3d	pos;
-	int		num_lights;
-
-	float		last_dot;
-
-	float		cr;
-
-	int		w, h;
-	ubyte		*data;
-	int		cached_valid;
-	int		bitmap_id;
-
-	angles	angs;
-
-	// thrust stuff
-	float		thrust_scale;
-	int		thrust_bitmap;
-	int		thrust_glow_bitmap;
-	float		thrust_glow_noise;
-
-	int		last_frame_rendered;		//	last frame in which this model was rendered not from the cache
-} model_cache;
-
-#define MAX_MODEL_CACHE MAX_OBJECTS
-model_cache Model_cache[MAX_MODEL_CACHE];		// Indexed by objnum
-int Model_cache_inited = 0;
-
-
-// Returns 0 if not valid points
-int model_cache_calc_coords(vec3d *pnt,float rad, float *cx, float *cy, float *cr)
-{
-	vertex pt;
-	ubyte flags;
-
-	flags = g3_rotate_vertex(&pt,pnt);
-
-	if (flags == 0) {
-
-		g3_project_vertex(&pt);
-
-		if (!(pt.flags & (PF_OVERFLOW|CC_BEHIND)))	{
-
-			*cx = pt.sx;
-			*cy = pt.sy;
-			*cr = rad*Matrix_scale.xyz.x*Canv_w2/pt.z;
-
-			if ( *cr < 1.0f )	{
-				*cr = 1.0f;
-			}
-
-			int x1, x2, y1, y2;
-
-			x1 = fl2i(*cx-*cr); 
-			if ( x1 < gr_screen.clip_left ) return 0;
-			x2 = fl2i(*cx+*cr);
-			if ( x2 > gr_screen.clip_right ) return 0;
-			y1 = fl2i(*cy-*cr);
-			if ( y1 < gr_screen.clip_top ) return 0;
-			y2 = fl2i(*cy+*cr);
-			if ( y2 > gr_screen.clip_bottom ) return 0;
-
-			return 1;
-		}
-	}
-	return 0;
-}
-*/
-
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if not
 int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *v)
@@ -2160,10 +2103,6 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 	int i;
 
 	Assert( G3_count == 1 );
-
-
-
-//	angle = 0.0f;
 		
 	sa = (float)sin(angle);
 	ca = (float)cos(angle);
@@ -2172,38 +2111,38 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 
 	width = height = rad;
 
-	v[0].x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[0].y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[0].z = pnt->z;
-	v[0].sw = 0.0f;
-	v[0].u = 0.0f;
-	v[0].v = 0.0f;
+	v[0].world.xyz.x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[0].world.xyz.y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[0].world.xyz.z = pnt->world.xyz.z;
+	v[0].screen.xyw.w = 0.0f;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 0.0f;
 
-	v[1].x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[1].y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[1].z = pnt->z;
-	v[1].sw = 0.0f;
-	v[1].u = 1.0f;
-	v[1].v = 0.0f;
+	v[1].world.xyz.x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[1].world.xyz.y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[1].world.xyz.z = pnt->world.xyz.z;
+	v[1].screen.xyw.w = 0.0f;
+	v[1].texture_position.u = 1.0f;
+	v[1].texture_position.v = 0.0f;
 
-	v[2].x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[2].y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[2].z = pnt->z;
-	v[2].sw = 0.0f;
-	v[2].u = 1.0f;
-	v[2].v = 1.0f;
+	v[2].world.xyz.x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[2].world.xyz.y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[2].world.xyz.z = pnt->world.xyz.z;
+	v[2].screen.xyw.w = 0.0f;
+	v[2].texture_position.u = 1.0f;
+	v[2].texture_position.v = 1.0f;
 
-	v[3].x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[3].y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[3].z = pnt->z;
-	v[3].sw = 0.0f;
-	v[3].u = 0.0f;
-	v[3].v = 1.0f;
+	v[3].world.xyz.x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[3].world.xyz.y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[3].world.xyz.z = pnt->world.xyz.z;
+	v[3].screen.xyw.w = 0.0f;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 1.0f;
 
 	ubyte codes_and=0xff;
 
 	float sw,z;
-	z = pnt->z - rad / 4.0f;
+	z = pnt->world.xyz.z - rad / 4.0f;
 	if ( z < 0.0f ) z = 0.0f;
 	sw = 1.0f / z;
 
@@ -2212,7 +2151,7 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 		codes_and &= g3_code_vertex(&v[i]);
 		v[i].flags = 0;		// mark as not yet projected
 		g3_project_vertex(&v[i]);
-		v[i].sw = sw;
+		v[i].screen.xyw.w = sw;
 	}
 
 	if (codes_and)
@@ -2712,7 +2651,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// start tertiary thruster glows
 			if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-				p.sw -= w;
+				p.screen.xyw.w -= w;
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
 				batch_add_bitmap_rotated(
 					Interp_tertiary_thrust_glow_bitmap,
@@ -2755,11 +2694,18 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT,
 							&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor*0.5f, d
 					);
-					if (Scene_framebuffer_in_frame) {
-						vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 4 * Interp_thrust_glow_len_factor);
-						distortion_add_beam(Interp_secondary_thrust_glow_bitmap,
+					if (Scene_framebuffer_in_frame && Interp_draw_distortion) {
+						vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * Interp_distortion_thrust_length_factor);
+						int dist_bitmap;
+						if (Interp_distortion_thrust_bitmap > 0) {
+							dist_bitmap = Interp_distortion_thrust_bitmap;
+						}
+						else {
+							dist_bitmap = Interp_secondary_thrust_glow_bitmap;
+						}
+						distortion_add_beam(dist_bitmap,
 							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_DISTORTION_THRUSTER | TMAP_FLAG_SOFT_QUAD,
-							&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor, 1.0f
+							&pnt, &norm2, wVal*Interp_distortion_thrust_rad_factor*0.5f, 1.0f
 						);
 					}
 				}
@@ -2969,17 +2915,17 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 								g3_transfer_vertex(&verts[3], &top1);
 							}
 
-							verts[0].u = 0.0f;
-							verts[0].v = 0.0f;
+							verts[0].texture_position.u = 0.0f;
+							verts[0].texture_position.v = 0.0f;
 
-							verts[1].u = 1.0f;
-							verts[1].v = 0.0f;
+							verts[1].texture_position.u = 1.0f;
+							verts[1].texture_position.v = 0.0f;
 
-							verts[2].u = 1.0f;
-							verts[2].v = 1.0f;
+							verts[2].texture_position.u = 1.0f;
+							verts[2].texture_position.v = 1.0f;
 
-							verts[3].u = 0.0f;
-							verts[3].v = 1.0f;
+							verts[3].texture_position.u = 0.0f;
+							verts[3].texture_position.v = 1.0f;
 
 							vm_vec_sub(&tempv,&View_position,&pnt);
 							vm_vec_normalize(&tempv);
@@ -3227,9 +3173,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			break;
 	}
 
+	vec3d auto_back = ZERO_VECTOR;
 	if (Interp_flags & MR_AUTOCENTER) {
-		vec3d auto_back = ZERO_VECTOR;
-
 		// standard autocenter using data in model
 		if (pm->flags & PM_FLAG_AUTOCEN) {
 			auto_back = pm->autocenter;
@@ -3347,28 +3292,71 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	// When in htl mode render with htl method unless its a jump node
 	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+		transparent_submodel ts;
+		ts.is_submodel = false;
+		transparent_submodels.push_back(ts);
 		model_render_buffers(pm, pm->detail[Interp_detail_level]);
 	} else {
 		model_interp_subcall(pm, pm->detail[Interp_detail_level], Interp_detail_level);
 	}
 
-	// Draw the thruster subobjects	
+	// Draw the thruster subobjects
 	if (draw_thrusters) {
 		i = pm->submodel[pm->detail[Interp_detail_level]].first_child;
 
-		while( i >= 0 )	{
+		while( i >= 0 ) {
 			if (pm->submodel[i].is_thruster) {
 				// When in htl mode render with htl method unless its a jump node
 				if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+					transparent_submodel ts;
+					ts.is_submodel = false;
+					transparent_submodels.push_back(ts);
 					model_render_children_buffers( pm, i, Interp_detail_level );
 				} else {
 					model_interp_subcall( pm, i, Interp_detail_level );
 				}
 			}
-
 			i = pm->submodel[i].next_sibling;
 		}
 	}
+
+	// Valathil - now draw the saved transparent objects
+	std::vector<transparent_submodel>::iterator ts;
+	std::vector<transparent_object>::iterator obj;
+
+	for(ts = transparent_submodels.begin(); ts != transparent_submodels.end(); ++ts)
+	{
+		if(ts->is_submodel)
+			g3_start_instance_matrix(&ts->model->offset, &ts->orient, true);
+
+		for(obj = ts->transparent_objects.begin(); obj != ts->transparent_objects.end(); ++obj)
+		{
+			GLOWMAP = obj->glow_map;
+			SPECMAP = obj->spec_map;
+			NORMMAP = obj->norm_map;
+			HEIGHTMAP = obj->height_map;
+
+			gr_push_scale_matrix(&obj->scale);
+			gr_set_bitmap(obj->texture, obj->blend_filter, GR_BITBLT_MODE_NORMAL, obj->alpha);
+
+			int zbuff = gr_zbuffer_set(GR_ZBUFF_READ);
+		
+			gr_render_buffer(0, obj->buffer, obj->i, obj->tmap_flags);
+		
+			gr_zbuffer_set(zbuff);
+			gr_pop_scale_matrix();
+
+			GLOWMAP = -1;
+			SPECMAP = -1;
+			NORMMAP = -1;
+			HEIGHTMAP = -1;
+		}
+		ts->transparent_objects.clear();
+		
+		if(ts->is_submodel)
+			g3_done_instance(true);
+	}
+	transparent_submodels.clear();
 
 	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
 		gr_set_buffer(-1);
@@ -3438,7 +3426,16 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	// Draw the thruster glow
 	if ( !is_outlines_only && !is_outlines_only_htl ) {
-		model_render_thrusters( pm, objnum, shipp, orient, pos );
+		if ( ( Interp_flags & MR_AUTOCENTER ) && set_autocen ) {
+			vec3d autoback_rotated;
+
+			vm_vec_unrotate(&autoback_rotated, &auto_back, orient);
+			vm_vec_add2(&autoback_rotated, pos);
+
+			model_render_thrusters( pm, objnum, shipp, orient, &autoback_rotated );
+		} else {
+			model_render_thrusters( pm, objnum, shipp, orient, pos );
+		}
 	}
 
 /*
@@ -3672,7 +3669,23 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 {
 	int nv = submodel_get_points_internal(model_num, submodel_num);
 
-	Assert(nv > 0);	// Goober5000 - to avoid div-0 error
+	// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+	if (nv <= 0) {
+		polymodel *pm = model_get(model_num);
+		Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+
+		// in case people ignore the error...
+		vm_vec_zero(v1);
+		vm_vec_zero(v2);
+		if (n1 != NULL) {
+			vm_vec_zero(n1);
+		}
+		if (n2 != NULL) {
+			vm_vec_zero(n2);
+		}
+		return;
+	}
+
 	int vn1 = (myrand()>>5) % nv;
 	int vn2 = (myrand()>>5) % nv;
 
@@ -4123,11 +4136,11 @@ void parse_tmap(int offset, ubyte *bsp_data)
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
 		v = Interp_verts[(int)tverts[0].vertnum];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = tverts[0].u;
-		V->v = tverts[0].v;
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[0].u;
+		V->texture_position.v = tverts[0].v;
 
 		*N = *Interp_norms[(int)tverts[0].normnum];
 
@@ -4142,11 +4155,11 @@ void parse_tmap(int offset, ubyte *bsp_data)
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
 		v = Interp_verts[(int)tverts[i].vertnum];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = tverts[i].u;
-		V->v = tverts[i].v;
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[i].u;
+		V->texture_position.v = tverts[i].v;
 
 		*N = *Interp_norms[(int)tverts[i].normnum];
 
@@ -4161,11 +4174,11 @@ void parse_tmap(int offset, ubyte *bsp_data)
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
 		v = Interp_verts[(int)tverts[i+1].vertnum];
-		V->x = v->xyz.x;
-		V->y = v->xyz.y;
-		V->z = v->xyz.z;
-		V->u = tverts[i+1].u;
-		V->v = tverts[i+1].v;
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[i+1].u;
+		V->texture_position.v = tverts[i+1].v;
 
 		*N = *Interp_norms[(int)tverts[i+1].normnum];
 
@@ -4771,7 +4784,11 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
 
 	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
-
+	transparent_submodel ts;
+	ts.is_submodel = true;
+	ts.model = model;
+	memcpy(&ts.orient,&submodel_matrix,sizeof(matrix));
+	transparent_submodels.push_back(ts);
 	model_render_buffers(pm, mn, true);
 
 	if (Interp_flags & MR_SHOW_PIVOTS)
@@ -4840,7 +4857,6 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 	texture_info tex_replace[TM_NUM_TYPES];
 
 	int no_texturing = (Interp_flags & MR_NO_TEXTURING);
-	int zbuffer_save = gr_zbuffering_mode;
 
 	int forced_texture = -2;
 	float forced_alpha = 1.0f;
@@ -4954,16 +4970,33 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 			// for special shockwave/warpmap usage
 			alpha = (Interp_warp_alpha != -1.0f) ? Interp_warp_alpha : 0.8f;
 			blend_filter = GR_ALPHABLEND_FILTER;
-			gr_zbuffer_set(GR_ZBUFF_READ);
+
+			//Valathil - Save the object for later rendering
+			transparent_object tobj;
+			tobj.alpha=alpha;
+			tobj.blend_filter = blend_filter;
+			tobj.buffer = &model->buffer;
+			tobj.glow_map = GLOWMAP;
+			tobj.height_map = HEIGHTMAP;
+			tobj.i = i;
+			tobj.norm_map = NORMMAP;
+			tobj.spec_map = SPECMAP;
+			tobj.texture = texture;
+			tobj.tmap_flags = Interp_tmap_flags;
+			memcpy(&tobj.scale,&scale,sizeof(vec3d));
+			transparent_submodels.back().transparent_objects.push_back(tobj);
+			//gr_zbuffer_set(GR_ZBUFF_READ);
 		}
+		else
+		{
+			if (forced_blend_filter != GR_ALPHABLEND_NONE) {
+				blend_filter = forced_blend_filter;
+			}
 
-		if (forced_blend_filter != GR_ALPHABLEND_NONE) {
-			blend_filter = forced_blend_filter;
+			gr_set_bitmap(texture, blend_filter, GR_BITBLT_MODE_NORMAL, alpha);
+
+			gr_render_buffer(0, &model->buffer, i, Interp_tmap_flags);
 		}
-
-		gr_set_bitmap(texture, blend_filter, GR_BITBLT_MODE_NORMAL, alpha);
-
-		gr_render_buffer(0, &model->buffer, i, Interp_tmap_flags);
 
 		GLOWMAP = -1;
 		SPECMAP = -1;
@@ -4971,9 +5004,9 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		HEIGHTMAP = -1;
 
 		// reset z-buffer
-		if (tmap->is_transparent || Interp_thrust_scale_subobj) {
+		/*if (tmap->is_transparent || Interp_thrust_scale_subobj) {
 			gr_zbuffer_set(zbuffer_save);
-		}
+		}*/
 	}
 
 	gr_pop_scale_matrix();

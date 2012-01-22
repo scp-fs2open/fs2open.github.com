@@ -18,13 +18,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -950,7 +948,7 @@ BEGIN
     CONTROL         "Update Cue",IDC_UPDATE_DEPARTURE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,246,54,10
     CONTROL         "Tree1",IDC_DEPARTURE_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | WS_BORDER | WS_HSCROLL | WS_TABSTOP,172,256,133,84,WS_EX_CLIENTEDGE
     CONTROL         "No Warp Effect",IDC_NO_DEPARTURE_WARP,"Button",BS_3STATE | WS_TABSTOP,172,342,65,10
-    EDITTEXT        IDC_HELP_BOX,7,362,307,53,ES_MULTILINE | ES_READONLY,WS_EX_TRANSPARENT
+    EDITTEXT        IDC_HELP_BOX,7,377,307,38,ES_MULTILINE | ES_READONLY,WS_EX_TRANSPARENT
     LTEXT           "Ship Name",IDC_STATIC,7,10,36,8
     LTEXT           "Ship Class",IDC_STATIC,9,25,34,8
     LTEXT           "Cargo",IDC_STATIC,23,68,20,8
@@ -979,6 +977,7 @@ BEGIN
     LTEXT           "Assist %",IDC_STATIC,158,75,27,8
     LTEXT           "Callsign",IDC_STATIC,18,95,25,8
     PUSHBUTTON      "Alt Ship Class",IDC_ALT_SHIP_CLASS,187,114,69,14,0,WS_EX_STATICEDGE
+    EDITTEXT        IDC_MINI_HELP_BOX,7,362,307,14,ES_MULTILINE | ES_READONLY,WS_EX_DLGMODALFRAME | WS_EX_TRANSPARENT
 END
 
 IDD_WEAPON_EDITOR DIALOGEX 0, 0, 519, 79
@@ -2947,18 +2946,16 @@ BEGIN
     ID_FORMAT_FS1_RETAIL    "Save missions compatible with FS1 retail"
 END
 
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.K.) resources
+// English (United Kingdom) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3004,7 +3001,7 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (U.K.) resources
+#endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

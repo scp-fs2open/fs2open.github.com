@@ -68,7 +68,7 @@ BOOL InitialShips::OnInitDialog()
 				m_initial_list.AddString( Ship_info[i].name );
 				if ( Campaign.ships_allowed[i] ) {
 					m_initial_list.SetCheck(m_list_count, 1);
-				} else if ( (strlen(Campaign.filename) == 0) && strstr(Ship_info[i].name, "Myrmidon") ) {
+				} else if ( (strlen(Campaign.filename) == 0) && strstr(Ship_info[i].name, "Myrmidon") ) { //-V805
 					m_initial_list.SetCheck(m_list_count, 1);
 				} else {
 					m_initial_list.SetCheck(m_list_count, 0);
@@ -102,7 +102,7 @@ BOOL InitialShips::OnInitDialog()
 				int add_weapon = 0;
 				if ( Campaign.weapons_allowed[i] ) {
 					add_weapon = 1;
-				} else if ( strlen(Campaign.filename) == 0 ) {
+				} else if ( strlen(Campaign.filename) == 0 ) { //-V805
 					if ( strstr(Weapon_info[i].name, "Subach")) {
 						add_weapon = 1;
 					} else if ( strstr(Weapon_info[i].name, "Akheton")) {

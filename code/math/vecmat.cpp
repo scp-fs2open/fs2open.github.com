@@ -173,21 +173,6 @@ void vm_vec_sub2(vec3d *dest,vec3d *src)
 }
 #endif
 
-
-void vm_vert2vec(vertex *vert, vec3d *vec)	//takes a vertex and makes it into a vector-Bobboau
-{
-	vec->xyz.x = vert->x;
-	vec->xyz.y = vert->y;
-	vec->xyz.z = vert->z;
-}
-
-void vm_vec2vert(vec3d *vec, vertex *vert)	//takes a vector and makes it into a vertex-Bobboau
-{
-	vert->x = vec->xyz.x;
-	vert->y = vec->xyz.y;
-	vert->z = vec->xyz.z;
-}
-
 //averages n vectors. returns ptr to dest
 //dest can equal either source
 vec3d *vm_vec_avg_n(vec3d *dest, int n, vec3d src[])

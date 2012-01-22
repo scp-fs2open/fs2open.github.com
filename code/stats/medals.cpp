@@ -66,10 +66,8 @@ int Medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 		{ 283, 91 },				// wings
 		{ 372, 76 },				// bronze kills badge
 		{ 403, 76 },				// silver kills badge
-#ifndef FS2_DEMO
 		{ 435, 76 },				// gold kills badge
 		{ 300, 152 },				// SOC unit crest
-#endif
 	},
 	{				// GR_1024
 		{ 143, 75 },				// eps. peg. lib
@@ -88,10 +86,8 @@ int Medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 		{ 453, 146 },				// wings
 		{ 595, 121 },				// bronze kills badge
 		{ 646, 121 },				// silver kills badge
-#ifndef FS2_DEMO
 		{ 696, 121 },				// gold kills badge
 		{ 480, 244 },				// SOC unit crest
-#endif
 	}
 };
 
@@ -296,13 +292,6 @@ void parse_medal_tbl()
 	// close localization
 	lcl_ext_close();
 }
-
-//WMC - not needed anymore
-//badge_stuff has a deconstructor
-/*
-void medal_close(){
-	for(int i = 0; i<MAX_BADGES; i++)if(Badge_info[i].promotion_text)vm_free(Badge_info[i].promotion_text);
-}*/
 
 // replacement for -gimmemedals
 DCF(medals, "Grant or revoke medals")

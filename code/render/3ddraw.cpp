@@ -16,7 +16,6 @@
 #include "globalincs/alphacolors.h"
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
-
 #include "io/key.h"
 
 
@@ -66,7 +65,9 @@ static void g3_allocate_vbufs(int nv)
 }
 
 
-//deal with a clipped line
+/**
+ * Deal with a clipped line
+ */
 int must_clip_line(vertex *p0,vertex *p1,ubyte codes_or, uint flags)
 {
 	int ret = 0;
@@ -88,9 +89,6 @@ int must_clip_line(vertex *p0,vertex *p1,ubyte codes_or, uint flags)
 		g3_project_vertex(p1);
 
 	if (p1->flags&PF_OVERFLOW) goto free_points;
-	
-	//gr_line(fl2i(p0->sx),fl2i(p0->sy),fl2i(p1->sx),fl2i(p1->sy),false);
-	//	gr_line_float(p0->sx,p0->sy,p1->sx,p1->sy);
 
 	gr_aaline( p0, p1 );
 
@@ -108,7 +106,9 @@ free_points:
 	return ret;
 }
 
-//draws a line. takes two points.  returns true if drew
+/**
+ * Draws a line. takes two points.  returns true if drew
+ */
 int g3_draw_line(vertex *p0,vertex *p1)
 {
 #ifdef FRED_OGL_COMMENT_OUT_FOR_NOW
@@ -135,7 +135,6 @@ int g3_draw_line(vertex *p0,vertex *p1)
 		g3_project_vertex(p0);
 
 	if (p0->flags&PF_OVERFLOW) 
-//		return 1;
 		return must_clip_line(p0,p1,codes_or,0);
 
 
@@ -143,11 +142,7 @@ int g3_draw_line(vertex *p0,vertex *p1)
 		g3_project_vertex(p1);
 
 	if (p1->flags&PF_OVERFLOW)
-//		return 1;
 		return must_clip_line(p0,p1,codes_or,0);
-
-//	gr_line(fl2i(p0->sx),fl2i(p0->sy),fl2i(p1->sx),fl2i(p1->sy),false);
-//	gr_line_float(p0->sx,p0->sy,p1->sx,p1->sy);
 
   	gr_aaline( p0, p1 );
 
@@ -184,9 +179,9 @@ int do_facing_check(vec3d *norm,vertex **vertlist,vec3d *p)
 
 		//get three points (rotated) and compute normal
 
-		vm_vec_perp(&tempv,(vec3d *)&vertlist[0]->x,(vec3d *)&vertlist[1]->x,(vec3d *)&vertlist[2]->x);
+		vm_vec_perp(&tempv,&vertlist[0]->world,&vertlist[1]->world,&vertlist[2]->world);
 
-		return (vm_vec_dot(&tempv,(vec3d *)&vertlist[1]->x ) < 0.0);
+		return (vm_vec_dot(&tempv,&vertlist[1]->world ) < 0.0);
 	}
 }
 
@@ -252,12 +247,6 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 
 	bufptr = Vbuf0;
 
-/*	if(tmap_flags & TMAP_HTL_3D_UNLIT && !Cmdline_nohtl) {
-	 	gr_tmapper( nv, pointlist, tmap_flags );
-	 	return 0;
-	}
-*/
-
 	for (i=0;i<nv;i++) {
 		vertex *p;
 
@@ -284,8 +273,6 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 					g3_project_vertex(p);
 		
 				if (p->flags&PF_OVERFLOW) {
-					//Int3();		//should not overflow after clip
-					//printf( "overflow in must_clip_tmap_face\n" );
 					goto free_points;
 				}				
 			}
@@ -310,8 +297,6 @@ free_points:
 				g3_project_vertex(p);
 
 			if (p->flags&PF_OVERFLOW) {
-				//Int3();		//should not overflow after clip
-				//printf( "3d: Point overflowed, but flags say OK!\n" );
 				return 255;
 			}
 
@@ -336,7 +321,6 @@ int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap
 	const int NUM_VERTICES = 4;
 	vec3d p[NUM_VERTICES] = { ZERO_VECTOR };
 	vertex v[NUM_VERTICES];
-	//float h = sqrt(2*(radius*radius));
 
 	p[0].xyz.x = width;
 	p[0].xyz.y = height;
@@ -354,8 +338,6 @@ int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap
 	{
 		vec3d tmp = vmd_zero_vector;
 
-		//Set spacing correctly
-		//vm_vec_scale2(&p[i], radius, 1.0f);
 		//Rotate correctly
 		vm_vec_unrotate(&tmp, &p[i], ori);
 		//Move to point in space
@@ -365,17 +347,17 @@ int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap
 		g3_transfer_vertex(&v[i], &tmp);
 	}
 
-	v[0].u = 1.0f;
-	v[0].v = 0.0f;
+	v[0].texture_position.u = 1.0f;
+	v[0].texture_position.v = 0.0f;
 
-	v[1].u = 0.0f;
-	v[1].v = 0.0f;
+	v[1].texture_position.u = 0.0f;
+	v[1].texture_position.v = 0.0f;
 	
-	v[2].u = 0.0f;
-	v[2].v = 1.0f;
+	v[2].texture_position.u = 0.0f;
+	v[2].texture_position.v = 1.0f;
 
-	v[3].u = 1.0f;
-	v[3].v = 1.0f;
+	v[3].texture_position.u = 1.0f;
+	v[3].texture_position.v = 1.0f;
 
 	gr_render(NUM_VERTICES, v, tmap_flags);
 
@@ -447,24 +429,13 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
 					g3_project_vertex(p);
 		
 				if (p->flags&PF_OVERFLOW) {
-					//Int3();		//should not overflow after clip
-					//printf( "overflow in must_clip_tmap_face\n" );
 					goto free_points;
 				}
 
-				p->sw = constant_sw;
+				p->screen.xyw.w = constant_sw;
 			}
 
 			gr_tmapper( nv, bufptr, tmap_flags );
-
-			// draw lines connecting the faces
-			/*
-			gr_set_color_fast(&Color_bright_green);
-			for(i=0; i<nv-1; i++){
-				g3_draw_line(bufptr[i], bufptr[i+1]);
-			} 
-			g3_draw_line(bufptr[0], bufptr[i]);
-			*/
 		}
 
 free_points:
@@ -485,25 +456,14 @@ free_points:
 				g3_project_vertex(p);
 
 			if (p->flags&PF_OVERFLOW) {
-				//Int3();		//should not overflow after clip
-				//printf( "3d: Point overflowed, but flags say OK!\n" );
 				return 255;
 			}
 
-			p->sw = constant_sw;
+			p->screen.xyw.w = constant_sw;
 
 		}
 
 		gr_tmapper( nv, bufptr, tmap_flags );
-
-		// draw lines connecting the faces
-		/*
-		gr_set_color_fast(&Color_bright_green);
-		for(i=0; i<nv-1; i++){
-			g3_draw_line(bufptr[i], bufptr[i+1]);
-		} 
-		g3_draw_line(bufptr[0], bufptr[i]);
-		*/
 	}
 	return 0;	//say it drew
 }
@@ -524,9 +484,9 @@ int g3_draw_sphere(vertex *pnt,float rad)
 
 			r2 = rad*Matrix_scale.xyz.x;
 
-			t=r2*Canv_w2/pnt->z;
+			t=r2*Canv_w2/pnt->world.xyz.z;
 
-			gr_circle(fl2i(pnt->sx),fl2i(pnt->sy),fl2i(t*2.0f),false);
+			gr_circle(fl2i(pnt->screen.xyw.x),fl2i(pnt->screen.xyw.y),fl2i(t*2.0f),false);
 		}
 	}
 
@@ -555,73 +515,12 @@ int g3_draw_sphere_ez(vec3d *pnt,float rad)
 	return 0;
 }
 
-//ID3DXSprite 
-// creates a quad centered around the given point, pointed at the camera
-/*
-0----1
-|\   |
-|  \ |
-3----2
-1.41421356
-*/
-
-/*
-int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
-{
-
-//return 0;
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
-	vec3d PNT;
-	vm_vert2vec(pnt, &PNT);
-	vec3d p[4];
-	vertex P[4];
-	//unused variables that were there for some reason
-//	matrix m;
-//	vm_set_identity(&m);
-
-	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
-	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
-
-	p[0].xyz.x = rad * aspect;	p[0].xyz.y = rad;	p[0].xyz.z = -depth;
-	p[1].xyz.x = -rad * aspect;	p[1].xyz.y = rad;	p[1].xyz.z = -depth;
-	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
-	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
-
-	for(int i = 0; i<4; i++){
-		vec3d t = p[i];
-		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
-		vm_vec_add2(&p[i],&PNT);//move it
-	}
-
-	//move all the data from the vecs into the verts
-	g3_transfer_vertex(&P[0], &p[3]);
-	g3_transfer_vertex(&P[1], &p[2]);
-	g3_transfer_vertex(&P[2], &p[1]);
-	g3_transfer_vertex(&P[3], &p[0]);
- 
-	//set up the UV coords
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 1.0f;	P[1].v = 0.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
-	P[3].u = 0.0f;	P[3].v = 1.0f;
-
-	int cull = gr_set_cull(0);
-	g3_draw_poly(4,ptlist,tmap_flags);
-	gr_set_cull(cull);
-
-	return 0;
-}
-*/
-
 //alternate method
 int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float depth)
 {
-//return 0;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 
-//	rad*=3.0f;
-	vec3d PNT;
-	vm_vert2vec(pnt, &PNT);
+	vec3d PNT(pnt->world);
 	vec3d p[4];
 	vertex P[4];
 	vec3d fvec, rvec, uvec;
@@ -635,7 +534,6 @@ int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float
 	vm_vec_normalize(&rvec);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
-//	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
 
 	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 	vm_vec_scale_add(&p[0], &PNT, &rvec, rad);
@@ -646,17 +544,6 @@ int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float
 	vm_vec_scale_add(&p[0], &p[0], &uvec, rad);
 	vm_vec_scale_add(&p[2], &p[2], &uvec, -rad);
 
-//	p[0].xyz.x = rad * aspect;	p[0].xyz.y = rad;	p[0].xyz.z = -depth;
-//	p[1].xyz.x = -rad * aspect;	p[1].xyz.y = rad;	p[1].xyz.z = -depth;
-//	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
-//	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
-
-//	for(int i = 0; i<4; i++){
-//		vec3d t = p[i];
-//		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
-//		vm_vec_add2(&p[i],&PNT);//move it
-//	}
-
 	//move all the data from the vecs into the verts
 	g3_transfer_vertex(&P[0], &p[3]);
 	g3_transfer_vertex(&P[1], &p[2]);
@@ -665,33 +552,28 @@ int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float
 
 	// set up the UV coords
 	if ( orient & 1 ) {
-		P[0].u = 1.0f;
-		P[1].u = 0.0f;
-		P[2].u = 0.0f;
-		P[3].u = 1.0f;
+		P[0].texture_position.u = 1.0f;
+		P[1].texture_position.u = 0.0f;
+		P[2].texture_position.u = 0.0f;
+		P[3].texture_position.u = 1.0f;
 	} else {
-		P[0].u = 0.0f;
-		P[1].u = 1.0f;
-		P[2].u = 1.0f;
-		P[3].u = 0.0f;
+		P[0].texture_position.u = 0.0f;
+		P[1].texture_position.u = 1.0f;
+		P[2].texture_position.u = 1.0f;
+		P[3].texture_position.u = 0.0f;
 	}
 
 	if ( orient & 2 ) {
-		P[0].v = 1.0f;
-		P[1].v = 1.0f;
-		P[2].v = 0.0f;
-		P[3].v = 0.0f;
+		P[0].texture_position.v = 1.0f;
+		P[1].texture_position.v = 1.0f;
+		P[2].texture_position.v = 0.0f;
+		P[3].texture_position.v = 0.0f;
 	} else {
-		P[0].v = 0.0f;
-		P[1].v = 0.0f;
-		P[2].v = 1.0f;
-		P[3].v = 1.0f;
+		P[0].texture_position.v = 0.0f;
+		P[1].texture_position.v = 0.0f;
+		P[2].texture_position.v = 1.0f;
+		P[3].texture_position.v = 1.0f;
 	}
-
-//	P[0].u = 0.0f;	P[0].v = 0.0f;
-//	P[1].u = 1.0f;	P[1].v = 0.0f;
-//	P[2].u = 1.0f;	P[2].v = 1.0f;
-//	P[3].u = 0.0f;	P[3].v = 1.0f;
 
 	int cull = gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
@@ -702,16 +584,10 @@ int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float
 
 int g3_draw_bitmap_3d_v(vertex *pnt, int orient, float rad, uint tmap_flags, float depth, float c)
 {
-//return 0;
-//	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
-	vec3d PNT;
-	vm_vert2vec(pnt, &PNT);
+	vec3d PNT(pnt->world);
 	vec3d p[4];
 	vertex P[4];
 	int i;
-	//unused variables that were there for some reason
-//	matrix m;
-//	vm_set_identity(&m);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
 	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
@@ -740,10 +616,10 @@ int g3_draw_bitmap_3d_v(vertex *pnt, int orient, float rad, uint tmap_flags, flo
 	}
 
 	//set up the UV coords
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 1.0f;	P[1].v = 0.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
-	P[3].u = 0.0f;	P[3].v = 1.0f;
+	P[0].texture_position.u = 0.0f;	P[0].texture_position.v = 0.0f;
+	P[1].texture_position.u = 1.0f;	P[1].texture_position.v = 0.0f;
+	P[2].texture_position.u = 1.0f;	P[2].texture_position.v = 1.0f;
+	P[3].texture_position.u = 0.0f;	P[3].texture_position.v = 1.0f;
 
 	int cull = gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags  | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
@@ -756,10 +632,8 @@ int g3_draw_bitmap_3d_volume(vertex *pnt, int orient, float rad, uint tmap_flags
 {
 	float s = 1.0f;
 	float res = float(resolution);
-//	float total = 0.0f;
 	for(int i = 0; i <resolution; i++){
 		s = (1.0f - (float(i-1)/res))/6.5f;
-	//	total +=s;
 		float d = (float(i)/res);
 		g3_draw_bitmap_3d_v(pnt,orient, rad, tmap_flags, depth * d, s);
 	}
@@ -773,7 +647,6 @@ int g3_draw_bitmap_3d_volume(vertex *pnt, int orient, float rad, uint tmap_flags
 int g3_draw_bitmap(vertex *pnt, int orient, float rad, uint tmap_flags, float depth)
 {
 	if ( !Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT) ) {
-	//	return g3_draw_bitmap_3d_volume(pnt, orient, rad, tmap_flags, depth, 10);// just playing with an idea for makeing glows on thrusters less... not... good
 		return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
 	}
 
@@ -815,14 +688,14 @@ int g3_draw_bitmap(vertex *pnt, int orient, float rad, uint tmap_flags, float de
 	if (pnt->flags & PF_OVERFLOW)
 		return 1;
 
-	t = (width*Canv_w2)/pnt->z;
+	t = (width*Canv_w2)/pnt->world.xyz.z;
 	w = t*Matrix_scale.xyz.x;
 
-	t = (height*Canv_h2)/pnt->z;
+	t = (height*Canv_h2)/pnt->world.xyz.z;
 	h = t*Matrix_scale.xyz.y;
 
 	float z,sw;
-	z = pnt->z - rad/2.0f;
+	z = pnt->world.xyz.z - rad/2.0f;
 	if ( z <= 0.0f ) {
 		z = 0.0f;
 		sw = 0.0f;
@@ -830,30 +703,30 @@ int g3_draw_bitmap(vertex *pnt, int orient, float rad, uint tmap_flags, float de
 		sw = 1.0f / z;
 	}
 
-	va.sx = pnt->sx - w/2.0f;
-	va.sy = pnt->sy - h/2.0f;
-	va.sw = sw;
-	va.z = z;
+	va.screen.xyw.x = pnt->screen.xyw.x - w/2.0f;
+	va.screen.xyw.y = pnt->screen.xyw.y - h/2.0f;
+	va.screen.xyw.w = sw;
+	va.world.xyz.z = z;
 
-	vb.sx = va.sx + w;
-	vb.sy = va.sy + h;
-	vb.sw = sw;
-	vb.z = z;
+	vb.screen.xyw.x = va.screen.xyw.x + w;
+	vb.screen.xyw.y = va.screen.xyw.y + h;
+	vb.screen.xyw.w = sw;
+	vb.world.xyz.z = z;
 
 	if ( orient & 1 )	{
-		va.u = 1.0f;
-		vb.u = 0.0f;
+		va.texture_position.u = 1.0f;
+		vb.texture_position.u = 0.0f;
 	} else {
-		va.u = 0.0f;
-		vb.u = 1.0f;
+		va.texture_position.u = 0.0f;
+		vb.texture_position.u = 1.0f;
 	}
 
 	if ( orient & 2 )	{
-		va.v = 1.0f;
-		vb.v = 0.0f;
+		va.texture_position.v = 1.0f;
+		vb.texture_position.v = 0.0f;
 	} else {
-		va.v = 0.0f;
-		vb.v = 1.0f;
+		va.texture_position.v = 0.0f;
+		vb.texture_position.v = 1.0f;
 	}
 
 	gr_scaler(&va, &vb, bw_bitmap);
@@ -895,77 +768,23 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 		return 1;
 	}
 
-	t = (width*Canv_w2)/pnt->z;
+	t = (width*Canv_w2)/pnt->world.xyz.z;
 	*w = (int)(t*Matrix_scale.xyz.x);
 
-	t = (height*Canv_h2)/pnt->z;
+	t = (height*Canv_h2)/pnt->world.xyz.z;
 	*h = (int)(t*Matrix_scale.xyz.y);	
 
-	*x = (int)(pnt->sx - *w/2.0f);
-	*y = (int)(pnt->sy - *h/2.0f);	
+	*x = (int)(pnt->screen.xyw.x - *w/2.0f);
+	*y = (int)(pnt->screen.xyw.y - *h/2.0f);	
 
 	*size = MAX(bw, bh);
 
 	return 0;
 }
-/*
-int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags, float depth){
-
-//	return 0;
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
-
-	angle+=Physics_viewer_bank;
-	if ( angle < 0.0f )
-		angle += PI2;
-	else if ( angle > PI2 )
-		angle -= PI2;
-	float sa = (float)sin(angle);
-	float ca = (float)cos(angle);
-
-	vec3d PNT;
-	vm_vert2vec(pnt, &PNT);
-	vec3d p[4];
-	vertex P[4];
-	matrix m;
-	vm_set_identity(&m);
-
-	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
-	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
-
-	p[0].xyz.x = (-rad*ca + rad*sa) * aspect;	p[0].xyz.y = (-rad*sa - rad*ca);	p[0].xyz.z = -depth;
-	p[1].xyz.x = (rad*ca + rad*sa) * aspect;		p[1].xyz.y = (rad*sa - rad*ca);	p[1].xyz.z = -depth;
-	p[2].xyz.x = (rad*ca - rad*sa) * aspect;		p[2].xyz.y = (rad*sa + rad*ca);	p[2].xyz.z = -depth;
-	p[3].xyz.x = (-rad*ca - rad*sa) * aspect;	p[3].xyz.y = (-rad*sa + rad*ca);	p[3].xyz.z = -depth;
-
-	for(int i = 0; i<4; i++){
-		vec3d t = p[i];
-		vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
-		vm_vec_add2(&p[i],&PNT);//move it
-	}
-
-	//move all the data from the vecs into the verts
-	g3_transfer_vertex(&P[0], &p[3]);
-	g3_transfer_vertex(&P[1], &p[2]);
-	g3_transfer_vertex(&P[2], &p[1]);
-	g3_transfer_vertex(&P[3], &p[0]);
-
-	//set up the UV coords
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 1.0f;	P[1].v = 0.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
-	P[3].u = 0.0f;	P[3].v = 1.0f;
-
-	int cull = gr_set_cull(0);
-	g3_draw_poly(4,ptlist,tmap_flags);
-	gr_set_cull(cull);
-
-	return 0;
-}
-*/
 
 //alternate method
-int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags, float depth){
-//return 0;
+int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags, float depth)
+{
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 
 	angle-=Physics_viewer_bank;
@@ -974,14 +793,12 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	else if ( angle > PI2 )
 		angle -= PI2;
 
-	vec3d PNT;
-	vm_vert2vec(pnt, &PNT);
+	vec3d PNT(pnt->world);
 	vec3d p[4];
 	vertex P[4];
 	vec3d fvec, rvec, uvec;
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
-	// VECMAT-ERROR: NULL VEC3D (PNT == View_position, multiplayer respawn or death sequence)
 	vm_vec_normalize_safe(&fvec);
 
 	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &View_matrix.vec.fvec);
@@ -991,7 +808,6 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	vm_vec_normalize(&rvec);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
-//	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
 
 	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 	vm_vec_scale_add(&p[0], &PNT, &rvec, rad);
@@ -1002,7 +818,6 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	vm_vec_scale_add(&p[0], &p[0], &uvec, rad);
 	vm_vec_scale_add(&p[2], &p[2], &uvec, -rad);
 
-
 	//move all the data from the vecs into the verts
 	g3_transfer_vertex(&P[0], &p[3]);
 	g3_transfer_vertex(&P[1], &p[2]);
@@ -1010,10 +825,10 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	g3_transfer_vertex(&P[3], &p[0]);
 
 	//set up the UV coords
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 1.0f;	P[1].v = 0.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
-	P[3].u = 0.0f;	P[3].v = 1.0f;
+	P[0].texture_position.u = 0.0f;	P[0].texture_position.v = 0.0f;
+	P[1].texture_position.u = 1.0f;	P[1].texture_position.v = 0.0f;
+	P[2].texture_position.u = 1.0f;	P[2].texture_position.v = 1.0f;
+	P[3].texture_position.u = 0.0f;	P[3].texture_position.v = 1.0f;
 
 	int cull = gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
@@ -1036,22 +851,6 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 
 	memset(v,0,sizeof(vertex)*4);
 
-	/*
-	if ( !Detail.alpha_effects )	{
-		int ang;
-		if ( angle < PI_2 )	{
-			ang = 0;
-		} else if ( angle < PI )	{
-			ang = 1;
-		} else if ( angle < PI+PI_2 )	{
-			ang = 2;
-		} else {
-			ang = 3;
-		}
-		return g3_draw_bitmap( pnt, ang, rad, tmap_flags );
-	}
-	*/
-
 	Assert( G3_count == 1 );
 
 	angle+=Physics_viewer_bank;
@@ -1059,7 +858,6 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 		angle += PI2;
 	else if ( angle > PI2 )
 		angle -= PI2;
-//	angle = 0.0f;
 			
 	sa = (float)sin(angle);
 	ca = (float)cos(angle);
@@ -1084,40 +882,38 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 		width = height = rad;
 	}
 
+	v[0].world.xyz.x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[0].world.xyz.y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[0].world.xyz.z = pnt->world.xyz.z;
+	v[0].screen.xyw.w = 0.0f;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 1.0f;
 
-	v[0].x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[0].y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[0].z = pnt->z;
-	v[0].sw = 0.0f;
-	v[0].u = 0.0f;
-	v[0].v = 1.0f;
-	
+	v[1].world.xyz.x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[1].world.xyz.y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[1].world.xyz.z = pnt->world.xyz.z;
+	v[1].screen.xyw.w = 0.0f;
+	v[1].texture_position.u = 1.0f;
+	v[1].texture_position.v = 1.0f;
 
-	v[1].x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[1].y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[1].z = pnt->z;
-	v[1].sw = 0.0f;
-	v[1].u = 1.0f;
-	v[1].v = 1.0f;
+	v[2].world.xyz.x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[2].world.xyz.y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[2].world.xyz.z = pnt->world.xyz.z;
+	v[2].screen.xyw.w = 0.0f;
+	v[2].texture_position.u = 1.0f;
+	v[2].texture_position.v = 0.0f;
 
-	v[2].x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[2].y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[2].z = pnt->z;
-	v[2].sw = 0.0f;
-	v[2].u = 1.0f;
-	v[2].v = 0.0f;
-
-	v[3].x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[3].y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[3].z = pnt->z;
-	v[3].sw = 0.0f;
-	v[3].u = 0.0f;
-	v[3].v = 0.0f;
+	v[3].world.xyz.x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[3].world.xyz.y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[3].world.xyz.z = pnt->world.xyz.z;
+	v[3].screen.xyw.w = 0.0f;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 0.0f;
 
 	ubyte codes_and=0xff;
 
 	float sw,z;
-	z = pnt->z - rad / 4.0f;
+	z = pnt->world.xyz.z - rad / 4.0f;
 	if ( z < 0.0f ) z = 0.0f;
 	sw = 1.0f / z;
 
@@ -1125,7 +921,6 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 		//now code the four points
 		codes_and &= g3_code_vertex(&v[i]);
 		v[i].flags = 0;		// mark as not yet projected
-		//g3_project_vertex(&v[i]);
 	}
 
 	if (codes_and)
@@ -1137,7 +932,22 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 	return 0;
 }
 
-#define TRIANGLE_AREA(_p, _q, _r)	do { vec3d a, b, cross; a.xyz.x = _q->x - _p->x; a.xyz.y = _q->y - _p->y; a.xyz.z = 0.0f; b.xyz.x = _r->x - _p->x; b.xyz.y = _r->y - _p->y; b.xyz.z = 0.0f; vm_vec_crossprod(&cross, &a, &b); total_area += vm_vec_mag(&cross) * 0.5f; } while(0);
+/** As a define only for readability. */
+#define TRIANGLE_AREA(_p, _q, _r)	do {\
+	vec3d a, b, cross;\
+	\
+	a.xyz.x = _q->world.xyz.x - _p->world.xyz.x;\
+	a.xyz.y = _q->world.xyz.y - _p->world.xyz.y;\
+	a.xyz.z = 0.0f;\
+	\
+	b.xyz.x = _r->world.xyz.x - _p->world.xyz.x;\
+	b.xyz.y = _r->world.xyz.y - _p->world.xyz.y;\
+	b.xyz.z = 0.0f;\
+	\
+	vm_vec_crossprod(&cross, &a, &b);\
+	total_area += vm_vec_mag(&cross) * 0.5f;\
+} while(0);
+
 float g3_get_poly_area(int nv, vertex **pointlist)
 {
 	int idx;
@@ -1164,12 +974,7 @@ float g3_draw_poly_constant_sw_area(int nv, vertex **pointlist, uint tmap_flags,
 	float p_area = 0.0f;
 
 	Assert( G3_count == 1 );
-
-//	if ( nv > TMAP_MAX_VERTS ) {
-//		Int3();
-//		return 0.0f;
-//	}
-
+	
 	g3_allocate_vbufs(nv);
 
 	cc.cc_or = 0;
@@ -1204,12 +1009,10 @@ float g3_draw_poly_constant_sw_area(int nv, vertex **pointlist, uint tmap_flags,
 					g3_project_vertex(p);
 		
 				if (p->flags&PF_OVERFLOW) {
-					//Int3();		//should not overflow after clip
-					//printf( "overflow in must_clip_tmap_face\n" );
 					goto free_points;
 				}
 
-				p->sw = constant_sw;
+				p->screen.xyw.w = constant_sw;
 			}
 
 			// check area
@@ -1242,7 +1045,7 @@ free_points:
 				return 0.0f;
 			}
 
-			p->sw = constant_sw;
+			p->screen.xyw.w = constant_sw;
 		}
 
 		// check area
@@ -1302,38 +1105,38 @@ float g3_draw_rotated_bitmap_area(vertex *pnt,float angle, float rad,uint tmap_f
 		width = height = rad;
 	}
 
-	v[0].x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[0].y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[0].z = pnt->z;
-	v[0].sw = 0.0f;
-	v[0].u = 0.0f;
-	v[0].v = 1.0f;
+	v[0].world.xyz.x = (-width*ca + height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[0].world.xyz.y = (-width*sa - height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[0].world.xyz.z = pnt->world.xyz.z;
+	v[0].screen.xyw.w = 0.0f;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 1.0f;
 
-	v[1].x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[1].y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[1].z = pnt->z;
-	v[1].sw = 0.0f;
-	v[1].u = 1.0f;
-	v[1].v = 1.0f;
+	v[1].world.xyz.x = (width*ca + height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[1].world.xyz.y = (width*sa - height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[1].world.xyz.z = pnt->world.xyz.z;
+	v[1].screen.xyw.w = 0.0f;
+	v[1].texture_position.u = 1.0f;
+	v[1].texture_position.v = 1.0f;
 
-	v[2].x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[2].y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[2].z = pnt->z;
-	v[2].sw = 0.0f;
-	v[2].u = 1.0f;
-	v[2].v = 0.0f;
+	v[2].world.xyz.x = (width*ca - height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[2].world.xyz.y = (width*sa + height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[2].world.xyz.z = pnt->world.xyz.z;
+	v[2].screen.xyw.w = 0.0f;
+	v[2].texture_position.u = 1.0f;
+	v[2].texture_position.v = 0.0f;
 
-	v[3].x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->x;
-	v[3].y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->y;
-	v[3].z = pnt->z;
-	v[3].sw = 0.0f;
-	v[3].u = 0.0f;
-	v[3].v = 0.0f;
+	v[3].world.xyz.x = (-width*ca - height*sa)*Matrix_scale.xyz.x + pnt->world.xyz.x;
+	v[3].world.xyz.y = (-width*sa + height*ca)*Matrix_scale.xyz.y + pnt->world.xyz.y;
+	v[3].world.xyz.z = pnt->world.xyz.z;
+	v[3].screen.xyw.w = 0.0f;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 0.0f;
 
 	ubyte codes_and=0xff;
 
 	float sw,z;
-	z = pnt->z - rad / 4.0f;
+	z = pnt->world.xyz.z - rad / 4.0f;
 	if ( z < 0.0f ) z = 0.0f;
 	sw = 1.0f / z;
 
@@ -1341,7 +1144,6 @@ float g3_draw_rotated_bitmap_area(vertex *pnt,float angle, float rad,uint tmap_f
 		//now code the four points
 		codes_and &= g3_code_vertex(&v[i]);
 		v[i].flags = 0;		// mark as not yet projected
-		//g3_project_vertex(&v[i]);
 	}
 
 	if (codes_and){
@@ -1363,41 +1165,15 @@ typedef struct horz_pt {
 //draws a horizon. takes eax=sky_color, edx=ground_color
 void g3_draw_horizon_line()
 {
-	//int sky_color,int ground_color
 	int s1, s2;
 	int cpnt;
 	horz_pt horz_pts[4];		// 0 = left, 1 = right
-//	int top_color, bot_color;
-//	int color_swap;		//flag for if we swapped
-//	int sky_ground_flag;	//0=both, 1=all sky, -1=all gnd
-
 	vec3d horizon_vec;
-	
 	float up_right, down_right,down_left,up_left;
-
-//	color_swap = 0;		//assume no swap
-//	sky_ground_flag = 0;	//assume both
-
-//	if ( View_matrix.uvec.xyz.y < 0.0f )
-//		color_swap = 1;
-//	else if ( View_matrix.uvec.xyz.y == 0.0f )	{
-//		if ( View_matrix.uvec.xyz.x > 0.0f )
-//			color_swap = 1;
-//	}
-
-//	if (color_swap)	{
-//		top_color  = ground_color;
-//		bot_color = sky_color;
-//	} else {
-//		top_color  = sky_color;
-//		bot_color = ground_color;
-//	}
 
 	Assert( G3_count == 1 );
 
-
-	//compute horizon_vector
-	
+	//compute horizon_vector	
 	horizon_vec.xyz.x = Unscaled_matrix.vec.rvec.xyz.y*Matrix_scale.xyz.y*Matrix_scale.xyz.z;
 	horizon_vec.xyz.y = Unscaled_matrix.vec.uvec.xyz.y*Matrix_scale.xyz.x*Matrix_scale.xyz.z;
 	horizon_vec.xyz.z = Unscaled_matrix.vec.fvec.xyz.y*Matrix_scale.xyz.x*Matrix_scale.xyz.y;
@@ -1410,20 +1186,13 @@ void g3_draw_horizon_line()
 
 	//check flags for all sky or all ground.
 	if ( (up_right<0.0f)&&(down_right<0.0f)&&(down_left<0.0f)&&(up_left<0.0f) )	{
-//		mprintf(( "All ground.\n" ));
 		return;
 	}
 
 	if ( (up_right>0.0f)&&(down_right>0.0f)&&(down_left>0.0f)&&(up_left>0.0f) )	{
-//		mprintf(( "All sky.\n" ));
 		return;
 	}
 
-//mprintf(( "Horizon vec = %.4f, %.4f, %.4f\n", horizon_vec.xyz.x, horizon_vec.xyz.y, horizon_vec.xyz.z ));
-//mprintf(( "%.4f, %.4f, %.4f, %.4f\n", up_right, down_right, down_left, up_left ));
-
-	
-//	mprintf(( "u: %.4f %.4f %.4f  c: %.4f %.4f %.4f %.4f\n",Unscaled_matrix.vec.uvec.xyz.y,Unscaled_matrix.vec.uvec.xyz.z,Unscaled_matrix.vec.uvec.xyz.x,up_left,up_right,down_right,down_left ));
 	// check for intesection with each of four edges & compute horizon line
 	cpnt = 0;
 	
@@ -1447,7 +1216,6 @@ void g3_draw_horizon_line()
 		cpnt++;
 	}
 
-	
 	// check intersection with right edge
 	s1 = up_right > 0.0f;
 	s2 = down_right > 0.0f;
@@ -1474,7 +1242,6 @@ void g3_draw_horizon_line()
 	}
 
 	//make sure first edge is left
-
 	if ( horz_pts[0].x > horz_pts[1].x )	{
 		horz_pt tmp;
 		tmp = horz_pts[0];
@@ -1482,446 +1249,10 @@ void g3_draw_horizon_line()
 		horz_pts[1] = tmp;
 	}
 
-
 	// draw from left to right.
 	gr_line( fl2i(horz_pts[0].x),fl2i(horz_pts[0].y),fl2i(horz_pts[1].x),fl2i(horz_pts[1].y), false );
 	
 }
-
-
-/*
-
-horizon_poly	dw	5 dup (?,?)	;max of 5 points
-
-;for g3_compute_horz_vecs
-xfrac	fix	?
-yfrac	fix	?
-
-vec_ptr	dd	?
-corner_num	dd	?
-
-;for compute corner vec
-m13	fix	?	;m1-m3
-m46	fix	?
-m79	fix	?
-m56	fix	?
-m23	fix	?
-m89	fix	?
-
-_DATA	ends
-
-
-_TEXT	segment	dword public USE32 'CODE'
-
-	extn	gr_setcolor_,gr_clear_canvas_
-	extn	gr_upoly_tmap_
-
-;draw a polygon (one half of horizon) from the horizon line
-draw_horz_poly:	lea	ebx,horizon_poly
-
-;copy horizon line as first points in poly
-
-	mov	eax,[edi]
-	mov	[ebx],eax
-	mov	eax,4[edi]
-	mov	4[ebx],eax
-
-	mov	eax,[esi]
-	mov	8[ebx],eax
-	mov	eax,4[esi]
-	mov	12[ebx],eax
-
-;add corners to polygon
-
-	mov	eax,8[esi]	;edge number of start edge
-
-	mov	ecx,8[edi]	;edge number of end point
-	sub	ecx,eax	;number of edges
-	jns	edgenum_ok
-	add	ecx,4
-edgenum_ok:
-	mov	edx,ecx	;save count
-	sal	eax,3	;edge * 8
-	lea	esi,corners[eax]	;first corner
-	lea	edi,16[ebx]	;rest of poly
-corner_loop:	movsd
-	movsd		;copy a corner
-	cmp	esi,offset corners+8*4	;end of list?
-	jne	no_wrap
-	lea	esi,corners
-no_wrap:	loop	corner_loop
-
-;now draw the polygon
-	mov	eax,edx	;get corner count
-	add	eax,2	;..plus horz line end points
-	lea	edx,horizon_poly	;get the points
-;;	call	gr_poly_	;draw it!
- call gr_upoly_tmap_
-	ret
-
-;return information on the polygon that is the sky. 
-;takes ebx=ptr to x,y pairs, ecx=ptr to vecs for each point
-;returns eax=number of points
-;IMPORTANT: g3_draw_horizon() must be called before this routine.
-g3_compute_sky_polygon:
-	test	sky_ground_flag,-1	;what was drawn
-	js	was_all_ground
-	jg	was_all_sky	
-
-	pushm	ebx,ecx,edx,esi,edi
-
-	lea	esi,left_point
-	lea	edi,right_point
-	test	color_swap,-1
-	jz	no_swap_ends
-	xchg	esi,edi	;sky isn't top
-no_swap_ends:
-
-;copy horizon line as first points in poly
-
-	mov	eax,[edi]	;copy end point
-	mov	[ebx],eax
-	mov	eax,4[edi]
-	mov	4[ebx],eax
-
-	mov	eax,[esi]	;copy start point
-	mov	8[ebx],eax
-	mov	eax,4[esi]
-	mov	12[ebx],eax
-
-	pushm	ebx,ecx
-	push	edi	;save end point
-	push	esi	;save start point
-	mov	esi,edi	;end point is first point
-	mov	edi,ecx	;dest buffer
-	call	compute_horz_end_vec
-
-	pop	esi	;get back start point
-	add	edi,12	;2nd vec
-	call	compute_horz_end_vec
-
-	pop	edi	;get back end point
-	popm	ebx,ecx
-	add	ebx,16	;past two x,y pairs
-	add	ecx,24	;past two vectors
-
-	mov	vec_ptr,ecx
-
-;add corners to polygon
-
-	mov	eax,8[esi]	;edge number of start edge
-	mov	corner_num,eax
-
-	mov	ecx,8[edi]	;edge number of end point
-	sub	ecx,eax	;number of edges
-	jns	edgenum_ok2
-	add	ecx,4
-edgenum_ok2:
-	push	ecx	;save count
-	sal	eax,3	;edge * 8
-	lea	esi,corners[eax]	;first corner
-	mov	edi,ebx	;rest of poly 2d points
-corner_loop2:
-	movsd
-	movsd		;copy a corner
-	cmp	esi,offset corners+8*4	;end of list?
-	jne	no_wrap2
-	lea	esi,corners
-no_wrap2:
-	pushm	ecx,esi,edi
-	mov	edi,vec_ptr
-	mov	eax,corner_num
-	call	compute_corner_vec
-	add	vec_ptr,12
-	inc	corner_num
-	popm	ecx,esi,edi
-
-	loop	corner_loop2
-
-;now return with count
-	pop	eax	;get corner count
-	add	eax,2	;..plus horz line end points
-
-	popm	ebx,ecx,edx,esi,edi
-
-	ret
-
-;we drew all ground, so there was no horizon drawn
-was_all_ground:	xor	eax,eax	;no points in poly
-	ret
-
-;we drew all sky, so find 4 corners
-was_all_sky:	pushm	ebx,ecx,edx,esi,edi
-	push	ecx
-	lea	esi,corners
-	mov	edi,ebx
-	mov	ecx,8
-	rep	movsd
-	pop	edi
-
-	mov	ecx,4
-	xor	eax,eax	;start corner 0
-sky_loop:	pushm	eax,ecx,edi
-	call	compute_corner_vec
-	popm	eax,ecx,edi
-	add	edi,12
-	inc	eax
-	loop	sky_loop
-	mov	eax,4	;4 corners
-	popm	ebx,ecx,edx,esi,edi
-	ret
-
-;compute vec3d describing horizon intersection with a point.
-;takes esi=2d point, edi=vec. trashes eax,ebx,ecx,edx
-compute_horz_end_vec:
-
-;compute rotated x/z & y/z ratios
-
-	mov	eax,[esi]	;get x coord
-  	sub	eax,Canv_w2
-	fixdiv	Canv_w2
-	mov	xfrac,eax	;save
-
-	mov	eax,4[esi]	;get y coord
-  	sub	eax,Canv_h2
-	fixdiv	Canv_h2
-	neg	eax	;y inversion
-	mov	yfrac,eax	;save
-
-;compute fraction unrotated x/z
-
-	mov	eax,xfrac
-	add	eax,yfrac
-	mov	ecx,eax	;save
-	fixmul	View_matrix.m9
-	sub	eax,View_matrix.m7
-	sub	eax,View_matrix.m8
-	mov	ebx,eax	;save numerator
-
-	mov	eax,ecx
-	fixmul	View_matrix.m3
-	mov	ecx,eax
-	mov	eax,View_matrix.m1
-	add	eax,View_matrix.m2
-	sub	eax,ecx
-
-;now eax/ebx = z/x. do divide in way to give result < 0
-
-	pushm	eax,ebx
-	abs_eax
-	xchg	eax,ebx
-	abs_eax
-	cmp	eax,ebx	;which is bigger?
-	popm	eax,ebx
-	jl	do_xz
-
-;x is bigger, so do as z/x
-
-	fixdiv	ebx
-	
-;now eax = z/x ratio.  Compute vec3d by normalizing and correcting sign
-
-	push	eax	;save ratio
-
-	imul	eax	;compute z*z
-	inc	edx	;+ x*x (x==1)
-	call	quad_sqrt
-
-	mov	ecx,eax	;mag in ecx
-	pop	eax	;get ratio, x part
-
-	fixdiv	ecx
-	mov	[edi].xyz.z,eax
-
-	mov	eax,f1_0
-	fixdiv	ecx
-
-	mov	[edi].xyz.x,eax
-
-	jmp	finish_end
-
-;z is bigger, so do as x/z
-do_xz:
-	xchg	eax,ebx
-	fixdiv	ebx
-	
-;now eax = x/z ratio.  Compute vec3d by normalizing and correcting sign
-
-	push	eax	;save ratio
-
-	imul	eax	;compute x*x
-	inc	edx	;+ z*z (z==1)
-	call	quad_sqrt
-
-	mov	ecx,eax	;mag in ecx
-	pop	eax	;get ratio, x part
-
-	fixdiv	ecx
-	mov	[edi].xyz.x,eax
-
-	mov	eax,f1_0
-	fixdiv	ecx
-
-	mov	[edi].xyz.z,eax
-
-finish_end:	xor	eax,eax	;y = 0
-	mov	[edi].xyz.y,eax
-
-;now make sure that this vec3d is in front of you, not behind
-
-	mov	eax,[edi].xyz.x
-	imul	View_matrix.m3
-	mov	ebx,eax
-	mov	ecx,edx
-	mov	eax,[edi].xyz.z
-	imul	View_matrix.m9
-	add	eax,ebx
-	adc	edx,ecx
-	jns	vec_ok	;has positive z, ok
-
-;z is neg, flip vector
-
-	neg	[edi].xyz.x
-	neg	[edi].xyz.z
-vec_ok:
-	ret
-
-MIN_DEN equ 7fffh
-
-sub2	macro	dest,src
-	mov	eax,src
-	sal	eax,1
-	sub	dest,eax
-	endm
-
-;compute vec3d decribing a corner of the screen.
-;takes edi=vector, eax=corner num
-compute_corner_vec:
-
-	cmp	eax,4
-	jl	num_ok
-	sub	eax,4
-num_ok:
-
-;compute all deltas
-	mov	ebx,View_matrix.m1
-	mov	ecx,View_matrix.m4
-	mov	edx,View_matrix.m7
-
-	or	eax,eax
-	jz	neg_x
-	cmp	eax,3
-	jne	no_neg_x
-neg_x:
-	neg	ebx
-	neg	ecx
-	neg	edx
-no_neg_x:	
-	sub	ebx,View_matrix.m3
-	mov	m13,ebx	;m1-m3
-	sub	ecx,View_matrix.m6
-	mov	m46,ecx	;m4-m6
-	sub	edx,View_matrix.m9
-	mov	m79,edx	;m7-m9
-
-	mov	ebx,View_matrix.m5
-	mov	ecx,View_matrix.m2
-	mov	edx,View_matrix.m8
-
-	cmp	eax,2
-	jl	no_neg_y
-neg_y:
-	neg	ebx
-	neg	ecx
-	neg	edx
-no_neg_y:	
-	sub	ebx,View_matrix.m6
-	mov	m56,ebx	;m5-m6
-	sub	ecx,View_matrix.m3
-	mov	m23,ecx	;m2-m3
-	sub	edx,View_matrix.m9
-	mov	m89,edx	;m8-m9
-
-;compute x/z ratio
-
-;compute denomonator
-
-	mov	eax,m46
-	fixmul	m23
-	mov	ebx,eax	;save
-
-	mov	eax,m56
-	fixmul	m13
-	sub	eax,ebx	;eax = denominator
-
-;now we have the denominator.  If it is too small, try x/y, z/y or z/x, y/x
-
-	mov	ecx,eax	;save den
-
-	abs_eax
-	cmp	eax,MIN_DEN
-	jl	z_too_small
-
-z_too_small:
-
-;now do x/z numerator
-
-	mov	eax,m79
-	fixmul	m56	;* (m5-m6)
-	mov	ebx,eax
-
-	mov	eax,m89
-	fixmul	m46	;* (m4-m6)
-	sub	eax,ebx
-
-;now, eax/ecx = x/z ratio
-
-	fixdiv	ecx	;eax = x/z
-
-	mov	[edi].xyz.x,eax	;save x
-
-;now do y/z
-
-	mov	eax,m89
-	fixmul	m13
-	mov	ebx,eax
-
-	mov	eax,m79
-	fixmul	m23
-	sub	eax,ebx
-
-;now eax/ecx = y/z ratio
-
-	fixdiv	ecx
-
-	mov	[edi].xyz.y,eax
-
-	mov	[edi].xyz.z,f1_0
-
-	mov	esi,edi
-	call	vm_vec_normalize
-
-;make sure this vec is pointing in right direction
-
-	lea	edi,View_matrix.vec.fvec
-	call	vm_vec_dotprod
-	or	eax,eax	;check sign
-	jg	vec_sign_ok
-
-	neg	[esi].xyz.x
-	neg	[esi].xyz.y
-	neg	[esi].xyz.z
-vec_sign_ok:
-
-	ret
-
-
-_TEXT	ends
-
-	end
-
-*/
-
 
 // Draws a polygon always facing the viewer.
 // compute the corners of a rod.  fills in vertbuf.
@@ -1967,29 +1298,29 @@ int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, u
 		else
 			g3_transfer_vertex( &pts[i], &vecs[i] );
 	}
-	ptlist[0]->u = 0.0f;
-	ptlist[0]->v = 0.0f;
+	ptlist[0]->texture_position.u = 0.0f;
+	ptlist[0]->texture_position.v = 0.0f;
 	ptlist[0]->r = gr_screen.current_color.red;
 	ptlist[0]->g = gr_screen.current_color.green;
 	ptlist[0]->b = gr_screen.current_color.blue;
 	ptlist[0]->a = gr_screen.current_color.alpha;
 
-	ptlist[1]->u = 1.0f;
-	ptlist[1]->v = 0.0f;
+	ptlist[1]->texture_position.u = 1.0f;
+	ptlist[1]->texture_position.v = 0.0f;
 	ptlist[1]->r = gr_screen.current_color.red;
 	ptlist[1]->g = gr_screen.current_color.green;
 	ptlist[1]->b = gr_screen.current_color.blue;
 	ptlist[1]->a = gr_screen.current_color.alpha;
 
-	ptlist[2]->u = 1.0f;
-	ptlist[2]->v = 1.0f;
+	ptlist[2]->texture_position.u = 1.0f;
+	ptlist[2]->texture_position.v = 1.0f;
 	ptlist[2]->r = gr_screen.current_color.red;
 	ptlist[2]->g = gr_screen.current_color.green;
 	ptlist[2]->b = gr_screen.current_color.blue;
 	ptlist[2]->a = gr_screen.current_color.alpha;
 
-	ptlist[3]->u = 0.0f;
-	ptlist[3]->v = 1.0f;
+	ptlist[3]->texture_position.u = 0.0f;
+	ptlist[3]->texture_position.v = 1.0f;
 	ptlist[3]->r = gr_screen.current_color.red;
 	ptlist[3]->g = gr_screen.current_color.green;
 	ptlist[3]->b = gr_screen.current_color.blue;
@@ -2009,7 +1340,6 @@ int g3_draw_rod(int num_points, vec3d *pvecs, float width, uint tmap_flags)
 
 	Assert( num_points >= 2 );
 	Assert( (num_points * 2) <= MAX_ROD_VECS );
-
 
 	for (i = 0; i < num_points; i++) {
 		vm_vec_sub(&fvec, &View_position, &pvecs[i]);
@@ -2033,7 +1363,6 @@ int g3_draw_rod(int num_points, vec3d *pvecs, float width, uint tmap_flags)
 		vm_vec_scale_add(&vecs[0], &pvecs[i], &uvec, width * 0.5f);
 		vm_vec_scale_add(&vecs[1], &pvecs[i], &uvec, -width * 0.5f);
 
-
 		if (nv > MAX_ROD_VECS-2) {
 			Warning(LOCATION, "Hit high-water mark (%i) in g3_draw_rod()!!\n", MAX_ROD_VECS);
 			break;
@@ -2050,15 +1379,15 @@ int g3_draw_rod(int num_points, vec3d *pvecs, float width, uint tmap_flags)
 			g3_transfer_vertex( &pts[nv+1], &vecs[1] );
 		}
 
-		ptlist[nv]->u = 1.0f;
-		ptlist[nv]->v = i2fl(i);
+		ptlist[nv]->texture_position.u = 1.0f;
+		ptlist[nv]->texture_position.v = i2fl(i);
 		ptlist[nv]->r = gr_screen.current_color.red;
 		ptlist[nv]->g = gr_screen.current_color.green;
 		ptlist[nv]->b = gr_screen.current_color.blue;
 		ptlist[nv]->a = gr_screen.current_color.alpha;
 
-		ptlist[nv+1]->u = 0.0f;
-		ptlist[nv+1]->v = i2fl(i);
+		ptlist[nv+1]->texture_position.u = 0.0f;
+		ptlist[nv+1]->texture_position.v = i2fl(i);
 		ptlist[nv+1]->r = gr_screen.current_color.red;
 		ptlist[nv+1]->g = gr_screen.current_color.green;
 		ptlist[nv+1]->b = gr_screen.current_color.blue;
@@ -2166,21 +1495,20 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	for(idx=0; idx<div_x; idx++){
 		for(s_idx=0; s_idx<div_y; s_idx++){						
 			// stuff texture coords
-			v[0].u = ui * float(idx);
-			v[0].v = vi * float(s_idx);
+			v[0].texture_position.u = ui * float(idx);
+			v[0].texture_position.v = vi * float(s_idx);
 			v[0].spec_r=v[0].spec_g=v[0].spec_b=0;
 			
-			v[1].u = ui * float(idx+1);
-			v[1].v = vi * float(s_idx);
+			v[1].texture_position.u = ui * float(idx+1);
+			v[1].texture_position.v = vi * float(s_idx);
 			v[1].spec_r=v[1].spec_g=v[1].spec_b=0;
 
-			v[2].u = ui * float(idx+1);
-			v[2].v = vi * float(s_idx+1);
+			v[2].texture_position.u = ui * float(idx+1);
+			v[2].texture_position.v = vi * float(s_idx+1);
 			v[2].spec_r=v[2].spec_g=v[2].spec_b=0;
 
-
-			v[3].u = ui * float(idx);
-			v[3].v = vi * float(s_idx+1);
+			v[3].texture_position.u = ui * float(idx);
+			v[3].texture_position.v = vi * float(s_idx+1);
 			v[3].spec_r=v[3].spec_g=v[3].spec_b=0;
 
 			// poly 1
@@ -2236,11 +1564,11 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 	int cull = gr_set_cull(0);		
 
 	// stuff coords		
-	v[0].sx = i2fl(x);
-	v[0].sy = i2fl(y);
-	v[0].sw = 0.0f;
-	v[0].u = 0.0f;
-	v[0].v = 0.0f;
+	v[0].screen.xyw.x = i2fl(x);
+	v[0].screen.xyw.y = i2fl(y);
+	v[0].screen.xyw.w = 0.0f;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 0.0f;
 	v[0].flags = PF_PROJECTED;
 	v[0].codes = 0;
 	v[0].r = (ubyte)r;
@@ -2248,11 +1576,11 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 	v[0].b = (ubyte)b;
 	v[0].a = (ubyte)a;
 
-	v[1].sx = i2fl(x + w);
-	v[1].sy = i2fl(y);	
-	v[1].sw = 0.0f;
-	v[1].u = 0.0f;
-	v[1].v = 0.0f;
+	v[1].screen.xyw.x = i2fl(x + w);
+	v[1].screen.xyw.y = i2fl(y);	
+	v[1].screen.xyw.w = 0.0f;
+	v[1].texture_position.u = 0.0f;
+	v[1].texture_position.v = 0.0f;
 	v[1].flags = PF_PROJECTED;
 	v[1].codes = 0;
 	v[1].r = (ubyte)r;
@@ -2260,11 +1588,11 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 	v[1].b = (ubyte)b;
 	v[1].a = (ubyte)a;
 
-	v[2].sx = i2fl(x + w);
-	v[2].sy = i2fl(y + h);
-	v[2].sw = 0.0f;
-	v[2].u = 0.0f;
-	v[2].v = 0.0f;
+	v[2].screen.xyw.x = i2fl(x + w);
+	v[2].screen.xyw.y = i2fl(y + h);
+	v[2].screen.xyw.w = 0.0f;
+	v[2].texture_position.u = 0.0f;
+	v[2].texture_position.v = 0.0f;
 	v[2].flags = PF_PROJECTED;
 	v[2].codes = 0;
 	v[2].r = (ubyte)r;
@@ -2272,11 +1600,11 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 	v[2].b = (ubyte)b;
 	v[2].a = (ubyte)a;
 
-	v[3].sx = i2fl(x);
-	v[3].sy = i2fl(y + h);
-	v[3].sw = 0.0f;
-	v[3].u = 0.0f;
-	v[3].v = 0.0f;
+	v[3].screen.xyw.x = i2fl(x);
+	v[3].screen.xyw.y = i2fl(y + h);
+	v[3].screen.xyw.w = 0.0f;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 0.0f;
 	v[3].flags = PF_PROJECTED;
 	v[3].codes = 0;				
 	v[3].r = (ubyte)r;
@@ -2289,7 +1617,6 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 
 	if (!Fred_running)
 		g3_end_frame();
-
 
 	// restore zbuffer and culling
 	gr_zbuffer_set(saved_zbuf);
@@ -2312,35 +1639,35 @@ int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, uint additional_t
 	gr_zbuffer_set(GR_ZBUFF_NONE);	
 
 	// stuff coords	
-	v[0].sx = x;
-	v[0].sy = y;	
-	v[0].sw = 0.0f;
-	v[0].u = 0.0f;
-	v[0].v = 0.0f;
+	v[0].screen.xyw.x = x;
+	v[0].screen.xyw.y = y;	
+	v[0].screen.xyw.w = 0.0f;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 0.0f;
 	v[0].flags = PF_PROJECTED;
 	v[0].codes = 0;
 
-	v[1].sx = (x + w);
-	v[1].sy = y;	
-	v[1].sw = 0.0f;
-	v[1].u = 1.0f;
-	v[1].v = 0.0f;
+	v[1].screen.xyw.x = (x + w);
+	v[1].screen.xyw.y = y;	
+	v[1].screen.xyw.w = 0.0f;
+	v[1].texture_position.u = 1.0f;
+	v[1].texture_position.v = 0.0f;
 	v[1].flags = PF_PROJECTED;
 	v[1].codes = 0;
 
-	v[2].sx = (x + w);
-	v[2].sy = (y + h);	
-	v[2].sw = 0.0f;
-	v[2].u = 1.0f;
-	v[2].v = 1.0f;
+	v[2].screen.xyw.x = (x + w);
+	v[2].screen.xyw.y = (y + h);	
+	v[2].screen.xyw.w = 0.0f;
+	v[2].texture_position.u = 1.0f;
+	v[2].texture_position.v = 1.0f;
 	v[2].flags = PF_PROJECTED;
 	v[2].codes = 0;
 
-	v[3].sx = x;
-	v[3].sy = (y + h);	
-	v[3].sw = 0.0f;
-	v[3].u = 0.0f;
-	v[3].v = 1.0f;
+	v[3].screen.xyw.x = x;
+	v[3].screen.xyw.y = (y + h);	
+	v[3].screen.xyw.w = 0.0f;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 1.0f;
 	v[3].flags = PF_PROJECTED;
 	v[3].codes = 0;
 
@@ -2387,58 +1714,57 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 
 		//tri one
 		vertex *V = &bitmap_2d_poly_list[i*6];
-		V->sx = (float)b_list[i].x;
-		V->sy = (float)b_list[i].y;	
-		V->sw = 0.0f;
-		V->u = 0.0f;
-		V->v = 0.0f;
+		V->screen.xyw.x = (float)b_list[i].x;
+		V->screen.xyw.y = (float)b_list[i].y;	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = 0.0f;
+		V->texture_position.v = 0.0f;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
 		V++;
-		V->sx = (float)(b_list[i].x + b_list[i].w);
-		V->sy = (float)b_list[i].y;	
-		V->sw = 0.0f;
-		V->u = 1.0f;
-		V->v = 0.0f;
+		V->screen.xyw.x = (float)(b_list[i].x + b_list[i].w);
+		V->screen.xyw.y = (float)b_list[i].y;	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = 1.0f;
+		V->texture_position.v = 0.0f;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
 		V++;
-		V->sx = (float)(b_list[i].x + b_list[i].w);
-		V->sy = (float)(b_list[i].y + b_list[i].h);	
-		V->sw = 0.0f;
-		V->u = 1.0f;
-		V->v = 1.0f;
+		V->screen.xyw.x = (float)(b_list[i].x + b_list[i].w);
+		V->screen.xyw.y = (float)(b_list[i].y + b_list[i].h);	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = 1.0f;
+		V->texture_position.v = 1.0f;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 	
-
 		//tri two
 		V++;
-		V->sx = (float)b_list[i].x;
-		V->sy = (float)b_list[i].y;	
-		V->sw = 0.0f;
-		V->u = 0.0f;
-		V->v = 0.0f;
+		V->screen.xyw.x = (float)b_list[i].x;
+		V->screen.xyw.y = (float)b_list[i].y;	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = 0.0f;
+		V->texture_position.v = 0.0f;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
 		V++;
-		V->sx = (float)(b_list[i].x + b_list[i].w);
-		V->sy = (float)(b_list[i].y + b_list[i].h);	
-		V->sw = 0.0f;
-		V->u = 1.0f;
-		V->v = 1.0f;
+		V->screen.xyw.x = (float)(b_list[i].x + b_list[i].w);
+		V->screen.xyw.y = (float)(b_list[i].y + b_list[i].h);	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = 1.0f;
+		V->texture_position.v = 1.0f;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
 		V++;
-		V->sx = (float)b_list[i].x;
-		V->sy = (float)(b_list[i].y + b_list[i].h);	
-		V->sw = 0.0f;
-		V->u = 0.0f;
-		V->v = 1.0f;
+		V->screen.xyw.x = (float)b_list[i].x;
+		V->screen.xyw.y = (float)(b_list[i].y + b_list[i].h);	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = 0.0f;
+		V->texture_position.v = 1.0f;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;	
 	}
@@ -2465,7 +1791,6 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		bitmap_2d_poly_list = new vertex[6* n_bm];
 		bitmap_2d_poly_vertlist = new vertex*[6*n_bm];
 		for(int i = 0; i<6*n_bm; i++)bitmap_2d_poly_vertlist[i] = &bitmap_2d_poly_list[i];
-	//	memset(bitmap_2d_poly_list,0,sizeof(vertex)*6*n_bm);
 	}
 
 	g3_start_frame(1);
@@ -2481,58 +1806,57 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		texture_rect_list* t = &b_list[i].texture_rect;
 		//tri one
 		vertex *V = &bitmap_2d_poly_list[i*6];
-		V->sx = (float)b->x;
-		V->sy = (float)b->y;	
-		V->sw = 0.0f;
-		V->u = (float)t->x;
-		V->v = (float)t->y;
+		V->screen.xyw.x = (float)b->x;
+		V->screen.xyw.y = (float)b->y;	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = (float)t->x;
+		V->texture_position.v = (float)t->y;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
 		V++;
-		V->sx = (float)(b->x + b->w);
-		V->sy = (float)b->y;	
-		V->sw = 0.0f;
-		V->u = (float)(t->x + t->w);
-		V->v = (float)t->y;
+		V->screen.xyw.x = (float)(b->x + b->w);
+		V->screen.xyw.y = (float)b->y;	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = (float)(t->x + t->w);
+		V->texture_position.v = (float)t->y;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
 		V++;
-		V->sx = (float)(b->x + b->w);
-		V->sy = (float)(b->y + b->h);	
-		V->sw = 0.0f;
-		V->u = (float)(t->x + t->w);
-		V->v = (float)(t->y + t->h);
+		V->screen.xyw.x = (float)(b->x + b->w);
+		V->screen.xyw.y = (float)(b->y + b->h);	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = (float)(t->x + t->w);
+		V->texture_position.v = (float)(t->y + t->h);
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 	
-
 		//tri two
 		V++;
-		V->sx = (float)b->x;
-		V->sy = (float)b->y;	
-		V->sw = 0.0f;
-		V->u = (float)t->x;
-		V->v = (float)t->y;
+		V->screen.xyw.x = (float)b->x;
+		V->screen.xyw.y = (float)b->y;	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = (float)t->x;
+		V->texture_position.v = (float)t->y;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
 		V++;
-		V->sx = (float)(b->x + b->w);
-		V->sy = (float)(b->y + b->h);	
-		V->sw = 0.0f;
-		V->u = (float)(t->x + t->w);
-		V->v = (float)(t->y + t->h);
+		V->screen.xyw.x = (float)(b->x + b->w);
+		V->screen.xyw.y = (float)(b->y + b->h);	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = (float)(t->x + t->w);
+		V->texture_position.v = (float)(t->y + t->h);
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
 		V++;
-		V->sx = (float)b->x;
-		V->sy = (float)(b->y + b->h);	
-		V->sw = 0.0f;
-		V->u = (float)t->x;
-		V->v = (float)(t->y + t->h);
+		V->screen.xyw.x = (float)b->x;
+		V->screen.xyw.y = (float)(b->y + b->h);	
+		V->screen.xyw.w = 0.0f;
+		V->texture_position.u = (float)t->x;
+		V->texture_position.v = (float)(t->y + t->h);
 		V->flags = PF_PROJECTED;
 		V->codes = 0;	
 	}
@@ -2612,8 +1936,8 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 			vm_vec_rand_vec_quick(&start);
 			vm_vec_rand_vec_quick(&end);
 
-			ray[i].start = start;
-			ray[i].end = end;
+			ray[i].start.world = start;
+			ray[i].end.world = end;
 		}else{
 			//random cones
 			vec3d start, end;
@@ -2621,8 +1945,8 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 			vm_vec_random_cone(&start, dir, outer, inner);
 			vm_vec_random_cone(&end, dir, outer, inner);
 
-			ray[i].start = start;
-			ray[i].end = end;
+			ray[i].start.world = start;
+			ray[i].end.world = end;
 		}
 		if(max_ray_width == 0.0f)ray[i].width=min_ray_width;
 		else ray[i].width = frand_range(min_ray_width, max_ray_width);
@@ -2640,14 +1964,10 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 void flash_ball::defpoint(int off, ubyte *bsp_data)
 {
 	int n;
-//	off+=4;
 	int nverts = w(off+bsp_data+8);	
 	int offset = w(off+bsp_data+16);
-//	int next_norm = 0;
-
 	ubyte * normcount = off+bsp_data+20;
 	vec3d *src = vp(off+bsp_data+offset);
-
 
 	if(n_rays < nverts){
 		if(ray)vm_free(ray);
@@ -2656,25 +1976,21 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 	}
 
 	{
-
-
 		vec3d temp;
 		for (n=0; n<nverts; n++ )	{
 
 			temp = *src;
 			vm_vec_sub2(&temp, &center);
 			vm_vec_normalize(&temp);
-			ray[n].start = temp;
+			ray[n].start.world = temp;
 		
 			src++;		// move to normal
 
 			src+=normcount[n];
 		}
 	}
-
-
-
 }
+
 #define OP_EOF 			0
 #define OP_DEFPOINTS 	1
 #define OP_FLATPOLY		2
@@ -2749,14 +2065,14 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 
 			vm_vec_rand_vec_quick(&end);
 
-			ray[i].end = end;
+			ray[i].end.world = end;
 		}else{
 			//random cones
 			vec3d end;
 
 			vm_vec_random_cone(&end, dir, outer, inner);
 
-			ray[i].end = end;
+			ray[i].end.world = end;
 		}
 		if(max_ray_width == 0.0f)ray[i].width=min_ray_width;
 		else ray[i].width = frand_range(min_ray_width, max_ray_width);
@@ -2770,7 +2086,7 @@ void flash_ball::render(float rad, float intinsity, float life){
 	flash_ball::batcher.allocate(n_rays);
 	for(int i = 0; i<n_rays; i++){
 		vec3d end;
-		vm_vec_interp_constant(&end, (vec3d*)&ray[i].start.x,  (vec3d*)&ray[i].end.x, life);
+		vm_vec_interp_constant(&end, &ray[i].start.world, &ray[i].end.world, life);
 		vm_vec_scale(&end, rad);
 		vm_vec_add2(&end, &center);
 		flash_ball::batcher.draw_beam(&center, &end, ray[i].width*rad, intinsity);

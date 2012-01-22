@@ -557,13 +557,7 @@ void options_tab_setup(int set_palette)
 	// do other special processing
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_select();
-
-			// need to hide the hud config and control config buttons
-			// Buttons[gr_screen.res][CONTROL_CONFIG_BUTTON].button.hide();
-			// Buttons[gr_screen.res][HUD_CONFIG_BUTTON].button.hide();
-#endif // DEMO
 			break;
 
 		case DETAIL_LEVELS_TAB:
@@ -577,9 +571,7 @@ void options_tab_close()
 {
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_unselect();		
-#endif
 			break;
 
 		case DETAIL_LEVELS_TAB:
@@ -592,13 +584,6 @@ void options_change_tab(int n)
 {
 	int idx;
 
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-	if (n == MULTIPLAYER_TAB) {
-		game_feature_not_in_demo_popup();
-		return;
-	}
-#endif
-
 	switch (n) {
 		case MULTIPLAYER_TAB:
 			if ( Networking_disabled ) {
@@ -608,10 +593,8 @@ void options_change_tab(int n)
 
 			if ( !Options_multi_inited ) {
 				// init multiplayer
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 				options_multi_init(&Ui_window);
 				options_multi_unselect();
-#endif
 				Options_multi_inited = 1;
 			}
 
@@ -746,10 +729,6 @@ void options_button_pressed(int n)
 			break;				
 
 		case HUD_CONFIG_BUTTON:
-#ifdef FS2_DEMO
-			game_feature_not_in_demo_popup();
-#else
-
 			// can't go to the hud config screen when a multiplayer observer
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 				gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -759,7 +738,6 @@ void options_button_pressed(int n)
 
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_HUD_CONFIG);
-#endif
 			break;
 
 		case ACCEPT_BUTTON:
@@ -909,9 +887,7 @@ void options_accept()
 {
 	// apply the selected multiplayer options
 	if ( Options_multi_inited ) {
-		#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 		options_multi_accept();
-		#endif
 	}
 
 	// If music is zero volume, disable
@@ -1068,9 +1044,7 @@ void options_menu_close()
 		Voice_vol_handle = -1;
 	}
 
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 	options_multi_close();
-#endif
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
@@ -1209,9 +1183,7 @@ void options_menu_do_frame(float frametime)
 			break;
 
 		case KEY_ESC:
-			// if(Tab != MULTIPLAYER_TAB){
-				options_cancel_exit();
-			// }
+			options_cancel_exit();
 			break;
 
 		case KEY_CTRLED | KEY_ENTER:
@@ -1251,9 +1223,7 @@ void options_menu_do_frame(float frametime)
 	// do specific processing for the multiplayer tab
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_do(k);
-#endif
 			break;
 
 		case DETAIL_LEVELS_TAB:
@@ -1274,7 +1244,7 @@ void options_menu_do_frame(float frametime)
 		}
 	}
 
-	if ((i == NUM_TABS) /*&& (Tab != MULTIPLAYER_TAB)*/ ){
+	if (i == NUM_TABS){
 		Buttons[gr_screen.res][Tab].button.draw_forced(2);
 	}
 
@@ -1304,18 +1274,15 @@ void options_menu_do_frame(float frametime)
 		y = Options_skills_text_coords[gr_screen.res][OPTIONS_Y_COORD];
 		gr_set_color_fast(&Color_bright_white);
 		gr_string(x + (Options_skills_text_coords[gr_screen.res][OPTIONS_W_COORD] / 2) - (w/2), y, Skill_level_names(Game_skill_level));
-	}
 
-	
-	//==============================================================================
-	// Draw the gamma adjustment grid.
-	if (Tab == OPTIONS_TAB) {
+		//==============================================================================
+		// Draw the gamma adjustment grid.
 
 		draw_gamma_box();
 		
 		gr_set_color_fast(&Color_white);
-		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD]; //  + Options_gamma_num_coords[gr_screen.res][OPTIONS_W_COORD] / 2 - 12;
-		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD]; // + Options_gamma_num_coords[gr_screen.res][OPTIONS_H_COORD] / 2 - gr_get_font_height() / 2;
+		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD];
+		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD];
 
 		gr_printf(x, y, NOX("%.2f"), FreeSpace_gamma);
 	}
@@ -1326,24 +1293,6 @@ void options_menu_do_frame(float frametime)
 		options_multi_vox_process_waveform();
 	}
 	
-/*  Debug code: Graphs the joystick range scaling
-{
-int joy_get_scaled_reading(int raw, int axn);
-	int x, y;
-
-	gr_set_color_fast(&Color_white);
-	for (x=0; x<256; x+=16) {
-		gr_line(x + 15, 0, x + 15, 255);
-		gr_line(0, x + 15, 255, x + 15);
-	}
-
-	gr_set_color_fast(&Color_bright_white);
-	for (x=0; x<256; x++) {
-		y = joy_get_scaled_reading(x * 256, 0) / 512;
-		gr_line(x, 128, x, 128 + y);
-	}
-}*/	
-
 	gr_flip();
 }
 

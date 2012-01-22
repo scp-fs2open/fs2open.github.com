@@ -2466,10 +2466,10 @@ int parse_weapon(int subtype, bool replace)
 		}
 
 		float bogus;
-		
+
 		required_string("+radius:");
 		stuff_float(&bogus);
-		
+
 		if ( optional_string("+burn time:") ) {
 			stuff_float(&bogus);
 		}
@@ -6061,7 +6061,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}
 
 	// single player and multiplayer masters evaluate the scoring and kill stuff
-	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
+	if (!MULTIPLAYER_CLIENT) {
 		//If this is a bomb, set it up for scoring. -Halleck
 		if (wip->wi_flags & WIF_BOMB) {
 			scoring_eval_kill_on_weapon(weapon_obj, other_obj);

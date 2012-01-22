@@ -898,11 +898,8 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 	if (val == IDCANCEL)
 		exit(1);
-#ifndef INTERPLAYQA
+
 	Int3();
-#else
-	AsmInt3();
-#endif
 
 	gr_activate(1);
 
@@ -966,11 +963,8 @@ void _cdecl WinAssert(char * text, char * filename, int linenum, const char * fo
 
 	if (val == IDCANCEL)
 		exit(1);
-#ifndef INTERPLAYQA
+
 	Int3();
-#else
-	AsmInt3();
-#endif
 
 	gr_activate(1);
 
@@ -1151,11 +1145,7 @@ void _cdecl Error( const char * filename, int line, const char * format, ... )
 			exit(1);
 
 		default:
-#ifndef INTERPLAYQA
 			Int3();
-#else
-			AsmInt3();
-#endif
 			break;
 	}
 
@@ -1273,11 +1263,7 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	switch (result)
 	{
 		case IDYES:
-#ifndef INTERPLAYQA
 			Int3();
-#else
-			AsmInt3();
-#endif
 			break;
 
 		case IDNO:

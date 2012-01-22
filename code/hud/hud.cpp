@@ -3504,9 +3504,9 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 
 		g3_project_vertex(&pt);
 
-		gr_unsize_screen_posf( &pt.sx, &pt.sy );
-		HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width_unscaled)*0.5f - pt.sx);
-		HUD_offset_y -= 0.45f * (i2fl(gr_screen.clip_height_unscaled)*0.5f - pt.sy);
+		gr_unsize_screen_posf( &pt.screen.xyw.x, &pt.screen.xyw.y );
+		HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width_unscaled)*0.5f - pt.screen.xyw.x);
+		HUD_offset_y -= 0.45f * (i2fl(gr_screen.clip_height_unscaled)*0.5f - pt.screen.xyw.y);
 
 		if ( HUD_offset_x > 100.0f )	{
 			HUD_offset_x = 100.0f;
@@ -3556,8 +3556,8 @@ void HUD_get_nose_coordinates(int *x, int *y)
 		g3_project_vertex(&v0);
 
 		if ( !(v0.codes & PF_OVERFLOW) ) {
-			x_nose = v0.sx;
-			y_nose = v0.sy;
+			x_nose = v0.screen.xyw.x;
+			y_nose = v0.screen.xyw.y;
 		} else {
 			// Means that the ship forward vector is not going through the frame buffer.
 			// We're assigning a high negative value so that the the bitmaps will be drawn offscreen so that

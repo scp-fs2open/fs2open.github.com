@@ -357,7 +357,7 @@ void CMessageEditorDlg::OnUpdateName()
 
 int CMessageEditorDlg::update(int num)
 {
-	char *ptr, buf[4096];
+	char *ptr, buf[MAX_EVENT_SIZE];
 	int i, node, fnode;
 	CListBox *list;
 

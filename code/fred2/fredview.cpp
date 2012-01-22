@@ -1313,8 +1313,8 @@ void select_objects()
 		g3_rotate_vertex(&v, &ptr->pos);
 		if (!(v.codes & CC_BEHIND) && valid)
 			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-				x = (int) v.sx;
-				y = (int) v.sy;
+				x = (int) v.screen.xyw.x;
+				y = (int) v.screen.xyw.y;
 
 				if (x >= marking_box.x1 && x <= marking_box.x2 && y >= marking_box.y1 && y <= marking_box.y2) {
 					if (ptr->flags & OF_MARKED)
@@ -2492,7 +2492,7 @@ int CFREDView::global_error_check()
 				}
 
 				// wing squad logo check - Goober5000
-				if (strlen(Wings[wing].wing_squad_filename) > 0)
+				if (strlen(Wings[wing].wing_squad_filename) > 0) //-V805
 				{
 					if (The_mission.game_type & MISSION_TYPE_MULTI)
 					{
@@ -3279,7 +3279,7 @@ int CFREDView::internal_error(char *msg, ...)
 
 int CFREDView::fred_check_sexp(int sexp, int type, char *msg, ...)
 {
-	char buf[512], buf2[2048], buf3[4096];
+	char buf[512], buf2[2048], buf3[MAX_EVENT_SIZE];
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -3294,7 +3294,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, char *msg, ...)
 	if (!z)
 		return 0;
 
-	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE, 2048);
+	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
 	sprintf(buf3, "Error in %s: %s\n\nIn sexpression: %s\n(Error appears to be: %s)",
 		buf, sexp_error_message(z), buf2, Sexp_nodes[faulty_node].text);
 

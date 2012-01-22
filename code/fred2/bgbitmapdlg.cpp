@@ -212,12 +212,12 @@ void bg_bitmap_dlg::create()
 	m_envmap = _T(The_mission.envmap_name);
 
 	for(i=0; i<MAX_NEB2_BITMAPS; i++){
-		if(strlen(Neb2_bitmap_filenames[i]) > 0){
+		if(strlen(Neb2_bitmap_filenames[i]) > 0){ //-V805
 			((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i]);
 		}
 	}
 	// if we have a texture selected already
-	if(strlen(Neb2_texture_name) > 0){
+	if(strlen(Neb2_texture_name) > 0){ //-V805
 		m_neb2_texture = ((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->SelectString(-1, Neb2_texture_name);
 		if(m_neb2_texture == CB_ERR){
 			((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->SetCurSel(0);

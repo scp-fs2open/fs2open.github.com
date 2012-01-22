@@ -184,8 +184,6 @@
 		34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531308C3D69F003B1351 /* timerbar.cpp */; };
 		34C71B0408C41AB100459F5B /* dbugfile.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531208C3D69F003B1351 /* dbugfile.h */; };
 		34C71B0608C41AB200459F5B /* console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531008C3D69F003B1351 /* console.cpp */; };
-		34C71B0908C41AB800459F5B /* demo.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531A08C3D69F003B1351 /* demo.h */; };
-		34C71B0A08C41AB800459F5B /* demo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531908C3D69F003B1351 /* demo.cpp */; };
 		34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459532D08C3D6A0003B1351 /* exceptionhandler.h */; };
 		34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459532C08C3D6A0003B1351 /* exceptionhandler.cpp */; };
 		34C71B0D08C41AC100459F5B /* warpineffect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459533108C3D6A0003B1351 /* warpineffect.cpp */; };
@@ -972,8 +970,6 @@
 		3459531208C3D69F003B1351 /* dbugfile.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = dbugfile.h; sourceTree = "<group>"; };
 		3459531308C3D69F003B1351 /* timerbar.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = timerbar.cpp; sourceTree = "<group>"; };
 		3459531408C3D69F003B1351 /* timerbar.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = timerbar.h; sourceTree = "<group>"; };
-		3459531908C3D69F003B1351 /* demo.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = demo.cpp; sourceTree = "<group>"; };
-		3459531A08C3D69F003B1351 /* demo.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = demo.h; sourceTree = "<group>"; };
 		3459531E08C3D69F003B1351 /* dxguid.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = dxguid.lib; sourceTree = "<group>"; };
 		3459531F08C3D6A0003B1351 /* strmiids.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = strmiids.lib; sourceTree = "<group>"; };
 		3459532008C3D6A0003B1351 /* vasync.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vasync.h; sourceTree = "<group>"; };
@@ -1897,7 +1893,6 @@
 				3459530908C3D69F003B1351 /* ddsutils */,
 				3459530C08C3D69F003B1351 /* debris */,
 				3459530F08C3D69F003B1351 /* debugconsole */,
-				3459531808C3D69F003B1351 /* demo */,
 				3459531B08C3D69F003B1351 /* directx */,
 				3459532B08C3D6A0003B1351 /* exceptionhandler */,
 				60E7978910F59BF700904FA6 /* external_dll */,
@@ -2112,15 +2107,6 @@
 				3459531408C3D69F003B1351 /* timerbar.h */,
 			);
 			path = debugconsole;
-			sourceTree = "<group>";
-		};
-		3459531808C3D69F003B1351 /* demo */ = {
-			isa = PBXGroup;
-			children = (
-				3459531908C3D69F003B1351 /* demo.cpp */,
-				3459531A08C3D69F003B1351 /* demo.h */,
-			);
-			path = demo;
 			sourceTree = "<group>";
 		};
 		3459531B08C3D69F003B1351 /* directx */ = {
@@ -3279,7 +3265,6 @@
 				34C71B0008C41AAD00459F5B /* debris.h in Headers */,
 				34C71B0208C41AB000459F5B /* timerbar.h in Headers */,
 				34C71B0408C41AB100459F5B /* dbugfile.h in Headers */,
-				34C71B0908C41AB800459F5B /* demo.h in Headers */,
 				34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */,
 				34C71B0E08C41AC100459F5B /* fireballs.h in Headers */,
 				34C71B1808C41ACB00459F5B /* gameplayhelp.h in Headers */,
@@ -3863,7 +3848,6 @@
 				34C71B0108C41AAD00459F5B /* debris.cpp in Sources */,
 				34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */,
 				34C71B0608C41AB200459F5B /* console.cpp in Sources */,
-				34C71B0A08C41AB800459F5B /* demo.cpp in Sources */,
 				34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */,
 				34C71B0D08C41AC100459F5B /* warpineffect.cpp in Sources */,
 				34C71B0F08C41AC200459F5B /* fireballs.cpp in Sources */,

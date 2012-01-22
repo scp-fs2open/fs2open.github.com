@@ -27,11 +27,7 @@
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
 
-#if defined(DEMO) || defined(OEM_BUILD) // no change for FS2_DEMO
-	#define MAX_PLAYERS	1
-#else
-	#define MAX_PLAYERS	12
-#endif
+#define MAX_PLAYERS	12
 
 #define USE_INLINE_ASM 1		// Define this to use inline assembly
 #define STRUCT_CMP(a, b) memcmp((void *) &a, (void *) &b, sizeof(a))
@@ -76,6 +72,9 @@ typedef struct ccodes {
 
 struct vertex;
 
+/** Represents a point in 3d space.
+
+Note: this is a struct, not a class, so no member functions. */
 typedef struct vec3d {
 	union {
 		struct {
@@ -83,15 +82,15 @@ typedef struct vec3d {
 		} xyz;
 		float a1d[3];
 	};
-	inline void operator= (vertex&vert);
-	inline void set_screen_vert(vertex&vert);
-
-	bool operator == (const vec3d &other);
 } vec3d;
 
-inline bool vec3d::operator == (const vec3d &other)
+/** Compares two vec3ds */
+inline bool operator==(const vec3d &self, const vec3d &other)
 {
-	return ( (a1d[0] == other.a1d[0]) && (a1d[1] == other.a1d[1]) && (a1d[2] == other.a1d[2]) );
+	return (self.xyz.x == other.xyz.x
+		&& self.xyz.y == other.xyz.y
+		&& self.xyz.z == other.xyz.z
+	);
 }
 
 typedef struct vec2d {
@@ -116,39 +115,49 @@ typedef struct uv_pair {
 	float u,v;
 } uv_pair;
 
-// Used to store rotated points for mines.
-// Has flag to indicate if projected.
+/** Compares two uv_pairs */
+inline bool operator==(const uv_pair &left, const uv_pair &right)
+{
+	return (left.u == right.u) && (left.v == right.v);
+}
+
+/** Represents a point in 3d screen space. 'w' is 1/z.
+
+Like vec3d but for screens.
+
+Note: this is a struct, not a class, so no member functions. */
+typedef struct screen3d
+{
+	union {
+		struct {
+			float x,y,w;
+		} xyw;
+		float a1d[3];
+	};
+} screen3d;
+
+/** Compares two screen3ds */
+inline bool operator==(const screen3d &self, const screen3d &other)
+{
+	return (self.xyw.x == other.xyw.x
+		&& self.xyw.y == other.xyw.y
+		&& self.xyw.w == other.xyw.w
+	);
+}
+
+/** Used to store rotated points for mines. Has flag to indicate if projected.
+
+Note: this is a struct, not a class, so no memeber functions. */
 typedef struct vertex {
-	float		x, y, z;			// world space position
-	float		sx, sy, sw;			// screen space position (sw == 1/z)
-	float		u, v;				// texture position
+	vec3d		world;				// world space position
+	screen3d	screen;				// screen space position (sw == 1/z)
+	uv_pair		texture_position;	// texture position
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
 	ubyte		spec_r, spec_g, spec_b, spec_a;	//specular highlights -Bobboau
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
 	ubyte		pad[2];				// pad structure to be 4 byte aligned.
-	void operator=(vec3d&vec) {
-		memcpy(&x,&vec, sizeof(vec3d));
-	}
-
-	bool operator == (const vertex &other);
 } vertex;
-
-inline bool vertex::operator == (const vertex &other)
-{
-	// NOTE: this is checking position and uv only!
-	return ( (x == other.x) && (y == other.y) && (z == other.z)
-				&& (u == other.u) && (v == other.v) );
-}
-
-inline void vec3d::operator= (vertex&vert) {
-	memcpy(this,&vert.x,sizeof(vec3d));
-}
-
-//set the vector to the vertex screen position
-inline void vec3d::set_screen_vert(vertex&vert) {
-	memcpy(this,&vert.sx,sizeof(vec3d));
-}
 
 //def_list
 typedef struct flag_def_list {
@@ -240,29 +249,15 @@ extern int Global_error_count;
 
 //#define Int3() _asm { int 3 }
 
-#ifdef INTERPLAYQA
-	// Interplay QA version of Int3
+#if defined(NDEBUG)
+	// No debug version of Int3
 	#define Int3() do { } while (0) 
-
-	// define to call from Warning function above since it calls Int3, so without this, we
-	// get put into infinite dialog boxes
-	#ifdef _WIN32
-		#define AsmInt3() _asm { int 3 }
-	#else
-		#define AsmInt3() exit(EXIT_FAILURE)
-	#endif
-
 #else
-	#if defined(NDEBUG)
-		// No debug version of Int3
-		#define Int3() do { } while (0) 
-	#else
-		void debug_int3(char *file, int line);
+	void debug_int3(char *file, int line);
 
-		// Debug version of Int3
-		#define Int3() debug_int3(__FILE__, __LINE__)
-	#endif	// NDEBUG && DEMO
-#endif	// INTERPLAYQA
+	// Debug version of Int3
+	#define Int3() debug_int3(__FILE__, __LINE__)
+#endif	// NDEBUG
 
 #ifndef MIN
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))

@@ -34,7 +34,6 @@
 #include "popup/popup.h"
 #include "weapon/emp.h"
 #include "weapon/beam.h"
-#include "demo/demo.h"
 #include "object/objectdock.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
@@ -639,7 +638,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		}
 
 		// if we're not in CLIENT_NODAMAGE multiplayer mode (which is a the NEW way of doing things)
-		if (damage_to_apply > 0.1f && !(MULTIPLAYER_CLIENT) && !(Game_mode & GM_DEMO_PLAYBACK))
+		if ( (damage_to_apply > 0.1f) && !(MULTIPLAYER_CLIENT) )
 		{
 			//	Decrease damage to subsystems to player ships.
 			if (ship_obj->flags & OF_PLAYER_SHIP){
@@ -703,7 +702,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			}
 
 			// multiplayer clients never blow up subobj stuff on their own
-			if ( (subsys->current_hits <= 0.0f) && !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)){
+			if ( (subsys->current_hits <= 0.0f) && !MULTIPLAYER_CLIENT) {
 				do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
 			}
 
@@ -1346,11 +1345,6 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	sp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[sp->ship_info_index];
 
-	// if recording demo
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_ship_kill(objp);
-	}
-
 	ai_announce_ship_dying(objp);
 
 	ship_stop_fire_primary(objp);	//mostly for stopping fighter beam looping sounds -Bobboau
@@ -1547,7 +1541,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	game_tst_mark(ship_obj, sp);
 
 	// single player and multiplayer masters evaluate the scoring and kill stuff
-	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
+	if ( !MULTIPLAYER_CLIENT ) {
 		killer_index = scoring_eval_kill( ship_obj );
 
 		// ship is destroyed -- send this event to the mission log stuff to record this event.  Try to find who
@@ -1998,7 +1992,6 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
 		int	weapon_info_index;
-		bool apply_shield_armor = true;
 
 		weapon_info_index = shiphit_get_damage_weapon(other_obj);
 		if ( weapon_info_index >= 0 ) {
@@ -2016,26 +2009,23 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			int dmg_type_idx = -1;
 
 			//Do armor stuff
-			if (apply_shield_armor)
-			{
-				if(other_obj_is_weapon) {
-					dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
-				} else if(other_obj_is_beam) {
-					dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
-				} else if(other_obj_is_shockwave) {
-					dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
-				} else if(other_obj_is_asteroid) {
-					dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
-				} else if(other_obj_is_debris) {
-					dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
-				} else if(other_obj_is_ship) {
-					dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
-				}
+			if(other_obj_is_weapon) {
+				dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+			} else if(other_obj_is_beam) {
+				dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+			} else if(other_obj_is_shockwave) {
+				dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+			} else if(other_obj_is_asteroid) {
+				dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+			} else if(other_obj_is_debris) {
+				dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
+			} else if(other_obj_is_ship) {
+				dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
+			}
 				
-				if(shipp->shield_armor_type_idx != -1)
-				{
-					piercing_pct = Armor_types[shipp->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
-				}
+			if(shipp->shield_armor_type_idx != -1)
+			{
+				piercing_pct = Armor_types[shipp->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
 			}
 			
 			float pre_shield = damage;
@@ -2045,12 +2035,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				damage = pre_shield * (1.0f - piercing_pct);
 			}
 
-			if (apply_shield_armor)
+			if(shipp->shield_armor_type_idx != -1)
 			{
-				if(shipp->shield_armor_type_idx != -1)
-				{
-					damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx);
-				}
+				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx);
 			}
 
 			damage = apply_damage_to_shield(ship_obj, quadrant, damage);
@@ -2143,7 +2130,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			}
 
 			// multiplayer clients don't do damage
-			if(((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT) || (Game_mode & GM_DEMO_PLAYBACK)){
+			if (((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT)) {
 			} else {
 				// Check if this is simulated damage.
 				weapon_info_index = shiphit_get_damage_weapon(other_obj);
@@ -2248,7 +2235,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 					percent_killed = 1.0f;
 				}
 
-				if ( !(shipp->flags & SF_DYING) && !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)){  // if not killed, then kill
+				if ( !(shipp->flags & SF_DYING) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
 					ship_hit_kill(ship_obj, other_obj, percent_killed, 0);
 				}
 			}
@@ -2343,7 +2330,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 
 	// only want to check the following in single player or if I am the multiplayer game server
 	// Added OBJ_BEAM for traitor detection - FUBAR
-	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK) && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_BEAM)) ){
+	if ( !MULTIPLAYER_CLIENT && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_BEAM)) ) {
 		ai_ship_hit(ship_obj, other_obj, hitpos, quadrant, hit_normal);
 	}
 

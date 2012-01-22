@@ -359,9 +359,6 @@ void model_init()
 		Polygon_models[i] = NULL;
 	}
 
-	// Init the model caching system
-//	model_cache_init();
-
 	atexit( model_free_all );
 	model_initted = 1;
 }
@@ -2944,8 +2941,8 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, i
 			g3_project_vertex(&pt);
 
 			if (!(pt.flags & PF_OVERFLOW)) {
-				x = fl2i(pt.sx);
-				y = fl2i(pt.sy);
+				x = fl2i(pt.screen.xyw.x);
+				y = fl2i(pt.screen.xyw.y);
 				if ( n_valid_pts == 0 )	{
 					min_x = x;
 					min_y = y;
@@ -3008,8 +3005,8 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
 			g3_project_vertex(&pt);
 
 			if (!(pt.flags & PF_OVERFLOW)) {
-				x = fl2i(pt.sx);
-				y = fl2i(pt.sy);
+				x = fl2i(pt.screen.xyw.x);
+				y = fl2i(pt.screen.xyw.y);
 				if ( n_valid_pts == 0 )	{
 					min_x = x;
 					min_y = y;
@@ -3068,17 +3065,17 @@ int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *
 	if (pnt.flags & PF_OVERFLOW)
 		return 2;
 
-	t = (width * Canv_w2)/pnt.z;
+	t = (width * Canv_w2)/pnt.world.xyz.z;
 	w = t*Matrix_scale.xyz.x;
 
-	t = (height*Canv_h2)/pnt.z;
+	t = (height*Canv_h2)/pnt.world.xyz.z;
 	h = t*Matrix_scale.xyz.y;
 
-	if (x1) *x1 = fl2i(pnt.sx - w);
-	if (y1) *y1 = fl2i(pnt.sy - h);
+	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
+	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
 
-	if (x2) *x2 = fl2i(pnt.sx + w);
-	if (y2) *y2 = fl2i(pnt.sy + h);
+	if (x2) *x2 = fl2i(pnt.screen.xyw.x + w);
+	if (y2) *y2 = fl2i(pnt.screen.xyw.y + h);
 
 	return 0;
 }
@@ -3106,17 +3103,17 @@ int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int 
 	if (pnt.flags & PF_OVERFLOW)
 		return 2;
 
-	t = (width * Canv_w2)/pnt.z;
+	t = (width * Canv_w2)/pnt.world.xyz.z;
 	w = t*Matrix_scale.xyz.x;
 
-	t = (height*Canv_h2)/pnt.z;
+	t = (height*Canv_h2)/pnt.world.xyz.z;
 	h = t*Matrix_scale.xyz.y;
 
-	if (x1) *x1 = fl2i(pnt.sx - w);
-	if (y1) *y1 = fl2i(pnt.sy - h);
+	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
+	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
 
-	if (x2) *x2 = fl2i(pnt.sx + w);
-	if (y2) *y2 = fl2i(pnt.sy + h);
+	if (x2) *x2 = fl2i(pnt.screen.xyw.x + w);
+	if (y2) *y2 = fl2i(pnt.screen.xyw.y + h);
 
 	return 0;
 }

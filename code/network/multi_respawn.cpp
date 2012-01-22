@@ -673,9 +673,6 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 
 		// if this is for me, I should jump back into gameplay
 		if(&Net_players[player_index] == Net_player){
-			//extern int Player_multi_died_check;
-			//Player_multi_died_check = -1;
-
 			gameseq_post_event(GS_EVENT_ENTER_GAME);
 		}
 		break;

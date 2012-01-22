@@ -117,7 +117,7 @@ int Cmd_image_center_coords[GR_NUM_RESOLUTIONS][2] =
 
 int Top_cmd_brief_text_line;
 
-int Max_cmdbrief_Lines;
+int Max_cmdbrief_Lines; // Maximum number of lines to be displayed
 
 #define MAX_CMD_BRIEF_BUTTONS	10
 #define MIN_CMD_BRIEF_BUTTONS	8
@@ -509,8 +509,6 @@ void cmd_brief_init(int team)
 {
 	common_music_init(SCORE_BRIEFING);
 
-//#ifndef FS2_DEMO
-
 	int i;
 	ui_button_info *b;
 
@@ -597,8 +595,6 @@ void cmd_brief_init(int team)
 	cmd_brief_new_stage(0);
 	Cmd_brief_paused = 0;
 	Cmd_brief_inited = 1;
-
-//#endif
 }
 
 void cmd_brief_close()

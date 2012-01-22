@@ -586,7 +586,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r)
 	g3_rotate_vertex(&text_center, &center_pt);
 	g3_project_vertex(&text_center);
 	gr_set_color_fast(&colour_white);
-	gr_string_win( (int)text_center.sx,  (int)text_center.sy, buf);
+	gr_string_win( (int)text_center.screen.xyw.x,  (int)text_center.screen.xyw.y, buf);
 }
 
 void display_active_ship_subsystem()
@@ -1004,7 +1004,7 @@ void display_distances()
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW))	{
 							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
-							gr_string_win((int) v.sx, (int) v.sy, buf);
+							gr_string_win((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
 						}
 				}
 
@@ -1103,7 +1103,7 @@ void display_ship_info()
 					else
 						gr_set_color_fast(&colour_white);
 
-					gr_string_win((int) v.sx, (int) v.sy, buf);
+					gr_string_win((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
 				}
 			}
 
@@ -1552,8 +1552,8 @@ void render_frame()
 
 				gr_get_string_size(&w, &h, buf);
 
-				x = (int) v.sx;
-				y = (int) v.sy + 20;
+				x = (int) v.screen.xyw.x;
+				y = (int) v.screen.xyw.y + 20;
 
 				gr_set_color_fast(&colour_white);
 				gr_rect(x-7, y-6, w+8, h+7);
@@ -1959,8 +1959,8 @@ int select_object(int cx, int cy)
 		g3_rotate_vertex(&vt, &ptr->pos);
 		if (!(vt.codes & CC_BEHIND))
 			if (!(g3_project_vertex(&vt) & PF_OVERFLOW)) {
-				hitpos.xyz.x = vt.sx - cx;
-				hitpos.xyz.y = vt.sy - cy;
+				hitpos.xyz.x = vt.screen.xyw.x - cx;
+				hitpos.xyz.y = vt.screen.xyw.y - cy;
 				dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y;
 				if ((dist < 8) && (dist < best_dist)) {
 					best = OBJ_INDEX(ptr);

@@ -26,7 +26,6 @@
 // defines for physics functions
 #define	MAX_TURN_LIMIT	0.2618f		// about 15 degrees
 
-#define ROT_DEBUG
 #define ROTVEL_TOL		0.1			// Amount of rotvel is decreased if over cap
 #define ROTVEL_CAP		14.0			// Rotational velocity cap for live objects
 #define DEAD_ROTVEL_CAP	16.3			// Rotational velocity cap for dead objects
@@ -388,7 +387,6 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 	// update world position from local to world coords using orient
 	vec3d world_disp;
 	vm_vec_unrotate (&world_disp, &local_disp, orient);
-
 	vm_vec_add2 (position, &world_disp);
 
 	// update world velocity
@@ -819,12 +817,6 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 	vm_vec_scale ( &delta_rotvel, (float) ROTVEL_WHACK_CONST );
 	vm_vec_add2( &pi->rotvel, &delta_rotvel );
 
-#ifdef ROT_DEBUG
-	if (check_rotvel_limit( pi )) {
-		nprintf(("Physics", "rotvel reset in physics_apply_whack\n"));
-	}
-#endif
-
 	//mprintf(("Whack: %7.3f %7.3f %7.3f\n", pi->rotvel.xyz.x, pi->rotvel.xyz.y, pi->rotvel.xyz.z));
 
 	// instant whack on the velocity
@@ -1034,14 +1026,6 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
-
-#ifdef ROT_DEBUG
-	if (check_rotvel_limit( pi )) {
-		nprintf(("Physics", "rotvel reset in physics_apply_shock\n"));
-	}
-#endif
-
-																				// ramped velocity is now affected by collision
 }
 
 // ----------------------------------------------------------------------------
@@ -1069,12 +1053,6 @@ void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_i
 	vm_vec_rotate( &body_delta_rotvel, world_delta_rotvel, orient );
 //	vm_vec_scale( &body_delta_rotvel, (float)	ROTVEL_COLLIDE_WHACK_CONST );
 	vm_vec_add2( &pi->rotvel, &body_delta_rotvel );
-
-#ifdef ROT_DEBUG
-	if (check_rotvel_limit( pi )) {
-		nprintf(("Physics", "rotvel reset in physics_collide_whack\n"));
-	}
-#endif
 
 	update_reduced_damp_timestamp( pi, vm_vec_mag(impulse) );
 

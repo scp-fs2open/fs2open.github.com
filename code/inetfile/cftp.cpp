@@ -492,7 +492,7 @@ uint CFtpGet::ReadFTPServerReply()
 	uint rcode;
 	int iBytesRead;
 	char chunk[2];
-	char szcode[5];
+	char szcode[4];
 	uint igotcrlf = 0;
 	memset(recv_buffer,0,1000);
 	do

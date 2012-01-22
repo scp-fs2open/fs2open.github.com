@@ -24,16 +24,12 @@ SCP_vector<camera*> Cameras;
 camid Current_camera;
 camid Main_camera;
 
-//*************************INTERNAL FUNCS*************************
-//static avd_camera *cam_upgrade_to_avd(camera *cam);
-
 //*************************CLASS: camera*************************
 //This is where the camera class beings! :D
 camera::camera(char *in_name, int in_signature)
 {
 	set_name(in_name);
 	sig = in_signature;
-//	flags = CAM_DEFAULT_FLAGS;
 
 	reset();
 }
@@ -75,31 +71,11 @@ void camera::reset()
 	pos_y.clear();
 	pos_z.clear();
 
-	/*
-	ori_p.clear();
-	ori_b.clear();
-	ori_h.clear();
-	*/
-	/*
-	ori_progress.clear();
-	ori_initial = ori_final = vmd_identity_matrix;
-	*/
 	for(int i = 0; i < 9; i++)
 	{
 		ori[i].clear();
 		ori[i].set(vmd_identity_matrix.a1d[i]);
 	}
-	/*
-	flags = CAM_DEFAULT_FLAGS;
-
-	desired_position = position = vmd_zero_vector;
-	
-	translation_velocity = translation_vel_limit = translation_acc_limit = vmd_zero_vector;
-
-	vm_set_identity(&orientation);
-	vm_set_identity(&desired_orientation);
-	rotation_rate = rotation_vel_limit = rotation_acc_limit = vmd_zero_vector;
-	*/
 }
 
 void camera::set_name(char *in_name)
@@ -144,15 +120,19 @@ void camera::set_object_target(object *objp, int n_object_target_submodel)
 	object_target_submodel = n_object_target_submodel;
 }
 
-//Custom function receives the already-modified current position value.
-//It should be replaced or added to as the custom function modifier sees fit.
+/**
+ * Custom function receives the already-modified current position value.
+ * It should be replaced or added to as the custom function modifier sees fit.
+ */
 void camera::set_custom_position_function(void (*n_func_custom_position)(camera *cam, vec3d *camera_pos))
 {
 	func_custom_position = n_func_custom_position;
 }
 
-//Custom function receives the already-modified current orientation value.
-//It should be replaced or added to as the custom function modifier sees fit.
+/**
+ * Custom function receives the already-modified current orientation value.
+ * It should be replaced or added to as the custom function modifier sees fit.
+ */
 void camera::set_custom_orientation_function(void (*n_func_custom_orientation)(camera *cam, matrix *camera_ori))
 {
 	func_custom_orientation = n_func_custom_orientation;
@@ -212,26 +192,6 @@ void camera::set_rotation(matrix *in_orientation, float in_rotation_time, float 
 
 	for(int i = 0; i < 9; i++)
 		ori[i].setAVD(in_orientation->a1d[i], in_rotation_time, in_rotation_acceleration_time, in_rotation_deceleration_time, 0.0f);
-	//WMC - This stationary check is here because it's a lot more
-	//accurate to directly save the matrix, if we've been provided one.
-	//IMPORTANT: Without this chunk, the HUD and view waves around with
-	//				the main camera.
-	/*
-	angles a;
-	vm_extract_angles_matrix(&a, in_orientation);
-	if(in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f)
-	{
-		c_ori = *in_orientation;
-		ori_p.set(a.p);
-		ori_b.set(a.b);
-		ori_h.set(a.h);
-		flags |= CAM_STATIONARY_ORI;
-		return;
-	}
-
-	//Continue on
-	this->set_rotation(&a, in_rotation_time, in_rotation_acceleration_time);
-	*/
 }
 
 void camera::set_rotation(angles *in_angles, float in_rotation_time, float in_rotation_acceleration_time, float in_rotation_deceleration_time)
@@ -239,33 +199,6 @@ void camera::set_rotation(angles *in_angles, float in_rotation_time, float in_ro
 	matrix mtx = IDENTITY_MATRIX;
 	vm_rotate_matrix_by_angles(&mtx, in_angles);
 	this->set_rotation(&mtx, in_rotation_time, in_rotation_acceleration_time, in_rotation_deceleration_time);
-	/*
-	if(in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f)
-	{
-		ori_p.set(in_angles->p);
-		ori_b.set(in_angles->b);
-		ori_h.set(in_angles->h);
-
-		c_ori = vmd_identity_matrix;
-		vm_rotate_matrix_by_angles(&c_ori, in_angles);
-
-		flags |= CAM_STATIONARY_ORI;
-		return;
-	}
-
-	flags &= ~CAM_STATIONARY_ORI;
-	if(in_angles == NULL)
-	{
-		ori_p.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
-		ori_b.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
-		ori_h.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
-		return;
-	}
-
-	ori_p.setAVD(in_angles->p, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
-	ori_b.setAVD(in_angles->b, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
-	ori_h.setAVD(in_angles->h, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
-	*/
 }
 
 void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float in_rotation_acceleration_time, float in_rotation_deceleration_time)
@@ -294,27 +227,6 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 void camera::set_rotation_velocity(angles *in_rotation_rate, float in_acceleration_time)
 {
 	Error(LOCATION, "This function is disabled until further notice.");
-	/*
-	ori_p.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->p);
-	ori_b.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->b);
-	ori_h.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->h);
-	*/
-
-	/*if(in_rotation_rate == NULL)
-	{
-		rotation_rate.p = rotation_rate.b = rotation_rate.h = 0.0f;
-
-		rotation_rate_delta_time = rotation_rate_delta_time_left = in_rotation_acceleration_time = 0.0f;
-		rotation_rate_decel_time_til = -1.0f;
-		return;
-	}
-
-	rotation_rate_delta_time = rotation_rate_delta_time_left = in_rotation_acceleration_time;
-	rotation_rate_decel_time_til = -1.0f;
-
-	rotation_rate_delta.p = in_rotation_rate->p / in_rotation_acceleration_time;
-	rotation_rate_delta.b = in_rotation_rate->b / in_rotation_acceleration_time;
-	rotation_rate_delta.h = in_rotation_rate->h / in_rotation_acceleration_time;*/
 }
 
 void camera::do_frame(float in_frametime)
@@ -360,7 +272,6 @@ float camera::get_fov()
 
 void camera::get_info(vec3d *position, matrix *orientation)
 {
-	//WTF?
 	if(position == NULL && orientation == NULL)
 		return;
 
@@ -452,17 +363,6 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				c_ori = vmd_identity_matrix;
 			}
 
-			//Do human interaction
-			//WMC - Nevermind for now, maybe toggleable later.
-			/*
-			if ( Viewer_obj == object_host.objp || Viewer_mode & VM_CHASE ) {
-				if ( Viewer_mode & VM_PADLOCK_ANY ) {
-					player_get_padlock_orient(&c_ori);
-				} else {
-					compute_slew_matrix(&c_ori, &Viewer_slew_angles);
-				}
-			}*/
-
 			matrix mtxA = c_ori;
 			matrix mtxB = IDENTITY_MATRIX;
 			float pos = 0.0f;
@@ -474,15 +374,6 @@ void camera::get_info(vec3d *position, matrix *orientation)
 			vm_matrix_x_matrix(&c_ori, &mtxA, &mtxB);
 
 			vm_orthogonalize_matrix(&c_ori);
-			/*
-			angles a;
-			ori_p.get(&a.p, NULL);
-			ori_b.get(&a.b, NULL);
-			ori_h.get(&a.h, NULL);
-
-			vm_rotate_matrix_by_angles(&c_ori, &a);
-			*/
-			//vm_angles_2_matrix(&c_ori, &a);
 		}
 		//Do custom orientation stuff, if needed
 		if(func_custom_orientation != NULL)
@@ -492,6 +383,7 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		*orientation = c_ori;
 	}
 }
+
 //*************************warp_camera*************************
 warp_camera::warp_camera()
 {
@@ -504,16 +396,7 @@ warp_camera::warp_camera(object *objp)
 	vec3d object_pos = objp->pos;
 	matrix tmp;
 	ship_get_eye(&object_pos, &tmp, objp);
-	/*
-	//matrix tmp_m = vmd_identity_matrix;
-	camid cid = ship_get_eye( objp );
-	if(cid.isValid())
-	{
-		camera *cam = cid.getCamera();
-		cam->get_info(&player_pos, NULL);
-		//tmp_m = *cam->get_orientation();
-	}
-	*/
+
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.rvec, 0.0f );
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.uvec, 0.952f );
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.fvec, -1.782f );
@@ -559,7 +442,6 @@ void warp_camera::set_velocity( vec3d *in_vel, bool instantaneous )
 
 }
 
-//
 void warp_camera::do_frame(float in_frametime)
 {
 	vec3d new_vel, delta_pos;
@@ -569,8 +451,6 @@ void warp_camera::do_frame(float in_frametime)
 	apply_physics( c_damping, c_desired_vel.xyz.z, c_vel.xyz.z, in_frametime, &new_vel.xyz.z, &delta_pos.xyz.z );
 
 	c_vel = new_vel;
-
-//	mprintf(( "Camera velocity = %.1f,%.1f, %.1f\n", Camera_velocity.xyz.x, Camera_velocity.xyz.y, Camera_velocity.xyz.z ));
 
 	vm_vec_add2( &c_pos, &delta_pos );
 
@@ -591,9 +471,6 @@ void warp_camera::do_frame(float in_frametime)
 		tmp.xyz.x = 22.0f * (float)sin(tmp_angle);
 		tmp.xyz.y = -22.0f * (float)cos(tmp_angle);
 
-		//mprintf(( "Angle = %.1f, vx=%.1f, vy=%.1f\n", tmp_angle, tmp.xyz.x, tmp.xyz.y ));
-
-		//mprintf(( "Changing velocity!\n" ));
 		this->set_velocity( &tmp, 0 );
 	}
 
@@ -1025,10 +902,12 @@ uint cam_get_num()
 	return Cameras.size();
 }
 
-//Looks up camera by name, returns -1 on failure
+/**
+ * Looks up camera by name, returns -1 on failure
+ */
 camid cam_lookup(char *name)
 {
-	unsigned int i,size=Cameras.size();
+	size_t i, size=Cameras.size();
 	for(i = 0; i < size; i++)
 	{
 		if(Cameras[i] != NULL && !stricmp(Cameras[i]->get_name(), name))
@@ -1066,35 +945,6 @@ void cam_reset_camera()
 
 	hud_set_draw(Camera_hud_draw_value);
 	Camera_hud_draw_saved = false;
-}
-
-//Functions must delete the original camera after calling this function.
-//Note that due to the esoteric nature of this function, it should not
-//be used outside camera.cpp
-/*
-static avd_camera *cam_upgrade_to_avd(camera *cam)
-{
-	for(uint i = 0; i < Cameras.size(); i++)
-	{
-		if(Cameras[i] == cam)
-			break;
-	}
-
-	if(i == Cameras.size())
-		return NULL;
-
-	avd_camera *avdcam = new avd_camera(cam);
-
-	//Make the switch
-	Cameras[i] = avdcam;
-
-	return avdcam;
-}
-*/
-
-void subtitles_init()
-{
-	//Do nothing!!
 }
 
 void subtitles_close()

@@ -904,31 +904,14 @@ int readyroom_continue_campaign()
 	int mc_rval = mission_campaign_next_mission();
 	if (mc_rval == -1)
 	{  // is campaign and next mission valid?
-#ifdef FS2_DEMO
-		int reset_campaign = 0;
-		reset_campaign = popup(PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Demo Campaign Is Over.  Would you like to play the campaign again?", 111) );
-		if ( reset_campaign == 1 ) {
-			mission_campaign_savefile_delete(Campaign.filename);
-			mission_campaign_load(Campaign.filename);
-			mission_campaign_next_mission();
-		} else {
-			return -1;
-		}
-#else
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		popup(0, 1, POPUP_OK, XSTR( "The campaign is over.  To replay the campaign, either create a new pilot or restart the campaign in the campaign room.", 112) );
 		return -1;
-#endif
 	}
 	else if(mc_rval == -2)
 	{
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		popup(0, 1, POPUP_OK, NOX("The current campaign has no missions") );
-		return -1;
-	}
-
-	// CD CHECK
-	if(!game_do_cd_mission_check(Game_current_mission_filename)){		
 		return -1;
 	}
 
@@ -950,12 +933,8 @@ void sim_room_commit()
 
 	Game_mode &= ~(GM_CAMPAIGN_MODE);						// be sure this bit is clear
 
-	// CD CHECK
-	if(game_do_cd_mission_check(Game_current_mission_filename)){		
-		// don't resume savegame, proceed to briefing
-		gameseq_post_event(GS_EVENT_START_GAME);
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
-	}
+	gameseq_post_event(GS_EVENT_START_GAME);
+	gamesnd_play_iface(SND_COMMIT_PRESSED);
 }
 
 int sim_room_button_pressed(int n)
@@ -973,17 +952,11 @@ int sim_room_button_pressed(int n)
 
 		case MISSION_TAB:
 			Simroom_show_all = 0;
-#ifdef OEM_BUILD
-			game_feature_not_in_demo_popup();
-//			gamesnd_play_iface(SND_GENERAL_FAIL);
-			break;
-#else
 			Player->readyroom_listing_mode = MODE_MISSIONS;
 			Selected_line = Scroll_offset = 0;
 			gamesnd_play_iface(SND_USER_SELECT);
 			sim_room_build_listing();
 			break;
-#endif
 
 		case CAMPAIGN_TAB:
 			if ( !strlen(Campaign.filename) ) {
@@ -1708,7 +1681,6 @@ void campaign_room_init()
 
 	list_h = Mission_list_coords[gr_screen.res][3];
 
-	// common_set_interface_palette("InterfacePalette");  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Campaign_mask_filename[gr_screen.res]);
 

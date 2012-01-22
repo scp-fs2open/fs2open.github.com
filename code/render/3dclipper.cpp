@@ -65,9 +65,9 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 		vec3d w, ray_direction;
 		float num,den;
 
-		vm_vec_sub(&ray_direction,(vec3d *)&off_pnt->x,(vec3d *)&on_pnt->x);
+		vm_vec_sub(&ray_direction,&off_pnt->world,&on_pnt->world);
 			
-		vm_vec_sub(&w,(vec3d *)&on_pnt->x,&G3_user_clip_point);
+		vm_vec_sub(&w,&on_pnt->world,&G3_user_clip_point);
 	
 		den = -vm_vec_dot(&G3_user_clip_normal,&ray_direction);
 		if ( den == 0.0f ) {	// Ray & plane are parallel, so there is no intersection
@@ -78,10 +78,10 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 	
 			ratio = num / den;
 		}
-
-		tmp->x = on_pnt->x + (off_pnt->x-on_pnt->x) * ratio;
-		tmp->y = on_pnt->y + (off_pnt->y-on_pnt->y) * ratio;
-		tmp->z = on_pnt->z + (off_pnt->z-on_pnt->z) * ratio;
+		
+		vm_vec_sub(&tmp->world, &off_pnt->world, &on_pnt->world);
+		vm_vec_scale(&tmp->world, ratio);
+		vm_vec_add2(&tmp->world, &on_pnt->world);
 
 	} else {
 		float a,b,kn,kd;
@@ -90,12 +90,12 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 		//use x or y as appropriate, and negate x/y value as appropriate
 
 		if (plane_flag & (CC_OFF_RIGHT | CC_OFF_LEFT)) {
-			a = on_pnt->x;
-			b = off_pnt->x;
+			a = on_pnt->world.xyz.x;
+			b = off_pnt->world.xyz.x;
 		}
 		else {
-			a = on_pnt->y;
-			b = off_pnt->y;
+			a = on_pnt->world.xyz.y;
+			b = off_pnt->world.xyz.y;
 		}
 
 		if (plane_flag & (CC_OFF_LEFT | CC_OFF_BOT)) {
@@ -103,28 +103,28 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 			b = -b;
 		}
 
-		kn = a - on_pnt->z;						//xs-zs
-		kd = kn - b + off_pnt->z;				//xs-zs-xe+ze
+		kn = a - on_pnt->world.xyz.z;						//xs-zs
+		kd = kn - b + off_pnt->world.xyz.z;				//xs-zs-xe+ze
 
 		ratio = kn / kd;
 
-		tmp->x = on_pnt->x + (off_pnt->x-on_pnt->x) * ratio;
-		tmp->y = on_pnt->y + (off_pnt->y-on_pnt->y) * ratio;
+		tmp->world.xyz.x = on_pnt->world.xyz.x + (off_pnt->world.xyz.x-on_pnt->world.xyz.x) * ratio;
+		tmp->world.xyz.y = on_pnt->world.xyz.y + (off_pnt->world.xyz.y-on_pnt->world.xyz.y) * ratio;
 
 		if (plane_flag & (CC_OFF_TOP|CC_OFF_BOT))	{
-			tmp->z = tmp->y;
+			tmp->world.xyz.z = tmp->world.xyz.y;
 		} else {
-			tmp->z = tmp->x;
+			tmp->world.xyz.z = tmp->world.xyz.x;
 		}
 
 		if (plane_flag & (CC_OFF_LEFT|CC_OFF_BOT))
-			tmp->z = -tmp->z;
+			tmp->world.xyz.z = -tmp->world.xyz.z;
 
 	}
 
 	if (flags & TMAP_FLAG_TEXTURED) {
-		tmp->u = on_pnt->u + (off_pnt->u-on_pnt->u) * ratio;
-		tmp->v = on_pnt->v + (off_pnt->v-on_pnt->v) * ratio;
+		tmp->texture_position.u = on_pnt->texture_position.u + (off_pnt->texture_position.u-on_pnt->texture_position.u) * ratio;
+		tmp->texture_position.v = on_pnt->texture_position.v + (off_pnt->texture_position.v-on_pnt->texture_position.v) * ratio;
 	}
 
 	if (flags & TMAP_FLAG_GOURAUD ) {

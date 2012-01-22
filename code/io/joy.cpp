@@ -196,23 +196,6 @@ DWORD joy_process(DWORD lparam)
 					joy_buttons[i].down_time = 0;
 
 					joy_buttons[i].state = 1;
-
-////////////////////////////
-/// SOMETHING TERRIBLE IS ABOUT TO HAPPEN.  I FEEL THIS IS NECESSARY FOR THE DEMO, SINCE
-/// I DON'T WANT TO CALL CRITICAL SECTION CODE EACH FRAME TO CHECK ALL THE JOYSTICK BUTTONS.
-/// PLEASE SEE ALAN FOR MORE INFORMATION.
-////////////////////////////
-#ifdef FS2_DEMO
-					{
-					extern void demo_reset_trailer_timer();
-					demo_reset_trailer_timer();
-					}
-#endif
-////////////////////////////
-/// IT'S OVER.  SEE, IT WASN'T SO BAD RIGHT?  IT'S IS VERY UGLY LOOKING, I KNOW.
-////////////////////////////
-
-
 				} else {
 					// went from down to up
 					if ( joy_buttons[i].state )	{

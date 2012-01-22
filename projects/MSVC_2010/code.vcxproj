@@ -961,7 +961,6 @@
     <ClCompile Include="..\..\code\Localization\fhash.cpp" />
     <ClCompile Include="..\..\code\Localization\localize.cpp" />
     <ClCompile Include="..\..\code\TgaUtils\tgautils.cpp" />
-    <ClCompile Include="..\..\code\Demo\demo.cpp" />
     <ClCompile Include="..\..\code\inetfile\cftp.cpp" />
     <ClCompile Include="..\..\code\inetfile\chttpget.cpp" />
     <ClCompile Include="..\..\code\inetfile\inetgetfile.cpp" />
@@ -1228,7 +1227,6 @@
     <ClInclude Include="..\..\code\Localization\fhash.h" />
     <ClInclude Include="..\..\code\Localization\localize.h" />
     <ClInclude Include="..\..\code\TgaUtils\tgautils.h" />
-    <ClInclude Include="..\..\code\Demo\demo.h" />
     <ClInclude Include="..\..\code\inetfile\cftp.h" />
     <ClInclude Include="..\..\code\inetfile\chttpget.h" />
     <ClInclude Include="..\..\code\inetfile\inetgetfile.h" />

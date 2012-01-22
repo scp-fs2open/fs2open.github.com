@@ -626,8 +626,8 @@ sexp_oper Operators[] = {
 	{ "set-jumpnode-name",			OP_JUMP_NODE_SET_JUMPNODE_NAME,			2, 2, }, //CommanderDJ
 	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
 	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
-	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, 1, },
-	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, 1, },
+	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, INT_MAX, },
+	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, INT_MAX, },
 
 	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
 	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
@@ -1035,7 +1035,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 		nprintf(("SEXP", "Bumping dynamic sexp node limit from %d to %d...\n", old_size, Num_sexp_nodes));
 
 		// clear all the new sexp nodes we just allocated
-		memset(&Sexp_nodes[old_size], 0, sizeof(sexp_node) * SEXP_NODE_INCREMENT);
+		memset(&Sexp_nodes[old_size], 0, sizeof(sexp_node) * SEXP_NODE_INCREMENT); //-V512
 
 		// our new sexp is the first out of the ones we just created
 		node = old_size;
@@ -1469,7 +1469,7 @@ int get_operator_index(int node)
 
 
 /**
- * From an operator name, return its constant (the number it was #define'd with)
+ * From an operator name, return its constant (the number it was define'd with)
  */
 int get_operator_const(char *token)
 {
@@ -7328,7 +7328,7 @@ int sexp_depart_node_delay(int n)
 
 	Assert( n >= 0 );
 
-	delay = atoi( CTEXT(n) );
+	delay = eval_num(n);
 	n = CDR(n);
 	jump_node_name = CTEXT(n);
 
@@ -12313,6 +12313,7 @@ int sexp_has_weapon(int node, int op_num)
 /**
  * Gets status of goals for previous missions (in the current campaign).
  *
+ * @param n Sexp node number
  * @param status tell this function if we are looking for a goal_satisfied, goal_failed, or goal incomplete event
  */
 int sexp_previous_goal_status( int n, int status )
@@ -12472,6 +12473,7 @@ int sexp_previous_event_status( int n, int status )
 /**
  * Return the status of an event in the current mission.  
  *
+ * @param n Sexp node number
  * @param want_true indicates if we are checking whether the event is true or the event is false.
  */
 int sexp_event_status( int n, int want_true )
@@ -12656,6 +12658,7 @@ int sexp_goal_incomplete(int n)
 /**
  * Protects/unprotects a ship.
  *
+ * @param n Sexp node number
  * @param flag Whether or not the protect bit should be set (flag==true) or cleared (flag==false)
  */
 void sexp_protect_ships(int n, bool flag)
@@ -12666,6 +12669,7 @@ void sexp_protect_ships(int n, bool flag)
 /**
  * Protects/unprotects a ship from beams.
  *
+ * @param n Sexp node number
  * @param flag Whether or not the protect bit should be set (flag==true) or cleared (flag==false)
  */
 void sexp_beam_protect_ships(int n, bool flag)
@@ -12676,6 +12680,7 @@ void sexp_beam_protect_ships(int n, bool flag)
 /**
  * Protects/unprotects a ship from various turrets.
  *
+ * @param n Sexp node number
  * @param flag Whether or not the protect bit should be set (flag==true) or cleared (flag==false)
  */
 void sexp_turret_protect_ships(int n, bool flag)
@@ -12722,6 +12727,7 @@ void sexp_ships_vaporize(int n, bool vaporize)
 /**
  * Make ships "visible" and "invisible" to sensors.
  *
+ * @param n Sexp node number
  * @param visible Is true when making ships visible, false otherwise
  */
 void sexp_ships_visible(int n, bool visible)
@@ -15699,18 +15705,17 @@ void sexp_turret_change_weapon(int node)
 void sexp_set_armor_type(int node)
 {	
 	int sindex;
-	int armor, rset; 
-	size_t t;
+	int armor, rset;
 	ship_subsys *ss = NULL;
 	ship *shipp = NULL;
 	ship_info *sip = NULL;
 
 	// get ship
 	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	if(sindex < 0) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0){
+	if(Ships[sindex].objnum < 0) {
 		return;
 	}
 	shipp = &Ships[sindex];
@@ -15722,21 +15727,15 @@ void sexp_set_armor_type(int node)
 
 	// get armor
 	node = CDR(node);
-	if (!stricmp(SEXP_NONE_STRING, CTEXT(node)))
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node))) {
 		armor = -1;
-	else {
-		for(t = 0; t < Armor_types.size(); t++) 
-		{
-			if ( !stricmp(Armor_types[t].GetNamePtr(), CTEXT(node)))  
-				break;
-		}
-		if (t == Armor_types.size()) 
-			return;
-		armor = (int)t;
+	} else {
+		armor = armor_type_get_idx(CTEXT(node));
 	}
 	
 	//Set armor
-	while(node != -1){
+	while(node != -1)
+	{
 		if (!stricmp(SEXP_HULL_STRING, CTEXT(node)))
 		{
 			// we are setting the ship itself
@@ -16322,13 +16321,14 @@ void sexp_rotating_subsys_set_turn_time(int node)
 	n = CDR(n);
 
 	// get and set the turn time
-	turn_time = ((float) atoi(CTEXT(n))) / 1000.0f;
+	turn_time = eval_num(n) / 1000.0f;
 	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
+	n = CDR(n);
 
 	// maybe get and set the turn accel
 	if (n != -1)
 	{
-		turn_accel = ((float) atoi(CTEXT(n))) / 1000.0f;
+		turn_accel = eval_num(n) / 1000.0f;
 		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
 	}
 	else
@@ -19531,52 +19531,33 @@ void multi_sexp_set_jumpnode_model()
 	jnp->set_model(model_name, show_polys);
 }
 
-void sexp_show_jumpnode(int n)
+void sexp_show_hide_jumpnode(int node, bool show)
 {
-	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
-
-	if(jnp!=NULL)
-		jnp->show(true);
-
 	multi_start_callback();
-	multi_send_string(CTEXT(n));
+
+	for (int n = node; n >= 0; n = CDR(n))
+	{
+		jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+		if (jnp != NULL)
+		{
+			jnp->show(show);
+			multi_send_string(CTEXT(n));
+		}
+	}
+
 	multi_end_callback();
 }
 
-void multi_sexp_show_jumpnode()
+void multi_sexp_show_hide_jumpnode(bool show)
 {
 	char jumpnode_name[TOKEN_LENGTH];
 
-	multi_get_string(jumpnode_name);
-
-	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
-
-	if(jnp!=NULL)
-		jnp->show(true);
-}
-
-void sexp_hide_jumpnode(int n)
-{
-	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
-
-	if(jnp!=NULL)
-		jnp->show(false);
-
-	multi_start_callback();
-	multi_send_string(CTEXT(n));
-	multi_end_callback();
-}
-
-void multi_sexp_hide_jumpnode()
-{
-	char jumpnode_name[TOKEN_LENGTH];
-
-	multi_get_string(jumpnode_name);
-
-	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
-
-	if(jnp!=NULL)
-		jnp->show(false);
+	while (multi_get_string(jumpnode_name))
+	{
+		jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+		if (jnp != NULL)
+			jnp->show(show);
+	}
 }
 
 //WMC - This is a bit of a hack, however, it's easier than
@@ -21825,12 +21806,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_jumpnode_model(node);
 				break;
 			case OP_JUMP_NODE_SHOW_JUMPNODE:
-				sexp_val = SEXP_TRUE;
-				sexp_show_jumpnode(node);
-				break;
 			case OP_JUMP_NODE_HIDE_JUMPNODE:
+				sexp_show_hide_jumpnode(node, op_num == OP_JUMP_NODE_SHOW_JUMPNODE);
 				sexp_val = SEXP_TRUE;
-				sexp_hide_jumpnode(node);
 				break;
 
 			case OP_SCRIPT_EVAL_NUM:
@@ -22197,11 +22175,8 @@ void multi_sexp_eval()
 				break;
 
 			case OP_JUMP_NODE_SHOW_JUMPNODE:
-				multi_sexp_show_jumpnode();
-				break;
-
 			case OP_JUMP_NODE_HIDE_JUMPNODE:
-				multi_sexp_hide_jumpnode();
+				multi_sexp_show_hide_jumpnode(op_num == OP_JUMP_NODE_SHOW_JUMPNODE);
 				break;
 
 			case OP_CLEAR_SUBTITLES:
@@ -22872,6 +22847,7 @@ int query_operator_return_type(int op)
 /**
  * Return the data type of a specified argument to an operator.  
  *
+ * @param op operator index
  * @param argnum is 0 indexed.
  */
 int query_operator_argument_type(int op, int argnum)
@@ -28632,7 +28608,7 @@ sexp_help_struct Sexp_help[] = {
 
 	// Karajorma
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
-		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
+		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
@@ -28644,7 +28620,7 @@ sexp_help_struct Sexp_help[] = {
 
 	// Karajorma
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
-		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
+		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
@@ -29396,15 +29372,13 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_JUMP_NODE_SHOW_JUMPNODE, "show-jumpnode\r\n"
-		"\tSets the model of a jump node.  "
-		"Takes 1 arguments..\r\n"
-		"\t1:\tJump node to show\r\n"
+		"\tSets a jump node to display on the screen.\r\n"
+		"\tAny:\tJump node to show\r\n"
 	},
 
 	{ OP_JUMP_NODE_HIDE_JUMPNODE, "hide-jumpnode\r\n"
-		"\tSets the model of a jump node.  "
-		"Takes 1 arguments...\r\n"
-		"\t1:\tJump node to hide\r\n"
+		"\tSets a jump node to not display on the screen.\r\n"
+		"\tAny:\tJump node to hide\r\n"
 	},
 
 	// taylor

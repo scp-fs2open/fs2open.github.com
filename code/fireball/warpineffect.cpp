@@ -32,8 +32,8 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 	vec3d norm;
 	vertex *vertlist[3];
 
-	vm_vec_perp(&norm,(vec3d *)&v1->x, (vec3d *)&v2->x, (vec3d *)&v3->x);
-	if ( vm_vec_dot(&norm, (vec3d *)&v1->x ) >= 0.0 ) {
+	vm_vec_perp(&norm,&v1->world, &v2->world, &v3->world);
+	if ( vm_vec_dot(&norm, &v1->world ) >= 0.0 ) {
 		vertlist[0] = v3;
 		vertlist[1] = v2;
 		vertlist[2] = v1;
@@ -92,7 +92,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 			}
 
 			vecs[4] = center;
-			verts[4].u = 0.5f; verts[4].v = 0.5f; 
+			verts[4].texture_position.u = 0.5f; verts[4].texture_position.v = 0.5f; 
 
 			if (Cmdline_nohtl) {
 				g3_rotate_vertex( &verts[4], &vecs[4] );
@@ -141,11 +141,20 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 	//	vm_vec_scale_add( &vecs[4], ¢er, &orient->vec.fvec, -Grid_depth );
 		vecs[4] = center;
 
-		verts[0].u = 0.01f; verts[0].v = 0.01f; 
-		verts[1].u = 0.99f; verts[1].v = 0.01f; 
-		verts[2].u = 0.99f; verts[2].v = 0.99f; 
-		verts[3].u = 0.01f; verts[3].v = 0.99f; 
-		verts[4].u = 0.5f; verts[4].v = 0.5f; 
+		verts[0].texture_position.u = 0.01f;
+		verts[0].texture_position.v = 0.01f;
+		
+		verts[1].texture_position.u = 0.99f;
+		verts[1].texture_position.v = 0.01f;
+
+		verts[2].texture_position.u = 0.99f;
+		verts[2].texture_position.v = 0.99f;
+
+		verts[3].texture_position.u = 0.01f;
+		verts[3].texture_position.v = 0.99f;
+
+		verts[4].texture_position.u = 0.5f;
+		verts[4].texture_position.v = 0.5f; 
 
 		if (Cmdline_nohtl) {
 			g3_rotate_vertex( &verts[0], &vecs[0] );

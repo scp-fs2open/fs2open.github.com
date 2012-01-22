@@ -66,7 +66,6 @@ void alpha_colors_init()
 	gr_init_alphacolor( &Color_black, 0, 0, 0, 255 );
 	gr_init_alphacolor( &Color_grey, 65, 65, 65, 255 );
 	gr_init_alphacolor( &Color_silver, 160, 160, 160, 255 );
-	//gr_init_alphacolor( &Color_white, 185, 185, 185, 255 );
 	gr_init_alphacolor( &Color_white, 105, 105, 105, 255 );
 	gr_init_alphacolor( &Color_bright_white, 255, 255, 255, 255 );
 
@@ -80,9 +79,6 @@ void alpha_colors_init()
 	gr_init_alphacolor( &Color_pink, 185, 150, 150, 255 );
 	gr_init_alphacolor( &Color_light_pink, 230, 190, 190, 255 );
 
-//	gr_init_alphacolor( &Color_yellow, 113, 184, 124, 255 );
-//	gr_init_alphacolor( &Color_bright_yellow, 162, 210, 162, 255 );
-//  This didn't look very "yellow"
 	gr_init_alphacolor( &Color_yellow, 255, 255, 122, 255 );
 	gr_init_alphacolor( &Color_bright_yellow, 255, 255, 0, 255 );
 

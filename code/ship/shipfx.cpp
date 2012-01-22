@@ -26,7 +26,6 @@
 #include "globalincs/linklist.h"
 #include "particle/particle.h"
 #include "weapon/muzzleflash.h"
-#include "demo/demo.h"
 #include "ship/shiphit.h"
 #include "object/objectsnd.h"
 #include "playerman/player.h"
@@ -38,6 +37,7 @@
 #include "network/multimsgs.h"
 #include "parse/scripting.h"
 #include "asteroid/asteroid.h"
+#include "bmpman/bmpman.h"
 
 
 
@@ -574,12 +574,6 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
-	// post a warpin event
-	if(Game_mode & GM_DEMO_RECORD)
-	{
-		demo_POST_warpin(objp->signature, shipp->flags);
-	}
-
 	// docked ships who are not dock leaders don't use the warp effect code
 	// (the dock leader takes care of the whole group)
 	if (object_is_docked(objp) && !(shipp->flags & SF_DOCK_LEADER))
@@ -832,11 +826,6 @@ void shipfx_warpout_start( object *objp )
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 	}
 
-	// post a warpin event
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_warpout(objp->signature, shipp->flags);
-	}
-
 	// don't send ship depart packets for player ships
 	if ( (MULTIPLAYER_MASTER) && !(objp->flags & OF_PLAYER_SHIP) ){
 		send_ship_depart_packet( objp );
@@ -981,6 +970,7 @@ int shipfx_in_shadow( object * src_obj )
 	return 0;
 }
 
+#define w(p)	(*((int *) (p)))
 /**
  * Given world point see if it is in a shadow.
  */
@@ -1048,6 +1038,75 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
 		if (model_collide(&mc))	{
 			return 1;
+		}
+	}
+
+	// check cockpit model
+	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
+	{
+		if(Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0)
+		{
+			ship *shipp = &Ships[Viewer_obj->instance];
+			ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+			if(sip->cockpit_model_num > 0)
+			{
+				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*2.0f );
+				vec3d pos,eye_posi;
+				matrix eye_ori;
+				ship_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
+				vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
+				vm_vec_add2(&pos, &eye_posi);
+
+				mc.model_num = sip->cockpit_model_num;
+				mc.orient = &Eye_matrix;
+				mc.pos = &pos;
+				mc.p0 = &rp0;
+				mc.p1 = &rp1;
+				mc.flags = MC_CHECK_MODEL;
+
+				int mc_result = model_collide(&mc);
+				mc.pos = NULL;
+
+				if(mc_result)
+				{
+					if(mc.t_poly)
+					{
+						polymodel *pm = model_get(sip->cockpit_model_num);
+						int tmap_num = w(mc.t_poly+40);
+						if(!(pm->maps[tmap_num].is_transparent)&&strcmp(bm_get_filename(mc.hit_bitmap),"glass.dds"))
+						{
+							return 1;
+						}
+					}
+					if(mc.f_poly)
+						 return 1;
+				}
+			}
+			if(sip->flags2 & SIF2_SHOW_SHIP_MODEL)
+			{
+				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
+				mc.model_num = sip->model_num;
+				mc.orient = &Viewer_obj->orient;
+				mc.pos = &Viewer_obj->pos;
+				mc.p0 = &rp0;
+				mc.p1 = &rp1;
+				mc.flags = MC_CHECK_MODEL;
+				if(model_collide(&mc))
+				{
+					if(mc.t_poly)
+					{
+						polymodel *pm = model_get(sip->model_num);
+						int tmap_num = w(mc.t_poly+40);
+						if(!(pm->maps[tmap_num].is_transparent)&&strcmp(bm_get_filename(mc.hit_bitmap),"glass.dds"))
+						{
+							return 1;
+						}
+					}
+					if(mc.f_poly)
+						 return 1;
+				}
+			}
 		}
 	}
 
@@ -2054,16 +2113,8 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 			pe.pos = model_clip_plane_pt;	// Where the particles emit from
 			pe.vel = half_ship->phys_info.vel;		// Initial velocity of all the particles
 
-#ifdef FS2_DEMO
-			float range = 1.0f + 0.002f*half_ship->parent_obj->radius * 5.0f;
-#else 
 			float range = 1.0f + 0.002f*half_ship->parent_obj->radius;
-#endif
 
-#ifdef FS2_DEMO
-			pe.min_life = 2.0f*range;				// How long the particles live
-			pe.max_life = 10.0f*range;				// How long the particles live
-#else
 			if (pef.max_life > 0.0f) {
 				pe.min_life = pef.min_life;
 				pe.max_life = pef.max_life;
@@ -2071,7 +2122,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 				pe.min_life = 0.5f*range;				// How long the particles live
 				pe.max_life = 6.0f*range;				// How long the particles live
 			}
-#endif
+
 			pe.normal = vmd_x_vector;		// What normal the particle emit around
 			pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 
@@ -2082,13 +2133,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 				pe.min_vel = 0.0f;									// How fast the slowest particle can move
 				pe.max_vel = half_ship->explosion_vel;				// How fast the fastest particle can move
 			}
-
-
-#ifdef FS2_DEMO
-			float scale = half_ship->parent_obj->radius * 0.02f;
-#else
 			float scale = half_ship->parent_obj->radius * 0.01f;
-#endif
 			if (pef.max_rad > 0.0f) {
 				pe.min_rad = pef.min_rad;
 				pe.max_rad = pef.max_rad;

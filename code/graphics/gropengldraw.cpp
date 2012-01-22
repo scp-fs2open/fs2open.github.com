@@ -608,10 +608,10 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 //	glLineWidth( 1.0 );
 
 	int clipped = 0, swapped = 0;
-	float x1 = v1->sx;
-	float y1 = v1->sy;
-	float x2 = v2->sx;
-	float y2 = v2->sy;
+	float x1 = v1->screen.xyw.x;
+	float y1 = v1->screen.xyw.y;
+	float x2 = v2->screen.xyw.x;
+	float y2 = v2->screen.xyw.y;
 	float sx1, sy1;
 	float sx2, sy2;
 
@@ -928,7 +928,7 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 		sw = 1.0f;
 
 		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) ) {
-			sz = (1.0f - 1.0f / (1.0f + va->z / 32768.0f));
+			sz = (1.0f - 1.0f / (1.0f + va->world.xyz.z / 32768.0f));
 
 		//	if ( sz > 0.98f ) {
 		//		sz = 0.98f;
@@ -937,14 +937,14 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 			sz = 0.99f;
 		}
 
-		sx = va->sx + (float)gr_screen.offset_x;
-		sy = va->sy + (float)gr_screen.offset_y;
+		sx = va->screen.xyw.x + (float)gr_screen.offset_x;
+		sy = va->screen.xyw.y + (float)gr_screen.offset_y;
 
 		if (flags & TMAP_FLAG_CORRECT) {
-			sx /= va->sw;
-			sy /= va->sw;
-			sz /= va->sw;
-			sw /= va->sw;
+			sx /= va->screen.xyw.w;
+			sy /= va->screen.xyw.w;
+			sz /= va->screen.xyw.w;
+			sw /= va->screen.xyw.w;
 		}
 
 		if (flags & TMAP_FLAG_ALPHA) {
@@ -965,8 +965,8 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 		}
 
 		if (flags & TMAP_FLAG_TEXTURED) {
-			tu = va->u * u_scale;
-			tv = va->v * v_scale;
+			tu = va->texture_position.u * u_scale;
+			tv = va->texture_position.v * v_scale;
 
 			// use opengl hardware multitexturing
 			vglMultiTexCoord2fARB(GL_TEXTURE0_ARB, tu, tv);
@@ -1021,11 +1021,11 @@ void opengl_tmapper_internal(int nv, vertex **verts, uint flags, int is_scaler =
 			float sx, sy;
                 
 			if (gr_screen.offset_x || gr_screen.offset_y) {
-				sx = ((va->sx * 16.0f) + ((float)gr_screen.offset_x * 16.0f)) / 16.0f;
-				sy = ((va->sy * 16.0f) + ((float)gr_screen.offset_y * 16.0f)) / 16.0f;
+				sx = ((va->screen.xyw.x * 16.0f) + ((float)gr_screen.offset_x * 16.0f)) / 16.0f;
+				sy = ((va->screen.xyw.y * 16.0f) + ((float)gr_screen.offset_y * 16.0f)) / 16.0f;
 			} else {
-				sx = va->sx;
-				sy = va->sy;
+				sx = va->screen.xyw.x;
+				sy = va->screen.xyw.y;
 			}
 
 			neb2_get_pixel( (int)sx, (int)sy, &nr, &ng, &nb );
@@ -1101,8 +1101,8 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 			glColor4ub(va->r, va->g, va->b, (ubyte)alpha);
 		}
 
-		glTexCoord2f(va->u, va->v);
-		glVertex3f(va->x, va->y, va->z);
+		glTexCoord2f(va->texture_position.u, va->texture_position.v);
+		glVertex3f(va->world.xyz.x, va->world.xyz.y, va->world.xyz.z);
 	}
 
 	glEnd();
@@ -1148,7 +1148,7 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 		}
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].u);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].texture_position.u);
 
 		// adjust texture coords if needed
 		if ( (u_scale != 1.0f) || (v_scale != 1.0f) ) {
@@ -1185,7 +1185,7 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 	glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, offset_z);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].sx);
+	glVertexPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].screen.xyw.x);
 
 	gr_opengl_set_2d_matrix();
 
@@ -1227,7 +1227,7 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 		}
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].u);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].texture_position.u);
 	}
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
@@ -1253,7 +1253,7 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 	}
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_FLOAT, sizeof(vertex), &verts[0].x);
+	glVertexPointer(3, GL_FLOAT, sizeof(vertex), &verts[0].world.xyz.x);
 
 	glDrawArrays(gl_mode, 0, nverts);
 
@@ -1323,11 +1323,14 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 			vglUniform1fARB(opengl_shader_get_uniform("nearZ"), Min_draw_distance);
 			vglUniform1fARB(opengl_shader_get_uniform("farZ"), Max_draw_distance);
 
-			attrib_index = opengl_shader_get_attribute("radius_in");
-			vglVertexAttribPointerARB(attrib_index, 1, GL_FLOAT, GL_FALSE, 0, radius_list);
+			if( !(flags & TMAP_FLAG_DISTORTION) && !(flags & TMAP_FLAG_DISTORTION_THRUSTER) ) // Only use vertex attribute with soft particles to avoid OpenGL Errors - Valathil
+			{
+				attrib_index = opengl_shader_get_attribute("radius_in");
+				vglVertexAttribPointerARB(attrib_index, 1, GL_FLOAT, GL_FALSE, 0, radius_list);
 
-			vglEnableVertexAttribArrayARB(attrib_index);
+				vglEnableVertexAttribArrayARB(attrib_index);
 
+			}
 			GL_state.Texture.SetActiveUnit(1);
 			GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 			GL_state.Texture.Enable(Scene_depth_texture);
@@ -1338,7 +1341,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 		}
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].u);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].texture_position.u);
 	}
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
@@ -1364,7 +1367,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 	}
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_FLOAT, sizeof(vertex), &verts[0].x);
+	glVertexPointer(3, GL_FLOAT, sizeof(vertex), &verts[0].world.xyz.x);
 
 	glDrawArrays(gl_mode, 0, nverts);
 
@@ -1418,18 +1421,18 @@ void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap = false)
 	float xmin, xmax, ymin, ymax;
 	int dx0, dy0, dx1, dy1;
 
-	x0 = va->sx;
-	y0 = va->sy;
-	x1 = vb->sx;
-	y1 = vb->sy;
+	x0 = va->screen.xyw.x;
+	y0 = va->screen.xyw.y;
+	x1 = vb->screen.xyw.x;
+	y1 = vb->screen.xyw.y;
 
 	xmin = i2fl(gr_screen.clip_left);
 	ymin = i2fl(gr_screen.clip_top);
 	xmax = i2fl(gr_screen.clip_right);
 	ymax = i2fl(gr_screen.clip_bottom);
 
-	u0 = va->u; v0 = va->v;
-	u1 = vb->u; v1 = vb->v;
+	u0 = va->texture_position.u; v0 = va->texture_position.v;
+	u1 = vb->texture_position.u; v1 = vb->texture_position.v;
 
 	// Check for obviously offscreen bitmaps...
 	if ( (y1 <= y0) || (x1 <= x0) ) {
@@ -1492,45 +1495,45 @@ void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap = false)
 	vertex *vl[4];
 
 	vl[0] = &v[0];	
-	v->sx = clipped_x0;
-	v->sy = clipped_y0;
-	v->sw = va->sw;
-	v->z = va->z;
-	v->u = clipped_u0;
-	v->v = clipped_v0;
+	v->screen.xyw.x = clipped_x0;
+	v->screen.xyw.y = clipped_y0;
+	v->screen.xyw.w = va->screen.xyw.w;
+	v->world.xyz.z = va->world.xyz.z;
+	v->texture_position.u = clipped_u0;
+	v->texture_position.v = clipped_v0;
 	v->spec_r = 0;
 	v->spec_g = 0;
 	v->spec_b = 0;
 
 	vl[1] = &v[1];	
-	v[1].sx = clipped_x1;
-	v[1].sy = clipped_y0;
-	v[1].sw = va->sw;
-	v[1].z = va->z;
-	v[1].u = clipped_u1;
-	v[1].v = clipped_v0;
+	v[1].screen.xyw.x = clipped_x1;
+	v[1].screen.xyw.y = clipped_y0;
+	v[1].screen.xyw.w = va->screen.xyw.w;
+	v[1].world.xyz.z = va->world.xyz.z;
+	v[1].texture_position.u = clipped_u1;
+	v[1].texture_position.v = clipped_v0;
 	v[1].spec_r = 0;
 	v[1].spec_g = 0;
 	v[1].spec_b = 0;
 
 	vl[2] = &v[2];	
-	v[2].sx = clipped_x1;
-	v[2].sy = clipped_y1;
-	v[2].sw = va->sw;
-	v[2].z = va->z;
-	v[2].u = clipped_u1;
-	v[2].v = clipped_v1;
+	v[2].screen.xyw.x = clipped_x1;
+	v[2].screen.xyw.y = clipped_y1;
+	v[2].screen.xyw.w = va->screen.xyw.w;
+	v[2].world.xyz.z = va->world.xyz.z;
+	v[2].texture_position.u = clipped_u1;
+	v[2].texture_position.v = clipped_v1;
 	v[2].spec_r = 0;
 	v[2].spec_g = 0;
 	v[2].spec_b = 0;
 
 	vl[3] = &v[3];	
-	v[3].sx = clipped_x0;
-	v[3].sy = clipped_y1;
-	v[3].sw = va->sw;
-	v[3].z = va->z;
-	v[3].u = clipped_u0;
-	v[3].v = clipped_v1;
+	v[3].screen.xyw.x = clipped_x0;
+	v[3].screen.xyw.y = clipped_y1;
+	v[3].screen.xyw.w = va->screen.xyw.w;
+	v[3].world.xyz.z = va->world.xyz.z;
+	v[3].texture_position.u = clipped_u0;
+	v[3].texture_position.v = clipped_v1;
 	v[3].spec_r = 0;
 	v[3].spec_g = 0;
 	v[3].spec_b = 0;
@@ -1994,8 +1997,8 @@ void opengl_setup_scene_textures()
 	}
 
 	// clamp size, if needed
-	int Scene_texture_width = gr_screen.max_w;
-	int Scene_texture_height = gr_screen.max_h;
+	Scene_texture_width = gr_screen.max_w;
+	Scene_texture_height = gr_screen.max_h;
 
 	if ( Scene_texture_width > GL_max_renderbuffer_size ) {
 		Scene_texture_width = GL_max_renderbuffer_size;

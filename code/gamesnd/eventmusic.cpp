@@ -666,7 +666,7 @@ void event_music_first_pattern()
 		event_music_level_init();
 	}
 
-	if ( Event_music_level_inited == FALSE ) {
+	if ( Event_music_level_inited == FALSE ) { //-V581
 		return;
 	}
 

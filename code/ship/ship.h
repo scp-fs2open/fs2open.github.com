@@ -122,6 +122,7 @@ typedef struct ship_weapon {
 	int primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// Max number of projectiles in bank
 	int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
 	int primary_bank_rearm_time[MAX_SHIP_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
+	// end ballistic primary support
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
 	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
@@ -640,6 +641,7 @@ typedef struct ship {
 
 	int	thruster_secondary_glow_bitmap;		// Bobboau
 	int	thruster_tertiary_glow_bitmap;		// Bobboau
+	int	thruster_distortion_bitmap;			// Valathil
 
 	int	next_engine_stutter;				// timestamp to time the engine stuttering when a ship dies
 
@@ -1310,10 +1312,16 @@ typedef struct ship_info {
 	thrust_pair			thruster_glow_info;
 	thrust_pair_bitmap	thruster_secondary_glow_info;
 	thrust_pair_bitmap	thruster_tertiary_glow_info;
+	thrust_pair_bitmap	thruster_distortion_info;
+
 	float		thruster01_glow_rad_factor;
 	float		thruster02_glow_rad_factor;
 	float		thruster03_glow_rad_factor;
+	float		thruster_dist_rad_factor;
 	float		thruster02_glow_len_factor;
+	float		thruster_dist_len_factor;
+
+	bool		draw_distortion;
 
 	int splodeing_texture;
 	char splodeing_texture_name[MAX_FILENAME_LEN];

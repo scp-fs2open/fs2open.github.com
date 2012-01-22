@@ -154,13 +154,11 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float dep
 	float radius = rad;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
 
-	vec3d PNT, p[4];
+	vec3d PNT(pnt->world);
+	vec3d p[4];
 	vec3d fvec, rvec, uvec;
 	vertex *P = &vert[n_to_render * 3];
 	float *R = &radius_list[n_to_render * 3];
-
-	vm_vert2vec(pnt, &PNT);
-
 
 	// get the direction from the point to the eye
 	vm_vec_sub(&fvec, &View_position, &PNT);
@@ -207,42 +205,42 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float dep
 	// set up the UV coords
 	if ( orient & 1 ) {
 		// tri 1
-		P[5].u = 1.0f;
-		P[4].u = 0.0f;
-		P[3].u = 0.0f;
+		P[5].texture_position.u = 1.0f;
+		P[4].texture_position.u = 0.0f;
+		P[3].texture_position.u = 0.0f;
 		// tri 2
-		P[2].u = 1.0f;
-		P[1].u = 0.0f;
-		P[0].u = 1.0f;
+		P[2].texture_position.u = 1.0f;
+		P[1].texture_position.u = 0.0f;
+		P[0].texture_position.u = 1.0f;
 	} else {
 		// tri 1
-		P[5].u = 0.0f;
-		P[4].u = 1.0f;
-		P[3].u = 1.0f;
+		P[5].texture_position.u = 0.0f;
+		P[4].texture_position.u = 1.0f;
+		P[3].texture_position.u = 1.0f;
 		// tri 2
-		P[2].u = 0.0f;
-		P[1].u = 1.0f;
-		P[0].u = 0.0f;
+		P[2].texture_position.u = 0.0f;
+		P[1].texture_position.u = 1.0f;
+		P[0].texture_position.u = 0.0f;
 	}
 
 	if ( orient & 2 ) {
 		// tri 1
-		P[5].v = 1.0f;
-		P[4].v = 1.0f;
-		P[3].v = 0.0f;
+		P[5].texture_position.v = 1.0f;
+		P[4].texture_position.v = 1.0f;
+		P[3].texture_position.v = 0.0f;
 		// tri 2
-		P[2].v = 1.0f;
-		P[1].v = 0.0f;
-		P[0].v = 0.0f;
+		P[2].texture_position.v = 1.0f;
+		P[1].texture_position.v = 0.0f;
+		P[0].texture_position.v = 0.0f;
 	} else {
 		// tri 1
-		P[5].v = 0.0f;
-		P[4].v = 0.0f;
-		P[3].v = 1.0f;
+		P[5].texture_position.v = 0.0f;
+		P[4].texture_position.v = 0.0f;
+		P[3].texture_position.v = 1.0f;
 		// tri 2
-		P[2].v = 0.0f;
-		P[1].v = 1.0f;
-		P[0].v = 1.0f;
+		P[2].texture_position.v = 0.0f;
+		P[1].texture_position.v = 1.0f;
+		P[0].texture_position.v = 1.0f;
 	}
 
 	for (int i = 0; i < 6 ; i++) {
@@ -270,12 +268,11 @@ void geometry_batcher::draw_bitmap(vertex *pnt, float rad, float angle, float de
 	else if ( angle > PI2 )
 		angle -= PI2;
 
-	vec3d PNT, p[4];
+	vec3d PNT(pnt->world);
+	vec3d p[4];
 	vec3d fvec, rvec, uvec;
 	vertex *P = &vert[n_to_render * 3];
 	float *R = &radius_list[n_to_render * 3];
-
-	vm_vert2vec(pnt, &PNT);
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize_safe(&fvec);
@@ -352,14 +349,14 @@ void geometry_batcher::draw_bitmap(vertex *pnt, float rad, float angle, float de
 	*/
 
 	//tri 1
-	P[5].u = 0.0f;	P[5].v = 0.0f;
-	P[4].u = 1.0f;	P[4].v = 0.0f;
-	P[3].u = 1.0f;	P[3].v = 1.0f;
+	P[5].texture_position.u = 0.0f;	P[5].texture_position.v = 0.0f;
+	P[4].texture_position.u = 1.0f;	P[4].texture_position.v = 0.0f;
+	P[3].texture_position.u = 1.0f;	P[3].texture_position.v = 1.0f;
 
 	//tri 2
-	P[2].u = 0.0f;	P[2].v = 0.0f;
-	P[1].u = 1.0f;	P[1].v = 1.0f;
-	P[0].u = 0.0f;	P[0].v = 1.0f;
+	P[2].texture_position.u = 0.0f;	P[2].texture_position.v = 0.0f;
+	P[1].texture_position.u = 1.0f;	P[1].texture_position.v = 1.0f;
+	P[0].texture_position.u = 0.0f;	P[0].texture_position.v = 1.0f;
 
 	for (int i = 0; i < 6 ; i++) {
 		P[i].r = pnt->r;
@@ -444,14 +441,14 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 
 	//set up the UV coords
 	//tri 1
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 1.0f;	P[1].v = 0.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[0].texture_position.u = 0.0f;	P[0].texture_position.v = 0.0f;
+	P[1].texture_position.u = 1.0f;	P[1].texture_position.v = 0.0f;
+	P[2].texture_position.u = 1.0f;	P[2].texture_position.v = 1.0f;
 
 	//tri 2
-	P[3].u = 0.0f;	P[3].v = 0.0f;
-	P[4].u = 1.0f;	P[4].v = 1.0f;
-	P[5].u = 0.0f;	P[5].v = 1.0f;
+	P[3].texture_position.u = 0.0f;	P[3].texture_position.v = 0.0f;
+	P[4].texture_position.u = 1.0f;	P[4].texture_position.v = 1.0f;
+	P[5].texture_position.u = 0.0f;	P[5].texture_position.v = 1.0f;
 
 	ubyte _color = (ubyte)(255.0f * intensity);
 
@@ -512,19 +509,19 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 	g3_transfer_vertex( &pts[4], &vecs[2] );
 	g3_transfer_vertex( &pts[5], &vecs[3] );
 
-	pts[0].u = 1.0f;
-	pts[0].v = 0.0f;
-	pts[1].u = 0.0f;
-	pts[1].v = 0.0f;
-	pts[2].u = 0.0f;
-	pts[2].v = 1.0f;
+	pts[0].texture_position.u = 1.0f;
+	pts[0].texture_position.v = 0.0f;
+	pts[1].texture_position.u = 0.0f;
+	pts[1].texture_position.v = 0.0f;
+	pts[2].texture_position.u = 0.0f;
+	pts[2].texture_position.v = 1.0f;
 
-	pts[3].u = 1.0f;
-	pts[3].v = 0.0f;
-	pts[4].u = 0.0f;
-	pts[4].v = 1.0f;
-	pts[5].u = 1.0f;
-	pts[5].v = 1.0f;
+	pts[3].texture_position.u = 1.0f;
+	pts[3].texture_position.v = 0.0f;
+	pts[4].texture_position.u = 0.0f;
+	pts[4].texture_position.v = 1.0f;
+	pts[5].texture_position.u = 1.0f;
+	pts[5].texture_position.v = 1.0f;
 
 	pts[0].r = (ubyte)r;
 	pts[0].g = (ubyte)g;
@@ -726,11 +723,7 @@ int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float 
 
 void batch_render_lasers()
 {
-	uint map_size = geometry_map.size();
-	batch_item *bi;
-
-	for (uint i = 0; i < map_size; i++) {
-		bi = &geometry_map[i];
+	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
 		if ( !bi->laser )
 			continue;
@@ -746,11 +739,7 @@ void batch_render_lasers()
 
 void batch_render_bitmaps()
 {
-	uint map_size = geometry_map.size();
-	batch_item *bi;
-
-	for (uint i = 0; i < map_size; i++) {
-		bi = &geometry_map[i];
+	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
 		if ( bi->laser )
 			continue;

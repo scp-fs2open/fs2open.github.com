@@ -9,7 +9,6 @@
 
 
 
-
 #include "hud/hudobserver.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudconfig.h"
@@ -17,14 +16,13 @@
 #include "network/multi.h"
 
 
-
-
 // use these to redirect Player_ship and Player_ai when switching into ai mode
 ship Hud_obs_ship;
 ai_info Hud_obs_ai;
 
-
-// initialize observer hud stuff
+/**
+ * Initialize observer hud stuff
+ */
 void hud_observer_init(ship *shipp,ai_info *aip)
 {
 	// setup the pseduo ship and ai
@@ -59,6 +57,9 @@ void hud_obs_render_players_all()
 	}
 }
 
+/**
+ * Render any specific observer stuff
+ */
 void hud_render_observer()
 {
 	Assert((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));

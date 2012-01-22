@@ -26,26 +26,10 @@
 #define FS_CAMPAIGN_FILE_EXT				NOX(".fc2")
 
 // CDROM volume names
-#ifdef MULTIPLAYER_BETA_BUILD
-	#define FS_CDROM_VOLUME_1					NOX("FS2_BETA")
-	#define FS_CDROM_VOLUME_2					NOX("FS2_BETA")
-#elif defined(E3_BUILD)
-	#define FS_CDROM_VOLUME_1					NOX("FS2_E3DEMO")
-	#define FS_CDROM_VOLUME_2					NOX("FS2_E3DEMO")
-#elif defined(OEM_BUILD)
-	#define FS_CDROM_VOLUME_1					NOX("FS2_OEM")
-	#define FS_CDROM_VOLUME_2					NOX("FS2_OEM")
-	#define FS_CDROM_VOLUME_3					NOX("FS2_OEM")
-#else
-	#define FS_CDROM_VOLUME_1					NOX("FREESPACE2_1")
-	#define FS_CDROM_VOLUME_2					NOX("FREESPACE2_2")
-	#define FS_CDROM_VOLUME_3					NOX("FREESPACE2_3")
+#define FS_CDROM_VOLUME_1					NOX("FREESPACE2_1")
+#define FS_CDROM_VOLUME_2					NOX("FREESPACE2_2")
+#define FS_CDROM_VOLUME_3					NOX("FREESPACE2_3")
 
-	// old volume names
-	// #define FS_CDROM_VOLUME_1					NOX("FREESPACE_1")
-	// #define FS_CDROM_VOLUME_2					NOX("FREESPACE_2")
-	// #define FS_CDROM_VOLUME_3					NOX("FREESPACE_3")
-#endif
 
 // frametime/missiontime variables
 extern fix Frametime;
@@ -210,10 +194,6 @@ int game_do_cd_check(char *volume_name=NULL);
 int game_do_cd_check_specific(char *volume_name, int cdnum);
 int find_freespace_cd(char *volume_name=NULL);
 int set_cdrom_path(int drive_num);
-int game_do_cd_mission_check(char *filename);
-
-// Used to tell the player that a feature isn't available in the demo version of FreeSpace
-void game_feature_not_in_demo_popup();
 
 // Used to tell the player that a feature is disabled by build settings
 void game_feature_disabled_popup();
