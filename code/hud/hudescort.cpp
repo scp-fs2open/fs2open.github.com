@@ -602,8 +602,8 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 				}
 			}
 
-			// don't process ships that are dying, or objects that should be dead
-			if ( (Ships[objp->instance].flags & (SF_DYING|SF_DEPARTING)) || (objp->flags & OF_SHOULD_BE_DEAD) ){
+			// don't process objects that should be dead
+			if ( objp->flags & OF_SHOULD_BE_DEAD ) {
 				continue;
 			}
 
@@ -759,10 +759,10 @@ void hud_remove_ship_from_escort_index(int dead_index, int objnum)
 
 }
 
-// called once per frame to remove dead or departed ships from the escort list
+// called once per frame to refresh the escort list if important flags changed
 void hud_escort_cull_list()
 {
-	int i, objnum;
+	int i;
 
 	int np_index;
 
@@ -773,19 +773,30 @@ void hud_escort_cull_list()
 			
 			// maybe remove him if he left
 			if ( np_index < 0 ) {
-				hud_remove_ship_from_escort_index(i, -1);
-				i--;
+				hud_setup_escort_list(0);
+				break;
 			}
 		}
 	} 
 	// everything else
 	else {
 		for ( i = 0; i < Num_escort_ships; i++ ) {
-			objnum = Escort_ships[i].objnum;
+			int objnum = Escort_ships[i].objnum;
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
-			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD || Ships[Objects[objnum].instance].flags & SF_HIDDEN_FROM_SENSORS ) {
-				hud_remove_ship_from_escort_index(i, objnum);
-				i--;
+
+			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD ) {
+				hud_setup_escort_list(0);
+				break;
+			} else if ( Objects[objnum].type == OBJ_SHIP ) {
+				int shipnum = Objects[objnum].instance;
+				Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
+
+				if ( (Ships[shipnum].flags & SF_HIDDEN_FROM_SENSORS)
+					|| ((Ships[shipnum].flags2 & SF2_STEALTH) && ((Ships[shipnum].team != Player_ship->team) || (Ships[shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS)))
+				) {
+					hud_setup_escort_list(0);
+					break;
+				}
 			}
 		}
 	}
@@ -834,7 +845,7 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 		complete_escorts[num_complete_escorts].obj_signature = Objects[objnum].signature;
 		complete_escorts[num_complete_escorts].priority = Ships[Objects[objnum].instance].escort_priority;
 
-		// remove him from escort list
+		// add him to escort list
 		Ships[Objects[objnum].instance].flags |= SF_ESCORT;
 
 		num_complete_escorts++;

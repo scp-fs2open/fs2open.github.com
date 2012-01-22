@@ -93,8 +93,6 @@ int laser_model_outer = -1;
 
 int missile_model = -1;
 
-char	*Weapon_names[MAX_WEAPON_TYPES];
-
 int     First_secondary_index = -1;
 int		Default_cmeasure_index = -1;
 
@@ -856,11 +854,14 @@ void init_weapon_entry(int weap_info_index)
 	wip->catchup_pixels_per_sec = 50;
 	wip->catchup_pixel_penalty = 50;
 	wip->seeker_strength = 1.0f;
-	
+
 	wip->swarm_count = -1;
 	// *Default is 150  -Et1
 	wip->SwarmWait = SWARM_MISSILE_DELAY;
 	
+	wip->pre_launch_snd = -1;
+	wip->pre_launch_snd_min_interval = 0;
+
 	wip->launch_snd = -1;
 	wip->impact_snd = -1;
 	wip->disarmed_impact_snd = -1;
@@ -1291,9 +1292,9 @@ int parse_weapon(int subtype, bool replace)
 
 		// Goober5000 - hack in order to make the beam whack behavior of these three beams match all other beams
 		// this relies on Bobboau's beam whack hack in beam_apply_whack()
-		if (!strcmp(wip->name, "SAAA") && (wip->mass == 4.0f)
-			|| !strcmp(wip->name, "MjolnirBeam") && (wip->mass == 1000.0f)
-			|| !strcmp(wip->name, "MjolnirBeam#home") && (wip->mass == 1000.0f))
+		if ((!strcmp(wip->name, "SAAA") && (wip->mass == 4.0f))
+			|| (!strcmp(wip->name, "MjolnirBeam") && (wip->mass == 1000.0f))
+			|| (!strcmp(wip->name, "MjolnirBeam#home") && (wip->mass == 1000.0f)))
 		{
 			wip->mass = 100.0f;
 		}
@@ -2749,14 +2750,6 @@ void parse_weaponstbl(char *filename)
 	lcl_ext_close();
 }
 
-void weapon_create_names()
-{
-	int	i;
-
-	for (i = 0; i < Num_weapon_types; i++)
-		Weapon_names[i] = Weapon_info[i].name;
-}
-
 //uses a simple bucket sort to sort weapons, order of importance is:
 //Lasers
 //Beams
@@ -3209,7 +3202,6 @@ void weapon_do_post_parse()
 	char *weakp;
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
-	weapon_create_names();
 	weapon_clean_entries();
 	weapon_generate_indexes_for_substitution();
 
@@ -3437,6 +3429,8 @@ void weapon_render(object *obj)
 	{
 		case WRT_LASER:
 		{
+			if(wip->laser_length < 0.0001f)
+					return;
 			// turn off fogging for good measure
 			gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 			int alpha = 255;
@@ -3466,6 +3460,7 @@ void weapon_render(object *obj)
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
 				vec3d headp;
+				
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
 
@@ -3567,7 +3562,7 @@ void weapon_render(object *obj)
 			int clip_plane=0;
 				
 			//start a clip plane
-			if ((wp->lssm_stage==2))
+			if (wp->lssm_stage==2)
 			{
 				object *wobj=&Objects[wp->lssm_warp_idx];		//warphole object
 				clip_plane=1;

@@ -105,19 +105,13 @@ int	subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye, vec3d* sub
 vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
 void	hud_target_change_check();
 
-void hud_show_target_triangle_indicator(vertex *projected_v);
-void hud_show_orientation_tee();
 void hud_show_hostile_triangle();
-void hud_show_target_data();
 void hud_start_flash_weapon(int index);
 void hud_update_weapon_flash();
-void hud_show_cmeasure_gauge();
-void hud_show_brackets(object *targetp, vertex *projected_v);
-void hud_draw_offscreen_indicator(color* clr, vertex* target_point, vec3d *tpos, float distance=0.0f, int draw_solid=1);
 void hud_process_homing_missiles(void);
 
 int hud_sensors_ok(ship *sp, int show_msg = 1);
-int hud_communications_state(ship *sp, int show_msg = 0);
+int hud_communications_state(ship *sp);
 
 int hud_get_best_primary_bank(float *range);
 void hud_target_toggle_hidden_from_sensors();

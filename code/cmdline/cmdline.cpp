@@ -653,11 +653,17 @@ void os_validate_parms(char *cmdline)
 				snprintf(buffer, 128, "Unrecognized command line parameter, \"%s\", continue?", token);
 				message = CFStringCreateWithCString(NULL, buffer, kCFStringEncodingASCII);
 
-				if ( CFUserNotificationDisplayAlert(0, kCFUserNotificationPlainAlertLevel, NULL, NULL, NULL, CFSTR("Unknown Command"), message, NULL, CFSTR("Quit"), NULL, &result) )
+				if ( CFUserNotificationDisplayAlert(0, kCFUserNotificationPlainAlertLevel, NULL, NULL, NULL, CFSTR("Unknown Command"), message, NULL, CFSTR("Quit"), NULL, &result) ) {
+                    CFRelease(message);
 					exit(0);
+				}
 
-				if (result != kCFUserNotificationDefaultResponse)
+				if (result != kCFUserNotificationDefaultResponse) {
+                    CFRelease(message);
 					exit(0);
+				}
+
+                CFRelease(message);
 #else
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
 				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?") ) {

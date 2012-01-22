@@ -21,9 +21,6 @@
 #define MAX_TRIS 200
 #define MAX_POINTS 300
 
-//static int neb_w = 0, neb_h = 0;
-
-//static int nebula_inited = 0;
 static int num_pts = 0;
 
 static vec3d nebula_vecs[MAX_POINTS];

@@ -1001,18 +1001,10 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		closeup_icon = brief_get_closeup_icon();
 		if ( bi == closeup_icon || selected ) {
 			icon_bitmap = ga->first_frame+1;
-//			gr_set_bitmap(ga->first_frame+1);
 		}
 		else {
 			icon_bitmap = ga->first_frame;
-//			gr_set_bitmap(ga->first_frame);
 		}
-	
-		// draw icon centered at draw position
-//		bx = fl2i(tv.sx - ib->icon_w/2.0f);
-//		by = fl2i(tv.sy - ib->icon_h/2.0f);
-//		bc = bx + fl2i(ib->icon_w/2.0f);
-		//gr_aabitmap(bx, by);
 
 		float scaled_w, scaled_h;
 
@@ -1033,18 +1025,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 			bi->y = by;
 			return;
 		}
-/*
-		vertex va, vb;
-		va.sx = bxf;
-		va.sy = byf;
-		va.u = 0.0f;
-		va.v = 0.0f;
 
-		vb.sx = bxf+scaled_w-1;
-		vb.sy = byf+scaled_h-1;
-		vb.u = 1.0f;
-		vb.v = 1.0f;
-*/
 		// render highlight anim frame
 		if ( (bi->flags&BI_SHOWHIGHLIGHT) && (bi->flags&BI_HIGHLIGHT) ) {
 			hud_anim *ha = &bi->highlight_anim;
@@ -1075,7 +1056,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 			if ( ha->first_frame >= 0 ) {
 				ha->sx = bx;
 				ha->sy = by;
-//				hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
 				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, true, mirror_icon) == 0 ) {
@@ -1149,11 +1129,9 @@ void brief_render_icons(int stage_num, float frametime)
 	}
 }
 
-// ------------------------------------------------------------------------------------
-// brief_start_highlight_anims()
-//
-//	see if there are any highlight animations to play
-//
+/**
+ * See if there are any highlight animations to play
+ */
 void brief_start_highlight_anims(int stage_num)
 {
 	brief_stage		*bs;
@@ -1190,20 +1168,14 @@ void brief_start_highlight_anims(int stage_num)
 //
 void brief_render_map(int stage_num, float frametime)
 {
-	brief_stage *bs;
-
 	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2);
-	
-	// REMOVED by neilk: removed gr_clear for FS2 because interface no longer calls for black background on grid
-	//	gr_clear();
 
-  if (stage_num >= Briefing->num_stages) {
+    if (stage_num >= Briefing->num_stages) {
 		gr_reset_clip();
 		return;
 	}
 
 	Assert(Briefing);
-	bs = &Briefing->stages[stage_num];
 
 	g3_start_frame(0);
 	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, 0.5f);
@@ -1235,11 +1207,12 @@ void brief_render_map(int stage_num, float frametime)
 	g3_end_frame();
 }
 
-// Display what stage of the briefing is active
+/**
+ * Display what stage of the briefing is active
+ */
 void brief_blit_stage_num(int stage_num, int stage_max)
 {
 	char buf[64];
-	// int w;
 
 	Assert( Briefing != NULL );
 	gr_set_color_fast(&Color_text_heading);
@@ -1249,19 +1222,6 @@ void brief_blit_stage_num(int stage_num, int stage_max)
 	} else {
 		gr_printf(Brief_stage_text_coords[gr_screen.res][0], Brief_stage_text_coords[gr_screen.res][1], buf);
 	}
-
-	// draw the title of the mission	
-	// if this goes above briefing text, it will need to be raised 10 pixels in multiplayer to make
-	// room for stage num, which makes toom for chat box
-	/*
-	if (Game_mode & GM_MULTIPLAYER) {
-		gr_get_string_size(&w,NULL,The_mission.name);
-		gr_string(bscreen.map_x2 - w, bscreen.map_y2 + 5, The_mission.name);		
-	} else {
-		gr_get_string_size(&w,NULL,The_mission.name);
-		gr_string(bscreen.map_x2 - w, bscreen.map_y2 + 5, The_mission.name);		
-	}
-	*/
 }
 
 /**
@@ -1423,7 +1383,6 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 void brief_render_elements(vec3d *pos, grid* gridp)
 {
 	vec3d	gpos;	//	Location of point on grid.
-//	vec3d	tpos;
 	float		dxz;
 	plane		tplane;
 	vec3d	*gv;
@@ -1925,7 +1884,6 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 	Brief_voice_started = 0;
 	Brief_stage_time = 0;
 
-
 	Brief_stage_highlight_sound_handle = -1;
 	Last_new_stage = stage_num;
 }
@@ -2268,9 +2226,6 @@ void brief_render_grid(grid *gridp)
 	//	Draw the row lines.
 	for (i=0; i<=nrows; i++)
 		brief_rpd_line(&gridp->gpoints3[i], &gridp->gpoints4[i]);
-
-	ncols = gridp->ncols / 2;
-	nrows = gridp->nrows / 2;
 }
 
 void brief_modify_grid(grid *gridp)

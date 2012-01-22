@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="wxFRED2"
 	ProjectGUID="{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}"
+	RootNamespace="wxFRED2"
 	>
 	<Platforms>
 		<Platform
@@ -49,7 +50,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(WXWIN)/include,$(WXWIN)/contrib/include,$(WXWIN)/lib/mswd,$(WXWIN)/lib/vc_lib/mswd"
+				AdditionalIncludeDirectories="../../code;&quot;$(WXWIN)/include&quot;;&quot;$(WXWIN)/contrib/include&quot;;&quot;$(WXWIN)/lib/mswd&quot;;&quot;$(WXWIN)/lib/vc_lib/mswd&quot;"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -155,7 +156,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="$(WXWIN)/include,$(WXWIN)/contrib/include,$(WXWIN)/lib/msw,$(WXWIN)/lib/vc_lib/msw"
+				AdditionalIncludeDirectories="../../code;&quot;$(WXWIN)/include&quot;;&quot;$(WXWIN)/contrib/include&quot;;&quot;$(WXWIN)/lib/mswd&quot;;&quot;$(WXWIN)/lib/vc_lib/mswd&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;INF_BUILD"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -259,7 +260,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(WXWIN)/include,$(WXWIN)/contrib/include,$(WXWIN)/lib/mswd,$(WXWIN)/lib/vc_lib/mswd"
+				AdditionalIncludeDirectories="../../code;&quot;$(WXWIN)/include&quot;;&quot;$(WXWIN)/contrib/include&quot;;&quot;$(WXWIN)/lib/mswd&quot;;&quot;$(WXWIN)/lib/vc_lib/mswd&quot;"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -365,7 +366,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="$(WXWIN)/include,$(WXWIN)/contrib/include,$(WXWIN)/lib/msw,$(WXWIN)/lib/vc_lib/msw"
+				AdditionalIncludeDirectories="../../code;&quot;$(WXWIN)/include&quot;;&quot;$(WXWIN)/contrib/include&quot;;&quot;$(WXWIN)/lib/mswd&quot;;&quot;$(WXWIN)/lib/vc_lib/mswd&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -479,10 +480,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\voiceactingmanagereditor.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\wxfred2\voicefilemanager.cpp"
 				>
 			</File>
 			<File

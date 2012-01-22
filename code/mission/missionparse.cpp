@@ -90,7 +90,6 @@ int Num_cargo = 0;
 int Num_status_names = MAX_STATUS_NAMES;
 int Num_arrival_names = MAX_ARRIVAL_NAMES;
 int Num_goal_type_names = MAX_GOAL_TYPE_NAMES;
-int Num_team_names = MAX_TEAM_NAMES;
 int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;
@@ -4646,7 +4645,7 @@ void parse_waypoint_list(mission *pm)
 	waypoint_add_list(name_buf, vec_list);
 }
 
-void parse_waypoints(mission *pm)
+void parse_waypoints_and_jumpnodes(mission *pm)
 {
 	vec3d pos;
 
@@ -5221,7 +5220,7 @@ int parse_mission(mission *pm, int flags)
 	parse_wings(pm);
 	parse_events(pm);
 	parse_goals(pm);
-	parse_waypoints(pm);
+	parse_waypoints_and_jumpnodes(pm);
 	parse_messages(pm, flags);
 	parse_reinforcements(pm);
 	parse_bitmaps(pm);

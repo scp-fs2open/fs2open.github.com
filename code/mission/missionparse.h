@@ -229,7 +229,6 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 
 #define	MAX_FORMATION_NAMES	3
 #define	MAX_STATUS_NAMES		3
-#define	MAX_TEAM_NAMES			4
 
 // defines for arrival locations.  These defines should match their counterparts in the arrival location
 // array
@@ -294,7 +293,6 @@ extern int	Num_status_names;
 extern int	Num_arrival_names;
 extern int	Num_formation_names;
 extern int	Num_goal_type_names;
-extern int	Num_team_names;
 extern int	Num_reinforcement_type_names;
 extern int	Player_starts;
 extern fix	Entry_delay_time;

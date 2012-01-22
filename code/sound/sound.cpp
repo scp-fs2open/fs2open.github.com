@@ -66,6 +66,10 @@ struct LoopingSoundInfo {
 		dynamicVolume(dynamicVolume)
 	{
 	}
+    
+    LoopingSoundInfo() : dsHandle(-1), defaultVolume(0.0f), dynamicVolume(0.0f)
+    {
+    }
 };
 
 SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;

@@ -898,8 +898,8 @@ void init_ai_stealth_info(ai_info *aip, object *stealth_objp)
 
 // -----------------------------------------------------------------------------
 // Check whether Pl_objp can see a stealth ship object
-#define STEALTH_INVISIBLE			0
-#define STEALTH_VISIBLE				1
+#define STEALTH_NOT_IN_FRUSTUM			0
+#define STEALTH_IN_FRUSTUM				1
 #define STEALTH_FULLY_TARGETABLE	2
 
 /**
@@ -980,7 +980,7 @@ int ai_is_stealth_visible(object *viewer_objp, object *stealth_objp)
 		// get max dist at which stealth is visible
 		max_stealth_dist = get_skill_stealth_dist_scaler() * STEALTH_MAX_VIEW_DIST;
 
-		// now check if within view frustrum
+		// now check if within view frustum
 		float needed_dot_to_stealth;
 		if (dist_to_stealth < 100) {
 			needed_dot_to_stealth = 0.0f;
@@ -989,12 +989,12 @@ int ai_is_stealth_visible(object *viewer_objp, object *stealth_objp)
 		}
 		if (dot_to_stealth > needed_dot_to_stealth) {
 			if (dist_to_stealth < max_stealth_dist) {
-				return STEALTH_VISIBLE;
+				return STEALTH_IN_FRUSTUM;
 			}
 		}
 
-		// not within frustrum
-		return STEALTH_INVISIBLE;
+		// not within frustum
+		return STEALTH_NOT_IN_FRUSTUM;
 	}
 
 	// visible by awacs level
@@ -1079,7 +1079,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	// if my target is a stealth ship and is not visible
 	if (aip->target_objnum >= 0) {
 		if ( is_object_stealth_ship(&Objects[aip->target_objnum]) ) {
-			if ( ai_is_stealth_visible(objp, &Objects[aip->target_objnum]) == STEALTH_INVISIBLE ) {
+			if ( ai_is_stealth_visible(objp, &Objects[aip->target_objnum]) == STEALTH_NOT_IN_FRUSTUM ) {
 				// and the weapon is coming from that stealth ship
 				if (weapon_objp->parent == aip->target_objnum) {
 					// update my position estimate for stealth ship
@@ -1641,26 +1641,21 @@ int	Player_attacking_enabled = 1;
  */
 int object_is_targetable(object *target, ship *viewer)
 {
-	int stealth_ship = 0;
-
 	// if target is ship, check if visible by team
 	if (target->type == OBJ_SHIP)
 	{
-		stealth_ship = (Ships[target->instance].flags2 & SF2_STEALTH);
-
-		if ( ship_is_visible_by_team(target, viewer) == 1)
-		{
+		if (ship_is_visible_by_team(target, viewer)) {
 			return 1;
 		}
-	}
 
-	// for AI partially targetable works as fully targetable, except for stealth ship
-	if (stealth_ship) {
-		// if not team targetable, check if within frustrum
-		if ( ai_is_stealth_visible(&Objects[viewer->objnum], target) == STEALTH_VISIBLE ) {
-			return 1;
-		} else {
-			return 0;
+		// for AI partially targetable works as fully targetable, except for stealth ship
+		if (Ships[target->instance].flags2 & SF2_STEALTH) {
+			// if not team targetable, check if within frustum
+			if ( ai_is_stealth_visible(&Objects[viewer->objnum], target) == STEALTH_IN_FRUSTUM ) {
+				return 1;
+			} else {
+				return 0;
+			}
 		}
 	}
 
@@ -2163,7 +2158,7 @@ int find_enemy(int objnum, float range, int max_attackers)
 
 			// DKA don't undo object as target in nebula missions.
 			// This could cause attack on ship on fringe on nebula to stop if attackee moves our of nebula range.  (BAD)
-			if ( (Objects[target_objnum].signature == aip->target_signature) ) {
+			if ( Objects[target_objnum].signature == aip->target_signature ) {
 				if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
 					if (!(Objects[target_objnum].flags & OF_PROTECTED)) {
 						return target_objnum;
@@ -8270,7 +8265,7 @@ void ai_chase()
 
 	case SM_ATTACK:
 		// if target is stealth and stealth not visible, then enter stealth find mode
-		if ( (aip->ai_flags & AIF_STEALTH_PURSUIT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_INVISIBLE) ) {
+		if ( (aip->ai_flags & AIF_STEALTH_PURSUIT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_NOT_IN_FRUSTUM) ) {
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
@@ -8385,7 +8380,7 @@ void ai_chase()
 
 	case SM_SUPER_ATTACK:
 		// if stealth and invisible, enter stealth find mode
-		if ( (aip->ai_flags & AIF_STEALTH_PURSUIT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_INVISIBLE) ) {
+		if ( (aip->ai_flags & AIF_STEALTH_PURSUIT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_NOT_IN_FRUSTUM) ) {
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
@@ -8492,7 +8487,7 @@ void ai_chase()
 	// Either change to SM_ATTACK or AIM_FIND_STEALTH
 	case SM_STEALTH_FIND:
 		// if time > 5 sec change mode to sweep
-		if ( !(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE) ) {
+		if ( !(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_IN_FRUSTUM) ) {
 			aip->submode = SM_ATTACK;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;
@@ -8507,7 +8502,7 @@ void ai_chase()
 		break;
 
 	case SM_STEALTH_SWEEP:
-		if ( !(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE) ) {
+		if ( !(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_IN_FRUSTUM) ) {
 			aip->submode = SM_ATTACK;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;
@@ -8566,7 +8561,7 @@ void ai_chase()
 	if (aip->ai_stalemate_dist_thresh > 0.0f &&
 			dist_to_enemy < aip->ai_stalemate_dist_thresh && 
 			aip->submode != SM_GET_AWAY && aip->submode != AIS_CHASE_GLIDEATTACK && aip->submode != SM_FLY_AWAY && 
-			(!(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE)))
+			(!(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_IN_FRUSTUM)))
 	{
 		aip->time_enemy_near += flFrametime;
 	}
@@ -9085,6 +9080,48 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			vec3d offset;
 
 			Assert(dock_mode == DOA_DOCK_STAY);
+			extern physics_info * Viewer_physics_info;
+			extern int Physics_viewer_direction;
+			if(&docker_objp->phys_info == Viewer_physics_info) //Valathil - transmit the changed bank to the viewer bank variable for billboard rotation
+			{
+				angles a_orient, a_dom;
+				vm_extract_angles_matrix(&a_orient, &docker_objp->orient);
+				vm_extract_angles_matrix(&a_dom, &dom);
+				
+				switch(Physics_viewer_direction){
+					case PHYSICS_VIEWER_FRONT:
+						Physics_viewer_bank -= (a_dom.b - a_orient.b);
+						break;
+
+					case PHYSICS_VIEWER_UP:
+						Physics_viewer_bank -= (a_dom.h - a_orient.h);
+						break;
+
+					case PHYSICS_VIEWER_REAR:
+						Physics_viewer_bank += (a_dom.b - a_orient.b);
+						break;
+
+					case PHYSICS_VIEWER_LEFT:
+						Physics_viewer_bank += (a_dom.p - a_orient.p);
+						break;
+
+					case PHYSICS_VIEWER_RIGHT:
+						Physics_viewer_bank -= (a_dom.p - a_orient.p);
+						break;
+
+					default:
+						Physics_viewer_bank -= (a_dom.b - a_orient.b);
+						break;
+				}
+
+				if ( Physics_viewer_bank < 0.0f ){
+					Physics_viewer_bank += 2.0f * PI; 	 
+				} 	 
+
+				if ( Physics_viewer_bank > 2.0f * PI ){ 	 
+					Physics_viewer_bank -= 2.0f * PI; 	 
+				}
+			}
 			docker_objp->orient = dom;
 
 			vm_vec_sub(&offset, &dockee_point, &docker_point);
@@ -9336,7 +9373,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 		if ( awacs_get_level(hitter_objp, &Ships[aip->shipnum], 1) < 1 ) {
 			// if he's a stealth and visible, but not targetable, ok to attack.
 			if ( is_object_stealth_ship(hitter_objp) ) {
-				if ( ai_is_stealth_visible(guard_objp, hitter_objp) != STEALTH_VISIBLE ) {
+				if ( ai_is_stealth_visible(guard_objp, hitter_objp) != STEALTH_IN_FRUSTUM ) {
 					return;
 				}
 			}
@@ -13577,7 +13614,7 @@ void ai_frame(int objnum)
 				aip->ai_flags |= AIF_STEALTH_PURSUIT;
 			}
 
-			if ( (stealth_state == STEALTH_FULLY_TARGETABLE) || (stealth_state == STEALTH_VISIBLE) ) {
+			if ( (stealth_state == STEALTH_FULLY_TARGETABLE) || (stealth_state == STEALTH_IN_FRUSTUM) ) {
 				aip->stealth_last_visible_stamp = timestamp();
 				aip->stealth_last_cheat_visible_stamp = aip->stealth_last_visible_stamp;
 				aip->stealth_last_pos = En_objp->pos;

@@ -298,8 +298,6 @@ void afterburners_stop(object *objp, int key_released)
 	}
 
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
-	float percent_left;
-	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
 	model_anim_start_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, -1);

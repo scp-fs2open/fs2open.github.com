@@ -591,14 +591,6 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 
 	start = Num_lines;
 
-	// next loop used to loop through max ships, comparing team values.  MWA changed this to iterate
-	// through object list.  Seemed safer since it doesn't rely on the team value getting reset to
-	// a bogus value between missions
-	//for (i=0; i<MAX_SHIPS; i++) {
-	//	if ((Ships[i].team == team) && (Ships[i].wingnum < 0)) {
-	//		hotkey_line_add_sorted(Ships[i].ship_name, HOTKEY_LINE_SHIP, i, start);
-	//	}
-
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		int shipnum;
 
@@ -664,7 +656,6 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		}
 	}
 
-	z = HOTKEY_LINE_HEADING;
 	for (i=start; i<Num_lines; i++) {
 		if (Hotkey_lines[i].type == HOTKEY_LINE_SUBSHIP)
 			y += font_height;

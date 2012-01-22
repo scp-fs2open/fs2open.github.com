@@ -351,7 +351,6 @@ void parse_stringstbl(char *filename)
 		p_offset = NULL;
 		offset_lo = 0;
 		offset_hi = 0;
-		num_offsets_on_this_line = 0;
 	}
 }
 

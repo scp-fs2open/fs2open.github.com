@@ -48,14 +48,6 @@
 #include "missionui/chatbox.h"
 
 
-
-/*
-#define OBJECTIVES_X	65
-#define OBJECTIVES_Y	137
-#define OBJECTIVES_W	508
-#define OBJECTIVES_H	233
-*/
-
 static int Brief_goals_coords[GR_NUM_RESOLUTIONS][4] = {
 	{
 		65,152,508,211		// GR_640
@@ -1748,9 +1740,6 @@ void brief_do_frame(float frametime)
 
 			// render the status indicator for the voice system
 			multi_common_voice_display_status();
-
-			// blit the "ships/players" locked button
-			// multi_ts_blit_locked_button();
 
 			// maybe blit the multiplayer "locked" button	
 			// if its locked, everyone blits it as such

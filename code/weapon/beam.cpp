@@ -3211,9 +3211,9 @@ int beam_ok_to_fire(beam *b)
 		if (shipp->weapon_energy <= 0.0f) {
 		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
 		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
-			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(shipp->weapons.next_primary_fire_stamp[b->bank] * 2);
+		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(shipp->weapons.next_primary_fire_stamp[b->bank] * 2); Valathil - Just do nothing to the timestamp, you can fire after the fire_wait period.
 
-			if ( OBJ_INDEX(Player_obj) == shipp->objnum ) {
+			if ( OBJ_INDEX(Player_obj) == shipp->objnum && !(b->life_left>0.0f)) {
 				extern int ship_maybe_play_primary_fail_sound();
 				ship_maybe_play_primary_fail_sound();
 			}
@@ -3323,13 +3323,12 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 	// don't whack docked ships
 	// Goober5000 - whacking docked ships should work now, so whack them
 	// Goober5000 - weapons with no mass don't whack (bypass the calculations)
-	if(/*object_is_docked(objp) ||*/ (wip->mass == 0.0f)) {
+	if(wip->mass == 0.0f) {
 		return;
 	}
 
 	// determine how big of a whack to apply
 	float whack;
-	float dist;
 
 	// this if block was added by Bobboau to make beams whack properly while preserving reverse compatibility
 	if(wip->mass == 100.0f){
@@ -3343,9 +3342,8 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 	}
 
 	// whack direction
-	vec3d whack_dir, temp;
-	vm_vec_dist_to_line(&objp->pos, &b->last_start, &b->last_shot, &temp, &dist);
-	vm_vec_sub(&whack_dir, &objp->pos, &temp);
+	vec3d whack_dir;
+	vm_vec_sub(&whack_dir, &b->last_shot, &b->last_start); // Valathil - use the beam direction as the force direction (like a high pressure water jet)
 	vm_vec_normalize(&whack_dir);
 	vm_vec_scale(&whack_dir, whack);
 
@@ -3452,197 +3450,5 @@ DCF(beam_list, "")
 			b_count++;
 			dc_printf("Beam %d : %s\n", b_count, Weapon_info[idx].name);
 		}
-	}
-}
-void beam_test(int whee)
-{
-	int s1, s2;
-	object *orion, *fenris;
-	ship_subsys *orion_turret, *fenris_turret, *fenris_radar, *orion_radar, *lookup;
-	beam_fire_info f;
-
-	nprintf(("General", "Running beam test\n"));
-
-	// lookup some stuff 
-	s1 = ship_name_lookup("GTD Orion 1");
-	Assert(s1 >= 0);
-	orion = &Objects[Ships[s1].objnum];
-	s2 = ship_name_lookup("GTC Fenris 2");
-	Assert(s2 >= 0);
-	fenris = &Objects[Ships[s2].objnum];		
-
-	// get beam weapons
-	lookup = GET_FIRST(&Ships[s1].subsys_list);
-	orion_turret = NULL;
-	orion_radar = NULL;
-	while(lookup != END_OF_LIST(&Ships[s1].subsys_list)){
-		// turret		
-		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !subsystem_stricmp(lookup->system_info->subobj_name, "turret07")){
-			orion_turret = lookup;			
-		}
-
-		// radar
-		if(lookup->system_info->type == SUBSYSTEM_RADAR){
-			orion_radar = lookup;
-		}
-
-		lookup = GET_NEXT(lookup);
-	}
-	Assert(orion_turret != NULL);
-	Assert(orion_radar != NULL);
-	lookup = GET_FIRST(&Ships[s2].subsys_list);
-	fenris_turret = NULL;
-	fenris_radar = NULL;
-	while(lookup != END_OF_LIST(&Ships[s2].subsys_list)){
-		// turret
-		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !subsystem_stricmp(lookup->system_info->subobj_name, "turret07")){
-			fenris_turret = lookup;			
-		}
-
-		// radar
-		if(lookup->system_info->type == SUBSYSTEM_RADAR){
-			fenris_radar = lookup;
-		}
-
-		lookup = GET_NEXT(lookup);
-	}
-	Assert(fenris_turret != NULL);	
-	Assert(fenris_radar != NULL);
-
-	memset(&f, 0, sizeof(beam_fire_info));
-	f.accuracy = beam_accuracy;
-	f.beam_info_index = -1;
-	f.beam_info_override = NULL;
-	f.shooter = orion;
-	f.target = fenris;
-	f.target_subsys = fenris_turret;
-	f.turret = orion_turret;
-
-	// find the first beam
-	int idx;	
-	int beam_first = -1;
-	int beam_count = 0;
-
-	for(idx=0; idx<Num_weapon_types; idx++){
-		if(Weapon_info[idx].wi_flags & WIF_BEAM){			
-			beam_count++;
-			if(beam_count > 1){
-				beam_first = idx;
-				break;
-			}
-		}
-	}	
-	if(beam_first < 0){
-		return;
-	}
-	
-	// maybe fire it, if its valid
-	f.beam_info_index = beam_first + whee - 1;
-	if(Weapon_info[f.beam_info_index].wi_flags & WIF_BEAM){
-		HUD_printf("Firing %s\n", Weapon_info[f.beam_info_index].name);
-
-		beam_fire(&f);
-	}
-}
-
-void beam_test_new(int whee)
-{
-	int s1, s2, s3;
-	object *orion, *fenris, *herc2, *herc3, *herc6, *alpha;
-	ship_subsys *orion_turret, *fenris_turret, *fenris_radar, *orion_radar, *lookup;
-	beam_fire_info f;
-
-	nprintf(("General", "Running beam test\n"));
-
-	// lookup some stuff 
-	s1 = ship_name_lookup("GTD Orion 1");
-	Assert(s1 >= 0);
-	orion = &Objects[Ships[s1].objnum];
-	s2 = ship_name_lookup("GTC Fenris 2");
-	Assert(s2 >= 0);
-	fenris = &Objects[Ships[s2].objnum];	
-	s3 = ship_name_lookup("GTF Hercules 2");
-	Assert(s3 >= 0);
-	herc2 = &Objects[Ships[s3].objnum];
-	s3 = ship_name_lookup("GTF Hercules 3");
-	Assert(s3 >= 0);
-	herc3 = &Objects[Ships[s3].objnum];
-	s3 = ship_name_lookup("GTF Hercules 6");
-	Assert(s3 >= 0);
-	herc6 = &Objects[Ships[s3].objnum];
-	s3 = ship_name_lookup("Alpha 1");
-	Assert(s3 >= 0);
-	alpha = &Objects[Ships[s3].objnum];	
-
-	// get beam weapons
-	lookup = GET_FIRST(&Ships[s1].subsys_list);
-	orion_turret = NULL;
-	orion_radar = NULL;
-	while(lookup != END_OF_LIST(&Ships[s1].subsys_list)){
-		// turret		
-		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !subsystem_stricmp(lookup->system_info->subobj_name, "turret07")){
-			orion_turret = lookup;			
-		}
-
-		// radar
-		if(lookup->system_info->type == SUBSYSTEM_RADAR){
-			orion_radar = lookup;
-		}
-
-		lookup = GET_NEXT(lookup);
-	}
-	Assert(orion_turret != NULL);
-	Assert(orion_radar != NULL);
-	lookup = GET_FIRST(&Ships[s2].subsys_list);
-	fenris_turret = NULL;
-	fenris_radar = NULL;
-	while(lookup != END_OF_LIST(&Ships[s2].subsys_list)){
-		// turret
-		if((lookup->system_info->type == SUBSYSTEM_TURRET) && !subsystem_stricmp(lookup->system_info->subobj_name, "turret03")){
-			fenris_turret = lookup;			
-		}
-
-		// radar
-		if(lookup->system_info->type == SUBSYSTEM_RADAR){
-			fenris_radar = lookup;
-		}
-
-		lookup = GET_NEXT(lookup);
-	}
-	Assert(fenris_turret != NULL);	
-	Assert(fenris_radar != NULL);
-
-	memset(&f, 0, sizeof(beam_fire_info));
-	f.accuracy = beam_accuracy;	
-	f.beam_info_override = NULL;
-	f.shooter = fenris;
-	f.target = alpha;
-	f.target_subsys = NULL;
-	f.turret = fenris_turret;
-	f.num_shots = 3;
-
-	// find the first beam
-	int idx;	
-	int beam_first = -1;
-	int beam_count = 0;
-
-	for(idx=0; idx<Num_weapon_types; idx++){
-		if(Weapon_info[idx].wi_flags & WIF_BEAM){
-			beam_count++;
-			if(beam_count > 1){
-				beam_first = idx;
-				break;
-			}			
-		}
-	}	
-	if(beam_first < 0){
-		return;
-	}
-	
-	// maybe fire it, if its valid
-	f.beam_info_index = beam_first + whee - 1;
-	if(Weapon_info[f.beam_info_index].wi_flags & WIF_BEAM){
-		HUD_printf("Firing %s\n", Weapon_info[f.beam_info_index].name);
-		beam_fire(&f);
 	}
 }

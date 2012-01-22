@@ -22,21 +22,6 @@
 
 
 int cell_shaded_lightmap = -1;
-/*typedef struct light {
-	int		type;							// What type of light this is
-	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
-	vec3d	vec2;							// second point on a tube light
-	vec3d	local_vec;					// rotated light vector
-	vec3d	local_vec2;					// rotated 2nd light vector for a tube light
-	float		intensity;					// How bright the light is.
-	float		rada, rada_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		r,g,b;						// The color components of the light
-	float		spec_r,spec_g,spec_b;		// The specular color components of the light
-	int		light_ignore_objnum;			// Don't light this object.  Used to optimize weapons casting light on parents.
-	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
-	int instance;
-} light;*/
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
@@ -153,10 +138,6 @@ void light_reset()
 
 	Num_lights = 0;
 	light_filter_reset();
-
-/*	if(!Cmdline_nohtl) {
-		for(int i = 0; i<MAX_LIGHTS; i++)gr_destroy_light(i);
-	}*/
 }
 extern vec3d Object_position;
 // Rotates the light into the current frame of reference
@@ -165,11 +146,6 @@ void light_rotate(light * l)
 	switch( l->type )	{
 	case LT_DIRECTIONAL:
 		// Rotate the light direction into local coodinates
-
-	/*	if(!Cmdline_nohtl) {
-		//	light_data *L = *(light_data*)(void*)l;
-			gr_modify_light(l, l->instance, 2);
-		}*/
 		
 		vm_vec_rotate(&l->local_vec, &l->vec, &Light_matrix );
 		break;
@@ -180,11 +156,6 @@ void light_rotate(light * l)
 	
 			vm_vec_sub(&tempv, &l->vec, &Light_base );
 			vm_vec_rotate(&l->local_vec, &tempv, &Light_matrix );
-
-		/*	if(!Cmdline_nohtl) {
-			//	light_data L = *(light_data*)(void*)l;
-				gr_modify_light(l, l->instance, 2);
-			}*/
 		}
 		break;
 	
@@ -198,37 +169,6 @@ void light_rotate(light * l)
 			// Rotate the point into local coordinates
 			vm_vec_sub(&tempv, &l->vec2, &Light_base );
 			vm_vec_rotate(&l->local_vec2, &tempv, &Light_matrix );
-
-		/*	if(!Cmdline_nohtl) {
-
-				//move the point to the neares to the object on the line
-					vec3d pos;
-
-				//	vm_vec_unrotate(&temp2, &temp, &obj->orient);
-				//	vm_vec_add2(&temp, &temp2);
-				//	vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].b_info.range);
-	
-					switch(vm_vec_dist_to_line(&Object_position, &l->local_vec, &l->local_vec2, &pos, NULL)){
-						// behind the beam, so use the start pos
-					case -1:
-						pos = l->vec;
-						break;
-				
-						// use the closest point
-					case 0:
-						// already calculated in vm_vec_dist_to_line(...)
-						break;
-
-						// past the beam, so use the shot pos
-					case 1:
-						pos = l->vec2;
-						break;
-					}
-			//	light_data L = *(light_data*)(void*)l;
-			//	L.vec = pos;
-			//	L.local_vec = pos;
-				gr_modify_light(l, l->instance, 2);
-			}*/
 		}
 		break;
 
@@ -412,8 +352,6 @@ void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, f
 
 	if (!Lighting_flag) return;
 
-//	if ( keyd_pressed[KEY_LSHIFT] ) return;
-
 	if ( Num_lights >= MAX_LIGHTS ) {
 		mprintf(( "Out of lights!\n" ));
 		return;
@@ -440,15 +378,11 @@ void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, f
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-/*	if(!Cmdline_nohtl) {
-	//	light_data *L = (light_data*)(void*)l;
-		gr_make_light(l, l->instance, 3);
-	}*/
-//	light_data *L = (light_data*)(void*)l;
-//	l->API_index = gr_make_light(L);
 }
 
-// Reset the list of lights to point to all lights.
+/**
+ * Reset the list of lights to point to all lights.
+ */
 void light_filter_reset()
 {
 	int i;
@@ -468,8 +402,10 @@ void light_filter_reset()
 }
 
 
-// Makes a list of only the lights that will affect
-// the sphere specified by 'pos' and 'rad' and 'objnum'
+/**
+ * Makes a list of only the lights that will affect
+ * the sphere specified by 'pos' and 'rad' and 'objnum'
+ */
 int light_filter_push( int objnum, vec3d *pos, float rad )
 {
 	int i;

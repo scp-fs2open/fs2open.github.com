@@ -535,7 +535,7 @@ int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte 
 	true_bpp = 8;
 
 	// don't do a bpp check here since it could be different in OGL - taylor
-	if ( (bmp->data == 0) ) {
+	if ( bmp->data == 0 ) {
 		Assert(be->ref_count == 1);
 
 		if ( be->type != BM_TYPE_USER ) {

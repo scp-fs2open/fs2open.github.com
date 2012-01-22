@@ -449,7 +449,7 @@ void HudGaugeMessages::render(float frametime)
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
-void HUD_fixed_printf(float duration, char * format, ...)
+void HUD_fixed_printf(float duration, color col, char * format, ...)
 {
 	va_list	args;
 	char		tmp[HUD_MSG_LENGTH_MAX];
@@ -483,7 +483,7 @@ void HUD_fixed_printf(float duration, char * format, ...)
 	}
 
 	strncpy(HUD_fixed_text[0].text, tmp, MAX_HUD_LINE_LEN - 1);
-	HUD_fixed_text[0].color = 0xff0000;
+	HUD_fixed_text[0].color = col.red << 16 | col.green << 8 | col.blue; 
 }
 
 //	Clear all pending text.

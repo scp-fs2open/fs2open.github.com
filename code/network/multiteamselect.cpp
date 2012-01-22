@@ -1023,21 +1023,6 @@ void multi_ts_set_status_bar_mode(int m)
 	Multi_ts_status_bar_mode = m;
 }
 
-// blit the proper "locked" button - used for weapon select and briefing screens
-void multi_ts_blit_locked_button()
-{		
-	// if we're locked down and we have a valid bitmap
-	if((Multi_ts_team[Net_player->p_info.team].multi_players_locked) && (Multi_ts_locked_bitmaps[2] != -1)){
-		gr_set_bitmap(Multi_ts_locked_bitmaps[2]);
-		gr_bitmap(Multi_ts_buttons[gr_screen.res][MULTI_TS_LOCK].x, Multi_ts_buttons[gr_screen.res][MULTI_TS_LOCK].y);
-	}
-	// draw as "not locked" if possible
-	else if(Multi_ts_locked_bitmaps[0] != -1){
-		gr_set_bitmap(Multi_ts_locked_bitmaps[0]);
-		gr_bitmap( Multi_ts_buttons[gr_screen.res][MULTI_TS_LOCK].x, Multi_ts_buttons[gr_screen.res][MULTI_TS_LOCK].y);
-	}
-}
-
 // the "lock" button has been pressed
 void multi_ts_lock_pressed()
 {

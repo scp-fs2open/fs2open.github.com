@@ -174,7 +174,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	float closest = 0.0f;
 	float test;
 	int closest_index = -1;
-	int idx, friendly_invisible = 0;
+	int idx, stealth_ship = 0, check_huge_ship = 0, friendly_stealth_invisible = 0;
 	ship *shipp = NULL;
 	ship_info *sip = NULL;
 
@@ -207,18 +207,30 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		// Goober5000
 		shipp = &Ships[target->instance];
 		sip = &Ship_info[shipp->ship_info_index];
-		friendly_invisible = (shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
+		stealth_ship = (shipp->flags2 & SF2_STEALTH);
+		friendly_stealth_invisible = (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
+
+		check_huge_ship = (sip->flags & SIF_HUGE_SHIP);
 	}
 	
-	int stealth_ship = (target->type == OBJ_SHIP) && (shipp != NULL) && (shipp->flags2 & SF2_STEALTH);
 	int nebula_enabled = (The_mission.flags & MISSION_FLAG_FULLNEB);
-	int check_huge_ship = (target->type == OBJ_SHIP) && (sip != NULL) && (sip->flags & SIF_HUGE_SHIP);
 
 	// ships on the same team are always viewable
-	// not necessarily now! :) -- Goober5000
-	if ((target->type == OBJ_SHIP) && (shipp != NULL) && (shipp->team == viewer->team) && (!friendly_invisible))
-		return FULLY_TARGETABLE;
+	if ((target->type == OBJ_SHIP) && (shipp->team == viewer->team))
+	{
+		// not necessarily now! -- Goober5000
+		if ( !(stealth_ship && friendly_stealth_invisible) )
+			return FULLY_TARGETABLE;
+	}
 
+	// check for a tagged ship. TAG'd ships are _always_ visible
+	if (target->type == OBJ_SHIP)
+	{
+		Assert( shipp != NULL );
+		if (shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f)
+			return FULLY_TARGETABLE;
+	}
+	
 	// only check for Awacs if stealth ship or Nebula mission
 	// determine the closest awacs on our team
 	if ((stealth_ship || nebula_enabled) && use_awacs)
@@ -268,14 +280,6 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		}
 	}
 
-	// check for a tagged ship. TAG'd ships are _always_ visible
-	if (target->type == OBJ_SHIP)
-	{
-		Assert( shipp != NULL );
-		if (shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f)
-			return FULLY_TARGETABLE;
-	}
-	
 	// if this is a stealth ship
 	if (stealth_ship)
 	{
@@ -286,7 +290,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 			if (nebula_enabled)
 				return MARGINALLY_TARGETABLE;
 
-			// otherwise its targetable
+			// otherwise it's targetable
 			return FULLY_TARGETABLE;
 		} 
 		// otherwise its completely hidden
@@ -317,7 +321,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		{
 			if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, scan_nebula_range))
 			{
-				if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, MARGINALLY_TARGETABLE * scan_nebula_range))
+				if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, 0.5f * scan_nebula_range))
 					return FULLY_TARGETABLE;
 
 				return MARGINALLY_TARGETABLE;
@@ -329,7 +333,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 			vm_vec_sub(&dist_vec, &target->pos, &Objects[viewer->objnum].pos);
 			test = vm_vec_mag_quick(&dist_vec);
 
-			if (test < (MARGINALLY_TARGETABLE * scan_nebula_range))
+			if (test < (0.5f * scan_nebula_range))
 				return FULLY_TARGETABLE;
 			else if (test < scan_nebula_range)
 				return MARGINALLY_TARGETABLE;
@@ -354,7 +358,7 @@ void team_visibility_update()
 	memset(team_count, 0, MAX_IFFS * sizeof(int));
 	memset(Ship_visibility_by_team, 0, MAX_IFFS * MAX_SHIPS * sizeof(ubyte));
 
-	// Go through list of ships and mark those visible for given team
+	// Go through list of ships and mark those visible for their own team
 	for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
 	{
 		// make sure its a valid ship
@@ -369,8 +373,12 @@ void team_visibility_update()
 		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
 			continue;
 
-		// check if ship if flagged as invisible
+		// check if ship is flagged as invisible
 		if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+			continue;
+
+		// check if ship is stealthed and friendly-invisible
+		if ((shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS))
 			continue;
 
 		Ship_visibility_by_team[shipp->team][ship_num] = 1;
@@ -396,8 +404,9 @@ void team_visibility_update()
 		// check against all enemy teams
 		for (int en_team = 0; en_team < MAX_IFFS; en_team++)
 		{
-			if (en_team == cur_team)
-				continue;
+			// NOTE: we no longer skip our own team because we must adjust visibility for friendly-stealth-invisible ships
+			// if (en_team == cur_team)
+			//	continue;
 
 			// set up enemy team
 			en_count = team_count[en_team];
