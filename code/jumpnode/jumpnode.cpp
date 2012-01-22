@@ -307,22 +307,6 @@ void jumpnode_render_all()
 		jnp->render(&jnp->get_obj()->pos);
 	}
 }
-
-bool jumpnode_check_for_duplicates()
-{
-	SCP_list<jump_node>::iterator reference, other;
-	
-	for (reference = Jump_nodes.begin(); reference != Jump_nodes.end(); ++reference)
-	{
-		for (other = Jump_nodes.begin(); other != Jump_nodes.end(); ++other)
-		{
-			if (!stricmp(reference->get_name_ptr(), other->get_name_ptr()))
-				return true;
-		}
-	}
-
-	return false;
-}
 	
 void jumpnode_level_close()
 {
