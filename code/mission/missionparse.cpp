@@ -4633,7 +4633,7 @@ void parse_waypoint_list(mission *pm)
 	waypoint_add_list(name_buf, vec_list);
 }
 
-void parse_waypoints(mission *pm)
+void parse_waypoints_and_jumpnodes(mission *pm)
 {
 	vec3d pos;
 
@@ -5208,7 +5208,7 @@ int parse_mission(mission *pm, int flags)
 	parse_wings(pm);
 	parse_events(pm);
 	parse_goals(pm);
-	parse_waypoints(pm);
+	parse_waypoints_and_jumpnodes(pm);
 	parse_messages(pm, flags);
 	parse_reinforcements(pm);
 	parse_bitmaps(pm);
