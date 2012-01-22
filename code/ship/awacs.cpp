@@ -404,8 +404,9 @@ void team_visibility_update()
 		// check against all enemy teams
 		for (int en_team = 0; en_team < MAX_IFFS; en_team++)
 		{
-			if (en_team == cur_team)
-				continue;
+			// NOTE: we no longer skip our own team because we must adjust visibility for friendly-stealth-invisible ships
+			// if (en_team == cur_team)
+			//	continue;
 
 			// set up enemy team
 			en_count = team_count[en_team];
