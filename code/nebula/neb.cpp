@@ -151,7 +151,7 @@ int neb_tossed_alpha = 0;		// nebs tossed because of alpha
 int neb_tossed_dot = 0;			// nebs tossed because of dot product
 int neb_tossed_count = 0;		// nebs tossed because of max render count 
 
-// the AWACS suppresion level for the nebula
+// the AWACS suppression level for the nebula
 float Neb2_awacs = -1.0f;
 
 // The visual render distance multipliers for the nebula

@@ -3344,7 +3344,7 @@ camid game_render_frame_setup()
 	say_view_target();
 
 	if ( Viewer_mode & VM_PADLOCK_ANY ) {
-		player_display_packlock_view();
+		player_display_padlock_view();
 	}
 
 	if (Game_mode & GM_DEAD) {
@@ -4007,7 +4007,7 @@ void game_simulation_frame()
 
 		physics_set_viewer( &Viewer_obj->phys_info, viewer_direction );
 	} else {
-		physics_set_viewer( NULL, PHYSICS_VIEWER_FRONT );
+		physics_set_viewer( &Objects[Player->objnum].phys_info, PHYSICS_VIEWER_FRONT );
 	}
 
 	// evaluate mission departures and arrivals before we process all objects.

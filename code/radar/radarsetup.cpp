@@ -156,7 +156,7 @@ void radar_plot_object( object *objp )
 	vec3d world_pos = objp->pos;
 	SCP_list<jump_node>::iterator jnp;
 
-		// don't process anything here.  Somehow, a jumpnode object caused this function
+	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
 	if( Game_mode & GM_STANDALONE_SERVER ){
 		return;
