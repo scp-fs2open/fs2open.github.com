@@ -579,7 +579,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast.
 		// Scale according to reduced_damp_time_expansion.
 		float reduced_damp_ramp_time_expansion;
-		if ( pi->flags & PF_REDUCED_DAMP ) {
+		if ( pi->flags & PF_REDUCED_DAMP && !timestamp_elapsed(pi->reduced_damp_decay) ) {
 			float reduced_damp_fraction_time_left = timestamp_until( pi->reduced_damp_decay ) / (float) REDUCED_DAMP_TIME;
 			reduced_damp_ramp_time_expansion = 1.0f + (REDUCED_DAMP_FACTOR-1) * reduced_damp_fraction_time_left;
 		} else {
