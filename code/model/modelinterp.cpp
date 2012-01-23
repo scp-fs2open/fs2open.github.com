@@ -4707,7 +4707,7 @@ float texture_info::GetTotalTime()
 }
 int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
 {
-	if (strlen(filename) >= NAME_LENGTH)
+	if (strlen(filename) + 4 >= NAME_LENGTH) //Filenames are passed in without extension
 	{
 		mprintf(("Generated texture name %s is too long. Skipping...\n"));
 		return -1;
