@@ -3998,7 +3998,7 @@ void game_simulation_frame()
 
 		physics_set_viewer( &Viewer_obj->phys_info, viewer_direction );
 	} else {
-		physics_set_viewer( NULL, PHYSICS_VIEWER_FRONT );
+		physics_set_viewer( &Objects[Player->objnum].phys_info, PHYSICS_VIEWER_FRONT );
 	}
 
 	// evaluate mission departures and arrivals before we process all objects.
