@@ -9655,7 +9655,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 				if ( shipp->weapon_energy < points*winfo_p->energy_consumed*flFrametime)
 				{
-					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]*2);
+					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 					if ( obj == Player_obj )
 					{
 						if ( ship_maybe_play_primary_fail_sound() )
@@ -9737,7 +9737,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				if ( (shipp->weapon_energy < points*numtimes * winfo_p->energy_consumed)			//was num_slots
 				 && !force ) {
 
-					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]);
+					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 					if ( obj == Player_obj )
 					{
 						if ( ship_maybe_play_primary_fail_sound() )

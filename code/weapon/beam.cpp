@@ -3211,9 +3211,9 @@ int beam_ok_to_fire(beam *b)
 		if (shipp->weapon_energy <= 0.0f) {
 		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
 		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
-			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(shipp->weapons.next_primary_fire_stamp[b->bank] * 2);
+		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(shipp->weapons.next_primary_fire_stamp[b->bank] * 2); Valathil - Just do nothing to the timestamp, you can fire after the fire_wait period.
 
-			if ( OBJ_INDEX(Player_obj) == shipp->objnum ) {
+			if ( OBJ_INDEX(Player_obj) == shipp->objnum && !(b->life_left>0.0f)) {
 				extern int ship_maybe_play_primary_fail_sound();
 				ship_maybe_play_primary_fail_sound();
 			}
