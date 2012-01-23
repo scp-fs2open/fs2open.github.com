@@ -2425,7 +2425,7 @@ char *ai_add_dock_name(char *str)
 	char *ptr;
 	int i;
 
-	Assert(strlen(str) < NAME_LENGTH - 1);
+	Assert(strlen(str) <= NAME_LENGTH - 1);
 	for (i=0; i<Num_ai_dock_names; i++)
 		if (!stricmp(Ai_dock_names[i], str))
 			return Ai_dock_names[i];
