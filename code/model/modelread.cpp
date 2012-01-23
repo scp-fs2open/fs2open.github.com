@@ -1451,7 +1451,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							*orient = vmd_identity_matrix;
 						}
 
-						Warning( LOCATION, "Improper custom orientation matrix, you must define a up vector, then a forward vector");
+						Warning( LOCATION, "Improper custom orientation matrix for subsystem %s, you must define a up vector, then a forward vector", pm->submodel[n].name);
 					}
 				} else {
 					int parent_num = pm->submodel[n].parent;
@@ -1463,7 +1463,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 
 					if (strstr(props, "$fvec:") != NULL) {
-						Warning( LOCATION, "Improper custom orientation matrix, you must define a up vector, then a forward vector");
+						Warning( LOCATION, "Improper custom orientation matrix for subsystem %s, you must define a up vector, then a forward vector", pm->submodel[n].name);
 					}
 				}
 
