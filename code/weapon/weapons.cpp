@@ -3433,6 +3433,8 @@ void weapon_render(object *obj)
 	{
 		case WRT_LASER:
 		{
+			if(wip->laser_length < 0.0001f)
+					return;
 			// turn off fogging for good measure
 			gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 			int alpha = 255;
@@ -3462,6 +3464,7 @@ void weapon_render(object *obj)
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
 				vec3d headp;
+				
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
 
