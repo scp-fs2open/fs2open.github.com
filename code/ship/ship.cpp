@@ -4702,7 +4702,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	ship_weapon	*swp = &shipp->weapons;
 	ship_info	*sip = &(Ship_info[ship_type]);
 
-	Assert(strlen(shipp->ship_name) < NAME_LENGTH - 1);
+	Assert(strlen(shipp->ship_name) <= NAME_LENGTH - 1);
 	shipp->ship_info_index = ship_type;
 	shipp->objnum = objnum;
 	shipp->group = 0;
