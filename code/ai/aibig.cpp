@@ -826,14 +826,11 @@ void ai_big_chase()
 	ship_info	*sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	ship			*shipp = &Ships[Pl_objp->instance];	
 	ai_info		*aip = &Ai_info[shipp->ai_index];
-	int			enemy_ship_type;
 	vec3d		predicted_enemy_pos;
 
 	Assert(aip->mode == AIM_CHASE);
 
 	maybe_cheat_fire_synaptic(Pl_objp, aip);
-
-	enemy_ship_type = Ship_info[Ships[En_objp->instance].ship_info_index].flags;
 
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 
@@ -1251,7 +1248,6 @@ void ai_big_strafe_attack()
 	vec3d	target_pos;
 	vec3d	rand_vec;
 	float		target_dist, target_dot, accel, t;
-	object	*target_objp;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -1263,11 +1259,8 @@ void ai_big_strafe_attack()
 	if ( ai_big_strafe_maybe_retreat(target_dist, &target_pos) )
 		return;
 
-	target_objp = &Objects[aip->target_objnum];
-
 	if (aip->ai_flags & AIF_KAMIKAZE) {
 		if (target_dist < 1200.0f) {
-			//nprintf(("AI", "Kamikaze: %7.3f %7.3f\n", target_dot, target_dist));
 			ai_turn_towards_vector(&target_pos, Pl_objp, flFrametime, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, NULL, NULL, 0.0f, 0);
 			accelerate_ship(aip, 1.0f);
 			if ((target_dist < 400.0f) && ai_maybe_fire_afterburner(Pl_objp, aip)) {
@@ -1303,7 +1296,6 @@ void ai_big_strafe_attack()
 
 			aip->submode = AIS_STRAFE_AVOID;
 			aip->submode_start_time = Missiontime;
-	//		nprintf(("Alan","Ship %s entering AIS_STRAFE_AVOID at frame %d\n", Ships[aip->shipnum].ship_name, Framecount));
 
 			if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 				afterburners_start(Pl_objp);

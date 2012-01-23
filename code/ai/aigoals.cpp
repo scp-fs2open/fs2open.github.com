@@ -1373,7 +1373,6 @@ void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
 int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 {
 	int status;
-	char *ai_shipname;
 	int return_val;
 	object *objp;
 	ai_info *aip;
@@ -1382,7 +1381,6 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 	objp = &Objects[objnum];
 	Assert( objp->instance != -1 );
-	ai_shipname = Ships[objp->instance].ship_name;
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	//  these orders are always achievable.
@@ -1445,8 +1443,6 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	{
 		case AI_GOAL_DOCK:
 		case AI_GOAL_UNDOCK:
-			//status = mission_log_get_time( LOG_SHIP_DOCK, ai_shipname, aigp->ship_name, NULL );
-			//status = mission_log_get_time( LOG_SHIP_UNDOCK, ai_shipname, aigp->ship_name, NULL );
 			//MWA 3/20/97 -- cannot short circuit a dock or undock goal already succeeded -- we must
 			// rely on the goal removal code to just remove this goal.  This is because docking/undock
 			// can happen > 1 time per mission per pair of ships.  The above checks will find only

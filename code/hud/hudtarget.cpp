@@ -2082,7 +2082,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	int		target_found = FALSE;	
 
 	int		player_obj_index = OBJ_INDEX(Player_obj);
-	ship_subsys *ss; //*nearest_turret_subsys = NULL, *ss;
+	ship_subsys *ss;
 
 	if ( (attacked_objnum >= 0) && (attacked_objnum != player_obj_index) ) {
 		// bail if player does not have target
@@ -2151,7 +2151,6 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 			// if former subobject was not a turret do, not change subsystem
 			ss = Ships[nearest_obj->instance].last_targeted_subobject[Player_num];
 			if (ss == NULL || get_closest_turret_attacking_player) {
-				// set_targeted_subsys(Player_ai, nearest_turret_subsys, OBJ_INDEX(nearest_obj));
 				// update nearest turret with later func
 				hud_target_live_turret(1, 1, get_closest_turret_attacking_player);
 				Ships[nearest_obj->instance].last_targeted_subobject[Player_num] = Player_ai->targeted_subsys;
@@ -2470,7 +2469,7 @@ void hud_target_in_reticle_old()
 			continue;
 		}
 
-		dist = vm_vec_normalized_dir(&vec_to_target, &A->pos, &Eye_position);
+		vm_vec_normalized_dir(&vec_to_target, &A->pos, &Eye_position);
 		dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 		if ( dot > MIN_DOT_FOR_TARGET ) {
@@ -2545,7 +2544,7 @@ void hud_target_subsystem_in_reticle()
 
 		get_subsystem_world_pos(targetp, subsys, &subobj_pos);
 
-		dist = vm_vec_normalized_dir(&vec_to_target, &subobj_pos, &Eye_position);
+		vm_vec_normalized_dir(&vec_to_target, &subobj_pos, &Eye_position);
 		dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 		if ( dot > best_dot ) {
@@ -3103,7 +3102,6 @@ void hud_show_message_sender()
 {
 	object *targetp;
 	vertex target_point;					// temp vertex used to find screen position for 3-D object;
-	ship	*target_shipp;
 
 	// don't draw brackets if no ship sending a message
 	if ( Message_shipnum == -1 )
@@ -3131,7 +3129,6 @@ void hud_show_message_sender()
 	}
 
 	Assert ( targetp->instance >=0 && targetp->instance < MAX_SHIPS );
-	target_shipp = &Ships[Message_shipnum];
 
 	// check the object flags to see if this ship is gone.  If so, then don't do this stuff anymore
 	if ( targetp->flags & OF_SHOULD_BE_DEAD ) {
@@ -3294,88 +3291,6 @@ void hud_show_selection_set()
 	}
 }
 
-void hud_show_brackets(object *targetp, vertex *projected_v)
-{
-	int x1,x2,y1,y2;
-	int draw_box = TRUE;
-	int bound_rc;
-
-	if ( Player->target_is_dying <= 0 ) {
-		int modelnum;
-
-		switch ( targetp->type ) {
-		case OBJ_SHIP:
-			modelnum = Ship_info[Ships[targetp->instance].ship_info_index].model_num;
-			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-			if ( bound_rc != 0 ) {
-				draw_box = FALSE;
-			}
-			break;
-
-		case OBJ_DEBRIS:
-			modelnum = Debris[targetp->instance].model_num;
-			bound_rc = submodel_find_2d_bound_min( modelnum, Debris[targetp->instance].submodel_num, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-			if ( bound_rc != 0 ) {
-				draw_box = FALSE;
-			}
-			break;
-
-		case OBJ_WEAPON:
-			//Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
-			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
-			if (modelnum != -1)
-				bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-			else {
-				vertex vtx;
-				g3_rotate_vertex(&vtx,&targetp->pos);
-				g3_project_vertex(&vtx);
-				x1 = x2 = (int) vtx.screen.xyw.x;
-				y1 = y2 = (int) vtx.screen.xyw.y;
-			}
-
-			break;
-
-		case OBJ_ASTEROID:
-			{
-			int pof = 0;
-			pof = Asteroids[targetp->instance].asteroid_subtype;
-			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
-			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-			}
-			break;
-
-		case OBJ_JUMP_NODE:
-			modelnum = targetp->jnp->get_modelnum();
-			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-			break;
-
-		default:
-			Int3();	// should never happen
-			return;
-		}
-
-		Hud_target_w = x2-x1+1;
-		if ( Hud_target_w > gr_screen.clip_width ) {
-			Hud_target_w = gr_screen.clip_width;
-		}
-
-		Hud_target_h = y2-y1+1;
-		if ( Hud_target_h > gr_screen.clip_height ) {
-			Hud_target_h = gr_screen.clip_height;
-		}
-
-		if ( draw_box == TRUE ) {
-			float distance = hud_find_target_distance(targetp, Player_obj);
-			hud_set_iff_color(targetp, 1);
-			draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,0,0,distance, OBJ_INDEX(targetp));
-		}
-
-		if ( targetp->type == OBJ_SHIP ) {
-			draw_bounding_brackets_subobject();
-		}
-	}
-}
-
 // hud_show_targeting_gauges() will display the targeting information on the HUD.  Called once per frame.
 //
 // Must be inside a g3_start_frame()
@@ -3468,14 +3383,13 @@ void hud_show_hostile_triangle()
 	ai_info *aip;
 	ship_obj	*so;
 	ship		*sp;
-	ship_subsys *ss, *nearest_turret_subsys = NULL;
+	ship_subsys *ss;
 
 	int player_obj_index = OBJ_INDEX(Player_obj);
 	int turret_is_attacking = 0;
 
 	hostile_obj = NULL;
 	
-	so = GET_FIRST(&Ship_obj_list);
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list);  so = GET_NEXT(so) ) {
 
 		A = &Objects[so->objnum];
@@ -3525,7 +3439,6 @@ void hud_show_hostile_triangle()
 						if (new_distance <= min_distance) {
 							min_distance=new_distance;
 							nearest_obj = A;
-							nearest_turret_subsys = ss;
 						}
 					}
 				}
@@ -3548,7 +3461,6 @@ void hud_show_hostile_triangle()
 			if (new_distance <= min_distance) {
 				min_distance=new_distance;
 				nearest_obj = A;
-				nearest_turret_subsys = NULL;
 			}
 		}
 	}
@@ -3691,27 +3603,21 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 	vec3d	last_predicted_enemy_pos = *predicted_enemy_pos;
 
 	ship *shipp;
-	shipp = &Ships[Player_obj->instance];
-//	Assert(shipp->weapons.current_primary_bank < shipp->weapons.num_primary_banks);
-//	weapon_info	*wip = &Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]];
 
 	float	weapon_speed = wip->max_speed;
 
 	vm_vec_zero(last_delta_vec);
 
 	// additive velocity stuff
-	//vec3d enemy_fvec = Objects[Player_ai->target_objnum].orient.vec.fvec;
 	// not just the player's main target
 	vec3d enemy_vel = targetp->phys_info.vel;
 	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
-		//vm_vec_sub2( &enemy_fvec, &Player_obj->orient.vec.fvec );
 		vm_vec_sub2( &enemy_vel, &Player_obj->phys_info.vel );
 	}
 	
 	for (iteration=0; iteration < num_polish_steps; iteration++) {
 		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &player_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
-//		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_fvec, en_physp->speed * time_to_enemy);
 		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_vel, time_to_enemy);
 		vm_vec_sub(last_delta_vec, predicted_enemy_pos, &last_predicted_enemy_pos);
 		last_predicted_enemy_pos= *predicted_enemy_pos;
@@ -4427,275 +4333,6 @@ void hud_target_change_check()
 
 	Player_ai->last_target = Player_ai->target_objnum;
 	Player_ai->last_subsys_target = Player_ai->targeted_subsys;
-}
-
-// ---------------------------------------------------------------------
-// hud_draw_offscreen_indicator()
-//
-// draws the offscreen target indicator
-//
-void hud_draw_offscreen_indicator(color* clr, vertex* target_point, vec3d *tpos, float distance, int draw_solid)
-{
-	char buf[32];
-	int w = 0, h = 0;
-	int on_top, on_right, on_left, on_bottom;
-	float target_x, target_y;
-
-	float xpos,ypos;
-	// points to draw triangles
-	float x1=0.0f;
-	float y1=0.0f;
-	float x2=0.0f;
-	float y2=0.0f;
-	float x3=0.0f;
-	float y3=0.0f;
-	float x4=0.0f;
-	float y4=0.0f;
-	float x5=0.0f;
-	float y5=0.0f;
-	float x6=0.0f;
-	float y6=0.0f;
-
-	vec3d targ_to_player;
-	float dist_behind;
-	float triangle_sep;
-	float half_gauge_length, half_triangle_sep;
-	int in_front;
-	float displayed_distance;
-
-	// scale by distance modifier from hud_guages.tbl for display purposes
-	displayed_distance = distance * Hud_unit_multiplier;
-
-	// calculate the dot product between the players forward vector and the vector connecting
-	// the player to the target. Normalize targ_to_player since we want the dot product
-	// to range between 0 -> 1.
-	vm_vec_sub(&targ_to_player, &Player_obj->pos, tpos);
-	vm_vec_normalize(&targ_to_player);
-	dist_behind = vm_vec_dot(&Player_obj->orient.vec.fvec, &targ_to_player);
-
-	in_front = 0;
-
-	if (dist_behind < 0) {	// still in front of player, but not in view
-		in_front = 1;
-		dist_behind = dist_behind + 1.0f;
-		if (dist_behind > 0.2 ){
-			triangle_sep = ( dist_behind ) * Max_front_seperation[gr_screen.res];
-		} else {
-			triangle_sep = 0.0f;
-		}
-	} else {
-		triangle_sep = dist_behind * Max_offscreen_tri_seperation[gr_screen.res] + Max_offscreen_tri_seperation[gr_screen.res];
-	}
-
-	if ( triangle_sep > Max_offscreen_tri_seperation[gr_screen.res] + Max_front_seperation[gr_screen.res]){
-		triangle_sep = Max_offscreen_tri_seperation[gr_screen.res] + Max_front_seperation[gr_screen.res];
-	}
-
-	// calculate these values only once, since it will be used in several places
-	half_triangle_sep = 0.5f * triangle_sep;
-	half_gauge_length = half_triangle_sep + Offscreen_tri_base[gr_screen.res];
-
-	target_x = target_point->world.xyz.x;
-	target_y = target_point->world.xyz.y;
-
-	// We need to find the screen (x,y) for where to draw the offscreen indicator
-	//
-	// The best way I've found is to draw a line from the eye_pos to the target, and
-	// then use clip_line() to find the screen (x,y) for where the line hits the edge
-	// of the screen.
-	//
-	// The weird thing about clip_line() is that is flips around the two verticies,
-	// so I use eye_vertex->sx and eye_vertex->sy for the off-screen indicator (x,y)
-	//
-	vertex *eye_vertex = NULL;
-	vertex real_eye_vertex;
-	eye_vertex = &real_eye_vertex;	// this is needed since clip line takes a **vertex
-	vec3d eye_pos;
-	vm_vec_add( &eye_pos, &Eye_position, &View_matrix.vec.fvec);
-	g3_rotate_vertex(eye_vertex, &eye_pos);
-
-	ubyte codes_or;
-	codes_or = (ubyte)(target_point->codes | eye_vertex->codes);
-	clip_line(&target_point,&eye_vertex,codes_or,0);
-	
-	if (!(target_point->flags&PF_PROJECTED))
-		g3_project_vertex(target_point);
-
-	if (!(eye_vertex->flags&PF_PROJECTED))
-		g3_project_vertex(eye_vertex);
-
-	if (eye_vertex->flags&PF_OVERFLOW) {
-		Int3();			//	This is unlikely to happen, but can if a clip goes through the player's eye.
-		Player_ai->target_objnum = -1;
-		return;
-	} 
-	
-	if (target_point->flags & PF_TEMP_POINT)
-		free_temp_point(target_point);
-
-	if (eye_vertex->flags & PF_TEMP_POINT)
-		free_temp_point(eye_vertex);
-
-	xpos = eye_vertex->screen.xyw.x;
-	ypos = eye_vertex->screen.xyw.y;
-
-	// we need it unsized here and it will be fixed when things are acutally drawn
-	gr_unsize_screen_posf(&xpos, &ypos);
-
-	on_left = on_right = on_top = on_bottom = 0;
-	xpos = (xpos<1) ? 0 : xpos;
-	ypos = (ypos<1) ? 0 : ypos;
-
-	if ( xpos <= gr_screen.clip_left_unscaled ) {
-		xpos = i2fl(gr_screen.clip_left_unscaled);
-		on_left = TRUE;
-
-		if ( ypos < (half_gauge_length - gr_screen.clip_top_unscaled) )
-			ypos = half_gauge_length;
-
-
-		if ( ypos > (gr_screen.clip_bottom_unscaled - half_gauge_length) ) 
-			ypos = gr_screen.clip_bottom_unscaled - half_gauge_length;
-
-	}
-	else if ( xpos >= gr_screen.clip_right_unscaled) {
-		xpos = i2fl(gr_screen.clip_right_unscaled);
-		on_right = TRUE;
-
-		if ( ypos < (half_gauge_length - gr_screen.clip_top_unscaled) )
-			ypos = half_gauge_length;
-
-		if ( ypos > (gr_screen.clip_bottom_unscaled - half_gauge_length) ) 
-			ypos = gr_screen.clip_bottom_unscaled - half_gauge_length;
-
-	}
-	else if ( ypos <= gr_screen.clip_top_unscaled ) {
-		ypos = i2fl(gr_screen.clip_top_unscaled);
-		on_top = TRUE;
-
-		if ( xpos < ( half_gauge_length - gr_screen.clip_left_unscaled) )
-			xpos = half_gauge_length;
-
-		if ( xpos > (gr_screen.clip_right_unscaled - half_gauge_length) ) 
-			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
-
-	}
-	else if ( ypos >= gr_screen.clip_bottom_unscaled ) {
-		ypos = i2fl(gr_screen.clip_bottom_unscaled);
-		on_bottom = TRUE;
-
-		if ( xpos < ( half_gauge_length - gr_screen.clip_left_unscaled) )
-			xpos = half_gauge_length;
-
-		if ( xpos > (gr_screen.clip_right_unscaled - half_gauge_length) ) 
-			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
-	}
-	else {
-		Int3();
-		return;
-	}
-
-	//	The offscreen target triangles are drawn according the the diagram below
-	//
-	//
-	//
-	//			  x3				x3
-	//		   /	|				| \.
-	//		 /		|				|   \.
-	//		x1___x2				x2___x1
-	//				|				|
-	//		......|...........|...............(xpos,ypos)
-	//				|				|
-	//		x4___x5				x5___x4
-	//		 \		|				|	  /
-	//		   \ 	|				|	/
-	//			  x6				x6
-	//
-	//
-
-	xpos = (float)floor(xpos);
-	ypos = (float)floor(ypos);
-
-	if ( hud_gauge_active(HUD_OFFSCREEN_RANGE) && (displayed_distance > 0.0f) ) {
-		sprintf(buf, "%d", fl2i(displayed_distance + 0.5f));
-		hud_num_make_mono(buf);
-		gr_get_string_size(&w, &h, buf);	
-	} else {
-		buf[0] = 0;
-	}
-
-	if (on_right) {
-		x1 = x4 = (xpos+2);
-			
-		x2 = x3 = x5 = x6 = x1 - Offscreen_tri_height[gr_screen.res];
-		y1 = y2 = ypos - half_triangle_sep;
-		y3 = y2 - Offscreen_tri_base[gr_screen.res];
-
-		y4 = y5 = ypos + half_triangle_sep;
-		y6 = y5 + Offscreen_tri_base[gr_screen.res];
-
-		if ( buf[0] ) {
-			gr_string( fl2i(xpos - w - 10), fl2i(ypos - h/2.0f+0.5f), buf);
-		}
-	}
-	else if (on_left) {
-		x1 = x4 = (xpos-1);
-			
-		x2 = x3 = x5 = x6 = x1 + Offscreen_tri_height[gr_screen.res];
-		y1 = y2 = ypos - half_triangle_sep;
-		y3 = y2 - Offscreen_tri_base[gr_screen.res];
-
-		y4 = y5 = ypos + half_triangle_sep;
-		y6 = y5 + Offscreen_tri_base[gr_screen.res];
-
-		if ( buf[0] ) {
-			gr_string(fl2i(xpos + 10), fl2i(ypos - h/2.0f+0.5f), buf);
-		}
-	}
-	else if (on_top) {
-		y1 = y4 = (ypos-1);
-			
-		y2 = y3 = y5 = y6 = y1 + Offscreen_tri_height[gr_screen.res];
-		x1 = x2 = xpos - half_triangle_sep;
-		x3 = x2 - Offscreen_tri_base[gr_screen.res];
-
-		x4 = x5 = xpos + half_triangle_sep;
-		x6 = x5 + Offscreen_tri_base[gr_screen.res];
-
-		if ( buf[0] ) {
-			gr_string(fl2i(xpos - w/2.0f+0.5f), fl2i(ypos+10), buf);
-		}
-	}
-	else if (on_bottom) {
-		y1 = y4 = (ypos+2);
-			
-		y2 = y3 = y5 = y6 = y1 - Offscreen_tri_height[gr_screen.res];
-		x1 = x2 = xpos - half_triangle_sep;
-		x3 = x2 - Offscreen_tri_base[gr_screen.res];
-
-		x4 = x5 = xpos + half_triangle_sep;
-		x6 = x5 + Offscreen_tri_base[gr_screen.res];
-
-		if ( buf[0] ) {
-			gr_string(fl2i(xpos - w/2.0f+0.5f), fl2i(ypos-h-10), buf);
-		}
-	}
-
-	if (draw_solid) {
-		hud_tri(x3,y3,x2,y2,x1,y1);
-		hud_tri(x4,y4,x5,y5,x6,y6);
-	} else {
-		hud_tri_empty(x3,y3,x2,y2,x1,y1);
-		hud_tri_empty(x4,y4,x5,y5,x6,y6);
-	}
-	if (on_right || on_bottom){
-		gr_line(fl2i(x2),fl2i(y2),fl2i(x5),fl2i(y5));
-	} else if (on_left) {
-		gr_line(fl2i(x2-1),fl2i(y2),fl2i(x5-1),fl2i(y5));
-	} else {
-		gr_line(fl2i(x2),fl2i(y2-1),fl2i(x5),fl2i(y5-1));
-	}
-
 }
 
 HudGaugeTargetTriangle::HudGaugeTargetTriangle():
@@ -6069,8 +5706,6 @@ void HudGaugeWeapons::pageIn()
 void HudGaugeWeapons::render(float frametime)
 {
 	ship_weapon	*sw;
-	int ship_is_ballistic;
-
 	int			np, ns;		// np == num primary, ns == num secondary
 	char			name[NAME_LENGTH];	
 
@@ -6081,15 +5716,8 @@ void HudGaugeWeapons::render(float frametime)
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
 
 	sw = &Ships[Player_obj->instance].weapons;
-	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags & SIF_BALLISTIC_PRIMARIES);
-
 	np = sw->num_primary_banks;
 	ns = sw->num_secondary_banks;
-
-	// NOTE:  I hate to hard-code numbers, but there is no clean way to organize these coords... they
-	//        are all over the place.  UGLY.
-
-	// BAH. You're a moron, above guy. :)
 
 	setGaugeColor();
 
@@ -6165,9 +5793,6 @@ void HudGaugeWeapons::render(float frametime)
 		}
 		name_y += primary_text_h;
 	}
-
-	//name_y = gr_screen.res==0 ? 309 : 561;
-	//y = gr_screen.res==0 ? 318 : 570;
 
 	weapon_info	*wip;
 	char	weapon_name[NAME_LENGTH + 10];
@@ -6408,7 +6033,6 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vertex* target_point, vec3d *tp
 	char buf[32];
 	int w = 0, h = 0;
 	int on_top, on_right, on_left, on_bottom;
-	float target_x, target_y;
 
 	float xpos,ypos;
 	// points to draw triangles
@@ -6429,7 +6053,6 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vertex* target_point, vec3d *tp
 	float dist_behind;
 	float triangle_sep;
 	float half_gauge_length, half_triangle_sep;
-	int in_front;
 	float displayed_distance;
 
 	// scale by distance modifier from hud_guages.tbl for display purposes
@@ -6442,10 +6065,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vertex* target_point, vec3d *tp
 	vm_vec_normalize(&targ_to_player);
 	dist_behind = vm_vec_dot(&Player_obj->orient.vec.fvec, &targ_to_player);
 
-	in_front = 0;
-
 	if (dist_behind < 0) {	// still in front of player, but not in view
-		in_front = 1;
 		dist_behind = dist_behind + 1.0f;
 		if (dist_behind > 0.2 ){
 			triangle_sep = ( dist_behind ) * Max_front_seperation;
@@ -6463,9 +6083,6 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vertex* target_point, vec3d *tp
 	// calculate these values only once, since it will be used in several places
 	half_triangle_sep = 0.5f * triangle_sep;
 	half_gauge_length = half_triangle_sep + Offscreen_tri_base;
-
-	target_x = target_point->world.xyz.x;
-	target_y = target_point->world.xyz.y;
 
 	// We need to find the screen (x,y) for where to draw the offscreen indicator
 	//

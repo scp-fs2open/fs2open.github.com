@@ -272,7 +272,6 @@ void mission_load_menu_do()
 		} else if ( Campaign_filter_index == 1 ) {
 			mlm_mission_list.set_new_list(jtmp_nfiles, jtmp_missions); 
 		}
-		mlm_current = 0;
 	}
 
 	mlm_current = mlm_mission_list.current();
