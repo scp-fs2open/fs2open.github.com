@@ -8578,7 +8578,15 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	// Goober5000 - if no ship name specified, or if specified ship already exists,
 	// or if specified ship has exited, use a default name
 	if ((ship_name == NULL) || (ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0)) {
-		sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
+		char suffix[NAME_LENGTH];
+		sprintf(suffix, NOX(" %d"), n);
+
+		// ensure complete ship name doesn't overflow the buffer
+		int name_len = MIN(NAME_LENGTH - strlen(suffix) - 1, strlen(Ship_info[ship_type].name));
+		Assert(name_len > 0);
+
+		strncpy(shipp->ship_name, Ship_info[ship_type].name, name_len);
+		strcpy(shipp->ship_name + name_len, suffix);
 	} else {
 		strcpy_s(shipp->ship_name, ship_name);
 	}
