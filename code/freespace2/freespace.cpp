@@ -3333,7 +3333,7 @@ camid game_render_frame_setup()
 	say_view_target();
 
 	if ( Viewer_mode & VM_PADLOCK_ANY ) {
-		player_display_packlock_view();
+		player_display_padlock_view();
 	}
 
 	if (Game_mode & GM_DEAD) {
