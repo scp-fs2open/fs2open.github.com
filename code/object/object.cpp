@@ -1436,11 +1436,11 @@ void obj_move_all(float frametime)
 		dock_move_docked_objects(objp);
 
 		//Valathil - Move the screen rotation calculation for billboards here to get the updated orientation matrices caused by docking interpolation
-		angles tangles;
+		vec3d tangles;
 
-		tangles.p = objp->phys_info.rotvel.xyz.x*frametime;
-		tangles.h = objp->phys_info.rotvel.xyz.y*frametime;
-		tangles.b = objp->phys_info.rotvel.xyz.z*frametime;
+		tangles.xyz.x = -objp->phys_info.rotvel.xyz.x*frametime;
+		tangles.xyz.y = -objp->phys_info.rotvel.xyz.y*frametime;
+		tangles.xyz.z = objp->phys_info.rotvel.xyz.z*frametime;
 
 		// If this is the viewer_object, keep track of the
 		// changes in banking so that rotated bitmaps look correct.
@@ -1448,30 +1448,14 @@ void obj_move_all(float frametime)
 		extern physics_info *Viewer_physics_info;
 		extern int Physics_viewer_direction;
 		if ( &objp->phys_info == Viewer_physics_info )	{
-			switch(Physics_viewer_direction){
-			case PHYSICS_VIEWER_FRONT:
-				Physics_viewer_bank -= tangles.b;
-				break;
+			vec3d tangles_r;
+			vm_vec_unrotate(&tangles_r, &tangles, &Eye_matrix);
+			vm_vec_rotate(&tangles, &tangles_r, &objp->orient);
 
-			case PHYSICS_VIEWER_UP:
-				Physics_viewer_bank -= tangles.h;
-				break;
-
-			case PHYSICS_VIEWER_REAR:
-				Physics_viewer_bank += tangles.b;
-				break;
-
-			case PHYSICS_VIEWER_LEFT:
-				Physics_viewer_bank += tangles.p;
-				break;
-
-			case PHYSICS_VIEWER_RIGHT:
-				Physics_viewer_bank -= tangles.p;
-				break;
-
-			default:
-				Physics_viewer_bank -= tangles.b;
-				break;
+			if(objp->dock_list && objp->dock_list->docked_objp->type == OBJ_SHIP && Ai_info[Ships[objp->dock_list->docked_objp->instance].ai_index].submode == AIS_DOCK_4) {
+				Physics_viewer_bank -= tangles.xyz.z*0.65f;
+			} else {
+				Physics_viewer_bank -= tangles.xyz.z;
 			}
 
 			if ( Physics_viewer_bank < 0.0f ){
