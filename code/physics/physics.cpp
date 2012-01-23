@@ -126,7 +126,7 @@ void apply_physics( float damping, float desired_vel, float initial_vel, float t
 
 float Physics_viewer_bank = 0.0f;
 int Physics_viewer_direction = PHYSICS_VIEWER_FRONT;
-static physics_info * Viewer_physics_info = NULL;
+physics_info * Viewer_physics_info = NULL;
 
 // If you would like Physics_viewer_bank to be tracked (Which is needed
 // for rotating 3d bitmaps) call this and pass it a pointer to the
@@ -187,45 +187,6 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	tangles.p = pi->rotvel.xyz.x*sim_time;
 	tangles.h = pi->rotvel.xyz.y*sim_time;
 	tangles.b = pi->rotvel.xyz.z*sim_time;
-
-	// If this is the viewer_object, keep track of the
-	// changes in banking so that rotated bitmaps look correct.
-	// This is used by the g3_draw_rotated_bitmap function.
-	if ( pi == Viewer_physics_info )	{
-		switch(Physics_viewer_direction){
-		case PHYSICS_VIEWER_FRONT:
-			Physics_viewer_bank -= tangles.b;
-			break;
-
-		case PHYSICS_VIEWER_UP:
-			Physics_viewer_bank -= tangles.h;
-			break;
-
-		case PHYSICS_VIEWER_REAR:
-			Physics_viewer_bank += tangles.b;
-			break;
-
-		case PHYSICS_VIEWER_LEFT:
-			Physics_viewer_bank += tangles.p;
-			break;
-
-		case PHYSICS_VIEWER_RIGHT:
-			Physics_viewer_bank -= tangles.p;
-			break;
-
-		default:
-			Physics_viewer_bank -= tangles.b;
-			break;
-		}
-
-		if ( Physics_viewer_bank < 0.0f ){
-			Physics_viewer_bank += 2.0f * PI;
-		}
-
-		if ( Physics_viewer_bank > 2.0f * PI ){
-			Physics_viewer_bank -= 2.0f * PI;
-		}
-	}
 
 /*	//	Make ship shake due to afterburner.
 	if (pi->flags & PF_AFTERBURNER_ON || !timestamp_elapsed(pi->afterburner_decay) ) {

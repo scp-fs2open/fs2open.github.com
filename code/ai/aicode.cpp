@@ -9076,6 +9076,48 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			vec3d offset;
 
 			Assert(dock_mode == DOA_DOCK_STAY);
+			extern physics_info * Viewer_physics_info;
+			extern int Physics_viewer_direction;
+			if(&docker_objp->phys_info == Viewer_physics_info) //Valathil - transmit the changed bank to the viewer bank variable for billboard rotation
+			{
+				angles a_orient, a_dom;
+				vm_extract_angles_matrix(&a_orient, &docker_objp->orient);
+				vm_extract_angles_matrix(&a_dom, &dom);
+				
+				switch(Physics_viewer_direction){
+					case PHYSICS_VIEWER_FRONT:
+						Physics_viewer_bank -= (a_dom.b - a_orient.b);
+						break;
+
+					case PHYSICS_VIEWER_UP:
+						Physics_viewer_bank -= (a_dom.h - a_orient.h);
+						break;
+
+					case PHYSICS_VIEWER_REAR:
+						Physics_viewer_bank += (a_dom.b - a_orient.b);
+						break;
+
+					case PHYSICS_VIEWER_LEFT:
+						Physics_viewer_bank += (a_dom.p - a_orient.p);
+						break;
+
+					case PHYSICS_VIEWER_RIGHT:
+						Physics_viewer_bank -= (a_dom.p - a_orient.p);
+						break;
+
+					default:
+						Physics_viewer_bank -= (a_dom.b - a_orient.b);
+						break;
+				}
+
+				if ( Physics_viewer_bank < 0.0f ){
+					Physics_viewer_bank += 2.0f * PI; 	 
+				} 	 
+
+				if ( Physics_viewer_bank > 2.0f * PI ){ 	 
+					Physics_viewer_bank -= 2.0f * PI; 	 
+				}
+			}
 			docker_objp->orient = dom;
 
 			vm_vec_sub(&offset, &dockee_point, &docker_point);
