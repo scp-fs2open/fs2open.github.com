@@ -8887,7 +8887,6 @@ void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *glo
 	}
 }
 
-#define	DOCK_BACKUP_RETURN_VAL	99999.9f
 
 //	Make docker_objp dock with dockee_objp
 //	Returns distance to goal, defined as distance between corresponding dock points, plus 10.0f * rotational velocity vector (DOA_DOCK only)
@@ -8908,6 +8907,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	vec3d docker_point, dockee_point;
 	float			fdist = UNINITIALIZED_VALUE;
 
+	aip = &Ai_info[Ships[docker_objp->instance].ai_index];
 
 	docker_objp->phys_info.forward_thrust = 0.0f;		//	Kill thrust so we don't have a sputtering thruster.
 
@@ -8916,7 +8916,11 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		if (ship_get_subsystem_strength(&Ships[docker_objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
 			return 9999.9f;
 
-	aip = &Ai_info[Ships[docker_objp->instance].ai_index];
+	//	If dockee has moved much, then path will be recreated.
+	//	Might need to change state if moved too far.
+	if ((dock_mode != DOA_DOCK_STAY) && (dock_mode != DOA_DOCK)) {
+		maybe_recreate_path(docker_objp, aip, 0);
+	}
 
 	sip0 = &Ship_info[Ships[docker_objp->instance].ship_info_index];
 	sip1 = &Ship_info[Ships[dockee_objp->instance].ship_info_index];
@@ -8981,14 +8985,6 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	rdinfo->submodel_pos = submodel_pos;
 	rdinfo->submodel_r = submodel_radius;
 	rdinfo->submodel_w = submodel_omega;
-
-
-	////	If dockee has moved much, then path will be recreated.
-	////	Might need to change state if moved too far.
-	//if ((dock_mode != DOA_DOCK_STAY) && (dock_mode != DOA_DOCK)) {
-	//	// Goober5000 - maybe force recreate
-	//	int force_recreate = (dockee_rotating_submodel >= 0) && ((dock_mode == DOA_APPROACH) || (dock_mode == DOA_UNDOCK_1));
-	//}
 
 
 	float speed_scale = 1.0f;
@@ -10137,15 +10133,83 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 	multi_maybe_send_repair_info( repaired_objp, repair_objp, how );
 }
 
+// Goober5000 - helper function that is also called from ai_dock()
+void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object *goal_objp, int &docker_index, int &dockee_index)
+{
+	// get the indexes
+	if ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_DOCK_4))
+	{
+		// get them from the active goal
+		Assert(aigp != NULL);
+		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+		docker_index = aigp->docker.index;
+		dockee_index = aigp->dockee.index;
+	}
+	else if ((aip->submode == AIS_UNDOCK_0) || (aip->submode == AIS_UNDOCK_1) || (aip->submode == AIS_UNDOCK_2))
+	{
+		// get them from the guy I'm docked to
+		Assert(goal_objp != NULL);
+		docker_index = dock_find_dockpoint_used_by_object(objp, goal_objp);
+		dockee_index = dock_find_dockpoint_used_by_object(goal_objp, objp);
+	}
+	else
+	{
+		// indexes aren't needed or (in case of AIS_UNDOCK_3) aren't actually used
+		docker_index = 0;
+		dockee_index = 0;
+	}
+}
+
 // Goober5000 - clean up my own dock mode
 void ai_cleanup_dock_mode_subjective(object *objp)
 {
+	ship *shipp = &Ships[objp->instance];
+
 	// get ai of object
-	ai_info *aip = &Ai_info[Ships[objp->instance].ai_index];
+	ai_info *aip = &Ai_info[shipp->ai_index];
 
 	// if the object is in dock mode, force them to near last stage
 	if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_UNDOCK_3) )
 	{
+		// get the active goal
+		ai_goal *aigp;
+		if (aip->active_goal >= 0)
+			aigp = &aip->goals[aip->active_goal];
+		else
+			aigp = NULL;
+
+		// get the object being acted upon
+		object		*goal_objp;
+		if (aip->goal_objnum >= 0)
+			goal_objp = &Objects[aip->goal_objnum];
+		else
+			goal_objp = NULL;
+
+		// get the indexes
+		int docker_index, dockee_index;
+		ai_get_dock_goal_indexes(objp, aip, aigp, goal_objp, docker_index, dockee_index);
+
+		// undo all the appropriate triggers
+		switch (aip->submode)
+		{
+			case AIS_UNDOCK_0:
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+			case AIS_UNDOCK_1:
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
+			case AIS_UNDOCK_2:
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
+				break;
+
+			case AIS_DOCK_4:
+			case AIS_DOCK_4A:
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+			case AIS_DOCK_3:
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
+			case AIS_DOCK_2:
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
+				break;
+		}
+
 		aip->submode = AIS_UNDOCK_3;
 		aip->submode_start_time = Missiontime;
 	}
@@ -10316,28 +10380,7 @@ void ai_dock()
 	else
 		goal_objp = NULL;
 
-	// get the indexes
-	if ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_DOCK_4))
-	{
-		// get them from the active goal
-		Assert(aigp != NULL);
-		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
-		docker_index = aigp->docker.index;
-		dockee_index = aigp->dockee.index;
-	}
-	else if ((aip->submode == AIS_UNDOCK_0) || (aip->submode == AIS_UNDOCK_1) || (aip->submode == AIS_UNDOCK_2))
-	{
-		// get them from the guy I'm docked to
-		Assert(goal_objp != NULL);
-		docker_index = dock_find_dockpoint_used_by_object(Pl_objp, goal_objp);
-		dockee_index = dock_find_dockpoint_used_by_object(goal_objp, Pl_objp);
-	}
-	else
-	{
-		// indexes aren't needed or (in case of AIS_UNDOCK_3) aren't actually used
-		docker_index = 0;
-		dockee_index = 0;
-	}
+	ai_get_dock_goal_indexes(Pl_objp, aip, aigp, goal_objp, docker_index, dockee_index);
 
 	// For docking submodes (ie, not undocking), follow path.  Once at second last
 	// point on path (point just before point on dock platform), orient into position.
@@ -10364,6 +10407,8 @@ void ai_dock()
 
 		aip->submode = AIS_DOCK_1;
 		aip->submode_start_time = Missiontime;
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, 1);
+
 		aip->path_start = -1;
 		break;
 	}
@@ -10387,6 +10432,8 @@ void ai_dock()
 			if (aip->path_cur-aip->path_start >= aip->path_length-1) {		//	If got this far, advance no matter what.
 				aip->submode = AIS_DOCK_2;
 				aip->submode_start_time = Missiontime;
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, 1);
+
 				aip->path_cur--;
 				Assert(aip->path_cur-aip->path_start >= 0);
 			} else if (aip->path_cur-aip->path_start >= aip->path_length-2) {
@@ -10395,6 +10442,7 @@ void ai_dock()
 				} else {
 					aip->submode = AIS_DOCK_2;
 					aip->submode_start_time = Missiontime;
+					model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, 1);
 				}
 			}
 		}
@@ -10408,25 +10456,16 @@ void ai_dock()
 		float		dist;
 		int	r;
 
-		if ((r = maybe_dock_obstructed(Pl_objp, goal_objp,0)) != -1) {
+		if ((r = maybe_dock_obstructed(Pl_objp, goal_objp, 0)) != -1) {
 			nprintf(("AI", "Dock 2: Obstructed by %s\n", Ships[Objects[r].instance].ship_name));
 			accelerate_ship(aip, 0.0f);
+
 			aip->submode = AIS_DOCK_1;
 			aip->submode_start_time = Missiontime;
+			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
 		} else {
 			dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_APPROACH);
 			Assert(dist != UNINITIALIZED_VALUE);
-
-			if (dist == DOCK_BACKUP_RETURN_VAL) {
-				Assert(aip->goal_objnum >= 0 && aip->goal_objnum < MAX_OBJECTS);
-				int path_num;
-
-				aip->submode = AIS_DOCK_1;
-				aip->submode_start_time = Missiontime;
-				path_num = ai_return_path_num_from_dockbay(goal_objp, dockee_index);
-				ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
-				break;
-			}
 
 			float	tolerance;
 			if (goal_objp->flags & OF_PLAYER_SHIP)
@@ -10437,6 +10476,8 @@ void ai_dock()
 			if ( dist < tolerance) {
 				aip->submode = AIS_DOCK_3;
 				aip->submode_start_time = Missiontime;
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, 1);
+
 				aip->path_cur++;
 			}
 		}
@@ -10451,19 +10492,15 @@ void ai_dock()
 		if ((r = maybe_dock_obstructed(Pl_objp, goal_objp,0)) != -1) {
 			nprintf(("AI", "Dock 1: Obstructed by %s\n", Ships[Objects[r].instance].ship_name));
 			accelerate_ship(aip, 0.0f);
+
 			aip->submode = AIS_DOCK_2;
 			aip->submode_start_time = Missiontime;
+			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
 		} else {
 			rotating_dockpoint_info rdinfo;
 
 			float dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_DOCK, &rdinfo);
 			Assert(dist != UNINITIALIZED_VALUE);
-
-			if (dist == DOCK_BACKUP_RETURN_VAL) {
-				aip->submode = AIS_DOCK_2;
-				aip->submode_start_time = Missiontime;
-				break;
-			}
 
 			float tolerance = 2*flFrametime * (1.0f + fl_sqrt(goal_objp->phys_info.speed));
 
@@ -10484,7 +10521,11 @@ void ai_dock()
 				ai_do_objects_docked_stuff( Pl_objp, docker_index, goal_objp, dockee_index );
 
 				if (aip->submode == AIS_DOCK_3) {
+					// Play a ship docking attach sound
 					snd_play_3d( &Snds[SND_DOCK_ATTACH], &Pl_objp->pos, &View_position );
+
+					// start the dock animation
+					model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, 1);
 
 					if ((Pl_objp == Player_obj) || (goal_objp == Player_obj))
 						joy_ff_docked();  // shake player's joystick a little
@@ -10549,6 +10590,8 @@ void ai_dock()
 				//	Got real far away from goal, so move back a couple modes and try again.
 				aip->submode = AIS_DOCK_2;
 				aip->submode_start_time = Missiontime;
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
 			}
 		}
 		else
@@ -10575,6 +10618,8 @@ void ai_dock()
 
 		aip->submode = AIS_UNDOCK_1;
 		aip->submode_start_time = Missiontime;
+		// start the detach animation (opposite of the dock animation)
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
 
 		break;
 	}
@@ -10611,6 +10656,7 @@ void ai_dock()
 		if ((dist < 2*flFrametime) || (dist_to_dock > 2*Pl_objp->radius)) {
 			aip->submode = AIS_UNDOCK_2;
 			aip->submode_start_time = Missiontime;
+			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
 		}
 		break;
 	}
@@ -10639,8 +10685,10 @@ void ai_dock()
 			// clear out dock stuff for both objects.
 			ai_do_objects_undocked_stuff( Pl_objp, goal_objp );
 			physics_ship_init(Pl_objp);
-			aip->submode = AIS_UNDOCK_3;				//	The do-nothing mode, until another order is issued
+
+			aip->submode = AIS_UNDOCK_3;
 			aip->submode_start_time = Missiontime;
+			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
 
 			// don't add undock log entries for support ships.
 			if ( !(sip->flags & SIF_SUPPORT) ) {
@@ -10657,6 +10705,7 @@ void ai_dock()
 			// this might happen when a goal is cancelled before docking has finished
 			aip->submode = AIS_UNDOCK_4;
 			aip->submode_start_time = Missiontime;
+			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, -1);
 		}
 		else
 		{
@@ -10666,6 +10715,7 @@ void ai_dock()
 			if (dist < Pl_objp->radius/2 + 5.0f) {
 				aip->submode = AIS_UNDOCK_4;
 				aip->submode_start_time = Missiontime;
+				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, -1);
 			}
 
 			// possible that this flag hasn't been cleared yet.  When aborting a rearm, this submode might
@@ -14884,8 +14934,8 @@ int ai_abort_rearm_request(object *requester_objp)
 					}
 					else
 					{
-						repair_aip->submode = AIS_UNDOCK_3;
-						repair_aip->submode_start_time = Missiontime;
+						// unwind all the support ship docking operations
+						ai_cleanup_dock_mode_subjective(repair_objp);
 					}
 				} else {
 					nprintf(("AI", "Not aborting rearm since already undocking\n"));

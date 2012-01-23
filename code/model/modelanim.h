@@ -24,16 +24,18 @@
 
 #define TRIGGER_TYPE_NONE					-1		// No animation
 #define TRIGGER_TYPE_INITIAL				0		// This is just the position the subobject should be placed in
-#define TRIGGER_TYPE_DOCKING				1		// Before you dock
-#define TRIGGER_TYPE_DOCKED					2		// After you have docked
-#define TRIGGER_TYPE_PRIMARY_BANK			3		// Primary banks
-#define TRIGGER_TYPE_SECONDARY_BANK			4		// Secondary banks
-#define TRIGGER_TYPE_DOCK_BAY_DOOR			5		// Fighter bays
-#define TRIGGER_TYPE_AFTERBURNER			6		// Afterburner -C
-#define TRIGGER_TYPE_TURRET_FIRING			7		// Turret shooting -C
-#define TRIGGER_TYPE_SCRIPTED				8		// Triggered exclusively by scripting...maybe SEXPs? -C
+#define TRIGGER_TYPE_DOCKING_STAGE_1		1		// Before you dock
+#define TRIGGER_TYPE_DOCKING_STAGE_2		2		// Before you dock
+#define TRIGGER_TYPE_DOCKING_STAGE_3		3		// Before you dock
+#define TRIGGER_TYPE_DOCKED					4		// As you dock
+#define TRIGGER_TYPE_PRIMARY_BANK			5		// Primary banks
+#define TRIGGER_TYPE_SECONDARY_BANK			6		// Secondary banks
+#define TRIGGER_TYPE_DOCK_BAY_DOOR			7		// Fighter bays
+#define TRIGGER_TYPE_AFTERBURNER			8		// Afterburner -C
+#define TRIGGER_TYPE_TURRET_FIRING			9		// Turret shooting -C
+#define TRIGGER_TYPE_SCRIPTED				10		// Triggered exclusively by scripting...maybe SEXPs? -C
 
-#define MAX_TRIGGER_ANIMATION_TYPES			9
+#define MAX_TRIGGER_ANIMATION_TYPES			11
 
 // Model Animation Position settings
 #define MA_POS_NOT_SET		0	// not yet setup
