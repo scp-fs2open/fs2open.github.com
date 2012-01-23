@@ -1741,9 +1741,6 @@ void brief_do_frame(float frametime)
 			// render the status indicator for the voice system
 			multi_common_voice_display_status();
 
-			// blit the "ships/players" locked button
-			// multi_ts_blit_locked_button();
-
 			// maybe blit the multiplayer "locked" button	
 			// if its locked, everyone blits it as such
 			if(multi_ts_is_locked()){

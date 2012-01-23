@@ -740,25 +740,7 @@ void labviewer_render_model(float frametime)
 	vec3d light_dir = vmd_zero_vector;
 	light_dir.xyz.y = 1.0f;
 	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-/*
-	light_add_directional(&light_dir, 0.05f, 0.0f, 0.0f, 1.0f);
 
-	light_add_directional(&light_dir, 0.05f, 0.0f, 0.0f, 1.0f);
-	light_dir = vmd_zero_vector;
-	light_dir.xyz.y = -1.0f;
-	light_add_directional(&light_dir, 0.65f, 1.0f, 0.0f, 0.0f);
-
-	light_add_directional(&light_dir, 0.05f, 1.0f, 0.0f, 0.0f);
-
-	light_add_directional(&light_dir, 0.05f, 1.0f, 0.0f, 0.0f);
-	light_dir = vmd_zero_vector;
-	light_dir.xyz.x = -1.0f;
-	light_dir.xyz.y = 1.0f;
-	light_add_directional(&light_dir, 0.65f, 0.0f, 1.0f, 0.0f);
-
-	light_add_directional(&light_dir, 0.05f, 0.0f, 1.0f, 0.0f);
-*/
-	// light_filter_reset();
 	light_rotate_all();
 	// lighting for techroom
 
@@ -767,11 +749,6 @@ void labviewer_render_model(float frametime)
 	model_set_detail_level(Lab_model_LOD);
 
 	int flagggs = Lab_model_flags;
-
-//	if (sip && sip->flags2 & SIF2_TRANSPARENT) {
-//		flagggs |= MR_ALL_XPARENT;
-//		model_set_alpha(1.0f);
-//	}
 
 	// only render the insignia when the flag is set
 	if (Lab_viewer_flags & LAB_FLAG_SHOW_INSIGNIA) {
