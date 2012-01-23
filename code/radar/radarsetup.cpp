@@ -155,7 +155,7 @@ void radar_plot_object( object *objp )
 	float awacs_level, dist, max_radar_dist;
 	vec3d world_pos = objp->pos;
 
-		// don't process anything here.  Somehow, a jumpnode object caused this function
+	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
 	if( Game_mode & GM_STANDALONE_SERVER ){
 		return;
