@@ -23,7 +23,9 @@ extern float flFrametime;
 
 char *animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] = {
 	"initial",
-	"docking",
+	"docking-stage-1",
+	"docking-stage-2",
+	"docking-stage-3",
 	"docked",
 	"primary_bank",
 	"secondary_bank",
@@ -48,6 +50,12 @@ int model_anim_match_type(char *p)
 	if ( !strnicmp(p, "inital", 6) || !strnicmp(p, "\"inital\"", 8) ) {
 		Warning(LOCATION, "Spelling error in table file.  Please change \"inital\" to \"initial\".");
 		return TRIGGER_TYPE_INITIAL;
+	}
+
+	// Goober5000 - deprecation
+	if ( !strnicmp(p, "docking", 7) || !strnicmp(p, "\"docking\"", 9) ) {
+		Warning(LOCATION, "The \"docking\" animation type name is deprecated.  Specify \"docking-stage-2\" instead.");
+		return TRIGGER_TYPE_DOCKING_STAGE_2;
 	}
 
 	// Goober5000 - with quotes
