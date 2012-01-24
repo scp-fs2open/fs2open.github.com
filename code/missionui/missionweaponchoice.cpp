@@ -1136,8 +1136,6 @@ void maybe_select_new_weapon(int index)
 {
 	int weapon_class;
 
-	anim_timer_start = timer_get_milliseconds();
-
 	// if a weapon is being carried, do nothing
 	if ( wl_icon_being_carried() ) {
 		return;
@@ -1171,8 +1169,6 @@ void maybe_select_new_weapon(int index)
 void maybe_select_new_ship_weapon(int index)
 {
 	int *wep, *wep_count;
-	
-	anim_timer_start = timer_get_milliseconds();
 
 	if ( Selected_wl_slot == -1 )
 		return;
@@ -3299,6 +3295,8 @@ void start_weapon_animation(int weapon_class)
 {
 	char *p;
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
+
+	anim_timer_start = timer_get_milliseconds();
 
 	if ( weapon_class < 0 )
 		return;
