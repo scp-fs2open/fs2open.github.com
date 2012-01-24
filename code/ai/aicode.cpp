@@ -10761,7 +10761,6 @@ typedef struct ai_render_stuff {
 ai_render_stuff AI_debug_render_stuff[MAX_AI_DEBUG_RENDER_STUFF];
 
 int	Num_AI_debug_render_stuff = 0;
-int	Msg_count_4996 = 0;
 
 void ai_debug_render_stuff()
 {
@@ -10861,13 +10860,8 @@ void process_subobjects(int objnum)
 				if(enemies_present == 1 || pss->turret_enemy_objnum >= 0)
 					ai_fire_from_turret(shipp, pss, objnum);
 			} else {
-#ifndef NDEBUG
-				if (!Msg_count_4996) {
-					Warning( LOCATION, "Ship '%s' has turrets with no guns!\nProbably a model problem, so get an artist!", shipp->ship_name );
-					Msg_count_4996++;
-				}
-#endif
-				}
+				Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
+			}
 			break;
 
 		case SUBSYSTEM_ENGINE:
