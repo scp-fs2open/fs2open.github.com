@@ -4203,49 +4203,38 @@ void game_render_hud(camid cid)
 void game_reset_shade_frame()
 {
 	Fade_type = FI_NONE;
-	Fade_delta_time = 1.0f;
 	gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 }
 
 void game_shade_frame(float frametime)
 {
-	int alpha = 0;
-
 	// only do frame shade if we are actually in a game play state
 	if ( !game_actually_playing() ) {
 		return;
 	}
 
-	if (Fade_type != FI_NONE)
-	{
-		if ( (Viewer_shader.c == 0) && (Fade_type != FI_FADEOUT) ) {
-			return;
-		}
+	if (Fade_type != FI_NONE) {
+		Assert(Fade_start_timestamp > 0);
+		Assert(Fade_end_timestamp > 0);
+		Assert(Fade_end_timestamp > Fade_start_timestamp);
 
-		alpha = Viewer_shader.c;
+		int startAlpha = 0;
+		int endAlpha = 0;
 
 		// Fade in or out if necessary
 		if (Fade_type == FI_FADEOUT) {
-			alpha += fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
+			endAlpha = 255;
 		} else if (Fade_type == FI_FADEIN) {
-			alpha -= fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
+			startAlpha = 255;
 		}
 
-		// Limit and set fade type if done
-		if (alpha < 0) {
-			alpha = 0;
+		int duration = (Fade_end_timestamp - Fade_start_timestamp);
+		int elapsed = (timestamp() - Fade_start_timestamp);
 
-			if (Fade_type == FI_FADEIN) {
-				Fade_type = FI_NONE;
-			}
-		}
+		int alpha = fl2i( (float)startAlpha + (((float)endAlpha - (float)startAlpha) / (float)duration) * (float)elapsed );
 
-		if (alpha > 255) {
-			alpha = 255;
-
-			if (Fade_type == FI_FADEOUT) {
-				Fade_type = FI_NONE;
-			}
+		if (alpha == endAlpha) {
+			Fade_type = FI_NONE;
 		}
 
 		Viewer_shader.c = (ubyte)alpha;

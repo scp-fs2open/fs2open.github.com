@@ -58,11 +58,15 @@ extern int Cutscene_bar_flags;
 //-----Fadein stuff
 struct shader;
 extern shader Viewer_shader;
-#define FI_NONE					0
-#define FI_FADEIN				1
-#define FI_FADEOUT				2
-extern float Fade_delta_time;
-extern int Fade_type;
+
+enum FadeType {
+	FI_NONE,
+	FI_FADEIN,
+	FI_FADEOUT
+};
+extern FadeType Fade_type;
+extern int Fade_start_timestamp;
+extern int Fade_end_timestamp;
 
 
 typedef struct vei {
