@@ -18324,52 +18324,49 @@ void multi_sexp_toggle_cutscene_bars(int set)
 
 void sexp_fade_in(int n)
 {
-	float delta_time = 0.0f;
+	int duration = 0;
 
 	if(n != -1)
-		delta_time = eval_num(n)/1000.0f;
+		duration = eval_num(n);
 
-	if(delta_time > 0.0f)
-	{
-		Fade_delta_time = delta_time;
+	if (duration > 0) {
+		Fade_start_timestamp = timestamp();
+		Fade_end_timestamp = timestamp(duration);
 		Fade_type = FI_FADEIN;
-	}
-	else
-	{
+	} else {
 		Fade_type = FI_NONE;
 		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 	}
 
 	// multiplayer callback
 	multi_start_callback();
-	multi_send_float(delta_time);
+	multi_send_int(duration);
 	multi_end_callback();
 }
 
 void multi_sexp_fade_in()
 {
-	float delta_time = 0.0f;
+	int duration = 0;
 
-	multi_get_float(delta_time);
+	multi_get_int(duration);
 
-	if(delta_time > 0.0f) {
-		Fade_delta_time = delta_time;
+	if (duration > 0) {
+		Fade_start_timestamp = timestamp();
+		Fade_end_timestamp = timestamp(duration);
 		Fade_type = FI_FADEIN;
-	}
-	else {
+	} else {
 		Fade_type = FI_NONE;
 		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 	}
 }
 
-void sexp_fade_out(float delta_time, int fade_type) 
+void sexp_fade_out(int duration, int fadeColor)
 {
 	ubyte R = 0;
 	ubyte G = 0;
 	ubyte B = 0;
 
-	switch(fade_type)
-	{
+	switch(fadeColor) {
 		//White out
 		case 1:
 			gr_create_shader(&Viewer_shader, 255, 255, 255, Viewer_shader.c);
@@ -18381,18 +18378,18 @@ void sexp_fade_out(float delta_time, int fade_type)
 		//Black out
 		default:
 			gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
+			break;
 	}
 
 	R = Viewer_shader.r;
 	G = Viewer_shader.g;
 	B = Viewer_shader.b;
 
-	if(delta_time > 0.0f) {
+	if (duration > 0) {
+		Fade_start_timestamp = timestamp();
+		Fade_end_timestamp = timestamp(duration);
 		Fade_type = FI_FADEOUT;
-		Fade_delta_time = delta_time;
-	}
-	else
-	{
+	} else {
 		Fade_type = FI_NONE;
 		gr_create_shader(&Viewer_shader, R, G, B, 255);
 	}
@@ -18400,40 +18397,38 @@ void sexp_fade_out(float delta_time, int fade_type)
 
 void sexp_fade_out(int n)
 {
-	float delta_time = 0.0f;
-	int fade_type = 0;
+	int duration = 0;
+	int fadeColor = 0;
 
-	if(n != -1)
-	{
-		delta_time = eval_num(n)/1000.0f;
+	if (n != -1) {
+		duration = eval_num(n);
 
 		n = CDR(n);
-		if(n != -1)
-		{
-			fade_type = eval_num(n);			
+		if (n != -1) {
+			fadeColor = eval_num(n);
 		}
 	}
 
-	sexp_fade_out(delta_time, fade_type);
+	sexp_fade_out(duration, fadeColor);
 
 	multi_start_callback();
-	multi_send_float(delta_time);
-	multi_send_int(fade_type);
+	multi_send_int(duration);
+	multi_send_int(fadeColor);
 	multi_end_callback();
 }
 
 void multi_sexp_fade_out()
 {
-	float delta_time = 0.0f;
-	int fade_type;
+	int duration = 0;
+	int fadeColor = 0;
 
-	multi_get_float(delta_time);
-	if (!multi_get_int(fade_type)){
+	multi_get_int(duration);
+	if (!multi_get_int(fadeColor)){
 		Int3();	// misformed packet
 		return;
 	}
 
-	sexp_fade_out(delta_time, fade_type);
+	sexp_fade_out(duration, fadeColor);
 }
 
 camera* sexp_get_set_camera(bool reset = false)
