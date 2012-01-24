@@ -254,13 +254,12 @@ typedef struct ai_class {
 #define AIS_CHASE_CIRCLESTRAFE	19	// Attempt a circle-strafe on the target
 
 //	Submodes for docking behavior
-#define	AIS_DOCK_0		21
-#define	AIS_DOCK_1		22
-#define	AIS_DOCK_2		23
-#define	AIS_DOCK_3		24
-//#define	AIS_DOCK_3A		25
-#define	AIS_DOCK_4		26			//	Only for rearm/repair.
-#define	AIS_DOCK_4A		27			//	Only for not rearm/repair.  MK, 7/15/97
+#define	AIS_DOCK_0		20
+#define	AIS_DOCK_1		21
+#define	AIS_DOCK_2		22
+#define	AIS_DOCK_3		23
+#define	AIS_DOCK_4		24			//	Only for rearm/repair.
+#define	AIS_DOCK_4A		25			//	Only for not rearm/repair.  MK, 7/15/97
 #define	AIS_UNDOCK_0	30
 #define	AIS_UNDOCK_1	31
 #define	AIS_UNDOCK_2	32

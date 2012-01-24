@@ -1208,7 +1208,7 @@ char* Default_main_vertex_shader =
 "varying vec3 lNormal;\n"
 "void main()\n"
 "{\n"
-"	gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;\n"
 "	gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n"
 "	gl_FrontColor = gl_Color;\n"
 "	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
