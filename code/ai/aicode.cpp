@@ -3063,12 +3063,14 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 {
 	Assert(docker != NULL);
 	Assert(dockee != NULL);
-	Assert(docker->instance != -1);
-	Assert(dockee->instance != -1);
-	Assert(Ships[docker->instance].ai_index != -1);
-	Assert(Ships[dockee->instance].ai_index != -1);
-	Assert(docker_index != -1);
-	Assert(dockee_index != -1);
+	Assert(docker->type == OBJ_SHIP);
+	Assert(dockee->type == OBJ_SHIP);
+	Assert(docker->instance >= 0);
+	Assert(dockee->instance >= 0);
+	Assert(Ships[docker->instance].ai_index >= 0);
+	Assert(Ships[dockee->instance].ai_index >= 0);
+	Assert(docker_index >= 0);
+	Assert(dockee_index >= 0);
 
 	ai_info *aip = &Ai_info[Ships[docker->instance].ai_index];
 
@@ -3107,6 +3109,15 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 	// dock instantly
 	if (dock_type == AIDO_DOCK_NOW)
 	{
+		// set model animations correctly
+		// (fortunately, this function is called AFTER model_anim_set_initial_states in the sea of ship creation
+		// functions, which is necessary for model animations to start from t=0 at the correct positions)
+		ship *shipp = &Ships[docker->instance];
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, 1);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, 1);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, 1);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, 1);
+
 		dock_orient_and_approach(docker, docker_index, dockee, dockee_index, DOA_DOCK_STAY);
 		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index, false );
 	}
@@ -10348,7 +10359,7 @@ int maybe_dock_obstructed(object *cur_objp, object *goal_objp, int big_only_flag
 
 
 //	Docking behavior.
-//	Approach a ship, follow path to docking platform, approach platform, after awhile,
+//	Approach a ship, follow path to docking platform, approach platform; after awhile,
 //	undock.
 void ai_dock()
 {
