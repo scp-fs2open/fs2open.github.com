@@ -722,7 +722,7 @@ void model_anim_set_initial_states(ship *shipp)
 	ship_primary_changed(shipp);
 	ship_secondary_changed(shipp);
 
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
 		for (i = 0; i < psub->n_triggers; i++) {
@@ -731,8 +731,29 @@ void model_anim_set_initial_states(ship *shipp)
 				pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
 				pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
 			} else {
-				if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL)
+				if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
 					pss->trigger.set_to_end(&psub->triggers[i]);
+
+					// Vasudan Admiral - And now actually APPLY the initial angle data to the subobjects themselves!
+					pss->submodel_info_1.angs.p = pss->trigger.current_ang.xyz.x;
+					pss->submodel_info_1.angs.h = pss->trigger.current_ang.xyz.y;
+					pss->submodel_info_1.angs.b = pss->trigger.current_ang.xyz.z;
+
+					if (pss->submodel_info_1.angs.p > PI2)
+						pss->submodel_info_1.angs.p -= PI2;
+					else if (pss->submodel_info_1.angs.p < 0.0f)
+						pss->submodel_info_1.angs.p += PI2;
+
+					if (pss->submodel_info_1.angs.h > PI2)
+						pss->submodel_info_1.angs.h -= PI2;
+					else if (pss->submodel_info_1.angs.h < 0.0f)
+						pss->submodel_info_1.angs.h += PI2;
+
+					if (pss->submodel_info_1.angs.b > PI2)
+						pss->submodel_info_1.angs.b -= PI2;
+					else if (pss->submodel_info_1.angs.b < 0.0f)
+						pss->submodel_info_1.angs.b += PI2;
+				}
 			}
 		}
 	}
