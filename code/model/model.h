@@ -307,7 +307,9 @@ typedef struct bsp_info {
 
 	vec3d	render_box_min;
 	vec3d	render_box_max;
-	int		use_render_box;			// 0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
+	float	render_sphere_radius;
+	int		use_render_box;			// 0==do nothing, 1==only render this object if you are inside the box, -1==only if you're outside
+	int		use_render_sphere;		// 0==do nothing, 1==only render this object if you are inside the sphere, -1==only if you're outside
 	bool	gun_rotation;			// for animated weapon models
 	bool	no_collisions;			// for $no_collisions property - kazan
 	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
@@ -340,7 +342,9 @@ typedef struct bsp_info {
 		next_sibling = 0;
 		num_details = 0;
 		num_arcs = 0;
+		render_sphere_radius = 0;
 		use_render_box = 0;
+		use_render_sphere = 0;
 		gun_rotation = false;
 		no_collisions = false;
 		nocollide_this_only = false;
