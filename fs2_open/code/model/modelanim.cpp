@@ -493,6 +493,10 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 
 bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction)
 {
+	// this makes the logic for docking triggers a bit cleaner
+	if (shipp == NULL)
+		return false;
+
 	ship_subsys	*pss;
 	bool retval = false;
 
