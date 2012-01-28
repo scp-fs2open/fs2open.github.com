@@ -37,6 +37,9 @@
 
 #define MAX_TRIGGER_ANIMATION_TYPES			11
 
+extern char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
+
+
 // Model Animation Position settings
 #define MA_POS_NOT_SET		0	// not yet setup
 #define MA_POS_SET			1	// set, but is moving
@@ -108,7 +111,9 @@ class triggered_rotation
 		~triggered_rotation();
 
 		void start(queued_animation *q);
-		void set_to_end(queued_animation *q);
+		void set_to_initial(queued_animation *q);
+		void set_to_final();
+		void apply_trigger_angles(angles *submodel_angles);
 
 		void add_queue(queued_animation *new_queue, int dir);
 		void process_queue();
@@ -143,8 +148,8 @@ void model_anim_fix_reverse_times(ship_info *sip);
 int model_anim_match_type(char *p);
 
 // starts an animation of a certan type that may be assosiated with a submodel of a ship (returns true if an animation was started)
-bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction);	// for a specific subsystem
-bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction);		// for all valid subsystems
+bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction, bool instant = false);	// for a specific subsystem
+bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction, bool instant = false);		// for all valid subsystems
 
 // how long until the animation is done
 int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype);	// for a specific subsystem
