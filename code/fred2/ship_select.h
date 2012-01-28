@@ -21,7 +21,7 @@ class ship_select : public CDialog
 {
 // Construction
 public:
-	void update_status();
+	void update_status(bool first_time = false);
 	void OnOK();
 	void create_list();
 	ship_select(CWnd* pParent = NULL);   // standard constructor
