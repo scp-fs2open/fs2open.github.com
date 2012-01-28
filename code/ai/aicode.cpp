@@ -3063,12 +3063,14 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 {
 	Assert(docker != NULL);
 	Assert(dockee != NULL);
-	Assert(docker->instance != -1);
-	Assert(dockee->instance != -1);
-	Assert(Ships[docker->instance].ai_index != -1);
-	Assert(Ships[dockee->instance].ai_index != -1);
-	Assert(docker_index != -1);
-	Assert(dockee_index != -1);
+	Assert(docker->type == OBJ_SHIP);
+	Assert(dockee->type == OBJ_SHIP);
+	Assert(docker->instance >= 0);
+	Assert(dockee->instance >= 0);
+	Assert(Ships[docker->instance].ai_index >= 0);
+	Assert(Ships[dockee->instance].ai_index >= 0);
+	Assert(docker_index >= 0);
+	Assert(dockee_index >= 0);
 
 	ai_info *aip = &Ai_info[Ships[docker->instance].ai_index];
 
@@ -3107,6 +3109,20 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 	// dock instantly
 	if (dock_type == AIDO_DOCK_NOW)
 	{
+		// set model animations correctly
+		// (fortunately, this function is called AFTER model_anim_set_initial_states in the sea of ship creation
+		// functions, which is necessary for model animations to start from t=0 at the correct positions)
+		ship *shipp = &Ships[docker->instance];
+		ship *goal_shipp = &Ships[dockee->instance];
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, 1, true);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_1, dockee_index, 1, true);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, 1, true);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, 1, true);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, 1, true);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, 1, true);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, 1, true);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, 1, true);
+
 		dock_orient_and_approach(docker, docker_index, dockee, dockee_index, DOA_DOCK_STAY);
 		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index, false );
 	}
@@ -10180,10 +10196,18 @@ void ai_cleanup_dock_mode_subjective(object *objp)
 
 		// get the object being acted upon
 		object		*goal_objp;
+		ship		*goal_shipp;
 		if (aip->goal_objnum >= 0)
+		{
 			goal_objp = &Objects[aip->goal_objnum];
+			Assert(goal_objp->type == OBJ_SHIP);
+			goal_shipp = &Ships[goal_objp->instance];
+		}
 		else
+		{
 			goal_objp = NULL;
+			goal_shipp = NULL;
+		}
 
 		// get the indexes
 		int docker_index, dockee_index;
@@ -10194,19 +10218,25 @@ void ai_cleanup_dock_mode_subjective(object *objp)
 		{
 			case AIS_UNDOCK_0:
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
 			case AIS_UNDOCK_1:
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, -1);
 			case AIS_UNDOCK_2:
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, -1);
 				break;
 
 			case AIS_DOCK_4:
 			case AIS_DOCK_4A:
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
 			case AIS_DOCK_3:
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, -1);
 			case AIS_DOCK_2:
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, -1);
 				break;
 		}
 
@@ -10348,7 +10378,7 @@ int maybe_dock_obstructed(object *cur_objp, object *goal_objp, int big_only_flag
 
 
 //	Docking behavior.
-//	Approach a ship, follow path to docking platform, approach platform, after awhile,
+//	Approach a ship, follow path to docking platform, approach platform; after awhile,
 //	undock.
 void ai_dock()
 {
@@ -10375,10 +10405,18 @@ void ai_dock()
 
 	// get the object being acted upon
 	object		*goal_objp;
+	ship		*goal_shipp;
 	if (aip->goal_objnum >= 0)
+	{
 		goal_objp = &Objects[aip->goal_objnum];
+		Assert(goal_objp->type == OBJ_SHIP);
+		goal_shipp = &Ships[goal_objp->instance];
+	}
 	else
+	{
 		goal_objp = NULL;
+		goal_shipp = NULL;
+	}
 
 	ai_get_dock_goal_indexes(Pl_objp, aip, aigp, goal_objp, docker_index, dockee_index);
 
@@ -10397,7 +10435,7 @@ void ai_dock()
 		if (aip->path_length < 4)
 		{
 			Assert(goal_objp != NULL);
-			ship_info *goal_sip = &Ship_info[Ships[goal_objp->instance].ship_info_index];
+			ship_info *goal_sip = &Ship_info[goal_shipp->ship_info_index];
 			char *goal_ship_class_name = goal_sip->name;
 			char *goal_dock_path_name = model_get(goal_sip->model_num)->paths[aip->mp_index].name;
 
@@ -10408,6 +10446,7 @@ void ai_dock()
 		aip->submode = AIS_DOCK_1;
 		aip->submode_start_time = Missiontime;
 		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, 1);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_1, dockee_index, 1);
 
 		aip->path_start = -1;
 		break;
@@ -10433,6 +10472,7 @@ void ai_dock()
 				aip->submode = AIS_DOCK_2;
 				aip->submode_start_time = Missiontime;
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, 1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, 1);
 
 				aip->path_cur--;
 				Assert(aip->path_cur-aip->path_start >= 0);
@@ -10443,6 +10483,7 @@ void ai_dock()
 					aip->submode = AIS_DOCK_2;
 					aip->submode_start_time = Missiontime;
 					model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, 1);
+					model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, 1);
 				}
 			}
 		}
@@ -10463,6 +10504,7 @@ void ai_dock()
 			aip->submode = AIS_DOCK_1;
 			aip->submode_start_time = Missiontime;
 			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
+			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, -1);
 		} else {
 			dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_APPROACH);
 			Assert(dist != UNINITIALIZED_VALUE);
@@ -10477,6 +10519,7 @@ void ai_dock()
 				aip->submode = AIS_DOCK_3;
 				aip->submode_start_time = Missiontime;
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, 1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, 1);
 
 				aip->path_cur++;
 			}
@@ -10496,6 +10539,7 @@ void ai_dock()
 			aip->submode = AIS_DOCK_2;
 			aip->submode_start_time = Missiontime;
 			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
+			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, -1);
 		} else {
 			rotating_dockpoint_info rdinfo;
 
@@ -10526,6 +10570,7 @@ void ai_dock()
 
 					// start the dock animation
 					model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, 1);
+					model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, 1);
 
 					if ((Pl_objp == Player_obj) || (goal_objp == Player_obj))
 						joy_ff_docked();  // shake player's joystick a little
@@ -10550,7 +10595,7 @@ void ai_dock()
 		if (aigp == NULL) {	//	Can happen for initially docked ships.
 			ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
 		} else {
-			mission_log_add_entry(LOG_SHIP_DOCKED, Ships[Pl_objp->instance].ship_name, Ships[goal_objp->instance].ship_name);
+			mission_log_add_entry(LOG_SHIP_DOCKED, shipp->ship_name, goal_shipp->ship_name);
 
 			if (aigp->ai_mode == AI_GOAL_DOCK) {
 				ai_mission_goal_complete( aip );					// Note, this calls ai_do_default_behavior().
@@ -10569,8 +10614,6 @@ void ai_dock()
 		float dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_DOCK);
 		Assert(dist != UNINITIALIZED_VALUE);
 
-		Assert(goal_objp->type == OBJ_SHIP);
-		ship		*goal_shipp = &Ships[goal_objp->instance];		
 		ai_info		*goal_aip = &Ai_info[goal_shipp->ai_index];
 
 		// Goober5000 - moved from call_doa
@@ -10591,7 +10634,9 @@ void ai_dock()
 				aip->submode = AIS_DOCK_2;
 				aip->submode_start_time = Missiontime;
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, -1);
 			}
 		}
 		else
@@ -10620,6 +10665,7 @@ void ai_dock()
 		aip->submode_start_time = Missiontime;
 		// start the detach animation (opposite of the dock animation)
 		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
 
 		break;
 	}
@@ -10657,6 +10703,7 @@ void ai_dock()
 			aip->submode = AIS_UNDOCK_2;
 			aip->submode_start_time = Missiontime;
 			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
+			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, -1);
 		}
 		break;
 	}
@@ -10668,7 +10715,7 @@ void ai_dock()
 
 		// get pointer to docked object's aip to reset flags, etc
 		Assert( aip->goal_objnum != -1 );
-		other_aip = &Ai_info[Ships[goal_objp->instance].ai_index];
+		other_aip = &Ai_info[goal_shipp->ai_index];
 
 		//	Second stage of undocking.
 		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_2);
@@ -10689,10 +10736,11 @@ void ai_dock()
 			aip->submode = AIS_UNDOCK_3;
 			aip->submode_start_time = Missiontime;
 			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
+			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, -1);
 
 			// don't add undock log entries for support ships.
 			if ( !(sip->flags & SIF_SUPPORT) ) {
-				mission_log_add_entry(LOG_SHIP_UNDOCKED, Ships[Pl_objp->instance].ship_name, Ships[goal_objp->instance].ship_name);
+				mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
 			}
 		}
 		break;
@@ -10706,6 +10754,7 @@ void ai_dock()
 			aip->submode = AIS_UNDOCK_4;
 			aip->submode_start_time = Missiontime;
 			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, -1);
+			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_1, dockee_index, -1);
 		}
 		else
 		{
@@ -10716,6 +10765,7 @@ void ai_dock()
 				aip->submode = AIS_UNDOCK_4;
 				aip->submode_start_time = Missiontime;
 				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, -1);
+				model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_1, dockee_index, -1);
 			}
 
 			// possible that this flag hasn't been cleared yet.  When aborting a rearm, this submode might

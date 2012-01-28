@@ -1352,6 +1352,20 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
+				if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
+					p += 15;
+					while (*p == ' ') p++;
+					pm->submodel[n].use_render_sphere = atoi(p);
+
+					if ( (p = strstr(props, "$radius:")) != NULL ) {
+						p += 8;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_sphere_radius = (float)strtod(p, (char **)NULL);
+					} else {
+						pm->submodel[n].render_sphere_radius = pm->submodel[n].rad;
+					}
+				}
+
 				// Added for new handling of turret orientation - KeldorKatarn
 				matrix	*orient = &pm->submodel[n].orientation;
 
