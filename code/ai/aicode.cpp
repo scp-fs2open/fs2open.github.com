@@ -3114,14 +3114,14 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 		// functions, which is necessary for model animations to start from t=0 at the correct positions)
 		ship *shipp = &Ships[docker->instance];
 		ship *goal_shipp = &Ships[dockee->instance];
-		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, 1);
-		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_1, dockee_index, 1);
-		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, 1);
-		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, 1);
-		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, 1);
-		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, 1);
-		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, 1);
-		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, 1);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, 1, true);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_1, dockee_index, 1, true);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, 1, true);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, 1, true);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, 1, true);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, 1, true);
+		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, 1, true);
+		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, 1, true);
 
 		dock_orient_and_approach(docker, docker_index, dockee, dockee_index, DOA_DOCK_STAY);
 		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index, false );
