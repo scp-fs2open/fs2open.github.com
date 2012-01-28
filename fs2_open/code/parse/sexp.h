@@ -95,7 +95,7 @@ class waypoint_list;
 #define OPF_SUBSYSTEM_TYPE		66		// Goober5000 - a generic subsystem type (navigation, engines, etc.) rather than a specific subsystem
 #define OPF_POST_EFFECT			67		// Hery - type of post-processing effect
 #define OPF_TARGET_PRIORITIES	68		// FUBAR - Target priority groups
-#define OPF_ARMOR_TYPES			69		// FUBAR - Armor type or <none>
+#define OPF_ARMOR_TYPE			69		// FUBAR - Armor type or <none>
 #define OPF_FONT				70		// Goober5000 - a FreeSpace font
 #define OPF_HUD_ELEMENT			71		// A magic name of a specific HUD element
 #define OPF_SOUND_ENVIRONMENT	72		// Goober5000 - one of EFX_presets, per Taylor
@@ -105,8 +105,9 @@ class waypoint_list;
 #define OPF_WEAPON_BANK_NUMBER	76		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
 #define OPF_MESSAGE_OR_STRING	77		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
 #define OPF_HUD_GAUGE			78		// The E
-#define OPF_DAMAGE_TYPES		79		// FUBAR - Damage type or <none>
+#define OPF_DAMAGE_TYPE			79		// FUBAR - Damage type or <none>
 #define OPF_SHIP_EFFECT			80		// The E - per-ship effects, as defined in post-processing.tbl
+#define OPF_ANIMATION_TYPE		81		// Goober5000 - as defined in modelanim.h
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -188,13 +189,13 @@ class waypoint_list;
 #define CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			(0x000d | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_NAV								(0x000e | OP_CATEGORY_CHANGE)
 
-#define STATUS_SUBCATEGORY_MULTIPLAYER_AND_MISSION_CONFIG	(0x000e | OP_CATEGORY_STATUS)
-#define STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		(0x000f | OP_CATEGORY_STATUS)
-#define STATUS_SUBCATEGORY_CARGO							(0x0010 | OP_CATEGORY_STATUS)
-#define STATUS_SUBCATEGORY_SHIP_STATUS						(0x0011 | OP_CATEGORY_STATUS)
-#define STATUS_SUBCATEGORY_DAMAGE							(0x0012 | OP_CATEGORY_STATUS)
-#define STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			(0x0013 | OP_CATEGORY_STATUS)
-#define STATUS_SUBCATEGORY_KILLS_AND_SCORING				(0x0014 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_MULTIPLAYER_AND_MISSION_CONFIG	(0x0000 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		(0x0001 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_CARGO							(0x0002 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_SHIP_STATUS						(0x0003 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_DAMAGE							(0x0004 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			(0x0005 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_KILLS_AND_SCORING				(0x0006 | OP_CATEGORY_STATUS)
 
 
 #define	OP_PLUS								(0x0000 | OP_CATEGORY_ARITHMETIC)
@@ -217,6 +218,7 @@ class waypoint_list;
 #define OP_SET_BIT							(0x0010 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_UNSET_BIT						(0x0011 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_IS_BIT_SET						(0x0012 | OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_SIGNUM							(0x0013 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 
 
 #define	OP_TRUE								(0x0000 | OP_CATEGORY_LOGICAL)
@@ -675,6 +677,7 @@ class waypoint_list;
 #define OP_BEAM_FIRE_COORDS					(0x0008 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_DOCKED						(0x0009 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Sushi
 #define OP_SET_THRUSTERS					(0x000a	| OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // The E
+#define OP_TRIGGER_SUBMODEL_ANIMATION		(0x000b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // defined for AI goals
@@ -925,6 +928,13 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION	-145
 #define SEXP_CHECK_INVALID_EXPLOSION_OPTION		-146
 #define SEXP_CHECK_INVALID_SHIP_EFFECT			-147
+#define SEXP_CHECK_INVALID_TURRET_TARGET_ORDER	-148
+#define SEXP_CHECK_INVALID_ARMOR_TYPE			-149
+#define SEXP_CHECK_INVALID_DAMAGE_TYPE			-150
+#define SEXP_CHECK_INVALID_TARGET_PRIORITIES	-151
+#define SEXP_CHECK_INVALID_AUDIO_VOLUME_OPTION	-152
+#define SEXP_CHECK_INVALID_HUD_GAUGE			-153
+#define SEXP_CHECK_INVALID_ANIMATION_TYPE		-154
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
