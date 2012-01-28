@@ -4212,26 +4212,34 @@ void game_shade_frame(float frametime)
 		Assert(Fade_end_timestamp > 0);
 		Assert(Fade_end_timestamp > Fade_start_timestamp);
 
-		int startAlpha = 0;
-		int endAlpha = 0;
+		if( timestamp() >= Fade_start_timestamp ) {
+			int startAlpha = 0;
+			int endAlpha = 0;
 
-		// Fade in or out if necessary
-		if (Fade_type == FI_FADEOUT) {
-			endAlpha = 255;
-		} else if (Fade_type == FI_FADEIN) {
-			startAlpha = 255;
+			if (Fade_type == FI_FADEOUT) {
+				endAlpha = 255;
+			} else if (Fade_type == FI_FADEIN) {
+				startAlpha = 255;
+			}
+
+			int alpha = 0;
+
+			if( timestamp() < Fade_end_timestamp ) {
+				int duration = (Fade_end_timestamp - Fade_start_timestamp);
+				int elapsed = (timestamp() - Fade_start_timestamp);
+
+				alpha = fl2i( (float)startAlpha + (((float)endAlpha - (float)startAlpha) / (float)duration) * (float)elapsed );
+			} else {
+				//Fade finished
+				Fade_type = FI_NONE;
+				Fade_start_timestamp = 0;
+				Fade_end_timestamp = 0;
+
+				alpha = endAlpha;
+			}
+
+			Viewer_shader.c = (ubyte)alpha;
 		}
-
-		int duration = (Fade_end_timestamp - Fade_start_timestamp);
-		int elapsed = (timestamp() - Fade_start_timestamp);
-
-		int alpha = fl2i( (float)startAlpha + (((float)endAlpha - (float)startAlpha) / (float)duration) * (float)elapsed );
-
-		if (alpha == endAlpha) {
-			Fade_type = FI_NONE;
-		}
-
-		Viewer_shader.c = (ubyte)alpha;
 	}
 
 	gr_flash_alpha(Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, Viewer_shader.c);
