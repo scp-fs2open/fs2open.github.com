@@ -2858,9 +2858,10 @@ float submodel_get_radius( int modelnum, int submodelnum )
 
 polymodel * model_get(int model_num)
 {
-	Assert( model_num >= 0 );
-	if ( model_num < 0 )
+	if ( model_num < 0 ) {
+		Warning(LOCATION, "Invalid model number %d requested. Please post the call stack where an SCP coder can see it.\n", model_num);
 		return NULL;
+	}
 
 	int num = model_num % MAX_POLYGON_MODELS;
 	
