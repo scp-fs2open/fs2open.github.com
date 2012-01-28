@@ -1065,11 +1065,17 @@ void wss_direct_restore_loadout()
 		return;
 	}
 
+	// niffiwan: if Starting_wings[] has missing wings, Player_loadout.unit_data
+	// skips the missing wings.  Use a new variable to track the number of valid
+	// wings in Starting_wings[], otherwise mission can crash on restart
+	int valid_wing_index = -1;
+
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 
 		if ( Starting_wings[i] < 0 )
 			continue;
 
+		valid_wing_index++;
 		wp = &Wings[Starting_wings[i]];
 
 		// If this wing is still on the arrival list, then update the parse objects
@@ -1077,7 +1083,7 @@ void wss_direct_restore_loadout()
 			p_object *p_objp;
 			j=0;
 			for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
-				slot = &Player_loadout.unit_data[i*MAX_WING_SLOTS+j];
+				slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
 					p_objp->ship_class = slot->ship_class;
 					wl_update_parse_object_weapons(p_objp, slot);
@@ -1095,7 +1101,7 @@ void wss_direct_restore_loadout()
 
 			// This wing is already created, so directly update the ships
 			for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
-				slot = &Player_loadout.unit_data[i*MAX_WING_SLOTS+j];
+				slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
 				shipp = &Ships[wp->ship_index[j]];
 				if ( shipp->ship_info_index != slot->ship_class ) {
 
