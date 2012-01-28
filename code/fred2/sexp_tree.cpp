@@ -2281,7 +2281,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			{
 				item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_SHIP_TAG) && (i == 1) )
+			else if ( (Operators[op].value == OP_SHIP_TAG) && (i == 1) || (Operators[op].value == OP_TRIGGER_SUBMODEL_ANIMATION) && (i == 3) )
 			{
 				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
@@ -2628,8 +2628,8 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_TURRET_TARGET_ORDER:
 		case OPF_POST_EFFECT:
 		case OPF_TARGET_PRIORITIES:
-		case OPF_ARMOR_TYPES:
-		case OPF_DAMAGE_TYPES:
+		case OPF_ARMOR_TYPE:
+		case OPF_DAMAGE_TYPE:
 		case OPF_FONT:
 		case OPF_HUD_ELEMENT:
 		case OPF_SOUND_ENVIRONMENT:
@@ -2640,6 +2640,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_MESSAGE_OR_STRING:
 		case OPF_HUD_GAUGE:
 		case OPF_SHIP_EFFECT:
+		case OPF_ANIMATION_TYPE:
 			return 1;
 
 		case OPF_SHIP:
@@ -4324,12 +4325,16 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_turret_target_priorities();
 			break;
 
-		case OPF_ARMOR_TYPES:
-			list = get_listing_opf_armor_types();
+		case OPF_ARMOR_TYPE:
+			list = get_listing_opf_armor_type();
 			break;
 
-		case OPF_DAMAGE_TYPES:
-			list = get_listing_opf_damage_types();
+		case OPF_DAMAGE_TYPE:
+			list = get_listing_opf_damage_type();
+			break;
+
+		case OPF_ANIMATION_TYPE:
+			list = get_listing_opf_animation_type();
 			break;
 
 		case OPF_PERSONA:
@@ -4373,11 +4378,11 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			break;
 
 		case OPF_HUD_GAUGE:
-			list = get_listing_hud_gauge();
+			list = get_listing_opf_hud_gauge();
 			break;
 
 		case OPF_SHIP_EFFECT:
-			list = get_listing_ship_effects();
+			list = get_listing_opf_ship_effect();
 			break;
 
 		default:
@@ -5293,7 +5298,7 @@ sexp_list_item *sexp_tree::get_listing_opf_adjust_audio_volume()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_hud_gauge() 
+sexp_list_item *sexp_tree::get_listing_opf_hud_gauge() 
 {
 	sexp_list_item head;
 
@@ -5303,7 +5308,7 @@ sexp_list_item *sexp_tree::get_listing_hud_gauge()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_ship_effects() 
+sexp_list_item *sexp_tree::get_listing_opf_ship_effect() 
 {
 	sexp_list_item head;
 	
@@ -5806,7 +5811,7 @@ sexp_list_item *sexp_tree::get_listing_opf_turret_target_priorities()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_armor_types()
+sexp_list_item *sexp_tree::get_listing_opf_armor_type()
 {
 	size_t t;
 	sexp_list_item head;
@@ -5816,13 +5821,24 @@ sexp_list_item *sexp_tree::get_listing_opf_armor_types()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_damage_types()
+sexp_list_item *sexp_tree::get_listing_opf_damage_type()
 {
 	size_t t;
 	sexp_list_item head;
 	head.add_data(SEXP_NONE_STRING);
 	for (t=0; t<Damage_types.size(); t++)
 		head.add_data(Damage_types[t].name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_animation_type()
+{
+	size_t t;
+	sexp_list_item head;
+
+	for (t = 0; t < MAX_TRIGGER_ANIMATION_TYPES; t++)
+		head.add_data(Animation_type_names[t]);
 
 	return head.next;
 }
