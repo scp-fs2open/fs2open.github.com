@@ -525,7 +525,7 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 		if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
 			// rotate instantly; don't use the queue
 			if (instant) {
-				pss->trigger.set_to_final();
+				pss->trigger.set_to_final(&psub->triggers[i]);
 				pss->trigger.apply_trigger_angles(&pss->submodel_info_1.angs);
 
 				retval = true;

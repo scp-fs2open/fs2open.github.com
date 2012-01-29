@@ -112,7 +112,7 @@ class triggered_rotation
 
 		void start(queued_animation *q);
 		void set_to_initial(queued_animation *q);
-		void set_to_final();
+		void set_to_final(queued_animation *q);
 		void apply_trigger_angles(angles *submodel_angles);
 
 		void add_queue(queued_animation *new_queue, int dir);
