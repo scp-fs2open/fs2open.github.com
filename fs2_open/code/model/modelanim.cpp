@@ -160,7 +160,7 @@ void triggered_rotation::set_to_initial(queued_animation *q)
 		current_ang.a1d[axis] += q->angle.a1d[axis];
 }
 
-void triggered_rotation::set_to_final()
+void triggered_rotation::set_to_final(queued_animation *q)
 {
 	for (int axis = 0; axis < 3; axis++)
 		current_ang.a1d[axis] = q->angle.a1d[axis];
