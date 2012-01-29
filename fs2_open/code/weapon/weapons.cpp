@@ -636,6 +636,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_DONT_SHOW_ON_RADAR;
 		else if (!stricmp(NOX("render flak"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_RENDER_FLAK;
+		else if (!stricmp(NOX("ciws"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_CIWS;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -5574,7 +5576,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		if ( objp->type == OBJ_WEAPON ) {
 			// only apply to missiles with hitpoints
 			weapon_info* wip2 = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip2->weapon_hitpoints <= 0 || !(wip2->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE))
+			if (wip2->weapon_hitpoints <= 0 || !(wip2->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE) || (wip->wi_flags2 & WIF2_CIWS))
 				continue;
 		}
 
