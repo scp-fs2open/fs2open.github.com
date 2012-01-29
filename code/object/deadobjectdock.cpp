@@ -31,6 +31,16 @@ object *dock_get_first_dead_docked_object(object *objp)
 	return objp->dead_dock_list->docked_objp;
 }
 
+int dock_find_dead_dockpoint_used_by_object(object *objp, object *other_objp)
+{
+	dock_instance *result = dead_dock_find_instance(objp, other_objp);
+	
+	if (result == NULL)
+		return -1;
+	else
+		return result->dockpoint_used;
+}
+
 // dock management functions -------------------------------------------------------------------------------------
 void dock_dead_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoint2)
 {
