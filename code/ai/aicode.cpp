@@ -10667,7 +10667,7 @@ void ai_dock()
 		}
 
 		// if not enough time has passed, just wait
-		if (!timestamp_elapsed(aip->mode_time)
+		if (!timestamp_elapsed(aip->mode_time))
 			break;
 
 		// clear timestamp
