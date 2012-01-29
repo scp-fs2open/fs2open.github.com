@@ -333,11 +333,12 @@ void UI_WINDOW::draw_tooltip()
 	if (first_gadget) {
 		gadget = first_gadget;
 		do	{
-			if (gadget->get_hotspot() == hotspot)
+			if (gadget->get_hotspot() == hotspot) {
 				if (gadget->hidden)  // if control is hidden, don't draw tooltip for it.
 					return;
 				else
 					break;
+			}
 
 			gadget = gadget->next;
 
