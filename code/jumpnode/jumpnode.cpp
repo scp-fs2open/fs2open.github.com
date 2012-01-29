@@ -64,7 +64,9 @@ jump_node::jump_node(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum
 jump_node::~jump_node()
 {
 	model_unload(m_modelnum);
-	obj_delete(m_objnum);
+
+	if (Objects[m_objnum].type != OBJ_NONE)
+		obj_delete(m_objnum);
 }
 
 // Accessor functions for private variables
