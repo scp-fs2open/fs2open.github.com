@@ -514,7 +514,10 @@ void obj_delete(int objnum)
 
 	Assert(objnum >= 0 && objnum < MAX_OBJECTS);
 	objp = &Objects[objnum];
-	Assert(objp->type != OBJ_NONE);	
+	if (objp->type == OBJ_NONE) {
+		mprintf(("obj_delete() called for already deleted object %d.\n"), objnum);
+		return;
+	};	
 
 	// Remove all object pairs
 	obj_remove_pairs( objp );

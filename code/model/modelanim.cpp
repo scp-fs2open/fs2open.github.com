@@ -157,13 +157,18 @@ void triggered_rotation::apply_trigger_angles(angles *submodel_angles)
 void triggered_rotation::set_to_initial(queued_animation *q)
 {
 	for (int axis = 0; axis < 3; axis++)
-		current_ang.a1d[axis] += q->angle.a1d[axis];
+	{
+		current_ang.a1d[axis] = q->angle.a1d[axis];
+	}
 }
 
-void triggered_rotation::set_to_final()
+void triggered_rotation::set_to_final(queued_animation *q)
 {
 	for (int axis = 0; axis < 3; axis++)
-		current_ang.a1d[axis] = end_angle.a1d[axis];
+	{
+		current_ang.a1d[axis] = q->angle.a1d[axis];
+		end_angle.a1d[axis] = current_ang.a1d[axis];
+	}
 }
 
 triggered_rotation::triggered_rotation()
@@ -525,7 +530,7 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 		if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
 			// rotate instantly; don't use the queue
 			if (instant) {
-				pss->trigger.set_to_final();
+				pss->trigger.set_to_final(&psub->triggers[i]);
 				pss->trigger.apply_trigger_angles(&pss->submodel_info_1.angs);
 
 				retval = true;
@@ -843,4 +848,35 @@ void model_anim_handle_multiplayer(ship *shipp)
 			}
 		}
 	}
+}
+
+// Goober5000 - stack based animation for reversing a sequence of animations
+
+SCP_map<int, animation_stack> Animation_map;
+
+bool model_anim_push_and_start_type(int stack_unique_id, ship *shipp, int animation_type, int subtype, int direction, bool instant)
+{
+	stack_item item;
+	item.shipp = shipp;
+	item.animation_type = animation_type;
+	item.subtype = subtype;
+	item.direction = direction;
+	item.instant = instant;
+
+	Animation_map[stack_unique_id].push_back(item);
+
+	return model_anim_start_type(shipp, animation_type, subtype, direction, instant);
+}
+
+bool model_anim_pop_and_start_type(int stack_unique_id)
+{
+	animation_stack stack = Animation_map[stack_unique_id];
+
+	if (stack.empty())
+		return false;
+
+	stack_item item = stack.back();
+	stack.pop_back();
+
+	return model_anim_start_type(item.shipp, item.animation_type, item.subtype, item.direction * -1, item.instant);
 }

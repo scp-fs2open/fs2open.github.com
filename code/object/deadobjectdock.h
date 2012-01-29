@@ -16,6 +16,9 @@
 // get the first object in objp's dock list
 object *dock_get_first_dead_docked_object(object *objp);
 
+// find objp's dockpoint being occupied by other_objp
+int dock_find_dead_dockpoint_used_by_object(object *objp, object *other_objp);
+
 // add objp1 and objp2 to each others' dock lists; currently only called by ai_deathroll_start
 void dock_dead_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoint2);
 
