@@ -849,3 +849,34 @@ void model_anim_handle_multiplayer(ship *shipp)
 		}
 	}
 }
+
+// Goober5000 - stack based animation for reversing a sequence of animations
+
+SCP_map<int, animation_stack> Animation_map;
+
+bool model_anim_push_and_start_type(int stack_unique_id, ship *shipp, int animation_type, int subtype, int direction, bool instant)
+{
+	stack_item item;
+	item.shipp = shipp;
+	item.animation_type = animation_type;
+	item.subtype = subtype;
+	item.direction = direction;
+	item.instant = instant;
+
+	Animation_map[stack_unique_id].push_back(item);
+
+	return model_anim_start_type(shipp, animation_type, subtype, direction, instant);
+}
+
+bool model_anim_pop_and_start_type(int stack_unique_id)
+{
+	animation_stack stack = Animation_map[stack_unique_id];
+
+	if (stack.empty())
+		return false;
+
+	stack_item item = stack.back();
+	stack.pop_back();
+
+	return model_anim_start_type(item.shipp, item.animation_type, item.subtype, item.direction * -1, item.instant);
+}
