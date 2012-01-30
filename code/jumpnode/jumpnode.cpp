@@ -170,7 +170,10 @@ void jump_node::set_model(char *model_name, bool show_polys)
 void jump_node::set_name(char *new_name)
 {
 	Assert(new_name != NULL);
-	Assert(jumpnode_get_by_name(new_name) == NULL);
+	#ifndef NDEBUG
+	jump_node* check = jumpnode_get_by_name(new_name);
+	#endif
+	Assert((check == this || !check));
 	strcpy_s(m_name, new_name);
 }
 
