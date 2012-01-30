@@ -420,7 +420,8 @@ int waypoint_path_dlg::update_data(int redraw)
 			UpdateData(FALSE);
 		}
 
-		if(jumpnode_get_by_name(m_name) != NULL)
+		jump_node* torename = jumpnode_get_by_name(m_name);
+		if(torename != NULL && &(*jnp) != torename)
 		{
 			if (bypass_errors)
 				return 1;
