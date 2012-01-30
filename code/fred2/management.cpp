@@ -750,7 +750,9 @@ int create_object(vec3d *pos, int waypoint_instance)
 			obj = create_player(Player_starts, pos, NULL, Default_player_model);
 
 	} else if (cur_model_index == Id_select_type_jump_node) {
-		obj = (new jump_node(pos))->get_objnum();
+		jump_node* jnp = new jump_node(pos);
+		obj = jnp->get_objnum();
+		Jump_nodes.push_back(*jnp);
 	} else if(Ship_info[cur_model_index].flags & SIF_NO_FRED){		
 		obj = -1;
 	} else {  // creating a ship

@@ -10552,13 +10552,33 @@ ADE_FUNC(getVectorFromCoords, l_Graphics,
 	vec3d pos = vmd_zero_vector;
 
 	bool in_frame = g3_in_frame() > 0;
-	if(!in_frame)
+	if(!in_frame) {
 		g3_start_frame(0);
+
+		vec3d cam_pos;
+		matrix cam_orient;
+
+		camid cid = cam_get_current();
+		camera *cam = cid.getCamera();
+
+		if (cam != NULL) {
+			cam->get_info(&cam_pos, &cam_orient);
+			g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+		} else {
+			g3_set_view_matrix(&Eye_position, &Eye_matrix, View_zoom);
+		}
+
+		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	g3_point_to_vec(&pos, x, y);
 
-	if(!in_frame)
+	if(!in_frame) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
 		g3_end_frame();
+	}
 
 	if(depth)
 		vm_vec_scale(&pos, depth);
@@ -10764,17 +10784,36 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 	ade_get_args(L, "|fo", &rad, l_Vector.Get(&pos));
 
 	bool in_frame = g3_in_frame() > 0;
-	if(!in_frame)
+	if(!in_frame) {
 		g3_start_frame(0);
+
+		vec3d cam_pos;
+		matrix cam_orient;
+
+		camid cid = cam_get_current();
+		camera *cam = cid.getCamera();
+
+		if (cam != NULL) {
+			cam->get_info(&cam_pos, &cam_orient);
+			g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+		} else {
+			g3_set_view_matrix(&Eye_position, &Eye_matrix, View_zoom);
+		}
+
+		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	vertex vtx;
 	vtx.world = pos;
 	g3_rotate_vertex(&vtx, &pos);
 	g3_draw_sphere(&vtx, rad);
 
-	if(!in_frame)
+	if(!in_frame) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
 		g3_end_frame();
-
+	}
 	return ADE_RETURN_TRUE;
 }
 
