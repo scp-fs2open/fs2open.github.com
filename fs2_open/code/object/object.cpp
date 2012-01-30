@@ -515,7 +515,7 @@ void obj_delete(int objnum)
 	Assert(objnum >= 0 && objnum < MAX_OBJECTS);
 	objp = &Objects[objnum];
 	if (objp->type == OBJ_NONE) {
-		mprintf(("obj_delete() called for already deleted object %d.\n"), objnum);
+		mprintf(("obj_delete() called for already deleted object %d.\n", objnum));
 		return;
 	};	
 
