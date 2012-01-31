@@ -10153,26 +10153,56 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object *goal_objp, int &docker_index, int &dockee_index)
 {
 	// get the indexes
-	if ((aip->submode >= AIS_DOCK_0) && (aip->submode <= AIS_DOCK_3))
+	switch (aip->submode)
 	{
-		// get them from the active goal
-		Assert(aigp != NULL);
-		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
-		docker_index = aigp->docker.index;
-		dockee_index = aigp->dockee.index;
-	}
-	else if ((aip->submode >= AIS_DOCK_4) && (aip->submode <= AIS_UNDOCK_2))
-	{
-		// get them from the guy I'm docked to
-		Assert(goal_objp != NULL);
-		docker_index = dock_find_dockpoint_used_by_object(objp, goal_objp);
-		dockee_index = dock_find_dockpoint_used_by_object(goal_objp, objp);
-	}
-	else
-	{
-		// indexes aren't needed or (in case of AIS_UNDOCK_3) aren't actually used
-		docker_index = -1;
-		dockee_index = -1;
+		case AIS_DOCK_1:
+		case AIS_DOCK_2:
+		case AIS_DOCK_3:
+			Warning(LOCATION, "Normally dock indexes should be calculated for only AIS_DOCK_0 and AIS_UNDOCK_0.  Trace out and debug.");
+		case AIS_DOCK_0:
+		{
+			// get them from the active goal
+			Assert(aigp != NULL);
+			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+			docker_index = aigp->docker.index;
+			dockee_index = aigp->dockee.index;
+			Assert(docker_index >= 0);
+			Assert(dockee_index >= 0);
+			break;
+		}
+
+		case AIS_DOCK_4:
+		case AIS_DOCK_4A:
+		case AIS_UNDOCK_1:
+		case AIS_UNDOCK_2:
+			Warning(LOCATION, "Normally dock indexes should be calculated for only AIS_DOCK_0 and AIS_UNDOCK_0.  Trace out and debug.");
+		case AIS_UNDOCK_0:
+		{
+			// get them from the guy I'm docked to
+			Assert(goal_objp != NULL);
+			docker_index = dock_find_dockpoint_used_by_object(objp, goal_objp);
+			dockee_index = dock_find_dockpoint_used_by_object(goal_objp, objp);
+			Assert(docker_index >= 0);
+			Assert(dockee_index >= 0);
+			break;
+		}
+
+		case AIS_UNDOCK_3:
+		case AIS_UNDOCK_4:
+		{
+			Warning(LOCATION, "Normally dock indexes should be calculated for only AIS_DOCK_0 and AIS_UNDOCK_0.  Additionally, dock indexes can't always be determined for AIS_UNDOCK_3 or AIS_UNDOCK_4.  Trace out and debug.");
+			docker_index = -1;
+			dockee_index = -1;
+			break;
+		}
+
+		default:
+		{
+			Error(LOCATION, "Unknown docking submode!");
+			docker_index = -1;
+			dockee_index = -1;
+			break;
+		}
 	}
 }
 
@@ -10395,7 +10425,11 @@ void ai_dock()
 	}
 
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
-	int docker_index, dockee_index;
+
+	// we need to keep the dock indexes stored in the submode because the goal may become invalid at any point
+	// (when we first dock or first undock, we'll calculate and overwrite these for the first time)
+	int docker_index = aip->submode_parm0;
+	int dockee_index = aip->submode_parm1;
 
 	// get the active goal
 	ai_goal *aigp;
@@ -10419,8 +10453,6 @@ void ai_dock()
 		goal_shipp = NULL;
 	}
 
-	ai_get_dock_goal_indexes(Pl_objp, aip, aigp, goal_objp, docker_index, dockee_index);
-
 
 	// For docking submodes (ie, not undocking), follow path.  Once at second last
 	// point on path (point just before point on dock platform), orient into position.
@@ -10433,7 +10465,8 @@ void ai_dock()
 	//	This mode means to find the path to the docking point.
 	case AIS_DOCK_0:
 	{
-		// save the dock indexes in case we need to clean up the dock mode later
+		// save the dock indexes we're currently using
+		ai_get_dock_goal_indexes(Pl_objp, aip, aigp, goal_objp, docker_index, dockee_index);
 		aip->submode_parm0 = docker_index;
 		aip->submode_parm1 = dockee_index;
 
@@ -10662,7 +10695,8 @@ void ai_dock()
 		// If this is the first frame for this submode, play the animation and set the timestamp
 		if (aip->mode_time < 0)
 		{
-			// save the dock indexes in case we need to clean up the dock mode later
+			// save the dock indexes we're currently using
+			ai_get_dock_goal_indexes(Pl_objp, aip, aigp, goal_objp, docker_index, dockee_index);
 			aip->submode_parm0 = docker_index;
 			aip->submode_parm1 = dockee_index;
 
