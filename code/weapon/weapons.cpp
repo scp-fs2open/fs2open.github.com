@@ -805,6 +805,9 @@ void init_weapon_entry(int weap_info_index)
 		wip->detail_distance[i] = -1;
 	}
 
+	vm_vec_zero(&wip->closeup_pos);
+	wip->closeup_zoom = 1.0f;
+
 	generic_anim_init(&wip->laser_bitmap);
 	generic_anim_init(&wip->laser_glow_bitmap);
 
@@ -1180,8 +1183,16 @@ int parse_weapon(int subtype, bool replace)
 		stuff_malloc_string(&wip->tech_desc, F_MULTITEXT);
 	}
 
-	if(optional_string("$Tech Model:")) {
+	if (optional_string("$Tech Model:")) {
 		stuff_string(wip->tech_model, F_NAME, MAX_FILENAME_LEN);
+
+		if (optional_string("+Closeup_pos:")) {
+			stuff_vector(&wip->closeup_pos);
+		}
+
+		if (optional_string("+Closeup_zoom:")) {
+			stuff_float(&wip->closeup_zoom);
+		}
 	}
 
 	// Weapon fadein effect, used when no ani is specified or weapon_select_3d is active

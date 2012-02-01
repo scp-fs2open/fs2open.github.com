@@ -31,6 +31,7 @@
 #include "ui/uidefs.h"
 #include "anim/animplay.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 #include "render/3d.h"
 #include "lighting/lighting.h"
 #include "network/multi.h"
@@ -1451,16 +1452,17 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 			bs = &pm->submodel[0];
 		}
 
-		vec3d weap_closeup;
+		vec3d weap_closeup = Weapon_info->closeup_pos;
 		float y_closeup;
+		float tm_zoom = Weapon_info->closeup_zoom;
 
 		//Find the center of teh submodel
 		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
 		weap_closeup.xyz.y = -(bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f);
 		//weap_closeup.xyz.z = (weap_closeup.xyz.x/tanf(zoom / 2.0f));
-		weap_closeup.xyz.z = -(bs->rad/tanf(zoom/2.0f));
+		weap_closeup.xyz.z = -(bs->rad/tanf(tm_zoom/2.0f));
 
-		y_closeup = -(weap_closeup.xyz.y/tanf(zoom / 2.0f));
+		y_closeup = -(weap_closeup.xyz.y/tanf(tm_zoom / 2.0f));
 		if(y_closeup < weap_closeup.xyz.z)
 		{
 			weap_closeup.xyz.z = y_closeup;
@@ -1469,7 +1471,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		{
 			weap_closeup.xyz.z = bs->min.xyz.x;
 		}
-		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
+		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
 		if (!Cmdline_nohtl) {
 			gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
@@ -1549,36 +1551,35 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		rot_angles.b = 0.0f;
 		rot_angles.h = *rotation_buffer;
 		vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
-	
+
 		gr_set_clip(x1, y1, x2, y2, resize);
 		vec3d wire_normal,ship_normal,plane_point;
 		// Clip the wireframe below the scanline
 		wire_normal.xyz.x = 0.0f;
 		wire_normal.xyz.y = 1.0f;
 		wire_normal.xyz.z = 0.0f;
-		
+
 		// Clip the ship above the scanline 
 		ship_normal.xyz.x = 0.0f;
 		ship_normal.xyz.y = -1.0f;
 		ship_normal.xyz.z = 0.0f;
 
 		polymodel *pm = model_get(model_id);
-		
+
 		//Make the clipping plane
 		float clip = -pm->rad*0.7f;
-		if(time < 1.5f && time >= 0.5f) // Phase 1 Move down
+		if (time < 1.5f && time >= 0.5f) // Phase 1 Move down
 			clip = pm->rad*(time-1.0f)*1.4f;
-		if(time >= 1.5f)
+
+		if (time >= 1.5f)
 			clip = pm->rad*(time-2.0f)*(-1.4f); // Phase 2 Move up
+
 		vm_vec_scale_sub(&plane_point,&vmd_zero_vector,&wire_normal,clip);
-		
+
 		g3_start_frame(1);
-		if(closeup_pos != NULL)
-		{
+		if ( (closeup_pos != NULL) && (vm_vec_mag(closeup_pos) != 0.0f) ) {
 			g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
-		}
-		else
-		{
+		} else {
 			vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
 			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
 		}
@@ -1594,7 +1595,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		float offset = size*0.5f*MIN(MAX(time-3.0f,0.0f),0.6f)*1.66667f;
 		if(time < 1.5f && time >= 0.5f)  // Clip the grid if were in phase 1
 			g3_start_user_clip_plane(&plane_point,&wire_normal);
-		
+
 		g3_start_instance_angles(&vmd_zero_vector,&view_angles);
 		if( time < 0.5f ) // Do the expanding scanline in phase 0
 		{
