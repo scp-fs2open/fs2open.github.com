@@ -1417,7 +1417,7 @@ void message_queue_process()
 	else
 		message_translate_tokens(buf, q->special_message);
 
-	Message_expire = timestamp(100 * strlen(buf));
+	Message_expire = timestamp(42 * strlen(buf));
 	// AL: added 07/14/97.. only play avi/sound if in gameplay
 	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
 		goto all_done;
