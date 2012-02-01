@@ -2899,13 +2899,25 @@ void ss_init_wing_info(int wing_num,int starting_wing_num)
 	Wss_num_wings++;
 
 	wp = &Wings[ss_wing->wingnum];
-	ss_wing->num_slots = wp->current_count;
+	// niffiwan: don't overrun the array
+	if (wp->current_count > MAX_WING_SLOTS) {
+		Warning(LOCATION, "Starting Wing '%s' has '%d' ships. Truncating ship selection to 'MAX_WING_SLOTS'\n", Starting_wing_names[ss_wing->wingnum],wp->current_count);
+		ss_wing->num_slots = MAX_WING_SLOTS;
+	} else {
+		ss_wing->num_slots = wp->current_count;
+	}
 
+	// deal with wing arriving after mission start
 	if ( wp->current_count == 0 || wp->ship_index[0] == -1 ) {
 		p_object *p_objp;
 		// Temporarily fill in the current count and initialize the ship list in the wing
 		// This gets cleaned up before the mission is started
 		for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
+			// niffiwan: don't overrun the array
+			if (ss_wing->num_slots >= MAX_WING_SLOTS) {
+				Warning(LOCATION, "Starting Wing '%s' has more than 'MAX_WING_SLOTS' ships\n", Starting_wing_names[ss_wing->wingnum]);
+				break;
+			}
 			if ( p_objp->wingnum == WING_INDEX(wp) ) {
 				slot = &ss_wing->ss_slots[ss_wing->num_slots++];
 				slot->sa_index = POBJ_INDEX(p_objp);
