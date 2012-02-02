@@ -21,26 +21,28 @@ extern float flFrametime;
 #define SUBTYPE_CHECK	((subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == subtype))
 
 
-char *animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] = {
+char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
+{
 	"initial",
-	"docking",
+	"docking-stage-1",
+	"docking-stage-2",
+	"docking-stage-3",
 	"docked",
-	"primary_bank",
-	"secondary_bank",
-	"door",
+	"primary-bank",
+	"secondary-bank",
+	"fighterbay",
 	"afterburner",
-	"turret firing",
+	"turret-firing",
 	"scripted"
 };
 
 int model_anim_match_type(char *p)
 {	
 	int i;
-	char name[NAME_LENGTH+1];
 
 	// standard match
 	for (i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++) {
-		if ( !strnicmp(p, animation_type_names[i], strlen(animation_type_names[i])) )
+		if ( !strnicmp(p, Animation_type_names[i], strlen(Animation_type_names[i])) )
 			return i;
 	}
 
@@ -50,19 +52,38 @@ int model_anim_match_type(char *p)
 		return TRIGGER_TYPE_INITIAL;
 	}
 
+	// Goober5000 - deprecation
+	if ( !strnicmp(p, "docking", 7) || !strnicmp(p, "\"docking\"", 9) ) {
+		Warning(LOCATION, "The \"docking\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_DOCKING_STAGE_2]);
+		return TRIGGER_TYPE_DOCKING_STAGE_2;
+	} else if ( !strnicmp(p, "primary_bank", 12) || !strnicmp(p, "\"primary_bank\"", 14) ) {
+		Warning(LOCATION, "The \"primary_bank\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_PRIMARY_BANK]);
+		return TRIGGER_TYPE_PRIMARY_BANK;
+	} else if ( !strnicmp(p, "secondary_bank", 14) || !strnicmp(p, "\"secondary_bank\"", 16) ) {
+		Warning(LOCATION, "The \"secondary_bank\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_SECONDARY_BANK]);
+		return TRIGGER_TYPE_SECONDARY_BANK;
+	} else if ( !strnicmp(p, "door", 4) || !strnicmp(p, "\"door\"", 6) ) {
+		Warning(LOCATION, "The \"door\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_DOCK_BAY_DOOR]);
+		return TRIGGER_TYPE_DOCK_BAY_DOOR;
+	} else if ( !strnicmp(p, "turret firing", 13) || !strnicmp(p, "\"turret firing\"", 15) ) {
+		Warning(LOCATION, "The \"turret firing\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_TURRET_FIRING]);
+		return TRIGGER_TYPE_TURRET_FIRING;
+	}
+
 	// Goober5000 - with quotes
 	for (i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++) {
-		memset( name, 0, sizeof(name) );
+		char quoted_name[NAME_LENGTH + 2];
+		strcpy(quoted_name, "\"");
+		strcat(quoted_name, Animation_type_names[i]);
+		strcat(quoted_name, "\"");
 
-		snprintf(name, NAME_LENGTH, "\"%s\"", animation_type_names[i]);
-
-		if ( !strnicmp(p, name, strlen(name)) ) {
-			Warning(LOCATION, "Old usage warning: Please remove quotes from animation type %s.", name);
+		if ( !strnicmp(p, quoted_name, strlen(quoted_name)) ) {
+			Warning(LOCATION, "Old usage warning: Please remove quotes from animation type %s.", quoted_name);
 			return i;
 		}
 	}
 
-	return -1;
+	return TRIGGER_TYPE_NONE;
 }
 
 
@@ -110,10 +131,44 @@ void triggered_rotation::start(queued_animation *q)
 	end_time = q->end_time;
 }
 
-void triggered_rotation::set_to_end(queued_animation *q)
+void triggered_rotation::apply_trigger_angles(angles *submodel_angles)
+{
+	// Vasudan Admiral - And now actually APPLY the angle data to the subobjects themselves!
+	submodel_angles->p = current_ang.xyz.x;
+	submodel_angles->h = current_ang.xyz.y;
+	submodel_angles->b = current_ang.xyz.z;
+
+	if (submodel_angles->p >= PI2)
+		submodel_angles->p -= PI2;
+	else if (submodel_angles->p < 0.0f)
+		submodel_angles->p += PI2;
+
+	if (submodel_angles->h >= PI2)
+		submodel_angles->h -= PI2;
+	else if (submodel_angles->h < 0.0f)
+		submodel_angles->h += PI2;
+
+	if (submodel_angles->b >= PI2)
+		submodel_angles->b -= PI2;
+	else if (submodel_angles->b < 0.0f)
+		submodel_angles->b += PI2;
+}
+
+void triggered_rotation::set_to_initial(queued_animation *q)
 {
 	for (int axis = 0; axis < 3; axis++)
-		current_ang.a1d[axis] += q->angle.a1d[axis];
+	{
+		current_ang.a1d[axis] = q->angle.a1d[axis];
+	}
+}
+
+void triggered_rotation::set_to_final(queued_animation *q)
+{
+	for (int axis = 0; axis < 3; axis++)
+	{
+		current_ang.a1d[axis] = q->angle.a1d[axis];
+		end_angle.a1d[axis] = current_ang.a1d[axis];
+	}
 }
 
 triggered_rotation::triggered_rotation()
@@ -438,17 +493,17 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	sii->angs.h = trigger->current_ang.xyz.y; //- (2.0f * PI2 * (trigger->current_ang.xyz.y / (2.0f * PI2)));
 	sii->angs.b = trigger->current_ang.xyz.z; //- (2.0f * PI2 * (trigger->current_ang.xyz.z / (2.0f * PI2)));
 
-	if (sii->angs.p > PI2)
+	if (sii->angs.p >= PI2)
 		sii->angs.p -= PI2;
 	else if (sii->angs.p < 0.0f)
 		sii->angs.p += PI2;
 
-	if (sii->angs.h > PI2)
+	if (sii->angs.h >= PI2)
 		sii->angs.h -= PI2;
 	else if (sii->angs.h < 0.0f)
 		sii->angs.h += PI2;
 
-	if (sii->angs.b > PI2)
+	if (sii->angs.b >= PI2)
 		sii->angs.b -= PI2;
 	else if (sii->angs.b < 0.0f)
 		sii->angs.b += PI2;
@@ -458,7 +513,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 //*** ship related animation stuff ***//
 //************************************//
 
-bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction)
+bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction, bool instant)
 {
 	Assert( pss != NULL );
 
@@ -473,23 +528,37 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 
 	for (int i = 0; i < psub->n_triggers; i++) {
 		if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
-			psub->triggers[i].instance = i;
-			pss->trigger.add_queue(&psub->triggers[i], direction);
+			// rotate instantly; don't use the queue
+			if (instant) {
+				pss->trigger.set_to_final(&psub->triggers[i]);
+				pss->trigger.apply_trigger_angles(&pss->submodel_info_1.angs);
 
-			retval = true;
+				retval = true;
+			}
+			// rotate normally
+			else {
+				psub->triggers[i].instance = i;
+				pss->trigger.add_queue(&psub->triggers[i], direction);
+
+				retval = true;
+			}
 		}
 	}
 
 	return retval;
 }
 
-bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction)
+bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction, bool instant)
 {
+	// this makes the logic for docking triggers a bit cleaner
+	if (shipp == NULL)
+		return false;
+
 	ship_subsys	*pss;
 	bool retval = false;
 
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		bool rc = model_anim_start_type(pss, animation_type, subtype, direction);
+		bool rc = model_anim_start_type(pss, animation_type, subtype, direction, instant);
 
 		if (rc)
 			retval = rc;
@@ -714,17 +783,19 @@ void model_anim_set_initial_states(ship *shipp)
 	ship_primary_changed(shipp);
 	ship_secondary_changed(shipp);
 
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
 		for (i = 0; i < psub->n_triggers; i++) {
 			if (psub->type == SUBSYSTEM_TURRET) {
 				// special case for turrets
-				pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
 				pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
+				pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
 			} else {
-				if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL)
-					pss->trigger.set_to_end(&psub->triggers[i]);
+				if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
+					pss->trigger.set_to_initial(&psub->triggers[i]);
+					pss->trigger.apply_trigger_angles(&pss->submodel_info_1.angs);
+				}
 			}
 		}
 	}
@@ -777,4 +848,35 @@ void model_anim_handle_multiplayer(ship *shipp)
 			}
 		}
 	}
+}
+
+// Goober5000 - stack based animation for reversing a sequence of animations
+
+SCP_map<int, animation_stack> Animation_map;
+
+bool model_anim_push_and_start_type(int stack_unique_id, ship *shipp, int animation_type, int subtype, int direction, bool instant)
+{
+	stack_item item;
+	item.shipp = shipp;
+	item.animation_type = animation_type;
+	item.subtype = subtype;
+	item.direction = direction;
+	item.instant = instant;
+
+	Animation_map[stack_unique_id].push_back(item);
+
+	return model_anim_start_type(shipp, animation_type, subtype, direction, instant);
+}
+
+bool model_anim_pop_and_start_type(int stack_unique_id)
+{
+	animation_stack stack = Animation_map[stack_unique_id];
+
+	if (stack.empty())
+		return false;
+
+	stack_item item = stack.back();
+	stack.pop_back();
+
+	return model_anim_start_type(item.shipp, item.animation_type, item.subtype, item.direction * -1, item.instant);
 }

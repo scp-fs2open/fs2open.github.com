@@ -78,9 +78,10 @@ static int Interp_num_verts = 0;
 static vertex **Interp_list = NULL;
 static int  Num_interp_list_verts_allocated = 0;
 
-static float Interp_box_scale = 1.0f;
+static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
 static vec3d Interp_render_box_min = ZERO_VECTOR;
 static vec3d Interp_render_box_max = ZERO_VECTOR;
+static float Interp_render_sphere_radius = 0.0f;
 
 // -------------------------------------------------------------------
 // lighting save stuff 
@@ -361,6 +362,7 @@ void interp_clear_instance()
 	Interp_box_scale = 1.0f;
 	Interp_render_box_min = vmd_zero_vector;
 	Interp_render_box_max = vmd_zero_vector;
+	Interp_render_sphere_radius = 0.0f;
 }
 
 /**
@@ -4290,6 +4292,18 @@ inline int in_box(vec3d *min, vec3d *max, vec3d *pos)
 	return -1;
 }
 
+inline int in_sphere(vec3d *pos, float radius)
+{
+	vec3d point;
+
+	vm_vec_sub(&point, &View_position, pos);
+
+	if ( vm_vec_dist(&point, pos) <= radius )
+		return 1;
+	else
+		return -1;
+}
+
 
 void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 {
@@ -4318,12 +4332,18 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 		Interp_thrust_scale_subobj = 0;
 	}
 
-	// if using detail boxes, check that we are valid for the range
+	// if using detail boxes or spheres, check that we are valid for the range
 	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box ) {
 		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
 		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
 
 		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset)) )
+			return;
+	}
+	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
+		Interp_render_sphere_radius = model->render_sphere_radius * Interp_box_scale;
+
+		if ( (-model->use_render_sphere + in_sphere(&model->offset, Interp_render_sphere_radius)) )
 			return;
 	}
 
@@ -4408,12 +4428,18 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 
 	bsp_info *model = &pm->submodel[mn];
 
-	// if using detail boxes, check that we are valid for the range
+	// if using detail boxes or spheres, check that we are valid for the range
 	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box ) {
 		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
 		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
 
 		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset)) )
+			return;
+	}
+	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
+		Interp_render_sphere_radius = model->render_sphere_radius * Interp_box_scale;
+
+		if ( (-model->use_render_sphere + in_sphere(&model->offset, Interp_render_sphere_radius)) )
 			return;
 	}
 
@@ -4707,6 +4733,11 @@ float texture_info::GetTotalTime()
 }
 int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
 {
+	if (strlen(filename) + 4 >= NAME_LENGTH) //Filenames are passed in without extension
+	{
+		mprintf(("Generated texture name %s is too long. Skipping...\n"));
+		return -1;
+	}
 	this->original_texture = bm_load_either(filename, NULL, NULL, NULL, 1, CF_TYPE_MAPS);
 	if(this->original_texture < 0)
 		nprintf(("Maps", "For \"%s\" I couldn't find %s.ani\n", dbg_name, filename));

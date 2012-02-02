@@ -97,7 +97,7 @@ struct ship_info;
 #define AIGF_GOAL_OVERRIDE			(1<<4)	// paired with AIG_TYPE_DYNAMIC to mean this goal overrides any other goal
 #define AIGF_PURGE					(1<<5)	// purge this goal next time we process
 #define AIGF_GOALS_PURGED			(1<<6)	// this goal has already caused other goals to get purged
-#define AIGF_DOCK_SOUND_PLAYED		(1<<7)	// Goober5000 - replacement for AL's hack ;)
+#define AIGF_DEPART_SOUND_PLAYED	(1<<7)	// Goober5000 - replacement for AL's hack ;)
 
 #define AIGF_DOCK_INDEXES_VALID		(AIGF_DOCKER_INDEX_VALID|AIGF_DOCKEE_INDEX_VALID)
 
@@ -254,13 +254,12 @@ typedef struct ai_class {
 #define AIS_CHASE_CIRCLESTRAFE	19	// Attempt a circle-strafe on the target
 
 //	Submodes for docking behavior
-#define	AIS_DOCK_0		21
-#define	AIS_DOCK_1		22
-#define	AIS_DOCK_2		23
-#define	AIS_DOCK_3		24
-//#define	AIS_DOCK_3A		25
-#define	AIS_DOCK_4		26			//	Only for rearm/repair.
-#define	AIS_DOCK_4A		27			//	Only for not rearm/repair.  MK, 7/15/97
+#define	AIS_DOCK_0		20
+#define	AIS_DOCK_1		21
+#define	AIS_DOCK_2		22
+#define	AIS_DOCK_3		23
+#define	AIS_DOCK_4		24			//	Only for rearm/repair.
+#define	AIS_DOCK_4A		25			//	Only for not rearm/repair.  MK, 7/15/97
 #define	AIS_UNDOCK_0	30
 #define	AIS_UNDOCK_1	31
 #define	AIS_UNDOCK_2	32

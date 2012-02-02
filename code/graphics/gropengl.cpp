@@ -345,7 +345,7 @@ void gr_opengl_flip()
 
 	//	opengl_save_mouse_area(mx, my, Gr_cursor_size, Gr_cursor_size);
 
-		if (Gr_cursor != -1) {
+		if (Gr_cursor != -1 && bm_is_valid(Gr_cursor)) {
 			gr_set_bitmap(Gr_cursor);
 			gr_bitmap( mx, my, false);
 		}

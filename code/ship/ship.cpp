@@ -4768,7 +4768,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	ship_weapon	*swp = &shipp->weapons;
 	ship_info	*sip = &(Ship_info[ship_type]);
 
-	Assert(strlen(shipp->ship_name) < NAME_LENGTH - 1);
+	Assert(strlen(shipp->ship_name) <= NAME_LENGTH - 1);
 	shipp->ship_info_index = ship_type;
 	shipp->objnum = objnum;
 	shipp->group = 0;
@@ -7021,6 +7021,14 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 	while (object_is_dead_docked(dying_objp))
 	{
 		docked_objp = dock_get_first_dead_docked_object(dying_objp);
+		ship *docked_shipp = &Ships[docked_objp->instance];
+		int dockee_index = dock_find_dead_dockpoint_used_by_object(docked_objp, dying_objp);
+
+		// undo all the docking animations for the docked ship only
+		model_anim_start_type(docked_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
+		model_anim_start_type(docked_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, -1);
+		model_anim_start_type(docked_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, -1);
+		model_anim_start_type(docked_shipp, TRIGGER_TYPE_DOCKING_STAGE_1, dockee_index, -1);
 
 		// only consider the mass of these two objects, not the whole assembly
 		// (this is inaccurate, but the alternative is a huge mess of extra code for a very small gain in realism)
@@ -8650,7 +8658,15 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	// Goober5000 - if no ship name specified, or if specified ship already exists,
 	// or if specified ship has exited, use a default name
 	if ((ship_name == NULL) || (ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0)) {
-		sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
+		char suffix[NAME_LENGTH];
+		sprintf(suffix, NOX(" %d"), n);
+
+		// ensure complete ship name doesn't overflow the buffer
+		int name_len = MIN(NAME_LENGTH - strlen(suffix) - 1, strlen(Ship_info[ship_type].name));
+		Assert(name_len > 0);
+
+		strncpy(shipp->ship_name, Ship_info[ship_type].name, name_len);
+		strcpy(shipp->ship_name + name_len, suffix);
 	} else {
 		strcpy_s(shipp->ship_name, ship_name);
 	}
@@ -15580,12 +15596,26 @@ void object_jettison_cargo(object *objp, object *cargo_objp)
 	Assert(dock_check_find_direct_docked_object(objp, cargo_objp));
 
 	vec3d impulse, pos;
+	ship *shipp = &Ships[objp->instance];
+	ship *cargo_shipp = &Ships[cargo_objp->instance];
+	int docker_index = dock_find_dockpoint_used_by_object(objp, cargo_objp);
+	int dockee_index = dock_find_dockpoint_used_by_object(cargo_objp, objp);
+
+	// undo all the docking animations
+	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_3, docker_index, -1);
+	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_2, docker_index, -1);
+	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING_STAGE_1, docker_index, -1);
+	model_anim_start_type(cargo_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
+	model_anim_start_type(cargo_shipp, TRIGGER_TYPE_DOCKING_STAGE_3, dockee_index, -1);
+	model_anim_start_type(cargo_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, -1);
+	model_anim_start_type(cargo_shipp, TRIGGER_TYPE_DOCKING_STAGE_1, dockee_index, -1);
 
 	// undock the objects
 	ai_do_objects_undocked_stuff(objp, cargo_objp);
 
 	// Goober5000 - add log
-	mission_log_add_entry(LOG_SHIP_UNDOCKED, Ships[objp->instance].ship_name, Ships[cargo_objp->instance].ship_name);
+	mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, cargo_shipp->ship_name);
 
 	// physics stuff
 	vm_vec_sub(&pos, &cargo_objp->pos, &objp->pos);

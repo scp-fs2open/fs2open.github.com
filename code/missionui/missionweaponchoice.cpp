@@ -1136,8 +1136,6 @@ void maybe_select_new_weapon(int index)
 {
 	int weapon_class;
 
-	anim_timer_start = timer_get_milliseconds();
-
 	// if a weapon is being carried, do nothing
 	if ( wl_icon_being_carried() ) {
 		return;
@@ -1171,8 +1169,6 @@ void maybe_select_new_weapon(int index)
 void maybe_select_new_ship_weapon(int index)
 {
 	int *wep, *wep_count;
-	
-	anim_timer_start = timer_get_milliseconds();
 
 	if ( Selected_wl_slot == -1 )
 		return;
@@ -2651,7 +2647,7 @@ void weapon_select_do(float frametime)
 
 	if(Wl_icons[Selected_wl_class].model_index != -1) {
 		static float WeapSelectScreenWeapRot = 0.0f;
-		wl_icon_info *sel_icon					= &Wl_icons[Selected_wl_class];
+		wl_icon_info *sel_icon	= &Wl_icons[Selected_wl_class];
 		weapon_info *wip = &Weapon_info[Selected_wl_class];
 		draw_model_rotating(sel_icon->model_index,
 			weapon_ani_coords[0],
@@ -2659,8 +2655,8 @@ void weapon_select_do(float frametime)
 			gr_screen.res == 0 ? 202 : 332,
 			gr_screen.res == 0 ? 185 : 260,
 			&WeapSelectScreenWeapRot,
-			NULL,
-			.65f,
+			&Weapon_info->closeup_pos,
+			Weapon_info->closeup_zoom * 0.65f,
 			REVOLUTION_RATE,
 			MR_IS_MISSILE | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
 			true,
@@ -2718,7 +2714,7 @@ void weapon_select_do(float frametime)
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, 0.4f, sx, sy, w, h, NULL);
+					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info->closeup_zoom / 2.5f, sx, sy, w, h, NULL);
 				}
 				else if(icon->laser_bmap != -1)
 				{
@@ -2963,7 +2959,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		if(icon->model_index != -1)
 		{
 			//Draw the model
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, .5f / 1.25f, x, y, 56, 24, NULL);
+			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info->closeup_zoom * 0.4f, x, y, 56, 24, NULL);
 		}
 		else if(icon->laser_bmap != -1)
 		{
@@ -3299,6 +3295,8 @@ void start_weapon_animation(int weapon_class)
 {
 	char *p;
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
+
+	anim_timer_start = timer_get_milliseconds();
 
 	if ( weapon_class < 0 )
 		return;

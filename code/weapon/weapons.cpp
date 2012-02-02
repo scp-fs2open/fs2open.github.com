@@ -634,6 +634,10 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_TAKES_SHOCKWAVE_DAMAGE;
 		else if (!stricmp(NOX("hide from radar"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_DONT_SHOW_ON_RADAR;
+		else if (!stricmp(NOX("render flak"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_RENDER_FLAK;
+		else if (!stricmp(NOX("ciws"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_CIWS;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -800,6 +804,9 @@ void init_weapon_entry(int weap_info_index)
 	{
 		wip->detail_distance[i] = -1;
 	}
+
+	vm_vec_zero(&wip->closeup_pos);
+	wip->closeup_zoom = 1.0f;
 
 	generic_anim_init(&wip->laser_bitmap);
 	generic_anim_init(&wip->laser_glow_bitmap);
@@ -1180,8 +1187,16 @@ int parse_weapon(int subtype, bool replace)
 		stuff_malloc_string(&wip->tech_desc, F_MULTITEXT);
 	}
 
-	if(optional_string("$Tech Model:")) {
+	if (optional_string("$Tech Model:")) {
 		stuff_string(wip->tech_model, F_NAME, MAX_FILENAME_LEN);
+
+		if (optional_string("+Closeup_pos:")) {
+			stuff_vector(&wip->closeup_pos);
+		}
+
+		if (optional_string("+Closeup_zoom:")) {
+			stuff_float(&wip->closeup_zoom);
+		}
 	}
 
 	// Weapon fadein effect, used when no ani is specified or weapon_select_3d is active
@@ -5081,7 +5096,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// if this is a flak weapon shell, make it so
 	// NOTE : this function will change some fundamental things about the weapon object
-	if ( wip->wi_flags & WIF_FLAK ){
+	if ( (wip->wi_flags & WIF_FLAK) && !(wip->wi_flags2 & WIF2_RENDER_FLAK) ) {
 		obj_set_flags(&Objects[wp->objnum], Objects[wp->objnum].flags & ~(OF_RENDERS));
 	}
 
@@ -5579,7 +5594,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		if ( objp->type == OBJ_WEAPON ) {
 			// only apply to missiles with hitpoints
 			weapon_info* wip2 = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip2->weapon_hitpoints <= 0 || !(wip2->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE))
+			if (wip2->weapon_hitpoints <= 0 || !(wip2->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE) || (wip->wi_flags2 & WIF2_CIWS))
 				continue;
 		}
 

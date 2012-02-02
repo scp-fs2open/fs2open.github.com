@@ -252,8 +252,8 @@ public:
 	sexp_list_item *get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_turret_target_order();
-	sexp_list_item *get_listing_opf_armor_types();
-	sexp_list_item *get_listing_opf_damage_types();
+	sexp_list_item *get_listing_opf_armor_type();
+	sexp_list_item *get_listing_opf_damage_type();
 	sexp_list_item *get_listing_opf_turret_target_priorities();
 	sexp_list_item *get_listing_opf_persona();
 	sexp_list_item *get_listing_opf_font();
@@ -264,8 +264,9 @@ public:
 	sexp_list_item *get_listing_opf_explosion_option();
 	sexp_list_item *get_listing_opf_adjust_audio_volume();
 	sexp_list_item *get_listing_opf_weapon_banks();
-	sexp_list_item *get_listing_hud_gauge();
-	sexp_list_item *get_listing_ship_effects();
+	sexp_list_item *get_listing_opf_hud_gauge();
+	sexp_list_item *get_listing_opf_ship_effect();
+	sexp_list_item *get_listing_opf_animation_type();
 
 	int m_mode;
 	int item_index;

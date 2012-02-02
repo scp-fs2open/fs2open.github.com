@@ -1352,6 +1352,20 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
+				if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
+					p += 15;
+					while (*p == ' ') p++;
+					pm->submodel[n].use_render_sphere = atoi(p);
+
+					if ( (p = strstr(props, "$radius:")) != NULL ) {
+						p += 8;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_sphere_radius = (float)strtod(p, (char **)NULL);
+					} else {
+						pm->submodel[n].render_sphere_radius = pm->submodel[n].rad;
+					}
+				}
+
 				// Added for new handling of turret orientation - KeldorKatarn
 				matrix	*orient = &pm->submodel[n].orientation;
 
@@ -2844,9 +2858,10 @@ float submodel_get_radius( int modelnum, int submodelnum )
 
 polymodel * model_get(int model_num)
 {
-	Assert( model_num >= 0 );
-	if ( model_num < 0 )
+	if ( model_num < 0 ) {
+		Warning(LOCATION, "Invalid model number %d requested. Please post the call stack where an SCP coder can see it.\n", model_num);
 		return NULL;
+	}
 
 	int num = model_num % MAX_POLYGON_MODELS;
 	

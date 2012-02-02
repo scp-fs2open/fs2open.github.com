@@ -36,8 +36,9 @@ float Cutscene_bars_progress = 1.0f;
 
 //FADEIN STUFF
 shader Viewer_shader;
-int Fade_type = FI_NONE;
-float Fade_delta_time = 1.0f;
+FadeType Fade_type = FI_NONE;
+int Fade_start_timestamp = 0;
+int Fade_end_timestamp = 0;
 
 // The detail level.  Anything below zero draws simple models earlier than it
 // should.   Anything above zero draws higher detail models longer than it should.

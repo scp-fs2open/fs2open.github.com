@@ -4197,52 +4197,49 @@ void game_render_hud(camid cid)
 void game_reset_shade_frame()
 {
 	Fade_type = FI_NONE;
-	Fade_delta_time = 1.0f;
 	gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 }
 
 void game_shade_frame(float frametime)
 {
-	int alpha = 0;
-
 	// only do frame shade if we are actually in a game play state
 	if ( !game_actually_playing() ) {
 		return;
 	}
 
-	if (Fade_type != FI_NONE)
-	{
-		if ( (Viewer_shader.c == 0) && (Fade_type != FI_FADEOUT) ) {
-			return;
-		}
+	if (Fade_type != FI_NONE) {
+		Assert(Fade_start_timestamp > 0);
+		Assert(Fade_end_timestamp > 0);
+		Assert(Fade_end_timestamp > Fade_start_timestamp);
 
-		alpha = Viewer_shader.c;
-
-		// Fade in or out if necessary
-		if (Fade_type == FI_FADEOUT) {
-			alpha += fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
-		} else if (Fade_type == FI_FADEIN) {
-			alpha -= fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
-		}
-
-		// Limit and set fade type if done
-		if (alpha < 0) {
-			alpha = 0;
-
-			if (Fade_type == FI_FADEIN) {
-				Fade_type = FI_NONE;
-			}
-		}
-
-		if (alpha > 255) {
-			alpha = 255;
+		if( timestamp() >= Fade_start_timestamp ) {
+			int startAlpha = 0;
+			int endAlpha = 0;
 
 			if (Fade_type == FI_FADEOUT) {
-				Fade_type = FI_NONE;
+				endAlpha = 255;
+			} else if (Fade_type == FI_FADEIN) {
+				startAlpha = 255;
 			}
-		}
 
-		Viewer_shader.c = (ubyte)alpha;
+			int alpha = 0;
+
+			if( timestamp() < Fade_end_timestamp ) {
+				int duration = (Fade_end_timestamp - Fade_start_timestamp);
+				int elapsed = (timestamp() - Fade_start_timestamp);
+
+				alpha = fl2i( (float)startAlpha + (((float)endAlpha - (float)startAlpha) / (float)duration) * (float)elapsed );
+			} else {
+				//Fade finished
+				Fade_type = FI_NONE;
+				Fade_start_timestamp = 0;
+				Fade_end_timestamp = 0;
+
+				alpha = endAlpha;
+			}
+
+			Viewer_shader.c = (ubyte)alpha;
+		}
 	}
 
 	gr_flash_alpha(Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, Viewer_shader.c);
@@ -7575,7 +7572,6 @@ void game_do_training_checks()
 		wplp = Training_context_path;
 		if (wplp->get_waypoints().size() > (uint) Training_context_goal_waypoint) {
 			i = Training_context_goal_waypoint;
-			Warning(LOCATION, "The following is very inefficient with the new waypoint code!  Contact Goober5000 if you need to use it.");
 			do {
 				waypoint *wpt = find_waypoint_at_index(wplp, i);
 				Assert(wpt != NULL);

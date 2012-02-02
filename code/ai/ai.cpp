@@ -95,7 +95,7 @@ char *ai_get_goal_target_name(char *name, int *index)
 		}
 
 	Assert(Total_goal_target_names < MAX_GOAL_TARGET_NAMES);
-	Assertion(strlen(name) < NAME_LENGTH - 1, "Goal target name %s is too long. Needs to be 31 characters or less.", name);
+	Assertion(strlen(name) <= NAME_LENGTH - 1, "Goal target name %s is too long. Needs to be 31 characters or less.", name);
 	i = Total_goal_target_names++;
 	strcpy_s(Goal_target_names[i], name);
 	*index = i;

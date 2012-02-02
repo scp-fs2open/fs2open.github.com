@@ -204,7 +204,7 @@ void ship_select::create_list()
 	char text[512];
 	object *ptr;
 
-	update_status();
+	update_status(true);
 	m_ship_list.ResetContent();
 	list_size = 0;
 
@@ -301,7 +301,7 @@ void ship_select::OnOK()
 	CDialog::OnOK();
 }
 
-void ship_select::update_status()
+void ship_select::update_status(bool first_time)
 {
 	int i, z;
 	object *ptr;
@@ -320,8 +320,8 @@ void ship_select::update_status()
 		else
 			obj_index[i]->flags |= OF_TEMP_MARKED;
 	}
-
-	OnSelchangeShipList();
+	if(!first_time)
+		OnSelchangeShipList();
 }
 
 void ship_select::OnFilterShips() 

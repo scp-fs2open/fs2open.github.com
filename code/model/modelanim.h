@@ -24,16 +24,21 @@
 
 #define TRIGGER_TYPE_NONE					-1		// No animation
 #define TRIGGER_TYPE_INITIAL				0		// This is just the position the subobject should be placed in
-#define TRIGGER_TYPE_DOCKING				1		// Before you dock
-#define TRIGGER_TYPE_DOCKED					2		// After you have docked
-#define TRIGGER_TYPE_PRIMARY_BANK			3		// Primary banks
-#define TRIGGER_TYPE_SECONDARY_BANK			4		// Secondary banks
-#define TRIGGER_TYPE_DOCK_BAY_DOOR			5		// Fighter bays
-#define TRIGGER_TYPE_AFTERBURNER			6		// Afterburner -C
-#define TRIGGER_TYPE_TURRET_FIRING			7		// Turret shooting -C
-#define TRIGGER_TYPE_SCRIPTED				8		// Triggered exclusively by scripting...maybe SEXPs? -C
+#define TRIGGER_TYPE_DOCKING_STAGE_1		1		// Before you dock
+#define TRIGGER_TYPE_DOCKING_STAGE_2		2		// Before you dock
+#define TRIGGER_TYPE_DOCKING_STAGE_3		3		// Before you dock
+#define TRIGGER_TYPE_DOCKED					4		// As you dock
+#define TRIGGER_TYPE_PRIMARY_BANK			5		// Primary banks
+#define TRIGGER_TYPE_SECONDARY_BANK			6		// Secondary banks
+#define TRIGGER_TYPE_DOCK_BAY_DOOR			7		// Fighter bays
+#define TRIGGER_TYPE_AFTERBURNER			8		// Afterburner -C
+#define TRIGGER_TYPE_TURRET_FIRING			9		// Turret shooting -C
+#define TRIGGER_TYPE_SCRIPTED				10		// Triggered exclusively by scripting...maybe SEXPs? -C
 
-#define MAX_TRIGGER_ANIMATION_TYPES			9
+#define MAX_TRIGGER_ANIMATION_TYPES			11
+
+extern char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
+
 
 // Model Animation Position settings
 #define MA_POS_NOT_SET		0	// not yet setup
@@ -106,7 +111,9 @@ class triggered_rotation
 		~triggered_rotation();
 
 		void start(queued_animation *q);
-		void set_to_end(queued_animation *q);
+		void set_to_initial(queued_animation *q);
+		void set_to_final(queued_animation *q);
+		void apply_trigger_angles(angles *submodel_angles);
 
 		void add_queue(queued_animation *new_queue, int dir);
 		void process_queue();
@@ -141,8 +148,8 @@ void model_anim_fix_reverse_times(ship_info *sip);
 int model_anim_match_type(char *p);
 
 // starts an animation of a certan type that may be assosiated with a submodel of a ship (returns true if an animation was started)
-bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction);	// for a specific subsystem
-bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction);		// for all valid subsystems
+bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction, bool instant = false);	// for a specific subsystem
+bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction, bool instant = false);		// for all valid subsystems
 
 // how long until the animation is done
 int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype);	// for a specific subsystem
@@ -150,5 +157,23 @@ int model_anim_get_time_type(ship *shipp, int animation_type, int subtype);			//
 
 // this is for handling multiplayer-safe, client-side, animations
 void model_anim_handle_multiplayer(ship *shipp);
+
+
+// for pushing and popping animations
+typedef struct stack_item
+{
+	ship *shipp;
+	int animation_type;
+	int subtype;
+	int direction;
+	bool instant;
+} stack_item;
+
+typedef SCP_vector<stack_item> animation_stack;
+
+extern SCP_map<int, animation_stack> Animation_map;
+
+bool model_anim_push_and_start_type(int stack_unique_id, ship *shipp, int animation_type, int subtype, int direction, bool instant = false);
+bool model_anim_pop_and_start_type(int stack_unique_id);
 
 #endif // _MODELANIM_H
