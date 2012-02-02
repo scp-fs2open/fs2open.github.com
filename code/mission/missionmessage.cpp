@@ -131,6 +131,7 @@ int Num_messages_playing;						// number of is a message currently playing?
 pmessage Playing_messages[MAX_PLAYING_MESSAGES];
 
 int Message_shipnum;						// ship number of who is sending message to player -- used outside this module
+int Message_expire;							// timestamp to extend the duration of message brackets when not using voice files
 
 // variables to control message queuing.  All new messages to the player are queued.  The array
 // will be ordered by priority, then time submitted.
@@ -1240,7 +1241,7 @@ void message_queue_process()
 
 			// if both ani and wave are done, mark internal variable so we can do next message on queue, and
 			// global variable to clear voice brackets on hud
-			if ( wave_done && ani_done ) {
+			if ( wave_done && ani_done && ( timestamp_elapsed(Message_expire) || (Playing_messages[Num_messages_playing].wave != -1) ) ) {
 				nprintf(("messaging", "Message %d is done playing\n", i));
 				Message_shipnum = -1;
 				Num_messages_playing--;
@@ -1416,6 +1417,7 @@ void message_queue_process()
 	else
 		message_translate_tokens(buf, q->special_message);
 
+	Message_expire = timestamp(42 * strlen(buf));
 	// AL: added 07/14/97.. only play avi/sound if in gameplay
 	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
 		goto all_done;
