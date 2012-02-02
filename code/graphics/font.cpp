@@ -488,7 +488,7 @@ int gr_create_font(char * typeface)
 				fnt->bm_data[(x+x1)+(y+y1)*fnt->bm_w] = (unsigned char)(c);	
 			}
 		}
-		x += fnt->char_data[i].byte_width;
+		x += fnt->char_data[i].byte_width + 2;
 	}
 
 	fnt->bitmap_id = bm_create( 8, fnt->bm_w, fnt->bm_h, fnt->bm_data, BMP_AABITMAP );
