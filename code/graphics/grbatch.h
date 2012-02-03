@@ -53,7 +53,7 @@ public:
 	void draw_quad(vertex *verts);
 
 	// draw a beam
-	void draw_beam(vec3d *start, vec3d *end, float width, float intensity = 1.0f);
+	void draw_beam(vec3d *start, vec3d *end, float width, float intensity = 1.0f, float offset = 0.0f);
 
 	//draw a laser
 	float draw_laser(vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b);
@@ -74,7 +74,7 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
 int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity = 1.0f);
 int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
-int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity = 1.0f);
+int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity = 1.0f, float offset = 0.0f);
 void batch_render_all();
 void batch_render_geometry_map_bitmaps();
 void batch_render_lasers();
