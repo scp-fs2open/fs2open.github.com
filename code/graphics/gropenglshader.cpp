@@ -55,7 +55,7 @@ static opengl_shader_file_t GL_shader_file[] = {
 		6, {"baseMap", "depthMap", "window_width", "window_height", "nearZ", "farZ"}, 1, { "radius_in" } },
 
 	{ "soft-v.sdr", "soft-f.sdr", (SDR_FLAG_SOFT_QUAD | SDR_FLAG_DISTORTION), 
-		5, {"baseMap", "window_width", "window_height", "distMap", "frameBuffer"}, 0, { NULL } },
+		5, {"baseMap", "window_width", "window_height", "distMap", "frameBuffer"}, 1, { "offset_in" } },
 
 	// with diffuse Textures
 	{ "lne-v.sdr", "lbgsne-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_ENV_MAP),
