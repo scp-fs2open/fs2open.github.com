@@ -841,6 +841,9 @@ void init_weapon_entry(int weap_info_index)
 	wip->arm_radius = 0.0f;
 	wip->det_range = 0.0f;
 	wip->det_radius = 0.0f;
+	wip->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
+	wip->flak_detonation_accuracy = 65.0f;
+	wip->untargeted_flak_range_penalty = 20.0f;
 	
 	wip->armor_factor = 1.0f;
 	wip->shield_factor = 1.0f;
@@ -1360,6 +1363,18 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("$Detonation Radius:")) {
 		stuff_float(&wip->det_radius);
+	}
+
+	if(optional_string("$Flak Detonation Accuracy:")) {
+		stuff_float(&wip->flak_detonation_accuracy);
+	}
+
+	if(optional_string("$Flak Targeting Accuracy:")) {
+		stuff_float(&wip->flak_targeting_accuracy);
+	}
+
+	if(optional_string("$Untargeted Flak Range Penalty:")) {
+		stuff_float(&wip->untargeted_flak_range_penalty);
 	}
 
 	parse_shockwave_info(&wip->shockwave, "$");

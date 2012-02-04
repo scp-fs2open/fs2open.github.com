@@ -335,15 +335,10 @@ typedef struct weapon_info {
 	float arm_dist;
 	float arm_radius;
 	float det_range;
-	float	det_radius;					//How far from target or target subsystem it blows up
-	/*float	blast_force;						// force this weapon exhibits when hitting an object
-	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
-	float	shockwave_speed;					// speed of shockwave ( 0 means none )*/
-
-	//int		shockwave_info_index;
-	//char	shockwave_name[NAME_LENGTH];
-	//char	shockwave_pof_name[NAME_LENGTH];	// Name of the pof for the shockwave, if useing it's own
-	//int		shockwave_model;					//model for the shock wave -Bobboau
+	float det_radius;					//How far from target or target subsystem it blows up
+	float flak_detonation_accuracy;		//How far away from a target a flak shell will blow up. Standard is 65.0f
+	float flak_targeting_accuracy;		//Determines the amount of jitter applied to flak targeting. USE WITH CAUTION!
+	float untargeted_flak_range_penalty; //Untargeted flak shells detonate after travelling max range - this parameter. Default 20.0f
 
 	float	armor_factor, shield_factor, subsystem_factor;	//	in 0.0..2.0, scale of damage done to type of thing
 	float life_min;

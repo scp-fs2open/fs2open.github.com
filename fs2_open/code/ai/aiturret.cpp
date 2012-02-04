@@ -2291,7 +2291,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// if the weapon is a flak gun, add some jitter to its aim so it fires in a "cone" 
 			// to make a cool visual effect and make them less lethal
 			if(wip->wi_flags & WIF_FLAK){
-				flak_jitter_aim(&tv2e, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS));
+				flak_jitter_aim(&tv2e, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS), wip);
 			}
 			
 			// Fire if:
