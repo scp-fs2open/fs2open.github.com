@@ -10,7 +10,6 @@
 
 
 #include "weapon/flak.h"
-#include "weapon/weapon.h"
 #include "weapon/muzzleflash.h"
 #include "object/object.h"
 
@@ -21,8 +20,9 @@
 //
 
 // temporary - max distance from target that a jittered flak aim direction can point at
-#define FLAK_MAX_ERROR											60.0f							// aim at _most_ this far off of the predicted target position
-float Flak_error = FLAK_MAX_ERROR;
+//#define FLAK_MAX_ERROR											60.0f							// aim at _most_ this far off of the predicted target position
+//float Flak_error = FLAK_MAX_ERROR;
+// Permanent: This parameter can now be set on a per-weapon basis in weapons.tbl -- The E
 
 // muzzle flash animation
 #define MUZZLE_FLASH_FILE										"flk2"
@@ -35,9 +35,9 @@ int Flak_muzzle_flash_ani = -1;
 int Flak_muzzle_mod = 0;
 
 // flak ranging info
-#define FLAK_RANGE_DEFAULT										65.0f							// spherical radius around the predicted target position
-float Flak_range = FLAK_RANGE_DEFAULT;
-
+//#define FLAK_RANGE_DEFAULT										65.0f							// spherical radius around the predicted target position
+//float Flak_range = FLAK_RANGE_DEFAULT;
+// The E -- can now be defined on a per-weapon basis
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 // FLAK FUNCTIONS
@@ -88,12 +88,14 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 	Assert(Weapons[objp->instance].weapon_info_index >= 0);
 	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_FLAK);	
 
+	weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+
 	// get the range to the target
 	vm_vec_sub(&temp, &objp->pos, predicted_target_pos);
 	final_range = vm_vec_mag(&temp);
 
 	//Is it larger than det_range?
-	det_range = Weapon_info[Weapons[objp->instance].weapon_info_index].det_range;
+	det_range = wip->det_range;
 	if(det_range != 0.0f && final_range > det_range)
 	{
 		flak_set_range(objp, det_range);
@@ -101,10 +103,15 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 	}
 
 	// add in some randomness
-	final_range += (Flak_range + (Flak_range * 0.65f * (1.0f - weapon_subsys_strength))) * frand_range(-1.0f, 1.0f);	
+	float random_range = ((wip->flak_detonation_accuracy + (wip->flak_detonation_accuracy * 0.65f * (1.0f - weapon_subsys_strength))) * frand_range(-1.0f, 1.0f));
+	final_range += random_range;	
 
-	// make sure we're firing at least 10 meters away
-	if(final_range < 10.0f){
+	// make sure we're firing at least 10 meters away, or the weapons' arm distance if one was defined.
+	if (wip->arm_dist > 0.0f) {
+		if(final_range < wip->arm_dist){
+			final_range = wip->arm_dist;
+		} 
+	} else {
 		final_range = 10.0f;
 	}
 
@@ -116,7 +123,7 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
  * Add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
  * assumes dir is normalized
  */
-void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength)
+void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength, weapon_info* wip)
 {			
 	vec3d rand_twist_pre, rand_twist_post;		
 	matrix temp;
@@ -127,7 +134,7 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 	vm_vector_2_matrix(&temp, dir, NULL, NULL);
 
 	// error value	
-	error_val = Flak_error + (Flak_error * 0.65f * (1.0f - weapon_subsys_strength));
+	error_val = wip->flak_targeting_accuracy + (wip->flak_targeting_accuracy * 0.65f * (1.0f - weapon_subsys_strength));
 	
 	// scale the rvec by some random value and make it the "pre-twist" value
 	float rand_dist = frand_range(0.0f, error_val);
@@ -206,14 +213,6 @@ DCF(flak, "show flak dcf commands")
 	dc_printf("flak_err <float>      : set the radius of error for flak targeting\n");	
 	dc_printf("flak_range <float>		: set the radius of error for detonation of a flak shell\n");
 	dc_printf("flak_rad <float>      : set the radius for the muzzle flash on a flak gun\n");
-}
-
-DCF(flak_err, "set the radius of error for flak targeting")
-{
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){		 
-		Flak_error = Dc_arg_float;
-	}
 }
 
 DCF(flak_range, "set the radius of error for detonation of a flak shell")

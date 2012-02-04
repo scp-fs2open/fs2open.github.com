@@ -10093,7 +10093,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								}
 								else
 								{
-									flak_set_range(&Objects[weapon_objnum], flak_range-20);
+									flak_set_range(&Objects[weapon_objnum], flak_range - winfo_p->untargeted_flak_range_penalty);
 								}
 
 								if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
