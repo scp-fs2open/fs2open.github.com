@@ -1459,7 +1459,7 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 
 	subsys = Player_ai->targeted_subsys;
 	if (subsys != NULL ) {
-		vm_vec_unrotate(&subobj_pos, &subsys->system_info->pnt, &target_objp->orient);
+		find_submodel_instance_point(&subobj_pos, target_objp, subsys->system_info->subobj_num);
 		vm_vec_add2(&subobj_pos, &target_objp->pos);
 
 		// is it subsystem in view
