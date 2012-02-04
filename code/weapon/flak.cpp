@@ -70,7 +70,9 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 			final_range = wip->arm_dist;
 		} 
 	} else {
-		final_range = 10.0f;
+		if (final_range < 10.0f) {
+			final_range = 10.0f;
+		}
 	}
 
 	// set the range
