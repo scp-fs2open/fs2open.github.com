@@ -215,14 +215,6 @@ DCF(flak, "show flak dcf commands")
 	dc_printf("flak_rad <float>      : set the radius for the muzzle flash on a flak gun\n");
 }
 
-DCF(flak_range, "set the radius of error for detonation of a flak shell")
-{
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){		 
-		Flak_range = Dc_arg_float;
-	}
-}
-
 DCF(flak_rad, "set the radius of flak gun muzzle flash")
 {
 	dc_get_arg(ARG_FLOAT);
