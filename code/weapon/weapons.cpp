@@ -841,6 +841,9 @@ void init_weapon_entry(int weap_info_index)
 	wip->arm_radius = 0.0f;
 	wip->det_range = 0.0f;
 	wip->det_radius = 0.0f;
+	wip->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
+	wip->flak_detonation_accuracy = 65.0f;
+	wip->untargeted_flak_range_penalty = 20.0f;
 	
 	wip->armor_factor = 1.0f;
 	wip->shield_factor = 1.0f;
@@ -1362,6 +1365,18 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&wip->det_radius);
 	}
 
+	if(optional_string("$Flak Detonation Accuracy:")) {
+		stuff_float(&wip->flak_detonation_accuracy);
+	}
+
+	if(optional_string("$Flak Targeting Accuracy:")) {
+		stuff_float(&wip->flak_targeting_accuracy);
+	}
+
+	if(optional_string("$Untargeted Flak Range Penalty:")) {
+		stuff_float(&wip->untargeted_flak_range_penalty);
+	}
+
 	parse_shockwave_info(&wip->shockwave, "$");
 
 	//Retain compatibility
@@ -1649,18 +1664,8 @@ int parse_weapon(int subtype, bool replace)
 	//Disarmed impact sound
 	parse_sound("$Disarmed ImpactSnd:", &wip->impact_snd, wip->name);
 
-	if (subtype == WP_MISSILE)
-	{
-		parse_sound("$FlyBySnd:", &wip->flyby_snd, wip->name);
-	}
-	else
-	{
-		if (optional_string("$FlyBySnd:"))
-		{
-			Warning(LOCATION, "$FlyBySnd: flag found on %s, but is not used with primary weapons; ignoring...", wip->name);
-		}
-	}
-
+	parse_sound("$FlyBySnd:", &wip->flyby_snd, wip->name);
+	
 	if(optional_string("$Model:"))
 	{
 		wip->render_type = WRT_POF;
@@ -3580,7 +3585,7 @@ void weapon_render(object *obj)
 
 
 			model_render(wip->model_num, &obj->orient, &obj->pos, render_flags);
-
+			wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
 			if (clip_plane)
 			{
 				g3_stop_user_clip_plane();
@@ -4075,8 +4080,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 		break;
 	case OBJ_WEAPON:
-		// don't home on countermeasures or non-bombs, that's handled elsewhere
-		if ( (Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE) || !(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+		// Home on countermeasures and bombs
+		if ( !(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE) || !(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
 			break;
 
 		if (wip->wi_flags & WIF_LOCKED_HOMING) {
@@ -4350,12 +4355,7 @@ MONITOR( NumWeapons )
  * Maybe play a "whizz sound" if close enough to view position
  */
 void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
-{	
-	// do a quick out if not a laser
-	if ( Weapon_info[wp->weapon_info_index].subtype != WP_LASER ) {
-		return;
-	}
-
+{
 	// don't play flyby sounds too close together
 	if ( !timestamp_elapsed(Weapon_flyby_sound_timer) ) {
 		return;
@@ -4392,7 +4392,13 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 			dot = vm_vec_dot(&vec_to_weapon, &weapon_objp->orient.vec.fvec);
 			
 			if ( (dot < -0.80) && (dot > -0.98) ) {
-				snd_play_3d( &Snds[SND_WEAPON_FLYBY], &weapon_objp->pos, &Eye_position );
+				if(Weapon_info[wp->weapon_info_index].flyby_snd != -1) {
+					snd_play_3d( &Snds[Weapon_info[wp->weapon_info_index].flyby_snd], &weapon_objp->pos, &Eye_position );
+				} else {
+					if ( Weapon_info[wp->weapon_info_index].subtype == WP_LASER ) {
+						snd_play_3d( &Snds[SND_WEAPON_FLYBY], &weapon_objp->pos, &Eye_position );
+					}
+				}
 				Weapon_flyby_sound_timer = timestamp(200);
 				wp->weapon_flags |= WF_PLAYED_FLYBY_SOUND;
 			}

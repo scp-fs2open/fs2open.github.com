@@ -13,6 +13,7 @@
 #define _FLAK_WEAPONS_HEADER_FILE
 
 #include "physics/physics.h"
+#include "weapon/weapon.h"
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 // FLAK DEFINES/VARS
@@ -37,7 +38,7 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 
 // add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
 // assumes dir is normalized
-void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength);
+void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength, weapon_info* wip);
 
 // create a muzzle flash from a flak gun based upon firing position and weapon type
 void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_weapon_class);
