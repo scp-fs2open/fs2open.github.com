@@ -2293,10 +2293,6 @@ void ship_apply_tag(int ship_num, int tag_level, float tag_time, object *target,
 		Assert(target);
 		Assert(start);
 
-		struct ssm_firing_info;
-
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Firing artillery", 1570));
-
 		ssm_create(target, start, ssm_index, NULL, ssm_team);
 	}
 }
