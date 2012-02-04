@@ -13,32 +13,6 @@
 #include "weapon/muzzleflash.h"
 #include "object/object.h"
 
-
-
-// --------------------------------------------------------------------------------------------------------------------------------------
-// FLAK DEFINES/VARS
-//
-
-// temporary - max distance from target that a jittered flak aim direction can point at
-//#define FLAK_MAX_ERROR											60.0f							// aim at _most_ this far off of the predicted target position
-//float Flak_error = FLAK_MAX_ERROR;
-// Permanent: This parameter can now be set on a per-weapon basis in weapons.tbl -- The E
-
-// muzzle flash animation
-#define MUZZLE_FLASH_FILE										"flk2"
-#define MUZZLE_FLASH_RADIUS									15.0f
-float Flak_muzzle_radius = MUZZLE_FLASH_RADIUS;
-int Flak_muzzle_flash_ani = -1;
-
-// muzzle flash limiting
-#define FLAK_MUZZLE_MOD		3
-int Flak_muzzle_mod = 0;
-
-// flak ranging info
-//#define FLAK_RANGE_DEFAULT										65.0f							// spherical radius around the predicted target position
-//float Flak_range = FLAK_RANGE_DEFAULT;
-// The E -- can now be defined on a per-weapon basis
-
 // --------------------------------------------------------------------------------------------------------------------------------------
 // FLAK FUNCTIONS
 //
@@ -48,13 +22,6 @@ int Flak_muzzle_mod = 0;
  */
 void flak_level_init()
 {
-	int num_frames;
-	int fps;
-
-	// if the muzzle flash ani is not loaded, do so
-	if(Flak_muzzle_flash_ani == -1){
-		Flak_muzzle_flash_ani = bm_load_animation(MUZZLE_FLASH_FILE, &num_frames, &fps, NULL, 1);
-	}
 }
 
 /**
@@ -62,15 +29,6 @@ void flak_level_init()
  */
 void flak_level_close()
 {
-	// zero out the ani (bitmap manager will take care of releasing it I think)
-	//WMC - Check to make sure
-	if(Flak_muzzle_flash_ani != -1)
-	{
-		if(bm_is_valid(Flak_muzzle_flash_ani))
-			bm_unload(Flak_muzzle_flash_ani);
-		else
-			Flak_muzzle_flash_ani = -1;
-	}
 }
 
 /**
@@ -173,16 +131,7 @@ void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_wea
 		return;
 	}
 
-	// maybe skip this flash
-	if(!(Flak_muzzle_mod % FLAK_MUZZLE_MOD)){
-		// call the muzzle flash code
-		mflash_create(pos, dir, pip, Weapon_info[turret_weapon_class].muzzle_flash);
-	}
-
-	Flak_muzzle_mod++;
-	if(Flak_muzzle_mod >= 10000){
-		Flak_muzzle_mod = 0;
-	}	
+	mflash_create(pos, dir, pip, Weapon_info[turret_weapon_class].muzzle_flash);
 }
 
 /**
@@ -206,19 +155,4 @@ float flak_get_range(object *objp)
 	Assert(objp->instance >= 0);	
 	
 	return Weapons[objp->instance].det_range;
-}
-
-DCF(flak, "show flak dcf commands")
-{
-	dc_printf("flak_err <float>      : set the radius of error for flak targeting\n");	
-	dc_printf("flak_range <float>		: set the radius of error for detonation of a flak shell\n");
-	dc_printf("flak_rad <float>      : set the radius for the muzzle flash on a flak gun\n");
-}
-
-DCF(flak_rad, "set the radius of flak gun muzzle flash")
-{
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){		 
-		Flak_muzzle_radius = Dc_arg_float;
-	}
 }
