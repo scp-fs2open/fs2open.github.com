@@ -554,7 +554,7 @@ void obj_snd_do_frame()
 				}
 				if (osp->flags & OS_SUBSYS_ROTATION )
 				{
-					if (osp->ss->current_hits > 0.0f) {
+					if (osp->ss->flags & SSF_ROTATES) {
 						rot_vol_mult = 1.0;
 					}
 				}
