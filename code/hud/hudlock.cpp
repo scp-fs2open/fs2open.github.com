@@ -145,7 +145,7 @@ void hud_draw_diamond(int x, int y, int width, int height)
 }
 
 HudGaugeLock::HudGaugeLock():
-HudGauge(HUD_OBJECT_LOCK, HUD_LEAD_INDICATOR, true, false, false, VM_DEAD_VIEW, 255, 255, 255)
+HudGauge(HUD_OBJECT_LOCK, HUD_LEAD_INDICATOR, false, false, VM_DEAD_VIEW, 255, 255, 255)
 {
 }
 

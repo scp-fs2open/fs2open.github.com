@@ -590,7 +590,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 }
 
 HudGaugeBrackets::HudGaugeBrackets():
-HudGauge(HUD_OBJECT_BRACKETS, HUD_OFFSCREEN_INDICATOR, true, false, true, VM_DEAD_VIEW, 255, 255, 255)
+HudGauge(HUD_OBJECT_BRACKETS, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW, 255, 255, 255)
 {
 }
 

@@ -2743,13 +2743,13 @@ void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3)
 }
 
 HudGaugeReticleTriangle::HudGaugeReticleTriangle():
-HudGauge(HUD_OBJECT_HOSTILE_TRI, HUD_HOSTILE_TRIANGLE, true, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_HOSTILE_TRI, HUD_HOSTILE_TRIANGLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 
 }
 
 HudGaugeReticleTriangle::HudGaugeReticleTriangle(int _gauge_object, int _gauge_config):
-HudGauge(_gauge_object, _gauge_config, true, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(_gauge_object, _gauge_config, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 
 }
@@ -3042,7 +3042,7 @@ void HudGaugeMissileTriangles::render(float frametime)
 }
 
 HudGaugeOrientationTee::HudGaugeOrientationTee():
-HudGauge(HUD_OBJECT_ORIENTATION_TEE, HUD_ORIENTATION_TEE, true, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_ORIENTATION_TEE, HUD_ORIENTATION_TEE, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
@@ -3641,7 +3641,7 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 }
 
 HudGaugeLeadIndicator::HudGaugeLeadIndicator():
-HudGauge(HUD_OBJECT_LEAD, HUD_LEAD_INDICATOR, true, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_LEAD, HUD_LEAD_INDICATOR, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 
 }
@@ -3967,7 +3967,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 }
 
 HudGaugeLeadSight::HudGaugeLeadSight():
-HudGauge(HUD_OBJECT_LEAD_SIGHT, HUD_LEAD_INDICATOR, true, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_LEAD_SIGHT, HUD_LEAD_INDICATOR, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
@@ -4603,7 +4603,7 @@ void hud_target_next_list(int hostile, int next_flag)
 }
 
 HudGaugeAutoTarget::HudGaugeAutoTarget():
-HudGauge(HUD_OBJECT_AUTO_TARGET, HUD_AUTO_TARGET, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_AUTO_TARGET, HUD_AUTO_TARGET, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -4661,7 +4661,7 @@ void HudGaugeAutoTarget::pageIn()
 }
 
 HudGaugeAutoSpeed::HudGaugeAutoSpeed():
-HudGauge(HUD_OBJECT_AUTO_SPEED, HUD_AUTO_SPEED, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_AUTO_SPEED, HUD_AUTO_SPEED, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -5212,7 +5212,7 @@ void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
 }
 
 HudGaugeCmeasures::HudGaugeCmeasures():
-HudGauge(HUD_OBJECT_CMEASURES, HUD_CMEASURE_GAUGE, true, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_CMEASURES, HUD_CMEASURE_GAUGE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
@@ -5269,7 +5269,7 @@ void HudGaugeCmeasures::render(float frametime)
 }
 
 HudGaugeAfterburner::HudGaugeAfterburner():
-HudGauge(HUD_OBJECT_AFTERBURNER, HUD_AFTERBURNER_ENERGY, true, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_AFTERBURNER, HUD_AFTERBURNER_ENERGY, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -5330,7 +5330,7 @@ void HudGaugeAfterburner::pageIn()
 }
 
 HudGaugeWeaponEnergy::HudGaugeWeaponEnergy():
-HudGauge(HUD_OBJECT_WEAPON_ENERGY, HUD_WEAPONS_ENERGY, true, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_WEAPON_ENERGY, HUD_WEAPONS_ENERGY, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -5519,7 +5519,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 }
 
 HudGaugeWeapons::HudGaugeWeapons():
-HudGauge(HUD_OBJECT_WEAPONS, HUD_WEAPONS_GAUGE, true, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_WEAPONS, HUD_WEAPONS_GAUGE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
@@ -5964,7 +5964,7 @@ void hud_target_clear_display_list()
 }
 
 HudGaugeOffscreen::HudGaugeOffscreen():
-HudGauge(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, true, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
