@@ -364,12 +364,12 @@ void radar_frame_init()
 }
 
 HudGaugeRadar::HudGaugeRadar():
-HudGauge(HUD_OBJECT_RADAR_STD, HUD_RADAR, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_RADAR_STD, HUD_RADAR, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
-HudGaugeRadar::HudGaugeRadar(int _gauge_object, bool n_allow_override, int r, int g, int b):
-HudGauge(_gauge_object, HUD_RADAR, n_allow_override, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), r, g, b)
+HudGaugeRadar::HudGaugeRadar(int _gauge_object, int r, int g, int b):
+HudGauge(_gauge_object, HUD_RADAR, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), r, g, b)
 {
 }
 
