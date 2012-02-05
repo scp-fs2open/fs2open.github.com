@@ -3830,7 +3830,7 @@ float ai_path_0()
 			min_dist_to_goal = MIN_DIST_TO_WAYPOINT_GOAL + Pl_objp->radius;
 
 		if ( (vm_vec_dist_quick(&Pl_objp->pos, &gcvp) < min_dist_to_goal) ||
-			((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, &gcvp) < (MIN_DIST_TO_WAYPOINT_GOAL + Pl_objp->radius))) {
+			(((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, &gcvp) < (MIN_DIST_TO_WAYPOINT_GOAL + Pl_objp->radius)))) {
 			aip->path_cur += aip->path_dir;
 			if (((aip->path_cur - aip->path_start) > (num_points+1)) || (aip->path_cur < aip->path_start)) {
 				Assert(aip->mode != AIM_DOCK);		//	If docking, should never get this far, getting to last point handled outside ai_path()
@@ -4007,7 +4007,7 @@ float ai_path_1()
 		}
 
 		if ( (vm_vec_dist_quick(&Pl_objp->pos, &gcvp) < min_dist_to_goal) ||
-			((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, &gcvp) < (MIN_DIST_TO_WAYPOINT_GOAL + Pl_objp->radius))) {
+			(((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, &gcvp) < (MIN_DIST_TO_WAYPOINT_GOAL + Pl_objp->radius)))) {
 			aip->path_cur += aip->path_dir;
 			if (((aip->path_cur - aip->path_start) > (num_points+1)) || (aip->path_cur < aip->path_start)) {
 				Assert(aip->mode != AIM_DOCK);		//	If docking, should never get this far, getting to last point handled outside ai_path()
@@ -4784,11 +4784,12 @@ void evade_weapon()
 			locked_weapon_objp = &Objects[aip->nearest_locked_object];
 	}
 	
-	if (aip->danger_weapon_objnum != -1)
+	if (aip->danger_weapon_objnum != -1) {
 		if (Objects[aip->danger_weapon_objnum].signature == aip->danger_weapon_signature)
 			unlocked_weapon_objp = &Objects[aip->danger_weapon_objnum];
 		else
 			aip->danger_weapon_objnum = -1;		//	Signatures don't match, so no longer endangered.
+	}
 
 	if (locked_weapon_objp != NULL) {
 		if (unlocked_weapon_objp != NULL) {
@@ -7455,9 +7456,9 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 		float	needed_dot = 0.9f - 0.5f * enemy_radius/(dist_to_enemy + enemy_radius);	//	Replaced MIN_TRACKABLE_DOT with 0.9f
 		if (dot_to_enemy > needed_dot &&
 			(wip->wi_flags & WIF_HOMING_ASPECT ||
-			wip->wi_flags & WIF_HOMING_JAVELIN &&
+			(wip->wi_flags & WIF_HOMING_JAVELIN &&
 			(tshpp == NULL ||
-			ship_get_closest_subsys_in_sight(tshpp, SUBSYSTEM_ENGINE, &aiobjp->pos)))) {
+			ship_get_closest_subsys_in_sight(tshpp, SUBSYSTEM_ENGINE, &aiobjp->pos))))) {
 				aip->aspect_locked_time += flFrametime;
 				if (aip->aspect_locked_time >= wip->min_lock_time) {
 					aip->aspect_locked_time = wip->min_lock_time;
@@ -8452,13 +8453,14 @@ void ai_chase()
 	case SM_AVOID:
 		if ((dot_to_enemy > -0.2f) && (dist_to_enemy / (dot_to_enemy + 0.3f) < 100.0f)) {
 			aip->submode_start_time = Missiontime;
-		} else if (Missiontime - aip->submode_start_time > i2f(1)/2)
+		} else if (Missiontime - aip->submode_start_time > i2f(1)/2) {
 			if (might_collide_with_ship(Pl_objp, En_objp, dot_to_enemy, dist_to_enemy, 3.0f)) {
 				aip->submode_start_time = Missiontime;
 			} else {
 				aip->submode = SM_GET_BEHIND;
 				aip->submode_start_time = Missiontime;
 			}
+		}
 
 		break;
 
@@ -9682,7 +9684,7 @@ void ai_big_guard()
 		// how often to choose new desired_z
 		// 1*(64) sec < 2000, 2*(64) < 2-4000 3*(64) > 4-8000, etc (Missiontime >> 22 is 64 sec intervals)
 		int time_choose = int(floor(log(length * 0.001f) / log(2.0f)));
-		float desired_z = min_z + length * static_randf( Pl_objp-Objects ^ (Missiontime >> (22 + time_choose)) );
+		float desired_z = min_z + length * static_randf( (Pl_objp-Objects) ^ (Missiontime >> (22 + time_choose)) );
 
 		// get r from guard_ship
 		float cur_guard_rad = vm_vec_dist(&Pl_objp->pos, &axis_pt);
