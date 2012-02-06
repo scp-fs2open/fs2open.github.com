@@ -196,6 +196,8 @@ void HudGaugeLock::initialize()
 	Lock_gauge_draw_stamp = -1;
 	Lock_gauge_draw = 0;
 	Rotate_time_id = 1;
+
+	HudGauge::initialize();
 }
 
 // hud_show_lock_indicator() will display the lock indicator for homing missiles.
