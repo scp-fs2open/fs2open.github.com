@@ -2498,7 +2498,7 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 }
 
 HudGaugeSquadMessage::HudGaugeSquadMessage():
-HudGauge(HUD_OBJECT_SQUAD_MSG, HUD_MESSAGE_BOX, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_SQUAD_MSG, HUD_MESSAGE_BOX, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -2507,6 +2507,8 @@ void HudGaugeSquadMessage::initialize()
 	flash_timer[0] = timestamp(1);
 	flash_timer[1] = timestamp(1);
 	flash_flag = false;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeSquadMessage::initHeaderOffsets(int x, int y)

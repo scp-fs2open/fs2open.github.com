@@ -178,7 +178,7 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 }
 
 HudGaugeTargetBox::HudGaugeTargetBox():
-HudGauge(HUD_OBJECT_TARGET_MONITOR, HUD_TARGET_MONITOR, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_TARGET_MONITOR, HUD_TARGET_MONITOR, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
 {
 }
 
@@ -281,6 +281,8 @@ void HudGaugeTargetBox::initialize()
 	for(int i = 0; i < NUM_TBOX_FLASH_TIMERS; i++) {
 		initFlashTimer(i);
 	}
+
+	HudGauge::initialize();
 }
 
 void HudGaugeTargetBox::initFlashTimer(int index)
@@ -1056,7 +1058,7 @@ void hud_get_target_strength(object *objp, float *shields, float *integrity)
 }
 
 HudGaugeExtraTargetData::HudGaugeExtraTargetData():
-HudGauge(HUD_OBJECT_EXTRA_TARGET_DATA, HUD_TARGET_MONITOR_EXTRA_DATA, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_EXTRA_TARGET_DATA, HUD_TARGET_MONITOR_EXTRA_DATA, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
 {
 	initDockFlashTimer();
 }
@@ -1064,6 +1066,8 @@ HudGauge(HUD_OBJECT_EXTRA_TARGET_DATA, HUD_TARGET_MONITOR_EXTRA_DATA, true, fals
 void HudGaugeExtraTargetData::initialize()
 {
 	initDockFlashTimer();
+
+	HudGauge::initialize();
 }
 
 void HudGaugeExtraTargetData::initBracketOffsets(int x, int y)

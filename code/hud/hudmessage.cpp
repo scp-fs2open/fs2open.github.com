@@ -248,7 +248,7 @@ void hud_clear_msg_buffer()
 }
 
 HudGaugeMessages::HudGaugeMessages():
-HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE), 255, 255, 255)
+HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, false, true, (VM_WARP_CHASE), 255, 255, 255)
 {
 }
 
@@ -293,6 +293,8 @@ void HudGaugeMessages::initialize()
 	Scroll_needed = false;
 	Scroll_in_progress = false;
 	Scroll_time_id = 1;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeMessages::pageIn()
@@ -1162,7 +1164,7 @@ void hud_scrollback_exit()
 }
 
 HudGaugeTalkingHead::HudGaugeTalkingHead():
-HudGauge(HUD_OBJECT_TALKING_HEAD, HUD_TALKING_HEAD, true, false, true, (VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_TALKING_HEAD, HUD_TALKING_HEAD, false, true, (VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
 {
 }
 
@@ -1170,6 +1172,8 @@ void HudGaugeTalkingHead::initialize()
 {
 	head_anim = NULL;
 	msg_id = -1;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeTalkingHead::initHeaderOffsets(int x, int y)
@@ -1294,7 +1298,7 @@ bool HudGaugeTalkingHead::canRender()
 }
 
 HudGaugeFixedMessages::HudGaugeFixedMessages():
-HudGauge(HUD_OBJECT_FIXED_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE), 255, 255, 255)
+HudGauge(HUD_OBJECT_FIXED_MESSAGES, HUD_MESSAGE_LINES, false, true, (VM_WARP_CHASE), 255, 255, 255)
 {
 }
 

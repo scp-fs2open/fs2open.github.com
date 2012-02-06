@@ -1406,8 +1406,10 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 	GL_state.Lighting(lighting);
 	gr_zbuffer_set(zbuff);
 
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
-	vglDrawBuffers(2, buffers);
+	if( (flags & TMAP_FLAG_DISTORTION) || (flags & TMAP_FLAG_DISTORTION_THRUSTER) ) {
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
+		vglDrawBuffers(2, buffers);
+	}
 
 	GL_CHECK_FOR_ERRORS("end of render3d()");
 }

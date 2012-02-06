@@ -214,7 +214,8 @@ protected:
 
 	int font_num;
 
-	bool config_override;
+	bool lock_color;
+	bool sexp_lock_color;
 	bool reticle_follow;
 	bool active;
 	bool off_by_default;
@@ -246,7 +247,7 @@ protected:
 public:
 	// constructors
 	HudGauge();
-	HudGauge(int _gauge_object, int _gauge_config, bool _allow_override, bool _slew, bool _message, int _disabled_views, int r, int g, int b);
+	HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b);
 	// constructor for custom gauges
 	HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y);
 
@@ -262,8 +263,9 @@ public:
 	bool isOffbyDefault();
 	bool isActive();
 	
-	bool configOverride();
-	void updateColor(int r, int g, int b, int a);
+	void updateColor(int r, int g, int b, int a = 255);
+	void lockConfigColor(bool lock);
+	void sexpLockConfigColor(bool lock);
 	void updateActive(bool show);
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);

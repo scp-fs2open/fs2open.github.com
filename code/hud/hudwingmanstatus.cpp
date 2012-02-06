@@ -205,13 +205,15 @@ void hud_wingman_status_update()
 }
 
 HudGaugeWingmanStatus::HudGaugeWingmanStatus():
-HudGauge(HUD_OBJECT_WINGMAN_STATUS, HUD_WINGMEN_STATUS, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_WINGMAN_STATUS, HUD_WINGMEN_STATUS, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
 void HudGaugeWingmanStatus::initialize()
 {
 	initFlash();
+
+	HudGauge::initialize();
 }
 void HudGaugeWingmanStatus::initHeaderOffsets(int x, int y)
 {
