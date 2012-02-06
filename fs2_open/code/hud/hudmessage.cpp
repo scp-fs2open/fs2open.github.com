@@ -293,6 +293,8 @@ void HudGaugeMessages::initialize()
 	Scroll_needed = false;
 	Scroll_in_progress = false;
 	Scroll_time_id = 1;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeMessages::pageIn()
@@ -1170,6 +1172,8 @@ void HudGaugeTalkingHead::initialize()
 {
 	head_anim = NULL;
 	msg_id = -1;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeTalkingHead::initHeaderOffsets(int x, int y)

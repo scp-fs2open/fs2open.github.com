@@ -440,6 +440,8 @@ void HudGaugeRadar::initialize()
 	gr_get_string_size( &w, &h, Large_blip_string );
 	Large_blip_offset_x = -w/2;
 	Large_blip_offset_y = -h/2;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeRadar::drawRange()
