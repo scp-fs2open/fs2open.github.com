@@ -1718,17 +1718,17 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				objp=&Objects[weapon_objnum];
 				wp=&Weapons[objp->instance];
 
-				parent_ship->last_fired_turret = turret;
-				turret->last_fired_weapon_info_index = wp->weapon_info_index;
-
-				Script_system.SetHookObjects(3, "Ship", &Objects[parent_objnum], "Weapon", objp, "Target", &Objects[turret->turret_enemy_objnum]);
-				Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
-
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
+					parent_ship->last_fired_turret = turret;
+					turret->last_fired_weapon_info_index = wp->weapon_info_index;
+
 					wp->target_num = turret->turret_enemy_objnum;
 					// AL 1-6-97: Store pointer to turret subsystem
 					wp->turret_subsys = turret;	
+
+					Script_system.SetHookObjects(3, "Ship", &Objects[parent_objnum], "Weapon", objp, "Target", &Objects[turret->turret_enemy_objnum]);
+					Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
 
 					// if the gun is a flak gun
 					if(wip->wi_flags & WIF_FLAK){			

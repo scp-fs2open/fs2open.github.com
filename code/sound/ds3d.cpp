@@ -52,10 +52,10 @@ int ds3d_update_buffer(int channel, float min, float max, vec3d *pos, vec3d *vel
 
 	if (vel) {
 		OpenAL_ErrorPrint( alSource3f(source_id, AL_VELOCITY, vel->xyz.x, vel->xyz.y, vel->xyz.z) );
-	//	OpenAL_ErrorPrint( alSourcef(source_id, AL_DOPPLER_FACTOR, 1.0f) );
+		//OpenAL_ErrorPrint( alDopplerFactor(1.0f) );
 	} else {
 		OpenAL_ErrorPrint( alSource3f(source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
-		OpenAL_ErrorPrint( alSourcef(source_id, AL_DOPPLER_FACTOR, 0.0f) );
+		OpenAL_ErrorPrint( alDopplerFactor(0.0f) );
 	}
 
 	if (max <= min) {
