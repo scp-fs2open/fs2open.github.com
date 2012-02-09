@@ -62,6 +62,7 @@
 #define	AIPF2_BEAMS_DAMAGE_WEAPONS									(1 << 8)
 #define AIPF2_PLAYER_WEAPON_SCALE_FIX								(1 << 9)
 #define AIPF2_NO_WARP_CAMERA										(1 << 10)
+#define AIPF2_ASPECT_LOCK_COUNTERMEASURE							(1 << 11)
 
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0

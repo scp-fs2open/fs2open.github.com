@@ -30,6 +30,8 @@ typedef struct shield_hit_info
 
 extern ubyte Quadrant_xlate[4];
 
+extern SCP_vector<SCP_string> Hud_shield_filenames;
+
 struct player;
 struct object;
 struct ship_info;

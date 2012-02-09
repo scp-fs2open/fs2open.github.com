@@ -29,6 +29,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropengldraw.h"
+#include "hud/hudshield.h"
 
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
@@ -1473,8 +1474,7 @@ void labviewer_populate_variables_window()
 	}	\
 	i++;	\
 }
-
-extern int Hud_shield_filename_count;
+extern SCP_vector<SCP_string> Hud_shield_filenames;
 
 void labviewer_update_variables_window()
 {
@@ -1516,7 +1516,7 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(sip->subsys_repair_rate, 0);
 		VAR_SET_VALUE_SAVE(sip->hull_repair_rate, 0);
 		VAR_SET_VALUE_SAVE(sip->cmeasure_max, 0);
-		VAR_SET_VALUE_SAVE(sip->shield_icon_index, Hud_shield_filename_count-1);
+		VAR_SET_VALUE_SAVE(sip->shield_icon_index, Hud_shield_filenames.size()-1);
 
 		VAR_SET_VALUE_SAVE(sip->power_output, 0);
 		VAR_SET_VALUE_SAVE(sip->max_overclocked_speed, 0);
