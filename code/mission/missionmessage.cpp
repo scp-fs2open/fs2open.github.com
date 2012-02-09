@@ -1241,7 +1241,7 @@ void message_queue_process()
 
 			// if both ani and wave are done, mark internal variable so we can do next message on queue, and
 			// global variable to clear voice brackets on hud
-			if ( wave_done && ani_done && ( timestamp_elapsed(Message_expire) || (Playing_messages[Num_messages_playing].wave != -1) ) ) {
+			if ( wave_done && ani_done && ( timestamp_elapsed(Message_expire) || (Playing_messages[Num_messages_playing].wave != -1) || (Playing_messages[i].shipnum == -1) ) ) {
 				nprintf(("messaging", "Message %d is done playing\n", i));
 				Message_shipnum = -1;
 				Num_messages_playing--;

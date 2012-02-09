@@ -15592,6 +15592,9 @@ float ship_get_exp_outer_rad(object *ship_objp)
 
 int valid_cap_subsys_cargo_list(char *subsys)
 {
+	// Return 1 for all subsystems now, due to Mantis #2524.
+	return 1;
+	/*
 	if (stristr(subsys, "nav")
 		|| stristr(subsys, "comm")
 		|| stristr(subsys, "engine")
@@ -15603,6 +15606,7 @@ int valid_cap_subsys_cargo_list(char *subsys)
 	}
 
 	return 0;
+	*/
 }
 
 /**
