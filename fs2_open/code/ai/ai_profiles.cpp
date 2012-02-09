@@ -450,6 +450,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$disable weapon damage scaling for player:", AIPF2_PLAYER_WEAPON_SCALE_FIX, AIP_FLAG2);
 
+			set_flag(profile, "$countermeasures affect aspect seekers:", AIPF2_ASPECT_LOCK_COUNTERMEASURE, AIP_FLAG2);
+
 			profile->ai_path_mode = AI_PATH_MODE_NORMAL;
 			if(optional_string("$ai path mode:"))
 			{

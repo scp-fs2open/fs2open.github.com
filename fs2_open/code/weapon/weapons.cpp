@@ -4080,8 +4080,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 		break;
 	case OBJ_WEAPON:
-		// Home on countermeasures and bombs
-		if ( !(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE) || !(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+		// don't home on countermeasures or non-bombs, that's handled elsewhere
+		if ( ((Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE) && !(The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE)) || !(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
 			break;
 
 		if (wip->wi_flags & WIF_LOCKED_HOMING) {
