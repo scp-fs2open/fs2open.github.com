@@ -116,7 +116,6 @@ void init_new_pilot(player *p, int reset)
 
 	// effectively sets the length return by strlen() to 0	
 	Campaign.filename[0] = 0;
-	p->main_hall = 0;
 
 	// pick a random pilot image for this guy
 	if (reset){
@@ -402,7 +401,6 @@ void player::reset()
 	memset(current_campaign, 0, sizeof(current_campaign));
 
 	readyroom_listing_mode = 0;
-	main_hall = 0;
 	flags = 0;
 	save_flags = 0;
 

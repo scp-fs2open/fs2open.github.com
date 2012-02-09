@@ -406,7 +406,7 @@ void mission_campaign_get_sw_info()
 int mission_campaign_load( char *filename, player *pl, int load_savefile )
 {
 	int len, rval, i;
-	char name[NAME_LENGTH], type[NAME_LENGTH];
+	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
@@ -523,13 +523,17 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				stuff_int(&cm->flags);
 
 			// Goober5000 - new main hall stuff!
-			cm->main_hall = 0;
-			if (optional_string("+Main Hall:"))
-				stuff_ubyte(&cm->main_hall);
+			// Updated by CommanderDJ
+			cm->main_hall = "0";
+			if (optional_string("+Main Hall:")) {
+				stuff_string(temp, F_RAW, 32);
+				cm->main_hall = temp;
+			}
 
 			// deal with previous campaign versions
-			if (cm->flags & CMISSION_FLAG_BASTION)
-				cm->main_hall = 1;
+			if (cm->flags & CMISSION_FLAG_BASTION) {
+				cm->main_hall = "1";
+			}
 
 			// Goober5000 - new debriefing persona stuff!
 			cm->debrief_persona_index = 0;
@@ -1194,10 +1198,6 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 		Sexp_nodes[mission->formula].value = SEXP_UNKNOWN;
 	}
-
-	// new main hall behavior - Goober5000
-	Assert(Player);
-	Player->main_hall = Campaign.missions[Campaign.next_mission].main_hall;
 
 	if (do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission

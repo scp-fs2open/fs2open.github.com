@@ -218,7 +218,6 @@ static int list_w1;
 static int list_w2;
 static int list_h;
 static int Background_bitmap;
-static int Old_main_hall = 0;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 
@@ -1687,9 +1686,6 @@ void campaign_room_init()
 	Num_desc_lines = 0;
 	Desc_scroll_offset = Scroll_offset = 0;
 
-	// Goober5000 - dumb hack, since main hall can be set in multiple places
-	Old_main_hall = Player->main_hall;
-
 	// this stuff needs to happen before the mission_campaign_build_list() call
 	load_failed = mission_load_up_campaign();
 	if (!load_failed) {
@@ -1729,15 +1725,6 @@ void campaign_room_close()
 
 	// unload the overlay bitmap
 	help_overlay_unload(CAMPAIGN_ROOM_OVERLAY);
-
-	// be sure that we are going to use the correct mainhall
-	if ( (Player != NULL) && (Campaign.current_mission >= 0) ) {
-		Player->main_hall = Campaign.missions[Campaign.current_mission].main_hall;
-
-		// we might need to switch the music
-		if (main_hall_get_music_index(Player->main_hall) != main_hall_get_music_index(Old_main_hall))
-			main_hall_stop_music();
-	}
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette

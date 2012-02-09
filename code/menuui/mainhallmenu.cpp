@@ -58,101 +58,9 @@
 #define MISC_ANIM_MODE_TIMED					2		// uses timestamps to determine when a finished anim should be checked again
 
 #define NUM_REGIONS								7		// (6 + 1 for multiplayer equivalent of campaign room)
-typedef struct main_hall_defines {
-	// bitmap and mask
-	SCP_string bitmap;
-	SCP_string mask;
 
-	// music
-	SCP_string music_name;
-	SCP_string substitute_music_name;
-
-	// intercom defines -------------------
-
-	// # of intercom sounds
-	int num_random_intercom_sounds;
-
-	// random (min/max) delays between playing intercom sounds
-	SCP_vector<SCP_vector<int> > intercom_delay;
-
-	// intercom sounds themselves
-	SCP_vector<int> intercom_sounds;
-
-	// intercom sound pan values
-	SCP_vector<float> intercom_sound_pan;
-
-
-	// misc animations --------------------
-
-	// # of misc animations
-	int num_misc_animations;
-
-	// filenames of the misc animations
-	SCP_vector<SCP_string> misc_anim_name;
-
-	// Time until we will next play a given misc animation, min delay, and max delay
-	SCP_vector<SCP_vector<int> > misc_anim_delay;
-
-	// Goober5000, used in preference to the flag in generic_anim
-	SCP_vector<int> misc_anim_paused;
-
-	// Goober5000, used when we want to play one of several anims
-	SCP_vector<int> misc_anim_group;
-
-	// coords of where to play the misc anim
-	SCP_vector<SCP_vector<int> > misc_anim_coords;
-
-	// misc anim play modes (see MISC_ANIM_MODE_* above)
-	SCP_vector<int> misc_anim_modes;
-
-	// panning values for each of the misc anims
-	SCP_vector<float> misc_anim_sound_pan;
-
-	//sounds for each of the misc anims
-	SCP_vector<SCP_vector<int> > misc_anim_special_sounds;
-
-	//frame number triggers for each of the misc anims
-	SCP_vector<SCP_vector<int> > misc_anim_special_trigger;
-
-	//flags for each of the misc anim sounds
-	SCP_vector<SCP_vector<int> > misc_anim_sound_flag;
-
-
-	// door animations --------------------
-
-	// # of door animations
-	int num_door_animations;
-
-	// filenames of the door animations
-	SCP_vector<SCP_string> door_anim_name;
-
-	// first pair : coords of where to play a given door anim
-	// second pair : center of a given door anim in windowed mode
-	SCP_vector<SCP_vector<int> > door_anim_coords;
-
-	// sounds for each region (open/close)
-	SCP_vector<SCP_vector<int> > door_sounds;
-
-	// pan values for the door sounds
-	SCP_vector<float> door_sound_pan;
-
-
-	// region descriptions ----------------
-
-	// text (tooltip) description
-	SCP_vector<char*> region_descript;
-
-	// y coord of where to draw tooltip text
-	int region_yval;
-
-} main_hall_defines;
-
-
-// use main hall 0 by default
-main_hall_defines Main_hall_defines[GR_NUM_RESOLUTIONS][MAIN_HALLS_MAX];
-main_hall_defines *Main_hall = &Main_hall_defines[0][0];
-
-int Num_main_halls = 0;
+SCP_vector<SCP_vector<main_hall_defines> > Main_hall_defines;
+main_hall_defines *Main_hall = NULL;
 
 int Vasudan_funny = 0;
 int Vasudan_funny_plate = -1;
@@ -488,7 +396,7 @@ void main_hall_campaign_cheat()
 //
 
 // initialize the main hall proper
-void main_hall_init(int main_hall_num)
+void main_hall_init(SCP_string main_hall_name)
 {
 	ubyte bg_type;
 	if ( Main_hall_inited ) {
@@ -498,18 +406,25 @@ void main_hall_init(int main_hall_num)
 	int idx;
 	char temp[100], whee[100];
 
-	//reparse the table here if the relevant cmdline flag is set
+	// reparse the table here if the relevant cmdline flag is set
 	if (Cmdline_reparse_mainhall) {
-		main_hall_read_table();
+		parse_main_hall_table();
 	}
 
-	if (!Num_main_halls) {
+	// sanity checks
+	if (Main_hall_defines.at(0).size() == 0) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
+	} else if (main_hall_name == "") {
+		Warning(LOCATION, "main_hall_init() was passed a blank mainhall name, loading first available mainhall.");
+		main_hall_name = main_hall_get_name(0);
+	} else if (main_hall_get_pointer(main_hall_name) == NULL) {
+		Warning(LOCATION, "Tried to load a main hall called '%s', but it does not exist; loading first available mainhall.\n", main_hall_name.c_str());
+		main_hall_name = main_hall_get_name(0);
 	}
 
-	if ( (main_hall_num < 0) || (main_hall_num >= Num_main_halls) ) {
-		Warning(LOCATION, "Tried to load a main hall %d, but valid main halls are only 0 through %d; defaulting to main hall 0", main_hall_num, Num_main_halls-1);
-		main_hall_num = 0;
+	// if we're switching to a different mainhall we may need to change music
+	if (main_hall_get_music_index(main_hall_get_index(main_hall_name)) != main_hall_get_music_index(main_hall_id())) {
+		main_hall_stop_music();
 	}
 
 	// create the snazzy interface and load up the info from the table
@@ -517,8 +432,8 @@ void main_hall_init(int main_hall_num)
 	read_menu_tbl(NOX("MAIN HALL"), temp, whee, Main_hall_region, &Main_hall_num_options, 0);
 
 	// assign the proper main hall data
-	Assert((main_hall_num >= 0) && (main_hall_num < Num_main_halls));
-	Main_hall = &Main_hall_defines[gr_screen.res][main_hall_num];	
+	Assert(main_hall_get_pointer(main_hall_name) != NULL);
+	Main_hall = main_hall_get_pointer(main_hall_name);
 
 	// tooltip strings
 	Main_hall->region_descript.at(0) = XSTR( "Exit FreeSpace 2", 353);
@@ -604,7 +519,7 @@ void main_hall_init(int main_hall_num)
 	}
 
 	// load in help overlay bitmap
-	if (Main_hall == &Main_hall_defines[gr_screen.res][0]) {
+	if (Main_hall == &Main_hall_defines.at(gr_screen.res).at(0)) {
 		Main_hall_overlay_id = MH_OVERLAY;
 	} else {
 		//Assert(Main_hall == &Main_hall_defines[gr_screen.res][1]);
@@ -622,16 +537,6 @@ void main_hall_init(int main_hall_num)
 		}
 	}
 
-/*
-	if(Player_select_very_first_pilot) {				
-		Main_hall_help_stamp = timestamp(MAIN_HALL_HELP_TIME);
-		
-		// don't display the "press f1" message more than once
-		Player_select_very_first_pilot = 0;
-	} else {
-		Main_hall_help_stamp = -1;
-	}
-*/
 	Main_hall_region_linger_stamp = -1;
 
 	strcpy_s(Main_hall_campaign_cheat, "");
@@ -1036,7 +941,7 @@ int main_hall_get_music_index(int main_hall_num)
 		return -1;
 	}
 
-	hall = &Main_hall_defines[gr_screen.res][main_hall_num];
+	hall = &Main_hall_defines.at(gr_screen.res).at(main_hall_num);
 
 	// Goober5000 - try substitute first
 	index = event_music_get_spooled_music_index(hall->substitute_music_name);
@@ -1073,7 +978,7 @@ void main_hall_start_music()
 	}
 
 	// get music
-	index = main_hall_get_music_index(Main_hall-Main_hall_defines[gr_screen.res]);
+	index = main_hall_get_music_index(main_hall_id());
 	if (index < 0) {
 		nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
 		return;
@@ -1601,14 +1506,73 @@ void main_hall_process_help_stuff()
 	gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str);
 }
 
+/**
+ * CommanderDJ - finds the mainhall struct whose name is equal to the passed string
+ * @param name_to_find Name of mainhall we're searching for
+ * 
+ * \return pointer to mainhall if one with a matching name is found
+ * \return NULL otherwise
+ */
+main_hall_defines* main_hall_get_pointer(SCP_string name_to_find)
+{
+	for (unsigned int i=0; i<Main_hall_defines.at(gr_screen.res).size(); i++) {
+		if (Main_hall_defines.at(gr_screen.res).at(i).name == name_to_find) {
+			return &Main_hall_defines.at(gr_screen.res).at(i);
+		}
+	}
+	return NULL;
+}
+
+/**
+ * CommanderDJ - finds the mainhall struct whose name is equal to the passed string
+ * @param name_to_find Name of mainhall we're searching for
+ *
+ * \return index of mainhall in Main_hall_defines if one with a matching name is found
+ * \return -1 otherwise
+ */
+
+int main_hall_get_index(SCP_string name_to_find)
+{
+	for (unsigned int i=0; i<Main_hall_defines.at(gr_screen.res).size(); i++) {
+		if (Main_hall_defines.at(gr_screen.res).at(i).name == name_to_find) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+SCP_string main_hall_get_name(unsigned int index)
+{
+	if ( index>Main_hall_defines.at(gr_screen.res).size() ) {
+		return "";
+	} else {
+		return Main_hall_defines.at(gr_screen.res).at(index).name;
+	}
+}
+
 // what main hall we're on
 int main_hall_id()
 {
-	return (Main_hall - &Main_hall_defines[gr_screen.res][0]);
+	if (Main_hall==NULL) {
+		return -1;
+	} else {
+		return main_hall_get_index(Main_hall->name);
+	}
 }
 
-//CommanderDJ - helper function for initialising intercom sounds vectors based on number of sounds
-//To be called after num_intercom_sounds has been parsed
+// helper function for initialising the Main_hall_defines vector
+// call before parsing mainhall.tbl
+void main_hall_defines_init()
+{
+	SCP_vector<main_hall_defines> temp;
+	// for each resolution we just want to put in a blank vector
+	for (int i=0; i<GR_NUM_RESOLUTIONS; i++) {
+		Main_hall_defines.push_back(temp);
+	}
+}
+
+// CommanderDJ - helper function for initialising intercom sounds vectors based on number of sounds
+// To be called after num_intercom_sounds has been parsed
 void intercom_sounds_init(main_hall_defines &m)
 {
 	if (Cmdline_reparse_mainhall) {
@@ -1750,8 +1714,9 @@ void door_anim_init(main_hall_defines &m)
 }
 
 // read in main hall table
-void main_hall_read_table()
+void parse_main_hall_table()
 {
+	SCP_vector<main_hall_defines> temp_vector;
 	main_hall_defines *m, temp;
 	int count, idx, s_idx, m_idx, rval;
 	char temp_string[MAX_FILENAME_LEN];
@@ -1773,23 +1738,53 @@ void main_hall_read_table()
 
 	reset_parse();
 
+	main_hall_defines_init();
+
 	// go for it
 	count = 0;
 	while (!optional_string("#end")) {
 		// read in 2 resolutions
 		for (m_idx=0; m_idx<GR_NUM_RESOLUTIONS; m_idx++) {
-			// maybe use a temp main hall struct
-			if (count >= MAIN_HALLS_MAX) {
-				m = &temp;
-				Warning(LOCATION, "Number of main halls in mainhall.tbl has exceeded max of %d. All further main halls will be ignored.", MAIN_HALLS_MAX);
-				//WMC - break, because there's nothing after this loop to parse
-				break;
-			} else {
-				m = &Main_hall_defines[m_idx][count];
-			}
+			Main_hall_defines.at(m_idx).push_back(temp);
+			m = &Main_hall_defines.at(m_idx).at(count);
 
 			// ready
 			required_string("$Main Hall");
+
+			// Parse the 640 entry name, checking for duplicates and erroring if necessary
+			if (m_idx == GR_640) {
+				if (optional_string("+Name:")) {
+					stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
+
+					// we can't have two mainhalls with the same name
+					if (main_hall_get_pointer(temp_string) == NULL) {
+						m->name = temp_string;
+					} else {
+						Error(LOCATION, "A mainhall with the name '%s' already exists. All mainhalls must have unique names.", temp_string);
+					}
+				} else {
+					itoa(count, temp_string, 10);
+					m->name = temp_string;
+				}
+			} else if (m_idx == GR_1024) {
+				if (optional_string("+Name:")) {
+					stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
+
+					/**
+					 * the reason that this is an error is that even if we were to change the names to match
+					 * it is very likely the user would get the wrong mainhall loaded since their campaign files 
+					 * may still refer to the entry with the incorrect name
+					 */
+					if (strcmp(temp_string, Main_hall_defines.at(GR_640).at(count).name.c_str()) != 0) {
+						Error(LOCATION, "The mainhall '%s' has different names for different resolutions. Both resolutions must have the same name. Either remove the hi-res entry's name entirely or set it to match the lo-res entry's name.", Main_hall_defines.at(GR_640).at(count).name.c_str());
+					}
+				}
+
+				m->name = Main_hall_defines.at(GR_640).at(count).name;
+			} else {
+				// bad things happened somewhere
+				Error(LOCATION, "Invalid value of m_idx, was expecting either GR_640 or GR_1024, got %d! Notify a coder.", m_idx);
+			}
 
 			// bitmap and mask
 			required_string("+Bitmap:");
@@ -1959,29 +1954,24 @@ void main_hall_read_table()
 			required_string("+Tooltip Y:");
 			stuff_int(&m->region_yval);
 		}
-
-		if (count < MAIN_HALLS_MAX) {
-			count++;
-		}
+		count++;
 	}
-
-	Num_main_halls = count;
 
 	// are we funny?
 	if (Vasudan_funny) {
 		int hall = main_hall_id();
 
-		Main_hall_defines[GR_640][hall].door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_640][hall].door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_1024][hall].door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_1024][hall].door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+		Main_hall_defines.at(GR_640).at(hall).door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
+		Main_hall_defines.at(GR_640).at(hall).door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+		Main_hall_defines.at(GR_1024).at(hall).door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
+		Main_hall_defines.at(GR_1024).at(hall).door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
 
 		// set head anim. hehe
-		Main_hall_defines[GR_1024][hall].door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
+		Main_hall_defines.at(GR_1024).at(hall).door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
 
 		// set the background
-		Main_hall_defines[GR_640][hall].bitmap = "vhallhead";
-		Main_hall_defines[GR_1024][hall].bitmap = "2_vhallhead";
+		Main_hall_defines.at(GR_640).at(hall).bitmap = "vhallhead";
+		Main_hall_defines.at(GR_1024).at(hall).bitmap = "2_vhallhead";
 	}
 
 	// free up memory from parsing the mainhall tbl

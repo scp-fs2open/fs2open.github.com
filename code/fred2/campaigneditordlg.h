@@ -100,7 +100,6 @@ protected:
 	afx_msg void OnEndEdit();
 	afx_msg void OnChangeBriefingCutscene();
 	afx_msg void OnSelchangeType();
-	afx_msg void MainHallChange();
 	afx_msg void OnToggleLoop();
 	afx_msg void OnBrowseLoopAni();
 	afx_msg void OnBrowseLoopSound();

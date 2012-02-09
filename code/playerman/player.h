@@ -93,7 +93,6 @@ typedef struct player {
 	char				current_campaign[MAX_FILENAME_LEN]; // Name of the currently active campaign, or zero-length string if none
 	int				readyroom_listing_mode;
 
-	ubyte			main_hall;							// Goober5000 - now allows 256 halls; I didn't make this int because it would mess up the file compatibility
 	int				flags;
 	int				save_flags;
 

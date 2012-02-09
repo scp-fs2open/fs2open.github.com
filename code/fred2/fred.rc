@@ -18,13 +18,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -1535,9 +1533,9 @@ BEGIN
     CONTROL         "Reset tech db at start of campaign",IDC_CUSTOM_TECH_DB,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,106,151,122,9
     EDITTEXT        IDC_BRIEFING_CUTSCENE,73,175,66,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_MAIN_HALL,200,175,21,12,ES_NUMBER,WS_EX_RIGHT
-    EDITTEXT        IDC_DEBRIEFING_PERSONA,200,190,21,12,ES_NUMBER,WS_EX_RIGHT
-    CONTROL         "Tree1",IDC_SEXP_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,7,224,157,111,WS_EX_CLIENTEDGE
+    EDITTEXT        IDC_MAIN_HALL,139,192,82,12
+    EDITTEXT        IDC_DEBRIEFING_PERSONA,97,193,21,12,ES_NUMBER,WS_EX_RIGHT
+    CONTROL         "Tree1",IDC_SEXP_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,224,157,111,WS_EX_CLIENTEDGE
     PUSHBUTTON      "Move Up",IDC_MOVE_UP,171,225,53,14,BS_CENTER,WS_EX_STATICEDGE
     PUSHBUTTON      "Move Down",IDC_MOVE_DOWN,171,242,53,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Toggle Loop",IDC_TOGGLE_LOOP,171,259,53,14,0,WS_EX_STATICEDGE
@@ -1554,7 +1552,7 @@ BEGIN
     LTEXT           "Campaign name",IDC_STATIC,7,99,52,8
     LTEXT           "Type",IDC_STATIC,138,99,17,8
     LTEXT           "Branches",IDC_STATIC,7,214,31,8
-    LTEXT           "Briefing cutscene",IDC_STATIC,13,176,56,8
+    LTEXT           "Briefing cutscene",IDC_STATIC,14,175,56,8
     LTEXT           "Number of Players:",IDC_PLAYERS_LABEL,7,151,60,8
     LTEXT           "Static",IDC_NUM_PLAYERS,70,151,19,8,0,WS_EX_TRANSPARENT
     LTEXT           "Campaign description",IDC_STATIC,7,113,68,8
@@ -1562,9 +1560,9 @@ BEGIN
     LTEXT           "Mission loop description",IDC_STATIC,7,367,76,8
     LTEXT           "Loop brief anim",IDC_STATIC,13,408,49,8
     LTEXT           "Loop brief voice",IDC_STATIC,13,423,52,8
-    LTEXT           "Main hall index",IDC_MAINHALL_LABEL,149,177,48,8
-    GROUPBOX        "Mission options",IDC_MISSION_OPTIONS,7,165,221,43
-    LTEXT           "Debriefing persona index",IDC_STATIC,118,193,79,8
+    LTEXT           "Main hall name",IDC_MAINHALL_LABEL,157,182,48,8
+    GROUPBOX        "Mission options",IDC_MISSION_OPTIONS,7,161,221,47
+    LTEXT           "Debriefing persona index",IDC_STATIC,14,193,79,8
 END
 
 IDD_TEXT_VIEW DIALOG  0, 0, 324, 285
@@ -1671,7 +1669,7 @@ BEGIN
     LTEXT           "Stage 1 of 9",IDC_STAGE_TITLE,7,10,53,8
     LTEXT           "Usage Formula",IDC_STATIC,7,43,48,8
     LTEXT           "Recommendation Text",IDC_STATIC,135,96,72,8
-    GROUPBOX       "Debriefing Music",IDC_STATIC,7,175,260,45
+    GROUPBOX        "Debriefing Music",IDC_STATIC,7,175,260,45
     LTEXT           "Success Music",IDC_STATIC,15,187,53,8
     COMBOBOX        IDC_SUCCESSFUL_MISSION_TRACK,12,195,80,180,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Average Music",IDC_STATIC,100,187,53,8
@@ -2956,18 +2954,16 @@ BEGIN
     ID_FORMAT_FS1_RETAIL    "Save missions compatible with FS1 retail"
 END
 
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.K.) resources
+// English (United Kingdom) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3013,7 +3009,7 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (U.K.) resources
+#endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

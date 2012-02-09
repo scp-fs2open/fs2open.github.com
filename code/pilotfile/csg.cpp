@@ -39,9 +39,6 @@ void pilotfile::csg_read_flags()
 	// tips?
 	p->tips = (int)cfread_ubyte(cfp);
 
-	// mainhall
-	p->main_hall = cfread_ubyte(cfp);
-
 	// available cutscenes
 	Cutscenes_viewable = cfread_int(cfp);
 }
@@ -52,9 +49,6 @@ void pilotfile::csg_write_flags()
 
 	// tips
 	cfwrite_ubyte((ubyte)p->tips, cfp);
-
-	// mainhall
-	cfwrite_ubyte((ubyte)p->main_hall, cfp);
 
 	// cutscenes
 	cfwrite_int(Cutscenes_viewable, cfp);

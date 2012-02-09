@@ -96,7 +96,7 @@ typedef struct cmission {
 	int				level;					// what level of the tree it's on (Fred)
 	int				pos;					// what x position on level it's on (Fred)
 	int				flags;
-	ubyte			main_hall;				// which main hall the player is in - Goober5000
+	SCP_string		main_hall;				// which main hall the player is in - converted to SCP_string by CommanderDJ
 	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000
 	scoring_struct	stats;
 } cmission;

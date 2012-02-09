@@ -124,7 +124,7 @@ csg_data::csg_data()
 	sig = 0;
 	cutscenes = 0;
 
-	main_hall = 0;
+	main_hall = "";
 	prev_mission = -1;
 	next_mission = -1;
 	loop_reentry = 0;
@@ -613,7 +613,7 @@ void pilotfile_convert::csg_import(bool inferno)
 {
 	Assert( cfp != NULL );
 
-	char name[35];
+	char name[35], temp[NAME_LENGTH];
 
 	unsigned int csg_id = cfread_uint(cfp);
 
@@ -642,7 +642,8 @@ void pilotfile_convert::csg_import(bool inferno)
 
 	csg_import_missions(inferno);
 
-	csg->main_hall = cfread_ubyte(cfp);
+	cfread_string(temp, NAME_LENGTH, cfp);
+	csg->main_hall = temp;
 
 	csg_import_red_alert();
 
@@ -679,7 +680,7 @@ void pilotfile_convert::csg_export_flags()
 	cfwrite_ubyte((ubyte)plr->tips, cfp);
 
 	// mainhall
-	cfwrite_ubyte((ubyte)csg->main_hall, cfp);
+	cfwrite_string(const_cast<char*>(csg->main_hall.c_str()), cfp);
 
 	// cutscenes
 	cfwrite_int(csg->cutscenes, cfp);

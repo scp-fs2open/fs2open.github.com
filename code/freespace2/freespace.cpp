@@ -2030,7 +2030,7 @@ void game_init()
 
 	if(!Cmdline_reparse_mainhall)
 	{
-		main_hall_read_table();
+		parse_main_hall_table();
 	}
 
 	if (Cmdline_env) {
@@ -5951,7 +5951,16 @@ void game_enter_state( int old_state, int new_state )
 			Game_mode &= ~(GM_MULTIPLAYER);
 	
 			// determine which ship this guy is currently based on
-			main_hall_init(Player->main_hall);
+			mission_load_up_campaign(Player);
+
+			// if we're coming from the end of a campaign, we want to load the first mainhall of the campaign
+			// otherwise load the mainhall for the mission the player's up to
+			if (Campaign.next_mission == -1) {
+				main_hall_init(Campaign.missions[0].main_hall);
+			} else {
+				main_hall_init(Campaign.missions[Campaign.next_mission].main_hall);
+			}
+
 			// set the game_mode based on the type of player
 			Assert( Player != NULL );
 

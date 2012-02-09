@@ -212,7 +212,7 @@ struct csg_data {
 	int sig;
 	int cutscenes;
 
-	int main_hall;
+	SCP_string main_hall;
 	int prev_mission;
 	int next_mission;
 	int loop_reentry;
