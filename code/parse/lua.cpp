@@ -6093,6 +6093,17 @@ ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name", "string", "Subsystem 
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
 }
 
+ADE_FUNC(getModelName, l_Subsystem, NULL, "Returns the original name of the subsystem in the model file", "string", "name or empty string on error")
+{
+	ship_subsys_h *sso;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "s", "");
+
+	if(!sso->IsValid())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", sso->ss->system_info->subobj_name);
+}
 
 ADE_VIRTVAR(PrimaryBanks, l_Subsystem, "weaponbanktype", "Array of primary weapon banks", "weaponbanktype", "Primary banks, or invalid weaponbanktype handle if subsystem handle is invalid")
 {
