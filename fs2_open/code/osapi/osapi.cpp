@@ -673,12 +673,16 @@ void win32_create_window(int width, int height)
 	int x_add, y_add;
 	int start_x, start_y;
 
-	if (Cmdline_window) {
+	if (Cmdline_window || Cmdline_fullscreen_window) {
 		RECT my_rect;
 
 		// make sure we adjust for the actual window border	
-		x_add = GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
-		y_add = 2 * GetSystemMetrics(SM_CYFIXEDFRAME) + GetSystemMetrics(SM_CYCAPTION);
+		if (Cmdline_window) {
+			x_add = GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
+			y_add = 2 * GetSystemMetrics(SM_CYFIXEDFRAME) + GetSystemMetrics(SM_CYCAPTION);
+		} else {
+			x_add = y_add = 0;
+		}
 
 		GetWindowRect( GetDesktopWindow(), &my_rect );
 
