@@ -4065,7 +4065,9 @@ void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 			// being careful not to muck with the standalone object
 			if(!((player_num == 0) && (Game_mode & GM_STANDALONE_SERVER))){
 				objp = multi_get_network_object(net_sig);
-				Assert(objp != NULL);
+				if (objp == NULL) {
+					Error(LOCATION, "Could not retrieve net object for signature %d!\n", net_sig);
+				}
 				multi_assign_player_ship( player_num, objp, ship_class );
 				Net_players[player_num].p_info.ship_index = ship_index;
 				objp->flags &= ~(OF_COULD_BE_PLAYER);
