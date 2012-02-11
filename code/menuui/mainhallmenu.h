@@ -115,8 +115,8 @@ void main_hall_init(SCP_string main_hall_name);
 // parse mainhall table files
 void main_hall_table_init();
 
-// read in mainhall.tbl
-void parse_main_hall_table();
+// read in mainhall tables
+void parse_main_hall_table(char* filename);
 
 // do a frame for the main hall
 void main_hall_do(float frametime);

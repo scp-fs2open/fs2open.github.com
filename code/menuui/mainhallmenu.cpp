@@ -408,7 +408,7 @@ void main_hall_init(SCP_string main_hall_name)
 
 	// reparse the table here if the relevant cmdline flag is set
 	if (Cmdline_reparse_mainhall) {
-		parse_main_hall_table();
+		main_hall_table_init();
 	}
 
 	// sanity checks
@@ -1564,6 +1564,12 @@ int main_hall_id()
 // call before parsing mainhall.tbl
 void main_hall_defines_init()
 {
+	// if we're parsing a modular table (ie Main_hall_defines already has GR_NUM_RESOLUTIONS vectors in it),
+	// we can skip this.
+	if (Main_hall_defines.size() >= GR_NUM_RESOLUTIONS) {
+		return;
+	}
+
 	SCP_vector<main_hall_defines> temp;
 	// for each resolution we just want to put in a blank vector
 	for (int i=0; i<GR_NUM_RESOLUTIONS; i++) {
@@ -1713,35 +1719,39 @@ void door_anim_init(main_hall_defines &m)
 
 }
 
+void main_hall_table_init()
+{
+	// if mainhall.tbl exists, parse it
+	if (cf_exists_full("mainhall.tbl", CF_TYPE_TABLES)) {
+		parse_main_hall_table("mainhall.tbl");
+	}
+
+	// parse any modular tables
+	parse_modular_table("*-hall.tbm", parse_main_hall_table);
+}
+
 // read in main hall table
-void parse_main_hall_table()
+void parse_main_hall_table(char* filename)
 {
 	SCP_vector<main_hall_defines> temp_vector;
 	main_hall_defines *m, temp;
-	int count, idx, s_idx, m_idx, rval;
+	int idx, s_idx, m_idx, rval;
+	unsigned int count;
 	char temp_string[MAX_FILENAME_LEN];
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "mainhall.tbl", rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		return;
 	}
 
-	// read the file in
-	if (cf_exists_full("mainhall.tbl", CF_TYPE_TABLES)) {
-		read_file_text("mainhall.tbl", CF_TYPE_TABLES);
-		mprintf(("TABLES => Starting parse of 'mainhall.tbl.\n"));
-	} else {
-		// mainhall.tbl doesn't exist
-		mprintf(("TABLES => Unable to find 'mainhall.tbl'!\n"));
-		return;
-	}
+	read_file_text(filename, CF_TYPE_TABLES);
 
 	reset_parse();
 
 	main_hall_defines_init();
 
 	// go for it
-	count = 0;
+	count = Main_hall_defines.at(0).size();
 	while (!optional_string("#end")) {
 		// read in 2 resolutions
 		for (m_idx=0; m_idx<GR_NUM_RESOLUTIONS; m_idx++) {
@@ -1954,6 +1964,7 @@ void parse_main_hall_table()
 			required_string("+Tooltip Y:");
 			stuff_int(&m->region_yval);
 		}
+
 		count++;
 	}
 

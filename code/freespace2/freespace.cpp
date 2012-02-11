@@ -2028,9 +2028,8 @@ void game_init()
 		old_alpha_colors_init();
 	}
 
-	if(!Cmdline_reparse_mainhall)
-	{
-		parse_main_hall_table();
+	if (!Cmdline_reparse_mainhall) {
+		main_hall_table_init();
 	}
 
 	if (Cmdline_env) {
