@@ -7559,7 +7559,6 @@ void game_do_training_checks()
 		wplp = Training_context_path;
 		if (wplp->get_waypoints().size() > (uint) Training_context_goal_waypoint) {
 			i = Training_context_goal_waypoint;
-			Warning(LOCATION, "The following is very inefficient with the new waypoint code!  Contact Goober5000 if you need to use it.");
 			do {
 				waypoint *wpt = find_waypoint_at_index(wplp, i);
 				Assert(wpt != NULL);
