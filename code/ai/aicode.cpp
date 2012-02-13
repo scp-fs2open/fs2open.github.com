@@ -10151,7 +10151,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object *goal_objp, int &docker_index, int &dockee_index)
 {
 	// get the indexes
-	if ((aip->submode == AIS_DOCK_2) || (aip->submode == AIS_DOCK_3) || (aip->submode == AIS_DOCK_4))
+	if ((aip->submode >= AIS_DOCK_0) && (aip->submode <= AIS_DOCK_3))
 	{
 		// get them from the active goal
 		Assert(aigp != NULL);
@@ -10159,7 +10159,7 @@ void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object 
 		docker_index = aigp->docker.index;
 		dockee_index = aigp->dockee.index;
 	}
-	else if ((aip->submode == AIS_UNDOCK_0) || (aip->submode == AIS_UNDOCK_1) || (aip->submode == AIS_UNDOCK_2))
+	else if ((aip->submode >= AIS_DOCK_4) && (aip->submode <= AIS_UNDOCK_2))
 	{
 		// get them from the guy I'm docked to
 		Assert(goal_objp != NULL);
@@ -10169,8 +10169,8 @@ void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object 
 	else
 	{
 		// indexes aren't needed or (in case of AIS_UNDOCK_3) aren't actually used
-		docker_index = 0;
-		dockee_index = 0;
+		docker_index = -1;
+		dockee_index = -1;
 	}
 }
 
@@ -10207,9 +10207,9 @@ void ai_cleanup_dock_mode_subjective(object *objp)
 			goal_shipp = NULL;
 		}
 
-		// get the indexes
-		int docker_index, dockee_index;
-		ai_get_dock_goal_indexes(objp, aip, aigp, goal_objp, docker_index, dockee_index);
+		// get the indexes from the saved parameters
+		int docker_index = aip->submode_parm0;
+		int dockee_index = aip->submode_parm1;
 
 		// undo all the appropriate triggers
 		switch (aip->submode)
@@ -10386,7 +10386,7 @@ void ai_dock()
 	// Make sure we still have a dock goal.
 	// Make sure the object we're supposed to dock with or undock from still exists.
 	if ( ((aip->active_goal < 0) && (aip->submode != AIS_DOCK_4A))
-		|| (aip->goal_objnum == -1)
+		|| (aip->goal_objnum < 0)
 		|| (Objects[aip->goal_objnum].signature != aip->goal_signature) )
 	{
 		ai_cleanup_dock_mode_subjective(Pl_objp);
@@ -10419,6 +10419,7 @@ void ai_dock()
 
 	ai_get_dock_goal_indexes(Pl_objp, aip, aigp, goal_objp, docker_index, dockee_index);
 
+
 	// For docking submodes (ie, not undocking), follow path.  Once at second last
 	// point on path (point just before point on dock platform), orient into position.
 	//
@@ -10430,6 +10431,10 @@ void ai_dock()
 	//	This mode means to find the path to the docking point.
 	case AIS_DOCK_0:
 	{
+		// save the dock indexes in case we need to clean up the dock mode later
+		aip->submode_parm0 = docker_index;
+		aip->submode_parm1 = dockee_index;
+
 		ai_path();
 		if (aip->path_length < 4)
 		{
@@ -10655,6 +10660,10 @@ void ai_dock()
 		// If this is the first frame for this submode, play the animation and set the timestamp
 		if (aip->mode_time < 0)
 		{
+			// save the dock indexes in case we need to clean up the dock mode later
+			aip->submode_parm0 = docker_index;
+			aip->submode_parm1 = dockee_index;
+
 			// start the detach animation (opposite of the dock animation)
 			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
 			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
