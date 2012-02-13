@@ -97,7 +97,7 @@ struct ship_info;
 #define AIGF_GOAL_OVERRIDE			(1<<4)	// paired with AIG_TYPE_DYNAMIC to mean this goal overrides any other goal
 #define AIGF_PURGE					(1<<5)	// purge this goal next time we process
 #define AIGF_GOALS_PURGED			(1<<6)	// this goal has already caused other goals to get purged
-#define AIGF_DOCK_SOUND_PLAYED		(1<<7)	// Goober5000 - replacement for AL's hack ;)
+#define AIGF_DEPART_SOUND_PLAYED	(1<<7)	// Goober5000 - replacement for AL's hack ;)
 
 #define AIGF_DOCK_INDEXES_VALID		(AIGF_DOCKER_INDEX_VALID|AIGF_DOCKEE_INDEX_VALID)
 

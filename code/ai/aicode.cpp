@@ -10648,8 +10648,28 @@ void ai_dock()
 
 	case AIS_UNDOCK_0:
 	{
-		int path_num;
 		//	First stage of undocking.
+		int path_num;
+
+		// If this is the first frame for this submode, play the animation and set the timestamp
+		if (aip->mode_time < 0)
+		{
+			// start the detach animation (opposite of the dock animation)
+			model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
+			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
+
+			// calculate time until animations elapse
+			int time1 = model_anim_get_time_type(shipp, TRIGGER_TYPE_DOCKED, docker_index);
+			int time2 = model_anim_get_time_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index);
+			aip->mode_time = MAX(time1, time2);
+		}
+
+		// if not enough time has passed, just wait
+		if (!timestamp_elapsed(aip->mode_time))
+			break;
+
+		// clear timestamp
+		aip->mode_time = -1;
 
 		// set up the path points for the undocking procedure
 		path_num = ai_return_path_num_from_dockbay(goal_objp, dockee_index);
@@ -10661,10 +10681,6 @@ void ai_dock()
 
 		aip->submode = AIS_UNDOCK_1;
 		aip->submode_start_time = Missiontime;
-		// start the detach animation (opposite of the dock animation)
-		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, -1);
-		model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
-
 		break;
 	}
 
@@ -10674,14 +10690,15 @@ void ai_dock()
 		float	dist;
 		rotating_dockpoint_info rdinfo;
 
+		//	Waiting for one second to elapse to let detach sound effect play out.
 		if (Missiontime - aip->submode_start_time < REARM_BREAKOFF_DELAY)
-		{
-			break;		//	Waiting for one second to elapse to let detach sound effect play out.
-		}
-		else if ( !(aigp->flags & AIGF_DOCK_SOUND_PLAYED))
+			break;		
+
+		// play the depart sound, but only once, since this mode is called multiple times per frame
+		if ( !(aigp->flags & AIGF_DEPART_SOUND_PLAYED))
 		{
 			snd_play_3d( &Snds[SND_DOCK_DEPART], &Pl_objp->pos, &View_position );
-			aigp->flags |= AIGF_DOCK_SOUND_PLAYED;
+			aigp->flags |= AIGF_DEPART_SOUND_PLAYED;
 		}
 
 		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_1, &rdinfo);
