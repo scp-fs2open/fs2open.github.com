@@ -10386,7 +10386,8 @@ void ai_dock()
 	// Make sure we still have a dock goal.
 	// Make sure the object we're supposed to dock with or undock from still exists.
 	if ( ((aip->active_goal < 0) && (aip->submode != AIS_DOCK_4A))
-		|| (aip->goal_objnum == -1)	|| (Objects[aip->goal_objnum].signature != aip->goal_signature) )
+		|| (aip->goal_objnum == -1)
+		|| (Objects[aip->goal_objnum].signature != aip->goal_signature) )
 	{
 		ai_cleanup_dock_mode_subjective(Pl_objp);
 	}
@@ -13930,6 +13931,7 @@ void init_ai_object(int objnum)
 	aip->best_dot_from_time = 0;
 	aip->submode_start_time = 0;
 	aip->submode_parm0 = 0;
+	aip->submode_parm1 = 0;
 	aip->active_goal = -1;
 	aip->goal_check_time = timestamp(0);
 	aip->last_predicted_enemy_pos = near_vec;
