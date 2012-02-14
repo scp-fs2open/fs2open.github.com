@@ -293,20 +293,23 @@ typedef struct weapon_info {
 	char	alt_name[NAME_LENGTH];			// alt name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	char	*desc;								// weapon's description (used by tooltips)
-	int	subtype;								// one of the WP_* macros above
-	int	render_type;						//	rendering method, laser, pof, avi
+	int		subtype;								// one of the WP_* macros above
+	int		render_type;						//	rendering method, laser, pof, avi
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
-	int	model_num;							// modelnum of weapon -- -1 if no model
-	char external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
-	int external_model_num;					//the model rendered on the weapon points of a ship
-	int hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
-	int num_detail_levels;					// number of LODs defined in table (optional)
+	int		model_num;							// modelnum of weapon -- -1 if no model
+	char	external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
+	int		external_model_num;					//the model rendered on the weapon points of a ship
+	int		hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
+	int		num_detail_levels;					// number of LODs defined in table (optional)
 	int		detail_distance[MAX_MODEL_DETAIL_LEVELS]; // LOD distances define in table (optional)
 	char	*tech_desc;								// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
-
 	char	tech_model[MAX_FILENAME_LEN];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
+
+	vec3d	closeup_pos;						// position for camera to set an offset for viewing the weapon model
+	float	closeup_zoom;						// zoom when using weapon model in closeup view in loadout selection
+
 	char hud_filename[MAX_FILENAME_LEN];			//Name of image to display on HUD in place of text
 	int hud_image_index;					//teh index of the image
 
