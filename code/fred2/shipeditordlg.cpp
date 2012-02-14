@@ -882,6 +882,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_FLAGS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(TRUE);
 		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(TRUE);	
+		GetDlgItem(IDC_SPECIAL_EXP)->EnableWindow(TRUE);
+		GetDlgItem(IDC_SPECIAL_HITPOINTS)->EnableWindow(TRUE);
 	} else {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(FALSE);
@@ -891,6 +893,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_FLAGS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(FALSE);
 		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(FALSE);
+		GetDlgItem(IDC_SPECIAL_EXP)->EnableWindow(FALSE);
+		GetDlgItem(IDC_SPECIAL_HITPOINTS)->EnableWindow(FALSE);
 	}
 
 	// disable textures for multiple ships
