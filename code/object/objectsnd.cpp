@@ -453,7 +453,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 //
 void obj_snd_do_frame()
 {
-	float				closest_dist, distance, speed_vol_multiplier, rot_vol_mult, percent_max;
+	float				closest_dist, distance, speed_vol_multiplier, rot_vol_mult, percent_max, alive_vol_mult;
 	obj_snd			*osp;
 	object			*objp, *closest_objp;
 	game_snd			*gs;
@@ -521,6 +521,7 @@ void obj_snd_do_frame()
 		// moving (unless flag SIF_BIG_SHIP is set)
 		speed_vol_multiplier = 1.0f;
 		rot_vol_mult = 1.0f;
+		alive_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
 			if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
 				if ( objp->phys_info.max_vel.xyz.z <= 0 ) {
@@ -551,6 +552,32 @@ void obj_snd_do_frame()
 					else
 						rot_vol_mult = 0;
 				}
+				if (osp->flags & OS_SUBSYS_ROTATION )
+				{
+					if (osp->ss->flags & SSF_ROTATES) {
+						rot_vol_mult = 1.0;
+					}
+				}
+				if (osp->flags & OS_SUBSYS_ALIVE)
+				{
+					if (osp->ss->current_hits > 0.0f) {
+						alive_vol_mult = 1.0f;
+					} else {
+						alive_vol_mult = 0.0f;
+					}
+				}
+				if (osp->flags & OS_SUBSYS_DEAD)
+				{
+					if (osp->ss->current_hits <= 0.0f) {
+						alive_vol_mult = 1.0f;
+					}
+				}
+				if (osp->flags & OS_SUBSYS_DAMAGED) 
+				{
+					alive_vol_mult = osp->ss->current_hits / osp->ss->max_hits;
+					CLAMP(alive_vol_mult, 0.0f, 1.0f);
+				}
+
 			}
 		}
 	
@@ -624,7 +651,7 @@ void obj_snd_do_frame()
 		// for DirectSound3D sounds, re-establish the maximum speed based on the
 		//	speed_vol_multiplier
 		if ( sp == NULL || ( (sp != NULL) && (sp->flags & SF_ENGINES_ON) ) ) {
-			snd_set_volume( osp->instance, gs->default_volume*speed_vol_multiplier*rot_vol_mult );
+			snd_set_volume( osp->instance, gs->default_volume*speed_vol_multiplier*rot_vol_mult*alive_vol_mult );
 		}
 		else {
 			// engine sound is disabled
