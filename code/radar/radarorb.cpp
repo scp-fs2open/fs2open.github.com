@@ -52,7 +52,7 @@ static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } },
 static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -3.0f } } };
 
 HudGaugeRadarOrb::HudGaugeRadarOrb():
-HudGaugeRadar(HUD_OBJECT_RADAR_ORB, true, 255, 255, 255)
+HudGaugeRadar(HUD_OBJECT_RADAR_ORB, 255, 255, 255)
 {
 	int i;
 	float s,c;

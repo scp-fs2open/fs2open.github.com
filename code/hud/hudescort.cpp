@@ -140,7 +140,7 @@ char *Escort_gauge_filenames[GR_NUM_RESOLUTIONS][MAX_ESCORT_SHIPS] =
 static int Last_target_index;	// index into Escort_gauges for last targeted via 'Next Escort Target' key
 
 HudGaugeEscort::HudGaugeEscort():
-HudGauge(HUD_OBJECT_ESCORT, HUD_ESCORT_VIEW, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_ESCORT, HUD_ESCORT_VIEW, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 

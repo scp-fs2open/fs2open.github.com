@@ -36,7 +36,7 @@
 extern int radar_target_id_flags;
 
 HudGaugeRadarStd::HudGaugeRadarStd():
-HudGaugeRadar(HUD_OBJECT_RADAR_STD, true, 255, 255, 255)
+HudGaugeRadar(HUD_OBJECT_RADAR_STD, 255, 255, 255)
 {
 	gr_init_alphacolor( &radar_crosshairs, 255, 255, 255, 196);
 }

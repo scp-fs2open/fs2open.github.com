@@ -554,12 +554,12 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 }
 
 HudGaugeShield::HudGaugeShield():
-HudGauge(HUD_OBJECT_PLAYER_SHIELD, HUD_PLAYER_SHIELD_ICON, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_PLAYER_SHIELD, HUD_PLAYER_SHIELD_ICON, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
 HudGaugeShield::HudGaugeShield(int _gauge_object, int _gauge_config):
-HudGauge(_gauge_object, _gauge_config, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(_gauge_object, _gauge_config, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -920,7 +920,7 @@ void HudGaugeShieldTarget::render(float frametime)
 }
 
 HudGaugeShieldMini::HudGaugeShieldMini(): // HUD_TARGET_MINI_ICON
-HudGauge(HUD_OBJECT_MINI_SHIELD, HUD_TARGET_MINI_ICON, true, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_MINI_SHIELD, HUD_TARGET_MINI_ICON, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 

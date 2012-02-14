@@ -121,7 +121,7 @@ protected:
 	char Large_blip_string[2];
 public:
 	HudGaugeRadar();
-	HudGaugeRadar(int _gauge_object, bool n_allow_override, int r, int g, int b);
+	HudGaugeRadar(int _gauge_object, int r, int g, int b);
 	void initRadius(int w, int h);
 	void initBlipRadius(int normal, int target);
 	void initDistanceShortOffsets(int x, int y);
