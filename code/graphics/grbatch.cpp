@@ -357,7 +357,7 @@ void geometry_batcher::draw_quad(vertex* verts)
 }
 
 
-void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float intensity)
+void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float intensity, float offset)
 {
 	vec3d p[4];
 	vertex *P = &vert[n_to_render * 3];
@@ -413,7 +413,11 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 
 	for(int i = 0; i < 6; i++){
 		P[i].r = P[i].g = P[i].b = P[i].a = _color;
-		R[i] = width;
+		if(offset > 0.0f) {
+			R[i] = offset;
+		} else {
+			R[i] = width;
+		}
 	}
 
 	n_to_render += 2;
@@ -745,7 +749,7 @@ int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, floa
 	return 0;
 }
 
-int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity)
+int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity, float offset)
 {
 	if (texture < 0) {
 		Int3();
@@ -764,7 +768,7 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 
 	item->add_allocate(1);
 
-	item->draw_beam(start,end,width,intensity);
+	item->draw_beam(start,end,width,intensity,offset);
 
 	return 0;
 }

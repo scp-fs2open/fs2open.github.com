@@ -2371,9 +2371,12 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 						else {
 							dist_bitmap = Interp_secondary_thrust_glow_bitmap;
 						}
+						float mag = vm_vec_mag(&gpt->pnt); 
+						pow(mag,12);
+						mag -= (float)((int)mag);//Valathil - Get a fairly random but constant number to offset the distortion texture
 						distortion_add_beam(dist_bitmap,
 							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_DISTORTION_THRUSTER | TMAP_FLAG_SOFT_QUAD,
-							&pnt, &norm2, wVal*Interp_distortion_thrust_rad_factor*0.5f, 1.0f
+							&pnt, &norm2, wVal*Interp_distortion_thrust_rad_factor*0.5f, 1.0f, mag
 						);
 					}
 				}
