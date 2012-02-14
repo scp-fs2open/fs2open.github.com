@@ -205,7 +205,7 @@ extern int delete_pilot_file(char *pilot_name, int single);
 /**
  * Sets Player values to 0/NULL/whatever appropriate default value
  */
-void zero_player () {
+void zero_player() {
 	player *tmp_Player = new player();
 	memcpy(Player,tmp_Player,sizeof(player));
 	free (tmp_Player);

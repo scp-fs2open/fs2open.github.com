@@ -82,6 +82,7 @@ typedef struct campaign_stats {
 } campaign_stats;
 
 typedef struct player {
+
 	char				callsign[CALLSIGN_LEN + 1];
 	char				short_callsign[CALLSIGN_LEN + 1];	// callsign truncated to SHORT_CALLSIGN_PIXEL_W pixels
 	int				short_callsign_width;					// useful for mutliplayer chat boxes.
@@ -171,7 +172,7 @@ typedef struct player {
 	int				killer_objtype;							// type of object that killed player
 	int				killer_species;							// Species which killed player
 	int				killer_weapon_index;						// weapon used to kill player (if applicable)
-	char				killer_parent_name[NAME_LENGTH];		// name of parent object that killed the player
+	char			killer_parent_name[NAME_LENGTH];		// name of parent object that killed the player
 
 	int				check_for_all_alone_msg;				// timestamp to check for playing of 'all alone' msg
 
@@ -202,6 +203,131 @@ typedef struct player {
 	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).
 	button_info		lua_bi;				// copy of button info for scripting purposes (not to disturb real controls).
 	button_info		lua_bi_full;		// gets all the button controls, not just the ones usually allowed
+
+	//CommanderDJ - constructor to initialise everything to safe defaults.
+	//mostly copied from player::reset() in Antipodes 8
+	player()
+	{
+		memset(callsign, 0, sizeof(callsign));
+		memset(short_callsign, 0, sizeof(short_callsign));
+
+		short_callsign_width = 0;
+		memset(image_filename, 0, sizeof(image_filename));
+		memset(squad_filename, 0, sizeof(squad_filename));
+		memset(squad_name, 0, sizeof(squad_name));
+
+		memset(current_campaign, 0, sizeof(current_campaign));
+
+		main_hall = 0;
+
+		readyroom_listing_mode = 0;
+		flags = 0;
+		save_flags = 0;
+
+		memset(keyed_targets, 0, sizeof(keyed_targets));
+		current_hotkey_set = -1;
+
+		lead_target_pos = vmd_zero_vector;
+		lead_target_cheat = 0;
+		lead_indicator_active = 0;
+
+		lock_indicator_x = 0;
+		lock_indicator_y = 0;
+		lock_indicator_start_x = 0;
+		lock_indicator_start_y = 0;
+		lock_indicator_visible = 0;
+		lock_time_to_target = 0.0f;
+		lock_dist_to_target = 0.0f;
+
+		last_ship_flown_si_index = -1;
+
+		objnum = -1;
+
+		memset(&bi, 0, sizeof(button_info));
+		memset(&ci, 0, sizeof(control_info));
+
+		init_scoring_element(&stats);
+
+		friendly_hits = 0;
+		friendly_damage = 0.0f;
+		friendly_last_hit_time = 0;
+		last_warning_message_time = 0;
+
+		control_mode = 0;
+		saved_viewer_mode = 0;
+
+		check_warn_timestamp = -1;
+
+		distance_warning_count = 0;
+		distance_warning_time = -1;
+
+		allow_warn_timestamp = -1;
+		warn_count = 0;
+
+		damage_this_burst = 0.0f;
+
+		repair_sound_loop = -1;
+		cargo_scan_loop = -1;
+
+		praise_count = 0;
+		allow_praise_timestamp = -1;
+		praise_delay_timestamp = -1;
+
+		ask_help_count = 0;
+		allow_ask_help_timestamp = -1;
+
+		scream_count = 0;
+		allow_scream_timestamp = -1;
+
+		low_ammo_complaint_count = 0;
+		allow_ammo_timestamp = -1;
+
+		subsys_in_view = -1;
+		request_repair_timestamp = -1;
+
+		cargo_inspect_time = -1;
+		target_is_dying = -1;
+		current_target_sx = 0;
+		current_target_sy = 0;
+		target_in_lock_cone = 0;
+		locking_subsys = NULL;
+		locking_subsys_parent = -1;
+		locking_on_center = 0;
+
+		killer_objtype = -1;
+		killer_species = 0;
+		killer_weapon_index = -1;
+		memset(killer_parent_name, 0, sizeof(killer_parent_name));
+
+		check_for_all_alone_msg = -1;
+
+		update_dumbfire_time = -1;
+		update_lock_time = -1;
+		threat_flags = 0;
+		auto_advance = 1;
+
+		multi_options_set_local_defaults(&m_local_options);
+		multi_options_set_netgame_defaults(&m_server_options);
+
+		insignia_texture = -1;
+
+		tips = 1;
+
+		shield_penalty_stamp = 0;
+
+		failures_this_session = 0;
+		show_skip_popup = 0;
+
+		num_variables = 0;
+		memset(player_variables, 0, sizeof(player_variables));
+
+		death_message = "";
+
+		memset(&lua_ci, 0, sizeof(control_info));
+		memset(&lua_bi, 0, sizeof(button_info));
+		memset(&lua_bi_full, 0, sizeof(button_info));
+	}
+
 } player;
 
 extern player Players[MAX_PLAYERS];
