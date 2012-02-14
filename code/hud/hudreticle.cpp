@@ -611,6 +611,8 @@ void HudGaugeThreatIndicator::initialize()
 
 	lock_warn_timer = timestamp(1);
 	lock_warn_frame = 0;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeThreatIndicator::pageIn()

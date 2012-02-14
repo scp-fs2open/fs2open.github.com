@@ -2507,6 +2507,8 @@ void HudGaugeSquadMessage::initialize()
 	flash_timer[0] = timestamp(1);
 	flash_timer[1] = timestamp(1);
 	flash_flag = false;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeSquadMessage::initHeaderOffsets(int x, int y)

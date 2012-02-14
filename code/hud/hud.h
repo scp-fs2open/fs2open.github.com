@@ -214,6 +214,8 @@ protected:
 
 	int font_num;
 
+	bool lock_color;
+	bool sexp_lock_color;
 	bool reticle_follow;
 	bool active;
 	bool off_by_default;
@@ -261,7 +263,9 @@ public:
 	bool isOffbyDefault();
 	bool isActive();
 	
-	void updateColor(int r, int g, int b, int a);
+	void updateColor(int r, int g, int b, int a = 255);
+	void lockConfigColor(bool lock);
+	void sexpLockConfigColor(bool lock);
 	void updateActive(bool show);
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);

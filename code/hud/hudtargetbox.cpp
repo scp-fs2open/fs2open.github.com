@@ -279,6 +279,8 @@ void HudGaugeTargetBox::initialize()
 	for(int i = 0; i < NUM_TBOX_FLASH_TIMERS; i++) {
 		initFlashTimer(i);
 	}
+
+	HudGauge::initialize();
 }
 
 void HudGaugeTargetBox::initFlashTimer(int index)
@@ -991,6 +993,8 @@ HudGauge(HUD_OBJECT_EXTRA_TARGET_DATA, HUD_TARGET_MONITOR_EXTRA_DATA, false, fal
 void HudGaugeExtraTargetData::initialize()
 {
 	initDockFlashTimer();
+
+	HudGauge::initialize();
 }
 
 void HudGaugeExtraTargetData::initBracketOffsets(int x, int y)

@@ -212,6 +212,8 @@ HudGauge(HUD_OBJECT_WINGMAN_STATUS, HUD_WINGMEN_STATUS, false, false, (VM_EXTERN
 void HudGaugeWingmanStatus::initialize()
 {
 	initFlash();
+
+	HudGauge::initialize();
 }
 void HudGaugeWingmanStatus::initHeaderOffsets(int x, int y)
 {

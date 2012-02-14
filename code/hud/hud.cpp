@@ -290,7 +290,7 @@ static int Damage_flash_bright;
 static int Damage_flash_timer;
 
 HudGauge::HudGauge():
-base_w(0), base_h(0), gauge_config(-1), font_num(FONT1), reticle_follow(false),
+base_w(0), base_h(0), gauge_config(-1), font_num(FONT1), reticle_follow(false), lock_color(false), sexp_lock_color(false),
 active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), custom_gauge(false),
 texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
@@ -315,7 +315,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(FONT1),
-reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
+reticle_follow(_slew), lock_color(false), sexp_lock_color(false), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
 disabled_views(_disabled_views), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
 canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
@@ -351,7 +351,7 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 // constructor for custom gauges
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(FONT1), 
-reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
+reticle_follow(_slew), lock_color(false), sexp_lock_color(false), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
 disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), custom_gauge(true), textoffset_x(txtoffset_x),
  textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
@@ -544,8 +544,21 @@ int HudGauge::getObjectType()
 	return gauge_object;
 }
 
+void HudGauge::lockConfigColor(bool lock)
+{
+	lock_color = lock;
+}
+
+void HudGauge::sexpLockConfigColor(bool lock)
+{
+	sexp_lock_color = lock;
+}
+
 void HudGauge::updateColor(int r, int g, int b, int a)
 {
+	if(sexp_lock_color || lock_color)
+		return;
+
 	gr_init_alphacolor(&gauge_color, r, g, b, a);
 }
 
@@ -1012,6 +1025,8 @@ void HudGauge::initialize()
 {
 	//Reset text to default
 	strcpy_s(custom_text, default_text);
+
+	sexp_lock_color = false;
 }
 
 bool HudGauge::canRender()
@@ -1920,6 +1935,8 @@ void HudGaugeDamage::initialize()
 	Damage_flash_timer = timestamp(1);
 	next_flash = timestamp(1);
 	flash_status = false;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeDamage::pageIn()
@@ -2268,6 +2285,8 @@ void HudGaugeTextWarnings::initialize()
 {
 	next_flash = timestamp(0);
 	flash_flags = false;
+
+	HudGauge::initialize();
 }
 
 int HudGaugeTextWarnings::maybeTextFlash()
@@ -3239,6 +3258,8 @@ void HudGaugeObjectiveNotify::initialize()
 	flash_timer[0] = timestamp(1);
 	flash_timer[1] = timestamp(1);
 	flash_flag = false;
+
+	HudGauge::initialize();
 }
 
 void HudGaugeObjectiveNotify::pageIn()
