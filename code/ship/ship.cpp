@@ -247,7 +247,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "no aggregate",			MSS_FLAG_NO_AGGREGATE,		0 },
 	{ "wait for animation",     MSS_FLAG_TURRET_ANIM_WAIT,  0 },
 	{ "play fire sound for player", MSS_FLAG2_PLAYER_TURRET_SOUND, 1},
-	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1}
+	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1},
+	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1}
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -5298,6 +5299,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags |= SSF_ROTATES;
 		if (model_system->flags2 & MSS_FLAG2_PLAYER_TURRET_SOUND)
 			ship_system->flags |= SSF_PLAY_SOUND_FOR_PLAYER;
+		if (model_system->flags2 & MSS_FLAG2_NO_DISAPPEAR)
+			ship_system->flags |= SSF_NO_DISAPPEAR;
 
 		ship_system->turn_rate = model_system->turn_rate;
 
