@@ -267,6 +267,7 @@ typedef struct cockpit_display_info {
 #define SSF_DAMAGE_AS_HULL		(1 << 11)		// Applies armor damage instead of subsystem damge. - FUBAR
 #define SSF_NO_AGGREGATE		(1 << 12)		// exclude this subsystem from the aggregate subsystem-info tracking - Goober5000
 #define SSF_PLAY_SOUND_FOR_PLAYER	( 1 << 13)	// If this subsystem is a turret on a player ship, play firing sounds - The E 
+#define SSF_NO_DISAPPEAR		( 1 << 14)		// prevents submodel from disappearing when subsys destroyed
 
 
 // Wanderer 

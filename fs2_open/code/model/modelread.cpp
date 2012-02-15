@@ -4258,6 +4258,12 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	if ( sub_model_num >= pm->n_models ) return;
 	bsp_info *sm = &pm->submodel[sub_model_num];
 
+	if (flags & SSF_NO_DISAPPEAR) {
+		// If the submodel is to not disappear when the subsystem is destroyed, we simply
+		// make the submodel act as its own replacement as well
+		sm->my_replacement = sub_model_num;
+	}
+
 	// Set the "blown out" flags	
 	sm->blown_off = sii->blown_off;
 
@@ -4268,7 +4274,9 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 			pm->submodel[sm->my_replacement].sii = sii;
 		}
 	} else {
-		if ( sm->my_replacement > -1 )	{
+		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
+		// the replacement model from being drawn by marking it as having been blown off
+		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
 			pm->submodel[sm->my_replacement].blown_off = 1;
 		}
 	}
@@ -4311,7 +4319,9 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 			pmi->submodel[sm->my_replacement].prev_angs = sii->prev_angs;
 		}
 	} else {
-		if ( sm->my_replacement > -1 )	{
+		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
+		// the replacement model from being drawn by marking it as having been blown off
+		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
 			pmi->submodel[sm->my_replacement].blown_off = true;
 		}
 	}
