@@ -8,7 +8,7 @@
 */ 
 
 
-
+#include <limits.h>
 #include <ctype.h>
 
 
@@ -1241,7 +1241,7 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 				dc_printf("Main hall index out of range\n");
 			} else {
 				Player_select_force_main_hall = main_hall_get_name(idx);
-				dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall);
+				dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall.c_str());
 			}
 		} else {
 			Player_select_force_main_hall = "1";

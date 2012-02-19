@@ -8344,7 +8344,7 @@ ADE_FUNC(getMainHallName, l_Player, NULL, "Gets player's current main hall name"
 		hallname = Campaign.missions[Campaign.next_mission].main_hall;
 	}
 
-	return ade_set_args(L, "i", hallname);
+	return ade_set_args(L, "i", hallname.c_str());
 }
 
 // use getMainHallName if at all possible.

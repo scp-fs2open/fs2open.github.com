@@ -7,7 +7,7 @@
  *
 */
 
-
+#include <stdlib.h>
 #include <limits.h>
 
 #include "menuui/mainhallmenu.h"
@@ -1745,7 +1745,7 @@ void parse_main_hall_table(char* filename)
 						Error(LOCATION, "A mainhall with the name '%s' already exists. All mainhalls must have unique names.", temp_string);
 					}
 				} else {
-					itoa(count, temp_string, 10);
+					snprintf(temp_string, MAX_FILENAME_LEN, "%d", count);
 					m->name = temp_string;
 				}
 			} else if (m_idx == GR_1024) {
