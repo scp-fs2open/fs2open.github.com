@@ -33,7 +33,6 @@
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglstate.h"
 #include "graphics/gropenglpostprocessing.h"
-#include "popup/popup.h"
 
 
 #if defined(_WIN32)
@@ -1896,36 +1895,6 @@ bool gr_opengl_init()
 	GL_state.init();
 
 	GLint max_texture_units = GL_supported_texture_units;
-
-	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
-			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) ) {
-		int ver = 0, major = 0, minor = 0;
-		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
-
-		sscanf(glsl_ver, "%d.%d", &major, &minor);
-		ver = (major * 100) + minor;
-
-		// SM 4.0 compatible or better
-		if (ver >= 400) {
-			Use_GLSL = 4;
-		}
-		// SM 3.0 compatible
-		else if ( ver >= 130 ) {
-			Use_GLSL = 3;
-		}
-		// SM 2.0 compatible
-		else if (ver >= 120) {
-			Use_GLSL = 2;
-		}
-		// we require GLSL 1.20 or higher
-		else if (ver < 110) {
-			Use_GLSL = 0;
-			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
-#ifdef NDEBUG
-			popup(0, 1, POPUP_OK, "GLSL support not available on this GPU. Disabling shader support and defaulting to fixed-function rendering.\n");
-#endif
-		}
-	}
 
 	if (Use_GLSL) {
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
