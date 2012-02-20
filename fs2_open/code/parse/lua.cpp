@@ -4004,7 +4004,7 @@ ADE_VIRTVAR(Speed, l_Weaponclass, "number", "Weapon max speed, aka $Velocity in 
 	return ade_set_args(L, "f", Weapon_info[idx].max_speed);
 }
 
-ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon clas flagged as bomb", "boolean", "New flag")
+ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "boolean", "New flag")
 {
 	int idx;
 	bool newVal = false;
@@ -4047,7 +4047,7 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index valus of the weapon class", "number", "index value of the weapon class")
+ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index value of the weapon class", "number", "index value of the weapon class")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -4258,7 +4258,7 @@ ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal
 	}
 }
 
-ADE_FUNC(isValid, l_ColInfo, NULL, "Detectes if this handle is valid", "boolean", "true if valid false otherwise")
+ADE_FUNC(isValid, l_ColInfo, NULL, "Detects if this handle is valid", "boolean", "true if valid false otherwise")
 {
 	mc_info_h* info;
 
