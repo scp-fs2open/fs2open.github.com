@@ -6280,6 +6280,24 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 	return ade_set_args(L, "b", (sso->ss->weapons.flags & SW_FLAG_TURRET_LOCK));
 }
 
+ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret may attempt to fire", "number", "Mission time (seconds) or -1 on error")
+{
+	ship_subsys_h *sso;
+	float newVal = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!sso->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if(ADE_SETTING_VAR)
+	{
+		sso->ss->turret_next_fire_stamp = (int)(newVal * 1000);
+	}
+
+	return ade_set_args(L, "f", sso->ss->turret_next_fire_stamp / 1000.0f);
+}
+
 ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targeting for this turret is switched off. If set to false, the AI will take over again.", "boolean", "Returns true if successful, false otherwise")
 {
 	bool targetOverride = false;
