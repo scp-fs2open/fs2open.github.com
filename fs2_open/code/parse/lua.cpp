@@ -6258,6 +6258,28 @@ ADE_VIRTVAR(TurnRate, l_Subsystem, "number", "The turn rate", "number", "Turnrat
 	return ade_set_args(L, "i", sso->ss->system_info->turret_turning_rate);
 }
 
+ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked. Setting to true locks the turret, setting to false frees it.", "boolean", "True if turret is locked, false otherwise")
+{
+	ship_subsys_h *sso;
+	bool newVal = false;
+	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "b", false);
+
+	if (!sso->IsValid())
+		return ade_set_error(L, "b", false);
+
+	if(ADE_SETTING_VAR)
+	{
+		if (newVal) {
+			sso->ss->weapons.flags |= SW_FLAG_TURRET_LOCK;
+		} else {
+			sso->ss->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
+		}
+	}
+
+	return ade_set_args(L, "b", (sso->ss->weapons.flags & SW_FLAG_TURRET_LOCK));
+}
+
 ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targeting for this turret is switched off. If set to false, the AI will take over again.", "boolean", "Returns true if successful, false otherwise")
 {
 	bool targetOverride = false;
