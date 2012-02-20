@@ -38,9 +38,6 @@ void pilotfile::csg_read_flags()
 {
 	// tips?
 	p->tips = (int)cfread_ubyte(cfp);
-
-	// available cutscenes
-	Cutscenes_viewable = cfread_int(cfp);
 }
 
 void pilotfile::csg_write_flags()
@@ -49,9 +46,6 @@ void pilotfile::csg_write_flags()
 
 	// tips
 	cfwrite_ubyte((ubyte)p->tips, cfp);
-
-	// cutscenes
-	cfwrite_int(Cutscenes_viewable, cfp);
 
 	endSection();
 }
@@ -1148,6 +1142,35 @@ void pilotfile::csg_write_controls()
 	endSection();
 }
 
+void pilotfile::csg_read_cutscenes() {
+	size_t list_size = cfread_uint(cfp);
+
+	for(size_t i = 0; i < list_size; i++) {
+		char tempFilename[MAX_FILENAME_LEN];
+
+		cfread_string_len(tempFilename, MAX_FILENAME_LEN, cfp);
+		cutscene_mark_viewable(tempFilename);
+	}
+}
+
+void pilotfile::csg_write_cutscenes() {
+	startSection(Section::Cutscenes);
+
+	size_t viewableScenes = 0;
+	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if(cut->viewable)
+			viewableScenes ++;
+	}
+	cfwrite_uint(viewableScenes, cfp);
+
+	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if(cut->viewable)
+			cfwrite_string_len(cut->filename, cfp);
+	}
+
+	endSection();
+}
+
 void pilotfile::csg_reset_data()
 {
 	int idx;
@@ -1346,6 +1369,11 @@ bool pilotfile::load_savefile(const char *campaign)
 					csg_read_controls();
 					break;
 
+				case Section::Cutscenes:
+					mprintf(("CSG => Parsing:  Cutscenes...\n"));
+					csg_read_cutscenes();
+					break;
+
 				default:
 					mprintf(("CSG => Skipping unknown section 0x%04x!\n", section_id));
 					break;
@@ -1449,6 +1477,8 @@ bool pilotfile::save_savefile()
 	csg_write_settings();
 	mprintf(("CSG => Saving:  Controls...\n"));
 	csg_write_controls();
+	mprintf(("CSG => Saving:  Cutscenes...\n"));
+	csg_write_cutscenes();
 
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));

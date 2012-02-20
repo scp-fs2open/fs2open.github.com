@@ -141,7 +141,7 @@ void init_new_pilot(player *p, int reset)
 
 	// reset the cutscenes which can be viewed
 	if ( reset ){
-		Cutscenes_viewable = INTRO_CUTSCENE_FLAG;
+		cutscene_init();
 	}
 
 	pilot_set_start_campaign(p);
@@ -306,9 +306,6 @@ int pilot_verify_overwrite()
 {
 	return popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG, 2, XSTR( "&No", 47), XSTR( "&Yes", 48), XSTR( "Warning\nA duplicate pilot exists\nOverwrite?", 49));
 }
-
-extern int Skip_packfile_search;  // located in CFileList.cpp
-
 
 // load up the list of pilot image filenames (do this at game startup as well as barracks startup)
 void pilot_load_pic_list()
