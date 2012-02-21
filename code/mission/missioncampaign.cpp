@@ -444,7 +444,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 		// we must also free any goal stuff that was from a previous campaign
 		// this also frees sexpressions so the next call to init_sexp will be able to reclaim
 		// nodes previously used by another campaign.
-		mission_campaign_close();
+		mission_campaign_clear();
 
 		strcpy_s( Campaign.filename, filename );
 
@@ -456,7 +456,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 		read_file_text( filename );
 		reset_parse();
-		memset( &Campaign, 0, sizeof(Campaign) );
 
 		// copy filename to campaign structure minus the extension
 		len = strlen(filename) - 4;
@@ -715,7 +714,7 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
  */
 void mission_campaign_init()
 {
-	memset(&Campaign, 0, sizeof(Campaign) );
+	mission_campaign_clear();
 
 	Campaign_file_missing = 0;
 }
@@ -1206,7 +1205,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
  */
-void mission_campaign_close()
+void mission_campaign_clear()
 {
 	int i;
 
@@ -1267,6 +1266,7 @@ void mission_campaign_close()
 		Campaign.missions[i].num_goals = 0;
 		Campaign.missions[i].num_events = 0;
 		Campaign.missions[i].num_variables = 0;	// Goober5000
+		Campaign.missions[i].main_hall.clear();
 	}
 
 	Campaign.num_missions = 0;

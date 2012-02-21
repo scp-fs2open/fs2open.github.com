@@ -180,7 +180,7 @@ extern int mission_campaign_next_mission( void );
 extern void mission_campaign_mission_over( bool do_next_mission = true );
 
 // frees all memory at game close time
-extern void mission_campaign_close( void );
+extern void mission_campaign_clear( void );
 
 // read in a campaign file.  Used by Fred.
 int mission_campaign_load_fred(char *filename, char *name_verify = NULL);
