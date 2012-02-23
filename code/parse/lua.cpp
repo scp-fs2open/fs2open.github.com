@@ -4004,7 +4004,7 @@ ADE_VIRTVAR(Speed, l_Weaponclass, "number", "Weapon max speed, aka $Velocity in 
 	return ade_set_args(L, "f", Weapon_info[idx].max_speed);
 }
 
-ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon clas flagged as bomb", "boolean", "New flag")
+ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "boolean", "New flag")
 {
 	int idx;
 	bool newVal = false;
@@ -4047,7 +4047,7 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index valus of the weapon class", "number", "index value of the weapon class")
+ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index value of the weapon class", "number", "index value of the weapon class")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -4258,7 +4258,7 @@ ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal
 	}
 }
 
-ADE_FUNC(isValid, l_ColInfo, NULL, "Detectes if this handle is valid", "boolean", "true if valid false otherwise")
+ADE_FUNC(isValid, l_ColInfo, NULL, "Detects if this handle is valid", "boolean", "true if valid false otherwise")
 {
 	mc_info_h* info;
 
@@ -6258,6 +6258,46 @@ ADE_VIRTVAR(TurnRate, l_Subsystem, "number", "The turn rate", "number", "Turnrat
 	return ade_set_args(L, "i", sso->ss->system_info->turret_turning_rate);
 }
 
+ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked. Setting to true locks the turret, setting to false frees it.", "boolean", "True if turret is locked, false otherwise")
+{
+	ship_subsys_h *sso;
+	bool newVal = false;
+	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "b", false);
+
+	if (!sso->IsValid())
+		return ade_set_error(L, "b", false);
+
+	if(ADE_SETTING_VAR)
+	{
+		if (newVal) {
+			sso->ss->weapons.flags |= SW_FLAG_TURRET_LOCK;
+		} else {
+			sso->ss->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
+		}
+	}
+
+	return ade_set_args(L, "b", (sso->ss->weapons.flags & SW_FLAG_TURRET_LOCK));
+}
+
+ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret may attempt to fire", "number", "Mission time (seconds) or -1 on error")
+{
+	ship_subsys_h *sso;
+	float newVal = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!sso->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if(ADE_SETTING_VAR)
+	{
+		sso->ss->turret_next_fire_stamp = (int)(newVal * 1000);
+	}
+
+	return ade_set_args(L, "f", sso->ss->turret_next_fire_stamp / 1000.0f);
+}
+
 ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targeting for this turret is switched off. If set to false, the AI will take over again.", "boolean", "Returns true if successful, false otherwise")
 {
 	bool targetOverride = false;
@@ -7734,6 +7774,40 @@ ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a d
 	}
 
 	return ade_set_object_with_breed(L, wp->target_num);
+}
+
+ADE_VIRTVAR(ParentTurret, l_Weapon, "subsystem", "Turret which fired this weapon.", "subsystem", "Turret subsystem handle, or an invalid handle if the weapon not fired from a turret")
+{
+	object_h *objh;
+	ship_subsys_h *newh;
+	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	weapon *wp = NULL;
+	if(objh->objp->instance > -1)
+		wp = &Weapons[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newh != NULL && newh->IsValid())
+		{
+			if(wp->turret_subsys != newh->ss)
+			{
+				wp->turret_subsys = newh->ss;
+			}
+		}
+		else
+		{
+			wp->turret_subsys = NULL;
+		}
+	}
+
+	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(&Objects[wp->turret_subsys->parent_objnum], wp->turret_subsys)));
 }
 
 ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in on. Value may also be a deriviative of the 'object' class, such as 'ship'", "object", "Object that weapon is homing in on, or an invalid object handle if weapon is not homing or the weapon handle is invalid")
