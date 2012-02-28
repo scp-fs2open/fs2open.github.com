@@ -1326,7 +1326,7 @@ typedef struct ship_info {
 	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
 	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 
-	SCP_map<int, int> ship_sounds;			// specifies ship-specific sound indexes
+	SCP_map<GameSoundsIndex, int> ship_sounds;			// specifies ship-specific sound indexes
 
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
@@ -1901,7 +1901,17 @@ extern SCP_vector<ship_effect> Ship_effects;
  *  
  *  @return An index into the Snds vector, if the specified index could not be found then the id itself will be returned
  */
-int ship_get_sound(object *objp, int id);
+int ship_get_sound(object *objp, GameSoundsIndex id);
+
+/**
+ *  @brief Specifies if a ship has a custom sound for the specified id
+ *  
+ *  @param objp An object pointer. Has to be of type OBJ_SHIP
+ *  @param id A sound id as defined in gamsesnd.h
+ *  
+ *  @return True if this object has the specified sound, false otherwise
+ */
+bool ship_has_sound(object *objp, GameSoundsIndex id);
 
 /**
  * @brief Returns the index of the default player ship
