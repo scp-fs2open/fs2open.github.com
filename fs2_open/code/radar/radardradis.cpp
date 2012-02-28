@@ -86,6 +86,8 @@ xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_con
 	
 	// give it some color
 	gr_init_alphacolor(&orb_color, 48, 96, 160, 1337);
+
+	this->loop_sound_handle = -1;
 }
 
 void HudGaugeRadarDradis::initBitmaps(char* fname_xy, char* fname_xz_yz, char* fname_sweep, char* fname_target_brackets, char* fname_unknown)
@@ -545,4 +547,164 @@ void HudGaugeRadarDradis::pageIn()
 	bm_page_in_texture(sweep_plane);
 	bm_page_in_texture(target_brackets);
 	bm_page_in_texture(unknown_contact_icon);
+}
+
+void HudGaugeRadarDradis::doLoopSnd()
+{
+	if (this->loop_snd < 0)
+	{
+		return;
+	}
+
+	if (!this->shouldDoSounds())
+	{
+		if (loop_sound_handle >= 0 && snd_is_playing(loop_sound_handle))
+		{
+			snd_stop(loop_sound_handle);
+			loop_sound_handle = -1;
+		}
+	}
+	else if (this->loop_sound_handle < 0 || !snd_is_playing(this->loop_sound_handle))
+	{
+		loop_sound_handle = snd_play(&Snds[loop_snd], 0.0f, loop_sound_volume);
+	}
+}
+
+void HudGaugeRadarDradis::doBeeps()
+{
+	if (!this->shouldDoSounds())
+	{
+		return;
+	}
+
+	if (Missiontime == 0 || Missiontime == Frametime)
+	{
+		// don't play sounds in first frame
+		return;
+	}
+
+	if (arrival_beep_snd < 0 &&
+		departure_beep_snd < 0 &&
+		stealth_arrival_snd < 0 &&
+		stealth_departure_snd < 0)
+	{
+		return;
+	}
+
+	bool departure_happened = false;
+	bool stealth_departure_happened = false;
+
+	bool arrival_happened = false;
+	bool stealth_arrival_happened = false;
+	
+	for (int i = 0; i < MAX_SHIPS; i++)
+	{
+		ship * shipp = &Ships[i];
+
+		if (shipp->objnum >= 0)
+		{
+			if (shipp->radar_visible_since >= 0 || shipp->radar_last_contact >= 0)
+			{
+				if (shipp->radar_visible_since == Missiontime)
+				{
+					if (shipp->radar_current_status == DISTORTED)
+					{
+						stealth_arrival_happened = true;
+					}
+					else
+					{
+						arrival_happened = true;
+					}
+				}
+				else if (shipp->radar_visible_since < 0 && shipp->radar_last_contact == Missiontime)
+				{
+					if (shipp->radar_last_status == DISTORTED)
+					{
+						stealth_departure_happened = true;
+					}
+					else
+					{
+						departure_happened = true;
+					}
+				}
+			}
+		}
+	}
+	
+	if (timestamp_elapsed(arrival_beep_next_check))
+	{
+		if (arrival_beep_snd >= 0 && arrival_happened)
+		{
+			snd_play(&Snds[arrival_beep_snd]);
+
+			arrival_beep_next_check = timestamp(arrival_beep_delay);
+		}
+		else if (stealth_arrival_snd >= 0 && stealth_arrival_happened)
+		{
+			snd_play(&Snds[stealth_arrival_snd]);
+
+			arrival_beep_next_check = timestamp(arrival_beep_delay);
+		}
+
+	}
+
+	if (timestamp_elapsed(departure_beep_next_check))
+	{
+		if (departure_beep_snd >= 0 && departure_happened)
+		{
+			snd_play(&Snds[departure_beep_snd]);
+
+			departure_beep_next_check = timestamp(departure_beep_delay);
+		}
+		else if (stealth_departure_snd >= 0 && stealth_departure_happened)
+		{
+			snd_play(&Snds[stealth_departure_snd]);
+
+			departure_beep_next_check = timestamp(departure_beep_delay);
+		}
+	}
+}
+
+void HudGaugeRadarDradis::initSound(int loop_snd, float loop_snd_volume, int arrival_snd, int departure_snd, int stealth_arrival_snd, int stealth_departue_snd, float arrival_delay, float departure_delay)
+{
+	this->loop_snd = loop_snd;
+	this->loop_sound_handle = -1;
+	this->loop_sound_volume = loop_snd_volume;
+
+	this->arrival_beep_snd = arrival_snd;
+	this->departure_beep_snd = departure_snd;
+
+	this->stealth_arrival_snd = stealth_arrival_snd;
+	this->stealth_departure_snd = stealth_departue_snd;
+
+	this->arrival_beep_delay = fl2i(arrival_delay * 1000.0f);
+	this->departure_beep_delay = fl2i(departure_delay * 1000.0f);
+}
+
+void HudGaugeRadarDradis::onFrame(float frametime)
+{
+	// Play the specified radar sound
+	this->doLoopSnd();
+
+	// Play beeps for ship arrival and departure
+	this->doBeeps();
+}
+
+void HudGaugeRadarDradis::initialize()
+{
+	HudGaugeRadar::initialize();
+
+	this->arrival_beep_next_check = timestamp();
+	this->departure_beep_next_check = timestamp();
+}
+
+bool HudGaugeRadarDradis::shouldDoSounds()
+{
+	if (hud_disabled())
+		return false;
+
+	if (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_DEAD_VIEW | VM_OTHER_SHIP))
+		return false;
+
+	return true;
 }

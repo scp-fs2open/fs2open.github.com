@@ -7997,6 +7997,43 @@ void ship_process_pre(object *objp, float frametime)
 
 MONITOR( NumShips )
 
+void ship_radar_process( object * obj, ship * shipp, ship_info * sip ) 
+{
+	Assert( obj != NULL);
+	Assert( shipp != NULL );
+	Assert( sip != NULL);
+
+	shipp->radar_last_status = shipp->radar_current_status;
+
+	RadarVisibility visibility = radar_is_visible(obj);
+
+	if (visibility == NOT_VISIBLE)
+	{
+		if (shipp->radar_last_contact < 0 && shipp->radar_visible_since < 0)
+		{
+			shipp->radar_visible_since = -1;
+			shipp->radar_last_contact = -1;
+		}
+		else
+		{
+			shipp->radar_visible_since = -1;
+			shipp->radar_last_contact = Missiontime;
+		}
+	}
+	else if (visibility == VISIBLE || visibility == DISTORTED)
+	{
+		if (shipp->radar_visible_since < 0)
+		{
+			shipp->radar_visible_since = Missiontime;
+		}
+
+		shipp->radar_last_contact = Missiontime;
+	}
+
+	shipp->radar_current_status = visibility;
+}
+
+
 /**
  * Player ship uses this code, but does a quick out after doing a few things.
  * 
@@ -8139,6 +8176,9 @@ void ship_process_post(object * obj, float frametime)
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpout_frame( obj, frametime );
 	} 
+
+	// update radar status of the ship
+	ship_radar_process(obj, shipp, sip);
 
 	if ( (!(shipp->flags & SF_ARRIVING) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
 		|| ((sip->warpin_type == WT_IN_PLACE_ANIM) && (shipp->flags & SF_ARRIVING_STAGE_2)) )
@@ -8701,6 +8741,11 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	model_anim_set_initial_states(shipp);
 
 	shipp->model_instance_num = model_create_instance(sip->model_num);
+
+	shipp->time_created = Missiontime;
+
+	shipp->radar_visible_since = -1;
+	shipp->radar_last_contact = -1;
 	
 	return objnum;
 }

@@ -24,6 +24,7 @@
 #include "network/multi_obj.h"
 #include "hud/hudparse.h"
 #include "render/3d.h"
+#include "radar/radarsetup.h"
 #include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
 #include "globalincs/pstypes.h"
@@ -742,6 +743,14 @@ typedef struct ship {
 	int debris_damage_type_idx;
 
 	int model_instance_num;
+
+	fix time_created;
+
+	fix radar_visible_since; // The first time this ship was visible on the radar. Gets reset when ship is not visible anymore
+	fix radar_last_contact; // The last time this ship appeared on the radar. When it is currently visible this has the value if Missiontime
+
+	RadarVisibility radar_last_status; // Last radar status
+	RadarVisibility radar_current_status; // Current radar status
 } ship;
 
 struct ai_target_priority {

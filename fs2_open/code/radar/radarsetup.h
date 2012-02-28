@@ -86,9 +86,17 @@ extern int		Radar_calc_bright_dist_timer;	// timestamp at which we recalc Radar_
 
 extern int See_all;
 
+enum RadarVisibility
+{
+	NOT_VISIBLE, //!< Not visible on the radar
+	VISIBLE, //!< Fully visible on the radar
+	DISTORTED //!< Visible but not fully
+};
+
 void radar_frame_init();
 void radar_mission_init();
 void radar_plot_object( object *objp );
+RadarVisibility radar_is_visible( object *objp );
 
 extern int Radar_static_looping;
 
