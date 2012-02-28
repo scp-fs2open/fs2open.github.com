@@ -293,6 +293,7 @@ public:
 	virtual bool canRender();
 	virtual void pageIn();
 	virtual void initialize();
+	virtual void onFrame(float frametime);
 
 	bool setupRenderCanvas(int render_target = -1);
 	void setCockpitTarget(cockpit_display *display);
