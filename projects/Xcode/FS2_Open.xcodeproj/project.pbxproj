@@ -585,6 +585,8 @@
 		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
 		60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E6113432B800CE910F /* voicerec.cpp */; };
 		60FAF4E9113432B800CE910F /* voicerec.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E7113432B800CE910F /* voicerec.h */; };
+		91D778A014FE96BE00E0090A /* mod_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91D7789E14FE96BE00E0090A /* mod_table.cpp */; };
+		91D778A114FE96BE00E0090A /* mod_table.h in Headers */ = {isa = PBXBuildFile; fileRef = 91D7789F14FE96BE00E0090A /* mod_table.h */; };
 		F007DDF612F4F44600D2F6C1 /* jconfig.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB512F4F44600D2F6C1 /* jconfig.h */; };
 		F007DDF712F4F44600D2F6C1 /* jdct.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB612F4F44600D2F6C1 /* jdct.h */; };
 		F007DDF912F4F44600D2F6C1 /* jerror.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB812F4F44600D2F6C1 /* jerror.h */; };
@@ -1504,6 +1506,8 @@
 		60FAF4E7113432B800CE910F /* voicerec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = voicerec.h; sourceTree = "<group>"; };
 		914580470FD036ED00788595 /* multi_sexp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = multi_sexp.cpp; sourceTree = "<group>"; };
 		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
+		91D7789E14FE96BE00E0090A /* mod_table.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mod_table.cpp; sourceTree = "<group>"; };
+		91D7789F14FE96BE00E0090A /* mod_table.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mod_table.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		B2F67F1E04C773E400A80002 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = /System/Library/Frameworks/GLUT.framework; sourceTree = "<absolute>"; };
 		F007DDB512F4F44600D2F6C1 /* jconfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jconfig.h; sourceTree = "<group>"; };
@@ -1880,6 +1884,7 @@
 				3459541308C3D6A0003B1351 /* mission */,
 				3459542808C3D6A0003B1351 /* missionui */,
 				3459544108C3D6A0003B1351 /* mm */,
+				91D7789D14FE96BE00E0090A /* mod_table */,
 				3459544408C3D6A0003B1351 /* model */,
 				3459544C08C3D6A0003B1351 /* nebula */,
 				3459545108C3D6A0003B1351 /* network */,
@@ -3044,6 +3049,15 @@
 			name = external_dll;
 			sourceTree = "<group>";
 		};
+		91D7789D14FE96BE00E0090A /* mod_table */ = {
+			isa = PBXGroup;
+			children = (
+				91D7789E14FE96BE00E0090A /* mod_table.cpp */,
+				91D7789F14FE96BE00E0090A /* mod_table.h */,
+			);
+			path = mod_table;
+			sourceTree = "<group>";
+		};
 		F0AAA8AF10FA0ACE0086B1B4 /* libpng */ = {
 			isa = PBXGroup;
 			children = (
@@ -3150,6 +3164,7 @@
 			files = (
 				3459585208C3D8CB003B1351 /* SDLMain.h in Headers */,
 				60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */,
+				91D778A114FE96BE00E0090A /* mod_table.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3697,6 +3712,7 @@
 			files = (
 				3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */,
 				606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */,
+				91D778A014FE96BE00E0090A /* mod_table.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
