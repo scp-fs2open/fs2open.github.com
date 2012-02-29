@@ -972,7 +972,10 @@ typedef struct mc_info {
 										// flags can be changed for the case of sphere check finds an edge hit
 	mc_info()
 	{
-		memset(this, 0, sizeof(this));
+		// Echelon9 - BIG WARNING.
+        // Using memset() as a constructor is rarely correct in C++
+        // If mc_info ever becomes non-POD type, this memset() will hose the virtual table
+        memset(this, 0, sizeof(*this));
 	}
 
 	mc_info(const mc_info& other)
