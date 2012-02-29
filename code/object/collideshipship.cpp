@@ -180,7 +180,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 	// Set up model_collide info
 	mc_info mc;
-	memset(&mc, -1, sizeof(mc_info));
 
 	// Do in heavy object RF
 	mc.model_num = heavy_sip->model_num;	// Fill in the model to check
