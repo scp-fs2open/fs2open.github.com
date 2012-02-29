@@ -34,6 +34,7 @@
 #include "cutscene/movie.h"
 #include "debris/debris.h"
 #include "exceptionhandler/exceptionhandler.h"
+#include "external_dll/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "fireball/fireballs.h"
 #include "freespace2/freespace.h"
 #include "freespace2/freespaceresource.h"
@@ -63,7 +64,6 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "external_dll/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
@@ -98,6 +98,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "network/multi.h"
@@ -1888,6 +1889,8 @@ void game_init()
 	// D3D's gamma system now works differently. 1.0 is the default value
 	ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
 	FreeSpace_gamma = (float)atof(ptr);
+
+	mod_table_init();		// load in all the mod dependent settings
 
 	script_init();			//WMC
 
