@@ -863,6 +863,7 @@
     <ClCompile Include="..\..\code\model\modelinterp.cpp" />
     <ClCompile Include="..\..\code\model\modeloctant.cpp" />
     <ClCompile Include="..\..\code\model\modelread.cpp" />
+    <ClCompile Include="..\..\code\mod_table\mod_table.cpp" />
     <ClCompile Include="..\..\code\object\collidedebrisship.cpp" />
     <ClCompile Include="..\..\code\object\collidedebrisweapon.cpp" />
     <ClCompile Include="..\..\code\object\collideshipship.cpp" />
@@ -1146,6 +1147,7 @@
     <ClInclude Include="..\..\code\model\model.h" />
     <ClInclude Include="..\..\code\model\modelanim.h" />
     <ClInclude Include="..\..\code\model\modelsinc.h" />
+    <ClInclude Include="..\..\code\mod_table\mod_table.h" />
     <ClInclude Include="..\..\code\object\deadobjectdock.h" />
     <ClInclude Include="..\..\code\object\objcollide.h" />
     <ClInclude Include="..\..\code\object\object.h" />
