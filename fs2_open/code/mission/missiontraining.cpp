@@ -29,6 +29,7 @@
 #include "ship/ship.h"
 #include "parse/sexp.h"
 #include "network/multi.h"
+#include "mod_table/mod_table.h"
 
 
 
@@ -530,8 +531,6 @@ void sort_training_objectives()
 	}
 }
 
-#define DIRECTIVE_WAIT	0
-
 /**
  * Maintains the objectives listing, adding, removing and updating items
  *
@@ -544,7 +543,7 @@ void training_check_objectives()
 	Training_obj_num_lines = 0;
 	for (event_idx=0; event_idx<Num_mission_events; event_idx++) {
 		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + DIRECTIVE_WAIT) ) {
+		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + Directive_wait_time) ) {
 			if (!Training_failure || !strnicmp(Mission_events[event_idx].name, XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective
