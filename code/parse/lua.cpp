@@ -12217,9 +12217,11 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds), or 0 if game is not in a mission")
 {
 	if(!(Game_mode & GM_IN_MISSION))
-		return ade_set_error(L, "f", 0.0f);
+		return ade_set_error(L, "d", 0.0f);
 
-	return ade_set_args(L, "x", Missiontime);
+	double time = (double)timestamp() / 1000.0;
+
+	return ade_set_args(L, "d", time);
 }
 
 //WMC - These are in freespace.cpp

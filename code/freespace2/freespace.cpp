@@ -4817,7 +4817,7 @@ void game_update_missiontime()
 	// TODO JAS: Put in if and move this into game_set_frametime, 
 	// fix navmap to call game_stop/start_time
 	//if ( !timer_paused )	
-		Missiontime += Frametime;
+		Missiontime = fixTimeFromMs(timestamp());
 }
 
 void game_do_frame()
