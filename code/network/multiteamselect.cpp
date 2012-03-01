@@ -838,16 +838,16 @@ void multi_ts_assign_players_all()
 	// and the first tvt wing must have the same name
 	memset(name_lookup,0,100);
 
-	// To account for cases where <Wingname> 1 is not a player ship
-	for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
-		if(Netgame.type_flags & NG_TYPE_TEAM) {
-			sprintf(name_lookup, "%s %d", TVT_wing_names[Netgame.host->p_info.team], i + 1);
-		} else {
+	if(Netgame.type_flags & NG_TYPE_TEAM) {
+		sprintf(name_lookup, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
+	}
+	else {
+		// To account for cases where <Wingname> 1 is not a player ship
+		for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
 			sprintf(name_lookup, "%s %d", TVT_wing_names[0], i + 1);
+			if (!stricmp(name_lookup, Player_start_shipname))
+				break;
 		}
-
-		if (!stricmp(name_lookup, Player_start_shipname))
-			break;
 	}
 		
 	shipnum = ship_name_lookup(name_lookup);
