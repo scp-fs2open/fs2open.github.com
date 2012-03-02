@@ -1514,6 +1514,18 @@ SOURCE=..\..\code\MissionUI\RedAlert.cpp
 SOURCE=..\..\code\MissionUI\RedAlert.h
 # End Source File
 # End Group
+# Begin Group "mod_table"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\mod_table\mod_table.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\mod_table\mod_table.h
+# End Source File
+# End Group
 # Begin Group "Model"
 
 # PROP Default_Filter ""
