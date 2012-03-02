@@ -616,7 +616,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	if (optional_string("+Viewer pos:")){
-		stuff_vector(&Parse_viewer_pos);
+		stuff_vec3d(&Parse_viewer_pos);
 	}
 
 	if (optional_string("+Viewer orient:")){
@@ -1328,7 +1328,7 @@ void parse_briefing(mission *pm, int flags)
 			required_string("$voice:");
 			stuff_string(bs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			required_string("$camera_pos:");
-			stuff_vector(&bs->camera_pos);
+			stuff_vec3d(&bs->camera_pos);
 			required_string("$camera_orient:");
 			stuff_matrix(&bs->camera_orient);
 			required_string("$camera_time:");
@@ -1440,7 +1440,7 @@ void parse_briefing(mission *pm, int flags)
 				}
 
 				required_string("$pos:");
-				stuff_vector(&bi->pos);
+				stuff_vec3d(&bi->pos);
 
 				bi->label[0] = 0;
 				if (optional_string("$label:"))
@@ -2602,7 +2602,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 	required_string("$Location:");
-	stuff_vector(&p_objp->pos);
+	stuff_vec3d(&p_objp->pos);
 
 	required_string("$Orientation:");
 	stuff_matrix(&p_objp->orient);
@@ -4628,7 +4628,7 @@ void parse_waypoint_list(mission *pm)
 
 	SCP_vector<vec3d> vec_list;
 	required_string("$List:");
-	stuff_vector_list(vec_list);
+	stuff_vec3d_list(vec_list);
 
 	waypoint_add_list(name_buf, vec_list);
 }
@@ -4644,7 +4644,7 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 	char jump_name[NAME_LENGTH] = { 0 };
 
 	while (optional_string("$Jump Node:")) {
-		stuff_vector(&pos);
+		stuff_vec3d(&pos);
 		jnp = new jump_node(&pos);
 		Assert(jnp != NULL);
 
@@ -5075,19 +5075,19 @@ void parse_asteroid_fields(mission *pm)
 		Asteroid_field.speed = speed;
 
 		required_string("$Minimum:");
-		stuff_vector(&Asteroid_field.min_bound);
+		stuff_vec3d(&Asteroid_field.min_bound);
 
 		required_string("$Maximum:");
-		stuff_vector(&Asteroid_field.max_bound);
+		stuff_vec3d(&Asteroid_field.max_bound);
 
 		if (optional_string("+Inner Bound:")) {
 			Asteroid_field.has_inner_bound = 1;
 
 			required_string("$Minimum:");
-			stuff_vector(&Asteroid_field.inner_min_bound);
+			stuff_vec3d(&Asteroid_field.inner_min_bound);
 
 			required_string("$Maximum:");
-			stuff_vector(&Asteroid_field.inner_max_bound);
+			stuff_vec3d(&Asteroid_field.inner_max_bound);
 		} else {
 			Asteroid_field.has_inner_bound = 0;
 		}
