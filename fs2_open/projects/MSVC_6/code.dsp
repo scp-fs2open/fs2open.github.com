@@ -589,6 +589,18 @@ SOURCE=..\..\code\Gamesnd\GameSnd.h
 # Begin Group "GlobalIncs"
 
 # PROP Default_Filter ""
+# Begin Group "msvc"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\msvc\inttypes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\msvc\stdint.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=..\..\code\GlobalIncs\AlphaColors.cpp
@@ -627,10 +639,6 @@ SOURCE=..\..\code\globalincs\globals.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\globalincs\inttypes.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\GlobalIncs\LinkList.h
 # End Source File
 # Begin Source File
@@ -656,10 +664,6 @@ SOURCE=..\..\code\globalincs\safe_strings.h
 # Begin Source File
 
 SOURCE=..\..\code\globalincs\safe_strings_test.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\globalincs\stdint.h
 # End Source File
 # Begin Source File
 
@@ -2332,7 +2336,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2351,7 +2355,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2370,7 +2374,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
 
 # Begin Custom Build
-InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2389,7 +2393,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
 
 # Begin Custom Build
-InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
