@@ -2818,6 +2818,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="mod_table"
+			>
+			<File
+				RelativePath="..\..\code\mod_table\mod_table.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\mod_table\mod_table.h"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
