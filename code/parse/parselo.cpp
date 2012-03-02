@@ -1,4 +1,4 @@
-/*
+/*`
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -2511,15 +2511,15 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 }
 
 
-//	Stuff a vector, which is 3 floats.
-void stuff_vector(vec3d *vp)
+//	Stuff a vec3d struct, which is 3 floats.
+void stuff_vec3d(vec3d *vp)
 {
 	stuff_float(&vp->xyz.x);
 	stuff_float(&vp->xyz.y);
 	stuff_float(&vp->xyz.z);
 }
 
-void stuff_parenthesized_vector(vec3d *vp)
+void stuff_parenthesized_vec3d(vec3d *vp)
 {
 	ignore_white_space();
 
@@ -2528,7 +2528,7 @@ void stuff_parenthesized_vector(vec3d *vp)
 		longjmp(parse_abort, 11);
 	} else {
 		Mp++;
-		stuff_vector(vp);
+		stuff_vec3d(vp);
 		ignore_white_space();
 		if (*Mp != ')') {
 			error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
@@ -2539,12 +2539,12 @@ void stuff_parenthesized_vector(vec3d *vp)
 
 }
 
-//	Stuffs vector list.
-//	This is of the form ( (vector)* )
-//	  where vector is a vector
+//	Stuffs vec3d list.  *vlp is an array of vec3ds.
+//	This is of the form ( (vec3d)* )
+//	  (where * is a kleene star, not a pointer indirection)
 // For example, ( (1 2 3) (2 3 4) (2 3 5) )
-//		 is a vector list of three vectors.
-int stuff_vector_list(vec3d *vlp, int max_vecs)
+//		 is a list of three vec3ds.
+int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 {
 	int	count = 0;
 
@@ -2562,10 +2562,10 @@ int stuff_vector_list(vec3d *vlp, int max_vecs)
 	while (*Mp != ')') {
 		Assert(count < max_vecs);
 		if (count < max_vecs) {
-			stuff_parenthesized_vector(&vlp[count++]);
+			stuff_parenthesized_vec3d(&vlp[count++]);
 		} else {
 			vec3d temp;
-			stuff_parenthesized_vector(&temp);
+			stuff_parenthesized_vec3d(&temp);
 		}
 		
 		ignore_white_space();
@@ -2576,8 +2576,8 @@ int stuff_vector_list(vec3d *vlp, int max_vecs)
 	return count;
 }
 
-// ditto the above, but a vector of vectors...
-int stuff_vector_list(SCP_vector<vec3d> &vec_list)
+// ditto the above, but a vector of vec3ds...
+int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 {
 	ignore_white_space();
 
@@ -2592,7 +2592,7 @@ int stuff_vector_list(SCP_vector<vec3d> &vec_list)
 
 	while (*Mp != ')') {
 		vec3d temp;
-		stuff_parenthesized_vector(&temp);
+		stuff_parenthesized_vec3d(&temp);
 		vec_list.push_back(temp);
 		
 		ignore_white_space();
@@ -2603,12 +2603,12 @@ int stuff_vector_list(SCP_vector<vec3d> &vec_list)
 	return vec_list.size();
 }
 
-//	Stuff a matrix, which is 3 vectors.
+//	Stuff a matrix, which is 3 vec3ds.
 void stuff_matrix(matrix *mp)
 {
-	stuff_vector(&mp->vec.rvec);
-	stuff_vector(&mp->vec.uvec);
-	stuff_vector(&mp->vec.fvec);
+	stuff_vec3d(&mp->vec.rvec);
+	stuff_vec3d(&mp->vec.uvec);
+	stuff_vec3d(&mp->vec.fvec);
 }
 
 
