@@ -54,19 +54,19 @@ int model_anim_match_type(char *p)
 
 	// Goober5000 - deprecation
 	if ( !strnicmp(p, "docking", 7) || !strnicmp(p, "\"docking\"", 9) ) {
-		Warning(LOCATION, "The \"docking\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_DOCKING_STAGE_2]);
+		mprintf(("The \"docking\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_DOCKING_STAGE_2]));
 		return TRIGGER_TYPE_DOCKING_STAGE_2;
 	} else if ( !strnicmp(p, "primary_bank", 12) || !strnicmp(p, "\"primary_bank\"", 14) ) {
-		Warning(LOCATION, "The \"primary_bank\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_PRIMARY_BANK]);
+		mprintf(( "The \"primary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_PRIMARY_BANK]));
 		return TRIGGER_TYPE_PRIMARY_BANK;
 	} else if ( !strnicmp(p, "secondary_bank", 14) || !strnicmp(p, "\"secondary_bank\"", 16) ) {
-		Warning(LOCATION, "The \"secondary_bank\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_SECONDARY_BANK]);
+		mprintf(("The \"secondary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_SECONDARY_BANK]));
 		return TRIGGER_TYPE_SECONDARY_BANK;
 	} else if ( !strnicmp(p, "door", 4) || !strnicmp(p, "\"door\"", 6) ) {
-		Warning(LOCATION, "The \"door\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_DOCK_BAY_DOOR]);
+		mprintf(("The \"door\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_DOCK_BAY_DOOR]));
 		return TRIGGER_TYPE_DOCK_BAY_DOOR;
 	} else if ( !strnicmp(p, "turret firing", 13) || !strnicmp(p, "\"turret firing\"", 15) ) {
-		Warning(LOCATION, "The \"turret firing\" animation type name is deprecated.  Specify \"%s\" instead.", Animation_type_names[TRIGGER_TYPE_TURRET_FIRING]);
+		mprintf(("The \"turret firing\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_TURRET_FIRING]));
 		return TRIGGER_TYPE_TURRET_FIRING;
 	}
 
@@ -78,7 +78,7 @@ int model_anim_match_type(char *p)
 		strcat(quoted_name, "\"");
 
 		if ( !strnicmp(p, quoted_name, strlen(quoted_name)) ) {
-			Warning(LOCATION, "Old usage warning: Please remove quotes from animation type %s.", quoted_name);
+			mprintf(( "Old usage warning: Please remove quotes from animation type %s.\n", quoted_name));
 			return i;
 		}
 	}

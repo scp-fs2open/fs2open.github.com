@@ -92,6 +92,7 @@
 #include "object/objectsnd.h"
 #include "graphics/font.h"
 #include "asteroid/asteroid.h"
+#include "mod_table/mod_table.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -8006,6 +8007,74 @@ void eval_when_do_one_exp(int exp)
 	}
 }
 
+
+// Karajorma
+void eval_when_do_all_exp(int all_actions, int when_op_num)
+{
+	arg_item *ptr;
+	int exp;
+	int actions; 
+	int op_num;
+
+	bool first_loop = true;
+
+	// loop through all the supplied arguments
+	ptr = Sexp_applicable_argument_list.get_next();
+
+	while (ptr != NULL)
+	{
+		// acquire argument to be used
+		Sexp_replacement_arguments.push_back(ptr->text);
+		actions = all_actions; 
+
+		while (actions != -1)
+		{	
+			exp = CAR(actions);	
+
+			op_num = get_operator_const(CTEXT(exp));
+
+			if (op_num == OP_DO_FOR_VALID_ARGUMENTS) {
+				int do_node = CDR(exp); 
+				while (do_node != -1) {
+					eval_sexp(do_node); 
+					do_node = CDR(do_node); 
+				}
+			}
+			else if ( first_loop || special_argument_appears_in_sexp_tree(exp) ) {
+				switch (op_num)
+				{
+					// if the op is a conditional we have to make sure that it can access arguments
+					case OP_WHEN:
+					case OP_EVERY_TIME:
+					case OP_IF_THEN_ELSE:				
+						Sexp_current_argument_nesting_level++;
+						Sexp_applicable_argument_list.add_data(ptr->text);
+						eval_sexp(exp);
+						Sexp_applicable_argument_list.clear_nesting_level();
+						Sexp_current_argument_nesting_level--;
+						break;
+
+					default:
+						eval_sexp(exp);
+				}
+			}
+			
+			// iterate
+			actions = CDR(actions);
+
+			// if-then-else only has one "if" action
+			if (when_op_num == OP_IF_THEN_ELSE)
+				break;
+		}
+		
+		first_loop = false;
+
+		// remove the argument 
+		Sexp_replacement_arguments.pop_back(); 
+		// continue along argument list
+		ptr = ptr->get_next();
+	}
+}
 	
 // Goober5000 - added capability for arguments
 // Goober5000 - and also if-then-else and perform-actions
@@ -8036,23 +8105,37 @@ int eval_when(int n, int when_op_num)
 		val = eval_sexp(cond);
 	}
 
+
 	// if value is true, perform the actions in the 'then' part
 	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE || when_op_num == OP_PERFORM_ACTIONS)
 	{
-		// loop through every action
-		while (actions != -1)
-		{
-			// get the operator
-			int exp = CAR(actions);
-			if (exp != -1)
-				eval_when_do_one_exp(exp);
+		// get the operator
+		int exp = CAR(actions);
 
-			// iterate
-			actions = CDR(actions);
+		// if the mod.tbl setting is in effect we want to each evaluate all the SEXPs for 
+		// each argument	
+		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(exp)) {	
+			if (exp != -1) {
+				eval_when_do_all_exp(actions, when_op_num);
+			}
+		}
+		// without the mod.tbl setting (or if there are no arguments in this SEXP) we loop 
+		// through every action performing them for all arguments
+		else {
+			while (actions != -1)
+			{
+				// get the operator
+				int exp = CAR(actions);
+				if (exp != -1)
+					eval_when_do_one_exp(exp);
 
-			// if-then-else only has one "if" action
-			if (when_op_num == OP_IF_THEN_ELSE)
-				break;
+				// iterate
+				actions = CDR(actions);
+
+				// if-then-else only has one "if" action
+				if (when_op_num == OP_IF_THEN_ELSE)
+					break;
+			}
 		}
 	}
 	// if-then-else has actions to perform under "else"

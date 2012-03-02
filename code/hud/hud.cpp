@@ -661,6 +661,11 @@ void HudGauge::preprocess()
 
 }
 
+void HudGauge::onFrame(float frametime)
+{
+	
+}
+
 void HudGauge::render(float frametime)
 {
 	if(!custom_gauge) {
@@ -1734,6 +1739,8 @@ void hud_render_gauges(int cockpit_display_num)
 				sip->hud_gauges[j]->preprocess();
 			}
 
+			sip->hud_gauges[j]->onFrame(flFrametime);
+
 			if ( !sip->hud_gauges[j]->setupRenderCanvas(render_target) ) {
 				continue;
 			}
@@ -1751,6 +1758,8 @@ void hud_render_gauges(int cockpit_display_num)
 
 		for(j = 0; j < num_gauges; j++) {
 			default_hud_gauges[j]->preprocess();
+
+			default_hud_gauges[j]->onFrame(flFrametime);
 
 			if ( !default_hud_gauges[j]->canRender() ) {
 				continue;

@@ -3077,6 +3077,18 @@ void load_gauge_radar_dradis(int base_w, int base_h, int font, int ship_index, c
 
 	int font_num = FONT1;
 
+	int loop_snd = -1;
+	float loop_snd_volume = 1.0f;
+
+	int arrival_beep_snd = -1;
+	int departure_beep_snd = -1;
+
+	int stealth_arrival_snd = -1;
+	int stealth_departure_snd = -1;
+
+	float arrival_beep_delay = 0.0f;
+	float departure_beep_delay = 0.0f;
+
 	if(gr_screen.res == GR_640) {
 		coords[0] = 231;
 		coords[1] = 332;
@@ -3142,6 +3154,47 @@ void load_gauge_radar_dradis(int base_w, int base_h, int font, int ship_index, c
 		stuff_int_list(display_size, 2);
 	}
 
+	parse_sound("Loop Sound:", &loop_snd, "DRADIS HudGauge");
+
+	if (optional_string("Loop Volume:"))
+	{
+		stuff_float(&loop_snd_volume);
+
+		if (loop_snd_volume <= 0.0f)
+		{
+			Warning(LOCATION, "\"Loop Volume:\" value of \"%f\" is invalid! Must be more than zero! Resetting to default.", arrival_beep_delay);
+			loop_snd_volume = 1.0f;
+		}
+	}
+
+	parse_sound("Arrival Beep Sound:", &arrival_beep_snd, "DRADIS HudGauge");
+	parse_sound("Stealth arrival Beep Sound:", &stealth_arrival_snd, "DRADIS HudGauge");
+
+	if (optional_string("Minimum Beep Delay:"))
+	{
+		stuff_float(&arrival_beep_delay);
+
+		if (arrival_beep_delay < 0.0f)
+		{
+			Warning(LOCATION, "\"Minimum Beep Delay:\" value of \"%f\" is invalid! Must be more than or equal to zero! Resetting to default.", arrival_beep_delay);
+			arrival_beep_delay = 0.0f;
+		}
+	}
+
+	parse_sound("Departure Beep Sound:", &departure_beep_snd, "DRADIS HudGauge");
+	parse_sound("Stealth departure Beep Sound:", &stealth_departure_snd, "DRADIS HudGauge");
+
+	if (optional_string("Minimum Beep Delay:"))
+	{
+		stuff_float(&departure_beep_delay);
+
+		if (departure_beep_delay < 0.0f)
+		{
+			Warning(LOCATION, "\"Minimum Beep Delay:\" value of \"%f\" is invalid! Must be more than or equal to zero! Resetting to default.", departure_beep_delay);
+			departure_beep_delay = 0.0f;
+		}
+	}
+
 	HudGaugeRadarDradis* hud_gauge = new HudGaugeRadarDradis();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -3149,6 +3202,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int font, int ship_index, c
 	hud_gauge->initBitmaps(xy_fname, xz_yz_fname, sweep_fname, target_fname, unknown_fname);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	hud_gauge->initFont(font_num);
+	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

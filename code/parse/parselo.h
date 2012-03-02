@@ -136,10 +136,10 @@ extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern int stuff_float_list(float* flp, int max_floats);
-extern int stuff_vector_list(vec3d *vlp, int max_vecs);
-extern int stuff_vector_list(SCP_vector<vec3d> &vec_list);
+extern int stuff_vec3d_list(vec3d *vlp, int max_vecs);
+extern int stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern int stuff_bool_list(bool *blp, int max_bools);
-extern void stuff_vector(vec3d *vp);
+extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
 extern int string_lookup(char *str1, char *strlist[], int max, char *description = NULL, int say_errors = 0);
 extern void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, char *description);
@@ -148,7 +148,7 @@ extern int match_and_stuff(int f_type, char *strlist[], int max, char *descripti
 extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
 	int max, char *description);
 extern int get_string(char *str);
-extern void stuff_parenthesized_vector(vec3d *vp);
+extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);

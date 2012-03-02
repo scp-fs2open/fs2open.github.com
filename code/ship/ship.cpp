@@ -1148,7 +1148,7 @@ int parse_ship_template()
 	return rtn;
 }
 
-void parse_ship_sound(char *name, int id, ship_info *sip)
+void parse_ship_sound(char *name, GameSoundsIndex id, ship_info *sip)
 {
 	Assert( name != NULL );
 
@@ -1157,7 +1157,7 @@ void parse_ship_sound(char *name, int id, ship_info *sip)
 	parse_sound(name, &temp_index, sip->name);
 
 	if (temp_index >= 0)
-		sip->ship_sounds.insert(std::pair<int, int>(id, temp_index));
+		sip->ship_sounds.insert(std::pair<GameSoundsIndex, int>(id, temp_index));
 }
 
 void parse_ship_sounds(ship_info *sip)
@@ -1184,6 +1184,9 @@ void parse_ship_sounds(ship_info *sip)
 	parse_ship_sound("$AspectSeekerProximityWarningSnd:", SND_PROXIMITY_ASPECT_WARNING, sip);
 	parse_ship_sound("$MissileEvadedSnd:",                SND_MISSILE_EVADED_POPUP, sip);
 	parse_ship_sound("$CargoScanningSnd:",                SND_CARGO_SCAN, sip);
+
+	// Use SND_SHIP_EXPLODE_1 for custom explosion sounds
+	parse_ship_sound("$ExplosionSnd:",                    SND_SHIP_EXPLODE_1, sip);
 } 
 
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string)
@@ -1471,7 +1474,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 	if(optional_string( "+Cockpit offset:" ))
 	{
-		stuff_vector(&sip->cockpit_offset);
+		stuff_vec3d(&sip->cockpit_offset);
 	}
 	while(optional_string( "$Cockpit Display:" )) 
 	{
@@ -1842,7 +1845,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Max Velocity:"))
 	{
-		stuff_vector(&sip->max_vel);
+		stuff_vec3d(&sip->max_vel);
 		sip->max_accel = sip->max_vel.xyz.z;
 	}
 
@@ -1851,7 +1854,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Rotation Time:"))
 	{
-		stuff_vector(&sip->rotation_time);
+		stuff_vec3d(&sip->rotation_time);
 
 		// div/0 safety check.
 		if ((sip->rotation_time.xyz.x == 0) || (sip->rotation_time.xyz.y == 0) || (sip->rotation_time.xyz.z == 0))
@@ -1937,7 +1940,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				stuff_float(&sip->convergence_distance);
 		}
 		if(optional_string("+Offset:")) {
-			stuff_vector(&sip->convergence_offset);
+			stuff_vec3d(&sip->convergence_offset);
 
 			if (IS_VEC_NULL(&sip->convergence_offset))
 				sip->aiming_flags &= ~AIM_FLAG_CONVERGENCE_OFFSET;
@@ -2606,7 +2609,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->flags |= SIF_AFTERBURNER;
 
 		if(optional_string("+Aburn Max Vel:")) {
-			stuff_vector(&sip->afterburner_max_vel);
+			stuff_vec3d(&sip->afterburner_max_vel);
 		}
 
 		if(optional_string("+Aburn For accel:")) {
@@ -2703,7 +2706,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	
 	if(optional_string("$Closeup_pos:"))
 	{
-		stuff_vector(&sip->closeup_pos);
+		stuff_vec3d(&sip->closeup_pos);
 	}
 	else if (first_time && strlen(sip->pof_file))
 	{
@@ -2730,7 +2733,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		
 	if(optional_string("$Topdown offset:")) {
 		sip->topdown_offset_def = true;
-		stuff_vector(&sip->topdown_offset);
+		stuff_vec3d(&sip->topdown_offset);
 	}
 
 	if (optional_string("$Shield_icon:")) {
@@ -2947,7 +2950,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		trail_info *ci = &sip->ct_info[sip->ct_count++];
 		
 		required_string("+Offset:");
-		stuff_vector(&ci->pt);
+		stuff_vec3d(&ci->pt);
 		
 		required_string("+Start Width:");
 		stuff_float(&ci->w_start);
@@ -3142,7 +3145,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		//Get +departure rvec and store on the path_metadata object
 		if (optional_string("+departure rvec:"))
 		{
-			stuff_vector(&metadata.departure_rvec);
+			stuff_vec3d(&metadata.departure_rvec);
 		}
 
 		//Add the new path_metadata to sip->pathMetadata keyed by path name
@@ -3549,7 +3552,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 						if(optional_string("+absolute_angle:")){
 							current_trigger->absolute = true;
-							stuff_vector(&current_trigger->angle );
+							stuff_vec3d(&current_trigger->angle );
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
@@ -3559,7 +3562,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 							if(!optional_string("+relative_angle:"))
 								required_string("+relative_angle:");
 
-							stuff_vector(&current_trigger->angle );
+							stuff_vec3d(&current_trigger->angle );
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
@@ -3567,14 +3570,14 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 						}
 		
 						if(optional_string("+velocity:")){
-							stuff_vector(&current_trigger->vel );
+							stuff_vec3d(&current_trigger->vel );
 							current_trigger->vel.xyz.x = fl_radians(current_trigger->vel.xyz.x);
 							current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
 							current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
 						}
 		
 						if(optional_string("+acceleration:")){
-							stuff_vector(&current_trigger->accel );
+							stuff_vec3d(&current_trigger->accel );
 							current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
 							current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
 							current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
@@ -3596,7 +3599,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		
 						if(optional_string("+absolute_angle:")){
 							current_trigger->absolute = true;
-							stuff_vector(&current_trigger->angle );
+							stuff_vec3d(&current_trigger->angle );
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
@@ -3604,7 +3607,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 						}else{
 							current_trigger->absolute = false;
 							required_string("+relative_angle:");
-							stuff_vector(&current_trigger->angle );
+							stuff_vec3d(&current_trigger->angle );
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
@@ -3612,13 +3615,13 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 						}
 		
 						required_string("+velocity:");
-						stuff_vector(&current_trigger->vel );
+						stuff_vec3d(&current_trigger->vel );
 						current_trigger->vel.xyz.x = fl_radians(current_trigger->vel.xyz.x);
 						current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
 						current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
 		
 						required_string("+acceleration:");
-						stuff_vector(&current_trigger->accel );
+						stuff_vec3d(&current_trigger->accel );
 						current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
 						current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
 						current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
@@ -7188,13 +7191,21 @@ void ship_dying_frame(object *objp, int ship_num)
 			
 			// play ship explosion sound effect, pick appropriate explosion sound
 			int sound_index;
-			if ( sip->flags & (SIF_CAPITAL | SIF_KNOSSOS_DEVICE) ) {
-				sound_index=SND_CAPSHIP_EXPLODE;
-			} else {
-				if ( OBJ_INDEX(objp) & 1 ) {
-					sound_index=SND_SHIP_EXPLODE_1;
+
+			if (ship_has_sound(objp, SND_SHIP_EXPLODE_1))
+			{
+				sound_index = ship_get_sound(objp, SND_SHIP_EXPLODE_1);
+			}
+			else
+			{
+				if ( sip->flags & (SIF_CAPITAL | SIF_KNOSSOS_DEVICE) ) {
+					sound_index=SND_CAPSHIP_EXPLODE;
 				} else {
-					sound_index=SND_SHIP_EXPLODE_2;
+					 if ( OBJ_INDEX(objp) & 1 ) {
+						sound_index=SND_SHIP_EXPLODE_1;
+					} else {
+						sound_index=SND_SHIP_EXPLODE_2;
+					}
 				}
 			}
 
@@ -7987,6 +7998,43 @@ void ship_process_pre(object *objp, float frametime)
 
 MONITOR( NumShips )
 
+void ship_radar_process( object * obj, ship * shipp, ship_info * sip ) 
+{
+	Assert( obj != NULL);
+	Assert( shipp != NULL );
+	Assert( sip != NULL);
+
+	shipp->radar_last_status = shipp->radar_current_status;
+
+	RadarVisibility visibility = radar_is_visible(obj);
+
+	if (visibility == NOT_VISIBLE)
+	{
+		if (shipp->radar_last_contact < 0 && shipp->radar_visible_since < 0)
+		{
+			shipp->radar_visible_since = -1;
+			shipp->radar_last_contact = -1;
+		}
+		else
+		{
+			shipp->radar_visible_since = -1;
+			shipp->radar_last_contact = Missiontime;
+		}
+	}
+	else if (visibility == VISIBLE || visibility == DISTORTED)
+	{
+		if (shipp->radar_visible_since < 0)
+		{
+			shipp->radar_visible_since = Missiontime;
+		}
+
+		shipp->radar_last_contact = Missiontime;
+	}
+
+	shipp->radar_current_status = visibility;
+}
+
+
 /**
  * Player ship uses this code, but does a quick out after doing a few things.
  * 
@@ -8129,6 +8177,9 @@ void ship_process_post(object * obj, float frametime)
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpout_frame( obj, frametime );
 	} 
+
+	// update radar status of the ship
+	ship_radar_process(obj, shipp, sip);
 
 	if ( (!(shipp->flags & SF_ARRIVING) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
 		|| ((sip->warpin_type == WT_IN_PLACE_ANIM) && (shipp->flags & SF_ARRIVING_STAGE_2)) )
@@ -8692,6 +8743,11 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	model_anim_set_initial_states(shipp);
 
 	shipp->model_instance_num = model_create_instance(sip->model_num);
+
+	shipp->time_created = Missiontime;
+
+	shipp->radar_visible_since = -1;
+	shipp->radar_last_contact = -1;
 	
 	return objnum;
 }
@@ -16981,7 +17037,7 @@ void init_path_metadata(path_metadata& metadata)
 	vm_vec_zero(&metadata.departure_rvec);
 }
 
-int ship_get_sound(object *objp, int id)
+int ship_get_sound(object *objp, GameSoundsIndex id)
 {
 	Assert( objp != NULL );
 	Assert( id >= 0 && id < (int) Snds.size() );
@@ -16991,10 +17047,29 @@ int ship_get_sound(object *objp, int id)
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-	SCP_map<int, int>::iterator element = sip->ship_sounds.find(id);
+	SCP_map<GameSoundsIndex, int>::iterator element = sip->ship_sounds.find(id);
 
 	if (element == sip->ship_sounds.end())
 		return id;
 	else
 		return (*element).second;
 }
+
+bool ship_has_sound(object *objp, GameSoundsIndex id)
+{
+	Assert( objp != NULL );
+	Assert( id >= 0 && id < (int) Snds.size() );
+
+	Assert( objp->type == OBJ_SHIP );
+
+	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	SCP_map<GameSoundsIndex, int>::iterator element = sip->ship_sounds.find(id);
+
+	if (element == sip->ship_sounds.end())
+		return false;
+	else
+		return true;
+}
+

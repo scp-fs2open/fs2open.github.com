@@ -27,6 +27,7 @@ extern char *Default_ai_profiles_table;
 extern char *Default_autopilot_table;
 extern char *Default_fonts_table;
 extern char *Default_controlconfig_table;
+extern char *Default_mod_table;
 extern char *Default_post_processing_table;
 extern char* Default_main_vertex_shader;
 extern char* Default_main_fragment_shader;
@@ -55,6 +56,7 @@ def_file Default_files[] =
 	{ "autopilot.tbl",			Default_autopilot_table },
 	{ "fonts.tbl",				Default_fonts_table },
 	{ "controlconfigdefaults.tbl",  Default_controlconfig_table },
+	{ "game_settings.tbl",		Default_mod_table},
 	{ "post_processing.tbl",	Default_post_processing_table},
 	{ "main-f.sdr",				Default_main_fragment_shader},
 	{ "main-v.sdr",				Default_main_vertex_shader},
@@ -97,6 +99,26 @@ char *defaults_get_file(char *filename)
 // This is the default table.
 // Please note that the {\n\}s should be removed from the end of each line
 // if you intend to use this to format your own table.
+
+char *Default_mod_table = "\
+;; Mod.tbl should be used for settings which affect the entire mod and	\n\
+;; only very rarely need to be changed (if ever).						\n\
+																		\n\
+#HUD SETTINGS															\n\
+																		\n\
+;; Sets the delay before a directive will appear on the screen (ms)		\n\
+$directive wait time: 3000												\n\
+																		\n\
+#SEXP SETTINGS															\n\
+																		\n\
+;; When set this makes the argument SEXPs loop through all the SEXPs	\n\
+;; before it moves on to the next argument. Default behaviour is the 	\n\
+;; exact opposite, each SEXP is called for all arguments.				\n\
+$Loop SEXPs Then Arguments:	NO											\n\
+																		\n\
+#END																	\n\
+";
+
 
 char *Default_species_table = "\
 																		\n\

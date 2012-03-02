@@ -479,6 +479,8 @@ FS2_SOURCES =	\
 	missionui/missionweaponchoice.h	\
 	missionui/redalert.cpp	\
 	missionui/redalert.h	\
+	mod_table/mod_table.cpp \
+	mod_table/mod_table.h \
 	model/model.h	\
 	model/modelanim.cpp	\
 	model/modelanim.h	\
