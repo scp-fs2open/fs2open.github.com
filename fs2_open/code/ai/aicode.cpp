@@ -10108,14 +10108,12 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		Int3();			// bogus type of repair info
 	}
 
-	if (repair_objp){
-		Ai_info[Ships[repair_objp->instance].ai_index].warp_out_timestamp = stamp;
-	}
-
 	// repair_objp might be NULL is we are cleaning up this mode because of the support ship
 	// getting killed.
 	if ( repair_objp ) {
+        Ai_info[Ships[repair_objp->instance].ai_index].warp_out_timestamp = stamp;
 		aip = &Ai_info[Ships[repair_objp->instance].ai_index];
+        
 		switch ( how ) {
 		case REPAIR_INFO_ONWAY:
 			Assert( repaired_objp != NULL );
