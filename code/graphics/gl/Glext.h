@@ -5123,12 +5123,12 @@ typedef unsigned long long int uint64_t;
 	// realize that, e.g. char has the same size as __int8
 	// so we give up on __intX for them.
 	#if (_MSC_VER < 1300)
-		#include "globalincs/msvc/stdint.h"
+		typedef signed int int32_t;
 	#else
-		typedef __int32 int32_t;
-		typedef __int64 int64_t;
-		typedef unsigned __int64 uint64_t;
+		typedef signed __int32 int32_t;
 	#endif
+	typedef signed __int64 int64_t;
+	typedef unsigned __int64 uint64_t;
 #else
 /* Fallback if nothing above works */
 #include <inttypes.h>
