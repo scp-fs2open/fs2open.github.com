@@ -846,6 +846,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\globalincs\msvc\inttypes.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\GlobalIncs\LinkList.h"
 				>
 			</File>
@@ -874,7 +878,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\globalincs\stdint.h"
+				RelativePath="..\..\code\globalincs\msvc\stdint.h"
 				>
 			</File>
 			<File
