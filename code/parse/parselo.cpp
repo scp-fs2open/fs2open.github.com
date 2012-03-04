@@ -1129,7 +1129,7 @@ int get_string_or_variable (SCP_string &str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str); 
+		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str()); 
 	}
 
 	return result;
@@ -1383,7 +1383,7 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 		outstr = read_str;
 	}
 
-	diag_printf("Stuffed string = [%.30s]\n", outstr);
+	diag_printf("Stuffed string = [%.30s]\n", outstr.c_str());
 }
 
 // stuff a string, but only until the end of a line. don't ignore leading whitespace. close analog of fgets()/cfgets()
@@ -1433,7 +1433,7 @@ void stuff_string_line(SCP_string &outstr)
 		fhash_add_str(outstr.c_str(), tag_id);
 	}
 
-	diag_printf("Stuffed string = [%.30s]\n", outstr);
+	diag_printf("Stuffed string = [%.30s]\n", outstr.c_str());
 }
 
 // Exactly the same as stuff string only Malloc's the buffer. 
