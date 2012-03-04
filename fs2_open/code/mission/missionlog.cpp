@@ -564,16 +564,16 @@ void message_log_add_segs(char *text, int color, int flags = 0)
 	int w;
 
 	while (1) {
-		if (X == ACTION_X) {
-			while (is_white_space(*text))
-				text++;
-		}
-
 		if (!text) {
 			mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
 			return;
 		}
-
+        
+		if (X == ACTION_X) {
+			while (is_white_space(*text))
+				text++;
+		}
+        
 		if ( !text[0] ) {
 			return;
 		}
