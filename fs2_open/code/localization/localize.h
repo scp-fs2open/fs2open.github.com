@@ -100,6 +100,7 @@ void lcl_fred_replace_stuff(SCP_string &text);
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
 void lcl_ext_localize(char *in, char *out, int max_len, int *id = NULL);
+void lcl_ext_localize(SCP_string &in, SCP_string &out, int *id = NULL);
 
 // translate the specified string based upon the current language
 char *XSTR(char *str, int index);
@@ -113,6 +114,7 @@ char* lcl_fix_umlauts(char *str, int which_way);
 
 // covert some polish characters
 void lcl_fix_polish(char *str);
+void lcl_fix_polish(SCP_string &str);
 
 // macro for launcher xstrs
 #if defined(GERMAN_BUILD)

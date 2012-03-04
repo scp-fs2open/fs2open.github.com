@@ -125,9 +125,11 @@ void lcl_ext_associate(char *filename);
 
 // given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success
 int lcl_ext_get_text(char *xstr, char *out);
+int lcl_ext_get_text(SCP_string &xstr, SCP_string &out);
 
 // given a valid XSTR() tag piece of text, extract the id# portion, return the value in out, nonzero on success
 int lcl_ext_get_id(char *xstr, int *out);
+int lcl_ext_get_id(SCP_string &xstr, int *out);
 
 // given a valid XSTR() id#, lookup the string in tstrings.tbl, filling in out if found, nonzero on success
 int lcl_ext_lookup(char *out, int id);
@@ -603,25 +605,24 @@ void lcl_fred_replace_stuff(SCP_string &text)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
 void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
-{			
-	char first_four[5];
+{
 	char text_str[PARSE_BUF_SIZE]="";
 	char lookup_str[PARSE_BUF_SIZE]="";
-	int str_id;	
+	int str_id;
 	int str_len;	
 
 	Assert(in);
 	Assert(out);
 
 	// default (non-external string) value
-	if(id != NULL){
+	if (id != NULL) {
 		*id = -2;
-	}	
+	}
 
 	str_len = strlen(in);
 
 	// if the string is < 9 chars, it can't be an XSTR("",) tag, so just copy it
-	if(str_len < 9){
+	if (str_len < 9) {
 		if (str_len > max_len)
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
 
@@ -634,9 +635,7 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 	}
 
 	// otherwise, check to see if it's an XSTR() tag
-	memset(first_four, 0, 5);
-	strncpy(first_four, in, 4);
-	if(stricmp(first_four, "XSTR")){
+	if (strnicmp(in, "XSTR", 4)) {
 		// NOT an XSTR() tag
 		if (str_len > max_len)
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
@@ -650,17 +649,20 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 	}
 
 	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections		
-	if(!lcl_ext_get_text(in, text_str)){
-		Int3();
+	if (!lcl_ext_get_text(in, text_str)) {
+		if (str_len > max_len)
+			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
+
 		strncpy(out, in, max_len);
-		if(id != NULL){
+
+		if (id != NULL)
 			*id = -1;
-		}
+
 		return;
 	}
-	if(!lcl_ext_get_id(in, &str_id)){
-		if ( strlen(in) > (uint)max_len )
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, strlen(in), max_len);
+	if (!lcl_ext_get_id(in, &str_id)) {
+		if (str_len > max_len)
+			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
 
@@ -684,7 +686,7 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 	}		
 
 	// attempt to find the string
-	if(lcl_ext_lookup(lookup_str, str_id)){
+	if (lcl_ext_lookup(lookup_str, str_id)) {
 		// copy to the outgoing string
 		if ( strlen(lookup_str) > (uint)max_len )
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", lookup_str, strlen(lookup_str), max_len);
@@ -700,7 +702,84 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 	}	
 
 	// set the id #
-	if(id != NULL){
+	if (id != NULL) {
+		*id = str_id;
+	}
+}
+
+// ditto for SCP_string
+void lcl_ext_localize_sub(SCP_string &in, SCP_string &out, int *id)
+{
+	SCP_string text_str = "";
+	char lookup_str[1024]="";
+	int str_id;
+
+	// default (non-external string) value
+	if (id != NULL) {
+		*id = -2;
+	}	
+
+	// if the string is < 9 chars, it can't be an XSTR("",) tag, so just copy it
+	if (in.length() < 9) {
+		out = in;
+
+		if (id != NULL)
+			*id = -2;
+
+		return;
+	}
+
+	// otherwise, check to see if it's an XSTR() tag
+	if (in.compare(0, 4, "XSTR")) {
+		// NOT an XSTR() tag
+		out = in;
+
+		if (id != NULL)
+			*id = -2;
+
+		return;
+	}
+
+	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections		
+	if (!lcl_ext_get_text(in, text_str)) {
+		out = in;
+
+		if (id != NULL)
+			*id = -1;
+
+		return;
+	}
+	if (!lcl_ext_get_id(in, &str_id)) {
+		out = in;
+
+		if (id != NULL)
+			*id = -1;
+
+		return;
+	}
+	
+	// if the localization file is not open, or we're running in the default language, return the original string
+	if ( (Lcl_ext_file == NULL) || (str_id < 0) || (Lcl_current_lang == LCL_DEFAULT_LANGUAGE) ) {
+		out = text_str;
+
+		if (id != NULL)
+			*id = str_id;
+
+		return;
+	}		
+
+	// attempt to find the string
+	if (lcl_ext_lookup(lookup_str, str_id)) {
+		// copy to the outgoing string
+		out = lookup_str;
+	}
+	// otherwise use what we have - probably should Int3() or assert here
+	else {
+		out = text_str;
+	}	
+
+	// set the id #
+	if (id != NULL){
 		*id = str_id;
 	}
 }
@@ -715,6 +794,16 @@ void lcl_ext_localize(char *in, char *out, int max_len, int *id)
 
 	// do translation of $callsign, $rank, etc.
 	lcl_replace_stuff(out, max_len);
+}
+
+// ditto for SCP_string
+void lcl_ext_localize(SCP_string &in, SCP_string &out, int *id)
+{
+	// do XSTR translation
+	lcl_ext_localize_sub(in, out, id);
+
+	// do translation of $callsign, $rank, etc.
+	lcl_replace_stuff(out);
 }
 
 // translate the specified string based upon the current language
@@ -781,28 +870,58 @@ int lcl_ext_get_text(char *xstr, char *out)
 	str_start = str_end = 0;
 	p = strstr(xstr, "\"");
 	if(p == NULL){
-		error_display(0, "Error parsing XSTR() tag %s\n", xstr);		
+		error_display(0, "Error parsing XSTR() tag %s\n", xstr);
 		return 0;
 	} else {
 		str_start = p - xstr + 1;		
 	}
 	// make sure we're not about to walk past the end of the string
 	if((p - xstr) >= str_len){
-		error_display(0, "Error parsing XSTR() tag %s\n", xstr);		
+		error_display(0, "Error parsing XSTR() tag %s\n", xstr);
 		return 0;
 	}
 
 	// look for the close quote
 	p2 = strstr(p+1, "\"");
 	if(p2 == NULL){
-		error_display(0, "Error parsing XSTR() tag %s\n", xstr);		
+		error_display(0, "Error parsing XSTR() tag %s\n", xstr);
 		return 0;
 	} else {
 		str_end = p2 - xstr;
 	}
 
-	// now that we know the boundaries of the actual string in the XSTR() tag. copy it
+	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
 	memcpy(out, xstr + str_start, str_end - str_start);	
+
+	if (Lcl_pl)
+		lcl_fix_polish(out);
+
+	// success
+	return 1;
+}
+
+// given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success
+int lcl_ext_get_text(SCP_string &xstr, SCP_string &out)
+{
+	size_t open_quote_pos, close_quote_pos;
+
+	// this is some crazy wack-ass code.
+	// look for the open quote
+	open_quote_pos = xstr.find('\"');
+	if (open_quote_pos == SCP_string::npos) {
+		error_display(0, "Error parsing XSTR() tag %s\n", xstr.c_str());
+		return 0;
+	}
+
+	// look for the close quote
+	close_quote_pos = xstr.find('\"', open_quote_pos+1);
+	if (close_quote_pos == SCP_string::npos) {
+		error_display(0, "Error parsing XSTR() tag %s\n", xstr.c_str());
+		return 0;
+	}
+
+	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
+	out.assign(xstr, open_quote_pos + 1, close_quote_pos - open_quote_pos - 1);
 
 	if (Lcl_pl)
 		lcl_fix_polish(out);
@@ -876,6 +995,78 @@ int lcl_ext_get_id(char *xstr, int *out)
 
 	// get the value and we're done
 	*out = atoi(pnext);
+
+	// success
+	return 1;
+}
+
+// given a valid XSTR() tag piece of text, extract the id# portion, return the value in out, nonzero on success
+int lcl_ext_get_id(SCP_string &xstr, int *out)
+{
+	char id_buf[10];
+	size_t p, pnext;
+
+	// find the first quote
+	p = xstr.find('\"');
+	if (p == SCP_string::npos) {
+		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
+		return 0;
+	}
+	p++;
+
+	// continue searching until we find the close quote
+	while(1) {
+		pnext = xstr.find('\"', p);
+		if (pnext == SCP_string::npos) {
+			error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
+			return 0;
+		}
+
+		// if the previous char is a \, we know its not the "end-of-string" quote
+		if (xstr[pnext - 1] != '\\') {
+			p = pnext;
+			break;
+		}
+
+		// continue
+		p = pnext;
+	}
+
+	// search until we find a ,	
+	pnext = xstr.find(',', p);
+	if (pnext == SCP_string::npos) {
+		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
+		return 0;
+	}
+
+	// find the close parenthesis
+	p = pnext;
+	pnext = xstr.find(')', p);
+	if (pnext == SCP_string::npos) {
+		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
+		return 0;
+	}
+
+	// get only the number
+	while (!isdigit(xstr[p]) && p < pnext)
+		p++;
+	while (!isdigit(xstr[pnext]) && p < pnext)
+		pnext--;
+	if (p == pnext) {
+		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
+		return 0;
+	}
+
+	// now get the id string
+	if ((pnext - p + 1) > 9) {
+		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
+		return 0;
+	}
+	memset(id_buf, 0, 10);
+	xstr.copy(id_buf, pnext - p + 1, p);
+
+	// get the value and we're done
+	*out = atoi(id_buf);
 
 	// success
 	return 1;
@@ -1258,6 +1449,17 @@ void lcl_fix_polish(char *str)
 			*str = '\xF3';
 		else if(*str == '\x88')
 			*str = '\xEA';
+	}
+}
+
+// convert some of the polish characters
+void lcl_fix_polish(SCP_string &str)
+{
+	for (SCP_string::iterator ii = str.begin(); ii != str.end(); ++ii) {
+		if(*ii == '\xA2')
+			*ii = '\xF3';
+		else if(*ii == '\x88')
+			*ii = '\xEA';
 	}
 }
 
