@@ -212,14 +212,15 @@ extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL)
 
 extern char	parse_error_text[128];
 
-// Goober5000 - returns position of replacement or -1 for exceeded length
+// Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
 extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
-
-// Goober5000 - returns number of replacements or -1 for exceeded length
-extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
-
 extern SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern SCP_string& replace_one(SCP_string& context, const char* from, const char* to);
+
+// Goober5000 - returns number of replacements or -1 for exceeded length (SCP_string variants return the result)
+extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
 extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern SCP_string& replace_all(SCP_string& context, const char* from, const char* to);
 
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
