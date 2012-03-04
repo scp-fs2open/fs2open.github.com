@@ -751,9 +751,9 @@ void multi_player_maybe_add_score (int score, int team)
 	}
 }
 
-// temporary hook for temporarily displaying objective completion/failure
-// extern void message_training_add_simple( char *text );
-
+/**
+ * Hook for temporarily displaying objective completion/failure
+ */
 void mission_goal_status_change( int goal_num, int new_status)
 {
 	int type;
@@ -778,7 +778,6 @@ void mission_goal_status_change( int goal_num, int new_status)
 				if ( !( Mission_goals[goal_num].flags & MGF_NO_MUSIC ) ) {	// maybe play event music
 					event_music_primary_goal_failed();
 				}
-				//HUD_sourced_printf(HUD_SOURCE_FAILED, "%s goal failed at time %6.1f!", Goal_type_text(type), f2fl(Missiontime) );
 			}
 		}
 		mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[goal_num].name, NULL, goal_num );

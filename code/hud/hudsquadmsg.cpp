@@ -1611,7 +1611,7 @@ void hud_squadmsg_type_select( )
 
 	// check to see if the player is a traitor.  If so, then he will not
 	// be able to do anything from this menu
-	if ( Player_ship->team == Iff_traitor ) {
+	if ((Player_ship != NULL) && (Player_ship->team == Iff_traitor)) {
 		for (i = 0; i < MAX_MENU_ITEMS; i++ )
 			MsgItems[i].active = 0;
 		goto do_main_menu;
