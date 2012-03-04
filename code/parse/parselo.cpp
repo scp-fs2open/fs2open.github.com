@@ -3790,7 +3790,17 @@ SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_s
 	size_t foundHere;
 	if ((foundHere = context.find(from, 0)) != SCP_string::npos)
 	{
-		context.replace(foundHere, from.size(), to);
+		context.replace(foundHere, from.length(), to);
+	}
+	return context;
+}
+
+SCP_string& replace_one(SCP_string& context, const char* from, const char* to)
+{
+	size_t foundHere;
+	if ((foundHere = context.find(from, 0)) != SCP_string::npos)
+	{
+		context.replace(foundHere, strlen(from), to);
 	}
 	return context;
 }
@@ -3798,12 +3808,31 @@ SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_s
 // http://www.cppreference.com/wiki/string/replace
 SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
+	size_t from_len = from.length();
+	size_t to_len = to.length();
+
 	size_t lookHere = 0;
 	size_t foundHere;
 	while ((foundHere = context.find(from, lookHere)) != SCP_string::npos)
 	{
-		context.replace(foundHere, from.size(), to);
-		lookHere = foundHere + to.size();
+		context.replace(foundHere, from_len, to);
+		lookHere = foundHere + to_len;
+	}
+	return context;
+}
+
+// http://www.cppreference.com/wiki/string/replace
+SCP_string& replace_all(SCP_string& context, const char* from, const char* to)
+{
+	size_t from_len = from.length();
+	size_t to_len = to.length();
+
+	size_t lookHere = 0;
+	size_t foundHere;
+	while ((foundHere = context.find(from, lookHere)) != SCP_string::npos)
+	{
+		context.replace(foundHere, from_len, to);
+		lookHere = foundHere + to_len;
 	}
 	return context;
 }
