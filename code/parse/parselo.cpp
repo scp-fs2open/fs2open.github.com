@@ -97,9 +97,7 @@ void ignore_gray_space()
 //		 "abc \t"   becomes "abc"
 void drop_trailing_white_space(char *str)
 {
-	int	i;
-
-	i = strlen(str) - 1;
+	int	i = strlen(str) - 1;
 
 	while ((i >= 0) && is_white_space(str[i]))
 		i--;
@@ -107,19 +105,59 @@ void drop_trailing_white_space(char *str)
 	str[i+1] = 0;
 }
 
+//	Ditto for SCP_string
+void drop_trailing_white_space(SCP_string &str)
+{
+	int i = str.length() - 1;
+
+	while ((i >= 0) && is_white_space(str[i]))
+		i--;
+
+	str.resize(i+1);
+}
+
 //	Eliminate any leading whitespace in str
 void drop_leading_white_space(char *str)
 {
-	int len, i;
+	int len, first;
 
 	len = strlen(str);
-	i = 0;
+	first = 0;
 
-	while ((i < len) && is_white_space(str[i]))
-		i++;
+	// find first non-whitespace
+	while ((first < len) && is_white_space(str[first]))
+		first++;
 
-	memmove(str, str+i, len-i);
-	str[len-i] = 0;
+	// quick out
+	if (first == 0)
+		return;
+
+	memmove(str, str+first, len-first);
+	str[len-first] = 0;
+}
+
+//	Ditto for SCP_string
+void drop_leading_white_space(SCP_string &str)
+{
+	int len, first, i;
+
+	len = str.length();
+	first = 0;
+
+	// find first non-whitespace
+	while ((first < len) && is_white_space(str[first]))
+		first++;
+
+	// quick out
+	if (first == 0)
+		return;
+
+	// copy chars to beginning of string
+	for (i = 0; (first + i) < len; i++)
+		str[i] = str[first + i];
+
+	// since i is now off the end of the for loop, it represents the new length
+	str.resize(i);
 }
 
 // eliminates all leading and trailing white space from a string.  Returns pointer passed in.
@@ -146,6 +184,40 @@ char *drop_white_space(char *str)
 	return str;
 }
 
+// ditto for SCP_string
+void drop_white_space(SCP_string &str)
+{
+	int len, newlen, first, i;
+
+	len = str.length();
+	first = 0;
+	newlen = 0;
+
+	// find first non-whitespace
+	while ((first < len) && is_white_space(str[first]))
+		first++;
+
+	// find first whitespace after string starts
+	while ((first + newlen < len) && !is_white_space(str[first + newlen]))
+		newlen++;
+
+	// quick out
+	if (newlen == 0)
+	{
+		str = "";
+		return;
+	}
+
+	if (first != 0)
+	{
+		// copy chars to beginning of string
+		for (i = 0; i < newlen; i++)
+			str[i] = str[first + i];
+	}
+
+	str.resize(newlen);
+}
+
 //	Advances Mp past current token.
 void skip_token()
 {
@@ -159,6 +231,7 @@ void skip_token()
 //	(Verbose is set if -v command line switch is present.)
 void diag_printf(char *format, ...)
 {
+#ifndef NDEBUG
 	char	buffer[8192];
 	va_list args;
 
@@ -167,6 +240,7 @@ void diag_printf(char *format, ...)
 	va_end(args);
 
 	nprintf(("Parse", "%s", buffer));
+#endif
 }
 
 //	Grab and return (a pointer to) a bunch of tokens, terminating at
@@ -442,9 +516,9 @@ int check_for_eoln()
 	else
 		return 0;
 }
+
 // similar to optional_string, but just checks if next token is a match.
 // It doesn't advance Mp except to skip past white space.
-//
 int check_for_string(char *pstr)
 {
 	ignore_white_space();
@@ -723,10 +797,32 @@ void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max)
 		count++;
 	}
 
-	if (count == max)
+	if (count >= max)
 		error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
 
 	*outstr = 0;
+}
+
+//	Ditto for SCP_string.
+void copy_to_eoln(SCP_string &outstr, char *more_terminators, char *instr)
+{
+	char	ch;
+	char	terminators[128];
+
+	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
+
+	terminators[0] = EOLN;
+	terminators[1] = (char)EOF_CHAR;
+	terminators[2] = NULL;
+	if (more_terminators != NULL)
+		strcat_s(terminators, more_terminators);
+	else
+		terminators[2] = 0;
+
+	outstr = "";
+	while (((ch = *instr++) != 0) && (strchr(terminators, ch) == NULL)) {
+		outstr.append(1, ch);
+	}
 }
 
 //	Copy characters from instr to outstr until next white space is found, or until max
@@ -753,10 +849,33 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 		count++;
 	}
 
-	if (count == max)
+	if (count >= max)
 		error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
 
 	*outstr = 0;
+}
+
+//	Ditto for SCP_string.
+void copy_to_next_white(SCP_string &outstr, char *instr)
+{
+	int	in_quotes = 0;
+	char	ch;
+
+	outstr = "";
+	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != EOF_CHAR)) {
+		if ( ch == '\"' ) {
+			in_quotes = !in_quotes;
+			continue;
+		}
+
+		if ( !in_quotes && is_white_space(ch) )	// not in quotes, white space terminates string
+			break;
+
+		if ( !in_quotes && is_parenthesis(ch) ) // not in quotes, parentheses are important for parsing so we don't want to copy them
+			break;
+
+		outstr.append(1, ch);
+	}
 }
 
 //Returns a null-terminated character string allocated with vm_malloc() with the data
@@ -805,7 +924,6 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 		outstr[foundstr - instr] = 0;
 
 	} else {
-
 		nprintf(("Error", "Error.  Too much text (%i chars, %i allowed) before %s\n",
 			foundstr - instr - strlen(endstr), max_chars, endstr));
 
@@ -815,28 +933,63 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 	diag_printf("Here's the partial wad of text:\n%.30s\n", outstr);
 }
 
+//	Ditto for SCP_string.
+void copy_text_until(SCP_string &outstr, char *instr, char *endstr)
+{
+	char *foundstr;
+	Assert(instr && endstr);
+
+	foundstr = stristr(instr, endstr);
+
+	if (foundstr == NULL) {
+		nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
+		longjmp(parse_abort, 3);
+	}
+
+	outstr.assign(instr, foundstr - instr);
+
+	diag_printf("Here's the partial wad of text:\n%.30s\n", outstr.c_str());
+}
+
 // stuffs a string into a buffer.  Can get a string between " marks and stops
-// when whitespace in encounted -- not to end of line
-void stuff_string_white(char *pstr, int len)
+// when whitespace is encounted -- not to end of line
+void stuff_string_white(char *outstr, int len)
 {
 	if(!len)
 		len = NAME_LENGTH-1;
 
 	ignore_white_space();
-	copy_to_next_white(pstr, Mp, len);
+	copy_to_next_white(outstr, Mp, len);
+	advance_to_next_white();
+}
+
+// ditto for SCP_string
+void stuff_string_white(SCP_string &outstr)
+{
+	ignore_white_space();
+	copy_to_next_white(outstr, Mp);
 	advance_to_next_white();
 }
 
 // Goober5000
-void stuff_string_until(char *pstr, char *endstr, int len)
+void stuff_string_until(char *outstr, char *endstr, int len)
 {
 	if(!len)
 		len = NAME_LENGTH-1;
 
 	ignore_gray_space();
-	copy_text_until(pstr, Mp, endstr, len);
-	Mp += strlen(pstr);
-	drop_trailing_white_space(pstr);
+	copy_text_until(outstr, Mp, endstr, len);
+	Mp += strlen(outstr);
+	drop_trailing_white_space(outstr);
+}
+
+// Goober5000
+void stuff_string_until(SCP_string &outstr, char *endstr)
+{
+	ignore_gray_space();
+	copy_text_until(outstr, Mp, endstr);
+	Mp += outstr.length();
+	drop_trailing_white_space(outstr);
 }
 
 //WMC
@@ -948,10 +1101,72 @@ int get_string_or_variable (char *str)
 	return result;
 }
 
+// ditto for SCP_string
+int get_string_or_variable (SCP_string &str)
+{
+	int result = -1; 
+
+	ignore_white_space();
+	
+	// Variable
+	if (*Mp == '@') 
+	{
+		Mp++;
+		stuff_string_white(str); 
+		int sexp_variable_index = get_index_sexp_variable_name(str); 
+		
+		// We only want String variables
+		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
+
+		result = PARSING_FOUND_VARIABLE; 
+	}
+	// Quoted string
+	else if (*Mp == '"')
+	{
+		get_string(str);
+		result =  PARSING_FOUND_STRING;
+	}
+	else
+	{
+		get_string(str);
+		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str); 
+	}
+
+	return result;
+}
+
+/**
+ * Stuff a string (" chars ") into *str, return length.
+ */
+int get_string(char *str)
+{
+	int	len;
+
+	len = strcspn(Mp + 1, "\"");
+	strncpy(str, Mp + 1, len);
+	str[len] = 0;
+
+	Mp += len + 2;
+	return len;
+}
+
+/**
+ * Stuff a string (" chars ") into str.
+ */
+void get_string(SCP_string &str)
+{
+	int len;
+
+	len = strcspn(Mp + 1, "\"");
+	str.assign(Mp + 1, len);
+
+	Mp += len + 2;
+}
+
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-void stuff_string(char *pstr, int type, int len, char *terminators)
+void stuff_string(char *outstr, int type, int len, char *terminators)
 {
 	char read_str[PARSE_BUF_SIZE] = "";
 	int read_len = PARSE_BUF_SIZE;
@@ -962,7 +1177,7 @@ void stuff_string(char *pstr, int type, int len, char *terminators)
 	Assert( final_len > 0 );
 
 	// make sure it's zero'd out
-	memset( pstr, 0, len );
+	memset( outstr, 0, len );
 
 	switch (type) {
 		case F_RAW:
@@ -1006,6 +1221,7 @@ void stuff_string(char *pstr, int type, int len, char *terminators)
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
 			break;
+
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
 		// can be deleted once all missions are using new briefing format
 
@@ -1039,17 +1255,17 @@ void stuff_string(char *pstr, int type, int len, char *terminators)
 			break;		
 
 		default:
-			Assert(0);
+			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
 	}
 
 	// now we want to do any final localization
 	if(type != F_RAW && type != F_LNAME)
 	{
-		lcl_ext_localize(read_str, pstr, final_len, &tag_id);
+		lcl_ext_localize(read_str, outstr, final_len, &tag_id);
 
 		// if the hash localized text hash table is active and we have a valid external string - hash it
 		if(fhash_active() && (tag_id > -2)){
-			fhash_add_str(pstr, tag_id);
+			fhash_add_str(outstr, tag_id);
 		}
 	}
 	else
@@ -1057,14 +1273,121 @@ void stuff_string(char *pstr, int type, int len, char *terminators)
 		if ( strlen(read_str) > (uint)final_len )
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", read_str, strlen(read_str), final_len);
 
-		strncpy(pstr, read_str, final_len);
+		strncpy(outstr, read_str, final_len);
 	}
 
-	diag_printf("Stuffed string = [%.30s]\n", pstr);
+	diag_printf("Stuffed string = [%.30s]\n", outstr);
+}
+
+//	Stuff a string into a string buffer.
+//	Supports various FreeSpace primitive types.
+void stuff_string(SCP_string &outstr, int type, char *terminators)
+{
+	SCP_string read_str;
+	int tag_id;
+
+	// make sure it's zero'd out
+	outstr = "";
+
+	switch (type) {
+		case F_RAW:
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		case F_LNAME:
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		case F_NAME:
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		case F_DATE:
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		case F_NOTES:
+			ignore_white_space();
+			copy_text_until(read_str, Mp, "$End Notes:");
+			Mp += read_str.length();
+			required_string("$End Notes:");
+			break;
+
+		case F_FILESPEC:
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		// F_MULTITEXTOLD keeping for backwards compatability with old missions
+		// can be deleted once all missions are using new briefing format
+
+		case F_MULTITEXTOLD:		
+			ignore_white_space();
+			copy_text_until(read_str, Mp, "$End Briefing Text:");
+			Mp += read_str.length();
+			required_string("$End Briefing Text:");
+			break;
+
+		case F_MULTITEXT:		
+			ignore_white_space();
+			copy_text_until(read_str, Mp, "$end_multi_text");
+			Mp += read_str.length();
+			drop_trailing_white_space(read_str);
+			required_string("$end_multi_text");
+			break;
+
+		case F_PATHNAME:
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		case F_MESSAGE:
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;		
+
+		default:
+			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
+	}
+
+	// now we want to do any final localization
+	if(type != F_RAW && type != F_LNAME)
+	{
+		lcl_ext_localize(read_str, outstr, &tag_id);
+
+		// if the hash localized text hash table is active and we have a valid external string - hash it
+		if(fhash_active() && (tag_id > -2)){
+			fhash_add_str(outstr.c_str(), tag_id);
+		}
+	}
+	else
+	{
+		outstr = read_str;
+	}
+
+	diag_printf("Stuffed string = [%.30s]\n", outstr);
 }
 
 // stuff a string, but only until the end of a line. don't ignore leading whitespace. close analog of fgets()/cfgets()
-void stuff_string_line(char *pstr, int len)
+void stuff_string_line(char *outstr, int len)
 {
 	char read_str[PARSE_BUF_SIZE] = "";
 	int read_len = PARSE_BUF_SIZE;
@@ -1080,14 +1403,37 @@ void stuff_string_line(char *pstr, int len)
 	Mp++;
 
 	// now we want to do any final localization
-	lcl_ext_localize(read_str, pstr, final_len, &tag_id);
+	lcl_ext_localize(read_str, outstr, final_len, &tag_id);
 
 	// if the hash localized text hash table is active and we have a valid external string - hash it
 	if(fhash_active() && (tag_id > -2)){
-		fhash_add_str(pstr, tag_id);
+		fhash_add_str(outstr, tag_id);
 	}
 
-	diag_printf("Stuffed string = [%.30s]\n", pstr);
+	diag_printf("Stuffed string = [%.30s]\n", outstr);
+}
+
+// ditto for SCP_string
+void stuff_string_line(SCP_string &outstr)
+{
+	SCP_string read_str;
+	int tag_id;
+
+	// read in a line
+	copy_to_eoln(read_str, "\n", Mp);
+	drop_trailing_white_space(read_str);
+	advance_to_eoln("");
+	Mp++;
+
+	// now we want to do any final localization
+	lcl_ext_localize(read_str, outstr, &tag_id);
+
+	// if the hash localized text hash table is active and we have a valid external string - hash it
+	if(fhash_active() && (tag_id > -2)){
+		fhash_add_str(outstr.c_str(), tag_id);
+	}
+
+	diag_printf("Stuffed string = [%.30s]\n", outstr);
 }
 
 // Exactly the same as stuff string only Malloc's the buffer. 
@@ -1136,10 +1482,48 @@ void stuff_malloc_string(char **dest, int type, char *terminators, int len)
 void compact_multitext_string(char *str)
 {
 	unsigned int i;
+	unsigned int len = strlen(str);
+	int num_cr = 0;
 
-	for (i=0; i<strlen(str); i++)
-		if (str[i] == '\n')
-			str[i] = ' ';
+	for (i=0; i<len; i++)
+	{
+		// skip CR
+		// convert LF to space
+		// copy characters backwards if any CRs previously encountered
+		if (str[i] == '\r')
+			num_cr++;
+		else if (str[i] == '\n')
+			str[i-num_cr] = ' ';
+		else if (num_cr > 0)
+			str[i-num_cr] = str[i];
+	}
+
+	if (num_cr > 0)
+		str[len-num_cr] = 0;
+}
+
+// ditto for SCP_string
+void compact_multitext_string(SCP_string &str)
+{
+	unsigned int i;
+	unsigned int len = str.length();
+	int num_cr = 0;
+
+	for (i=0; i<len; i++)
+	{
+		// skip CR
+		// convert LF to space
+		// copy characters backwards if any CRs previously encountered
+		if (str[i] == '\r')
+			num_cr++;
+		else if (str[i] == '\n')
+			str[i-num_cr] = ' ';
+		else if (num_cr > 0)
+			str[i-num_cr] = str[i];
+	}
+
+	if (num_cr > 0)
+		str.resize(len-num_cr);
 }
 
 int maybe_convert_foreign_character(int ch)
@@ -1254,12 +1638,21 @@ int maybe_convert_foreign_character(int ch)
 void maybe_convert_foreign_characters(char *line)
 {
 	char *ch;
+	if (Fred_running)
+		return;
 
 	for (ch = line; *ch != '\0'; ch++)
-	{
-		if (!Fred_running)
 			*ch = (char) maybe_convert_foreign_character(*ch);
-	}
+}
+
+// Goober5000
+void maybe_convert_foreign_characters(SCP_string &line)
+{
+	if (Fred_running)
+		return;
+
+	for (SCP_string::iterator ii = line.begin(); ii != line.end(); ++ii)
+		*ii = (char) maybe_convert_foreign_character(*ii);
 }
 
 // Goober5000
@@ -1268,7 +1661,25 @@ int get_number_before_separator(char *text, char separator)
 	char buf[10];
 	char *ch;
 
+	memset(buf, 0, 10);
 	strncpy(buf, text, 9);
+
+	ch = strchr(buf, separator);
+	if (ch == NULL)
+		return 0;
+	*ch = '\0';
+
+	return atoi(buf);	
+}
+
+// Goober5000
+int get_number_before_separator(SCP_string &text, char separator)
+{
+	char buf[10];
+	char *ch;
+
+	memset(buf, 0, 10);
+	text.copy(buf, 9);
 
 	ch = strchr(buf, separator);
 	if (ch == NULL)
@@ -2613,7 +3024,7 @@ void stuff_matrix(matrix *mp)
 
 
 //	Given a string, find it in a string array.
-//	*descrtiption is only used for diagnostics in case it can't be found.
+//	*description is only used for diagnostics in case it can't be found.
 //	*str1 is the string to be found.
 //	*strlist is the list of strings to search.
 //	max is the number of entries in *strlist to scan.
@@ -3275,22 +3686,33 @@ bool end_string_at_first_hash_symbol(char *src)
 }
 
 // Goober5000
+bool end_string_at_first_hash_symbol(SCP_string &src)
+{
+	int index = get_index_of_first_hash_symbol(src);
+	if (index >= 0)
+	{
+		while (index > 0 && src[index-1] == ' ')
+			index--;
+
+		src.resize(index);
+		return true;
+	}
+
+	return false;
+}
+
+// Goober5000
 char *get_pointer_to_first_hash_symbol(char *src)
 {
 	Assert(src);
-
-/*	char *p, *p2;
-	p = strchr(src, '(');
-	if (p != NULL)
-	{
-		p2 = strchr(p, ')');
-		if (p2 != NULL)
-			return p;
-	}
-*/
-//	Backslash - The above used to be for very old versions of FSPort.  Now it's not needed, and
-//	interferes with some situations where we want to strip the hash symbol but keep the ( ).
 	return strchr(src, '#');
+}
+
+// Goober5000
+int get_index_of_first_hash_symbol(SCP_string &src)
+{
+	size_t pos = src.find('#');
+	return (pos == SCP_string::npos) ? -1 : pos;
 }
 
 // Goober5000
