@@ -6973,23 +6973,23 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 
 	if(ADE_SETTING_VAR)
 	{
-		if(aip->target_signature == newh->sig)
+		if(newh->IsValid())
 		{
-			if(newh->IsValid())
-			{
-				aip->target_objnum = OBJ_INDEX(newh->objp);
-				aip->target_signature = newh->sig;
-				aip->target_time = 0.0f;
-				set_targeted_subsys(aip, newh->ss, aip->target_objnum);
-			}
-			else
-			{
-				aip->target_objnum = -1;
-				aip->target_signature = 0;
-				aip->target_time = 0.0f;
+			aip->target_objnum = OBJ_INDEX(newh->objp);
+			aip->target_signature = newh->sig;
+			aip->target_time = 0.0f;
+			set_targeted_subsys(aip, newh->ss, aip->target_objnum);
 
-				set_targeted_subsys(aip, NULL, -1);
-			}
+			if (aip == Player_ai)
+				Ships[newh->ss->parent_objnum].last_targeted_subobject[Player_num] = newh->ss;
+		}
+		else
+		{
+			aip->target_objnum = -1;
+			aip->target_signature = 0;
+			aip->target_time = 0.0f;
+
+			set_targeted_subsys(aip, NULL, -1);
 		}
 	}
 
