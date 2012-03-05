@@ -1084,7 +1084,7 @@ void debrief_traitor_init()
 		if ( Fred_running )	{
 			stuff_string( stagep->new_text, F_MULTITEXT, MAX_DEBRIEF_LEN);
 		} else {
-			stagep->new_text = stuff_and_malloc_string( F_MULTITEXT, NULL, MAX_DEBRIEF_LEN);
+			stagep->new_text = stuff_and_malloc_string( F_MULTITEXT, NULL);
 		}
 		required_string("$Voice:");
 		char traitor_voice_file[MAX_FILENAME_LEN];
@@ -1104,7 +1104,7 @@ void debrief_traitor_init()
 		if ( Fred_running )	{
 			stuff_string( stagep->new_recommendation_text, F_MULTITEXT, MAX_RECOMMENDATION_LEN);
 		} else {
-			stagep->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL, MAX_RECOMMENDATION_LEN);
+			stagep->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL);
 		}
 		inited = 1;
 
