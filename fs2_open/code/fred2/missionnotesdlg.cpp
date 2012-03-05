@@ -630,11 +630,12 @@ void CMissionNotesDlg::OnSquadLogo()
 	}	
 }
 
-char *Load_screen_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.jpeg, *.tga)|*.dds;*.pcx;*.jpg;*.jpeg;*.tga|"
+char *Load_screen_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.jpeg, *.tga, *.png)|*.dds;*.pcx;*.jpg;*.jpeg;*.tga;*.png|"
 						"DDS Files (*.dds)|*.dds|"
 						"PCX Files (*.pcx)|*.pcx|"
 						"JPG Files (*.jpg; *.jpeg)|*.jpg;*.jpeg|"
 						"TGA Files (*.tga)|*.tga|"
+						"PNG Files (*.png)|*.png|"
 						"All Files (*.*)|*.*|"
 						"|";
 
