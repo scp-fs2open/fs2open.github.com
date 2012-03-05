@@ -3589,11 +3589,10 @@ bool can_construe_as_integer(const char *text)
 
 // Goober5000
 // yoinked gratefully from dbugfile.cpp
-void sprintf(SCP_string &dest, const char *format, ...)
+void vsprintf(SCP_string &dest, const char *format, va_list ap)
 {
 	char buf[32];
 
-	va_list ap;
 	char *p;
 	long ival;
 	double dval;
@@ -3602,8 +3601,6 @@ void sprintf(SCP_string &dest, const char *format, ...)
 	dest = "";
 
 	// Add each extra parameter to string
-	va_start(ap, format);
-
 	for (p = const_cast<char *>(format); *p; p++)
 	{
 		if (*p != '%')
@@ -3662,8 +3659,14 @@ void sprintf(SCP_string &dest, const char *format, ...)
 			}
 		}
 	}
+}
 
-	va_end(ap);
+void sprintf(SCP_string &dest, const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	vsprintf(dest, true, format, args);
+	va_end(args);
 }
 
 // Goober5000
