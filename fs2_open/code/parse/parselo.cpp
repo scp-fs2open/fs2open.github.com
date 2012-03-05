@@ -3583,9 +3583,15 @@ bool can_construe_as_integer(const char *text)
 // yoinked gratefully from dbugfile.cpp
 void vsprintf(SCP_string &dest, const char *format, va_list ap)
 {
-	char buf[32];
+	const int MAX_BUF = 64;
+	const char *handled_types = "diouxXcfsn%";
+
+	int buf_src_len;
+	char buf_src[MAX_BUF];
+	char buf_dest[MAX_BUF];
 
 	char *p;
+	int *pint;
 	long ival;
 	double dval;
 
@@ -3593,7 +3599,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 	dest = "";
 
 	// Add each extra parameter to string
-	for (p = const_cast<char *>(format); *p; p++)
+	for (p = const_cast<char *>(format); *p; ++p)
 	{
 		if (*p != '%')
 		{
@@ -3601,17 +3607,38 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 			continue;
 		}
 
-		p++;
-		if (!*p)
-			break;	// stupid edge case
+		// find the specifier that comes next
+		buf_src[0] = '%';
+		buf_src_len = 1;
+		do {
+			++p;
+			if (!*p || (buf_src_len >= MAX_BUF))
+			{
+				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF, format, (p - format));
 
+				// unsafe to continue handling this va_list
+				dest += buf_src;
+				return;
+			}
+
+			buf_src[buf_src_len] = *p;
+			buf_src_len++;
+		} while (strchr(handled_types, *p) == NULL);
+		buf_src[buf_src_len] = 0;
+
+		// handle it
 		switch (*p)
 		{
 			case 'd':
+			case 'i':
+			case 'o':
+			case 'u':
+			case 'x':
+			case 'X':
 			{
 				ival = va_arg(ap, int);
-				sprintf(buf, "%d", ival);
-				dest += buf;
+				sprintf(buf_dest, buf_src, ival);
+				dest += buf_dest;
 				break;
 			}
 			case 'c':
@@ -3619,24 +3646,23 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 				dest += (char) va_arg(ap, char);
 				break;
 			}
-			case 'x':
-			{
-				ival = va_arg(ap, int);
-				sprintf(buf, "%x", ival);
-				dest += buf;
-				break;
-			}
 			case 'f':
 			{
 				dval = va_arg(ap, double);
-				sprintf(buf, "%f", dval);
-				dest += buf;
+				sprintf(buf_dest, buf_src, dval);
+				dest += buf_dest;
 				break;
 			}
 			case 's':
 			{
 				dest += va_arg(ap, char *);
 				break;
+			}
+			case 'n':
+			{
+				pint = va_arg(ap, int *);
+				Assert(pint != NULL);
+				*pint = dest.length();
 			}
 			case '%':
 			{
@@ -3645,8 +3671,8 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 			}
 			default:
 			{
-				sprintf(buf, "N/A: %%%c", *p);
-				dest += buf;
+				sprintf(buf_dest, "N/A: %%%c", *p);
+				dest += buf_dest;
 				break;
 			}
 		}
