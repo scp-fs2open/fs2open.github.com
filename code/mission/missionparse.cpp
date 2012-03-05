@@ -927,6 +927,17 @@ void parse_player_info2(mission *pm)
 			}
 		}
 		ptr->num_weapon_choices = num_choices;
+
+		memset(ptr->weapon_required, 0, MAX_WEAPON_TYPES * sizeof(bool));
+		if (optional_string("+Required for mission:"))
+		{
+			int num_weapons;
+			int weapon_list_buf[MAX_WEAPON_TYPES];
+			num_weapons = stuff_int_list(weapon_list_buf, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+
+			for (i = 0; i < num_weapons; i++)
+				ptr->weapon_required[weapon_list_buf[i]] = true;
+		}
 	}
 
 	if ( nt != Num_teams )

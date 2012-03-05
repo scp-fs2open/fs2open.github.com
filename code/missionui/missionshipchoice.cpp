@@ -47,6 +47,7 @@
 #include "network/multiutil.h"
 #include "ai/aigoals.h"
 #include "io/timer.h"
+#include "weapon/weapon.h"
 
 
 //////////////////////////////////////////////////////
@@ -1834,12 +1835,34 @@ void ss_unload_all_anims()
 	}
 }
 
+bool is_weapon_carried(int weapon_index)
+{
+	for (int slot = 0; slot < MAX_WING_BLOCKS*MAX_WING_SLOTS; slot++)
+	{
+		// a ship must exist in this slot
+		if (Wss_slots[slot].ship_class >= 0)
+		{
+			for (int bank = 0; bank < MAX_SHIP_WEAPONS; bank++)
+			{
+				// there must be a weapon here
+				if (Wss_slots[slot].wep_count[bank] > 0)
+				{
+					if (Wss_slots[slot].wep[bank] == weapon_index)
+						return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 // ------------------------------------------------------------------------
 // commit_pressed() is called when the commit button from any of the briefing/ship select/ weapon
 // select screens is pressed.  The ship selected is created, and the interface music is stopped.
 void commit_pressed()
 {
-	int player_ship_info_index;
+	int j, player_ship_info_index;
 	
 	if ( Wss_num_wings > 0 ) {
 		if(!(Game_mode & GM_MULTIPLAYER)){
@@ -1853,7 +1876,6 @@ void commit_pressed()
 	}
 	else if(Player_obj != NULL)
 	{
-
 		if ( Selected_ss_class == -1 ) {
 			player_ship_info_index = Team_data[Common_team].default_ship;
 
@@ -1865,6 +1887,39 @@ void commit_pressed()
 		update_player_ship( player_ship_info_index );
 		if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[0]) == -1 ) {
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player ship has no weapons", 461));
+			return;
+		}
+	}
+
+	// Goober5000 - mjn.mixael's required weapon feature
+	int num_required_weapons = 0;
+	int num_satisfied_weapons = 0;
+	SCP_string weapon_list;
+	for (j=0; j<MAX_WEAPON_TYPES; j++)
+	{
+		if (Team_data[Common_team].weapon_required[j])
+		{
+			// add it to the message list
+			num_required_weapons++;
+			if (num_required_weapons > 1)
+				weapon_list.append(1, EOLN);
+			weapon_list.append(Weapon_info[j].name);
+
+			// see if it's carried by any ship
+			if (is_weapon_carried(j))
+				num_satisfied_weapons++;
+		}
+	}
+	if (num_satisfied_weapons < num_required_weapons)
+	{
+		if (num_required_weapons == 1)
+		{
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", -1), weapon_list.c_str());
+			return;
+		}
+		else if (num_required_weapons > 1)
+		{
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", -1), weapon_list.c_str());
 			return;
 		}
 	}

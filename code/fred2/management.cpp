@@ -922,7 +922,8 @@ void clear_mission()
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");
 				Team_data[i].ship_count[count] = 5;
-				strcpy_s(Team_data[i].ship_count_variables[count++], "");
+				strcpy_s(Team_data[i].ship_count_variables[count], "");
+				count++;
 			}
 		}
 		Team_data[i].num_ship_choices = count;
@@ -937,8 +938,10 @@ void clear_mission()
 				}
 				Team_data[i].weaponry_pool[count] = j; 
 				strcpy_s(Team_data[i].weaponry_pool_variable[count], "");
-				strcpy_s(Team_data[i].weaponry_amount_variable[count++], "");
-			} 
+				strcpy_s(Team_data[i].weaponry_amount_variable[count], "");
+				count++;
+			}
+			Team_data[i].weapon_required[j] = false;
 		}
 		Team_data[i].num_weapon_choices = count; 
 	}
