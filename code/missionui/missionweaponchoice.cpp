@@ -3516,7 +3516,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][slot->wep[from_bank]])) {
 				char display_name[NAME_LENGTH];
-				char txt[100];
+				char txt[39 + NAME_LENGTH];
 
 				strncpy(display_name, (Weapon_info[slot->wep[from_bank]].alt_name[0]) ? Weapon_info[slot->wep[from_bank]].alt_name : Weapon_info[slot->wep[from_bank]].name, NAME_LENGTH);
 
@@ -3525,7 +3525,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 					lcl_translate_wep_name(display_name);
 				}
 
-				sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+				sprintf(txt, XSTR("This bank is unable to carry %s weaponry", -1), display_name);
 
 				if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
@@ -3680,7 +3680,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net
 	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
 			char display_name[NAME_LENGTH];
-			char txt[100];
+			char txt[39 + NAME_LENGTH];
 
 			strncpy(display_name, Weapon_info[from_list].name, NAME_LENGTH);
 
@@ -3689,7 +3689,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net
 				lcl_translate_wep_name(display_name);
 			}
 
-			sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", -1), display_name);
 
 			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
@@ -3766,7 +3766,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
 			char display_name[NAME_LENGTH];
-			char txt[100];
+			char txt[39 + NAME_LENGTH];
 
 			strncpy(display_name, (Weapon_info[from_list].alt_name[0]) ? Weapon_info[from_list].alt_name : Weapon_info[from_list].name, NAME_LENGTH);
 
@@ -3775,7 +3775,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 				lcl_translate_wep_name(display_name);
 			}
 
-			sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", -1), display_name);
 
 			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
@@ -3929,24 +3929,21 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 // Goober5000
 void wl_apply_current_loadout_to_all_ships_in_current_wing()
 {
-	bool error_flag;
 	int source_wss_slot, cur_wss_slot;
 	int cur_wing_block, cur_wing_slot, cur_bank;
 	int weapon_type_to_add, result;
-	int i;
+	size_t i;
 
 	ship_info *sip, *source_sip;
 	weapon_info *wip;
 
 	char ship_name[NAME_LENGTH];
-	char error_messages[MAX_WING_SLOTS * MAX_SHIP_WEAPONS][50 + NAME_LENGTH * 2];
 	char *wep_display_name;
 	char buf[NAME_LENGTH];
 
-	// clear error stuff
-	error_flag = false;
-	for (i = 0; i < MAX_WING_SLOTS * MAX_SHIP_WEAPONS; i++)
-		*error_messages[i] = '\0';
+	// error stuff
+	bool error_flag = false;
+	SCP_vector<SCP_string> error_messages;
 
 	// make sure we're not holding anything
 	wl_dump_carried_icon();
@@ -4024,7 +4021,10 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add])
 				|| ((wip->wi_flags2 & WIF2_BALLISTIC) && !(sip->flags & SIF_BALLISTIC_PRIMARIES)))
 			{
-				sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry"), ship_name, wep_display_name);
+				SCP_string temp;
+				sprintf(temp, XSTR("%s is unable to carry %s weaponry", -1), ship_name, wep_display_name);
+				error_messages.push_back(temp);
+
 				error_flag = true;
 				continue;
 			}
@@ -4034,10 +4034,12 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			{
 				if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[cur_bank][weapon_type_to_add]))
 				{
+					SCP_string temp;
 					if (cur_bank < MAX_SHIP_PRIMARY_BANKS)
-						sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry in primary bank %d"), ship_name, wep_display_name, cur_bank+1);
+						sprintf(temp, XSTR("%s is unable to carry %s weaponry in primary bank %d", -1), ship_name, wep_display_name, cur_bank+1);
 					else
-						sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry in secondary bank %d"), ship_name, wep_display_name, cur_bank+1-MAX_SHIP_PRIMARY_BANKS);
+						sprintf(temp, XSTR("%s is unable to carry %s weaponry in secondary bank %d", -1), ship_name, wep_display_name, cur_bank+1-MAX_SHIP_PRIMARY_BANKS);
+					error_messages.push_back(temp);
 
 					error_flag = true;
 					continue;
@@ -4050,7 +4052,10 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			// bank left unfilled or partially filled
 			if ((result == 0) || (result == 2))
 			{
-				sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("Insufficient %s available to arm %s"), (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name, ship_name);
+				SCP_string temp;
+				sprintf(temp, XSTR("Insufficient %s available to arm %s", -1), (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name, ship_name);
+				error_messages.push_back(temp);
+
 				error_flag = true;
 				continue;
 			}
@@ -4063,42 +4068,33 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	// display error messages
 	if (error_flag)
 	{
-		int j;
+		SCP_string full_error_message = "The following errors were encountered:\n";
+
+		size_t j;
 		bool is_duplicate;
-		char error_msg[MAX_WING_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
-		strcpy_s(error_msg, "The following errors were encountered:\n\n");
 
 		// copy all messages
-		for (i = 0; i < (MAX_WING_SLOTS * MAX_SHIP_WEAPONS); i++)
+		for (i = 0; i < error_messages.size(); i++)
 		{
-			// there should be a message here
-			if (*error_messages[i] == '\0')
-				continue;
-
 			// check for duplicate messages
 			is_duplicate = false;
 			for (j = 0; j < i; j++)
 			{
-				if (strcmp(error_messages[i], error_messages[j]) == 0)
+				if (error_messages[i] == error_messages[j])
 				{
 					is_duplicate = true;
 					break;
 				}
 			}
 			if (is_duplicate)
-			{
 				continue;
-			}
 
 			// copy message
-			strcat_s(error_msg, error_messages[i]);
-			strcat_s(error_msg, "\n");
+			full_error_message += "\n";
+			full_error_message += error_messages[i];
 		}
 
-		// remove last endline
-		error_msg[strlen(error_msg)-1] = '\0';
-
 		// display popup
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, error_msg);
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, full_error_message.c_str());
 	}
 }

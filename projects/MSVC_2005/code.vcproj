@@ -671,6 +671,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\globalincs\msvc\inttypes.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\GlobalIncs\LinkList.h"
 				>
 			</File>
@@ -696,6 +700,10 @@
 			</File>
 			<File
 				RelativePath="..\..\code\globalincs\safe_strings_test.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\msvc\stdint.h"
 				>
 			</File>
 			<File
@@ -2654,6 +2662,18 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Weapon\Weapons.cpp"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="mod_table"
+			>
+			<File
+				RelativePath="..\..\code\mod_table\mod_table.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\mod_table\mod_table.h"
 				>
 			</File>
 		</Filter>

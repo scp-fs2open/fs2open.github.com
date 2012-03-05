@@ -927,6 +927,17 @@ void parse_player_info2(mission *pm)
 			}
 		}
 		ptr->num_weapon_choices = num_choices;
+
+		memset(ptr->weapon_required, 0, MAX_WEAPON_TYPES * sizeof(bool));
+		if (optional_string("+Required for mission:"))
+		{
+			int num_weapons;
+			int weapon_list_buf[MAX_WEAPON_TYPES];
+			num_weapons = stuff_int_list(weapon_list_buf, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+
+			for (i = 0; i < num_weapons; i++)
+				ptr->weapon_required[weapon_list_buf[i]] = true;
+		}
 	}
 
 	if ( nt != Num_teams )
@@ -1255,7 +1266,7 @@ void parse_cmd_brief(mission *pm)
 	required_string("#Command Briefing");
 	while (optional_string("$Stage Text:")) {
 		Assert(stage < CMD_BRIEF_STAGES_MAX);
-		Cur_cmd_brief->stage[stage].text = stuff_and_malloc_string(F_MULTITEXT, NULL, CMD_BRIEF_TEXT_MAX);
+		Cur_cmd_brief->stage[stage].text = stuff_and_malloc_string(F_MULTITEXT, NULL);
 		Assert(Cur_cmd_brief->stage[stage].text);
 
 		required_string("$Ani Filename:");
@@ -1323,7 +1334,7 @@ void parse_briefing(mission *pm, int flags)
 			if ( Fred_running )	{
 				stuff_string(bs->new_text, F_MULTITEXT, MAX_BRIEF_LEN);
 			} else {
-				bs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_BRIEF_LEN);
+				bs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL);
 			}
 			required_string("$voice:");
 			stuff_string(bs->voice, F_FILESPEC, MAX_FILENAME_LEN);
@@ -1531,7 +1542,7 @@ void parse_debriefing_new(mission *pm)
 			if ( Fred_running )	{
 				stuff_string(dbs->new_text, F_MULTITEXT, MAX_DEBRIEF_LEN);
 			} else {
-				dbs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_DEBRIEF_LEN);
+				dbs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL);
 			}
 			required_string("$Voice:");
 			stuff_string(dbs->voice, F_FILESPEC, MAX_FILENAME_LEN);
@@ -1539,7 +1550,7 @@ void parse_debriefing_new(mission *pm)
 			if ( Fred_running )	{
 				stuff_string( dbs->new_recommendation_text, F_MULTITEXT, MAX_RECOMMENDATION_LEN);
 			} else {
-				dbs->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL, MAX_RECOMMENDATION_LEN);
+				dbs->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL);
 			}
 		} // end while
 

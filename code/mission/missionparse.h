@@ -639,6 +639,7 @@ typedef struct {
 	int		weaponry_count[MAX_WEAPON_TYPES];
 	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
 	char	weaponry_amount_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
+	bool	weapon_required[MAX_WEAPON_TYPES];
 } team_data;
 
 #define MAX_P_WINGS		16

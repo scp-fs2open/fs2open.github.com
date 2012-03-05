@@ -354,7 +354,7 @@ void neb2_post_level_init()
 		if (strlen(Neb2_texture_name)) {
 			Neb2_htl_fog_data = new ubyte[768];
 
-			if ( pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE ) {
+			if ((Neb2_htl_fog_data != NULL) && (pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE)) {
 				// based on the palette, get an average color value (this doesn't really account for actual pixel usage though)
 				ushort r = 0, g = 0, b = 0, pcount = 0;
 				for (idx = 0; idx < 768; idx += 3) {

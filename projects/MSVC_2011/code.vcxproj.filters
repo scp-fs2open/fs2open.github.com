@@ -202,6 +202,9 @@
     <Filter Include="ExternalDLL">
       <UniqueIdentifier>{34eefea3-a25d-40cd-8198-13c48ad8a6eb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="mod_table">
+      <UniqueIdentifier>{b8fecc33-7ae8-42db-beaa-e7cc8abded39}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\code\ai\ai.cpp">
@@ -1050,6 +1053,9 @@
     <ClCompile Include="..\..\code\radar\radardradis.cpp">
       <Filter>Radar</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\mod_table\mod_table.cpp">
+      <Filter>mod_table</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1843,6 +1849,9 @@
     </ClInclude>
     <ClInclude Include="..\..\code\radar\radardradis.h">
       <Filter>Radar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\mod_table\mod_table.h">
+      <Filter>mod_table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\PilotFile\pilotfile_convert.h">
       <Filter>PilotFile</Filter>

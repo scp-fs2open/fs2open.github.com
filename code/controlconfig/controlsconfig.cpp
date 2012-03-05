@@ -2157,10 +2157,8 @@ int check_control_used(int id, int key)
 			z &= KEY_MASK;
 
 			if (keyd_pressed[z] || key_down_count(z)) {
-				if ( !hud_squadmsg_read_key(z) ) {
-					control_used(id);
-					return 1;
-				}
+				control_used(id);
+				return 1;
 			}
 		}
 

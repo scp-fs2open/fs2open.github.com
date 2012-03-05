@@ -2934,21 +2934,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 	return 0;
 }
 
-/**
- * Stuff a string (" chars ") in *str, return length.
- */
-int get_string(char *str)
-{
-	int	len;
-
-	len = strcspn(Mp + 1, "\"");
-	strncpy(str, Mp + 1, len);
-	str[len] = 0;
-
-	Mp += len + 2;
-	return len;
-}
-
 // Goober5000
 void get_unformatted_sexp_variable_name(char *unformatted, char *formatted_pre)
 {

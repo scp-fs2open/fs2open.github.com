@@ -1417,7 +1417,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	if (optional_string("+Description:")) {
-		stuff_malloc_string(&sip->desc, F_MULTITEXT, NULL, SHIP_MULTITEXT_LENGTH);
+		stuff_malloc_string(&sip->desc, F_MULTITEXT, NULL);
 	}
 	
 	if (optional_string("+Tech Title:")) {
@@ -1425,7 +1425,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	if (optional_string("+Tech Description:")) {
-		stuff_malloc_string(&sip->tech_desc, F_MULTITEXT, NULL, SHIP_MULTITEXT_LENGTH);
+		stuff_malloc_string(&sip->tech_desc, F_MULTITEXT, NULL);
 	}
 
 	if (optional_string("+Length:")) {

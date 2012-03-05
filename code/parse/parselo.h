@@ -52,10 +52,6 @@ extern jmp_buf parse_abort;
 //For modular TBL files -C
 #define MAX_TBL_PARTS 32
 
-// 1K on the stack? seems to work...
-// JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.
-#define MAX_TMP_STRING_LENGTH 16384
-
 
 #define	SHIP_TYPE			0	// used to identify which kind of array to do a search for a name in
 #define	SHIP_INFO_TYPE		1
@@ -76,7 +72,9 @@ extern jmp_buf parse_abort;
 
 // Goober5000 - this seems to be a pretty universal function
 extern bool end_string_at_first_hash_symbol(char *src);
+extern bool end_string_at_first_hash_symbol(SCP_string &src);
 extern char *get_pointer_to_first_hash_symbol(char *src);
+extern int get_index_of_first_hash_symbol(SCP_string &src);
 
 // white space
 extern int is_white_space(char ch);
@@ -84,6 +82,11 @@ extern void ignore_white_space();
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
+
+// SCP_string white space
+extern void drop_trailing_white_space(SCP_string &str);
+extern void drop_leading_white_space(SCP_string &str);
+extern void drop_white_space(SCP_string &str);
 
 // gray space
 extern int is_gray_space(char ch);
@@ -113,10 +116,18 @@ extern int required_string_4(char *str1, char *str2, char *str3, char *str4);
 // stuff
 extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);
 extern void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars);
-extern void stuff_string_white(char *pstr, int len = 0);
-extern void stuff_string_until(char *pstr, char *endstr, int len = 0);
-extern void stuff_string(char *pstr, int type, int len, char *terminators = NULL);
-extern void stuff_string_line(char *pstr, int len);
+extern void stuff_string_white(char *outstr, int len = 0);
+extern void stuff_string_until(char *outstr, char *endstr, int len = 0);
+extern void stuff_string(char *outstr, int type, int len, char *terminators = NULL);
+extern void stuff_string_line(char *outstr, int len);
+
+// SCP_string stuff
+extern void copy_to_eoln(SCP_string &outstr, char *more_terminators, char *instr);
+extern void copy_text_until(SCP_string &outstr, char *instr, char *endstr);
+extern void stuff_string_white(SCP_string &outstr);
+extern void stuff_string_until(SCP_string &outstr, char *endstr);
+extern void stuff_string(SCP_string &outstr, int type, char *terminators = NULL);
+extern void stuff_string_line(SCP_string &outstr);
 
 //alloc
 extern char* alloc_block(char* startstr, char* endstr, int extra_chars = 0);
@@ -124,8 +135,8 @@ extern char* alloc_block(char* startstr, char* endstr, int extra_chars = 0);
 // Exactly the same as stuff string only Malloc's the buffer. 
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-extern char *stuff_and_malloc_string( int type, char *terminators = NULL, int len = 0);
-extern void stuff_malloc_string(char **dest, int type, char *terminators = NULL, int len = 0);
+extern char *stuff_and_malloc_string(int type, char *terminators = NULL);
+extern void stuff_malloc_string(char **dest, int type, char *terminators = NULL);
 extern void stuff_float(float *f);
 extern int stuff_float_optional(float *f);
 extern void stuff_int(int *i);
@@ -148,6 +159,7 @@ extern int match_and_stuff(int f_type, char *strlist[], int max, char *descripti
 extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
 	int max, char *description);
 extern int get_string(char *str);
+extern void get_string(SCP_string &str);
 extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
@@ -173,6 +185,7 @@ extern void stop_parse();
 // utility
 extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
+extern void compact_multitext_string(SCP_string &str);
 extern void read_file_text(char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_file_text_from_array(char *array, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
@@ -195,14 +208,15 @@ extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL)
 
 extern char	parse_error_text[128];
 
-// Goober5000 - returns position of replacement or -1 for exceeded length
+// Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
 extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
-
-// Goober5000 - returns number of replacements or -1 for exceeded length
-extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
-
 extern SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern SCP_string& replace_one(SCP_string& context, const char* from, const char* to);
+
+// Goober5000 - returns number of replacements or -1 for exceeded length (SCP_string variants return the result)
+extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
 extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern SCP_string& replace_all(SCP_string& context, const char* from, const char* to);
 
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
@@ -211,6 +225,7 @@ extern char *stristr(const char *str, const char *substr);
 extern bool can_construe_as_integer(const char *text);
 
 // Goober5000 (ditto for C++)
+extern void vsprintf(SCP_string &dest, const char *format, va_list ap);
 extern void sprintf(SCP_string &dest, const char *format, ...);
 
 // Goober5000
@@ -238,6 +253,7 @@ extern bool Parsing_modular_table;
 //Karajorma - Parses mission and campaign ship loadouts. 
 int stuff_loadout_list (int *ilp, int max_ints, int lookup_type);
 int get_string_or_variable (char *str);
+int get_string_or_variable (SCP_string &str);
 #define PARSING_FOUND_STRING		0
 #define PARSING_FOUND_VARIABLE		1
 

@@ -1257,6 +1257,32 @@ int CFred_mission_save::save_players()
 
 		fout(")");
 
+		// Goober5000 - mjn.mixael's required weapon feature
+		bool uses_required_weapon = false;
+		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		{
+			if (Team_data[i].weapon_required[j])
+			{
+				uses_required_weapon = true;
+				break;
+			}
+		}
+		if (uses_required_weapon)
+		{
+			if (optional_string_fred("+Required for mission:", "$Starting Shipname:"))
+				parse_comments(2);
+			else
+				fout("\n+Required for mission:");
+
+			fout(" (");
+			for (j=0; j<MAX_WEAPON_TYPES; j++)
+			{
+				if (Team_data[i].weapon_required[j])
+					fout(" \"%s\"", Weapon_info[j].name);
+			}
+			fout(" )");
+		}
+
 		fso_comment_pop();
 	}
 
@@ -2874,7 +2900,7 @@ void CFred_mission_save::parse_comments(int newlines)
 
 int CFred_mission_save::fout_version(char *format, ...)
 {
-	char str[16384];
+	SCP_string str_scp;
 	char *ch = NULL;
 	va_list args;
 	
@@ -2885,33 +2911,31 @@ int CFred_mission_save::fout_version(char *format, ...)
 	// output the version first thing, but skip the special case where we use
 	// fout_version() for multiline value strings (typically indicated by an initial space)
 	if ( (Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE) && (*format != ' ') && !fso_ver_comment.empty() ) {
-		int len = 0;
 		while (*format == '\n') {
-			str[len++] = '\n';
+			str_scp.append(1, *format);
 			format++;
 		}
 
-		str[len] = '\0';
+		str_scp.append(const_cast<char*>(fso_ver_comment.back().c_str()));
+		str_scp.append(" ");
 
-		strcat_s(str, fso_ver_comment.back().c_str());
-		strcat_s(str, " ");
+		cfputs(const_cast<char*>(str_scp.c_str()), fp);
 
-		cfputs(str, fp);
-
-		memset(str, 0, sizeof(str));
+		str_scp = "";
 	}
 
 	va_start(args, format);
-	vsprintf(str, format, args);
+	vsprintf(str_scp, format, args);
 	va_end(args);
-	Assert(strlen(str) < 16384);
+
+	char *str_c = vm_strdup(str_scp.c_str());
 
 	// this could be a multi-line string, so we've got to handle it all properly
 	if ( (Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE) && !fso_ver_comment.empty() ) {
 		bool first_line = true;
-		char *str_p = str;
+		char *str_p = str_c;
 
-		ch = strchr(str, '\n');
+		ch = strchr(str_c, '\n');
 
 		// if we have something, and it's not just at the end, then process it specially
 		if ( (ch != NULL) && (*(ch+1) != '\0') ) {
@@ -2922,7 +2946,7 @@ int CFred_mission_save::fout_version(char *format, ...)
 					if (first_line) {
 						first_line = false;
 					} else {
-						cfputs((char*)fso_ver_comment.back().c_str(), fp);
+						cfputs(const_cast<char*>(fso_ver_comment.back().c_str()), fp);
 						cfputs(" ", fp);
 					}
 
@@ -2934,7 +2958,7 @@ int CFred_mission_save::fout_version(char *format, ...)
 					if (first_line) {
 						first_line = false;
 					} else {
-						cfputs((char*)fso_ver_comment.back().c_str(), fp);
+						cfputs(const_cast<char*>(fso_ver_comment.back().c_str()), fp);
 						cfputs(" ", fp);
 					}
 
@@ -2948,42 +2972,43 @@ int CFred_mission_save::fout_version(char *format, ...)
 
 			// be sure to account for any ending elements too
 			if ( strlen(str_p) ) {
-				cfputs((char*)fso_ver_comment.back().c_str(), fp);
+				cfputs(const_cast<char*>(fso_ver_comment.back().c_str()), fp);
 				cfputs(" ", fp);
 				cfputs(str_p, fp);
 			}
 
+			vm_free(str_c);
 			return 0;
 		}
 	}
 
-	cfputs(str, fp);
+	cfputs(str_c, fp);
 
+	vm_free(str_c);
 	return 0;
 }
 
 int CFred_mission_save::fout(char *format, ...)
 {
-	char str[16384];
+	SCP_string str;
 	va_list args;
 	
-	if (err){
+	if (err) {
 		return err;
 	}
 
 	va_start(args, format);
 	vsprintf(str, format, args);
 	va_end(args);
-	Assert(strlen(str) < 16384);
 
-	cfputs(str, fp);
+	cfputs(const_cast<char*>(str.c_str()), fp);
 	return 0;
 }
 
 int CFred_mission_save::fout_ext(char *pre_str, char *format, ...)
 {
-	char str[16384];
-	char str_out[16384] = "";
+	SCP_string str_scp;
+	SCP_string str_out_scp;
 	va_list args;
 	int str_id;
 	
@@ -2992,37 +3017,45 @@ int CFred_mission_save::fout_ext(char *pre_str, char *format, ...)
 	}
 
 	va_start(args, format);
-	vsprintf(str, format, args);
+	vsprintf(str_scp, format, args);
 	va_end(args);
-	Assert(strlen(str) < 16384);
-
-	memset(str_out, 0, sizeof(str_out));
 
 	if (pre_str) {
-		strcpy_s(str_out, pre_str);
+		str_out_scp = pre_str;
 	}
 
 	// lookup the string in the hash table
-	str_id = fhash_string_exists(str);
+	str_id = fhash_string_exists(str_scp.c_str());
 
 	// doesn't exist, so assign it an ID of -1 and stick it in the table
 	if (str_id <= -2) {
-		sprintf(str_out+strlen(str_out), " XSTR(\"%s\", -1)", str);
+		str_out_scp += " XSTR(\"";
+		str_out_scp += str_scp;
+		str_out_scp += "\", -1)";
 
 		// add the string to the table		
-		fhash_add_str(str, -1);
+		fhash_add_str(str_scp.c_str(), -1);
 	}
 	// _does_ exist, so just write it out as it is
 	else {
-		sprintf(str_out+strlen(str_out), " XSTR(\"%s\", %d)", str, str_id);
+		char buf[10];
+		sprintf(buf, "%d", str_id);
+
+		str_out_scp += " XSTR(\"";
+		str_out_scp += str_scp;
+		str_out_scp += "\", ";
+		str_out_scp += buf;
+		str_out_scp += ")";
 	}
+
+	char *str_out_c = vm_strdup(str_out_scp.c_str());
 
 	// this could be a multi-line string, so we've got to handle it all properly
 	if ( !fso_ver_comment.empty() ) {
 		bool first_line = true;
-		char *str_p = str_out;
+		char *str_p = str_out_c;
 
-		char *ch = strchr(str_out, '\n');
+		char *ch = strchr(str_out_c, '\n');
 
 		// if we have something, and it's not just at the end, then process it specially
 		if ( (ch != NULL) && (*(ch+1) != '\0') ) {
@@ -3033,7 +3066,7 @@ int CFred_mission_save::fout_ext(char *pre_str, char *format, ...)
 					if (first_line) {
 						first_line = false;
 					} else {
-						cfputs((char*)fso_ver_comment.back().c_str(), fp);
+						cfputs(const_cast<char*>(fso_ver_comment.back().c_str()), fp);
 						cfputs(" ", fp);
 					}
 
@@ -3045,7 +3078,7 @@ int CFred_mission_save::fout_ext(char *pre_str, char *format, ...)
 					if (first_line) {
 						first_line = false;
 					} else {
-						cfputs((char*)fso_ver_comment.back().c_str(), fp);
+						cfputs(const_cast<char*>(fso_ver_comment.back().c_str()), fp);
 						cfputs(" ", fp);
 					}
 
@@ -3059,17 +3092,19 @@ int CFred_mission_save::fout_ext(char *pre_str, char *format, ...)
 
 			// be sure to account for any ending elements too
 			if ( strlen(str_p) ) {
-				cfputs((char*)fso_ver_comment.back().c_str(), fp);
+				cfputs(const_cast<char*>(fso_ver_comment.back().c_str()), fp);
 				cfputs(" ", fp);
 				cfputs(str_p, fp);
 			}
 
+			vm_free(str_out_c);
 			return 0;
 		}
 	}
 
-	cfputs(str_out, fp);
+	cfputs(str_out_c, fp);
 
+	vm_free(str_out_c);
 	return 0;
 }
 
