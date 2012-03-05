@@ -711,15 +711,14 @@ void VoiceActingManager::OnChangeNoReplace()
 
 int VoiceActingManager::fout(char *format, ...)
 {
-	char str[16384];
+	SCP_string str;
 	va_list args;
 	
 	va_start(args, format);
 	vsprintf(str, format, args);
 	va_end(args);
-	Assert(strlen(str) < 16384);
 
-	cfputs(str, fp);
+	cfputs(const_cast<char*>(str.c_str()), fp);
 	return 0;
 }
 
