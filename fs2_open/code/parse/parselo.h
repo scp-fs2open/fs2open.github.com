@@ -229,7 +229,7 @@ extern char *stristr(const char *str, const char *substr);
 extern bool can_construe_as_integer(const char *text);
 
 // Goober5000 (ditto for C++)
-extern void vsprintf(SCP_string &dest, bool clear_first, const char *format, va_list ap);
+extern void vsprintf(SCP_string &dest, const char *format, va_list ap);
 extern void sprintf(SCP_string &dest, const char *format, ...);
 
 // Goober5000
