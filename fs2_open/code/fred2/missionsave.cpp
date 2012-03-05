@@ -1257,6 +1257,32 @@ int CFred_mission_save::save_players()
 
 		fout(")");
 
+		// Goober5000 - mjn.mixael's required weapon feature
+		bool uses_required_weapon = false;
+		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		{
+			if (Team_data[i].weapon_required[j])
+			{
+				uses_required_weapon = true;
+				break;
+			}
+		}
+		if (uses_required_weapon)
+		{
+			if (optional_string_fred("+Required for mission:", "$Starting Shipname:"))
+				parse_comments(2);
+			else
+				fout("\n+Required for mission:");
+
+			fout(" (");
+			for (j=0; j<MAX_WEAPON_TYPES; j++)
+			{
+				if (Team_data[i].weapon_required[j])
+					fout(" \"%s\"", Weapon_info[j].name);
+			}
+			fout(" )");
+		}
+
 		fso_comment_pop();
 	}
 
