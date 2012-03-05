@@ -357,7 +357,7 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 	for (j = 0; j < vb->tex_buf.size(); j++) {
 		n_verts = vb->tex_buf[j].n_verts;
 		uint offset = vb->tex_buf[j].index_offset;
-		uint *index = vb->tex_buf[j].index;
+		const uint *index = vb->tex_buf[j].get_index();
 
 		// bump to our spot in the buffer
 		GLubyte *ibuf = m_vbp->index_list + offset;
@@ -494,7 +494,7 @@ static void opengl_init_arrays(opengl_vertex_buffer *vbp, const vertex_buffer *b
 	if (Cmdline_drawelements) \
 		glDrawElements(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start)); \
 	else \
-		vglDrawRangeElements(GL_TRIANGLES, start, end, count, element_type, ibuffer + (datap->index_offset + start));
+		vglDrawRangeElements(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start));
 
 int GL_last_shader_flags = -1;
 int GL_last_shader_index = -1;
