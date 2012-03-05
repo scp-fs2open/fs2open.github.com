@@ -52,10 +52,6 @@ extern jmp_buf parse_abort;
 //For modular TBL files -C
 #define MAX_TBL_PARTS 32
 
-// 1K on the stack? seems to work...
-// JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.
-#define MAX_TMP_STRING_LENGTH 16384
-
 
 #define	SHIP_TYPE			0	// used to identify which kind of array to do a search for a name in
 #define	SHIP_INFO_TYPE		1
@@ -139,8 +135,8 @@ extern char* alloc_block(char* startstr, char* endstr, int extra_chars = 0);
 // Exactly the same as stuff string only Malloc's the buffer. 
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-extern char *stuff_and_malloc_string( int type, char *terminators = NULL, int len = 0);
-extern void stuff_malloc_string(char **dest, int type, char *terminators = NULL, int len = 0);
+extern char *stuff_and_malloc_string(int type, char *terminators = NULL);
+extern void stuff_malloc_string(char **dest, int type, char *terminators = NULL);
 extern void stuff_float(float *f);
 extern int stuff_float_optional(float *f);
 extern void stuff_int(int *i);

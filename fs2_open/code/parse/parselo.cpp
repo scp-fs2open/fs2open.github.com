@@ -1439,32 +1439,24 @@ void stuff_string_line(SCP_string &outstr)
 // Exactly the same as stuff string only Malloc's the buffer. 
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-char *stuff_and_malloc_string( int type, char *terminators, int len)
+char *stuff_and_malloc_string(int type, char *terminators)
 {
-	int l;
+	SCP_string tmp_result;
 
-	char tmp_result[MAX_TMP_STRING_LENGTH];
-	int final_len = len;
-
-	if ( !len || (len > MAX_TMP_STRING_LENGTH) )
-		final_len = MAX_TMP_STRING_LENGTH;
-
-	stuff_string(tmp_result, type, final_len, terminators);
+	stuff_string(tmp_result, type, terminators);
 	drop_white_space(tmp_result);
 
-	l = strlen(tmp_result);
-	Assert(l < MAX_TMP_STRING_LENGTH);		// Get John!!
-	if (l < 1)
+	if (tmp_result.empty())
 		return NULL;
 
-	return vm_strdup(tmp_result);
+	return vm_strdup(tmp_result.c_str());
 }
 
-void stuff_malloc_string(char **dest, int type, char *terminators, int len)
+void stuff_malloc_string(char **dest, int type, char *terminators)
 {
 	Assert(dest != NULL); //wtf?
 	
-	char *new_val = stuff_and_malloc_string(type, terminators, len);
+	char *new_val = stuff_and_malloc_string(type, terminators);
 	
 	if(new_val != NULL)
 	{

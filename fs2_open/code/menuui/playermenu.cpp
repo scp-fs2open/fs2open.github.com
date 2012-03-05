@@ -1334,7 +1334,7 @@ void player_tips_init()
 		if(Num_player_tips >= MAX_PLAYER_TIPS) {
 			break;
 		}
-		Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL, 1024);
+		Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
 	}
 
 	// stop externalizing, homey
