@@ -3665,7 +3665,7 @@ void sprintf(SCP_string &dest, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	vsprintf(dest, true, format, args);
+	vsprintf(dest, format, args);
 	va_end(args);
 }
 
