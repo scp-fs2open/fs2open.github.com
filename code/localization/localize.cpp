@@ -1038,6 +1038,7 @@ int lcl_ext_get_id(SCP_string &xstr, int *out)
 		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
 		return 0;
 	}
+	pnext++;
 
 	// find the close parenthesis
 	p = pnext;
@@ -1046,11 +1047,12 @@ int lcl_ext_get_id(SCP_string &xstr, int *out)
 		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
 		return 0;
 	}
+	pnext--;
 
 	// get only the number
-	while (!isdigit(xstr[p]) && p < pnext)
+	while (is_white_space(xstr[p]) && p < pnext)
 		p++;
-	while (!isdigit(xstr[pnext]) && p < pnext)
+	while (is_white_space(xstr[pnext]) && p < pnext)
 		pnext--;
 	if (p == pnext) {
 		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
