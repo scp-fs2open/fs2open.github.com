@@ -3516,7 +3516,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][slot->wep[from_bank]])) {
 				char display_name[NAME_LENGTH];
-				char txt[100];
+				char txt[39 + NAME_LENGTH];
 
 				strncpy(display_name, (Weapon_info[slot->wep[from_bank]].alt_name[0]) ? Weapon_info[slot->wep[from_bank]].alt_name : Weapon_info[slot->wep[from_bank]].name, NAME_LENGTH);
 
@@ -3525,7 +3525,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 					lcl_translate_wep_name(display_name);
 				}
 
-				sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+				sprintf(txt, XSTR("This bank is unable to carry %s weaponry", -1), display_name);
 
 				if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
@@ -3680,7 +3680,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net
 	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
 			char display_name[NAME_LENGTH];
-			char txt[100];
+			char txt[39 + NAME_LENGTH];
 
 			strncpy(display_name, Weapon_info[from_list].name, NAME_LENGTH);
 
@@ -3689,7 +3689,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net
 				lcl_translate_wep_name(display_name);
 			}
 
-			sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", -1), display_name);
 
 			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
@@ -3766,7 +3766,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
 			char display_name[NAME_LENGTH];
-			char txt[100];
+			char txt[39 + NAME_LENGTH];
 
 			strncpy(display_name, (Weapon_info[from_list].alt_name[0]) ? Weapon_info[from_list].alt_name : Weapon_info[from_list].name, NAME_LENGTH);
 
@@ -3775,7 +3775,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 				lcl_translate_wep_name(display_name);
 			}
 
-			sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", -1), display_name);
 
 			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
