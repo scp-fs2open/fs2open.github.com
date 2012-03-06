@@ -104,6 +104,11 @@ char *Default_mod_table = "\
 ;; Mod.tbl should be used for settings which affect the entire mod and	\n\
 ;; only very rarely need to be changed (if ever).						\n\
 																		\n\
+#CAMPAIGN SETTINGS														\n\
+																		\n\
+;; Sets default campaign file the game will look for with new pilots	\n\
+$Default Campaign File Name: FreeSpace2									\n\
+																		\n\
 #HUD SETTINGS															\n\
 																		\n\
 ;; Sets the delay before a directive will appear on the screen (ms)		\n\

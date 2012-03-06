@@ -64,6 +64,8 @@ int	Num_campaigns;
 int Campaign_file_missing;
 int Campaign_names_inited = 0;
 
+char Default_campaign_file_name[MAX_FILENAME_LEN - 4]  = { NULL };
+
 // stuff used for campaign list building
 static bool MC_desc = false;
 static bool MC_multiplayer = false;
@@ -2345,7 +2347,7 @@ int mission_load_up_campaign( player *pl )
 	if ( strlen(pl->current_campaign) ) {
 		return mission_campaign_load(pl->current_campaign, pl);
 	} else {
-		int rc = mission_campaign_load(BUILTIN_CAMPAIGN, pl);
+		int rc = mission_campaign_load(Default_campaign_file_name, pl);
 
 		// if the builtin campaign is missing/corrupt then try and fall back on whatever is available
 		if (rc) {
