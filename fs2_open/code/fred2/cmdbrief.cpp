@@ -91,16 +91,13 @@ void cmd_brief_dlg::update_data(int update)
 
 	// save previously editing data before we load over it.
 	if (last_cmd_brief && m_last_stage >= 0 && m_last_stage < last_cmd_brief->num_stages) {
-		char buf[CMD_BRIEF_TEXT_MAX];
+		cmd_brief_stage *last_stage = &last_cmd_brief->stage[m_last_stage];
 
-		if (last_cmd_brief->stage[m_last_stage].text)
-			free(last_cmd_brief->stage[m_last_stage].text);
+		deconvert_multiline_string(last_stage->text, m_text);
+		lcl_fred_replace_stuff(last_stage->text);
 
-		deconvert_multiline_string(buf, m_text, CMD_BRIEF_TEXT_MAX);
-		lcl_fred_replace_stuff(buf, CMD_BRIEF_TEXT_MAX);
-		last_cmd_brief->stage[m_last_stage].text = strdup(buf);
-		string_copy(last_cmd_brief->stage[m_last_stage].ani_filename, m_ani_filename, MAX_FILENAME_LEN);
-		string_copy(last_cmd_brief->stage[m_last_stage].wave_filename, m_wave_filename, MAX_FILENAME_LEN);
+		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN);
+		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN);
 	}
 
 	// load data of new stage into dialog
@@ -109,7 +106,7 @@ void cmd_brief_dlg::update_data(int update)
 			m_cur_stage = 0;
 
 		m_stage_title.Format("Stage %d of %d", m_cur_stage + 1, Cur_cmd_brief->num_stages);
-		m_text = convert_multiline_string(Cur_cmd_brief->stage[m_cur_stage].text);
+		m_text = convert_multiline_string(const_cast<char*>(Cur_cmd_brief->stage[m_cur_stage].text.c_str()));
 		m_ani_filename = Cur_cmd_brief->stage[m_cur_stage].ani_filename;
 		m_wave_filename = Cur_cmd_brief->stage[m_cur_stage].wave_filename;
 		enable = TRUE;
@@ -243,8 +240,7 @@ void cmd_brief_dlg::OnDeleteStage()
 	z = m_cur_stage;
 	m_cur_stage = -1;
 	update_data(1);
-	if (Cur_cmd_brief->stage[z].text)
-		free(Cur_cmd_brief->stage[z].text);
+	Cur_cmd_brief->stage[z].text = "";
 
 	for (i=z+1; i<Cur_cmd_brief->num_stages; i++)
 		Cur_cmd_brief->stage[i-1] = Cur_cmd_brief->stage[i];
@@ -262,14 +258,14 @@ void cmd_brief_dlg::OnDeleteStage()
 void cmd_brief_dlg::copy_stage(int from, int to)
 {
 	if ((from < 0) || (from >= Cur_cmd_brief->num_stages)) {
-		Cur_cmd_brief->stage[to].text = strdup("<Text here>");
+		Cur_cmd_brief->stage[to].text = "<Text here>";
 		strcpy_s(Cur_cmd_brief->stage[to].ani_filename, "<default>");
 		strcpy_s(Cur_cmd_brief->stage[to].wave_filename, "none");
 		return;
 	}
 
 	Cur_cmd_brief->stage[to] = Cur_cmd_brief->stage[from];
-	Cur_cmd_brief->stage[to].text = strdup(Cur_cmd_brief->stage[from].text);
+	Cur_cmd_brief->stage[to].text = Cur_cmd_brief->stage[from].text;
 }
 
 void cmd_brief_dlg::OnBrowseAni() 

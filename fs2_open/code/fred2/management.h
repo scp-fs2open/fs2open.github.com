@@ -63,8 +63,11 @@ extern bool Show_iff[];
 extern CCriticalSection CS_cur_object_index;
 
 void	string_copy(char *dest, CString &src, int max_len, int modify = 0);
+void	string_copy(SCP_string &dest, CString &src, int modify = 0);
 CString convert_multiline_string(char *src);
 void	deconvert_multiline_string(char *buf, CString &str, int max_len);
+void	deconvert_multiline_string(SCP_string &buf, CString &str);
+
 bool	fred_init();
 void	set_physics_controls();
 int	dup_object(object *objp);

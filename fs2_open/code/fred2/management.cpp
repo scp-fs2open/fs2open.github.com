@@ -150,6 +150,15 @@ void string_copy(char *dest, CString &src, int max_len, int modify)
 	dest[len] = 0;
 }
 
+void string_copy(SCP_string &dest, CString &src, int modify)
+{
+	if (modify)
+		if (strcmp(src, dest.c_str()))
+			set_modified();
+
+	dest = src;
+}
+
 // converts a multiline string (one with newlines in it) into a windows format multiline
 // string (newlines changed to '\r\n').
 CString convert_multiline_string(char *src)
@@ -219,6 +228,13 @@ void deconvert_multiline_string(char *buf, CString &str, int max_len)
 	//if (*(ptr - 1) != '\n')
 	//	*ptr++ = '\n';
 	*ptr = 0;
+}
+
+// ditto for SCP_string
+void deconvert_multiline_string(SCP_string &buf, CString &str)
+{
+	buf = str;
+	replace_all(buf, "\r\n", "\n");
 }
 
 // medal_stuff Medals[NUM_MEDALS];
