@@ -50,8 +50,14 @@
 
 void CFred_mission_save::convert_special_tags_to_retail(char *text, int max_len)
 {
-	replace_all(Mp, "$quote", "''", max_len);
-	replace_all(Mp, "$semicolon", ",", max_len);
+	replace_all(text, "$quote", "''", max_len);
+	replace_all(text, "$semicolon", ",", max_len);
+}
+
+void CFred_mission_save::convert_special_tags_to_retail(SCP_string &text)
+{
+	replace_all(text, "$quote", "''");
+	replace_all(text, "$semicolon", ",");
 }
 
 // Goober5000 - convert $quote and $semicolon to '' and ,
@@ -67,7 +73,7 @@ void CFred_mission_save::convert_special_tags_to_retail()
 		// command briefing
 		for (stage = 0; stage < Cmd_briefs[team].num_stages; stage++)
 		{
-			convert_special_tags_to_retail(Cmd_briefs[team].stage[stage].text, CMD_BRIEF_TEXT_MAX);
+			convert_special_tags_to_retail(Cmd_briefs[team].stage[stage].text);
 		}
 
 		// briefing
@@ -799,7 +805,7 @@ int CFred_mission_save::save_cmd_brief()
 		parse_comments(2);
 
 		// XSTR
-		fout_ext("\n", "%s", Cur_cmd_brief->stage[stage].text);
+		fout_ext("\n", "%s", Cur_cmd_brief->stage[stage].text.c_str());
 
 		required_string_fred("$end_multi_text", "$Stage Text:");
 		parse_comments();

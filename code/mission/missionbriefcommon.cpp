@@ -2430,8 +2430,7 @@ void cmd_brief_reset()
 	if (inited) {
 		for (i=0; i<MAX_TVT_TEAMS; i++) {
 			for (j=0; j<Cmd_briefs[i].num_stages; j++) {
-				if (Cmd_briefs[i].stage[j].text)
-					vm_free(Cmd_briefs[i].stage[j].text);
+				Cmd_briefs[i].stage[j].text = "";
 			}
 		}
 	}

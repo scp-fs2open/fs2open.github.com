@@ -59,6 +59,7 @@ private:
 	void save_single_dock_instance(ship *shipp, dock_instance *dock_ptr);
 
 	void convert_special_tags_to_retail(char *text, int max_len);
+	void convert_special_tags_to_retail(SCP_string &text);
 	void convert_special_tags_to_retail();
 
 public:
