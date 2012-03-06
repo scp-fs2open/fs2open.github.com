@@ -508,6 +508,7 @@ typedef struct ship {
 	char targeting_laser_bank;						// -1 if not firing, index into polymodel gun points if it _is_ firing
 	// corkscrew missile stuff
 	ubyte num_corkscrew_to_fire;						// # of corkscrew missiles lef to fire
+	int corkscrew_missile_bank;
 	// END PACK
 
 	// targeting laser info
@@ -614,6 +615,7 @@ typedef struct ship {
 	int	next_swarm_fire;					// timestamp of next swarm missile to fire
 	int	next_swarm_path;					// next path number for swarm missile to take
 	int	num_turret_swarm_info;			// number of turrets in process of launching swarm
+	int swarm_missile_bank;				// The missilebank the swarm was originally launched from
 
 	int	group;								// group ship is in, or -1 if none.  Fred thing
 	int	death_roll_snd;					// id of death roll sound, may need to be stopped early	
