@@ -113,18 +113,18 @@ typedef struct
 // Please group them by type, ie graphics, gameplay etc, maximum 20 different types
 Flag exe_params[] = 
 {
-	{ "-spec",				"Enable specular",							true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-spec", },
-	{ "-glow",				"Enable glow maps",							true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-glow", },
-	{ "-env",				"Enable environment maps",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
+	{ "-nospec",			"Disable specular",							true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-spec", },
+	{ "-noglow",			"Disable glow maps",						true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-glow", },
+	{ "-noenv",				"Disable environment maps",					true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-missile_lighting",	"Apply lighting to missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
-	{ "-normal",			"Enable normal maps",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
+	{ "-nonormal",			"Disable normal maps",						true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
 	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
 	{ "-post_process",		"Enable post processing",					true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
 	{ "-soft_particles",	"Enable soft particles",					true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-soft_particles" },
 	{ "-fxaa",				"Enable FXAA anti-aliasing",				true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fxaa" },
-	{ "-flightshaftsoff",	"Force Lightshafts off",					true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-flightshaftsoff"},
+	{ "-nolightshafts",		"Disable lightshafts",						true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-flightshaftsoff"},
 
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
@@ -256,16 +256,16 @@ cmdline_parm ogl_spec_arg("-ogl_spec", NULL);		// Cmdline_ogl_spec
 cmdline_parm spec_static_arg("-spec_static", NULL);
 cmdline_parm spec_point_arg("-spec_point", NULL);
 cmdline_parm spec_tube_arg("-spec_tube", NULL);
-cmdline_parm ambient_factor_arg("-ambient_factor", NULL);	// Cmdline_ambient_factor
-cmdline_parm env("-env", NULL);						// Cmdline_env
+cmdline_parm ambient_factor_arg("-ambient_factor", NULL);		// Cmdline_ambient_factor
+cmdline_parm env("-noenv", NULL);								// Cmdline_env
 cmdline_parm missile_lighting_arg("-missile_lighting", NULL);	// Cmdline_missile_lighting
-cmdline_parm glow_arg("-glow", NULL); 				// Cmdline_glow  -- use Bobs glow code
-cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); // Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
-cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disable video scaling that fits to window
-cmdline_parm spec_arg("-spec", NULL);				// Cmdline_spec  -- use specular highlighting -Sticks
+cmdline_parm glow_arg("-noglow", NULL); 						// Cmdline_glow  -- use Bobs glow code
+cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
+cmdline_parm noscalevid_arg("-noscalevid", NULL);				// Cmdline_noscalevid  -- disable video scaling that fits to window
+cmdline_parm spec_arg("-nospec", NULL);							// Cmdline_spec  -- 
 cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
-cmdline_parm normal_arg("-normal", NULL);				// Cmdline_normal  -- enable normal mapping
-cmdline_parm height_arg("-height", NULL);			// Cmdline_height  -- enable support for parallax mapping
+cmdline_parm normal_arg("-nonormal", NULL);						// Cmdline_normal  -- disable normal mapping
+cmdline_parm height_arg("-height", NULL);						// Cmdline_height  -- enable support for parallax mapping
 cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL);
 cmdline_parm softparticles_arg("-soft_particles", NULL);
 cmdline_parm postprocess_arg("-post_process", NULL);
@@ -273,21 +273,21 @@ cmdline_parm bloom_intensity_arg("-bloom_intensity", NULL);
 cmdline_parm fxaa_arg("-fxaa", NULL);
 cmdline_parm fxaa_preset_arg("-fxaa_preset", NULL);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL);
-cmdline_parm flightshaftsoff_arg("-flightshaftsoff", NULL);
+cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
 float Cmdline_ogl_spec = 80.0f;
 int Cmdline_ambient_factor = 128;
-int Cmdline_env = 0;
+int Cmdline_env = 1;
 int Cmdline_mipmap = 0;
 int Cmdline_missile_lighting = 0;
-int Cmdline_glow = 0;
+int Cmdline_glow = 1;
 int Cmdline_nomotiondebris = 0;
 int Cmdline_noscalevid = 0;
-int Cmdline_spec = 0;
+int Cmdline_spec = 1;
 int Cmdline_no_emissive = 0;
-int Cmdline_normal = 0;
+int Cmdline_normal = 1;
 int Cmdline_height = 0;
 int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
@@ -1227,7 +1227,7 @@ bool SetCmdlineParams()
 
 	if ( spec_arg.found() )
 	{
-		Cmdline_spec = 1;
+		Cmdline_spec = 0;
 	}
 
 	if ( htl_arg.found() ) 
@@ -1253,7 +1253,7 @@ bool SetCmdlineParams()
 #endif
 
 	if ( normal_arg.found() ) {
-		Cmdline_normal = 1;
+		Cmdline_normal = 0;
 
 		// height maps are only used if normal maps are
 		if ( height_arg.found() ) {
@@ -1287,7 +1287,7 @@ bool SetCmdlineParams()
 		Cmdline_img2dds = 1;
 
 	if ( glow_arg.found() )
-		Cmdline_glow = 1;
+		Cmdline_glow = 0;
 
 	if ( query_speech_arg.found() )
 		Cmdline_query_speech = 1;
@@ -1384,7 +1384,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( env.found() ) {
-		Cmdline_env = 1;
+		Cmdline_env = 0;
 	}
 
 	if ( ballistic_gauge.found() ) {
