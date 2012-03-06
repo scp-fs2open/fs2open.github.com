@@ -12,7 +12,6 @@
 #ifndef __MISSIONCMDBRIEF_H__
 #define __MISSIONCMDBRIEF_H__
 
-#define CMD_BRIEF_TEXT_MAX		16384
 #define CMD_BRIEF_STAGES_MAX	10
 
 #include "globalincs/globals.h"

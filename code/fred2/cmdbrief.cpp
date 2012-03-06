@@ -47,7 +47,6 @@ void cmd_brief_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_WAVE_FILENAME, m_wave_filename);
 	//}}AFX_DATA_MAP
 
-	DDV_MaxChars(pDX, m_text, CMD_BRIEF_TEXT_MAX - 1);
 	DDV_MaxChars(pDX, m_ani_filename, MAX_FILENAME_LEN - 1);
 	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
 }
