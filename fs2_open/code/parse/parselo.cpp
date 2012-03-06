@@ -187,22 +187,24 @@ char *drop_white_space(char *str)
 // ditto for SCP_string
 void drop_white_space(SCP_string &str)
 {
-	int len, newlen, first, i;
+	int len, newlen, first, last, i;
 
 	len = str.length();
 	first = 0;
-	newlen = 0;
+	last = len - 1;
 
 	// find first non-whitespace
 	while ((first < len) && is_white_space(str[first]))
 		first++;
 
-	// find first whitespace after string starts
-	while ((first + newlen < len) && !is_white_space(str[first + newlen]))
-		newlen++;
+	// find last non-whitespace
+	while ((last > first) && is_white_space(str[last]))
+		last--;
+
+	newlen = last - first + 1;
 
 	// quick out
-	if (newlen == 0)
+	if (newlen <= 0)
 	{
 		str = "";
 		return;
