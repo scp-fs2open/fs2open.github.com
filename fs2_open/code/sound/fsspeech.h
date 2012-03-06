@@ -22,7 +22,7 @@ enum
 
 bool fsspeech_init();
 void fsspeech_deinit();
-void fsspeech_play(int type, char *text);
+void fsspeech_play(int type, const char *text);
 void fsspeech_stop();
 void fsspeech_pause(bool playing);
 
@@ -41,7 +41,7 @@ inline bool fsspeech_was_compiled() { return true; }
 
 inline bool fsspeech_init() { return false; }
 inline void fsspeech_deinit() {}
-inline void fsspeech_play(int type, char *text) { (type); (text); }
+inline void fsspeech_play(int type, const char *text) { (type); (text); }
 inline void fsspeech_stop() {}
 inline void fsspeech_pause(bool playing) { (playing); }
 
