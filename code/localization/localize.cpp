@@ -1050,11 +1050,11 @@ int lcl_ext_get_id(SCP_string &xstr, int *out)
 	pnext--;
 
 	// get only the number
-	while (is_white_space(xstr[p]) && p <= pnext)
+	while (is_white_space(xstr[p]) && p < pnext)
 		p++;
-	while (is_white_space(xstr[pnext]) && p <= pnext)
+	while (is_white_space(xstr[pnext]) && p < pnext)
 		pnext--;
-	if (p > pnext) {
+	if (p == pnext) {
 		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr.c_str());
 		return 0;
 	}
