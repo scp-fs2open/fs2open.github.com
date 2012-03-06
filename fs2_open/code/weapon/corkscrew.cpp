@@ -78,22 +78,24 @@ void cscrew_maybe_fire_missile(int shipnum)
 
 	// make sure we're supposed to be firing some missiles
 	if ( sp->num_corkscrew_to_fire <= 0 ){
+		sp->corkscrew_missile_bank = -1;
 		return;
 	}
 
-	// make sure we have a valid weapon band
+	// make sure we have a valid weapon bank
 	swp = &sp->weapons;
-	if ( swp->current_secondary_bank == -1 ) {
+	if ( sp->corkscrew_missile_bank == -1 ) {
 		sp->num_corkscrew_to_fire = 0;
 		return;
 	}
 
-	weapon_info_index = swp->secondary_bank_weapons[swp->current_secondary_bank];
+	weapon_info_index = swp->secondary_bank_weapons[sp->corkscrew_missile_bank];
 	Assert( weapon_info_index >= 0 && weapon_info_index < MAX_WEAPON_TYPES );
 
 	// if current secondary bank is not a corkscrew missile, return
 	if ( !(Weapon_info[weapon_info_index].wi_flags & WIF_CORKSCREW) ) {
 		sp->num_corkscrew_to_fire = 0;
+		sp->corkscrew_missile_bank = -1;
 		return;
 	}
 

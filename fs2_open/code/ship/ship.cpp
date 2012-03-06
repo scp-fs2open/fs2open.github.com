@@ -4969,6 +4969,10 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	// corkscrew missile stuff
 	shipp->next_corkscrew_fire = 1;
 
+	// Missile bank indexes to avoid firing different swarm/corkscrew missiles
+	shipp->swarm_missile_bank = -1;
+	shipp->corkscrew_missile_bank = -1;
+
 	// field for score
 	shipp->score = sip->score;
 
@@ -10580,8 +10584,16 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	num_fired = 0;		// tracks how many missiles actually fired
 
-	bank = swp->current_secondary_bank;
-	if ( bank < 0 ) {
+	// niffiwan: allow swarm/corkscrew bank to keep firing if current bank changes
+	if (shipp->swarm_missile_bank != -1 && allow_swarm) {
+		bank = shipp->swarm_missile_bank;
+	} else if (shipp->corkscrew_missile_bank != -1 && allow_swarm) {
+		bank = shipp->corkscrew_missile_bank;
+	} else {
+		bank = swp->current_secondary_bank;
+	}
+
+	if ( bank < 0 || bank > sip->num_secondary_banks ) {
 		return 0;
 	}
 
@@ -10624,7 +10636,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		return 0;
 	}
 
-	if ( swp->current_secondary_bank < 0 ){
+	// niffiwan: 04/03/12: duplicate of a check approx 100 lines above - not needed?
+	if ( bank < 0 ){
 		return 0;
 	}
 
@@ -10702,10 +10715,11 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	if ( (wip->wi_flags & WIF_SWARM) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
 		if(wip->swarm_count <= 0){
-			shipp->num_swarm_missiles_to_fire += SWARM_DEFAULT_NUM_MISSILES_FIRED;
+			shipp->num_swarm_missiles_to_fire = SWARM_DEFAULT_NUM_MISSILES_FIRED;
 		} else {
-			shipp->num_swarm_missiles_to_fire += wip->swarm_count;
+			shipp->num_swarm_missiles_to_fire = wip->swarm_count;
 		}
+		shipp->swarm_missile_bank = bank;
 		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
 	}
 
@@ -10713,7 +10727,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	if ( (wip->wi_flags & WIF_CORKSCREW) && !allow_swarm ) {
 		//phreak 11-9-02 
 		//changed this from 4 to custom number defined in tables
-		shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);		
+		shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
+		shipp->corkscrew_missile_bank = bank;
 		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
 	}	
 
@@ -10875,8 +10890,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		if ( Weapon_info[weapon].launch_snd != -1 ) {
 			snd_play( &Snds[Weapon_info[weapon].launch_snd], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 			swp = &Player_ship->weapons;
-			if (swp->current_secondary_bank >= 0) {
-				wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+			if (bank >= 0) {
+				wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 				if (Player_ship->flags & SF_SECONDARY_DUAL_FIRE){
 					joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
 				} else {
@@ -10933,10 +10948,12 @@ done_secondary:
 
 		if (shipp->num_swarm_missiles_to_fire > 1) {
 			shipp->num_swarm_missiles_to_fire = 1;
+			shipp->swarm_missile_bank = -1;
 		}
 
 		if (shipp->num_corkscrew_to_fire > 1) {
 			shipp->num_corkscrew_to_fire = 1;
+			shipp->corkscrew_missile_bank = -1;
 		}
 	}
 
@@ -10954,8 +10971,8 @@ done_secondary:
 	//then it would have no firedelay. and then add 250 ms of delay. in effect, this way there is no penalty if there is any firedelay remaning in
 	//the next valid bank. the delay is there to prevent things like Trible/Quad Fire Trebuchets.
 	//
-	// niffiwan: only try to switch banks if object has multiple banks
-	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) ) {
+	// niffiwan: only try to switch banks if object has multiple banks, and firing bank is the current bank
+	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
 		// niffiwan: call ship_select_next_secondary instead of ship_select_next_valid_secondary_bank
 		// ensures all "extras" are dealt with, like animations, scripting hooks, etc
 		if (ship_select_next_secondary(obj) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
