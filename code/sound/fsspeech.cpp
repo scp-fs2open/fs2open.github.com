@@ -83,7 +83,7 @@ void fsspeech_deinit()
 	speech_inited = 0;
 }
 
-void fsspeech_play(int type, char *text)
+void fsspeech_play(int type, const char *text)
 {
 	if (!speech_inited)
 		return;

@@ -85,7 +85,7 @@ void speech_deinit()
 #endif
 }
 
-bool speech_play(char *text)
+bool speech_play(const char *text)
 {
 	if(Speech_init == false) return true;
 	if(text == NULL) return false;
