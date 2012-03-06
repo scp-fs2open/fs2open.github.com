@@ -6,6 +6,7 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/def_files.h"
+#include "mission/missioncampaign.h"
 #include "mod_table/mod_table.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
@@ -36,16 +37,22 @@ void parse_mod_table(char *filename)
 	reset_parse();	
 
 	// start parsing
-	required_string("#HUD SETTINGS");
-	
+	optional_string("#CAMPAIGN SETTINGS"); 
+	if (optional_string("$Default Campaign File Name:")) {
+		stuff_string(Default_campaign_file_name, F_NAME, (MAX_FILENAME_LEN - 4) );
+	}
+	else if (Default_campaign_file_name == NULL) {
+		strcpy(Default_campaign_file_name, BUILTIN_CAMPAIGN);
+	}
+
+	optional_string("#HUD SETTINGS"); 
 	// how long should the game wait before displaying a directive?
 	if (optional_string("$Directive Wait Time:")) {
 		stuff_int(&Directive_wait_time);
 	}
 
-	required_string("#SEXP SETTINGS");
-
-	if (optional_string("$Loop SEXPs Then Arguments:")) {
+	optional_string("#SEXP SETTINGS"); 
+	if (optional_string("$Loop SEXPs Then Arguments:")) { 
 		stuff_boolean(&True_loop_argument_sexps);
 		if (True_loop_argument_sexps){
 			mprintf(("Game Settings Table : Using Reversed Loops For SEXP Arguments"));
@@ -54,9 +61,6 @@ void parse_mod_table(char *filename)
 			mprintf(("Game Settings Table : Using Standard Loops For SEXP Arguments"));
 		}
 	}
-	else 
-
-
 
 	required_string("#END");
 

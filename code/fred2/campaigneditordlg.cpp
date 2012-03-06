@@ -180,7 +180,7 @@ void campaign_editor::load_campaign()
 	load_tree(0);
 
 	if (!strlen(Campaign.filename))
-		strcpy_s(Campaign.filename, BUILTIN_CAMPAIGN);
+		strcpy_s(Campaign.filename, Default_campaign_file_name);
 
 	if (mission_campaign_load(Campaign.filename, NULL, 0)) {
 		MessageBox("Couldn't open Campaign file!", "Error");

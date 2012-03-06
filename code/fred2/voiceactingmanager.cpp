@@ -428,7 +428,7 @@ void VoiceActingManager::OnGenerateScript()
 
 			cmd_brief_stage *stage = &Cmd_briefs[0].stage[i];
 			entry.Replace("$filename", stage->wave_filename);
-			entry.Replace("$message", stage->text);
+			entry.Replace("$message", stage->text.c_str());
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 

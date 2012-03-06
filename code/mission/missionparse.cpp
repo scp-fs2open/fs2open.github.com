@@ -1266,8 +1266,7 @@ void parse_cmd_brief(mission *pm)
 	required_string("#Command Briefing");
 	while (optional_string("$Stage Text:")) {
 		Assert(stage < CMD_BRIEF_STAGES_MAX);
-		Cur_cmd_brief->stage[stage].text = stuff_and_malloc_string(F_MULTITEXT, NULL);
-		Assert(Cur_cmd_brief->stage[stage].text);
+		stuff_string(Cur_cmd_brief->stage[stage].text, F_MULTITEXT, NULL);
 
 		required_string("$Ani Filename:");
 		stuff_string(Cur_cmd_brief->stage[stage].ani_filename, F_FILESPEC, MAX_FILENAME_LEN);

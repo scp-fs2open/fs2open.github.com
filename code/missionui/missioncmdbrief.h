@@ -12,7 +12,6 @@
 #ifndef __MISSIONCMDBRIEF_H__
 #define __MISSIONCMDBRIEF_H__
 
-#define CMD_BRIEF_TEXT_MAX		16384
 #define CMD_BRIEF_STAGES_MAX	10
 
 #include "globalincs/globals.h"
@@ -23,7 +22,7 @@ struct anim;
 struct anim_instance;
 
 typedef struct {
-	char *text;  // text to display
+	SCP_string text;  // text to display
 	char ani_filename[MAX_FILENAME_LEN];  // associated ani file to play
 	//char tech_anim_filename[MAX_FILENAME_LEN];	//duh
 	//anim* animation;	// ptr to the animation

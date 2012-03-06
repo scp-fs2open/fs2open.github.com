@@ -324,11 +324,11 @@ void cmd_brief_new_stage(int stage)
 
 	// If the briefing has no wave to play use simulated speach
 	if(Cur_cmd_brief->stage[stage].wave <= 0) {
-		fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage].text);
+		fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage].text.c_str());
 	}
 
 	Cur_stage = stage;
-	brief_color_text_init(Cur_cmd_brief->stage[stage].text, Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]);
+	brief_color_text_init(Cur_cmd_brief->stage[stage].text.c_str(), Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]);
 
 	// load a new animation if it's different to what's already playing
 	if (strcmp(Cur_anim_filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {
@@ -517,10 +517,7 @@ void cmd_brief_init(int team)
 
 	// Goober5000 - replace any variables (probably persistent variables) with their values
 	for (i = 0; i < Cur_cmd_brief->num_stages; i++)
-	{
-		if (Cur_cmd_brief->stage[i].text)
-			sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text, CMD_BRIEF_TEXT_MAX);
-	}
+		sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text);
 
 	if (Cur_cmd_brief->num_stages <= 0)
 		return;
