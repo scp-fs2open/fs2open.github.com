@@ -18,7 +18,6 @@ struct sexp_variable;
 
 // name of the builtin campaign.
 #define BUILTIN_CAMPAIGN		"FreeSpace2"
-#define BUILTIN_CAMPAIGN_NAME	"The Main FreeSpace2 Campaign"
 
 #define MAX_CAMPAIGN_MISSIONS	100			// maximum number of missions in a campaign
 
@@ -31,7 +30,7 @@ struct sexp_variable;
 // missions.
 #define CAMPAIGN_TYPE_SINGLE			0
 #define CAMPAIGN_TYPE_MULTI_COOP		1
-#define CAMPAIGN_TYPE_MULTI_TEAMS	2
+#define CAMPAIGN_TYPE_MULTI_TEAMS		2
 
 #define MAX_CAMPAIGN_TYPES				3
 
@@ -144,6 +143,8 @@ extern char *Campaign_file_names[MAX_CAMPAIGNS];
 extern char *Campaign_descs[MAX_CAMPAIGNS];
 extern int	Num_campaigns;
 extern int	Campaign_names_inited;
+
+extern char Default_campaign_file_name[MAX_FILENAME_LEN - 4];
 
 // if the campaign file is missing this will get set for us to check against
 extern int Campaign_file_missing;
