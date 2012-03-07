@@ -3368,7 +3368,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	return line_num;
 }
 
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_vector<const char*> *p_str, char ignore_char)
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3377,8 +3377,6 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 	
 	// check our assumptions..
 	Assert(src != NULL);
-	Assert(n_chars != NULL);
-	Assert(p_str != NULL);
 	Assert(max_pixel_w > 0);
 	
 	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
@@ -3387,7 +3385,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 	while (is_white_space(*src))
 		src++;
 
-	p_str->clear();
+	p_str.clear();
 
 	// iterate through chars in line, keeping track of most recent "white space" location that can be used
 	// as a line splitting point if necessary
@@ -3398,7 +3396,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 			if (is_gray_space(*src))
 				continue;
 
-			p_str->push_back(src);
+			p_str.push_back(src);
 			breakpoint = NULL;
 			new_line = 0;
 		}
@@ -3413,7 +3411,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 
 		// if we have a newline, split the line here
 		if (*src == '\n') {
-			n_chars->push_back(src - p_str->at(line_num));  // track length of line
+			n_chars.push_back(src - p_str.at(line_num));  // track length of line
 			line_num++;
 			new_line = 1;
 
@@ -3455,8 +3453,8 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 				src--;  // reuse this character in next line
 			}
 
-			n_chars->push_back(end - p_str->at(line_num));  // track length of line
-			Assert(n_chars->at(line_num));
+			n_chars.push_back(end - p_str.at(line_num));  // track length of line
+			Assert(n_chars.at(line_num));
 			line_num++;
 			new_line = 1;
 
@@ -3466,9 +3464,9 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 		}
 	}	// end for
 
-	if (!new_line && p_str->at(line_num)) {
-		n_chars->push_back(src - p_str->at(line_num));  // track length of line
-		Assert(n_chars->at(line_num));
+	if (!new_line && p_str.at(line_num)) {
+		n_chars.push_back(src - p_str.at(line_num));  // track length of line
+		Assert(n_chars.at(line_num));
 		line_num++;
 	}
 

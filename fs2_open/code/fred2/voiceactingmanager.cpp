@@ -447,7 +447,7 @@ void VoiceActingManager::OnGenerateScript()
 
 			brief_stage *stage = &Briefings[0].stages[i];
 			entry.Replace("$filename", stage->voice);
-			entry.Replace("$message", stage->new_text);
+			entry.Replace("$message", stage->text.c_str());
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 
@@ -466,7 +466,7 @@ void VoiceActingManager::OnGenerateScript()
 
 			debrief_stage *stage = &Debriefings[0].stages[i];
 			entry.Replace("$filename", stage->voice);
-			entry.Replace("$message", stage->new_text);
+			entry.Replace("$message", stage->text.c_str());
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
 	

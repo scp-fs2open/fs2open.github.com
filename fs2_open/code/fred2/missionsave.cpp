@@ -79,13 +79,13 @@ void CFred_mission_save::convert_special_tags_to_retail()
 		// briefing
 		for (stage = 0; stage < Briefings[team].num_stages; stage++)
 		{
-			convert_special_tags_to_retail(Briefings[team].stages[stage].new_text, MAX_BRIEF_LEN);
+			convert_special_tags_to_retail(Briefings[team].stages[stage].text);
 		}
 
 		// debriefing
 		for (stage = 0; stage < Debriefings[team].num_stages; stage++)
 		{
-			convert_special_tags_to_retail(Debriefings[team].stages[stage].new_text, MAX_DEBRIEF_LEN);
+			convert_special_tags_to_retail(Debriefings[team].stages[stage].text);
 		}
 	}
 
@@ -841,7 +841,7 @@ int CFred_mission_save::save_cmd_briefs()
 int CFred_mission_save::save_briefing()
 {
 	int			i,j,k, nb;
-	char		out[MAX_EVENT_SIZE];
+	char		sexp_out[MAX_EVENT_SIZE];
 	brief_stage	*bs;
 	brief_icon	*bi;
 
@@ -868,8 +868,7 @@ int CFred_mission_save::save_briefing()
 			parse_comments();
 
 			// XSTR
-			sprintf(out,"%s", bs->new_text);
-			fout_ext("\n", out);
+			fout_ext("\n", "%s", bs->text.c_str());
 
 			required_string_fred("$end_multi_text", "$start_stage");
 			parse_comments();
@@ -921,8 +920,8 @@ int CFred_mission_save::save_briefing()
 
 			required_string_fred("$Formula:");
 			parse_comments();
-			convert_sexp_to_string(bs->formula, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
-			fout(" %s", out);
+			convert_sexp_to_string(bs->formula, sexp_out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
+			fout(" %s", sexp_out);
 
 			for ( j = 0; j < bs->num_icons; j++ ) {
 				bi = &bs->icons[j];
@@ -1010,7 +1009,7 @@ int CFred_mission_save::save_briefing()
 int CFred_mission_save::save_debriefing()
 {
 	int j, i;
-	char out[MAX_EVENT_SIZE];
+	char sexp_out[MAX_EVENT_SIZE];
 
 	for ( j = 0; j < Num_teams; j++ ) {
 
@@ -1026,13 +1025,13 @@ int CFred_mission_save::save_debriefing()
 		for (i=0; i<Debriefing->num_stages; i++) {
 			required_string_fred("$Formula:");
 			parse_comments(2);
-			convert_sexp_to_string(Debriefing->stages[i].formula, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
-			fout(" %s", out);
+			convert_sexp_to_string(Debriefing->stages[i].formula, sexp_out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
+			fout(" %s", sexp_out);
 
 			// XSTR
 			required_string_fred("$Multi text");
 			parse_comments();
-			fout_ext("\n   ", "%s", Debriefing->stages[i].new_text);
+			fout_ext("\n   ", "%s", Debriefing->stages[i].text.c_str());
 
 			required_string_fred("$end_multi_text");
 			parse_comments();
@@ -1048,7 +1047,7 @@ int CFred_mission_save::save_debriefing()
 			// XSTR
 			required_string_fred("$Recommendation text:");
 			parse_comments();
-			fout_ext("\n   ", "%s", Debriefing->stages[i].new_recommendation_text);
+			fout_ext("\n   ", "%s", Debriefing->stages[i].recommendation_text.c_str());
 
 			required_string_fred("$end_multi_text");
 			parse_comments();
