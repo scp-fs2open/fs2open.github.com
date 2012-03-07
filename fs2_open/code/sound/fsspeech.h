@@ -27,7 +27,7 @@ void fsspeech_stop();
 void fsspeech_pause(bool playing);
 
 void fsspeech_start_buffer();
-void fsspeech_stuff_buffer(char *text);
+void fsspeech_stuff_buffer(const char *text);
 void fsspeech_play_buffer(int type);
 
 bool fsspeech_play_from(int type);
@@ -46,7 +46,7 @@ inline void fsspeech_stop() {}
 inline void fsspeech_pause(bool playing) { (playing); }
 
 inline void fsspeech_start_buffer() {}
-inline void fsspeech_stuff_buffer(char *text) { (text); }
+inline void fsspeech_stuff_buffer(const char *text) { (text); }
 inline void fsspeech_play_buffer(int type) {}
 
 inline bool fsspeech_play_from(int type) { return false; }
