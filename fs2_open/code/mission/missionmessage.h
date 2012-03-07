@@ -172,6 +172,7 @@ typedef struct persona_s {
 extern Persona *Personas;
 extern int Num_personas;
 extern int Default_command_persona;
+extern int Praise_self_percentage;
 
 // function to parse a message from either messages.tbl or the mission file.  Both files have the
 // exact same format, so this function just gets reused in both instances.

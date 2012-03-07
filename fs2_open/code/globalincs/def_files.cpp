@@ -121,6 +121,11 @@ $directive wait time: 3000												\n\
 ;; exact opposite, each SEXP is called for all arguments.				\n\
 $Loop SEXPs Then Arguments:	NO											\n\
 																		\n\
+#OTHER SETTINGS															\n\
+																		\n\
+;; The percentage chance that a pilot will brag about his kills			\n\
+$Self Praise Percentage: 10												\n\
+																		\n\
 #END																	\n\
 ";
 
