@@ -254,15 +254,7 @@ BOOL CFREDApp::InitInstance()
 
 	m_nCmdShow = Main_wnd_data.p.showCmd;
 
-	//if we're opening a file, actually open it instead of just a new window
-	if(cmdInfo.m_nShellCommand == CCommandLineInfo::FileOpen)
-	{
-		AfxGetApp()->OpenDocumentFile((LPCTSTR)cmdInfo.m_strFileName);
-	}
-	else
-	{
-		OnFileNew();
-	}
+	OnFileNew();
 
 	if(m_pMainWnd == NULL) return FALSE;
 
