@@ -14340,7 +14340,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	int j; 
 	bool wingman = false;
 
-	if ( myrand()&10 ) {
+	if ( (int)(frand()*100) > Praise_self_percentage ) {
 		return;
 	}
 

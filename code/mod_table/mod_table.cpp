@@ -7,6 +7,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/def_files.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionmessage.h"
 #include "mod_table/mod_table.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
@@ -41,9 +42,6 @@ void parse_mod_table(char *filename)
 	if (optional_string("$Default Campaign File Name:")) {
 		stuff_string(Default_campaign_file_name, F_NAME, (MAX_FILENAME_LEN - 4) );
 	}
-	else if (Default_campaign_file_name == NULL) {
-		strcpy(Default_campaign_file_name, BUILTIN_CAMPAIGN);
-	}
 
 	optional_string("#HUD SETTINGS"); 
 	// how long should the game wait before displaying a directive?
@@ -62,6 +60,15 @@ void parse_mod_table(char *filename)
 		}
 	}
 
+	optional_string("#OTHER SETTINGS"); 
+	if (optional_string("$Self Praise Percentage:")) { 
+		stuff_int(&Praise_self_percentage);
+		if (Praise_self_percentage < 0 || Praise_self_percentage > 100) {
+			Warning(LOCATION, "Game_settings.tbl - $Self Praise Percentage must be between 0 and 100. Setting to 100");
+			Praise_self_percentage = 100;
+		}
+	}
+
 	required_string("#END");
 
 	// close localization
@@ -70,11 +77,13 @@ void parse_mod_table(char *filename)
 
 void mod_table_init()
 {	
-	// if a mod.tbl exists read it, otherwise fallback to the default
-	if (cf_exists_full("game_settings.tbl", CF_TYPE_TABLES))
+	// first parse the default table
+	parse_mod_table(NULL);
+
+	// if a mod.tbl exists read it
+	if (cf_exists_full("game_settings.tbl", CF_TYPE_TABLES)) {
 		parse_mod_table("game_settings.tbl");
-	else
-		parse_mod_table(NULL);
+	}
 
 	// parse any modular tables
 	parse_modular_table("*-mod.tbm", parse_mod_table);
