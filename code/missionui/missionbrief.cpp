@@ -789,16 +789,12 @@ void brief_compact_stages()
 	while ( num < Briefing->num_stages ) {
 		result = eval_sexp( Briefing->stages[num].formula );
 		if ( !result ) {
-			if ( Briefing->stages[num].new_text != NULL ) {
-				vm_free( Briefing->stages[num].new_text );
-				Briefing->stages[num].new_text = NULL;
-			}
+			Briefing->stages[num].text = "";
 
 			if ( Briefing->stages[num].icons != NULL ) {
 				vm_free( Briefing->stages[num].icons );
 				Briefing->stages[num].icons = NULL;
 			}
-
 
 			if ( Briefing->stages[num].lines != NULL ) {
 				vm_free( Briefing->stages[num].lines );
@@ -818,7 +814,10 @@ void brief_compact_stages()
 	// completely clear out the old entries (if any) so we don't access them by mistake - taylor
 	if ( before > Briefing->num_stages ) {
 		for ( i = Briefing->num_stages; i < before; i++ ) {
-			memset( &Briefing->stages[i], 0, sizeof(brief_stage) );
+			Briefing->stages[i].formula = -1;
+			Briefing->stages[i].flags = 0;
+			Briefing->stages[i].text = "";
+			Briefing->stages[i].num_lines = 0;
 		}
 	}
 
@@ -861,10 +860,7 @@ void brief_init()
 
 	// Goober5000 - replace any variables (probably persistent variables) with their values
 	for (i = 0; i < Briefing->num_stages; i++)
-	{
-		if (Briefing->stages[i].new_text)
-			sexp_replace_variable_names_with_values(Briefing->stages[i].new_text, MAX_BRIEF_LEN);
-	}
+		sexp_replace_variable_names_with_values(Briefing->stages[i].text);
 
 	Brief_last_auto_advance = 0;
 

@@ -1012,8 +1012,8 @@ void debrief_award_init()
 		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_RANK], Promoted + 1);
 		Rank_bitmap = bm_load(buf);
 
-		Promotion_stage.new_text = Ranks[Promoted].promotion_text;
-		Promotion_stage.new_recommendation_text = NULL;
+		Promotion_stage.text = Ranks[Promoted].promotion_text;
+		Promotion_stage.recommendation_text = "";
 
 		// choose appropriate promotion voice for this mission
 		debrief_choose_voice(Promotion_stage.voice, Ranks[Promoted].promotion_voice_base);
@@ -1028,8 +1028,8 @@ void debrief_award_init()
 		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_BADGE], Medals[i].badge_num + 1);
 		Badge_bitmap = bm_load(buf);
 
-		Badge_stage.new_text = Medals[i].promotion_text;
-		Badge_stage.new_recommendation_text = NULL;
+		Badge_stage.text = Medals[i].promotion_text;
+		Badge_stage.recommendation_text = "";
 
 		// choose appropriate voice
 		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned].voice_base);
@@ -1081,11 +1081,7 @@ void debrief_traitor_init()
 		required_string("$Formula:");
 		stagep->formula = get_sexp_main();
 		required_string("$multi text");
-		if ( Fred_running )	{
-			stuff_string( stagep->new_text, F_MULTITEXT, MAX_DEBRIEF_LEN);
-		} else {
-			stagep->new_text = stuff_and_malloc_string( F_MULTITEXT, NULL);
-		}
+		stuff_string( stagep->text, F_MULTITEXT, NULL);
 		required_string("$Voice:");
 		char traitor_voice_file[MAX_FILENAME_LEN];
 		stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
@@ -1101,11 +1097,8 @@ void debrief_traitor_init()
 		debrief_choose_voice(stagep->voice, traitor_voice_file, 1);
 
 		required_string("$Recommendation text:");
-		if ( Fred_running )	{
-			stuff_string( stagep->new_recommendation_text, F_MULTITEXT, MAX_RECOMMENDATION_LEN);
-		} else {
-			stagep->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL);
-		}
+		stuff_string( stagep->recommendation_text, F_MULTITEXT, NULL);
+
 		inited = 1;
 
 		// close localization
@@ -1848,11 +1841,11 @@ void debrief_check_buttons()
 	*/
 }
 
-void debrief_text_stage_init(char *src, int type)
+void debrief_text_stage_init(const char *src, int type)
 {
 	int i, n_lines, n_chars[MAX_DEBRIEF_LINES];
 	char line[MAX_DEBRIEF_LINE_LEN];
-	char *p_str[MAX_DEBRIEF_LINES];
+	const char *p_str[MAX_DEBRIEF_LINES];
 
 	n_lines = split_str(src, Debrief_text_wnd_coords[gr_screen.res][2], n_chars, p_str, MAX_DEBRIEF_LINES);
 	Assert(n_lines >= 0);
@@ -1890,7 +1883,7 @@ void debrief_free_text()
 void debrief_text_init()
 {
 	int r_count = 0;
-	char *src;
+	const char *src;
 	int i;
 
 	// If no wav files are being used use speech simulation
@@ -1913,9 +1906,9 @@ void debrief_text_init()
 			if (i)
 				Text[Num_text_lines++] = NULL;  // add a blank line between stages
 
-			src = Debrief_stages[i]->new_text;
+			src = Debrief_stages[i]->text.c_str();
 
-			if (src) {
+			if (*src) {
 				debrief_text_stage_init(src, TEXT_TYPE_NORMAL);
 
 				if (use_sim_speech && !Recommend_active) {
@@ -1925,11 +1918,12 @@ void debrief_text_init()
 			}
 
 			if (Recommend_active) {
-				src = Debrief_stages[i]->new_recommendation_text;
-				if (!src && (i == Num_debrief_stages - 1) && !r_count)
+				src = Debrief_stages[i]->recommendation_text.c_str();
+
+				if ((i == Num_debrief_stages - 1) && !r_count && !*src)
 					src = XSTR( "We have no recommendations for you.", 1054);
 
-				if (src) {
+				if (*src) {
 					Text[Num_text_lines++] = NULL;
 					debrief_text_stage_init(src, TEXT_TYPE_RECOMMENDATION);
 					r_count++;
@@ -2003,10 +1997,7 @@ void debrief_init()
 
 	// Goober5000 - replace any variables with their values
 	for (i = 0; i < Debriefing->num_stages; i++)
-	{
-		if (Debriefing->stages[i].new_text)
-			sexp_replace_variable_names_with_values(Debriefing->stages[i].new_text, MAX_DEBRIEF_LEN);
-	}
+		sexp_replace_variable_names_with_values(Debriefing->stages[i].text);
 
 	// no longer is mission
 	Game_mode &= ~(GM_IN_MISSION);	

@@ -1330,11 +1330,7 @@ void parse_briefing(mission *pm, int flags)
 			Assert(stage_num < MAX_BRIEF_STAGES);
 			bs = &bp->stages[stage_num++];
 			required_string("$multi_text");
-			if ( Fred_running )	{
-				stuff_string(bs->new_text, F_MULTITEXT, MAX_BRIEF_LEN);
-			} else {
-				bs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL);
-			}
+			stuff_string(bs->text, F_MULTITEXT, NULL);
 			required_string("$voice:");
 			stuff_string(bs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			required_string("$camera_pos:");
@@ -1538,19 +1534,11 @@ void parse_debriefing_new(mission *pm)
 			required_string("$Formula:");
 			dbs->formula = get_sexp_main();
 			required_string("$multi text");
-			if ( Fred_running )	{
-				stuff_string(dbs->new_text, F_MULTITEXT, MAX_DEBRIEF_LEN);
-			} else {
-				dbs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL);
-			}
+			stuff_string(dbs->text, F_MULTITEXT, NULL);
 			required_string("$Voice:");
 			stuff_string(dbs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			required_string("$Recommendation text:");
-			if ( Fred_running )	{
-				stuff_string( dbs->new_recommendation_text, F_MULTITEXT, MAX_RECOMMENDATION_LEN);
-			} else {
-				dbs->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL);
-			}
+			stuff_string(dbs->recommendation_text, F_MULTITEXT, NULL);
 		} // end while
 
 		Assert(db->num_stages == stage_num);

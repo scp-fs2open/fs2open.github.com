@@ -175,7 +175,7 @@ void red_alert_voice_unload()
 void red_alert_voice_play()
 {
 	if ( Red_alert_voice == -1 ){
-		fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].new_text);
+		fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str());
 		return;	// voice file doesn't exist
 	}
 
@@ -338,8 +338,7 @@ void red_alert_init()
 	}
 
 	if ( Briefing->num_stages > 0 ) {
-		Assert(Briefing->stages[0].new_text);
-		brief_color_text_init(Briefing->stages[0].new_text, Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], 0);
+		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], 0);
 	}
 
 	red_alert_voice_load();
