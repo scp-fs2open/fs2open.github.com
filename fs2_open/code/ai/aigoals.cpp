@@ -2288,7 +2288,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 }
 
-void ai_update_goal_references(ai_goal *goals, int type, char *old_name, char *new_name)
+void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, const char *new_name)
 {
 	int i, mode, flag, dummy;
 

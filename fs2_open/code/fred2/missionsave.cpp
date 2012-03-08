@@ -2921,7 +2921,7 @@ int CFred_mission_save::fout_version(char *format, ...)
 			format++;
 		}
 
-		str_scp.append(const_cast<char*>(fso_ver_comment.back().c_str()));
+		str_scp.append(fso_ver_comment.back().c_str());
 		str_scp.append(" ");
 
 		cfputs(const_cast<char*>(str_scp.c_str()), fp);

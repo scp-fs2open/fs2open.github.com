@@ -34,7 +34,7 @@ class waypoint_list
 {
 	public:
 		waypoint_list();
-		waypoint_list(char *name);
+		waypoint_list(const char *name);
 		~waypoint_list();
 
 		// accessors
@@ -42,7 +42,7 @@ class waypoint_list
 		SCP_list<waypoint> &get_waypoints();
 
 		// mutators
-		void set_name(char *name);
+		void set_name(const char *name);
 
 	private:
 		char name[NAME_LENGTH];
@@ -69,10 +69,10 @@ int calc_waypoint_index(int waypoint_instance);
 void waypoint_create_game_objects();
 
 // Find a waypoint list with the specified name
-waypoint_list *find_matching_waypoint_list(char *name);
+waypoint_list *find_matching_waypoint_list(const char *name);
 
 // Find a waypoint with the specified name (e.g. Path:1)
-waypoint *find_matching_waypoint(char *name);
+waypoint *find_matching_waypoint(const char *name);
 
 // Find a waypoint with the matching object info
 waypoint *find_waypoint_with_objnum(int objnum);
@@ -89,7 +89,7 @@ int find_index_of_waypoint(waypoint *wpt);
 void waypoint_find_unique_name(char *dest_name, int start_index);
 
 // Add a new list of waypoints.  Called from mission parsing.
-void waypoint_add_list(char *name, SCP_vector<vec3d> &vec_list);
+void waypoint_add_list(const char *name, SCP_vector<vec3d> &vec_list);
 
 // Attempts to create a waypoint with the specified instance (used to calculate list and index).
 // Returns the object number, or -1 on failure.  Used by scripting and FRED.

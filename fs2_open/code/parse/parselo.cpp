@@ -3567,8 +3567,7 @@ bool can_construe_as_integer(const char *text)
 		return false;
 
 	// check digits for rest
-	// (why on earth do we need a const cast here?  text isn't the pointer being modified!)
-	for (char *p = const_cast<char*>(text) + 1; *p != '\0'; p++)
+	for (const char *p = text + 1; *p != '\0'; p++)
 	{
 		if (!isdigit(*p))
 			return false;
@@ -3588,7 +3587,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 	char buf_src[MAX_BUF];
 	char buf_dest[MAX_BUF];
 
-	char *p;
+	const char *p;
 	int *pint;
 	long ival;
 	double dval;
@@ -3597,7 +3596,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 	dest = "";
 
 	// Add each extra parameter to string
-	for (p = const_cast<char *>(format); *p; ++p)
+	for (p = format; *p; ++p)
 	{
 		if (*p != '%')
 		{

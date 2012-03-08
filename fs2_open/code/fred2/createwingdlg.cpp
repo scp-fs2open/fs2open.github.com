@@ -119,7 +119,7 @@ void create_wing_dlg::OnOK()
 		}
 	}
 
-	if (find_matching_waypoint_list(const_cast<char *>((const char *) m_name)) != NULL)
+	if (find_matching_waypoint_list((LPCSTR) m_name) != NULL)
 	{
 		MessageBox("This wing name is already being used by a waypoint path");
 		return;

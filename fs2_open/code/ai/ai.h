@@ -604,7 +604,7 @@ void ai_process( object * obj, int ai_index, float frametime );
 int get_wingnum(int objnum);
 
 void set_wingnum(int objnum, int wingnum);
-char *ai_get_goal_target_name(char *name, int *index);
+char *ai_get_goal_target_name(const char *name, int *index);
 
 extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp);

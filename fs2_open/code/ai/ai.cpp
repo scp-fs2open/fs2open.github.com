@@ -82,7 +82,7 @@ void set_wingnum(int objnum, int wingnum)
 	Ai_info[ai_index].wing = wingnum;
 }
 
-char *ai_get_goal_target_name(char *name, int *index)
+char *ai_get_goal_target_name(const char *name, int *index)
 {
 	Assert(name != NULL);
 	Assert(index != NULL);
