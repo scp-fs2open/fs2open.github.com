@@ -108,7 +108,7 @@ public:
 	void set_data_dup(char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void add_op(int op_num);
 	void add_data(char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void add_data_dup(char *str, int t = (SEXPT_STRING | SEXPT_VALID));
+	void add_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void add_list(sexp_list_item *list);
 	void destroy();
 };

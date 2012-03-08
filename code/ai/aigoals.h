@@ -117,7 +117,7 @@ extern void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip );
 extern void ai_mission_goal_complete( ai_info *aip );
 extern void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp );
 
-extern void ai_update_goal_references(ai_goal *goals, int type, char *old_name, char *new_name);
+extern void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, const char *new_name);
 extern int query_referenced_in_ai_goals(ai_goal *goals, int type, char *name);
 extern char *ai_add_dock_name(char *str);
 

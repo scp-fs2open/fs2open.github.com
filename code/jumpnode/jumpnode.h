@@ -60,7 +60,7 @@ public:
 	//Setting
 	void set_alphacolor(int r, int g, int b, int alpha);
 	void set_model(char *model_name, bool show_polys=false);
-	void set_name(char *new_name);
+	void set_name(const char *new_name);
 	void show(bool enabled);
 
 	//Rendering
@@ -71,7 +71,7 @@ public:
 extern SCP_list<jump_node> Jump_nodes;
 
 //-----Functions-----
-jump_node *jumpnode_get_by_name(char *name);
+jump_node *jumpnode_get_by_name(const char *name);
 jump_node *jumpnode_get_which_in(object *objp);
 
 void jumpnode_render_all();

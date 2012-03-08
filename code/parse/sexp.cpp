@@ -789,7 +789,7 @@ int Num_explosion_options = 6;
 
 int get_sexp(char *token);
 void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
-void update_sexp_references(char *old_name, char *new_name, int format, int node);
+void update_sexp_references(const char *old_name, const char *new_name, int format, int node);
 int sexp_determine_team(char *subj);
 int extract_sexp_variable_index(int node);
 void init_sexp_vars();
@@ -24960,7 +24960,7 @@ int query_operator_argument_type(int op, int argnum)
 
 // DA: 1/7/99  Used to rename ships and waypoints, not variables
 // Strictly used in FRED
-void update_sexp_references(char *old_name, char *new_name)
+void update_sexp_references(const char *old_name, const char *new_name)
 {
 	int i;
 
@@ -24975,7 +24975,7 @@ void update_sexp_references(char *old_name, char *new_name)
 
 // DA: 1/7/99  Used to rename event names, goal names, not variables
 // Strictly used in FRED
-void update_sexp_references(char *old_name, char *new_name, int format)
+void update_sexp_references(const char *old_name, const char *new_name, int format)
 {
 	int i;
 
@@ -24989,7 +24989,7 @@ void update_sexp_references(char *old_name, char *new_name, int format)
 
 // DA: 1/7/99  Used to rename event names, goal names, not variables
 // recursive function to update references to a certain type of data
-void update_sexp_references(char *old_name, char *new_name, int format, int node)
+void update_sexp_references(const char *old_name, const char *new_name, int format, int node)
 {
 	int i, n, op;
 

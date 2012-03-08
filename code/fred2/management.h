@@ -64,7 +64,7 @@ extern CCriticalSection CS_cur_object_index;
 
 void	string_copy(char *dest, CString &src, int max_len, int modify = 0);
 void	string_copy(SCP_string &dest, CString &src, int modify = 0);
-CString convert_multiline_string(char *src);
+CString convert_multiline_string(const char *src);
 void	deconvert_multiline_string(char *buf, CString &str, int max_len);
 void	deconvert_multiline_string(SCP_string &buf, CString &str);
 
@@ -112,7 +112,7 @@ void	correct_marking();
 int	get_ship_from_obj(int obj);
 int	get_ship_from_obj(object *objp);
 void	set_valid_dock_points(int ship, int type, CComboBox *box);
-void	ai_update_goal_references(int type, char *old_name, char *new_name);
+void	ai_update_goal_references(int type, const char *old_name, const char *new_name);
 int	query_referenced_in_ai_goals(int type, char *name);
 int	advanced_stricmp(char *one, char *two);
 int	reference_handler(char *name, int type, int obj);
@@ -141,6 +141,6 @@ extern int wing_is_player_wing(int wing);
 extern void update_custom_wing_indexes();
 extern void stuff_special_arrival_anchor_name(char *buf, int iff_index, int restrict_to_players, int retail_format);
 extern void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_format);
-extern void update_texture_replacements(char *old_name, char *new_name);
+extern void update_texture_replacements(const char *old_name, const char *new_name);
 
 #endif

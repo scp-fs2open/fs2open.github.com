@@ -21,7 +21,7 @@
 #define ANI_BPP_CHECK		(ga->ani.bg_type == BM_TYPE_PCX) ? 16 : 32
 
 // Goober5000
-int generic_anim_init_and_stream(generic_anim *anim, char *anim_filename, ubyte bg_type, bool attempt_hi_res)
+int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, ubyte bg_type, bool attempt_hi_res)
 {
 	int stream_result = -1;
 	char filename[NAME_LENGTH];
@@ -69,15 +69,9 @@ int generic_anim_init_and_stream(generic_anim *anim, char *anim_filename, ubyte 
 }
 
 // Goober5000
-void generic_anim_init(generic_anim *ga, char *filename)
+void generic_anim_init(generic_anim *ga)
 {
-	//memset(ga, 0, sizeof(ga));	//this makes the mission load screen crash :(
-	if (filename == NULL) {
-		ga->filename[0] = '\0';
-	} else {
-		strncpy(ga->filename, filename, MAX_FILENAME_LEN - 1);
-	}
-
+	memset(ga->filename, 0, MAX_FILENAME_LEN);
 	ga->first_frame = -1;
 	ga->num_frames = 0;
 	ga->keyframe = 0;
@@ -100,16 +94,25 @@ void generic_anim_init(generic_anim *ga, char *filename)
 	ga->width = 0;
 	ga->bitmap_id = -1;
 }
-/**
- * CommanderDJ - same as generic_anim_init, just with an SCP_string 
- */
+
+// Goober5000
+void generic_anim_init(generic_anim *ga, const char *filename)
+{
+	generic_anim_init(ga);
+
+	if (filename != NULL)
+		strncpy(ga->filename, filename, MAX_FILENAME_LEN - 1);
+}
+
+// CommanderDJ - same as generic_anim_init, just with an SCP_string 
 void generic_anim_init(generic_anim *ga, const SCP_string& filename)
 {
-	generic_anim_init(ga, const_cast<char*> (filename.c_str()));
+	generic_anim_init(ga);
+	strncpy(ga->filename, filename.c_str(), MAX_FILENAME_LEN - 1);
 }
 
 // Goober5000
-void generic_bitmap_init(generic_bitmap *gb, char *filename)
+void generic_bitmap_init(generic_bitmap *gb, const char *filename)
 {
 	if (filename == NULL) {
 		gb->filename[0] = '\0';

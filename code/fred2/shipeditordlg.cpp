@@ -1108,7 +1108,7 @@ int CShipEditorDlg::update_data(int redraw)
 			}
 		}
 
-		if (find_matching_waypoint_list(const_cast<char*>((const char *) m_ship_name)) != NULL)
+		if (find_matching_waypoint_list((LPCSTR) m_ship_name) != NULL)
 		{
 			if (bypass_errors)
 				return 0;

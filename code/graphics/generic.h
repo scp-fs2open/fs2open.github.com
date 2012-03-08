@@ -52,10 +52,11 @@ typedef struct generic_bitmap {
 	int bitmap_id;
 } generic_bitmap;
 
-int generic_anim_init_and_stream(generic_anim *anim, char *anim_filename, ubyte bg_type, bool attempt_hi_res);
-void generic_anim_init(generic_anim *ga, char *filename = NULL);
+int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, ubyte bg_type, bool attempt_hi_res);
+void generic_anim_init(generic_anim *ga);
+void generic_anim_init(generic_anim *ga, const char *filename);
 void generic_anim_init(generic_anim *ga, const SCP_string& filename);
-void generic_bitmap_init(generic_bitmap *gb, char *filename = NULL);
+void generic_bitmap_init(generic_bitmap *gb, const char *filename = NULL);
 int generic_anim_load(generic_anim *ga);
 int generic_anim_stream(generic_anim *ga);
 int generic_bitmap_load(generic_bitmap *gb);
