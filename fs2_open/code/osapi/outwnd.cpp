@@ -30,6 +30,7 @@
 #include "globalincs/systemvars.h"
 #include "cfile/cfilesystem.h"
 #include "globalincs/globals.h"
+#include "parse/parselo.h"
 
 
 extern int Cmdline_debug_window;
@@ -89,7 +90,7 @@ int find_line = -1, find_pos;
 #define NMONO
 HANDLE  mono_driver=NULL;				// handle to the monochrome driver
 
-void outwnd_print(char *id, char *tmp);
+void outwnd_print(const char *id = NULL, const char *temp = NULL);
 BOOL CALLBACK find_dlg_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam);
 void find_text_in_outwindow(int n, int p);
 void outwnd_copy_marked_selection(HWND hwnd);
@@ -103,7 +104,7 @@ int Log_debug_output_to_file = 1;
 FILE *Log_fp = NULL;
 char *FreeSpace_logfilename = NULL;
 
-char safe_string[512] = { 0 };
+SCP_string safe_string;
 
 
 
@@ -269,21 +270,19 @@ void save_filter_info(void)
 	}
 }
 
-void outwnd_printf2(char *format, ...)
+void outwnd_printf2(const char *format, ...)
 {
-	char tmp[MAX_LINE_WIDTH*4] = {'\0'};
+	SCP_string temp;
 	va_list args;
 
 	if (format == NULL)
 		return;
 
 	va_start(args, format);
-	//WMC - Switched from vsprintf to _vsnprintf to prevent overflow of tmp
-	//Try vsnprintf under Linux or OS X if this breaks compilation there.
-	_vsnprintf(tmp, sizeof(tmp)-1,format, args);
+	vsprintf(temp, format, args);
 	va_end(args);
 
-	outwnd_print("General", tmp);
+	outwnd_print("General", temp.c_str());
 }
 
 #ifndef NMONO
@@ -375,26 +374,24 @@ void mono_print( char * text, int len )
 #endif // NMONO
 
 
-void outwnd_printf(char *id, char *format, ...)
+void outwnd_printf(const char *id, const char *format, ...)
 {
-	char tmp[MAX_LINE_WIDTH*4] = {'\0'};
+	SCP_string temp;
 	va_list args;
 
 	if ( (id == NULL) || (format == NULL) )
 		return;
 
 	va_start(args, format);
-	//WMC - Switched from vsprintf to _vsnprintf to prevent overflow of tmp
-	//Try vsnprintf under Linux or OS X if this breaks compilation there.
-	_vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsprintf(temp, format, args);
 	va_end(args);
 
-	outwnd_print(id, tmp);
+	outwnd_print(id, temp.c_str());
 }
 
-void outwnd_print(char *id, char *tmp)
+void outwnd_print(const char *id, const char *tmp)
 {
-	char *sptr;
+	const char *sptr;
 	char *dptr;
 	int nrows, ccol;
 	uint i;
@@ -467,7 +464,7 @@ void outwnd_print(char *id, char *tmp)
 	if ( mono_driver != ((HANDLE)-1) ) {
 		DWORD   cbReturned;
 
-		DeviceIoControl (mono_driver, (DWORD)IOCTL_MONO_PRINT, tmp, strlen(tmp), NULL, 0, &cbReturned, 0 );
+		DeviceIoControl (mono_driver, (DWORD)IOCTL_MONO_PRINT, const_cast<char*>(tmp), strlen(tmp), NULL, 0, &cbReturned, 0 );
 #ifndef NMONO
 	} else {
 		mono_print(tmp, strlen(tmp) );
@@ -1351,19 +1348,19 @@ void outwnd_close()
 	outwnd_inited = false;
 }
 
-void safe_point_print(char *format, ...)
+void safe_point_print(const char *format, ...)
 {
-	char tmp[512];
+	SCP_string temp;
 	va_list args;
 	
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsprintf(temp, format, args);
 	va_end(args);
 
-	strcpy_s(safe_string, tmp);
+	safe_string = temp;
 }
 
-void safe_point(char *file, int line, char *format, ...)
+void safe_point(const char *file, int line, const char *format, ...)
 {
 	safe_point_print("last safepoint: %s, %d; [%s]", file, line, format);
 }

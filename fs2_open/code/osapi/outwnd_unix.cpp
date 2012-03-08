@@ -23,10 +23,11 @@
 #include "osapi/osregistry.h"
 #include "cfile/cfilesystem.h"
 #include "globalincs/globals.h"
+#include "parse/parselo.h"
 
 
 
-void outwnd_print(char *id = NULL, char *tmp = NULL);
+void outwnd_print(const char *id = NULL, const char *temp = NULL);
 
 #define MAX_LINE_WIDTH	128
 
@@ -53,7 +54,7 @@ int Log_debug_output_to_file = 1;
 FILE *Log_fp = NULL;
 char *FreeSpace_logfilename = "fs2_open.log";
 
-char safe_string[512] = { 0 };
+SCP_string safe_string;
 
 
 void load_filter_info(void)
@@ -154,37 +155,37 @@ void save_filter_info(void)
 	}
 }
 
-void outwnd_printf2(char *format, ...)
+void outwnd_printf2(const char *format, ...)
 {
-	char tmp[MAX_LINE_WIDTH*4] = {'\0'};
+	SCP_string temp;
 	va_list args;
 
 	if (format == NULL)
 		return;
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1,format, args);
+	vsprintf(temp, format, args);
 	va_end(args);
 
-	outwnd_print("General", tmp);
+	outwnd_print("General", temp.c_str());
 }
 
-void outwnd_printf(char *id, char *format, ...)
+void outwnd_printf(const char *id, const char *format, ...)
 {
-	char tmp[MAX_LINE_WIDTH*4] = {'\0'};
+	SCP_string temp;
 	va_list args;
 
 	if ( (id == NULL) || (format == NULL) )
 		return;
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1,format, args);
+	vsprintf(temp, format, args);
 	va_end(args);
 
-	outwnd_print(id, tmp);
+	outwnd_print(id, temp.c_str());
 }
 
-void outwnd_print(char *id, char *tmp)
+void outwnd_print(const char *id, const char *tmp)
 {
 	uint i;
 
@@ -291,18 +292,19 @@ void outwnd_close()
 	outwnd_inited = false;
 }
 
-void safe_point_print(char *format, ...)
+void safe_point_print(const char *format, ...)
 {
-	char tmp[512];
+	SCP_string temp;
 	va_list args;
 	
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1,format, args);
+	vsprintf(temp, format, args);
 	va_end(args);
-	strcpy_s(safe_string, tmp);
+
+	safe_string = temp;
 }
 
-void safe_point(char *file, int line, char *format, ...)
+void safe_point(const char *file, int line, const char *format, ...)
 {
 	safe_point_print("last safepoint: %s, %d; [%s]", file, line, format);
 }
