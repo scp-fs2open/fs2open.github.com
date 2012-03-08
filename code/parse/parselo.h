@@ -107,7 +107,7 @@ extern void skip_token();
 
 // required
 extern int required_string(char *pstr);
-extern int optional_string(char *pstr);
+extern int optional_string(const char *pstr);
 extern int optional_string_either(char *str1, char *str2);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_3(char *str1, char *str2, char *str3);

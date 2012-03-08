@@ -542,7 +542,7 @@ int check_for_string_raw(char *pstr)
 // Find an optional string.
 //	If found, return 1, else return 0.
 //	If found, point past string, else don't update pointer.
-int optional_string(char *pstr)
+int optional_string(const char *pstr)
 {
 	ignore_white_space();
 //	mprintf(("lookint for optional string %s",pstr));
