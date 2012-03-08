@@ -5380,7 +5380,7 @@ void post_process_mission()
 	// Loop through the Sexp_nodes array and send the top level functions to the check_sexp_syntax parser
 
 	for (i = 0; i < Num_sexp_nodes; i++) {
-		if ( is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
+		if (is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
 			int result, bad_node, op;
 
 			op = get_operator_index(CTEXT(i));
@@ -5390,16 +5390,19 @@ void post_process_mission()
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()
 			if ( result ) {
-				char sexp_str[MAX_EVENT_SIZE], text[4500];
+				SCP_string sexp_str;
+				SCP_string error_msg;
 
-				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
-				sprintf(text, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)",
-					sexp_error_message(result), sexp_str, Sexp_nodes[bad_node].text);
+				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
+				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 
-				if (!Fred_running)
-					Error( LOCATION, text );
-				else
-					Warning( LOCATION, text );
+				if (!Fred_running) {
+					nprintf(("Error", error_msg.c_str()));
+					Error(LOCATION, error_msg.c_str());
+				} else {
+					nprintf(("Warning", error_msg.c_str()));
+					Warning(LOCATION, error_msg.c_str());
+				}
 			}
 		}
 	}

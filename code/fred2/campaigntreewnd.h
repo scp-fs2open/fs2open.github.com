@@ -27,8 +27,8 @@ public:
 public:
 	int error_checker();
 	int fred_check_sexp(int sexp, int type, char *msg, ...);
-	int error(char *msg, ...);
-	int internal_error(char *msg, ...);
+	int error(const char *msg, ...);
+	int internal_error(const char *msg, ...);
 	int save_modified();
 
 // Overrides

@@ -373,9 +373,9 @@ int campaign_tree_wnd::error_checker()
 	return 0;
 }
 
-int campaign_tree_wnd::error(char *msg, ...)
+int campaign_tree_wnd::error(const char *msg, ...)
 {
-	char buf[2048];
+	SCP_string buf;
 	va_list args;
 
 	g_err++;
@@ -383,15 +383,16 @@ int campaign_tree_wnd::error(char *msg, ...)
 	vsprintf(buf, msg, args);
 	va_end(args);
 
-	if (MessageBox(buf, "Error", MB_OKCANCEL | MB_ICONEXCLAMATION) == IDOK)
+	nprintf(("Error", buf.c_str()));
+	if (MessageBox(buf.c_str(), "Error", MB_OKCANCEL | MB_ICONEXCLAMATION) == IDOK)
 		return 0;
 
 	return 1;
 }
 
-int campaign_tree_wnd::internal_error(char *msg, ...)
+int campaign_tree_wnd::internal_error(const char *msg, ...)
 {
-	char buf[2048], buf2[2048];
+	SCP_string buf, buf2;
 	va_list args;
 
 	g_err++;
@@ -400,9 +401,10 @@ int campaign_tree_wnd::internal_error(char *msg, ...)
 	va_end(args);
 
 	sprintf(buf2, "%s\n\nThis is an internal error.  Please let Hoffoss\n"
-		"know about this so he can fix it.  Click cancel to debug.", buf);
+		"know about this so he can fix it.  Click cancel to debug.", buf.c_str());
 
-	if (MessageBox(buf2, "Internal Error", MB_OKCANCEL | MB_ICONEXCLAMATION) == IDCANCEL)
+	nprintf(("Error", buf.c_str()));
+	if (MessageBox(buf2.c_str(), "Internal Error", MB_OKCANCEL | MB_ICONEXCLAMATION) == IDCANCEL)
 		Int3();  // drop to debugger so the problem can be analyzed.
 
 	return -1;
@@ -410,7 +412,7 @@ int campaign_tree_wnd::internal_error(char *msg, ...)
 
 int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 {
-	char buf[512], buf2[2048], buf3[MAX_EVENT_SIZE];
+	SCP_string buf, sexp_buf, error_buf;
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -425,17 +427,16 @@ int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 	if (!z)
 		return 0;
 
-	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
-	sprintf(buf3, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)",
-		buf, sexp_error_message(z), buf2, Sexp_nodes[faulty_node].text);
+	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
 
 	if (z < 0 && z > -100)
 		err = 1;
 
 	if (err)
-		return internal_error(buf3);
+		return internal_error(error_buf.c_str());
 
-	if (error(buf3))
+	if (error(error_buf.c_str()))
 		return 1;
 
 	return 0;

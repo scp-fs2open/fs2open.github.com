@@ -28,7 +28,7 @@
 class CFred_mission_save {
 private:
 	char *raw_ptr;
-	std::vector<std::string> fso_ver_comment;
+	SCP_vector<SCP_string> fso_ver_comment;
 	int err;
 	CFILE *fp;
 

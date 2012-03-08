@@ -3232,7 +3232,7 @@ int CFREDView::global_error_check_player_wings(int multi)
 	return 0;
 }
 
-int CFREDView::error(char *msg, ...)
+int CFREDView::error(const char *msg, ...)
 {
 	char buf[2048];
 	va_list args;
@@ -3248,7 +3248,7 @@ int CFREDView::error(char *msg, ...)
 	return 1;
 }
 
-int CFREDView::internal_error(char *msg, ...)
+int CFREDView::internal_error(const char *msg, ...)
 {
 	char buf[2048];
 	va_list args;
@@ -3275,9 +3275,9 @@ int CFREDView::internal_error(char *msg, ...)
 	return -1;
 }
 
-int CFREDView::fred_check_sexp(int sexp, int type, char *msg, ...)
+int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 {
-	char buf[512], buf2[2048], buf3[MAX_EVENT_SIZE];
+	SCP_string buf, sexp_buf, error_buf;
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -3292,17 +3292,16 @@ int CFREDView::fred_check_sexp(int sexp, int type, char *msg, ...)
 	if (!z)
 		return 0;
 
-	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
-	sprintf(buf3, "Error in %s: %s\n\nIn sexpression: %s\n(Error appears to be: %s)",
-		buf, sexp_error_message(z), buf2, Sexp_nodes[faulty_node].text);
+	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
 
 	if (z < 0 && z > -100)
 		err = 1;
 
 	if (err)
-		return internal_error(buf3);
+		return internal_error(error_buf.c_str());
 
-	if (error(buf3))
+	if (error(error_buf.c_str()))
 		return 1;
 
 	return 0;
