@@ -45,9 +45,9 @@ protected: // create from serialization only
 public:
 
 	int global_error_check_mixed_player_wing(int w);
-	int fred_check_sexp(int sexp, int type, char *msg, ...);
-	int internal_error(char *msg, ...);
-	int error(char *msg, ...);
+	int fred_check_sexp(int sexp, int type, const char *msg, ...);
+	int internal_error(const char *msg, ...);
+	int error(const char *msg, ...);
 	int global_error_check();
 	void place_background_bitmap(vec3d v);
 	void cycle_constraint();
