@@ -1301,8 +1301,8 @@ void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *ban
 	Assert(bank_default_weapons != NULL);
 	Assert(bank_capacities != NULL);
 	const int max_banks = is_primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS;
-	char *default_banks_str = is_primary ? "$Default PBanks:" : "$Default SBanks:";
-	char *bank_capacities_str = is_primary ? "$PBank Capacity:" : "$SBank Capacity:";
+	const char *default_banks_str = is_primary ? "$Default PBanks:" : "$Default SBanks:";
+	const char *bank_capacities_str = is_primary ? "$PBank Capacity:" : "$SBank Capacity:";
 
 	// we initialize to the previous parse, which presumably worked
 	int num_bank_capacities = num_banks != NULL ? *num_banks : 0;
