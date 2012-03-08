@@ -308,7 +308,7 @@ static char* GetFilePart(char *source)
 //
 // --------------------
 
-extern char safe_string[512];
+SCP_string safe_string;
 
 // Entry point into the main exception handling routine.  This routine is put into an except()
 // statment at the beginning of a thread and is called anytime that there is a program exception
@@ -494,8 +494,8 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 #endif
 
 #ifndef NDEBUG
-	if (safe_string[0])
-		hprintf(LogFile, "Last safe point: %s\r\n", safe_string);
+	if (!safe_string.empty())
+		hprintf(LogFile, "Last safe point: %s\r\n", safe_string.c_str());
 #endif
 
 	RecordModuleList(LogFile);
