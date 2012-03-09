@@ -312,30 +312,28 @@ int get_line_num()
 extern int Cmdline_noparseerrors;
 void error_display(int error_level, char *format, ...)
 {
-	char	buffer[1024];
-	char	error_text[128];
+	char type[8];
+	SCP_string error_text;
 	va_list args;
 
 	if (error_level == 0) {
-		strcpy_s(error_text, "Warning");
+		strcpy_s(type, "Warning");
 		Warning_count++;
 	} else {
-		strcpy_s(error_text, "Error");
+		strcpy_s(type, "Error");
 		Error_count++;
 	}
 
-	nprintf((error_text, "%s(line %i:%s: ", Current_filename, get_line_num(), error_text));
-
 	va_start(args, format);
-	vsprintf(buffer, format, args);
+	vsprintf(error_text, format, args);
 	va_end(args);
-	Assert(strlen(buffer) < 1024);
 
-	nprintf((error_text, "%s", buffer));
+	nprintf((type, "%s(line %i): %s: %s\n", Current_filename, get_line_num(), type, error_text.c_str()));
+
 	if(error_level == 0 || Cmdline_noparseerrors)
-		Warning(LOCATION, "%s(line %i:\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
+		Warning(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
 	else
-		Error(LOCATION, "%s(line %i:\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
+		Error(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
 }
 
 //	Advance Mp to the next eoln character.
@@ -544,7 +542,7 @@ int check_for_string_raw(char *pstr)
 // Find an optional string.
 //	If found, return 1, else return 0.
 //	If found, point past string, else don't update pointer.
-int optional_string(char *pstr)
+int optional_string(const char *pstr)
 {
 	ignore_white_space();
 //	mprintf(("lookint for optional string %s",pstr));
@@ -3370,7 +3368,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	return line_num;
 }
 
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_vector<const char*> *p_str, char ignore_char)
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3379,8 +3377,6 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 	
 	// check our assumptions..
 	Assert(src != NULL);
-	Assert(n_chars != NULL);
-	Assert(p_str != NULL);
 	Assert(max_pixel_w > 0);
 	
 	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
@@ -3389,7 +3385,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 	while (is_white_space(*src))
 		src++;
 
-	p_str->clear();
+	p_str.clear();
 
 	// iterate through chars in line, keeping track of most recent "white space" location that can be used
 	// as a line splitting point if necessary
@@ -3400,7 +3396,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 			if (is_gray_space(*src))
 				continue;
 
-			p_str->push_back(src);
+			p_str.push_back(src);
 			breakpoint = NULL;
 			new_line = 0;
 		}
@@ -3415,7 +3411,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 
 		// if we have a newline, split the line here
 		if (*src == '\n') {
-			n_chars->push_back(src - p_str->at(line_num));  // track length of line
+			n_chars.push_back(src - p_str.at(line_num));  // track length of line
 			line_num++;
 			new_line = 1;
 
@@ -3457,8 +3453,8 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 				src--;  // reuse this character in next line
 			}
 
-			n_chars->push_back(end - p_str->at(line_num));  // track length of line
-			Assert(n_chars->at(line_num));
+			n_chars.push_back(end - p_str.at(line_num));  // track length of line
+			Assert(n_chars.at(line_num));
 			line_num++;
 			new_line = 1;
 
@@ -3468,9 +3464,9 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_ve
 		}
 	}	// end for
 
-	if (!new_line && p_str->at(line_num)) {
-		n_chars->push_back(src - p_str->at(line_num));  // track length of line
-		Assert(n_chars->at(line_num));
+	if (!new_line && p_str.at(line_num)) {
+		n_chars.push_back(src - p_str.at(line_num));  // track length of line
+		Assert(n_chars.at(line_num));
 		line_num++;
 	}
 
@@ -3571,8 +3567,7 @@ bool can_construe_as_integer(const char *text)
 		return false;
 
 	// check digits for rest
-	// (why on earth do we need a const cast here?  text isn't the pointer being modified!)
-	for (char *p = const_cast<char*>(text) + 1; *p != '\0'; p++)
+	for (const char *p = text + 1; *p != '\0'; p++)
 	{
 		if (!isdigit(*p))
 			return false;
@@ -3592,7 +3587,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 	char buf_src[MAX_BUF];
 	char buf_dest[MAX_BUF];
 
-	char *p;
+	const char *p;
 	int *pint;
 	long ival;
 	double dval;
@@ -3601,7 +3596,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 	dest = "";
 
 	// Add each extra parameter to string
-	for (p = const_cast<char *>(format); *p; ++p)
+	for (p = format; *p; ++p)
 	{
 		if (*p != '%')
 		{

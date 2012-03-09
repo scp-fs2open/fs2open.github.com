@@ -121,7 +121,7 @@ void fsspeech_start_buffer()
 	Speech_buffer[0] = '\0';
 }
 
-void fsspeech_stuff_buffer(char *text)
+void fsspeech_stuff_buffer(const char *text)
 {
 	if (!speech_inited)
 		return;

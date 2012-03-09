@@ -178,6 +178,7 @@ char *Persona_type_names[MAX_PERSONA_TYPES] =
 };
 
 int Default_command_persona;
+int Praise_self_percentage;
 
 
 // Goober5000

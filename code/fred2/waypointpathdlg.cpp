@@ -157,7 +157,8 @@ void waypoint_path_dlg::initialize_data(int full_update)
 
 int waypoint_path_dlg::update_data(int redraw)
 {
-	char *str, old_name[255];
+	const char *str;
+	char old_name[255];
 	int i, z;
 	object *ptr;
 	SCP_list<jump_node>::iterator jnp;
@@ -389,7 +390,7 @@ int waypoint_path_dlg::update_data(int redraw)
 			}
 		}
 
-		if (find_matching_waypoint_list(const_cast<char *>((const char *) m_name)) != NULL)
+		if (find_matching_waypoint_list((LPCSTR) m_name) != NULL)
 		{
 			if (bypass_errors)
 				return 1;
@@ -438,9 +439,9 @@ int waypoint_path_dlg::update_data(int redraw)
 		}
 		
 		strcpy_s(old_name, jnp->get_name_ptr());
-		jnp->set_name(const_cast<char *>((const char *) m_name));
+		jnp->set_name((LPCSTR) m_name);
 		
-		str = (char *) (LPCTSTR) m_name;
+		str = (LPCTSTR) m_name;
 		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
 		}

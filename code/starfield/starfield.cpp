@@ -103,7 +103,11 @@ typedef struct starfield_bitmap_instance {
 	int n_verts;
 	vertex *verts;
 
-	starfield_bitmap_instance() { memset(this, 0, sizeof(starfield_bitmap_instance)); star_bitmap_index = -1; };
+	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1), star_bitmap_index(-1), n_verts(0), verts(NULL) {
+		ang.p = 0.0f;
+		ang.b = 0.0f;
+		ang.h = 0.0f;
+    }
 } starfield_bitmap_instance;
 
 // for drawing cool stuff on the background - comes from a table
@@ -819,14 +823,8 @@ void stars_post_level_init()
 			mprintf(("Adding default sun.\n"));
 
 			starfield_bitmap_instance def_sun;
-		//	memset( &def_sun, 0, sizeof(starfield_bitmap_instance) );
 
 			// stuff some values
-			def_sun.star_bitmap_index = 0;
-			def_sun.scale_x = 1.0f;
-			def_sun.scale_y = 1.0f;
-			def_sun.div_x = 1;
-			def_sun.div_y = 1;
 			def_sun.ang.h = fl_radians(60.0f);
 
 			Suns.push_back(def_sun);
@@ -2199,7 +2197,6 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 	Assert(sun_ptr != NULL);
 
 	// copy information
-	memset(&sbi, 0, sizeof(starfield_bitmap_instance));
 	sbi.ang.p = sun_ptr->ang.p;
 	sbi.ang.b = sun_ptr->ang.b;
 	sbi.ang.h = sun_ptr->ang.h;
@@ -2287,10 +2284,9 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	int idx;
 	starfield_bitmap_instance sbi;
 
-	Assert( sle != NULL );
+	Assert(sle != NULL);
 
 	// copy information
-	memset(&sbi, 0, sizeof(starfield_bitmap_instance));
 	sbi.ang.p = sle->ang.p;
 	sbi.ang.b = sle->ang.b;
 	sbi.ang.h = sle->ang.h;
@@ -2510,7 +2506,14 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 	Assert( index >= 0 );
 	Assert( sbi_new != NULL );
 
-	memcpy( &sbi, sbi_new, sizeof(starfield_bitmap_instance) );
+    // copy information
+    sbi.ang.p = sbi_new->ang.p;
+	sbi.ang.b = sbi_new->ang.b;
+	sbi.ang.h = sbi_new->ang.h;
+	sbi.scale_x = sbi_new->scale_x;
+	sbi.scale_y = sbi_new->scale_y;
+	sbi.div_x = sbi_new->div_x;
+	sbi.div_y = sbi_new->div_y;
 
 	if (is_a_sun) {
 		idx = stars_find_sun((char*)name);

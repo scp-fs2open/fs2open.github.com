@@ -22,9 +22,7 @@ class waypoint_list;
 
 #define MAX_SEXP_VARIABLES 250
 
-#define	MAX_SEXP_TEXT	2000
 #define	MAX_OPERATORS	1024  // Yes, this is used, but not by the Sexp code.
-#define MAX_EVENT_SIZE	16384
 
 // Operator argument formats (data types of an argument)
 #define	OPF_NONE				1		// argument cannot exist at this position if it's this
@@ -1016,7 +1014,6 @@ extern int Num_operators;
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
-extern char *Sexp_string;
 extern int Training_context;
 extern int Training_context_speed_min;
 extern int Training_context_speed_max;
@@ -1059,13 +1056,13 @@ extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
-extern void update_sexp_references(char *old_name, char *new_name);
-extern void update_sexp_references(char *old_name, char *new_name, int format);
+extern void update_sexp_references(const char *old_name, const char *new_name);
+extern void update_sexp_references(const char *old_name, const char *new_name, int format);
 extern int query_referenced_in_sexp(int mode, char *name, int *node);
 extern int verify_vector(char *text);
 extern void skip_white(char **str);
 extern int validate_float(char **str);
-extern int build_sexp_string(int cur_node, int level, int mode, int max_len);
+extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
 extern char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();

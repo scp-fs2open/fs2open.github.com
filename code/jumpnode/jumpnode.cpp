@@ -167,13 +167,13 @@ void jump_node::set_model(char *model_name, bool show_polys)
  *
  * @param new_name New name to set
  */
-void jump_node::set_name(char *new_name)
+void jump_node::set_name(const char *new_name)
 {
 	Assert(new_name != NULL);
 	#ifndef NDEBUG
 	jump_node* check = jumpnode_get_by_name(new_name);
-	#endif
 	Assert((check == this || !check));
+	#endif
 	strcpy_s(m_name, new_name);
 }
 
@@ -263,7 +263,7 @@ void jump_node::render(vec3d *pos, vec3d *view_pos)
  * @param name Name of jump node
  * @return Jump node object
  */
-jump_node *jumpnode_get_by_name(char* name)
+jump_node *jumpnode_get_by_name(const char* name)
 {
 	Assert(name != NULL);
 	SCP_list<jump_node>::iterator jnp;

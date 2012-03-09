@@ -1330,11 +1330,7 @@ void parse_briefing(mission *pm, int flags)
 			Assert(stage_num < MAX_BRIEF_STAGES);
 			bs = &bp->stages[stage_num++];
 			required_string("$multi_text");
-			if ( Fred_running )	{
-				stuff_string(bs->new_text, F_MULTITEXT, MAX_BRIEF_LEN);
-			} else {
-				bs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL);
-			}
+			stuff_string(bs->text, F_MULTITEXT, NULL);
 			required_string("$voice:");
 			stuff_string(bs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			required_string("$camera_pos:");
@@ -1538,19 +1534,11 @@ void parse_debriefing_new(mission *pm)
 			required_string("$Formula:");
 			dbs->formula = get_sexp_main();
 			required_string("$multi text");
-			if ( Fred_running )	{
-				stuff_string(dbs->new_text, F_MULTITEXT, MAX_DEBRIEF_LEN);
-			} else {
-				dbs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL);
-			}
+			stuff_string(dbs->text, F_MULTITEXT, NULL);
 			required_string("$Voice:");
 			stuff_string(dbs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			required_string("$Recommendation text:");
-			if ( Fred_running )	{
-				stuff_string( dbs->new_recommendation_text, F_MULTITEXT, MAX_RECOMMENDATION_LEN);
-			} else {
-				dbs->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL);
-			}
+			stuff_string(dbs->recommendation_text, F_MULTITEXT, NULL);
 		} // end while
 
 		Assert(db->num_stages == stage_num);
@@ -5392,7 +5380,7 @@ void post_process_mission()
 	// Loop through the Sexp_nodes array and send the top level functions to the check_sexp_syntax parser
 
 	for (i = 0; i < Num_sexp_nodes; i++) {
-		if ( is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
+		if (is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
 			int result, bad_node, op;
 
 			op = get_operator_index(CTEXT(i));
@@ -5402,16 +5390,19 @@ void post_process_mission()
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()
 			if ( result ) {
-				char sexp_str[MAX_EVENT_SIZE], text[4500];
+				SCP_string sexp_str;
+				SCP_string error_msg;
 
-				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
-				sprintf(text, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)",
-					sexp_error_message(result), sexp_str, Sexp_nodes[bad_node].text);
+				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
+				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 
-				if (!Fred_running)
-					Error( LOCATION, text );
-				else
-					Warning( LOCATION, text );
+				if (!Fred_running) {
+					nprintf(("Error", error_msg.c_str()));
+					Error(LOCATION, error_msg.c_str());
+				} else {
+					nprintf(("Warning", error_msg.c_str()));
+					Warning(LOCATION, error_msg.c_str());
+				}
 			}
 		}
 	}

@@ -357,8 +357,9 @@ void CMessageEditorDlg::OnUpdateName()
 
 int CMessageEditorDlg::update(int num)
 {
-	char *ptr, buf[MAX_EVENT_SIZE];
+	char *ptr;
 	int i, node, fnode;
+	CString buf;
 	CListBox *list;
 
 	UpdateData(TRUE);
@@ -443,9 +444,9 @@ int CMessageEditorDlg::update(int num)
 			ptr = (char *) (LPCTSTR) m_message_name;
 			node = alloc_sexp(ptr, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			((CComboBox *) GetDlgItem(IDC_PRIORITY))->GetLBText(m_priority, buf);
-			node = alloc_sexp(buf, SEXP_ATOM, SEXP_ATOM_STRING, -1, node);
+			node = alloc_sexp((char *) (LPCTSTR) buf, SEXP_ATOM, SEXP_ATOM_STRING, -1, node);
 			((CComboBox *) GetDlgItem(IDC_SENDER))->GetLBText(m_sender, buf);
-			node = alloc_sexp(buf, SEXP_ATOM, SEXP_ATOM_STRING, -1, node);
+			node = alloc_sexp((char *) (LPCTSTR) buf, SEXP_ATOM, SEXP_ATOM_STRING, -1, node);
 			node = alloc_sexp("send-message", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, node);
 			node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, fnode, node);

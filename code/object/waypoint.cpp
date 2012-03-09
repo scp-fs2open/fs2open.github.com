@@ -62,7 +62,7 @@ waypoint_list::waypoint_list()
 	this->name[0] = '\0';
 }
 
-waypoint_list::waypoint_list(char *name)
+waypoint_list::waypoint_list(const char *name)
 {
 	Assert(name != NULL);
 	Assert(find_matching_waypoint_list(name) == NULL);
@@ -84,7 +84,7 @@ SCP_list<waypoint> &waypoint_list::get_waypoints()
 	return waypoints;
 }
 
-void waypoint_list::set_name(char *name)
+void waypoint_list::set_name(const char *name)
 {
 	Assert(name != NULL);
 	strcpy_s(this->name, name);
@@ -154,7 +154,7 @@ void waypoint_create_game_objects()
 	}
 }
 
-waypoint_list *find_matching_waypoint_list(char *name)
+waypoint_list *find_matching_waypoint_list(const char *name)
 {
 	Assert(name != NULL);
 	SCP_list<waypoint_list>::iterator ii;
@@ -169,7 +169,7 @@ waypoint_list *find_matching_waypoint_list(char *name)
 }
 
 // NOTE: waypoint names are always in the format Name:index
-waypoint *find_matching_waypoint(char *name)
+waypoint *find_matching_waypoint(const char *name)
 {
 	Assert(name != NULL);
 	SCP_list<waypoint_list>::iterator ii;
@@ -186,7 +186,7 @@ waypoint *find_matching_waypoint(char *name)
 				continue;
 
 			// skip over the : to inspect a new string holding only the index
-			char *index_str = name + len + 1;
+			const char *index_str = name + len + 1;
 			if (*index_str == '\0')
 			{
 				nprintf(("waypoints", "possible error with waypoint name '%s': no waypoint number after the colon\n", name));
@@ -195,7 +195,7 @@ waypoint *find_matching_waypoint(char *name)
 
 			// make sure it's actually a number
 			bool valid = true;
-			for (char *ch = index_str; *ch != '\0'; ch++)
+			for (const char *ch = index_str; *ch != '\0'; ch++)
 			{
 				if (!isdigit(*ch))
 				{
@@ -364,7 +364,7 @@ void waypoint_find_unique_name(char *dest_name, int start_index)
 	} while (collision != NULL);
 }
 
-void waypoint_add_list(char *name, SCP_vector<vec3d> &vec_list)
+void waypoint_add_list(const char *name, SCP_vector<vec3d> &vec_list)
 {
 	Assert(name != NULL);
 

@@ -111,7 +111,6 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_FLIP_ICON, m_flipicon);
 	//}}AFX_DATA_MAP
 
-	DDV_MaxChars(pDX, m_text, MAX_BRIEF_LEN - 1);
 	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
 	DDV_MaxChars(pDX, m_icon_label, MAX_LABEL_LEN - 1);
 	DDV_MaxChars(pDX, m_icon_text, MAX_ICON_TEXT_LEN - 1);
@@ -302,7 +301,8 @@ void briefing_editor_dlg::restore_editor_state()
 
 void briefing_editor_dlg::update_data(int update)
 {
-	char buf[MAX_LABEL_LEN], buf2[MAX_ICON_TEXT_LEN], buf3[MAX_BRIEF_LEN];
+	char buf[MAX_LABEL_LEN], buf2[MAX_ICON_TEXT_LEN];
+	SCP_string buf3;
 	int i, j, l, lines, count, enable = TRUE, valid = 0, invalid = 0;
 	object *objp;
 	brief_stage *ptr = NULL;
@@ -317,12 +317,12 @@ void briefing_editor_dlg::update_data(int update)
 	strcpy_s(The_mission.substitute_briefing_music_name, m_substitute_briefing_music);
 	if (m_last_stage >= 0) {
 		ptr = &Briefing->stages[m_last_stage];
-		deconvert_multiline_string(buf3, m_text, MAX_BRIEF_LEN);
-		lcl_fred_replace_stuff(buf3, MAX_BRIEF_LEN);
-		if (stricmp(ptr->new_text, buf3))
+		deconvert_multiline_string(buf3, m_text);
+		lcl_fred_replace_stuff(buf3);
+		if (ptr->text != buf3)
 			set_modified();
 
-		strcpy(ptr->new_text, buf3);
+		ptr->text = buf3;
 		MODIFY(ptr->camera_time, atoi(m_time));
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN, 1);
 		i = ptr->flags;
@@ -489,7 +489,7 @@ void briefing_editor_dlg::update_data(int update)
 	if ((m_cur_stage >= 0) && (m_cur_stage < Briefing->num_stages)) {
 		ptr = &Briefing->stages[m_cur_stage];
 		m_stage_title.Format("Stage %d of %d", m_cur_stage + 1, Briefing->num_stages);
-		m_text = convert_multiline_string(ptr->new_text);
+		m_text = convert_multiline_string(ptr->text.c_str());
 		m_time.Format("%d", ptr->camera_time);
 		m_voice = ptr->voice;
 		m_cut_prev = (ptr->flags & BS_BACKWARD_CUT) ? 1 : 0;
@@ -852,7 +852,7 @@ void briefing_editor_dlg::OnInsertStage()
 void briefing_editor_dlg::copy_stage(int from, int to)
 {
 	if ((from < 0) || (from >= Briefing->num_stages)) {
-		strcpy(Briefing->stages[to].new_text, "<Text here>");
+		Briefing->stages[to].text = "<Text here>";
 		strcpy_s(Briefing->stages[to].voice, "none.wav");
 		Briefing->stages[to].camera_pos = view_pos;
 		Briefing->stages[to].camera_orient = view_orient;
@@ -863,7 +863,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 	}
 
 	// Copy all the data in the stage structure.
-	strcpy( Briefing->stages[to].new_text, Briefing->stages[from].new_text );
+	Briefing->stages[to].text = Briefing->stages[from].text;
 	strcpy_s( Briefing->stages[to].voice, Briefing->stages[from].voice );
 	Briefing->stages[to].camera_pos = Briefing->stages[from].camera_pos;
 	Briefing->stages[to].camera_orient = Briefing->stages[from].camera_orient;

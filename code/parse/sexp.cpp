@@ -729,7 +729,6 @@ int	Sexp_useful_number;  // a variable to pass useful info in from external modu
 int	Locked_sexp_true, Locked_sexp_false;
 int	Num_operators = sizeof(Operators) / sizeof(sexp_oper);
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
-int	Sexp_build_flag;
 int	Sexp_clipboard = -1;  // used by Fred
 int	Training_context = 0;
 int	Training_context_speed_set;
@@ -740,8 +739,6 @@ waypoint_list *Training_context_path;
 int Training_context_goal_waypoint;
 int Training_context_at_waypoint;
 float	Training_context_distance;
-char	Sexp_error_text[MAX_SEXP_TEXT];
-char	*Sexp_string; //[1024] = {0};
 
 #define SEXP_NODE_INCREMENT	250
 int Num_sexp_nodes = 0;
@@ -791,8 +788,8 @@ char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", 
 int Num_explosion_options = 6;
 
 int get_sexp(char *token);
-void build_extended_sexp_string(int cur_node, int level, int mode, int max_len);
-void update_sexp_references(char *old_name, char *new_name, int format, int node);
+void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
+void update_sexp_references(const char *old_name, const char *new_name, int format, int node);
 int sexp_determine_team(char *subj);
 int extract_sexp_variable_index(int node);
 void init_sexp_vars();
@@ -3450,9 +3447,9 @@ int num_block_variables()
 }
 
 /**
- * Build SEXP text string
+ * Stuff SEXP text string
  */
-void build_sexp_text_string(char *buffer, int node, int mode)
+void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 {
 	Assert( (node >= 0) && (node < Num_sexp_nodes) );
 
@@ -3469,14 +3466,14 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 			// Error check - can be Fred or FreeSpace
 			if (mode == SEXP_ERROR_CHECK_MODE) {
 				if ( Fred_running ) {
-					sprintf(buffer, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
+					sprintf(dest, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 				} else {
-					sprintf(buffer, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
+					sprintf(dest, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
 				}
 			} else {
 				// Save as string - only  Fred
 				Assert(mode == SEXP_SAVE_MODE);
-				sprintf(buffer, "@%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
+				sprintf(dest, "@%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 			}
 		} else {
 			// string
@@ -3486,133 +3483,99 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 			// Error check - can be Fred or FreeSpace
 			if (mode == SEXP_ERROR_CHECK_MODE) {
 				if ( Fred_running ) {
-					sprintf(buffer, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
+					sprintf(dest, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
 				} else {
-					sprintf(buffer, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
+					sprintf(dest, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 				}
 			} else {
 				// Save as string - only Fred
 				Assert(mode == SEXP_SAVE_MODE);
-				sprintf(buffer, "\"@%s[%s]\" ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
+				sprintf(dest, "\"@%s[%s]\" ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 			}
 		}
 	} else {
 		// not a variable
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
-			sprintf(buffer, "\"%s\" ", CTEXT(node));
+			sprintf(dest, "\"%s\" ", CTEXT(node));
 		} else {
-			sprintf(buffer, "%s ", CTEXT(node));
+			sprintf(dest, "%s ", CTEXT(node));
 		}
 	}
 }
 
-static int Sexp_text_overflow_warning = 0;
-
-// speed is not critical, since we're using FRED
-char *sexp_strcat_s(char *dest, const char *src, int max_len)
+int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode)
 {
-	int dest_len = strlen(dest);
-	int src_len = strlen(src);
+	SCP_string buf;
+	int node, old_length = accumulator.length();
 
-	if (dest_len + src_len < max_len - 1)
-	{
-		strcpy(&dest[dest_len], src);
-	}
-	else
-	{
-		if (!Sexp_text_overflow_warning)
-		{
-			char buf[640];
-			strcpy_s(buf, "SEXP OVERFLOW: The sexp starting with the following text...\n\n");
-			strncat(buf, dest, 172);
-			strcat_s(buf, "\n\n...is too long!  The sexp has been truncated accordingly and is probably no longer correct.  Please fix this sexp using a text editor.\n\n(Please note that future sexp overflows will fail silently, and this warning will not be displayed again until you restart FRED.)\n");
-			strcat_s(buf, "...sexp truncated on or near:  ");
-			strncat(buf, src, 40);
-			strcat_s(buf, "\n\n");
-			mprintf((buf));
-			Error(LOCATION, buf);
-
-			Sexp_text_overflow_warning = 1;
-		}
-	}
-
-	return dest;
-}
-
-int build_sexp_string(int cur_node, int level, int mode, int max_len)
-{
-	char	pstr[128];
-	int len, offset, node;
-
-	Sexp_build_flag = 0;
-	offset = strlen(Sexp_string);
-	sexp_strcat_s(Sexp_string, "( ", max_len);
+	accumulator += "( ";
 	node = cur_node;
 	while (node != -1) {
 		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			// build text to string
-			build_sexp_text_string(pstr, node, mode);
-			sexp_strcat_s(Sexp_string, pstr, max_len);
+			stuff_sexp_text_string(buf, node, mode);
+			accumulator += buf;
 
 		} else {
-			build_sexp_string(Sexp_nodes[node].first, level + 1, mode, max_len);
+			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		}
 
 		node = Sexp_nodes[node].rest;
 	}
 
-	sexp_strcat_s(Sexp_string, ") ", max_len);
-	len = strlen(Sexp_string) - offset;
-	if (len > 40) {
-		Sexp_string[offset] = 0;
-		build_extended_sexp_string(cur_node, level, mode, max_len);
+	accumulator += ")";
+	if ((accumulator.length() - old_length) > 40) {
+		accumulator.resize(old_length);
+		build_extended_sexp_string(accumulator, cur_node, level, mode);
 		return 1;
 	}
 
 	return 0;
 }
 
-void build_extended_sexp_string(int cur_node, int level, int mode, int max_len)
+void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode)
 {
-	char pstr[128];
+	SCP_string buf;
 	int i, flag = 0, node;
 
-	sexp_strcat_s(Sexp_string, "( ", max_len);
+	accumulator += "( ";
 	node = cur_node;
 	while (node != -1) {
-		if (flag)  // not the first line?
+		// not the first line?
+		if (flag) {
 			for (i=0; i<level + 1; i++)
-				sexp_strcat_s(Sexp_string, "   ", max_len);
+				accumulator += "   ";
+		}
 
 		flag = 1;
 		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
-			build_sexp_text_string(pstr,node, mode);
-			sexp_strcat_s(Sexp_string, pstr, max_len);
+			stuff_sexp_text_string(buf, node, mode);
+			accumulator += buf;
 
 		} else {
-			build_sexp_string(Sexp_nodes[node].first, level + 1, mode, max_len);
+			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		}
 
-		sexp_strcat_s(Sexp_string, "\n", max_len);
+		accumulator += "\n";
 		node = Sexp_nodes[node].rest;
 	}
 
 	for (i=0; i<level; i++)
-		sexp_strcat_s(Sexp_string, "   ", max_len);
+		accumulator += "   ";
 
-	sexp_strcat_s(Sexp_string, ")", max_len);
+	accumulator += ")";
 }
 
-void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len)
+void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode)
 {
-	Sexp_string = outstr;
-	*outstr = 0;
-	if (cur_node >= 0)
-		build_sexp_string(cur_node, 0, mode, max_len);
-	else
-		strcpy(Sexp_string, "( )");
+	if (cur_node >= 0) {
+		dest = "";
+		build_sexp_string(dest, cur_node, 0, mode);
+	} else {
+		dest = "( )";
+	}
 }
 
 
@@ -22188,9 +22151,9 @@ int eval_sexp(int cur_node, int referenced_node)
 			// make sure everything works okay
 			if (arg_num == -1)
 			{
-				char sexp_text[MAX_EVENT_SIZE];
-				convert_sexp_to_string(cur_node, sexp_text, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
-				Error(LOCATION, "Error finding sexp argument.  Received value %d for sexp:\n%s", sexp_val, sexp_text);
+				SCP_string sexp_text;
+				convert_sexp_to_string(sexp_text, cur_node, SEXP_ERROR_CHECK_MODE);
+				Error(LOCATION, "Error finding sexp argument.  Received value %d for sexp:\n%s", sexp_val, sexp_text.c_str());
 			}
 
 			// if we need a positive value, make it positive
@@ -24997,7 +24960,7 @@ int query_operator_argument_type(int op, int argnum)
 
 // DA: 1/7/99  Used to rename ships and waypoints, not variables
 // Strictly used in FRED
-void update_sexp_references(char *old_name, char *new_name)
+void update_sexp_references(const char *old_name, const char *new_name)
 {
 	int i;
 
@@ -25012,7 +24975,7 @@ void update_sexp_references(char *old_name, char *new_name)
 
 // DA: 1/7/99  Used to rename event names, goal names, not variables
 // Strictly used in FRED
-void update_sexp_references(char *old_name, char *new_name, int format)
+void update_sexp_references(const char *old_name, const char *new_name, int format)
 {
 	int i;
 
@@ -25026,7 +24989,7 @@ void update_sexp_references(char *old_name, char *new_name, int format)
 
 // DA: 1/7/99  Used to rename event names, goal names, not variables
 // recursive function to update references to a certain type of data
-void update_sexp_references(char *old_name, char *new_name, int format, int node)
+void update_sexp_references(const char *old_name, const char *new_name, int format, int node)
 {
 	int i, n, op;
 
@@ -25443,10 +25406,11 @@ char *sexp_error_message(int num)
 			
 		case SEXP_CHECK_INVALID_ANIMATION_TYPE:
 			return "Invalid animation type";
-	}
 
-	sprintf(Sexp_error_text, "Sexp error code %d", num);
-	return Sexp_error_text;
+		default:
+			Warning(LOCATION, "Unhandled sexp error code %d!", num);
+			return "Unhandled sexp error code!";
+	}
 }
 
 int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship)

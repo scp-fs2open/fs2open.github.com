@@ -67,9 +67,7 @@ void debriefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_FAILED_MISSION_TRACK, m_debriefFail_music);
 	//}}AFX_DATA_MAP
 
-	DDV_MaxChars(pDX, m_text, MAX_BRIEF_LEN - 1);
 	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
-	DDV_MaxChars(pDX, m_rec_text, MAX_RECOMMENDATION_LEN - 1);
 }
 
 BEGIN_MESSAGE_MAP(debriefing_editor_dlg, CDialog)
@@ -204,10 +202,10 @@ void debriefing_editor_dlg::update_data(int update)
 			free_sexp2(ptr->formula);
 
 		ptr->formula = m_tree.save_tree();
-		deconvert_multiline_string(ptr->new_text, m_text, MAX_DEBRIEF_LEN);
-		lcl_fred_replace_stuff(ptr->new_text, MAX_DEBRIEF_LEN);
-		deconvert_multiline_string(ptr->new_recommendation_text, m_rec_text, MAX_RECOMMENDATION_LEN);
-		lcl_fred_replace_stuff(ptr->new_recommendation_text,MAX_RECOMMENDATION_LEN);
+		deconvert_multiline_string(ptr->text, m_text);
+		lcl_fred_replace_stuff(ptr->text);
+		deconvert_multiline_string(ptr->recommendation_text, m_rec_text);
+		lcl_fred_replace_stuff(ptr->recommendation_text);
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN);
 	}
 
@@ -216,8 +214,8 @@ void debriefing_editor_dlg::update_data(int update)
 		ptr = &Debriefing->stages[m_cur_stage];
 		m_stage_title.Format("Stage %d of %d", m_cur_stage + 1, Debriefing->num_stages);
 		m_tree.load_tree(ptr->formula);
-		m_text = convert_multiline_string(ptr->new_text);
-		m_rec_text = convert_multiline_string(ptr->new_recommendation_text);
+		m_text = convert_multiline_string(ptr->text.c_str());
+		m_rec_text = convert_multiline_string(ptr->recommendation_text.c_str());
 		m_voice = ptr->voice;
 		enable = TRUE;
 
@@ -387,21 +385,20 @@ void debriefing_editor_dlg::OnInsertStage()
 void debriefing_editor_dlg::copy_stage(int from, int to, int clear_formula)
 {
 	if ((from < 0) || (from >= Debriefing->num_stages)) {
-		strcpy(Debriefing->stages[to].new_text, "<Text here>");
+		Debriefing->stages[to].text = "<Text here>";
 		strcpy_s(Debriefing->stages[to].voice, "none.wav");
 		Debriefing->stages[to].formula = -1;
 		return;
 	}
-
 	
 	if (clear_formula)
 		Debriefing->stages[to].formula = -1;
 	else
 		Debriefing->stages[to].formula = Debriefing->stages[from].formula;
 
-	strcpy( Debriefing->stages[to].new_text, Debriefing->stages[from].new_text );
+	Debriefing->stages[to].text = Debriefing->stages[from].text;
 	strcpy_s( Debriefing->stages[to].voice, Debriefing->stages[from].voice );
-	strcpy( Debriefing->stages[to].new_recommendation_text, Debriefing->stages[from].new_recommendation_text );
+	Debriefing->stages[to].recommendation_text = Debriefing->stages[from].recommendation_text;
 }
 
 void debriefing_editor_dlg::OnRclickTree(NMHDR* pNMHDR, LRESULT* pResult) 

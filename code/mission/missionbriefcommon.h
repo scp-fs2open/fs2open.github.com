@@ -64,13 +64,11 @@
 // Structures to hold briefing data
 // ------------------------------------------------------------------------
 
-#define	MAX_BRIEF_LEN			4096		// size of char array which holds briefing text
 #define	MAX_BRIEF_LINES		70
 #define	MAX_BRIEF_LINE_LEN	256		// max number of chars in a briefing line
 #define	MAX_BRIEF_LINE_W_640		375		// max width of line in pixels in 640x480 mode
 #define	MAX_BRIEF_LINE_W_1024	600		// max width of line in pixels in 1024x768 mode
 
-#define	MAX_DEBRIEF_LEN		2048		// size of char array which holds debriefing text
 #define	MAX_DEBRIEF_LINES		60
 #define	MAX_DEBRIEF_LINE_LEN	256		// max number of chars in a debriefing line
 #define	MAX_DEBRIEF_LINE_W	500		// max width of line in pixels
@@ -84,8 +82,6 @@
 #define	MAX_BRIEF_STAGES			15
 #define	MAX_DEBRIEF_STAGES		40
 #define	MAX_LABEL_LEN				64
-
-#define	MAX_RECOMMENDATION_LEN	1024
 
 #define		BI_HIGHLIGHT		(1<<0)
 #define		BI_SHOWHIGHLIGHT	(1<<1)
@@ -126,7 +122,7 @@ typedef struct brief_line
 
 typedef struct brief_stage
 {
-	char			*new_text;
+	SCP_string	text;
 	char			voice[MAX_FILENAME_LEN];
 	vec3d		camera_pos;
 	matrix		camera_orient;
@@ -139,7 +135,7 @@ typedef struct brief_stage
 	brief_line	*lines;
 
 	brief_stage( ) 
-		: new_text( NULL ), camera_time( 0 ), flags( 0 ), formula( -1 ),
+		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ),
 		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
 	{ 
 		voice[ 0 ] = NULL;
@@ -151,13 +147,13 @@ typedef struct brief_stage
 typedef struct debrief_stage
 {
 	int			formula;
-	char			*new_text;
+	SCP_string	text;
 	char			voice[MAX_FILENAME_LEN];
-	char			*new_recommendation_text;
+	SCP_string	recommendation_text;
 
 	debrief_stage( ) 
-		: formula( -1 ), new_text( NULL ),
-		  new_recommendation_text( NULL )
+		: formula( -1 ), text( ),
+		  recommendation_text( )
 	{ 
 		voice[ 0 ] = NULL;
 	}

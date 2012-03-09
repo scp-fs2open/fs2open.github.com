@@ -107,7 +107,7 @@ extern void skip_token();
 
 // required
 extern int required_string(char *pstr);
-extern int optional_string(char *pstr);
+extern int optional_string(const char *pstr);
 extern int optional_string_either(char *str1, char *str2);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_3(char *str1, char *str2, char *str3);
@@ -191,14 +191,14 @@ extern void read_file_text_from_array(char *array, char *processed_text = NULL, 
 extern void read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
 extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void debug_show_mission_text();
-extern void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len);
+extern void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode);
 char *split_str_once(char *src, int max_pixel_w);
 int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char = -1);
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_vector<const char*> *p_str, char ignore_char);
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char);
 
 inline int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_lines, char ignore_char = -1)
 {
-	return split_str((const char*)src,max_pixel_w,n_chars,(const char**)p_str,max_lines,ignore_char);
+	return split_str(const_cast<const char*>(src), max_pixel_w, n_chars, const_cast<const char**>(p_str), max_lines, ignore_char);
 }
 
 // fred

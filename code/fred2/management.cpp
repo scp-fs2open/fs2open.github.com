@@ -161,9 +161,10 @@ void string_copy(SCP_string &dest, CString &src, int modify)
 
 // converts a multiline string (one with newlines in it) into a windows format multiline
 // string (newlines changed to '\r\n').
-CString convert_multiline_string(char *src)
+CString convert_multiline_string(const char *src)
 {
-	char *ptr, buf[256];
+	const char *ptr;
+	char buf[256];
 	int i;
 	static CString str;
 
@@ -1996,7 +1997,7 @@ int get_ship_from_obj(object *objp)
 	return 0;
 }
 
-void ai_update_goal_references(int type, char *old_name, char *new_name)
+void ai_update_goal_references(int type, const char *old_name, const char *new_name)
 {
 	int i;
 
@@ -2679,7 +2680,7 @@ void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_for
 }
 
 // Goober5000
-void update_texture_replacements(char *old_name, char *new_name)
+void update_texture_replacements(const char *old_name, const char *new_name)
 {
 	int i;
 
