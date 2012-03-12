@@ -1245,9 +1245,7 @@ void game_loading_callback_init()
 	if (Game_loading_background < 0)
 		Game_loading_background = bm_load(Game_loading_bground_fname[gr_screen.res]);
 
-	// niffiwan: set data after the init? :-)
-	generic_anim_init(&Game_loading_ani);
-	strcpy_s(Game_loading_ani.filename, Game_loading_ani_fname[gr_screen.res]);
+	generic_anim_init(&Game_loading_ani, Game_loading_ani_fname[gr_screen.res]);
 	generic_anim_load(&Game_loading_ani);
 	Assertion( Game_loading_ani.num_frames > 0, "Load Screen animation %s not found, or corrupted. Needs to be an animation with at least 1 frame.", Game_loading_ani.filename );
 
