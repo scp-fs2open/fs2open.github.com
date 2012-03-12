@@ -71,7 +71,16 @@ int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, 
 // Goober5000
 void generic_anim_init(generic_anim *ga)
 {
-	memset(ga->filename, 0, MAX_FILENAME_LEN);
+	generic_anim_init(ga, NULL);
+}
+
+// Goober5000
+void generic_anim_init(generic_anim *ga, const char *filename)
+{
+	if (filename != NULL)
+		strcpy_s(ga->filename, filename);
+	else
+		memset(ga->filename, 0, MAX_FILENAME_LEN);
 	ga->first_frame = -1;
 	ga->num_frames = 0;
 	ga->keyframe = 0;
@@ -95,27 +104,11 @@ void generic_anim_init(generic_anim *ga)
 	ga->bitmap_id = -1;
 }
 
-// Goober5000
-void generic_anim_init(generic_anim *ga, const char *filename)
-{
-	// niffiwan: if pointer ga->filename == pointer filename then
-	// filename will be removed by the memset in generic_anim_init(ga) 
-	// call below.  Save filename in another var to prevent this happening
-	// shouldn't happen with the SCP_string variant below, at least 
-	// until ga->filename is converted to be a SCP_string...
-	SCP_string tmpbuf;
-	if (filename != NULL)
-		tmpbuf.assign(filename);
-
-	generic_anim_init(ga);
-	strncpy(ga->filename, tmpbuf.c_str(), MAX_FILENAME_LEN - 1);
-}
-
 // CommanderDJ - same as generic_anim_init, just with an SCP_string 
 void generic_anim_init(generic_anim *ga, const SCP_string& filename)
 {
 	generic_anim_init(ga);
-	strncpy(ga->filename, filename.c_str(), MAX_FILENAME_LEN - 1);
+	filename.copy(ga->filename, MAX_FILENAME_LEN - 1);
 }
 
 // Goober5000
