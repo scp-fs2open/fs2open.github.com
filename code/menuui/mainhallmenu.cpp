@@ -569,7 +569,7 @@ void main_hall_init(int main_hall_num)
 	// load up the misc animations, and nullify all the delay timestamps for the misc animations
 	for (idx=0; idx<Main_hall->num_misc_animations; idx++) {
 		generic_anim temp;
-		generic_anim_init(&temp, Main_hall->misc_anim_name.at(idx).c_str());
+		generic_anim_init(&temp, Main_hall->misc_anim_name.at(idx));
 		Main_hall_misc_anim.push_back(temp);
 		Main_hall_misc_anim.at(idx).ani.bg_type = bg_type;
 		if (generic_anim_stream(&Main_hall_misc_anim.at(idx)) == -1) {
