@@ -9416,9 +9416,9 @@ void sexp_hud_set_message(int n)
 		if ( !stricmp(text, Messages[i].name) ) {
 			strcpy_s(message, Messages[i].message);
 
-			sexp_replace_variable_names_with_values(message, NAME_LENGTH);
+			sexp_replace_variable_names_with_values(message, MESSAGE_LENGTH);
 
-			if (strlen(message) > NAME_LENGTH) {
+			if (strlen(message) > MESSAGE_LENGTH) {
 				WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", Messages[i].name);
 			}
 
@@ -9443,7 +9443,7 @@ void sexp_hud_set_directive(int n)
 
 	message_translate_tokens(message, text);
 
-	if (strlen(message) > NAME_LENGTH) {
+	if (strlen(message) > MESSAGE_LENGTH) {
 		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", message);
 		return;
 	}

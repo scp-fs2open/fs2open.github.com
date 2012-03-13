@@ -13,6 +13,7 @@
 #include "hud/hudgauges.h"
 #include "graphics/2d.h"
 #include "hud/hudparse.h"
+#include "globalincs/vmallocator.h"
 
 struct object;
 struct cockpit_display;
@@ -235,8 +236,9 @@ protected:
 	int custom_frame_offset;
 	int textoffset_x, textoffset_y;
 	char custom_name[NAME_LENGTH];
-	char custom_text[NAME_LENGTH];
-	char default_text[NAME_LENGTH];
+	SCP_string custom_text;
+	
+	SCP_string default_text;
 
 	// Render to texture stuff
 	char texture_target_fname[MAX_FILENAME_LEN];
@@ -283,7 +285,7 @@ public:
 	void updateCustomGaugeCoords(int _x, int _y);
 	void updateCustomGaugeFrame(int frame_offset);
 	void updateCustomGaugeText(char* txt);
-	char* getCustomGaugeText();
+	const char* getCustomGaugeText();
 
 	void startPopUp(int time=4000);
 	int popUpActive();
