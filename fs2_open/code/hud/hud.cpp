@@ -307,7 +307,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 	texture_target_fname[0] = '\0';
 
 	custom_name[0] = '\0';
-	custom_text[0] = '\0';
+	custom_text.clear();
 	custom_frame.first_frame = -1;
 	custom_frame.num_frames = 0;
 	custom_frame_offset = 0;
@@ -341,8 +341,8 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 	texture_target_fname[0] = '\0';
 
 	custom_name[0] = '\0';
-	custom_text[0] = '\0';
-	default_text[0] = '\0';
+	custom_text.clear();
+	default_text.clear();
 	custom_frame.first_frame = -1;
 	custom_frame.num_frames = 0;
 	custom_frame_offset = 0;
@@ -379,11 +379,11 @@ disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), cus
 	}
 
 	if(_custom_text) {
-		strcpy_s(custom_text, _custom_text);
-		strcpy_s(default_text, _custom_text);
+		custom_text = _custom_text;
+		default_text = _custom_text;
 	} else {
-		custom_text[0] = '\0';
-		default_text[0] = '\0';
+		custom_text.clear();
+		default_text.clear();
 	}
 
 	custom_frame.first_frame = -1;
@@ -431,9 +431,9 @@ char* HudGauge::getCustomGaugeName()
 	return custom_name;
 }
 
-char* HudGauge::getCustomGaugeText()
+const char* HudGauge::getCustomGaugeText()
 {
-	return custom_text;
+	return custom_text.c_str();
 }
 
 void HudGauge::updateCustomGaugeCoords(int _x, int _y)
@@ -461,7 +461,7 @@ void HudGauge::updateCustomGaugeText(char* txt)
 		return;
 	}
 
-	strcpy_s(custom_text, txt);
+	custom_text = txt;
 }
 
 void HudGauge::setFont()
@@ -674,11 +674,14 @@ void HudGauge::render(float frametime)
 
 	setGaugeColor();
 
-	if(custom_text) {
-		if(custom_text[0] != '\0') {
-			hud_num_make_mono(custom_text);
-			renderString(position[0] + textoffset_x, position[1] + textoffset_y, custom_text);
-		}
+	if( !custom_text.empty() ) {
+		char *text = new char[custom_text.size()+1];
+		strcpy(text, custom_text.c_str());
+
+		hud_num_make_mono(text);
+		renderString(position[0] + textoffset_x, position[1] + textoffset_y, text);
+
+		delete[] text;
 	}
 
 	if(custom_frame.first_frame > -1) {
@@ -1029,7 +1032,7 @@ void HudGauge::pageIn()
 void HudGauge::initialize()
 {
 	//Reset text to default
-	strcpy_s(custom_text, default_text);
+	custom_text = default_text;
 
 	sexp_lock_color = false;
 }
