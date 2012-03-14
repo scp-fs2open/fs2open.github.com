@@ -415,6 +415,11 @@ void HudGaugeMessages::scrollMessages()
 	}
 }
 
+void HudGaugeMessages::clearMessages()
+{
+	active_messages.clear();
+}
+
 void HudGaugeMessages::preprocess()
 {
 	setFont();
