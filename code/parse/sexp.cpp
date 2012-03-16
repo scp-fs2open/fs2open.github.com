@@ -27038,7 +27038,8 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true.\r\n"
-		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+		"\t3:\t(Optional) Defaults to False. When set to false, directives will only appear as soon as the specified event is true.\r\n"
+		"\t\tWhen set to true, the event only affects whether the directive succeeds/fails, and has no effect on when it appears"},
 
 	{ OP_EVENT_FALSE_DELAY, "Mission Event False (Boolean operator)\r\n"
 		"\tReturns true N seconds after the specified event in the this mission is false "
@@ -27046,7 +27047,8 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true.\r\n"
-		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+		"\t3:\t(Optional) Defaults to False. When set to false, directives will only appear as soon as the specified event is true.\r\n"
+		"\t\tWhen set to true, the event only affects whether the directive succeeds/fails, and has no effect on when it appears"},
 
 	{ OP_EVENT_TRUE_MSECS_DELAY, "Mission Event True (Boolean operator)\r\n"
 		"\tReturns true N milliseconds after the specified event in the this mission is true "
@@ -27054,7 +27056,8 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of milliseconds to delay before returning true.\r\n"
-		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
+		"\t3:\t(Optional) Defaults to False. When set to false, directives will only appear as soon as the specified event is true.\r\n"
+		"\t\tWhen set to true, the event only affects whether the directive succeeds/fails, and has no effect on when it appears"},
 
 	{ OP_EVENT_FALSE_MSECS_DELAY, "Mission Event False (Boolean operator)\r\n"
 		"\tReturns true N milliseconds after the specified event in the this mission is false "
@@ -27062,8 +27065,8 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
 		"\t2:\tNumber of milliseconds to delay before returning true.\r\n"
-		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
-
+		"\t3:\t(Optional) Defaults to False. When set to false, directives will only appear as soon as the specified event is true.\r\n"
+		"\t\tWhen set to true, the event only affects whether the directive succeeds/fails, and has no effect on when it appears"},
 
 	{ OP_EVENT_INCOMPLETE, "Mission Event Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the this mission is incomplete.  This "
