@@ -455,7 +455,16 @@ void HudGauge::updateCustomGaugeFrame(int frame_offset)
 	custom_frame_offset = frame_offset;
 }
 
-void HudGauge::updateCustomGaugeText(char* txt)
+void HudGauge::updateCustomGaugeText(const char* txt)
+{
+	if(!custom_gauge) {
+		return;
+	}
+
+	custom_text = txt;
+}
+
+void HudGauge::updateCustomGaugeText(SCP_string& txt)
 {
 	if(!custom_gauge) {
 		return;

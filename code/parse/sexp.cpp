@@ -9388,7 +9388,7 @@ void multi_sexp_hud_disable_except_messages()
 void sexp_hud_set_text_num(int n)
 {
 	char* gaugename = CTEXT(n);
-	char tmp[256] = "";
+	char tmp[16] = "";
 
 	HudGauge* cg = hud_get_gauge(gaugename);
 	if(cg) {
@@ -9412,17 +9412,13 @@ void sexp_hud_set_message(int n)
 {
 	char* gaugename = CTEXT(n);
 	char* text = CTEXT(CDR(n));
-	char message[MESSAGE_LENGTH];
+	SCP_string message;
 
 	for (int i = 0; i < Num_messages; i++) {
 		if ( !stricmp(text, Messages[i].name) ) {
-			strcpy_s(message, Messages[i].message);
+			message = Messages[i].message;
 
-			sexp_replace_variable_names_with_values(message, MESSAGE_LENGTH);
-
-			if (strlen(message) > MESSAGE_LENGTH) {
-				WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", Messages[i].name);
-			}
+			sexp_replace_variable_names_with_values(message);
 
 			HudGauge* cg = hud_get_gauge(gaugename);
 			if(cg) {
@@ -9446,7 +9442,7 @@ void sexp_hud_set_directive(int n)
 	message_translate_tokens(message, text);
 
 	if (strlen(message) > MESSAGE_LENGTH) {
-		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", message);
+		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to %d characters or less.", message, MESSAGE_LENGTH);
 		return;
 	}
 
