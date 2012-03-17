@@ -434,7 +434,7 @@ typedef struct {
 //
 //WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
 
-float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, bool *hull_should_apply_armor)
+float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor)
 {
 	vec3d			g_subobj_pos;
 	float				damage_left, damage_if_hull;
@@ -538,6 +538,14 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			float range = subsys_get_range(other_obj, subsys);
 
 			if ( dist < range) {
+				if (subsys->system_info->flags2 & MSS_FLAG2_COLLIDE_SUBMODEL) {
+					if (submodel_num != -1 && subsys->system_info->subobj_num != submodel_num) {
+						// If this subsystem only wants to take damage when its submodel receives
+						// a direct hit and the current hit did not do so, skip it.
+						continue;
+					}
+				}
+				
 				subsys_list[count].dist = dist;
 				subsys_list[count].range = range;
 				subsys_list[count].ptr = subsys;
@@ -1865,11 +1873,12 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 //				TODO:	get a better value for hitpos
 //				damage		=>		damage to apply to the ship
 //				quadrant	=> which part of shield takes damage, -1 if not shield hit
+//				submodel_num=> which submodel was hit, -1 if none in particular
 //				wash_damage	=>		1 if damage is done by engine wash
 // Goober5000 - sanity checked this whole function in the case that other_obj is NULL, which
 // will happen with the explosion-effect sexp
 void ai_update_lethality(object *ship_obj, object *weapon_obj, float damage);
-static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, int quadrant, int wash_damage=0)
+static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, int quadrant, int submodel_num, int wash_damage=0)
 {
 //	mprintf(("doing damage\n"));
 
@@ -2067,7 +2076,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		float pre_subsys = subsystem_damage;
 		bool apply_hull_armor = true;
 
-		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, subsystem_damage, &apply_hull_armor);
+		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, submodel_num, subsystem_damage, &apply_hull_armor);
 
 		if(shipp->armor_type_idx != -1)
 		{
@@ -2379,7 +2388,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 	scoring_eval_hit(ship_obj,other_obj);
 
 	global_damage = false;
-	ship_do_damage(ship_obj, other_obj, hitpos, damage, quadrant );
+	ship_do_damage(ship_obj, other_obj, hitpos, damage, quadrant, submodel_num );
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
 	// doesn't hit shield and we want sparks
@@ -2449,7 +2458,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 		}
 
 		// Do damage on local point		
-		ship_do_damage(ship_obj, other_obj, &world_hitpos, damage, shield_quad );
+		ship_do_damage(ship_obj, other_obj, &world_hitpos, damage, shield_quad, -1 );
 	} else {
 		// Since an force_center wasn't specified, this is probably just a debug key
 		// to kill an object.   So pick a shield quadrant and a point on the
@@ -2457,7 +2466,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 		vm_vec_scale_add( &world_hitpos, &ship_obj->pos, &ship_obj->orient.vec.fvec, ship_obj->radius );
 
 		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
-			ship_do_damage(ship_obj, other_obj, &world_hitpos, damage/MAX_SHIELD_SECTIONS, i);
+			ship_do_damage(ship_obj, other_obj, &world_hitpos, damage/MAX_SHIELD_SECTIONS, i, -1);
 		}
 	}
 
@@ -2488,7 +2497,7 @@ void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage)
 
 	// Do damage to hull and not to shields
 	global_damage = true;
-	ship_do_damage(ship_obj, other_obj, &world_hitpos, damage, -1, 1);
+	ship_do_damage(ship_obj, other_obj, &world_hitpos, damage, -1, -1, 1);
 
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_obj == Player_obj ) {

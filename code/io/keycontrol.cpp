@@ -105,7 +105,7 @@ bool quit_mission_popup_shown = false;
 extern int AI_watch_object;
 extern int Countermeasures_enabled;
 
-extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, bool *hull_should_apply_armor);
+extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor);
 
 extern void mission_goal_mark_all_true( int type );
 
@@ -740,7 +740,7 @@ void process_debug_keys(int k)
 
 					get_subsystem_world_pos(objp, Player_ai->targeted_subsys, &g_subobj_pos);
 
-					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, (float) -Player_ai->targeted_subsys->system_info->type, NULL); //100.0f);
+					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, Player_ai->targeted_subsys->system_info->subobj_num, (float) -Player_ai->targeted_subsys->system_info->type, NULL); //100.0f);
 
 					if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
