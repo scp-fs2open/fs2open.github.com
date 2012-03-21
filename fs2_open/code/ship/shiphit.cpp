@@ -442,6 +442,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 	ship_subsys		*subsys;
 	ship				*ship_p;
 	sublist			subsys_list[MAX_SUBSYS_LIST];
+	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the damage; index into subsys_list
 	vec3d			hitpos2;
 
 	//WMC - first, set this to damage if it isn't NULL, in case we want to return with no damage to subsystems
@@ -553,6 +554,12 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 			}
 
 			if ( dist < range) {
+				if (submodel_num != -1 && (submodel_num == mss->subobj_num || submodel_num == mss->turret_gun_sobj)) {
+					// If the hit impacted this subsystem's submodel, then make sure this subsys
+					// gets dealt damage first, even if another subsystem is closer to the hit location
+					subsys_hit_first = count;
+				}
+
 				if (mss->flags2 & MSS_FLAG2_COLLIDE_SUBMODEL) {
 					if (submodel_num != -1 && submodel_num != mss->subobj_num && submodel_num != mss->turret_gun_sobj) {
 						// If this subsystem only wants to take damage when its submodel receives
@@ -597,7 +604,8 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 	}
 
 	//	Now scan the sorted list of subsystems in range.
-	//	Apply damage to the nearest one first, subtracting off damage as we go.
+	//	Apply damage to the nearest one first (exception: subsys_hit_first),
+	//	subtracting off damage as we go.
 	int	i, j;
 	for (j=0; j<count; j++)
 	{
@@ -605,14 +613,22 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 		ship_subsys	*subsys;
 
 		int	min_index = -1;
-		float	min_dist = 9999999.9f;
 
-		for (i=0; i<count; i++) {
-			if (subsys_list[i].dist < min_dist) {
-				min_dist = subsys_list[i].dist;
-				min_index = i;
+		if (subsys_hit_first > -1) {
+			min_index = subsys_hit_first;
+
+			subsys_hit_first = -1;
+		} else {
+			float	min_dist = 9999999.9f;
+
+			for (i=0; i<count; i++) {
+				if (subsys_list[i].dist < min_dist) {
+					min_dist = subsys_list[i].dist;
+					min_index = i;
+				}
 			}
 		}
+
 		Assert(min_index != -1);
 
 		float	damage_to_apply = 0.0f;
