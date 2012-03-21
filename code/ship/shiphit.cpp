@@ -507,17 +507,19 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 	int	count = 0;
 	for ( subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) )
 	{
+		model_subsystem *mss = subsys->system_info;
+
 		//Deal with cheat correctly. If damage is the negative of the subsystem type, then we'll just kill the subsystem
 		//See process_debug_keys() in keycontrol.cpp for details. 
 		if (damage < 0.0f) {
 			// single player or multiplayer
 			Assert(Player_ai->targeted_subsys != NULL);
 			if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0) ) {
-				Assert(subsys->system_info->type == (int) -damage);
+				Assert(mss->type == (int) -damage);
 				if (!(subsys->flags & SSF_NO_AGGREGATE)) {
-					ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits -= subsys->current_hits;
-					if (ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits < 0.0f) {
-						ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits = 0.0f;
+					ship_p->subsys_info[mss->type].aggregate_current_hits -= subsys->current_hits;
+					if (ship_p->subsys_info[mss->type].aggregate_current_hits < 0.0f) {
+						ship_p->subsys_info[mss->type].aggregate_current_hits = 0.0f;
 					}
 				}
 				subsys->current_hits = 0.0f;
@@ -527,25 +529,38 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 				continue;
 			}
 		}
-		
+
 		if (subsys->current_hits > 0.0f) {
-			float	dist;
+			float	dist, range;
 
-			// calculate the distance between the hit and the subsystem center
-			get_subsystem_world_pos(ship_obj, subsys, &g_subobj_pos);
-			dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
+			if (submodel_num != -1 && submodel_num == mss->turret_gun_sobj) {
+				// Special case:
+				// if the subsystem is a turret and the hit submodel is its barrel,
+				// get the distance between the hit and the turret barrel center
+				find_submodel_instance_world_point(&g_subobj_pos, ship_obj, submodel_num);
+				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
 
-			float range = subsys_get_range(other_obj, subsys);
+				// Damage attenuation range of barrel radius * 2 makes full damage
+				// be taken regardless of where the barrel is hit
+				range = submodel_get_radius(Ship_info[ship_p->ship_info_index].model_num, submodel_num) * 2;
+			} else {
+				// Default behavior:
+				// get the distance between the hit and the subsystem center
+				get_subsystem_world_pos(ship_obj, subsys, &g_subobj_pos);
+				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
+
+				range = subsys_get_range(other_obj, subsys);
+			}
 
 			if ( dist < range) {
-				if (subsys->system_info->flags2 & MSS_FLAG2_COLLIDE_SUBMODEL) {
-					if (submodel_num != -1 && subsys->system_info->subobj_num != submodel_num) {
+				if (mss->flags2 & MSS_FLAG2_COLLIDE_SUBMODEL) {
+					if (submodel_num != -1 && submodel_num != mss->subobj_num && submodel_num != mss->turret_gun_sobj) {
 						// If this subsystem only wants to take damage when its submodel receives
 						// a direct hit and the current hit did not do so, skip it.
 						continue;
 					}
 				}
-				
+
 				subsys_list[count].dist = dist;
 				subsys_list[count].range = range;
 				subsys_list[count].ptr = subsys;
