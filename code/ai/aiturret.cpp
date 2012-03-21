@@ -651,8 +651,8 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		if (objp->flags & OF_PLAYER_SHIP) {
 			max_turrets = The_mission.ai_profile->max_turret_ownage_player[Game_skill_level];
 		}
-		// Apply the per-turret limit, if there is one
-		if (ss->turret_max_target_ownage != -1) {
+		// Apply the per-turret limit for small targets, if there is one and this is a small target
+		if (ss->turret_max_target_ownage != -1 && (Ship_info[shipp->ship_info_index].flags & (SIF_SMALL_SHIP))) {
 			max_turrets = MIN(max_turrets, ss->system_info->turret_max_target_ownage);
 		}
 		if (num_att_turrets > max_turrets) {
