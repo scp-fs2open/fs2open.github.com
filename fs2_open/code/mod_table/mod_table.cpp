@@ -71,7 +71,7 @@ void parse_mod_table(char *filename)
 		}
 	}
 
-	if (optional_string("$Fix Turret Collisions:")) { 
+	if (optional_string("$Fixed Turret Collisions:")) { 
 		stuff_boolean(&Fixed_turret_collisions);
 	}
 
