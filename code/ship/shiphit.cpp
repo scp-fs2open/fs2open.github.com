@@ -45,6 +45,7 @@
 #include "parse/scripting.h"
 #include "parse/parselo.h"
 #include "object/objectsnd.h"
+#include "mod_table/mod_table.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -534,7 +535,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 		if (subsys->current_hits > 0.0f) {
 			float	dist, range;
 
-			if (submodel_num != -1 && submodel_num == mss->turret_gun_sobj) {
+			if (Fixed_turret_collisions && submodel_num != -1 && submodel_num == mss->turret_gun_sobj) {
 				// Special case:
 				// if the subsystem is a turret and the hit submodel is its barrel,
 				// get the distance between the hit and the turret barrel center
@@ -554,7 +555,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 			}
 
 			if ( dist < range) {
-				if (submodel_num != -1 && (submodel_num == mss->subobj_num || submodel_num == mss->turret_gun_sobj)) {
+				if (Damage_impacted_subsystem_first && submodel_num != -1 && (submodel_num == mss->subobj_num || submodel_num == mss->turret_gun_sobj)) {
 					// If the hit impacted this subsystem's submodel, then make sure this subsys
 					// gets dealt damage first, even if another subsystem is closer to the hit location
 					subsys_hit_first = count;
@@ -614,7 +615,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 
 		int	min_index = -1;
 
-		if (subsys_hit_first > -1) {
+		if (Damage_impacted_subsystem_first && subsys_hit_first > -1) {
 			min_index = subsys_hit_first;
 
 			subsys_hit_first = -1;
