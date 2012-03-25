@@ -284,7 +284,8 @@ public:
 	char* getCustomGaugeName();
 	void updateCustomGaugeCoords(int _x, int _y);
 	void updateCustomGaugeFrame(int frame_offset);
-	void updateCustomGaugeText(char* txt);
+	void updateCustomGaugeText(const char* txt);
+	void updateCustomGaugeText(SCP_string& txt);
 	const char* getCustomGaugeText();
 
 	void startPopUp(int time=4000);

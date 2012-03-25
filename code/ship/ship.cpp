@@ -248,7 +248,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "wait for animation",     MSS_FLAG_TURRET_ANIM_WAIT,  0 },
 	{ "play fire sound for player", MSS_FLAG2_PLAYER_TURRET_SOUND, 1},
 	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1},
-	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1}
+	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1},
+	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1}
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);

@@ -14,6 +14,8 @@
 
 int Directive_wait_time;
 bool True_loop_argument_sexps;
+bool Fixed_turret_collisions;
+bool Damage_impacted_subsystem_first;
 
 void parse_mod_table(char *filename)
 {
@@ -67,6 +69,14 @@ void parse_mod_table(char *filename)
 			Warning(LOCATION, "Game_settings.tbl - $Self Praise Percentage must be between 0 and 100. Setting to 100");
 			Praise_self_percentage = 100;
 		}
+	}
+
+	if (optional_string("$Fixed Turret Collisions:")) { 
+		stuff_boolean(&Fixed_turret_collisions);
+	}
+
+	if (optional_string("$Damage Impacted Subsystem First:")) { 
+		stuff_boolean(&Damage_impacted_subsystem_first);
 	}
 
 	required_string("#END");
