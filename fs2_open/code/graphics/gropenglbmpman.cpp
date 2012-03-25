@@ -463,7 +463,7 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 			c_type = be->type;
 		}
 
-		try_compress = (Cmdline_img2dds && Texture_compression_available && is_power_of_two(bmp->w, bmp->h) && !(flags & BMP_AABITMAP) && !Is_standalone);
+		try_compress = (Texture_compression_available && is_power_of_two(bmp->w, bmp->h) && !(flags & BMP_AABITMAP) && !Is_standalone);
 
 		switch ( c_type )
 		{
