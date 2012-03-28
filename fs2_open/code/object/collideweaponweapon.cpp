@@ -91,11 +91,11 @@ int collide_weapon_weapon( obj_pair * pair )
 
 			float aDamage = wipA->damage;
 			if (wipB->armor_type_idx >= 0)
-				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx);
+				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f);
 
 			float bDamage = wipB->damage;
 			if (wipA->armor_type_idx >= 0)
-				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx);
+				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f);
 
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.

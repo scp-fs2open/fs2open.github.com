@@ -445,6 +445,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 	sublist			subsys_list[MAX_SUBSYS_LIST];
 	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the damage; index into subsys_list
 	vec3d			hitpos2;
+	float			ss_dif_scale = 1.0f; // Nuke: Set a base dificulty scale for compatibility
 
 	//WMC - first, set this to damage if it isn't NULL, in case we want to return with no damage to subsystems
 	if(hull_should_apply_armor != NULL) {
@@ -644,7 +645,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
 			if(subsys->armor_type_idx > -1)
 			{
-				damage = Armor_types[subsys->armor_type_idx].GetDamage(damage, dmg_type_idx);
+				damage = Armor_types[subsys->armor_type_idx].GetDamage(damage, dmg_type_idx, 1.0f); // Nuke: I don't think we need to apply damage sacaling to this one, using 1.0f
 				if(hull_should_apply_armor) {
 					*hull_should_apply_armor = false;
 				}
@@ -681,14 +682,14 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 		{
 			//	Decrease damage to subsystems to player ships.
 			if (ship_obj->flags & OF_PLAYER_SHIP){
-				damage_to_apply *= The_mission.ai_profile->subsys_damage_scale[Game_skill_level];
+				ss_dif_scale *= The_mission.ai_profile->subsys_damage_scale[Game_skill_level];
 			}
 		
 			// Goober5000 - subsys guardian
 			if (subsys->subsys_guardian_threshold > 0)
 			{
 				float min_subsys_strength = 0.01f * subsys->subsys_guardian_threshold * subsys->max_hits;
-				if ( (subsys->current_hits - damage_to_apply) < min_subsys_strength ) {
+				if ( (subsys->current_hits - (damage_to_apply * ss_dif_scale)) < min_subsys_strength ) {
 					// find damage needed to take object to min subsys strength
 					damage_to_apply = subsys->current_hits - min_subsys_strength;
 
@@ -699,28 +700,33 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 
 			// decrease the damage left to apply to the ship subsystems
 			// WMC - since armor aborbs damage, subtract the amount of damage before we apply armor
-			damage_left -= damage_to_apply;
+			damage_left -= (damage_to_apply * ss_dif_scale);
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
 			if (subsys->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE) {
 				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsys->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
 					float subsystem_factor = 0.0f;
 					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
-						if (subsys->flags & SSF_DAMAGE_AS_HULL)
+						if (subsys->flags & SSF_DAMAGE_AS_HULL) {
 							subsystem_factor = Weapon_info[weapon_info_index].armor_factor;
-						else
+						} else {
 							subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
+						}
 					}
-					if (subsystem_factor > 0.0f) 
-						damage -= ((MIN(subsys->current_hits, damage_to_apply)) / subsystem_factor);
-					else
-						damage -= MIN(subsys->current_hits, damage_to_apply);
+					if (subsystem_factor > 0.0f) {
+						damage -= ((MIN(subsys->current_hits, (damage_to_apply * ss_dif_scale))) / subsystem_factor);
+					} else {
+						damage -= MIN(subsys->current_hits, (damage_to_apply * ss_dif_scale));
+					}
 				}
 			}
 
 			//Apply armor to damage
 			if (subsys->armor_type_idx >= 0) {
-				damage_to_apply = Armor_types[subsys->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx);
+				// Nuke: this will finally factor it in to damage_to_apply and i wont need to factor it in anywhere after this
+				damage_to_apply = Armor_types[subsys->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx, ss_dif_scale);
+			} else { // Nuke: no get damage call to apply difficulty scaling, so factor it in now
+				damage_to_apply *= ss_dif_scale;
 			}
 
 			subsys->current_hits -= damage_to_apply;
@@ -1922,6 +1928,8 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	int other_obj_is_asteroid;
 	int other_obj_is_debris;
 	int other_obj_is_ship;
+	float shp_diff_dmg_scale = 1.0f;	// Nuke: we will multiply difficulty related damage factors against this, so they can be passed to armor type GetDamage calls.
+	float sub_diff_dmg_scale = 1.0f;	// Nuke
 
 	Assert(ship_obj);	// Goober5000
 	Assert(hitpos);		// Goober5000
@@ -1978,8 +1986,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		else {
 			// Do a little "skill" balancing for the player in single player and coop multiplayer
 			if (ship_obj->flags & OF_PLAYER_SHIP)	{
-				damage *= The_mission.ai_profile->player_damage_scale[Game_skill_level];
-				subsystem_damage *= The_mission.ai_profile->player_damage_scale[Game_skill_level];
+				// Nuke - store it in a couple factor and we will apply it where needed
+				shp_diff_dmg_scale *= The_mission.ai_profile->player_damage_scale[Game_skill_level];
+				sub_diff_dmg_scale *= The_mission.ai_profile->player_damage_scale[Game_skill_level];
 			}		
 		}
 	}
@@ -2000,7 +2009,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
 			if (((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_obj == Player_obj))
 			{
-				ship_hit_pain(damage);
+				ship_hit_pain(damage * shp_diff_dmg_scale);
 			}	
 		}
 		if (other_obj->type == OBJ_WEAPON)
@@ -2008,7 +2017,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapon_types));
 			if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_obj == Player_obj))
 			{
-				ship_hit_pain(damage);
+				ship_hit_pain(damage * shp_diff_dmg_scale);
 			}
 		}
 	}	// read violation sanity check
@@ -2021,7 +2030,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 
 	//	if ship is already dying, shorten deathroll.
 	if (shipp->flags & SF_DYING) {
-		shiphit_hit_after_death(ship_obj, damage);
+		shiphit_hit_after_death(ship_obj, (damage * shp_diff_dmg_scale));
 		return;
 	}
 	
@@ -2067,16 +2076,22 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				piercing_pct = Armor_types[shipp->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
 			}
 			
-			float pre_shield = damage;
-			float pre_shield_ss = subsystem_damage;
+			float pre_shield = damage; // Nuke: dont use the difficulty scaling in here, since its also appled in Armor_type.GetDamage. dont want it to apply twice
+			float pre_shield_ss = (subsystem_damage * sub_diff_dmg_scale); // Nuke - same here
 
 			if (piercing_pct > 0.0f) {
 				damage = pre_shield * (1.0f - piercing_pct);
 			}
 
+			// Nuke: apply pre_shield difficulty scaling here, since it was meant to be applied through damage
+			pre_shield *= shp_diff_dmg_scale;
+
 			if(shipp->shield_armor_type_idx != -1)
 			{
-				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx);
+				// Nuke: this call will decide when to use the damage factor, but it will get used, unless the modder is dumb (like setting +Difficulty Scale Type: to 'manual' and not manually applying it in their calculations)
+				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx, shp_diff_dmg_scale);
+			} else { // Nuke: if that didn't get called, difficulty would not be applied to damage so apply it here
+				damage *= shp_diff_dmg_scale;
 			}
 
 			damage = apply_damage_to_shield(ship_obj, quadrant, damage);
@@ -2105,8 +2120,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
 		int	weapon_info_index;
 		int armor_flags = 0;		
-		float pre_subsys = subsystem_damage;
+		float pre_subsys = (subsystem_damage * sub_diff_dmg_scale); // Nuke: should be the last time we need to do this in this function
 		bool apply_hull_armor = true;
+		bool apply_diff_scale = true;
 
 		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, submodel_num, subsystem_damage, &apply_hull_armor);
 
@@ -2141,8 +2157,13 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			
 			if(shipp->armor_type_idx != -1)
 			{
-				damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, dmg_type_idx);
+				damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, dmg_type_idx, shp_diff_dmg_scale);
+				apply_diff_scale = false;
 			}
+		}
+		// Nuke: this is done incase difficulty scaling is not applied into damage by getDamage() above
+		if (apply_diff_scale) {
+			damage *= shp_diff_dmg_scale; // Nuke: we can finally stop doing this now
 		}
 
 		// continue with damage?
