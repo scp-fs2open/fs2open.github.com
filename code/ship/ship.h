@@ -162,6 +162,22 @@ int damage_type_add(char *name);
 //**************************************************************
 //WMC - Armor stuff
 
+// Nuke: some defines for difficulty scaling type
+#define ADT_DIFF_SCALE_BAD_VAL	-1 // error mode 
+#define ADT_DIFF_SCALE_FIRST	0
+#define ADT_DIFF_SCALE_LAST		1
+#define ADT_DIFF_SCALE_MANUAL	2 // this is the user defined mode where the modder has to handle difficulty scaling in their calculations
+
+// Nuke: +value: replacing constants
+// these are stored as altArguments, positive values mean storage idxes and -1 means not used, anything below that is fair game
+#define AT_CONSTANT_NOT_USED	-1	// will probibly never get used
+#define AT_CONSTANT_BAD_VAL		-2	// this conveys table error to the user 
+#define AT_CONSTANT_BASE_DMG	-3	// what the damage was at start of calculations
+#define AT_CONSTANT_CURRENT_DMG	-4	// what the damage currently is
+#define AT_CONSTANT_DIFF_FACTOR	-5	// difficulty factor (by default 0.2 (easy) to 1.0 (insane))
+#define AT_CONSTANT_RANDOM		-6	// number between 0 and 1 (redundant but saves a calculation)
+#define AT_CONSTANT_PI			-7	// because everyone likes pi
+
 struct ArmorDamageType
 {
 	friend class ArmorType;
@@ -171,11 +187,14 @@ private:
 	int					DamageTypeIndex;
 	SCP_vector<int>	Calculations;
 	SCP_vector<float>	Arguments;
+	SCP_vector<int>		altArguments;		// Nuke: to facilitate optional importation of data in place of +value: tag -nuke 
 	float				shieldpierce_pct;
 
 	// piercing effect data
 	float				piercing_start_pct;
 	int					piercing_type;
+	// Nuke: difficulty scale type
+	int					difficulty_scale_type;
 
 public:
 	void clear();
@@ -194,7 +213,7 @@ public:
 	//Get
 	char *GetNamePtr(){return Name;}
 	bool IsName(char *in_name){return (stricmp(in_name,Name)==0);}
-	float GetDamage(float damage_applied, int in_damage_type_idx);
+	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
 	float GetPiercingLimit(int damage_type_idx);
