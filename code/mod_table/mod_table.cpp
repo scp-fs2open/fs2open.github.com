@@ -55,10 +55,10 @@ void parse_mod_table(char *filename)
 	if (optional_string("$Loop SEXPs Then Arguments:")) { 
 		stuff_boolean(&True_loop_argument_sexps);
 		if (True_loop_argument_sexps){
-			mprintf(("Game Settings Table : Using Reversed Loops For SEXP Arguments"));
+			mprintf(("Game Settings Table : Using Reversed Loops For SEXP Arguments\n"));
 		}
 		else {
-			mprintf(("Game Settings Table : Using Standard Loops For SEXP Arguments"));
+			mprintf(("Game Settings Table : Using Standard Loops For SEXP Arguments\n"));
 		}
 	}
 
