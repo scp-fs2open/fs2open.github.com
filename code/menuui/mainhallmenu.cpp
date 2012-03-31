@@ -126,12 +126,6 @@ void main_hall_handle_random_intercom_sounds();
 // the misc animations themselves
 SCP_vector<generic_anim> Main_hall_misc_anim;
 
-// handle starting, stopping and randomizing misc animations
-void main_hall_handle_misc_anims();
-
-// cull any finished misc animation instances
-void main_hall_cull_misc_anim_instances();
-
 // render all playing misc animations
 void main_hall_render_misc_anims(float frametime);
 
