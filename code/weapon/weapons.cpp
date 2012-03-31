@@ -724,15 +724,16 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 	sprintf(buf, "%sInner Radius:", pre_char);
 	if(optional_string(buf)) {
 		stuff_float(&sci->inner_rad);
-		if (!sci->inner_rad != 0.0f) {
-			WarningEx(LOCATION, "Invalid inner Radius for Shockwave. Must be greater than 0.\n");
-			sci->inner_rad = 0.1f;
-		}
 	}
 
 	sprintf(buf, "%sOuter Radius:", pre_char);
 	if(optional_string(buf)) {
 		stuff_float(&sci->outer_rad);
+	}
+
+	if (sci->outer_rad < sci->inner_rad) {
+		Warning(LOCATION, "Shockwave outer radius must be greater than or equal to the inner radius!");
+		sci->outer_rad = sci->inner_rad;
 	}
 
 	sprintf(buf, "%sShockwave Speed:", pre_char);
@@ -5510,11 +5511,18 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
 		*damage = max_damage;
 		*blast = max_blast;
 	} else {
-		float dist_to_outer_rad_squared, total_dist_squared;
 		min_dist = dist - objp->radius;
 		Assert(min_dist < outer_rad);
-		dist_to_outer_rad_squared = (outer_rad-min_dist)*(outer_rad-min_dist);
-		total_dist_squared = (inner_rad-outer_rad)*(inner_rad-outer_rad);
+
+		float dist_to_outer_rad_squared = (outer_rad-min_dist)*(outer_rad-min_dist);
+		float total_dist_squared = (inner_rad-outer_rad)*(inner_rad-outer_rad);
+
+		// this means the inner and outer radii are basically equal... and since we aren't within the inner radius,
+		// we fudge the law of excluded middle to place ourselves outside the outer radius
+		if (total_dist_squared < 0.0001f) {
+			return -1;	// avoid divide-by-zero; we won't take damage anyway
+		}
+
 		// AL 2-24-98: drop off damage relative to square of distance
 		Assert(dist_to_outer_rad_squared <= total_dist_squared);
 		*damage = max_damage * dist_to_outer_rad_squared/total_dist_squared;
@@ -5581,7 +5589,6 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 	wip = &Weapon_info[Weapons[wobjp->instance].weapon_info_index];	
 	wp = &Weapons[wobjp->instance];
-	Assertion(sci->inner_rad != 0, "Shockwave info for weapon %s is invalid. Inner Radius needs to be greater than 0./n", wip->name);	
 
 	// only blast ships and asteroids
 	// And (some) weapons
@@ -5624,7 +5631,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		case OBJ_WEAPON:
 			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 			if (target_wip->armor_type_idx >= 0)
-				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->damage_type_idx);
+				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->damage_type_idx, 1.0f);
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {

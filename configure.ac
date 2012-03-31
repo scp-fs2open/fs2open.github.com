@@ -445,6 +445,5 @@ echo
 echo Text-to-speech enabled . : $fs2_speech
 echo
 echo Debug build ............ : $fs2_debug
-echo DEMO build ............. : $fs2_demo
 echo GProf support .......... : $fs2_gprof
 echo
