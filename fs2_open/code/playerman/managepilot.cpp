@@ -758,7 +758,7 @@ int read_pilot_file(char *callsign, int single, player *p)
 	}
 
 	// restore some player flags
-	Player[Player_num].save_flags = cfread_int(file);
+	p->save_flags = cfread_int(file);
 
 	// restore the most recent ship selection	
 	pilot_read_loadout(file, Player_file_version);	
