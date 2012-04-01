@@ -4303,11 +4303,7 @@ inline int in_box(vec3d *min, vec3d *max, vec3d *pos)
 
 inline int in_sphere(vec3d *pos, float radius)
 {
-	vec3d point;
-
-	vm_vec_sub(&point, &View_position, pos);
-
-	if ( vm_vec_dist(&point, pos) <= radius )
+	if ( vm_vec_dist(&View_position, pos) <= radius )
 		return 1;
 	else
 		return -1;

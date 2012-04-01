@@ -2959,7 +2959,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		if(icon->model_index != -1)
 		{
 			//Draw the model
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info->closeup_zoom * 0.4f, x, y, 56, 24, NULL);
+			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info[index].closeup_zoom * 0.4f, x, y, 56, 24, NULL);
 		}
 		else if(icon->laser_bmap != -1)
 		{
@@ -2995,7 +2995,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 /**
  * Draw the icons for the weapons that are currently on the selected ship
  *
- * @param slot_num Slot to draw weapons for
+ * @param index Slot to draw weapons for
  */
 void wl_draw_ship_weapons(int index)
 {
