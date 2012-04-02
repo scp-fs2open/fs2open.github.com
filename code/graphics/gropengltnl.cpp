@@ -76,8 +76,6 @@ struct opengl_vertex_buffer {
 	uint vbo_size;
 	uint ibo_size;
 
-	SCP_map<int, int> shader_ids;
-
 	opengl_vertex_buffer() :
 		array_list(NULL), index_list(NULL), vbo(0), ibo(0),
 		vbo_size(0), ibo_size(0)
@@ -106,8 +104,6 @@ void opengl_vertex_buffer::clear()
 		vglDeleteBuffersARB(1, &ibo);
 		GL_vertex_data_in -= ibo_size;
 	}
-
-	shader_ids.clear();
 }
 
 static SCP_vector<opengl_vertex_buffer> GL_vertex_buffers;
@@ -566,28 +562,15 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	if (shader_flags == GL_last_shader_flags) {
 		sdr_index = GL_last_shader_index;
 	} else {
-		SCP_map<int, int>::iterator it;
+		sdr_index = opengl_shader_get_index(shader_flags);
 
-		it = vbp->shader_ids.find(shader_flags);
-
-		if ( it != vbp->shader_ids.end() ) {
-			sdr_index = it->second;
-
-			GL_last_shader_index = sdr_index;
-			GL_last_shader_flags = shader_flags;
-		} else {
-			sdr_index = opengl_shader_get_index(shader_flags);
-
-			if (sdr_index < 0) {
-				opengl_render_pipeline_fixed(start, bufferp, datap, flags);
-				return;
-			}
-
-			vbp->shader_ids[shader_flags] = sdr_index;
-
-			GL_last_shader_index = sdr_index;
-			GL_last_shader_flags = shader_flags;
+		if (sdr_index < 0) {
+			opengl_render_pipeline_fixed(start, bufferp, datap, flags);
+			return;
 		}
+
+		GL_last_shader_index = sdr_index;
+		GL_last_shader_flags = shader_flags;
 	}
 
 	Assert( sdr_index >= 0 );

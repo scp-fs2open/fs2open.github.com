@@ -19,24 +19,16 @@
 
 
 #define SDR_FLAG_LIGHT			(1<<0)
-#define SDR_FLAG_NUM_LIGHTS_1	(1<<1)
-#define SDR_FLAG_NUM_LIGHTS_2	(1<<2)
-#define SDR_FLAG_NUM_LIGHTS_3	(1<<3)
-#define SDR_FLAG_NUM_LIGHTS_4	(1<<4)
-#define SDR_FLAG_NUM_LIGHTS_5	(1<<5)
-#define SDR_FLAG_NUM_LIGHTS_6	(1<<6)
-#define SDR_FLAG_NUM_LIGHTS_7	(1<<7)
-#define SDR_FLAG_NUM_LIGHTS_8	(1<<8)
-#define SDR_FLAG_FOG			(1<<9)
-#define SDR_FLAG_DIFFUSE_MAP	(1<<10)
-#define SDR_FLAG_GLOW_MAP		(1<<11)
-#define SDR_FLAG_SPEC_MAP		(1<<12)
-#define SDR_FLAG_NORMAL_MAP		(1<<13)
-#define SDR_FLAG_HEIGHT_MAP		(1<<14)
-#define SDR_FLAG_ENV_MAP		(1<<15)
-#define SDR_FLAG_ANIMATED		(1<<16)
-#define SDR_FLAG_SOFT_QUAD		(1<<17)
-#define SDR_FLAG_DISTORTION		(1<<18)
+#define SDR_FLAG_FOG			(1<<1)
+#define SDR_FLAG_DIFFUSE_MAP	(1<<2)
+#define SDR_FLAG_GLOW_MAP		(1<<3)
+#define SDR_FLAG_SPEC_MAP		(1<<4)
+#define SDR_FLAG_NORMAL_MAP		(1<<5)
+#define SDR_FLAG_HEIGHT_MAP		(1<<6)
+#define SDR_FLAG_ENV_MAP		(1<<7)
+#define SDR_FLAG_ANIMATED		(1<<8)
+#define SDR_FLAG_SOFT_QUAD		(1<<9)
+#define SDR_FLAG_DISTORTION		(1<<10)
 
 #define MAX_SHADER_UNIFORMS		15
 
@@ -44,17 +36,22 @@
 
 #define MAX_SDR_ATTRIBUTES		1
 
-struct opengl_shader_file_t {
+struct opengl_shader_flag_t {
 	char *vert;
 	char *frag;
 
 	int flags;
+};
+
+struct opengl_shader_uniform_reference_t {
+	int flag;
 
 	int num_uniforms;
-	char *uniforms[MAX_SHADER_UNIFORMS];
+	char* uniforms[MAX_SHADER_UNIFORMS];
 
 	int num_attributes;
-	char *attributes[MAX_SDR_ATTRIBUTES];
+	char* attributes[MAX_SDR_ATTRIBUTES];
+	SCP_string name;
 };
 
 typedef struct opengl_shader_uniform_t {
@@ -88,6 +85,7 @@ void opengl_shader_set_current(opengl_shader_t *shader_obj = NULL);
 void opengl_shader_init();
 void opengl_shader_shutdown();
 
+void opengl_compile_main_shader(int flags);
 GLhandleARB opengl_shader_create(const char *vs, const char *fs);
 
 void opengl_shader_init_attribute(const char *attribute_text);
