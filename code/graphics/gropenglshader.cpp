@@ -88,7 +88,7 @@ void opengl_shader_check_info_log(GLhandleARB shader_object);
 
 /**
  * Set the currently active shader 
- * @param opengl_shader_t shader_obj	Pointer to an opengl_shader_t object. This function calls glUseProgramARB with parameter 0 if shader_obj is NULL or if function is called without parameters, causing OpenGL to revert to fixed-function processing 
+ * @param shader_obj	Pointer to an opengl_shader_t object. This function calls glUseProgramARB with parameter 0 if shader_obj is NULL or if function is called without parameters, causing OpenGL to revert to fixed-function processing 
  */
 void opengl_shader_set_current(opengl_shader_t *shader_obj)
 {
@@ -125,8 +125,8 @@ void opengl_shader_set_current(opengl_shader_t *shader_obj)
 /**
  * Given a set of flags, determine whether a shader with these flags exists within the GL_shader vector. If no shader with the requested flags exists, attempt to compile one.
  *
- * @param int flags	Integer variable, holding a combination of SDR_* flags
- * @return int		Index into GL_shader, referencing a valid shader, or -1 if shader compilation failed
+ * @param flags	Integer variable, holding a combination of SDR_* flags
+ * @return 		Index into GL_shader, referencing a valid shader, or -1 if shader compilation failed
  */
 int opengl_shader_get_index(int flags)
 {
@@ -181,9 +181,9 @@ void opengl_shader_shutdown()
  * This function will also create a list of preprocessor defines for the GLSL compiler based on the shader flags
  * and the supported GLSL version as reported by the GPU driver.
  *
- * @param char *filename	C-string holding the filename (with extension) of the shader file
- * @param int flags			integer variable holding a combination of SDR_* flags
- * @return char*			C-string holding the complete shader source code
+ * @param filename	C-string holding the filename (with extension) of the shader file
+ * @param flags		integer variable holding a combination of SDR_* flags
+ * @return			C-string holding the complete shader source code
  */
 static char *opengl_load_shader(char *filename, int flags)
 {
@@ -270,7 +270,7 @@ static char *opengl_load_shader(char *filename, int flags)
  * if compilation is successful.
  * This function is used for main (i.e. model rendering) and particle shaders, post processing shaders use their own infrastructure
  *
- * @param int flags		Combination of SDR_* flags
+ * @param flags		Combination of SDR_* flags
  */
 void opengl_compile_main_shader(int flags) {
 	char *vert = NULL, *frag = NULL;
@@ -281,8 +281,16 @@ void opengl_compile_main_shader(int flags) {
 	opengl_shader_t new_shader;
 
 	// choose appropriate files
-	char *vert_name = (flags & SDR_FLAG_SOFT_QUAD) ? "soft-v.sdr" : "main-v.sdr";
-	char *frag_name = (flags & SDR_FLAG_SOFT_QUAD) ? "soft-f.sdr" : "main-f.sdr";
+	char vert_name[NAME_LENGTH];
+	char frag_name[NAME_LENGTH];
+
+	if (flags & SDR_FLAG_SOFT_QUAD) {
+		strcpy_s( vert_name, "soft-v.sdr");
+		strcpy_s( frag_name, "soft-f.sdr");
+	} else {
+		strcpy_s( vert_name, "main-v.sdr");
+		strcpy_s( frag_name, "main-f.sdr");
+	}
 
 	// read vertex shader
 	if ( (vert = opengl_load_shader(vert_name, flags)) == NULL ) {
@@ -446,7 +454,7 @@ void opengl_shader_init()
 /**
  * Retrieve the compilation log for a given shader object, and store it in the GLshader_info_log global variable
  *
- * @param GLhandleARB shader_object		OpenGL handle of a shader object
+ * @param shader_object		OpenGL handle of a shader object
  */
 void opengl_shader_check_info_log(GLhandleARB shader_object)
 {
@@ -464,9 +472,9 @@ void opengl_shader_check_info_log(GLhandleARB shader_object)
  * Prints compilation errors (if any) to the log.
  * Note that this will only compile shaders into objects, linking them into executables happens later
  *
- * @param GLcharARB* shader_source	GLSL sourcecode for the shader
- * @param GLenum shader_type		OpenGL ID for the type of shader being used, like GL_FRAGMENT_SHADER_ARB, GL_VERTEX_SHADER_ARB
- * @return GLhandleARB				OpenGL handle for the compiled shader object
+ * @param shader_source		GLSL sourcecode for the shader
+ * @param shader_type		OpenGL ID for the type of shader being used, like GL_FRAGMENT_SHADER_ARB, GL_VERTEX_SHADER_ARB
+ * @return 					OpenGL handle for the compiled shader object
  */
 GLhandleARB opengl_shader_compile_object(const GLcharARB *shader_source, GLenum shader_type)
 {
@@ -508,9 +516,9 @@ GLhandleARB opengl_shader_compile_object(const GLcharARB *shader_source, GLenum 
  * Link a vertex shader object and a fragment shader object into a usable shader executable.
  * Prints linker errors (if any) to the log.
  * 
- * @param GLhandleARB vertex_object		Compiled vertex shader object
- * @param GLhandleARB fragment_object	Compiled fragment shader object
- * @return GLhandleARB		Shader executable
+ * @param vertex_object		Compiled vertex shader object
+ * @param fragment_object	Compiled fragment shader object
+ * @return					Shader executable
  */
 GLhandleARB opengl_shader_link_object(GLhandleARB vertex_object, GLhandleARB fragment_object)
 {
@@ -556,9 +564,9 @@ GLhandleARB opengl_shader_link_object(GLhandleARB vertex_object, GLhandleARB fra
 /**
  * Creates an executable shader.
  *
- * @param const char* vs	Vertex shader source code
- * @param const char* fs	Fragment shader source code
- * @return GLhandleARB		Internal ID of the compiled and linked shader as generated by OpenGL
+ * @param vs	Vertex shader source code
+ * @param fs	Fragment shader source code
+ * @return 		Internal ID of the compiled and linked shader as generated by OpenGL
  */
 GLhandleARB opengl_shader_create(const char *vs, const char *fs)
 {
@@ -605,7 +613,7 @@ Done:
 /**
  * Initialize a shader attribute. Requires that the Current_shader global variable is valid.
  *
- * @param const char* attribute_text	Name of the attribute to be initialized
+ * @param attribute_text	Name of the attribute to be initialized
  */
 void opengl_shader_init_attribute(const char *attribute_text)
 {
@@ -630,8 +638,8 @@ void opengl_shader_init_attribute(const char *attribute_text)
 /**
  * Get the internal OpenGL location for a given attribute. Requires that the Current_shader global variable is valid
  *
- * @param const char* attribute_text	Name of the attribute
- * @return GLint	Internal OpenGL location for the attribute
+ * @param attribute_text	Name of the attribute
+ * @return					Internal OpenGL location for the attribute
  */
 GLint opengl_shader_get_attribute(const char *attribute_text)
 {
@@ -654,7 +662,7 @@ GLint opengl_shader_get_attribute(const char *attribute_text)
 /**
  * Initialize a shader uniform. Requires that the Current_shader global variable is valid.
  *
- * @param const char* uniform_text	Name of the uniform to be initialized
+ * @param uniform_text		Name of the uniform to be initialized
  */
 void opengl_shader_init_uniform(const char *uniform_text)
 {
@@ -679,8 +687,8 @@ void opengl_shader_init_uniform(const char *uniform_text)
 /**
  * Get the internal OpenGL location for a given uniform. Requires that the Current_shader global variable is valid
  *
- * @param const char* uniform_text	Name of the uniform
- * @return GLint	Internal OpenGL location for the uniform
+ * @param uniform_text	Name of the uniform
+ * @return				Internal OpenGL location for the uniform
  */
 GLint opengl_shader_get_uniform(const char *uniform_text)
 {
@@ -703,7 +711,7 @@ GLint opengl_shader_get_uniform(const char *uniform_text)
 /**
  * Sets the currently active animated effect.
  *
- * @param int effect	Effect ID, needs to be implemented and checked for in the shader
+ * @param effect	Effect ID, needs to be implemented and checked for in the shader
  */
 void opengl_shader_set_animated_effect(int effect)
 {
@@ -714,7 +722,7 @@ void opengl_shader_set_animated_effect(int effect)
 /**
  * Returns the currently active animated effect ID.
  *
- * @return int	Currently active effect ID
+ * @return		Currently active effect ID
  */
 int opengl_shader_get_animated_effect()
 {
@@ -724,7 +732,7 @@ int opengl_shader_get_animated_effect()
 /**
  * Set the timer for animated effects.
  *
- * @param float timer Timer value to be passed to the shader
+ * @param timer		Timer value to be passed to the shader
  */
 void opengl_shader_set_animated_timer(float timer)
 {
