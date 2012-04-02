@@ -45,6 +45,19 @@ int ls_samplenum = 50;
 
 static SCP_vector<opengl_shader_t> GL_post_shader;
 
+struct opengl_shader_file_t {
+char *vert;
+	char *frag;
+
+	int flags;
+
+	int num_uniforms;
+	char* uniforms[MAX_SHADER_UNIFORMS];
+
+	int num_attributes;
+	char* attributes[MAX_SDR_ATTRIBUTES];
+};
+
 // NOTE: The order of this list *must* be preserved!  Additional shaders can be
 //       added, but the first 7 are used with magic numbers so their position
 //       is assumed to never change.
@@ -542,7 +555,7 @@ void get_post_process_effect_names(SCP_vector<SCP_string> &names)
 	}
 }
 
-static bool opengl_post_compile_main_shader(int flags)
+static bool opengl_post_compile_shader(int flags)
 {
 	char *vert = NULL, *frag = NULL;
 	bool in_error = false;
@@ -674,7 +687,7 @@ void gr_opengl_post_process_set_effect(const char *name, int value)
 
 	// if not then add a new shader to the list
 	if (need_change) {
-		if ( !opengl_post_compile_main_shader(sflags) ) {
+		if ( !opengl_post_compile_shader(sflags) ) {
 			// shader added, set it as active
 			Post_active_shader_index = (int)(GL_post_shader.size() - 1);
 		} else {
