@@ -1000,7 +1000,7 @@ void anim_display_info(char *real_filename)
 	printf("FPS:                       %d\n", A.fps);
 
 #ifndef NDEBUG
-	printf("Transparent RGB:           (%d,%d,%d)\n", A.xparent_r, A.xparent_g, A.xparent_b); 
+	printf("Transparent RGB:           (%u,%u,%u)\n", A.xparent_r, A.xparent_g, A.xparent_b); 
 #endif
 
 	printf("ac version:                %d\n", A.version);
