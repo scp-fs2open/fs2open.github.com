@@ -487,10 +487,10 @@ void parse_ai_profiles_tbl(char *filename)
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
 			{
-				char buf[60];
-				memset(buf, 0, 60);
-				strncpy(buf, Mp, 59);
-				mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n", buf));
+				char tmp[60];
+				memset(tmp, 0, 60);
+				strncpy(tmp, Mp, 59);
+				mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n", tmp));
 
 				Mp++;
 			}
