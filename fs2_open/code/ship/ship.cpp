@@ -15234,7 +15234,7 @@ void ship_page_in()
 #ifndef NDEBUG
 			// Verify that all the subsystem model numbers are updated
 			for (j = 0; j < sip->n_subsystems; j++)
-				Assert( sip->subsystems[j].model_num == sip->model_num );	// JAS
+				Assertion( sip->subsystems[j].model_num == sip->model_num, "Model reference for subsystem %s (model num: %d) on model %s (model num: %d) is invalid.\n", sip->subsystems[j].name, sip->subsystems[j].model_num, sip->pof_file, sip->model_num );	// JAS
 #endif
 		}
 
