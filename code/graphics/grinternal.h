@@ -8,10 +8,8 @@
 */ 
 
 
-
 #ifndef _GRINTERNAL_H
 #define _GRINTERNAL_H
-
 
 #include "graphics/font.h"
 #include "graphics/2d.h"
@@ -21,36 +19,8 @@
 extern int Gr_cursor;
 extern int Gr_cursor_size;
 
-//#define GR_SCREEN_PTR(type,x,y) ((type *)(ptr_u(gr_screen.offscreen_buffer) + ptr_u(((x)+gr_screen.offset_x)*sizeof(type)) + ptr_u(((y)+gr_screen.offset_y)*gr_screen.rowsize)))
-//#define GR_SCREEN_PTR_SIZE(bpp,x,y) ((ptr_u)(ptr_u(gr_screen.offscreen_buffer) + ptr_u(((x)+gr_screen.offset_x)*(bpp)) + ptr_u(((y)+gr_screen.offset_y)*gr_screen.rowsize)))
-
 extern ubyte Gr_original_palette[768];		// The palette 
 extern ubyte Gr_current_palette[768];
-
-/*typedef struct alphacolor {
-	int	used;
-	int	r,g,b,alpha;
-	int	type;						// See AC_TYPE_??? define
-	color	*clr;
-
-//	union {
-//		ubyte		lookup[16][256];		// For 8-bpp rendering modes
-//	} table;
-} alphacolor;
-
-// for backwards fred aabitmap compatibility
-typedef struct alphacolor_old {
-	int	used;
-	int	r,g,b,alpha;
-	int	type;						// See AC_TYPE_??? define
-	color	*clr;	
-	union {
-		ubyte		lookup[16][256];		// For 8-bpp rendering modes
-	} table;	
-} alphacolor_old;
-
-extern alphacolor * Current_alphacolor;
-void gr_init_alphacolors();*/
 
 extern char Gr_current_palette_name[128];
 
@@ -74,19 +44,8 @@ extern color_gun Gr_ta_red, Gr_ta_green, Gr_ta_blue, Gr_ta_alpha;
 // of the above values
 extern color_gun *Gr_current_red, *Gr_current_green, *Gr_current_blue, *Gr_current_alpha;
 
-
-// Translate the 768 byte 'src' palette into 
-// the current screen format's palette.
-// The size of the dst array is assumed to be gr_screen.bpp
-// bytes per element.
-//void gr_xlat_palette( void *dst, bitmap *bmp );
-
-// CPU identification variables
-//extern int Gr_cpu;			// What type of CPU.  5=Pentium, 6=Ppro/PII
-//extern int Gr_mmx;			// MMX capabilities?  0=No, 1=Yes
-
 extern float Gr_gamma;
-extern int Gr_gamma_int;				// int(Gr_gamma*100)
+extern int Gr_gamma_int;
 
 #define TCACHE_TYPE_AABITMAP				0		// HUD bitmap.  All Alpha.
 #define TCACHE_TYPE_NORMAL					1		// Normal bitmap. Alpha = 0.
@@ -94,10 +53,6 @@ extern int Gr_gamma_int;				// int(Gr_gamma*100)
 #define TCACHE_TYPE_INTERFACE				3		// for graphics that are using in the interface (for special filtering or sizing)
 #define TCACHE_TYPE_COMPRESSED				4		// Compressed bitmap type (DXT1, DXT3, DXT5)
 #define TCACHE_TYPE_CUBEMAP					5
-
-//extern int Ambient_r_default;
-//extern int Ambient_g_default;
-//extern int Ambient_b_default;
 
 #define NEBULA_COLORS 20
 
@@ -123,6 +78,5 @@ typedef enum gr_zbuffer_type {
 	ZBUFFER_TYPE_FULL,
 	ZBUFFER_TYPE_DEFAULT
 } gr_zbuffer_type;
-
 
 #endif
