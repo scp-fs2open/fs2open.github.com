@@ -916,7 +916,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	iconp = &Briefing->stages[m_cur_stage].icons[m_cur_icon];
 	ship = waypoint = -1;
 	team = 0;
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 
 	vm_vec_make(&min, 9e19f, 9e19f, 9e19f);
 	vm_vec_make(&max, -9e19f, -9e19f, -9e19f);
@@ -948,7 +948,7 @@ void briefing_editor_dlg::OnMakeIcon()
 				
 				case OBJ_JUMP_NODE:
 					for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) { 
-						if(jnp->get_obj() == ptr) 
+						if(jnp->GetSCPObject() == ptr) 
 							break; 
 					} 
 					break;
@@ -997,7 +997,7 @@ void briefing_editor_dlg::OnMakeIcon()
 		name = wp_list->get_name();
 	}
 	else if (jnp != Jump_nodes.end())
-		name = jnp->get_name_ptr();
+		name = jnp->GetName();
 	else
 		return;
 

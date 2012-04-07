@@ -11024,7 +11024,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	int bound_rc, pof;
 	int modelnum;
 	bool entered_frame = false;
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	
 	if ( !(g3_in_frame( ) > 0 ) )
 	{
@@ -11064,11 +11064,11 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			break;
 		case OBJ_JUMP_NODE:
 			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->get_obj() == targetp)
+				if(jnp->GetSCPObject() == targetp)
 					break;
 			}
 			
-			modelnum = jnp->get_modelnum();
+			modelnum = jnp->GetModelNumber();
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
 		default: //Someone passed an invalid pointer.

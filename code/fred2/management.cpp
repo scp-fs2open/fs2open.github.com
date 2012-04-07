@@ -767,8 +767,8 @@ int create_object(vec3d *pos, int waypoint_instance)
 			obj = create_player(Player_starts, pos, NULL, Default_player_model);
 
 	} else if (cur_model_index == Id_select_type_jump_node) {
-		jump_node* jnp = new jump_node(pos);
-		obj = jnp->get_objnum();
+		CJumpNode* jnp = new CJumpNode(pos);
+		obj = jnp->GetSCPObjectNumber();
 		Jump_nodes.push_back(*jnp);
 	} else if(Ship_info[cur_model_index].flags & SIF_NO_FRED){		
 		obj = -1;
@@ -1278,7 +1278,7 @@ int common_object_delete(int obj)
 	char msg[255], *name;
 	int i, z, r, type;
 	object *objp;
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 
 	type = Objects[obj].type;
 	if (type == OBJ_START) {
@@ -1400,7 +1400,7 @@ int common_object_delete(int obj)
 
 	} else if (type == OBJ_JUMP_NODE) {
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->get_obj() == &Objects[obj])
+			if(jnp->GetSCPObject() == &Objects[obj])
 				break;
 		}
 		
@@ -2489,9 +2489,9 @@ void generate_weaponry_usage_list(int team, int *arr)
 	}
 }
 
-jump_node *jumpnode_get_by_name(CString& name)
+CJumpNode *jumpnode_get_by_name(CString& name)
 {
-	jump_node *jnp = jumpnode_get_by_name(name.GetBuffer(name.GetLength()));
+	CJumpNode *jnp = jumpnode_get_by_name(name.GetBuffer(name.GetLength()));
 	name.ReleaseBuffer();
 
 	return jnp;

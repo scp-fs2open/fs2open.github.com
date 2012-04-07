@@ -13843,9 +13843,9 @@ int sexp_node_targeted(int node)
 {
 	int z;
 
-	jump_node *jnp = jumpnode_get_by_name(CTEXT(node));
+	CJumpNode *jnp = jumpnode_get_by_name(CTEXT(node));
 
-	if (jnp==NULL || !Player_ai || (jnp->get_objnum() != Player_ai->target_objnum)){
+	if (jnp==NULL || !Player_ai || (jnp->GetSCPObjectNumber() != Player_ai->target_objnum)){
 		return SEXP_FALSE;
 	}
 
@@ -19626,7 +19626,7 @@ void sexp_set_jumpnode_name(int n) //CommanderDJ
 {
 	char *old_name = CTEXT(n); //for multi
 
-	jump_node *jnp = jumpnode_get_by_name(old_name);
+	CJumpNode *jnp = jumpnode_get_by_name(old_name);
 
 	if(jnp==NULL) {
 		return;
@@ -19634,7 +19634,7 @@ void sexp_set_jumpnode_name(int n) //CommanderDJ
 
 	n=CDR(n);
 	char *new_name = CTEXT(n); //for multi
-	jnp->set_name(new_name);
+	jnp->SetName(new_name);
 
 	//multiplayer callback
 	multi_start_callback();
@@ -19651,17 +19651,17 @@ void multi_sexp_set_jumpnode_name() //CommanderDJ
 	multi_get_string(old_name);
 	multi_get_string(new_name);
 
-	jump_node *jnp = jumpnode_get_by_name(old_name);
+	CJumpNode *jnp = jumpnode_get_by_name(old_name);
 
 	if(jnp==NULL) 
 		return;
 
-	jnp->set_name(new_name);
+	jnp->SetName(new_name);
 }
 
 void sexp_set_jumpnode_color(int n)
 {
-	jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+	CJumpNode *jnp = jumpnode_get_by_name(CTEXT(n));
 
 	if(jnp==NULL)
 		return;
@@ -19675,7 +19675,7 @@ void sexp_set_jumpnode_color(int n)
 	int blue = eval_num(CDR(CDR(n)));
 	int alpha = eval_num(CDR(CDR(CDR(n))));
 
-	jnp->set_alphacolor(red, green, blue, alpha);
+	jnp->SetAlphaColor(red, green, blue, alpha);
 
 	multi_start_callback();
 	multi_send_string(jumpnode_name);
@@ -19693,7 +19693,7 @@ void multi_sexp_set_jumpnode_color()
 	int red, blue, green, alpha;
 
 	multi_get_string(jumpnode_name);
-	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
 
 	if(jnp==NULL) {
 		multi_discard_remaining_callback_data();
@@ -19705,13 +19705,13 @@ void multi_sexp_set_jumpnode_color()
 	multi_get_int(blue);
 	multi_get_int(alpha);
 
-	jnp->set_alphacolor(red, green, blue, alpha);
+	jnp->SetAlphaColor(red, green, blue, alpha);
 }
 
 void sexp_set_jumpnode_model(int n)
 {
 	char* jumpnode_name = CTEXT(n);
-	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
 
 	if(jnp==NULL)
 		return;
@@ -19721,7 +19721,7 @@ void sexp_set_jumpnode_model(int n)
 	n=CDR(n);
 	bool show_polys = (is_sexp_true(n) != 0);
 
-	jnp->set_model(model_name, show_polys);
+	jnp->SetModel(model_name, show_polys);
 
 	multi_start_callback();
 	multi_send_string(jumpnode_name);
@@ -19739,7 +19739,7 @@ void multi_sexp_set_jumpnode_model()
 	multi_get_string(jumpnode_name);
 	multi_get_string(model_name);
 
-	jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
 
 	if(jnp==NULL) {
 		multi_discard_remaining_callback_data();		
@@ -19748,7 +19748,7 @@ void multi_sexp_set_jumpnode_model()
 
 	show_polys = multi_get_bool(show_polys);
 
-	jnp->set_model(model_name, show_polys);
+	jnp->SetModel(model_name, show_polys);
 }
 
 void sexp_show_hide_jumpnode(int node, bool show)
@@ -19757,10 +19757,10 @@ void sexp_show_hide_jumpnode(int node, bool show)
 
 	for (int n = node; n >= 0; n = CDR(n))
 	{
-		jump_node *jnp = jumpnode_get_by_name(CTEXT(n));
+		CJumpNode *jnp = jumpnode_get_by_name(CTEXT(n));
 		if (jnp != NULL)
 		{
-			jnp->show(show);
+			jnp->SetVisibility(show);
 			multi_send_string(CTEXT(n));
 		}
 	}
@@ -19774,9 +19774,9 @@ void multi_sexp_show_hide_jumpnode(bool show)
 
 	while (multi_get_string(jumpnode_name))
 	{
-		jump_node *jnp = jumpnode_get_by_name(jumpnode_name);
+		CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
 		if (jnp != NULL)
-			jnp->show(show);
+			jnp->SetVisibility(show);
 	}
 }
 
