@@ -26,53 +26,55 @@ struct object;
 #define JN_HIDE						(1<<2)		//Hides a jump node
 #define JN_SPECIAL_MODEL			(1<<3)		//If non-default model
 
-class jump_node
+class CJumpNode
 {
 private:
-	char m_name[NAME_LENGTH];
-	float m_radius;
+    char m_name[NAME_LENGTH];
+    float m_radius;
 
-	int	m_modelnum;
-	int	m_objnum;						// objnum of this jump node
+    int	m_modelnum;
+    int	m_objnum;						// objnum of this jump node
 
-	int m_flags;
-	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
-    vec3d pos;
+    int m_flags;
+    color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
+    vec3d m_pos;
 public:
-	//Constructors
-    jump_node();
-	jump_node(vec3d *position);
+    //Constructors
+    CJumpNode();
+    CJumpNode(vec3d *position);
     
     //Destructor
-	~jump_node();
+    ~CJumpNode();
 	
 	//Getting
-    char *get_name_ptr();
-	int get_modelnum();
-	int get_objnum();
-	object *get_obj();
-	bool is_hidden();
-	bool is_colored();
-	bool is_special_model();
-    color get_color();
-    vec3d *get_pos();
+    char *GetName();
+    int GetModelNumber();
+    int GetSCPObjectNumber();
+    object *GetSCPObject();
+    color GetColor();
+    vec3d *GetPosition();
 
-	//Setting
-	void set_alphacolor(int r, int g, int b, int alpha);
-	void set_model(char *model_name, bool show_polys=false);
-	void set_name(const char *new_name);
-	void show(bool enabled);
+    //Setting
+    void SetAlphaColor(int r, int g, int b, int alpha);
+    void SetModel(char *model_name, bool show_polys=false);
+    void SetName(const char *new_name);
+    void SetVisibility(bool enabled);
+    
+    //Query
+    bool IsHidden();
+    bool IsColored();
+    bool IsSpecialModel();
 
-	//Rendering
-	void render(vec3d *pos, vec3d *view_pos = NULL);
+    //Rendering
+    void Render(vec3d *pos, vec3d *view_pos = NULL);
 };
 
 //-----Globals------
-extern SCP_list<jump_node> Jump_nodes;
+extern SCP_list<CJumpNode> Jump_nodes;
 
 //-----Functions-----
-jump_node *jumpnode_get_by_name(const char *name);
-jump_node *jumpnode_get_which_in(object *objp);
+CJumpNode *jumpnode_get_by_name(const char *name);
+CJumpNode *jumpnode_get_which_in(object *objp);
 
 void jumpnode_render_all();
 void jumpnode_level_close();

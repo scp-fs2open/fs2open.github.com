@@ -401,9 +401,9 @@ void DumpStats::get_object_stats(CString &buffer)
 	// Jumpnodes
 	buffer += "\r\nJUMPNODES\r\n";
 
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		temp.Format("\tJumpnode: %s\r\n", jnp->get_name_ptr());
+		temp.Format("\tJumpnode: %s\r\n", jnp->GetName());
 		buffer += temp;
 	}
 

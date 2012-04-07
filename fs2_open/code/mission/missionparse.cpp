@@ -4637,23 +4637,23 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 
 	required_string("#Waypoints");
 
-	jump_node *jnp;
+	CJumpNode *jnp;
 	char file_name[MAX_FILENAME_LEN] = { 0 };
 	char jump_name[NAME_LENGTH] = { 0 };
 
 	while (optional_string("$Jump Node:")) {
 		stuff_vec3d(&pos);
-		jnp = new jump_node(&pos);
+		jnp = new CJumpNode(&pos);
 		Assert(jnp != NULL);
 
 		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
 			stuff_string(jump_name, F_NAME, NAME_LENGTH);
-			jnp->set_name(jump_name);
+			jnp->SetName(jump_name);
 		}
 
 		if(optional_string("+Model File:")){
 			stuff_string(file_name, F_NAME, MAX_FILENAME_LEN);
-			jnp->set_model(file_name);
+			jnp->SetModel(file_name);
 		}
 
 		if(optional_string("+Alphacolor:")) {
@@ -4662,13 +4662,13 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 			stuff_ubyte(&g);
 			stuff_ubyte(&b);
 			stuff_ubyte(&a);
-			jnp->set_alphacolor(r, g, b, a);
+			jnp->SetAlphaColor(r, g, b, a);
 		}
 
 		if(optional_string("+Hidden:")) {
 			int hide;
 			stuff_boolean(&hide);
-			jnp->show(!hide);
+			jnp->SetVisibility(!hide);
 		}
 
 		Jump_nodes.push_back(*jnp);

@@ -1496,7 +1496,7 @@ MONITOR( NumObjectsRend )
 extern int Cmdline_dis_weapons;
 void obj_render(object *obj)
 {
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	
 	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
 
@@ -1537,9 +1537,9 @@ void obj_render(object *obj)
 			break;*/
 		case OBJ_JUMP_NODE:
 			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->get_obj() != obj)
+				if(jnp->GetSCPObject() != obj)
 					continue;
-				jnp->render(&obj->pos, &Eye_position);
+				jnp->Render(&obj->pos, &Eye_position);
 			}
 			break;
 		case OBJ_WAYPOINT:

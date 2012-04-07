@@ -73,7 +73,7 @@ void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 {
 	int i;
 	SCP_list<waypoint_list>::iterator ii;
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	CMenu *m;
 
 	m = pMenu->GetSubMenu(0);
@@ -85,8 +85,8 @@ void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 
 	i = 0; 
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		m->AppendMenu(MF_ENABLED | MF_STRING, ID_JUMP_NODE_MENU + i, jnp->get_name_ptr());
-		if (jnp->get_objnum() == cur_object_index) {
+		m->AppendMenu(MF_ENABLED | MF_STRING, ID_JUMP_NODE_MENU + i, jnp->GetName());
+		if (jnp->GetSCPObjectNumber() == cur_object_index) {
 			m->CheckMenuItem(ID_JUMP_NODE_MENU + i,  MF_BYCOMMAND | MF_CHECKED);
 		}
 		i++;
@@ -123,7 +123,7 @@ void waypoint_path_dlg::OnClose()
 void waypoint_path_dlg::initialize_data(int full_update)
 {
 	int enable = TRUE;
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 
 	if (!GetSafeHwnd())
 		return;
@@ -138,11 +138,11 @@ void waypoint_path_dlg::initialize_data(int full_update)
 
 	} else if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->get_obj() == &Objects[cur_object_index])
+			if(jnp->GetSCPObject() == &Objects[cur_object_index])
 				break;
 		}
 		
-		m_name = _T(jnp->get_name_ptr());
+		m_name = _T(jnp->GetName());
 
 	} else {
 		m_name = _T("");
@@ -161,7 +161,7 @@ int waypoint_path_dlg::update_data(int redraw)
 	char old_name[255];
 	int i, z;
 	object *ptr;
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 
 	if (!GetSafeHwnd())
 		return 0;
@@ -312,7 +312,7 @@ int waypoint_path_dlg::update_data(int redraw)
 
 	} else if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->get_obj() == &Objects[cur_object_index])
+			if(jnp->GetSCPObject() == &Objects[cur_object_index])
 				break;
 		}
 
@@ -329,7 +329,7 @@ int waypoint_path_dlg::update_data(int redraw)
 				if (z == IDCANCEL)
 					return -1;
 
-				m_name = _T(jnp->get_name_ptr());
+				m_name = _T(jnp->GetName());
 				UpdateData(FALSE);
 			}
 		}
@@ -348,7 +348,7 @@ int waypoint_path_dlg::update_data(int redraw)
 					if (z == IDCANCEL)
 						return -1;
 
-					m_name = _T(jnp->get_name_ptr());
+					m_name = _T(jnp->GetName());
 					UpdateData(FALSE);
 				}
 			}
@@ -368,7 +368,7 @@ int waypoint_path_dlg::update_data(int redraw)
 				if (z == IDCANCEL)
 					return -1;
 
-				m_name = _T(jnp->get_name_ptr());
+				m_name = _T(jnp->GetName());
 				UpdateData(FALSE);
 			}
 		}
@@ -385,7 +385,7 @@ int waypoint_path_dlg::update_data(int redraw)
 				if (z == IDCANCEL)
 					return -1;
 
-				m_name = _T(jnp->get_name_ptr());
+				m_name = _T(jnp->GetName());
 				UpdateData(FALSE);
 			}
 		}
@@ -402,7 +402,7 @@ int waypoint_path_dlg::update_data(int redraw)
 			if (z == IDCANCEL)
 				return -1;
 
-			m_name = _T(jnp->get_name_ptr());
+			m_name = _T(jnp->GetName());
 			UpdateData(FALSE);
 		}
 
@@ -417,11 +417,11 @@ int waypoint_path_dlg::update_data(int redraw)
 			if (z == IDCANCEL)
 				return -1;
 
-			m_name = _T(jnp->get_name_ptr());
+			m_name = _T(jnp->GetName());
 			UpdateData(FALSE);
 		}
 
-		jump_node* found = jumpnode_get_by_name(m_name);
+		CJumpNode* found = jumpnode_get_by_name(m_name);
 		if(found != NULL && &(*jnp) != found)
 		{
 			if (bypass_errors)
@@ -434,12 +434,12 @@ int waypoint_path_dlg::update_data(int redraw)
 			if (z == IDCANCEL)
 				return -1;
 
-			m_name = _T(jnp->get_name_ptr());
+			m_name = _T(jnp->GetName());
 			UpdateData(FALSE);
 		}
 		
-		strcpy_s(old_name, jnp->get_name_ptr());
-		jnp->set_name((LPCSTR) m_name);
+		strcpy_s(old_name, jnp->GetName());
+		jnp->SetName((LPCSTR) m_name);
 		
 		str = (LPCTSTR) m_name;
 		if (strcmp(old_name, str)) {
