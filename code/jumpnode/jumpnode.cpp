@@ -8,12 +8,9 @@
 */ 
 
 
-
-#include "object/object.h"
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
 #include "hud/hud.h"
-#include "globalincs/linklist.h"
 
 SCP_list<CJumpNode> Jump_nodes;
 
@@ -71,50 +68,50 @@ CJumpNode::~CJumpNode()
 
 // Accessor functions for private variables
 
+/**
+ * @return Name of jump node
+ */
 char *CJumpNode::GetName()
 {
 	return m_name;
 }
 
+/**
+ * @return Handle to model
+ */
 int CJumpNode::GetModelNumber()
 {
 	return m_modelnum;
 }
 
+/**
+ * @return Index into Objects[]
+ */
 int CJumpNode::GetSCPObjectNumber()
 {
 	return m_objnum;
 }
 
+/**
+ * @return Object
+ */
 object *CJumpNode::GetSCPObject()
 {
 	Assert(m_objnum != -1);
     return &Objects[m_objnum];
 }
 
-bool CJumpNode::IsHidden()
-{
-	if(m_flags & JN_HIDE)
-		return true;
-	else
-		return false;
-}
-
-bool CJumpNode::IsColored()
-{
-	return ((m_flags & JN_USE_DISPLAY_COLOR) != 0);
-}
-
-bool CJumpNode::IsSpecialModel()
-{
-	return ((m_flags & JN_SPECIAL_MODEL) != 0);
-}
-
+/**
+ * @return Color of jump node when rendered
+ */
 color CJumpNode::GetColor()
 {
 	return m_display_color;
 }
 
+/**
+ * @return World position of jump node
+ */
 vec3d *CJumpNode::GetPosition()
 {
 	return &m_pos;
@@ -122,6 +119,14 @@ vec3d *CJumpNode::GetPosition()
 
 // Settor functions for private variables
 
+/**
+ * Set jump node alpha and color
+ *
+ * @param r Red component
+ * @param g Green component
+ * @param b Blue component
+ * @param alpha Alpha component
+ */
 void CJumpNode::SetAlphaColor(int r, int g, int b, int alpha)
 {
 	CLAMP(r, 0, 255);
@@ -133,6 +138,12 @@ void CJumpNode::SetAlphaColor(int r, int g, int b, int alpha)
 	gr_init_alphacolor(&m_display_color, r, g, b, alpha);
 }
 
+/**
+ * Set jump node model to render
+ *
+ * @param model_name Name of model file to load
+ * @param show_polys Whether to render wireframe or not
+ */
 void CJumpNode::SetModel(char *model_name, bool show_polys)
 {
 	Assert(model_name != NULL);
@@ -170,15 +181,19 @@ void CJumpNode::SetModel(char *model_name, bool show_polys)
 void CJumpNode::SetName(const char *new_name)
 {
 	Assert(new_name != NULL);
+    
 	#ifndef NDEBUG
 	CJumpNode* check = jumpnode_get_by_name(new_name);
 	Assert((check == this || !check));
 	#endif
+    
 	strcpy_s(m_name, new_name);
 }
 
 /**
  * Set appearance, hidden or not
+ *
+ * @param enabled Visibility to set
  */
 void CJumpNode::SetVisibility(bool enabled)
 {
@@ -195,16 +210,45 @@ void CJumpNode::SetVisibility(bool enabled)
 	}
 }
 
+// Query functions
+
+/**
+ * @return Is the jump node hidden when rendering?
+ */
+bool CJumpNode::IsHidden()
+{
+	if(m_flags & JN_HIDE)
+		return true;
+	else
+		return false;
+}
+
+/**
+ * @return Is the jump node colored any other color than default white?
+ */
+bool CJumpNode::IsColored()
+{
+	return ((m_flags & JN_USE_DISPLAY_COLOR) != 0);
+}
+
+/**
+ * @return Is the jump node model set differently from the default one?
+ */
+bool CJumpNode::IsSpecialModel()
+{
+	return ((m_flags & JN_SPECIAL_MODEL) != 0);
+}
+
 /**
  * Render jump node
  *
  * @param pos		World position
- * @param view_pos	Viewer's world position
+ * @param view_pos	Viewer's world position, can be NULL
  */
 void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 {
 	Assert(pos != NULL);
-    // Assert(view_pos != NULL);
+    // Assert(view_pos != NULL); - view_pos can be NULL
 	
 	if(m_flags & JN_HIDE)
 		return;
@@ -277,7 +321,7 @@ CJumpNode *jumpnode_get_by_name(const char* name)
 }
 
 /**
- * Given an object, returns which jump node it's in (if any)
+ * Given an object, returns which jump node it's inside (if any)
  *
  * @param objp Object
  * @return Jump node object or NULL if not in one
@@ -289,7 +333,6 @@ CJumpNode *jumpnode_get_which_in(object *objp)
 	float radius, dist;
 
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		//WMC - if a jump node has no model, who cares?
 		if(jnp->GetModelNumber() < 0)
 			continue;
 
@@ -303,7 +346,11 @@ CJumpNode *jumpnode_get_which_in(object *objp)
 	return NULL;
 }
 
-// only called by FRED
+/**
+ * Render all function
+ *
+ * @note Only called by FRED
+ */
 void jumpnode_render_all()
 {
 	SCP_list<CJumpNode>::iterator jnp;
@@ -312,7 +359,10 @@ void jumpnode_render_all()
 		jnp->Render(&jnp->GetSCPObject()->pos);
 	}
 }
-	
+
+/**
+ * Level cleanup
+ */
 void jumpnode_level_close()
 {
 	Jump_nodes.clear();
