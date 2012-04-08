@@ -14,7 +14,6 @@
 #include "playerman/player.h"
 #include "hud/hudtarget.h"
 #include "render/3d.h"
-#include "globalincs/linklist.h"
 #include "weapon/emp.h"
 #include "ship/ship.h"
 #include "object/object.h"
