@@ -27,6 +27,19 @@ extern int Gr_inited;
 extern int gr_zbuffering, gr_zbuffering_mode;
 extern int gr_global_zbuffering;
 
+// Shader flags
+#define SDR_FLAG_LIGHT			(1<<0)
+#define SDR_FLAG_FOG			(1<<1)
+#define SDR_FLAG_DIFFUSE_MAP	(1<<2)
+#define SDR_FLAG_GLOW_MAP		(1<<3)
+#define SDR_FLAG_SPEC_MAP		(1<<4)
+#define SDR_FLAG_NORMAL_MAP		(1<<5)
+#define SDR_FLAG_HEIGHT_MAP		(1<<6)
+#define SDR_FLAG_ENV_MAP		(1<<7)
+#define SDR_FLAG_ANIMATED		(1<<8)
+#define SDR_FLAG_SOFT_QUAD		(1<<9)
+#define SDR_FLAG_DISTORTION		(1<<10)
+
 /**
  * This is a structure used by the shader to keep track
  * of the values you want to use in the shade primitive.
@@ -455,6 +468,8 @@ typedef struct screen {
 
 	void (*gf_line_htl)(vec3d *start, vec3d* end);
 	void (*gf_sphere_htl)(float rad);
+
+	int (*gf_maybe_create_shader)(int flags);
 } screen;
 
 // handy macro
@@ -726,6 +741,8 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 
 #define gr_line_htl						GR_CALL(*gr_screen.gf_line_htl)
 #define gr_sphere_htl					GR_CALL(*gr_screen.gf_sphere_htl)
+
+#define gr_maybe_create_shader			GR_CALL(*gr_screen.gf_maybe_create_shader)
 
 // color functions
 void gr_get_color( int *r, int *g, int  b );

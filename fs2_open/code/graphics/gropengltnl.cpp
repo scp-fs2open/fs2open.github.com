@@ -562,7 +562,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	if (shader_flags == GL_last_shader_flags) {
 		sdr_index = GL_last_shader_index;
 	} else {
-		sdr_index = opengl_shader_get_index(shader_flags);
+		sdr_index = gr_opengl_maybe_create_shader(shader_flags);
 
 		if (sdr_index < 0) {
 			opengl_render_pipeline_fixed(start, bufferp, datap, flags);
