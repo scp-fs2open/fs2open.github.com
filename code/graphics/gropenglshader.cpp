@@ -128,8 +128,11 @@ void opengl_shader_set_current(opengl_shader_t *shader_obj)
  * @param flags	Integer variable, holding a combination of SDR_* flags
  * @return 		Index into GL_shader, referencing a valid shader, or -1 if shader compilation failed
  */
-int opengl_shader_get_index(int flags)
+int gr_opengl_maybe_create_shader(int flags)
 {
+	if (Use_GLSL < 2)
+		return -1;
+
 	size_t idx;
 	size_t max = GL_shader.size();
 

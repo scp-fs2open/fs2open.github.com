@@ -2323,6 +2323,27 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		}
 	}
 	// -------------------------------------------------------------------------
+
+	// See if we need to compile a new shader for this material
+	int shader_flags = 0;
+
+	if (tbase->GetTexture() > 0)
+		shader_flags |= SDR_FLAG_DIFFUSE_MAP;
+	if (tglow->GetTexture() > 0 && Cmdline_glow)
+		shader_flags |= SDR_FLAG_GLOW_MAP;
+	if (tspec->GetTexture() > 0 && Cmdline_spec)
+		shader_flags |= SDR_FLAG_SPEC_MAP;
+	if (tnorm->GetTexture() > 0 && Cmdline_normal)
+		shader_flags |= SDR_FLAG_NORMAL_MAP;
+	if (theight->GetTexture() > 0 && Cmdline_height)
+		shader_flags |= SDR_FLAG_HEIGHT_MAP;
+	if (tspec->GetTexture() > 0 && Cmdline_env && Cmdline_spec) // No env maps without spec map
+		shader_flags |= SDR_FLAG_ENV_MAP;
+
+	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT);
+	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_FOG);
+	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_ANIMATED);
+	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_ANIMATED | SDR_FLAG_FOG);
 }
 
 //returns the number of this model

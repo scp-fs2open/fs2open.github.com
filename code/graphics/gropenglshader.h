@@ -17,19 +17,6 @@
 
 #include <string>
 
-
-#define SDR_FLAG_LIGHT			(1<<0)
-#define SDR_FLAG_FOG			(1<<1)
-#define SDR_FLAG_DIFFUSE_MAP	(1<<2)
-#define SDR_FLAG_GLOW_MAP		(1<<3)
-#define SDR_FLAG_SPEC_MAP		(1<<4)
-#define SDR_FLAG_NORMAL_MAP		(1<<5)
-#define SDR_FLAG_HEIGHT_MAP		(1<<6)
-#define SDR_FLAG_ENV_MAP		(1<<7)
-#define SDR_FLAG_ANIMATED		(1<<8)
-#define SDR_FLAG_SOFT_QUAD		(1<<9)
-#define SDR_FLAG_DISTORTION		(1<<10)
-
 #define MAX_SHADER_UNIFORMS		15
 
 #define SDR_ATTRIB_RADIUS		0
@@ -79,7 +66,7 @@ extern SCP_vector<opengl_shader_t> GL_shader;
 
 extern opengl_shader_t *Current_shader;
 
-int opengl_shader_get_index(int flags);
+int gr_opengl_maybe_create_shader(int flags);
 void opengl_shader_set_current(opengl_shader_t *shader_obj = NULL);
 
 void opengl_shader_init();
