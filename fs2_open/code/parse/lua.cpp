@@ -7807,7 +7807,10 @@ ADE_VIRTVAR(ParentTurret, l_Weapon, "subsystem", "Turret which fired this weapon
 		}
 	}
 
-	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(&Objects[wp->turret_subsys->parent_objnum], wp->turret_subsys)));
+    if(wp->turret_subsys == NULL)
+        return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+    else
+        return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(&Objects[wp->turret_subsys->parent_objnum], wp->turret_subsys)));
 }
 
 ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in on. Value may also be a deriviative of the 'object' class, such as 'ship'", "object", "Object that weapon is homing in on, or an invalid object handle if weapon is not homing or the weapon handle is invalid")
