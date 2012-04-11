@@ -323,16 +323,14 @@ int obj_snd_get_freq(int source_freq, object* source, object* observor, vec3d *s
 }
 
 
-// ---------------------------------------------------------------------------------------
-// obj_snd_stop_lowest_vol()
-//
-//	Stop a playing object sound, if it is quieter than sound at new_distance
-//
-// input:		new_vol			=>	volume of requested sound to play
-//
-//	returns:		TRUE	=>		A sound was stopped 
-//					FALSE	=>		A sound was not stopped
-//
+/**
+ * Stop a playing object sound, if it is quieter than sound at new_distance
+ *
+ * @param new_vol Volume of requested sound to play
+ *
+ * @return 1 A sound was stopped 
+ * @return 0 A sound was not stopped
+ */
 int obj_snd_stop_lowest_vol(float new_vol)
 {
 	obj_snd			*osp;
@@ -352,8 +350,8 @@ int obj_snd_stop_lowest_vol(float new_vol)
 		}
 	}
 
-	Assert(lowest_vol_osp != NULL);
-	objp = &Objects[lowest_vol_osp->objnum];
+	if (lowest_vol_osp != NULL)
+        objp = &Objects[lowest_vol_osp->objnum];
 
 	if ( (lowest_vol < new_vol) && (objp != NULL) ) {
 		int idx = 0;
