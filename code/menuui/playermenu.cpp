@@ -208,7 +208,7 @@ extern int delete_pilot_file(char *pilot_name, int single);
 void zero_player() {
 	player *tmp_Player = new player();
 	memcpy(Player,tmp_Player,sizeof(player));
-	free (tmp_Player);
+	delete tmp_Player;
 }
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0)
