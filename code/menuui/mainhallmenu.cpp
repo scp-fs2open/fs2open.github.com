@@ -487,7 +487,11 @@ void main_hall_campaign_cheat()
 // FUNCTION DEFINITIONS BEGIN
 //
 
-// initialize the main hall proper
+/**
+ * Initialize the main hall proper
+ *
+ * @param main_hall_num Main hall index
+ */
 void main_hall_init(int main_hall_num)
 {
 	ubyte bg_type;
@@ -568,9 +572,9 @@ void main_hall_init(int main_hall_num)
 
 	// load up the misc animations, and nullify all the delay timestamps for the misc animations
 	for (idx=0; idx<Main_hall->num_misc_animations; idx++) {
-		generic_anim temp;
-		generic_anim_init(&temp, Main_hall->misc_anim_name.at(idx));
-		Main_hall_misc_anim.push_back(temp);
+		generic_anim temp_anim;
+		generic_anim_init(&temp_anim, Main_hall->misc_anim_name.at(idx));
+		Main_hall_misc_anim.push_back(temp_anim);
 		Main_hall_misc_anim.at(idx).ani.bg_type = bg_type;
 		if (generic_anim_stream(&Main_hall_misc_anim.at(idx)) == -1) {
 			nprintf(("General","WARNING!, Could not load misc %s anim in main hall\n",Main_hall->misc_anim_name.at(idx).c_str()));
@@ -592,9 +596,9 @@ void main_hall_init(int main_hall_num)
 
 	// load up the door animations
 	for (idx=0; idx<Main_hall->num_door_animations; idx++) {
-		generic_anim temp;
-		generic_anim_init(&temp, Main_hall->door_anim_name.at(idx));
-		Main_hall_door_anim.push_back(temp);
+		generic_anim temp_anim;
+		generic_anim_init(&temp_anim, Main_hall->door_anim_name.at(idx));
+		Main_hall_door_anim.push_back(temp_anim);
 		Main_hall_door_anim.at(idx).ani.bg_type = bg_type;
 		if (generic_anim_stream(&Main_hall_door_anim.at(idx)) == -1) {
 			nprintf(("General","WARNING!, Could not load door anim %s in main hall\n",Main_hall->door_anim_name.at(idx).c_str()));
@@ -622,16 +626,6 @@ void main_hall_init(int main_hall_num)
 		}
 	}
 
-/*
-	if(Player_select_very_first_pilot) {				
-		Main_hall_help_stamp = timestamp(MAIN_HALL_HELP_TIME);
-		
-		// don't display the "press f1" message more than once
-		Player_select_very_first_pilot = 0;
-	} else {
-		Main_hall_help_stamp = -1;
-	}
-*/
 	Main_hall_region_linger_stamp = -1;
 
 	strcpy_s(Main_hall_campaign_cheat, "");
@@ -1900,9 +1894,9 @@ void main_hall_read_table()
 			for (idx=0; idx<m->num_misc_animations; idx++) {
 				// anim sound triggers
 				required_string("+Misc anim trigger:");
-				int temp = 0;
-				stuff_int(&temp);
-				for (s_idx=0; s_idx<temp; s_idx++) {
+				int temp_int = 0;
+				stuff_int(&temp_int);
+				for (s_idx=0; s_idx<temp_int; s_idx++) {
 					m->misc_anim_special_trigger.at(idx).push_back(0);
 					stuff_int(&m->misc_anim_special_trigger.at(idx).at(s_idx));
 				}
