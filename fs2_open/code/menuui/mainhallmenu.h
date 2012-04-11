@@ -14,8 +14,7 @@
 
 // the # of main halls we're supporting
 #define MAIN_HALLS_MAX			10		// Goober5000 - bumped down to 10; don't go above 256 (size of ubyte)
-
-// initialize the main hall proper 
+ 
 void main_hall_init(int main_hall_num);
 
 // read in mainhall.tbl
