@@ -79,6 +79,6 @@ void gr_font_close();
 
 extern font *Current_font;
 extern int get_char_width(ubyte c1,ubyte c2,int *width,int *spacing);
-extern int get_centered_x(char *s);
+extern int get_centered_x(const char *s);
 
 #endif
