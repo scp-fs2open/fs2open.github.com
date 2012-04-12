@@ -319,7 +319,7 @@ void gr_opengl_aabitmap(int x, int y, bool resize, bool mirror)
 }
 
 
-void gr_opengl_string(int sx, int sy, char *s, bool resize)
+void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 {
 	int width, spacing, letter;
 	int x, y, do_resize;

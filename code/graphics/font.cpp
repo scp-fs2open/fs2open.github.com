@@ -110,7 +110,7 @@ int get_char_width(ubyte c1,ubyte c2,int *width,int *spacing)
 }
 
 // NOTE: this returns an unscaled size for non-standard resolutions
-int get_centered_x(char *s)
+int get_centered_x(const char *s)
 {
 	int w,w2,s2;
 
@@ -177,7 +177,7 @@ int gr_get_font_height()
 	}
 }
 
-void gr_get_string_size(int *w1, int *h1, char *text, int len)
+void gr_get_string_size(int *w1, int *h1, const char *text, int len)
 {
 	int longest_width;
 	int width,spacing;

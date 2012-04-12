@@ -290,7 +290,7 @@ typedef struct screen {
 	void (*gf_aabitmap)(int x, int y, bool resize, bool mirror);
 	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror);
 
-	void (*gf_string)(int x, int y, char * text,bool resize);
+	void (*gf_string)(int x, int y, const char * text,bool resize);
 
 	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
 	void (*gf_gradient)(int x1, int y1, int x2, int y2, bool resize);
@@ -521,7 +521,12 @@ extern void _cdecl gr_printf( int x, int y, char * format, ... );
 extern void _cdecl gr_printf_no_resize( int x, int y, char * format, ... );
 
 // Returns the size of the string in pixels in w and h
-extern void gr_get_string_size( int *w, int *h, char * text, int len = 9999 );
+extern void gr_get_string_size( int *w, int *h, const char * text, int len = 9999 );
+
+__inline void gr_get_string_size( int *w, int *h, char * text, int len = 9999 )
+{
+	gr_get_string_size(w, h, const_cast<const char*>(text), len);
+}
 
 // Returns the height of the current font
 extern int gr_get_font_height();
@@ -582,9 +587,14 @@ __inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resi
 void gr_rect(int x, int y, int w, int h, bool resize = true);
 void gr_shade(int x, int y, int w, int h, bool resize = true);
 
-__inline void gr_string(int x, int y, char* string, bool resize = true)
+__inline void gr_string(int x, int y, const char* string, bool resize = true)
 {
 	(*gr_screen.gf_string)(x,y,string,resize);
+}
+
+__inline void gr_string(int x, int y, char* string, bool resize = true)
+{
+	(*gr_screen.gf_string)(x,y,const_cast<char*>(string),resize);
 }
 
 __inline void gr_circle(int xc, int yc, int d, bool resize = true)
