@@ -112,11 +112,6 @@ char *fs2_open_credit_text =
 char *unmodified_credits = "ORIGINAL VOLITION STAFF:\n\n\n";
 char *mod_check = "Design:";
 
-#define CREDITS_MUSIC_DELAY	2000
-#define CREDITS_SCROLL_RATE	15.0f
-#define CREDITS_ARTWORK_DISPLAY_TIME	9.0f
-#define CREDITS_ARTWORK_FADE_TIME		1.0f
-
 #define NUM_BUTTONS				5
 #define NUM_IMAGES				46
 
@@ -207,11 +202,25 @@ static float Credits_counter;
 static int Credits_artwork_index;
 static int Credits_bmps[NUM_IMAGES];
 
-char *Credit_text = NULL;
-int Credit_text_malloced = 0;			// TRUE if credit_text was malloced
-
 // Positions for credits...
 float Credit_start_pos, Credit_stop_pos, Credit_position = 0.0f;
+
+static int Credits_music_delay				= 2000;
+static float Credits_scroll_rate			= 15.0f;
+static float Credits_artwork_display_time	= 9.0f;
+static float Credits_artwork_fade_time		= 1.0f;
+
+static SCP_string Credit_text;
+
+static bool Credits_parsed;
+
+enum CreditsPosition
+{
+	START,
+	END
+};
+
+static CreditsPosition SCP_credits_position	= START;
 
 void credits_stop_music()
 {
@@ -271,12 +280,130 @@ int credits_screen_button_pressed(int n)
 	return 0;
 }
 
+void credits_parse_table(char* filename)
+{
+	int rval;
+
+	if ((rval = setjmp(parse_abort)) != 0)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		return;
+	}
+		
+	read_file_text(filename, CF_TYPE_TABLES);
+	reset_parse();
+
+	// any metadata?
+	if (optional_string("$Start Image Index:"))
+	{
+		stuff_int(&Credits_artwork_index);
+
+		// bounds check
+		if (Credits_artwork_index < 0)
+		{
+			Credits_artwork_index = 0;
+		}
+		else if (Credits_artwork_index >= NUM_IMAGES)
+		{
+			Credits_artwork_index = NUM_IMAGES - 1;
+		}
+	}
+
+	parse_optional_float("$Text scroll rate:", &Credits_scroll_rate, 15.0f, 0.0f);
+
+	parse_optional_float("$Artworks display time:", &Credits_artwork_display_time, 9.0f, 0.0f);
+
+	parse_optional_float("$Artworks fade time:", &Credits_artwork_fade_time, 1.0f, 0.0f);
+
+	if (optional_string("$SCP Credits position:"))
+	{
+		char mode[NAME_LENGTH];
+
+		stuff_string(mode, F_NAME, NAME_LENGTH);
+
+		if (!stricmp(mode, "Start"))
+			SCP_credits_position = START;
+		else if (!stricmp(mode, "End"))
+			SCP_credits_position = END;
+		else
+			Warning(LOCATION, "Unknown credits position mode \"%s\".", mode);
+	}
+
+	ignore_white_space();
+	
+	SCP_string line;
+
+	SCP_vector<int> charNum;
+	SCP_vector<const char*> lines;
+	int numLines = -1;
+
+	bool first_run = true;
+	while(!check_for_string_raw("#end"))
+	{
+		// Read in a line of text			
+		stuff_string_line(line);
+
+		// This is a bit odd but it means if a total conversion uses different credits the 
+		// Volition credit won't happen
+		// Also don't append the default credits anymore when there was already a parsed table
+		if(first_run && !Credits_parsed && !line.compare(mod_check))
+		{
+			Credit_text.append(unmodified_credits);
+		}
+
+		first_run = false;
+
+		if (line.empty())
+		{
+			// If the line is empty then just append a newline, don't bother with splitting it first
+			Credit_text.append("\n");
+		}
+		else
+		{
+			// split_str doesn't take care of this.
+			charNum.clear();
+
+			// Split the string into multiple lines if it's too long
+			numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines, -1);
+
+			// Make sure that we have valid data
+			Assertion(lines.size() == (size_t) numLines, "split_str reported %d lines but vector contains %d entries!", numLines, lines.size());
+
+			Assertion(lines.size() <= charNum.size(),
+				"Something has gone wrong while splitting strings. Got %d lines but only %d chacter lengths.",
+				lines.size(), charNum.size());
+
+			// Now add all splitted lines to the credit text and append a newline to the end
+			for (int i = 0; i < numLines; i++)
+			{
+				Credit_text.append(SCP_string(lines[i], charNum[i]));
+				Credit_text.append("\n");
+			}
+		}
+	}
+
+	Credits_parsed = true;
+}
+
+void credits_parse()
+{
+	// open localization
+	lcl_ext_open();
+
+	// Parse main table
+	credits_parse_table("credits.tbl");
+
+	// Parse modular tables
+	parse_modular_table("*-crd.tbm", credits_parse_table);
+
+	// close localization
+	lcl_ext_close();
+}
+
 void credits_init()
 {
 	int i, w, h;
 	credits_screen_buttons *b;
-	char line[512] = "";	
-	char *linep1, *linep2;	
 
 	int credits_spooled_music_index = event_music_get_spooled_music_index("Cinema");	
 	if(credits_spooled_music_index != -1){
@@ -287,97 +414,46 @@ void credits_init()
 	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
-	Credits_music_begin_timestamp = timestamp(CREDITS_MUSIC_DELAY);
+	Credits_music_begin_timestamp = timestamp(Credits_music_delay);
 
 	Credits_frametime = 0;
 	Credits_last_time = timer_get_milliseconds();
 
-	Credit_text = NULL;
-	Credit_text_malloced = 0;
+	Credit_text = "";
 
 	// this is moved up here so we can override it if desired
 	Credits_artwork_index = rand() % NUM_IMAGES;
 
-	// allocate enough space for credits text
-	CFILE *fp = cfopen( NOX("credits.tbl"), "rb" );
-	if(fp != NULL){
-		int rval, size;
-		size = cfilelength(fp);
-		Credit_text = (char *) vm_malloc(size + 200 + strlen(fs2_open_credit_text) + strlen(unmodified_credits));
-		if (Credit_text == NULL) {
-			return;
-		} else {
-			Credit_text_malloced = 1;
+	Credits_parsed = false;
+
+	credits_parse();
+
+	if (!Credits_parsed)
+		Credit_text.assign("No credits available.\n");
+	else
+	{
+		switch (SCP_credits_position)
+		{
+			case START:
+				Credit_text.insert(0, fs2_open_credit_text);
+				break;
+
+			case END:
+				Credit_text.append(fs2_open_credit_text);
+				break;
+
+			default:
+				Error(LOCATION, "Unimplemented credits position %d. Get a coder!", (int) SCP_credits_position);
+				break;
 		}
-		cfclose(fp);
-
-		// open localization
-		lcl_ext_open();
-
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "credits.tbl", rval));
-			lcl_ext_close();
-			return;
-		}
-		
-		read_file_text("credits.tbl", CF_TYPE_TABLES);
-		reset_parse();
-
-		// any metadata?
-		if (optional_string("$Start Image Index:")) {
-			stuff_int(&Credits_artwork_index);
-
-			// bounds check
-			if (Credits_artwork_index < 0) {
-				Credits_artwork_index = 0;
-			} else if (Credits_artwork_index >= NUM_IMAGES) {
-				Credits_artwork_index = NUM_IMAGES - 1;
-			}
-		}
-
-		ignore_white_space();
-
-		// prepend the SCP credits to what's in the table
-		strcpy(Credit_text, fs2_open_credit_text); 
-	   
-		bool first_run = true;
-		while(!check_for_string_raw("#end")){ 
-			
-			stuff_string_line(line, sizeof(line));
-
-			// This is a bit odd but it means if a total conversion uses different credits the 
-			// Volition credit won't happen
-			if(first_run == true)
-			{
-				if(strcmp(line, mod_check) == 0)
-				{
-					strcat(Credit_text,	unmodified_credits);	
-				}
-
-				first_run = false;
-			}
-
-			linep1 = line;
-
-			do {
-				linep2 = split_str_once(linep1, Credits_text_coords[gr_screen.res][2]);
-				Assert( linep2 != linep1 );
-				strcat(Credit_text, linep1);
-				strcat(Credit_text, "\n");			
-				linep1 = linep2;
-			} while (linep2 != NULL);
-		}		
-
-		// close localization
-		lcl_ext_close();	
-	} else {
-		Credit_text = NOX("No credits available.\n");
-	}	
+	}
 
 	int ch;
-	for ( i = 0; Credit_text[i]; i++ ) {
-			ch = Credit_text[i];
-			switch (ch) {
+	for (SCP_string::iterator ii = Credit_text.begin(); ii != Credit_text.end(); ++ii)
+	{
+		ch = *ii;
+		switch (ch)
+		{
 			case -4:
 				ch = 129;
 				break;
@@ -477,11 +553,12 @@ void credits_init()
 			case -20:
 				ch = 141;
 				break;
-			}
-			Credit_text[i] = (char)ch;
+		}
+
+		*ii = (char) ch;
 	}
 
-	gr_get_string_size(&w, &h, Credit_text);
+	gr_get_string_size(&w, &h, Credit_text.c_str(), Credit_text.length());
 
 	Credit_start_pos = i2fl(Credits_text_coords[gr_screen.res][CREDITS_H_COORD]);
 	Credit_stop_pos = -i2fl(h);
@@ -534,13 +611,7 @@ void credits_close()
 
 	credits_stop_music();
 
-	if (Credit_text) {
-		if (Credit_text_malloced){
-			vm_free(Credit_text);
-		}
-
-		Credit_text = NULL;
-	}
+	Credit_text = "";
 
 	if (Background_bitmap){
 		bm_release(Background_bitmap);
@@ -601,7 +672,7 @@ void credits_do_frame(float frametime)
 		gr_bitmap(0, 0);
 	} 
 
-	percent = (int) (100.0f - (CREDITS_ARTWORK_DISPLAY_TIME - Credits_counter) * 100.0f / CREDITS_ARTWORK_FADE_TIME);
+	percent = (int) (100.0f - (Credits_artwork_display_time - Credits_counter) * 100.0f / Credits_artwork_fade_time);
 	if (percent < 0){
 		percent = 0;
 	}
@@ -675,7 +746,7 @@ void credits_do_frame(float frametime)
 		sy = fl2i(Credit_position-0.5f);
 	}
 
-	gr_string(0x8000, sy, Credit_text);
+	gr_string(0x8000, sy, Credit_text.c_str());
 
 	int temp_time;
 	temp_time = timer_get_milliseconds();
@@ -686,9 +757,9 @@ void credits_do_frame(float frametime)
 
 	float fl_frametime = i2fl(Credits_frametime) / 1000.f;
 	if (keyd_pressed[KEY_LSHIFT]) {
-		Credit_position -= fl_frametime * CREDITS_SCROLL_RATE * 4.0f;
+		Credit_position -= fl_frametime * Credits_scroll_rate * 4.0f;
 	} else {
-		Credit_position -= fl_frametime * CREDITS_SCROLL_RATE;
+		Credit_position -= fl_frametime * Credits_scroll_rate;
 	}
 
 	if (Credit_position < Credit_stop_pos){
@@ -696,8 +767,8 @@ void credits_do_frame(float frametime)
 	}
 
 	Credits_counter += fl_frametime;
-	while (Credits_counter >= CREDITS_ARTWORK_DISPLAY_TIME) {
-		Credits_counter -= CREDITS_ARTWORK_DISPLAY_TIME;
+	while (Credits_counter >= Credits_artwork_display_time) {
+		Credits_counter -= Credits_artwork_display_time;
 		Credits_artwork_index = next;
 	}
 
