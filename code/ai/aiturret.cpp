@@ -272,6 +272,11 @@ bool all_turret_weapons_have_flags(ship_weapon *swp, int flags)
 	return true;
 }
 
+/**
+ * Returns true if all weapons in swp have the specified flag
+ *
+ * @note does work for WIF2, but not WIF
+ */
 bool all_turret_weapons_have_flags2(ship_weapon *swp, int flags)
 {
 	int i;
@@ -291,6 +296,8 @@ bool all_turret_weapons_have_flags2(ship_weapon *swp, int flags)
 
 /**
  * Returns true if any of the weapons in swp have flags
+ *
+ * @note doesn't work for WIF2
  */
 bool turret_weapon_has_flags(ship_weapon *swp, int flags)
 {
