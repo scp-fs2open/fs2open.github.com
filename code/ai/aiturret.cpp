@@ -302,7 +302,7 @@ bool turret_weapon_has_flags(ship_weapon *swp, int flags)
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & flags)
+		if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags & flags)
 			return true;
 	}
 
@@ -324,7 +324,7 @@ bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & flags)
+		if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & flags)
 			return true;
 	}
 
