@@ -4462,7 +4462,7 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 
 	// at this point, we must have a point for a target
 	wpt = find_matching_waypoint(object_name);
-	if (wpt != NULL)
+	if ((wpt != NULL) && (wpt->get_objnum() >= 0))
 	{
 		oswpt->type = OSWPT_TYPE_WAYPOINT;
 
