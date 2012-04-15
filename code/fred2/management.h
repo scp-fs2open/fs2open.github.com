@@ -127,7 +127,7 @@ void	generate_weaponry_usage_list(int team, int *arr);
 void	generate_weaponry_usage_list(int *arr, int wing);
 void	generate_ship_usage_list(int *arr, int wing);
 
-jump_node *jumpnode_get_by_name(CString& name);
+CJumpNode *jumpnode_get_by_name(CString& name);
 
 // function and defines to use when adding ships to combo boxes
 #define SHIPS_2_COMBO_SPECIAL					(1<<0)

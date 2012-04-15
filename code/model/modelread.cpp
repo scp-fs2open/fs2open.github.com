@@ -1947,7 +1947,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			}
 
 			case ID_SPCL: {
-				char name[MAX_NAME_LEN], props[MAX_PROP_LEN], *p;
+				char name[MAX_NAME_LEN], props_spcl[MAX_PROP_LEN], *p;
 				int n_specials;
 				float radius;
 				vec3d pnt;
@@ -1959,7 +1959,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					cfread_string_len(name, MAX_NAME_LEN, fp);			// get the name of this special polygon
 
-					cfread_string_len(props, MAX_PROP_LEN, fp);		// will definately have properties as well!
+					cfread_string_len(props_spcl, MAX_PROP_LEN, fp);		// will definately have properties as well!
 					cfread_vector( &pnt, fp );
 					radius = cfread_float( fp );
 
@@ -1969,14 +1969,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->split_plane[pm->num_split_plane] = pnt.xyz.z;
 						pm->num_split_plane++;
 						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
-					} else if ( ( p = strstr(props, "$special"))!= NULL ) {
+					} else if ( ( p = strstr(props_spcl, "$special"))!= NULL ) {
 						char type[64];
 
 						get_user_prop_value(p+9, type);
 						if ( !stricmp(type, "subsystem") )						// if we have a subsystem, put it into the list!
-							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props, &name[1], pm->id );		// skip the first '$' character of the name
+							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
 					} else if ( strstr(name, "$enginelarge") || strstr(name, "$enginehuge") ){
-						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props, &name[1], pm->id );		// skip the first '$' character of the name
+						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
 					} else {
 						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
 					}					
@@ -2323,6 +2323,27 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		}
 	}
 	// -------------------------------------------------------------------------
+
+	// See if we need to compile a new shader for this material
+	int shader_flags = 0;
+
+	if (tbase->GetTexture() > 0)
+		shader_flags |= SDR_FLAG_DIFFUSE_MAP;
+	if (tglow->GetTexture() > 0 && Cmdline_glow)
+		shader_flags |= SDR_FLAG_GLOW_MAP;
+	if (tspec->GetTexture() > 0 && Cmdline_spec)
+		shader_flags |= SDR_FLAG_SPEC_MAP;
+	if (tnorm->GetTexture() > 0 && Cmdline_normal)
+		shader_flags |= SDR_FLAG_NORMAL_MAP;
+	if (theight->GetTexture() > 0 && Cmdline_height)
+		shader_flags |= SDR_FLAG_HEIGHT_MAP;
+	if (tspec->GetTexture() > 0 && Cmdline_env && Cmdline_spec) // No env maps without spec map
+		shader_flags |= SDR_FLAG_ENV_MAP;
+
+	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT);
+	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_FOG);
+	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_ANIMATED);
+	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_ANIMATED | SDR_FLAG_FOG);
 }
 
 //returns the number of this model

@@ -2563,37 +2563,37 @@ int CFred_mission_save::save_waypoints()
 	parse_comments(2);
 	fout("\t\t;! %d lists total\n", Waypoint_lists.size());
 
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp)
 	{
 		required_string_fred("$Jump Node:", "$Jump Node Name:");
 		parse_comments(2);
-		save_vector(jnp->get_obj()->pos);
+		save_vector(jnp->GetSCPObject()->pos);
 
 		required_string_fred("$Jump Node Name:", "$Jump Node:");
 		parse_comments();
-		fout(" %s", jnp->get_name_ptr());
+		fout(" %s", jnp->GetName());
 		
-		if(jnp->is_special_model())
+		if(jnp->IsSpecialModel())
 		{
 			if ( optional_string_fred("+Model File:", "$Jump Node:"))
 				parse_comments();
 			else
 				fout("\n+Model File:");
 
-			int model = jnp->get_modelnum();
+			int model = jnp->GetModelNumber();
 			polymodel *pm = model_get(model);
 			fout(" %s", pm->filename );
 		}
 
-		if(jnp->is_colored())
+		if(jnp->IsColored())
 		{
 			if ( optional_string_fred("+Alphacolor:", "$Jump Node:"))
 				parse_comments();
 			else
 				fout("\n+Alphacolor:");
 
-			color jn_color = jnp->get_color();
+			color jn_color = jnp->GetColor();
 			fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha );
 		}
 
@@ -2601,12 +2601,12 @@ int CFred_mission_save::save_waypoints()
 		if(hidden_is_there)
 			parse_comments();
 
-		if(hidden_is_there || jnp->is_hidden())
+		if(hidden_is_there || jnp->IsHidden())
 		{
 			if(!hidden_is_there)
 				fout("\n+Hidden:");
 
-			if(jnp->is_hidden())
+			if(jnp->IsHidden())
 				fout(" %s", "true");
 			else
 				fout(" %s", "false");

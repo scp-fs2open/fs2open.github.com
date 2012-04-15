@@ -911,13 +911,13 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	vec3d		orient_vec, up_vector;
 	float			factor, dist;
 	int			hx, hy, w, h;
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		if(jnp->get_obj() != target_objp)
+		if(jnp->GetSCPObject() != target_objp)
 			continue;
 	
-		if ( jnp->is_hidden() ) {
+		if ( jnp->IsHidden() ) {
 			set_target_objnum( Player_ai, -1 );
 			return;
 		}
@@ -938,7 +938,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 			vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
 			renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
-			jnp->render( &obj_pos );
+			jnp->Render( &obj_pos );
 			renderTargetClose();
 		}
 
@@ -946,7 +946,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		renderTargetIntegrity(1);
 		setGaugeColor();
 
-		strcpy_s(outstr, jnp->get_name_ptr());
+		strcpy_s(outstr, jnp->GetName());
 		end_string_at_first_hash_symbol(outstr);
 		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
 

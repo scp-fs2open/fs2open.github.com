@@ -45,7 +45,6 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
-#include "globalincs/linklist.h"
 #include "globalincs/version.h"
 #include "globalincs/mspdb_callstack.h"
 #include "graphics/font.h"

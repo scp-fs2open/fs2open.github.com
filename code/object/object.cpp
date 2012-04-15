@@ -288,7 +288,7 @@ float get_shield_pct(object *objp)
 //sets up the free list & init player & whatever else
 void obj_init()
 {
-	int i, idx;
+	int i;
 	object *objp;
 	
 	Object_inited = 1;
@@ -305,11 +305,6 @@ void obj_init()
 		objp->type = OBJ_NONE;
 		objp->signature = i + 100;
 		objp->collision_group_id = 0;
-
-		// zero all object sounds
-		for(idx=0; idx<MAX_OBJECT_SOUNDS; idx++){
-			objp->objsnd_num[idx] = -1;
-		}
 		
 		list_append(&obj_free_list, objp);
 		objp++;
@@ -417,7 +412,7 @@ void obj_free(int objnum)
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
                vec3d * pos, float radius, uint flags )
 {
-	int objnum,idx;
+	int objnum;
 	object *obj;
 
 	// Find next free object
@@ -460,9 +455,6 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->flags &= ~OF_INVULNERABLE;		//	Make vulnerable.
 	physics_init( &obj->phys_info );
 
-	for(idx=0; idx<MAX_OBJECT_SOUNDS; idx++){
-		obj->objsnd_num[idx] = -1;
-	}
 	obj->num_pairs = 0;
 	obj->net_signature = 0;			// be sure to reset this value so new objects don't take on old signatures.	
 
@@ -1504,7 +1496,7 @@ MONITOR( NumObjectsRend )
 extern int Cmdline_dis_weapons;
 void obj_render(object *obj)
 {
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	
 	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
 
@@ -1545,9 +1537,9 @@ void obj_render(object *obj)
 			break;*/
 		case OBJ_JUMP_NODE:
 			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->get_obj() != obj)
+				if(jnp->GetSCPObject() != obj)
 					continue;
-				jnp->render(&obj->pos, &Eye_position);
+				jnp->Render(&obj->pos, &Eye_position);
 			}
 			break;
 		case OBJ_WAYPOINT:

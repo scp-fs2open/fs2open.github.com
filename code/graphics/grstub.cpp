@@ -324,7 +324,7 @@ void gr_stub_start_instance_matrix(vec3d *offset, matrix* rotation)
 {
 }
 
-void gr_stub_string( int sx, int sy, char *s, bool resize = false)
+void gr_stub_string( int sx, int sy, const char *s, bool resize = false)
 {
 }
 

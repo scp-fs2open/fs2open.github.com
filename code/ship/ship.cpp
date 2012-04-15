@@ -1385,12 +1385,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	if (optional_string("$Species:")) {
 		char temp[NAME_LENGTH];
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		int i = 0;
+		int i_species = 0;
 		
 		bool found = false;
-		for (SCP_vector<species_info>::iterator sii = Species_info.begin(); sii != Species_info.end(); ++sii, ++i) {
+		for (SCP_vector<species_info>::iterator sii = Species_info.begin(); sii != Species_info.end(); ++sii, ++i_species) {
 			if (!stricmp(temp, sii->species_name)) {
-				sip->species = i;
+				sip->species = i_species;
 				found = true;
 				break;
 			}
@@ -6735,11 +6735,11 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if (cleanup_mode == SHIP_DEPARTED) {
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
-		jump_node *jnp = jumpnode_get_which_in(&Objects[shipp->objnum]);
+		CJumpNode *jnp = jumpnode_get_which_in(&Objects[shipp->objnum]);
 		if(jnp==NULL)
 			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, NULL, shipp->wingnum);
 		else
-			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->get_name_ptr(), shipp->wingnum);
+			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->GetName(), shipp->wingnum);
 	}
 
 #ifndef NDEBUG
@@ -13030,7 +13030,8 @@ void ship_assign_sound(ship *sp)
 void ship_assign_sound_all()
 {
 	object *objp;
-	int idx, has_sounds;
+	size_t idx;
+	int has_sounds;
 
 	if ( !Sound_enabled )
 		return;
@@ -13040,7 +13041,7 @@ void ship_assign_sound_all()
 			has_sounds = 0;
 
 			// check to make sure this guy hasn't got sounds already assigned to him
-			for(idx=0; idx<MAX_OBJECT_SOUNDS; idx++){
+			for(idx=0; idx<objp->objsnd_num.size(); idx++){
 				if(objp->objsnd_num[idx] != -1){
 					// skip
 					has_sounds = 1;
@@ -15247,7 +15248,7 @@ void ship_page_in()
 #ifndef NDEBUG
 			// Verify that all the subsystem model numbers are updated
 			for (j = 0; j < sip->n_subsystems; j++)
-				Assert( sip->subsystems[j].model_num == sip->model_num );	// JAS
+				Assertion( sip->subsystems[j].model_num == sip->model_num, "Model reference for subsystem %s (model num: %d) on model %s (model num: %d) is invalid.\n", sip->subsystems[j].name, sip->subsystems[j].model_num, sip->pof_file, sip->model_num );	// JAS
 #endif
 		}
 

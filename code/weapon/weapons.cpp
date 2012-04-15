@@ -813,7 +813,7 @@ void init_weapon_entry(int weap_info_index)
 	generic_anim_init(&wip->laser_glow_bitmap);
 
 	gr_init_color(&wip->laser_color_1, 255, 255, 255);
-	gr_init_color(&wip->laser_color_2, 0, 0, 0);
+	gr_init_color(&wip->laser_color_2, 255, 255, 255);
 	
 	wip->laser_length = 10.0f;
 	wip->laser_head_radius = 1.0f;
@@ -1288,6 +1288,8 @@ int parse_weapon(int subtype, bool replace)
 		stuff_ubyte(&g);
 		stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_2, r, g, b );
+	} else {
+		gr_init_color( &wip->laser_color_2, wip->laser_color_1.red, wip->laser_color_1.green, wip->laser_color_1.blue );
 	}
 
 	if(optional_string("@Laser Length:")) {
@@ -6154,7 +6156,7 @@ void weapon_get_laser_color(color *c, object *objp)
 	winfo = &Weapon_info[wep->weapon_info_index];
 
 	// if we're a one-color laser
-	if ( (winfo->laser_color_2.red == 0) && (winfo->laser_color_2.green == 0) && (winfo->laser_color_2.blue == 0) ) {
+	if ( (winfo->laser_color_2.red == winfo->laser_color_1.red) && (winfo->laser_color_2.green == winfo->laser_color_1.green) && (winfo->laser_color_2.blue == winfo->laser_color_1.blue) ) {
 		*c = winfo->laser_color_1;
 		return;
 	}

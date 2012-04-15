@@ -8,33 +8,30 @@
 */ 
 
 
-
-#include "object/object.h"
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
 #include "hud/hud.h"
-#include "globalincs/linklist.h"
 
-SCP_list<jump_node> Jump_nodes;
+SCP_list<CJumpNode> Jump_nodes;
 
 /**
- * Constructor for jump_node object, default
+ * Constructor for CJumpNode class, default
  */
-jump_node::jump_node() : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0)
+CJumpNode::CJumpNode() : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0)
 {	
     gr_init_alphacolor(&m_display_color, 0, 255, 0, 255);
 
 	m_name[0] = '\0';
 	
-    pos.xyz.x = 0.0f;
-	pos.xyz.y = 0.0f;
-	pos.xyz.z = 0.0f;
+    m_pos.xyz.x = 0.0f;
+    m_pos.xyz.y = 0.0f;
+    m_pos.xyz.z = 0.0f;
 }
 
 /**
- * Constructor for jump_node object, with world position argument
+ * Constructor for CJumpNode class, with world position argument
  */
-jump_node::jump_node(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0)
+CJumpNode::CJumpNode(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0)
 {	
 	Assert(position != NULL);
 	
@@ -50,18 +47,18 @@ jump_node::jump_node(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum
 	else
 		m_radius = model_get_radius(m_modelnum);
 	
-    pos.xyz.x = position->xyz.x;
-	pos.xyz.y = position->xyz.y;
-	pos.xyz.z = position->xyz.z;
+    m_pos.xyz.x = position->xyz.x;
+    m_pos.xyz.y = position->xyz.y;
+    m_pos.xyz.z = position->xyz.z;
     
 	// Create the object
-	m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &pos, m_radius, OF_RENDERS);
+    m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &m_pos, m_radius, OF_RENDERS);
 }
 
 /**
- * Destructor for jump_node object
+ * Destructor for CJumpNode class
  */
-jump_node::~jump_node()
+CJumpNode::~CJumpNode()
 {
 	model_unload(m_modelnum);
 
@@ -71,58 +68,66 @@ jump_node::~jump_node()
 
 // Accessor functions for private variables
 
-char *jump_node::get_name_ptr()
+/**
+ * @return Name of jump node
+ */
+char *CJumpNode::GetName()
 {
 	return m_name;
 }
 
-int jump_node::get_modelnum()
+/**
+ * @return Handle to model
+ */
+int CJumpNode::GetModelNumber()
 {
 	return m_modelnum;
 }
 
-int jump_node::get_objnum()
+/**
+ * @return Index into Objects[]
+ */
+int CJumpNode::GetSCPObjectNumber()
 {
 	return m_objnum;
 }
 
-object *jump_node::get_obj()
+/**
+ * @return Object
+ */
+object *CJumpNode::GetSCPObject()
 {
 	Assert(m_objnum != -1);
     return &Objects[m_objnum];
 }
 
-bool jump_node::is_hidden()
-{
-	if(m_flags & JN_HIDE)
-		return true;
-	else
-		return false;
-}
-
-bool jump_node::is_colored()
-{
-	return ((m_flags & JN_USE_DISPLAY_COLOR) != 0);
-}
-
-bool jump_node::is_special_model()
-{
-	return ((m_flags & JN_SPECIAL_MODEL) != 0);
-}
-
-color jump_node::get_color()
+/**
+ * @return Color of jump node when rendered
+ */
+color CJumpNode::GetColor()
 {
 	return m_display_color;
 }
 
-vec3d *jump_node::get_pos()
+/**
+ * @return World position of jump node
+ */
+vec3d *CJumpNode::GetPosition()
 {
-	return &pos;
+	return &m_pos;
 }
 
 // Settor functions for private variables
 
-void jump_node::set_alphacolor(int r, int g, int b, int alpha)
+/**
+ * Set jump node alpha and color
+ *
+ * @param r Red component
+ * @param g Green component
+ * @param b Blue component
+ * @param alpha Alpha component
+ */
+void CJumpNode::SetAlphaColor(int r, int g, int b, int alpha)
 {
 	CLAMP(r, 0, 255);
 	CLAMP(g, 0, 255);
@@ -133,7 +138,13 @@ void jump_node::set_alphacolor(int r, int g, int b, int alpha)
 	gr_init_alphacolor(&m_display_color, r, g, b, alpha);
 }
 
-void jump_node::set_model(char *model_name, bool show_polys)
+/**
+ * Set jump node model to render
+ *
+ * @param model_name Name of model file to load
+ * @param show_polys Whether to render wireframe or not
+ */
+void CJumpNode::SetModel(char *model_name, bool show_polys)
 {
 	Assert(model_name != NULL);
 	
@@ -167,20 +178,24 @@ void jump_node::set_model(char *model_name, bool show_polys)
  *
  * @param new_name New name to set
  */
-void jump_node::set_name(const char *new_name)
+void CJumpNode::SetName(const char *new_name)
 {
 	Assert(new_name != NULL);
+    
 	#ifndef NDEBUG
-	jump_node* check = jumpnode_get_by_name(new_name);
+	CJumpNode* check = jumpnode_get_by_name(new_name);
 	Assert((check == this || !check));
 	#endif
+    
 	strcpy_s(m_name, new_name);
 }
 
 /**
  * Set appearance, hidden or not
+ *
+ * @param enabled Visibility to set
  */
-void jump_node::show(bool enabled)
+void CJumpNode::SetVisibility(bool enabled)
 {
 	if(enabled)
 	{
@@ -195,16 +210,45 @@ void jump_node::show(bool enabled)
 	}
 }
 
+// Query functions
+
+/**
+ * @return Is the jump node hidden when rendering?
+ */
+bool CJumpNode::IsHidden()
+{
+	if(m_flags & JN_HIDE)
+		return true;
+	else
+		return false;
+}
+
+/**
+ * @return Is the jump node colored any other color than default white?
+ */
+bool CJumpNode::IsColored()
+{
+	return ((m_flags & JN_USE_DISPLAY_COLOR) != 0);
+}
+
+/**
+ * @return Is the jump node model set differently from the default one?
+ */
+bool CJumpNode::IsSpecialModel()
+{
+	return ((m_flags & JN_SPECIAL_MODEL) != 0);
+}
+
 /**
  * Render jump node
  *
  * @param pos		World position
- * @param view_pos	Viewer's world position
+ * @param view_pos	Viewer's world position, can be NULL
  */
-void jump_node::render(vec3d *pos, vec3d *view_pos)
+void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 {
 	Assert(pos != NULL);
-    // Assert(view_pos != NULL);
+    // Assert(view_pos != NULL); - view_pos can be NULL
 	
 	if(m_flags & JN_HIDE)
 		return;
@@ -263,13 +307,13 @@ void jump_node::render(vec3d *pos, vec3d *view_pos)
  * @param name Name of jump node
  * @return Jump node object
  */
-jump_node *jumpnode_get_by_name(const char* name)
+CJumpNode *jumpnode_get_by_name(const char* name)
 {
 	Assert(name != NULL);
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {	
-		if(!stricmp(jnp->get_name_ptr(), name)) 
+		if(!stricmp(jnp->GetName(), name)) 
 			return &(*jnp);
 	}
 
@@ -277,24 +321,23 @@ jump_node *jumpnode_get_by_name(const char* name)
 }
 
 /**
- * Given an object, returns which jump node it's in (if any)
+ * Given an object, returns which jump node it's inside (if any)
  *
  * @param objp Object
  * @return Jump node object or NULL if not in one
  */
-jump_node *jumpnode_get_which_in(object *objp)
+CJumpNode *jumpnode_get_which_in(object *objp)
 {
 	Assert(objp != NULL);
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	float radius, dist;
 
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		//WMC - if a jump node has no model, who cares?
-		if(jnp->get_modelnum() < 0)
+		if(jnp->GetModelNumber() < 0)
 			continue;
 
-		radius = model_get_radius( jnp->get_modelnum() );
-		dist = vm_vec_dist( &objp->pos, &jnp->get_obj()->pos );
+		radius = model_get_radius( jnp->GetModelNumber() );
+		dist = vm_vec_dist( &objp->pos, &jnp->GetSCPObject()->pos );
 		if ( dist <= radius ) {
 			return &(*jnp);
 		}
@@ -303,16 +346,23 @@ jump_node *jumpnode_get_which_in(object *objp)
 	return NULL;
 }
 
-// only called by FRED
+/**
+ * Render all function
+ *
+ * @note Only called by FRED
+ */
 void jumpnode_render_all()
 {
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {	
-		jnp->render(&jnp->get_obj()->pos);
+		jnp->Render(&jnp->GetSCPObject()->pos);
 	}
 }
-	
+
+/**
+ * Level cleanup
+ */
 void jumpnode_level_close()
 {
 	Jump_nodes.clear();

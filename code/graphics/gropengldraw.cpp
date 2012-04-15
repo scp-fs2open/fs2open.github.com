@@ -319,7 +319,7 @@ void gr_opengl_aabitmap(int x, int y, bool resize, bool mirror)
 }
 
 
-void gr_opengl_string(int sx, int sy, char *s, bool resize)
+void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 {
 	int width, spacing, letter;
 	int x, y, do_resize;
@@ -1292,7 +1292,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 			if( (flags & TMAP_FLAG_DISTORTION) || (flags & TMAP_FLAG_DISTORTION_THRUSTER) )
 			{
 				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-				sdr_index = opengl_shader_get_index(SDR_FLAG_SOFT_QUAD|SDR_FLAG_DISTORTION);
+				sdr_index = gr_opengl_maybe_create_shader(SDR_FLAG_SOFT_QUAD|SDR_FLAG_DISTORTION);
 				opengl_shader_set_current(&GL_shader[sdr_index]);
 				
 				vglUniform1iARB(opengl_shader_get_uniform("frameBuffer"), 2);
@@ -1316,7 +1316,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 			}
 			else
 			{
-				sdr_index = opengl_shader_get_index(SDR_FLAG_SOFT_QUAD);
+				sdr_index = gr_opengl_maybe_create_shader(SDR_FLAG_SOFT_QUAD);
 				opengl_shader_set_current(&GL_shader[sdr_index]);
 				zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
 			}

@@ -110,17 +110,11 @@ int trail_is_on_ship(trail *trailp, ship *shipp)
 // Basically a queue of points that face the viewer
 extern int Cmdline_nohtl;
 
-static vertex **Trail_vlist = NULL;
 static vertex *Trail_v_list = NULL;
 static int Trail_verts_allocated = 0;
 
 static void deallocate_trail_verts()
 {
-	if (Trail_vlist != NULL) {
-		vm_free(Trail_vlist);
-		Trail_vlist = NULL;
-	}
-
 	if (Trail_v_list != NULL) {
 		vm_free(Trail_v_list);
 		Trail_v_list = NULL;
@@ -135,17 +129,11 @@ static void allocate_trail_verts(int num_verts)
 	if (num_verts <= Trail_verts_allocated)
 		return;
 
-	if (Trail_vlist != NULL) {
-		vm_free(Trail_vlist);
-		Trail_vlist = NULL;
-	}
-
 	if (Trail_v_list != NULL) {
 		vm_free(Trail_v_list);
 		Trail_v_list = NULL;
 	}
 
-	Trail_vlist = (vertex**) vm_malloc( num_verts * sizeof(vertex*) );
 	Trail_v_list = (vertex*) vm_malloc( num_verts * sizeof(vertex) );
 
 	memset( Trail_v_list, 0, sizeof(vertex) * Trail_verts_allocated );
@@ -272,34 +260,29 @@ void trail_render( trail * trailp )
 
 				Trail_v_list[nv].a = l;	
 
-				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->texture_position.u = U;
-				Trail_vlist[nv]->texture_position.v = 1.0f; 
-				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				Trail_v_list[nv].texture_position.u = U;
+				Trail_v_list[nv].texture_position.v = 1.0f; 
+				Trail_v_list[nv].r = Trail_v_list[nv].g = Trail_v_list[nv].b = l;
 				nv++;
 
-				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->texture_position.u = U;
-				Trail_vlist[nv]->texture_position.v = 0.0f; 
-				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				Trail_v_list[nv].texture_position.u = U;
+				Trail_v_list[nv].texture_position.v = 0.0f; 
+				Trail_v_list[nv].r = Trail_v_list[nv].g = Trail_v_list[nv].b = l;
 				nv++;
 
-				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->texture_position.u = U + 1.0f;
-				Trail_vlist[nv]->texture_position.v = 0.5f;
-				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = 0;
+				Trail_v_list[nv].texture_position.u = U + 1.0f;
+				Trail_v_list[nv].texture_position.v = 0.5f;
+				Trail_v_list[nv].r = Trail_v_list[nv].g = Trail_v_list[nv].b = 0;
 				nv++;
 			} else {
-				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->texture_position.u = U;
-				Trail_vlist[nv]->texture_position.v = 1.0f; 
-				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				Trail_v_list[nv].texture_position.u = U;
+				Trail_v_list[nv].texture_position.v = 1.0f; 
+				Trail_v_list[nv].r = Trail_v_list[nv].g = Trail_v_list[nv].b = l;
 				nv++;
 
-				Trail_vlist[nv] = &Trail_v_list[nv];
-				Trail_vlist[nv]->texture_position.u = U;
-				Trail_vlist[nv]->texture_position.v = 0.0f; 
-				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				Trail_v_list[nv].texture_position.u = U;
+				Trail_v_list[nv].texture_position.v = 0.0f; 
+				Trail_v_list[nv].r = Trail_v_list[nv].g = Trail_v_list[nv].b = l;
 				nv++;
 			}
 		}
@@ -322,7 +305,7 @@ void trail_render( trail * trailp )
 
 
 	gr_set_bitmap( ti->texture.bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-	g3_draw_poly( nv, Trail_vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
+	gr_render(nv, Trail_v_list, TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
 }
 
 

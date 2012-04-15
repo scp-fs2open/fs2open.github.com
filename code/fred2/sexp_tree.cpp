@@ -5685,9 +5685,9 @@ sexp_list_item *sexp_tree::get_listing_opf_jump_nodes()
 {
 	sexp_list_item head;
 
-	SCP_list<jump_node>::iterator jnp;
+	SCP_list<CJumpNode>::iterator jnp;
 	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {	
-		head.add_data( jnp->get_name_ptr());
+		head.add_data( jnp->GetName());
 	}
 
 	return head.next;

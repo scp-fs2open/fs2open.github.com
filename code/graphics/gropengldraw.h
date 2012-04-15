@@ -13,8 +13,7 @@
 
 void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror);
 void gr_opengl_aabitmap(int x, int y, bool resize, bool mirror);
-void gr_opengl_string(int sx, int sy, char *s, bool resize = true);
-void gr_opengl_string(float sx, float sy, char *s, bool resize = true);
+void gr_opengl_string(int sx, int sy, const char *s, bool resize = true);
 void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize);
 void gr_opengl_aaline(vertex *v1, vertex *v2);
 void gr_opengl_pixel(int x, int y, bool resize);
