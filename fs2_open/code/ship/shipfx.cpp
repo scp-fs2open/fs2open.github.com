@@ -1951,7 +1951,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 	}
 	else if(sip->debris_max_rotspeed >= 0.0f)
 	{
-		float curspeed = vm_vec_mag(&pi->rotvel);
+		curspeed = vm_vec_mag(&pi->rotvel);
 		if(curspeed > sip->debris_max_rotspeed)
 		{
 			if(fabs(currotvel) >= 0.001f)
