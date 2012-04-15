@@ -4330,9 +4330,9 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESS = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "FS2_Open (debug)";
-				SDKROOT = macosx;
+				SDKROOT = macosx10.6;
 				STRIP_INSTALLED_PRODUCT = NO;
 				UNSTRIPPED_PRODUCT = YES;
 				WARNING_CFLAGS = (
@@ -4367,9 +4367,9 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESS = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = FS2_Open;
-				SDKROOT = macosx;
+				SDKROOT = macosx10.6;
 				SEPARATE_STRIP = YES;
 				WARNING_CFLAGS = (
 					"-Wno-write-strings",
@@ -4541,9 +4541,9 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESS = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "FS2_Open-Inferno (debug)";
-				SDKROOT = macosx;
+				SDKROOT = macosx10.6;
 				STRIP_INSTALLED_PRODUCT = NO;
 				UNSTRIPPED_PRODUCT = YES;
 				WARNING_CFLAGS = (
@@ -4748,9 +4748,9 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESS = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "FS2_Open-Inferno";
-				SDKROOT = macosx;
+				SDKROOT = macosx10.6;
 				SEPARATE_STRIP = YES;
 				WARNING_CFLAGS = (
 					"-Wno-write-strings",
