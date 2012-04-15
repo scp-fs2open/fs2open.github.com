@@ -2189,7 +2189,6 @@ int parse_create_object_sub(p_object *p_objp)
 	else
 	{
 		int max_allowed_sparks, num_sparks, iLoop;
-		polymodel *pm;
 
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
 		for (iLoop = 0; iLoop<MAX_SHIELD_SECTIONS; iLoop++)
