@@ -8026,9 +8026,12 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 	}
 }
 	
-// Goober5000 - added capability for arguments
-// Goober5000 - and also if-then-else and perform-actions
-// eval_when evaluates the when conditional
+/**
+ * Evaluates the when conditional
+ *
+ * @note Goober5000 - added capability for arguments
+ * @note Goober5000 - and also if-then-else and perform-actions
+ */
 int eval_when(int n, int when_op_num)
 {
 	int cond, val, actions;
@@ -8075,7 +8078,7 @@ int eval_when(int n, int when_op_num)
 			while (actions != -1)
 			{
 				// get the operator
-				int exp = CAR(actions);
+				exp = CAR(actions);
 				if (exp != -1)
 					eval_when_do_one_exp(exp);
 
