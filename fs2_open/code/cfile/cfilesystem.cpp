@@ -818,18 +818,23 @@ void cf_free_secondary_filelist()
 	Num_files = 0;
 }
 
-// Searches for a file.   Follows all rules and precedence and searches
-// CD's and pack files.
-// Input:  filespace   - Filename & extension
-//         pathtype    - See CF_TYPE_ defines in CFILE.H
-//         max_out     - Maximum string length that should be stuffed into pack_filename
-// Output: pack_filename - Absolute path and filename of this file.   Could be a packfile or the actual file.
-//         size        - File size
-//         offset      - Offset into pack file.  0 if not a packfile.
-// Returns: If not found returns 0.
+/**
+ * Searches for a file.
+ *
+ * @note Follows all rules and precedence and searches CD's and pack files.
+ *
+ * @param filespace     Filename & extension
+ * @param pathtype      See CF_TYPE_ defines in CFILE.H
+ * @param max_out       Maximum string length that should be stuffed into pack_filename
+ * @param pack_filename OUTPUT: Absolute path and filename of this file.   Could be a packfile or the actual file.
+ * @param size          OUTPUT: File size
+ * @param offset        OUTPUT: Offset into pack file.  0 if not a packfile.
+ *
+ * @return If not found returns 0.
+ */
 int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
-	uint i;
+	int i;
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
 
@@ -874,7 +879,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
 		search_order[num_search_dirs++] = pathtype;
 	} else {
-		for (int i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
+		for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
 			if (i != pathtype)
 				search_order[num_search_dirs++] = i;
 		}
