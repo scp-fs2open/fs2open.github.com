@@ -1025,22 +1025,26 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 // -- from parselo.cpp --
 extern char *stristr(const char *str, const char *substr);
 
-// Searches for a file.   Follows all rules and precedence and searches
-// CD's and pack files.  Searches all locations in order for first filename using filter list.
-// Input:  filename    - Filename & extension
-//         ext_num     - number of extensions to look for
-//         ext_list    - extension filter list
-//         pathtype    - See CF_TYPE_ defines in CFILE.H
-//         max_out     - Maximum string length that should be stuffed into pack_filename
-// Output: pack_filename - Absolute path and filename of this file.   Could be a packfile or the actual file.
-//         size        - File size
-//         offset      - Offset into pack file.  0 if not a packfile.
-// Returns: If not found returns -1, else returns offset into ext_list.
-// (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
+/**
+ * Searches for a file.
+ *
+ * @note Follows all rules and precedence and searches CD's and pack files. Searches all locations in order for first filename using filter list.
+ * @note This function is exponentially slow, so don't use it unless truely needed
+ *
+ * @param filename      Filename & extension
+ * @param ext_num       Number of extensions to look for
+ * @param ext_list      Extension filter list
+ * @param pathtype      See CF_TYPE_ defines in CFILE.H
+ * @param max_out       Maximum string length that should be stuffed into pack_filename
+ * @param pack_filename OUTPUT: Absolute path and filename of this file.   Could be a packfile or the actual file.
+ * @param size          OUTPUT: File size
+ * @param offset        OUTPUT: Offset into pack file.  0 if not a packfile.
+ *
+ * @return If not found returns -1, else returns offset into ext_list.
+ */
 int cf_find_file_location_ext( char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
-	uint i;
-	int cur_ext;
+	int cur_ext, i;
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
 	char filespec[MAX_FILENAME_LEN];
@@ -1074,7 +1078,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
 		search_order[num_search_dirs++] = pathtype;
 	} else {
-		for (int i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++)
+		for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++)
 			search_order[num_search_dirs++] = i;
 	}
 
