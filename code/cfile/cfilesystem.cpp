@@ -835,6 +835,7 @@ void cf_free_secondary_filelist()
 int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
 	int i;
+    uint ui;
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
 
@@ -888,8 +889,8 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	memset( longname, 0, sizeof(longname) );
 
 
-	for (i=0; i<num_search_dirs; i++ )	{
-		switch (search_order[i])
+	for (ui=0; ui<num_search_dirs; ui++ )	{
+		switch (search_order[ui])
 		{
 			case CF_TYPE_ROOT:
 			case CF_TYPE_DATA:
@@ -908,7 +909,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 		}
  
 		if (cfs_slow_search) {
-			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
+			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[ui], filespec, localize );
 
 #if defined _WIN32
 			findhandle = _findfirst(longname, &findstruct);
@@ -949,9 +950,8 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	}
 
 	// Search the pak files and CD-ROM.
-
-	for (i = 0; i < Num_files; i++ )	{
-		cf_file *f = cf_get_file(i);
+	for (ui = 0; ui < Num_files; ui++ )	{
+		cf_file *f = cf_get_file(ui);
 
 		// only search paths we're supposed to...
 		if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index) )
@@ -1045,6 +1045,7 @@ extern char *stristr(const char *str, const char *substr);
 int cf_find_file_location_ext( char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
 	int cur_ext, i;
+    uint ui;
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
 	char filespec[MAX_FILENAME_LEN];
@@ -1088,14 +1089,14 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	// strip any existing extension
 	strncpy(filespec, filename, MAX_FILENAME_LEN-1);
 
-	for (i = 0; i < num_search_dirs; i++) {
+	for (ui = 0; ui < num_search_dirs; ui++) {
 		// always hit the disk if we are looking in only one path
 		if (num_search_dirs == 1) {
 			cfs_slow_search = 1;
 		}
 		// otherwise hit based on a directory type
 		else {
-			switch (search_order[i])
+			switch (search_order[ui])
 			{
 				case CF_TYPE_ROOT:
 				case CF_TYPE_DATA:
@@ -1122,7 +1123,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 
 			strcat_s( filespec, ext_list[cur_ext] );
  
-			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
+			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[ui], filespec, localize );
 
 #if defined _WIN32
 			findhandle = _findfirst(longname, &findstruct);
@@ -1185,8 +1186,8 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	file_list_index.reserve( MIN(ext_num * 4, (int)Num_files) );
 
 	// next, run though and pick out base matches
-	for (i = 0; i < Num_files; i++) {
-		cf_file *f = cf_get_file(i);
+	for (ui = 0; ui < Num_files; ui++) {
+		cf_file *f = cf_get_file(ui);
 
 		// ... only search paths that we're supposed to
 		if ( (num_search_dirs == 1) && (pathtype != f->pathtype_index) )
