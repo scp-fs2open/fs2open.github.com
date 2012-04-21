@@ -1019,6 +1019,9 @@ void init_weapon_entry(int weap_info_index)
 	wip->SSM_index =-1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
 	
 	wip->field_of_fire = 0.0f;
+	wip->fof_spread_rate = 0.0f;
+	wip->fof_reset_rate = 0.0f;
+	wip->max_fof_spread = 0.0f;
 	
 	wip->shots = 1;
 
@@ -2432,9 +2435,28 @@ int parse_weapon(int subtype, bool replace)
 		stuff_int(&wip->SSM_index);
 	}// SSM index -Bobboau
 
-	if( optional_string("$FOF:")){
+	if(optional_string("$FOF:")){
 		stuff_float(&wip->field_of_fire);
+
+		if(optional_string("+FOF Spread Rate:")){
+			stuff_float(&wip->fof_spread_rate);
+			if(required_string("+FOF Reset Rate:")){
+				stuff_float(&wip->fof_reset_rate);
+			}
+
+			if(required_string("+Max FOF:")){
+				float max_fof;
+				stuff_float(&max_fof);
+				wip->max_fof_spread = max_fof - wip->field_of_fire;
+
+				if (wip->max_fof_spread <= 0.0f) {
+					Warning(LOCATION, "WARNING: +Max FOF must be at least as big as $FOF for '%s'! Defaulting to match $FOF, no spread will occur!", wip->name);
+					wip->max_fof_spread = 0.0f;
+				}
+			}
+		}
 	}
+
 
 	if( optional_string("$Shots:")){
 		stuff_int(&wip->shots);
@@ -4794,7 +4816,7 @@ inline size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* s
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned)
+int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned, float fof_cooldown)
 {
 	int			n, objnum;
 	int num_deleted;
@@ -4838,7 +4860,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 			return -1;
 		} else if ( wip->weapon_substitution_pattern[*position] != weapon_type ) {
 			// weapon wants to sub with weapon other than me
-			return weapon_create(pos, porient, wip->weapon_substitution_pattern[*position], parent_objnum, group_id, is_locked, is_spawned);
+			return weapon_create(pos, porient, wip->weapon_substitution_pattern[*position], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
 		}
 	}
 
@@ -4892,9 +4914,16 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	orient = &morient;
-	if(wip->field_of_fire){
+
+	float combined_fof = wip->field_of_fire;
+	// If there is a fof_cooldown value, increase the spread linearly
+	if (fof_cooldown != 0.0f) {
+		combined_fof = wip->field_of_fire + (fof_cooldown * wip->max_fof_spread);
+	}
+
+	if(combined_fof > 0.0f){
 		vec3d f;
-		vm_vec_random_cone(&f, &orient->vec.fvec, wip->field_of_fire);
+		vm_vec_random_cone(&f, &orient->vec.fvec, combined_fof);
 		vm_vec_normalize(&f);
 		vm_vector_2_matrix( orient, &f, NULL, NULL);
 	}

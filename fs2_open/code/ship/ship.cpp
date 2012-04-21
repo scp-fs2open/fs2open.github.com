@@ -4814,6 +4814,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		swp->last_primary_fire_stamp[i] = -1;	
 		swp->primary_bank_rearm_time[i] = timestamp(0);		// added by Goober5000
 		swp->last_primary_fire_sound_stamp[i] = timestamp(0); // added by Halleck
+		swp->primary_bank_fof_cooldown[i] = 0.0f;
 
 		swp->primary_animation_position[i] = MA_POS_NOT_SET;
 		swp->secondary_animation_position[i] = MA_POS_NOT_SET;
@@ -9740,6 +9741,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			next_fire_delay *= 1.0f + (num_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
 		}
 
+		if (winfo_p->fof_spread_rate > 0.0f)
+		{
+			//Adjust the primary_bank_fof_cooldown based on how long it's been since the last shot. 
+			float reset_amount = (timestamp_until(swp->last_primary_fire_stamp[bank_to_fire]) / 1000.0f) * winfo_p->fof_reset_rate;
+			swp->primary_bank_fof_cooldown[bank_to_fire] += winfo_p->fof_spread_rate + reset_amount;
+			CLAMP(swp->primary_bank_fof_cooldown[bank_to_fire], 0.0f, 1.0f);
+		}
+
 		//	MK, 2/4/98: Since you probably were allowed to fire earlier, but couldn't fire until your frame interval
 		//	rolled around, subtract out up to half the previous frametime.
 		//	Note, unless we track whether the fire button has been held down, and not tapped, it's hard to
@@ -10127,9 +10136,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 							
 							// create the weapon -- the network signature for multiplayer is created inside
-							// of weapon_create
-
-							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id );
+							// of weapon_create							
+							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id, 
+								0, 0, swp->primary_bank_fof_cooldown[bank_to_fire] );
 							has_fired = true;
 
 							weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				

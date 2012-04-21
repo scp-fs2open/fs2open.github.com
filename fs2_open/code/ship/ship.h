@@ -125,6 +125,8 @@ typedef struct ship_weapon {
 	int primary_bank_rearm_time[MAX_SHIP_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
 	// end ballistic primary support
 
+	float primary_bank_fof_cooldown[MAX_SHIP_PRIMARY_BANKS];      // SUSHI: Current FOF cooldown level for the primary weapon
+
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
 	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
 	int secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];		// Max number of missiles in bank

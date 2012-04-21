@@ -450,8 +450,11 @@ typedef struct weapon_info {
 	float lssm_warpin_radius;
 	float lssm_lock_range;
 
-	float			field_of_fire;	//cone the weapon will fire in, 0 is strait all the time-Bobboau
-	int				shots;			//the number of shots that will be fired at a time, 
+	float field_of_fire;			//cone the weapon will fire in, 0 is strait all the time-Bobboau
+	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
+	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
+	float max_fof_spread;			//The maximum fof increase that the shots can spread to
+	int	  shots;					//the number of shots that will be fired at a time, 
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
 
@@ -592,7 +595,7 @@ int weapon_create_group_id();
 
 // Passing a group_id of -1 means it isn't in a group.  See weapon_create_group_id for more 
 // help on weapon groups.
-int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int group_id=-1, int is_locked = 0, int is_spawned = 0);
+int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int group_id=-1, int is_locked = 0, int is_spawned = 0, float fof_cooldown = 0.0f);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
 // for weapons flagged as particle spewers, spew particles. wheee

@@ -15842,6 +15842,7 @@ void sexp_turret_change_weapon(int node)
 		swp->primary_bank_ammo[prim_slot] = swp->primary_bank_start_ammo[prim_slot];
 		swp->primary_bank_weapons[prim_slot] = windex;
 		swp->primary_bank_rearm_time[prim_slot] = timestamp(0);
+		swp->primary_bank_fof_cooldown[prim_slot] = 0.0f;
 	}
 	else if(sec_slot)
 	{
