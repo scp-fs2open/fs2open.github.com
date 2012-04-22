@@ -771,17 +771,13 @@ void brief_set_default_closeup()
 	}
 }
 
-//  funciton to evaluate the sexpressions of the briefing stages eliminating those stages
-// which shouldn't get shown
+/**
+ * Evaluate the sexpressions of the briefing stages eliminating those stages
+ * which shouldn't get shown
+ */
 void brief_compact_stages()
 {
 	int num, before, result, i;
-
-	/*
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.campaign_mode == MP_CAMPAIGN) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		Game_mode |= GM_CAMPAIGN_MODE;
-	}
-	*/
 
 	before = Briefing->num_stages;
 
@@ -814,18 +810,9 @@ void brief_compact_stages()
 	// completely clear out the old entries (if any) so we don't access them by mistake - taylor
 	if ( before > Briefing->num_stages ) {
 		for ( i = Briefing->num_stages; i < before; i++ ) {
-			Briefing->stages[i].formula = -1;
-			Briefing->stages[i].flags = 0;
-			Briefing->stages[i].text = "";
-			Briefing->stages[i].num_lines = 0;
+			Briefing->stages[i] = brief_stage();
 		}
 	}
-
-	/*
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.campaign_mode == MP_CAMPAIGN) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		Game_mode &= ~(GM_CAMPAIGN_MODE);
-	}
-	*/
 }
 
 
