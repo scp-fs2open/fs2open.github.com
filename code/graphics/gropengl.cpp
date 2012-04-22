@@ -42,7 +42,6 @@
 #elif defined(__APPLE__)
 #include "OpenGL.h"
 #else
-//#include <GL/glx.h>
 typedef int ( * PFNGLXSWAPINTERVALSGIPROC) (int interval);
 #endif
 

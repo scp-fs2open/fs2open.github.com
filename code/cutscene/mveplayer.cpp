@@ -21,7 +21,6 @@
 #include "sound/sound.h"
 #include "sound/openal.h"
 #include "bmpman/bmpman.h"
-//#include "sound/audiostr.h"
 
 
 extern int Cmdline_noscalevid;
