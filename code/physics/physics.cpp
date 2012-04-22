@@ -1106,7 +1106,7 @@ void update_reduced_damp_timestamp( physics_info *pi, float impulse )
 }
 
 //*************************CLASS: avd_movement*************************
-avd_movement::avd_movement() : Pc(0), Vc(0), TSi(0), Pi(0), Vi(0), Pf(0), Tf(0), Tai(0), Taf(0), Vf(0), Vm(0), Ai(0), Af(0)
+avd_movement::avd_movement() : Pc(0.0f), Vc(0.0f), TSi(0), Pi(0.0f), Vi(0.0f), Pf(0.0f), Tf(0.0f), Tai(0.0f), Taf(0.0f), Vf(0.0f), Vm(0.0f), Ai(0.0f), Af(0.0f)
 {
 }
 
