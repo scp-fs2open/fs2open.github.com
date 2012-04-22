@@ -121,10 +121,11 @@ private:
 
 public:
 	//*****Constructors
-	ade_table_entry(){
-		memset(this, 0, sizeof(ade_table_entry));
-		ParentIdx = UINT_MAX;
-		DerivatorIdx = UINT_MAX;
+	ade_table_entry() : Name(NULL), ShortName(NULL), ParentIdx(UINT_MAX), DerivatorIdx(UINT_MAX), Instanced(false), 
+        Size(0), Arguments(NULL), Description(NULL),  ReturnType(NULL), ReturnDescription(NULL), Num_subentries(0)
+    {
+        Type = '\0';
+		memset(Subentries, 0, sizeof(Subentries));
 	}
 
 	//*****Operators
