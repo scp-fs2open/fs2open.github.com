@@ -443,10 +443,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\lua\ltests.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\lua\ltm.c"
 				>
 			</File>

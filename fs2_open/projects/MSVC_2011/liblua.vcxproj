@@ -707,7 +707,6 @@
     <ClCompile Include="..\..\lua\lstrlib.c" />
     <ClCompile Include="..\..\lua\ltable.c" />
     <ClCompile Include="..\..\lua\ltablib.c" />
-    <ClCompile Include="..\..\lua\ltests.c" />
     <ClCompile Include="..\..\lua\ltm.c" />
     <ClCompile Include="..\..\lua\lundump.c" />
     <ClCompile Include="..\..\lua\lvm.c" />
