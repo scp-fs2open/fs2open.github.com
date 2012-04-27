@@ -86,9 +86,6 @@
     <ClCompile Include="..\..\lua\ltablib.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\lua\ltests.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\lua\ltm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
