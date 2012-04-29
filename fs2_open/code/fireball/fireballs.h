@@ -16,7 +16,7 @@
 
 struct object;
 struct ship_info;
-struct asteroid_info;
+class asteroid_info;
 
 // values correspond to the fireball render types
 #define FIREBALL_MEDIUM_EXPLOSION	0
