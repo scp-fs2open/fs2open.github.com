@@ -1975,8 +1975,8 @@ void asteroid_parse_tbl()
 	if (tally != max_asteroids)
 	{
 #ifndef NDEBUG
-		for(SCP_vector<SCP_string>::const_iterator iter = parsed_asteroids.cbegin();
-			iter != parsed_asteroids.cend(); ++iter)
+		for(SCP_vector<SCP_string>::iterator iter = parsed_asteroids.begin();
+			iter != parsed_asteroids.end(); ++iter)
 		{
 			mprintf(("Asteroid.tbl as parsed:\n"));
 			mprintf((iter->c_str()));

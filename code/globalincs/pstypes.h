@@ -228,7 +228,7 @@ extern int Global_error_count;
 	// Assertion can only use its proper fuctionality in compilers that support variadic macro
 #	ifndef _MSC_VER   // non MS compilers
 #		define Assertion(expr, msg, ...) do {\
-			if (!(x)) {\
+			if (!(expr)) {\
 				WinAssert(#expr,__FILE__,__LINE__, msg , ##__VA_ARGS__ );\
 			}\
 		} while (0)
@@ -238,11 +238,11 @@ extern int Global_error_count;
 				if (!(expr)) {\
 					WinAssert(#expr,__FILE__,__LINE__, msg, __VA_ARGS__ );\
 				}\
-				ASSUME(x);\
+				ASSUME(expr);\
 			} while (0)
 #		else // older MSVC compilers
 #			define Assertion(expr, msg) do {\
-				if (!(x)) {\
+				if (!(expr)) {\
 					WinAssert(#expr,__FILE__,__LINE__);\
 				}\
 			} while (0)
