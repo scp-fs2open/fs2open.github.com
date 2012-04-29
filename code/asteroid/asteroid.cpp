@@ -1797,8 +1797,6 @@ void asteroid_parse_section(asteroid_info *asip)
 		stuff_string(asip->pof_files[2], F_NAME, MAX_FILENAME_LEN);
 	}
 
-	asip->num_detail_levels = 0;
-
 	required_string("$Detail distance:");
 	asip->num_detail_levels = stuff_int_list(asip->detail_distance, MAX_ASTEROID_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 
@@ -1864,13 +1862,35 @@ void asteroid_parse_section(asteroid_info *asip)
 }
 
 /**
- * Read in data from asteroid.tbl into Asteroid_info[] array
- */
+Read in data from asteroid.tbl into Asteroid_info[] array.
+
+After this function is completes, the Asteroid_info[] array will
+contain exactly three asteroids per species plus exactly three
+generic asteroids.  These three asteroids are a set
+of small, medium, and large asteroids in that exact order.
+
+If asteroid.tbl contains too many or too few asteroids as per
+the rules above this function will abort the engine with an
+error message stating the number expected and it will write
+to the debug.log how everything was parsed.
+
+Note that by saying "asteroid" this code is talking about
+the asteroids and the debris that make up asteroid fields
+and debris fields. Which means that these debris have nothing
+to do with the debris of ships that explode, however these
+are the same debris and asteroids that get flung at a ship
+that is being protected.
+*/
 void asteroid_parse_tbl()
 {
 	char impact_ani_file[MAX_FILENAME_LEN];
-	int *asteroid_tally = NULL;
 	int i, rval;
+
+	// How did we get here without having any species defined?
+	Assertion(Species_info.size() > 0,
+		"Cannot parse asteroids/debris if there "
+		"are no species for them to belong to."
+		);
 
 	// open localization
 	lcl_ext_open();
@@ -1886,43 +1906,96 @@ void asteroid_parse_tbl()
 
 	required_string("#Asteroid Types");
 
-	asteroid_tally = new int[Species_info.size() + 1];
+	int tally = 0;
+	int max_asteroids =
+		NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES;
 
-	memset(asteroid_tally, 0, sizeof(int) * (Species_info.size()+1));
+#ifndef NDEBUG
+	SCP_vector<SCP_string> parsed_asteroids;
+#endif
 
+	// parse and tally each asteroid
 	while (required_string_either("#End","$Name:"))
 	{
 		asteroid_info new_asteroid;
 
-		for (i = 0; i < NUM_DEBRIS_POFS; i++)
-			new_asteroid.model_num[i] = -1;
-
 		asteroid_parse_section( &new_asteroid );
 
-		Assert( Species_info.size() );
-		// sanity check for debris type sizes
-		for (i = (int)Species_info.size(); i >= 0; i--) {
-			// must remain in proper order
-			//   0 - generic debris types
-			// > 0 - species specific debris types
-			if ( (i == 0) || stristr(new_asteroid.name, Species_info[i-1].species_name) ) {
-				Assert( asteroid_tally[i] < NUM_DEBRIS_SIZES );
-
-				if ( asteroid_tally[i] >= NUM_DEBRIS_SIZES ) {
-					// too many sizes specified, don't increment Num_debris_types and we'll overwrite
-					// the current entry with the next
-					break;
-				}
-
-				// we're safe to continue
-				asteroid_tally[i]++;
-				Asteroid_info.push_back( new_asteroid );
-				break;
-			}
+		int species = tally / NUM_DEBRIS_SIZES;
+		if (tally >= max_asteroids)
+		{
+#ifdef NDEBUG
+			// Bump the warning count in release so they get something
+			// even if the message never gets displayed.
+			Warning(LOCATION, "Ignoring extra asteroid/debris");
+#else
+			SCP_string msg("Ignoring extra asteroid/debris '");
+			msg.append(new_asteroid.name);
+			msg.append("'\n");
+			Warning(LOCATION,msg.c_str());
+			parsed_asteroids.push_back(msg);
+#endif
 		}
+		else
+		{
+#ifndef NDEBUG
+			SCP_string msg;
+			msg.append("Parsing asteroid: '");
+			msg.append(new_asteroid.name);
+			msg.append("' as a '");
+			msg.append((species == 0)?"generic":Species_info[species-1].species_name);
+			msg.append("'");
+			switch(tally % NUM_DEBRIS_SIZES) {
+			case ASTEROID_TYPE_SMALL:
+				msg.append(" small\n");
+				break;
+			case ASTEROID_TYPE_MEDIUM:
+				msg.append(" medium\n");
+				break;
+			case ASTEROID_TYPE_LARGE:
+				msg.append(" large\n");
+				break;
+			default:
+				Error(LOCATION, "Get a coder! Math has broken!\n"
+					"Important numbers:\n"
+					"\ttally: %d\n"
+					"\tNUM_DEBRIS_SIZES: %d\n",
+					tally, NUM_DEBRIS_SIZES
+					);
+				msg.append(" unknown\n");
+			}
+			parsed_asteroids.push_back(msg);
+#endif
+			Asteroid_info.push_back(new_asteroid);
+		}
+		tally++;
 	}
-
 	required_string("#End");
+
+	if (tally != max_asteroids)
+	{
+#ifndef NDEBUG
+		for(SCP_vector<SCP_string>::const_iterator iter = parsed_asteroids.cbegin();
+			iter != parsed_asteroids.cend(); ++iter)
+		{
+			mprintf(("Asteroid.tbl as parsed:\n"));
+			mprintf((iter->c_str()));
+		}
+#endif
+		Error(LOCATION,
+			"Found %d asteroids/debris when %d expected\n\n"
+			"<Number expected> = <Number of species> * %d + %d generic asteroids\n"
+			"%d = %d*%d + %d\n\n"
+#ifdef NDEBUG
+			"Run a debug build to see a list of all parsed asteroids\n",
+#else
+			"See the debug.log for a listing of all parsed asteroids\n",
+#endif
+			tally, max_asteroids,
+			NUM_DEBRIS_SIZES, NUM_DEBRIS_SIZES,
+			max_asteroids, Species_info.size(), NUM_DEBRIS_SIZES, NUM_DEBRIS_SIZES
+			);
+	}
 
 	Asteroid_impact_explosion_ani = -1;
 	required_string("$Impact Explosion:");
@@ -1938,31 +2011,6 @@ void asteroid_parse_tbl()
 
 	// close localization
 	lcl_ext_close();
-
-	// check for any missing info
-	char *errormsg = new char[75 + (Species_info.size() * (NAME_LENGTH))];
-	bool species_missing = false;
-	strcpy(errormsg, "The following species are missing debris types in asteroids.tbl:\n");
-	for (i = 0; i < (int)Species_info.size(); i++)
-	{
-		int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
-
-		if (asteroid_tally[idx] < NUM_DEBRIS_SIZES)
-		{
-			strcat(errormsg, Species_info[i].species_name);
-			strcat(errormsg, "\n");
-			species_missing = true;
-		}
-	}
-	strcat(errormsg, "\0");
-
-	if (species_missing)
-	{
-		Error(LOCATION, errormsg);
-	}
-
-	delete[] asteroid_tally;
-	delete[] errormsg;
 }
 
 /**
