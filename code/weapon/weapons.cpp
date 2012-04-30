@@ -128,6 +128,10 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
 
+// homing missiles have an extended lifetime so they don't appear to run out of gas before they can hit a moving target at extreme
+// range. Check the comment in weapon_set_tracking_info() for more details
+#define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
+
 extern int compute_num_homing_objects(object *target_objp);
 
 extern void fs2netd_add_table_validation(char *tblname);
@@ -1019,6 +1023,9 @@ void init_weapon_entry(int weap_info_index)
 	wip->SSM_index =-1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
 	
 	wip->field_of_fire = 0.0f;
+	wip->fof_spread_rate = 0.0f;
+	wip->fof_reset_rate = 0.0f;
+	wip->max_fof_spread = 0.0f;
 	
 	wip->shots = 1;
 
@@ -1602,6 +1609,11 @@ int parse_weapon(int subtype, bool replace)
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
 					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
 				}
+			}
+
+			if (wip->wi_flags & WIF_LOCKED_HOMING) {
+				// locked homing missiles have a much longer lifespan than the AI think they do
+				wip->max_lifetime = wip->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR; 
 			}
 		}
 		else
@@ -2432,9 +2444,28 @@ int parse_weapon(int subtype, bool replace)
 		stuff_int(&wip->SSM_index);
 	}// SSM index -Bobboau
 
-	if( optional_string("$FOF:")){
+	if(optional_string("$FOF:")){
 		stuff_float(&wip->field_of_fire);
+
+		if(optional_string("+FOF Spread Rate:")){
+			stuff_float(&wip->fof_spread_rate);
+			if(required_string("+FOF Reset Rate:")){
+				stuff_float(&wip->fof_reset_rate);
+			}
+
+			if(required_string("+Max FOF:")){
+				float max_fof;
+				stuff_float(&max_fof);
+				wip->max_fof_spread = max_fof - wip->field_of_fire;
+
+				if (wip->max_fof_spread <= 0.0f) {
+					Warning(LOCATION, "WARNING: +Max FOF must be at least as big as $FOF for '%s'! Defaulting to match $FOF, no spread will occur!", wip->name);
+					wip->max_fof_spread = 0.0f;
+				}
+			}
+		}
 	}
+
 
 	if( optional_string("$Shots:")){
 		stuff_int(&wip->shots);
@@ -4755,9 +4786,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		// DB - removed 7:14 pm 9/6/99. was totally messing up lifetimes for all weapons.
 		//	MK, 7:11 am, 9/7/99.  Put it back in, but with a proper check here to make sure it's an aspect seeker and
 		//	put a sanity check in the color changing laser code that was broken by this code.
-		if (target_is_locked && (wp->target_num != -1) &&
-			(wip->wi_flags & WIF_LOCKED_HOMING) ) {
-			wp->lifeleft *= 1.2f;
+		if (target_is_locked && (wp->target_num != -1) && (wip->wi_flags & WIF_LOCKED_HOMING) ) {
+			wp->lifeleft *= LOCKED_HOMING_EXTENDED_LIFE_FACTOR;
 			if (MULTIPLAYER_MASTER) {
 				wp->weapon_flags |= WF_HOMING_UPDATE_NEEDED;
 			}
@@ -4794,7 +4824,7 @@ inline size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* s
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned)
+int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned, float fof_cooldown)
 {
 	int			n, objnum;
 	int num_deleted;
@@ -4838,7 +4868,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 			return -1;
 		} else if ( wip->weapon_substitution_pattern[*position] != weapon_type ) {
 			// weapon wants to sub with weapon other than me
-			return weapon_create(pos, porient, wip->weapon_substitution_pattern[*position], parent_objnum, group_id, is_locked, is_spawned);
+			return weapon_create(pos, porient, wip->weapon_substitution_pattern[*position], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
 		}
 	}
 
@@ -4892,9 +4922,16 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	orient = &morient;
-	if(wip->field_of_fire){
+
+	float combined_fof = wip->field_of_fire;
+	// If there is a fof_cooldown value, increase the spread linearly
+	if (fof_cooldown != 0.0f) {
+		combined_fof = wip->field_of_fire + (fof_cooldown * wip->max_fof_spread);
+	}
+
+	if(combined_fof > 0.0f){
 		vec3d f;
-		vm_vec_random_cone(&f, &orient->vec.fvec, wip->field_of_fire);
+		vm_vec_random_cone(&f, &orient->vec.fvec, combined_fof);
 		vm_vec_normalize(&f);
 		vm_vector_2_matrix( orient, &f, NULL, NULL);
 	}

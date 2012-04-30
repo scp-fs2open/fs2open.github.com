@@ -15842,6 +15842,7 @@ void sexp_turret_change_weapon(int node)
 		swp->primary_bank_ammo[prim_slot] = swp->primary_bank_start_ammo[prim_slot];
 		swp->primary_bank_weapons[prim_slot] = windex;
 		swp->primary_bank_rearm_time[prim_slot] = timestamp(0);
+		swp->primary_bank_fof_cooldown[prim_slot] = 0.0f;
 	}
 	else if(sec_slot)
 	{
@@ -25017,6 +25018,9 @@ void update_sexp_references(const char *old_name, const char *new_name)
 void update_sexp_references(const char *old_name, const char *new_name, int format)
 {
 	int i;
+	if (!strcmp(old_name, new_name)) {
+		return;
+	}
 
 	Assert(strlen(new_name) < TOKEN_LENGTH);
 	for (i = 0; i < Num_sexp_nodes; i++)

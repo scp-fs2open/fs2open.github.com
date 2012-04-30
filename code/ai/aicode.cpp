@@ -5564,9 +5564,10 @@ int ai_fire_primary_weapon(object *objp)
 		vm_vec_normalized_dir(&vecToTarget, &enemy_objp->pos, &objp->pos);
 		float dotToTarget = vm_vec_dot(&vecToTarget, &objp->orient.vec.fvec);
 		dotToTarget = pow(dotToTarget, 4);	//This makes the dot a tiny bit more impactful (otherwise nearly always over 0.98 or so)
+		float fof_spread_cooldown_factor = 1.0f - swp->primary_bank_fof_cooldown[swp->current_primary_bank];
 		
 		//Combine factors
-		float burstFireProb = ((0.6f * percentAmmoLeft) + (0.4f * distanceFactor)) * dotToTarget * aip->ai_primary_ammo_burst_mult;
+		float burstFireProb = ((0.6f * percentAmmoLeft) + (0.4f * distanceFactor)) * dotToTarget * aip->ai_primary_ammo_burst_mult * fof_spread_cooldown_factor;
 
 		//Possibly change values every half-second
 		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 15) > burstFireProb)

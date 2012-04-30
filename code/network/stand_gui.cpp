@@ -13,9 +13,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
-//#include <windowsx.h>
 #include <commctrl.h>
-//#include <io.h>
 #endif
 
 #include "network/stand_gui.h"

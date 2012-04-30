@@ -1106,14 +1106,35 @@ void update_reduced_damp_timestamp( physics_info *pi, float impulse )
 }
 
 //*************************CLASS: avd_movement*************************
-avd_movement::avd_movement()
+avd_movement::avd_movement() : Pc(0.0f), Vc(0.0f), TSi(0), Pi(0.0f), Vi(0.0f), Pf(0.0f), Tf(0.0f), Tai(0.0f), Taf(0.0f), Vf(0.0f), Vm(0.0f), Ai(0.0f), Af(0.0f)
 {
-	clear();
 }
 
 void avd_movement::clear()
 {
-	memset(this, 0, sizeof(avd_movement));
+    // We should really refactor so that a ::clear() method isn't needed.
+    // For now, be sure this syncs with the class declaration 
+    
+    //Current
+	Pc = 0;		//Current position
+	Vc = 0;		//Current velocity
+	
+	//Initial
+	TSi = 0;		//Initial timestamp <-- note TIMESTAMP
+	Pi = 0;		//Initial position
+	Vi = 0;		//Initial velocity
+    
+	//Given
+	Pf = 0;		//Final position
+	Tf = 0;		//Final duration
+	Tai = 0;		//Starting acceleration duration
+	Taf = 0;		//Ending acceleration duration
+	Vf = 0;		//Final velocity
+    
+	//Calculated
+	Vm = 0;		//Middle velocity
+	Ai = 0;		//Starting acceleration
+	Af = 0;		//Ending acceleration
 }
 
 void avd_movement::get(float Time, float *Position, float *Velocity)

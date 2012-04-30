@@ -24,7 +24,6 @@
 #include "hud/hudlock.h"
 #include "mission/missiontraining.h"
 #include "mission/missionmessage.h"
-//#include "weapon/emp.h"
 #include "hud/hudparse.h" //Duh.
 #include "radar/radarsetup.h"
 #include "radar/radar.h"
