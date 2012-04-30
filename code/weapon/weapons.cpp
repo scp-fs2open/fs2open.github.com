@@ -128,6 +128,10 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
 
+// homing missiles have an extended lifetime so they don't appear to run out of gas before they can hit a moving target at extreme
+// range. Check the comment in weapon_set_tracking_info() for more details
+#define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
+
 extern int compute_num_homing_objects(object *target_objp);
 
 extern void fs2netd_add_table_validation(char *tblname);
@@ -1605,6 +1609,11 @@ int parse_weapon(int subtype, bool replace)
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
 					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
 				}
+			}
+
+			if (wip->wi_flags & WIF_LOCKED_HOMING) {
+				// locked homing missiles have a much longer lifespan than the AI think they do
+				wip->max_lifetime = wip->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR; 
 			}
 		}
 		else
@@ -4777,9 +4786,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		// DB - removed 7:14 pm 9/6/99. was totally messing up lifetimes for all weapons.
 		//	MK, 7:11 am, 9/7/99.  Put it back in, but with a proper check here to make sure it's an aspect seeker and
 		//	put a sanity check in the color changing laser code that was broken by this code.
-		if (target_is_locked && (wp->target_num != -1) &&
-			(wip->wi_flags & WIF_LOCKED_HOMING) ) {
-			wp->lifeleft *= 1.2f;
+		if (target_is_locked && (wp->target_num != -1) && (wip->wi_flags & WIF_LOCKED_HOMING) ) {
+			wp->lifeleft *= LOCKED_HOMING_EXTENDED_LIFE_FACTOR;
 			if (MULTIPLAYER_MASTER) {
 				wp->weapon_flags |= WF_HOMING_UPDATE_NEEDED;
 			}
