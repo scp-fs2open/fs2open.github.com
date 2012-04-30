@@ -25018,6 +25018,9 @@ void update_sexp_references(const char *old_name, const char *new_name)
 void update_sexp_references(const char *old_name, const char *new_name, int format)
 {
 	int i;
+	if (!strcmp(old_name, new_name)) {
+		return;
+	}
 
 	Assert(strlen(new_name) < TOKEN_LENGTH);
 	for (i = 0; i < Num_sexp_nodes; i++)
