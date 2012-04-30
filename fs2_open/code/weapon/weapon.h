@@ -343,7 +343,8 @@ typedef struct weapon_info {
 	float	armor_factor, shield_factor, subsystem_factor;	//	in 0.0..2.0, scale of damage done to type of thing
 	float life_min;
 	float life_max;
-	float	lifetime;							//	How long this thing lives.
+	float max_lifetime ;						// How long this weapon will actually live for
+	float	lifetime;						// How long the AI thinks this thing lives (used for distance calculations etc)
 	float energy_consumed;					// Energy used up when weapon is fired
 	int	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 	int wi_flags2;							// stupid int wi_flags, only 32 bits... argh - Goober5000
