@@ -184,7 +184,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 	}
 
 	// 2 chars for the lod, 4 for the extension that gets added automatically
-	if ( MAX_FILENAME_LEN - (strlen(filename) > 6) ) {
+	if ( (MAX_FILENAME_LEN - strlen(filename)) > 6 ) {
 		for (idx = 1; idx < expected_lods; idx++) {
 			sprintf(name_tmp, "%s_%d", filename, idx);
 
