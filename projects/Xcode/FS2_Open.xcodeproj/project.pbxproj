@@ -51,7 +51,6 @@
 		344BA9B3095A5B6F00B9D97D /* ltable.c in Sources */ = {isa = PBXBuildFile; fileRef = 344BA97F095A5B6F00B9D97D /* ltable.c */; };
 		344BA9B4095A5B6F00B9D97D /* ltable.h in Headers */ = {isa = PBXBuildFile; fileRef = 344BA980095A5B6F00B9D97D /* ltable.h */; };
 		344BA9B5095A5B6F00B9D97D /* ltablib.c in Sources */ = {isa = PBXBuildFile; fileRef = 344BA981095A5B6F00B9D97D /* ltablib.c */; };
-		344BA9B6095A5B6F00B9D97D /* ltests.c in Sources */ = {isa = PBXBuildFile; fileRef = 344BA982095A5B6F00B9D97D /* ltests.c */; };
 		344BA9B7095A5B6F00B9D97D /* ltm.c in Sources */ = {isa = PBXBuildFile; fileRef = 344BA983095A5B6F00B9D97D /* ltm.c */; };
 		344BA9B8095A5B6F00B9D97D /* ltm.h in Headers */ = {isa = PBXBuildFile; fileRef = 344BA984095A5B6F00B9D97D /* ltm.h */; };
 		344BA9B9095A5B6F00B9D97D /* lua.h in Headers */ = {isa = PBXBuildFile; fileRef = 344BA985095A5B6F00B9D97D /* lua.h */; };
@@ -904,7 +903,6 @@
 		344BA97F095A5B6F00B9D97D /* ltable.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = ltable.c; path = ../../lua/ltable.c; sourceTree = SOURCE_ROOT; };
 		344BA980095A5B6F00B9D97D /* ltable.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = ltable.h; path = ../../lua/ltable.h; sourceTree = SOURCE_ROOT; };
 		344BA981095A5B6F00B9D97D /* ltablib.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = ltablib.c; path = ../../lua/ltablib.c; sourceTree = SOURCE_ROOT; };
-		344BA982095A5B6F00B9D97D /* ltests.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = ltests.c; path = ../../lua/ltests.c; sourceTree = SOURCE_ROOT; };
 		344BA983095A5B6F00B9D97D /* ltm.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = ltm.c; path = ../../lua/ltm.c; sourceTree = SOURCE_ROOT; };
 		344BA984095A5B6F00B9D97D /* ltm.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = ltm.h; path = ../../lua/ltm.h; sourceTree = SOURCE_ROOT; };
 		344BA985095A5B6F00B9D97D /* lua.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = lua.h; path = ../../lua/lua.h; sourceTree = SOURCE_ROOT; };
@@ -1825,7 +1823,6 @@
 				344BA97F095A5B6F00B9D97D /* ltable.c */,
 				344BA980095A5B6F00B9D97D /* ltable.h */,
 				344BA981095A5B6F00B9D97D /* ltablib.c */,
-				344BA982095A5B6F00B9D97D /* ltests.c */,
 				344BA983095A5B6F00B9D97D /* ltm.c */,
 				344BA984095A5B6F00B9D97D /* ltm.h */,
 				344BA985095A5B6F00B9D97D /* lua.h */,
@@ -3695,7 +3692,6 @@
 				344BA9B2095A5B6F00B9D97D /* lstrlib.c in Sources */,
 				344BA9B3095A5B6F00B9D97D /* ltable.c in Sources */,
 				344BA9B5095A5B6F00B9D97D /* ltablib.c in Sources */,
-				344BA9B6095A5B6F00B9D97D /* ltests.c in Sources */,
 				344BA9B7095A5B6F00B9D97D /* ltm.c in Sources */,
 				344BA9BB095A5B6F00B9D97D /* lundump.c in Sources */,
 				344BA9BD095A5B6F00B9D97D /* lvm.c in Sources */,
