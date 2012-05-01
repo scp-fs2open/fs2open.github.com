@@ -1438,7 +1438,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 	if(optional_string( "+Cockpit offset:" ))
 	{
-		stuff_vector(&sip->cockpit_offset);
+		stuff_vec3d(&sip->cockpit_offset);
 	}
 	while(optional_string( "$Cockpit Display:" )) 
 	{
@@ -1809,7 +1809,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Max Velocity:"))
 	{
-		stuff_vector(&sip->max_vel);
+		stuff_vec3d(&sip->max_vel);
 		sip->max_accel = sip->max_vel.xyz.z;
 	}
 
@@ -1818,7 +1818,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Rotation Time:"))
 	{
-		stuff_vector(&sip->rotation_time);
+		stuff_vec3d(&sip->rotation_time);
 
 		// div/0 safety check.
 		if ((sip->rotation_time.xyz.x == 0) || (sip->rotation_time.xyz.y == 0) || (sip->rotation_time.xyz.z == 0))
@@ -1904,7 +1904,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				stuff_float(&sip->convergence_distance);
 		}
 		if(optional_string("+Offset:"))
-			stuff_vector(&sip->convergence_offset);
+			stuff_vec3d(&sip->convergence_offset);
 	}
 
 	if(optional_string("$Warpin type:"))
@@ -2537,7 +2537,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->flags |= SIF_AFTERBURNER;
 
 		if(optional_string("+Aburn Max Vel:")) {
-			stuff_vector(&sip->afterburner_max_vel);
+			stuff_vec3d(&sip->afterburner_max_vel);
 		}
 
 		if(optional_string("+Aburn For accel:")) {
@@ -2657,7 +2657,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Closeup_pos:"))
 	{
-		stuff_vector(&sip->closeup_pos);
+		stuff_vec3d(&sip->closeup_pos);
 	}
 	else if (first_time && strlen(sip->pof_file))
 	{
@@ -2684,7 +2684,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		
 	if(optional_string("$Topdown offset:")) {
 		sip->topdown_offset_def = true;
-		stuff_vector(&sip->topdown_offset);
+		stuff_vec3d(&sip->topdown_offset);
 	}
 
 	if (optional_string("$Shield_icon:")) {
@@ -2901,7 +2901,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		trail_info *ci = &sip->ct_info[sip->ct_count++];
 		
 		required_string("+Offset:");
-		stuff_vector(&ci->pt);
+		stuff_vec3d(&ci->pt);
 		
 		required_string("+Start Width:");
 		stuff_float(&ci->w_start);
@@ -3096,7 +3096,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		//Get +departure rvec and store on the path_metadata object
 		if (optional_string("+departure rvec:"))
 		{
-			stuff_vector(&metadata.departure_rvec);
+			stuff_vec3d(&metadata.departure_rvec);
 		}
 
 		//Add the new path_metadata to sip->pathMetadata keyed by path name
@@ -3503,7 +3503,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 						if(optional_string("+absolute_angle:")){
 							current_trigger->absolute = true;
-							stuff_vector(&current_trigger->angle );
+							stuff_vec3d(&current_trigger->angle );
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
@@ -3513,7 +3513,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 							if(!optional_string("+relative_angle:"))
 								required_string("+relative_angle:");
 
-							stuff_vector(&current_trigger->angle );
+							stuff_vec3d(&current_trigger->angle );
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
@@ -3521,14 +3521,14 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 						}
 		
 						if(optional_string("+velocity:")){
-							stuff_vector(&current_trigger->vel );
+							stuff_vec3d(&current_trigger->vel );
 							current_trigger->vel.xyz.x = fl_radians(current_trigger->vel.xyz.x);
 							current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
 							current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
 						}
 		
 						if(optional_string("+acceleration:")){
-							stuff_vector(&current_trigger->accel );
+							stuff_vec3d(&current_trigger->accel );
 							current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
 							current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
 							current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
@@ -3550,7 +3550,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		
 						if(optional_string("+absolute_angle:")){
 							current_trigger->absolute = true;
-							stuff_vector(&current_trigger->angle );
+							stuff_vec3d(&current_trigger->angle );
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
@@ -3558,7 +3558,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 						}else{
 							current_trigger->absolute = false;
 							required_string("+relative_angle:");
-							stuff_vector(&current_trigger->angle );
+							stuff_vec3d(&current_trigger->angle );
 		
 							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
 							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
@@ -3566,13 +3566,13 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 						}
 		
 						required_string("+velocity:");
-						stuff_vector(&current_trigger->vel );
+						stuff_vec3d(&current_trigger->vel );
 						current_trigger->vel.xyz.x = fl_radians(current_trigger->vel.xyz.x);
 						current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
 						current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
 		
 						required_string("+acceleration:");
-						stuff_vector(&current_trigger->accel );
+						stuff_vec3d(&current_trigger->accel );
 						current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
 						current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
 						current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
