@@ -5118,9 +5118,17 @@ typedef unsigned long long int uint64_t;
 #elif defined(_WIN32) && defined(__GNUC__)
 #include <stdint.h>
 #elif defined(_WIN32)
-typedef __int32 int32_t;
-typedef __int64 int64_t;
-typedef unsigned __int64 uint64_t;
+	// per stdint.h
+	// Visual Studio 6 and Embedded Visual C++ 4 doesn't
+	// realize that, e.g. char has the same size as __int8
+	// so we give up on __intX for them.
+	#if (_MSC_VER < 1300)
+		typedef signed int int32_t;
+	#else
+		typedef signed __int32 int32_t;
+	#endif
+	typedef signed __int64 int64_t;
+	typedef unsigned __int64 uint64_t;
 #else
 /* Fallback if nothing above works */
 #include <inttypes.h>
