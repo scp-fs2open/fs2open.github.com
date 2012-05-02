@@ -96,21 +96,24 @@ void swarm_maybe_fire_missile(int shipnum)
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS );
 	sp = &Ships[shipnum];
 
-	if ( sp->num_swarm_missiles_to_fire <= 0 )
+	if ( sp->num_swarm_missiles_to_fire <= 0 ) {
+		sp->swarm_missile_bank = -1;
 		return;
+	}
 
 	swp = &sp->weapons;
-	if ( swp->current_secondary_bank == -1 ) {
+	if ( sp->swarm_missile_bank == -1 ) {
 		sp->num_swarm_missiles_to_fire = 0;
 		return;
 	}
 
-	weapon_info_index = swp->secondary_bank_weapons[swp->current_secondary_bank];
+	weapon_info_index = swp->secondary_bank_weapons[sp->swarm_missile_bank];
 	Assert( weapon_info_index >= 0 && weapon_info_index < MAX_WEAPON_TYPES );
 
-	// if current secondary bank is not a swarm missile, return
+	// if swarm secondary bank is not a swarm missile, return
 	if ( !(Weapon_info[weapon_info_index].wi_flags & WIF_SWARM) ) {
 		sp->num_swarm_missiles_to_fire = 0;
+		sp->swarm_missile_bank = -1;
 		return;
 	}
 
