@@ -1110,7 +1110,7 @@ void main_hall_stop_music()
 void main_hall_render_misc_anims(float frametime)
 {
 	int idx, s_idx, jdx;
-	SCP_vector<bool> group_anims_weve_checked;
+	std::deque<bool> group_anims_weve_checked;
 
 	// render all misc animations
 	for (idx = 0; idx < Main_hall->num_misc_animations; idx++) {
