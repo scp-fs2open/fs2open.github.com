@@ -236,30 +236,28 @@ int get_line_num()
 extern int Cmdline_noparseerrors;
 void error_display(int error_level, char *format, ...)
 {
-	char	buffer[1024];
-	char	error_text[128];
+	char type[8];
+	SCP_string error_text;
 	va_list args;
 
 	if (error_level == 0) {
-		strcpy_s(error_text, "Warning");
+		strcpy_s(type, "Warning");
 		Warning_count++;
 	} else {
-		strcpy_s(error_text, "Error");
+		strcpy_s(type, "Error");
 		Error_count++;
 	}
 
-	nprintf((error_text, "%s(line %i:%s: ", Current_filename, get_line_num(), error_text));
-
 	va_start(args, format);
-	vsprintf(buffer, format, args);
+	vsprintf(error_text, format, args);
 	va_end(args);
-	Assert(strlen(buffer) < 1024);
 
-	nprintf((error_text, "%s", buffer));
+	nprintf((type, "%s(line %i): %s: %s\n", Current_filename, get_line_num(), type, error_text.c_str()));
+
 	if(error_level == 0 || Cmdline_noparseerrors)
-		Warning(LOCATION, "%s(line %i:\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
+		Warning(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
 	else
-		Error(LOCATION, "%s(line %i:\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
+		Error(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
 }
 
 //	Advance Mp to the next eoln character.
