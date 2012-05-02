@@ -2995,7 +2995,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 /**
  * Draw the icons for the weapons that are currently on the selected ship
  *
- * @param slot_num Slot to draw weapons for
+ * @param index Slot to draw weapons for
  */
 void wl_draw_ship_weapons(int index)
 {
