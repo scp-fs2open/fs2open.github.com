@@ -2507,12 +2507,7 @@ int parse_weapon(int subtype, bool replace)
 
 		if (optional_string("+Alpha Min:")) {
 			stuff_float(&wip->alpha_min);
-
-			if (wip->alpha_min > 1.0f)
-				wip->alpha_min = 1.0f;
-
-			if (wip->alpha_min < 0.0f)
-				wip->alpha_min = 0.0f;
+            CLAMP(wip->alpha_min, 0.0f, 1.0f);
 		}
 
 		if (optional_string("+Alpha Cycle:")) {
