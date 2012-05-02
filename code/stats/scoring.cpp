@@ -597,12 +597,8 @@ int scoring_eval_kill(object *ship_obj)
 
 	// the pct of total damage applied to this ship
 	max_damage_pct = dead_ship->damage_ship[max_damage_index] / dead_ship->total_damage_received;
-	if(max_damage_pct < 0.0f){
-		max_damage_pct = 0.0f;
-	} 
-	if(max_damage_pct > 1.0f){
-		max_damage_pct = 1.0f;
-	}
+    
+    CLAMP(max_damage_pct, 0.0f, 1.0f);
 
 	// only evaluate if the max damage % is high enough to record a kill and it was done by a valid object
 	if((max_damage_pct >= Kill_percentage) && (dead_ship->damage_ship_id[max_damage_index] >= 0)){
@@ -856,12 +852,8 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 	// the pct of total damage applied to this ship
 	max_damage_pct = dead_wp->damage_ship[max_damage_index] / dead_wp->total_damage_received;
-	if(max_damage_pct < 0.0f){
-		max_damage_pct = 0.0f;
-	} 
-	if(max_damage_pct > 1.0f){
-		max_damage_pct = 1.0f;
-	}
+    
+	CLAMP(max_damage_pct, 0.0f, 1.0f);
 
 	// only evaluate if the max damage % is high enough to record a kill and it was done by a valid object
 	if((max_damage_pct >= Kill_percentage) && (dead_wp->damage_ship_id[max_damage_index] >= 0)){
