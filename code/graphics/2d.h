@@ -109,7 +109,12 @@ struct buffer_data {
 
 	size_t index_offset;
 
-	uint *index;
+	const uint *get_index() const
+	{
+		return index;
+	}
+	
+        uint i_first, i_last;
 
 	void release()
 	{
@@ -119,10 +124,26 @@ struct buffer_data {
 		}
 	}
 
-	buffer_data() :
-		flags(0), texture(-1), n_verts(0), index_offset(0), index(NULL)
+	void assign(int i, uint j)
 	{
+		const_cast<uint *>(index)[i] = j;
+		if (i_first > i_last)
+			i_first = i_last = j;
+		else if (i_first > j)
+			i_first = j;
+		else if (i_last < j)
+			i_last = j;
 	}
+
+	buffer_data(int n_vrts) :
+		flags(0), texture(-1), n_verts(n_vrts), index_offset(0),
+		i_first(1), i_last(0)
+	{
+		index = new(std::nothrow) uint[n_verts];
+	}
+
+private:
+	uint *index;
 };
 
 struct vertex_buffer {
