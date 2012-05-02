@@ -678,11 +678,7 @@ ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 	}
 
 	// At this point, l must be between 0 and 0.75 (0.75-1.0 is for dynamic light only)
-	if ( lval < 0.0f ) {
-		lval = 0.0f;
-	} else if ( lval > 0.75f ) {
-		lval = 0.75f;
-	}
+    CLAMP(lval, 0.0f, 0.75f);
 
 	lval *= static_light_level;
 
@@ -788,21 +784,9 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 		}
 
 
-	if ( rval < 0.0f ) {
-		rval = 0.0f;
-	} else if ( rval > 0.75f ) {
-		rval = 0.75f;
-	}
-	if ( gval < 0.0f ) {
-		gval = 0.0f;
-	} else if ( gval > 0.75f ) {
-		gval = 0.75f;
-	}
-	if ( bval < 0.0f ) {
-		bval = 0.0f;
-	} else if ( bval > 0.75f ) {
-		bval = 0.75f;
-	}
+    CLAMP(rval, 0.0f, 0.75f);
+    CLAMP(gval, 0.0f, 0.75f);
+    CLAMP(bval, 0.0f, 0.75f);
 
 	//dynamic lights
 
@@ -874,21 +858,9 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 		}
 	}
 
-	if ( rval < 0.0f ) {
-		rval = 0.0f;
-	} else if ( rval > 1.0f ) {
-		rval = 1.0f;
-	}
-	if ( gval < 0.0f ) {
-		gval = 0.0f;
-	} else if ( gval > 1.0f ) {
-		gval = 1.0f;
-	}
-	if ( bval < 0.0f ) {
-		bval = 0.0f;
-	} else if ( bval > 1.0f ) {
-		bval = 1.0f;
-	}
+    CLAMP(rval, 0.0f, 1.0f);
+    CLAMP(gval, 0.0f, 1.0f);
+    CLAMP(bval, 0.0f, 1.0f);
 
 	*param_r = ubyte(fl2i(rval*254.0f));
 	*param_g = ubyte(fl2i(gval*254.0f));
@@ -951,21 +923,9 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 	}
 
 	// At this point, l must be between 0 and 0.75 (0.75-1.0 is for dynamic light only)
-	if ( rval < 0.0f ) {
-		rval = 0.0f;
-	} else if ( rval > 0.75f ) {
-		rval = 0.75f;
-	}
-	if ( gval < 0.0f ) {
-		gval = 0.0f;
-	} else if ( gval > 0.75f ) {
-		gval = 0.75f;
-	}
-	if ( bval < 0.0f ) {
-		bval = 0.0f;
-	} else if ( bval > 0.75f ) {
-		bval = 0.75f;
-	}
+	CLAMP(rval, 0.0f, 0.75f);
+    CLAMP(gval, 0.0f, 0.75f);
+    CLAMP(bval, 0.0f, 0.75f);
 
 	rval *= static_light_level;
 	gval *= static_light_level;
@@ -1043,41 +1003,11 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 		bval *= im;
 	}
 	
-	if ( rval < 0.0f ) {
-		rval = 0.0f;
-	} else if ( rval > 1.0f ) {
-		rval = 1.0f;
-	}
-	if ( gval < 0.0f ) {
-		gval = 0.0f;
-	} else if ( gval > 1.0f ) {
-		gval = 1.0f;
-	}
-	if ( bval < 0.0f ) {
-		bval = 0.0f;
-	} else if ( bval > 1.0f ) {
-		bval = 1.0f;
-	}
+    CLAMP(rval, 0.0f, 1.0f);
+    CLAMP(gval, 0.0f, 1.0f);
+    CLAMP(bval, 0.0f, 1.0f);
 
 	*param_r = ubyte(fl2i(rval*255.0f));
 	*param_g = ubyte(fl2i(gval*255.0f));
 	*param_b = ubyte(fl2i(bval*255.0f));
 }
-
-
-/*
-float light_apply( vec3d *pos, vec3d * norm )
-{
-#if 1
-	float r,g,b;
-	light_apply_rgb( &r, &g, &b, pos, norm );
-	return (r+g+b) / 3.0f;
-#else
-	return light_apply_ramp( pos, norm );
-#endif
-
-}
-*/
-
-
-
