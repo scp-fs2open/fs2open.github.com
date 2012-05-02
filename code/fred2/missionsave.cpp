@@ -2069,8 +2069,13 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 			fout("\n+Primary Banks:");
 
 		fout(" ( ");
-		for (j=0; j<wp->num_primary_banks; j++)
-			fout("\"%s\" ", Weapon_info[wp->primary_bank_weapons[j]].name);
+		for (j=0; j<wp->num_primary_banks; j++) {
+			if (wp->primary_bank_weapons[j] != -1) { // Just in case someone has set a weapon bank to empty
+				fout("\"%s\" ", Weapon_info[wp->primary_bank_weapons[j]].name);
+			} else {
+				fout("\"\" ");
+			}
+		}
 
 		fout(")");
 	}
@@ -2088,8 +2093,13 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 			fout("\n+Secondary Banks:");
 
 		fout(" ( ");
-		for (j=0; j<wp->num_secondary_banks; j++)
-			fout("\"%s\" ", Weapon_info[wp->secondary_bank_weapons[j]].name);
+		for (j=0; j<wp->num_secondary_banks; j++) {
+			if (wp->secondary_bank_weapons[j] != -1) {
+				fout("\"%s\" ", Weapon_info[wp->secondary_bank_weapons[j]].name);
+			} else {
+				fout("\"\" ");
+			}
+		}
 
 		fout(")");
 	}
