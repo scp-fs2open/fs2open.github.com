@@ -126,11 +126,6 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_TEMP_MARKED		(1<<30)	// Temporarily marked (Fred).
 #define OF_HIDDEN			(1<<31)	// Object is hidden (not shown) and can't be manipulated
 
-
-// max # of object sounds per object
-//WMC - bumped this to 32 :D
-#define MAX_OBJECT_SOUNDS	32
-
 struct dock_instance;
 
 typedef struct object {
@@ -151,7 +146,7 @@ typedef struct object {
 	float				shield_quadrant[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
 	float				hull_strength;	//	Remaining hull strength.
 	float				sim_hull_strength;	// Simulated hull strength - used with training weapons.
-	short				objsnd_num[MAX_OBJECT_SOUNDS];		// Index of persistant sound struct.  -1 if no persistant sound assigned.
+	SCP_vector<int> objsnd_num;		// Index of persistant sound struct.
 	ushort			net_signature;
 	int				num_pairs;		// How many object pairs this is associated with.  When 0 then there are no more.
 

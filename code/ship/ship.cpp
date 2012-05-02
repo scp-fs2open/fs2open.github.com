@@ -12894,7 +12894,8 @@ void ship_assign_sound(ship *sp)
 void ship_assign_sound_all()
 {
 	object *objp;
-	int idx, has_sounds;
+	size_t idx;
+	int has_sounds;
 
 	if ( !Sound_enabled )
 		return;
@@ -12904,7 +12905,7 @@ void ship_assign_sound_all()
 			has_sounds = 0;
 
 			// check to make sure this guy hasn't got sounds already assigned to him
-			for(idx=0; idx<MAX_OBJECT_SOUNDS; idx++){
+			for(idx=0; idx<objp->objsnd_num.size(); idx++){
 				if(objp->objsnd_num[idx] != -1){
 					// skip
 					has_sounds = 1;
