@@ -689,7 +689,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, xVal);
 			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, yVal);
 
-			if ( curGlideCap >= 0.0f ) {	// so if negative, don't bother with speed cap
+			// Only do the glide cap if we have one and are actively thrusting in some direction.
+			if ( curGlideCap >= 0.0f && (ci->forward != 0.0f || ci->sideways != 0.0f || ci->vertical != 0.0f) ) {
 				float currentmag = vm_vec_mag(&pi->desired_vel);
 				if ( currentmag > curGlideCap ) {
 					vm_vec_scale( &pi->desired_vel, curGlideCap / currentmag );
