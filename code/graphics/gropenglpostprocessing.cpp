@@ -626,8 +626,17 @@ void gr_opengl_post_process_set_defaults()
 
 void gr_opengl_post_process_save_zbuffer()
 {
-	if ( !Post_initialized ) {
-		return;
+	if (Post_initialized)
+	{
+		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+		gr_zbuffer_clear(TRUE);
+		zbuffer_saved = true;
+	}
+	else
+	{
+		// If we can't save the z-buffer then just clear it so cockpits are still rendered correctly when
+		// post-processing isn't available/enabled.
+		gr_zbuffer_clear(TRUE);
 	}
 }
 
