@@ -981,6 +981,8 @@ typedef struct mc_info {
 		this->hit_dist = other.hit_dist;
 		this->hit_point = other.hit_point;
 		this->hit_point_world = other.hit_point_world;
+        this->hit_submodel = other.hit_submodel;
+        this->hit_bitmap = other.hit_bitmap;
 		this->hit_u = other.hit_u;
 		this->hit_v = other.hit_v;
 		this->shield_hit_tri = other.shield_hit_tri;
