@@ -106,6 +106,7 @@ public:
 	void initStepSize(int h);
 	void initTotalLife(int ms);
 
+	void clearMessages();
 	void processMessageBuffer();
 	void addPending(char *text, int source, int x = 0);
 	void scrollMessages();

@@ -70,6 +70,7 @@
 #include "sound/sound.h"
 #include "cmdline/cmdline.h"
 #include "hud/hudparse.h"
+#include "hud/hudmessage.h"
 #include "starfield/starfield.h"
 #include "hud/hudartillery.h"
 #include "object/objectdock.h"
@@ -557,6 +558,7 @@ sexp_oper Operators[] = {
 	{ "hud-display-gauge",			OP_HUD_DISPLAY_GAUGE,		2, 2 },
 	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,		2, 2 },
 	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,		2, 2},
+	{ "hud-clear-messages",			OP_HUD_CLEAR_MESSAGES, 0, 0},	// swifty
 
 	{ "ai-chase",					OP_AI_CHASE,					2, 2, },
 	{ "ai-chase-wing",			OP_AI_CHASE_WING,				2, 2, },
@@ -9355,7 +9357,7 @@ void multi_sexp_hud_disable_except_messages()
 void sexp_hud_set_text_num(int n)
 {
 	char* gaugename = CTEXT(n);
-	char tmp[256] = "";
+	char tmp[16] = "";
 
 	HudGauge* cg = hud_get_gauge(gaugename);
 	if(cg) {
@@ -9379,17 +9381,13 @@ void sexp_hud_set_message(int n)
 {
 	char* gaugename = CTEXT(n);
 	char* text = CTEXT(CDR(n));
-	char message[MESSAGE_LENGTH];
+	SCP_string message;
 
 	for (int i = 0; i < Num_messages; i++) {
 		if ( !stricmp(text, Messages[i].name) ) {
-			strcpy_s(message, Messages[i].message);
+			message = Messages[i].message;
 
-			sexp_replace_variable_names_with_values(message, NAME_LENGTH);
-
-			if (strlen(message) > NAME_LENGTH) {
-				WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", Messages[i].name);
-			}
+			sexp_replace_variable_names_with_values(message);
 
 			HudGauge* cg = hud_get_gauge(gaugename);
 			if(cg) {
@@ -9412,8 +9410,8 @@ void sexp_hud_set_directive(int n)
 
 	message_translate_tokens(message, text);
 
-	if (strlen(message) > NAME_LENGTH) {
-		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", message);
+	if (strlen(message) > MESSAGE_LENGTH) {
+		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to %d characters or less.", message, MESSAGE_LENGTH);
 		return;
 	}
 
@@ -9422,6 +9420,35 @@ void sexp_hud_set_directive(int n)
 		cg->updateCustomGaugeText(message);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+	}
+}
+
+void sexp_hud_clear_messages()
+{
+	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+		size_t num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
+
+		for(size_t i = 0; i < num_gauges; i++) {
+			if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getObjectType() == HUD_OBJECT_MESSAGES) {
+				HudGaugeMessages* gauge = dynamic_cast<HudGaugeMessages*>(Ship_info[Player_ship->ship_info_index].hud_gauges[i]);
+
+				if ( gauge != NULL) {
+					gauge->clearMessages();
+				}
+			}
+		}
+	} else {
+		size_t num_gauges = default_hud_gauges.size();
+
+		for(size_t i = 0; i < num_gauges; i++) {
+			if (default_hud_gauges[i]->getObjectType() == HUD_OBJECT_MESSAGES) {
+				HudGaugeMessages* gauge = dynamic_cast<HudGaugeMessages*>(default_hud_gauges[i]);
+				
+				if ( gauge != NULL) {
+					gauge->clearMessages();
+				}
+			}
+		}
 	}
 }
 
@@ -22034,6 +22061,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_hud_gauge_set_active(node);
 				break;
 
+			case OP_HUD_CLEAR_MESSAGES:
+				sexp_val = SEXP_TRUE;
+				sexp_hud_clear_messages();
+				break;
+
 			case OP_HUD_ACTIVATE_GAUGE_TYPE:
 				sexp_val = SEXP_TRUE;
 				sexp_hud_activate_gauge_type(node);
@@ -22917,6 +22949,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
+		case OP_HUD_CLEAR_MESSAGES:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -23825,6 +23858,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else
 				return OPF_POSITIVE;
+
+		case OP_HUD_CLEAR_MESSAGES:
+			return OPF_NONE;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -26372,6 +26408,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_DIRECTIVE:
 		case OP_HUD_GAUGE_SET_ACTIVE:
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
+		case OP_HUD_CLEAR_MESSAGES:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -29823,6 +29860,11 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
+	},
+
+	{OP_HUD_CLEAR_MESSAGES, "hud-clear-messages\r\n"
+		"\tClears active messages displayed on the HUD."
+		"Takes no arguments\r\n"
 	},
 
 	{OP_HUD_ACTIVATE_GAUGE_TYPE, "hud-activate-gauge-type\r\n"
