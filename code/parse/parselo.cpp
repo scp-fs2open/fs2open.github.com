@@ -237,7 +237,7 @@ extern int Cmdline_noparseerrors;
 void error_display(int error_level, char *format, ...)
 {
 	char type[8];
-	SCP_string error_text;
+	char error_text[1024];
 	va_list args;
 
 	if (error_level == 0) {
@@ -249,15 +249,15 @@ void error_display(int error_level, char *format, ...)
 	}
 
 	va_start(args, format);
-	vsprintf(error_text, format, args);
+	vsnprintf(error_text, sizeof(error_text) -1, format, args);
 	va_end(args);
 
-	nprintf((type, "%s(line %i): %s: %s\n", Current_filename, get_line_num(), type, error_text.c_str()));
+	nprintf((type, "%s(line %i): %s: %s\n", Current_filename, get_line_num(), type, error_text));
 
 	if(error_level == 0 || Cmdline_noparseerrors)
-		Warning(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
+		Warning(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text);
 	else
-		Error(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
+		Error(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text);
 }
 
 //	Advance Mp to the next eoln character.
