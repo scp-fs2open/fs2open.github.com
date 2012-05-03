@@ -732,7 +732,7 @@ typedef struct ship {
 	int ab_count;
 
 	// glow points
-	SCP_vector<bool> glow_point_bank_active;
+	std::deque<bool> glow_point_bank_active;
 
 	//Animated Shader effects
 	int shader_effect_num;

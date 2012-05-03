@@ -975,10 +975,14 @@ void main_hall_stop_music()
 	}
 }
 
-// render all playing misc animations
+/**
+ * Render all playing misc animations
+ * 
+ * @param frametime Animation time
+ */
 void main_hall_render_misc_anims(float frametime)
 {
-	SCP_vector<bool> group_anims_weve_checked;
+	std::deque<bool> group_anims_weve_checked;
 	int idx, s_idx, jdx;
 
 	// render all misc animations

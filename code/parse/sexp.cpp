@@ -5399,12 +5399,7 @@ void sexp_set_energy_pct (int node, int op_num)
 	new_pct = eval_num(node) / 100.0f;
 
 	// deal with ridiculous percentages
-	if (new_pct > 1.0f) {
-		new_pct = 1.0f;
-	}
-	else if (new_pct < 0.0f) {
-		new_pct = 0.0f; 
-	}
+    CLAMP(new_pct, 0.0f, 1.0f);
 	
 	// only need to send a packet for afterburners because shields and weapon energy are sent from server to clients
 	if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {

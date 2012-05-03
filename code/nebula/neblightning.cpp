@@ -148,11 +148,8 @@ DCF(lightning_intensity, "")
 {
 	dc_get_arg(ARG_FLOAT);
 	float val = Dc_arg_float;
-	if(val < 0.0f){
-		val = 0.0f;
-	} else if(val > 1.0f){
-		val = 1.0f;
-	}
+    
+    CLAMP(val, 0.0f, 1.0f);
 
 	Nebl_intensity = 1.0f - val;
 }

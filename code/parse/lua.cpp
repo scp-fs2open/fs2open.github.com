@@ -5175,18 +5175,9 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	if(x2 < x1 || y2 < y1)
 		return ade_set_args(L, "b", false);
 
-	if(rot_angles.p < 0.0f)
-		rot_angles.p = 0.0f;
-	if(rot_angles.p > 100.0f)
-		rot_angles.p = 100.0f;
-	if(rot_angles.b < 0.0f)
-		rot_angles.b = 0.0f;
-	if(rot_angles.b > 100.0f)
-		rot_angles.b = 100.0f;
-	if(rot_angles.h < 0.0f)
-		rot_angles.h = 0.0f;
-	if(rot_angles.h > 100.0f)
-		rot_angles.h = 100.0f;
+    CLAMP(rot_angles.p, 0.0f, 100.0f);
+    CLAMP(rot_angles.b, 0.0f, 100.0f);
+    CLAMP(rot_angles.h, 0.0f, 100.0f);
 
 	ship_info *sip = &Ship_info[idx];
 
@@ -9723,14 +9714,8 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
 	if(pri < 0 || pri > 3)
 		pri = 0;
 
-	if(pan < -1.0f)
-		pan = -1.0f;
-	if(pan > 1.0f)
-		pan = 1.0f;
-	if(vol < 0.0f)
-		vol = 0.0f;
-	if(vol > 100.0f)
-		vol = 100.0f;
+    CLAMP(pan, -1.0f, 1.0f);
+    CLAMP(vol, 0.0f, 100.0f);
 
 	idx = snd_play(&Snds[gamesnd_get_by_tbl_index(idx)], pan, vol*0.01f, pri, voice_msg);
 

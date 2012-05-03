@@ -140,7 +140,12 @@ void light_reset()
 	light_filter_reset();
 }
 extern vec3d Object_position;
-// Rotates the light into the current frame of reference
+
+/**
+ * Rotates the light into the current frame of reference
+ *
+ * @param l Light to rotate
+ */
 void light_rotate(light * l)
 {
 	switch( l->type )	{
@@ -222,14 +227,8 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 	l->instance = Num_lights-1;
 		
 	Assert( Num_light_levels <= 1 );
-//	Relevent_lights[Num_relevent_lights[Num_light_levels-1]++][Num_light_levels-1] = l;
 
 	Static_light.push_back(l);
-
-/*	if(!Cmdline_nohtl) {
-	//	light_data *L = (light_data*)(void*)l;
-		gr_make_light(l, l->instance, 1);
-	}*/
 }
 
 
@@ -252,8 +251,6 @@ void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r,
 	if ( Lighting_off ) return;
 
 	if (!Lighting_flag) return;
-
-//	if ( keyd_pressed[KEY_LSHIFT] ) return;
 
 	if ( Num_lights >= MAX_LIGHTS ) {
 		mprintf(( "Out of lights!\n" ));
@@ -280,11 +277,6 @@ void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r,
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-/*	if(!Cmdline_nohtl) {
-	//	light_data *L = (light_data*)(void*)l;
-		gr_make_light(l, l->instance, 2);
-	}*/
-//	Relevent_lights[Num_relevent_lights[Num_light_levels-1]++][Num_light_levels-1] = l;
 }
 
 void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
@@ -301,8 +293,6 @@ void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, f
 	if ( Lighting_off ) return;
 
 	if (!Lighting_flag) return;
-
-//	if ( keyd_pressed[KEY_LSHIFT] ) return;
 
 	if ( Num_lights >= MAX_LIGHTS ) {
 		mprintf(( "Out of lights!\n" ));
@@ -329,10 +319,6 @@ void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, f
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-/*	if(!Cmdline_nohtl) {
-	//	light_data *L = (light_data*)(void*)l;
-		gr_make_light(l, l->instance, 2);
-	}*/
 }
 
 // beams affect every ship except the firing ship
@@ -405,6 +391,10 @@ void light_filter_reset()
 /**
  * Makes a list of only the lights that will affect
  * the sphere specified by 'pos' and 'rad' and 'objnum'
+ *
+ * @param objnum    Object number
+ * @param pos       World position
+ * @param rad       Radius
  */
 int light_filter_push( int objnum, vec3d *pos, float rad )
 {
@@ -450,19 +440,17 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 				}
 				// otherwise check all relevant objects
 				else {
-					// if ( (l->light_ignore_objnum < 0) || (l->light_ignore_objnum != objnum) )	{
-						vec3d to_light;
-						float dist_squared, max_dist_squared;
-						vm_vec_sub( &to_light, &l->vec, pos );
-						dist_squared = vm_vec_mag_squared(&to_light);
+                    vec3d to_light;
+                    float dist_squared, max_dist_squared;
+                    vm_vec_sub( &to_light, &l->vec, pos );
+                    dist_squared = vm_vec_mag_squared(&to_light);
 
-						max_dist_squared = l->radb+rad;
-						max_dist_squared *= max_dist_squared;
+                    max_dist_squared = l->radb+rad;
+                    max_dist_squared *= max_dist_squared;
 						
-						if ( dist_squared < max_dist_squared )	{
-							Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
-						}
-					// }
+                    if ( dist_squared < max_dist_squared )	{
+                        Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
+                    }
 				}
 			}
 			break;
@@ -527,12 +515,6 @@ int light_filter_push_box( vec3d *min, vec3d *max )
 	n2 = Num_light_levels;
 	Num_light_levels++;
 
-//	static int mll = -1;
-//	if ( Num_light_levels > mll )	{
-//		mll = Num_light_levels;
-//		mprintf(( "Max level = %d\n", mll ));
-//	}
-
 	Assert( Num_light_levels < MAX_LIGHT_LEVELS );
 
 	Num_relevent_lights[n2] = 0;
@@ -542,11 +524,10 @@ int light_filter_push_box( vec3d *min, vec3d *max )
 
 		switch( l->type )	{
 		case LT_DIRECTIONAL:
-			Int3();	//Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
+			//Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
 			break;
 
 		case LT_POINT:	{
-				// l->local_vec
 				if ( is_inside( min, max, &l->local_vec, l->radb ) )	{
 					Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
 				}
@@ -596,19 +577,24 @@ void light_rotate_all()
 	for (i = 0; i < (int)Static_light.size(); i++) {
 		light_rotate(Static_light[i]);
 	}
-
-//	l = Lights;
-//	for (i=0; i<Num_lights; i++, l++ )	{
-//		light_rotate(l);
-//	}
 }
 
-// return the # of global light sources
+/**
+ * Return the # of global light sources
+ */
 int light_get_global_count()
 {
 	return (int)Static_light.size();
 }
 
+/**
+ * Fills direction of global light source N in pos.
+ *
+ * @param pos   Position
+ * @param n     Light source
+ *
+ * Returns 0 if there is no global light.
+ */
 int light_get_global_dir(vec3d *pos, int n)
 {
 	if ( (n < 0) || (n >= (int)Static_light.size()) ) {
@@ -692,11 +678,7 @@ ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 	}
 
 	// At this point, l must be between 0 and 0.75 (0.75-1.0 is for dynamic light only)
-	if ( lval < 0.0f ) {
-		lval = 0.0f;
-	} else if ( lval > 0.75f ) {
-		lval = 0.75f;
-	}
+    CLAMP(lval, 0.0f, 0.75f);
 
 	lval *= static_light_level;
 
@@ -802,21 +784,9 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 		}
 
 
-	if ( rval < 0.0f ) {
-		rval = 0.0f;
-	} else if ( rval > 0.75f ) {
-		rval = 0.75f;
-	}
-	if ( gval < 0.0f ) {
-		gval = 0.0f;
-	} else if ( gval > 0.75f ) {
-		gval = 0.75f;
-	}
-	if ( bval < 0.0f ) {
-		bval = 0.0f;
-	} else if ( bval > 0.75f ) {
-		bval = 0.75f;
-	}
+    CLAMP(rval, 0.0f, 0.75f);
+    CLAMP(gval, 0.0f, 0.75f);
+    CLAMP(bval, 0.0f, 0.75f);
 
 	//dynamic lights
 
@@ -888,21 +858,9 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 		}
 	}
 
-	if ( rval < 0.0f ) {
-		rval = 0.0f;
-	} else if ( rval > 1.0f ) {
-		rval = 1.0f;
-	}
-	if ( gval < 0.0f ) {
-		gval = 0.0f;
-	} else if ( gval > 1.0f ) {
-		gval = 1.0f;
-	}
-	if ( bval < 0.0f ) {
-		bval = 0.0f;
-	} else if ( bval > 1.0f ) {
-		bval = 1.0f;
-	}
+    CLAMP(rval, 0.0f, 1.0f);
+    CLAMP(gval, 0.0f, 1.0f);
+    CLAMP(bval, 0.0f, 1.0f);
 
 	*param_r = ubyte(fl2i(rval*254.0f));
 	*param_g = ubyte(fl2i(gval*254.0f));
@@ -965,21 +923,9 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 	}
 
 	// At this point, l must be between 0 and 0.75 (0.75-1.0 is for dynamic light only)
-	if ( rval < 0.0f ) {
-		rval = 0.0f;
-	} else if ( rval > 0.75f ) {
-		rval = 0.75f;
-	}
-	if ( gval < 0.0f ) {
-		gval = 0.0f;
-	} else if ( gval > 0.75f ) {
-		gval = 0.75f;
-	}
-	if ( bval < 0.0f ) {
-		bval = 0.0f;
-	} else if ( bval > 0.75f ) {
-		bval = 0.75f;
-	}
+	CLAMP(rval, 0.0f, 0.75f);
+    CLAMP(gval, 0.0f, 0.75f);
+    CLAMP(bval, 0.0f, 0.75f);
 
 	rval *= static_light_level;
 	gval *= static_light_level;
@@ -1057,41 +1003,11 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 		bval *= im;
 	}
 	
-	if ( rval < 0.0f ) {
-		rval = 0.0f;
-	} else if ( rval > 1.0f ) {
-		rval = 1.0f;
-	}
-	if ( gval < 0.0f ) {
-		gval = 0.0f;
-	} else if ( gval > 1.0f ) {
-		gval = 1.0f;
-	}
-	if ( bval < 0.0f ) {
-		bval = 0.0f;
-	} else if ( bval > 1.0f ) {
-		bval = 1.0f;
-	}
+    CLAMP(rval, 0.0f, 1.0f);
+    CLAMP(gval, 0.0f, 1.0f);
+    CLAMP(bval, 0.0f, 1.0f);
 
 	*param_r = ubyte(fl2i(rval*255.0f));
 	*param_g = ubyte(fl2i(gval*255.0f));
 	*param_b = ubyte(fl2i(bval*255.0f));
 }
-
-
-/*
-float light_apply( vec3d *pos, vec3d * norm )
-{
-#if 1
-	float r,g,b;
-	light_apply_rgb( &r, &g, &b, pos, norm );
-	return (r+g+b) / 3.0f;
-#else
-	return light_apply_ramp( pos, norm );
-#endif
-
-}
-*/
-
-
-

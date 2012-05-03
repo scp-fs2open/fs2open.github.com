@@ -8885,8 +8885,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// extra check
 	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
-	if (hull_pct <= 0.0f) hull_pct = 0.1f;
-	if (hull_pct > 1.0f) hull_pct = 1.0f;
+    CLAMP(hull_pct, 0.1f, 1.0f);
 
 	// shield
 	if (sp->special_shield > 0) {
@@ -8899,8 +8898,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// extra check
 	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
-	if (shield_pct < 0.0f) shield_pct = 0.0f;
-	if (shield_pct > 1.0f) shield_pct = 1.0f;
+    CLAMP(shield_pct, 0.0f, 1.0f);
 
 	// subsystems
 	int num_saved_subsystems = 0;
@@ -8927,8 +8925,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		// extra check
 		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
-		if (subsys_pcts[num_saved_subsystems] < 0.0f) subsys_pcts[num_saved_subsystems] = 0.0f;
-		if (subsys_pcts[num_saved_subsystems] > 1.0f) subsys_pcts[num_saved_subsystems] = 1.0f;
+        CLAMP(subsys_pcts[num_saved_subsystems], 0.0f, 1.0f);
 
 		num_saved_subsystems++;
 		ss = GET_NEXT(ss);

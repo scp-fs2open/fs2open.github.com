@@ -1410,11 +1410,7 @@ bool SetCmdlineParams()
 	if ( ogl_spec_arg.found() ) {
 		Cmdline_ogl_spec = ogl_spec_arg.get_float();
 
-		if ( Cmdline_ogl_spec < 0.0f )
-			Cmdline_ogl_spec = 0.0f;
-
-		if ( Cmdline_ogl_spec > 128.0f )
-			Cmdline_ogl_spec = 128.0f;
+		CLAMP(Cmdline_ogl_spec, 0.0f, 128.0f);
 	}
 
 	if ( rearm_timer_arg.found() )
