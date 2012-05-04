@@ -1174,6 +1174,7 @@ typedef struct transparent_submodel {
 	bsp_info *model;
 	matrix orient;
 	bool is_submodel;
+	bool pop_matrix;
 	SCP_vector<transparent_object> transparent_objects;
 } transparent_submodel;
 // scale the engines thrusters by this much
