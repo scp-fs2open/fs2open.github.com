@@ -293,18 +293,37 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 
 						// Okay, if we're still here, then objp is both valid and a ship
 						ship* shipp = &Ships[objp->instance];
+						bool primary = false, secondary = false, prev_primary = false, prev_secondary = false;
 						switch (action) {
 							case CHA_ONWPSELECTED:
-								if (! ((stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0) 
-									|| (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0)))
+								primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
+								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
+								
+								if (!(primary || secondary))
 									return false;
+								
 								break;
 							case CHA_ONWPDESELECTED:
-								if (! (((stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name, scp->data.name) == 0) 
-									&&  ( stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) != 0)) 
-									|| ((stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name, scp->data.name) == 0) 
-									&&  (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) != 0)) ))
+								primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
+								prev_primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name, scp->data.name) == 0;
+								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
+								prev_secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name, scp->data.name) == 0;
+
+								if ( !prev_secondary && ! secondary && !prev_primary && !primary )
 									return false;
+
+								if ( (!prev_secondary && !secondary) && (prev_primary && primary) ) 
+									return false;
+
+								if ( (!prev_secondary && !secondary) && (!prev_primary && primary) ) 
+									return false;
+
+								if ( (!prev_primary && !primary) && (prev_secondary && secondary) )
+									return false;
+
+								if ( (!prev_primary && !primary) && (!prev_secondary && secondary) )
+									return false;
+
 								break;
 							case CHA_ONWPEQUIPPED: {
 								bool equipped = false;
@@ -334,10 +353,12 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 								break;
 							}
 							case CHA_ONWPFIRED: {
-								bool primary = false, secondary = false;
 								primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
 								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
 								
+								if (shipp->flags & SF_PRIMARY_LINKED && primary && Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK)
+									return false;
+
 								if (!(primary || secondary))
 									return false;
 								break;
