@@ -72,7 +72,9 @@ flag_def_list Script_actions[] =
 	{"On Weapon Selected",		CHA_ONWPSELECTED,	0},
 	{"On Weapon Deselected",	CHA_ONWPDESELECTED,	0},
 	{"On Gameplay Start",		CHA_GAMEPLAYSTART,	0},
-	{"On Turret Fired",			CHA_ONTURRETFIRED,	0}
+	{"On Turret Fired",			CHA_ONTURRETFIRED,	0},
+	{"On Primary Fire",			CHA_PRIMARYFIRE,	0},
+	{"On Secondary Fire",		CHA_SECONDARYFIRE,	0}
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -332,12 +334,26 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 								break;
 							}
 							case CHA_ONWPFIRED: {
-								if (! (stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0 || (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0)))
+								bool primary = false, secondary = false;
+								primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
+								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
+								
+								if (!(primary || secondary))
 									return false;
 								break;
 							}
 							case CHA_ONTURRETFIRED: {
 								if (! (stricmp(Weapon_info[shipp->last_fired_turret->last_fired_weapon_info_index].name, scp->data.name) == 0))
+									return false;
+								break;
+							}
+							case CHA_PRIMARYFIRE: {
+								if (stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name))
+									return false;
+								break;
+							}
+							case CHA_SECONDARYFIRE: {
+								if (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name))
 									return false;
 								break;
 							}
