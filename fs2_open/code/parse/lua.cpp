@@ -5911,6 +5911,34 @@ ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
 }
 
+ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
+{
+	ship_subsys_h *sso;
+	char *s = NULL;
+	char *name = NULL;
+	
+	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
+		return ade_set_error(L, "s", "");
+
+	if(!sso->IsValid())
+		return ade_set_error(L, "s", "");
+
+	ship_subsys *ssys = sso->ss;
+
+	int atindex = -1;
+	if (ADE_SETTING_VAR && s != NULL) {
+		atindex = armor_type_get_idx(s);
+		ssys->armor_type_idx = atindex;
+	}
+
+	if (atindex != -1)
+		name = Armor_types[atindex].GetNamePtr();
+	else
+		name = "";
+
+	return ade_set_args(L, "s", name);
+}
+
 ADE_VIRTVAR(AWACSIntensity, l_Subsystem, "number", "Subsystem AWACS intensity", "number", "AWACS intensity, or 0 if handle is invalid")
 {
 	ship_subsys_h *sso;
@@ -6616,6 +6644,33 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp->instance]));
+}
+
+ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ships' shield", "string", "Armor class name, or empty string if none is set")
+{
+	object_h *objh;
+	char *s = NULL;
+	char *name = NULL;
+	
+	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
+		return ade_set_error(L, "s", "");
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	ship *shipp = &Ships[objh->objp->instance];
+	int atindex = -1;
+	if (ADE_SETTING_VAR && s != NULL) {
+		atindex = armor_type_get_idx(s);
+		shipp->shield_armor_type_idx = atindex;
+	}
+
+	if (atindex != -1)
+		name = Armor_types[atindex].GetNamePtr();
+	else
+		name = "";
+
+	return ade_set_args(L, "s", name);
 }
 
 ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
