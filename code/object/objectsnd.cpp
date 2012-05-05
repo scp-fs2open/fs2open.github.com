@@ -655,17 +655,16 @@ void obj_snd_do_frame()
 			snd_set_volume( osp->instance, 0.0f );
 		}
 
-		vec3d *vel=NULL;
-		vel = &objp->phys_info.vel;
+		vec3d vel = objp->phys_info.vel;
 
 		// Don't play doppler effect for cruisers or capitals
 		if ( sp ) {
 			if ( ship_get_SIF(sp) & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
-				vel=NULL;
+				vel = vmd_zero_vector;
 			}
 		}
 
-		ds3d_update_buffer(channel, i2fl(gs->min), i2fl(gs->max), &source_pos, vel);
+		ds3d_update_buffer(channel, i2fl(gs->min), i2fl(gs->max), &source_pos, &vel);
 		snd_get_3d_vol_and_pan(gs, &source_pos, &osp->vol, &osp->pan, add_distance);
 	}	// end for
 
