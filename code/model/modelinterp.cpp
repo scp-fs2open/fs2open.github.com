@@ -2977,6 +2977,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
 		transparent_submodel ts;
 		ts.is_submodel = false;
+		ts.pop_matrix = false;
 		transparent_submodels.push_back(ts);
 		model_render_buffers(pm, pm->detail[Interp_detail_level]);
 	} else {
@@ -2993,6 +2994,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 				if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
 					transparent_submodel ts;
 					ts.is_submodel = false;
+					ts.pop_matrix = false;
 					transparent_submodels.push_back(ts);
 					model_render_children_buffers( pm, i, Interp_detail_level );
 				} else {
@@ -3036,7 +3038,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		}
 		ts->transparent_objects.clear();
 		
-		if(ts->is_submodel)
+		if(ts->pop_matrix)
 			g3_done_instance(true);
 	}
 	transparent_submodels.clear();
@@ -3237,6 +3239,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 
 		transparent_submodel ts;
 		ts.is_submodel = false;
+		ts.pop_matrix = false;
 		transparent_submodels.push_back(ts);
 
 		model_render_buffers(pm, submodel_num);
@@ -4386,6 +4389,19 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 	
 	transparent_submodel ts;
 	ts.is_submodel = true;
+	ts.pop_matrix = true;
+
+	bool childs = false;
+	i = model->first_child;
+	while (i >= 0) {
+		if ( !pm->submodel[i].is_thruster ) {
+			childs = true;
+			ts.pop_matrix = false;
+			break;
+		}
+
+		i = pm->submodel[i].next_sibling;
+	}
 	ts.model = model;
 	
 	memcpy(&ts.orient,&submodel_matrix,sizeof(matrix));
@@ -4406,6 +4422,15 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 		}
 
 		i = pm->submodel[i].next_sibling;
+	}
+
+	if(childs)
+	{
+		ts.is_submodel = false;
+		ts.pop_matrix = true;
+		ts.model = 0;
+		ts.transparent_objects.clear();
+		transparent_submodels.push_back(ts);
 	}
 
 	Interp_flags = fl;

@@ -10306,6 +10306,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			target = &Objects[Player_ai->target_objnum]; 
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
+
+		Script_system.RunCondition(CHA_PRIMARYFIRE, 0, NULL, objp);
 	}
 
 	return num_fired;
@@ -11017,6 +11019,7 @@ done_secondary:
 			target = &Objects[Player_ai->target_objnum]; 
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
+		Script_system.RunCondition(CHA_SECONDARYFIRE, 0, NULL, objp);
 	}
 
 	return num_fired;

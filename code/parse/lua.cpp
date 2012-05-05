@@ -6618,6 +6618,33 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 	return ade_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp->instance]));
 }
 
+ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
+{
+	object_h *objh;
+	char *s = NULL;
+	char *name = NULL;
+	
+	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
+		return ade_set_error(L, "s", "");
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	ship *shipp = &Ships[objh->objp->instance];
+	int atindex = -1;
+	if (ADE_SETTING_VAR && s != NULL) {
+		atindex = armor_type_get_idx(s);
+		shipp->armor_type_idx = atindex;
+	}
+
+	if (atindex != -1)
+		name = Armor_types[atindex].GetNamePtr();
+	else
+		name = "";
+
+	return ade_set_args(L, "s", name);
+}
+
 ADE_VIRTVAR(Name, l_Ship, "string", "Ship name", "string", "Ship name, or empty string if handle is invalid")
 {
 	object_h *objh;
