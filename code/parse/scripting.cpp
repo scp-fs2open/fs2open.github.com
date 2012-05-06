@@ -356,8 +356,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 								primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
 								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
 								
-								if (shipp->flags & SF_PRIMARY_LINKED && primary && Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK)
-									return false;
+								// if (shipp->flags & SF_PRIMARY_LINKED && primary && Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK)
+								// 	return false;
 
 								if (!(primary || secondary))
 									return false;
