@@ -1080,13 +1080,10 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				// Be sure to mark this ship as as a could_be_player
 				obj_set_flags( objp, objp->flags | OF_COULD_BE_PLAYER );
 				objp->flags &= ~OF_PLAYER_SHIP;
-			}
 
-			// if this is a player ship, make sure we find out who's it is and set their objnum accordingly
-			if(team_val != -1){
+                // if this is a player ship, make sure we find out who's it is and set their objnum accordingly
 				for( j = 0; j < MAX_PLAYERS; j++){
-					if(MULTI_CONNECTED(Net_players[j]) && (Net_players[j].m_player->objnum == Objects[Ships[idx].objnum].net_signature)) {						
-						// nprintf(("Network", "Making %s ship for %s\n", Ships[shipnum].ship_name, Net_players[j].player->callsign));
+					if(MULTI_CONNECTED(Net_players[j]) && (Net_players[j].m_player->objnum == Objects[Ships[idx].objnum].net_signature)) {
 						multi_assign_player_ship( j, objp, Ships[idx].ship_info_index );
 						objp->flags |= OF_PLAYER_SHIP;
 						objp->flags &= ~OF_COULD_BE_PLAYER;
