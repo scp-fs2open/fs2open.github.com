@@ -40,6 +40,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
+import javax.swing.ScrollPaneConstants;
 
 import com.fsoinstaller.common.InstallerNode;
 import com.fsoinstaller.main.Configuration;
@@ -58,7 +59,7 @@ public class ModSelectPage extends WizardPage
 	
 	private final List<InstallerNode> treeWalk;
 	private boolean inited;
-	private int numChecked;
+	private SharedCounter counter;
 	
 	public ModSelectPage()
 	{
@@ -79,7 +80,7 @@ public class ModSelectPage extends WizardPage
 		
 		treeWalk = new ArrayList<InstallerNode>();
 		inited = false;
-		numChecked = 0;
+		counter = null;
 	}
 	
 	@Override
@@ -90,7 +91,7 @@ public class ModSelectPage extends WizardPage
 		labelPanel.add(new JLabel("You can modify your installation here or continue with your current selection."));
 		labelPanel.add(Box.createHorizontalGlue());
 		
-		JScrollPane modScrollPane = new JScrollPane(modPanel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		JScrollPane modScrollPane = new JScrollPane(modPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		
 		JPanel panel = new JPanel(new BorderLayout(0, GUIConstants.DEFAULT_MARGIN));
 		panel.setBorder(BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN));
@@ -119,6 +120,9 @@ public class ModSelectPage extends WizardPage
 				logger.error("There are no mods available!  (And this should have been checked already!)");
 				return;
 			}
+			
+			// this is only done once, and is thread-safe since it goes on the event-dispatching thread
+			counter = new SharedCounter(nextButton);
 			
 			// populate the mod panel
 			modPanel.removeAll();
@@ -149,12 +153,12 @@ public class ModSelectPage extends WizardPage
 		// TODO: select and disable nodes that have been installed already
 		
 		// set Install button status
-		nextButton.setEnabled(numChecked > 0);
+		counter.syncButton();
 	}
 	
 	private void addTreeNode(InstallerNode node, int depth)
 	{
-		SingleModPanel panel = new SingleModPanel(node, depth);
+		SingleModPanel panel = new SingleModPanel(node, depth, counter);
 		node.setUserObject(panel);
 		treeWalk.add(node);
 		
@@ -170,17 +174,19 @@ public class ModSelectPage extends WizardPage
 		runWhenReady.run();
 	}
 	
-	private class SingleModPanel extends JPanel
+	private static class SingleModPanel extends JPanel
 	{
 		private final InstallerNode node;
 		private final JCheckBox checkBox;
 		private final JButton button;
+		private final SharedCounter counter;
 		
-		public SingleModPanel(InstallerNode node, int depth)
+		public SingleModPanel(InstallerNode node, int depth, SharedCounter counter)
 		{
 			this.node = node;
-			this.checkBox = createCheckBox(node);
+			this.checkBox = createCheckBox(node, counter);
 			this.button = createMoreInfoButton(node);
+			this.counter = counter;
 			
 			// set up layout
 			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
@@ -205,15 +211,15 @@ public class ModSelectPage extends WizardPage
 		{
 			// keep track of tally, but don't set Install button status here
 			if (checkBox.isSelected() && !selected)
-				numChecked--;
+				counter.numChecked--;
 			else if (!checkBox.isSelected() && selected)
-				numChecked++;
+				counter.numChecked++;
 			
 			checkBox.setSelected(selected);
 		}
 	}
 	
-	private JCheckBox createCheckBox(final InstallerNode node)
+	private static JCheckBox createCheckBox(final InstallerNode node, final SharedCounter counter)
 	{
 		JCheckBox checkBox = new JCheckBox(new AbstractAction()
 		{
@@ -230,12 +236,12 @@ public class ModSelectPage extends WizardPage
 				
 				// update check tally for this box only
 				if (((JCheckBox) e.getSource()).isSelected())
-					numChecked++;
+					counter.numChecked++;
 				else
-					numChecked--;
+					counter.numChecked--;
 				
 				// set Install button status
-				nextButton.setEnabled(numChecked > 0);
+				counter.syncButton();
 				
 				// changing the selection means the installation is now custom
 				Configuration.getInstance().getSettings().put(Configuration.INSTALL_CHOICE_KEY, InstallChoice.CUSTOM);
@@ -312,5 +318,22 @@ public class ModSelectPage extends WizardPage
 			button.setEnabled(false);
 		
 		return button;
+	}
+	
+	private static class SharedCounter
+	{
+		public int numChecked;
+		private final JButton nextButton;
+		
+		public SharedCounter(JButton nextButton)
+		{
+			this.numChecked = 0;
+			this.nextButton = nextButton;
+		}
+		
+		public void syncButton()
+		{
+			nextButton.setEnabled(numChecked > 0);
+		}
 	}
 }
