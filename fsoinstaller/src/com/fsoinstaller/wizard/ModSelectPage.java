@@ -170,6 +170,16 @@ public class ModSelectPage extends WizardPage
 	@Override
 	public void prepareToLeavePage(Runnable runWhenReady)
 	{
+		// extract all the nodes we selected
+		List<InstallerNode> installNodes = new ArrayList<InstallerNode>();
+		for (InstallerNode node: treeWalk)
+			if (((SingleModPanel) node.getUserObject()).isSelected())
+				installNodes.add(node);
+		
+		// save in configuration
+		Map<String, Object> settings = Configuration.getInstance().getSettings();
+		settings.put(Configuration.NODES_TO_INSTALL_KEY, installNodes);
+		
 		resetNextButton();
 		runWhenReady.run();
 	}
@@ -197,6 +207,7 @@ public class ModSelectPage extends WizardPage
 			add(button);
 		}
 		
+		@SuppressWarnings("unused")
 		public InstallerNode getNode()
 		{
 			return node;

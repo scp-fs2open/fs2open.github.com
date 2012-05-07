@@ -47,6 +47,7 @@ public class Configuration
 	public static final String BASIC_CONFIG_MODS_KEY = "BASIC-CONFIG-MODS";
 	public static final String MOD_NODES_KEY = "MOD-NODES";
 	public static final String INSTALL_CHOICE_KEY = "INSTALL-CHOICE";
+	public static final String NODES_TO_INSTALL_KEY = "NODES-TO-INSTALL";
 	
 	/**
 	 * Use the Initialization On Demand Holder idiom for thread-safe
