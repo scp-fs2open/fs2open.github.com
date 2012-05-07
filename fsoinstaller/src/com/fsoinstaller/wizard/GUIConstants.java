@@ -19,8 +19,11 @@
 
 package com.fsoinstaller.wizard;
 
-public class GUIConstants
+public final class GUIConstants
 {
 	public static final int DEFAULT_MARGIN = 10;
 	public static final int SMALL_MARGIN = 5;
+	
+	// prevent instantiation
+	private GUIConstants() {}
 }

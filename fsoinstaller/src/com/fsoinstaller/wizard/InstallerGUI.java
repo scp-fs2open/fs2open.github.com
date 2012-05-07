@@ -33,10 +33,10 @@ public class InstallerGUI extends JFrame
 {
 	private static final BufferedImage app_icon = GraphicsUtils.getResourceImage("installer_icon.png");
 	
-	protected final InstallerPage[] pages;
+	protected final WizardPage[] pages;
 	protected final CardLayout layout;
 	
-	protected InstallerPage activePage;
+	protected WizardPage activePage;
 	protected int activePageIndex;
 	
 	public InstallerGUI()
@@ -44,7 +44,7 @@ public class InstallerGUI extends JFrame
 		layout = new CardLayout();
 		
 		// instantiate all the pages we'll be using
-		pages = new InstallerPage[]
+		pages = new WizardPage[]
 		{
 			new ConfigPage(),
 			new ChoicePage(),
@@ -68,7 +68,7 @@ public class InstallerGUI extends JFrame
 		
 		// add pages to layout
 		contentPane.removeAll();
-		for (InstallerPage page: pages)
+		for (WizardPage page: pages)
 		{
 			page.setGUI(this);
 			page.buildUI();

@@ -20,6 +20,8 @@
 package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +39,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.JTextPane;
 
 import com.fsoinstaller.common.InstallerNode;
 import com.fsoinstaller.main.Configuration;
@@ -44,7 +47,7 @@ import com.fsoinstaller.utils.Logger;
 import com.fsoinstaller.utils.MiscUtils;
 
 
-public class ModSelectPage extends InstallerPage
+public class ModSelectPage extends WizardPage
 {
 	private static final Logger logger = Logger.getLogger(ModSelectPage.class);
 	
@@ -242,7 +245,25 @@ public class ModSelectPage extends InstallerPage
 				@Override
 				public void actionPerformed(ActionEvent e)
 				{
-					JOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), node.getDescription(), node.getName(), JOptionPane.INFORMATION_MESSAGE);
+					JLabel name = new JLabel(node.getName());
+					name.setFont(name.getFont().deriveFont(Font.BOLD));
+					
+					// we want the description to have multiline capability, so we put it in a JTextPane that looks like a JLabel
+					JTextPane description = new JTextPane();
+					description.setBackground(null);
+					description.setEditable(false);
+					description.setBorder(null);
+					
+					// manually wrap the description :-/
+					FontMetrics metrics = description.getFontMetrics(description.getFont());
+					int maxWidth = (int) (MiscUtils.getActiveFrame().getSize().getWidth() * 0.8);
+					description.setText(MiscUtils.wrapText(node.getDescription(), metrics, maxWidth));
+					
+					JPanel message = new JPanel(new BorderLayout(0, GUIConstants.DEFAULT_MARGIN));
+					message.add(name, BorderLayout.NORTH);
+					message.add(description, BorderLayout.CENTER);
+					
+					JOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), message, "FreeSpace Open Installer", JOptionPane.INFORMATION_MESSAGE);
 				}
 			});
 			

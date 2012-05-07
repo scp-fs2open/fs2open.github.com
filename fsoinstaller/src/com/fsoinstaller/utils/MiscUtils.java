@@ -22,6 +22,7 @@ package com.fsoinstaller.utils;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.FontMetrics;
 import java.awt.Frame;
 import java.awt.Toolkit;
 import java.io.BufferedReader;
@@ -31,8 +32,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.SwingUtilities;
 
 
 /**
@@ -263,5 +267,41 @@ public class MiscUtils
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Handy-dandy text wrapping function, adapted from
+	 * http://www.geekyramblings.net/2005/06/30/wrap-jlabel-text/.
+	 */
+	public static String wrapText(String text, FontMetrics metrics, int maxWidth)
+	{
+		BreakIterator boundary = BreakIterator.getWordInstance();
+		boundary.setText(text);
+		
+		StringBuilder line = new StringBuilder();
+		StringBuilder paragraph = new StringBuilder();
+		
+		// build it with embedded newlines
+		for (int start = boundary.first(), end = boundary.next(); end != BreakIterator.DONE; start = end, end = boundary.next())
+		{
+			String word = text.substring(start, end);
+			
+			line.append(word);
+			int lineWidth = SwingUtilities.computeStringWidth(metrics, line.toString());
+			
+			if (lineWidth > maxWidth)
+			{
+				// trim off whitespace at the beginning of the word
+				word = word.replaceAll("^\\s+", "");
+				
+				// append a newline, and start a new line
+				line = new StringBuilder(word);
+				paragraph.append("\n");
+			}
+			
+			paragraph.append(word);
+		}
+		
+		return paragraph.toString();
 	}
 }

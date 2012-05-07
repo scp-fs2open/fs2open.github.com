@@ -40,7 +40,7 @@ import com.fsoinstaller.utils.GraphicsUtils;
 import com.fsoinstaller.utils.MiscUtils;
 
 
-public abstract class InstallerPage extends JPanel
+public abstract class WizardPage extends JPanel
 {
 	private static final BufferedImage banner = GraphicsUtils.getResourceImage("top.png");
 	
@@ -54,7 +54,7 @@ public abstract class InstallerPage extends JPanel
 	protected String oldNextText;
 	protected String oldNextToolTip;
 	
-	public InstallerPage(String name)
+	public WizardPage(String name)
 	{
 		gui = null;
 		configuration = Configuration.getInstance();
@@ -127,7 +127,7 @@ public abstract class InstallerPage extends JPanel
 	 * This method will be called immediately before the page is about to be
 	 * changed. This method should perform any validation necessary, then invoke
 	 * runWhenReady upon validation success. If the page should not be left for
-	 * any reason, do not invokeRunWhenReady.
+	 * any reason, do not invoke runWhenReady.
 	 */
 	public abstract void prepareToLeavePage(Runnable runWhenReady);
 	
@@ -162,7 +162,7 @@ public abstract class InstallerPage extends JPanel
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setBorder(BorderFactory.createEmptyBorder(GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN, GUIConstants.DEFAULT_MARGIN));
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
-		buttonPanel.add(new JLabel("\u00A9 2006-2011 The FreeSpace 2 Source Code Project"));
+		buttonPanel.add(new JLabel("\u00A9 2006-2012 The FreeSpace 2 Source Code Project"));
 		buttonPanel.add(Box.createHorizontalGlue());
 		buttonPanel.add(backButton);
 		buttonPanel.add(nextButton);

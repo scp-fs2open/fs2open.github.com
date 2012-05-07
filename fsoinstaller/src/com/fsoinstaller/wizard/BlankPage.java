@@ -22,7 +22,7 @@ package com.fsoinstaller.wizard;
 import javax.swing.JPanel;
 
 
-public class BlankPage extends InstallerPage
+public class BlankPage extends WizardPage
 {
 	public BlankPage()
 	{

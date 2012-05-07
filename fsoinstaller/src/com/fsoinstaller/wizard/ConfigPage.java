@@ -64,7 +64,7 @@ import com.fsoinstaller.utils.ThreadSafeJOptionPane;
 import com.l2fprod.common.swing.JDirectoryChooser;
 
 
-public class ConfigPage extends InstallerPage
+public class ConfigPage extends WizardPage
 {
 	private static final Logger logger = Logger.getLogger(ConfigPage.class);
 	

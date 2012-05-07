@@ -46,7 +46,7 @@ import com.fsoinstaller.utils.Logger;
 import com.fsoinstaller.utils.MiscUtils;
 
 
-public class ChoicePage extends InstallerPage
+public class ChoicePage extends WizardPage
 {
 	private static final Logger logger = Logger.getLogger(ChoicePage.class);
 	
