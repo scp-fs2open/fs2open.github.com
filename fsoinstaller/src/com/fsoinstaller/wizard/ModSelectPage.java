@@ -58,6 +58,7 @@ public class ModSelectPage extends WizardPage
 	
 	private final List<InstallerNode> treeWalk;
 	private boolean inited;
+	private int numChecked;
 	
 	public ModSelectPage()
 	{
@@ -78,6 +79,7 @@ public class ModSelectPage extends WizardPage
 		
 		treeWalk = new ArrayList<InstallerNode>();
 		inited = false;
+		numChecked = 0;
 	}
 	
 	@Override
@@ -145,6 +147,9 @@ public class ModSelectPage extends WizardPage
 		}
 		
 		// TODO: select and disable nodes that have been installed already
+		
+		// set Install button status
+		nextButton.setEnabled(numChecked > 0);
 	}
 	
 	private void addTreeNode(InstallerNode node, int depth)
@@ -165,7 +170,7 @@ public class ModSelectPage extends WizardPage
 		runWhenReady.run();
 	}
 	
-	private static class SingleModPanel extends JPanel
+	private class SingleModPanel extends JPanel
 	{
 		private final InstallerNode node;
 		private final JCheckBox checkBox;
@@ -198,79 +203,114 @@ public class ModSelectPage extends WizardPage
 		
 		public void setSelected(boolean selected)
 		{
+			// keep track of tally, but don't set Install button status here
+			if (checkBox.isSelected() && !selected)
+				numChecked--;
+			else if (!checkBox.isSelected() && selected)
+				numChecked++;
+			
 			checkBox.setSelected(selected);
 		}
-		
-		private static JCheckBox createCheckBox(final InstallerNode node)
+	}
+	
+	private JCheckBox createCheckBox(final InstallerNode node)
+	{
+		JCheckBox checkBox = new JCheckBox(new AbstractAction()
 		{
-			JCheckBox checkBox = new JCheckBox(new AbstractAction()
 			{
-				{
-					putValue(AbstractAction.NAME, node.getName());
-				}
+				putValue(AbstractAction.NAME, node.getName());
+			}
+			
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				// we want to automatically select or deselect appropriate nodes
+				setSuperTreeState(node, ((JCheckBox) e.getSource()).isSelected());
+				setSubTreeState(node, ((JCheckBox) e.getSource()).isSelected());
 				
-				@Override
-				public void actionPerformed(ActionEvent e)
-				{
-					// we want to automatically select or deselect any children
-					setSubTreeState(node, ((JCheckBox) e.getSource()).isSelected());
-					
-					// changing the selection means the installation is now custom
-					Configuration.getInstance().getSettings().put(Configuration.INSTALL_CHOICE_KEY, InstallChoice.CUSTOM);
-				}
+				// update check tally for this box only
+				if (((JCheckBox) e.getSource()).isSelected())
+					numChecked++;
+				else
+					numChecked--;
 				
-				private void setSubTreeState(InstallerNode root, boolean selected)
-				{
-					// this check exists because we don't want to doubly-set the node we're on
-					if (root != node)
-						((SingleModPanel) root.getUserObject()).setSelected(selected);
-					
-					// iterate through the tree
-					for (InstallerNode child: root.getChildren())
-						setSubTreeState(child, selected);
-				}
-			});
-			return checkBox;
-		}
-		
-		private static JButton createMoreInfoButton(final InstallerNode node)
+				// set Install button status
+				nextButton.setEnabled(numChecked > 0);
+				
+				// changing the selection means the installation is now custom
+				Configuration.getInstance().getSettings().put(Configuration.INSTALL_CHOICE_KEY, InstallChoice.CUSTOM);
+			}
+			
+			private void setSuperTreeState(InstallerNode root, boolean selected)
+			{
+				// this is only if we are *selecting* a child of an unselected parent, so do nothing if we are *deselecting*
+				if (!selected)
+					return;
+				
+				// this check exists because we don't want to doubly-set the node we're on
+				if (root != node)
+					((SingleModPanel) root.getUserObject()).setSelected(selected);
+				
+				// iterate upward through the tree
+				if (root.getParent() != null)
+					setSuperTreeState(root.getParent(), selected);
+			}
+			
+			private void setSubTreeState(InstallerNode root, boolean selected)
+			{
+				// this is only if we are *deselecting* a parent of selected children, so do nothing if we are *selecting*
+				if (selected)
+					return;
+				
+				// this check exists because we don't want to doubly-set the node we're on
+				if (root != node)
+					((SingleModPanel) root.getUserObject()).setSelected(selected);
+				
+				// iterate through the tree
+				for (InstallerNode child: root.getChildren())
+					setSubTreeState(child, selected);
+			}
+		});
+		return checkBox;
+	}
+	
+	private static JButton createMoreInfoButton(final InstallerNode node)
+	{
+		JButton button = new JButton(new AbstractAction()
 		{
-			JButton button = new JButton(new AbstractAction()
 			{
-				{
-					putValue(AbstractAction.NAME, "More Info");
-					putValue(AbstractAction.SHORT_DESCRIPTION, "Click to display additional information about this mod");
-				}
+				putValue(AbstractAction.NAME, "More Info");
+				putValue(AbstractAction.SHORT_DESCRIPTION, "Click to display additional information about this mod");
+			}
+			
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				JLabel name = new JLabel(node.getName());
+				name.setFont(name.getFont().deriveFont(Font.BOLD));
 				
-				@Override
-				public void actionPerformed(ActionEvent e)
-				{
-					JLabel name = new JLabel(node.getName());
-					name.setFont(name.getFont().deriveFont(Font.BOLD));
-					
-					// we want the description to have multiline capability, so we put it in a JTextPane that looks like a JLabel
-					JTextPane description = new JTextPane();
-					description.setBackground(null);
-					description.setEditable(false);
-					description.setBorder(null);
-					
-					// manually wrap the description :-/
-					FontMetrics metrics = description.getFontMetrics(description.getFont());
-					int maxWidth = (int) (MiscUtils.getActiveFrame().getSize().getWidth() * 0.8);
-					description.setText(MiscUtils.wrapText(node.getDescription(), metrics, maxWidth));
-					
-					JPanel message = new JPanel(new BorderLayout(0, GUIConstants.DEFAULT_MARGIN));
-					message.add(name, BorderLayout.NORTH);
-					message.add(description, BorderLayout.CENTER);
-					
-					JOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), message, "FreeSpace Open Installer", JOptionPane.INFORMATION_MESSAGE);
-				}
-			});
-			
-			if (node.getDescription() == null || node.getDescription().isEmpty())
-				button.setEnabled(false);
-			
-			return button;
-		}
+				// we want the description to have multiline capability, so we put it in a JTextPane that looks like a JLabel
+				JTextPane description = new JTextPane();
+				description.setBackground(null);
+				description.setEditable(false);
+				description.setBorder(null);
+				
+				// manually wrap the description :-/
+				FontMetrics metrics = description.getFontMetrics(description.getFont());
+				int maxWidth = (int) (MiscUtils.getActiveFrame().getSize().getWidth() * 0.8);
+				description.setText(MiscUtils.wrapText(node.getDescription(), metrics, maxWidth));
+				
+				JPanel message = new JPanel(new BorderLayout(0, GUIConstants.DEFAULT_MARGIN));
+				message.add(name, BorderLayout.NORTH);
+				message.add(description, BorderLayout.CENTER);
+				
+				JOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), message, "FreeSpace Open Installer", JOptionPane.INFORMATION_MESSAGE);
+			}
+		});
+		
+		if (node.getDescription() == null || node.getDescription().isEmpty())
+			button.setEnabled(false);
+		
+		return button;
 	}
 }
