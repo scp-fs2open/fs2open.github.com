@@ -345,6 +345,7 @@ sexp_oper Operators[] = {
 	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
 	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
 	{ "allow-treason",				OP_ALLOW_TREASON,				1, 1 },			// Karajorma
+	{ "set-player-orders",			OP_SET_PLAYER_ORDERS,			3, INT_MAX },	// Karajorma
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 4,			},
@@ -9603,7 +9604,8 @@ void sexp_player_use_ai(int flag)
 }
 
 // Karajorma
-void sexp_allow_treason (int n) {
+void sexp_allow_treason (int n) 
+{
 	n = CDR(n);
 	if (n != -1) {
 		if ( is_sexp_true(n) ) {
@@ -9612,6 +9614,44 @@ void sexp_allow_treason (int n) {
 		else {
 			The_mission.flags &= ~MISSION_FLAG_NO_TRAITOR;
 		}
+	}
+}
+
+void sexp_set_player_orders(int n) 
+{
+	ship *shipp; 
+	int i;
+	int allow_order;
+	int orders = 0;
+	int default_orders; 
+
+	shipp = sexp_get_ship_from_node(n);
+
+	// we need to know which orders this ship class can accept.
+	default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
+	n = CDR(n);
+	allow_order = is_sexp_true(n);
+	n = CDR(n);
+	do {
+		for (i = 0 ; i < NUM_COMM_ORDER_ITEMS ; i++) {
+			// since it's the cheaper test, test first if the ship will even accept this order first
+			if (default_orders & Sexp_comm_orders[i].item) {
+				if (!stricmp(CTEXT(n), Sexp_comm_orders[i].name)) {
+					orders |= Sexp_comm_orders[i].item;
+					break;
+				}
+			}
+		}
+
+		n = CDR(n);
+	}while (n >= 0);
+		
+	// set or unset the orders
+	if (allow_order) {
+		shipp->orders_accepted |= orders;
+	}
+	else {
+		shipp->orders_accepted &= ~orders;
 	}
 }
 
@@ -20973,6 +21013,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break; 
 
+			//Karajorma
+			case OP_SET_PLAYER_ORDERS:
+				sexp_set_player_orders(node);
+				sexp_val = SEXP_TRUE;
+				break; 
+
 			// Goober5000
 			case OP_EXPLOSION_EFFECT:
 				sexp_explosion_effect(node);
@@ -22957,6 +23003,7 @@ int query_operator_return_type(int op)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 		case OP_ALLOW_TREASON:
+		case OP_SET_PLAYER_ORDERS:
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
 		case OP_NAV_DEL:
@@ -23825,6 +23872,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ALLOW_TREASON:
 		case OP_END_MISSION:
 			return OPF_BOOL;
+
+		case OP_SET_PLAYER_ORDERS:
+			if (argnum==0)
+				return OPF_SHIP_WING_TEAM;
+			if (argnum==1)
+				return OPF_BOOL;
+			else 
+				return OPF_AI_ORDER;
 
 		case OP_SET_SOUND_ENVIRONMENT:
 			if (argnum == 0)
@@ -26236,6 +26291,7 @@ int get_subcategory(int sexp_id)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 		case OP_ALLOW_TREASON:
+		case OP_SET_PLAYER_ORDERS:
 		case OP_CHANGE_IFF_COLOR:
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
@@ -29444,6 +29500,14 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_ALLOW_TREASON, "allow-treason\r\n"
 		"\tTurns the Allow Traitor switch on or off in mission. Takes 0 arguments.\r\n"
 		"\t1:\tTrue/False."
+	},
+
+	// Karajorma
+	{ OP_SET_PLAYER_ORDERS, "set-player-orders\r\n"
+		"\tChanges the orders friendly AI will accept. Takes 3 or more arguments.\r\n"
+		"\t1:\tShip Name\r\n"
+		"\t2:\tTrue/False as to whether this order is allowed or not\r\n"
+		"\tRest:\tOrder"
 	},
 
 	//WMC

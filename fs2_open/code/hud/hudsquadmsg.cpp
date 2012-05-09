@@ -165,6 +165,37 @@ comm_order Comm_orders[NUM_COMM_ORDER_ITEMS];
 
 // Goober5000
 // this is stupid, but localization won't work otherwise
+// Karajorma 
+// moving the defines to a non-temporary array is no less stupid. But at least now the SEXP system can get at them.
+sexp_com_order Sexp_comm_orders[] =
+	{
+		// common stuff
+		{ "Destroy my target",	299,	ATTACK_TARGET_ITEM },
+		{ "Disable my target",	300,	DISABLE_TARGET_ITEM },
+		{ "Disarm my target",	301,	DISARM_TARGET_ITEM },
+		{ "Destroy subsystem",	302,	DISABLE_SUBSYSTEM_ITEM },
+		{ "Protect my target",	303,	PROTECT_TARGET_ITEM },
+		{ "Ignore my target",	304,	IGNORE_TARGET_ITEM },
+		{ "Form on my wing",	305,	FORMATION_ITEM },
+		{ "Cover me",			306,	COVER_ME_ITEM },
+		{ "Engage enemy",		307,	ENGAGE_ENEMY_ITEM },
+
+		// transports mostly
+		{ "Capture my target",	308,	CAPTURE_TARGET_ITEM },
+
+		// support ships
+		{ "Rearm me",			309,	REARM_REPAIR_ME_ITEM },
+		{ "Abort rearm",		310,	ABORT_REARM_REPAIR_ITEM },
+
+		// all ships
+		{ "Depart",				311,	DEPART_ITEM },
+	
+		// extra stuff for support (maintain original comm menu order)
+		{ "Stay near me",		-1,		STAY_NEAR_ME_ITEM},
+		{ "Stay near my target",-1,		STAY_NEAR_TARGET_ITEM},
+		{ "Keep safe distance", -1,		KEEP_SAFE_DIST_ITEM},
+	};
+
 void hud_init_comm_orders()
 {
 	int i;
@@ -179,35 +210,6 @@ void hud_init_comm_orders()
 		XSTR("Abort Rearm", 298)
 	};
 
-	struct { char *name; int item; } temp_comm_orders[] =
-	{
-		// common stuff
-		{ XSTR("Destroy my target", 299),	ATTACK_TARGET_ITEM },
-		{ XSTR("Disable my target", 300),	DISABLE_TARGET_ITEM },
-		{ XSTR("Disarm my target", 301),	DISARM_TARGET_ITEM },
-		{ XSTR("Destroy subsystem", 302),	DISABLE_SUBSYSTEM_ITEM },
-		{ XSTR("Protect my target", 303),	PROTECT_TARGET_ITEM },
-		{ XSTR("Ignore my target", 304),	IGNORE_TARGET_ITEM },
-		{ XSTR("Form on my wing", 305),		FORMATION_ITEM },
-		{ XSTR("Cover me", 306),			COVER_ME_ITEM },
-		{ XSTR("Engage enemy", 307),		ENGAGE_ENEMY_ITEM },
-
-		// transports mostly
-		{ XSTR("Capture my target", 308),	CAPTURE_TARGET_ITEM },
-
-		// support ships
-		{ XSTR("Rearm me", 309),			REARM_REPAIR_ME_ITEM },
-		{ XSTR("Abort rearm", 310),			ABORT_REARM_REPAIR_ITEM },
-
-		// all ships
-		{ XSTR("Depart", 311),				DEPART_ITEM },
-	
-		// extra stuff for support (maintain original comm menu order)
-		{ XSTR("Stay near me", -1),			STAY_NEAR_ME_ITEM},
-		{ XSTR("Stay near my target", -1),	STAY_NEAR_TARGET_ITEM},
-		{ XSTR("Keep safe distance", -1),	KEEP_SAFE_DIST_ITEM},
-	};
-
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
 	{
 		strcpy_s(Comm_order_types[i], temp_comm_order_types[i]);
@@ -215,8 +217,8 @@ void hud_init_comm_orders()
 
 	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
 	{
-		strcpy_s(Comm_orders[i].name, temp_comm_orders[i].name);
-		Comm_orders[i].item = temp_comm_orders[i].item;
+		strcpy_s(Comm_orders[i].name, XSTR(Sexp_comm_orders[i].name, Sexp_comm_orders[i].xstring));
+		Comm_orders[i].item = Sexp_comm_orders[i].item;
 	}
 }
 
