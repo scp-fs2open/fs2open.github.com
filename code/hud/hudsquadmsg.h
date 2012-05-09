@@ -67,7 +67,14 @@ typedef struct comm_order {
 	int item;
 } comm_order;
 
+typedef struct sexp_com_order{ 
+	char *name; 
+	int xstring; 
+	int item; 
+}sexp_com_order;
+
 extern comm_order Comm_orders[];
+extern sexp_com_order Sexp_comm_orders[];
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages
