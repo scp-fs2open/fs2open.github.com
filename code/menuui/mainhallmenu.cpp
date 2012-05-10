@@ -1275,6 +1275,12 @@ void main_hall_cull_door_sounds()
 
 void main_hall_handle_random_intercom_sounds()
 {
+	if (Main_hall->num_random_intercom_sounds <= 0)
+	{
+		// If there are no intercom sounds then just skip this section
+		return;
+	}
+
 	// if we have no timestamp for the next random sound, then set on
 	if ( (Main_hall_next_intercom_sound_stamp == -1) && (Main_hall_intercom_sound_handle == -1) ) {
 		Main_hall_next_intercom_sound_stamp = timestamp((int)(((float)rand()/(float)RAND_MAX) * 

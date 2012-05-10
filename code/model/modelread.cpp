@@ -3935,7 +3935,7 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *
 {
 	Assert(ship_obj->type == OBJ_SHIP);
 
-	outnorm = submodel_norm;
+	*outnorm = *submodel_norm;
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
 
