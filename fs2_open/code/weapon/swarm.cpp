@@ -263,7 +263,10 @@ void swarm_update_direction(object *objp, float frametime)
 
 			missile_speed = pi->speed;
 			missile_dist = missile_speed * swarmp->change_time/1000.0f;
-			swarmp->angle_offset = (float)(asin(SWARM_DIST_OFFSET / missile_dist));
+			if (missile_dist == 0.0f) // Just in case of div by zero, which can happen with local SSMs
+				swarmp->angle_offset = (float)asin(SWARM_DIST_OFFSET);
+			else
+				swarmp->angle_offset = (float)(asin(SWARM_DIST_OFFSET / missile_dist));
 			Assert(!_isnan(swarmp->angle_offset) );
 		}
 
