@@ -16597,7 +16597,7 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 	}
 
 	//curr_arg is a pointer to the current calculation type value
-	float	*curr_arg = NULL;
+	float	*curr_arg = new float;
 
 	//Make sure that we _have_ an armor entry for this damage type
 	if(adtp != NULL)
