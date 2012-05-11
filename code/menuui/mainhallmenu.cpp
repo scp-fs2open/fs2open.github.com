@@ -1176,6 +1176,12 @@ void main_hall_mouse_release_region(int region)
 		return;
 	}
 
+	// don't do anything if there are no animations to play
+	else if(Main_hall_door_anim.size() == 0)
+	{
+		return;
+	}
+
 	// run backwards and stop at the first frame
 	Main_hall_door_anim.at(region).direction = GENERIC_ANIM_DIRECTION_BACKWARDS | GENERIC_ANIM_DIRECTION_NOLOOP;
 
@@ -1199,6 +1205,12 @@ void main_hall_mouse_release_region(int region)
 void main_hall_mouse_grab_region(int region)
 {
 	if (Main_hall_frame_skip) {
+		return;
+	}
+
+	// don't do anything if there are no animations to play
+	else if(Main_hall_door_anim.size() == 0)
+	{
 		return;
 	}
 
