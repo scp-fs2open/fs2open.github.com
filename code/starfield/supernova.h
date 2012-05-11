@@ -44,6 +44,9 @@ void supernova_level_init();
 // start a supernova
 void supernova_start(int seconds);
 
+// stop a supernova
+void supernova_stop();
+
 // call once per frame
 void supernova_process();
 

@@ -85,6 +85,36 @@ void supernova_start(int seconds)
 	Supernova_status = SUPERNOVA_STARTED;
 }
 
+void supernova_stop()
+{
+	// There's no currently active supernova
+	if(Supernova_status != SUPERNOVA_STARTED)
+	{
+		return;
+	}
+	
+	// We're too late.
+	if(supernova_time_left() < SUPERNOVA_CUT_TIME)
+	{
+		return;
+	}
+
+	// A supernova? In MY multiplayer?
+	if(Game_mode & GM_MULTIPLAYER) {
+		return;
+	}
+
+	Supernova_time_total = -1.0f;
+	Supernova_time = -1.0f;
+	Supernova_finished = 0;
+	Supernova_popup = 0;
+	Supernova_fade_to_white = 0.0f;
+	Supernova_particle_stamp = -1;
+
+	Supernova_status = SUPERNOVA_NONE;
+}
+
+
 int sn_particles = 100;
 DCF(sn_part, "")
 {
