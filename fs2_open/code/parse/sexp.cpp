@@ -511,6 +511,7 @@ sexp_oper Operators[] = {
 	{ "weapon-create",					OP_WEAPON_CREATE,				5, 10	},	// Goober5000
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
+	{ "supernova-stop",					OP_SUPERNOVA_STOP,				0,	0			}, //CommanderDJ
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
 	{ "ship-tag",				OP_SHIP_TAG,				3, 8			},	// Goober5000
@@ -17926,6 +17927,11 @@ void sexp_supernova_start(int node)
 	supernova_start(eval_num(node));
 }
 
+void sexp_supernova_stop(int node)
+{
+	supernova_stop();
+}
+
 int sexp_is_secondary_selected(int node)
 {
 	int sindex;
@@ -21679,6 +21685,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_supernova_start(node);
 				break;
 
+			case OP_SUPERNOVA_STOP:
+				sexp_val = SEXP_TRUE;
+				sexp_supernova_stop(node);
+				break;
+
 			case OP_SHIELD_RECHARGE_PCT:
 				sexp_val = sexp_shield_recharge_pct(node);
 				break;
@@ -22955,6 +22966,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_TAGGED_CLEAR_ALL:
 		case OP_SUBSYS_SET_RANDOM:
 		case OP_SUPERNOVA_START:
+		case OP_SUPERNOVA_STOP:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
@@ -23200,6 +23212,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_INVALIDATE_ALL_ARGUMENTS:
 		case OP_VALIDATE_ALL_ARGUMENTS:
 		case OP_NUM_VALID_ARGUMENTS:
+		case OP_SUPERNOVA_STOP:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -26526,6 +26539,7 @@ int get_subcategory(int sexp_id)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_SUPERNOVA_START:
+		case OP_SUPERNOVA_STOP:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
@@ -29026,6 +29040,10 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_SUPERNOVA_START, "supernova-start\r\n"
 		"\t1: Time in seconds until the supernova shockwave hits the player\r\n"},
+
+	{ OP_SUPERNOVA_STOP, "supernova-stop\r\n"
+		"\t Stops a supernova in progress.\r\n"
+		"\t Note this only works if the camera hasn't cut to the player's death animation yet.\r\n"},
 
 	{ OP_WEAPON_RECHARGE_PCT, "weapon-recharge-pct\r\n"
 		"\tReturns a percentage from 0 to 100\r\n"
