@@ -54,6 +54,8 @@ void parse_mod_table(char *filename)
 
 	if (optional_string("$Cutscene camera disables HUD:")) {
 		stuff_boolean(&Cutscene_camera_disables_hud);
+		if (!Cutscene_camera_disables_hud)
+			mprintf(("Game Settings Table : HUD will not be disabled by default in in-game cutscenes.\n"));
 	} else {
 		Cutscene_camera_disables_hud = true;
 	}
