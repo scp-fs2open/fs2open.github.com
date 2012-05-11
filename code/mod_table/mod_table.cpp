@@ -16,6 +16,7 @@ int Directive_wait_time;
 bool True_loop_argument_sexps;
 bool Fixed_turret_collisions;
 bool Damage_impacted_subsystem_first;
+bool Cutscene_camera_disables_hud;
 
 void parse_mod_table(char *filename)
 {
@@ -49,6 +50,14 @@ void parse_mod_table(char *filename)
 	// how long should the game wait before displaying a directive?
 	if (optional_string("$Directive Wait Time:")) {
 		stuff_int(&Directive_wait_time);
+	}
+
+	if (optional_string("$Cutscene camera disables HUD:")) {
+		stuff_boolean(&Cutscene_camera_disables_hud);
+		if (!Cutscene_camera_disables_hud)
+			mprintf(("Game Settings Table : HUD will not be disabled by default in in-game cutscenes.\n"));
+	} else {
+		Cutscene_camera_disables_hud = true;
 	}
 
 	optional_string("#SEXP SETTINGS"); 

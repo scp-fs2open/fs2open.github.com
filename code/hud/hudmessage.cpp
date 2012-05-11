@@ -1278,7 +1278,7 @@ bool HudGaugeTalkingHead::canRender()
 		return false;
 	}
 
-	if (hud_disabled()) {
+	if (hud_disabled() && !hud_disabled_except_messages()) {
 		return false;
 	}
 

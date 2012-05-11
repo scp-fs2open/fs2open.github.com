@@ -16611,7 +16611,7 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 	}
 
 	//curr_arg is a pointer to the current calculation type value
-	float	*curr_arg = NULL;
+	float	*curr_arg = new float;
 
 	//Make sure that we _have_ an armor entry for this damage type
 	if(adtp != NULL)
@@ -16655,25 +16655,25 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 				curr_arg = &adtp->Arguments[i];
 			// maybe handle constants
 			} else if (storage_idx == AT_CONSTANT_BASE_DMG) {
-				curr_arg = &base_damage;
+				*curr_arg = base_damage;
 				using_constant = true;
 			} else if (storage_idx == AT_CONSTANT_CURRENT_DMG) {
-				curr_arg = &damage_applied;
+				*curr_arg = damage_applied;
 				using_constant = true;
 			} else if (storage_idx == AT_CONSTANT_DIFF_FACTOR) {
-				curr_arg = &diff_dmg_scale;
+				*curr_arg = diff_dmg_scale;
 				using_constant = true;
 			} else if (storage_idx == AT_CONSTANT_RANDOM) {
 				constant_val = frand();
-				curr_arg = &constant_val;
+				*curr_arg = constant_val;
 				using_constant = true;
 			} else if (storage_idx == AT_CONSTANT_PI) {
 				constant_val = PI;
-				curr_arg = &constant_val;
+				*curr_arg = constant_val;
 				using_constant = true;
 			} else { // fail
 				constant_val = 0.0f;
-				curr_arg = &constant_val;
+				*curr_arg = constant_val;
 			}
 			// new calcs go here
 			switch(adtp->Calculations[i])

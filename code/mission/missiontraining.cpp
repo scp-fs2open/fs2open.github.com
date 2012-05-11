@@ -194,7 +194,7 @@ bool HudGaugeDirectives::canRender()
 		return false;
 	}
 
-	if(hud_disabled_except_messages() && !message_gauge) {
+	if(hud_disabled_except_messages()) {
 		return false;
 	}
 
