@@ -10,6 +10,7 @@
 #include "playerman/player.h" //player_get_padlock_orient
 #include "ship/ship.h" //compute_slew_matrix
 #include "graphics/font.h"
+#include "mod_table/mod_table.h"
 
 //*************************IMPORTANT GLOBALS*************************
 float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
@@ -930,12 +931,15 @@ bool cam_set_camera(camid cid)
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = cid;
 
-	if(!Camera_hud_draw_saved)
+	if (Cutscene_camera_disables_hud) 
 	{
-		Camera_hud_draw_value = hud_get_draw();
-		Camera_hud_draw_saved = true;
+		if(!Camera_hud_draw_saved)
+		{
+			Camera_hud_draw_value = hud_get_draw();
+			Camera_hud_draw_saved = true;
+		}
+		hud_set_draw(0);
 	}
-	hud_set_draw(0);
 	return true;
 }
 
@@ -943,8 +947,11 @@ void cam_reset_camera()
 {
 	Viewer_mode &= ~VM_FREECAMERA;
 
-	hud_set_draw(Camera_hud_draw_value);
-	Camera_hud_draw_saved = false;
+	if (Cutscene_camera_disables_hud) 
+	{
+		hud_set_draw(Camera_hud_draw_value);
+		Camera_hud_draw_saved = false;
+	}
 }
 
 void subtitles_close()
