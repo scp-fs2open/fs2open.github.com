@@ -855,6 +855,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				SPECMAP = -1;
 				NORMMAP = -1;
 				HEIGHTMAP = -1;
+				MISCMAP = -1;
 			} else {
 
 				int vertnum = verts[i].vertnum;
@@ -948,6 +949,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 							NORMMAP = model_interp_get_texture(&tmap->textures[TM_NORMAL_TYPE], Interp_base_frametime);
 							HEIGHTMAP = model_interp_get_texture(&tmap->textures[TM_HEIGHT_TYPE], Interp_base_frametime);
 						}
+
+						MISCMAP = model_interp_get_texture(&tmap->textures[TM_MISC_TYPE], Interp_base_frametime);
 					}
 
 					//*****
@@ -979,6 +982,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 								case TM_HEIGHT_TYPE:
 									HEIGHTMAP = tex;
 									break;
+								case TM_MISC_TYPE:
+									MISCMAP = tex;
 								default:
 									break;
 							}
@@ -1018,6 +1023,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	SPECMAP = -1;
 	NORMMAP = -1;
 	HEIGHTMAP = -1;
+	MISCMAP = -1;
 
 	if (Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET) )	{
 	
@@ -3020,6 +3026,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			SPECMAP = obj->spec_map;
 			NORMMAP = obj->norm_map;
 			HEIGHTMAP = obj->height_map;
+			MISCMAP = obj->misc_map;
 
 			gr_push_scale_matrix(&obj->scale);
 			gr_set_bitmap(obj->texture, obj->blend_filter, GR_BITBLT_MODE_NORMAL, obj->alpha);
@@ -3035,6 +3042,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			SPECMAP = -1;
 			NORMMAP = -1;
 			HEIGHTMAP = -1;
+			MISCMAP = -1;
 		}
 		ts->transparent_objects.clear();
 		
@@ -3253,6 +3261,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 			SPECMAP = obj->spec_map;
 			NORMMAP = obj->norm_map;
 			HEIGHTMAP = obj->height_map;
+			MISCMAP = obj->misc_map;
 
 			gr_push_scale_matrix(&obj->scale);
 			gr_set_bitmap(obj->texture, obj->blend_filter, GR_BITBLT_MODE_NORMAL, obj->alpha);
@@ -3268,6 +3277,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 			SPECMAP = -1;
 			NORMMAP = -1;
 			HEIGHTMAP = -1;
+			MISCMAP = -1;
 		}
 		ts_i->transparent_objects.clear();
 		transparent_submodels.clear();
@@ -4564,6 +4574,7 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 				texture_info *spec_map = &tmap->textures[TM_SPECULAR_TYPE];
 				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
+				texture_info *misc_map = &tmap->textures[TM_MISC_TYPE];
 
 				if (Interp_new_replacement_textures != NULL) {
 					if (Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
@@ -4580,11 +4591,17 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 						tex_replace[TM_HEIGHT_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
 						height_map = &tex_replace[TM_HEIGHT_TYPE];
 					}
+
+					if (Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE] >= 0) {
+						tex_replace[TM_MISC_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE]);
+						misc_map = &tex_replace[TM_MISC_TYPE];
+					}
 				}
 
 				SPECMAP = model_interp_get_texture(spec_map, Interp_base_frametime);
 				NORMMAP = model_interp_get_texture(norm_map, Interp_base_frametime);
 				HEIGHTMAP = model_interp_get_texture(height_map, Interp_base_frametime);
+				MISCMAP = model_interp_get_texture(misc_map, Interp_base_frametime);
 			}
 		}
 
@@ -4605,6 +4622,7 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 			tobj.buffer = &model->buffer;
 			tobj.glow_map = GLOWMAP;
 			tobj.height_map = HEIGHTMAP;
+			tobj.misc_map = MISCMAP;
 			tobj.i = i;
 			tobj.norm_map = NORMMAP;
 			tobj.spec_map = SPECMAP;
@@ -4628,6 +4646,7 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		SPECMAP = -1;
 		NORMMAP = -1;
 		HEIGHTMAP = -1;
+		MISCMAP = -1;
 	}
 
 	gr_pop_scale_matrix();

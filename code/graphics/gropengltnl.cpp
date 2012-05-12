@@ -37,6 +37,7 @@ extern int GLOWMAP;
 extern int CLOAKMAP;
 extern int SPECMAP;
 extern int NORMMAP;
+extern int MISCMAP;
 extern int HEIGHTMAP;
 extern vec3d G3_user_clip_normal;
 extern vec3d G3_user_clip_point;
@@ -556,6 +557,10 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 				}
 			}
 		}
+
+		if (MISCMAP > 0) {
+			shader_flags |= SDR_FLAG_MISC_MAP;
+		}
 	}
 
 	// find proper shader
@@ -661,6 +666,14 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 
 			render_pass++;
 		}
+	}
+
+	if (shader_flags & SDR_FLAG_MISC_MAP) {
+		vglUniform1iARB( opengl_shader_get_uniform("sMiscmap"), render_pass );
+
+		gr_opengl_tcache_set(MISCMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
+		render_pass++; // bump!
 	}
 
 	if ((shader_flags & SDR_FLAG_ANIMATED))

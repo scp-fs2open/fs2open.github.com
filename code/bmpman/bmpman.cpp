@@ -53,6 +53,7 @@ int SPECMAP = -1;
 int ENVMAP = -1;
 int NORMMAP = -1;
 int HEIGHTMAP = -1;
+int MISCMAP = -1;
 
 bitmap_entry bm_bitmaps[MAX_BITMAPS];
 
