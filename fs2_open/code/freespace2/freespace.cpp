@@ -8273,9 +8273,6 @@ int init_cdrom()
 	int i, rval;
 
 	//scan for CD, etc.
-
-	rval = 1;
-
 	i = find_freespace_cd();
 
 	rval = set_cdrom_path(i);
@@ -8307,11 +8304,10 @@ int game_cd_changed()
 		Last_cd_label_found = found;
 		if ( found )	{
 			mprintf(( "CD '%s' was inserted\n", label ));
-			changed = 1;
 		} else {
 			mprintf(( "CD '%s' was removed\n", Last_cd_label ));
-			changed = 1;
 		}
+        changed = 1;
 	} else {
 		if ( Last_cd_label_found )	{
 			if ( !stricmp( Last_cd_label, label ))	{
