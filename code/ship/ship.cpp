@@ -16596,8 +16596,8 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 		}
 	}
 
-	//curr_arg is a pointer to the current calculation type value
-	float	*curr_arg = new float;
+	//curr_arg is the current calculation type value
+	float curr_arg;
 
 	//Make sure that we _have_ an armor entry for this damage type
 	if(adtp != NULL)
@@ -16634,88 +16634,88 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 			//Set curr_arg
 			// use storage index at +Stored Value:
 			if ( (storage_idx >= 0) && (storage_idx < AT_NUM_STORAGE_LOCATIONS) ) {
-				curr_arg = &storage[storage_idx];
+				curr_arg = storage[storage_idx];
 				using_storage = true;
 			// using +value: (or error cases caught at parse, where this holda a 0.0f)
 			} else if (storage_idx == AT_CONSTANT_NOT_USED) { // save time checking all possible constants when most of the time you will be using +value:
-				curr_arg = &adtp->Arguments[i];
+				curr_arg = adtp->Arguments[i];
 			// maybe handle constants
 			} else if (storage_idx == AT_CONSTANT_BASE_DMG) {
-				*curr_arg = base_damage;
+				curr_arg = base_damage;
 				using_constant = true;
 			} else if (storage_idx == AT_CONSTANT_CURRENT_DMG) {
-				*curr_arg = damage_applied;
+				curr_arg = damage_applied;
 				using_constant = true;
 			} else if (storage_idx == AT_CONSTANT_DIFF_FACTOR) {
-				*curr_arg = diff_dmg_scale;
+				curr_arg = diff_dmg_scale;
 				using_constant = true;
 			} else if (storage_idx == AT_CONSTANT_RANDOM) {
 				constant_val = frand();
-				*curr_arg = constant_val;
+				curr_arg = constant_val;
 				using_constant = true;
 			} else if (storage_idx == AT_CONSTANT_PI) {
 				constant_val = PI;
-				*curr_arg = constant_val;
+				curr_arg = constant_val;
 				using_constant = true;
 			} else { // fail
 				constant_val = 0.0f;
-				*curr_arg = constant_val;
+				curr_arg = constant_val;
 			}
 			// new calcs go here
 			switch(adtp->Calculations[i])
 			{
 				case AT_TYPE_ADDITIVE:
-					damage_applied += *curr_arg;
+					damage_applied += curr_arg;
 					break;
 				case AT_TYPE_MULTIPLICATIVE:
-					damage_applied *= *curr_arg;
+					damage_applied *= curr_arg;
 					break;
 				case AT_TYPE_EXPONENTIAL:
-					damage_applied = powf(damage_applied, *curr_arg);
+					damage_applied = powf(damage_applied, curr_arg);
 					break;
 				case AT_TYPE_EXPONENTIAL_BASE:
-					damage_applied = powf(*curr_arg, damage_applied);
+					damage_applied = powf(curr_arg, damage_applied);
 					break;
 				case AT_TYPE_CUTOFF:
-					if(damage_applied < *curr_arg)
+					if(damage_applied < curr_arg)
 						damage_applied = 0;
 					break;
 				case AT_TYPE_REVERSE_CUTOFF:
-					if(damage_applied > *curr_arg)
+					if(damage_applied > curr_arg)
 						damage_applied = 0;
 					break;
 				case AT_TYPE_INSTANT_CUTOFF:
-					if(damage_applied < *curr_arg)
+					if(damage_applied < curr_arg)
 					{
 						damage_applied = 0;
 						end_now = true;
 					}
 					break;
 				case AT_TYPE_INSTANT_REVERSE_CUTOFF:
-					if(damage_applied > *curr_arg)
+					if(damage_applied > curr_arg)
 					{
 						damage_applied = 0;
 						end_now = true;
 					}
 					break;
 				case AT_TYPE_CAP:
-					if (damage_applied > *curr_arg)
-						damage_applied = *curr_arg;
+					if (damage_applied > curr_arg)
+						damage_applied = curr_arg;
 					break;
 				case AT_TYPE_INSTANT_CAP:
-					if (damage_applied > *curr_arg) {
-						damage_applied = *curr_arg;
+					if (damage_applied > curr_arg) {
+						damage_applied = curr_arg;
 						end_now = true;
 					}
 					break;
 				case AT_TYPE_SET:
-					damage_applied = *curr_arg;
+					damage_applied = curr_arg;
 					break;
 				case AT_TYPE_STORE:
 					if (using_storage || using_constant) {
 						Warning(LOCATION, "Cannot use +Stored Value: or +Constant: with +Store:, that would be bad. Skipping calculation.");
 					} else {
-						storage_idx =  int(floorf(*curr_arg));
+						storage_idx =  int(floorf(curr_arg));
 						// Nuke: idiotproof this, no segfault 4 u
 						if ( (storage_idx < 0) || (storage_idx >= AT_NUM_STORAGE_LOCATIONS) ) {
 							Warning(LOCATION, "+Value: for +Store: calculation out of range. Should be between 0 and %i. Read: %i, Skipping calculation.", AT_NUM_STORAGE_LOCATIONS, storage_idx);
@@ -16729,7 +16729,7 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 					if (using_storage || using_constant) {
 						Warning(LOCATION, "Cannot use +Stored Value: or +Constant: with +Load:, that would be bad. Skipping calculation.");
 					} else {
-						storage_idx =  int(floorf(*curr_arg));
+						storage_idx =  int(floorf(curr_arg));
 						// Nuke: idiotproof this, no segfault 4 u
 						if ( (storage_idx < 0) || (storage_idx >= AT_NUM_STORAGE_LOCATIONS) ) {
 							Warning(LOCATION, "+Value: for +Load: calculation out of range. Should be between 0 and %i. Read: %i, Skipping calculation.", AT_NUM_STORAGE_LOCATIONS, storage_idx);
@@ -16740,10 +16740,10 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 					}
 					break;
 				case AT_TYPE_RANDOM:  // Nuke: get a random number between damage_applied and +value:
-					if (damage_applied > *curr_arg) {
-						damage_applied = frand_range( *curr_arg, damage_applied );
+					if (damage_applied > curr_arg) {
+						damage_applied = frand_range( curr_arg, damage_applied );
 					} else {
-						damage_applied = frand_range( damage_applied, *curr_arg );
+						damage_applied = frand_range( damage_applied, curr_arg );
 					}
 				break;
 			}
