@@ -1884,7 +1884,7 @@ that is being protected.
 void asteroid_parse_tbl()
 {
 	char impact_ani_file[MAX_FILENAME_LEN];
-	int i, rval;
+	int rval;
 
 	// How did we get here without having any species defined?
 	Assertion(Species_info.size() > 0,
