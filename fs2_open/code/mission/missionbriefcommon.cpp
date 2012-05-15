@@ -1584,28 +1584,34 @@ int brief_text_colorize(char *src, int instance)
 		if ( (i < src_len - 1)  && (src[i] == BRIEF_META_CHAR) )
 		{
 			i++;   // Consume the $ character
-			active_color_index = brief_return_color_index(src[i]);
-			i++; // Consume the color identifier and focus on the white character (if any)
 
-			// special case: different default colors
-			// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
-			if (src[i] == '{')
+			// it's possible that there's a closing brace here
+			if (src[i] == '}')
 			{
-				i++;	// consume the {
-				if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
-				{
-					color_stack_index++;
-					default_color_stack[color_stack_index] = active_color_index;
-				}
-			}
-			else if (src[i] == '}')
-			{
-				i++;	// consume the }
 				if (color_stack_index > 0)
 				{
 					color_stack_index--;
 					active_color_index = default_color_stack[color_stack_index];
 				}
+				i++;	// consume the }
+			}
+			// normal $c or $c{
+			else
+			{
+				active_color_index = brief_return_color_index(src[i]);
+				i++; // Consume the color identifier and focus on the white character (if any)
+			}
+
+			// special case: color spans (different default color within braces)
+			// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
+			if (src[i] == '{')
+			{
+				if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
+				{
+					color_stack_index++;
+					default_color_stack[color_stack_index] = active_color_index;
+				}
+				i++;	// consume the {
 			}
  
 			// Skip every whitespace until the next word is reached
