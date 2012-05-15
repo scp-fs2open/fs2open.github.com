@@ -3403,8 +3403,13 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 
 		// maybe skip leading whitespace
 		if (ignore_until_whitespace) {
-			if ( is_white_space(*src) )
+			if ( is_white_space(*src) ) {
 				ignore_until_whitespace = 0;
+
+				// don't eat the newline
+				if (*src == EOLN)
+					src--;
+			}
 
 			continue;
 		}

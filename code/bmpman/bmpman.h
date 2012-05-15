@@ -267,6 +267,7 @@ extern int SPECMAP;	//this holds a reference to a map that is for specular mappi
 extern int ENVMAP;	//this holds a reference to a map that is for environment mapping -Bobboau
 extern int NORMMAP;	// normal mapping
 extern int HEIGHTMAP;	// height map for normal mapping
+extern int MISCMAP; // Utility map, to be utilized for various things shader authors can come up with
 
 int bm_is_compressed(int num);
 int bm_get_tcache_type(int num);

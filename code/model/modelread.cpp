@@ -2322,6 +2322,16 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			theight->LoadTexture(tmp_name, pm->filename);
 		}
 	}
+
+	// Utility map -------------------------------------------------------------
+	texture_info *tmisc = &tmap->textures[TM_MISC_TYPE];
+
+	strcpy_s(tmp_name, file);
+	strcat_s(tmp_name, "-misc");
+	strlwr(tmp_name);
+
+	tmisc->LoadTexture(tmp_name, pm->filename);
+
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
@@ -2339,6 +2349,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		shader_flags |= SDR_FLAG_HEIGHT_MAP;
 	if (tspec->GetTexture() > 0 && Cmdline_env && Cmdline_spec) // No env maps without spec map
 		shader_flags |= SDR_FLAG_ENV_MAP;
+	if (tmisc->GetTexture() > 0)
+		shader_flags |= SDR_FLAG_MISC_MAP;
 
 	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT);
 	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_FOG);

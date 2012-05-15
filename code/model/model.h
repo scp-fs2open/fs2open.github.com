@@ -597,7 +597,8 @@ public:
 #define TM_SPECULAR_TYPE	2		// optional specular map
 #define TM_NORMAL_TYPE		3		// optional normal map
 #define TM_HEIGHT_TYPE		4		// optional height map (for parallax mapping)
-#define TM_NUM_TYPES		5		//WMC - Number of texture_info objects in texture_map
+#define TM_MISC_TYPE		5		// optional utility map
+#define TM_NUM_TYPES		6		//WMC - Number of texture_info objects in texture_map
 									//Used by scripting - if you change this, do a search
 									//to update switch() statement in lua.cpp
 // taylor
@@ -1164,6 +1165,7 @@ typedef struct transparent_object {
 	int spec_map;
 	int norm_map;
 	int height_map;
+	int misc_map;
 	vertex_buffer *buffer;
 	unsigned int tmap_flags;
 	int i;
