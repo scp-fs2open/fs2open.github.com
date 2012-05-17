@@ -89,7 +89,7 @@ typedef struct species_info {
 	species_info( )
 		: default_iff( 0 ), awacs_multiplier( 0 )
 	{
-		species_name[ 0 ] = NULL;
+		species_name[ 0 ] = 0;
 		memset( fred_color.a1d, 0, sizeof( fred_color.a1d ) );
 	}
 

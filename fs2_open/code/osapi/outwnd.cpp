@@ -63,7 +63,7 @@ struct outwnd_filter_struct {
 	outwnd_filter_struct( ) 
 		: enabled( false )
 	{ 
-		name[ 0 ] = NULL;
+		name[ 0 ] = 0;
 	}
 };
 

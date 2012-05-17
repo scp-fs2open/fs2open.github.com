@@ -44,8 +44,8 @@ typedef struct multi_create_info {
 	multi_create_info( )
 		: flags( 0 ), respawn( 0 ), max_players( 0 ), valid_status( MVALID_STATUS_UNKNOWN )
 	{
-		filename[ 0 ] = NULL;
-		name[ 0 ] = NULL;
+		filename[ 0 ] = 0;
+		name[ 0 ] = 0;
 	}
 } multi_create_info;
 
