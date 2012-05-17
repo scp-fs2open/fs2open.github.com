@@ -31,7 +31,7 @@ typedef struct hud_anim {
 		: first_frame( 0 ), num_frames( 0 ), sx( 0 ), sy( 0 ),
 		  total_time( 0 ), time_elapsed( 0 )
 	{
-		filename[ 0 ] = NULL;
+		filename[ 0 ] = 0;
 	}
 } hud_anim;
 
