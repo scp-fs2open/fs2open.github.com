@@ -841,7 +841,6 @@ void game_flash_diminish(float frametime)
 	
 	if ( Use_palette_flash )	{
 		int r,g,b;
-		static int o_r=0, o_g=0, o_b=0;
 
 		// Change the 200 to change the color range of colors.
 		r = fl2i( Game_flash_red*128.0f );  
@@ -866,10 +865,6 @@ void game_flash_diminish(float frametime)
 
 		if ( (r!=0) || (g!=0) || (b!=0) ) {
 			gr_flash( r, g, b );
-
-			o_r = r;
-			o_g = g;
-			o_b = b;
 		}
 	}
 	
