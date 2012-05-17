@@ -4079,7 +4079,7 @@ void game_simulation_frame()
 		obj_snd_do_frame();						// update the object-linked persistant sounds
 
 		game_maybe_update_sound_environment();
-		snd_update_listener(&View_position, &Player_obj->phys_info.vel, &Player_obj->orient);
+		snd_update_listener(&Eye_position, &Player_obj->phys_info.vel, &Eye_matrix);
 
 // AL: debug code used for testing ambient subspace sound (ie when enabling subspace through debug console)
 #ifndef NDEBUG
