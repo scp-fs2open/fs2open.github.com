@@ -1364,6 +1364,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					} else {
 						pm->submodel[n].render_sphere_radius = pm->submodel[n].rad;
 					}
+
+					if ( (p = strstr(props, "$offset:")) != NULL ) {
+						p += 8;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+					} else {
+						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
+					}
 				}
 
 				// Added for new handling of turret orientation - KeldorKatarn
