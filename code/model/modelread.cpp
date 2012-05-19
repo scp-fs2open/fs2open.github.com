@@ -2314,10 +2314,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	// bump maps ---------------------------------------------------------------
 	texture_info *tnorm = &tmap->textures[TM_NORMAL_TYPE];
-	texture_info *theight = &tmap->textures[TM_HEIGHT_TYPE];
 	if ( (!Cmdline_normal && !Fred_running) || (tbase->GetTexture() < 0) ) {
 		tnorm->clear();
-		theight->clear();
 	} else {
 		strcpy_s(tmp_name, file);
 		strcat_s(tmp_name, "-normal");
@@ -2327,7 +2325,10 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	}
 
 	// try to get a height map too
-	if (Cmdline_height) {
+	texture_info *theight = &tmap->textures[TM_HEIGHT_TYPE];
+	if ((!Cmdline_height && !Fred_running) || (tbase->GetTexture() < 0)) {
+		theight->clear();
+	} else {
 		strcpy_s(tmp_name, file);
 		strcat_s(tmp_name, "-height");
 		strlwr(tmp_name);
