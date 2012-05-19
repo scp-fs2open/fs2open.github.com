@@ -658,14 +658,14 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		gr_opengl_tcache_set(NORMMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
 		render_pass++; // bump!
+	}
 
-		if (shader_flags & SDR_FLAG_HEIGHT_MAP) {
-			vglUniform1iARB( opengl_shader_get_uniform("sHeightmap"), render_pass );
+	if (shader_flags & SDR_FLAG_HEIGHT_MAP) {
+		vglUniform1iARB( opengl_shader_get_uniform("sHeightmap"), render_pass );
 
-			gr_opengl_tcache_set(HEIGHTMAP, tmap_type, &u_scale, &v_scale, render_pass);
+		gr_opengl_tcache_set(HEIGHTMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
-			render_pass++;
-		}
+		render_pass++;
 	}
 
 	if (shader_flags & SDR_FLAG_MISC_MAP) {
