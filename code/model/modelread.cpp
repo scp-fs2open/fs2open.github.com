@@ -2324,15 +2324,15 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strlwr(tmp_name);
 
 		tnorm->LoadTexture(tmp_name, pm->filename);
+	}
 
-		// try to get a height map too
-		if ( Cmdline_height && (tnorm->GetTexture() > 0) ) {
-			strcpy_s(tmp_name, file);
-			strcat_s(tmp_name, "-height");
-			strlwr(tmp_name);
+	// try to get a height map too
+	if (Cmdline_height) {
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-height");
+		strlwr(tmp_name);
 
-			theight->LoadTexture(tmp_name, pm->filename);
-		}
+		theight->LoadTexture(tmp_name, pm->filename);
 	}
 
 	// Utility map -------------------------------------------------------------
