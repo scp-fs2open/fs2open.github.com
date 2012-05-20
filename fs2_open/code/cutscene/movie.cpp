@@ -127,6 +127,7 @@ bool movie_play(char *name)
 		} else {
 			// uh-oh, movie is invalid... Abory, Retry, Fail?
 			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
+			Mouse_hidden--;	// show the mouse cursor!
 			return false;
 		}
 	} else if (rc == MOVIE_MVE) {
@@ -143,6 +144,7 @@ bool movie_play(char *name)
 		} else {
 			// uh-oh, movie is invalid... Abory, Retry, Fail?
 			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
+			Mouse_hidden--;	// show the mouse cursor!
 			return false;
 		}
 	}
