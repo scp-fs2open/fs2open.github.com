@@ -288,7 +288,7 @@ void HudGaugeMessages::initialize()
 	Window_height = Max_lines * Line_h;
 
 	active_messages.clear();
-	pending_messages = SCP_queue<HUD_message_data>(); // there's no clear() method for queues :\
+	pending_messages = SCP_queue<HUD_message_data>(); // there's no clear() method for queues :/
 
 	Scroll_needed = false;
 	Scroll_in_progress = false;
