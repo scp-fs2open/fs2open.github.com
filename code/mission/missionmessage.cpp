@@ -1189,8 +1189,8 @@ void message_queue_process()
 			int ani_done, wave_done, j;
 
 			ani_done = 1;
-			//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
-			//	ani_done = 0;
+			if ( Playing_messages[i].play_anim )
+				ani_done = 0;
 
 			wave_done = 1;
 
