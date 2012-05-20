@@ -5617,12 +5617,10 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
 void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos, object *other_obj)
 {
 	weapon_info	*wip;
-	weapon *wp;
 	object		*objp;
 	float			damage, blast;
 
 	wip = &Weapon_info[Weapons[wobjp->instance].weapon_info_index];	
-	wp = &Weapons[wobjp->instance];
 
 	// only blast ships and asteroids
 	// And (some) weapons

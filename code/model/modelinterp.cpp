@@ -82,6 +82,7 @@ static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes
 static vec3d Interp_render_box_min = ZERO_VECTOR;
 static vec3d Interp_render_box_max = ZERO_VECTOR;
 static float Interp_render_sphere_radius = 0.0f;
+static vec3d Interp_render_sphere_offset = ZERO_VECTOR;
 
 // -------------------------------------------------------------------
 // lighting save stuff 
@@ -363,6 +364,7 @@ void interp_clear_instance()
 	Interp_render_box_min = vmd_zero_vector;
 	Interp_render_box_max = vmd_zero_vector;
 	Interp_render_sphere_radius = 0.0f;
+	Interp_render_sphere_offset = vmd_zero_vector;
 }
 
 /**
@@ -4361,7 +4363,12 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
 		Interp_render_sphere_radius = model->render_sphere_radius * Interp_box_scale;
 
-		if ( (-model->use_render_sphere + in_sphere(&model->offset, Interp_render_sphere_radius)) )
+		// TODO: doesn't consider submodel rotations yet -zookeeper
+		vec3d offset;
+		model_find_submodel_offset(&offset, pm->id, mn);
+		vm_vec_add2(&offset, &model->render_sphere_offset);
+
+		if ( (-model->use_render_sphere + in_sphere(&offset, Interp_render_sphere_radius)) )
 			return;
 	}
 
@@ -4479,7 +4486,12 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
 		Interp_render_sphere_radius = model->render_sphere_radius * Interp_box_scale;
 
-		if ( (-model->use_render_sphere + in_sphere(&model->offset, Interp_render_sphere_radius)) )
+		// TODO: doesn't consider submodel rotations yet -zookeeper
+		vec3d offset;
+		model_find_submodel_offset(&offset, pm->id, mn);
+		vm_vec_add2(&offset, &model->render_sphere_offset);
+
+		if ( (-model->use_render_sphere + in_sphere(&offset, Interp_render_sphere_radius)) )
 			return;
 	}
 

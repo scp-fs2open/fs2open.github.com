@@ -1364,6 +1364,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					} else {
 						pm->submodel[n].render_sphere_radius = pm->submodel[n].rad;
 					}
+
+					if ( (p = strstr(props, "$offset:")) != NULL ) {
+						p += 8;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+					} else {
+						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
+					}
 				}
 
 				// Added for new handling of turret orientation - KeldorKatarn
@@ -2302,25 +2314,26 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	// bump maps ---------------------------------------------------------------
 	texture_info *tnorm = &tmap->textures[TM_NORMAL_TYPE];
-	texture_info *theight = &tmap->textures[TM_HEIGHT_TYPE];
 	if ( (!Cmdline_normal && !Fred_running) || (tbase->GetTexture() < 0) ) {
 		tnorm->clear();
-		theight->clear();
 	} else {
 		strcpy_s(tmp_name, file);
 		strcat_s(tmp_name, "-normal");
 		strlwr(tmp_name);
 
 		tnorm->LoadTexture(tmp_name, pm->filename);
+	}
 
-		// try to get a height map too
-		if ( Cmdline_height && (tnorm->GetTexture() > 0) ) {
-			strcpy_s(tmp_name, file);
-			strcat_s(tmp_name, "-height");
-			strlwr(tmp_name);
+	// try to get a height map too
+	texture_info *theight = &tmap->textures[TM_HEIGHT_TYPE];
+	if ((!Cmdline_height && !Fred_running) || (tbase->GetTexture() < 0)) {
+		theight->clear();
+	} else {
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-height");
+		strlwr(tmp_name);
 
-			theight->LoadTexture(tmp_name, pm->filename);
-		}
+		theight->LoadTexture(tmp_name, pm->filename);
 	}
 
 	// Utility map -------------------------------------------------------------

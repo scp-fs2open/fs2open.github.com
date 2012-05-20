@@ -2969,7 +2969,7 @@ void ss_init_wing_info(int wing_num,int starting_wing_num)
 		// This gets cleaned up before the mission is started
 		for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
 			// niffiwan: don't overrun the array
-			if (ss_wing->num_slots >= MAX_WING_SLOTS) {
+			if (ss_wing->num_slots > MAX_WING_SLOTS) {
 				Warning(LOCATION, "Starting Wing '%s' has more than 'MAX_WING_SLOTS' ships\n", Starting_wing_names[ss_wing->wingnum]);
 				break;
 			}

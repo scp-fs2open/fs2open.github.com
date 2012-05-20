@@ -531,7 +531,7 @@ typedef struct weapon_expl_lod {
 	weapon_expl_lod( ) 
 		: bitmap_id( -1 ), num_frames( 0 ), fps( 0 )
 	{ 
-		filename[ 0 ] = NULL;
+		filename[ 0 ] = 0;
 	}
 } weapon_expl_lod;
 
