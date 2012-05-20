@@ -123,7 +123,7 @@ typedef struct campaign {
 extern campaign Campaign;
 
 // campaign wasn't ended
-extern int Campaign_ended_in_mission;
+extern int Campaign_ending_via_supernova;
 
 // structure for players.  Holds the campaign name, number of missions flown in the campaign, and result
 // of the missions flown.  This structure is stored in the player file and thus is persistent across
