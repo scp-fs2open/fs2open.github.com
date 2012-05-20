@@ -225,7 +225,7 @@ void supernova_process()
 					//
 					// don't actually check for a specific campaign here since others may want to end this way but we
 					// should test positive here if in campaign mode and sexp_end_campaign() got called - taylor
-					if (Campaign_ended_in_mission && (Game_mode & GM_CAMPAIGN_MODE) /*&& !stricmp(Campaign.filename, "freespace2")*/) {
+					if (Campaign_ending_via_supernova && (Game_mode & GM_CAMPAIGN_MODE) /*&& !stricmp(Campaign.filename, "freespace2")*/) {
 						gameseq_post_event(GS_EVENT_END_CAMPAIGN);
 					} else {
 						popupdead_start();
