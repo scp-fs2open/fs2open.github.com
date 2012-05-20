@@ -10636,7 +10636,7 @@ void sexp_end_campaign(int n)
 	// code needs special time to execute and will post GS_EVENT_END_CAMPAIGN with Game_mode check
 	// or show death-popup when it's done - taylor
 	if (supernova_active() /*&& !stricmp(Campaign.filename, "freespace2")*/) {
-		Campaign_ended_in_mission = 1;
+		Campaign_ending_via_supernova = 1;
 	} else {
 		// post and event to move us to the end-of-campaign state
 		gameseq_post_event(GS_EVENT_END_CAMPAIGN);

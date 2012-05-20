@@ -1165,7 +1165,9 @@ void message_play_anim( message_q *q )
 	}
 }
 
-// process the message queue -- called once a frame
+/** 
+ * process the message queue -- called once a frame
+ */
 void message_queue_process()
 {	
 	char	buf[MESSAGE_LENGTH];
@@ -1189,8 +1191,8 @@ void message_queue_process()
 			int ani_done, wave_done, j;
 
 			ani_done = 1;
-			//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
-			//	ani_done = 0;
+			if ( Playing_messages[i].play_anim )
+				ani_done = 0;
 
 			wave_done = 1;
 

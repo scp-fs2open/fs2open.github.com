@@ -288,7 +288,7 @@ void HudGaugeMessages::initialize()
 	Window_height = Max_lines * Line_h;
 
 	active_messages.clear();
-	pending_messages = SCP_queue<HUD_message_data>(); // there's no clear() method for queues :\
+	pending_messages = SCP_queue<HUD_message_data>(); // there's no clear() method for queues :/
 
 	Scroll_needed = false;
 	Scroll_in_progress = false;
@@ -427,10 +427,10 @@ void HudGaugeMessages::preprocess()
 	scrollMessages();
 }
 
-// ---------------------------------------------------------------------------------------
-// HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
-// the messages up when a new message arrives.  
-//
+/**
+ * HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
+ * the messages up when a new message arrives.
+ */
 void HudGaugeMessages::render(float frametime)
 {
 	hud_set_default_color();
@@ -1207,6 +1207,9 @@ void HudGaugeTalkingHead::initBitmaps(char *fname)
 	}
 }
 
+/**
+ * Create a new head animation object
+ */
 anim_instance* HudGaugeTalkingHead::createAnim(int anim_start_frame, anim* anim_data)
 {
 	anim_play_struct aps;
@@ -1222,6 +1225,11 @@ anim_instance* HudGaugeTalkingHead::createAnim(int anim_start_frame, anim* anim_
 	return anim_play(&aps);
 }
 
+/**
+ * Renders everything for a head animation except the actual head animation
+ * ANI (see anim_render_all), i.e. the background, border & title
+ * Also checks for when new head ani's need to start playing
+ */
 void HudGaugeTalkingHead::render(float frametime)
 {
 	if ( Head_frame.first_frame == -1 ){
@@ -1239,12 +1247,19 @@ void HudGaugeTalkingHead::render(float frametime)
 			gr_clear();
 			resetClip();
 
-			renderBitmap(Head_frame.first_frame, position[0], position[1]);		
+			renderBitmap(Head_frame.first_frame, position[0], position[1]);		// head ani border
 
 			// draw title
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
 			anim_stop_playing(head_anim);
+			for (int j = 0; j < Num_messages_playing; ++j) {
+				if (Playing_messages[j].id == msg_id) {
+					Playing_messages[j].play_anim = false;
+					break;  // only one head ani plays at a time
+				}
+			}
+			msg_id = -1;    // allow repeated messages to display a new head ani
 			head_anim = NULL; // Nothing to see here anymore, move along
 		}
 	}

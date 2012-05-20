@@ -48,7 +48,7 @@
 
 
 // campaign wasn't ended
-int Campaign_ended_in_mission = 0;
+int Campaign_ending_via_supernova = 0;
 
 // stuff for selecting campaigns.  We need to keep both arrays around since we display the
 // list of campaigns by name, but must load campaigns by filename
