@@ -282,6 +282,6 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 
 void cmd_brief_reset();
 
-int brief_time_to_advance(int stage_num, float frametime);
+int brief_time_to_advance(int stage_num);
 
 #endif
