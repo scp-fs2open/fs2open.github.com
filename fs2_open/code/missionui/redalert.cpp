@@ -174,53 +174,66 @@ void red_alert_voice_unload()
 // start playback of the red alert voice
 void red_alert_voice_play()
 {
-	if ( Red_alert_voice == -1 ){
-		fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str());
-		return;	// voice file doesn't exist
-	}
-
 	if ( !Briefing_voice_enabled ) {
 		return;
 	}
 
-	if ( audiostream_is_playing(Red_alert_voice) ){
-		return;
-	}
+	if ( Red_alert_voice < 0 ) {
+		// play simulated speech?
+		if (fsspeech_play_from(FSSPEECH_FROM_BRIEFING)) {
+			if (fsspeech_playing()) {
+				return;
+			}
 
-	audiostream_play(Red_alert_voice, Master_voice_volume, 0);
-	Red_alert_voice_started = 1;
+			fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str());
+			Red_alert_voice_started = 1;
+		}
+	} else {
+		if (audiostream_is_playing(Red_alert_voice)) {
+			return;
+		}
+
+		audiostream_play(Red_alert_voice, Master_voice_volume, 0);
+		Red_alert_voice_started = 1;
+	}
 }
 
 // stop playback of the red alert voice
 void red_alert_voice_stop()
 {
-	if ( Red_alert_voice == -1 )
+	if ( !Red_alert_voice_started )
 		return;
 
-	audiostream_stop(Red_alert_voice, 1, 0);	// stream is automatically rewound
+	if (Red_alert_voice < 0) {
+		fsspeech_stop();
+	} else {
+		audiostream_stop(Red_alert_voice, 1, 0);	// stream is automatically rewound
+	}
 }
 
 // pausing and unpausing of red alert voice
 void red_alert_voice_pause()
 {
-	if ( Red_alert_voice == -1 )
-		return;
-
 	if ( !Red_alert_voice_started )
 		return;
 
-	audiostream_pause(Red_alert_voice);
+	if (Red_alert_voice < 0) {
+		fsspeech_pause(true);
+	} else {
+		audiostream_pause(Red_alert_voice);
+	}
 }
 
 void red_alert_voice_unpause()
 {
-	if ( Red_alert_voice == -1 )
-		return;
-
 	if ( !Red_alert_voice_started )
 		return;
 
-	audiostream_unpause(Red_alert_voice);
+	if (Red_alert_voice < 0) {
+		fsspeech_pause(false);
+	} else {
+		audiostream_unpause(Red_alert_voice);
+	}
 }
 
 // a button was pressed, deal with it

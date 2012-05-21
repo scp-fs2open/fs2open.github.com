@@ -1619,7 +1619,7 @@ void brief_do_frame(float frametime)
 	common_render(frametime);
 
 	if ( Current_brief_stage < (Num_brief_stages-1) ) {
-		if ( !help_overlay_active(BR_OVERLAY) && brief_time_to_advance(Current_brief_stage, frametime) ) {
+		if ( !help_overlay_active(BR_OVERLAY) && brief_time_to_advance(Current_brief_stage) ) {
 			brief_do_next_pressed(0);
 			common_flash_button_init();
 			Brief_last_auto_advance = timer_get_milliseconds();
