@@ -245,7 +245,7 @@ bool speech_is_speaking()
 	hr = Voice_device->GetStatus(&pStatus, NULL);
 	if (FAILED(hr)) return false;
 
-	return (pStatus.dwRunningState == SPRS_IS_SPEAKING);
+	return (pStatus.dwRunningState != SPRS_DONE);
 #else
 	STUB_FUNCTION;
 
