@@ -50,8 +50,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../speech/include;../../zlib"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -87,7 +87,7 @@
 				OutputFile="$(OutDir)\fs2_open_3_6_13d_INF.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -95,8 +95,6 @@
 				MapFileName="$(TargetDir)$(TargetName).map"
 				MapExports="true"
 				SubSystem="2"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -202,7 +200,6 @@
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
-				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -210,8 +207,6 @@
 				MapFileName="$(TargetDir)$(TargetName).map"
 				MapExports="true"
 				SubSystem="2"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -284,8 +279,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../speech/include;../../zlib"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;INF_BUILD;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -319,8 +314,7 @@
 				OutputFile="$(OutDir)\fs2_open_3_6_13r_INF.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
-				EnableUAC="false"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="false"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -329,8 +323,6 @@
 				MapExports="false"
 				SubSystem="2"
 				LinkTimeCodeGeneration="1"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -439,7 +431,6 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
-				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="false"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -448,8 +439,6 @@
 				MapExports="false"
 				SubSystem="2"
 				LinkTimeCodeGeneration="1"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
