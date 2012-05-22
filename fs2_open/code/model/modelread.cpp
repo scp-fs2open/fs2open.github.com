@@ -1673,10 +1673,22 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						dock_bay *bay = &pm->docking_bays[i];
 
 						cfread_string_len( props, MAX_PROP_LEN, fp );
-						if ( (p = strstr(props, "$name"))!= NULL )
+						if ( (p = strstr(props, "$name"))!= NULL ) {
 							get_user_prop_value(p+5, bay->name);
-						else
+
+							int len = strlen(bay->name);
+							if ((len > 0) && is_white_space(bay->name[len-1])) {
+								nprintf(("Model", "model '%s' has trailing whitespace on bay name '%s'; this will be trimmed\n", pm->filename, bay->name));
+								drop_trailing_white_space(bay->name);
+							}
+							if (strlen(bay->name) == 0) {
+								nprintf(("Model", "model '%s' has an empty name specified for docking point %d\n", pm->filename, i));
+							}
+						} else {
+							nprintf(("Model", "model '%s' has no name specified for docking point %d\n", pm->filename, i));
 							sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
+						}
+
 						bay->num_spline_paths = cfread_int( fp );
 						if ( bay->num_spline_paths > 0 ) {
 							bay->splines = (int *)vm_malloc(sizeof(int) * bay->num_spline_paths);
