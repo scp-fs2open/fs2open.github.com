@@ -193,6 +193,7 @@ static generic_anim Cur_Anim;
 static char *Cur_anim_filename = "~~~~";
 
 static int Cmd_brief_last_voice;
+static int Cmd_brief_last_stage;
 static int Cmd_brief_paused = 0;
 //static int Palette_bmp = -1;
 
@@ -214,6 +215,7 @@ void cmd_brief_init_voice()
 	}
 
 	Cmd_brief_last_voice = -1;
+	Cmd_brief_last_stage = -1;
 }
 
 int cmd_brief_check_stage_done()
@@ -227,12 +229,26 @@ int cmd_brief_check_stage_done()
 	if (Voice_ended_time && (timer_get_milliseconds() - Voice_ended_time >= 1000))
 		return 1;
 
+	// check normal speech
 	if (Briefing_voice_enabled && (Cmd_brief_last_voice >= 0)) {
-		if (audiostream_is_playing(Cmd_brief_last_voice)){
+		if (audiostream_is_playing(Cmd_brief_last_voice)) {
 			return 0;
 		}
 
-		if (!Voice_ended_time){
+		if (!Voice_ended_time) {
+			Voice_ended_time = timer_get_milliseconds();
+		}
+
+		return 0;
+	}
+
+	// check simulated speech
+	if (Briefing_voice_enabled && (Cmd_brief_last_stage >= 0)) {
+		if (fsspeech_playing()) {
+			return 0;
+		}
+
+		if (!Voice_ended_time) {
 			Voice_ended_time = timer_get_milliseconds();
 		}
 
@@ -250,6 +266,7 @@ int cmd_brief_check_stage_done()
 void cmd_brief_voice_play(int stage_num)
 {
 	int voice = -1;
+	int stage = -1;
 
 	if (!Voice_good_to_go) {
 		Voice_started_time = 0;
@@ -267,23 +284,44 @@ void cmd_brief_voice_play(int stage_num)
 
 	if (Cur_stage >= 0 && Cur_stage < Cur_cmd_brief->num_stages){
 		voice = Cur_cmd_brief->stage[stage_num].wave;
+		stage = stage_num;
 	}
 
-	// are we still on same voice that is currently playing/played?
-	if (Cmd_brief_last_voice == voice){
-		return;  // no changes, nothing to do.
-	}
+	// do we need to play simulated speech?
+	if (voice < 0 && fsspeech_play_from(FSSPEECH_FROM_BRIEFING)) {
+		// are we still on the same stage?
+		if (Cmd_brief_last_stage == stage) {
+			return;  // no changes, nothing to do.
+		}
 
-	// if previous wave is still playing, stop it first.
-	if (Cmd_brief_last_voice >= 0) {
-		audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
-		Cmd_brief_last_voice = -1;
-	}
+		// if previous stage is still playing, stop it first.
+		if (Cmd_brief_last_stage >= 0) {
+			fsspeech_stop();
+			Cmd_brief_last_stage = -1;
+		}
 
-	// ok, new wave needs playing, so we can start playing it now (and it becomes the current wave)
-	Cmd_brief_last_voice = voice;
-	if (voice >= 0){
-		audiostream_play(voice, Master_voice_volume, 0);
+		// ok, new text needs speaking
+		Cmd_brief_last_stage = stage;
+		if (stage >= 0) {
+			fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage_num].text.c_str());
+		}
+	} else {
+		// are we still on same voice that is currently playing/played?
+		if (Cmd_brief_last_voice == voice) {
+			return;  // no changes, nothing to do.
+		}
+
+		// if previous wave is still playing, stop it first.
+		if (Cmd_brief_last_voice >= 0) {
+			audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
+			Cmd_brief_last_voice = -1;
+		}
+
+		// ok, new wave needs playing, so we can start playing it now (and it becomes the current wave)
+		Cmd_brief_last_voice = voice;
+		if (voice >= 0) {
+			audiostream_play(voice, Master_voice_volume, 0);
+		}
 	}
 }
 
@@ -313,6 +351,10 @@ void cmd_brief_stop_anim(int id)
 		audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
 		Cmd_brief_last_voice = -1;
 	}
+	if (Cmd_brief_last_stage >= 0) {
+		fsspeech_stop();
+		Cmd_brief_last_stage = -1;
+	}
 }
 
 void cmd_brief_new_stage(int stage)
@@ -320,11 +362,6 @@ void cmd_brief_new_stage(int stage)
 	if (stage < 0) {
 		cmd_brief_stop_anim(-1);
 		Cur_stage = -1;
-	}
-
-	// If the briefing has no wave to play use simulated speach
-	if(Cur_cmd_brief->stage[stage].wave <= 0) {
-		fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage].text.c_str());
 	}
 
 	Cur_stage = stage;
@@ -382,12 +419,13 @@ void cmd_brief_pause()
 	if (Cmd_brief_last_voice >= 0) {
 		audiostream_pause(Cmd_brief_last_voice);
 	}
+	if (Cmd_brief_last_stage >= 0) {
+		fsspeech_pause(true);
+	}
 
 	if (Briefing_music_handle >= 0) {
 		audiostream_pause(Briefing_music_handle);
 	}
-
-	fsspeech_pause(true);
 }
 
 void cmd_brief_unpause()
@@ -400,12 +438,13 @@ void cmd_brief_unpause()
 	if (Cmd_brief_last_voice >= 0) {
 		audiostream_unpause(Cmd_brief_last_voice);
 	}
+	if (Cmd_brief_last_stage >= 0) {
+		fsspeech_pause(false);
+	}
 
 	if (Briefing_music_handle >= 0) {
 		audiostream_unpause(Briefing_music_handle);
 	}
-
-	fsspeech_pause(false);
 }
 
 void cmd_brief_button_pressed(int n)

@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="Fred2"
 	ProjectGUID="{434E4D48-3078-406D-871F-E69869AA487E}"
+	RootNamespace="Fred2"
 	Keyword="MFCProj"
 	>
 	<Platforms>
@@ -86,15 +87,12 @@
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
-				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
 				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -203,15 +201,12 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
-				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="false"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="false"
 				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool

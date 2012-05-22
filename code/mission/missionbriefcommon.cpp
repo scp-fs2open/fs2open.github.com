@@ -238,10 +238,8 @@ color *Brief_text_colors[MAX_BRIEF_TEXT_COLORS] =
 float Brief_text_wipe_time_elapsed;
 static int Max_briefing_line_len;
 
-static int Brief_voice_ended;
-static int Brief_textdraw_finished;
-static int Brief_voice_started;
-static int Brief_stage_time;
+static int Voice_started_time;
+static int Voice_ended_time;
 
 const float		BRIEF_TEXT_WIPE_TIME	= 1.5f;		// time in seconds for wipe to occur
 static int		Brief_text_wipe_snd;					// sound handle of sound effect for text wipe
@@ -1154,12 +1152,6 @@ void brief_render_map(int stage_num, float frametime)
 	brief_render_icons(stage_num, frametime);
 
 	if ( Cam_target_reached && brief_text_wipe_finished() ) {
-
-		if ( Brief_textdraw_finished == 0 ) {
-			Brief_textdraw_finished = 1;
-			Brief_stage_time = 0;
-		}
-
 		if ( Play_highlight_flag ) {
 			brief_start_highlight_anims(stage_num);
 			Play_highlight_flag = 0;
@@ -1864,10 +1856,6 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 		Num_brief_text_lines[0] = brief_color_text_init(msg, MAX_BRIEF_LINE_W_1024);		
 	}
 
-	if ( Brief_voices[stage_num] == -1 ) {
-		fsspeech_play(FSSPEECH_FROM_BRIEFING, msg);
-	}
-
 	Top_brief_text_line = 0;
 
 	if (not_objv){
@@ -1878,10 +1866,8 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 		snd_stop(Brief_stage_highlight_sound_handle);
 	}
 
-	Brief_voice_ended = 0;
-	Brief_textdraw_finished = 0;
-	Brief_voice_started = 0;
-	Brief_stage_time = 0;
+	Voice_started_time = 0;
+	Voice_ended_time = 0;
 
 	Brief_stage_highlight_sound_handle = -1;
 	Last_new_stage = stage_num;
@@ -2272,9 +2258,8 @@ void brief_common_close()
 
 void brief_restart_text_wipe()
 {
-	Brief_stage_time = 0;
-	Brief_voice_ended = 0;
-	Brief_voice_started = 0;
+	Voice_started_time = 0;
+	Voice_ended_time = 0;
 	Brief_text_wipe_time_elapsed = 0.0f;
 }
 
@@ -2347,18 +2332,31 @@ void brief_voice_unload_all()
  */
 void brief_voice_play(int stage_num)
 {
-	if ( Brief_voices[stage_num] == -1 )
-		return;	// voice file doesn't exist
+	if (!Voice_started_time) {
+		Voice_started_time = timer_get_milliseconds();
+		Voice_ended_time = 0;
+	}
 
 	if ( !Briefing_voice_enabled ) {
 		return;
 	}
 
-	if ( audiostream_is_playing( Brief_voices[stage_num]) )
-		return;
+	if ( Brief_voices[stage_num] < 0 ) {
+		// play simulated speech?
+		if (fsspeech_play_from(FSSPEECH_FROM_BRIEFING)) {
+			if (fsspeech_playing()) {
+				return;
+			}
 
-	audiostream_play(Brief_voices[stage_num], Master_voice_volume, 0);
-	Brief_voice_started = 1;
+			fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[stage_num].text.c_str());
+		}
+	} else {
+		if ( audiostream_is_playing( Brief_voices[stage_num]) ) {
+			return;
+		}
+
+		audiostream_play(Brief_voices[stage_num], Master_voice_volume, 0);
+	}
 }
 
 /**
@@ -2366,10 +2364,11 @@ void brief_voice_play(int stage_num)
  */
 void brief_voice_stop(int stage_num)
 {
-	if ( Brief_voices[stage_num] == -1 )
-		return;
-
-	audiostream_stop(Brief_voices[stage_num], 1, 0);	// stream is automatically rewound
+	if (Brief_voices[stage_num] < 0) {
+		fsspeech_stop();
+	} else {
+		audiostream_stop(Brief_voices[stage_num], 1, 0);	// stream is automatically rewound
+	}
 }
 
 /**
@@ -2378,18 +2377,20 @@ void brief_voice_stop(int stage_num)
  */
 void brief_voice_pause(int stage_num)
 {
-	if ( Brief_voices[stage_num] == -1 )
-		return;
-
-	audiostream_pause(Brief_voices[stage_num]);
+	if (Brief_voices[stage_num] < 0) {
+		fsspeech_stop();
+	} else {
+		audiostream_pause(Brief_voices[stage_num]);
+	}
 }
 
 void brief_voice_unpause(int stage_num)
 {
-	if ( Brief_voices[stage_num] == -1 )
-		return;
-
-	audiostream_unpause(Brief_voices[stage_num]);
+	if (Brief_voices[stage_num] < 0) {
+		fsspeech_stop();
+	} else {
+		audiostream_unpause(Brief_voices[stage_num]);
+	}
 }
 
 void brief_reset_last_new_stage()
@@ -2442,51 +2443,52 @@ void cmd_brief_reset()
 /**
  * Should briefing advance to the next stage?
  */
-int brief_time_to_advance(int stage_num, float frametime)
+int brief_time_to_advance(int stage_num)
 {
-	int voice_active, advance = 0;
-	brief_icon *closeup_icon;
-
-	closeup_icon = brief_get_closeup_icon();
-	if ( closeup_icon ) {
+	if (brief_get_closeup_icon() != NULL)
 		return 0;
-	}
 
-	if ( !Player->auto_advance ) {
-		return 0;
-	}
-
-	Brief_stage_time += fl2i(frametime*1000 + 0.5f);
-
-	// we do this after the stage time gets set so that we can continue the voice
-	// and current stage rather than jumping to the next
 	if (Briefing_paused)
 		return 0;
 
-	if ( (Brief_voices[stage_num] >= 0) && Briefing_voice_enabled ) {
-		voice_active = 1;
-	} else {
-		voice_active = 0;
+	if ( !Player->auto_advance )
+		return 0;
+
+	if (!brief_text_wipe_finished())
+		return 0;
+
+	if (Voice_ended_time && (timer_get_milliseconds() - Voice_ended_time >= STAGE_ADVANCE_DELAY))
+		return 1;
+
+	// check normal speech
+	if (Briefing_voice_enabled && (Brief_voices[stage_num] >= 0)) {
+		if (audiostream_is_playing(Brief_voices[stage_num])) {
+			return 0;
+		}
+
+		if (!Voice_ended_time) {
+			Voice_ended_time = timer_get_milliseconds();
+		}
+
+		return 0;
 	}
 
-	if ( voice_active && (Brief_voice_ended == 0) && Brief_voice_started) {
-		if ( !audiostream_is_playing( Brief_voices[stage_num]) ) {
-			Brief_voice_ended = 1;
-			Brief_stage_time = 0;
+	// check simulated speech
+	if (Briefing_voice_enabled && (Brief_voices[stage_num] < 0) && fsspeech_play_from(FSSPEECH_FROM_BRIEFING)) {
+		if (fsspeech_playing()) {
+			return 0;
 		}
-	}
-	
-	if ( Brief_voice_ended ) {
-		if ( Brief_stage_time > STAGE_ADVANCE_DELAY ) {
-			advance = 1;
+
+		if (!Voice_ended_time) {
+			Voice_ended_time = timer_get_milliseconds();
 		}
+
+		return 0;
 	}
 
-	if ( !voice_active && (Brief_textdraw_finished > 0) ) {
-		if ( Brief_stage_time > MAX(5000, Num_brief_text_lines[0] * 3500) ) {
-			advance = 1;
-		}
-	}
+	// if we get here, there is no voice, so we simulate the time it would take instead
+	if (!Voice_ended_time)
+		Voice_ended_time = Voice_started_time + MAX(5000, Num_brief_text_lines[0] * 3500);
 
-	return advance;
+	return 0;
 }
