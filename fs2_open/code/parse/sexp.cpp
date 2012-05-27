@@ -2790,8 +2790,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				st = model_anim_match_type(CTEXT(node));
-				if ( st == TRIGGER_TYPE_NONE )
+				i = model_anim_match_type(CTEXT(node));
+				if ( i == TRIGGER_TYPE_NONE )
 					return SEXP_CHECK_INVALID_ANIMATION_TYPE;
 
 				break;
