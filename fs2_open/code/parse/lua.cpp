@@ -1025,9 +1025,6 @@ ADE_FUNC(isValid, l_Event, NULL, "Detects whether handle is valid", "boolean", "
 }
 
 //**********HANDLE: File
-//static CFILE *Lua_file_current = NULL;
-static int Lua_file_handle_instances = 0;
-static int Lua_max_file_handle_instances = 5;
 
 ade_obj<CFILE*> l_File("file", "File handle");
 
