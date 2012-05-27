@@ -410,7 +410,7 @@ int HudGaugeRadarOrb::calcAlpha(vec3d* pt)
     Assert(Player_obj);
 
     vec3d new_pt;
-    vec3d fvec = {0.0f, 0.0f, 1.0f};
+    vec3d fvec = { { { 0.0f, 0.0f, 1.0f } } };
 
     vm_vec_unrotate(&new_pt, pt, &Player_obj->orient);
     vm_vec_normalize(&new_pt);
