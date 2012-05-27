@@ -271,10 +271,10 @@ void recompile_fxaa_shader() {
 	mprintf(("Recompiling FXAA shader with preset %d\n", Cmdline_fxaa_preset));
 
 	// read vertex shader
-	vert = opengl_post_load_shader(vert_name, shader_file->flags, NULL);
+	vert = opengl_post_load_shader(vert_name, shader_file->flags, 0);
 
 	// read fragment shader
-	frag = opengl_post_load_shader(frag_name, shader_file->flags, NULL);
+	frag = opengl_post_load_shader(frag_name, shader_file->flags, 0);
 
 
 	Verify( vert != NULL );
