@@ -83,6 +83,24 @@ public class InstallerNode
 		this.name = name;
 	}
 	
+	public String buildTreeName()
+	{
+		// construct name consisting of tree path to this node
+		StringBuilder builder = new StringBuilder();
+		InstallerNode ii = this;
+		while (ii != null)
+		{
+			builder.insert(0, '.');
+			builder.insert(0, ii.getName());
+			ii = ii.getParent();
+		}
+		
+		// get rid of trailing period
+		builder.setLength(builder.length() - 1);
+		
+		return builder.toString();
+	}
+	
 	public String getDescription()
 	{
 		return description;

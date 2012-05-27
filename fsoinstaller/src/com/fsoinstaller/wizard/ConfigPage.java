@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
@@ -363,176 +364,19 @@ public class ConfigPage extends WizardPage
 			settings.put(Configuration.CONNECTOR_KEY, connector);
 			settings.put(Configuration.DOWNLOADER_KEY, downloader);
 			
-			// if we already have a version, we must have checked this already
-			if (settings.containsKey(Configuration.REMOTE_VERSION_KEY))
-			{
-				EventQueue.invokeLater(runWhenReady);
-				return null;
-			}
-			
-			logger.info("Checking installer version...");
-			
-			File tempVersion;
-			File tempFilenames;
-			File tempBasicConfig;
-			try
-			{
-				tempVersion = File.createTempFile("fsoinstaller_version", null);
-				tempFilenames = File.createTempFile("fsoinstaller_filenames", null);
-				tempBasicConfig = File.createTempFile("fsoinstaller_basicconfig", null);
-			}
-			catch (IOException ioe)
-			{
-				logger.error("Error creating temporary file!", ioe);
-				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was an error creating a temporary file!  This application may need elevated privileges to run.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-				return null;
-			}
-			tempVersion.deleteOnExit();
-			tempFilenames.deleteOnExit();
-			tempBasicConfig.deleteOnExit();
-			
-			double maxVersion = -1.0;
-			String maxVersionURL = null;
-			
-			// check all URLs for version and filename info
-			for (String url: FreeSpaceOpenInstaller.INSTALLER_HOME_URLs)
-			{
-				logger.debug("Accessing version info from " + url + "...");
-				
-				// assemble URLs
-				URL versionURL;
-				URL filenameURL;
-				URL basicURL;
-				try
-				{
-					versionURL = new URL(url + "version.txt");
-					filenameURL = new URL(url + "filenames.txt");
-					basicURL = new URL(url + "basic_config.txt");
-				}
-				catch (MalformedURLException murle)
-				{
-					logger.error("Something went wrong with the URL!", murle);
-					continue;
-				}
-				
-				// download version information
-				if (downloader.downloadFile(versionURL, tempVersion))
-				{
-					List<String> versionLines = MiscUtils.readTextFile(tempVersion);
-					if (!versionLines.isEmpty())
-					{
-						double thisVersion;
-						try
-						{
-							thisVersion = Double.valueOf(versionLines.get(0));
-						}
-						catch (NumberFormatException nfe)
-						{
-							thisVersion = 0.0;
-						}
-						
-						logger.info("Version at this URL is " + thisVersion);
-						
-						// get the information from the highest version available
-						if (thisVersion > maxVersion)
-						{
-							// get file names
-							if (downloader.downloadFile(filenameURL, tempFilenames))
-							{
-								List<String> filenameLines = MiscUtils.readTextFile(tempFilenames);
-								if (!filenameLines.isEmpty())
-								{
-									settings.put(Configuration.REMOTE_VERSION_KEY, thisVersion);
-									settings.put(Configuration.MOD_URLS_KEY, filenameLines);
-									
-									maxVersion = thisVersion;
-									maxVersionURL = versionLines.get(1);
-									
-									// try to get basic configuration too, but this can be optional (sort of)
-									if (downloader.downloadFile(basicURL, tempBasicConfig))
-									{
-										List<String> basicLines = MiscUtils.readTextFile(tempBasicConfig);
-										
-										// strip empty/blank lines
-										Iterator<String> ii = basicLines.iterator();
-										while (ii.hasNext())
-											if (ii.next().trim().isEmpty())
-												ii.remove();
-										
-										if (!basicLines.isEmpty())
-											settings.put(Configuration.BASIC_CONFIG_MODS_KEY, basicLines);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-			
-			// make sure we could access version information
+			// only check for the installer version if we haven't checked already
 			if (!settings.containsKey(Configuration.REMOTE_VERSION_KEY))
 			{
-				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was a problem accessing the remote sites.  Check your network connection and try again.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
-				return null;
-			}
-			
-			// we have a version; check if it is more recent than what we're running
-			// (this prompt should only ever come up once, because once the version is known, future visits to this page will take the early exit above)
-			if (maxVersion > FreeSpaceOpenInstaller.INSTALLER_VERSION)
-			{
-				int result = ThreadSafeJOptionPane.showConfirmDialog(activeFrame, "This version of the installer is out-of-date.  Would you like to bring up the download page for the most recent version?\n\n(If you click Yes, the program will exit.)", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
-				if (result == JOptionPane.YES_OPTION)
-				{
-					try
-					{
-						if (connector.browseToURL(new URL(maxVersionURL)))
-						{
-							// this should close the program
-							EventQueue.invokeLater(exitRunnable);
-							return null;
-						}
-					}
-					catch (MalformedURLException murle)
-					{
-						logger.error("Something went wrong with the URL!", murle);
-					}
-					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was a problem bringing up the download link.  Try re-downloading the installer using your favorite Internet browser.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-					return null;
-				}
-			}
-			
-			logger.info("Downloading mod information...");
-			
-			@SuppressWarnings("unchecked")
-			List<String> urls = (List<String>) Configuration.getInstance().getSettings().get(Configuration.MOD_URLS_KEY);
-			if (urls == null || urls.isEmpty())
-			{
-				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.  It shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-				EventQueue.invokeLater(exitRunnable);
-				return null;
-			}
-			
-			// parse mod urls into nodes
-			List<InstallerNode> modNodes = new ArrayList<InstallerNode>();
-			for (String url: urls)
-			{
-				// create a URL
-				URL modURL;
-				try
-				{
-					modURL = new URL(url);
-				}
-				catch (MalformedURLException murle)
-				{
-					logger.error("Something went wrong with the URL!", murle);
-					continue;
-				}
+				logger.info("Checking installer version...");
 				
-				// create a temporary file
-				File tempModFile;
+				File tempVersion;
+				File tempFilenames;
+				File tempBasicConfig;
 				try
 				{
-					tempModFile = File.createTempFile("fsoinstaller_mod", null);
+					tempVersion = File.createTempFile("fsoinstaller_version", null);
+					tempFilenames = File.createTempFile("fsoinstaller_filenames", null);
+					tempBasicConfig = File.createTempFile("fsoinstaller_basicconfig", null);
 				}
 				catch (IOException ioe)
 				{
@@ -540,59 +384,310 @@ public class ConfigPage extends WizardPage
 					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was an error creating a temporary file!  This application may need elevated privileges to run.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
 					return null;
 				}
-				tempModFile.deleteOnExit();
+				tempVersion.deleteOnExit();
+				tempFilenames.deleteOnExit();
+				tempBasicConfig.deleteOnExit();
 				
-				// download it to the temp file
-				if (!downloader.downloadFile(modURL, tempModFile))
-				{
-					logger.warn("Could not download mod information from '" + url + "'");
-					continue;
-				}
+				double maxVersion = -1.0;
+				String maxVersionURL = null;
 				
-				// parse it into one or more nodes
-				InstallerNode node;
-				try
+				// check all URLs for version and filename info
+				for (String url: FreeSpaceOpenInstaller.INSTALLER_HOME_URLs)
 				{
-					FileReader reader = new FileReader(tempModFile);
-					while (true)
+					logger.debug("Accessing version info from " + url + "...");
+					
+					// assemble URLs
+					URL versionURL;
+					URL filenameURL;
+					URL basicURL;
+					try
 					{
-						node = InstallerNodeFactory.readNode(reader);
-						if (node == null)
-							break;
-						
-						modNodes.add(node);
-						logger.info("Successfully added " + node.getName());
+						versionURL = new URL(url + "version.txt");
+						filenameURL = new URL(url + "filenames.txt");
+						basicURL = new URL(url + "basic_config.txt");
+					}
+					catch (MalformedURLException murle)
+					{
+						logger.error("Something went wrong with the URL!", murle);
+						continue;
+					}
+					
+					// download version information
+					if (downloader.downloadFile(versionURL, tempVersion))
+					{
+						List<String> versionLines = MiscUtils.readTextFile(tempVersion);
+						if (!versionLines.isEmpty())
+						{
+							double thisVersion;
+							try
+							{
+								thisVersion = Double.valueOf(versionLines.get(0));
+							}
+							catch (NumberFormatException nfe)
+							{
+								thisVersion = 0.0;
+							}
+							
+							logger.info("Version at this URL is " + thisVersion);
+							
+							// get the information from the highest version available
+							if (thisVersion > maxVersion)
+							{
+								// get file names
+								if (downloader.downloadFile(filenameURL, tempFilenames))
+								{
+									List<String> filenameLines = MiscUtils.readTextFile(tempFilenames);
+									if (!filenameLines.isEmpty())
+									{
+										settings.put(Configuration.REMOTE_VERSION_KEY, thisVersion);
+										settings.put(Configuration.MOD_URLS_KEY, filenameLines);
+										
+										maxVersion = thisVersion;
+										maxVersionURL = versionLines.get(1);
+										
+										// try to get basic configuration too, but this can be optional (sort of)
+										if (downloader.downloadFile(basicURL, tempBasicConfig))
+										{
+											List<String> basicLines = MiscUtils.readTextFile(tempBasicConfig);
+											
+											// strip empty/blank lines
+											Iterator<String> ii = basicLines.iterator();
+											while (ii.hasNext())
+												if (ii.next().trim().isEmpty())
+													ii.remove();
+											
+											if (!basicLines.isEmpty())
+												settings.put(Configuration.BASIC_CONFIG_MODS_KEY, basicLines);
+										}
+									}
+								}
+							}
+						}
 					}
 				}
-				catch (FileNotFoundException fnfe)
+				
+				// make sure we could access version information
+				if (!settings.containsKey(Configuration.REMOTE_VERSION_KEY))
 				{
-					logger.error("This is very odd; we can't find the temp file we just created!", fnfe);
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was a problem accessing the remote sites.  Check your network connection and try again.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.WARNING_MESSAGE);
+					return null;
 				}
-				catch (IOException ioe)
+				
+				// we have a version; check if it is more recent than what we're running
+				// (this prompt should only ever come up once, because once the version is known, future visits to this page will take the early exit above)
+				if (maxVersion > FreeSpaceOpenInstaller.INSTALLER_VERSION)
 				{
-					logger.error("This is very odd; there was an error reading the temp file we just created!", ioe);
-				}
-				catch (InstallerNodeParseException inpe)
-				{
-					logger.warn("There was an error parsing the mod file at '" + url + "'", inpe);
+					int result = ThreadSafeJOptionPane.showConfirmDialog(activeFrame, "This version of the installer is out-of-date.  Would you like to bring up the download page for the most recent version?\n\n(If you click Yes, the program will exit.)", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
+					if (result == JOptionPane.YES_OPTION)
+					{
+						try
+						{
+							if (connector.browseToURL(new URL(maxVersionURL)))
+							{
+								// this should close the program
+								EventQueue.invokeLater(exitRunnable);
+								return null;
+							}
+						}
+						catch (MalformedURLException murle)
+						{
+							logger.error("Something went wrong with the URL!", murle);
+						}
+						ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was a problem bringing up the download link.  Try re-downloading the installer using your favorite Internet browser.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+						return null;
+					}
 				}
 			}
 			
-			// check that we have mods
-			if (modNodes.isEmpty())
+			// only check for mod information if we haven't checked already
+			if (!settings.containsKey(Configuration.MOD_NODES_KEY))
 			{
-				ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.  It shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
-				EventQueue.invokeLater(exitRunnable);
-				return null;
+				logger.info("Downloading mod information...");
+				
+				@SuppressWarnings("unchecked")
+				List<String> urls = (List<String>) Configuration.getInstance().getSettings().get(Configuration.MOD_URLS_KEY);
+				if (urls == null || urls.isEmpty())
+				{
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.  It shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+					EventQueue.invokeLater(exitRunnable);
+					return null;
+				}
+				
+				// parse mod urls into nodes
+				List<InstallerNode> modNodes = new ArrayList<InstallerNode>();
+				for (String url: urls)
+				{
+					// create a URL
+					URL modURL;
+					try
+					{
+						modURL = new URL(url);
+					}
+					catch (MalformedURLException murle)
+					{
+						logger.error("Something went wrong with the URL!", murle);
+						continue;
+					}
+					
+					// create a temporary file
+					File tempModFile;
+					try
+					{
+						tempModFile = File.createTempFile("fsoinstaller_mod", null);
+					}
+					catch (IOException ioe)
+					{
+						logger.error("Error creating temporary file!", ioe);
+						ThreadSafeJOptionPane.showMessageDialog(activeFrame, "There was an error creating a temporary file!  This application may need elevated privileges to run.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+						return null;
+					}
+					tempModFile.deleteOnExit();
+					
+					// download it to the temp file
+					if (!downloader.downloadFile(modURL, tempModFile))
+					{
+						logger.warn("Could not download mod information from '" + url + "'");
+						continue;
+					}
+					
+					// parse it into one or more nodes
+					InstallerNode node;
+					try
+					{
+						FileReader reader = new FileReader(tempModFile);
+						while (true)
+						{
+							node = InstallerNodeFactory.readNode(reader);
+							if (node == null)
+								break;
+							
+							modNodes.add(node);
+							logger.info("Successfully added " + node.getName());
+						}
+					}
+					catch (FileNotFoundException fnfe)
+					{
+						logger.error("This is very odd; we can't find the temp file we just created!", fnfe);
+					}
+					catch (IOException ioe)
+					{
+						logger.error("This is very odd; there was an error reading the temp file we just created!", ioe);
+					}
+					catch (InstallerNodeParseException inpe)
+					{
+						logger.warn("There was an error parsing the mod file at '" + url + "'", inpe);
+					}
+				}
+				
+				// check that we have mods
+				if (modNodes.isEmpty())
+				{
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.  It shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+					EventQueue.invokeLater(exitRunnable);
+					return null;
+				}
+				
+				// add to settings
+				settings.put(Configuration.MOD_NODES_KEY, modNodes);
 			}
 			
-			// add to settings
-			settings.put(Configuration.MOD_NODES_KEY, modNodes);
+			// now that we have the mod list, check to see if there is any old version information left over from Turey's installer
+			logger.info("Checking for legacy version information...");
+			
+			// we check this every time because the user could have changed the destination directory
+			// (however, the installed versions file should be deleted after the first try, or at least the properties file should contain the keys we need)
+			try
+			{
+				File oldInstallerInfoDir = new File(destinationDir, "temp");
+				if (oldInstallerInfoDir.exists() && oldInstallerInfoDir.isDirectory())
+				{
+					File installedversions = new File(oldInstallerInfoDir, "installedversions.txt");
+					if (installedversions.exists())
+					{
+						// read lines from the installedversions file
+						List<String> lines = MiscUtils.readTextFile(installedversions);
+						
+						// load the version for each node
+						@SuppressWarnings("unchecked")
+						List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
+						for (InstallerNode node: modNodes)
+							loadLegacyModVersions(node, lines, configuration.getProperties());
+						
+						// save our properties
+						configuration.saveProperties();
+						
+						// delete the file, since we don't need it any more
+						installedversions.delete();
+					}
+					
+					// delete other old files and the folder
+					File latest = new File(oldInstallerInfoDir, "latest.txt");
+					if (latest.exists())
+						latest.delete();
+					File version = new File(oldInstallerInfoDir, "version.txt");
+					if (version.exists())
+						version.delete();
+					File[] filesLeft = oldInstallerInfoDir.listFiles();
+					if (filesLeft.length == 0)
+						oldInstallerInfoDir.delete();
+				}
+			}
+			catch (SecurityException se)
+			{
+				logger.warn("A SecurityException was thrown when checking for legacy version information!", se);
+			}
 			
 			// validation completed!
 			logger.info("Done with SuperValidationTask!");
 			EventQueue.invokeLater(runWhenReady);
 			return null;
+		}
+		
+		private void loadLegacyModVersions(InstallerNode node, List<String> installedversions_lines, Properties properties)
+		{
+			String propertyName = node.buildTreeName();
+			
+			// if we have a version already, we don't need to query the legacy version
+			logger.debug(propertyName);
+			if (properties.containsKey(propertyName))
+				return;
+			
+			// find the version corresponding to this node in the installedversions file
+			String version = null;
+			Iterator<String> ii = installedversions_lines.iterator();
+			while (ii.hasNext())
+			{
+				// get name matching this node
+				if (!ii.next().equalsIgnoreCase("NAME"))
+					continue;
+				if (!ii.hasNext())
+					break;
+				if (!ii.next().equals(node.getName()))
+					continue;
+				// ensure name hasn't provided a version
+				if (version != null)
+				{
+					logger.warn("The installedversions file contains more than one version for the name '" + node.getName() + "'!");
+					return;
+				}
+				
+				// get version
+				if (!ii.hasNext())
+					break;
+				if (!ii.next().equalsIgnoreCase("VERSION"))
+					continue;
+				if (!ii.hasNext())
+					break;
+				version = ii.next();
+			}
+			
+			// now that we have a version, save it
+			if (version != null)
+				properties.setProperty(propertyName, version);
+			
+			// we need to check all the child nodes as well
+			for (InstallerNode child: node.getChildren())
+				loadLegacyModVersions(child, installedversions_lines, properties);
 		}
 	}
 }

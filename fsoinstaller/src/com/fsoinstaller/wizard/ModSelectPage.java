@@ -24,8 +24,10 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -142,15 +144,36 @@ public class ModSelectPage extends WizardPage
 			List<String> basicMods = (List<String>) settings.get(Configuration.BASIC_CONFIG_MODS_KEY);
 			
 			for (InstallerNode node: treeWalk)
+			{
+				logger.debug("Selecting '" + node.getName() + "' as a BASIC mod");
 				((SingleModPanel) node.getUserObject()).setSelected(basicMods.contains(node.getName()) && MiscUtils.validForOS(node.getName()));
+			}
 		}
 		else if (choice == InstallChoice.COMPLETE)
 		{
 			for (InstallerNode node: treeWalk)
+			{
+				logger.debug("Selecting '" + node.getName() + "' as a COMPLETE mod");
 				((SingleModPanel) node.getUserObject()).setSelected(MiscUtils.validForOS(node.getName()));
+			}
 		}
 		
-		// TODO: select and disable nodes that have been installed already
+		// select nodes that have been installed already
+		// but not for COMPLETE, as that's redundant
+		if (choice != InstallChoice.COMPLETE)
+		{
+			for (InstallerNode node: treeWalk)
+			{
+				// standard selection by whether a current or previous version has been installed
+				String propertyName = node.buildTreeName();
+				if (configuration.getProperties().containsKey(propertyName))
+				{
+					logger.debug("Selecting '" + node.getName() + "' as already installed based on version");
+					((SingleModPanel) node.getUserObject()).setSelected(true);
+					((SingleModPanel) node.getUserObject()).setAlreadyInstalled(true);
+				}
+			}
+		}
 		
 		// set Install button status
 		counter.syncButton();
@@ -170,15 +193,15 @@ public class ModSelectPage extends WizardPage
 	@Override
 	public void prepareToLeavePage(Runnable runWhenReady)
 	{
-		// extract all the nodes we selected
-		List<InstallerNode> installNodes = new ArrayList<InstallerNode>();
+		// store the mod names we selected
+		Set<String> selectedMods = new HashSet<String>();
 		for (InstallerNode node: treeWalk)
 			if (((SingleModPanel) node.getUserObject()).isSelected())
-				installNodes.add(node);
+				selectedMods.add(node.getName());
 		
 		// save in configuration
 		Map<String, Object> settings = Configuration.getInstance().getSettings();
-		settings.put(Configuration.NODES_TO_INSTALL_KEY, installNodes);
+		settings.put(Configuration.MODS_TO_INSTALL_KEY, selectedMods);
 		
 		resetNextButton();
 		runWhenReady.run();
@@ -227,6 +250,17 @@ public class ModSelectPage extends WizardPage
 				counter.numChecked++;
 			
 			checkBox.setSelected(selected);
+		}
+		
+		@SuppressWarnings("unused")
+		public boolean isAlreadyInstalled()
+		{
+			return !checkBox.isEnabled();
+		}
+		
+		public void setAlreadyInstalled(boolean installed)
+		{
+			checkBox.setEnabled(!installed);
 		}
 	}
 	
