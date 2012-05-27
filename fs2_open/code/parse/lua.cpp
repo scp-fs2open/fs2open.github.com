@@ -6883,10 +6883,12 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if(ADE_SETTING_VAR)
+    {
 		if(trig)
 			shipp->flags |= SF_TRIGGER_DOWN;
 		else
 			shipp->flags &= ~SF_TRIGGER_DOWN;
+    }
 
 	if (shipp->flags & SF_TRIGGER_DOWN)
 		return ADE_RETURN_TRUE;
