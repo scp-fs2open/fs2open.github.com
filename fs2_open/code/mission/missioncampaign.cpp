@@ -64,7 +64,7 @@ int	Num_campaigns;
 int Campaign_file_missing;
 int Campaign_names_inited = 0;
 
-char Default_campaign_file_name[MAX_FILENAME_LEN - 4]  = { NULL };
+char Default_campaign_file_name[MAX_FILENAME_LEN - 4]  = { 0 };
 
 // stuff used for campaign list building
 static bool MC_desc = false;
