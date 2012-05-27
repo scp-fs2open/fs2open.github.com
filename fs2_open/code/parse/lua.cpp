@@ -7128,10 +7128,12 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if(ADE_SETTING_VAR)
+    {
 		if(set)
 			shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
 		else
 			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+    }
 
 	if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
 		return ADE_RETURN_TRUE;
