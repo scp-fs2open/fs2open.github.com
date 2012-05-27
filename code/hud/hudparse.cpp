@@ -977,7 +977,7 @@ void load_gauge_custom(int base_w, int base_h, int font, int ship_index, color *
 {
 	int i;
 	int coords[2];
-	int base_res[2];
+	int base_res[2] = {640, 480};
 	char gauge_string[MAX_FILENAME_LEN];
 	char name[MAX_FILENAME_LEN];
 	char text[MAX_FILENAME_LEN];
