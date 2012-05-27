@@ -22,6 +22,7 @@ package com.fsoinstaller.wizard;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.FontMetrics;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -337,8 +339,20 @@ public class ModSelectPage extends WizardPage
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
+				// the name is a simple bold label
 				JLabel name = new JLabel(node.getName());
 				name.setFont(name.getFont().deriveFont(Font.BOLD));
+				
+				// make a header panel with the name, and if a version is specified, add that underneath
+				JComponent header;
+				if (node.getVersion() != null)
+				{
+					header = new JPanel(new GridLayout(2, 1));
+					((JPanel) header).add(name);
+					((JPanel) header).add(new JLabel(node.getVersion()));
+				}
+				else
+					header = name;
 				
 				// we want the description to have multiline capability, so we put it in a JTextPane that looks like a JLabel
 				JTextPane description = new JTextPane();
@@ -351,8 +365,9 @@ public class ModSelectPage extends WizardPage
 				int maxWidth = (int) (MiscUtils.getActiveFrame().getSize().getWidth() * 0.8);
 				description.setText(MiscUtils.wrapText(node.getDescription(), metrics, maxWidth));
 				
+				// put together the panel with the header plus the description
 				JPanel message = new JPanel(new BorderLayout(0, GUIConstants.DEFAULT_MARGIN));
-				message.add(name, BorderLayout.NORTH);
+				message.add(header, BorderLayout.NORTH);
 				message.add(description, BorderLayout.CENTER);
 				
 				JOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), message, "FreeSpace Open Installer", JOptionPane.INFORMATION_MESSAGE);

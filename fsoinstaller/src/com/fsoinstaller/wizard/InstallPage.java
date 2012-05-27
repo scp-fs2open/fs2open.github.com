@@ -22,6 +22,7 @@ package com.fsoinstaller.wizard;
 import java.awt.BorderLayout;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -33,10 +34,13 @@ import javax.swing.ScrollPaneConstants;
 
 import com.fsoinstaller.common.InstallerNode;
 import com.fsoinstaller.main.Configuration;
+import com.fsoinstaller.utils.Logger;
 
 
 public class InstallPage extends WizardPage
 {
+	private static final Logger logger = Logger.getLogger(ModSelectPage.class);
+	
 	private final JPanel installPanel;
 	
 	public InstallPage()
@@ -74,10 +78,22 @@ public class InstallPage extends WizardPage
 		
 		Map<String, Object> settings = Configuration.getInstance().getSettings();
 		@SuppressWarnings("unchecked")
-		List<InstallerNode> installNodes = (List<InstallerNode>) settings.get(Configuration.NODES_TO_INSTALL_KEY);
+		List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
+		@SuppressWarnings("unchecked")
+		Set<String> selectedMods = (Set<String>) settings.get(Configuration.MODS_TO_INSTALL_KEY);
 		
-		for (InstallerNode node: installNodes)
+		// log the mods
+		logger.info("Selected mods:");
+		for (String mod: selectedMods)
+			logger.info(mod);
+		
+		// TODO: we need to do a breadth-first traversal
+		
+		for (InstallerNode node: modNodes)
 		{
+			if (!selectedMods.contains(node.getName()))
+				continue;
+			
 			JPanel labelPanel = new JPanel();
 			labelPanel.setLayout(new BoxLayout(labelPanel, BoxLayout.X_AXIS));
 			labelPanel.add(new JLabel(node.getName()));
