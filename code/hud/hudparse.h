@@ -29,7 +29,7 @@ void init_hud();
 void load_missing_retail_gauges();
 void check_color(int *color);
 
-#define NUM_HUD_OBJECT_ENTRIES			54
+#define NUM_HUD_OBJECT_ENTRIES			54		// not used anywhere?
 int parse_gauge_type();
 void load_gauge(int gauge, int base_w = -1, int base_h = -1, int font = -1, int ship_idx = -1, color *use_clr = NULL);
 
@@ -182,5 +182,8 @@ void load_gauge_kills(int base_w, int base_h, int font, int ship_idx = -1, color
 
 #define HUD_OBJECT_FIXED_MESSAGES		49
 void load_gauge_fixed_messages(int base_w, int base_h, int font, int ship_idx = -1, color *use_clr = NULL);
+
+#define HUD_OBJECT_ETS_RETAIL			50
+void load_gauge_ets_retail(int base_w, int base_h, int hud_font, int ship_idx = -1, color *use_clr = NULL);
 
 #endif // _HUDPARSE_H
