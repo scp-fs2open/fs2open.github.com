@@ -17412,7 +17412,7 @@ int is_nav_linked(int node)
 			return (Ships[i].flags2 & SF2_NAVPOINT_CARRY) != 0;
 		}
 	}
-	return false;
+	return 0;
 }
 
 //text: distance-to-nav

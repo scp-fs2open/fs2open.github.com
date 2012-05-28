@@ -10347,11 +10347,11 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 	{
 		if (newVal)
 		{
-			Use_mouse_to_fly = true;
+			Use_mouse_to_fly = 1;
 		}
 		else
 		{
-			Use_mouse_to_fly = false;
+			Use_mouse_to_fly = 0;
 		}
 	}
 

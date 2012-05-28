@@ -352,7 +352,7 @@ void HudGaugeRadarOrb::doneDrawingHtl()
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 	resetClip();
-    gr_zbuffer_set(1);
+    gr_zbuffer_set(GR_ZBUFF_FULL);
 }
 
 void HudGaugeRadarOrb::drawOutlines()
@@ -681,5 +681,5 @@ void HudGaugeRadarOrb::setupViewHtl()
     gr_set_proj_matrix( .625f * PI_2, float(w)/float(h), 0.001f, 5.0f);
 	gr_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix );
 
-    gr_zbuffer_set(0);
+    gr_zbuffer_set(GR_ZBUFF_NONE);
 }
