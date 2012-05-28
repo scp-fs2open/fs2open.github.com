@@ -521,7 +521,7 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 void geometry_batcher::render(int flags, float radius)
 {
 	if (n_to_render) {
-		if ( (((flags & TMAP_FLAG_SOFT_QUAD) && Cmdline_softparticles)) || (flags & TMAP_FLAG_DISTORTION) || (flags & TMAP_FLAG_DISTORTION_THRUSTER) && use_radius ) {
+		if ( ((flags & TMAP_FLAG_SOFT_QUAD) && Cmdline_softparticles) || (flags & TMAP_FLAG_DISTORTION) || ((flags & TMAP_FLAG_DISTORTION_THRUSTER) && use_radius) ) {
 			gr_render_effect(n_to_render * 3, vert, radius_list, flags | TMAP_FLAG_TRILIST);
 		} else {
 			gr_render(n_to_render * 3, vert, flags | TMAP_FLAG_TRILIST);

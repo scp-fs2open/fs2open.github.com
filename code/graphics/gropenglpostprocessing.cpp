@@ -76,10 +76,10 @@ static opengl_shader_file_t GL_post_shader_files[] = {
 	{ "post-v.sdr", "brightpass-f.sdr", SDR_POST_FLAG_BRIGHT,
 		1, { "tex" } },
 
-	{ "fxaa-v.sdr", "fxaa-f.sdr", NULL, 
+	{ "fxaa-v.sdr", "fxaa-f.sdr", 0, 
 		3, { "tex0", "rt_w", "rt_h"} },
 
-	{ "post-v.sdr", "fxaapre-f.sdr", NULL,
+	{ "post-v.sdr", "fxaapre-f.sdr", 0,
 		1, { "tex"} },
 
 	{ "post-v.sdr", "ls-f.sdr", SDR_POST_FLAG_LIGHTSHAFT,
@@ -271,10 +271,10 @@ void recompile_fxaa_shader() {
 	mprintf(("Recompiling FXAA shader with preset %d\n", Cmdline_fxaa_preset));
 
 	// read vertex shader
-	vert = opengl_post_load_shader(vert_name, shader_file->flags, NULL);
+	vert = opengl_post_load_shader(vert_name, shader_file->flags, 0);
 
 	// read fragment shader
-	frag = opengl_post_load_shader(frag_name, shader_file->flags, NULL);
+	frag = opengl_post_load_shader(frag_name, shader_file->flags, 0);
 
 
 	Verify( vert != NULL );
@@ -287,7 +287,7 @@ void recompile_fxaa_shader() {
 
 
 	new_shader->flags = shader_file->flags;
-	new_shader->flags2 = NULL;
+	new_shader->flags2 = 0;
 
 	opengl_shader_set_current( new_shader );
 

@@ -983,7 +983,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		by = fl2i(byf);
 		bc = fl2i(sx);
 
-		if ( (bx < 0) || (bx > gr_screen.max_w_unscaled) || (by < 0) || (by > gr_screen.max_h_unscaled) && !Fred_running ) {
+		if ( ( (bx < 0) || (bx > gr_screen.max_w_unscaled) || (by < 0) || (by > gr_screen.max_h_unscaled) ) && !Fred_running ) {
 			bi->x = bx;
 			bi->y = by;
 			return;

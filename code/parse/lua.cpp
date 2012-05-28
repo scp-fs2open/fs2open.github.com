@@ -1025,9 +1025,6 @@ ADE_FUNC(isValid, l_Event, NULL, "Detects whether handle is valid", "boolean", "
 }
 
 //**********HANDLE: File
-//static CFILE *Lua_file_current = NULL;
-static int Lua_file_handle_instances = 0;
-static int Lua_max_file_handle_instances = 5;
 
 ade_obj<CFILE*> l_File("file", "File handle");
 
@@ -6883,10 +6880,12 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if(ADE_SETTING_VAR)
+    {
 		if(trig)
 			shipp->flags |= SF_TRIGGER_DOWN;
 		else
 			shipp->flags &= ~SF_TRIGGER_DOWN;
+    }
 
 	if (shipp->flags & SF_TRIGGER_DOWN)
 		return ADE_RETURN_TRUE;
@@ -7128,10 +7127,12 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if(ADE_SETTING_VAR)
+    {
 		if(set)
 			shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
 		else
 			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+    }
 
 	if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
 		return ADE_RETURN_TRUE;

@@ -3159,7 +3159,7 @@ void hud_show_message_sender()
 	g3_project_vertex(&target_point);
 
 	if (!(target_point.flags & PF_OVERFLOW)) {  // make sure point projected
-		hud_target_add_display_list(targetp, &target_point, &targetp->pos, 10, iff_get_color(IFF_COLOR_MESSAGE, 1), NULL, NULL);
+		hud_target_add_display_list(targetp, &target_point, &targetp->pos, 10, iff_get_color(IFF_COLOR_MESSAGE, 1), NULL, 0);
 	} else if (target_point.codes != 0) { // target center is not on screen
 		// draw the offscreen indicator at the edge of the screen where the target is closest to
 		// AL 11-19-97: only show offscreen indicator if player sensors are functioning
@@ -3287,12 +3287,12 @@ void hud_show_selection_set()
 				return;
 			}
 			if ( OBJ_INDEX(targetp) == Player_ai->target_objnum ) {
-				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, NULL);
+				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
 				HUD_drew_selection_bracket_on_target = 1;
 			} else if ( Cmdline_targetinfo ) {		//Backslash -- show the distance and a lead indicator
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, TARGET_DISPLAY_DIST | TARGET_DISPLAY_LEAD);
 			} else {
-				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, NULL);
+				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
 			}
 		}
 
@@ -3302,7 +3302,7 @@ void hud_show_selection_set()
 
 			if ( OBJ_INDEX(targetp) != Player_ai->target_objnum ) {
 				if ( hud_sensors_ok(Player_ship, 0) ) {
-					hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, NULL);
+					hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
 				}
 			}
 		}
@@ -3383,7 +3383,7 @@ void hud_show_targeting_gauges(float frametime)
 		// AL 11-11-97:	don't draw the indicator if the ship is messaging, the indicator is drawn
 		// in the message sending color in hud_show_message_sender()
 		if ( Message_shipnum != Objects[Player_ai->target_objnum].instance ) {
-			hud_target_add_display_list(targetp, &target_point, &targetp->pos, 0, NULL, NULL, NULL);
+			hud_target_add_display_list(targetp, &target_point, &targetp->pos, 0, NULL, NULL, 0);
 		}
 	}
 }
