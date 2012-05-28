@@ -301,7 +301,7 @@ void HudGaugeRadarDradis::setupViewHtl()
 	gr_set_proj_matrix(.625f * PI_2, i2fl(Radar_radius[0])/i2fl(Radar_radius[1]), 0.001f, 5.0f);
 	gr_set_view_matrix(&Orb_eye_position, &vmd_identity_matrix);
 
-	gr_zbuffer_set(0);
+	gr_zbuffer_set(GR_ZBUFF_NONE);
 }
 
 void HudGaugeRadarDradis::doneDrawingHtl()
@@ -311,7 +311,7 @@ void HudGaugeRadarDradis::doneDrawingHtl()
 	
 	//hud_save_restore_camera_data(0);
 
-	gr_zbuffer_set(1);
+	gr_zbuffer_set(GR_ZBUFF_FULL);
 }
 
 void HudGaugeRadarDradis::drawOutlinesHtl()

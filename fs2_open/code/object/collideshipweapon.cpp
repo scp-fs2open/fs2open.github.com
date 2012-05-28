@@ -263,7 +263,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
         if (vm_vec_dot(&hit_direction, &warp_orient.vec.fvec) < 0.0f)
         {
-             valid_hit_occurred = false;
+             valid_hit_occurred = 0;
         }
     }
 
