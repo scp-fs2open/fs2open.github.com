@@ -72,37 +72,53 @@ public class Downloader
 	
 	protected final List<DownloadListener> downloadListeners;
 	protected final Connector connector;
+	protected final URL sourceURL;
+	protected final File destination;
 	
-	public Downloader(Connector connector)
+	public Downloader(Connector connector, URL sourceURL, File destination)
 	{
 		this.connector = connector;
+		this.sourceURL = sourceURL;
+		this.destination = destination;
+		
 		// woot, CopyOnWriteArrayList is A-1 SUPAR as a listener list;
 		// see http://www.ibm.com/developerworks/java/library/j-jtp07265/index.html
 		this.downloadListeners = new CopyOnWriteArrayList<DownloadListener>();
 	}
 	
-	public boolean download(URL sourceURL, File destinationDirectory)
+	public boolean download()
 	{
-		String fileName = new File(sourceURL.getPath()).getName();
-		int periodPos = fileName.lastIndexOf('.');
-		String extension = (periodPos >= 0) ? fileName.substring(periodPos + 1) : "";
-		
-		// download a zip
-		if (extension.equalsIgnoreCase("zip"))
-			return downloadFromZip(sourceURL, destinationDirectory);
-		
-		// download another supported archive
-		for (ArchiveFormat format: ArchiveFormat.values())
+		// if downloading to a directory, put the source file inside it with the same name
+		// (or names, in the case of an archive)
+		if (destination.isDirectory())
 		{
-			if (format.getMethodName().equalsIgnoreCase(extension))
-				return downloadFromArchive(sourceURL, destinationDirectory, format);
+			File destinationDirectory = destination;
+			String fileName = new File(sourceURL.getPath()).getName();
+			int periodPos = fileName.lastIndexOf('.');
+			String extension = (periodPos >= 0) ? fileName.substring(periodPos + 1) : "";
+			
+			// download a zip
+			if (extension.equalsIgnoreCase("zip"))
+				return downloadFromZip(sourceURL, destinationDirectory);
+			
+			// download another supported archive
+			for (ArchiveFormat format: ArchiveFormat.values())
+			{
+				if (format.getMethodName().equalsIgnoreCase(extension))
+					return downloadFromArchive(sourceURL, destinationDirectory, format);
+			}
+			
+			// download as a standard file
+			return downloadFile(sourceURL, new File(destinationDirectory, fileName));
 		}
-		
-		// download as a standard file
-		return downloadFile(sourceURL, new File(destinationDirectory, fileName));
+		// if downloading to a file, copy the source file and use the destination name
+		else
+		{
+			return downloadFile(sourceURL, destination);
+		}
 	}
 	
-	public boolean downloadFile(URL sourceURL, File destinationFile)
+	protected boolean downloadFile(URL sourceURL, File destinationFile)
 	{
 		logger.info("Downloading from " + sourceURL + " to local file " + destinationFile);
 		
@@ -155,7 +171,7 @@ public class Downloader
 		}
 	}
 	
-	public boolean downloadFromZip(URL sourceURL, File destinationDirectory)
+	protected boolean downloadFromZip(URL sourceURL, File destinationDirectory)
 	{
 		logger.info("Downloading and extracting from " + sourceURL + " to local directory " + destinationDirectory);
 		
@@ -229,7 +245,7 @@ public class Downloader
 		}
 	}
 	
-	public boolean downloadFromArchive(URL sourceURL, File destinationDirectory, ArchiveFormat format)
+	protected boolean downloadFromArchive(URL sourceURL, File destinationDirectory, ArchiveFormat format)
 	{
 		logger.info("Downloading and extracting from " + sourceURL + " to local directory " + destinationDirectory);
 		

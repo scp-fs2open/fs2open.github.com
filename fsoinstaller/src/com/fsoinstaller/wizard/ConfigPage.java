@@ -360,9 +360,7 @@ public class ConfigPage extends WizardPage
 			configuration.saveProperties();
 			
 			Connector connector = new Connector(proxy);
-			Downloader downloader = new Downloader(connector);
 			settings.put(Configuration.CONNECTOR_KEY, connector);
-			settings.put(Configuration.DOWNLOADER_KEY, downloader);
 			
 			// only check for the installer version if we haven't checked already
 			if (!settings.containsKey(Configuration.REMOTE_VERSION_KEY))
@@ -413,7 +411,8 @@ public class ConfigPage extends WizardPage
 					}
 					
 					// download version information
-					if (downloader.downloadFile(versionURL, tempVersion))
+					Downloader tempVersionDownloader = new Downloader(connector, versionURL, tempVersion);
+					if (tempVersionDownloader.download())
 					{
 						List<String> versionLines = MiscUtils.readTextFile(tempVersion);
 						if (!versionLines.isEmpty())
@@ -434,7 +433,8 @@ public class ConfigPage extends WizardPage
 							if (thisVersion > maxVersion)
 							{
 								// get file names
-								if (downloader.downloadFile(filenameURL, tempFilenames))
+								Downloader tempFilenamesDownloader = new Downloader(connector, filenameURL, tempFilenames);
+								if (tempFilenamesDownloader.download())
 								{
 									List<String> filenameLines = MiscUtils.readTextFile(tempFilenames);
 									if (!filenameLines.isEmpty())
@@ -446,7 +446,8 @@ public class ConfigPage extends WizardPage
 										maxVersionURL = versionLines.get(1);
 										
 										// try to get basic configuration too, but this can be optional (sort of)
-										if (downloader.downloadFile(basicURL, tempBasicConfig))
+										Downloader tempBasicConfigDownloader = new Downloader(connector, basicURL, tempBasicConfig);
+										if (tempBasicConfigDownloader.download())
 										{
 											List<String> basicLines = MiscUtils.readTextFile(tempBasicConfig);
 											
@@ -544,7 +545,8 @@ public class ConfigPage extends WizardPage
 					tempModFile.deleteOnExit();
 					
 					// download it to the temp file
-					if (!downloader.downloadFile(modURL, tempModFile))
+					Downloader tempModFileDownloader = new Downloader(connector, modURL, tempModFile);
+					if (!tempModFileDownloader.download())
 					{
 						logger.warn("Could not download mod information from '" + url + "'");
 						continue;
