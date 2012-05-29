@@ -20,9 +20,12 @@
 package com.fsoinstaller.wizard;
 
 import java.awt.BorderLayout;
+import java.awt.EventQueue;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -87,25 +90,35 @@ public class InstallPage extends WizardPage
 		for (String mod: selectedMods)
 			logger.info(mod);
 		
-		// TODO: we need to do a breadth-first traversal
+		// prepare to bring out the big guns: create an ExecutorService
+		ExecutorService exec = Executors.newCachedThreadPool();
 		
+		// we are adding the top-level nodes, and they will subsequently add their child nodes
 		for (InstallerNode node: modNodes)
 		{
 			if (!selectedMods.contains(node.getName()))
 				continue;
 			
-			JPanel labelPanel = new JPanel();
-			labelPanel.setLayout(new BoxLayout(labelPanel, BoxLayout.X_AXIS));
-			labelPanel.add(new JLabel(node.getName()));
-			labelPanel.add(Box.createHorizontalGlue());
+			final InstallItem item = new InstallItem(exec, node, selectedMods);
+			installPanel.add(item);
 			
-			installPanel.add(labelPanel);
+			EventQueue.invokeLater(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					item.start();
+				}
+			});
 		}
+		
+		// TODO: note that the ExecutorService isn't going to terminate automatically, so we need to shut it down properly in success or failure
 	}
 	
 	@Override
 	public void prepareToLeavePage(Runnable runWhenReady)
 	{
-		runWhenReady.run();
+		// TODO
+		//runWhenReady.run();
 	}
 }
