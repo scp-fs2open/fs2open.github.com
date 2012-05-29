@@ -41,9 +41,11 @@ extern char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
 
 
 // Model Animation Position settings
-#define MA_POS_NOT_SET		0	// not yet setup
-#define MA_POS_SET			1	// set, but is moving
-#define MA_POS_READY		2	// set, done with move
+enum EModelAnimationPosition {
+    MA_POS_NOT_SET          = 0,	// not yet setup
+    MA_POS_SET              = 1,	// set, but is moving
+    MA_POS_READY            = 2     // set, done with move
+};
 
 #define ANIMATION_SUBTYPE_ALL -1
 
