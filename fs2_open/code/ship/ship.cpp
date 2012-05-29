@@ -9132,10 +9132,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// Bobboau's animation fixup
 	for( i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
-			swp->primary_animation_position[i] = false;
+			swp->primary_animation_position[i] = MA_POS_NOT_SET;
 	}
 	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
-			swp->secondary_animation_position[i] = false;
+			swp->secondary_animation_position[i] = MA_POS_NOT_SET;
 	}
 	model_anim_set_initial_states(sp);
 
