@@ -2056,6 +2056,7 @@ float hud_find_target_distance( object *targetee, object *targeter )
 }
 
 //
+
 /// \brief evaluate a ship (and maybe turrets) as a potential target
 /// 
 /// Check if shipp (or its turrets) is attacking attacked_objnum
@@ -2247,6 +2248,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 		}
 	}
 
+	int initial_attacked_objnum = attacked_objnum;
 	if (attacked_objnum == -1) {
 		attacked_objnum = player_obj_index;
 	}
@@ -2266,6 +2268,10 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 		// fill in rest of esct
 		esct.shipp = shipp;
 
+		// Filter out any target that is not targeting the player  --Mastadon
+		if ( (initial_attacked_objnum == player_obj_index) && (Ai_info[shipp->ai_index].target_objnum != player_obj_index) ) {
+			continue;
+		}
 		// check each shipp on list and update nearest obj and subsys
 		evaluate_ship_as_closest_target(&esct);
 		if (esct.min_distance < min_distance) {
