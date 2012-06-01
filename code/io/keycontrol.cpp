@@ -2276,7 +2276,7 @@ int button_function(int n)
 		case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
 			control_used(TARGET_CLOSEST_SHIP_ATTACKING_SELF);
 			if (hud_sensors_ok(Player_ship)){
-				hud_target_closest(iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
+				hud_target_next_list(1, 0, iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
 			}
 			break;
 
