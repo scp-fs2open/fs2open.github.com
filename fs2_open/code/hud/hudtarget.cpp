@@ -1281,6 +1281,143 @@ ship_obj *advance_ship(ship_obj *so, int next_flag)
 	return GET_LAST(so);
 }
 
+/// \brief Iterates down to and selects the next target in a linked list 
+///        fashion ordered from closest to farthest from the 
+///        attacked_object_number, returning the next valid target.
+/// 
+/// 
+/// \param targeting_from_closest_to_farthest[in]   targets the closest object 
+///                                     if true. Targets the farthest 
+///                                     away object if false.
+/// \param valid_team_mask[in]          A bit mask that defines the desired 
+///                                     victim team.
+/// \param attacked_object_number[in]   The objectid that is under attack. 
+///                                     Defaults to -1.
+/// \param target_filters               Applies a bit filter to exclude certain
+///                                     classes of objects from being targeted.
+///                                     Defaults to (SIF_CARGO | SIF_NAVBUOY)
+///                                        
+/// \returns         The next object to target if targetting was successful. 
+///                  Returns NULL if targetting was unsuccessful.
+static object* select_next_target_by_distance( const bool targeting_from_closest_to_farthest, const int valid_team_mask, const int attacked_object_number = -1, const int target_filters = (SIF_CARGO | SIF_NAVBUOY)) {
+	object *minimum_object_ptr, *maximum_object_ptr, *nearest_object_ptr;
+	minimum_object_ptr = maximum_object_ptr = nearest_object_ptr = NULL;
+	float current_distance = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
+	float minimum_distance = 1e20f;
+	float maximum_distance = 0.0f;
+	int player_object_index = OBJ_INDEX(Player_obj);
+	
+	float nearest_distance;
+	if ( targeting_from_closest_to_farthest ) {
+		nearest_distance = 1e20f;
+	} else {
+		nearest_distance = 0.0f;
+	}
+	
+	ship_obj *ship_object_ptr;
+	object   *prospective_victim_ptr;
+	ship     *prospective_victim_ship_ptr;
+	for ( ship_object_ptr = GET_FIRST(&Ship_obj_list);   ship_object_ptr != END_OF_LIST(&Ship_obj_list);   ship_object_ptr = GET_NEXT(  ship_object_ptr) ) {
+		prospective_victim_ptr = &Objects[  ship_object_ptr->objnum];
+		  // get a pointer to the ship information
+		prospective_victim_ship_ptr = &Ships[prospective_victim_ptr->instance];
+	
+		float new_distance;
+			if ( (prospective_victim_ptr == Player_obj) || (prospective_victim_ship_ptr->flags & TARGET_SHIP_IGNORE_FLAGS) ) {
+				continue;
+			}
+	
+			// choose from the correct team
+			if ( !iff_matches_mask(prospective_victim_ship_ptr->team, valid_team_mask) ) {
+				continue;
+			}
+				
+			// don't use object if it is already a target
+			if ( OBJ_INDEX(prospective_victim_ptr) == Player_ai->target_objnum ) {
+				continue;
+			}
+				
+	
+		if( attacked_object_number == -1 ) {
+			// always ignore navbuoys and cargo
+			if ( Ship_info[prospective_victim_ship_ptr->ship_info_index].flags & target_filters ) {
+				continue;
+			}
+				
+			if(hud_target_invalid_awacs(prospective_victim_ptr)){
+				continue;
+			}
+	
+			new_distance = hud_find_target_distance(prospective_victim_ptr,Player_obj);
+		} else {
+				// Filter out any target that is not targeting the player  --Mastadon
+			if ( (attacked_object_number == player_object_index) && (Ai_info[prospective_victim_ship_ptr->ai_index].target_objnum != player_object_index) ) {
+				continue;
+			}
+			esct eval_ship_as_closest_target_args;
+			eval_ship_as_closest_target_args.attacked_objnum = attacked_object_number;
+			eval_ship_as_closest_target_args.check_all_turrets = (attacked_object_number == player_object_index);
+			eval_ship_as_closest_target_args.check_nearest_turret = false;
+				// We don't ever filter our target selection to just bombers or fighters
+				// because the select next attacker logic doesn't.  --Mastadon
+			eval_ship_as_closest_target_args.filter = 0;
+			eval_ship_as_closest_target_args.team_mask = valid_team_mask;
+				// We always get the turret attacking, since that's how the select next 
+				// attacker logic does it.  --Mastadon
+			eval_ship_as_closest_target_args.turret_attacking_target = 1;
+			eval_ship_as_closest_target_args.shipp = prospective_victim_ship_ptr;
+			evaluate_ship_as_closest_target( &eval_ship_as_closest_target_args );
+	
+			new_distance = eval_ship_as_closest_target_args.min_distance;
+		}
+	
+	
+		if (new_distance <= minimum_distance) {
+			minimum_distance = new_distance;
+			minimum_object_ptr = prospective_victim_ptr;
+		}
+	
+		if (new_distance >= maximum_distance) {
+			maximum_distance = new_distance;
+			maximum_object_ptr = prospective_victim_ptr;
+		}
+			
+		float diff = 0.0f;
+		if ( targeting_from_closest_to_farthest ) {
+			diff = new_distance - current_distance;
+			if ( diff > 0.0f ) {
+				if ( diff < ( nearest_distance - current_distance ) ) {
+					nearest_distance = new_distance;
+					nearest_object_ptr = prospective_victim_ptr;
+				}
+			}
+		} else {
+			diff = current_distance - new_distance;
+			if ( diff > 0.0f ) {
+				if ( diff < ( current_distance - nearest_distance ) ) {
+					nearest_distance = new_distance;
+					nearest_object_ptr = const_cast<object *>(prospective_victim_ptr);
+				}
+			}
+		}
+	}
+
+	if ( nearest_object_ptr == NULL ) {
+
+		if ( targeting_from_closest_to_farthest ) {
+			if ( minimum_object_ptr != NULL ) {
+				nearest_object_ptr = minimum_object_ptr;
+			}
+		} else {
+			if ( maximum_object_ptr != NULL ) {
+				nearest_object_ptr = maximum_object_ptr;
+			}
+		}
+	}
+
+	return nearest_object_ptr;
+}
+
 ship_obj *get_ship_obj_ptr_from_index(int index);
 // -------------------------------------------------------------------
 // hud_target_missile()
@@ -1918,45 +2055,23 @@ float hud_find_target_distance( object *targetee, object *targeter )
 	return dist;
 }
 
-// hud_target_closest() will set the Players[Player_num].current_target to the closest
-// ship to the player that matches the team passed as a paramater
 //
-// The current algorithm is to simply iterate through the objects and calculate the 
-// magnitude of the vector that connects the player to the target. The smallest magnitude
-// is tracked, and then used to locate the closest hostile ship.  Note only the square of the
-// magnitude is required, since we are only comparing magnitudes
-//
-//	parameters:		team	=> team of closest ship that should be targeted.
-//                         Default value is -1, if team doesn't matter.
-//
-//						attacked_objnum => object number of ship that is being attacked
-//						play_fail_snd   => boolean, whether to play SND_TARGET_FAIL
-//                                   (needed, since function called repeatedly when auto-targeting is
-//                                    enabled, and we don't want a string of fail sounds playing).
-//                                   This is a default parameter with a value of TRUE
-//						filter	=> OPTIONAL parameter (default value 0): when set to TRUE, only
-//										fighters and bombers are considered for new targets
-//
-// returns:	TRUE  ==> a target was acquired
-//				FALSE ==> no target was acquired
-//
-// eval target as closest struct
-typedef struct esct
-{
-	int				team_mask;
-	int				filter;
-	ship*				shipp;
-	float				min_distance;
-	int				check_nearest_turret;
-	int				attacked_objnum;
-	int				check_all_turrets;
-	int				turret_attacking_target;		// check that turret is actually attacking the attacked_objnum
-} esct;
-
-// evaluate a ship (and maybe turrets) as a potential target
-// check if shipp (or its turrets) is attacking attacked_objnum
-// special case for player trying to select target (don't check if turrets are aimed at player)
-void evaluate_ship_as_closest_target(esct *esct)
+/// \brief evaluate a ship (and maybe turrets) as a potential target
+/// 
+/// Check if shipp (or its turrets) is attacking attacked_objnum
+/// Provides a special case for player trying to select target (don't check if 
+/// turrets are aimed at player)
+/// 
+/// \param[in, out] *esct The Evaluate Ship as Closest Target (esct) that will 
+///                       be used to determine if a target is a valid, harmful 
+///                       target and, if so, sets the min_distance attribute 
+///                       to the distance of either the attacker or the 
+///                       closest attacker's turret. Otherwise, min_distance 
+///                       is set to FLT_MAX
+/// 
+/// \return true if either the ship or one of it's turrets are attacking the 
+///                       player. Otherwise, returns false.
+bool evaluate_ship_as_closest_target(esct *esct)
 {
 	int targeting_player, turret_is_attacking;
 	ship_subsys *ss;
@@ -1971,7 +2086,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	object *objp = &Objects[esct->shipp->objnum];
 	Assert(objp->type == OBJ_SHIP);
 	if (objp->type != OBJ_SHIP) {
-		return;
+		return false;
 	}
 
 	// player being targeted, so we will want closest distance from player
@@ -1979,28 +2094,28 @@ void evaluate_ship_as_closest_target(esct *esct)
 
 	// filter on team
 	if ( !iff_matches_mask(esct->shipp->team, esct->team_mask) ) {
-		return;
+		return false;
 	}
 
 	// check if player or ignore ship
 	if ( (esct->shipp->objnum == OBJ_INDEX(Player_obj)) || (esct->shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ) {
-		return;
+		return false;
 	}
 
 	// bail if harmless
 	if ( Ship_info[esct->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct->shipp->ship_info_index].class_type].hud_bools & STI_HUD_TARGET_AS_THREAT)) {
-		return;
+		return false;
 	}
 
 	// only look at targets that are AWACS valid
 	if (hud_target_invalid_awacs(&Objects[esct->shipp->objnum])) {
-		return;
+		return false;
 	}
 
 	// If filter is set, only target fighters and bombers
 	if ( esct->filter ) {
 		if ( !(Ship_info[esct->shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
-			return;
+			return false;
 		}
 	}
 
@@ -2049,11 +2164,11 @@ void evaluate_ship_as_closest_target(esct *esct)
 		ai_info *aip = &Ai_info[esct->shipp->ai_index];
 
 		if (aip->target_objnum != esct->attacked_objnum) {
-			return;
+			return false;
 		}
 
 		if ( (Game_mode & GM_NORMAL) && ( aip->mode != AIM_CHASE ) && (aip->mode != AIM_STRAFE) && (aip->mode != AIM_EVADE) && (aip->mode != AIM_EVADE_WEAPON) && (aip->mode != AIM_AVOID)) {
-			return;
+			return false;
 		}
 	}
 
@@ -2067,8 +2182,38 @@ void evaluate_ship_as_closest_target(esct *esct)
 			esct->check_nearest_turret = FALSE;
 		}
 	}
+
+	return true;
 }
 
+/// \brief Sets the Players[Player_num].current_target to the closest ship to 
+///        the player that matches the team passed as a paramater.
+///
+/// The current algorithm is to simply iterate through the objects and 
+/// calculate the magnitude of the vector that connects the player to the 
+/// target. The smallest magnitude is tracked, and then used to locate the 
+/// closest hostile ship. Note only the square of the magnitude is required, 
+/// since we are only comparing magnitudes.
+///
+/// \param[in] team            team of closest ship that should be targeted.
+///                            Default value is -1, if team doesn't matter.
+///
+/// \param[in] attacked_objnum object number of ship that is being attacked
+/// \param[in] play_fail_snd   boolean, whether to play SND_TARGET_FAIL
+///                            (needed, since function called repeatedly when 
+///                            auto-targeting is enabled, and we don't want a 
+///                            string of fail sounds playing). This is a 
+///                            default parameter with a value of TRUE.
+/// \param[in] filter          OPTIONAL parameter (default value 0): when set 
+///                            to TRUE, only fighters and bombers are 
+///                            considered for new targets.
+/// \param[in] get_closest_turret_attacking_player Finds the closest turret 
+///                            attacking the player if true. Otherwise, only 
+///                            finds the closest attacking ship, targeting the 
+///                            turret closest to the player.
+///
+/// \return: true (non-zero) if a target was acquired. Returns false (zero) if 
+///          no target was acquired.
 int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, int filter, int get_closest_turret_attacking_player)
 {
 	object	*A;
@@ -4477,19 +4622,18 @@ int hud_communications_state(ship *sp)
 }
 
 // target the next or previous hostile/friendly ship
-void hud_target_next_list(int hostile, int next_flag)
+void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacked_objnum, int play_fail_snd, int filter, int get_closest_turret_attacking_player)
 {
-	object	*A, *min_obj, *max_obj, *nearest_obj;
-	ship		*shipp;
-	ship_obj	*so;
-//	vec3d	target_vec;
-	float		cur_dist, min_dist, max_dist, new_dist, nearest_dist, diff;	
 	int		timestamp_val, valid_team_mask;
 
 	if ( hostile ) {
 		timestamp_val = Tl_hostile_reset_timestamp;
 		Tl_hostile_reset_timestamp = timestamp(TL_RESET);
-		valid_team_mask = iff_get_attackee_mask(Player_ship->team);
+		if ( team_mask == -1 ) {
+			valid_team_mask = iff_get_attackee_mask(Player_ship->team);
+		} else {
+			valid_team_mask = team_mask;
+		}
 	} else {
 		// everyone hates a traitor including other traitors so the friendly target option shouldn't work for them
 		if (Player_ship->team == Iff_traitor) {
@@ -4504,98 +4648,19 @@ void hud_target_next_list(int hostile, int next_flag)
 
 	// If no target is selected, then simply target the closest ship
 	if ( Player_ai->target_objnum == -1 || timestamp_elapsed(timestamp_val) ) {
-		hud_target_closest(valid_team_mask);
+		hud_target_closest(valid_team_mask, attacked_objnum, play_fail_snd, filter, get_closest_turret_attacking_player);
 		return;
 	}
 
-	cur_dist = hud_find_target_distance(&Objects[Player_ai->target_objnum],Player_obj);
+	object *nearest_object = select_next_target_by_distance((next_flag != 0), valid_team_mask, attacked_objnum);
 
-	min_obj = max_obj = nearest_obj = NULL;
-	min_dist = 1e20f;
-	max_dist = 0.0f;
-	if ( next_flag ) {
-		nearest_dist = 1e20f;
-	} else {
-		nearest_dist = 0.0f;
-	}
-
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		A = &Objects[so->objnum];
-		shipp = &Ships[A->instance];	// get a pointer to the ship information
-
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
-			continue;
-
-		// choose from the correct team
-		if ( !iff_matches_mask(shipp->team, valid_team_mask) ) {
-			continue;
-		}
-
-		// always ignore navbuoys and cargo
-		if ( Ship_info[shipp->ship_info_index].flags & (SIF_CARGO | SIF_NAVBUOY) ) {
-			continue;
-		}
-
-		// don't use object if it is already a target
-		if ( OBJ_INDEX(A) == Player_ai->target_objnum ) {
-			continue;
-		}
-
-		if(hud_target_invalid_awacs(A)){
-			continue;
-		}
-
-		new_dist = hud_find_target_distance(A,Player_obj);
-			
-		if (new_dist <= min_dist) {
-			min_dist = new_dist;
-			min_obj = A;
-		}
-
-		if (new_dist >= max_dist) {
-			max_dist = new_dist;
-			max_obj = A;
-		}
-
-		if ( next_flag ) {
-			diff = new_dist - cur_dist;
-			if ( diff > 0 ) {
-				if ( diff < ( nearest_dist - cur_dist ) ) {
-					nearest_dist = new_dist;
-					nearest_obj = A;
-				}
-			}
-		} else {
-			diff = cur_dist - new_dist;
-			if ( diff > 0 ) {
-				if ( diff < ( cur_dist - nearest_dist ) ) {
-					nearest_dist = new_dist;
-					nearest_obj = A;
-				}
-			}
-		}
-	}
-
-	if ( nearest_obj == NULL ) {
-
-		if ( next_flag ) {
-			if ( min_obj != NULL ) {
-				nearest_obj = min_obj;
-			}
-		} else {
-			if ( max_obj != NULL ) {
-				nearest_obj = max_obj;
-			}
-		}
-	}
-
-	if (nearest_obj != NULL) {
+	if (nearest_object != NULL) {
 		// set new target
-		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		set_target_objnum( Player_ai, OBJ_INDEX(nearest_object) );
 
 		// maybe set new turret subsystem
-		hud_maybe_set_sorted_turret_subsys(&Ships[nearest_obj->instance]);
-		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
+		hud_maybe_set_sorted_turret_subsys(&Ships[nearest_object->instance]);
+		hud_restore_subsystem_target(&Ships[nearest_object->instance]);
 	}
 	else {
 		snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
