@@ -2232,57 +2232,61 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	int		player_obj_index = OBJ_INDEX(Player_obj);
 	ship_subsys *ss;
 
-	if ( (attacked_objnum >= 0) && (attacked_objnum != player_obj_index) ) {
-		// bail if player does not have target
-		if ( Player_ai->target_objnum == -1 ) {
-			goto Target_closest_done;
+	if (!(
+			(attacked_objnum >= 0) &&
+			(attacked_objnum != player_obj_index) &&
+			(
+				// bail if player does not have target
+				(Player_ai->target_objnum == -1) ||
+				// bail if not a ship
+				(Objects[attacked_objnum].type != OBJ_SHIP) ||
+				// bail if ship is to be ignored
+				(Ships[Objects[attacked_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS)
+			)
+		))
+	{
+
+		int initial_attacked_objnum = attacked_objnum;
+		if (attacked_objnum == -1) {
+			attacked_objnum = player_obj_index;
 		}
 
-		if ( Objects[attacked_objnum].type != OBJ_SHIP ) {
-			goto Target_closest_done;
-		}
+		// check all turrets if for player.
+		esct.check_all_turrets = (attacked_objnum == player_obj_index);
+		esct.filter = filter;
+		esct.team_mask = team_mask;
+		esct.attacked_objnum = attacked_objnum;
+		esct.turret_attacking_target = get_closest_turret_attacking_player;
 
-		// bail if ship is to be ignored
-		if (Ships[Objects[attacked_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) {
-			goto Target_closest_done;
+		for (so=GET_FIRST(&Ship_obj_list);
+			so!=END_OF_LIST(&Ship_obj_list);
+			so=GET_NEXT(so)
+			)
+		{
+
+			A = &Objects[so->objnum];
+			shipp = &Ships[A->instance];	// get a pointer to the ship information
+
+			// fill in rest of esct
+			esct.shipp = shipp;
+
+			// Filter out any target that is not targeting the player  --Mastadon
+			if ((initial_attacked_objnum == player_obj_index) &&
+				(Ai_info[shipp->ai_index].target_objnum != player_obj_index)
+				)
+			{
+				continue;
+			}
+			// check each shipp on list and update nearest obj and subsys
+			evaluate_ship_as_closest_target(&esct);
+			if (esct.min_distance < min_distance) {
+				target_found = TRUE;
+				min_distance = esct.min_distance;
+				nearest_obj = A;
+				check_nearest_turret = esct.check_nearest_turret;
+			}
 		}
 	}
-
-	int initial_attacked_objnum = attacked_objnum;
-	if (attacked_objnum == -1) {
-		attacked_objnum = player_obj_index;
-	}
-
-	// check all turrets if for player.
-	esct.check_all_turrets = (attacked_objnum == player_obj_index);
-	esct.filter = filter;
-	esct.team_mask = team_mask;
-	esct.attacked_objnum = attacked_objnum;
-	esct.turret_attacking_target = get_closest_turret_attacking_player;
-
-	for ( so=GET_FIRST(&Ship_obj_list); so!=END_OF_LIST(&Ship_obj_list); so=GET_NEXT(so) ) {
-
-		A = &Objects[so->objnum];
-		shipp = &Ships[A->instance];	// get a pointer to the ship information
-
-		// fill in rest of esct
-		esct.shipp = shipp;
-
-		// Filter out any target that is not targeting the player  --Mastadon
-		if ( (initial_attacked_objnum == player_obj_index) && (Ai_info[shipp->ai_index].target_objnum != player_obj_index) ) {
-			continue;
-		}
-		// check each shipp on list and update nearest obj and subsys
-		evaluate_ship_as_closest_target(&esct);
-		if (esct.min_distance < min_distance) {
-			target_found = TRUE;
-			min_distance = esct.min_distance;
-			nearest_obj = A;
-			check_nearest_turret = esct.check_nearest_turret;
-		}
-	}
-
-	Target_closest_done:
 
 	// maybe ignore target if too far away
 	// DKA 9/8/99 Remove distance check
