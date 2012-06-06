@@ -76,7 +76,7 @@
 #include "object/objcollide.h"
 #include "parse/scripting.h"
 #include "graphics/gropenglshader.h"
-
+#include "model/model.h"
 
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
@@ -5469,6 +5469,9 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		model_set_instance_info(&ship_system->submodel_info_1, model_system->turn_rate, turn_accel);
 
 		model_clear_instance_info( &ship_system->submodel_info_2 );
+
+		// Clear this flag here so we correctly rebuild the turret matrix on mission load
+		model_system->flags &= ~MSS_FLAG_TURRET_MATRIX;
 	}
 
 	if ( !ignore_subsys_info ) {
@@ -9134,10 +9137,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// Bobboau's animation fixup
 	for( i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
-			swp->primary_animation_position[i] = false;
+			swp->primary_animation_position[i] = MA_POS_NOT_SET;
 	}
 	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
-			swp->secondary_animation_position[i] = false;
+			swp->secondary_animation_position[i] = MA_POS_NOT_SET;
 	}
 	model_anim_set_initial_states(sp);
 

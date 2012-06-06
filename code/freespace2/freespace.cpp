@@ -4668,9 +4668,7 @@ void lock_time_compression(bool is_locked)
 
 void change_time_compression(float multiplier)
 {
-	fix modified = F1_0;
-
-	modified = fl2f( f2fl(Game_time_compression) * multiplier );
+	fix modified = fl2f( f2fl(Game_time_compression) * multiplier );
 
 	Desired_time_compression = Game_time_compression = modified;
 	Time_compression_change_rate = 0;

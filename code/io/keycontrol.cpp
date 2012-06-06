@@ -2502,7 +2502,7 @@ int button_function(int n)
 
 			// target closest ship that is attacking player
 			case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
-				hud_target_closest(iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
+				hud_target_next_list(1, 0, iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
 				break;
 
 			// target your target's target

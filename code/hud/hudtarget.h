@@ -69,6 +69,22 @@ extern char *Strafe_submode_text[];
 
 extern void hud_init_targeting_colors();
 
+/// \brief An abbreviation for "Evaluate Ship as Closest Target", defines a 
+///        data structure used to hold the required arguments for evaluating 
+///        a prospective closest target to an attacked object.
+typedef struct esct
+{
+	int				team_mask;
+	int				filter;
+	ship*				shipp;
+	float				min_distance;
+	int				check_nearest_turret;
+	int				attacked_objnum;
+	int				check_all_turrets;
+	int				turret_attacking_target;		// check that turret is actually attacking the attacked_objnum
+} esct;
+
+bool evaluate_ship_as_closest_target(esct *esct);
 void	hud_init_targeting();
 void	hud_target_next(int team_mask = -1);
 void	hud_target_prev(int team_mask = -1);
@@ -81,7 +97,7 @@ void	hud_target_targets_target();
 void	hud_check_reticle_list();
 void	hud_target_closest_locked_missile(object *A);
 void	hud_target_missile(object *source_obj, int next_flag);
-void	hud_target_next_list(int hostile=1, int next_flag=1);
+void	hud_target_next_list(int hostile=1, int next_flag=1, int team_mask = -1, int attacked_objnum = -1, int play_fail_sound = TRUE, int filter = 0, int turret_attacking_target = 0);
 int	hud_target_closest_repair_ship(int goal_objnum=-1);
 void	hud_target_auto_target_next();
 void	hud_process_remote_detonate_missile();

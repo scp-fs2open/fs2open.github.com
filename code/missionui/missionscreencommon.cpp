@@ -1601,7 +1601,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		}
 		g3_done_instance(true);
 
-		gr_zbuffer_set(false); // Turn of Depthbuffer so we dont get gridlines over the ship or a disappearing scanline 
+		gr_zbuffer_set(GR_ZBUFF_NONE); // Turn of Depthbuffer so we dont get gridlines over the ship or a disappearing scanline 
 		if (time >= 0.5f) { // Phase 1 onward draw the grid
 			int i;
 			start.xyz.y = -offset;
@@ -1669,7 +1669,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 			}
 		}
 
-		gr_zbuffer_set(true); // Turn of depthbuffer again
+		gr_zbuffer_set(GR_ZBUFF_FULL); // Turn of depthbuffer again
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 		g3_end_frame();

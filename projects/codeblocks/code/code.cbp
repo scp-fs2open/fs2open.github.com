@@ -906,6 +906,8 @@
 		</Unit>
 		<Unit filename="../../../code/mm/mmreg.h" />
 		<Unit filename="../../../code/mm/msacm.h" />
+		<Unit filename="../../../code/mod_table/mod_table.cpp" />
+		<Unit filename="../../../code/mod_table/mod_table.h" />
 		<Unit filename="../../../code/model/model.h">
 			<Option virtualFolder="model/" />
 		</Unit>

@@ -76,6 +76,10 @@ public :
 	void Printf( const char* format, ... ) ;
 	void SetWindowText( HWND hWnd ) const ;
 	char buffer[ BUFFER_SIZE ] ;
+
+	void Append(const char* text);
+	void Truncate(size_t size);
+	size_t Size() const;
 private :
 	char* current ;
 } ;
@@ -91,6 +95,27 @@ DumpBuffer :: DumpBuffer()
 void DumpBuffer :: Clear()
 {
 	current = buffer ;
+}
+
+
+void DumpBuffer :: Append(const char* text)
+{
+	strcat_s(buffer, text);
+}
+
+
+void DumpBuffer :: Truncate(size_t size)
+{
+	if (size >= strlen(buffer))
+		return;
+
+	buffer[size] = 0;
+}
+
+
+size_t DumpBuffer :: Size() const
+{
+	return strlen(buffer);
 }
 
 
@@ -877,6 +902,12 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	/* Copy to the clipboard */
 	dump_text_to_clipboard( assertString.c_str( ) );
 
+	// truncate text
+	if (assertString.size() > 1600) {
+		assertString.resize(1600);
+		assertString.append("...");
+	}
+
 	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
 	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
 	val = MessageBox( NULL, assertString.c_str( ), "Assertion Failed!", MB_OKCANCEL | flags );
@@ -887,6 +918,12 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	dumpBuffer.Printf( "\r\n" );
 	DumpCallsStack( dumpBuffer ) ;  
 	dump_text_to_clipboard(dumpBuffer.buffer);
+
+	// truncate text
+	if (dumpBuffer.Size() > 1600) {
+		dumpBuffer.Truncate(1600);
+		dumpBuffer.Append("...");
+	}
 
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
@@ -942,6 +979,12 @@ void _cdecl WinAssert(char * text, char * filename, int linenum, const char * fo
 	/* Copy to the clipboard */
 	dump_text_to_clipboard( assertString.c_str( ) );
 
+	// truncate text
+	if (assertString.size() > 1600) {
+		assertString.resize(1600);
+		assertString.append("...");
+	}
+
 	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
 	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
 	val = MessageBox( NULL, assertString.c_str( ), "Assertion Failed!", MB_OKCANCEL | flags );
@@ -952,6 +995,12 @@ void _cdecl WinAssert(char * text, char * filename, int linenum, const char * fo
 	dumpBuffer.Printf( "\r\n" );
 	DumpCallsStack( dumpBuffer ) ;  
 	dump_text_to_clipboard(dumpBuffer.buffer);
+
+	// truncate text
+	if (dumpBuffer.Size() > 1600) {
+		dumpBuffer.Truncate(1600);
+		dumpBuffer.Append("...");
+	}
 
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
@@ -1070,6 +1119,12 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 	dump_text_to_clipboard(dumpBuffer.buffer);
 
+	// truncate text
+	if (dumpBuffer.Size() > 1600) {
+		dumpBuffer.Truncate(1600);
+		dumpBuffer.Append("...");
+	}
+
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 
@@ -1118,6 +1173,12 @@ void _cdecl Error( const char * filename, int line, const char * format, ... )
 	/* Copy to the clipboard */
 	dump_text_to_clipboard( assertString.c_str( ) );
 
+	// truncate text
+	if (assertString.size() > 1600) {
+		assertString.resize(1600);
+		assertString.append("...");
+	}
+
 	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
 	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
 	val = MessageBox( NULL, assertString.c_str( ), "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
@@ -1128,6 +1189,12 @@ void _cdecl Error( const char * filename, int line, const char * format, ... )
 	dumpBuffer.Printf( "\r\n" );
 	DumpCallsStack( dumpBuffer ) ;  
 	dump_text_to_clipboard(dumpBuffer.buffer);
+
+	// truncate text
+	if (dumpBuffer.Size() > 1600) {
+		dumpBuffer.Truncate(1600);
+		dumpBuffer.Append("...");
+	}
 
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
@@ -1234,6 +1301,12 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	/* Copy to the clipboard */
 	dump_text_to_clipboard( assertString.c_str( ) );
 
+	// truncate text
+	if (assertString.size() > 1600) {
+		assertString.resize(1600);
+		assertString.append("...");
+	}
+
 	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
 	assertString += "\n\nUse Yes to break into Debugger, No to continue.\nand Cancel to Quit\n";
 	result = MessageBox( NULL, assertString.c_str( ), "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
@@ -1247,6 +1320,12 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	dumpBuffer.Printf( "\r\n" );
 	DumpCallsStack( dumpBuffer ) ;  
 	dump_text_to_clipboard(dumpBuffer.buffer);
+
+	// truncate text
+	if (dumpBuffer.Size() > 1600) {
+		dumpBuffer.Truncate(1600);
+		dumpBuffer.Append("...");
+	}
 
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");

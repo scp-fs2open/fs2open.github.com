@@ -645,7 +645,7 @@ void HudGaugeBrackets::render(float frametime)
 void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_correction, int h_correction, int flags)
 {
 	int x1,x2,y1,y2;
-	int draw_box = true;
+	bool draw_box = true;
 	int bound_rc;
 	SCP_list<CJumpNode>::iterator jnp;
 
