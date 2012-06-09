@@ -87,7 +87,7 @@ public class ChoicePage extends WizardPage
 			public void actionPerformed(ActionEvent e)
 			{
 				nextButton.setEnabled(true);
-				Configuration.getInstance().getSettings().put(Configuration.INSTALL_CHOICE_KEY, choice);
+				configuration.getSettings().put(Configuration.INSTALL_CHOICE_KEY, choice);
 			}
 		});
 		return button;
@@ -152,7 +152,7 @@ public class ChoicePage extends WizardPage
 	public void prepareForDisplay()
 	{
 		// take care of correct choice state, including whether anything has been chosen yet
-		Map<String, Object> settings = Configuration.getInstance().getSettings();
+		Map<String, Object> settings = configuration.getSettings();
 		InstallChoice choice = (InstallChoice) settings.get(Configuration.INSTALL_CHOICE_KEY);
 		if (choice == null)
 			nextButton.setEnabled(false);

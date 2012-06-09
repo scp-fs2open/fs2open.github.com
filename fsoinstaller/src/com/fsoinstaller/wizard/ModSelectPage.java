@@ -112,7 +112,7 @@ public class ModSelectPage extends WizardPage
 	{
 		setNextButton("Install", "Proceed with installation");
 		
-		Map<String, Object> settings = Configuration.getInstance().getSettings();
+		Map<String, Object> settings = configuration.getSettings();
 		@SuppressWarnings("unchecked")
 		List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
 		
@@ -202,7 +202,7 @@ public class ModSelectPage extends WizardPage
 				selectedMods.add(node.getName());
 		
 		// save in configuration
-		Map<String, Object> settings = Configuration.getInstance().getSettings();
+		Map<String, Object> settings = configuration.getSettings();
 		settings.put(Configuration.MODS_TO_INSTALL_KEY, selectedMods);
 		
 		resetNextButton();

@@ -50,6 +50,7 @@ public class Configuration
 	public static final String MOD_NODES_KEY = "MOD-NODES";
 	public static final String INSTALL_CHOICE_KEY = "INSTALL-CHOICE";
 	public static final String MODS_TO_INSTALL_KEY = "MODS-TO-INSTALL";
+	public static final String CHECKED_DIRECTORIES_KEY = "CHECKED-DIRECTORIES";
 	
 	/**
 	 * Use the Initialization On Demand Holder idiom for thread-safe
@@ -127,7 +128,7 @@ public class Configuration
 		String string = applicationProperties.getProperty("application.allowedvps", "root_fs2.vp,sparky_fs2.vp,sparky_hi_fs2.vp,stu_fs2.vp,tango1_fs2.vp,tango2_fs2.vp,tango3_fs2.vp,warble_fs2.vp,smarty_fs2.vp,FS2OGGcutscenepack.vp,multi-mission-pack.vp,multi-voice-pack.vp");
 		
 		List<String> vpList = new ArrayList<String>();
-		String[] vpArray = string.split(",");
+		String[] vpArray = string.toLowerCase().split(",");
 		for (String vp: vpArray)
 			vpList.add(vp.trim());
 		
