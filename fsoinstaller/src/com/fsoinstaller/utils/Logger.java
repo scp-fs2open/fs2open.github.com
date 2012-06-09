@@ -19,6 +19,7 @@
 
 package com.fsoinstaller.utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,21 +54,46 @@ public final class Logger
 		// set level of root logger
 		java.util.logging.Logger.getLogger("").setLevel(Level.ALL);
 		
-		List<StreamHandler> temp = new ArrayList<StreamHandler>();
+		// create logs folder if possible
+		String logfile = "fsoinstaller.log";
+		File file = new File("logs");
+		if (file.exists())
+		{
+			// already exists, yay
+			logfile = "logs/" + logfile;
+		}
+		else
+		{
+			// doesn't exist; try to create it
+			try
+			{
+				if (file.mkdir())
+					logfile = "logs/" + logfile;
+			}
+			catch (SecurityException se)
+			{
+				java.util.logging.Logger.getLogger("global").log(Level.SEVERE, "Could not create the logs folder for logging!", se);
+			}
+		}
 		
 		// add all our handlers
 		StreamHandler consoleHandler = new ConsoleHandler();
 		consoleHandler.setFormatter(formatter);
+		List<StreamHandler> temp = new ArrayList<StreamHandler>();
 		temp.add(consoleHandler);
 		try
 		{
-			FileHandler fileHandler = new FileHandler("logs/fsoinstaller.log", true);
+			FileHandler fileHandler = new FileHandler(logfile, true);
 			fileHandler.setFormatter(formatter);
 			temp.add(fileHandler);
 		}
+		catch (SecurityException se)
+		{
+			java.util.logging.Logger.getLogger("global").log(Level.SEVERE, "Could not create FileHandler for " + logfile + "!", se);
+		}
 		catch (IOException ioe)
 		{
-			java.util.logging.Logger.getLogger("global").log(Level.SEVERE, "Could not create FileHandler for fsoinstaller.log!", ioe);
+			java.util.logging.Logger.getLogger("global").log(Level.SEVERE, "Could not create FileHandler for " + logfile + "!", ioe);
 		}
 		
 		// assign to list
