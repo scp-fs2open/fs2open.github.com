@@ -255,7 +255,6 @@ public class ConfigPage extends WizardPage
 			// we need to insert this task between validation and proceeding to the next page
 			toRunNext = new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					Callable<Void> gog = new DirectoryTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), runWhenReady, exitRunnable);
