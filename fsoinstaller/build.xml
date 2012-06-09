@@ -47,7 +47,7 @@
 
     <!-- jar it up -->
     <jar jarfile="${dist}/FreeSpaceOpenInstaller.jar">
-      <fileset file="fsoinstaller.properties"/>
+      <fileset file="application.properties"/>
       <fileset dir="${build}" excludes="**/svn*"/>
       <fileset dir="${src}" excludes="**/svn*"/>
       <fileset dir="." includes="${lib}/**" excludes="**/svn*"/>

@@ -168,7 +168,7 @@ public class ModSelectPage extends WizardPage
 			{
 				// standard selection by whether a current or previous version has been installed
 				String propertyName = node.buildTreeName();
-				if (configuration.getProperties().containsKey(propertyName))
+				if (configuration.getUserProperties().containsKey(propertyName))
 				{
 					logger.debug("Selecting '" + node.getName() + "' as already installed based on version");
 					((SingleModPanel) node.getUserObject()).setSelected(true);

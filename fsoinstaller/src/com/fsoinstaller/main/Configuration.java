@@ -20,8 +20,10 @@
 package com.fsoinstaller.main;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -39,6 +41,7 @@ public class Configuration
 {
 	private static final Logger logger = Logger.getLogger(Configuration.class);
 	
+	// these are for the settings
 	public static final String PROXY_KEY = "PROXY";
 	public static final String CONNECTOR_KEY = "CONNECTOR";
 	public static final String REMOTE_VERSION_KEY = "REMOTE-VERSION";
@@ -62,42 +65,92 @@ public class Configuration
 		return InstanceHolder.INSTANCE;
 	}
 	
+	private final Properties applicationProperties;
+	private final Properties userProperties;
 	private final Map<String, Object> settings;
-	private final Properties properties;
 	
 	// prevent instantiation
 	private Configuration()
 	{
-		Properties temp = PropertiesUtils.loadProperties("fsoinstaller.properties");
+		Properties temp;
+		
+		// this should always be present, but we technically allow it to be absent because we always supply defaults
+		temp = PropertiesUtils.loadProperties("application.properties");
 		if (temp == null)
 		{
-			logger.info("No fsoinstaller.properties file could be found; a new one will be created");
+			logger.error("No application.properties file could be found!");
 			temp = new Properties();
 		}
+		applicationProperties = temp;
 		
+		// this could be created upon first run but is otherwise persistent
+		String userPropertiesName = applicationProperties.getProperty("application.userproperties", "fsoinstaller.properties");
+		temp = PropertiesUtils.loadProperties(userPropertiesName);
+		if (temp == null)
+		{
+			logger.info("No " + userPropertiesName + " file could be found; a new one will be created");
+			temp = new Properties();
+		}
+		userProperties = temp;
+		
+		// this is always created anew for each run
+		// (since Properties inherits from Hashtable, it is already thread-safe)
 		settings = Collections.synchronizedMap(new HashMap<String, Object>());
-		// since Properties inherits from Hashtable, it is already thread-safe
-		properties = temp;
 	}
 	
-	public void saveProperties()
+	// APPLICATION PROPERTIES ----------
+	// these should always return a value or a default
+	
+	public String getApplicationTitle()
 	{
-		PropertiesUtils.saveProperties("fsoinstaller.properties", properties);
+		return applicationProperties.getProperty("application.title", "FreeSpace Open Installer");
 	}
 	
-	public Map<String, Object> getSettings()
+	public String getDefaultDir()
 	{
-		return settings;
+		return applicationProperties.getProperty("application.defaultdir", "C:\\Games\\FreeSpace2");
 	}
 	
-	public Properties getProperties()
+	public boolean requiresFS2()
 	{
-		return properties;
+		String string = applicationProperties.getProperty("application.requiresfs2", "true");
+		return Boolean.valueOf(string);
+	}
+	
+	public String getUserPropertiesName()
+	{
+		return applicationProperties.getProperty("application.userproperties", "fsoinstaller.properties");
+	}
+	
+	public List<String> getAllowedVPs()
+	{
+		String string = applicationProperties.getProperty("application.allowedvps", "root_fs2.vp,sparky_fs2.vp,sparky_hi_fs2.vp,stu_fs2.vp,tango1_fs2.vp,tango2_fs2.vp,tango3_fs2.vp,warble_fs2.vp,smarty_fs2.vp,FS2OGGcutscenepack.vp,multi-mission-pack.vp,multi-voice-pack.vp");
+		
+		List<String> vpList = new ArrayList<String>();
+		String[] vpArray = string.split(",");
+		for (String vp: vpArray)
+			vpList.add(vp.trim());
+		
+		return vpList;
+	}
+	
+	// USER PROPERTIES ----------
+	// these could be null
+	
+	public Properties getUserProperties()
+	{
+		return userProperties;
+	}
+	
+	public void saveUserProperties()
+	{
+		String userPropertiesName = applicationProperties.getProperty("application.userproperties", "fsoinstaller.properties");
+		PropertiesUtils.saveProperties(userPropertiesName, userProperties);
 	}
 	
 	public String getProxyHost()
 	{
-		String host = properties.getProperty("proxy.host");
+		String host = userProperties.getProperty("proxy.host");
 		if (host == null || host.equalsIgnoreCase("none") || host.isEmpty())
 			return null;
 		return host;
@@ -105,7 +158,7 @@ public class Configuration
 	
 	public int getProxyPort()
 	{
-		String port = properties.getProperty("proxy.port");
+		String port = userProperties.getProperty("proxy.port");
 		try
 		{
 			return Integer.valueOf(port);
@@ -125,30 +178,27 @@ public class Configuration
 		// store either both or none
 		boolean valid = (host != null && port >= 0);
 		
-		properties.setProperty("proxy.host", valid ? host : "none");
-		properties.setProperty("proxy.port", valid ? Integer.toString(port) : "none");
-	}
-	
-	public String getApplicationTitle()
-	{
-		return properties.getProperty("application.title");
-	}
-	
-	// this is not likely to ever get called unless we're building a custom installer
-	public void setApplicationTitle(String title)
-	{
-		properties.setProperty("application.title", title);
+		userProperties.setProperty("proxy.host", valid ? host : "none");
+		userProperties.setProperty("proxy.port", valid ? Integer.toString(port) : "none");
 	}
 	
 	public File getApplicationDir()
 	{
-		String fileName = properties.getProperty("application.dir");
+		String fileName = userProperties.getProperty("application.dir");
 		return MiscUtils.validateApplicationDir(fileName);
 	}
 	
 	public void setApplicationDir(File dir)
 	{
 		String dirStr = MiscUtils.validateApplicationDir(dir) ? dir.getAbsolutePath() : "none";
-		properties.setProperty("application.dir", dirStr);
+		userProperties.setProperty("application.dir", dirStr);
+	}
+	
+	// SETTINGS ----------
+	// these can pretty much be anything 	
+	
+	public Map<String, Object> getSettings()
+	{
+		return settings;
 	}
 }

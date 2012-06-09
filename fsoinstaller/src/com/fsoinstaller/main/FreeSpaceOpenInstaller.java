@@ -37,15 +37,7 @@ public class FreeSpaceOpenInstaller
 	/**
 	 * Title used for dialogs and such.
 	 */
-	public static final String INSTALLER_TITLE;
-	static
-	{
-		// grab it from the properties file, with a reasonable default
-		String title = Configuration.getInstance().getApplicationTitle();
-		if (title == null)
-			title = "FreeSpace Open Installer";
-		INSTALLER_TITLE = title;
-	}
+	public static final String INSTALLER_TITLE = Configuration.getInstance().getApplicationTitle();
 	
 	/**
 	 * Version of the Installer.
