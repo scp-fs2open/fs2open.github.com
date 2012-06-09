@@ -20,11 +20,12 @@
 package com.fsoinstaller.utils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Properties;
 
 
@@ -72,38 +73,44 @@ public class PropertiesUtils
 		return null;
 	}
 	
+	public static void saveProperties(String resource, Properties properties)
+	{
+		// try file in home dir
+		File file = new File(System.getProperty("user.home"), resource);
+		savePropertiesToFile(file, properties);
+	}
+	
 	public static Properties loadPropertiesFromFile(File file)
 	{
 		if (!file.exists())
 			return null;
 		
 		logger.info("Loading properties from '" + file.getName() + "'");
-		FileReader reader = null;
 		try
 		{
-			try
-			{
-				Properties properties = new Properties();
-				reader = new FileReader(file);
-				properties.load(reader);
-				return properties;
-			}
-			finally
-			{
-				if (reader != null)
-					reader.close();
-			}
+			InputStream is = new FileInputStream(file);
+			return loadPropertiesFromStream(is);
 		}
 		catch (FileNotFoundException fnfe)
 		{
 			logger.error("The properties file exists, but it could not be opened for reading!", fnfe);
 		}
-		catch (IOException ioe)
-		{
-			logger.error("The properties file exists, but it could not be read!", ioe);
-		}
 		
 		return null;
+	}
+	
+	public static void savePropertiesToFile(File file, Properties properties)
+	{
+		logger.info("Saving properties to '" + file.getName() + "'");
+		try
+		{
+			OutputStream os = new FileOutputStream(file);
+			savePropertiesToStream(os, properties);
+		}
+		catch (FileNotFoundException fnfe)
+		{
+			logger.error("The properties file could not be opened for writing!", fnfe);
+		}
 	}
 	
 	public static Properties loadPropertiesFromStream(InputStream is)
@@ -124,39 +131,29 @@ public class PropertiesUtils
 		}
 		catch (IOException ioe)
 		{
-			logger.error("There was a problem reading the properties file from the input stream!", ioe);
+			logger.error("There was a problem reading the properties object from the input stream!", ioe);
 		}
 		
 		return null;
 	}
 	
-	public static void saveProperties(String resource, Properties properties)
+	public static void savePropertiesToStream(OutputStream os, Properties properties)
 	{
-		// try file in home dir
-		File file = new File(System.getProperty("user.home"), resource);
-		savePropertiesToFile(file, properties);
-	}
-	
-	public static void savePropertiesToFile(File file, Properties properties)
-	{
-		logger.info("Saving properties to '" + file.getName() + "'");
-		FileWriter writer = null;
+		logger.info("Saving properties to output stream");
 		try
 		{
 			try
 			{
-				writer = new FileWriter(file);
-				properties.store(writer, "FSO Installer Properties");
+				properties.store(os, "FSO Installer Properties");
 			}
 			finally
 			{
-				if (writer != null)
-					writer.close();
+				os.close();
 			}
 		}
 		catch (IOException ioe)
 		{
-			logger.error("The properties file could not be written!", ioe);
+			logger.error("There was a problem writing the properties object to the output stream!", ioe);
 		}
 	}
 }
