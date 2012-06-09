@@ -30,10 +30,13 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
@@ -79,7 +82,7 @@ public class ConfigPage extends WizardPage
 		super("config");
 		
 		// load initial directory
-		String dirText = "";
+		String dirText = configuration.getDefaultDir();
 		File dir = configuration.getApplicationDir();
 		if (dir != null)
 		{
@@ -204,18 +207,67 @@ public class ConfigPage extends WizardPage
 	}
 	
 	@Override
-	public void prepareToLeavePage(Runnable runWhenReady)
+	public void prepareToLeavePage(final Runnable runWhenReady)
 	{
-		Callable<Void> task = new SuperValidationTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), usingProxy, hostField.getText(), portField.getText(), runWhenReady, new Runnable()
+		// what happens when we're finished validating
+		Runnable toRunNext = runWhenReady;
+		
+		// what happens if we cancel
+		final Runnable exitRunnable = new Runnable()
 		{
 			public void run()
 			{
 				MiscUtils.getActiveFrame().dispose();
 			}
-		});
+		};
 		
-		ProgressBarDialog dialog = new ProgressBarDialog("Accessing installer information...");
-		dialog.runTask(task, null);
+		// exception callback
+		final ProgressBarDialog.ExceptionCallback callback = new ProgressBarDialog.ExceptionCallback()
+		{
+			public void handleException(Exception exception)
+			{
+				if (exception instanceof SecurityException)
+				{
+					ThreadSafeJOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), "The Java security manager is prohibiting the installer from making any changes to the file system.  You will need to change the permissions in the Java control panel before the installer will be able to run successfully.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+					exitRunnable.run();
+				}
+				else
+				{
+					ThreadSafeJOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), "An unexpected runtime exception occurred.  Please visit Hard Light Productions for technical support.  Make sure you provide the log file.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+					exitRunnable.run();
+				}
+			}
+		};
+		
+		// this is okay because the checked directories are only ever accessed from the event dispatching thread
+		Map<String, Object> settings = configuration.getSettings();
+		@SuppressWarnings("unchecked")
+		Set<String> checked = (Set<String>) settings.get(Configuration.CHECKED_DIRECTORIES_KEY);
+		if (checked == null)
+		{
+			checked = new HashSet<String>();
+			settings.put(Configuration.CHECKED_DIRECTORIES_KEY, checked);
+		}
+		
+		// don't do directory manipulation if we don't need to
+		if (!checked.contains(directoryField.getText()))
+		{
+			// we need to insert this task between validation and proceeding to the next page
+			toRunNext = new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					Callable<Void> gog = new DirectoryTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), runWhenReady, exitRunnable);
+					ProgressBarDialog dialog = new ProgressBarDialog("Checking the installation directory...");
+					dialog.runTask(gog, callback);
+				}
+			};
+		}
+		
+		Callable<Void> validation = new SuperValidationTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), usingProxy, hostField.getText(), portField.getText(), toRunNext, exitRunnable);
+		ProgressBarDialog dialog = new ProgressBarDialog("Setting up the installer...");
+		dialog.runTask(validation, callback);
 	}
 	
 	private final class BrowseAction extends AbstractAction
@@ -282,7 +334,7 @@ public class ConfigPage extends WizardPage
 			this.runWhenReady = runWhenReady;
 			this.exitRunnable = exitRunnable;
 			
-			// Configuration and its two maps are thread-safe
+			// Configuration and its maps are thread-safe
 			this.configuration = Configuration.getInstance();
 			this.settings = configuration.getSettings();
 		}
@@ -299,7 +351,7 @@ public class ConfigPage extends WizardPage
 				return null;
 			}
 			
-			// ditto
+			// create directory that doesn't exist
 			if (!destinationDir.exists())
 			{
 				// prompt to create it
@@ -503,10 +555,10 @@ public class ConfigPage extends WizardPage
 				logger.info("Downloading mod information...");
 				
 				@SuppressWarnings("unchecked")
-				List<String> urls = (List<String>) Configuration.getInstance().getSettings().get(Configuration.MOD_URLS_KEY);
+				List<String> urls = (List<String>) settings.get(Configuration.MOD_URLS_KEY);
 				if (urls == null || urls.isEmpty())
 				{
-					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.  It shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.\n\nThis shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
 					EventQueue.invokeLater(exitRunnable);
 					return null;
 				}
@@ -581,7 +633,7 @@ public class ConfigPage extends WizardPage
 				// check that we have mods
 				if (modNodes.isEmpty())
 				{
-					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.  It shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+					ThreadSafeJOptionPane.showMessageDialog(activeFrame, "For some reason, there are no mods available for download.  This is not an error with the network, but rather with the remote mod repositories.\n\nThis shouldn't ever happen, and we're rather perplexed that you're seeing this right now.  We can only suggest that you try again later.\n\nClick OK to exit.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
 					EventQueue.invokeLater(exitRunnable);
 					return null;
 				}
@@ -595,45 +647,38 @@ public class ConfigPage extends WizardPage
 			
 			// we check this every time because the user could have changed the destination directory
 			// (however, the installed versions file should be deleted after the first try, or at least the properties file should contain the keys we need)
-			try
+			File oldInstallerInfoDir = new File(destinationDir, "temp");
+			if (oldInstallerInfoDir.exists() && oldInstallerInfoDir.isDirectory())
 			{
-				File oldInstallerInfoDir = new File(destinationDir, "temp");
-				if (oldInstallerInfoDir.exists() && oldInstallerInfoDir.isDirectory())
+				File installedversions = new File(oldInstallerInfoDir, "installedversions.txt");
+				if (installedversions.exists())
 				{
-					File installedversions = new File(oldInstallerInfoDir, "installedversions.txt");
-					if (installedversions.exists())
-					{
-						// read lines from the installedversions file
-						List<String> lines = MiscUtils.readTextFile(installedversions);
-						
-						// load the version for each node
-						@SuppressWarnings("unchecked")
-						List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
-						for (InstallerNode node: modNodes)
-							loadLegacyModVersions(node, lines, configuration.getUserProperties());
-						
-						// save our properties
-						configuration.saveUserProperties();
-						
-						// delete the file, since we don't need it any more
-						installedversions.delete();
-					}
+					// read lines from the installedversions file
+					List<String> lines = MiscUtils.readTextFile(installedversions);
 					
-					// delete other old files and the folder
-					File latest = new File(oldInstallerInfoDir, "latest.txt");
-					if (latest.exists())
-						latest.delete();
-					File version = new File(oldInstallerInfoDir, "version.txt");
-					if (version.exists())
-						version.delete();
-					File[] filesLeft = oldInstallerInfoDir.listFiles();
-					if (filesLeft.length == 0)
-						oldInstallerInfoDir.delete();
+					// load the version for each node
+					@SuppressWarnings("unchecked")
+					List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
+					for (InstallerNode node: modNodes)
+						loadLegacyModVersions(node, lines, configuration.getUserProperties());
+					
+					// save our properties
+					configuration.saveUserProperties();
+					
+					// delete the file, since we don't need it any more
+					installedversions.delete();
 				}
-			}
-			catch (SecurityException se)
-			{
-				logger.warn("A SecurityException was thrown when checking for legacy version information!", se);
+				
+				// delete other old files and the folder
+				File latest = new File(oldInstallerInfoDir, "latest.txt");
+				if (latest.exists())
+					latest.delete();
+				File version = new File(oldInstallerInfoDir, "version.txt");
+				if (version.exists())
+					version.delete();
+				File[] filesLeft = oldInstallerInfoDir.listFiles();
+				if (filesLeft.length == 0)
+					oldInstallerInfoDir.delete();
 			}
 			
 			// validation completed!
@@ -687,6 +732,129 @@ public class ConfigPage extends WizardPage
 			// we need to check all the child nodes as well
 			for (InstallerNode child: node.getChildren())
 				loadLegacyModVersions(child, installedversions_lines, properties);
+		}
+	}
+	
+	private static final class DirectoryTask implements Callable<Void>
+	{
+		private final JFrame activeFrame;
+		private final String directoryText;
+		private final Runnable runWhenReady;
+		@SuppressWarnings("unused")
+		private final Runnable exitRunnable;
+		
+		private final Configuration configuration;
+		private final Map<String, Object> settings;
+		
+		public DirectoryTask(JFrame activeFrame, String directoryText, Runnable runWhenReady, Runnable exitRunnable)
+		{
+			this.activeFrame = activeFrame;
+			this.directoryText = directoryText;
+			this.runWhenReady = runWhenReady;
+			this.exitRunnable = exitRunnable;
+			
+			// Configuration and its maps are thread-safe
+			this.configuration = Configuration.getInstance();
+			this.settings = configuration.getSettings();
+		}
+		
+		public Void call()
+		{
+			logger.info("Checking target directory...");
+			
+			File destinationDir = MiscUtils.validateApplicationDir(directoryText);
+			if (destinationDir == null || !destinationDir.exists())
+				throw new IllegalStateException("The directory should exist at this point!");
+			
+			// if we need FS2 installed, make sure that it is (or that user has been warned)
+			if (configuration.requiresFS2())
+			{
+				// the best way to do this is probably to check for the presence of root_fs2
+				File root_fs2 = new File(destinationDir, "root_fs2.vp");
+				if (!root_fs2.exists())
+				{
+					// prompt to continue
+					int result = ThreadSafeJOptionPane.showConfirmDialog(activeFrame, "The destination directory does not appear to contain a retail installation of FreeSpace 2.  FreeSpace 2 is required to run FreeSpace Open as well as any mods you download.\n\nDo you want to continue anyway?", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
+					if (result != JOptionPane.YES_OPTION)
+						return null;
+				}
+			}
+			
+			logger.info("Checking for write and delete access...");
+			
+			// check that we can write to this directory
+			String unique = "installer_" + UUID.randomUUID().toString().replaceAll("-", "") + ".tmp";
+			File writingTest = new File(unique);
+			try
+			{
+				writingTest.createNewFile();
+			}
+			catch (IOException ioe)
+			{
+				logger.error("Creating a temporary file '" + unique + "' failed", ioe);
+				ThreadSafeJOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), "The installer could not create a temporary file in the destination directory.  Please ensure that the directory is writable, or visit Hard Light Productions for technical support.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+				return null;
+			}
+			if (!writingTest.delete())
+			{
+				logger.error("Deleting a temporary file '" + unique + "' failed");
+				ThreadSafeJOptionPane.showMessageDialog(MiscUtils.getActiveFrame(), "The installer could not delete a temporary file in the destination directory.  Please ensure that the directory is not read-only, or visit Hard Light Productions for technical support.", FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.ERROR_MESSAGE);
+				return null;
+			}
+			
+			logger.info("Checking for extra VPs in the directory");
+			
+			// check for spurious VPs
+			// (note: allowed VPs are in lowercase)
+			List<String> allowedVPs = configuration.getAllowedVPs();
+			List<String> extraVPs = new ArrayList<String>();
+			File[] contents = destinationDir.listFiles();
+			for (File file: contents)
+			{
+				if (file.isDirectory())
+					continue;
+				
+				String name = file.getName();
+				if (!name.endsWith(".vp"))
+					continue;
+				
+				if (!allowedVPs.contains(name.toLowerCase()))
+					extraVPs.add(name);
+			}
+			
+			if (!extraVPs.isEmpty())
+			{
+				StringBuilder message = new StringBuilder("The destination directory contains several extra VPs beyond the standard ones that should be there:\n\n");
+				for (String name: extraVPs)
+				{
+					message.append(name);
+					message.append("\n");
+				}
+				message.append("\nThese are likely to cause problems, and you are encouraged to move or delete them before running the game.  Do you want to continue with the installation?");
+				
+				// prompt to continue
+				int result = ThreadSafeJOptionPane.showConfirmDialog(activeFrame, message, FreeSpaceOpenInstaller.INSTALLER_TITLE, JOptionPane.YES_NO_OPTION);
+				if (result != JOptionPane.YES_OPTION)
+					return null;
+			}
+			
+			// TODO: see about copying the GOG movies from data2 and data3 to data/movies
+			
+			// directory is good to go
+			EventQueue.invokeLater(new Runnable()
+			{
+				public void run()
+				{
+					@SuppressWarnings("unchecked")
+					Set<String> checked = (Set<String>) settings.get(Configuration.CHECKED_DIRECTORIES_KEY);
+					checked.add(directoryText);
+				}
+			});
+			
+			// checking completed!
+			logger.info("Done with DirectoryTask!");
+			EventQueue.invokeLater(runWhenReady);
+			return null;
 		}
 	}
 }
