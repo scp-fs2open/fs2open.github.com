@@ -23,7 +23,6 @@ import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.EventQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BorderFactory;
@@ -31,7 +30,6 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JProgressBar;
-import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.Border;
@@ -184,7 +182,7 @@ public class ProgressBarDialog
 		setPercentComplete((int) (ratio * 100.0));
 	}
 	
-	private static final class ProgressBarTask extends SwingWorker<Void, Void>
+	private static final class ProgressBarTask
 	{
 		private final Callable<Void> task;
 		private final ExceptionCallback callback;
@@ -201,52 +199,40 @@ public class ProgressBarDialog
 			this.dialog = dialog;
 		}
 		
-		/**
-		 * Executed in worker thread
-		 */
-		@Override
-		protected Void doInBackground() throws Exception
+		public void execute()
 		{
-			logger.info("Running task: '" + description + "'");
-			return task.call();
-		}
-		
-		/**
-		 * Executed in event dispatching thread
-		 */
-		@Override
-		protected void done()
-		{
-			logger.info("Finished task: '" + description + "'");
-			dialog.dispose();
-			
-			// find out if we threw any exceptions
-			logger.debug("Checking for exceptions...");
-			try
+			WorkerThread thread = new WorkerThread(new Runnable()
 			{
-				get();
-				logger.debug("...no exceptions found");
-			}
-			catch (InterruptedException ie)
-			{
-				logger.error("Thread interrupted!", ie);
-				Thread.currentThread().interrupt();
-			}
-			catch (ExecutionException ee)
-			{
-				Throwable cause = ee.getCause();
-				logger.error("The task aborted because of an exception!", cause);
-				
-				// we don't handle errors in the callback
-				if (cause instanceof Error)
-					throw (Error) cause;
-				// it's not an Error, but it's not an Exception either?
-				else if (!(cause instanceof Exception))
-					throw new Error("The task threw a Throwable that was not an Exception or an Error", cause);
-				// at this point it must be an exception, so check for a callback
-				else if (callback != null)
-					callback.handleException((Exception) cause);
-			}
+				public void run()
+				{
+					Exception exception = null;
+					try
+					{
+						logger.info("Running task: '" + description + "'");
+						task.call();
+					}
+					catch (Exception e)
+					{
+						logger.error("The task aborted because of an exception!", e);
+						exception = e;
+					}
+					
+					final Exception _exception = exception;
+					EventQueue.invokeLater(new Runnable()
+					{
+						public void run()
+						{
+							logger.info("Finished task: '" + description + "'");
+							dialog.dispose();
+							
+							// handle any exceptions
+							if (_exception != null && callback != null)
+								callback.handleException(_exception);
+						}
+					});
+				}
+			}, "ProgressBarDialogThread", Thread.NORM_PRIORITY);
+			thread.start();
 		}
 	}
 	
