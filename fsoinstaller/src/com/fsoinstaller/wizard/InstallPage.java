@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -79,7 +80,7 @@ public class InstallPage extends WizardPage
 		backButton.setVisible(false);
 		nextButton.setVisible(false);
 		
-		Map<String, Object> settings = Configuration.getInstance().getSettings();
+		Map<String, Object> settings = configuration.getSettings();
 		@SuppressWarnings("unchecked")
 		List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
 		@SuppressWarnings("unchecked")
@@ -91,27 +92,29 @@ public class InstallPage extends WizardPage
 			logger.info(mod);
 		
 		// prepare to bring out the big guns: create an ExecutorService
+		// IMPLEMENTATION DETAIL: since tasks are queued from the event thread, we need to use an implementation that never blocks on adding a task
 		ExecutorService exec = Executors.newCachedThreadPool();
 		
-		// we are adding the top-level nodes, and they will subsequently add their child nodes
+		
+		// OK HERE'S HOW IT WORKS
+		
+		// submit an InstallItem for an individual node
+		// each InstallItem is basically its own task or thread
+		// if that node's future returns true (meaning success) then submit InstallItems for its child nodes		
+		
 		for (InstallerNode node: modNodes)
 		{
 			if (!selectedMods.contains(node.getName()))
 				continue;
 			
-			final InstallItem item = new InstallItem(exec, node, selectedMods);
+			InstallItem item = new InstallItem(node);
 			installPanel.add(item);
-			
-			EventQueue.invokeLater(new Runnable()
-			{
-				public void run()
-				{
-					item.start();
-				}
-			});
+			Future<Boolean> f = exec.submit(item);
+			// TODO: do something with F
 		}
 		
 		// TODO: note that the ExecutorService isn't going to terminate automatically, so we need to shut it down properly in success or failure
+		
 	}
 	
 	@Override

@@ -19,86 +19,137 @@
 
 package com.fsoinstaller.wizard;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import com.fsoinstaller.common.BaseURL;
 import com.fsoinstaller.common.InstallerNode;
 import com.fsoinstaller.common.InstallerNode.InstallUnit;
 import com.fsoinstaller.common.InstallerNode.RenamePair;
 import com.fsoinstaller.internet.Downloader;
 import com.fsoinstaller.main.Configuration;
+import com.fsoinstaller.utils.Logger;
 
 
-public class InstallItem extends JPanel
+public class InstallItem extends JPanel implements Callable<Boolean>
 {
-	private final ExecutorService exec;
-	private final InstallerNode node;
-	private final Set<String> modsToInstall;
+	private static final Logger logger = Logger.getLogger(InstallItem.class);
 	
-	public InstallItem(ExecutorService exec, InstallerNode node, Set<String> modsToInstall)
+	private final InstallerNode node;
+	
+	public InstallItem(InstallerNode node)
 	{
 		super();
-		this.exec = exec;
 		this.node = node;
-		this.modsToInstall = modsToInstall;
 		
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		add(new JLabel(node.getName()));
 		add(Box.createHorizontalGlue());
 	}
 	
-	public void start()
+	/**
+	 * Perform the installation tasks for this node.
+	 * 
+	 * @throws SecurityException if e.g. we are not allowed to create a folder
+	 *         or download files to it
+	 */
+	public Boolean call() throws SecurityException
 	{
+		File installDir = Configuration.getInstance().getApplicationDir();
+		String nodeName = node.getName();
+		
+		logger.info(nodeName + ": Starting processing");
+		
+		// create the folder for this mod, if it has one
+		File folder;
+		String folderName = node.getFolder();
+		if (folderName == null || folderName.length() == 0 || folderName.equals("/") || folderName.equals("\\"))
+		{
+			logger.debug(nodeName + ": This node has no folder; using application folder instead");
+			folder = installDir;
+		}
+		else
+		{
+			logger.info(nodeName + ": Creating folder '" + folderName + "'");
+			folder = new File(installDir, folderName);
+			if (!folder.exists() && !folder.mkdir())
+			{
+				logger.error(nodeName + ": Unable to create the '" + folderName + "' folder!");
+				return false;
+			}
+		}
+		
+		logger.info(nodeName + ": Processing DELETE items");
+		
+		// delete what we need to
 		for (String delete: node.getDeleteList())
 		{
-			final String _delete = delete;
-			exec.submit(new Runnable()
+			logger.debug(nodeName + ": Deleting '" + delete + "'");
+			File file = new File(installDir, delete);
+			if (file.exists())
 			{
-				public void run()
+				if (file.isDirectory())
+					logger.debug(nodeName + ": Cannot delete '" + delete + "'; deleting directories is not supported at this time");
+				else if (!file.delete())
 				{
-					System.out.println("DELETE " + _delete);
+					logger.error(nodeName + ": Unable to delete '" + delete + "'!");
+					return false;
 				}
-			});
+			}
 		}
 		
-		// ensure all deletions happen before renames start
-		// (use a barrier or some sort)
+		logger.info(nodeName + ": Processing RENAME items");
 		
+		// rename what we need to
 		for (RenamePair rename: node.getRenameList())
 		{
-			final RenamePair _rename = rename;
-			exec.submit(new Runnable()
+			logger.debug(nodeName + ": Renaming '" + rename.getFrom() + "' to '" + rename.getTo() + "'");
+			File from = new File(installDir, rename.getFrom());
+			File to = new File(installDir, rename.getTo());
+			if (!from.exists())
+				logger.debug(nodeName + ": Cannot rename '" + rename.getFrom() + "'; it does not exist");
+			else if (to.exists())
+				logger.debug(nodeName + ": Cannot rename '" + rename.getFrom() + "' to '" + rename.getTo() + "'; the latter already exists");
+			else if (!from.renameTo(to))
 			{
-				public void run()
-				{
-					System.out.println("RENAME " + _rename.getFrom() + " TO " + _rename.getTo());
-				}
-			});
+				logger.error(nodeName + ": Unable to rename '" + rename.getFrom() + "' to '" + rename.getTo() + "'!");
+				return false;
+			}
 		}
 		
-		// another barrier
+		logger.info(nodeName + ": Processing INSTALL items");
 		
 		for (InstallUnit install: node.getInstallList())
 		{
-			final InstallUnit _install = install;
-			exec.submit(new Runnable()
+			List<BaseURL> urls = install.getBaseURLList();
+			for (String file: install.getFileList())
 			{
-				public void run()
-				{
-					System.out.println("INSTALL " + _install.getFileList());
-				}
-			});
+				// attempt to install this file
+				boolean succeeded = installOne(urls, file);
+				if (!succeeded)
+					return false;
+			}
 		}
 		
-		// another barrier: all installs should be successful before child nodes are added
+		// TODO: hash lists
 		
-		// TODO: create new InstallItems for child nodes and add them to InstallItem's parent panel
+		return true;
+	}
+	
+	private boolean installOne(List<BaseURL> baseURLList, String file)
+	{
+		return true;
 	}
 	
 	public void cancel()
