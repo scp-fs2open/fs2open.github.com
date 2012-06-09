@@ -184,12 +184,10 @@ public abstract class WizardPage extends JPanel
 			putValue(Action.SHORT_DESCRIPTION, "Go to the previous page");
 		}
 		
-		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			prepareToLeavePage(new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					gui.moveBack();
@@ -206,12 +204,10 @@ public abstract class WizardPage extends JPanel
 			putValue(Action.SHORT_DESCRIPTION, "Go to the next page");
 		}
 		
-		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			prepareToLeavePage(new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					gui.moveNext();
@@ -228,7 +224,6 @@ public abstract class WizardPage extends JPanel
 			putValue(Action.SHORT_DESCRIPTION, "Cancel installation");
 		}
 		
-		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			JFrame frame = (JFrame) MiscUtils.getActiveFrame();

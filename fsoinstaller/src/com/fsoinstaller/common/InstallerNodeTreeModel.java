@@ -48,50 +48,42 @@ public class InstallerNodeTreeModel implements TreeModel
 			throw new IllegalArgumentException("Illegal node in tree!  Parent is " + parent.toString() + "; class is " + parent.getClass());
 	}
 	
-	@Override
 	public Object getChild(Object parent, int index)
 	{
 		return getInstallerNodeChildren(parent).get(index);
 	}
 	
-	@Override
 	public int getChildCount(Object parent)
 	{
 		return getInstallerNodeChildren(parent).size();
 	}
 	
-	@Override
 	public int getIndexOfChild(Object parent, Object child)
 	{
 		return getInstallerNodeChildren(parent).indexOf(child);
 	}
 	
-	@Override
 	public Object getRoot()
 	{
 		return root;
 	}
 	
-	@Override
 	public boolean isLeaf(Object node)
 	{
 		// all nodes have potential children
 		return false;
 	}
 	
-	@Override
 	public void valueForPathChanged(TreePath path, Object newValue)
 	{
 		// we probably don't need to do anything here
 	}
 	
-	@Override
 	public void addTreeModelListener(TreeModelListener listener)
 	{
 		treeModelListeners.add(listener);
 	}
 	
-	@Override
 	public void removeTreeModelListener(TreeModelListener listener)
 	{
 		treeModelListeners.remove(listener);

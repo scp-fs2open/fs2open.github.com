@@ -183,7 +183,7 @@ public class MiscUtils
 	
 	public static File validateApplicationDir(String dirName)
 	{
-		if (dirName == null || dirName.isEmpty())
+		if (dirName == null || dirName.length() == 0)
 			return null;
 		
 		File file = new File(dirName);

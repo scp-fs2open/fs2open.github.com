@@ -67,7 +67,7 @@ public final class Logger
 		}
 		catch (IOException ioe)
 		{
-			java.util.logging.Logger.getLogger(java.util.logging.Logger.GLOBAL_LOGGER_NAME).log(Level.SEVERE, "Could not create FileHandler for fsoinstaller.log!", ioe);
+			java.util.logging.Logger.getLogger("global").log(Level.SEVERE, "Could not create FileHandler for fsoinstaller.log!", ioe);
 		}
 		
 		// assign to list

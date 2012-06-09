@@ -62,7 +62,6 @@ public class FreeSpaceOpenInstaller
 		// Swing code goes on the event-dispatching thread...
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				logger.debug("Setting look-and-feel...");
@@ -92,7 +91,6 @@ public class FreeSpaceOpenInstaller
 		// for now, we only have one possible operation: going through the wizard
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				logger.debug("Launching wizard...");

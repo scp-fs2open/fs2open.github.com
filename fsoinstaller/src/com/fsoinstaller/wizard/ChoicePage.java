@@ -84,7 +84,6 @@ public class ChoicePage extends WizardPage
 		group.add(button);
 		button.addActionListener(new ActionListener()
 		{
-			@Override
 			public void actionPerformed(ActionEvent e)
 			{
 				nextButton.setEnabled(true);

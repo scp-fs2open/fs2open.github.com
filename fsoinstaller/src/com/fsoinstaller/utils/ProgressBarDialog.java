@@ -81,7 +81,6 @@ public class ProgressBarDialog
 		// (we'd do this in runTask, except programmers may want to configure the bar before starting the task)
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				temp = new JProgressBar(0, 100);
@@ -115,7 +114,6 @@ public class ProgressBarDialog
 		// gui operations go on the event dispatching thread
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				// create dialog
@@ -155,7 +153,6 @@ public class ProgressBarDialog
 		
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				progressBar.setIndeterminate(indeterminate);
@@ -175,7 +172,6 @@ public class ProgressBarDialog
 		final int _percent = percent;
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				progressBar.setValue(_percent);

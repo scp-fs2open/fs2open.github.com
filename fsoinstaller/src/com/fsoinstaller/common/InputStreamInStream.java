@@ -201,7 +201,6 @@ public class InputStreamInStream implements IInStream
 			throw new IOException("Number of read tries exceeded MAX_SEEK_TRIES");
 	}
 
-	@Override
 	public long seek(long offset, int seekOrigin) throws SevenZipException
 	{
 		switch (seekOrigin)
@@ -227,7 +226,6 @@ public class InputStreamInStream implements IInStream
 		}
 	}
 
-	@Override
 	public int read(byte[] data) throws SevenZipException
 	{
 		if (data.length == 0)

@@ -151,7 +151,7 @@ public class Configuration
 	public String getProxyHost()
 	{
 		String host = userProperties.getProperty("proxy.host");
-		if (host == null || host.equalsIgnoreCase("none") || host.isEmpty())
+		if (host == null || host.equalsIgnoreCase("none") || host.length() == 0)
 			return null;
 		return host;
 	}
@@ -172,7 +172,7 @@ public class Configuration
 	public void setProxyInfo(String host, int port)
 	{
 		// resolve host
-		if (host == null || host.equalsIgnoreCase("none") || host.isEmpty())
+		if (host == null || host.equalsIgnoreCase("none") || host.length() == 0)
 			host = null;
 		
 		// store either both or none

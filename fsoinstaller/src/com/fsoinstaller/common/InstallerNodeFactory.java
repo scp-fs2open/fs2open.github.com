@@ -103,7 +103,7 @@ public class InstallerNodeFactory
 				handleToken(reader, (InstallerNodeToken) object, node, currentInstallUnit);
 			}
 			// we have an unannotated string
-			else if (!((String) object).isEmpty())
+			else if (((String) object).length() != 0)
 			{
 				String string = (String) object;
 				
@@ -384,7 +384,7 @@ public class InstallerNodeFactory
 	private static void writeLine(int indent, Writer writer, String string) throws IOException
 	{
 		String trimmed = string.trim();
-		if (!trimmed.isEmpty())
+		if (trimmed.length() != 0)
 		{
 			for (int i = 0; i < indent; i++)
 				writer.write('\t');

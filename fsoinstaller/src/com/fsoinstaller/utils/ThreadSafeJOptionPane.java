@@ -45,7 +45,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showConfirmDialog(parentComponent, message));
@@ -59,7 +58,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showConfirmDialog(parentComponent, message, title, optionType));
@@ -73,7 +71,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showConfirmDialog(parentComponent, message, title, optionType, messageType));
@@ -87,7 +84,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showConfirmDialog(parentComponent, message, title, optionType, messageType, icon));
@@ -101,7 +97,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<String> value = new AtomicReference<String>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInputDialog(message));
@@ -115,7 +110,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<String> value = new AtomicReference<String>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInputDialog(message, initialSelectionValue));
@@ -129,7 +123,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<String> value = new AtomicReference<String>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInputDialog(parentComponent, message));
@@ -143,7 +136,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<String> value = new AtomicReference<String>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInputDialog(parentComponent, message, initialSelectionValue));
@@ -157,7 +149,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<String> value = new AtomicReference<String>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInputDialog(parentComponent, message, title, messageType));
@@ -171,7 +162,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<Object> value = new AtomicReference<Object>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInputDialog(parentComponent, message, title, messageType, icon, selectionValues, initialSelectionValue));
@@ -184,7 +174,6 @@ public final class ThreadSafeJOptionPane
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				JOptionPane.showMessageDialog(parentComponent, message);
@@ -196,7 +185,6 @@ public final class ThreadSafeJOptionPane
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				JOptionPane.showMessageDialog(parentComponent, message, title, messageType);
@@ -208,7 +196,6 @@ public final class ThreadSafeJOptionPane
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				JOptionPane.showMessageDialog(parentComponent, message, title, messageType, icon);
@@ -221,7 +208,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showOptionDialog(parentComponent, message, title, optionType, messageType, icon, options, initialValue));
@@ -235,7 +221,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInternalConfirmDialog(parentComponent, message));
@@ -249,7 +234,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInternalConfirmDialog(parentComponent, message, title, optionType));
@@ -263,7 +247,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInternalConfirmDialog(parentComponent, message, title, optionType, messageType));
@@ -277,7 +260,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInternalConfirmDialog(parentComponent, message, title, optionType, messageType, icon));
@@ -291,7 +273,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<String> value = new AtomicReference<String>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInternalInputDialog(parentComponent, message));
@@ -305,7 +286,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<String> value = new AtomicReference<String>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInternalInputDialog(parentComponent, message, title, messageType));
@@ -319,7 +299,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicReference<Object> value = new AtomicReference<Object>();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInternalInputDialog(parentComponent, message, title, messageType, icon, selectionValues, initialSelectionValue));
@@ -332,7 +311,6 @@ public final class ThreadSafeJOptionPane
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				JOptionPane.showInternalMessageDialog(parentComponent, message);
@@ -344,7 +322,6 @@ public final class ThreadSafeJOptionPane
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				JOptionPane.showInternalMessageDialog(parentComponent, message, title, messageType);
@@ -356,7 +333,6 @@ public final class ThreadSafeJOptionPane
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				JOptionPane.showInternalMessageDialog(parentComponent, message, title, messageType, icon);
@@ -369,7 +345,6 @@ public final class ThreadSafeJOptionPane
 		final AtomicInteger value = new AtomicInteger();
 		MiscUtils.invokeAndWait(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				value.set(JOptionPane.showInternalOptionDialog(parentComponent, message, title, optionType, messageType, icon, options, initialValue));

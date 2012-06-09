@@ -368,7 +368,6 @@ public class Downloader
 		{
 			private boolean ever_recycled = false;
 			
-			@Override
 			public InputStream recycleInputStream(InputStream oldInputStream) throws IOException
 			{
 				if (oldInputStream != null)
@@ -418,7 +417,6 @@ public class Downloader
 			private File currentFile = null;
 			private OutputStreamSequentialOutStream currentOutStream = null;
 			
-			@Override
 			public ISequentialOutStream getStream(int index, ExtractAskMode extractAskMode) throws SevenZipException
 			{
 				switch (extractAskMode)
@@ -455,7 +453,6 @@ public class Downloader
 				return currentOutStream;
 			}
 			
-			@Override
 			public void prepareOperation(ExtractAskMode extractAskMode) throws SevenZipException
 			{
 				if (extractAskMode == ExtractAskMode.EXTRACT)
@@ -465,7 +462,6 @@ public class Downloader
 				}
 			}
 			
-			@Override
 			public void setOperationResult(ExtractOperationResult extractOperationResult) throws SevenZipException
 			{
 				switch (extractOperationResult)
@@ -523,7 +519,6 @@ public class Downloader
 				}
 			}
 			
-			@Override
 			public void setCompleted(long completeValue) throws SevenZipException
 			{
 				if (currentIndex >= 0)
@@ -533,7 +528,6 @@ public class Downloader
 				}
 			}
 			
-			@Override
 			public void setTotal(long total) throws SevenZipException
 			{
 				if (currentIndex >= 0)
@@ -638,7 +632,6 @@ public class Downloader
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				DownloadEvent event = null;
@@ -659,7 +652,6 @@ public class Downloader
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				DownloadEvent event = null;
@@ -680,7 +672,6 @@ public class Downloader
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				DownloadEvent event = null;
@@ -701,7 +692,6 @@ public class Downloader
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				DownloadEvent event = null;
@@ -722,7 +712,6 @@ public class Downloader
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				DownloadEvent event = null;

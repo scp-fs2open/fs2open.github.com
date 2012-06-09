@@ -274,7 +274,6 @@ public class ModSelectPage extends WizardPage
 				putValue(AbstractAction.NAME, node.getName());
 			}
 			
-			@Override
 			public void actionPerformed(ActionEvent e)
 			{
 				// we want to automatically select or deselect appropriate nodes
@@ -336,7 +335,6 @@ public class ModSelectPage extends WizardPage
 				putValue(AbstractAction.SHORT_DESCRIPTION, "Click to display additional information about this mod");
 			}
 			
-			@Override
 			public void actionPerformed(ActionEvent e)
 			{
 				// the name is a simple bold label
@@ -374,7 +372,7 @@ public class ModSelectPage extends WizardPage
 			}
 		});
 		
-		if (node.getDescription() == null || node.getDescription().isEmpty())
+		if (node.getDescription() == null || node.getDescription().length() == 0)
 			button.setEnabled(false);
 		
 		return button;

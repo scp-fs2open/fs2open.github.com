@@ -60,7 +60,6 @@ public class InstallItem extends JPanel
 			final String _delete = delete;
 			exec.submit(new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					System.out.println("DELETE " + _delete);
@@ -76,7 +75,6 @@ public class InstallItem extends JPanel
 			final RenamePair _rename = rename;
 			exec.submit(new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					System.out.println("RENAME " + _rename.getFrom() + " TO " + _rename.getTo());
@@ -91,7 +89,6 @@ public class InstallItem extends JPanel
 			final InstallUnit _install = install;
 			exec.submit(new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					System.out.println("INSTALL " + _install.getFileList());

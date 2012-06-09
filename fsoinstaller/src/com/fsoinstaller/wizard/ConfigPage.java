@@ -208,7 +208,6 @@ public class ConfigPage extends WizardPage
 	{
 		Callable<Void> task = new SuperValidationTask((JFrame) MiscUtils.getActiveFrame(), directoryField.getText(), usingProxy, hostField.getText(), portField.getText(), runWhenReady, new Runnable()
 		{
-			@Override
 			public void run()
 			{
 				MiscUtils.getActiveFrame().dispose();
@@ -227,7 +226,6 @@ public class ConfigPage extends WizardPage
 			putValue(Action.SHORT_DESCRIPTION, "Click to choose an installation directory");
 		}
 		
-		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			File dir = MiscUtils.validateApplicationDir(directoryField.getText());
@@ -252,7 +250,6 @@ public class ConfigPage extends WizardPage
 			putValue(Action.NAME, "Use proxy");
 		}
 		
-		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			usingProxy = !usingProxy;
@@ -454,7 +451,7 @@ public class ConfigPage extends WizardPage
 											// strip empty/blank lines
 											Iterator<String> ii = basicLines.iterator();
 											while (ii.hasNext())
-												if (ii.next().trim().isEmpty())
+												if (ii.next().trim().length() == 0)
 													ii.remove();
 											
 											if (!basicLines.isEmpty())

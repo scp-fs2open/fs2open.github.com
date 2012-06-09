@@ -104,7 +104,6 @@ public class InstallPage extends WizardPage
 			
 			EventQueue.invokeLater(new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					item.start();

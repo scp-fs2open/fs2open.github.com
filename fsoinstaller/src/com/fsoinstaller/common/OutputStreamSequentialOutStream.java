@@ -43,7 +43,6 @@ public class OutputStreamSequentialOutStream implements ISequentialOutStream
 		this.currentOutputStream = outputStream;
 	}
 
-	@Override
 	public int write(byte[] data) throws SevenZipException
 	{
 		if (data.length == 0)
