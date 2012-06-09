@@ -357,7 +357,7 @@ public class ConfigPage extends WizardPage
 			// save our settings
 			configuration.setApplicationDir(destinationDir);
 			configuration.setProxyInfo(host, port);
-			configuration.saveProperties();
+			configuration.saveUserProperties();
 			
 			Connector connector = new Connector(proxy);
 			settings.put(Configuration.CONNECTOR_KEY, connector);
@@ -613,10 +613,10 @@ public class ConfigPage extends WizardPage
 						@SuppressWarnings("unchecked")
 						List<InstallerNode> modNodes = (List<InstallerNode>) settings.get(Configuration.MOD_NODES_KEY);
 						for (InstallerNode node: modNodes)
-							loadLegacyModVersions(node, lines, configuration.getProperties());
+							loadLegacyModVersions(node, lines, configuration.getUserProperties());
 						
 						// save our properties
-						configuration.saveProperties();
+						configuration.saveUserProperties();
 						
 						// delete the file, since we don't need it any more
 						installedversions.delete();
