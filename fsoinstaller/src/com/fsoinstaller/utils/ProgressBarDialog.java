@@ -47,7 +47,7 @@ public class ProgressBarDialog
 {
 	private static final Logger logger = Logger.getLogger(ProgressBarDialog.class);
 	
-	private static final String INDETERMINATE_STRING = "Working...";
+	public static final String INDETERMINATE_STRING = "Working...";
 	
 	private final String text;
 	private final String title;

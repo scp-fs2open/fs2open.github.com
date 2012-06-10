@@ -19,6 +19,8 @@
 
 package com.fsoinstaller.wizard;
 
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -28,10 +30,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 
 import com.fsoinstaller.common.BaseURL;
 import com.fsoinstaller.common.InstallerNode;
@@ -40,6 +44,9 @@ import com.fsoinstaller.common.InstallerNode.RenamePair;
 import com.fsoinstaller.internet.Downloader;
 import com.fsoinstaller.main.Configuration;
 import com.fsoinstaller.utils.Logger;
+import com.fsoinstaller.utils.ProgressBarDialog;
+
+import static com.fsoinstaller.wizard.GUIConstants.*;
 
 
 public class InstallItem extends JPanel implements Callable<Boolean>
@@ -47,15 +54,27 @@ public class InstallItem extends JPanel implements Callable<Boolean>
 	private static final Logger logger = Logger.getLogger(InstallItem.class);
 	
 	private final InstallerNode node;
+	private final JProgressBar bar;
 	
 	public InstallItem(InstallerNode node)
 	{
 		super();
 		this.node = node;
 		
-		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-		add(new JLabel(node.getName()));
-		add(Box.createHorizontalGlue());
+		setBorder(BorderFactory.createEmptyBorder(SMALL_MARGIN, SMALL_MARGIN, SMALL_MARGIN, SMALL_MARGIN));
+		setLayout(new BorderLayout(0, SMALL_MARGIN));
+		
+		bar = new JProgressBar(0, 100);
+		bar.setIndeterminate(true);
+		bar.setString(ProgressBarDialog.INDETERMINATE_STRING);
+		bar.setStringPainted(true);
+		bar.setPreferredSize(new Dimension((int) bar.getPreferredSize().getWidth(), (int) bar.getMinimumSize().getHeight()));
+		bar.setMaximumSize(new Dimension((int) bar.getMaximumSize().getWidth(), (int) bar.getMinimumSize().getHeight()));
+		
+		add(new JLabel(node.getName()), BorderLayout.NORTH);
+		add(bar, BorderLayout.CENTER);
+		
+		setMaximumSize(new Dimension((int) getMaximumSize().getWidth(), (int) getPreferredSize().getHeight()));
 	}
 	
 	/**
@@ -149,6 +168,7 @@ public class InstallItem extends JPanel implements Callable<Boolean>
 	
 	private boolean installOne(List<BaseURL> baseURLList, String file)
 	{
+		logger.info(node.getName() + ": installing '" + file + "'");
 		return true;
 	}
 	

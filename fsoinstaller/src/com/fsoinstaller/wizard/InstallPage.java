@@ -109,9 +109,10 @@ public class InstallPage extends WizardPage
 			
 			InstallItem item = new InstallItem(node);
 			installPanel.add(item);
-			Future<Boolean> f = exec.submit(item);
+			//Future<Boolean> f = exec.submit(item);
 			// TODO: do something with F
 		}
+		installPanel.add(Box.createGlue());
 		
 		// TODO: note that the ExecutorService isn't going to terminate automatically, so we need to shut it down properly in success or failure
 		
