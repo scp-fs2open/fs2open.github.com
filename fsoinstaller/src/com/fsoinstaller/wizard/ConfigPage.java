@@ -760,10 +760,7 @@ public class ConfigPage extends WizardPage
 		public Void call()
 		{
 			logger.info("Checking target directory...");
-			
-			File destinationDir = MiscUtils.validateApplicationDir(directoryText);
-			if (destinationDir == null || !destinationDir.exists())
-				throw new IllegalStateException("The directory should exist at this point!");
+			File destinationDir = configuration.getApplicationDir();
 			
 			// if we need FS2 installed, make sure that it is (or that user has been warned)
 			if (configuration.requiresFS2())
