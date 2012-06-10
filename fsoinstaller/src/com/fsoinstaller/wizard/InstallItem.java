@@ -172,7 +172,6 @@ public class InstallItem extends JPanel implements Callable<InstallItem>
 			setText("Installing files...");
 			
 			Connector connector = (Connector) Configuration.getInstance().getSettings().get(Configuration.CONNECTOR_KEY);
-			File destinationDir = Configuration.getInstance().getApplicationDir();
 			
 			// these could be files to download, or they could later be files to extract
 			for (InstallUnit install: node.getInstallList())
@@ -181,7 +180,7 @@ public class InstallItem extends JPanel implements Callable<InstallItem>
 				for (String file: install.getFileList())
 				{
 					// attempt to install this file
-					boolean succeeded = installOne(nodeName, connector, destinationDir, urls, file);
+					boolean succeeded = installOne(nodeName, connector, folder, urls, file);
 					if (!succeeded)
 						return this;
 					logger.info(nodeName + ": Downloaded '" + file + "'");
@@ -201,7 +200,7 @@ public class InstallItem extends JPanel implements Callable<InstallItem>
 		return this;
 	}
 	
-	private boolean installOne(String nodeName, Connector connector, File destinationDir, List<BaseURL> baseURLList, String file)
+	private boolean installOne(String nodeName, Connector connector, File modFolder, List<BaseURL> baseURLList, String file)
 	{
 		logger.info(nodeName + ": installing '" + file + "'");
 		
@@ -224,7 +223,7 @@ public class InstallItem extends JPanel implements Callable<InstallItem>
 			}
 			
 			logger.debug(nodeName + ": Beginning download of '" + file + "'");
-			Downloader downloader = new Downloader(connector, url, destinationDir);
+			Downloader downloader = new Downloader(connector, url, modFolder);
 			downloader.addDownloadListener(updater);
 			downloader.download();
 			
