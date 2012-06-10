@@ -286,9 +286,14 @@ public class MiscUtils
 		{
 			String word = text.substring(start, end);
 			
-			line.append(word);
-			int lineWidth = SwingUtilities.computeStringWidth(metrics, line.toString());
+			// if we have an actual line break, reset the line, otherwise build on it
+			if (word.equals("\n"))
+				line = new StringBuilder();
+			else
+				line.append(word);
 			
+			// compute running total of the line width
+			int lineWidth = SwingUtilities.computeStringWidth(metrics, line.toString());
 			if (lineWidth > maxWidth)
 			{
 				// trim off whitespace at the beginning of the word
