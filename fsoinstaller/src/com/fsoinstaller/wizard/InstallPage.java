@@ -109,7 +109,7 @@ public class InstallPage extends WizardPage
 			
 			InstallItem item = new InstallItem(node);
 			installPanel.add(item);
-			//Future<Boolean> f = exec.submit(item);
+			Future<InstallItem> f = exec.submit(item);
 			// TODO: do something with F
 		}
 		installPanel.add(Box.createGlue());
