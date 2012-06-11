@@ -2359,7 +2359,11 @@ int mission_load_up_campaign( player *pl )
 
 			mission_campaign_free_list();
 		}
-
+		
+		if (!rc) {
+			pl->main_hall = Campaign.missions[0].main_hall;
+			strcpy_s(pl->current_campaign, Campaign.filename);
+		}
 		return rc;
 	}
 }
