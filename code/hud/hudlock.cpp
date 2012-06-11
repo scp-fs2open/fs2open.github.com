@@ -1061,7 +1061,7 @@ void hud_lock_get_new_lock_pos(object *target_objp)
 			}
 			ss = GET_NEXT( ss );
 		}
-	} else if ((target_shipp) && wip->wi_flags & WIF_HOMING_JAVELIN) {
+	} else if ( (target_shipp) && (wip->wi_flags & WIF_HOMING_JAVELIN)) {
 		Player->locking_subsys = ship_get_closest_subsys_in_sight(target_shipp, SUBSYSTEM_ENGINE, &Player_obj->pos);
 		if (Player->locking_subsys != NULL) {
 			get_subsystem_world_pos(target_objp, Player->locking_subsys, &lock_world_pos);
@@ -1105,7 +1105,7 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 		Player->locking_on_center=0;
 		Player->locking_subsys=Player_ai->targeted_subsys;
 		Player->locking_subsys_parent=Player_ai->target_objnum;
-	} else if ( wip->wi_flags & WIF_HOMING_JAVELIN && target_objp->type == OBJ_SHIP) {
+	} else if ( (wip->wi_flags & WIF_HOMING_JAVELIN) && (target_objp->type == OBJ_SHIP)) {
 		if (!Player->locking_subsys ||
 			Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
 				Player->locking_subsys = ship_get_closest_subsys_in_sight(&Ships[target_objp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
