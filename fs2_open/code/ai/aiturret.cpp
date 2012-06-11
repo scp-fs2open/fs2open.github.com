@@ -2246,11 +2246,13 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		if (objnum >= 0 && is_target_beam_valid(&ss->weapons, &Objects[objnum])) {
 			if (ss->turret_enemy_objnum == -1) {
 				ss->turret_enemy_objnum = objnum;
+				ss->targeted_subsys = NULL;		// Turret has retargeted; reset subsystem - Valathil for Mantis #2652
 				ss->turret_enemy_sig = Objects[objnum].signature;
 				// why return?
 				return;
 			} else {
 				ss->turret_enemy_objnum = objnum;
+				ss->targeted_subsys = NULL;		// Turret has retargeted; reset subsystem - Valathil for Mantis #2652
 				ss->turret_enemy_sig = Objects[objnum].signature;
 			}
 		} else {
