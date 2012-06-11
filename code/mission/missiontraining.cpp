@@ -215,14 +215,12 @@ void HudGaugeDirectives::pageIn()
 void HudGaugeDirectives::render(float frametime)
 {
 	char buf[256], *second_line;
-	int i, t, x, y, z, height, end, offset, bx, by, y_count;
+	int i, t, x, y, z, end, offset, bx, by, y_count;
 	color *c;
 
 	if (!Training_obj_num_lines){
 		return;
 	}
-
-	height = gr_get_font_height();
 
 	offset = 0;
 	end = Training_obj_num_lines;
@@ -637,10 +635,9 @@ char *translate_message_token(char *str)
  */
 void message_translate_tokens(char *buf, char *text)
 {
-	char temp[40], *toke1, *toke2, *ptr, *orig_buf;
+	char temp[40], *toke1, *toke2, *ptr;
 	int r;
 
-	orig_buf = buf;
 	*buf = 0;
 	toke1 = strchr(text, '$');
 	toke2 = strchr(text, '#');
