@@ -4045,7 +4045,6 @@ void weapon_home(object *obj, int num, float frame_time)
 		if ( wp->target_sig > 0 ) {
 			if ( wp->homing_object->signature != wp->target_sig ) {
 				wp->homing_object = &obj_used_list;
-				wp->homing_subsys = NULL;	// Goober5000 for Mantis #2652
 				return;
 			}
 		}
@@ -4065,7 +4064,6 @@ void weapon_home(object *obj, int num, float frame_time)
 		if (wp->homing_subsys->flags & SSF_MISSILES_IGNORE_IF_DEAD) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
 				wp->homing_object = &obj_used_list;
-				wp->homing_subsys = NULL;
 				return;
 			}
 		}
@@ -4089,7 +4087,6 @@ void weapon_home(object *obj, int num, float frame_time)
 		(wp->target_sig > 0) &&
 		(wp->homing_subsys == NULL)) {
 			wp->homing_object = &obj_used_list;
-			wp->homing_object = NULL;
 			return;
 	}
 
