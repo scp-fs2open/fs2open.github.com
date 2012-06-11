@@ -323,7 +323,6 @@ typedef struct weapon_info {
 
 	float	max_speed;							// initial speed of the weapon
 	float	free_flight_time;
-	float	free_flight_speed;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 
