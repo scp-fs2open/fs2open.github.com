@@ -1024,7 +1024,7 @@ HudGauge(HUD_OBJECT_TRAINING_MESSAGES, HUD_DIRECTIVES_VIEW, false, true, VM_EXTE
 
 bool HudGaugeTrainingMessages::canRender()
 {
-	if (hud_disabled()) {
+	if (hud_disabled() && !hud_disabled_except_messages()) {
 		return false;
 	}
 	
