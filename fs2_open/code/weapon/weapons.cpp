@@ -832,7 +832,6 @@ void init_weapon_entry(int weap_info_index)
 	wip->mass = 1.0f;
 	wip->max_speed = 10.0f;
 	wip->free_flight_time = 0.0f;
-	wip->free_flight_speed = 0.25f;
 	wip->fire_wait = 1.0f;
 	wip->damage = 0.0f;
 	
@@ -1655,11 +1654,9 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if(optional_string("$Free Flight Speed:")) {
-		stuff_float(&wip->free_flight_speed);
-		if (wip->free_flight_speed < 0.01f) {
-			nprintf(("Warning", "Free Flight Speed value is too low. Resetting to default (25% of maximum)\n"));
-			wip->free_flight_speed = 0.25f;
-		}
+		float temp;
+		stuff_float(&temp);
+		nprintf(("Warning", "Ignoring free flight speed for weapon '%s'\n", wip->name));
 	}
 	//Optional one-shot sound to play at the beginning of firing
 	parse_sound("$PreLaunchSnd:", &wip->pre_launch_snd, wip->name);
