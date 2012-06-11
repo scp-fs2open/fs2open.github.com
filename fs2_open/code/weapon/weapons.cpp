@@ -4015,9 +4015,12 @@ void weapon_home(object *obj, int num, float frame_time)
 	else
 		max_speed=wip->max_speed;
 
-	//	If not 1/2 second gone by, don't home yet.
-	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < wip->free_flight_time )) {
-		//	If this is a heat seeking homing missile and 1/2 second has elapsed since firing, find a new target.
+	//	If not [free-flight-time] gone by, don't home yet.
+	// Goober5000 - this has been fixed back to more closely follow the original logic.  Remember, the retail code
+	// had 0.5 second of free flight time, the first half of which was spent ramping up to full speed.
+	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < (wip->free_flight_time / 2) )) {
+		//	If this is a heat seeking homing missile and [free-flight-time] has elapsed since firing
+		//	and we don't have a target (else we wouldn't be inside the IF), find a new target.
         if ((wip->wi_flags & WIF_HOMING_HEAT) &&
             (f2fl(Missiontime - wp->creation_time) > wip->free_flight_time))
         {
@@ -4029,21 +4032,23 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 
 		if (obj->phys_info.speed > max_speed) {
-			obj->phys_info.speed -= frame_time / wip->free_flight_speed;
+			obj->phys_info.speed -= frame_time * (2 / wip->free_flight_time);
 			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
-		} else if ((obj->phys_info.speed < max_speed * wip->free_flight_speed) && (wip->wi_flags & WIF_HOMING_HEAT)) {
-			obj->phys_info.speed = max_speed * wip->free_flight_speed;
+		} else if ((obj->phys_info.speed < max_speed / (2 / wip->free_flight_time)) && (wip->wi_flags & WIF_HOMING_HEAT)) {
+			obj->phys_info.speed = max_speed / (2 / wip->free_flight_time);
 			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 		}
 
 		return;
 	}
 
-	// AL 4-8-98: If orgiginal target for aspect or javelin HS lock missile is lost, stop homing
+	// AL 4-8-98: If original target for aspect lock missile is lost, stop homing
+	// WCS - or javelin
 	if (wip->wi_flags & WIF_LOCKED_HOMING) {
 		if ( wp->target_sig > 0 ) {
 			if ( wp->homing_object->signature != wp->target_sig ) {
 				wp->homing_object = &obj_used_list;
+				wp->homing_subsys = NULL;	// Goober5000 for Mantis #2652
 				return;
 			}
 		}
@@ -4063,6 +4068,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		if (wp->homing_subsys->flags & SSF_MISSILES_IGNORE_IF_DEAD) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
 				wp->homing_object = &obj_used_list;
+				wp->homing_subsys = NULL;
 				return;
 			}
 		}
@@ -4086,6 +4092,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		(wp->target_sig > 0) &&
 		(wp->homing_subsys == NULL)) {
 			wp->homing_object = &obj_used_list;
+			wp->homing_object = NULL;
 			return;
 	}
 
@@ -4751,6 +4758,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 						if (wp->homing_subsys == NULL) {
 							wp->homing_object = &obj_used_list;
 						} else {
+							Assert(wp->homing_subsys->parent_objnum == target_objnum);
 							wp->homing_object = &Objects[target_objnum];
 							weapon_maybe_play_warning(wp);
 						}
@@ -4764,11 +4772,12 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 				//	immediately drop it and try to find one in its view cone.
 				if ((target_objnum != -1) && !(wip->wi_flags2 & WIF2_UNTARGETED_HEAT_SEEKER)) {
 					wp->homing_object = &Objects[target_objnum];
+					wp->homing_subsys = target_subsys;
 					weapon_maybe_play_warning(wp);
-				} else
+				} else {
 					wp->homing_object = &obj_used_list;
-
-				wp->homing_subsys = target_subsys;
+					wp->homing_subsys = NULL;
+				}
 			}
 		} else {
 			wp->target_num = -1;
