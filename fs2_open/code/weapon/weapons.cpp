@@ -4548,12 +4548,10 @@ void weapon_process_post(object * obj, float frame_time)
 				float		dot;
 				vec3d	tvec;
 				ai_info	*parent_aip;
-				float		lead_scale = 0.0f;
 
 				parent_aip = NULL;
 				if (obj->parent != Player_obj-Objects) {
 					parent_aip = &Ai_info[Ships[Objects[obj->parent].instance].ai_index];
-					lead_scale = parent_aip->lead_scale;
 				}
 
 				vm_vec_normalized_dir(&tvec, &v0, &Objects[wp->target_num].pos);
@@ -5759,7 +5757,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	int			num = weapon_obj->instance;
 	int			weapon_type = Weapons[num].weapon_info_index;
 	int			expl_ani_handle;
-	object		*weapon_parent_objp;
 	weapon_info	*wip;
 	weapon *wp;
 	bool		hit_target = false;
@@ -5770,11 +5767,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}
 	wp = &Weapons[weapon_obj->instance];
 	wip = &Weapon_info[weapon_type];
-	if(weapon_obj->parent > -1) {
-		weapon_parent_objp = &Objects[weapon_obj->parent];
-	} else {
-		weapon_parent_objp = NULL;
-	}
 
 	// check if the weapon actually hit the intended target
 	if (wp->homing_object != NULL)
@@ -6573,7 +6565,6 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		!(The_mission.ai_profile->flags & AIPF_DISABLE_WEAPON_DAMAGE_SCALING) &&
 		!(Ship_info[Ships[target->instance].ship_info_index].flags2 & SIF2_DISABLE_WEAPON_DAMAGE_SCALING)
 	) {
-		ship *shipp;
 		ship_info *sip;
 
 		// get some info on the ship
@@ -6581,7 +6572,6 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		if((target->instance < 0) || (target->instance >= MAX_SHIPS)){
 			return total_scale;
 		}
-		shipp = &Ships[target->instance];
 		sip = &Ship_info[Ships[target->instance].ship_info_index];
 
 		// get hull pct of the ship currently
