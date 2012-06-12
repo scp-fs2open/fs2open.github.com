@@ -116,8 +116,6 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 			if (num_tries > octp->nverts)
 				num_tries = octp->nverts;
 
-			int	best_index = -1;
-
 			for (i=0; i<num_tries; i++) {
 				int	index;
 				float	dist, dot;
@@ -142,7 +140,6 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 
 				if (in_fov) {
 					if (dist < nearest_dist) {
-						best_index = index;
 						nearest_dist = dist;
 						best_point = result_point;
 						*local_attack_point = rel_point;

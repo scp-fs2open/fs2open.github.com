@@ -1107,10 +1107,8 @@ DCF_BOOL(use_parent_target, Use_parent_target)
 int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d *tvec, int current_enemy)
 {
 	int					enemy_team_mask, enemy_objnum;
-	model_subsystem	*tp;
 	ship_info			*sip;
 
-	tp = turret_subsys->system_info;
 	enemy_team_mask = iff_get_attackee_mask(obj_team(&Objects[objnum]));
 
 	bool big_only_flag = all_turret_weapons_have_flags(&turret_subsys->weapons, WIF_HUGE);
