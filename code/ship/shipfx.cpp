@@ -2590,7 +2590,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 	vec3d temp, dir, shockwave_pos;
 	vec3d head = vmd_zero_vector;
 	vec3d tail = vmd_zero_vector;	
-	float len, step, cur;
+	float step, cur;
 	int idx;
 
 	// sanity checks
@@ -2640,7 +2640,6 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 
 	// now create as many shockwaves as needed
 	vm_vec_sub(&dir, &head, &tail);
-	len = vm_vec_mag(&dir);
 	step = 1.0f / ((float)sip->shockwave_count + 1.0f);
 	cur = step;
 	for(idx=0; idx<sip->shockwave_count; idx++){
@@ -3523,10 +3522,8 @@ int WE_Default::warpFrame(float frametime)
 
 		// Find the closest point on line from center of wormhole
 		vec3d cpos;
-		float dist;
 
 		fvi_ray_plane(&cpos, &objp->pos, &fvec, &pos, &fvec, 0.0f );
-		dist = vm_vec_dist( &cpos, &objp->pos );
 
 		if ( objp == Player_obj )	{
 			// Code for player warpout frame

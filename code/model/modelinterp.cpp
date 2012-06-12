@@ -1795,13 +1795,9 @@ void model_render_insignias(polymodel *pm, int detail_level)
 	int idx, s_idx;
 	vertex vecs[3];
 	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
-	vec3d t1, t2, t3, x;
+	vec3d t1, t2, t3;
 	int i1, i2, i3;
 	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT;
-
-	x.xyz.x=0;
-	x.xyz.y=0;
-	x.xyz.z=0;
 
 	// set the proper texture	
 	gr_set_bitmap(Interp_insignia_bitmap, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 0.65f);
@@ -2016,10 +2012,8 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 		Interp_light = 1.0f;
 	}
 
-	int num_lights = 0;
-
 	if ( !(flags & MR_NO_LIGHTING ) )	{
-		num_lights = light_filter_push( objnum, pos, pm->rad );
+		light_filter_push( objnum, pos, pm->rad );
 	}
 
 	model_really_render(model_num, orient, pos, flags, objnum);
