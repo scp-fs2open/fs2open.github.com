@@ -370,14 +370,12 @@ void shockwave_move(object *shockwave_objp, float frametime)
 void shockwave_render(object *objp)
 {
 	shockwave		*sw;
-	shockwave_info	*si;
 	vertex			p;
 
 	Assert(objp->type == OBJ_SHOCKWAVE);
 	Assert(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES);
 
 	sw = &Shockwaves[objp->instance];
-	si = &Shockwave_info[sw->shockwave_info_index];
 
 	if( (sw->delay_stamp != -1) && !timestamp_elapsed(sw->delay_stamp)){
 		return;

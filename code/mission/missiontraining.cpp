@@ -112,36 +112,12 @@ void message_translate_tokens(char *buf, char *text);
 static hud_frames Directive_gauge[NUM_DIRECTIVE_GAUGES];
 static int Directive_frames_loaded = 0;
 
-static char *Directive_fnames[3] = 
-{
-//XSTR:OFF
-	"directives1",
-	"directives2",
-	"directives3"
-//XSTR:ON
-};
-
 #define DIRECTIVE_H						9
 #define DIRECTIVE_X						5
 #define NUM_DIRECTIVE_COORDS			3
 #define DIRECTIVE_COORDS_TOP			0
 #define DIRECTIVE_COORDS_MIDDLE		1
 #define DIRECTIVE_COORDS_TITLE		2
-static int Directive_coords[GR_NUM_RESOLUTIONS][NUM_DIRECTIVE_COORDS][2] =
-{
-	{
-		// GR_640
-		{5,178},
-		{5,190},
-		{7,180}
-	},
-	{
-		// GR_1024
-		{5,278},
-		{5,290},
-		{7,280}
-	}
-};
 
 HudGaugeDirectives::HudGaugeDirectives():
 HudGauge(HUD_OBJECT_DIRECTIVES, HUD_DIRECTIVES_VIEW, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
@@ -239,14 +215,12 @@ void HudGaugeDirectives::pageIn()
 void HudGaugeDirectives::render(float frametime)
 {
 	char buf[256], *second_line;
-	int i, t, x, y, z, height, end, offset, bx, by, y_count;
+	int i, t, x, y, z, end, offset, bx, by, y_count;
 	color *c;
 
 	if (!Training_obj_num_lines){
 		return;
 	}
-
-	height = gr_get_font_height();
 
 	offset = 0;
 	end = Training_obj_num_lines;
@@ -661,10 +635,9 @@ char *translate_message_token(char *str)
  */
 void message_translate_tokens(char *buf, char *text)
 {
-	char temp[40], *toke1, *toke2, *ptr, *orig_buf;
+	char temp[40], *toke1, *toke2, *ptr;
 	int r;
 
-	orig_buf = buf;
 	*buf = 0;
 	toke1 = strchr(text, '$');
 	toke2 = strchr(text, '#');
@@ -1024,7 +997,7 @@ HudGauge(HUD_OBJECT_TRAINING_MESSAGES, HUD_DIRECTIVES_VIEW, false, true, VM_EXTE
 
 bool HudGaugeTrainingMessages::canRender()
 {
-	if (hud_disabled()) {
+	if (hud_disabled() && !hud_disabled_except_messages()) {
 		return false;
 	}
 	
