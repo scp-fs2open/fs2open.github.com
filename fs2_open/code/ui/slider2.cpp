@@ -83,15 +83,10 @@ void UI_SLIDER2::draw() {
 
 void UI_SLIDER2::process(int focus)
 {
-	int OnMe, keyfocus, mouse_lock_move;	
+	int OnMe, mouse_lock_move;	
 
 	if (disabled_flag) {
 		return;
-	}
-
-	keyfocus = 0;	
-	if (my_wnd->selected_gadget == this){
-		keyfocus = 1;
 	}
 
 	OnMe = is_mouse_on();

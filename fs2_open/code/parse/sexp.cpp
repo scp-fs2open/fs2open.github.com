@@ -12365,7 +12365,6 @@ void multi_sexp_set_persona()
 int sexp_weapon_fired_delay(int node, int op_num)
 {
 	ship *shipp;
-	weapon_info * wip;
 	
 	int requested_bank; 
 	int delay;
@@ -12395,7 +12394,6 @@ int sexp_weapon_fired_delay(int node, int op_num)
 			if (requested_bank >= shipp->weapons.num_primary_banks) {
 				return SEXP_FALSE;
 			}
-			wip = &Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]];
 			last_fired = shipp->weapons.last_primary_fire_stamp[requested_bank];
 			break; 
 
@@ -12403,7 +12401,6 @@ int sexp_weapon_fired_delay(int node, int op_num)
 			if (requested_bank >= shipp->weapons.num_secondary_banks) {
 				return SEXP_FALSE;
 			}
-			wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]];
 			last_fired = shipp->weapons.last_secondary_fire_stamp[requested_bank];
 			break; 
 	}
@@ -17105,12 +17102,10 @@ void set_nav_needslink(int node)
 {
 	int n=node, i;
 	char *name;
-	bool skip;
 
 	while (n != -1)
 	{
 		name = CTEXT(n);
-		skip = false;
 
 		for (i = 0; i < MAX_SHIPS; i++)
 		{

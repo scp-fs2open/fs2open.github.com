@@ -92,12 +92,6 @@ int collide_weapon_weapon( obj_pair * pair )
 
 		if(!a_override && !b_override)
 		{
-			//Do the normal stuff if no override -C
-			ship	*sap, *sbp;
-
-			sap = &Ships[Objects[A->parent].instance];
-			sbp = &Ships[Objects[B->parent].instance];
-
 			float aDamage = wipA->damage;
 			if (wipB->armor_type_idx >= 0)
 				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f);

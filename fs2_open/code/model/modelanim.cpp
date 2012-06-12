@@ -386,8 +386,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	Assert( psub->flags & MSS_FLAG_TRIGGERED );
 
 	triggered_rotation *trigger = &ss->trigger;
-	submodel_instance_info *sii = &ss->submodel_info_1;
-	int looping = 0;	
+	submodel_instance_info *sii = &ss->submodel_info_1;	
 	int not_moving_count = 0;
 
 	if ( psub->model_num < 0 ) {
@@ -423,8 +422,6 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 				}
 				// have reached target speed
 				else {
-					looping = 1;
-
 					trigger->current_vel.a1d[i] = trigger->rot_vel.a1d[i];
 				}
 			}
