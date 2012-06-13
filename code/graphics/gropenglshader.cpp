@@ -39,20 +39,6 @@ static int Effect_num = 0;
 static float Anim_timer = 0.0f;
 
 
-/*
-struct opengl_shader_uniform_reference_t {
-	int flag;
-
-	int num_uniforms;
-	char* uniforms[MAX_SHADER_UNIFORMS];
-
-	int num_attributes;
-	char* attributes[MAX_SDR_ATTRIBUTES];
-
-	SCP_string name;
-};
-*/
-
 /**
  * Static lookup reference for main shader uniforms
  * When adding a new SDR_ flag, list all associated uniforms and attributes here
