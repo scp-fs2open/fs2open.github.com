@@ -395,9 +395,6 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	float			max_shield;
 	int			hud_color_index, range, frame_offset;
 	int			sx, sy, i;
-	shield_hit_info	*shi;
-
-	shi = &Shield_hit_data[SHIELD_HIT_TARGET];
 
 	if ( objp->type != OBJ_SHIP ) {
 		return;
@@ -974,9 +971,6 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 	float			max_shield;
 	int			hud_color_index, range, frame_offset;
 	int			sx, sy, i;
-	shield_hit_info	*shi;
-
-	shi = &Shield_hit_data[SHIELD_HIT_TARGET];
 
 	if ( objp->type != OBJ_SHIP ) {
 		return;
