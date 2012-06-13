@@ -224,20 +224,6 @@ char Cm_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
 #define TOGGLE_TEXT_TARGET		1
 #define TOGGLE_TEXT_AUTOS		2
 #define TOGGLE_TEXT_SPEED		3
-static int Hud_toggle_coords[GR_NUM_RESOLUTIONS][4][2] = {
-	{		// GR_640
-		{ 590, 382 },
-		{ 584, 390 },
-		{ 590, 406 },
-		{ 587, 414 }
-	},
-	{		// GR_1024
-		{ 973, 650 },
-		{ 967, 658 },
-		{ 973, 674 },
-		{ 970, 682 }
-	}
-};
 
 int Toggle_text_alpha = 255;
 

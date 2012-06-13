@@ -1971,7 +1971,6 @@ void HudGaugeDamage::render(float frametime)
 {
 	model_subsystem	*psub;
 	ship_subsys			*pss;
-	ship_info			*sip;
 	int					sx, sy, bx, by, w, h, screen_integrity, num, best_str, best_index;
 	float					strength, shield, integrity;
 	char					buf[128];
@@ -1989,7 +1988,6 @@ void HudGaugeDamage::render(float frametime)
 		return;
 	}
 		
-	sip = &Ship_info[Player_ship->ship_info_index];
 	hud_get_target_strength(Player_obj, &shield, &integrity);
 	screen_integrity = fl2i(integrity*100);
 
