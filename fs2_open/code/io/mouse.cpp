@@ -28,7 +28,9 @@
 LOCAL int Mouse_mode = MOUSE_MODE_WIN;
 
 int mouse_inited = 0;
-LOCAL int Di_mouse_inited = 0;
+#ifdef WIN32
+    LOCAL int Di_mouse_inited = 0;
+#endif
 LOCAL int Mouse_x;
 LOCAL int Mouse_y;
 

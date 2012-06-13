@@ -388,7 +388,6 @@ void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
 	char			buf[255];	
 	int			np_index;
 	object		*objp;
-	ship_info	*sip;
 
 	int stat_shift = 40;
 
@@ -411,7 +410,7 @@ void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
 	if((Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP)){
 		objp = &Objects[Net_players[np_index].m_player->objnum];
 		if((objp->instance >= 0) && (objp->instance < MAX_SHIPS) && (Ships[objp->instance].ship_info_index >= 0) && (Ships[objp->instance].ship_info_index < MAX_SHIPS)){
-			sip = &Ship_info[Ships[objp->instance].ship_info_index];
+			//
 		} else {
 			return;
 		}

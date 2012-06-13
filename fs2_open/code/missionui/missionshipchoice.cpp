@@ -3433,7 +3433,6 @@ void ss_drop(int from_slot,int from_list,int to_slot,int to_list,int player_inde
 void ss_recalc_multiplayer_slots()
 {
 	int				i,j;
-	wing				*wp;
 	ss_slot_info	*ss_slot;
 	ss_wing_info	*ss_wing;
 	
@@ -3453,10 +3452,7 @@ void ss_recalc_multiplayer_slots()
 			continue;
 		}
 
-		// NOTE : the method below will eventually have to change to account for all possible netgame options
-		
-		// get the wing pointer
-		wp = &Wings[ss_wing->wingnum];		
+		// NOTE : the method below will eventually have to change to account for all possible netgame options	
 		for ( j = 0; j < ss_wing->num_slots; j++ ) {				
 			// get the slot pointer
 			ss_slot = &ss_wing->ss_slots[j];			

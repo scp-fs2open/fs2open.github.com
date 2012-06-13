@@ -1079,12 +1079,6 @@ void draw_gamma_box()
 		v = 0;
 	}
 
-	int Gamma_changed = 0;
-	if ( v != Gamma_last_set )	{
-		Gamma_changed = 1;
-	} else {
-		Gamma_changed = 0;
-	}
 	Gamma_last_set = v;
 
 	{
