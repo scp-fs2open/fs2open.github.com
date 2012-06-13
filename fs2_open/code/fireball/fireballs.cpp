@@ -378,13 +378,11 @@ void fireball_render(object * obj)
 	int		num;
 	vertex	p;
 	fireball	*fb;
-	fireball_info *fd;
-
+    
 	MONITOR_INC( NumFireballsRend, 1 );	
 	
 	num = obj->instance;
 	fb = &Fireballs[num];
-	fd = &Fireball_info[fb->fireball_info_index];
 
 	if ( Fireballs[num].current_bitmap < 0 )
 		return;
