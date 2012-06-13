@@ -611,7 +611,7 @@ int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
 	Status = GST_MOUSE_OVER;
 
 	bool something_pressed = false;
-	int unused_queue;
+
 	if (clearandflip) {
 		gr_clear();
 	}
@@ -643,10 +643,6 @@ int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
 			} else if (mouse_down(MOUSE_RIGHT_BUTTON)) {
 				Status |= GST_MOUSE_RIGHT_BUTTON;
 			}
-
-			//Now that we are done setting status, add all that stuff to the unused queue
-			//Children will be changing this function as they do stuff with statuses
-			unused_queue = Status;
 
 			mouse_get_pos(&MouseX, &MouseY);
 

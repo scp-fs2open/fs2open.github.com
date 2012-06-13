@@ -97,7 +97,10 @@ int Num_filter_keys;
 int Key_filter[MAX_FILTER_KEYS];
 
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
-static int Key_running_NT = 0;		// NT is the OS
+
+#ifdef _WIN32
+    static int Key_running_NT = 0;		// NT is the OS
+#endif
 
 int Cheats_enabled = 0;
 int Key_normal_game = 0;

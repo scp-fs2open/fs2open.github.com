@@ -719,10 +719,7 @@ int player_select_create_new_pilot()
 void player_select_delete_pilot()
 {
 	char filename[MAX_PATH_LEN + 1];
-	int i, deleted_cur_pilot;
-	int del_rval;
-
-	deleted_cur_pilot = 0;
+	int i, del_rval;
 
 	// tack on the full path and the pilot file extension
 	// build up the path name length

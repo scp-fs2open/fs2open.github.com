@@ -1693,10 +1693,6 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
 
 		gr_set_clip(x1, y1, x2, y2, resize);
-		vec3d normal;
-		normal.xyz.x = 0.0f;
-		normal.xyz.y = 1.0f;
-		normal.xyz.z = 0.0f;
 		g3_start_frame(1);
 
 		// render the wodel

@@ -1193,7 +1193,7 @@ void brief_blit_stage_num(int stage_num, int stage_max)
  */
 void brief_render_line(int line_num, int x, int y, int instance)
 {
-	Assert( 0<=instance && instance < (sizeof(Colored_stream)/sizeof(*Colored_stream)) );
+	Assert( 0<=instance && instance < (int)(sizeof(Colored_stream)/sizeof(*Colored_stream)) );
 
 	SCP_vector<colored_char> *src = &Colored_stream[instance].at(line_num);
 
@@ -1235,7 +1235,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 			//when the current color changes, the accumulated character sequence is drawn.
 			if (current_char.color != last_color){
 				//add a 0 terminal character to make line a valid C string
-				Assert(char_seq_pos<sizeof(char_seq));
+				Assert(char_seq_pos < (int)sizeof(char_seq));
 				char_seq[char_seq_pos] = 0;         
 				{	// Draw coloured text, and increment cariage position
 					int w=0,h=0;
@@ -1248,12 +1248,12 @@ void brief_render_line(int line_num, int x, int y, int instance)
 				char_seq_pos = 0;
 				last_color = current_char.color;
 			}
-			Assert(char_seq_pos<sizeof(char_seq));
+			Assert(char_seq_pos < (int)sizeof(char_seq));
 			char_seq[char_seq_pos++] = current_char.letter;		
 		}
 		// Draw the final chunk of acumulated characters
 		// Add a 0 terminal character to make line a valid C string
-		Assert(char_seq_pos<sizeof(char_seq));
+		Assert(char_seq_pos < (int)sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
         {	// Draw coloured text, and increment cariage position
 			int w=0,h=0;
@@ -1267,10 +1267,10 @@ void brief_render_line(int line_num, int x, int y, int instance)
 	{	// PART2: Draw leading bright white characters
 		char_seq_pos = 0;
 		for( int current_pos = truncate_len; current_pos<truncate_len + bright_len; current_pos++){		
-			Assert(char_seq_pos<sizeof(char_seq));
+			Assert(char_seq_pos < (int)sizeof(char_seq));
 			char_seq[char_seq_pos++] = src->at(current_pos).letter;
 		}
-		Assert(char_seq_pos<sizeof(char_seq));
+		Assert(char_seq_pos < (int)sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
 		gr_set_color_fast(&Color_bright_white);
 		gr_string(x + offset, y, char_seq);    
@@ -1340,7 +1340,6 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 void brief_render_elements(vec3d *pos, grid* gridp)
 {
 	vec3d	gpos;	//	Location of point on grid.
-	float		dxz;
 	plane		tplane;
 	vec3d	*gv;
 	
@@ -1353,8 +1352,6 @@ void brief_render_elements(vec3d *pos, grid* gridp)
 	tplane.D = gridp->planeD;
 
 	compute_point_on_plane(&gpos, &tplane, pos);
-
-	dxz = vm_vec_dist(pos, &gpos)/8.0f;
 
 	gv = &gridp->gmatrix.vec.uvec;
 	if (gv->xyz.x * pos->xyz.x + gv->xyz.y * pos->xyz.y + gv->xyz.z * pos->xyz.z < -gridp->planeD)
@@ -1555,7 +1552,7 @@ bool is_a_word_separator(char character)
 int brief_text_colorize(char *src, int instance)
 {
 	Assert(src);
-	Assert((0 <= instance) && (instance < (sizeof(Colored_stream) / sizeof(*Colored_stream))));
+	Assert((0 <= instance) && (instance < (int)(sizeof(Colored_stream) / sizeof(*Colored_stream))));
 
 	// manage different default colors (don't use a SCP_ stack because eh)
 	const int HIGHEST_COLOR_STACK_INDEX = 9;
