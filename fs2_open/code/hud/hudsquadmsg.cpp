@@ -2304,22 +2304,7 @@ int hud_squadmsg_do_frame( )
 	}
 
 	// check for multiplayer mode - this is really a special case checker for support ship requesting and aborting
-	if(MULTIPLAYER_CLIENT && (Squad_msg_mode == SM_MODE_REPAIR_REARM || Squad_msg_mode == SM_MODE_REPAIR_REARM_ABORT)){
-		char *subsys_name;
-//		int who_to_sig;
-		ushort net_sig;
-		
-		// who_to_sig = Objects[Ships[shipnum].objnum].net_signature;
-		if(Player_ai->target_objnum != -1)
-			net_sig = Objects[Player_ai->target_objnum].net_signature;
-		else 
-			net_sig = 0;
-
-      if ((Player_ai->targeted_subsys != NULL) && (Player_ai->targeted_subsys->current_hits > 0.0f))
-			subsys_name = Player_ai->targeted_subsys->system_info->subobj_name;
-		else
-			subsys_name = NULL;
-		
+	if(MULTIPLAYER_CLIENT && (Squad_msg_mode == SM_MODE_REPAIR_REARM || Squad_msg_mode == SM_MODE_REPAIR_REARM_ABORT)){		
 		// send the correct packet
 		if(Squad_msg_mode == SM_MODE_REPAIR_REARM)		
 			send_player_order_packet(SQUAD_MSG_SHIP, 0, REARM_REPAIR_ME_ITEM);
@@ -2359,19 +2344,11 @@ int hud_squadmsg_do_frame( )
 		break;		
 		
 	case SM_MODE_REPAIR_REARM:
-		//if( MULTIPLAYER_MASTER && (addr != NULL)){
-		//	hud_squadmsg_repair_rearm(1,&Objects[Net_players[player_num].player->objnum]);
-		//} else {
-			hud_squadmsg_repair_rearm(1);				// note we return right away.  repair/rearm code handles messaging, etc
-		//}	
+        hud_squadmsg_repair_rearm(1);				// note we return right away.  repair/rearm code handles messaging, etc
 		break;
 
 	case SM_MODE_REPAIR_REARM_ABORT:
-		//if( MULTIPLAYER_MASTER && (addr != NULL)){
-		//	hud_squadmsg_repair_rearm_abort(1,&Objects[Net_players[player_num].player->objnum]);
-		//} else {
-			hud_squadmsg_repair_rearm_abort(1);		// note we return right away.  repair/rearm code handles messaging, etc
-		//}
+        hud_squadmsg_repair_rearm_abort(1);		// note we return right away.  repair/rearm code handles messaging, etc
 		break;
 
 	case SM_MODE_ALL_FIGHTERS:

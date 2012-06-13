@@ -367,7 +367,6 @@ void HudGaugeTargetBox::renderTargetForeground()
  */
 void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 {
-	object	*objp;
 	int		clip_h,w,h;
 	char		buf[16];
 
@@ -379,12 +378,8 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 		return;
 	}
 
-	if(force_obj_num == -1){
+	if(force_obj_num == -1)
 		Assert(Player_ai->target_objnum >= 0 );
-		objp = &Objects[Player_ai->target_objnum];
-	} else {
-		objp = &Objects[force_obj_num];
-	}
 
 	clip_h = fl2i( (1 - Pl_target_integrity) * integrity_bar_h );
 
