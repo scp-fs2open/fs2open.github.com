@@ -40,12 +40,12 @@
 
 flag_def_list model_render_flags[] =
 {
-	{"no lighting",		MR_NO_LIGHTING},
-	{"transparent",		MR_ALL_XPARENT},
-	{"no Zbuffer",		MR_NO_ZBUFFER},
-	{"no cull",			MR_NO_CULL},
-	{"no glowmaps",		MR_NO_GLOWMAPS},
-	{"force clamp",		MR_FORCE_CLAMP},
+	{"no lighting",		MR_NO_LIGHTING,     0},
+	{"transparent",		MR_ALL_XPARENT,     0},
+	{"no Zbuffer",		MR_NO_ZBUFFER,      0},
+	{"no cull",			MR_NO_CULL,         0},
+	{"no glowmaps",		MR_NO_GLOWMAPS,     0},
+	{"force clamp",		MR_FORCE_CLAMP,     0},
 };
   	 
 int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
