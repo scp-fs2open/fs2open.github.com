@@ -5572,12 +5572,12 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  * Apply the blast effects of an explosion to a ship
  *
  * @param force_apply_pos	World pos of where force is applied to object
- * @param ship_obj			Object pointer of ship receiving the blast
+ * @param ship_objp			Object pointer of ship receiving the blast
  * @param blast_pos			World pos of blast center
  * @param blast				Force of blast
  * @param make_shockwave	Boolean, whether to create a shockwave or not
  */
-void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *blast_pos, float blast, int make_shockwave)
+void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave)
 {
 	#define	SHAKE_CONST 3000
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
@@ -5588,22 +5588,22 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
 		return;
 
 	// apply blast force based on distance from center of explosion
-	vm_vec_sub(&vec_blast_to_ship, &ship_obj->pos, blast_pos);
+	vm_vec_sub(&vec_blast_to_ship, &ship_objp->pos, blast_pos);
 	vm_vec_normalize_safe(&vec_blast_to_ship);
 	vm_vec_copy_scale(&force, &vec_blast_to_ship, blast );
 
-	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_obj->pos);
+	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_objp->pos);
 
-	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+	pm = model_get(Ship_info[Ships[ship_objp->instance].ship_info_index].model_num);
 	Assert ( pm != NULL );
 
 	if (make_shockwave) {
-		physics_apply_shock (&force, blast, &ship_obj->phys_info, &ship_obj->orient, &pm->mins, &pm->maxs, pm->rad);
-		if (ship_obj == Player_obj) {
+		physics_apply_shock (&force, blast, &ship_objp->phys_info, &ship_objp->orient, &pm->mins, &pm->maxs, pm->rad);
+		if (ship_objp == Player_obj) {
 			joy_ff_play_vector_effect(&vec_blast_to_ship, blast * 2.0f);
 		}
 	} else {
-		ship_apply_whack( &force, &vec_ship_to_impact, ship_obj);
+		ship_apply_whack( &force, &vec_ship_to_impact, ship_objp);
 	}
 }
 
