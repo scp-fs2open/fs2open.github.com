@@ -2213,6 +2213,8 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	int		player_obj_index = OBJ_INDEX(Player_obj);
 	ship_subsys *ss;
 
+	int initial_attacked_objnum = attacked_objnum;
+
 	if ( (attacked_objnum >= 0) && (attacked_objnum != player_obj_index) ) {
 		// bail if player does not have target
 		if ( Player_ai->target_objnum == -1 ) {
@@ -2229,7 +2231,6 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 		}
 	}
 
-	int initial_attacked_objnum = attacked_objnum;
 	if (attacked_objnum == -1) {
 		attacked_objnum = player_obj_index;
 	}
