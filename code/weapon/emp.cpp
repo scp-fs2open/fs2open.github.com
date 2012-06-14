@@ -259,16 +259,16 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 
 // start the emp effect for the passed ship (setup lightning arcs, timestamp, etc)
 // NOTE : if this ship is also me, I should call emp_start_local() as well
-void emp_start_ship(object *ship_obj, float intensity, float time)
+void emp_start_ship(object *ship_objp, float intensity, float time)
 {
 	ship *shipp;
 	ai_info *aip;
 	float start_intensity;
 
 	// make sure this is a ship
-	Assert(ship_obj->type == OBJ_SHIP);
-	Assert(ship_obj->instance >= 0);
-	shipp = &Ships[ship_obj->instance];
+	Assert(ship_objp->type == OBJ_SHIP);
+	Assert(ship_objp->instance >= 0);
+	shipp = &Ships[ship_objp->instance];
 
 	// determining pre-existing EMP intensity (if any)
 	start_intensity = shipp->emp_intensity < 0.0f ? 0.0f : shipp->emp_intensity;

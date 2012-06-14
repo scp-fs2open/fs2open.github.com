@@ -630,7 +630,7 @@ void turret_swarm_check_validity()
 {
 	int i;
 	turret_swarm_info *tswarmp;
-	object *ship_obj;
+	object *ship_objp;
 
 	if (timestamp_elapsed(Turret_swarm_validity_next_check_time)) {
 
@@ -642,9 +642,9 @@ void turret_swarm_check_validity()
 			tswarmp = &Turret_swarm_info[i];
 
 			if (tswarmp->flags & SWARM_USED) {
-				ship_obj = &Objects[tswarmp->parent_objnum];
-				if (ship_obj->type == OBJ_SHIP) {
-					if (ship_obj->signature == tswarmp->parent_sig) {
+				ship_objp = &Objects[tswarmp->parent_objnum];
+				if (ship_objp->type == OBJ_SHIP) {
+					if (ship_objp->signature == tswarmp->parent_sig) {
 						continue;
 					}
 				}
