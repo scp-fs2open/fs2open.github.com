@@ -590,27 +590,6 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 		return TARGA_ERROR_READING;
 	}
 
-	int xo, yo;
-	if ( header.image_descriptor & 0x10 )	{
-		xo = 1;
-	} else {
-		xo = 0;
-	}
-
-	if ( header.image_descriptor & 0x20 )	{
-		yo = 1;
-	} else {
-		yo = 0;
-	}		
-
-	/*
-	char test=char(header.image_descriptor&0xF);
-	if((test!=8)&&(test!=0)) {
-		cfclose(targa_file);
-		return TARGA_ERROR_READING;
-	}
-	*/
-
 	if((header.image_type!=1)&&(header.image_type!=2)&&(header.image_type!=9)&&(header.image_type!=10)) {
 		cfclose(targa_file);
 		return TARGA_ERROR_READING;
