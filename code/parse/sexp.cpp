@@ -9461,11 +9461,8 @@ void sexp_hud_clear_messages()
 
 		for(size_t i = 0; i < num_gauges; i++) {
 			if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getObjectType() == HUD_OBJECT_MESSAGES) {
-				HudGaugeMessages* gauge = dynamic_cast<HudGaugeMessages*>(Ship_info[Player_ship->ship_info_index].hud_gauges[i]);
-
-				if ( gauge != NULL) {
-					gauge->clearMessages();
-				}
+				HudGaugeMessages* gauge = static_cast<HudGaugeMessages*>(Ship_info[Player_ship->ship_info_index].hud_gauges[i]);
+				gauge->clearMessages();
 			}
 		}
 	} else {
@@ -9473,11 +9470,8 @@ void sexp_hud_clear_messages()
 
 		for(size_t i = 0; i < num_gauges; i++) {
 			if (default_hud_gauges[i]->getObjectType() == HUD_OBJECT_MESSAGES) {
-				HudGaugeMessages* gauge = dynamic_cast<HudGaugeMessages*>(default_hud_gauges[i]);
-				
-				if ( gauge != NULL) {
-					gauge->clearMessages();
-				}
+				HudGaugeMessages* gauge = static_cast<HudGaugeMessages*>(default_hud_gauges[i]);
+				gauge->clearMessages();
 			}
 		}
 	}
