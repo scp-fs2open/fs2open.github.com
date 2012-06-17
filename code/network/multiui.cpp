@@ -1557,14 +1557,11 @@ void multi_join_do_netstuff()
 // evaluate a returned pong.
 void multi_join_eval_pong(net_addr *addr, fix pong_time)
 {	
-	int found;
 	active_game *moveup = Active_game_head;
 
-	found = 0;
 	if(moveup != NULL){
 		do {				
 			if(psnet_same(&moveup->server_addr,addr)){
-				found = 1;
 				multi_ping_eval_pong(&moveup->ping);
 				
 				break;
@@ -1573,16 +1570,6 @@ void multi_join_eval_pong(net_addr *addr, fix pong_time)
 			}
 		} while(moveup != Active_game_head);
 	}	
-
-	// update the game's ping
-	/* 
-	
-	if(found && (moveup->ping_end > moveup->ping_start)){		
-		moveup->ping_time = f2fl(moveup->ping_end - moveup->ping_start);
-		moveup->ping_start = -1;
-		moveup->ping_end = -1;
-
-	 }	*/
 }
 
 // ping all the server on the list

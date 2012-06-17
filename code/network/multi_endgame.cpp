@@ -516,7 +516,7 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 // called when server is waiting for clients to disconnect
 int multi_endgame_server_ok_to_leave()
 {
-	int idx,clients_gone;
+	int idx;
 	
 	// check to see if our client disconnect timestamp has elapsed
 	if ( Multi_endgame_server_wait_stamp > 0.0f ) {
@@ -527,10 +527,8 @@ int multi_endgame_server_ok_to_leave()
 	}
 		
 	// check to see if all clients have disconnected
-	clients_gone = 1;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
 		if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx])){
-			clients_gone = 0;
 			return 0;
 		}
 	}

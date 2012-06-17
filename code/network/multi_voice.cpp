@@ -1009,7 +1009,7 @@ void multi_voice_set_vars(int qos,int duration)
 // <server> process a request for the token
 void multi_voice_process_token_request(int player_index)
 {
-	int stream_index,idx;
+	int idx;
 	
 	// if we're not doing voice on this server, return now
 	if(Netgame.options.flags & MSO_FLAG_NO_VOICE){
@@ -1028,7 +1028,6 @@ void multi_voice_process_token_request(int player_index)
 	}
 
 	// attempt to find a free token token
-	stream_index = -1;
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		if(Multi_voice_stream[idx].token_status == MULTI_VOICE_TOKEN_INDEX_FREE){
 			multi_voice_give_token(idx,player_index);
@@ -1479,7 +1478,6 @@ int multi_voice_max_chunk_size(int msg_mode)
 void multi_voice_process_next_chunk()
 {			
 	int sound_size;
-	float gain;
 	double d_gain;
 	voice_stream *str;
 
@@ -1488,7 +1486,6 @@ void multi_voice_process_next_chunk()
 
 	// get the data	
 	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer, &sound_size, &d_gain);		
-	gain = (float)d_gain;
 
 	// if we've reached the max # of packets for this stream, bail
 	if(Multi_voice_current_stream_index >= (MULTI_VOICE_ACCUM_BUFFER_COUNT - 1)){

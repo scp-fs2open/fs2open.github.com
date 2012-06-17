@@ -843,11 +843,8 @@ void multi_ingame_select_close()
 void multi_ingame_join_display_ship(object *objp,int y_start)
 {
 	int icon_num,idx;
-	ship_info *sip;
 	int y_spacing;
 	ship_weapon *wp;
-
-	sip = &Ship_info[Ships[objp->instance].ship_info_index];
 	
 	// blit the ship name itself
 	gr_set_color_fast(&Color_normal);

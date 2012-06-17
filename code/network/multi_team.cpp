@@ -513,10 +513,7 @@ void multi_team_mark_all_ships()
 // set the proper team for the passed in ship
 void multi_team_mark_ship(ship *sp)
 {	
-	int i, team_num;
-
-	// no team found yet
-	team_num = -1;
+	int i;
 	
 	// look through TVT wings... each wing corresponds to a team
 	for (i = 0; i < MAX_TVT_WINGS; i++)
