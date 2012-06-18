@@ -65,25 +65,25 @@ static opengl_shader_file_t GL_post_shader_files[] = {
 	// NOTE: the main post-processing shader has any number of uniforms, but
 	//       these few should always be present
 	{ "post-v.sdr", "post-f.sdr", SDR_POST_FLAG_MAIN,
-		4, { "tex", "timer", "bloomed", "bloom_intensity" } },
+		4, { "tex", "timer", "bloomed", "bloom_intensity" }, 0, { NULL } },
 
 	{ "post-v.sdr", "blur-f.sdr", SDR_POST_FLAG_BLUR | SDR_POST_FLAG_PASS1,
-		2, { "tex", "bsize" } },
+		2, { "tex", "bsize" }, 0, { NULL } },
 
 	{ "post-v.sdr", "blur-f.sdr", SDR_POST_FLAG_BLUR | SDR_POST_FLAG_PASS2,
-		2, { "tex", "bsize" } },
+		2, { "tex", "bsize" }, 0, { NULL } },
 
 	{ "post-v.sdr", "brightpass-f.sdr", SDR_POST_FLAG_BRIGHT,
-		1, { "tex" } },
+		1, { "tex" }, 0, { NULL } },
 
 	{ "fxaa-v.sdr", "fxaa-f.sdr", 0, 
-		3, { "tex0", "rt_w", "rt_h"} },
+		3, { "tex0", "rt_w", "rt_h"}, 0, { NULL } },
 
 	{ "post-v.sdr", "fxaapre-f.sdr", 0,
-		1, { "tex"} },
+		1, { "tex"}, 0, { NULL } },
 
 	{ "post-v.sdr", "ls-f.sdr", SDR_POST_FLAG_LIGHTSHAFT,
-		8, { "scene", "cockpit", "sun_pos", "weight", "intensity", "falloff", "density", "cp_intensity" } }
+		8, { "scene", "cockpit", "sun_pos", "weight", "intensity", "falloff", "density", "cp_intensity" }, 0, { NULL } }
 };
 
 static const unsigned int Num_post_shader_files = sizeof(GL_post_shader_files) / sizeof(opengl_shader_file_t);

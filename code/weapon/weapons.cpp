@@ -4548,12 +4548,10 @@ void weapon_process_post(object * obj, float frame_time)
 				float		dot;
 				vec3d	tvec;
 				ai_info	*parent_aip;
-				float		lead_scale = 0.0f;
 
 				parent_aip = NULL;
 				if (obj->parent != Player_obj-Objects) {
 					parent_aip = &Ai_info[Ships[Objects[obj->parent].instance].ai_index];
-					lead_scale = parent_aip->lead_scale;
 				}
 
 				vm_vec_normalized_dir(&tvec, &v0, &Objects[wp->target_num].pos);
@@ -5574,12 +5572,12 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  * Apply the blast effects of an explosion to a ship
  *
  * @param force_apply_pos	World pos of where force is applied to object
- * @param ship_obj			Object pointer of ship receiving the blast
+ * @param ship_objp			Object pointer of ship receiving the blast
  * @param blast_pos			World pos of blast center
  * @param blast				Force of blast
  * @param make_shockwave	Boolean, whether to create a shockwave or not
  */
-void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *blast_pos, float blast, int make_shockwave)
+void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave)
 {
 	#define	SHAKE_CONST 3000
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
@@ -5590,22 +5588,22 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
 		return;
 
 	// apply blast force based on distance from center of explosion
-	vm_vec_sub(&vec_blast_to_ship, &ship_obj->pos, blast_pos);
+	vm_vec_sub(&vec_blast_to_ship, &ship_objp->pos, blast_pos);
 	vm_vec_normalize_safe(&vec_blast_to_ship);
 	vm_vec_copy_scale(&force, &vec_blast_to_ship, blast );
 
-	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_obj->pos);
+	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_objp->pos);
 
-	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+	pm = model_get(Ship_info[Ships[ship_objp->instance].ship_info_index].model_num);
 	Assert ( pm != NULL );
 
 	if (make_shockwave) {
-		physics_apply_shock (&force, blast, &ship_obj->phys_info, &ship_obj->orient, &pm->mins, &pm->maxs, pm->rad);
-		if (ship_obj == Player_obj) {
+		physics_apply_shock (&force, blast, &ship_objp->phys_info, &ship_objp->orient, &pm->mins, &pm->maxs, pm->rad);
+		if (ship_objp == Player_obj) {
 			joy_ff_play_vector_effect(&vec_blast_to_ship, blast * 2.0f);
 		}
 	} else {
-		ship_apply_whack( &force, &vec_ship_to_impact, ship_obj);
+		ship_apply_whack( &force, &vec_ship_to_impact, ship_objp);
 	}
 }
 
@@ -5759,7 +5757,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	int			num = weapon_obj->instance;
 	int			weapon_type = Weapons[num].weapon_info_index;
 	int			expl_ani_handle;
-	object		*weapon_parent_objp;
 	weapon_info	*wip;
 	weapon *wp;
 	bool		hit_target = false;
@@ -5770,11 +5767,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}
 	wp = &Weapons[weapon_obj->instance];
 	wip = &Weapon_info[weapon_type];
-	if(weapon_obj->parent > -1) {
-		weapon_parent_objp = &Objects[weapon_obj->parent];
-	} else {
-		weapon_parent_objp = NULL;
-	}
 
 	// check if the weapon actually hit the intended target
 	if (wp->homing_object != NULL)
@@ -6573,7 +6565,6 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		!(The_mission.ai_profile->flags & AIPF_DISABLE_WEAPON_DAMAGE_SCALING) &&
 		!(Ship_info[Ships[target->instance].ship_info_index].flags2 & SIF2_DISABLE_WEAPON_DAMAGE_SCALING)
 	) {
-		ship *shipp;
 		ship_info *sip;
 
 		// get some info on the ship
@@ -6581,7 +6572,6 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		if((target->instance < 0) || (target->instance >= MAX_SHIPS)){
 			return total_scale;
 		}
-		shipp = &Ships[target->instance];
 		sip = &Ship_info[Ships[target->instance].ship_info_index];
 
 		// get hull pct of the ship currently

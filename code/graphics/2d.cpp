@@ -259,7 +259,7 @@ DCF(gr,"Changes graphics mode")
 		dc_printf( "The options can be:\n" );
 		dc_printf( "Macros:  A=software win32 window (obsolete)\n" );
 		dc_printf( "         B=software directdraw fullscreen (obsolete)\n" );
-		dc_printf( "         G=Glide\n" );
+		dc_printf( "         G=Glide (obsolete)\n" );
 		dc_printf( "         O=OpenGL\n" );
 		Dc_status = 0;	// don't print status if help is printed.  Too messy.
 	}

@@ -208,14 +208,14 @@ static struct {
 } Backgrounds[GR_NUM_RESOLUTIONS][NUM_TABS] = {
 //XSTR:OFF
 	{	// GR_640
-		{ "OptionsMain", "OptionsMain-M"},
-		{ "OptionsMulti", "OptionsMulti-M"},
-		{ "OptionsDetail", "OptionsDetail-M"},
+		{ "OptionsMain", "OptionsMain-M", -1, -1},
+		{ "OptionsMulti", "OptionsMulti-M", -1, -1},
+		{ "OptionsDetail", "OptionsDetail-M", -1, -1},
 	},
 	{	// GR_1024
-		{ "2_OptionsMain", "2_OptionsMain-M"},
-		{ "2_OptionsMulti", "2_OptionsMulti-M"},
-		{ "2_OptionsDetail", "2_OptionsDetail-M"},
+		{ "2_OptionsMain", "2_OptionsMain-M", -1, -1},
+		{ "2_OptionsMulti", "2_OptionsMulti-M", -1, -1},
+		{ "2_OptionsDetail", "2_OptionsDetail-M", -1, -1},
 	}
 //XSTR:ON
 };
@@ -1078,12 +1078,6 @@ void draw_gamma_box()
 		v = 0;
 	}
 
-	int Gamma_changed = 0;
-	if ( v != Gamma_last_set )	{
-		Gamma_changed = 1;
-	} else {
-		Gamma_changed = 0;
-	}
 	Gamma_last_set = v;
 
 	{

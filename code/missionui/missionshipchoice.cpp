@@ -819,8 +819,6 @@ void maybe_change_selected_ship(int offset)
 
 void maybe_change_selected_wing_ship(int wb_num, int ws_num)
 {
-	ss_slot_info	*ss_slot;
-
 	Assert(wb_num >= 0 && wb_num < MAX_WING_BLOCKS);
 	Assert(ws_num >= 0 && ws_num < MAX_WING_SLOTS);	
 	Assert( (Ss_wings != NULL) && (Wss_slots != NULL) );
@@ -829,7 +827,6 @@ void maybe_change_selected_wing_ship(int wb_num, int ws_num)
 		return;
 	}
 
-	ss_slot = &Ss_wings[wb_num].ss_slots[ws_num];
 	if ( Selected_ss_class != -1 && Selected_ss_class != Wss_slots[wb_num*MAX_WING_SLOTS+ws_num].ship_class ) {
 		Selected_ss_class = Wss_slots[wb_num*MAX_WING_SLOTS+ws_num].ship_class;
 		start_ship_animation(Selected_ss_class, 1);
@@ -1775,15 +1772,12 @@ void start_ship_animation(int ship_class, int play_sound)
 			mprintf(("Couldn't load model file %s in missionshipchoice.cpp\n", sip->pof_file));
 		}
 	} else {
-		ss_icon_info *ss_icon;
 		Assert( ship_class >= 0 );
 		Assert( Ss_icons != NULL );
 		
 		if (Ship_anim_class == ship_class) {
 			return;
 		}
-
-		ss_icon = &Ss_icons[ship_class];
 
 		//If there was a model loaded for the previous ship, unload it
 		if (ShipSelectModelNum >= 0 ) {
@@ -3233,7 +3227,7 @@ void ss_synch_interface()
 // exit: data changed flag
 int ss_swap_slot_slot(int from_slot, int to_slot, int *sound)
 {
-	int i, tmp, fwnum, fsnum, twnum, tsnum;
+	int i, tmp;
 
 	if ( from_slot == to_slot ) {
 		*sound=SND_ICON_DROP_ON_WING;
@@ -3245,12 +3239,6 @@ int ss_swap_slot_slot(int from_slot, int to_slot, int *sound)
 		*sound=SND_ICON_DROP;
 		return 0;
 	}
-
-	fwnum = from_slot/MAX_WING_SLOTS;
-	fsnum = from_slot%MAX_WING_SLOTS;
-
-	twnum = to_slot/MAX_WING_SLOTS;
-	tsnum = to_slot%MAX_WING_SLOTS;
 
 	// swap ship class
 	tmp = Wss_slots[from_slot].ship_class;
@@ -3275,7 +3263,7 @@ int ss_swap_slot_slot(int from_slot, int to_slot, int *sound)
 // exit: data changed flag
 int ss_dump_to_list(int from_slot, int to_list, int *sound)
 {
-	int i, fwnum, fsnum;
+	int i;
 	wss_unit	*slot;
 
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
@@ -3287,9 +3275,6 @@ int ss_dump_to_list(int from_slot, int to_list, int *sound)
 		*sound=SND_ICON_DROP;
 		return 0;
 	}
-
-	fwnum = from_slot/MAX_WING_SLOTS;
-	fsnum = from_slot%MAX_WING_SLOTS;
 
 	// put ship back in list
 	Ss_pool[to_list]++;		// return to list
@@ -3447,8 +3432,7 @@ void ss_drop(int from_slot,int from_list,int to_slot,int to_list,int player_inde
 // lock/unlock any necessary slots for multiplayer
 void ss_recalc_multiplayer_slots()
 {
-	int				i,j,objnum;
-	wing				*wp;
+	int				i,j;
 	ss_slot_info	*ss_slot;
 	ss_wing_info	*ss_wing;
 	
@@ -3468,14 +3452,8 @@ void ss_recalc_multiplayer_slots()
 			continue;
 		}
 
-		// NOTE : the method below will eventually have to change to account for all possible netgame options
-		
-		// get the wing pointer
-		wp = &Wings[ss_wing->wingnum];		
+		// NOTE : the method below will eventually have to change to account for all possible netgame options	
 		for ( j = 0; j < ss_wing->num_slots; j++ ) {				
-			// get the objnum of the ship in this slot
-			objnum = Ships[wp->ship_index[j]].objnum;
-
 			// get the slot pointer
 			ss_slot = &ss_wing->ss_slots[j];			
 			

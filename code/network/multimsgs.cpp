@@ -2060,7 +2060,7 @@ void send_netgame_update_packet(net_player *pl)
 // process information about the netgame sent from the server/host
 void process_netgame_update_packet( ubyte *data, header *hinfo )
 {
-	int offset,old_flags;	
+	int offset;	
 	int ng_state;
 		
 	Assert(!(Game_mode & GM_STANDALONE_SERVER));
@@ -2078,7 +2078,6 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 	GET_UINT(Netgame.respawn);		
 	
 	// be sure not to blast the quitting flag because of the "one frame extra" problem
-	old_flags = Netgame.flags;	
 	GET_INT(Netgame.flags);	
 	GET_INT(Netgame.type_flags);
 	GET_INT(Netgame.version_info);
@@ -3790,7 +3789,6 @@ void send_ingame_nak(int state, net_player *p)
 void process_ingame_nak(ubyte *data, header *hinfo)
 {
 	int offset,state,pid;	
-	net_player *pl;
 
 	offset = HEADER_LENGTH;
 	GET_INT(state);	
@@ -3800,7 +3798,6 @@ void process_ingame_nak(ubyte *data, header *hinfo)
 	if(pid < 0){
 		return;
 	}
-	pl = &Net_players[pid];
 	
 	switch(state){
 	case ACK_FILE_ACCEPTED :

@@ -39,35 +39,21 @@ static int Effect_num = 0;
 static float Anim_timer = 0.0f;
 
 
-/*
-struct opengl_shader_uniform_reference_t {
-	int flag;
-
-	int num_uniforms;
-	char* uniforms[MAX_SHADER_UNIFORMS];
-
-	int num_attributes;
-	char* attributes[MAX_SDR_ATTRIBUTES];
-
-	SCP_string name;
-};
-*/
-
 /**
  * Static lookup reference for main shader uniforms
  * When adding a new SDR_ flag, list all associated uniforms and attributes here
  */
 static opengl_shader_uniform_reference_t GL_Uniform_Reference_Main[] = {
-	{ SDR_FLAG_LIGHT,		1, {"n_lights"}, 0, {}, "Lighting" },
-	{ SDR_FLAG_FOG,			0, {}, 0, {}, "Fog Effect" },
-	{ SDR_FLAG_DIFFUSE_MAP, 1, {"sBasemap"}, 0, {}, "Diffuse Mapping"},
-	{ SDR_FLAG_GLOW_MAP,	1, {"sGlowmap"}, 0, {}, "Glow Mapping" },
-	{ SDR_FLAG_SPEC_MAP,	1, {"sSpecmap"}, 0, {}, "Specular Mapping" },
-	{ SDR_FLAG_NORMAL_MAP,	1, {"sNormalmap"}, 0, {}, "Normal Mapping" },
-	{ SDR_FLAG_HEIGHT_MAP,	1, {"sHeightmap"}, 0, {}, "Parallax Mapping" },
-	{ SDR_FLAG_ENV_MAP,		3, {"sEnvmap", "alpha_spec", "envMatrix"}, 0, {}, "Environment Mapping" },
-	{ SDR_FLAG_ANIMATED,	5, {"sFramebuffer", "effect_num", "anim_timer", "vpwidth", "vpheight"}, 0, {}, "Animated Effects" },
-	{ SDR_FLAG_MISC_MAP,	1, {"sMiscmap"}, 0, {}, "Utility mapping" }
+	{ SDR_FLAG_LIGHT,		1, {"n_lights"}, 0, { NULL }, "Lighting" },
+	{ SDR_FLAG_FOG,			0, { NULL }, 0, { NULL }, "Fog Effect" },
+	{ SDR_FLAG_DIFFUSE_MAP, 1, {"sBasemap"}, 0, { NULL }, "Diffuse Mapping"},
+	{ SDR_FLAG_GLOW_MAP,	1, {"sGlowmap"}, 0, { NULL }, "Glow Mapping" },
+	{ SDR_FLAG_SPEC_MAP,	1, {"sSpecmap"}, 0, { NULL }, "Specular Mapping" },
+	{ SDR_FLAG_NORMAL_MAP,	1, {"sNormalmap"}, 0, { NULL }, "Normal Mapping" },
+	{ SDR_FLAG_HEIGHT_MAP,	1, {"sHeightmap"}, 0, { NULL }, "Parallax Mapping" },
+	{ SDR_FLAG_ENV_MAP,		3, {"sEnvmap", "alpha_spec", "envMatrix"}, 0, { NULL }, "Environment Mapping" },
+	{ SDR_FLAG_ANIMATED,	5, {"sFramebuffer", "effect_num", "anim_timer", "vpwidth", "vpheight"}, 0, { NULL }, "Animated Effects" },
+	{ SDR_FLAG_MISC_MAP,	1, {"sMiscmap"}, 0, { NULL }, "Utility mapping" }
 };
 
 static const int Main_shader_flag_references = sizeof(GL_Uniform_Reference_Main) / sizeof(opengl_shader_uniform_reference_t);
@@ -332,17 +318,19 @@ void opengl_compile_main_shader(int flags) {
 	if (new_shader.flags & SDR_FLAG_SOFT_QUAD) {
 		for (int j = 0; j < Particle_shader_flag_references; j++) {
 			if (new_shader.flags == GL_Uniform_Reference_Particle[j].flag) {
+				int k;
+
 			// Equality check needed because the combination of SDR_FLAG_SOFT_QUAD and SDR_FLAG_DISTORTION define something very different
 			// than just SDR_FLAG_SOFT_QUAD alone
-				for (int k = 0; k < GL_Uniform_Reference_Particle[j].num_uniforms; k++) {
+				for (k = 0; k < GL_Uniform_Reference_Particle[j].num_uniforms; k++) {
 					opengl_shader_init_uniform( GL_Uniform_Reference_Particle[j].uniforms[k] );
 				}
 
-				for (int k = 0; k < GL_Uniform_Reference_Particle[j].num_attributes; k++) {
+				for (k = 0; k < GL_Uniform_Reference_Particle[j].num_attributes; k++) {
 					opengl_shader_init_attribute( GL_Uniform_Reference_Particle[j].attributes[k] );
 				}
 
-				mprintf(("   %s\n", GL_Uniform_Reference_Particle[j].name.c_str()));
+				mprintf(("   %s\n", GL_Uniform_Reference_Particle[j].name));
 			}
 		}
 	} else {
@@ -360,7 +348,7 @@ void opengl_compile_main_shader(int flags) {
 					}
 				}
 
-				mprintf(("   %s\n", GL_Uniform_Reference_Main[j].name.c_str()));
+				mprintf(("   %s\n", GL_Uniform_Reference_Main[j].name));
 			}
 		}
 	}

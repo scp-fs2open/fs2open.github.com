@@ -224,24 +224,6 @@ int Reticle_launch_coords[GR_NUM_RESOLUTIONS][2] = {
 static int Threat_lock_timer;				// timestamp for when to show next flashing frame for lock threat
 static int Threat_lock_frame;				// frame offset of current lock flashing warning
 
-// coordinates
-static int Max_speed_coords[GR_NUM_RESOLUTIONS][2] = 
-{
-	{ // GR_640
-		236, 254
-	}, 
-	{ // GR_1024
-		377, 406
-	}
-};
-static int Zero_speed_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		252, 303
-	},
-	{ // GR_1024
-		403, 485
-	}
-};
 
 HudGaugeReticle::HudGaugeReticle():
 HudGauge(HUD_OBJECT_CENTER_RETICLE, HUD_CENTER_RETICLE, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_TOPDOWN | VM_OTHER_SHIP), 255, 255, 255)

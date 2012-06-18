@@ -92,7 +92,10 @@ int shifted_ascii_table[128] =
   255,255,255,255,255,255,255,255 };
 
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
-static int Key_running_NT = 0;		// NT is the OS
+
+#ifdef _WIN32
+    static int Key_running_NT = 0;		// NT is the OS
+#endif
 
 int Cheats_enabled = 0;
 int Key_normal_game = 0;

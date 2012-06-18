@@ -557,15 +557,15 @@ SOURCE=..\..\code\GlobalIncs\AlphaColors.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\GlobalIncs\AlphaColors.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\globalincs\compatibility.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\globalincs\compatibility.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\GlobalIncs\AlphaColors.h
 # End Source File
 # Begin Source File
 

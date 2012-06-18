@@ -1373,7 +1373,6 @@ void psnet_rel_work()
 	static SOCKADDR rcv_addr;
 	int bytesin = 0;
 	int addrlen = sizeof(SOCKADDR);
-	unsigned int rcvid;//The id of who we actually received a packet from, as opposed to socketid parm
 	timeout.tv_sec=0;            
 	timeout.tv_usec=0;
 
@@ -1530,7 +1529,6 @@ void psnet_rel_work()
 				rsockaddr = (SOCKADDR_IN *)&Reliable_sockets[i].addr;
 				if(memcmp(&d3_rcv_addr,&Reliable_sockets[i].m_net_addr,sizeof(net_addr)) == 0){
 					rsocket=&Reliable_sockets[i];
-					rcvid = i;
 					break;
 				}				
 			}
@@ -1847,7 +1845,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 	int addrlen;
 	ubyte iaddr[6];
 	ushort port;
-	int name_length;
 	float time_sent_req = 0;
 	float first_sent_req = 0;
 	static reliable_header conn_header;
@@ -1928,7 +1925,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			memcpy(ipx_addr.sa_netnum, server_addr->net_id, 4);
 			ipx_addr.sa_socket = htons(port);
 			addr = (SOCKADDR *)&ipx_addr;
-			name_length = sizeof(ipx_addr);
 			if( SOCKET_ERROR == SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE) ){
 				ml_printf("Unable to send IPX packet in nw_ConnectToServer()! -- %d",WSAGetLastError());
 				return;
@@ -1945,7 +1941,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			memcpy(&sockaddr.sin_addr.s_addr, iaddr, 4);
 			sockaddr.sin_port = htons(port); 
 			addr = (SOCKADDR *)&sockaddr;
-			name_length = sizeof(sockaddr);
 			if( SOCKET_ERROR == SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE) ){
 				ml_printf("Unable to send UDP packet in nw_ConnectToServer()! -- %d",WSAGetLastError());
 				return;

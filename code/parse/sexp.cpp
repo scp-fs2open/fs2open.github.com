@@ -2576,7 +2576,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (*CTEXT(node) != '#') {  // not a manual source?
 					if ( stricmp(CTEXT(node), "<any wingman>"))  
 						if ( stricmp(CTEXT(node), "<none>") ) // not a special token?
-							if ((ship_name_lookup(CTEXT(node)) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
+							if ((ship_name_lookup(CTEXT(node), TRUE) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
 								if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
 									return SEXP_CHECK_INVALID_MSG_SOURCE;
 				}
@@ -9461,11 +9461,8 @@ void sexp_hud_clear_messages()
 
 		for(size_t i = 0; i < num_gauges; i++) {
 			if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getObjectType() == HUD_OBJECT_MESSAGES) {
-				HudGaugeMessages* gauge = dynamic_cast<HudGaugeMessages*>(Ship_info[Player_ship->ship_info_index].hud_gauges[i]);
-
-				if ( gauge != NULL) {
-					gauge->clearMessages();
-				}
+				HudGaugeMessages* gauge = static_cast<HudGaugeMessages*>(Ship_info[Player_ship->ship_info_index].hud_gauges[i]);
+				gauge->clearMessages();
 			}
 		}
 	} else {
@@ -9473,11 +9470,8 @@ void sexp_hud_clear_messages()
 
 		for(size_t i = 0; i < num_gauges; i++) {
 			if (default_hud_gauges[i]->getObjectType() == HUD_OBJECT_MESSAGES) {
-				HudGaugeMessages* gauge = dynamic_cast<HudGaugeMessages*>(default_hud_gauges[i]);
-				
-				if ( gauge != NULL) {
-					gauge->clearMessages();
-				}
+				HudGaugeMessages* gauge = static_cast<HudGaugeMessages*>(default_hud_gauges[i]);
+				gauge->clearMessages();
 			}
 		}
 	}
@@ -12365,7 +12359,6 @@ void multi_sexp_set_persona()
 int sexp_weapon_fired_delay(int node, int op_num)
 {
 	ship *shipp;
-	weapon_info * wip;
 	
 	int requested_bank; 
 	int delay;
@@ -12395,7 +12388,6 @@ int sexp_weapon_fired_delay(int node, int op_num)
 			if (requested_bank >= shipp->weapons.num_primary_banks) {
 				return SEXP_FALSE;
 			}
-			wip = &Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]];
 			last_fired = shipp->weapons.last_primary_fire_stamp[requested_bank];
 			break; 
 
@@ -12403,7 +12395,6 @@ int sexp_weapon_fired_delay(int node, int op_num)
 			if (requested_bank >= shipp->weapons.num_secondary_banks) {
 				return SEXP_FALSE;
 			}
-			wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]];
 			last_fired = shipp->weapons.last_secondary_fire_stamp[requested_bank];
 			break; 
 	}
@@ -17105,12 +17096,10 @@ void set_nav_needslink(int node)
 {
 	int n=node, i;
 	char *name;
-	bool skip;
 
 	while (n != -1)
 	{
 		name = CTEXT(n);
-		skip = false;
 
 		for (i = 0; i < MAX_SHIPS; i++)
 		{

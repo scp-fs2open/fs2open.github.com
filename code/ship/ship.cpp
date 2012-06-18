@@ -515,7 +515,6 @@ void parse_engine_wash(bool replace)
 	engine_wash_info ewt;
 	engine_wash_info *ewp;
 	bool create_if_not_found  = true;
-	bool first_time = true;
 
 	// name of engine wash info
 	required_string("$Name:");
@@ -542,7 +541,6 @@ void parse_engine_wash(bool replace)
 		{
 			Error(LOCATION, "Error:  Engine wash %s already exists.  All engine wash names must be unique.", ewt.name);
 		}
-		first_time = false;
 	}
 	else
 	{
@@ -9553,8 +9551,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	ai_info		*aip;
 	int			weapon, i, j, w, v, weapon_objnum;
 	int			bank_to_fire, num_fired = 0;	
-	int			banks_fired, have_timeout;				// used for multiplayer to help determine whether or not to send packet
-	have_timeout = 0;			// used to help tell us whether or not we need to send a packet
+	int			banks_fired;				// used for multiplayer to help determine whether or not to send packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
 	bool has_fired = false;		// used to determine whether we should fire the scripting hook
 	bool has_autoaim, has_converging_autoaim, needs_target_pos;	// used to flag weapon/ship as having autoaim
@@ -9711,7 +9708,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		// only non-multiplayer clients (single, multi-host) need to do timestamp checking
 		if ( !timestamp_elapsed(swp->next_primary_fire_stamp[bank_to_fire]) ) {
-			have_timeout = 1;
 			continue;
 		}
 
@@ -10547,7 +10543,7 @@ extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_i
 //                need to avoid firing when normally called
 int ship_fire_secondary( object *obj, int allow_swarm )
 {
-	int			n, weapon, j, bank, have_timeout, starting_bank_count = -1, num_fired;
+	int			n, weapon, j, bank, starting_bank_count = -1, num_fired;
 	ushort		starting_sig = 0;
 	ship			*shipp;
 	ship_weapon *swp;
@@ -10634,8 +10630,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 	wip = &Weapon_info[weapon];
 
-	have_timeout = 0;			// used to help tell whether or not we have a timeout
-
 	if ( MULTIPLAYER_MASTER ) {
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
 		starting_bank_count = swp->secondary_bank_ammo[bank];
@@ -10668,7 +10662,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		if (timestamp_until(swp->next_secondary_fire_stamp[bank]) > 60000){
 			swp->next_secondary_fire_stamp[bank] = timestamp(1000);
 		}
-		have_timeout = 1;
 		goto done_secondary;
 	}
 
@@ -13075,17 +13068,11 @@ void ship_assign_sound_all()
  */
 DCF(set_shield,"Change player ship shield strength")
 {
-	ship_info	*sip;
-	
-	sip = &Ship_info[Ships[Player_obj->instance].ship_info_index];
 	if ( Dc_command )	{
 		dc_get_arg(ARG_FLOAT|ARG_NONE);
 
 		if ( Dc_arg_type & ARG_FLOAT ) {
-			if ( Dc_arg_float < 0 ) 
-				Dc_arg_float = 0.0f;
-			if ( Dc_arg_float > 1.0 )
-				Dc_arg_float = 1.0f;
+            CLAMP(Dc_arg_float, 0.0f, 1.0f);
 			shield_set_strength(Player_obj, Dc_arg_float * Player_ship->ship_max_shield_strength);
 			dc_printf("Shields set to %.2f\n", shield_get_strength(Player_obj) );
 		}
@@ -13108,17 +13095,11 @@ DCF(set_shield,"Change player ship shield strength")
  */
 DCF(set_hull, "Change player ship hull strength")
 {
-	ship_info	*sip;
-	
-	sip = &Ship_info[Ships[Player_obj->instance].ship_info_index];
 	if ( Dc_command )	{
 		dc_get_arg(ARG_FLOAT|ARG_NONE);
 
 		if ( Dc_arg_type & ARG_FLOAT ) {
-			if ( Dc_arg_float < 0 ) 
-				Dc_arg_float = 0.0f;
-			if ( Dc_arg_float > 1.0 )
-				Dc_arg_float = 1.0f;
+			CLAMP(Dc_arg_float, 0.0f, 1.0f);
 			Player_obj->hull_strength = Dc_arg_float * Player_ship->ship_max_hull_strength;
 			dc_printf("Hull set to %.2f\n", Player_obj->hull_strength );
 		}
@@ -15851,7 +15832,6 @@ DCF(art, "")
 void ship_update_artillery_lock()
 {
 	ai_info *aip = NULL;
-	weapon_info *tlaser = NULL;
 	mc_info *cinfo = NULL;
 	int c_objnum;
 	vec3d temp, local_hit;
@@ -15894,8 +15874,7 @@ void ship_update_artillery_lock()
 		Assert((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags & WIF_BEAM) && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type == BEAM_TYPE_C));
 		if(!(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags & WIF_BEAM) || (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type != BEAM_TYPE_C)){
 			continue;
-		}
-		tlaser = &Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]];	
+		}	
 
 		// get collision info
 		if(!beam_get_collision(shipp->targeting_laser_objnum, 0, &c_objnum, &cinfo)){
@@ -17094,8 +17073,6 @@ void parse_ai_target_priorities()
 
 	required_string("$Name:");
 	ai_target_priority temp_priority = init_ai_target_priorities();
-	ai_target_priority *temp_priority_p;
-	temp_priority_p = &temp_priority;
 
 	stuff_string(temp_priority.name, F_NAME, NAME_LENGTH);
 	if (first_time == false) {

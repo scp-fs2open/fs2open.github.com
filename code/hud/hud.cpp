@@ -307,7 +307,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 	texture_target_fname[0] = '\0';
 
 	custom_name[0] = '\0';
-	custom_text.clear();
+	custom_text = "";
 	custom_frame.first_frame = -1;
 	custom_frame.num_frames = 0;
 	custom_frame_offset = 0;
@@ -341,8 +341,8 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 	texture_target_fname[0] = '\0';
 
 	custom_name[0] = '\0';
-	custom_text.clear();
-	default_text.clear();
+	custom_text = "";
+	default_text = "";
 	custom_frame.first_frame = -1;
 	custom_frame.num_frames = 0;
 	custom_frame_offset = 0;
@@ -382,8 +382,8 @@ disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), cus
 		custom_text = _custom_text;
 		default_text = _custom_text;
 	} else {
-		custom_text.clear();
-		default_text.clear();
+		custom_text = "";
+		default_text = "";
 	}
 
 	custom_frame.first_frame = -1;
@@ -1971,7 +1971,6 @@ void HudGaugeDamage::render(float frametime)
 {
 	model_subsystem	*psub;
 	ship_subsys			*pss;
-	ship_info			*sip;
 	int					sx, sy, bx, by, w, h, screen_integrity, num, best_str, best_index;
 	float					strength, shield, integrity;
 	char					buf[128];
@@ -1989,7 +1988,6 @@ void HudGaugeDamage::render(float frametime)
 		return;
 	}
 		
-	sip = &Ship_info[Player_ship->ship_info_index];
 	hud_get_target_strength(Player_obj, &shield, &integrity);
 	screen_integrity = fl2i(integrity*100);
 

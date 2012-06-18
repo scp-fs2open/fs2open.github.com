@@ -3132,7 +3132,6 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 void mission_parse_handle_late_arrivals(p_object *p_objp)
 {
 	ship_info *sip = NULL;
-	polymodel *pm = NULL;
 	model_subsystem *subsystems = NULL;
 
 	// only for objects which show up after the start of a mission
@@ -3149,8 +3148,6 @@ void mission_parse_handle_late_arrivals(p_object *p_objp)
 
 	// we need the model to process the texture set, so go ahead and load it now
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, subsystems);
-
-	pm = model_get(sip->model_num);
 }
 
 // Goober5000 - I split this because 1) it's clearer; and 2) initially multiple docked ships would have been
@@ -4247,11 +4244,10 @@ void parse_wing(mission *pm)
 	// into the sexpression array of each goal (max 10).  When a ship in this wing is created, each
 	// goal in the wings goal array is given to the ship.
 	if ( wing_goals != -1 ) {
-		int sexp, index;
+		int sexp;
 
 		// this will assign the goals to the wings as well as to any ships in the wing that have been
 		// already created.
-		index = 0;
 		for ( sexp = CDR(wing_goals); sexp != -1; sexp = CDR(sexp) )
 			ai_add_wing_goal_sexp(sexp, AIG_TYPE_EVENT_WING, wingnum);  // used by Fred
 
@@ -5418,7 +5414,7 @@ void post_process_mission()
 	// their SF_IGNORE_COUNT flag set.  We don't count ships in wings when the equivalent wing flag is set.
 	// in counting ships in wings, we increment the count by the wing's wave count to account for everyone.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		int siflags, num, shipnum;
+		int num, shipnum;
 
 		shipnum = Objects[so->objnum].instance;
 		// pass over non-ship objects and player ship objects
@@ -5429,7 +5425,6 @@ void post_process_mission()
 		if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_IGNORE_COUNT) )
 			continue;
 
-		siflags = Ship_info[Ships[shipnum].ship_info_index].flags;
 		num = 1;
 
 		ship_add_ship_type_count( Ships[shipnum].ship_info_index, num );
@@ -5438,15 +5433,13 @@ void post_process_mission()
 	// now go through the list of ships yet to arrive
 	for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
-		int siflags, num;
+		int num;
 
 		// go through similar motions as above
 		if ( p_objp->flags & P_SF_IGNORE_COUNT )
 			continue;
 		if ( (p_objp->wingnum != -1) && (Wings[p_objp->wingnum].flags & WF_IGNORE_COUNT) )
 			continue;
-
-		siflags = Ship_info[p_objp->ship_class].flags;
 
 		if ( p_objp->wingnum == -1 )
 			num = 1;

@@ -1148,10 +1148,8 @@ void asteroid_render(object * obj)
 {
 	if (Asteroids_enabled) {
 		int			num;
-		polymodel	*pm;
 		asteroid		*asp;
 
-		pm = NULL;	
 		num = obj->instance;
 
 		Assert((num >= 0) && (num < MAX_ASTEROIDS));

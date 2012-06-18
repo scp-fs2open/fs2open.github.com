@@ -1441,7 +1441,6 @@ void obj_move_all(float frametime)
 		// changes in banking so that rotated bitmaps look correct.
 		// This is used by the g3_draw_rotated_bitmap function.
 		extern physics_info *Viewer_physics_info;
-		extern int Physics_viewer_direction;
 		if ( &objp->phys_info == Viewer_physics_info )	{
 			vec3d tangles_r;
 			vm_vec_unrotate(&tangles_r, &tangles, &Eye_matrix);

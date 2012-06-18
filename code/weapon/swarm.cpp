@@ -519,7 +519,7 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 	ship_subsys *subsys;
 	turret_swarm_info *tsi;
 	object *parent_obj, *target_obj;
-	int target_objnum, num_turret_swarm_turrets_left;
+	int num_turret_swarm_turrets_left;
 	int k, j;
 	weapon_info *wip;
 
@@ -561,13 +561,10 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 						Assert(tsi->num_to_launch > 0);
 	
 						// check target still alive
-						target_objnum = -1;
 						if (tsi->target_objnum > -1) {
 							target_obj= &Objects[tsi->target_objnum];
 
-							if (target_obj->signature == tsi->target_sig) {
-								target_objnum = tsi->target_objnum;
-							} else {
+							if (target_obj->signature != tsi->target_sig) {
 								// poor target, it died
 								tsi->target_objnum = -1;
 							}
@@ -630,7 +627,7 @@ void turret_swarm_check_validity()
 {
 	int i;
 	turret_swarm_info *tswarmp;
-	object *ship_obj;
+	object *ship_objp;
 
 	if (timestamp_elapsed(Turret_swarm_validity_next_check_time)) {
 
@@ -642,9 +639,9 @@ void turret_swarm_check_validity()
 			tswarmp = &Turret_swarm_info[i];
 
 			if (tswarmp->flags & SWARM_USED) {
-				ship_obj = &Objects[tswarmp->parent_objnum];
-				if (ship_obj->type == OBJ_SHIP) {
-					if (ship_obj->signature == tswarmp->parent_sig) {
+				ship_objp = &Objects[tswarmp->parent_objnum];
+				if (ship_objp->type == OBJ_SHIP) {
+					if (ship_objp->signature == tswarmp->parent_sig) {
 						continue;
 					}
 				}

@@ -38,7 +38,8 @@ struct opengl_shader_uniform_reference_t {
 
 	int num_attributes;
 	char* attributes[MAX_SDR_ATTRIBUTES];
-	SCP_string name;
+
+	const char* name;
 };
 
 typedef struct opengl_shader_uniform_t {
