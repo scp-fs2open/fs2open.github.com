@@ -2479,7 +2479,7 @@ int button_function(int n)
 
 		case ESCORT_CLEAR:
 			control_used(ESCORT_CLEAR);
-			hud_escort_clear_all();
+			hud_escort_clear_all(true);
 			break;
 
 		case TARGET_NEXT_ESCORT_SHIP:
