@@ -909,6 +909,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_HARMLESS				(SIF_CARGO | SIF_NAVBUOY | SIF_ESCAPEPOD)		// AL 12-3-97: ships that are not a threat
 // for ships of this type, we make beam weapons miss a little bit otherwise they'd be way too powerful
 #define	SIF_BEAM_JITTER			(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_SENTRYGUN | SIF_NAVBUOY | SIF_ESCAPEPOD)
+// these ships avoid shockwaves
+// (the weird thing is that freighters and transports used to be explicitly allowed in one part of the code but then explicitly disallowed in another)
+#define SIF_AVOID_SHOCKWAVE		SIF_SMALL_SHIP
 
 // masks for preventing only non flag entry SIF flags from being cleared
 #define SIF_MASK				SIF_AFTERBURNER
