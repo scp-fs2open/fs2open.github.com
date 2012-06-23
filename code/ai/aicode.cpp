@@ -13123,7 +13123,8 @@ void ai_announce_ship_dying(object *dying_objp)
 			object	*A = &Objects[so->objnum];
 			Assert(A->type == OBJ_SHIP);
 
-			if (Ship_info[Ships[A->instance].ship_info_index].flags & (SIF_SMALL_SHIP | SIF_FREIGHTER | SIF_TRANSPORT)) {
+			// Goober5000 - the disallow is now handled uniformly in the ai_avoid_shockwave function
+			/*if (Ship_info[Ships[A->instance].ship_info_index].flags & (SIF_SMALL_SHIP | SIF_FREIGHTER | SIF_TRANSPORT))*/ {
 				ai_info	*aip = &Ai_info[Ships[A->instance].ai_index];
 
 				// AL 1-5-98: only avoid shockwave if not docked or repairing
@@ -13322,7 +13323,8 @@ int ai_avoid_shockwave(object *objp, ai_info *aip)
 	vec3d	safe_pos;
 
 	// BIG|HUGE do not respond to shockwaves
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
+	// Goober5000 - let's treat shockwave response the same way whether from weapon or ship
+	if (!(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_AVOID_SHOCKWAVE))) {
 		// don't come here again
 		aip->ai_flags &= ~AIF_AVOID_SHOCKWAVE;
 		return 0;
