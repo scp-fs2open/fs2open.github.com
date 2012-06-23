@@ -3062,7 +3062,19 @@ int get_sexp(char *token)
 			int len = strcspn(Mp + 1, "\"");
 			
 			Assert(Mp[len + 1] == '\"');    // hit EOF first (unterminated string)
-			Assertion(len < TOKEN_LENGTH, "Token %s is too long. Needs to be shorter than 31 characters.", Mp);  // token is too long.
+
+			if(len >= TOKEN_LENGTH)
+			{
+				char * errortoken = new char[len+1];
+				memset(errortoken, 0, len+1);
+				strncpy(errortoken, Mp, len);
+				char * message = new char[95 + len]; // 95 approximate fixed string length.
+				memset(message, 0, 95 + len);
+				sprintf(message, "Token %s is too long. Needs to be shorter than 31 characters and will be truncated to fit.", errortoken);
+				MessageBox(NULL,message,NULL,MB_OK); // token is too long.
+				delete errortoken;
+				delete message;
+			}
 
 			// check if string variable
 			if ( *(Mp + 1) == SEXP_VARIABLE_CHAR ) {
@@ -3072,14 +3084,14 @@ int get_sexp(char *token)
 				Assert(length < 2*TOKEN_LENGTH+2);
 
 				// start copying after skipping 1st char
-				strncpy(token, Mp + 2, length);
-				token[length] = 0;
+				strncpy(token, Mp + 2, TOKEN_LENGTH);
+				token[TOKEN_LENGTH-1] = 0;
 
 				get_sexp_text_for_variable(variable_text, token);
 				node = alloc_sexp(variable_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
 			} else {
-				strncpy(token, Mp + 1, len);
-				token[len] = 0;
+				strncpy(token, Mp + 1, TOKEN_LENGTH);
+				token[TOKEN_LENGTH-1] = 0;
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			}
 
