@@ -97,7 +97,7 @@ typedef struct mission_event {
 	char	*objective_text;
 	char	*objective_key_text;
 	int	count;					// object count for directive display
-	int	satisfied_time;
+	int	satisfied_time;			// this is used to temporarily mark the directive as satisfied when the event isn't (e.g. for a destroyed wave when there are more waves later)
 	int	born_on_date;			// timestamp at which event was born
 	int	team;						// for multiplayer games
 } mission_event;
