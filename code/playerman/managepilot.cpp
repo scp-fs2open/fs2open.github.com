@@ -239,7 +239,10 @@ void pilot_set_start_campaign(player* p)
 		incr /= 2;
 	}
 
-	strcpy_s(p->current_campaign, campaign_file_list[0]);
+	if (rc > 0)
+		strcpy_s(p->current_campaign, campaign_file_list[0]);
+	else
+		strcpy_s(p->current_campaign, "<none>");
 
 }
 
