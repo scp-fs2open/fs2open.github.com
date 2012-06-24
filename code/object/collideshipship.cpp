@@ -266,6 +266,12 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 				// turn on submodel for collision test
 				pmi->submodel[*smv].collision_checked = false;
 
+				if (pmi->submodel[*smv].blown_off)
+				{
+					pmi->submodel[*smv].collision_checked = true;
+					continue;
+				}
+
 				// set angles for last frame
 				angles copy_angles = pmi->submodel[*smv].angs;
 
