@@ -3074,6 +3074,7 @@ int get_sexp(char *token)
 				MessageBox(NULL,message,NULL,MB_OK); // token is too long.
 				delete errortoken;
 				delete message;
+				len = TOKEN_LENGTH;
 			}
 
 			// check if string variable
@@ -3084,14 +3085,14 @@ int get_sexp(char *token)
 				Assert(length < 2*TOKEN_LENGTH+2);
 
 				// start copying after skipping 1st char
-				strncpy(token, Mp + 2, TOKEN_LENGTH);
-				token[TOKEN_LENGTH-1] = 0;
+				strncpy(token, Mp + 2, length);
+				token[length] = 0;
 
 				get_sexp_text_for_variable(variable_text, token);
 				node = alloc_sexp(variable_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
 			} else {
-				strncpy(token, Mp + 1, TOKEN_LENGTH);
-				token[TOKEN_LENGTH-1] = 0;
+				strncpy(token, Mp + 1, len);
+				token[len] = 0;
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			}
 
