@@ -36,59 +36,60 @@
 
 
 int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES]; 
-// here is a text list of the builtin message names.  These names are used to match against
-// names read in for builtin message radio bits to see what message to play.  These are
-// generic names, meaning that there will be the same message type for a number of different
-// personas
-char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES] =
+// here is the list of the builtin message names and the settings which control how frequently
+// they are heard.  These names are used to match against names read in for builtin message 
+// radio bits to see what message to play.  
+// These are generic names, meaning that there will be the same message type for a 
+// number of different personas
+builtin_message Builtin_messages[] =
 {
 //XSTR:OFF
-	"Arrive Enemy",
-	"Attack Target",
-	"Beta Arrived",
-	"Check 6",
-	"Engage",
-	"Gamma Arrived",
-	"Help",
-	"Praise",
-	"Backup",
-	"Ignore Target",
-	"No",
-	"Oops 1",
-	"Permission",			// AL: no code support yet
-	"Stray",					// DA: no code support
-	"Depart",
-	"yes",
-	"Rearm on Way",
-	"On way",
-	"Rearm warping in",
-	"No Target",
-	"Docking Start",		// AL: no message seems to exist for this
-	"Repair Done",
-	"Repair Aborted",
-	"Traitor",
-	"Rearm",
-	"Disable Target",
-	"Disarm Target",
-	"Player Dead",
-	"Death",
-	"Support Killed",
-	"All Clear",			// DA: no code support
-	"All Alone",
-	"Repair",
-	"Delta Arrived",
-	"Epsilon Arrived",
-	"Instructor Hit",
-	"Instructor Attack",
-	"Stray Warning",
-	"Stray Warning Final",
-	"AWACS at 75",
-	"AWACS at 25",
-	"Praise Self", 
-	"High Praise",
-	"Rearm Primaries",
-	"Primaries Low",
-//XSTR:ON
+	{"Arrive Enemy",			100,	-1,		0}, 
+	{"Attack Target",			100,	-1,		0}, 
+	{"Beta Arrived",			100,	-1,		0}, 
+	{"Check 6",					100,	2,		6000}, 
+	{"Engage",					100,	-1,		0}, 
+	{"Gamma Arrived",			100,	-1,		0}, 
+	{"Help",					100,	10,		60000}, 
+	{"Praise",					100,	10,		60000}, 
+	{"Backup",					100,	-1,		0}, 
+	{"Ignore Target",			100,	-1,		0}, 
+	{"No",						100,	-1,		0}, 
+	{"Oops 1",					100,	-1,		0}, 
+	{"Permission",				100,	-1,		0}, 		// AL: no code support yet
+	{"Stray",					100,	-1,		0}, 			// DA: no code support
+	{"Depart",					100,	-1,		0}, 
+	{"yes",						100,	-1,		0}, 
+	{"Rearm on Way",			100,	-1,		0}, 
+	{"On way",					100,	-1,		0}, 
+	{"Rearm warping in",		100,	-1,		0}, 
+	{"No Target",				100,	-1,		0}, 
+	{"Docking Start",			100,	-1,		0}, 		// AL: no message seems to exist for this
+	{"Repair Done",				100,	-1,		0}, 
+	{"Repair Aborted",			100,	-1,		0}, 
+	{"Traitor",					100,	-1,		0}, 
+	{"Rearm",					100,	-1,		0}, 
+	{"Disable Target",			100,	-1,		0}, 
+	{"Disarm Target",			100,	-1,		0}, 
+	{"Player Dead",				100,	-1,		0}, 
+	{"Death",					50,		10,		60000}, 
+	{"Support Killed",			100,	-1,		0}, 
+	{"All Clear",				100,	-1,		0}, 			// DA: no code support
+	{"All Alone",				100,	-1,		0}, 
+	{"Repair",					100,	-1,		0}, 
+	{"Delta Arrived",			100,	-1,		0}, 
+	{"Epsilon Arrived",			100,	-1,		0}, 
+	{"Instructor Hit",			100,	-1,		0}, 
+	{"Instructor Attack",		100,	-1,		0}, 
+	{"Stray Warning",			100,	-1,		0}, 
+	{"Stray Warning Final",		100,	-1,		0}, 
+	{"AWACS at 75",				100,	-1,		0}, 
+	{"AWACS at 25",				100,	-1,		0}, 
+	{"Praise Self",				10,		4,		60000}, 
+	{"High Praise",				100,	-1,		0}, 
+	{"Rearm Primaries",			100,	-1,		0}, 
+	{"Primaries Low",			100,	-1,		0}, 
+	//XSTR:ON
 };
 
 SCP_vector<MMessage> Messages;
@@ -178,8 +179,6 @@ char *Persona_type_names[MAX_PERSONA_TYPES] =
 };
 
 int Default_command_persona;
-int Praise_self_percentage;
-
 
 // Goober5000
 // NOTE - these are truncated filenames, i.e. without extensions
@@ -421,6 +420,49 @@ void message_parse(bool importing_from_fsm)
 	Messages.push_back(msg); 
 }
 
+void message_frequency_parse()
+{
+	char name[32];
+	int i, max_count, min_delay, occurrence_chance;  
+	int builtin_type = -1; 
+
+	required_string("$Name:");
+	stuff_string(name, F_NAME, NAME_LENGTH);
+
+	for (i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
+		if (!strcmp(name, Builtin_messages[i].name)) {
+			builtin_type = i;
+			break;
+		}
+	}
+
+	if (builtin_type == -1) {
+		Warning(LOCATION, "Unknown Builtin Message Type Detected. Type : %s not supported", name);
+		return;
+	}
+
+	if (optional_string("+Occurrence Chance:")) {
+		stuff_int(&occurrence_chance); 
+		if ((occurrence_chance >= 0) && (occurrence_chance <= 100)) {
+			Builtin_messages[builtin_type].occurrence_chance = occurrence_chance;
+		}
+	}
+
+	if (optional_string("+Maximum Count:")) {
+		stuff_int(&max_count); 
+		if (max_count > -2) {
+			Builtin_messages[builtin_type].max_count = max_count;
+		}
+	}
+
+	if (optional_string("+Minimum Delay:")) {
+		stuff_int(&min_delay); 
+		if (min_delay > -1) {
+			Builtin_messages[builtin_type].min_delay = min_delay;
+		}
+	}	
+}
+
 void parse_msgtbl()
 {
 	int i, j;
@@ -454,7 +496,13 @@ void parse_msgtbl()
 		}
 	}
 
-	// Goober5000 - now we can start parsing
+	// now we can start parsing
+	if (optional_string("#Message Frequencies")) {
+		while ( required_string_either("#Personas", "$Name:")) {
+			message_frequency_parse();
+		}
+	}	
+
 	required_string("#Personas");
 	while ( required_string_either("#Messages", "$Persona:")){
 		persona_parse();
@@ -477,7 +525,7 @@ void parse_msgtbl()
 	// now cycle through the messages to determine which type of builtins we have messages for
 	for (i = 0; i < Num_builtin_messages; i++) {
 		for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {
-			if (!(stricmp(Messages[i].name, Builtin_message_types[j]))) {
+			if (!(stricmp(Messages[i].name, Builtin_messages[j].name))) {
 				Valid_builtin_message_types[j] = 1; 
 				break;
 			}
@@ -1849,7 +1897,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}
 
-	char *name = Builtin_message_types[type];
+	char *name = Builtin_messages[type].name;
 
 	if (persona_index >= 0) {
 		persona_species = Personas[persona_index].species;
@@ -1892,10 +1940,10 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	}
 
 	if (best_match == BUILTIN_MATCHES_SPECIES) {
-		nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
+		nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
 		nprintf(("messaging", "using a message for any persona of that species\n"));
 	} else if (best_match == BUILTIN_MATCHES_TYPE) {
-		nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
+		nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
 		nprintf(("messaging", "looking for message for any persona of any species\n"));
 	} else if (best_match < 0) {
 		nprintf(("messaging", "Couldn't find any builtin message of type %d\n", type ));

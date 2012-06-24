@@ -55,10 +55,17 @@ extern SCP_vector<message_extra> Message_waves;
 // defines for message id's used in FreeSpace code.  Callers to message_send_to_player() should
 // probably use these defines.
 
+typedef struct builtin_message {
+	char			*name;
+	int				occurrence_chance;
+	int				max_count;
+	int				min_delay;
+} builtin_message;
+
 // this number in this define should match the number of elements in the next array
 #define MAX_BUILTIN_MESSAGE_TYPES	45
 
-extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
+extern builtin_message Builtin_messages[];
 
 #define MESSAGE_ARRIVE_ENEMY		0
 #define MESSAGE_ATTACK_TARGET		1
