@@ -1495,14 +1495,17 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		light_rotate_all();
 	}
 
+	Glowpoint_override = true;
 	model_clear_instance(model_id);
 	model_render(model_id, &object_orient, &vmd_zero_vector, flags, -1, -1);
+	Glowpoint_override = false;
 
 	if (!Cmdline_nohtl) 
 	{
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 	}
+
 
 	g3_end_frame();
 	gr_reset_clip();
@@ -1670,6 +1673,9 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		}
 
 		gr_zbuffer_set(GR_ZBUFF_FULL); // Turn of depthbuffer again
+
+		batch_render_all();
+
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 		g3_end_frame();
@@ -1726,6 +1732,8 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		} else {
 			model_render(model_id, &model_orient, &vmd_zero_vector, flags);
 		}
+
+		batch_render_all();
 
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
