@@ -6548,7 +6548,7 @@ void mission_eval_arrivals()
 					// see if this wing has an arrival message associated with it
 					for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++)
 					{
-						if (!stricmp(message_name, Builtin_message_types[j]))
+						if (!stricmp(message_name, Builtin_messages[j].name))
 						{
 							message_send_builtin_to_player(j, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 							break;

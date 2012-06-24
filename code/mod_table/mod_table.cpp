@@ -72,13 +72,6 @@ void parse_mod_table(char *filename)
 	}
 
 	optional_string("#OTHER SETTINGS"); 
-	if (optional_string("$Self Praise Percentage:")) { 
-		stuff_int(&Praise_self_percentage);
-		if (Praise_self_percentage < 0 || Praise_self_percentage > 100) {
-			Warning(LOCATION, "Game_settings.tbl - $Self Praise Percentage must be between 0 and 100. Setting to 100");
-			Praise_self_percentage = 100;
-		}
-	}
 
 	if (optional_string("$Fixed Turret Collisions:")) { 
 		stuff_boolean(&Fixed_turret_collisions);

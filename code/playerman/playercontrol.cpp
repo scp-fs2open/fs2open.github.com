@@ -1242,6 +1242,9 @@ void player_level_init()
 	Player->low_ammo_complaint_count = 0;	// number of complaints about low ammo received in this mission
 	Player->allow_ammo_timestamp = 1;		// timestamp until next 'Ammo low' message can be played
 
+	Player->praise_self_count = 0;			// number of boasts about kills received in this mission
+	Player->praise_self_timestamp = 1;		// timestamp marking time until next boast is allowed
+
 	Player->request_repair_timestamp = 1;	// timestamp until next 'requesting repair sir' message can be played
 
 	Player->repair_sound_loop = -1;
@@ -1343,9 +1346,6 @@ void player_stop_cargo_scan_sound()
 	}
 }
 
-
-#define PLAYER_ALLOW_PRAISE_INTERVAL	60000		// minimum time between praises
-
 /**
  * @brief See if there is a praise message to deliver to the player.  We want to delay the praise messages
  * a bit, to make them more realistic
@@ -1373,7 +1373,7 @@ int player_process_pending_praise()
 				else {
 					message_send_builtin_to_player(MESSAGE_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				}
-				Player->allow_praise_timestamp = timestamp(PLAYER_ALLOW_PRAISE_INTERVAL*(Game_skill_level+1) );
+				Player->allow_praise_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE].min_delay * (Game_skill_level+1) );
 				Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise
 				Player->praise_count++;
 				return 1;

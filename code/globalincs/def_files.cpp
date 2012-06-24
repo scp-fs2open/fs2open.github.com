@@ -123,9 +123,6 @@ $Loop SEXPs Then Arguments:	NO											\n\
 																		\n\
 #OTHER SETTINGS															\n\
 																		\n\
-;; The percentage chance that a pilot will brag about his kills			\n\
-$Self Praise Percentage: 10												\n\
-																		\n\
 #END																	\n\
 ";
 
