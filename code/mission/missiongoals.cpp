@@ -892,9 +892,13 @@ void mission_process_event( int event )
 	// if chained, insure that previous event is true and next event is false
 	if (Mission_events[event].chain_delay >= 0) {  // this indicates it's chained
 		if (event > 0){
-			if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].satisfied_time + i2f(Mission_events[event].chain_delay) > Missiontime)){
+			if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].timestamp + i2f(Mission_events[event].chain_delay) > Missiontime)){
 				sindex = -1;  // bypass evaluation
 			}
+		}
+
+		if ((event < Num_mission_events - 1) && Mission_events[event + 1].result && (Mission_events[event + 1].chain_delay >= 0)){
+			sindex = -1;  // bypass evaluation
 		}
 	}
 

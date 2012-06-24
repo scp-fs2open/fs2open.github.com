@@ -2708,7 +2708,7 @@ int button_function(int n)
 			break;
 
 		case ESCORT_CLEAR:
-			hud_escort_clear_all();
+			hud_escort_clear_all(true);
 			break;
 
 		case TARGET_NEXT_ESCORT_SHIP:

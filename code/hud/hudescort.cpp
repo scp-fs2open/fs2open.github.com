@@ -464,12 +464,15 @@ void hud_escort_init()
 // ----------------------------------------------------------------------
 // hud_escort_clear_all()
 //
-void hud_escort_clear_all()
+void hud_escort_clear_all(bool clear_flags)
 {
 	int i;
 
 	Num_escort_ships = 0;
 	for ( i = 0; i < Max_escort_ships; i++ ) {
+		if(clear_flags && (Escort_ships[i].objnum >= 0) && (Objects[Escort_ships[i].objnum].type == OBJ_SHIP) && (Objects[Escort_ships[i].objnum].instance >= 0)){
+			Ships[Objects[Escort_ships[i].objnum].instance].flags &= ~SF_ESCORT;
+		}
 		Escort_ships[i].obj_signature = -99;
 		Escort_ships[i].np_id = -1;
 		shield_info_reset(&Escort_ships[i].hit_info);

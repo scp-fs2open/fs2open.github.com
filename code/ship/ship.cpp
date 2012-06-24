@@ -14224,9 +14224,7 @@ next_cargo:
 //
 // NOTE: there are no filters on enemy_sp, so it could be any ship type
 //
-#define PLAYER_ALLOW_WARN_INTERVAL		60000		// minimum time between warnings
 #define PLAYER_CHECK_WARN_INTERVAL		300		// how often we check for warnings
-#define PLAYER_MAX_WARNINGS				2			// max number of warnings player can receive in a mission
 #define PLAYER_MIN_WARN_DIST				100		// minimum distance attacking ship can be from player and still allow warning
 #define PLAYER_MAX_WARN_DIST				1000		// maximum distance attacking ship can be from plyaer and still allow warning
 
@@ -14237,7 +14235,7 @@ void ship_maybe_warn_player(ship *enemy_sp, float dist)
 	int		msg_type; //, on_right;
 
 	// First check if the player has reached the maximum number of warnings for a mission
-	if ( Player->warn_count >= PLAYER_MAX_WARNINGS ) {
+	if ((Builtin_messages[MESSAGE_CHECK_6].max_count > -1) && ( Player->warn_count >= Builtin_messages[MESSAGE_CHECK_6].max_count )) {
 		return;
 	}
 
@@ -14298,14 +14296,13 @@ void ship_maybe_warn_player(ship *enemy_sp, float dist)
 			} else {
 				message_send_builtin_to_player(msg_type, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
 			}
-			Player->allow_warn_timestamp = timestamp(PLAYER_ALLOW_WARN_INTERVAL);
+			Player->allow_warn_timestamp = timestamp(Builtin_messages[MESSAGE_CHECK_6].min_delay);
 			Player->warn_count++;
 		}
 	}
 }
 
 // player has just killed a ship, maybe offer send a 'good job' message
-#define PLAYER_MAX_PRAISES					10			// max number of praises player can receive in a mission
 void ship_maybe_praise_player(ship *deader_sp)
 {
 	if ( myrand()&1 ) {
@@ -14313,7 +14310,7 @@ void ship_maybe_praise_player(ship *deader_sp)
 	}
 
 	// First check if the player has reached the maximum number of praises for a mission
-	if ( Player->praise_count >= PLAYER_MAX_PRAISES ) {
+	if ((Builtin_messages[MESSAGE_PRAISE].max_count > -1) && (Player->praise_count >= Builtin_messages[MESSAGE_PRAISE].max_count )) {
 		return;
 	}
 
@@ -14351,11 +14348,19 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	int j; 
 	bool wingman = false;
 
-	if ( (int)(frand()*100) > Praise_self_percentage ) {
+	if ( (int)(frand()*100) > Builtin_messages[MESSAGE_PRAISE_SELF].occurrence_chance ) {
 		return;
 	}
 
 	if (Game_mode & GM_MULTIPLAYER) {
+		return;
+	}
+
+	if ((Builtin_messages[MESSAGE_PRAISE_SELF].max_count) && (Player->praise_self_count > Builtin_messages[MESSAGE_PRAISE_SELF].max_count)) {
+		return;
+	}
+
+	if (timestamp_elapsed(Player->praise_self_timestamp)) {
 		return;
 	}
 
@@ -14391,11 +14396,10 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	}
 
 	message_send_builtin_to_player(MESSAGE_PRAISE_SELF, killer_sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
-				
+	Player->praise_self_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE_SELF].min_delay);
+	Player->praise_self_count++;			
 }
 
-#define PLAYER_ASK_HELP_INTERVAL			60000		// minimum time between praises
-#define PLAYER_MAX_ASK_HELP				10			// max number of warnings player can receive in a mission
 #define ASK_HELP_SHIELD_PERCENT			0.1		// percent shields at which ship will ask for help
 #define ASK_HELP_HULL_PERCENT				0.3		// percent hull at which ship will ask for help
 #define AWACS_HELP_HULL_HI					0.75		// percent hull at which ship will ask for help
@@ -14429,7 +14433,7 @@ void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 
 	if (message >= 0) {
 		message_send_builtin_to_player(message, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
-		Player->allow_ask_help_timestamp = timestamp(PLAYER_ASK_HELP_INTERVAL);
+		Player->allow_ask_help_timestamp = timestamp(Builtin_messages[MESSAGE_HELP].min_delay);
 		Player->ask_help_count++;
 	}
 }
@@ -14441,7 +14445,7 @@ void ship_maybe_ask_for_help(ship *sp)
 	int multi_team_filter = -1;
 
 	// First check if the player has reached the maximum number of ask_help's for a mission
-	if (Player->ask_help_count >= PLAYER_MAX_ASK_HELP)
+	if ((Builtin_messages[MESSAGE_HELP].max_count > -1) && (Player->ask_help_count >= Builtin_messages[MESSAGE_HELP].max_count))
 		return;
 
 	// Check if enough time has elapsed since last help request, if not - leave
@@ -14492,7 +14496,7 @@ play_ask_help:
 	if (!(sp->flags2 & SF2_NO_BUILTIN_MESSAGES)) // Karajorma - Only unsilenced ships should ask for help
 	{
 	message_send_builtin_to_player(MESSAGE_HELP, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
-	Player->allow_ask_help_timestamp = timestamp(PLAYER_ASK_HELP_INTERVAL);
+	Player->allow_ask_help_timestamp = timestamp(Builtin_messages[MESSAGE_HELP].min_delay);
 
 	// prevent overlap with death message
 	if (timestamp_until(Player->allow_scream_timestamp) < 15000)
@@ -14521,9 +14525,6 @@ void ship_maybe_lament()
 	}
 }
 
-#define PLAYER_SCREAM_INTERVAL		60000
-#define PLAYER_MAX_SCREAMS				10
-
 /**
  * Play a death scream for a ship
  */
@@ -14546,7 +14547,7 @@ void ship_scream(ship *sp)
 	}
 
 	message_send_builtin_to_player(MESSAGE_WINGMAN_SCREAM, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
-	Player->allow_scream_timestamp = timestamp(PLAYER_SCREAM_INTERVAL);
+	Player->allow_scream_timestamp = timestamp(Builtin_messages[MESSAGE_WINGMAN_SCREAM].min_delay);
 	Player->scream_count++;
 
 	sp->flags |= SF_SHIP_HAS_SCREAMED;
@@ -14568,9 +14569,10 @@ void ship_maybe_scream(ship *sp)
 	// if screaming is enabled, skip all checks
 	if (!(sp->flags2 & SF2_ALWAYS_DEATH_SCREAM))
 	{
-		// only scream 50% of the time
-		if (rand() & 1)
+		// only scream x% of the time 
+		if ( (int)(frand()*100) > Builtin_messages[MESSAGE_WINGMAN_SCREAM].occurrence_chance ) {
 			return;
+		}
 
 		// check if enough time has elapsed since last scream; if not, leave
 		if (!timestamp_elapsed(Player->allow_scream_timestamp))
@@ -14584,8 +14586,9 @@ void ship_maybe_scream(ship *sp)
 				return;
 
 			// first check if the player has reached the maximum number of screams for a mission
-			if (Player->scream_count >= PLAYER_MAX_SCREAMS)
+			if ((Builtin_messages[MESSAGE_WINGMAN_SCREAM].max_count > -1) && (Player->scream_count >= Builtin_messages[MESSAGE_WINGMAN_SCREAM].max_count)) {
 				return;
+			}
 
 			// if on different teams (i.e. team v. team games in multiplayer), no scream
 			if (Player_ship->team != sp->team)

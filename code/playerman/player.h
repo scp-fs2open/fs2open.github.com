@@ -146,7 +146,7 @@ typedef struct player {
 	int				allow_praise_timestamp;					// timestamp marking time until next praise is allowed
 	int				praise_delay_timestamp;					// timestamp used to delay a praise by a second or two
 
-	int				ask_help_count;							// number of praises received this mission
+	int				ask_help_count;							// number of times wingmen have asked for help this mission
 	int				allow_ask_help_timestamp;				// timestamp marking time until next 'ask help' is allowed
 
 	int				scream_count;								// number of wingman screams received this mission
@@ -154,6 +154,9 @@ typedef struct player {
 
 	int				low_ammo_complaint_count;							// number of complaints about low ammo received in this mission
 	int				allow_ammo_timestamp;					// timestamp marking time until next 'low ammo' complaint is allowed
+
+	int				praise_self_count;							// number of boasts about kills received in this mission
+	int				praise_self_timestamp;					// timestamp marking time until next boast is allowed
 
 	int				subsys_in_view;							// set to -1 when this information needs to be re-evaluated
 	int				request_repair_timestamp;				// timestamp marking time until next time we can be informed of a repair ship getting called in
