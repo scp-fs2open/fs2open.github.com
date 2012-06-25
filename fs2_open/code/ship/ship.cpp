@@ -14342,11 +14342,11 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 		return;
 	}
 
-	if ((Builtin_messages[MESSAGE_PRAISE_SELF].max_count) && (Player->praise_self_count > Builtin_messages[MESSAGE_PRAISE_SELF].max_count)) {
+	if ((Builtin_messages[MESSAGE_PRAISE_SELF].max_count > -1) && (Player->praise_self_count >= Builtin_messages[MESSAGE_PRAISE_SELF].max_count)) {
 		return;
 	}
 
-	if (timestamp_elapsed(Player->praise_self_timestamp)) {
+	if (!timestamp_elapsed(Player->praise_self_timestamp)) {
 		return;
 	}
 
