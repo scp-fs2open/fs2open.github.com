@@ -6666,7 +6666,6 @@ int will_collide_with_big_ship_all(object *objp, object *ignore_objp, vec3d *goa
 	float		min_dist = 999999.9f;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		float	time = 0.0f;
 		big_objp = &Objects[so->objnum];
 
 		if (big_objp == ignore_objp)
