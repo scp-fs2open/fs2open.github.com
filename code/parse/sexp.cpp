@@ -3070,7 +3070,7 @@ int get_sexp(char *token)
 				strncpy(errortoken, Mp, len);
 				char * message = new char[95 + len]; // 95 approximate fixed string length.
 				memset(message, 0, 95 + len);
-				sprintf(message, "Token %s is too long. Needs to be shorter than 31 characters and will be truncated to fit.", errortoken);
+				sprintf(message, "Token '%s' is too long. Needs to be %d characters or shorter and will be truncated to fit.", errortoken, (TOKEN_LENGTH-1));
 				MessageBox(NULL,message,NULL,MB_OK); // token is too long.
 				delete errortoken;
 				delete message;
