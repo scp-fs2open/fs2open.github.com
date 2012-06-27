@@ -14356,11 +14356,11 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 		return;
 	}
 
-	if ((Builtin_messages[MESSAGE_PRAISE_SELF].max_count) && (Player->praise_self_count > Builtin_messages[MESSAGE_PRAISE_SELF].max_count)) {
+	if ((Builtin_messages[MESSAGE_PRAISE_SELF].max_count > -1) && (Player->praise_self_count >= Builtin_messages[MESSAGE_PRAISE_SELF].max_count)) {
 		return;
 	}
 
-	if (timestamp_elapsed(Player->praise_self_timestamp)) {
+	if (!timestamp_elapsed(Player->praise_self_timestamp)) {
 		return;
 	}
 
@@ -14604,7 +14604,11 @@ void ship_maybe_scream(ship *sp)
 #define PLAYER_REQUEST_REPAIR_MSG_INTERVAL	240000
 #define PLAYER_MAX_LOW_AMMO_MSGS			5
 
-void	ship_maybe_tell_about_low_ammo(ship *sp)
+/**
+ * This function is only for notifying the player that the ship's ammo is low, without necessarily requesting support (e.g. if support
+ * is disallowed for this mission).  It is not called if support was successfully requested in maybe_request_support.
+ */
+void ship_maybe_tell_about_low_ammo(ship *sp)
 {
 	weapon_info *wip;
 	int i;
@@ -14625,6 +14629,10 @@ void	ship_maybe_tell_about_low_ammo(ship *sp)
 	if (sp->flags2 & SF2_NO_BUILTIN_MESSAGES) {
 		return;
 	}
+
+	// don't mention low ammo if we're docked, for the same reason as in maybe_request_support
+	if (object_is_docked(&Objects[sp->objnum]))
+		return;
 
 	// for now, each ship can only complain about low ammo once a mission to stop it getting repetitive
 	if (sp->ammo_low_complaint_count) {
@@ -14688,9 +14696,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	// Silent ships should remain just that
 	if (sp->flags2 & SF2_NO_BUILTIN_MESSAGES)
-	{
 		return;
-	}
 
 	// AL 1-4-98:	If ship integrity is low, tell player you want to get repaired.  Otherwise, tell
 	// the player you want to get re-armed.

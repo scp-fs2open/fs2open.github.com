@@ -6666,7 +6666,6 @@ int will_collide_with_big_ship_all(object *objp, object *ignore_objp, vec3d *goa
 	float		min_dist = 999999.9f;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		float	time = 0.0f;
 		big_objp = &Objects[so->objnum];
 
 		if (big_objp == ignore_objp)
@@ -10590,7 +10589,9 @@ void ai_dock()
 	case AIS_DOCK_4A:
 	{
 		if (aigp == NULL) {	//	Can happen for initially docked ships.
-			ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
+			// Goober5000 - if we just "sit and wait for further orders", then we're not doing any behavior, grrr...
+			// (commenting out a retail bug)
+			//ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
 		} else {
 			mission_log_add_entry(LOG_SHIP_DOCKED, shipp->ship_name, goal_shipp->ship_name);
 
@@ -10958,13 +10959,16 @@ void process_subobjects(int objnum)
 		// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
 		// aren't under AI control here
 		if ( (!(objp->flags & OF_PLAYER_SHIP) ) && (sip->flags & (SIF_FIGHTER | SIF_BOMBER)) && !(shipp->flags & SF_DYING) ) {
-			// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
-			//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
-			//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
-			if ( aip->mode != AIM_BAY_DEPART ) {
-				ai_attack_object(objp, NULL, NULL);		//	Regardless of current mode, enter attack mode.
-				aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
-				aip->submode_start_time = Missiontime;
+			// Goober5000 - don't do anything if docked
+			if (!object_is_docked(objp)) {
+				// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
+				//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
+				//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
+				if ( aip->mode != AIM_BAY_DEPART ) {
+					ai_attack_object(objp, NULL, NULL);		//	Regardless of current mode, enter attack mode.
+					aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
+					aip->submode_start_time = Missiontime;
+				}
 			}
 		}
 	}
@@ -11733,6 +11737,9 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if (!(sip->flags & (SIF_SMALL_SHIP | SIF_TRANSPORT)))
+		return;
+
+	if (object_is_docked(objp))
 		return;
 
 	if (!shipp->cmeasure_count)
@@ -12836,6 +12843,12 @@ int maybe_request_support(object *objp)
 		return 0;
 
 	if (!is_support_allowed(objp))
+		return 0;
+
+	// Goober5000 - a ship that is currently docked shouldn't request repair.
+	// This is to prevent support ships being summoned for a ship that is getting
+	// towed away by other means.
+	if (object_is_docked(objp))
 		return 0;
 
 	//	Compute a desire value.

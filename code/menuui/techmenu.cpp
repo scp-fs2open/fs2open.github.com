@@ -530,6 +530,8 @@ void techroom_ships_render(float frametime)
 	model_set_detail_level(0);
 	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
 
+	batch_render_all();
+
 	if (!Cmdline_nohtl)
 	{
 		gr_end_view_matrix();
