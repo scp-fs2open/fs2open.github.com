@@ -780,6 +780,12 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
 
+			if (max_vel_weapon == max_vel_other) {
+				// this will give us NAN using the below formula, so check every frame
+				current_pair->next_check_time = timestamp(0);
+				return 0;
+			}
+
 			vm_vec_sub( &delta_x, &obj_weapon->pos, &other->pos );
 			laser_vel = obj_weapon->phys_info.vel;
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
@@ -800,22 +806,34 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 				root2 = (-b - root) / (2.0f * a) * 1000.0f;	// get time in ms
 			}
 
-			// find earliest positive time
-			if ( root1 > root2 ) {
-				float temp = root1;
-				root1 = root2;
-				root2 = temp;
-			}
+			// standard algorithm
+			if (max_vel_weapon > max_vel_other) {
+				// find earliest positive time
+				if ( root1 > root2 ) {
+					float temp = root1;
+					root1 = root2;
+					root2 = temp;
+				}
 
-			if (root1 > 0) {
-				earliest_time = root1;
-			} else if (root2 > 0) {
-				// root1 < 0 and root2 > 0, so we're inside sphere and next check should be next frame
-				current_pair->next_check_time = timestamp(0);	// check next time
-				return 0;
-			} else {
-				// both times negative, so never collides
-				return 1;
+				if (root1 > 0) {
+					earliest_time = root1;
+				} else if (root2 > 0) {
+					// root1 < 0 and root2 > 0, so we're inside sphere and next check should be next frame
+					current_pair->next_check_time = timestamp(0);	// check next time
+					return 0;
+				} else {
+					// both times negative, so never collides
+					return 1;
+				}
+			}
+			// need to modify it for weapons that are slower than ships
+			else {
+				if (root2 > 0) {
+					earliest_time = root2;
+				} else {
+					current_pair->next_check_time = timestamp(0);
+					return 0;
+				}
 			}
 
 
