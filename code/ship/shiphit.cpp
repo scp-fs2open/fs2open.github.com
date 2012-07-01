@@ -1755,7 +1755,11 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 		// Goober5000 - this code attempts to account properly for whacking a docked object as one mass.
 		// It isn't perfect, because physics doesn't completely account for it (particularly because it
 		// still uses the moment of inertia for the whacked object, not for all objects).  Commenting
-		// the bracketed code restores Volition's code, but it doesn't calculate the correct torque.
+		// out the contents of the block restores the Volition behavior, but it doesn't calculate the
+		// correct torque.
+		// Addendum: this block is now not executed for docked fighters or bombers because the whack
+		// looks like the fighter is doing evasive maneuvers
+		if ((objp->type != OBJ_SHIP) || !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)))
 		{
 			vec3d world_hit_pos, world_center_pos;
 
