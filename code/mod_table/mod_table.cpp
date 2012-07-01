@@ -17,6 +17,7 @@ bool True_loop_argument_sexps;
 bool Fixed_turret_collisions;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_disables_hud;
+bool Alternate_chaining_behavior;
 
 void parse_mod_table(char *filename)
 {
@@ -86,6 +87,14 @@ void parse_mod_table(char *filename)
 		}
 		else {
 			mprintf(("Game Settings Table: Using Standard Loops For SEXP Arguments\n"));
+		}
+	}
+	if (optional_string("$Use Alternate Chaining Behavior:")) {
+		stuff_boolean(&Alternate_chaining_behavior);
+		if (Alternate_chaining_behavior) {
+			mprintf(("Game Settings Table: Using alternate event chaining behavior\n"));
+		} else {
+			mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
 		}
 	}
 
