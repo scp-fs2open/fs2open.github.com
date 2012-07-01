@@ -5871,18 +5871,44 @@ void mission_parse_set_up_initial_docks()
 
 		// resolve the docker and dockee
 		docker = mission_parse_get_parse_object(Initially_docked[i].docker);
+		if (docker == NULL)
+		{
+			Warning(LOCATION, "Could not resolve initially docked object '%s'!", Initially_docked[i].docker);
+			continue;
+		}
 		dockee = mission_parse_get_parse_object(Initially_docked[i].dockee);
-		Assert((docker != NULL) && (dockee != NULL));
+		if (dockee == NULL)
+		{
+			Warning(LOCATION, "Could not resolve docking target '%s' of initially docked object '%s'!", Initially_docked[i].dockee, Initially_docked[i].docker);
+			continue;
+		}
 
 		// resolve the dockpoints
 		docker_point = Initially_docked[i].docker_point;
 		dockee_point = Initially_docked[i].dockee_point;
 
-		// if they're not already docked, dock them
-		if (!dock_check_find_direct_docked_object(docker, dockee))
+		// are they already docked?
+		if (dock_check_find_direct_docked_object(docker, dockee))
 		{
-			dock_dock_objects(docker, docker_point, dockee, dockee_point);
+			Warning(LOCATION, "Trying to initially dock '%s' and '%s', but they're already docked!", Initially_docked[i].docker, Initially_docked[i].dockee);
+			continue;
 		}
+
+		// docker point in use?
+		if (dock_find_object_at_dockpoint(docker, docker_point) != NULL)
+		{
+			Warning(LOCATION, "Trying to initially dock '%s' and '%s', but the former's dockpoint is already in use!", Initially_docked[i].docker, Initially_docked[i].dockee);
+			continue;
+		}
+
+		// dockee point in use?
+		if (dock_find_object_at_dockpoint(dockee, dockee_point) != NULL)
+		{
+			Warning(LOCATION, "Trying to initially dock '%s' and '%s', but the latter's dockpoint is already in use!", Initially_docked[i].docker, Initially_docked[i].dockee);
+			continue;
+		}
+
+		dock_dock_objects(docker, docker_point, dockee, dockee_point);
 	}
 
 	// now resolve the leader of each tree
