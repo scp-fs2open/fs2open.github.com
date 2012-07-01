@@ -5802,7 +5802,7 @@ void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info 
 		if (existing_leader != NULL)
 		{
 			// keep existing leader if he has a higher priority than us
-			if (ship_class_compare(pobjp->ship_class, existing_leader->ship_class) < 0)
+			if (ship_class_compare(pobjp->ship_class, existing_leader->ship_class) >= 0)
 			{
 				// set my arrival cue to false
 				free_sexp2(pobjp->arrival_cue);
