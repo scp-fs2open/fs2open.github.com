@@ -16350,17 +16350,54 @@ int ship_tvt_wing_lookup(char *wing_name)
 }
 
 // Goober5000
-// currently only used in FRED, but probably useful elsewhere too
+int ship_class_get_priority(int ship_class)
+{
+	ship_info *sip = &Ship_info[ship_class];
+
+	// biggest to smallest
+	if (sip->flags & SIF_KNOSSOS_DEVICE)
+		return 1;
+	else if (sip->flags & SIF_SUPERCAP)
+		return 2;
+	else if (sip->flags & SIF_DRYDOCK)
+		return 3;
+	else if (sip->flags & SIF_CAPITAL)
+		return 4;
+	else if (sip->flags & SIF_CORVETTE)
+		return 5;
+	else if (sip->flags & SIF_CRUISER)
+		return 6;
+	else if (sip->flags & SIF_GAS_MINER)
+		return 7;
+	else if (sip->flags & SIF_AWACS)
+		return 8;
+	else if (sip->flags & SIF_FREIGHTER)
+		return 9;
+	else if (sip->flags & SIF_TRANSPORT)
+		return 10;
+	else if (sip->flags & SIF_BOMBER)
+		return 11;
+	else if (sip->flags & (SIF_FIGHTER | SIF_STEALTH))
+		return 12;
+	else if (sip->flags & SIF_ESCAPEPOD)
+		return 13;
+	else if (sip->flags & SIF_SENTRYGUN)
+		return 14;
+	else if (sip->flags & SIF_CARGO)
+		return 15;
+	else if (sip->flags & SIF_NAVBUOY)
+		return 16;
+
+	Warning(LOCATION, "Unknown priority for ship class '%s'!", sip->name);
+	return 17 + ship_class;
+}
+
+// Goober5000
 int ship_class_compare(int ship_class_1, int ship_class_2)
 {
 	// grab priorities
-	//WMC - just use table order
-	int priority1 = ship_class_query_general_type(ship_class_1);
-	int priority2 = ship_class_query_general_type(ship_class_2);
-	/*
-	int priority1 = Ship_type_priorities[ship_class_query_general_type(ship_class_1)];
-	int priority2 = Ship_type_priorities[ship_class_query_general_type(ship_class_2)];
-	*/
+	int priority1 = ship_class_get_priority(ship_class_1);
+	int priority2 = ship_class_get_priority(ship_class_2);
 
 	// standard compare
 	if (priority1 < priority2)
