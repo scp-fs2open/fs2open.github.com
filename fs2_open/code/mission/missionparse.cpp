@@ -5883,16 +5883,15 @@ void mission_parse_set_up_initial_docks()
 			continue;
 		}
 
+		// skip docking if they're already docked
+		// (in FSO, we list all initially docked pairs for all ships,
+		// so we end up with twice as many docking entries as we need)
+		if (dock_check_find_direct_docked_object(docker, dockee))
+			continue;
+
 		// resolve the dockpoints
 		docker_point = Initially_docked[i].docker_point;
 		dockee_point = Initially_docked[i].dockee_point;
-
-		// are they already docked?
-		if (dock_check_find_direct_docked_object(docker, dockee))
-		{
-			Warning(LOCATION, "Trying to initially dock '%s' and '%s', but they're already docked!", Initially_docked[i].docker, Initially_docked[i].dockee);
-			continue;
-		}
 
 		// docker point in use?
 		if (dock_find_object_at_dockpoint(docker, docker_point) != NULL)
