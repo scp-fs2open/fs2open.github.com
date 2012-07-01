@@ -67,6 +67,16 @@ bool dock_check_find_direct_docked_object(p_object *objp, p_object *other_objp)
 	return (dock_find_instance(objp, other_objp) != NULL);
 }
 
+p_object *dock_find_object_at_dockpoint(p_object *objp, char *dockpoint)
+{
+	p_dock_instance *result = dock_find_instance(objp, dockpoint);
+	
+	if (result == NULL)
+		return NULL;
+	else
+		return result->docked_objp;
+}
+
 char *dock_find_dockpoint_used_by_object(p_object *objp, p_object *other_objp)
 {
 	p_dock_instance *result = dock_find_instance(objp, other_objp);
