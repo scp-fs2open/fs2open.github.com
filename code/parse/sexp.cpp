@@ -9480,6 +9480,7 @@ void sexp_hud_set_color(int n)
 
 	HudGauge* cg = hud_get_gauge(gaugename);
 	if(cg) {
+		cg->sexpLockConfigColor(false);
 		cg->updateColor(red, green, blue, (HUD_color_alpha+1)*16);
 		cg->sexpLockConfigColor(true);
 	}
