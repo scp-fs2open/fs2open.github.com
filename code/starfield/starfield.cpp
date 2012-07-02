@@ -103,7 +103,7 @@ typedef struct starfield_bitmap_instance {
 	int n_verts;
 	vertex *verts;
 
-	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1), star_bitmap_index(-1), n_verts(0), verts(NULL) {
+	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1), star_bitmap_index(0), n_verts(0), verts(NULL) {
 		ang.p = 0.0f;
 		ang.b = 0.0f;
 		ang.h = 0.0f;
