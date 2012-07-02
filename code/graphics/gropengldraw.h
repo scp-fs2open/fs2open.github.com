@@ -47,6 +47,10 @@ void opengl_scene_texture_shutdown();
 void gr_opengl_scene_texture_begin();
 void gr_opengl_scene_texture_end();
 
+inline void opengl_draw_textured_quad(
+	GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
+	GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2 );
+
 extern int Scene_texture_initialized;
 
 extern GLuint Scene_color_texture;
