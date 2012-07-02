@@ -59,7 +59,12 @@ int collide_weapon_weapon( obj_pair * pair )
 		if (!(wipA->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
-		if ( (wipA->lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		
+		if (wipA->wi_flags & WIF_LOCKED_HOMING) {
+			if ( (wipA->max_lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+				return 0;
+		}
+		else if ( (wipA->lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -67,7 +72,11 @@ int collide_weapon_weapon( obj_pair * pair )
 		if (!(wipB->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
-		if ( (wipB->lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		if (wipB->wi_flags & WIF_LOCKED_HOMING) {
+			if ( (wipB->max_lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+				return 0;
+		}
+		else if ( (wipB->lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
