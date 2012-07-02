@@ -1834,12 +1834,7 @@ void hud_target_auto_target_next()
 		hud_target_hotkey_select(Player->current_hotkey_set);
 	}
 
-	int	valid_team_mask = iff_get_attackee_mask(Player_ship->team);
-
-	// try target closest ship attacking player
-	if ( Player_ai->target_objnum == -1 ) {
-		hud_target_closest(valid_team_mask, OBJ_INDEX(Player_obj), FALSE, TRUE );
-	}
+	int valid_team_mask = iff_get_attackee_mask(Player_ship->team);
 
 	// if none, try targeting closest hostile fighter/bomber
 	if ( Player_ai->target_objnum == -1 ) { //-V581
