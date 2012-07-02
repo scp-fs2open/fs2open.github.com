@@ -1164,7 +1164,9 @@ void message_play_anim( message_q *q )
 	}
 }
 
-// process the message queue -- called once a frame
+/** 
+ * process the message queue -- called once a frame
+ */
 void message_queue_process()
 {	
 	char	buf[MESSAGE_LENGTH];
