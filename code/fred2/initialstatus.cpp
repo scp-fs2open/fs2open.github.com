@@ -973,6 +973,57 @@ void initial_status::undock(object *objp1, object *objp2)
 
 // ----- the following are not contained in the class because of apparent scope issues -----
 
+bool set_cue_to_false(int *cue)
+{
+	// if the cue is not false, make it false.  Be sure to set all ship editor dialog functions
+	// to update data before and after we modify the cue.
+	if (*cue != Locked_sexp_false)
+	{
+		Ship_editor_dialog.update_data(1);
+		Wing_editor_dialog.update_data(1);
+
+		free_sexp2(*cue);
+		*cue = Locked_sexp_false;
+
+		Ship_editor_dialog.initialize_data(1);
+		Wing_editor_dialog.initialize_data(1);
+
+		return true;
+	}
+	else
+		return false;
+}
+
+// function to set the arrival cue of a ship to false
+void reset_arrival_to_false(int shipnum, bool reset_wing)
+{
+	char buf[256];
+	ship *shipp = &Ships[shipnum];
+
+	// falsify the ship cue
+	if (set_cue_to_false(&shipp->arrival_cue))
+	{
+		sprintf(buf, "Setting arrival cue of ship %s\nto false for initial docking purposes.", shipp->ship_name);
+		MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
+	}
+
+	// falsify the wing cue and all ships in that wing
+	if (reset_wing && shipp->wingnum >= 0)
+	{
+		int i;
+		wing *wingp = &Wings[shipp->wingnum];
+
+		if (set_cue_to_false(&wingp->arrival_cue))
+		{
+			sprintf(buf, "Setting arrival cue of wing %s\nto false for initial docking purposes.", wingp->name);
+			MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
+		}
+
+		for (i = 0; i < wingp->wave_count; i++)
+			reset_arrival_to_false(wingp->ship_index[i], false);
+	}
+}
+
 // NOTE - in both retail and SCP, the dock "leader" is defined as the only guy in his
 // group with a non-false arrival cue
 void initial_status_mark_dock_leader_helper(object *objp, dock_function_info *infop)
@@ -1028,55 +1079,6 @@ void initial_status_mark_dock_leader_helper(object *objp, dock_function_info *in
 void initial_status_unmark_dock_handled_flag(object *objp, dock_function_info *infop)
 {
 	objp->flags &= ~OF_DOCKED_ALREADY_HANDLED;
-}
-
-bool set_cue_to_false(int *cue)
-{
-	// if the cue is not false, make it false.  Be sure to set all ship editor dialog functions
-	// to update data before and after we modify the cue.
-	if (*cue != Locked_sexp_false)
-	{
-		Ship_editor_dialog.update_data(1);
-
-		free_sexp2(*cue);
-		*cue = Locked_sexp_false;
-
-		Ship_editor_dialog.initialize_data(1);
-
-		return true;
-	}
-	else
-		return false;
-}
-
-// function to set the arrival cue of a ship to false
-void reset_arrival_to_false(int shipnum, bool reset_wing)
-{
-	char buf[256];
-	ship *shipp = &Ships[shipnum];
-
-	// falsify the ship cue
-	if (set_cue_to_false(&shipp->arrival_cue))
-	{
-		sprintf(buf, "Setting arrival cue of ship %s\nto false for initial docking purposes.", shipp->ship_name);
-		MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
-	}
-
-	// falsify the wing cue and all ships in that wing
-	if (reset_wing && shipp->wingnum >= 0)
-	{
-		int i;
-		wing *wingp = &Wings[shipp->wingnum];
-
-		if (set_cue_to_false(&wingp->arrival_cue))
-		{
-			sprintf(buf, "Setting arrival cue of wing %s\nto false for initial docking purposes.", wingp->name);
-			MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
-		}
-
-		for (i = 0; i < wingp->wave_count; i++)
-			reset_arrival_to_false(wingp->ship_index[i], false);
-	}
 }
 
 void initial_status::OnPrimariesLocked() 
