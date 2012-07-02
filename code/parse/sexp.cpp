@@ -3118,7 +3118,7 @@ int get_sexp(char *token)
 			}
 			token[len] = 0;
 
-			// Goober5000 - maybe replace deprecated names
+			// maybe replace deprecated names
 			if (!stricmp(token, "set-ship-position"))
 				strcpy(token, "set-object-position");
 			else if (!stricmp(token, "set-ship-facing"))
