@@ -50,7 +50,7 @@ bool Hud_retail = true;
 int Hud_font = -1;
 
 //WARNING: If you add gauges to this array, make sure to bump num_default_gauges!
-int num_default_gauges = 44;
+int num_default_gauges = 42;
 static int retail_gauges[] = {
 	HUD_OBJECT_MESSAGES,
 	HUD_OBJECT_TRAINING_MESSAGES,
@@ -71,9 +71,6 @@ static int retail_gauges[] = {
 	HUD_OBJECT_TARGET_SHIELD,
 	HUD_OBJECT_ESCORT,
 	HUD_OBJECT_MISSION_TIME,
-	HUD_OBJECT_ETS_WEAPONS,
-	HUD_OBJECT_ETS_SHIELDS,
-	HUD_OBJECT_ETS_ENGINES,
 	HUD_OBJECT_TARGET_MONITOR,
 	HUD_OBJECT_EXTRA_TARGET_DATA,
 	HUD_OBJECT_AFTERBURNER,
@@ -95,7 +92,8 @@ static int retail_gauges[] = {
 	HUD_OBJECT_TARGET_TRI,
 	HUD_OBJECT_MISSILE_TRI,
 	HUD_OBJECT_KILLS,
-	HUD_OBJECT_FIXED_MESSAGES
+	HUD_OBJECT_FIXED_MESSAGES,
+	HUD_OBJECT_ETS_RETAIL
 };
 
 flag_def_list Hud_gauge_types[] = {
@@ -147,7 +145,8 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Target direction",	HUD_OBJECT_TARGET_TRI,			0},
 	{ "Missile indicator",	HUD_OBJECT_MISSILE_TRI,			0},
 	{ "Kills",				HUD_OBJECT_KILLS,				0},
-	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0}
+	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0},
+	{ "Ets retail",			HUD_OBJECT_ETS_RETAIL,			0}
 };
 
 int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
@@ -440,6 +439,7 @@ void load_missing_retail_gauges()
 			for(int j = 0; j < num_loaded_gauges; j++) {
 				if(retail_gauges[i] == default_hud_gauges[j]->getObjectType()) {
 					retail_gauge_loaded = true;
+					break;
 				}
 			}
 
@@ -701,6 +701,9 @@ int parse_gauge_type()
 	if(optional_string("+ETS Engines:")) 
 		return HUD_OBJECT_ETS_ENGINES;
 
+	if(optional_string("+ETS Retail:"))
+		return HUD_OBJECT_ETS_RETAIL;
+
 	if(optional_string("+Target Monitor:")) 
 		return HUD_OBJECT_TARGET_MONITOR;
 
@@ -861,6 +864,9 @@ void load_gauge(int gauge, int base_w, int base_h, int font, int ship_idx, color
 		break;
 	case HUD_OBJECT_ETS_ENGINES:
 		load_gauge_ets_engines(base_w, base_h, font, ship_idx, use_clr);
+		break;
+	case HUD_OBJECT_ETS_RETAIL:
+		load_gauge_ets_retail(base_w, base_h, font, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_TARGET_MONITOR:
 		load_gauge_target_monitor(base_w, base_h, font, ship_idx, use_clr);
@@ -2298,6 +2304,139 @@ void load_gauge_throttle(int base_w, int base_h, int font, int ship_index, color
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
+
+	if(ship_index >= 0) {
+		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	} else {
+		default_hud_gauges.push_back(hud_gauge);
+	}
+}
+
+/**
+ * Load retail style ETS gauge
+ * i.e. treats weapons, shields & engines gauges as a single gauge
+ */
+void load_gauge_ets_retail(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+{
+	int coords[2];
+	int base_res[2];
+	int bar_h;
+	int letter_offsets[2];
+	int top_offsets[2];
+	int bottom_offsets[2];
+	char ets_letters[num_retail_ets_gauges];
+	char fname[MAX_FILENAME_LEN] = "energy1";
+	bool slew = false;
+	int font_num = FONT1;
+	int colors[3] = {255, 255, 255};
+	bool lock_color = false;
+	int gauge_offset; // distance between micro gauges
+	int i;
+	int gauge_positions[num_retail_ets_gauges];
+
+	if (Lcl_gr) {
+		ets_letters[0] = 'G'; ets_letters[1] = 'S'; ets_letters[2] = 'A'; // German
+	} else if (Lcl_fr) {
+		ets_letters[0] = 'C'; ets_letters[1] = 'B'; ets_letters[2] = 'M'; // French
+	} else {
+		ets_letters[0] = 'G'; ets_letters[1] = 'S'; ets_letters[2] = 'E'; // English
+	}
+
+	// default values which may be overwritten by .tbl
+	if(gr_screen.res == GR_640) {
+		coords[0] = 523;
+		coords[1] = 380;
+
+		base_res[0] = 640;
+		base_res[1] = 480;
+	} else {
+		coords[0] = 880;
+		coords[1] = 648;
+
+		base_res[0] = 1024;
+		base_res[1] = 768;
+	}
+	bar_h = 41;
+	letter_offsets[0] = 2;
+	letter_offsets[1] = 42;
+	top_offsets[0] = 0;
+	top_offsets[1] = 0;
+	bottom_offsets[0] = 0;
+	bottom_offsets[1] = 50;
+	gauge_offset = 20;
+
+	// parse data from .tbl
+	if(check_base_res(base_w, base_h)) {
+		base_res[0] = base_w;
+		base_res[1] = base_h;
+
+		if(optional_string("Position:")) {
+			stuff_int_list(coords, 2);
+		}
+	}
+
+	if ( use_clr != NULL ) {
+		colors[0] = use_clr->red;
+		colors[1] = use_clr->green;
+		colors[2] = use_clr->blue;
+
+		lock_color = true;
+	} else if ( optional_string("Color:") ) {
+		stuff_int_list(colors, 3);
+
+		check_color(colors);
+
+		lock_color = true;
+	}
+
+	if ( optional_string("Font:") ) {
+		stuff_int(&font_num);
+	} else {
+		if ( hud_font >=0 ) {
+			font_num = hud_font;
+		}
+	}
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Foreground Clip Height:")) {
+		stuff_int(&bar_h);
+	}
+	if(optional_string("Letter Offsets:")) {
+		stuff_int_list(letter_offsets, 2);
+	}
+	if(optional_string("Top Offsets:")) {
+		stuff_int_list(top_offsets, 2);
+	}
+	if(optional_string("Bottom Offsets:")) {
+		stuff_int_list(bottom_offsets, 2);
+	}
+	if(optional_string("Gauge Offset:")) {
+		stuff_int(&gauge_offset);
+	}
+
+	// calculate offsets for the three gauges
+	for (i = 0; i < num_retail_ets_gauges; ++i)
+		gauge_positions[i] = coords[0] + gauge_offset * i;
+
+	HudGaugeEtsRetail* hud_gauge = new HudGaugeEtsRetail();
+
+	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initLetters(ets_letters);
+	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
+	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
+	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
+	hud_gauge->initBarHeight(bar_h);
+	hud_gauge->initBitmaps(fname);
+	hud_gauge->initSlew(slew);
+	hud_gauge->initFont(font_num);
+	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
+	hud_gauge->lockConfigColor(lock_color);
+	hud_gauge->initGaugePositions(gauge_positions);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

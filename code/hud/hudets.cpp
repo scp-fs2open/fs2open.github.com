@@ -713,12 +713,12 @@ void HudGaugeEts::pageIn()
 	bm_page_in_aabitmap( Ets_bar.first_frame, Ets_bar.num_frames );
 }
 
+/**
+ * Draw one ETS bar to screen
+ */
 void HudGaugeEts::blitGauge(int index)
 {
 	int y_start, y_end, clip_h, w, h, x, y;
-
-	// draw the letters for the gauges first, before any clipping occurs
-	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter); 
 
 	clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );
 
@@ -772,6 +772,97 @@ void HudGaugeEts::blitGauge(int index)
 	}
 }
 
+/**
+ * Default ctor for retail ETS gauge
+ * 2nd arg (0) is not used
+ */
+HudGaugeEtsRetail::HudGaugeEtsRetail():
+HudGaugeEts(HUD_OBJECT_ETS_RETAIL, 0)
+{
+}
+
+/**
+ * Render the ETS retail gauge to the screen (weapon+shield+engine)
+ */
+void HudGaugeEtsRetail::render(float frametime)
+{
+	int i;
+	int initial_position;
+
+	ship* ship_p = &Ships[Player_obj->instance];
+
+	if ( Ets_bar.first_frame < 0 ) {
+		return;
+	}
+
+	// if at least two gauges are not shown, don't show any
+	i = 0;
+	if (!ship_has_energy_weapons(ship_p)) i++;
+	if (Player_obj->flags & OF_NO_SHIELDS) i++;
+	if (!ship_has_engine_power(ship_p)) i++;
+	if (i >= 2) return;
+
+	setGaugeColor();
+
+	// draw the letters for the gauges first, before any clipping occurs
+	// skip letter for any missing gauges (max one, see check above)
+	initial_position = 0;
+	if (ship_has_energy_weapons(ship_p)) {
+		Letter = Letters[0];
+		position[0] = Gauge_positions[initial_position++];
+		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+	}
+	if (!(Player_obj->flags & OF_NO_SHIELDS)) {
+		Letter = Letters[1];
+		position[0] = Gauge_positions[initial_position++];
+		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+	}
+	if (ship_has_engine_power(ship_p)) {
+		Letter = Letters[2];
+		position[0] = Gauge_positions[initial_position++];
+		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+	}
+
+	// draw gauges, skipping any gauge that is missing
+	initial_position = 0;
+	if (ship_has_energy_weapons(ship_p)) {
+		Letter = Letters[0];
+		position[0] = Gauge_positions[initial_position++];
+		blitGauge(ship_p->weapon_recharge_index);
+	}
+	if (!(Player_obj->flags & OF_NO_SHIELDS)) {
+		Letter = Letters[1];
+		position[0] = Gauge_positions[initial_position++];
+		blitGauge(ship_p->shield_recharge_index);
+	}
+	if (ship_has_engine_power(ship_p)) {
+		Letter = Letters[2];
+		position[0] = Gauge_positions[initial_position++];
+		blitGauge(ship_p->engine_recharge_index);
+	}
+}
+
+/**
+ * Set ETS letters for retail ETS gauge
+ * Allows for different languages to be used in the hud
+ */
+void HudGaugeEtsRetail::initLetters(char *_letters)
+{
+	int i;
+	for ( i = 0; i < num_retail_ets_gauges; ++i)
+		Letters[i] = _letters[i];
+}
+
+/**
+ * Set the three possible positions for ETS bars
+ */
+void HudGaugeEtsRetail::initGaugePositions(int *_gauge_positions)
+{
+	int i;
+	for ( i = 0; i < num_retail_ets_gauges; ++i)
+		Gauge_positions[i] = _gauge_positions[i];
+}
+
 HudGaugeEtsWeapons::HudGaugeEtsWeapons():
 HudGaugeEts(HUD_OBJECT_ETS_WEAPONS, (int)WEAPONS)
 {
@@ -794,13 +885,16 @@ void HudGaugeEtsWeapons::render(float frametime)
 	if (!ship_has_engine_power(ship_p)) i++;
 	if (i >= 2) return;
 
-	// now actually check if this 
+	// no weapon energy, no weapon gauge
 	if (!ship_has_energy_weapons(ship_p))
 	{
 		return;
 	}
 
 	setGaugeColor();
+
+	// draw the letters for the gauge first, before any clipping occurs
+	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
 
 	// draw the gauges for the weapon system
 	blitGauge(ship_p->weapon_recharge_index);
@@ -828,14 +922,17 @@ void HudGaugeEtsShields::render(float frametime)
 	if (!ship_has_engine_power(ship_p)) i++;
 	if (i >= 2) return;
 
-	setGaugeColor();
-
-	// draw the letters for the gauges first, before any clipping occurs
+	// no shields, no shields gauge
 	if (Player_obj->flags & OF_NO_SHIELDS) {
 		return;
 	}
 
-	// draw the gauges for the weapon system
+	setGaugeColor();
+
+	// draw the letters for the gauge first, before any clipping occurs
+	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+
+	// draw the gauge for the shield system
 	blitGauge(ship_p->shield_recharge_index);
 }
 
@@ -861,13 +958,16 @@ void HudGaugeEtsEngines::render(float frametime)
 	if (!ship_has_engine_power(ship_p)) i++;
 	if (i >= 2) return;
 
-	setGaugeColor();
-
-	// draw the letters for the gauges first, before any clipping occurs
+	// no engines, no engine gauge
 	if (!ship_has_engine_power(ship_p)) {
 		return;
 	}
 
-	// draw the gauges for the weapon system
+	setGaugeColor();
+
+	// draw the letters for the gauge first, before any clipping occurs
+	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+
+	// draw the gauge for the engine system
 	blitGauge(ship_p->engine_recharge_index);
 }

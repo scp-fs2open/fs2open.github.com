@@ -18,6 +18,8 @@ struct object;
 
 #define	ETS_RECHARGE_RATE	4.0f			//	Recharge this percent of total shields/second
 
+const int num_retail_ets_gauges = 3;
+
 extern float Energy_levels[];
 extern int Weapon_energy_cheat;
 
@@ -79,6 +81,18 @@ class HudGaugeEtsEngines: public HudGaugeEts
 public:
 	HudGaugeEtsEngines();
 	void render(float frametime);
+};
+
+class HudGaugeEtsRetail: public HudGaugeEts
+{
+protected:
+	char Letters[num_retail_ets_gauges];
+	int Gauge_positions[num_retail_ets_gauges];
+public:
+	HudGaugeEtsRetail();
+	void render(float frametime);
+	void initLetters(char *_letters);
+	void initGaugePositions(int *_gauge_positions);
 };
 
 #endif
