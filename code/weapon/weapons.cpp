@@ -1485,8 +1485,8 @@ int parse_weapon(int subtype, bool replace)
 					wip->wi_flags &= ~WIF_HOMING_ASPECT;
 				}
 
-				wip->wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
-				wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
+				wip->wi_flags |= (WIF_HOMING_JAVELIN | WIF_TURNS);
+				wi_flags |= (WIF_HOMING_JAVELIN | WIF_TURNS);
 			}
 			//If you want to add another weapon, remember you need to reset
 			//ALL homing flags.
@@ -1534,7 +1534,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 			}
 		}
-		else if (wip->wi_flags & WIF_HOMING_ASPECT || wip->wi_flags & WIF_HOMING_JAVELIN)
+		else if ((wip->wi_flags & WIF_HOMING_ASPECT) || (wip->wi_flags & WIF_HOMING_JAVELIN))
 		{
 			if(optional_string("+Turn Time:")) {
 				stuff_float(&wip->turn_time);
@@ -3646,8 +3646,8 @@ void weapon_maybe_play_warning(weapon *wp)
 			wp->weapon_flags |= WF_LOCK_WARNING_PLAYED;
 			// Use heatlock-warning sound for Heat and Javelin for now
 			// Possibly add an additional third sound later
-			if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_HEAT ||
-				 Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_JAVELIN ) {
+			if ( (Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_HEAT) ||
+				 (Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_JAVELIN) ) {
 				snd_play(&Snds[SND_HEATLOCK_WARN]);
 			} else {
 				Assert(Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_ASPECT);
@@ -4037,11 +4037,11 @@ void weapon_home(object *obj, int num, float frame_time)
 	}
 
 	// Make sure Javelin HS missiles always home on engine subsystems if ships
-	if (wip->wi_flags & WIF_HOMING_JAVELIN &&
-		hobjp->type == OBJ_SHIP &&
-		wp->target_sig > 0 &&
-		wp->homing_subsys != NULL &&
-		wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+	if ((wip->wi_flags & WIF_HOMING_JAVELIN) &&
+		(hobjp->type == OBJ_SHIP) &&
+		(wp->target_sig > 0) &&
+		(wp->homing_subsys != NULL) &&
+		(wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE)) {
 			ship *enemy = &Ships[ship_get_by_signature(wp->target_sig)];
 			wp->homing_subsys = ship_get_closest_subsys_in_sight(enemy, SUBSYSTEM_ENGINE, &Objects[wp->objnum].pos);
 	}
@@ -4049,10 +4049,10 @@ void weapon_home(object *obj, int num, float frame_time)
 	// If Javelin HS missile doesn't home in on a subsystem but homing in on a
 	// ship, lose lock alltogether
 	// Javelins can only home in one Engines or bombs.
-	if (wip->wi_flags & WIF_HOMING_JAVELIN &&
-		hobjp->type == OBJ_SHIP &&
-		wp->target_sig > 0 &&
-		wp->homing_subsys == NULL) {
+	if ((wip->wi_flags & WIF_HOMING_JAVELIN) &&
+		(hobjp->type == OBJ_SHIP) &&
+		(wp->target_sig > 0) &&
+		(wp->homing_subsys == NULL)) {
 			wp->homing_object = &obj_used_list;
 			return;
 	}
@@ -4711,9 +4711,9 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 				wp->homing_subsys = target_subsys;
 				weapon_maybe_play_warning(wp);
 			} else if ( (wip->wi_flags & WIF_HOMING_JAVELIN) && target_is_locked) {
-				if (Objects[target_objnum].type == OBJ_SHIP &&
-					(wp->homing_subsys == NULL ||
-					wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE)) {
+				if ((Objects[target_objnum].type == OBJ_SHIP) &&
+					( (wp->homing_subsys == NULL) ||
+					  (wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE) )) {
 						ship *target_ship = &Ships[Objects[target_objnum].instance];
 						wp->homing_subsys = ship_get_closest_subsys_in_sight(target_ship, SUBSYSTEM_ENGINE, &Objects[weapon_objnum].pos);
 						if (wp->homing_subsys == NULL) {
