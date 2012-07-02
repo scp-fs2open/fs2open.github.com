@@ -40,7 +40,7 @@ GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
 ubyte GL_xlat[256];
 GLfloat GL_anisotropy = 1.0f;
-GLfloat GL_max_anisotropy = 2.0f;
+GLfloat GL_max_anisotropy = -1.0f;
 int GL_mipmap_filter = 0;
 GLenum GL_texture_target = GL_TEXTURE_2D;
 GLenum GL_texture_face = GL_TEXTURE_2D;
@@ -96,7 +96,7 @@ GLfloat opengl_get_max_anisotropy()
 		return 0.0f;
 	}
 
-	if ( !GL_max_anisotropy ) {
+	if ( GL_max_anisotropy < 0.0f ) {
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &GL_max_anisotropy);
 	}
 
