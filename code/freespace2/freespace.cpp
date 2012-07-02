@@ -1061,7 +1061,7 @@ void game_level_init(int seed)
 	Game_no_clear = 0;
 
 	// campaign wasn't ended
-	Campaign_ended_in_mission = 0;
+	Campaign_ending_via_supernova = 0;
 
 	Env_cubemap_drawn = false;
 
@@ -5167,7 +5167,14 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_DEBRIEF:
-			gameseq_set_state(GS_STATE_DEBRIEF);
+			// did we end the campaign in the main freespace 2 single player campaign?
+			// (specifically, did we successfully jump out when the supernova was in progress
+			// and the campaign was ending?)
+			if (Campaign_ending_via_supernova && (Game_mode & GM_CAMPAIGN_MODE)/* && !stricmp(Campaign.filename, "freespace2")*/) {
+				gameseq_post_event(GS_EVENT_END_CAMPAIGN);
+			} else {
+				gameseq_set_state(GS_STATE_DEBRIEF);		
+			}
 			break;
 
 		case GS_EVENT_SHIP_SELECTION:
