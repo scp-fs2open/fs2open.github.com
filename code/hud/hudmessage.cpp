@@ -1245,6 +1245,13 @@ void HudGaugeTalkingHead::render(float frametime)
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
 			anim_stop_playing(head_anim);
+			for (int j = 0; j < Num_messages_playing; ++j) {
+				if (Playing_messages[j].id == msg_id) {
+					Playing_messages[j].play_anim = false;
+					break;  // only one head ani plays at a time
+				}
+			}
+			msg_id = -1;    // allow repeated messages to display a new head ani
 			head_anim = NULL; // Nothing to see here anymore, move along
 		}
 	}
