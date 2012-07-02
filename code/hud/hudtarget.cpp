@@ -3404,6 +3404,13 @@ void hud_show_selection_set()
 			continue;
 		}
 
+		// Goober5000 - don't draw indicators for non-visible ships, per Mantis #1972
+		// (the only way we could get here is if the hotkey set contained a mix of visible
+		// and invisible ships)
+		if (awacs_get_level(targetp, Player_ship, 1) < 1) {
+			continue;
+		}
+
 		// find the current target vertex 
 		//
 		g3_rotate_vertex(&target_point,&targetp->pos);
