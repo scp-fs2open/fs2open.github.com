@@ -5794,7 +5794,7 @@ void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info 
 		if (existing_leader != NULL)
 		{
 			// keep existing leader if he has a higher priority than us
-			if (ship_class_compare(pobjp->ship_class, existing_leader->ship_class) < 0)
+			if (ship_class_compare(pobjp->ship_class, existing_leader->ship_class) >= 0)
 			{
 				// set my arrival cue to false
 				free_sexp2(pobjp->arrival_cue);
@@ -5863,18 +5863,43 @@ void mission_parse_set_up_initial_docks()
 
 		// resolve the docker and dockee
 		docker = mission_parse_get_parse_object(Initially_docked[i].docker);
+		if (docker == NULL)
+		{
+			Warning(LOCATION, "Could not resolve initially docked object '%s'!", Initially_docked[i].docker);
+			continue;
+		}
 		dockee = mission_parse_get_parse_object(Initially_docked[i].dockee);
-		Assert((docker != NULL) && (dockee != NULL));
+		if (dockee == NULL)
+		{
+			Warning(LOCATION, "Could not resolve docking target '%s' of initially docked object '%s'!", Initially_docked[i].dockee, Initially_docked[i].docker);
+			continue;
+		}
+
+		// skip docking if they're already docked
+		// (in FSO, we list all initially docked pairs for all ships,
+		// so we end up with twice as many docking entries as we need)
+		if (dock_check_find_direct_docked_object(docker, dockee))
+			continue;
 
 		// resolve the dockpoints
 		docker_point = Initially_docked[i].docker_point;
 		dockee_point = Initially_docked[i].dockee_point;
 
-		// if they're not already docked, dock them
-		if (!dock_check_find_direct_docked_object(docker, dockee))
+		// docker point in use?
+		if (dock_find_object_at_dockpoint(docker, docker_point) != NULL)
 		{
-			dock_dock_objects(docker, docker_point, dockee, dockee_point);
+			Warning(LOCATION, "Trying to initially dock '%s' and '%s', but the former's dockpoint is already in use!", Initially_docked[i].docker, Initially_docked[i].dockee);
+			continue;
 		}
+
+		// dockee point in use?
+		if (dock_find_object_at_dockpoint(dockee, dockee_point) != NULL)
+		{
+			Warning(LOCATION, "Trying to initially dock '%s' and '%s', but the latter's dockpoint is already in use!", Initially_docked[i].docker, Initially_docked[i].dockee);
+			continue;
+		}
+
+		dock_dock_objects(docker, docker_point, dockee, dockee_point);
 	}
 
 	// now resolve the leader of each tree

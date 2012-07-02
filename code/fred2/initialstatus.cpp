@@ -941,7 +941,7 @@ void initial_status::undock(object *objp1, object *objp2)
 	ship_num = get_ship_from_obj(OBJ_INDEX(objp1));
 	other_ship_num = get_ship_from_obj(OBJ_INDEX(objp2));
 
-	if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) > 0)
+	if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0)
 		vm_vec_scale_add2(&objp2->pos, &v, objp2->radius * 2.0f);
 	else
 		vm_vec_scale_add2(&objp1->pos, &v, objp1->radius * -2.0f);
@@ -978,9 +978,21 @@ void initial_status::undock(object *objp1, object *objp2)
 void initial_status_mark_dock_leader_helper(object *objp, dock_function_info *infop)
 {
 	ship *shipp = &Ships[objp->instance];
+	int cue_to_check;
+
+	// if this guy is part of a wing, he uses his wing's arrival cue
+	if (shipp->wingnum >= 0)
+	{
+		cue_to_check = Wings[shipp->wingnum].arrival_cue;
+	}
+	// check the ship's arrival cue
+	else
+	{
+		cue_to_check = shipp->arrival_cue;
+	}
 
 	// all ships except the leader should have a locked false arrival cue
-	if (shipp->arrival_cue != Locked_sexp_false)
+	if (cue_to_check != Locked_sexp_false)
 	{
 		object *existing_leader;
 
@@ -994,7 +1006,7 @@ void initial_status_mark_dock_leader_helper(object *objp, dock_function_info *in
 			ship *leader_shipp = &Ships[existing_leader->instance];
 
 			// keep existing leader if he has a higher priority than us
-			if (ship_class_compare(shipp->ship_info_index, leader_shipp->ship_info_index) < 0)
+			if (ship_class_compare(shipp->ship_info_index, leader_shipp->ship_info_index) >= 0)
 			{
 				// set my arrival cue to false
 				reset_arrival_to_false(SHIP_INDEX(shipp), true);
