@@ -232,21 +232,8 @@ void rs_compute_uvs(shield_tri *stp, shield_vertex *verts, vec3d *tcp, float rad
 		sv->u = vm_vec_dot(&v2cp, rightv) * Shield_scale + 0.5f;
 		sv->v = - vm_vec_dot(&v2cp, upv) * Shield_scale + 0.5f;
 
-		if (sv->u > UV_MAX){
-			sv->u = UV_MAX;
-		}
-
-		if (sv->u < 0.0f){
-			sv->u = 0.0f;
-		}
-
-		if (sv->v > UV_MAX){
-			sv->v = UV_MAX;
-		}
-
-		if (sv->v < 0.0f){
-			sv->v = 0.0f;
-		}
+        CLAMP(sv->u, 0.0f, UV_MAX);
+        CLAMP(sv->v, 0.0f, UV_MAX);
 	}
 }
 

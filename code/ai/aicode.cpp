@@ -11390,10 +11390,7 @@ int formation_is_leader_chaotic(object *objp)
 
 		Leader_chaos *= (1.0f - flFrametime*0.2f);
 
-		if (Leader_chaos < 0.0f)
-			Leader_chaos = 0.0f;
-		else if (Leader_chaos > 1.7f)
-			Leader_chaos = 1.7f;
+		CLAMP(Leader_chaos, 0.0f, 1.7f);
 
 		Chaos_frame = Framecount;
 	}
