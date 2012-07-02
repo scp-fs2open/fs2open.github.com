@@ -3376,7 +3376,7 @@ void HudGaugeObjectiveNotify::renderRedAlert()
 	// Blit the background
 	gr_set_color_fast(&Color_red);		// Color box red, because it's an emergency
 
-	GR_AABITMAP(Objective_display_gauge.first_frame, position[0], position[1]);	
+	renderBitmap(Objective_display_gauge.first_frame, position[0], position[1]);
 
 	startFlashNotify();
 	if(maybeFlashNotify()) {
