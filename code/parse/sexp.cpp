@@ -3078,7 +3078,20 @@ int get_sexp(char *token)
 			int len = strcspn(Mp + 1, "\"");
 			
 			Assert(Mp[len + 1] == '\"');    // hit EOF first (unterminated string)
-			Assertion(len < TOKEN_LENGTH, "Token %s is too long. Needs to be shorter than 31 characters.", Mp);  // token is too long.
+
+			if(len >= TOKEN_LENGTH)
+			{
+				char * errortoken = new char[len+1];
+				memset(errortoken, 0, len+1);
+				strncpy(errortoken, Mp, len);
+				char * message = new char[95 + len]; // 95 approximate fixed string length.
+				memset(message, 0, 95 + len);
+				sprintf(message, "Token '%s' is too long. Needs to be %d characters or shorter and will be truncated to fit.", errortoken, (TOKEN_LENGTH-1));
+				MessageBox(NULL,message,NULL,MB_OK); // token is too long.
+				delete errortoken;
+				delete message;
+				len = TOKEN_LENGTH;
+			}
 
 			// check if string variable
 			if ( *(Mp + 1) == SEXP_VARIABLE_CHAR ) {
