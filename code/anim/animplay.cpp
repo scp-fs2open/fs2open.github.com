@@ -472,7 +472,7 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		if ( instance->last_bitmap != -1 ){
 			bm_release(instance->last_bitmap);
 		}
-		bitmap_id = bm_create(16, instance->parent->width, instance->parent->height, instance->frame, bitmap_flags);
+		bitmap_id = bm_create(bpp, instance->parent->width, instance->parent->height, instance->frame, bitmap_flags);
 	}
 	
 	if ( bitmap_id == -1 ) {
