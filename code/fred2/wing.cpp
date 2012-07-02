@@ -229,7 +229,7 @@ int create_wing()
 	leader = cur_object_index;
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if ((ptr->type == OBJ_SHIP) && (ptr->flags & OF_MARKED)) {
+		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags & OF_MARKED)) {
 			count++;
 			i = -1;
 			switch (ptr->type) {
