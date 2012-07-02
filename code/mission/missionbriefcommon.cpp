@@ -1572,7 +1572,8 @@ void brief_set_text_color(int color_index)
  * @param character the character to be analysed.
  * @return true when the given character is a word separator, and false when the character is part of a word.
  */
-bool is_a_word_separator(char character){
+bool is_a_word_separator(char character)
+{
 	return character<=33					//  2 characters including (space) and !
 		|| (35<=character && character<=38)	//  4 characters #$%&
 		|| (42<=character && character<=44)	//  3 characters *+,
@@ -1597,19 +1598,56 @@ bool is_a_word_separator(char character){
 int brief_text_colorize(char *src, int instance)
 {
 	Assert(src);
-	Assert( 0<=instance && instance < (sizeof(Colored_stream)/sizeof(*Colored_stream)) );
+	Assert((0 <= instance) && (instance < (sizeof(Colored_stream) / sizeof(*Colored_stream))));
 
-	briefing_line dest_line; //the resulting vector of colored character
-	ubyte active_color_index = BRIEF_TEXT_WHITE; //the current drawing color
+	// manage different default colors (don't use a SCP_ stack because eh)
+	const int HIGHEST_COLOR_STACK_INDEX = 9;
+	ubyte default_color_stack[10];
+	int color_stack_index = 0;
+
+	briefing_line dest_line;	//the resulting vector of colored character
+	ubyte active_color_index;	//the current drawing color
+
+	// start off with white
+	default_color_stack[0] = active_color_index = BRIEF_TEXT_WHITE;
 
 	int src_len = strlen(src);
-	for (int i=0; i<src_len; i++) {
+	for (int i = 0; i < src_len; i++)
+	{
 		// Is the character a color markup?
 		// text markup consists of a '$' plus a character plus an optional space
-		if ( (i < src_len - 1)  && (src[i] == BRIEF_META_CHAR) ) {
+		if ( (i < src_len - 1)  && (src[i] == BRIEF_META_CHAR) )
+		{
 			i++;   // Consume the $ character
-			active_color_index = brief_return_color_index(src[i]);
-			i++; // Consume the color identifier and focus on the white character (if any)
+
+			// it's possible that there's a closing brace here
+			if (src[i] == '}')
+			{
+				if (color_stack_index > 0)
+				{
+					color_stack_index--;
+					active_color_index = default_color_stack[color_stack_index];
+				}
+				i++;	// consume the }
+			}
+			// normal $c or $c{
+			else
+			{
+				active_color_index = brief_return_color_index(src[i]);
+				i++; // Consume the color identifier and focus on the white character (if any)
+			}
+
+			// special case: color spans (different default color within braces)
+			// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
+			if (src[i] == '{')
+			{
+				if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
+				{
+					color_stack_index++;
+					default_color_stack[color_stack_index] = active_color_index;
+				}
+				i++;	// consume the {
+			}
  
 			// Skip every whitespace until the next word is reached
 			while ( (i < src_len) && is_white_space(src[i]) )
@@ -1621,10 +1659,9 @@ int brief_text_colorize(char *src, int instance)
 			continue;
  		}
 
-		// When the word is terminated reset color to white
-		if ( (is_white_space(src[i]) ) || ( is_a_word_separator(src[i]) )) {
-			active_color_index = BRIEF_TEXT_WHITE;
-		}
+		// When the word is terminated, reset color to default
+		if ( (is_white_space(src[i]) ) || ( is_a_word_separator(src[i]) ))
+			active_color_index = default_color_stack[color_stack_index];
 
 		// Append the character to the result structure
 		colored_char dest;
@@ -1632,6 +1669,7 @@ int brief_text_colorize(char *src, int instance)
 		dest.color = active_color_index;
 		dest_line.push_back(dest);
 	} 
+
 	Colored_stream[instance].push_back(dest_line); 	
 	return dest_line.size();
 }
