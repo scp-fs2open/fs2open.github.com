@@ -5211,6 +5211,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 
+		ship_system->parent_objnum = objnum;
+
 		// if the table has set an name copy it
 		if (ship_system->system_info->alt_sub_name[0] != '\0') {
 			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name);

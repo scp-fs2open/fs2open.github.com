@@ -282,6 +282,8 @@ typedef	struct ship_subsys {
 	struct ship_subsys *next, *prev;				//	Index of next and previous objects in list.
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
+	int			parent_objnum;						// objnum of the parent ship
+
 	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
 	float		max_hits;
