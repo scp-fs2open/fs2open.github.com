@@ -2277,6 +2277,12 @@ void CShipEditorDlg::OnRestrictArrival()
 	CComboBox *box;
 	restrict_paths dlg;
 
+	if (multi_edit)
+	{
+		MessageBox("Please select only one ship.", "Too many ships selected");
+		return;
+	}
+
 	// grab stuff from GUI
 	UpdateData(TRUE);
 
@@ -2314,6 +2320,12 @@ void CShipEditorDlg::OnRestrictDeparture()
 	int depart_to_ship;
 	CComboBox *box;
 	restrict_paths dlg;
+
+	if (multi_edit)
+	{
+		MessageBox("Please select only one ship.", "Too many ships selected");
+		return;
+	}
 
 	// grab stuff from GUI
 	UpdateData(TRUE);
