@@ -59,29 +59,6 @@ void gr_opengl_pixel(int x, int y, bool resize)
 	gr_line(x, y, x, y, resize);
 }
 
-inline void opengl_draw_textured_quad(
-	GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
-	GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2 )
-{
-	GLfloat glVertices[4][4] = {
-		{ x1, y1, u1, v1 },
-		{ x1, y2, u1, v2 },
-		{ x2, y1, u2, v1 },
-		{ x2, y2, u2, v2 }
-	};
-
-	glVertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
-	glTexCoordPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-
 void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror)
 {
 	if ( (w < 1) || (h < 1) ) {
