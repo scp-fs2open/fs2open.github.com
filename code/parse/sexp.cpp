@@ -94,6 +94,7 @@
 #include "graphics/font.h"
 #include "asteroid/asteroid.h"
 #include "mod_table/mod_table.h"
+#include "ship/afterburner.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -276,6 +277,7 @@ sexp_oper Operators[] = {
 	{ "primary-fired-since",		OP_PRIMARY_FIRED_SINCE,		3,	3},	// Karajorma
 	{ "secondary-fired-since",		OP_SECONDARY_FIRED_SINCE,	3,	3},	// Karajorma
 	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
+	{ "set-player-throttle-speed",	OP_SET_PLAYER_THROTTLE_SPEED,		2, 2,	}, //CommanderDJ
 	{ "has-primary-weapon",			OP_HAS_PRIMARY_WEAPON,		3,	INT_MAX},	// Karajorma
 	{ "has-secondary-weapon",		OP_HAS_SECONDARY_WEAPON,	3,	INT_MAX},	// Karajorma
 	{ "directive-value",			OP_DIRECTIVE_VALUE,	1,	2},	// Karajorma
@@ -12045,7 +12047,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 			// the lock afterburner SEXP also needs to set a physics flag
 			if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
 				if (set_it) {
-					Objects[Ships[ship_index].objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
+					afterburners_stop(&Objects[Ships[ship_index].objnum], 1);
 				}
 			}
 
@@ -12145,7 +12147,7 @@ void multi_sexp_deal_with_ship_flag()
 			// deal with side effects of these flags
 			if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
 				if (set_it) {
-					Objects[shipp->objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
+					afterburners_stop(&Objects[shipp->objnum], 1);
 				}
 			}
 
@@ -13928,6 +13930,25 @@ int sexp_get_throttle_speed(int node)
 	}
 
 	return 0;
+}
+
+// CommanderDJ
+void sexp_set_player_throttle_speed(int node)
+{
+	//get and sanity check the player first
+	player *the_player;
+	the_player = get_player_from_ship_node(node); 
+
+	if(the_player != NULL)
+	{
+		//now the throttle percentage
+		node = CDR(node);
+		int throttle_percent = eval_num(node);
+		CLAMP(throttle_percent, 0, 100);
+		
+		//now actually set the throttle
+		the_player->ci.forward_cruise_percent = (float) throttle_percent;
+	}
 }
 
 // Goober5000
@@ -21391,6 +21412,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_throttle_speed(node);
 				break;
 
+			case OP_SET_PLAYER_THROTTLE_SPEED:
+				sexp_set_player_throttle_speed(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_PRIMARIES_DEPLETED:
 				sexp_val = sexp_primaries_depleted(node);
 				break;
@@ -23128,6 +23154,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
 		case OP_SET_THRUSTERS:
+		case OP_SET_PLAYER_THROTTLE_SPEED:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -23376,6 +23403,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_THROTTLE_SPEED:
 			return OPF_SHIP;
 		
+		case OP_SET_PLAYER_THROTTLE_SPEED:
+			if(argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
+
 		case OP_SHIP_CREATE:
 			if(argnum == 0)
 				return OPF_STRING;
@@ -26309,6 +26342,8 @@ int get_subcategory(int sexp_id)
 		case OP_ALLOW_TREASON:
 		case OP_SET_PLAYER_ORDERS:
 		case OP_CHANGE_IFF_COLOR:
+		case OP_FORCE_GLIDE:
+		case OP_SET_PLAYER_THROTTLE_SPEED:
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
 		case OP_SABOTAGE_SUBSYSTEM:
@@ -26344,6 +26379,8 @@ int get_subcategory(int sexp_id)
 		case OP_SET_AFTERBURNER_ENERGY: 
 		case OP_SET_WEAPON_ENERGY:
 		case OP_SET_SHIELD_ENERGY:
+		case OP_DISABLE_ETS:
+		case OP_ENABLE_ETS:
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
 		case OP_SHIP_INVULNERABLE:
@@ -26371,9 +26408,6 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
 		case OP_SET_ARMOR_TYPE:
-		case OP_FORCE_GLIDE:
-		case OP_DISABLE_ETS:
-		case OP_ENABLE_ETS:
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_GET_COLGROUP_ID:
@@ -30036,6 +30070,15 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tBoolean, true sets thrusters to visible, false deactivates them.\r\n"
 		"\t2:\tRest: List of ships this sexp will work on.\r\n"
+	},
+
+	{OP_SET_PLAYER_THROTTLE_SPEED, "set-player-throttle-speed\r\n"
+		"\tSets a player's throttle to a percentage of their maximum speed.\r\n"
+		"\tThis SEXP has no effect if used on an AI ship, however it will still work on an AI-controlled player ship.\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tThe player ship to set the throttle of.\r\n"
+		"\t2:\tThe percentage of the player's maximum speed to set their throttle to.\r\n"
+		"\t\tThis is capped to either 0 or 100 if outside the valid range."
 	}
 };
 

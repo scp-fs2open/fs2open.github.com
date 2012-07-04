@@ -120,19 +120,7 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
 
-	glBegin(GL_QUADS);
-		glTexCoord2f(u0, v1);
-		glVertex2f(x1, y2);
-
-		glTexCoord2f(u1, v1);
-		glVertex2f(x2, y2);
-
-		glTexCoord2f(u1, v0);
-		glVertex2f(x2, y1);
-
-		glTexCoord2f(u0, v0);
-		glVertex2f(x1, y1);
-	glEnd();
+	opengl_draw_textured_quad(x1,y1,u0,v0, x2,y2,u1,v1);
 
 	GL_state.CullFace(cull_face);
 
@@ -318,6 +306,7 @@ void gr_opengl_aabitmap(int x, int y, bool resize, bool mirror)
 	opengl_aabitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, resize, mirror);
 }
 
+struct v4 { GLfloat x,y,u,v; };
 
 void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 {
@@ -327,6 +316,10 @@ void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 	float u0, u1, v0, v1;
 	int x1, x2, y1, y2;
 	float u_scale, v_scale;
+
+	// conversion from quads to triangles requires six vertices per quad
+	struct v4 *glVert = (struct v4*) alloca(sizeof(struct v4) * strlen(s) * 6);
+	int curChar = 0;
 
 	if ( !Current_font || (*s == 0) ) {
 		return;
@@ -350,7 +343,7 @@ void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 
 	bw = i2fl(ibw);
 	bh = i2fl(ibh);
-	
+
 	// set color!
 	if (gr_screen.current_color.is_alphacolor) {
 		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
@@ -383,9 +376,6 @@ void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 	spacing = 0;
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
-
-	// start rendering...
-	glBegin(GL_QUADS);
 
 	// pick out letter coords, draw it, goto next letter and do the same
 	while (*s)	{
@@ -482,21 +472,42 @@ void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 		u1 = u_scale * (i2fl((u+xd)+wc) / bw);
 		v1 = v_scale * (i2fl((v+yd)+hc) / bh);
 
-		glTexCoord2f(u0, v1);
-		glVertex2i(x1, y2);
+		glVert[curChar*6 + 0].x = (GLfloat)x1;
+		glVert[curChar*6 + 0].y = (GLfloat)y2;
+		glVert[curChar*6 + 0].u = u0;
+		glVert[curChar*6 + 0].v = v1;
 
-		glTexCoord2f(u1, v1);
-		glVertex2i(x2, y2);
+		glVert[curChar*6 + 1].x = (GLfloat)x2;
+		glVert[curChar*6 + 1].y = (GLfloat)y2;
+		glVert[curChar*6 + 1].u = u1;
+		glVert[curChar*6 + 1].v = v1;
 
-		glTexCoord2f(u1, v0);
-		glVertex2i(x2, y1);
+		glVert[curChar*6 + 2].x = (GLfloat)x1;
+		glVert[curChar*6 + 2].y = (GLfloat)y1;
+		glVert[curChar*6 + 2].u = u0;
+		glVert[curChar*6 + 2].v = v0;
 
-		glTexCoord2f(u0, v0);
-		glVertex2i(x1, y1);
+		glVert[curChar*6 + 3] = glVert[curChar*6 + 1];
+		glVert[curChar*6 + 4] = glVert[curChar*6 + 2];
+
+		glVert[curChar*6 + 5].x = (GLfloat)x2;
+		glVert[curChar*6 + 5].y = (GLfloat)y1;
+		glVert[curChar*6 + 5].u = u1;
+		glVert[curChar*6 + 5].v = v0;
+
+		curChar++;
 	}
 
-	// done!
-	glEnd();
+	glVertexPointer(2, GL_FLOAT, sizeof(struct v4), &glVert[0].x);
+	glTexCoordPointer(2, GL_FLOAT, sizeof(struct v4), &glVert[0].u);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	glDrawArrays(GL_TRIANGLES, 0, curChar * 6);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	GL_state.CullFace(cull_face);
 
@@ -890,16 +901,21 @@ void gr_opengl_curve(int xc, int yc, int r, int direction)
 	}
 }
 
+struct v6 { GLfloat x,y,z,w,u,v; };
+struct c4 { GLubyte r,g,b,a; };
+
 void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int a, int override_primary = 0)
 {
 	GLenum gl_mode = GL_TRIANGLE_FAN;
-	float sx, sy, sz, sw, tu, tv;
-	int i;
+	float sx, sy, sz, sw;
+	int i,j;
 	vertex *va;
 	bool isNebula = false;
 	bool isRamp = false;
 	bool isRGB = false;
 	ubyte alpha = (ubyte)a;
+	struct v6 *vertPos = (struct v6*) alloca(sizeof(struct v6) * nv);
+	struct c4 *vertCol = (struct c4*) alloca(sizeof(struct c4) * nv);
 
 	GL_CHECK_FOR_ERRORS("start of draw_primitive()");
 
@@ -922,12 +938,11 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 	} else if (flags & TMAP_FLAG_QUADLIST) {
 		gl_mode = GL_QUADS;
 	} else if (flags & TMAP_FLAG_QUADSTRIP) {
-		gl_mode = GL_QUAD_STRIP;
+		gl_mode = GL_TRIANGLE_STRIP;
+		Assert((nv % 2) == 0);
 	}
 
-	glBegin(gl_mode);
-
-	for (i = (nv - 1); i >= 0; i--) {
+	for (i = (nv - 1), j = 0; i >= 0; i--, j++) {
 		va = verts[i];
 
 		sw = 1.0f;
@@ -957,31 +972,66 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 		}
 
 		if (override_primary) {
-			glColor3ub(va->spec_r, va->spec_g, va->spec_b);
+			vertCol[j].r = va->spec_r;
+			vertCol[j].g = va->spec_g;
+			vertCol[j].b = va->spec_b;
+			vertCol[j].a = 255;
 		} else {
 			if (isNebula) {
 				int pal = (va->b * (NEBULA_COLORS-1)) / 255;
-				glColor4ub( gr_palette[pal*3+0], gr_palette[pal*3+1], gr_palette[pal*3+2], alpha );
+				vertCol[j].r = gr_palette[pal*3+0];
+				vertCol[j].g = gr_palette[pal*3+1];
+				vertCol[j].b = gr_palette[pal*3+2];
+				vertCol[j].a = alpha;
 			} else if (isRamp) {
-				glColor4ub( va->b, va->b, va->b, alpha );
+				vertCol[j].r = va->b;
+				vertCol[j].g = va->b;
+				vertCol[j].b = va->b;
+				vertCol[j].a = alpha;
 			} else if (isRGB) {
-				glColor4ub( va->r, va->g, va->b, alpha );
+				vertCol[j].r = va->r;
+				vertCol[j].g = va->g;
+				vertCol[j].b = va->b;
+				vertCol[j].a = alpha;
 			}
 		}
 
 		if (flags & TMAP_FLAG_TEXTURED) {
-			tu = va->texture_position.u * u_scale;
-			tv = va->texture_position.v * v_scale;
-
-			// use opengl hardware multitexturing
-			vglMultiTexCoord2fARB(GL_TEXTURE0_ARB, tu, tv);
-			vglMultiTexCoord2fARB(GL_TEXTURE1_ARB, tu, tv);
+			vertPos[j].u = va->texture_position.u * u_scale;
+			vertPos[j].v = va->texture_position.v * v_scale;
 		}
 
-		glVertex4f(sx, sy, -sz, sw);
+		vertPos[j].x = sx;
+		vertPos[j].y = sy;
+		vertPos[j].z = -sz;
+		vertPos[j].w = sw;
 	}
 
-	glEnd();
+	glVertexPointer(4, GL_FLOAT, sizeof(struct v6), &vertPos[0].x);
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	if(flags & TMAP_FLAG_TEXTURED) {
+		vglClientActiveTextureARB(GL_TEXTURE0);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(struct v6), &vertPos[0].u);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		vglClientActiveTextureARB(GL_TEXTURE1);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(struct v6), &vertPos[0].u);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	}
+
+	if(flags & (TMAP_FLAG_NEBULA | TMAP_FLAG_GOURAUD)) {
+		glColorPointer(4, GL_UNSIGNED_BYTE, 0, &vertCol[0].r);
+		glEnableClientState(GL_COLOR_ARRAY);
+	}
+
+	glDrawArrays(gl_mode, 0, nv);
+
+	glDisableClientState(GL_COLOR_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	vglClientActiveTextureARB(GL_TEXTURE0);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	GL_CHECK_FOR_ERRORS("start of draw_primitive()");
 }
@@ -1726,19 +1776,7 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool 
 
 	glColor4f(1.0f, 1.0f, 1.0f, gr_screen.current_alpha);
 
-	glBegin(GL_QUADS);
-		glTexCoord2f(u0, v1);
-		glVertex2f(x1, y2);
-
-		glTexCoord2f(u1, v1);
-		glVertex2f(x2, y2);
-
-		glTexCoord2f(u1, v0);
-		glVertex2f(x2, y1);
-
-		glTexCoord2f(u0, v0);
-		glVertex2f(x1, y1);
-	glEnd();
+	opengl_draw_textured_quad(x1, y1, u0, v0, x2, y2, u1, v1);
 }
 
 

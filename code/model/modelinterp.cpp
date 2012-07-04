@@ -2473,7 +2473,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	gr_zbuffer_set(zbuff_save);
 }
 
-void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d *pos)
+void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true)
 {
 	int i, j;
 
@@ -2571,9 +2571,13 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 								}
  
 								p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
+								int gpflags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+								if (use_depth_buffer)
+									gpflags |= TMAP_FLAG_SOFT_QUAD;
+
 								batch_add_bitmap(
 									bank->glow_bitmap,
-									TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,  
+									gpflags,  
 									&p,
 									0,
 									(w * 0.5f),
@@ -3107,7 +3111,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	// start rendering glow points -Bobboau
 	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl && !Glowpoint_override ) {
-		model_render_glow_points(pm, shipp, orient, pos);
+		model_render_glow_points(pm, shipp, orient, pos, Glowpoint_use_depth_buffer);
 	}
 
 	// Draw the thruster glow

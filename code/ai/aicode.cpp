@@ -10589,9 +10589,8 @@ void ai_dock()
 	case AIS_DOCK_4A:
 	{
 		if (aigp == NULL) {	//	Can happen for initially docked ships.
-			// Goober5000 - if we just "sit and wait for further orders", then we're not doing any behavior, grrr...
-			// (commenting out a retail bug)
-			//ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
+			// this now "just sits here" for docked ships
+			ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
 		} else {
 			mission_log_add_entry(LOG_SHIP_DOCKED, shipp->ship_name, goal_shipp->ship_name);
 
@@ -12000,6 +11999,11 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 		return;
 	}
 
+	// don't evade missiles if you're docked
+	if (object_is_docked(objp)) {
+		return;
+	}
+
 	if (aip->ai_flags & (AIF_NO_DYNAMIC | AIF_KAMIKAZE)) {	//	If not allowed to pursue dynamic objectives, don't evade.  Dumb?  Maybe change. -- MK, 3/15/98
 		return;
 	}
@@ -12095,6 +12099,11 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 {
 	//	Only small ships evade an incoming missile.  Why would a capital ship try to swerve?
 	if (!(Ship_info[Ships[Pl_objp->instance].ship_info_index].flags & SIF_SMALL_SHIP)) {
+		return;
+	}
+
+	// don't evade missiles if you're docked
+	if (object_is_docked(Pl_objp)) {
 		return;
 	}
 
@@ -14188,42 +14197,42 @@ void ai_set_default_behavior(object *obj, int classnum)
 
 void ai_do_default_behavior(object *obj)
 {
-	ai_info	*aip;
-	int		ship_flags;
-
 	Assert(obj != NULL);
 	Assert(obj->instance != -1);
 	Assert(Ships[obj->instance].ai_index != -1);
 
-	aip = &Ai_info[Ships[obj->instance].ai_index];
+	ai_info	*aip = &Ai_info[Ships[obj->instance].ai_index];
+	int	si_flags = Ship_info[Ships[obj->instance].ship_info_index].flags;
 
-	ship_flags = Ship_info[Ships[obj->instance].ship_info_index].flags;
-	if (!is_instructor(obj) && (ship_flags & (SIF_FIGHTER | SIF_BOMBER)))
-	{
-		int enemy_objnum = find_enemy(OBJ_INDEX(obj), 1000.0f, The_mission.ai_profile->max_attackers[Game_skill_level]);
-		set_target_objnum(aip, enemy_objnum);
-		aip->mode = AIM_CHASE;
-		aip->submode = SM_ATTACK;
-		aip->submode_start_time = Missiontime;
-	}
-	else if (ship_flags & (SIF_SUPPORT))
-	{
-		aip->mode = AIM_SAFETY;
-		aip->submode = AISS_1;
-		aip->submode_start_time = Missiontime;
-		aip->ai_flags &= ~(AIF_REPAIRING);
-	}
-	else if ( ship_flags & SIF_SENTRYGUN )
-	{
-		aip->mode = AIM_SENTRYGUN;
-	}
-	else
-	{
-		aip->mode = AIM_NONE;
-	}
-	
+	// default behavior in most cases (especially if we're docked) is to just stay put
+	aip->mode = AIM_NONE;
 	aip->submode_start_time = Missiontime;
 	aip->active_goal = AI_GOAL_NONE;
+
+	// if we're not docked, we may modify the behavior a bit
+	if (!object_is_docked(obj))
+	{
+		// fighters automatically chase things
+		if (!is_instructor(obj) && (si_flags & (SIF_FIGHTER | SIF_BOMBER)))
+		{
+			int enemy_objnum = find_enemy(OBJ_INDEX(obj), 1000.0f, The_mission.ai_profile->max_attackers[Game_skill_level]);
+			set_target_objnum(aip, enemy_objnum);
+			aip->mode = AIM_CHASE;
+			aip->submode = SM_ATTACK;
+		}
+		// support ships automatically keep a safe distance
+		else if (si_flags & SIF_SUPPORT)
+		{
+			aip->mode = AIM_SAFETY;
+			aip->submode = AISS_1;
+			aip->ai_flags &= ~(AIF_REPAIRING);
+		}
+		// sentry guns... do their thing
+		else if (si_flags & SIF_SENTRYGUN)
+		{
+			aip->mode = AIM_SENTRYGUN;
+		}
+	}
 }
 
 #define	FRIENDLY_DAMAGE_THRESHOLD	50.0f		//	Display a message at this threshold.  Note, this gets scaled by Skill_level
@@ -14619,23 +14628,24 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		
 		//	Hit by a protected ship, don't attack it.
 		if (objp_hitter->flags & OF_PROTECTED) {
-			if ((Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && (aip->target_objnum == -1)) {
-				if (aip->mode == AIM_CHASE) {
-					if (aip->submode != SM_EVADE_WEAPON) {
-						aip->mode = AIM_CHASE;
-						aip->submode = SM_EVADE_WEAPON;
+			if (!object_is_docked(objp_ship)) {
+				if ((Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && (aip->target_objnum == -1)) {
+					if (aip->mode == AIM_CHASE) {
+						if (aip->submode != SM_EVADE_WEAPON) {
+							aip->mode = AIM_CHASE;
+							aip->submode = SM_EVADE_WEAPON;
+							aip->submode_start_time = Missiontime;
+						}
+					} else if (aip->mode != AIM_EVADE_WEAPON) {
+						aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
+						aip->previous_mode = aip->mode;
+						aip->previous_submode = aip->submode;
+						aip->mode = AIM_EVADE_WEAPON;
+						aip->submode = -1;
 						aip->submode_start_time = Missiontime;
+						aip->mode_time = timestamp(MAX_EVADE_TIME);	//	Evade for up to five seconds.
 					}
-				} else if (aip->mode != AIM_EVADE_WEAPON) {
-					aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
-					aip->previous_mode = aip->mode;
-					aip->previous_submode = aip->submode;
-					aip->mode = AIM_EVADE_WEAPON;
-					aip->submode = -1;
-					aip->submode_start_time = Missiontime;
-					aip->mode_time = timestamp(MAX_EVADE_TIME);	//	Evade for up to five seconds.
 				}
-
 			}
 			return;
 		}
@@ -14714,10 +14724,12 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 	//	If the hitter object is the ignore object, don't attack it.
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 	if ((is_ignore_object(aip, objp_hitter-Objects)) && (sip->flags & (SIF_BOMBER | SIF_FIGHTER))) {
-		if (aip->mode == AIM_NONE) {
-			aip->mode = AIM_CHASE;	//	This will cause the ship to move, if not attack.
-			aip->submode = SM_EVADE;
-			aip->submode_start_time = Missiontime;
+		if (!object_is_docked(objp_ship)) {
+			if (aip->mode == AIM_NONE) {
+				aip->mode = AIM_CHASE;	//	This will cause the ship to move, if not attack.
+				aip->submode = SM_EVADE;
+				aip->submode_start_time = Missiontime;
+			}
 		}
 		return;
 	}

@@ -350,13 +350,18 @@ void emp_process_ship(ship *shipp)
 	if(!(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))){
 		return;
 	}
+
+	// if he's docked, or ordered to not move, bail now
+	if (object_is_docked(objp) || (aip->mode == AIM_STILL) || (aip->mode == AIM_PLAY_DEAD)){
+		return;
+	}
 	
 	// pick targets randomly and wackily so that the ship flies crazily :)	
 	if(((int)f2fl(Missiontime) + (int)(EMP_INTENSITY_MAX * shipp->emp_intensity)) % mod_val == 0){
 		int ship_lookup = ship_get_random_team_ship(iff_get_attackee_mask(shipp->team));
 
 		// if we got a valid ship object to target
-		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0)){
+		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags & OF_PROTECTED)){
 			// attack the object
 			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], NULL);
 		}

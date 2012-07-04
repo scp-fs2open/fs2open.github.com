@@ -49,7 +49,7 @@ bool object_is_docked(p_object *objp);
 bool dock_check_find_direct_docked_object(p_object *objp, p_object *other_objp);
 
 // find the object occupying objp's specified dockpoint
-p_object *dock_find_object_at_dockpoint(p_object *objp, int dockpoint);
+p_object *dock_find_object_at_dockpoint(p_object *objp, char *dockpoint);
 
 // find objp's dockpoint being occupied by other_objp
 char *dock_find_dockpoint_used_by_object(p_object *objp, p_object *other_objp);

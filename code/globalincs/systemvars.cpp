@@ -72,6 +72,7 @@ bool Specmap_override = false;
 bool Normalmap_override = false;
 bool Heightmap_override = false;
 bool Glowpoint_override = false;
+bool Glowpoint_use_depth_buffer = true;
 bool GLSL_override = false;
 bool PostProcessing_override = false;
 

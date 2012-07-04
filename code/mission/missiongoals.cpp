@@ -32,6 +32,7 @@
 #include "network/multimsgs.h"
 #include "network/multi_team.h"
 #include "network/multi_sexp.h"
+#include "mod_table/mod_table.h"
 
 
 
@@ -891,14 +892,25 @@ void mission_process_event( int event )
 
 	// if chained, insure that previous event is true and next event is false
 	if (Mission_events[event].chain_delay >= 0) {  // this indicates it's chained
-		if (event > 0){
-			if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].timestamp + i2f(Mission_events[event].chain_delay) > Missiontime)){
-				sindex = -1;  // bypass evaluation
+		// What everyone expected the chaining behavior to be, as specified in Karajorma's original fix to Mantis #82
+		if (Alternate_chaining_behavior) {
+			if (event > 0){
+				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].satisfied_time + i2f(Mission_events[event].chain_delay) > Missiontime)){
+					sindex = -1;  // bypass evaluation
+				}
 			}
 		}
+		// Volition's original chaining behavior as used in retail and demonstrated in e.g. btm-01.fsm (or btm-01.fs2 in the Port)
+		else {
+			if (event > 0){
+				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].timestamp + i2f(Mission_events[event].chain_delay) > Missiontime)){
+					sindex = -1;  // bypass evaluation
+				}
+			}
 
-		if ((event < Num_mission_events - 1) && Mission_events[event + 1].result && (Mission_events[event + 1].chain_delay >= 0)){
-			sindex = -1;  // bypass evaluation
+			if ((event < Num_mission_events - 1) && Mission_events[event + 1].result && (Mission_events[event + 1].chain_delay >= 0)){
+				sindex = -1;  // bypass evaluation
+			}
 		}
 	}
 

@@ -225,7 +225,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	// determine the contents of the flags member based on the type of entry we added.  We need to store things
 	// like team for the primary and (possibly) secondary object for this entry.
 	switch ( type ) {
-	int index, si;
+	int index;
 
 	case LOG_SHIP_DESTROYED:
 	case LOG_SHIP_ARRIVED:
@@ -312,9 +312,19 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 
 		// get the team value for this wing.  Departed or destroyed wings will pass the team
 		// value in info_index parameter.  For arriving wings, get the team value from the
-		// first ship in the list
+		// first ship in the list because the info_index contains the wave count
 		if ( type == LOG_WING_ARRIVED ) {
-			si = Wings[index].ship_index[0];
+			int i, si = -1;
+
+			// Goober5000 - get the team value from any ship in the list, because
+			// ships that arrive initially docked could be created in random order
+			for (i = 0; i < MAX_SHIPS_PER_WING; ++i) {
+				// get first valid ship
+				si = Wings[index].ship_index[i];
+				if (si >= 0) {
+					break;
+				}
+			}
 			Assert( si != -1 );
 			entry->primary_team = Ships[si].team;
 		} else {

@@ -17,6 +17,7 @@ bool True_loop_argument_sexps;
 bool Fixed_turret_collisions;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_disables_hud;
+bool Alternate_chaining_behavior;
 
 void parse_mod_table(char *filename)
 {
@@ -43,7 +44,25 @@ void parse_mod_table(char *filename)
 	// start parsing
 	optional_string("#CAMPAIGN SETTINGS"); 
 	if (optional_string("$Default Campaign File Name:")) {
-		stuff_string(Default_campaign_file_name, F_NAME, (MAX_FILENAME_LEN - 4) );
+		char temp[MAX_FILENAME_LEN];
+		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+
+		// remove extension?
+		char *p = strrchr(temp, '.');
+		if (p != NULL) {
+			mprintf(("Game Settings Table: Removing extension on default campaign file name %s\n", temp));
+			*p = 0;
+		}
+
+		// check length
+		int maxlen = (MAX_FILENAME_LEN - 4);
+		int len = strlen(temp);
+		if (len > maxlen) {
+			Warning(LOCATION, "Token too long: [%s].  Length = %i.  Max is %i.\n", temp, len, maxlen);
+			temp[maxlen] = 0;
+		}
+
+		strcpy_s(Default_campaign_file_name, temp);
 	}
 
 	optional_string("#HUD SETTINGS"); 
@@ -55,7 +74,7 @@ void parse_mod_table(char *filename)
 	if (optional_string("$Cutscene camera disables HUD:")) {
 		stuff_boolean(&Cutscene_camera_disables_hud);
 		if (!Cutscene_camera_disables_hud)
-			mprintf(("Game Settings Table : HUD will not be disabled by default in in-game cutscenes.\n"));
+			mprintf(("Game Settings Table: HUD will not be disabled by default in in-game cutscenes.\n"));
 	} else {
 		Cutscene_camera_disables_hud = true;
 	}
@@ -63,11 +82,19 @@ void parse_mod_table(char *filename)
 	optional_string("#SEXP SETTINGS"); 
 	if (optional_string("$Loop SEXPs Then Arguments:")) { 
 		stuff_boolean(&True_loop_argument_sexps);
-		if (True_loop_argument_sexps){
-			mprintf(("Game Settings Table : Using Reversed Loops For SEXP Arguments\n"));
+		if (True_loop_argument_sexps) {
+			mprintf(("Game Settings Table: Using Reversed Loops For SEXP Arguments\n"));
 		}
 		else {
-			mprintf(("Game Settings Table : Using Standard Loops For SEXP Arguments\n"));
+			mprintf(("Game Settings Table: Using Standard Loops For SEXP Arguments\n"));
+		}
+	}
+	if (optional_string("$Use Alternate Chaining Behavior:")) {
+		stuff_boolean(&Alternate_chaining_behavior);
+		if (Alternate_chaining_behavior) {
+			mprintf(("Game Settings Table: Using alternate event chaining behavior\n"));
+		} else {
+			mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
 		}
 	}
 
