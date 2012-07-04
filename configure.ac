@@ -64,9 +64,9 @@ AC_ARG_ENABLE(speech,
 
 AC_ARG_ENABLE(inferno,
 	AC_HELP_STRING([--enable-inferno],
-		[Make an Inferno build]),
+		[Make an Inferno build (default = yes)]),
 		[fs2_inferno=$enableval],
-		[fs2_inferno=no],
+		[fs2_inferno=yes],
 )
 
 AC_ARG_ENABLE(gprof,
@@ -185,15 +185,15 @@ if test "$fs2_debug" = "yes" ; then
 
 	if test "$fs2_fred" = "yes" ; then
 		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["wxFRED2_INF_d"])
+			AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_DEBUG"])
 		else
-			AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+			AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_NOINF_DEBUG"])
 		fi
 	else
 		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["fs2_open_INF_d"])
+			AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}_DEBUG"])
 		else
-			AC_SUBST(FS2_BINARY, ["fs2_open_d"])
+			AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}_NOINF_DEBUG"])
 		fi
 	fi
 else
@@ -203,15 +203,15 @@ else
 
 	if test "$fs2_fred" = "yes" ; then
 		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["wxFRED2_INF_r"])
+			AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}"])
 		else
-			AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
+			AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_NOINF"])
 		fi
 	else
 		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["fs2_open_INF_r"])
+			AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}"])
 		else
-			AC_SUBST(FS2_BINARY, ["fs2_open_r"])
+			AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}_NOINF"])
 		fi
 	fi
 fi
