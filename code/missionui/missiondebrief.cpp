@@ -2004,8 +2004,12 @@ void debrief_init()
 	// Goober5000 - replace any variables with their values
 	for (i = 0; i < Debriefing->num_stages; i++)
 	{
-		if (Debriefing->stages[i].new_text)
-			sexp_replace_variable_names_with_values(Debriefing->stages[i].new_text, MAX_DEBRIEF_LEN);
+		debrief_stage *stage = &Debriefing->stages[i];
+
+		if (stage->new_text)
+			sexp_replace_variable_names_with_values(stage->new_text, MAX_DEBRIEF_LEN);
+		if (stage->new_recommendation_text)
+			sexp_replace_variable_names_with_values(stage->new_recommendation_text, MAX_RECOMMENDATION_LEN);
 	}
 
 	// no longer is mission
