@@ -191,7 +191,10 @@ AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
 
-EXTRA_PROGRAMS = fs2_open_r fs2_open_d wxFRED2_r wxFRED2_d fs2_open_INF_r fs2_open_INF_d wxFRED2_INF_r wxFRED2_INF_d
+EXTRA_PROGRAMS = fs2_open_@PACKAGE_VERSION@ fs2_open_@PACKAGE_VERSION@_NOINF \
+	fs2_open_@PACKAGE_VERSION@_DEBUG fs2_open_@PACKAGE_VERSION@_NOINF_DEBUG \
+	wxFRED2_@PACKAGE_VERSION@ wxFRED2_@PACKAGE_VERSION@_NOINF \
+	wxFRED2_@PACKAGE_VERSION@_DEBUG wxFRED2_@PACKAGE_VERSION@_NOINF_DEBUG 
 
 ###############################################################################
 ##
@@ -793,22 +796,22 @@ FS2OPEN_SOURCES = \
 	freespace2/levelpaging.cpp	\
 	freespace2/levelpaging.h
 
-fs2_open_d_SOURCES =	\
+fs2_open_@PACKAGE_VERSION@_DEBUG_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_r_SOURCES =	\
+fs2_open_@PACKAGE_VERSION@_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_INF_d_SOURCES =	\
+fs2_open_@PACKAGE_VERSION@_NOINF_DEBUG_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_INF_r_SOURCES =	\
+fs2_open_@PACKAGE_VERSION@_NOINF_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_d_LDADD = libcode.a
-fs2_open_r_LDADD = libcode.a
-fs2_open_INF_d_LDADD = libcode.a
-fs2_open_INF_r_LDADD = libcode.a
+fs2_open_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a
+fs2_open_@PACKAGE_VERSION@_LDADD = libcode.a
+fs2_open_@PACKAGE_VERSION@_NOINF_DEBUG_LDADD = libcode.a
+fs2_open_@PACKAGE_VERSION@_NOINF_LDADD = libcode.a
 
 ##
 ## End MAIN binary
@@ -828,22 +831,22 @@ wxFRED_SOURCES = \
 	wxfred2/wxfred_xrc.cpp	\
 	wxfred2/wxfred_xrc.h
 
-wxFRED2_d_SOURCES = \
+wxFRED2_@PACKAGE_VERSION@_DEBUG_SOURCES = \
 	${wxFRED_SOURCES}
 
-wxFRED2_r_SOURCES =	\
+wxFRED2_@PACKAGE_VERSION@_SOURCES =	\
 	${wxFRED_SOURCES}
 
-wxFRED2_INF_d_SOURCES = \
+wxFRED2_@PACKAGE_VERSION@_NOINF_DEBUG_SOURCES = \
 	${wxFRED_SOURCES}
 
-wxFRED2_INF_r_SOURCES =	\
+wxFRED2_@PACKAGE_VERSION@_NOINF_SOURCES =	\
 	${wxFRED_SOURCES}
 
-wxFRED2_d_LDADD = libcode.a
-wxFRED2_r_LDADD = libcode.a
-wxFRED2_INF_d_LDADD = libcode.a
-wxFRED2_INF_r_LDADD = libcode.a
+wxFRED2_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a
+wxFRED2_@PACKAGE_VERSION@_LDADD = libcode.a
+wxFRED2_@PACKAGE_VERSION@_NOINF_DEBUG_LDADD = libcode.a
+wxFRED2_@PACKAGE_VERSION@_NOINF_LDADD = libcode.a
 
 ##
 ## End wxFRED2 binary
