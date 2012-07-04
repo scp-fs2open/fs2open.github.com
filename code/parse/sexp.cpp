@@ -93,6 +93,7 @@
 #include "object/objectsnd.h"
 #include "graphics/font.h"
 #include "asteroid/asteroid.h"
+#include "ship/afterburner.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -11972,7 +11973,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 			// the lock afterburner SEXP also needs to set a physics flag
 			if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
 				if (set_it) {
-					Objects[Ships[ship_index].objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
+					afterburners_stop(&Objects[Ships[ship_index].objnum], 1);
 				}
 			}
 
@@ -12072,7 +12073,7 @@ void multi_sexp_deal_with_ship_flag()
 			// deal with side effects of these flags
 			if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
 				if (set_it) {
-					Objects[shipp->objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
+					afterburners_stop(&Objects[shipp->objnum], 1);
 				}
 			}
 
