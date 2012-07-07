@@ -1220,10 +1220,10 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 		vertvec.push_back(va->world.xyz.z);
 	}
 
-	if (isRGB) glColorPointer(4, GL_UNSIGNED_BYTE, 0, colour.data());
+	if (isRGB) glColorPointer(4, GL_UNSIGNED_BYTE, 0, &colour.front());
 
-	glTexCoordPointer(2, GL_FLOAT, 0, uvcoords.data());
-	glVertexPointer(3, GL_FLOAT, 0, vertvec.data());
+	glTexCoordPointer(2, GL_FLOAT, 0, &uvcoords.front());
+	glVertexPointer(3, GL_FLOAT, 0, &vertvec.front());
 
 	if (isRGB) glEnableClientState(GL_COLOR_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -2534,8 +2534,8 @@ void gr_opengl_update_distortion()
 		vertex.push_back((float)gr_screen.max_h*0.03125f*i);
 	}
 
-	glVertexPointer(2, GL_FLOAT, 0, vertex.data());
-	glColorPointer(4, GL_UNSIGNED_BYTE, 0, colours.data());
+	glVertexPointer(2, GL_FLOAT, 0, &vertex.front());
+	glColorPointer(4, GL_UNSIGNED_BYTE, 0, &colours.front());
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
