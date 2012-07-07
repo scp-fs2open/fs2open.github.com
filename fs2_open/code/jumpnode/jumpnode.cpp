@@ -260,7 +260,7 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 	
 	int mr_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL;
 	if(!(m_flags & JN_SHOW_POLYS)) {
-		mr_flags |= MR_NO_CULL | MR_NO_POLYS | MR_SHOW_OUTLINE_HTL;
+		mr_flags |= MR_NO_CULL | MR_NO_POLYS | MR_SHOW_OUTLINE_PRESET;
 	}
 	
 	if ( Fred_running ) {
