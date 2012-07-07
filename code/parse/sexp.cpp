@@ -3543,7 +3543,7 @@ int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode
 		node = Sexp_nodes[node].rest;
 	}
 
-	accumulator += ")";
+	accumulator += ") ";
 	if ((accumulator.length() - old_length) > 40) {
 		accumulator.resize(old_length);
 		build_extended_sexp_string(accumulator, cur_node, level, mode);
