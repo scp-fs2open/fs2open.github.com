@@ -70,6 +70,46 @@ inline void opengl_draw_textured_quad(
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
+inline void opengl_draw_coloured_quad(
+	GLint x1, GLint y1, 
+	GLint x2, GLint y2 )
+{
+	GLint glVertices[8] = {
+		x1, y1,
+		x1, y2,
+		x2, y1,
+		x2, y2
+	};
+
+	glVertexPointer(2, GL_INT, 0, glVertices);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+}
+
+inline void opengl_draw_coloured_quad(
+	GLfloat x1, GLfloat y1,
+	GLfloat x2, GLfloat y2 )
+{
+	GLfloat glVertices[8] = {
+		x1, y1,
+		x1, y2,
+		x2, y1,
+		x2, y2
+	};
+
+	glVertexPointer(2, GL_FLOAT, 0, glVertices);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+}
+
 extern int Scene_texture_initialized;
 
 extern GLuint Scene_color_texture;
