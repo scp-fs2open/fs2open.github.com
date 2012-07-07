@@ -553,13 +553,17 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 
 	if ( (x1 == x2) && (y1 == y2) ) {
 		gr_opengl_set_2d_matrix();
+		
+		GLfloat vert[3]= {sx1, sy1, -0.99f};
+		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
-		glBegin(GL_POINTS);
-			glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+		glVertexPointer(3, GL_FLOAT, 0, vert);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glDrawArrays(GL_POINTS, 0, 1);
+		glDisableClientState(GL_VERTEX_ARRAY);
 
-			glVertex3f(sx1, sy1, -0.99f);
-		glEnd ();
-
+		GL_CHECK_FOR_ERRORS("end of opengl_line()");
+		
 		gr_opengl_end_2d_matrix();
 
 		return;
@@ -581,12 +585,19 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 
 	gr_opengl_set_2d_matrix();
 
-	glBegin(GL_LINES);
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	GLfloat line[6] = {
+		sx2, sy2, -0.99f,
+		sx1, sy1, -0.99f
+	};
 
-		glVertex3f(sx2, sy2, -0.99f);
-		glVertex3f(sx1, sy1, -0.99f);
-	glEnd();
+	glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+
+	glVertexPointer(3, GL_FLOAT, 0, line);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glDrawArrays(GL_LINES, 0, 2);
+	glDisableClientState(GL_VERTEX_ARRAY);
+
+	GL_CHECK_FOR_ERRORS("end of opengl_line()");
 
 	gr_opengl_end_2d_matrix();
 }
@@ -601,18 +612,29 @@ void gr_opengl_line_htl(vec3d *start, vec3d *end)
 	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetZbufferType(zbuffer_state);
 
+
     if (gr_screen.current_color.is_alphacolor) {
         GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-        glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-    } else {
+		glColor4ub( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha );
+	} else {
         GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-        glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+		glColor3ub( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue );
     }
 
-    glBegin(GL_LINES);
-		glVertex3fv(start->a1d);
-		glVertex3fv(end->a1d);
-	glEnd();
+	GLfloat line[6] = {
+		start->xyz.x,	start->xyz.y,	start->xyz.z,
+		end->xyz.x,		end->xyz.y,		end->xyz.z
+	};
+
+	glVertexPointer(3, GL_FLOAT, 0, line);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	glDrawArrays(GL_LINES, 0, 2);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+
+	GL_CHECK_FOR_ERRORS("end of opengl_line_htl()");
 }
 
 void gr_opengl_aaline(vertex *v1, vertex *v2)
@@ -646,11 +668,16 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 	if ( (x1 == x2) && (y1 == y2) ) {
 		gr_opengl_set_2d_matrix();
 
-		glBegin(GL_POINTS);
-			glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
-			glVertex3f(sx1, sy1, -0.99f);
-		glEnd();
+		GLfloat vert[3]= {sx1, sy1, -0.99f};
+
+		glVertexPointer(3, GL_FLOAT, 0, vert);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glDrawArrays(GL_POINTS, 0, 1);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		GL_CHECK_FOR_ERRORS("end of opengl_aaline()");
 
 		gr_opengl_end_2d_matrix();
 
@@ -673,12 +700,18 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 
 	gr_opengl_set_2d_matrix();
 
-	glBegin(GL_LINES);
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	GLfloat line[6] = {
+		sx2, sy2, -0.99f,
+		sx1, sy1, -0.99f
+	};
 
-		glVertex3f(sx2, sy2, -0.99f);
-		glVertex3f(sx1, sy1, -0.99f);
-	glEnd();
+	glVertexPointer(3, GL_FLOAT, 0, line);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glDrawArrays(GL_LINES, 0, 2);
+	glDisableClientState(GL_VERTEX_ARRAY);
+
+	GL_CHECK_FOR_ERRORS("end of opengl_aaline()");
 
 	gr_opengl_end_2d_matrix();
 
@@ -729,13 +762,25 @@ void gr_opengl_gradient(int x1, int y1, int x2, int y2, bool resize)
 		}
 	}
 
-	glBegin(GL_LINES);
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, ba);
-		glVertex2f(sx2, sy2);
+	GLubyte colour[8] = {
+		gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, ba,
+		gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, aa
+	};
 
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, aa);
-		glVertex2f(sx1, sy1);
-	glEnd();	
+	GLfloat verts[4] = {
+		sx2, sy2,
+		sx1, sy1
+	};
+
+	glColorPointer(4, GL_UNSIGNED_BYTE, 0, colour);
+	glVertexPointer(2, GL_FLOAT, 0, verts);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glDrawArrays(GL_LINES, 0, 2);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+
 }
 
 void gr_opengl_circle(int xc, int yc, int d, bool resize)
@@ -1147,20 +1192,48 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
-	glBegin(gl_mode);
+	SCP_vector<ubyte> colour;
+	SCP_vector<float> vertvec;
+	SCP_vector<float> uvcoords;
+
+	if (isRGB)
+		colour.reserve(nv * 4);
+	
+	vertvec.reserve(nv * 3);
+	uvcoords.reserve(nv * 2);
 
 	for (int i = 0; i < nv; i++) {
 		vertex *va = verts[i];
-
+		
 		if (isRGB) {
-			glColor4ub(va->r, va->g, va->b, (ubyte)alpha);
+			colour.push_back(va->r);
+			colour.push_back(va->g);
+			colour.push_back(va->b);
+			colour.push_back(alpha);
 		}
 
-		glTexCoord2f(va->texture_position.u, va->texture_position.v);
-		glVertex3f(va->world.xyz.x, va->world.xyz.y, va->world.xyz.z);
+		uvcoords.push_back(va->texture_position.u);
+		uvcoords.push_back(va->texture_position.v);
+
+		vertvec.push_back(va->world.xyz.x);
+		vertvec.push_back(va->world.xyz.y);
+		vertvec.push_back(va->world.xyz.z);
 	}
 
-	glEnd();
+	if (isRGB) glColorPointer(4, GL_UNSIGNED_BYTE, 0, colour.data());
+
+	glTexCoordPointer(2, GL_FLOAT, 0, uvcoords.data());
+	glVertexPointer(3, GL_FLOAT, 0, vertvec.data());
+
+	if (isRGB) glEnableClientState(GL_COLOR_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	glDrawArrays(gl_mode, 0, nv);
+
+	if (isRGB) glDisableClientState(GL_COLOR_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
 
 	GL_state.CullFace(cull_face);
 
@@ -1651,12 +1724,7 @@ void gr_opengl_shade(int x, int y, int w, int h, bool resize)
 	glColor4ub( (GLubyte)gr_screen.current_shader.r, (GLubyte)gr_screen.current_shader.g,
 				(GLubyte)gr_screen.current_shader.b, (GLubyte)gr_screen.current_shader.c );
 
-	glBegin(GL_QUADS);
-		glVertex2i(x1, y2);
-		glVertex2i(x2, y2);
-		glVertex2i(x2, y1);
-		glVertex2i(x1, y1);
-	glEnd();
+	opengl_draw_coloured_quad(x1, y1, x2, y2);
 
 	gr_opengl_end_2d_matrix();
 }
@@ -1682,12 +1750,7 @@ void gr_opengl_flash(int r, int g, int b)
 
 	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
 
-	glBegin(GL_QUADS);
-		glVertex2i(x1, y2);
-		glVertex2i(x2, y2);
-		glVertex2i(x2, y1);
-		glVertex2i(x1, y1);
-	glEnd();
+	opengl_draw_coloured_quad(x1, y1, x2, y2);
 }
 
 void gr_opengl_flash_alpha(int r, int g, int b, int a)
@@ -1712,12 +1775,7 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 
 	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
 
-	glBegin(GL_QUADS);
-		glVertex2i(x1, y2);
-		glVertex2i(x2, y2);
-		glVertex2i(x2, y1);
-		glVertex2i(x1, y1);
-	glEnd();
+	opengl_draw_coloured_quad(x1, y1, x2, y2);
 }
 
 
@@ -1964,12 +2022,7 @@ void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 
 	glColor3fv(pre_set_colours[colour]);
 
-	glBegin(GL_QUADS);
-		glVertex2f(x, y);
-		glVertex2f(x, y+h);
-		glVertex2f(x+w, y+h);
-		glVertex2f(x+w, y);
-	glEnd();
+	opengl_draw_coloured_quad(x, y, x+w, y+h);
 }
 
 void gr_opengl_sphere_htl(float rad)
@@ -2347,35 +2400,57 @@ void gr_opengl_scene_texture_end()
 
 		if (GL_rendering_to_texture)
 		{
-			glBegin(GL_QUADS);
-				glTexCoord2f(Scene_texture_u_scale, 0.0f);
-				glVertex2f(0.0f, (float)gr_screen.max_h);
-				
-				glTexCoord2f(0.0f, 0.0f);
-				glVertex2f((float)gr_screen.max_w, (float)gr_screen.max_h);
-				
-				glTexCoord2f(0.0f, Scene_texture_v_scale);
-				glVertex2f((float)gr_screen.max_w, 0.0f);
-				
-				glTexCoord2f(Scene_texture_u_scale, Scene_texture_v_scale);
-				glVertex2f(0.0f, 0.0f);
-			glEnd();
+			GLfloat vertices[8] = {
+				0.0f, (float)gr_screen.max_h,
+				(float)gr_screen.max_w, (float)gr_screen.max_h,
+				(float)gr_screen.max_w, 0.0f,
+				0.0f, 0.0f
+			};
+
+			GLfloat uvcoords[8] = {
+				Scene_texture_u_scale, 0.0f,
+				0.0f, 0.0f,
+				0.0f, Scene_texture_v_scale,
+				Scene_texture_u_scale, Scene_texture_v_scale
+			};
+
+			glVertexPointer(2, GL_FLOAT, 0, vertices);
+			glTexCoordPointer(2, GL_FLOAT, 0, uvcoords);
+
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			
+			glDisableClientState(GL_VERTEX_ARRAY);
+			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		}
 		else
 		{
-			glBegin(GL_QUADS);
-				glTexCoord2f(0.0f, 0.0f);
-				glVertex2f(0.0f, (float)gr_screen.max_h);
+			GLfloat vertices[8] = {
+				0.0f, (float)gr_screen.max_h,
+				(float)gr_screen.max_w, (float)gr_screen.max_h,
+				(float)gr_screen.max_w, 0.0f,
+				0.0f, 0.0f
+			};
 
-				glTexCoord2f(Scene_texture_u_scale, 0.0f);
-				glVertex2f((float)gr_screen.max_w, (float)gr_screen.max_h);
+			GLfloat uvcoords[8] = {
+				0.0f, 0.0f,
+				Scene_texture_u_scale, 0.0f,
+				Scene_texture_u_scale, Scene_texture_v_scale,
+				0.0f, Scene_texture_v_scale
+			};
 
-				glTexCoord2f(Scene_texture_u_scale, Scene_texture_v_scale);
-				glVertex2f((float)gr_screen.max_w, 0.0f);
+			glVertexPointer(2, GL_FLOAT, 0, vertices);
+			glTexCoordPointer(2, GL_FLOAT, 0, uvcoords);
 
-				glTexCoord2f(0.0f, Scene_texture_v_scale);
-				glVertex2f(0.0f, 0.0f);
-			glEnd();
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		
+			glDrawArrays(GL_QUADS, 0, 4);
+			
+			glDisableClientState(GL_VERTEX_ARRAY);
+			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		}
 
 		GL_state.Texture.SetActiveUnit(0);
@@ -2418,27 +2493,57 @@ void gr_opengl_update_distortion()
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-	glBegin(GL_QUADS);
-		glTexCoord2f(0.0f, 0.0f);
-		glVertex2f(0.03f*(float)gr_screen.max_w,(float)gr_screen.max_h);
+	GLfloat texcoord[8] = {
+		0.0f, 0.0f,
+		0.96875f, 0.0f,
+		0.96875f, 1.0f,
+		0.0f, 1.0f
+	};
 
-		glTexCoord2f(0.96875f, 0.0f);
-		glVertex2f((float)gr_screen.max_w, (float)gr_screen.max_h);
+	GLfloat vertices[8] = {
+		0.03f*(float)gr_screen.max_w,(float)gr_screen.max_h,
+		(float)gr_screen.max_w, (float)gr_screen.max_h,
+		(float)gr_screen.max_w, 0.0f,
+		0.03f*(float)gr_screen.max_w, 0.0f
+	};
 
-		glTexCoord2f(0.96875f, 1.0f);
-		glVertex2f((float)gr_screen.max_w, 0.0f);
+	glVertexPointer(2, GL_FLOAT, 0, vertices);
+	glTexCoordPointer(2, GL_FLOAT, 0, texcoord);
 
-		glTexCoord2f(0.0f, 1.0f);
-		glVertex2f(0.03f*(float)gr_screen.max_w, 0.0f);
-	glEnd();
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		
+	glDrawArrays(GL_QUADS, 0, 4);
+			
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	GL_state.Texture.Disable();
-	glBegin(GL_POINTS);
-		for(int i = 0; i < 33; i++)
-		{
-			glColor4ub(rand()%256, rand()%256 ,255, 255);
-			glVertex2f(0.04f, (float)gr_screen.max_h*0.03125f*i);
-		}
-	glEnd();
+
+	SCP_vector<ubyte> colours;
+	SCP_vector<GLfloat> vertex;
+	colours.reserve(33 * 4);
+	vertex.reserve(33 * 2);
+	for(int i = 0; i < 33; i++)
+	{
+		colours.push_back(rand()%256);
+		colours.push_back(rand()%256);
+		colours.push_back(255);
+		colours.push_back(255);
+
+		vertex.push_back(0.04f);
+		vertex.push_back((float)gr_screen.max_h*0.03125f*i);
+	}
+
+	glVertexPointer(2, GL_FLOAT, 0, vertex.data());
+	glColorPointer(4, GL_UNSIGNED_BYTE, 0, colours.data());
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+		
+	glDrawArrays(GL_POINTS, 0, 33);
+			
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
 	Distortion_switch = !Distortion_switch;
 
 	// reset state
