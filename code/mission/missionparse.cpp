@@ -4007,10 +4007,18 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	// possibly play some event driven music here.  Send a network packet indicating the wing was
 	// created.  Only do this stuff if actually in the mission.
 	if ( (objnum != -1) && (Game_mode & GM_IN_MISSION) ) {		// if true, we have created at least one new ship.
-		int ship_num;
+		int i, ship_num;
 
-		// Goober5000 - make all wings form on their respective leaders
-		ai_maybe_add_form_goal( wingp );
+		// see if this wing is a player starting wing, and if so, call the maybe_add_form_goal
+		// function to possibly make the wing form on the player
+		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
+			if ( Starting_wings[i] == wingnum ){
+				break;
+			}
+		}
+		if ( i < MAX_STARTING_WINGS ){
+			ai_maybe_add_form_goal( wingp );
+		}
 
 		mission_log_add_entry( LOG_WING_ARRIVED, wingp->name, NULL, wingp->current_wave );
 		ship_num = wingp->ship_index[0];

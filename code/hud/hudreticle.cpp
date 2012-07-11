@@ -755,6 +755,8 @@ void HudGaugeWeaponLinking::render(float frametime)
 	int			gauge_index=0, frame_offset=0;
 	ship_weapon	*swp;
 
+	setGaugeColor();
+
 	renderBitmap(arc.first_frame+1, position[0], position[1]);
 
 	swp = &Player_ship->weapons;
