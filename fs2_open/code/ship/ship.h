@@ -1395,6 +1395,7 @@ typedef struct ship_info {
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;
+extern int	*Player_cockpit_textures;
 
 // Data structure to track the active missiles
 typedef struct ship_obj {
