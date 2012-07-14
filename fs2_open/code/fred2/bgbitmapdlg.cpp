@@ -239,7 +239,7 @@ void bg_bitmap_dlg::create()
 	if(Neb2_awacs < 0.0f){
 		m_neb_intensity = CString("3000");
 	} else {
-		char whee[255] = "";
+		char whee[25] = "";
 		m_neb_intensity = CString(itoa((int)Neb2_awacs, whee, 10));
 	}
 		
