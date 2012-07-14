@@ -5491,6 +5491,7 @@ void post_process_mission()
 				SCP_string error_msg;
 
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
+				truncate_message_lines(sexp_str, 30);
 				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 
 				if (!Fred_running) {

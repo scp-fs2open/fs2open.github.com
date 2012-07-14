@@ -3977,6 +3977,30 @@ int scan_fso_version_string(const char *text, int *major, int *minor, int *build
 	return 0;
 }
 
+// Goober5000 - used for long Warnings, Errors, and FRED error messages with SEXPs
+void truncate_message_lines(SCP_string &text, int num_allowed_lines)
+{
+	Assert(num_allowed_lines > 0);
+	size_t find_from = 0;
+
+	while (find_from < text.size())
+	{
+		if (num_allowed_lines <= 0)
+		{
+			text.resize(find_from);
+			text.append("[...]");
+			break;
+		}
+
+		size_t pos = text.find('\n', find_from);
+		if (pos == SCP_string::npos)
+			break;
+
+		num_allowed_lines--;
+		find_from = pos + 1;
+	}
+}
+
 // Goober5000 - ugh, I can't see why they didn't just use stuff_*_list for these;
 // the only differece is the lack of parentheses
 

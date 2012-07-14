@@ -243,6 +243,9 @@ extern void format_integer_with_commas(char *buf, int integer, bool use_comma_wi
 // Goober5000
 extern int scan_fso_version_string(const char *text, int *major, int *minor, int *build, int *revis);
 
+// Goober5000
+extern void truncate_message_lines(SCP_string &text, int num_allowed_lines);
+
 inline void parse_advance(int s){Mp+=s;}
 
 // parse a modular table, returns the number of files matching the "name_check" filter or 0 if it did nothing
