@@ -5025,7 +5025,7 @@ public:
 	{
 		if (!isValid())
 		{
-			return -1;
+			return UINT_MAX;
 		}
 
 		return display_num;
