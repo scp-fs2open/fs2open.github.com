@@ -6257,7 +6257,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		if ( dist <= 0 )
 		{
 			// Goober5000 - default to 100
-			Error(LOCATION, "Distance of %d is invalid in mission_set_arrival_location.  Defaulting to 100.\n", dist);
+			Warning(LOCATION, "Distance of %d is invalid in mission_set_arrival_location.  Defaulting to 100.\n", dist);
 			dist = 100;
 		}
 		
