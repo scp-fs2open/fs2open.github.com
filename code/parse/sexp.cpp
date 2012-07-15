@@ -10763,6 +10763,10 @@ void sexp_sabotage_subsystem(int n)
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 			// set the strength to the given percentage if current strength is > given percentage
 			ss = ship_get_indexed_subsys( shipp, index );
+			if (ss == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for sabotage subsystem\n", index, shipp->ship_name));
+				return;
+			}
 		}
 
 		sabotage_hits = ss->max_hits * ((float)percentage / 100.0f);
@@ -10871,6 +10875,10 @@ void sexp_repair_subsystem(int n)
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 			// set the strength to the given percentage if current strength is < given percentage
 			ss = ship_get_indexed_subsys( shipp, index );
+			if (ss == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for repair subsystem\n", index, shipp->ship_name));
+				return;
+			}
 		}
 	
 		repair_hits = ss->max_hits * ((float)percentage / 100.0f);
@@ -10986,6 +10994,10 @@ void sexp_set_subsystem_strength(int n)
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 			// set the strength to the given percentage
 			ss = ship_get_indexed_subsys( shipp, index );
+			if (ss == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for set subsystem strength\n", index, shipp->ship_name));
+				return;
+			}
 		}
 		
 		// maybe blow up subsys
@@ -18181,6 +18193,10 @@ void sexp_subsys_set_random(int node)
 		if ( exclusion_list[idx] == 0 ) {
 			// get non excluded subsystem
 			subsys = ship_get_indexed_subsys(shipp, idx, NULL);
+			if (subsys == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for sabotage subsystem\n", idx, shipp->ship_name));
+				continue;
+			}
 
 			// randomize its hit points
 			rand = rand_internal(low, high);

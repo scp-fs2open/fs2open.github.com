@@ -12044,7 +12044,8 @@ ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos )
 			}
 		}
 		
-		Int3();				// maybe we shouldn't get here, but with possible floating point rounding, I suppose we could
+		// maybe we shouldn't get here, but with possible floating point rounding, I suppose we could
+		Warning(LOCATION, "Unable to get a nonspecific subsystem of index %d on ship %s!", index, sp->ship_name);
 		return NULL;
 	}
 
@@ -12057,7 +12058,9 @@ ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos )
 		count++;
 		ss = GET_NEXT( ss );
 	}
-	Int3();			// get allender -- turret ref didn't fixup correctly!!!!
+
+	// get allender -- turret ref didn't fixup correctly!!!!
+	Warning(LOCATION, "In ship_get_indexed_subsys, unable to get a subsystem of index %d on ship %s, due to a broken subsystem reference!  This is most likely due to a table/model mismatch.", index, sp->ship_name);	
 	return NULL;
 }
 

@@ -4525,6 +4525,12 @@ void process_subsystem_destroyed_packet( ubyte *data, header *hinfo )
 
 		// call to get the pointer to the subsystem we should be working on
 		subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+		if (subsysp == NULL) {
+			nprintf(("Network", "Could not find subsys %d for ship %s to process as being destroyed\n", (int)uindex, shipp->ship_name ));
+			PACKET_SET_SIZE();
+			return;
+		}
+
 		vm_vec_unrotate( &world_hit_pos, &local_hit_pos, &objp->orient );
 		vm_vec_add2( &world_hit_pos, &objp->pos );
 
