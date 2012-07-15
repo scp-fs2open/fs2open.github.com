@@ -260,20 +260,4 @@ int get_string_or_variable (SCP_string &str);
 #define PARSING_FOUND_STRING		0
 #define PARSING_FOUND_VARIABLE		1
 
-/**
- * @brief Reads a float and takes care of given limits
- *
- * Parses a float into @c destination if the specified tag is present. When the parsed float is less than
- * the specified @c min value then a warning will be generated and the destination will contain @c min as its
- * value. The same applies to @c max.
- *
- * @param tag The optional tag that should be checked
- * @param destination The destination float where the value should be stored
- * @param def The default value which should be used when the tag isn't present
- * @param min The minimum value which will be accepted. Optional parameter; defaults to @c FLT_MIN
- * @param max The maximum value which will be accepted. Optional parameter; defaults to @c FLT_MAX
- * @return
- */
-bool parse_optional_float(const char *tag, float *destination, float def, float min = FLT_MIN, float max = FLT_MAX);
-
 #endif
