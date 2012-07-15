@@ -4054,33 +4054,3 @@ int parse_modular_table(char *name_check, void (*parse_callback)(char *filename)
 
 	return num_files;
 }
-
-bool parse_optional_float(const char *tag, float *destination, float def, float min, float max)
-{
-	Assert(tag != NULL);
-	Assert(destination != NULL);
-
-	if (optional_string(tag))
-	{
-		stuff_float(destination);
-
-		if (*destination < min)
-		{
-			Warning(LOCATION, "Invalid value for \"%s\". Minimum value is %f but %f was specified", tag, min, *destination);
-			*destination = min;
-		}
-		else if (*destination > max)
-		{
-			Warning(LOCATION, "Invalid value for \"%s\". Maximum value is %f but %f was specified", tag, max, *destination);
-			*destination = max;
-		}
-
-		return true;
-	}
-	else
-	{
-		*destination = def;
-
-		return false;
-	}
-}
