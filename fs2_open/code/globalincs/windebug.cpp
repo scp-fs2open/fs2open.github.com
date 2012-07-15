@@ -1123,12 +1123,35 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 	AssertText2[0] = '\0';
 	dumpBuffer.Printf(Separator);
-	dumpBuffer.Printf("LUA Stack:\r\n");
-	int i;
-	for (i = 0; i < 4; i++) {
-		if (debug_stack[i][0] != '\0')
-			dumpBuffer.Printf("\t%s\r\n", debug_stack[i]);
+	
+	// Get the stack via the debug.traceback() function
+	lua_getglobal(L, LUA_DBLIBNAME);
+
+	if (!lua_isnil(L, -1))
+	{
+		dumpBuffer.Printf( "\r\n" );
+		lua_getfield(L, -1, "traceback");
+		lua_remove(L, -2);
+
+		if (lua_pcall(L, 0, 1, 0) != 0)
+			dumpBuffer.Printf("Error while retrieving stack: %s", lua_tostring(L, -1));
+		else
+			dumpBuffer.Printf(lua_tostring(L, -1));
+
+		lua_pop(L, 1);
 	}
+	else
+	{
+		// If the debug library is nil then fall back to the default debug stack
+		dumpBuffer.Printf("LUA Stack:\r\n");
+		int i;
+		for (i = 0; i < 4; i++) {
+			if (debug_stack[i][0] != '\0')
+				dumpBuffer.Printf("\t%s\r\n", debug_stack[i]);
+		}
+	}
+	dumpBuffer.Printf( "\r\n" );
+
 	dumpBuffer.Printf(Separator);
 	ade_stackdump(L, AssertText2);
 	dumpBuffer.Printf( AssertText2 );
