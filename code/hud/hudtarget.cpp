@@ -1343,7 +1343,7 @@ static object* select_next_target_by_distance( const bool targeting_from_closest
 			esct eval_ship_as_closest_target_args;
 			eval_ship_as_closest_target_args.attacked_objnum = attacked_object_number;
 			eval_ship_as_closest_target_args.check_all_turrets = (attacked_object_number == player_object_index);
-			eval_ship_as_closest_target_args.check_nearest_turret = false;
+			eval_ship_as_closest_target_args.check_nearest_turret = FALSE;
 				// We don't ever filter our target selection to just bombers or fighters
 				// because the select next attacker logic doesn't.  --Mastadon
 			eval_ship_as_closest_target_args.filter = 0;
