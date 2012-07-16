@@ -835,7 +835,7 @@ void wl_render_overhead_view(float frametime)
 
 			if(!Cmdline_ship_choice_3d)
 			{
-				rot_angles.p = -(3.14159f * 0.5f);
+				rot_angles.p = -(PI_2);
 				rot_angles.b = 0.0f;
 				rot_angles.h = 0.0f;
 				vm_angles_2_matrix(&object_orient, &rot_angles);
