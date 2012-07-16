@@ -1416,8 +1416,8 @@ vec3d g3_square[4] = {
 
 void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta )
 {		
-	float a = 3.14159f * phi;
-	float b = 6.28318f * theta;
+	float a = PI * phi;
+	float b = PI2 * theta;
 	float sin_a = (float)sin(a);	
 
 	// coords

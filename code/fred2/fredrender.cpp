@@ -139,8 +139,8 @@ color colour_yellow;
 
 void fred_enable_htl()
 {
-	if (!Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * FRED_DEFAULT_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
-	if (Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * FRED_BRIEFING_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
+	if (!Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * PI * FRED_DEFAULT_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
+	if (Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * PI * FRED_BRIEFING_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
