@@ -1632,15 +1632,15 @@ void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap = false)
 	vertex *vl[4];
 
 	vl[0] = &v[0];	
-	v->screen.xyw.x = clipped_x0;
-	v->screen.xyw.y = clipped_y0;
-	v->screen.xyw.w = va->screen.xyw.w;
-	v->world.xyz.z = va->world.xyz.z;
-	v->texture_position.u = clipped_u0;
-	v->texture_position.v = clipped_v0;
-	v->spec_r = 0;
-	v->spec_g = 0;
-	v->spec_b = 0;
+	v[0].screen.xyw.x = clipped_x0;
+	v[0].screen.xyw.y = clipped_y0;
+	v[0].screen.xyw.w = va->screen.xyw.w;
+	v[0].world.xyz.z = va->world.xyz.z;
+	v[0].texture_position.u = clipped_u0;
+	v[0].texture_position.v = clipped_v0;
+	v[0].spec_r = 0;
+	v[0].spec_g = 0;
+	v[0].spec_b = 0;
 
 	vl[1] = &v[1];	
 	v[1].screen.xyw.x = clipped_x1;
