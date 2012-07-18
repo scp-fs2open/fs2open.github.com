@@ -2521,8 +2521,7 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 
 					vm_vec_unrotate(&world_pnt, &loc_offset, orient);
 					vm_vec_add2(&world_pnt, pos);
-					vm_vec_sub(&tempv, &View_position, &world_pnt);
-					vm_vec_normalize(&tempv);
+
 					vm_vec_unrotate(&world_norm, &loc_norm, orient);
 
 					switch (bank->type)
@@ -2531,13 +2530,13 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 						{
 							float d;
 
-							if ( IS_VEC_NULL(&loc_norm) ) {
+							if ( IS_VEC_NULL(&world_norm) ) {
 								d = 1.0f;	//if given a nul vector then always show it
 							} else {
-								vm_vec_sub(&tempv,&View_position,&loc_offset);
+								vm_vec_sub(&tempv,&View_position,&world_pnt);
 								vm_vec_normalize(&tempv);
 
-								d = vm_vec_dot(&tempv,&loc_norm);
+								d = vm_vec_dot(&tempv,&world_norm);
 								d -= 0.25;	
 							}
 					
@@ -2553,10 +2552,10 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 
 								// fade them in the nebula as well
 								if (The_mission.flags & MISSION_FLAG_FULLNEB) {
-									vec3d npnt;
-									vm_vec_add(&npnt, &loc_offset, pos);
+									//vec3d npnt;
+									//vm_vec_add(&npnt, &loc_offset, pos);
 
-									d *= (1.0f - neb2_get_fog_intensity(&npnt));
+									d *= (1.0f - neb2_get_fog_intensity(&world_pnt));
 									w *= 1.5;	//make it bigger in a nebula
 								}
 				
