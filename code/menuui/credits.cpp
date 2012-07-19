@@ -41,8 +41,9 @@ char *fs2_open_credit_text =
 	"\n"
 	"Senior Advisors:\n"
 	"\n"
-	"Taylor Richards\n"
 	"Ian \"Goober5000\" Warfield\n"
+	"Michael \"Zacam\" LaFleur\n"
+	"Taylor Richards\n"
 	"Edward \"Inquisitor\" Gardner\n"
 	"\n"
 	"Programmers:\n"
@@ -57,13 +58,13 @@ char *fs2_open_credit_text =
 	"FUBAR\n"	
 	"Iss Mneur\n"	
 	"kkmic\n"
-	"Michael \"Zacam\" LaFleur\n"
 	"Shade\n"
 	"Soulstorm\n"
 	"Sushi\n"
 	"Swifty\n"
 	"Wanderer\n"	
 	"Fabian \"The E\" Woltermann\n"
+	"CommanderDJ\n"
 	"\n"
 	"\n"
 	"Readme Staff:\n"
@@ -74,7 +75,6 @@ char *fs2_open_credit_text =
 	"\n"
 	"http://www.hard-light.net/\n"
 	"http://scp.indiegames.us/\n"
-	"http://fs2source.warpcore.org/\n"
 	"\n"
 	"Special thanks to:\n"
 	"\n"
@@ -193,6 +193,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 //XSTR:ON
 };
 
+static char Credits_music_name[NAME_LENGTH];
 static int	Credits_music_handle = -1;
 static int	Credits_music_begin_timestamp;
 
@@ -236,7 +237,7 @@ void credits_load_music(char* fname)
 		return;
 	}
 
-	if ( fname ){
+	if ( fname && *fname ){
 		Credits_music_handle = audiostream_open( fname, ASF_MENUMUSIC );
 	}
 }
@@ -294,6 +295,10 @@ void credits_parse_table(char* filename)
 	reset_parse();
 
 	// any metadata?
+	if (optional_string("$Music:"))
+	{
+		stuff_string(Credits_music_name);
+	}
 	if (optional_string("$Start Image Index:"))
 	{
 		stuff_int(&Credits_artwork_index);
@@ -308,8 +313,6 @@ void credits_parse_table(char* filename)
 			Credits_artwork_index = NUM_IMAGES - 1;
 		}
 	}
-
-	// various values
 	if (optional_string("$Text scroll rate:"))
 	{
 		stuff_float(&Credits_scroll_rate);
@@ -328,7 +331,6 @@ void credits_parse_table(char* filename)
 		if (Credits_artwork_fade_time < 0.01f)
 			Credits_artwork_fade_time = 0.01f;
 	}
-
 	if (optional_string("$SCP Credits position:"))
 	{
 		char mode[NAME_LENGTH];
@@ -422,7 +424,17 @@ void credits_init()
 	int i;
 	credits_screen_buttons *b;
 
-	int credits_spooled_music_index = event_music_get_spooled_music_index("Cinema");	
+	// this is moved up here so we can override it if desired
+	Credits_artwork_index = rand() % NUM_IMAGES;
+
+	// ditto
+	strcpy_s(Credits_music_name, "Cinema");
+
+	// parse credits early so as to set up any overrides (for music and such)
+	Credits_parsed = false;
+	credits_parse();
+
+	int credits_spooled_music_index = event_music_get_spooled_music_index(Credits_music_name);	
 	if(credits_spooled_music_index != -1){
 		char *credits_wavfile_name = Spooled_music[credits_spooled_music_index].filename;		
 		if(credits_wavfile_name != NULL){
@@ -436,13 +448,6 @@ void credits_init()
 	Credits_frametime = 0;
 	Credits_last_time = timer_get_milliseconds();
 	
-	// this is moved up here so we can override it if desired
-	Credits_artwork_index = rand() % NUM_IMAGES;
-
-	Credits_parsed = false;
-
-	credits_parse();
-
 	if (!Credits_parsed)
 	{
 		Credit_text_parts.push_back(SCP_string("No credits available.\n"));
