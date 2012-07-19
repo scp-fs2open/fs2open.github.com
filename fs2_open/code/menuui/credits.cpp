@@ -297,7 +297,7 @@ void credits_parse_table(char* filename)
 	// any metadata?
 	if (optional_string("$Music:"))
 	{
-		stuff_string(Credits_music_name);
+		stuff_string(Credits_music_name, F_NAME, NAME_LENGTH);
 	}
 	if (optional_string("$Start Image Index:"))
 	{
