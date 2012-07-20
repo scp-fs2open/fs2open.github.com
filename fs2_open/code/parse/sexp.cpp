@@ -6702,11 +6702,11 @@ void sexp_set_object_orientation(int n)
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
-	a.p = fl_radians(eval_num(n));
+	a.p = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	a.b = fl_radians(eval_num(n));
+	a.b = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	a.h = fl_radians(eval_num(n));
+	a.h = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 
 	vm_angles_2_matrix(&target_orient, &a);
@@ -13387,19 +13387,19 @@ void sexp_ship_create(int n)
 
 	n = CDR(n);
 	if(n != -1) {
-		new_ship_ang.p = eval_num(n) * (PI/180.0f);
+		new_ship_ang.p = fl_radians(eval_num(n) % 360);
 		change_angles = true;
 	}
 
 	n = CDR(n);
 	if(n != -1) {
-		new_ship_ang.b = eval_num(n) * (PI/180.0f);
+		new_ship_ang.b = fl_radians(eval_num(n) % 360);
 		change_angles = true;
 	}
 
 	n = CDR(n);
 	if(n != -1) {
-		new_ship_ang.h = eval_num(n) * (PI/180.0f);
+		new_ship_ang.h = fl_radians(eval_num(n) % 360);
 		change_angles = true;
 	}
 
@@ -13452,21 +13452,21 @@ void sexp_weapon_create(int n)
 
 	if (n >= 0)
 	{
-		weapon_angles.p = eval_num(n) * (PI/180.0f);
+		weapon_angles.p = fl_radians(eval_num(n) % 360);
 		n = CDR(n);
 		change_angles = true;
 	}
 
 	if (n >= 0)
 	{
-		weapon_angles.b = eval_num(n) * (PI/180.0f);
+		weapon_angles.b = fl_radians(eval_num(n) % 360);
 		n = CDR(n);
 		change_angles = true;
 	}
 
 	if (n >= 0)
 	{
-		weapon_angles.h = eval_num(n) * (PI/180.0f);
+		weapon_angles.h = fl_radians(eval_num(n) % 360);
 		n = CDR(n);
 		change_angles = true;
 	}
@@ -15431,15 +15431,15 @@ void sexp_set_post_effect(int node)
 void sexp_set_skybox_model(int n)
 {
 	for ( ; n != -1; n = CDR(n)) {
-		if ( !stricmp("default", CTEXT(n)) ) {
-			stars_set_background_model( The_mission.skybox_model, NULL );
-		} else {
-			// stars_level_init() will set the actual mission skybox after this gets
-			// evaluated during parse. by setting it now we get everything loaded so
-			// there is less slowdown when it actually swaps out - taylor
-			stars_set_background_model( CTEXT(n), NULL );
-		}
+	if ( !stricmp("default", CTEXT(n)) ) {
+		stars_set_background_model( The_mission.skybox_model, NULL );
+	} else {
+		// stars_level_init() will set the actual mission skybox after this gets
+		// evaluated during parse. by setting it now we get everything loaded so
+		// there is less slowdown when it actually swaps out - taylor
+		stars_set_background_model( CTEXT(n), NULL );
 	}
+			}
 }
 
 // taylor - preload a skybox model.  this doesn't set anything as viewable, just loads it into memory
@@ -19028,11 +19028,11 @@ void sexp_set_camera_rotation(int n)
 	float rot_dec_time = 0.0f;
 
 	//Angles are in degrees
-	rot_angles.p = eval_num(n) * (PI/180.0f);
+	rot_angles.p = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	rot_angles.b = eval_num(n) * (PI/180.0f);
+	rot_angles.b = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	rot_angles.h = eval_num(n) * (PI/180.0f);
+	rot_angles.h = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 	if(n != -1)
 	{
@@ -19241,7 +19241,7 @@ void sexp_set_camera_fov(int n)
 	float camera_acc_time = 0.0f;
 	float camera_dec_time = 0.0f;
 
-	float camera_fov = i2fl(eval_num(n)) * (PI/180.0f);
+	float camera_fov = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 
 	if(n != -1)
@@ -19407,10 +19407,8 @@ void sexp_set_fov(int n)
 	}
 
 	//Cap FOV to something reasonable.
-	float new_fov = (float)eval_num(n);
-	CLAMP(new_fov, 0.0f, 360.0f);
-
-	Sexp_fov = (new_fov * (PI/180.0f));
+	float new_fov = (float)(eval_num(n) % 360);
+	Sexp_fov = fl_radians(new_fov);
 
 	multi_start_callback();
 	multi_send_float(new_fov);
@@ -19428,7 +19426,7 @@ void multi_sexp_set_fov()
 	}
 
 	multi_get_float(new_fov);
-	Sexp_fov = (new_fov * (PI/180.0f));
+	Sexp_fov = fl_radians(new_fov);
 }
 
 int sexp_get_fov()
@@ -19438,9 +19436,9 @@ int sexp_get_fov()
 		return -1;
 	else if(Sexp_fov > 0.0f)
 		// SEXP override has been set
-		return (int) (Sexp_fov / (PI/180.0f));
+		return (int) fl_degrees(Sexp_fov);
 	else	
-		return (int) (cam->get_fov() / (PI/180.0f));
+		return (int) fl_degrees(cam->get_fov());
 }
 
 /**
