@@ -65,7 +65,7 @@
 #define MAX_COMPLETE_ESCORT_LIST	20
              
 // from weapon.h
-#define MAX_WEAPONS	700
+#define MAX_WEAPONS	2000
 
 #define MAX_WEAPON_TYPES				300
 
@@ -81,7 +81,7 @@
 extern int Num_medals;
 
 // object.h
-#define MAX_OBJECTS			2000		
+#define MAX_OBJECTS			3500		
 
 // from lighting.cpp
 #define MAX_LIGHTS 256

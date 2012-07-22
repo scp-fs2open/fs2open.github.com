@@ -4065,7 +4065,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 void parse_wing(mission *pm)
 {
-	int wingnum, i, wing_goals, delay;
+	int wingnum, i, wing_goals, delay, saved_arrival_delay;
 	char name[NAME_LENGTH], ship_names[MAX_SHIPS_PER_WING][NAME_LENGTH];
 	char wing_flag_strings[MAX_WING_FLAGS][NAME_LENGTH];
 	wing *wingp;
@@ -4172,6 +4172,7 @@ void parse_wing(mission *pm)
 			Error(LOCATION, "Cannot have arrival delay < 0 on wing %s", wingp->name );
 	} else
 		delay = 0;
+	saved_arrival_delay = delay;
 
 	if ( !Fred_running ){
 		wingp->arrival_delay = -delay;
@@ -4355,10 +4356,24 @@ void parse_wing(mission *pm)
 				// get Allender -- ship appears to be in multiple wings
 				Assert (p_objp->wingnum == -1);
 
+				// assign wingnum
 				p_objp->wingnum = wingnum;
 				p_objp->pos_in_wing = i;
-
 				assigned++;
+
+				// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
+				if ((p_objp->flags & P_OF_PLAYER_START) && (saved_arrival_delay != 0)) {
+					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, saved_arrival_delay);
+					if (!Fred_running && wingp->arrival_delay > 0) {
+						// timestamp has been set, so set it again
+						wingp->arrival_delay = timestamp(0);
+					} else {
+						// no timestamp, or timestamp invalid
+						wingp->arrival_delay = 0;
+					}
+					// prevent message from reappearing
+					saved_arrival_delay = 0;
+				}
 			}
 		}
 
@@ -5476,6 +5491,7 @@ void post_process_mission()
 				SCP_string error_msg;
 
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
+				truncate_message_lines(sexp_str, 30);
 				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 
 				if (!Fred_running) {
@@ -6241,7 +6257,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		if ( dist <= 0 )
 		{
 			// Goober5000 - default to 100
-			Error(LOCATION, "Distance of %d is invalid in mission_set_arrival_location.  Defaulting to 100.\n", dist);
+			Warning(LOCATION, "Distance of %d is invalid in mission_set_arrival_location.  Defaulting to 100.\n", dist);
 			dist = 100;
 		}
 		

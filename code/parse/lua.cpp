@@ -5025,7 +5025,7 @@ public:
 	{
 		if (!isValid())
 		{
-			return -1;
+			return UINT_MAX;
 		}
 
 		return display_num;
@@ -6979,7 +6979,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	//Get default turret info
 	vec3d gpos, gvec;
 	
-	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, true, NULL);
+	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, 1, NULL);
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
 
@@ -7066,7 +7066,7 @@ ADE_FUNC(getNextFiringPosition, l_Subsystem, NULL, "Retrieves the next position 
 
 	vec3d gpos, gvec;
 
-	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, true, NULL);
+	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, 1, NULL);
 
 	return ade_set_args(L, "oo", l_Vector.Set(gpos), l_Vector.Set(gvec));
 }

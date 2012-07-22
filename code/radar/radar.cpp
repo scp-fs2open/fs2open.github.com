@@ -360,7 +360,7 @@ void HudGaugeRadarStd::plotBlip(blip *b, int *x, int *y)
 	if (b->dist < pos->xyz.z) {
 		rscale = 0.0f;
 	} else {
-		rscale = (float) acos(pos->xyz.z / b->dist) / 3.14159f;		//2.0f;	 
+		rscale = (float) acos(pos->xyz.z / b->dist) / PI;		//2.0f;	 
 	}
 
 	zdist = fl_sqrt((pos->xyz.x * pos->xyz.x) + (pos->xyz.y * pos->xyz.y));

@@ -105,7 +105,7 @@ void ct_ship_delete(ship *shipp)
 void ct_ship_process(ship *shipp)
 {
 	// seems like as good a place as any -Bobboau
-	if (shipp->ab_info->texture.bitmap_id != -1)
+	if (shipp->ab_info[0].texture.bitmap_id != -1)
 		ct_ship_process_ABtrails(shipp);
 
 	Assert(shipp != NULL);

@@ -412,6 +412,7 @@ sexp_oper Operators[] = {
 	{ "fix-warp",					OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
 	{ "never-warp",					OP_WARP_NEVER,					1, INT_MAX, },
 	{ "allow-warp",					OP_WARP_ALLOWED,				1, INT_MAX, },
+	{ "set-subspace-drive",			OP_SET_SUBSPACE_DRIVE,			2, INT_MAX, },
 	{ "set-armor-type",				OP_SET_ARMOR_TYPE,				4, INT_MAX, },  // FUBAR
 	{ "add-to-collision-group",		OP_ADD_TO_COLGROUP,				2, INT_MAX },	// The E
 	{ "remove-from-collision-group",OP_REMOVE_FROM_COLGROUP,		2, INT_MAX },
@@ -449,6 +450,7 @@ sexp_oper Operators[] = {
 	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0 },
+	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,		1, 1 },	// Goober5000
 
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 4 }, //kazan
 	{ "add-nav-ship",					OP_NAV_ADD_SHIP,				2, 2 }, //kazan
@@ -507,6 +509,8 @@ sexp_oper Operators[] = {
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
 	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
 	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 7 },	// Goober5000
+	{ "set-arrival-info",			OP_SET_ARRIVAL_INFO,			2, 6 },	// Goober5000
+	{ "set-departure-info",			OP_SET_DEPARTURE_INFO,			2, 5 },	// Goober5000
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-create",					OP_SHIP_CREATE,					5, 8	},	//WMC
@@ -4341,13 +4345,14 @@ int sexp_string_compare(int n, int op)
 	return SEXP_TRUE;
 }
 
-#define OSWPT_TYPE_NONE			0
-#define OSWPT_TYPE_SHIP			1
-#define OSWPT_TYPE_WING			2
-#define OSWPT_TYPE_WAYPOINT		3
-#define OSWPT_TYPE_TEAM			4
-#define OSWPT_TYPE_PARSE_OBJECT	5
-#define OSWPT_TYPE_EXITED		6
+#define OSWPT_TYPE_NONE				0
+#define OSWPT_TYPE_SHIP				1
+#define OSWPT_TYPE_WING				2
+#define OSWPT_TYPE_WAYPOINT			3
+#define OSWPT_TYPE_TEAM				4
+#define OSWPT_TYPE_PARSE_OBJECT		5	// a "ship" that hasn't arrived yet
+#define OSWPT_TYPE_EXITED			6
+#define OSWPT_TYPE_WING_NOT_PRESENT	7	// a wing that hasn't arrived yet or is between waves
 
 // Goober5000
 typedef struct object_ship_wing_point_team
@@ -4457,20 +4462,36 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 
 
 	// at this point, we must have a wing or point for a target
-	wing_num = wing_name_lookup(object_name);
+	wing_num = wing_name_lookup(object_name, 1);
 	if (wing_num >= 0)
 	{
 		wing *wingp = &Wings[wing_num];
 
-		// make sure that at least one ship exists and that the wing leader is valid
-		if ( (wingp->current_count >= 0) && (wingp->ship_index[wingp->special_ship] >= 0) )
+		// make sure that at least one ship exists
+		if (wingp->current_count > 0)
 		{
 			oswpt->type = OSWPT_TYPE_WING;
-
-			// point to wing leader
 			oswpt->wingp = wingp;
-			oswpt->shipp = &Ships[wingp->ship_index[wingp->special_ship]];
-			oswpt->objp = &Objects[oswpt->shipp->objnum];
+
+			// point to wing leader if he is valid
+			if ((wingp->special_ship >= 0) && (wingp->ship_index[wingp->special_ship] >= 0))
+			{
+				oswpt->shipp = &Ships[wingp->ship_index[wingp->special_ship]];
+				oswpt->objp = &Objects[oswpt->shipp->objnum];
+			}
+			// boo... well, just point to ship at index 0
+			else
+			{
+				oswpt->shipp = &Ships[wingp->ship_index[0]];
+				oswpt->objp = &Objects[oswpt->shipp->objnum];
+				Warning(LOCATION, "Substituting ship '%s' at index 0 for nonexistent wing leader at index %d!", oswpt->shipp->ship_name, oswpt->wingp->special_ship);
+			}
+		}
+		// it's still a valid wing even if nobody is here
+		else
+		{
+			oswpt->type = OSWPT_TYPE_WING_NOT_PRESENT;
+			oswpt->wingp = wingp;
 		}
 
 		return;
@@ -4535,9 +4556,7 @@ int sexp_num_ships_in_battle(int n)
 			  break;
 
 		    case OSWPT_TYPE_WING:
-		      int wingnum;
-		      wingnum = wing_name_lookup( CTEXT(n), 0 );
-			  count += Wings[wingnum].current_count;
+			  count += oswpt1.wingp->current_count;
 			  break;
 	    }
 
@@ -6683,11 +6702,11 @@ void sexp_set_object_orientation(int n)
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
-	a.p = fl_radians(eval_num(n));
+	a.p = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	a.b = fl_radians(eval_num(n));
+	a.b = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	a.h = fl_radians(eval_num(n));
+	a.h = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 
 	vm_angles_2_matrix(&target_orient, &a);
@@ -8921,6 +8940,7 @@ void sexp_change_iff(int n)
 
 			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
 			case OSWPT_TYPE_WING:
+			case OSWPT_TYPE_WING_NOT_PRESENT:
 			{
 				// current ships
 				for (int i = 0; i < oswpt.wingp->current_count; i++)
@@ -9022,6 +9042,7 @@ void sexp_change_iff_color(int n)
 
 			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
 			case OSWPT_TYPE_WING:
+			case OSWPT_TYPE_WING_NOT_PRESENT:
 			{
 				// current ships
 				for (i = 0; i < oswpt.wingp->current_count; i++)
@@ -10742,6 +10763,10 @@ void sexp_sabotage_subsystem(int n)
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 			// set the strength to the given percentage if current strength is > given percentage
 			ss = ship_get_indexed_subsys( shipp, index );
+			if (ss == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for sabotage subsystem\n", index, shipp->ship_name));
+				return;
+			}
 		}
 
 		sabotage_hits = ss->max_hits * ((float)percentage / 100.0f);
@@ -10850,6 +10875,10 @@ void sexp_repair_subsystem(int n)
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 			// set the strength to the given percentage if current strength is < given percentage
 			ss = ship_get_indexed_subsys( shipp, index );
+			if (ss == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for repair subsystem\n", index, shipp->ship_name));
+				return;
+			}
 		}
 	
 		repair_hits = ss->max_hits * ((float)percentage / 100.0f);
@@ -10965,6 +10994,10 @@ void sexp_set_subsystem_strength(int n)
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 			// set the strength to the given percentage
 			ss = ship_get_indexed_subsys( shipp, index );
+			if (ss == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for set subsystem strength\n", index, shipp->ship_name));
+				return;
+			}
 		}
 		
 		// maybe blow up subsys
@@ -11697,6 +11730,15 @@ void sexp_end_mission(int n)
 	}
 }
 
+// Goober5000
+void sexp_set_debriefing_toggled(int node)
+{
+	if (is_sexp_true(node))
+		The_mission.flags |= MISSION_FLAG_TOGGLE_DEBRIEFING;
+	else
+		The_mission.flags &= ~MISSION_FLAG_TOGGLE_DEBRIEFING;
+}
+
 /**
  * Toggle the status bit for the AI code which tells the AI if it is a good time to rearm.
  *
@@ -12204,6 +12246,14 @@ void sexp_deal_with_warp( int n, bool repairable, bool damage_it )
 	}
 
 	sexp_deal_with_ship_flag(n, true, 0, 0, ship_flag, 0, p_object_flag, 0, damage_it);
+}
+
+// Goober5000
+void sexp_set_subspace_drive(int node)
+{
+	bool set_flag = !is_sexp_true(node);
+
+	sexp_deal_with_ship_flag(CDR(node), true, 0, 0, 0, SF2_NO_SUBSPACE_DRIVE, 0, 0, set_flag);
 }
 
 /**
@@ -13337,19 +13387,19 @@ void sexp_ship_create(int n)
 
 	n = CDR(n);
 	if(n != -1) {
-		new_ship_ang.p = eval_num(n) * (PI/180.0f);
+		new_ship_ang.p = fl_radians(eval_num(n) % 360);
 		change_angles = true;
 	}
 
 	n = CDR(n);
 	if(n != -1) {
-		new_ship_ang.b = eval_num(n) * (PI/180.0f);
+		new_ship_ang.b = fl_radians(eval_num(n) % 360);
 		change_angles = true;
 	}
 
 	n = CDR(n);
 	if(n != -1) {
-		new_ship_ang.h = eval_num(n) * (PI/180.0f);
+		new_ship_ang.h = fl_radians(eval_num(n) % 360);
 		change_angles = true;
 	}
 
@@ -13402,21 +13452,21 @@ void sexp_weapon_create(int n)
 
 	if (n >= 0)
 	{
-		weapon_angles.p = eval_num(n) * (PI/180.0f);
+		weapon_angles.p = fl_radians(eval_num(n) % 360);
 		n = CDR(n);
 		change_angles = true;
 	}
 
 	if (n >= 0)
 	{
-		weapon_angles.b = eval_num(n) * (PI/180.0f);
+		weapon_angles.b = fl_radians(eval_num(n) % 360);
 		n = CDR(n);
 		change_angles = true;
 	}
 
 	if (n >= 0)
 	{
-		weapon_angles.h = eval_num(n) * (PI/180.0f);
+		weapon_angles.h = fl_radians(eval_num(n) % 360);
 		n = CDR(n);
 		change_angles = true;
 	}
@@ -13560,6 +13610,7 @@ void sexp_kamikaze(int n, int kamikaze)
 
 			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
 			case OSWPT_TYPE_WING:
+			case OSWPT_TYPE_WING_NOT_PRESENT:
 			{
 				// current ships
 				for (int i = 0; i < oswpt.wingp->current_count; i++)
@@ -13665,6 +13716,7 @@ void sexp_ship_change_alt_name(int node)
 
 			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
 			case OSWPT_TYPE_WING:
+			case OSWPT_TYPE_WING_NOT_PRESENT:
 			{		
 				// current ships
 				for (int i = 0; i < oswpt.wingp->current_count; i++)
@@ -15379,15 +15431,15 @@ void sexp_set_post_effect(int node)
 void sexp_set_skybox_model(int n)
 {
 	for ( ; n != -1; n = CDR(n)) {
-		if ( !stricmp("default", CTEXT(n)) ) {
-			stars_set_background_model( The_mission.skybox_model, NULL );
-		} else {
-			// stars_level_init() will set the actual mission skybox after this gets
-			// evaluated during parse. by setting it now we get everything loaded so
-			// there is less slowdown when it actually swaps out - taylor
-			stars_set_background_model( CTEXT(n), NULL );
-		}
+	if ( !stricmp("default", CTEXT(n)) ) {
+		stars_set_background_model( The_mission.skybox_model, NULL );
+	} else {
+		// stars_level_init() will set the actual mission skybox after this gets
+		// evaluated during parse. by setting it now we get everything loaded so
+		// there is less slowdown when it actually swaps out - taylor
+		stars_set_background_model( CTEXT(n), NULL );
 	}
+			}
 }
 
 // taylor - preload a skybox model.  this doesn't set anything as viewable, just loads it into memory
@@ -16906,6 +16958,209 @@ void sexp_set_support_ship(int n)
 	}
 }
 
+// Goober5000 - set stuff for arriving ships or wings
+void sexp_set_arrival_info(int node)
+{
+	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, n = node;
+	bool show_warp;
+	object_ship_wing_point_team oswpt;
+
+	// get ship or wing
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	n = CDR(n);
+
+	// get arrival location
+	arrival_location = -1;
+	for (i=0; i<MAX_ARRIVAL_NAMES; i++)
+	{
+		if (!stricmp(CTEXT(n), Arrival_location_names[i]))
+			arrival_location = i;
+	}
+	if (arrival_location < 0)
+	{
+		Warning(LOCATION, "Arrival location '%s' not found.\n", CTEXT(n));
+		return;
+	}
+	n = CDR(n);
+
+	// get arrival anchor
+	arrival_anchor = -1;
+	if ((n < 0) || !stricmp(CTEXT(n), "<no anchor>"))
+	{
+		// if no anchor, set arrival location to hyperspace
+		arrival_location = 0;
+	}
+	else
+	{
+		// anchor must exist - look for it
+		for (i=0; i<Num_parse_names; i++)
+		{
+			if (!stricmp(CTEXT(n), Parse_names[i]))
+				arrival_anchor = i;
+		}
+		// if not found, make a new entry
+		if (arrival_anchor < 0)
+		{
+			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
+			arrival_anchor = Num_parse_names;
+			Num_parse_names++;
+		}
+	}
+	n = CDR(n);
+
+	// get arrival path mask
+	arrival_mask = 0;
+	if (n >= 0)
+		arrival_mask = eval_num(n);
+	n = CDR(n);
+
+	// get arrival distance
+	arrival_distance = 0;
+	if (n >= 0)
+		arrival_distance = eval_num(n);
+	n = CDR(n);
+
+	// get warp effect
+	show_warp = true;
+	if (n >= 0)
+		show_warp = (is_sexp_true(n) != 0);
+
+	// now set all that information depending on the first argument
+	if (oswpt.type == OSWPT_TYPE_SHIP)
+	{
+		oswpt.shipp->arrival_location = arrival_location;
+		oswpt.shipp->arrival_anchor = arrival_anchor;
+		oswpt.shipp->arrival_path_mask = arrival_mask;
+		oswpt.shipp->arrival_distance = arrival_distance;
+
+		if (show_warp)
+			oswpt.shipp->flags &= ~SF_NO_ARRIVAL_WARP;
+		else
+			oswpt.shipp->flags |= SF_NO_ARRIVAL_WARP;
+	}
+	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
+	{
+		oswpt.wingp->arrival_location = arrival_location;
+		oswpt.wingp->arrival_anchor = arrival_anchor;
+		oswpt.wingp->arrival_path_mask = arrival_mask;
+		oswpt.wingp->arrival_distance = arrival_distance;
+
+		if (show_warp)
+			oswpt.wingp->flags &= ~WF_NO_ARRIVAL_WARP;
+		else
+			oswpt.wingp->flags |= WF_NO_ARRIVAL_WARP;
+	}
+	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
+	{
+		oswpt.p_objp->arrival_location = arrival_location;
+		oswpt.p_objp->arrival_anchor = arrival_anchor;
+		oswpt.p_objp->arrival_path_mask = arrival_mask;
+		oswpt.p_objp->arrival_distance = arrival_distance;
+
+		if (show_warp)
+			oswpt.p_objp->flags &= ~P_SF_NO_ARRIVAL_WARP;
+		else
+			oswpt.p_objp->flags |= P_SF_NO_ARRIVAL_WARP;
+	}
+}
+
+// Goober5000 - set stuff for departing ships or wings
+void sexp_set_departure_info(int node)
+{
+	int i, departure_location, departure_anchor, departure_mask, n = node;
+	bool show_warp;
+	object_ship_wing_point_team oswpt;
+
+	// get ship or wing
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	n = CDR(n);
+
+	// get departure location
+	departure_location = -1;
+	for (i=0; i<MAX_DEPARTURE_NAMES; i++)
+	{
+		if (!stricmp(CTEXT(n), Departure_location_names[i]))
+			departure_location = i;
+	}
+	if (departure_location < 0)
+	{
+		Warning(LOCATION, "Departure location '%s' not found.\n", CTEXT(n));
+		return;
+	}
+	n = CDR(n);
+
+	// get departure anchor
+	departure_anchor = -1;
+	if ((n < 0) || !stricmp(CTEXT(n), "<no anchor>"))
+	{
+		// if no anchor, set departure location to hyperspace
+		departure_location = 0;
+	}
+	else
+	{
+		// anchor must exist - look for it
+		for (i=0; i<Num_parse_names; i++)
+		{
+			if (!stricmp(CTEXT(n), Parse_names[i]))
+				departure_anchor = i;
+		}
+		// if not found, make a new entry
+		if (departure_anchor < 0)
+		{
+			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
+			departure_anchor = Num_parse_names;
+			Num_parse_names++;
+		}
+	}
+	n = CDR(n);
+
+	// get departure path mask
+	departure_mask = 0;
+	if (n >= 0)
+		departure_mask = eval_num(n);
+	n = CDR(n);
+
+	// get warp effect
+	show_warp = true;
+	if (n >= 0)
+		show_warp = (is_sexp_true(n) != 0);
+
+	// now set all that information depending on the first argument
+	if (oswpt.type == OSWPT_TYPE_SHIP)
+	{
+		oswpt.shipp->departure_location = departure_location;
+		oswpt.shipp->departure_anchor = departure_anchor;
+		oswpt.shipp->departure_path_mask = departure_mask;
+
+		if (show_warp)
+			oswpt.shipp->flags &= ~SF_NO_DEPARTURE_WARP;
+		else
+			oswpt.shipp->flags |= SF_NO_DEPARTURE_WARP;
+	}
+	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
+	{
+		oswpt.wingp->departure_location = departure_location;
+		oswpt.wingp->departure_anchor = departure_anchor;
+		oswpt.wingp->departure_path_mask = departure_mask;
+
+		if (show_warp)
+			oswpt.wingp->flags &= ~WF_NO_DEPARTURE_WARP;
+		else
+			oswpt.wingp->flags |= WF_NO_DEPARTURE_WARP;
+	}
+	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
+	{
+		oswpt.p_objp->departure_location = departure_location;
+		oswpt.p_objp->departure_anchor = departure_anchor;
+		oswpt.p_objp->departure_path_mask = departure_mask;
+
+		if (show_warp)
+			oswpt.p_objp->flags &= ~P_SF_NO_DEPARTURE_WARP;
+		else
+			oswpt.p_objp->flags |= P_SF_NO_DEPARTURE_WARP;
+	}
+}
+
 // Goober5000
 // set *all* the escort priorities of ships in escort list as follows: most damaged ship gets
 // first priority in the argument list, next damaged gets next priority, etc.; if there are more
@@ -17938,6 +18193,10 @@ void sexp_subsys_set_random(int node)
 		if ( exclusion_list[idx] == 0 ) {
 			// get non excluded subsystem
 			subsys = ship_get_indexed_subsys(shipp, idx, NULL);
+			if (subsys == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for sabotage subsystem\n", idx, shipp->ship_name));
+				continue;
+			}
 
 			// randomize its hit points
 			rand = rand_internal(low, high);
@@ -18769,11 +19028,11 @@ void sexp_set_camera_rotation(int n)
 	float rot_dec_time = 0.0f;
 
 	//Angles are in degrees
-	rot_angles.p = eval_num(n) * (PI/180.0f);
+	rot_angles.p = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	rot_angles.b = eval_num(n) * (PI/180.0f);
+	rot_angles.b = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	rot_angles.h = eval_num(n) * (PI/180.0f);
+	rot_angles.h = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 	if(n != -1)
 	{
@@ -18982,7 +19241,7 @@ void sexp_set_camera_fov(int n)
 	float camera_acc_time = 0.0f;
 	float camera_dec_time = 0.0f;
 
-	float camera_fov = i2fl(eval_num(n)) * (PI/180.0f);
+	float camera_fov = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 
 	if(n != -1)
@@ -19148,10 +19407,8 @@ void sexp_set_fov(int n)
 	}
 
 	//Cap FOV to something reasonable.
-	float new_fov = (float)eval_num(n);
-	CLAMP(new_fov, 0.0f, 360.0f);
-
-	Sexp_fov = (new_fov * (PI/180.0f));
+	float new_fov = (float)(eval_num(n) % 360);
+	Sexp_fov = fl_radians(new_fov);
 
 	multi_start_callback();
 	multi_send_float(new_fov);
@@ -19169,7 +19426,7 @@ void multi_sexp_set_fov()
 	}
 
 	multi_get_float(new_fov);
-	Sexp_fov = (new_fov * (PI/180.0f));
+	Sexp_fov = fl_radians(new_fov);
 }
 
 int sexp_get_fov()
@@ -19179,9 +19436,9 @@ int sexp_get_fov()
 		return -1;
 	else if(Sexp_fov > 0.0f)
 		// SEXP override has been set
-		return (int) (Sexp_fov / (PI/180.0f));
+		return (int) fl_degrees(Sexp_fov);
 	else	
-		return (int) (cam->get_fov() / (PI/180.0f));
+		return (int) fl_degrees(cam->get_fov());
 }
 
 /**
@@ -21213,6 +21470,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			// Goober5000
+			case OP_SET_DEBRIEFING_TOGGLED:
+				sexp_set_debriefing_toggled(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
 			case OP_FORCE_JUMP:
 				sexp_force_jump();
 				sexp_val = SEXP_TRUE;
@@ -21270,6 +21533,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_deal_with_warp( node, (op_num==OP_WARP_BROKEN) || (op_num==OP_WARP_NOT_BROKEN),
 					(op_num==OP_WARP_BROKEN) || (op_num==OP_WARP_NEVER) );
 				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
+			case OP_SET_SUBSPACE_DRIVE:
+				sexp_set_subspace_drive(node);
 				break;
 
 			case OP_GOOD_SECONDARY_TIME:
@@ -21769,6 +22037,18 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_SET_SUPPORT_SHIP:
 				sexp_set_support_ship(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
+			case OP_SET_ARRIVAL_INFO:
+				sexp_set_arrival_info(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
+			case OP_SET_DEPARTURE_INFO:
+				sexp_set_departure_info(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -22913,6 +23193,7 @@ int query_operator_return_type(int op)
 		case OP_SET_TRAINING_CONTEXT_FLY_PATH:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
 		case OP_END_MISSION:
+		case OP_SET_DEBRIEFING_TOGGLED:
 		case OP_FORCE_JUMP:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_GOOD_REARM_TIME:
@@ -22930,6 +23211,7 @@ int query_operator_return_type(int op)
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
+		case OP_SET_SUBSPACE_DRIVE:
 		case OP_FLASH_HUD_GAUGE:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_SHIP_VISIBLE:
@@ -23015,6 +23297,8 @@ int query_operator_return_type(int op)
 		case OP_ACTIVATE_GLOW_POINT_BANK:
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SET_SUPPORT_SHIP:
+		case OP_SET_ARRIVAL_INFO:
+		case OP_SET_DEPARTURE_INFO:
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
@@ -23920,6 +24204,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CLOSE_SOUND_FROM_FILE:
 		case OP_ALLOW_TREASON:
 		case OP_END_MISSION:
+		case OP_SET_DEBRIEFING_TOGGLED:
 			return OPF_BOOL;
 
 		case OP_SET_PLAYER_ORDERS:
@@ -24264,6 +24549,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
 			return OPF_SHIP;
+
+		case OP_SET_SUBSPACE_DRIVE:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_SHIP;
 
 		case OP_FLASH_HUD_GAUGE:
 			return OPF_HUD_GAUGE_NAME;
@@ -24776,6 +25067,37 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			if (argnum == 6)
 				return OPF_NUMBER;
+			break;
+
+		// Goober5000
+		case OP_SET_ARRIVAL_INFO:
+			if (argnum == 0)
+				return OPF_SHIP_WING;
+			else if (argnum == 1)
+				return OPF_ARRIVAL_LOCATION;
+			else if (argnum == 2)
+				return OPF_ARRIVAL_ANCHOR_ALL;
+			else if (argnum == 3)
+				return OPF_NUMBER;
+			else if (argnum == 4)
+				return OPF_POSITIVE;
+			else if (argnum == 5)
+				return OPF_BOOL;
+			break;
+
+		// Goober5000
+		case OP_SET_DEPARTURE_INFO:
+			if (argnum == 0)
+				return OPF_SHIP_WING;
+			else if (argnum == 1)
+				return OPF_DEPARTURE_LOCATION;
+			else if (argnum == 2)
+				return OPF_SHIP_WITH_BAY;
+			else if (argnum == 3)
+				return OPF_NUMBER;
+			else if (argnum == 4)
+				return OPF_BOOL;
+			break;
 
 		case OP_KAMIKAZE:
 			if (argnum==0)
@@ -26407,6 +26729,7 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
+		case OP_SET_SUBSPACE_DRIVE:
 		case OP_SET_ARMOR_TYPE:
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
@@ -26443,6 +26766,7 @@ int get_subcategory(int sexp_id)
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
 		case OP_END_CAMPAIGN:
+		case OP_SET_DEBRIEFING_TOGGLED:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
 		case OP_ALLOW_SHIP:
@@ -26507,6 +26831,8 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
+		case OP_SET_ARRIVAL_INFO:
+		case OP_SET_DEPARTURE_INFO:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -28692,6 +29018,11 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	// Goober5000
+	{ OP_SET_DEBRIEFING_TOGGLED, "set-debriefing-toggled\r\n"
+		"\tSets or clears the \"toggle debriefing\" mission flag.  If set, the mission will have its debriefing turned off, unless it is a multiplayer dogfight mission, in which case its debriefing will be turned on.  Takes 1 argument.\r\n"
+	},
+
+	// Goober5000
 	{ OP_FORCE_JUMP, "force-jump\r\n"
 		"\tForces activation of the player's subspace drive, thus ending the mission.  Takes no arguments."
 	},
@@ -28803,6 +29134,14 @@ sexp_help_struct Sexp_help[] = {
 		"\tAllows a ship which was previously not allowed to warp out to do so.  When this sexpression is "
 		"used, the given ships will be able to warp out again.  Takes 1 or more arguments...\r\n"
 		"\tAll:\tList of ships whose are allowed to warp out"},
+
+	{ OP_SET_SUBSPACE_DRIVE, "set-subspace-drive\r\n"
+		"\tTurns on or off the subspace edrive for the given ships.  A ship with no subspace drive will act "
+		"as though it doesn't even occur to him to depart via subspace, and if ordered to do so, he will look "
+		"for a friendly ship with a hangar bay.  If the ship is the player, pressing Alt-J will not not initiate "
+		"a jump, nor give any indication that a jump failed.  Takes 2 or more arguments...\r\n"
+		"\t1:\tTrue if the ship should have a drive; false otherwise\r\n"
+		"\tRest:\tList of ships" },
 
 	{ OP_JETTISON_CARGO, "jettison-cargo-delay\r\n"
 		"\tCauses a cargo carrying ship to jettison its cargo without the undocking procedure. Takes 2 or more arguments...\r\n"
@@ -29244,7 +29583,7 @@ sexp_help_struct Sexp_help[] = {
 
 	// Goober5000
 	{ OP_SET_SUPPORT_SHIP, "set-support-ship\r\n"
-		"\tSets information for all support ships in a mission.  Takes 6 arguments...\r\n"
+		"\tSets information for all support ships in a mission.  Takes 6 or 7 arguments...\r\n"
 		"\t1: Arrival location\r\n"
 		"\t2: Arrival anchor\r\n"
 		"\t3: Departure location\r\n"
@@ -29254,6 +29593,27 @@ sexp_help_struct Sexp_help[] = {
 		"\t7: Maximum number of support ships concurrently in this mission (optional, default 1)\r\n"
 		"\r\n"
 		"Note: The support ship will emerge from or depart into hyperspace if the location is set as hyperspace *or* the anchor is set as <no anchor>."
+	},
+
+	// Goober5000
+	{ OP_SET_ARRIVAL_INFO, "set-arrival-info\r\n"
+		"\tSets arrival information for a ship or wing.  Takes 2 to 6 arguments...\r\n"
+		"\t1: Ship or wing name\r\n"
+		"\t2: Arrival location\r\n"
+		"\t3: Arrival anchor (optional; only required for certain locations)\r\n"
+		"\t4: Arrival path mask (optional; defaults to 0; note that this is a bitfield)\r\n"
+		"\t5: Arrival distance (optional; defaults to 0)\r\n"
+		"\t6: Whether to show a jump effect if arriving from subspace (optional; defaults to true)\r\n"
+	},
+
+	// Goober5000
+	{ OP_SET_DEPARTURE_INFO, "set-departure-info\r\n"
+		"\tSets departure information for a ship or wing.  Takes 2 to 5 arguments...\r\n"
+		"\t1: Ship or wing name\r\n"
+		"\t2: Departure location\r\n"
+		"\t3: Departure anchor (optional; only required for certain locations)\r\n"
+		"\t4: Departure path mask (optional; defaults to 0; note that this is a bitfield)\r\n"
+		"\t5: Whether to show a jump effect if departing to subspace (optional; defaults to true)\r\n"
 	},
 
 	// Bobboau

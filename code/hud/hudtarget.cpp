@@ -1343,7 +1343,7 @@ static object* select_next_target_by_distance( const bool targeting_from_closest
 			esct eval_ship_as_closest_target_args;
 			eval_ship_as_closest_target_args.attacked_objnum = attacked_object_number;
 			eval_ship_as_closest_target_args.check_all_turrets = (attacked_object_number == player_object_index);
-			eval_ship_as_closest_target_args.check_nearest_turret = false;
+			eval_ship_as_closest_target_args.check_nearest_turret = FALSE;
 				// We don't ever filter our target selection to just bombers or fighters
 				// because the select next attacker logic doesn't.  --Mastadon
 			eval_ship_as_closest_target_args.filter = 0;
@@ -2994,17 +2994,15 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	g3_project_vertex(&hostile_vertex);
 
 	if (hostile_vertex.codes == 0)  { // on screen
-		float		projected_x, projected_y;
+		int		projected_x, projected_y;
 
 		if (!(hostile_vertex.flags & PF_OVERFLOW)) {  // make sure point projected
-			float mag_squared;
+			int mag_squared;
 
-			projected_x = hostile_vertex.screen.xyw.x;
-			projected_y = hostile_vertex.screen.xyw.y;
+			projected_x = fl2i(hostile_vertex.screen.xyw.x);
+			projected_y = fl2i(hostile_vertex.screen.xyw.y);
 
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_posf( &projected_x, &projected_x );
-			gr_reset_screen_scale();
+			unsize(&projected_x, &projected_y);
 
 			mag_squared = (projected_x - position[0]) * (projected_x - position[0]) + 
 							  (projected_y - position[1]) * (projected_y - position[1]);
@@ -3024,9 +3022,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 
 	gr_resize_screen_pos(&HUD_nose_scaled_x, &HUD_nose_scaled_y);
 
-	gr_set_screen_scale(base_w, base_h);
-	gr_unsize_screen_posf( &hostile_vertex.world.xyz.x, &hostile_vertex.world.xyz.y );
-	gr_reset_screen_scale();
+	unsize( &hostile_vertex.world.xyz.x, &hostile_vertex.world.xyz.y );
 
 	ang = atan2_safe(hostile_vertex.world.xyz.y,hostile_vertex.world.xyz.x);
 	sin_ang=(float)sin(ang);

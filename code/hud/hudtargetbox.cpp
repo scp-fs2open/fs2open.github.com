@@ -487,9 +487,9 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 				break;
 			case 1:
 				if (ship_is_tagged(target_objp))
-					model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, true));
+					model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, 1));
 				else
-					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, true, target_objp));
+					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
 
 				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
 				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
@@ -499,9 +499,9 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 				break;
 			case 3:
 				if (ship_is_tagged(target_objp))
-					model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, true));
+					model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, 1));
 				else
-					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, true, target_objp));
+					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 

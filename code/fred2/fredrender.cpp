@@ -139,8 +139,8 @@ color colour_yellow;
 
 void fred_enable_htl()
 {
-	if (!Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * FRED_DEFAULT_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
-	if (Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * FRED_BRIEFING_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
+	if (!Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * PI * FRED_DEFAULT_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
+	if (Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * PI * FRED_BRIEFING_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
@@ -734,7 +734,7 @@ void render_one_model_nohtl(object *objp)
 		Fred_outline = FRED_COLOUR_YELLOW;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
-		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, true, objp);
+		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
 
 		Fred_outline = (iff_color->red << 16) | (iff_color->green << 8) | (iff_color->blue);
 
@@ -782,7 +782,7 @@ void render_one_model_nohtl(object *objp)
 			if (!Show_ships)
 				return;
 
-			color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, true, objp);
+			color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
 
 			r = iff_color->red;
 			g = iff_color->green;
@@ -863,7 +863,7 @@ void render_one_model_htl(object *objp)
 		Fred_outline = FRED_COLOUR_YELLOW;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
-		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, true, objp);
+		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
 
 		Fred_outline = (iff_color->red << 16) | (iff_color->green << 8) | (iff_color->blue);
 
@@ -919,7 +919,7 @@ void render_one_model_htl(object *objp)
 				return;
 			}
 
-			color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, true, objp);
+			color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
 
 			r = iff_color->red;
 			g = iff_color->green;

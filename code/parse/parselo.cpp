@@ -3977,6 +3977,30 @@ int scan_fso_version_string(const char *text, int *major, int *minor, int *build
 	return 0;
 }
 
+// Goober5000 - used for long Warnings, Errors, and FRED error messages with SEXPs
+void truncate_message_lines(SCP_string &text, int num_allowed_lines)
+{
+	Assert(num_allowed_lines > 0);
+	size_t find_from = 0;
+
+	while (find_from < text.size())
+	{
+		if (num_allowed_lines <= 0)
+		{
+			text.resize(find_from);
+			text.append("[...]");
+			break;
+		}
+
+		size_t pos = text.find('\n', find_from);
+		if (pos == SCP_string::npos)
+			break;
+
+		num_allowed_lines--;
+		find_from = pos + 1;
+	}
+}
+
 // Goober5000 - ugh, I can't see why they didn't just use stuff_*_list for these;
 // the only differece is the lack of parentheses
 
@@ -4029,34 +4053,4 @@ int parse_modular_table(char *name_check, void (*parse_callback)(char *filename)
 	Parsing_modular_table = false;
 
 	return num_files;
-}
-
-bool parse_optional_float(const char *tag, float *destination, float def, float min, float max)
-{
-	Assert(tag != NULL);
-	Assert(destination != NULL);
-
-	if (optional_string(tag))
-	{
-		stuff_float(destination);
-
-		if (*destination < min)
-		{
-			Warning(LOCATION, "Invalid value for \"%s\". Minimum value is %f but %f was specified", tag, min, *destination);
-			*destination = min;
-		}
-		else if (*destination > max)
-		{
-			Warning(LOCATION, "Invalid value for \"%s\". Maximum value is %f but %f was specified", tag, max, *destination);
-			*destination = max;
-		}
-
-		return true;
-	}
-	else
-	{
-		*destination = def;
-
-		return false;
-	}
 }

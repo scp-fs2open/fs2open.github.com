@@ -41,8 +41,9 @@ char *fs2_open_credit_text =
 	"\n"
 	"Senior Advisors:\n"
 	"\n"
-	"Taylor Richards\n"
 	"Ian \"Goober5000\" Warfield\n"
+	"Michael \"Zacam\" LaFleur\n"
+	"Taylor Richards\n"
 	"Edward \"Inquisitor\" Gardner\n"
 	"\n"
 	"Programmers:\n"
@@ -57,13 +58,13 @@ char *fs2_open_credit_text =
 	"FUBAR\n"	
 	"Iss Mneur\n"	
 	"kkmic\n"
-	"Michael \"Zacam\" LaFleur\n"
 	"Shade\n"
 	"Soulstorm\n"
 	"Sushi\n"
 	"Swifty\n"
 	"Wanderer\n"	
 	"Fabian \"The E\" Woltermann\n"
+	"CommanderDJ\n"
 	"\n"
 	"\n"
 	"Readme Staff:\n"
@@ -74,7 +75,6 @@ char *fs2_open_credit_text =
 	"\n"
 	"http://www.hard-light.net/\n"
 	"http://scp.indiegames.us/\n"
-	"http://fs2source.warpcore.org/\n"
 	"\n"
 	"Special thanks to:\n"
 	"\n"
@@ -193,6 +193,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 //XSTR:ON
 };
 
+static char Credits_music_name[NAME_LENGTH];
 static int	Credits_music_handle = -1;
 static int	Credits_music_begin_timestamp;
 
@@ -210,7 +211,7 @@ static float Credits_scroll_rate			= 15.0f;
 static float Credits_artwork_display_time	= 9.0f;
 static float Credits_artwork_fade_time		= 1.0f;
 
-static SCP_string Credit_text;
+static SCP_vector<SCP_string> Credit_text_parts;
 
 static bool Credits_parsed;
 
@@ -236,7 +237,7 @@ void credits_load_music(char* fname)
 		return;
 	}
 
-	if ( fname ){
+	if ( fname && *fname ){
 		Credits_music_handle = audiostream_open( fname, ASF_MENUMUSIC );
 	}
 }
@@ -294,6 +295,10 @@ void credits_parse_table(char* filename)
 	reset_parse();
 
 	// any metadata?
+	if (optional_string("$Music:"))
+	{
+		stuff_string(Credits_music_name, F_NAME, NAME_LENGTH);
+	}
 	if (optional_string("$Start Image Index:"))
 	{
 		stuff_int(&Credits_artwork_index);
@@ -308,13 +313,24 @@ void credits_parse_table(char* filename)
 			Credits_artwork_index = NUM_IMAGES - 1;
 		}
 	}
-
-	parse_optional_float("$Text scroll rate:", &Credits_scroll_rate, 15.0f, 0.0f);
-
-	parse_optional_float("$Artworks display time:", &Credits_artwork_display_time, 9.0f, 0.0f);
-
-	parse_optional_float("$Artworks fade time:", &Credits_artwork_fade_time, 1.0f, 0.0f);
-
+	if (optional_string("$Text scroll rate:"))
+	{
+		stuff_float(&Credits_scroll_rate);
+		if (Credits_scroll_rate < 0.01f)
+			Credits_scroll_rate = 0.01f;
+	}
+	if (optional_string("$Artworks display time:"))
+	{
+		stuff_float(&Credits_artwork_display_time);
+		if (Credits_artwork_display_time < 0.01f)
+			Credits_artwork_display_time = 0.01f;
+	}
+	if (optional_string("$Artworks fade time:"))
+	{
+		stuff_float(&Credits_artwork_fade_time);
+		if (Credits_artwork_fade_time < 0.01f)
+			Credits_artwork_fade_time = 0.01f;
+	}
 	if (optional_string("$SCP Credits position:"))
 	{
 		char mode[NAME_LENGTH];
@@ -331,6 +347,7 @@ void credits_parse_table(char* filename)
 
 	ignore_white_space();
 	
+	SCP_string credits_text;
 	SCP_string line;
 
 	SCP_vector<int> charNum;
@@ -348,7 +365,7 @@ void credits_parse_table(char* filename)
 		// Also don't append the default credits anymore when there was already a parsed table
 		if(first_run && !Credits_parsed && !line.compare(mod_check))
 		{
-			Credit_text.append(unmodified_credits);
+			credits_text.append(unmodified_credits);
 		}
 
 		first_run = false;
@@ -356,7 +373,7 @@ void credits_parse_table(char* filename)
 		if (line.empty())
 		{
 			// If the line is empty then just append a newline, don't bother with splitting it first
-			Credit_text.append("\n");
+			credits_text.append("\n");
 		}
 		else
 		{
@@ -376,11 +393,13 @@ void credits_parse_table(char* filename)
 			// Now add all splitted lines to the credit text and append a newline to the end
 			for (int i = 0; i < numLines; i++)
 			{
-				Credit_text.append(SCP_string(lines[i], charNum[i]));
-				Credit_text.append("\n");
+				credits_text.append(SCP_string(lines[i], charNum[i]));
+				credits_text.append("\n");
 			}
 		}
 	}
+
+	Credit_text_parts.push_back(credits_text);
 
 	Credits_parsed = true;
 }
@@ -402,10 +421,20 @@ void credits_parse()
 
 void credits_init()
 {
-	int i, w, h;
+	int i;
 	credits_screen_buttons *b;
 
-	int credits_spooled_music_index = event_music_get_spooled_music_index("Cinema");	
+	// this is moved up here so we can override it if desired
+	Credits_artwork_index = rand() % NUM_IMAGES;
+
+	// ditto
+	strcpy_s(Credits_music_name, "Cinema");
+
+	// parse credits early so as to set up any overrides (for music and such)
+	Credits_parsed = false;
+	credits_parse();
+
+	int credits_spooled_music_index = event_music_get_spooled_music_index(Credits_music_name);	
 	if(credits_spooled_music_index != -1){
 		char *credits_wavfile_name = Spooled_music[credits_spooled_music_index].filename;		
 		if(credits_wavfile_name != NULL){
@@ -418,28 +447,21 @@ void credits_init()
 
 	Credits_frametime = 0;
 	Credits_last_time = timer_get_milliseconds();
-
-	Credit_text = "";
-
-	// this is moved up here so we can override it if desired
-	Credits_artwork_index = rand() % NUM_IMAGES;
-
-	Credits_parsed = false;
-
-	credits_parse();
-
+	
 	if (!Credits_parsed)
-		Credit_text.assign("No credits available.\n");
+	{
+		Credit_text_parts.push_back(SCP_string("No credits available.\n"));
+	}
 	else
 	{
 		switch (SCP_credits_position)
 		{
 			case START:
-				Credit_text.insert(0, fs2_open_credit_text);
+				Credit_text_parts.insert(Credit_text_parts.begin(), fs2_open_credit_text);
 				break;
 
 			case END:
-				Credit_text.append(fs2_open_credit_text);
+				Credit_text_parts.push_back(fs2_open_credit_text);
 				break;
 
 			default:
@@ -449,116 +471,127 @@ void credits_init()
 	}
 
 	int ch;
-	for (SCP_string::iterator ii = Credit_text.begin(); ii != Credit_text.end(); ++ii)
+	for (SCP_vector<SCP_string>::iterator iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
-		ch = *ii;
-		switch (ch)
+		for (SCP_string::iterator ii = iter->begin(); ii != iter->end(); ++ii)
 		{
-			case -4:
-				ch = 129;
-				break;
+			ch = *ii;
+			switch (ch)
+			{
+				case -4:
+					ch = 129;
+					break;
 
-			case -28:
-				ch = 132;
-				break;
+				case -28:
+					ch = 132;
+					break;
 
-			case -10:
-				ch = 148;
-				break;
+				case -10:
+					ch = 148;
+					break;
 
-			case -23:
-				ch = 130;
-				break;
+				case -23:
+					ch = 130;
+					break;
 
-			case -30:
-				ch = 131;
-				break;
+				case -30:
+					ch = 131;
+					break;
 
-			case -25:
-				ch = 135;
-				break;
+				case -25:
+					ch = 135;
+					break;
 
-			case -21:
-				ch = 137;
-				break;
+				case -21:
+					ch = 137;
+					break;
 
-			case -24:
-				ch = 138;
-				break;
+				case -24:
+					ch = 138;
+					break;
 
-			case -17:
-				ch = 139;
-				break;
+				case -17:
+					ch = 139;
+					break;
 
-			case -18:
-				ch = 140;
-				break;
+				case -18:
+					ch = 140;
+					break;
 
-			case -60:
-				ch = 142;
-				break;
+				case -60:
+					ch = 142;
+					break;
 
-			case -55:
-				ch = 144;
-				break;
+				case -55:
+					ch = 144;
+					break;
 
-			case -12:
-				ch = 147;
-				break;
+				case -12:
+					ch = 147;
+					break;
 
-			case -14:
-				ch = 149;
-				break;
+				case -14:
+					ch = 149;
+					break;
 
-			case -5:
-				ch = 150;
-				break;
+				case -5:
+					ch = 150;
+					break;
 
-			case -7:
-				ch = 151;
-				break;
+				case -7:
+					ch = 151;
+					break;
 
-			case -42:
-				ch = 153;
-				break;
+				case -42:
+					ch = 153;
+					break;
 
-			case -36:
-				ch = 154;
-				break;
+				case -36:
+					ch = 154;
+					break;
 
-			case -31:
-				ch = 160;
-				break;
+				case -31:
+					ch = 160;
+					break;
 
-			case -19:
-				ch = 161;
-				break;
+				case -19:
+					ch = 161;
+					break;
 
-			case -13:
-				ch = 162;
-				break;
+				case -13:
+					ch = 162;
+					break;
 
-			case -6:
-				ch = 163;
-				break;
+				case -6:
+					ch = 163;
+					break;
 
-			case -32:
-				ch = 133;
-				break;
+				case -32:
+					ch = 133;
+					break;
 
-			case -22:
-				ch = 136;
-				break;
+				case -22:
+					ch = 136;
+					break;
 
-			case -20:
-				ch = 141;
-				break;
+				case -20:
+					ch = 141;
+					break;
+			}
+
+			*ii = (char) ch;
 		}
-
-		*ii = (char) ch;
 	}
 
-	gr_get_string_size(&w, &h, Credit_text.c_str(), Credit_text.length());
+	int temp_h;
+	int h = 0;
+
+	for (SCP_vector<SCP_string>::iterator iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
+	{
+		gr_get_string_size(NULL, &temp_h, iter->c_str(), iter->length());
+
+		h = h + temp_h;
+	}
 
 	Credit_start_pos = i2fl(Credits_text_coords[gr_screen.res][CREDITS_H_COORD]);
 	Credit_stop_pos = -i2fl(h);
@@ -611,7 +644,7 @@ void credits_close()
 
 	credits_stop_music();
 
-	Credit_text = "";
+	Credit_text_parts.clear();
 
 	if (Background_bitmap){
 		bm_release(Background_bitmap);
@@ -738,15 +771,28 @@ void credits_do_frame(float frametime)
 	gr_set_clip(Credits_text_coords[gr_screen.res][CREDITS_X_COORD], Credits_text_coords[gr_screen.res][CREDITS_Y_COORD], Credits_text_coords[gr_screen.res][CREDITS_W_COORD], Credits_text_coords[gr_screen.res][CREDITS_H_COORD]);
 	gr_set_font(FONT1);
 	gr_set_color_fast(&Color_normal);
-
-	int sy;
+	
+	int sy; // The current position of the first text part
 	if ( Credit_position > 0 ) {
 		sy = fl2i(Credit_position+0.5f);
 	} else {
 		sy = fl2i(Credit_position-0.5f);
 	}
 
-	gr_string(0x8000, sy, Credit_text.c_str());
+	for (SCP_vector<SCP_string>::iterator iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
+	{
+		int height;
+
+		gr_get_string_size(NULL, &height, iter->c_str(), iter->length());
+
+		// Check if the text part is actually visible
+		if (sy + height > 0)
+		{
+			gr_string(0x8000, sy, iter->c_str());
+		}
+
+		sy = sy + height;
+	}
 
 	int temp_time;
 	temp_time = timer_get_milliseconds();
