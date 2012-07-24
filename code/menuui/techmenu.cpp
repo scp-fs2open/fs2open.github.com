@@ -526,9 +526,13 @@ void techroom_ships_render(float frametime)
 	light_rotate_all();
 	// lighting for techroom
 
+	Glowpoint_use_depth_buffer = false;
+
 	model_clear_instance(Techroom_ship_modelnum);
 	model_set_detail_level(0);
 	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
+
+	Glowpoint_use_depth_buffer = true;
 
 	batch_render_all();
 
