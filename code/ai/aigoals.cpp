@@ -131,18 +131,9 @@ char *Ai_goal_text(int goal)
 }
 
 // function to maybe add the form on my wing goal for a player's starting wing.  Called when a player wing arrives.
-// Goober5000 - made more generic
 void ai_maybe_add_form_goal( wing *wingp )
 {
 	int j;
-	char *wing_leader;
-
-	// if the wing leader isn't available (ie, dead/departed) then go ahead and bail now
-	if (wingp->ship_index[wingp->special_ship] < 0)
-		return;
-
-	// Goober5000 - the wing leader is now not necessarily the player
-	wing_leader = Ships[wingp->ship_index[wingp->special_ship]].ship_name;
 
 	// iterate through the ship_index list of this wing and check for orders.  We will do
 	// this for all ships in the wing instead of on a wing only basis in case some ships
@@ -152,20 +143,15 @@ void ai_maybe_add_form_goal( wing *wingp )
 
 		Assert( wingp->ship_index[j] != -1 );						// get Allender
 
-		// don't process wing leader
-		if (j == wingp->special_ship)
-			continue;
-
 		aip = &Ai_info[Ships[wingp->ship_index[j]].ai_index];
-
 		// don't process Player_ship
 		if ( aip == Player_ai )
 			continue;
 		
 		// it is sufficient enough to check the first goal entry to see if it has a valid goal
 		if ( aip->goals[0].ai_mode == AI_GOAL_NONE ) {
-			// need to add a form on my wing goal here
-			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, wing_leader, aip );
+			// need to add a form on my wing goal here.  Ships are always forming on the player's wing.
+			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip );
 		}
 	}
 }
@@ -173,38 +159,28 @@ void ai_maybe_add_form_goal( wing *wingp )
 void ai_post_process_mission()
 {
 	object *objp;
-
-/*
-	// Goober5000 - considering that this is also done in parse_wing_create_ships,
-	// it's redundant (and possibly premature for some wings) here
+	int i;
 
 	// Check ships in player starting wings.  Those ships should follow these rules:
 	// (1) if they have no orders, they should get a form on my wing order
 	// (2) if they have an order, they are free to act on it.
 	//
 	// So basically, we are checking for (1)
-	if ( !Fred_running )
-	{
-		int i;
+	if ( !Fred_running ) {
+		//	MK, 5/9/98: Used to iterate through MAX_STARTING_WINGS, but this was too many ships forming on player.
+		// Goober5000 - MK originally iterated on only the first wing; now we iterate on only the player wing
+		// because the player wing may not be first
+		for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {	
+			if ( Starting_wings[i] == Player_ship->wingnum ) {
+				wing *wingp;
 
-		// Goober5000 - make all wings form on their respective leaders
-		for ( i = 0; i < Num_wings; i++ )
-		{
-			ai_maybe_add_form_goal( &Wings[i] );
+				wingp = &Wings[Starting_wings[i]];
+
+				ai_maybe_add_form_goal( wingp );
+
+			}
 		}
-
-//		for ( i = 0; i < 1; i++ ) {	//	MK, 5/9/98: Used to iterate through MAX_STARTING_WINGS, but this was too many ships forming on player.
-//			if ( Starting_wings[i] != -1 ) {
-//				wing *wingp;
-//
-//				wingp = &Wings[Starting_wings[i]];
-//
-//				ai_maybe_add_form_goal( wingp );
-//
-//			}
-//		}
 	}
-*/
 
 	// for every valid ship object, call process_mission_orders to be sure that ships start the
 	// mission following the orders in the mission file right away instead of waiting N seconds
