@@ -1446,8 +1446,13 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// for this goal to be valid).
 			Assert ( aigp->ai_submode >= 0 );
 			ssp = ship_get_indexed_subsys( &Ships[sindex], aigp->ai_submode );
-			status = mission_log_get_time( LOG_SHIP_SUBSYS_DESTROYED, aigp->target_name, ssp->system_info->subobj_name, NULL );
-
+			if (ssp != NULL) {
+				status = mission_log_get_time( LOG_SHIP_SUBSYS_DESTROYED, aigp->target_name, ssp->system_info->subobj_name, NULL );
+			} else {
+				// not supposed to ever happen, but could if there is a mismatch between the table and model subsystems
+				nprintf(("AI", "Couldn't find subsystem %d for ship %s\n", aigp->ai_submode, Ships[sindex].ship_name));
+				status = 0;
+			}
 			break;
 		}
 
