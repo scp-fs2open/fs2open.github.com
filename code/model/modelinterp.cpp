@@ -2469,31 +2469,42 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 
 				if (flick == 1) {
 					glow_point *gpt = &bank->points[j];
-                    vec3d loc_offset = gpt->pnt;
-                    vec3d loc_norm = gpt->norm;
-                    vec3d world_pnt;
-                    vec3d world_norm;
-                    vec3d tempv;
-                    vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
-                    bool submodel_rotation = false;
+					vec3d pnt = gpt->pnt;
+					vec3d norm = gpt->norm;
+				
+					if (bank->submodel_parent > 0) { //this is where it rotates for the submodel parent-Bobboau
+						if (pm->submodel[bank->submodel_parent].blown_off)
+							continue;
 
-					if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) && shipp != NULL ) {
-						model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_parent);
+						angles angs = pm->submodel[bank->submodel_parent].angs;
+						angs.b = PI2 - angs.b;
+						angs.p = PI2 - angs.p;
+						angs.h = PI2 - angs.h;
 
-						submodel_rotation = true;
+						// Compute final submodel orientation by using the orientation
+						// matrix and the rotation angles.
+						// By using this kind of computation, the rotational angles can
+						// always be computed relative to the submodel itself, instead
+						// of relative to the parent - KeldorKatarn
+						matrix rotation_matrix = pm->submodel[bank->submodel_parent].orientation;
+						vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
+
+						matrix inv_orientation;
+						vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[bank->submodel_parent].orientation);
+
+						matrix submodel_matrix;
+						vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
+
+						vec3d offset = pm->submodel[bank->submodel_parent].offset;
+						vm_vec_sub(&pnt, &pnt, &offset);
+						vec3d p = pnt;
+						vec3d n = norm;
+						vm_vec_rotate(&pnt, &p, &submodel_matrix);
+						vm_vec_rotate(&norm, &n, &submodel_matrix);
+						vm_vec_add2(&pnt, &offset);
 					}
 
-					if ( submodel_rotation ) {
-						vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
-
-						tempv = loc_offset;
-						find_submodel_instance_point_normal(&loc_offset, &loc_norm, &Objects[shipp->objnum], bank->submodel_parent, &tempv, &loc_norm);
-					}
-
-					vm_vec_unrotate(&world_pnt, &loc_offset, orient);
-					vm_vec_add2(&world_pnt, pos);
-
-					vm_vec_unrotate(&world_norm, &loc_norm, orient);
+					vec3d tempv;
 
 					switch (bank->type)
 					{
@@ -2501,13 +2512,13 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 						{
 							float d;
 
-							if ( IS_VEC_NULL(&world_norm) ) {
+							if ( IS_VEC_NULL(&norm) ) {
 								d = 1.0f;	//if given a nul vector then always show it
 							} else {
-								vm_vec_sub(&tempv,&View_position,&world_pnt);
+								vm_vec_sub(&tempv,&View_position,&pnt);
 								vm_vec_normalize(&tempv);
 
-								d = vm_vec_dot(&tempv,&world_norm);
+								d = vm_vec_dot(&tempv,&norm);
 								d -= 0.25;	
 							}
 					
@@ -2523,10 +2534,10 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 
 								// fade them in the nebula as well
 								if (The_mission.flags & MISSION_FLAG_FULLNEB) {
-									//vec3d npnt;
-									//vm_vec_add(&npnt, &loc_offset, pos);
+									vec3d npnt;
+									vm_vec_add(&npnt, &pnt, pos);
 
-									d *= (1.0f - neb2_get_fog_intensity(&world_pnt));
+									d *= (1.0f - neb2_get_fog_intensity(&npnt));
 									w *= 1.5;	//make it bigger in a nebula
 								}
 				
@@ -2535,20 +2546,13 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 									gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	
 								if (!Cmdline_nohtl) {
-									g3_transfer_vertex(&p, &world_pnt);
+									g3_transfer_vertex(&p, &pnt);
 								} else {
-									g3_rotate_vertex(&p, &world_pnt);
+									g3_rotate_vertex(&p, &pnt);
 								}
- 
-								p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
-								batch_add_bitmap(
-									bank->glow_bitmap,
-									TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,  
-									&p,
-									0,
-									(w * 0.5f),
-									d
-								);
+
+								gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
+								g3_draw_bitmap(&p, 0, (w * 0.5f), TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w);
 							} //d>0.0f
 
 							break;
@@ -2559,16 +2563,16 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 							vertex verts[4];
 							vec3d fvec, top1, bottom1, top2, bottom2, start, end;
 
-							vm_vec_add2(&loc_norm, &loc_offset);
+							vm_vec_add2(&norm, &pnt);
 
-							vm_vec_rotate(&start, &loc_offset, orient);
-							vm_vec_rotate(&end, &loc_norm, orient);
+							vm_vec_rotate(&start, &pnt, orient);
+							vm_vec_rotate(&end, &norm, orient);
 							vm_vec_sub(&fvec, &end, &start);
 
 							vm_vec_normalize(&fvec);
 
-							moldel_calc_facing_pts(&top1, &bottom1, &fvec, &loc_offset, gpt->radius, 1.0f, &View_position);
-							moldel_calc_facing_pts(&top2, &bottom2, &fvec, &loc_norm, gpt->radius, 1.0f, &View_position);
+							moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, gpt->radius, 1.0f, &View_position);
+							moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, gpt->radius, 1.0f, &View_position);
 
 							int idx = 0;
 
@@ -2600,7 +2604,7 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 							verts[3].texture_position.u = 0.0f;
 							verts[3].texture_position.v = 1.0f;
 
-							vm_vec_sub(&tempv,&View_position,&loc_offset);
+							vm_vec_sub(&tempv,&View_position,&pnt);
 							vm_vec_normalize(&tempv);
 
 							if (The_mission.flags & MISSION_FLAG_FULLNEB) {
@@ -3055,6 +3059,11 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		model_render_shields(pm);
 	}	
 
+	// start rendering glow points -Bobboau
+	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl && !Glowpoint_override ) {
+		model_render_glow_points(pm, shipp, orient, pos);
+	}
+
 	if ( Interp_flags & MR_SHOW_PATHS ){
 		if (Cmdline_nohtl) model_draw_paths(model_num);
 		else model_draw_paths_htl(model_num);
@@ -3070,11 +3079,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 
 	g3_done_instance(use_api);
-
-	// start rendering glow points -Bobboau
-	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl && !Glowpoint_override ) {
-		model_render_glow_points(pm, shipp, orient, pos);
-	}
 
 	// Draw the thruster glow
 	if ( !is_outlines_only && !is_outlines_only_htl ) {
