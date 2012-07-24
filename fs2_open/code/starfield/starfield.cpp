@@ -163,6 +163,7 @@ int stars_debris_loaded = 0;	// 0 = not loaded, 1 = normal vclips, 2 = nebula vc
 // background data
 int Stars_background_inited = 0;			// if we're inited
 int Nmodel_num = -1;							// model num
+matrix Nmodel_orient = IDENTITY_MATRIX;			// model orientation
 int Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
 int Nmodel_bitmap = -1;						// model texture
 
@@ -718,6 +719,7 @@ void stars_pre_level_init(bool clear_backgrounds)
 	stars_clear_instances();
 
 	stars_set_background_model(NULL, NULL);
+	stars_set_background_orientation();
 
 	// mark all starfield and sun bitmaps as unused for this mission and release any current bitmaps
 	// NOTE: that because of how we have to load the bitmaps it's important to release all of
@@ -775,6 +777,7 @@ void stars_post_level_init()
 
 
 	stars_set_background_model(The_mission.skybox_model, NULL, The_mission.skybox_flags);
+	stars_set_background_orientation(&The_mission.skybox_orientation);
 
 	stars_load_debris( ((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) );
 
@@ -2116,7 +2119,7 @@ void stars_draw_background()
 	// draw the model at the player's eye with no z-buffering
 	model_set_alpha(1.0f);
 
-	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, Nmodel_flags);
+	model_render(Nmodel_num, &Nmodel_orient, &Eye_position, Nmodel_flags);
 
 	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(-1);
@@ -2147,6 +2150,16 @@ void stars_set_background_model(char *model_name, char *texture_name, int flags)
 
 	if (Nmodel_num >= 0)
 		model_page_in_textures(Nmodel_num);
+}
+
+// call this to set a specific orientation for the background
+void stars_set_background_orientation(matrix *orient)
+{
+	if (orient == NULL) {
+		vm_set_identity(&Nmodel_orient);
+	} else {
+		Nmodel_orient = *orient;
+	}
 }
 
 // lookup a starfield bitmap, return index or -1 on fail
@@ -2456,6 +2469,7 @@ void stars_set_nebula(bool activate)
 		if(Cmdline_nohtl || Fred_running) {
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
+			stars_set_background_orientation();
 		} else {
 			Neb2_render_mode = NEB2_RENDER_HTL;
 		}

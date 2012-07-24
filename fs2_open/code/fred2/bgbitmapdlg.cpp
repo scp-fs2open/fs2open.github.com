@@ -37,7 +37,6 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 {
 	//{{AFX_DATA_INIT(bg_bitmap_dlg)		
 	m_neb_intensity = _T("");
-	m_skybox_model = _T("");
 	m_envmap = _T("");
 	m_nebula_color = -1;
 	m_nebula_index = -1;
@@ -65,6 +64,11 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	b_scale_x = 1.0f; b_scale_y = 1.0f;
 	b_div_x = 1; b_div_y = 1;
 	b_index = -1;
+
+	m_skybox_model = _T("");
+	m_skybox_pitch = 0;
+	m_skybox_bank = 0;
+	m_skybox_heading = 0;
 	m_sky_flag_1 = The_mission.skybox_flags & MR_NO_LIGHTING ? 1 : 0;
 	m_sky_flag_2 = The_mission.skybox_flags & MR_ALL_XPARENT ? 1 : 0;
 	m_sky_flag_3 = The_mission.skybox_flags & MR_NO_ZBUFFER ? 1 : 0;
@@ -122,6 +126,12 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SBITMAP_DIV_Y, b_div_y);
 	DDV_MinMaxInt(pDX, b_div_y, 1, 5);
 	DDX_Text(pDX, IDC_SKYBOX_FNAME, m_skybox_model);
+	DDX_Text(pDX, IDC_SKYBOX_P, m_skybox_pitch);
+	DDV_MinMaxInt(pDX, m_skybox_pitch, 0, 359);
+	DDX_Text(pDX, IDC_SKYBOX_B, m_skybox_bank);
+	DDV_MinMaxInt(pDX, m_skybox_bank, 0, 359);
+	DDX_Text(pDX, IDC_SKYBOX_H, m_skybox_heading);
+	DDV_MinMaxInt(pDX, m_skybox_heading, 0, 359);
 	DDX_Text(pDX, IDC_ENVMAP, m_envmap);
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_LIGHTING, m_sky_flag_1);
 	DDX_Check(pDX, IDC_SKY_FLAG_XPARENT, m_sky_flag_2);
@@ -170,6 +180,12 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_BN_CLICKED(IDC_SWAP_BACKGROUND, OnSwapBackground)
 	ON_CBN_SELCHANGE(IDC_BACKGROUND_NUM, OnBackgroundDropdownChange)
 	ON_BN_CLICKED(IDC_SKYBOX_MODEL, OnSkyboxBrowse)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SKYBOX_P_SPIN, OnDeltaposSkyboxPSpin)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SKYBOX_B_SPIN, OnDeltaposSkyboxBSpin)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SKYBOX_H_SPIN, OnDeltaposSkyboxHSpin)
+	ON_EN_KILLFOCUS(IDC_SKYBOX_P, OnKillfocusSkyboxP)
+	ON_EN_KILLFOCUS(IDC_SKYBOX_B, OnKillfocusSkyboxB)
+	ON_EN_KILLFOCUS(IDC_SKYBOX_H, OnKillfocusSkyboxH)
 	ON_BN_CLICKED(IDC_ENVMAP_BROWSE, OnEnvmapBrowse)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -210,6 +226,12 @@ void bg_bitmap_dlg::create()
 
 	m_skybox_model = _T(The_mission.skybox_model);
 	m_envmap = _T(The_mission.envmap_name);
+
+	angles skybox_angles;
+	vm_extract_angles_matrix(&skybox_angles, &The_mission.skybox_orientation);
+	m_skybox_pitch = fl_degrees(skybox_angles.p);
+	m_skybox_bank = fl_degrees(skybox_angles.b);
+	m_skybox_heading = fl_degrees(skybox_angles.h);
 
 	for(i=0; i<MAX_NEB2_BITMAPS; i++){
 		if(strlen(Neb2_bitmap_filenames[i]) > 0){ //-V805
@@ -402,9 +424,14 @@ void bg_bitmap_dlg::OnClose()
 	string_copy(The_mission.skybox_model, m_skybox_model, NAME_LENGTH, 1);
 	string_copy(The_mission.envmap_name, m_envmap, NAME_LENGTH, 1);
 
+	angles skybox_angles;
+	skybox_angles.p = fl_radians(m_skybox_pitch);
+	skybox_angles.b = fl_radians(m_skybox_bank);
+	skybox_angles.h = fl_radians(m_skybox_heading);
+	vm_angles_2_matrix(&The_mission.skybox_orientation, &skybox_angles);
+
 	//store the skybox flags
 	The_mission.skybox_flags = 0;
-
 	if(m_sky_flag_1) {
 		The_mission.skybox_flags |= MR_NO_LIGHTING;
 	}
@@ -1179,6 +1206,51 @@ void bg_bitmap_dlg::OnKillfocusSun1Scale()
 	OnSunChange();
 }
 
+void bg_bitmap_dlg::OnDeltaposSkyboxPSpin(NMHDR* pNMHDR, LRESULT* pResult) 
+{
+	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
+
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_P, &m_skybox_pitch, 0, 359);
+	OnOrientationChange();
+	*pResult = 0;
+}
+
+void bg_bitmap_dlg::OnDeltaposSkyboxBSpin(NMHDR* pNMHDR, LRESULT* pResult) 
+{
+	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
+
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_B, &m_skybox_bank, 0, 359);
+	OnOrientationChange();
+	*pResult = 0;
+}
+
+void bg_bitmap_dlg::OnDeltaposSkyboxHSpin(NMHDR* pNMHDR, LRESULT* pResult) 
+{
+	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
+
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_H, &m_skybox_heading, 0, 359);
+	OnOrientationChange();
+	*pResult = 0;
+}
+
+void bg_bitmap_dlg::OnKillfocusSkyboxP() 
+{
+	get_data_int(IDC_SKYBOX_P, &m_skybox_pitch, 0, 359);
+	OnOrientationChange();
+}
+
+void bg_bitmap_dlg::OnKillfocusSkyboxB() 
+{
+	get_data_int(IDC_SKYBOX_B, &m_skybox_bank, 0, 359);
+	OnOrientationChange();
+}
+
+void bg_bitmap_dlg::OnKillfocusSkyboxH() 
+{
+	get_data_int(IDC_SKYBOX_H, &m_skybox_heading, 0, 359);
+	OnOrientationChange();
+}
+
 
 extern void parse_one_background(background_t *background);
 
@@ -1344,6 +1416,17 @@ void bg_bitmap_dlg::OnSkyboxBrowse()
 
 	// load/display new skybox model (if one was selected)
 	stars_set_background_model( (char*)(LPCTSTR)m_skybox_model, NULL );
+}
+
+void bg_bitmap_dlg::OnOrientationChange()
+{
+	angles temp_angles;
+	matrix temp_orient;
+	temp_angles.p = fl_radians(m_skybox_pitch);
+	temp_angles.b = fl_radians(m_skybox_bank);
+	temp_angles.h = fl_radians(m_skybox_heading);
+	vm_angles_2_matrix(&temp_orient, &temp_angles);
+	stars_set_background_orientation( &temp_orient );
 }
 
 void bg_bitmap_dlg::OnEnvmapBrowse()
