@@ -166,6 +166,7 @@ public:
 		for ( int i = 0; i < GR_NUM_RESOLUTIONS; i++ )
 			loading_screen[ i ][ 0 ] = '\0';
 		skybox_model[ 0 ] = '\0';
+		//vm_set_identity(&skybox_orientation);
 		envmap_name[ 0 ] = '\0';
 		skybox_flags = 0;
 		contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;

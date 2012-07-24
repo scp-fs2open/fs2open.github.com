@@ -111,6 +111,7 @@ void stars_camera_cut();
 
 // call this to set a specific model as the background model
 void stars_set_background_model(char *model_name, char *texture_name, int flags = DEFAULT_NMODEL_FLAGS);
+void stars_set_background_orientation(matrix *orient = NULL);
 
 // lookup a starfield bitmap, return index or -1 on fail
 int stars_find_bitmap(char *name);

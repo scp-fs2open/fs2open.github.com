@@ -701,9 +701,15 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	strcpy_s(pm->skybox_model, "");
-	if (optional_string("$Skybox model:"))
+	if (optional_string("$Skybox Model:"))
 	{
 		stuff_string(pm->skybox_model, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	vm_set_identity(&pm->skybox_orientation);
+	if (optional_string("+Skybox Orientation:"))
+	{
+		stuff_matrix(&pm->skybox_orientation);
 	}
 
 	if (optional_string("+Skybox Flags:")){

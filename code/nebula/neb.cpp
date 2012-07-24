@@ -344,6 +344,7 @@ void neb2_post_level_init()
 		// by default we'll use pof rendering
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
+		stars_set_background_orientation();
 	} else {
 		// Set a default colour just in case something goes wrong
 		Neb2_fog_color_r =  30;
@@ -1570,6 +1571,7 @@ DCF(neb2_mode, "")
 		case NEB2_RENDER_POF:
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, "Eraseme3");
+			stars_set_background_orientation();
 		break;
 
 		case NEB2_RENDER_LAME:

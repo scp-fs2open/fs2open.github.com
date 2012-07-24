@@ -811,6 +811,7 @@
 #define IDC_ABBREV_DEBRIEFING           1347
 #define IDC_TVT_WING_NAME_2             1347
 #define IDC_SPECIAL_DEATHROLL_TIME      1347
+#define IDC_SKYBOX_B                    1347
 #define IDC_SHIELDS                     1348
 #define IDC_ABBREV_MISSION              1348
 #define IDC_SQUADRON_WING_NAME_5        1348
@@ -1004,6 +1005,7 @@
 #define IDC_SBITMAP_SCALE_X             1519
 #define IDC_SUN1_P                      1520
 #define IDC_SUN1_SCALE_SPIN             1521
+#define IDC_SKYBOX_H                    1521
 #define IDC_SUN1_P_SPIN                 1522
 #define IDC_SUN1_B_SPIN                 1523
 #define IDC_SUN1_H_SPIN                 1524
@@ -1027,11 +1029,16 @@
 #define IDC_SBITMAP_DIV_Y               1537
 #define IDC_STATS_TEXT                  1537
 #define IDC_SUBTYPE1                    1538
+#define IDC_SKYBOX_P                    1538
 #define IDC_SUBTYPE2                    1539
 #define IDC_SPECIAL_WARPIN              1539
+#define IDC_SKYBOX_P_SPIN               1539
 #define IDC_SUBTYPE3                    1540
 #define IDC_LOOP_BRIEF_ANIM             1540
+#define IDC_SKYBOX_B_SPIN               1540
 #define IDC_LOOP_BRIEF_SOUND            1541
+#define IDC_SBITMAP_H_SPIN2             1541
+#define IDC_SKYBOX_H_SPIN               1541
 #define IDC_SPECS_TOGGLE_TRAILS         1542
 #define IDC_SUPPORT_REPAIR              1543
 #define IDC_SUPPORT_REPAIRS_HULL        1543
