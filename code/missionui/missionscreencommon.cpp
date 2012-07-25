@@ -1084,13 +1084,13 @@ void wss_direct_restore_loadout()
 			p_object *p_objp;
 			j=0;
 			for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
-				slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
 					// niffiwan: don't overrun the array
 					if (j >= MAX_WING_SLOTS) {
 						Warning(LOCATION, "Starting Wing '%s' has more than 'MAX_WING_SLOTS' ships\n", Starting_wing_names[i]);
 						break;
 					}
+					slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
 					p_objp->ship_class = slot->ship_class;
 					wl_update_parse_object_weapons(p_objp, slot);
 					j++;
