@@ -164,8 +164,8 @@ extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
-extern int check_for_string(char *pstr);
-extern int check_for_string_raw(char *pstr);
+extern int check_for_string(const char *pstr);
+extern int check_for_string_raw(const char *pstr);
 extern int check_for_eof();
 extern int check_for_eoln();
 
