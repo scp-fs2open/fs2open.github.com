@@ -729,6 +729,9 @@ void mission_parse_lookup_callsign_index(int index, char *out);
 int mission_parse_add_callsign(char *name);
 void mission_parse_reset_callsign();
 
+// is training mission
+int is_training_mission();
+
 // code to save/restore mission parse stuff
 int get_mission_info(char *filename, mission *missionp = NULL, bool basic = true);
 
