@@ -181,9 +181,6 @@
     <Filter Include="Cmdline">
       <UniqueIdentifier>{4feafd16-d55a-4ce8-b2a7-31ea81d03b2b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="fs2netd">
-      <UniqueIdentifier>{eaaf5609-a655-4b46-95b4-bee16c341561}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Species_Defs">
       <UniqueIdentifier>{ab2a00a5-8e90-4bec-ba37-9ba23bfc53cd}</UniqueIdentifier>
     </Filter>
@@ -201,6 +198,9 @@
     </Filter>
     <Filter Include="mod_table">
       <UniqueIdentifier>{b8fecc33-7ae8-42db-beaa-e7cc8abded39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameHelp\fs2netd">
+      <UniqueIdentifier>{eaaf5609-a655-4b46-95b4-bee16c341561}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1003,13 +1003,13 @@
       <Filter>Cmdline</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fs2netd\fs2netd_client.cpp">
-      <Filter>fs2netd</Filter>
+      <Filter>GameHelp\fs2netd</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fs2netd\tcp_client.cpp">
-      <Filter>fs2netd</Filter>
+      <Filter>GameHelp\fs2netd</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fs2netd\tcp_socket.cpp">
-      <Filter>fs2netd</Filter>
+      <Filter>GameHelp\fs2netd</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\species_defs\species_defs.cpp">
       <Filter>Species_Defs</Filter>
@@ -1785,16 +1785,16 @@
       <Filter>Cmdline</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fs2netd\fs2netd_client.h">
-      <Filter>fs2netd</Filter>
+      <Filter>GameHelp\fs2netd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fs2netd\protocol.h">
-      <Filter>fs2netd</Filter>
+      <Filter>GameHelp\fs2netd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fs2netd\tcp_client.h">
-      <Filter>fs2netd</Filter>
+      <Filter>GameHelp\fs2netd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fs2netd\tcp_socket.h">
-      <Filter>fs2netd</Filter>
+      <Filter>GameHelp\fs2netd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\species_defs\species_defs.h">
       <Filter>Species_Defs</Filter>

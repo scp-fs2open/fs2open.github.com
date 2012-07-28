@@ -491,6 +491,11 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 				else
 					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
 
+				if (Ship_info[Ships[target_objp->instance].ship_info_index].uses_team_colors) {
+					gr_set_team_color(Ships[target_objp->instance].team_name);
+					gr_enable_team_color();
+				}
+
 				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
 				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
 
@@ -528,6 +533,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		}
 		Glowpoint_override = false;
 		ship_model_stop( target_objp );
+		gr_disable_team_color();
 
 		sx = 0;
 		sy = 0;

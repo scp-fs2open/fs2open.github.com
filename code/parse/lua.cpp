@@ -5740,6 +5740,11 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 
 	ship_info *sip = &Ship_info[idx];
 
+	if (sip->uses_team_colors) {
+		gr_set_team_color(sip->default_team_name);
+		gr_enable_team_color();
+	}
+
 	//Make sure model is loaded
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
 
@@ -5785,6 +5790,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
+	gr_disable_team_color();
 
 	return ade_set_args(L, "b", true);
 }
@@ -5806,6 +5812,11 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 		return ade_set_args(L, "b", false);
 
 	ship_info *sip = &Ship_info[idx];
+
+	if (sip->uses_team_colors) {
+		gr_set_team_color(sip->default_team_name);
+		gr_enable_team_color();
+	}
 
 	//Make sure model is loaded
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
@@ -5845,6 +5856,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
+	gr_disable_team_color();
 
 	return ade_set_args(L, "b", true);
 }

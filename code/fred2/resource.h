@@ -643,6 +643,7 @@
 #define IDC_NEB2_TEXTURE                1244
 #define IDC_SHIP_ALT                    1244
 #define IDC_SET_FROM_VARIABLES          1244
+#define IDC_TEAMSELECT                  1244
 #define IDC_COMBO4                      1245
 #define IDC_BEHAVIOR2                   1245
 #define IDC_PRIORITY                    1245

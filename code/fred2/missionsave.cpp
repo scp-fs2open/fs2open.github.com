@@ -1418,6 +1418,12 @@ int CFred_mission_save::save_objects()
 		parse_comments();
 		fout(" %s", Iff_info[shipp->team].iff_name);
 
+		if (Ship_info[shipp->ship_info_index].uses_team_colors) {
+			required_string_fred("$Team Color Setting:");
+			parse_comments();
+			fout(" %s", shipp->team_name.c_str());
+		}
+
 		required_string_fred("$Location:");
 		parse_comments();
 		save_vector(Objects[shipp->objnum].pos);
