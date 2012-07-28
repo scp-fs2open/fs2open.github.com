@@ -519,7 +519,7 @@ int check_for_eoln()
 
 // similar to optional_string, but just checks if next token is a match.
 // It doesn't advance Mp except to skip past white space.
-int check_for_string(char *pstr)
+int check_for_string(const char *pstr)
 {
 	ignore_white_space();
 
@@ -530,11 +530,10 @@ int check_for_string(char *pstr)
 }
 
 // like check for string, but doesn't skip past any whitespace
-int check_for_string_raw(char *pstr)
+int check_for_string_raw(const char *pstr)
 {
-	if (!strnicmp(pstr, Mp, strlen(pstr))){
+	if (!strnicmp(pstr, Mp, strlen(pstr)))
 		return 1;
-	}
 
 	return 0;
 }

@@ -32,6 +32,7 @@
 #include "ai/aigoals.h"
 #include "gamesnd/gamesnd.h"
 #include "mission/missionmessage.h"
+#include "mission/missionparse.h"
 #include "cmeasure/cmeasure.h"
 #include "math/staticrand.h"
 #include "ship/afterburner.h"
@@ -9166,7 +9167,6 @@ int num_ships_attacking(int target_objnum)
 		attacking_aip = &Ai_info[Ships[attacking_objp->instance].ai_index];
 
 		// don't count instructor
-		int is_training_mission();
 		if (is_training_mission() && is_instructor(attacking_objp))
 			continue;	// Goober5000 10/06/2005 changed from break
 

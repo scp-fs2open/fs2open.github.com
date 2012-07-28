@@ -779,6 +779,8 @@ typedef struct ship {
 
 	RadarVisibility radar_last_status; // Last radar status
 	RadarVisibility radar_current_status; // Current radar status
+
+	SCP_string team_name;
 } ship;
 
 struct ai_target_priority {
@@ -1312,6 +1314,10 @@ typedef struct ship_info {
 
 	// rgb shield color
 	ubyte shield_color[3];
+
+	// HW2-style team coloring
+	bool uses_team_colors;
+	SCP_string default_team_name;
 
 	// optional afterburner trail values
 	generic_bitmap afterburner_trail;

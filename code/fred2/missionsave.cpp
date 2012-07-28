@@ -46,6 +46,7 @@
 #include "globalincs/version.h"
 #include "sound/sound.h"
 #include "sound/ds.h"
+#include "math/vecmat.h"
 
 
 void CFred_mission_save::convert_special_tags_to_retail(char *text, int max_len)
@@ -572,6 +573,21 @@ int CFred_mission_save::save_mission_info()
 		bypass_comment(";;FSO 3.6.0;; $Skybox Model:");
 	}
 
+	// orientation?
+	if ((strlen(The_mission.skybox_model) > 0) && !vm_matrix_same(&vmd_identity_matrix, &The_mission.skybox_orientation)) {
+		if (optional_string_fred("+Skybox Orientation:")) {
+			parse_comments(1);
+			save_matrix(The_mission.skybox_orientation);
+		} else {
+			fso_comment_push(";;FSO 3.6.14;;");
+			fout_version("\n+Skybox Orientation:");
+			save_matrix(The_mission.skybox_orientation);
+			fso_comment_pop();
+		}
+	} else {
+		bypass_comment(";;FSO 3.6.14;; +Skybox Orientation:");
+	}
+
 	// are skybox flags in use?
 	if (The_mission.skybox_flags != DEFAULT_NMODEL_FLAGS) {
 		//char out_str[4096];
@@ -583,8 +599,7 @@ int CFred_mission_save::save_mission_info()
 			fout_version("\n+Skybox Flags: %d", The_mission.skybox_flags);
 			fso_comment_pop();
 		}
-	}
-	else {
+	} else {
 		bypass_comment(";;FSO 3.6.11;; +Skybox Flags:");
 	}
 
@@ -1402,6 +1417,12 @@ int CFred_mission_save::save_objects()
 		required_string_fred("$Team:");
 		parse_comments();
 		fout(" %s", Iff_info[shipp->team].iff_name);
+
+		if (Ship_info[shipp->ship_info_index].uses_team_colors) {
+			required_string_fred("$Team Color Setting:");
+			parse_comments();
+			fout(" %s", shipp->team_name.c_str());
+		}
 
 		required_string_fred("$Location:");
 		parse_comments();

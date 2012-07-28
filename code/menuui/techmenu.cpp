@@ -465,6 +465,11 @@ void techroom_ships_render(float frametime)
 	int z;
 	ship_info *sip = &Ship_info[Cur_entry_index];
 
+	if (sip->uses_team_colors) {
+		gr_set_team_color(sip->default_team_name);
+		gr_enable_team_color();
+	}
+
 	// get correct revolution rate
 	z = sip->flags;
 	if (z & SIF_BIG_SHIP) {
@@ -545,6 +550,7 @@ void techroom_ships_render(float frametime)
 	g3_end_frame();
 
 	gr_reset_clip();
+	gr_disable_team_color();
 }
 
 // select previous entry in current list

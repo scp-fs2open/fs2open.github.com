@@ -1532,6 +1532,12 @@ void ship_select_do(float frametime)
 			if (sip->flags & SIF_HUGE_SHIP) {
 				rev_rate *= 3.0f;
 			}
+
+			if (sip->uses_team_colors) {
+				gr_set_team_color(sip->default_team_name);
+				gr_enable_team_color();
+			}
+
 			draw_model_rotating(ShipSelectModelNum,
 				Ship_anim_coords[gr_screen.res][0],
 				Ship_anim_coords[gr_screen.res][1],
@@ -1544,6 +1550,8 @@ void ship_select_do(float frametime)
 				MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
 				true,
 				sip->selection_effect);
+
+			gr_disable_team_color();
 		}
 	}
 

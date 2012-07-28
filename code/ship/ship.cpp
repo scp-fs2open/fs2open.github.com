@@ -13,6 +13,7 @@
 #include <setjmp.h>
 
 #include "globalincs/def_files.h"
+#include "globalincs/alphacolors.h"
 #include "ship/ship.h"
 #include "object/object.h"
 #include "weapon/weapon.h"
@@ -964,6 +965,9 @@ void init_ship_entry(ship_info *sip)
 	sip->pathMetadata.clear();
 
 	sip->selection_effect = Default_ship_select_effect;
+
+	// Team colors
+	sip->uses_team_colors = false;
 }
 
 /**
@@ -1624,6 +1628,30 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			sip->nondark_colors[sip->num_nondark_colors][0] = nr;
 			sip->nondark_colors[sip->num_nondark_colors][1] = ng;
 			sip->nondark_colors[sip->num_nondark_colors++][2] = nb;
+		}
+	}
+
+	if (optional_string("$Default Team:")) {
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		SCP_string name = temp;
+		if (Team_Colors.find(name) != Team_Colors.end()) {
+			sip->default_team_name = name;
+			sip->uses_team_colors = true;
+		} else {
+			Warning(LOCATION, "Team name %s is invalid. Teams must be defined in colors.tbl.\n", temp);
+		}
+	}
+
+	if (optional_string("$Default Team:")) {
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		SCP_string name = temp;
+		if (Team_Colors.find(name) != Team_Colors.end()) {
+			sip->default_team_name = name;
+			sip->uses_team_colors = true;
+		} else {
+			Warning(LOCATION, "Team name %s is invalid. Teams must be defined in colors.tbl.\n", temp);
 		}
 	}
 
@@ -5068,6 +5096,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// Reset special explosion too.
 	shipp->use_special_explosion = false;
+
+	// Team colors
+	shipp->team_name.assign( sip->default_team_name);
 }
 
 /**
@@ -6071,6 +6102,11 @@ void ship_render(object * obj)
 				}
 			}
 
+			if (sip->uses_team_colors) {
+				gr_enable_team_color();
+				gr_set_team_color(shipp->team_name);
+			}
+
 			if(sip->flags2 & SIF2_NO_LIGHTING)
 				render_flags |= MR_NO_LIGHTING;
 
@@ -6228,6 +6264,8 @@ void ship_render(object * obj)
 		shipp->warpin_effect->warpShipRender();
 	else if(shipp->flags & SF_DEPART_WARP)
 		shipp->warpout_effect->warpShipRender();
+
+	gr_disable_team_color();
 }
 
 void ship_render_cockpit(object *objp)

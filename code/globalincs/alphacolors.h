@@ -54,6 +54,10 @@ extern color Color_ui_light_pink, Color_ui_pink;
 #define NETPLAYER_COLORS 20
 extern color *Color_netplayer[NETPLAYER_COLORS];
 
+// Team colors
+extern SCP_map<SCP_string, team_color> Team_Colors;
+extern SCP_vector<SCP_string> Team_Names;
+
 // -----------------------------------------------------------------------------------
 // ALPHA FUNCTIONS
 //

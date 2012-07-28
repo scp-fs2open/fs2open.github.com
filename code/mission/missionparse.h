@@ -146,6 +146,7 @@ typedef struct mission {
 	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 	char	skybox_model[MAX_FILENAME_LEN];
+	matrix	skybox_orientation;
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		skybox_flags;
 	int		contrail_threshold;
@@ -191,8 +192,9 @@ typedef struct mission {
 		for ( i = 0; i < GR_NUM_RESOLUTIONS; i++ )
 			loading_screen[ i ][ 0 ] = '\0';
 		skybox_model[ 0 ] = '\0';
-		envmap_name[ 0 ] = '\0';
+		vm_set_identity(&skybox_orientation);
 		skybox_flags = 0;
+		envmap_name[ 0 ] = '\0';
 		contrail_threshold = 0;
 		ambient_light_level = 0;
 		sound_environment.id = -1;
@@ -363,6 +365,7 @@ typedef struct p_object {
 	int	behavior;							// ai_class;
 	int	ai_goals;							// sexp of lists of goals that this ship should try and do
 	char	cargo1;
+	SCP_string team_color_setting;
 
 	int	status_count;
 	int	status_type[MAX_OBJECT_STATUS];
@@ -726,6 +729,9 @@ int mission_parse_lookup_callsign(char *name);
 void mission_parse_lookup_callsign_index(int index, char *out);
 int mission_parse_add_callsign(char *name);
 void mission_parse_reset_callsign();
+
+// is training mission
+int is_training_mission();
 
 // code to save/restore mission parse stuff
 int get_mission_info(char *filename, mission *missionp = NULL, bool basic = true);

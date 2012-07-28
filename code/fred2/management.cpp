@@ -20,6 +20,7 @@
 #include "ship/ship.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
+#include "globalincs/alphacolors.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
@@ -132,6 +133,7 @@ int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
 extern int Nmodel_num;
+extern matrix Nmodel_orient;
 extern int Nmodel_bitmap;
 
 void string_copy(char *dest, CString &src, int max_len, int modify)
@@ -449,6 +451,10 @@ bool fred_init()
 	Voice_export_selection = 0;
 
 	hud_init_comm_orders();		// Goober5000
+
+	if (!new_alpha_colors_init()) {
+		old_alpha_colors_init();
+	}
 	
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
@@ -1003,8 +1009,8 @@ void clear_mission()
 	}
 
 	Nmodel_flags = DEFAULT_NMODEL_FLAGS;
-	The_mission.skybox_flags  = DEFAULT_NMODEL_FLAGS;
 	Nmodel_num = -1;
+	vm_set_identity(&Nmodel_orient);
 	Nmodel_bitmap = -1;
 
 	The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -1031,7 +1037,9 @@ void clear_mission()
 	strcpy_s(The_mission.loading_screen[GR_640],"");
 	strcpy_s(The_mission.loading_screen[GR_1024],"");
 	strcpy_s(The_mission.skybox_model, "");
+	vm_set_identity(&The_mission.skybox_orientation);
 	strcpy_s(The_mission.envmap_name, "");
+	The_mission.skybox_flags = DEFAULT_NMODEL_FLAGS;
 
 	// no sound environment
 	The_mission.sound_environment.id = -1;

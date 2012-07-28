@@ -1983,6 +1983,12 @@ void game_init()
 
 	event_music_init();
 
+	// initialize alpha colors
+	// CommanderDJ: try with colors.tbl first, then use the old way if that doesn't work
+	if (!new_alpha_colors_init()) {
+		old_alpha_colors_init();
+	}
+
 	obj_init();	
 	mflash_game_init();	
 	armor_init();
@@ -2017,12 +2023,6 @@ void game_init()
 	pilot_load_squad_pic_list();
 
 	load_animating_pointer(NOX("cursor"), 0, 0);	
-
-	// initialize alpha colors
-	// CommanderDJ: try with colors.tbl first, then use the old way if that doesn't work
-	if (!new_alpha_colors_init()) {
-		old_alpha_colors_init();
-	}
 
 	if (!Cmdline_reparse_mainhall) {
 		main_hall_table_init();

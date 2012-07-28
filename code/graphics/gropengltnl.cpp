@@ -14,6 +14,7 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/def_files.h"
+#include "globalincs/alphacolors.h"
 
 #include "graphics/2d.h"
 #include "lighting/lighting.h"
@@ -66,6 +67,8 @@ int GL_vertex_data_in = 0;
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
 
+team_color* Current_team_color;
+bool Using_Team_Color = false;
 
 struct opengl_vertex_buffer {
 	GLfloat *array_list;	// interleaved array
@@ -446,6 +449,21 @@ void opengl_tnl_shutdown()
 	opengl_destroy_all_buffers();
 }
 
+void gr_opengl_set_team_color(SCP_string team) {
+	if (Team_Colors.find(team) != Team_Colors.end())
+		Current_team_color = &Team_Colors[team];
+	else
+		Using_Team_Color = false;
+}
+
+void gr_opengl_enable_team_color() {
+	Using_Team_Color = true;
+}
+
+void gr_opengl_disable_team_color() {
+	Using_Team_Color = false;
+}
+
 static void opengl_init_arrays(opengl_vertex_buffer *vbp, const vertex_buffer *bufferp)
 {
 	GLint offset = (GLint)bufferp->vertex_offset;
@@ -560,6 +578,10 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 
 		if (MISCMAP > 0) {
 			shader_flags |= SDR_FLAG_MISC_MAP;
+		}
+
+		if (Using_Team_Color) {
+			shader_flags |= SDR_FLAG_TEAMCOLOR;
 		}
 	}
 
@@ -690,6 +712,15 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		vglUniform1iARB( opengl_shader_get_uniform("sFramebuffer"), render_pass );
 		render_pass++;
 	}
+
+	// Team colors are passed to the shader here, but the shader needs to handle their application.
+	// By default, this is handled through the r and g channels of the misc map, but this can be changed
+	// in the shader; test versions of this used the normal map r and b channels
+	if (shader_flags & SDR_FLAG_TEAMCOLOR) {
+		vglUniform3fARB( opengl_shader_get_uniform("stripe_color"), Current_team_color->stripe.r,  Current_team_color->stripe.g,  Current_team_color->stripe.b);
+		vglUniform3fARB( opengl_shader_get_uniform("base_color"), Current_team_color->base.r, Current_team_color->base.g, Current_team_color->base.b);
+	}
+
 	// DRAW IT!!
 	DO_RENDER();
 /*
