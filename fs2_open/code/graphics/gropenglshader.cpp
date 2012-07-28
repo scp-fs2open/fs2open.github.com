@@ -53,7 +53,8 @@ static opengl_shader_uniform_reference_t GL_Uniform_Reference_Main[] = {
 	{ SDR_FLAG_HEIGHT_MAP,	1, {"sHeightmap"}, 0, { NULL }, "Parallax Mapping" },
 	{ SDR_FLAG_ENV_MAP,		3, {"sEnvmap", "alpha_spec", "envMatrix"}, 0, { NULL }, "Environment Mapping" },
 	{ SDR_FLAG_ANIMATED,	5, {"sFramebuffer", "effect_num", "anim_timer", "vpwidth", "vpheight"}, 0, { NULL }, "Animated Effects" },
-	{ SDR_FLAG_MISC_MAP,	1, {"sMiscmap"}, 0, { NULL }, "Utility mapping" }
+	{ SDR_FLAG_MISC_MAP,	1, {"sMiscmap"}, 0, { NULL }, "Utility mapping" },
+	{ SDR_FLAG_TEAMCOLOR,	2, {"stripe_color", "base_color"}, 0, {}, "Team Colors" }
 };
 
 static const int Main_shader_flag_references = sizeof(GL_Uniform_Reference_Main) / sizeof(opengl_shader_uniform_reference_t);
@@ -229,6 +230,10 @@ static char *opengl_load_shader(char *filename, int flags)
 
 	if (flags & SDR_FLAG_MISC_MAP) {
 		sflags += "#define FLAG_MISC_MAP\n";
+	}
+
+	if (flags & SDR_FLAG_TEAMCOLOR) {
+		sflags += "#define FLAG_TEAMCOLOR\n";
 	}
 
 	const char *shader_flags = sflags.c_str();

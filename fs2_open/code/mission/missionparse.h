@@ -365,6 +365,7 @@ typedef struct p_object {
 	int	behavior;							// ai_class;
 	int	ai_goals;							// sexp of lists of goals that this ship should try and do
 	char	cargo1;
+	SCP_string team_color_setting;
 
 	int	status_count;
 	int	status_type[MAX_OBJECT_STATUS];

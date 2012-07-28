@@ -20,6 +20,7 @@
 #include "ship/ship.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
+#include "globalincs/alphacolors.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
@@ -450,6 +451,10 @@ bool fred_init()
 	Voice_export_selection = 0;
 
 	hud_init_comm_orders();		// Goober5000
+
+	if (!new_alpha_colors_init()) {
+		old_alpha_colors_init();
+	}
 	
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	

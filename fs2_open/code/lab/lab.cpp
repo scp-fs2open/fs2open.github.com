@@ -646,6 +646,11 @@ void labviewer_render_model(float frametime)
 		} else if (sip->flags & SIF_HUGE_SHIP) {
 			rev_rate *= 3.0f;
 		}
+
+		if (sip->uses_team_colors && !Teamcolor_override) {
+			gr_enable_team_color();
+			gr_set_team_color(sip->default_team_name);
+		}
 	}
 
 	// rotate/pan/zoom the model as much as required for this frame
@@ -809,6 +814,7 @@ void labviewer_render_model(float frametime)
 		gr_end_proj_matrix();
 	}
 
+	gr_disable_team_color();
 	g3_end_frame();
 }
 
@@ -1674,6 +1680,7 @@ void labviewer_make_render_options_window(Button *caller)
 	if (Cmdline_height) {
 		ADD_RENDER_BOOL("No Height Map", Heightmap_override);
 	}
+	ADD_RENDER_BOOL("No Team Colors", Teamcolor_override);
 	ADD_RENDER_BOOL("No Glow Points", Glowpoint_override);
 	// model flags
 	ADD_RENDER_FLAG("Wireframe", Lab_model_flags, ((Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL) | MR_NO_POLYS);

@@ -50,6 +50,10 @@ void gr_opengl_start_state_block();
 int gr_opengl_end_state_block();
 void gr_opengl_set_state_block(int);
 
+void gr_opengl_set_team_color(SCP_string team);
+void gr_opengl_enable_team_color();
+void gr_opengl_disable_team_color();
+
 void opengl_tnl_shutdown();
 
 #endif //_GROPENGLTNL_H

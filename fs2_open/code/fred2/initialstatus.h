@@ -58,6 +58,7 @@ public:
 	int		m_secondaries_locked;
 	int		m_turrets_locked;
 	int		m_afterburner_locked;
+	CComboBox m_team_color_setting;
 
 	//}}AFX_DATA
 
