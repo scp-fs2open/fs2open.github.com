@@ -2026,7 +2026,7 @@ void game_init()
 
 	if(!Cmdline_reparse_mainhall)
 	{
-		main_hall_read_table();
+		main_hall_table_init();
 	}
 
 	if (Cmdline_env) {
