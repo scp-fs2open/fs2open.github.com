@@ -103,7 +103,7 @@ public:
 	bool AddCondition(script_condition sc);
 	bool AddAction(script_action sa);
 
-	bool ConditionsValid(int action, struct object *objp=NULL);
+	bool ConditionsValid(int action, struct object *objp=NULL, int more_data = 0);
 	bool IsOverride(class script_state *sys, int action);
 	bool Run(class script_state *sys, int action, char format='\0', void *data=NULL);
 };
@@ -181,7 +181,7 @@ public:
 	//***Hook running functions
 	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
 	bool IsOverride(script_hook &hd);
-	int RunCondition(int condition, char format='\0', void *data=NULL, struct object *objp = NULL);
+	int RunCondition(int condition, char format='\0', void *data=NULL, struct object *objp = NULL, int more_data = 0);
 	bool IsConditionOverride(int action, object *objp=NULL);
 
 	//*****Other functions
