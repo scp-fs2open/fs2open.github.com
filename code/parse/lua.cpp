@@ -203,7 +203,7 @@ int ade_get_operator(char *tablename)
 	return -1;
 }
 
-const size_t INVALID_ID = -1; // Use -1 to get highest possible unsigned number
+const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigned number
 
 //*************************Lua helpers*************************
 //Function macro
