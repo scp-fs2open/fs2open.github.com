@@ -113,7 +113,10 @@ $Default Campaign File Name: FreeSpace2									\n\
 #HUD SETTINGS															\n\
 																		\n\
 ;; Sets the delay before a directive will appear on the screen (ms)		\n\
-$directive wait time: 3000												\n\
+$Directive Wait Time: 3000												\n\
+																		\n\
+;; Turns off the HUD when in-game cutscenes are playing					\n\
+$Cutscene camera disables HUD: YES										\n\
 																		\n\
 																		\n\
 #SEXP SETTINGS															\n\
@@ -129,6 +132,19 @@ $Use Alternate Chaining Behavior: NO									\n\
 																		\n\
 																		\n\
 #OTHER SETTINGS															\n\
+																		\n\
+;; DESCRIPTION NEEDED!													\n\
+$Fixed Turret Collisions: NO											\n\
+																		\n\
+;; If not set, will damage nearest subsystem first						\n\
+$Damage Impacted Subsystem First: NO									\n\
+																		\n\
+;; used when no ani is specified or ship_select_3d is active			\n\
+$Default ship select effect: FS2										\n\
+																		\n\
+;; used when no ani is specified or weapon_select_3d is active			\n\
+$Default weapon select effect: FS2										\n\
+																		\n\
 																		\n\
 #END																	\n\
 ";

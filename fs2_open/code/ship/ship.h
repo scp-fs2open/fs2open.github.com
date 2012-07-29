@@ -1923,8 +1923,6 @@ int thruster_glow_anim_load(generic_anim *ga);
 // Sushi - Path metadata
 void init_path_metadata(path_metadata& metadata);
 
-// Ship select stuff
-extern int Default_ship_select_effect;
 
 typedef struct ship_effect {
 	char name[NAME_LENGTH];

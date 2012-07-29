@@ -78,6 +78,7 @@
 #include "parse/scripting.h"
 #include "graphics/gropenglshader.h"
 #include "model/model.h"
+#include "globalincs/mod_table.h"
 
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
@@ -373,9 +374,6 @@ static int Thrust_anim_inited = 0;
 bool warning_too_many_ship_classes = false;
 
 int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
-
-// Used to set the default effect for real time ship select anis, defaults to the FS2 effect
-int Default_ship_select_effect = 2;
 
 SCP_vector<ship_effect> Ship_effects;
 
@@ -1451,9 +1449,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_string(effect, F_NAME, NAME_LENGTH);
 		if (!stricmp(effect, "FS2"))
 			sip->selection_effect = 2;
-		if (!stricmp(effect, "FS1"))
+		else if (!stricmp(effect, "FS1"))
 			sip->selection_effect = 1;
-		if (!stricmp(effect, "off"))
+		else if (!stricmp(effect, "off"))
 			sip->selection_effect = 0;
 	}
 

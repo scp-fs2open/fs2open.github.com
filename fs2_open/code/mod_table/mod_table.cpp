@@ -18,6 +18,9 @@ bool Fixed_turret_collisions;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_disables_hud;
 bool Alternate_chaining_behavior;
+int Default_ship_select_effect;
+int Default_weapon_select_effect;
+
 
 void parse_mod_table(char *filename)
 {
@@ -42,7 +45,8 @@ void parse_mod_table(char *filename)
 	reset_parse();	
 
 	// start parsing
-	optional_string("#CAMPAIGN SETTINGS"); 
+	optional_string("#CAMPAIGN SETTINGS");
+
 	if (optional_string("$Default Campaign File Name:")) {
 		char temp[MAX_FILENAME_LEN];
 		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
@@ -65,7 +69,8 @@ void parse_mod_table(char *filename)
 		strcpy_s(Default_campaign_file_name, temp);
 	}
 
-	optional_string("#HUD SETTINGS"); 
+	optional_string("#HUD SETTINGS");
+
 	// how long should the game wait before displaying a directive?
 	if (optional_string("$Directive Wait Time:")) {
 		stuff_int(&Directive_wait_time);
@@ -73,22 +78,19 @@ void parse_mod_table(char *filename)
 
 	if (optional_string("$Cutscene camera disables HUD:")) {
 		stuff_boolean(&Cutscene_camera_disables_hud);
-		if (!Cutscene_camera_disables_hud)
-			mprintf(("Game Settings Table: HUD will not be disabled by default in in-game cutscenes.\n"));
-	} else {
-		Cutscene_camera_disables_hud = true;
 	}
 
 	optional_string("#SEXP SETTINGS"); 
+
 	if (optional_string("$Loop SEXPs Then Arguments:")) { 
 		stuff_boolean(&True_loop_argument_sexps);
 		if (True_loop_argument_sexps) {
 			mprintf(("Game Settings Table: Using Reversed Loops For SEXP Arguments\n"));
-		}
-		else {
+		} else {
 			mprintf(("Game Settings Table: Using Standard Loops For SEXP Arguments\n"));
 		}
 	}
+
 	if (optional_string("$Use Alternate Chaining Behavior:")) {
 		stuff_boolean(&Alternate_chaining_behavior);
 		if (Alternate_chaining_behavior) {
@@ -106,6 +108,28 @@ void parse_mod_table(char *filename)
 
 	if (optional_string("$Damage Impacted Subsystem First:")) { 
 		stuff_boolean(&Damage_impacted_subsystem_first);
+	}
+
+	if (optional_string("$Default ship select effect:")) {
+		char effect[NAME_LENGTH];
+		stuff_string(effect, F_NAME, NAME_LENGTH);
+		if (!stricmp(effect, "FS2"))
+			Default_ship_select_effect = 2;
+		else if (!stricmp(effect, "FS1"))
+			Default_ship_select_effect = 1;
+		else if (!stricmp(effect, "off"))
+			Default_ship_select_effect = 0;
+	}
+
+	if (optional_string("$Default weapon select effect:")) {
+		char effect[NAME_LENGTH];
+		stuff_string(effect, F_NAME, NAME_LENGTH);
+		if (!stricmp(effect, "FS2"))
+			Default_weapon_select_effect = 2;
+		else if (!stricmp(effect, "FS1"))
+			Default_weapon_select_effect = 1;
+		else if (!stricmp(effect, "off"))
+			Default_weapon_select_effect = 0;
 	}
 
 	required_string("#END");
