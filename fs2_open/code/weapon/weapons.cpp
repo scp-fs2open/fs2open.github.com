@@ -46,7 +46,7 @@
 #include "network/multiutil.h"
 #include "parse/scripting.h"
 #include "stats/scoring.h"
-#include "globalincs/mod_table.h"
+#include "mod_table/mod_table.h"
 
 
 #ifndef NDEBUG
