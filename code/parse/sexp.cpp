@@ -18256,7 +18256,7 @@ int sexp_is_secondary_selected(int node)
 	}
 
 	// is this the bank currently selected
-	if(bank == shipp->weapons.current_secondary_bank){
+	if( (bank == shipp->weapons.current_primary_bank) || ((shipp->flags & SF_PRIMARY_LINKED) && !(Weapon_info[shipp->weapons.primary_bank_weapons[bank]].wi_flags3 & WIF3_NOLINK)) ){
 		return SEXP_TRUE;
 	}
 

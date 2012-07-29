@@ -229,9 +229,9 @@ void bg_bitmap_dlg::create()
 
 	angles skybox_angles;
 	vm_extract_angles_matrix(&skybox_angles, &The_mission.skybox_orientation);
-	m_skybox_pitch = fl_degrees(skybox_angles.p);
-	m_skybox_bank = fl_degrees(skybox_angles.b);
-	m_skybox_heading = fl_degrees(skybox_angles.h);
+	m_skybox_pitch = (int) fl_degrees(skybox_angles.p);
+	m_skybox_bank = (int) fl_degrees(skybox_angles.b);
+	m_skybox_heading = (int) fl_degrees(skybox_angles.h);
 
 	for(i=0; i<MAX_NEB2_BITMAPS; i++){
 		if(strlen(Neb2_bitmap_filenames[i]) > 0){ //-V805

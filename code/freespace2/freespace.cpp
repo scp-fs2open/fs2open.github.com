@@ -2024,8 +2024,9 @@ void game_init()
 
 	load_animating_pointer(NOX("cursor"), 0, 0);	
 
-	if (!Cmdline_reparse_mainhall) {
-		main_hall_table_init();
+	if(!Cmdline_reparse_mainhall)
+	{
+		main_hall_read_table();
 	}
 
 	if (Cmdline_env) {

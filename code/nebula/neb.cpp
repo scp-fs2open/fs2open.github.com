@@ -360,9 +360,9 @@ void neb2_post_level_init()
 				ushort r = 0, g = 0, b = 0, pcount = 0;
 				for (idx = 0; idx < 768; idx += 3) {
 					if (Neb2_htl_fog_data[idx] || Neb2_htl_fog_data[idx+1] || Neb2_htl_fog_data[idx+2]) {
-						r += Neb2_htl_fog_data[idx];
-						g += Neb2_htl_fog_data[idx+1];
-						b += Neb2_htl_fog_data[idx+2];
+						r = r + Neb2_htl_fog_data[idx];
+						g = g + Neb2_htl_fog_data[idx+1];
+						b = b + Neb2_htl_fog_data[idx+2];
 						pcount++;
 					}
 				}

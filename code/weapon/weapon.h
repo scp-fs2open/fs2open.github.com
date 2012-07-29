@@ -39,6 +39,7 @@ extern int Num_weapon_subtypes;
 
 #define WIF_DEFAULT_VALUE	0
 #define WIF2_DEFAULT_VALUE	0
+#define WIF3_DEFAULT_VALUE	0
 
 #define	WIF_HOMING_HEAT	(1 << 0)				//	if set, this weapon homes via seeking heat
 #define	WIF_HOMING_ASPECT	(1 << 1)				//	if set, this weapon homes via chasing aspect
@@ -110,6 +111,10 @@ extern int Num_weapon_subtypes;
 #define WIF2_DONT_SHOW_ON_RADAR			(1 << 28)   // Force a weapon to not show on radar
 #define WIF2_RENDER_FLAK				(1 << 29)	// Even though this is a flak weapon, render the shell
 #define WIF2_CIWS						(1 << 30)	// This weapons' burst and shockwave damage can damage bombs (Basically, a reverse for TAKES_BLAST/SHOCKWAVE_DAMAGE
+#define WIF2_ANTISUBSYSBEAM				(1 << 31)	// This beam can target subsystems as per normal
+
+#define WIF3_NOLINK						(1 << 0)	// This weapon can not be linked with others
+
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -347,6 +352,7 @@ typedef struct weapon_info {
 	float energy_consumed;					// Energy used up when weapon is fired
 	int	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 	int wi_flags2;							// stupid int wi_flags, only 32 bits... argh - Goober5000
+	int wi_flags3;							// stupid int wi_flags2, only 32 bits... argh - The E
 	float turn_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming

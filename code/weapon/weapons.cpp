@@ -467,7 +467,7 @@ int weapon_info_lookup(const char *name)
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
 //	Parse the weapon flags.
-void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
+void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_flags3)
 {
 	const char *spawn_str = NOX("Spawn");
 	const size_t spawn_str_len = strlen(spawn_str);
@@ -485,6 +485,7 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 		// reseting the flag values if set to override the existing flags
 		weaponp->wi_flags = wi_flags;
 		weaponp->wi_flags2 = wi_flags2;
+		weaponp->wi_flags3 = wi_flags3;
 	}
 
 	bool set_pierce = false;
@@ -642,6 +643,10 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_RENDER_FLAK;
 		else if (!stricmp(NOX("ciws"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_CIWS;
+		else if (!stricmp(NOX("anti-subsystem beam"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_ANTISUBSYSBEAM;
+		else if (!stricmp(NOX("no primary linking"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_NOLINK;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -1066,6 +1071,7 @@ int parse_weapon(int subtype, bool replace)
 	bool create_if_not_found  = true;
 	int wi_flags = WIF_DEFAULT_VALUE;
 	int wi_flags2 = WIF2_DEFAULT_VALUE;
+	int wi_flags3 = WIF3_DEFAULT_VALUE;
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -1726,7 +1732,7 @@ int parse_weapon(int subtype, bool replace)
 
 	}
 
-	parse_wi_flags(wip, wi_flags, wi_flags2);
+	parse_wi_flags(wip, wi_flags, wi_flags2, wi_flags3);
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
 	// primary
