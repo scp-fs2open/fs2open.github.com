@@ -38,28 +38,18 @@
  */
 typedef struct game_snd
 {
-	int	sig;						//!< index number of sound in as specified in sounds.tbl
+	SCP_string name;				//!< The name of the sound
 	char filename[MAX_FILENAME_LEN];
+	uint signature;					//!< Unique signature of this sound
 	float default_volume;			//!<range: 0.0 -> 1.0
 	int	min;						//!<distance at which sound will stop getting louder
 	int max;						//!<distance at which sound is inaudible
-	int	preload;					//!< preload sound (ie read from disk before mission starts)
+	bool preload;					//!< preload sound (ie read from disk before mission starts)
 	int	id;							//!< index into Sounds[], where sound data is stored
 	int	id_sig;						//!< signature of Sounds[] element
 	int	flags;
 
-	game_snd( )
-		: sig ( -1 ),
-		  default_volume( 0 ),
-		  preload( 0 ),
-		  id( -1 ),
-		  id_sig( -1 ),
-		  flags( 0 )
-	{
-		filename[0] = 0;
-		min = 0;
-		max = 0;
-	}
+	game_snd( );
 } game_snd;
 
 typedef struct sound_env

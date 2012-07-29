@@ -302,7 +302,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 			//       but will not load a duplicate 2D entry to get stereo if 3D
 			//       version already loaded
 			if ( (Sounds[n].info.n_channels == 1) || !(gs->flags & GAME_SND_USE_DS3D) ) {
-				gs->sig = Sounds[n].sig;
 				return (int)n;
 			}
 		}
@@ -1493,3 +1492,13 @@ void snd_aav_init()
 		aav_data[i].start_time = 0.0f;	
 	}
 }
+
+uint nextSignature = 0;
+
+game_snd::game_snd() : name ( SCP_string("") ), default_volume( 0 ),
+	preload( false ), id( -1 ), id_sig( -1 ), flags( 0 ), signature( nextSignature++ )
+	{
+		filename[0] = 0;
+		min = 0;
+		max = 0;
+	}
