@@ -7,7 +7,7 @@
  *
 */ 
 
-
+#include <sstream>
 
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
@@ -28,87 +28,96 @@ void gamesnd_play_iface(int n)
 	Snds_iface_handle[n] = snd_play(&Snds_iface[n]);
 }
 
-//WMC - now ignores file extension.
-int gamesnd_get_by_name(char* name)
+/**
+ * Function to search for a given game_snd with the specified name
+ * in the passed vector
+ * 
+ * @param name Name to search for
+ * @param sounds Vector to seach in
+ *
+ */
+int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 {
-	Assert( Snds.size() <= INT_MAX );
-	int i = 0;
-	for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); ++snd)
+	//if we get passed -1, don't bother trying to look it up.
+	if (name == NULL || *name == 0 || !strcmp(name, "-1"))
 	{
-		char *p = strrchr( snd->filename, '.' );
-		if(p == NULL)
-		{
-			if(!stricmp(snd->filename, name))
-			{
-				return i;
-			}
-		}
-		else if(!strnicmp(snd->filename, name, p-snd->filename))
+		return -1;
+	}
+
+	Assert( sounds.size() <= INT_MAX );
+
+	int i = 0;
+
+	for(SCP_vector<game_snd>::const_iterator snd = sounds.begin(); snd != sounds.end(); ++snd)
+	{
+		if (!snd->name.compare(name))
 		{
 			return i;
 		}
 		i++;
 	}
+
 	return -1;
 }
 
-int gamesnd_get_by_iface_name(char* name)
+//WMC - now ignores file extension.
+int gamesnd_get_by_name(const char* name)
+{
+	Assert( Snds.size() <= INT_MAX );
+	
+	int index = gamesnd_lookup_name(name, Snds);
+
+	if (index < 0)
+	{
+		int i = 0;
+		for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); ++snd)
+		{
+			char *p = strrchr( snd->filename, '.' );
+			if(p == NULL)
+			{
+				if(!stricmp(snd->filename, name))
+				{
+					index = i;
+					break;
+				}
+			}
+			else if(!strnicmp(snd->filename, name, p-snd->filename))
+			{
+				index = i;
+				break;
+			}
+
+			i++;
+		}
+	}
+
+	return index;
+}
+
+int gamesnd_get_by_iface_name(const char* name)
 {
 	Assert( Snds_iface.size() <= INT_MAX );
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
-	int i = 0;
-	for(SCP_vector<game_snd>::iterator snd = Snds_iface.begin(); snd != Snds_iface.end(); ++snd)
-	{
-		char *p = strrchr( snd->filename, '.' );
-		if(p == NULL)
-		{
-			if(!stricmp(snd->filename, name))
-			{
-				return i;
-			}
-		}
-		else if(!strnicmp(snd->filename, name, p-snd->filename))
-		{
-			return i;
-		}
-		i++;
-	}
-	return -1;
+	
+	return gamesnd_lookup_name(name, Snds_iface);
 }
 
 int gamesnd_get_by_tbl_index(int index)
 {
-	//if we get passed -1, don't bother trying to look it up.
-	if (index == -1)
-		return -1;
-	Assert( Snds.size() <= INT_MAX );
-	int i = 0;
-	for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); ++snd) {
-		if ( snd->sig == index )
-		{
-			return i;
-		}
-		i++;
-	}
-	return -1;
+	char temp[11];
+	sprintf(temp, "%i", index);
+
+	return gamesnd_lookup_name(temp, Snds);
 }
 
 int gamesnd_get_by_iface_tbl_index(int index)
 {
-	//if we get passed -1, don't bother trying to look it up.
-	if (index == -1)
-		return -1;
-	Assert( Snds_iface.size() <= INT_MAX );
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
-	int i = 0;
-	for(SCP_vector<game_snd>::iterator snd = Snds_iface.begin(); snd != Snds_iface.end(); ++snd) {
-		if ( snd->sig == index )
-		{
-			return i;
-		}
-		i++;
-	}
-	return -1;
+
+	char temp[11];
+	sprintf(temp, "%i", index);
+
+	return gamesnd_lookup_name(temp, Snds_iface);
 }
 
 /**
@@ -121,7 +130,7 @@ int gamesnd_get_by_iface_tbl_index(int index)
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_sound_core(char* tag, int *idx_dest, char* object_name, char* buf, parse_sound_flags flags)
+void parse_sound_core(const char* tag, int *idx_dest, const char* object_name, const char* buf, parse_sound_flags flags)
 {
 	int idx;
 
@@ -134,18 +143,8 @@ void parse_sound_core(char* tag, int *idx_dest, char* object_name, char* buf, pa
 	{
 		(*idx_dest) = idx;
 	}
-	else
-	{
-		if(flags & PARSE_SOUND_INTERFACE_SOUND)
-			idx = gamesnd_get_by_iface_tbl_index(atoi(buf));
-		else
-			idx = gamesnd_get_by_tbl_index(atoi(buf));
 
-		if (idx != -1)
-			(*idx_dest) = idx;
-	}
-
-	int size_to_check = 0;
+	size_t size_to_check = 0;
 	
 	if(flags & PARSE_SOUND_INTERFACE_SOUND)
 	{
@@ -179,7 +178,7 @@ void parse_sound_core(char* tag, int *idx_dest, char* object_name, char* buf, pa
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_sound(char* tag, int *idx_dest, char* object_name, parse_sound_flags flags)
+void parse_sound(const char* tag, int *idx_dest, const char* object_name, parse_sound_flags flags)
 {
 	if(optional_string(tag))
 	{
@@ -202,7 +201,7 @@ void parse_sound(char* tag, int *idx_dest, char* object_name, parse_sound_flags 
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_sound_list(char* tag, SCP_vector<int>& destination, char* object_name, parse_sound_flags flags)
+void parse_sound_list(const char* tag, SCP_vector<int>& destination, const char* object_name, parse_sound_flags flags)
 {
 	if(optional_string(tag))
 	{
@@ -215,13 +214,13 @@ void parse_sound_list(char* tag, SCP_vector<int>& destination, char* object_name
 		}
 
 		//now read the rest of the entries on the line
-		for(int i=0;!check_for_eoln();i++)
+		for(size_t i=0; !check_for_eoln(); i++)
 		{
 			char buf[MAX_FILENAME_LEN];
 			stuff_string_white(buf, MAX_FILENAME_LEN);
 
 			//we do this conditionally to avoid adding needless entries when reparsing
-			if(destination.size() <= (unsigned)i)
+			if(destination.size() <= i)
 			{
 				destination.push_back(-1);
 			}
@@ -324,34 +323,407 @@ void gamesnd_unload_interface_sounds()
 	}
 }
 
-/**
- * Parse a sound effect line
- */
-void gamesnd_parse_line(game_snd *gs, char *tag)
+void parse_gamesnd_old(game_snd* gs)
 {
 	int is_3d;
+	int temp;
 
-	required_string(tag);
-	stuff_int(&gs->sig);
 	stuff_string(gs->filename, F_NAME, MAX_FILENAME_LEN, ",");
-	if ( !stricmp(gs->filename,NOX("empty")) ) {
+
+	if (!stricmp(gs->filename, NOX("empty")))
+	{
 		gs->filename[0] = 0;
 		advance_to_eoln(NULL);
 		return;
 	}
 	Mp++;
-	stuff_int(&gs->preload);
+
+	stuff_int(&temp);
+
+	if (temp > 0)
+	{
+		gs->preload = true;
+	}
+
 	stuff_float(&gs->default_volume);
+
 	stuff_int(&is_3d);
-	if ( is_3d ) {
+
+	if (is_3d)
+	{
 		gs->flags |= GAME_SND_USE_DS3D;
 		stuff_int(&gs->min);
 		stuff_int(&gs->max);
-	} else {
+	}
+	else
+	{
 		gs->min = 0;
 		gs->max = 0;
 	}
+
 	advance_to_eoln(NULL);
+}
+
+void parse_gamesnd_new(game_snd* gs)
+{
+	// New extended format found
+	stuff_string(gs->filename, F_NAME, MAX_FILENAME_LEN);
+		
+	if (!stricmp(gs->filename, NOX("empty")))
+	{
+		gs->filename[0] = 0;
+		return;
+	}
+
+	required_string("+Preload:");
+
+	stuff_boolean(&gs->preload);
+
+	required_string("+Volume:");
+
+	stuff_float(&gs->default_volume);
+
+	if (optional_string("+3D Sound:"))
+	{
+		required_string("+Attenuation start:");
+		
+		stuff_int(&gs->min);
+		
+		required_string("+Attenuation end:");
+
+		stuff_int(&gs->max);
+	}
+	else
+	{
+		gs->min = 0;
+		gs->max = 0;
+	}
+}
+
+void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *lookupVector)
+{
+	SCP_string name;
+
+	stuff_string(name, F_NAME, "\t \n");
+
+	if (!no_create)
+	{
+		if (lookupVector != NULL)
+		{
+			if (gamesnd_lookup_name(name.c_str(), *lookupVector) >= 0)
+			{
+				Warning(LOCATION, "Duplicate sound name \"%s\" found!", name.c_str());
+			}
+		}
+
+		gs->name = name;
+	}
+	else
+	{
+		int vectorIndex = gamesnd_lookup_name(name.c_str(), *lookupVector);
+
+		if (vectorIndex < 0)
+		{
+			Warning(LOCATION, "No existing sound entry with name \"%s\" found!", name.c_str());
+			no_create = false;
+			gs->name = name;
+		}
+		else
+		{
+			gs = &lookupVector->at(vectorIndex);
+		}
+	}
+
+	if (optional_string("+Filename:"))
+	{
+		parse_gamesnd_new(gs);
+	}
+	else
+	{
+		parse_gamesnd_old(gs);
+	}
+}
+
+/**
+ * Parse a sound effect entry by requiring the given tag at the beginning.
+ * 
+ * @param gs The game_snd instance to fill in
+ * @param tag The tag that's required before an entry
+ * @param lookupVector If non-NULL used to look up @c +nocreate entries
+ * 
+ * @return @c true when a new entry has been parsed and should be added to the list of known
+ *			entries. @c false otherwise, for example in case of @c +nocreate
+ */
+bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *lookupVector = NULL)
+{
+	Assertion(gs != NULL, "Invalid game_snd pointer passed to gamesnd_parse_line!");
+	
+	required_string(const_cast<char*>(tag));
+
+	bool no_create = false;
+
+	if (lookupVector != NULL)
+	{
+		if(optional_string("+nocreate"))
+		{
+			no_create = true;
+		}
+	}
+
+	gamesnd_parse_entry(gs, no_create, lookupVector);
+
+	return !no_create;
+}
+
+void parse_sound_environments()
+{
+	char name[65] = { '\0' };
+	char template_name[65] = { '\0' };
+	EFXREVERBPROPERTIES *props;
+
+	while (required_string_either("#Sound Environments End", "$Name:"))
+	{
+		required_string("$Name:");
+		stuff_string(name, F_NAME, sizeof(name)-1);
+
+		if (optional_string("$Template:"))
+		{
+			stuff_string(template_name, F_NAME, sizeof(template_name)-1);
+		}
+		else
+		{
+			template_name[0] = '\0';
+		}
+
+		ds_eax_get_prop(&props, name, template_name);
+
+		if (optional_string("+Density:"))
+		{
+			stuff_float(&props->flDensity);
+			CLAMP(props->flDensity, 0.0f, 1.0f);
+		}
+
+		if (optional_string("+Diffusion:"))
+		{
+			stuff_float(&props->flDiffusion);
+			CLAMP(props->flDiffusion, 0.0f, 1.0f);
+		}
+
+		if (optional_string("+Gain:"))
+		{
+			stuff_float(&props->flGain);
+			CLAMP(props->flGain, 0.0f, 1.0f);
+		}
+
+		if (optional_string("+Gain HF:"))
+		{
+			stuff_float(&props->flGainHF);
+			CLAMP(props->flGainHF, 0.0f, 1.0f);
+		}
+
+		if (optional_string("+Gain LF:"))
+		{
+			stuff_float(&props->flGainLF);
+			CLAMP(props->flGainLF, 0.0f, 1.0f);
+		}
+
+		if (optional_string("+Decay Time:"))
+		{
+			stuff_float(&props->flDecayTime);
+			CLAMP(props->flDecayTime, 0.01f, 20.0f);
+		}
+
+		if (optional_string("+Decay HF Ratio:"))
+		{
+			stuff_float(&props->flDecayHFRatio);
+			CLAMP(props->flDecayHFRatio, 0.1f, 20.0f);
+		}
+
+		if (optional_string("+Decay LF Ratio:"))
+		{
+			stuff_float(&props->flDecayLFRatio);
+			CLAMP(props->flDecayLFRatio, 0.1f, 20.0f);
+		}
+
+		if (optional_string("+Reflections Gain:"))
+		{
+			stuff_float(&props->flReflectionsGain);
+			CLAMP(props->flReflectionsGain, 0.0f, 3.16f);
+		}
+
+		if (optional_string("+Reflections Delay:"))
+		{
+			stuff_float(&props->flReflectionsDelay);
+			CLAMP(props->flReflectionsDelay, 0.0f, 0.3f);
+		}
+
+		if (optional_string("+Reflections Pan:"))
+		{
+			stuff_float_list(props->flReflectionsPan, 3);
+			CLAMP(props->flReflectionsPan[0], 0.0f, 1.0f);
+			CLAMP(props->flReflectionsPan[1], 0.0f, 1.0f);
+			CLAMP(props->flReflectionsPan[2], 0.0f, 1.0f);
+		}
+
+		if (optional_string("+Late Reverb Gain:"))
+		{
+			stuff_float(&props->flLateReverbGain);
+			CLAMP(props->flLateReverbGain, 0.0f, 10.0f);
+		}
+
+		if (optional_string("+Late Reverb Delay:"))
+		{
+			stuff_float(&props->flLateReverbDelay);
+			CLAMP(props->flLateReverbDelay, 0.0f, 0.1f);
+		}
+
+		if (optional_string("+Late Reverb Pan:"))
+		{
+			stuff_float_list(props->flLateReverbPan, 3);
+			CLAMP(props->flLateReverbPan[0], 0.0f, 1.0f);
+			CLAMP(props->flLateReverbPan[1], 0.0f, 1.0f);
+			CLAMP(props->flLateReverbPan[2], 0.0f, 1.0f);
+		}
+
+		if (optional_string("+Echo Time:"))
+		{
+			stuff_float(&props->flEchoTime);
+			CLAMP(props->flEchoTime, 0.075f, 0.25f);
+		}
+
+		if (optional_string("+Echo Depth:"))
+		{
+			stuff_float(&props->flEchoDepth);
+			CLAMP(props->flEchoDepth, 0.0f, 1.0f);
+		}
+
+		if (optional_string("+Modulation Time:"))
+		{
+			stuff_float(&props->flModulationTime);
+			CLAMP(props->flModulationTime, 0.004f, 4.0f);
+		}
+
+		if (optional_string("+Modulation Depth:"))
+		{
+			stuff_float(&props->flModulationDepth);
+			CLAMP(props->flModulationDepth, 0.0f, 1.0f);
+		}
+
+		if (optional_string("+HF Reference:"))
+		{
+			stuff_float(&props->flHFReference);
+			CLAMP(props->flHFReference, 1000.0f, 20000.0f);
+		}
+
+		if (optional_string("+LF Reference:"))
+		{
+			stuff_float(&props->flLFReference);
+			CLAMP(props->flLFReference, 20.0f, 1000.0f);
+		}
+
+		if (optional_string("+Room Rolloff Factor:"))
+		{
+			stuff_float(&props->flRoomRolloffFactor);
+			CLAMP(props->flRoomRolloffFactor, 0.0f, 10.0f);
+		}
+
+		if (optional_string("+Air Absorption Gain HF:"))
+		{
+			stuff_float(&props->flAirAbsorptionGainHF);
+			CLAMP(props->flAirAbsorptionGainHF, 0.892f, 1.0f);
+		}
+
+		if (optional_string("+Decay HF Limit:"))
+		{
+			stuff_int(&props->iDecayHFLimit);
+			CLAMP(props->iDecayHFLimit, 0, 1);
+		}
+	}
+
+	required_string("#Sound Environments End");
+}
+
+static SCP_vector<species_info> missingFlybySounds;
+
+void parse_sound_table(char* filename)
+{
+	int	rval;
+
+	if ((rval = setjmp(parse_abort)) != 0)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		return;
+	}
+
+	read_file_text(filename, CF_TYPE_TABLES);
+	reset_parse();
+
+	// Parse the gameplay sounds section
+	if (optional_string("#Game Sounds Start"))
+	{
+		while (!check_for_string("#Game Sounds End"))
+		{
+			game_snd tempSound;
+			if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
+			{
+				Snds.push_back(game_snd(tempSound));
+			}
+		}
+
+		required_string("#Game Sounds End");
+	}
+
+	// Parse the interface sounds section
+	if (optional_string("#Interface Sounds Start"))
+	{
+		while (!check_for_string("#Interface Sounds End"))
+		{
+			game_snd tempSound;
+			if (gamesnd_parse_line( &tempSound, "$Name:", &Snds_iface))
+			{
+				Snds_iface.push_back(game_snd(tempSound));
+				Snds_iface_handle.push_back(-1);
+			}
+		}
+
+		required_string("#Interface Sounds End");
+	}
+
+	// parse flyby sound section	
+	if (optional_string("#Flyby Sounds Start"))
+	{
+		char species_name_tag[NAME_LENGTH + 2];
+		int	sanity_check = 0;
+		size_t i;
+
+		while (!check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()))
+		{
+			for (i = 0; i < Species_info.size(); i++)
+			{
+				species_info *species = &Species_info[i];
+
+				sprintf(species_name_tag, "$%s:", species->species_name);
+
+				if (check_for_string(species_name_tag))
+				{
+					gamesnd_parse_line(&species->snd_flyby_fighter, species_name_tag);
+					gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);
+					sanity_check--;
+				}
+				else
+				{
+					sanity_check++;
+				}
+			}
+		}
+
+		required_string("#Flyby Sounds End");
+	}
+
+	if (optional_string("#Sound Environments Start"))
+	{
+		parse_sound_environments();
+	}
 }
 
 /**
@@ -359,231 +731,30 @@ void gamesnd_parse_line(game_snd *gs, char *tag)
  */
 void gamesnd_parse_soundstbl()
 {
-	int		rval;
-	size_t	i;
-	char	cstrtemp[NAME_LENGTH+3];
-	char	*missing_species_names = NULL;
-	ubyte	*missing_species = NULL;
-	int		sanity_check = 0;
-
 	// open localization
 	lcl_ext_open();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "sounds.tbl", rval));
-		lcl_ext_close();
-		return;
-	}
+	parse_sound_table("sounds.tbl");
 
-	read_file_text("sounds.tbl", CF_TYPE_TABLES);
-	reset_parse();		
-
-	// Parse the gameplay sounds section
-	required_string("#Game Sounds Start");
-	while (required_string_either("#Game Sounds End","$Name:")) {
-		game_snd tempSound;
-		gamesnd_parse_line( &tempSound, "$Name:" );
-		Snds.push_back(game_snd(tempSound));
-	}
-	required_string("#Game Sounds End");
-
-	// Parse the interface sounds section
-	required_string("#Interface Sounds Start");
-	while (required_string_either("#Interface Sounds End","$Name:")) {
-		game_snd tempSound;
-		gamesnd_parse_line( &tempSound, "$Name:");
-
-		Snds_iface.push_back(game_snd(tempSound));
-		Snds_iface_handle.push_back(-1);
-	}
-	required_string("#Interface Sounds End");
-
-	// parse flyby sound section	
-	required_string("#Flyby Sounds Start");
-
-	missing_species_names = new char[Species_info.size() * (NAME_LENGTH+2)];
-	missing_species = new ubyte[Species_info.size()];
-
-	memset( missing_species_names, 0, Species_info.size() * (NAME_LENGTH+2) );
-	memset( missing_species, 1, Species_info.size() );	// assume they are all missing
-
-	while ( !check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()) )
-	{
-		for (i = 0; i < Species_info.size(); i++) {
-			species_info *species = &Species_info[i];
-
-			sprintf(cstrtemp, "$%s:", species->species_name);
-
-			if ( check_for_string(cstrtemp) ) {
-				gamesnd_parse_line(&species->snd_flyby_fighter, cstrtemp);
-				gamesnd_parse_line(&species->snd_flyby_bomber, cstrtemp);
-				missing_species[i] = 0;
-				sanity_check--;
-			} else {
-				sanity_check++;
-			}
-		}
-	}
-
-	// if we are missing any species then report it
-	for (i = 0; i < Species_info.size(); i++) {
-		if ( missing_species[i] ) {
-			strcat(missing_species_names, Species_info[i].species_name);
-			strcat(missing_species_names, "\n");
-		}
-	}
-
-	if ( strlen(missing_species_names) ) {
-		Error( LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", missing_species_names );
-	}
-
-	delete[] missing_species_names;
-	delete[] missing_species;
-
-	required_string("#Flyby Sounds End");
-
-	if ( optional_string("#Sound Environments Start") ) {
-		char name[65] = { '\0' };
-		char template_name[65] = { '\0' };
-		EFXREVERBPROPERTIES *props;
-
-		while ( required_string_either("#Sound Environments End", "$Name:") ) {
-			required_string("$Name:");
-			stuff_string(name, F_NAME, sizeof(name)-1);
-
-			if ( optional_string("$Template:") ) {
-				stuff_string(template_name, F_NAME, sizeof(template_name)-1);
-			} else {
-				template_name[0] = '\0';
-			}
-
-			ds_eax_get_prop(&props, name, template_name);
-
-			if ( optional_string("+Density:") ) {
-				stuff_float(&props->flDensity);
-				CLAMP(props->flDensity, 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+Diffusion:") ) {
-				stuff_float(&props->flDiffusion);
-				CLAMP(props->flDiffusion, 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+Gain:") ) {
-				stuff_float(&props->flGain);
-				CLAMP(props->flGain, 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+Gain HF:") ) {
-				stuff_float(&props->flGainHF);
-				CLAMP(props->flGainHF, 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+Gain LF:") ) {
-				stuff_float(&props->flGainLF);
-				CLAMP(props->flGainLF, 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+Decay Time:") ) {
-				stuff_float(&props->flDecayTime);
-				CLAMP(props->flDecayTime, 0.01f, 20.0f);
-			}
-
-			if ( optional_string("+Decay HF Ratio:") ) {
-				stuff_float(&props->flDecayHFRatio);
-				CLAMP(props->flDecayHFRatio, 0.1f, 20.0f);
-			}
-
-			if ( optional_string("+Decay LF Ratio:") ) {
-				stuff_float(&props->flDecayLFRatio);
-				CLAMP(props->flDecayLFRatio, 0.1f, 20.0f);
-			}
-
-			if ( optional_string("+Reflections Gain:") ) {
-				stuff_float(&props->flReflectionsGain);
-				CLAMP(props->flReflectionsGain, 0.0f, 3.16f);
-			}
-
-			if ( optional_string("+Reflections Delay:") ) {
-				stuff_float(&props->flReflectionsDelay);
-				CLAMP(props->flReflectionsDelay, 0.0f, 0.3f);
-			}
-
-			if ( optional_string("+Reflections Pan:") ) {
-				stuff_float_list(props->flReflectionsPan, 3);
-				CLAMP(props->flReflectionsPan[0], 0.0f, 1.0f);
-				CLAMP(props->flReflectionsPan[1], 0.0f, 1.0f);
-				CLAMP(props->flReflectionsPan[2], 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+Late Reverb Gain:") ) {
-				stuff_float(&props->flLateReverbGain);
-				CLAMP(props->flLateReverbGain, 0.0f, 10.0f);
-			}
-
-			if ( optional_string("+Late Reverb Delay:") ) {
-				stuff_float(&props->flLateReverbDelay);
-				CLAMP(props->flLateReverbDelay, 0.0f, 0.1f);
-			}
-
-			if ( optional_string("+Late Reverb Pan:") ) {
-				stuff_float_list(props->flLateReverbPan, 3);
-				CLAMP(props->flLateReverbPan[0], 0.0f, 1.0f);
-				CLAMP(props->flLateReverbPan[1], 0.0f, 1.0f);
-				CLAMP(props->flLateReverbPan[2], 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+Echo Time:") ) {
-				stuff_float(&props->flEchoTime);
-				CLAMP(props->flEchoTime, 0.075f, 0.25f);
-			}
-
-			if ( optional_string("+Echo Depth:") ) {
-				stuff_float(&props->flEchoDepth);
-				CLAMP(props->flEchoDepth, 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+Modulation Time:") ) {
-				stuff_float(&props->flModulationTime);
-				CLAMP(props->flModulationTime, 0.004f, 4.0f);
-			}
-
-			if ( optional_string("+Modulation Depth:") ) {
-				stuff_float(&props->flModulationDepth);
-				CLAMP(props->flModulationDepth, 0.0f, 1.0f);
-			}
-
-			if ( optional_string("+HF Reference:") ) {
-				stuff_float(&props->flHFReference);
-				CLAMP(props->flHFReference, 1000.0f, 20000.0f);
-			}
-
-			if ( optional_string("+LF Reference:") ) {
-				stuff_float(&props->flLFReference);
-				CLAMP(props->flLFReference, 20.0f, 1000.0f);
-			}
-
-			if ( optional_string("+Room Rolloff Factor:") ) {
-				stuff_float(&props->flRoomRolloffFactor);
-				CLAMP(props->flRoomRolloffFactor, 0.0f, 10.0f);
-			}
-
-			if ( optional_string("+Air Absorption Gain HF:") ) {
-				stuff_float(&props->flAirAbsorptionGainHF);
-				CLAMP(props->flAirAbsorptionGainHF, 0.892f, 1.0f);
-			}
-
-			if ( optional_string("+Decay HF Limit:") ) {
-				stuff_int(&props->iDecayHFLimit);
-				CLAMP(props->iDecayHFLimit, 0, 1);
-			}
-		}
-
-		required_string("#Sound Environments End");
-	}
+	parse_modular_table("*-snd.tbm", parse_sound_table);
 
 	// close localization
 	lcl_ext_close();
+
+	// if we are missing any species then report 
+	if (missingFlybySounds.size() > 0)
+	{
+		SCP_string errorString;
+		for (size_t i = 0; i < missingFlybySounds.size(); i++)
+		{
+			errorString.append(missingFlybySounds[i].species_name);
+			errorString.append("\n");
+		}
+		
+		Error(LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", errorString.c_str());
+	}
+
+	missingFlybySounds.clear();
 }
 
 /**
