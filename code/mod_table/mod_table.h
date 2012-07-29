@@ -15,5 +15,7 @@ extern bool Fixed_turret_collisions;
 extern bool Damage_impacted_subsystem_first;
 extern bool Cutscene_camera_disables_hud;
 extern bool Alternate_chaining_behavior;
+extern int Default_ship_select_effect;
+extern int Default_weapon_select_effect;
 
 void mod_table_init();
