@@ -5828,7 +5828,7 @@ void HudGaugeWeapons::render(float frametime)
 		}
 
 		// indicate if this is linked or currently armed
-		if ( (sw->current_primary_bank == i && !(Player_ship->flags & SF_PRIMARY_LINKED)) || ((Player_ship->flags & SF_PRIMARY_LINKED) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK))) {
+		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags & SF_PRIMARY_LINKED)) || ((Player_ship->flags & SF_PRIMARY_LINKED) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK))) {
 			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);
 		}
 		
