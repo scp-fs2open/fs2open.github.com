@@ -642,6 +642,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_RENDER_FLAK;
 		else if (!stricmp(NOX("ciws"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_CIWS;
+		else if (!stricmp(NOX("anti-subsystem beam"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_ANTISUBSYSBEAM;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}

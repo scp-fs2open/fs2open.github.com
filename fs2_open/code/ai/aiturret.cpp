@@ -1768,7 +1768,10 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			fire_info.beam_info_override = NULL;
 			fire_info.shooter = &Objects[parent_objnum];
 			fire_info.target = &Objects[turret->turret_enemy_objnum];
-			fire_info.target_subsys = NULL;
+			if (wip->wi_flags2 & WIF2_ANTISUBSYSBEAM)
+				fire_info.target_subsys = turret->targeted_subsys;
+			else
+				fire_info.target_subsys = NULL;
 			fire_info.turret = turret;
 
 			// fire a beam weapon
