@@ -78,7 +78,7 @@
 #include "parse/scripting.h"
 #include "graphics/gropenglshader.h"
 #include "model/model.h"
-#include "globalincs/mod_table.h"
+#include "mod_table/mod_table.h"
 
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
