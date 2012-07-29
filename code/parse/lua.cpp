@@ -203,6 +203,8 @@ int ade_get_operator(char *tablename)
 	return -1;
 }
 
+const size_t INVALID_ID = -1; // Use -1 to get highest possible unsigned number
+
 //*************************Lua helpers*************************
 //Function macro
 //This is what you call to make new functions
@@ -4831,7 +4833,7 @@ private:
 	size_t display_num;
 
 public:
-	cockpit_disp_info_h() : sip( NULL ), display_num( UINT_MAX ) {}
+	cockpit_disp_info_h() : sip( NULL ), display_num( INVALID_ID ) {}
 	cockpit_disp_info_h(ship_info *sip, size_t display_num)
 	{
 		this->sip = sip;
@@ -4849,6 +4851,11 @@ public:
 	bool isValid()
 	{
 		if (sip == NULL)
+		{
+			return false;
+		}
+
+		if (display_num == INVALID_ID)
 		{
 			return false;
 		}
@@ -5002,7 +5009,7 @@ private:
 	size_t display_num;
 
 public:
-	cockpit_display_h() : obj_num( -1 ), objp( NULL ), display_num( UINT_MAX ) {}
+	cockpit_display_h() : obj_num( -1 ), objp( NULL ), display_num( INVALID_ID ) {}
 	cockpit_display_h(object *objp, size_t display_num)
 	{
 		this->obj_num = OBJ_INDEX(objp);
@@ -5025,7 +5032,7 @@ public:
 	{
 		if (!isValid())
 		{
-			return UINT_MAX;
+			return INVALID_ID;
 		}
 
 		return display_num;
@@ -5049,10 +5056,14 @@ public:
 			return false;
 		}
 
-		if (display_num >= Player_displays.size())
+		if (display_num == INVALID_ID)
 		{
 			return false;
 		}
+
+		if (display_num >= Player_displays.size())
+		{
+			return false;		}
 
 		return true;
 	}
