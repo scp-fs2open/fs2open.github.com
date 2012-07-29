@@ -9760,7 +9760,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// Goober5000 (thanks to _argv[-1] for the original idea)
 		if (!(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY))
 		{
-			next_fire_delay *= 1.0f + (num_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
+			int effective_primary_banks = 0;
+			for (int i = 0; i < num_primary_banks; i++)
+				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK)
+					continue;
+				else
+					effective_primary_banks++;
+
+			next_fire_delay *= 1.0f + (effective_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
 		}
 
 		if (winfo_p->fof_spread_rate > 0.0f)
