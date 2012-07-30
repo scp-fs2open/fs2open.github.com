@@ -105,7 +105,7 @@ void cmd_brief_dlg::update_data(int update)
 			m_cur_stage = 0;
 
 		m_stage_title.Format("Stage %d of %d", m_cur_stage + 1, Cur_cmd_brief->num_stages);
-		m_text = convert_multiline_string(Cur_cmd_brief->stage[m_cur_stage].text.c_str());
+		convert_multiline_string(m_text, Cur_cmd_brief->stage[m_cur_stage].text);
 		m_ani_filename = Cur_cmd_brief->stage[m_cur_stage].ani_filename;
 		m_wave_filename = Cur_cmd_brief->stage[m_cur_stage].wave_filename;
 		enable = TRUE;

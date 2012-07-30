@@ -489,7 +489,7 @@ void briefing_editor_dlg::update_data(int update)
 	if ((m_cur_stage >= 0) && (m_cur_stage < Briefing->num_stages)) {
 		ptr = &Briefing->stages[m_cur_stage];
 		m_stage_title.Format("Stage %d of %d", m_cur_stage + 1, Briefing->num_stages);
-		m_text = convert_multiline_string(ptr->text.c_str());
+		convert_multiline_string(m_text, ptr->text);
 		m_time.Format("%d", ptr->camera_time);
 		m_voice = ptr->voice;
 		m_cut_prev = (ptr->flags & BS_BACKWARD_CUT) ? 1 : 0;
