@@ -415,8 +415,10 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_designer_name_orig = m_designer_name = _T(The_mission.author);
 	m_created = _T(The_mission.created);
 	m_modified = _T(The_mission.modified);
-	m_mission_notes_orig = m_mission_notes = convert_multiline_string(The_mission.notes);
-	m_mission_desc_orig = m_mission_desc = convert_multiline_string(The_mission.mission_desc);
+	convert_multiline_string(m_mission_notes_orig, The_mission.notes);
+	convert_multiline_string(m_mission_notes, The_mission.notes);
+	convert_multiline_string(m_mission_desc_orig, The_mission.mission_desc);
+	convert_multiline_string(m_mission_desc, The_mission.mission_desc);
 	m_red_alert = (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0;
 	m_scramble = (The_mission.flags & MISSION_FLAG_SCRAMBLE) ? 1 : 0;
 	m_full_war = Mission_all_attack;

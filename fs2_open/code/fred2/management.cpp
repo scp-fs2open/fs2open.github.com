@@ -136,7 +136,7 @@ extern int Nmodel_num;
 extern matrix Nmodel_orient;
 extern int Nmodel_bitmap;
 
-void string_copy(char *dest, CString &src, int max_len, int modify)
+void string_copy(char *dest, const CString &src, int max_len, int modify)
 {
 	int len;
 
@@ -152,7 +152,7 @@ void string_copy(char *dest, CString &src, int max_len, int modify)
 	dest[len] = 0;
 }
 
-void string_copy(SCP_string &dest, CString &src, int modify)
+void string_copy(SCP_string &dest, const CString &src, int modify)
 {
 	if (modify)
 		if (strcmp(src, dest.c_str()))
@@ -163,81 +163,32 @@ void string_copy(SCP_string &dest, CString &src, int modify)
 
 // converts a multiline string (one with newlines in it) into a windows format multiline
 // string (newlines changed to '\r\n').
-CString convert_multiline_string(const char *src)
+void convert_multiline_string(CString &dest, const SCP_string &src)
 {
-	const char *ptr;
-	char buf[256];
-	int i;
-	static CString str;
+	dest = src.c_str();
+	dest.Replace("\n", "\r\n");
+}
 
-	str = _T("");
-	while ((ptr = strchr(src, '\n'))!=NULL) {
-		i = ptr - src;
-		while (i > 250) {
-			strncpy(buf, src, 250);
-			buf[250] = 0;
-			str += buf;
-			src += 250;
-			i -= 250;
-		}
-
-		if (i)
-			strncpy(buf, src, i);
-
-		buf[i] = 0;
-		str += buf;
-		str += "\r\n";
-		src = ptr + 1;
-	}
-
-	i = strlen(src);
-	if (i)
-		str += src;
-
-	return str;
+// converts a multiline string (one with newlines in it) into a windows format multiline
+// string (newlines changed to '\r\n').
+void convert_multiline_string(CString &dest, const char *src)
+{
+	dest = src;
+	dest.Replace("\n", "\r\n");
 }
 
 // Converts a windows format multiline CString back into a normal multiline string.
-void deconvert_multiline_string(char *buf, CString &str, int max_len)
+void deconvert_multiline_string(char *dest, const CString &str, int max_len)
 {
-	char *ptr = buf;
-	int i, j;
-	CString str2;
-
-	Assert(max_len > 1);
-	Assert(ptr!=NULL);
-	max_len -= 2;
-	while ((i = str.Find("\r\n")) >= 0) {
-		for (j=0; j<i; j++)
-			if (max_len) {
-				*ptr++ = str[j];
-				max_len--;
-			}
-
-		*ptr++ = '\n';
-		str2 = str.Mid(i + 2);
-		str = str2;
-	}
-
-	i = str.GetLength();
-	for (j=0; j<i; j++)
-		if (max_len) {
-			*ptr++ = str[j];
-			max_len--;
-		}
-
-	// removed 10/29/98 by DB
-	// this was generating an extra newline - why?
-	//if (*(ptr - 1) != '\n')
-	//	*ptr++ = '\n';
-	*ptr = 0;
+	strncpy_s(dest, max_len, (LPCTSTR) str, max_len);
+	replace_all(dest, "\r\n", "\n", max_len);
 }
 
 // ditto for SCP_string
-void deconvert_multiline_string(SCP_string &buf, CString &str)
+void deconvert_multiline_string(SCP_string &dest, const CString &str)
 {
-	buf = str;
-	replace_all(buf, "\r\n", "\n");
+	dest = str;
+	replace_all(dest, "\r\n", "\n");
 }
 
 // medal_stuff Medals[NUM_MEDALS];
@@ -1695,14 +1646,14 @@ void generate_ship_popup_menu(CMenu *mptr, int first_id, int state, int filter)
 // Alternate string lookup function, taking a CString instead.  The reason that it's here,
 // instead of parselo.cpp, is because the class CString require an include of windows.h,
 // which everyone wants to avoid including in any freespace header files.  So..
-int string_lookup(CString str1, char *strlist[], int max)
+int string_lookup(const CString &str1, char *strlist[], int max)
 {
 	int	i;
 
 	for (i=0; i<max; i++) {
 		Assert(strlen(strlist[i]));
 
-		if (!stricmp(str1, strlist[i])){
+		if (!stricmp((LPCTSTR) str1, strlist[i])){
 			return i;
 		}
 	}
@@ -2497,11 +2448,9 @@ void generate_weaponry_usage_list(int team, int *arr)
 	}
 }
 
-CJumpNode *jumpnode_get_by_name(CString& name)
+CJumpNode *jumpnode_get_by_name(const CString& name)
 {
-	CJumpNode *jnp = jumpnode_get_by_name(name.GetBuffer(name.GetLength()));
-	name.ReleaseBuffer();
-
+	CJumpNode *jnp = jumpnode_get_by_name((LPCTSTR) name);
 	return jnp;
 }
 
