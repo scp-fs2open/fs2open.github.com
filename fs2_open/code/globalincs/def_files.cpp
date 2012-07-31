@@ -1283,10 +1283,7 @@ char* Default_main_vertex_shader =
 " #ifdef FLAG_FOG\n"
 "	fogDist = clamp((gl_Position.z - gl_Fog.start) * 0.75 * gl_Fog.scale, 0.0, 1.0);\n"
 " #endif\n"
-" #ifdef __GLSL_CG_DATA_TYPES\n"
-" // Check necessary for ATI specific behavior\n"
 "	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);\n"
-" #endif\n"
 "}";
 
 char *Default_main_fragment_shader = 
