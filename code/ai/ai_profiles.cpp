@@ -464,24 +464,6 @@ void parse_ai_profiles_tbl(char *filename)
 				}
 			}
 
-			if (optional_string("$Default weapon select effect:")) {
-				char effect[NAME_LENGTH];
-				stuff_string(effect, F_NAME, NAME_LENGTH);
-				if (!stricmp(effect, "FS1"))
-					Default_weapon_select_effect = 1;
-				if (!stricmp(effect, "off"))
-					Default_weapon_select_effect = 0;
-			}
-
-			if (optional_string("$Default ship select effect:")) {
-				char effect[NAME_LENGTH];
-				stuff_string(effect, F_NAME, NAME_LENGTH);
-				if (!stricmp(effect, "FS1"))
-					Default_ship_select_effect = 1;
-				if (!stricmp(effect, "off"))
-					Default_ship_select_effect = 0;
-			}
-
 			set_flag(profile, "$no warp camera:", AIPF2_NO_WARP_CAMERA, AIP_FLAG2);
 
 			// if we've been through once already and are at the same place, force a move

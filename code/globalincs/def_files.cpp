@@ -113,7 +113,10 @@ $Default Campaign File Name: FreeSpace2									\n\
 #HUD SETTINGS															\n\
 																		\n\
 ;; Sets the delay before a directive will appear on the screen (ms)		\n\
-$directive wait time: 3000												\n\
+$Directive Wait Time: 3000												\n\
+																		\n\
+;; Turns off the HUD when in-game cutscenes are playing					\n\
+$Cutscene camera disables HUD: YES										\n\
 																		\n\
 																		\n\
 #SEXP SETTINGS															\n\
@@ -129,6 +132,19 @@ $Use Alternate Chaining Behavior: NO									\n\
 																		\n\
 																		\n\
 #OTHER SETTINGS															\n\
+																		\n\
+;; DESCRIPTION NEEDED!													\n\
+$Fixed Turret Collisions: NO											\n\
+																		\n\
+;; If not set, will damage nearest subsystem first						\n\
+$Damage Impacted Subsystem First: NO									\n\
+																		\n\
+;; used when no ani is specified or ship_select_3d is active			\n\
+$Default ship select effect: FS2										\n\
+																		\n\
+;; used when no ani is specified or weapon_select_3d is active			\n\
+$Default weapon select effect: FS2										\n\
+																		\n\
 																		\n\
 #END																	\n\
 ";
@@ -1267,10 +1283,7 @@ char* Default_main_vertex_shader =
 " #ifdef FLAG_FOG\n"
 "	fogDist = clamp((gl_Position.z - gl_Fog.start) * 0.75 * gl_Fog.scale, 0.0, 1.0);\n"
 " #endif\n"
-" #ifdef __GLSL_CG_DATA_TYPES\n"
-" // Check necessary for ATI specific behavior\n"
 "	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);\n"
-" #endif\n"
 "}";
 
 char *Default_main_fragment_shader = 
@@ -1308,6 +1321,10 @@ char *Default_main_fragment_shader =
 "#ifdef FLAG_TEAMCOLOR\n"
 "uniform vec3 base_color;\n"
 "uniform vec3 stripe_color;\n"
+"vec2 teamMask = vec2(0.0, 0.0);\n"
+"#endif\n"
+"#ifdef FLAG_MISC_MAP\n"
+"uniform sampler2D sMiscmap;\n"
 "#endif\n"
 "varying vec4 position;\n"
 "varying vec3 lNormal;\n"
@@ -1340,6 +1357,7 @@ char *Default_main_fragment_shader =
 "    vec2 teamMask = vec2(0.0, 0.0);\n"
 "    teamMask = texture2D(sMiscmap, texCoord).rg;\n"
 "   #endif\n"
+" #endif\n"
 " #ifdef FLAG_LIGHT\n"
 "  #ifdef FLAG_NORMAL_MAP\n"
 "	// Normal map - convert from DXT5nm\n"

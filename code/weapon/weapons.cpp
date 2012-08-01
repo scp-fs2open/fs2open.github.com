@@ -46,6 +46,7 @@
 #include "network/multiutil.h"
 #include "parse/scripting.h"
 #include "stats/scoring.h"
+#include "mod_table/mod_table.h"
 
 
 #ifndef NDEBUG
@@ -95,8 +96,6 @@ int missile_model = -1;
 
 int     First_secondary_index = -1;
 int		Default_cmeasure_index = -1;
-
-int Default_weapon_select_effect = 2;
 
 static int *used_weapons = NULL;
 
@@ -1218,9 +1217,9 @@ int parse_weapon(int subtype, bool replace)
 		stuff_string(effect, F_NAME, NAME_LENGTH);
 		if (!stricmp(effect, "FS2"))
 			wip->selection_effect = 2;
-		if (!stricmp(effect, "FS1"))
+		else if (!stricmp(effect, "FS1"))
 			wip->selection_effect = 1;
-		if (!stricmp(effect, "off"))
+		else if (!stricmp(effect, "off"))
 			wip->selection_effect = 0;
 	}	
 

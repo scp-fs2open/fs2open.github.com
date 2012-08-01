@@ -571,7 +571,7 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 					read_mission_goal_list(Cur_campaign_mission);
 
 				if (Campaign.missions[Cur_campaign_mission].notes) {
-					str = convert_multiline_string(Campaign.missions[Cur_campaign_mission].notes);
+					convert_multiline_string(str, Campaign.missions[Cur_campaign_mission].notes);
 					box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_HELP_BOX);
 					if (box)
 						box->SetWindowText(str);

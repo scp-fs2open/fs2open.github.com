@@ -217,7 +217,7 @@ bool ConditionedHook::AddAction(script_action sa)
 	return true;
 }
 
-bool ConditionedHook::ConditionsValid(int action, object *objp)
+bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 {
 	uint i;
 
@@ -359,14 +359,19 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 								break;
 							}
 							case CHA_ONWPFIRED: {
-								primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
-								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
-								
+								if (more_data == 1) {
+									primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
+									secondary = false;
+								} else {
+									primary = false;
+									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
+								}
+
 								if (shipp->flags & SF_PRIMARY_LINKED && primary && Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK)
 								 	return false;
 
-								if (!(primary || secondary))
-									return false;
+								return more_data == 1 ? primary : secondary;
+
 								break;
 							}
 							case CHA_ONTURRETFIRED: {
@@ -855,12 +860,12 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 	return 1;
 }
 
-int script_state::RunCondition(int action, char format, void *data, object *objp)
+int script_state::RunCondition(int action, char format, void *data, object *objp, int more_data)
 {
 	int num = 0;
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
-		if(chp->ConditionsValid(action, objp))
+		if(chp->ConditionsValid(action, objp, more_data))
 		{
 			chp->Run(this, action, format, data);
 			num++;

@@ -62,11 +62,12 @@ extern bool Show_iff[];
 
 extern CCriticalSection CS_cur_object_index;
 
-void	string_copy(char *dest, CString &src, int max_len, int modify = 0);
-void	string_copy(SCP_string &dest, CString &src, int modify = 0);
-CString convert_multiline_string(const char *src);
-void	deconvert_multiline_string(char *buf, CString &str, int max_len);
-void	deconvert_multiline_string(SCP_string &buf, CString &str);
+void	string_copy(char *dest, const CString &src, int max_len, int modify = 0);
+void	string_copy(SCP_string &dest, const CString &src, int modify = 0);
+void	convert_multiline_string(CString &dest, const SCP_string &src);
+void	convert_multiline_string(CString &dest, const char *src);
+void	deconvert_multiline_string(char *dest, const CString &str, int max_len);
+void	deconvert_multiline_string(SCP_string &dest, const CString &str);
 
 bool	fred_init();
 void	set_physics_controls();
@@ -97,7 +98,7 @@ void	unmark_all();
 void	clear_menu(CMenu *ptr);
 void	generate_wing_popup_menu(CMenu *mptr, int first_id, int state);
 void	generate_ship_popup_menu(CMenu *mptr, int first_id, int state, int filter = 0);
-int	string_lookup(CString str1, char *strlist[], int max);
+int	string_lookup(const CString &str1, char *strlist[], int max);
 int	update_dialog_boxes();
 void	set_cur_wing(int wing);
 int	gray_menu_tree(CMenu *base);
@@ -127,7 +128,7 @@ void	generate_weaponry_usage_list(int team, int *arr);
 void	generate_weaponry_usage_list(int *arr, int wing);
 void	generate_ship_usage_list(int *arr, int wing);
 
-CJumpNode *jumpnode_get_by_name(CString& name);
+CJumpNode *jumpnode_get_by_name(const CString& name);
 
 // function and defines to use when adding ships to combo boxes
 #define SHIPS_2_COMBO_SPECIAL					(1<<0)

@@ -384,6 +384,11 @@ BOOL initial_status::OnInitDialog()
 			int i = 0;
 
 			if (Ship_info[shipp->ship_info_index].uses_team_colors) {
+				//Add a "None" entry at the beginning to allow simple deselection of colours
+				int t = m_team_color_setting.AddString("None");
+				m_team_color_setting.SetItemData(t, i);
+				++i;
+
 				for (SCP_vector<SCP_string>::iterator tni = Team_Names.begin(); tni != Team_Names.end(); ++tni) {
 					int z = m_team_color_setting.AddString(tni->c_str());
 					if (!stricmp(tni->c_str(), shipp->team_name.c_str())) {
@@ -532,7 +537,8 @@ void initial_status::OnOK()
 			Ships[m_ship].flags2 &= ~SF2_AFTERBURNER_LOCKED;
 	}
 
-	Ships[m_ship].team_name = Team_Names[m_team_color_setting.GetCurSel()];
+	if (m_team_color_setting.IsWindowEnabled() && m_team_color_setting.GetCurSel() > 0)
+		Ships[m_ship].team_name = Team_Names[m_team_color_setting.GetCurSel()];
 
 	update_docking_info();
 

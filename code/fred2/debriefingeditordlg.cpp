@@ -214,8 +214,8 @@ void debriefing_editor_dlg::update_data(int update)
 		ptr = &Debriefing->stages[m_cur_stage];
 		m_stage_title.Format("Stage %d of %d", m_cur_stage + 1, Debriefing->num_stages);
 		m_tree.load_tree(ptr->formula);
-		m_text = convert_multiline_string(ptr->text.c_str());
-		m_rec_text = convert_multiline_string(ptr->recommendation_text.c_str());
+		convert_multiline_string(m_text, ptr->text);
+		convert_multiline_string(m_rec_text, ptr->recommendation_text);
 		m_voice = ptr->voice;
 		enable = TRUE;
 

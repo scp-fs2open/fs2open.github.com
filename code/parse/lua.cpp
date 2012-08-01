@@ -47,6 +47,8 @@
 #include "sound/ds.h"
 #include "weapon/weapon.h"
 #include "weapon/beam.h"
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 
 //*************************Lua globals*************************
 SCP_vector<ade_table_entry> Ade_table_entries;
@@ -202,6 +204,8 @@ int ade_get_operator(char *tablename)
 
 	return -1;
 }
+
+const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigned number
 
 //*************************Lua helpers*************************
 //Function macro
@@ -3144,7 +3148,11 @@ ADE_FUNC(__gc, l_Texture, NULL, "Auto-deletes texture", NULL, NULL)
 	if(!ade_get_args(L, "o", l_Texture.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx > -1 && bm_is_valid(idx))
+	// Note: due to some unknown reason, in some circumstances this function
+	// might get called even for handles to bitmaps which are actually still in
+	// use, and in order to prevent that we want to double-check the load count
+	// here before unloading the bitmap. -zookeeper
+	if(idx > -1 && bm_is_valid(idx) && bm_bitmaps[bm_get_cache_slot(idx, 0)].load_count < 1)
 		bm_unload(idx);
 
 	return ADE_RETURN_NIL;
@@ -4831,7 +4839,7 @@ private:
 	size_t display_num;
 
 public:
-	cockpit_disp_info_h() : sip( NULL ), display_num( UINT_MAX ) {}
+	cockpit_disp_info_h() : sip( NULL ), display_num( INVALID_ID ) {}
 	cockpit_disp_info_h(ship_info *sip, size_t display_num)
 	{
 		this->sip = sip;
@@ -4849,6 +4857,11 @@ public:
 	bool isValid()
 	{
 		if (sip == NULL)
+		{
+			return false;
+		}
+
+		if (display_num == INVALID_ID)
 		{
 			return false;
 		}
@@ -5002,7 +5015,7 @@ private:
 	size_t display_num;
 
 public:
-	cockpit_display_h() : obj_num( -1 ), objp( NULL ), display_num( UINT_MAX ) {}
+	cockpit_display_h() : obj_num( -1 ), objp( NULL ), display_num( INVALID_ID ) {}
 	cockpit_display_h(object *objp, size_t display_num)
 	{
 		this->obj_num = OBJ_INDEX(objp);
@@ -5025,7 +5038,7 @@ public:
 	{
 		if (!isValid())
 		{
-			return UINT_MAX;
+			return INVALID_ID;
 		}
 
 		return display_num;
@@ -5049,10 +5062,14 @@ public:
 			return false;
 		}
 
-		if (display_num >= Player_displays.size())
+		if (display_num == INVALID_ID)
 		{
 			return false;
 		}
+
+		if (display_num >= Player_displays.size())
+		{
+			return false;		}
 
 		return true;
 	}
