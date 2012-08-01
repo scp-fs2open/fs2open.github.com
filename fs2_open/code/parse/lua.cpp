@@ -47,6 +47,8 @@
 #include "sound/ds.h"
 #include "weapon/weapon.h"
 #include "weapon/beam.h"
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 
 //*************************Lua globals*************************
 SCP_vector<ade_table_entry> Ade_table_entries;
