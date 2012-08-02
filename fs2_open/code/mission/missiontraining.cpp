@@ -776,7 +776,6 @@ int message_play_training_voice(int index)
 
 		} else {
 			game_snd tmp_gs;
-			memset(&tmp_gs, 0, sizeof(game_snd));
 			strcpy_s(tmp_gs.filename, Message_waves[index].name);
 			Message_waves[index].num = snd_load(&tmp_gs, 0);
 			if (Message_waves[index].num < 0) {
