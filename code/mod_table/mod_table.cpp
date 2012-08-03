@@ -20,6 +20,7 @@ bool Cutscene_camera_disables_hud;
 bool Alternate_chaining_behavior;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
+bool Enable_external_shaders = false;
 
 
 void parse_mod_table(char *filename)
@@ -100,6 +101,16 @@ void parse_mod_table(char *filename)
 		}
 	}
 
+	optional_string("#GRAPHICS SETTINGS");
+
+	if (optional_string("$Enable External Shaders:")) {
+		stuff_boolean(&Enable_external_shaders);
+		if (Enable_external_shaders)
+			mprintf(("Game Settings Table: External shaders are enabled\n"));
+		else
+			mprintf(("Game Settings Table: External shaders are DISABLED\n"));
+	}
+	
 	optional_string("#OTHER SETTINGS"); 
 
 	if (optional_string("$Fixed Turret Collisions:")) { 

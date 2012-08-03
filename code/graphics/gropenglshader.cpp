@@ -27,6 +27,7 @@
 #include "math/vecmat.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
+#include "mod_table/mod_table.h"
 
 
 SCP_vector<opengl_shader_t> GL_shader;
@@ -239,29 +240,32 @@ static char *opengl_load_shader(char *filename, int flags)
 	const char *shader_flags = sflags.c_str();
 	int flags_len = strlen(shader_flags);
 
-	CFILE *cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+	if (Enable_external_shaders) {
+		CFILE *cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
 	
-	if (cf_shader != NULL) {
-		int len = cfilelength(cf_shader);
-		char *shader = (char*) vm_malloc(len + flags_len + 1);
+		if (cf_shader != NULL) {
+			int len = cfilelength(cf_shader);
+			char *shader = (char*) vm_malloc(len + flags_len + 1);
 
-		strcpy(shader, shader_flags);
-		memset(shader + flags_len, 0, len + 1);
-		cfread(shader + flags_len, len + 1, 1, cf_shader);
-		cfclose(cf_shader);
+			strcpy(shader, shader_flags);
+			memset(shader + flags_len, 0, len + 1);
+			cfread(shader + flags_len, len + 1, 1, cf_shader);
+			cfclose(cf_shader);
 
-		return shader;	
-	} else {
-		mprintf(("   Loading built-in default shader for: %s\n", filename));
-		char* def_shader = defaults_get_file(filename);
-		size_t len = strlen(def_shader);
-		char *shader = (char*) vm_malloc(len + flags_len + 1);
-
-		strcpy(shader, shader_flags);
-		strcat(shader, def_shader);
-
-		return shader;
+			return shader;	
+		}
 	}
+
+	//If we're still here, proceed with internals
+	mprintf(("   Loading built-in default shader for: %s\n", filename));
+	char* def_shader = defaults_get_file(filename);
+	size_t len = strlen(def_shader);
+	char *shader = (char*) vm_malloc(len + flags_len + 1);
+
+	strcpy(shader, shader_flags);
+	strcat(shader, def_shader);
+
+	return shader;
 }
 
 /**
