@@ -2523,6 +2523,11 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 					vm_vec_add2(&world_pnt, pos);
 
 					vm_vec_unrotate(&world_norm, &loc_norm, orient);
+					
+					if ( (shipp != NULL) && (shipp->flags & (SF_ARRIVING | SF_DEPART_WARP) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+						if (g3_point_behind_user_plane(&world_pnt))
+							continue;
+					}
 
 					switch (bank->type)
 					{
