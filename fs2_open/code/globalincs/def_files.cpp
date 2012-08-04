@@ -133,7 +133,7 @@ $Use Alternate Chaining Behavior: NO									\n\
 																		\n\
 #GRAPHICS SETTINGS														\n\
 ;; When set, this enables the loading of external shader files			\n\
-$Use external shaders: NO												\n\
+$Enable external shaders: NO											\n\
 																		\n\
 																		\n\
 #OTHER SETTINGS															\n\
