@@ -949,7 +949,6 @@ void message_load_wave(int index, const char *filename)
 	}
 
 	game_snd tmp_gs;
-	memset(&tmp_gs, 0, sizeof(game_snd));
 	strcpy_s( tmp_gs.filename, filename );
 	Message_waves[index].num = snd_load( &tmp_gs, 0 );
 

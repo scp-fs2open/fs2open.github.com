@@ -131,6 +131,11 @@ $Loop SEXPs Then Arguments:	NO											\n\
 $Use Alternate Chaining Behavior: NO									\n\
 																		\n\
 																		\n\
+#GRAPHICS SETTINGS														\n\
+;; When set, this enables the loading of external shader files			\n\
+$Enable external shaders: NO											\n\
+																		\n\
+																		\n\
 #OTHER SETTINGS															\n\
 																		\n\
 ;; DESCRIPTION NEEDED!													\n\

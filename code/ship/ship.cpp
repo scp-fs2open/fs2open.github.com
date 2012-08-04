@@ -1631,11 +1631,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if (optional_string("$Enable Team Colors:")) {
 		stuff_boolean(&sip->uses_team_colors);
-	} else {
-		sip->uses_team_colors = false;
-	}
-
-	sip->default_team_name = "None";
+		sip->default_team_name = "None";
+	} 
 
 	if (optional_string("$Default Team:")) {
 		char temp[NAME_LENGTH];
