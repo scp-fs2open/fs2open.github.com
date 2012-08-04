@@ -18,11 +18,13 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (United States) resources
+// English (U.S.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
+#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -622,7 +624,7 @@ CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
-    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.13 Antipodes OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.13 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
     LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
     DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
     LTEXT           """Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",IDC_STATIC,39,62,238,20
@@ -1280,7 +1282,7 @@ BEGIN
     LTEXT           "Trigger Count",IDC_STATIC,210,126,44,8
 END
 
-IDD_BG_BITMAP DIALOGEX 0, 0, 431, 354
+IDD_BG_BITMAP DIALOGEX 0, 0, 431, 402
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Background Editor"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
@@ -1310,33 +1312,33 @@ BEGIN
     EDITTEXT        IDC_SUN1_H,349,87,23,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Spin2",IDC_SUN1_H_SPIN,"msctls_updown32",UDS_ARROWKEYS,373,87,11,14
     EDITTEXT        IDC_SUN1_SCALE,362,105,23,14,ES_AUTOHSCROLL
-    CONTROL         "Full Nebula",IDC_FULLNEB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,183,62,10
-    EDITTEXT        IDC_NEB2_INTENSITY,68,202,63,12,ES_AUTOHSCROLL
-    COMBOBOX        IDC_NEB2_TEXTURE,68,218,63,88,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_NEB2_LIGHTNING,68,233,63,91,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Toggle ship trails",IDC_NEB_TOGGLE_TRAILS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,251,123,10
-    CONTROL         "Check1",IDC_POOF0,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,189,62,10
-    CONTROL         "Check2",IDC_POOF1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,199,62,10
-    CONTROL         "Check3",IDC_POOF2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,208,62,10
-    CONTROL         "Check4",IDC_POOF3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,217,62,10
-    CONTROL         "Check5",IDC_POOF4,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,226,62,10
-    CONTROL         "Check6",IDC_POOF5,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,235,62,10
-    COMBOBOX        IDC_NEBPATTERN,42,272,61,108,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_NEBCOLOR,42,288,61,108,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_PITCH,166,252,40,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_BANK,166,269,40,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_HEADING,166,286,40,14,ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "Slider1",IDC_SLIDER1,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,227,233,178,15
-    CONTROL         "Takes place inside Subspace",IDC_SUBSPACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,228,253,109,10
-    LTEXT           "Pattern:",IDC_STATIC,14,274,26,8
-    LTEXT           "Color:",IDC_STATIC,15,290,23,8
-    LTEXT           "Pitch",IDC_STATIC,145,255,17,8
-    GROUPBOX        "Nebula",IDC_STATIC,5,167,210,179
-    LTEXT           "Bank",IDC_STATIC,144,272,18,8
-    LTEXT           "Heading",IDC_STATIC,134,289,28,8
-    LTEXT           "Number of stars:",IDC_STATIC,227,222,52,8
-    LTEXT           "Static",IDC_TOTAL,283,222,43,8
-    GROUPBOX        "Misc",IDC_STATIC,220,215,206,131
+    CONTROL         "Full Nebula",IDC_FULLNEB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,62,10
+    EDITTEXT        IDC_NEB2_INTENSITY,68,201,63,12,ES_AUTOHSCROLL
+    COMBOBOX        IDC_NEB2_TEXTURE,68,217,63,88,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_NEB2_LIGHTNING,68,232,63,91,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Toggle ship trails",IDC_NEB_TOGGLE_TRAILS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,249,123,10
+    CONTROL         "Check1",IDC_POOF0,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,192,62,10
+    CONTROL         "Check2",IDC_POOF1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,202,62,10
+    CONTROL         "Check3",IDC_POOF2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,211,62,10
+    CONTROL         "Check4",IDC_POOF3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,220,62,10
+    CONTROL         "Check5",IDC_POOF4,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,229,62,10
+    CONTROL         "Check6",IDC_POOF5,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,144,238,62,10
+    COMBOBOX        IDC_NEBPATTERN,42,333,61,108,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_NEBCOLOR,42,349,61,108,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_PITCH,166,316,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_BANK,166,333,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_HEADING,166,350,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Slider1",IDC_SLIDER1,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,227,336,178,15
+    CONTROL         "Takes place inside Subspace",IDC_SUBSPACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,228,356,109,10
+    LTEXT           "Pattern:",IDC_STATIC,14,335,26,8
+    LTEXT           "Color:",IDC_STATIC,15,351,23,8
+    LTEXT           "Pitch",IDC_STATIC,145,319,17,8
+    GROUPBOX        "Nebula",IDC_STATIC,5,172,210,127
+    LTEXT           "Bank",IDC_STATIC,144,336,18,8
+    LTEXT           "Heading",IDC_STATIC,134,353,28,8
+    LTEXT           "Number of stars:",IDC_STATIC,227,325,52,8
+    LTEXT           "Static",IDC_TOTAL,283,325,43,8
+    GROUPBOX        "Misc",IDC_STATIC,220,314,206,79
     GROUPBOX        "Suns",IDC_STATIC,220,23,206,124
     GROUPBOX        "Bitmaps",IDC_STATIC,5,23,210,145
     LTEXT           "Scale",IDC_STATIC,340,108,19,8
@@ -1347,37 +1349,47 @@ BEGIN
     LTEXT           "P",IDC_STATIC,125,61,8,8
     LTEXT           "B",IDC_STATIC,125,77,8,8
     LTEXT           "H",IDC_STATIC,125,93,8,8
-    LTEXT           "Range:",IDC_STATIC,14,202,24,8
-    LTEXT           "Pattern:",IDC_STATIC,14,217,26,8
-    LTEXT           "Poofs",IDC_STATIC,142,177,19,8
+    LTEXT           "Range:",IDC_STATIC,14,201,24,8
+    LTEXT           "Pattern:",IDC_STATIC,14,216,26,8
+    LTEXT           "Poofs",IDC_STATIC,142,180,19,8
     LTEXT           "# divisions (x/y)",IDC_STATIC,144,139,50,8
-    LTEXT           "Lightning Storm",IDC_STATIC,14,234,50,8
-    EDITTEXT        IDC_SKYBOX_FNAME,311,268,107,14,ES_AUTOHSCROLL
-    CONTROL         "Slider2",IDC_AMBIENT_R_SLIDER,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,229,161,144,15
-    CONTROL         "Slider3",IDC_AMBIENT_G_SLIDER,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,229,177,144,15
-    CONTROL         "Slider4",IDC_AMBIENT_B_SLIDER,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,229,193,144,15
-    LTEXT           "Static",IDC_AMBIENT_R_TEXT,379,163,42,8
-    LTEXT           "Static",IDC_AMBIENT_G_TEXT,379,179,42,8
-    LTEXT           "Static",IDC_AMBIENT_B_TEXT,379,195,42,8
-    GROUPBOX        "Ambient light",IDC_STATIC,220,149,206,62
+    LTEXT           "Lightning Storm",IDC_STATIC,14,233,50,8
+    EDITTEXT        IDC_SKYBOX_FNAME,311,232,108,14,ES_AUTOHSCROLL
+    CONTROL         "Slider2",IDC_AMBIENT_R_SLIDER,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,229,164,144,15
+    CONTROL         "Slider3",IDC_AMBIENT_G_SLIDER,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,229,180,144,15
+    CONTROL         "Slider4",IDC_AMBIENT_B_SLIDER,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,229,196,144,15
+    LTEXT           "Static",IDC_AMBIENT_R_TEXT,379,166,42,8
+    LTEXT           "Static",IDC_AMBIENT_G_TEXT,379,182,42,8
+    LTEXT           "Static",IDC_AMBIENT_B_TEXT,379,198,42,8
+    GROUPBOX        "Ambient light",IDC_STATIC,220,152,206,62
     PUSHBUTTON      "Import...",IDC_IMPORT_BACKGROUND,103,7,41,14
     COMBOBOX        IDC_BACKGROUND_NUM,14,8,83,265,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_BACKGROUND_SWAP_NUM,343,8,83,265,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Swap With",IDC_SWAP_BACKGROUND,293,7,41,14
-    EDITTEXT        IDC_ENVMAP,311,324,107,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "Environment Map",IDC_ENVMAP_BROWSE,228,324,78,14
-    PUSHBUTTON      "Skybox Model",IDC_SKYBOX_MODEL,228,268,78,14
-    CONTROL         "No Lighting",IDC_SKY_FLAG_NO_LIGHTING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,239,296,52,10
-    CONTROL         "Transparent",IDC_SKY_FLAG_XPARENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,297,296,54,10
-    CONTROL         "Force clamp",IDC_SKY_FLAG_CLAMP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,351,296,54,10
-    CONTROL         "No Z-Buffer",IDC_SKY_FLAG_NO_ZBUFF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,239,309,53,10
-    CONTROL         "No Cull",IDC_SKY_FLAG_NO_CULL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,297,309,39,10
-    LTEXT           "Fog Near Multiplier",IDC_STATIC,14,304,58,8
-    LTEXT           "Fog Far Multiplier",IDC_STATIC,14,319,53,8
-    EDITTEXT        IDC_NEB_NEAR_MULTIPLIER,72,302,25,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_NEB_FAR_MULTIPLIER,72,317,25,14,ES_AUTOHSCROLL
-    CONTROL         "No Glowmaps",IDC_SKY_FLAG_NO_GLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,351,309,60,10
-    GROUPBOX        "Skybox Flags",IDC_STATIC,231,285,185,36
+    EDITTEXT        IDC_ENVMAP,311,373,107,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Environment Map",IDC_ENVMAP_BROWSE,227,373,81,14
+    PUSHBUTTON      "Skybox Model",IDC_SKYBOX_MODEL,227,232,79,14
+    CONTROL         "No Lighting",IDC_SKY_FLAG_NO_LIGHTING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,239,277,52,10
+    CONTROL         "Transparent",IDC_SKY_FLAG_XPARENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,297,277,54,10
+    CONTROL         "Force clamp",IDC_SKY_FLAG_CLAMP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,351,277,54,10
+    CONTROL         "No Z-Buffer",IDC_SKY_FLAG_NO_ZBUFF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,239,290,53,10
+    CONTROL         "No Cull",IDC_SKY_FLAG_NO_CULL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,297,290,39,10
+    LTEXT           "Fog Near Multiplier",IDC_STATIC,14,266,58,8
+    LTEXT           "Fog Far Multiplier",IDC_STATIC,14,281,53,8
+    EDITTEXT        IDC_NEB_NEAR_MULTIPLIER,72,264,25,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_NEB_FAR_MULTIPLIER,72,279,25,14,ES_AUTOHSCROLL
+    CONTROL         "No Glowmaps",IDC_SKY_FLAG_NO_GLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,351,290,60,10
+    GROUPBOX        "Skybox",IDC_STATIC,220,219,206,91
+    EDITTEXT        IDC_SKYBOX_P,237,253,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_SKYBOX_P_SPIN,"msctls_updown32",UDS_ARROWKEYS,262,253,11,14
+    EDITTEXT        IDC_SKYBOX_B,295,253,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_SKYBOX_B_SPIN,"msctls_updown32",UDS_ARROWKEYS,320,253,11,14
+    EDITTEXT        IDC_SKYBOX_H,351,252,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_SKYBOX_H_SPIN,"msctls_updown32",UDS_ARROWKEYS,376,252,11,14
+    LTEXT           "P",IDC_STATIC,227,256,8,8
+    LTEXT           "B",IDC_STATIC,285,256,8,8
+    LTEXT           "H",IDC_STATIC,341,255,8,8
+    GROUPBOX        "Old Nebula",IDC_STATIC,5,306,210,64
 END
 
 IDD_REINFORCEMENT_EDITOR DIALOGEX 0, 0, 183, 119
@@ -1535,9 +1547,9 @@ BEGIN
     CONTROL         "Reset tech db at start of campaign",IDC_CUSTOM_TECH_DB,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,106,151,122,9
     EDITTEXT        IDC_BRIEFING_CUTSCENE,73,175,66,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_MAIN_HALL,139,192,82,12
-    EDITTEXT        IDC_DEBRIEFING_PERSONA,97,193,21,12,ES_NUMBER,WS_EX_RIGHT
-    CONTROL         "Tree1",IDC_SEXP_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,224,157,111,WS_EX_CLIENTEDGE
+    EDITTEXT        IDC_MAIN_HALL,200,175,21,12,ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_DEBRIEFING_PERSONA,200,190,21,12,ES_NUMBER,WS_EX_RIGHT
+    CONTROL         "Tree1",IDC_SEXP_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,7,224,157,111,WS_EX_CLIENTEDGE
     PUSHBUTTON      "Move Up",IDC_MOVE_UP,171,225,53,14,BS_CENTER,WS_EX_STATICEDGE
     PUSHBUTTON      "Move Down",IDC_MOVE_DOWN,171,242,53,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Toggle Loop",IDC_TOGGLE_LOOP,171,259,53,14,0,WS_EX_STATICEDGE
@@ -1554,7 +1566,7 @@ BEGIN
     LTEXT           "Campaign name",IDC_STATIC,7,99,52,8
     LTEXT           "Type",IDC_STATIC,138,99,17,8
     LTEXT           "Branches",IDC_STATIC,7,214,31,8
-    LTEXT           "Briefing cutscene",IDC_STATIC,14,175,56,8
+    LTEXT           "Briefing cutscene",IDC_STATIC,13,176,56,8
     LTEXT           "Number of Players:",IDC_PLAYERS_LABEL,7,151,60,8
     LTEXT           "Static",IDC_NUM_PLAYERS,70,151,19,8,0,WS_EX_TRANSPARENT
     LTEXT           "Campaign description",IDC_STATIC,7,113,68,8
@@ -1562,12 +1574,12 @@ BEGIN
     LTEXT           "Mission loop description",IDC_STATIC,7,367,76,8
     LTEXT           "Loop brief anim",IDC_STATIC,13,408,49,8
     LTEXT           "Loop brief voice",IDC_STATIC,13,423,52,8
-    LTEXT           "Main hall name",IDC_MAINHALL_LABEL,157,182,48,8
-    GROUPBOX        "Mission options",IDC_MISSION_OPTIONS,7,161,221,47
-    LTEXT           "Debriefing persona index",IDC_STATIC,14,193,79,8
+    LTEXT           "Main hall index",IDC_MAINHALL_LABEL,149,177,48,8
+    GROUPBOX        "Mission options",IDC_MISSION_OPTIONS,7,165,221,43
+    LTEXT           "Debriefing persona index",IDC_STATIC,118,193,79,8
 END
 
-IDD_TEXT_VIEW DIALOG 0, 0, 324, 285
+IDD_TEXT_VIEW DIALOG  0, 0, 324, 285
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Ship TBL Data"
 FONT 8, "MS Sans Serif"
@@ -2091,12 +2103,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "Volition Inc."
-            VALUE "FileDescription", "Fred 2 Open - Antipodes"
+            VALUE "FileDescription", "Fred 2 Open"
             VALUE "FileVersion", "3.6.13.0000"
-            VALUE "InternalName", "Fred 2 Open - Antipodes"
+            VALUE "InternalName", "Fred 2 Open"
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fred2.exe"
-            VALUE "ProductName", "Fred 2 Open - Antipodes"
+            VALUE "ProductName", "Fred 2 Open"
             VALUE "ProductVersion", "3.6.13"
         END
     END
@@ -2248,7 +2260,7 @@ BEGIN
         VERTGUIDE, 215
         VERTGUIDE, 220
         VERTGUIDE, 426
-        BOTTOMMARGIN, 346
+        BOTTOMMARGIN, 393
         HORZGUIDE, 126
         HORZGUIDE, 132
     END
@@ -2956,23 +2968,25 @@ BEGIN
     ID_FORMAT_FS1_RETAIL    "Save missions compatible with FS1 retail"
 END
 
-#endif    // English (United States) resources
+#endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (United Kingdom) resources
+// English (U.K.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 #pragma code_page(1252)
+#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Dialog
 //
 
-IDD_ALT_SHIP_CLASS DIALOG 0, 0, 312, 212
+IDD_ALT_SHIP_CLASS DIALOG  0, 0, 312, 212
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Alternate Ship Class Editor"
 FONT 8, "MS Sans Serif"
@@ -3011,7 +3025,7 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (United Kingdom) resources
+#endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
