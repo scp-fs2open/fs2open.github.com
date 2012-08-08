@@ -4128,7 +4128,6 @@
 		344BA94E095A5A2000B9D97D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
 					"$(SRCROOT)/../../lua",
@@ -4142,7 +4141,6 @@
 		344BA94F095A5A2000B9D97D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
@@ -4158,7 +4156,6 @@
 		34BE722D08C940D200673B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4180,7 +4177,6 @@
 		34BE722E08C940D200673B45 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libjpeg;
 				LIBRARY_STYLE = STATIC;
@@ -4194,7 +4190,6 @@
 		34BE723108C940D200673B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -4238,7 +4233,6 @@
 		34BE723208C940D200673B45 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -4269,7 +4263,6 @@
 		34BE723508C940D200673B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				FRAMEWORK_SEARCH_PATHS = ./Frameworks;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
@@ -4313,7 +4306,6 @@
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
-				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
@@ -4328,9 +4320,8 @@
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "FS2_Open (debug)";
-				SDKROOT = macosx10.6;
+				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
-				UNSTRIPPED_PRODUCT = YES;
 				WARNING_CFLAGS = (
 					"-Wno-write-strings",
 					"-Wno-char-subscripts",
@@ -4347,9 +4338,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
-				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NDEBUG,
@@ -4365,7 +4354,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = FS2_Open;
-				SDKROOT = macosx10.6;
+				SDKROOT = macosx;
 				SEPARATE_STRIP = YES;
 				WARNING_CFLAGS = (
 					"-Wno-write-strings",
@@ -4523,7 +4512,6 @@
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
-				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
@@ -4539,9 +4527,8 @@
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "FS2_Open-Inferno (debug)";
-				SDKROOT = macosx10.6;
+				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
-				UNSTRIPPED_PRODUCT = YES;
 				WARNING_CFLAGS = (
 					"-Wno-write-strings",
 					"-Wno-char-subscripts",
@@ -4552,7 +4539,6 @@
 		915F25D10F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				FRAMEWORK_SEARCH_PATHS = ./Frameworks;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
@@ -4570,7 +4556,6 @@
 		915F25D20F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -4615,7 +4600,6 @@
 		915F25D30F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4637,7 +4621,6 @@
 		915F25D40F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
 					"$(SRCROOT)/../../lua",
@@ -4727,9 +4710,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
-				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NDEBUG,
@@ -4746,7 +4727,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "FS2_Open-Inferno";
-				SDKROOT = macosx10.6;
+				SDKROOT = macosx;
 				SEPARATE_STRIP = YES;
 				WARNING_CFLAGS = (
 					"-Wno-write-strings",
@@ -4778,7 +4759,6 @@
 		915F25DB0F8AA7D700521775 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -4816,7 +4796,6 @@
 		915F25DC0F8AA7D700521775 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libjpeg;
 				LIBRARY_STYLE = STATIC;
@@ -4830,7 +4809,6 @@
 		915F25DD0F8AA7D700521775 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
@@ -4916,7 +4894,6 @@
 		F0AAA89F10FA0A7C0086B1B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4936,7 +4913,6 @@
 		F0AAA8A010FA0A7C0086B1B4 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4956,7 +4932,6 @@
 		F0AAA8A110FA0A7C0086B1B4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libpng;
 				LIBRARY_STYLE = STATIC;
@@ -4970,7 +4945,6 @@
 		F0AAA8A210FA0A7C0086B1B4 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libpng;
 				LIBRARY_STYLE = STATIC;
@@ -4984,7 +4958,6 @@
 		F0AAA90B10FA0CAA0086B1B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -5004,7 +4977,6 @@
 		F0AAA90C10FA0CAA0086B1B4 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -5024,7 +4996,6 @@
 		F0AAA90D10FA0CAA0086B1B4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libzlib;
 				LIBRARY_STYLE = STATIC;
@@ -5038,7 +5009,6 @@
 		F0AAA90E10FA0CAA0086B1B4 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libzlib;
 				LIBRARY_STYLE = STATIC;
