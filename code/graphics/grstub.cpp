@@ -434,6 +434,10 @@ void gr_stub_draw_line_list(colored_vector *lines, int num)
 {
 }
 
+void gr_stub_flush_data_states()
+{
+}
+
 // bitmap functions
 int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
 {
@@ -810,6 +814,8 @@ bool gr_stub_init()
 
 	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
 	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;
+
+	gr_screen.gf_flush_data_states	= gr_stub_flush_data_states;
 
 	return true;
 }

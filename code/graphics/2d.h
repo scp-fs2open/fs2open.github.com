@@ -482,6 +482,8 @@ typedef struct screen {
 
 	int (*gf_maybe_create_shader)(int flags);
 
+	void (*gf_flush_data_states)();
+
 	void (*gf_set_team_color)(SCP_string team);
 	void (*gf_enable_team_color)();
 	void (*gf_disable_team_color)();
@@ -768,6 +770,8 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 #define gr_sphere_htl					GR_CALL(*gr_screen.gf_sphere_htl)
 
 #define gr_maybe_create_shader			GR_CALL(*gr_screen.gf_maybe_create_shader)
+
+#define gr_flush_data_states			GR_CALL(*gr_screen.gf_flush_data_states)
 
 #define gr_set_team_color				GR_CALL(*gr_screen.gf_set_team_color)
 #define gr_enable_team_color			GR_CALL(*gr_screen.gf_enable_team_color)

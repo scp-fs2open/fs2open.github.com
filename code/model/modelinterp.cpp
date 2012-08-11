@@ -169,6 +169,9 @@ int Interp_detail_level = 0;
 
 static int FULLCLOAK = -1;
 
+// current transformation texture
+int Interp_no_flush = 0;
+
 // forward references
 int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check);
 void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum = -1);
@@ -3052,8 +3055,12 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 	transparent_submodels.clear();
 
-	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
-		gr_set_buffer(-1);
+	if ( !Interp_no_flush ) {
+		gr_flush_data_states();
+
+		if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+			gr_set_buffer(-1);
+		}
 	}
 
 	if (is_outlines_only_htl) {

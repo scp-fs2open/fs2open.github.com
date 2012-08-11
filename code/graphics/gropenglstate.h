@@ -39,6 +39,8 @@ struct opengl_texture_unit {
 
 	GLfloat rgb_scale;
 	GLfloat alpha_scale;
+
+	GLboolean used;
 };
 
 class opengl_texture_state
@@ -69,7 +71,9 @@ class opengl_texture_state
 		void SetActiveUnit(GLuint id = 0);
 		void Enable(GLuint tex_id = 0);
 		void Disable(bool force = false);
+		void DisableUnused();
 		void DisableAll();
+		void ResetUsed();
 		void Delete(GLuint tex_id);
 		GLfloat AnisoFilter(GLfloat aniso = 0.0f);
 		
@@ -161,7 +165,102 @@ inline void opengl_texture_state::SetShaderMode(GLboolean mode)
 	shader_mode = mode;
 }
 
+struct opengl_client_texture_unit
+{
+	GLboolean status;
 
+	GLuint buffer;
+	GLint size;
+	GLenum type;
+	GLsizei stride;
+	GLvoid *pointer;
+	bool reset;
+};
+
+struct opengl_vertex_attrib_unit
+{
+	GLboolean status;
+
+	GLuint buffer;
+	GLint size;
+	GLenum type;
+	GLboolean normalized;
+	GLsizei stride;
+	GLvoid *pointer;
+
+	bool used;
+	bool initialized;
+	bool reset;
+};
+
+class opengl_array_state
+{
+	private:
+		GLuint active_client_texture_unit;
+		GLuint num_client_texture_units;
+
+		opengl_client_texture_unit *client_texture_units;
+
+		GLboolean color_array_Status;
+		GLuint color_array_Buffer;
+		GLint color_array_size;
+		GLenum color_array_type;
+		GLsizei color_array_stride;
+		GLvoid *color_array_pointer;
+		bool color_array_reset;
+
+		GLboolean normal_array_Status;
+		GLuint normal_array_Buffer;
+		GLenum normal_array_Type;
+		GLsizei normal_array_Stride;
+		GLvoid *normal_array_Pointer;
+		bool normal_array_reset;
+
+		GLboolean vertex_array_Status;
+		GLuint vertex_array_Buffer;
+		GLint vertex_array_Size;
+		GLenum vertex_array_Type;
+		GLsizei vertex_array_Stride;
+		GLvoid *vertex_array_Pointer;
+		bool vertex_array_reset;
+
+		SCP_map<GLuint, opengl_vertex_attrib_unit> vertex_attrib_units;
+
+		GLuint array_buffer;
+		GLuint element_array_buffer;
+	public:
+		opengl_array_state(): active_client_texture_unit(0), client_texture_units(NULL) {}
+		~opengl_array_state();
+
+		void init(GLuint n_units);
+
+		void SetActiveClientUnit(GLuint id);
+		void EnableClientTexture();
+		void DisableClientTexture();
+		void TexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer);
+
+		void EnableClientColor();
+		void DisableClientColor();
+		void ColorPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer);
+
+		void EnableClientNormal();
+		void DisableClientNormal();
+		void NormalPointer(GLenum type, GLsizei stride, GLvoid *pointer);
+
+		void EnableClientVertex();
+		void DisableClientVertex();
+		void VertexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer);
+		void ResetVertexPointer();
+
+		void ResetVertexAttribUsed();
+		void DisabledVertexAttribUnused();
+		void EnableVertexAttrib(GLuint index);
+		void DisableVertexAttrib(GLuint index);
+		void VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLvoid *pointer);
+
+		void BindArrayBuffer(GLuint id);
+		void BindElementBuffer(GLuint id);
+};
 
 class opengl_state
 {
@@ -197,6 +296,7 @@ class opengl_state
 		void init();
 
 		opengl_texture_state Texture;
+		opengl_array_state Array;
 
 		void SetTextureSource(gr_texture_source ts);
 		void SetAlphaBlendMode(gr_alpha_blend ab);
@@ -287,6 +387,7 @@ inline GLenum opengl_state::DepthFunc(GLenum new_val)
 
 extern opengl_state GL_state;
 
+void gr_opengl_flush_data_states();
 void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler = 0);
 
 

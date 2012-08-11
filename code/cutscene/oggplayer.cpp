@@ -557,11 +557,14 @@ static void OGG_video_init(theora_info *tinfo)
 		glVertices[3][2] = gl_screenU;
 		glVertices[3][3] = gl_screenV;
 
-		glVertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
+		GL_state.Array.BindArrayBuffer(0);
 
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		GL_state.Array.EnableClientVertex();
+		GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
+
+		GL_state.Array.SetActiveClientUnit(0);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
 	}
 	if(!use_shaders && tinfo->frame_height > 450) {
 		mprintf(("VIDEO: No shader support and hd video is beeing played this can get choppy."));
@@ -576,8 +579,8 @@ static void OGG_video_close()
 	}
 
 	if (gr_screen.mode == GR_OPENGL) {
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		GL_state.Array.DisableClientVertex();
+		GL_state.Array.DisableClientTexture();
 
 		if (scale_video) {
 			glMatrixMode(GL_MODELVIEW);
