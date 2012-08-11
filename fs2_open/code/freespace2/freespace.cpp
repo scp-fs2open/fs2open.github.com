@@ -1679,29 +1679,6 @@ DCF(gamma,"Sets Gamma factor")
 	}
 }
 
-void run_launcher()
-{
-#ifdef _WIN32
-	const char *launcher_link = "explorer.exe \"http://www.randomtiger.pwp.blueyonder.co.uk/freespace/Launcher5.rar\"";
-
-	int download = MessageBox((HWND)os_get_window(), 
-		"Run the fs2_open launcher to fix your problem. "
-		"Would you like to download the latest version of the launcher? "
-		"You must have at least version 5.0 to run fs2_open versions above 3.6.", 
-		"Question", MB_YESNO | MB_ICONQUESTION);
-
-	if(download == IDYES)
-	{
-		// Someone should change this to the offical link
-		WinExec(launcher_link, SW_SHOW);
-		return;
-	}
-
-	// This now crashes the launcher since fs2_open is still open
-	return;
-#endif
-}
-
 #ifdef APPLE_APP
 char full_path[1024];
 #endif
@@ -1849,7 +1826,6 @@ void game_init()
 		ShowCursor(TRUE);
 		ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
 		MessageBox( NULL, "Error intializing graphics!", "Error", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
-		run_launcher();
 #elif defined(SCP_UNIX)
 		fprintf(stderr, "Error initializing graphics!");
 
