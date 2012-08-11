@@ -267,6 +267,27 @@ void gr_stub_set_buffer(int idx)
 {
 }
 
+int gr_stub_create_stream_buffer()
+{
+	return -1;
+}
+
+void gr_stub_update_stream_buffer(int buffer, effect_vertex *buffer_data, uint size)
+{
+}
+
+void gr_stub_render_stream_buffer(int offset, int n_verts, int flags)
+{
+}
+
+void gr_stub_render_stream_buffer_start(int buffer_id)
+{
+}
+
+void gr_stub_render_stream_buffer_end()
+{
+}
+
 void gr_stub_set_clear_color(int r, int g, int b)
 {
 }
@@ -765,6 +786,12 @@ bool gr_stub_init()
 	gr_screen.gf_destroy_buffer		= gr_stub_destroy_buffer;
 	gr_screen.gf_render_buffer		= gr_stub_render_buffer;
 	gr_screen.gf_set_buffer			= gr_stub_set_buffer;
+
+	gr_screen.gf_create_stream_buffer		= gr_stub_create_stream_buffer;
+	gr_screen.gf_update_stream_buffer		= gr_stub_update_stream_buffer;
+	gr_screen.gf_render_stream_buffer		= gr_stub_render_stream_buffer;
+	gr_screen.gf_render_stream_buffer_start	= gr_stub_render_stream_buffer_start;
+	gr_screen.gf_render_stream_buffer_end	= gr_stub_render_stream_buffer_end;
 
 	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
 	gr_screen.gf_end_instance_matrix			= gr_stub_end_instance_matrix;
