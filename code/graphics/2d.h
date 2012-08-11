@@ -425,6 +425,12 @@ typedef struct screen {
 	void (*gf_set_buffer)(int);
 	void (*gf_render_buffer)(int, const vertex_buffer*, int, int);
 
+	int (*gf_create_stream_buffer)();
+	void (*gf_update_stream_buffer)(int buffer, effect_vertex *buffer_data, uint size);
+	void (*gf_render_stream_buffer)(int offset, int n_verts, int flags);
+	void (*gf_render_stream_buffer_start)(int buffer_id);
+	void (*gf_render_stream_buffer_end)();
+
 	int	 (*gf_make_flat_buffer)(poly_list*);
 	int	 (*gf_make_line_buffer)(line_list*);
 	
@@ -714,6 +720,12 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 {
 	(*gr_screen.gf_render_buffer)(start, bufferp, texi, flags);
 }
+
+#define gr_create_stream_buffer			GR_CALL(*gr_screen.gf_create_stream_buffer)
+#define gr_update_stream_buffer			GR_CALL(*gr_screen.gf_update_stream_buffer)
+#define gr_render_stream_buffer			GR_CALL(*gr_screen.gf_render_stream_buffer)
+#define gr_render_stream_buffer_start	GR_CALL(*gr_screen.gf_render_stream_buffer_start)
+#define gr_render_stream_buffer_end		GR_CALL(*gr_screen.gf_render_stream_buffer_end)
 
 #define gr_set_buffer					GR_CALL(*gr_screen.gf_set_buffer)      
       

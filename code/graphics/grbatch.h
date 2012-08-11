@@ -20,6 +20,8 @@ private:
 	bool use_radius;
 	float *radius_list;		// radiuses associated with the vertices in vert
 
+	int buffer_offset;
+
 	// makes sure we have enough space in the memory buffer for the geometry we are about to put into it
 	// you need to figure out how many verts are going to be required
 	void allocate_internal(int n_verts);
@@ -27,7 +29,7 @@ private:
 	void clone(const geometry_batcher &geo);
 
 public:
-	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), use_radius(true), radius_list(NULL) {};
+	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), use_radius(true), radius_list(NULL), buffer_offset(-1) {};
 	~geometry_batcher();
 
     geometry_batcher(const geometry_batcher &geo) { clone(geo); }
@@ -62,6 +64,10 @@ public:
 	// accepts tmap flags so you can use anything you want really
 	void render(int flags, float radius = 0.0f);
 
+	void load_buffer(effect_vertex* buffer, int *n_verts);
+
+	void render_buffer(int flags);
+
 	// determine if we even need to try and render this (helpful for particle system)
 	int need_to_render() { return n_to_render; };
 
@@ -75,10 +81,17 @@ int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float ang
 int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity = 1.0f);
 int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
 int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float width, float intensity = 1.0f, float offset = 0.0f);
-void batch_render_all();
-void batch_render_geometry_map_bitmaps();
-void batch_render_lasers();
+void batch_render_all(int stream_buffer = -1);
+void batch_render_geometry_map_bitmaps(bool stream_buffer = false);
+void batch_load_buffer_geometry_map_bitmaps(effect_vertex* buffer, int *n_verts);
+void batch_render_lasers(bool stream_buffer = false);
+void batch_load_buffer_lasers(effect_vertex* buffer, int *n_verts);
 void batch_reset();
-void batch_render_distortion_map_bitmaps();
+void batch_render_distortion_map_bitmaps(bool stream_buffer = false);
+void batch_load_buffer_distortion_map_bitmaps(effect_vertex* buffer, int *n_verts);
+
+int batch_get_size();
+void batch_render_close();
+
 
 #endif

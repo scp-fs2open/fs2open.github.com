@@ -1784,6 +1784,12 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_render_buffer		= gr_opengl_render_buffer;
 	gr_screen.gf_set_buffer			= gr_opengl_set_buffer;
 
+	gr_screen.gf_create_stream_buffer		= gr_opengl_create_stream_buffer;
+	gr_screen.gf_update_stream_buffer		= gr_opengl_update_stream_buffer;
+	gr_screen.gf_render_stream_buffer		= gr_opengl_render_stream_buffer;
+	gr_screen.gf_render_stream_buffer_start	= gr_opengl_render_stream_buffer_start;
+	gr_screen.gf_render_stream_buffer_end	= gr_opengl_render_stream_buffer_end;
+
 	gr_screen.gf_start_instance_matrix			= gr_opengl_start_instance_matrix;
 	gr_screen.gf_end_instance_matrix			= gr_opengl_end_instance_matrix;
 	gr_screen.gf_start_angles_instance_matrix	= gr_opengl_start_instance_angles;

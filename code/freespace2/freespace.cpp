@@ -908,6 +908,7 @@ void game_level_close()
 		ship_clear_cockpit_displays();
 		hud_level_close();
 		model_instance_free_all();
+		batch_render_close();
 
 		// be sure to not only reset the time but the lock as well
 		set_time_compression(1.0f, 0.0f);
