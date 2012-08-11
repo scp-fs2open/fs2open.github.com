@@ -67,6 +67,8 @@ int GL_vertex_data_in = 0;
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
 
+int Buffer_sdr = -1;
+
 team_color* Current_team_color;
 bool Using_Team_Color = false;
 
@@ -138,7 +140,7 @@ static void opengl_gen_buffer(opengl_vertex_buffer *vbp)
 
 		// make sure we have one
 		if (vbp->vbo) {
-			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+			GL_state.Array.BindArrayBuffer(vbp->vbo);
 			vglBufferDataARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_size, vbp->array_list, GL_STATIC_DRAW_ARB);
 
 			// just in case
@@ -148,7 +150,7 @@ static void opengl_gen_buffer(opengl_vertex_buffer *vbp)
 				return;
 			}
 
-			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			GL_state.Array.BindArrayBuffer(0);
 
 			vm_free(vbp->array_list);
 			vbp->array_list = NULL;	
@@ -166,7 +168,7 @@ static void opengl_gen_buffer(opengl_vertex_buffer *vbp)
 
 		// make sure we have one
 		if (vbp->ibo) {
-			vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbp->ibo);
+			GL_state.Array.BindElementBuffer(vbp->ibo);
 			vglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbp->ibo_size, vbp->index_list, GL_STATIC_DRAW_ARB);
 
 			// just in case
@@ -176,7 +178,7 @@ static void opengl_gen_buffer(opengl_vertex_buffer *vbp)
 				return;
 			}
 
-			vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+			GL_state.Array.BindElementBuffer(0);
 
 			vm_free(vbp->index_list);
 			vbp->index_list = NULL;
@@ -386,12 +388,13 @@ void gr_opengl_set_buffer(int idx)
 
 	if (idx < 0) {
 		if (Use_VBOs) {
-			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+			GL_state.Array.BindArrayBuffer(0);
+			GL_state.Array.BindElementBuffer(0);
 		}
 
 		if ( (Use_GLSL > 1) && !GLSL_override ) {
 			opengl_shader_set_current();
+			Buffer_sdr = -1;
 		}
 
 		return;
@@ -469,39 +472,43 @@ static void opengl_init_arrays(opengl_vertex_buffer *vbp, const vertex_buffer *b
 	GLint offset = (GLint)bufferp->vertex_offset;
 	GLubyte *ptr = NULL;
 
+	if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+		offset = 0;
+	}
+
 	// vertex buffer
 
 	if (vbp->vbo) {
-		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+		GL_state.Array.BindArrayBuffer(vbp->vbo);
 	} else {
 		ptr = (GLubyte*)vbp->array_list;
 	}
 
 	if (bufferp->flags & VB_FLAG_UV1) {
-		vglClientActiveTextureARB(GL_TEXTURE0_ARB);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2, GL_FLOAT, bufferp->stride, ptr + offset);
+		GL_state.Array.SetActiveClientUnit(0);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer(2, GL_FLOAT, bufferp->stride, ptr + offset);
 		offset += (2 * sizeof(GLfloat));
 	}
 
 	if (bufferp->flags & VB_FLAG_NORMAL) {
-		glEnableClientState(GL_NORMAL_ARRAY);
-		glNormalPointer(GL_FLOAT, bufferp->stride, ptr + offset);
+		GL_state.Array.EnableClientNormal();
+		GL_state.Array.NormalPointer(GL_FLOAT, bufferp->stride, ptr + offset);
 		offset += (3 * sizeof(GLfloat));
 	}
 
 	if (bufferp->flags & VB_FLAG_TANGENT) {
 		// we treat this as texture coords for ease of use
 		// NOTE: this is forced on tex unit 1!!!
-		vglClientActiveTextureARB(GL_TEXTURE1_ARB);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(4, GL_FLOAT, bufferp->stride, ptr + offset);
+		GL_state.Array.SetActiveClientUnit(1);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer(4, GL_FLOAT, bufferp->stride, ptr + offset);
 		offset += (4 * sizeof(GLfloat));
 	}
 
 	Assert( bufferp->flags & VB_FLAG_POSITION );
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_FLOAT, bufferp->stride, ptr + offset);
+	GL_state.Array.EnableClientVertex();
+	GL_state.Array.VertexPointer(3, GL_FLOAT, bufferp->stride, ptr + offset);
 	offset += (3 * sizeof(GLfloat));
 }
 
@@ -602,8 +609,10 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 
 	Assert( sdr_index >= 0 );
 
-	opengl_shader_set_current( &GL_shader[sdr_index] );
-
+	if ( sdr_index != Buffer_sdr ) {
+		Buffer_sdr = sdr_index;
+		opengl_shader_set_current( &GL_shader[sdr_index] );
+	}
 
 	opengl_default_light_settings( !GL_center_alpha, (Interp_light > 0.25f) );
 	gr_opengl_set_center_alpha(GL_center_alpha);
@@ -621,7 +630,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	opengl_init_arrays(vbp, bufferp);
 
 	if (vbp->ibo) {
-		vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbp->ibo);
+		GL_state.Array.BindElementBuffer(vbp->ibo);
 	} else {
 		ibuffer = (GLubyte*)vbp->index_list;
 	}
@@ -713,6 +722,8 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		render_pass++;
 	}
 
+	GL_state.Texture.DisableUnused();
+
 	// Team colors are passed to the shader here, but the shader needs to handle their application.
 	// By default, this is handled through the r and g channels of the misc map, but this can be changed
 	// in the shader; test versions of this used the normal map r and b channels
@@ -722,7 +733,21 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	}
 
 	// DRAW IT!!
-	DO_RENDER();
+	//DO_RENDER();
+
+	if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+		if (Cmdline_drawelements) {
+			vglDrawElementsBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_offset/bufferp->stride);
+		} else {
+			vglDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_offset/bufferp->stride);
+		}
+	} else {
+		if (Cmdline_drawelements) {
+			glDrawElements(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start)); 
+		} else {
+			vglDrawRangeElements(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start));
+		}
+	}
 /*
 	int n_light_passes = (MIN(Num_active_gl_lights, GL_max_lights) - 1) / 3;
 
@@ -788,15 +813,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	}
 */
 
-	// make sure everthing gets turned back off
 	GL_state.Texture.SetShaderMode(GL_FALSE);
-	GL_state.Texture.DisableAll();
-	vglClientActiveTextureARB(GL_TEXTURE1_ARB);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	vglClientActiveTextureARB(GL_TEXTURE0_ARB);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
 }
 
 static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
