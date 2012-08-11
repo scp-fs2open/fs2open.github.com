@@ -4882,7 +4882,17 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	num_deleted = 0;
 	if (Num_weapons >= MAX_WEAPONS-5) {
-		num_deleted = collide_remove_weapons();
+
+		//No, do remove for AI ships -- MK, 3/12/98  // don't need to try and delete weapons for ai ships
+		//if ( !(Objects[parent_objnum].flags & OF_PLAYER_SHIP) )
+		//	return -1;
+
+		if ( Cmdline_old_collision_sys ) {
+			num_deleted = collide_remove_weapons();
+		} else {
+			num_deleted = 0;
+		}
+
 		nprintf(("WARNING", "Deleted %d weapons because of lack of slots\n", num_deleted));
 		if (num_deleted == 0){
 			return -1;

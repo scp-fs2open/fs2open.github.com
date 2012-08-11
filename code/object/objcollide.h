@@ -50,6 +50,15 @@ typedef struct collision_info_struct {
 // type specific collision modules.
 //===============================================================================
 
+typedef struct collider_pair {
+	object *a;
+	object *b;
+	int signature_a;
+	int signature_b;
+	int next_check_time;
+	bool initialized;
+} collider_pair;
+
 // Keeps track of pairs of objects for collision detection
 typedef struct obj_pair	{
 	object *a;
@@ -76,10 +85,20 @@ void obj_pairs_close();
 void obj_reset_pairs();
 void obj_add_pair( object *A, object *B, int check_time = -1, int add_to_end = 0 );
 
+void obj_add_collider(int obj_index);
+void obj_remove_collider(int obj_index);
+void obj_reset_colliders();
+
 void obj_check_all_collisions();
+void obj_sort_and_collide();
+void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axis);
+void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide);
+float obj_get_collider_endpoint(int obj_num, int axis, bool min);
+void obj_collide_pair(object *A, object *B);
 
 // retimes all collision pairs to be checked (in 25ms by default)
 void obj_all_collisions_retime(int checkdly=25);
+void obj_collide_retime_cached_pairs(int checkdly=25);
 
 // Returns TRUE if the weapon will never hit the other object.
 // If it can it predicts how long until these two objects need
