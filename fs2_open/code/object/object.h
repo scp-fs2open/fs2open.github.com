@@ -171,6 +171,17 @@ typedef struct object_orient_pos {
 	matrix orient;
 } object_orient_pos;
 
+#ifdef OBJECT_CHECK
+typedef struct checkobject
+{
+	int	type;
+	int	signature;
+	uint	flags;
+	int	parent_sig;
+	int	parent_type;
+} checkobject;
+#endif
+
 /*
  *		VARIABLES
  */
