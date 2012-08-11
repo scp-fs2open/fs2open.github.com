@@ -3922,10 +3922,8 @@ int WE_BSG::warpShipRender()
 			vm_vec_scale_add(&start, &pos, &objp->orient.vec.fvec, z_offset_min);
 			vm_vec_scale_add(&end, &pos, &objp->orient.vec.fvec, z_offset_max);
 
-			batcher.draw_beam(&start, &end, tube_radius*2.0f, 1.0f);	
-
 			//Render the warpout effect
-			batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+			batch_add_beam(anim + anim_frame, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT, &start, &end, tube_radius*2.0f, 1.0f);
 		}
 	}
 
@@ -3942,8 +3940,8 @@ int WE_BSG::warpShipRender()
 			}else{
 				g3_transfer_vertex(&p, &pos);
 			}
-			gr_set_bitmap(shockwave + shockwave_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-			g3_draw_bitmap(&p, 0, shockwave_radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+
+			batch_add_bitmap(shockwave + shockwave_frame, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, &p, 0, shockwave_radius, 1.0f);
 		}
 	}
 
