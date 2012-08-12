@@ -516,11 +516,14 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		glVertices[3][2] = gl_screenU;
 		glVertices[3][3] = gl_screenV;
 
-		glVertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
+		GL_state.Array.BindArrayBuffer(0);
 
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		GL_state.Array.EnableClientVertex();
+		GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
+
+		GL_state.Array.SetActiveClientUnit(0);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
 	}
 
 	return 1;
@@ -794,8 +797,8 @@ void mve_play(MVESTREAM *mve)
 void mve_shutdown()
 {
 	if (gr_screen.mode == GR_OPENGL) {
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		GL_state.Array.DisableClientVertex();
+		GL_state.Array.DisableClientTexture();
 
 		if (mve_scale_video) {
 			glMatrixMode(GL_MODELVIEW);

@@ -425,6 +425,12 @@ typedef struct screen {
 	void (*gf_set_buffer)(int);
 	void (*gf_render_buffer)(int, const vertex_buffer*, int, int);
 
+	int (*gf_create_stream_buffer)();
+	void (*gf_update_stream_buffer)(int buffer, effect_vertex *buffer_data, uint size);
+	void (*gf_render_stream_buffer)(int offset, int n_verts, int flags);
+	void (*gf_render_stream_buffer_start)(int buffer_id);
+	void (*gf_render_stream_buffer_end)();
+
 	int	 (*gf_make_flat_buffer)(poly_list*);
 	int	 (*gf_make_line_buffer)(line_list*);
 	
@@ -481,6 +487,8 @@ typedef struct screen {
 	void (*gf_sphere_htl)(float rad);
 
 	int (*gf_maybe_create_shader)(int flags);
+
+	void (*gf_flush_data_states)();
 
 	void (*gf_set_team_color)(SCP_string team);
 	void (*gf_enable_team_color)();
@@ -713,6 +721,12 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 	(*gr_screen.gf_render_buffer)(start, bufferp, texi, flags);
 }
 
+#define gr_create_stream_buffer			GR_CALL(*gr_screen.gf_create_stream_buffer)
+#define gr_update_stream_buffer			GR_CALL(*gr_screen.gf_update_stream_buffer)
+#define gr_render_stream_buffer			GR_CALL(*gr_screen.gf_render_stream_buffer)
+#define gr_render_stream_buffer_start	GR_CALL(*gr_screen.gf_render_stream_buffer_start)
+#define gr_render_stream_buffer_end		GR_CALL(*gr_screen.gf_render_stream_buffer_end)
+
 #define gr_set_buffer					GR_CALL(*gr_screen.gf_set_buffer)      
       
 #define gr_make_flat_buffer				GR_CALL(*gr_screen.gf_make_flat_buffer)            
@@ -768,6 +782,8 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 #define gr_sphere_htl					GR_CALL(*gr_screen.gf_sphere_htl)
 
 #define gr_maybe_create_shader			GR_CALL(*gr_screen.gf_maybe_create_shader)
+
+#define gr_flush_data_states			GR_CALL(*gr_screen.gf_flush_data_states)
 
 #define gr_set_team_color				GR_CALL(*gr_screen.gf_set_team_color)
 #define gr_enable_team_color			GR_CALL(*gr_screen.gf_enable_team_color)

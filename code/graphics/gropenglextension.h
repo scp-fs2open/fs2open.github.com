@@ -73,8 +73,10 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_ARB_VERTEX_SHADER				22
 #define OGL_ARB_FRAGMENT_SHADER				23
 #define OGL_SM30							24
+#define OGL_ARB_FLOATING_POINT_TEXTURES		25
+#define OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX	26
 
-#define NUM_OGL_EXTENSIONS					25
+#define NUM_OGL_EXTENSIONS					27
 
 
 // Functions
@@ -141,8 +143,12 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_UNIFORM1I						56
 #define OGL_UNIFORM_MATRIX4FV				57
 #define OGL_DRAWBUFFERS						58
+#define OGL_DRAW_ELEMENTS_BASE_VERTEX				59
+#define OGL_DRAW_RANGE_ELEMENTS_BASE_VERTEX			60
+#define OGL_DRAW_ELEMENTS_INSTANCED_BASE_VERTEX		61
+#define OGL_MULTI_DRAW_ELEMENTS_BASE_VERTEX			62
 
-#define NUM_OGL_FUNCTIONS					59
+#define NUM_OGL_FUNCTIONS					63
 
 
 // special extensions/functions (OS specific, non-GL stuff)
@@ -236,6 +242,10 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define PFNGLUNIFORM1IARBPROC					glUniform1iARBProcPtr
 #define PFNGLUNIFORMMATRIX4FVARBPROC			glUniformMatrix4fvARBProcPtr
 #define PFNGLDRAWBUFFERSPROC					glDrawBuffersARBProcPtr
+#define PFNGLDRAWELEMENTSBASEVERTEXPROC         glDrawElementsBaseVertexProcPtr
+#define PFNGLDRAWRANGEELEMENTSBASEVERTEXPROC    glDrawRangeElementsBaseVertexProcPtr
+#define PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC glDrawElementsInstancedBaseVertexProcPtr
+#define PFNGLMULTIDRAWELEMENTSBASEVERTEXPROC    glMultiDrawElementsBaseVertexProcPtr
 #endif	// __APPLE__
 
 #define vglFogCoordfEXT					GLEXT_CALL( OGL_FOG_COORDF, PFNGLFOGCOORDFEXTPROC )
@@ -301,6 +311,10 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define vglUniform1iARB					GLEXT_CALL( OGL_UNIFORM1I, PFNGLUNIFORM1IARBPROC )
 #define vglUniformMatrix4fvARB			GLEXT_CALL( OGL_UNIFORM_MATRIX4FV, PFNGLUNIFORMMATRIX4FVARBPROC )
 #define vglDrawBuffers					GLEXT_CALL( OGL_DRAWBUFFERS, PFNGLDRAWBUFFERSPROC )
+#define vglDrawElementsBaseVertex		GLEXT_CALL( OGL_DRAW_ELEMENTS_BASE_VERTEX, PFNGLDRAWELEMENTSBASEVERTEXPROC )
+#define vglDrawRangeElementsBaseVertex	GLEXT_CALL( OGL_DRAW_RANGE_ELEMENTS_BASE_VERTEX, PFNGLDRAWRANGEELEMENTSBASEVERTEXPROC )
+#define vglDrawElementsInstancedBaseVertex		GLEXT_CALL( OGL_DRAW_ELEMENTS_INSTANCED_BASE_VERTEX, PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC )
+#define vglMultiDrawElementsBaseVertex	GLEXT_CALL( OGL_MULTI_DRAW_ELEMENTS_BASE_VERTEX, PFNGLMULTIDRAWELEMENTSBASEVERTEXPROC )
 
 // special extensions
 #define vwglSwapIntervalEXT			GLEXT_SPC_CALL( OGL_SPC_WGL_SWAP_INTERVAL, PFNWGLSWAPINTERVALEXTPROC )

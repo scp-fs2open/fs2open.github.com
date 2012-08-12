@@ -38,6 +38,7 @@ static int Particles_enabled = 1;
 
 uint lastSignature = 0; // 0 is an invalid signature!
 
+int Particle_buffer_object = -1;
 
 // Reset everything between levels
 void particle_init()
@@ -63,6 +64,11 @@ void particle_init()
 	// wheeze
 	if ( Anim_bitmap_id_smoke2 == -1 )	{
 		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps, NULL, 0 );
+	}
+
+	// grab a vertex buffer object
+	if ( Particle_buffer_object < 0 ) {
+		Particle_buffer_object = gr_create_stream_buffer();
 	}
 }
 
@@ -442,7 +448,7 @@ void particle_render_all()
 	}
 
 	if (render_batch) {
-		batch_render_all();
+		batch_render_all(Particle_buffer_object);
 	}
 }
 

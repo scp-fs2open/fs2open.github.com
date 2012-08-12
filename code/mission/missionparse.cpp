@@ -2243,7 +2243,11 @@ int parse_create_object_sub(p_object *p_objp)
 			vec3d v1, v2;
 
 			// DA 10/20/98 - sparks must be chosen on the hull and not any submodel
-			submodel_get_two_random_points(sip->model_num, pm->detail[0], &v1, &v2);
+			if ( Cmdline_old_collision_sys ) {
+				submodel_get_two_random_points(sip->model_num, pm->detail[0], &v1, &v2);
+			} else {
+				submodel_get_two_random_points_better(sip->model_num, pm->detail[0], &v1, &v2);
+			}
 			ship_hit_sparks_no_rotate(&Objects[objnum], &v1);
 		}
 	}

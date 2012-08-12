@@ -17,7 +17,7 @@
 #include "graphics/tmapper.h"
 #include "math/fvi.h"
 #include "model/modelsinc.h"
-
+#include "cmdline/cmdline.h"
 
 
 
@@ -119,7 +119,7 @@ int mc_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *
 // detects whether or not a vector has collided with a polygon.  vector points stored in global
 // Mc_p0 and Mc_p1.  Results stored in global mc_info * Mc.
 
-static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_rad, vec3d *plane_norm, uv_pair *uvl_list, int ntmap, ubyte *poly)
+static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_rad, vec3d *plane_norm, uv_pair *uvl_list, int ntmap, ubyte *poly, bsp_collision_leaf* bsp_leaf)
 {
 	vec3d	hit_point;
 	float		dist;
@@ -167,6 +167,8 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_ra
 			Mc->f_poly = poly;
 		}
 
+		Mc->bsp_leaf = bsp_leaf;
+
 //		mprintf(( "Bing!\n" ));
 
 		Mc->num_hits++;
@@ -181,7 +183,7 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_ra
 //				plane_pnt	=>		center point in plane (about which radius is measured)
 //				face_rad		=>		radius of face 
 //				plane_norm	=>		normal of face
-static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt, float face_rad, vec3d * plane_norm, uv_pair * uvl_list, int ntmap, ubyte *poly)
+static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt, float face_rad, vec3d * plane_norm, uv_pair * uvl_list, int ntmap, ubyte *poly, bsp_collision_leaf *bsp_leaf)
 {
 	vec3d	hit_point;
 	float		u, v;
@@ -250,6 +252,8 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 				Mc->t_poly = NULL;
 				Mc->f_poly = poly;
 			}
+
+			Mc->bsp_leaf = bsp_leaf;
 
 			Mc->num_hits++;
 			check_edges = 0;
@@ -351,6 +355,25 @@ void model_collide_defpoints(ubyte * p)
 	} 
 }
 
+int model_collide_parse_bsp_defpoints(ubyte * p)
+{
+	int n;
+	int nverts = w(p+8);	
+	int offset = w(p+16);	
+
+	ubyte * normcount = p+20;
+	vec3d *src = vp(p+offset);
+
+	Assert( Mc_point_list != NULL );
+
+	for (n=0; n<nverts; n++ ) {
+		Mc_point_list[n] = src;
+
+		src += normcount[n]+1;
+	} 
+
+	return nverts;
+}
 
 // Flat Poly
 // +0      int         id
@@ -386,9 +409,9 @@ void model_collide_flatpoly(ubyte * p)
 	}
 
 	if ( Mc->flags & MC_CHECK_SPHERELINE )	{
-		mc_check_sphereline_face(nv, points, vp(p+20), fl(p+32), vp(p+8), NULL, -1, p);
+		mc_check_sphereline_face(nv, points, vp(p+20), fl(p+32), vp(p+8), NULL, -1, p, NULL);
 	} else {
-		mc_check_face(nv, points, vp(p+20), fl(p+32), vp(p+8), NULL, -1, p);
+		mc_check_face(nv, points, vp(p+20), fl(p+32), vp(p+8), NULL, -1, p, NULL);
 	}
 }
 
@@ -437,9 +460,9 @@ void model_collide_tmappoly(ubyte * p)
 	}
 
 	if ( Mc->flags & MC_CHECK_SPHERELINE )	{
-		mc_check_sphereline_face(nv, points, vp(p+20), fl(p+32), vp(p+8), uvlist, tmap_num, p);
+		mc_check_sphereline_face(nv, points, vp(p+20), fl(p+32), vp(p+8), uvlist, tmap_num, p, NULL);
 	} else {
-		mc_check_face(nv, points, vp(p+20), fl(p+32), vp(p+8), uvlist, tmap_num, p);
+		mc_check_face(nv, points, vp(p+20), fl(p+32), vp(p+8), uvlist, tmap_num, p, NULL);
 	}
 }
 
@@ -465,9 +488,14 @@ void model_collide_sortnorm(ubyte * p)
 	int prelist = w(p+44);
 	int postlist = w(p+48);
 	int onlist = w(p+52);
+	vec3d hitpos;
 
 	if ( Mc_pm->version >= 2000 )	{
-		if (!mc_ray_boundingbox( vp(p+56), vp(p+68), &Mc_p0, &Mc_direction, NULL ))	{
+		if ( mc_ray_boundingbox( vp(p+56), vp(p+68), &Mc_p0, &Mc_direction, &hitpos) )	{
+			if ( !(Mc->flags & MC_CHECK_RAY) && (vm_vec_dist(&hitpos, &Mc_p0) > Mc_mag) ) {
+				return;
+			}
+		} else {
 			return;
 		}
 	}
@@ -485,6 +513,7 @@ int model_collide_sub(void *model_ptr )
 {
 	ubyte *p = (ubyte *)model_ptr;
 	int chunk_type, chunk_size;
+	vec3d hitpos;
 
 	chunk_type = w(p);
 	chunk_size = w(p+4);
@@ -500,7 +529,12 @@ int model_collide_sub(void *model_ptr )
 		case OP_TMAPPOLY:		model_collide_tmappoly(p); break;
 		case OP_SORTNORM:		model_collide_sortnorm(p); break;
 		case OP_BOUNDBOX:	
-			if (!mc_ray_boundingbox( vp(p+8), vp(p+20), &Mc_p0, &Mc_direction, NULL ))	{
+			if ( mc_ray_boundingbox( vp(p+8), vp(p+20), &Mc_p0, &Mc_direction, &hitpos ) )	{
+				if ( !(Mc->flags & MC_CHECK_RAY) && (vm_vec_dist(&hitpos, &Mc_p0) > Mc_mag) ) {
+					// The ray isn't long enough to intersect the bounding box
+					return 1;
+				}
+			} else {
 				return 1;
 			}
 			break;
@@ -514,6 +548,345 @@ int model_collide_sub(void *model_ptr )
 		chunk_size = w(p+4);
 	}
 	return 1;
+}
+
+void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
+{
+	int i;
+	int tested_leaf = leaf_index;
+	uv_pair uvlist[TMAP_MAX_VERTS];
+	vec3d *points[TMAP_MAX_VERTS];
+
+	while ( tested_leaf >= 0 ) {
+		bsp_collision_leaf *leaf = &tree->leaf_list[tested_leaf];
+
+		bool flat_poly = false;
+		int vert_start = leaf->vert_start;
+		int nv = leaf->num_verts;
+
+		if ( leaf->tmap_num < MAX_MODEL_TEXTURES ) {
+			if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[leaf->tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
+				// Don't check invisible polygons.
+				//SUSHI: Unless $collide_invisible is set.
+				if (!(Mc_pm->submodel[Mc_submodel].collide_invisible))
+					return;
+			}
+		} else {
+			flat_poly = true;
+		}
+
+		int vert_num;
+		for ( i = 0; i < nv; ++i ) {
+			vert_num = tree->vert_list[vert_start+i].vertnum;
+			points[i] = &tree->point_list[vert_num];
+
+			uvlist[i].u = tree->vert_list[vert_start+i].u;
+			uvlist[i].v = tree->vert_list[vert_start+i].v;
+		}
+
+		if ( flat_poly ) {
+			if ( Mc->flags & MC_CHECK_SPHERELINE ) {
+				mc_check_sphereline_face(nv, points, &leaf->plane_pnt, leaf->face_rad, &leaf->plane_norm, NULL, -1, NULL, leaf);
+			} else {
+				mc_check_face(nv, points, &leaf->plane_pnt, leaf->face_rad, &leaf->plane_norm, NULL, -1, NULL, leaf);
+			}
+		} else {
+			if ( Mc->flags & MC_CHECK_SPHERELINE ) {
+				mc_check_sphereline_face(nv, points, &leaf->plane_pnt, leaf->face_rad, &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
+			} else {
+				mc_check_face(nv, points, &leaf->plane_pnt, leaf->face_rad, &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
+			}
+		}
+
+		tested_leaf = leaf->next;
+	}
+}
+
+void model_collide_bsp(bsp_collision_tree *tree, int node_index)
+{
+	if ( tree->node_list == NULL || tree->n_verts <= 0) {
+		return;
+	}
+
+	bsp_collision_node *node = &tree->node_list[node_index];
+	vec3d hitpos;
+
+	// check the bounding box of this node. if it passes, check left and right children
+	if ( mc_ray_boundingbox( &node->min, &node->max, &Mc_p0, &Mc_direction, &hitpos ) ) {
+		if ( !(Mc->flags & MC_CHECK_RAY) && (vm_vec_dist(&hitpos, &Mc_p0) > Mc_mag) ) {
+			// The ray isn't long enough to intersect the bounding box
+			return;
+		}
+
+		if ( node->leaf >= 0 ) {
+			model_collide_bsp_poly(tree, node->leaf);
+		} else {
+			if ( node->back >= 0 ) model_collide_bsp(tree, node->back);
+			if ( node->front >= 0 ) model_collide_bsp(tree, node->front);
+		}
+	}
+}
+
+void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model_tmap_vert> *vert_buffer, void *model_ptr)
+{
+	ubyte *p = (ubyte *)model_ptr;
+
+	int i;
+	int nv;
+	model_tmap_vert *verts;
+
+	nv = w(p+36);
+
+	if ( nv < 0 ) return;
+
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return;
+	}
+
+	int tmap_num = w(p+40);
+
+	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
+
+	verts = (model_tmap_vert *)(p+44);
+
+	leaf->tmap_num = tmap_num;
+	leaf->num_verts = nv;
+	leaf->vert_start = vert_buffer->size();
+
+	vec3d *plane_pnt = vp(p+20);
+	float face_rad = fl(p+32);
+	vec3d *plane_norm = vp(p+8);
+
+	leaf->plane_pnt = *plane_pnt;
+	leaf->face_rad = face_rad;
+	leaf->plane_norm = *plane_norm;
+
+	for ( i = 0; i < nv; ++i ) {
+		vert_buffer->push_back(verts[i]);
+	}
+}
+
+void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model_tmap_vert> *vert_buffer, void *model_ptr)
+{
+	ubyte *p = (ubyte *)model_ptr;
+
+	int i;
+	int nv;
+	short *verts;
+
+	nv = w(p+36);
+
+	if ( nv < 0 ) return;
+
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return;
+	}
+
+	verts = (short *)(p+44);
+
+	leaf->tmap_num = 255;
+	leaf->num_verts = nv;
+	leaf->vert_start = vert_buffer->size();
+
+	vec3d *plane_pnt = vp(p+20);
+	float face_rad = fl(p+32);
+	vec3d *plane_norm = vp(p+8);
+
+	leaf->plane_pnt = *plane_pnt;
+	leaf->face_rad = face_rad;
+	leaf->plane_norm = *plane_norm;
+
+	model_tmap_vert vert;
+
+	for ( i = 0; i < nv; ++i ) {
+		vert.vertnum = verts[i*2];
+		vert.normnum = 0;
+		vert.u = 0.0f;
+		vert.v = 0.0f;
+
+		vert_buffer->push_back(vert);
+	}
+}
+
+void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int version)
+{
+	ubyte *p = (ubyte *)model_ptr;
+	ubyte *next_p;
+
+	int chunk_type = w(p);
+	int chunk_size = w(p+4);
+
+	int next_chunk_type;
+	int next_chunk_size;
+
+	Assert(chunk_type == OP_DEFPOINTS);
+
+	int n_verts = model_collide_parse_bsp_defpoints(p);
+
+	if ( n_verts <= 0) {
+		tree->point_list = NULL;
+		tree->n_verts = 0;
+
+		tree->n_nodes = 0;
+		tree->node_list = NULL;
+
+		tree->n_leaves = 0;
+		tree->leaf_list = NULL;
+
+		// finally copy the vert list.
+		tree->vert_list = NULL;
+
+		return;
+	}
+
+	p += chunk_size;
+
+	bsp_collision_node new_node;
+	bsp_collision_leaf new_leaf;
+
+	SCP_vector<bsp_collision_node> node_buffer;
+	SCP_vector<bsp_collision_leaf> leaf_buffer;
+	SCP_vector<model_tmap_vert> vert_buffer;
+
+	SCP_map<size_t, ubyte*> bsp_datap;
+
+	node_buffer.push_back(new_node);
+
+	size_t i = 0;
+	vec3d *min;
+	vec3d *max;
+
+	bsp_datap[i] = p;
+
+	while ( i < node_buffer.size() ) {
+		p = bsp_datap[i];
+
+		chunk_type = w(p);
+		chunk_size = w(p+4);
+
+		switch ( chunk_type ) {
+		case OP_SORTNORM:
+			if ( version >= 2000 ) {
+				min = vp(p+56);
+				max = vp(p+68);
+
+				node_buffer[i].min = *min;
+				node_buffer[i].max = *max;
+			}
+
+			node_buffer[i].leaf = -1;
+			node_buffer[i].front = -1;
+			node_buffer[i].back = -1;
+
+			if ( w(p+36) ) {
+				next_chunk_type = w(p+w(p+36));
+
+				if ( next_chunk_type != OP_EOF ) {
+					node_buffer.push_back(new_node);
+					node_buffer[i].front = (node_buffer.size() - 1);
+					bsp_datap[node_buffer[i].front] = p+w(p+36);
+				}
+			}
+
+			if ( w(p+40) ) {
+				next_chunk_type = w(p+w(p+40));
+				
+				if ( next_chunk_type != OP_EOF ) {
+					node_buffer.push_back(new_node);
+					node_buffer[i].back = (node_buffer.size() - 1);
+					bsp_datap[node_buffer[i].back] = p+w(p+40);
+				}
+			}
+
+			next_p = p + chunk_size;
+			next_chunk_type = w(next_p);
+
+			Assert( next_chunk_type == OP_EOF );
+
+			++i;
+			break;
+		case OP_BOUNDBOX:
+			min = vp(p+8);
+			max = vp(p+20);
+
+			node_buffer[i].min = *min;
+			node_buffer[i].max = *max;
+
+			node_buffer[i].front = -1;
+			node_buffer[i].back = -1;
+			node_buffer[i].leaf = -1;
+
+			next_p = p + chunk_size;
+			next_chunk_type = w(next_p);
+			next_chunk_size = w(next_p+4);
+
+			if ( next_chunk_type != OP_EOF && (next_chunk_type == OP_TMAPPOLY || next_chunk_type == OP_FLATPOLY ) ) {
+				new_leaf.next = -1;
+
+				node_buffer[i].leaf = leaf_buffer.size();	// get index of where our poly list starts in the leaf buffer
+
+				while ( next_chunk_type != OP_EOF ) {
+					if ( next_chunk_type == OP_TMAPPOLY ) {
+
+						model_collide_parse_bsp_tmappoly(&new_leaf, &vert_buffer, next_p);
+
+						leaf_buffer.push_back(new_leaf);
+
+						leaf_buffer.back().next = leaf_buffer.size();
+					} else if ( next_chunk_type == OP_FLATPOLY ) {
+						model_collide_parse_bsp_flatpoly(&new_leaf, &vert_buffer, next_p);
+
+						leaf_buffer.push_back(new_leaf);
+
+						leaf_buffer.back().next = leaf_buffer.size();
+					} else {
+						Int3();
+					}
+
+					next_p += next_chunk_size;
+					next_chunk_type = w(next_p);
+					next_chunk_size = w(next_p+4);
+				}
+
+				leaf_buffer.back().next = -1;
+			}
+
+			Assert(next_chunk_type == OP_EOF);
+
+			++i;
+			break;
+		}
+	}
+
+	// copy point list
+	Assert(n_verts != -1);
+
+	tree->point_list = (vec3d*)vm_malloc(sizeof(vec3d) * n_verts);
+
+	for ( i = 0; i < n_verts; ++i ) {
+		tree->point_list[i] = *Mc_point_list[i];
+	}
+
+	tree->n_verts = n_verts;
+
+	// copy node info. this might be a good time to organize the nodes into a cache efficient tree layout.
+	tree->n_nodes = node_buffer.size();
+	tree->node_list = (bsp_collision_node*)vm_malloc(sizeof(bsp_collision_node) * node_buffer.size());
+	memcpy(tree->node_list, &node_buffer[0], sizeof(bsp_collision_node) * node_buffer.size());
+	node_buffer.clear();
+
+	// copy leaves.
+	tree->n_leaves = leaf_buffer.size();
+	tree->leaf_list = (bsp_collision_leaf*)vm_malloc(sizeof(bsp_collision_leaf) * leaf_buffer.size());
+	memcpy(tree->leaf_list, &leaf_buffer[0], sizeof(bsp_collision_leaf) * leaf_buffer.size());
+	leaf_buffer.clear();
+
+	// finally copy the vert list.
+	tree->vert_list = (model_tmap_vert*)vm_malloc(sizeof(model_tmap_vert) * vert_buffer.size());
+	memcpy(tree->vert_list, &vert_buffer[0], sizeof(model_tmap_vert) * vert_buffer.size());
+	vert_buffer.clear();
 }
 
 bool mc_shield_check_common(shield_tri	*tri)
@@ -560,7 +933,7 @@ bool mc_shield_check_common(shield_tri	*tri)
 
 		// HACK HACK!! The 10000.0 is the face radius, I didn't know this,
 		// so I'm assume 10000 would be as big as ever.
-		mc_check_sphereline_face(3, points, points[0], 10000.0f, &tri->norm, NULL, 0, NULL);
+		mc_check_sphereline_face(3, points, points[0], 10000.0f, &tri->norm, NULL, 0, NULL, NULL);
 		if (Mc->num_hits && Mc->hit_dist < sphere_check_closest_shield_dist) {
 
 			// same behavior whether face or edge
@@ -726,7 +1099,11 @@ void mc_check_subobj( int mn )
 			Mc->hit_bitmap = -1;
 			Mc->num_hits++;
 		} else {
-			model_collide_sub(sm->bsp_data);
+			if ( Cmdline_old_collision_sys ) {
+				model_collide_sub(sm->bsp_data);
+			} else {
+				model_collide_bsp(model_get_bsp_collision_tree(sm->collision_tree_index), 0);
+			}
 		}
 	}
 

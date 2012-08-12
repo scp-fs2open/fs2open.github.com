@@ -54,20 +54,12 @@ object obj_create_list;
 object *Player_obj = NULL;
 object *Viewer_obj = NULL;
 
-
+extern int Cmdline_old_collision_sys;
 
 //Data for objects
 object Objects[MAX_OBJECTS];
 
 #ifdef OBJECT_CHECK 
-typedef struct checkobject
-{
-	int	type;
-	int	signature;
-	uint	flags;
-	int	parent_sig;
-	int	parent_type;
-} checkobject;
 checkobject CheckObjects[MAX_OBJECTS];
 #endif
 
@@ -200,7 +192,11 @@ int free_object_slots(int num_used)
 		return original_num_to_free;
 	}
 
-	deleted_weapons = collide_remove_weapons();
+	if ( Cmdline_old_collision_sys ) {
+		deleted_weapons = collide_remove_weapons();
+	} else {
+		deleted_weapons = 0;
+	}
 	num_to_free -= deleted_weapons;
 	if ( !num_to_free ){
 		return original_num_to_free;
@@ -314,7 +310,11 @@ void obj_init()
 	Num_objects = 0;			
 	Highest_object_index = 0;
 
-	obj_reset_pairs();
+	if ( Cmdline_old_collision_sys ) {
+		obj_reset_pairs();
+	} else {
+		obj_reset_colliders();
+	}
 }
 
 static int num_objects_hwm = 0;
@@ -512,7 +512,11 @@ void obj_delete(int objnum)
 	};	
 
 	// Remove all object pairs
-	obj_remove_pairs( objp );
+	if ( Cmdline_old_collision_sys ) {
+		obj_remove_pairs( objp );
+	} else {
+		obj_remove_collider(objnum);
+	}
 	
 	switch( objp->type )	{
 	case OBJ_WEAPON:
@@ -626,7 +630,11 @@ void obj_merge_created_list(void)
 		list_remove( obj_create_list, objp );
 
 		// Add it to the object pairs array
-		obj_add_pairs(OBJ_INDEX(objp));
+		if ( Cmdline_old_collision_sys ) {
+			obj_add_pairs(OBJ_INDEX(objp));
+		} else {
+			obj_add_collider(OBJ_INDEX(objp));
+		}
 
 		// Then add it to the object used list
 		list_append( &obj_used_list, objp );
@@ -996,7 +1004,11 @@ void obj_set_flags( object *obj, uint new_flags )
 	// turning collision detection off
 	if ( (obj->flags & OF_COLLIDES) && (!(new_flags&OF_COLLIDES)))	{		
 		// Remove all object pairs
-		obj_remove_pairs( obj );
+		if ( Cmdline_old_collision_sys ) {
+			obj_remove_pairs( obj );
+		} else {
+			obj_remove_collider(objnum);
+		}
 
 		// update object flags properly		
 		obj->flags = new_flags;
@@ -1022,7 +1034,11 @@ void obj_set_flags( object *obj, uint new_flags )
 		obj->flags |= OF_COLLIDES;
 
 		// Turn on collision detection
-		obj_add_pairs(objnum);
+		if ( Cmdline_old_collision_sys ) {
+			obj_add_pairs(objnum);
+		} else {
+			obj_add_collider(objnum);
+		}
 				
 		obj->flags = new_flags;
 		obj->flags &= ~(OF_NOT_IN_COLL);		
@@ -1473,7 +1489,11 @@ void obj_move_all(float frametime)
 	beam_move_all_pre();
 
 	if ( Collisions_enabled ) {
-		obj_check_all_collisions();		
+		if ( Cmdline_old_collision_sys ) {
+			obj_check_all_collisions();
+		} else {
+			obj_sort_and_collide();
+		}
 	}
 
 	turret_swarm_check_validity();
@@ -1629,7 +1649,11 @@ void obj_client_post_interpolate()
 	}	
 
 	// check collisions
-	obj_check_all_collisions();		
+	if ( Cmdline_old_collision_sys ) {
+		obj_check_all_collisions();
+	} else {
+		obj_sort_and_collide();
+	}
 
 	// do post-collision stuff for beam weapons
 	beam_move_all_post();
@@ -1918,7 +1942,11 @@ void obj_reset_all_collisions()
 #endif
 
 	// clear object pairs
-	obj_reset_pairs();
+	if ( Cmdline_old_collision_sys ) {
+		obj_reset_pairs();
+	} else {
+		obj_reset_colliders();
+	}
 
 	// now add every object back into the object collision pairs
 	object *moveup;
@@ -1928,7 +1956,11 @@ void obj_reset_all_collisions()
 		moveup->flags |= OF_NOT_IN_COLL;
 
 		// recalc pairs for this guy
-		obj_add_pairs(OBJ_INDEX(moveup));
+		if ( Cmdline_old_collision_sys ) {
+			obj_add_pairs(OBJ_INDEX(moveup));
+		} else {
+			obj_add_collider(OBJ_INDEX(moveup));
+		}
 
 		// next
 		moveup = GET_NEXT(moveup);

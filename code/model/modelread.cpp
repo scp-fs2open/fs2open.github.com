@@ -57,6 +57,8 @@ int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 polymodel *Polygon_models[MAX_POLYGON_MODELS];
 SCP_vector<polymodel_instance*> Polygon_model_instances;
 
+SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
+
 static int model_initted = 0;
 extern int Cmdline_nohtl;
 
@@ -230,6 +232,10 @@ void model_unload(int modelnum, int force)
 
 			if ( pm->submodel[i].bsp_data )	{
 				vm_free(pm->submodel[i].bsp_data);
+			}
+
+			if ( pm->submodel[i].collision_tree_index >= 0 ) {
+				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
 			}
 		}
 
@@ -2621,6 +2627,15 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	model_octant_create( pm );
 
+	if ( !Cmdline_old_collision_sys ) {
+		for ( i = 0; i < pm->n_models; ++i ) {
+			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
+			bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+
+			model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+		}
+	}
+
 	// Find the core_radius... the minimum of 
 	float rx, ry, rz;
 	rx = fl_abs( pm->submodel[pm->detail[0]].max.xyz.x - pm->submodel[pm->detail[0]].min.xyz.x );
@@ -4705,6 +4720,62 @@ int model_find_bay_path(int modelnum, char *bay_path_name)
 	}
 
 	return -1;
+}
+
+int model_create_bsp_collision_tree()
+{
+	// first find an open slot
+	size_t i;
+	bool slot_found = false;
+
+	for ( i = 0; i < Bsp_collision_tree_list.size(); ++i ) {
+		if ( !Bsp_collision_tree_list[i].used ) {
+			slot_found = true;
+			break;
+		}
+	}
+
+	if ( slot_found ) {
+		Bsp_collision_tree_list[i].used = true;
+
+		return (int)i;
+	}
+
+	bsp_collision_tree tree;
+
+	tree.used = true;
+	Bsp_collision_tree_list.push_back(tree);
+
+	return Bsp_collision_tree_list.size() - 1;
+}
+
+bsp_collision_tree *model_get_bsp_collision_tree(int tree_index)
+{
+	Assert(tree_index >= 0);
+	Assert(tree_index < Bsp_collision_tree_list.size());
+
+	return &Bsp_collision_tree_list[tree_index];
+}
+
+void model_remove_bsp_collision_tree(int tree_index)
+{
+	Bsp_collision_tree_list[tree_index].used = false;
+
+	if ( Bsp_collision_tree_list[tree_index].node_list ) {
+		vm_free(Bsp_collision_tree_list[tree_index].node_list);
+	}
+
+	if ( Bsp_collision_tree_list[tree_index].leaf_list ) {
+		vm_free(Bsp_collision_tree_list[tree_index].leaf_list);
+	}
+	
+	if ( Bsp_collision_tree_list[tree_index].point_list ) {
+		vm_free( Bsp_collision_tree_list[tree_index].point_list );
+	}
+	
+	if ( Bsp_collision_tree_list[tree_index].vert_list ) {
+		vm_free( Bsp_collision_tree_list[tree_index].vert_list);
+	}
 }
 
 #if BYTE_ORDER == BIG_ENDIAN

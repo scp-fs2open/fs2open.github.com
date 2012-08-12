@@ -130,6 +130,7 @@ extern char* Cmdline_keyboard_layout;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
+extern int Cmdline_old_collision_sys;
 extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern int Cmdline_noparseerrors;

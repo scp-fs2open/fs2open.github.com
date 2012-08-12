@@ -145,7 +145,12 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_ARB_fragment_shader" }, 0, { NULL } },
 
 	// shader version 3.0 detection extensions (if any of these extensions exist then we should have a SM3.0 compatible card, hopefully)
-	{ false, false, 3, { "GL_ARB_shader_texture_lod", "GL_NV_vertex_program3", "GL_ATI_shader_texture_lod" }, 0, { NULL } }
+	{ false, false, 3, { "GL_ARB_shader_texture_lod", "GL_NV_vertex_program3", "GL_ATI_shader_texture_lod" }, 0, { NULL } },
+
+	{ false, false, 1, { "GL_ARB_texture_float" }, 0, { NULL } },
+
+	{ false, false, 1, { "GL_ARB_draw_elements_base_vertex" }, 4, { "glDrawElementsBaseVertex", "glDrawRangeElementsBaseVertex", 
+		"glDrawElementsInstancedBaseVertex", "glMultiDrawElementsBaseVertex" } }
 };
 
 // ogl_funcion is:
@@ -217,7 +222,11 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 	{ "glUniform4fvARB", 0 },
 	{ "glUniform1iARB", 0 },
 	{ "glUniformMatrix4fvARB", 0 },
-	{ "glDrawBuffers", 0 }
+	{ "glDrawBuffers", 0 },
+	{ "glDrawElementsBaseVertex", 0	},
+	{ "glDrawRangeElementsBaseVertex", 0 }, 
+	{ "glDrawElementsInstancedBaseVertex", 0 },
+	{ "glMultiDrawElementsBaseVertex", 0 }
 };
 
 // special extensions (only special functions are supported at the moment)
@@ -360,6 +369,7 @@ void opengl_extensions_init()
 	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
 	Use_compressed_textures = Is_Extension_Enabled(OGL_EXT_TEXTURE_COMPRESSION_S3TC);
 	Texture_compression_available = Is_Extension_Enabled(OGL_ARB_TEXTURE_COMPRESSION);
+	int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
 
 	//allow VBOs to be used
 	if ( !Cmdline_nohtl && !Cmdline_novbo && Is_Extension_Enabled(OGL_ARB_VERTEX_BUFFER_OBJECT) ) {

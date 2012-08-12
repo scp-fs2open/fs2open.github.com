@@ -1122,6 +1122,8 @@ int collide_ship_ship( obj_pair * pair )
 
 		hit = ship_ship_check_collision(&ship_ship_hit_info, &world_hit_pos);
 
+		pair->next_check_time = timestamp(0);
+
 		if ( hit )
 		{
 			Script_system.SetHookObjects(4, "Ship", A, "ShipB", B, "Self", A, "Object", B);

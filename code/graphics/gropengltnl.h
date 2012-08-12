@@ -46,6 +46,12 @@ void gr_opengl_set_buffer(int idx);
 void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags);
 void gr_opengl_render_to_env(int FACE);
 
+int gr_opengl_create_stream_buffer();
+void gr_opengl_update_stream_buffer(int buffer, effect_vertex *buffer_data, uint size);
+void gr_opengl_render_stream_buffer(int offset, int n_verts, int flags);
+void gr_opengl_render_stream_buffer_start(int buffer_id);
+void gr_opengl_render_stream_buffer_end();
+
 void gr_opengl_start_state_block();
 int gr_opengl_end_state_block();
 void gr_opengl_set_state_block(int);

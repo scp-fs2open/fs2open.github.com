@@ -313,8 +313,14 @@ void labviewer_add_model_arcs()
 		int n, n_arcs = ((rand() >> 5) % 3) + 1;		// Create 1-3 sparks
 
 		vec3d v1, v2, v3, v4;
-		submodel_get_two_random_points(Lab_model_num, -1, &v1, &v2);
-		submodel_get_two_random_points(Lab_model_num, -1, &v3, &v4);
+
+		if ( Cmdline_old_collision_sys ) {
+			submodel_get_two_random_points(Lab_model_num, -1, &v1, &v2);
+			submodel_get_two_random_points(Lab_model_num, -1, &v3, &v4);
+		} else {
+			submodel_get_two_random_points_better(Lab_model_num, -1, &v1, &v2);
+			submodel_get_two_random_points_better(Lab_model_num, -1, &v3, &v4);
+		}
 
 		// For large ships, cap the length to be 25% of max radius
 		if (mradius > 200.0f)	{
@@ -402,7 +408,11 @@ void labviewer_add_model_arcs()
 
 				if ( mr < (RAND_MAX / 5) ) {
 					vec3d v1, v2;
-					submodel_get_two_random_points(Lab_model_num, -1, &v1, &v2);
+					if ( Cmdline_old_collision_sys ) {
+						submodel_get_two_random_points(Lab_model_num, -1, &v1, &v2);
+					} else {
+						submodel_get_two_random_points_better(Lab_model_num, -1, &v1, &v2);
+					}
 
 					vec3d static_one;
 
