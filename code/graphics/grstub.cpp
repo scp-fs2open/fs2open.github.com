@@ -670,6 +670,18 @@ void gr_stub_bm_page_in_start()
 {
 }
 
+int gr_stub_maybe_create_shader(int flags) {
+	return -1;
+}
+
+void gr_stub_set_team_color(SCP_string team) {
+}
+
+void gr_stub_enable_team_color() {
+}
+
+void gr_stub_disable_team_color() {
+}
 
 bool gr_stub_init() 
 {
@@ -842,7 +854,14 @@ bool gr_stub_init()
 	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
 	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;
 
+	gr_screen.gf_maybe_create_shader = gr_stub_maybe_create_shader;
+
 	gr_screen.gf_flush_data_states	= gr_stub_flush_data_states;
+
+	gr_screen.gf_set_team_color		= gr_stub_set_team_color;
+	gr_screen.gf_enable_team_color  = gr_stub_enable_team_color;
+	gr_screen.gf_disable_team_color = gr_stub_disable_team_color;
+
 
 	return true;
 }
