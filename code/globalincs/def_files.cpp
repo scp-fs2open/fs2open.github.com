@@ -138,10 +138,12 @@ $Enable external shaders: NO											\n\
 																		\n\
 #OTHER SETTINGS															\n\
 																		\n\
-;; DESCRIPTION NEEDED!													\n\
+;; If not set, a hit to a turret's barrels will not count as a hit to	\n\
+;; the turret unless it is also within the turret base's radius.		\n\
 $Fixed Turret Collisions: NO											\n\
 																		\n\
-;; If not set, will damage nearest subsystem first						\n\
+;; If not set, hits will damage nearest subsystem first, rather than the\n\
+;; impacted physical subsystem first.									\n\
 $Damage Impacted Subsystem First: NO									\n\
 																		\n\
 ;; used when no ani is specified or ship_select_3d is active			\n\
