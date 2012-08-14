@@ -118,6 +118,8 @@ $Directive Wait Time: 3000												\n\
 ;; Turns off the HUD when in-game cutscenes are playing					\n\
 $Cutscene camera disables HUD: YES										\n\
 																		\n\
+;; Set to NO when you want to have full color .eff head animations		\n\
+$Color head animations with hud colors: YES								\n\
 																		\n\
 #SEXP SETTINGS															\n\
 																		\n\
@@ -151,7 +153,6 @@ $Default ship select effect: FS2										\n\
 																		\n\
 ;; used when no ani is specified or weapon_select_3d is active			\n\
 $Default weapon select effect: FS2										\n\
-																		\n\
 																		\n\
 #END																	\n\
 ";

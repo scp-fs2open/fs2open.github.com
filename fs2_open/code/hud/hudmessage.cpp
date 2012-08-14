@@ -1237,7 +1237,7 @@ void HudGaugeTalkingHead::render(float frametime)
 	}
 
 	if(msg_id != -1 && head_anim != NULL) {
-		if(anim_playing(head_anim)) {
+		if(!head_anim->done_playing) {
 			// draw frame
 			// hud_set_default_color();
 			setGaugeColor();
@@ -1248,11 +1248,12 @@ void HudGaugeTalkingHead::render(float frametime)
 			resetClip();
 
 			renderBitmap(Head_frame.first_frame, position[0], position[1]);		// head ani border
-
+			gr_set_screen_scale(base_w, base_h);
+			setGaugeColor();
+			generic_anim_render(head_anim,frametime, position[0] + Anim_offsets[0] + fl2i(HUD_offset_x), position[1] + Anim_offsets[1] + fl2i(HUD_offset_y));
 			// draw title
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
-			anim_stop_playing(head_anim);
 			for (int j = 0; j < Num_messages_playing; ++j) {
 				if (Playing_messages[j].id == msg_id) {
 					Playing_messages[j].play_anim = false;
@@ -1267,13 +1268,8 @@ void HudGaugeTalkingHead::render(float frametime)
 	for (int i = 0; i < Num_messages_playing; i++ ) {
 		if(Playing_messages[i].play_anim && Playing_messages[i].id != msg_id ) {
 			msg_id = Playing_messages[i].id;
-			if(head_anim) {
-				if(anim_playing(head_anim)) {
-					anim_stop_playing(head_anim);
-				}
-			} 
 			if (Playing_messages[i].anim_data)
-				head_anim = createAnim(Playing_messages[i].start_frame, Playing_messages[i].anim_data);	
+				head_anim = Playing_messages[i].anim_data;	
 			else
 				head_anim = NULL;
 

@@ -102,6 +102,7 @@ void generic_anim_init(generic_anim *ga, const char *filename)
 	ga->height = 0;
 	ga->width = 0;
 	ga->bitmap_id = -1;
+	ga->colored = false;
 }
 
 // CommanderDJ - same as generic_anim_init, just with an SCP_string 
@@ -184,6 +185,8 @@ int generic_anim_stream(generic_anim *ga)
 	//TODO: add streaming EFF
 	if(ga->type == BM_TYPE_ANI) {
 		bpp = ANI_BPP_CHECK;
+		if(ga->colored)
+			bpp = 8;
 		ga->ani.animation = anim_load(ga->filename, CF_TYPE_ANY, 0);
 		ga->ani.instance = init_anim_instance(ga->ani.animation, bpp);
 
@@ -197,7 +200,7 @@ int generic_anim_stream(generic_anim *ga)
 		ga->height = ga->ani.animation->height;
 		ga->width = ga->ani.animation->width;
 		ga->buffer = ga->ani.instance->frame;
-		ga->bitmap_id = bm_create(bpp, ga->width, ga->height, ga->buffer, 0);
+		ga->bitmap_id = bm_create(bpp, ga->width, ga->height, ga->buffer, (bpp==8)?BMP_AABITMAP:0);
 		ga->ani.instance->last_bitmap = -1;
 
 		ga->ani.instance->file_offset = ga->ani.animation->file_offset;
@@ -206,8 +209,19 @@ int generic_anim_stream(generic_anim *ga)
 		ga->previous_frame = -1;
 	}
 	else {
-		//placeholder until we get eff streaming working
-		return generic_anim_load(ga);
+		bpp = 32;
+		if(ga->colored)
+			bpp = 8;
+		bm_load_and_parse_eff(ga->filename, CF_TYPE_ANY, &ga->num_frames, &anim_fps, &ga->keyframe, 0);
+		char *p = strrchr( ga->filename, '.' );
+		if ( p )
+			*p = 0;
+		char frame_name[32];
+		snprintf(frame_name, 32, "%s_0000", ga->filename);
+		ga->bitmap_id = bm_load(frame_name);
+		snprintf(frame_name, 32, "%s_0001", ga->filename);
+		ga->eff.next_frame = bm_load(frame_name);
+		bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
 	}
 
 	// keyframe info
@@ -233,9 +247,6 @@ int generic_anim_stream(generic_anim *ga)
 				ga->keyoffset = ga->ani.animation->keys[1].offset;
 			}
 		}
-	}
-	else {
-		// EFF not handled yet; code shouldn't get here anyway per above block
 	}
 
 	ga->streaming = 1;
@@ -269,6 +280,10 @@ void generic_anim_unload(generic_anim *ga)
 				anim_free(ga->ani.animation);
 				free_anim_instance(ga->ani.instance);
 			}
+			if(ga->type == BM_TYPE_EFF) {
+				bm_release(ga->eff.next_frame);
+				bm_release(ga->bitmap_id);
+			}
 		}
 		else {
 			//trying to release the first frame will release ALL frames
@@ -282,11 +297,44 @@ void generic_anim_unload(generic_anim *ga)
 }
 
 //for timer debug, #define TIMER
+void generic_render_eff_stream(generic_anim *ga)
+{
+	if(ga->current_frame == ga->previous_frame)
+		return;
+	int i;
+	int bpp = 32;
+	if(ga->colored)
+		bpp = 8;
+	#ifdef TIMER
+		int start_time = timer_get_fixed_seconds();
+	#endif
+
+	#ifdef TIMER
+		mprintf(("=========================\n"));
+		mprintf(("frame: %d\n", ga->current_frame));
+	#endif
+		char frame_name[32];
+		snprintf(frame_name, 32, "%s_%.4d", ga->filename, ga->current_frame);
+		if(bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
+		{
+			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
+			if(next_frame_bmp->data)
+				gr_update_texture(ga->bitmap_id, bpp, (ubyte*)next_frame_bmp->data);
+			bm_unlock(ga->eff.next_frame);
+			bm_unload(ga->eff.next_frame, 0, true);
+		}
+	#ifdef TIMER
+		mprintf(("end: %d\n", timer_get_fixed_seconds() - start_time));
+		mprintf(("=========================\n"));
+	#endif
+}
+
 void generic_render_ani_stream(generic_anim *ga)
 {
 	int i;
 	int bpp = ANI_BPP_CHECK;
-
+	if(ga->colored)
+		bpp = 8;
 	#ifdef TIMER
 		int start_time = timer_get_fixed_seconds();
 	#endif
@@ -310,10 +358,10 @@ void generic_render_ani_stream(generic_anim *ga)
 			ga->ani.instance->data = ga->ani.animation->data + ga->ani.animation->keys[ga->current_frame].offset;
 		}
 		if(ga->ani.animation->flags & ANF_STREAMED) {
-			ga->ani.instance->file_offset = unpack_frame_from_file(ga->ani.instance, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, 0, bpp);
+			ga->ani.instance->file_offset = unpack_frame_from_file(ga->ani.instance, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, (bpp==8)?1:0, bpp);
 		}
 		else {
-			ga->ani.instance->data = unpack_frame(ga->ani.instance, ga->ani.instance->data, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, 0, bpp);
+			ga->ani.instance->data = unpack_frame(ga->ani.instance, ga->ani.instance->data, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, (bpp==8)?1:0, bpp);
 		}
 	}
 	else {
@@ -341,20 +389,18 @@ void generic_render_ani_stream(generic_anim *ga)
 		#endif
 		for(i = ga->previous_frame + 1; i <= ga->current_frame; i++) {
 			if(ga->ani.animation->flags & ANF_STREAMED) {
-				ga->ani.instance->file_offset = unpack_frame_from_file(ga->ani.instance, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, 0, bpp);
+				ga->ani.instance->file_offset = unpack_frame_from_file(ga->ani.instance, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, (bpp==8)?1:0, bpp);
 			}
 			else {
-				ga->ani.instance->data = unpack_frame(ga->ani.instance, ga->ani.instance->data, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, 0, bpp);
+				ga->ani.instance->data = unpack_frame(ga->ani.instance, ga->ani.instance->data, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, (bpp==8)?1:0, bpp);
 			}
 		}
 	}
 	// always go back to screen format
 	BM_SELECT_SCREEN_FORMAT();
 	//we need to use this because performance is worse if we flush the gfx card buffer
-	if ( ga->ani.instance->last_bitmap != -1 ){
-		bm_release(ga->ani.instance->last_bitmap);
-	}
-	ga->bitmap_id = bm_create(bpp, ga->width, ga->height, ga->buffer, 0);
+	
+	gr_update_texture(ga->bitmap_id, bpp, ga->buffer);
 
 	//in case we want to check that the frame is actually changing
 	//mprintf(("frame crc = %08X\n", cf_add_chksum_long(0, ga->buffer, ga->width * ga->height * (bpp >> 3))));
@@ -401,7 +447,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 				if(ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) {
 					ga->anim_time = ga->total_time - 0.001f;		//stop on last frame when playing - if it's equal we jump to the first frame
 				}
-				else if(!ga->done_playing){
+				if(!ga->done_playing){
 					//we've played this at least once
 					ga->done_playing = 1;
 				}
@@ -425,6 +471,8 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 			//TODO: add EFF streaming
 			if(ga->type == BM_TYPE_ANI) {
 				generic_render_ani_stream(ga);
+			} else {
+				generic_render_eff_stream(ga);
 			}
 			gr_set_bitmap(ga->bitmap_id);
 		}
@@ -432,6 +480,9 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 			gr_set_bitmap(ga->first_frame + ga->current_frame);
 		}
 		ga->previous_frame = ga->current_frame;
-		gr_bitmap(x, y);
+		if(ga->colored)
+			gr_aabitmap(x,y);
+		else
+			gr_bitmap(x,y);
 	}
 }

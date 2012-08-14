@@ -14,6 +14,7 @@
 
 #include "hud/hud.h"
 #include "anim/packunpack.h"
+#include "graphics/generic.h"
 
 #define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
 
@@ -124,7 +125,8 @@ class HudGaugeTalkingHead: public HudGauge // HUD_TALKING_HEAD
 	int Anim_offsets[2];
 	int Anim_size[2];
 
-	anim_instance *head_anim;
+	generic_anim *head_anim;
+	
 	int msg_id;
 public:
 	HudGaugeTalkingHead();

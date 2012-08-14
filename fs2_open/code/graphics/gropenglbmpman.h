@@ -43,7 +43,7 @@ void gr_opengl_bm_init(int n);
 void gr_opengl_bm_page_in_start();
 
 // Lock an image files data into memory
-int gr_opengl_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
+int gr_opengl_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug);
 
 void gr_opengl_bm_save_render_target(int slot);
 int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags);
