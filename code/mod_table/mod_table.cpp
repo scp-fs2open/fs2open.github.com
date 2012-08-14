@@ -21,6 +21,7 @@ bool Alternate_chaining_behavior;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
 bool Enable_external_shaders = false;
+bool Headani_color = true;
 
 
 void parse_mod_table(char *filename)
@@ -79,6 +80,10 @@ void parse_mod_table(char *filename)
 
 	if (optional_string("$Cutscene camera disables HUD:")) {
 		stuff_boolean(&Cutscene_camera_disables_hud);
+	}
+	
+	if (optional_string("$Color head animations with hud colors:")) {
+		stuff_boolean(&Headani_color);
 	}
 
 	optional_string("#SEXP SETTINGS"); 

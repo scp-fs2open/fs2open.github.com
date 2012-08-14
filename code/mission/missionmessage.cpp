@@ -309,7 +309,7 @@ int add_avi( char *avi_name )
 	// would have returned if a slot existed.
 	strcpy_s( extra.name, avi_name );
 	extra.num = -1;
-	extra.anim_data = NULL;
+	generic_anim_unload(&extra.anim_data);
 	Message_avis.push_back(extra); 
 	Num_message_avis++;
 	return ((int)Message_avis.size() - 1);
@@ -622,7 +622,7 @@ void messages_init()
 	// this forces a reload of the AVI's and waves for builtin messages.  Needed because the flic and
 	// sound system also get reset between missions!
 	for (i = 0; i < Num_builtin_avis; i++ ) {
-		Message_avis[i].anim_data = NULL;
+		generic_anim_unload(&Message_avis[i].anim_data);
 	}
 
 	for (i = 0; i < Num_builtin_waves; i++ ){
@@ -663,8 +663,6 @@ void messages_init()
 // free a loaded avi
 void message_mission_free_avi(int m_index)
 {
-	int rc = 0, try_count = 0;
-
 	// check for bogus index
 	if ( (m_index < 0) || (m_index >= Num_message_avis) )
 		return;
@@ -674,21 +672,7 @@ void message_mission_free_avi(int m_index)
 	if ( !hud_gauge_active(HUD_TALKING_HEAD) )
 		return;
 
-	if (Message_avis[m_index].anim_data != NULL) {
-		do {
-			rc = anim_free( Message_avis[m_index].anim_data );
-			try_count++;
-
-			// -2 is to catch a point where the data isn't valid and we want
-			// to just abort right now rather than to keep trying
-			if (rc == -2)
-				break;
-
-			// stop at 25 tries to avoid a possible endless loop
-		} while ( rc && (try_count < 25) );
-
-		Message_avis[m_index].anim_data = NULL;
-	}
+	generic_anim_unload(&Message_avis[m_index].anim_data);
 }
 
 // called to do cleanup when leaving a mission
@@ -1045,7 +1029,7 @@ bool message_play_wave( message_q *q )
 // input:	time	=>		time of voice clip, in ms
 //				ani	=>		pointer to anim data
 //				reverse	=>	flag to indicate that the start should be time ms from the end (used for death screams)
-int message_calc_anim_start_frame(int time, anim *ani, int reverse)
+void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 {
 	float	wave_time, anim_time;
 	int	start_frame;
@@ -1054,23 +1038,24 @@ int message_calc_anim_start_frame(int time, anim *ani, int reverse)
 
 	// If no voice clip exists, start from beginning of anim
 	if ( time <= 0 ) {
-		return start_frame;
+		return;
 	}
 
 	// convert time to seconds
 	wave_time = time/1000.0f;
-	anim_time = ani->time;
+	anim_time = ani->total_time;
 
 	// If voice clip is longer than anim, start from beginning of anim
 	if ( wave_time >= (anim_time) ) {
-		return start_frame;
+		return;
 	}
 
+	float fps = ani->num_frames / ani->total_time;
 	if ( reverse ) {
-		start_frame = (ani->total_frames-1) - fl2i(ani->fps * wave_time + 0.5f);
+		start_frame = (ani->num_frames-1) - fl2i(fps * wave_time + 0.5f);
 	} else {
 		int num_frames_extra;
-		num_frames_extra = fl2i(ani->fps * (anim_time - wave_time) + 0.5f);
+		num_frames_extra = fl2i(fps * (anim_time - wave_time) + 0.5f);
 		if ( num_frames_extra > 0 ) {
 			start_frame=rand()%num_frames_extra;
 		}
@@ -1081,7 +1066,8 @@ int message_calc_anim_start_frame(int time, anim *ani, int reverse)
 		start_frame=0;
 	}
 
-	return start_frame;
+	ani->current_frame = start_frame;
+	ani->anim_time = fps / start_frame;
 }
 
 // Play animation associated with message
@@ -1089,6 +1075,7 @@ int message_calc_anim_start_frame(int time, anim *ani, int reverse)
 //				q		=>		message queue data
 //
 // note: changes Messave_wave_duration, Playing_messages[].wave, and Message_waves[].num
+extern bool Headani_color;
 void message_play_anim( message_q *q )
 {
 	message_extra	*anim_info;
@@ -1182,13 +1169,15 @@ void message_play_anim( message_q *q )
 	// the avi, set the top level index to -1 to avoid multiple tries at loading the flick.
 
 	// if there is something already here that's not this same file then go ahead a let go of it - taylor
-	if ( (anim_info->anim_data != NULL) && !strstr(anim_info->anim_data->name, ani_name) ) {
+	if ( !strstr(anim_info->anim_data.filename, ani_name) ) {
 		message_mission_free_avi( m->avi_info.index );
 	}
 
-	anim_info->anim_data = anim_load( ani_name, CF_TYPE_ANY, 0 );
+	generic_anim_init(&anim_info->anim_data, ani_name);
+	if(Headani_color)
+			anim_info->anim_data.colored = true;
 
-	if ( anim_info->anim_data == NULL ) {
+	if ( generic_anim_stream(&anim_info->anim_data) < 0 ) {
 		nprintf (("messaging", "Cannot load message avi %s.  Will not play.\n", ani_name));
 		m->avi_info.index = -1;			// if cannot load the avi -- set this index to -1 to avoid trying to load multiple times
 	}
@@ -1205,9 +1194,10 @@ void message_play_anim( message_q *q )
 		if ( hud_disabled() ) {
 			return;
 		}
-
-		Playing_messages[Num_messages_playing].anim_data = anim_info->anim_data;
-		Playing_messages[Num_messages_playing].start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
+		
+		anim_info->anim_data.direction = GENERIC_ANIM_DIRECTION_NOLOOP;
+		Playing_messages[Num_messages_playing].anim_data = &anim_info->anim_data;
+		message_calc_anim_start_frame(Message_wave_duration, &anim_info->anim_data, is_death_scream);
 		Playing_messages[Num_messages_playing].play_anim = true;
 	}
 }

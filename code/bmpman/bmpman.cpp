@@ -635,6 +635,37 @@ int bm_load_duplicate(char *filename)
 	return ret;
 }
 
+/**
+ * This function is used to reload a different bitmap into an existing slot.
+ * This should only be used if you are certain the new picture has the same type, dimensions etc.
+ *
+ * @return negative if the given handle doesn't exist, the filename was empty or the slot is still locked
+ * @return the bitmap_handle on success
+ */
+int bm_reload(int bitmap_handle, char* filename)
+{
+	if ( !bm_inited )
+		bm_init();
+
+	// if no file was passed then get out now
+	if ( (filename == NULL) || (strlen(filename) <= 0) )
+		return -1;
+
+	int bitmapnum = bitmap_handle % MAX_BITMAPS;
+
+	if ( bm_bitmaps[bitmapnum].type == BM_TYPE_NONE )
+		return -1;
+
+	if ( bm_bitmaps[bitmapnum].ref_count )
+	{
+		nprintf(("BmpMan", "Trying to reload a bitmap that is still locked. Filename: %s, ref_count: %d", bm_bitmaps[bitmapnum].filename, bm_bitmaps[bitmapnum].ref_count));		
+		return -1;
+	}
+
+	strncpy(bm_bitmaps[bitmapnum].filename, filename, MAX_FILENAME_LEN);
+	return bitmap_handle;
+}
+
 DCF(bm_frag,"Shows BmpMan fragmentation")
 {
 	if ( Dc_command )	{
@@ -1617,7 +1648,7 @@ MONITOR( SizeBitmapPage )
  *
  * Only lock a bitmap when you need it! This will convert it into the appropriate format also.
  */
-bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
+bitmap * bm_lock( int handle, ubyte bpp, ubyte flags, bool nodebug)
 {
 	bitmap			*bmp;
 	bitmap_entry	*be;
@@ -1677,7 +1708,7 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	#endif
 
 	// read the file data
-	if ( gr_bm_lock( be->filename, handle, bitmapnum, bpp, flags ) == -1 ) {
+	if ( gr_bm_lock( be->filename, handle, bitmapnum, bpp, flags, nodebug ) == -1 ) {
 		// oops, this isn't good - reset and return NULL
 		bm_unlock( bitmapnum );
 		bm_unload( bitmapnum );
@@ -1891,7 +1922,7 @@ int bm_release(int handle, int clear_render_targets)
  *
  * @return	1 on successful release, 0 otherwise
  */
-int bm_unload( int handle, int clear_render_targets )
+int bm_unload( int handle, int clear_render_targets, bool nodebug )
 {
 	bitmap_entry *be;
 	bitmap *bmp;
@@ -1913,7 +1944,7 @@ int bm_unload( int handle, int clear_render_targets )
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE!
 
 	// If it is locked, cannot free it.
-	if (be->ref_count != 0) {
+	if (be->ref_count != 0  && !nodebug) {
 		nprintf(("BmpMan", "Tried to unload %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
 		return 0;
 	}
@@ -1925,7 +1956,7 @@ int bm_unload( int handle, int clear_render_targets )
 		if ( be->load_count > 0 )
 			be->load_count--;
 
-		if ( be->load_count != 0 ) {
+		if ( be->load_count != 0  && !nodebug) {
 			nprintf(("BmpMan", "Tried to unload %s that has a load count of %d.. not unloading\n", be->filename, be->load_count + 1));
 			return 0;
 		}
@@ -1941,11 +1972,13 @@ int bm_unload( int handle, int clear_render_targets )
 			return 1;
 
 		for (i = 0; i < bm_bitmaps[first].info.ani.num_frames; i++) {
-			nprintf(("BmpMan", "Unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
+			if(!nodebug)
+				nprintf(("BmpMan", "Unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
 			bm_free_data(first+i);		// clears flags, bbp, data, etc
 		}
 	} else {
-		nprintf(("BmpMan", "Unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
+		if(!nodebug)
+			nprintf(("BmpMan", "Unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
 		bm_free_data(n);		// clears flags, bbp, data, etc
 	}
 

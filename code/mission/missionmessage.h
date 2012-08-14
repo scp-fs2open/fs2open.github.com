@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"		// include so that we can gets defs for lengths of tokens
 #include "anim/packunpack.h"
+#include "graphics/generic.h"
 
 struct ship;
 
@@ -26,7 +27,7 @@ struct ship;
 typedef struct message_extra {
 	char				name[MAX_FILENAME_LEN];
 	int				num;
-	anim				*anim_data;
+	generic_anim		anim_data;
 } message_extra;
 
 extern SCP_vector<message_extra> Message_avis;
@@ -139,7 +140,7 @@ extern SCP_vector<MMessage> Messages;
 
 typedef struct pmessage {
 	//anim_instance *anim;		// handle of anim currently playing
-	anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
+	generic_anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
 	int start_frame;			// the start frame needed to play the animation
 	bool play_anim;			// used to tell HUD gauges if they should be playing or not
 	int wave;					// handle of wave currently playing

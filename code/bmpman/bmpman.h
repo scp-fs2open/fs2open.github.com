@@ -109,7 +109,7 @@ int bm_create( int bpp, int w, int h, void *data = NULL, int flags = 0);
 // Frees up a bitmap's data, but bitmap number 'n' can
 // still be used, it will just have to be paged in next
 // time it is locked.
-int bm_unload( int n, int clear_render_targets = 0 );
+int bm_unload( int n, int clear_render_targets = 0, bool nodebug = false);
 
 // like bm_unload() except that it's safe to use to free data without worrying about
 // load_count so it's safe to use in relation to bm_release() and in gr_*_texture functions
@@ -133,7 +133,7 @@ extern int bm_load_either(char *filename, int *nframes = NULL, int *fps = NULL, 
 // that can be accessed until you call bm_unlock.   Only lock
 // a bitmap when you need it!  This will convert it into the 
 // appropriate format also.
-extern bitmap * bm_lock( int bitmapnum, ubyte bpp, ubyte flags );
+extern bitmap * bm_lock( int bitmapnum, ubyte bpp, ubyte flags, bool nodebug = false);
 
 // The signature is a field that gets filled in with 
 // a unique signature for each bitmap.  The signature for each bitmap
@@ -171,6 +171,9 @@ void bm_gfx_get_pixel( int bitmap, float u, float v, ubyte *r, ubyte *g, ubyte *
 // ntotal = number of bytes of bitmaps locked this frame
 // nnew = number of bytes of bitmaps locked this frame that weren't locked last frame
 void bm_get_frame_usage(int *ntotal, int *nnew);
+
+// Reload a different image into an existing bmpman slot
+int bm_reload(int bitmap_handle, char* filename);
 
 /* 
  * Example on using bm_create
@@ -281,4 +284,5 @@ int bm_make_render_target( int width, int height, int flags );
 int bm_is_render_target(int bitmap_id);
 int bm_set_render_target(int handle, int face = -1);
 
+int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type);
 #endif
