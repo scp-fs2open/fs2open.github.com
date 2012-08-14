@@ -6668,7 +6668,13 @@ void sexp_set_object_position(int n)
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
-			set_object_for_clients(oswpt.objp);
+			oswpt.waypointp->set_pos(&target_vec);
+			multi_start_callback();
+			multi_send_int(OBJ_INDEX(oswpt.objp));
+			multi_send_float(target_vec.xyz.x);
+			multi_send_float(target_vec.xyz.y);
+			multi_send_float(target_vec.xyz.z);
+			multi_end_callback();		
 			return;
 		}
 
@@ -6694,6 +6700,24 @@ void sexp_set_object_position(int n)
 
 			return;
 		}
+	}
+}
+
+// only for waypoints cause they don't get transferred the normal way
+void multi_sexp_set_object_position()
+{
+	object *objp;
+	vec3d wp_vec;
+	int objnum;
+	multi_get_int(objnum);
+	multi_get_float(wp_vec.xyz.x);
+	multi_get_float(wp_vec.xyz.y);
+	multi_get_float(wp_vec.xyz.z);
+	objp = &Objects[objnum];
+	if (objp->type == OBJ_WAYPOINT) {
+		objp->pos = wp_vec;
+		waypoint *wpt = find_waypoint_with_objnum(OBJ_INDEX(objp));
+		wpt->set_pos(&wp_vec);
 	}
 }
 
@@ -22836,6 +22860,9 @@ void multi_sexp_eval()
 			case OP_SET_OBJECT_SPEED_Y:
 			case OP_SET_OBJECT_SPEED_Z:
 				multi_sexp_set_object_speed();
+				break;
+			case OP_SET_OBJECT_POSITION:
+				multi_sexp_set_object_position();
 				break;
 
 			// bad sexp in the packet
