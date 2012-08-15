@@ -87,6 +87,7 @@ protected:
 	int Step_size;
 	int Total_life;
 	int Line_h;
+	bool Hidden_by_comms_menu;
 
 	int Window_width;
 	int Window_height;
@@ -106,6 +107,7 @@ public:
 	void initScrollTime(int ms);
 	void initStepSize(int h);
 	void initTotalLife(int ms);
+	void initHiddenByCommsMenu(bool hide);
 
 	void clearMessages();
 	void processMessageBuffer();
