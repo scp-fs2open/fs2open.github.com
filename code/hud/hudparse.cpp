@@ -40,6 +40,7 @@ extern int ships_inited; //Need this
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
 float Hud_speed_multiplier = 1.0f;	//The E
+bool Comms_menu_hides_messages = true;	//zookeeper
 
 // Goober5000
 int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
@@ -256,6 +257,10 @@ void parse_hud_gauges_tbl(char *filename)
 			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
 		else
 			Hud_reticle_style = temp;
+	}
+
+	if (optional_string("$Comms Menu Hides Messages:")) {
+		stuff_boolean(&Comms_menu_hides_messages);
 	}
 
 	int base_res[2];

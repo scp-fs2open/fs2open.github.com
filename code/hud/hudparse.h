@@ -13,6 +13,7 @@
 extern int Num_custom_gauges;
 extern float Hud_unit_multiplier;
 extern float Hud_speed_multiplier;
+extern bool Comms_menu_hides_messages;
 
 #define NUM_HUD_RETICLE_STYLES	2
 
