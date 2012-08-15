@@ -40,7 +40,6 @@ extern int ships_inited; //Need this
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
 float Hud_speed_multiplier = 1.0f;	//The E
-bool Comms_menu_hides_messages = true;	//zookeeper
 
 // Goober5000
 int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
@@ -257,10 +256,6 @@ void parse_hud_gauges_tbl(char *filename)
 			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
 		else
 			Hud_reticle_style = temp;
-	}
-
-	if (optional_string("$Comms Menu Hides Messages:")) {
-		stuff_boolean(&Comms_menu_hides_messages);
 	}
 
 	int base_res[2];
@@ -5041,6 +5036,7 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, int ship_index, c
 	int step_size = 3;
 	int total_life = 14000;
 	int line_height = 12;
+	bool hidden_by_comms_menu = true;
 
 	coords[0] = 5;
 	coords[1] = 5;
@@ -5113,6 +5109,9 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, int ship_index, c
 	if ( optional_string("Step Size:") ) {
 		stuff_int(&step_size);
 	}
+	if ( optional_string("Hidden By Comms Menu:") ) {
+		stuff_boolean(&hidden_by_comms_menu);
+	}
 
 	HudGaugeMessages* hud_gauge = new HudGaugeMessages();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -5125,6 +5124,7 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, int ship_index, c
 	hud_gauge->initStepSize(step_size);
 	hud_gauge->initTotalLife(total_life);
 	hud_gauge->initLineHeight(line_height);
+	hud_gauge->initHiddenByCommsMenu(hidden_by_comms_menu);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 

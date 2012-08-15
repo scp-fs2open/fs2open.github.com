@@ -282,6 +282,11 @@ void HudGaugeMessages::initLineHeight(int h)
 	Line_h = h;
 }
 
+void HudGaugeMessages::initHiddenByCommsMenu(bool hide)
+{
+	Hidden_by_comms_menu = hide;
+}
+
 void HudGaugeMessages::initialize()
 {
 	// calculate the window height based on the number of lines, and line height
@@ -440,7 +445,7 @@ void HudGaugeMessages::render(float frametime)
 
 	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m) {
 		if ( !timestamp_elapsed(m->total_life) ) {
-			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Comms_menu_hides_messages) {
+			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
 				// set the appropriate color					
 				if ( m->msg.source ) {
 					setGaugeColor(HUD_C_BRIGHT);
