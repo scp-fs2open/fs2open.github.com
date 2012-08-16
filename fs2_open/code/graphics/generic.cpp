@@ -219,9 +219,14 @@ int generic_anim_stream(generic_anim *ga)
 		char frame_name[32];
 		snprintf(frame_name, 32, "%s_0000", ga->filename);
 		ga->bitmap_id = bm_load(frame_name);
+		if(ga->bitmap_id < 0) {
+			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s", ga->filename));
+			return -1;
+		}
 		snprintf(frame_name, 32, "%s_0001", ga->filename);
 		ga->eff.next_frame = bm_load(frame_name);
 		bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
+		ga->previous_frame = 0;
 	}
 
 	// keyframe info
@@ -281,8 +286,10 @@ void generic_anim_unload(generic_anim *ga)
 				free_anim_instance(ga->ani.instance);
 			}
 			if(ga->type == BM_TYPE_EFF) {
-				bm_release(ga->eff.next_frame);
-				bm_release(ga->bitmap_id);
+				if(ga->eff.next_frame >= 0) 
+					bm_release(ga->eff.next_frame);
+				if(ga->bitmap_id >= 0)
+					bm_release(ga->bitmap_id);
 			}
 		}
 		else {
