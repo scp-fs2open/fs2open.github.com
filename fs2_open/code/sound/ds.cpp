@@ -1395,6 +1395,8 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 					lowest_instance_vol = chp->vol;
 					lowest_instance_vol_index = i;
 				}
+			} else if ( chp->is_voice_msg ) {
+				// a playing voice message is not allowed to be preempted.
 			} else if ( (chp->vol < lowest_vol) && (chp->looping == FALSE) ) {
 				lowest_vol_index = i;
 				lowest_vol = chp->vol;
@@ -1402,24 +1404,36 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 		}
 	}
 
-	if (first_free_channel < 0) {
-		// If we've exceeded the limit, then maybe stop the duplicate if it is lower volume
-		if ( (instance_count >= limit) && (lowest_instance_vol_index >= 0) ) {
-			// If there is a lower volume duplicate, stop it.... otherwise, don't play the sound
-			if (lowest_instance_vol <= new_volume) {
-				ds_close_channel_fast(lowest_instance_vol_index);
-				first_free_channel = lowest_instance_vol_index;
-			}
+	// If we've exceeded the limit, then maybe stop the duplicate if it is lower volume
+	if ( (instance_count >= limit) && (lowest_instance_vol_index >= 0) ) {
+		// If there is a lower volume duplicate, stop it.... otherwise, don't play the sound
+		if (lowest_instance_vol <= new_volume) {
+			ds_close_channel_fast(lowest_instance_vol_index);
+			first_free_channel = lowest_instance_vol_index;
 		} else {
-			// there is no limit barrier to play the sound, so see if we've ran out of channels
-			// stop the lowest volume instance to play our sound if priority demands it
-			if ( (lowest_vol_index != -1) && (priority == DS_MUST_PLAY) ) {
-				// Check if the lowest volume playing is less than the volume of the requested sound.
-				// If so, then we are going to trash the lowest volume sound.
-				if ( Channels[lowest_vol_index].vol <= new_volume ) {
-					ds_close_channel_fast(lowest_vol_index);
-					first_free_channel = lowest_vol_index;
-				}
+			// NOTE: yes we are preventing the sound from playing even if
+			// there is an available channel because we are over the limit
+			// requested by the rest of the engine, which means if we do
+			// not honour its request to limit the count then the engine
+			// will trip itself up by using all channels without having
+			// the intention of actually doing so.  This means we get
+			// very loud sounds, missing more important sounds, etc.
+			// Effectivly the problem is the rest of the engine assumes
+			// it is still stuck in the 90s with a sound card that only has
+			// <=16 channels so we need to give it a sound card that
+			// has 16 channels (though we are actually allowing 32 channels
+			// just because we can).
+			first_free_channel = -1;
+		}
+	} else if (first_free_channel == -1) {
+		// there is no limit barrier to play the sound, but we have run out of channels
+		// stop the lowest volume instance to play our sound if priority demands it
+		if ( (lowest_vol_index != -1) && (priority == DS_MUST_PLAY) ) {
+			// Check if the lowest volume playing is less than the volume of the requested sound.
+			// If so, then we are going to trash the lowest volume sound.
+			if ( Channels[lowest_vol_index].vol <= new_volume ) {
+				ds_close_channel_fast(lowest_vol_index);
+				first_free_channel = lowest_vol_index;
 			}
 		}
 	}
