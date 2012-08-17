@@ -6665,6 +6665,11 @@ void sexp_set_object_position(int n)
 		}
 
 		case OSWPT_TYPE_SHIP:
+		{
+			oswpt.objp->pos = target_vec;
+			set_object_for_clients(oswpt.objp);
+			return;
+		}
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
