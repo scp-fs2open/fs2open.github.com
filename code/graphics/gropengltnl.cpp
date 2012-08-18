@@ -493,7 +493,7 @@ static void opengl_init_arrays(opengl_vertex_buffer *vbp, const vertex_buffer *b
 	GLint offset = (GLint)bufferp->vertex_offset;
 	GLubyte *ptr = NULL;
 
-	if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+	if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) && Use_GLSL > 1 ) {
 		offset = 0;
 	}
 
@@ -892,7 +892,7 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 	opengl_init_arrays(vbp, bufferp);
 
 	if (vbp->ibo) {
-		vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbp->ibo);
+		GL_state.Array.BindElementBuffer(vbp->ibo);
 	} else {
 		ibuffer = (GLubyte*)vbp->index_list;
 	}
@@ -909,9 +909,9 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 
 		// base texture
 		if ( !Basemap_override ) {
-			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+			GL_state.Array.SetActiveClientUnit(render_pass);
+			GL_state.Array.EnableClientTexture();
+			GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 			gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -921,9 +921,9 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 
 		// glowmaps!
 		if (using_glow) {
-			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+			GL_state.Array.SetActiveClientUnit(render_pass);
+			GL_state.Array.EnableClientTexture();
+			GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 			// set glowmap on relevant ARB
 			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
@@ -988,9 +988,9 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 		render_pass = 0;
 
 		// set specmap, for us to modulate against
-		vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		GL_state.Array.SetActiveClientUnit(render_pass);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer(2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 		// set specmap on relevant ARB
 		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
@@ -1019,9 +1019,9 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 		render_pass++; // bump!
 
 		// now move the to the envmap
-		vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		GL_state.Array.SetActiveClientUnit(render_pass);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer(2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
 
@@ -1099,14 +1099,14 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 		// turn all previously used arbs off before the specular pass
 		// this fixes the glowmap multitexture rendering problem - taylor
 		GL_state.Texture.DisableAll();
-		vglClientActiveTextureARB(GL_TEXTURE1_ARB);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		GL_state.Array.SetActiveClientUnit(1);
+		GL_state.Array.DisableClientTexture();
 
 		render_pass = 0;
 
-		vglClientActiveTextureARB(GL_TEXTURE0_ARB);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		GL_state.Array.SetActiveClientUnit(0);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -1138,20 +1138,20 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 	// make sure everthing gets turned back off
 	GL_state.Texture.DisableAll();
 	GL_state.Normalize(GL_FALSE);
-	vglClientActiveTextureARB(GL_TEXTURE1_ARB);
+	GL_state.Array.SetActiveClientUnit(1);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	vglClientActiveTextureARB(GL_TEXTURE0_ARB);
+	GL_state.Array.DisableClientTexture();
+	GL_state.Array.SetActiveClientUnit(0);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
+	GL_state.Array.DisableClientTexture();
+	GL_state.Array.DisableClientVertex();
+	GL_state.Array.DisableClientNormal();
 }
 
 // start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
