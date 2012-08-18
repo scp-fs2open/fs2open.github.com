@@ -1067,7 +1067,7 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 	}
 
 	ani->current_frame = start_frame;
-	ani->anim_time = fps / start_frame;
+	ani->anim_time = start_frame / fps;
 }
 
 // Play animation associated with message
