@@ -931,7 +931,7 @@ bool cam_set_camera(camid cid)
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = cid;
 
-	if (!Cutscene_camera_displays_hud) 
+	if (Cutscene_camera_disables_hud) 
 	{
 		if(!Camera_hud_draw_saved)
 		{
@@ -947,7 +947,7 @@ void cam_reset_camera()
 {
 	Viewer_mode &= ~VM_FREECAMERA;
 
-	if (!Cutscene_camera_displays_hud) 
+	if (Cutscene_camera_disables_hud) 
 	{
 		hud_set_draw(Camera_hud_draw_value);
 		Camera_hud_draw_saved = false;

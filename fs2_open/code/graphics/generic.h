@@ -43,7 +43,7 @@ typedef struct generic_anim {
 	int height;
 	int width;
 	int bitmap_id;
-	bool use_hud_color;
+	bool colored;
 } generic_anim;
 
 // Goober5000

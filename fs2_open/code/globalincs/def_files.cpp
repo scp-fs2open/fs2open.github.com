@@ -115,12 +115,11 @@ $Default Campaign File Name: FreeSpace2									\n\
 ;; Sets the delay before a directive will appear on the screen (ms)		\n\
 $Directive Wait Time: 3000												\n\
 																		\n\
-;; If set, shows the HUD during in-game cutscenes						\n\
-$Cutscene camera displays HUD: NO										\n\
+;; Turns off the HUD when in-game cutscenes are playing					\n\
+$Cutscene camera disables HUD: YES										\n\
 																		\n\
-;; If set, uses the colors of the ANI instead of the colors of the HUD	\n\
-$Full color head animations: NO											\n\
-																		\n\
+;; Set to NO when you want to have full color .eff head animations		\n\
+$Color head animations with hud colors: YES								\n\
 																		\n\
 #SEXP SETTINGS															\n\
 																		\n\
@@ -135,7 +134,6 @@ $Use Alternate Chaining Behavior: NO									\n\
 																		\n\
 																		\n\
 #GRAPHICS SETTINGS														\n\
-																		\n\
 ;; When set, this enables the loading of external shader files			\n\
 $Enable external shaders: NO											\n\
 																		\n\
@@ -1087,7 +1085,7 @@ $no extra collision avoidance vs player:	NO							\n\
 																		\n\
 ;; If set, the game will check if the dying ship is a player's wingman, \n\
 ;; before making it give a death scream					 				\n\
-$perform fewer checks for death screams:	NO							\n\
+$perform less checks for death screams:	NO								\n\
 																		\n\
 ;; If set, allows shield management for all ships						\n\
 ;; (including capships).												\n\
@@ -1098,7 +1096,7 @@ $ai aims from ship center:			NO									\n\
 																		\n\
 ;; If set, prevents fighters from linking their weapons in the first	\n\
 ;; few minutes of the mission											\n\
-$allow primary link at mission start:	NO								\n\
+$allow primary link delay:				YES								\n\
 																		\n\
 ;; If set, prevents beams from instantly killing all weapons from first	\n\
 ;; hit, instead allows weapon hitpoints to be used instead				\n\
