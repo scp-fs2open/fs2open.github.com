@@ -475,9 +475,9 @@ void parse_ai_profiles_tbl(char *filename)
 				bool temp;
 				stuff_boolean(&temp);
 				if (temp)
-					profile->flags |= AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
+					profile->flags2 |= AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
 				else
-					profile->flags &= ~AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
+					profile->flags2 &= ~AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
 			}
 			if (optional_string("$allow primary link delay:"))
 			{
@@ -485,9 +485,9 @@ void parse_ai_profiles_tbl(char *filename)
 				bool temp;
 				stuff_boolean(&temp);
 				if (temp)
-					profile->flags &= ~AIPF2_ALLOW_PRIMARY_LINK_AT_START;
+					profile->flags2 &= ~AIPF2_ALLOW_PRIMARY_LINK_AT_START;
 				else
-					profile->flags |= AIPF2_ALLOW_PRIMARY_LINK_AT_START;
+					profile->flags2 |= AIPF2_ALLOW_PRIMARY_LINK_AT_START;
 			}
 
 
