@@ -434,7 +434,7 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
 
-			set_flag(profile, "$perform fewer checks for death screams:", AIPF2_PERFORM_FEWER_SCREAM_CHECKS, AIP_FLAG2);
+			set_flag(profile, "$perform less checks for death screams:", AIPF2_PERFORM_LESS_SCREAM_CHECKS, AIP_FLAG2);
 
 			set_flag(profile, "$advanced turret fov edge checks:", AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS, AIP_FLAG2);
 
@@ -444,7 +444,7 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$ai aims from ship center:", AIPF2_AI_AIMS_FROM_SHIP_CENTER, AIP_FLAG2);
 
-			set_flag(profile, "$allow primary link at mission start:", AIPF2_ALLOW_PRIMARY_LINK_AT_START, AIP_FLAG2);
+			set_flag(profile, "$allow primary link delay:", AIPF2_ALLOW_PRIMARY_LINK_DELAY, AIP_FLAG2);
 
 			set_flag(profile, "$allow beams to damage bombs:", AIPF2_BEAMS_DAMAGE_WEAPONS, AIP_FLAG2);
 
@@ -465,31 +465,6 @@ void parse_ai_profiles_tbl(char *filename)
 			}
 
 			set_flag(profile, "$no warp camera:", AIPF2_NO_WARP_CAMERA, AIP_FLAG2);
-
-			// ----------
-
-			// compatibility
-			if (optional_string("$perform less checks for death screams:"))
-			{
-				mprintf(("Warning: \"$perform less checks for death screams\" flag is deprecated in favor of \"$perform fewer checks for death screams\"\n"));
-				bool temp;
-				stuff_boolean(&temp);
-				if (temp)
-					profile->flags |= AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
-				else
-					profile->flags &= ~AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
-			}
-			if (optional_string("$allow primary link delay:"))
-			{
-				mprintf(("Warning: \"$allow primary link delay\" flag is deprecated in favor of \"$allow primary link at mission start\"\n"));
-				bool temp;
-				stuff_boolean(&temp);
-				if (temp)
-					profile->flags &= ~AIPF2_ALLOW_PRIMARY_LINK_AT_START;
-				else
-					profile->flags |= AIPF2_ALLOW_PRIMARY_LINK_AT_START;
-			}
-
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
