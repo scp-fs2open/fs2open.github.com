@@ -5397,7 +5397,7 @@ void set_primary_weapon_linkage(object *objp)
 	}
 
 	//	Don't want all ships always linking weapons at start, so asynchronize.
-	if (The_mission.ai_profile->flags2 & AIPF2_ALLOW_PRIMARY_LINK_DELAY)
+	if (!(The_mission.ai_profile->flags2 & AIPF2_ALLOW_PRIMARY_LINK_AT_START))
 	{
 		if (Missiontime < i2f(30))
 			return;
