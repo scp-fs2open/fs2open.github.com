@@ -115,11 +115,12 @@ $Default Campaign File Name: FreeSpace2									\n\
 ;; Sets the delay before a directive will appear on the screen (ms)		\n\
 $Directive Wait Time: 3000												\n\
 																		\n\
-;; Turns off the HUD when in-game cutscenes are playing					\n\
-$Cutscene camera disables HUD: YES										\n\
+;; If set, shows the HUD during in-game cutscenes						\n\
+$Cutscene camera displays HUD: NO										\n\
 																		\n\
-;; Set to NO when you want to have full color .eff head animations		\n\
-$Color head animations with hud colors: YES								\n\
+;; If set, uses the colors of the ANI instead of the colors of the HUD	\n\
+$Full color head animations: NO											\n\
+																		\n\
 																		\n\
 #SEXP SETTINGS															\n\
 																		\n\
@@ -134,6 +135,7 @@ $Use Alternate Chaining Behavior: NO									\n\
 																		\n\
 																		\n\
 #GRAPHICS SETTINGS														\n\
+																		\n\
 ;; When set, this enables the loading of external shader files			\n\
 $Enable external shaders: NO											\n\
 																		\n\
