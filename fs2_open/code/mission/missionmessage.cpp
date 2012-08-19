@@ -33,6 +33,7 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "mod_table/mod_table.h"
 
 
 int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES]; 
@@ -1075,7 +1076,6 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 //				q		=>		message queue data
 //
 // note: changes Messave_wave_duration, Playing_messages[].wave, and Message_waves[].num
-extern bool Headani_color;
 void message_play_anim( message_q *q )
 {
 	message_extra	*anim_info;
@@ -1174,8 +1174,8 @@ void message_play_anim( message_q *q )
 	}
 
 	generic_anim_init(&anim_info->anim_data, ani_name);
-	if(Headani_color)
-			anim_info->anim_data.colored = true;
+	if(!Full_color_head_anis)
+			anim_info->anim_data.use_hud_color = true;
 
 	if ( generic_anim_stream(&anim_info->anim_data) < 0 ) {
 		nprintf (("messaging", "Cannot load message avi %s.  Will not play.\n", ani_name));

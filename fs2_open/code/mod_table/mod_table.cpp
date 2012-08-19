@@ -12,16 +12,16 @@
 #include "localization/localize.h"
 #include "parse/parselo.h"
 
-int Directive_wait_time;
-bool True_loop_argument_sexps;
-bool Fixed_turret_collisions;
-bool Damage_impacted_subsystem_first;
-bool Cutscene_camera_disables_hud;
-bool Alternate_chaining_behavior;
-int Default_ship_select_effect;
-int Default_weapon_select_effect;
+int Directive_wait_time = 0;
+bool True_loop_argument_sexps = false;
+bool Fixed_turret_collisions = false;
+bool Damage_impacted_subsystem_first = false;
+bool Cutscene_camera_displays_hud = false;
+bool Alternate_chaining_behavior = false;
+int Default_ship_select_effect = 0;
+int Default_weapon_select_effect = 0;
 bool Enable_external_shaders = false;
-bool Headani_color = true;
+bool Full_color_head_anis = false;
 
 
 void parse_mod_table(char *filename)
@@ -78,12 +78,26 @@ void parse_mod_table(char *filename)
 		stuff_int(&Directive_wait_time);
 	}
 
+	if (optional_string("$Cutscene camera displays HUD:")) {
+		stuff_boolean(&Cutscene_camera_displays_hud);
+	}
+	// compatibility
 	if (optional_string("$Cutscene camera disables HUD:")) {
-		stuff_boolean(&Cutscene_camera_disables_hud);
+		mprintf(("Game Settings Table: \"$$Cutscene camera disables HUD\" is deprecated in favor of \"$Cutscene camera displays HUD\"\n"));
+		bool temp;
+		stuff_boolean(&temp);
+		Cutscene_camera_displays_hud = !temp;
 	}
 	
+	if (optional_string("$Full color head animations:")) {
+		stuff_boolean(&Full_color_head_anis);
+	}
+	// compatibility
 	if (optional_string("$Color head animations with hud colors:")) {
-		stuff_boolean(&Headani_color);
+		mprintf(("Game Settings Table: \"$Color head animations with hud colors\" is deprecated in favor of \"$Full color head animations\"\n"));
+		bool temp;
+		stuff_boolean(&temp);
+		Full_color_head_anis = !temp;
 	}
 
 	optional_string("#SEXP SETTINGS"); 
