@@ -14617,7 +14617,7 @@ void ship_maybe_scream(ship *sp)
 			return;
 
 		// for WCSaga, only do a subset of the checks
-		if (!(The_mission.ai_profile->flags2 & AIPF2_PERFORM_LESS_SCREAM_CHECKS))
+		if (!(The_mission.ai_profile->flags2 & AIPF2_PERFORM_FEWER_SCREAM_CHECKS))
 		{
 			// bail if this ship isn't from the player wing
 			if (!(sp->flags & SF_FROM_PLAYER_WING))

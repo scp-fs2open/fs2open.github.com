@@ -1085,7 +1085,7 @@ $no extra collision avoidance vs player:	NO							\n\
 																		\n\
 ;; If set, the game will check if the dying ship is a player's wingman, \n\
 ;; before making it give a death scream					 				\n\
-$perform less checks for death screams:	NO								\n\
+$perform fewer checks for death screams:	NO							\n\
 																		\n\
 ;; If set, allows shield management for all ships						\n\
 ;; (including capships).												\n\
@@ -1096,7 +1096,7 @@ $ai aims from ship center:			NO									\n\
 																		\n\
 ;; If set, prevents fighters from linking their weapons in the first	\n\
 ;; few minutes of the mission											\n\
-$allow primary link delay:				YES								\n\
+$allow primary link at mission start:	NO								\n\
 																		\n\
 ;; If set, prevents beams from instantly killing all weapons from first	\n\
 ;; hit, instead allows weapon hitpoints to be used instead				\n\
