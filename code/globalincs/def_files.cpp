@@ -904,7 +904,8 @@ $Stalemate Time Threshold: 0, 0, 0, 0, 0								\n\
 ;; for a dogfight stalemate												\n\
 $Stalemate Distance Threshold: 0, 0, 0, 0, 0							\n\
 																		\n\
-;; factor applied to the speed at which the player's shields recharge	\n\
+;; Sets the factor applied to the speed at which the player's shields	\n\
+;; recharge																\n\
 $Player Shield Recharge Scale: 4, 2, 1.5, 1.25, 1						\n\
 																		\n\
 ;; factor applied to the speed at which the player's weapons recharge	\n\
@@ -1077,9 +1078,17 @@ $use only single fov for turrets:		NO								\n\
 ;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
 $allow vertical dodge:	NO												\n\
 																		\n""\
+;; If set makes beam turrets use same FOV rules as other weapons do.	\n\
+;; Prevents beam from a turret from following the target beyond the		\n\
+;; turret's FOV.														\n\
+$force beam turrets to use normal fov: NO								\n\
+																		\n\
 ;; Fixes a bug where AI class is not properly set if set in the mission	\n\
 ;; This should be YES if you want anything in AI.tbl to mean anything	\n\
 $fix AI class bug:	NO													\n\
+																		\n\
+;; TBD																	\n\
+$turrets ignore targets radius in range checks: NO						\n\
 																		\n\
 ;; If set, the AI will NOT make extra effort to avoid ramming the player\n\
 ;; during dogfights. This results in more aggressive AI.				\n\
@@ -1088,6 +1097,12 @@ $no extra collision avoidance vs player:	NO							\n\
 ;; If set, the game will check if the dying ship is a player's wingman, \n\
 ;; before making it give a death scream					 				\n\
 $perform fewer checks for death screams:	NO							\n\
+																		\n\
+;; TBD																	\n\
+$advanced turret fov edge checks: NO									\n\
+																		\n\
+;; TBD																	\n\
+$require turrets to have target in fov: NO								\n\
 																		\n\
 ;; If set, allows shield management for all ships						\n\
 ;; (including capships).												\n\
@@ -1103,6 +1118,18 @@ $allow primary link at mission start:	NO								\n\
 ;; If set, prevents beams from instantly killing all weapons from first	\n\
 ;; hit, instead allows weapon hitpoints to be used instead				\n\
 $allow beams to damage bombs:			NO								\n\
+																		\n\
+;; TBD																	\n\
+$disable weapon damage scaling for player:	NO							\n\
+																		\n\
+;; TBD																	\n\
+$countermeasures affect aspect seekers:	NO								\n\
+																		\n\
+;; TBD																	\n\
+$ai path mode:	normal													\n\
+																		\n\
+;; TBD																	\n\
+$no warp camera:	NO													\n\
 																		\n\
 #End																	\n\
 ";
