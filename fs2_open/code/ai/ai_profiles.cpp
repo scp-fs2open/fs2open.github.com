@@ -232,9 +232,6 @@ void parse_ai_profiles_tbl(char *filename)
 					profile->predict_position_delay[iLoop] = fl2f(temp_list[iLoop]);
 			}
 
-			if (optional_string("$Player Shield Recharge Scale:"))
-				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
-
 			if (optional_string("$AI Shield Manage Delay:") || optional_string("$AI Shield Manage Delays:"))
 				parse_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
 
@@ -249,9 +246,6 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$Hostile AI Secondary Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_secondary_delay_scale_hostile, NUM_SKILL_LEVELS);
-
-			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
-				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Turn Time Scale:"))
 				parse_float_list(profile->turn_time_scale, NUM_SKILL_LEVELS);
@@ -313,6 +307,9 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$Stalemate Distance Threshold:"))
 				parse_float_list(profile->stalemate_dist_thresh, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Player Shield Recharge Scale:"))
+				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Player Weapon Recharge Scale:"))
 				parse_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
