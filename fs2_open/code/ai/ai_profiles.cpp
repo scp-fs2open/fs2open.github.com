@@ -205,7 +205,7 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$AI Maybe Links Energy Weapons:"))
 				parse_float_list(profile->link_energy_levels_maybe, NUM_SKILL_LEVELS);
 
-			if (optional_string("$Max Missles Locked on Player:"))
+			if (optional_string("$Max Missles Locked on Player:") || optional_string("$Max Missiles Locked on Player:"))
 				parse_int_list(profile->max_allowed_player_homers, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Max Player Attackers:"))

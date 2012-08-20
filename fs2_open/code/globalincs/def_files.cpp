@@ -841,7 +841,7 @@ $AI Maybe Links Energy Weapons: 90, 60, 40, 20, 10						\n\
 																		\n\
 ;; maximum number of missiles allowed to be homing in on a player at a	\n\
 ;; given time (single-player only; no restriction in multiplayer)		\n\
-$Max Missles Locked on Player: 2, 3, 4, 7, 99							\n\
+$Max Missiles Locked on Player: 2, 3, 4, 7, 99							\n\
 																		\n\
 ;; maximum number of ships allowed to be attacking the player at a		\n\
 ;; given time (single-player only; no restriction in multiplayer)		\n\
