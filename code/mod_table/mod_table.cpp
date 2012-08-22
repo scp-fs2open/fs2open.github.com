@@ -12,14 +12,14 @@
 #include "localization/localize.h"
 #include "parse/parselo.h"
 
-int Directive_wait_time = 0;
+int Directive_wait_time = 3000;
 bool True_loop_argument_sexps = false;
 bool Fixed_turret_collisions = false;
 bool Damage_impacted_subsystem_first = false;
 bool Cutscene_camera_displays_hud = false;
 bool Alternate_chaining_behavior = false;
-int Default_ship_select_effect = 0;
-int Default_weapon_select_effect = 0;
+int Default_ship_select_effect = 2;
+int Default_weapon_select_effect = 2;
 bool Enable_external_shaders = false;
 bool Full_color_head_anis = false;
 
