@@ -45,6 +45,8 @@
 #include "sound/ds.h"
 #include "weapon/weapon.h"
 #include "weapon/beam.h"
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 
 //*************************Lua globals*************************
 SCP_vector<ade_table_entry> Ade_table_entries;
@@ -2951,7 +2953,11 @@ ADE_FUNC(__gc, l_Texture, NULL, "Auto-deletes texture", NULL, NULL)
 	if(!ade_get_args(L, "o", l_Texture.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx > -1 && bm_is_valid(idx))
+	// Note: due to some unknown reason, in some circumstances this function
+	// might get called even for handles to bitmaps which are actually still in
+	// use, and in order to prevent that we want to double-check the load count
+	// here before unloading the bitmap. -zookeeper
+	if(idx > -1 && bm_is_valid(idx) && bm_bitmaps[bm_get_cache_slot(idx, 0)].load_count < 1)
 		bm_unload(idx);
 
 	return ADE_RETURN_NIL;
