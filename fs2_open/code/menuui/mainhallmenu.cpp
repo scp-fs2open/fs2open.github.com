@@ -1972,24 +1972,9 @@ void main_hall_read_table()
 				required_string("+Misc anim trigger:");
 				int temp_int = 0;
 				stuff_int(&temp_int);
-
-				//load the ani to get the number of frames
-				int num_frames;
-				int ani = bm_load_either(const_cast<char*>(m->misc_anim_name.at(idx).c_str()), &num_frames);
-				//unload it again
-				bm_unload(ani);
-
 				for (s_idx=0; s_idx<temp_int; s_idx++) {
 					m->misc_anim_special_trigger.at(idx).push_back(0);
-					int trigger_frame;
-					stuff_int(&trigger_frame);
-
-					if (trigger_frame < num_frames) {
-						m->misc_anim_special_trigger.at(idx).at(s_idx);
-					} else {
-						WarningEx(LOCATION, "Frame number %d is too high for animation %s. The animation only has %d frames.\nTrigger frame has been set to 0.\n",
-							trigger_frame, m->misc_anim_name.at(idx).c_str(), num_frames);
-					}
+					stuff_int(&m->misc_anim_special_trigger.at(idx).at(s_idx));
 				}
 			}
 
