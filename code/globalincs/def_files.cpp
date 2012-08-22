@@ -115,8 +115,11 @@ $Default Campaign File Name: FreeSpace2									\n\
 ;; Sets the delay before a directive will appear on the screen (ms)		\n\
 $Directive Wait Time: 3000												\n\
 																		\n\
-;; Turns off the HUD when in-game cutscenes are playing					\n\
-$Cutscene camera disables HUD: YES										\n\
+;; If set, shows the HUD during in-game cutscenes						\n\
+$Cutscene camera displays HUD: NO										\n\
+																		\n\
+;; If set, uses the colors of the ANI instead of the colors of the HUD	\n\
+$Full color head animations: NO											\n\
 																		\n\
 																		\n\
 #SEXP SETTINGS															\n\
@@ -132,16 +135,19 @@ $Use Alternate Chaining Behavior: NO									\n\
 																		\n\
 																		\n\
 #GRAPHICS SETTINGS														\n\
+																		\n\
 ;; When set, this enables the loading of external shader files			\n\
 $Enable external shaders: NO											\n\
 																		\n\
 																		\n\
 #OTHER SETTINGS															\n\
 																		\n\
-;; DESCRIPTION NEEDED!													\n\
+;; If not set, a hit to a turret's barrels will not count as a hit to	\n\
+;; the turret unless it is also within the turret base's radius.		\n\
 $Fixed Turret Collisions: NO											\n\
 																		\n\
-;; If not set, will damage nearest subsystem first						\n\
+;; If not set, hits will damage nearest subsystem first, rather than the\n\
+;; impacted physical subsystem first.									\n\
 $Damage Impacted Subsystem First: NO									\n\
 																		\n\
 ;; used when no ani is specified or ship_select_3d is active			\n\
@@ -149,7 +155,6 @@ $Default ship select effect: FS2										\n\
 																		\n\
 ;; used when no ani is specified or weapon_select_3d is active			\n\
 $Default weapon select effect: FS2										\n\
-																		\n\
 																		\n\
 #END																	\n\
 ";
@@ -836,7 +841,7 @@ $AI Maybe Links Energy Weapons: 90, 60, 40, 20, 10						\n\
 																		\n\
 ;; maximum number of missiles allowed to be homing in on a player at a	\n\
 ;; given time (single-player only; no restriction in multiplayer)		\n\
-$Max Missles Locked on Player: 2, 3, 4, 7, 99							\n\
+$Max Missiles Locked on Player: 2, 3, 4, 7, 99							\n\
 																		\n\
 ;; maximum number of ships allowed to be attacking the player at a		\n\
 ;; given time (single-player only; no restriction in multiplayer)		\n\
@@ -899,7 +904,8 @@ $Stalemate Time Threshold: 0, 0, 0, 0, 0								\n\
 ;; for a dogfight stalemate												\n\
 $Stalemate Distance Threshold: 0, 0, 0, 0, 0							\n\
 																		\n\
-;; factor applied to the speed at which the player's shields recharge	\n\
+;; Sets the factor applied to the speed at which the player's shields	\n\
+;; recharge																\n\
 $Player Shield Recharge Scale: 4, 2, 1.5, 1.25, 1						\n\
 																		\n\
 ;; factor applied to the speed at which the player's weapons recharge	\n\
@@ -1072,9 +1078,17 @@ $use only single fov for turrets:		NO								\n\
 ;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
 $allow vertical dodge:	NO												\n\
 																		\n""\
+;; If set makes beam turrets use same FOV rules as other weapons do.	\n\
+;; Prevents beam from a turret from following the target beyond the		\n\
+;; turret's FOV.														\n\
+$force beam turrets to use normal fov: NO								\n\
+																		\n\
 ;; Fixes a bug where AI class is not properly set if set in the mission	\n\
 ;; This should be YES if you want anything in AI.tbl to mean anything	\n\
 $fix AI class bug:	NO													\n\
+																		\n\
+;; TBD																	\n\
+$turrets ignore targets radius in range checks: NO						\n\
 																		\n\
 ;; If set, the AI will NOT make extra effort to avoid ramming the player\n\
 ;; during dogfights. This results in more aggressive AI.				\n\
@@ -1082,7 +1096,13 @@ $no extra collision avoidance vs player:	NO							\n\
 																		\n\
 ;; If set, the game will check if the dying ship is a player's wingman, \n\
 ;; before making it give a death scream					 				\n\
-$perform less checks for death screams:	NO								\n\
+$perform fewer checks for death screams:	NO							\n\
+																		\n\
+;; TBD																	\n\
+$advanced turret fov edge checks: NO									\n\
+																		\n\
+;; TBD																	\n\
+$require turrets to have target in fov: NO								\n\
 																		\n\
 ;; If set, allows shield management for all ships						\n\
 ;; (including capships).												\n\
@@ -1093,11 +1113,23 @@ $ai aims from ship center:			NO									\n\
 																		\n\
 ;; If set, prevents fighters from linking their weapons in the first	\n\
 ;; few minutes of the mission											\n\
-$allow primary link delay:				YES								\n\
+$allow primary link at mission start:	NO								\n\
 																		\n\
 ;; If set, prevents beams from instantly killing all weapons from first	\n\
 ;; hit, instead allows weapon hitpoints to be used instead				\n\
 $allow beams to damage bombs:			NO								\n\
+																		\n\
+;; TBD																	\n\
+$disable weapon damage scaling for player:	NO							\n\
+																		\n\
+;; TBD																	\n\
+$countermeasures affect aspect seekers:	NO								\n\
+																		\n\
+;; TBD																	\n\
+$ai path mode:	normal													\n\
+																		\n\
+;; TBD																	\n\
+$no warp camera:	NO													\n\
 																		\n\
 #End																	\n\
 ";

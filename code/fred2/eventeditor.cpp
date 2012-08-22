@@ -1254,7 +1254,7 @@ void event_editor::OnBrowseAvi()
 
 	z = cfile_push_chdir(CF_TYPE_INTERFACE);
 	CFileDialog dlg(TRUE, "ani", m_avi_filename, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Ani Files (*.ani)|*.ani|Avi Files (*.avi)|*.avi|Both (*.ani, *.avi)|*.ani;*.avi||");
+		"Ani Files (*.ani)|*.ani|Eff Files (*.eff)|*.eff|Avi Files (*.avi)|*.avi|Both (*.ani, *.avi)|*.ani;*.avi||");
 
 	if (dlg.DoModal() == IDOK) {
 		m_avi_filename = dlg.GetFileName();

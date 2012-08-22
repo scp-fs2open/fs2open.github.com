@@ -5036,6 +5036,7 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, int ship_index, c
 	int step_size = 3;
 	int total_life = 14000;
 	int line_height = 12;
+	bool hidden_by_comms_menu = true;
 
 	coords[0] = 5;
 	coords[1] = 5;
@@ -5108,6 +5109,9 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, int ship_index, c
 	if ( optional_string("Step Size:") ) {
 		stuff_int(&step_size);
 	}
+	if ( optional_string("Hidden By Comms Menu:") ) {
+		stuff_boolean(&hidden_by_comms_menu);
+	}
 
 	HudGaugeMessages* hud_gauge = new HudGaugeMessages();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -5120,6 +5124,7 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, int ship_index, c
 	hud_gauge->initStepSize(step_size);
 	hud_gauge->initTotalLife(total_life);
 	hud_gauge->initLineHeight(line_height);
+	hud_gauge->initHiddenByCommsMenu(hidden_by_comms_menu);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 

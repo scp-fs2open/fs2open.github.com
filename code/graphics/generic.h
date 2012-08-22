@@ -33,9 +33,8 @@ typedef struct generic_anim {
 			anim_instance *instance;
 			unsigned char bg_type;	//to store background type to avoid messed up colours
 		} ani;
-		//reserved for eff streaming
 		struct {
-			//
+			int next_frame;
 		} eff;
 	};
 	ubyte type;
@@ -44,6 +43,7 @@ typedef struct generic_anim {
 	int height;
 	int width;
 	int bitmap_id;
+	bool use_hud_color;
 } generic_anim;
 
 // Goober5000

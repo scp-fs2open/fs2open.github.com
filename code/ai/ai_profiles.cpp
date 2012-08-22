@@ -205,7 +205,7 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$AI Maybe Links Energy Weapons:"))
 				parse_float_list(profile->link_energy_levels_maybe, NUM_SKILL_LEVELS);
 
-			if (optional_string("$Max Missles Locked on Player:"))
+			if (optional_string("$Max Missles Locked on Player:") || optional_string("$Max Missiles Locked on Player:"))
 				parse_int_list(profile->max_allowed_player_homers, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Max Player Attackers:"))
@@ -232,9 +232,6 @@ void parse_ai_profiles_tbl(char *filename)
 					profile->predict_position_delay[iLoop] = fl2f(temp_list[iLoop]);
 			}
 
-			if (optional_string("$Player Shield Recharge Scale:"))
-				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
-
 			if (optional_string("$AI Shield Manage Delay:") || optional_string("$AI Shield Manage Delays:"))
 				parse_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
 
@@ -249,9 +246,6 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$Hostile AI Secondary Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_secondary_delay_scale_hostile, NUM_SKILL_LEVELS);
-
-			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
-				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Turn Time Scale:"))
 				parse_float_list(profile->turn_time_scale, NUM_SKILL_LEVELS);
@@ -313,6 +307,9 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$Stalemate Distance Threshold:"))
 				parse_float_list(profile->stalemate_dist_thresh, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Player Shield Recharge Scale:"))
+				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Player Weapon Recharge Scale:"))
 				parse_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
@@ -434,7 +431,7 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
 
-			set_flag(profile, "$perform less checks for death screams:", AIPF2_PERFORM_LESS_SCREAM_CHECKS, AIP_FLAG2);
+			set_flag(profile, "$perform fewer checks for death screams:", AIPF2_PERFORM_FEWER_SCREAM_CHECKS, AIP_FLAG2);
 
 			set_flag(profile, "$advanced turret fov edge checks:", AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS, AIP_FLAG2);
 
@@ -444,7 +441,7 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$ai aims from ship center:", AIPF2_AI_AIMS_FROM_SHIP_CENTER, AIP_FLAG2);
 
-			set_flag(profile, "$allow primary link delay:", AIPF2_ALLOW_PRIMARY_LINK_DELAY, AIP_FLAG2);
+			set_flag(profile, "$allow primary link at mission start:", AIPF2_ALLOW_PRIMARY_LINK_AT_START, AIP_FLAG2);
 
 			set_flag(profile, "$allow beams to damage bombs:", AIPF2_BEAMS_DAMAGE_WEAPONS, AIP_FLAG2);
 
@@ -465,6 +462,31 @@ void parse_ai_profiles_tbl(char *filename)
 			}
 
 			set_flag(profile, "$no warp camera:", AIPF2_NO_WARP_CAMERA, AIP_FLAG2);
+
+			// ----------
+
+			// compatibility
+			if (optional_string("$perform less checks for death screams:"))
+			{
+				mprintf(("Warning: \"$perform less checks for death screams\" flag is deprecated in favor of \"$perform fewer checks for death screams\"\n"));
+				bool temp;
+				stuff_boolean(&temp);
+				if (temp)
+					profile->flags2 |= AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
+				else
+					profile->flags2 &= ~AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
+			}
+			if (optional_string("$allow primary link delay:"))
+			{
+				mprintf(("Warning: \"$allow primary link delay\" flag is deprecated in favor of \"$allow primary link at mission start\"\n"));
+				bool temp;
+				stuff_boolean(&temp);
+				if (temp)
+					profile->flags2 &= ~AIPF2_ALLOW_PRIMARY_LINK_AT_START;
+				else
+					profile->flags2 |= AIPF2_ALLOW_PRIMARY_LINK_AT_START;
+			}
+
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
