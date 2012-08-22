@@ -434,6 +434,10 @@ void gr_stub_draw_line_list(colored_vector *lines, int num)
 {
 }
 
+void gr_stub_update_texture(int bitmap_handle, int bpp, ubyte* data)
+{
+}
+
 // bitmap functions
 int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
 {
@@ -524,7 +528,7 @@ int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, i
 	return 0;
 }
 
-int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags)
+int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
 {
 	ubyte c_type = BM_TYPE_NONE;
 	ubyte true_bpp;
@@ -811,5 +815,6 @@ bool gr_stub_init()
 	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
 	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;
 
+	gr_screen.gf_update_texture = gr_stub_update_texture;
 	return true;
 }

@@ -1834,6 +1834,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_line_htl			= gr_opengl_line_htl;
 	gr_screen.gf_sphere_htl			= gr_opengl_sphere_htl;
 
+
+	gr_screen.gf_update_texture = gr_opengl_update_texture;
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************

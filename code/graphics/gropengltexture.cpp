@@ -1388,6 +1388,70 @@ int opengl_export_image( int slot, int width, int height, int alpha, int num_mip
 	return m_offset;
 }
 
+void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data)
+{
+	GLenum texFormat, glFormat;
+	int n = bm_get_cache_slot (bitmap_handle, 1);
+	tcache_slot_opengl *t = &Textures[n];
+	if(!t->texture_id)
+		return;
+	int byte_mult = (bpp >> 3);
+	int true_byte_mult = (t->bpp >> 3);
+	ubyte* texmem = NULL;
+	// GL_BGRA_EXT is *much* faster with some hardware/drivers
+	if (true_byte_mult == 4) {
+		texFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
+		glFormat = GL_BGRA;
+	} else if (true_byte_mult == 3) {
+		texFormat = GL_UNSIGNED_BYTE;
+		glFormat = GL_BGR;
+	} else {
+		texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+		glFormat = GL_BGRA;
+	}
+	if (byte_mult == 1) {
+		texFormat = GL_UNSIGNED_BYTE;
+		glFormat = GL_ALPHA;
+		texmem = (ubyte *) vm_malloc (t->w*t->h*byte_mult);
+		ubyte* texmemp = texmem;
+
+		Assert( texmem != NULL );
+
+		int luminance = 0;
+		for (int i = 0; i < t->h; i++) {
+			for (int j = 0; j < t->w; j++) {
+				if ( (i < t->h) && (j < t->w) ) {
+					if ( true_byte_mult > 1 ) {
+						luminance = 0;
+
+						if ( true_byte_mult > 3 ) {
+							for (int k = 0; k < 3; k++) {
+								luminance += data[(i*t->w+j)*true_byte_mult+k];
+							}
+
+							*texmemp++ = (ubyte)((luminance / 3) * (data[(i*t->w+j)*true_byte_mult+3]/255.0f));
+						} else {
+							for (int k = 0; k < true_byte_mult; k++) {
+								luminance += data[(i*t->w+j)*true_byte_mult+k]; 
+							}
+
+							*texmemp++ = (ubyte)(luminance / true_byte_mult);
+						}
+					} else {
+						*texmemp++ = GL_xlat[data[i*t->w+j]];
+					}
+				} else {
+					*texmemp++ = 0;
+				}
+			}
+		}
+	}
+	glBindTexture(GL_TEXTURE_2D, t->texture_id);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t->w, t->h, glFormat, texFormat, (texmem)?texmem:data);
+	if (texmem != NULL)
+		vm_free(texmem);
+}
+
 // -----------------------------------------------------------------------------
 // GL_EXT_framebuffer_object stuff (ie, render-to-texture)
 //

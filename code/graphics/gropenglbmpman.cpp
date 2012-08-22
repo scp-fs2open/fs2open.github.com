@@ -418,7 +418,7 @@ extern bool opengl_texture_slot_valid(int n, int handle);
 /**
  * Lock an image files data into memory
  */
-int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags )
+int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
 {
 	ubyte c_type = BM_TYPE_NONE;
 	ubyte true_bpp;
@@ -438,13 +438,13 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 	if ( (bmp->data == 0) && !opengl_texture_slot_valid(bitmapnum, handle) ) {
 		Assert(be->ref_count == 1);
 
-		if (be->type != BM_TYPE_USER) {
+		if (be->type != BM_TYPE_USER && !nodebug) {
 			if (bmp->data == 0)
 				nprintf (("BmpMan", "Loading %s for the first time.\n", be->filename));
 		}
 
 		if ( !Bm_paging )	{
-			if (be->type != BM_TYPE_USER)						
+			if (be->type != BM_TYPE_USER && !nodebug)						
 				nprintf(("Paging", "Loading %s (%dx%dx%d)\n", be->filename, bmp->w, bmp->h, true_bpp));
 		}
 

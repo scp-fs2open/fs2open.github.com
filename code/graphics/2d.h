@@ -383,7 +383,7 @@ typedef struct screen {
 	int (*gf_bm_load)(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size);
 	void (*gf_bm_init)(int n);
 	void (*gf_bm_page_in_start)();
-	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
+	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug);
 
 	int (*gf_bm_make_render_target)(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags );
 	int (*gf_bm_set_render_target)(int n, int face);
@@ -455,6 +455,8 @@ typedef struct screen {
 
 	void (*gf_line_htl)(vec3d *start, vec3d* end);
 	void (*gf_sphere_htl)(float rad);
+
+	void (*gf_update_texture)(int bitmap_handle, int bpp, ubyte* data);
 } screen;
 
 // handy macro
@@ -727,6 +729,8 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 #define gr_line_htl						GR_CALL(*gr_screen.gf_line_htl)
 #define gr_sphere_htl					GR_CALL(*gr_screen.gf_sphere_htl)
 
+#define gr_update_texture				GR_CALL(*gr_screen.gf_update_texture)
+
 // color functions
 void gr_get_color( int *r, int *g, int  b );
 void gr_init_color(color *c, int r, int g, int b);
@@ -743,6 +747,10 @@ void gr_bitmap(int x, int y, bool resize = true);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, bool resize = true);
 void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling);
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
+
+// texture update functions
+ubyte* gr_opengl_get_texture_update_pointer(int bitmap_handle);
+void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
