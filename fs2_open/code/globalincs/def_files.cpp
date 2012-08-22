@@ -156,9 +156,6 @@ $Default ship select effect: FS2										\n\
 ;; used when no ani is specified or weapon_select_3d is active			\n\
 $Default weapon select effect: FS2										\n\
 																		\n\
-;; Enable weapons to inherit their parent object's collision group setting \n\
-$Weapons inherit parent collision group: NO								\n\
-																		\n\
 #END																	\n\
 ";
 
