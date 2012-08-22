@@ -798,7 +798,7 @@ int sexp_explosion_option_lookup(char *text);
 char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed", "death roll time" };
 int Num_explosion_options = 6;
 
-int get_sexp(char *token);
+int get_sexp();
 void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 void update_sexp_references(const char *old_name, const char *new_name, int format, int node);
 int sexp_determine_team(char *subj);
@@ -3042,9 +3042,10 @@ void preload_turret_change_weapon(char *text)
 /**
  * Returns the first sexp index of data this function allocates. (start of this sexp)
  */
-int get_sexp(char *token)
+int get_sexp()
 {
 	int start, node, last, op, count;
+	char token[TOKEN_LENGTH];
 	char variable_text[TOKEN_LENGTH];
 
 	// start - the node allocated in first instance of fuction
@@ -3059,45 +3060,42 @@ int get_sexp(char *token)
 	ignore_white_space();
 	while (*Mp != ')') {
 		Assert(*Mp != EOF_CHAR);
+
+		// Sexp list
 		if (*Mp == '(') {
-			// Sexp list
 			Mp++;
-			node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, get_sexp(token), -1);
+			node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, get_sexp(), -1);
+		}
 
-		} else if (*Mp == '\"')	{
-			// Sexp string
+		// Sexp string
+		else if (*Mp == '\"') {
 			int len = strcspn(Mp + 1, "\"");
-			
 			Assert(Mp[len + 1] == '\"');    // hit EOF first (unterminated string)
-
-			if(len >= TOKEN_LENGTH)
-			{
-				char * errortoken = new char[len+1];
-				memset(errortoken, 0, len+1);
-				strncpy(errortoken, Mp, len);
-				char * message = new char[95 + len]; // 95 approximate fixed string length.
-				memset(message, 0, 95 + len);
-				sprintf(message, "Token '%s' is too long. Needs to be %d characters or shorter and will be truncated to fit.", errortoken, (TOKEN_LENGTH-1));
-				MessageBox(NULL,message,NULL,MB_OK); // token is too long.
-				delete errortoken;
-				delete message;
-				len = TOKEN_LENGTH;
-			}
 
 			// check if string variable
 			if ( *(Mp + 1) == SEXP_VARIABLE_CHAR ) {
+				char variable_token[2*TOKEN_LENGTH+2];	// variable_token[contents_token]
 
 				// reduce length by 1 for end \"
 				int length = len - 1;
-				Assert(length < 2*TOKEN_LENGTH+2);
+				if (length >= 2*TOKEN_LENGTH+2) {
+					Error(LOCATION, "Variable token %s is too long. Needs to be %d characters or shorter.", Mp, 2*TOKEN_LENGTH+2 - 1);
+					return -1;
+				}
 
 				// start copying after skipping 1st char
-				strncpy(token, Mp + 2, length);
-				token[length] = 0;
+				strncpy(variable_token, Mp + 2, length);
+				variable_token[length] = 0;
 
-				get_sexp_text_for_variable(variable_text, token);
+				get_sexp_text_for_variable(variable_text, variable_token);
 				node = alloc_sexp(variable_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
 			} else {
+				// token is too long?
+				if (len >= TOKEN_LENGTH) {
+					Error(LOCATION, "Token %s is too long. Needs to be %d characters or shorter.", Mp, TOKEN_LENGTH - 1);
+					return -1;
+				}
+
 				strncpy(token, Mp + 1, len);
 				token[len] = 0;
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
@@ -3106,8 +3104,10 @@ int get_sexp(char *token)
 			// bump past closing \" by 1 char
 			Mp += len + 2;
 
-		} else {
-			// Sexp operator or number
+		}
+
+		// Sexp operator or number
+		else {
 			int len = 0;
 			bool variable = false;
 			while (*Mp != ')' && !is_white_space(*Mp)) {
@@ -22897,7 +22897,6 @@ void multi_sexp_eval()
 int get_sexp_main()
 {
 	int	start_node, op;
-	char	token[TOKEN_LENGTH];
 	char  *savep, ch;
 
 	ignore_white_space();
@@ -22908,7 +22907,7 @@ int get_sexp_main()
 
 	Assert(*Mp == '(');
 	Mp++;
-	start_node = get_sexp(token);
+	start_node = get_sexp();
 	// only need to check syntax if we have a operator
 	if (Fred_running || (start_node == -1))
 		return start_node;
