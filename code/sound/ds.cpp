@@ -1401,6 +1401,8 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 					lowest_instance_vol = chp->vol;
 					lowest_instance_vol_index = i;
 				}
+			} else if ( chp->is_voice_msg ) {
+				// a playing voice message is not allowed to be preempted
 			} else if ( (chp->vol < lowest_vol) && (chp->looping == FALSE) ) {
 				lowest_vol_index = i;
 				lowest_vol = chp->vol;
@@ -1429,9 +1431,10 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 			// just because we can).
 			first_free_channel = -1;
 		}
-	} else {
-		// there is no limit barrier to play the sound, so see if we've ran out of channels
-		// stop the lowest volume instance to play our sound if priority demands it
+	} else if (first_free_channel == -1) {
+		// there is no limit barrier to play the sound, but we have run out
+		// of channels so stop the lowest volume instance to play our sound
+		// if priority demands it
 		if ( (lowest_vol_index != -1) && (priority == DS_MUST_PLAY) ) {
 			// Check if the lowest volume playing is less than the volume of the requested sound.
 			// If so, then we are going to trash the lowest volume sound.
