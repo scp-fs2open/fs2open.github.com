@@ -965,32 +965,37 @@ void red_alert_start_mission()
 	}
 }
 
-// called from main game loop to check to see if we should move to a red alert mission
-int red_alert_check_status()
+// called from HUD code to see if we're red-alerting
+int red_alert_in_progress()
+{
+	// it is specifically a question of whether the timestamp is running
+	return timestamp_valid(Red_alert_new_mission_timestamp);
+}
+
+// called from the game loop to check if we should actually do the red-alert
+void red_alert_maybe_move_to_next_mission()
 {
 	// if the timestamp is invalid, do nothing.
 	if ( !timestamp_valid(Red_alert_new_mission_timestamp) )
-		return 0;
+		return;
 
 	// return if the timestamp hasn't elapsed yet
-	if ( timestamp_elapsed(Red_alert_new_mission_timestamp) ) {
+	if ( !timestamp_elapsed(Red_alert_new_mission_timestamp) )
+		return;
 
-		// basic premise here is to stop the current mission, and then set the next mission in the campaign
-		// which better be a red alert mission
-		if ( Game_mode & GM_CAMPAIGN_MODE ) {
-			red_alert_store_wingman_status();
-			mission_goal_fail_incomplete();
-			mission_campaign_store_goals_and_events_and_variables();
-			scoring_level_close();
-			mission_campaign_eval_next_mission();
-			mission_campaign_mission_over();
+	// basic premise here is to stop the current mission, and then set the next mission in the campaign
+	// which better be a red alert mission
+	if ( Game_mode & GM_CAMPAIGN_MODE ) {
+		red_alert_store_wingman_status();
+		mission_goal_fail_incomplete();
+		mission_campaign_store_goals_and_events_and_variables();
+		scoring_level_close();
+		mission_campaign_eval_next_mission();
+		mission_campaign_mission_over();
 
-			// CD CHECK
-			gameseq_post_event(GS_EVENT_START_GAME);
-		} else {
-			gameseq_post_event(GS_EVENT_END_GAME);
-		}
+		// CD CHECK
+		gameseq_post_event(GS_EVENT_START_GAME);
+	} else {
+		gameseq_post_event(GS_EVENT_END_GAME);
 	}
-
-	return 1;
 }
