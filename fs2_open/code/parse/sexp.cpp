@@ -11755,7 +11755,7 @@ void sexp_end_mission(int n)
 
 	// if we go straight to the main hall we have to clean up the mission without entering the debriefing
 	if (boot_to_main_hall && !(Game_mode & GM_MULTIPLAYER)) {
-		gameseq_post_event(GS_EVENT_MAIN_MENU);
+		gameseq_post_event(GS_EVENT_END_GAME);
 	} else {
 		send_debrief_event();
 	}
