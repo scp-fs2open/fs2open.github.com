@@ -6732,6 +6732,29 @@ void ship_actually_depart(int shipnum, int method)
 	}
 }
 
+// no destruction effects, not for player destruction and multiplayer, only self-destruction
+void ship_destroy_instantly(object *ship_obj, int shipnum)
+{
+	Assert(ship_obj->type == OBJ_SHIP);
+	Assert(!(ship_obj == Player_obj));
+	Assert(!(Game_mode & GM_MULTIPLAYER));
+
+	// undocking and death preperation
+	ship_stop_fire_primary(ship_obj);
+	ai_deathroll_start(ship_obj);
+
+	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_obj->instance].ship_name, NULL );
+	
+	// scripting stuff
+	Script_system.SetHookObject("Self", ship_obj);
+	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
+	Script_system.RemHookVars(2, "Self", "Killer");
+
+	ship_obj->flags |= OF_SHOULD_BE_DEAD;
+	ship_cleanup(shipnum,SHIP_DESTROYED);
+}
+
+
 /**
  * Merge ship_destroyed and ship_departed and ship_vanished
  */

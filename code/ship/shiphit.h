@@ -30,7 +30,7 @@ struct object;
 // for damaging ship's hulls, shields, and subsystems.  Nothing more.
 
 // function to destroy a subsystem.  Called internally and from multiplayer messaging code
-extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d *hitpos );
+extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d *hitpos, bool no_explosion = false );
 
 // Goober5000
 extern void ship_apply_tag(int ship_num, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team);
