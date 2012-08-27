@@ -352,8 +352,10 @@ sexp_oper Operators[] = {
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 4,			},
 	{ "set-subsystem-strength",	OP_SET_SUBSYSTEM_STRNGTH,			3, 4,			},
+	{ "destroy-subsys-instantly",	OP_DESTROY_SUBSYS_INSTANTLY,	2, INT_MAX	}, // Admiral MS
 	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
 	{ "self-destruct",				OP_SELF_DESTRUCT,				1, INT_MAX,	},
+	{ "destroy-instantly",			OP_DESTROY_INSTANTLY,			1, INT_MAX	}, // Admiral MS
 	{ "transfer-cargo",				OP_TRANSFER_CARGO,				2, 2,			},
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
 	{ "set-cargo",					OP_SET_CARGO,					2, 3,			},
@@ -11058,6 +11060,73 @@ void sexp_set_subsystem_strength(int n)
 	}
 }
 
+// destroys a subsystem without explosions
+void sexp_destroy_subsys_instantly (int n)
+{
+	char *subsystem;
+	int	shipnum, index, generic_type;
+	ship *shipp;
+	ship_subsys *ss = NULL;
+	
+	// if MULTIPLAYER bail
+	if (Game_mode & GM_MULTIPLAYER) {
+		return;
+	}
+
+	shipnum = ship_name_lookup(CTEXT(n));
+	// if no ship, then return immediately.
+	if ( shipnum == -1 ){
+		return;
+	}
+
+	shipp = &Ships[shipnum];
+	n = CDR(n);
+	
+	//Process subsystems
+	while(n != -1)
+	{
+		subsystem = CTEXT(n);
+		if ( !stricmp( subsystem, SEXP_HULL_STRING) || !stricmp( subsystem, SEXP_SIM_HULL_STRING)){
+			n = CDR(n);
+			continue;
+		}
+		// deal with generic subsystems
+		generic_type = get_generic_subsys(subsystem);
+		if (generic_type) {
+			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
+				if (generic_type == ss->system_info->type) {
+					// do destruction stuff
+					ss->current_hits = 0;
+					ship_recalc_subsys_strength(shipp);
+					do_subobj_destroyed_stuff(shipp, ss, NULL, true);
+				}
+			}
+		}
+		else
+		{
+			// normal subsystems
+			ss = ship_get_subsys(shipp, subsystem);
+			index = ship_get_subsys_index(shipp, subsystem, 1);
+			if ( index == -1 ) {
+				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for destroy-subsys-instantly\n", subsystem, shipp->ship_name));
+				n = CDR(n);
+				continue;
+			}
+			if(ss == NULL) {
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for destroy-subsys-instantly\n", index, shipp->ship_name));
+				n = CDR(n);
+				continue;
+			}
+			// do destruction stuff
+			ss->current_hits = 0;
+			ship_recalc_subsys_strength(shipp);
+			do_subobj_destroyed_stuff(shipp, ss, NULL, true);
+		}
+		// next
+		n = CDR(n);
+	}
+}
+
 /**
  * Changes the validity of a goal.
  * 
@@ -13567,6 +13636,37 @@ void sexp_ship_vanish(int n)
 		num = ship_name_lookup(ship_name);
 		if ( num != -1 )
 			ship_actually_depart(num, SHIP_VANISHED);
+	}
+}
+
+void sexp_destroy_instantly(int n)
+{
+	char *ship_name;
+	int ship_num;
+	object *ship_obj;
+
+	// if MULTIPLAYER bail
+	if (Game_mode & GM_MULTIPLAYER) {
+		return;
+	}
+
+	for ( ; n != -1; n = CDR(n) ) {
+		ship_name = CTEXT(n);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
+			continue;
+		ship_num = ship_name_lookup(ship_name);
+
+		// if it still exists, destroy it
+		if (ship_num >= 0) {
+			ship_obj = &Objects[Ships[ship_num].objnum];
+
+			//if its the player don't destroy
+			if (ship_obj == Player_obj)
+				continue;
+			ship_destroy_instantly(ship_obj,ship_num);
+		}
 	}
 }
 
@@ -21218,6 +21318,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_DESTROY_INSTANTLY:
+				sexp_destroy_instantly(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			//-Sesquipedalian
 			case OP_SHIELDS_ON: 
 			case OP_SHIELDS_OFF:
@@ -21432,6 +21537,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_SET_SUBSYSTEM_STRNGTH:
 				sexp_set_subsystem_strength(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_DESTROY_SUBSYS_INSTANTLY:
+				sexp_destroy_subsys_instantly(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -23258,6 +23368,7 @@ int query_operator_return_type(int op)
 		case OP_SET_DEBRIEFING_TOGGLED:
 		case OP_FORCE_JUMP:
 		case OP_SET_SUBSYSTEM_STRNGTH:
+		case OP_DESTROY_SUBSYS_INSTANTLY:
 		case OP_GOOD_REARM_TIME:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
@@ -23289,6 +23400,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SHIP_VANISH:
+		case OP_DESTROY_INSTANTLY:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_STEALTHY:
@@ -23733,6 +23845,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_VANISH:
+		case OP_DESTROY_INSTANTLY:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_STEALTHY:
@@ -24452,6 +24565,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else 
 				return OPF_BOOL;
+
+		case OP_DESTROY_SUBSYS_INSTANTLY:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYS_OR_GENERIC;
 
 		case OP_WAYPOINTS_DONE:
 			if ( argnum == 0 )
@@ -26734,8 +26853,10 @@ int get_subcategory(int sexp_id)
 		case OP_SABOTAGE_SUBSYSTEM:
 		case OP_REPAIR_SUBSYSTEM:
 		case OP_SET_SUBSYSTEM_STRNGTH:
+		case OP_DESTROY_SUBSYS_INSTANTLY:
 		case OP_SUBSYS_SET_RANDOM:
 		case OP_SELF_DESTRUCT:
+		case OP_DESTROY_INSTANTLY:
 		case OP_TRANSFER_CARGO:
 		case OP_EXCHANGE_CARGO:
 		case OP_SET_CARGO:
@@ -28140,6 +28261,13 @@ sexp_help_struct Sexp_help[] = {
 		"\t3:\tPercentage to set subsystem integrity to.\r\n" 
 		"\t4:\tRepair turret submodel.  Optional argument that defaults to true."},
 
+	{ OP_DESTROY_SUBSYS_INSTANTLY, "destroy-subsys-instantly\r\n"
+		"\tDetroys the specified subsystems without effects."
+		"\tSingle player only!"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of ship subsystem is on.\r\n"
+		"\tRest:\tName of subsystem to destroy.\r\n"},
+
 	{ OP_INVALIDATE_GOAL, "Invalidate goal (Action operator)\r\n"
 		"\tMakes a mission goal invalid, which causes it to not show up on mission goals "
 		"screen, or be evaluated.\r\n"
@@ -29208,14 +29336,14 @@ sexp_help_struct Sexp_help[] = {
 		"\tRest:\tList of ships" },
 
 	{ OP_JETTISON_CARGO, "jettison-cargo-delay\r\n"
-		"\tCauses a cargo carrying ship to jettison its cargo without the undocking procedure. Takes 2 or more arguments...\r\n"
+		"\tCauses a cargo carrying ship to jettison its cargo without the undocking procedure.  Takes 2 or more arguments...\r\n"
 		"\t1: Ship to jettison cargo\r\n"
 		"\t2: Delay after which to jettison cargo (note that this isn't actually used)\r\n"
 		"\tRest (optional): Cargo to jettison.  If no optional arguments are specified, the ship jettisons all cargo.\r\n"
 	},
 
 	{ OP_SET_DOCKED, "set-docked\r\n"
-		"\tCauses one ship to become instantly docked to another at the specified docking ports.Takes 4 arguments...\r\n"
+		"\tCauses one ship to become instantly docked to another at the specified docking ports.  Takes 4 arguments...\r\n"
 		"\t1: Docker ship\r\n"
 		"\t1: Docker point\r\n"
 		"\t1: Dockee ship\r\n"
@@ -29562,6 +29690,11 @@ sexp_help_struct Sexp_help[] = {
 		"\tMakes the named ship vanish (no log and vanish)\r\n"
 		"\tSingle Player Only!  Warning: This will cause ship exit not to be logged, so 'has-departed', etc. will not work\r\n"
 		"\t1: List of ship names to vanish\r\n"},
+
+	{ OP_DESTROY_INSTANTLY, "destroy-instantly\r\n"
+		"\tSelf-destructs the named ship without explosion, death roll, or debris.  That is, the ship is instantly gone from the mission and the only indication of what happened is a mission log entry.\r\n"
+		"\tSingle Player Only! Non-player ship only!\r\n"
+		"\tAll: List of ship names to destroy.\r\n"},
 
 	{ OP_SHIP_CREATE, "ship-create\r\n"
 		"\tCreates a new ship\r\n"
