@@ -23,7 +23,8 @@ void	red_alert_close();
 void	red_alert_do_frame(float frametime);
 int	red_alert_mission();
 void	red_alert_invalidate_timestamp();
-int	red_alert_check_status();
+int	red_alert_in_progress();
+void red_alert_maybe_move_to_next_mission();
 
 void red_alert_store_wingman_status();
 void red_alert_bash_wingman_status();

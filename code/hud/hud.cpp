@@ -3357,7 +3357,7 @@ void HudGaugeObjectiveNotify::renderRedAlert()
 {
 	int w, h;
 
-	if ( !red_alert_check_status() ) {
+	if ( !red_alert_in_progress() ) {
 		return;
 	}
 
