@@ -4485,6 +4485,10 @@ void game_frame(int paused)
 				}
 			}
 
+			// Goober5000 - check if we should red-alert
+			// (this is approximately where the red_alert_check_status() function tree began in the pre-HUD-overhaul code)
+			red_alert_maybe_move_to_next_mission();
+
 			DEBUG_GET_TIME( render3_time2 )
 			DEBUG_GET_TIME( render2_time1 )
 

@@ -1558,6 +1558,7 @@ extern int ship_get_num_ships();
 #define SHIP_DEPARTED			( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
 // Goober5000
 extern void ship_cleanup(int shipnum, int cleanup_mode);
+extern void ship_destroy_instantly(object *ship_obj, int shipnum);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern int ship_fire_primary_debug(object *objp);	//	Fire the debug laser.

@@ -158,7 +158,8 @@ inline bool obj_render_is_model(object *obj)
 		|| (obj->type == OBJ_WEAPON 
 			&& Weapon_info[Weapons[obj->instance].weapon_info_index].render_type == WRT_POF) 
 		|| obj->type == OBJ_ASTEROID 
-		|| obj->type == OBJ_DEBRIS;
+		|| obj->type == OBJ_DEBRIS
+		|| obj->type == OBJ_JUMP_NODE;
 }
 
 // Sorts all the objects by Z and renders them
