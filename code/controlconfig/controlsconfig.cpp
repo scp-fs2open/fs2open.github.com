@@ -387,7 +387,7 @@ int control_config_detect_axis()
 
 void control_config_conflict_check()
 {
-	int i, j, a, b, c, shift = -1, alt = -1;
+	int i, j, shift = -1, alt = -1;
 
 	for (i=0; i<CCFG_MAX; i++) {
 		Conflicts[i].key = Conflicts[i].joy = -1;
@@ -410,11 +410,16 @@ void control_config_conflict_check()
 
 	for (i=0; i<CCFG_MAX-1; i++) {
 		for (j=i+1; j<CCFG_MAX; j++) {
-			if (Control_config[i].key_id >= 0) {
-				c = 0;
-				a = Control_config[i].key_id;
-				b = Control_config[j].key_id;
-				if (a == b) {
+			if ((Control_config[i].key_id >= 0) && (Control_config[i].key_id == Control_config[j].key_id)) {
+				// If one of the conflicting keys is disabled, then this silently clears
+				// the disabled key to prevent the conflict; a conflict is recorded only
+				// if both keys are enabled
+
+				if (Control_config[i].disabled)
+					Control_config[i].key_id = (short) -1;
+				else if (Control_config[j].disabled)
+					Control_config[j].key_id = (short) -1;
+				else {
 					Conflicts[i].key = j;
 					Conflicts[j].key = i;
 					Conflicts_tabs[ Control_config[i].tab ] = 1;
@@ -423,10 +428,18 @@ void control_config_conflict_check()
 			}
 
 			if ((Control_config[i].joy_id >= 0) && (Control_config[i].joy_id == Control_config[j].joy_id)) {
-				Conflicts[i].joy = j;
-				Conflicts[j].joy = i;
-				Conflicts_tabs[ Control_config[i].tab ] = 1;
-				Conflicts_tabs[ Control_config[j].tab ] = 1;
+				// Same as above
+
+				if (Control_config[i].disabled)
+					Control_config[i].joy_id = (short) -1;
+				else if (Control_config[j].disabled)
+					Control_config[j].joy_id = (short) -1;
+				else {
+					Conflicts[i].joy = j;
+					Conflicts[j].joy = i;
+					Conflicts_tabs[ Control_config[i].tab ] = 1;
+					Conflicts_tabs[ Control_config[j].tab ] = 1;
+				}
 			}
 		}
 	}
@@ -454,7 +467,7 @@ void control_config_list_prepare()
 
 	Num_cc_lines = y = z = 0;
 	while (z < CCFG_MAX) {
-		if (Control_config[z].tab == Tab) {
+		if (Control_config[z].tab == Tab && !Control_config[z].disabled) {
 			k = Control_config[z].key_id;
 			j = Control_config[z].joy_id;
 
@@ -2116,6 +2129,9 @@ int check_control_used(int id, int key)
 	if ((Game_mode & GM_MULTIPLAYER) && multi_ignore_controls()){
 		return 0;
 	}
+
+	if (Control_config[id].disabled)
+		return 0;
 
 	if (Control_config[id].type == CC_TYPE_CONTINUOUS) {
 		if (joy_down(Control_config[id].joy_id) || joy_down_count(Control_config[id].joy_id, 1)) {

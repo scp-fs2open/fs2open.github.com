@@ -625,6 +625,11 @@ void control_config_common_load_overrides()
                 if (optional_string("$Type:"))
                 {stuff_string(szTempBuffer, F_NAME, iBufferLength);
                  r_ccConfig.type = (char)mEnumNameToVal[szTempBuffer];}
+                 
+                 if (optional_string("+Disable")) {
+                    r_ccConfig.disabled = true;
+                } else
+                    r_ccConfig.disabled = false;
                 
                 // Nerf the buffer now.
                 szTempBuffer[0] = '\0';
