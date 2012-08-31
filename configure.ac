@@ -173,9 +173,9 @@ if test "$fs2_debug" = "yes" ; then
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+		AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_DEBUG"])
 	else
-		AC_SUBST(FS2_BINARY, ["fs2_open_d"])
+		AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}_DEBUG"])
 	fi
 else
 	AC_DEFINE([NDEBUG])
@@ -183,9 +183,9 @@ else
 	D_LDFLAGS="$D_LDFLAGS "
 
 	if test "$fs2_fred" = "yes" ; then
-		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
+		AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}"])
 	else
-		AC_SUBST(FS2_BINARY, ["fs2_open_r"])
+		AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}"])
 	fi
 fi
 
