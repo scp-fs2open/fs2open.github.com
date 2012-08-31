@@ -533,6 +533,9 @@ void control_config_common_load_overrides();
 // initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_init()
 {
+	for (int i=0; i<CCFG_MAX; i++)
+		Control_config[i].disabled = false;
+
     control_config_common_load_overrides();
 	if(Lcl_gr){
 		Scan_code_text = Scan_code_text_german;
@@ -626,10 +629,8 @@ void control_config_common_load_overrides()
                 {stuff_string(szTempBuffer, F_NAME, iBufferLength);
                  r_ccConfig.type = (char)mEnumNameToVal[szTempBuffer];}
                  
-                 if (optional_string("+Disable")) {
+                 if (optional_string("+Disable"))
                     r_ccConfig.disabled = true;
-                } else
-                    r_ccConfig.disabled = false;
                 
                 // Nerf the buffer now.
                 szTempBuffer[0] = '\0';
