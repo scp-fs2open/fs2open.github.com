@@ -3625,7 +3625,7 @@ void weapon_render(object *obj)
 		}
 
 		default:
-			Warning(LOCATION, "Unknown weapon rendering type = %i\n", wip->render_type);
+			Warning(LOCATION, "Unknown weapon rendering type = %i for weapon %s\n", wip->render_type, wip->name);
 	}
 }
 
