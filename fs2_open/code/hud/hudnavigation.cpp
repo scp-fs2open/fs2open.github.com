@@ -47,6 +47,6 @@ void hud_draw_navigation()
 		g3_project_vertex(&target_point);
 
 		if ( in_cockpit )
-			hud_target_add_display_list(NULL, &target_point, target_pos, 0, &NavColor, Navs[CurrentNav].NavName, TARGET_DISPLAY_DIST);
+			hud_target_add_display_list(NULL, &target_point, target_pos, 0, &NavColor, Navs[CurrentNav].m_NavName, TARGET_DISPLAY_DIST);
 	}
 }

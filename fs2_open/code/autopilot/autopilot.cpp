@@ -1336,7 +1336,7 @@ int FindNav(char *Nav)
 {
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 	{
-		if (!stricmp(Navs[i].NavName, Nav))
+		if (!stricmp(Navs[i].m_NavName, Nav))
 			return i;
 	}
 
@@ -1401,7 +1401,7 @@ bool AddNav_Ship(char *Nav, char *TargetName, int flags)
 	// Create the NavPoint struct
 	NavPoint tnav;
 
-	strncpy(tnav.NavName, Nav, 32);
+	strncpy(tnav.m_NavName, Nav, 32);
 	tnav.flags = NP_SHIP | flags;
 
 	Assert(!(tnav.flags & NP_WAYPOINT));
@@ -1447,7 +1447,7 @@ bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
 	// Create the NavPoint struct
 	NavPoint tnav;
 
-	strncpy(tnav.NavName, Nav, 32);
+	strncpy(tnav.m_NavName, Nav, 32);
 	tnav.flags = NP_WAYPOINT | flags;
 
 	Assert(!(tnav.flags & NP_SHIP));
