@@ -308,7 +308,6 @@ void generic_render_eff_stream(generic_anim *ga)
 {
 	if(ga->current_frame == ga->previous_frame)
 		return;
-	int i;
 	int bpp = 32;
 	if(ga->use_hud_color)
 		bpp = 8;
