@@ -149,7 +149,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, float dist, float alp
 	int h, w;
 	vertex vert;
 	float aspect_mp;
-	float scale = 0.6f;
+	float temp_scale = 0.6f;
 
 	if ((sub_y_clip && (pnt->xyz.y > 0)) || ((!sub_y_clip) && (pnt->xyz.y <= 0)))
 		return;
@@ -159,7 +159,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, float dist, float alp
 
 	float range = player_farthest_weapon_range();
 	if(dist <= range) {
-		scale = 0.6f + (range-dist)/range;
+		temp_scale = 0.6f + (range-dist)/range;
 	}
 	
 	bm_get_info(idx, &w, &h);
@@ -170,7 +170,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, float dist, float alp
         aspect_mp = (((float) h) / ((float) w));
     }
 
-	float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f) * scale;
+	float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f) * temp_scale;
 
 	gr_set_bitmap(idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
 	g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
@@ -179,7 +179,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, float dist, float alp
 // radar is damaged, so make blips dance around
 void HudGaugeRadarDradis::blipDrawDistorted(blip *b, vec3d *pos, float alpha)
 {
-	float scale;
+	float temp_scale;
 	float dist = vm_vec_normalize(pos);
 	vec3d out;
 	float distortion_angle=20;
@@ -187,9 +187,9 @@ void HudGaugeRadarDradis::blipDrawDistorted(blip *b, vec3d *pos, float alpha)
 	// maybe alter the effect if EMP is active
 	if (emp_active_local())
 	{
-		scale = emp_current_intensity();
-		dist *= frand_range(MAX(0.75f, 0.75f*scale), MIN(1.25f, 1.25f*scale));
-		distortion_angle *= frand_range(-3.0f,3.0f)*frand_range(0.0f, scale);
+		temp_scale = emp_current_intensity();
+		dist *= frand_range(MAX(0.75f, 0.75f*temp_scale), MIN(1.25f, 1.25f*temp_scale));
+		distortion_angle *= frand_range(-3.0f,3.0f)*frand_range(0.0f, temp_scale);
 
 		if (dist > 1.0f) dist = 1.0f;
 		if (dist < 0.1f) dist = 0.1f;
@@ -548,7 +548,7 @@ void HudGaugeRadarDradis::pageIn()
 
 void HudGaugeRadarDradis::doLoopSnd()
 {
-	if (this->loop_snd < 0)
+	if (this->m_loop_snd < 0)
 	{
 		return;
 	}
@@ -563,7 +563,7 @@ void HudGaugeRadarDradis::doLoopSnd()
 	}
 	else if (this->loop_sound_handle < 0 || !snd_is_playing(this->loop_sound_handle))
 	{
-		loop_sound_handle = snd_play(&Snds[loop_snd], 0.0f, loop_sound_volume);
+		loop_sound_handle = snd_play(&Snds[m_loop_snd], 0.0f, loop_sound_volume);
 	}
 }
 
@@ -582,7 +582,7 @@ void HudGaugeRadarDradis::doBeeps()
 
 	if (arrival_beep_snd < 0 &&
 		departure_beep_snd < 0 &&
-		stealth_arrival_snd < 0 &&
+		m_stealth_arrival_snd < 0 &&
 		stealth_departure_snd < 0)
 	{
 		return;
@@ -636,9 +636,9 @@ void HudGaugeRadarDradis::doBeeps()
 
 			arrival_beep_next_check = timestamp(arrival_beep_delay);
 		}
-		else if (stealth_arrival_snd >= 0 && stealth_arrival_happened)
+		else if (m_stealth_arrival_snd >= 0 && stealth_arrival_happened)
 		{
-			snd_play(&Snds[stealth_arrival_snd]);
+			snd_play(&Snds[m_stealth_arrival_snd]);
 
 			arrival_beep_next_check = timestamp(arrival_beep_delay);
 		}
@@ -664,14 +664,14 @@ void HudGaugeRadarDradis::doBeeps()
 
 void HudGaugeRadarDradis::initSound(int loop_snd, float loop_snd_volume, int arrival_snd, int departure_snd, int stealth_arrival_snd, int stealth_departue_snd, float arrival_delay, float departure_delay)
 {
-	this->loop_snd = loop_snd;
+	this->m_loop_snd = loop_snd;
 	this->loop_sound_handle = -1;
 	this->loop_sound_volume = loop_snd_volume;
 
 	this->arrival_beep_snd = arrival_snd;
 	this->departure_beep_snd = departure_snd;
 
-	this->stealth_arrival_snd = stealth_arrival_snd;
+	this->m_stealth_arrival_snd = stealth_arrival_snd;
 	this->stealth_departure_snd = stealth_departue_snd;
 
 	this->arrival_beep_delay = fl2i(arrival_delay * 1000.0f);

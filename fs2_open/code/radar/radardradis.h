@@ -53,13 +53,13 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 	bool sub_y_clip;
 
 	int loop_sound_handle;
-	int loop_snd;
+	int m_loop_snd;
 	float loop_sound_volume;
 
 	int arrival_beep_snd;
 	int departure_beep_snd;
 
-	int stealth_arrival_snd;
+	int m_stealth_arrival_snd;
 	int stealth_departure_snd;
 
 	int arrival_beep_delay;
