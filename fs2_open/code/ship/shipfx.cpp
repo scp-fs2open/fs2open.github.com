@@ -3886,9 +3886,9 @@ int WE_BSG::warpShipClip()
 
 	if(direction == WD_WARP_OUT && stage > 0)
 	{
-		vec3d pos;
-		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
-		g3_start_user_clip_plane( &pos, &objp->orient.vec.fvec );
+		vec3d position;
+		vm_vec_scale_add(&position, &objp->pos, &objp->orient.vec.fvec, objp->radius);
+		g3_start_user_clip_plane( &position, &objp->orient.vec.fvec );
 	}
 	return 1;
 }
@@ -3967,10 +3967,10 @@ int WE_BSG::getWarpPosition(vec3d *output)
 	if(!this->isValid())
 		return 0;
 
-	vec3d pos;
-	vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
+	vec3d position;
+	vm_vec_scale_add(&position, &objp->pos, &objp->orient.vec.fvec, objp->radius);
 
-	*output = pos;
+	*output = position;
 	return 1;
 }
 
