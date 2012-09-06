@@ -27,7 +27,7 @@
 
 struct NavPoint 
 {
-	char NavName[32];
+	char m_NavName[32];
 	int flags;
 
 	void *target_obj;
