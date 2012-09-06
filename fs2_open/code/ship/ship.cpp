@@ -9799,8 +9799,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if (!(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY))
 		{
 			int effective_primary_banks = 0;
-			for (int i = 0; i < num_primary_banks; i++)
-				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK)
+			for (int it = 0; it < num_primary_banks; it++)
+				if (Weapon_info[swp->primary_bank_weapons[it]].wi_flags3 & WIF3_NOLINK)
 					continue;
 				else
 					effective_primary_banks++;
