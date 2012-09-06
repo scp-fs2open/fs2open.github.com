@@ -45,7 +45,7 @@ class waypoint_list
 		void set_name(const char *name);
 
 	private:
-		char name[NAME_LENGTH];
+		char m_name[NAME_LENGTH];
 		SCP_list<waypoint> waypoints;
 };
 

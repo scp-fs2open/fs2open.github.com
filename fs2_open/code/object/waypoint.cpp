@@ -59,14 +59,14 @@ void waypoint::set_pos(vec3d *pos)
 
 waypoint_list::waypoint_list()
 {
-	this->name[0] = '\0';
+	this->m_name[0] = '\0';
 }
 
 waypoint_list::waypoint_list(const char *name)
 {
 	Assert(name != NULL);
 	Assert(find_matching_waypoint_list(name) == NULL);
-	strcpy_s(this->name, name);
+	strcpy_s(this->m_name, name);
 }
 
 waypoint_list::~waypoint_list()
@@ -76,7 +76,7 @@ waypoint_list::~waypoint_list()
 
 char *waypoint_list::get_name()
 {
-	return name;
+	return m_name;
 }
 
 SCP_list<waypoint> &waypoint_list::get_waypoints()
@@ -87,7 +87,7 @@ SCP_list<waypoint> &waypoint_list::get_waypoints()
 void waypoint_list::set_name(const char *name)
 {
 	Assert(name != NULL);
-	strcpy_s(this->name, name);
+	strcpy_s(this->m_name, name);
 }
 
 //********************FUNCTIONS********************
