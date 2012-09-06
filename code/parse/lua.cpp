@@ -4835,15 +4835,15 @@ ADE_FUNC(kill, l_Asteroid, "[ship killer=nil, wvector hitpos=nil]", "Kills the a
 class cockpit_disp_info_h
 {
 private:
-	ship_info *sip;
-	size_t display_num;
+	ship_info *m_sip;
+	size_t m_display_num;
 
 public:
-	cockpit_disp_info_h() : sip( NULL ), display_num( INVALID_ID ) {}
+	cockpit_disp_info_h() : m_sip( NULL ), m_display_num( INVALID_ID ) {}
 	cockpit_disp_info_h(ship_info *sip, size_t display_num)
 	{
-		this->sip = sip;
-		this->display_num = display_num;
+		this->m_sip = sip;
+		this->m_display_num = display_num;
 	}
 
 	cockpit_display_info *Get()
@@ -4851,27 +4851,27 @@ public:
 		if (!this->isValid())
 			return NULL;
 
-		return &sip->displays[display_num];
+		return &m_sip->displays[m_display_num];
 	}
 
 	bool isValid()
 	{
-		if (sip == NULL)
+		if (m_sip == NULL)
 		{
 			return false;
 		}
 
-		if (display_num == INVALID_ID)
+		if (m_display_num == INVALID_ID)
 		{
 			return false;
 		}
 
-		if ( display_num >= sip->displays.size())
+		if ( m_display_num >= m_sip->displays.size())
 		{
 			return false;
 		}
 
-		if (!sip->hud_enabled)
+		if (!m_sip->hud_enabled)
 		{
 			return false;
 		}
@@ -5011,17 +5011,17 @@ class cockpit_display_h
 {
 private:
 	int obj_num;
-	object *objp;
-	size_t display_num;
+	object *m_objp;
+	size_t m_display_num;
 
 public:
-	cockpit_display_h() : obj_num( -1 ), objp( NULL ), display_num( INVALID_ID ) {}
+	cockpit_display_h() : obj_num( -1 ), m_objp( NULL ), m_display_num( INVALID_ID ) {}
 	cockpit_display_h(object *objp, size_t display_num)
 	{
 		this->obj_num = OBJ_INDEX(objp);
-		this->objp = objp;
+		this->m_objp = objp;
 
-		this->display_num = display_num;
+		this->m_display_num = display_num;
 	}
 
 	cockpit_display *Get()
@@ -5031,7 +5031,7 @@ public:
 			return NULL;
 		}
 
-		return &Player_displays[display_num];
+		return &Player_displays[m_display_num];
 	}
 
 	size_t GetId()
@@ -5041,7 +5041,7 @@ public:
 			return INVALID_ID;
 		}
 
-		return display_num;
+		return m_display_num;
 	}
 
 	bool isValid()
@@ -5051,23 +5051,23 @@ public:
 			return false;
 		}
 
-		if (objp == NULL || OBJ_INDEX(objp) != obj_num)
+		if (m_objp == NULL || OBJ_INDEX(m_objp) != obj_num)
 		{
 			return false;
 		}
 
 		// Only player has cockpit displays
-		if (objp != Player_obj)
+		if (m_objp != Player_obj)
 		{
 			return false;
 		}
 
-		if (display_num == INVALID_ID)
+		if (m_display_num == INVALID_ID)
 		{
 			return false;
 		}
 
-		if (display_num >= Player_displays.size())
+		if (m_display_num >= Player_displays.size())
 		{
 			return false;		}
 
@@ -5201,12 +5201,12 @@ ADE_FUNC(isValid, l_CockpitDisplay, NULL, "Detects whether this handle is valid 
 class cockpit_displays_info_h
 {
 private:
-	int ship_info_idx;
+	int m_ship_info_idx;
 public:
-	cockpit_displays_info_h() : ship_info_idx( -1 ) {}
+	cockpit_displays_info_h() : m_ship_info_idx( -1 ) {}
 	cockpit_displays_info_h(int ship_info_idx)
 	{
-		this->ship_info_idx = ship_info_idx;
+		this->m_ship_info_idx = ship_info_idx;
 	}
 
 	ship_info *Get()
@@ -5214,17 +5214,17 @@ public:
 		if (!isValid())
 			return NULL;
 
-		return &Ship_info[ship_info_idx];
+		return &Ship_info[m_ship_info_idx];
 	}
 
 	bool isValid()
 	{
-		if (ship_info_idx < 0 || ship_info_idx >= Num_ship_classes)
+		if (m_ship_info_idx < 0 || m_ship_info_idx >= Num_ship_classes)
 		{
 			return false;
 		}
 
-		if (!Ship_info[ship_info_idx].hud_enabled)
+		if (!Ship_info[m_ship_info_idx].hud_enabled)
 		{
 			return false;
 		}
@@ -7244,22 +7244,22 @@ ADE_FUNC(isValid, l_ShipTextures, NULL, "Detects whether handle is valid", "bool
 class cockpit_displays_h
 {
 private:
-	object *objp;
+	object *m_objp;
 public:
-	cockpit_displays_h() : objp( NULL ) {}
+	cockpit_displays_h() : m_objp( NULL ) {}
 	cockpit_displays_h(object *objp)
 	{
-		this->objp = objp;
+		this->m_objp = objp;
 	}
 
 	bool isValid()
 	{
-		if (objp == NULL)
+		if (m_objp == NULL)
 		{
 			return false;
 		}
 
-		if (objp != Player_obj)
+		if (m_objp != Player_obj)
 		{
 			return false;
 		}
