@@ -177,6 +177,7 @@ protected:
 	int Header_offsets[2];
 	int Item_start_offsets[2];
 	int Middle_frame_start_offset_y;
+	int bottom_bg_offset;
 	int Item_h;
 	int Item_offset_x;
 
@@ -191,6 +192,7 @@ public:
 	void initHeaderOffsets(int x, int y);
 	void initItemStartOffsets(int x, int y);
 	void initMiddleFrameStartOffsetY(int y);
+	void initBottomBgOffset(int offset);
 	void initItemHeight(int h);
 	void initItemOffsetX(int x);
 	void initPgUpOffsets(int x, int y);

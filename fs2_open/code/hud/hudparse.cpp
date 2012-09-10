@@ -3736,6 +3736,7 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, int ship_ind
 	int Header_offsets[2];
 	int Item_start_offsets[2];
 	int Middle_frame_start_offset_y;
+	int bottom_bg_offset = 0;
 	int Item_h;
 	int Item_offset_x;
 	char fname_top[MAX_FILENAME_LEN] = "message1";
@@ -3832,6 +3833,9 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, int ship_ind
 	if(optional_string("Entry Height:")) {
 		stuff_int(&Item_h);
 	}
+	if(optional_string("Bottom Background Offset:")) {
+		stuff_int(&bottom_bg_offset);
+	}
 	if(optional_string("Command X-offset:")) {
 		stuff_int(&Item_offset_x);
 	}
@@ -3849,6 +3853,7 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, int ship_ind
 	hud_gauge->initHeaderOffsets(Header_offsets[0], Header_offsets[1]);
 	hud_gauge->initItemStartOffsets(Item_start_offsets[0], Item_start_offsets[1]);
 	hud_gauge->initMiddleFrameStartOffsetY(Middle_frame_start_offset_y);
+	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initItemHeight(Item_h);
 	hud_gauge->initItemOffsetX(Item_offset_x);
 	hud_gauge->initPgUpOffsets(Pgup_offsets[0], Pgup_offsets[1]);
