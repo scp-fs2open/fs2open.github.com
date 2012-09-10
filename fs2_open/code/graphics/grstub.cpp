@@ -381,6 +381,15 @@ void gr_stub_zbuffer_clear(int mode)
 {
 }
 
+int gr_stub_stencil_set(int mode)
+{
+	return 0;
+}
+
+void gr_stub_stencil_clear()
+{
+}
+
 /*void gr_stub_shade(int x,int y,int w,int h)
 {
 }*/

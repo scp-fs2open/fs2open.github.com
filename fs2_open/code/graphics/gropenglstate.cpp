@@ -507,6 +507,24 @@ GLboolean opengl_state::ScissorTest(GLint state)
 	return save_state;
 }
 
+GLboolean opengl_state::StencilTest(GLint state)
+{
+    GLboolean save_state = stenciltest_Status;
+
+    if ( !((state == -1) || (state == stenciltest_Status)) ) {
+        if (state) {
+            Assert( state == GL_TRUE );
+            glEnable(GL_STENCIL_TEST);
+            stenciltest_Status = GL_TRUE;
+        } else {
+            glDisable(GL_STENCIL_TEST);
+            stenciltest_Status = GL_FALSE;
+        }
+    }
+
+    return save_state;
+}
+
 GLboolean opengl_state::CullFace(GLint state)
 {
 	GLboolean save_state = cullface_Status;
@@ -720,6 +738,37 @@ void opengl_state::SetZbufferType(gr_zbuffer_type zt)
 	GL_state.DepthTest( (zt == ZBUFFER_TYPE_NONE) ? GL_FALSE : GL_TRUE );
 
 	Current_zbuffer_type = zt;
+}
+
+void opengl_state::SetStencilType(gr_stencil_type st)
+{
+    if (st == Current_stencil_type) {
+        return;
+    }
+    
+    switch (st) {
+        case STENCIL_TYPE_NONE:
+            glStencilFunc( GL_NEVER, 1, 0xFFFF );
+            glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
+            break;
+            
+        case STENCIL_TYPE_READ:
+            glStencilFunc( GL_NOTEQUAL, 1, 0XFFFF );
+            glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
+            break;
+            
+        case STENCIL_TYPE_WRITE:
+            glStencilFunc( GL_ALWAYS, 1, 0xFFFF );
+            glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE );
+            break;
+                     
+        default:
+            break;
+    }
+           
+    GL_state.StencilTest( (st == STENCIL_TYPE_NONE) ? GL_FALSE : GL_TRUE );
+         
+    Current_stencil_type = st;
 }
 
 opengl_array_state::~opengl_array_state()

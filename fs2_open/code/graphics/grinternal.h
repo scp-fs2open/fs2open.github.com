@@ -79,4 +79,10 @@ typedef enum gr_zbuffer_type {
 	ZBUFFER_TYPE_DEFAULT
 } gr_zbuffer_type;
 
+typedef enum gr_stencil_type {
+    STENCIL_TYPE_NONE,
+    STENCIL_TYPE_READ,
+    STENCIL_TYPE_WRITE
+} gr_stencil_type;
+
 #endif
