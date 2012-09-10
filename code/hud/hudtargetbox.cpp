@@ -259,6 +259,11 @@ void HudGaugeTargetBox::initCargoScanSize(int w, int h)
 	Cargo_scan_h = h;
 }
 
+void HudGaugeTargetBox::initDesaturate(bool desaturate)
+{
+	Desaturated = desaturate;
+}
+
 void HudGaugeTargetBox::initBitmaps(char *fname_monitor, char *fname_monitor_mask, char *fname_integrity, char *fname_static)
 {
 	Monitor_frame.first_frame = bm_load_animation(fname_monitor, &Monitor_frame.num_frames);
@@ -467,6 +472,7 @@ void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orie
 
 }
 
+extern bool Interp_desaturate;
 void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 {
 	vec3d		obj_pos = ZERO_VECTOR;
@@ -548,16 +554,21 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_READ);
 		}
+		Interp_desaturate = Desaturated;
 
 		if (!Glowpoint_override)
 			Glowpoint_override = true;
+
 		// maybe render a special hud-target-only model
 		if(target_sip->model_num_hud >= 0){
 			model_render( target_sip->model_num_hud, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 		} else {
 			model_render( target_sip->model_num, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, target_shipp->ship_replacement_textures);
 		}
+
+		Interp_desaturate = false;
 		Glowpoint_override = false;
+
 		ship_model_stop( target_objp );
 		gr_disable_team_color();
 
@@ -670,8 +681,12 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 			gr_stencil_set(GR_STENCIL_READ);
 		}
 
+		Interp_desaturate = Desaturated;
+
 		// This calls the colour that doesn't get reset
 		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
+
+		Interp_desaturate = false;
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -805,7 +820,11 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			gr_stencil_set(GR_STENCIL_READ);
 		}
 
+		Interp_desaturate = Desaturated;
+
 		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
+
+		Interp_desaturate = false;
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -919,7 +938,11 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 			gr_stencil_set(GR_STENCIL_READ);
 		}
 
+		Interp_desaturate = Desaturated;
+
 		model_render(Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
+
+		Interp_desaturate = false;
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
