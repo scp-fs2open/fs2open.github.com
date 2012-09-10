@@ -783,6 +783,36 @@ void HudGauge::renderPrintf(int x, int y, int gauge_id, char* format, ...)
 	renderString(x, y, gauge_id, tmp);
 }
 
+void HudGauge::renderBitmapColor(int frame, int x, int y)
+{
+	int jx = x, jy = y, nx = 0, ny = 0;
+
+	if( !emp_should_blit_gauge() ) {
+		return;
+	}
+
+	emp_hud_jitter(&jx, &jy);
+
+	if ( gr_screen.rendering_to_texture != -1 ) {
+		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
+	} else {
+		if ( reticle_follow ) {
+			nx = HUD_nose_x;
+			ny = HUD_nose_y;
+
+			gr_resize_screen_pos(&nx, &ny);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&nx, &ny);
+		} else {
+			gr_set_screen_scale(base_w, base_h);
+		}
+	}
+
+	gr_set_bitmap(frame);
+	gr_bitmap(jx + nx, jy + ny);
+	gr_reset_screen_scale();
+}
+
 void HudGauge::renderBitmap(int x, int y)
 {
 	int jx = x, jy = y, nx = 0, ny = 0;
