@@ -802,6 +802,8 @@ int parse_gauge_type()
 	if ( optional_string("+Warhead Count:") )
 		return HUD_OBJECT_WARHEAD_COUNT;
 
+	if ( optional_string("+Hardpoints:") )
+		return HUD_OBJECT_HARDPOINTS;
 	return -1;
 }
 
@@ -966,6 +968,9 @@ void load_gauge(int gauge, int base_w, int base_h, int hud_font, int ship_idx, c
 		break;
 	case HUD_OBJECT_WARHEAD_COUNT:
 		load_gauge_warhead_count(base_w, base_h, hud_font, ship_idx, use_clr);
+		break;
+	case HUD_OBJECT_HARDPOINTS:
+		load_gauge_hardpoints(base_w, base_h, hud_font, ship_idx, use_clr);
 		break;
 	default:
 		Warning(LOCATION, "Invalid gauge found in hud_gauges.tbl");
@@ -6774,6 +6779,112 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, int ship_index, 
 	hud_gauge->initTextAlign(alignment);
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
+	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
+	hud_gauge->lockConfigColor(lock_color);
+
+	if(ship_index >= 0) {
+		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	} else {
+		default_hud_gauges.push_back(hud_gauge);
+	}
+}
+
+void load_gauge_hardpoints(int base_w, int base_h, int font, int ship_index, color *use_clr)
+{
+	int coords[2];
+	int base_res[2];
+	bool slew = false;
+	int font_num = FONT1;
+
+	int sizes[2] = {150, 150};
+	float line_width = 1.0f;
+	int view_dir = HudGaugeHardpoints::TOP;
+	bool show_primary = false;
+	bool show_secondary = true;
+	int colors[3] = {255, 255, 255};
+	bool lock_color = false;
+
+	if(gr_screen.res == GR_640) {
+		coords[0] = 396;
+		coords[1] = 379;
+
+		base_res[0] = 640;
+		base_res[1] = 480;
+	} else {
+		coords[0] = 634;
+		coords[1] = 670;
+
+		base_res[0] = 1024;
+		base_res[1] = 768;
+	}
+
+	if( check_base_res(base_w, base_h) ) {
+		base_res[0] = base_w;
+		base_res[1] = base_h;
+
+		if ( optional_string("Position:") ) {
+			stuff_int_list(coords, 2);
+		}
+	}
+
+	if ( use_clr != NULL ) {
+		colors[0] = use_clr->red;
+		colors[1] = use_clr->green;
+		colors[2] = use_clr->blue;
+
+		lock_color = true;
+	} else if ( optional_string("Color:") ) {
+		stuff_int_list(colors, 3);
+
+		check_color(colors);
+
+		lock_color = true;
+	}
+
+	if ( optional_string("Font:") ) {
+		stuff_int(&font_num);
+	} else {
+		if ( font >=0 ) {
+			font_num = font;
+		}
+	}
+	if ( optional_string("Slew:") ) {
+		stuff_boolean(&slew);
+	}
+
+	if ( optional_string("Size:") ) {
+		stuff_int_list(sizes, 2);
+	}
+
+	if ( optional_string("Line Width:") ) {
+		stuff_float(&line_width);
+	}
+
+	if ( optional_string("View Direction:") ) {
+		if ( optional_string("Top") ) {
+			view_dir = HudGaugeHardpoints::TOP;
+		} else if ( optional_string("Front") ) {
+			view_dir = HudGaugeHardpoints::FRONT;
+		}
+	}
+
+	if ( optional_string("Show Primary Weapons:") ) {
+		stuff_boolean(&show_primary);
+	}
+
+	if ( optional_string("Show Secondary Weapons:") ) {
+		stuff_boolean(&show_secondary);
+	}
+
+	HudGaugeHardpoints* hud_gauge = new HudGaugeHardpoints();
+	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+	hud_gauge->initSlew(slew);
+	hud_gauge->initFont(font_num);
+	hud_gauge->initSizes(sizes[0], sizes[1]);
+	hud_gauge->initLineWidth(line_width);
+	hud_gauge->initViewDir(view_dir);
+	hud_gauge->initDrawOptions(show_primary, show_secondary);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 

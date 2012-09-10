@@ -4660,6 +4660,8 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 				HEIGHTMAP = model_interp_get_texture(height_map, Interp_base_frametime);
 				MISCMAP = model_interp_get_texture(misc_map, Interp_base_frametime);
 			}
+		} else {
+			alpha = forced_alpha;
 		}
 
 		if ( (texture == -1) && !no_texturing ) {
