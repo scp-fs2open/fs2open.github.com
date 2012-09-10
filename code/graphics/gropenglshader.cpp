@@ -47,7 +47,7 @@ static float Anim_timer = 0.0f;
 static opengl_shader_uniform_reference_t GL_Uniform_Reference_Main[] = {
 	{ SDR_FLAG_LIGHT,		1, {"n_lights"}, 0, { NULL }, "Lighting" },
 	{ SDR_FLAG_FOG,			0, { NULL }, 0, { NULL }, "Fog Effect" },
-	{ SDR_FLAG_DIFFUSE_MAP, 1, {"sBasemap"}, 0, { NULL }, "Diffuse Mapping"},
+	{ SDR_FLAG_DIFFUSE_MAP, 5, {"sBasemap", "desaturate", "desaturate_r", "desaturate_g", "desaturate_b"}, 0, { NULL }, "Diffuse Mapping"},
 	{ SDR_FLAG_GLOW_MAP,	1, {"sGlowmap"}, 0, { NULL }, "Glow Mapping" },
 	{ SDR_FLAG_SPEC_MAP,	1, {"sSpecmap"}, 0, { NULL }, "Specular Mapping" },
 	{ SDR_FLAG_NORMAL_MAP,	1, {"sNormalmap"}, 0, { NULL }, "Normal Mapping" },
