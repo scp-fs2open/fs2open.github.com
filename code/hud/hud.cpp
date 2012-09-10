@@ -3888,3 +3888,63 @@ void HudGaugeSupernova::render(float frametime)
 	gr_set_color_fast(&Color_bright_red);
 	renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
 }
+
+HudGaugeFlightPath::HudGaugeFlightPath():
+HudGauge(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
+{
+}
+
+void HudGaugeFlightPath::initBitmap(char *fname)
+{
+	Marker.first_frame = bm_load_animation(fname, &Marker.num_frames);
+
+	if ( Marker.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname);
+	}
+}
+
+void HudGaugeFlightPath::initHalfSize(int w, int h)
+{
+	Marker_half[0] = w;
+	Marker_half[1] = h;
+}
+
+void HudGaugeFlightPath::render(float frametime)
+{
+	object *obj;
+	vec3d p0,v;
+	vertex v0;
+	int sx, sy;
+
+	bool in_frame = g3_in_frame() > 0;
+	if(!in_frame) {
+		g3_start_frame(0);
+	}
+
+	obj = Player_obj;
+
+	vm_vec_scale_add( &v, &obj->phys_info.vel, &obj->orient.vec.fvec, 1.0f );
+	vm_vec_normalize( &v );
+			
+	vm_vec_scale_add( &p0, &obj->pos, &v, 1000000.0f );
+
+	g3_rotate_vertex( &v0, &p0 );
+
+	if (v0.codes == 0) { // on screen
+		g3_project_vertex(&v0);
+
+		if (!(v0.flags & PF_OVERFLOW)) {
+			if ( Marker.first_frame >= 0 ) {
+				sx = fl2i(v0.screen.xyw.x);
+				sy = fl2i(v0.screen.xyw.y);
+
+				unsize(&sx, &sy);
+				renderBitmap(Marker.first_frame, sx - Marker_half[0], sy - Marker_half[1]);
+			}
+		}
+	}
+	
+	if(!in_frame) {
+		g3_end_frame();
+	}
+}
