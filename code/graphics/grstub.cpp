@@ -301,6 +301,11 @@ int gr_stub_set_cull(int cull)
 	return 0;
 }
 
+int gr_stub_set_color_buffer(int mode)
+{
+	return 0;
+}
+
 void gr_stub_set_gamma(float gamma)
 {
 }
@@ -797,6 +802,7 @@ bool gr_stub_init()
 	gr_screen.gf_bm_set_render_target	= gr_stub_bm_set_render_target;
 
 	gr_screen.gf_set_cull			= gr_stub_set_cull;
+	gr_screen.gf_set_color_buffer	= gr_stub_set_color_buffer;
 
 	gr_screen.gf_cross_fade			= gr_stub_cross_fade;
 

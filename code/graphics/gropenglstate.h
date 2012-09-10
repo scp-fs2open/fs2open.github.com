@@ -280,6 +280,7 @@ class opengl_state
 		GLboolean *light_Status;
 		GLboolean depthmask_Status;
 		GLboolean lighting_Status;
+        GLboolean colormask_Status;
 
 		GLenum frontface_Value;
 		GLenum cullface_Value;
@@ -320,6 +321,7 @@ class opengl_state
 		GLboolean Light(GLint num, GLint state = -1);
 		GLboolean ClipPlane(GLint num, GLint state = -1);
 		GLboolean DepthMask(GLint state = -1);
+        GLboolean ColorMask(GLint state = -1);
 
 		inline GLenum FrontFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		inline GLenum CullFaceValue(GLenum new_val = GL_INVALID_ENUM);
