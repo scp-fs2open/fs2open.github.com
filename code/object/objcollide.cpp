@@ -1144,6 +1144,7 @@ void obj_remove_collider(int obj_index)
 void obj_reset_colliders()
 {
 	Collision_sort_list.clear();
+	Collision_cached_pairs.clear();
 }
 
 void obj_collide_retime_cached_pairs(int checkdly)
