@@ -760,6 +760,9 @@ bool gr_stub_init()
 	gr_screen.gf_zbuffer_get		= gr_stub_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_stub_zbuffer_set;
 	gr_screen.gf_zbuffer_clear		= gr_stub_zbuffer_clear;
+
+	gr_screen.gf_stencil_set		= gr_stub_stencil_set;
+	gr_screen.gf_stencil_clear		= gr_stub_stencil_clear;
 	
 	gr_screen.gf_save_screen		= gr_stub_save_screen;
 	gr_screen.gf_restore_screen		= gr_stub_restore_screen;
