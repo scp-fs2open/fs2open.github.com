@@ -45,6 +45,9 @@ extern int gr_global_zbuffering;
 // stencil buffering stuff
 extern int gr_stencil_mode;
 
+// alpha test
+extern int gr_alpha_test;
+
 /**
  * This is a structure used by the shader to keep track
  * of the values you want to use in the shade primitive.
@@ -361,6 +364,8 @@ typedef struct screen {
 
 	// Clears the stencil buffer.
 	void (*gf_stencil_clear)();
+
+	int (*gf_alpha_mask_set)(int mode, float alpha);
 	
 	// Saves screen. Returns an id you pass to restore and free.
 	int (*gf_save_screen)();
@@ -674,6 +679,8 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
 
 #define gr_stencil_set		GR_CALL(gr_screen.gf_stencil_set)
 #define gr_stencil_clear	GR_CALL(gr_screen.gf_stencil_clear)
+
+#define gr_alpha_mask_set	GR_CALL(gr_screen.gf_alpha_mask_set)
 
 #define gr_save_screen		GR_CALL(gr_screen.gf_save_screen)
 #define gr_restore_screen	GR_CALL(gr_screen.gf_restore_screen)

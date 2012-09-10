@@ -390,6 +390,11 @@ void gr_stub_stencil_clear()
 {
 }
 
+int gr_stub_alpha_mask_set(int mode, float alpha)
+{
+	return 0;
+}
+
 /*void gr_stub_shade(int x,int y,int w,int h)
 {
 }*/
@@ -763,6 +768,8 @@ bool gr_stub_init()
 
 	gr_screen.gf_stencil_set		= gr_stub_stencil_set;
 	gr_screen.gf_stencil_clear		= gr_stub_stencil_clear;
+
+	gr_screen.gf_alpha_mask_set		= gr_stub_alpha_mask_set;
 	
 	gr_screen.gf_save_screen		= gr_stub_save_screen;
 	gr_screen.gf_restore_screen		= gr_stub_restore_screen;

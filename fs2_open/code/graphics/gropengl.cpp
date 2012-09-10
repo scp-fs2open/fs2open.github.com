@@ -785,6 +785,23 @@ void gr_opengl_stencil_clear()
 	glClear(GL_STENCIL_BUFFER_BIT);
 }
 
+int gr_opengl_alpha_mask_set(int mode, float alpha)
+{
+	int tmp = gr_alpha_test;
+
+	gr_alpha_test = mode;
+
+	if ( mode ) {
+		GL_state.AlphaTest(GL_TRUE);
+		GL_state.AlphaFunc(GL_GREATER, alpha);
+	} else {
+		GL_state.AlphaTest(GL_FALSE);
+		GL_state.AlphaFunc(GL_ALWAYS, 1.0f);
+	}
+
+	return tmp;
+}
+
 // I feel dirty...
 static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
 {
@@ -1764,6 +1781,8 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_stencil_set		= gr_opengl_stencil_set;
 	gr_screen.gf_stencil_clear		= gr_opengl_stencil_clear;
+
+	gr_screen.gf_alpha_mask_set		= gr_opengl_alpha_mask_set;
 	
 	gr_screen.gf_save_screen		= gr_opengl_save_screen;
 	gr_screen.gf_restore_screen		= gr_opengl_restore_screen;
