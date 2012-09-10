@@ -6505,3 +6505,137 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vertex* target_point, vec3d *tp
 		gr_line(fl2i(x2),fl2i(y2-1),fl2i(x5),fl2i(y5-1));
 	}
 }
+
+HudGaugeWarheadCount::HudGaugeWarheadCount():
+HudGauge(HUD_OBJECT_WARHEAD_COUNT, HUD_WEAPONS_GAUGE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
+{
+}
+
+void HudGaugeWarheadCount::initBitmap(char *fname)
+{
+	Warhead.first_frame = bm_load_animation(fname, &Warhead.num_frames);
+
+	if ( Warhead.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname);
+	}
+}
+
+void HudGaugeWarheadCount::initNameOffsets(int x, int y)
+{
+	Warhead_name_offsets[0] = x;
+	Warhead_name_offsets[1] = y;
+}
+
+void HudGaugeWarheadCount::initCountOffsets(int x, int y)
+{
+	Warhead_count_offsets[0] = x;
+	Warhead_count_offsets[1] = y;
+}
+
+void HudGaugeWarheadCount::initCountSizes(int w, int h)
+{
+	Warhead_count_size[0] = w;
+	Warhead_count_size[1] = h;
+}
+
+void HudGaugeWarheadCount::initMaxSymbols(int count)
+{
+	Max_symbols = count;
+}
+
+void HudGaugeWarheadCount::initMaxColumns(int count)
+{
+	Max_columns = count;
+}
+
+void HudGaugeWarheadCount::initTextAlign(int align)
+{
+	Text_align = align;
+}
+
+void HudGaugeWarheadCount::pageIn()
+{
+	bm_page_in_aabitmap(Warhead.first_frame, Warhead.num_frames);
+}
+
+void HudGaugeWarheadCount::render(float frametime)
+{
+	if(Player_obj->type == OBJ_OBSERVER) {
+		return;
+	}
+
+	Assert(Player_obj->type == OBJ_SHIP);
+	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
+
+	ship_weapon	*sw = &Ships[Player_obj->instance].weapons;
+
+	// don't bother displaying anything if we have no secondaries
+	if ( sw->num_secondary_banks <= 0 ) {
+		return;
+	}
+
+	int wep_num = sw->current_secondary_bank;
+	weapon_info *wip = &Weapon_info[sw->secondary_bank_weapons[wep_num]];
+	int ammo = sw->secondary_bank_ammo[wep_num];
+
+	// don't bother displaying anything if we have no ammo.
+	if ( ammo <= 0 ) {
+		return;
+	}
+
+	char weapon_name[NAME_LENGTH + 10];
+	strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+	end_string_at_first_hash_symbol(weapon_name);
+
+	setGaugeColor();
+
+	// display the weapon name
+	if ( Text_align ) {
+		int w, h;
+
+		gr_get_string_size(&w, &h, weapon_name);
+		renderString(position[0] + Warhead_name_offsets[0] - w, position[1] + Warhead_name_offsets[1], weapon_name);
+	} else {
+		renderString(position[0] + Warhead_name_offsets[0], position[1] + Warhead_name_offsets[1], weapon_name);
+	}
+
+	setGaugeColor(HUD_C_BRIGHT);
+
+	// if ammo is greater than the icon display limit, just show a numeric
+	if ( ammo > Max_symbols ) {
+		char ammo_str[32];
+
+		sprintf(ammo_str, "%d", ammo);
+		hud_num_make_mono(ammo_str);
+
+		if ( Text_align ) {
+			int w, h;
+
+			gr_get_string_size(&w, &h, ammo_str);
+			renderString(position[0] + Warhead_count_offsets[0] - w, position[1] + Warhead_count_offsets[1], ammo_str);
+		} else {
+			renderString(position[0] + Warhead_count_offsets[0], position[1] + Warhead_count_offsets[1], ammo_str);
+		}
+
+		return;
+	}
+
+	int delta_x = 0, delta_y = 0;
+	if ( Text_align ) {
+		delta_x = -Warhead_count_size[0];
+	} else {
+		delta_x = Warhead_count_size[0];
+	}
+
+	int i, column;
+	for ( i = 0; i < ammo; i++ ) {
+		if ( Max_columns > 0 ) {
+			delta_y = Warhead_count_size[1] * (i / Max_columns);
+			column = i % Max_columns;
+		} else {
+			column = i;
+		}
+
+		renderBitmap(Warhead.first_frame, position[0] + Warhead_count_offsets[0] + column * delta_x, position[1] + Warhead_count_offsets[1] + delta_y);
+	}
+}
