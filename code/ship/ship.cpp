@@ -939,6 +939,7 @@ void init_ship_entry(ship_info *sip)
 	sip->model_num_hud = -1;
 
 	sip->radar_image_2d_idx = -1;
+	sip->radar_color_image_2d_idx = -1;
 	sip->radar_image_size = -1;
 	sip->radar_projection_size_mult = 1.0f;
 
@@ -3073,6 +3074,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	{
 		stuff_string(name_tmp, F_NAME, NAME_LENGTH);
 		sip->radar_image_2d_idx = bm_load(name_tmp);
+
+		if ( optional_string("$Radar Color Image 2D:") ) {
+			stuff_string(name_tmp, F_NAME, NAME_LENGTH);
+			sip->radar_color_image_2d_idx = bm_load(name_tmp);
+		}
 
 		if (optional_string("$Radar Image Size:"))
 			stuff_int(&sip->radar_image_size);

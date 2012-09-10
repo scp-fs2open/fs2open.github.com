@@ -53,7 +53,7 @@ public:
 	void drawBlipsSorted(int distort);
 	void drawContact(vec3d *pnt, int rad);
 	void drawContactHtl(vec3d *pnt, int rad);
-	void drawContactImage(vec3d *pnt, int rad, int idx, float mult);
+	void drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult);
 	void drawCrosshairs( vec3d pnt );
 	void doneDrawing();
 	void doneDrawingHtl();

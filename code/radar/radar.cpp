@@ -151,10 +151,10 @@ void HudGaugeRadarStd::drawBlips(int blip_type, int bright, int distort)
 		}
 		else
 		{
-			if (b->radar_image_2d == -1)
+			if (b->radar_image_2d == -1 && b->radar_color_image_2d == -1)
 				drawContactCircle(x, y, b->rad);
 			else
-				drawContactImage(x, y, b->rad, b->radar_image_2d, b->radar_image_size);
+				drawContactImage(x, y, b->rad, b->radar_image_2d, b->radar_color_image_2d, b->radar_image_size);
 		}
 	}
 }
@@ -190,7 +190,7 @@ void HudGaugeRadarStd::drawContactCircle( int x, int y, int rad )
 		renderString( Small_blip_offset_x+x, Small_blip_offset_y+y, Small_blip_string );
 	}
 }
-void HudGaugeRadarStd::drawContactImage( int x, int y, int rad, int idx, int size )
+void HudGaugeRadarStd::drawContactImage( int x, int y, int rad, int idx, int clr_idx, int size )
 {
 	// this we will move as ships.tbl option (or use for radar scaling etc etc)
 	//int size = 24; 
@@ -259,8 +259,18 @@ void HudGaugeRadarStd::drawContactImage( int x, int y, int rad, int idx, int siz
 	y = (int) ((yf / scalef) - hf/2.0f);
 
 	gr_push_scale_matrix(&blip_scaler);
-	gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
-	renderBitmap( x, y );
+
+	if ( idx >= 0 ) {
+		gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
+		renderBitmap( x, y );
+	}
+
+	if ( clr_idx >= 0 ) {
+		gr_set_screen_scale(base_w, base_h);
+		gr_bitmap(x, y);
+		gr_reset_screen_scale();
+	}
+
 	gr_pop_scale_matrix();
 
 	gr_screen.clip_bottom = old_bottom;

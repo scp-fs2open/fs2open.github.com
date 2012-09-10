@@ -83,9 +83,6 @@ xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_con
 	fx_guides2_1.a1d[0] = 0.0f;
 	fx_guides2_1.a1d[1] = 0.0f;
 	fx_guides2_1.a1d[2] = 1.0f;
-	
-	// give it some color
-	gr_init_alphacolor(&orb_color, 48, 96, 160, 1337);
 
 	this->loop_sound_handle = -1;
 }
@@ -143,37 +140,46 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 	}
 }
 
-void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, float dist, float alpha)
+void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha)
 {
 	vec3d  p;
 	int h, w;
 	vertex vert;
 	float aspect_mp;
-	float temp_scale = 0.6f;
 
 	if ((sub_y_clip && (pnt->xyz.y > 0)) || ((!sub_y_clip) && (pnt->xyz.y <= 0)))
 		return;
 
 	vm_vec_rotate(&p, pnt,  &vmd_identity_matrix); 
 	g3_transfer_vertex(&vert, &p);
-
-	float range = player_farthest_weapon_range();
-	if(dist <= range) {
-		temp_scale = 0.6f + (range-dist)/range;
-	}
 	
-	bm_get_info(idx, &w, &h);
+	float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
 
-	if (h == w) {
-        aspect_mp = 1.0f;
-    } else {
-        aspect_mp = (((float) h) / ((float) w));
+    if ( clr_idx >= 0 ) {
+        bm_get_info(clr_idx, &w, &h);
+        
+        if (h == w) {
+            aspect_mp = 1.0f;
+        } else {
+            aspect_mp = (((float) h) / ((float) w));
+        }
+        
+        gr_set_bitmap(clr_idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+        g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
     }
-
-	float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f) * temp_scale;
-
-	gr_set_bitmap(idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
-	g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+    
+    if ( idx >= 0 ) {
+        bm_get_info(idx, &w, &h);
+        
+        if (h == w) {
+            aspect_mp = 1.0f;
+        } else {
+            aspect_mp = (((float) h) / ((float) w));
+        }
+        
+        gr_set_bitmap(idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+        g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT);
+    }
 }
 
 // radar is damaged, so make blips dance around
@@ -198,7 +204,7 @@ void HudGaugeRadarDradis::blipDrawDistorted(blip *b, vec3d *pos, float alpha)
 	vm_vec_random_cone(&out, pos, distortion_angle);
 	vm_vec_scale(&out, dist);
 
-	drawContact(&out, unknown_contact_icon, b->dist, alpha);
+	drawContact(&out, -1, unknown_contact_icon, b->dist, alpha);
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -236,7 +242,7 @@ void HudGaugeRadarDradis::blipDrawFlicker(blip *b, vec3d *pos, float alpha)
 	vm_vec_random_cone(&out,pos,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	drawContact(&out, unknown_contact_icon, b->dist, alpha);
+	drawContact(&out, -1, unknown_contact_icon, b->dist, alpha);
 }
 
 // Draw all the active radar blips
@@ -271,7 +277,7 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 		{
 			alpha = 1.0;
 			b->rad = Radar_blip_radius_target;
-			drawContact(&pos, target_brackets, b->dist, alpha);
+			drawContact(&pos, -1, target_brackets, b->dist, alpha);
 		}
 		else {
 			b->rad = Radar_blip_radius_normal;
@@ -283,10 +289,10 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 		} else {
 			if (b->flags & BLIP_DRAW_DISTORTED) {
 				blipDrawFlicker(b, &pos, alpha);
-			} else if (b->radar_image_2d >= 0) {
-				drawContact(&pos, b->radar_image_2d, b->dist, alpha);
+			} else if (b->radar_image_2d >= 0 || b->radar_color_image_2d >= 0) {
+				drawContact(&pos, b->radar_image_2d, b->radar_color_image_2d, b->dist, alpha);
 			} else {
-				drawContact(&pos, unknown_contact_icon, b->dist, alpha);
+				drawContact(&pos, -1, unknown_contact_icon, b->dist, alpha);
 			}
 		}
 	}
@@ -320,14 +326,6 @@ void HudGaugeRadarDradis::drawOutlinesHtl()
 		return;
 	
 	g3_start_instance_matrix(&vmd_zero_vector, /*&Player_obj->orient*/&vmd_identity_matrix, true);
-		gr_init_alphacolor(&orb_color, 100, 150, 210, 255);
-		gr_set_color_fast(&orb_color);
-		
-		gr_set_line_width(1.5f);
-			g3_draw_htl_line(&fx_guides0_0, &fx_guides0_1);
-			g3_draw_htl_line(&fx_guides1_0, &fx_guides1_1);
-			g3_draw_htl_line(&fx_guides2_0, &fx_guides2_1);
-		gr_set_line_width(1.0f);
 		
 		// Tilt the base disc component of DRADIS-style radar 30 degrees down
 		vm_angle_2_matrix(&base_tilt, PI/6, 0);

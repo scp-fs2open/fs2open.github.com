@@ -40,6 +40,7 @@ typedef struct blip	{
 	color *blip_color;
 	vec3d position;
 	int radar_image_2d;
+	int radar_color_image_2d;
 	int radar_image_size;
 	float radar_projection_size;
 
