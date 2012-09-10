@@ -4683,6 +4683,30 @@ void HudGaugeAutoTarget::initBitmaps(char *fname)
 	}
 }
 
+void HudGaugeAutoTarget::initOnColor(int r, int g, int b, int a)
+{
+	if ( r == -1 || g == -1 || b == -1 || a == -1 ) {
+		Use_on_color = false;
+		gr_init_alphacolor(&On_color, 0, 0, 0, 0);
+		return;
+	}
+
+	Use_on_color = true;
+	gr_init_alphacolor(&On_color, r, g, b, a);
+}
+
+void HudGaugeAutoTarget::initOffColor(int r, int g, int b, int a)
+{
+	if ( r == -1 || g == -1 || b == -1 || a == -1 ) {
+		Use_off_color = false;
+		gr_init_alphacolor(&Off_color, 0, 0, 0, 0);
+		return;
+	}
+
+	Use_off_color = true;
+	gr_init_alphacolor(&Off_color, r, g, b, a);
+}
+
 void HudGaugeAutoTarget::render(float frametime)
 {
 	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
@@ -4702,9 +4726,13 @@ void HudGaugeAutoTarget::render(float frametime)
 
 	// draw the text on top
 	if (frame_offset == 1) {
-		static color text_color;
-		gr_init_alphacolor(&text_color, 0, 0, 0, Toggle_text_alpha);
-		gr_set_color_fast(&text_color);
+		//static color text_color;
+		//gr_init_alphacolor(&text_color, 0, 0, 0, Toggle_text_alpha);
+		if ( Use_on_color ) {
+			gr_set_color_fast(&On_color);
+		}
+	} else if ( Use_off_color ) {
+		gr_set_color_fast(&Off_color);
 	}
 
 	renderString(position[0] + Auto_text_offsets[0], position[1] + Auto_text_offsets[1], XSTR("auto", 1463));
@@ -4741,6 +4769,30 @@ void HudGaugeAutoSpeed::initBitmaps(char *fname)
 	}
 }
 
+void HudGaugeAutoSpeed::initOnColor(int r, int g, int b, int a)
+{
+	if ( r == -1 || g == -1 || b == -1 || a == -1 ) {
+		Use_on_color = false;
+		gr_init_alphacolor(&On_color, 0, 0, 0, 0);
+		return;
+	}
+
+	Use_on_color = true;
+	gr_init_alphacolor(&On_color, r, g, b, a);
+}
+
+void HudGaugeAutoSpeed::initOffColor(int r, int g, int b, int a)
+{
+	if ( r == -1 || g == -1 || b == -1 || a == -1 ) {
+		Use_off_color = false;
+		gr_init_alphacolor(&Off_color, 0, 0, 0, 0);
+		return;
+	}
+
+	Use_off_color = true;
+	gr_init_alphacolor(&Off_color, r, g, b, a);
+}
+
 void HudGaugeAutoSpeed::render(float frametime)
 {
 	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
@@ -4760,9 +4812,13 @@ void HudGaugeAutoSpeed::render(float frametime)
 
 	// draw the text on top
 	if (frame_offset == 3) {
-		static color text_color;
-		gr_init_alphacolor(&text_color, 0, 0, 0, Toggle_text_alpha);
-		gr_set_color_fast(&text_color);
+		//static color text_color;
+		//gr_init_alphacolor(&text_color, 0, 0, 0, Toggle_text_alpha);
+		if ( Use_on_color ) {
+			gr_set_color_fast(&On_color);
+		}
+	} else if ( Use_off_color ) {
+		gr_set_color_fast(&Off_color);
 	}
 	renderString(position[0] + Auto_text_offsets[0], position[1] + Auto_text_offsets[1], XSTR("auto", 1463));
 	renderString(position[0] + Speed_text_offsets[0], position[1] + Speed_text_offsets[1], XSTR("speed", 1464));

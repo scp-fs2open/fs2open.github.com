@@ -187,11 +187,18 @@ protected:
 
 	int Auto_text_offsets[2];
 	int Target_text_offsets[2];
+
+	color On_color;
+	bool Use_on_color;
+	color Off_color;
+	bool Use_off_color;
 public:
 	HudGaugeAutoTarget();
 	void initAutoTextOffsets(int x, int y);
 	void initTargetTextOffsets(int x, int y);
 	void initBitmaps(char *fname);
+	void initOnColor(int r, int g, int b, int a);
+	void initOffColor(int r, int g, int b, int a);
 	void render(float frametime);
 	void pageIn();
 };
@@ -203,11 +210,18 @@ protected:
 
 	int Auto_text_offsets[2];
 	int Speed_text_offsets[2];
+
+	color On_color;
+	bool Use_on_color;
+	color Off_color;
+	bool Use_off_color;
 public:
 	HudGaugeAutoSpeed();
 	void initAutoTextOffsets(int x, int y);
 	void initSpeedTextOffsets(int x, int y);
 	void initBitmaps(char *fname);
+	void initOnColor(int r, int g, int b, int a);
+	void initOffColor(int r, int g, int b, int a);
 	void render(float frametime);
 	void pageIn();
 };
