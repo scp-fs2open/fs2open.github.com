@@ -175,7 +175,9 @@ int HUD_config_default_flags2 =
 	(1<<(HUD_KILLS_GAUGE-32)) |
 	(1<<(HUD_ATTACKING_TARGET_COUNT-32)) | 
 	(1<<(HUD_SUPPORT_GAUGE-32)) | 
-	(1<<(HUD_LAG_GAUGE-32))
+	(1<<(HUD_LAG_GAUGE-32)) |
+	(1<<(HUD_TEXT_FLASH-32)) |
+	(1<<(HUD_MESSAGE_BOX-32))
 };
 
 // bits to tell whether a given gauge should be treated as pop-up or not
