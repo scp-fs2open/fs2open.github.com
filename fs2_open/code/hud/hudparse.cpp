@@ -1531,7 +1531,9 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, int ship_index
 	int list_start_offsets[2];
 	int entry_h;
 	int entry_stagger_w;
+	int bottom_bg_offset = 0;
 	int ship_name_offsets[2];
+	int ship_name_max_w = 100;
 	int ship_integrity_offsets[2];
 	int ship_status_offsets[2];
 	char header_text[MAX_FILENAME_LEN] = "monitoring";
@@ -1631,6 +1633,9 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, int ship_index
 	if(optional_string("Entry Stagger Width:")) {
 		stuff_int(&entry_stagger_w);
 	}
+	if(optional_string("Bottom Background Offset:")) {
+		stuff_int(&bottom_bg_offset);
+	}
 	if(optional_string("Header Text:")) {
 		stuff_string(header_text, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -1650,18 +1655,24 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, int ship_index
 		stuff_int(&ship_status_offsets[0]);
 	}
 
+	if ( optional_string("Ship Name Max Width:") ) {
+		stuff_int(&ship_name_max_w);
+	}
+
 	HudGaugeEscort* hud_gauge = new HudGaugeEscort();
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initEntryHeight(entry_h);
 	hud_gauge->initEntryStaggerWidth(entry_stagger_w);
+	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initHeaderText(header_text);
 	hud_gauge->initHeaderTextOffsets(header_text_offsets[0], header_text_offsets[1]);
 	hud_gauge->initListStartOffsets(list_start_offsets[0], list_start_offsets[1]);
 	hud_gauge->initShipIntegrityOffsets(ship_integrity_offsets[0], ship_integrity_offsets[1]);
 	hud_gauge->initShipNameOffsets(ship_name_offsets[0], ship_name_offsets[1]);
 	hud_gauge->initShipStatusOffsets(ship_status_offsets[0], ship_status_offsets[1]);
+	hud_gauge->initShipNameMaxWidth(ship_name_max_w);
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);

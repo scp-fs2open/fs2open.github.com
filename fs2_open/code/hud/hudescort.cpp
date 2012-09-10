@@ -171,6 +171,11 @@ void HudGaugeEscort::initEntryStaggerWidth(int w)
 	entry_stagger_w = w;
 }
 
+void HudGaugeEscort::initBottomBgOffset(int offset)
+{
+	bottom_bg_offset = offset;
+}
+
 void HudGaugeEscort::initShipNameOffsets(int x, int y)
 {
 	ship_name_offsets[0] = x;
@@ -187,6 +192,11 @@ void HudGaugeEscort::initShipStatusOffsets(int x, int y)
 {
 	ship_status_offsets[0] = x;
 	ship_status_offsets[1] = y;
+}
+
+void HudGaugeEscort::initShipNameMaxWidth(int w)
+{
+	ship_name_max_width = w;
 }
 
 void HudGaugeEscort::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
@@ -320,7 +330,7 @@ void HudGaugeEscort::render(float frametime)
 	Num_escort_ships++;
 
 	//Show the last escort entry
-	renderBitmap(Escort_gauges[2].first_frame, x, y);
+	renderBitmap(Escort_gauges[2].first_frame, x, y + bottom_bg_offset);
 	renderIcon(x, y, i);
 }
 
@@ -358,7 +368,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 
 	// print out ship name
 	strcpy_s(buf, sp->ship_name);
-	gr_force_fit_string(buf, 255, 100);	
+	gr_force_fit_string(buf, 255, ship_name_max_width);	
     end_string_at_first_hash_symbol(buf);
 	
 	renderString( x + ship_name_offsets[0], y + ship_name_offsets[1], EG_ESCORT1 + index, buf);	
