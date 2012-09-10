@@ -2152,9 +2152,19 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, int ship_index, c
 	int throttle_h, throttle_w;
 	int throttle_aburn_h;
 	int max_speed_offset[2];
+	bool show_max_speed = true;
 	int zero_speed_offset[2];
+	bool show_min_speed = true;
+	bool orbit = true;
 	int orbit_center_offset[2];
 	int orbit_radius;
+	int target_speed_offset[2] = {0, 0};
+	bool show_target_speed = false;
+	bool show_target_speed_percent = false;
+	int glide_offset[2] = {0, 0};
+	bool custom_glide = false;
+	int match_speed_offset[2] = {0, 0};
+	bool custom_match = false;
 	char fname[MAX_FILENAME_LEN];
 	bool show_background = false;
 	bool slew = true;
@@ -2300,14 +2310,39 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, int ship_index, c
 	if(optional_string("Max Speed Label Offsets:")) {
 		stuff_int_list(max_speed_offset, 2);
 	}
+	if(optional_string("Show Max Speed Label:")) {
+		stuff_boolean(&show_max_speed);
+	}
 	if(optional_string("Min Speed Label Offsets:")) {
 		stuff_int_list(zero_speed_offset, 2);
+	}
+	if(optional_string("Show Min Speed Label:")) {
+		stuff_boolean(&show_min_speed);
 	}
 	if(optional_string("Orbit Center Offsets:")) {
 		stuff_int_list(orbit_center_offset, 2);
 	}
 	if(optional_string("Orbit Radius:")) {
 		stuff_int(&orbit_radius);
+	}
+	if(optional_string("Current Speed Offsets:")) {
+		stuff_int_list(orbit_center_offset, 2);
+		orbit = false;
+	}
+	if(optional_string("Target Speed Offsets:")) {
+		stuff_int_list(target_speed_offset, 2);
+		show_target_speed = true;
+	}
+	if ( optional_string("Show Percentage:") ) {
+		stuff_boolean(&show_target_speed_percent);
+	}
+	if(optional_string("Glide Status Offsets:")) {
+		stuff_int_list(glide_offset, 2);
+		custom_glide = true;
+	}
+	if(optional_string("Match Speed Status Offsets:")) {
+		stuff_int_list(match_speed_offset, 2);
+		custom_match = true;
 	}
 
 	HudGaugeThrottle* hud_gauge = new HudGaugeThrottle();
@@ -2317,10 +2352,13 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, int ship_index, c
 	hud_gauge->initThrottleStartY(bottom_offset_y);
 	hud_gauge->initThrottleSizes(throttle_w, throttle_h);
 	hud_gauge->initAburnHeight(throttle_aburn_h);
-	hud_gauge->initMaxSpeedOffsets(max_speed_offset[0], max_speed_offset[1]);
-	hud_gauge->initZeroSpeedOffsets(zero_speed_offset[0], zero_speed_offset[1]);
-	hud_gauge->initOrbitCenterOffsets(orbit_center_offset[0], orbit_center_offset[1]);
+	hud_gauge->initMaxSpeedOffsets(max_speed_offset[0], max_speed_offset[1], show_max_speed);
+	hud_gauge->initZeroSpeedOffsets(zero_speed_offset[0], zero_speed_offset[1], show_min_speed);
+	hud_gauge->initOrbitCenterOffsets(orbit_center_offset[0], orbit_center_offset[1], orbit);
 	hud_gauge->initOrbitRadius(orbit_radius);
+	hud_gauge->initTargetSpeedOffsets(target_speed_offset[0], target_speed_offset[1], show_target_speed, show_target_speed_percent);
+	hud_gauge->initGlideOffsets(glide_offset[0], glide_offset[1], custom_glide);
+	hud_gauge->initMatchSpeedOffsets(match_speed_offset[0], match_speed_offset[1], custom_match);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->showBackground(show_background);
 	hud_gauge->initSlew(slew);
