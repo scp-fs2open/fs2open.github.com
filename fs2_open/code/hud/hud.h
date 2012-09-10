@@ -509,6 +509,18 @@ public:
 	void render(float frametime);
 };
 
+class HudGaugeFlightPath: public HudGauge
+{
+	hud_frames Marker;
+
+	int Marker_half[2];
+public:
+	HudGaugeFlightPath();
+	void initBitmap(char *fname);
+	void initHalfSize(int w, int h);
+	void render(float frametime);
+};
+
 HudGauge* hud_get_gauge(char* name);
 
 extern SCP_vector<HudGauge*> default_hud_gauges;
