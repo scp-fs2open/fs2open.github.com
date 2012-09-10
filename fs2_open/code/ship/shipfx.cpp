@@ -1121,7 +1121,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
 					if ( mc.bsp_leaf ) {
 						if ( mc.bsp_leaf->tmap_num < 255 ) {
-							polymodel *pm = model_get(sip->cockpit_model_num);
+							polymodel *pm = model_get(sip->model_num);
 							int tmap_num = mc.bsp_leaf->tmap_num;
 
 							if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
