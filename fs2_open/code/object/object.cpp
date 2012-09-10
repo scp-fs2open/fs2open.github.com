@@ -192,11 +192,8 @@ int free_object_slots(int num_used)
 		return original_num_to_free;
 	}
 
-	if ( Cmdline_old_collision_sys ) {
-		deleted_weapons = collide_remove_weapons();
-	} else {
-		deleted_weapons = 0;
-	}
+	deleted_weapons = collide_remove_weapons();
+
 	num_to_free -= deleted_weapons;
 	if ( !num_to_free ){
 		return original_num_to_free;

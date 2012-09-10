@@ -4887,11 +4887,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		//if ( !(Objects[parent_objnum].flags & OF_PLAYER_SHIP) )
 		//	return -1;
 
-		if ( Cmdline_old_collision_sys ) {
-			num_deleted = collide_remove_weapons();
-		} else {
-			num_deleted = 0;
-		}
+		num_deleted = collide_remove_weapons();
 
 		nprintf(("WARNING", "Deleted %d weapons because of lack of slots\n", num_deleted));
 		if (num_deleted == 0){
