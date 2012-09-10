@@ -259,7 +259,7 @@ void HudGaugeTargetBox::initCargoScanSize(int w, int h)
 	Cargo_scan_h = h;
 }
 
-void HudGaugeTargetBox::initBitmaps(char *fname_monitor, char *fname_integrity, char *fname_static)
+void HudGaugeTargetBox::initBitmaps(char *fname_monitor, char *fname_monitor_mask, char *fname_integrity, char *fname_static)
 {
 	Monitor_frame.first_frame = bm_load_animation(fname_monitor, &Monitor_frame.num_frames);
 	if ( Monitor_frame.first_frame < 0 ) {
@@ -269,6 +269,14 @@ void HudGaugeTargetBox::initBitmaps(char *fname_monitor, char *fname_integrity, 
 	Integrity_bar.first_frame = bm_load_animation(fname_integrity, &Integrity_bar.num_frames);
 	if ( Integrity_bar.first_frame < 0 ) {
 		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_integrity);
+	}
+
+	if ( strlen(fname_monitor_mask) > 0 ) {
+		Monitor_mask = bm_load_animation(fname_monitor_mask);
+
+		if ( Monitor_mask < 0 ) {
+			Warning(LOCATION, "Cannot load bitmap hud mask: %s\n", fname_monitor_mask);
+		}
 	}
 
 	strcpy_s(static_fname, fname_static);
@@ -307,6 +315,20 @@ void HudGaugeTargetBox::render(float frametime)
 
 	// blit the background frame
 	renderBitmap(Monitor_frame.first_frame, position[0], position[1]);
+
+	if ( Monitor_mask >= 0 ) {
+		// render the alpha mask
+		gr_alpha_mask_set(1, 0.5f);
+		gr_stencil_clear();
+		gr_stencil_set(GR_STENCIL_WRITE);
+		gr_set_color_buffer(0);
+
+		renderBitmapColor(Monitor_mask, position[0], position[1]);
+
+		gr_set_color_buffer(1);
+		gr_stencil_set(GR_STENCIL_NONE);
+		gr_alpha_mask_set(0, 1.0f);
+	}
 
 	switch ( target_objp->type ) {
 		case OBJ_SHIP:
@@ -523,6 +545,10 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 			opengl_shader_set_animated_effect(Targetbox_shader_effect);
 		}
 
+		if ( Monitor_mask >= 0 ) {
+			gr_stencil_set(GR_STENCIL_READ);
+		}
+
 		if (!Glowpoint_override)
 			Glowpoint_override = true;
 		// maybe render a special hud-target-only model
@@ -534,6 +560,10 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		Glowpoint_override = false;
 		ship_model_stop( target_objp );
 		gr_disable_team_color();
+
+		if ( Monitor_mask >= 0 ) {
+			gr_stencil_set(GR_STENCIL_NONE);
+		}
 
 		sx = 0;
 		sy = 0;
@@ -636,8 +666,17 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 			opengl_shader_set_animated_effect(Targetbox_shader_effect);
 		}
 
+		if ( Monitor_mask >= 0 ) {
+			gr_stencil_set(GR_STENCIL_READ);
+		}
+
 		// This calls the colour that doesn't get reset
 		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
+
+		if ( Monitor_mask >= 0 ) {
+			gr_stencil_set(GR_STENCIL_NONE);
+		}
+
 		renderTargetClose();
 	}
 	renderTargetForeground();
@@ -762,7 +801,16 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			opengl_shader_set_animated_effect(Targetbox_shader_effect);
 		}
 
+		if ( Monitor_mask >= 0 ) {
+			gr_stencil_set(GR_STENCIL_READ);
+		}
+
 		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
+
+		if ( Monitor_mask >= 0 ) {
+			gr_stencil_set(GR_STENCIL_NONE);
+		}
+
 		renderTargetClose();
 	}
 	renderTargetForeground(); 
@@ -867,7 +915,16 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 			opengl_shader_set_animated_effect(Targetbox_shader_effect);
 		}
 
+		if ( Monitor_mask >= 0 ) {
+			gr_stencil_set(GR_STENCIL_READ);
+		}
+
 		model_render(Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
+
+		if ( Monitor_mask >= 0 ) {
+			gr_stencil_set(GR_STENCIL_NONE);
+		}
+
 		renderTargetClose();
 	}
 	renderTargetForeground();
@@ -936,7 +993,17 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 			vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
 			renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
+
+			if ( Monitor_mask >= 0 ) {
+				gr_stencil_set(GR_STENCIL_READ);
+			}
+
 			jnp->Render( &obj_pos );
+
+			if ( Monitor_mask >= 0 ) {
+				gr_stencil_set(GR_STENCIL_NONE);
+			}
+
 			renderTargetClose();
 		}
 

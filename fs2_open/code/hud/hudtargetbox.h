@@ -44,6 +44,7 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 {
 	hud_frames Monitor_frame;
 	hud_frames Integrity_bar;
+	int Monitor_mask;
 
 	char static_fname[MAX_FILENAME_LEN];
 	hud_anim Monitor_static;
@@ -77,7 +78,7 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 public:
 	HudGaugeTargetBox();
 
-	void initBitmaps(char *fname_monitor, char *fname_integrity, char *fname_static);
+	void initBitmaps(char *fname_monitor, char *fname_monitor_mask, char *fname_integrity, char *fname_static);
 	void initViewportOffsets(int x, int y);
 	void initViewportSize(int w, int h);
 	void initIntegrityOffsets(int x, int y);
