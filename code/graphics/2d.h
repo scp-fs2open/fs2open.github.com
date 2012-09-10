@@ -42,6 +42,9 @@ extern int gr_global_zbuffering;
 #define SDR_FLAG_MISC_MAP		(1<<11)
 #define SDR_FLAG_TEAMCOLOR		(1<<12)
 
+// stencil buffering stuff
+extern int gr_stencil_mode;
+
 /**
  * This is a structure used by the shader to keep track
  * of the values you want to use in the shade primitive.
@@ -352,6 +355,12 @@ typedef struct screen {
 
 	// Clears the zbuffer.  If use_zbuffer is FALSE, then zbuffering mode is ignored and zbuffer is always off.
 	void (*gf_zbuffer_clear)(int use_zbuffer);
+
+	// Set the stencil buffer mode. Returns previous mode
+	int (*gf_stencil_set)(int mode);
+
+	// Clears the stencil buffer.
+	void (*gf_stencil_clear)();
 	
 	// Saves screen. Returns an id you pass to restore and free.
 	int (*gf_save_screen)();
@@ -530,6 +539,10 @@ extern screen gr_screen;
 #define GR_ZBUFF_READ	(1<<1)
 #define GR_ZBUFF_FULL	(GR_ZBUFF_WRITE|GR_ZBUFF_READ)
 
+#define GR_STENCIL_NONE		0
+#define GR_STENCIL_READ		1
+#define GR_STENCIL_WRITE	2
+
 void gr_set_screen_scale(int x, int y);
 void gr_set_screen_scale(int x, int y, int max_x, int max_y);
 void gr_reset_screen_scale();
@@ -658,6 +671,9 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
 #define gr_zbuffer_clear	GR_CALL(gr_screen.gf_zbuffer_clear)
+
+#define gr_stencil_set		GR_CALL(gr_screen.gf_stencil_set)
+#define gr_stencil_clear	GR_CALL(gr_screen.gf_stencil_clear)
 
 #define gr_save_screen		GR_CALL(gr_screen.gf_save_screen)
 #define gr_restore_screen	GR_CALL(gr_screen.gf_restore_screen)

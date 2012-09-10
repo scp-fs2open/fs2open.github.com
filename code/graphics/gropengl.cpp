@@ -760,6 +760,31 @@ void gr_opengl_zbuffer_clear(int mode)
 	}
 }
 
+int gr_opengl_stencil_set(int mode)
+{
+	int tmp = gr_stencil_mode;
+
+	gr_stencil_mode = mode;
+
+	if ( mode == GR_STENCIL_READ ) {
+		GL_state.StencilTest(1);
+		GL_state.SetStencilType(STENCIL_TYPE_READ);
+	} else if ( mode == GR_STENCIL_WRITE ) {
+		GL_state.StencilTest(1);
+		GL_state.SetStencilType(STENCIL_TYPE_WRITE);
+	} else {
+		GL_state.StencilTest(0);
+		GL_state.SetStencilType(STENCIL_TYPE_NONE);
+	}
+
+	return tmp;
+}
+
+void gr_opengl_stencil_clear()
+{
+	glClear(GL_STENCIL_BUFFER_BIT);
+}
+
 // I feel dirty...
 static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
 {
@@ -1545,7 +1570,7 @@ int opengl_init_display_device()
 	GL_pfd.cBlueBits = (ubyte)Gr_blue.bits;
 	GL_pfd.cAlphaBits = (bpp == 32) ? (ubyte)Gr_alpha.bits : 0;
 	GL_pfd.cDepthBits = (bpp == 32) ? 24 : 16;
-
+	GL_pfd.cStencilBits = (bpp == 32) ? 8 : 1;
 
 	wnd = (HWND)os_get_window();
 
@@ -1574,6 +1599,7 @@ int opengl_init_display_device()
 			// if we failed at 32-bit then we are probably a 16-bit desktop, so try and init a 16-bit visual instead
 			GL_pfd.cAlphaBits = 0;
 			GL_pfd.cDepthBits = 16;
+			GL_pfd.cStencilBits = 1;
 			// NOTE: the bit values for colors should get updated automatically by ChoosePixelFormat()
 
 			PixelFormat = ChoosePixelFormat(GL_device_context, &GL_pfd);
@@ -1609,7 +1635,7 @@ int opengl_init_display_device()
 		return 1;
 	}
 
-	mprintf(("  Requested WGL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, GL_pfd.cColorBits, (GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0));
+	mprintf(("  Requested WGL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, GL_pfd.cDepthBits, GL_pfd.cStencilBits, (GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0));
 
 	// now report back as to what we ended up getting
 
@@ -1618,10 +1644,11 @@ int opengl_init_display_device()
 	int r = GL_pfd.cRedBits;
 	int g = GL_pfd.cGreenBits;
 	int b = GL_pfd.cBlueBits;
-	int depth = GL_pfd.cColorBits;
+	int depth = GL_pfd.cDepthBits;
+	int stencil = GL_pfd.cStencilBits;
 	int db = ((GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
 
-	mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", r, g, b, depth, db));
+	mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d\n", r, g, b, depth, stencil, db));
 
 	// get the default gamma ramp so that we can restore it on close
 	if (GL_original_gamma_ramp != NULL) {
@@ -1631,7 +1658,7 @@ int opengl_init_display_device()
 #else
 
 	int flags = SDL_OPENGL;
-	int r = 0, g = 0, b = 0, depth = 0, db = 1;
+	int r = 0, g = 0, b = 0, depth = 0, stencil = 1, db = 1;
 
 	mprintf(("  Initializing SDL...\n"));
 
@@ -1649,6 +1676,7 @@ int opengl_init_display_device()
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, Gr_green.bits);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, Gr_blue.bits);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, (bpp == 32) ? 24 : 16);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, (bpp == 32) ? 8 : 1);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, db);
 	
 	int fsaa_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
@@ -1659,7 +1687,7 @@ int opengl_init_display_device()
 	// Slight hack to make Mesa advertise S3TC support without libtxc_dxtn
 	setenv("force_s3tc_enable", "true", 1);
 
-	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, db, fsaa_samples));
+	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, (bpp == 32) ? 8 : 1, db, fsaa_samples));
 
 	if (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, bpp, flags) == NULL) {
 		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError());
@@ -1671,9 +1699,10 @@ int opengl_init_display_device()
 	SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &b);
 	SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &depth);
 	SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &db);
+	SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &stencil);
 	SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &fsaa_samples);
 
-	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d, FSAA: %d\n", r, g, b, depth, db, fsaa_samples));
+	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", r, g, b, depth, stencil, db, fsaa_samples));
 
 	SDL_ShowCursor(0);
 
@@ -1732,6 +1761,9 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_opengl_zbuffer_set;
 	gr_screen.gf_zbuffer_clear		= gr_opengl_zbuffer_clear;
+
+	gr_screen.gf_stencil_set		= gr_opengl_stencil_set;
+	gr_screen.gf_stencil_clear		= gr_opengl_stencil_clear;
 	
 	gr_screen.gf_save_screen		= gr_opengl_save_screen;
 	gr_screen.gf_restore_screen		= gr_opengl_restore_screen;
