@@ -36,6 +36,7 @@ protected:
 
 	int header_offsets[2];
 	int left_frame_end_x;
+	int right_frame_start_offset;
 	
 	int actual_origin[2];
 	int single_wing_offsets[2];
@@ -43,7 +44,7 @@ protected:
 	int wing_width;
 	int wing_name_offsets[2];
 
-	enum {GROW_LEFT, GROW_RIGHT};
+	enum {GROW_LEFT, GROW_RIGHT, GROW_DOWN};
 	int grow_mode;
 
 	int wingmate_offsets[MAX_SHIPS_PER_WING][2];
@@ -58,6 +59,7 @@ public:
 	void initSingleWingOffsets(int x, int y);
 	void initMultipleWingOffsets(int x, int y);
 	void initWingWidth(int w);
+	void initRightBgOffset(int offset);
 	void initWingNameOffsets(int x, int y);
 	void initWingmate1Offsets(int x, int y);
 	void initWingmate2Offsets(int x, int y);

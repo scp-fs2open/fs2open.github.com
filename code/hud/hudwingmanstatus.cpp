@@ -243,6 +243,11 @@ void HudGaugeWingmanStatus::initWingWidth(int w)
 	wing_width = w;
 }
 
+void HudGaugeWingmanStatus::initRightBgOffset(int offset)
+{
+	right_frame_start_offset = offset;
+}
+
 void HudGaugeWingmanStatus::initWingNameOffsets(int x, int y)
 {
 	wing_name_offsets[0] = x;
@@ -343,15 +348,30 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 	renderString(sx+header_offsets[0], sy+header_offsets[1], XSTR( "wingmen", 352));
 
 	// bring us to the end of the left portion so we can draw the last or middle bits depending on how many wings we have to draw
-	sx += left_frame_end_x;
+	if ( grow_mode == GROW_DOWN ) {
+		sy += left_frame_end_x;
+	} else {
+		sx += left_frame_end_x;
+	}
 
 	bitmap = Wingman_status_middle.first_frame;
 
-	if(num_wings_to_draw > 2 && bitmap > 0) {
-		for(int i = 0; i < num_wings_to_draw - 2; i++){
+	if ( grow_mode == GROW_DOWN ) {
+		for ( int i = 0; i < num_wings_to_draw; i++ ) {
 			renderBitmap(bitmap, sx, sy);
-			sx += wing_width;
+			sy += wing_width;
 		}
+
+		sy += right_frame_start_offset;
+	} else {
+		if(num_wings_to_draw > 2 && bitmap > 0) {
+			for(int i = 0; i < num_wings_to_draw - 2; i++){
+				renderBitmap(bitmap, sx, sy);
+				sx += wing_width;
+			}
+		}
+
+		sx += right_frame_start_offset;
 	}
 
 	bitmap = Wingman_status_right.first_frame;
@@ -369,6 +389,9 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 	if(num_wings_to_draw == 1) {
 		sx = position[0] + single_wing_offsets[0];
 		sy = position[1] + single_wing_offsets[1];
+	} else if ( grow_mode == GROW_DOWN ) {
+		sx = actual_origin[0] + multiple_wing_offsets[0]; // wing_width = 35
+		sy = actual_origin[1] + multiple_wing_offsets[1] + screen_index*wing_width;
 	} else {
 		sx = actual_origin[0] + multiple_wing_offsets[0] + (screen_index - 1)*wing_width; // wing_width = 35
 		sy = actual_origin[1] + multiple_wing_offsets[1];

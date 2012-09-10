@@ -4750,6 +4750,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, int ship_in
 	int single_wing_offsets[2];
 	int multiple_wing_offsets[2];
 	int wing_width;
+	int right_bg_offset = 0;
 	int wing_name_offsets[2];
 	bool slew = false;
 	int font_num = FONT1;
@@ -4838,10 +4839,13 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, int ship_in
 	if(optional_string("Left Background Filename:")) {
 		stuff_string(fname_left, F_NAME, MAX_FILENAME_LEN);
 	}
+	if(optional_string("First Background Filename:")) {
+		stuff_string(fname_left, F_NAME, MAX_FILENAME_LEN);
+	}
 	if(optional_string("Entry Background Filename:")) {
 		stuff_string(fname_middle, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Right Background Filename:")) {
+	if(optional_string("Right Background Filename:") || optional_string("Last Background Filename:")) {
 		stuff_string(fname_right, F_NAME, MAX_FILENAME_LEN);
 	}
 	if(optional_string("Dot Filename:")) {
@@ -4853,8 +4857,17 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, int ship_in
 	if(optional_string("Left Background Width:")) {
 		stuff_int(&left_frame_end_x);
 	}
+	if(optional_string("First Background Size:")) {
+		stuff_int(&left_frame_end_x);
+	}
 	if(optional_string("Entry Width:")) {
 		stuff_int(&wing_width);
+	}
+	if(optional_string("Entry Size:")) {
+		stuff_int(&wing_width);
+	}
+	if(optional_string("Right Background Offset:") || optional_string("Last Background Offset:")) {
+		stuff_int(&right_bg_offset);
 	}
 	if(optional_string("Single Wing Offsets:")) {
 		stuff_int_list(single_wing_offsets, 2);
@@ -4877,8 +4890,10 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, int ship_in
 	int grow_mode = 0; //By default, expand the gauge to the left (in -x direction)
 
 	if(optional_string("Expansion Mode:")) {
-		if(required_string("Right")) 
+		if(optional_string("Right")) 
 			grow_mode = 1;
+		else if(optional_string("Down"))
+			grow_mode = 2;
 	}
 
 	HudGaugeWingmanStatus* hud_gauge = new HudGaugeWingmanStatus();
@@ -4897,6 +4912,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->initWingmate6Offsets(wingmate_offsets[5][0], wingmate_offsets[5][1]);
 	hud_gauge->initWingNameOffsets(wing_name_offsets[0], wing_name_offsets[1]);
 	hud_gauge->initWingWidth(wing_width);
+	hud_gauge->initRightBgOffset(right_bg_offset);
 	hud_gauge->initGrowMode(grow_mode);
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
