@@ -346,6 +346,26 @@ public:
 	void maybeFlashWeapon(int index);
 };
 
+class HudGaugeHardpoints: public HudGauge
+{
+	int _size[2];
+	float _line_width;
+	int _view_direction;
+
+	bool draw_secondary_models;
+	bool draw_primary_models;
+public:
+	enum {TOP, FRONT};
+
+	void initSizes(int w, int h);
+	void initLineWidth(float w);
+	void initViewDir(int dir);
+	void initDrawOptions(bool primary_models, bool secondary_models);
+
+	HudGaugeHardpoints();
+	void render(float frametime);
+};
+
 class HudGaugeWarheadCount: public HudGauge
 {
 	hud_frames Warhead;

@@ -29,7 +29,7 @@ void init_hud();
 void load_missing_retail_gauges();
 void check_color(int *colorp);
 
-#define NUM_HUD_OBJECT_ENTRIES			53		// not used anywhere?
+#define NUM_HUD_OBJECT_ENTRIES			54		// not used anywhere?
 int parse_gauge_type();
 void load_gauge(int gauge, int base_w = -1, int base_h = -1, int font = -1, int ship_idx = -1, color *use_clr = NULL);
 
@@ -191,5 +191,8 @@ void load_gauge_flight_path(int base_w, int base_h, int font, int ship_idx = -1,
 
 #define HUD_OBJECT_WARHEAD_COUNT		52
 void load_gauge_warhead_count(int base_w, int base_h, int font, int ship_idx = -1, color *use_clr = NULL);
+
+#define HUD_OBJECT_HARDPOINTS			53
+void load_gauge_hardpoints(int base_w, int base_h, int font, int ship_idx = -1, color *use_clr = NULL);
 
 #endif // _HUDPARSE_H
