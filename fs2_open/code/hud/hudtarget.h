@@ -346,6 +346,30 @@ public:
 	void maybeFlashWeapon(int index);
 };
 
+class HudGaugeWarheadCount: public HudGauge
+{
+	hud_frames Warhead;
+	
+	int Warhead_name_offsets[2];
+	int Warhead_count_offsets[2];
+	int Warhead_count_size[2];
+
+	int Max_symbols;
+	int Text_align;
+	int Max_columns;
+public:
+	HudGaugeWarheadCount();
+	void initBitmap(char *fname);
+	void initNameOffsets(int x, int y);
+	void initCountOffsets(int x, int y);
+	void initCountSizes(int w, int h);
+	void initMaxSymbols(int count);
+	void initMaxColumns(int count);
+	void initTextAlign(int align);
+	void render(float frametime);
+	void pageIn();
+};
+
 class HudGaugeOrientationTee: public HudGauge
 {
 protected:
