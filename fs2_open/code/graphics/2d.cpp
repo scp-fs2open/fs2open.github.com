@@ -86,6 +86,8 @@ static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
 float Gr_save_resize_X = 1.0f, Gr_save_resize_Y = 1.0f;
 float Gr_save_unsize_X = 1.0f, Gr_save_unsize_Y = 1.0f;
 
+bool Save_custom_screen_size;
+
 void gr_set_screen_scale(int w, int h)
 {
 	Gr_resize_X = (float)gr_screen.max_w / (float)w;
@@ -93,6 +95,10 @@ void gr_set_screen_scale(int w, int h)
 
 	Gr_unsize_X = (float)w / (float)gr_screen.max_w;
 	Gr_unsize_Y = (float)h / (float)gr_screen.max_h;
+
+	Save_custom_screen_size = gr_screen.custom_size;
+
+	gr_screen.custom_size = true;
 }
 
 void gr_set_screen_scale(int w, int h, int max_w, int max_h)
@@ -102,6 +108,10 @@ void gr_set_screen_scale(int w, int h, int max_w, int max_h)
 
 	Gr_unsize_X = (float)w / (float)max_w;
 	Gr_unsize_Y = (float)h / (float)max_h;
+
+	Save_custom_screen_size = gr_screen.custom_size;
+
+	gr_screen.custom_size = true;
 }
 
 void gr_reset_screen_scale()
@@ -111,6 +121,8 @@ void gr_reset_screen_scale()
 
 	Gr_unsize_X = Gr_save_unsize_X;
 	Gr_unsize_Y = Gr_save_unsize_Y;
+
+	gr_screen.custom_size = Save_custom_screen_size;
 }
 
 /**
