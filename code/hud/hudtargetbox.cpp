@@ -178,7 +178,10 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 }
 
 HudGaugeTargetBox::HudGaugeTargetBox():
-HudGauge(HUD_OBJECT_TARGET_MONITOR, HUD_TARGET_MONITOR, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+	HudGauge(HUD_OBJECT_TARGET_MONITOR, HUD_TARGET_MONITOR, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255), 
+	Use_subsys_name_offsets(false), 
+	Use_subsys_integrity_offsets(false),
+	Use_disabled_status_offsets(false)
 {
 }
 
@@ -257,6 +260,27 @@ void HudGaugeTargetBox::initCargoScanSize(int w, int h)
 {
 	Cargo_scan_w = w;
 	Cargo_scan_h = h;
+}
+
+void HudGaugeTargetBox::initSubsysNameOffsets(int x, int y, bool activate)
+{
+	Subsys_name_offsets[0] = x;
+	Subsys_name_offsets[1] = y;
+	Use_subsys_name_offsets = activate;
+}
+
+void HudGaugeTargetBox::initSubsysIntegrityOffsets(int x, int y, bool activate)
+{
+	Subsys_integrity_offsets[0] = x;
+	Subsys_integrity_offsets[1] = y;
+	Use_subsys_integrity_offsets = activate;
+}
+
+void HudGaugeTargetBox::initDisabledStatusOffsets(int x, int y, bool activate)
+{
+	Disabled_status_offsets[0] = x;
+	Disabled_status_offsets[1] = y;
+	Use_disabled_status_offsets = activate;
 }
 
 void HudGaugeTargetBox::initDesaturate(bool desaturate)
@@ -1497,16 +1521,38 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 			p_line = strpbrk(p_line+1,linebreak);
 		}
 
+		int subsys_name_pos_x;
+		int subsys_name_pos_y;
+
+		if ( Use_subsys_name_offsets ) {
+			subsys_name_pos_x = position[0] + Subsys_name_offsets[0];
+			subsys_name_pos_y = position[1] + Subsys_name_offsets[1];
+		} else {
+			subsys_name_pos_x = position[0] + Viewport_offsets[0] + 2;
+			subsys_name_pos_y = position[1] + Viewport_offsets[1] + Viewport_h;
+		}
+
 		if (n_linebreaks) {
 			p_line = strtok(outstr,linebreak);
 			while (p_line != NULL) {
-				gr_printf(position[0] + Viewport_offsets[0]+2, position[1] + Viewport_offsets[1]+Viewport_h-h-(10*n_linebreaks), p_line);
+				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-(10*n_linebreaks), p_line);
 				p_line = strtok(NULL,linebreak);
 				n_linebreaks--;
 			}
 		} else {
 			hud_targetbox_truncate_subsys_name(outstr);
-			renderPrintf(position[0] + Viewport_offsets[0]+2, position[1] + Viewport_offsets[1]+Viewport_h-h, outstr);
+			renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h, outstr);
+		}
+
+		int subsys_integrity_pos_x;
+		int subsys_integrity_pos_y;
+
+		if ( Use_subsys_integrity_offsets ) {
+			subsys_integrity_pos_x = position[0] + Subsys_integrity_offsets[0];
+			subsys_integrity_pos_y = position[1] + Subsys_integrity_offsets[1];
+		} else {
+			subsys_integrity_pos_x = position[0] + Viewport_offsets[0] + Viewport_w - 1;
+			subsys_integrity_pos_y = position[1] + Viewport_offsets[1] + Viewport_h;
 		}
 
 		// AL 23-3-98: Fighter bays are a special case.  Player cannot destroy them, so don't
@@ -1517,7 +1563,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		{
 			sprintf(outstr,XSTR( "%d%%", 341),screen_integrity);
 			gr_get_string_size(&w,&h,outstr);
-			renderPrintf(position[0] + Viewport_offsets[0] + Viewport_w - w - 1, position[1] + Viewport_offsets[1] + Viewport_h - h, "%s", outstr);
+			renderPrintf(subsys_integrity_pos_x - w, subsys_integrity_pos_y - h, "%s", outstr);
 		}
 
 		setGaugeColor();
@@ -1531,7 +1577,19 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 			sprintf(outstr, XSTR( "DISRUPTED", 343));
 		}
 		gr_get_string_size(&w,&h,outstr);
-		renderPrintf(position[0] + Viewport_offsets[0] + Viewport_w/2 - w/2 - 1, position[1] + Viewport_offsets[1] + Viewport_h - 2*h, "%s", outstr);
+
+		int disabled_status_pos_x;
+		int disabled_status_pos_y;
+
+		if ( Use_disabled_status_offsets ) {
+			disabled_status_pos_x = position[0] + Disabled_status_offsets[0];
+			disabled_status_pos_y = position[1] + Disabled_status_offsets[1];
+		} else {
+			disabled_status_pos_x = position[0] + Viewport_offsets[0] + Viewport_w/2 - w/2 - 1;
+			disabled_status_pos_y = position[1] + Viewport_offsets[1] + Viewport_h - 2*h;
+		}
+
+		renderPrintf(disabled_status_pos_x, disabled_status_pos_y, "%s", outstr);
 	}
 }
 

@@ -70,6 +70,15 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 	int Cargo_scan_h;
 	int Cargo_scan_w;
 
+	int Subsys_name_offsets[2];
+	bool Use_subsys_name_offsets;
+
+	int Subsys_integrity_offsets[2];
+	bool Use_subsys_integrity_offsets;
+
+	int Disabled_status_offsets[2];
+	bool Use_disabled_status_offsets;
+
 	bool Desaturated;
 
 	// first element is time flashing expires, second element is time of next flash
@@ -94,6 +103,9 @@ public:
 	void initHullOffsets(int x, int y);
 	void initCargoScanStartOffsets(int x, int y);
 	void initCargoScanSize(int w, int h);
+	void initSubsysNameOffsets(int x, int y, bool activate);
+	void initSubsysIntegrityOffsets(int x, int y, bool activate);
+	void initDisabledStatusOffsets(int x, int y, bool activate);
 	void initDesaturate(bool desaturate);
 
 	void initialize();
