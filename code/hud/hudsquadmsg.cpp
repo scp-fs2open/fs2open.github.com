@@ -2507,6 +2507,11 @@ void HudGaugeSquadMessage::initMiddleFrameStartOffsetY(int y)
 	Middle_frame_start_offset_y = y;
 }
 
+void HudGaugeSquadMessage::initBottomBgOffset(int offset)
+{
+	bottom_bg_offset = offset;
+}
+
 void HudGaugeSquadMessage::initItemHeight(int h)
 {
 	Item_h = h;
@@ -2707,7 +2712,7 @@ void HudGaugeSquadMessage::render(float frametime)
 	setGaugeColor();
 	if ( Mbox_gauge[2].first_frame >= 0 ) {
 	
-		renderBitmap(Mbox_gauge[2].first_frame, bx, by);
+		renderBitmap(Mbox_gauge[2].first_frame, bx, by + bottom_bg_offset);
 	}
 
 	// determine if we should put the text "[more]" at top or bottom to indicate you can page up or down
