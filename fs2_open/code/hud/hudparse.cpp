@@ -3537,6 +3537,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, int ship_in
 	int Cargo_scan_size[2];
 	int colors[3] = {255, 255, 255};
 	bool lock_color = false;
+	bool desaturate = false;
 
 	char fname_monitor[MAX_FILENAME_LEN] = "targetview1";
 	char fname_integrity[MAX_FILENAME_LEN] = "targetview2";
@@ -3668,6 +3669,9 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, int ship_in
 	if(optional_string("Cargo Scan Size:")) {
 		stuff_int_list(Cargo_scan_size, 2);
 	}
+	if ( optional_string("Desaturate:") ) {
+		stuff_boolean(&desaturate);
+	}
 
 	HudGaugeTargetBox* hud_gauge = new HudGaugeTargetBox();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -3685,6 +3689,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->initHullOffsets(Hull_offsets[0], Hull_offsets[1]);
 	hud_gauge->initCargoScanStartOffsets(Cargo_scan_start_offsets[0], Cargo_scan_start_offsets[1]);
 	hud_gauge->initCargoScanSize(Cargo_scan_size[0], Cargo_scan_size[1]);
+	hud_gauge->initDesaturate(desaturate);
 	hud_gauge->initBitmaps(fname_monitor, fname_monitor_mask, fname_integrity, fname_static);
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);

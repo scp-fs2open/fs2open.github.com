@@ -70,6 +70,8 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 	int Cargo_scan_h;
 	int Cargo_scan_w;
 
+	bool Desaturated;
+
 	// first element is time flashing expires, second element is time of next flash
 	int Next_flash_timers[NUM_TBOX_FLASH_TIMERS];
 
@@ -92,6 +94,7 @@ public:
 	void initHullOffsets(int x, int y);
 	void initCargoScanStartOffsets(int x, int y);
 	void initCargoScanSize(int w, int h);
+	void initDesaturate(bool desaturate);
 
 	void initialize();
 	void pageIn();
