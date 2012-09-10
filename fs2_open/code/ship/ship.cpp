@@ -9211,8 +9211,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	sp->model_instance_num = model_create_instance(sip->model_num);
 
 	// Valathil - Reinitialize collision checks
-	obj_remove_pairs(objp);
-	obj_add_pairs(objp->instance);
+	if ( Cmdline_old_collision_sys ) {
+		obj_remove_pairs(objp);
+		obj_add_pairs(objp->instance);
+	} else {
+		obj_remove_collider(OBJ_INDEX(objp));
+		obj_add_collider(OBJ_INDEX(objp));
+	}
 
 	// The E - If we're switching during gameplay, make sure we get valid primary/secondary selections
 	if ( by_sexp ) {
