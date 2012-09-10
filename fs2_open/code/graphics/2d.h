@@ -403,6 +403,9 @@ typedef struct screen {
 	// poly culling
 	int (*gf_set_cull)(int cull);
 
+	// color buffer writes
+	int (*gf_set_color_buffer)(int mode);
+
 	// cross fade
 	void (*gf_cross_fade)(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct);
 
@@ -700,6 +703,7 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 }
 
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
+#define gr_set_color_buffer	GR_CALL(gr_screen.gf_set_color_buffer)
 
 #define gr_cross_fade		GR_CALL(gr_screen.gf_cross_fade)
 

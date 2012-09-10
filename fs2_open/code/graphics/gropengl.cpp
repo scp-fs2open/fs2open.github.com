@@ -710,6 +710,21 @@ void gr_opengl_set_clear_color(int r, int g, int b)
 	gr_init_color(&gr_screen.current_clear_color, r, g, b);
 }
 
+int gr_opengl_set_color_buffer(int mode)
+{
+	GLboolean enabled = GL_FALSE;
+
+	if ( mode ) {
+		enabled = GL_state.ColorMask(GL_TRUE);
+	} else {
+		enabled = GL_state.ColorMask(GL_FALSE);
+	}
+
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+
+	return (enabled) ? 1 : 0;
+}
+
 int gr_opengl_zbuffer_get()
 {
 	if ( !gr_global_zbuffering ) {
@@ -1810,6 +1825,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_bm_set_render_target	= gr_opengl_bm_set_render_target;
 
 	gr_screen.gf_set_cull			= gr_opengl_set_cull;
+	gr_screen.gf_set_color_buffer	= gr_opengl_set_color_buffer;
 
 	gr_screen.gf_cross_fade			= gr_opengl_cross_fade;
 

@@ -639,6 +639,24 @@ GLboolean opengl_state::DepthMask(GLint state)
 	return save_state;
 }
 
+GLboolean opengl_state::ColorMask(GLint state)
+{
+    GLboolean save_state = colormask_Status;
+
+    if ( !((state == -1) || (state == colormask_Status)) ) {
+        if (state) {
+            Assert( state == GL_TRUE );
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            colormask_Status = GL_TRUE;
+        } else {
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            colormask_Status = GL_FALSE;
+        }
+    }
+
+    return save_state;
+}
+
 void opengl_state::SetTextureSource(gr_texture_source ts)
 {
 	if (ts == Texture.Current_texture_source) {
