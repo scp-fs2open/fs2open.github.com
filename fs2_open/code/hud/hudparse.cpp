@@ -4749,6 +4749,7 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, int ship_index, col
 	int middle_frame_start_offset_y;
 	int subsys_integ_start_offsets[2];
 	int subsys_integ_val_offset_x;
+	int bottom_bg_offset = 0;
 	int line_h;
 	char fname_top[MAX_FILENAME_LEN] = "damage1";
 	char fname_middle[MAX_FILENAME_LEN] = "damage2";
@@ -4843,6 +4844,9 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, int ship_index, col
 	if(optional_string("Subsystem Entry Value X-offset:")) {
 		stuff_int(&subsys_integ_val_offset_x);
 	}
+	if(optional_string("Bottom Background Offset:")) {
+		stuff_int(&bottom_bg_offset);
+	}
 
 	HudGaugeDamage* hud_gauge = new HudGaugeDamage();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -4854,6 +4858,7 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, int ship_index, col
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initSubsysIntegStartOffsets(subsys_integ_start_offsets[0], subsys_integ_start_offsets[1]);
 	hud_gauge->initSubsysIntegValueOffsetX(subsys_integ_val_offset_x);
+	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
