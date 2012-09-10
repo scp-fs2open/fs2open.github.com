@@ -4544,6 +4544,9 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, int ship_index
 	char fname[MAX_FILENAME_LEN] = "toggle1";
 	bool slew = false;
 	int font_num = FONT1;
+
+	int on_color[4] = {0, 0, 0, 255};
+	int off_color[4] = {-1, -1, -1, -1};
 	int colors[3] = {255, 255, 255};
 	bool lock_color = false;
 
@@ -4607,6 +4610,14 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, int ship_index
 		stuff_int_list(target_text_offset, 2);
 	}
 
+	if ( optional_string("On Text Color:") ) {
+		stuff_int_list(on_color, 4);
+	}
+
+	if ( optional_string("Off Text Color:") ) {
+		stuff_int_list(off_color, 4);
+	}
+
 	HudGaugeAutoTarget* hud_gauge = new HudGaugeAutoTarget();
 	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -4615,6 +4626,8 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->initTargetTextOffsets(target_text_offset[0], target_text_offset[1]);
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
+	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
+	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
@@ -4634,6 +4647,8 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, int ship_index,
 	char fname[MAX_FILENAME_LEN] = "toggle1";
 	bool slew = false;
 	int font_num = FONT1;
+	int on_color[4] = {0, 0, 0, 255};
+	int off_color[4] = {-1, -1, -1, -1};
 	int colors[3] = {255, 255, 255};
 	bool lock_color = false;
 
@@ -4697,6 +4712,14 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, int ship_index,
 		stuff_int_list(speed_text_offset, 2);
 	}
 
+	if ( optional_string("On Text Color:") ) {
+		stuff_int_list(on_color, 4);
+	}
+
+	if ( optional_string("Off Text Color:") ) {
+		stuff_int_list(off_color, 4);
+	}
+
 	HudGaugeAutoSpeed* hud_gauge = new HudGaugeAutoSpeed();
 	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -4705,6 +4728,8 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, int ship_index,
 	hud_gauge->initSpeedTextOffsets(speed_text_offset[0], speed_text_offset[1]);
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
+	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
+	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
