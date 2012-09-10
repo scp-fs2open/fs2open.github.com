@@ -804,6 +804,13 @@ int parse_gauge_type()
 
 	if ( optional_string("+Hardpoints:") )
 		return HUD_OBJECT_HARDPOINTS;
+
+	if ( optional_string("+Primary Weapons:") )
+		return HUD_OBJECT_PRIMARY_WEAPONS;
+
+	if ( optional_string("+Secondary Weapons:") )
+		return HUD_OBJECT_SECONDARY_WEAPONS;
+
 	return -1;
 }
 
@@ -971,6 +978,12 @@ void load_gauge(int gauge, int base_w, int base_h, int hud_font, int ship_idx, c
 		break;
 	case HUD_OBJECT_HARDPOINTS:
 		load_gauge_hardpoints(base_w, base_h, hud_font, ship_idx, use_clr);
+		break;
+	case HUD_OBJECT_PRIMARY_WEAPONS:
+		load_gauge_primary_weapons(base_w, base_h, hud_font, ship_idx, use_clr);
+		break;
+	case HUD_OBJECT_SECONDARY_WEAPONS:
+		load_gauge_secondary_weapons(base_w, base_h, hud_font, ship_idx, use_clr);
 		break;
 	default:
 		Warning(LOCATION, "Invalid gauge found in hud_gauges.tbl");
@@ -6885,6 +6898,330 @@ void load_gauge_hardpoints(int base_w, int base_h, int font, int ship_index, col
 	hud_gauge->initLineWidth(line_width);
 	hud_gauge->initViewDir(view_dir);
 	hud_gauge->initDrawOptions(show_primary, show_secondary);
+	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
+	hud_gauge->lockConfigColor(lock_color);
+
+	if(ship_index >= 0) {
+		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	} else {
+		default_hud_gauges.push_back(hud_gauge);
+	}
+}
+
+void load_gauge_primary_weapons(int base_w, int base_h, int font, int ship_index, color *use_clr)
+{
+	int coords[2];
+	int base_res[2];
+	bool slew = false;
+	int font_num = FONT1;
+
+	char fname_first[MAX_FILENAME_LEN] = "weapon_list1";
+	char fname_entry[MAX_FILENAME_LEN] = "weapon_list2";
+	char fname_last[MAX_FILENAME_LEN] = "weapon_list3";
+	int header_offsets[2] = {2, 2};
+	char header_text[NAME_LENGTH] = "Primary Weapons";
+	int first_bg_h = 12;
+	int first_bg_offset_x = 0;
+	int entry_bg_h = 12;
+	int entry_bg_offset_x = 0;
+	int last_bg_offset_x = 0;
+	int last_bg_offset_y = 0;
+	int entry_h = 10;
+	int entry_start_offset_y = 12;
+	int ammo_x = 28;
+	int link_x = 33;
+	int name_x = 35;
+	int colors[3] = {255, 255, 255};
+	bool lock_color = false;
+
+	if( check_base_res(base_w, base_h) ) {
+		base_res[0] = base_w;
+		base_res[1] = base_h;
+
+		if ( optional_string("Position:") ) {
+			stuff_int_list(coords, 2);
+		}
+	}
+
+	if ( use_clr != NULL ) {
+		colors[0] = use_clr->red;
+		colors[1] = use_clr->green;
+		colors[2] = use_clr->blue;
+
+		lock_color = true;
+	} else if ( optional_string("Color:") ) {
+		stuff_int_list(colors, 3);
+
+		check_color(colors);
+
+		lock_color = true;
+	}
+
+	if ( optional_string("Font:") ) {
+		stuff_int(&font_num);
+	} else {
+		if ( font >=0 ) {
+			font_num = font;
+		}
+	}
+
+	if ( optional_string("Slew:") ) {
+		stuff_boolean(&slew);
+	}
+
+	if ( optional_string("Header Offsets:") ) {
+		stuff_int_list(header_offsets, 2);
+	}
+
+	if ( optional_string("Header Text:") ) {
+		stuff_string(header_text, F_NAME, NAME_LENGTH);
+	}
+
+	if ( optional_string("First Background Filename:") ) {
+		stuff_string(fname_first, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if ( optional_string("First Background Height:") ) {
+		stuff_int(&first_bg_h);
+	}
+
+	if ( optional_string("First Background X-offset:") ) {
+		stuff_int(&first_bg_offset_x);
+	}
+
+	if ( optional_string("Entry Background Filename:") ) {
+		stuff_string(fname_entry, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if ( optional_string("Entry Background Height:") ) {
+		stuff_int(&entry_bg_h);
+	}
+
+	if ( optional_string("Entry Background X-offset:") ) {
+		stuff_int(&entry_bg_offset_x);
+	}
+
+	if ( optional_string("Last Background Filename:") ) {
+		stuff_string(fname_last, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if ( optional_string("Last Background X-offset:") ) {
+		stuff_int(&last_bg_offset_x);
+	}
+
+	if ( optional_string("Last Background Y-offset:") ) {
+		stuff_int(&last_bg_offset_y);
+	}
+
+	if ( optional_string("Entry Height:") ) {
+		stuff_int(&entry_h);
+	}
+
+	if ( optional_string("List Start Y-offset:") ) {
+		stuff_int(&entry_start_offset_y);
+	}
+
+	if ( optional_string("Ammo X-offset:") ) {
+		stuff_int(&ammo_x);
+	}
+
+	if ( optional_string("Link X-offset:") ) {
+		stuff_int(&link_x);
+	}
+
+	if ( optional_string("Name X-offset:") ) {
+		stuff_int(&name_x);
+	}
+
+	HudGaugePrimaryWeapons* hud_gauge = new HudGaugePrimaryWeapons();
+	
+	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initFont(font_num);
+	hud_gauge->initSlew(slew);
+	
+	hud_gauge->initBitmaps(fname_first, fname_entry, fname_last);
+	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
+	hud_gauge->initHeaderText(header_text);
+	hud_gauge->initBgFirstHeight(first_bg_h);
+	hud_gauge->initBgFirstOffsetX(first_bg_offset_x);
+	hud_gauge->initBgEntryHeight(entry_bg_h);
+	hud_gauge->initBgEntryOffsetX(entry_bg_offset_x);
+	hud_gauge->initBgLastOffsetX(last_bg_offset_x);
+	hud_gauge->initBgLastOffsetY(last_bg_offset_y);
+	hud_gauge->initEntryHeight(entry_h);
+	hud_gauge->initEntryStartY(entry_start_offset_y);
+	hud_gauge->initPrimaryAmmoOffsetX(ammo_x);
+	hud_gauge->initPrimaryLinkOffsetX(link_x);
+	hud_gauge->initPrimaryNameOffsetX(name_x);
+	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
+	hud_gauge->lockConfigColor(lock_color);
+
+	if(ship_index >= 0) {
+		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	} else {
+		default_hud_gauges.push_back(hud_gauge);
+	}
+}
+
+void load_gauge_secondary_weapons(int base_w, int base_h, int font, int ship_index, color *use_clr)
+{
+	int coords[2];
+	int base_res[2];
+	bool slew = false;
+	int font_num = FONT1;
+
+	char fname_first[MAX_FILENAME_LEN] = "weapon_list1";
+	char fname_entry[MAX_FILENAME_LEN] = "weapon_list2";
+	char fname_last[MAX_FILENAME_LEN] = "weapon_list3";
+	int header_offsets[2] = {2, 2};
+	char header_text[NAME_LENGTH] = "Secondary Weapons";
+	int first_bg_h = 12;
+	int first_bg_offset_x = 0;
+	int entry_bg_h = 12;
+	int entry_bg_offset_x = 0;
+	int last_bg_offset_x = 0;
+	int last_bg_offset_y = 0;
+	int entry_h = 10;
+	int entry_start_offset_y = 12;
+	int ammo_x = 28;
+	int link_x = 28;
+	int name_x = 39;
+	int reload_x = 118;
+	int unlink_x = 33;
+	int colors[3] = {255, 255, 255};
+	bool lock_color = false;
+
+	if( check_base_res(base_w, base_h) ) {
+		base_res[0] = base_w;
+		base_res[1] = base_h;
+
+		if ( optional_string("Position:") ) {
+			stuff_int_list(coords, 2);
+		}
+	}
+
+	if ( use_clr != NULL ) {
+		colors[0] = use_clr->red;
+		colors[1] = use_clr->green;
+		colors[2] = use_clr->blue;
+
+		lock_color = true;
+	} else if ( optional_string("Color:") ) {
+		stuff_int_list(colors, 3);
+
+		check_color(colors);
+
+		lock_color = true;
+	}
+
+	if ( optional_string("Font:") ) {
+		stuff_int(&font_num);
+	} else {
+		if ( font >=0 ) {
+			font_num = font;
+		}
+	}
+
+	if ( optional_string("Slew:") ) {
+		stuff_boolean(&slew);
+	}
+
+	if ( optional_string("Header Offsets:") ) {
+		stuff_int_list(header_offsets, 2);
+	}
+
+	if ( optional_string("Header Text:") ) {
+		stuff_string(header_text, F_NAME, NAME_LENGTH);
+	}
+
+	if ( optional_string("First Background Filename:") ) {
+		stuff_string(fname_first, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if ( optional_string("First Background Height:") ) {
+		stuff_int(&first_bg_h);
+	}
+
+	if ( optional_string("First Background X-offset:") ) {
+		stuff_int(&first_bg_offset_x);
+	}
+
+	if ( optional_string("Entry Background Filename:") ) {
+		stuff_string(fname_entry, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if ( optional_string("Entry Background Height:") ) {
+		stuff_int(&entry_bg_h);
+	}
+
+	if ( optional_string("Entry Background X-offset:") ) {
+		stuff_int(&entry_bg_offset_x);
+	}
+
+	if ( optional_string("Last Background Filename:") ) {
+		stuff_string(fname_last, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if ( optional_string("Last Background X-offset:") ) {
+		stuff_int(&last_bg_offset_x);
+	}
+
+	if ( optional_string("Last Background Y-offset:") ) {
+		stuff_int(&last_bg_offset_y);
+	}
+
+	if ( optional_string("Entry Height:") ) {
+		stuff_int(&entry_h);
+	}
+
+	if ( optional_string("List Start Y-offset:") ) {
+		stuff_int(&entry_start_offset_y);
+	}
+
+	if ( optional_string("Ammo X-offset:") ) {
+		stuff_int(&ammo_x);
+	}
+
+	if ( optional_string("Link X-offset:") ) {
+		stuff_int(&link_x);
+	}
+
+	if ( optional_string("Name X-offset:") ) {
+		stuff_int(&name_x);
+	}
+
+	if ( optional_string("Unlink X-offset:") ) {
+		stuff_int(&unlink_x);
+	}
+
+	if ( optional_string("Reload X-offset:") ) {
+		stuff_int(&reload_x);
+	}
+
+	HudGaugeSecondaryWeapons* hud_gauge = new HudGaugeSecondaryWeapons();
+
+	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initFont(font_num);
+	hud_gauge->initSlew(slew);
+
+	hud_gauge->initBitmaps(fname_first, fname_entry, fname_last);
+	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
+	hud_gauge->initHeaderText(header_text);
+	hud_gauge->initBgFirstHeight(first_bg_h);
+	hud_gauge->initBgFirstOffsetX(first_bg_offset_x);
+	hud_gauge->initBgEntryHeight(entry_bg_h);
+	hud_gauge->initBgEntryOffsetX(entry_bg_offset_x);
+	hud_gauge->initBgLastOffsetX(last_bg_offset_x);
+	hud_gauge->initBgLastOffsetY(last_bg_offset_y);
+	hud_gauge->initEntryHeight(entry_h);
+	hud_gauge->initEntryStartY(entry_start_offset_y);
+	hud_gauge->initSecondaryAmmoOffsetX(ammo_x);
+	hud_gauge->initSecondaryLinkedOffsetX(link_x);
+	hud_gauge->initSecondaryNameOffsetX(name_x);
+	hud_gauge->initSecondaryReloadOffsetX(reload_x);
+	hud_gauge->initSecondaryUnlinkedOffsetX(unlink_x);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 

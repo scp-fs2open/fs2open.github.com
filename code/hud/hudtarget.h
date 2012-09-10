@@ -346,6 +346,79 @@ public:
 	void maybeFlashWeapon(int index);
 };
 
+class HudGaugeWeaponList: public HudGauge
+{
+protected:
+	hud_frames _background_first;
+	hud_frames _background_entry;
+	hud_frames _background_last;
+
+	int _bg_first_offset_x;
+	int _bg_entry_offset_x;
+	int _bg_last_offset_x;
+	int _bg_last_offset_y;
+
+	int _background_first_h;
+	int _background_entry_h;
+
+	int _header_offsets[2];
+	int _entry_start_y;
+	int _entry_h;
+
+	char header_text[NAME_LENGTH];
+public:
+	HudGaugeWeaponList(int gauge_object);
+	void initBitmaps(char *fname_first, char *fname_entry, char *fname_last);
+	void initBgFirstOffsetX(int x);
+	void initBgEntryOffsetX(int x);
+	void initBgLastOffsetX(int x);
+	void initBgLastOffsetY(int x);
+	void initBgFirstHeight(int h);
+	void initBgEntryHeight(int h);
+	void initHeaderText(char *text);
+	void initHeaderOffsets(int x, int y);
+	void initEntryStartY(int y);
+	void initEntryHeight(int h);
+
+	virtual void render(float frametime);
+	void pageIn();
+	void maybeFlashWeapon(int index);
+};
+
+class HudGaugePrimaryWeapons: public HudGaugeWeaponList
+{
+protected:
+	int _plink_offset_x; 
+	int _pname_offset_x; 
+	int _pammo_offset_x; 
+public:
+	HudGaugePrimaryWeapons();
+	void initPrimaryLinkOffsetX(int x);
+	void initPrimaryNameOffsetX(int x);
+	void initPrimaryAmmoOffsetX(int x);
+
+	void render(float frametime);
+};
+
+class HudGaugeSecondaryWeapons: public HudGaugeWeaponList
+{
+protected:
+	int _sammo_offset_x;
+	int _sname_offset_x;
+	int _sreload_offset_x;
+	int _slinked_offset_x;
+	int _sunlinked_offset_x;
+public:
+	HudGaugeSecondaryWeapons();
+	void initSecondaryAmmoOffsetX(int x);
+	void initSecondaryNameOffsetX(int x);
+	void initSecondaryReloadOffsetX(int x);
+	void initSecondaryLinkedOffsetX(int x);
+	void initSecondaryUnlinkedOffsetX(int x);
+
+	void render(float frametime);
+};
+
 class HudGaugeHardpoints: public HudGauge
 {
 	int _size[2];
