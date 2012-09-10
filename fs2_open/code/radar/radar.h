@@ -57,7 +57,7 @@ public:
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
 	void drawContactCircle( int x, int y, int rad );
-	void drawContactImage( int x, int y, int rad, int idx, int size );
+	void drawContactImage( int x, int y, int rad, int idx, int clr_idx, int size );
 	void drawCrosshairs(int x, int y);
 	void render(float frametime);
 	void pageIn();
