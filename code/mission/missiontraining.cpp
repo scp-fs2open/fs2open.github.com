@@ -146,6 +146,16 @@ void HudGaugeDirectives::initTextHeight(int h)
 	text_h = h;
 }
 
+void HudGaugeDirectives::initMaxLineWidth(int w)
+{
+	max_line_width = w;
+}
+
+void HudGaugeDirectives::initBottomBgOffset(int offset)
+{
+	bottom_bg_offset = offset;
+}
+
 void HudGaugeDirectives::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
 {
 	directives_top.first_frame = bm_load_animation(fname_top, &directives_top.num_frames);
@@ -288,7 +298,7 @@ void HudGaugeDirectives::render(float frametime)
 		}
 
 		// maybe split the directives line
-		second_line = split_str_once(buf, 167);
+		second_line = split_str_once(buf, max_line_width);
 		Assert( second_line != buf );
 
 		// blit the background frames
@@ -323,7 +333,7 @@ void HudGaugeDirectives::render(float frametime)
 	// draw the bottom of objective display
 	setGaugeColor();
 
-	renderBitmap(directives_bottom.first_frame, bx, by);
+	renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
 }
 
 /**

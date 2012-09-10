@@ -4242,9 +4242,11 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, int ship_index,
 	int middle_frame_offset_y;
 	int text_start_offsets[2];
 	int text_h;
+	int max_line_width = 167;
 	char fname_top[MAX_FILENAME_LEN] = "directives1";
 	char fname_middle[MAX_FILENAME_LEN] = "directives2";
 	char fname_bottom[MAX_FILENAME_LEN] = "directives3";
+	int bottom_bg_offset = 0;
 	bool slew = false;
 	int font_num = FONT1;
 	int colors[3] = {255, 255, 255};
@@ -4323,6 +4325,12 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, int ship_index,
 	if(optional_string("Entry Height:")) {
 		stuff_int(&text_h);
 	}
+	if(optional_string("Bottom Background Offset:")) {
+		stuff_int(&bottom_bg_offset);
+	}
+	if ( optional_string("Max Line Width:") ) {
+		stuff_int(&max_line_width);
+	}
 
 	HudGaugeDirectives* hud_gauge = new HudGaugeDirectives();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -4330,13 +4338,15 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, int ship_index,
 	hud_gauge->initMiddleFrameOffsetY(middle_frame_offset_y);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTextHeight(text_h);
+	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initTextStartOffsets(text_start_offsets[0], text_start_offsets[1]);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
+	hud_gauge->initMaxLineWidth(max_line_width);
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-
+	
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
 	} else {
