@@ -545,7 +545,6 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 				if (Ship_info[Ships[target_objp->instance].ship_info_index].uses_team_colors) {
 					gr_set_team_color(Ships[target_objp->instance].team_name);
-					gr_enable_team_color();
 				}
 
 				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
