@@ -99,7 +99,33 @@ int gamesnd_get_by_iface_name(const char* name)
 	Assert( Snds_iface.size() <= INT_MAX );
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 	
-	return gamesnd_lookup_name(name, Snds_iface);
+	int index = gamesnd_lookup_name(name, Snds_iface);
+
+	if (index < 0)
+	{
+		int i = 0;
+		for(SCP_vector<game_snd>::iterator snd = Snds_iface.begin(); snd != Snds_iface.end(); ++snd)
+		{
+			char *p = strrchr( snd->filename, '.' );
+			if(p == NULL)
+			{
+				if(!stricmp(snd->filename, name))
+				{
+					index = i;
+					break;
+				}
+			}
+			else if(!strnicmp(snd->filename, name, p-snd->filename))
+			{
+				index = i;
+				break;
+			}
+
+			i++;
+		}
+	}
+
+	return index;
 }
 
 int gamesnd_get_by_tbl_index(int index)

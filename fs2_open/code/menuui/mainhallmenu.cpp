@@ -1200,8 +1200,14 @@ void main_hall_render_misc_anims(float frametime)
 							snd_stop(Main_hall->misc_anim_special_sounds.at(idx).at(s_idx));
 						}
 
-						// play the sound
-						snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds.at(idx).at(s_idx)],Main_hall->misc_anim_sound_pan.at(idx));
+						int sound = Main_hall->misc_anim_special_sounds.at(idx).at(s_idx);
+
+						// Check if the sound is valid
+						if (sound >= 0)
+						{
+							// play the sound
+							snd_play(&Snds_iface[sound],Main_hall->misc_anim_sound_pan.at(idx));
+						}
 						break;
 					}
 				}
@@ -1331,7 +1337,13 @@ void main_hall_mouse_release_region(int region)
 		if (Main_hall_door_sound_handles.at(region) != -1) {
 			snd_stop(Main_hall_door_sound_handles.at(region));
 		}
-		Main_hall_door_sound_handles.at(region) = snd_play(&Snds_iface[Main_hall->door_sounds.at(region).at(1)], Main_hall->door_sound_pan.at(region));
+
+		int sound = Main_hall->door_sounds.at(region).at(1);
+
+		if (sound >= 0)
+		{
+			Main_hall_door_sound_handles.at(region) = snd_play(&Snds_iface[sound], Main_hall->door_sound_pan.at(region));
+		}
 
 		//TODO: track current frame
 		snd_set_pos(Main_hall_door_sound_handles.at(region), &Snds_iface[SND_MAIN_HALL_DOOR_CLOSE], 
@@ -1369,7 +1381,13 @@ void main_hall_mouse_grab_region(int region)
 	if (Main_hall_door_sound_handles.at(region) != -1) {
 		snd_stop(Main_hall_door_sound_handles.at(region));
 	}
-	Main_hall_door_sound_handles.at(region) = snd_play(&Snds_iface[Main_hall->door_sounds.at(region).at(0)],Main_hall->door_sound_pan.at(region));
+
+	int sound = Main_hall->door_sounds.at(region).at(0);
+
+	if (sound >= 0)
+	{
+		Main_hall_door_sound_handles.at(region) = snd_play(&Snds_iface[sound],Main_hall->door_sound_pan.at(region));
+	}
 
 	// start the sound playing at the right spot relative to the completion of the animation
 	if ( (Main_hall_door_anim.at(region).num_frames > 0) && (Main_hall_door_anim.at(region).current_frame != -1) ) {
@@ -1458,11 +1476,17 @@ void main_hall_handle_random_intercom_sounds()
 
 		// if the timestamp has popped, play a sound
 		if ( (Main_hall_next_intercom_sound_stamp != -1) && (timestamp_elapsed(Main_hall_next_intercom_sound_stamp)) ) {
-			// play the sound
-			Main_hall_intercom_sound_handle = snd_play(&Snds_iface.at(Main_hall->intercom_sounds.at(Main_hall_next_intercom_sound)));			
+			int sound = Main_hall->intercom_sounds.at(Main_hall_next_intercom_sound);
 
-			// unset the timestamp
-			Main_hall_next_intercom_sound_stamp = -1;
+			// Check if the sound is valid
+			if (sound >= 0)
+			{
+				// play the sound
+				Main_hall_intercom_sound_handle = snd_play(&Snds_iface.at(sound));
+
+				// unset the timestamp
+				Main_hall_next_intercom_sound_stamp = -1;
+			}
 		}
 	}
 	// if the sound is playing
