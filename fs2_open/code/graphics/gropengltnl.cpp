@@ -1292,8 +1292,10 @@ void gr_opengl_render_stream_buffer(int offset, int n_verts, int flags)
 					GL_state.Texture.SetActiveUnit(3);
 					GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 					GL_state.Texture.Enable(Distortion_texture[!Distortion_switch]);
+					vglUniform1fARB(opengl_shader_get_uniform("use_offset"), 1.0f);
 				} else {
 					vglUniform1iARB(opengl_shader_get_uniform("distMap"), 0);
+					vglUniform1fARB(opengl_shader_get_uniform("use_offset"), 0.0f);
 				}
 
 				zbuff = gr_zbuffer_set(GR_ZBUFF_READ);

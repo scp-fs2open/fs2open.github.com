@@ -64,7 +64,7 @@ static const int Main_shader_flag_references = sizeof(GL_Uniform_Reference_Main)
  * Static lookup referene for particle shader uniforms
  */
 static opengl_shader_uniform_reference_t GL_Uniform_Reference_Particle[] = {
-	{ (SDR_FLAG_SOFT_QUAD | SDR_FLAG_DISTORTION), 5, {"baseMap", "window_width", "window_height", "distMap", "frameBuffer"}, 1, { "offset_in" }, "Distorted Particles" },
+	{ (SDR_FLAG_SOFT_QUAD | SDR_FLAG_DISTORTION), 6, {"baseMap", "window_width", "window_height", "distMap", "frameBuffer", "use_offset"}, 1, { "offset_in" }, "Distorted Particles" },
 	{ (SDR_FLAG_SOFT_QUAD),	6, {"baseMap", "depthMap", "window_width", "window_height", "nearZ", "farZ"}, 1, { "radius_in" }, "Depth-blended Particles" }
 };
 
