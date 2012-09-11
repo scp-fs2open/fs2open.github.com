@@ -474,14 +474,11 @@ void opengl_tnl_shutdown()
 }
 
 void gr_opengl_set_team_color(SCP_string team) {
-	if (Team_Colors.find(team) != Team_Colors.end())
+	if (Team_Colors.find(team) != Team_Colors.end()) {
 		Current_team_color = &Team_Colors[team];
-	else
-		Using_Team_Color = false;
-}
-
-void gr_opengl_enable_team_color() {
-	Using_Team_Color = true;
+		Using_Team_Color = true;
+	} else
+ 		Using_Team_Color = false;
 }
 
 void gr_opengl_disable_team_color() {

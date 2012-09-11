@@ -1911,7 +1911,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_flush_data_states	= gr_opengl_flush_data_states;
 
 	gr_screen.gf_set_team_color		= gr_opengl_set_team_color;
-	gr_screen.gf_enable_team_color  = gr_opengl_enable_team_color;
 	gr_screen.gf_disable_team_color = gr_opengl_disable_team_color;
 
 	gr_screen.gf_update_texture = gr_opengl_update_texture;
