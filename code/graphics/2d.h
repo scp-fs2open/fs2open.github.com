@@ -42,6 +42,12 @@ extern int gr_global_zbuffering;
 #define SDR_FLAG_MISC_MAP		(1<<11)
 #define SDR_FLAG_TEAMCOLOR		(1<<12)
 
+// stencil buffering stuff
+extern int gr_stencil_mode;
+
+// alpha test
+extern int gr_alpha_test;
+
 /**
  * This is a structure used by the shader to keep track
  * of the values you want to use in the shade primitive.
@@ -352,6 +358,14 @@ typedef struct screen {
 
 	// Clears the zbuffer.  If use_zbuffer is FALSE, then zbuffering mode is ignored and zbuffer is always off.
 	void (*gf_zbuffer_clear)(int use_zbuffer);
+
+	// Set the stencil buffer mode. Returns previous mode
+	int (*gf_stencil_set)(int mode);
+
+	// Clears the stencil buffer.
+	void (*gf_stencil_clear)();
+
+	int (*gf_alpha_mask_set)(int mode, float alpha);
 	
 	// Saves screen. Returns an id you pass to restore and free.
 	int (*gf_save_screen)();
@@ -388,6 +402,9 @@ typedef struct screen {
 
 	// poly culling
 	int (*gf_set_cull)(int cull);
+
+	// color buffer writes
+	int (*gf_set_color_buffer)(int mode);
 
 	// cross fade
 	void (*gf_cross_fade)(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct);
@@ -530,6 +547,10 @@ extern screen gr_screen;
 #define GR_ZBUFF_READ	(1<<1)
 #define GR_ZBUFF_FULL	(GR_ZBUFF_WRITE|GR_ZBUFF_READ)
 
+#define GR_STENCIL_NONE		0
+#define GR_STENCIL_READ		1
+#define GR_STENCIL_WRITE	2
+
 void gr_set_screen_scale(int x, int y);
 void gr_set_screen_scale(int x, int y, int max_x, int max_y);
 void gr_reset_screen_scale();
@@ -659,6 +680,11 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
 #define gr_zbuffer_clear	GR_CALL(gr_screen.gf_zbuffer_clear)
 
+#define gr_stencil_set		GR_CALL(gr_screen.gf_stencil_set)
+#define gr_stencil_clear	GR_CALL(gr_screen.gf_stencil_clear)
+
+#define gr_alpha_mask_set	GR_CALL(gr_screen.gf_alpha_mask_set)
+
 #define gr_save_screen		GR_CALL(gr_screen.gf_save_screen)
 #define gr_restore_screen	GR_CALL(gr_screen.gf_restore_screen)
 #define gr_free_screen		GR_CALL(gr_screen.gf_free_screen)
@@ -677,6 +703,7 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 }
 
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
+#define gr_set_color_buffer	GR_CALL(gr_screen.gf_set_color_buffer)
 
 #define gr_cross_fade		GR_CALL(gr_screen.gf_cross_fade)
 

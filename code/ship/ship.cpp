@@ -940,6 +940,7 @@ void init_ship_entry(ship_info *sip)
 	sip->model_num_hud = -1;
 
 	sip->radar_image_2d_idx = -1;
+	sip->radar_color_image_2d_idx = -1;
 	sip->radar_image_size = -1;
 	sip->radar_projection_size_mult = 1.0f;
 
@@ -3074,6 +3075,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	{
 		stuff_string(name_tmp, F_NAME, NAME_LENGTH);
 		sip->radar_image_2d_idx = bm_load(name_tmp);
+
+		if ( optional_string("$Radar Color Image 2D:") ) {
+			stuff_string(name_tmp, F_NAME, NAME_LENGTH);
+			sip->radar_color_image_2d_idx = bm_load(name_tmp);
+		}
 
 		if (optional_string("$Radar Image Size:"))
 			stuff_int(&sip->radar_image_size);
@@ -9213,8 +9219,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	sp->model_instance_num = model_create_instance(sip->model_num);
 
 	// Valathil - Reinitialize collision checks
-	obj_remove_pairs(objp);
-	obj_add_pairs(objp->instance);
+	if ( Cmdline_old_collision_sys ) {
+		obj_remove_pairs(objp);
+		obj_add_pairs(objp->instance);
+	} else {
+		obj_remove_collider(OBJ_INDEX(objp));
+		obj_add_collider(OBJ_INDEX(objp));
+	}
 
 	// The E - If we're switching during gameplay, make sure we get valid primary/secondary selections
 	if ( by_sexp ) {
@@ -9801,8 +9812,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if (!(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY))
 		{
 			int effective_primary_banks = 0;
-			for (int i = 0; i < num_primary_banks; i++)
-				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK)
+			for (int it = 0; it < num_primary_banks; it++)
+				if (Weapon_info[swp->primary_bank_weapons[it]].wi_flags3 & WIF3_NOLINK)
 					continue;
 				else
 					effective_primary_banks++;

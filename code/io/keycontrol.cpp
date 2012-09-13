@@ -2132,6 +2132,9 @@ int button_function(int n)
 {
 	Assert(n >= 0);
 
+	if (Control_config[n].disabled)
+		return 0;
+
 	// check if the button has been set to be ignored by a SEXP
 	if (Ignored_keys[n]) {
 		if (Ignored_keys[n] > 0) {

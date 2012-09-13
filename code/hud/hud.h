@@ -308,6 +308,7 @@ public:
 	// rendering functions
 	void renderBitmap(int x, int y);
 	void renderBitmap(int frame, int x, int y);
+	void renderBitmapColor(int frame, int x, int y);
 	void renderBitmapUv(int frame, int x, int y, int w, int h, float u0, float v0, float u1, float v1);
 	void renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy);
 	void renderString(int x, int y, char *str);
@@ -432,6 +433,7 @@ protected:
 	int middle_frame_start_offset_y;
 	int subsys_integ_start_offsets[2];
 	int subsys_integ_val_offset_x;
+	int bottom_bg_offset;
 	int line_h;
 
 	int Damage_flash_timer;
@@ -448,6 +450,7 @@ public:
 	void initMiddleFrameStartOffsetY(int y);
 	void initSubsysIntegStartOffsets(int x, int y);
 	void initSubsysIntegValueOffsetX(int x);
+	void initBottomBgOffset(int offset);
 	void initLineHeight(int h);
 	void render(float frametime);
 	void pageIn();
@@ -503,6 +506,18 @@ class HudGaugeSupernova: public HudGauge
 {
 public:
 	HudGaugeSupernova();
+	void render(float frametime);
+};
+
+class HudGaugeFlightPath: public HudGauge
+{
+	hud_frames Marker;
+
+	int Marker_half[2];
+public:
+	HudGaugeFlightPath();
+	void initBitmap(char *fname);
+	void initHalfSize(int w, int h);
 	void render(float frametime);
 };
 

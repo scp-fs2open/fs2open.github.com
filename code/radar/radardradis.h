@@ -30,8 +30,6 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 	float sweep_duration; // in seconds
 	float sweep_percent;
 
-	color orb_color;
-
 	matrix view_perturb;
 	vec3d Orb_eye_position;
 
@@ -53,13 +51,13 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 	bool sub_y_clip;
 
 	int loop_sound_handle;
-	int loop_snd;
+	int m_loop_snd;
 	float loop_sound_volume;
 
 	int arrival_beep_snd;
 	int departure_beep_snd;
 
-	int stealth_arrival_snd;
+	int m_stealth_arrival_snd;
 	int stealth_departure_snd;
 
 	int arrival_beep_delay;
@@ -78,8 +76,8 @@ public:
 	void blipDrawFlicker(blip *b, vec3d *pos, float alpha);
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
-	void drawContact(vec3d *pnt, int idx, float dist, float alpha);
-	void drawContactImage(vec3d *pnt, int rad, int idx, float mult);
+	void drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha);
+	void drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult);
 	void drawSweeps();
 	void drawCrosshairs( vec3d pnt );
 	void doneDrawing();

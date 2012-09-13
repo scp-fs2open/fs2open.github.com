@@ -783,6 +783,36 @@ void HudGauge::renderPrintf(int x, int y, int gauge_id, char* format, ...)
 	renderString(x, y, gauge_id, tmp);
 }
 
+void HudGauge::renderBitmapColor(int frame, int x, int y)
+{
+	int jx = x, jy = y, nx = 0, ny = 0;
+
+	if( !emp_should_blit_gauge() ) {
+		return;
+	}
+
+	emp_hud_jitter(&jx, &jy);
+
+	if ( gr_screen.rendering_to_texture != -1 ) {
+		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
+	} else {
+		if ( reticle_follow ) {
+			nx = HUD_nose_x;
+			ny = HUD_nose_y;
+
+			gr_resize_screen_pos(&nx, &ny);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&nx, &ny);
+		} else {
+			gr_set_screen_scale(base_w, base_h);
+		}
+	}
+
+	gr_set_bitmap(frame);
+	gr_bitmap(jx + nx, jy + ny);
+	gr_reset_screen_scale();
+}
+
 void HudGauge::renderBitmap(int x, int y)
 {
 	int jx = x, jy = y, nx = 0, ny = 0;
@@ -1927,6 +1957,11 @@ void HudGaugeDamage::initSubsysIntegValueOffsetX(int x)
 	subsys_integ_val_offset_x = x;
 }
 
+void HudGaugeDamage::initBottomBgOffset(int offset)
+{
+	bottom_bg_offset = offset;
+}
+
 void HudGaugeDamage::initLineHeight(int h)
 {
 	line_h = h;
@@ -2140,7 +2175,7 @@ void HudGaugeDamage::render(float frametime)
 	}
 
 	setGaugeColor();
-	renderBitmap(damage_bottom.first_frame, bx, by);		
+	renderBitmap(damage_bottom.first_frame, bx, by + bottom_bg_offset);		
 }
 
 /** 
@@ -3852,4 +3887,64 @@ void HudGaugeSupernova::render(float frametime)
 
 	gr_set_color_fast(&Color_bright_red);
 	renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+}
+
+HudGaugeFlightPath::HudGaugeFlightPath():
+HudGauge(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
+{
+}
+
+void HudGaugeFlightPath::initBitmap(char *fname)
+{
+	Marker.first_frame = bm_load_animation(fname, &Marker.num_frames);
+
+	if ( Marker.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname);
+	}
+}
+
+void HudGaugeFlightPath::initHalfSize(int w, int h)
+{
+	Marker_half[0] = w;
+	Marker_half[1] = h;
+}
+
+void HudGaugeFlightPath::render(float frametime)
+{
+	object *obj;
+	vec3d p0,v;
+	vertex v0;
+	int sx, sy;
+
+	bool in_frame = g3_in_frame() > 0;
+	if(!in_frame) {
+		g3_start_frame(0);
+	}
+
+	obj = Player_obj;
+
+	vm_vec_scale_add( &v, &obj->phys_info.vel, &obj->orient.vec.fvec, 1.0f );
+	vm_vec_normalize( &v );
+			
+	vm_vec_scale_add( &p0, &obj->pos, &v, 1000000.0f );
+
+	g3_rotate_vertex( &v0, &p0 );
+
+	if (v0.codes == 0) { // on screen
+		g3_project_vertex(&v0);
+
+		if (!(v0.flags & PF_OVERFLOW)) {
+			if ( Marker.first_frame >= 0 ) {
+				sx = fl2i(v0.screen.xyw.x);
+				sy = fl2i(v0.screen.xyw.y);
+
+				unsize(&sx, &sy);
+				renderBitmap(Marker.first_frame, sx - Marker_half[0], sy - Marker_half[1]);
+			}
+		}
+	}
+	
+	if(!in_frame) {
+		g3_end_frame();
+	}
 }

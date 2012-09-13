@@ -44,6 +44,7 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 {
 	hud_frames Monitor_frame;
 	hud_frames Integrity_bar;
+	int Monitor_mask;
 
 	char static_fname[MAX_FILENAME_LEN];
 	hud_anim Monitor_static;
@@ -69,6 +70,17 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 	int Cargo_scan_h;
 	int Cargo_scan_w;
 
+	int Subsys_name_offsets[2];
+	bool Use_subsys_name_offsets;
+
+	int Subsys_integrity_offsets[2];
+	bool Use_subsys_integrity_offsets;
+
+	int Disabled_status_offsets[2];
+	bool Use_disabled_status_offsets;
+
+	bool Desaturated;
+
 	// first element is time flashing expires, second element is time of next flash
 	int Next_flash_timers[NUM_TBOX_FLASH_TIMERS];
 
@@ -77,7 +89,7 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 public:
 	HudGaugeTargetBox();
 
-	void initBitmaps(char *fname_monitor, char *fname_integrity, char *fname_static);
+	void initBitmaps(char *fname_monitor, char *fname_monitor_mask, char *fname_integrity, char *fname_static);
 	void initViewportOffsets(int x, int y);
 	void initViewportSize(int w, int h);
 	void initIntegrityOffsets(int x, int y);
@@ -91,6 +103,10 @@ public:
 	void initHullOffsets(int x, int y);
 	void initCargoScanStartOffsets(int x, int y);
 	void initCargoScanSize(int w, int h);
+	void initSubsysNameOffsets(int x, int y, bool activate);
+	void initSubsysIntegrityOffsets(int x, int y, bool activate);
+	void initDisabledStatusOffsets(int x, int y, bool activate);
+	void initDesaturate(bool desaturate);
 
 	void initialize();
 	void pageIn();

@@ -47,6 +47,8 @@ SCP_hash_map<uint, collider_pair> Collision_cached_pairs;
 struct checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];
 
+extern int Cmdline_old_collision_sys;
+
 void obj_pairs_close()
 {
 	if (Obj_pairs != NULL) {
@@ -1022,18 +1024,47 @@ int collide_remove_weapons( )
 
 	// first pass is to see if any of the weapons don't have collision pairs.
 
-	opp = &pair_used_list;
-	opp = opp->next;
-	while( opp != NULL )	{
-		// for each collide pair, if the two objects can still collide, then set the remove_weapon
-		// parameter for the weapon to 0.  need to check both parameters
-		if ( opp->a->type == OBJ_WEAPON )
-			crw_check_weapon( opp->a->instance, opp->next_check_time );
-
-		if ( opp->b->type == OBJ_WEAPON )
-			crw_check_weapon( opp->b->instance, opp->next_check_time );
-
+	if ( Cmdline_old_collision_sys ) {
+		opp = &pair_used_list;
 		opp = opp->next;
+		while( opp != NULL )	{
+			// for each collide pair, if the two objects can still collide, then set the remove_weapon
+			// parameter for the weapon to 0.  need to check both parameters
+			if ( opp->a->type == OBJ_WEAPON )
+				crw_check_weapon( opp->a->instance, opp->next_check_time );
+
+			if ( opp->b->type == OBJ_WEAPON )
+				crw_check_weapon( opp->b->instance, opp->next_check_time );
+
+			opp = opp->next;
+		}
+	} else {
+		SCP_hash_map<uint, collider_pair>::iterator it;
+		collider_pair *pair_obj;
+
+		for ( it = Collision_cached_pairs.begin(); it != Collision_cached_pairs.end(); ++it ) {
+			pair_obj = &it->second;
+			
+			if ( !pair_obj->initialized ) {
+				continue;
+			}
+
+			if ( pair_obj->a->type == OBJ_WEAPON && pair_obj->signature_a == pair_obj->a->signature ) {
+				crw_check_weapon(pair_obj->a->instance, pair_obj->next_check_time);
+
+				if ( crw_status[pair_obj->a->instance] == CRW_CAN_DELETE ) {
+					pair_obj->initialized = false;
+				}
+			}
+
+			if ( pair_obj->b->type == OBJ_WEAPON && pair_obj->signature_b == pair_obj->b->signature ) {
+				crw_check_weapon(pair_obj->b->instance, pair_obj->next_check_time);
+
+				if ( crw_status[pair_obj->b->instance] == CRW_CAN_DELETE ) {
+					pair_obj->initialized = false;
+				}
+			}
+		}
 	}
 
 	// for each weapon which could be removed, delete the object
@@ -1144,6 +1175,7 @@ void obj_remove_collider(int obj_index)
 void obj_reset_colliders()
 {
 	Collision_sort_list.clear();
+	Collision_cached_pairs.clear();
 }
 
 void obj_collide_retime_cached_pairs(int checkdly)

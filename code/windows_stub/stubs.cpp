@@ -216,8 +216,10 @@ void Error( const char * filename, int line, const char * format, ... )
 	Global_error_count++;
 
 	va_list args;
+#ifndef APPLE_APP
 	int i;
 	int slen = 0;
+#endif
 
 	memset( buffer, 0, sizeof(buffer) );
 	memset( buffer_tmp, 0, sizeof(buffer_tmp) );

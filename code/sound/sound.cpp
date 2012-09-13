@@ -56,18 +56,18 @@ float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playbac
 unsigned int SND_ENV_DEFAULT = 0;
 
 struct LoopingSoundInfo {
-	int dsHandle;
-	float defaultVolume;	//!< The default volume of this sound (from game_snd)
-	float dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
+	int m_dsHandle;
+	float m_defaultVolume;	//!< The default volume of this sound (from game_snd)
+	float m_dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
 
 	LoopingSoundInfo(int dsHandle, float defaultVolume, float dynamicVolume):
-		dsHandle(dsHandle),
-		defaultVolume(defaultVolume),
-		dynamicVolume(dynamicVolume)
+		m_dsHandle(dsHandle),
+		m_defaultVolume(defaultVolume),
+		m_dynamicVolume(dynamicVolume)
 	{
 	}
     
-    LoopingSoundInfo() : dsHandle(-1), defaultVolume(0.0f), dynamicVolume(0.0f)
+    LoopingSoundInfo() : m_dsHandle(-1), m_defaultVolume(0.0f), m_dynamicVolume(0.0f)
     {
     }
 };
@@ -847,7 +847,7 @@ void snd_stop( int sig )
 	SCP_list<LoopingSoundInfo>::iterator iter = currentlyLoopingSoundInfos.begin();
 	while (iter != currentlyLoopingSoundInfos.end())
 	{
-		if(iter->dsHandle == sig) {
+		if(iter->m_dsHandle == sig) {
 			iter = currentlyLoopingSoundInfos.erase(iter);
 		} else {
 			++iter;
@@ -899,8 +899,8 @@ void snd_set_volume( int sig, float volume )
 
 	SCP_list<LoopingSoundInfo>::iterator iter;
 	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
-		if(iter->dsHandle == sig) {
-			iter->dynamicVolume = volume;
+		if(iter->m_dsHandle == sig) {
+			iter->m_dynamicVolume = volume;
 
 			isLoopingSound = true;
 			break;
@@ -1370,8 +1370,8 @@ void snd_do_frame()
 	SCP_list<LoopingSoundInfo>::iterator iter;
 	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
 
-		float new_volume = iter->defaultVolume * iter->dynamicVolume * (Master_sound_volume * aav_effect_volume);
-		ds_set_volume(ds_get_channel(iter->dsHandle), new_volume);
+		float new_volume = iter->m_defaultVolume * iter->m_dynamicVolume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume(ds_get_channel(iter->m_dsHandle), new_volume);
 	}
 
 	ds_do_frame();

@@ -672,6 +672,16 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	if (shader_flags & SDR_FLAG_DIFFUSE_MAP) {
 		vglUniform1iARB( opengl_shader_get_uniform("sBasemap"), render_pass );
 
+		int desaturate = 0;
+		if ( flags & TMAP_FLAG_DESATURATE ) {
+			desaturate = 1;
+		}
+
+		vglUniform1iARB( opengl_shader_get_uniform("desaturate"), desaturate);
+		vglUniform1fARB( opengl_shader_get_uniform("desaturate_r"), gr_screen.current_color.red/255.0f);
+		vglUniform1fARB( opengl_shader_get_uniform("desaturate_g"), gr_screen.current_color.green/255.0f);
+		vglUniform1fARB( opengl_shader_get_uniform("desaturate_b"), gr_screen.current_color.blue/255.0f);
+
 		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
 	
 		render_pass++; // bump!

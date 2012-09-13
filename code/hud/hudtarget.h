@@ -187,11 +187,18 @@ protected:
 
 	int Auto_text_offsets[2];
 	int Target_text_offsets[2];
+
+	color On_color;
+	bool Use_on_color;
+	color Off_color;
+	bool Use_off_color;
 public:
 	HudGaugeAutoTarget();
 	void initAutoTextOffsets(int x, int y);
 	void initTargetTextOffsets(int x, int y);
 	void initBitmaps(char *fname);
+	void initOnColor(int r, int g, int b, int a);
+	void initOffColor(int r, int g, int b, int a);
 	void render(float frametime);
 	void pageIn();
 };
@@ -203,11 +210,18 @@ protected:
 
 	int Auto_text_offsets[2];
 	int Speed_text_offsets[2];
+
+	color On_color;
+	bool Use_on_color;
+	color Off_color;
+	bool Use_off_color;
 public:
 	HudGaugeAutoSpeed();
 	void initAutoTextOffsets(int x, int y);
 	void initSpeedTextOffsets(int x, int y);
 	void initBitmaps(char *fname);
+	void initOnColor(int r, int g, int b, int a);
+	void initOffColor(int r, int g, int b, int a);
 	void render(float frametime);
 	void pageIn();
 };
@@ -249,11 +263,26 @@ protected:
 
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
+	int Text_alignment;
+
+	int Armed_name_offsets[2];
+	int Armed_alignment;
+	bool Show_armed;
+	int Armed_name_h;
+	
+	bool Always_show_text;
+	bool Moving_text;
+	bool Show_ballistic;
 public:
 	HudGaugeWeaponEnergy();
 	void initBitmaps(char *fname);
 	void initTextOffsets(int x, int y);
 	void initEnergyHeight(int h);
+	void initAlwaysShowText(bool show_text);
+	void initMoveText(bool move_text);
+	void initShowBallistics(bool show_ballistics);
+	void initAlignments(int text_align, int armed_align);
+	void initArmedOffsets(int x, int y, int h, bool show);
 	void render(float frametime);
 	void pageIn();
 };
@@ -315,6 +344,123 @@ public:
 	void render(float frametime);
 	void pageIn();
 	void maybeFlashWeapon(int index);
+};
+
+class HudGaugeWeaponList: public HudGauge
+{
+protected:
+	hud_frames _background_first;
+	hud_frames _background_entry;
+	hud_frames _background_last;
+
+	int _bg_first_offset_x;
+	int _bg_entry_offset_x;
+	int _bg_last_offset_x;
+	int _bg_last_offset_y;
+
+	int _background_first_h;
+	int _background_entry_h;
+
+	int _header_offsets[2];
+	int _entry_start_y;
+	int _entry_h;
+
+	char header_text[NAME_LENGTH];
+public:
+	HudGaugeWeaponList(int gauge_object);
+	void initBitmaps(char *fname_first, char *fname_entry, char *fname_last);
+	void initBgFirstOffsetX(int x);
+	void initBgEntryOffsetX(int x);
+	void initBgLastOffsetX(int x);
+	void initBgLastOffsetY(int x);
+	void initBgFirstHeight(int h);
+	void initBgEntryHeight(int h);
+	void initHeaderText(char *text);
+	void initHeaderOffsets(int x, int y);
+	void initEntryStartY(int y);
+	void initEntryHeight(int h);
+
+	virtual void render(float frametime);
+	void pageIn();
+	void maybeFlashWeapon(int index);
+};
+
+class HudGaugePrimaryWeapons: public HudGaugeWeaponList
+{
+protected:
+	int _plink_offset_x; 
+	int _pname_offset_x; 
+	int _pammo_offset_x; 
+public:
+	HudGaugePrimaryWeapons();
+	void initPrimaryLinkOffsetX(int x);
+	void initPrimaryNameOffsetX(int x);
+	void initPrimaryAmmoOffsetX(int x);
+
+	void render(float frametime);
+};
+
+class HudGaugeSecondaryWeapons: public HudGaugeWeaponList
+{
+protected:
+	int _sammo_offset_x;
+	int _sname_offset_x;
+	int _sreload_offset_x;
+	int _slinked_offset_x;
+	int _sunlinked_offset_x;
+public:
+	HudGaugeSecondaryWeapons();
+	void initSecondaryAmmoOffsetX(int x);
+	void initSecondaryNameOffsetX(int x);
+	void initSecondaryReloadOffsetX(int x);
+	void initSecondaryLinkedOffsetX(int x);
+	void initSecondaryUnlinkedOffsetX(int x);
+
+	void render(float frametime);
+};
+
+class HudGaugeHardpoints: public HudGauge
+{
+	int _size[2];
+	float _line_width;
+	int _view_direction;
+
+	bool draw_secondary_models;
+	bool draw_primary_models;
+public:
+	enum {TOP, FRONT};
+
+	void initSizes(int w, int h);
+	void initLineWidth(float w);
+	void initViewDir(int dir);
+	void initDrawOptions(bool primary_models, bool secondary_models);
+
+	HudGaugeHardpoints();
+	void render(float frametime);
+};
+
+class HudGaugeWarheadCount: public HudGauge
+{
+	hud_frames Warhead;
+	
+	int Warhead_name_offsets[2];
+	int Warhead_count_offsets[2];
+	int Warhead_count_size[2];
+
+	int Max_symbols;
+	int Text_align;
+	int Max_columns;
+public:
+	HudGaugeWarheadCount();
+	void initBitmap(char *fname);
+	void initNameOffsets(int x, int y);
+	void initCountOffsets(int x, int y);
+	void initCountSizes(int w, int h);
+	void initMaxSymbols(int count);
+	void initMaxColumns(int count);
+	void initTextAlign(int align);
+	void render(float frametime);
+	void pageIn();
 };
 
 class HudGaugeOrientationTee: public HudGauge

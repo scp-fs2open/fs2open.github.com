@@ -110,6 +110,7 @@ static color Interp_outline_color;
 static int Interp_detail_level_locked = 0;
 static uint Interp_flags = 0;
 static uint Interp_tmap_flags = 0;
+bool Interp_desaturate = false;
 
 // If non-zero, then the subobject gets scaled by Interp_thrust_scale.
 static int Interp_thrust_scale_subobj = 0;
@@ -2743,6 +2744,10 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if ( Interp_flags & MR_ANIMATED_SHADER )
 		Interp_tmap_flags |= TMAP_ANIMATED_SHADER;
 
+	if ( Interp_desaturate ) {
+		Interp_tmap_flags |= TMAP_FLAG_DESATURATE;
+	}
+
 	save_gr_zbuffering_mode = gr_zbuffering_mode;
 	zbuf_mode = gr_zbuffering_mode;
 
@@ -4655,6 +4660,8 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 				HEIGHTMAP = model_interp_get_texture(height_map, Interp_base_frametime);
 				MISCMAP = model_interp_get_texture(misc_map, Interp_base_frametime);
 			}
+		} else {
+			alpha = forced_alpha;
 		}
 
 		if ( (texture == -1) && !no_texturing ) {

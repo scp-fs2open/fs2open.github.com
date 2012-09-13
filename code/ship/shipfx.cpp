@@ -1121,7 +1121,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
 					if ( mc.bsp_leaf ) {
 						if ( mc.bsp_leaf->tmap_num < 255 ) {
-							polymodel *pm = model_get(sip->cockpit_model_num);
+							polymodel *pm = model_get(sip->model_num);
 							int tmap_num = mc.bsp_leaf->tmap_num;
 
 							if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
@@ -3886,9 +3886,9 @@ int WE_BSG::warpShipClip()
 
 	if(direction == WD_WARP_OUT && stage > 0)
 	{
-		vec3d pos;
-		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
-		g3_start_user_clip_plane( &pos, &objp->orient.vec.fvec );
+		vec3d position;
+		vm_vec_scale_add(&position, &objp->pos, &objp->orient.vec.fvec, objp->radius);
+		g3_start_user_clip_plane( &position, &objp->orient.vec.fvec );
 	}
 	return 1;
 }
@@ -3967,10 +3967,10 @@ int WE_BSG::getWarpPosition(vec3d *output)
 	if(!this->isValid())
 		return 0;
 
-	vec3d pos;
-	vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
+	vec3d position;
+	vm_vec_scale_add(&position, &objp->pos, &objp->orient.vec.fvec, objp->radius);
 
-	*output = pos;
+	*output = position;
 	return 1;
 }
 

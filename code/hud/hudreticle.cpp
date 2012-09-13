@@ -339,22 +339,25 @@ void HudGaugeThrottle::initAburnHeight(int h)
 	throttle_aburn_h = h;
 }
 
-void HudGaugeThrottle::initMaxSpeedOffsets(int x, int y)
+void HudGaugeThrottle::initMaxSpeedOffsets(int x, int y, bool show)
 {
 	Max_speed_offsets[0] = x;
 	Max_speed_offsets[1] = y;
+	Show_max_speed = show;
 }
 
-void HudGaugeThrottle::initZeroSpeedOffsets(int x, int y)
+void HudGaugeThrottle::initZeroSpeedOffsets(int x, int y, bool show)
 {
 	Zero_speed_offsets[0] = x;
 	Zero_speed_offsets[1] = y;
+	Show_min_speed = show;
 }
 
-void HudGaugeThrottle::initOrbitCenterOffsets(int x, int y)
+void HudGaugeThrottle::initOrbitCenterOffsets(int x, int y, bool orbiting)
 {
 	Orbit_center_offsets[0] = x;
 	Orbit_center_offsets[1] = y;
+	orbit = orbiting;
 }
 
 void HudGaugeThrottle::initOrbitRadius(int radius)
@@ -362,9 +365,31 @@ void HudGaugeThrottle::initOrbitRadius(int radius)
 	orbit_radius = radius;
 }
 
+void HudGaugeThrottle::initTargetSpeedOffsets(int x, int y, bool show, bool percent)
+{
+	Target_speed_offsets[0] = x;
+	Target_speed_offsets[1] = y;
+	Show_target_speed = show;
+	Show_percent = percent;
+}
+
 void HudGaugeThrottle::showBackground(bool show)
 {
 	Show_background = show;
+}
+
+void HudGaugeThrottle::initGlideOffsets(int x, int y, bool custom)
+{
+	Glide_offsets[0] = x;
+	Glide_offsets[1] = y;
+	Use_custom_glide = custom;
+}
+
+void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
+{
+	Match_speed_offsets[0] = x;
+	Match_speed_offsets[1] = y;
+	Use_custom_match_speed = custom;
 }
 
 void HudGaugeThrottle::initBitmaps(char *fname)
@@ -454,14 +479,40 @@ void HudGaugeThrottle::render(float frametime)
 	// Absolute speed, not forward speed, for hud speed reticle - fixes the guage for sliding -- kazan
 	renderThrottleSpeed(absolute_displayed_speed, y_end);
 
+	// draw target speed if necessary
+	if ( Show_target_speed ) {
+		char buf[32];
+		int w, h;
+
+		if ( Show_percent ) {
+			if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
+				strcpy_s(buf, "A/B");
+			} else {
+				sprintf(buf, XSTR( "%d%%", 326), fl2i( (desired_speed/max_speed)*100 + 0.5f ));
+			}
+		} else {
+			sprintf(buf, "%d", fl2i(desired_speed * Hud_speed_multiplier + 0.5f));
+		}
+
+		hud_num_make_mono(buf);
+		gr_get_string_size(&w, &h, buf);
+
+		renderString(position[0] + Target_speed_offsets[0] - w, position[1] + Target_speed_offsets[1], buf);
+	}
+
 	// draw the "desired speed" bar on the throttle
 	renderThrottleLine(desired_y_pos);
 
 	// draw left arc (the bright portion of the throttle gauge)
 	renderThrottleForeground(y_end);
 
-	renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], "%d",fl2i(max_displayed_speed+0.5f));
-	renderPrintf(position[0] + Zero_speed_offsets[0], position[1] + Zero_speed_offsets[1], XSTR( "0", 292));
+	if ( Show_max_speed ) {
+		renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], "%d",fl2i(max_displayed_speed+0.5f));
+	}
+	
+	if ( Show_min_speed ) {
+		renderPrintf(position[0] + Zero_speed_offsets[0], position[1] + Zero_speed_offsets[1], XSTR( "0", 292));
+	}
 }
 
 void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
@@ -470,45 +521,66 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 	int sx, sy, x_pos, y_pos, w, h;
 
 	//setGaugeColor();
-
-	// y_end is the y-coordinate of the current throttle setting, calc x-coordinate for edge of 
-	// circle (x^2 + y^2 = r^2)
-	y_pos = position[1] + Orbit_center_offsets[1] - y_end;
-	x_pos = (int)sqrt(double(orbit_radius * orbit_radius - y_pos * y_pos) );
-	x_pos = position[0] + Orbit_center_offsets[0] - x_pos;
-
-	// draw current speed at (x_pos, y_end);
 	sprintf(buf, "%d", fl2i(current_speed+0.5f));
 	hud_num_make_mono(buf);
 	gr_get_string_size(&w, &h, buf);
-	sx = x_pos - w - 2;
-	sy = fl2i(y_end - h/2.0f + 1.5);
+
+	if ( orbit ) {
+		// y_end is the y-coordinate of the current throttle setting, calc x-coordinate for edge of 
+		// circle (x^2 + y^2 = r^2)
+		y_pos = position[1] + Orbit_center_offsets[1] - y_end;
+		x_pos = (int)sqrt(double(orbit_radius * orbit_radius - y_pos * y_pos) );
+		x_pos = position[0] + Orbit_center_offsets[0] - x_pos;
+
+		// draw current speed at (x_pos, y_end);
+		sx = x_pos - w - 2;
+		sy = fl2i(y_end - h/2.0f + 1.5);
+	} else {
+		sx = position[0] + Orbit_center_offsets[0] - w;
+		sy = position[1] + Orbit_center_offsets[1];
+	}
+	
 	renderPrintf(sx, sy, buf);
 
 	if ( object_get_gliding(Player_obj) ) { 
-		int offset;
-		if ( current_speed <= 9.5 ) {
-			offset = -31;
-		} else if ( current_speed <= 99.5 ) {
-			offset = -22;
+		if ( Use_custom_glide ) {
+			renderString(position[0] + Glide_offsets[0], position[1] + Glide_offsets[1], "GLIDE");
 		} else {
-			offset = -13;
-		}
-		renderString(sx+offset, sy + h, "GLIDE");
-	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
-		int offset;
-		if ( current_speed <= 9.5 ) {
-			offset = 0;
-		} else {
-			offset = 3;
-		}
+			int offset;
+			if ( current_speed <= 9.5 ) {
+				offset = -31;
+			} else if ( current_speed <= 99.5 ) {
+				offset = -22;
+			} else {
+				offset = -13;
+			}
 
-		if (Lcl_gr) {
-			// print an m, cuz the voice says its an m.  
-			// its a normal m cuz the german font has no special m (its an a)
-			renderString(sx+offset, sy + h, "m");
+			renderString(sx+offset, sy + h, "GLIDE");
+		}
+	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
+		if ( Use_custom_match_speed ) {
+			if (Lcl_gr) {
+				// print an m, cuz the voice says its an m.  
+				// its a normal m cuz the german font has no special m (its an a)
+				renderString(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "m");
+			} else {
+				renderPrintf(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "%c", Lcl_special_chars + 3);
+			}
 		} else {
-			renderPrintf(sx+offset, sy + h, "%c", Lcl_special_chars + 3);
+			int offset;
+			if ( current_speed <= 9.5 ) {
+				offset = 0;
+			} else {
+				offset = 3;
+			}
+
+			if (Lcl_gr) {
+				// print an m, cuz the voice says its an m.  
+				// its a normal m cuz the german font has no special m (its an a)
+				renderString(sx+offset, sy + h, "m");
+			} else {
+				renderPrintf(sx+offset, sy + h, "%c", Lcl_special_chars + 3);
+			}
 		}
 	}
 }

@@ -1682,8 +1682,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						if ( (p = strstr(props, "$name"))!= NULL ) {
 							get_user_prop_value(p+5, bay->name);
 
-							int len = strlen(bay->name);
-							if ((len > 0) && is_white_space(bay->name[len-1])) {
+							int length = strlen(bay->name);
+							if ((length > 0) && is_white_space(bay->name[length-1])) {
 								nprintf(("Model", "model '%s' has trailing whitespace on bay name '%s'; this will be trimmed\n", pm->filename, bay->name));
 								drop_trailing_white_space(bay->name);
 							}

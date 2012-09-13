@@ -84,6 +84,8 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 // use framebuffer distortion mapping  - Valathil
 #define TMAP_FLAG_DISTORTION		(1<<22)
 
+#define TMAP_FLAG_DESATURATE		(1<<23)
+
 #define TMAP_ADDRESS_WRAP			1
 #define TMAP_ADDRESS_MIRROR			2
 #define TMAP_ADDRESS_CLAMP			3

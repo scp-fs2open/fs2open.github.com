@@ -1379,6 +1379,7 @@ typedef struct ship_info {
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
 
 	int radar_image_2d_idx;
+	int radar_color_image_2d_idx;
 	int radar_image_size;
 	float radar_projection_size_mult;
 

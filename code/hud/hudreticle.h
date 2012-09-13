@@ -61,10 +61,26 @@ protected:
 	int throttle_h;			// Hud_throttle_h[gr_screen.res]
 	int throttle_w;			// Hud_throttle_frame_w[gr_screen.res]
 	int throttle_aburn_h;	// Hud_throttle_aburn_h[gr_screen.res]
+
 	int Max_speed_offsets[2];		// Max_speed_coords[gr_screen.res][0] Max_speed_coords[gr_screen.res][1]
+	bool Show_max_speed;
+
 	int Zero_speed_offsets[2];		// Zero_speed_coords[gr_screen.res][0] Zero_speed_coords[gr_screen.res][1]
+	bool Show_min_speed;
+
 	int Orbit_center_offsets[2];	// Hud_reticle_center[gr_screen.res][0] Hud_reticle_center[gr_screen.res][1]
 	int orbit_radius;		// Outer_circle_radius[gr_screen.res]
+	bool orbit;
+
+	int Target_speed_offsets[2];
+	bool Show_target_speed;
+	bool Show_percent;
+
+	int Glide_offsets[2];
+	bool Use_custom_glide;
+
+	int Match_speed_offsets[2];
+	bool Use_custom_match_speed;
 
 	bool Show_background;
 public:
@@ -72,10 +88,13 @@ public:
 	void initThrottleStartY(int y);
 	void initThrottleSizes(int w, int h);	// throttle_w will be implicitly figured out using bm_get_info
 	void initAburnHeight(int h);
-	void initMaxSpeedOffsets(int x, int y);
-	void initZeroSpeedOffsets(int x, int y);
-	void initOrbitCenterOffsets(int x, int y);
+	void initMaxSpeedOffsets(int x, int y, bool show);
+	void initZeroSpeedOffsets(int x, int y, bool show);
+	void initOrbitCenterOffsets(int x, int y, bool orbiting);
 	void initOrbitRadius(int radius);
+	void initTargetSpeedOffsets(int x, int y, bool show, bool percent);
+	void initGlideOffsets(int x, int y, bool custom);
+	void initMatchSpeedOffsets(int x, int y, bool custom);
 	void showBackground(bool show);
 	void initBitmaps(char *fname);
 
