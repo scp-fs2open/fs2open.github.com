@@ -661,7 +661,9 @@ sexp_oper Operators[] = {
 	{ "string-concatenate",			OP_STRING_CONCATENATE,					3, 3,			}, // Goober5000
 	{ "string-get-substring",		OP_STRING_GET_SUBSTRING,				4, 4,	}, // Goober5000
 	{ "string-set-substring",		OP_STRING_SET_SUBSTRING,				5, 5,	}, // Goober5000
-	{ "string-get-length",			OP_STRING_GET_LENGTH,					1, 1,	}, // Goober5000
+	{ "string-get-length",			OP_STRING_GET_LENGTH,					2, 2,	}, // Goober5000
+
+	{ "debug",						OP_DEBUG,								2, 2,	}, // Karajorma
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
 };
@@ -18837,6 +18839,40 @@ void sexp_string_set_substring(int node)
 	sexp_modify_variable(new_text, sexp_variable_index);
 }
 
+// breaks into the code or sends a warning
+void sexp_debug(int node)
+{
+	int no_release_message; 
+	int i;
+	char *id;
+	char temp_buf[MESSAGE_LENGTH] = {""};
+
+	no_release_message = is_sexp_true(node); 
+
+	node = CDR(node); 
+	Assertion (node >= 0, "No message defined in debug SEXP"); 
+	id = CTEXT(node);
+
+	for (i=0; i<Num_messages; i++) {
+		// find the message
+		if ( !stricmp(id, Messages[i].name) ) {
+			//replace variables if necessary
+			strcpy_s(temp_buf, Messages[i].message);
+			sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH); 
+			break;
+		}
+	}
+
+	//send the message
+	#ifndef NDEBUG
+		Warning(LOCATION, temp_buf);
+    #else	
+	if (!no_release_message) {	
+		Warning(LOCATION, temp_buf);
+	}
+	#endif
+}
+
 // custom sexp operator for handling misc training stuff
 int sexp_special_training_check(int node)
 {
@@ -21950,6 +21986,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_string_get_length(node);
 				break;
 
+			// Karajorma
+			case OP_DEBUG:
+				sexp_debug(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case 0: // zero represents a non-operator
 				return eval_num(cur_node);
 
@@ -23614,6 +23656,7 @@ int query_operator_return_type(int op)
 		case OP_CLEAR_SUBTITLES:
 		case OP_SET_THRUSTERS:
 		case OP_SET_PLAYER_THROTTLE_SPEED:
+		case OP_DEBUG:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -23778,6 +23821,15 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			} else if (argnum == 4) {
 				return OPF_VARIABLE_NAME;
+			}
+
+		case OP_DEBUG:
+			if (argnum == 0) {
+				return OPF_BOOL;
+			}else if (argnum == 1) {
+				return OPF_MESSAGE; 
+			}else  {
+				return OPF_STRING;
 			}
 
 		case OP_HAS_TIME_ELAPSED:
@@ -28792,6 +28844,13 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Length of the substring\r\n"
 		"\t4: New substring (which can be a different length than the old substring)\r\n"
 		"\t5: String variable to hold the result\r\n" },
+
+	// Karajorma
+	{ OP_DEBUG, "debug\r\n"
+		"\tPops up a warning on debug builds (and optionally on release builds)\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\t If false, popup messages in release builds too. Defaults to true.\r\n"
+		"\t2:\tName of a message which will appear in the warning (optional)\r\n"},
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
