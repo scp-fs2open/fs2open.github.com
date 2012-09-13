@@ -815,7 +815,6 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 #define gr_flush_data_states			GR_CALL(*gr_screen.gf_flush_data_states)
 
 #define gr_set_team_color				GR_CALL(*gr_screen.gf_set_team_color)
-#define gr_enable_team_color			GR_CALL(*gr_screen.gf_enable_team_color)
 #define gr_disable_team_color			GR_CALL(*gr_screen.gf_disable_team_color)
 
 #define gr_update_texture				GR_CALL(*gr_screen.gf_update_texture)

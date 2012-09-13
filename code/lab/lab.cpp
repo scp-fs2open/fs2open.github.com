@@ -658,7 +658,6 @@ void labviewer_render_model(float frametime)
 		}
 
 		if (sip->uses_team_colors && !Teamcolor_override) {
-			gr_enable_team_color();
 			gr_set_team_color(sip->default_team_name);
 		}
 	}

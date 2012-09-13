@@ -260,6 +260,7 @@ protected:
 	uint GetMaxWriteSize (void);
 	bool ServiceBuffer (void);
 	static bool TimerCallback (ptr_u dwUser);
+	bool PlaybackDone(void);
 
 	ALuint m_source_id;	// name of openAL source
 	ALuint m_buffer_ids[MAX_STREAM_BUFFERS];	// names of buffers
@@ -1375,12 +1376,7 @@ bool AudioStream::ServiceBuffer (void)
 				m_bPastLimit = true;
 			}
 
-
-			// see if we're done
-			ALint state = 0;
-			OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_SOURCE_STATE, &state) );
-
-			if ( m_bReadingDone && (state != AL_PLAYING) ) {
+			if ( PlaybackDone() ) {
 				if ( m_bDestroy_when_faded == true ) {
 					LEAVE_CRITICAL_SECTION( write_lock );
 
@@ -1508,11 +1504,20 @@ uint AudioStream::Get_Samples_Committed(void)
 }
 
 
-// Fade_and_Destroy
+/** Have stream fade out and be destroyed when inaudabile.
+If stream is already done or never started just destroy it now.
+*/
 void AudioStream::Fade_and_Destroy (void)
 {
-	m_bFade = true;
-	m_bDestroy_when_faded = true;
+	if (!m_fPlaying || PlaybackDone())
+	{
+		Destroy();
+	}
+	else
+	{
+		m_bFade = true;
+		m_bDestroy_when_faded = true;
+	}
 }
 
 // Fade_and_Destroy
@@ -1586,6 +1591,16 @@ float AudioStream::Get_Volume()
 	return m_lVolume;
 }
 
+bool AudioStream::PlaybackDone()
+{
+	ALint state = 0;
+	OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_SOURCE_STATE, &state) );
+
+	if (m_bReadingDone && (state != AL_PLAYING))
+		return true;
+	else
+		return false;
+}
 
 
 AudioStream Audio_streams[MAX_AUDIO_STREAMS];

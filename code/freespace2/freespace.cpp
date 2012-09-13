@@ -6154,7 +6154,9 @@ void game_enter_state( int old_state, int new_state )
 			//Set the current hud
 			set_current_hud();
 
-			ship_init_cockpit_displays(Player_ship);
+			if ( !Is_standalone ) {
+				ship_init_cockpit_displays(Player_ship);
+			}
 
 			Game_mode |= GM_IN_MISSION;
 

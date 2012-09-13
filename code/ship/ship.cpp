@@ -6104,7 +6104,6 @@ void ship_render(object * obj)
 			}
 
 			if (sip->uses_team_colors) {
-				gr_enable_team_color();
 				gr_set_team_color(shipp->team_name);
 			}
 
