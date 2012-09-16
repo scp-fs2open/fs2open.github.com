@@ -36,6 +36,7 @@
 #include "pngutils/pngutils.h"
 #include "jpgutils/jpgutils.h"
 #include "parse/parselo.h"
+#include "network/multiutil.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -2251,7 +2252,6 @@ void bm_page_in_start()
 	gr_bm_page_in_start();
 }
 
-extern int Multi_ping_timestamp;
 extern void multi_ping_send_all();
 
 void bm_page_in_stop()
@@ -2284,15 +2284,7 @@ void bm_page_in_stop()
 
 				n++;
 
-				// send out a ping if we are multi so that psnet2 doesn't kill us off for a long load
-				// NOTE that we can't use the timestamp*() functions here since they won't increment
-				//      during this loading process
-				if (Game_mode & GM_MULTIPLAYER) {
-					if ( (Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()) ) {
-						multi_ping_send_all();
-						Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
-					}
-				}
+				multi_send_anti_timeout_ping();
 
 				if ( (bm_bitmaps[i].info.ani.first_frame == 0) || (bm_bitmaps[i].info.ani.first_frame == i) ) {
 #ifndef NDEBUG

@@ -238,6 +238,9 @@ void send_debrief_event();
 // Karajorma - Performs any cleanup needed by missions which don't end with a warpout.
 void multi_handle_sudden_mission_end();
 
+// Send a ping to make sure the mission doesn't timeout during loading.
+void multi_send_anti_timeout_ping();
+
 // make a bunch of fake players - don't rely on this to be very safe - its mostly used for interface testing
 #ifndef NDEBUG
 void multi_make_fake_players(int count);
