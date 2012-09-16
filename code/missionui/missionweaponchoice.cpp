@@ -34,6 +34,7 @@
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
+#include "network/multiutil.h"
 #include "missionui/chatbox.h"
 #include "network/multi_pmsg.h"
 #include "parse/parselo.h"
@@ -46,6 +47,7 @@
 #define IS_LIST_PRIMARY(x)			(Weapon_info[x].subtype != WP_MISSILE)
 #define IS_LIST_SECONDARY(x)		(Weapon_info[x].subtype == WP_MISSILE)
 
+extern int Multi_ping_timestamp;
 
 //////////////////////////////////////////////////////////////////
 // Game-wide globals
@@ -1248,6 +1250,8 @@ void wl_load_icons(int weapon_class)
 			icon->icon_bmaps[i] = first_frame+i;
 		}
 	}
+
+	multi_send_anti_timeout_ping();
 
 	if ( first_frame == -1 && icon->model_index == -1)
 	{
