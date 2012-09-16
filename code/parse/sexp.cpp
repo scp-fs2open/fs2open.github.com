@@ -658,6 +658,7 @@ sexp_oper Operators[] = {
 	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 7 },	// Goober5000
 	{ "script-eval",				OP_SCRIPT_EVAL,							1, INT_MAX},
 	{ "debug",						OP_DEBUG,								2, 2,	}, // Karajorma
+	{ "do-nothing",					OP_NOP,									0, 0,                   },
 	
 	//AI Goals Category
 	{ "ai-chase",					OP_AI_CHASE,					2, 2, },
