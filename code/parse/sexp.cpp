@@ -15346,18 +15346,18 @@ void multi_sexp_change_ship_class()
 	p_object *pobjp = NULL;
 
 	multi_get_int(class_num);
-	multi_get_bool(ship_arrived);
-
-	if (ship_arrived) {
-		multi_get_ship(ship_num);
-		if ((class_num >= 0) && (ship_num >= 0)) {
-			change_ship_type(ship_num, class_num, 1);
+	while (multi_get_bool(ship_arrived)) {
+		if (ship_arrived) {
+			multi_get_ship(ship_num);
+			if ((class_num >= 0) && (ship_num >= 0)) {
+				change_ship_type(ship_num, class_num, 1);
+			}
 		}
-	}
-	else {
-		multi_get_parse_object(pobjp); 
-		if ((class_num >= 0) && (pobjp != NULL)) {
-			swap_parse_object(pobjp, class_num);
+		else {
+			multi_get_parse_object(pobjp); 
+			if ((class_num >= 0) && (pobjp != NULL)) {
+				swap_parse_object(pobjp, class_num);
+			}
 		}
 	}
 }
