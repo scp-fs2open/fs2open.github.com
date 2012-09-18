@@ -19841,8 +19841,11 @@ void multi_sexp_clear_subtitles()
 void sexp_show_subtitle_text(int node)
 {
 	int n = node;
+	char text[TOKEN_LENGTH];
 
-	char *text = CTEXT(n);
+	char *buffer = CTEXT(n);
+	message_translate_tokens(text, buffer);
+
 	n = CDR(n);
 
 	int x_pct = eval_num(n);
