@@ -264,9 +264,12 @@ void parse_hud_gauges_tbl(char *filename)
 	int gauge_type = -1;
 	int use_font = -1;
 	color *use_clr_p = NULL;
+	SCP_vector<int> ship_classes;
 
 	while(optional_string("#Gauge Config")) {
 		if(optional_string("$Ship:")) {
+
+			mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
 
 			if(!ships_inited) {
 				// just in case ship info has not been initialized.
@@ -276,6 +279,7 @@ void parse_hud_gauges_tbl(char *filename)
 
 			// get the ship number for this HUD configuration.	
 			ship_idx = parse_ship_start();
+			ship_classes.push_back(ship_idx);
 
 			if(ship_idx >= 0) {
 				Ship_info[ship_idx].hud_enabled = true;
@@ -298,13 +302,43 @@ void parse_hud_gauges_tbl(char *filename)
 				}
 			} else {
 				// can't find ship class. move on.
+				ship_classes.push_back(-1);
 				skip_to_start_of_string("#Gauge Config");
 				//skip_to_start_of_string_either("#Gauge Config", "#End");
 				continue;
 			}
+		}
+		
+		if (optional_string("Ships:")) {
+			int shiparray[256];
+
+			int n_ships = stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
+
+			bool retail_config = false;
+			if(optional_string("$Load Retail Configuration:")) {
+				stuff_boolean(&retail_config);
+			}
+
+			for (int i = 0; i < n_ships; ++i) {
+				ship_classes.push_back(shiparray[i]);
+				Ship_info[shiparray[i]].hud_enabled = true;
+				Ship_info[shiparray[i]].hud_retail = retail_config;
+			}
+
+			if ( optional_string("$Color:") ) {
+				stuff_int_list(colors, 3);
+
+				check_color(colors);
+				gr_init_alphacolor(&ship_color, colors[0], colors[1], colors[2], 255);
+				ship_clr_p = &ship_color;
+			}
+
+			if(optional_string("$Font:")) {
+				stuff_int(&ship_font);
+			}
 		} else {
 			// No particular ship. -1 for default HUD configuration.
-			ship_idx = -1;
+			ship_classes.push_back(-1);
 			ship_font = -1;
 			ship_clr_p = NULL;
 		}
@@ -387,9 +421,9 @@ void parse_hud_gauges_tbl(char *filename)
 			// then call the specific gauge load handler function for this gauge type.
 			if(optional_string("default")) {
 				// sending -1 base width and height will indicate GR_640 or GR_1024 to the handlers
-				load_gauge(gauge_type, -1, -1, use_font, ship_idx, use_clr_p);
+				load_gauge(gauge_type, -1, -1, use_font, &ship_classes, use_clr_p);
 			} else {
-				load_gauge(gauge_type, base_res[0], base_res[1], use_font, ship_idx, use_clr_p);
+				load_gauge(gauge_type, base_res[0], base_res[1], use_font, &ship_classes, use_clr_p);
 			}
 
 			if ( saved_Mp && (saved_Mp == Mp) ) {
@@ -490,6 +524,8 @@ void load_missing_retail_gauges()
 
 	// for each ship class, check if their specific HUD config is enabled
 	for (int k = 0; k < Num_ship_classes; k++) {
+		SCP_vector<int> sindex;
+		sindex.push_back(k);
 		if(Ship_info[k].hud_enabled && Ship_info[k].hud_retail) {
 			int num_loaded_gauges = (int)Ship_info[k].hud_gauges.size();
 
@@ -501,7 +537,9 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					load_gauge(retail_gauges[i], -1, -1, Hud_font, k);
+					SCP_vector<int> sindex;
+					sindex.push_back(k);
+					load_gauge(retail_gauges[i], -1, -1, Hud_font, &sindex);
 				}
 			}
 
@@ -518,9 +556,9 @@ void load_missing_retail_gauges()
 			// load radar gauge if not loaded.
 			if(!retail_gauge_loaded) {
 				if(Cmdline_orb_radar) {
-					load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, k);
+					load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, &sindex);
 				} else {
-					load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, k);
+					load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, &sindex);
 				}
 			}
 
@@ -534,7 +572,7 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, k);
+					load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, &sindex);
 				}
 			}
 		}
@@ -814,8 +852,13 @@ int parse_gauge_type()
 	return -1;
 }
 
-void load_gauge(int gauge, int base_w, int base_h, int hud_font, int ship_idx, color *use_clr)
+void load_gauge(int gauge, int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
+	SCP_vector<int> ship_index;
+	ship_index.push_back(-1);
+	if (ship_idx = NULL) {
+		ship_idx = &ship_index;
+	}
 	switch(gauge) {
 	case HUD_OBJECT_CUSTOM:
 		load_gauge_custom(base_w, base_h, hud_font, ship_idx, use_clr);
@@ -1009,7 +1052,7 @@ void check_color(int *colorp)
 	}
 }
 
-void load_gauge_custom(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int i;
 	int coords[2];
@@ -1101,14 +1144,16 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, int ship_index, col
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_lag(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_lag(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -1179,14 +1224,16 @@ void load_gauge_lag(int base_w, int base_h, int hud_font, int ship_index, color 
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_mini_shields(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -1285,14 +1332,16 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, int ship_inde
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -1438,14 +1487,16 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, int ship_ind
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_target_shields(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_target_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -1510,14 +1561,16 @@ void load_gauge_target_shields(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_player_shields(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_player_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -1582,14 +1635,16 @@ void load_gauge_player_shields(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_escort_view(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -1744,14 +1799,16 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_afterburner(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -1845,15 +1902,17 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
 
-void load_gauge_mission_time(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -1939,14 +1998,16 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, int ship_inde
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -2090,14 +2151,16 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, int ship_
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_center_reticle(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -2203,14 +2266,16 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_throttle(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -2432,8 +2497,10 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, int ship_index, c
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
@@ -2443,7 +2510,7 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, int ship_index, c
  * Load retail style ETS gauge
  * i.e. treats weapons, shields & engines gauges as a single gauge
  */
-void load_gauge_ets_retail(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -2565,14 +2632,16 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, int ship_index,
 	hud_gauge->lockConfigColor(lock_color);
 	hud_gauge->initGaugePositions(gauge_positions);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -2682,14 +2751,16 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_ets_shields(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -2801,14 +2872,16 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_ets_engines(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -2921,14 +2994,16 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -3037,14 +3112,16 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, int ship
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_radar_std(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -3171,15 +3248,17 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, int ship_index, 
 		hud_gauge->lockConfigColor(lock_color);
 		hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 
-		if(ship_index >= 0) {
-			Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+		if(ship_idx->at(0) >= 0) {
+			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+				Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+			}
 		} else {
 			default_hud_gauges.push_back(hud_gauge);
 		}
 	}
 }
 
-void load_gauge_radar_orb(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -3306,15 +3385,17 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, int ship_index, 
 		hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 		hud_gauge->lockConfigColor(lock_color);
 
-		if(ship_index >= 0) {
-			Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+		if(ship_idx->at(0) >= 0) {
+			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+				Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+			}
 		} else {
 			default_hud_gauges.push_back(hud_gauge);
 		}
 	}
 }
 
-void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	// basic radar gauge info
 	int coords[2];
@@ -3399,7 +3480,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, int ship_inde
 	if(optional_string("Unknown Contact Filename:")) {
 		stuff_string(unknown_fname, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Cockpit Target:") && ship_index >= 0) {
+	if(optional_string("Cockpit Target:") && ship_idx->at(0) >= 0) {
 		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
 		if(optional_string("Canvas Size:")) {
@@ -3463,14 +3544,16 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, int ship_inde
 	hud_gauge->initFont(font_num);
 	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_text_warnings(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_text_warnings(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -3535,14 +3618,16 @@ void load_gauge_text_warnings(int base_w, int base_h, int hud_font, int ship_ind
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_target_monitor(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -3744,14 +3829,16 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_squad_message(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -3887,14 +3974,16 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, int ship_ind
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_objective_notify(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -4008,14 +4097,16 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, int ship_
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_weapons(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -4251,14 +4342,16 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, int ship_index, co
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_directives(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -4371,14 +4464,16 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, int ship_index,
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 	
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_talking_head(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -4463,14 +4558,16 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, int ship_inde
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_countermeasures(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -4552,14 +4649,16 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, int ship_i
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_auto_target(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -4655,14 +4754,16 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_auto_speed(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -4757,14 +4858,16 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, int ship_index,
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_wingman_status(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -4943,14 +5046,16 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_damage(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5076,14 +5181,16 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, int ship_index, col
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_support(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5185,14 +5292,16 @@ void load_gauge_support(int base_w, int base_h, int hud_font, int ship_index, co
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_training_messages(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_training_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5234,14 +5343,16 @@ void load_gauge_training_messages(int base_w, int base_h, int hud_font, int ship
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_messages(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5344,14 +5455,16 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, int ship_index, c
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5393,14 +5506,16 @@ void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5547,14 +5662,16 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, int ship_in
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_multi_msg(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_multi_msg(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5596,14 +5713,16 @@ void load_gauge_multi_msg(int base_w, int base_h, int hud_font, int ship_index, 
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_voice_status(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_voice_status(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5668,14 +5787,16 @@ void load_gauge_voice_status(int base_w, int base_h, int hud_font, int ship_inde
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_ping(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_ping(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5740,14 +5861,16 @@ void load_gauge_ping(int base_w, int base_h, int hud_font, int ship_index, color
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_supernova(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_supernova(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -5812,14 +5935,16 @@ void load_gauge_supernova(int base_w, int base_h, int hud_font, int ship_index, 
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_lock(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int base_res[2];
 	int Lock_gauge_half_w;
@@ -5951,14 +6076,16 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, int ship_index, color
 	hud_gauge->initTargetBoxSize(Lock_target_box_width,	Lock_target_box_height);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_offscreen(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_offscreen(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int base_res[2];
 	float Max_offscreen_tri_seperation;
@@ -6006,14 +6133,16 @@ void load_gauge_offscreen(int base_w, int base_h, int hud_font, int ship_index, 
 	hud_gauge->initTriHeight(Offscreen_tri_height);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_brackets(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_brackets(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int base_res[2];
 	int min_target_box[2];
@@ -6060,14 +6189,16 @@ void load_gauge_brackets(int base_w, int base_h, int hud_font, int ship_index, c
 	hud_gauge->initMinTargetBoxSizes(min_target_box[0], min_target_box[1]);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -6137,14 +6268,16 @@ void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_target_tri(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_target_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -6214,14 +6347,16 @@ void load_gauge_target_tri(int base_w, int base_h, int hud_font, int ship_index,
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_missile_tri(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_missile_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -6291,14 +6426,16 @@ void load_gauge_missile_tri(int base_w, int base_h, int hud_font, int ship_index
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_lead(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_lead(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int base_res[2];
 	float Lead_indicator_half[2];
@@ -6373,14 +6510,16 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, int ship_index, color
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -6436,14 +6575,16 @@ void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, int ship_i
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_lead_sight(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_lead_sight(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -6508,14 +6649,16 @@ void load_gauge_lead_sight(int base_w, int base_h, int hud_font, int ship_index,
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_kills(int base_w, int base_h, int hud_font, int ship_index, color *use_clr)
+void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -6606,14 +6749,16 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, int ship_index, colo
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_flight_path(int base_w, int base_h, int font, int ship_index, color *use_clr)
+void load_gauge_flight_path(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int base_res[2];
 	int Marker_half[2];
@@ -6674,14 +6819,16 @@ void load_gauge_flight_path(int base_w, int base_h, int font, int ship_index, co
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_warhead_count(int base_w, int base_h, int font, int ship_index, color *use_clr)
+void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -6795,14 +6942,16 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, int ship_index, 
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_hardpoints(int base_w, int base_h, int font, int ship_index, color *use_clr)
+void load_gauge_hardpoints(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -6901,14 +7050,16 @@ void load_gauge_hardpoints(int base_w, int base_h, int font, int ship_index, col
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_primary_weapons(int base_w, int base_h, int font, int ship_index, color *use_clr)
+void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -7057,14 +7208,16 @@ void load_gauge_primary_weapons(int base_w, int base_h, int font, int ship_index
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
 }
 
-void load_gauge_secondary_weapons(int base_w, int base_h, int font, int ship_index, color *use_clr)
+void load_gauge_secondary_weapons(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int coords[2];
 	int base_res[2];
@@ -7225,8 +7378,10 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int font, int ship_ind
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 
-	if(ship_index >= 0) {
-		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	if(ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+			Ship_info[*ship_index].hud_gauges.push_back(hud_gauge);
+		}
 	} else {
 		default_hud_gauges.push_back(hud_gauge);
 	}
