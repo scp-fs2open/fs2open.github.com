@@ -269,6 +269,7 @@ void parse_hud_gauges_tbl(char *filename)
 	int n_ships = 0;
 
 	while(optional_string("#Gauge Config")) {
+		ship_classes.clear();
 		switch (optional_string_either("$Ship:", "$Ships:")) {
 			case 0:
 				mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
