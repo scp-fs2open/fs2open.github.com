@@ -267,7 +267,7 @@ void parse_hud_gauges_tbl(char *filename)
 	SCP_vector<int> ship_classes;
 
 	while(optional_string("#Gauge Config")) {
-		if(optional_string("$Ship:")) {
+		if(!optional_string_either("$Ship:", "$Ships:")) {
 
 			mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
 
@@ -307,9 +307,7 @@ void parse_hud_gauges_tbl(char *filename)
 				//skip_to_start_of_string_either("#Gauge Config", "#End");
 				continue;
 			}
-		}
-		
-		if (optional_string("Ships:")) {
+		} else {
 			int shiparray[256];
 
 			int n_ships = stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
