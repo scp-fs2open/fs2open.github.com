@@ -265,28 +265,64 @@ void parse_hud_gauges_tbl(char *filename)
 	int use_font = -1;
 	color *use_clr_p = NULL;
 	SCP_vector<int> ship_classes;
+	bool retail_config = false;
+	int n_ships = 0;
 
 	while(optional_string("#Gauge Config")) {
-		if(!optional_string_either("$Ship:", "$Ships:")) {
+		switch (optional_string_either("$Ship:", "$Ships:")) {
+			case 0:
+				mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
 
-			mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
+				if(!ships_inited) {
+					// just in case ship info has not been initialized.
+					skip_to_start_of_string("#Gauge Config");
+					continue;
+				}
 
-			if(!ships_inited) {
-				// just in case ship info has not been initialized.
-				skip_to_start_of_string("#Gauge Config");
-				continue;
-			}
+				// get the ship number for this HUD configuration.	
+				ship_idx = parse_ship_start();
+				ship_classes.push_back(ship_idx);
 
-			// get the ship number for this HUD configuration.	
-			ship_idx = parse_ship_start();
-			ship_classes.push_back(ship_idx);
+				if(ship_idx >= 0) {
+					Ship_info[ship_idx].hud_enabled = true;
 
-			if(ship_idx >= 0) {
-				Ship_info[ship_idx].hud_enabled = true;
+					// see if we need to load defaults for this configuration
+					if(optional_string("$Load Retail Configuration:")) {
+						stuff_boolean(&Ship_info[ship_idx].hud_retail);
+					}
 
-				// see if we need to load defaults for this configuration
+					if ( optional_string("$Color:") ) {
+						stuff_int_list(colors, 3);
+
+						check_color(colors);
+						gr_init_alphacolor(&ship_color, colors[0], colors[1], colors[2], 255);
+						ship_clr_p = &ship_color;
+					}
+
+					if(optional_string("$Font:")) {
+						stuff_int(&ship_font);
+					}
+				} else {
+					// can't find ship class. move on.
+					ship_classes.push_back(-1);
+					skip_to_start_of_string("#Gauge Config");
+					//skip_to_start_of_string_either("#Gauge Config", "#End");
+					continue;
+				}
+				break;
+			case 1:
+				int shiparray[256];
+
+				n_ships = stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
+
 				if(optional_string("$Load Retail Configuration:")) {
-					stuff_boolean(&Ship_info[ship_idx].hud_retail);
+					stuff_boolean(&retail_config);
+				}
+
+				for (int i = 0; i < n_ships; ++i) {
+					ship_classes.push_back(shiparray[i]);
+					Ship_info[shiparray[i]].hud_enabled = true;
+					Ship_info[shiparray[i]].hud_retail = retail_config;
 				}
 
 				if ( optional_string("$Color:") ) {
@@ -300,45 +336,13 @@ void parse_hud_gauges_tbl(char *filename)
 				if(optional_string("$Font:")) {
 					stuff_int(&ship_font);
 				}
-			} else {
-				// can't find ship class. move on.
-				ship_classes.push_back(-1);
-				skip_to_start_of_string("#Gauge Config");
-				//skip_to_start_of_string_either("#Gauge Config", "#End");
-				continue;
-			}
-		} else {
-			int shiparray[256];
-
-			int n_ships = stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
-
-			bool retail_config = false;
-			if(optional_string("$Load Retail Configuration:")) {
-				stuff_boolean(&retail_config);
-			}
-
-			for (int i = 0; i < n_ships; ++i) {
-				ship_classes.push_back(shiparray[i]);
-				Ship_info[shiparray[i]].hud_enabled = true;
-				Ship_info[shiparray[i]].hud_retail = retail_config;
-			}
-
-			if ( optional_string("$Color:") ) {
-				stuff_int_list(colors, 3);
-
-				check_color(colors);
-				gr_init_alphacolor(&ship_color, colors[0], colors[1], colors[2], 255);
-				ship_clr_p = &ship_color;
-			}
-
-			if(optional_string("$Font:")) {
-				stuff_int(&ship_font);
-			}
-		} else {
+				break;
+			default:
 			// No particular ship. -1 for default HUD configuration.
 			ship_classes.push_back(-1);
 			ship_font = -1;
 			ship_clr_p = NULL;
+			break; 
 		}
 
 		if ( ship_clr_p != NULL ) {
