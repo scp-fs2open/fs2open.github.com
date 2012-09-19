@@ -858,7 +858,7 @@ void load_gauge(int gauge, int base_w, int base_h, int hud_font, SCP_vector<int>
 {
 	SCP_vector<int> ship_index;
 	ship_index.push_back(-1);
-	if (ship_idx = NULL) {
+	if (ship_idx == NULL) {
 		ship_idx = &ship_index;
 	}
 	switch(gauge) {
