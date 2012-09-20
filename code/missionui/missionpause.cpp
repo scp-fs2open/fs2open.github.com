@@ -22,7 +22,7 @@
 #include "object/object.h"
 #include "graphics/font.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/beam.h"	
+#include "weapon/weapon.h"	
 #include "controlconfig/controlsconfig.h"
 #include "network/multi_pause.h"
 
@@ -104,8 +104,8 @@ void pause_init()
 
 	Assert( !(Game_mode & GM_MULTIPLAYER) );
 
-	// pause all beam weapon sounds
-	beam_pause_sounds();
+	// pause all weapon sounds
+	weapon_pause_sounds();
 
 	if (Pause_type == PAUSE_TYPE_NORMAL)	{
 		Pause_saved_screen = gr_save_screen();
@@ -244,8 +244,8 @@ void pause_close()
 
 	Assert( !(Game_mode & GM_MULTIPLAYER) );
 
-	// unpause all beam weapon sounds
-	beam_unpause_sounds();
+	// unpause all weapon sounds
+	weapon_unpause_sounds();
 
 	// deinit stuff
 	if(Pause_saved_screen != -1) {
