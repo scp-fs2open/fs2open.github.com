@@ -27,7 +27,7 @@
 #include "graphics/font.h"
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/beam.h"
+#include "weapon/weapon.h"
 #include "iff_defs/iff_defs.h"
 #include "parse/parselo.h"
 
@@ -917,8 +917,8 @@ void mission_hotkey_init()
 	int i;
 	hotkey_buttons *b;
 
-	// pause all beam weapon sounds
-	beam_pause_sounds();
+	// pause all weapon sounds
+	weapon_pause_sounds();
 
 	// pause all game music
 	audiostream_pause_all();
@@ -989,8 +989,8 @@ void mission_hotkey_close()
 	// unload the overlay bitmap
 //	help_overlay_unload(HOTKEY_OVERLAY);
 
-	// unpause all beam weapon sounds
-	beam_unpause_sounds();
+	// unpause all weapon sounds
+	weapon_unpause_sounds();
 
 	// unpause all game music
 	audiostream_unpause_all();
