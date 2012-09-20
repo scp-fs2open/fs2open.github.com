@@ -1053,6 +1053,11 @@ void init_weapon_entry(int weap_info_index)
 	wip->target_lead_scaler = 0.0f;
 
 	wip->selection_effect = Default_weapon_select_effect;
+
+	wip->hud_locked_snd = -1;
+	wip->hud_tracking_snd = -1;
+	wip->hud_in_flight_snd = -1;
+	wip->in_flight_play_type = ALWAYS;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -1682,7 +1687,38 @@ int parse_weapon(int subtype, bool replace)
 	parse_sound("$Disarmed ImpactSnd:", &wip->impact_snd, wip->name);
 
 	parse_sound("$FlyBySnd:", &wip->flyby_snd, wip->name);
+
+	parse_sound("$TrackingSnd:", &wip->hud_tracking_snd, wip->name);
 	
+	parse_sound("$LockedSnd:", &wip->hud_locked_snd, wip->name);
+
+	parse_sound("$InFlightSnd:", &wip->hud_in_flight_snd, wip->name);
+
+	if (optional_string("+Inflight sound type:"))
+	{
+		SCP_string type;
+
+		stuff_string(type, F_NAME);
+
+		if (!stricmp(type.c_str(), "TARGETED"))
+		{
+			wip->in_flight_play_type = TARGETED;
+		}
+		else if (!stricmp(type.c_str(), "UNTARGETED"))
+		{
+			wip->in_flight_play_type = UNTARGETED;
+		}
+		else if (!stricmp(type.c_str(), "ALWAYS"))
+		{
+			wip->in_flight_play_type = ALWAYS;
+		}
+		else
+		{
+			Warning(LOCATION, "Unknown in-flight sound type \"%s\"!", type.c_str());
+			wip->in_flight_play_type = TARGETED;
+		}
+	}
+
 	if(optional_string("$Model:"))
 	{
 		wip->render_type = WRT_POF;
@@ -3665,6 +3701,11 @@ void weapon_delete(object *obj)
 		wp->trail_ptr = NULL;
 	}
 
+	if (wp->hud_in_flight_snd_sig >= 0 && snd_is_playing(wp->hud_in_flight_snd_sig))
+	{
+		snd_stop(wp->hud_in_flight_snd_sig);
+	}
+
 	wp->objnum = -1;
 	Num_weapons--;
 	Assert(Num_weapons >= 0);
@@ -4701,6 +4742,33 @@ void weapon_process_post(object * obj, float frame_time)
 		}
 	}
 
+	if (wip->hud_in_flight_snd >= 0 && obj->parent_sig == Player_obj->signature)
+	{
+		bool play_sound = false;
+		switch (wip->in_flight_play_type)
+		{
+		case TARGETED:
+			play_sound = wp->homing_object != &obj_used_list;
+			break;
+		case UNTARGETED:
+			play_sound = wp->homing_object == &obj_used_list;
+			break;
+		case ALWAYS:
+			play_sound = true;
+			break;
+		default:
+			Error(LOCATION, "Unknown in-flight sound status %d!", (int) wip->in_flight_play_type);
+			break;
+		}
+
+		if (play_sound)
+		{
+			if (wp->hud_in_flight_snd_sig < 0 || !snd_is_playing(wp->hud_in_flight_snd_sig))
+			{
+				wp->hud_in_flight_snd_sig = snd_play_looping(&Snds[wip->hud_in_flight_snd]);
+			}
+		}
+	}
 }
 
 /**
@@ -5218,6 +5286,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->alpha_backward = 0;
 
 	wp->collisionOccured = false;
+	wp->hud_in_flight_snd_sig = -1;
 
 	Num_weapons++;
 
@@ -6636,4 +6705,38 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	}
 	
 	return total_scale;
+}
+
+void pause_in_flight_sounds()
+{
+	beam *moveup = NULL;
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (Weapons[i].objnum != -1)
+		{
+			weapon* wp = &Weapons[i];
+
+			if (wp->hud_in_flight_snd_sig >= 0 && snd_is_playing(wp->hud_in_flight_snd_sig))
+			{
+				// Stop sound, it will be restarted in the first frame after the game is unpaused
+				snd_stop(wp->hud_in_flight_snd_sig);
+			}
+		}
+	}
+}
+
+void weapon_pause_sounds()
+{
+	// Pause all beam sounds
+	beam_pause_sounds();
+
+	// Pause in-flight sounds
+	pause_in_flight_sounds();
+}
+
+void weapon_unpause_sounds()
+{
+	// Pause all beam sounds
+	beam_unpause_sounds();
 }

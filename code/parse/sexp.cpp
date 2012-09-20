@@ -113,6 +113,7 @@
 
 sexp_oper Operators[] = {
 //   Operator, Identity, Min / Max arguments
+	//Arithmetic Category
 	{ "+",					OP_PLUS,			2,	INT_MAX	},
 	{ "-",					OP_MINUS,			2,	INT_MAX	},
 	{ "*",					OP_MUL,				2,	INT_MAX	},
@@ -134,6 +135,7 @@ sexp_oper Operators[] = {
 	{ "bitwise-not",		OP_BITWISE_NOT,		1,	1 },	// Goober5000
 	{ "bitwise-xor",		OP_BITWISE_XOR,		2,	2 },	// Goober5000
 
+	//Logical Category
 	{ "true",							OP_TRUE,							0,	0,			},
 	{ "false",							OP_FALSE,						0,	0,			},
 	{ "and",								OP_AND,							2,	INT_MAX,	},
@@ -153,6 +155,7 @@ sexp_oper Operators[] = {
 	{ "perform-actions",			OP_PERFORM_ACTIONS,						2,	INT_MAX,	},	// Goober5000
 	{ "has-time-elapsed",			OP_HAS_TIME_ELAPSED,			1,	1,			},
 
+	//Event/Goals Category
 	{ "is-goal-true-delay",					OP_GOAL_TRUE_DELAY,				2, 2,	},
 	{ "is-goal-false-delay",				OP_GOAL_FALSE_DELAY,				2, 2,	},
 	{ "is-goal-incomplete",					OP_GOAL_INCOMPLETE,				1, 1,	},
@@ -170,6 +173,7 @@ sexp_oper Operators[] = {
 	{ "is-previous-event-false",			OP_PREVIOUS_EVENT_FALSE,		2, 3,	},
 	{ "is-previous-event-incomplete",		OP_PREVIOUS_EVENT_INCOMPLETE,	2, 3,	},
 
+	//Objectives Category
 	{ "is-destroyed",							OP_IS_DESTROYED,						1,	INT_MAX,	},
 	{ "is-destroyed-delay",					OP_IS_DESTROYED_DELAY,				2,	INT_MAX,	},
 	{ "is-subsystem-destroyed",			OP_IS_SUBSYSTEM_DESTROYED,			2, 2,			},
@@ -198,90 +202,105 @@ sexp_oper Operators[] = {
 	{ "depart-node-delay",					OP_DEPART_NODE_DELAY,				3, INT_MAX, },	
 	{ "destroyed-or-departed-delay",		OP_DESTROYED_DEPARTED_DELAY,		2, INT_MAX, },	
 
-	{ "is-cargo-known",						OP_IS_CARGO_KNOWN,					1, INT_MAX,	},
-	{ "is-cargo-known-delay",				OP_CARGO_KNOWN_DELAY,				2, INT_MAX,	},
-	{ "cap-subsys-cargo-known-delay",	OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,	3, INT_MAX,	},
-	{ "is-cargo",						OP_IS_CARGO,						2, 3 },
+	//Status Category
+	//Mission Sub-Category
+	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	INT_MAX},	//phreak modified by FUBAR
+	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
+	{ "directive-value",			OP_DIRECTIVE_VALUE,	1,	2},	// Karajorma
+
+	//Player Sub-Category
+	{ "was-promotion-granted",		OP_WAS_PROMOTION_GRANTED,	0, 1,			},
+	{ "was-medal-granted",			OP_WAS_MEDAL_GRANTED,		0, 1,			},
+	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
+	{ "num_kills",					OP_NUM_KILLS,				1, 1			},
+	{ "num_assists",				OP_NUM_ASSISTS,				1, 1			},
+	{ "num_type_kills",				OP_NUM_TYPE_KILLS,			2,	2			},
+	{ "num_class_kills",			OP_NUM_CLASS_KILLS,			2,	2			},
+	{ "ship_score",					OP_SHIP_SCORE,				1, 1			},
+	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, },
+
+	//Multiplayer Sub-Category
+	{ "num-players",				OP_NUM_PLAYERS,				0, 0, },
+	{ "team-score",					OP_TEAM_SCORE,				1,	1,	}, 
+	{ "ship-deaths",				OP_SHIP_DEATHS,				1, 1			},
+	{ "respawns-left",				OP_RESPAWNS_LEFT,				1, 1			},
+	{ "is-player",					OP_IS_PLAYER,				2,	INT_MAX},	// Karajorma
+
+	//Ship Status Sub-Category
+	{ "is-in-mission",					OP_IS_IN_MISSION,					1, INT_MAX, },	// Goober5000
 	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,			1, 1, },
 	{ "is-ship-stealthy",				OP_IS_SHIP_STEALTHY,	1, 1, },
 	{ "is-friendly-stealth-visible",		OP_IS_FRIENDLY_STEALTH_VISIBLE,	1, 1, },
-	{ "is_tagged",								OP_IS_TAGGED,							1, 1			},
-	{ "has-been-tagged-delay",				OP_HAS_BEEN_TAGGED_DELAY,			2, INT_MAX,	},
 	{ "is-iff",							OP_IS_IFF,						2, INT_MAX,	},
 	{ "is-ai-class",					OP_IS_AI_CLASS,					2, INT_MAX,	},
 	{ "is-ship-type",					OP_IS_SHIP_TYPE,					2, INT_MAX,	},
 	{ "is-ship-class",					OP_IS_SHIP_CLASS,					2, INT_MAX,	},
 	{ "is-facing",						OP_IS_FACING,						3, 4, },
-	{ "is-in-mission",					OP_IS_IN_MISSION,					1, INT_MAX, },	// Goober5000
-	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
-	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
-	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
-	{ "shield-quad-low",					OP_SHIELD_QUAD_LOW,					2,	2			},
+	{ "is_tagged",								OP_IS_TAGGED,							1, 1			},
+	{ "has-been-tagged-delay",				OP_HAS_BEEN_TAGGED_DELAY,			2, INT_MAX,	},
+
+	//Shields, Engines and Weapons Sub-Category
+	{ "has-primary-weapon",			OP_HAS_PRIMARY_WEAPON,		3,	INT_MAX},	// Karajorma
+	{ "has-secondary-weapon",		OP_HAS_SECONDARY_WEAPON,	3,	INT_MAX},	// Karajorma
+	{ "is-primary-selected",				OP_IS_PRIMARY_SELECTED,				2,	2			},
+	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
+	{ "primary-fired-since",		OP_PRIMARY_FIRED_SINCE,		3,	3},	// Karajorma
+	{ "secondary-fired-since",		OP_SECONDARY_FIRED_SINCE,	3,	3},	// Karajorma
 	{ "primary-ammo-pct",					OP_PRIMARY_AMMO_PCT,				2,	2			},
 	{ "secondary-ammo-pct",					OP_SECONDARY_AMMO_PCT,				2,	2			},
 	{ "get-primary-ammo",					OP_GET_PRIMARY_AMMO,				2,	2			}, // Karajorma
 	{ "get-secondary-ammo",					OP_GET_SECONDARY_AMMO,				2,	2			}, // Karajorma
 	{ "get-num-countermeasures",			OP_GET_NUM_COUNTERMEASURES,			1,	1			}, // Karajorma
-	{ "is-primary-selected",				OP_IS_PRIMARY_SELECTED,				2,	2			},
-	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
-	{ "afterburner-energy-pct",				OP_AFTERBURNER_LEFT,		1, 1			},
 	{ "weapon-energy-pct",					OP_WEAPON_ENERGY_LEFT,			1, 1			},
+	{ "afterburner-energy-pct",				OP_AFTERBURNER_LEFT,		1, 1			},
+	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
+	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
+	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
+	{ "shield-quad-low",					OP_SHIELD_QUAD_LOW,					2,	2			},
+	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
+	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
+
+	//Cargo Sub-Category
+	{ "is-cargo-known",						OP_IS_CARGO_KNOWN,					1, INT_MAX,	},
+	{ "is-cargo-known-delay",				OP_CARGO_KNOWN_DELAY,				2, INT_MAX,	},
+	{ "cap-subsys-cargo-known-delay",	OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,	3, INT_MAX,	},
+	{ "is-cargo",						OP_IS_CARGO,						2, 3 },
+
+	//Damage Sub-Category
 	{ "shields-left",						OP_SHIELDS_LEFT,					1, 1,			},
 	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
 	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 3, },
 	{ "hits-left-subsystem-generic",	OP_HITS_LEFT_SUBSYSTEM_GENERIC,		2,	2,	},	// Goober5000
 	{ "hits-left-subsystem-specific",	OP_HITS_LEFT_SUBSYSTEM_SPECIFIC,	2,	2,	},	// Goober5000
 	{ "sim-hits-left",						OP_SIM_HITS_LEFT,					1, 1, }, // Turey
+	{ "get-damage-caused",			OP_GET_DAMAGE_CAUSED,		2, INT_MAX	},
+
+	//Distance and Coordinates Sub-Category
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "distance-to-nav",				OP_NAV_DISTANCE,				1, 1 }, // Kazan
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
 	{ "is-in-box",					OP_IS_IN_BOX,					7,	8},	//Sushi
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
-	{ "get-damage-caused",			OP_GET_DAMAGE_CAUSED,		2, INT_MAX	},
-
 	{ "get-object-x",				OP_GET_OBJECT_X,				1,	5	},	// Goober5000
 	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	5	},	// Goober5000
 	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	5	},	// Goober5000
-	{ "set-object-position",		OP_SET_OBJECT_POSITION,			4,	4	},	// WMC
 	{ "get-object-pitch",				OP_GET_OBJECT_PITCH,			1,	1	},	// Goober5000
 	{ "get-object-bank",				OP_GET_OBJECT_BANK,				1,	1	},	// Goober5000
 	{ "get-object-heading",				OP_GET_OBJECT_HEADING,			1,	1	},	// Goober5000
-	{ "set-object-orientation",		OP_SET_OBJECT_ORIENTATION,			4,	4	},	// Goober5000
-	{ "set-object-facing",			OP_SET_OBJECT_FACING,					4,	6	},	// Goober5000
-	{ "set-object-facing-object",	OP_SET_OBJECT_FACING_OBJECT,			2,	4	},	// Goober5000
-	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,			2,	3	},	// WMC
-	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,			2,	3	},	// WMC
-	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,			2,	3	},	// WMC
 	{ "get-object-speed-x",				OP_GET_OBJECT_SPEED_X,			1,	2	},
 	{ "get-object-speed-y",				OP_GET_OBJECT_SPEED_Y,			1,	2	},
 	{ "get-object-speed-z",				OP_GET_OBJECT_SPEED_Z,			1,	2	},
 
-	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, },
-	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
-	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	INT_MAX},	//phreak modified by FUBAR
-	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
-	{ "is-player",					OP_IS_PLAYER,				2,	INT_MAX},	// Karajorma
-	{ "num-players",				OP_NUM_PLAYERS,				0, 0, },
-	{ "num_kills",					OP_NUM_KILLS,				1, 1			},
-	{ "num_assists",				OP_NUM_ASSISTS,				1, 1			},
-	{ "ship_score",					OP_SHIP_SCORE,				1, 1			},
-	{ "ship-deaths",				OP_SHIP_DEATHS,				1, 1			},
-	{ "respawns-left",				OP_RESPAWNS_LEFT,				1, 1			},	
-	{ "num_type_kills",				OP_NUM_TYPE_KILLS,			2,	2			},
-	{ "num_class_kills",			OP_NUM_CLASS_KILLS,			2,	2			},
-	{ "team-score",					OP_TEAM_SCORE,				1,	1,	}, 
-	{ "was-promotion-granted",		OP_WAS_PROMOTION_GRANTED,	0, 1,			},
-	{ "was-medal-granted",			OP_WAS_MEDAL_GRANTED,		0, 1,			},
-	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
-	{ "primary-fired-since",		OP_PRIMARY_FIRED_SINCE,		3,	3},	// Karajorma
-	{ "secondary-fired-since",		OP_SECONDARY_FIRED_SINCE,	3,	3},	// Karajorma
-	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
-	{ "set-player-throttle-speed",	OP_SET_PLAYER_THROTTLE_SPEED,		2, 2,	}, //CommanderDJ
-	{ "has-primary-weapon",			OP_HAS_PRIMARY_WEAPON,		3,	INT_MAX},	// Karajorma
-	{ "has-secondary-weapon",		OP_HAS_SECONDARY_WEAPON,	3,	INT_MAX},	// Karajorma
-	{ "directive-value",			OP_DIRECTIVE_VALUE,	1,	2},	// Karajorma
-	
+	//Variables Sub-Category
+	{ "string-to-int",				OP_STRING_TO_INT,						1, 1,			}, // Karajorma
+	{ "string-get-length",			OP_STRING_GET_LENGTH,					1, 1,	}, // Goober5000
+
+	//Other Sub-Category
+	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
+	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
+
+	//Time Category
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
 	{ "time-ship-departed",		OP_TIME_SHIP_DEPARTED,		1,	1,	},
@@ -293,6 +312,7 @@ sexp_oper Operators[] = {
 	{ "time-docked",			OP_TIME_DOCKED,				3, 3, },
 	{ "time-undocked",			OP_TIME_UNDOCKED,			3, 3, },
 
+	//Conditionals Category
 	{ "cond",						OP_COND,					1, INT_MAX, },
 	{ "when",						OP_WHEN,					2, INT_MAX, },
 	{ "when-argument",				OP_WHEN_ARGUMENT,			3, INT_MAX, },	// Goober5000
@@ -313,18 +333,19 @@ sexp_oper Operators[] = {
 	{ "do-for-valid-arguments",		OP_DO_FOR_VALID_ARGUMENTS,	1, INT_MAX, },	// Karajorma
 	{ "num-valid-arguments",		OP_NUM_VALID_ARGUMENTS,		0, 0, },		// Karajorma
 
-	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
+	//Change Category
+	//Messaging Sub-Category
 	{ "send-message",				OP_SEND_MESSAGE,			3,	3,		},
+	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
 	{ "send-random-message",		OP_SEND_RANDOM_MESSAGE,		3,	INT_MAX,},
-	{ "invalidate-goal",			OP_INVALIDATE_GOAL,			1,	INT_MAX,},
-	{ "validate-goal",				OP_VALIDATE_GOAL,			1,	INT_MAX,},
 	{ "scramble-messages",			OP_SCRAMBLE_MESSAGES,		0,	0,},
 	{ "unscramble-messages",		OP_UNSCRAMBLE_MESSAGES,		0,	0,},
 	{ "disable-builtin-messages",	OP_DISABLE_BUILTIN_MESSAGES,	0,	INT_MAX,},	// Karajorma
 	{ "enable-builtin-messages",	OP_ENABLE_BUILTIN_MESSAGES,		0,	INT_MAX,},	// Karajorma
 	{ "set-persona",				OP_SET_PERSONA,					2,	INT_MAX,},	// Karajorma
-	{ "clear-subtitles",			OP_CLEAR_SUBTITLES,				0, 0},
+	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
 
+	//AI Control Sub-Category
 	{ "add-goal",					OP_ADD_GOAL,					2, 2, },
 	{ "remove-goal",				OP_REMOVE_GOAL,					2, 2, },			// Goober5000
 	{ "add-ship-goal",				OP_ADD_SHIP_GOAL,				2, 2,			},
@@ -334,28 +355,97 @@ sexp_oper Operators[] = {
 	{ "clear-wing-goals",			OP_CLEAR_WING_GOALS,			1, 1,			},
 	{ "good-rearm-time",				OP_GOOD_REARM_TIME,			2,	2,			},
 	{ "good-secondary-time",		OP_GOOD_SECONDARY_TIME,			4, 4,			},
-	{ "change-iff",					OP_CHANGE_IFF,					2,	INT_MAX,	},
-	{ "change-iff-color",			OP_CHANGE_IFF_COLOR,			6,	INT_MAX,	},
 	{ "change-ai-class",			OP_CHANGE_AI_CLASS,				2,	INT_MAX,	},
+	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
+	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
+	{ "set-player-orders",			OP_SET_PLAYER_ORDERS,			3, INT_MAX },	// Karajorma
+	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
+
+	//Ship Status Sub-Category
 	{ "protect-ship",				OP_PROTECT_SHIP,				1, INT_MAX,	},
 	{ "unprotect-ship",				OP_UNPROTECT_SHIP,				1, INT_MAX,	},
 	{ "beam-protect-ship",			OP_BEAM_PROTECT_SHIP,			1, INT_MAX,	},
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
 	{ "turret-protect-ship",		OP_TURRET_PROTECT_SHIP,			2, INT_MAX,	},	// Goober5000
 	{ "turret-unprotect-ship",		OP_TURRET_UNPROTECT_SHIP,		2, INT_MAX,	},	// Goober5000
+	{ "ship-invisible",				OP_SHIP_INVISIBLE,				1, INT_MAX	},
+	{ "ship-visible",				OP_SHIP_VISIBLE,				1, INT_MAX	},
+	{ "ship-stealthy",				OP_SHIP_STEALTHY,				1, INT_MAX },
+	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,				1, INT_MAX },			// Goober5000
+	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },	// Goober5000
+	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },	// Goober5000
+	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
+	{ "ship-targetable-as-bomb",	OP_SHIP_BOMB_TARGETABLE,			1, INT_MAX	},
+	{ "ship-untargetable-as-bomb",	OP_SHIP_BOMB_UNTARGETABLE,			1, INT_MAX	},
 	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
-	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
-	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
-	{ "allow-treason",				OP_ALLOW_TREASON,				1, 1 },			// Karajorma
-	{ "set-player-orders",			OP_SET_PLAYER_ORDERS,			3, INT_MAX },	// Karajorma
+	{ "change-iff",					OP_CHANGE_IFF,					2,	INT_MAX,	},
+	{ "change-iff-color",			OP_CHANGE_IFF_COLOR,			6,	INT_MAX,	},
+	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
+	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
+	{ "ship-change-callsign",		OP_SHIP_CHANGE_CALLSIGN,	2, INT_MAX	},	// FUBAR
+	{ "ship-tag",					OP_SHIP_TAG,				3, 8			},	// Goober5000
+	{ "ship-untag",					OP_SHIP_UNTAG,				1, 1			},	// Goober5000
+	{ "set-arrival-info",			OP_SET_ARRIVAL_INFO,			2, 6 },	// Goober5000
+	{ "set-departure-info",			OP_SET_DEPARTURE_INFO,			2, 5 },	// Goober5000
 
-	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
-	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 4,			},
-	{ "set-subsystem-strength",	OP_SET_SUBSYSTEM_STRNGTH,			3, 4,			},
-	{ "destroy-subsys-instantly",	OP_DESTROY_SUBSYS_INSTANTLY,	2, INT_MAX	}, // Admiral MS
-	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
+	//Shields, Engines and Weapons Sub-Category
+	{ "set-weapon-energy",			OP_SET_WEAPON_ENERGY,			2, INT_MAX },		// Karajorma
+	{ "set-shield-energy",			OP_SET_SHIELD_ENERGY,			2, INT_MAX },		// Karajorma
+	{ "set-player-throttle-speed",	OP_SET_PLAYER_THROTTLE_SPEED,	2, 2, }, //CommanderDJ
+	{ "set-afterburner-energy",		OP_SET_AFTERBURNER_ENERGY,		2, INT_MAX },		// Karajorma
+	{ "set-subspace-drive",			OP_SET_SUBSPACE_DRIVE,			2, INT_MAX, },
+	{ "set-primary-weapon",			OP_SET_PRIMARY_WEAPON,			3, 5 },		// Karajorma
+	{ "set-secondary-weapon",		OP_SET_SECONDARY_WEAPON,		3, 5 },		// Karajorma
+	{ "set-primary-ammo",			OP_SET_PRIMARY_AMMO,			3, 4 },		// Karajorma
+	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 4 },		// Karajorma
+	{ "set-num-countermeasures",	OP_SET_NUM_COUNTERMEASURES,		2, 2 },		// Karajorma
+	{ "lock-primary-weapon",		OP_LOCK_PRIMARY_WEAPON,			1, INT_MAX },		// Karajorma
+	{ "unlock-primary-weapon",		OP_UNLOCK_PRIMARY_WEAPON,		1, INT_MAX },		// Karajorma
+	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
+	{ "unlock-secondary-weapon",	OP_UNLOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
+	{ "lock-afterburner",			OP_LOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
+	{ "unlock-afterburner",			OP_UNLOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
+	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX }, //-Sesquipedalian
+	{ "shields-off",				OP_SHIELDS_OFF,					1, INT_MAX }, //-Sesquipedalian
+	{ "force-glide",				OP_FORCE_GLIDE,					2, 2 }, // The E
+	{ "disable-ets",				OP_DISABLE_ETS,					1, INT_MAX}, // The E
+	{ "enable-ets",					OP_ENABLE_ETS,					1, INT_MAX}, // The E
+	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
+	{ "fix-warp",					OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
+	{ "never-warp",					OP_WARP_NEVER,					1, INT_MAX, },
+	{ "allow-warp",					OP_WARP_ALLOWED,				1, INT_MAX, },
+	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
+
+	//Subsystems and Health Sub-Category
+	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
+	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
+	{ "ship-guardian",				OP_SHIP_GUARDIAN,				1, INT_MAX	},
+	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,			1, INT_MAX	},
+	{ "ship-guardian-threshold",	OP_SHIP_GUARDIAN_THRESHOLD,				2, INT_MAX	},
+	{ "ship-subsys-guardian-threshold",	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	3, INT_MAX	},
 	{ "self-destruct",				OP_SELF_DESTRUCT,				1, INT_MAX,	},
 	{ "destroy-instantly",			OP_DESTROY_INSTANTLY,			1, INT_MAX	}, // Admiral MS
+	{ "destroy-subsys-instantly",	OP_DESTROY_SUBSYS_INSTANTLY,	2, INT_MAX	}, // Admiral MS
+	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
+	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 4,			},
+	{ "ship-copy-damage",			OP_SHIP_COPY_DAMAGE,			2, INT_MAX },	// Goober5000
+	{ "set-subsystem-strength",		OP_SET_SUBSYSTEM_STRNGTH,			3, 4,			},
+	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
+	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
+	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
+	{ "reverse-rotating-subsystem",	OP_REVERSE_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
+	{ "rotating-subsys-set-turn-time", OP_ROTATING_SUBSYS_SET_TURN_TIME,	3, INT_MAX	},	// Goober5000
+	{ "trigger-submodel-animation",	OP_TRIGGER_SUBMODEL_ANIMATION,	4, 6 },		// Goober5000
+	{ "change-subsystem-name",		OP_CHANGE_SUBSYSTEM_NAME,		3, INT_MAX },		// Karajorma
+	{ "ship-subsys-targetable",		OP_SHIP_SUBSYS_TARGETABLE,		2, INT_MAX },	// Goober5000
+	{ "ship-subsys-untargetable",	OP_SHIP_SUBSYS_UNTARGETABLE,	2, INT_MAX },	// Goober5000
+	{ "ship-subsys-no-replace",		OP_SHIP_SUBSYS_NO_REPLACE,		3, INT_MAX },	// FUBAR
+	{ "ship-subsys-no-live-debris",	OP_SHIP_SUBSYS_NO_LIVE_DEBRIS,	3, INT_MAX },	// FUBAR
+	{ "ship-subsys-vanish",			OP_SHIP_SUBSYS_VANISHED,		3, INT_MAX },	// FUBAR
+	{ "ship-subsys-ignore_if_dead",	OP_SHIP_SUBSYS_IGNORE_IF_DEAD,	3, INT_MAX },	// FUBAR
+	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
+
+	//Cargo Sub-Category
 	{ "transfer-cargo",				OP_TRANSFER_CARGO,				2, 2,			},
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
 	{ "set-cargo",					OP_SET_CARGO,					2, 3,			},
@@ -364,63 +454,15 @@ sexp_oper Operators[] = {
 	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,			1,	2			},
 	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
 	{ "set-unscanned",				OP_SET_UNSCANNED,				1, 2 },
-	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
-	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
-	{ "reverse-rotating-subsystem",	OP_REVERSE_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
-	{ "rotating-subsys-set-turn-time", OP_ROTATING_SUBSYS_SET_TURN_TIME,	3, INT_MAX	},	// Goober5000
-	{ "trigger-submodel-animation",	OP_TRIGGER_SUBMODEL_ANIMATION,	4, 6 },		// Goober5000
-	{ "set-primary-ammo",			OP_SET_PRIMARY_AMMO,			3, 4 },		// Karajorma
-	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 4 },		// Karajorma
-	{ "set-primary-weapon",			OP_SET_PRIMARY_WEAPON,			3, 5 },		// Karajorma
-	{ "set-secondary-weapon",		OP_SET_SECONDARY_WEAPON,		3, 5 },		// Karajorma
-	{ "set-num-countermeasures",	OP_SET_NUM_COUNTERMEASURES,		2, 2 },		// Karajorma
-	{ "lock-primary-weapon",		OP_LOCK_PRIMARY_WEAPON,			1, INT_MAX },		// Karajorma
-	{ "unlock-primary-weapon",		OP_UNLOCK_PRIMARY_WEAPON,		1, INT_MAX },		// Karajorma
-	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
-	{ "unlock-secondary-weapon",	OP_UNLOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
-	{ "change-subsystem-name",		OP_CHANGE_SUBSYSTEM_NAME,		3, INT_MAX },		// Karajorma
-	{ "lock-afterburner",			OP_LOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
-	{ "unlock-afterburner",			OP_UNLOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
-	{ "set-afterburner-energy",		OP_SET_AFTERBURNER_ENERGY,		2, INT_MAX },		// Karajorma
-	{ "set-weapon-energy",			OP_SET_WEAPON_ENERGY,			2, INT_MAX },		// Karajorma
-	{ "set-shield-energy",			OP_SET_SHIELD_ENERGY,			2, INT_MAX },		// Karajorma
-	{ "set-ambient-light",			OP_SET_AMBIENT_LIGHT,			3, 3 },				// Karajorma
-	{ "set-post-effect",			OP_SET_POST_EFFECT,				2, 2 },				// Hery
-
-	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
-	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
-	{ "ship-guardian",				OP_SHIP_GUARDIAN,				1, INT_MAX	},
-	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,			1, INT_MAX	},
-	{ "ship-guardian-threshold",	OP_SHIP_GUARDIAN_THRESHOLD,				2, INT_MAX	},
-	{ "ship-subsys-guardian-threshold",	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	3, INT_MAX	},
-	{ "ship-invisible",				OP_SHIP_INVISIBLE,				1, INT_MAX	},
-	{ "ship-visible",				OP_SHIP_VISIBLE,				1, INT_MAX	},
-	{ "ship-stealthy",				OP_SHIP_STEALTHY,				1, INT_MAX },
-	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,				1, INT_MAX },			// Goober5000
-	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },	// Goober5000
-	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },	// Goober5000
-	{ "ship-targetable-as-bomb",	OP_SHIP_BOMB_TARGETABLE,			1, INT_MAX	},
-	{ "ship-untargetable-as-bomb",	OP_SHIP_BOMB_UNTARGETABLE,			1, INT_MAX	},
-	{ "ship-subsys-targetable",		OP_SHIP_SUBSYS_TARGETABLE,		2, INT_MAX },	// Goober5000
-	{ "ship-subsys-no-replace",		OP_SHIP_SUBSYS_NO_REPLACE,		3, INT_MAX },	// FUBAR
-	{ "ship-subsys-no-live-debris",	OP_SHIP_SUBSYS_NO_LIVE_DEBRIS,	3, INT_MAX },	// FUBAR
-	{ "ship-subsys-vanish",			OP_SHIP_SUBSYS_VANISHED,		3, INT_MAX },	// FUBAR
-	{ "ship-subsys-ignore_if_dead",	OP_SHIP_SUBSYS_IGNORE_IF_DEAD,	3, INT_MAX },	// FUBAR
-	{ "ship-subsys-untargetable",	OP_SHIP_SUBSYS_UNTARGETABLE,	2, INT_MAX },	// Goober5000
-	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
-	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
-	{ "set-explosion-option",		OP_SET_EXPLOSION_OPTION,		3, INT_MAX	},	// Goober5000
-	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
-	{ "fix-warp",					OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
-	{ "never-warp",					OP_WARP_NEVER,					1, INT_MAX, },
-	{ "allow-warp",					OP_WARP_ALLOWED,				1, INT_MAX, },
-	{ "set-subspace-drive",			OP_SET_SUBSPACE_DRIVE,			2, INT_MAX, },
+	
+	//Armor and Damage Types Sub-Category
 	{ "set-armor-type",				OP_SET_ARMOR_TYPE,				4, INT_MAX, },  // FUBAR
-	{ "add-to-collision-group",		OP_ADD_TO_COLGROUP,				2, INT_MAX },	// The E
-	{ "remove-from-collision-group",OP_REMOVE_FROM_COLGROUP,		2, INT_MAX },
-	{ "get-collision-group",		OP_GET_COLGROUP_ID,				1, 1 },
-	{ "ship-effect",				OP_SHIP_EFFECT,					3, INT_MAX },	// Valathil
+	{ "weapon-set-damage-type",		OP_WEAPON_SET_DAMAGE_TYPE,		4, INT_MAX }, // FUBAR
+	{ "ship-set-damage-type",		OP_SHIP_SET_DAMAGE_TYPE,		4, INT_MAX }, // FUBAR
+	{ "ship-set-shockwave-damage-type",		OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE,		3, INT_MAX }, // FUBAR
+	{ "field-set-damage-type",		OP_FIELD_SET_DAMAGE_TYPE,		2,2 }, // FUBAR
 
+	//Beams and Turrets Sub-Category
 	{ "fire-beam",						OP_BEAM_FIRE,					3, 5		},
 	{ "fire-beam-at-coordinates",		OP_BEAM_FIRE_COORDS,			5, 9		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
@@ -444,8 +486,39 @@ sexp_oper Operators[] = {
 	{ "ship-turret-target-order",			OP_SHIP_TURRET_TARGET_ORDER,		1, 1+NUM_TURRET_ORDER_TYPES},	//WMC
 	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE, 2, INT_MAX	},
 	{ "turret-subsys-target-enable",	OP_TURRET_SUBSYS_TARGET_ENABLE,	2, INT_MAX	},
+	
+	//Models and Textures Sub-Category
+	{ "change-ship-class",			OP_CHANGE_SHIP_CLASS,			2, INT_MAX },	// Goober5000
+	{ "deactivate-glow-maps",		OP_DEACTIVATE_GLOW_MAPS,		1, INT_MAX },	//-Bobboau
+	{ "activate-glow-maps",			OP_ACTIVATE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
+	{ "deactivate-glow-points",		OP_DEACTIVATE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
+	{ "activate-glow-points",		OP_ACTIVATE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
+	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
+	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
+	{ "set-thrusters-status",		OP_SET_THRUSTERS,				2, INT_MAX },	// The E
+	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
+	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
+	{ "add-to-collision-group",		OP_ADD_TO_COLGROUP,				2, INT_MAX },	// The E
+	{ "remove-from-collision-group",OP_REMOVE_FROM_COLGROUP,		2, INT_MAX },
+	{ "get-collision-group",		OP_GET_COLGROUP_ID,				1, 1 },
 
+	//Coordinate Manipulation Sub-Category
+	{ "set-object-position",		OP_SET_OBJECT_POSITION,			4,	4	},	// WMC
+	{ "set-object-orientation",		OP_SET_OBJECT_ORIENTATION,			4,	4	},	// Goober5000
+	{ "set-object-facing",			OP_SET_OBJECT_FACING,					4,	6	},	// Goober5000
+	{ "set-object-facing-object",	OP_SET_OBJECT_FACING_OBJECT,			2,	4	},	// Goober5000
+	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,			2,	3	},	// WMC
+	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,			2,	3	},	// WMC
+	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,			2,	3	},	// WMC
+	{ "ship-maneuver",			OP_SHIP_MANEUVER,			10, 10 }, // Wanderer
+	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
+	{ "ship-lat-maneuver",		OP_SHIP_LAT_MANEUVER,		6, 6 }, // Wanderer
+	{ "set-immobile",		OP_SET_IMMOBILE,			1, INT_MAX	},	// Goober5000
+	{ "set-mobile",			OP_SET_MOBILE,			1, INT_MAX	},	// Goober5000
 
+	//Mission and Campaign Sub-Category
+	{ "invalidate-goal",			OP_INVALIDATE_GOAL,			1,	INT_MAX,},
+	{ "validate-goal",				OP_VALIDATE_GOAL,			1,	INT_MAX,},
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
 	{ "end-mission",					OP_END_MISSION,					0, 2 }, //-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
@@ -453,7 +526,45 @@ sexp_oper Operators[] = {
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0 },
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,		1, 1 },	// Goober5000
+	{ "allow-treason",				OP_ALLOW_TREASON,				1, 1 },			// Karajorma
+	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
+	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
+	{ "allow-ship",					OP_ALLOW_SHIP,						1, 1,			},
+	{ "allow-weapon",					OP_ALLOW_WEAPON,					1, 1,			},
+	{ "tech-add-ships",				OP_TECH_ADD_SHIP,					1, INT_MAX	},
+	{ "tech-add-weapons",			OP_TECH_ADD_WEAPON,				1, INT_MAX	},
+	{ "tech-add-intel",				OP_TECH_ADD_INTEL,				1, INT_MAX	},	// Goober5000
+	{ "tech-reset-to-default",		OP_TECH_RESET_TO_DEFAULT,		0, 0 },	// Goober5000
+	{ "change-player-score",		OP_CHANGE_PLAYER_SCORE,			2, INT_MAX },	// Karajorma
+	{ "change-team-score",			OP_CHANGE_TEAM_SCORE,			2, 2 },			// Karajorma
+	{ "set-respawns",			OP_SET_RESPAWNS,			2, INT_MAX },	// Karajorma
 
+	//Music and Sound Sub-Category
+	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
+	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
+	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 3 },		// Goober5000
+	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
+	{ "set-sound-environment",		OP_SET_SOUND_ENVIRONMENT,		1, INT_MAX },	// Taylor
+	{ "update-sound-environment",	OP_UPDATE_SOUND_ENVIRONMENT,	2, INT_MAX },	// Taylor
+	{ "adjust-audio-volume",		OP_ADJUST_AUDIO_VOLUME,			1, 3},
+
+	//HUD Sub-Category
+	{ "hud-disable",			OP_HUD_DISABLE,					1, 1 },	// Goober5000
+	{ "hud-disable-except-messages",	OP_HUD_DISABLE_EXCEPT_MESSAGES,	1, 1 },	// Goober5000
+	{ "hud-set-text",			OP_HUD_SET_TEXT,				2, 2 },	//WMCoolmon
+	{ "hud-set-text-num",			OP_HUD_SET_TEXT_NUM,			2, 2 },	//WMCoolmon
+	{ "hud-set-message",			OP_HUD_SET_MESSAGE,				2, 2 }, //The E
+	{ "hud-set-directive",			OP_HUD_SET_DIRECTIVE,			2, 2 }, //The E
+	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
+	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
+	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
+	{ "hud-display-gauge",			OP_HUD_DISPLAY_GAUGE,		2, 2 },
+	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,		2, 2 },
+	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,		2, 2},
+	{ "hud-clear-messages",			OP_HUD_CLEAR_MESSAGES, 0, 0},	// swifty
+	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,		1, 1 }, // Goober5000
+
+	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 4 }, //kazan
 	{ "add-nav-ship",					OP_NAV_ADD_SHIP,				2, 2 }, //kazan
 	{ "del-nav",						OP_NAV_DEL,						1, 1 }, //kazan
@@ -471,80 +582,33 @@ sexp_oper Operators[] = {
 	{ "use-nav-cinematics",				OP_NAV_USECINEMATICS,			1, 1 }, //kazan
 	{ "use-autopilot",					OP_NAV_USEAP,					1, 1 }, //kazan
 
-	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
-	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
-	{ "allow-ship",					OP_ALLOW_SHIP,						1, 1,			},
-	{ "allow-weapon",					OP_ALLOW_WEAPON,					1, 1,			},
-	{ "tech-add-ships",				OP_TECH_ADD_SHIP,					1, INT_MAX	},
-	{ "tech-add-weapons",			OP_TECH_ADD_WEAPON,				1, INT_MAX	},
-	{ "tech-add-intel",				OP_TECH_ADD_INTEL,				1, INT_MAX	},	// Goober5000
-	{ "tech-reset-to-default",		OP_TECH_RESET_TO_DEFAULT,		0, 0 },	// Goober5000
-	{ "change-player-score",		OP_CHANGE_PLAYER_SCORE,			2, INT_MAX },	// Karajorma
-	{ "change-team-score",			OP_CHANGE_TEAM_SCORE,			2, 2 },			// Karajorma
-	{ "set-respawns",			OP_SET_RESPAWNS,			2, INT_MAX },	// Karajorma
-
-	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
-	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
-	{ "change-ship-class",			OP_CHANGE_SHIP_CLASS,			2, INT_MAX },	// Goober5000
-	{ "deactivate-glow-points",		OP_DEACTIVATE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
-	{ "activate-glow-points",		OP_ACTIVATE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
-	{ "deactivate-glow-maps",		OP_DEACTIVATE_GLOW_MAPS,		1, INT_MAX },	//-Bobboau
-	{ "activate-glow-maps",			OP_ACTIVATE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
-	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
-	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
-	{ "set-thrusters-status",		OP_SET_THRUSTERS,				2, INT_MAX },	// The E
-
-	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
-	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
-	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 3 },		// Goober5000
-	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
-	{ "set-sound-environment",		OP_SET_SOUND_ENVIRONMENT,		1, INT_MAX },	// Taylor
-	{ "update-sound-environment",	OP_UPDATE_SOUND_ENVIRONMENT,	2, INT_MAX },	// Taylor
-	{ "adjust-audio-volume",		OP_ADJUST_AUDIO_VOLUME,			1, 3},
-
-	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
-	{ "variable-array-get",				OP_GET_VARIABLE_BY_INDEX,	1,	1,			},
-	{ "variable-array-set",				OP_SET_VARIABLE_BY_INDEX,	2,	2,			},
-	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
-	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3, INT_MAX },					//phreak
-	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
-	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
-	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
-	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 7 },	// Goober5000
-	{ "set-arrival-info",			OP_SET_ARRIVAL_INFO,			2, 6 },	// Goober5000
-	{ "set-departure-info",			OP_SET_DEPARTURE_INFO,			2, 5 },	// Goober5000
-	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
-	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
-	{ "ship-create",					OP_SHIP_CREATE,					5, 8	},	//WMC
-	{ "weapon-create",					OP_WEAPON_CREATE,				5, 10	},	// Goober5000
-	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
+	//Cutscene Sub-Category
+	{ "set-cutscene-bars",			OP_CUTSCENES_SET_CUTSCENE_BARS,			0, 1, },
+	{ "unset-cutscene-bars",		OP_CUTSCENES_UNSET_CUTSCENE_BARS,		0, 1, },
+	{ "fade-in",					OP_CUTSCENES_FADE_IN,					0, 1, },
+	{ "fade-out",					OP_CUTSCENES_FADE_OUT,					0, 2, },
+	{ "set-camera",					OP_CUTSCENES_SET_CAMERA,				0, 1, },
+	{ "set-camera-position",		OP_CUTSCENES_SET_CAMERA_POSITION,		3, 6, },
+	{ "set-camera-facing",			OP_CUTSCENES_SET_CAMERA_FACING,			3, 6, },
+	{ "set-camera-facing-object",	OP_CUTSCENES_SET_CAMERA_FACING_OBJECT,	1, 4, },
+	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 6, },
+	{ "set-camera-host",			OP_CUTSCENES_SET_CAMERA_HOST,			1, 2, },
+	{ "set-camera-target",			OP_CUTSCENES_SET_CAMERA_TARGET,			1, 2, },
+	{ "set-camera-fov",				OP_CUTSCENES_SET_CAMERA_FOV,			1, 5, },
+	{ "set-fov",					OP_CUTSCENES_SET_FOV,					1, 1, },
+	{ "get-fov",					OP_CUTSCENES_GET_FOV,					0, 0, },
+	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
+	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
+	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 13, },
+	{ "show-subtitle-text",			OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6, 13, },
+	{ "show-subtitle-image",		OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8, 10, },
+	{ "clear-subtitles",			OP_CLEAR_SUBTITLES,						0, 0},
+	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
+	{ "set-camera-shudder",			OP_SET_CAMERA_SHUDDER,					2, 2, },
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,				0,	0			}, //CommanderDJ
-	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
-	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
-	{ "ship-tag",				OP_SHIP_TAG,				3, 8			},	// Goober5000
-	{ "ship-untag",				OP_SHIP_UNTAG,				1, 1			},	// Goober5000
-	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
-	{ "warp-effect",			OP_WARP_EFFECT,					12, 12 },		// Goober5000
-	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
-	{ "ship-change-callsign",		OP_SHIP_CHANGE_CALLSIGN,	2, INT_MAX	},	// FUBAR
-	{ "ship-copy-damage",			OP_SHIP_COPY_DAMAGE,			2, INT_MAX },	// Goober5000
-	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
-	{ "remove-weapons",			OP_REMOVE_WEAPONS,			0, 1 },	// Karajorma
-	{ "ship-maneuver",			OP_SHIP_MANEUVER,			10, 10 }, // Wanderer
-	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
-	{ "ship-lat-maneuver",		OP_SHIP_LAT_MANEUVER,		6, 6 }, // Wanderer
-	{ "force-glide",			OP_FORCE_GLIDE,				2, 2 }, // The E
-	{ "weapon-set-damage-type",		OP_WEAPON_SET_DAMAGE_TYPE,		4, INT_MAX }, // FUBAR
-	{ "ship-set-damage-type",		OP_SHIP_SET_DAMAGE_TYPE,		4, INT_MAX }, // FUBAR
-	{ "ship-set-shockwave-damage-type",		OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE,		3, INT_MAX }, // FUBAR
-	{ "field-set-damage-type",		OP_FIELD_SET_DAMAGE_TYPE,		2,2 }, // FUBAR
-	{ "disable-ets",				OP_DISABLE_ETS,			1, INT_MAX}, // The E
-	{ "enable-ets",					OP_ENABLE_ETS,			1, INT_MAX}, // The E
-	{ "set-immobile",		OP_SET_IMMOBILE,			1, INT_MAX	},	// Goober5000
-	{ "set-mobile",			OP_SET_MOBILE,			1, INT_MAX	},	// Goober5000
-	
-	//background and nebula sexps
+
+	//Background and Nebula Sub-Category
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
 	{ "mission-set-subspace",		OP_MISSION_SET_SUBSPACE,			1, 1 },
 	{ "add-background-bitmap",		OP_ADD_BACKGROUND_BITMAP,			9, 9 }, // phreak
@@ -555,23 +619,48 @@ sexp_oper Operators[] = {
 	{ "nebula-toggle-poof",			OP_NEBULA_TOGGLE_POOF,				2, 2 }, // phreak
 	{ "set-skybox-model",			OP_SET_SKYBOX_MODEL,				1, 1 },	// taylor
 	{ "set-skybox-orientation",		OP_SET_SKYBOX_ORIENT,				3, 3 },	// Goober5000
+	{ "set-ambient-light",			OP_SET_AMBIENT_LIGHT,			3, 3 },				// Karajorma
 
-	//HUD funcs -C
-	{ "hud-disable",			OP_HUD_DISABLE,					1, 1 },	// Goober5000
-	{ "hud-disable-except-messages",	OP_HUD_DISABLE_EXCEPT_MESSAGES,	1, 1 },	// Goober5000
-	{ "hud-set-text",			OP_HUD_SET_TEXT,				2, 2 },	//WMCoolmon
-	{ "hud-set-text-num",			OP_HUD_SET_TEXT_NUM,			2, 2 },	//WMCoolmon
-	{ "hud-set-message",			OP_HUD_SET_MESSAGE,				2, 2 }, //The E
-	{ "hud-set-directive",			OP_HUD_SET_DIRECTIVE,			2, 2 }, //The E
-	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
-	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
-	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
-	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,		1, 1 }, // Goober5000
-	{ "hud-display-gauge",			OP_HUD_DISPLAY_GAUGE,		2, 2 },
-	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,		2, 2 },
-	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,		2, 2},
-	{ "hud-clear-messages",			OP_HUD_CLEAR_MESSAGES, 0, 0},	// swifty
+	//Jump Node Sub-Category
+	{ "set-jumpnode-name",			OP_JUMP_NODE_SET_JUMPNODE_NAME,			2, 2, }, //CommanderDJ
+	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
+	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
+	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, INT_MAX, },
+	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, INT_MAX, },
 
+	//Special Effects Sub-Category
+	{ "set-post-effect",			OP_SET_POST_EFFECT,				2, 2 },				// Hery
+	{ "ship-effect",				OP_SHIP_EFFECT,					3, INT_MAX },	// Valathil
+	{ "ship-create",				OP_SHIP_CREATE,					5, 8	},	//WMC
+	{ "weapon-create",				OP_WEAPON_CREATE,				5, 10	},	// Goober5000
+	{ "ship-vanish",				OP_SHIP_VANISH,					1, INT_MAX	},
+	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
+	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
+	{ "set-explosion-option",		OP_SET_EXPLOSION_OPTION,		3, INT_MAX	},	// Goober5000
+	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
+	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
+	{ "remove-weapons",			OP_REMOVE_WEAPONS,			0, 1 },	// Karajorma
+	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
+	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
+
+	//Variable Category
+	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
+	{ "variable-array-get",				OP_GET_VARIABLE_BY_INDEX,	1,	1,			},
+	{ "variable-array-set",				OP_SET_VARIABLE_BY_INDEX,	2,	2,			},
+	{ "int-to-string",				OP_INT_TO_STRING,						2, 2,			}, // Goober5000
+	{ "string-concatenate",			OP_STRING_CONCATENATE,					3, 3,			}, // Goober5000
+	{ "string-get-substring",		OP_STRING_GET_SUBSTRING,				4, 4,	}, // Goober5000
+	{ "string-set-substring",		OP_STRING_SET_SUBSTRING,				5, 5,	}, // Goober5000
+
+	//Other Sub-Category
+	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3, INT_MAX },					//phreak
+	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
+	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 7 },	// Goober5000
+	{ "script-eval",				OP_SCRIPT_EVAL,							1, INT_MAX},
+	{ "debug",						OP_DEBUG,								2, 2,	}, // Karajorma
+	{ "do-nothing",					OP_NOP,									0, 0,                   },
+	
+	//AI Goals Category
 	{ "ai-chase",					OP_AI_CHASE,					2, 2, },
 	{ "ai-chase-wing",			OP_AI_CHASE_WING,				2, 2, },
 	{ "ai-chase-any",				OP_AI_CHASE_ANY,				1, 1, },
@@ -597,6 +686,7 @@ sexp_oper Operators[] = {
 
 	{ "goals",	OP_GOALS_ID,	1, INT_MAX, },
 
+	//Training Category
 	{ "key-pressed",				OP_KEY_PRESSED,				1,	2,			},
 	{ "key-reset",					OP_KEY_RESET,					1, INT_MAX,	},
 	{ "key-reset-multiple",			OP_KEY_RESET_MULTIPLE,			1, INT_MAX,	},
@@ -621,51 +711,6 @@ sexp_oper Operators[] = {
 
 	{ "set-training-context-fly-path",	OP_SET_TRAINING_CONTEXT_FLY_PATH,	2, 2, },
 	{ "set-training-context-speed",		OP_SET_TRAINING_CONTEXT_SPEED,		2, 2, },
-
-	//Cutscene stuff
-	{ "set-cutscene-bars",			OP_CUTSCENES_SET_CUTSCENE_BARS,			0, 1, },
-	{ "unset-cutscene-bars",		OP_CUTSCENES_UNSET_CUTSCENE_BARS,		0, 1, },
-	{ "fade-in",					OP_CUTSCENES_FADE_IN,					0, 1, },
-	{ "fade-out",					OP_CUTSCENES_FADE_OUT,					0, 2, },
-	{ "set-camera",					OP_CUTSCENES_SET_CAMERA,				0, 1, },
-	{ "set-camera-facing",			OP_CUTSCENES_SET_CAMERA_FACING,			3, 6, },
-	{ "set-camera-facing-object",	OP_CUTSCENES_SET_CAMERA_FACING_OBJECT,	1, 4, },
-	{ "set-camera-fov",				OP_CUTSCENES_SET_CAMERA_FOV,			1, 5, },
-	{ "set-camera-host",			OP_CUTSCENES_SET_CAMERA_HOST,			1, 2, },
-	{ "set-camera-position",		OP_CUTSCENES_SET_CAMERA_POSITION,		3, 6, },
-	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 6, },
-	{ "set-camera-target",			OP_CUTSCENES_SET_CAMERA_TARGET,			1, 2, },
-	{ "set-fov",					OP_CUTSCENES_SET_FOV,					1, 1, },
-	{ "get-fov",					OP_CUTSCENES_GET_FOV,					0, 0, },
-	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
-	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
-	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 13, },
-	{ "show-subtitle-text",			OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6, 13, },
-	{ "show-subtitle-image",		OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8, 10, },
-	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
-	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
-	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
-	{ "set-camera-shudder",			OP_SET_CAMERA_SHUDDER,					2, 2, },
-
-	{ "set-jumpnode-name",			OP_JUMP_NODE_SET_JUMPNODE_NAME,			2, 2, }, //CommanderDJ
-	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
-	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
-	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, INT_MAX, },
-	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, INT_MAX, },
-
-	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
-	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
-	{ "script-eval",				OP_SCRIPT_EVAL,							1, INT_MAX},
-	{ "string-to-int",				OP_STRING_TO_INT,						1, 1,			}, // Karajorma
-	{ "int-to-string",				OP_INT_TO_STRING,						2, 2,			}, // Goober5000
-	{ "string-concatenate",			OP_STRING_CONCATENATE,					3, 3,			}, // Goober5000
-	{ "string-get-substring",		OP_STRING_GET_SUBSTRING,				4, 4,	}, // Goober5000
-	{ "string-set-substring",		OP_STRING_SET_SUBSTRING,				5, 5,	}, // Goober5000
-	{ "string-get-length",			OP_STRING_GET_LENGTH,					2, 2,	}, // Goober5000
-
-	{ "debug",						OP_DEBUG,								2, 2,	}, // Karajorma
-
-	{ "do-nothing",	OP_NOP,	0, 0,			},
 };
 
 sexp_ai_goal_link Sexp_ai_goal_links[] = {
@@ -15302,18 +15347,18 @@ void multi_sexp_change_ship_class()
 	p_object *pobjp = NULL;
 
 	multi_get_int(class_num);
-	multi_get_bool(ship_arrived);
-
-	if (ship_arrived) {
-		multi_get_ship(ship_num);
-		if ((class_num >= 0) && (ship_num >= 0)) {
-			change_ship_type(ship_num, class_num, 1);
+	while (multi_get_bool(ship_arrived)) {
+		if (ship_arrived) {
+			multi_get_ship(ship_num);
+			if ((class_num >= 0) && (ship_num >= 0)) {
+				change_ship_type(ship_num, class_num, 1);
+			}
 		}
-	}
-	else {
-		multi_get_parse_object(pobjp); 
-		if ((class_num >= 0) && (pobjp != NULL)) {
-			swap_parse_object(pobjp, class_num);
+		else {
+			multi_get_parse_object(pobjp); 
+			if ((class_num >= 0) && (pobjp != NULL)) {
+				swap_parse_object(pobjp, class_num);
+			}
 		}
 	}
 }
@@ -19796,8 +19841,11 @@ void multi_sexp_clear_subtitles()
 void sexp_show_subtitle_text(int node)
 {
 	int n = node;
+	char text[TOKEN_LENGTH];
 
-	char *text = CTEXT(n);
+	char *buffer = CTEXT(n);
+	message_translate_tokens(text, buffer);
+
 	n = CDR(n);
 
 	int x_pct = eval_num(n);
@@ -26867,48 +26915,118 @@ int get_subcategory(int sexp_id)
 {
 	switch(sexp_id)
 	{
+
 		case OP_SEND_MESSAGE_LIST:
 		case OP_SEND_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
-		case OP_INVALIDATE_GOAL:
-		case OP_VALIDATE_GOAL:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
+		case OP_SET_DEATH_MESSAGE:
 		case OP_SET_PERSONA:
-			return CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS;
-			
+			return CHANGE_SUBCATEGORY_MESSAGING;
+
+
 		case OP_ADD_GOAL:
 		case OP_REMOVE_GOAL:
 		case OP_CLEAR_GOALS:
 		case OP_GOOD_REARM_TIME:
 		case OP_GOOD_SECONDARY_TIME:
-		case OP_CHANGE_IFF:
 		case OP_CHANGE_AI_CLASS:
+		case OP_PLAYER_USE_AI:
+		case OP_PLAYER_NOT_USE_AI:
+		case OP_SET_PLAYER_ORDERS:
+		case OP_CAP_WAYPOINT_SPEED:
+			return CHANGE_SUBCATEGORY_AI_CONTROL;
+
+
+
 		case OP_PROTECT_SHIP:
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
 		case OP_BEAM_UNPROTECT_SHIP:
 		case OP_TURRET_PROTECT_SHIP:
 		case OP_TURRET_UNPROTECT_SHIP:
+		case OP_SHIP_INVISIBLE:
+		case OP_SHIP_VISIBLE:
+		case OP_SHIP_STEALTHY:
+		case OP_SHIP_UNSTEALTHY:
+		case OP_FRIENDLY_STEALTH_INVISIBLE:
+		case OP_FRIENDLY_STEALTH_VISIBLE:
+		case OP_PRIMITIVE_SENSORS_SET_RANGE:
+		case OP_SHIP_BOMB_TARGETABLE:
+		case OP_SHIP_BOMB_UNTARGETABLE:
 		case OP_KAMIKAZE:
-		case OP_PLAYER_USE_AI:
-		case OP_PLAYER_NOT_USE_AI:
-		case OP_ALLOW_TREASON:
-		case OP_SET_PLAYER_ORDERS:
+		case OP_CHANGE_IFF:
 		case OP_CHANGE_IFF_COLOR:
-		case OP_FORCE_GLIDE:
+		case OP_ADD_REMOVE_ESCORT:
+		case OP_SHIP_CHANGE_ALT_NAME:
+		case OP_SHIP_CHANGE_CALLSIGN:
+		case OP_SHIP_TAG:
+		case OP_SHIP_UNTAG:
+		case OP_SET_ARRIVAL_INFO:
+		case OP_SET_DEPARTURE_INFO:
+			return CHANGE_SUBCATEGORY_SHIP_STATUS;
+
+		case OP_SET_WEAPON_ENERGY:
+		case OP_SET_SHIELD_ENERGY:
 		case OP_SET_PLAYER_THROTTLE_SPEED:
-			return CHANGE_SUBCATEGORY_AI_AND_IFF;
-			
-		case OP_SABOTAGE_SUBSYSTEM:
-		case OP_REPAIR_SUBSYSTEM:
-		case OP_SET_SUBSYSTEM_STRNGTH:
-		case OP_DESTROY_SUBSYS_INSTANTLY:
-		case OP_SUBSYS_SET_RANDOM:
+		case OP_SET_AFTERBURNER_ENERGY:
+		case OP_SET_SUBSPACE_DRIVE:
+		case OP_SET_SPECIAL_WARPOUT_NAME:
+		case OP_SET_PRIMARY_WEAPON:		// Karajorma
+		case OP_SET_SECONDARY_WEAPON:	// Karajorma
+		case OP_SET_PRIMARY_AMMO:		// Karajorma
+		case OP_SET_SECONDARY_AMMO:		// Karajorma
+		case OP_SET_NUM_COUNTERMEASURES: // Karajorma
+		case OP_LOCK_PRIMARY_WEAPON:
+		case OP_UNLOCK_PRIMARY_WEAPON:
+		case OP_LOCK_SECONDARY_WEAPON:
+		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_LOCK_AFTERBURNER:	// KeldorKatarn
+		case OP_UNLOCK_AFTERBURNER:	// KeldorKatarn
+		case OP_SHIELDS_ON:
+		case OP_SHIELDS_OFF:
+		case OP_FORCE_GLIDE:
+		case OP_DISABLE_ETS:
+		case OP_ENABLE_ETS:
+		case OP_WARP_BROKEN:
+		case OP_WARP_NOT_BROKEN:
+		case OP_WARP_NEVER:
+		case OP_WARP_ALLOWED:
+
+			return CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
+
+		case OP_SHIP_INVULNERABLE:
+		case OP_SHIP_VULNERABLE:
+		case OP_SHIP_GUARDIAN:
+		case OP_SHIP_NO_GUARDIAN:
+		case OP_SHIP_GUARDIAN_THRESHOLD:
+		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SELF_DESTRUCT:
 		case OP_DESTROY_INSTANTLY:
+		case OP_DESTROY_SUBSYS_INSTANTLY:
+		case OP_SABOTAGE_SUBSYSTEM:
+		case OP_REPAIR_SUBSYSTEM:
+		case OP_SHIP_COPY_DAMAGE:
+		case OP_SET_SUBSYSTEM_STRNGTH:
+		case OP_SUBSYS_SET_RANDOM:
+		case OP_LOCK_ROTATING_SUBSYSTEM:
+		case OP_FREE_ROTATING_SUBSYSTEM:
+		case OP_REVERSE_ROTATING_SUBSYSTEM:
+		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
+		case OP_TRIGGER_SUBMODEL_ANIMATION:
+		case OP_CHANGE_SUBSYSTEM_NAME:
+		case OP_SHIP_SUBSYS_TARGETABLE:
+		case OP_SHIP_SUBSYS_UNTARGETABLE:
+		case OP_SHIP_SUBSYS_NO_REPLACE:
+		case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
+		case OP_SHIP_SUBSYS_VANISHED:
+		case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
+		case OP_AWACS_SET_RADIUS:
+			return CHANGE_SUBCATEGORY_SUBSYSTEMS;
+
 		case OP_TRANSFER_CARGO:
 		case OP_EXCHANGE_CARGO:
 		case OP_SET_CARGO:
@@ -26917,62 +27035,16 @@ int get_subcategory(int sexp_id)
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SCANNED:
 		case OP_SET_UNSCANNED:
-		case OP_LOCK_ROTATING_SUBSYSTEM:
-		case OP_FREE_ROTATING_SUBSYSTEM:
-		case OP_REVERSE_ROTATING_SUBSYSTEM:
-		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
-		case OP_TRIGGER_SUBMODEL_ANIMATION:
-		case OP_SET_PRIMARY_AMMO:		// Karajorma
-		case OP_SET_SECONDARY_AMMO:		// Karajorma
-		case OP_SET_PRIMARY_WEAPON:		// Karajorma
-		case OP_SET_SECONDARY_WEAPON:	// Karajorma
-		case OP_SET_NUM_COUNTERMEASURES: // Karajorma
-		case OP_LOCK_PRIMARY_WEAPON:
-		case OP_UNLOCK_PRIMARY_WEAPON:
-		case OP_LOCK_SECONDARY_WEAPON:
-		case OP_UNLOCK_SECONDARY_WEAPON:
-		case OP_CHANGE_SUBSYSTEM_NAME:
-		case OP_LOCK_AFTERBURNER:	// KeldorKatarn
-		case OP_UNLOCK_AFTERBURNER:	// KeldorKatarn
-		case OP_SET_AFTERBURNER_ENERGY: 
-		case OP_SET_WEAPON_ENERGY:
-		case OP_SET_SHIELD_ENERGY:
-		case OP_DISABLE_ETS:
-		case OP_ENABLE_ETS:
-			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
-			
-		case OP_SHIP_INVULNERABLE:
-		case OP_SHIP_VULNERABLE:
-		case OP_SHIP_BOMB_TARGETABLE:
-		case OP_SHIP_BOMB_UNTARGETABLE:
-		case OP_SHIP_GUARDIAN:
-		case OP_SHIP_NO_GUARDIAN:
-		case OP_SHIP_GUARDIAN_THRESHOLD:
-		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
-		case OP_SHIP_INVISIBLE:
-		case OP_SHIP_VISIBLE:
-		case OP_SHIP_STEALTHY:
-		case OP_SHIP_UNSTEALTHY:
-		case OP_FRIENDLY_STEALTH_INVISIBLE:
-		case OP_FRIENDLY_STEALTH_VISIBLE:
-		case OP_SHIP_SUBSYS_TARGETABLE:
-		case OP_SHIP_SUBSYS_UNTARGETABLE:
-		case OP_SHIP_SUBSYS_NO_REPLACE:
-		case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
-		case OP_SHIP_SUBSYS_VANISHED:
-		case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
-		case OP_WARP_BROKEN:
-		case OP_WARP_NOT_BROKEN:
-		case OP_WARP_NEVER:
-		case OP_WARP_ALLOWED:
-		case OP_SET_SUBSPACE_DRIVE:
+			return CHANGE_SUBCATEGORY_CARGO;
+
+
 		case OP_SET_ARMOR_TYPE:
-		case OP_ADD_TO_COLGROUP:
-		case OP_REMOVE_FROM_COLGROUP:
-		case OP_GET_COLGROUP_ID:
-		case OP_SHIP_EFFECT:
-			return CHANGE_SUBCATEGORY_SHIP_STATUS;
-			
+		case OP_WEAPON_SET_DAMAGE_TYPE:
+		case OP_SHIP_SET_DAMAGE_TYPE:
+		case OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE:
+		case OP_FIELD_SET_DAMAGE_TYPE:
+			return CHANGE_SUBCATEGORY_ARMOR_AND_DAMAGE_TYPES;
+
 		case OP_BEAM_FIRE:
 		case OP_BEAM_FIRE_COORDS:
 		case OP_BEAM_FREE:
@@ -26998,11 +27070,46 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
+
+
+		case OP_CHANGE_SHIP_CLASS:
+		case OP_DEACTIVATE_GLOW_MAPS:
+		case OP_ACTIVATE_GLOW_MAPS:
+		case OP_DEACTIVATE_GLOW_POINTS:
+		case OP_ACTIVATE_GLOW_POINTS:
+		case OP_DEACTIVATE_GLOW_POINT_BANK:
+		case OP_ACTIVATE_GLOW_POINT_BANK:
+		case OP_SET_THRUSTERS:
+		case OP_DONT_COLLIDE_INVISIBLE:
+		case OP_COLLIDE_INVISIBLE:
+		case OP_ADD_TO_COLGROUP:
+		case OP_REMOVE_FROM_COLGROUP:
+		case OP_GET_COLGROUP_ID:
+			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
+
+
+		case OP_SET_OBJECT_POSITION:
+		case OP_SET_OBJECT_ORIENTATION:
+		case OP_SET_OBJECT_FACING:
+		case OP_SET_OBJECT_FACING_OBJECT:
+		case OP_SET_OBJECT_SPEED_X:
+		case OP_SET_OBJECT_SPEED_Y:
+		case OP_SET_OBJECT_SPEED_Z:
+		case OP_SHIP_MANEUVER:
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
+		case OP_SET_MOBILE:
+		case OP_SET_IMMOBILE:
+			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
+
+		case OP_INVALIDATE_GOAL:
+		case OP_VALIDATE_GOAL:
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
 		case OP_END_CAMPAIGN:
 		case OP_SET_DEBRIEFING_TOGGLED:
+		case OP_ALLOW_TREASON:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
 		case OP_ALLOW_SHIP:
@@ -27016,30 +27123,6 @@ int get_subcategory(int sexp_id)
 		case OP_SET_RESPAWNS:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
-		case OP_DONT_COLLIDE_INVISIBLE:
-		case OP_COLLIDE_INVISIBLE:
-		case OP_CHANGE_SHIP_CLASS:
-		case OP_DEACTIVATE_GLOW_POINTS:
-		case OP_ACTIVATE_GLOW_POINTS:
-		case OP_DEACTIVATE_GLOW_MAPS:
-		case OP_ACTIVATE_GLOW_MAPS:
-		case OP_DEACTIVATE_GLOW_POINT_BANK:
-		case OP_ACTIVATE_GLOW_POINT_BANK:
-		case OP_SET_THRUSTERS:
-			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
-
-		case OP_SET_OBJECT_POSITION:
-		case OP_SET_OBJECT_ORIENTATION:
-		case OP_SET_OBJECT_FACING:
-		case OP_SET_OBJECT_FACING_OBJECT:
-		case OP_SET_OBJECT_SPEED_X:
-		case OP_SET_OBJECT_SPEED_Y:
-		case OP_SET_OBJECT_SPEED_Z:
-		case OP_SHIP_MANEUVER:
-		case OP_SHIP_ROT_MANEUVER:
-		case OP_SHIP_LAT_MANEUVER:
-			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
-
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_PLAY_SOUND_FROM_FILE:
@@ -27049,105 +27132,22 @@ int get_subcategory(int sexp_id)
 		case OP_ADJUST_AUDIO_VOLUME:
 			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
 
-		case OP_ADD_REMOVE_ESCORT:
-		case OP_AWACS_SET_RADIUS:
-		case OP_PRIMITIVE_SENSORS_SET_RANGE:
-		case OP_CAP_WAYPOINT_SPEED:
-		case OP_SET_SPECIAL_WARPOUT_NAME:
-		case OP_SHIP_CREATE:
-		case OP_WEAPON_CREATE:
-		case OP_SHIP_VANISH:
-		case OP_SHIP_VAPORIZE:
-		case OP_SHIP_NO_VAPORIZE:
-		case OP_SET_EXPLOSION_OPTION:
-		case OP_SHIELDS_ON:
-		case OP_SHIELDS_OFF:
-		case OP_SHIP_TAG:
-		case OP_SHIP_UNTAG:
-		case OP_DAMAGED_ESCORT_LIST:
-		case OP_DAMAGED_ESCORT_LIST_ALL:
-		case OP_SET_SUPPORT_SHIP:
-		case OP_SET_ARRIVAL_INFO:
-		case OP_SET_DEPARTURE_INFO:
-		case OP_SHIP_CHANGE_ALT_NAME:
-		case OP_SHIP_CHANGE_CALLSIGN:
-		case OP_SET_DEATH_MESSAGE:
-		case OP_EXPLOSION_EFFECT:
-		case OP_WARP_EFFECT:
-		case OP_SHIP_COPY_DAMAGE:
-		case OP_REMOVE_WEAPONS:
-		case OP_WEAPON_SET_DAMAGE_TYPE:
-		case OP_SHIP_SET_DAMAGE_TYPE:
-		case OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE:
-		case OP_FIELD_SET_DAMAGE_TYPE:
-		case OP_SET_MOBILE:
-		case OP_SET_IMMOBILE:
-			return CHANGE_SUBCATEGORY_SPECIAL;
-
-		case OP_SET_SKYBOX_MODEL:
-		case OP_SET_SKYBOX_ORIENT:
-		case OP_MISSION_SET_NEBULA:
-		case OP_ADD_BACKGROUND_BITMAP:
-		case OP_REMOVE_BACKGROUND_BITMAP:
-		case OP_ADD_SUN_BITMAP:
-		case OP_REMOVE_SUN_BITMAP:
-		case OP_NEBULA_CHANGE_STORM:
-		case OP_NEBULA_TOGGLE_POOF:
-		case OP_SET_AMBIENT_LIGHT:
-		case OP_SET_POST_EFFECT:
-		case OP_MISSION_SET_SUBSPACE:
-			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
-		case OP_HUD_SET_COORDS:
-		case OP_HUD_SET_FRAME:
-		case OP_HUD_SET_COLOR:
-		case OP_HUD_SET_MAX_TARGETING_RANGE:
-		case OP_HUD_DISPLAY_GAUGE:
 		case OP_HUD_SET_MESSAGE:
 		case OP_HUD_SET_DIRECTIVE:
+		case OP_HUD_SET_FRAME:
+		case OP_HUD_SET_COLOR:
+		case OP_HUD_SET_COORDS:
+		case OP_HUD_DISPLAY_GAUGE:
 		case OP_HUD_GAUGE_SET_ACTIVE:
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 		case OP_HUD_CLEAR_MESSAGES:
+		case OP_HUD_SET_MAX_TARGETING_RANGE:
 			return CHANGE_SUBCATEGORY_HUD;
-
-		case OP_CUTSCENES_SET_CUTSCENE_BARS:
-		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
-		case OP_CUTSCENES_FADE_IN:
-		case OP_CUTSCENES_FADE_OUT:
-		case OP_CUTSCENES_SET_CAMERA:
-		case OP_CUTSCENES_SET_CAMERA_FACING:
-		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
-		case OP_CUTSCENES_SET_CAMERA_FOV:
-		case OP_CUTSCENES_SET_CAMERA_HOST:
-		case OP_CUTSCENES_SET_CAMERA_POSITION:
-		case OP_CUTSCENES_SET_CAMERA_ROTATION:
-		case OP_CUTSCENES_SET_CAMERA_TARGET:
-		case OP_CUTSCENES_SET_FOV:
-		case OP_CUTSCENES_GET_FOV:
-		case OP_CUTSCENES_RESET_FOV:
-		case OP_CUTSCENES_FORCE_PERSPECTIVE:
-		case OP_CUTSCENES_RESET_CAMERA:
-		case OP_CUTSCENES_SHOW_SUBTITLE:
-		case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
-		case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
-		case OP_CLEAR_SUBTITLES:
-		case OP_CUTSCENES_SET_TIME_COMPRESSION:
-		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
-		case OP_SET_CAMERA_SHUDDER:
-		case OP_SUPERNOVA_START:
-		case OP_SUPERNOVA_STOP:
-			return CHANGE_SUBCATEGORY_CUTSCENES;
-
-		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
-		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
-		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
-		case OP_JUMP_NODE_SHOW_JUMPNODE:
-		case OP_JUMP_NODE_HIDE_JUMPNODE:
-			return CHANGE_SUBCATEGORY_JUMP_NODES;
 
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
@@ -27166,16 +27166,123 @@ int get_subcategory(int sexp_id)
 		case OP_NAV_USEAP:
 			return CHANGE_SUBCATEGORY_NAV;
 
+
+		case OP_CUTSCENES_SET_CUTSCENE_BARS:
+		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
+		case OP_CUTSCENES_FADE_IN:
+		case OP_CUTSCENES_FADE_OUT:
+		case OP_CUTSCENES_SET_CAMERA:
+		case OP_CUTSCENES_SET_CAMERA_POSITION:
+		case OP_CUTSCENES_SET_CAMERA_FACING:
+		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+		case OP_CUTSCENES_SET_CAMERA_ROTATION:
+		case OP_CUTSCENES_SET_CAMERA_HOST:
+		case OP_CUTSCENES_SET_CAMERA_TARGET:
+		case OP_CUTSCENES_SET_CAMERA_FOV:
+		case OP_CUTSCENES_SET_FOV:
+		case OP_CUTSCENES_GET_FOV:
+		case OP_CUTSCENES_RESET_FOV:
+		case OP_CUTSCENES_RESET_CAMERA:
+		case OP_CUTSCENES_SHOW_SUBTITLE:
+		case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
+		case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
+		case OP_CLEAR_SUBTITLES:
+		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+		case OP_SET_CAMERA_SHUDDER:
+		case OP_SUPERNOVA_START:
+		case OP_SUPERNOVA_STOP:
+			return CHANGE_SUBCATEGORY_CUTSCENES;
+
+
+		case OP_SET_SKYBOX_MODEL:
+		case OP_SET_SKYBOX_ORIENT:
+		case OP_MISSION_SET_NEBULA:
+		case OP_MISSION_SET_SUBSPACE:
+		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_REMOVE_BACKGROUND_BITMAP:
+		case OP_ADD_SUN_BITMAP:
+		case OP_REMOVE_SUN_BITMAP:
+		case OP_NEBULA_CHANGE_STORM:
+		case OP_NEBULA_TOGGLE_POOF:
+		case OP_SET_AMBIENT_LIGHT:
+			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
+
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
+		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
+		case OP_JUMP_NODE_SHOW_JUMPNODE:
+		case OP_JUMP_NODE_HIDE_JUMPNODE:
+			return CHANGE_SUBCATEGORY_JUMP_NODES;
+
+		case OP_SET_POST_EFFECT:
+		case OP_SHIP_EFFECT:
+		case OP_SHIP_CREATE:
+		case OP_WEAPON_CREATE:
+		case OP_SHIP_VANISH:
+		case OP_SHIP_VAPORIZE:
+		case OP_SHIP_NO_VAPORIZE:
+		case OP_SET_EXPLOSION_OPTION:
+		case OP_EXPLOSION_EFFECT:
+		case OP_WARP_EFFECT:
+		case OP_REMOVE_WEAPONS:
+		case OP_CUTSCENES_SET_TIME_COMPRESSION:
+		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+			return CHANGE_SUBCATEGORY_SPECIAL_EFFECTS;
+
+		case OP_MODIFY_VARIABLE:
+		case OP_GET_VARIABLE_BY_INDEX:
+		case OP_SET_VARIABLE_BY_INDEX:
+		case OP_INT_TO_STRING:
+		case OP_STRING_CONCATENATE:
+		case OP_STRING_GET_SUBSTRING:
+		case OP_STRING_SET_SUBSTRING:
+			return CHANGE_SUBCATEGORY_VARIABLES;
+
+		case OP_DAMAGED_ESCORT_LIST:
+		case OP_DAMAGED_ESCORT_LIST_ALL:
+		case OP_SET_SUPPORT_SHIP:
+		case OP_SCRIPT_EVAL:
+			return CHANGE_SUBCATEGORY_OTHER;
+
+
+		case OP_NUM_SHIPS_IN_BATTLE:
+		case OP_NUM_SHIPS_IN_WING:
+		case OP_DIRECTIVE_VALUE:
+			return STATUS_SUBCATEGORY_MISSION;
+
+		case OP_WAS_PROMOTION_GRANTED:
+		case OP_WAS_MEDAL_GRANTED:
+		case OP_SKILL_LEVEL_AT_LEAST:
+		case OP_NUM_KILLS:
+		case OP_NUM_ASSISTS:
+		case OP_NUM_TYPE_KILLS:
+		case OP_NUM_CLASS_KILLS:
+		case OP_SHIP_SCORE:
+		case OP_LAST_ORDER_TIME:
+			return STATUS_SUBCATEGORY_PLAYER;
+
 		case OP_NUM_PLAYERS:
 		case OP_TEAM_SCORE:
 		case OP_SHIP_DEATHS:
 		case OP_RESPAWNS_LEFT:
 		case OP_IS_PLAYER:
-		case OP_NUM_SHIPS_IN_BATTLE:
-		case OP_NUM_SHIPS_IN_WING:
-		case OP_LAST_ORDER_TIME:
-		case OP_DIRECTIVE_VALUE:
-			return STATUS_SUBCATEGORY_MULTIPLAYER_AND_MISSION_CONFIG;
+			return STATUS_SUBCATEGORY_MULTIPLAYER;
+
+		case OP_HAS_BEEN_TAGGED_DELAY:
+		case OP_IS_TAGGED:
+		case OP_IS_SHIP_VISIBLE:
+		case OP_IS_SHIP_STEALTHY:
+		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
+		case OP_IS_IFF:
+		case OP_IS_AI_CLASS:
+		case OP_IS_SHIP_CLASS:
+		case OP_IS_SHIP_TYPE:
+		case OP_CURRENT_SPEED:
+		case OP_GET_THROTTLE_SPEED:
+		case OP_IS_FACING:
+		case OP_IS_IN_MISSION:
+		case OP_NAV_ISLINKED:
+			return STATUS_SUBCATEGORY_SHIP_STATUS;
 
 		case OP_SHIELD_RECHARGE_PCT:
 		case OP_ENGINE_RECHARGE_PCT:
@@ -27200,22 +27307,6 @@ int get_subcategory(int sexp_id)
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 		case OP_IS_CARGO:
 			return STATUS_SUBCATEGORY_CARGO;
-			
-		case OP_HAS_BEEN_TAGGED_DELAY:
-		case OP_IS_TAGGED:
-		case OP_IS_SHIP_VISIBLE:
-		case OP_IS_SHIP_STEALTHY:
-		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
-		case OP_IS_IFF:
-		case OP_IS_AI_CLASS:
-		case OP_IS_SHIP_CLASS:
-		case OP_IS_SHIP_TYPE:
-		case OP_CURRENT_SPEED:
-		case OP_GET_THROTTLE_SPEED:
-		case OP_IS_FACING:
-		case OP_IS_IN_MISSION:
-		case OP_NAV_ISLINKED:
-			return STATUS_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
@@ -27242,16 +27333,15 @@ int get_subcategory(int sexp_id)
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_IN_BOX:
 			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
+
+		case OP_STRING_TO_INT:
+		case OP_STRING_GET_LENGTH:
+			return STATUS_SUBCATEGORY_VARIABLES;
+
+		case OP_SCRIPT_EVAL_STRING:
+		case OP_SCRIPT_EVAL_NUM:
+			return STATUS_SUBCATEGORY_OTHER;
 			
-		case OP_WAS_PROMOTION_GRANTED:
-		case OP_WAS_MEDAL_GRANTED:
-		case OP_NUM_KILLS:
-		case OP_NUM_ASSISTS:
-		case OP_NUM_TYPE_KILLS:
-		case OP_NUM_CLASS_KILLS:
-		case OP_SHIP_SCORE:
-		case OP_SKILL_LEVEL_AT_LEAST:
-			return STATUS_SUBCATEGORY_KILLS_AND_SCORING;
 
 		default:
 			return -1;		// sexp doesn't have a subcategory
@@ -30724,28 +30814,38 @@ op_menu_struct op_menu[] =
 // if people so choose - see sexp.h)
 op_menu_struct op_submenu[] =
 {
-	{	"Messaging and Mission Goals",	CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		},
-	{	"AI and IFF",					CHANGE_SUBCATEGORY_AI_AND_IFF						},
-	{	"Subsystems and Cargo",			CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO				},
+	{	"Messages and Personas",		CHANGE_SUBCATEGORY_MESSAGING						},
+	{	"AI Control",					CHANGE_SUBCATEGORY_AI_CONTROL						},
 	{	"Ship Status",					CHANGE_SUBCATEGORY_SHIP_STATUS						},
+	{	"Weapons, Shields, and Engines",	CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		},
+	{	"Subsystems and Health",		CHANGE_SUBCATEGORY_SUBSYSTEMS						},
+	{	"Cargo",						CHANGE_SUBCATEGORY_CARGO							},
+	{	"Armor and Damage Types",		CHANGE_SUBCATEGORY_ARMOR_AND_DAMAGE_TYPES			},
 	{	"Beams and Turrets",			CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS				},
-	{	"Mission and Campaign",			CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN				},
 	{	"Models and Textures",			CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES				},
 	{	"Coordinate Manipulation",		CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION			},
+	{	"Mission and Campaign",			CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN				},
 	{	"Music and Sound",				CHANGE_SUBCATEGORY_MUSIC_AND_SOUND					},
-	{	"Hud",							CHANGE_SUBCATEGORY_HUD								},
-	{	"Nav",							CHANGE_SUBCATEGORY_NAV								},
+	{	"HUD",							CHANGE_SUBCATEGORY_HUD								},
+	{	"Nav Points",					CHANGE_SUBCATEGORY_NAV								},
 	{	"Cutscenes",					CHANGE_SUBCATEGORY_CUTSCENES						},
+	{	"Backgrounds and Nebulae",		CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			},
 	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
-	{	"Backgrounds and Nebula",		CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			},
-	{	"Special",						CHANGE_SUBCATEGORY_SPECIAL							},
-	{	"Multiplayer and Mission Config",	STATUS_SUBCATEGORY_MULTIPLAYER_AND_MISSION_CONFIG	},
+	{	"Special Effects",				CHANGE_SUBCATEGORY_SPECIAL_EFFECTS					},
+	{	"Variables",					CHANGE_SUBCATEGORY_VARIABLES						},
+	{	"Other",						CHANGE_SUBCATEGORY_OTHER							},
+	{	"Mission",						STATUS_SUBCATEGORY_MISSION							},
+	{	"Player",						STATUS_SUBCATEGORY_PLAYER							},
+	{	"Multiplayer",						STATUS_SUBCATEGORY_MULTIPLAYER					},
+	{	"Ship Status",					STATUS_SUBCATEGORY_SHIP_STATUS						},
 	{	"Weapons, Shields, and Engines",	STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS	},
 	{	"Cargo",						STATUS_SUBCATEGORY_CARGO							},
-	{	"Ship Status",					STATUS_SUBCATEGORY_SHIP_STATUS						},
 	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},
 	{	"Distance and Coordinates",		STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			},
-	{	"Kills and Scoring",			STATUS_SUBCATEGORY_KILLS_AND_SCORING				},
+	{	"Variables",					STATUS_SUBCATEGORY_VARIABLES						},
+	{	"Other",						STATUS_SUBCATEGORY_OTHER							},
+
+
 };
 int Num_sexp_help = sizeof(Sexp_help) / sizeof(sexp_help_struct);
 int Num_op_menus = sizeof(op_menu) / sizeof(op_menu_struct);

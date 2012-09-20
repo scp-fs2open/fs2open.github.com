@@ -81,6 +81,8 @@
 extern int ascii_table[];
 extern int shifted_ascii_table[];
 
+extern int Multi_ping_timestamp;
+
 // network object management
 ushort Next_ship_signature;										// next permanent network signature to assign to an object
 ushort Next_asteroid_signature;									// next signature for an asteroid
@@ -4174,5 +4176,17 @@ void send_debrief_event() {
 		gameseq_post_event(GS_EVENT_DEBRIEF);
 	}
 }
+
+// sends out a ping if we are multi so that psnet2 doesn't kill us off for a long load
+void multi_send_anti_timeout_ping()
+{
+	if (Game_mode & GM_MULTIPLAYER) {
+		if ( (Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()) ) {
+			multi_ping_send_all();
+			Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
+		}
+	}
+}
+
 
 #pragma optimize("", on)

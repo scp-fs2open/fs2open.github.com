@@ -30,7 +30,7 @@
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
 #include "nebula/neb.h"
-#include "weapon/beam.h"
+#include "weapon/weapon.h"
 #include "network/multi.h"
 #include "menuui/optionsmenumulti.h"
 
@@ -921,7 +921,7 @@ void options_menu_init()
 	Assert(!Options_menu_inited);
 
 	// pause all sounds, since we could get here through the game
-	beam_pause_sounds();
+	weapon_pause_sounds();
 	//audiostream_pause_all();
 
 	Tab = 0;
@@ -1051,7 +1051,7 @@ void options_menu_close()
 	game_flush();
 	
 	// unpause all sounds, since we could be headed back to the game
-	beam_unpause_sounds();
+	weapon_unpause_sounds();
 	//audiostream_unpause_all();
 	
 	Options_menu_inited = 0;
