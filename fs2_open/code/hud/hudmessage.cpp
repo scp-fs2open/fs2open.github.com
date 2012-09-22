@@ -29,7 +29,7 @@
 #include "gamesnd/gamesnd.h"
 #include "mission/missiongoals.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/weapon.h"
+#include "weapon/beam.h"
 #include "sound/audiostr.h"
 #include "ship/ship.h"
 #include "parse/parselo.h"
@@ -920,7 +920,7 @@ void hud_scrollback_init()
 	scrollback_buttons *b;
 
 	// pause all game sounds
-	weapon_pause_sounds();
+	beam_pause_sounds();
 	audiostream_pause_all();
 
 	common_set_interface_palette("BriefingPalette");  // set the interface palette
@@ -976,7 +976,7 @@ void hud_scrollback_close()
 	game_flush();
 
 	// unpause all game sounds
-	weapon_unpause_sounds();
+	beam_unpause_sounds();
 	audiostream_unpause_all();
 
 }

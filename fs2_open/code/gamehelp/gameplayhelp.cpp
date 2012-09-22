@@ -17,7 +17,7 @@
 #include "gamesnd/gamesnd.h"
 #include "missionui/missionscreencommon.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/weapon.h"
+#include "weapon/beam.h"
 #include "sound/audiostr.h"
 
 
@@ -268,7 +268,7 @@ void gameplay_help_goto_next_screen()
 void gameplay_help_leave()
 {
 	// unpause all game sounds
-	weapon_unpause_sounds();
+	beam_unpause_sounds();
 	audiostream_unpause_all();
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
@@ -789,7 +789,7 @@ void gameplay_help_do_frame(float frametime)
 	}
 
 	// make sure game sounds are paused
-	weapon_pause_sounds();
+	beam_pause_sounds();
 	audiostream_pause_all();
 
 	k = Ui_window.process() & ~KEY_DEBUGGED;

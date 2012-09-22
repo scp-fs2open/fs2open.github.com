@@ -2084,7 +2084,7 @@ void lab_init()
 	GUIObject *cbp;
 	int x;
 
-	weapon_pause_sounds();
+	beam_pause_sounds();
 
 	if (gameseq_get_pushed_state() == GS_STATE_GAME_PLAY) {
 		Lab_in_mission = true;
@@ -2360,7 +2360,7 @@ void lab_close()
 	// reset detail levels to default
 	Detail.hardware_textures = Lab_detail_texture_save;
 
-	weapon_unpause_sounds();
+	beam_unpause_sounds();
 	//audiostream_unpause_all();
 	game_flush();
 }
