@@ -1491,6 +1491,13 @@ void debrief_render_stagenum()
 	gr_set_color_fast(&Color_white);
 }
 
+// render the mission difficulty at the specified y location
+void debrief_render_mission_difficulty(int y_loc)
+{	
+	gr_string(0, y_loc, XSTR( "Skill Level", 1509));
+	gr_string(Debrief_text_x2[gr_screen.res], y_loc, Skill_level_names(Game_skill_level));	
+}
+
 // render the mission time at the specified y location
 void debrief_render_mission_time(int y_loc)
 {
@@ -1545,18 +1552,21 @@ void debrief_stats_render()
 	font_height = gr_get_font_height();
 	y = 30;
 	
+	gr_set_color_fast(&Color_white);
+	
+	debrief_render_mission_difficulty(y);
+	y += 2*font_height;
+	
 	switch ( Current_stage ) {
 		case DEBRIEF_MISSION_STATS:
 			i = Current_stage - 1;
 			if ( i < 0 )
 				i = 0;
 
-			gr_set_color_fast(&Color_white);
-
 			// display mission completion time
 			debrief_render_mission_time(y);
 
-			y += 20;
+			y += 2*font_height;
 			show_stats_label(i, 0, y, font_height);
 			show_stats_numbers(i, Debrief_text_x2[gr_screen.res], y, font_height);
 			break;
@@ -1565,14 +1575,12 @@ void debrief_stats_render()
 			if ( i < 0 )
 				i = 0;
 
-			gr_set_color_fast(&Color_white);
 			show_stats_label(i, 0, y, font_height);
 			show_stats_numbers(i, Debrief_text_x2[gr_screen.res], y, font_height);
 			break;
 
 		case DEBRIEF_ALLTIME_KILLS:
 		case DEBRIEF_MISSION_KILLS:
-			gr_set_color_fast(&Color_white);
 			i = Text_offset;
 			while (y + font_height <= Debrief_text_wnd_coords[gr_screen.res][3]) {
 				if (i >= Num_text_lines)
