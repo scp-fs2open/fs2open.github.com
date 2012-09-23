@@ -4300,7 +4300,7 @@
 		34BE723908C940D200673B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = "3.6.13-trunk";
 				DEAD_CODE_STRIPPING = NO;
@@ -4332,7 +4332,7 @@
 		34BE723A08C940D200673B45 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = "3.6.13-trunk";
 				DEAD_CODE_STRIPPING = YES;
@@ -4506,7 +4506,7 @@
 		915F25D00F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = "3.6.13-trunk";
 				DEAD_CODE_STRIPPING = NO;
@@ -4704,7 +4704,7 @@
 		915F25D90F8AA7D700521775 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = "3.6.13-trunk";
 				DEAD_CODE_STRIPPING = YES;
