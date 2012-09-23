@@ -22,6 +22,7 @@ int Default_ship_select_effect = 2;
 int Default_weapon_select_effect = 2;
 bool Enable_external_shaders = false;
 bool Full_color_head_anis = false;
+bool Flag_decides_techroom_weapons = false;
 
 
 void parse_mod_table(char *filename)
@@ -128,6 +129,12 @@ void parse_mod_table(char *filename)
 			mprintf(("Game Settings Table: External shaders are enabled\n"));
 		else
 			mprintf(("Game Settings Table: External shaders are DISABLED\n"));
+	}
+	
+	optional_string("#MULTIPLAYER SETTINGS"); 
+
+	if (optional_string("$In tech database flag decides what is in tech database:")) { 
+		stuff_boolean(&Flag_decides_techroom_weapons);
 	}
 	
 	optional_string("#OTHER SETTINGS"); 
