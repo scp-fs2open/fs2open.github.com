@@ -139,6 +139,11 @@ $Use Alternate Chaining Behavior: NO									\n\
 ;; When set, this enables the loading of external shader files			\n\
 $Enable external shaders: NO											\n\
 																		\n\
+#MULTIPLAYER SETTINGS													\n\
+																		\n\
+;; When set, the game doesn't ignore the \"in tech database\" in multi	\n\
+$In tech database flag decides what is in tech database: NO				\n\
+																		\n\
 																		\n\
 #OTHER SETTINGS															\n\
 																		\n\

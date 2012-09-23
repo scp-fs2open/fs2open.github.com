@@ -30,6 +30,8 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "mod_table/mod_table.h"
+
 
 
 
@@ -784,7 +786,12 @@ void techroom_change_tab(int num)
 				}
 
 				Weapon_list_size = 0;
-				mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
+				if (Flag_decides_techroom_weapons) {
+					mask = WIF_IN_TECH_DATABASE;
+				}
+				else {
+					mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
+				}
 				mask2 = WIF2_DEFAULT_IN_TECH_DATABASE;
 
 				for (i=0; i<Num_weapon_types; i++)
