@@ -124,8 +124,8 @@ int Multi_paused = 0;
 
 extern void game_flush();
 
-extern void beam_pause_sounds();
-extern void beam_unpause_sounds();
+extern void weapon_pause_sounds();
+extern void weapon_unpause_sounds();
 
 extern void audiostream_pause_all();
 extern void audiostream_unpause_all();
@@ -326,7 +326,7 @@ void multi_pause_init()
 		return;
 
 	// pause all beam weapon sounds
-	beam_pause_sounds();
+	weapon_pause_sounds();
 
 	// standalone shouldn't be doing any freespace interface stuff
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -471,8 +471,8 @@ void multi_pause_close(int end_mission)
 		audiostream_unpause_all();	
 	}
 
-	// unpause all beam weapon sounds
-	beam_unpause_sounds();
+	// unpause beam weapon sounds
+	weapon_unpause_sounds();
 
 	// eat keys timestamp
 	Multi_pause_eat = f2fl(timer_get_fixed_seconds());
