@@ -343,7 +343,9 @@ sexp_oper Operators[] = {
 	{ "disable-builtin-messages",	OP_DISABLE_BUILTIN_MESSAGES,	0,	INT_MAX,},	// Karajorma
 	{ "enable-builtin-messages",	OP_ENABLE_BUILTIN_MESSAGES,		0,	INT_MAX,},	// Karajorma
 	{ "set-persona",				OP_SET_PERSONA,					2,	INT_MAX,},	// Karajorma
-	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
+	{ "set-death-message",			OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
+	{ "set-mission-mood",			OP_SET_MISSION_MOOD,			1, 1 },			// Karajorma
+
 
 	//AI Control Sub-Category
 	{ "add-goal",					OP_ADD_GOAL,					2, 2, },
@@ -2654,6 +2656,23 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (i == Num_personas) {
 					return SEXP_CHECK_INVALID_PERSONA_NAME; 
 				}
+				break;
+
+			case OPF_MISSION_MOOD:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				for (i = 0; i < (int)Builtin_moods.size(); i++) {
+					if (!strcmp(Builtin_moods[i].c_str(), CTEXT(node))) {
+						break;
+					}
+				}
+
+				if (i == Builtin_moods.size()) {
+					return SEXP_CHECK_INVALID_MISSION_MOOD;
+				}
+
 				break;
 
 			case OPF_FONT:
@@ -12587,6 +12606,21 @@ void multi_sexp_set_persona()
 	}
 }
 
+void sexp_set_mission_mood (int node)
+{
+	char *mood; 
+
+	mood = CTEXT(node);
+	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
+		if (!strcmp(iter->c_str(), mood)) {
+			Current_mission_mood = iter - Builtin_moods.begin();
+			return;
+		}
+	}
+
+	Warning(LOCATION, "Sexp-mission-mood attempted to set mood %s which does not exist in messages.tbl", mood); 
+}
+
 int sexp_weapon_fired_delay(int node, int op_num)
 {
 	ship *shipp;
@@ -21591,6 +21625,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_MISSION_MOOD:
+				sexp_set_mission_mood (node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SEND_MESSAGE_LIST:
 				sexp_send_message_list(node);
 				sexp_val = SEXP_TRUE;
@@ -23689,6 +23728,7 @@ int query_operator_return_type(int op)
 		case OP_UNLOCK_AFTERBURNER:
 		case OP_RESET_ORDERS:
 		case OP_SET_PERSONA:
+		case OP_SET_MISSION_MOOD:
 		case OP_CHANGE_SUBSYSTEM_NAME:
 		case OP_SET_RESPAWNS:
 		case OP_SET_AFTERBURNER_ENERGY: 
@@ -24626,6 +24666,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_PERSONA;
 			else
 				return OPF_SHIP;
+
+		case OP_SET_MISSION_MOOD:
+			return OPF_MISSION_MOOD;
 
 		case OP_SELF_DESTRUCT:
 			return OPF_SHIP;
@@ -26165,6 +26208,9 @@ char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_ANIMATION_TYPE:
 			return "Invalid animation type";
 
+		case SEXP_CHECK_INVALID_MISSION_MOOD:
+			return "Invalid mission mood";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -26937,6 +26983,7 @@ int get_subcategory(int sexp_id)
 		case OP_DISABLE_BUILTIN_MESSAGES:
 		case OP_SET_DEATH_MESSAGE:
 		case OP_SET_PERSONA:
+		case OP_SET_MISSION_MOOD:
 			return CHANGE_SUBCATEGORY_MESSAGING;
 
 
@@ -28348,6 +28395,12 @@ sexp_help_struct Sexp_help[] = {
 		"If no arguments are supplied all built in messages are disabled.\r\n"
 		"Using the Any Wingman option silences for all ships in wings.\r\n"
 		"\tAll:\tName of ship to be silenced." },
+
+	// Karajorma	
+	{ OP_SET_MISSION_MOOD, "set Mission Mood (Action operator)\r\n"
+		"\tSets the mood of the mission, this affects the choice of builtin messages sent by wingmen\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tMission mood (from messages.tbl) to use." },
 
 	// Karajorma	
 	{ OP_SET_PERSONA, "Set Persona (Action operator)\r\n"

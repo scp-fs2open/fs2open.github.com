@@ -106,6 +106,7 @@ class waypoint_list;
 #define OPF_DAMAGE_TYPE			79		// FUBAR - Damage type or <none>
 #define OPF_SHIP_EFFECT			80		// The E - per-ship effects, as defined in post-processing.tbl
 #define OPF_ANIMATION_TYPE		81		// Goober5000 - as defined in modelanim.h
+#define OPF_MISSION_MOOD		82		// Karajorma - Moods determine which builtin messages will be sent
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -699,6 +700,7 @@ class waypoint_list;
 #define OP_DESTROY_INSTANTLY				(0x0015 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Admiral MS
 #define OP_DESTROY_SUBSYS_INSTANTLY			(0x0016 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Admiral MS
 #define OP_DEBUG							(0x0017 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_SET_MISSION_MOOD					(0x0018 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 
 // defined for AI goals
@@ -956,6 +958,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_AUDIO_VOLUME_OPTION	-152
 #define SEXP_CHECK_INVALID_HUD_GAUGE			-153
 #define SEXP_CHECK_INVALID_ANIMATION_TYPE		-154
+#define SEXP_CHECK_INVALID_MISSION_MOOD			-155
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
