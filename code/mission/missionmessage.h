@@ -63,6 +63,9 @@ typedef struct builtin_message {
 	int				min_delay;
 } builtin_message;
 
+extern SCP_vector<SCP_string> Builtin_moods;
+extern int Current_mission_mood;
+
 // this number in this define should match the number of elements in the next array
 #define MAX_BUILTIN_MESSAGE_TYPES	45
 
@@ -119,6 +122,8 @@ typedef struct MissionMessage {
 	char	message[MESSAGE_LENGTH];			// actual message
 	int	persona_index;							// which persona says this message
 	int	multi_team;								// multiplayer team filter (important for TvT only)
+	int				mood;
+	SCP_vector<int> excluded_moods;
 
 	// unions for avi/wave information.  Because of issues with Fred, we are using
 	// the union to specify either the index into the avi or wave arrays above,
