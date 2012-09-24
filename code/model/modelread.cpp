@@ -4752,7 +4752,7 @@ int model_create_bsp_collision_tree()
 bsp_collision_tree *model_get_bsp_collision_tree(int tree_index)
 {
 	Assert(tree_index >= 0);
-	Assert(tree_index < Bsp_collision_tree_list.size());
+	Assert((uint) tree_index < Bsp_collision_tree_list.size());
 
 	return &Bsp_collision_tree_list[tree_index];
 }
