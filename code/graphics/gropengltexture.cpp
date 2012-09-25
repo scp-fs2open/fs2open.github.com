@@ -1388,7 +1388,7 @@ int opengl_export_image( int slot, int width, int height, int alpha, int num_mip
 	return m_offset;
 }
 
-void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data)
+void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, int height)
 {
 	GLenum texFormat, glFormat;
 	int n = bm_get_cache_slot (bitmap_handle, 1);
@@ -1412,33 +1412,33 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data)
 	if (byte_mult == 1) {
 		texFormat = GL_UNSIGNED_BYTE;
 		glFormat = GL_ALPHA;
-		texmem = (ubyte *) vm_malloc (t->w*t->h*byte_mult);
+		texmem = (ubyte *) vm_malloc (width*height*byte_mult);
 		ubyte* texmemp = texmem;
 
 		Assert( texmem != NULL );
 
 		int luminance = 0;
-		for (int i = 0; i < t->h; i++) {
-			for (int j = 0; j < t->w; j++) {
-				if ( (i < t->h) && (j < t->w) ) {
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				if ( (i < height) && (j < width) ) {
 					if ( true_byte_mult > 1 ) {
 						luminance = 0;
 
 						if ( true_byte_mult > 3 ) {
 							for (int k = 0; k < 3; k++) {
-								luminance += data[(i*t->w+j)*true_byte_mult+k];
+								luminance += data[(i*width+j)*true_byte_mult+k];
 							}
 
-							*texmemp++ = (ubyte)((luminance / 3) * (data[(i*t->w+j)*true_byte_mult+3]/255.0f));
+							*texmemp++ = (ubyte)((luminance / 3) * (data[(i*width+j)*true_byte_mult+3]/255.0f));
 						} else {
 							for (int k = 0; k < true_byte_mult; k++) {
-								luminance += data[(i*t->w+j)*true_byte_mult+k]; 
+								luminance += data[(i*width+j)*true_byte_mult+k]; 
 							}
 
 							*texmemp++ = (ubyte)(luminance / true_byte_mult);
 						}
 					} else {
-						*texmemp++ = GL_xlat[data[i*t->w+j]];
+						*texmemp++ = GL_xlat[data[i*width+j]];
 					}
 				} else {
 					*texmemp++ = 0;
@@ -1447,7 +1447,7 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data)
 		}
 	}
 	glBindTexture(GL_TEXTURE_2D, t->texture_id);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t->w, t->h, glFormat, texFormat, (texmem)?texmem:data);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, glFormat, texFormat, (texmem)?texmem:data);
 	if (texmem != NULL)
 		vm_free(texmem);
 }
