@@ -478,7 +478,7 @@ void gr_stub_flush_data_states()
 {
 }
 
-void gr_stub_update_texture(int bitmap_handle, int bpp, ubyte* data)
+void gr_stub_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, int height)
 {
 }
 

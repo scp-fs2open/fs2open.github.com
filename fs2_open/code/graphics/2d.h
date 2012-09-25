@@ -511,7 +511,7 @@ typedef struct screen {
 	void (*gf_enable_team_color)();
 	void (*gf_disable_team_color)();
 
-	void (*gf_update_texture)(int bitmap_handle, int bpp, ubyte* data);
+	void (*gf_update_texture)(int bitmap_handle, int bpp, ubyte* data, int width, int height);
 } screen;
 
 // handy macro
@@ -838,7 +838,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
 
 // texture update functions
 ubyte* gr_opengl_get_texture_update_pointer(int bitmap_handle);
-void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data);
+void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, int height);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
