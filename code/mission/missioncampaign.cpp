@@ -63,6 +63,7 @@ char *Campaign_descs[MAX_CAMPAIGNS] = { NULL };
 int	Num_campaigns;
 int Campaign_file_missing;
 int Campaign_names_inited = 0;
+SCP_vector<SCP_string> Ignored_campaigns;
 
 char Default_campaign_file_name[MAX_FILENAME_LEN - 4]  = { 0 };
 
@@ -105,6 +106,8 @@ campaign Campaign;
 #define CAMPAIGN_STATS_FILE_VERSION					2
 #define CAMPAIGN_STATS_FILE_COMPATIBLE_VERSION	1
 #define CAMPAIGN_STATS_FILE_ID						0xabbadaad
+
+bool campaign_is_ignored(char *filename, bool add_extension = false);
 
 /**
  * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
@@ -261,6 +264,11 @@ int mission_campaign_maybe_add(char *filename)
 	int type, max_players;
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
+		// don't add ignored campaigns
+		if (campaign_is_ignored(filename)) {
+			return 0;
+		}
+
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
 			Campaign_names[Num_campaigns] = vm_strdup(name);
 
@@ -428,6 +436,11 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	char name[NAME_LENGTH], type[NAME_LENGTH];
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
+
+	if (campaign_is_ignored(filename)) {
+		Campaign_file_missing = 1;
+		return CAMPAIGN_ERROR_IGNORED;
+	}
 
 	// open localization
 	lcl_ext_open();	
@@ -2338,6 +2351,28 @@ void mission_campaign_save_persistent( int type, int sindex )
 		Int3();
 }
 
+bool campaign_is_ignored(char *filename, bool add_extension)
+{
+	bool current_campaign_ignored = false;
+	int i;
+	char campaign_name[NAME_LENGTH] = {""};
+
+	strcpy_s(campaign_name, filename);
+
+	if (add_extension) {
+		strcat_s(campaign_name, FS_CAMPAIGN_FILE_EXT);
+	}
+
+	for (i = 0; i < (int)Ignored_campaigns.size(); i++) {
+		if (!stricmp (campaign_name, Ignored_campaigns[i].c_str())) {
+			current_campaign_ignored = true;
+			break;
+		}
+	}
+	
+	return current_campaign_ignored;
+}
+
 // returns 0: loaded, !0: error
 int mission_load_up_campaign( player *pl )
 {
@@ -2345,27 +2380,32 @@ int mission_load_up_campaign( player *pl )
 		pl = Player;
 
 	if ( strlen(pl->current_campaign) ) {
-		return mission_campaign_load(pl->current_campaign, pl);
-	} else {
-		int rc = mission_campaign_load(Default_campaign_file_name, pl);
-
-		// if the builtin campaign is missing/corrupt then try and fall back on whatever is available
-		if (rc) {
-			// no descriptions, and no sorting since we want the actual first entry found
-			mission_campaign_build_list(false, false);
-
-			if ( (Campaign_file_names[0] != NULL) && strlen(Campaign_file_names[0]) )
-				rc = mission_campaign_load(Campaign_file_names[0], pl);
-
-			mission_campaign_free_list();
+		if (!campaign_is_ignored(pl->current_campaign, true)) {
+			return mission_campaign_load(pl->current_campaign, pl);
 		}
-		
-		if (!rc) {
-			pl->main_hall = Campaign.missions[0].main_hall;
-			strcpy_s(pl->current_campaign, Campaign.filename);
+		else {
+			Campaign_file_missing = 1;
 		}
-		return rc;
 	}
+
+	int rc = mission_campaign_load(Default_campaign_file_name, pl);
+
+	// if the builtin campaign is missing/corrupt then try and fall back on whatever is available
+	if (rc) {
+		// no descriptions, and no sorting since we want the actual first entry found
+		mission_campaign_build_list(false, false);
+
+		if ( (Campaign_file_names[0] != NULL) && strlen(Campaign_file_names[0]) )
+			rc = mission_campaign_load(Campaign_file_names[0], pl);
+
+		mission_campaign_free_list();
+	}
+	
+	if (!rc) {
+		pl->main_hall = Campaign.missions[0].main_hall;
+		strcpy_s(pl->current_campaign, Campaign.filename);
+	}
+	return rc;
 }
 
 /**
