@@ -24,6 +24,7 @@ struct sexp_variable;
 #define CAMPAIGN_ERROR_CORRUPT			-1
 #define CAMPAIGN_ERROR_SEXP_EXHAUSTED	-2
 #define CAMPAIGN_ERROR_MISSING			-3
+#define CAMPAIGN_ERROR_IGNORED			-4
 
 // types of campaigns -- these defines match the string literals listed below which
 // are found in the campaign files.  I don't think that we need campaigns for furball
@@ -143,6 +144,7 @@ extern char *Campaign_file_names[MAX_CAMPAIGNS];
 extern char *Campaign_descs[MAX_CAMPAIGNS];
 extern int	Num_campaigns;
 extern int	Campaign_names_inited;
+extern SCP_vector<SCP_string> Ignored_campaigns;
 
 extern char Default_campaign_file_name[MAX_FILENAME_LEN - 4];
 
