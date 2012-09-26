@@ -21,23 +21,17 @@
 struct anim;
 struct anim_instance;
 
-typedef struct {
+struct cmd_brief_stage {
 	SCP_string text;  // text to display
 	char ani_filename[MAX_FILENAME_LEN];  // associated ani file to play
-	//char tech_anim_filename[MAX_FILENAME_LEN];	//duh
-	//anim* animation;	// ptr to the animation
-	//generic_anim animation;	// animation info
-	//anim *cmd_anim;
-	//anim_instance *cmd_anim_instance;
-	//int anim_ref;  // potential reference to another index (use it's anim instead of this's)
-	char wave_filename[MAX_FILENAME_LEN];
+	char wave_filename[MAX_FILENAME_LEN]; // associated wav file to play
 	int wave;  // instance number of above
-} cmd_brief_stage;
+};
 
-typedef struct {
+struct cmd_brief {
 	int num_stages;
 	cmd_brief_stage stage[CMD_BRIEF_STAGES_MAX];
-} cmd_brief;
+};
 
 extern cmd_brief Cmd_briefs[MAX_TVT_TEAMS];
 extern cmd_brief *Cur_cmd_brief;  // pointer to one of the Cmd_briefs elements (the active one)
