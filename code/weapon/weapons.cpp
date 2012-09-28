@@ -3278,7 +3278,6 @@ void weapon_do_post_parse()
 	weapon_info *wip;
 	int first_cmeasure_index = -1;
 	int i;
-	char *weakp;
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_clean_entries();
@@ -3301,18 +3300,12 @@ void weapon_do_post_parse()
 		if ( (first_cmeasure_index < 0) && (wip->wi_flags & WIF_CMEASURE) )
 			first_cmeasure_index = i;
 
-		// if we are a "#weak" weapon then popup a warning if we don't have the "player allowed" flag set
-		if ( !(wip->wi_flags & WIF_PLAYER_ALLOWED) && ((weakp = stristr(wip->name, "#weak")) != NULL) ) {
-			int idx = -1;
-			char non_weak[NAME_LENGTH];
-			memset(non_weak, 0, NAME_LENGTH);	// Valathil
-
-			strncpy(non_weak, wip->name, weakp - wip->name);	// Valathil taking into account the possibility of another suffix after #weak
-			idx = weapon_info_lookup(non_weak);
-
-			// only add the flag if the non-weak version is also player-allowed
-			if ( (idx >= 0) && (Weapon_info[idx].wi_flags & WIF_PLAYER_ALLOWED) ) {
-				mprintf(("Weapon '%s' requires the \"player allowed\" flag, but it's not listed!  Adding it by default.\n", wip->name));
+		// if we are a "weak" weapon then popup a warning if we don't have the "player allowed" flag set
+		weapon_info *base_wip = NULL;
+		if ( !(wip->wi_flags & WIF_PLAYER_ALLOWED) && weapon_is_weak_variant(wip, &base_wip) ) {
+			// only add the flag if the non-weak version is player-allowed
+			if (base_wip->wi_flags & WIF_PLAYER_ALLOWED) {
+				mprintf(("Weapon variant '%s' requires the \"player allowed\" flag because its base weapon '%s' has it!  Adding it by default.\n", wip->name, base_wip->name));
 				wip->wi_flags |= WIF_PLAYER_ALLOWED;
 			}
 		}
@@ -6708,8 +6701,6 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 
 void pause_in_flight_sounds()
 {
-	beam *moveup = NULL;
-
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
 		if (Weapons[i].objnum != -1)
@@ -6738,4 +6729,25 @@ void weapon_unpause_sounds()
 {
 	// Pause all beam sounds
 	beam_unpause_sounds();
+}
+
+bool weapon_is_weak_variant(weapon_info *wip, weapon_info **base_wip)
+{
+	const char *weakp = stristr(wip->name, "#weak");
+	if (weakp == NULL)
+		return false;
+
+	char non_weak[NAME_LENGTH];
+	memset(non_weak, 0, NAME_LENGTH);	// Valathil
+	strncpy(non_weak, wip->name, weakp - wip->name);	// Valathil taking into account the possibility of another suffix after #weak
+
+	int idx = weapon_info_lookup(non_weak);
+	if (idx >= 0)
+	{
+		if (base_wip != NULL)
+			*base_wip = &Weapon_info[idx];
+		return true;
+	}
+
+	return false;
 }
