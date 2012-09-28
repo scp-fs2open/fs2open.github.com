@@ -2669,7 +2669,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 				}
 
-				if (i == Builtin_moods.size()) {
+				if (i == (int)Builtin_moods.size()) {
 					return SEXP_CHECK_INVALID_MISSION_MOOD;
 				}
 
