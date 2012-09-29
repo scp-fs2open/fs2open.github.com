@@ -2758,6 +2758,12 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			else
 				return 0;
 
+		case OPF_MISSION_MOOD:
+			if (Builtin_moods.empty()) 
+				return 0;
+			else
+				return 1;
+
 		default:
 			Int3();
 
@@ -4385,6 +4391,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_effect();
 			break;
 
+		case OPF_MISSION_MOOD:
+			list = get_listing_opf_mission_moods();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5856,6 +5866,18 @@ sexp_list_item *sexp_tree::get_listing_opf_weapon_banks()
 
 	return head.next;
 }
+
+sexp_list_item *sexp_tree::get_listing_opf_mission_moods()
+{
+	sexp_list_item head;
+	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
+		head.add_data_dup(iter->c_str());
+	}
+
+	return head.next;
+}
+
+
 
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type

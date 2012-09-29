@@ -657,4 +657,10 @@ void weapon_pause_sounds();
 // Unpauses all running weapon sounds
 void weapon_unpause_sounds();
 
+/**
+ * Returns whether a weapon is a weak version of another weapon (e.g. Harpoon#Weak for Harpoon).  If base_wip
+ * is supplied (i.e. non-null) and the weapon is weak, base_wip is assigned the other weapon.
+ */
+bool weapon_is_weak_variant(weapon_info *wip, weapon_info **base_wip = NULL);
+
 #endif

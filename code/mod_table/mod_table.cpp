@@ -71,6 +71,14 @@ void parse_mod_table(char *filename)
 		strcpy_s(Default_campaign_file_name, temp);
 	}
 
+	if (optional_string("#Ignored Campaign File Names")) {
+		SCP_string campaign_name; 
+		while (optional_string("$Campaign File Name:")) {
+			stuff_string(campaign_name, F_NAME); 
+			Ignored_campaigns.push_back(campaign_name); 
+		}
+	}
+
 	optional_string("#HUD SETTINGS");
 
 	// how long should the game wait before displaying a directive?

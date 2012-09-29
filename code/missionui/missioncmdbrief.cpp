@@ -9,24 +9,24 @@
 
 
 
+#include "anim/animplay.h"
+#include "anim/packunpack.h"
+#include "gamehelp/contexthelp.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
+#include "io/key.h"
+#include "io/timer.h"
+#include "mission/missionbriefcommon.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
-#include "ui/uidefs.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesequence/gamesequence.h"
-#include "io/key.h"
-#include "graphics/font.h"
-#include "mission/missionbriefcommon.h"
 #include "missionui/redalert.h"
-#include "sound/audiostr.h"
-#include "io/timer.h"
-#include "gamesnd/eventmusic.h"
 #include "playerman/player.h"
-#include "gamehelp/contexthelp.h"
-#include "globalincs/alphacolors.h"
-#include "anim/packunpack.h"
-#include "anim/animplay.h"
+#include "sound/audiostr.h"
 #include "sound/fsspeech.h"
+#include "ui/uidefs.h"
 
 
 
@@ -91,18 +91,6 @@ int Cmd_stage_y[GR_NUM_RESOLUTIONS] =
 	90,		// GR_640
 	145		// GR_1024
 };
-
-/*
-int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] =
-{
-	{
-		26, 258, 441, 204		// GR_640
-	},
-	{
-		155, 475, 706, 327		// GR_1024
-	}
-};
-*/
 
 // Goober5000 - center coordinates only
 int Cmd_image_center_coords[GR_NUM_RESOLUTIONS][2] =
@@ -183,19 +171,15 @@ static UI_WINDOW Ui_window;
 static int Cmd_brief_background_bitmap;					// bitmap for the background of the cmd_briefing
 static int Cur_stage;
 static int Cmd_brief_inited = 0;
-// static int Cmd_brief_ask_for_cd;
 static int Voice_good_to_go = 0;
 static int Voice_started_time = 0;
 static int Voice_ended_time;
-//static int Anim_playing_id = -1;
-//static anim_instance *Cur_anim_instance = NULL;
 static generic_anim Cur_Anim;
 static char *Cur_anim_filename = "~~~~";
 
 static int Cmd_brief_last_voice;
 static int Cmd_brief_last_stage;
 static int Cmd_brief_paused = 0;
-//static int Palette_bmp = -1;
 
 static int Uses_scroll_buttons = 0;
 
@@ -262,7 +246,10 @@ int cmd_brief_check_stage_done()
 	return 0;
 }
 
-// start playback of the voice for a particular briefing stage
+/**
+ * Start playback of the voice for a particular briefing stage
+ * @param stage_num Particular briefing stage
+ */
 void cmd_brief_voice_play(int stage_num)
 {
 	int voice = -1;
@@ -325,7 +312,9 @@ void cmd_brief_voice_play(int stage_num)
 	}
 }
 
-// called to leave the command briefing screen
+/**
+ * called to leave the command briefing screen
+ */
 void cmd_brief_exit()
 {
 	// I know, going to red alert from cmd brief is stupid, but we have stupid fredders
@@ -336,16 +325,11 @@ void cmd_brief_exit()
 	}
 }
 
-//doesn't actually stop playing ANIs any more, just stops audio
-void cmd_brief_stop_anim(int id)
+/**
+ * Doesn't actually stop playing ANIs any more, just stops audio
+ */
+void cmd_brief_stop_anim()
 {
-	/*
-	if (Cur_anim_instance && (id != Anim_playing_id)) {
-		anim_stop_playing(Cur_anim_instance);
-		Cur_anim_instance = NULL;
-	}
-	*/
-
 	Voice_good_to_go = 0;
 	if (Cmd_brief_last_voice >= 0) {
 		audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
@@ -360,7 +344,7 @@ void cmd_brief_stop_anim(int id)
 void cmd_brief_new_stage(int stage)
 {
 	if (stage < 0) {
-		cmd_brief_stop_anim(-1);
+		cmd_brief_stop_anim();
 		Cur_stage = -1;
 	}
 
@@ -391,15 +375,14 @@ void cmd_brief_new_stage(int stage)
 	}
 
 	//resetting the audio here
-	cmd_brief_stop_anim(-1);
+	cmd_brief_stop_anim();
 
 	Top_cmd_brief_text_line = 0;
 }
 
 void cmd_brief_hold()
 {
-	cmd_brief_stop_anim(-1);
-	//Anim_playing_id = -1;
+	cmd_brief_stop_anim();
 }
 
 void cmd_brief_unhold()
@@ -567,13 +550,6 @@ void cmd_brief_init(int team)
 	gr_flip();
 	Mouse_hidden--;
 
-	/*
-	Palette_bmp = bm_load("BarracksPalette");	//CommandBriefPalette");
-	Assert(Palette_bmp);
-	bm_get_palette(Palette_bmp, Palette, Palette_name);  // get the palette for this bitmap
-	gr_set_palette(Palette_name, Palette, 1);
-	*/
-
 	// first determine which layout to use
 	Uses_scroll_buttons = 1;	// assume true
 	Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);	// try to load extra one first
@@ -585,8 +561,6 @@ void cmd_brief_init(int team)
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Cmd_brief_mask[Uses_scroll_buttons][gr_screen.res]);
-
-	// Cmd_brief_ask_for_cd = 1;
 
 	for (i=0; i<NUM_CMD_BRIEF_BUTTONS; i++) {
 		b = &Cmd_brief_buttons[gr_screen.res][i];
@@ -627,7 +601,6 @@ void cmd_brief_init(int team)
 		cmd_brief_ani_wave_init(i);
 
 	cmd_brief_init_voice();
-	//Cur_anim_instance = NULL;
 	cmd_brief_new_stage(0);
 	Cmd_brief_paused = 0;
 	Cmd_brief_inited = 1;
@@ -638,7 +611,7 @@ void cmd_brief_close()
 	int i;
 
 	if (Cmd_brief_inited) {
-		cmd_brief_stop_anim(-1);
+		cmd_brief_stop_anim();
 		generic_anim_unload(&Cur_Anim);
 		for (i=0; i<Cur_cmd_brief->num_stages; i++) {
 			if (Cur_cmd_brief->stage[i].wave >= 0)
@@ -656,11 +629,6 @@ void cmd_brief_close()
 		help_overlay_unload(CMD_BRIEF_OVERLAY);
 
 		Ui_window.destroy();
-		/*
-		if (Palette_bmp){
-			bm_unload(Palette_bmp);
-		}
-		*/
 
 		game_flush();
 		Cmd_brief_inited = 0;
