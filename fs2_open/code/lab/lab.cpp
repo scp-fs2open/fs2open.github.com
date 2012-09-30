@@ -39,6 +39,7 @@
 #define LAB_FLAG_SUBMODEL_ROTATE	(1<<3)	// do rotation for any rotating ship subobjects
 #define LAB_FLAG_LIGHTNING_ARCS		(1<<4)	// show damage lightning
 #define LAB_FLAG_FULLY_LOAD			(1<<5)	// use create_ship() to test the ships
+#define LAB_FLAG_SHOW_WEAPONS		(1<<6)	// determines if external weapons models are displayed
 
 // modes
 #define LAB_MODE_NONE		0	// not showing anything
@@ -70,9 +71,11 @@ static int Lab_selected_index = -1;
 static int Lab_last_selected_ship = -1;
 
 static int Lab_model_num = -1;
+static int Lab_weaponmodel_num[MAX_SHIP_WEAPONS];
 static int Lab_model_LOD = 0;
 static int Lab_model_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
 static char Lab_model_filename[MAX_FILENAME_LEN];
+static char Lab_weaponmodel_filename[MAX_SHIP_WEAPONS][MAX_FILENAME_LEN];
 
 static int Lab_bitmap_id = -1;
 static char Lab_bitmap_filename[MAX_FILENAME_LEN];
@@ -190,6 +193,8 @@ void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
 void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 {
 	bool change_model = true;
+	int j,l;
+	ship_info *sip = NULL;
 
 	anim_timer_start = timer_get_milliseconds();
 
@@ -208,6 +213,14 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 			model_page_out_textures(Lab_model_num, true);
 			model_unload(Lab_model_num);
 			Lab_model_num = -1;
+
+			for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
+				if (Lab_weaponmodel_num[j] > 0) {
+					model_page_out_textures(Lab_weaponmodel_num[j], true);
+					model_unload(Lab_weaponmodel_num[j]);
+					Lab_weaponmodel_num[j] = -1;
+				}
+			}
 
 			if (Lab_last_selected_ship >= 0) {
 				ship_page_out_textures(Lab_last_selected_ship, true);
@@ -249,9 +262,43 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 					model_set_instance_info(&Lab_ship_subsys[idx].submodel_info_1, Lab_ship_model_subsys[idx].turn_rate, 0.5f);
 				}
 			}
+
+			// do the same for weapon models if necessary
+			if (Lab_mode == LAB_MODE_SHIP) {
+				sip = &Ship_info[Lab_selected_index];
+				l = 0;
+				for (j = 0; j < sip->num_primary_banks; j++) {
+					if (!sip->draw_primary_models[j])
+						continue;
+					Lab_weaponmodel_num[l] = model_load(Weapon_info[sip->primary_bank_weapons[j]].external_model_name, 0, NULL, 0);
+					if (Lab_weaponmodel_num[l] >= 0) {
+						strcpy_s(Lab_weaponmodel_filename[l], Weapon_info[sip->primary_bank_weapons[j]].external_model_name);
+					} else {
+						memset( Lab_weaponmodel_filename[l], 0, sizeof(Lab_weaponmodel_filename[l]) );
+					}
+					l++;
+				}
+			
+				for (j = 0; j < sip->num_secondary_banks; j++) {
+					if (!sip->draw_secondary_models[j])
+						continue;
+					Lab_weaponmodel_num[l] = model_load(Weapon_info[sip->secondary_bank_weapons[j]].external_model_name, 0, NULL, 0);
+					if (Lab_weaponmodel_num[l] >= 0) {
+						strcpy_s(Lab_weaponmodel_filename[l], Weapon_info[sip->primary_bank_weapons[j]].external_model_name);
+					} else {
+						memset( Lab_weaponmodel_filename[l], 0, sizeof(Lab_weaponmodel_filename[l]) );
+					}
+					l++;
+				}
+			}
 		} else {
 			// clear out the model filename
 			memset( Lab_model_filename, 0, sizeof(Lab_model_filename) );
+			if (Lab_weaponmodel_num[0] > 0) {
+				for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
+					memset( Lab_weaponmodel_filename[j], 0, sizeof(Lab_weaponmodel_filename[j]) );
+				}
+			}
 		}
 	}
 
@@ -813,6 +860,50 @@ void labviewer_render_model(float frametime)
 		}
 		opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS1);
 		opengl_shader_set_animated_timer(MIN((timer_get_milliseconds()-anim_timer_start)/1500.0f,2.0f));
+
+		//render weapon models if selected
+		if (Lab_mode == LAB_MODE_SHIP && (Lab_viewer_flags & LAB_FLAG_SHOW_WEAPONS)) {
+			int j,k,l;
+			g3_start_instance_matrix(&vmd_zero_vector, &Lab_viewer_orient, true);
+			l = 0;
+
+			// no thrusters for attached missiles
+			int render_flags = flagggs;
+			render_flags &= ~MR_SHOW_THRUSTERS;
+
+			//primary weapons
+			for (j = 0; j < sip->num_primary_banks; j++) {
+				if (!sip->draw_primary_models[j])
+					continue;
+				w_bank *bank = &model_get(Lab_model_num)->gun_banks[j];
+				for(k = 0; k < bank->num_slots; k++) {	
+					model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k], render_flags);
+				}
+				l++;
+			}
+			//secondary weapons
+			vec3d secondary_weapon_pos;
+			w_bank* bank;
+
+			for (j = 0; j < sip->num_secondary_banks; j++) {
+				if (!sip->draw_secondary_models[j])
+					continue;
+				bank = &(model_get(Lab_model_num))->missile_banks[j];
+				if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+					for(k = 0; k < bank->num_slots; k++) {
+						model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k], render_flags);
+					}
+				} else {
+					for(k = 0; k < bank->num_slots; k++)
+					{
+						secondary_weapon_pos = bank->pnt[k];
+						model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
+					}
+				}
+				l++;
+			}
+			g3_done_instance(true);
+		}
 		model_render(Lab_model_num, &Lab_viewer_orient, &vmd_zero_vector, /*Lab_model_flags*/flagggs, -1, -1);
 	}
 
@@ -1706,6 +1797,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Show Shields", Lab_model_flags, MR_SHOW_SHIELDS);
 	ADD_RENDER_FLAG("Show Thrusters", Lab_model_flags, MR_SHOW_THRUSTERS);
 	ADD_RENDER_FLAG("Animated Shader", Lab_model_flags, MR_ANIMATED_SHADER);
+	ADD_RENDER_FLAG("Show Ship Weapons", Lab_viewer_flags, LAB_FLAG_SHOW_WEAPONS);
 
 
 	// start tree
@@ -2146,6 +2238,8 @@ void lab_init()
 
 	// disable post-processing by default in the lab
 	PostProcessing_override = true;
+	// disable model rotation by default in the lab
+	Lab_viewer_flags |= LAB_FLAG_NO_ROTATION;
 }
 
 #include "controlconfig/controlsconfig.h"
