@@ -145,7 +145,7 @@ $Enable external shaders: NO											\n\
 ;; If not set, a hit to a turret's barrels will not count as a hit to	\n\
 ;; the turret unless it is also within the turret base's radius.		\n\
 $Fixed Turret Collisions: NO											\n\
-																		\n\
+																		\n""\
 ;; If not set, hits will damage nearest subsystem first, rather than the\n\
 ;; impacted physical subsystem first.									\n\
 $Damage Impacted Subsystem First: NO									\n\
@@ -1126,7 +1126,7 @@ $disable weapon damage scaling for player:	NO							\n\
 $countermeasures affect aspect seekers:	NO								\n\
 																		\n\
 ;; TBD																	\n\
-$ai path mode:	normal													\n\
+$ai path mode:	normal													\n""\
 																		\n\
 ;; TBD																	\n\
 $no warp camera:	NO													\n\

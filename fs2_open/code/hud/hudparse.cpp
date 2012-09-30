@@ -163,7 +163,7 @@ int parse_ship_start()
 
 void parse_hud_gauges_tbl(char *filename)
 {
-	int rval;
+	int i, rval;
 	char *saved_Mp = NULL;
 
 	int colors[3] = {255, 255, 255};
@@ -320,7 +320,7 @@ void parse_hud_gauges_tbl(char *filename)
 					stuff_boolean(&retail_config);
 				}
 
-				for (int i = 0; i < n_ships; ++i) {
+				for (i = 0; i < n_ships; ++i) {
 					ship_classes.push_back(shiparray[i]);
 					Ship_info[shiparray[i]].hud_enabled = true;
 					Ship_info[shiparray[i]].hud_retail = retail_config;
