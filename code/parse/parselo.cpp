@@ -27,6 +27,12 @@
 #include "globalincs/version.h"
 
 
+// per zutil.h...
+/* In Win32, vsnprintf is available as the "non-ANSI" _vsnprintf. */
+#ifndef vsnprintf
+#define vsnprintf(a, b, c, d)	_vsnprintf(a, b, c, d)
+#endif
+
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
