@@ -9038,7 +9038,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// Valathil - Reinitialize collision checks
 	obj_remove_pairs(objp);
-	obj_add_pairs(objp->instance);
+	obj_add_pairs(OBJ_INDEX(objp));
 
 	// The E - If we're switching during gameplay, make sure we get valid primary/secondary selections
 	if ( by_sexp ) {
