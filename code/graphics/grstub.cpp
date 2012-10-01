@@ -434,7 +434,7 @@ void gr_stub_draw_line_list(colored_vector *lines, int num)
 {
 }
 
-void gr_stub_update_texture(int bitmap_handle, int bpp, ubyte* data)
+void gr_stub_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, int height)
 {
 }
 

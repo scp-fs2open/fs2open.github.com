@@ -315,7 +315,7 @@ void generic_render_eff_stream(generic_anim *ga)
 		{
 			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
 			if(next_frame_bmp->data)
-				gr_update_texture(ga->bitmap_id, bpp, (ubyte*)next_frame_bmp->data);
+				gr_update_texture(ga->bitmap_id, bpp, (ubyte*)next_frame_bmp->data, ga->width, ga->height);
 			bm_unlock(ga->eff.next_frame);
 			bm_unload(ga->eff.next_frame, 0, true);
 		}
@@ -396,7 +396,7 @@ void generic_render_ani_stream(generic_anim *ga)
 	BM_SELECT_SCREEN_FORMAT();
 	//we need to use this because performance is worse if we flush the gfx card buffer
 	
-	gr_update_texture(ga->bitmap_id, bpp, ga->buffer);
+	gr_update_texture(ga->bitmap_id, bpp, ga->buffer, ga->width, ga->height);
 
 	//in case we want to check that the frame is actually changing
 	//mprintf(("frame crc = %08X\n", cf_add_chksum_long(0, ga->buffer, ga->width * ga->height * (bpp >> 3))));
