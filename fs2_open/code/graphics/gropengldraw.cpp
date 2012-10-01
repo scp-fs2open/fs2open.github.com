@@ -317,10 +317,6 @@ void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 	int x1, x2, y1, y2;
 	float u_scale, v_scale;
 
-	// conversion from quads to triangles requires six vertices per quad
-	struct v4 *glVert = (struct v4*) alloca(sizeof(struct v4) * strlen(s) * 6);
-	int curChar = 0;
-
 	if ( !Current_font || (*s == 0) ) {
 		return;
 	}
@@ -336,6 +332,10 @@ void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 	if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale) ) {
 		return;
 	}
+
+	// conversion from quads to triangles requires six vertices per quad
+	struct v4 *glVert = (struct v4*) vm_malloc(sizeof(struct v4) * strlen(s) * 6);
+	int curChar = 0;
 
 	int ibw, ibh;
 
@@ -513,6 +513,8 @@ void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 	GL_state.Array.DisableClientTexture();
 
 	GL_state.CullFace(cull_face);
+
+	vm_free(glVert);
 
 	GL_CHECK_FOR_ERRORS("end of string()");
 }
@@ -972,8 +974,8 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 	bool isRamp = false;
 	bool isRGB = false;
 	ubyte alpha = (ubyte)a;
-	struct v6 *vertPos = (struct v6*) alloca(sizeof(struct v6) * nv);
-	struct c4 *vertCol = (struct c4*) alloca(sizeof(struct c4) * nv);
+	struct v6 *vertPos = (struct v6*) vm_malloc(sizeof(struct v6) * nv);
+	struct c4 *vertCol = (struct c4*) vm_malloc(sizeof(struct c4) * nv);
 
 	GL_CHECK_FOR_ERRORS("start of draw_primitive()");
 
@@ -1097,6 +1099,9 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 	GL_state.Array.DisableClientTexture();
 
 	GL_CHECK_FOR_ERRORS("start of draw_primitive()");
+
+	vm_free(vertPos);
+	vm_free(vertCol);
 }
 
 void opengl_tmapper_internal(int nv, vertex **verts, uint flags, int is_scaler = 0)
@@ -1227,7 +1232,7 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 			colour.push_back(va->r);
 			colour.push_back(va->g);
 			colour.push_back(va->b);
-			colour.push_back(alpha);
+			colour.push_back((ubyte) alpha);
 		}
 
 		uvcoords.push_back(va->texture_position.u);
@@ -2565,8 +2570,8 @@ void gr_opengl_update_distortion()
 	vertex.reserve(33 * 2);
 	for(int i = 0; i < 33; i++)
 	{
-		colours.push_back(rand()%256);
-		colours.push_back(rand()%256);
+		colours.push_back((ubyte) rand()%256);
+		colours.push_back((ubyte) rand()%256);
 		colours.push_back(255);
 		colours.push_back(255);
 
