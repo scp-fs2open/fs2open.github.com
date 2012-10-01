@@ -9708,7 +9708,13 @@ void sexp_play_sound_from_table(int n)
 
 	// play sound effect ---------------------------
 	if (sound_index >= 0) {
-		snd_play_3d( &Snds[gamesnd_get_by_tbl_index(sound_index)], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+		game_snd *snd = &Snds[gamesnd_get_by_tbl_index(sound_index)];
+		if (snd->min == 0 && snd->max == 0) {
+			// if sound doesn't specify 3d range, don't play in 3d
+			snd_play( snd, 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		} else {
+			snd_play_3d( snd, &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY );
+		}
 	}
 
 	if (MULTIPLAYER_MASTER) {
@@ -9732,9 +9738,15 @@ void multi_sexp_play_sound_from_table()
 	multi_get_int(sound_index);
 
 
-	if (sound_index != -1) {
-		// play sound effect ---------------------------
-		snd_play_3d( &Snds[gamesnd_get_by_tbl_index(sound_index)], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	// play sound effect ---------------------------
+	if (sound_index >= 0) {
+		game_snd *snd = &Snds[gamesnd_get_by_tbl_index(sound_index)];
+		if (snd->min == 0 && snd->max == 0) {
+			// if sound doesn't specify 3d range, don't play in 3d
+			snd_play( snd, 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		} else {
+			snd_play_3d( snd, &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY );
+		}
 	}
 }
 
