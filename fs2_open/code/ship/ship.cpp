@@ -9218,7 +9218,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Valathil - Reinitialize collision checks
 	if ( Cmdline_old_collision_sys ) {
 		obj_remove_pairs(objp);
-		obj_add_pairs(objp->instance);
+		obj_add_pairs(OBJ_INDEX(objp));
 	} else {
 		obj_remove_collider(OBJ_INDEX(objp));
 		obj_add_collider(OBJ_INDEX(objp));
