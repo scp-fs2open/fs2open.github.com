@@ -29,8 +29,12 @@
 
 // per zutil.h...
 /* In Win32, vsnprintf is available as the "non-ANSI" _vsnprintf. */
-#ifndef vsnprintf
-#define vsnprintf(a, b, c, d)	_vsnprintf(a, b, c, d)
+#ifdef WIN32
+  #if !defined(vsnprintf)
+    #if !defined(_MSC_VER) || ( defined(_MSC_VER) && _MSC_VER < 1500 )
+      #define vsnprintf _vsnprintf
+	#endif
+  #endif
 #endif
 
 
