@@ -112,6 +112,12 @@ void parse_autopilot_table(char *filename);
 // Finds a Nav point by name
 int FindNav(char *Nav);
 
+// Selects a Nav point by name
+void SelectNav(char *Nav);
+
+// Deselects any navpoint selected.
+void DeselectNav();
+
 // Set A Nav point to "ZERO"
 void ZeroNav(int i);
 

@@ -583,6 +583,8 @@ sexp_oper Operators[] = {
 	{ "is-nav-linked",					OP_NAV_ISLINKED,				1, 1 }, //kazan
 	{ "use-nav-cinematics",				OP_NAV_USECINEMATICS,			1, 1 }, //kazan
 	{ "use-autopilot",					OP_NAV_USEAP,					1, 1 }, //kazan
+	{ "select-nav",						OP_NAV_SELECT,					1, 1 }, //Talon1024
+	{ "deselect-nav",					OP_NAV_DESELECT,				0, 0 }, //Talon1024
 
 	//Cutscene Sub-Category
 	{ "set-cutscene-bars",			OP_CUTSCENES_SET_CUTSCENE_BARS,			0, 1, },
@@ -17951,6 +17953,17 @@ int distance_to_nav(int node)
 	return DistanceTo(nav_name);
 }
 
+void select_nav(int node)
+{
+	char *nav_name = CTEXT(node);
+	SelectNav(nav_name);
+}
+
+void deselect_nav()
+{
+	DeselectNav();
+}
+
 
 //*************************************************************************************************
 
@@ -22613,6 +22626,18 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				set_use_ap_cinematics(node);
 				break;
+			
+			//Talon1024
+			case OP_NAV_SELECT:
+				sexp_val = SEXP_TRUE;
+				select_nav(node);
+				break;
+				
+			//Talon1024
+			case OP_NAV_DESELECT:
+				sexp_val = SEXP_TRUE;
+				deselect_nav();
+				break;
 
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
@@ -23660,6 +23685,8 @@ int query_operator_return_type(int op)
 		case OP_NAV_UNSET_NEEDSLINK:
 		case OP_NAV_USECINEMATICS:
 		case OP_NAV_USEAP:
+		case OP_NAV_SELECT:
+		case OP_NAV_DESELECT:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
@@ -23845,6 +23872,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_VALIDATE_ALL_ARGUMENTS:
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_SUPERNOVA_STOP:
+		case OP_NAV_DESELECT:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -25482,6 +25510,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NAV_UNRESTRICT:		//kazan
 		case OP_NAV_SET_VISITED:	//kazan
 		case OP_NAV_UNSET_VISITED:	//kazan
+		case OP_NAV_SELECT:			//Talon1024
 			return OPF_STRING;
 		
 		case OP_NAV_SET_CARRY:		//kazan
@@ -27223,6 +27252,8 @@ int get_subcategory(int sexp_id)
 		case OP_NAV_UNSET_NEEDSLINK:
 		case OP_NAV_USECINEMATICS:
 		case OP_NAV_USEAP:
+		case OP_NAV_SELECT:
+		case OP_NAV_DESELECT:
 			return CHANGE_SUBCATEGORY_NAV;
 
 
@@ -27497,6 +27528,15 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_NAV_USEAP, "Takes 1 boolean argument.\r\n"
 		"Set to true to enable autopilot, set to false to disable autopilot." },
 
+	{ OP_NAV_SELECT, "nav-select (Action operator)\r\n"
+		"\tSelects a nav point.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the nav point." },
+
+	{ OP_NAV_DESELECT, "nav-deselect (Action operator)\r\n"
+		"\tDeselects any navpoint selected.\r\n\r\n"
+		"Takes no arguments..." },
+	
 	// -------------------------- -------------------------- -------------------------- 
 
 	// Goober5000
