@@ -8065,7 +8065,7 @@ void ai_chase()
 	}
 
 	// Can only acquire lock on a target that isn't hidden from sensors
-	if ( !(Ships[En_objp->instance].flags & SF_HIDDEN_FROM_SENSORS) && !is_stealthy_ship ) {
+	if ( En_objp->type == OBJ_SHIP && !(Ships[En_objp->instance].flags & SF_HIDDEN_FROM_SENSORS) && !is_stealthy_ship ) {
 		update_aspect_lock_information(aip, &real_vec_to_enemy, dist_to_enemy, En_objp->radius);
 	} else {
 		aip->current_target_is_locked = 0;
@@ -9156,7 +9156,7 @@ int num_ships_attacking(int target_objnum)
 	ai_info	*attacking_aip;
 	ship_obj	*so;
 	int		count = 0;
-	int target_team = Ships[Objects[target_objnum].instance].team;
+	int target_team = obj_team(&Objects[target_objnum]);
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
 	{
