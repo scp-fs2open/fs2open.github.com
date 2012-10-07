@@ -3299,16 +3299,6 @@ void weapon_do_post_parse()
 		// catch a fall back cmeasure index, just in case
 		if ( (first_cmeasure_index < 0) && (wip->wi_flags & WIF_CMEASURE) )
 			first_cmeasure_index = i;
-
-		// if we are a "weak" weapon then popup a warning if we don't have the "player allowed" flag set
-		weapon_info *base_wip = NULL;
-		if ( !(wip->wi_flags & WIF_PLAYER_ALLOWED) && weapon_is_weak_variant(wip, &base_wip) ) {
-			// only add the flag if the non-weak version is player-allowed
-			if (base_wip->wi_flags & WIF_PLAYER_ALLOWED) {
-				mprintf(("Weapon variant '%s' requires the \"player allowed\" flag because its base weapon '%s' has it!  Adding it by default.\n", wip->name, base_wip->name));
-				wip->wi_flags |= WIF_PLAYER_ALLOWED;
-			}
-		}
 	}
 
 	// catch cmeasure fallback
@@ -6729,25 +6719,4 @@ void weapon_unpause_sounds()
 {
 	// Pause all beam sounds
 	beam_unpause_sounds();
-}
-
-bool weapon_is_weak_variant(weapon_info *wip, weapon_info **base_wip)
-{
-	const char *weakp = stristr(wip->name, "#weak");
-	if (weakp == NULL)
-		return false;
-
-	char non_weak[NAME_LENGTH];
-	memset(non_weak, 0, NAME_LENGTH);	// Valathil
-	strncpy(non_weak, wip->name, weakp - wip->name);	// Valathil taking into account the possibility of another suffix after #weak
-
-	int idx = weapon_info_lookup(non_weak);
-	if (idx >= 0)
-	{
-		if (base_wip != NULL)
-			*base_wip = &Weapon_info[idx];
-		return true;
-	}
-
-	return false;
 }
