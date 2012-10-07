@@ -11811,7 +11811,10 @@ void ai_preprocess_ignore_objnum(object *objp, ai_info *aip)
 
 	if (is_ignore_object(aip, aip->goal_objnum))
 	{
-		aip->goal_objnum = -1;
+		// you can land and launch on a ship you're ignoring!
+		if (aip->mode != AIM_BAY_EMERGE && aip->mode != AIM_BAY_DEPART) {
+			aip->goal_objnum = -1;
+		}
 
 		// AL 12-11-97: If in STRAFE mode, we need to ensure that target_objnum is also
 		//              set to -1
