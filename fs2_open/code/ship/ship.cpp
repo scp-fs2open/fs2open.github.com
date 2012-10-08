@@ -14212,7 +14212,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		}
 		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
 	} else {
-		sprintf( outbuf, XSTR( "Unknown", 497) );
+		strcpy( outbuf, XSTR( "Unknown", 497) );
 	}
 
 	return outbuf;
