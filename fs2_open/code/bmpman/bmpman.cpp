@@ -1920,6 +1920,7 @@ int bm_release(int handle, int clear_render_targets)
  *
  * @param handle				index into ::bm_bitmaps ( index returned from bm_load() or bm_create() )
  * @param clear_render_targets	Whether to release a render target
+ * @param nodebug               Exclude certain debug messages
  *
  * @return	1 on successful release, 0 otherwise
  */
