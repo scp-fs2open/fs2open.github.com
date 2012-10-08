@@ -1162,6 +1162,14 @@
 #define IDC_NEB_NEAR_MULTIPLIER         1632
 #define IDC_EDIT6                       1633
 #define IDC_NEB_FAR_MULTIPLIER          1634
+#define IDC_MISSION_LOG_TRUE            1635
+#define IDC_MISSION_LOG_FALSE           1636
+#define IDC_MISSION_LOG_ALWAYS_TRUE     1637
+#define IDC_MISSION_LOG_ALWAYS_FALSE    1638
+#define IDC_MISSION_LOG_1ST_REPEAT      1639
+#define IDC_MISSION_LOG_LAST_REPEAT     1640
+#define IDC_MISSION_LOG_1ST_TRIGGER     1641
+#define IDC_MISSION_LOG_LAST_TRIGGER    1642
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1455,7 +1463,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        320
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1635
+#define _APS_NEXT_CONTROL_VALUE         1643
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

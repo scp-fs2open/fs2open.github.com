@@ -12,6 +12,7 @@
 
 #include <stdarg.h>
 #include "network/multi_log.h"
+#include "parse/generic_log.h"
 #include "cfile/cfile.h"
 
 
@@ -23,17 +24,8 @@
 // max length for a line of the logfile
 #define MAX_LOGFILE_LINE_LEN					256
 
-// name of the multiplayer logfile
-#define MULTI_LOGFILE_NAME						"multi.log"
-
-// echo all ml_printf's to the debug window
-//#define MULTI_LOGFILE_ECHO_TO_DEBUG
-
 // how often we'll write an update to the logfile (in seconds)
 #define MULTI_LOGFILE_UPDATE_TIME			2520			// every 42 minutes
-
-// outfile itself
-CFILE *Multi_log_out = NULL;
 
 // time when the logfile was opened
 int Multi_log_open_systime = -1;
@@ -54,7 +46,7 @@ void multi_log_write_header()
 	// header message
 	timer = time(NULL);	
 	strftime(str, 1024, "FreeSpace Multi Log - Opened %a, %b %d, %Y  at %I:%M%p\n----\n----\n----\n\n", localtime(&timer));
-	ml_string(str, 0);	
+	log_string(LOGFILE_MULTI_LOG, str, 0);	
 }
 
 // write the standard shutdown trailer
@@ -66,7 +58,7 @@ void multi_log_write_trailer()
 	// header message
 	timer = time(NULL);
 	strftime(str, 1024, "\n\n----\n----\n----\nFreeSpace Multi Log - Closing on %a, %b %d, %Y  at %I:%M%p", localtime(&timer));
-	ml_string(str, 0);	
+	log_string(LOGFILE_MULTI_LOG, str, 0);	
 }
 
 // write out some info about stuff
@@ -87,41 +79,25 @@ void multi_log_write_update()
 // initialize the multi logfile
 void multi_log_init()
 {
-	// attempt to open the file
-	Multi_log_out = cfopen(MULTI_LOGFILE_NAME, "wt", CFILE_NORMAL, CF_TYPE_DATA);
-
-	// if we successfully opened the file, write the header
-	if(Multi_log_out != NULL){
+	if (logfile_init(LOGFILE_MULTI_LOG)) {
 		multi_log_write_header();
 
 		// initialize our timer info
 		Multi_log_open_systime = (int) time(NULL);
 		Multi_log_update_systime = Multi_log_open_systime;
-	} else {
-		nprintf(("Network","Error opening %s for writing!!\n",MULTI_LOGFILE_NAME));
-	}
+	} 
 }
 
 // close down the multi logfile
 void multi_log_close()
 {
-	// if we have a valid file, write a trailer and close
-	if(Multi_log_out != NULL){
-		multi_log_write_trailer();
-
-		cfclose(Multi_log_out);
-		Multi_log_out = NULL;
-	}
+	multi_log_write_trailer();
+	logfile_close(LOGFILE_MULTI_LOG);
 }
 
 // give some processing time to the logfile system so it can check up on stuff
 void multi_log_process()
 {
-	// if we don't have a valid logfile, do nothing
-	if(Multi_log_out == NULL){
-		return;
-	}
-
 	// check to see if we've been active a long enough time, and 
 	if(time(NULL) - Multi_log_update_systime > MULTI_LOGFILE_UPDATE_TIME){
 		// write the update
@@ -136,19 +112,14 @@ void ml_printf(char *format, ...)
 {
 	char tmp[MAX_LOGFILE_LINE_LEN*4];
 	va_list args;
-
-	// if we don't have a valid logfile do nothing
-	if(Multi_log_out == NULL){
-		return;
-	}
 	
 	// format the text
 	va_start(args, format);
 	vsprintf(tmp, format, args);
 	va_end(args);
 	
-	// log the string
-	ml_string(tmp);
+	// log the string including the time
+	log_string(LOGFILE_MULTI_LOG, tmp, 1);
 }
 
 // string print function
@@ -157,11 +128,6 @@ void ml_string(char *string, int add_time)
 	char tmp[MAX_LOGFILE_LINE_LEN*4];
 	char time_str[128];
 	time_t timer;	
-
-	// if we don't have a valid logfile do nothing
-	if(Multi_log_out == NULL){
-		return;
-	}
 
 	// if the passed string is NULL, do nothing
 	if(string == NULL){
@@ -181,8 +147,7 @@ void ml_string(char *string, int add_time)
 	strcat_s(tmp, "\n");
 
 	// now print it to the logfile if necessary	
-	cfputs(tmp, Multi_log_out);
-	cflush(Multi_log_out);
+	log_string(LOGFILE_MULTI_LOG, tmp, 0);
 
 	// add to standalone UI too
 	extern int Is_standalone;

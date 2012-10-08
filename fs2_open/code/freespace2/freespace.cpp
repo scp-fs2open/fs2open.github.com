@@ -122,6 +122,7 @@
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
+#include "parse/generic_log.h"
 #include "parse/lua.h"
 #include "parse/parselo.h"
 #include "parse/scripting.h"
@@ -1946,6 +1947,10 @@ void game_init()
 	gameseq_init();
 
 	multi_init();	
+
+	// start up the mission logfile
+	logfile_init(LOGFILE_EVENT_LOG);
+	log_string(LOGFILE_EVENT_LOG,"FS2_Open Mission Log - Opened \n\n", 1);
 
 	// standalone's don't use the joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
@@ -7322,6 +7327,7 @@ void game_shutdown(void)
 	mission_parse_close();		// clear out any extra memory that may be in use by mission parsing
 	multi_voice_close();			// close down multiplayer voice (including freeing buffers, etc)
 	multi_log_close();
+	logfile_close(LOGFILE_EVENT_LOG); // close down the mission log
 #ifdef MULTI_USE_LAG
 	multi_lag_close();
 #endif
