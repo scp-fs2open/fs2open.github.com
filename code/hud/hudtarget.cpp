@@ -2177,7 +2177,7 @@ bool evaluate_ship_as_closest_target(esct *esct)
 /// closest hostile ship. Note only the square of the magnitude is required, 
 /// since we are only comparing magnitudes.
 ///
-/// \param[in] team            team of closest ship that should be targeted.
+/// \param[in] team_mask       team of closest ship that should be targeted.
 ///                            Default value is -1, if team doesn't matter.
 ///
 /// \param[in] attacked_objnum object number of ship that is being attacked

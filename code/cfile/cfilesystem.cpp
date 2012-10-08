@@ -823,12 +823,13 @@ void cf_free_secondary_filelist()
  *
  * @note Follows all rules and precedence and searches CD's and pack files.
  *
- * @param filespace     Filename & extension
+ * @param filespec      Filename & extension
  * @param pathtype      See CF_TYPE_ defines in CFILE.H
  * @param max_out       Maximum string length that should be stuffed into pack_filename
  * @param pack_filename OUTPUT: Absolute path and filename of this file.   Could be a packfile or the actual file.
  * @param size          OUTPUT: File size
  * @param offset        OUTPUT: Offset into pack file.  0 if not a packfile.
+ * @param localize      Undertake localization
  *
  * @return If not found returns 0.
  */
@@ -1039,6 +1040,7 @@ extern char *stristr(const char *str, const char *substr);
  * @param pack_filename OUTPUT: Absolute path and filename of this file.   Could be a packfile or the actual file.
  * @param size          OUTPUT: File size
  * @param offset        OUTPUT: Offset into pack file.  0 if not a packfile.
+ * @param localize      Undertake localization
  *
  * @return If not found returns -1, else returns offset into ext_list.
  */
