@@ -170,8 +170,7 @@ struct goal_text {
 
 int Num_mission_events;
 int Num_goals = 0;								// number of goals for this mission
-int Event_index = -1;  // used by sexp code to tell what event it came from
-bool Log_event = false;
+int Event_index;  // used by sexp code to tell what event it came from
 int Mission_goal_timestamp;
 
 mission_event Mission_events[MAX_MISSION_EVENTS];
@@ -378,7 +377,6 @@ void mission_init_goals()
 		Mission_events[i].satisfied_time = 0;
 		Mission_events[i].born_on_date = 0;
 		Mission_events[i].team = -1;
-		Mission_events[i].mission_log_flags = 0;
 	}
 
 	Mission_goal_timestamp = timestamp(GOAL_TIMESTAMP);
@@ -886,7 +884,6 @@ void mission_process_event( int event )
 
 	int result, sindex;
 	bool bump_timestamp = false; 
-	Log_event = false;
 
 	Directive_count = 0;
 	Event_index = event;
@@ -919,9 +916,6 @@ void mission_process_event( int event )
 
 	if (sindex >= 0) {
 		Sexp_useful_number = 1;
-		if (Mission_events[event].mission_log_flags != 0) {
-			Log_event = true;
-		}
 		result = eval_sexp(sindex);
 
 		// if the directive count is a special value, deal with that first.  Mark the event as a special
@@ -945,11 +939,7 @@ void mission_process_event( int event )
 		}
 	}
 
-	if (Mission_events[event].mission_log_flags != 0) {
-		maybe_write_to_event_log(result);
-	}
-
-	Event_index = -1;
+	Event_index = 0;
 	Mission_events[event].result = result;
 
 	// if the sexpression is known false, then no need to evaluate anymore

@@ -22,7 +22,6 @@
 
 
 #include "mission/missionparse.h"
-#include "parse/generic_log.h"
 #include "parse/parselo.h"
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"
@@ -310,17 +309,6 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"cloaked",
 	"ship-locked",
 	"weapons-locked",
-};
-
-char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
-	"true",
-	"false",
-	"always true",
-	"always false",
-	"first repeat",
-	"last repeat", 
-	"first trigger",
-	"last trigger",
 };
 
 
@@ -4664,23 +4652,6 @@ void parse_event(mission *pm)
 		}
 	}
 
-	if( optional_string("+Event Log Flags:") ) {
-		SCP_vector<SCP_string> buffer;
-		
-		stuff_string_list(buffer); 
-		for (int i = 0; i < (int)buffer.size(); i++) {
-			int add_flag = 1; 
-
-			for (int j = 0; j < MAX_MISSION_EVENT_LOG_FLAGS; j++) {
-				if (!stricmp(buffer[i].c_str(), Mission_event_log_flags[j])) {
-					// bitshift add_flag so that it equals the index of the flag in Mission_event_log_flags[]
-					add_flag = add_flag << j; 
-					event->mission_log_flags |= add_flag;
-				}
-			}
-		}
-	}
-
 	event->timestamp = timestamp(-1);
 
 	// sanity check on the repeat count variable
@@ -5243,24 +5214,6 @@ void parse_asteroid_fields(mission *pm)
 	}
 }
 
-void parse_list_collections()
-{
-	if (! optional_string("#Sexp_containers") ) {
-		return;
-	} 
-	else {
-		if (optional_string("$Lists")) {
-			stuff_sexp_list_container();
-			required_string("$End Lists");
-		}
-		
-		if (optional_string("$Maps")) {
-			stuff_sexp_map_container();
-			required_string("$End Maps");
-		}
-	}
-}
-
 void parse_variables()
 {
 	int i, j, k, num_variables;
@@ -5363,7 +5316,6 @@ int parse_mission(mission *pm, int flags)
 
 	parse_plot_info(pm);
 	parse_variables();
-	parse_list_collections();
 	parse_briefing_info(pm);	// TODO: obsolete code, keeping so we don't obsolete existing mission files
 	parse_cutscenes(pm);
 	parse_fiction(pm);
@@ -5441,8 +5393,6 @@ int parse_mission(mission *pm, int flags)
 		sprintf(text, "Warning!\n\nThe current mission has generated %d warnings and/or errors during load.  These are usually caused by corrupted ship models or syntax errors in the mission file.  While FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.  Source Code Project staff cannot provide assistance or support for these problems, as they are caused by the mission's data files, not FreeSpace Open's source code.", (saved_warning_count - Global_warning_count) + (saved_error_count - Global_error_count));
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_NO_NETWORKING, 1, POPUP_OK, text);
 	}
-
-	log_printf(LOGFILE_EVENT_LOG, "Mission %s loaded.\n", pm->name); 
 
 	// success
 	return 0;
