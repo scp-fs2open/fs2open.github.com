@@ -320,7 +320,7 @@ void cutscenes_screen_play()
 		char str[256];
 
 		if (Cmdline_nomovies)
-			sprintf(str, XSTR("Movies are currently disabled.", -1));
+			strcpy_s(str, XSTR("Movies are currently disabled.", -1));
 		else
 			sprintf(str, XSTR("Unable to play movie %s.", 204), Cutscenes[which_cutscene].name);
 

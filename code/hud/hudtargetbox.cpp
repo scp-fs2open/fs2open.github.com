@@ -437,16 +437,16 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 	// print out status of ship
 	switch(Current_ts) {
 		case TS_DIS:
-			sprintf(buf,XSTR( "dis", 344));
+			strcpy_s(buf,XSTR( "dis", 344));
 			break;
 		case TS_OK:
-			sprintf(buf,XSTR( "ok", 345));
+			strcpy_s(buf,XSTR( "ok", 345));
 			break;
 		case TS_DMG:
-			sprintf(buf,XSTR( "dmg", 346));
+			strcpy_s(buf,XSTR( "dmg", 346));
 			break;
 		case TS_CRT:
-			sprintf(buf,XSTR( "crt", 347));
+			strcpy_s(buf,XSTR( "crt", 347));
 			break;
 	}
 
@@ -878,7 +878,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		if ( speed > 0 ) {
 			sprintf(outstr, NOX("impact: %.1f sec"), dist/speed);
 		} else {
-			sprintf(outstr, XSTR( "unknown", 349));
+			strcpy_s(outstr, XSTR( "unknown", 349));
 		}
 
 		renderString(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, outstr);		
@@ -1266,7 +1266,7 @@ void HudGaugeExtraTargetData::render(float frametime)
 		}
 
 		if ( has_orders ) {
-			sprintf(outstr, XSTR( "time to: ", 338));
+			strcpy_s(outstr, XSTR( "time to: ", 338));
 			if ( ship_return_time_to_goal(tmpbuf, target_shipp) ) {
 				strcat_s(outstr, tmpbuf);
 				
@@ -1571,9 +1571,9 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 	// print out 'disabled' on the monitor if the target is disabled
 	if ( (target_shipp->flags & SF_DISABLED) || (ship_subsys_disrupted(target_shipp, SUBSYSTEM_ENGINE)) ) {
 		if ( target_shipp->flags & SF_DISABLED ) {
-			sprintf(outstr, XSTR( "DISABLED", 342));
+			strcpy_s(outstr, XSTR( "DISABLED", 342));
 		} else {
-			sprintf(outstr, XSTR( "DISRUPTED", 343));
+			strcpy_s(outstr, XSTR( "DISRUPTED", 343));
 		}
 		gr_get_string_size(&w,&h,outstr);
 

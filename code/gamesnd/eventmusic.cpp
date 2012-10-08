@@ -1686,7 +1686,7 @@ int hostile_ships_to_arrive()
 void event_music_get_info(char *outbuf)
 {
 	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE || Current_pattern == -1 ) {
-		sprintf(outbuf,XSTR( "Event music is not playing", 213));
+		strcpy(outbuf,XSTR( "Event music is not playing", 213));
 	}
 	else {	
 		sprintf(outbuf,XSTR( "soundtrack: %s [%s]", 214), Soundtracks[Current_soundtrack_num].name, Pattern_info[Current_pattern].pattern_desc);
@@ -1752,7 +1752,7 @@ void event_music_get_soundtrack_name(char *outbuf)
 		strcpy(outbuf, XSTR( "Event music is not playing", 213));
 	}
 	else {
-		sprintf(outbuf, Soundtracks[Current_soundtrack_num].name);
+		strcpy(outbuf, Soundtracks[Current_soundtrack_num].name);
 	}
 }
 

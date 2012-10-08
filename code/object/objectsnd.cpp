@@ -122,7 +122,7 @@ DCF(objsnd, "Persistant sound stuff" )
 				}
 
 				if ( Objects[osp->objnum].type == OBJ_SHIP ) {
-					sprintf(buf2, Ships[Objects[osp->objnum].instance].ship_name);
+					strcpy_s(buf2, Ships[Objects[osp->objnum].instance].ship_name);
 				}
 				else if ( Objects[osp->objnum].type == OBJ_DEBRIS ) {
 					sprintf(buf2, "Debris");

@@ -2850,9 +2850,9 @@ void HudGaugeSupport::render(float frametime)
 			}
 
 			if (repairing)
-				sprintf(outstr, XSTR("repairing", 227));
+				strcpy_s(outstr, XSTR("repairing", 227));
 			else
-				sprintf(outstr, XSTR("rearming", 228));
+				strcpy_s(outstr, XSTR("rearming", 228));
 		}
 		else
 		{
@@ -2874,17 +2874,17 @@ void HudGaugeSupport::render(float frametime)
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 	}
 	else if (Player_ai->ai_flags & AIF_REPAIR_OBSTRUCTED) {
-		sprintf(outstr, XSTR( "obstructed", 229));
+		strcpy_s(outstr, XSTR( "obstructed", 229));
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 	} else {
 		if ( Hud_support_objnum == -1 ) {
 			if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
 			{
-				sprintf(outstr, XSTR( "exiting hangar", -1));
+				strcpy_s(outstr, XSTR( "exiting hangar", -1));
 			}
 			else
 			{
-				sprintf(outstr, XSTR( "warping in", 230));
+				strcpy_s(outstr, XSTR( "warping in", 230));
 			}
 			renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 		} else {
@@ -2893,11 +2893,11 @@ void HudGaugeSupport::render(float frametime)
 			// Display "busy" when support ship isn't actually enroute to me
 			aip = &Ai_info[Ships[Objects[Hud_support_objnum].instance].ai_index];
 			if ( aip->goal_objnum != OBJ_INDEX(Player_obj) ) {
-				sprintf(outstr, XSTR( "busy", 231));
+				strcpy_s(outstr, XSTR( "busy", 231));
 				show_time = 0;
 
 			} else {
-				sprintf(outstr, XSTR( "dock in:", 232));
+				strcpy_s(outstr, XSTR( "dock in:", 232));
 				show_time = 1;
 			}		
 
@@ -3858,7 +3858,7 @@ void HudGaugePing::render(float frametime)
 		if((Netgame.server != NULL) && (Netgame.server->s_info.ping.ping_avg > 0)){
 			// Get the string
 			if(Netgame.server->s_info.ping.ping_avg >= 1000){
-				sprintf(ping_str,XSTR("> 1 sec",628));
+				strcpy_s(ping_str,XSTR("> 1 sec",628));
 			} else {
 				sprintf(ping_str,XSTR("%d ms",629),Netgame.server->s_info.ping.ping_avg);
 			}
