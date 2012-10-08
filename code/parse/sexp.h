@@ -107,8 +107,6 @@ class waypoint_list;
 #define OPF_SHIP_EFFECT			80		// The E - per-ship effects, as defined in post-processing.tbl
 #define OPF_ANIMATION_TYPE		81		// Goober5000 - as defined in modelanim.h
 #define OPF_MISSION_MOOD		82		// Karajorma - Moods determine which builtin messages will be sent
-#define	OPF_LIST_CONTAINER_NAME	83		// Karajorma - The name of a list container class
-#define	OPF_MAP_CONTAINER_NAME	84		// Karajorma - The name of a list container class
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -839,11 +837,6 @@ char *CTEXT(int n);
 // flags for sexpressions -- masked onto the end of the type field
 #define SEXP_FLAG_PERSISTENT				(1<<31)		// should this sexp node be persistant across missions
 #define SEXP_FLAG_VARIABLE					(1<<30)
-#define SEXP_FLAG_LIST_CONTAINER			(1<<29)
-#define SEXP_FLAG_MAP_CONTAINER				(1<<28)
-
-
-#define SEXP_FLAG_CONTAINER					(SEXP_FLAG_LIST_CONTAINER | SEXP_FLAG_MAP_CONTAINER)
 
 // sexp variable definitions
 #define SEXP_VARIABLE_CHAR					('@')
@@ -864,16 +857,6 @@ char *CTEXT(int n);
 #define SEXP_VARIABLE_CAMPAIGN_PERSISTENT	(1<<29)	//	(0x0100)
 //Karajorma
 #define SEXP_VARIABLE_NETWORK				(1<<28)
-
-#define SEXP_CONTAINER_CHAR					('&')
-#define SEXP_CONTAINER_LIST							(1<<0)
-#define SEXP_CONTAINER_MAP							(1<<1)
-#define SEXP_CONTAINER_NUMBER_DATA					(1<<2)
-#define SEXP_CONTAINER_STRING_DATA					(1<<3)
-#define SEXP_CONTAINER_NUMBER_KEYS					(1<<4)
-#define SEXP_CONTAINER_STRING_KEYS					(1<<5)
-#define SEXP_CONTAINER_STRONGLY_TYPED_KEYS			(1<<6)
-#define SEXP_CONTAINER_STRONGLY_TYPED_DATA			(1<<7)
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
@@ -899,7 +882,6 @@ char *CTEXT(int n);
 #define SEXP_ATOM_OPERATOR		1
 #define SEXP_ATOM_NUMBER		2
 #define SEXP_ATOM_STRING		3
-#define SEXP_ATOM_CONTAINER		4
 
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.
@@ -990,21 +972,10 @@ typedef struct sexp_ai_goal_link {
 	int op_code;
 } sexp_ai_goal_link;
 
-#define SEXP_CONDITIONAL_OPERATOR			(1<<0)
-#define SEXP_ARGUMENT_OPERATOR				(1<<1)
-#define SEXP_ACTION_OPERATOR				(1<<2)
-#define SEXP_ARITHMETIC_OPERATOR			(1<<3)
-#define SEXP_BOOLEAN_OPERATOR				(1<<4)
-#define SEXP_INTEGER_OPERATOR				(1<<5)
-#define SEXP_GOAL_OPERATOR					(1<<6)
-
-#define SEXP_TRIGGER_OPERATOR		( SEXP_ARITHMETIC_OPERATOR | SEXP_BOOLEAN_OPERATOR | SEXP_INTEGER_OPERATOR ) 
-
 typedef struct sexp_oper {
 	char	*text;
 	int	value;
 	int	min, max;
-	int type;
 } sexp_oper;
 
 typedef struct sexp_node {
@@ -1016,45 +987,18 @@ typedef struct sexp_node {
 	int	rest;						// index into Sexp_nodes of rest of parameters
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
-	int iteration;
 } sexp_node;
 
 // Goober5000
-#define SNF_ARGUMENT_VALID					(1<<0)
-#define SNF_ARGUMENT_SELECT					(1<<1)
-// Karajorma - If a container flag is added, SNF_CONTAINER_MASK should be updated to include it. 
-#define SNF_CONTAINER_GET_DATA				(1<<2)
-#define SNF_CONTAINER_GET_FIRST			(1<<3)
-#define SNF_CONTAINER_GET_LAST				(1<<4)
-#define SNF_CONTAINER_ADD_BACK				(1<<5)
-#define SNF_CONTAINER_REMOVE_FIRST			(1<<6)
-#define SNF_CONTAINER_REMOVE_LAST			(1<<7)
-#define SNF_CONTAINER_GET_SIZE				(1<<8)
-#define SNF_CONTAINER_ITERATE_FORWARDS		(1<<9)
-#define SNF_CONTAINER_ITERATE_BACKWARDS	(1<<10)
-
-#define SNF_CONTAINER_FINAL_ITERATION		(1<<31)
-
+#define SNF_ARGUMENT_VALID		(1<<0)
+#define SNF_ARGUMENT_SELECT		(1<<1)
 #define SNF_DEFAULT_VALUE		SNF_ARGUMENT_VALID
-#define SNF_CONTAINER_MASK		( SNF_CONTAINER_GET_DATA | SNF_CONTAINER_GET_FIRST | SNF_CONTAINER_GET_LAST | SNF_CONTAINER_ADD_BACK | SNF_CONTAINER_REMOVE_FIRST | SNF_CONTAINER_REMOVE_LAST | SNF_CONTAINER_GET_SIZE | SNF_CONTAINER_ITERATE_FORWARDS | SNF_CONTAINER_ITERATE_BACKWARDS)
 
 typedef struct sexp_variable {
 	int		type;
 	char	text[TOKEN_LENGTH];
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
-
-typedef struct sexp_list_container {
-	SCP_deque<SCP_string>	data;
-	SCP_string	list_name;
-	int		type;
-}sexp_list_container;
-
-typedef struct sexp_map_container {
-	SCP_hash_map<SCP_string, SCP_string> data;
-	SCP_string	list_name;
-	int		type;
-}sexp_map_container;
 
 
 #define ARG_ITEM_F_DUP	(1<<0)
@@ -1091,9 +1035,6 @@ extern sexp_node *Sexp_nodes;
 
 extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
-
-extern SCP_vector<sexp_map_container> Sexp_map_containers;
-extern SCP_vector<sexp_list_container> Sexp_list_containers;
 
 extern sexp_oper Operators[];
 extern int Num_operators;
@@ -1138,8 +1079,6 @@ extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression); // debug and lua sexps
 extern int stuff_sexp_variable_list();
-extern void stuff_sexp_list_container();
-extern void stuff_sexp_map_container();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
@@ -1188,9 +1127,6 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 bool generate_special_explosion_block_variables();
 int num_block_variables();
 bool has_special_explosion_block_index(ship *shipp, int *index);
-
-// sexp_container
-int get_index_sexp_container_name(const char *text);
 
 // Karajorma
 void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
@@ -1260,7 +1196,5 @@ extern int Sexp_hud_display_warpout;
 
 //Needed for scripting access to ship effects
 int get_effect_from_name(char* name);
-
-void maybe_write_to_event_log(int result);
 
 #endif
