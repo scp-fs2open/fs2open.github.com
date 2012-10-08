@@ -108,6 +108,9 @@ template< typename T >
 class SCP_vector : public std::vector< T, SCP_vm_allocator< T > > { };
 
 template< typename T >
+class SCP_deque : public std::deque< T, SCP_vm_allocator< T > > { };
+
+template< typename T >
 class SCP_list : public std::list< T, SCP_vm_allocator< T > > { };
 
 typedef std::basic_string<char, std::char_traits<char>, SCP_vm_allocator<char> > SCP_string;

@@ -281,6 +281,7 @@ extern char *Object_flags[];
 extern char *Parse_object_flags[];
 extern char *Parse_object_flags_2[];
 extern char *Icon_names[];
+extern char *Mission_event_log_flags[];
 
 extern char *Cargo_names[MAX_CARGO];
 extern char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
