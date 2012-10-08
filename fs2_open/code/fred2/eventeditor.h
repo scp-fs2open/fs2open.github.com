@@ -71,6 +71,14 @@ public:
 	int		m_team;
 	int		m_message_team;
 	int		m_last_message_node;
+	int		m_log_true;
+	int		m_log_false;
+	int		m_log_always_true;
+	int		m_log_always_false;
+	int		m_log_1st_repeat;
+	int		m_log_last_repeat;
+	int		m_log_1st_trigger;
+	int		m_log_last_trigger;
 	//}}AFX_DATA
 
 	CBitmap m_play_bm;
