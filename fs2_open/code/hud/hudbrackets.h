@@ -23,6 +23,8 @@ void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick=0);
 void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2, int thick=0);
 void draw_brackets_dashed_square_quick(int x1, int y1, int x2, int y2);
 
+int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, bool draw = true, bool set_color = true, int* draw_coords = NULL);
+
 class HudGaugeBrackets: public HudGauge
 {
 protected:
