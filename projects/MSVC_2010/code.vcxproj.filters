@@ -1032,6 +1032,9 @@
     <ClCompile Include="..\..\code\mod_table\mod_table.cpp">
       <Filter>mod_table</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\parse\generic_log.cpp">
+      <Filter>Parse</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1825,6 +1828,9 @@
     </ClInclude>
     <ClInclude Include="..\..\code\mod_table\mod_table.h">
       <Filter>mod_table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\parse\generic_log.h">
+      <Filter>Parse</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

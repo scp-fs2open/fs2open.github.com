@@ -886,6 +886,7 @@
     <ClCompile Include="..\..\code\osapi\outwnd.cpp" />
     <ClCompile Include="..\..\code\Palman\palman.cpp" />
     <ClCompile Include="..\..\code\parse\encrypt.cpp" />
+    <ClCompile Include="..\..\code\parse\generic_log.cpp" />
     <ClCompile Include="..\..\code\parse\lua.cpp" />
     <ClCompile Include="..\..\code\parse\parselo.cpp" />
     <ClCompile Include="..\..\code\parse\scripting.cpp" />
@@ -1163,6 +1164,7 @@
     <ClInclude Include="..\..\code\osapi\outwnd.h" />
     <ClInclude Include="..\..\code\Palman\palman.h" />
     <ClInclude Include="..\..\code\parse\encrypt.h" />
+    <ClInclude Include="..\..\code\parse\generic_log.h" />
     <ClInclude Include="..\..\code\parse\lua.h" />
     <ClInclude Include="..\..\code\parse\parselo.h" />
     <ClInclude Include="..\..\code\parse\scripting.h" />
