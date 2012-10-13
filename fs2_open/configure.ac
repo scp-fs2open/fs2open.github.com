@@ -136,6 +136,16 @@ case "$target" in
 		echo "Using Solaris 10 defines (for $host_os)"
 		fs2_os_solaris="yes"
 		;;
+    *freebsd*)
+        # FreeBSD 9.1
+        echo "Using Unix defines (for $host_os $host_cpu)"
+        fs2_os_unix="yes"
+        if test "$host_cpu" = "amd64"
+        then
+            D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi"
+        fi
+        D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
+        ;;
 	*)
 		# Unknown
 		echo "fs2_open does not support $host_cpu-$host_os"
@@ -391,7 +401,9 @@ PKG_CHECK_MODULES(
 	[LUA],
 	[lua >= 5.1.3],
 	[], ## do nothing special
-	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [])])
+	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [], [
+        PKG_CHECK_MODULES([LUA], [lua-5.1 >= 5.1.3], [])
+    ])])
 D_CFLAGS=$D_CFLAGS" $LUA_CFLAGS"
 FS2_LIBS=$FS2_LIBS" $LUA_LIBS"
 
