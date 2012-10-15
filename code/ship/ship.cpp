@@ -9701,17 +9701,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 	// lets start gun convergence / autoaim code from here - Wanderer
 	// don't use gun convergence / autoaim if we're in multiplayer - Swifty
-	has_converging_autoaim = ( !(Game_mode & GM_MULTIPLAYER) 
-		&& ( sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f) ) 
-		&& aip->target_objnum != -1 );
+	has_converging_autoaim = 
+		( sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || ( ( The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f ) && !( Game_mode & GM_MULTIPLAYER ) ) ) 
+		&& ( aip->target_objnum != -1 );
 
-	has_autoaim = ( !(Game_mode & GM_MULTIPLAYER) 
-		&& ( has_converging_autoaim || (sip->aiming_flags & AIM_FLAG_AUTOAIM) ) 
-		&& aip->target_objnum != -1);
+	has_autoaim = ( has_converging_autoaim || (sip->aiming_flags & AIM_FLAG_AUTOAIM) ) && ( aip->target_objnum != -1 );
 
-	needs_target_pos = ( !(Game_mode & GM_MULTIPLAYER) 
-		&& ( has_autoaim || (sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) ) 
-		&& aip->target_objnum != -1);
+	needs_target_pos = ( has_autoaim || (sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) ) && ( aip->target_objnum != -1 );
 	
 	if (needs_target_pos) {
 		if (has_autoaim) {
