@@ -6390,7 +6390,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 		return;
 	}
 
-	int i, tm_num, diffuse_target = -1, glow_target = -1, bmp_handle = -1;
+	int i, tm_num, diffuse_target = -1, glow_target = -1, glow_handle = -1, diffuse_handle = -1;
 	int w, h;
 	cockpit_display new_display;
 
@@ -6403,30 +6403,22 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 		if ( tm_num >= 0 ) {
 			diffuse_target = i*TM_NUM_TYPES;
 			glow_target = i*TM_NUM_TYPES+TM_GLOW_TYPE;
-			bmp_handle = pm->maps[i].textures[tm_num].GetTexture();
+
+			diffuse_handle = pm->maps[i].textures[TM_BASE_TYPE].GetTexture();
+			glow_handle = pm->maps[i].textures[TM_GLOW_TYPE].GetTexture();
 			break;
 		}
 	}
 
-	// if we still don't have a valid bmp_handle, then this texture name is invalid. Scold and bail
-	if ( bmp_handle < 0 ) {
-		Warning(LOCATION, "Invalid texture target defined: %s", display->filename);
-		return;
-	}
+	// create a render target for this cockpit texture
+	if ( Player_cockpit_textures[glow_target] < 0) {
 
-	if (glow_target != -1 && diffuse_target != -1) {
-		// create a render target for this cockpit texture
-		if ( Player_cockpit_textures[diffuse_target] < 0 || Player_cockpit_textures[glow_target] < 0) {
+		bm_get_info(diffuse_handle, &w, &h);
+		Player_cockpit_textures[glow_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
 
-			bm_get_info(bmp_handle, &w, &h);
-			Player_cockpit_textures[diffuse_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
-
-			// if no render target was made, bail
-			if ( Player_cockpit_textures[diffuse_target] < 0 ) {
-				return;
-			}
-
-			Player_cockpit_textures[glow_target] = Player_cockpit_textures[diffuse_target];
+		// if no render target was made, bail
+		if ( Player_cockpit_textures[glow_target] < 0 ) {
+			return;
 		}
 	}
 
@@ -6453,8 +6445,8 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	new_display.offset[1] = display->offset[1];
 	new_display.size[0] = display->size[0];
 	new_display.size[1] = display->size[1];
-	new_display.source = bmp_handle;
-	new_display.target = Player_cockpit_textures[diffuse_target];
+	new_display.source = glow_handle;
+	new_display.target = Player_cockpit_textures[glow_target];
 
 	Player_displays.push_back(new_display);
 }
@@ -6503,8 +6495,11 @@ int ship_start_render_cockpit_display(int cockpit_display_num)
 	int cull = gr_set_cull(0);
 
 	gr_clear();
-	gr_set_bitmap(display->source);
-	gr_bitmap(0, 0, false);
+	
+	if ( display->source >= 0 ) {
+		gr_set_bitmap(display->source);
+		gr_bitmap(0, 0, false);
+	}
 
 	if ( display->background >= 0 ) {
 		gr_set_bitmap(display->background);

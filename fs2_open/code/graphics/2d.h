@@ -233,6 +233,7 @@ typedef struct screen {
 	int	max_w, max_h;		// Width and height
 	int max_w_unscaled, max_h_unscaled;		// Width and height, should be 1024x768 or 640x480 in non-standard resolutions
 	int	save_max_w, save_max_h;		// Width and height
+	int save_max_w_unscaled, save_max_h_unscaled;
 	int	res;					// GR_640 or GR_1024
 	int	mode;					// What mode gr_init was called with.
 	float	aspect, clip_aspect;				// Aspect ratio, aspect of clip_width/clip_height

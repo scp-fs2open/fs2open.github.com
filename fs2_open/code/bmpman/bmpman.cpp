@@ -2838,14 +2838,23 @@ int bm_set_render_target(int handle, int face)
 			//if we are moving from the back buffer to a texture save whatever the current settings are
 			gr_screen.save_max_w = gr_screen.max_w;
 			gr_screen.save_max_h = gr_screen.max_h;
+
+			gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
+			gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
 		}
 
 		if (n < 0) {
 			gr_screen.max_w = gr_screen.save_max_w;
 			gr_screen.max_h = gr_screen.save_max_h;
+
+			gr_screen.max_w_unscaled = gr_screen.save_max_w_unscaled;
+			gr_screen.max_h_unscaled = gr_screen.save_max_h_unscaled;
 		} else {
 			gr_screen.max_w = bm_bitmaps[n].bm.w;
 			gr_screen.max_h = bm_bitmaps[n].bm.h;
+
+			gr_screen.max_w_unscaled = bm_bitmaps[n].bm.w;
+			gr_screen.max_h_unscaled = bm_bitmaps[n].bm.h;
 		}
 
 		gr_screen.rendering_to_face = face;

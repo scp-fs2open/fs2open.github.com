@@ -245,6 +245,7 @@ protected:
 	int texture_target;
 	int canvas_w, canvas_h;
 	int target_w, target_h;
+	int target_x, target_y;
 	int display_offset_x, display_offset_y;
 public:
 	// constructors

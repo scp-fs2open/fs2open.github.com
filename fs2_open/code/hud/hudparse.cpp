@@ -1076,6 +1076,7 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(check_base_res(base_w, base_h)) {
@@ -1091,6 +1092,10 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 
 			if ( optional_string("Canvas Size:") ) {
 				stuff_int_list(canvas_size, 2);
+			}
+
+			if ( optional_string("Display Offset:") ) {
+				stuff_int_list(display_offset, 2);
 			}
 
 			required_string("Display Size:");
@@ -1162,7 +1167,7 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	hud_gauge->initRenderStatus(active_by_default);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1189,6 +1194,7 @@ void load_gauge_lag(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -1219,6 +1225,10 @@ void load_gauge_lag(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -1262,7 +1272,7 @@ void load_gauge_lag(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1292,6 +1302,7 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -1336,6 +1347,10 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -1390,7 +1405,7 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1427,6 +1442,7 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
@@ -1481,6 +1497,10 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -1565,7 +1585,7 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1591,6 +1611,7 @@ void load_gauge_target_shields(int base_w, int base_h, int hud_font, SCP_vector<
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -1621,6 +1642,10 @@ void load_gauge_target_shields(int base_w, int base_h, int hud_font, SCP_vector<
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -1659,7 +1684,7 @@ void load_gauge_target_shields(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1685,6 +1710,7 @@ void load_gauge_player_shields(int base_w, int base_h, int hud_font, SCP_vector<
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -1715,6 +1741,10 @@ void load_gauge_player_shields(int base_w, int base_h, int hud_font, SCP_vector<
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -1753,7 +1783,7 @@ void load_gauge_player_shields(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1792,6 +1822,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -1848,6 +1879,10 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -1937,7 +1972,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1965,6 +2000,7 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
@@ -2015,6 +2051,10 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int
 			stuff_int_list(canvas_size, 2);
 		}
 
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
+
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
 	}
@@ -2060,7 +2100,7 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2090,6 +2130,7 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<in
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -2126,6 +2167,10 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<in
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -2176,7 +2221,7 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<in
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2207,6 +2252,7 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
@@ -2295,6 +2341,10 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 			stuff_int_list(canvas_size, 2);
 		}
 
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
+
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
 	}
@@ -2349,7 +2399,7 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2379,6 +2429,7 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
@@ -2435,6 +2486,10 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 			stuff_int_list(canvas_size, 2);
 		}
 
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
+
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
 	}
@@ -2484,7 +2539,7 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2529,6 +2584,7 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	// default values for the throttle
@@ -2629,6 +2685,10 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -2735,7 +2795,7 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2774,6 +2834,7 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if (Lcl_gr) {
@@ -2822,6 +2883,10 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -2890,7 +2955,7 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 	hud_gauge->initGaugePositions(gauge_positions);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2922,6 +2987,7 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(Lcl_gr) {
@@ -2970,6 +3036,10 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -3029,7 +3099,7 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3061,6 +3131,7 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(Lcl_gr){
@@ -3110,6 +3181,10 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -3170,7 +3245,7 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3202,6 +3277,7 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(Lcl_gr){
@@ -3252,6 +3328,10 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -3312,7 +3392,7 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3343,6 +3423,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -3391,6 +3472,10 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -3450,7 +3535,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3481,6 +3566,7 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -3553,6 +3639,10 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 			stuff_int_list(canvas_size, 2);
 		}
 
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
+
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
 	}
@@ -3606,7 +3696,7 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		hud_gauge->initFont(font_num);
 		hud_gauge->lockConfigColor(lock_color);
 		hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-		hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+		hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 		if(ship_idx->at(0) >= 0) {
 			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3638,6 +3728,7 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -3710,6 +3801,10 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 			stuff_int_list(canvas_size, 2);
 		}
 
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
+
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
 	}
@@ -3763,7 +3858,7 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		hud_gauge->initFont(font_num);
 		hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 		hud_gauge->lockConfigColor(lock_color);
-		hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+		hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 		if(ship_idx->at(0) >= 0) {
 			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3870,8 +3965,9 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<in
 			stuff_int_list(canvas_size, 2);
 		}
 
-		required_string("Display Offset:");
-		stuff_int_list(display_offset, 2);
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
 
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
@@ -3951,6 +4047,7 @@ void load_gauge_text_warnings(int base_w, int base_h, int hud_font, SCP_vector<i
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -3981,6 +4078,10 @@ void load_gauge_text_warnings(int base_w, int base_h, int hud_font, SCP_vector<i
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -4019,7 +4120,7 @@ void load_gauge_text_warnings(int base_w, int base_h, int hud_font, SCP_vector<i
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4074,6 +4175,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -4135,6 +4237,10 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -4250,7 +4356,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4287,6 +4393,7 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -4335,6 +4442,10 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -4415,7 +4526,7 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4448,6 +4559,7 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -4492,6 +4604,10 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -4558,7 +4674,7 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4616,6 +4732,7 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -4674,6 +4791,10 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -4823,7 +4944,7 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4858,6 +4979,7 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -4893,6 +5015,10 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -4965,7 +5091,7 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4994,6 +5120,7 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<in
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -5029,6 +5156,10 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<in
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -5079,7 +5210,7 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<in
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5108,6 +5239,7 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -5140,6 +5272,10 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -5190,7 +5326,7 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5222,6 +5358,7 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -5255,6 +5392,10 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -5315,7 +5456,7 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5346,6 +5487,7 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -5379,6 +5521,10 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -5439,7 +5585,7 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5480,6 +5626,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -5535,6 +5682,10 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -5647,7 +5798,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5684,6 +5835,7 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -5722,6 +5874,10 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -5802,7 +5958,7 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5833,6 +5989,7 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -5875,6 +6032,10 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -5933,7 +6094,7 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5956,6 +6117,7 @@ void load_gauge_training_messages(int base_w, int base_h, int hud_font, SCP_vect
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -5988,6 +6150,10 @@ void load_gauge_training_messages(int base_w, int base_h, int hud_font, SCP_vect
 			stuff_int_list(canvas_size, 2);
 		}
 
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
+
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
 	}
@@ -6004,7 +6170,7 @@ void load_gauge_training_messages(int base_w, int base_h, int hud_font, SCP_vect
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6041,6 +6207,7 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -6069,6 +6236,10 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -6136,7 +6307,7 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	hud_gauge->initHiddenByCommsMenu(hidden_by_comms_menu);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6165,6 +6336,7 @@ void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -6191,6 +6363,10 @@ void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<
 			stuff_int_list(canvas_size, 2);
 		}
 
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
+
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
 	}
@@ -6207,7 +6383,7 @@ void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6240,6 +6416,7 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -6306,6 +6483,10 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -6383,7 +6564,7 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6406,6 +6587,7 @@ void load_gauge_multi_msg(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -6438,6 +6620,10 @@ void load_gauge_multi_msg(int base_w, int base_h, int hud_font, SCP_vector<int>*
 			stuff_int_list(canvas_size, 2);
 		}
 
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
+		}
+
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
 	}
@@ -6454,7 +6640,7 @@ void load_gauge_multi_msg(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6480,6 +6666,7 @@ void load_gauge_voice_status(int base_w, int base_h, int hud_font, SCP_vector<in
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -6510,6 +6697,10 @@ void load_gauge_voice_status(int base_w, int base_h, int hud_font, SCP_vector<in
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -6548,7 +6739,7 @@ void load_gauge_voice_status(int base_w, int base_h, int hud_font, SCP_vector<in
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6574,6 +6765,7 @@ void load_gauge_ping(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -6604,6 +6796,10 @@ void load_gauge_ping(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -6642,7 +6838,7 @@ void load_gauge_ping(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6668,6 +6864,7 @@ void load_gauge_supernova(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -6698,6 +6895,10 @@ void load_gauge_supernova(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -6736,7 +6937,7 @@ void load_gauge_supernova(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7506,6 +7707,7 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* shi
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -7544,6 +7746,10 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* shi
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -7594,7 +7800,7 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* shi
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
@@ -7704,6 +7910,7 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>*
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if ( gr_screen.res == GR_640 ) {
@@ -7732,6 +7939,10 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>*
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -7813,7 +8024,7 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>*
 	hud_gauge->initFont(font_num);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7845,6 +8056,7 @@ void load_gauge_hardpoints(int base_w, int base_h, int font, SCP_vector<int>* sh
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
@@ -7875,6 +8087,10 @@ void load_gauge_hardpoints(int base_w, int base_h, int font, SCP_vector<int>* sh
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -7941,7 +8157,7 @@ void load_gauge_hardpoints(int base_w, int base_h, int font, SCP_vector<int>* sh
 	hud_gauge->initDrawOptions(show_primary, show_secondary);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7984,6 +8200,7 @@ void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if( check_base_res(base_w, base_h) ) {
@@ -8000,6 +8217,10 @@ void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -8119,7 +8340,7 @@ void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int
 	hud_gauge->initPrimaryNameOffsetX(name_x);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -8164,6 +8385,7 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int font, SCP_vector<i
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
 	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
 	if( check_base_res(base_w, base_h) ) {
@@ -8180,6 +8402,10 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int font, SCP_vector<i
 
 		if ( optional_string("Canvas Size:") ) {
 			stuff_int_list(canvas_size, 2);
+		}
+
+		if ( optional_string("Display Offset:") ) {
+			stuff_int_list(display_offset, 2);
 		}
 
 		required_string("Display Size:");
@@ -8309,7 +8535,7 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int font, SCP_vector<i
 	hud_gauge->initSecondaryUnlinkedOffsetX(unlink_x);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, 0, 0, display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
