@@ -76,7 +76,7 @@ public:
 	void blipDrawFlicker(blip *b, vec3d *pos, float alpha);
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
-	void drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha);
+	void drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha, float scale);
 	void drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult);
 	void drawSweeps();
 	void drawCrosshairs( vec3d pnt );
