@@ -268,6 +268,10 @@ void model_unload(int modelnum, int force)
 			Ship_info[i].model_num = -1;
 		}
 
+		if ( pm->id == Ship_info[i].cockpit_model_num ) {
+			Ship_info[i].cockpit_model_num = -1;
+		}
+
 		if ( pm->id == Ship_info[i].model_num_hud ) {
 			Ship_info[i].model_num_hud = -1;
 		}
