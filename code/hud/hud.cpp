@@ -785,13 +785,13 @@ void HudGauge::renderPrintf(int x, int y, int gauge_id, char* format, ...)
 
 void HudGauge::renderBitmapColor(int frame, int x, int y)
 {
-	int jx = x, jy = y, nx = 0, ny = 0;
+	int nx = 0, ny = 0;
 
 	if( !emp_should_blit_gauge() ) {
 		return;
 	}
 
-	emp_hud_jitter(&jx, &jy);
+	emp_hud_jitter(&x, &y);
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
 		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
@@ -809,19 +809,19 @@ void HudGauge::renderBitmapColor(int frame, int x, int y)
 	}
 
 	gr_set_bitmap(frame);
-	gr_bitmap(jx + nx, jy + ny);
+	gr_bitmap(x + nx, y + ny);
 	gr_reset_screen_scale();
 }
 
 void HudGauge::renderBitmap(int x, int y)
 {
-	int jx = x, jy = y, nx = 0, ny = 0;
+	int nx = 0, ny = 0;
 
 	if( !emp_should_blit_gauge() ) {
 		return;
 	}
 
-	emp_hud_jitter(&jx, &jy);
+	emp_hud_jitter(&x, &y);
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
 		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
@@ -838,7 +838,8 @@ void HudGauge::renderBitmap(int x, int y)
 		}
 	}
 	
-	gr_aabitmap(jx + nx, jy + ny);
+	gr_aabitmap(x + nx, y + ny);
+
 	gr_reset_screen_scale();
 }
 
@@ -850,13 +851,13 @@ void HudGauge::renderBitmap(int frame, int x, int y)
 
 void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy)
 {
-	int jx = x, jy = y, nx = 0, ny = 0; 
+	int nx = 0, ny = 0; 
 	
 	if( !emp_should_blit_gauge() ) { 
 		return;
 	}
 
-	emp_hud_jitter(&jx, &jy); 
+	emp_hud_jitter(&x, &y); 
 
 	gr_set_bitmap(frame);
 
@@ -875,7 +876,8 @@ void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int
 		}
 	}
 
-	gr_aabitmap_ex(jx + nx, jy + ny, w, h, sx, sy);
+	gr_aabitmap_ex(x + nx, y + ny, w, h, sx, sy);
+
 	gr_reset_screen_scale();
 }
 
@@ -982,7 +984,14 @@ void HudGauge::setClip(int x, int y, int w, int h)
 		hx = display_offset_x;
 		hy = display_offset_y;
 
-		gr_set_clip(hx+x, hy+y, w, h, false);
+		gr_resize_screen_pos(&x, &y);
+
+		hx += x;
+		hy += y;
+
+		gr_unsize_screen_pos(&hx, &hy);
+
+		gr_set_clip(hx, hy, w, h);
 	} else {
 		if ( reticle_follow ) {
 			hx += HUD_nose_x;
@@ -1012,8 +1021,12 @@ void HudGauge::resetClip()
 		hx = display_offset_x;
 		hy = display_offset_y;
 
-		w = target_w;
-		h = target_h;
+		gr_unsize_screen_pos(&hx, &hy);
+
+		w = canvas_w;
+		h = canvas_h;
+
+		gr_set_clip(hx, hy, w, h);
 	} else {
 		hx = fl2i(HUD_offset_x);
 		hy = fl2i(HUD_offset_y);
@@ -1023,10 +1036,10 @@ void HudGauge::resetClip()
 
 		w = gr_screen.max_w;
 		h = gr_screen.max_h;
-	}
 
-	// clip the screen based on the actual resolution
-	gr_set_clip(hx, hy, w, h, false);
+		// clip the screen based on the actual resolution
+		gr_set_clip(hx, hy, w, h, false);
+	}
 
 	gr_reset_screen_scale();
 }
@@ -1122,6 +1135,9 @@ void HudGauge::initCockpitTarget(char* display_name, int _target_x, int _target_
 		return;
 	}
 
+	target_x = _target_x;
+	target_y = _target_y;
+
 	strcpy_s(texture_target_fname, display_name);
 	target_w = _target_w;
 	target_h = _target_h;
@@ -1165,8 +1181,8 @@ void HudGauge::setCockpitTarget(cockpit_display *display)
 	}
 
 	texture_target = display->target;
-	display_offset_x = display->offset[0];
-	display_offset_y = display->offset[1];
+	display_offset_x = display->offset[0] + target_x;
+	display_offset_y = display->offset[1] + target_y;
 }
 
 void HudGauge::resetCockpitTarget()
