@@ -2198,6 +2198,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\parse\generic_log.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\parse\generic_log.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\Parse\PARSELO.CPP"
 				>
 			</File>
