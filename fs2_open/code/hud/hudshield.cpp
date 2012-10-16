@@ -765,7 +765,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 							renderGradientLine(sx + j, y_val, sx + j, sy);
 						break;
 					//Left
-					case 1:
+					case 3:
 						sx += 1;
 						x_val = sx + 10;
 						y_val = sy + 15;
@@ -798,7 +798,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 						sx += 2;
 						break;
 					//Right
-					case 2:
+					case 1:
 						x_val = sx + 109;	//-3 for border
 						y_val = sy + 15;
 						for(j = 0; j < 6; j++)
@@ -829,7 +829,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 							renderGradientLine(mid_val, y_val + j, x_val, y_val + j);
 						break;
 					//Bottom
-					case 3:
+					case 2:
 						y_val = sy + 80; //-3 for border
 						for(j = 0; j < 6; j++)
 							renderGradientLine(sx + j,
@@ -851,6 +851,10 @@ void HudGaugeShield::showShields(object *objp, int mode)
 						y_val += 3;
 						for(j = 0; j < 112; j++)
 							renderGradientLine(sx + j, mid_val, sx + j, y_val);
+
+					//Whoops?
+					default:
+						Warning(LOCATION, "Invalid shield quadrant %d specified!", i);
 				}
 			}
 		}
