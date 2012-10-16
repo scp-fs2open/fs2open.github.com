@@ -507,8 +507,8 @@ sexp_oper Operators[] = {
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
 	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
 	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 7 },	// Goober5000
-	{ "set-arrival-info",			OP_SET_ARRIVAL_INFO,			2, 6 },	// Goober5000
-	{ "set-departure-info",			OP_SET_DEPARTURE_INFO,			2, 5 },	// Goober5000
+	{ "set-arrival-info",			OP_SET_ARRIVAL_INFO,			2, 7 },	// Goober5000
+	{ "set-departure-info",			OP_SET_DEPARTURE_INFO,			2, 6 },	// Goober5000
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-create",					OP_SHIP_CREATE,					5, 8	},	//WMC
@@ -16901,7 +16901,7 @@ void sexp_set_support_ship(int n)
 // Goober5000 - set stuff for arriving ships or wings
 void sexp_set_arrival_info(int node)
 {
-	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, n = node;
+	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, arrival_delay, n = node;
 	bool show_warp;
 	object_ship_wing_point_team oswpt;
 
@@ -16960,6 +16960,12 @@ void sexp_set_arrival_info(int node)
 		arrival_distance = eval_num(n);
 	n = CDR(n);
 
+	// get arrival delay
+	arrival_delay = 0;
+	if (n >= 0)
+		arrival_delay = eval_num(n);
+	n = CDR(n);
+
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
@@ -16972,6 +16978,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.shipp->arrival_anchor = arrival_anchor;
 		oswpt.shipp->arrival_path_mask = arrival_mask;
 		oswpt.shipp->arrival_distance = arrival_distance;
+		oswpt.shipp->arrival_delay = arrival_delay;
 
 		if (show_warp)
 			oswpt.shipp->flags &= ~SF_NO_ARRIVAL_WARP;
@@ -16984,6 +16991,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.wingp->arrival_anchor = arrival_anchor;
 		oswpt.wingp->arrival_path_mask = arrival_mask;
 		oswpt.wingp->arrival_distance = arrival_distance;
+		oswpt.wingp->arrival_delay = arrival_delay;
 
 		if (show_warp)
 			oswpt.wingp->flags &= ~WF_NO_ARRIVAL_WARP;
@@ -16996,6 +17004,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.p_objp->arrival_anchor = arrival_anchor;
 		oswpt.p_objp->arrival_path_mask = arrival_mask;
 		oswpt.p_objp->arrival_distance = arrival_distance;
+		oswpt.p_objp->arrival_delay = arrival_delay;
 
 		if (show_warp)
 			oswpt.p_objp->flags &= ~P_SF_NO_ARRIVAL_WARP;
@@ -17007,7 +17016,7 @@ void sexp_set_arrival_info(int node)
 // Goober5000 - set stuff for departing ships or wings
 void sexp_set_departure_info(int node)
 {
-	int i, departure_location, departure_anchor, departure_mask, n = node;
+	int i, departure_location, departure_anchor, departure_mask, departure_delay, n = node;
 	bool show_warp;
 	object_ship_wing_point_team oswpt;
 
@@ -17060,6 +17069,12 @@ void sexp_set_departure_info(int node)
 		departure_mask = eval_num(n);
 	n = CDR(n);
 
+	// get departure delay
+	departure_delay = 0;
+	if (n >= 0)
+		departure_delay = eval_num(n);
+	n = CDR(n);
+
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
@@ -17071,6 +17086,7 @@ void sexp_set_departure_info(int node)
 		oswpt.shipp->departure_location = departure_location;
 		oswpt.shipp->departure_anchor = departure_anchor;
 		oswpt.shipp->departure_path_mask = departure_mask;
+		oswpt.shipp->departure_delay = departure_delay;
 
 		if (show_warp)
 			oswpt.shipp->flags &= ~SF_NO_DEPARTURE_WARP;
@@ -17082,6 +17098,7 @@ void sexp_set_departure_info(int node)
 		oswpt.wingp->departure_location = departure_location;
 		oswpt.wingp->departure_anchor = departure_anchor;
 		oswpt.wingp->departure_path_mask = departure_mask;
+		oswpt.wingp->departure_delay = departure_delay;
 
 		if (show_warp)
 			oswpt.wingp->flags &= ~WF_NO_DEPARTURE_WARP;
@@ -17093,6 +17110,7 @@ void sexp_set_departure_info(int node)
 		oswpt.p_objp->departure_location = departure_location;
 		oswpt.p_objp->departure_anchor = departure_anchor;
 		oswpt.p_objp->departure_path_mask = departure_mask;
+		oswpt.p_objp->departure_delay = departure_delay;
 
 		if (show_warp)
 			oswpt.p_objp->flags &= ~P_SF_NO_DEPARTURE_WARP;
@@ -25007,9 +25025,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_ARRIVAL_ANCHOR_ALL;
 			else if (argnum == 3)
 				return OPF_NUMBER;
-			else if (argnum == 4)
+			else if (argnum == 4 || argnum == 5)
 				return OPF_POSITIVE;
-			else if (argnum == 5)
+			else if (argnum == 6)
 				return OPF_BOOL;
 			break;
 
@@ -25021,9 +25039,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_DEPARTURE_LOCATION;
 			else if (argnum == 2)
 				return OPF_SHIP_WITH_BAY;
-			else if (argnum == 3)
+			else if (argnum == 3 || argnum == 4)
 				return OPF_NUMBER;
-			else if (argnum == 4)
+			else if (argnum == 5)
 				return OPF_BOOL;
 			break;
 
@@ -29523,23 +29541,25 @@ sexp_help_struct Sexp_help[] = {
 
 	// Goober5000
 	{ OP_SET_ARRIVAL_INFO, "set-arrival-info\r\n"
-		"\tSets arrival information for a ship or wing.  Takes 2 to 6 arguments...\r\n"
+		"\tSets arrival information for a ship or wing.  Takes 2 to 7 arguments...\r\n"
 		"\t1: Ship or wing name\r\n"
 		"\t2: Arrival location\r\n"
 		"\t3: Arrival anchor (optional; only required for certain locations)\r\n"
 		"\t4: Arrival path mask (optional; defaults to 0; note that this is a bitfield)\r\n"
 		"\t5: Arrival distance (optional; defaults to 0)\r\n"
-		"\t6: Whether to show a jump effect if arriving from subspace (optional; defaults to true)\r\n"
+		"\t6: Arrival delay (optional; defaults to 0)\r\n"
+		"\t7: Whether to show a jump effect if arriving from subspace (optional; defaults to true)\r\n"
 	},
 
 	// Goober5000
 	{ OP_SET_DEPARTURE_INFO, "set-departure-info\r\n"
-		"\tSets departure information for a ship or wing.  Takes 2 to 5 arguments...\r\n"
+		"\tSets departure information for a ship or wing.  Takes 2 to 6 arguments...\r\n"
 		"\t1: Ship or wing name\r\n"
 		"\t2: Departure location\r\n"
 		"\t3: Departure anchor (optional; only required for certain locations)\r\n"
 		"\t4: Departure path mask (optional; defaults to 0; note that this is a bitfield)\r\n"
-		"\t5: Whether to show a jump effect if departing to subspace (optional; defaults to true)\r\n"
+		"\t5: Departure delay (optional; defaults to 0)\r\n"
+		"\t6: Whether to show a jump effect if departing to subspace (optional; defaults to true)\r\n"
 	},
 
 	// Bobboau
