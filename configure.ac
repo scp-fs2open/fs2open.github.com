@@ -127,8 +127,32 @@ case "$target" in
 	*-*-solaris*)
 		# Solaris
 		echo "Using Solaris 10 defines (for $host_os)"
+        echo "************************************************************"
+        echo "************************ NOTE ******************************"
+        echo "* Support for this OS is not actively maintatined. It ******"
+        echo "* should work but please provide feedback about builds and *"
+        echo "* play experience on this OS at ****************************"
+        echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"
+        echo "************************************************************"
 		fs2_os_solaris="yes"
 		;;
+    *freebsd*)
+        # FreeBSD 9.1
+        echo "Using Unix defines (for $host_os $host_cpu)"
+        echo "************************************************************"
+        echo "************************ NOTE ******************************"
+        echo "* Support for this OS is not actively maintatined. It ******"
+        echo "* should work but please provide feedback about builds and *"
+        echo "* play experience on this OS at ****************************"
+        echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"
+        echo "************************************************************"
+        fs2_os_unix="yes"
+        if test "$host_cpu" = "amd64"
+        then
+            D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi"
+        fi
+        D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
+        ;;
 	*)
 		# Unknown
 		echo "fs2_open does not support $host_cpu-$host_os"
@@ -136,6 +160,12 @@ case "$target" in
 		echo "host_cpu:    " $host_cpu
 		echo "host_vendor: " $host_vendor
 		echo "host_os      " $host_os
+        echo "************************************************************"
+        echo "* Please let us know about successful builds on this OS at *"
+        echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"
+        echo "* Create a new thread about your build experience and what *"
+        echo "* was required to make the build successful. ***************"
+        echo "************************************************************"
 		exit 1;
 		;;
 esac
@@ -364,7 +394,9 @@ PKG_CHECK_MODULES(
 	[LUA],
 	[lua >= 5.1.3],
 	[], ## do nothing special
-	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [])])
+	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [], [
+        PKG_CHECK_MODULES([LUA], [lua-5.1 >= 5.1.3], [])
+    ])])
 D_CFLAGS=$D_CFLAGS" $LUA_CFLAGS"
 FS2_LIBS=$FS2_LIBS" $LUA_LIBS"
 

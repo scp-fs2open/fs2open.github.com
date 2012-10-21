@@ -137,6 +137,7 @@ typedef struct polymodel_instance {
 #define MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE (1 << 1)	// Turrets only target things they're allowed to shoot at (e.g. if check-hull fails, won't keep targeting)
 #define MSS_FLAG2_NO_DISAPPEAR					 (1 << 2)	// Submodel won't disappear when subsystem destroyed
 #define MSS_FLAG2_COLLIDE_SUBMODEL				 (1 << 3)	// subsystem takes damage only from hits which impact the associated submodel
+#define MSS_FLAG2_DESTROYED_ROTATION			 (1 << 4)   // allows subobjects to continue to rotate even if they have been destroyed
 
 #define NUM_SUBSYSTEM_FLAGS			33
 

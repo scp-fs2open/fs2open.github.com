@@ -791,11 +791,6 @@ void techroom_change_tab(int num)
 				{
 					if (Techroom_show_all || (Weapon_info[i].wi_flags & mask) || (Weapon_info[i].wi_flags2 & mask2))
 					{ 
-						// don't show #weak weapons unless we're showing all of them
-						// (mainly to deal with the multiplayer bug caused by the player-allowed fix for FSPort)
-						if (!Techroom_show_all && weapon_is_weak_variant(&Weapon_info[i]))
-							continue;
-
 						// we have a weapon that should be in the tech db, so fill out the entry struct
 						Weapon_list[Weapon_list_size].index = i;
 						Weapon_list[Weapon_list_size].desc = Weapon_info[i].tech_desc;

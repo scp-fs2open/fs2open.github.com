@@ -896,6 +896,20 @@ ADE_FUNC(__tostring, l_Enum, NULL, "Returns enumeration name", "string", "Enumer
 	return ade_set_args(L, "s", "<INVALID>");
 }
 
+ADE_FUNC(__eq, l_Enum, "enumeration", "Compares the two enumerations for equality", "boolean", "true if equal, false otherwise")
+{
+	enum_h *e1 = NULL; 
+	enum_h *e2 = NULL;
+
+	if(!ade_get_args(L, "oo", l_Enum.GetPtr(&e1), l_Enum.GetPtr(&e2)))
+		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
+
+	if (e1 == NULL || e2 == NULL)
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", e1->index == e2->index);
+}
+
 //**********HANDLE: event
 ade_obj<int> l_Event("event", "Mission event handle");
 
@@ -1711,6 +1725,14 @@ struct glowpoint_h
 
 ade_obj<glowpoint_h> l_Glowpoint("glowpoint", "A model glowpoint");
 
+// Glowbanks:
+class dockingbays_h : public model_h 
+{
+	public:
+	dockingbays_h(polymodel *pm) : model_h(pm){}
+	dockingbays_h() : model_h(){}
+};
+ade_obj<dockingbays_h> l_Dockingbays("dockingbays", "The docking bays of a model");
 
 ADE_VIRTVAR(Textures, l_Model, "modeltextures_h", "Model textures", "modeltextures_h", "Model textures, or an invalid modeltextures handle if the model handle is invalid")
 {
@@ -1765,6 +1787,24 @@ ADE_VIRTVAR(Eyepoints, l_Model, "eyepoints", "Model eyepoints", "eyepoints", "Ar
 	}
 
 	return ade_set_args(L, "o", l_Eyepoints.Set(eyepoints_h(pm)));
+}
+
+ADE_VIRTVAR(Dockingbays, l_Model, "dockingbays", "Docking bays handle of model", "dockingbays", "Array of docking bays on this model, or invalid handle on error")
+{
+	model_h *mdl = NULL;
+	dockingbays_h *dbh = NULL;
+	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_Dockingbays.GetPtr(&dbh)))
+		return ade_set_error(L, "o", l_Dockingbays.Set(dockingbays_h()));
+
+	polymodel *pm = mdl->Get();
+	if(pm == NULL)
+		return ade_set_error(L, "o", l_Dockingbays.Set(dockingbays_h()));
+
+	if(ADE_SETTING_VAR && dbh->IsValid()) {
+		LuaError(L, "Attempt to use Incomplete Feature: Docking bays copy");
+	}
+
+	return ade_set_args(L, "o", l_Dockingbays.Set(dockingbays_h(pm)));
 }
 
 extern void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
@@ -2141,6 +2181,248 @@ ADE_FUNC(isValid, l_Glowpoint, NULL, "Returns wether this handle is valid or not
 		return ADE_RETURN_FALSE;
 	
 	return ade_set_args(L, "b", glh.isValid());
+}
+
+class dockingbay_h : public model_h
+{
+private:
+	int dock_id;
+
+public:
+	dockingbay_h(polymodel *pm, int dock_id) : model_h(pm), dock_id(dock_id) {}
+	dockingbay_h() : model_h(), dock_id(-1){}
+
+	bool IsValid()
+	{
+		if (!model_h::IsValid())
+		{
+			return false;
+		}
+		else
+		{
+			return dock_id >= 0 && dock_id < this->Get()->n_docks;
+		}
+	}
+
+	dock_bay* getDockingBay()
+	{
+		if (!this->IsValid())
+		{
+			return NULL;
+		}
+
+		return &this->Get()->docking_bays[dock_id];
+	}
+};
+ade_obj<dockingbay_h> l_Dockingbay("dockingbay", "Handle to a model docking bay");
+
+//**********HANDLE: dockingbays
+ADE_INDEXER(l_Dockingbays, "dockingbay", "Gets a dockingbay handle from this model. If a string is given then a dockingbay with that name is searched.", "dockingbay", "Handle or invalid handle on error")
+{
+	dockingbays_h *dbhp = NULL;
+	int index = -1;
+	dockingbay_h *newVal = NULL;
+
+	if (lua_isnumber(L, 2))
+	{
+		if (!ade_get_args(L, "oi|o", l_Dockingbays.GetPtr(&dbhp), &index, l_Dockingbay.GetPtr(&newVal)))
+			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
+
+		if (!dbhp->IsValid())
+			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
+
+		index--; // Lua --> C/C++
+	}
+	else
+	{
+		char* name = NULL;
+
+		if (!ade_get_args(L, "os|o", l_Dockingbays.GetPtr(&dbhp), &name, l_Dockingbay.GetPtr(&newVal)))
+		{
+			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
+		}
+
+		if (!dbhp->IsValid() && name != NULL)
+			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
+		
+		index = model_find_dock_name_index(dbhp->GetID(), name);
+	}
+
+	polymodel *pm = dbhp->Get();
+
+	if (index < 0 || index >= pm->n_docks)
+	{
+		return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
+	}
+
+	return ade_set_args(L, "o", l_Dockingbay.Set(dockingbay_h(pm, index)));
+}
+
+ADE_FUNC(__len, l_Dockingbays, NULL, "Retrieves the number of dockingbays on this model", "number", "number of docking bays or 0 on error")
+{
+	dockingbays_h *dbhp = NULL;
+
+	if (!ade_get_args(L, "o", l_Dockingbays.GetPtr(&dbhp)))
+		return ade_set_error(L, "i", 0);
+
+	if (!dbhp->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", dbhp->Get()->n_docks);
+}
+
+//**********HANDLE: dockingbay
+ADE_FUNC(__len, l_Dockingbay, NULL, "Gets the number of docking points in this bay", "number", "The number of docking points or 0 on error")
+{
+	dockingbay_h* dbh = NULL;
+
+	if (!ade_get_args(L, "o", l_Dockingbay.GetPtr(&dbh)))
+	{
+		return ade_set_error(L, "i", 0);
+	}
+
+	if (dbh == NULL || !dbh->IsValid())
+	{
+		return ade_set_error(L, "i", 0);
+	}
+
+	return ade_set_args(L, "i", dbh->getDockingBay()->num_slots);
+}
+
+ADE_FUNC(getName, l_Dockingbay, NULL, "Gets the name of this docking bay", "string", "The name or an empty string on error")
+{
+	dockingbay_h* dbh = NULL;
+	if (!ade_get_args(L, "o", l_Dockingbay.GetPtr(&dbh)))
+	{
+		return ade_set_error(L, "s", "");
+	}
+
+	if (dbh == NULL || !dbh->IsValid())
+	{
+		return ade_set_error(L, "s", "");
+	}
+
+	dock_bay* dbp = dbh->getDockingBay();
+
+	return ade_set_args(L, "s", dbp->name);
+}
+
+ADE_FUNC(getPoint, l_Dockingbay, "number index", "Gets the location of a docking point in this bay", "vector", "The local location or null vector on error")
+{
+	dockingbay_h* dbh = NULL;
+	int index = -1;
+
+	if (!ade_get_args(L, "oi", l_Dockingbay.GetPtr(&dbh), &index))
+	{
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	}
+
+	index--; // Lua --> C/C++
+
+	if (dbh == NULL || !dbh->IsValid())
+	{
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	}
+
+	dock_bay* dbp = dbh->getDockingBay();
+
+	if (index < 0 || index > dbp->num_slots)
+	{
+		LuaError(L, "Invalid dock bay index %d!", (index + 1));
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(dbp->pnt[index]));
+}
+
+ADE_FUNC(getNormal, l_Dockingbay, "number index", "Gets the normal of a docking point in this bay", "vector", "The normal vector or null vector on error")
+{
+	dockingbay_h* dbh = NULL;
+	int index = -1;
+
+	if (!ade_get_args(L, "oi", l_Dockingbay.GetPtr(&dbh), &index))
+	{
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	}
+
+	index--; // Lua --> C/C++
+
+	if (dbh == NULL || !dbh->IsValid())
+	{
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	}
+
+	dock_bay* dbp = dbh->getDockingBay();
+
+	if (index < 0 || index > dbp->num_slots)
+	{
+		LuaError(L, "Invalid dock bay index %d!", (index + 1));
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(dbp->norm[index]));
+}
+
+ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay", "Computes the final position and orientation of a docker bay that docks with this bay.", "vector, orientation", "The local location and orientation of the docker vessel in the reference to the vessel of the docking bay handle, or a nil value on error")
+{
+	dockingbay_h *dockee_bay_h = NULL, *docker_bay_h = NULL;
+	vec3d final_pos;
+	matrix final_orient;
+
+	if (!ade_get_args(L, "oo", l_Dockingbay.GetPtr(&dockee_bay_h), l_Dockingbay.GetPtr(&docker_bay_h)))
+	{
+		return ADE_RETURN_NIL;
+	}
+
+	if (!dockee_bay_h->IsValid() || !docker_bay_h->IsValid())
+	{
+		return ADE_RETURN_NIL;
+	}
+
+	dock_bay* dockee_bay = dockee_bay_h->getDockingBay();
+	dock_bay* docker_bay = docker_bay_h->getDockingBay();
+
+	// Mostly the same as aicode.cpp: dock_orient_and_approach
+	vec3d dockee_dock_pos, docker_dock_pos_local, docker_dock_pos;
+	vec3d dock_up_dir;
+
+	// Get the center between the two docking points
+	vm_vec_avg(&dockee_dock_pos, &dockee_bay->pnt[0], &dockee_bay->pnt[1]);
+	vm_vec_avg(&docker_dock_pos_local, &docker_bay->pnt[0], &docker_bay->pnt[1]);
+
+	// Get the up-vector of the docking bay
+	vm_vec_sub(&dock_up_dir, &dockee_bay->pnt[1], &dockee_bay->pnt[0]);
+
+	// Compute the orientation
+	vm_vector_2_matrix(&final_orient, &dockee_bay->norm[0], &dock_up_dir, NULL);
+
+	// Rotate the docker position into the right orientation
+	vm_vec_unrotate(&docker_dock_pos, &docker_dock_pos_local, &final_orient);
+
+	// The docker vector points into the wrong direction, we need to scale it appropriately
+	vm_vec_scale(&docker_dock_pos, -1.0f);
+
+	// Now get the position of the other vessel
+	vm_vec_add(&final_pos, &dockee_dock_pos, &docker_dock_pos);
+
+	return ade_set_args(L, "oo", l_Vector.Set(final_pos),l_Matrix.Set(matrix_h(&final_orient)));
+}
+
+ADE_FUNC(isValid, l_Dockingbay, NULL, "Detects whether is valid or not", "number", "<i>true</i> if valid, <i>false</i> otherwise")
+{
+	dockingbay_h* dbh = NULL;
+
+	if (!ade_get_args(L, "o", l_Dockingbay.GetPtr(&dbh)))
+	{
+		return ade_set_error(L, "i", 0);
+	}
+
+	if (dbh == NULL)
+	{
+		return ADE_RETURN_FALSE;
+	}
+	
+	return ade_set_args(L, "b", dbh->IsValid());
 }
 
 //**********HANDLE: order
@@ -7010,6 +7292,8 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
 
+	sso->ss->turret_next_fire_pos++;
+
 	return ade_set_args(L, "b", rtn);
 }
 
@@ -7950,6 +8234,95 @@ ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boo
 	}
 
 	if (shipp->flags & SF_DISABLED)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(Stealthed, l_Ship, "boolean", "Stealth status of this ship", "boolean", "true if stealthed, false otherwise or on error")
+{
+	object_h *objh=NULL;
+	bool stealthed = false;
+
+	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &stealthed))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR)
+	{
+		if(stealthed)
+		{
+			shipp->flags2 &= ~SF2_STEALTH;
+		}
+		else
+		{
+			shipp->flags2 |= SF2_STEALTH;
+		}
+	}
+
+	if (shipp->flags2 & SF2_STEALTH)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(HiddenFromSensors, l_Ship, "boolean", "Hidden from sensors status of this ship", "boolean", "true if invisible to hidden from sensors, false otherwise or on error")
+{
+	object_h *objh=NULL;
+	bool hidden = false;
+
+	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &hidden))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR)
+	{
+		if(hidden)
+		{
+			shipp->flags &= ~SF_HIDDEN_FROM_SENSORS;
+		}
+		else
+		{
+			shipp->flags |= SF_HIDDEN_FROM_SENSORS;
+		}
+	}
+
+	if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(Gliding, l_Ship, "boolean", "Specifies whether this ship is currently gliding or not.", "boolean", "true if gliding, false otherwise or in case of error")
+{
+	object_h *objh=NULL;
+	bool gliding = false;
+
+	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &gliding))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR)
+	{
+		if (Ship_info[shipp->ship_info_index].can_glide)
+		{
+			object_set_gliding(&Objects[shipp->objnum], gliding, true);
+		}
+	}
+
+	if (objh->objp->phys_info.flags & PF_GLIDING || objh->objp->phys_info.flags & PF_FORCE_GLIDE)
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -12036,6 +12409,53 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }
 
+ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, [boolean setColor=false]]",
+	"Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
+	"number,number,number,number",
+	"Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
+{
+	if(!Gr_inited) {
+		return ADE_RETURN_NIL;
+	}
+
+	ship_subsys_h *sshp = NULL;
+	bool draw = true;
+	bool set_color = false;
+
+	if( !ade_get_args(L, "o|bb", l_Subsystem.GetPtr(&sshp), &draw, &set_color) ) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (!sshp->IsValid())
+	{
+		return ADE_RETURN_NIL;
+	}
+
+	bool entered_frame = false;
+	
+	if ( !(g3_in_frame( ) > 0 ) )
+	{
+		g3_start_frame( 0 );
+		entered_frame = true;
+	}
+
+	int coords[4];
+
+	int in_sight = draw_subsys_brackets(sshp->ss, 24, 24, draw, set_color, coords);
+
+	if ( entered_frame )
+		g3_end_frame( );
+
+	if (in_sight > 0)
+	{
+		return ade_set_args(L, "iiii", coords[0], coords[1], coords[2], coords[3]);
+	}
+	else
+	{
+		return ADE_RETURN_NIL;
+	}
+}
+
 #define MAX_TEXT_LINES		256
 static char *BooleanValues[] = {"False", "True"};
 static const int NextDrawStringPosInitial[] = {0, 0};
@@ -13236,6 +13656,27 @@ ADE_FUNC(renderFrame, l_Mission, NULL, "Renders mission frame, but does not move
 	camid cid = game_render_frame_setup();
 	game_render_frame( cid );
 	game_render_post_frame();
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(applyShudder, l_Mission, "number time, number intesity", "Applies a shudder effects to the camera. Time is in seconds. Intensity specifies the shudder effect strength, the Maxim has a value of 1440.", "boolean", "true if successfull, false otherwise")
+{
+	float time = -1.0f;
+	float intensity = -1.0f;
+
+	if (!ade_get_args(L, "ff", &time, &intensity))
+		return ADE_RETURN_FALSE;
+
+	if (time < 0.0f || intensity < 0.0f)
+	{
+		LuaError(L, "Illegal shudder values given. Must be bigger than zero, got time of %f and intensity of %f.", time, intensity);
+		return ADE_RETURN_FALSE;
+	}
+
+	int int_time = fl2i(time * 1000.0f);
+
+	game_shudder_apply(int_time, intensity * 0.01f);
 
 	return ADE_RETURN_TRUE;
 }

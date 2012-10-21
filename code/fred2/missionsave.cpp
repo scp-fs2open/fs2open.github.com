@@ -3297,7 +3297,7 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 int CFred_mission_save::save_events()
 {
 	SCP_string sexp_out;
-	int i;
+	int i, j, add_flag;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Events");
@@ -3398,6 +3398,24 @@ int CFred_mission_save::save_events()
 				fout("\n+Team:");
 			} 
 			fout(" %d", Mission_events[i].team);
+		}
+
+		if (Format_fs2_open != FSO_FORMAT_RETAIL && Mission_events[i].mission_log_flags != 0 ) {
+			if ( optional_string_fred("+Event Log Flags: (", "$Formula:")){
+				parse_comments();
+			} else {
+				fso_comment_push(";;FSO 3.6.11;;");
+				fout_version("\n+Event Log Flags: (");
+				fso_comment_pop(); 
+			}
+
+			for (j = 0; j < MAX_MISSION_EVENT_LOG_FLAGS ; j++) {
+				add_flag = 1 << j; 
+				if (Mission_events[i].mission_log_flags & add_flag ) {
+					fout(" \"%s\"", Mission_event_log_flags[j]);
+				}
+			}
+			fout(" )"); 
 		}
 
 		fso_comment_pop();

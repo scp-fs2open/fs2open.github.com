@@ -8065,7 +8065,7 @@ void ai_chase()
 	}
 
 	// Can only acquire lock on a target that isn't hidden from sensors
-	if ( !(Ships[En_objp->instance].flags & SF_HIDDEN_FROM_SENSORS) && !is_stealthy_ship ) {
+	if ( En_objp->type == OBJ_SHIP && !(Ships[En_objp->instance].flags & SF_HIDDEN_FROM_SENSORS) && !is_stealthy_ship ) {
 		update_aspect_lock_information(aip, &real_vec_to_enemy, dist_to_enemy, En_objp->radius);
 	} else {
 		aip->current_target_is_locked = 0;
@@ -9156,7 +9156,7 @@ int num_ships_attacking(int target_objnum)
 	ai_info	*attacking_aip;
 	ship_obj	*so;
 	int		count = 0;
-	int target_team = Ships[Objects[target_objnum].instance].team;
+	int target_team = obj_team(&Objects[target_objnum]);
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
 	{
@@ -10883,8 +10883,8 @@ void process_subobjects(int objnum)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
-		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke)
-		if (pss->max_hits > 0 && pss->current_hits <= 0.0f ) 
+		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke) (but also process subobjects that are allowed to rotate)
+		if (pss->max_hits > 0 && pss->current_hits <= 0.0f && !(psub->flags2 & MSS_FLAG2_DESTROYED_ROTATION))
 			continue;
 
 		switch (psub->type) {
@@ -11811,7 +11811,10 @@ void ai_preprocess_ignore_objnum(object *objp, ai_info *aip)
 
 	if (is_ignore_object(aip, aip->goal_objnum))
 	{
-		aip->goal_objnum = -1;
+		// you can land and launch on a ship you're ignoring!
+		if (aip->mode != AIM_BAY_EMERGE && aip->mode != AIM_BAY_DEPART) {
+			aip->goal_objnum = -1;
+		}
 
 		// AL 12-11-97: If in STRAFE mode, we need to ensure that target_objnum is also
 		//              set to -1

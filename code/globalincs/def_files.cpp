@@ -145,7 +145,7 @@ $Enable external shaders: NO											\n\
 ;; If not set, a hit to a turret's barrels will not count as a hit to	\n\
 ;; the turret unless it is also within the turret base's radius.		\n\
 $Fixed Turret Collisions: NO											\n\
-																		\n\
+																		\n""\
 ;; If not set, hits will damage nearest subsystem first, rather than the\n\
 ;; impacted physical subsystem first.									\n\
 $Damage Impacted Subsystem First: NO									\n\
@@ -1043,7 +1043,7 @@ $score assists based on damage caused: NO								\n\
 $allow event and goal scoring in multiplayer: NO						\n\
 																		\n\
 ;; if set, the AI will properly link primaries according to				\n\
-;; specified percentages of energy levels instead of retail behavior	\n\
+;; specified percentages of energy levels, instead of retail behavior	\n\
 ;; where it mistakenly linked according to absolute energy levels		\n\
 $fix linked primary weapon decision bug: NO								\n\
 																		\n\
@@ -1067,7 +1067,7 @@ $multi allow empty primaries:		NO									\n\
 ;; allow a player to commit into a multiplayer game without secondaries	\n\
 $multi allow empty secondaries:		NO									\n\
 																		\n\
-;; if set, allows turrets target other weapons that bombs assuming		\n\
+;; if set, allows turrets target other weapons than bombs assuming		\n\
 ;; it is within allowed target priorities								\n\
 $allow turrets target weapons freely: NO								\n\
 																		\n\
@@ -1094,8 +1094,10 @@ $turrets ignore targets radius in range checks: NO						\n\
 ;; during dogfights. This results in more aggressive AI.				\n\
 $no extra collision avoidance vs player:	NO							\n\
 																		\n\
-;; If set, the game will check if the dying ship is a player's wingman, \n\
-;; before making it give a death scream					 				\n\
+;; If set, the game will not check if the dying ship is a player's		\n\
+;; wingman, or if the maximum number of screams have been played, or 	\n\
+;; even if the dying ship is on the player's team before making it give	\n\
+;; a death scream										 				\n\
 $perform fewer checks for death screams:	NO							\n\
 																		\n\
 ;; TBD																	\n\
@@ -1111,8 +1113,8 @@ $all ships manage shields:				NO								\n\
 ;; If set, ai aims using ship center instead of first gunpoint			\n\
 $ai aims from ship center:			NO									\n\
 																		\n\
-;; If set, prevents fighters from linking their weapons in the first	\n\
-;; few minutes of the mission											\n\
+;; If set, allows AI fighters to link their weapons at the beginning of	\n\
+;; a mission instead of imposing a delay of 30s to 120s					\n\
 $allow primary link at mission start:	NO								\n\
 																		\n\
 ;; If set, prevents beams from instantly killing all weapons from first	\n\
@@ -1126,7 +1128,7 @@ $disable weapon damage scaling for player:	NO							\n\
 $countermeasures affect aspect seekers:	NO								\n\
 																		\n\
 ;; TBD																	\n\
-$ai path mode:	normal													\n\
+$ai path mode:	normal													\n""\
 																		\n\
 ;; TBD																	\n\
 $no warp camera:	NO													\n\

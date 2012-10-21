@@ -701,7 +701,8 @@ class waypoint_list;
 #define OP_DESTROY_SUBSYS_INSTANTLY			(0x0016 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Admiral MS
 #define OP_DEBUG							(0x0017 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_SET_MISSION_MOOD					(0x0018 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-
+#define OP_NAV_SELECT						(0x0019 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Talon1024
+#define OP_NAV_DESELECT						(0x0020 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Talon1024
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1195,5 +1196,7 @@ extern int Sexp_hud_display_warpout;
 
 //Needed for scripting access to ship effects
 int get_effect_from_name(char* name);
+
+void maybe_write_to_event_log(int result);
 
 #endif

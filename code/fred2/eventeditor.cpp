@@ -59,6 +59,14 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	modified = 0;
 	select_sexp_node = -1;
 	m_wave_id = -1;
+	m_log_true = 0;
+	m_log_false = 0;
+	m_log_always_true = 0;
+	m_log_always_false = 0;
+	m_log_1st_repeat = 0;
+	m_log_last_repeat = 0;
+	m_log_1st_trigger = 0;
+	m_log_last_trigger = 0;
 }
 
 void event_editor::DoDataExchange(CDataExchange* pDX)
@@ -80,6 +88,14 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_PERSONA_NAME, m_persona);
 	DDX_CBString(pDX, IDC_WAVE_FILENAME, m_wave_filename);
 	DDX_LBIndex(pDX, IDC_MESSAGE_LIST, m_cur_msg);
+	DDX_Check(pDX, IDC_MISSION_LOG_TRUE, m_log_true);
+	DDX_Check(pDX, IDC_MISSION_LOG_FALSE, m_log_false);
+	DDX_Check(pDX, IDC_MISSION_LOG_ALWAYS_TRUE, m_log_always_true);
+	DDX_Check(pDX, IDC_MISSION_LOG_ALWAYS_FALSE, m_log_always_false);
+	DDX_Check(pDX, IDC_MISSION_LOG_1ST_REPEAT, m_log_1st_repeat);
+	DDX_Check(pDX, IDC_MISSION_LOG_LAST_REPEAT, m_log_last_repeat);
+	DDX_Check(pDX, IDC_MISSION_LOG_1ST_TRIGGER, m_log_1st_trigger);
+	DDX_Check(pDX, IDC_MISSION_LOG_LAST_TRIGGER, m_log_last_trigger);
 
 
 	// m_team == -1 maps to 2
@@ -419,6 +435,8 @@ int event_editor::query_modified()
 			return 1;
 		if (advanced_stricmp(m_events[i].objective_key_text, Mission_events[i].objective_key_text))
 			return 1;
+		if (m_events[i].mission_log_flags != Mission_events[i].mission_log_flags)
+			return 1;
 	}
 
 	if (m_cur_msg < 0)
@@ -510,6 +528,7 @@ void event_editor::OnOk()
 		Mission_events[i].formula = m_event_tree.save_tree(m_events[i].formula);
 		Mission_events[i].objective_text = m_events[i].objective_text;
 		Mission_events[i].objective_key_text = m_events[i].objective_key_text;
+		Mission_events[i].mission_log_flags = m_events[i].mission_log_flags;
 	}
 
 	// now update all sexp references
@@ -717,6 +736,7 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	m_events[num].objective_text = NULL;
 	m_events[num].objective_key_text = NULL;
 	m_events[num].team = -1;
+	m_events[num].mission_log_flags = 0;
 	m_sig[num] = -1;
 
 	m_event_tree.item_index = -1;
@@ -874,6 +894,26 @@ void event_editor::save_event(int e)
 		}
 	}
 
+	// handle event log flags
+	m_events[e].mission_log_flags = 0;
+	if (m_log_true) 
+		m_events[e].mission_log_flags |= MLF_SEXP_TRUE;
+	if (m_log_false) 
+		m_events[e].mission_log_flags |= MLF_SEXP_FALSE;
+	if (m_log_always_true) 
+		m_events[e].mission_log_flags |= MLF_SEXP_KNOWN_TRUE;
+	if (m_log_always_false) 
+		m_events[e].mission_log_flags |= MLF_SEXP_KNOWN_FALSE;
+	if (m_log_1st_repeat) 
+		m_events[e].mission_log_flags |= MLF_FIRST_REPEAT_ONLY;
+	if (m_log_last_repeat) 
+		m_events[e].mission_log_flags |= MLF_LAST_REPEAT_ONLY;
+	if (m_log_1st_trigger) 
+		m_events[e].mission_log_flags |= MLF_FIRST_TRIGGER_ONLY;
+	if (m_log_last_trigger) 
+		m_events[e].mission_log_flags |= MLF_LAST_TRIGGER_ONLY;
+
+
 	// Search for item to update
 	HTREEITEM h = m_event_tree.GetRootItem();
 	while (h) {
@@ -993,6 +1033,48 @@ void event_editor::update_cur_event()
 	GetDlgItem(IDC_EVENT_TEAM)->EnableWindow(FALSE);
 	if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ){
 		GetDlgItem(IDC_EVENT_TEAM)->EnableWindow(TRUE);
+	}
+
+	// handle event log flags
+	if (m_events[cur_event].mission_log_flags & MLF_SEXP_TRUE) {
+		m_log_true  = TRUE;
+	}else {
+		m_log_true  = FALSE;
+	}
+	if (m_events[cur_event].mission_log_flags & MLF_SEXP_FALSE) {
+		m_log_false  = TRUE;
+	}else {
+		m_log_false  = FALSE;
+	}
+	if (m_events[cur_event].mission_log_flags & MLF_SEXP_KNOWN_TRUE) {
+		m_log_always_true  = TRUE;
+	}else {
+		m_log_always_true  = FALSE;
+	}
+	if (m_events[cur_event].mission_log_flags & MLF_SEXP_KNOWN_FALSE) {
+		m_log_always_false  = TRUE;
+	}else {
+		m_log_always_false  = FALSE;
+	}
+	if (m_events[cur_event].mission_log_flags & MLF_FIRST_REPEAT_ONLY) {
+		m_log_1st_repeat  = TRUE;
+	}else {
+		m_log_1st_repeat  = FALSE;
+	}
+	if (m_events[cur_event].mission_log_flags & MLF_LAST_REPEAT_ONLY) {
+		m_log_last_repeat  = TRUE;
+	}else {
+		m_log_last_repeat  = FALSE;
+	}
+	if (m_events[cur_event].mission_log_flags & MLF_FIRST_TRIGGER_ONLY) {
+		m_log_1st_trigger  = TRUE;
+	}else {
+		m_log_1st_trigger  = FALSE;
+	}
+	if (m_events[cur_event].mission_log_flags & MLF_LAST_TRIGGER_ONLY) {
+		m_log_last_trigger  = TRUE;
+	}else {
+		m_log_last_trigger  = FALSE;
 	}
 
 	UpdateData(FALSE);

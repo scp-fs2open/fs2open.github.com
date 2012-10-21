@@ -395,6 +395,9 @@ void gr_screen_resize(int width, int height)
 		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
 
+	gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
+	gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
+
 	if (gr_screen.mode == GR_OPENGL) {
 		extern void opengl_setup_viewport();
 		opengl_setup_viewport();
@@ -464,6 +467,9 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
 		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
+
+	gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
+	gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
 
 #ifdef WIN32
 	// FRED doesn't need this

@@ -251,7 +251,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "play fire sound for player", MSS_FLAG2_PLAYER_TURRET_SOUND, 1},
 	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1},
 	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1},
-	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1}
+	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1},
+	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1}
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -6391,7 +6392,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 		return;
 	}
 
-	int i, tm_num, diffuse_target = -1, glow_target = -1, bmp_handle = -1;
+	int i, tm_num, diffuse_target = -1, glow_target = -1, glow_handle = -1, diffuse_handle = -1;
 	int w, h;
 	cockpit_display new_display;
 
@@ -6404,30 +6405,22 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 		if ( tm_num >= 0 ) {
 			diffuse_target = i*TM_NUM_TYPES;
 			glow_target = i*TM_NUM_TYPES+TM_GLOW_TYPE;
-			bmp_handle = pm->maps[i].textures[tm_num].GetTexture();
+
+			diffuse_handle = pm->maps[i].textures[TM_BASE_TYPE].GetTexture();
+			glow_handle = pm->maps[i].textures[TM_GLOW_TYPE].GetTexture();
 			break;
 		}
 	}
 
-	// if we still don't have a valid bmp_handle, then this texture name is invalid. Scold and bail
-	if ( bmp_handle < 0 ) {
-		Warning(LOCATION, "Invalid texture target defined: %s", display->filename);
-		return;
-	}
+	// create a render target for this cockpit texture
+	if ( Player_cockpit_textures[glow_target] < 0) {
 
-	if (glow_target != -1 && diffuse_target != -1) {
-		// create a render target for this cockpit texture
-		if ( Player_cockpit_textures[diffuse_target] < 0 || Player_cockpit_textures[glow_target] < 0) {
+		bm_get_info(diffuse_handle, &w, &h);
+		Player_cockpit_textures[glow_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
 
-			bm_get_info(bmp_handle, &w, &h);
-			Player_cockpit_textures[diffuse_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
-
-			// if no render target was made, bail
-			if ( Player_cockpit_textures[diffuse_target] < 0 ) {
-				return;
-			}
-
-			Player_cockpit_textures[glow_target] = Player_cockpit_textures[diffuse_target];
+		// if no render target was made, bail
+		if ( Player_cockpit_textures[glow_target] < 0 ) {
+			return;
 		}
 	}
 
@@ -6454,8 +6447,8 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	new_display.offset[1] = display->offset[1];
 	new_display.size[0] = display->size[0];
 	new_display.size[1] = display->size[1];
-	new_display.source = bmp_handle;
-	new_display.target = Player_cockpit_textures[diffuse_target];
+	new_display.source = glow_handle;
+	new_display.target = Player_cockpit_textures[glow_target];
 
 	Player_displays.push_back(new_display);
 }
@@ -6504,8 +6497,11 @@ int ship_start_render_cockpit_display(int cockpit_display_num)
 	int cull = gr_set_cull(0);
 
 	gr_clear();
-	gr_set_bitmap(display->source);
-	gr_bitmap(0, 0, false);
+	
+	if ( display->source >= 0 ) {
+		gr_set_bitmap(display->source);
+		gr_bitmap(0, 0, false);
+	}
 
 	if ( display->background >= 0 ) {
 		gr_set_bitmap(display->background);
@@ -9220,7 +9216,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Valathil - Reinitialize collision checks
 	if ( Cmdline_old_collision_sys ) {
 		obj_remove_pairs(objp);
-		obj_add_pairs(objp->instance);
+		obj_add_pairs(OBJ_INDEX(objp));
 	} else {
 		obj_remove_collider(OBJ_INDEX(objp));
 		obj_add_collider(OBJ_INDEX(objp));
@@ -9707,7 +9703,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 
 	// lets start gun convergence / autoaim code from here - Wanderer
-	has_converging_autoaim = ((sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f)) && aip->target_objnum != -1);
+	has_converging_autoaim = ((sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
 	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags & AIM_FLAG_AUTOAIM)) && aip->target_objnum != -1);
 	needs_target_pos = ((has_autoaim || (sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE)) && aip->target_objnum != -1);
 	
@@ -14217,7 +14213,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		}
 		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
 	} else {
-		sprintf( outbuf, XSTR( "Unknown", 497) );
+		strcpy( outbuf, XSTR( "Unknown", 497) );
 	}
 
 	return outbuf;

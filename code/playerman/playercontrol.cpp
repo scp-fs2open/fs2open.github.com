@@ -1450,7 +1450,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
 			}
 		} else {
-			sprintf(outstr, XSTR( "Scanned", 85) );
+			strcpy(outstr, XSTR( "Scanned", 85) );
 		}
 
 		// always bash cargo_inspect_time to 0 since AI ships can reveal cargo that we
@@ -1468,9 +1468,9 @@ int player_inspect_cargo(float frametime, char *outstr)
 		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
 		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
 			if ( !(cargo_sp->flags & SF_SCANNABLE) )
-				sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 			else
-				sprintf(outstr,XSTR( "not scanned", 87));
+				strcpy(outstr,XSTR( "not scanned", 87));
 			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
 			Player->cargo_inspect_time = 0;
 			return 1;
@@ -1482,9 +1482,9 @@ int player_inspect_cargo(float frametime, char *outstr)
 		}
 
 		if ( !(cargo_sp->flags & SF_SCANNABLE) )
-			sprintf(outstr,XSTR( "cargo: inspecting", 88));
+			strcpy(outstr,XSTR( "cargo: inspecting", 88));
 		else
-			sprintf(outstr,XSTR( "scanning", 89));
+			strcpy(outstr,XSTR( "scanning", 89));
 
 		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
 			ship_do_cargo_revealed( cargo_sp );
@@ -1493,9 +1493,9 @@ int player_inspect_cargo(float frametime, char *outstr)
 		}
 	} else {
 		if ( !(cargo_sp->flags & SF_SCANNABLE) )
-			sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 		else
-			sprintf(outstr,XSTR( "not scanned", 87));
+			strcpy(outstr,XSTR( "not scanned", 87));
 	}
 
 	return 1;
@@ -1547,7 +1547,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
 			}
 		} else {
-			sprintf(outstr, XSTR( "Scanned", 85) );
+			strcpy(outstr, XSTR( "Scanned", 85) );
 		}
 	
 		// always bash cargo_inspect_time to 0 since AI ships can reveal cargo that we
@@ -1583,9 +1583,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
 			if ( !(cargo_sp->flags & SF_SCANNABLE) )
-				sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 			else
-				sprintf(outstr,XSTR( "not scanned", 87));
+				strcpy(outstr,XSTR( "not scanned", 87));
 			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
 			Player->cargo_inspect_time = 0;
 			return 1;
@@ -1597,9 +1597,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		}
 
 		if ( !(cargo_sp->flags & SF_SCANNABLE) )
-			sprintf(outstr,XSTR( "cargo: inspecting", 88));
+			strcpy(outstr,XSTR( "cargo: inspecting", 88));
 		else
-			sprintf(outstr,XSTR( "scanning", 89));
+			strcpy(outstr,XSTR( "scanning", 89));
 
 		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
@@ -1608,9 +1608,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		}
 	} else {
 		if ( !(cargo_sp->flags & SF_SCANNABLE) )
-			sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 		else
-			sprintf(outstr,XSTR( "not scanned", 87));
+			strcpy(outstr,XSTR( "not scanned", 87));
 	}
 
 	return 1;

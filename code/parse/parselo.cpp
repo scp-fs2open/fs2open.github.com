@@ -3524,16 +3524,16 @@ char *stristr(const char *str, const char *substr)
 	char substr_ch_upper = (char)toupper(*substr);
 
 	// find the maximum distance to search
-	char *upper_bound = (char *)str + strlen(str) - strlen(substr);
+	const char *upper_bound = str + strlen(str) - strlen(substr);
 
 	// loop through every character of str
-	for (char *start = (char *)str; start <= upper_bound; start++)
+	for (const char *start = str; start <= upper_bound; start++)
 	{
 		// check first character of substr
 		if ((*start == substr_ch_upper) || (*start == substr_ch_lower))
 		{
 			// first character matched, so check the rest
-			for (char *str_ch = start+1, *substr_ch = (char *)substr+1; *substr_ch != '\0'; str_ch++, substr_ch++)
+			for (const char *str_ch = start+1, *substr_ch = substr+1; *substr_ch != '\0'; str_ch++, substr_ch++)
 			{
 				// character match?
 				if (*str_ch == *substr_ch)
@@ -3548,7 +3548,7 @@ char *stristr(const char *str, const char *substr)
 			}
 
 			// finished inner loop with success!
-			return start;
+			return const_cast<char*>(start);
 		}
 
 stristr_continue_outer_loop:

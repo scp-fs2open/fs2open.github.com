@@ -471,7 +471,9 @@ void credits_init()
 	}
 
 	int ch;
-	for (SCP_vector<SCP_string>::iterator iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
+	SCP_vector<SCP_string>::iterator iter;
+
+	for (iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
 		for (SCP_string::iterator ii = iter->begin(); ii != iter->end(); ++ii)
 		{
@@ -586,7 +588,7 @@ void credits_init()
 	int temp_h;
 	int h = 0;
 
-	for (SCP_vector<SCP_string>::iterator iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
+	for (iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
 		gr_get_string_size(NULL, &temp_h, iter->c_str(), iter->length());
 

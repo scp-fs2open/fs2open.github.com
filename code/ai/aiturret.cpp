@@ -90,9 +90,13 @@ typedef struct eval_enemy_obj_struct {
 /**
  * Is object in turret field of view?
  *
- * @param dist Distance from turret to center point of object
+ * @param objp  Pointer to object to test
+ * @param ss    Ship turret subsystem to test from
+ * @param tvec  Turret initial vector
+ * @param tpos  Turret initial position
+ * @param dist  Distance from turret to center point of object
  *
- * @return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
+ * @return 1 if objp is in fov of the specified turret.  Otherwise return 0.
  */
 int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist)
 {
@@ -1211,6 +1215,11 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
  * Given an object and a turret on that object, return the global position and forward vector
  * of the turret.
  *
+ * @param objp  Pointer to object
+ * @param tp    Turrent model system on that object
+ * @param gpos  [Output] Global absolute position of gun firing point
+ * @param gvec  [Output] Global vector
+ *
  * @note The gun normal is the unrotated gun normal, (the center of the FOV cone), not
  * the actual gun normal given using the current turret heading.  But it _is_ rotated into the model's orientation
  * in global space.
@@ -1230,8 +1239,12 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos,
  * gun to fire next in the ship specific info for this turret subobject.  Use this info
  * to determine which position to fire from next.
  *
- * @param gpos  Absolute position of gun firing point
- * @param gvec  Vector from *gpos to *targetp
+ * @param objp          Pointer to object
+ * @param ssp           Pointer to turret subsystem
+ * @param gpos          Absolute position of gun firing point
+ * @param gvec          Vector from *gpos to *targetp
+ * @param use_angles    Use current angles
+ * @param targetp       Pointer to target object
  */
 void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp)
 {

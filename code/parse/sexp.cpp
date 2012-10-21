@@ -104,6 +104,7 @@
 #include "object/objectshield.h"
 #include "network/multi_sexp.h"
 #include "io/keycontrol.h"
+#include "parse/generic_log.h"
 
 
 
@@ -387,8 +388,8 @@ sexp_oper Operators[] = {
 	{ "ship-change-callsign",		OP_SHIP_CHANGE_CALLSIGN,	2, INT_MAX	},	// FUBAR
 	{ "ship-tag",					OP_SHIP_TAG,				3, 8			},	// Goober5000
 	{ "ship-untag",					OP_SHIP_UNTAG,				1, 1			},	// Goober5000
-	{ "set-arrival-info",			OP_SET_ARRIVAL_INFO,			2, 6 },	// Goober5000
-	{ "set-departure-info",			OP_SET_DEPARTURE_INFO,			2, 5 },	// Goober5000
+	{ "set-arrival-info",			OP_SET_ARRIVAL_INFO,			2, 7 },	// Goober5000
+	{ "set-departure-info",			OP_SET_DEPARTURE_INFO,			2, 6 },	// Goober5000
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "set-weapon-energy",			OP_SET_WEAPON_ENERGY,			2, INT_MAX },		// Karajorma
@@ -583,6 +584,8 @@ sexp_oper Operators[] = {
 	{ "is-nav-linked",					OP_NAV_ISLINKED,				1, 1 }, //kazan
 	{ "use-nav-cinematics",				OP_NAV_USECINEMATICS,			1, 1 }, //kazan
 	{ "use-autopilot",					OP_NAV_USEAP,					1, 1 }, //kazan
+	{ "select-nav",						OP_NAV_SELECT,					1, 1 }, //Talon1024
+	{ "deselect-nav",					OP_NAV_DESELECT,				0, 0 }, //Talon1024
 
 	//Cutscene Sub-Category
 	{ "set-cutscene-bars",			OP_CUTSCENES_SET_CUTSCENE_BARS,			0, 1, },
@@ -890,6 +893,11 @@ ship * sexp_get_ship_from_node(int node);
 
 // hud-display-gauge magic values
 #define SEXP_HUD_GAUGE_WARPOUT "warpout"
+
+// event log stuff
+SCP_vector<SCP_string> event_log_buffer;
+SCP_vector<SCP_string> event_log_variable_buffer;
+SCP_vector<SCP_string> event_log_argument_buffer;
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
@@ -8109,7 +8117,7 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 	ptr = Sexp_applicable_argument_list.get_next();
 
 	while (ptr != NULL)
-	{
+	{	
 		// acquire argument to be used
 		Sexp_replacement_arguments.push_back(ptr->text);
 		actions = all_actions; 
@@ -8173,6 +8181,7 @@ int eval_when(int n, int when_op_num)
 {
 	int cond, val, actions;
 	Assert( n >= 0 );
+	arg_item *ptr;
 
 	// get the parts of the sexp and evaluate the conditional
 	if (is_blank_argument_op(when_op_num))
@@ -8255,6 +8264,15 @@ int eval_when(int n, int when_op_num)
 
 	if (is_blank_argument_op(when_op_num))
 	{
+		if (Log_event) {	
+			ptr = Sexp_applicable_argument_list.get_next();		
+			while(ptr != NULL) {
+				// See if we have an argument. 
+				event_log_argument_buffer.push_back(ptr->text); 
+				ptr = ptr->get_next();
+			}
+		}	
+
 		// clean up any special sexp stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
 		Sexp_current_argument_nesting_level--;
@@ -17209,7 +17227,7 @@ void sexp_set_support_ship(int n)
 // Goober5000 - set stuff for arriving ships or wings
 void sexp_set_arrival_info(int node)
 {
-	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, n = node;
+	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, arrival_delay, n = node;
 	bool show_warp;
 	object_ship_wing_point_team oswpt;
 
@@ -17268,6 +17286,12 @@ void sexp_set_arrival_info(int node)
 		arrival_distance = eval_num(n);
 	n = CDR(n);
 
+	// get arrival delay
+	arrival_delay = 0;
+	if (n >= 0)
+		arrival_delay = eval_num(n);
+	n = CDR(n);
+
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
@@ -17280,6 +17304,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.shipp->arrival_anchor = arrival_anchor;
 		oswpt.shipp->arrival_path_mask = arrival_mask;
 		oswpt.shipp->arrival_distance = arrival_distance;
+		oswpt.shipp->arrival_delay = arrival_delay;
 
 		if (show_warp)
 			oswpt.shipp->flags &= ~SF_NO_ARRIVAL_WARP;
@@ -17292,6 +17317,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.wingp->arrival_anchor = arrival_anchor;
 		oswpt.wingp->arrival_path_mask = arrival_mask;
 		oswpt.wingp->arrival_distance = arrival_distance;
+		oswpt.wingp->arrival_delay = arrival_delay;
 
 		if (show_warp)
 			oswpt.wingp->flags &= ~WF_NO_ARRIVAL_WARP;
@@ -17304,6 +17330,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.p_objp->arrival_anchor = arrival_anchor;
 		oswpt.p_objp->arrival_path_mask = arrival_mask;
 		oswpt.p_objp->arrival_distance = arrival_distance;
+		oswpt.p_objp->arrival_delay = arrival_delay;
 
 		if (show_warp)
 			oswpt.p_objp->flags &= ~P_SF_NO_ARRIVAL_WARP;
@@ -17315,7 +17342,7 @@ void sexp_set_arrival_info(int node)
 // Goober5000 - set stuff for departing ships or wings
 void sexp_set_departure_info(int node)
 {
-	int i, departure_location, departure_anchor, departure_mask, n = node;
+	int i, departure_location, departure_anchor, departure_mask, departure_delay, n = node;
 	bool show_warp;
 	object_ship_wing_point_team oswpt;
 
@@ -17368,6 +17395,12 @@ void sexp_set_departure_info(int node)
 		departure_mask = eval_num(n);
 	n = CDR(n);
 
+	// get departure delay
+	departure_delay = 0;
+	if (n >= 0)
+		departure_delay = eval_num(n);
+	n = CDR(n);
+
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
@@ -17379,6 +17412,7 @@ void sexp_set_departure_info(int node)
 		oswpt.shipp->departure_location = departure_location;
 		oswpt.shipp->departure_anchor = departure_anchor;
 		oswpt.shipp->departure_path_mask = departure_mask;
+		oswpt.shipp->departure_delay = departure_delay;
 
 		if (show_warp)
 			oswpt.shipp->flags &= ~SF_NO_DEPARTURE_WARP;
@@ -17390,6 +17424,7 @@ void sexp_set_departure_info(int node)
 		oswpt.wingp->departure_location = departure_location;
 		oswpt.wingp->departure_anchor = departure_anchor;
 		oswpt.wingp->departure_path_mask = departure_mask;
+		oswpt.wingp->departure_delay = departure_delay;
 
 		if (show_warp)
 			oswpt.wingp->flags &= ~WF_NO_DEPARTURE_WARP;
@@ -17401,6 +17436,7 @@ void sexp_set_departure_info(int node)
 		oswpt.p_objp->departure_location = departure_location;
 		oswpt.p_objp->departure_anchor = departure_anchor;
 		oswpt.p_objp->departure_path_mask = departure_mask;
+		oswpt.p_objp->departure_delay = departure_delay;
 
 		if (show_warp)
 			oswpt.p_objp->flags &= ~P_SF_NO_DEPARTURE_WARP;
@@ -17949,6 +17985,17 @@ int distance_to_nav(int node)
 {
 	char *nav_name = CTEXT(node);
 	return DistanceTo(nav_name);
+}
+
+void select_nav(int node)
+{
+	char *nav_name = CTEXT(node);
+	SelectNav(nav_name);
+}
+
+void deselect_nav()
+{
+	DeselectNav();
 }
 
 
@@ -20711,6 +20758,183 @@ int is_sexp_true(int cur_node, int referenced_node)
 	return ((result == SEXP_TRUE) || (result == SEXP_KNOWN_TRUE));
 }
 
+
+/**
+* 
+*/
+int generate_event_log_flags_mask(int result)
+{
+	int matches = 0; 
+	mission_event *current_event = &Mission_events[Event_index];
+
+	switch (result) {
+		case SEXP_TRUE:
+			matches |= MLF_SEXP_TRUE; 
+			break; 
+
+		case SEXP_FALSE:
+			matches |= MLF_SEXP_FALSE; 
+			break;
+
+		case SEXP_KNOWN_TRUE:
+			matches |= MLF_SEXP_KNOWN_TRUE; 
+			break; 
+
+		case SEXP_KNOWN_FALSE:
+			matches |= MLF_SEXP_KNOWN_FALSE; 
+			break; 
+
+		default:
+			Int3();	// just for now. This shouldn't hit trunk!
+	}
+
+	if (( result == SEXP_TRUE ) || (result == SEXP_KNOWN_TRUE)) {
+		// now deal with the flags depending on repeat and trigger counts
+		switch (current_event->mission_log_flags) {
+			case MLF_FIRST_REPEAT_ONLY: 
+				if (current_event->repeat_count > 1) {			
+					matches |= MLF_FIRST_REPEAT_ONLY; 
+				}
+				break;
+
+			case MLF_LAST_REPEAT_ONLY: 
+				if (current_event->repeat_count == 1) {			
+					matches |= MLF_LAST_REPEAT_ONLY; 
+				}
+				break;
+
+			case MLF_FIRST_TRIGGER_ONLY: 
+				if (current_event->trigger_count > 1) {			
+					matches |= MLF_FIRST_TRIGGER_ONLY; 
+				}
+				break;
+
+			case MLF_LAST_TRIGGER_ONLY: 
+				if ((current_event->trigger_count == 1) && (current_event->flags & MEF_USING_TRIGGER_COUNT)) {			
+					matches |= MLF_LAST_TRIGGER_ONLY; 
+				}
+				break;
+		}
+	}
+
+	return matches;
+}
+
+
+/**
+* Checks the mission logs flags for this event and writes to the log if this has been asked for
+*/
+void maybe_write_to_event_log(int result)
+{
+	char buffer [TOKEN_LENGTH*2]; 
+
+	int mask = generate_event_log_flags_mask(result); 
+	if (!(mask &=  Mission_events[Event_index].mission_log_flags)) {
+		event_log_buffer.clear();
+		return;
+	}
+
+	// remove some of the flags	
+	if (mask & (MLF_FIRST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY)) {
+		Mission_events[Event_index].mission_log_flags &= ~(MLF_FIRST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY) ; 
+	}
+
+	if (event_log_buffer.empty()) {
+		return;
+	}
+
+	sprintf(buffer, "%s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name, f2i(Missiontime), f2i((longlong)Missiontime * 1000));
+
+	log_string(LOGFILE_EVENT_LOG, buffer);
+	while (!event_log_buffer.empty()) {
+		log_string(LOGFILE_EVENT_LOG, event_log_buffer.back().c_str());
+		event_log_buffer.pop_back();
+	}
+	log_string(LOGFILE_EVENT_LOG, "");
+}
+
+/**
+* Returns the constant used as a SEXP's result as text for printing to the event log
+*/
+char *sexp_get_result_as_text(int result)
+{
+	switch (result) {
+		case SEXP_TRUE:
+			return "TRUE";
+
+		case SEXP_FALSE:
+			return "FALSE";
+
+		case SEXP_KNOWN_FALSE:
+			return "ALWAYS FALSE";
+
+		case SEXP_KNOWN_TRUE:
+			return "ALWAYS TRUE";
+
+		case SEXP_UNKNOWN:	
+			return "UNKNOWN";
+				
+		case SEXP_NAN:	
+			return "NOT A NUMBER";
+
+		case SEXP_NAN_FOREVER:
+			return "CAN NEVER BE A NUMBER";
+
+		case SEXP_CANT_EVAL:
+			return "CAN'T EVALUATE";
+
+		default:
+			return NULL;
+	}
+}
+
+/**
+* Checks the mission logs flags for this event and writes to the log if this has been asked for
+*/
+void add_to_event_log_buffer(int op_num, int result)
+{
+	char buffer[TOKEN_LENGTH];
+	SCP_string tmp; 
+	tmp.append(Operators[op_num].text);
+	tmp.append(" returned ");
+
+	if (sexp_get_result_as_text(result) == NULL) {
+		sprintf(buffer, "%d", result);
+		tmp.append(buffer);
+	}
+	else {
+		tmp.append(sexp_get_result_as_text(result));
+	}
+
+	if (True_loop_argument_sexps && !Sexp_replacement_arguments.empty()) {
+		tmp.append(" for argument ");
+		tmp.append(Sexp_replacement_arguments.back());
+	}
+	
+	if (!event_log_argument_buffer.empty()) {
+		tmp.append(" for the following arguments");
+		while (!event_log_argument_buffer.empty()) {
+			tmp.append("\n");
+			tmp.append(event_log_argument_buffer.back().c_str());
+			event_log_argument_buffer.pop_back();
+		}
+	}
+
+	if (!event_log_variable_buffer.empty()) {
+		tmp.append("\nVariables:\n");
+		while (!event_log_variable_buffer.empty()) {
+			tmp.append(event_log_variable_buffer.back().c_str()); 
+			event_log_variable_buffer.pop_back();
+			tmp.append("[");
+			tmp.append(event_log_variable_buffer.back().c_str()); 
+			event_log_variable_buffer.pop_back();
+			tmp.append("]");
+		}
+	}
+
+	event_log_buffer.push_back(tmp);
+}
+
 /**
  * High-level sexpression evaluator
  */
@@ -22613,6 +22837,18 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				set_use_ap_cinematics(node);
 				break;
+			
+			//Talon1024
+			case OP_NAV_SELECT:
+				sexp_val = SEXP_TRUE;
+				select_nav(node);
+				break;
+				
+			//Talon1024
+			case OP_NAV_DESELECT:
+				sexp_val = SEXP_TRUE;
+				deselect_nav();
+				break;
 
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
@@ -22811,6 +23047,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
 		}
+
+		if (Log_event) {
+			add_to_event_log_buffer(get_operator_index(cur_node), sexp_val);
+		}
+
 		Assert(!Current_sexp_operator.empty()); 
 		Current_sexp_operator.pop_back();
 
@@ -23660,6 +23901,8 @@ int query_operator_return_type(int op)
 		case OP_NAV_UNSET_NEEDSLINK:
 		case OP_NAV_USECINEMATICS:
 		case OP_NAV_USEAP:
+		case OP_NAV_SELECT:
+		case OP_NAV_DESELECT:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
@@ -23845,6 +24088,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_VALIDATE_ALL_ARGUMENTS:
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_SUPERNOVA_STOP:
+		case OP_NAV_DESELECT:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -25416,9 +25660,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_ARRIVAL_ANCHOR_ALL;
 			else if (argnum == 3)
 				return OPF_NUMBER;
-			else if (argnum == 4)
+			else if (argnum == 4 || argnum == 5)
 				return OPF_POSITIVE;
-			else if (argnum == 5)
+			else if (argnum == 6)
 				return OPF_BOOL;
 			break;
 
@@ -25430,9 +25674,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_DEPARTURE_LOCATION;
 			else if (argnum == 2)
 				return OPF_SHIP_WITH_BAY;
-			else if (argnum == 3)
+			else if (argnum == 3 || argnum == 4)
 				return OPF_NUMBER;
-			else if (argnum == 4)
+			else if (argnum == 5)
 				return OPF_BOOL;
 			break;
 
@@ -25482,6 +25726,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NAV_UNRESTRICT:		//kazan
 		case OP_NAV_SET_VISITED:	//kazan
 		case OP_NAV_UNSET_VISITED:	//kazan
+		case OP_NAV_SELECT:			//Talon1024
 			return OPF_STRING;
 		
 		case OP_NAV_SET_CARRY:		//kazan
@@ -26330,6 +26575,11 @@ char *CTEXT(int n)
 
 		Assert( !(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NOT_USED) );
 		Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+		if (Log_event) {
+			event_log_variable_buffer.push_back(Sexp_variables[sexp_variable_index].text); 
+			event_log_variable_buffer.push_back(Sexp_variables[sexp_variable_index].variable_name); 
+		}
 
 		return Sexp_variables[sexp_variable_index].text;
 	}
@@ -27223,6 +27473,8 @@ int get_subcategory(int sexp_id)
 		case OP_NAV_UNSET_NEEDSLINK:
 		case OP_NAV_USECINEMATICS:
 		case OP_NAV_USEAP:
+		case OP_NAV_SELECT:
+		case OP_NAV_DESELECT:
 			return CHANGE_SUBCATEGORY_NAV;
 
 
@@ -27497,6 +27749,15 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_NAV_USEAP, "Takes 1 boolean argument.\r\n"
 		"Set to true to enable autopilot, set to false to disable autopilot." },
 
+	{ OP_NAV_SELECT, "nav-select (Action operator)\r\n"
+		"\tSelects a nav point.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the nav point." },
+
+	{ OP_NAV_DESELECT, "nav-deselect (Action operator)\r\n"
+		"\tDeselects any navpoint selected.\r\n\r\n"
+		"Takes no arguments..." },
+	
 	// -------------------------- -------------------------- -------------------------- 
 
 	// Goober5000
@@ -30008,23 +30269,25 @@ sexp_help_struct Sexp_help[] = {
 
 	// Goober5000
 	{ OP_SET_ARRIVAL_INFO, "set-arrival-info\r\n"
-		"\tSets arrival information for a ship or wing.  Takes 2 to 6 arguments...\r\n"
+		"\tSets arrival information for a ship or wing.  Takes 2 to 7 arguments...\r\n"
 		"\t1: Ship or wing name\r\n"
 		"\t2: Arrival location\r\n"
 		"\t3: Arrival anchor (optional; only required for certain locations)\r\n"
 		"\t4: Arrival path mask (optional; defaults to 0; note that this is a bitfield)\r\n"
 		"\t5: Arrival distance (optional; defaults to 0)\r\n"
-		"\t6: Whether to show a jump effect if arriving from subspace (optional; defaults to true)\r\n"
+		"\t6: Arrival delay (optional; defaults to 0)\r\n"
+		"\t7: Whether to show a jump effect if arriving from subspace (optional; defaults to true)\r\n"
 	},
 
 	// Goober5000
 	{ OP_SET_DEPARTURE_INFO, "set-departure-info\r\n"
-		"\tSets departure information for a ship or wing.  Takes 2 to 5 arguments...\r\n"
+		"\tSets departure information for a ship or wing.  Takes 2 to 6 arguments...\r\n"
 		"\t1: Ship or wing name\r\n"
 		"\t2: Departure location\r\n"
 		"\t3: Departure anchor (optional; only required for certain locations)\r\n"
 		"\t4: Departure path mask (optional; defaults to 0; note that this is a bitfield)\r\n"
-		"\t5: Whether to show a jump effect if departing to subspace (optional; defaults to true)\r\n"
+		"\t5: Departure delay (optional; defaults to 0)\r\n"
+		"\t6: Whether to show a jump effect if departing to subspace (optional; defaults to true)\r\n"
 	},
 
 	// Bobboau

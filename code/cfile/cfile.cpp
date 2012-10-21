@@ -1730,7 +1730,8 @@ int cf_chksum_pack(char *filename, uint *chk_long, bool full)
 	else {
 		CLAMP(max_size, 0, safe_size);
 
-		Assert( max_size > header_offset );
+		Assertion(max_size > header_offset,
+			"max_size (%d) > header_offset in packfile %s", max_size, filename);
 		max_size -= header_offset;
 
 		fseek(fp, -(max_size), SEEK_END);
