@@ -8,6 +8,7 @@
 */
 
 #include "globalincs/pstypes.h"	// for NULL
+#include "globalincs/globals.h"
 
 #ifndef _SEXP_H
 #define _SEXP_H
@@ -18,7 +19,6 @@ class waypoint_list;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
-#define	TOKEN_LENGTH		32
 
 #define MAX_SEXP_VARIABLES 250
 
@@ -107,6 +107,7 @@ class waypoint_list;
 #define OPF_SHIP_EFFECT			80		// The E - per-ship effects, as defined in post-processing.tbl
 #define OPF_ANIMATION_TYPE		81		// Goober5000 - as defined in modelanim.h
 #define OPF_MISSION_MOOD		82		// Karajorma - Moods determine which builtin messages will be sent
+#define OPF_SHIP_FLAG			83		// Karajorma - The name of a ship flag
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -702,7 +703,8 @@ class waypoint_list;
 #define OP_DEBUG							(0x0017 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_SET_MISSION_MOOD					(0x0018 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_NAV_SELECT						(0x0019 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Talon1024
-#define OP_NAV_DESELECT						(0x0020 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Talon1024
+#define OP_NAV_DESELECT						(0x001a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Talon1024
+#define OP_ALTER_SHIP_FLAG					(0x001b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -960,6 +962,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_HUD_GAUGE			-153
 #define SEXP_CHECK_INVALID_ANIMATION_TYPE		-154
 #define SEXP_CHECK_INVALID_MISSION_MOOD			-155
+#define SEXP_CHECK_INVALID_SHIP_FLAG			-156
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)

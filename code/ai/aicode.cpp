@@ -195,6 +195,11 @@ int	AI_FrameCount = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
 int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 
+//	Constant for flag,				Name of flag,				In flags or flags2
+ai_flag_name Ai_flag_names[] = {
+	{AIF_NO_DYNAMIC,				"no-dynamic",					1,	},
+};
+
 char *Skill_level_names(int level, int translate)
 {
 	char *str = NULL;

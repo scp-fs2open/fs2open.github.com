@@ -36,6 +36,8 @@
 #define MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
 #define SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400
 
+// from missionparse.h and then redefined to the same value in sexp.h
+#define TOKEN_LENGTH	32
 // ****************************************************************
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST

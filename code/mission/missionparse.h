@@ -649,8 +649,6 @@ typedef struct {
 #define MAX_P_WINGS		16
 #define MAX_SHIP_LIST	16
 
-#define TOKEN_LENGTH	32
-
 extern team_data Team_data[MAX_TVT_TEAMS];
 extern subsys_status *Subsys_status;
 extern int Subsys_index;

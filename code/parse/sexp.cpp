@@ -447,6 +447,7 @@ sexp_oper Operators[] = {
 	{ "ship-subsys-vanish",			OP_SHIP_SUBSYS_VANISHED,		3, INT_MAX },	// FUBAR
 	{ "ship-subsys-ignore_if_dead",	OP_SHIP_SUBSYS_IGNORE_IF_DEAD,	3, INT_MAX },	// FUBAR
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
+	{ "alter-ship-flag",			OP_ALTER_SHIP_FLAG,				3,	INT_MAX	},	// Karajorma 
 
 	//Cargo Sub-Category
 	{ "transfer-cargo",				OP_TRANSFER_CARGO,				2, 2,			},
@@ -2683,6 +2684,41 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				break;
 
+			case OPF_SHIP_FLAG:
+				{
+				bool found = false;
+				for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
+					if (!stricmp(Object_flag_names[i].flag_name, CTEXT(node))) {
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
+						if (!stricmp(Ship_flag_names[i].flag_name, CTEXT(node))) {
+							found = true;
+							break;
+						}
+					}
+				}
+
+				if (!found) {
+					for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
+						if (!stricmp(Ai_flag_names[i].flag_name, CTEXT(node))) {
+							found = true;
+							break;
+						}
+					}
+				}
+
+				if (!found) {
+					return SEXP_CHECK_INVALID_SHIP_FLAG;
+				}
+
+				break;
+				}
+
 			case OPF_FONT:
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -4443,11 +4479,51 @@ typedef struct object_ship_wing_point_team
 	wing *wingp;
 	waypoint *waypointp;
 	int team;
+
+	void clear();
 }
 object_ship_wing_point_team;
 
+void object_ship_wing_point_team::clear()
+{
+	object_name = NULL;
+	type = OSWPT_TYPE_NONE;
+
+	p_objp = NULL;
+	objp = NULL;
+	shipp = NULL;
+	waypointp = NULL;
+	wingp = NULL;
+	team = -1;
+}
+
+void sexp_object_ship_wing_point_team_set_ship(object_ship_wing_point_team *oswpt, ship *shipp, bool set_parse_flag_too = false);
+void sexp_object_ship_wing_point_team_set_ship(object_ship_wing_point_team *oswpt, ship_obj *so, bool set_parse_flag_too = false);
+void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, char *object_name, bool set_parse_flag_too = false); 
+
+void object_ship_wing_point_team_set_ship(object_ship_wing_point_team *oswpt, ship *shipp, bool set_parse_flag_too)
+{
+	oswpt->clear(); 
+	
+	oswpt->shipp = shipp;
+	oswpt->object_name = oswpt->shipp->ship_name; 
+	oswpt->objp = &Objects[shipp->objnum];
+	oswpt->type = OSWPT_TYPE_SHIP;
+
+	if (set_parse_flag_too) {
+		oswpt->p_objp = mission_parse_get_arrival_ship(oswpt->object_name);
+	}
+}
+
+
+void object_ship_wing_point_team_set_ship(object_ship_wing_point_team *oswpt, ship_obj *so, bool set_parse_flag_too)
+{
+	object_ship_wing_point_team_set_ship(oswpt, &Ships[Objects[so->objnum].instance], set_parse_flag_too); 
+}
+
+
 // Goober5000
-void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, char *object_name)
+void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, char *object_name, bool set_parse_flag_too)
 {
 	int team, ship_num, wing_num;
 	waypoint *wpt;
@@ -4456,15 +4532,8 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	Assert(oswpt != NULL);
 	Assert(object_name != NULL);
 
+	oswpt->clear(); 
 	oswpt->object_name = object_name;
-	oswpt->type = OSWPT_TYPE_NONE;
-
-	oswpt->p_objp = NULL;
-	oswpt->objp = NULL;
-	oswpt->shipp = NULL;
-	oswpt->waypointp = NULL;
-	oswpt->wingp = NULL;
-	oswpt->team = -1;
 
 	if(!stricmp(object_name, SEXP_NONE_STRING))
 	{
@@ -4489,6 +4558,10 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 
 	// if we have a team type, pick the first ship of that team
 	team = sexp_determine_team(object_name);
+	if (team == -1) {
+		// try it another way
+		team = iff_lookup(object_name);
+	}
 	if (team >= 0)
 	{
 		for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
@@ -4522,7 +4595,9 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 		oswpt->shipp = &Ships[ship_num];
 		oswpt->objp = &Objects[oswpt->shipp->objnum];
 
-		return;
+		if (!set_parse_flag_too) {
+			return;
+		}
 	}
 
 
@@ -4530,7 +4605,9 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	p_objp = mission_parse_get_arrival_ship(object_name);
 	if (p_objp != NULL)
 	{
-		oswpt->type = OSWPT_TYPE_PARSE_OBJECT;
+		if (oswpt->type != OSWPT_TYPE_SHIP) {
+			oswpt->type = OSWPT_TYPE_PARSE_OBJECT;
+		}
 
 		oswpt->p_objp = p_objp;
 
@@ -12207,7 +12284,6 @@ void sexp_allow_weapon(int n)
 	}
 }
 
-// Goober5000
 // generic function for all those sexps that set flags
 void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int p_object_flag, int p_object_flag2, bool set_it, bool send_multiplayer = false, bool include_players_in_ship_lookup = false)
 {
@@ -12429,6 +12505,422 @@ void multi_sexp_deal_with_ship_flag()
 		}
 	}
 }
+
+void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
+{
+	ship_obj	*so;
+	object_ship_wing_point_team oswpt2;
+	p_object *p_objp;
+
+	switch (oswpt.type)
+	{			
+		case OSWPT_TYPE_NONE:
+		case OSWPT_TYPE_EXITED:
+			return;
+
+		case OSWPT_TYPE_TEAM:
+			Assert (oswpt.team >= 0); 
+			oswpt2.clear();
+			for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ){
+				if (Ships[Objects[so->objnum].instance].team == oswpt.team) {
+					object_ship_wing_point_team_set_ship(&oswpt2, so, future_ships); 
+
+					// recurse
+					sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+				}
+			}
+
+			if (future_ships) {
+				for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp)) {
+					if (p_objp->team == oswpt.team) {
+						oswpt2.p_objp = p_objp;
+						oswpt2.type = OSWPT_TYPE_PARSE_OBJECT;
+						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+					}
+				}
+			}
+			break;
+
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+			// if the wing isn't here, and we're only dealing with ships which are, we're done. 
+			if  (!future_ships){
+				if (oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT) {
+					return; 
+				}
+			}
+			else {
+				for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp)) {
+					if (p_objp->wingnum == WING_INDEX(oswpt.wingp)) {
+						oswpt2.p_objp = p_objp;
+						oswpt2.type = OSWPT_TYPE_PARSE_OBJECT;
+						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+					}
+				}
+			}
+
+			for (int i = 0; i < oswpt.wingp->current_count; i++) {
+				object_ship_wing_point_team_set_ship(&oswpt2, &Ships[oswpt.wingp->ship_index[i]], future_ships); 
+				sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+			}
+
+			break;
+
+		// finally! If we actually have a ship, we can set its flags!
+		case OSWPT_TYPE_SHIP:
+			// see if we have an object flag to set
+			if (object_flag)
+			{
+				// set or clear?
+				if (set_flag)
+					oswpt.objp->flags |= object_flag;
+				else
+					oswpt.objp->flags &= ~object_flag;
+			}
+
+			// see if we have an object flag2 to set
+			if (object_flag2)
+			{
+				// Add code here when have flag2 settings
+			}
+
+			// see if we have a ship flag to set
+			if (ship_flag)
+			{
+				// set or clear?
+				if (set_flag)
+					oswpt.shipp->flags |= ship_flag;
+				else
+					oswpt.shipp->flags &= ~ship_flag;
+			}
+
+			// see if we have a ship flag2 to set
+			if (ship_flag2)
+			{
+				// set or clear?
+				if (set_flag)
+					oswpt.shipp->flags2 |= ship_flag2;
+				else
+					oswpt.shipp->flags2 &= ~ship_flag2;
+			}
+
+			// the lock afterburner SEXP also needs to set a physics flag
+			if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
+				if (set_flag) {
+					afterburners_stop(oswpt.objp, 1);
+				}
+			}
+
+			// see if we have an ai flag to set
+			if (ai_flag)
+			{
+				// set or clear?
+				if (set_flag)
+					Ai_info[oswpt.shipp->ai_index].ai_flags |= ai_flag;
+				else
+					Ai_info[oswpt.shipp->ai_index].ai_flags &= ~ai_flag;
+			}
+
+			// see if we have an object flag2 to set
+			if (ai_flag2)
+			{
+				// Add code here when have flag2 settings
+			}
+
+			// no break statement. We want to fall through. 
+			
+		case OSWPT_TYPE_PARSE_OBJECT:
+			if (!future_ships) {
+				return;
+			}
+
+			// see if we have a p_object flag to set
+			if (parse_obj_flag && oswpt.p_objp != NULL)
+			{
+				// set or clear?
+				if (set_flag)
+					oswpt.p_objp->flags |= parse_obj_flag;
+				else
+					oswpt.p_objp->flags &= ~parse_obj_flag;
+			}
+
+			// see if we have a p_object flag2 to set
+			if (parse_obj_flag2 && oswpt.p_objp != NULL)
+			{
+				// set or clear?
+				if (set_flag)
+					oswpt.p_objp->flags2 |= parse_obj_flag2;
+				else
+					oswpt.p_objp->flags2 &= ~parse_obj_flag2;
+			}
+			break;
+
+
+	}
+
+}
+
+void alter_flag_for_all_ships(bool future_ships, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
+{
+	ship_obj	*so;
+	p_object	*p_objp;
+	object_ship_wing_point_team oswpt;
+
+	// set all the ships present in the mission
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		object_ship_wing_point_team_set_ship(&oswpt, so, future_ships); 
+
+		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+	}
+
+	// set up all the ships which have yet to arrive
+	if (future_ships) {
+		oswpt.clear(); 
+		for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+		{
+			oswpt.p_objp = p_objp; 
+			oswpt.type = OSWPT_TYPE_PARSE_OBJECT;
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+		}
+	}
+}
+
+void sexp_alter_ship_flag(int node)
+{
+	char *flag_name;
+	int object_flag = 0;
+	int object_flag2 = 0;
+	int ship_flags = 0;
+	int ship_flags2 = 0;
+	int parse_obj_flag = 0;
+	int parse_obj_flag2 = 0;
+	int ai_flag = 0;
+	int ai_flag2 = 0;
+	bool set_flag = false; 
+	bool send_multi = false;
+	bool future_ships = false; 
+	int i;
+	object_ship_wing_point_team oswpt;
+
+	flag_name = CTEXT(node); 
+	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
+		if (!stricmp(Object_flag_names[i].flag_name, flag_name)) {
+			// make sure the list writes to the correct list of flags!
+			if (Object_flag_names[i].flag_list == 1) {
+				object_flag = Object_flag_names[i].flag;
+			}
+			else if (Object_flag_names[i].flag_list == 2) {
+				object_flag2 = Object_flag_names[i].flag;
+			}
+			break;
+		}
+	}
+
+	for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
+		if (!stricmp(Ship_flag_names[i].flag_name, flag_name)) {
+			// make sure the list writes to the correct list of flags!
+			if (Ship_flag_names[i].flag_list == 1) {
+				ship_flags = Ship_flag_names[i].flag;
+			}
+			else if (Ship_flag_names[i].flag_list == 2) {
+				ship_flags2 = Ship_flag_names[i].flag;
+				// only ship flags2 and above need to be sent the game handles the first set of flags elsewhere
+				send_multi = true;
+			}
+			break;
+		}
+	}
+
+	// parse files already have a list of names in the same order as the flags, so we can do something slightly different here. 
+	for ( i = 0; i < MAX_PARSE_OBJECT_FLAGS; i++) {
+		if (!stricmp(Parse_object_flags[i], flag_name)) {
+			parse_obj_flag = (1 << i);
+			break;
+		}
+	}
+
+	for ( i = 0; i < MAX_PARSE_OBJECT_FLAGS_2; i++) {
+		if (!stricmp(Parse_object_flags_2[i], flag_name)) {
+			parse_obj_flag2 = (1 << i);
+			break;
+		}
+	}
+
+	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
+		if (!stricmp(Ai_flag_names[i].flag_name, flag_name)) {
+			// make sure the list writes to the correct list of flags!
+			if (Ai_flag_names[i].flag_list == 1) {
+				ai_flag = Ai_flag_names[i].flag;
+			}
+			else if (Ai_flag_names[i].flag_list == 2) {
+				ai_flag2 = Ai_flag_names[i].flag;
+			}
+			break;
+		}
+	}
+
+	node = CDR(node); 
+	if (is_sexp_true(node)) {
+		set_flag = true;
+	}
+
+	node = CDR(node);
+	if (is_sexp_true(node)) {
+		future_ships = true;
+	}
+
+
+	// start the multiplayer packet
+	if (send_multi && MULTIPLAYER_MASTER) {
+		multi_start_callback(); 
+		multi_send_int(object_flag); 
+		/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until object_flag2
+		is actually used by the engine 
+		*/
+		// multi_send_int(object_flag2); 
+		multi_send_int(ship_flags); 
+		multi_send_int(ship_flags2); 
+		multi_send_int(parse_obj_flag); 
+		multi_send_int(parse_obj_flag2); 
+		multi_send_int(ai_flag); 
+		/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until ai_flag2
+		is actually used by the engine 
+		*/
+		// multi_send_int(ai_flag2); 
+		multi_send_bool(set_flag); 
+		multi_send_bool(future_ships); 
+	}
+
+	node = CDR(node);
+
+	// no 4th argument means do this to every ship in the mission (and if the flag is set, every ship that will be too).
+	if (node == -1) {
+		// send a message to the clients saying there were no more arguments
+		multi_send_bool(false); 
+
+		alter_flag_for_all_ships(future_ships, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+	}
+
+
+	else {
+		// send a message to the clients saying there are more arguments
+		multi_send_bool(true); 
+
+		while (node != -1) {
+			sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(node), future_ships); 
+			
+			// no point in setting these flags at all
+			if (oswpt.type == OSWPT_TYPE_NONE || oswpt.type == OSWPT_TYPE_EXITED ) {
+				node = CDR(node);
+				continue; 
+			}
+
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+			node = CDR(node);
+
+			multi_send_int(oswpt.type);
+
+			switch (oswpt.type) {
+				case OSWPT_TYPE_SHIP:
+					multi_send_ship(oswpt.shipp);
+					break;
+
+				case OSWPT_TYPE_PARSE_OBJECT:
+					multi_send_parse_object(oswpt.p_objp);
+					break;
+
+				case OSWPT_TYPE_WING_NOT_PRESENT:
+				case OSWPT_TYPE_WING:
+					multi_send_ushort(oswpt.wingp->net_signature);
+					break;
+
+				case OSWPT_TYPE_TEAM:
+					multi_send_int(oswpt.team);
+					break;
+			}
+		}
+	}
+	multi_end_callback();
+}
+
+
+
+void multi_sexp_alter_ship_flag() 
+{
+	int object_flag = 0;
+	int object_flag2 = 0; 
+	int ship_flag = 0; 
+	int ship_flag2 = 0;
+	int parse_obj_flag = 0;
+	int parse_obj_flag2 = 0;
+	bool set_flag = false;
+	bool future_ships = true; 
+	bool process_data = false;
+	int ai_flag = 0;
+	int ai_flag2 = 0;
+	int type = -1;
+	object_ship_wing_point_team oswpt;
+	ushort wing_sig;
+
+	multi_get_int(object_flag); 
+	// multi_get_int(object_flag2); 
+	multi_get_int(ship_flag); 
+	multi_get_int(ship_flag2); 
+	multi_get_int(parse_obj_flag); 
+	multi_get_int(parse_obj_flag2); 
+	multi_get_int(ai_flag); 
+	multi_get_bool(set_flag);
+	multi_get_bool(future_ships);
+ 
+	// if any of the above failed so will this loop
+	if (!multi_get_bool(process_data)) 
+	{
+		return;
+	}
+
+	// no more data means do this to every ship in the mission
+	if (!process_data) {
+		alter_flag_for_all_ships(future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+	}
+	else {
+		while (multi_get_int(type)) {
+			oswpt.clear();
+			oswpt.type = type; 
+
+			switch (oswpt.type) {
+				case OSWPT_TYPE_SHIP:
+					multi_get_ship(oswpt.shipp);
+					break;
+
+				case OSWPT_TYPE_PARSE_OBJECT:
+					multi_get_parse_object(oswpt.p_objp);
+					break;
+
+				case OSWPT_TYPE_WING_NOT_PRESENT:
+				case OSWPT_TYPE_WING:
+					multi_get_ushort(wing_sig);
+					for (int i = 0; i < Num_wings; i++) {
+						if (Wings[i].net_signature == wing_sig) {
+							oswpt.wingp = &Wings[i];
+							break;
+						}
+					}
+
+					if (oswpt.wingp == NULL) {
+						Warning(LOCATION, "Unable to get wing to apply flags to in multi_sexp_alter_ship_flag()"); 
+					}
+					break;
+
+				case OSWPT_TYPE_TEAM:
+					multi_get_int(oswpt.team);
+					break;
+			}
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+		}
+	}
+}
+
+
 // modified by Goober5000; now it should work properly
 // function to deal with breaking/fixing the warp engines on ships/wings.
 // --repairable is true when we are breaking the warp drive (can be repaired)
@@ -21589,6 +22081,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_ALTER_SHIP_FLAG:
+				sexp_alter_ship_flag(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SHIP_VULNERABLE:
 			case OP_SHIP_INVULNERABLE:
 				sexp_ships_invulnerable(node, (op_num == OP_SHIP_INVULNERABLE));
@@ -23219,6 +23716,10 @@ void multi_sexp_eval()
 				multi_sexp_deal_with_ship_flag();
 				break;
 
+			case OP_ALTER_SHIP_FLAG:
+				multi_sexp_alter_ship_flag();
+				break;
+
 			case OP_SET_AFTERBURNER_ENERGY: 
 				multi_sexp_set_energy_pct();
 				break;
@@ -24000,6 +24501,7 @@ int query_operator_return_type(int op)
 		case OP_SET_THRUSTERS:
 		case OP_SET_PLAYER_THROTTLE_SPEED:
 		case OP_DEBUG:
+		case OP_ALTER_SHIP_FLAG:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -24258,6 +24760,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_DAMAGE_CAUSED:
 		case OP_GET_THROTTLE_SPEED:
 			return OPF_SHIP;
+
+		case OP_ALTER_SHIP_FLAG:
+			if(argnum == 0)
+				return OPF_SHIP_FLAG;
+			if(argnum == 1 || argnum == 2)
+				return OPF_BOOL;
+			else
+				return OPF_SHIP_WING_TEAM;
 		
 		case OP_SET_PLAYER_THROTTLE_SPEED:
 			if(argnum == 0)
@@ -26456,6 +26966,9 @@ char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_MISSION_MOOD:
 			return "Invalid mission mood";
 
+		case SEXP_CHECK_INVALID_SHIP_FLAG:
+			return "Invalid ship flag";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -27251,6 +27764,7 @@ int get_subcategory(int sexp_id)
 
 
 
+		case OP_ALTER_SHIP_FLAG:
 		case OP_PROTECT_SHIP:
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
@@ -29458,6 +29972,14 @@ sexp_help_struct Sexp_help[] = {
 		"\tCauses the specified hud gauge to flash to draw the player's attention to it.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of hud gauge to flash." },
+		
+	{ OP_ALTER_SHIP_FLAG, "alter-ship-flag\r\n"
+		"\tSets a ships flag and/or parse flag.\r\n\r\n"
+		"Takes 4 or more arguments...\r\n"
+		"\t1:\tShip flag name\r\n"
+		"\t2:\tTrue if turning on, false if turning off\r\n"
+		"\t3:\tTrue\\False - Apply this flag to future waves of this wing. Apply to ship if not present\r\n"
+		"\tRest:\t (optional)Name of ships. If not supplied, will work on all ships in the mission" },
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
 		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"

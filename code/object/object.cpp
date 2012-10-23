@@ -92,6 +92,18 @@ char *Object_type_names[MAX_OBJECT_TYPES] = {
 //XSTR:ON
 };
 
+obj_flag_name Object_flag_names[] = {
+	{OF_INVULNERABLE,			"invulnerable",				1,	},
+	{OF_PROTECTED,				"protect-ship",				1,	},
+	{OF_BEAM_PROTECTED,			"beam-protect-ship",		1,	},
+	{OF_NO_SHIELDS,				"no-shields",				1,	},
+	{OF_TARGETABLE_AS_BOMB,		"targetable-as-bomb",		1,	},
+	{OF_FLAK_PROTECTED,			"flak-protect-ship",		1,	},
+	{OF_LASER_PROTECTED,		"laser-protect-ship",		1,	},
+	{OF_MISSILE_PROTECTED,		"missile-protect-ship",		1,	},
+	{OF_IMMOBILE,				"immobile",					1,	},
+};
+
 //-----------------------------------------------------------------------------
 //	Scan the object list, freeing down to num_used objects
 //	Returns number of slots freed.
