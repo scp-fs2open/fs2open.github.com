@@ -356,6 +356,22 @@ flag_def_list ai_tgt_weapon_flags[] = {
 	{ "capital+",			WIF2_CAPITAL_PLUS,		1 }
 };
 
+//	Constant for flag,				Name of flag,				In flags or flags2
+ship_flag_name Ship_flag_names[] = {
+	{SF_VAPORIZE,					"vaporize",						1,	},
+	{SF_WARP_BROKEN,				"afterburners-locked",			1,	},
+	{SF_WARP_NEVER,					"primaries-locked",				1,	},
+	//{SF_HIDDEN_FROM_SENSORS,		"hidden-from-sensors",			1,	},
+	//{SF2_STEALTH,					"stealth",						2,	},
+	//{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
+	{SF2_AFTERBURNER_LOCKED,		"afterburners-locked",			2,	},
+	{SF2_PRIMARIES_LOCKED,			"primaries-locked",				2,	},
+	{SF2_SECONDARIES_LOCKED,		"secondaries-locked",			2,	},
+	{SF2_NO_SUBSPACE_DRIVE,			"no-subspace-drive",			2,	},
+	{SF2_DONT_COLLIDE_INVIS,		"don't-collide-invisible",		2,	},
+	{SF2_NO_ETS,					"no-ets",						2,	},
+};
+
 const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
 
 SCP_vector <ai_target_priority> Ai_tp_list;

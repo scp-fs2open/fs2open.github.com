@@ -268,6 +268,7 @@ public:
 	sexp_list_item *get_listing_opf_ship_effect();
 	sexp_list_item *get_listing_opf_animation_type();
 	sexp_list_item *get_listing_opf_mission_moods();
+	sexp_list_item *get_listing_opf_ship_flags();
 
 	int m_mode;
 	int item_index;
