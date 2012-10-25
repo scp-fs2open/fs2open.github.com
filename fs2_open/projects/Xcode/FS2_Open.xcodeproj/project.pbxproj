@@ -584,6 +584,8 @@
 		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
 		60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E6113432B800CE910F /* voicerec.cpp */; };
 		60FAF4E9113432B800CE910F /* voicerec.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E7113432B800CE910F /* voicerec.h */; };
+		914F0FC61639998700A5B57A /* generic_log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 914F0FC41639998700A5B57A /* generic_log.cpp */; };
+		914F0FC71639998700A5B57A /* generic_log.h in Headers */ = {isa = PBXBuildFile; fileRef = 914F0FC51639998700A5B57A /* generic_log.h */; };
 		91D778A014FE96BE00E0090A /* mod_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91D7789E14FE96BE00E0090A /* mod_table.cpp */; };
 		91D778A114FE96BE00E0090A /* mod_table.h in Headers */ = {isa = PBXBuildFile; fileRef = 91D7789F14FE96BE00E0090A /* mod_table.h */; };
 		F007DDF612F4F44600D2F6C1 /* jconfig.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB512F4F44600D2F6C1 /* jconfig.h */; };
@@ -1504,6 +1506,8 @@
 		60FAF4E7113432B800CE910F /* voicerec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = voicerec.h; sourceTree = "<group>"; };
 		914580470FD036ED00788595 /* multi_sexp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = multi_sexp.cpp; sourceTree = "<group>"; };
 		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
+		914F0FC41639998700A5B57A /* generic_log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = generic_log.cpp; sourceTree = "<group>"; };
+		914F0FC51639998700A5B57A /* generic_log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = generic_log.h; sourceTree = "<group>"; };
 		91D7789E14FE96BE00E0090A /* mod_table.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mod_table.cpp; sourceTree = "<group>"; };
 		91D7789F14FE96BE00E0090A /* mod_table.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mod_table.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
@@ -2625,6 +2629,8 @@
 		345954B108C3D6A0003B1351 /* parse */ = {
 			isa = PBXGroup;
 			children = (
+				914F0FC41639998700A5B57A /* generic_log.cpp */,
+				914F0FC51639998700A5B57A /* generic_log.h */,
 				3468A8DA0991BDE200123C87 /* lua.cpp */,
 				3468A8DB0991BDE200123C87 /* lua.h */,
 				3468A8DC0991BDE200123C87 /* scripting.cpp */,
@@ -3416,6 +3422,7 @@
 				60FAF4E4113431A100CE910F /* openal.h in Headers */,
 				60FAF4E9113432B800CE910F /* voicerec.h in Headers */,
 				F0E986A311C66F5700CF5169 /* bitarray.h in Headers */,
+				914F0FC71639998700A5B57A /* generic_log.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3984,6 +3991,7 @@
 				60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */,
 				60584F4C11347FE10080E50C /* audiostr.cpp in Sources */,
 				606034471134822A0032BB9A /* dscap.cpp in Sources */,
+				914F0FC61639998700A5B57A /* generic_log.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
