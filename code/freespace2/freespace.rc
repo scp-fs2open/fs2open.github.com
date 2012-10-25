@@ -354,12 +354,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Volition Inc."
             VALUE "FileDescription", "FreeSpace 2 Open"
-            VALUE "FileVersion", "3.6.13.0000"
+            VALUE "FileVersion", "3.6.15.0000"
             VALUE "InternalName", "FreeSpace 2 Open"
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fs2.exe"
             VALUE "ProductName", "FreeSpace 2 Open"
-            VALUE "ProductVersion", "3.6.13"
+            VALUE "ProductVersion", "3.6.15"
         END
     END
     BLOCK "VarFileInfo"
