@@ -236,18 +236,18 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE2|Win32'">fred2_open_3_6_13d_INF_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fred2_open_3_6_13d</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno|Win32'">fred2_open_3_6_13d_INF</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE|Win32'">fred2_open_3_6_13d_INF_SSE</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fred2_open_3_6_13d_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fred2_open_3_6_13d_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fred2_open_3_6_13r</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Inferno|Win32'">fred2_open_3_6_13r_INF</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Inferno SSE|Win32'">fred2_open_3_6_13r_INF_SSE</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Inferno SSE2|Win32'">fred2_open_3_6_13r_INF_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fred2_open_3_6_13r_SSE</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fred2_open_3_6_13r_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE2|Win32'">fred2_open_3_6_15d_INF_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fred2_open_3_6_15d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno|Win32'">fred2_open_3_6_15d_INF</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE|Win32'">fred2_open_3_6_15d_INF_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fred2_open_3_6_15d_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fred2_open_3_6_15d_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fred2_open_3_6_15r</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Inferno|Win32'">fred2_open_3_6_15r_INF</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Inferno SSE|Win32'">fred2_open_3_6_15r_INF_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Inferno SSE2|Win32'">fred2_open_3_6_15r_INF_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fred2_open_3_6_15r_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fred2_open_3_6_15r_SSE2</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CustomBuildStep>
