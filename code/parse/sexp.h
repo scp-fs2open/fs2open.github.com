@@ -108,6 +108,7 @@ class waypoint_list;
 #define OPF_ANIMATION_TYPE		81		// Goober5000 - as defined in modelanim.h
 #define OPF_MISSION_MOOD		82		// Karajorma - Moods determine which builtin messages will be sent
 #define OPF_SHIP_FLAG			83		// Karajorma - The name of a ship flag
+#define OPF_TEAM_COLOR			84		// The E - Color settings as defined in Colors.tbl
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -705,6 +706,7 @@ class waypoint_list;
 #define OP_NAV_SELECT						(0x0019 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Talon1024
 #define OP_NAV_DESELECT						(0x001a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Talon1024
 #define OP_ALTER_SHIP_FLAG					(0x001b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CHANGE_TEAM_COLOR				(0x001c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -963,6 +965,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_ANIMATION_TYPE		-154
 #define SEXP_CHECK_INVALID_MISSION_MOOD			-155
 #define SEXP_CHECK_INVALID_SHIP_FLAG			-156
+#define SEXP_CHECK_INVALID_TEAM_COLOR			-157
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)

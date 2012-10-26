@@ -785,6 +785,10 @@ typedef struct ship {
 	RadarVisibility radar_current_status; // Current radar status
 
 	SCP_string team_name;
+	SCP_string secondary_team_name;	//If the change-team-color sexp is used, these fields control the fading behaviour
+	fix team_change_timestamp;
+	int team_change_time;
+
 } ship;
 
 struct ai_target_priority {
