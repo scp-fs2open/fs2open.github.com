@@ -110,6 +110,8 @@ static bool Lab_thrust_afterburn = false;
 static int Trackball_mode = 1;
 static int Trackball_active = 0;
 
+SCP_string Lab_team_color = "<none>";
+
 // functions
 void labviewer_change_ship_lod(Tree *caller);
 void labviewer_change_ship(Tree *caller);
@@ -705,7 +707,7 @@ void labviewer_render_model(float frametime)
 		}
 
 		if (sip->uses_team_colors && !Teamcolor_override) {
-			gr_set_team_color(sip->default_team_name);
+			gr_set_team_color(Lab_team_color, "<none>", 0, 0);
 		}
 	}
 
@@ -1160,6 +1162,10 @@ void labviewer_do_render(float frametime)
 	if (Cmdline_bloom_intensity && !PostProcessing_override)
 		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 3) - 3, "Bloom intensity: %i", Cmdline_bloom_intensity);
 
+	//Print current Team Color setting, if any
+	if (Lab_team_color != "<none>")
+		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 4) - 3, "Use T and Y to cycle through available Team Color settings. Current: %s", Lab_team_color.c_str());
+
 	//Display helpful text
 	if (!PostProcessing_override)
 		gr_printf_no_resize(gr_screen.clip_left + 70, gr_screen.clip_bottom - gr_get_font_height(), "Use number keys to switch between FXAA presets. B and N can be used to adjust bloom.");
@@ -1478,6 +1484,7 @@ void labviewer_populate_variables_window()
 		labviewer_variables_add(&y, "Name");
 		labviewer_variables_add(&y, "Species");
 		labviewer_variables_add(&y, "Type");
+		labviewer_variables_add(&y, "Default Team Color");
 
 		// physics
 		VAR_ADD_HEADER("Physics");
@@ -1607,6 +1614,7 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE(sip->name);
 		VAR_SET_VALUE_SAVE(sip->species, Species_info.size()-1);
 		VAR_SET_VALUE_SAVE(sip->class_type, Ship_types.size()-1);
+		VAR_SET_VALUE(sip->default_team_name);
 
 		VAR_SET_VALUE_SAVE(sip->density, 0);
 		VAR_SET_VALUE_SAVE(sip->damp, 0);
@@ -2005,6 +2013,12 @@ void labviewer_change_ship_lod(Tree* caller)
 
 	labviewer_change_model(Ship_info[ship_index].pof_file, caller->GetSelectedItem()->GetData(), ship_index);
 
+	if (Ship_info[ship_index].uses_team_colors) {
+		Lab_team_color = Ship_info[ship_index].default_team_name;
+	} else {
+		Lab_team_color = "<none>";
+	}
+
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
 	labviewer_update_variables_window();
@@ -2280,6 +2294,8 @@ void lab_do_frame(float frametime)
 			Trackball_mode = 0;
 		}
 
+		//Due to switch scoping rules, this has to be declared here
+		SCP_map<SCP_string, team_color>::iterator color = Team_Colors.find(Lab_team_color);
 		// handle any key presses
 		switch (key) {
 			// switch between the current insignia bitmap to render with
@@ -2363,6 +2379,23 @@ void lab_do_frame(float frametime)
 					if (Cmdline_bloom_intensity < 0)
 						Cmdline_bloom_intensity = 0;
 				}
+				break;
+
+			case KEY_T:
+				if (color == Team_Colors.begin()) {
+					color = --Team_Colors.end();
+					Lab_team_color = color->first;
+				} else {
+					--color;
+					Lab_team_color = color->first;
+				}
+				break;
+
+			case KEY_Y:
+				++color;
+				if (color == Team_Colors.end())
+					color = Team_Colors.begin();
+				Lab_team_color = color->first;
 				break;
 
 			// bail...

@@ -379,7 +379,7 @@ BOOL initial_status::OnInitDialog()
 		GetDlgItem(IDC_HULL)->SetWindowText("");
 
 	if (objp != NULL) {
-		if (objp->type == OBJ_SHIP) {
+		if (objp->type == OBJ_SHIP || objp->type == OBJ_START) {
 			ship* shipp = &Ships[objp->instance];
 			int i = 0;
 

@@ -95,6 +95,7 @@
 #include "asteroid/asteroid.h"
 #include "mod_table/mod_table.h"
 #include "ship/afterburner.h"
+#include "globalincs/alphacolors.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -505,6 +506,7 @@ sexp_oper Operators[] = {
 	{ "add-to-collision-group",		OP_ADD_TO_COLGROUP,				2, INT_MAX },	// The E
 	{ "remove-from-collision-group",OP_REMOVE_FROM_COLGROUP,		2, INT_MAX },
 	{ "get-collision-group",		OP_GET_COLGROUP_ID,				1, 1 },
+	{ "change-team-color",			OP_CHANGE_TEAM_COLOR,			3, INT_MAX },	// The E
 
 	//Coordinate Manipulation Sub-Category
 	{ "set-object-position",		OP_SET_OBJECT_POSITION,			4,	4	},	// WMC
@@ -2718,6 +2720,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				break;
 				}
+
+			case OPF_TEAM_COLOR:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (Team_Colors.find(CTEXT(node)) == Team_Colors.end())
+					return SEXP_CHECK_INVALID_TEAM_COLOR;
+				
+				break;
 
 			case OPF_FONT:
 				if (type2 != SEXP_ATOM_STRING) {
@@ -21211,6 +21223,29 @@ void sexp_ship_effect(int n)
 	}
 }
 
+void sexp_change_team_color(int n) {
+	SCP_string new_color = CTEXT(n);
+	n = CDR(n);
+	int fade_time = eval_num(n);
+
+	n = CDR(n);
+	while (n != -1) {
+		ship* shipp = sexp_get_ship_from_node(n);
+
+		if (shipp != NULL) {
+			if (fade_time == 0) {
+				shipp->team_name = new_color;
+			} else {
+				shipp->secondary_team_name = new_color;
+				shipp->team_change_time = fade_time;
+				shipp->team_change_timestamp = Missiontime;
+			}
+		}
+
+		n = CDR(n);
+	}
+}
+
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets>
  */
@@ -23540,6 +23575,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_thrusters(node);
 				break;
 
+			case OP_CHANGE_TEAM_COLOR:
+				sexp_val = SEXP_TRUE;
+				sexp_change_team_color(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -24502,6 +24542,7 @@ int query_operator_return_type(int op)
 		case OP_SET_PLAYER_THROTTLE_SPEED:
 		case OP_DEBUG:
 		case OP_ALTER_SHIP_FLAG:
+		case OP_CHANGE_TEAM_COLOR:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -25423,6 +25464,14 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SET_MISSION_MOOD:
 			return OPF_MISSION_MOOD;
+
+		case OP_CHANGE_TEAM_COLOR:
+			if (argnum == 0)
+				return OPF_TEAM_COLOR;
+			else if (argnum == 1)
+				return OPF_NUMBER;
+			else
+				return OPF_SHIP;
 
 		case OP_SELF_DESTRUCT:
 			return OPF_SHIP;
@@ -27908,6 +27957,7 @@ int get_subcategory(int sexp_id)
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_GET_COLGROUP_ID:
+		case OP_CHANGE_TEAM_COLOR:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 
@@ -31641,6 +31691,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe player ship to set the throttle of.\r\n"
 		"\t2:\tThe percentage of the player's maximum speed to set their throttle to.\r\n"
 		"\t\tThis is capped to either 0 or 100 if outside the valid range."
+	},
+
+	{OP_CHANGE_TEAM_COLOR, "change-team-color\r\n"
+		"\tChanges the team color setting for one or several ships.\r\n"
+		"\tThis sexp has no effect on ships that don't have team colors enabled for them.\r\n"
+		"\tTakes 3 or more arguments...\r\n"
+		"\t1:\tThe new team color name. Name must be defined in colors.tbl.\r\n"
+		"\t2:\tCrossfade time in milliseconds. During this time, colors will be mixed.\r\n"
+		"\t3:\tRest: List of ships this sexp will operate on."
 	}
 };
 

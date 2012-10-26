@@ -5116,6 +5116,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// Team colors
 	shipp->team_name.assign( sip->default_team_name);
+	shipp->secondary_team_name = "<none>";
+	shipp->team_change_time = 0;
+	shipp->team_change_timestamp = 0;
 }
 
 /**
@@ -6120,7 +6123,7 @@ void ship_render(object * obj)
 			}
 
 			if (sip->uses_team_colors) {
-				gr_set_team_color(shipp->team_name);
+				gr_set_team_color(shipp->team_name, shipp->secondary_team_name, shipp->team_change_timestamp, shipp->team_change_time);
 			}
 
 			if(sip->flags2 & SIF2_NO_LIGHTING)

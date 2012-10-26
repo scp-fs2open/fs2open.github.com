@@ -45,6 +45,7 @@
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglpostprocessing.h"
 #include "sound/ds.h"
+#include "globalincs/alphacolors.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -2765,6 +2766,9 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			else
 				return 1;
 
+		case OPF_TEAM_COLOR:
+			return 1;
+
 		default:
 			Int3();
 
@@ -4400,6 +4404,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_flags();
 			break;
 
+		case OPF_TEAM_COLOR:
+			list = get_listing_opf_team_colors();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5897,6 +5905,17 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
 	// ai flags
 	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
 		head.add_data_dup(Ai_flag_names[i].flag_name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_team_colors()
+{
+	sexp_list_item head;
+	head.add_data("None");
+	for (SCP_map<SCP_string, team_color>::iterator tcolor = Team_Colors.begin(); tcolor != Team_Colors.end(); ++tcolor) {
+		head.add_data_dup(tcolor->first.c_str());
 	}
 
 	return head.next;
