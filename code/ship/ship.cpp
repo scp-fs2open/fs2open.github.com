@@ -359,8 +359,8 @@ flag_def_list ai_tgt_weapon_flags[] = {
 //	Constant for flag,				Name of flag,				In flags or flags2
 ship_flag_name Ship_flag_names[] = {
 	{SF_VAPORIZE,					"vaporize",						1,	},
-	{SF_WARP_BROKEN,				"afterburners-locked",			1,	},
-	{SF_WARP_NEVER,					"primaries-locked",				1,	},
+	{SF_WARP_BROKEN,				"break-warp",					1,	},
+	{SF_WARP_NEVER,					"never-warp",					1,	},
 	//{SF_HIDDEN_FROM_SENSORS,		"hidden-from-sensors",			1,	},
 	//{SF2_STEALTH,					"stealth",						2,	},
 	//{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
