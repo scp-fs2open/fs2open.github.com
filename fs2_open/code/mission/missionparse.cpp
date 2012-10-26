@@ -5027,7 +5027,7 @@ void parse_bitmaps(mission *pm)
 
 	if (pm->ambient_light_level == 0)
 	{
-		pm->ambient_light_level = 0x00787878;
+		pm->ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
 	}
 
 	// This should call light_set_ambient() to

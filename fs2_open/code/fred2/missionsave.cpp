@@ -330,7 +330,7 @@ int CFred_mission_save::save_mission_info()
 #endif		
 
 	if ( optional_string_fred("+Game Type Flags:")){
-		parse_comments(2);
+		parse_comments(1);
 	} else {
 		fout("\n+Game Type Flags:");
 	}	
@@ -338,7 +338,7 @@ int CFred_mission_save::save_mission_info()
 	fout(" %d", The_mission.game_type);
 
 	if (optional_string_fred("+Flags:")){
-		parse_comments(2);
+		parse_comments(1);
 	} else {
 		fout("\n+Flags:");
 	}
@@ -420,7 +420,7 @@ int CFred_mission_save::save_mission_info()
 	}
 
 	if ( optional_string_fred("+Disallow Support:")){
-		parse_comments(2);
+		parse_comments(1);
 	} else {
 		fout("\n+Disallow Support:");
 	}
@@ -431,14 +431,14 @@ int CFred_mission_save::save_mission_info()
 	if (Format_fs2_open != FSO_FORMAT_RETAIL)
 	{
 		if ( optional_string_fred("+Hull Repair Ceiling:")) {
-			parse_comments(2);
+			parse_comments(1);
 		} else {
 			fout("\n+Hull Repair Ceiling:");
 		}
 		fout(" %f", The_mission.support_ships.max_hull_repair_val);
 
 		if ( optional_string_fred("+Subsystem Repair Ceiling:")) {
-			parse_comments(2);
+			parse_comments(1);
 		} else {
 			fout("\n+Subsystem Repair Ceiling:");
 		}
@@ -3327,7 +3327,13 @@ int CFred_mission_save::save_events()
 			fout("\n+Repeat Count:");
 		}
 
-		fout(" %d", Mission_events[i].repeat_count);
+		// if we have a trigger count but no repeat count, we want the event to loop until it has triggered enough times
+		if ( Mission_events[i].repeat_count == 1 && Mission_events[i].trigger_count != 1) {
+			fout(" -1"); 
+		}
+		else {
+			fout(" %d", Mission_events[i].repeat_count);
+		}
 
 		if (Format_fs2_open != FSO_FORMAT_RETAIL && Mission_events[i].trigger_count != 1 ) {
 			if ( optional_string_fred("+Trigger Count:", "$Formula:")){

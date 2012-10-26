@@ -29,6 +29,8 @@ struct p_dock_instance;
 #define NUM_NEBULAS			3				// how many background nebulas we have altogether
 #define NUM_NEBULA_COLORS	9
 
+#define DEFAULT_AMBIENT_LIGHT_LEVEL			0x00787878
+
 // arrival anchor types
 // mask should be high enough to avoid conflicting with ship anchors
 #define SPECIAL_ARRIVAL_ANCHOR_FLAG				0x1000
@@ -196,7 +198,7 @@ typedef struct mission {
 		skybox_flags = 0;
 		envmap_name[ 0 ] = '\0';
 		contrail_threshold = 0;
-		ambient_light_level = 0;
+		ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
 		sound_environment.id = -1;
 		command_persona = 0;
 		command_sender[ 0 ] = '\0';
