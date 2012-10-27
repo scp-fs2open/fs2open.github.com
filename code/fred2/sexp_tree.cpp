@@ -45,6 +45,7 @@
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglpostprocessing.h"
 #include "sound/ds.h"
+#include "globalincs/alphacolors.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -2641,6 +2642,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_HUD_GAUGE:
 		case OPF_SHIP_EFFECT:
 		case OPF_ANIMATION_TYPE:
+		case OPF_SHIP_FLAG:
 			return 1;
 
 		case OPF_SHIP:
@@ -2763,6 +2765,9 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				return 0;
 			else
 				return 1;
+
+		case OPF_TEAM_COLOR:
+			return 1;
 
 		default:
 			Int3();
@@ -4394,6 +4399,14 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		case OPF_MISSION_MOOD:
 			list = get_listing_opf_mission_moods();
 			break;
+			
+		case OPF_SHIP_FLAG:
+			list = get_listing_opf_ship_flags();
+			break;
+
+		case OPF_TEAM_COLOR:
+			list = get_listing_opf_team_colors();
+			break;
 
 		default:
 			Int3();  // unknown OPF code
@@ -5872,6 +5885,37 @@ sexp_list_item *sexp_tree::get_listing_opf_mission_moods()
 	sexp_list_item head;
 	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
 		head.add_data_dup(iter->c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
+{
+	int i;
+	sexp_list_item head;
+	// object flags
+	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
+		head.add_data_dup(Object_flag_names[i].flag_name);
+	}
+	// ship flags
+	for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
+		head.add_data_dup(Ship_flag_names[i].flag_name);
+	}
+	// ai flags
+	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
+		head.add_data_dup(Ai_flag_names[i].flag_name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_team_colors()
+{
+	sexp_list_item head;
+	head.add_data("None");
+	for (SCP_map<SCP_string, team_color>::iterator tcolor = Team_Colors.begin(); tcolor != Team_Colors.end(); ++tcolor) {
+		head.add_data_dup(tcolor->first.c_str());
 	}
 
 	return head.next;

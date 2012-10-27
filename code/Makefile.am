@@ -586,6 +586,8 @@ FS2_SOURCES =	\
 	palman/palman.h	\
 	parse/encrypt.cpp	\
 	parse/encrypt.h	\
+	parse/generic_log.cpp	\
+	parse/generic_log.h	\
 	parse/lua.cpp	\
 	parse/lua.h	\
 	parse/parselo.cpp	\

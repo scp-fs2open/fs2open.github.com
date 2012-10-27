@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/def_files.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/systemvars.h"
 
 #include "graphics/2d.h"
 #include "lighting/lighting.h"
@@ -70,6 +71,7 @@ GLint GL_max_elements_indices = 4096;
 int Buffer_sdr = -1;
 
 team_color* Current_team_color;
+team_color Current_temp_color;
 bool Using_Team_Color = false;
 
 struct opengl_vertex_buffer {
@@ -473,12 +475,49 @@ void opengl_tnl_shutdown()
 	opengl_destroy_all_buffers();
 }
 
-void gr_opengl_set_team_color(SCP_string team) {
-	if (Team_Colors.find(team) != Team_Colors.end()) {
-		Current_team_color = &Team_Colors[team];
-		Using_Team_Color = true;
-	} else
- 		Using_Team_Color = false;
+void mix_two_team_colors(team_color* dest, team_color* a, team_color* b, float mix_factor) {
+	dest->base.r = a->base.r * (1.0f - mix_factor) + b->base.r * mix_factor;
+	dest->base.g = a->base.g * (1.0f - mix_factor) + b->base.g * mix_factor;
+	dest->base.b = a->base.b * (1.0f - mix_factor) + b->base.b * mix_factor;
+
+	dest->stripe.r = a->stripe.r * (1.0f - mix_factor) + b->stripe.r * mix_factor;
+	dest->stripe.g = a->stripe.g * (1.0f - mix_factor) + b->stripe.g * mix_factor;
+	dest->stripe.b = a->stripe.b * (1.0f - mix_factor) + b->stripe.b * mix_factor;
+}
+
+void gr_opengl_set_team_color(SCP_string team, SCP_string secondaryteam, fix timestamp, int fadetime) {
+	if (secondaryteam == "<none>") {
+		if (Team_Colors.find(team) != Team_Colors.end()) {
+			Current_team_color = &Team_Colors[team];
+			Using_Team_Color = true;
+		} else
+			Using_Team_Color = false;
+	} else {
+		if ( Team_Colors.find(secondaryteam) != Team_Colors.end()) {
+			team_color temp_color;
+			team_color start;
+			if (Team_Colors.find(team) != Team_Colors.end()) {
+				start = Team_Colors[team];
+			} else {
+				start.base.r = 0.0f;
+				start.base.g = 0.0f;
+				start.base.b = 0.0f;
+
+				start.stripe.r = 0.0f;
+				start.stripe.g = 0.0f;
+				start.stripe.b = 0.0f;
+			}
+			team_color end = Team_Colors[secondaryteam];
+			float time_remaining = (f2fl(Missiontime - timestamp) * 1000)/fadetime;
+			CLAMP(time_remaining, 0.0f, 1.0f);
+			mix_two_team_colors(&temp_color, &start, &end, time_remaining);
+
+			Current_temp_color = temp_color;
+			Current_team_color = &Current_temp_color;
+			Using_Team_Color = true;
+		} else
+			Using_Team_Color = false;
+	}
 }
 
 void gr_opengl_disable_team_color() {

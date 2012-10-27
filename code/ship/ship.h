@@ -409,6 +409,15 @@ typedef struct ship_subsys_info {
 	float aggregate_current_hits;	// current count of hits for all subsystems of this type.	
 } ship_subsys_info;
 
+// Karajorma - Used by the alter-ship-flag SEXP as an alternative to having lots of ship flag SEXPs
+typedef struct ship_flag_name {
+	int flag;							// the actual ship flag constant as given by the define below
+	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
+	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
+} ship_flag_name;
+
+#define MAX_SHIP_FLAG_NAMES					9
+extern ship_flag_name Ship_flag_names[];
 
 // states for the flags variable within the ship structure
 // low bits are for mission file savable flags..
@@ -781,6 +790,10 @@ typedef struct ship {
 	RadarVisibility radar_current_status; // Current radar status
 
 	SCP_string team_name;
+	SCP_string secondary_team_name;	//If the change-team-color sexp is used, these fields control the fading behaviour
+	fix team_change_timestamp;
+	int team_change_time;
+
 } ship;
 
 struct ai_target_priority {

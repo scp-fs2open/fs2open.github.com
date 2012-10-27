@@ -26,6 +26,15 @@ struct ship_info;
 
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
+typedef struct ai_flag_name {
+	int flag;
+	char flag_name[TOKEN_LENGTH];
+	int flag_list;
+} ai_flag_name;
+
+#define MAX_AI_FLAG_NAMES			1
+extern ai_flag_name Ai_flag_names[];
+
 #define	AIF_FORMATION_WING					(1 << 0)	//	Fly in formation as part of wing.
 #define	AIF_AWAITING_REPAIR					(1 << 1)	//	Awaiting a repair ship.
 #define	AIF_BEING_REPAIRED					(1 << 2)	//	Currently docked with repair ship.
