@@ -21225,24 +21225,61 @@ void sexp_ship_effect(int n)
 
 void sexp_change_team_color(int n) {
 	SCP_string new_color = CTEXT(n);
+	SCP_vector<ship*> shippointers;
 	n = CDR(n);
 	int fade_time = eval_num(n);
 
 	n = CDR(n);
+
 	while (n != -1) {
 		ship* shipp = sexp_get_ship_from_node(n);
 
 		if (shipp != NULL) {
-			if (fade_time == 0) {
-				shipp->team_name = new_color;
-			} else {
-				shipp->secondary_team_name = new_color;
-				shipp->team_change_time = fade_time;
-				shipp->team_change_timestamp = Missiontime;
-			}
+			shippointers.push_back(shipp);
 		}
 
 		n = CDR(n);
+	}
+
+	multi_start_callback();
+	multi_send_string(new_color);
+	multi_send_int(fade_time);
+	multi_send_int(shippointers.size());
+
+	for (SCP_vector<ship*>::iterator shipp = shippointers.begin(); shipp != shippointers.end(); ++shipp) {
+		ship* shp = *shipp;
+		multi_send_ship(shp);
+		if (fade_time == 0) {
+			shp->team_name = new_color;
+		} else {
+			shp->secondary_team_name = new_color;
+			shp->team_change_time = fade_time;
+			shp->team_change_timestamp = Missiontime;
+		}
+	}
+
+	multi_end_callback();
+}
+
+void multi_sexp_change_team_color() {
+	SCP_string new_color = "<none>";
+	int fade_time = 0;
+	int n_ships = 0;
+	
+	multi_get_string(new_color);
+	multi_get_int(fade_time);
+	multi_get_int(n_ships);
+
+	for (int i = 0; i < n_ships; ++i) {
+		ship* shipp;
+		multi_get_ship(shipp);
+		if (fade_time == 0) {
+			shipp->team_name = new_color;
+		} else {
+			shipp->secondary_team_name = new_color;
+			shipp->team_change_time = fade_time;
+			shipp->team_change_timestamp = Missiontime;
+		}
 	}
 }
 
@@ -23901,6 +23938,10 @@ void multi_sexp_eval()
 				break;
 			case OP_SET_OBJECT_POSITION:
 				multi_sexp_set_object_position();
+				break;
+
+			case OP_CHANGE_TEAM_COLOR:
+				multi_sexp_change_team_color();
 				break;
 
 			// bad sexp in the packet
