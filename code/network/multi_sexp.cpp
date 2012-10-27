@@ -350,6 +350,22 @@ void multi_send_string(char *string)
 	current_argument_count += packet_size - start_size; 
 }
 
+void multi_send_string(SCP_string string) 
+{
+	if (cannot_send_data()) {
+		return;
+	}
+
+	multi_sexp_ensure_space_remains(string.length()+4); 
+
+	int start_size = packet_size; 
+	//write into the Type buffer.
+	type[packet_size] = TYPE_STRING; 
+	//write the into the data buffer
+	ADD_STRING(string.c_str()); 
+	current_argument_count += packet_size - start_size; 
+}
+
 /**
 * Add a boolean to the SEXP packet.
 */
@@ -709,6 +725,23 @@ bool multi_get_string(char *buffer)
 	}
 
 	GET_STRING(buffer);
+	multi_reduce_counts(offset - starting_offset); 
+
+	return true; 
+}
+
+bool multi_get_string(SCP_string &buffer)
+{
+	char tempstring[TOKEN_LENGTH];
+	int starting_offset = offset; 
+
+	if (!Multi_sexp_bytes_left || !current_argument_count) {
+		return false; 
+	}
+
+	buffer.clear();
+	GET_STRING(tempstring);
+	buffer = tempstring;
 	multi_reduce_counts(offset - starting_offset); 
 
 	return true; 
