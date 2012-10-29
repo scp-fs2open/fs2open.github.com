@@ -851,10 +851,11 @@ void HudGaugeShield::showShields(object *objp, int mode)
 						y_val += 3;
 						for(j = 0; j < 112; j++)
 							renderGradientLine(sx + j, mid_val, sx + j, y_val);
-
+						break;
 					//Whoops?
 					default:
-						Warning(LOCATION, "Invalid shield quadrant %d specified!", i);
+						nprintf(("HUD", "Invalid shield quadrant %d specified!\n", i));
+						break;
 				}
 			}
 		}
