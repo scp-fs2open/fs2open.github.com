@@ -4767,6 +4767,10 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		objh->objp->pos = *v3;
+		if (objh->objp->type == OBJ_WAYPOINT) {
+			waypoint *wpt = find_waypoint_with_objnum(OBJ_INDEX(objh->objp));
+			wpt->set_pos(v3);
+		}
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->pos));
