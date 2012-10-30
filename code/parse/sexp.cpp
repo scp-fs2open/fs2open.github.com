@@ -588,7 +588,7 @@ sexp_oper Operators[] = {
 	{ "use-nav-cinematics",				OP_NAV_USECINEMATICS,			1, 1 }, //kazan
 	{ "use-autopilot",					OP_NAV_USEAP,					1, 1 }, //kazan
 	{ "select-nav",						OP_NAV_SELECT,					1, 1 }, //Talon1024
-	{ "deselect-nav",					OP_NAV_DESELECT,				0, 0 }, //Talon1024
+	{ "unselect-nav",					OP_NAV_UNSELECT,				0, 0 }, //Talon1024
 
 	//Cutscene Sub-Category
 	{ "set-cutscene-bars",			OP_CUTSCENES_SET_CUTSCENE_BARS,			0, 1, },
@@ -18497,7 +18497,7 @@ void select_nav(int node)
 	SelectNav(nav_name);
 }
 
-void deselect_nav()
+void unselect_nav()
 {
 	DeselectNav();
 }
@@ -23414,9 +23414,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 				
 			//Talon1024
-			case OP_NAV_DESELECT:
+			case OP_NAV_UNSELECT:
 				sexp_val = SEXP_TRUE;
-				deselect_nav();
+				unselect_nav();
 				break;
 
 			case OP_SCRAMBLE_MESSAGES:
@@ -24484,7 +24484,7 @@ int query_operator_return_type(int op)
 		case OP_NAV_USECINEMATICS:
 		case OP_NAV_USEAP:
 		case OP_NAV_SELECT:
-		case OP_NAV_DESELECT:
+		case OP_NAV_UNSELECT:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
@@ -24672,7 +24672,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_VALIDATE_ALL_ARGUMENTS:
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_SUPERNOVA_STOP:
-		case OP_NAV_DESELECT:
+		case OP_NAV_UNSELECT:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -28079,7 +28079,7 @@ int get_subcategory(int sexp_id)
 		case OP_NAV_USECINEMATICS:
 		case OP_NAV_USEAP:
 		case OP_NAV_SELECT:
-		case OP_NAV_DESELECT:
+		case OP_NAV_UNSELECT:
 			return CHANGE_SUBCATEGORY_NAV;
 
 
@@ -28359,7 +28359,7 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the nav point." },
 
-	{ OP_NAV_DESELECT, "nav-deselect (Action operator)\r\n"
+	{ OP_NAV_UNSELECT, "nav-deselect (Action operator)\r\n"
 		"\tDeselects any navpoint selected.\r\n\r\n"
 		"Takes no arguments..." },
 	
