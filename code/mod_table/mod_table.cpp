@@ -171,7 +171,7 @@ void parse_mod_table(char *filename)
 			Default_weapon_select_effect = 0;
 	}
 
-	if (optional_string("$Weapons inherit parent collision group")) {
+	if (optional_string("$Weapons inherit parent collision group:")) {
 		stuff_boolean(&Weapons_inherit_parent_collision_group);
 		if (Weapons_inherit_parent_collision_group)
 			mprintf(("Game Settings Table: Weapons inherit parent collision group\n"));
