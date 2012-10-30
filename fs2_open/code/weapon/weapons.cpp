@@ -5280,6 +5280,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wp->damage_ship_id[i] = -1;
 	}
 
+	if (Weapons_inherit_parent_collision_group) {
+		Objects[objnum].collision_group_id = Objects[parent_objnum].collision_group_id;
+	}
+
 	return objnum;
 }
 
