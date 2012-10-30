@@ -404,8 +404,6 @@ BEGIN
         MENUITEM "Copy\tCtrl+C",                ID_EDIT_COPY
         MENUITEM "Paste\tCtrl+V",               ID_EDIT_PASTE, GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "Add Paste",                   ID_EDIT_PASTE_SPECIAL, GRAYED
-        MENUITEM SEPARATOR
         POPUP "Add Operator"
         BEGIN
             MENUITEM "placeholder",                 ID_PLACEHOLDER, GRAYED
@@ -416,6 +414,8 @@ BEGIN
             MENUITEM "String",                      ID_ADD_STRING, GRAYED
             MENUITEM SEPARATOR
         END
+        MENUITEM SEPARATOR
+        MENUITEM "Add Paste",                   ID_EDIT_PASTE_SPECIAL, GRAYED
         MENUITEM SEPARATOR
         POPUP "Insert Operator"
         BEGIN
