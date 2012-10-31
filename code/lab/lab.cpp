@@ -2188,7 +2188,7 @@ void labviewer_make_weap_window(Button* caller)
 void lab_init()
 {
 	GUIObject *cbp;
-	int x;
+	int x,i;
 
 	weapon_pause_sounds();
 
@@ -2235,10 +2235,12 @@ void lab_init()
 	Lab_thrust_afterburn = false;
 	Lab_arc_next_time = -1;
 	Lab_arc_disrupted = false;
+	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
+		Lab_weaponmodel_num[i] = -1;
+	}
 
 	// save detail options
 	Lab_detail_texture_save = Detail.hardware_textures;
-
 	if ( !Lab_in_mission ) {
 		// load up the list of insignia that we might use on the ships
 		pilot_load_squad_pic_list();
