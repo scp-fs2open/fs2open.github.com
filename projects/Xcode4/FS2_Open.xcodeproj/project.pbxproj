@@ -3633,7 +3633,7 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0430;
+				LastUpgradeCheck = 0450;
 			};
 			buildConfigurationList = 34BE723808C940D200673B45 /* Build configuration list for PBXProject "FS2_Open" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -4136,6 +4136,7 @@
 		344BA94E095A5A2000B9D97D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
 					"$(SRCROOT)/../../lua",
@@ -4149,6 +4150,7 @@
 		344BA94F095A5A2000B9D97D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
@@ -4164,6 +4166,7 @@
 		34BE722D08C940D200673B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4185,6 +4188,7 @@
 		34BE722E08C940D200673B45 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libjpeg;
 				LIBRARY_STYLE = STATIC;
@@ -4198,6 +4202,7 @@
 		34BE723108C940D200673B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -4241,6 +4246,7 @@
 		34BE723208C940D200673B45 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -4271,6 +4277,7 @@
 		34BE723508C940D200673B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = ./Frameworks;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
@@ -4288,6 +4295,7 @@
 		34BE723608C940D200673B45 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = ./Frameworks;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
@@ -4547,6 +4555,7 @@
 		915F25D10F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = ./Frameworks;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
@@ -4564,6 +4573,7 @@
 		915F25D20F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -4608,6 +4618,7 @@
 		915F25D30F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4629,6 +4640,7 @@
 		915F25D40F8AA7CE00521775 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
 					"$(SRCROOT)/../../lua",
@@ -4747,6 +4759,7 @@
 		915F25DA0F8AA7D700521775 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = ./Frameworks;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
@@ -4767,6 +4780,7 @@
 		915F25DB0F8AA7D700521775 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -4804,6 +4818,7 @@
 		915F25DC0F8AA7D700521775 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libjpeg;
 				LIBRARY_STYLE = STATIC;
@@ -4817,6 +4832,7 @@
 		915F25DD0F8AA7D700521775 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
@@ -4902,6 +4918,7 @@
 		F0AAA89F10FA0A7C0086B1B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4921,6 +4938,7 @@
 		F0AAA8A010FA0A7C0086B1B4 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4940,6 +4958,7 @@
 		F0AAA8A110FA0A7C0086B1B4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libpng;
 				LIBRARY_STYLE = STATIC;
@@ -4953,6 +4972,7 @@
 		F0AAA8A210FA0A7C0086B1B4 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libpng;
 				LIBRARY_STYLE = STATIC;
@@ -4966,6 +4986,7 @@
 		F0AAA90B10FA0CAA0086B1B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4985,6 +5006,7 @@
 		F0AAA90C10FA0CAA0086B1B4 /* Debug_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -5004,6 +5026,7 @@
 		F0AAA90D10FA0CAA0086B1B4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libzlib;
 				LIBRARY_STYLE = STATIC;
@@ -5017,6 +5040,7 @@
 		F0AAA90E10FA0CAA0086B1B4 /* Release_Inferno */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = NO;
 				HEADER_SEARCH_PATHS = ../../libzlib;
 				LIBRARY_STYLE = STATIC;
