@@ -256,7 +256,7 @@ fi
 
 dnl generate appropriate conditionals for Makefile.am
 AM_CONDITIONAL(FS2_OS_WIN32,   test "$fs2_os_win32" = "yes")
-AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_linux" = "yes" || test "$fs2_os_osx" = "yes" || test "$fs2_os_solaris" = "yes" || test "$fs2_os_bsd = "yes")
+AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_linux" = "yes" || test "$fs2_os_osx" = "yes" || test "$fs2_os_solaris" = "yes" || test "$fs2_os_bsd" = "yes")
 AM_CONDITIONAL(FS2_OS_LINUX,   test "$fs2_os_linux" = "yes")
 AM_CONDITIONAL(FS2_OS_OSX,     test "$fs2_os_osx"   = "yes")
 AM_CONDITIONAL(FS2_OS_SOLARIS, test "$fs2_os_solaris"   = "yes")
