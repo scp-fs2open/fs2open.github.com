@@ -400,7 +400,7 @@ elif test "$fs2_os_linux" = "yes" || test "$fs2_os_bsd" = "yes" ; then
 	FS2_LIBS=$FS2_LIBS" $OPENGL_LIBS"
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
-	if test "$fs2_os_bsd = "yes" ; then
+	if test "$fs2_os_bsd" = "yes" ; then
 		AC_DEFINE([SCP_BSD])
 	fi
 elif test "$fs2_os_osx" = "yes" ; then
