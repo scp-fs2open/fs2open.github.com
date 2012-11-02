@@ -1479,13 +1479,17 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// checking departure and destroyed.  In multiplayer, since ships can respawn,
 			// they get log entries for being destroyed even though they have respawned.
 			sindex = ship_name_lookup( aigp->target_name );
-			if ( sindex == -1 ) {
+			if ( sindex < 0 ) {
 				status = mission_log_get_time( LOG_SHIP_DEPARTED, aigp->target_name, NULL, NULL);
 				if ( !status ) {
 					status = mission_log_get_time( LOG_SHIP_DESTROYED, aigp->target_name, NULL, NULL);
-					if ( status )
-						return_val = AI_GOAL_NOT_ACHIEVABLE;
+					if ( !status ) {
+						status = mission_log_get_time( LOG_SELF_DESTRUCTED, aigp->target_name, NULL, NULL);
+					}
 				}
+
+				if ( status )
+					return_val = AI_GOAL_NOT_ACHIEVABLE;
 			} else {
 				status = 0;
 			}

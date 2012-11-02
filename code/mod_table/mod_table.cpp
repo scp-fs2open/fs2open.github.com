@@ -22,6 +22,7 @@ int Default_ship_select_effect = 2;
 int Default_weapon_select_effect = 2;
 bool Enable_external_shaders = false;
 bool Full_color_head_anis = false;
+bool Weapons_inherit_parent_collision_group = false;
 
 
 void parse_mod_table(char *filename)
@@ -168,6 +169,12 @@ void parse_mod_table(char *filename)
 			Default_weapon_select_effect = 1;
 		else if (!stricmp(effect, "off"))
 			Default_weapon_select_effect = 0;
+	}
+
+	if (optional_string("$Weapons inherit parent collision group:")) {
+		stuff_boolean(&Weapons_inherit_parent_collision_group);
+		if (Weapons_inherit_parent_collision_group)
+			mprintf(("Game Settings Table: Weapons inherit parent collision group\n"));
 	}
 
 	required_string("#END");

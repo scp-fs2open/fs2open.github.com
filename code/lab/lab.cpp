@@ -217,7 +217,7 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 			Lab_model_num = -1;
 
 			for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
-				if (Lab_weaponmodel_num[j] > 0) {
+				if (Lab_weaponmodel_num[j] >= 0) {
 					model_page_out_textures(Lab_weaponmodel_num[j], true);
 					model_unload(Lab_weaponmodel_num[j]);
 					Lab_weaponmodel_num[j] = -1;
@@ -296,7 +296,7 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 		} else {
 			// clear out the model filename
 			memset( Lab_model_filename, 0, sizeof(Lab_model_filename) );
-			if (Lab_weaponmodel_num[0] > 0) {
+			if (Lab_weaponmodel_num[0] >= 0) {
 				for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
 					memset( Lab_weaponmodel_filename[j], 0, sizeof(Lab_weaponmodel_filename[j]) );
 				}
@@ -2188,7 +2188,7 @@ void labviewer_make_weap_window(Button* caller)
 void lab_init()
 {
 	GUIObject *cbp;
-	int x;
+	int x,i;
 
 	weapon_pause_sounds();
 
@@ -2235,10 +2235,12 @@ void lab_init()
 	Lab_thrust_afterburn = false;
 	Lab_arc_next_time = -1;
 	Lab_arc_disrupted = false;
+	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
+		Lab_weaponmodel_num[i] = -1;
+	}
 
 	// save detail options
 	Lab_detail_texture_save = Detail.hardware_textures;
-
 	if ( !Lab_in_mission ) {
 		// load up the list of insignia that we might use on the ships
 		pilot_load_squad_pic_list();
@@ -2460,6 +2462,14 @@ void lab_close()
 		model_page_out_textures(Lab_model_num, true);
 		model_unload(Lab_model_num);
 		Lab_model_num = -1;
+	}
+
+	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
+		if (Lab_weaponmodel_num[i] >= 0) {
+			model_page_out_textures(Lab_weaponmodel_num[i], true);
+			model_unload(Lab_weaponmodel_num[i]);
+			Lab_weaponmodel_num[i] = -1;
+		}
 	}
 
 	if (Lab_screen_save_bitmap != 1) {
