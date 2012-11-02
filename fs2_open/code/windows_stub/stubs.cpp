@@ -38,6 +38,10 @@ static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 #include <malloc/malloc.h>
 #define MALLOC_USABLE(pointer) malloc_size(pointer)
 #else
+#ifdef SCP_BSD
+#include <stdlib.h>
+#include <malloc_np.h>
+#endif
 #define MALLOC_USABLE(pointer) malloc_usable_size(pointer)
 #endif // __APPLE__
 #endif // NDEBUG
