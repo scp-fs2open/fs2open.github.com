@@ -169,7 +169,6 @@ int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int
 	char filename[MAX_FILENAME_LEN];
 	CFILE *img_cfp = NULL;
 	JSAMPARRAY buffer = NULL;
-	int rc = 0;
 
 	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
@@ -195,7 +194,7 @@ int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int
 	// or we risk needed more memory than we have available in "image_data".  The only exception is
 	// bpp since 'dest_size' should already indicate what we want to end up with.
 
-	if ( (rc = setjmp( FSJpegError ) == 0) != FALSE ) {
+	if ( setjmp( FSJpegError ) == 0) {
 		// initialize decompression struct
 		jpeg_create_decompress(&jpeg_info);
 
