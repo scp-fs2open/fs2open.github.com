@@ -281,12 +281,10 @@ extern int Om_tracker_flag;
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 
-/*
 // ingame ack data codes
 #define ACK_RESPAWN_POINTS			0x1		// from ingame joiner to server, indicating he got the respawn points packet
 #define ACK_FILE_ACCEPTED        0x2		// server to client saying their file is valid
 #define ACK_FILE_REJECTED        0x3		// server to client saying their file is not valid
-*/
 
 // join request denial codes
 #define JOIN_DENY_JR_STATE				0		// join request is rejected because the game is not in the proper state
