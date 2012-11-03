@@ -1395,7 +1395,8 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 	// using vm_malloc() here rather than 'new' so we get the extra out-of-memory check
 	nverts_good = (ubyte *) vm_malloc(n_verts);
 
-	Assert( nverts_good != NULL );
+	if ( nverts_good == NULL )
+		return;
 	memset( nverts_good, 0, n_verts );
 
 	vertex_list.reserve(n_verts);
