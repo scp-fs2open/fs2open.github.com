@@ -380,9 +380,10 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 
 	// generate the index array
 	for (j = 0; j < vb->tex_buf.size(); j++) {
-		n_verts = vb->tex_buf[j].n_verts;
-		uint offset = vb->tex_buf[j].index_offset;
-		const uint *index = vb->tex_buf[j].get_index();
+		buffer_data* tex_buf = &vb->tex_buf[j];
+		n_verts = tex_buf->n_verts;
+		uint offset = tex_buf->index_offset;
+		const uint *index = tex_buf->get_index();
 
 		// bump to our spot in the buffer
 		GLubyte *ibuf = m_vbp->index_list + offset;
