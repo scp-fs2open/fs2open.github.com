@@ -6840,7 +6840,7 @@ void sexp_set_object_position(int n)
 			oswpt.objp->pos = target_vec;
 			oswpt.waypointp->set_pos(&target_vec);
 			multi_start_callback();
-			multi_send_int(OBJ_INDEX(oswpt.objp));
+			multi_send_ushort(oswpt.objp->net_signature);
 			multi_send_float(target_vec.xyz.x);
 			multi_send_float(target_vec.xyz.y);
 			multi_send_float(target_vec.xyz.z);
@@ -6878,12 +6878,12 @@ void multi_sexp_set_object_position()
 {
 	object *objp;
 	vec3d wp_vec;
-	int objnum;
-	multi_get_int(objnum);
+	ushort obj_sig;
+	multi_get_ushort(obj_sig);
 	multi_get_float(wp_vec.xyz.x);
 	multi_get_float(wp_vec.xyz.y);
 	multi_get_float(wp_vec.xyz.z);
-	objp = &Objects[objnum];
+	objp = multi_get_network_object(obj_sig);
 	if (objp->type == OBJ_WAYPOINT) {
 		objp->pos = wp_vec;
 		waypoint *wpt = find_waypoint_with_objnum(OBJ_INDEX(objp));
