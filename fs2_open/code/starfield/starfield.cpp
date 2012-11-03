@@ -2258,13 +2258,14 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 
 		if (Sun_bitmaps[idx].flare) {
 			for (i = 0; i < MAX_FLARE_BMP; i++) {
-				if ( !strlen(Sun_bitmaps[idx].flare_bitmaps[i].filename) )
+				flare_bitmap* fbp = &Sun_bitmaps[idx].flare_bitmaps[i];
+				if ( !strlen(fbp->filename) )
 					continue;
 
-				if (Sun_bitmaps[idx].flare_bitmaps[i].bitmap_id < 0) {
-					Sun_bitmaps[idx].flare_bitmaps[i].bitmap_id = bm_load(Sun_bitmaps[idx].flare_bitmaps[i].filename);
+				if (fbp->bitmap_id < 0) {
+					fbp->bitmap_id = bm_load(fbp->filename);
 
-					if (Sun_bitmaps[idx].flare_bitmaps[i].bitmap_id < 0) {
+					if (fbp->bitmap_id < 0) {
 						Warning(LOCATION, "Unable to load sun flare bitmap: '%s'!\n", Sun_bitmaps[idx].flare_bitmaps[i].filename);
 						continue;
 					}
