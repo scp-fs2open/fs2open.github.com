@@ -2161,6 +2161,11 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		return;
 	}
 
+	if (shipp == NULL) {
+		Int3();
+		return;
+	}
+
 	if ( !(Interp_flags & MR_SHOW_THRUSTERS) ) {
 		return;
 	}
@@ -2482,6 +2487,9 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 	int i, j;
 
 	int cull = gr_set_cull(0);
+
+	if (shipp == NULL)
+		return;
 
 	for (i = 0; i < pm->n_glow_point_banks; i++ ) {
 		glow_point_bank *bank = &pm->glow_point_banks[i];
@@ -3439,31 +3447,33 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 {
 	polymodel *pm = model_get(model_num);
 
-	if ( submodel_num < 0 )	{
-		submodel_num = pm->detail[0];
+	if (pm != NULL) {
+		if ( submodel_num < 0 )	{
+			submodel_num = pm->detail[0];
+		}
+
+		bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
+
+		int nv = tree->n_verts;
+
+		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+		if (nv <= 0) {
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+
+			// in case people ignore the error...
+			vm_vec_zero(v1);
+			vm_vec_zero(v2);
+
+			return;
+		}
+
+		Assert(nv > 0);	// Goober5000 - to avoid div-0 error
+		int vn1 = (myrand()>>5) % nv;
+		int vn2 = (myrand()>>5) % nv;
+
+		*v1 = tree->point_list[vn1];
+		*v2 = tree->point_list[vn2];
 	}
-
-	bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
-
-	int nv = tree->n_verts;
-
-	// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
-	if (nv <= 0) {
-		Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
-
-		// in case people ignore the error...
-		vm_vec_zero(v1);
-		vm_vec_zero(v2);
-
-		return;
-	}
-
-	Assert(nv > 0);	// Goober5000 - to avoid div-0 error
-	int vn1 = (myrand()>>5) % nv;
-	int vn2 = (myrand()>>5) % nv;
-
-	*v1 = tree->point_list[vn1];
-	*v2 = tree->point_list[vn2];
 }
 
 // If MR_FLAG_OUTLINE bit set this color will be used for outlines.
@@ -3868,14 +3878,11 @@ void parse_defpoint(int off, ubyte *bsp_data)
 int check_values(vec3d *N)
 {
 	// Values equal to -1.#IND0
-	if((N->xyz.x * N->xyz.x) < 0 ||
-	   (N->xyz.y * N->xyz.y) < 0 ||
-	   (N->xyz.z * N->xyz.z) < 0 ||
-	   !is_valid_vec(N))
+	if(!is_valid_vec(N))
 	{
-		N->xyz.x = 1;
-		N->xyz.y = 0;
-		N->xyz.z = 0;
+		N->xyz.x = 1.0f;
+		N->xyz.y = 0.0f;
+		N->xyz.z = 0.0f;
 		return 1;
 	}
 
