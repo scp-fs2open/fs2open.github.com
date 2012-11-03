@@ -1106,7 +1106,7 @@ void opengl_array_state::ResetVertexAttribUsed()
 {
 	SCP_map<GLuint,opengl_vertex_attrib_unit>::iterator it;
 
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); it++ ) {
+	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
 		it->second.used = false;
 	}
 }
@@ -1115,7 +1115,7 @@ void opengl_array_state::DisabledVertexAttribUnused()
 {
 	SCP_map<GLuint,opengl_vertex_attrib_unit>::iterator it;
 
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); it++ ) {
+	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
 		if ( !it->second.used ) {
 			DisableVertexAttrib(it->first);
 		}
@@ -1142,7 +1142,7 @@ void opengl_array_state::BindArrayBuffer(GLuint id)
 
 	SCP_map<GLuint,opengl_vertex_attrib_unit>::iterator it;
 
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); it++ ) {
+	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
 		it->second.reset = true;
 	}
 }
