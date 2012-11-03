@@ -3820,11 +3820,8 @@ void HudGaugeVoiceStatus::render(float frametime)
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		return;
 	}
-
-	char play_callsign[CALLSIGN_LEN+5];
 	
 	// if we are currently playing a rtvoice sound stream from another player back
-	memset(play_callsign,0,CALLSIGN_LEN+5);
 	switch(multi_voice_status()){
 	// the player has been denied the voice token
 	case MULTI_VOICE_STATUS_DENIED:
