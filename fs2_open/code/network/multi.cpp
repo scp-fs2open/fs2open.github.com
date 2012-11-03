@@ -56,22 +56,11 @@
 //
 
 // timestamp defines
-// #define NETGAME_SEND_TIME								1000					// time between sending netgame update packets
-// #define STATE_SEND_TIME									1000					// time between sending netplayer state packets
-// #define GAMEINFO_SEND_TIME								3000					// time between sending game information packets
-// #define PING_SEND_TIME									2000					// time between player pings
-// #define INGAME_UPDATE_TIME								1000					// time limit between ingame join operations
 #define NETGAME_SEND_TIME								2						// time between sending netgame update packets
 #define STATE_SEND_TIME									2						// time between sending netplayer state packets
 #define GAMEINFO_SEND_TIME								3						// time between sending game information packets
 #define PING_SEND_TIME									2						// time between player pings
 #define BYTES_SENT_TIME									5						// every five seconds
-
-// netplayer stuff
-#define CULL_ZOMBIE_TIME								1000					//	zombies are checked for at this interval (in milliseconds)
-
-// object update stuff
-#define SEND_POS_INTERVAL								30						// min time in milliseconds between sending position updates
 
 // local network buffer stuff
 #define MAX_NET_BUFFER									(1024 * 16)			// define and variable declaration for our local tcp buffer
@@ -83,8 +72,6 @@
 #define MULTI_SERVER_WAIT_TIME						(F1_0 * 60)					// wait 60 seconds to reconnect with the server
 #define MULTI_SERVER_GONE								1
 #define MULTI_SERVER_ALIVE								2
-
-#define DISCONNECT_TIMEOUT								(F1_0 * 10)					// 10 seconds to timeout someone who cannot connnect
 
 // define for when to show "slow network" icon
 #define MULTI_SERVER_SLOW_PING_TIME					700					// when average ping time to server reaches this -- display hud icon
