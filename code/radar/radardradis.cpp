@@ -266,7 +266,6 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 	}
 	
 	float scale = 1.0f;
-	blip *current_target = NULL;
 
 	// draw all blips of this type
 	for (b = GET_FIRST(blip_head); b != END_OF_LIST(blip_head); b = GET_NEXT(b))
