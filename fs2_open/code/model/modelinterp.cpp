@@ -2161,11 +2161,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		return;
 	}
 
-	if (shipp == NULL) {
-		Int3();
-		return;
-	}
-
 	if ( !(Interp_flags & MR_SHOW_THRUSTERS) ) {
 		return;
 	}
@@ -2487,9 +2482,6 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 	int i, j;
 
 	int cull = gr_set_cull(0);
-
-	if (shipp == NULL)
-		return;
 
 	for (i = 0; i < pm->n_glow_point_banks; i++ ) {
 		glow_point_bank *bank = &pm->glow_point_banks[i];
