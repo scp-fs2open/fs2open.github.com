@@ -6901,7 +6901,6 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 	int ship_is_ballistic;
 
 	int num_primaries, num_secondaries;
-	char name[NAME_LENGTH];
 
 	Assert(Player_obj->type == OBJ_SHIP);
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
@@ -7066,7 +7065,7 @@ void HudGaugeHardpoints::render(float frametime)
 	
 	int cull = gr_set_cull(0);
 	gr_stencil_clear();
-	int stencil = gr_stencil_set(GR_STENCIL_WRITE);
+	gr_stencil_set(GR_STENCIL_WRITE);
 	int zbuffer = gr_zbuffer_set(GR_ZBUFF_NONE);
 	gr_set_color_buffer(0);
 
@@ -7175,7 +7174,7 @@ void HudGaugeHardpoints::render(float frametime)
 					//unsize(&xc, &yc);
 					//unsize(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y);
 
-					renderCircle(draw_point.screen.xyw.x + position[0], draw_point.screen.xyw.y + position[1], 10);
+					renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
 					//renderCircle(xc, yc, 25);
 				} else {
 					polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
