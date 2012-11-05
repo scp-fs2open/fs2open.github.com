@@ -128,9 +128,9 @@ void mission_log_obsolete_entries(int type, char *pname)
 	int i;
 	log_entry *entry = NULL;
 
-	// before adding this entry, check to see if the entry type is a ship destroyed entry.
+	// before adding this entry, check to see if the entry type is a ship destroyed or destructed entry.
 	// If so, we can remove any subsystem destroyed entries from the log for this ship.  
-	if ( type == LOG_SHIP_DESTROYED ) {
+	if ( type == LOG_SHIP_DESTROYED || type == LOG_SELF_DESTRUCTED ) {
 		for (i = 0; i < last_entry; i++) {
 			entry = &log_entries[i];
 
