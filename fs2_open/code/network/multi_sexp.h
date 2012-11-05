@@ -22,7 +22,7 @@ void multi_send_ship(int shipnum);
 void multi_send_object(object *objp);
 void multi_send_parse_object(p_object *pobjp);
 void multi_send_string(char *string);
-void multi_send_string(SCP_string string);
+void multi_send_string(const SCP_string &string);
 void multi_send_bool(bool value);
 void multi_send_float(float value);
 void multi_send_short(short value);

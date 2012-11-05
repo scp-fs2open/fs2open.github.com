@@ -334,7 +334,7 @@ int ObjectClassInfoEntry::GetObjectCoords(int *x, int *y, int *w, int *h)
 	return rval;
 }
 //*****************************GUIScreen*******************************
-GUIScreen::GUIScreen(SCP_string in_Name)
+GUIScreen::GUIScreen(const SCP_string &in_Name)
 {
 	//Set the name
 	Name = in_Name;
@@ -718,7 +718,7 @@ void GUISystem::DestroyClassInfo()
 }
 
 //*****************************GUIObject*******************************
-GUIObject::GUIObject(SCP_string in_Name, int x_coord, int y_coord, int x_width, int y_height, int in_style)
+GUIObject::GUIObject(const SCP_string &in_Name, int x_coord, int y_coord, int x_width, int y_height, int in_style)
 {
 	//General stuff
 	LastStatus = Status = 0;
@@ -1554,7 +1554,7 @@ void Window::ClearContent()
 	}
 }
 
-Window::Window(SCP_string in_caption, int x_coord, int y_coord, int x_width, int y_width, int in_style)
+Window::Window(const SCP_string &in_caption, int x_coord, int y_coord, int x_width, int y_width, int in_style)
 :GUIObject(in_caption, x_coord,y_coord,x_width,y_width,in_style)
 {
 	Caption = in_caption;
@@ -1571,7 +1571,7 @@ Window::Window(SCP_string in_caption, int x_coord, int y_coord, int x_width, int
 
 //*****************************Button*******************************
 
-Button::Button(SCP_string in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller), int x_width, int y_height, int in_style)
+Button::Button(const SCP_string &in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller), int x_width, int y_height, int in_style)
 :GUIObject(in_caption, x_coord, y_coord, x_width, y_height, in_style)
 {
 	Caption = in_caption;
@@ -1782,7 +1782,7 @@ int Tree::DoRefreshSize()
 	return OF_TRUE;
 }
 
-Tree::Tree(SCP_string in_name, int x_coord, int y_coord, void* in_associateditem, int x_width, int y_height, int in_style)
+Tree::Tree(const SCP_string &in_name, int x_coord, int y_coord, void* in_associateditem, int x_width, int y_height, int in_style)
 :GUIObject(in_name, x_coord, y_coord, x_width, y_height, in_style)
 {
 	AssociatedItem = in_associateditem;
@@ -1905,7 +1905,7 @@ void Tree::DoMove(int dx, int dy)
 	MoveTreeItems(dx, dy, &Items);
 }
 
-TreeItem* Tree::AddItem(TreeItem *parent, SCP_string in_name, int in_data, bool in_delete_data, void (*in_function)(Tree* caller))
+TreeItem* Tree::AddItem(TreeItem *parent, const SCP_string &in_name, int in_data, bool in_delete_data, void (*in_function)(Tree* caller))
 {
 	TreeItem *ni = new TreeItem;
 
@@ -2103,7 +2103,7 @@ int Text::DoKeyPress(float frametime)
 	return OF_TRUE;
 }
 
-Text::Text(SCP_string in_name, SCP_string in_content, int x_coord, int y_coord, int x_width, int y_height, int in_style)
+Text::Text(const SCP_string &in_name, const SCP_string &in_content, int x_coord, int y_coord, int x_width, int y_height, int in_style)
 :GUIObject(in_name, x_coord, y_coord, x_width, y_height, in_style)
 {
 	Content = in_content;
@@ -2113,7 +2113,7 @@ Text::Text(SCP_string in_name, SCP_string in_content, int x_coord, int y_coord, 
 	Type = GT_TEXT;
 }
 
-void Text::SetText(SCP_string in_content)
+void Text::SetText(const SCP_string &in_content)
 {
 	Content = in_content;
 	OnRefreshSize();
@@ -2135,7 +2135,7 @@ void Text::SetText(float the_float)
 	OnRefreshSize();
 }
 
-void Text::AddLine(SCP_string in_line)
+void Text::AddLine(const SCP_string &in_line)
 {
 	Content += in_line;
 	OnRefreshSize();
@@ -2342,7 +2342,7 @@ void Text::Load()
 
 //*****************************Checkbox*******************************
 
-Checkbox::Checkbox(SCP_string in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller), int x_width, int y_height, int in_style)
+Checkbox::Checkbox(const SCP_string &in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller), int x_width, int y_height, int in_style)
 :GUIObject(in_label, x_coord, y_coord, x_width, y_height, in_style)
 {
 	Label = in_label;
@@ -2480,7 +2480,7 @@ int Checkbox::DoMouseOut(float frametime)
 }
 
 //*****************************ImageAnim*******************************
-ImageAnim::ImageAnim(SCP_string in_name, SCP_string in_imagename, int x_coord, int y_coord, int x_width, int y_width, int in_style)
+ImageAnim::ImageAnim(const SCP_string &in_name, const SCP_string &in_imagename, int x_coord, int y_coord, int x_width, int y_width, int in_style)
 :GUIObject(in_name, x_coord, y_coord, x_width, y_width, in_style)
 {
 	//Load the image
@@ -2555,7 +2555,7 @@ int ImageAnim::DoRefreshSize()
 	return OF_FALSE;
 }
 
-void ImageAnim::SetImage(SCP_string in_imagename)
+void ImageAnim::SetImage(const SCP_string &in_imagename)
 {
 	if (in_imagename.size()) {
 		ImageHandle = IMG_LOAD_ANIM((char*)in_imagename.c_str(), &TotalFrames, &FPS);
