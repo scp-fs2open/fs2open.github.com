@@ -350,7 +350,7 @@ void multi_send_string(char *string)
 	current_argument_count += packet_size - start_size; 
 }
 
-void multi_send_string(SCP_string string) 
+void multi_send_string(const SCP_string &string) 
 {
 	if (cannot_send_data()) {
 		return;

@@ -510,7 +510,7 @@ typedef struct screen {
 
 	void (*gf_flush_data_states)();
 
-	void (*gf_set_team_color)(SCP_string team, SCP_string secondaryteam, fix timestamp, int fadetime);
+	void (*gf_set_team_color)(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
 	void (*gf_enable_team_color)();
 	void (*gf_disable_team_color)();
 
