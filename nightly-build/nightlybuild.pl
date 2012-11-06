@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.7.0
+# Nightly build script version 1.7.1
+# 1.7.1 - Fixed another bug with subversion regex
 # 1.7.0 - Changed config file default name in SVN, so make sure it was copied to buildconfig.conf before continuing.
 # 1.6.9 - FreeBSD support
 # 1.6.3 - Fix an export bug
@@ -155,8 +156,8 @@ sub updatesvn
 
 	# print $updateoutput;
 	
-	# TODO:  Simple test for now.  Later, if not ^At revision, filter out project file updates that don't apply and other unimportant changes.
-	if($updateoutput =~ /^At revision /)
+	# TODO:  Simple test for now.  Later, if not At revision, filter out project file updates that don't apply and other unimportant changes.
+	if($updateoutput =~ /At revision /)
 	{
 		# No change to source
 		$updateoutput =~ /At revision (\d*)\./;
