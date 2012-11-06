@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.6.9
+# Nightly build script version 1.7.0
+# 1.7.0 - Changed config file default name in SVN, so make sure it was copied to buildconfig.conf before continuing.
 # 1.6.9 - FreeBSD support
 # 1.6.3 - Fix an export bug
 # 1.6.2 - Fix a problem with stoprevision not working.
@@ -33,6 +34,7 @@ use Getopt::Long;
 
 my $CONFIG = Config::Tiny->new();
 $CONFIG = Config::Tiny->read("buildconfig.conf"); # Read in the ftp and forum authentication info
+if(!(Config::Tiny->errstr() eq "")) { die "Could not read config file, did you copy the sample to buildconfig.conf and edit it?\n"; }
 my $OS = getOS();
 if(!$OS) { die "Unrecognized OS.\n"; }
 
