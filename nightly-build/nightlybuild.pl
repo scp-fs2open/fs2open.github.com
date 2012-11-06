@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.6.2
+# Nightly build script version 1.6.3
+# 1.6.3 - Fix an export bug
 # 1.6.2 - Fix a problem with stoprevision not working.
 # 1.6.1 - Ability to use the SMF package's version setting
 # 1.6.0 - Added stoprevision command line support, shifted around some debug output
@@ -188,7 +189,7 @@ sub export
 #	print $exportcommand . "\n";
 	$exportoutput = `$exportcommand`;
 	
-	if($exportoutput =~ /^Export complete./)
+	if($exportoutput =~ /Export complete.\s*$/)
 	{
 		return 1;
 	}
