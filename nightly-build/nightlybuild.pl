@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.6.3
+# Nightly build script version 1.6.9
+# 1.6.9 - FreeBSD support
 # 1.6.3 - Fix an export bug
 # 1.6.2 - Fix a problem with stoprevision not working.
 # 1.6.1 - Ability to use the SMF package's version setting
@@ -108,6 +109,9 @@ sub getOS
 	}
 	elsif($^O eq "darwin" || $^O eq "rhapsody") {
 		return "OSX";
+	}
+	elsif($^O eq "freebsd") {
+		return "FREEBSD";
 	}
 	else {
 		return 0;
@@ -259,7 +263,7 @@ sub compile
 			elsif($OS eq "OSX") {
 				$command = $CONFIG->{$OS}->{build_program_path} . " -project FS2_Open.xcodeproj -configuration " . $BUILD_CONFIGS{$_} . " clean build";
 			}
-			elsif($OS eq "LINUX") {
+			elsif($OS eq "LINUX" || $OS eq "FREEBSD") {
 				$command = "./autogen.sh " . $BUILD_CONFIGS{$_} . " 2>&1 && " . $CONFIG->{$OS}->{build_program_path} . " clean 2>&1 && " . $CONFIG->{$OS}->{build_program_path};
 			}
 			else {
@@ -277,7 +281,7 @@ sub compile
 			# TODO:  Check @outputlist for actual changes, or if it just exited without doing anything
 			if(($OS eq "OSX" && $output =~ / BUILD FAILED /) || 
 				($OS eq "WIN" && !($output =~ /0 Projects failed/)) || 
-				($OS eq "LINUX" && $output =~ / Error 1\n$/)) {
+				(($OS eq "LINUX" || $OS eq "FREEBSD") && $output =~ / Error 1\n$/)) {
 				print $output . "\n\n";
 				print "Building " . $_ . " failed, see output for more information.\n";
 				return 0;
