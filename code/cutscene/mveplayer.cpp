@@ -305,7 +305,7 @@ void mve_audio_play()
 // call this in shutdown to stop and close audio
 static void mve_audio_stop()
 {
-	if (!audiobuf_created) {
+	if (!audiobuf_created || mas == NULL) {
 		return;
 	}
 

@@ -650,8 +650,8 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 	verts = (model_tmap_vert *)(p+44);
 
-	leaf->tmap_num = tmap_num;
-	leaf->num_verts = nv;
+	leaf->tmap_num = (ubyte)tmap_num;
+	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = vert_buffer->size();
 
 	vec3d *plane_pnt = vp(p+20);
@@ -687,7 +687,7 @@ void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model
 	verts = (short *)(p+44);
 
 	leaf->tmap_num = 255;
-	leaf->num_verts = nv;
+	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = vert_buffer->size();
 
 	vec3d *plane_pnt = vp(p+20);
@@ -865,7 +865,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 
 	tree->point_list = (vec3d*)vm_malloc(sizeof(vec3d) * n_verts);
 
-	for ( i = 0; i < n_verts; ++i ) {
+	for ( i = 0; i < (size_t)n_verts; ++i ) {
 		tree->point_list[i] = *Mc_point_list[i];
 	}
 

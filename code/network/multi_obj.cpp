@@ -594,6 +594,9 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 	ship *shipp = NULL;
 	object *objp = NULL;
 	int offset = 0;
+
+	if (pl == NULL)
+		Error(LOCATION, "Invalid net_player pointer passed to multi_oo_unpack_client\n");
 	
 	memcpy(&in_flags, data, sizeof(ubyte));	
 	offset++;

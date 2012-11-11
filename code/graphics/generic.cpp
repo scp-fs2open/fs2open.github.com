@@ -308,7 +308,7 @@ void generic_render_eff_stream(generic_anim *ga)
 {
 	if(ga->current_frame == ga->previous_frame)
 		return;
-	int bpp = 32;
+	ubyte bpp = 32;
 	if(ga->use_hud_color)
 		bpp = 8;
 	#ifdef TIMER

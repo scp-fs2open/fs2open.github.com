@@ -636,16 +636,17 @@ void set_current_hud()
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
-			config_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
+			HudGauge* hgp = Ship_info[Player_ship->ship_info_index].hud_gauges[i];
+			config_type = hgp->getConfigType();
 
-			if ( ( (!Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() || Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isActive()) && hud_config_show_flag_is_set(config_type)) )
-				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(true);
+			if ( ( (!hgp->isOffbyDefault() || hgp->isActive()) && hud_config_show_flag_is_set(config_type)) )
+				hgp->updateActive(true);
 			else
-				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(false);
+				hgp->updateActive(false);
 
-			//Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(hud_config_show_flag_is_set(config_type) ? true : false);
-			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
-			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateColor(
+			//hgp->updateActive(hud_config_show_flag_is_set(config_type) ? true : false);
+			hgp->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
+			hgp->updateColor(
 				HUD_config.clr[config_type].red, 
 				HUD_config.clr[config_type].green, 
 				HUD_config.clr[config_type].blue, 

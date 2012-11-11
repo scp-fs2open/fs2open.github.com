@@ -380,9 +380,10 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 
 	// generate the index array
 	for (j = 0; j < vb->tex_buf.size(); j++) {
-		n_verts = vb->tex_buf[j].n_verts;
-		uint offset = vb->tex_buf[j].index_offset;
-		const uint *index = vb->tex_buf[j].get_index();
+		buffer_data* tex_buf = &vb->tex_buf[j];
+		n_verts = tex_buf->n_verts;
+		uint offset = tex_buf->index_offset;
+		const uint *index = tex_buf->get_index();
 
 		// bump to our spot in the buffer
 		GLubyte *ibuf = m_vbp->index_list + offset;
@@ -485,7 +486,7 @@ void mix_two_team_colors(team_color* dest, team_color* a, team_color* b, float m
 	dest->stripe.b = a->stripe.b * (1.0f - mix_factor) + b->stripe.b * mix_factor;
 }
 
-void gr_opengl_set_team_color(SCP_string team, SCP_string secondaryteam, fix timestamp, int fadetime) {
+void gr_opengl_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime) {
 	if (secondaryteam == "<none>") {
 		if (Team_Colors.find(team) != Team_Colors.end()) {
 			Current_team_color = &Team_Colors[team];

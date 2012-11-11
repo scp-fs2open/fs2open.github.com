@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug SSE2|Win32">
@@ -124,12 +124,12 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fs2_open_3_6_15d</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fs2_open_3_6_15r</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno|Win32'">fs2_open_3_6_15d_INF</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE|Win32'">fs2_open_3_6_15d_INF_SSE</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE2|Win32'">fs2_open_3_6_15d_INF_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fs2_open_3_6_15d_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fs2_open_3_6_17d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fs2_open_3_6_17r</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno|Win32'">fs2_open_3_6_17d_INF</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE|Win32'">fs2_open_3_6_17d_INF_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE2|Win32'">fs2_open_3_6_17d_INF_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fs2_open_3_6_17d_SSE</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CustomBuildStep>

@@ -3591,15 +3591,12 @@ int multi_pxo_is_end_of_motd_text(char *txt)
  */
 int multi_pxo_chat_is_left_message(char *txt)
 {
-	char last_portion[100];
-	
 	// if the text is not server text
 	if(!multi_pxo_is_server_text(txt)){
 		return 0;
 	}
 
 	// check to see if the last portion is the correct wording
-	memset(last_portion, 0, 100);
 	if((strlen(txt) > strlen(MULTI_PXO_HAS_LEFT)) && !strcmp(&txt[strlen(txt) - strlen(MULTI_PXO_HAS_LEFT)], MULTI_PXO_HAS_LEFT)){
 		return 1;
 	}

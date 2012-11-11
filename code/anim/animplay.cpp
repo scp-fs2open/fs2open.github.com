@@ -968,6 +968,9 @@ void anim_display_info(char *real_filename)
 	// read the keyframe frame nums and offsets
 	key_frame_nums = (int*)vm_malloc(sizeof(int)*A.num_keys);
 	Assert(key_frame_nums != NULL);
+	if (key_frame_nums == NULL)
+		return;
+
 	for ( i = 0; i < A.num_keys; i++ ) {
 		key_frame_nums[i] = 0;
 		cfread(&key_frame_nums[i], 2, 1, fp);

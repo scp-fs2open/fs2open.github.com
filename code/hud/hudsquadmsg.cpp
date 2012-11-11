@@ -2729,7 +2729,7 @@ void HudGaugeSquadMessage::render(float frametime)
 	if ( messaging_allowed ) {
 		if ( none_valid ){
 			renderPrintf( sx, by - Item_h + 2, XSTR( "No valid items", 314));
-		} else if ( !none_valid && (Msg_shortcut_command != -1) ){
+		} else if (Msg_shortcut_command != -1){
 			renderPrintf( sx, by - Item_h + 2, "%s", comm_order_get_text(Msg_shortcut_command));
 		}
 	} else {

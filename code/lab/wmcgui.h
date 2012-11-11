@@ -277,7 +277,7 @@ protected:
 public:
 	//CONSTRUCTION/DESTRUCTION
 	//Derive your class's constructer from the GUIObject one
-	GUIObject(SCP_string in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
+	GUIObject(const SCP_string &in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
 	~GUIObject();
 	void Delete();
 
@@ -312,7 +312,7 @@ private:
 	GUIObject Guiobjects;
 	SCP_vector<GUIObject*> DeletionCache;
 public:
-	GUIScreen(SCP_string in_Name="");
+	GUIScreen(const SCP_string &in_Name="");
 	~GUIScreen();
 
 	ObjectClassInfoEntry *GetObjectClassInfo(GUIObject *cgp);
@@ -431,8 +431,8 @@ protected:
 	bool HasChildren(){return NOT_EMPTY(&Children);}
 
 public:
-	Window(SCP_string in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
-	void SetCaption(SCP_string in_caption){Caption = in_caption;}
+	Window(const SCP_string &in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
+	void SetCaption(const SCP_string &in_caption){Caption = in_caption;}
 	void ClearContent();
 };
 
@@ -462,7 +462,7 @@ protected:
 	int DoMouseUp(float frametime);
 	int DoMouseOut(float frametime);
 public:
-	Button(SCP_string in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller) = NULL, int x_width = -1, int y_height = -1, int in_style = 0);
+	Button(const SCP_string &in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller) = NULL, int x_width = -1, int y_height = -1, int in_style = 0);
 
 	void SetPressed(bool in_isdown){IsDown = in_isdown;}
 };
@@ -530,10 +530,10 @@ protected:
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
 public:
-	Tree(SCP_string in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
+	Tree(const SCP_string &in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//void LoadItemList(TreeItem *in_list, unsigned int count);
-	TreeItem* AddItem(TreeItem *parent, SCP_string in_name, int in_data = 0, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
+	TreeItem* AddItem(TreeItem *parent, const SCP_string &in_name, int in_data = 0, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
 	void ClearItems();
 
 	TreeItem* GetSelectedItem(){return SelectedItem;}
@@ -590,10 +590,10 @@ protected:
 	int DoMouseDown(float frametime);
 	int DoKeyPress(float frametime);
 public:
-	Text(SCP_string in_name, SCP_string in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
+	Text(const SCP_string &in_name, const SCP_string &in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//Set
-	void SetText(SCP_string in_content);
+	void SetText(const SCP_string &in_content);
 	void SetText(int the_int);
 	void SetText(float the_float);
 	void SetSaveLoc(int *ptr, int save_method, int max_value=INT_MAX, int min_value=INT_MIN);
@@ -602,7 +602,7 @@ public:
 	void SetSaveLoc(char *ptr, int save_method, uint max_len=UINT_MAX, uint min_len = 0);
 	void SetSaveLoc(ubyte *ptr, int save_method, int max_value=UCHAR_MAX, int min_value=0);
 	void SetSaveStringAlloc(char **ptr, int save_method, int mem_flags, uint max_len=UINT_MAX, uint min_len = 0);
-	void AddLine(SCP_string in_line);
+	void AddLine(const SCP_string &in_line);
 
 	//Get?
 	bool Save();
@@ -637,13 +637,13 @@ protected:
 	int DoMouseOut(float frametime);
 
 public:
-	Checkbox(SCP_string in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
+	Checkbox(const SCP_string &in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
 
 	bool GetChecked() {
 		return IsChecked;
 	}
 
-	void SetLabel(SCP_string in_label) {
+	void SetLabel(const SCP_string &in_label) {
 		Label = in_label;
 	}
 
@@ -700,9 +700,9 @@ protected:
 	void DoDraw(float frametime);
 	int DoRefreshSize();
 public:
-	ImageAnim(SCP_string in_name, SCP_string in_imagename, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
+	ImageAnim(const SCP_string &in_name, const SCP_string &in_imagename, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
-	void SetImage(SCP_string in_imagename);
+	void SetImage(const SCP_string &in_imagename);
 	void Play(bool in_isreversed);
 	void Pause();
 	void Stop();
