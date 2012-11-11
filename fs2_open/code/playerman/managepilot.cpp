@@ -1327,15 +1327,16 @@ void init_new_pilot(player *p, int reset)
 		control_config_reset_defaults();		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults
 
+		/*
 		cur_speed = os_config_read_uint(NULL, NOX("ComputerSpeed"), 2 );
 		if ( cur_speed < 0 )	{
 			cur_speed = 0;
 		} else if ( cur_speed >= NUM_DEFAULT_DETAIL_LEVELS )	{
 			cur_speed = NUM_DEFAULT_DETAIL_LEVELS-1;
-		}	
-		// always set to high
-		// DKA: 8/4/99 USE speed from registry
-		// cur_speed = NUM_DEFAULT_DETAIL_LEVELS-2;
+		}*/	
+		// always set to very high by default, because that's what almost
+		// everyone wants these days (in 2012) -zookeeper
+		cur_speed = NUM_DEFAULT_DETAIL_LEVELS-1;
 
 #if NUM_DEFAULT_DETAIL_LEVELS != 4
 #error Code in ManagePilot assumes NUM_DEFAULT_DETAIL_LEVELS = 4
