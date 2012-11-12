@@ -449,6 +449,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$countermeasures affect aspect seekers:", AIPF2_ASPECT_LOCK_COUNTERMEASURE, AIP_FLAG2);
 
+			set_flag(profile, "$ai guards specific ship in wing:", AIPF2_AI_GUARDS_SPECIFIC_SHIP_IN_WING, AIP_FLAG2);
+
 			profile->ai_path_mode = AI_PATH_MODE_NORMAL;
 			if(optional_string("$ai path mode:"))
 			{
