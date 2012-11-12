@@ -270,11 +270,15 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 				sip = &Ship_info[Lab_selected_index];
 				l = 0;
 				for (j = 0; j < sip->num_primary_banks; j++) {
+					weapon_info *wip = &Weapon_info[sip->primary_bank_weapons[j]];
 					if (!sip->draw_primary_models[j])
 						continue;
-					Lab_weaponmodel_num[l] = model_load(Weapon_info[sip->primary_bank_weapons[j]].external_model_name, 0, NULL, 0);
+					Lab_weaponmodel_num[l] = -1;
+					if ( strlen(wip->external_model_name) ){
+						Lab_weaponmodel_num[l] = model_load(wip->external_model_name, 0, NULL);
+					}
 					if (Lab_weaponmodel_num[l] >= 0) {
-						strcpy_s(Lab_weaponmodel_filename[l], Weapon_info[sip->primary_bank_weapons[j]].external_model_name);
+						strcpy_s(Lab_weaponmodel_filename[l], wip->external_model_name);
 					} else {
 						memset( Lab_weaponmodel_filename[l], 0, sizeof(Lab_weaponmodel_filename[l]) );
 					}
@@ -282,11 +286,15 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 				}
 			
 				for (j = 0; j < sip->num_secondary_banks; j++) {
+					weapon_info *wip = &Weapon_info[sip->secondary_bank_weapons[j]];
 					if (!sip->draw_secondary_models[j])
 						continue;
-					Lab_weaponmodel_num[l] = model_load(Weapon_info[sip->secondary_bank_weapons[j]].external_model_name, 0, NULL, 0);
+					Lab_weaponmodel_num[l] = -1;
+					if ( strlen(wip->external_model_name) ){
+						Lab_weaponmodel_num[l] = model_load(wip->external_model_name, 0, NULL);
+					}
 					if (Lab_weaponmodel_num[l] >= 0) {
-						strcpy_s(Lab_weaponmodel_filename[l], Weapon_info[sip->primary_bank_weapons[j]].external_model_name);
+						strcpy_s(Lab_weaponmodel_filename[l], wip->external_model_name);
 					} else {
 						memset( Lab_weaponmodel_filename[l], 0, sizeof(Lab_weaponmodel_filename[l]) );
 					}
@@ -877,9 +885,11 @@ void labviewer_render_model(float frametime)
 			for (j = 0; j < sip->num_primary_banks; j++) {
 				if (!sip->draw_primary_models[j])
 					continue;
-				w_bank *bank = &model_get(Lab_model_num)->gun_banks[j];
-				for(k = 0; k < bank->num_slots; k++) {	
-					model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k], render_flags);
+				if (Lab_weaponmodel_num[l] >= 0) {
+					w_bank *bank = &model_get(Lab_model_num)->gun_banks[j];
+					for(k = 0; k < bank->num_slots; k++) {	
+						model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k], render_flags);
+					}
 				}
 				l++;
 			}
@@ -890,16 +900,18 @@ void labviewer_render_model(float frametime)
 			for (j = 0; j < sip->num_secondary_banks; j++) {
 				if (!sip->draw_secondary_models[j])
 					continue;
-				bank = &(model_get(Lab_model_num))->missile_banks[j];
-				if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
-					for(k = 0; k < bank->num_slots; k++) {
-						model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k], render_flags);
-					}
-				} else {
-					for(k = 0; k < bank->num_slots; k++)
-					{
-						secondary_weapon_pos = bank->pnt[k];
-						model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
+				if (Lab_weaponmodel_num[l] >= 0) {
+					bank = &(model_get(Lab_model_num))->missile_banks[j];
+					if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+						for(k = 0; k < bank->num_slots; k++) {
+							model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k], render_flags);
+						}
+					} else {
+						for(k = 0; k < bank->num_slots; k++)
+						{
+							secondary_weapon_pos = bank->pnt[k];
+							model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
+						}
 					}
 				}
 				l++;
