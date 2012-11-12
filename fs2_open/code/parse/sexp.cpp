@@ -15902,6 +15902,9 @@ void sexp_change_ship_class(int n)
 			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
 			{
 				change_ship_type(ship_num, class_num, 1);
+				if (&Ships[ship_num] == Player_ship) {
+					set_current_hud();
+				}
 
 				if (MULTIPLAYER_MASTER) {
 					multi_send_bool(true); 
@@ -15929,6 +15932,9 @@ void multi_sexp_change_ship_class()
 			multi_get_ship(ship_num);
 			if ((class_num >= 0) && (ship_num >= 0)) {
 				change_ship_type(ship_num, class_num, 1);
+				if (&Ships[ship_num] == Player_ship) {
+					set_current_hud();
+				}
 			}
 		}
 		else {
