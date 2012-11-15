@@ -435,6 +435,7 @@ void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec)
  */
 void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 {
+	int i;
 	asteroid_info	*asip;
 
 	Assert( asteroid_info_index < (int)Asteroid_info.size() );
@@ -451,13 +452,16 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 
 	asip->model_num[asteroid_subtype] = model_load( asip->pof_files[asteroid_subtype], 0, NULL );
 
-	if (asip->model_num[asteroid_subtype] > -1) {
-		asip->modelp[asteroid_subtype] = model_get(asip->model_num[asteroid_subtype]);
+	if (asip->model_num[asteroid_subtype] >= 0)
+	{
+		polymodel *pm = asip->modelp[asteroid_subtype] = model_get(asip->model_num[asteroid_subtype]);
 		
+		if ( asip->num_detail_levels != pm->n_detail_levels )
+			Warning(LOCATION, "For asteroid '%s', detail level\nmismatch (POF needs %d)", asip->name, pm->n_detail_levels );
+
 		// Stuff detail level distances.
-		for (int i = 0; i < asip->num_detail_levels; i++) {
-			asip->modelp[asteroid_subtype]->detail_depth[i] = i2fl(asip->detail_distance[i]);
-		}
+		for ( i=0; i<pm->n_detail_levels; i++ )
+			pm->detail_depth[i] = (i < asip->num_detail_levels) ? i2fl(asip->detail_distance[i]) : 0.0f;
 	}
 }
 
