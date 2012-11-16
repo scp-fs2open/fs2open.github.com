@@ -530,7 +530,7 @@ static void opengl_init_arrays(opengl_vertex_buffer *vbp, const vertex_buffer *b
 	GLint offset = (GLint)bufferp->vertex_offset;
 	GLubyte *ptr = NULL;
 
-	if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) && Use_GLSL > 1 ) {
+	if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
 		offset = 0;
 	}
 
@@ -956,9 +956,11 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 
 		// base texture
 		if ( !Basemap_override ) {
-			GL_state.Array.SetActiveClientUnit(render_pass);
-			GL_state.Array.EnableClientTexture();
-			GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+			if ( !Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+				GL_state.Array.SetActiveClientUnit(render_pass);
+				GL_state.Array.EnableClientTexture();
+				GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+			}
 
 			gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -970,7 +972,11 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 		if (using_glow) {
 			GL_state.Array.SetActiveClientUnit(render_pass);
 			GL_state.Array.EnableClientTexture();
-			GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+			if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+				GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, 0 );
+			} else {
+				GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+			}
 
 			// set glowmap on relevant ARB
 			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
@@ -982,7 +988,20 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 	}
 
 	// DRAW IT!!
-	DO_RENDER();
+	if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+		if (Cmdline_drawelements) {
+			vglDrawElementsBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_offset/bufferp->stride);
+		} else {
+			vglDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_offset/bufferp->stride);
+		}
+	} else {
+		if (Cmdline_drawelements) {
+			glDrawElements(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start)); 
+		} else {
+			vglDrawRangeElements(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start));
+		}
+	}
+
 // -------- End 2nd PASS --------------------------------------------------------- //
 
 
@@ -1035,9 +1054,11 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 		render_pass = 0;
 
 		// set specmap, for us to modulate against
-		GL_state.Array.SetActiveClientUnit(render_pass);
-		GL_state.Array.EnableClientTexture();
-		GL_state.Array.TexPointer(2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		if ( !Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+			GL_state.Array.SetActiveClientUnit(render_pass);
+			GL_state.Array.EnableClientTexture();
+			GL_state.Array.TexPointer(2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		}
 
 		// set specmap on relevant ARB
 		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
@@ -1066,9 +1087,11 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 		render_pass++; // bump!
 
 		// now move the to the envmap
-		GL_state.Array.SetActiveClientUnit(render_pass);
-		GL_state.Array.EnableClientTexture();
-		GL_state.Array.TexPointer(2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		if ( !Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+			GL_state.Array.SetActiveClientUnit(render_pass);
+			GL_state.Array.EnableClientTexture();
+			GL_state.Array.TexPointer(2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		}
 
 		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
 
@@ -1112,7 +1135,19 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 		glMaterialfv( GL_FRONT, GL_AMBIENT, ambient );
 
 		// DRAW IT!!
-		DO_RENDER();
+		if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+			if (Cmdline_drawelements) {
+				vglDrawElementsBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_offset/bufferp->stride);
+			} else {
+				vglDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_offset/bufferp->stride);
+			}
+		} else {
+			if (Cmdline_drawelements) {
+				glDrawElements(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start)); 
+			} else {
+				vglDrawRangeElements(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start));
+			}
+		}
 
 		// disable and reset everything we changed
 		GL_state.Texture.SetRGBScale(1.0f);
@@ -1151,9 +1186,11 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 
 		render_pass = 0;
 
-		GL_state.Array.SetActiveClientUnit(0);
-		GL_state.Array.EnableClientTexture();
-		GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		if ( !Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+			GL_state.Array.SetActiveClientUnit(0);
+			GL_state.Array.EnableClientTexture();
+			GL_state.Array.TexPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
+		}
 
 		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -1174,7 +1211,19 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 		GL_state.DepthFunc(GL_LEQUAL);
 
 		// DRAW IT!!
-		DO_RENDER();
+		if ( Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX) ) {
+			if (Cmdline_drawelements) {
+				vglDrawElementsBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_offset/bufferp->stride);
+			} else {
+				vglDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_offset/bufferp->stride);
+			}
+		} else {
+			if (Cmdline_drawelements) {
+				glDrawElements(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start)); 
+			} else {
+				vglDrawRangeElements(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start));
+			}
+		}
 
 		opengl_default_light_settings();
 
