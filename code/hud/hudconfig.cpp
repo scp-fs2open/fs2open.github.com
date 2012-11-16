@@ -1571,6 +1571,13 @@ void hud_set_default_hud_config(player *p)
 	HUD_config.rp_flags = RP_DEFAULT;
 	HUD_config.rp_dist = RR_INFINITY;
 	HUD_config.is_observer = 0;
+
+	// in the demo, load up the hardcoded hcf file
+#ifdef FS2_DEMO
+	hud_config_color_load("hud_1.hcf");
+#else
+	hud_config_color_load("hud_3.hcf");
+#endif
 }
 
 // hud_config_restore() will restore the hud configuration the player started with when the 
