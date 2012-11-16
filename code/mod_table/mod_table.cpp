@@ -147,7 +147,7 @@ void parse_mod_table(char *filename)
 
 		mprintf(("Game Settings Table: Setting default detail level to %i of %i-%i\n", detail_level, 0, NUM_DEFAULT_DETAIL_LEVELS-1));
 
-		if (Default_detail_level < 0 || Default_detail_level >= NUM_DEFAULT_DETAIL_LEVELS-1) {
+		if (detail_level < 0 || detail_level > NUM_DEFAULT_DETAIL_LEVELS-1) {
 			Warning(LOCATION, "Invalid detail level: %i, setting to %i\n", detail_level, Default_detail_level);
 		} else {
 			Default_detail_level = detail_level;
