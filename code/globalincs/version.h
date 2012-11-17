@@ -21,7 +21,7 @@
 // #define STANDALONE_ONLY_BUILD
 // #define STANDALONE_ONLY_RELEASE_VERSION		0
 
-// Here are the version defines.  
+// Here are the version defines.
 //	Gets displayed as MAJOR.MINOR, or 1.21 if MAJOR = 1, MINOR = 21.
 //	Prior to release, MAJOR should be zero.  After release, it should be 1.  Probably never increase to 2 as that could
 //	cause confusion with a sequel.
@@ -37,15 +37,15 @@
 //   the first version is 3.0 :-)
 //   Major.Minor.Bugfix
 
-#define FS_VERSION_MAJOR 3					// major version
-#define FS_VERSION_MINOR 6					// increase by 1 for minor revs
-#define FS_VERSION_BUILD 17					// bugfix release
-#define FS_VERSION_REVIS 9327				// SVN revision
+#define FS_VERSION_MAJOR 3			// major version
+#define FS_VERSION_MINOR 6			// increase by 1 for minor revs
+#define FS_VERSION_BUILD 17			// bugfix release
+#define FS_VERSION_REVIS 9352		// SVN revision
 
 #define VERSION_LOC_FNAME			"version.nfo"
 #define MOTD_LOC_FNAME				"motd.txt"
 
-#define MOTD_URL						"http://www.pxo.net/files/fs2/motd.txt"
+#define MOTD_URL					"http://www.pxo.net/files/fs2/motd.txt"
 #define VERSION_URL					"http://www.pxo.net/files/fs2/version.nfo"
 
 #define VERSION_FILE_COMMENT_CHAR ';'

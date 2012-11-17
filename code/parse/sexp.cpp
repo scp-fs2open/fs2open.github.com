@@ -3335,8 +3335,16 @@ int get_sexp()
 		switch (op)
 		{
 			case OP_CHANGE_SHIP_CLASS:
-				// model is argument #1
+				// ship class is argument #1
 				n = CDR(start);
+				do_preload_for_arguments(preload_change_ship_class, n, arg_handler);
+				break;
+
+			case OP_SHIP_CREATE:
+				// ship class is argument #2
+				n = CDDR(start);
+				// page in ship classes of dynamically created ships
+				// preload_change_ship_class doesn't require a class change, so we can use that here -zookeeper
 				do_preload_for_arguments(preload_change_ship_class, n, arg_handler);
 				break;
 
@@ -15902,6 +15910,9 @@ void sexp_change_ship_class(int n)
 			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
 			{
 				change_ship_type(ship_num, class_num, 1);
+				if (&Ships[ship_num] == Player_ship) {
+					set_current_hud();
+				}
 
 				if (MULTIPLAYER_MASTER) {
 					multi_send_bool(true); 
@@ -15929,6 +15940,9 @@ void multi_sexp_change_ship_class()
 			multi_get_ship(ship_num);
 			if ((class_num >= 0) && (ship_num >= 0)) {
 				change_ship_type(ship_num, class_num, 1);
+				if (&Ships[ship_num] == Player_ship) {
+					set_current_hud();
+				}
 			}
 		}
 		else {

@@ -7366,9 +7366,9 @@ void ai_set_guard_object(object *objp, object *other_objp)
 	aip = &Ai_info[shipp->ai_index];
 	aip->avoid_check_timestamp = timestamp(1);
 
-	//	If ship to guard is in a wing, guard that whole wing.
+	//	If ship to guard is in a wing, guard that whole wing, unless the appropriate flag has been set
 	ai_info	*other_aip = &Ai_info[Ships[other_objp->instance].ai_index];
-	if ((other_aip->wing != -1) && (other_aip->wing != aip->wing)) {
+	if ((other_aip->wing != -1) && (other_aip->wing != aip->wing) && !(The_mission.ai_profile->flags2 & AIPF2_AI_GUARDS_SPECIFIC_SHIP_IN_WING)) {
 		ai_set_guard_wing(objp, Ai_info[Ships[other_objp->instance].ai_index].wing);
 	} else {
 

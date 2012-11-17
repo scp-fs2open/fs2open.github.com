@@ -21,6 +21,7 @@ bool Alternate_chaining_behavior = false;
 int Default_ship_select_effect = 2;
 int Default_weapon_select_effect = 2;
 bool Enable_external_shaders = false;
+int Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 bool Full_color_head_anis = false;
 bool Weapons_inherit_parent_collision_group = false;
 
@@ -137,6 +138,20 @@ void parse_mod_table(char *filename)
 			mprintf(("Game Settings Table: External shaders are enabled\n"));
 		else
 			mprintf(("Game Settings Table: External shaders are DISABLED\n"));
+	}
+
+	if (optional_string("$Default Detail Level:")) {
+		int detail_level;
+
+		stuff_int(&detail_level);
+
+		mprintf(("Game Settings Table: Setting default detail level to %i of %i-%i\n", detail_level, 0, NUM_DEFAULT_DETAIL_LEVELS-1));
+
+		if (detail_level < 0 || detail_level > NUM_DEFAULT_DETAIL_LEVELS-1) {
+			Warning(LOCATION, "Invalid detail level: %i, setting to %i\n", detail_level, Default_detail_level);
+		} else {
+			Default_detail_level = detail_level;
+		}
 	}
 	
 	optional_string("#OTHER SETTINGS"); 

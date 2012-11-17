@@ -5238,6 +5238,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		pm = model_get(Weapon_info[wp->weapon_info_index].model_num);
 
 		for (i=0; i<pm->n_detail_levels; i++){
+			// for weapons, detail levels are all preset to -1
 			if (wip->detail_distance[i] >= 0)
 				pm->detail_depth[i] = i2fl(wip->detail_distance[i]);
 			else

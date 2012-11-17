@@ -1136,6 +1136,10 @@ $ai path mode:	normal													\n""\
 ;; TBD																	\n\
 $no warp camera:	NO													\n\
 																		\n\
+;; If set, this flag overrides the retail behavior whereby a ship		\n\
+;; assigned to guard a ship in a wing will instead guard the entire wing\n\
+$ai guards specific ship in wing:	NO									\n\
+																		\n\
 #End																	\n\
 ";
 

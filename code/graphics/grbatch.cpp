@@ -596,7 +596,7 @@ static SCP_vector<batch_item> distortion_map;
 
 // Used for sending verts to the vertex buffer
 effect_vertex *Batch_buffer = NULL;
-int Batch_buffer_size = 0;
+size_t Batch_buffer_size = 0;
 
 static size_t find_good_batch_item(int texture)
 {

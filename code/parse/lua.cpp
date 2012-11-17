@@ -13465,9 +13465,11 @@ ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], ori
 	
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
-	if(obj_idx > -1)
+	if(obj_idx > -1) {
+		model_page_in_textures(Ship_info[sclass].model_num, sclass);
+
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx]), Objects[obj_idx].signature));
-	else
+	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 }
 

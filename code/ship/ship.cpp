@@ -8707,18 +8707,11 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	ship_copy_subsystem_fixup(sip);
 	show_ship_subsys_count();
 
-	if ( sip->num_detail_levels < pm->n_detail_levels )
-	{
+	if ( sip->num_detail_levels != pm->n_detail_levels )
 		Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
-
-		for (i=0; i<pm->n_detail_levels; i++ )	{
-			sip->detail_distance[i] = 0;
-		}
-	}
 	
-	for (i=0; i<sip->num_detail_levels; i++ )	{
-		pm->detail_depth[i] = i2fl(sip->detail_distance[i]);
-	}
+	for ( i=0; i<pm->n_detail_levels; i++ )
+		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
 	// JAS: Nav buoys don't need to do collisions!
 	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
@@ -8893,13 +8886,11 @@ void ship_model_change(int n, int ship_type)
 
 	ship_copy_subsystem_fixup(sip);
 
-	if ( sip->num_detail_levels < pm->n_detail_levels )	{
-		Warning(LOCATION, "For ship '%s', detail level\nmismatch (POF needs %d)", sip->name, pm->n_detail_levels );
-
-		for (i=0; i<pm->n_detail_levels; i++ )	{
-			sip->detail_distance[i] = 0;
-		}
-	}
+	if ( sip->num_detail_levels != pm->n_detail_levels )
+		Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+	
+	for ( i=0; i<pm->n_detail_levels; i++ )
+		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
 	if (sp->shield_integrity != NULL) {
 		vm_free(sp->shield_integrity);
@@ -8915,10 +8906,6 @@ void ship_model_change(int n, int ship_type)
 		}
 	} else {
 		sp->shield_integrity = NULL;
-	}
-
-	for (i=0; i<sip->num_detail_levels; i++ )	{
-		pm->detail_depth[i] = i2fl(sip->detail_distance[i]);
 	}
 
 	// reset texture animations
