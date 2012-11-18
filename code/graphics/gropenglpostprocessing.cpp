@@ -382,7 +382,7 @@ void gr_opengl_post_process_end()
 				GL_state.Texture.SetActiveUnit(1);
 				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 				GL_state.Texture.Enable(Cockpit_depth_texture);
-				glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+				GL_state.Color(255, 255, 255, 255);
 				GL_state.Blend(GL_TRUE);
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 				
@@ -411,7 +411,7 @@ void gr_opengl_post_process_end()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	GL_state.Color(255, 255, 255, 255);
 
 	// set and configure post shader ...
 

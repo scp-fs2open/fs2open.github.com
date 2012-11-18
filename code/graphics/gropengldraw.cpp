@@ -110,7 +110,7 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 		gr_resize_screen_posf(&x2, &y2);
 	}
 
-	glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
 	if (mirror) {
 		float temp = u0;
@@ -346,9 +346,9 @@ void gr_opengl_string(int sx, int sy, const char *s, bool resize)
 
 	// set color!
 	if (gr_screen.current_color.is_alphacolor) {
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 	} else {
-		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 	}
 
 //	if ( (gr_screen.custom_size && resize) || (gr_screen.rendering_to_texture != -1) ) {
@@ -560,7 +560,7 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 		gr_opengl_set_2d_matrix();
 		
 		GLfloat vert[3]= {sx1, sy1, -0.99f};
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
 		GL_state.Array.EnableClientVertex();
 		GL_state.Array.VertexPointer(3, GL_FLOAT, 0, vert);
@@ -597,7 +597,7 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 		sx1, sy1, -0.99f
 	};
 
-	glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
 	GL_state.Array.EnableClientVertex();
 	GL_state.Array.VertexPointer(3, GL_FLOAT, 0, line);
@@ -624,10 +624,10 @@ void gr_opengl_line_htl(vec3d *start, vec3d *end)
 
     if (gr_screen.current_color.is_alphacolor) {
         GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-		glColor4ub( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha );
+		GL_state.Color( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha );
 	} else {
         GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-		glColor3ub( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue );
+		GL_state.Color( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue );
     }
 
 	GLfloat line[6] = {
@@ -677,7 +677,7 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 	if ( (x1 == x2) && (y1 == y2) ) {
 		gr_opengl_set_2d_matrix();
 
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
 		GLfloat vert[3]= {sx1, sy1, -0.99f};
 
@@ -711,7 +711,7 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 
 	gr_opengl_set_2d_matrix();
 
-	glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 	GLfloat line[6] = {
 		sx2, sy2, -0.99f,
 		sx1, sy1, -0.99f
@@ -988,7 +988,7 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 			isRGB = true;
 		}
 	} else {
-		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, alpha );
+		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, alpha );
 	}
 
 	if (flags & TMAP_FLAG_TRISTRIP) {
@@ -1212,7 +1212,7 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	if ( !isRGB ) {
-		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	SCP_vector<ubyte> colour;
@@ -1328,18 +1328,17 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 		if (flags & TMAP_FLAG_ALPHA) {
 			GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
 		} else {
-			glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+			GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 			GL_state.Array.ColorPointer(3, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
 		}
 	}
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	else {
-		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+		GL_state.Color( (ubyte)r-1, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	float offset_z = -0.99f;
 
-	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, offset_z);
 
@@ -1360,7 +1359,6 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 		glMatrixMode(GL_MODELVIEW);
 	}
 
-	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 
 	GL_state.Array.DisableClientTexture();
@@ -1411,7 +1409,7 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 	}
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	else {
-		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	GL_state.Array.EnableClientVertex();
@@ -1535,7 +1533,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 	}
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	else {
-		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	GL_state.Array.EnableClientVertex();
@@ -1758,7 +1756,7 @@ void gr_opengl_shade(int x, int y, int w, int h, bool resize)
 
 	gr_opengl_set_2d_matrix();
 
-	glColor4ub( (GLubyte)gr_screen.current_shader.r, (GLubyte)gr_screen.current_shader.g,
+	GL_state.Color( (GLubyte)gr_screen.current_shader.r, (GLubyte)gr_screen.current_shader.g,
 				(GLubyte)gr_screen.current_shader.b, (GLubyte)gr_screen.current_shader.c );
 
 	opengl_draw_coloured_quad((GLint)x1, (GLint)y1, (GLint)x2, (GLint)y2);
@@ -1785,7 +1783,7 @@ void gr_opengl_flash(int r, int g, int b)
 	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
 	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
 
-	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
+	GL_state.Color( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
 
 	opengl_draw_coloured_quad((GLint)x1, (GLint)y1, (GLint)x2, (GLint)y2);
 }
@@ -1810,7 +1808,7 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
 	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
 
-	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
+	GL_state.Color( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
 
 	opengl_draw_coloured_quad((GLint)x1, (GLint)y1, (GLint)x2, (GLint)y2);
 }
@@ -1869,7 +1867,7 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool 
 		gr_resize_screen_posf(&x2, &y2);
 	}
 
-	glColor4f(1.0f, 1.0f, 1.0f, gr_screen.current_alpha);
+	GL_state.Color(255, 255, 255, (GLubyte)(gr_screen.current_alpha * 255));
 
 	opengl_draw_textured_quad(x1, y1, u0, v0, x2, y2, u1, v1);
 }
@@ -2057,7 +2055,7 @@ void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
-	glColor3fv(pre_set_colours[colour]);
+	GL_state.Color((GLubyte)(pre_set_colours[colour][0] * 255) , (GLubyte)(pre_set_colours[colour][1] * 255), (GLubyte)(pre_set_colours[colour][2] * 255));
 
 	opengl_draw_coloured_quad(x, y, x+w, y+h);
 }
@@ -2083,7 +2081,7 @@ void gr_opengl_sphere_htl(float rad)
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_FULL);
 
-	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 
 	// FIXME: opengl_check_for_errors() needs to be modified to work with this at
 	// some point but for now I just don't care so it does nothing
@@ -2433,7 +2431,7 @@ void gr_opengl_scene_texture_end()
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		GL_state.Color(255, 255, 255, 255);
 
 		GL_state.Array.BindArrayBuffer(0);
 
@@ -2532,7 +2530,7 @@ void gr_opengl_update_distortion()
 	GL_state.Texture.Enable(Distortion_texture[Distortion_switch]);
 	glClearColor(0.5f, 0.5f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	GL_state.Color(255, 255, 255, 255);
 
 	GLfloat texcoord[8] = {
 		0.0f, 0.0f,

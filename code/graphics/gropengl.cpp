@@ -1347,6 +1347,9 @@ const char *opengl_error_string()
 
 int opengl_check_for_errors(char *err_at)
 {
+#ifdef NDEBUG
+	return 0;
+#endif
 	const char *error_str = NULL;
 	int num_errors = 0;
 

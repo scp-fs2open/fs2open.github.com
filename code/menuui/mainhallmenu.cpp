@@ -1485,6 +1485,7 @@ void main_hall_process_help_stuff()
 
 	// set the color and print out text and shader
 	gr_set_color_fast(&Color_bright_white);
+	gr_set_shader(&Main_hall_tooltip_shader);
 	gr_shade(0, 0, gr_screen.max_w_unscaled, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset);
 	gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str);
 }

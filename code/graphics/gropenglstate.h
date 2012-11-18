@@ -106,7 +106,10 @@ inline void opengl_texture_state::SetAlphaScale(GLfloat scale)
 
 inline void opengl_texture_state::SetEnvMode(GLenum mode)
 {
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode);
+	if (mode != units[active_texture_unit].env_mode) {
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode);
+		units[active_texture_unit].env_mode = mode;
+	}
 }
 
 inline void opengl_texture_state::SetEnvCombineMode(GLenum cmode, GLenum cfunc)
@@ -281,6 +284,10 @@ class opengl_state
 		GLboolean depthmask_Status;
 		GLboolean lighting_Status;
         GLboolean colormask_Status;
+		GLubyte red_Status;
+		GLubyte blue_Status;
+		GLubyte green_Status;
+		GLubyte alpha_Status;
 
 		GLenum frontface_Value;
 		GLenum cullface_Value;
@@ -330,6 +337,7 @@ class opengl_state
 		inline GLenum BlendFuncDest();
 		inline GLenum DepthFunc(GLenum new_val = GL_INVALID_ENUM);
 		inline void AlphaFunc(GLenum f_val, GLclampf r_val);
+		inline void Color(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha = 255);
 };
 
 inline GLenum opengl_state::FrontFaceValue(GLenum new_val)
@@ -394,6 +402,17 @@ inline GLenum opengl_state::DepthFunc(GLenum new_val)
 inline void opengl_state::AlphaFunc(GLenum f_val, GLclampf r_val)
 {
 	glAlphaFunc(f_val, r_val);
+}
+
+inline void opengl_state::Color(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
+{
+	if ( (red != red_Status) || (green != green_Status) || (blue != blue_Status) || (alpha != alpha_Status) ) {
+		glColor4ub(red, green, blue, alpha);
+		red_Status = red;
+		green_Status = green;
+		blue_Status = blue;
+		alpha_Status = alpha;
+	}
 }
 
 extern opengl_state GL_state;

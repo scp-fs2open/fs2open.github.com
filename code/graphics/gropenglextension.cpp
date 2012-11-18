@@ -369,7 +369,8 @@ void opengl_extensions_init()
 	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
 	Use_compressed_textures = Is_Extension_Enabled(OGL_EXT_TEXTURE_COMPRESSION_S3TC);
 	Texture_compression_available = Is_Extension_Enabled(OGL_ARB_TEXTURE_COMPRESSION);
-	int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
+	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
+	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
 
 	//allow VBOs to be used
 	if ( !Cmdline_nohtl && !Cmdline_novbo && Is_Extension_Enabled(OGL_ARB_VERTEX_BUFFER_OBJECT) ) {
