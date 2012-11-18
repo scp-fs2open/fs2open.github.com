@@ -32,12 +32,55 @@ void opengl_texture_state::init(GLuint n_units)
 	units = (opengl_texture_unit*) vm_malloc(n_units * sizeof(opengl_texture_unit));
 	num_texture_units = n_units;
 
-	for (unsigned int i = 0; i < num_texture_units; i++) {
-		units[i].active = GL_FALSE;
-		units[i].enabled = GL_FALSE;
-		units[i].used = GL_FALSE;
+	for (unsigned int unit = 0; unit < num_texture_units; unit++) {
+		units[unit].active = GL_FALSE;
+		units[unit].enabled = GL_FALSE;
+		units[unit].used = GL_FALSE;
 
-		default_values(i);
+		default_values(unit);
+
+		vglActiveTextureARB(GL_TEXTURE0 + unit);
+		if (unit < (GLuint)GL_supported_texture_units) {
+			glDisable(GL_TEXTURE_GEN_S);
+			glDisable(GL_TEXTURE_GEN_T);
+			glDisable(GL_TEXTURE_GEN_R);
+			glDisable(GL_TEXTURE_GEN_Q);
+		}
+
+		units[unit].texgen_S = GL_FALSE;
+		units[unit].texgen_T = GL_FALSE;
+		units[unit].texgen_R = GL_FALSE;
+		units[unit].texgen_Q = GL_FALSE;
+
+		if (unit < (GLuint)GL_supported_texture_units) {
+			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+			glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+			glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		}
+
+		units[unit].texgen_mode_S = GL_EYE_LINEAR;
+		units[unit].texgen_mode_T = GL_EYE_LINEAR;
+		units[unit].texgen_mode_R = GL_EYE_LINEAR;
+		units[unit].texgen_mode_Q = GL_EYE_LINEAR;
+
+		if (unit < (GLuint)GL_supported_texture_units) {
+			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE);
+		}
+
+		units[unit].env_mode = GL_MODULATE;
+		units[unit].env_combine_rgb = GL_MODULATE;
+		units[unit].env_combine_alpha = GL_MODULATE;
+
+		if (unit < (GLuint)GL_supported_texture_units) {
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
+		}
+
+		units[unit].rgb_scale = 1.0f;
+		units[unit].alpha_scale = 1.0f;
 	}
 
 	DisableAll();
@@ -59,48 +102,6 @@ void opengl_texture_state::default_values(GLint unit, GLenum target)
 		units[unit].texture_target = GL_TEXTURE_2D;
 		units[unit].texture_id = 0;
 	}
-
-	if (unit < GL_supported_texture_units) {
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_R);
-		glDisable(GL_TEXTURE_GEN_Q);
-	}
-
-	units[unit].texgen_S = GL_FALSE;
-	units[unit].texgen_T = GL_FALSE;
-	units[unit].texgen_R = GL_FALSE;
-	units[unit].texgen_Q = GL_FALSE;
-
-	if (unit < GL_supported_texture_units) {
-		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	}
-
-	units[unit].texgen_mode_S = GL_EYE_LINEAR;
-	units[unit].texgen_mode_T = GL_EYE_LINEAR;
-	units[unit].texgen_mode_R = GL_EYE_LINEAR;
-	units[unit].texgen_mode_Q = GL_EYE_LINEAR;
-
-	if (unit < GL_supported_texture_units) {
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
-		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE);
-	}
-
-	units[unit].env_mode = GL_MODULATE;
-	units[unit].env_combine_rgb = GL_MODULATE;
-	units[unit].env_combine_alpha = GL_MODULATE;
-
-	if (unit < GL_supported_texture_units) {
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
-		glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
-	}
-
-	units[unit].rgb_scale = 1.0f;
-	units[unit].alpha_scale = 1.0f;
 }
 
 GLboolean opengl_texture_state::TexgenS(GLint state)
@@ -395,6 +396,12 @@ void opengl_state::init()
 
 	Current_alpha_blend_mode = ALPHA_BLEND_NONE;
 	Current_zbuffer_type = ZBUFFER_TYPE_READ;
+
+	glColor4ub(255, 255, 255, 255);
+	red_Status = 255;
+	blue_Status = 255;
+	green_Status = 255;
+	alpha_Status = 255;
 }
 
 GLboolean opengl_state::Lighting(GLint state)
