@@ -2557,7 +2557,7 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 
 	ignore_white_space();
 
-	char buf[NAME_LENGTH];
+	char buf[2048];
 
 	while (*Mp != ')') {
 		if(*Mp != '\"') {
