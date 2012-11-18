@@ -880,7 +880,6 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		DO_RENDER();
 	}
 */
-	gr_opengl_flush_data_states();
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 }
 

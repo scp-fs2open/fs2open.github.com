@@ -1167,8 +1167,6 @@ void opengl_array_state::BindElementBuffer(GLuint id)
 
 void gr_opengl_flush_data_states()
 {
-	GL_state.Texture.DisableAll();
-
 	GL_state.Array.SetActiveClientUnit(1);
 	GL_state.Array.DisableClientTexture();
 
