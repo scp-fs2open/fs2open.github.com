@@ -655,8 +655,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	}
 	
 	if (!valid_reference_ship) {
-		Int3();
-		mprintf(("special warpout reference ship not found\n"));
+		mprintf(("Special warpout reference ship is not a Knossos\n"));
 		return -1;
 	}
 	sip = &Ship_info[Ships[objp->instance].ship_info_index];
