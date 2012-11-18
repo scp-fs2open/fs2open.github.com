@@ -676,7 +676,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	gr_opengl_set_center_alpha(GL_center_alpha);
 
 	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
-	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+	GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
 
 	render_pass = 0;
@@ -791,8 +791,6 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		vglUniform1iARB( opengl_shader_get_uniform("sFramebuffer"), render_pass );
 		render_pass++;
 	}
-
-	GL_state.Texture.DisableUnused();
 
 	// Team colors are passed to the shader here, but the shader needs to handle their application.
 	// By default, this is handled through the r and g channels of the misc map, but this can be changed
@@ -933,7 +931,7 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 	gr_opengl_set_center_alpha(GL_center_alpha);
 
 	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
-	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+	GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
 	// basic setup of all data
 	opengl_init_arrays(vbp, bufferp);
@@ -1453,7 +1451,7 @@ void gr_opengl_render_stream_buffer(int offset, int n_verts, int flags)
 	} else {
 		// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 		GL_state.Array.DisableClientColor();
-		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	GL_state.Array.EnableClientVertex();
@@ -1488,7 +1486,6 @@ void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 
 	GL_CHECK_FOR_ERRORS("start of start_instance_matrix()");
 
-	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
 	vec3d axis;
@@ -1496,7 +1493,8 @@ void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 	vm_matrix_to_rot_axis_and_angle(rotation, &ang, &axis);
 
 	glTranslatef( offset->xyz.x, offset->xyz.y, offset->xyz.z );
-	glRotatef( fl_degrees(ang), axis.xyz.x, axis.xyz.y, axis.xyz.z );
+	if (abs(ang) > 0.0f)
+		glRotatef( fl_degrees(ang), axis.xyz.x, axis.xyz.y, axis.xyz.z );
 
 	GL_CHECK_FOR_ERRORS("end of start_instance_matrix()");
 
@@ -1525,7 +1523,6 @@ void gr_opengl_end_instance_matrix()
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
-	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 
 	GL_modelview_matrix_depth--;
@@ -1614,7 +1611,6 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 
 	GL_CHECK_FOR_ERRORS("start of set_view_matrix()");
 
-	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
 	// right now it depends on your settings as to whether this has any effect in-mission
@@ -1725,7 +1721,6 @@ void gr_opengl_end_view_matrix()
 
 	Assert(GL_modelview_matrix_depth == 2);
 
-	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 	glLoadIdentity();
 
@@ -1810,13 +1805,10 @@ static bool GL_scale_matrix_set = false;
 
 void gr_opengl_push_scale_matrix(vec3d *scale_factor)
 {
-	if (GL_scale_matrix_set) 
-	{
-		Int3();
+	if ( (scale_factor->xyz.x == 1) && (scale_factor->xyz.y == 1) && (scale_factor->xyz.z == 1) )
 		return;
-	}
 
-	glMatrixMode(GL_MODELVIEW);
+	GL_scale_matrix_set = true;
 	glPushMatrix();
 
 	GL_modelview_matrix_depth++;
@@ -1826,16 +1818,13 @@ void gr_opengl_push_scale_matrix(vec3d *scale_factor)
 
 void gr_opengl_pop_scale_matrix()
 {
-	if (GL_scale_matrix_set) 
-	{
-		Int3();
+	if (!GL_scale_matrix_set) 
 		return;
-	}
 
-	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 
 	GL_modelview_matrix_depth--;
+	GL_scale_matrix_set = false;
 }
 
 void gr_opengl_end_clip_plane()

@@ -170,9 +170,9 @@ void opengl_set_light(int light_num, opengl_light *ltp)
 	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, diffuse);
 	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, ltp->Specular);
 	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, ltp->SpotDir);
-	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, ltp->ConstantAtten);
+	//glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, ltp->ConstantAtten); Default is 1.0 and we only use 1.0 - Valathil
 	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, ltp->LinearAtten);
-	glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, ltp->QuadraticAtten);
+	//glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, ltp->QuadraticAtten); Default is 0.0 and we only use 0.0 - Valathil
 	glLightf(GL_LIGHT0+light_num, GL_SPOT_EXPONENT, ltp->SpotExp);
 	glLightf(GL_LIGHT0+light_num, GL_SPOT_CUTOFF, ltp->SpotCutOff);
 }
@@ -244,7 +244,6 @@ void opengl_change_active_lights(int pos, int d_offset)
 
 	offset = (pos * GL_max_lights) + d_offset;
 
-	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
 	if ( !memcmp(&Eye_position, &last_view_pos, sizeof(vec3d)) && !memcmp(&Eye_matrix, &last_view_orient, sizeof(matrix)) ) {
@@ -516,33 +515,54 @@ void opengl_light_init()
 }
 
 extern int Cmdline_no_emissive;
+bool ambient_state = false;
+bool emission_state = false;
+bool specular_state = false;
 void opengl_default_light_settings(int ambient, int emission, int specular)
 {
 	if (!lighting_is_enabled)
 		return;
 
 	if (ambient) {
-		glMaterialfv( GL_FRONT, GL_DIFFUSE, GL_light_color );
-		glMaterialfv( GL_FRONT, GL_AMBIENT, GL_light_ambient );
+		if (!ambient_state) {
+			glMaterialfv( GL_FRONT, GL_DIFFUSE, GL_light_color );
+			glMaterialfv( GL_FRONT, GL_AMBIENT, GL_light_ambient );
+			ambient_state = true;
+		}
 	} else {
-		if (GL_center_alpha) {
-			glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
-		} else {
-			glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
+		if (ambient_state) {
+			if (GL_center_alpha) {
+				glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
+			} else {
+				glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
+			}
+			ambient_state = false;
 		}
 	}
 
 	if (emission && !Cmdline_no_emissive) {
 		// emissive light is just a general glow but without it things are *terribly* dark if there is no light on them
-		glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_emission );
+		if (!emission_state) {
+			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_emission );
+			emission_state = true;
+		}
 	} else {
-		glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_zero );
+		if (emission_state) {
+			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_zero );
+			emission_state = false;
+		}
 	}
 
 	if (specular) {
-		glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_spec );
+		if (!specular_state) {
+			glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_spec );
+			specular_state = true;
+		}
 	} else {
-		glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_zero );
+		if (specular_state) {
+			glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_zero );
+			specular_state = false;
+		}
 	}
 }
 
