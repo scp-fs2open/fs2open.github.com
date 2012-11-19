@@ -1528,13 +1528,7 @@ void brief_set_text_color(int color_index)
  */
 bool is_a_word_separator(char character)
 {
-	return character<=33					//  2 characters including (space) and !
-		|| (35<=character && character<=38)	//  4 characters #$%&
-		|| (42<=character && character<=44)	//  3 characters *+,
-		|| (character == 47)				//  1 character  /
-		|| (59<=character && character<=64)	//  6 characters ;<=>?@
-		|| (91<=character && character<=95)	//  5 characters [\]^_
-		|| (123<=character);				//  5 characters {|}~
+	return character <= 32;					//  all control characters including space, newline, and tab
 }
 
 /**
