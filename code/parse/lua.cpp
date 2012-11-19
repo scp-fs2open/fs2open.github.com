@@ -7815,8 +7815,12 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, 
 
 	ship *shipp = &Ships[objh->objp->instance];
 
-	if(ADE_SETTING_VAR && idx > -1)
+	if(ADE_SETTING_VAR && idx > -1) {
 		change_ship_type(objh->objp->instance, idx, 1);
+		if (shipp == Player_ship) {
+			set_current_hud();
+		}
+	}
 
 	if(shipp->ship_info_index < 0)
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
