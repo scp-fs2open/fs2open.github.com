@@ -397,11 +397,11 @@ void opengl_state::init()
 	Current_alpha_blend_mode = ALPHA_BLEND_NONE;
 	Current_zbuffer_type = ZBUFFER_TYPE_READ;
 
-	glColor4ub(255, 255, 255, 255);
 	red_Status = 255;
 	blue_Status = 255;
 	green_Status = 255;
 	alpha_Status = 255;
+	color_invalid = true;
 }
 
 GLboolean opengl_state::Lighting(GLint state)
