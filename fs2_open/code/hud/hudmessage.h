@@ -38,7 +38,7 @@ typedef struct HUD_message_data {
 typedef struct line_node {
 	line_node* next;
 	line_node* prev;
-	int time;  // timestamp when message was added
+	fix time;  // timestamp when message was added
 	int source;  // who/what the source of the message was (for color coding)
 	int x;
 	int y;

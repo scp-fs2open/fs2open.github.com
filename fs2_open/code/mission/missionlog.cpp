@@ -64,7 +64,7 @@ static int X, P_width;
 
 // Log_lines is used for scrollback display purposes.
 static log_text_seg *Log_lines[MAX_LOG_LINES];
-static int Log_line_timestamps[MAX_LOG_LINES];
+static fix Log_line_timestamps[MAX_LOG_LINES];
 
 log_entry log_entries[MAX_LOG_ENTRIES];	// static array because John says....
 int last_entry;
@@ -659,7 +659,7 @@ void message_log_init_scrollback(int pw)
 			continue;
 
 		// track time of event (normal timestamp milliseconds format)
-		Log_line_timestamps[Num_log_lines] = (int) ( f2fl(entry->timestamp) * 1000.0f );
+		Log_line_timestamps[Num_log_lines] = entry->timestamp;
 
 		// Goober5000
 		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED))
