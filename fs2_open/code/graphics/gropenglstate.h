@@ -288,6 +288,7 @@ class opengl_state
 		GLubyte blue_Status;
 		GLubyte green_Status;
 		GLubyte alpha_Status;
+		bool color_invalid;
 
 		GLenum frontface_Value;
 		GLenum cullface_Value;
@@ -338,6 +339,7 @@ class opengl_state
 		inline GLenum DepthFunc(GLenum new_val = GL_INVALID_ENUM);
 		inline void AlphaFunc(GLenum f_val, GLclampf r_val);
 		inline void Color(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha = 255);
+		inline void InvalidateColor();
 };
 
 inline GLenum opengl_state::FrontFaceValue(GLenum new_val)
@@ -406,13 +408,19 @@ inline void opengl_state::AlphaFunc(GLenum f_val, GLclampf r_val)
 
 inline void opengl_state::Color(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
 {
-	if ( (red != red_Status) || (green != green_Status) || (blue != blue_Status) || (alpha != alpha_Status) ) {
+	if ( color_invalid || (red != red_Status) || (green != green_Status) || (blue != blue_Status) || (alpha != alpha_Status) ) {
 		glColor4ub(red, green, blue, alpha);
 		red_Status = red;
 		green_Status = green;
 		blue_Status = blue;
 		alpha_Status = alpha;
+		color_invalid = false;
 	}
+}
+
+inline void opengl_state::InvalidateColor()
+{
+	color_invalid = true;
 }
 
 extern opengl_state GL_state;
