@@ -457,8 +457,17 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 		polymodel *pm = asip->modelp[asteroid_subtype] = model_get(asip->model_num[asteroid_subtype]);
 		
 		if ( asip->num_detail_levels != pm->n_detail_levels )
-			Warning(LOCATION, "For asteroid '%s', detail level\nmismatch (POF needs %d)", asip->name, pm->n_detail_levels );
-
+		{
+			if ( !Is_standalone )
+			{
+				// just log to file for standalone servers
+				Warning(LOCATION, "For asteroid '%s', detail level\nmismatch (POF needs %d)", asip->name, pm->n_detail_levels );
+			}
+			else
+			{
+				nprintf(("Warning",  "For asteroid '%s', detail level mismatch (POF needs %d)", asip->name, pm->n_detail_levels));
+			}
+		}	
 		// Stuff detail level distances.
 		for ( i=0; i<pm->n_detail_levels; i++ )
 			pm->detail_depth[i] = (i < asip->num_detail_levels) ? i2fl(asip->detail_distance[i]) : 0.0f;
