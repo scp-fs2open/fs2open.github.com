@@ -8706,8 +8706,17 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	show_ship_subsys_count();
 
 	if ( sip->num_detail_levels != pm->n_detail_levels )
-		Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
-	
+	{
+		if ( !Is_standalone )
+		{
+			// just log to file for standalone servers
+			Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+		}
+		else
+		{
+			nprintf(("Warning",  "For ship '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
+		}	
+	}		
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
@@ -8885,8 +8894,17 @@ void ship_model_change(int n, int ship_type)
 	ship_copy_subsystem_fixup(sip);
 
 	if ( sip->num_detail_levels != pm->n_detail_levels )
-		Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
-	
+	{
+		if ( !Is_standalone )
+		{
+			// just log to file for standalone servers
+			Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+		}
+		else
+		{
+			nprintf(("Warning",  "For ship '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
+		}
+	}	
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
