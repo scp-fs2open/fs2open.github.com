@@ -21413,7 +21413,7 @@ int generate_event_log_flags_mask(int result)
 */
 void maybe_write_to_event_log(int result)
 {
-	char buffer [TOKEN_LENGTH*2]; 
+	char buffer [256]; 
 
 	int mask = generate_event_log_flags_mask(result); 
 	if (!(mask &=  Mission_events[Event_index].mission_log_flags)) {
