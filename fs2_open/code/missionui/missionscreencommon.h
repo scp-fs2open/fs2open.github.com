@@ -194,7 +194,7 @@ typedef struct loadout_data
 extern loadout_data Player_loadout;
 
 void wss_save_loadout();
-void wss_restore_loadout();
+void wss_maybe_restore_loadout();
 void wss_direct_restore_loadout();
 
 int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_ship_slot);

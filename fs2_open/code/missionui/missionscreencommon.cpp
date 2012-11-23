@@ -500,7 +500,7 @@ void common_select_init()
 	// restore loadout from Player_loadout if this is the same mission as the one previously played
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
 		if ( !stricmp(Player_loadout.filename, Game_current_mission_filename) ) {
-			wss_restore_loadout();
+			wss_maybe_restore_loadout();
 			ss_synch_interface();
 			wl_synch_interface();
 		}
@@ -1020,37 +1020,105 @@ void wss_save_loadout()
 }
 
 // restore ship/weapons loadout from the Player_loadout struct
-void wss_restore_loadout()
+void wss_maybe_restore_loadout()
 {
 	int i,j;
 	wss_unit	*slot;
 
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
-	// only restore if mission hasn't changed
-	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
-		return;
+	// first we generate a pool of ships and weapons used the last time this mission was played. We also generate a pool of what is 
+	// available in this mission.
+	int	last_loadout_ships[MAX_SHIP_CLASSES];
+	int	this_loadout_ships[MAX_SHIP_CLASSES];
+
+	int	last_loadout_weapons[MAX_WEAPON_TYPES];
+	int	this_loadout_weapons[MAX_WEAPON_TYPES];
+
+	// zero all pools
+	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+		last_loadout_ships[i] = 0; 
+		this_loadout_ships[i] = 0; 
 	}
+	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+		last_loadout_weapons[i] = 0; 
+		this_loadout_weapons[i] = 0; 
+	}
+
+	// record the ship classes / weapons used last time
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		slot = &Player_loadout.unit_data[i];
+		if ((slot->ship_class >= 0) && (slot->ship_class < MAX_SHIP_CLASSES)) {
+			++last_loadout_ships[slot->ship_class];
+
+			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+				if ((slot->wep[j] >= 0) && (slot->wep[j] < MAX_WEAPON_TYPES)) {
+					last_loadout_weapons[slot->wep[j]] += slot->wep_count[j]; 
+				}
+			}
+		}
+	}
+
+	// record the ships classes / weapons used by the player and wingmen. We don't include the amount in the pools yet
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < MAX_SHIP_CLASSES)) {
+			++this_loadout_ships[Wss_slots[i].ship_class];
+
+			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < MAX_WEAPON_TYPES)) {
+					this_loadout_weapons[Wss_slots[i].wep[j]] += Wss_slots[i].wep_count[j];
+				}
+			}
+		}
+	}
+
+	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
+	// than there were last time, we can't restore and must abort.
+	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+		this_loadout_ships[i] += Ss_pool[i];
+		if ( this_loadout_ships[i] < last_loadout_ships[i]) {
+			return; 
+		}
+	}
+	
+	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+		this_loadout_weapons[i] += Wl_pool[i];
+		if ( this_loadout_weapons[i] < last_loadout_weapons[i]) {
+			return; 
+		}
+	}
+
+	// go through the slots and restore the previous runthrough's loadout. Also remove that ship from total of ships in this mission
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		slot = &Player_loadout.unit_data[i];
+
+		if ((slot->ship_class >= 0) && (slot->ship_class < MAX_SHIP_CLASSES)) {
+			--this_loadout_ships[slot->ship_class];
+			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
+
+		}
+		// restore the ship class for each slot
+		Wss_slots[i].ship_class = slot->ship_class;
+
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+			if ((slot->wep[j] >= 0) && (slot->wep[j] < MAX_WEAPON_TYPES)) {
+				this_loadout_weapons[slot->wep[j]] -= slot->wep_count[j];
+				Assertion((this_loadout_weapons[slot->wep[j]] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of weapons available");
+			}
+
+			Wss_slots[i].wep[j]= slot->wep[j];
+			Wss_slots[i].wep_count[j] = slot->wep_count[j];
+		}
+	}	
 
 	// restore the ship pool
 	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		Ss_pool[i] = Player_loadout.ship_pool[i]; 
+		Ss_pool[i] = this_loadout_ships[i]; 
 	}
 
 	// restore the weapons pool
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_pool[i] = Player_loadout.weapon_pool[i]; 
-	}
-
-	// restore the ship class / weapons for each slot
-	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		slot = &Player_loadout.unit_data[i];
-		Wss_slots[i].ship_class = slot->ship_class;
-
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			Wss_slots[i].wep[j]= slot->wep[j];
-			Wss_slots[i].wep_count[j] = slot->wep_count[j];
-		}
+		Wl_pool[i] = this_loadout_weapons[i]; 
 	}
 }
 
