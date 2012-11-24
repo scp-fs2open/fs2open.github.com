@@ -2832,13 +2832,14 @@ void parse_weaponstbl(char *filename)
 //uses a simple bucket sort to sort weapons, order of importance is:
 //Lasers
 //Beams
+//Child primary weapons
 //Fighter missiles and bombs
 //Capital missiles and bombs
-//Child weapons
+//Child secondary weapons
 void weapon_sort_by_type()
 {
-	weapon_info *lasers = NULL, *big_lasers = NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_weapons = NULL;
-	int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child = 0;
+	weapon_info *lasers = NULL, *big_lasers = NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_primaries = NULL, *child_secondaries = NULL;
+	int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child_primaries = 0, num_child_secondaries = 0;
 	int i, weapon_index;
 
 	// get the initial count of each weapon type
@@ -2849,7 +2850,9 @@ void weapon_sort_by_type()
 				continue;
 
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
+				if (Weapon_info[i].wi_flags & WIF_CHILD)
+					num_child_primaries++;
+				else if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
 					num_big_lasers++;
 				else
 					num_lasers++;
@@ -2861,7 +2864,7 @@ void weapon_sort_by_type()
 
 			case WP_MISSILE:
 				if (Weapon_info[i].wi_flags & WIF_CHILD)
-					num_child++;
+					num_child_secondaries++;
 				else if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
 					num_big_missiles++;
 				else
@@ -2905,10 +2908,16 @@ void weapon_sort_by_type()
 		num_big_missiles = 0;
 	}
 
-	if (num_child) {
-		child_weapons = new weapon_info[num_child];
-		Verify( child_weapons != NULL );
-		num_child = 0;
+	if (num_child_primaries) {
+		child_primaries = new weapon_info[num_child_primaries];
+		Verify( child_primaries != NULL );
+		num_child_primaries = 0;
+	}
+
+	if (num_child_secondaries) {
+		child_secondaries = new weapon_info[num_child_secondaries];
+		Verify( child_secondaries != NULL );
+		num_child_secondaries = 0;
 	}
 
 	// fill the buckets
@@ -2919,7 +2928,9 @@ void weapon_sort_by_type()
 				continue;
 
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
+				if (Weapon_info[i].wi_flags & WIF_CHILD)
+					child_primaries[num_child_primaries++] = Weapon_info[i];
+				else if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
 					big_lasers[num_big_lasers++] = Weapon_info[i];
 				else
 					lasers[num_lasers++] = Weapon_info[i];
@@ -2931,7 +2942,7 @@ void weapon_sort_by_type()
 
 			case WP_MISSILE:
 				if (Weapon_info[i].wi_flags & WIF_CHILD)
-					child_weapons[num_child++] = Weapon_info[i];
+					child_secondaries[num_child_secondaries++] = Weapon_info[i];
 				else if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
 					big_missiles[num_big_missiles++] = Weapon_info[i];
 				else
@@ -2955,6 +2966,9 @@ void weapon_sort_by_type()
 	for (i = 0; i < num_beams; i++, weapon_index++)
 		Weapon_info[weapon_index] = beams[i];
 
+	for (i = 0; i < num_child_primaries; i++, weapon_index++)
+		Weapon_info[weapon_index] = child_primaries[i];
+
 	// designate start of secondary weapons so that we'll have the correct offset later on
 	First_secondary_index = weapon_index;
 
@@ -2964,8 +2978,8 @@ void weapon_sort_by_type()
 	for (i = 0; i < num_big_missiles; i++, weapon_index++)
 		Weapon_info[weapon_index] = big_missiles[i];
 
-	for (i = 0; i < num_child; i++, weapon_index++)
-		Weapon_info[weapon_index] = child_weapons[i];
+	for (i = 0; i < num_child_secondaries; i++, weapon_index++)
+		Weapon_info[weapon_index] = child_secondaries[i];
 
 
 	if (lasers)			delete [] lasers;
@@ -2973,7 +2987,8 @@ void weapon_sort_by_type()
 	if (beams)			delete [] beams;
 	if (missiles)		delete [] missiles;
 	if (big_missiles)	delete [] big_missiles;
-	if (child_weapons)	delete [] child_weapons;
+	if (child_primaries)	delete [] child_primaries;
+	if (child_secondaries)	delete [] child_secondaries;
 }
 
 /**
