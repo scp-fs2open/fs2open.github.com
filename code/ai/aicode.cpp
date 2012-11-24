@@ -1834,28 +1834,7 @@ int is_ignore_object(ai_info *aip, int objnum, int just_the_original = 0)
 	return 0;
 }
 
-/**
- * Given a ship with bounding box and a point, find the closest point on the bbox
- */
-int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt)
-{
-	vec3d temp, rf_start;
-	polymodel *pm;
-	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
 
-	// get start in ship rf
-	vm_vec_sub(&temp, start, &ship_obj->pos);
-	vm_vec_rotate(&rf_start, &temp, &ship_obj->orient);
-
-	// find box_pt
-	int inside = project_point_onto_bbox(&pm->mins, &pm->maxs, &rf_start, &temp);
-
-	// get box_pt in world rf
-	vm_vec_unrotate(box_pt, &temp, &ship_obj->orient);
-	vm_vec_add2(box_pt, &ship_obj->pos);
-
-	return inside;
-}
 
 
 typedef struct eval_nearest_objnum {

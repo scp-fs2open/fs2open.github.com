@@ -5589,7 +5589,7 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
 }
 
 /**
- * Calculate teh damage for an object based on the location of an area-effect
+ * Calculate the damage for an object based on the location of an area-effect
  * explosion.
  *
  * @param objp			Object pointer ship receiving blast effect
@@ -5607,23 +5607,33 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
  */
 int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage, float *blast, float *damage, float limit)
 {
-	float			dist, max_dist, min_dist;
+	float dist;
+	vec3d box_pt;
 
-	max_dist = objp->radius + outer_rad;
-	dist = vm_vec_dist_quick(&objp->pos, pos);	
-	if ( (dist > max_dist) || (dist > (limit+objp->radius)) ) {
+	// if object receiving the blast is a ship, use the bbox for distances
+	// otherwise use the objects radius
+	// could possibly exclude SIF_SMALL_SHIP (& other small objects) from using the bbox
+	if (objp->type == OBJ_SHIP) {
+		int inside = get_nearest_bbox_point(objp, pos, &box_pt);
+		if (inside) {
+			dist = 0.0001f;
+		} else {
+			dist = vm_vec_dist_quick(pos, &box_pt);
+		}
+	} else {
+		dist = vm_vec_dist_quick(&objp->pos, pos) - objp->radius;
+	}
+
+	if ( (dist > outer_rad) || (dist > limit) ) {
 		return -1;	// spheres don't intersect at all
 	}
 
-	if ( dist < (inner_rad+objp->radius) ) {
+	if ( dist < inner_rad ) {
 		// damage is maximum within inner radius
 		*damage = max_damage;
 		*blast = max_blast;
 	} else {
-		min_dist = dist - objp->radius;
-		Assert(min_dist < outer_rad);
-
-		float dist_to_outer_rad_squared = (outer_rad-min_dist)*(outer_rad-min_dist);
+		float dist_to_outer_rad_squared = (outer_rad-dist)*(outer_rad-dist);
 		float total_dist_squared = (inner_rad-outer_rad)*(inner_rad-outer_rad);
 
 		// this means the inner and outer radii are basically equal... and since we aren't within the inner radius,
@@ -5635,8 +5645,7 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
 		// AL 2-24-98: drop off damage relative to square of distance
 		Assert(dist_to_outer_rad_squared <= total_dist_squared);
 		*damage = max_damage * dist_to_outer_rad_squared/total_dist_squared;
-
-		*blast =  (min_dist - outer_rad) * max_blast /(inner_rad - outer_rad);
+		*blast =  (dist - outer_rad) * max_blast /(inner_rad - outer_rad);
 	}
 
 	return 0;

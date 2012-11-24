@@ -61,6 +61,7 @@
 #include "ship/shipcontrails.h"
 #include "weapon/beam.h"
 #include "math/staticrand.h"
+#include "math/fvi.h"
 #include "missionui/missionshipchoice.h"
 #include "hud/hudartillery.h"
 #include "species_defs/species_defs.h"
@@ -17435,3 +17436,32 @@ bool ship_has_sound(object *objp, GameSoundsIndex id)
 		return true;
 }
 
+/**
+ * Given a ship with bounding box and a point, find the closest point on the bbox
+ *
+ * @param ship_obj Object that has the bounding box (should be a ship)
+ * @param start World position of the point being compared
+ * @param box_pt OUTPUT PARAMETER: closest point on the bbox to start
+ *
+ * @return point is inside bbox, TRUE/1
+ * @return point is outside bbox, FALSE/0
+ */
+int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt)
+{
+	vec3d temp, rf_start;
+	polymodel *pm;
+	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+
+	// get start in ship rf
+	vm_vec_sub(&temp, start, &ship_obj->pos);
+	vm_vec_rotate(&rf_start, &temp, &ship_obj->orient);
+
+	// find box_pt
+	int inside = project_point_onto_bbox(&pm->mins, &pm->maxs, &rf_start, &temp);
+
+	// get box_pt in world rf
+	vm_vec_unrotate(box_pt, &temp, &ship_obj->orient);
+	vm_vec_add2(box_pt, &ship_obj->pos);
+
+	return inside;
+}
