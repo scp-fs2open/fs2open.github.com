@@ -181,7 +181,7 @@ void multi_options_read_config()
 				} else
 				// use pxo flag
 				if ( SETTING("+use_pxo") ) {
-					Om_tracker_flag = true;
+					Om_tracker_flag = 1;
 				} else
 				// standalone pxo login user
 				if ( SETTING("+pxo_login") ) {
