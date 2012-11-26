@@ -3866,9 +3866,13 @@ void CFred_mission_save::save_turret_info(ship_subsys *ptr, int ship)
 			fout("\n+Primary Banks:");
 
 		fout(" ( ");
-		for (i=0; i<wp->num_primary_banks; i++)
-			fout("\"%s\" ", Weapon_info[wp->primary_bank_weapons[i]].name);
-
+		for (i=0; i<wp->num_primary_banks; i++) {
+			if (wp->primary_bank_weapons[i] != -1) { // Just in case someone has set a weapon bank to empty
+				fout("\"%s\" ", Weapon_info[wp->primary_bank_weapons[i]].name);
+			} else {
+				fout("\"\" ");
+			}
+		}
 		fout(")");
 	}
 
@@ -3885,9 +3889,13 @@ void CFred_mission_save::save_turret_info(ship_subsys *ptr, int ship)
 			fout("\n+Secondary Banks:");
 
 		fout(" ( ");
-		for (i=0; i<wp->num_secondary_banks; i++)
-			fout("\"%s\" ", Weapon_info[wp->secondary_bank_weapons[i]].name);
-
+		for (i=0; i<wp->num_secondary_banks; i++) {
+			if (wp->secondary_bank_weapons[i] != -1) {
+				fout("\"%s\" ", Weapon_info[wp->secondary_bank_weapons[i]].name);
+			} else {
+				fout("\"\" ");
+			}
+		}
 		fout(")");
 	}
 
