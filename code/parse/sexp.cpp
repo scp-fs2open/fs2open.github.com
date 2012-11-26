@@ -16012,11 +16012,27 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 
 	// copy hull...
 	target_pobjp->special_hitpoints = source_shipp->special_hitpoints;
-	target_pobjp->ship_max_hull_strength_multiplier = source_shipp->ship_max_hull_strength / Ship_info[source_shipp->ship_info_index].max_hull_strength;
+	if (Ship_info[source_shipp->ship_info_index].max_hull_strength == 0.0f)
+	{
+		Warning(LOCATION, "Why does %s have a maximum hull strength of 0?", Ship_info[source_shipp->ship_info_index].name);
+		target_pobjp->ship_max_hull_strength_multiplier = 1.0f;
+	}
+	else
+	{
+		target_pobjp->ship_max_hull_strength_multiplier = source_shipp->ship_max_hull_strength / Ship_info[source_shipp->ship_info_index].max_hull_strength;
+	}
 	target_pobjp->initial_hull = fl2i(get_hull_pct(source_objp) * 100.0f);
 
 	// ...and shields
-	target_pobjp->ship_max_shield_strength_multiplier = source_shipp->ship_max_shield_strength / Ship_info[source_shipp->ship_info_index].max_shield_strength;
+	if (Ship_info[source_shipp->ship_info_index].max_shield_strength == 0.0f)
+	{
+		// this is okay because a ship can have no shields
+		target_pobjp->ship_max_shield_strength_multiplier = 1.0f;
+	}
+	else
+	{
+		target_pobjp->ship_max_shield_strength_multiplier = source_shipp->ship_max_shield_strength / Ship_info[source_shipp->ship_info_index].max_shield_strength;
+	}
 	target_pobjp->initial_shields = fl2i(get_shield_pct(source_objp) * 100.0f);
 
 
@@ -16029,16 +16045,23 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 		// gak... none allocated; we need to allocate one!
 		if (target_sssp == NULL)
 		{
-			// jam in the new subsystem at the end of the existing list
+			// jam in the new subsystem at the end of the existing list for this parse object
 			int new_idx = insert_subsys_status(target_pobjp);
 			target_sssp = &Subsys_status[new_idx];
-			target_pobjp->subsys_count++;
 
 			strcpy_s(target_sssp->name, source_ss->system_info->subobj_name);
 		}
 
 		// copy
-		target_sssp->percent = 100.0f - (source_ss->current_hits / source_ss->max_hits) * 100.0f;
+		if (source_ss->max_hits == 0.0f)
+		{
+			Warning(LOCATION, "Why does %s's subsystem %s have a maximum strength of 0?", source_shipp->ship_name, source_ss->system_info->subobj_name);
+			target_sssp->percent = 100.0f;
+		}
+		else
+		{
+			target_sssp->percent = 100.0f - (source_ss->current_hits / source_ss->max_hits) * 100.0f;
+		}
 	}
 }
 
