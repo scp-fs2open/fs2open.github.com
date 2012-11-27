@@ -9268,6 +9268,17 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		Objects[sp->objnum].phys_info.prev_ramp_vel = Objects[sp->objnum].phys_info.vel;
 		Objects[sp->objnum].phys_info.desired_vel = Objects[sp->objnum].phys_info.vel;
 	}
+
+	// Goober5000 - if we're changing to a ship class that has a different default set of orders, update the orders
+	// (this avoids wiping the orders if we're e.g. changing between fighter classes)
+	if (Fred_running)
+	{
+		int old_defaults = ship_get_default_orders_accepted(sip_orig);
+		int new_defaults = ship_get_default_orders_accepted(sip);
+
+		if (old_defaults != new_defaults)
+			sp->orders_accepted = new_defaults;
+	}
 }
 
 #ifndef NDEBUG
