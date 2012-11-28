@@ -1765,6 +1765,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( (argnum == 2) && (i < 1) )
 					return SEXP_CHECK_NUM_RANGE_INVALID;
 
+			// valid color range 0 to 255 - FUBAR
+			if ((z == OP_CHANGE_IFF_COLOR)  && ((argnum >= 2) && (argnum <= 4)))
+			{
+				if ( i < 0 || i > 255) 
+				{
+					return SEXP_CHECK_NUM_RANGE_INVALID;
+				}
+			}
+
 			z = get_operator_index(CTEXT(op_node));
 			if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
 				if ( (i < 0) || (i > 200) )
