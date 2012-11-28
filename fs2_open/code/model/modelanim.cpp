@@ -33,7 +33,8 @@ char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
 	"fighterbay",
 	"afterburner",
 	"turret-firing",
-	"scripted"
+	"scripted",
+	"turret-fired"
 };
 
 int model_anim_match_type(char *p)
