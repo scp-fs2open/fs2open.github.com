@@ -6787,6 +6787,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	Assert(Objects[Ships[shipnum].objnum].flags & OF_SHOULD_BE_DEAD);
 
 	ship *shipp = &Ships[shipnum];
+	object *objp = &Objects[shipp->objnum];
 
 	// add the information to the exited ship list
 	if (cleanup_mode == SHIP_DESTROYED) {
@@ -6813,7 +6814,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if (cleanup_mode == SHIP_DEPARTED) {
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
-		CJumpNode *jnp = jumpnode_get_which_in(&Objects[shipp->objnum]);
+		CJumpNode *jnp = jumpnode_get_which_in(objp);
 		if(jnp==NULL)
 			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, NULL, shipp->wingnum);
 		else
@@ -6865,6 +6866,14 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		ai_ship_destroy(shipnum, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
 	}
 
+	// Goober5000 - lastly, clear out the dead-docked list, per Mantis #2294
+	// (for exploding ships, this list should have already been cleared by now, via
+	// do_dying_undock_physics, except in the case of the destroy-instantly sexp)
+	while (object_is_dead_docked(objp))
+	{
+		object *docked_objp = dock_get_first_dead_docked_object(objp);
+		dock_dead_undock_objects(objp, docked_objp);
+	}
 }
 
 /**
