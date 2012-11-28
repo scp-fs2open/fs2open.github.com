@@ -477,10 +477,9 @@ void PSNET_TOP_LAYER_PROCESS()
 		}		
 
 		// determine the packet type
-		int packet_type = packet_read.data[0];		
-		if((packet_type < 0) || (packet_type >= PSNET_NUM_TYPES)){
-			Int3();
-		} else {		
+		int packet_type = packet_read.data[0];	
+		Assertion(((packet_type >= 0) && (packet_type < PSNET_NUM_TYPES)), "Invalid packet_type found. Packet type %d does not exist", packet_type);
+		if((packet_type >= 0) && (packet_type < PSNET_NUM_TYPES)){
 			// buffer the packet
 			psnet_buffer_packet(&Psnet_top_buffers[packet_type], packet_read.data + 1, read_len - 1, &from_addr);
 		}
