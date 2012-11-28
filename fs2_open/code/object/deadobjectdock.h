@@ -22,7 +22,7 @@ int dock_find_dead_dockpoint_used_by_object(object *objp, object *other_objp);
 // add objp1 and objp2 to each others' dock lists; currently only called by ai_deathroll_start
 void dock_dead_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoint2);
 
-// remove objp1 and objp2 from each others' dock lists; currently only called by do_dying_undock_physics
+// remove objp1 and objp2 from each others' dock lists; currently called by do_dying_undock_physics and ship_cleanup
 void dock_dead_undock_objects(object *objp1, object *objp2);
 
 #endif	// _DEAD_OBJECT_DOCK_H
