@@ -29620,7 +29620,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to chase.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_DOCK, "Ai-dock (Ship goal)\r\n"
 		"\tCauses one ship to dock with another ship.\r\n\r\n"
@@ -29628,7 +29628,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of dockee ship (The ship that \"docker\" will dock with).\r\n"
 		"\t2:\tDocker's docking point - Which dock point docker uses to dock.\r\n"
 		"\t3:\tDockee's docking point - Which dock point on dockee docker will move to.\r\n"
-		"\t4:\tGoal priority (number between 0 and 89)." },
+		"\t4:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_UNDOCK, "Ai-undock (Ship goal)\r\n"
 		"\tCauses the specified ship to undock from who it is currently docked with.\r\n\r\n"
@@ -29642,19 +29642,19 @@ sexp_help_struct Sexp_help[] = {
 		"argument means nothing.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to follow to warp out (not used).\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_WAYPOINTS, "Ai-waypoints (Ship goal)\r\n"
 		"\tCauses the specified ship to fly a waypoint path continuously.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_WAYPOINTS_ONCE, "Ai-waypoints once (Ship goal)\r\n"
 		"\tCauses the specified ship to fly a waypoint path.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_DESTROY_SUBSYS, "Ai-destroy subsys (Ship goal)\r\n"
 		"\tCauses the specified ship to attack and try and destroy the specified subsystem "
@@ -29662,55 +29662,55 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\t2:\tName of subsystem on the ship to attack and destroy.\r\n"
-		"\t3:\tGoal priority (number between 0 and 89)." },
+		"\t3:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_CHASE_WING, "Ai-chase wing (Ship goal)\r\n"
 		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of wing to chase.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_DISABLE_SHIP, "Ai-disable-ship (Ship/wing goal)\r\n"
 		"\tThis AI goal causes a ship/wing to destroy all of the engine subsystems on "
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
 		"may have multiple engine subsystems requiring the use of > 1 ai-destroy-subsystem "
 		"goals.\r\n"
-		"Please note that this goal will implicitly call \"protect-ship\" on the target "
+		"Please note that this goal may call \"protect-ship\" on the target "
 		"to prevent overzealous AI ships from destroying it in the process of disabling it.  "
 		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship whose engine subsystems should be destroyed\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_DISARM_SHIP, "Ai-disarm-ship (Ship/wing goal)\r\n"
 		"\tThis AI goal causes a ship/wing to destroy all of the turret subsystems on "
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
 		"may have multiple turret subsystems requiring the use of > 1 ai-destroy-subsystem "
 		"goals.\r\n"
-		"Please note that this goal will implicitly call \"protect-ship\" on the target "
+		"Please note that this goal may call \"protect-ship\" on the target "
 		"to prevent overzealous AI ships from destroying it in the process of disarming it.  "
 		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship whose turret subsystems should be destroyed\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_GUARD, "Ai-guard (Ship goal)\r\n"
 		"\tCauses the specified ship to guard a ship from other ships not on the same team.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to guard.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_CHASE_ANY, "Ai-chase-any (Ship goal)\r\n"
 		"\tCauses the specified ship to chase and attack any ship on the opposite team.\r\n\r\n"
 		"Takes 1 argument...\r\n"
-		"\t1:\tGoal priority (number between 0 and 89)." },
+		"\t1:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_GUARD_WING, "Ai-guard wing (Ship goal)\r\n"
 		"\tCauses the specified ship to guard a wing of ships from other ships not on the "
 		"same team.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of wing to guard.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_NOP, "Do-nothing (Action operator)\r\n"
 		"\tDoes nothing.  This is used as the default for any required action arguments "
