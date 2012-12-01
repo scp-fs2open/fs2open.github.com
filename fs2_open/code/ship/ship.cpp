@@ -9058,7 +9058,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		objp->hull_strength = 100.0f;
 	} else {
 		if (sp->special_hitpoints > 0) {
-			sp->ship_max_hull_strength = (float)sp->special_hitpoints > 0;
+			sp->ship_max_hull_strength = (float)sp->special_hitpoints;
 		} else {
 			sp->ship_max_hull_strength = sip->max_hull_strength;
 		}
