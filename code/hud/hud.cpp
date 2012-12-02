@@ -3606,7 +3606,7 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 		HUD_offset_y = 0.0f;
 	}
 
-	if ( Viewer_mode & VM_TOPDOWN ) {
+	if ( Viewer_mode & ( VM_TOPDOWN | VM_CHASE ) ) {
 		HUD_nose_x = 0;
 		HUD_nose_y = 0;
 	} else {

@@ -880,7 +880,6 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		DO_RENDER();
 	}
 */
-
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 }
 
@@ -1448,6 +1447,7 @@ void gr_opengl_render_stream_buffer(int offset, int n_verts, int flags)
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
 		GL_state.Array.EnableClientColor();
 		GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, sizeof(effect_vertex), ptr + color_offset);
+		GL_state.InvalidateColor();
 	} else {
 		// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 		GL_state.Array.DisableClientColor();

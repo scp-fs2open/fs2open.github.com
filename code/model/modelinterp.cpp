@@ -3329,6 +3329,8 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
+
+	gr_flush_data_states();
 }
 
 // Fills in an array with points from a model.

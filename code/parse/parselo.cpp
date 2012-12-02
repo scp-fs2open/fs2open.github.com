@@ -2557,7 +2557,7 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 
 	ignore_white_space();
 
-	char buf[NAME_LENGTH];
+	SCP_string buf;
 
 	while (*Mp != ')') {
 		if(*Mp != '\"') {
@@ -2565,8 +2565,9 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 		}
 		//Assert ( *Mp == '\"' );					// should always be enclosed in quotes
 
+		buf = "";
 		get_string( buf );
-		slp.push_back(SCP_string(buf));
+		slp.push_back( buf );
 		ignore_white_space();
 	}
 

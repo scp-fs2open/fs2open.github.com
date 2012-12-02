@@ -790,7 +790,7 @@ void gr_opengl_gradient(int x1, int y1, int x2, int y2, bool resize)
 
 	GL_state.Array.EnableClientColor();
 	GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, 0, colour);
-
+	GL_state.InvalidateColor();
 	glDrawArrays(GL_LINES, 0, 2);
 
 	GL_state.Array.DisableClientVertex();
@@ -1085,6 +1085,7 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 	if(flags & (TMAP_FLAG_NEBULA | TMAP_FLAG_GOURAUD)) {
 		GL_state.Array.EnableClientColor();
 		GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, 0, &vertCol[0].r);
+		GL_state.InvalidateColor();
 	}
 
 	glDrawArrays(gl_mode, 0, nv);
@@ -1248,6 +1249,7 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 	if (isRGB) {
 		GL_state.Array.EnableClientColor();
 		GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, 0, &colour.front());
+		GL_state.InvalidateColor();
 	}
 
 	GL_state.Array.EnableClientVertex();
@@ -1327,14 +1329,16 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 
 		if (flags & TMAP_FLAG_ALPHA) {
 			GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
+			GL_state.InvalidateColor();
 		} else {
 			GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 			GL_state.Array.ColorPointer(3, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
+			GL_state.InvalidateColor();
 		}
 	}
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	else {
-		GL_state.Color( (ubyte)r-1, (ubyte)g, (ubyte)b, (ubyte)alpha );
+		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	float offset_z = -0.99f;
@@ -1406,6 +1410,7 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
 		GL_state.Array.EnableClientColor();
 		GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
+		GL_state.InvalidateColor();
 	}
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	else {
@@ -1530,6 +1535,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
 		GL_state.Array.EnableClientColor();
 		GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
+		GL_state.InvalidateColor();
 	}
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	else {
@@ -2582,6 +2588,7 @@ void gr_opengl_update_distortion()
 
 	GL_state.Array.EnableClientColor();
 	GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, 0, &colours.front());
+	GL_state.InvalidateColor();
 		
 	glDrawArrays(GL_POINTS, 0, 33);
 			

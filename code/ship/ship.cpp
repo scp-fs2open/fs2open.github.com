@@ -61,6 +61,7 @@
 #include "ship/shipcontrails.h"
 #include "weapon/beam.h"
 #include "math/staticrand.h"
+#include "math/fvi.h"
 #include "missionui/missionshipchoice.h"
 #include "hud/hudartillery.h"
 #include "species_defs/species_defs.h"
@@ -6787,6 +6788,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	Assert(Objects[Ships[shipnum].objnum].flags & OF_SHOULD_BE_DEAD);
 
 	ship *shipp = &Ships[shipnum];
+	object *objp = &Objects[shipp->objnum];
 
 	// add the information to the exited ship list
 	if (cleanup_mode == SHIP_DESTROYED) {
@@ -6813,7 +6815,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if (cleanup_mode == SHIP_DEPARTED) {
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
-		CJumpNode *jnp = jumpnode_get_which_in(&Objects[shipp->objnum]);
+		CJumpNode *jnp = jumpnode_get_which_in(objp);
 		if(jnp==NULL)
 			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, NULL, shipp->wingnum);
 		else
@@ -6865,6 +6867,14 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		ai_ship_destroy(shipnum, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
 	}
 
+	// Goober5000 - lastly, clear out the dead-docked list, per Mantis #2294
+	// (for exploding ships, this list should have already been cleared by now, via
+	// do_dying_undock_physics, except in the case of the destroy-instantly sexp)
+	while (object_is_dead_docked(objp))
+	{
+		object *docked_objp = dock_get_first_dead_docked_object(objp);
+		dock_dead_undock_objects(objp, docked_objp);
+	}
 }
 
 /**
@@ -8708,8 +8718,17 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	show_ship_subsys_count();
 
 	if ( sip->num_detail_levels != pm->n_detail_levels )
-		Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
-	
+	{
+		if ( !Is_standalone )
+		{
+			// just log to file for standalone servers
+			Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+		}
+		else
+		{
+			nprintf(("Warning",  "For ship '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
+		}	
+	}		
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
@@ -8887,8 +8906,17 @@ void ship_model_change(int n, int ship_type)
 	ship_copy_subsystem_fixup(sip);
 
 	if ( sip->num_detail_levels != pm->n_detail_levels )
-		Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
-	
+	{
+		if ( !Is_standalone )
+		{
+			// just log to file for standalone servers
+			Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+		}
+		else
+		{
+			nprintf(("Warning",  "For ship '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
+		}
+	}	
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
@@ -9032,7 +9060,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		objp->hull_strength = 100.0f;
 	} else {
 		if (sp->special_hitpoints > 0) {
-			sp->ship_max_hull_strength = (float)sp->special_hitpoints > 0;
+			sp->ship_max_hull_strength = (float)sp->special_hitpoints;
 		} else {
 			sp->ship_max_hull_strength = sip->max_hull_strength;
 		}
@@ -9250,6 +9278,17 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		Objects[sp->objnum].phys_info.vel.xyz.z = Objects[sp->objnum].phys_info.speed;
 		Objects[sp->objnum].phys_info.prev_ramp_vel = Objects[sp->objnum].phys_info.vel;
 		Objects[sp->objnum].phys_info.desired_vel = Objects[sp->objnum].phys_info.vel;
+	}
+
+	// Goober5000 - if we're changing to a ship class that has a different default set of orders, update the orders
+	// (this avoids wiping the orders if we're e.g. changing between fighter classes)
+	if (Fred_running)
+	{
+		int old_defaults = ship_get_default_orders_accepted(sip_orig);
+		int new_defaults = ship_get_default_orders_accepted(sip);
+
+		if (old_defaults != new_defaults)
+			sp->orders_accepted = new_defaults;
 	}
 }
 
@@ -17431,3 +17470,32 @@ bool ship_has_sound(object *objp, GameSoundsIndex id)
 		return true;
 }
 
+/**
+ * Given a ship with bounding box and a point, find the closest point on the bbox
+ *
+ * @param ship_obj Object that has the bounding box (should be a ship)
+ * @param start World position of the point being compared
+ * @param box_pt OUTPUT PARAMETER: closest point on the bbox to start
+ *
+ * @return point is inside bbox, TRUE/1
+ * @return point is outside bbox, FALSE/0
+ */
+int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt)
+{
+	vec3d temp, rf_start;
+	polymodel *pm;
+	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+
+	// get start in ship rf
+	vm_vec_sub(&temp, start, &ship_obj->pos);
+	vm_vec_rotate(&rf_start, &temp, &ship_obj->orient);
+
+	// find box_pt
+	int inside = project_point_onto_bbox(&pm->mins, &pm->maxs, &rf_start, &temp);
+
+	// get box_pt in world rf
+	vm_vec_unrotate(box_pt, &temp, &ship_obj->orient);
+	vm_vec_add2(box_pt, &ship_obj->pos);
+
+	return inside;
+}

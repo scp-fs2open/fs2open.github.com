@@ -7028,7 +7028,7 @@ int allocate_subsys_status()
 // Goober5000
 int insert_subsys_status(p_object *pobjp)
 {
-	int i;
+	int i, new_index;
 
 	// this is not good; we have to allocate another slot, but then bump all the
 	// slots upward so that this particular parse object's subsystems are contiguous
@@ -7040,8 +7040,20 @@ int insert_subsys_status(p_object *pobjp)
 		memcpy(&Subsys_status[i], &Subsys_status[i-1], sizeof(subsys_status));
 	}
 
-	// return index for new element
-	return pobjp->subsys_index + pobjp->subsys_count;
+	// generate index for new element
+	new_index = pobjp->subsys_index + pobjp->subsys_count;
+	pobjp->subsys_count++;
+
+	// we also have to adjust all the indexes in existing parse objects
+	// (each p_object's subsys_index points to subsystem 0 in its list)
+	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
+	{
+		// bump up base index to accommodate inserted subsystem
+		if (ii->subsys_index >= new_index)
+			ii->subsys_index++;
+	}
+
+	return new_index;
 }
 
 // Goober5000

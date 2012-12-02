@@ -165,8 +165,8 @@ BEGIN
         POPUP "Save &Format"
         BEGIN
             MENUITEM "FS2 Open",                    33069, CHECKED
-            MENUITEM "FS2 Open (Compatibility)",    33092
             MENUITEM "FS2 Retail",                  33070
+            MENUITEM "Here Be Dragons",             33092
         END
         POPUP "&Import"
         BEGIN

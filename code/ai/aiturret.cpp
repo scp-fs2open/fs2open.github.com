@@ -1885,6 +1885,9 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	}
 
 	turret->flags |= SSF_HAS_FIRED; //set has fired flag for scriptng - nuke
+
+	//Fire animation stuff
+	model_anim_start_type(turret, TRIGGER_TYPE_TURRET_FIRED, ANIMATION_SUBTYPE_ALL, 1);
 	return true;
 }
 

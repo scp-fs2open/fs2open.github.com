@@ -4389,7 +4389,7 @@ ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index value of the 
 	return ade_set_args(L, "i", idx);
 }
 
-ADE_FUNC(isLaser, l_Weaponclass, NULL, "Return true if the weapon is a laser (this includes balistic primaries)", "boolean", "true if the weapon is a laser, false otherwise")
+ADE_FUNC(isLaser, l_Weaponclass, NULL, "Return true if the weapon is a primary weapon (this includes Beams). This function is deprecated, use isPrimary instead.", "boolean", "true if the weapon is a primary, false otherwise")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -4404,7 +4404,37 @@ ADE_FUNC(isLaser, l_Weaponclass, NULL, "Return true if the weapon is a laser (th
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(isMissile, l_Weaponclass, NULL, "Return true if the weapon is a missile", "boolean", "true if the weapon is a missile, false otherwise")
+ADE_FUNC(isMissile, l_Weaponclass, NULL, "Return true if the weapon is a secondary weapon. This function is deprecated, use isSecondary instead.", "boolean", "true if the weapon is a secondary, false otherwise")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return ADE_RETURN_FALSE;
+
+	if (Weapon_info[idx].subtype == WP_MISSILE)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isPrimary, l_Weaponclass, NULL, "Return true if the weapon is a primary weapon (this includes Beams)", "boolean", "true if the weapon is a primary, false otherwise")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return ADE_RETURN_FALSE;
+
+	if (Weapon_info[idx].subtype == WP_LASER)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isSecondary, l_Weaponclass, NULL, "Return true if the weapon is a secondary weapon", "boolean", "true if the weapon is a secondary, false otherwise")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -4428,7 +4458,7 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 	if(idx < 0 || idx >= Num_weapon_types)
 		return ADE_RETURN_FALSE;
 
-	if (Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].wi_flags & WIF_BEAM || Weapon_info[idx].subtype == WP_BEAM)
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -7815,8 +7845,12 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, 
 
 	ship *shipp = &Ships[objh->objp->instance];
 
-	if(ADE_SETTING_VAR && idx > -1)
+	if(ADE_SETTING_VAR && idx > -1) {
 		change_ship_type(objh->objp->instance, idx, 1);
+		if (shipp == Player_ship) {
+			set_current_hud();
+		}
+	}
 
 	if(shipp->ship_info_index < 0)
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));

@@ -179,6 +179,7 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 
 HudGaugeTargetBox::HudGaugeTargetBox():
 	HudGauge(HUD_OBJECT_TARGET_MONITOR, HUD_TARGET_MONITOR, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255), 
+	Monitor_mask(-1),
 	Use_subsys_name_offsets(false), 
 	Use_subsys_integrity_offsets(false),
 	Use_disabled_status_offsets(false)

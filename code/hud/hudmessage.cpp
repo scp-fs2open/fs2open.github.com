@@ -590,7 +590,7 @@ void hud_sourced_print(int source, char *msg)
 	}
 
 	// add message to the scrollback log first
-	hud_add_msg_to_scrollback(msg, source, timestamp());
+	hud_add_msg_to_scrollback(msg, source, Missiontime);
 
 	HUD_message_data new_msg;
 
@@ -632,7 +632,7 @@ void HUD_add_to_scrollback(char *text, int source)
 		return;
 	}
 
-	hud_add_msg_to_scrollback(text, source, timestamp());
+	hud_add_msg_to_scrollback(text, source, Missiontime);
 }
 
 // hud_add_msg_to_scrollback() adds the new_msg to the scroll-back message list.  If there
@@ -1163,7 +1163,7 @@ void hud_scrollback_do_frame(float frametime)
 	}
 
 	gr_set_color_fast(&Color_text_heading);
-	gr_print_timestamp(Hud_mission_log_time_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, (int) (f2fl(Missiontime) * 1000));
+	gr_print_timestamp(Hud_mission_log_time_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, Missiontime);
 	gr_string(Hud_mission_log_time2_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, XSTR( "Current time", 289));
 	gr_flip();
 }
