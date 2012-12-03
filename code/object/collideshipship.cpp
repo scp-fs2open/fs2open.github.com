@@ -679,11 +679,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		light_local_vel.xyz.z < light_sip->collision_physics.landing_max_z &&
 		light_local_vel.xyz.z > light_sip->collision_physics.landing_min_z &&
 		light_local_vel.xyz.y > light_sip->collision_physics.landing_min_y &&
-		abs(light_local_vel.xyz.x) < light_sip->collision_physics.landing_max_x &&
+		fl_abs(light_local_vel.xyz.x) < light_sip->collision_physics.landing_max_x &&
 		light_uvec_dot_norm > 0 &&
 		light_fvec_dot_norm < light_sip->collision_physics.landing_max_angle &&
 		light_fvec_dot_norm > light_sip->collision_physics.landing_min_angle &&
-		abs(light_rvec_dot_norm) < light_sip->collision_physics.landing_max_rot_angle)
+		fl_abs(light_rvec_dot_norm) < light_sip->collision_physics.landing_max_rot_angle)
 	{
 		ship_ship_hit_info->is_landing = true;
 	}
@@ -776,11 +776,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		light_local_vel.xyz.z < light_sip->collision_physics.reorient_max_z  &&
 		light_local_vel.xyz.z > light_sip->collision_physics.reorient_min_z &&
 		light_local_vel.xyz.y > light_sip->collision_physics.reorient_min_y &&
-		abs(light_local_vel.xyz.x) < light_sip->collision_physics.reorient_max_x &&
+		fl_abs(light_local_vel.xyz.x) < light_sip->collision_physics.reorient_max_x &&
 		light_uvec_dot_norm > 0 &&
 		light_fvec_dot_norm < light_sip->collision_physics.reorient_max_angle &&
 		light_fvec_dot_norm > light_sip->collision_physics.reorient_min_angle &&
-		abs(light_rvec_dot_norm) < light_sip->collision_physics.reorient_max_rot_angle) 
+		fl_abs(light_rvec_dot_norm) < light_sip->collision_physics.reorient_max_rot_angle) 
 	{
 		vec3d landing_delta_rotvel;
 		landing_delta_rotvel.xyz.x = (light_fvec_dot_norm * light_sip->collision_physics.reorient_mult) 

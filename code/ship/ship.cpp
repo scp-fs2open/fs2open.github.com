@@ -8974,31 +8974,36 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 
 	// Goober5000 - maintain the original hull, shield, and subsystem percentages... gah
+	// ...except when in FRED, because this stuff is handled in the missionparse/missionsave part. The E
 
-	// hull
-	if (sp->special_hitpoints) {
-		hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
+	if (!Fred_running) {
+		// hull
+		if (sp->special_hitpoints) {
+			hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
+		} else {
+			Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
+			hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
+		}
+
+		// extra check
+		Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
+		CLAMP(hull_pct, 0.1f, 1.0f);
+
+		// shield
+		if (sp->special_shield > 0) {
+			shield_pct = shield_get_strength(objp) / sp->ship_max_shield_strength;
+		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
+			shield_pct = shield_get_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
+		} else {
+			shield_pct = 0.0f;
+		}
+
+		// extra check
+		Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
+		CLAMP(shield_pct, 0.0f, 1.0f);
 	} else {
-		Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
-		hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
+		shield_pct = hull_pct = 1.0f;
 	}
-
-	// extra check
-	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
-    CLAMP(hull_pct, 0.1f, 1.0f);
-
-	// shield
-	if (sp->special_shield > 0) {
-		shield_pct = shield_get_strength(objp) / sp->ship_max_shield_strength;
-	} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
-		shield_pct = shield_get_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
-	} else {
-		shield_pct = 0.0f;
-	}
-
-	// extra check
-	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
-    CLAMP(shield_pct, 0.0f, 1.0f);
 
 	// subsystems
 	int num_saved_subsystems = 0;
