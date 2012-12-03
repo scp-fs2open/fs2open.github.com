@@ -2768,7 +2768,7 @@ void vm_vec_dist_squared_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest,
 //Scales the vector in-place so that the longest dimension = scale
 void vm_vec_boxscale(vec2d *vec, float scale)
 {
-	float ratio = 1.0f / MAX(abs(vec->x), abs(vec->y));
+	float ratio = 1.0f / MAX(fl_abs(vec->x), fl_abs(vec->y));
 	vec->x *= ratio;
 	vec->y *= ratio;
 }

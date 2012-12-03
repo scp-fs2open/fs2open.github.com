@@ -1493,8 +1493,9 @@ void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 	vm_matrix_to_rot_axis_and_angle(rotation, &ang, &axis);
 
 	glTranslatef( offset->xyz.x, offset->xyz.y, offset->xyz.z );
-	if (abs(ang) > 0.0f)
+	if (fl_abs(ang) > 0.0f) {
 		glRotatef( fl_degrees(ang), axis.xyz.x, axis.xyz.y, axis.xyz.z );
+	}
 
 	GL_CHECK_FOR_ERRORS("end of start_instance_matrix()");
 
