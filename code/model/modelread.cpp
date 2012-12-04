@@ -1724,6 +1724,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							cfread_vector( &(bay->pnt[j]), fp );
 							cfread_vector( &(bay->norm[j]), fp );
 						}
+						if(vm_vec_same(&bay->pnt[0], &bay->pnt[1])) {
+							Warning(LOCATION, "Model '%s' has two identical docking slot positions on docking port '%s'. This could result in erratic docking behaviour.", filename, bay->name);
+						}
 					}
 				}
 				break;
