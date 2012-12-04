@@ -445,7 +445,16 @@ cmdline_parm get_flags_arg("-get_flags", NULL);
 cmdline_parm output_sexp_arg("-output_sexps", NULL); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL);	//WMC
 
+// Deprecated flags - CommanderDJ
+cmdline_parm deprecated_spec_arg("-spec", NULL);
+cmdline_parm deprecated_glow_arg("-glow", NULL);
+cmdline_parm deprecated_normal_arg("-normal", NULL);
+cmdline_parm deprecated_env_arg("-env", NULL);
 
+int Cmdline_deprecated_spec = 0;
+int Cmdline_deprecated_glow = 0;
+int Cmdline_deprecated_normal = 0;
+int Cmdline_deprecated_env = 0;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -453,7 +462,6 @@ void cmdline_debug_print_cmdline()
 {
 	cmdline_parm *parmp;
 	int found = 0;
-
 	mprintf(("Passed cmdline options:"));
 
 	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
@@ -471,6 +479,27 @@ void cmdline_debug_print_cmdline()
 		mprintf(("\n  <none>"));
 
 	mprintf(("\n"));
+
+	//Print log messages about any deprecated flags we found - CommanderDJ
+	if(Cmdline_deprecated_spec == 1)
+	{
+		mprintf(("Deprecated flag '-spec' found. Please remove from your cmdline.\n"));
+	}
+
+	if(Cmdline_deprecated_glow == 1)
+	{
+		mprintf(("Deprecated flag '-glow' found. Please remove from your cmdline.\n"));
+	}
+
+	if(Cmdline_deprecated_normal == 1)
+	{
+		mprintf(("Deprecated flag '-normal' found. Please remove from your cmdline.\n"));
+	}
+
+	if(Cmdline_deprecated_env == 1)
+	{
+		mprintf(("Deprecated flag '-env' found. Please remove from your cmdline.\n"));
+	}
 }
 #endif
 
@@ -1474,6 +1503,27 @@ bool SetCmdlineParams()
 	if( reparse_mainhall_arg.found() )
 	{
 		Cmdline_reparse_mainhall = 1;
+	}
+
+	//Deprecated flags - CommanderDJ
+	if( deprecated_spec_arg.found() )
+	{
+		Cmdline_deprecated_spec = 1;
+	}
+
+	if( deprecated_glow_arg.found() )
+	{
+		Cmdline_deprecated_glow = 1;
+	}
+
+	if( deprecated_normal_arg.found() )
+	{
+		Cmdline_deprecated_normal = 1;
+	}
+
+	if( deprecated_env_arg.found() )
+	{
+		Cmdline_deprecated_env = 1;
 	}
 
 	return true; 
