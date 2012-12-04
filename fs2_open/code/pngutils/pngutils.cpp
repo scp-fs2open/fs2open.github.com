@@ -188,7 +188,7 @@ int png_read_bitmap(char *real_filename, ubyte *image_data, ubyte *bpp, int dest
 
 	png_set_read_fn(png_ptr, &png_file, png_scp_read_data);
 
-	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_EXPAND, NULL);
+	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_EXPAND | PNG_TRANSFORM_STRIP_16, NULL);
 	len = png_get_rowbytes(png_ptr, info_ptr);
 
 	row_pointers = png_get_rows(png_ptr, info_ptr);
