@@ -583,6 +583,12 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		if (!Glowpoint_override)
 			Glowpoint_override = true;
 
+		// set glowmap flag here since model_render (etc) require an objnum to handle glowmaps
+		// if we did pass the objnum, we'd also have thrusters drawn in the targetbox
+		if (target_shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+			flags |= MR_NO_GLOWMAPS;
+		}
+
 		// maybe render a special hud-target-only model
 		if(target_sip->model_num_hud >= 0){
 			model_render( target_sip->model_num_hud, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
