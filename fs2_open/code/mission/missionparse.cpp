@@ -1954,7 +1954,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if (sip->max_shield_strength * p_objp->ship_max_shield_strength_multiplier == 0.0f)
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 	// force shields on means we have them regardless of other flags; per r5332 this ranks above the next check
-	else if (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON))
+	else if (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON)
 		Objects[objnum].flags &= ~OF_NO_SHIELDS;
 	// intrinsic no-shields means we have them off in-game
 	else if (!Fred_running && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS))
@@ -3029,7 +3029,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// set custom shield value
-	if ((p_objp->special_shield != -1) && (Ship_info[p_objp->ship_class].max_shield_strength > 0.0f) {
+	if ((p_objp->special_shield != -1) && (Ship_info[p_objp->ship_class].max_shield_strength > 0.0f)) {
 		// the fact that we use a multiplier means we can't magically grant shields to ships which are tabled with 0 shields, unfortunately...
 		p_objp->ship_max_shield_strength_multiplier = (float) p_objp->special_shield / Ship_info[p_objp->ship_class].max_shield_strength;
 	} else {
