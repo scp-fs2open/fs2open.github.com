@@ -1724,14 +1724,28 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							cfread_vector( &(bay->pnt[j]), fp );
 							cfread_vector( &(bay->norm[j]), fp );
 						}
+
 						if(vm_vec_same(&bay->pnt[0], &bay->pnt[1])) {
-							Warning(LOCATION, "Model '%s' has two identical docking slot positions on docking port '%s'. This could result in erratic docking behaviour.", filename, bay->name);
+							Warning(LOCATION, "Model '%s' has two identical docking slot positions on docking port '%s'. This is not allowed.  A new second slot position will be generated.", filename, bay->name);
+
+							// just move the second point over by some amount
+							bay->pnt[1].xyz.z += 10.0f;
 						}
+
 						vec3d diff;
 						vm_vec_normalized_dir(&diff, &bay->pnt[0], &bay->pnt[1]);
 						float dot = vm_vec_dotprod(&diff, &bay->norm[0]);
 						if(fl_abs(dot) > 0.99f) {
-							Warning(LOCATION, "Model '%s', docking port '%s' has docking slot positions that lie on the same axis as the docking normal. This will cause a NULL VEC crash when docked to another ship.", filename, bay->name);
+							Warning(LOCATION, "Model '%s', docking port '%s' has docking slot positions that lie on the same axis as the docking normal.  This will cause a NULL VEC crash when docked to another ship.  A new docking normal will be generated.", filename, bay->name);
+
+							// generate a simple rotation matrix in all three dimensions (though bank is probably not needed)
+							angles a = { PI_2, PI_2, PI_2 };
+							matrix m;
+							vm_angles_2_matrix(&m, &a);
+
+							// rotate the docking normal
+							vec3d temp = bay->norm[0];
+							vm_vec_rotate(&bay->norm[0], &temp, &m);
 						}
 					}
 				}
