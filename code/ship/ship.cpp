@@ -9293,6 +9293,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		if (old_defaults != new_defaults)
 			sp->orders_accepted = new_defaults;
 	}
+
+	// The E - Deal with texture replacement, if by some miracle the original ship class and target ship class have the same model
+	if (Ship_info[sp_orig.ship_info_index].model_num == Ship_info[sp->ship_info_index].model_num) {
+		if (sp_orig.ship_replacement_textures != NULL) {
+			sp->ship_replacement_textures = sp_orig.ship_replacement_textures;
+		}
+	}	
 }
 
 #ifndef NDEBUG
