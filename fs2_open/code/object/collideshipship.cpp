@@ -236,8 +236,14 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 	SCP_vector<int> submodel_vector;
 	int valid_hit_occured = 0;
-	polymodel *pm;
+	polymodel *pm, *pm_light;
 	polymodel_instance *pmi;
+		
+	pm_light = model_get(Ship_info[light_shipp->ship_info_index].model_num);
+
+	if(pm_light->submodel[pm_light->detail[0]].no_collisions) {
+		return 0;
+	}
 
 	if (model_collide(&mc)) {
 
