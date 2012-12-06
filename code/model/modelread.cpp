@@ -4114,13 +4114,17 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 	bsp_info *child_submodel;
 	
 	child_submodel = &pm->submodel[pm->detail[0]];
+	
+	if(child_submodel->no_collisions) { // if detail0 has $no_collision set dont check childs
+		return;
+	}
 
 	int i = child_submodel->first_child;
 	while ( i >= 0 )	{
 		child_submodel = &pm->submodel[i];
 
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if ( !child_submodel->blown_off && (child_submodel->i_replace == -1) )	{
+		if ( !child_submodel->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
 
 			// Only look for submodels that rotate
 			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT) {
