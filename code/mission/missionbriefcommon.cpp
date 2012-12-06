@@ -270,8 +270,7 @@ typedef struct icon_move_info
 	float				last_dist;
 } icon_move_info;
 
-#define MAX_MOVE_ICONS	10
-icon_move_info	Icon_movers[MAX_MOVE_ICONS];
+icon_move_info	Icon_movers[MAX_BRIEF_ICONS];
 icon_move_info	Icon_move_list;	// head of linked list
 
 // fading out icons
@@ -438,7 +437,7 @@ void brief_move_icon_reset()
 	int i;
 
 	list_init(&Icon_move_list);
-	for ( i = 0; i < MAX_MOVE_ICONS; i++ )
+	for ( i = 0; i < MAX_BRIEF_ICONS; i++ )
 		Icon_movers[i].used = 0;
 }
 
@@ -1674,12 +1673,12 @@ int brief_get_free_move_icon()
 {
 	int i;
 
-	for ( i = 0; i < MAX_MOVE_ICONS; i++ ) {
+	for ( i = 0; i < MAX_BRIEF_ICONS; i++ ) {
 		if ( Icon_movers[i].used == 0 )
 			break;
 	}
 	
-	if ( i == MAX_MOVE_ICONS ) 
+	if ( i == MAX_BRIEF_ICONS ) 
 		return -1;
 
 	Icon_movers[i].used = 1;
@@ -1716,7 +1715,7 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 
 					k = brief_get_free_move_icon();				
 					if ( k == -1 ) {
-						Int3();	// should never happen, get Alan
+						Warning(LOCATION, "Too many briefing icons are moving simultaneously!");
 						return 0;
 					}
 					imi = &Icon_movers[k];
