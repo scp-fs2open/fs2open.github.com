@@ -773,18 +773,19 @@ void brief_render_fade_outs(float frametime)
 			}
 
 			bm_get_info( fi->fade_anim.first_frame, &w, &h, NULL);
+			float screenX = tv.screen.xyw.x;
+			float screenY = tv.screen.xyw.y;
+			gr_unsize_screen_posf( &screenX, &screenY );
 
-			gr_resize_screen_pos( &w, &h );
-
-			bxf = tv.screen.xyw.x - w / 2.0f + 0.5f;
-			byf = tv.screen.xyw.y - h / 2.0f + 0.5f;
+			bxf = screenX - w / 2.0f + 0.5f;
+			byf = screenY - h / 2.0f + 0.5f;
 			bx = fl2i(bxf);
 			by = fl2i(byf);
 
 			if ( fi->fade_anim.first_frame >= 0 ) {
 				fi->fade_anim.sx = bx;
 				fi->fade_anim.sy = by;
-				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, false);
+				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, true);
 			}
 		}
 	}
