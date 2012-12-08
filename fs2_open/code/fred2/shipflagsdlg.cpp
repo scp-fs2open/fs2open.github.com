@@ -419,7 +419,20 @@ void ship_flags_dlg::update_ship(int shipnum)
 	object *objp = &Objects[shipp->objnum];
 
 	if (m_reinforcement.GetCheck() != 2)
-		set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());
+	{
+		//Check if we're trying to add more and we've got too many.
+		if( (Num_reinforcements >= MAX_REINFORCEMENTS) && (m_reinforcement.GetCheck() == 1))
+		{
+			char error_message[256];
+			sprintf(error_message, "Too many reinforcements; could not add ship '%s' to reinforcement list!", shipp->ship_name); 
+			MessageBox(error_message);
+		}
+		//Otherwise, just update as normal.
+		else
+		{
+			set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());	
+		}
+	}
 
 	switch (m_cargo_known.GetCheck()) {
 		case 1:
