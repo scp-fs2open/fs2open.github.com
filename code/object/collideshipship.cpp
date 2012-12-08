@@ -72,7 +72,9 @@ int ships_are_docking(object *objp1, object *objp2)
 		if (aip1->goal_objnum == OBJ_INDEX(objp2)){
 			return 1;
 		}
-	} else if (aip2->mode == AIM_DOCK) {
+	}
+
+	if (aip2->mode == AIM_DOCK) {
 		if (aip2->goal_objnum == OBJ_INDEX(objp1)){
 			return 1;
 		}
