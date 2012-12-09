@@ -465,6 +465,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$no warp camera:", AIPF2_NO_WARP_CAMERA, AIP_FLAG2);
 
+			set_flag(profile, "$fix ai path order bug:", AIPF2_FIX_AI_PATH_ORDER_BUG, AIP_FLAG2);
+
 			// ----------
 
 			// compatibility

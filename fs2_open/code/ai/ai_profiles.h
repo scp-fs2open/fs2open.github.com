@@ -64,6 +64,7 @@
 #define AIPF2_NO_WARP_CAMERA										(1 << 10)
 #define AIPF2_ASPECT_LOCK_COUNTERMEASURE							(1 << 11)
 #define AIPF2_AI_GUARDS_SPECIFIC_SHIP_IN_WING						(1 << 12)
+#define AIPF2_FIX_AI_PATH_ORDER_BUG									(1 << 13)
 
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0
