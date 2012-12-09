@@ -28356,58 +28356,83 @@ sexp_help_struct Sexp_help[] = {
 		"\t3:\t(optional) A seed to use when generating numbers. (Setting this to 0 is the same as having no seed at all)" },
 
 	// -------------------------- Nav Points --- Kazan -------------------------- 
-	{ OP_NAV_IS_VISITED, "Takes 1 argument: The Nav Point Name\r\n"
-		"Returns whether that nav point has been visited (player within 1000 meters)" },
+	{ OP_NAV_IS_VISITED, "is-nav-visited\r\n"
+		"Returns true when the player has visited the given navpoint (Has closed to within 1000m of it). Takes 1 argument...\r\n"
+		"\t1:\tThe name of the navpoint" },
 
-	{ OP_NAV_DISTANCE, "Takes 1 argument: The Nav point Name\r\n"
-		"Returns the distance from the player ship to that nav point" },
+	{ OP_NAV_DISTANCE, "distance-to-nav\r\n"
+		"Returns the distance from the player ship to that nav point. Takes 1 argument..."
+		"\t1:\tThe name of the navpoint" },
 
-	{ OP_NAV_ADD_WAYPOINT, "Takes 3 Arguments: NavPoint Name, Waypoint Path Name, Waypoint Path Point #\r\n"
+	{ OP_NAV_ADD_WAYPOINT, "add-nav-waypoint\r\n"
+		"Takes 3 Arguments: NavPoint Name, Waypoint Path Name, Waypoint Path Point #\r\n"
 		"IE Setting up 'Nav 1' to be on the first Waypoint on Wapoint Path 'Intercept' the arguments would be:\r\n"
 		"'Nav 1', 'Intercept', '1'" },
 
-	{ OP_NAV_ADD_SHIP, "Takes 2 Arguments: NavPoint Name, Ship Name\r\n"
-		"Binds the named navpoint to the named ship - when the ship moves, the waypoint moves with it\r\n" },
+	{ OP_NAV_ADD_SHIP, "add-nav-ship\r\n"
+		"Binds the named navpoint to the named ship - when the ship moves, the waypoint moves with it. Takes 2 Arguments...\r\n"
+		"\t1:\tThe NavPoint's Name\r\n"
+		"\t2:\tThe Ship's Name\r\n" },
 
-	{ OP_NAV_DEL, "Takes 1 Argument: NavPoint Name, and deletes that NavPoint" },
+	{ OP_NAV_DEL, "del-nav\r\n"
+		"Deletes a nav point. Takes 1 Argument...\r\n"
+		"\t1:\tNavPoint Name" },
 
-	{ OP_NAV_HIDE, "Takes 1 Argument: NavPoint Name, it then 'hides' that Nav Point\n\r"
-		"This causes the nav point to be unselectable, if in the future the Nav Map screen is implemented\r\n" 
-		"then a hidden nav point will not be displayed on it\r\n" },
+	{ OP_NAV_HIDE, "hide-nav\r\n"
+		"Hides a nav point. Takes 1 Argument...\r\n"
+		"\t1:\tNavPoint Name, it then 'hides' that Nav Point\r\n" },
 
-	{ OP_NAV_RESTRICT, "Takes 1 Argument: NavPoint Name, it then 'restricts' that Nav Point\n\r"
-		"This causes the nav point to be unselectable, if in the future the Nav Map screen is implemented\r\n" 
-		"then a restrict nav point will be displayed on it, but unselectable\r\n"  },
+	{ OP_NAV_RESTRICT, "restrict-nav\r\n"
+		"This causes the nav point to be unselectable. Takes 1 Argument...\r\n"
+		"\t1:\tThe Navpoint name\r\n" },
 
-	{ OP_NAV_UNHIDE, "Takes 1 Argument: NavPoint Name, it then unhides it\r\n" },
+	{ OP_NAV_UNHIDE, "unhide-nav\r\n"
+		"Restores a hidden navpoint. Takes 1 Argument...\r\n"
+		"\t1:\tThe Navpoint Name\r\n" },
 
-	{ OP_NAV_UNRESTRICT, "Takes 1 Argument: NavPoint Name, it then unrestricts it\r\n" },
+	{ OP_NAV_UNRESTRICT, "unrestrict-nav\r\n"
+		"Removes restrictions from a Navpoint. Takes 1 Argument...\r\n"	
+		"\t1:\tThe Navpoint Name\r\n" },
 
-	{ OP_NAV_SET_VISITED, "Takes 1 Argument: NavPoint Name, it then sets its visited flag\r\n" },
+	{ OP_NAV_SET_VISITED, "set-nav-visited\r\n"
+		"Sets the status of the given Navpoint to \"visited\". Takes 1 Argument...\r\n"
+		"\t1:\tThe Navpoint Name\r\n" },
 
-	{ OP_NAV_UNSET_VISITED, "Takes 1 Argument: NavPoint Name, it then unsets its visited flag\r\n" },
+	{ OP_NAV_UNSET_VISITED, "unset-nav-visited\r\n"
+		"Removes the \"visited\" status from a Navpoint. Takes 1 Argument...\r\n"	
+		"\t1:\tThe Navpoint Name\r\n" },
 
-	{ OP_NAV_SET_CARRY, "Takes at least 1 argument, but can take as many as you give it.\r\n"
-		"It takes ship and/or wing names as sets their Nav Carry flag -- a ship with the nav carry flag\r\n" 
-		"will autopilot with the player\r\n" },
+	{ OP_NAV_SET_CARRY, "nav-set-carry\r\n"
+		"Sets the Nav Carry flag for all listed ships. Vessels with this flag will follow the player into and out of autopilot.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\tShips and Wings that should receive the Nav Carry flag.\r\n" },
 
-	{ OP_NAV_UNSET_CARRY, "Takes atleast 1 argument, but can take as many as you give it.\r\n"
-		"It takes ship and/or wing names and unsets their Nav Carry flag\r\n" },
+	{ OP_NAV_UNSET_CARRY, "unset-nav-carry\r\n"
+		"Removes the Nav Carry flag from all listed ships and wings. Takes 1 or more arguments...\r\n"
+		"\t1:\tShips and Wings to remove the Nav Carry flag from\r\n" },
 
-	{ OP_NAV_SET_NEEDSLINK, "Takes atleast 1 argument, but can take as many as you give it.\r\n" 
-		"It takes ships and marks them as needing AutoNav linkup (approach within link distance)"},
+	{ OP_NAV_SET_NEEDSLINK, "set-nav-needslink\r\n"
+		"Marks all listed ships as needing to link up before entering autopilot.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\tShips to mark\r\n" },
 
-	{ OP_NAV_UNSET_NEEDSLINK, "Takes atleast 1 argument, but can take as many as you give it.\r\n" 
-	    "It takes ships and unmarks them as needing AutoNav linkup"},
+	{ OP_NAV_UNSET_NEEDSLINK, "unset-nav-needslink\r\n"
+		"Removes the requirement for the listed ships to link up before entering autopilot.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\tShips to mark\r\n" },
 
-	{ OP_NAV_ISLINKED, "Takes 1 argument.\r\n"
-		"Determines if a ship is linked for autopilot (\"set-nav-carry\" or \"set-nav-needslink\" + linked)"},
+	{ OP_NAV_ISLINKED, "is-nav-linked\r\n"
+		"Determines if a ship is linked for autopilot (\"set-nav-carry\" or \"set-nav-needslink\" + linked)"
+		"Takes 1 argument...\r\n"
+		"\t1:\tShip to check\r\n"},
 
-	{ OP_NAV_USECINEMATICS, "Takes 1 boolean argument.\r\n"
-		"Set to true to enable automatic cinematics, set to false to disable automatic cinematics." },
+	{ OP_NAV_USECINEMATICS, "use-nav-cinematics\r\n"
+		"Controls the use of the cinematic autopilot camera. Takes 1 Argument..."
+		"\t1:\tSet to true to enable automatic cinematics, set to false to disable automatic cinematics." },
 
-	{ OP_NAV_USEAP, "Takes 1 boolean argument.\r\n"
-		"Set to true to enable autopilot, set to false to disable autopilot." },
+	{ OP_NAV_USEAP, "use-autopilot\r\n"
+		"Takes 1 boolean argument.\r\n"
+		"\t1:\tSet to true to enable autopilot, set to false to disable autopilot." },
 
 	{ OP_NAV_SELECT, "nav-select (Action operator)\r\n"
 		"\tSelects a nav point.\r\n\r\n"
