@@ -28365,9 +28365,11 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe name of the navpoint" },
 
 	{ OP_NAV_ADD_WAYPOINT, "add-nav-waypoint\r\n"
-		"Takes 3 Arguments: NavPoint Name, Waypoint Path Name, Waypoint Path Point #\r\n"
-		"IE Setting up 'Nav 1' to be on the first Waypoint on Wapoint Path 'Intercept' the arguments would be:\r\n"
-		"'Nav 1', 'Intercept', '1'" },
+		"Adds a Navpoint to a navpoint path. Takes 3 or 4 Arguments...\r\n"
+		"\t1:\tName of the new navpoint.\r\n"
+		"\t2:\tName of the navpoint path the new navpoint should be added to.\r\n"
+		"\t3:\tPosition where the new navpoint will be inserted. Note: This is 1-indexed, so the first waypoint in a path has position 1.\r\n"
+		"\t4:\t(Optional Argument) Controls the visibility of the new navpoint. Only entities belonging to the chosen category will be able to see it.\r\n" },
 
 	{ OP_NAV_ADD_SHIP, "add-nav-ship\r\n"
 		"Binds the named navpoint to the named ship - when the ship moves, the waypoint moves with it. Takes 2 Arguments...\r\n"
