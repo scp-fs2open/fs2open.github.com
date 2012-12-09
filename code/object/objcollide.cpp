@@ -42,7 +42,7 @@ obj_pair pair_used_list;
 obj_pair pair_free_list;
 
 SCP_vector<int> Collision_sort_list;
-SCP_hash_map<uint, collider_pair> Collision_cached_pairs;
+SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
 struct checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];
@@ -1039,7 +1039,7 @@ int collide_remove_weapons( )
 			opp = opp->next;
 		}
 	} else {
-		SCP_hash_map<uint, collider_pair>::iterator it;
+		SCP_unordered_map<uint, collider_pair>::iterator it;
 		collider_pair *pair_obj;
 
 		for ( it = Collision_cached_pairs.begin(); it != Collision_cached_pairs.end(); ++it ) {
@@ -1180,7 +1180,7 @@ void obj_reset_colliders()
 
 void obj_collide_retime_cached_pairs(int checkdly)
 {
-	SCP_hash_map<uint, collider_pair>::iterator it;
+	SCP_unordered_map<uint, collider_pair>::iterator it;
 
 	for ( it = Collision_cached_pairs.begin(); it != Collision_cached_pairs.end(); ++it ) {
 		it->second.next_check_time = timestamp(checkdly);

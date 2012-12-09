@@ -68,8 +68,6 @@ int GL_vertex_data_in = 0;
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
 
-int Buffer_sdr = -1;
-
 team_color* Current_team_color;
 team_color Current_temp_color;
 bool Using_Team_Color = false;
@@ -418,7 +416,6 @@ void gr_opengl_set_buffer(int idx)
 
 		if ( (Use_GLSL > 1) && !GLSL_override ) {
 			opengl_shader_set_current();
-			Buffer_sdr = -1;
 		}
 
 		return;
@@ -583,6 +580,8 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 
 extern bool Scene_framebuffer_in_frame;
 extern GLuint Framebuffer_fallback_texture_id;
+extern int Interp_thrust_scale_subobj;
+extern float Interp_thrust_scale;
 static void opengl_render_pipeline_program(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
 {
 	float u_scale, v_scale;
@@ -650,6 +649,10 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		}
 	}
 
+	if ( Interp_thrust_scale_subobj ) {
+		shader_flags |= SDR_FLAG_THRUSTER;
+	}
+
 	// find proper shader
 	if (shader_flags == GL_last_shader_flags) {
 		sdr_index = GL_last_shader_index;
@@ -667,10 +670,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 
 	Assert( sdr_index >= 0 );
 
-	if ( sdr_index != Buffer_sdr ) {
-		Buffer_sdr = sdr_index;
-		opengl_shader_set_current( &GL_shader[sdr_index] );
-	}
+	opengl_shader_set_current( &GL_shader[sdr_index] );
 
 	opengl_default_light_settings( !GL_center_alpha, (Interp_light > 0.25f) );
 	gr_opengl_set_center_alpha(GL_center_alpha);
@@ -798,6 +798,10 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	if (shader_flags & SDR_FLAG_TEAMCOLOR) {
 		vglUniform3fARB( opengl_shader_get_uniform("stripe_color"), Current_team_color->stripe.r,  Current_team_color->stripe.g,  Current_team_color->stripe.b);
 		vglUniform3fARB( opengl_shader_get_uniform("base_color"), Current_team_color->base.r, Current_team_color->base.g, Current_team_color->base.b);
+	}
+
+	if (shader_flags & SDR_FLAG_THRUSTER) {
+		vglUniform1fARB( opengl_shader_get_uniform("thruster_scale"), Interp_thrust_scale);
 	}
 
 	// DRAW IT!!

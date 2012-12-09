@@ -11464,6 +11464,14 @@ int ai_formation()
 	}
 	
 	if (aip->mode == AIM_WAYPOINTS) {
+
+		if (The_mission.ai_profile->flags2 & AIPF2_FIX_AI_PATH_ORDER_BUG){
+			// skip if wing leader has no waypoint order or a different waypoint list
+			if ((laip->mode != AIM_WAYPOINTS) || !(aip->wp_list == laip->wp_list)){
+				return 1;
+			}
+		}
+
 		aip->wp_list = laip->wp_list;
 		aip->wp_index = laip->wp_index;
 		aip->wp_flags = laip->wp_flags;

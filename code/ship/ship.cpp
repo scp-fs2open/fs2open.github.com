@@ -5742,7 +5742,6 @@ void ship_render(object * obj)
 	ship *shipp = &Ships[num];
 	ship *warp_shipp = NULL;
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
-	bool reset_proj_when_done = false;
 	bool is_first_stage_arrival = false;
 	bool show_thrusters = (shipp->flags2 & SF2_NO_THRUSTERS) == 0;
 	dock_function_info dfi;
@@ -5798,20 +5797,9 @@ void ship_render(object * obj)
 			}
 		}		
 
-		if (!(sip->flags2 & SIF2_SHOW_SHIP_MODEL) && !(Viewer_mode & VM_TOPDOWN))
+		if (!(Viewer_mode & VM_TOPDOWN))
 		{
 			return;
-		}
-
-		//For in-ship cockpits. This is admittedly something of a hack
-		if (!Cmdline_nohtl) {
-			reset_proj_when_done = true;
-
-			gr_end_view_matrix();
-			gr_end_proj_matrix();
-
-			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Eye_matrix);
 		}
 	}
 
@@ -6267,14 +6255,6 @@ void ship_render(object * obj)
 			}
 		}
 	#endif
-
-		if (!Cmdline_nohtl && reset_proj_when_done) {
-			gr_end_view_matrix();
-			gr_end_proj_matrix();
-
-			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Eye_matrix);
-		}
 	}
 
 	//WMC - Draw animated warp effect (ie BSG thingy)
@@ -6309,16 +6289,15 @@ void ship_render_cockpit(object *objp)
 
 	matrix eye_ori = vmd_identity_matrix;
 	vec3d eye_pos = vmd_zero_vector;
-	ship_get_eye(&eye_pos, &eye_ori, objp, false);
+	ship_get_eye(&eye_pos, &eye_ori, objp, false, true);
 
 	vec3d pos = vmd_zero_vector;
 
 	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
-	vm_vec_add2(&pos, &eye_pos);
 	if (!Cmdline_nohtl)
 	{
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f*pm->rad);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		gr_set_view_matrix(&vmd_zero_vector, &Eye_matrix);
 	}
 
 	//Zbuffer
@@ -6340,6 +6319,28 @@ void ship_render_cockpit(object *objp)
 	}
 
 	hud_save_restore_camera_data(0);
+}
+
+void ship_render_show_ship_cockpit(object *objp)
+{
+	vec3d cockpit_eye_pos;
+	matrix dummy;
+	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, true); //Get cockpit eye position
+	
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
+	gr_set_view_matrix(&cockpit_eye_pos, &Eye_matrix); // Set Camera to cockpit eye position
+	
+	Glowpoint_override = true; // Turn off glowpoints so they dont get rendered fixed at origin
+	model_set_detail_level(0);
+	model_render(Ship_info[Ships[objp->instance].ship_info_index].model_num, &objp->orient, &vmd_zero_vector, MR_NORMAL | MR_LOCK_DETAIL, OBJ_INDEX(objp)); // Render ship model with fixed detail level 0 so its not switching LOD when moving away from origin
+	Glowpoint_override = false;
+
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix); // Reset Camera to normal
 }
 
 void ship_init_cockpit_displays(ship *shipp)
@@ -12091,7 +12092,7 @@ void ship_set_eye( object *obj, int eye_index)
 // the vector of the eye is returned in the parameter 'eye'.  The orientation of the
 // eye is returned in orient.  (NOTE: this is kind of bogus for now since non 0th element
 // eyes have no defined up vector)
-void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew )
+void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew , bool from_origin)
 {
 	ship *shipp = &Ships[obj->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
@@ -12106,7 +12107,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
 	// element.
 	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
-	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, &obj->orient, &obj->pos );
+	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
 	*eye_orient = obj->orient;
 
 	//	Modify the orientation based on head orientation.
