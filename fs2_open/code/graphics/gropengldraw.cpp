@@ -1195,6 +1195,8 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 		}
 	}
 
+	opengl_shader_set_current();
+
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
 
 	if (flags & TMAP_FLAG_TRILIST) {

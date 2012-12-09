@@ -113,8 +113,8 @@ static uint Interp_tmap_flags = 0;
 bool Interp_desaturate = false;
 
 // If non-zero, then the subobject gets scaled by Interp_thrust_scale.
-static int Interp_thrust_scale_subobj = 0;
-static float Interp_thrust_scale = 0.1f;
+int Interp_thrust_scale_subobj = 0;
+float Interp_thrust_scale = 0.1f;
 static float Interp_thrust_scale_x = 0.0f;//added -bobboau
 static float Interp_thrust_scale_y = 0.0f;//added -bobboau
 
@@ -4602,7 +4602,9 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		forced_blend_filter = GR_ALPHABLEND_FILTER;
 	}
 
-	gr_push_scale_matrix(&scale);
+	if (!Interp_thrust_scale_subobj) {
+		gr_push_scale_matrix(&scale);
+	}
 
 	size_t buffer_size = model->buffer.tex_buf.size();
 
