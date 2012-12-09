@@ -316,8 +316,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 						model_instance_find_world_point(&ship_ship_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_num, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
 					}
 				}
-				// Don't look at this submodel again
-				pmi->submodel[*smv].collision_checked = true;
 			}
 
 		}
