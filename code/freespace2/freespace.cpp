@@ -3670,7 +3670,7 @@ void game_render_frame( camid cid )
 	if(draw_viewer_last && Viewer_obj)
 	{
 		gr_post_process_save_zbuffer();
-		ship_render(Viewer_obj);
+		ship_render_show_ship_cockpit(Viewer_obj);
 	}
 
 
