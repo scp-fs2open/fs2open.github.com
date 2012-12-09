@@ -163,7 +163,9 @@ void debris_render(object * obj)
 	Assert(db->flags & DEBRIS_USED);
 
 	texture_info *tbase = NULL;
-
+	
+	model_clear_instance( db->model_num );
+	
 	// Swap in a different texture depending on the species
 	if (db->species >= 0)
 	{
@@ -176,8 +178,6 @@ void debris_render(object * obj)
 			tbase->SetTexture(Species_info[db->species].debris_texture.bitmap_id);
 		}
 	}
-
-	model_clear_instance( db->model_num );
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
