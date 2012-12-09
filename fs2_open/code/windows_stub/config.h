@@ -277,7 +277,7 @@ void strlwr(char *s);
 char *strnset( char *string, int fill, size_t count);
 
 // other stuff
-#define _isnan(f)     isnan(f)
+#define _isnan(f)     std::isnan(f)
 #define _hypot(x, y)  hypot(x, y)
 
 int MulDiv(int number, int numerator, int denominator);
