@@ -72,7 +72,9 @@ int ships_are_docking(object *objp1, object *objp2)
 		if (aip1->goal_objnum == OBJ_INDEX(objp2)){
 			return 1;
 		}
-	} else if (aip2->mode == AIM_DOCK) {
+	}
+
+	if (aip2->mode == AIM_DOCK) {
 		if (aip2->goal_objnum == OBJ_INDEX(objp1)){
 			return 1;
 		}
@@ -236,8 +238,14 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 	SCP_vector<int> submodel_vector;
 	int valid_hit_occured = 0;
-	polymodel *pm;
+	polymodel *pm, *pm_light;
 	polymodel_instance *pmi;
+		
+	pm_light = model_get(Ship_info[light_shipp->ship_info_index].model_num);
+
+	if(pm_light->submodel[pm_light->detail[0]].no_collisions) {
+		return 0;
+	}
 
 	if (model_collide(&mc)) {
 

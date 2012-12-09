@@ -16035,7 +16035,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 	// ...and shields
 	if (Ship_info[source_shipp->ship_info_index].max_shield_strength == 0.0f)
 	{
-		// this is okay because a ship can have no shields
+		// [see above comment] this is okay because a ship can have no shields
 		target_pobjp->ship_max_shield_strength_multiplier = 1.0f;
 	}
 	else

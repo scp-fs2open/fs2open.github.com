@@ -701,7 +701,28 @@ int wing_editor::update_data(int redraw)
 			Update_window = 1;
 		}
 
-		if (set_reinforcement(str, m_reinforcement) == 1) {
+		//Check if we're trying to add more and we've got too many.
+		if( (Num_reinforcements >= MAX_REINFORCEMENTS) && (m_reinforcement == 1))
+		{
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+
+			char error_message[256];
+			sprintf(error_message, "Too many reinforcements; could not add wing '%s' to reinforcement list!", str); 
+			MessageBox(error_message, "Error", MB_ICONEXCLAMATION | MB_OK);
+
+			//clear the flag
+			m_reinforcement = 0;
+			UpdateData(FALSE);
+
+			return -1;
+
+		}
+		//Otherwise, just update as normal.
+		else if (set_reinforcement(str, m_reinforcement) == 1) 
+		{
 			free_sexp2(Wings[cur_wing].arrival_cue);
 			Wings[cur_wing].arrival_cue = Locked_sexp_false;
 		}

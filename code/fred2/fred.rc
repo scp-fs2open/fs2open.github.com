@@ -2095,8 +2095,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,6,17,9352
- PRODUCTVERSION 3,6,17,9352
+ FILEVERSION 3,6,17,9409
+ PRODUCTVERSION 3,6,17,9409
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -2113,7 +2113,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Volition Inc."
             VALUE "FileDescription", "Fred 2 Open - Antipodes"
-            VALUE "FileVersion", "3.6.17.9352"
+            VALUE "FileVersion", "3.6.17.9409"
             VALUE "InternalName", "Fred 2 Open - Antipodes"
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fred2.exe"

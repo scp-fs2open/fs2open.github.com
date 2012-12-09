@@ -3201,6 +3201,26 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 
 	//set to true since D3d and OGL need the api matrices set
 	g3_start_instance_matrix(pos, orient, true);
+	bool set_autocen = false;
+	vec3d auto_back = ZERO_VECTOR;
+	if (Interp_flags & MR_AUTOCENTER) {
+		// standard autocenter using data in model
+		if (pm->flags & PM_FLAG_AUTOCEN) {
+			auto_back = pm->autocenter;
+			vm_vec_scale(&auto_back, -1.0f);
+			set_autocen = true;
+		}
+		// fake autocenter if we are a missile and don't already have autocen info
+		else if (Interp_flags & MR_IS_MISSILE) {
+            auto_back.xyz.x = -( (pm->submodel[pm->detail[Interp_detail_level]].max.xyz.x + pm->submodel[pm->detail[Interp_detail_level]].min.xyz.x) / 2.0f );
+            auto_back.xyz.y = -( (pm->submodel[pm->detail[Interp_detail_level]].max.xyz.y + pm->submodel[pm->detail[Interp_detail_level]].min.xyz.y) / 2.0f );
+			auto_back.xyz.z = -( (pm->submodel[pm->detail[Interp_detail_level]].max.xyz.z + pm->submodel[pm->detail[Interp_detail_level]].min.xyz.z) / 2.0f );
+			set_autocen = true;
+		}
+
+		if (set_autocen)
+			g3_start_instance_matrix(&auto_back, NULL, true);
+	}
 
 	if (is_outlines_only_htl) {
 		gr_set_fill_mode( GR_FILL_MODE_WIRE );
@@ -3322,7 +3342,8 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_filter_pop();	
 	}
-
+	if (set_autocen)
+		g3_done_instance(true);
 	g3_done_instance(true);
 
 	// turn off fog after each model renders, RT This fixes HUD being fogged when debris is in target box

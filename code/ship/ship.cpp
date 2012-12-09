@@ -8954,7 +8954,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip;
 	ship_info	*sip_orig;
 	ship			*sp;
-	ship		sp_orig;
 	ship_weapon *swp;
 	ship_subsys *ss;
 	object		*objp;
@@ -8964,13 +8963,21 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
-	sp_orig = Ships[n];
 	sip = &(Ship_info[ship_type]);
 	swp = &sp->weapons;
 	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
 	p_objp = mission_parse_get_parse_object(sp->ship_name);
 	ph_inf = objp->phys_info;
+
+
+	// Goober5000 - we can't copy the ship object because the tree of structs contains at least
+	// one class without a copy constructor.  So let's just save the information we need.
+
+	// these are wiped by ets_init_ship
+	int orig_wep_rechg_idx = sp->weapon_recharge_index;
+	int orig_shd_rechg_idx = sp->shield_recharge_index;
+	int orig_eng_rechg_idx = sp->engine_recharge_index;
 
 
 	// Goober5000 - maintain the original hull, shield, and subsystem percentages... gah
@@ -9272,9 +9279,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 
 		// While we're at it, let's copy over the ETS settings too
-		sp->weapon_recharge_index = sp_orig.weapon_recharge_index;
-		sp->shield_recharge_index = sp_orig.shield_recharge_index;
-		sp->engine_recharge_index = sp_orig.engine_recharge_index;
+		sp->weapon_recharge_index = orig_wep_rechg_idx;
+		sp->shield_recharge_index = orig_shd_rechg_idx;
+		sp->engine_recharge_index = orig_eng_rechg_idx;
 	}
 
 	// zookeeper - If we're switching in the loadout screen, make sure we retain initial velocity set in FRED
@@ -9294,6 +9301,31 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		if (old_defaults != new_defaults)
 			sp->orders_accepted = new_defaults;
+	}
+
+	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
+	if (sp->ship_replacement_textures != NULL)
+	{
+		// clear them out because the new positions may be different
+		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+			sp->ship_replacement_textures[i] = -1;
+
+		// now fill them in according to texture name
+		for (i = 0; i < p_objp->num_texture_replacements; i++)
+		{
+			int j;
+			polymodel *pm = model_get(sip->model_num);
+
+			// look for textures
+			for (j = 0; j < pm->n_textures; j++)
+			{
+				texture_map *tmap = &pm->maps[j];
+
+				int tnum = tmap->FindTexture(p_objp->replacement_textures[i].old_texture);
+				if(tnum > -1)
+					sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = p_objp->replacement_textures[i].new_texture_id;
+			}
+		}
 	}
 }
 

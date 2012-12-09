@@ -1816,9 +1816,8 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
-	// Goober5000
-	shipp->ship_max_shield_strength = Ship_info[shipp->ship_info_index].max_shield_strength * p_objp->ship_max_shield_strength_multiplier;
-	shipp->ship_max_hull_strength =  Ship_info[shipp->ship_info_index].max_hull_strength * p_objp->ship_max_hull_strength_multiplier;
+	shipp->ship_max_shield_strength = sip->max_shield_strength * p_objp->ship_max_shield_strength_multiplier;
+	shipp->ship_max_hull_strength =  sip->max_hull_strength * p_objp->ship_max_hull_strength_multiplier;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -1948,10 +1947,18 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// other flag checks
 ////////////////////////
-	if (p_objp->ship_max_shield_strength_multiplier == 0.0f || (!Fred_running && !(p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)))
+
+	// forcing the shields on or off depending on flags -- but only if shield strength supports it
+
+	// no strength means we can't have shields, period
+	if (sip->max_shield_strength * p_objp->ship_max_shield_strength_multiplier == 0.0f)
 		Objects[objnum].flags |= OF_NO_SHIELDS;
-	else if ((p_objp->ship_max_shield_strength_multiplier > 0.0f) && (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON))
+	// force shields on means we have them regardless of other flags; per r5332 this ranks above the next check
+	else if (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON)
 		Objects[objnum].flags &= ~OF_NO_SHIELDS;
+	// intrinsic no-shields means we have them off in-game
+	else if (!Fred_running && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS))
+		Objects[objnum].flags |= OF_NO_SHIELDS;
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
 	// game only before the game or during respawning.
@@ -2405,7 +2412,10 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags & P_SF_REINFORCEMENT)
 		shipp->flags |= SF_REINFORCEMENT;
 
-	Assert(!((parse_flags & P_OF_NO_SHIELDS) && (parse_flags2 & P2_OF_FORCE_SHIELDS_ON)));
+	if ((parse_flags & P_OF_NO_SHIELDS) && (parse_flags2 & P2_OF_FORCE_SHIELDS_ON))
+	{
+		Warning(LOCATION, "The parser found a ship with both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent!");
+	}
 	if (parse_flags & P_OF_NO_SHIELDS)
 		objp->flags |= OF_NO_SHIELDS;
 
@@ -3018,18 +3028,15 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		fix_old_special_hits(p_objp, variable_index);
 	}
 
-	// set max hitpoint and shield values		
-	if (p_objp->special_shield != -1) {
-		if (Ship_info[p_objp->ship_class].max_shield_strength > 0.0f) {
-			p_objp->ship_max_shield_strength_multiplier = (float) p_objp->special_shield / Ship_info[p_objp->ship_class].max_shield_strength;
-		} else {
-			p_objp->ship_max_shield_strength_multiplier = 0.0f;
-		}
-	}
-	else {
+	// set custom shield value
+	if ((p_objp->special_shield != -1) && (Ship_info[p_objp->ship_class].max_shield_strength > 0.0f)) {
+		// the fact that we use a multiplier means we can't magically grant shields to ships which are tabled with 0 shields, unfortunately...
+		p_objp->ship_max_shield_strength_multiplier = (float) p_objp->special_shield / Ship_info[p_objp->ship_class].max_shield_strength;
+	} else {
 		p_objp->ship_max_shield_strength_multiplier = 1.0f;
 	}
-		
+	
+	// set custom hitpoint value
 	if (p_objp->special_hitpoints > 0) {
 		p_objp->ship_max_hull_strength_multiplier = (float) p_objp->special_hitpoints / Ship_info[p_objp->ship_class].max_hull_strength; 
 	}

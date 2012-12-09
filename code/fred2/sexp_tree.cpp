@@ -3888,7 +3888,11 @@ void sexp_tree::update_help(HTREEITEM h)
 		return;
 	}
 
-	if (SEXPT_TYPE(tree_nodes[i].type) != SEXPT_OPERATOR)
+	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR)
+	{
+		mini_help_box->SetWindowText("");
+	}
+	else
 	{
 		z = tree_nodes[i].parent;
 		if (z < 0) {
@@ -3935,6 +3939,14 @@ void sexp_tree::update_help(HTREEITEM h)
 				{
 					sprintf(searchstr, "%d:", sibling_place);
 					loc = strstr(helpstr, searchstr);
+				}
+				if(loc == NULL)
+				{
+					loc = strstr(helpstr, "Rest:");
+				}
+				if(loc == NULL)
+				{
+					loc = strstr(helpstr, "All:");
 				}
 
 				if(loc != NULL)
