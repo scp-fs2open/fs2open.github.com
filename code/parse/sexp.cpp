@@ -18292,12 +18292,13 @@ void add_nav_waypoint(char *nav, char *WP_path, int vert, char *oswpt_name)
 				if (oswpt.team == Player_ship->team) {
 					add_for_this_player = true; 
 				}
+				break;
 
 			case OSWPT_TYPE_SHIP:
 				if (oswpt.shipp == Player_ship) {
 					add_for_this_player = true; 
 				}
-
+				break;
 			case OSWPT_TYPE_WING:
 				for ( i = 0; i < oswpt.wingp->current_count; i++) {
 					if (Ships[oswpt.wingp->ship_index[i]].objnum == Player_ship->objnum) {
@@ -18305,15 +18306,14 @@ void add_nav_waypoint(char *nav, char *WP_path, int vert, char *oswpt_name)
 					}
 				}
 
-			// for all other oswpt types we simply return
+
+			// for all other oswpt types we simply ignore this
 			default:
-				return;
+				break;
 		}
 	}
-
-	if (add_for_this_player) {		
-		AddNav_Waypoint(nav, WP_path, vert, 0);
-	}
+	
+	AddNav_Waypoint(nav, WP_path, vert, add_for_this_player ? 0 : NP_HIDDEN);
 }
 
 
@@ -26405,7 +26405,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum==2)
 				return OPF_POSITIVE;
 			else 
-				return OPF_SHIP_WING_POINT;
+				return OPF_SHIP_WING_TEAM;
 
 		case OP_NAV_ADD_SHIP:		//kazan
 			if (argnum==0)
