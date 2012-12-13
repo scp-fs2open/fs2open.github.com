@@ -2015,10 +2015,24 @@ void labviewer_change_ship_lod(Tree* caller)
 	// useful tool for checking model errors.
 	if (Lab_viewer_flags & LAB_FLAG_FULLY_LOAD)
 	{
+		// Goober5000 - The lab loads subsystems into its special lab-specific vector, but normally subsystems are loaded into the Ship_info
+		// entry.  Note also that models are only loaded once each.  If a lab model was previously loaded using the "lightweight" method,
+		// ship_create will not find any of the subsystems it is looking for.  So we have to make sure the model is only loaded for the purposes
+		// of error-checking and then immediately cleared so that it can be subsequently loaded the lab way.
+
+		// reset any existing model/bitmap that is showing
+		labviewer_change_model(NULL);
+		labviewer_change_bitmap();
+
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 		int test_idx = ship_create(&vmd_identity_matrix, &vmd_zero_vector, ship_index);
 		obj_delete(test_idx);
 		obj_snd_level_close();
+
+		// unload the model we just loaded
+		model_page_out_textures(Ship_info[ship_index].model_num, true);
+		model_unload(Ship_info[ship_index].model_num);
+		Ship_info[ship_index].model_num = -1;
 	}
 
 	Lab_last_selected_ship = Lab_selected_index;
