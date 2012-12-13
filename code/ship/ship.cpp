@@ -12990,6 +12990,9 @@ void ship_close()
 		}
 	}
 
+	// free this too! -- Goober5000
+	ship_clear_subsystems();
+
 	// free memory alloced for subsystem storage
 	for ( i = 0; i < Num_ship_classes; i++ ) {
 		if ( Ship_info[i].subsystems != NULL ) {
