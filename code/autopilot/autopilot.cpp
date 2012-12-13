@@ -1447,7 +1447,7 @@ bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
 	// Create the NavPoint struct
 	NavPoint tnav;
 
-	strncpy(tnav.m_NavName, Nav, 32);
+	strncpy(tnav.m_NavName, Nav, TOKEN_LENGTH);
 	tnav.flags = NP_WAYPOINT | flags;
 
 	Assert(!(tnav.flags & NP_SHIP));

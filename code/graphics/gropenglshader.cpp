@@ -106,8 +106,8 @@ void opengl_shader_set_current(opengl_shader_t *shader_obj)
 					}
 				}
 			}
-		}
 #endif
+		}
 	} else {
 		Current_shader = NULL;
 		vglUseProgramObjectARB(0);
