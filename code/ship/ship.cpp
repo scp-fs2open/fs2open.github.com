@@ -12988,6 +12988,14 @@ void ship_close()
 			vm_free(shipp->ship_replacement_textures);
 			shipp->ship_replacement_textures = NULL;
 		}
+
+		if(shipp->warpin_effect != NULL)
+			delete shipp->warpin_effect;
+		shipp->warpin_effect = NULL;
+
+		if(shipp->warpout_effect != NULL)
+			delete shipp->warpout_effect;
+		shipp->warpout_effect = NULL;
 	}
 
 	// free this too! -- Goober5000
