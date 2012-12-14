@@ -31466,7 +31466,9 @@ sexp_help_struct Sexp_help[] = {
 	
 	{ OP_CUTSCENES_SET_CAMERA_HOST, "set-camera-host\r\n"
 		"\tSets the object and subystem camera should view from. Camera position is offset from the host. "
-		"Camera orientation is also offset from host, unless a valid camera target is set."
+		"If the selected subsystem or one of its children has an eyepoint bound to it it will be used for the camera position and orientation."
+		"If the selected subsystem is a turret and has no eyepoint the camera will be at the first firing point and look along the firing direction."
+		"If a valid camera target is set the direction to the target will override any other orientation."
 		"Takes 1 to 2 arguments...\r\n"
 		"\t1:\tShip to mount camera on\r\n"
 		"\t(optional)\r\n"
