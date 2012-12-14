@@ -1093,6 +1093,8 @@ void mission_eval_goals()
 	if (Game_mode & GM_STANDALONE_SERVER){
 		std_multi_update_goals();
 	}
+	
+	Log_event = false;
 }
 
 //	evaluate_primary_goals() will determine if the primary goals for a mission are complete
