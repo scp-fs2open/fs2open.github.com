@@ -4721,8 +4721,7 @@ int sexp_num_ships_in_battle(int n)
 		sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
 
 	    switch (oswpt1.type){
-			// Should use OSWPT_TYPE_TEAM but can't in order to keep compatibility with the existing SEXP
- 		    case OSWPT_TYPE_NONE:
+ 		    case OSWPT_TYPE_TEAM:
 			  team = iff_lookup(CTEXT(n));
 			  if (team >= 0) {
 				  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
@@ -23363,7 +23362,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_NUM_SHIPS_IN_BATTLE:	// phreak
-				sexp_val=sexp_num_ships_in_battle(node);
+				sexp_val = sexp_num_ships_in_battle(node);
 				break;
 
 			// Karajorma
