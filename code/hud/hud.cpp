@@ -1086,6 +1086,8 @@ void HudGauge::initialize()
 	//Reset text to default
 	custom_text = default_text;
 
+	custom_frame_offset = 0;
+
 	sexp_lock_color = false;
 }
 
