@@ -1808,7 +1808,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				// so we need to get the position info separately for each shot
 				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, turret_fvec, 1, NULL);
 
-				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1);
+				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1, 0,0.0f, turret);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
 			
 
@@ -1927,7 +1927,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	vm_vector_2_matrix(&turret_orient, &turret_fvec, NULL, NULL);
 
 	// create weapon and homing info
-	weapon_objnum = weapon_create(&turret_pos, &turret_orient, tsi->weapon_class, tsi->parent_objnum, -1, 1);
+	weapon_objnum = weapon_create(&turret_pos, &turret_orient, tsi->weapon_class, tsi->parent_objnum, -1, 1, 0, 0.0f, tsi->turret);
 	weapon_set_tracking_info(weapon_objnum, tsi->parent_objnum, tsi->target_objnum, 1, tsi->target_subsys);
 
 	// do other cool stuff if weapon is created.

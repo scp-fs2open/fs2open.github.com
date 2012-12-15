@@ -4870,9 +4870,13 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
-inline size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* shipp) {
+inline size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* shipp, ship_subsys * src_turret) {
 	Assert( shipp != NULL );
 	ship_weapon* ship_weapon_p = &(shipp->weapons);
+	if(src_turret)
+	{
+		ship_weapon_p = &src_turret->weapons;
+	}
 	Assert( ship_weapon_p != NULL );
 
 	// search for the corresponding bank pattern index for the weapon_type that is being fired.
@@ -4897,7 +4901,7 @@ inline size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* s
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned, float fof_cooldown)
+int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned, float fof_cooldown, ship_subsys * src_turret)
 {
 	int			n, objnum;
 	int num_deleted;
@@ -4931,7 +4935,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		ship* parent_shipp = &(Ships[parent_objp->instance]);
 		Assert( parent_shipp != NULL );
 
-		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp);
+		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
 		*position = ++(*position) % wip->weapon_substitution_pattern.size();
