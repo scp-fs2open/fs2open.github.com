@@ -411,6 +411,7 @@ void parse_gamesnd_new(game_snd* gs)
 
 	if (optional_string("+3D Sound:"))
 	{
+		gs->flags |= GAME_SND_USE_DS3D;
 		required_string("+Attenuation start:");
 		
 		stuff_int(&gs->min);
