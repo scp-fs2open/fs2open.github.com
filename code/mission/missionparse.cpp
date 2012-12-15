@@ -6311,7 +6311,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			return 0;
 		}
 		Objects[objnum].pos = pos;
-		Objects[objnum].orient.vec.fvec = fvec;
+		vm_vector_2_matrix(&Objects[objnum].orient, &fvec, NULL, NULL);
 	} else {
 
 		// AL: ensure dist > 0 (otherwise get errors in vecmat)
