@@ -2087,18 +2087,34 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 		return;
 	}
 
-	// see if we have something besides "none" selected
 	ptr->GetWindowText(cstr);
-	if(cstr == CString("<none>")){
-		// zero the entry
-		strcpy_s(Fred_alt_names[base_ship], "");
-		return;
-	}	
+	cstr.Trim();
 	p = cstr.GetBuffer(0);
 	if(p == NULL){
 		return;
 	}
 	strcpy_s(str, p);
+
+	// do we have an empty string or "none" selected?
+	if(!*str || !stricmp(str, "<none>")) {
+		// if we currently have an entry, remove it -- but only if it's unused
+		if (*Fred_alt_names[base_ship]) {
+			bool used = false;
+			for (int i = 0; i < MAX_SHIPS; ++i) {
+				if (i != base_ship && !strcmp(Fred_alt_names[i], Fred_alt_names[base_ship])) {
+					used = true;
+					break;
+				}
+			}
+			if (!used) {
+				mission_parse_remove_alt(Fred_alt_names[base_ship]);
+			}
+
+			// zero the entry
+			strcpy_s(Fred_alt_names[base_ship], "");
+		}
+		return;
+	}
 
 	// otherwise see if it already exists
 	if(mission_parse_lookup_alt(str) >= 0){
@@ -2170,18 +2186,34 @@ void CShipEditorDlg::ship_callsign_close(int base_ship)
 		return;
 	}
 
-	// see if we have something besides "none" selected
 	ptr->GetWindowText(cstr);
-	if(cstr == CString("<none>")){
-		// zero the entry
-		strcpy_s(Fred_callsigns[base_ship], "");
-		return;
-	}	
+	cstr.Trim();
 	p = cstr.GetBuffer(0);
 	if(p == NULL){
 		return;
 	}
 	strcpy_s(str, p);
+
+	// do we have an empty string or "none" selected?
+	if(!*str || !stricmp(str, "<none>")) {
+		// if we currently have an entry, remove it -- but only if it's unused
+		if (*Fred_callsigns[base_ship]) {
+			bool used = false;
+			for (int i = 0; i < MAX_SHIPS; ++i) {
+				if (i != base_ship && !strcmp(Fred_callsigns[i], Fred_callsigns[base_ship])) {
+					used = true;
+					break;
+				}
+			}
+			if (!used) {
+				mission_parse_remove_callsign(Fred_callsigns[base_ship]);
+			}
+
+			// zero the entry
+			strcpy_s(Fred_callsigns[base_ship], "");
+		}
+		return;
+	}
 
 	// otherwise see if it already exists
 	if(mission_parse_lookup_callsign(str) >= 0){
