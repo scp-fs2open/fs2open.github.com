@@ -75,9 +75,13 @@ void CShipTexturesDlg::OnOK()
 			// make sure we have a texture
 			if (strlen(new_texture_name[i]))
 			{
-				// try loading it (bmpman should take care of eventually unloading them)
+				// allow invisible textures without doing a file check
+				if (!stricmp(new_texture_name[i], "invisible"))
+					continue;
+
+				// try loading the texture (bmpman should take care of eventually unloading it)
 				temp_bmp = bm_load( new_texture_name[i] );
-	
+
 				// if PCX not found, look for ANI
 				if (temp_bmp < 0)
 				{					
