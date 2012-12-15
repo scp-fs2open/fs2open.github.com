@@ -48,7 +48,7 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	// 6/3/98 -- don't set observer to update high...let it be whatever player set it at.
 	//Net_players[player_num].p_info.options.obj_update_level = OBJ_UPDATE_HIGH;
 	// set up the net_player structure
-	memset(pl, 0, sizeof(player));
+	pl->reset();
 	stuff_netplayer_info( &Net_players[player_num], addr, 0, pl );
 	Net_players[player_num].last_heard_time = timer_get_fixed_seconds();
 	Net_players[player_num].reliable_socket = INVALID_SOCKET;
