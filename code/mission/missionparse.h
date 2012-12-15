@@ -720,15 +720,17 @@ int mission_remove_scheduled_repair( object *objp );
 void mission_parse_support_arrived( int objnum );
 
 // alternate name stuff
-int mission_parse_lookup_alt(char *name);
+int mission_parse_lookup_alt(const char *name);
 void mission_parse_lookup_alt_index(int index, char *out);
-int mission_parse_add_alt(char *name);
+int mission_parse_add_alt(const char *name);
+void mission_parse_remove_alt(const char *name);
 void mission_parse_reset_alt();
 
 // callsign stuff
-int mission_parse_lookup_callsign(char *name);
+int mission_parse_lookup_callsign(const char *name);
 void mission_parse_lookup_callsign_index(int index, char *out);
-int mission_parse_add_callsign(char *name);
+int mission_parse_add_callsign(const char *name);
+void mission_parse_remove_callsign(const char *name);
 void mission_parse_reset_callsign();
 
 // is training mission

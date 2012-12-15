@@ -7510,20 +7510,19 @@ int mission_remove_scheduled_repair( object *objp )
 /**
  * Alternate name stuff
  */
-int mission_parse_lookup_alt(char *name)
+int mission_parse_lookup_alt(const char *name)
 {
 	int idx;
 
 	// sanity
-	if(name == NULL){
+	if(name == NULL)
 		return -1;
-	}
 
 	// lookup
-	for(idx=0; idx<Mission_alt_type_count; idx++){
-		if(!strcmp(Mission_alt_types[idx], name)){
+	for(idx=0; idx<Mission_alt_type_count; idx++)
+	{
+		if(!strcmp(Mission_alt_types[idx], name))
 			return idx;
-		}
 	}
 
 	// could not find
@@ -7534,11 +7533,13 @@ static int mission_parse_lookup_alt_index_warn = 1;
 void mission_parse_lookup_alt_index(int index, char *out)
 {
 	// sanity
-	if(out == NULL){
+	if(out == NULL)
 		return;
-	}
-	if((index < 0) || (index >= Mission_alt_type_count)){
-		if (mission_parse_lookup_alt_index_warn) {
+
+	if((index < 0) || (index >= Mission_alt_type_count))
+	{
+		if (mission_parse_lookup_alt_index_warn)
+		{
 			Warning(LOCATION, "Ship with invalid alt_name.  Get a programmer");
 			mission_parse_lookup_alt_index_warn = 0;
 		}
@@ -7549,23 +7550,44 @@ void mission_parse_lookup_alt_index(int index, char *out)
 	strcpy(out, Mission_alt_types[index]);
 }
 
-int mission_parse_add_alt(char *name)
+int mission_parse_add_alt(const char *name)
 {
 	// sanity
-	if(name == NULL){
+	if(name == NULL)
 		return -1;
-	}
 
 	// maybe add
-	if(Mission_alt_type_count < MAX_ALT_TYPE_NAMES){
+	if(Mission_alt_type_count < MAX_ALT_TYPE_NAMES)
+	{
 		// stuff the name
-		strncpy(Mission_alt_types[Mission_alt_type_count++], name, NAME_LENGTH);
+		strcpy_s(Mission_alt_types[Mission_alt_type_count++], name);
 
 		// done
 		return Mission_alt_type_count - 1;
 	}
 
 	return -1;
+}
+
+void mission_parse_remove_alt(const char *name)
+{
+	// sanity
+	if(name == NULL)
+		return;
+
+	// maybe remove
+	for (int i = 0; i < Mission_alt_type_count; ++i)
+	{
+		if (!strcmp(Mission_alt_types[i], name))
+		{
+			// remove this name by overwriting it with the last name
+			if (i < Mission_alt_type_count - 1)
+				strcpy_s(Mission_alt_types[i], Mission_alt_types[Mission_alt_type_count - 1]);
+
+			Mission_alt_type_count--;
+			break;
+		}
+	}
 }
 
 void mission_parse_reset_alt()
@@ -7576,20 +7598,19 @@ void mission_parse_reset_alt()
 /**
  * Callsign stuff
  */
-int mission_parse_lookup_callsign(char *name)
+int mission_parse_lookup_callsign(const char *name)
 {
 	int idx;
 
 	// sanity
-	if(name == NULL){
+	if(name == NULL)
 		return -1;
-	}
 
 	// lookup
-	for(idx=0; idx<Mission_callsign_count; idx++){
-		if(!strcmp(Mission_callsigns[idx], name)){
+	for(idx=0; idx<Mission_callsign_count; idx++)
+	{
+		if(!strcmp(Mission_callsigns[idx], name))
 			return idx;
-		}
 	}
 
 	// could not find
@@ -7600,11 +7621,13 @@ static int mission_parse_lookup_callsign_index_warn = 1;
 void mission_parse_lookup_callsign_index(int index, char *out)
 {
 	// sanity
-	if(out == NULL){
+	if(out == NULL)
 		return;
-	}
-	if((index < 0) || (index >= Mission_callsign_count)){
-		if (mission_parse_lookup_callsign_index_warn) {
+
+	if((index < 0) || (index >= Mission_callsign_count))
+	{
+		if (mission_parse_lookup_callsign_index_warn)
+		{
 			Warning(LOCATION, "Ship with invalid callsign.  Get a programmer");
 			mission_parse_lookup_callsign_index_warn = 0;
 		}
@@ -7615,23 +7638,44 @@ void mission_parse_lookup_callsign_index(int index, char *out)
 	strcpy(out, Mission_callsigns[index]);
 }
 
-int mission_parse_add_callsign(char *name)
+int mission_parse_add_callsign(const char *name)
 {
 	// sanity
-	if(name == NULL){
+	if(name == NULL)
 		return -1;
-	}
 
 	// maybe add
-	if(Mission_callsign_count < MAX_CALLSIGNS){
+	if(Mission_callsign_count < MAX_CALLSIGNS)
+	{
 		// stuff the name
-		strncpy(Mission_callsigns[Mission_callsign_count++], name, NAME_LENGTH);
+		strcpy_s(Mission_callsigns[Mission_callsign_count++], name);
 
 		// done
 		return Mission_callsign_count - 1;
 	}
 
 	return -1;
+}
+
+void mission_parse_remove_callsign(const char *name)
+{
+	// sanity
+	if(name == NULL)
+		return;
+
+	// maybe remove
+	for (int i = 0; i < Mission_callsign_count; ++i)
+	{
+		if (!strcmp(Mission_callsigns[i], name))
+		{
+			// remove this callsign by overwriting it with the last callsign
+			if (i < Mission_callsign_count - 1)
+				strcpy_s(Mission_callsigns[i], Mission_callsigns[Mission_callsign_count - 1]);
+
+			Mission_callsign_count--;
+			break;
+		}
+	}
 }
 
 void mission_parse_reset_callsign()

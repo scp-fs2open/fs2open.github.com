@@ -1075,14 +1075,18 @@ void wss_maybe_restore_loadout()
 	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
 	// than there were last time, we can't restore and must abort.
 	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
-		this_loadout_ships[i] += Ss_pool[i];
+		if (Ss_pool[i] >= 1) {
+			this_loadout_ships[i] += Ss_pool[i];
+		}
 		if ( this_loadout_ships[i] < last_loadout_ships[i]) {
 			return; 
 		}
 	}
 	
 	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
-		this_loadout_weapons[i] += Wl_pool[i];
+		if (Wl_pool[i] >= 1) {
+			this_loadout_weapons[i] += Wl_pool[i];
+		}
 		if ( this_loadout_weapons[i] < last_loadout_weapons[i]) {
 			return; 
 		}

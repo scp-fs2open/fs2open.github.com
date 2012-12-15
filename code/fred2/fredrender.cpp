@@ -79,7 +79,7 @@ int	Editing_mode = 1;
 int	Control_mode = 0;
 int	last_x=0, last_y=0;
 int	Show_grid = 1;
-int	Show_outlines = 1;
+int	Show_outlines = 0;
 int	Show_stars = 1;
 int	Show_grid_positions = 1;
 int	Show_coordinates = 0;

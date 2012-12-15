@@ -168,6 +168,9 @@ camid cam_get_camera(uint index);
 camid cam_get_current();
 uint cam_get_num();
 
+void get_turret_cam_pos(camera *cam, vec3d *pos);
+void get_turret_cam_orient(camera *cam, matrix *ori);
+
 void subtitles_close();
 void subtitles_do_frame(float frametime);
 void subtitles_do_frame_post_shaded(float frametime);
