@@ -10295,6 +10295,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							// of weapon_create							
 							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id, 
 								0, 0, swp->primary_bank_fof_cooldown[bank_to_fire] );
+							winfo_p = &Weapon_info[Weapons[Objects[weapon_objnum].instance].weapon_info_index];
 							has_fired = true;
 
 							weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
@@ -11030,6 +11031,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+			weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
 			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
 			has_fired = true;
 

@@ -1814,6 +1814,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 				objp=&Objects[weapon_objnum];
 				wp=&Weapons[objp->instance];
+				wip=&Weapon_info[wp->weapon_info_index];
 
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
