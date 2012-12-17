@@ -3189,8 +3189,18 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			}
 
 			// load the texture
-			p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load_either(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+			if (!stricmp(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, "invisible"))
+			{
+				// invisible is a special case
+				p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = REPLACE_WITH_INVISIBLE;
+			}
+			else
+			{
+				// try to load texture or anim as normal
+				p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load_either(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+			}
 
+			// not found?
 			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
 			{
 				mprintf(("Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name));

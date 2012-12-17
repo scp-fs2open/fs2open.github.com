@@ -4622,10 +4622,15 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		}
 		else if ( !no_texturing ) {
 			// pick the texture, animating it if necessary
-			if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
+			if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE] == REPLACE_WITH_INVISIBLE) ) {
+				// invisible textures aren't rendered, but we still have to skip assigning the underlying model texture
+				texture = -1;
+			} else if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
+				// an underlying texture is replaced with a real new texture
 				tex_replace[TM_BASE_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE]);
 				texture = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], Interp_base_frametime);
 			} else {
+				// we just use the underlying texture
 				texture = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], Interp_base_frametime);
 			}
 
