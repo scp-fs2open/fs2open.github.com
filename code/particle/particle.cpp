@@ -75,14 +75,12 @@ void particle_init()
 // only call from game_shutdown()!!!
 void particle_close()
 {
-	while (!Particles.empty())
-	{		
-		particle* part = Particles.back();
-		part->signature = 0;
-		delete part;
-
-		Particles.pop_back();
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p)
+	{
+		(*p)->signature = 0;
+		delete *p;
 	}
+	Particles.clear();
 }
 
 void particle_page_in()
@@ -252,7 +250,8 @@ void particle_move_all(float frametime)
 	if ( Particles.empty() )
 		return;
 
-	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ) {	
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); )
+	{	
 		particle* part = *p;
 		if (part->age == 0.0f) {
 			part->age = 0.00001f;
@@ -260,39 +259,45 @@ void particle_move_all(float frametime)
 			part->age += frametime;
 		}
 
-		// if it's time expired, remove it
+		bool remove_particle = false;
+
+		// if its time expired, remove it
 		if (part->age > part->max_life) {
 			// special case, if max_life is 0 then we want it to render at least once
 			if ( (part->age > frametime) || (part->max_life > 0.0f) ) {
-				part->signature = 0;
-				delete *p;
-				*p = NULL;
-
-				*p = Particles.back();
-				Particles.pop_back();
-				continue;
+				remove_particle = true;
 			}
 		}
 
 		// if the particle is attached to an object which has become invalid, kill it
 		if (part->attached_objnum >= 0) {
 			// if the signature has changed, or it's bogus, kill it
-			if ( (part->attached_objnum >= MAX_OBJECTS)
-				|| (part->attached_sig != Objects[part->attached_objnum].signature) )
-			{
-				part->signature = 0;
-				delete *p;
-				*p = NULL;
+			if ( (part->attached_objnum >= MAX_OBJECTS) || (part->attached_sig != Objects[part->attached_objnum].signature) ) {
+				remove_particle = true;
+			}
+		}
 
+		if (remove_particle)
+		{
+			part->signature = 0;
+			delete part;
+
+			// if we're sitting on the very last particle, popping-back will invalidate the iterator!
+			if (p + 1 == Particles.end())
+			{
+				Particles.pop_back();
+				break;
+			}
+			else
+			{
 				*p = Particles.back();
 				Particles.pop_back();
 				continue;
 			}
 		}
+
 		// move as a regular particle
-		else {
-			vm_vec_scale_add2( &part->pos, &part->velocity, frametime );
-		}
+		vm_vec_scale_add2( &part->pos, &part->velocity, frametime );
 
 		// next particle
 		++p;
@@ -306,13 +311,12 @@ void particle_kill_all()
 	Num_particles = 0;
 	Num_particles_hwm = 0;
 
-	while (!Particles.empty())
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p)
 	{
-		particle* part = Particles.back();
-		part->signature = 0;
-		delete part;
-		Particles.pop_back();
+		(*p)->signature = 0;
+		delete *p;
 	}
+	Particles.clear();
 }
 
 MONITOR( NumParticlesRend )
