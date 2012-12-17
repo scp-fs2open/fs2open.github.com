@@ -2223,12 +2223,14 @@ void stuff_float(float *f)
 	diag_printf("Stuffed float: %f\n", *f);
 }
 
-int stuff_float_optional(float *f)
+int stuff_float_optional(float *f, bool raw)
 {
 	int skip_len;
 	bool comma = false;
 	
-	ignore_white_space();
+	if (!raw)
+		ignore_white_space();
+
 	skip_len = strspn(Mp, "+-0123456789.");
 	if(*(Mp+skip_len) == ',') {
 		comma = true;
@@ -2265,9 +2267,35 @@ void stuff_int(int *i)
 	diag_printf("Stuffed int: %i\n", *i);
 }
 
+int stuff_int_optional(int *i, bool raw)
+{
+	int skip_len;
+	bool comma = false;
+	
+	if (!raw)
+		ignore_white_space();
+
+	skip_len = strspn(Mp, "+-0123456789");
+	if(*(Mp+skip_len) == ',') {
+		comma = true;
+	}
+	
+	if(skip_len == 0)
+	{
+		if(comma) {
+			Mp++;
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+
+	stuff_int(i);
+	return 2;
+}
+
 int stuff_int_or_variable (int &i, bool positive_value = false);
 int stuff_int_or_variable (int *ilp, int count, bool positive_value = false);
-
 
 // Stuffs an int value or the value of a number variable. Returns the index of the variable or NOT_SET_BY_SEXP_VARIABLE.
 int stuff_int_or_variable (int &i, bool positive_value)
