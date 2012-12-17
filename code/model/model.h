@@ -660,6 +660,9 @@ public:
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
 
+// Goober5000 - since we need something < 0
+#define REPLACE_WITH_INVISIBLE	-47
+
 //used to describe a polygon model
 typedef struct polymodel {
 	int			id;				// what the polygon model number is.  (Index in Polygon_models)
