@@ -23,7 +23,7 @@
 #endif
 
 int Num_particles = 0;
-static SCP_list<particle*> Particles;
+static SCP_vector<particle*> Particles;
 
 int Anim_bitmap_id_fire = -1;
 int Anim_num_frames_fire = -1;
@@ -75,10 +75,14 @@ void particle_init()
 // only call from game_shutdown()!!!
 void particle_close()
 {
-	for (SCP_list<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {		
-		delete *p;
+	while (!Particles.empty())
+	{		
+		particle* part = Particles.back();
+		part->signature = 0;
+		delete part;
+
+		Particles.pop_back();
 	}
-	Particles.clear();
 }
 
 void particle_page_in()
@@ -248,7 +252,7 @@ void particle_move_all(float frametime)
 	if ( Particles.empty() )
 		return;
 
-	for (SCP_list<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {	
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ) {	
 		particle* part = *p;
 		if (part->age == 0.0f) {
 			part->age = 0.00001f;
@@ -262,7 +266,10 @@ void particle_move_all(float frametime)
 			if ( (part->age > frametime) || (part->max_life > 0.0f) ) {
 				part->signature = 0;
 				delete *p;
-				p = Particles.erase(p);
+				*p = NULL;
+
+				*p = Particles.back();
+				Particles.pop_back();
 				continue;
 			}
 		}
@@ -275,7 +282,10 @@ void particle_move_all(float frametime)
 			{
 				part->signature = 0;
 				delete *p;
-				p = Particles.erase(p);
+				*p = NULL;
+
+				*p = Particles.back();
+				Particles.pop_back();
 				continue;
 			}
 		}
@@ -283,6 +293,9 @@ void particle_move_all(float frametime)
 		else {
 			vm_vec_scale_add2( &part->pos, &part->velocity, frametime );
 		}
+
+		// next particle
+		++p;
 	}
 }
 
@@ -293,10 +306,13 @@ void particle_kill_all()
 	Num_particles = 0;
 	Num_particles_hwm = 0;
 
-	for (SCP_list<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {		
-		delete *p;
+	while (!Particles.empty())
+	{
+		particle* part = Particles.back();
+		part->signature = 0;
+		delete part;
+		Particles.pop_back();
 	}
-	Particles.clear();
 }
 
 MONITOR( NumParticlesRend )
@@ -347,7 +363,7 @@ void particle_render_all()
 	if ( Particles.empty() )
 		return;
 
-	for (SCP_list<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {
 		particle* part = *p;
 		// skip back-facing particles (ripped from fullneb code)
 		// Wanderer - add support for attached particles
