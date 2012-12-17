@@ -1922,7 +1922,13 @@ int select_object(int cx, int cy)
 	if (Briefing_dialog) {
 		best = Briefing_dialog->check_mouse_hit(cx, cy);
 		if (best >= 0)
+		{
+			if(Selection_lock && !(Objects[best].flags & OF_MARKED))
+			{
+				return -1;
+			}
 			return best;
+		}
 	}
 
 /*	gr_reset_clip();
@@ -1957,8 +1963,13 @@ int select_object(int cx, int cy)
 	}
 
 	if (best >= 0)
+	{
+		if(Selection_lock && !(Objects[best].flags & OF_MARKED))
+		{
+			return -1;
+		}
 		return best;
-
+	}
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list))
 	{
@@ -1975,6 +1986,11 @@ int select_object(int cx, int cy)
 			}
 
 		ptr = GET_NEXT(ptr);
+	}
+
+	if(Selection_lock && !(Objects[best].flags & OF_MARKED))
+	{
+		return -1;
 	}
 
 	return best;
