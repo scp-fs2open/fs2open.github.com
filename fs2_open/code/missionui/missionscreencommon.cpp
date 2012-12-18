@@ -99,6 +99,7 @@ extern void ss_reset_team_pointers();
 extern void wl_set_team_pointers(int team);
 extern void wl_reset_team_pointers();
 extern int anim_timer_start;
+extern void ss_reset_selected_ship();
 
 //////////////////////////////////////////////////////////////////
 // UI 
@@ -506,6 +507,8 @@ void common_select_init()
 		}
 	}
 	
+	ss_reset_selected_ship();
+
 	Drop_icon_mflag = 0;
 	Drop_on_wing_mflag = 0;
 
