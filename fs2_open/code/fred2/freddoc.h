@@ -103,6 +103,7 @@ private:
 	int save_briefing_info(FILE *fp);
 	int save_plot_info(FILE *fp);
 	int save_mission_info(FILE *FP);
+	void recreate_dialogs();
 };
 
 extern int Local_modified;
