@@ -141,6 +141,10 @@ typedef struct polymodel_instance {
 
 #define NUM_SUBSYSTEM_FLAGS			33
 
+// all subsys flags set in model file, used to copy only these flags for different table entries using the same model
+#define MSS_MODEL_FLAG				(MSS_FLAG_CREWPOINT | MSS_FLAG_ROTATES | MSS_FLAG_TRIGGERED | MSS_FLAG_ARTILLERY | MSS_FLAG_STEPPED_ROTATE)
+#define MSS_MODEL_FLAG2				0
+
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
 	int num_steps;				// number of steps in complete revolution
