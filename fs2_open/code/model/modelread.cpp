@@ -404,8 +404,8 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 		for ( j = 0; j < n_subsystems; j++ ) {
 			dest = &d_sp[j];
 			if ( !subsystem_stricmp( source->subobj_name, dest->subobj_name) ) {
-				dest->flags |= (source->flags & MSS_MODEL_FLAG);
-				dest->flags2 |= (source->flags2 & MSS_MODEL_FLAG2);
+				dest->flags |= (source->flags & MSS_MODEL_FLAG_MASK);
+				dest->flags2 |= (source->flags2 & MSS_MODEL_FLAG2_MASK);
 				dest->subobj_num = source->subobj_num;
 				dest->model_num = source->model_num;
 				dest->pnt = source->pnt;
