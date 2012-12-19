@@ -2907,7 +2907,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	if (is_outlines_only_htl) {
 		gr_set_fill_mode( GR_FILL_MODE_WIRE );
-
+		gr_set_color_fast( &Interp_outline_color );
 		// lines shouldn't be rendered with textures or special RGB colors (assuming preset colors)
 		Interp_flags |= MR_NO_TEXTURING;
 		Interp_tmap_flags &= ~TMAP_FLAG_TEXTURED;
