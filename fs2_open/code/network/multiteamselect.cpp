@@ -1731,6 +1731,7 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 			}
 		}
 	}
+	Assert((*team_index != -1) && (*slot_index != -1)); // For tracking down Mantis 2757 - Valathil
 }
 
 // function to return the shipname of the ship in the slot designated by the team and slot
