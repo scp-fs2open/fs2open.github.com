@@ -23,7 +23,7 @@
 #endif
 
 int Num_particles = 0;
-static SCP_list<particle*> Particles;
+static SCP_vector<particle*> Particles;
 
 int Anim_bitmap_id_fire = -1;
 int Anim_num_frames_fire = -1;
@@ -75,7 +75,9 @@ void particle_init()
 // only call from game_shutdown()!!!
 void particle_close()
 {
-	for (SCP_list<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {		
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p)
+	{
+		(*p)->signature = 0;
 		delete *p;
 	}
 	Particles.clear();
@@ -248,7 +250,8 @@ void particle_move_all(float frametime)
 	if ( Particles.empty() )
 		return;
 
-	for (SCP_list<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {	
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); )
+	{	
 		particle* part = *p;
 		if (part->age == 0.0f) {
 			part->age = 0.00001f;
@@ -256,33 +259,48 @@ void particle_move_all(float frametime)
 			part->age += frametime;
 		}
 
-		// if it's time expired, remove it
+		bool remove_particle = false;
+
+		// if its time expired, remove it
 		if (part->age > part->max_life) {
 			// special case, if max_life is 0 then we want it to render at least once
 			if ( (part->age > frametime) || (part->max_life > 0.0f) ) {
-				part->signature = 0;
-				delete *p;
-				p = Particles.erase(p);
-				continue;
+				remove_particle = true;
 			}
 		}
 
 		// if the particle is attached to an object which has become invalid, kill it
 		if (part->attached_objnum >= 0) {
 			// if the signature has changed, or it's bogus, kill it
-			if ( (part->attached_objnum >= MAX_OBJECTS)
-				|| (part->attached_sig != Objects[part->attached_objnum].signature) )
+			if ( (part->attached_objnum >= MAX_OBJECTS) || (part->attached_sig != Objects[part->attached_objnum].signature) ) {
+				remove_particle = true;
+			}
+		}
+
+		if (remove_particle)
+		{
+			part->signature = 0;
+			delete part;
+
+			// if we're sitting on the very last particle, popping-back will invalidate the iterator!
+			if (p + 1 == Particles.end())
 			{
-				part->signature = 0;
-				delete *p;
-				p = Particles.erase(p);
+				Particles.pop_back();
+				break;
+			}
+			else
+			{
+				*p = Particles.back();
+				Particles.pop_back();
 				continue;
 			}
 		}
+
 		// move as a regular particle
-		else {
-			vm_vec_scale_add2( &part->pos, &part->velocity, frametime );
-		}
+		vm_vec_scale_add2( &part->pos, &part->velocity, frametime );
+
+		// next particle
+		++p;
 	}
 }
 
@@ -293,7 +311,9 @@ void particle_kill_all()
 	Num_particles = 0;
 	Num_particles_hwm = 0;
 
-	for (SCP_list<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {		
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p)
+	{
+		(*p)->signature = 0;
 		delete *p;
 	}
 	Particles.clear();
@@ -347,7 +367,7 @@ void particle_render_all()
 	if ( Particles.empty() )
 		return;
 
-	for (SCP_list<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {
+	for (SCP_vector<particle*>::iterator p = Particles.begin(); p != Particles.end(); ++p) {
 		particle* part = *p;
 		// skip back-facing particles (ripped from fullneb code)
 		// Wanderer - add support for attached particles

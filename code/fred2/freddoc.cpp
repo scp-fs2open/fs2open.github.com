@@ -496,6 +496,8 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	set_modified(0);
 	stars_post_level_init();
 
+	recreate_dialogs();
+
 	return 0;
 }
 
@@ -629,6 +631,7 @@ void CFREDDoc::editor_init_mission()
 {
 	reset_mission();
 	SetModifiedFlag(FALSE);
+	recreate_dialogs();
 }
 /*
 void CFREDDoc::OnFileNew() 
@@ -1009,6 +1012,7 @@ void CFREDDoc::OnFileImportFSM()
 	create_new_mission();
 
 	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+	recreate_dialogs();
 }
 
 void restore_default_weapons(char *ships_tbl);
@@ -1092,4 +1096,27 @@ void CFREDDoc::OnFileImportWeapons()
 	// error check and notify
 	if (!Fred_view_wnd->global_error_check())
 		Fred_view_wnd->MessageBox("Weapon loadouts successfully imported with no errors.", "Woohoo!");
+}
+
+void CFREDDoc::recreate_dialogs()
+{
+	if(Briefing_dialog)
+	{
+		Briefing_dialog->OnCancel();
+		Briefing_dialog = new briefing_editor_dlg;
+		Briefing_dialog->create();
+		Briefing_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
+		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+		Briefing_dialog->ShowWindow(SW_RESTORE);
+	}
+
+	if(Bg_bitmap_dialog)
+	{
+		Bg_bitmap_dialog->OnClose();
+		Bg_bitmap_dialog = new bg_bitmap_dlg;
+		Bg_bitmap_dialog->create();
+		Bg_bitmap_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
+		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+		Bg_bitmap_dialog->ShowWindow(SW_RESTORE);
+	}
 }

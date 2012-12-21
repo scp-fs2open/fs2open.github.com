@@ -2079,6 +2079,7 @@ void labviewer_show_tech_model(Tree *caller)
 	labviewer_change_model(Weapon_info[weap_index].tech_model, caller->GetSelectedItem()->GetData(), weap_index);
 }
 
+extern void weapon_load_bitmaps(int weapon_index);
 void labviewer_change_weapon(Tree *caller)
 {
 	int weap_index = (int)(caller->GetSelectedItem()->GetData());
@@ -2089,6 +2090,7 @@ void labviewer_change_weapon(Tree *caller)
 			case WRT_POF:
 				labviewer_change_bitmap();
 				labviewer_change_model(Weapon_info[weap_index].pofbitmap_name, 0, weap_index);
+				weapon_load_bitmaps(weap_index);
 				break;
 
 			case WRT_LASER:

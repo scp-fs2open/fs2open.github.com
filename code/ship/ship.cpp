@@ -10304,6 +10304,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							// of weapon_create							
 							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id, 
 								0, 0, swp->primary_bank_fof_cooldown[bank_to_fire] );
+							winfo_p = &Weapon_info[Weapons[Objects[weapon_objnum].instance].weapon_info_index];
 							has_fired = true;
 
 							weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
@@ -11039,6 +11040,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+			weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
 			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
 			has_fired = true;
 
@@ -15400,8 +15402,11 @@ void ship_page_in()
 
 #ifndef NDEBUG
 				for (j = 0; j < sip->n_subsystems; j++) {
-					if (sip->subsystems[j].model_num != sip->model_num)
-						Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].subobj_name, sip->pof_file);
+					if (sip->subsystems[j].model_num != sip->model_num) {
+						polymodel *sip_pm = model_get(sip->model_num);
+						polymodel *subsys_pm = model_get(sip->subsystems[j].model_num);
+						Warning(LOCATION, "After ship_copy_subsystem_fixup, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)", sip->name, sip->subsystems[j].subobj_name, sip->pof_file, sip_pm->filename, subsys_pm->filename);
+					}
 				}
 #endif
 			} else {
@@ -15411,8 +15416,11 @@ void ship_page_in()
 
 #ifndef NDEBUG
 				for (j = 0; j < sip->n_subsystems; j++) {
-					if (sip->subsystems[j].model_num != sip->model_num)
-						Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].subobj_name, sip->pof_file);
+					if (sip->subsystems[j].model_num != sip->model_num) {
+						polymodel *sip_pm = model_get(sip->model_num);
+						polymodel *subsys_pm = model_get(sip->subsystems[j].model_num);
+						Warning(LOCATION, "Without ship_copy_subsystem_fixup, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)", sip->name, sip->subsystems[j].subobj_name, sip->pof_file, sip_pm->filename, subsys_pm->filename);
+					}
 				}
 #endif
 			}

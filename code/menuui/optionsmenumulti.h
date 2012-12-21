@@ -26,7 +26,7 @@ void options_multi_do(int key);
 void options_multi_close();
 
 // called if the accept button on the main options screen was hit
-void options_multi_accept();
+bool options_multi_accept();
 
 // called when the multiplayer tab is hit - initializes/switches all necessary data.
 // NOTE : this is different from the initialization function, which is called only when the options menu is started
