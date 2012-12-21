@@ -2230,11 +2230,37 @@ void options_multi_close()
 	Om_mode = OM_MODE_NONE;
 }
 
-// called if the accept button on the main options screen was hit
-void options_multi_accept()
+/**
+* Checks if the multiplayer config screen is in a legal state to exit
+**/
+bool options_multi_ok_to_accept()
+{
+	// if PXO is turned on, do we have a username and password?
+	if (Om_tracker_flag) {
+		if (strlen(Multi_tracker_login) == 0) {
+			return false;
+		}
+		else if (strlen(Multi_tracker_passwd) == 0) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+* Called if the accept button on the main options screen was hit. 
+* Returns false if the multi option screen is not in a legal state
+**/
+bool options_multi_accept()
 {	
 	// accept function for the protocol section
 	options_multi_protocol_accept();
+
+	// is it legal to leave this screen?
+	if (!options_multi_ok_to_accept()) {
+		return false;
+	}
 
 	// accept function for the general tab
 	options_multi_gen_accept();
@@ -2252,6 +2278,8 @@ void options_multi_accept()
 	if((Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && MULTI_CONNECTED(Net_players[MY_NET_PLAYER_NUM]) ){
 		multi_options_update_local();
 	}
+
+	return true;
 }
 
 // called when the multiplayer tab is hit - initializes/switches all necessary data.
