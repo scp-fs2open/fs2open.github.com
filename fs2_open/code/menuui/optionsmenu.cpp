@@ -887,7 +887,12 @@ void options_accept()
 {
 	// apply the selected multiplayer options
 	if ( Options_multi_inited ) {
-		options_multi_accept();
+		// if we've failed to provide a PXO password or username but have turned on PXO, we don't want to quit
+		if (!options_multi_accept()) {
+			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "PXO is selected but password or username is missing");
+			return;
+		}
 	}
 
 	// If music is zero volume, disable
