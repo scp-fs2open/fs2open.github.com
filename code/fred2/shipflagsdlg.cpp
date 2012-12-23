@@ -360,7 +360,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	}
 
 	// flags that enable/disable according to whether this isn't a player
-	GetDlgItem(IDC_REINFORCEMENT)->EnableWindow(p_enable);
+	GetDlgItem(IDC_REINFORCEMENT)->EnableWindow(p_enable && !ship_in_wing);
 	GetDlgItem(IDC_CARGO_KNOWN)->EnableWindow(p_enable);
 	GetDlgItem(IDC_DESTROY_CHECK)->EnableWindow(p_enable);
 	GetDlgItem(IDC_DESTROY_VALUE)->EnableWindow(p_enable);

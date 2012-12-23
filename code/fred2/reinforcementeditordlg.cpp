@@ -272,7 +272,7 @@ BOOL reinforcement_select::OnInitDialog()
 	box = (CListBox *) GetDlgItem(IDC_LIST);
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->type == OBJ_SHIP) {
+		if (ptr->type == OBJ_SHIP && Ships[ptr->instance].wingnum < 0) {
 			z = box->AddString(Ships[ptr->instance].ship_name);
 			box->SetItemData(z, OBJ_INDEX(ptr));
 		}

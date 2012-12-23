@@ -2410,8 +2410,18 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 		objp->flags |= OF_PROTECTED;
 
 	if (parse_flags & P_SF_REINFORCEMENT)
-		shipp->flags |= SF_REINFORCEMENT;
-
+	{
+		//Individual ships in wings can't be reinforcements - FUBAR
+		if(shipp->wingnum >= 0)
+		{
+			Warning(LOCATION, "Ship %s is a reinforcement unit but is a member of a wing. Ignoring reinforcement flag.", shipp->ship_name);
+		}
+		else
+		{
+			shipp->flags |= SF_REINFORCEMENT;
+		}
+	}
+	
 	if ((parse_flags & P_OF_NO_SHIELDS) && (parse_flags2 & P2_OF_FORCE_SHIELDS_ON))
 	{
 		Warning(LOCATION, "The parser found a ship with both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent!");
@@ -4933,7 +4943,16 @@ void parse_reinforcement(mission *pm)
 			return;
 		}
 	} else {
-		instance = rforce_obj->wingnum;
+		// Individual ships in wings can't be reinforcements - FUBAR
+		if (rforce_obj->wingnum >= 0)
+		{
+			Warning(LOCATION, "Reinforcement %s is part of a wing - Ignoring reinforcement declaration", ptr->name);
+			return;
+		}
+		else
+		{
+			instance = rforce_obj->wingnum;
+		}
 	}
 
 	// now, if the reinforcement is a wing, then set the number of waves of the wing == number of
