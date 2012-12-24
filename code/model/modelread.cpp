@@ -1724,6 +1724,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						for (j = 0; j < bay->num_slots; j++) {
 							cfread_vector( &(bay->pnt[j]), fp );
 							cfread_vector( &(bay->norm[j]), fp );
+							if(vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
+								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal. ", filename, bay->name);
+							}
 						}
 
 						if(vm_vec_same(&bay->pnt[0], &bay->pnt[1])) {
