@@ -1078,8 +1078,8 @@ void obj_set_flags( object *obj, uint new_flags )
 
 		// see if this ship is really a player ship (or should be)
 		shipp = &Ships[obj->instance];
-		extern void multi_ts_get_team_and_slot(char *, int *, int *);
-		multi_ts_get_team_and_slot(shipp->ship_name,&team,&slot);
+		extern void multi_ts_get_team_and_slot(char *, int *, int *, bool);
+		multi_ts_get_team_and_slot(shipp->ship_name,&team,&slot, false);
 		if ( (shipp->wingnum == -1) || (team == -1) || (slot==-1) ) {
 			Int3();
 			return;
