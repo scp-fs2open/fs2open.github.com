@@ -450,11 +450,15 @@ cmdline_parm deprecated_spec_arg("-spec", NULL);
 cmdline_parm deprecated_glow_arg("-glow", NULL);
 cmdline_parm deprecated_normal_arg("-normal", NULL);
 cmdline_parm deprecated_env_arg("-env", NULL);
+cmdline_parm deprecated_tbp_arg("-tbp", NULL);
+cmdline_parm deprecated_jpgtga_arg("-jpgtga", NULL);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
 int Cmdline_deprecated_normal = 0;
 int Cmdline_deprecated_env = 0;
+int Cmdline_deprecated_tbp = 0;
+int Cmdline_deprecated_jpgtga = 0;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -499,6 +503,16 @@ void cmdline_debug_print_cmdline()
 	if(Cmdline_deprecated_env == 1)
 	{
 		mprintf(("Deprecated flag '-env' found. Please remove from your cmdline.\n"));
+	}
+
+	if(Cmdline_deprecated_tbp == 1)
+	{
+		mprintf(("Deprecated flag '-tbp' found. Please remove from your cmdline.\n"));
+	}
+
+	if(Cmdline_deprecated_jpgtga == 1)
+	{
+		mprintf(("Deprecated flag '-jpgtga' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -1524,6 +1538,16 @@ bool SetCmdlineParams()
 	if( deprecated_env_arg.found() )
 	{
 		Cmdline_deprecated_env = 1;
+	}
+
+	if( deprecated_tbp_arg.found() )
+	{
+		Cmdline_deprecated_tbp = 1;
+	}
+
+	if( deprecated_jpgtga_arg.found() )
+	{
+		Cmdline_deprecated_jpgtga = 1;
 	}
 
 	return true; 

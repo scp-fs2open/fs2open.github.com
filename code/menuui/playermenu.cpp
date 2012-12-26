@@ -459,6 +459,18 @@ void player_select_close()
 	Player = &Players[0];
 	Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 
+	//New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
+	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+		Player->flags |= PLAYER_FLAGS_IS_MULTI;
+	}
+
+	//WMC - Set appropriate game mode
+	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
+		Game_mode = GM_MULTIPLAYER;
+	} else {
+		Game_mode = GM_NORMAL;
+	}
+
 	// now read in a the pilot data
 	if ( !Pilot.load_player(Pilots[Player_select_pilot], Player) ) {
 		Error(LOCATION,"Couldn't load pilot file, bailing");
@@ -477,18 +489,6 @@ void player_select_close()
 	stop_parse();
 
 	Player_select_screen_active = 0;
-
-	//New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
-	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-		Player->flags |= PLAYER_FLAGS_IS_MULTI;
-	}
-
-	//WMC - Set appropriate game mode
-	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
-		Game_mode = GM_MULTIPLAYER;
-	} else {
-		Game_mode = GM_NORMAL;
-	}
 }
 
 void player_select_set_input_mode(int n)

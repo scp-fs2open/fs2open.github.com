@@ -5933,6 +5933,15 @@ void game_enter_state( int old_state, int new_state )
 
 			// remove any multiplayer flags from the game mode
 			Game_mode &= ~(GM_MULTIPLAYER);
+
+			// set the game_mode based on the type of player
+			Assert( Player != NULL );
+
+			if ( Player->flags & PLAYER_FLAGS_IS_MULTI ){
+				Game_mode = GM_MULTIPLAYER;
+			} else {
+				Game_mode = GM_NORMAL;
+			}
 	
 			// determine which ship this guy is currently based on
 			mission_load_up_campaign(Player);
@@ -5943,15 +5952,6 @@ void game_enter_state( int old_state, int new_state )
 				main_hall_init(Campaign.missions[0].main_hall);
 			} else {
 				main_hall_init(Campaign.missions[Campaign.next_mission].main_hall);
-			}
-
-			// set the game_mode based on the type of player
-			Assert( Player != NULL );
-
-			if ( Player->flags & PLAYER_FLAGS_IS_MULTI ){
-				Game_mode = GM_MULTIPLAYER;
-			} else {
-				Game_mode = GM_NORMAL;
 			}
 
 			//if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && !Main_hall_netgame_started ) {
