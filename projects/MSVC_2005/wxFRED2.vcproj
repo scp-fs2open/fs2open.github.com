@@ -29,8 +29,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/wxfred2_open_trunk_INF_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/wxfred2_open_trunk_INF_d.exe;$(FS2PATH)\wxfred.xrc"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/wxfred2_open_3_6_16_RC1_INF_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/wxfred2_open_3_6_16_RC1_INF_d.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -80,15 +80,15 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28d_xrc.lib wxmsw28d_html.lib wxmsw28d_adv.lib wxmsw28d_core.lib wxbase28d_xml.lib wxbase28d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib"
-				OutputFile="Debug_Inferno/wxfred2_open_trunk_INF_d.exe"
+				OutputFile="Debug_Inferno/wxfred2_open_3_6_16_RC1_INF_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
 				IgnoreDefaultLibraryNames="libcd.lib,libcid.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug_Inferno/wxfred2_open_trunk_INF_d.pdb"
+				ProgramDatabaseFile=".\Debug_Inferno/wxfred2_open_3_6_16_RC1_INF_d.pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug_Inferno\Profile\wxfred2/wxfred2_open_trunk_INF_d.map"
+				MapFileName=".\Debug_Inferno\Profile\wxfred2/wxfred2_open_3_6_16_RC1_INF_d.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -134,8 +134,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\wxfred2_open_trunk_INF_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)\wxfred2_open_trunk_INF_r.exe;$(FS2PATH)\wxfred.xrc"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\wxfred2_open_3_6_16_RC1_INF_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)\wxfred2_open_3_6_16_RC1_INF_r.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -185,15 +185,15 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib"
-				OutputFile="Release_Inferno/wxfred2_open_trunk_INF_r.exe"
+				OutputFile="Release_Inferno/wxfred2_open_3_6_16_RC1_INF_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
 				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
 				GenerateDebugInformation="false"
-				ProgramDatabaseFile=".\Release_Inferno/wxfred2_open_trunk_INF_r.pdb"
+				ProgramDatabaseFile=".\Release_Inferno/wxfred2_open_3_6_16_RC1_INF_r.pdb"
 				GenerateMapFile="false"
-				MapFileName=".\Release_Inferno\Profile\wxfred2/wxfred2_open_trunk_INF_r.map"
+				MapFileName=".\Release_Inferno\Profile\wxfred2/wxfred2_open_3_6_16_RC1_INF_r.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -239,8 +239,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/wxfred2_open_trunk_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/wxfred2_open_trunk_d.exe;$(FS2PATH)\wxfred.xrc"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/wxfred2_open_3_6_16_RC1_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/wxfred2_open_3_6_16_RC1_d.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -290,15 +290,15 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28d_xrc.lib wxmsw28d_html.lib wxmsw28d_adv.lib wxmsw28d_core.lib wxbase28d_xml.lib wxbase28d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib"
-				OutputFile="Debug/wxfred2_open_trunk_d.exe"
+				OutputFile="Debug/wxfred2_open_3_6_16_RC1_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
 				IgnoreDefaultLibraryNames="libcd.lib,libcid.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/wxfred2_open_trunk_d.pdb"
+				ProgramDatabaseFile=".\Debug/wxfred2_open_3_6_16_RC1_d.pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug\Profile\wxfred2/wxfred2_open_trunk_d.map"
+				MapFileName=".\Debug\Profile\wxfred2/wxfred2_open_3_6_16_RC1_d.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -344,8 +344,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\wxfred2_open_trunk_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)\wxfred2_open_trunk_r.exe;$(FS2PATH)\wxfred.xrc"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\wxfred2_open_3_6_16_RC1_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)\wxfred2_open_3_6_16_RC1_r.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -395,15 +395,15 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib"
-				OutputFile="Release/wxfred2_open_trunk_r.exe"
+				OutputFile="Release/wxfred2_open_3_6_16_RC1_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
 				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
 				GenerateDebugInformation="false"
-				ProgramDatabaseFile=".\Release/wxfred2_open_trunk_r.pdb"
+				ProgramDatabaseFile=".\Release/wxfred2_open_3_6_16_RC1_r.pdb"
 				GenerateMapFile="false"
-				MapFileName=".\Release\Profile\wxfred2/wxfred2_open_trunk_r.map"
+				MapFileName=".\Release\Profile\wxfred2/wxfred2_open_3_6_16_RC1_r.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
