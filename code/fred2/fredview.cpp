@@ -2195,6 +2195,35 @@ void CFREDView::OnUpdateZoomSelected(CCmdUI* pCmdUI)
 
 void CFREDView::OnFormWing() 
 {
+	object *ptr = GET_FIRST(&obj_used_list);
+	bool found = false;
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags & OF_MARKED)) {
+			if(Ships[ptr->instance].flags & SF_REINFORCEMENT) {
+				found = true;
+				break;
+			}
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	if(found) {
+		int ok = MessageBox("Some of the ships you selected to create a wing are marked as reinforcements. Press Ok to clear the flag on all selected ships. Press Cancel to not create the wing.", "Reinforcement conflict", MB_ICONEXCLAMATION | MB_OKCANCEL);
+		if(ok == IDOK) {
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags & OF_MARKED)) {
+					set_reinforcement(Ships[ptr->instance].ship_name, 0);
+				}
+
+			ptr = GET_NEXT(ptr);
+			}
+		} else {
+			return;
+		}
+	}
+
 	if (!create_wing())
 		FREDDoc_ptr->autosave("form wing");
 }

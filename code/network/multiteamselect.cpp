@@ -419,7 +419,7 @@ void multi_ts_init_objnums();
 void multi_ts_init_flags();
 
 // get the proper team and slot index for the given ship name
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index);
+void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch);
 
 // handle an available ship scroll down button press
 void multi_ts_avail_scroll_down();
@@ -872,7 +872,7 @@ void multi_ts_assign_players_all()
 		// find a valid player ship - ignoring the ship which was assigned to the host
 		if((objp->flags & OF_PLAYER_SHIP) && stricmp(Ships[objp->instance].ship_name,name_lookup)){
 			// determine what team and slot this ship is				
-			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index);
+			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index, true);
 			Assert((team_index != -1) && (slot_index != -1));
 
 			// in a team vs. team situation
@@ -1691,7 +1691,7 @@ bool multi_ts_validate_ship(char *shipname, char *wingname)
 }
 
 // get the proper team and slot index for the given ship name
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
+void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch)
 {
 	int idx; 
 
@@ -1731,7 +1731,8 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 			}
 		}
 	}
-	Assert((*team_index != -1) && (*slot_index != -1)); // For tracking down Mantis 2757 - Valathil
+	if(mantis2757switch)
+		Assert((*team_index != -1) && (*slot_index != -1)); // For tracking down Mantis 2757 - Valathil
 }
 
 // function to return the shipname of the ship in the slot designated by the team and slot
