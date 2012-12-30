@@ -373,7 +373,7 @@ extern int Om_tracker_flag;
 #define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
-#define MAX_SHIPS_PER_PACKET		130			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
+static const int MAX_SHIPS_PER_PACKET		64			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
 
 // ----------------------------------------------------------------------------------------
 
