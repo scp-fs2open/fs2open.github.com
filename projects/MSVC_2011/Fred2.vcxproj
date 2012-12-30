@@ -133,7 +133,7 @@
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fred2_open_3_6_17_DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fred2_open_3_6_17_DEBUC_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fred2_open_3_6_17_DEBUG_SSE</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fred2_open_3_6_17_DEBUG_SSE2</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fred2_open_3_6_17</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fred2_open_3_6_17_SSE2</TargetName>
