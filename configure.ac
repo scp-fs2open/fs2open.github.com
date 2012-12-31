@@ -425,10 +425,10 @@ dnl LUA
 ## Checking for lua.pc and if that fails lua5.1.pc
 PKG_CHECK_MODULES(
 	[LUA],
-	[lua >= 5.1.3],
+	[lua >= 5.1.3 lua < 5.2],
 	[], ## do nothing special
-	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [], [
-        PKG_CHECK_MODULES([LUA], [lua-5.1 >= 5.1.3], [])
+	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3 lua5.1 < 5.2], [], [
+        PKG_CHECK_MODULES([LUA], [lua-5.1 >= 5.1.3 lua-5.1 < 5.2], [])
     ])])
 D_CFLAGS=$D_CFLAGS" $LUA_CFLAGS"
 FS2_LIBS=$FS2_LIBS" $LUA_LIBS"
