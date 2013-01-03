@@ -22,10 +22,10 @@
 #define HULL_HIT_OFFSET				4		// used to access the members in shield_hit_info that pertain to the hull
 typedef struct shield_hit_info
 {
-	int shield_hit_status;		// bitfield, if offset for shield quadrant is set, that means shield is being hit
-	int shield_show_bright;		// bitfield, if offset for shield quadrant is set, that means play bright frame
 	int shield_hit_timers[NUM_SHIELD_HIT_MEMBERS];	// timestamps that get set for SHIELD_FLASH_TIME when a quadrant is hit
 	int shield_hit_next_flash[NUM_SHIELD_HIT_MEMBERS];
+	int shield_hit_status;		// bitfield, if offset for shield quadrant is set, that means shield is being hit
+	int shield_show_bright;		// bitfield, if offset for shield quadrant is set, that means play bright frame
 } shield_hit_info;
 
 extern ubyte Quadrant_xlate[4];
