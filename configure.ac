@@ -116,13 +116,14 @@ case "$target" in
 		# linux
 		echo "Using 64-bit Unix defines (for $host_os)"
 		fs2_os_linux="yes"
-		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi"
+		D_CFLAGS="$D_CFLAGS -m64 -mtune=i686 -msse -msse2 -ansi"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-linux*)
 		# linux
 		echo "Using Unix defines (for $host_os)"
 		fs2_os_linux="yes"
+		D_CFLAGS="$D_CFLAGS -mtune=i686 -mfpmath=sse -msse -msse2 -ansi"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-darwin*)
@@ -424,10 +425,10 @@ dnl LUA
 ## Checking for lua.pc and if that fails lua5.1.pc
 PKG_CHECK_MODULES(
 	[LUA],
-	[lua >= 5.1.3],
+	[lua >= 5.1.3 lua < 5.2],
 	[], ## do nothing special
-	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [], [
-        PKG_CHECK_MODULES([LUA], [lua-5.1 >= 5.1.3], [])
+	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3 lua5.1 < 5.2], [], [
+        PKG_CHECK_MODULES([LUA], [lua-5.1 >= 5.1.3 lua-5.1 < 5.2], [])
     ])])
 D_CFLAGS=$D_CFLAGS" $LUA_CFLAGS"
 FS2_LIBS=$FS2_LIBS" $LUA_LIBS"

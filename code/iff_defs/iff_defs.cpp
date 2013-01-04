@@ -207,7 +207,7 @@ void iff_init()
 
 	// alternate = use same method as with ship blips
 	// retail = use 1/2 intensities
-	if (optional_string("$Use Alternate Blip Coloring:"))
+	if (optional_string("$Use Alternate Blip Coloring:") || optional_string("$Use Alternate Blip Colouring:"))
 	{
 		stuff_boolean(&alternate_blip_color);
 	}
@@ -306,7 +306,7 @@ void iff_init()
 	
 	// begin reading data
 	Num_iffs = 0;
-	while (required_string_either("#End","$IFF Name:"))
+	while (required_string_either("#End", "$IFF Name:"))
 	{
 		iff_info *iff;
 		int cur_iff;
