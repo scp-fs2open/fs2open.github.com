@@ -9864,6 +9864,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			continue;
 		}
 
+		// if weapons are linked and this is a nolink weapon, skip it
+		if (shipp->flags & SF_PRIMARY_LINKED && winfo_p->wi_flags3 & WIF3_NOLINK) {
+			continue;
+		}
+
 		// do timestamp stuff for next firing time
 		float next_fire_delay;
 		bool fast_firing = false;

@@ -2318,8 +2318,13 @@ int parse_create_object_sub(p_object *p_objp)
 	{
 		Objects[objnum].net_signature = p_objp->net_signature;
 
-		if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
-			send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
+		// Goober5000 - for an initially docked group, only send the packet for the dock leader... this is necessary so that the
+		// docked hierarchy of objects can be created in the right order on the client side
+		if (!object_is_docked(p_objp) || (p_objp->flags & P_SF_DOCK_LEADER))
+		{
+			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
+				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
+		}
 	}
 
 	return objnum;

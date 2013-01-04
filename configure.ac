@@ -109,13 +109,14 @@ case "$target" in
 		# linux
 		echo "Using 64-bit Unix defines (for $host_os)"
 		fs2_os_linux="yes"
-		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi"
+		D_CFLAGS="$D_CFLAGS -m64 -mtune=i686 -msse -msse2 -ansi"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-linux*)
 		# linux
 		echo "Using Unix defines (for $host_os)"
 		fs2_os_linux="yes"
+		D_CFLAGS="$D_CFLAGS -mtune=i686 -mfpmath=sse -msse -msse2 -ansi"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-darwin*)
