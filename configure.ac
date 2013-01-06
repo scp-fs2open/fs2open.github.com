@@ -417,7 +417,12 @@ elif test "$fs2_os_solaris" = "yes" ; then
 fi
 
 dnl PNG libs
-PKG_CHECK_MODULES([PNG], [libpng >= 1.2.20])
+PKG_CHECK_MODULES(
+	[PNG],
+	[libpng >= 1.2.20],
+	[], ## do nothing special
+	[PKG_CHECK_MODULES([PNG], [libpng12 >= 1.2.20])]
+	)
 D_CFLAGS=$D_CFLAGS" $PNG_CFLAGS"
 FS2_LIBS=$FS2_LIBS" $PNG_LIBS"
 
