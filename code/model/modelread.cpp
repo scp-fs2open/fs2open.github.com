@@ -1061,9 +1061,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 #endif
 
 				// Check for unrealistic radii
-				if ( pm->rad <= 1.0f )
+				if ( pm->rad <= 0.1f )
 				{
-					Warning(LOCATION, "Model <%s> has a radius <= 1.0f\n", filename);
+					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
 				}
 
 				pm->submodel = (bsp_info *)vm_malloc( sizeof(bsp_info)*pm->n_models );
@@ -1238,9 +1238,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
 
 				// Check for unrealistic radii
-				if ( pm->submodel[n].rad <= 1.0f )
+				if ( pm->submodel[n].rad <= 0.1f )
 				{
-					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 1.0f\n", pm->submodel[n].name, filename);
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", pm->submodel[n].name, filename);
 				}
 				
 				// sanity first!
