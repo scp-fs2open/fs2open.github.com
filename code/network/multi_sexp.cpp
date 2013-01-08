@@ -739,7 +739,6 @@ bool multi_get_string(SCP_string &buffer)
 		return false; 
 	}
 
-	buffer.clear();
 	GET_STRING(tempstring);
 	buffer = tempstring;
 	multi_reduce_counts(offset - starting_offset); 

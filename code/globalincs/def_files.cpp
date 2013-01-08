@@ -1125,13 +1125,13 @@ $allow primary link at mission start:	NO								\n\
 $allow beams to damage bombs:			NO								\n\
 																		\n\
 ;; TBD																	\n\
-$disable weapon damage scaling for player:	NO							\n\
+$disable weapon damage scaling for player:	NO							\n""\
 																		\n\
 ;; TBD																	\n\
 $countermeasures affect aspect seekers:	NO								\n\
 																		\n\
 ;; TBD																	\n\
-$ai path mode:	normal													\n""\
+$ai path mode:	normal													\n\
 																		\n\
 ;; TBD																	\n\
 $no warp camera:	NO													\n\

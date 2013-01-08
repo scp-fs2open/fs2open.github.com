@@ -12544,6 +12544,7 @@ void multi_sexp_deal_with_ship_flag()
 
 void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
 {
+	int i;
 	ship_obj	*so;
 	object_ship_wing_point_team oswpt2;
 	p_object *p_objp;
@@ -12595,7 +12596,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 				}
 			}
 
-			for (int i = 0; i < oswpt.wingp->current_count; i++) {
+			for (i = 0; i < oswpt.wingp->current_count; i++) {
 				object_ship_wing_point_team_set_ship(&oswpt2, &Ships[oswpt.wingp->ship_index[i]], future_ships); 
 				sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 			}
@@ -12883,6 +12884,7 @@ void sexp_alter_ship_flag(int node)
 
 void multi_sexp_alter_ship_flag() 
 {
+	int i;
 	int object_flag = 0;
 	int object_flag2 = 0; 
 	int ship_flag = 0; 
@@ -12935,7 +12937,7 @@ void multi_sexp_alter_ship_flag()
 				case OSWPT_TYPE_WING_NOT_PRESENT:
 				case OSWPT_TYPE_WING:
 					multi_get_ushort(wing_sig);
-					for (int i = 0; i < Num_wings; i++) {
+					for (i = 0; i < Num_wings; i++) {
 						if (Wings[i].net_signature == wing_sig) {
 							oswpt.wingp = &Wings[i];
 							break;
