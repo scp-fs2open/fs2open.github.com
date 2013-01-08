@@ -2019,6 +2019,14 @@ SOURCE=..\..\code\Parse\Encrypt.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\parse\generic_log.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\generic_log.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Parse\PARSELO.CPP
 # End Source File
 # Begin Source File
