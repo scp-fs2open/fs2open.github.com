@@ -2088,7 +2088,8 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 	}
 
 	ptr->GetWindowText(cstr);
-	cstr.Trim();
+	cstr.TrimLeft();
+	cstr.TrimRight();
 	p = cstr.GetBuffer(0);
 	if(p == NULL){
 		return;
@@ -2187,7 +2188,8 @@ void CShipEditorDlg::ship_callsign_close(int base_ship)
 	}
 
 	ptr->GetWindowText(cstr);
-	cstr.Trim();
+	cstr.TrimLeft();
+	cstr.TrimRight();
 	p = cstr.GetBuffer(0);
 	if(p == NULL){
 		return;

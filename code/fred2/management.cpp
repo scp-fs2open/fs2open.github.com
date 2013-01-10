@@ -180,7 +180,10 @@ void convert_multiline_string(CString &dest, const char *src)
 // Converts a windows format multiline CString back into a normal multiline string.
 void deconvert_multiline_string(char *dest, const CString &str, int max_len)
 {
-	strncpy_s(dest, max_len, (LPCTSTR) str, max_len);
+	// leave room for the null terminator
+	memset(dest, 0, max_len);
+	strncpy(dest, (LPCTSTR) str, max_len - 1);
+
 	replace_all(dest, "\r\n", "\n", max_len);
 }
 

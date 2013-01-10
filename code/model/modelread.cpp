@@ -1059,7 +1059,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				pm->n_models = cfread_int(fp);
 //				mprintf(( "Num models = %d\n", pm->n_models ));
 #endif
-				
+
+				// Check for unrealistic radii
+				if ( pm->rad <= 0.1f )
+				{
+					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
+				}
+
 				pm->submodel = (bsp_info *)vm_malloc( sizeof(bsp_info)*pm->n_models );
 				Assert(pm->submodel != NULL );
 				for ( i = 0; i < pm->n_models; i++ )
@@ -1231,6 +1237,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				cfread_string_len(pm->submodel[n].name, MAX_NAME_LEN, fp);		// get the name
 				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
 
+				// Check for unrealistic radii
+				if ( pm->submodel[n].rad <= 0.1f )
+				{
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", pm->submodel[n].name, filename);
+				}
+				
 				// sanity first!
 				if (maybe_swap_mins_maxs(&pm->submodel[n].min, &pm->submodel[n].max)) {
 					Warning(LOCATION, "Inverted bounding box on submodel '%s' of model '%s'!  Swapping values to compensate.", pm->submodel[n].name, pm->filename);

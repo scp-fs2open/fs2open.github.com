@@ -962,6 +962,53 @@ bool SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
+
+	// DO THIS FIRST to avoid unrecognized flag warnings when just getting flag file
+	if ( get_flags_arg.found() ) {
+		FILE *fp = fopen("flags.lch","w");
+		
+		if (fp == NULL) {
+			MessageBox(NULL,"Error creating flag list for launcher", "Error", MB_OK);
+			return false; 
+		}
+		
+		int easy_flag_size	= sizeof(EasyFlag);
+		int flag_size		= sizeof(Flag);
+		
+		int num_easy_flags	= sizeof(easy_flags) / easy_flag_size;
+		int num_flags		= sizeof(exe_params) / flag_size;
+		
+		// Launcher will check its using structures of the same size
+		fwrite(&easy_flag_size, sizeof(int), 1, fp);
+		fwrite(&flag_size, sizeof(int), 1, fp);
+		
+		fwrite(&num_easy_flags, sizeof(int), 1, fp);
+		fwrite(&easy_flags, sizeof(easy_flags), 1, fp);
+		
+		fwrite(&num_flags, sizeof(int), 1, fp);
+		fwrite(&exe_params, sizeof(exe_params), 1, fp);
+		
+		{
+			// cheap and bastardly cap check for builds
+			// (needs to be compatible with older Launchers, which means having
+			//  this implies an OpenAL build for old Launchers)
+			ubyte build_caps = 0;
+			
+			/* portej05 defined this always */
+			build_caps |= BUILD_CAP_OPENAL;
+			build_caps |= BUILD_CAP_NO_D3D;
+			build_caps |= BUILD_CAP_NEW_SND;
+			
+			
+			fwrite(&build_caps, 1, 1, fp);
+		}
+		
+		fflush(fp);
+		fclose(fp);
+		
+		return false; 
+	}
+
 	if (no_fpscap.found())
 	{
 		Cmdline_NoFPSCap = 1;
@@ -1349,51 +1396,6 @@ bool SetCmdlineParams()
 
 	if ( ambient_factor_arg.found() )
 		Cmdline_ambient_factor = ambient_factor_arg.get_int();
-
-	if ( get_flags_arg.found() ) {
-		FILE *fp = fopen("flags.lch","w");
-
-		if (fp == NULL) {
-			MessageBox(NULL,"Error creating flag list for launcher", "Error", MB_OK);
-			return false; 
-		}
-
-		int easy_flag_size	= sizeof(EasyFlag);
-		int flag_size		= sizeof(Flag);
-
-		int num_easy_flags	= sizeof(easy_flags) / easy_flag_size;
-		int num_flags		= sizeof(exe_params) / flag_size;
-
-		// Launcher will check its using structures of the same size
-		fwrite(&easy_flag_size, sizeof(int), 1, fp);
-		fwrite(&flag_size, sizeof(int), 1, fp);
-
-		fwrite(&num_easy_flags, sizeof(int), 1, fp);
-		fwrite(&easy_flags, sizeof(easy_flags), 1, fp);
-
-		fwrite(&num_flags, sizeof(int), 1, fp);
-		fwrite(&exe_params, sizeof(exe_params), 1, fp);
-
-		{
-			// cheap and bastardly cap check for builds
-			// (needs to be compatible with older Launchers, which means having
-			//  this implies an OpenAL build for old Launchers)
-			ubyte build_caps = 0;
-
-			/* portej05 defined this always */
-			build_caps |= BUILD_CAP_OPENAL;
-			build_caps |= BUILD_CAP_NO_D3D;
-			build_caps |= BUILD_CAP_NEW_SND;
-
-
-			fwrite(&build_caps, 1, 1, fp);
-		}
-
-		fflush(fp);
-		fclose(fp);
-
-		return false; 
-	}
 
 	if ( output_scripting_arg.found() )
 		Output_scripting_meta = true;

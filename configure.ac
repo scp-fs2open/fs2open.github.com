@@ -358,9 +358,6 @@ if test "$fs2_os_win32" = "yes" ; then
 	FS2_LDFLAGS=$FS2_LDFLAGS" -L/c:/dxsdk/lib"
 fi
 
-dnl libpng
-FS2_LIBS="$FS2_LIBS -lpng"
-
 dnl OpenGL libs and CFLAGS
 if test "$fs2_os_win32" = "yes" ; then
 	if test "x$GL_LIBS" != "x" ; then
@@ -389,8 +386,13 @@ elif test "$fs2_os_solaris" = "yes" ; then
 	AC_DEFINE([NO_DIRECT3D])
 fi
 
-dnl PNG libs
-PKG_CHECK_MODULES([PNG], [libpng >= 1.2.20])
+dnl PNG libs (libpng, falling back to libpng12)
+PKG_CHECK_MODULES(
+	[PNG],
+	[libpng >= 1.2.20],
+	[], ## do nothing special
+	[PKG_CHECK_MODULES([PNG], [libpng12 >= 1.2.20])]
+	)
 D_CFLAGS=$D_CFLAGS" $PNG_CFLAGS"
 FS2_LIBS=$FS2_LIBS" $PNG_LIBS"
 

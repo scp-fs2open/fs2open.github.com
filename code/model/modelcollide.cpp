@@ -1230,7 +1230,10 @@ int model_collide(mc_info * mc_info)
 	}
 
 	if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-		Assert( Mc->radius > 0.0f );
+		if ( Mc->radius <= 0.0f ) {
+			Warning(LOCATION, "Attempting to collide with a sphere, but the sphere's radius is <= 0.0f!\n\n(model file is %s; submodel is %d, mc_flags are %d)", Mc_pm->filename, first_submodel, Mc->flags);
+			return 0;
+		}
 
 		// Do a quick check on the Bounding Sphere
 		if (fvi_segment_sphere(&Mc->hit_point_world, Mc->p0, Mc->p1, Mc->pos, model_radius+Mc->radius) )	{
