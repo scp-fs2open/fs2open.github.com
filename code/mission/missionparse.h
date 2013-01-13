@@ -697,7 +697,7 @@ int mission_parse_is_multi(char *filename, char *mission_name );
 int mission_parse_get_multi_mission_info(char *filename);
 
 // called externally from multiplayer code
-int mission_do_departure(object *objp);
+int mission_do_departure(object *objp, bool goal_is_to_warp = false);
 
 // called externally from freespace.cpp
 void mission_parse_fixup_players(void);

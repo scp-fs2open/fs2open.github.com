@@ -6829,17 +6829,36 @@ int ship_can_use_warp_drive(ship *shipp)
 }
 
 /**
- * Called to make object objp depart.
+ * Called to make object objp depart.  Rewritten and expanded by Goober5000.
  */
-int mission_do_departure(object *objp)
+int mission_do_departure(object *objp, bool goal_is_to_warp)
 {
-	Assert (objp->type == OBJ_SHIP);
+	Assert(objp->type == OBJ_SHIP);
 	int location, anchor, path_mask;
 	ship *shipp = &Ships[objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
 
-	// Goober5000 - if this is a ship which has no subspace drive, departs to hyperspace, and belongs to a wing,
-	// then use the wing departure information
-	if ((shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) && (shipp->departure_location == DEPART_AT_LOCATION) && (shipp->wingnum >= 0))
+	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
+
+	// if our current goal is to warp, then we won't consider departing to a bay, because the goal explicitly says to warp out
+	if (goal_is_to_warp)
+	{
+		// aha, but not if we were ORDERED to depart, because the comms menu ALSO uses the goal code, and yet the comms menu means any departure method!
+		if ((shipp->flags & SF_DEPARTURE_ORDERED) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_DEPARTURE_ORDERED)))
+		{
+			mprintf(("Looks like we were ordered to depart; initiating the standardard departure logic\n"));
+		}
+		// since our goal is to warp, then if we can warp, jump directly to the warping part
+		else if (ship_can_use_warp_drive(shipp))
+		{
+			mprintf(("Our current goal is to warp!  Trying to warp...\n"));
+			goto try_to_warp;
+		}
+		// otherwise, since we can't warp, we'll do the standard bay departure check, etc.
+	}
+
+	// if this ship belongs to a wing, then use the wing departure information
+	if (shipp->wingnum >= 0)
 	{
 		wing *wingp = &Wings[shipp->wingnum];
 
@@ -6867,6 +6886,7 @@ int mission_do_departure(object *objp)
 		// see if ship is yet to arrive.  If so, then warp.
 		if (mission_parse_get_arrival_ship(name))
 		{
+			mprintf(("Anchor ship %s hasn't arrived yet!  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -6875,6 +6895,7 @@ int mission_do_departure(object *objp)
 		anchor_shipnum = ship_name_lookup(name);
 		if (anchor_shipnum < 0)
 		{
+			mprintf(("Anchor ship %s not found!  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -6887,6 +6908,7 @@ int mission_do_departure(object *objp)
 		// make sure fighterbays aren't destroyed
 		if (ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]))
 		{
+			mprintf(("Anchor ship %s's fighterbays are destroyed!  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -6895,19 +6917,20 @@ int mission_do_departure(object *objp)
 		{
 			MONITOR_INC(NumShipDepartures,1);
 
+			mprintf(("Acquired departure path\n"));
 			return 1;
 		}
 	}
 
 try_to_warp:
-	ai_info *aip = &Ai_info[shipp->ai_index];
 
-	// Goober5000 - make sure we can actually warp
+	// make sure we can actually warp
 	if (ship_can_use_warp_drive(shipp))
 	{
 		ai_set_mode_warp_out(objp, aip);
 		MONITOR_INC(NumShipDepartures,1);
 
+		mprintf(("Setting mode to warpout\n"));
 		return 1;
 	}
 	else
@@ -6917,6 +6940,7 @@ try_to_warp:
 		// find something else to do
 		aip->mode = AIM_NONE;
 
+		mprintf(("Can't warp!  Doing something else instead.\n"));
 		return 0;
 	}
 }
@@ -7000,11 +7024,6 @@ void mission_eval_departures()
 
 				Assert ( shipp->objnum != -1 );
 				objp = &Objects[shipp->objnum];
-				
-				// copy the wing's departure information to the ship
-				shipp->departure_location = Wings[shipp->wingnum].departure_location;
-				shipp->departure_anchor = Wings[shipp->wingnum].departure_anchor;
-				shipp->departure_path_mask = Wings[shipp->wingnum].departure_path_mask;
 				
 				mission_do_departure( objp );
 				// don't add to wingp->total_departed here -- this is taken care of in ship code.

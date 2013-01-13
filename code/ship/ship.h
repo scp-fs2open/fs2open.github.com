@@ -428,7 +428,7 @@ extern ship_flag_name Ship_flag_names[];
 //#define	SF_LOCKED					(1 << 6)		// can't manipulate ship in loadout screens
 
 // high bits are for internal flags not saved to mission files
-// Go from bit 31 down to bit 3
+// Go from bit 31 down to bit 6
 #define	SF_KILL_BEFORE_MISSION	(1 << 31)
 #define	SF_DYING						(1 << 30)
 #define	SF_DISABLED					(1 << 29)
@@ -454,8 +454,9 @@ extern ship_flag_name Ship_flag_names[];
 #define	SF_SHIP_HAS_SCREAMED		(1 << 10)	// ship has let out a death scream
 #define	SF_RED_ALERT_STORE_STATUS (1 << 9)	// ship status should be stored/restored if red alert mission
 #define	SF_VAPORIZE					(1<<8)		// ship is vaporized by beam - alternative death sequence
+#define SF_DEPARTURE_ORDERED		(1<<7)		// departure of this ship was ordered by player - Goober5000, similar to WF_DEPARTURE_ORDERED
 
-// MWA -- don't go below whatever bitfield is used for Fred above (currently 7)!!!!
+// MWA -- don't go below whatever bitfield is used for Fred above (currently 6)!!!!
 
 #define	SF_DEPARTING				(SF_DEPART_WARP | SF_DEPART_DOCKBAY)				// ship is departing
 #define	SF_CANNOT_WARP				(SF_WARP_BROKEN | SF_WARP_NEVER | SF_DISABLED)	// ship cannot warp out

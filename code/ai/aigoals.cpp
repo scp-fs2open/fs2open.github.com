@@ -2200,7 +2200,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	case AI_GOAL_WARP: {
-		mission_do_departure( objp );
+		mission_do_departure( objp, true );
 		break;
 	}
 

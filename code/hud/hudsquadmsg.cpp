@@ -1227,6 +1227,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			ai_mode = AI_GOAL_WARP;
 			ai_submode = -1;
 			message = MESSAGE_WARP_OUT;
+			Ships[shipnum].flags |= SF_DEPARTURE_ORDERED;
 			break;
 		
 		// the following are support ship options!!!
