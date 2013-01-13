@@ -1233,10 +1233,10 @@ int brief_setup_closeup(brief_icon *bi)
 		*/
 		break;
 	case ICON_ASTEROID_FIELD:
-		strcpy_s(pof_filename, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);
+		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
 		strcpy_s(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
-		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -334.0f);
-		Closeup_zoom = 0.5f;
+		Closeup_cam_pos = Asteroid_icon_closeup_position;
+		Closeup_zoom = Asteroid_icon_closeup_zoom;
 		break;
 	case ICON_JUMP_NODE:
 		strcpy_s(pof_filename, NOX("subspacenode.pof"));
