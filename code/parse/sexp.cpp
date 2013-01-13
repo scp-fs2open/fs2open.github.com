@@ -16021,27 +16021,11 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 
 	// copy hull...
 	target_pobjp->special_hitpoints = source_shipp->special_hitpoints;
-	if (Ship_info[source_shipp->ship_info_index].max_hull_strength == 0.0f)
-	{
-		Warning(LOCATION, "Why does %s have a maximum hull strength of 0?", Ship_info[source_shipp->ship_info_index].name);
-		target_pobjp->ship_max_hull_strength_multiplier = 1.0f;
-	}
-	else
-	{
-		target_pobjp->ship_max_hull_strength_multiplier = source_shipp->ship_max_hull_strength / Ship_info[source_shipp->ship_info_index].max_hull_strength;
-	}
+	target_pobjp->ship_max_hull_strength = source_shipp->ship_max_hull_strength;
 	target_pobjp->initial_hull = fl2i(get_hull_pct(source_objp) * 100.0f);
 
 	// ...and shields
-	if (Ship_info[source_shipp->ship_info_index].max_shield_strength == 0.0f)
-	{
-		// [see above comment] this is okay because a ship can have no shields
-		target_pobjp->ship_max_shield_strength_multiplier = 1.0f;
-	}
-	else
-	{
-		target_pobjp->ship_max_shield_strength_multiplier = source_shipp->ship_max_shield_strength / Ship_info[source_shipp->ship_info_index].max_shield_strength;
-	}
+	target_pobjp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	target_pobjp->initial_shields = fl2i(get_shield_pct(source_objp) * 100.0f);
 
 
