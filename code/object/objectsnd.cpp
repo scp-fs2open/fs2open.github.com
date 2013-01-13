@@ -32,7 +32,7 @@
 // --end hack--
 
 
-// Persistant sounds for objects (pointer to obj_snd is in object struct)
+// Persistent sounds for objects (pointer to obj_snd is in object struct)
 typedef struct _obj_snd {
 	_obj_snd	*next, *prev;
 	int		objnum;			// object index of object that contains this sound
@@ -47,7 +47,7 @@ typedef struct _obj_snd {
 	ship_subsys *ss;		//Associated subsystem
 } obj_snd;
 
-#define VOL_PAN_UPDATE			50						// time in ms to update a persistant sound vol/pan
+#define VOL_PAN_UPDATE			50						// time in ms to update a persistent sound vol/pan
 #define MIN_PERSISTANT_VOL		0.10f
 #define MIN_FORWARD_SPEED		5
 #define SPEED_SOUND				600.0f				// speed of sound in FreeSpace
@@ -91,10 +91,10 @@ void obj_snd_source_pos(vec3d *sound_pos, obj_snd *osp)
 // ---------------------------------------------------------------------------------------
 // dcf_objsnd()
 //
-// Debug console function for object linked persistant sounds
+// Debug console function for object linked persistent sounds
 //
 //XSTR:OFF
-DCF(objsnd, "Persistant sound stuff" )
+DCF(objsnd, "Persistent sound stuff" )
 {
 	char		buf1[16], buf2[64];
 	obj_snd	*osp;
@@ -183,7 +183,7 @@ int obj_snd_get_slot()
 // ---------------------------------------------------------------------------------------
 // obj_snd_init()
 //
-// Called once at level start to initialize the persistant object sound system
+// Called once at level start to initialize the persistent object sound system
 //
 void obj_snd_level_init()
 {
@@ -212,7 +212,7 @@ void obj_snd_level_init()
 // ---------------------------------------------------------------------------------------
 // obj_snd_stop()
 //
-// Stop a persistant sound from playing.
+// Stop a persistent sound from playing.
 //
 // parameters:  objp			=> pointer to object that sound is to be stopped for
 //
@@ -285,7 +285,7 @@ void obj_snd_stop(object *objp, int index)
 // ---------------------------------------------------------------------------------------
 // obj_snd_stop_all()
 //
-// Stop all object-linked persistant sounds from playing
+// Stop all object-linked persistent sounds from playing
 //
 //
 void obj_snd_stop_all()
@@ -446,7 +446,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 // ---------------------------------------------------------------------------------------
 // obj_snd_do_frame()
 //
-// Called once per frame to process the persistant sound objects
+// Called once per frame to process the persistent sound objects
 //
 void obj_snd_do_frame()
 {
@@ -675,13 +675,13 @@ void obj_snd_do_frame()
 // ---------------------------------------------------------------------------------------
 // obj_snd_assign()
 //
-// Assign a persistant sound to an object.
+// Assign a persistent sound to an object.
 //
 // parameters:  objnum		=> index of object that sound is being assigned to
 //              i				=> Index into Snds[] array
 //					 fname		=> filename of sound to play ( so DS3D can load the sound )
 //
-// returns:     -1			=> sound could not be assigned (possible, since only MAX_OBJECT_SOUNDS persistant
+// returns:     -1			=> sound could not be assigned (possible, since only MAX_OBJECT_SOUNDS persistent
 //										sound can be assigned per object).  
 //               >= 0			=> sound was successfully assigned
 //
@@ -758,7 +758,7 @@ int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags, ship
 // ---------------------------------------------------------------------------------------
 // obj_snd_delete()
 //
-// Remove a persistant sound that has been assigned to an object.
+// Remove a persistent sound that has been assigned to an object.
 //
 // parameters:  objnum		=> index of object that sound is being removed from.
 //				index		=> index of sound in objsnd_num
@@ -788,7 +788,7 @@ void obj_snd_delete(int objnum, int index)
 // ---------------------------------------------------------------------------------------
 // obj_snd_delete_type()
 //
-// Remove every similar persistant sound that has been assigned to an object.
+// Remove every similar persistent sound that has been assigned to an object.
 //
 // parameters:  objnum		=> index of object that sound is being removed from.
 //				sndnum		=> index of sound that we're trying to completely get rid of
@@ -830,7 +830,7 @@ void	obj_snd_delete_type(int objnum, int sndnum, ship_subsys *ss)
 // ---------------------------------------------------------------------------------------
 // obj_snd_delete_all()
 //
-// Remove all persistant sounds
+// Remove all persistent sounds
 //
 void obj_snd_delete_all()
 {
@@ -847,7 +847,7 @@ void obj_snd_delete_all()
 // ---------------------------------------------------------------------------------------
 // obj_snd_close()
 //
-// Called once at game close to de-initialize the persistant object sound system
+// Called once at game close to de-initialize the persistent object sound system
 //
 void obj_snd_level_close()
 {

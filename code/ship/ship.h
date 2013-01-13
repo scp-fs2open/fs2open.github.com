@@ -492,7 +492,7 @@ extern ship_flag_name Ship_flag_names[];
 #define SF2_SHIP_LOCKED						(1<<24)		// Karajorma - Prevents the player from changing the ship class on loadout screen
 #define SF2_WEAPONS_LOCKED					(1<<25)		// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
 
-// If any of these bits in the ship->flags are set, ignore this ship when targetting
+// If any of these bits in the ship->flags are set, ignore this ship when targeting
 extern int TARGET_SHIP_IGNORE_FLAGS;
 
 #define MAX_DAMAGE_SLOTS	32

@@ -47,7 +47,7 @@
 #include "network/multiutil.h"
 #include "model/model.h"
 
-// If any of these bits in the ship->flags are set, ignore this ship when targetting
+// If any of these bits in the ship->flags are set, ignore this ship when targeting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);
 
 // Global values for the target bracket width and height, used for debugging
@@ -1283,8 +1283,8 @@ ship_obj *advance_ship(ship_obj *so, int next_flag)
 ///                                     classes of objects from being targeted.
 ///                                     Defaults to (SIF_CARGO | SIF_NAVBUOY)
 ///                                        
-/// \returns         The next object to target if targetting was successful. 
-///                  Returns NULL if targetting was unsuccessful.
+/// \returns         The next object to target if targeting was successful. 
+///                  Returns NULL if targeting was unsuccessful.
 static object* select_next_target_by_distance( const bool targeting_from_closest_to_farthest, const int valid_team_mask, const int attacked_object_number = -1, const int target_filters = (SIF_CARGO | SIF_NAVBUOY)) {
 	object *minimum_object_ptr, *maximum_object_ptr, *nearest_object_ptr;
 	minimum_object_ptr = maximum_object_ptr = nearest_object_ptr = NULL;
@@ -1989,7 +1989,7 @@ void hud_target_auto_target_next()
 }
 
 
-// Given that object 'targeter' is targetting object 'targetee', 
+// Given that object 'targeter' is targeting object 'targetee', 
 // how far are they?   This uses the point closest to the targeter
 // object on the targetee's bounding box.  So if targeter is inside
 // targtee's bounding box, the distance is 0.
@@ -2140,7 +2140,7 @@ bool evaluate_ship_as_closest_target(esct *esct)
 		}
 	}
 
-	// If no turret is attacking, check if objp is actually targetting attacked_objnum
+	// If no turret is attacking, check if objp is actually targeting attacked_objnum
 	// don't bail if targeting is for player
 	if ( !targeting_player && !turret_is_attacking ) {
 		ai_info *aip = &Ai_info[esct->shipp->ai_index];
@@ -3851,7 +3851,7 @@ void HudGaugeLeadIndicator::render(float frametime)
 	// first render the current target the player has selected.
 	renderLeadCurrentTarget();
 
-	// if extra targetting info is enabled, render lead indicators for objects in the target display list.
+	// if extra targeting info is enabled, render lead indicators for objects in the target display list.
 	for(size_t i = 0; i < target_display_list.size(); i++) {
 		if ( (target_display_list[i].flags & TARGET_DISPLAY_LEAD) && target_display_list[i].objp ) {
 

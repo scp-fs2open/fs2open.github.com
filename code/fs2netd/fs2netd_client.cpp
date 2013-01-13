@@ -490,7 +490,7 @@ bool fs2netd_login()
 
 		default:
 			ml_string("FS2NetD ERROR: Unknown return case for GetPlayerData()");
-			strcpy_s(error_str, "Unkown return case from GetPlayerData(). Contact the FS2NetD Administrator!");
+			strcpy_s(error_str, "Unknown return case from GetPlayerData(). Contact the FS2NetD Administrator!");
 			retval = false;
 			break;
 	}

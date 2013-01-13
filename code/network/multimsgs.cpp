@@ -2811,7 +2811,7 @@ void process_ship_depart_packet( ubyte *data, header *hinfo )
 				ship_actually_depart(objp->instance, s_method); 
 			}
 			else {
-				nprintf(("network", "Can not proces ship depart packed. Object with net signature %d is not a ship!\n", signature ));	
+				nprintf(("network", "Can not process ship depart packed. Object with net signature %d is not a ship!\n", signature ));	
 				return;
 			}
 			break;
@@ -4349,7 +4349,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 
 	// if this player is not allowed to do messaging, quit here
 	if( !multi_can_message(&Net_players[player_num]) ){
-		nprintf(("Network","Recieved player order packet from player not allowed to give orders!!\n"));
+		nprintf(("Network","Received player order packet from player not allowed to give orders!!\n"));
 		return;
 	}
 

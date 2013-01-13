@@ -11547,7 +11547,7 @@ void sexp_transfer_cargo(int n)
 	// Don't give warning for large ships (cruiser on up) 
 	if (! (Ship_info[Ships[shipnum2].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
 		if ( stricmp(Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK], "nothing") ) {
-			Warning(LOCATION, "Transfering cargo to %s which already\nhas cargo %s.\nCargo will be replaced", Ships[shipnum2].ship_name, Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK] );
+			Warning(LOCATION, "Transferring cargo to %s which already\nhas cargo %s.\nCargo will be replaced", Ships[shipnum2].ship_name, Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK] );
 		}
 	}
 #endif
@@ -13687,7 +13687,7 @@ void sexp_turret_protect_ships(int n, bool flag)
 		Warning(LOCATION, "Invalid turret type '%s'!", turret_type);
 }
 
-// Goober5000 - sets the "dont collide invisible" flag on a list of ships
+// Goober5000 - sets the "don't collide invisible" flag on a list of ships
 void sexp_dont_collide_invisible(int n, bool dont_collide)
 {
 	sexp_deal_with_ship_flag(n, true, 0, 0, 0, SF2_DONT_COLLIDE_INVIS, 0, P_SF2_DONT_COLLIDE_INVIS, dont_collide);
@@ -29957,10 +29957,10 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of medal to grant to player." },
 
-	{ OP_GOOD_SECONDARY_TIME, "Set prefered secondary weapons\r\n"
-		"\tThis sexpression is used to inform the AI about prefered secondary weapons to "
+	{ OP_GOOD_SECONDARY_TIME, "Set preferred secondary weapons\r\n"
+		"\tThis sexpression is used to inform the AI about preferred secondary weapons to "
 		"fire during combat.  When this expression is evaulated, any AI ships of the given "
-		"team prefer to fire the given weapon at the given ship. (Prefered over other "
+		"team prefer to fire the given weapon at the given ship. (Preferred over other "
 		"secondary weapons)\r\n\r\n"
 		"Takes 4 argument...\r\n"
 		"\t1:\tTeam name which will prefer firing given weapon\r\n"
@@ -30166,12 +30166,12 @@ sexp_help_struct Sexp_help[] = {
 		"\t1+:\tName of ships to make invulnerable to weapons." },
 
 	{ OP_SHIP_BOMB_TARGETABLE, "ship-targetable-as-bomb\r\n"
-		"\tCauses the ships listed in this sexpression to be targetable with bomb targetting key.\r\n\r\n"
+		"\tCauses the ships listed in this sexpression to be targetable with bomb targeting key.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\t1+:\tName of ships to make targetable with bomb targeting key." },
 
 	{ OP_SHIP_BOMB_UNTARGETABLE, "ship-untargetable-as-bomb\r\n"
-		"\tCauses the ships listed in this sexpression to not be targetable with bomb targetting key.\r\n\r\n"
+		"\tCauses the ships listed in this sexpression to not be targetable with bomb targeting key.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\t1+:\tName of ships to make nontargetable with bomb targeting key." },
 
@@ -30442,14 +30442,14 @@ sexp_help_struct Sexp_help[] = {
 		"\tAll:\tList of ships on which to unset the vaporize flag" },
 
 	{ OP_DONT_COLLIDE_INVISIBLE, "don't-collide-invisible\r\n"
-		"\tSets the \"dont collide invisible\" flag on a list of ships.\r\n"
+		"\tSets the \"don't collide invisible\" flag on a list of ships.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to set the \"dont collide invisible\" flag" },
+		"\tAll:\tList of ships on which to set the \"don't collide invisible\" flag" },
 
 	{ OP_COLLIDE_INVISIBLE, "collide-invisible\r\n"
-		"\tUnsets the \"dont collide invisible\" flag on a list of ships.\r\n"
+		"\tUnsets the \"don't collide invisible\" flag on a list of ships.\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tList of ships on which to unset the \"dont collide invisible\" flag" },
+		"\tAll:\tList of ships on which to unset the \"don't collide invisible\" flag" },
 
 	{ OP_SET_MOBILE, "set-mobile\r\n"
 		"\tAllows the specified ship(s) to move.  Opposite of set-immobile.\r\n"

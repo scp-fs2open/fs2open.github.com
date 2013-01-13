@@ -1438,7 +1438,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 
 // NOTE:  Do not change this value unless you understand exactly what it means and what it does.
 //        It refers to how many (non-destroyed) subsystems (and turrets) will be scanned for possible
-//        targetting, per turret, per frame.  A higher value will process more systems at once,
+//        targeting, per turret, per frame.  A higher value will process more systems at once,
 //        but it will be much slower to scan though them.  It is not necessary to scan all
 //        non-destroyed subsystem each frame for each turret.  Also, "aifft_max_checks" is balanced
 //        against the original value, be sure to account for this discrepancy with any changes.

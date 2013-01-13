@@ -1298,7 +1298,7 @@ void lcl_ext_setup_pointers()
 
 	// if we didn't find the language specified, error
 	if(found_start <= 0){
-		error_display(0, "Could not find specified langauge in tstrings.tbl!\n");
+		error_display(0, "Could not find specified language in tstrings.tbl!\n");
 		lcl_ext_close();
 		return;
 	}

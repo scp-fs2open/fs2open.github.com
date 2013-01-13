@@ -301,7 +301,7 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 				if (pcm_total_size > 0) {
 					*dest_size = (uint)(pcm_total_size * (*header)->nBlockAlign);
 				} else {
-					nprintf(("Sound", "SOUND ==> Size returned for this file is invalid. Please reencode the file, as it will not work correctly.\n"));
+					nprintf(("Sound", "SOUND ==> Size returned for this file is invalid. Please re-encode the file, as it will not work correctly.\n"));
 					return -1;
 				}
 			} else {
