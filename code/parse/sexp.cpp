@@ -29672,9 +29672,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t2 (optional):\tShip to undock from.  If none is specified, the code will pick the first docked ship." },
 
 	{ OP_AI_WARP_OUT, "Ai-warp-out (Ship/Wing Goal)\r\n"
-		"\tCauses the specified ship/wing to warp out of the mission.  Currently, the ship will "
-		"warp out at its current location.  This behavior will change.  Currently, the first "
-		"argument means nothing.\r\n\r\n"
+		"\tCauses the specified ship/wing to immediately warp out of the mission, from its current location.  "
+		"It will warp even if its departure cue is specified as a hangar bay.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to follow to warp out (not used).\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },

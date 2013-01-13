@@ -6841,6 +6841,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
 	// if our current goal is to warp, then we won't consider departing to a bay, because the goal explicitly says to warp out
+	// (this sort of goal can be assigned in FRED, either in the ship's initial orders or as the ai-warp-out goal)
 	if (goal_is_to_warp)
 	{
 		// aha, but not if we were ORDERED to depart, because the comms menu ALSO uses the goal code, and yet the comms menu means any departure method!
@@ -6862,16 +6863,16 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	{
 		wing *wingp = &Wings[shipp->wingnum];
 
-		location = wingp->departure_location;
-		anchor = wingp->departure_anchor;
-		path_mask = wingp->departure_path_mask;
+		// copy the wing's departure information to the ship
+		// (needed because the bay departure code will check the ship's information again later on)
+		shipp->departure_location = wingp->departure_location;
+		shipp->departure_anchor = wingp->departure_anchor;
+		shipp->departure_path_mask = wingp->departure_path_mask;
 	}
-	else
-	{
-		location = shipp->departure_location;
-		anchor = shipp->departure_anchor;
-		path_mask = shipp->departure_path_mask;
-	}
+	
+	location = shipp->departure_location;
+	anchor = shipp->departure_anchor;
+	path_mask = shipp->departure_path_mask;
 
 	// if departing to a docking bay, try to find the anchor ship to depart to.  If not found, then
 	// just make it warp out like anything else.
@@ -7024,7 +7025,7 @@ void mission_eval_departures()
 
 				Assert ( shipp->objnum != -1 );
 				objp = &Objects[shipp->objnum];
-				
+
 				mission_do_departure( objp );
 				// don't add to wingp->total_departed here -- this is taken care of in ship code.
 			}
