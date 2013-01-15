@@ -127,9 +127,9 @@
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fs2_open_3_6_17_DEBUG</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fs2_open_3_6_17_DEBUG_SSE</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fs2_open_3_6_17_DEBUG_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fs2_open_3_6_17r</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fs2_open_3_6_17r_SSE</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fs2_open_3_6_17r_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fs2_open_3_6_17</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fs2_open_3_6_17_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fs2_open_3_6_17_SSE2</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CustomBuildStep>
