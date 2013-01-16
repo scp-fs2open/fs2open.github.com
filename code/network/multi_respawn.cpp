@@ -681,19 +681,19 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 		// determine whether he wants to respawn as an observer or not
 		GET_DATA(code);
 
-		nprintf(("Network","Received respawn request\n"));
 		if(player_index == -1){
 			nprintf(("Network","Received respawn request from unknown player!\n"));
 			break;
 		} 		     		
+		nprintf(("Network","Received respawn request for player %s\n", Net_players[player_index].m_player->callsign));
 
 		// make sure he's not making an invalid request
 		if((code == 0) && !(Net_players[player_index].flags & NETINFO_FLAG_RESPAWNING)){
-			nprintf(("Network","Received respawn request from player who shouldn't be respawning!\n"));
+			nprintf(("Network","This player shouldn't be respawning!\n"));
 			Int3();
 			break;
 		} else if((code == 1) && !(Net_players[player_index].flags & NETINFO_FLAG_LIMBO)){
-			nprintf(("Network","Received respawn observer request from a player who shouldn't be respawning as an observer!\n"));
+			nprintf(("Network","This is a respawn observer request from a player who shouldn't be respawning as an observer!\n"));
 			Int3();
 			break;
 		}
