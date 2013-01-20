@@ -769,7 +769,9 @@ void pilotfile::csg_read_redalert()
 		return;
 	}
 
-	Red_alert_wingman_status.reserve( list_size );
+	// about to read new redalert data so flush any existing data
+	// otherwise wingman entries will multiply like rabbits
+	Red_alert_wingman_status.clear();
 
 	cfread_string_len(t_string, MAX_FILENAME_LEN, cfp);
 
