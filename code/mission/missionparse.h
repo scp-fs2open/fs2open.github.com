@@ -437,8 +437,8 @@ typedef struct p_object {
 	int		alt_type_index;					// optional alt type index
 	int		callsign_index;					// optional callsign index
 
-	float ship_max_hull_strength_multiplier;			// Needed to deal with special hitpoints
-	float ship_max_shield_strength_multiplier;			//
+	float ship_max_hull_strength;			// Needed to deal with special hitpoints
+	float ship_max_shield_strength;
 
 	// Goober5000
 	int num_texture_replacements;
@@ -532,8 +532,8 @@ typedef struct p_object {
 		alt_type_index = 0;
 		callsign_index = 0;
 
-		ship_max_hull_strength_multiplier = 1.0f;
-		ship_max_shield_strength_multiplier = 1.0f;
+		ship_max_hull_strength = 0.0f;
+		ship_max_shield_strength = 0.0f;
 
 		num_texture_replacements = 0;
 		
@@ -697,7 +697,7 @@ int mission_parse_is_multi(char *filename, char *mission_name );
 int mission_parse_get_multi_mission_info(char *filename);
 
 // called externally from multiplayer code
-int mission_do_departure(object *objp);
+int mission_do_departure(object *objp, bool goal_is_to_warp = false);
 
 // called externally from freespace.cpp
 void mission_parse_fixup_players(void);

@@ -1816,8 +1816,8 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
-	shipp->ship_max_shield_strength = sip->max_shield_strength * p_objp->ship_max_shield_strength_multiplier;
-	shipp->ship_max_hull_strength =  sip->max_hull_strength * p_objp->ship_max_hull_strength_multiplier;
+	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
+	shipp->ship_max_hull_strength =  p_objp->ship_max_hull_strength;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -1951,7 +1951,7 @@ int parse_create_object_sub(p_object *p_objp)
 	// forcing the shields on or off depending on flags -- but only if shield strength supports it
 
 	// no strength means we can't have shields, period
-	if (sip->max_shield_strength * p_objp->ship_max_shield_strength_multiplier == 0.0f)
+	if (p_objp->ship_max_shield_strength == 0.0f)
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 	// force shields on means we have them regardless of other flags; per r5332 this ranks above the next check
 	else if (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON)
@@ -3044,22 +3044,23 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// set custom shield value
-	if ((p_objp->special_shield != -1) && (Ship_info[p_objp->ship_class].max_shield_strength > 0.0f)) {
-		// the fact that we use a multiplier means we can't magically grant shields to ships which are tabled with 0 shields, unfortunately...
-		p_objp->ship_max_shield_strength_multiplier = (float) p_objp->special_shield / Ship_info[p_objp->ship_class].max_shield_strength;
-	} else {
-		p_objp->ship_max_shield_strength_multiplier = 1.0f;
+	if (p_objp->special_shield != -1) {
+		p_objp->ship_max_shield_strength = (float) p_objp->special_shield; 
+	}
+	else {
+		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
 	}
 	
 	// set custom hitpoint value
 	if (p_objp->special_hitpoints > 0) {
-		p_objp->ship_max_hull_strength_multiplier = (float) p_objp->special_hitpoints / Ship_info[p_objp->ship_class].max_hull_strength; 
+		p_objp->ship_max_hull_strength = (float) p_objp->special_hitpoints; 
 	}
 	else {
-		p_objp->ship_max_hull_strength_multiplier = 1.0f;
+		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
 	}
 
-	Assert(p_objp->ship_max_hull_strength_multiplier > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+
 
 	// if the kamikaze flag is set, we should have the next flag
 	if (optional_string("+Kamikaze Damage:"))
@@ -3688,11 +3689,28 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	// Hitpoints
 	// We need to take into account that the ship might have been assigned special hitpoints so we can't 
 	// simply swap old for new. 
-	Assert (p_obj->ship_max_hull_strength_multiplier > 0.0f);
-	Assert (old_ship_info->max_hull_strength > 0.0f);
+	Assert (p_obj->ship_max_hull_strength > 0);
+	Assert (old_ship_info->max_hull_strength > 0);
 	
-	float hp_multiplier = (Ship_info[p_obj->ship_class].max_hull_strength * p_obj->ship_max_hull_strength_multiplier) / old_ship_info->max_hull_strength;
-	p_obj->ship_max_hull_strength_multiplier = (new_ship_info->max_hull_strength * hp_multiplier) / new_ship_info->max_hull_strength;
+	float hp_multiplier = p_obj->ship_max_hull_strength / old_ship_info->max_hull_strength;
+	p_obj->ship_max_hull_strength = new_ship_info->max_hull_strength * hp_multiplier;
+
+	// Shields
+	// Again we have to watch out for special hitpoints but this time we can't assume that there will be a 
+	// shield. So first lets see if there is one. 
+	if ((p_obj->ship_max_shield_strength != old_ship_info->max_shield_strength) && 
+		(p_obj->ship_max_shield_strength > 0) &&
+		(new_ship_info->max_shield_strength > 0))
+	{
+		// This ship is using special hitpoints to alter the shield strength
+		float shield_multiplier = p_obj->ship_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
+		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
+	}
+	// Not using special hitpoints or a class which has a shield strength of zero
+	else
+	{
+		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength;
+	}
 	
 	// Primary weapons
 	// First find out what is the correct number for a ship of this class
@@ -6829,30 +6847,50 @@ int ship_can_use_warp_drive(ship *shipp)
 }
 
 /**
- * Called to make object objp depart.
+ * Called to make object objp depart.  Rewritten and expanded by Goober5000.
  */
-int mission_do_departure(object *objp)
+int mission_do_departure(object *objp, bool goal_is_to_warp)
 {
-	Assert (objp->type == OBJ_SHIP);
+	Assert(objp->type == OBJ_SHIP);
 	int location, anchor, path_mask;
 	ship *shipp = &Ships[objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
 
-	// Goober5000 - if this is a ship which has no subspace drive, departs to hyperspace, and belongs to a wing,
-	// then use the wing departure information
-	if ((shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) && (shipp->departure_location == DEPART_AT_LOCATION) && (shipp->wingnum >= 0))
+	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
+
+	// if our current goal is to warp, then we won't consider departing to a bay, because the goal explicitly says to warp out
+	// (this sort of goal can be assigned in FRED, either in the ship's initial orders or as the ai-warp-out goal)
+	if (goal_is_to_warp)
+	{
+		// aha, but not if we were ORDERED to depart, because the comms menu ALSO uses the goal code, and yet the comms menu means any departure method!
+		if ((shipp->flags & SF_DEPARTURE_ORDERED) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_DEPARTURE_ORDERED)))
+		{
+			mprintf(("Looks like we were ordered to depart; initiating the standardard departure logic\n"));
+		}
+		// since our goal is to warp, then if we can warp, jump directly to the warping part
+		else if (ship_can_use_warp_drive(shipp))
+		{
+			mprintf(("Our current goal is to warp!  Trying to warp...\n"));
+			goto try_to_warp;
+		}
+		// otherwise, since we can't warp, we'll do the standard bay departure check, etc.
+	}
+
+	// if this ship belongs to a wing, then use the wing departure information
+	if (shipp->wingnum >= 0)
 	{
 		wing *wingp = &Wings[shipp->wingnum];
 
-		location = wingp->departure_location;
-		anchor = wingp->departure_anchor;
-		path_mask = wingp->departure_path_mask;
+		// copy the wing's departure information to the ship
+		// (needed because the bay departure code will check the ship's information again later on)
+		shipp->departure_location = wingp->departure_location;
+		shipp->departure_anchor = wingp->departure_anchor;
+		shipp->departure_path_mask = wingp->departure_path_mask;
 	}
-	else
-	{
-		location = shipp->departure_location;
-		anchor = shipp->departure_anchor;
-		path_mask = shipp->departure_path_mask;
-	}
+	
+	location = shipp->departure_location;
+	anchor = shipp->departure_anchor;
+	path_mask = shipp->departure_path_mask;
 
 	// if departing to a docking bay, try to find the anchor ship to depart to.  If not found, then
 	// just make it warp out like anything else.
@@ -6867,6 +6905,7 @@ int mission_do_departure(object *objp)
 		// see if ship is yet to arrive.  If so, then warp.
 		if (mission_parse_get_arrival_ship(name))
 		{
+			mprintf(("Anchor ship %s hasn't arrived yet!  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -6875,6 +6914,7 @@ int mission_do_departure(object *objp)
 		anchor_shipnum = ship_name_lookup(name);
 		if (anchor_shipnum < 0)
 		{
+			mprintf(("Anchor ship %s not found!  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -6887,6 +6927,7 @@ int mission_do_departure(object *objp)
 		// make sure fighterbays aren't destroyed
 		if (ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]))
 		{
+			mprintf(("Anchor ship %s's fighterbays are destroyed!  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -6895,19 +6936,20 @@ int mission_do_departure(object *objp)
 		{
 			MONITOR_INC(NumShipDepartures,1);
 
+			mprintf(("Acquired departure path\n"));
 			return 1;
 		}
 	}
 
 try_to_warp:
-	ai_info *aip = &Ai_info[shipp->ai_index];
 
-	// Goober5000 - make sure we can actually warp
+	// make sure we can actually warp
 	if (ship_can_use_warp_drive(shipp))
 	{
 		ai_set_mode_warp_out(objp, aip);
 		MONITOR_INC(NumShipDepartures,1);
 
+		mprintf(("Setting mode to warpout\n"));
 		return 1;
 	}
 	else
@@ -6917,6 +6959,7 @@ try_to_warp:
 		// find something else to do
 		aip->mode = AIM_NONE;
 
+		mprintf(("Can't warp!  Doing something else instead.\n"));
 		return 0;
 	}
 }
@@ -7000,12 +7043,7 @@ void mission_eval_departures()
 
 				Assert ( shipp->objnum != -1 );
 				objp = &Objects[shipp->objnum];
-				
-				// copy the wing's departure information to the ship
-				shipp->departure_location = Wings[shipp->wingnum].departure_location;
-				shipp->departure_anchor = Wings[shipp->wingnum].departure_anchor;
-				shipp->departure_path_mask = Wings[shipp->wingnum].departure_path_mask;
-				
+
 				mission_do_departure( objp );
 				// don't add to wingp->total_departed here -- this is taken care of in ship code.
 			}
@@ -7390,8 +7428,8 @@ void mission_bring_in_support_ship( object *requester_objp )
 	}
 
 	// set support ship hitpoints
-	pobj->ship_max_hull_strength_multiplier = 1.0f;
-	pobj->ship_max_shield_strength_multiplier = 1.0f;
+	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
+	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
 
 	pobj->team = requester_shipp->team;
 

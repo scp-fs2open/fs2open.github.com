@@ -1656,7 +1656,7 @@ void hud_render_preprocess(float frametime)
 	// process asteroid brackets if necessary
 	hud_show_asteroid_brackets();
 
-	// process targetting data around the current target
+	// process targeting data around the current target
 	hud_show_targeting_gauges(frametime);
 
 	// process brackets and distance to remote detonate missile

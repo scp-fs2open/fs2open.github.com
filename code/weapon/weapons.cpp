@@ -2406,7 +2406,7 @@ int parse_weapon(int subtype, bool replace)
 					} else {
 						wip->particle_spewers[spew_index].particle_spew_type = PSPEW_DEFAULT;
 					}
-				// for compatability with existing tables that dont have a type tag
+				// for compatability with existing tables that don't have a type tag
 				} else if (wip->particle_spewers[spew_index].particle_spew_type == PSPEW_NONE) { // make sure the ommission of type wanst to edit an existing entry
 					wip->particle_spewers[spew_index].particle_spew_type = PSPEW_DEFAULT;
 				}
@@ -6344,7 +6344,7 @@ void weapon_maybe_spew_particle(object *obj)
 				wp->particle_spew_time[psi] = timestamp(wip->particle_spewers[0].particle_spew_time);
 
 				// turn normals and origins to world space if we need to
-				if (!vm_vec_same(&wip->particle_spewers[psi].particle_spew_offset, &vmd_zero_vector)) {	// dont xform unused vectors
+				if (!vm_vec_same(&wip->particle_spewers[psi].particle_spew_offset, &vmd_zero_vector)) {	// don't xform unused vectors
 					vm_vec_unrotate(&spawn_pos, &wip->particle_spewers[psi].particle_spew_offset, &obj->orient);
 				} else {
 					spawn_pos = vmd_zero_vector;
@@ -6459,7 +6459,7 @@ void weapon_maybe_spew_particle(object *obj)
 						vm_vec_rand_vec_quick(&input_vel);
 						vm_vec_scale(&input_vel, wip->particle_spewers[psi].particle_spew_scale);
 						
-						if (wip->particle_spewers[psi].particle_spew_z_scale != 1.0f) {	// dont do the extra math for spherical effect
+						if (wip->particle_spewers[psi].particle_spew_z_scale != 1.0f) {	// don't do the extra math for spherical effect
 							temp_vel = input_vel;
 							temp_vel.xyz.z *= wip->particle_spewers[psi].particle_spew_z_scale;	// for an oviod particle effect to better combine with laser effects
 							vm_vec_unrotate(&input_vel, &temp_vel, &obj->orient);				// so it has to be rotated

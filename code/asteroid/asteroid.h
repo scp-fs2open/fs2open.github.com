@@ -136,6 +136,9 @@ extern asteroid_field	Asteroid_field;
 
 extern int	Num_asteroids;
 extern int	Asteroids_enabled;
+extern char		Asteroid_icon_closeup_model[NAME_LENGTH];	// model for asteroid field briefing icon rendering
+extern vec3d	Asteroid_icon_closeup_position;  // closeup position for asteroid field briefing icon rendering
+extern float	Asteroid_icon_closeup_zoom;		 // zoom position for asteroid field briefing icon rendering
 
 void	asteroid_init();
 void	asteroid_level_init();

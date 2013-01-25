@@ -310,7 +310,7 @@ int Cmdline_no_vsync = 0;
 
 // HUD related
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL);	// Cmdline_ballistic_gauge
-cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Cmdline_dualscanlines  -- Change to phreaks options including new targetting code
+cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Cmdline_dualscanlines  -- Change to phreaks options including new targeting code
 cmdline_parm orb_radar("-orbradar", NULL);			// Cmdline_orb_radar
 cmdline_parm rearm_timer_arg("-rearm_timer", NULL);	// Cmdline_rearm_timer
 cmdline_parm targetinfo_arg("-targetinfo", NULL);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C

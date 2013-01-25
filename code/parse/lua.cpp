@@ -4912,7 +4912,7 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 	return ade_set_args(L, "o", l_Shields.Set(object_h(objh->objp)));
 }
 
-ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "number", "Returns the objects unique numeric signature, or -1 if invalid. useful for creating a metadata sytem")
+ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "number", "Returns the object's unique numeric signature, or -1 if invalid.  Useful for creating a metadata system")
 {
 	object_h *oh;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
@@ -4924,7 +4924,7 @@ ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "nu
 	return ade_set_args(L, "i", oh->sig);
 }
 
-ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", "true if handle is valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	object_h *oh;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
@@ -5548,7 +5548,7 @@ public:
 		return true;
 	}
 };
-ade_obj<cockpit_displays_info_h> l_CockpitDisplayInfos("cockpitdisplays", "Array of cockpit display informations");
+ade_obj<cockpit_displays_info_h> l_CockpitDisplayInfos("cockpitdisplays", "Array of cockpit display information");
 
 ADE_FUNC(__len, l_CockpitDisplayInfos, NULL, "Number of cockpit displays for this ship class", "number", "number of cockpit displays or -1 on error")
 {
@@ -5952,7 +5952,7 @@ ADE_VIRTVAR(CockpitModel, l_Shipclass, "model", "Model used for first-person coc
 	return ade_set_args(L, "o", l_Model.Set(model_h(sip->cockpit_model_num)));
 }
 
-ADE_VIRTVAR(CockpitDisplays, l_Shipclass, "cockpitdisplays", "Gets the cockpit display information array of this ship class", "cockpitdisplays", "Array handle containing the informations or invalid handle on error")
+ADE_VIRTVAR(CockpitDisplays, l_Shipclass, "cockpitdisplays", "Gets the cockpit display information array of this ship class", "cockpitdisplays", "Array handle containing the information or invalid handle on error")
 {
 	int ship_info_idx=-1;
 	cockpit_displays_info_h *cdih = NULL;
@@ -7088,7 +7088,7 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 }
 
 
-ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem. If used to set a new target, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
+ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. If used to set a new target, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
 {
 	ship_subsys_h *sso;
 	object_h *objh;

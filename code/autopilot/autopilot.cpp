@@ -225,7 +225,7 @@ extern object* Autopilot_flight_leader;
 //        * Control switched from player to AI
 //        * Time compression to 32x
 //        * Lock time compression -WMC
-//        * Tell AI to fly to targetted Nav Point (for all nav-status wings/ships)
+//        * Tell AI to fly to targeted Nav Point (for all nav-status wings/ships)
 //		  * Sets max waypoint speed to the best-speed of the slowest ship tagged
 bool StartAutopilot()
 {

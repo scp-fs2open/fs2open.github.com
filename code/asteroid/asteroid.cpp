@@ -64,6 +64,9 @@ asteroid_field	Asteroid_field;
 
 static int		Asteroid_impact_explosion_ani;
 static float	Asteroid_impact_explosion_radius;
+char	Asteroid_icon_closeup_model[NAME_LENGTH];
+vec3d	Asteroid_icon_closeup_position;
+float	Asteroid_icon_closeup_zoom;	
 
 #define	ASTEROID_CHECK_WRAP_TIMESTAMP			2000	// how often an asteroid gets checked for wrapping
 #define	ASTEROID_UPDATE_COLLIDE_TIMESTAMP	2000	// how often asteroid is checked for impending collisions with escort ships
@@ -1803,7 +1806,7 @@ void asteroid_parse_section(asteroid_info *asip)
 	required_string( "$POF file2:" );
 	stuff_string(asip->pof_files[1], F_NAME, MAX_FILENAME_LEN);
 
-	if ( (stristr(asip->name,"Asteroid") != NULL) ) {
+	if ( (stristr(asip->name, "Asteroid") != NULL) ) {
 		required_string( "$POF file3:" );
 		stuff_string(asip->pof_files[2], F_NAME, MAX_FILENAME_LEN);
 	}
@@ -2019,6 +2022,24 @@ void asteroid_parse_tbl()
 
 	required_string("$Impact Explosion Radius:");
 	stuff_float(&Asteroid_impact_explosion_radius);
+
+	if (optional_string("$Briefing Icon Closeup Model:")) {
+		stuff_string(Asteroid_icon_closeup_model, F_NAME, NAME_LENGTH);
+	} else {
+		strcpy_s(Asteroid_icon_closeup_model, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);	// magic file from retail
+	}
+
+	if (optional_string("$Briefing Icon Closeup Position:")) {
+		stuff_vec3d(&Asteroid_icon_closeup_position);
+	} else {
+		vm_vec_make(&Asteroid_icon_closeup_position, 0.0f, 0.0f, -334.0f);  // magic numbers from retail
+	}
+
+	if (optional_string("$Briefing Icon Closeup Zoom:")) {
+		stuff_float(&Asteroid_icon_closeup_zoom);
+	} else {
+		Asteroid_icon_closeup_zoom = 0.5f;	// magic number from retail
+	}
 
 	// close localization
 	lcl_ext_close();

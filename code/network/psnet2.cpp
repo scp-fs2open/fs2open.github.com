@@ -1998,7 +1998,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 								memcpy(&Reliable_sockets[i].addr,&rcv_addr,sizeof(SOCKADDR));
 								Reliable_sockets[i].status = RNF_LIMBO;
 								*socket = i;
-								ml_string("Succesfully connected to server in nw_ConnectToServer().");
+								ml_string("Successfully connected to server in nw_ConnectToServer().");
 								//Now send I_AM_HERE packet
 								conn_header.type = RNT_I_AM_HERE;
 								conn_header.seq = (ushort)(~CONNECTSEQ);
