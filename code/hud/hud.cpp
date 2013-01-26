@@ -451,6 +451,10 @@ void HudGauge::updateCustomGaugeFrame(int frame_offset)
 	if(!custom_gauge) {
 		return;
 	}
+	
+	if (frame_offset < 0 ||frame_offset > custom_frame.num_frames) {
+		return;
+	}
 
 	custom_frame_offset = frame_offset;
 }
