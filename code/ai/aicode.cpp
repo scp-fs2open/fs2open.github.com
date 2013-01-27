@@ -2829,7 +2829,7 @@ void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_flag, int 
 
 			ship	*shipp = &Ships[objp->instance];
 			pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-			if(pm->n_paths <= path_num)
+			if(path_num >= pm->n_paths)
 				Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exist, on ship %s", path_num, shipp->ship_name);
 
 			aip->goal_objnum = objnum;
@@ -12563,7 +12563,7 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 	shipp->bay_doors_launched_from = (ubyte)ship_bay_path;
 	shipp->bay_doors_parent_shipnum = parent_objp->instance;
 
-	Assert(pm->n_paths > path_index);
+	Assert(path_index < pm->n_paths);
 	ai_find_path(pl_objp, parent_objnum, path_index, 0);
 
 	// Set this flag, so we don't bother recreating the path... we won't need to update the path
