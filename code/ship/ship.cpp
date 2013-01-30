@@ -8962,8 +8962,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
-	sip = &(Ship_info[ship_type]);
+
+	// do a quick out if we're already using the new ship class
+	if (sp->ship_info_index == ship_type)
+		return;
+
 	swp = &sp->weapons;
+	sip = &(Ship_info[ship_type]);
 	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
 	p_objp = mission_parse_get_parse_object(sp->ship_name);
