@@ -29893,8 +29893,7 @@ sexp_help_struct Sexp_help[] = {
 
 	// Karajorma
 	{ OP_STRING_TO_INT, "string-to-int\r\n"
-		"\tConverts a string into an integer. The string must only contain numeric characters "
-		"or zero is returned \r\n"
+		"\tConverts a string into an integer.  All non-numeric characters (except for the negative sign) will be ignored, as will any fractional part of a decimal number.  This behavior is somewhat different than the atoi() function in C or C++, which will abort if it encounters any non-numeric character.  For a string like \"turret31\", this sexp will return 31, but atoi() will return 0.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tString to convert" },
 

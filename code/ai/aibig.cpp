@@ -370,17 +370,18 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 	target_objp = &Objects[aip->target_objnum];
 
 	if ( (aip->targeted_subsys != NULL) && (aip->target_objnum >= 0) && (aip->targeted_subsys->system_info->path_num >= 0) ) {
-		polymodel	*pm;
 		int			subsys_path_num, subsys_in_sight, checked_sight;
 		float			dist;
 
-		pm = model_get( Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num );
-		//Necessary sanity check
-		polymodel	*pm_t;
-		pm_t = model_get(Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].model_num);
-		Assertion(aip->targeted_subsys->system_info->path_num <= pm_t->n_paths, "Invalid Path number %d for subsystem %s on ship %s (Model: %s)\n", aip->targeted_subsys->system_info->path_num, aip->targeted_subsys->system_info->name, Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].name, pm_t->filename );
-		if (aip->targeted_subsys->system_info->path_num > pm_t->n_paths)
+		// Get models of both source and target
+		polymodel *pm = model_get( Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num );
+		polymodel *pm_t = model_get( Ship_info[Ships[target_objp->instance].ship_info_index].model_num );
+
+		// Necessary sanity check
+		Assertion(aip->targeted_subsys->system_info->path_num < pm_t->n_paths, "Invalid Path number %d for subsystem %s on ship %s (Model: %s)\n", aip->targeted_subsys->system_info->path_num, aip->targeted_subsys->system_info->name, Ship_info[Ships[target_objp->instance].ship_info_index].name, pm_t->filename );
+		if (aip->targeted_subsys->system_info->path_num >= pm_t->n_paths)
 			return 0;
+
 		// If attacking a subsystem, ensure that we have an unobstructed line of sight... if not, then move
 		// towards path linked to subsystem
 		subsys_in_sight = 0;	// assume Pl_objp doesn't have line of sight to subys
@@ -424,7 +425,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 
 			aip->path_goal_dist = 5;
 			subsys_path_num = aip->targeted_subsys->system_info->path_num;
-			if ( ((aip->path_start) == -1 || (aip->mp_index != subsys_path_num)) && subsys_path_num <= pm->n_paths ) {
+			if ( ((aip->path_start) == -1 || (aip->mp_index != subsys_path_num)) && subsys_path_num < pm_t->n_paths ) {
 				// maybe create a new path
 				if ( subsys_path_num >= 0 ) {
 					Assert(aip->target_objnum >= 0);

@@ -711,7 +711,6 @@ void multi_assign_player_ship( int net_player, object *objp,int ship_class )
 	// works properly.
 	Net_players[net_player].p_info.p_objp = mission_parse_get_arrival_ship( shipp->ship_name );
 	Assert( Net_players[net_player].p_info.p_objp != NULL );		// get allender -- ship should be on list
-	Net_players[net_player].p_info.p_objp->ship_class = ship_class;		// be sure this gets set so respawns work
 
 	// game server and this client need to initialize this information so object updating
 	// works properly.
