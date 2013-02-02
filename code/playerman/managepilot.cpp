@@ -752,6 +752,11 @@ int read_pilot_file(char *callsign, int single, player *p)
 	read_stats_block(file, Player_file_version, &p->stats);	
 
 	Game_skill_level = cfread_int(file);
+	if (Game_skill_level >= NUM_SKILL_LEVELS) {		
+		Warning(LOCATION, "Invalid skill level %i read from pilot file! Valid range 0 to %i. Resetting to default.", Game_skill_level, NUM_SKILL_LEVELS);
+		Game_skill_level = game_get_default_skill_level();  
+	}
+
 
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
 		Axis_map_to[i] = cfread_int(file);
