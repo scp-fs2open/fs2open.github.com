@@ -630,7 +630,7 @@ int barracks_pilot_accepted()
 	//write_pilot_file(!is_pilot_multi(Cur_pilot));
 	Pilot.save_player(Cur_pilot);
 
-	os_config_write_string(NULL, "LastPilot", Cur_pilot->callsign);
+	os_config_write_string(NULL, "LastPlayer", Cur_pilot->callsign);
 
 	return 0;
 }
