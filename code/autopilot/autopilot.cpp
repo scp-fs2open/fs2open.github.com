@@ -704,9 +704,9 @@ bool StartAutopilot()
 
 				vm_vec_add(&Objects[Ships[*idx].objnum].pos, &Autopilot_flight_leader->pos, &offset);
 
-				if (vm_vec_dist_quick(&Autopilot_flight_leader->pos, &Objects[Ships[i].objnum].pos) > distance)
+				if (vm_vec_dist_quick(&Autopilot_flight_leader->pos, &Objects[Ships[*idx].objnum].pos) > distance)
 				{
-					distance = vm_vec_dist_quick(&Autopilot_flight_leader->pos, &Objects[Ships[i].objnum].pos);
+					distance = vm_vec_dist_quick(&Autopilot_flight_leader->pos, &Objects[Ships[*idx].objnum].pos);
 				}
 			}
 		}
