@@ -15400,9 +15400,9 @@ void ship_page_in()
 #ifndef NDEBUG
 				for (j = 0; j < sip->n_subsystems; j++) {
 					if (sip->subsystems[j].model_num != sip->model_num) {
-						polymodel *sip_pm = model_get(sip->model_num);
-						polymodel *subsys_pm = model_get(sip->subsystems[j].model_num);
-						Warning(LOCATION, "After ship_copy_subsystem_fixup, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)", sip->name, sip->subsystems[j].subobj_name, sip->pof_file, sip_pm->filename, subsys_pm->filename);
+						polymodel *sip_pm = (sip->model_num >= 0) ? model_get(sip->model_num) : NULL;
+						polymodel *subsys_pm = (sip->subsystems[j].model_num >= 0) ? model_get(sip->subsystems[j].model_num) : NULL;
+						Warning(LOCATION, "After ship_copy_subsystem_fixup, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)", sip->name, sip->subsystems[j].subobj_name, sip->pof_file, (sip_pm != NULL) ? sip_pm->filename : "NULL", (subsys_pm != NULL) ? subsys_pm->filename : "NULL");
 					}
 				}
 #endif
@@ -15414,9 +15414,9 @@ void ship_page_in()
 #ifndef NDEBUG
 				for (j = 0; j < sip->n_subsystems; j++) {
 					if (sip->subsystems[j].model_num != sip->model_num) {
-						polymodel *sip_pm = model_get(sip->model_num);
-						polymodel *subsys_pm = model_get(sip->subsystems[j].model_num);
-						Warning(LOCATION, "Without ship_copy_subsystem_fixup, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)", sip->name, sip->subsystems[j].subobj_name, sip->pof_file, sip_pm->filename, subsys_pm->filename);
+						polymodel *sip_pm = (sip->model_num >= 0) ? model_get(sip->model_num) : NULL;
+						polymodel *subsys_pm = (sip->subsystems[j].model_num >= 0) ? model_get(sip->subsystems[j].model_num) : NULL;
+						Warning(LOCATION, "Without ship_copy_subsystem_fixup, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)", sip->name, sip->subsystems[j].subobj_name, sip->pof_file, (sip_pm != NULL) ? sip_pm->filename : "NULL", (subsys_pm != NULL) ? subsys_pm->filename : "NULL");
 					}
 				}
 #endif
