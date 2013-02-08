@@ -7897,10 +7897,10 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>*
 	int base_res[2];
 	int warhead_name_offsets[2] = {6, 4};
 	int warhead_count_offsets[2] = {74, 4};
-	int icon_width;
-	int icon_height;
-	int max_icons;
-	int max_columns;
+	int icon_width = 0;
+	int icon_height = 0;
+	int max_icons = 0;
+	int max_columns = 0;
 	int alignment = 0;
 	char fname[MAX_FILENAME_LEN] = "warhead_icon";
 	bool slew = true;
