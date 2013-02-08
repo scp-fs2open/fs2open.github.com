@@ -2145,7 +2145,7 @@ void stars_set_background_model(char *model_name, char *texture_name, int flags)
 	if ( (model_name == NULL) || (*model_name == '\0') )
 		return;
 
-	Nmodel_num = model_load(model_name, 0, NULL, 0);
+	Nmodel_num = model_load(model_name, 0, NULL, -1);
 	Nmodel_bitmap = bm_load(texture_name);
 
 	if (Nmodel_num >= 0)
