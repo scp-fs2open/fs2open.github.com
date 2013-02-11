@@ -1965,8 +1965,6 @@ void audiostream_pause_all()
 
 void audiostream_unpause(int i)
 {
-	int is_looping;
-
 	if ( i == -1 )
 		return;
 
@@ -1976,8 +1974,7 @@ void audiostream_unpause(int i)
 		return;
 
 	if ( audiostream_is_paused(i) == (int)true ) {
-		is_looping = Audio_streams[i].Is_looping();
-		audiostream_play(i, -1.0f, is_looping);
+		audiostream_play(i, Audio_streams[i].Get_Volume(), Audio_streams[i].Is_looping());
 	}
 }
 

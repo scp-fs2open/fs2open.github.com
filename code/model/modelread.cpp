@@ -967,7 +967,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	if (!fp) {
 		if (ferror == 1) {
 			Error( LOCATION, "Can't open model file <%s>", filename );
-		} else {
+		} else if (ferror == 0) {
 			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
 

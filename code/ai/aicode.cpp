@@ -14110,6 +14110,12 @@ int combine_flags(int base_flags, int override_flags, int override_set)
 //just says which flags are set.
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile)
 {
+	// since we use it so much in this function, sanity check the value for Game_skill_level
+	if (Game_skill_level < 0 || Game_skill_level >= NUM_SKILL_LEVELS) {
+		Warning(LOCATION, "Invalid skill level %i! Valid range 0 to %i. Resetting to default.", Game_skill_level, NUM_SKILL_LEVELS);
+		Game_skill_level = game_get_default_skill_level();
+	}
+
 	//ai_class-only stuff
 	aip->ai_courage = aicp->ai_courage[Game_skill_level];
 	aip->ai_patience = aicp->ai_patience[Game_skill_level];
