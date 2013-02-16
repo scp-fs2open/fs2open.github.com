@@ -2406,8 +2406,8 @@ int parse_weapon(int subtype, bool replace)
 					} else {
 						wip->particle_spewers[spew_index].particle_spew_type = PSPEW_DEFAULT;
 					}
-				// for compatability with existing tables that don't have a type tag
-				} else if (wip->particle_spewers[spew_index].particle_spew_type == PSPEW_NONE) { // make sure the ommission of type wanst to edit an existing entry
+				// for compatibility with existing tables that don't have a type tag
+				} else if (wip->particle_spewers[spew_index].particle_spew_type == PSPEW_NONE) { // make sure the omission of type wasn't to edit an existing entry
 					wip->particle_spewers[spew_index].particle_spew_type = PSPEW_DEFAULT;
 				}
 
@@ -6461,7 +6461,7 @@ void weapon_maybe_spew_particle(object *obj)
 						
 						if (wip->particle_spewers[psi].particle_spew_z_scale != 1.0f) {	// don't do the extra math for spherical effect
 							temp_vel = input_vel;
-							temp_vel.xyz.z *= wip->particle_spewers[psi].particle_spew_z_scale;	// for an oviod particle effect to better combine with laser effects
+							temp_vel.xyz.z *= wip->particle_spewers[psi].particle_spew_z_scale;	// for an ovoid particle effect to better combine with laser effects
 							vm_vec_unrotate(&input_vel, &temp_vel, &obj->orient);				// so it has to be rotated
 						}
 
