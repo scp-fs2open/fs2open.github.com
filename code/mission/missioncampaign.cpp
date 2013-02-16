@@ -558,14 +558,14 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			if (optional_string("+Flags:"))
 				stuff_int(&cm->flags);
 
+			// deal with previous campaign versions
+			if (cm->flags & CMISSION_FLAG_BASTION)
+				cm->main_hall = 1;
+
 			// Goober5000 - new main hall stuff!
 			cm->main_hall = 0;
 			if (optional_string("+Main Hall:"))
 				stuff_ubyte(&cm->main_hall);
-
-			// deal with previous campaign versions
-			if (cm->flags & CMISSION_FLAG_BASTION)
-				cm->main_hall = 1;
 
 			// Goober5000 - new debriefing persona stuff!
 			cm->debrief_persona_index = 0;
