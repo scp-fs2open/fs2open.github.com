@@ -909,9 +909,6 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
 	mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, strrchr(filename, '\\')+1, linenum ));
 
-	if (Cmdline_nowarn)
-		return;
-
 	Messagebox_active = true;
 
 	gr_activate(0);
@@ -979,9 +976,6 @@ void _cdecl WinAssert(char * text, char * filename, int linenum, const char * fo
 
 	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
 	mprintf(("ASSERTION: \"%s\" at %s:%d\n %s\n", text, strrchr(filename, '\\')+1, linenum, AssertText2 ));
-
-	if (Cmdline_nowarn)
-		return;
 
 	Messagebox_active = true;
 
@@ -1306,12 +1300,6 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	}
 
 	mprintf(("WARNING: \"%s\" at %s:%d\n", AssertText2, strrchr(filename, '\\')+1, line));
-
-	// now go for the additional popup window, if we want it ...
-
-	if (Cmdline_nowarn) {
-		return;
-	}
 
 	filename = strrchr(filename, '\\')+1;
 	sprintf(AssertText2, "Warning: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line );
