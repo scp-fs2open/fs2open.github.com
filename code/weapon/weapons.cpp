@@ -646,6 +646,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags2 |= WIF2_ANTISUBSYSBEAM;
 		else if (!stricmp(NOX("no primary linking"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_NOLINK;
+		else if (!stricmp(NOX("same emp time for capships"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -5994,7 +5996,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	// check if this is an EMP weapon
 	if(wip->wi_flags & WIF_EMP){
-		emp_apply(&weapon_obj->pos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->emp_intensity, wip->emp_time);
+		emp_apply(&weapon_obj->pos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->emp_intensity, wip->emp_time, (wip->wi_flags3 & WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS) != 0);
 	}	
 
 	// spawn weapons - note the change from FS 1 multiplayer.

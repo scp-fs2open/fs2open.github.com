@@ -114,6 +114,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_ANTISUBSYSBEAM				(1 << 31)	// This beam can target subsystems as per normal
 
 #define WIF3_NOLINK						(1 << 0)	// This weapon can not be linked with others
+#define WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS	(1 << 1)	// override MAX_TURRET_DISRUPT_TIME in emp.cpp - Goober5000
 
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
