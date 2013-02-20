@@ -62,6 +62,13 @@ AC_ARG_ENABLE(speech,
 		[fs2_speech=no],
 )
 
+AC_ARG_ENABLE(nowarn,
+	AC_HELP_STRING([--enable-nowarn],
+		[Make a Warning Suppression Build (NOT Recommended)]),
+		[fs2_nowarn=$enableval],
+		[fs2_nowarn=no],
+)
+
 AC_ARG_ENABLE(inferno,
 	AC_HELP_STRING([--enable-inferno],
 		[Make an Inferno build (default = yes)]),
@@ -183,6 +190,10 @@ esac
 
 
 dnl define compiler switches
+
+if test "$fs2_nowarn" = "yes" ; then
+	AC_DEFINE([Allow_NoWarn])
+fi
 
 if test "$fs2_inferno" = "yes" ; then
 	AC_DEFINE([INF_BUILD])
@@ -503,7 +514,7 @@ if test "x$fs2_static_ogg" != "x" ; then
 fi
 echo
 echo Text-to-speech enabled . : $fs2_speech
-echo
+echo NoWarn Allowed ......... : $fs2_nowarn
 echo Debug build ............ : $fs2_debug
 echo Inferno build .......... : $fs2_inferno
 echo GProf support .......... : $fs2_gprof
