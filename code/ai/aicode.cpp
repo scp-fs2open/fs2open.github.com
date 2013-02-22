@@ -9044,14 +9044,25 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			//	Note, we're interested in distance from goal, so if we're still turning, bash that into return value.
 			fdist += 10.0f * vm_vec_mag_quick(&omega_out);
 		} else {
-			vec3d offset;
-
 			Assert(dock_mode == DOA_DOCK_STAY);
-			
-			docker_objp->orient = dom;
+			matrix temp, m_offset;
+			vec3d origin_docker_point, adjusted_docker_point, v_offset;
 
-			vm_vec_sub(&offset, &dockee_point, &docker_point);
-			vm_vec_add2(&docker_objp->pos, &offset);
+			// find out the rotation matrix that will get us from the old to the new rotation
+			vm_copy_transpose_matrix(&temp, &docker_objp->orient);
+			vm_matrix_x_matrix(&m_offset, &temp, &dom);
+
+			// now find out the new docker point after being adjusted for the new orientation
+			vm_vec_sub(&origin_docker_point, &docker_point, &docker_objp->pos);
+			vm_vec_rotate(&adjusted_docker_point, &origin_docker_point, &m_offset);
+			vm_vec_add2(&adjusted_docker_point, &docker_objp->pos);
+
+			// find the vector that will get us from the old to the new position
+			vm_vec_sub(&v_offset, &dockee_point, &adjusted_docker_point);
+			
+			// now set the new rotation and move to the new position
+			docker_objp->orient = dom;
+			vm_vec_add2(&docker_objp->pos, &v_offset);
 		}
 
 		break;
