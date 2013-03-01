@@ -624,7 +624,7 @@ CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
-    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.15 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.19 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
     LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
     DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
     LTEXT           """Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",IDC_STATIC,39,62,238,20
@@ -2095,8 +2095,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,6,13,0
- PRODUCTVERSION 3,6,13,0
+ FILEVERSION 3,6,19,0
+ PRODUCTVERSION 3,6,19,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -2113,12 +2113,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Volition Inc."
             VALUE "FileDescription", "Fred 2 Open"
-            VALUE "FileVersion", "3.6.15.0000"
+            VALUE "FileVersion", "3.6.19.0000"
             VALUE "InternalName", "Fred 2 Open"
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fred2.exe"
             VALUE "ProductName", "Fred 2 Open"
-            VALUE "ProductVersion", "3.6.15"
+            VALUE "ProductVersion", "3.6.19"
         END
     END
     BLOCK "VarFileInfo"
@@ -2689,7 +2689,7 @@ IDC_CURSOR2             CURSOR                  "res\\cursor2.cur"
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "FRED2_OPEN 3.6.15 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+    IDR_MAINFRAME           "FRED2_OPEN 3.6.19 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
 END
 
 STRINGTABLE 

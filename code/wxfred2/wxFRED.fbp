@@ -2060,7 +2060,7 @@
                                 <property name="font"></property>
                                 <property name="hidden"></property>
                                 <property name="id">wxID_ANY</property>
-                                <property name="label">FRED2_OPEN - FreeSpace Editor, Version 3.6.15</property>
+                                <property name="label">FRED2_OPEN - FreeSpace Editor, Version 3.6.19</property>
                                 <property name="maximum_size"></property>
                                 <property name="minimum_size"></property>
                                 <property name="name">m_staticText57</property>

@@ -3359,7 +3359,7 @@
 						<flag>wxALL</flag>
 						<border>3</border>
 						<object class="wxStaticText" name="m_staticText57">
-							<label>FRED2__OPEN - FreeSpace Editor, Version 3.6.15</label>
+							<label>FRED2__OPEN - FreeSpace Editor, Version 3.6.19</label>
 							<wrap>-1</wrap>
 						</object>
 					</object>
