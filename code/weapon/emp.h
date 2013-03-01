@@ -76,7 +76,7 @@ struct weapon_info;
 void emp_level_init();
 
 // apply the EMP effect to all relevant ships
-void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time);
+void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time, bool use_emp_time_for_capship_turrets = false);
 
 // start the emp effect for the passed ship (setup lightning arcs, timestamp, etc)
 // NOTE : if this ship is also me, I should call emp_start_local() as well

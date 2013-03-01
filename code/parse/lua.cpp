@@ -7204,17 +7204,17 @@ ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "numb
 {
 	ship_subsys_h *sso;
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
-		return ade_set_error(L, "i", 0);
+		return ade_set_error(L, "f", 0.0f);
 	
 	if (!sso->IsValid())
-		return ade_set_error(L, "i", 0);
+		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR)
 	{
 		LuaError(L, "Setting radius for subsystems is not allowed!");
 	}
 
-	return ade_set_args(L, "i", sso->ss->system_info->radius);
+	return ade_set_args(L, "f", sso->ss->system_info->radius);
 }
 
 ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked. Setting to true locks the turret, setting to false frees it.", "boolean", "True if turret is locked, false otherwise")

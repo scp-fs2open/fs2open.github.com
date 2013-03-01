@@ -99,7 +99,7 @@ void emp_level_init()
 }
 
 // apply the EMP effect to all relevant ships
-void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time)
+void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time, bool use_emp_time_for_capship_turrets)
 {	
 	float actual_intensity, actual_time;
 	vec3d dist;
@@ -165,8 +165,9 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		}
 
 		// if the ship is a cruiser or cap ship, only apply the EMP effect to turrets
-		if(Ship_info[Ships[target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
-			// void ship_subsys_set_disrupted(ship_subsys *ss, int time)
+		if(Ship_info[Ships[target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+			float capship_emp_time = use_emp_time_for_capship_turrets ? emp_time : MAX_TURRET_DISRUPT_TIME;
+			
 			moveup = &Ships[target->instance].subsys_list;
 			if(moveup->next != NULL){
 				moveup = moveup->next;
@@ -201,11 +202,11 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 						moveup = moveup->next;
 						continue;
 					}
-					
-					// disrupt the turret
-					ship_subsys_set_disrupted(moveup, (int)(MAX_TURRET_DISRUPT_TIME * scale_factor));
 
-					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->subobj_name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, MAX_TURRET_DISRUPT_TIME * scale_factor));
+					// disrupt the turret
+					ship_subsys_set_disrupted(moveup, (int)(capship_emp_time * scale_factor));
+
+					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->subobj_name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, capship_emp_time * scale_factor));
 				}
 				
 				// next item

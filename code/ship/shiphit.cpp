@@ -2076,7 +2076,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				piercing_pct = Armor_types[shipp->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
 			}
 			
-			float pre_shield = damage; // Nuke: dont use the difficulty scaling in here, since its also appled in Armor_type.GetDamage. dont want it to apply twice
+			float pre_shield = damage; // Nuke: don't use the difficulty scaling in here, since its also applied in Armor_type.GetDamage. Don't want it to apply twice
 			float pre_shield_ss = subsystem_damage; // Nuke - same here
 
 			if (piercing_pct > 0.0f) {

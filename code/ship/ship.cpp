@@ -16660,7 +16660,7 @@ void ArmorDamageType::clear()
 
 	Calculations.clear();
 	Arguments.clear();
-	altArguments.clear();  // Nuke: dont forget to delete it
+	altArguments.clear();  // Nuke: don't forget to delete it
 }
 
 //************
@@ -17188,7 +17188,7 @@ void ArmorType::ParseData()
 			no_content = false;
 		}
 
-		// Nuke: dont forget to init things
+		// Nuke: don't forget to init things
 		adt.difficulty_scale_type = ADT_DIFF_SCALE_FIRST;
 
 		if (optional_string("+Difficulty Scale Type:")) {

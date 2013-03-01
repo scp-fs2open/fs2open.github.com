@@ -29958,7 +29958,7 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_GOOD_SECONDARY_TIME, "Set preferred secondary weapons\r\n"
 		"\tThis sexpression is used to inform the AI about preferred secondary weapons to "
-		"fire during combat.  When this expression is evaulated, any AI ships of the given "
+		"fire during combat.  When this expression is evaluated, any AI ships of the given "
 		"team prefer to fire the given weapon at the given ship. (Preferred over other "
 		"secondary weapons)\r\n\r\n"
 		"Takes 4 argument...\r\n"

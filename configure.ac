@@ -14,7 +14,7 @@ AC_CANONICAL_TARGET
 
 dnl we need at least version 1.6.1 of automake, well it's as far down as has been tested anyway
 AM_INIT_AUTOMAKE([ 1.6.1 no-define dist-bzip2 ])
-
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_DEFINE([NO_CD_CHECK])
 
 dnl Check for programs
@@ -60,6 +60,13 @@ AC_ARG_ENABLE(speech,
 		[Enable text-to-speech]),
 		[fs2_speech=$enableval],
 		[fs2_speech=no],
+)
+
+AC_ARG_ENABLE(nowarn,
+	AC_HELP_STRING([--enable-nowarn],
+		[Make a Warning Suppression Build (NOT Recommended)]),
+		[fs2_nowarn=$enableval],
+		[fs2_nowarn=no],
 )
 
 AC_ARG_ENABLE(gprof,
@@ -176,6 +183,10 @@ esac
 
 
 dnl define compiler switches
+
+if test "$fs2_nowarn" = "yes" ; then
+	AC_DEFINE([Allow_NoWarn])
+fi
 
 if test "$fs2_speech" = "yes" ; then
 	AC_DEFINE([FS2_SPEECH])
@@ -476,7 +487,7 @@ if test "x$fs2_static_ogg" != "x" ; then
 fi
 echo
 echo Text-to-speech enabled . : $fs2_speech
-echo
+echo NoWarn Allowed ......... : $fs2_nowarn
 echo Debug build ............ : $fs2_debug
 echo GProf support .......... : $fs2_gprof
 echo

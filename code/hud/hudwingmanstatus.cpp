@@ -189,7 +189,7 @@ void hud_wingman_status_update()
 			wing_index = shipp->wing_status_wing_index;
 			wing_pos = shipp->wing_status_wing_pos;
 
-			if ( (wing_index >= 0) && (wing_pos >= 0) ) {
+			if ( (wing_index >= 0) && (wing_pos >= 0) && !(ship_objp->flags & OF_SHOULD_BE_DEAD) ) {
 
 				HUD_wingman_status[wing_index].used = 1;
 				if (!(shipp->flags & SF_DEPARTING) ) {

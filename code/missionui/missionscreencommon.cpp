@@ -1030,6 +1030,11 @@ void wss_maybe_restore_loadout()
 
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
+	// only restore if mission hasn't changed
+	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
+		return;
+	}
+
 	// first we generate a pool of ships and weapons used the last time this mission was played. We also generate a pool of what is 
 	// available in this mission.
 	int	last_loadout_ships[MAX_SHIP_CLASSES];
