@@ -52,7 +52,7 @@
 #define GS_EVENT_MULTI_HOST_SETUP				31		// host setup for multiplayer
 #define GS_EVENT_MULTI_CLIENT_SETUP				32		// client setup for multiplayer
 #define GS_EVENT_DEBRIEF						33		// go to debriefing
-#define GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN  	34    // go to the demo management screen
+#define GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN  	34    // go to the management screen
 #define GS_EVENT_MULTI_STD_WAIT					35    // standalone wait state
 #define GS_EVENT_STANDALONE_MAIN				36    // the main do-nothing state of the standalone
 #define GS_EVENT_MULTI_PAUSE				    37    // pause your multiplayer game
@@ -78,7 +78,6 @@
 #define GS_EVENT_RED_ALERT						57		// go to red alert screen
 #define GS_EVENT_SIMULATOR_ROOM					58
 #define GS_EVENT_END_CAMPAIGN					59		// end of the whole thang.
-#define GS_EVENT_END_DEMO						60		// end of demo campaign
 #define GS_EVENT_LOOP_BRIEF						61		// campaign loop brief
 #define GS_EVENT_CAMPAIGN_CHEAT					62		// skip to a mission in a campaign
 #define GS_EVENT_PXO							63
@@ -143,7 +142,6 @@ extern char *GS_event_text[];		// text description for the GS_EVENT_* #defines a
 #define GS_STATE_RED_ALERT							44		// red alert screen
 #define GS_STATE_END_OF_CAMPAIGN					45		// end of main campaign -- only applicable in single player
 #define GS_STATE_GAMEPLAY_HELP						46
-#define GS_STATE_END_DEMO							47		// end of demo campaign (upsell then main menu)
 #define GS_STATE_LOOP_BRIEF							48
 #define GS_STATE_PXO								49
 #define GS_STATE_LAB								50

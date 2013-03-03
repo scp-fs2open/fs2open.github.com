@@ -180,11 +180,6 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 //		0.90		5/21/98	MWA -- getting ready for final.
 //		0.10		4/9/98.  Set by MK.
 //
-//	Demo version: (obsolete since DEMO codebase split from tree)
-//		0.03		4/10/98	AL.	Interplay rev
-//		0.02		4/8/98	MK.	Increased when this system was modified.
-//		0.01		4/7/98?	AL.	First release to Interplay QA.
-//
 //	OEM version:
 //		1.00		5/28/98	AL.	First release to Interplay QA.
 
@@ -466,7 +461,6 @@ void game_shutdown(void);
 void game_show_event_debug(float frametime);
 void game_event_debug_init();
 void game_frame(bool paused = false);
-void demo_upsell_show_screens();
 void game_start_subspace_ambient_sound();
 void game_stop_subspace_ambient_sound();
 void verify_ships_tbl();
@@ -943,7 +937,6 @@ uint load_post_level_init;
 /**
  * Intializes game stuff.  
  *
- * @param seed Only set by demo playback code.
  * @return 0 on failure, 1 on success
  */
 void game_level_init(int seed)
@@ -4329,19 +4322,10 @@ void game_frame(bool paused)
 			;
 	}
 #endif
+	// start timing frame
+	timing_frame_start();
 
-#ifdef DEMO_SYSTEM
-	demo_do_frame_start();
-	if(Demo_error){
-		mprintf(("Error (%d) while processing demo!\n", Demo_error));
-		demo_close();
-	}
-#endif
-	
-		// start timing frame
-		timing_frame_start();
-	
-		DEBUG_GET_TIME( total_time1 )
+	DEBUG_GET_TIME( total_time1 )
 
 	if(paused)
 	{
@@ -4352,8 +4336,7 @@ void game_frame(bool paused)
 	{
 		// var to hold which state we are in
 		actually_playing = game_actually_playing();
-	
-		
+
 		if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
 			if (!(Game_mode & GM_STANDALONE_SERVER)){
 				Assert( OBJ_INDEX(Player_obj) >= 0 );
@@ -4365,17 +4348,17 @@ void game_frame(bool paused)
 		} else {
 			; //nprintf(("AI", "Framecount = %i, time = %7.3f\n", Framecount, f2fl(Missiontime)));
 		}
-	
+
 		//	Note: These are done even before the player enters, else buffers can overflow.
 		if (! (Game_mode & GM_STANDALONE_SERVER)){
 			radar_frame_init();
 		}
-	
+
 		shield_frame_init();
-	
-		if ( !Pre_player_entry && actually_playing ) {		   		
+
+		if ( !Pre_player_entry && actually_playing ) {
 			if (! (Game_mode & GM_STANDALONE_SERVER) ) {
-	
+
 				if( (!popup_running_state()) && (!popupdead_is_active()) ){
 					game_process_keys();
 					read_player_controls( Player_obj, flFrametime);
@@ -4541,13 +4524,6 @@ void game_frame(bool paused)
 	Timing_flip = f2fl( flip_time2 - flip_time1 ) * 1000.0f;
 #endif
 
-#ifdef DEMO_SYSTEM
-	demo_do_frame_end();
-	if(Demo_error){
-		mprintf(("Error (%d) while processing demo!\n", Demo_error));
-		demo_close();
-	}
-#endif
 }
 
 #define	MAX_FRAMETIME	(F1_0/4)		// Frametime gets saturated at this.  Changed by MK on 11/1/97.
@@ -4765,7 +4741,6 @@ void game_set_frametime(int state)
 	//mprintf(("Frame %i, Last_time = %7.3f\n", Framecount, f2fl(Last_time)));
 
 	flFrametime = f2fl(Frametime);
-	//if(!(Game_mode & GM_PLAYING_DEMO)){
 	timestamp_inc(flFrametime);
 
 	// wrap overall frametime if needed
@@ -5086,12 +5061,6 @@ void os_close()
 	gameseq_post_event(GS_EVENT_QUIT_GAME);
 }
 
-void end_demo_campaign_do()
-{
-	// drop into main hall
-	gameseq_post_event( GS_EVENT_MAIN_MENU );
-}
-
 // All code to process events.   This is the only place
 // that you should change the state of the game.
 void game_process_event( int current_state, int event )
@@ -5144,7 +5113,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_START_BRIEFING:
-			gameseq_set_state(GS_STATE_BRIEFING);		
+			gameseq_set_state(GS_STATE_BRIEFING);
 			break;
 
 		case GS_EVENT_DEBRIEF:
@@ -5154,7 +5123,7 @@ void game_process_event( int current_state, int event )
 			if (Campaign_ending_via_supernova && (Game_mode & GM_CAMPAIGN_MODE)/* && !stricmp(Campaign.filename, "freespace2")*/) {
 				gameseq_post_event(GS_EVENT_END_CAMPAIGN);
 			} else {
-				gameseq_set_state(GS_STATE_DEBRIEF);		
+				gameseq_set_state(GS_STATE_DEBRIEF);
 			}
 			break;
 
@@ -5166,14 +5135,7 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state( GS_STATE_WEAPON_SELECT );
 			break;
 
-		case GS_EVENT_ENTER_GAME:		
-#ifdef DEMO_SYSTEM
-			// maybe start recording a demo
-			if(Demo_make){
-				demo_start_record("test.fsd");
-			}
-#endif
-
+		case GS_EVENT_ENTER_GAME:
 			if (Game_mode & GM_MULTIPLAYER) {
 				// if we're respawning, make sure we change the view mode so that the hud shows up
 				if (current_state == GS_STATE_DEATH_BLEW_UP) {
@@ -5185,7 +5147,7 @@ void game_process_event( int current_state, int event )
 				gameseq_set_state(GS_STATE_GAME_PLAY, 1);
 			}
 
-			// clear multiplayer button info			
+			// clear multiplayer button info
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 
@@ -5463,10 +5425,6 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_END_OF_CAMPAIGN);
 			break;		
 
-		case GS_EVENT_END_DEMO:
-			gameseq_set_state(GS_STATE_END_DEMO);
-			break;
-
 		case GS_EVENT_LOOP_BRIEF:
 			gameseq_set_state(GS_STATE_LOOP_BRIEF);
 			break;
@@ -5664,11 +5622,6 @@ void game_leave_state( int old_state, int new_state )
 			}
 
 			if (end_mission) {
-			// shut down any recording or playing demos
-#ifdef DEMO_SYSTEM
-				demo_close();
-#endif
-
 				// when in multiplayer and going back to the main menu, send a leave game packet
 				// right away (before calling stop mission).  stop_mission was taking to long to
 				// close mission down and I want people to get notified ASAP.
@@ -5677,7 +5630,7 @@ void game_leave_state( int old_state, int new_state )
 				}
 				snd_aav_init();
 
-				freespace_stop_mission();			
+				freespace_stop_mission();
 			}
 			break;
 
@@ -6701,7 +6654,7 @@ void game_do_state(int state)
 		case GS_STATE_MULTI_MISSION_SYNC:
 			game_set_frametime(GS_STATE_MULTI_MISSION_SYNC);
 			multi_sync_do();
-			break;		
+			break;
 
 		case GS_STATE_MULTI_START_GAME:
 			game_set_frametime(GS_STATE_MULTI_START_GAME);
@@ -6711,16 +6664,11 @@ void game_do_state(int state)
 		case GS_STATE_MULTI_HOST_OPTIONS:
 			game_set_frametime(GS_STATE_MULTI_HOST_OPTIONS);
 			multi_host_options_do();
-			break;		
+			break;
 
 		case GS_STATE_END_OF_CAMPAIGN:
 			mission_campaign_end_do();
-			break;		
-
-		case GS_STATE_END_DEMO:
-			game_set_frametime(GS_STATE_END_DEMO);
-			end_demo_campaign_do();
-			break;
+			break;	
 
 		case GS_STATE_LOOP_BRIEF:
 			game_set_frametime(GS_STATE_LOOP_BRIEF);
@@ -7009,14 +6957,10 @@ int game_main(char *cmdline)
 	}
 
 
-#ifdef STANDALONE_ONLY_BUILD
-	Is_standalone = 1;
-	nprintf(("Network", "Standalone running"));
-#else
 	if (Is_standalone){
 		nprintf(("Network", "Standalone running"));
 	}
-#endif
+
 
 #ifdef _WIN32
 	if ( !Is_standalone )
@@ -7995,10 +7939,6 @@ void get_version_string(char *str, int max_size)
 	#else
 		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
 	#endif
-
-#ifdef INF_BUILD
-	strcat_s( str, max_size, " Inferno" );
-#endif
 
 #ifndef NDEBUG
 	strcat_s( str, max_size, " Debug" );

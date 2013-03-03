@@ -2151,7 +2151,7 @@ int button_function(int n)
 				break;
 			}
 
-			Player->flags ^= PLAYER_FLAGS_AUTO_MATCH_SPEED;					
+			Player->flags ^= PLAYER_FLAGS_AUTO_MATCH_SPEED;
 			control_used(TOGGLE_AUTO_MATCH_TARGET_SPEED);
 			hud_gauge_popup_start(HUD_AUTO_SPEED);
 			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
@@ -2164,12 +2164,12 @@ int button_function(int n)
 			{
 				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
 				player_match_target_speed();
-			}			
+			}
 			break;
 
 		// target next
 		case TARGET_NEXT:
-			control_used(TARGET_NEXT);			
+			control_used(TARGET_NEXT);
 			if ( hud_sensors_ok(Player_ship) ) {
 				hud_target_next();
 			}
@@ -2193,7 +2193,7 @@ int button_function(int n)
 
 		// target the previous closest hostile 
 		case TARGET_PREV_CLOSEST_HOSTILE:
-			control_used(TARGET_PREV_CLOSEST_HOSTILE);			
+			control_used(TARGET_PREV_CLOSEST_HOSTILE);
 			if (hud_sensors_ok(Player_ship)){
 				hud_target_next_list(1,0);
 			}
@@ -2218,7 +2218,7 @@ int button_function(int n)
 
 		// target the next friendly ship
 		case TARGET_NEXT_CLOSEST_FRIENDLY:
-			control_used(TARGET_NEXT_CLOSEST_FRIENDLY);			
+			control_used(TARGET_NEXT_CLOSEST_FRIENDLY);
 			if (hud_sensors_ok(Player_ship)){
 				hud_target_next_list(0);
 			}
@@ -2226,7 +2226,7 @@ int button_function(int n)
 
 		// target the closest friendly ship
 		case TARGET_PREV_CLOSEST_FRIENDLY:
-			control_used(TARGET_PREV_CLOSEST_FRIENDLY);			
+			control_used(TARGET_PREV_CLOSEST_FRIENDLY);
 			if (hud_sensors_ok(Player_ship)) {
 				hud_target_next_list(0,0);
 			}
@@ -2234,7 +2234,7 @@ int button_function(int n)
 
 		// target ship closest to center of reticle
 		case TARGET_SHIP_IN_RETICLE:
-			control_used(TARGET_SHIP_IN_RETICLE);			
+			control_used(TARGET_SHIP_IN_RETICLE);
 			if (hud_sensors_ok(Player_ship)){
 				hud_target_in_reticle_new();
 			}

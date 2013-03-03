@@ -2055,12 +2055,6 @@ void std_build_title_string(char *str)
 
 	// output first part
 	strcpy(str, temp);
-
-#ifdef STANDALONE_ONLY_BUILD
-	memset(temp, 0, 256);
-	sprintf(temp, "   %s %d", "Release", STANDALONE_ONLY_RELEASE_VERSION);
-	strcat_s(str, temp);
-#endif
 }
 
 // initialize the property sheet itself

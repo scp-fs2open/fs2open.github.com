@@ -192,11 +192,6 @@ int verify_pilot_file(char *filename, int single, int *rank)
 			"<freespace dir>",
 #endif
 			(single)?"single":"multi",
-#ifdef INF_BUILD
-			"/inferno"
-#else
-			""
-#endif
 		);
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, popup_str);
 		return -1;

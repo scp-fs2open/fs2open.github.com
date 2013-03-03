@@ -44,11 +44,7 @@
 // ****************************************************************
 #define MAX_SHIP_CLASSES_MULTI	130
 
-#ifdef INF_BUILD
 #define MAX_SHIP_CLASSES		250
-#else
-#define MAX_SHIP_CLASSES		130
-#endif
 
 #define MAX_WINGS				75
 
@@ -73,25 +69,15 @@
 // from weapon.h
 #define MAX_WEAPONS	2000
 
-#ifdef INF_BUILD
 #define MAX_WEAPON_TYPES				300
-#else
-#define MAX_WEAPON_TYPES				200
-#endif
+
 
 // from model.h
 
 #define MAX_MODEL_TEXTURES	64
 
-#ifdef INF_BUILD
-	#define MAX_POLYGON_MODELS  300
-#else
-	#define MAX_POLYGON_MODELS  128 //DTP reset from 198 to original value of 128
-#endif
+#define MAX_POLYGON_MODELS  300
 
-// from scoring.h
-// ARGH. IMPORTANT : do not change NUM_MEDALS without talking to DaveB first. It will affect the size of the scoring struct and hence, will break
-// a lot of PXO related stuff. SEE ALSO : MAX_SHIP_CLASSES
 #define MAX_MEDALS			18
 #define NUM_MEDALS_FS1		16
 extern int Num_medals;

@@ -69,13 +69,6 @@ AC_ARG_ENABLE(nowarn,
 		[fs2_nowarn=no],
 )
 
-AC_ARG_ENABLE(inferno,
-	AC_HELP_STRING([--enable-inferno],
-		[Make an Inferno build (default = yes)]),
-		[fs2_inferno=$enableval],
-		[fs2_inferno=yes],
-)
-
 AC_ARG_ENABLE(gprof,
 	AC_HELP_STRING([--enable-gprof],
 		[Build with GProf support]),
@@ -195,10 +188,6 @@ if test "$fs2_nowarn" = "yes" ; then
 	AC_DEFINE([Allow_NoWarn])
 fi
 
-if test "$fs2_inferno" = "yes" ; then
-	AC_DEFINE([INF_BUILD])
-fi
-
 if test "$fs2_speech" = "yes" ; then
 	AC_DEFINE([FS2_SPEECH])
 fi
@@ -229,17 +218,9 @@ if test "$fs2_debug" = "yes" ; then
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_DEBUG"])
-		else
-			AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_NOINF_DEBUG"])
-		fi
+		AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_DEBUG"])
 	else
-		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}_DEBUG"])
-		else
-			AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}_NOINF_DEBUG"])
-		fi
+		AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}_DEBUG"])
 	fi
 else
 	AC_DEFINE([NDEBUG])
@@ -247,17 +228,9 @@ else
 	D_LDFLAGS="$D_LDFLAGS "
 
 	if test "$fs2_fred" = "yes" ; then
-		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}"])
-		else
-			AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_NOINF"])
-		fi
+		AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}"])
 	else
-		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}"])
-		else
-			AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}_NOINF"])
-		fi
+		AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}"])
 	fi
 fi
 
@@ -516,6 +489,5 @@ echo
 echo Text-to-speech enabled . : $fs2_speech
 echo NoWarn Allowed ......... : $fs2_nowarn
 echo Debug build ............ : $fs2_debug
-echo Inferno build .......... : $fs2_inferno
 echo GProf support .......... : $fs2_gprof
 echo

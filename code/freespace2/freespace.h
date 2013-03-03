@@ -198,7 +198,7 @@ int set_cdrom_path(int drive_num);
 // Used to tell the player that a feature is disabled by build settings
 void game_feature_disabled_popup();
 
-//	Return version string for demo or full version, depending on build.
+//	Return version string for build.
 void get_version_string(char *str, int max_size);
 
 // format the specified time (fixed point) into a nice string

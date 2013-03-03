@@ -16,11 +16,6 @@
 // VERSION DEFINES/VARS
 //
 
-// keep this defined to build a standalone only executable
-// STANDALONE_ONLY
-// #define STANDALONE_ONLY_BUILD
-// #define STANDALONE_ONLY_RELEASE_VERSION		0
-
 // Here are the version defines.  
 //	Gets displayed as MAJOR.MINOR, or 1.21 if MAJOR = 1, MINOR = 21.
 //	Prior to release, MAJOR should be zero.  After release, it should be 1.  Probably never increase to 2 as that could
