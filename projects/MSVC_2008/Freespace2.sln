@@ -38,15 +38,9 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
-		Debug Inferno|Win32 = Debug Inferno|Win32
-		Debug Inferno SSE|Win32 = Debug Inferno SSE|Win32
-		Debug Inferno SSE2|Win32 = Debug Inferno SSE2|Win32
 		Debug SSE|Win32 = Debug SSE|Win32
 		Debug SSE2|Win32 = Debug SSE2|Win32
 		Release|Win32 = Release|Win32
-		Release Inferno|Win32 = Release Inferno|Win32
-		Release Inferno SSE|Win32 = Release Inferno SSE|Win32
-		Release Inferno SSE2|Win32 = Release Inferno SSE2|Win32
 		Release SSE|Win32 = Release SSE|Win32
 		Release SSE2|Win32 = Release SSE2|Win32
 	EndGlobalSection
