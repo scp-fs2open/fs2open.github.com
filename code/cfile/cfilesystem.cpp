@@ -2040,6 +2040,12 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 			}
 		}
 
+		// keep pilot files separated for an Inferno build since they aren't compatible
+		if ( pathtype == CF_TYPE_SINGLE_PLAYERS || pathtype == CF_TYPE_MULTI_PLAYERS ) {
+			strcat_s(path, path_max, "inferno");
+			strcat_s(path, path_max, DIR_SEPARATOR_STR);
+		}
+
 		// add filename
 		if (filename) {
 			strcat_s(path, path_max, filename);
