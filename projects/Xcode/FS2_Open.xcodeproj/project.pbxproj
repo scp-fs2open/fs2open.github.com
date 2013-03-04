@@ -1432,7 +1432,7 @@
 		3459556D08C3D6A0003B1351 /* wxfred_xrc.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = wxfred_xrc.cpp; sourceTree = "<group>"; };
 		3459556E08C3D6A0003B1351 /* wxfred_xrc.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wxfred_xrc.h; sourceTree = "<group>"; };
 		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		34595A7508C3D8CB003B1351 /* FS2_Open-Inferno (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open-Inferno (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		345A81150B4941D700282E7A /* grstub.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grstub.cpp; sourceTree = "<group>"; };
 		345A81170B4941F100282E7A /* deadobjectdock.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = deadobjectdock.cpp; sourceTree = "<group>"; };
 		345A81180B4941F100282E7A /* deadobjectdock.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = deadobjectdock.h; sourceTree = "<group>"; };
@@ -1716,7 +1716,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				34595A7508C3D8CB003B1351 /* FS2_Open-Inferno (debug).app */,
+				34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */,
 				34C71A8208C4147700459F5B /* libcode.a */,
 				34C71A9108C4184200459F5B /* libjpeg.a */,
 				34DCF83408CFA6B900A528A0 /* cfilearchiver */,
@@ -3517,7 +3517,7 @@
 			name = FS2_Open;
 			productInstallPath = "$(HOME)/Applications";
 			productName = FS2_Open;
-			productReference = 34595A7508C3D8CB003B1351 /* FS2_Open-Inferno (debug).app */;
+			productReference = 34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 		34C71A8108C4147700459F5B /* code */ = {
