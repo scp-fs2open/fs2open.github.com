@@ -1253,10 +1253,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				pm->submodel[n].movement_axis = cfread_int(fp);
 
 				// change turret movement type to MOVEMENT_TYPE_ROT_SPECIAL
+				if ( strstr(pm->submodel[n].name, "turret") || strstr(pm->submodel[n].name, "gun") || strstr(pm->submodel[n].name, "cannon")) {
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
+					pm->submodel[n].can_move = true;
+				} else
+
 				if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
-					if ( strstr(pm->submodel[n].name, "turret") || strstr(pm->submodel[n].name, "gun") || strstr(pm->submodel[n].name, "cannon")) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-					} else if (strstr(pm->submodel[n].name, "thruster")) {
+					if (strstr(pm->submodel[n].name, "thruster")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
 					}else if(strstr(props, "$triggered:")){
