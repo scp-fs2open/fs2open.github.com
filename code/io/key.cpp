@@ -742,7 +742,7 @@ void key_mark( uint code, int state, uint latency )
 			key_data.TimeKeyHeldDown[scancode] = 0;
 		} else {
 			key_data.TimeKeyHeldDown[scancode] += event_time - key_data.TimeKeyWentDown[scancode];
-		)
+		}
 
 		Current_key_down = scancode;
 		if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
