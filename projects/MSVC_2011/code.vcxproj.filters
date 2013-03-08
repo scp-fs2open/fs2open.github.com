@@ -121,6 +121,9 @@
     <Filter Include="Physics">
       <UniqueIdentifier>{73764146-6133-4a00-9463-532184af6694}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PilotFile">
+      <UniqueIdentifier>{73764146-6640-4a00-9463-532184af6694}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Playerman">
       <UniqueIdentifier>{9db79e68-6640-4232-9f4c-7811fcd113f4}</UniqueIdentifier>
     </Filter>
@@ -692,6 +695,24 @@
     </ClCompile>
     <ClCompile Include="..\..\code\Physics\physics.cpp">
       <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\PilotFile\csg.cpp">
+      <Filter>PilotFile</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\PilotFile\csg_convert.cpp">
+      <Filter>PilotFile</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\PilotFile\pilotfile.cpp">
+      <Filter>PilotFile</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\PilotFile\pilotfile_convert.cpp">
+      <Filter>PilotFile</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\PilotFile\plr.cpp">
+      <Filter>PilotFile</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\PilotFile\plr_convert.cpp">
+      <Filter>PilotFile</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\playerman\managepilot.cpp">
       <Filter>Playerman</Filter>
@@ -1831,6 +1852,12 @@
     </ClInclude>
     <ClInclude Include="..\..\code\parse\generic_log.h">
       <Filter>Parse</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\PilotFile\pilotfile_convert.h">
+      <Filter>PilotFile</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\PilotFile\pilotfile.h">
+      <Filter>PilotFile</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

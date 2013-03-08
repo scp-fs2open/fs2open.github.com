@@ -347,6 +347,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>code/pilotfile</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>code/playerman</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
@@ -2985,6 +2990,46 @@
 			<name>code/physics/physics.h</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/code/physics/physics.h</locationURI>
+		</link>
+		<link>
+			<name>code/pilotfile/csg.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/pilotfile/csg.cpp</locationURI>
+		</link>
+		<link>
+			<name>code/pilotfile/csg_convert.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/pilotfile/csg_convert.cpp</locationURI>
+		</link>
+		<link>
+			<name>code/pilotfile/pilotfile.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/pilotfile/pilotfile.cpp</locationURI>
+		</link>
+		<link>
+			<name>code/pilotfile/pilotfile.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/pilotfile/pilotfile.h</locationURI>
+		</link>
+		<link>
+			<name>code/pilotfile/pilotfile_convert.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/pilotfile/pilotfile_convert.cpp</locationURI>
+		</link>
+		<link>
+			<name>code/pilotfile/pilotfile_convert.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/pilotfile/pilotfile_convert.h</locationURI>
+		</link>
+		<link>
+			<name>code/pilotfile/plr.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/pilotfile/plr.cpp</locationURI>
+		</link>
+		<link>
+			<name>code/pilotfile/plr_convert.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/pilotfile/plr_convert.cpp</locationURI>
 		</link>
 		<link>
 			<name>code/playerman/managepilot.cpp</name>

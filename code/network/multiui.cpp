@@ -48,6 +48,7 @@
 #include "network/multi_voice.h"
 #include "network/multi_endgame.h"
 #include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "stats/stats.h"
 #include "network/multi_pmsg.h"
 #include "network/multi_obj.h"
@@ -6242,7 +6243,7 @@ void multi_ho_accept_hit()
 	// store these values locally
 	memcpy(&Player->m_local_options,&Net_player->p_info.options,sizeof(multi_local_options));
 	memcpy(&Player->m_server_options,&Netgame.options,sizeof(multi_server_options));
-	write_pilot_file(Player);	
+	Pilot.save_player(Player);
 
 	// apply any changes in settings (notify everyone of voice qos changes, etc)
 	multi_ho_apply_options();

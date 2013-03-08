@@ -695,3 +695,18 @@ void blit_medals()
 	gr_set_bitmap(Rank_bm);
 	gr_bitmap(Medal_coords[gr_screen.res][RANK_MEDAL_REGION][0], Medal_coords[gr_screen.res][RANK_MEDAL_REGION][1]);
 }
+
+int medals_info_lookup(const char *name)
+{
+	if ( !name ) {
+		return -1;
+	}
+
+	for (int i = 0; i < Num_medals; i++) {
+		if ( !stricmp(name, Medals[i].name) ) {
+			return i;
+		}
+	}
+
+	return -1;
+}

@@ -21,7 +21,7 @@
 #include "gamesnd/gamesnd.h"
 #include "missionui/missionscreencommon.h"
 #include "graphics/font.h"
-#include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "gamehelp/contexthelp.h"
 #include "popup/popup.h"
 #include "ui/uidefs.h"
@@ -1350,7 +1350,12 @@ void control_config_close()
 	common_free_interface_palette();		// restore game palette
 	hud_squadmsg_save_keys();				// rebuild map for saving/restoring keys in squadmsg mode
 	game_flush();
-	write_pilot_file();
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		Pilot.save_player();
+	} else {
+		Pilot.save_savefile();
+	}
 
 	// free strings	
 	for(idx=0; idx<NUM_JOY_AXIS_ACTIONS; idx++){

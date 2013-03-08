@@ -8,6 +8,7 @@ extern "C" {
 
 #include "object/object.h"
 #include "globalincs/pstypes.h"
+#include "menuui/mainhallmenu.h"
 
 //*************************Lua funcs*************************
 //Used to parse arguments on the stack to C values

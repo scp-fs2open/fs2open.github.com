@@ -15,7 +15,7 @@
 #include "bmpman/bmpman.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
-#include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesnd/eventmusic.h"
@@ -1021,8 +1021,6 @@ void options_menu_init()
 
 	Gamma_colors_inited = 0;
 
-	// used to allow all keystrokes, even when called from a demo playback
-	key_clear_filter();
 	Options_menu_inited = 1;
 
 	// hide options crap
@@ -1053,7 +1051,8 @@ void options_menu_close()
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
-	write_pilot_file();
+	Pilot.save_player();
+	Pilot.save_savefile();
 	game_flush();
 	
 	// unpause all sounds, since we could be headed back to the game

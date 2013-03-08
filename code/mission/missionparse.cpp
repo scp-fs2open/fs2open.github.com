@@ -5304,7 +5304,7 @@ void parse_asteroid_fields(mission *pm)
 
 void parse_variables()
 {
-	int i, j, k, num_variables;
+	int i, j, num_variables = 0;
 
 	if (! optional_string("#Sexp_variables") ) {
 		return;
@@ -5314,45 +5314,45 @@ void parse_variables()
 
 	// yeesh - none of this should be done in FRED :)
 	// It shouldn't be done for missions in the tecroom either. They should default to whatever FRED set them to
-	if (!Fred_running && (Game_mode & GM_CAMPAIGN_MODE))
-	{
-		// Goober5000 - now set the default value, if it's a campaign-persistent variable
-		// look through all previous missions (by doing it this way, we will continually
-		// overwrite the variable with the most recent information)
-		for (i=0; i<Campaign.num_missions; i++)
-		{
-			if (Campaign.missions[i].completed != 1)
-				continue;
+	if ( Fred_running || !(Game_mode & GM_CAMPAIGN_MODE) ) {
+		return;
+	}
 
-			// loop through this particular previous mission's variables
-			for (j=0; j<Campaign.missions[i].num_saved_variables; j++)
-			{
-				// loop through the current mission's variables
-				for (k=0; k<num_variables; k++)
-				{
-					// if the active mission has a variable with the same name as a campaign
-					// variable AND it is not a block variable, override its initial value
-					// with the previous mission's value
-					if (!(stricmp(Sexp_variables[k].variable_name, Campaign.missions[i].saved_variables[j].variable_name)) ) {
-						Sexp_variables[k].type = Campaign.missions[i].saved_variables[j].type;
-						strcpy_s(Sexp_variables[k].text, Campaign.missions[i].saved_variables[j].text);
-					}
+	// Goober5000 - now set the default value, if it's a campaign-persistent variable
+	// loop through the current mission's variables
+	for (j = 0; j < num_variables; j++) {
+		// check against existing variables
+		for (i = 0; i < Campaign.num_variables; i++) {
+			// if the active mission has a variable with the same name as a campaign
+			// variable AND it is not a block variable, override its initial value
+			// with the previous mission's value
+			if ( !stricmp(Sexp_variables[j].variable_name, Campaign.variables[i].variable_name) ) {
+				if (Sexp_variables[j].type  & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) {
+					Sexp_variables[j].type = Campaign.variables[i].type;
+					strcpy_s(Sexp_variables[j].text, Campaign.variables[i].text);
+					break;
+				} else {
+					WarningEx(LOCATION, "Variable %s has the same name as a campaign persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 			}
 		}
+	}
 
-		// Goober5000 - next, see if any player-persistent variables are set
-		for (i=0; i<Player->num_variables; i++)
-		{
-			// loop through the current mission's variables
-			for (j=0; j<num_variables; j++)
-			{
-				// if the active mission has a variable with the same name as a player
-				// variable AND it is not a block variable, override its initial value
-				// with the previous mission's value
-				if (!(stricmp(Sexp_variables[j].variable_name, Player->player_variables[i].variable_name)) ) {
-					Sexp_variables[j].type = Player->player_variables[i].type;
-					strcpy_s(Sexp_variables[j].text, Player->player_variables[i].text);
+	// Goober5000 - next, see if any player-persistent variables are set
+	// loop through the current mission's variables
+	for (j = 0; j < num_variables; j++) {
+		// check against existing variables
+		for (i = 0; i < (int)Player->variables.size(); i++) {
+			// if the active mission has a variable with the same name as a player
+			// variable AND it is not a block variable, override its initial value
+			// with the previous mission's value
+			if ( !stricmp(Sexp_variables[j].variable_name, Player->variables[i].variable_name) ) {
+				if (Sexp_variables[j].type & SEXP_VARIABLE_PLAYER_PERSISTENT) {
+					Sexp_variables[j].type = Player->variables[i].type;
+					strcpy_s(Sexp_variables[j].text, Player->variables[i].text);
+					break;
+				} else {
+					WarningEx(LOCATION, "Variable %s has the same name as a player persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 			}
 		}

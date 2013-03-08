@@ -4017,12 +4017,12 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 			else
 				fout("\n+Main Hall:");
 
-			fout(" %d", Campaign.missions[m].main_hall);
+			fout(" %s", Campaign.missions[m].main_hall.c_str());
 		}
 		else
 		{
 			// save Bastion flag properly
-			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall > 0) ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall != "") ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if ( Campaign.missions[m].debrief_persona_index > 0 ) {

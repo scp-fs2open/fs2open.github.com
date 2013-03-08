@@ -5,9 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
-
-
+ */
 
 #ifndef _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 #define _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
@@ -15,24 +13,23 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-// this cutscene is always available.
-#define INTRO_CUTSCENE_FLAG		(1<<0)
+typedef struct cutscene_info {
+	cutscene_info() :
+		viewable(false)
+	{}
 
-typedef struct cutscene_info
-{
-	char		filename[MAX_FILENAME_LEN];
-	char		name[NAME_LENGTH];
-	char		*description;
+	char	filename[MAX_FILENAME_LEN];
+	char	name[NAME_LENGTH];
+	char	*description;
 	int		cd;
+	bool	viewable;
 } cutscene_info;
 
 extern SCP_vector<cutscene_info> Cutscenes;
-extern int Cutscenes_viewable;
 
 // initializa table data
 void cutscene_init();
 int cutscene_get_cd_num(char *filename);
-
 
 void cutscenes_screen_init();
 void cutscenes_screen_close();

@@ -50,11 +50,11 @@ typedef struct HUD_CONFIG_TYPE {
 	int show_flags2;				// whether to show gauge
 	int popup_flags;				// whether gauge is popup 	
 	int popup_flags2;				// whether gauge is popup 		
-	int num_msg_window_lines;	
 	int rp_flags;					// see RP_ flags above
 	int rp_dist;					// one of RR_ #defines above
 	int is_observer;				// 1 or 0, observer mode or not, respectively
 	int main_color;				// the main color
+	ubyte num_msg_window_lines;	
 
 	// colors for all the gauges
 	color clr[NUM_HUD_GAUGES];
@@ -94,6 +94,7 @@ void	hud_config_popup_flag_set(int i);
 void	hud_config_popup_flag_clear(int i);
 
 void hud_config_record_color(int color);
+void hud_config_set_color(int color);
 
 // load up the given hcf file
 void hud_config_color_load(char *name);

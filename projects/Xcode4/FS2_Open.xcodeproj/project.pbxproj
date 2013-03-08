@@ -579,6 +579,14 @@
 		6066A02413AFEA6700A817AA /* pnglibconf.h in Headers */ = {isa = PBXBuildFile; fileRef = 6066A01F13AFEA6700A817AA /* pnglibconf.h */; };
 		6066A02513AFEA6700A817AA /* pngpriv.h in Headers */ = {isa = PBXBuildFile; fileRef = 6066A02013AFEA6700A817AA /* pngpriv.h */; };
 		606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 606CBAE1126A1BFF007BE418 /* fsmemory.cpp */; };
+		60B18453127F544400CD9F1E /* csg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60B1844B127F544400CD9F1E /* csg.cpp */; };
+		60B18454127F544400CD9F1E /* csg_convert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60B1844C127F544400CD9F1E /* csg_convert.cpp */; };
+		60B18455127F544400CD9F1E /* pilotfile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60B1844D127F544400CD9F1E /* pilotfile.cpp */; };
+		60B18456127F544400CD9F1E /* pilotfile.h in Headers */ = {isa = PBXBuildFile; fileRef = 60B1844E127F544400CD9F1E /* pilotfile.h */; };
+		60B18457127F544400CD9F1E /* pilotfile_convert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60B1844F127F544400CD9F1E /* pilotfile_convert.cpp */; };
+		60B18458127F544400CD9F1E /* pilotfile_convert.h in Headers */ = {isa = PBXBuildFile; fileRef = 60B18450127F544400CD9F1E /* pilotfile_convert.h */; };
+		60B18459127F544400CD9F1E /* plr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60B18451127F544400CD9F1E /* plr.cpp */; };
+		60B1845A127F544400CD9F1E /* plr_convert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60B18452127F544400CD9F1E /* plr_convert.cpp */; };
 		60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */ = {isa = PBXBuildFile; fileRef = 60B56A32124BBFD5005AF5A9 /* fsmemory.h */; };
 		60FAF4E2113431A100CE910F /* acm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4DF113431A100CE910F /* acm.cpp */; };
 		60FAF4E3113431A100CE910F /* openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E0113431A100CE910F /* openal.cpp */; };
@@ -1494,6 +1502,14 @@
 		6066A01F13AFEA6700A817AA /* pnglibconf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pnglibconf.h; sourceTree = "<group>"; };
 		6066A02013AFEA6700A817AA /* pngpriv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngpriv.h; sourceTree = "<group>"; };
 		606CBAE1126A1BFF007BE418 /* fsmemory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsmemory.cpp; sourceTree = "<group>"; };
+		60B1844B127F544400CD9F1E /* csg.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = csg.cpp; sourceTree = "<group>"; };
+		60B1844C127F544400CD9F1E /* csg_convert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = csg_convert.cpp; sourceTree = "<group>"; };
+		60B1844D127F544400CD9F1E /* pilotfile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pilotfile.cpp; sourceTree = "<group>"; };
+		60B1844E127F544400CD9F1E /* pilotfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pilotfile.h; sourceTree = "<group>"; };
+		60B1844F127F544400CD9F1E /* pilotfile_convert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pilotfile_convert.cpp; sourceTree = "<group>"; };
+		60B18450127F544400CD9F1E /* pilotfile_convert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pilotfile_convert.h; sourceTree = "<group>"; };
+		60B18451127F544400CD9F1E /* plr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = plr.cpp; sourceTree = "<group>"; };
+		60B18452127F544400CD9F1E /* plr_convert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = plr_convert.cpp; sourceTree = "<group>"; };
 		60B56A32124BBFD5005AF5A9 /* fsmemory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsmemory.h; sourceTree = "<group>"; };
 		60C1FEFE126E63B5005D5132 /* radardradis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = radardradis.cpp; sourceTree = "<group>"; };
 		60C1FEFF126E63B5005D5132 /* radardradis.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = radardradis.h; sourceTree = "<group>"; };
@@ -1897,6 +1913,7 @@
 				345954B808C3D6A0003B1351 /* particle */,
 				345954BB08C3D6A0003B1351 /* pcxutils */,
 				345954BE08C3D6A0003B1351 /* physics */,
+				60B1844A127F544400CD9F1E /* pilotfile */,
 				345954C108C3D6A0003B1351 /* playerman */,
 				F0B73A8F10FA065F005E1A69 /* pngutils */,
 				345954C608C3D6A0003B1351 /* popup */,
@@ -2672,6 +2689,21 @@
 			path = physics;
 			sourceTree = "<group>";
 		};
+		60B1844A127F544400CD9F1E /* pilotfile */ = {
+			isa = PBXGroup;
+			children = (
+				60B1844B127F544400CD9F1E /* csg.cpp */,
+				60B1844C127F544400CD9F1E /* csg_convert.cpp */,
+				60B1844D127F544400CD9F1E /* pilotfile.cpp */,
+				60B1844E127F544400CD9F1E /* pilotfile.h */,
+				60B1844F127F544400CD9F1E /* pilotfile_convert.cpp */,
+				60B18450127F544400CD9F1E /* pilotfile_convert.h */,
+				60B18451127F544400CD9F1E /* plr.cpp */,
+				60B18452127F544400CD9F1E /* plr_convert.cpp */,
+			);
+			path = pilotfile;
+			sourceTree = "<group>";
+		};
 		345954C108C3D6A0003B1351 /* playerman */ = {
 			isa = PBXGroup;
 			children = (
@@ -3166,6 +3198,8 @@
 			files = (
 				3459585208C3D8CB003B1351 /* SDLMain.h in Headers */,
 				60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */,
+				60B18456127F544400CD9F1E /* pilotfile.h in Headers */,
+				60B18458127F544400CD9F1E /* pilotfile_convert.h in Headers */,
 				5C06872F14BCDEDA0043BFB9 /* pngconf.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3717,6 +3751,12 @@
 			files = (
 				3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */,
 				606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */,
+				60B18453127F544400CD9F1E /* csg.cpp in Sources */,
+				60B18454127F544400CD9F1E /* csg_convert.cpp in Sources */,
+				60B18455127F544400CD9F1E /* pilotfile.cpp in Sources */,
+				60B18457127F544400CD9F1E /* pilotfile_convert.cpp in Sources */,
+				60B18459127F544400CD9F1E /* plr.cpp in Sources */,
+				60B1845A127F544400CD9F1E /* plr_convert.cpp in Sources */,				
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

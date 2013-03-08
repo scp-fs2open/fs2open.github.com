@@ -207,6 +207,9 @@ enum IoActionId  {
 	//Gliding
 	TOGGLE_GLIDING									=117,	//!< TOGGLE_GLIDING
 
+	//Inflight configurable firing sequence
+	CYCLE_PRIMARY_WEAPON_SEQUENCE					=118,	//!< cycle num primaries to fire at once
+
 	/**
 	 * This must always be below the last defined action
 	 */

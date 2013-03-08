@@ -1280,6 +1280,30 @@
 		<Unit filename="../../../code/physics/physics.h">
 			<Option virtualFolder="physics/" />
 		</Unit>
+		<Unit filename="../../../code/pilotfile/csg.cpp">
+			<Option virtualFolder="pilotfile/" />
+		</Unit>
+		<Unit filename="../../../code/pilotfile/csg_convert.cpp">
+			<Option virtualFolder="pilotfile/" />
+		</Unit>
+		<Unit filename="../../../code/pilotfile/pilotfile.cpp">
+			<Option virtualFolder="pilotfile/" />
+		</Unit>
+		<Unit filename="../../../code/pilotfile/pilotfile.h">
+			<Option virtualFolder="pilotfile/" />
+		</Unit>
+		<Unit filename="../../../code/pilotfile/pilotfile_convert.cpp">
+			<Option virtualFolder="pilotfile/" />
+		</Unit>
+		<Unit filename="../../../code/pilotfile/pilotfile_convert.h">
+			<Option virtualFolder="pilotfile/" />
+		</Unit>
+		<Unit filename="../../../code/pilotfile/plr.cpp">
+			<Option virtualFolder="pilotfile/" />
+		</Unit>
+		<Unit filename="../../../code/pilotfile/plr_convert.cpp">
+			<Option virtualFolder="pilotfile/" />
+		</Unit>
 		<Unit filename="../../../code/playerman/managepilot.cpp">
 			<Option virtualFolder="playerman/" />
 		</Unit>

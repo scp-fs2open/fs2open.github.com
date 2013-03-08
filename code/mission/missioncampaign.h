@@ -24,7 +24,8 @@ struct sexp_variable;
 #define CAMPAIGN_ERROR_CORRUPT			-1
 #define CAMPAIGN_ERROR_SEXP_EXHAUSTED	-2
 #define CAMPAIGN_ERROR_MISSING			-3
-#define CAMPAIGN_ERROR_IGNORED			-4
+#define CAMPAIGN_ERROR_SAVEFILE			-4
+#define CAMPAIGN_ERROR_IGNORED			-5
 
 // types of campaigns -- these defines match the string literals listed below which
 // are found in the campaign files.  I don't think that we need campaigns for furball
@@ -86,8 +87,8 @@ typedef struct cmission {
 	mgoal			*goals;					// malloced array of mgoals (of num_goals size) which has the goal completion status
 	int				num_events;				// number of events this mission had
 	mevent			*events;				// malloced array of mevents (of num_events size) which has event completion status
-	int				num_saved_variables;	// number of variables this mission had - Goober5000
-	sexp_variable	*saved_variables;		// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
+	int				num_variables;			// number of variables this mission had - Goober5000
+	sexp_variable	*variables;				// malloced array of sexp_variables (of num_variables size) containing mission-persistent variables - Goober5000
 	int				mission_loop_formula;	// formula to determine whether to allow a side loop
 	char			*mission_branch_desc;	// message in popup
 	char			*mission_branch_brief_anim;
@@ -95,30 +96,32 @@ typedef struct cmission {
 	int				level;					// what level of the tree it's on (Fred)
 	int				pos;					// what x position on level it's on (Fred)
 	int				flags;
-	ubyte			main_hall;				// which main hall the player is in - Goober5000
+	SCP_string		main_hall;				// which main hall the player is in - converted to SCP_string by CommanderDJ
 	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000
 	scoring_struct	stats;
 } cmission;
 
 typedef struct campaign {
-	char		name[NAME_LENGTH];						// name of the campaign
-	char		filename[MAX_FILENAME_LEN];			// filename the campaign info is in
-	char		*desc;										// description of campaign
-	int		type;											// type of campaign
-	int		flags;										// flags - Goober5000
-	int		num_missions;								// number of missions in the campaign
+	char	name[NAME_LENGTH];						// name of the campaign
+	char	filename[MAX_FILENAME_LEN];				// filename the campaign info is in
+	char	*desc;									// description of campaign
+	int		type;									// type of campaign
+	int		flags;									// flags - Goober5000
+	int		num_missions;							// number of missions in the campaign
 	int		num_missions_completed;					// number of missions in the campaign that have been flown
-	int		current_mission;							// the current mission that the player is playing.  Only valid during the mission
-	int		next_mission;								// number of the next mission to fly when comtinuing the campaign.  Always valid
-	int		prev_mission;								// mission that we just came from.  Always valid
-	int		loop_enabled;								// whether mission loop is chosen - true during a loop, false otherwise
-	int		loop_mission;								// mission number of misssion loop (if any)
-	int		loop_reentry;								// mission number to return to after loop is finished
-	int		realign_required;							// are any missions missing alignment info? (Fred)
-	int		num_players;								// valid in multiplayer campaigns -- number of players campaign supports.
-	ubyte		ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
-	ubyte		weapons_allowed[MAX_WEAPON_TYPES];	// which weapons the player can use
-	cmission	missions[MAX_CAMPAIGN_MISSIONS];		// decription of the missions
+	int		current_mission;						// the current mission that the player is playing.  Only valid during the mission
+	int		next_mission;							// number of the next mission to fly when comtinuing the campaign.  Always valid
+	int		prev_mission;							// mission that we just came from.  Always valid
+	int		loop_enabled;							// whether mission loop is chosen - true during a loop, false otherwise
+	int		loop_mission;							// mission number of misssion loop (if any)
+	int		loop_reentry;							// mission number to return to after loop is finished
+	int		realign_required;						// are any missions missing alignment info? (Fred)
+	int		num_players;							// valid in multiplayer campaigns -- number of players campaign supports.
+	ubyte	ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
+	ubyte	weapons_allowed[MAX_WEAPON_TYPES];		// which weapons the player can use
+	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
+	int				num_variables;					// number of variables this campaign had - Goober5000
+	sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
 } campaign;
 
 extern campaign Campaign;
@@ -131,9 +134,9 @@ extern int Campaign_ending_via_supernova;
 // games
 typedef struct campaign_info
 {
-	char		filename[NAME_LENGTH];
 	int		num_missions_completed;
-	ubyte		missions_completed[MAX_CAMPAIGN_MISSIONS];
+	char	filename[NAME_LENGTH];
+	ubyte	missions_completed[MAX_CAMPAIGN_MISSIONS];
 } campaign_info;
 
 // extern'ed so the mission loading can get a list of campains.  Only use this
@@ -166,9 +169,8 @@ int mission_campaign_load( char *filename, player *pl = NULL, int load_savefile 
 extern int mission_campaign_save( void );
 
 // declaration for local campaign save game load function
-extern int mission_campaign_savefile_load( char *cfilename, player *pl = NULL );
-extern void mission_campaign_savefile_delete( char *cfilename, int is_multi = -1 );
-extern void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi );
+extern void mission_campaign_savefile_delete( char *cfilename );
+extern void mission_campaign_delete_all_savefiles( char *pilot_name );
 
 // if a given campaign is a multiplayer campaign, we can load and save the multiplayer info portion with these functions
 extern int mission_campaign_parse_is_multi(char *filename, char *name);
@@ -180,7 +182,7 @@ extern int mission_campaign_next_mission( void );
 extern void mission_campaign_mission_over( bool do_next_mission = true );
 
 // frees all memory at game close time
-extern void mission_campaign_close( void );
+extern void mission_campaign_clear( void );
 
 // read in a campaign file.  Used by Fred.
 int mission_campaign_load_fred(char *filename, char *name_verify = NULL);
@@ -248,6 +250,8 @@ void mission_campaign_end_do();
 
 // Goober5000 - save persistent variables
 extern void mission_campaign_save_player_persistent_variables();
+
+extern void mission_campaign_load_failure_popup();
 
 // End CSFE stuff
 #endif

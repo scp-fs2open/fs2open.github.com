@@ -30,6 +30,7 @@
 #include "network/multi_dogfight.h"
 #include "network/multi_pmsg.h"
 #include "ai/ai_profiles.h"
+#include "pilotfile/pilotfile.h"
 
 /*
 // uncomment to get extra debug messages when a player scores
@@ -375,6 +376,7 @@ void scoring_level_close(int accepted)
 		// this will grant any potential medals and then early bail, and
 		// then we will early bail
 		scoring_do_accept(&Player->stats);
+		Pilot.update_stats(&Player->stats, true);
 		return;
 	}
 
@@ -390,6 +392,10 @@ void scoring_level_close(int accepted)
 					// get the scoring struct
 					sc = &Net_players[idx].m_player->stats;
 					scoring_do_accept( sc );
+
+					if (Net_player == &Net_players[idx]) {
+						Pilot.update_stats(sc);
+					}
 				}
 			}
 		} else {
@@ -413,6 +419,9 @@ void scoring_level_close(int accepted)
 			}
 		}
 
+		if ( !(Game_mode & GM_MULTIPLAYER) ) {
+			Pilot.update_stats(&Player->stats);
+		}
 	} 	
 }
 

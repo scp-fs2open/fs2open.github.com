@@ -8,7 +8,7 @@
 */ 
 
 
-
+#include <limits.h>
 #include <ctype.h>
 
 
@@ -18,6 +18,7 @@
 #include "playerman/player.h"
 #include "io/key.h"
 #include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "cmdline/cmdline.h"
@@ -155,7 +156,7 @@ int Player_select_clone_flag;						// clone the currently selected pilot
 char Player_select_last_pilot[CALLSIGN_LEN + 10];	// callsign of the last used pilot, or none if there wasn't one
 int Player_select_last_is_multi;
 
-int Player_select_force_main_hall = -1;
+SCP_string Player_select_force_main_hall = "";
 
 static int Player_select_no_save_pilot = 0;		// to skip save of pilot in pilot_select_close()
 
@@ -200,16 +201,8 @@ void player_select_eval_very_first_pilot();
 void player_select_commit();
 void player_select_cancel_create();
 
-extern int delete_pilot_file(char *pilot_name, int single);
+extern int delete_pilot_file(char *pilot_name);
 
-/**
- * Sets Player values to 0/NULL/whatever appropriate default value
- */
-void zero_player() {
-	player *tmp_Player = new player();
-	memcpy(Player,tmp_Player,sizeof(player));
-	delete tmp_Player;
-}
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0)
 void player_select_set_controls(int gray)
@@ -235,7 +228,7 @@ void player_select_init()
 	// start a looping ambient sound
 	main_hall_start_ambient();
 
-	Player_select_force_main_hall = -1;
+	Player_select_force_main_hall = "";
 
 	Player_select_screen_active = 1;
 
@@ -466,18 +459,29 @@ void player_select_close()
 	Player = &Players[0];
 	Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 
+	// New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
+	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+		Player->flags |= PLAYER_FLAGS_IS_MULTI;
+	}
+
+	// WMC - Set appropriate game mode
+	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
+		Game_mode = GM_MULTIPLAYER;
+	} else {
+		Game_mode = GM_NORMAL;
+	}
+
 	// now read in a the pilot data
-	if (read_pilot_file(Pilots[Player_select_pilot], !Player_select_mode, Player) != 0) {
+	if ( !Pilot.load_player(Pilots[Player_select_pilot], Player) ) {
 		Error(LOCATION,"Couldn't load pilot file, bailing");
 		Player = NULL;
 	} else {
-		if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
-			mission_load_up_campaign(); // load up campaign savefile - taylor
-		}
+		// NOTE: this may fail if there is no current campaign, it's not fatal
+		Pilot.load_savefile(Player->current_campaign);
 	}
 
-	if (Player_select_force_main_hall >= 0) {
-		Player->main_hall = (ubyte)Player_select_force_main_hall;
+	if (Player_select_force_main_hall != "") {
+		main_hall_init(Player_select_force_main_hall);
 	}
 
 	// free memory from all parsing so far, all tbls found during game_init()
@@ -485,13 +489,6 @@ void player_select_close()
 	stop_parse();
 
 	Player_select_screen_active = 0;
-
-	//WMC - Set appropriate game mode
-	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
-		Game_mode = GM_MULTIPLAYER;
-	} else {
-		Game_mode = GM_NORMAL;
-	}
 }
 
 void player_select_set_input_mode(int n)
@@ -562,14 +559,10 @@ void player_select_button_pressed(int n)
 			}
 
 			// attempt to read in the pilot file of the guy to be cloned
-			if (read_pilot_file(Pilots[Player_select_pilot], !Player_select_mode, Player) != 0) {
+			if ( !Pilot.load_player(Pilots[Player_select_pilot], Player) ) {
 				Error(LOCATION,"Couldn't load pilot file, bailing");
 				Player = NULL;
 				Int3();
-			} else {
-				if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
-					mission_load_up_campaign(); // get campaign file - taylor
-				}
 			}
 
 			// set the clone flag
@@ -579,7 +572,7 @@ void player_select_button_pressed(int n)
 			if ( !player_select_create_new_pilot() ) {
 				player_select_set_bottom_text(XSTR( "Error creating new pilot file!", 380));
 				Player_select_clone_flag = 0;
-				zero_player();
+				Player->reset();
 				Player = NULL;
 				break;
 			}
@@ -620,12 +613,18 @@ void player_select_button_pressed(int n)
 		player_select_set_bottom_text("");
 
 		if (Player_select_pilot >= 0) {
-			// display a popup requesting confirmation
-			ret = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR( "Warning!\n\nAre you sure you wish to delete this pilot?", 382));
+			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+				popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
+							"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
+							"deleted from the single-player menu.", -1));
+			} else {
+				// display a popup requesting confirmation
+				ret = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR( "Warning!\n\nAre you sure you wish to delete this pilot?", 382));
 
-			// delete the pilot
-			if (ret == 1) {
-				player_select_delete_pilot();
+				// delete the pilot
+				if (ret == 1) {
+					player_select_delete_pilot();
+				}
 			}
 		}
 		break;
@@ -726,7 +725,7 @@ void player_select_delete_pilot()
 	// make sure we do this based upon whether we're in single or multiplayer mode
 	strcpy_s( filename, Pilots[Player_select_pilot] );
 
-	del_rval = delete_pilot_file(filename, (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) ? 1 : 0);
+	del_rval = delete_pilot_file(filename);
 
 	if ( !del_rval ) {
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", -1));
@@ -785,6 +784,8 @@ void player_select_scroll_list_down()
 // fill in the data on the last played pilot (callsign and is_multi or not)
 int player_select_get_last_pilot_info()
 {
+	// TODO: Replace this with a function that does this properly for the new pilot code.
+
 	char *last_player;
 
 	last_player = os_config_read_string( NULL, "LastPlayer", NULL);
@@ -795,8 +796,10 @@ int player_select_get_last_pilot_info()
 		strcpy_s(Player_select_last_pilot,last_player);
 	}
 
-	// determine if he was a single or multi-player based upon the last character in his callsign
-	Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
+	//// determine if he was a single or multi-player based upon the last character in his callsign
+	// Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
+	Player_select_last_is_multi = 0;
+
 	Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';
 
 	return 1;
@@ -813,31 +816,8 @@ int player_select_get_last_pilot()
 		}
 
 		Get_file_list_filter = player_select_pilot_file_filter;
-		if (Player_select_last_is_multi) {
-			Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
-		} else {
-			int i,j, new_pilot_num = 0;
-			int old_pilot_num = 0;
-			char old_pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
-			char *old_pilots[MAX_PILOTS];
 
-			Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
-			old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
-
-			new_pilot_num = MIN((Player_select_num_pilots + old_pilot_num), MAX_PILOTS);
-
-			for (i = Player_select_num_pilots; i<new_pilot_num;) {
-				for (j = 0; j<old_pilot_num; j++) {
-					if ( i >= MAX_PILOTS ) {
-						break;
-					}
-
-					strcpy( Pilots[i], old_pilots[j] );
-					Player_select_num_pilots++;
-					i++;
-				}
-			}
-		}
+		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
 		Player_select_pilot = -1;
 		idx = 0;
@@ -856,10 +836,7 @@ int player_select_get_last_pilot()
 		// if we've actually found a valid pilot, load him up
 		if (Player_select_pilot != -1) {
 			Player = &Players[0];
-			read_pilot_file(Pilots_arr[idx],!Player_select_last_is_multi,Player);
-			if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
-				mission_load_up_campaign(); // load up campaign file now - taylor
-			}
+			Pilot.load_player(Pilots_arr[idx], Player);
 			Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 			return 1;
 		}
@@ -877,31 +854,8 @@ void player_select_init_player_stuff(int mode)
 
 	// load up the list of players based upon the Player_select_mode (single or multiplayer)
 	Get_file_list_filter = player_select_pilot_file_filter;
-	if (mode == PLAYER_SELECT_MODE_SINGLE) {
-		int i,j, new_pilot_num = 0;
-		int old_pilot_num = 0;
-		char old_pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
-		char *old_pilots[MAX_PILOTS];
-	
-		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
-		old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
-		new_pilot_num = MIN((Player_select_num_pilots + old_pilot_num), MAX_PILOTS);
-
-		for (i = Player_select_num_pilots; i<new_pilot_num;) {
-			for (j = 0; j<old_pilot_num; j++) {
-				if ( i >= MAX_PILOTS ) {
-					break;
-				}
-
-				strcpy( Pilots[i], old_pilots[j] );
-				Player_select_num_pilots++;
-				i++;
-			}
-		}
-	} else {
-		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
-	}
+	Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
 	Player = NULL;
 
@@ -976,12 +930,16 @@ void player_select_process_noninput(int k)
 		if (Player_select_pilot >= 0) {
 			int ret;
 
-			// display a popup requesting confirmation
-			ret = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON,2,POPUP_NO,POPUP_YES,XSTR( "Are you sure you want to delete this pilot?", 383));										
+			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+				popup(PF_TITLE_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Pilots can only be deleted from the single player menu!", -1));
+			} else {
+				// display a popup requesting confirmation
+				ret = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON,2,POPUP_NO,POPUP_YES,XSTR( "Are you sure you want to delete this pilot?", 383));										
 
-			// delete the pilot
-			if (ret == 1) {
-				player_select_delete_pilot();
+				// delete the pilot
+				if (ret == 1) {
+					player_select_delete_pilot();
+				}
 			}
 		}
 		break;
@@ -1074,7 +1032,7 @@ void player_select_process_input(int k)
 		// if this is the first guy, we should set the Player struct
 		if (Player == NULL) {
 			Player = &Players[0];
-			zero_player();
+			Player->reset();
 			Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 		}
 
@@ -1088,10 +1046,10 @@ void player_select_process_input(int k)
 		}
 
 		// create his pilot file
-		write_pilot_file(Player);
+		Pilot.save_player(Player);
 
 		// unset the player
-		zero_player();
+		Player->reset();
 		Player = NULL;
 
 		// make this guy the selected pilot and put him first on the list
@@ -1177,7 +1135,7 @@ void player_select_display_all_text()
 
 int player_select_pilot_file_filter(char *filename)
 {
-	return !verify_pilot_file(filename, Player_select_mode == PLAYER_SELECT_MODE_SINGLE);
+	return (int)Pilot.verify(filename);
 }
 
 void player_select_set_bottom_text(char *txt)
@@ -1218,11 +1176,6 @@ void player_select_commit()
 {
 	// if we've gotten to this point, we should have ensured this was the case
 	Assert(Player_select_num_pilots > 0);
-
-	// check to see if we are going to try and upgrade or not
-	if ( pilot_file_upgrade_check(Pilots[Player_select_pilot], !Player_select_mode) ) {
-		return;
-	}
 
 	gameseq_post_event(GS_EVENT_MAIN_MENU);
 	gamesnd_play_iface(SND_COMMIT_PRESSED);
@@ -1276,15 +1229,16 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 		if (Dc_arg_type & ARG_INT) {
 			int idx = Dc_arg_int;
 
-			if (idx < 0 || idx >= MAIN_HALLS_MAX) {
+			Assert(Main_hall_defines.at(gr_screen.res).size() < INT_MAX);
+			if (idx < 0 || idx >= (int) Main_hall_defines.at(gr_screen.res).size()) {
 				dc_printf("Main hall index out of range\n");
 			} else {
-				Player_select_force_main_hall = idx;
-				dc_printf("Player is now on main hall #%d\n", idx);
+				Player_select_force_main_hall = main_hall_get_name(idx);
+				dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall.c_str());
 			}
 		} else {
-			Player_select_force_main_hall = 1;
-			dc_printf("Player is now on the Bastion\n");
+			Player_select_force_main_hall = "1";
+			dc_printf("Player is now on the Bastion... hopefully\n");
 		}
 		Dc_status = 0;
 	}
@@ -1389,7 +1343,8 @@ void player_tips_popup()
 		case 2:
 			ret = 0;
 			Player->tips = 0;
-			write_pilot_file(Player);
+			Pilot.save_player(Player);
+			Pilot.save_savefile();
 			break;
 		}
 	} while(ret > 0);

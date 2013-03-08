@@ -85,4 +85,6 @@ void blit_callsign();
 // individual medals
 void medals_translate_name(char *name, int max_len);
 
+int medals_info_lookup(const char *name);
+
 #endif

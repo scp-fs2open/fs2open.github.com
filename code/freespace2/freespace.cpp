@@ -157,8 +157,11 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 #include "fs2netd/fs2netd_client.h"
+#include "pilotfile/pilotfile.h"
 
 #include "globalincs/pstypes.h"
+
+#include <stdexcept>
 
 extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
@@ -1998,7 +2001,7 @@ void game_init()
 
 	if(!Cmdline_reparse_mainhall)
 	{
-		main_hall_read_table();
+		main_hall_table_init();
 	}
 
 	if (Cmdline_env) {
@@ -2012,6 +2015,9 @@ void game_init()
 	Script_system.RunCondition(CHA_GAMEINIT);
 
 	game_title_screen_close();
+
+	// convert old pilot files (if they need it)
+	convert_pilot_files();
 
 #ifdef _WIN32
 	timeBeginPeriod(1);	
@@ -5880,9 +5886,7 @@ void game_enter_state( int old_state, int new_state )
 
 			// remove any multiplayer flags from the game mode
 			Game_mode &= ~(GM_MULTIPLAYER);
-	
-			// determine which ship this guy is currently based on
-			main_hall_init(Player->main_hall);
+
 			// set the game_mode based on the type of player
 			Assert( Player != NULL );
 
@@ -5890,6 +5894,17 @@ void game_enter_state( int old_state, int new_state )
 				Game_mode = GM_MULTIPLAYER;
 			} else {
 				Game_mode = GM_NORMAL;
+			}
+
+			// determine which ship this guy is currently based on
+			mission_load_up_campaign(Player);
+
+			// if we're coming from the end of a campaign, we want to load the first mainhall of the campaign
+			// otherwise load the mainhall for the mission the player's up to
+			if (Campaign.next_mission == -1) {
+				main_hall_init(Campaign.missions[0].main_hall);
+			} else {
+				main_hall_init(Campaign.missions[Campaign.next_mission].main_hall);
 			}
 
 			//if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && !Main_hall_netgame_started ) {
@@ -7250,8 +7265,8 @@ void game_shutdown(void)
    // if the player has left the "player select" screen and quit the game without actually choosing
 	// a player, Player will be NULL, in which case we shouldn't write the player file out!
 	if (!(Game_mode & GM_STANDALONE_SERVER) && (Player!=NULL) && !Is_standalone){
-		write_pilot_file();
-		mission_campaign_savefile_save();
+		Pilot.save_player();
+		Pilot.save_savefile();
 	}
 
 	// load up common multiplayer icons
@@ -7263,7 +7278,7 @@ void game_shutdown(void)
 	ship_close();					// free any memory that was allocated for the ships
 	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
 	unload_animating_pointer();// frees the frames used for the animating mouse pointer
-	mission_campaign_close();	// close out the campaign stuff
+	mission_campaign_clear();	// clear out the campaign stuff
 	message_mission_close();	// clear loaded table data from message.tbl
 	mission_parse_close();		// clear out any extra memory that may be in use by mission parsing
 	multi_voice_close();			// close down multiplayer voice (including freeing buffers, etc)

@@ -9677,18 +9677,29 @@ ADE_FUNC(getImageFilename, l_Player, NULL, "Gets current player image filename",
 	return ade_set_args(L, "s", Players[idx].image_filename);
 }
 
-
-ADE_FUNC(getMainHall, l_Player, NULL, "Gets player's main hall number", "number", "Main hall index, or 1 if handle is invalid")
+ADE_FUNC(getMainHallName, l_Player, NULL, "Gets player's current main hall name", "string", "Main hall name, or name of first mainhall in campaign if something goes wrong")
 {
-	int idx;
-	if(!ade_get_args(L, "o", l_Player.Get(&idx)))
-		return ade_set_error(L, "i", 1);
+	SCP_string hallname;
+	// FS2-->Lua
+	if (Campaign.next_mission == -1) {
+		hallname = Campaign.missions[0].main_hall;
+	} else {
+		hallname = Campaign.missions[Campaign.next_mission].main_hall;
+	}
 
-	if(idx < 0 || idx >= Player_num)
-		return ade_set_error(L, "i", 1);
+	return ade_set_args(L, "i", hallname.c_str());
+}
 
+// use getMainHallName if at all possible.
+ADE_FUNC(getMainHallIndex, l_Player, NULL, "Gets player's current main hall number", "number", "Main hall index, or index of first mainhall in campaign if something goes wrong")
+{
+	int hallnum = 0;
 	//FS2-->Lua
-	int hallnum = (int)Players[idx].main_hall + 1;
+	if (Campaign.next_mission == -1) {
+		hallnum = main_hall_get_index(Campaign.missions[0].main_hall);
+	} else {
+		hallnum = main_hall_get_index(Campaign.missions[Campaign.next_mission].main_hall);
+	}
 
 	return ade_set_args(L, "i", hallnum);
 }

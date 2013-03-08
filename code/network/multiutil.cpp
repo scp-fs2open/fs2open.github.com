@@ -783,11 +783,11 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 	}
 
 	// blast the old player data
-	memset(pl,0,sizeof(player));
+	pl->reset();
 
 	// set up the net_player structure
-	stuff_netplayer_info( &Net_players[net_player_num], addr, player_ship_class, pl );
-	Net_players[net_player_num].s_info.num_last_buttons = 0;
+	stuff_netplayer_info( &Net_players[net_player_num], addr, player_ship_class, pl );	Net_players[net_player_num].s_info.num_last_buttons = 0;
+
 	// Net_players[net_player_num].respawn_count = 0;
 	Net_players[net_player_num].last_heard_time = timer_get_fixed_seconds();
 	Net_players[net_player_num].reliable_socket = INVALID_SOCKET;

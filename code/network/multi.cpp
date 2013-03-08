@@ -47,6 +47,7 @@
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
+#include "pilotfile/pilotfile.h"
 
 
 
@@ -255,7 +256,7 @@ void multi_level_init()
 	ml_string(NOX("multi_level_init()"));
 
 	// initialize the Net_players array
-	for(idx=0;idx<MAX_PLAYERS;idx++) {
+	for ( idx = 0; idx < MAX_PLAYERS; idx++) {
 		// close all sockets down just for good measure
 		psnet_rel_close_socket(&Net_players[idx].reliable_socket);
 
@@ -267,11 +268,11 @@ void multi_level_init()
 	}
 
 	// initialize the Players array
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(Player == &Players[idx]){
+	for (idx=0;idx<MAX_PLAYERS;idx++) {
+		if (Player == &Players[idx]) {
 			continue;
 		}
-		memset(&Players[idx],0,sizeof(player));
+		Players[idx].reset();
 	}
 
 	multi_vars_init();	
@@ -306,7 +307,7 @@ void multi_level_init()
 	multi_respawn_init();
 
 	// initialize all netgame timestamps
-   multi_reset_timestamps();
+	multi_reset_timestamps();
 
 	// flush psnet sockets
 	psnet_flush();
@@ -1490,8 +1491,7 @@ void standalone_main_init()
 	timestamp_reset();
 
 	// setup a blank pilot (this is a standalone usage only!)
-	extern int read_pilot_file(char* callsign, int single = 1, player *p = NULL);
-	read_pilot_file(NULL);
+	Pilot.load_player(NULL);
 
 	// setup the netplayer for the standalone
 	Net_player = &Net_players[0];	

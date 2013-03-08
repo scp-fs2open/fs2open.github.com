@@ -35,11 +35,9 @@ char *Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 	"2_ViewFootage-m"
 };
 
-int Cutscenes_viewable;
 int Description_index;
 SCP_vector<cutscene_info> Cutscenes;
 
-//extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 void cutscene_close()
 {
 	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut)
@@ -72,6 +70,8 @@ void cutscene_init()
 	skip_to_string("#Cutscenes");
 	ignore_white_space();
 
+	bool isFirstCutscene = true;
+
 	while ( required_string_either("#End", "$Filename:") ) 
     {
         memset(&cutinfo, 0, sizeof(cutscene_info));
@@ -91,12 +91,21 @@ void cutscene_init()
 		required_string("$cd:");
 		stuff_int( &cutinfo.cd );
 
+		if (isFirstCutscene) {
+			isFirstCutscene = false;
+			// The original code assumes the first movie is the intro, so always viewable
+			cutinfo.viewable = true;
+		}
+
+		if (optional_string("$Always Viewable:")) {
+			stuff_boolean(&cutinfo.viewable);
+		}
+
+
         Cutscenes.push_back(cutinfo);
 	}
 
 	required_string("#End");
-
-	Cutscenes_viewable = INTRO_CUTSCENE_FLAG;
 
 	// close localization
 	lcl_ext_close();
@@ -140,7 +149,7 @@ void cutscene_mark_viewable(char *filename)
 
 		// see if the stripped filename matches the cutscene filename
 		if ( strstr(cut_file, file) != NULL ) {
-			Cutscenes_viewable |= (1<<i);
+			cut->viewable = true;
 			return;
 		}
 		i++;
@@ -473,20 +482,12 @@ void cutscenes_screen_init()
 	Scroll_offset = Selected_line = 0;
 	Description_index = -1;
 
-	// when doing a debug version, just put all of the movie files here.
-#ifndef NDEBUG
-	//Cutscenes_viewable = 0xffffffff;			// makes all cutscenes viewble.
-#endif
-
-//  	if (All_movies_enabled)
-//  		Cutscenes_viewable = 0xffffffff;		//	Cheat code enables all movies.
-
     Cutscene_list.clear();
 	
-	size_t size = Cutscenes.size();
-	for (size_t j=0;j < size;j++) {
-		if ( Cutscenes_viewable & (1<<j) ) {
-            Cutscene_list.push_back((int)j);
+	int u = 0;
+	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, u++) {
+		if ( (*cut).viewable ) {
+			Cutscene_list.push_back(u);
 		}
 	}
 }

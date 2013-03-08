@@ -59,6 +59,80 @@
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
 
+#define MAX_NUM_SLOTS 6
+
+struct ftable
+{
+int count;
+int table[ MAX_NUM_SLOTS ];
+};
+
+#define MAX_SLOT_COUNT 25
+
+class factor_table
+	{
+	public:
+		factor_table();
+		~factor_table(){ delete[] table; };
+		int getNextSlots( int slots_on_ship, int cur_slots );
+
+	private:
+		ftable * table;
+	};
+
+factor_table ftables;
+
+static bool isAPrimeFactor( int factor, int product )
+{
+return ( (float)product / (float)factor ) == (product / factor);
+}
+
+factor_table::factor_table()
+{
+table = new ftable[ MAX_NUM_SLOTS ];
+
+memset( table, 0x00, sizeof( ftable ) * MAX_NUM_SLOTS );
+for( int i = 0 ; i < MAX_NUM_SLOTS; ++i )
+	{
+	table[ i ].count = 0;
+	for( int j = 1; j <= i; ++j )
+		{
+		if( isAPrimeFactor( j, i ) )
+			{
+			table[ i ].table[ table[ i ].count ] = j;
+			table[ i ].count ++;
+			}
+		}
+	}
+}
+
+int factor_table::getNextSlots(int slots_on_ship, int cur_slots)
+{
+Assert( slots_on_ship <= MAX_NUM_SLOTS );
+Assert( slots_on_ship >= 0 );
+
+for( int i = 0; i < table[ slots_on_ship ].count; ++i )
+	{
+	if( table[ slots_on_ship ].table[ i ] == cur_slots )
+		{
+		if( table[ slots_on_ship ].count == i + 1 )
+			{
+			//Overflow back to 1
+			return 1;
+			}
+		else
+			{
+			//Next block in the table
+			return table[ slots_on_ship ].table[ i + 1 ];
+			}
+		}
+	}
+//Did not find cur_slots, try and get back on track
+
+Assert( 0 );
+return 1;
+}
+
 // --------------------------------------------------------------
 // Global to file 
 // --------------------------------------------------------------
@@ -218,7 +292,8 @@ int Normal_key_set[] = {
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
 
-	TOGGLE_GLIDING
+	TOGGLE_GLIDING,
+	CYCLE_PRIMARY_WEAPON_SEQUENCE
 };
 
 int Dead_key_set[] = {
@@ -352,7 +427,8 @@ int Non_critical_key_set[] = {
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
-	TOGGLE_GLIDING
+	TOGGLE_GLIDING,
+	CYCLE_PRIMARY_WEAPON_SEQUENCE
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -1639,8 +1715,24 @@ int button_function_critical(int n, net_player *p = NULL)
 	}
 	
 	switch (n) {
+		// cycle num primaries to fire at once
+		case CYCLE_PRIMARY_WEAPON_SEQUENCE:
+			{
+				int count;
+				ship * shipp = &Ships[objp->instance];
+				ship_weapon *swp = &shipp->weapons;
+				ship_info *sip = &Ship_info[shipp->ship_info_index];
+				polymodel *pm = model_get( sip->model_num );
+				count = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+				swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
+				shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
+				shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
+				shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+			}
+			break;
+
 		// cycle to next primary weapon
-		case CYCLE_NEXT_PRIMARY:			
+		case CYCLE_NEXT_PRIMARY:
 			if (at_self) {
 				control_used(CYCLE_NEXT_PRIMARY);
 			}
@@ -2110,37 +2202,85 @@ int button_function(int n)
 		}
 	}
 
-	// now handle keys the regular way
+	switch(n) {
+		// following are not handled here, but we need to bypass the Int3()
+		case LAUNCH_COUNTERMEASURE:
+		case VIEW_SLEW:
+		case VIEW_TRACK_TARGET:
+		case ONE_THIRD_THROTTLE:
+		case TWO_THIRDS_THROTTLE:
+		case MINUS_5_PERCENT_THROTTLE:
+		case PLUS_5_PERCENT_THROTTLE:
+		case ZERO_THROTTLE:
+		case MAX_THROTTLE:
+		case TOGGLE_GLIDING:
+		case GLIDE_WHEN_PRESSED:
+			return 0;
+	}
+
+	/**
+	 * This switch handles the critical buttons
+	 *
+	 * button_function_critical is also called from network
+	 */
 	switch (n) {
-		// cycle to next primary weapon
-		case CYCLE_NEXT_PRIMARY:			
-			return button_function_critical(CYCLE_NEXT_PRIMARY);
+		case CYCLE_PRIMARY_WEAPON_SEQUENCE:
+		case CYCLE_NEXT_PRIMARY:	// cycle to next primary weapon
+		case CYCLE_PREV_PRIMARY:	// cycle to previous primary weapon
+		case CYCLE_SECONDARY:		// cycle to next secondary weapon
+		case CYCLE_NUM_MISSLES:		// cycle number of missiles fired from secondary bank
+		case SHIELD_EQUALIZE:		// equalize shield energy to all quadrants
+		case SHIELD_XFER_TOP:		// transfer shield energy to front
+		case SHIELD_XFER_BOTTOM:	// transfer shield energy to rear
+		case SHIELD_XFER_LEFT:		// transfer shield energy to left
+		case SHIELD_XFER_RIGHT:		// transfer shield energy to right
+		case XFER_SHIELD:			// transfer energy to shield from weapons
+		case XFER_LASER:			// transfer energy to weapons from shield
+			return button_function_critical(n);
 			break;
 
-		// cycle to previous primary weapon
-		case CYCLE_PREV_PRIMARY:			
-			return button_function_critical(CYCLE_PREV_PRIMARY);
-			break;
-
-		// cycle to next secondary weapon
-		case CYCLE_SECONDARY:
-			return button_function_critical(CYCLE_SECONDARY);
-			break;
-
-		// cycle number of missiles fired from secondary bank
-		case CYCLE_NUM_MISSLES:
-         return button_function_critical(CYCLE_NUM_MISSLES);			
-			break;
-
-		// undefined in multiplayer for clients right now
-		// match target speed
-		case MATCH_TARGET_SPEED:
-			control_used(MATCH_TARGET_SPEED);
-			// If player is auto-matching, break auto-match speed
-			if ( Player->flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
-				Player->flags &= ~PLAYER_FLAGS_AUTO_MATCH_SPEED;
+		case INCREASE_WEAPON:		// increase weapon recharge rate
+		case DECREASE_WEAPON:		// decrease weapon recharge rate
+		case INCREASE_SHIELD:		// increase shield recharge rate
+		case DECREASE_SHIELD:		// decrease shield recharge rate
+		case INCREASE_ENGINE:		// increase energy to engines
+		case DECREASE_ENGINE:		// decrease energy to engines
+		case ETS_EQUALIZE:
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(n);
 			}
-			player_match_target_speed();						
+			return 1;
+			break;
+	}
+
+	/**
+	 * Assume the switches below will catch the key, if not, set to FALSE in default
+	 *
+	 * Below, you must not use return in cases,
+	 * else the check for invalid keys will fail
+	 */
+	int keyHasBeenUsed = TRUE;
+
+	switch(n) {
+		// message all netplayers button
+		case MULTI_MESSAGE_ALL:
+			multi_msg_key_down(MULTI_MSG_ALL);
+			break;
+
+		// message all friendlies button
+		case MULTI_MESSAGE_FRIENDLY:
+			multi_msg_key_down(MULTI_MSG_FRIENDLY);
+			break;
+
+		// message all hostiles button
+		case MULTI_MESSAGE_HOSTILE:
+			multi_msg_key_down(MULTI_MSG_HOSTILE);
+			break;
+
+		// message targeted ship (if player)
+		case MULTI_MESSAGE_TARGET:
+			multi_msg_key_down(MULTI_MSG_TARGET);
 			break;
 
 		// undefined in multiplayer for clients right now
@@ -2167,174 +2307,6 @@ int button_function(int n)
 			}
 			break;
 
-		// target next
-		case TARGET_NEXT:
-			control_used(TARGET_NEXT);
-			if ( hud_sensors_ok(Player_ship) ) {
-				hud_target_next();
-			}
-			break;
-
-		// target previous
-		case TARGET_PREV:
-			control_used(TARGET_PREV);			
-			if ( hud_sensors_ok(Player_ship) ) {
-				hud_target_prev();			
-			}
-			break;
-
-		// target the next hostile target
-		case TARGET_NEXT_CLOSEST_HOSTILE:
-			control_used(TARGET_NEXT_CLOSEST_HOSTILE);			
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_next_list();
-			}			
-			break;
-
-		// target the previous closest hostile 
-		case TARGET_PREV_CLOSEST_HOSTILE:
-			control_used(TARGET_PREV_CLOSEST_HOSTILE);
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_next_list(1,0);
-			}
-			break;
-
-		// toggle auto-targeting
-		case TOGGLE_AUTO_TARGETING:
-			control_used(TOGGLE_AUTO_TARGETING);
-			hud_gauge_popup_start(HUD_AUTO_TARGET);
-			Players[Player_num].flags ^= PLAYER_FLAGS_AUTO_TARGETING;
-			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING ) {
-				if (hud_sensors_ok(Player_ship)) {
-					hud_target_closest(iff_get_attackee_mask(Player_ship->team), -1, FALSE, TRUE );
-					snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
-				} else {
-					Players[Player_num].flags ^= PLAYER_FLAGS_AUTO_TARGETING;
-				}
-			} else {
-				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
-			}
-			break;
-
-		// target the next friendly ship
-		case TARGET_NEXT_CLOSEST_FRIENDLY:
-			control_used(TARGET_NEXT_CLOSEST_FRIENDLY);
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_next_list(0);
-			}
-			break;
-
-		// target the closest friendly ship
-		case TARGET_PREV_CLOSEST_FRIENDLY:
-			control_used(TARGET_PREV_CLOSEST_FRIENDLY);
-			if (hud_sensors_ok(Player_ship)) {
-				hud_target_next_list(0,0);
-			}
-			break;
-
-		// target ship closest to center of reticle
-		case TARGET_SHIP_IN_RETICLE:
-			control_used(TARGET_SHIP_IN_RETICLE);
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_in_reticle_new();
-			}
-			break;
-
-		case TARGET_LAST_TRANMISSION_SENDER:
-			control_used(TARGET_LAST_TRANMISSION_SENDER);
-			if ( hud_sensors_ok(Player_ship)) {
-				hud_target_last_transmit();
-			}
-			break;
-
-		// target the closest repair ship
-		case TARGET_CLOSEST_REPAIR_SHIP:
-			control_used(TARGET_CLOSEST_REPAIR_SHIP);
-			// AL: Try to find the closest repair ship coming to repair the player... if no support
-			//		 ships are coming to rearm the player, just try for the closest repair ship
-			if ( hud_target_closest_repair_ship(OBJ_INDEX(Player_obj)) == 0 ) {
-				if ( hud_target_closest_repair_ship() == 0 ) {
-					snd_play(&Snds[SND_TARGET_FAIL]);
-				}
-			}
-			break;
-
-		// target the closest ship attacking current target
-		case TARGET_CLOSEST_SHIP_ATTACKING_TARGET:
-			control_used(TARGET_CLOSEST_SHIP_ATTACKING_TARGET);
-			if (hud_sensors_ok(Player_ship))
-			{
-				if (Player_ai->target_objnum < 0)
-				{
-					snd_play(&Snds[SND_TARGET_FAIL]);
-					break;
-				}
-
-				hud_target_closest(iff_get_attacker_mask(obj_team(&Objects[Player_ai->target_objnum])), Player_ai->target_objnum);
-			}
-			break;
-
-		// stop targeting ship
-		case STOP_TARGETING_SHIP:
-			control_used(STOP_TARGETING_SHIP);
-			hud_cease_targeting();
-			break;
-
-		// target closest ship that is attacking player
-		case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
-			control_used(TARGET_CLOSEST_SHIP_ATTACKING_SELF);
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_next_list(1, 0, iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
-			}
-			break;
-
-		// target your target's target
-		case TARGET_TARGETS_TARGET:
-			control_used(TARGET_TARGETS_TARGET);
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_targets_target();
-			}
-			break;
-
-		// target ships subsystem in reticle
-		case TARGET_SUBOBJECT_IN_RETICLE:
-			control_used(TARGET_SUBOBJECT_IN_RETICLE);
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_subsystem_in_reticle();
-			}
-			break;
-
-		case TARGET_PREV_SUBOBJECT:
-			control_used(TARGET_PREV_SUBOBJECT);
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_prev_subobject();
-			}
-			break;
-
-		// target next subsystem on current target
-		case TARGET_NEXT_SUBOBJECT:
-			control_used(TARGET_NEXT_SUBOBJECT);
-			if (hud_sensors_ok(Player_ship)){
-				hud_target_next_subobject();
-			}
-			break;
-
-		// stop targeting subsystems on ship
-		case STOP_TARGETING_SUBSYSTEM:
-			control_used(STOP_TARGETING_SUBSYSTEM);
-			hud_cease_subsystem_targeting();
-			break;
-			
-		case TARGET_NEXT_BOMB:
-			control_used(TARGET_NEXT_BOMB);
-			hud_target_missile(Player_obj, 1);
-			break;
-
-		case TARGET_PREV_BOMB:
-			control_used(TARGET_PREV_BOMB);
-			hud_target_missile(Player_obj, 0);
-			break;
-
 		case TARGET_NEXT_UNINSPECTED_CARGO:
 			hud_target_uninspected_object(1);
 			break;
@@ -2355,80 +2327,340 @@ int button_function(int n)
 			hud_target_live_turret(0);
 			break;
 
+		// end the mission
+		case END_MISSION:
+			// in multiplayer, all end mission requests should go through the server
+			if (Game_mode & GM_MULTIPLAYER) {
+				multi_handle_end_mission_request();
+				break;
+			}
+
+			control_used(END_MISSION);
+
+			if (collide_predict_large_ship(Player_obj, 200.0f) 
+			|| (Ship_info[Ships[Player_obj->instance].ship_info_index].warpout_type == WT_HYPERSPACE 
+			&& collide_predict_large_ship(Player_obj, 100000.0f)))
+			{
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
+			} else if (!ship_engine_ok_to_warp(Player_ship)) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR("Engine failure.  Cannot engage subspace drive.", 40));
+			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", -1));
+			} else if ( (Player_obj != NULL) && object_get_gliding(Player_obj)) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", -1));
+			} else {
+				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
+			}
+			break;
+
+		case ADD_REMOVE_ESCORT:
+			if ( Player_ai->target_objnum >= 0 ) {
+				control_used(ADD_REMOVE_ESCORT);
+				hud_add_remove_ship_escort(Player_ai->target_objnum);
+			}
+			break;
+
+		// if i'm an observer, zoom to my targeted object
+		case MULTI_OBSERVER_ZOOM_TO:
+			multi_obs_zoom_to_target();
+			break;
+
+		// toggle between high and low HUD contrast
+		case TOGGLE_HUD_CONTRAST:
+			gamesnd_play_iface(SND_USER_SELECT);
+			hud_toggle_contrast();
+			break;
+
+		// toggle network info
+		case MULTI_TOGGLE_NETINFO:
+			extern int Multi_display_netinfo;
+			Multi_display_netinfo = !Multi_display_netinfo;
+			break;
+
+		// self destruct (multiplayer only)
+		case MULTI_SELF_DESTRUCT:
+			if (!(Game_mode & GM_MULTIPLAYER)) {
+				break;
+			}
+
+			// bogus netplayer
+			if ( (Net_player == NULL) || (Net_player->m_player == NULL) ) {
+				break;
+			}
+
+			// blow myself up, if I'm the server
+			if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+				if ( (Net_player->m_player->objnum >= 0) && 
+					(Net_player->m_player->objnum < MAX_OBJECTS) && 
+					(Objects[Net_player->m_player->objnum].type == OBJ_SHIP) && 
+					(Objects[Net_player->m_player->objnum].instance >= 0) && 
+					(Objects[Net_player->m_player->objnum].instance < MAX_SHIPS) )
+				{
+
+					ship_self_destruct(&Objects[Net_player->m_player->objnum]);
+				}
+			} else { // otherwise send a packet to the server
+				send_self_destruct_packet();
+			}
+			break;
+
+		case TOGGLE_HUD:
+			gamesnd_play_iface(SND_USER_SELECT);
+			hud_toggle_draw();
+			break;
+
+		case HUD_TARGETBOX_TOGGLE_WIREFRAME:
+			if (!Lock_targetbox_mode) {
+				gamesnd_play_iface(SND_USER_SELECT);
+				hud_targetbox_switch_wireframe_mode();
+			} else {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+			}
+			break;
+
+		// Autopilot key control
+		case AUTO_PILOT_TOGGLE:
+			if (!(The_mission.flags & MISSION_FLAG_DEACTIVATE_AP)) {
+				if (AutoPilotEngaged) {
+					if (Cmdline_autopilot_interruptable == 1) //allow WCS to disable autopilot interrupt via commandline
+						EndAutoPilot();
+				} else {
+					if (!StartAutopilot())
+						gamesnd_play_iface(SND_GENERAL_FAIL);
+				}
+			}
+			break;
+
+		case NAV_CYCLE:
+			if (!Sel_NextNav())
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+			break;
+		default:
+			keyHasBeenUsed = FALSE;
+			break;
+	}
+
+	/**
+	 * The key has been handled, return early before the timestamp is set
+	 */
+	if (keyHasBeenUsed) {
+		return 1;
+	}
+
+	/**
+	 * 	Update the last used timestamp of this key
+	 */
+	control_used(n);
+
+	if ( hud_sensors_ok(Player_ship) ) {
+		int keyHasBeenUsed = TRUE;
+		switch(n) {
+			// target next
+			case TARGET_NEXT:
+				hud_target_next();
+				break;
+
+			// target previous
+			case TARGET_PREV:
+				hud_target_prev();
+				break;
+
+			// target the next hostile target
+			case TARGET_NEXT_CLOSEST_HOSTILE:
+				hud_target_next_list();
+				break;
+
+			// target the previous closest hostile
+			case TARGET_PREV_CLOSEST_HOSTILE:
+				hud_target_next_list(1,0);
+				break;
+
+			// target the next friendly ship
+			case TARGET_NEXT_CLOSEST_FRIENDLY:
+				hud_target_next_list(0);
+				break;
+
+			// target the closest friendly ship
+			case TARGET_PREV_CLOSEST_FRIENDLY:
+				hud_target_next_list(0,0);
+				break;
+
+			// target ship closest to center of reticle
+			case TARGET_SHIP_IN_RETICLE:
+				hud_target_in_reticle_new();
+				break;
+
+			case TARGET_LAST_TRANMISSION_SENDER:
+				hud_target_last_transmit();
+				break;
+
+			// target the closest ship attacking current target
+			case TARGET_CLOSEST_SHIP_ATTACKING_TARGET:
+				if (Player_ai->target_objnum < 0) {
+					snd_play(&Snds[SND_TARGET_FAIL]);
+					break;
+				}
+
+				hud_target_closest(iff_get_attacker_mask(obj_team(&Objects[Player_ai->target_objnum])), Player_ai->target_objnum);
+				break;
+
+			// target closest ship that is attacking player
+			case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
+				hud_target_next_list(1, 0, iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
+				break;
+
+			// target your target's target
+			case TARGET_TARGETS_TARGET:
+				hud_target_targets_target();
+				break;
+
+			// target ships subsystem in reticle
+			case TARGET_SUBOBJECT_IN_RETICLE:
+				hud_target_subsystem_in_reticle();
+				break;
+
+			case TARGET_PREV_SUBOBJECT:
+				hud_target_prev_subobject();
+				break;
+
+			// target next subsystem on current target
+			case TARGET_NEXT_SUBOBJECT:
+				hud_target_next_subobject();
+				break;
+
+			default:
+				keyHasBeenUsed = FALSE;
+				break;
+		};
+		if (keyHasBeenUsed) {
+			return 1;
+		}
+	}
+
+	keyHasBeenUsed = TRUE;
+	switch(n) {
+		// undefined in multiplayer for clients right now
+		// match target speed
+		case MATCH_TARGET_SPEED:
+			// If player is auto-matching, break auto-match speed
+			if ( Player->flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
+				Player->flags &= ~PLAYER_FLAGS_AUTO_MATCH_SPEED;
+			}
+			player_match_target_speed();
+			break;
+
+		// toggle auto-targeting
+		case TOGGLE_AUTO_TARGETING:
+			hud_gauge_popup_start(HUD_AUTO_TARGET);
+			Players[Player_num].flags ^= PLAYER_FLAGS_AUTO_TARGETING;
+			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING ) {
+				if (hud_sensors_ok(Player_ship)) {
+					hud_target_closest(iff_get_attackee_mask(Player_ship->team), -1, FALSE, TRUE );
+					snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
+					//HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto targeting activated", -1));
+				} else {
+					Players[Player_num].flags ^= PLAYER_FLAGS_AUTO_TARGETING;
+				}
+			} else {
+				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
+				//HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto targeting deactivated", -1));
+			}
+			break;
+
+		// target the closest repair ship
+		case TARGET_CLOSEST_REPAIR_SHIP:
+			// AL: Try to find the closest repair ship coming to repair the player... if no support
+			//		 ships are coming to rearm the player, just try for the closest repair ship
+			if ( hud_target_closest_repair_ship(OBJ_INDEX(Player_obj)) == 0 ) {
+				if ( hud_target_closest_repair_ship() == 0 ) {
+					snd_play(&Snds[SND_TARGET_FAIL]);
+				}
+			}
+			break;
+
+		// stop targeting ship
+		case STOP_TARGETING_SHIP:
+			hud_cease_targeting();
+			break;
+
+		// stop targeting subsystems on ship
+		case STOP_TARGETING_SUBSYSTEM:
+			hud_cease_subsystem_targeting();
+			break;
+			
+		case TARGET_NEXT_BOMB:
+			hud_target_missile(Player_obj, 1);
+			break;
+
+		case TARGET_PREV_BOMB:
+			hud_target_missile(Player_obj, 0);
+			break;
+
 		// wingman message: attack current target
 		case ATTACK_MESSAGE:
-			control_used(ATTACK_MESSAGE);
 			hud_squadmsg_shortcut( ATTACK_TARGET_ITEM );
 			break;
 
 		// wingman message: disarm current target
 		case DISARM_MESSAGE:
-			control_used(DISARM_MESSAGE);
 			hud_squadmsg_shortcut( DISARM_TARGET_ITEM );
 			break;
 
 		// wingman message: disable current target
 		case DISABLE_MESSAGE:
-			control_used(DISABLE_MESSAGE);
 			hud_squadmsg_shortcut( DISABLE_TARGET_ITEM );
 			break;
 
 		// wingman message: disable current target
 		case ATTACK_SUBSYSTEM_MESSAGE:
-			control_used(ATTACK_SUBSYSTEM_MESSAGE);
 			hud_squadmsg_shortcut( DISABLE_SUBSYSTEM_ITEM );
 			break;
 
 		// wingman message: capture current target
 		case CAPTURE_MESSAGE:
-			control_used(CAPTURE_MESSAGE);
 			hud_squadmsg_shortcut( CAPTURE_TARGET_ITEM );
 			break;
 
 		// wingman message: engage enemy
 		case ENGAGE_MESSAGE:
-    		control_used(ENGAGE_MESSAGE);
 			hud_squadmsg_shortcut( ENGAGE_ENEMY_ITEM );
 			break;
 
 		// wingman message: form on my wing
 		case FORM_MESSAGE:
-			control_used(FORM_MESSAGE);
 			hud_squadmsg_shortcut( FORMATION_ITEM );
 			break;
 
 		// wingman message: protect current target
 		case PROTECT_MESSAGE:
-			control_used(PROTECT_MESSAGE);
 			hud_squadmsg_shortcut( PROTECT_TARGET_ITEM );
 			break;
 
 		// wingman message: cover me
 		case COVER_MESSAGE:
-			control_used(COVER_MESSAGE);
 			hud_squadmsg_shortcut( COVER_ME_ITEM );
 			break;
 		
 		// wingman message: warp out
 		case WARP_MESSAGE:
-			control_used(WARP_MESSAGE);
 			hud_squadmsg_shortcut( DEPART_ITEM );
 			break;
 
 		case IGNORE_MESSAGE:
-			control_used(IGNORE_MESSAGE);
 			hud_squadmsg_shortcut( IGNORE_TARGET_ITEM );
 			break;
 
 		// rearm message
 		case REARM_MESSAGE:
-			control_used(REARM_MESSAGE);
 			hud_squadmsg_rearm_shortcut();
 			break;
 
 		// cycle to next radar range
 		case RADAR_RANGE_CYCLE:
-			control_used(RADAR_RANGE_CYCLE);
 			HUD_config.rp_dist++;
 			if ( HUD_config.rp_dist >= RR_MAX_RANGES )
 				HUD_config.rp_dist = 0;
@@ -2438,13 +2670,11 @@ int button_function(int n)
 
 		// toggle the squadmate messaging menu
 		case SQUADMSG_MENU:
-			control_used(SQUADMSG_MENU);
 			hud_squadmsg_toggle();				// leave the details to the messaging code!!!
 			break;
 
 		// show the mission goals screen
 		case SHOW_GOALS:
-			control_used(SHOW_GOALS);
 			gameseq_post_event( GS_EVENT_SHOW_GOALS );
 			break;
 
@@ -2486,221 +2716,26 @@ int button_function(int n)
 			break;
 
 		case ESCORT_CLEAR:
-			control_used(ESCORT_CLEAR);
 			hud_escort_clear_all(true);
 			break;
 
 		case TARGET_NEXT_ESCORT_SHIP:
-			control_used(TARGET_NEXT_ESCORT_SHIP);
 			hud_escort_target_next();
 			break;
 
-		// increase weapon recharge rate
-		case INCREASE_WEAPON:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
-				hud_gauge_popup_start(HUD_ETS_GAUGE);
-				return button_function_critical(INCREASE_WEAPON);
-			}
-			break;
-
-		// decrease weapon recharge rate
-		case DECREASE_WEAPON:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
-				hud_gauge_popup_start(HUD_ETS_GAUGE);
-				return button_function_critical(DECREASE_WEAPON);
-			}
-			break;
-
-		// increase shield recharge rate
-		case INCREASE_SHIELD:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
-				hud_gauge_popup_start(HUD_ETS_GAUGE);
-				return button_function_critical(INCREASE_SHIELD);
-			}
-			break;
-
-		// decrease shield recharge rate
-		case DECREASE_SHIELD:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
-				hud_gauge_popup_start(HUD_ETS_GAUGE);
-				return button_function_critical(DECREASE_SHIELD);
-			}
-			break;
-
-		// increase energy to engines
-		case INCREASE_ENGINE:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
-				hud_gauge_popup_start(HUD_ETS_GAUGE);
-				return button_function_critical(INCREASE_ENGINE);
-			}
-			break;
-
-		// decrease energy to engines
-		case DECREASE_ENGINE:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
-				hud_gauge_popup_start(HUD_ETS_GAUGE);
-				return button_function_critical(DECREASE_ENGINE);
-			}
-			break;
-
-		case ETS_EQUALIZE:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
-				hud_gauge_popup_start(HUD_ETS_GAUGE);
-				return button_function_critical(ETS_EQUALIZE);
-			}
-			break;
-
-		// equalize shield energy to all quadrants
-		case SHIELD_EQUALIZE:
-			return button_function_critical(SHIELD_EQUALIZE);
-			break;
-
-		// transfer shield energy to front
-		case SHIELD_XFER_TOP:
-         return button_function_critical(SHIELD_XFER_TOP);
-			break;
-
-		// transfer shield energy to rear
-		case SHIELD_XFER_BOTTOM:
-			return button_function_critical(SHIELD_XFER_BOTTOM);
-			break;
-
-		// transfer shield energy to left
-		case SHIELD_XFER_LEFT:
-			return button_function_critical(SHIELD_XFER_LEFT);
-			break;
-		
-		// transfer shield energy to right
-		case SHIELD_XFER_RIGHT:
-			return button_function_critical(SHIELD_XFER_RIGHT);
-			break;
-
-		// transfer energy to shield from weapons
-		case XFER_SHIELD:
-			return button_function_critical(XFER_SHIELD);
-			break;
-
-		// transfer energy to weapons from shield
-		case XFER_LASER:
-			return button_function_critical(XFER_LASER);
-			break;
-
-		// message all netplayers button
-		case MULTI_MESSAGE_ALL:
-			multi_msg_key_down(MULTI_MSG_ALL);
-			break;
-
-		// message all friendlies button
-		case MULTI_MESSAGE_FRIENDLY:
-			multi_msg_key_down(MULTI_MSG_FRIENDLY);
-			break;
-
-		// message all hostiles button
-		case MULTI_MESSAGE_HOSTILE:
-			multi_msg_key_down(MULTI_MSG_HOSTILE);
-			break;
-
-		// message targeted ship (if player)
-		case MULTI_MESSAGE_TARGET:
-			multi_msg_key_down(MULTI_MSG_TARGET);
-			break;
-
-		// if i'm an observer, zoom to my targeted object
-		case MULTI_OBSERVER_ZOOM_TO:
-			multi_obs_zoom_to_target();
-			break;
-
-		// toggle between high and low HUD contrast
-		case TOGGLE_HUD_CONTRAST:
-			gamesnd_play_iface(SND_USER_SELECT);
-			hud_toggle_contrast();
-			break;
-
-		// toggle network info
-		case MULTI_TOGGLE_NETINFO:
-			extern int Multi_display_netinfo;
-			Multi_display_netinfo = !Multi_display_netinfo;
-			break;
-
-		// self destruct (multiplayer only)
-		case MULTI_SELF_DESTRUCT:
-			if(!(Game_mode & GM_MULTIPLAYER)){
-				break;
-			}
-
-			// bogus netplayer
-			if((Net_player == NULL) || (Net_player->m_player == NULL)){
-				break;
-			}
-
-			// blow myself up, if I'm the server
-			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-				if((Net_player->m_player->objnum >= 0) && (Net_player->m_player->objnum < MAX_OBJECTS) && 
-					(Objects[Net_player->m_player->objnum].type == OBJ_SHIP) && (Objects[Net_player->m_player->objnum].instance >= 0) && (Objects[Net_player->m_player->objnum].instance < MAX_SHIPS)){
-
-					ship_self_destruct(&Objects[Net_player->m_player->objnum]);
-				}
-			}
-			// otherwise send a packet to the server
-			else {
-				send_self_destruct_packet();
-			}
-			break;
-
-		case TOGGLE_HUD:
-			gamesnd_play_iface(SND_USER_SELECT);
-			hud_toggle_draw();
-			break;
-
-		case HUD_TARGETBOX_TOGGLE_WIREFRAME:
-			if (!Lock_targetbox_mode) {
-				gamesnd_play_iface(SND_USER_SELECT);
-				hud_targetbox_switch_wireframe_mode();
-			}
-			else {
-				gamesnd_play_iface(SND_GENERAL_FAIL); 
-			}
-			break;	
-
-		// Autopilot key control
-		case AUTO_PILOT_TOGGLE:
-			if (!(The_mission.flags & MISSION_FLAG_DEACTIVATE_AP)) {
-				if (AutoPilotEngaged)
-				{
-					if (Cmdline_autopilot_interruptable == 1) //allow WCS to disable autopilot interrupt via commandline
-						EndAutoPilot();
-				}
-				else
-				{
-					if (!StartAutopilot())
-						gamesnd_play_iface(SND_GENERAL_FAIL);
-				}
-			}
-			break;
-
-		case NAV_CYCLE:
-			if (!Sel_NextNav())
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			break;
-		
-		// following are not handled here, but we need to bypass the Int3()
-		case LAUNCH_COUNTERMEASURE:
-		case VIEW_SLEW:
-		case VIEW_TRACK_TARGET:
-		case ONE_THIRD_THROTTLE:
-		case TWO_THIRDS_THROTTLE:
-		case MINUS_5_PERCENT_THROTTLE:
-		case PLUS_5_PERCENT_THROTTLE:
-		case ZERO_THROTTLE:
-		case MAX_THROTTLE:
-		case TOGGLE_GLIDING:
-		case GLIDE_WHEN_PRESSED:
-			return 0;
-
 		default:
-			mprintf(("Unknown key %d at %s:%u\n", n, __FILE__, __LINE__));
+			keyHasBeenUsed = FALSE;
 			break;
-	} // end switch
+	};
+	if (keyHasBeenUsed) {
+		return 1;
+	}
+
+	/**
+	 * All keys should have been handled above, if not panic
+	 */
+	mprintf(("Unknown key %d at %s:%u\n", n, __FILE__, __LINE__));
+	Int3();
 
 	return 1;
 }

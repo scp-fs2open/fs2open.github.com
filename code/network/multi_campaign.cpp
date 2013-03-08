@@ -711,7 +711,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 	case MC_JIP_INITIAL_PACKET:
 
 		// clear out the names of the missions
-		mission_campaign_close();						// should free all data structures which need to be freed
+		mission_campaign_clear();		// should free all data structures which need to be freed
 
 		// get the number of campaigns and their names.
 		GET_INT(Campaign.num_missions);
