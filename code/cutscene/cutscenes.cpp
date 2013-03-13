@@ -93,7 +93,7 @@ void cutscene_init()
 
 		if (isFirstCutscene) {
 			isFirstCutscene = false;
-			//The original code assumes the first movie is the intro, so always viewable
+			// The original code assumes the first movie is the intro, so always viewable
 			cutinfo.viewable = true;
 		}
 
@@ -484,12 +484,12 @@ void cutscenes_screen_init()
 
     Cutscene_list.clear();
 	
-    int u = 0;
-    for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, u++) {
+	int u = 0;
+	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, u++) {
 		if ( (*cut).viewable ) {
 			Cutscene_list.push_back(u);
 		}
-    }
+	}
 }
 
 void cutscenes_screen_close()

@@ -173,7 +173,7 @@ typedef struct player {
 	int				killer_objtype;							// type of object that killed player
 	int				killer_species;							// Species which killed player
 	int				killer_weapon_index;						// weapon used to kill player (if applicable)
-	char				killer_parent_name[NAME_LENGTH];		// name of parent object that killed the player
+	char			killer_parent_name[NAME_LENGTH];		// name of parent object that killed the player
 
 	int				check_for_all_alone_msg;				// timestamp to check for playing of 'all alone' msg
 

@@ -5985,7 +5985,7 @@ void ship_render(object * obj)
 				}
 			}
 
-			if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters ) {
+			if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
 				mst_info mst;
 
 				mst.length.xyz.z = obj->phys_info.forward_thrust;

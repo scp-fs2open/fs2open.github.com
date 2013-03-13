@@ -462,7 +462,7 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	if (swp == NULL) {
 		return;
 	}
-	
+
 	// edited to accommodate ballistics - Goober5000
 	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 		weapons.index = swp->primary_bank_weapons[i];

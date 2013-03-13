@@ -4335,7 +4335,10 @@ void game_frame(bool paused)
 			;
 	}
 #endif
+	// start timing frame
+	timing_frame_start();
 
+	DEBUG_GET_TIME( total_time1 )
 #ifdef DEMO_SYSTEM
 	demo_do_frame_start();
 	if(Demo_error){
@@ -4343,11 +4346,6 @@ void game_frame(bool paused)
 		demo_close();
 	}
 #endif
-	
-		// start timing frame
-		timing_frame_start();
-	
-		DEBUG_GET_TIME( total_time1 )
 
 	if(paused)
 	{
@@ -4358,8 +4356,7 @@ void game_frame(bool paused)
 	{
 		// var to hold which state we are in
 		actually_playing = game_actually_playing();
-	
-		
+
 		if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
 			if (!(Game_mode & GM_STANDALONE_SERVER)){
 				Assert( OBJ_INDEX(Player_obj) >= 0 );
@@ -4371,17 +4368,17 @@ void game_frame(bool paused)
 		} else {
 			; //nprintf(("AI", "Framecount = %i, time = %7.3f\n", Framecount, f2fl(Missiontime)));
 		}
-	
+
 		//	Note: These are done even before the player enters, else buffers can overflow.
 		if (! (Game_mode & GM_STANDALONE_SERVER)){
 			radar_frame_init();
 		}
-	
+
 		shield_frame_init();
-	
-		if ( !Pre_player_entry && actually_playing ) {		   		
+
+		if ( !Pre_player_entry && actually_playing ) {
 			if (! (Game_mode & GM_STANDALONE_SERVER) ) {
-	
+
 				if( (!popup_running_state()) && (!popupdead_is_active()) ){
 					game_process_keys();
 					read_player_controls( Player_obj, flFrametime);
@@ -5150,7 +5147,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_START_BRIEFING:
-			gameseq_set_state(GS_STATE_BRIEFING);		
+			gameseq_set_state(GS_STATE_BRIEFING);
 			break;
 
 		case GS_EVENT_DEBRIEF:
@@ -5160,7 +5157,7 @@ void game_process_event( int current_state, int event )
 			if (Campaign_ending_via_supernova && (Game_mode & GM_CAMPAIGN_MODE)/* && !stricmp(Campaign.filename, "freespace2")*/) {
 				gameseq_post_event(GS_EVENT_END_CAMPAIGN);
 			} else {
-				gameseq_set_state(GS_STATE_DEBRIEF);		
+				gameseq_set_state(GS_STATE_DEBRIEF);
 			}
 			break;
 
@@ -5172,7 +5169,7 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state( GS_STATE_WEAPON_SELECT );
 			break;
 
-		case GS_EVENT_ENTER_GAME:		
+		case GS_EVENT_ENTER_GAME:
 #ifdef DEMO_SYSTEM
 			// maybe start recording a demo
 			if(Demo_make){
@@ -5191,7 +5188,7 @@ void game_process_event( int current_state, int event )
 				gameseq_set_state(GS_STATE_GAME_PLAY, 1);
 			}
 
-			// clear multiplayer button info			
+			// clear multiplayer button info
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 
@@ -5683,7 +5680,7 @@ void game_leave_state( int old_state, int new_state )
 				}
 				snd_aav_init();
 
-				freespace_stop_mission();			
+				freespace_stop_mission();
 			}
 			break;
 
@@ -5942,7 +5939,7 @@ void game_enter_state( int old_state, int new_state )
 			} else {
 				Game_mode = GM_NORMAL;
 			}
-	
+
 			// determine which ship this guy is currently based on
 			mission_load_up_campaign(Player);
 
@@ -6716,7 +6713,7 @@ void game_do_state(int state)
 		case GS_STATE_MULTI_MISSION_SYNC:
 			game_set_frametime(GS_STATE_MULTI_MISSION_SYNC);
 			multi_sync_do();
-			break;		
+			break;
 
 		case GS_STATE_MULTI_START_GAME:
 			game_set_frametime(GS_STATE_MULTI_START_GAME);
@@ -6726,11 +6723,11 @@ void game_do_state(int state)
 		case GS_STATE_MULTI_HOST_OPTIONS:
 			game_set_frametime(GS_STATE_MULTI_HOST_OPTIONS);
 			multi_host_options_do();
-			break;		
+			break;
 
 		case GS_STATE_END_OF_CAMPAIGN:
 			mission_campaign_end_do();
-			break;		
+			break;	
 
 		case GS_STATE_END_DEMO:
 			game_set_frametime(GS_STATE_END_DEMO);
@@ -7031,6 +7028,7 @@ int game_main(char *cmdline)
 	if (Is_standalone){
 		nprintf(("Network", "Standalone running"));
 	}
+
 #endif
 
 #ifdef _WIN32

@@ -38,7 +38,7 @@ void gamesnd_play_iface(int n)
  */
 int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 {
-	//if we get passed -1, don't bother trying to look it up.
+	// if we get passed -1, don't bother trying to look it up.
 	if (name == NULL || *name == 0 || !strcmp(name, "-1"))
 	{
 		return -1;
@@ -60,7 +60,7 @@ int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 	return -1;
 }
 
-//WMC - now ignores file extension.
+// WMC - now ignores file extension.
 int gamesnd_get_by_name(const char* name)
 {
 	Assert( Snds.size() <= INT_MAX );

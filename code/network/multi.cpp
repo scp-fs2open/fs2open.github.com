@@ -256,7 +256,7 @@ void multi_level_init()
 	ml_string(NOX("multi_level_init()"));
 
 	// initialize the Net_players array
-	for(idx=0;idx<MAX_PLAYERS;idx++) {
+	for ( idx = 0; idx < MAX_PLAYERS; idx++) {
 		// close all sockets down just for good measure
 		psnet_rel_close_socket(&Net_players[idx].reliable_socket);
 
@@ -268,8 +268,8 @@ void multi_level_init()
 	}
 
 	// initialize the Players array
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(Player == &Players[idx]){
+	for (idx=0;idx<MAX_PLAYERS;idx++) {
+		if (Player == &Players[idx]) {
 			continue;
 		}
 		Players[idx].reset();
@@ -307,7 +307,7 @@ void multi_level_init()
 	multi_respawn_init();
 
 	// initialize all netgame timestamps
-   multi_reset_timestamps();
+	multi_reset_timestamps();
 
 	// flush psnet sockets
 	psnet_flush();

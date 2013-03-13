@@ -16,12 +16,12 @@
 // VERSION DEFINES/VARS
 //
 
+// Here are the version defines.  
 // keep this defined to build a standalone only executable
 // STANDALONE_ONLY
 // #define STANDALONE_ONLY_BUILD
 // #define STANDALONE_ONLY_RELEASE_VERSION		0
 
-// Here are the version defines.
 //	Gets displayed as MAJOR.MINOR, or 1.21 if MAJOR = 1, MINOR = 21.
 //	Prior to release, MAJOR should be zero.  After release, it should be 1.  Probably never increase to 2 as that could
 //	cause confusion with a sequel.
@@ -45,7 +45,7 @@
 #define VERSION_LOC_FNAME			"version.nfo"
 #define MOTD_LOC_FNAME				"motd.txt"
 
-#define MOTD_URL					"http://www.pxo.net/files/fs2/motd.txt"
+#define MOTD_URL						"http://www.pxo.net/files/fs2/motd.txt"
 #define VERSION_URL					"http://www.pxo.net/files/fs2/version.nfo"
 
 #define VERSION_FILE_COMMENT_CHAR ';'

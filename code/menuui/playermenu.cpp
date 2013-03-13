@@ -459,12 +459,12 @@ void player_select_close()
 	Player = &Players[0];
 	Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 
-	//New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
+	// New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
 	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;
 	}
 
-	//WMC - Set appropriate game mode
+	// WMC - Set appropriate game mode
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
 		Game_mode = GM_MULTIPLAYER;
 	} else {
@@ -784,7 +784,7 @@ void player_select_scroll_list_down()
 // fill in the data on the last played pilot (callsign and is_multi or not)
 int player_select_get_last_pilot_info()
 {
-	//TODO: Replace this with a function that does this properly for the new pilot code.
+	// TODO: Replace this with a function that does this properly for the new pilot code.
 
 	char *last_player;
 
@@ -797,7 +797,7 @@ int player_select_get_last_pilot_info()
 	}
 
 	//// determine if he was a single or multi-player based upon the last character in his callsign
-	//Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
+	// Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
 	Player_select_last_is_multi = 0;
 
 	Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';

@@ -81,17 +81,8 @@ void init_new_pilot(player *p, int reset)
 	if (reset) {
 		hud_set_default_hud_config(p);		// use a default hud config
 
-		//hud_config_color_load("hud_3.hcf");
-
 		control_config_reset_defaults();		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults
-/*
-		cur_speed = os_config_read_uint(NULL, NOX("ComputerSpeed"), 2 );
-		CLAMP(cur_speed, 0, NUM_DEFAULT_DETAIL_LEVELS-1);
-*/
-		// always set to high
-		// DKA: 8/4/99 USE speed from registry
-		// cur_speed = NUM_DEFAULT_DETAIL_LEVELS-2;
 
 		// set the default detail level based on tabling rather than the above method
 		cur_speed = Default_detail_level;

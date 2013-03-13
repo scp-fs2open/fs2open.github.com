@@ -302,7 +302,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 								if (!(primary || secondary))
 									return false;
 
-								if (shipp->flags & SF_PRIMARY_LINKED && primary && Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK)
+								if ((shipp->flags & SF_PRIMARY_LINKED) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK))
 									return false;
 								
 								break;
@@ -312,7 +312,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
 								prev_secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name, scp->data.name) == 0;
 
-								if (prev_primary && shipp->flags & SF_PRIMARY_LINKED && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags3 & WIF3_NOLINK))
+								if ((shipp->flags & SF_PRIMARY_LINKED) && prev_primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags3 & WIF3_NOLINK))
 									return true;
 
 								if ( !prev_secondary && ! secondary && !prev_primary && !primary )
@@ -367,7 +367,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
 								}
 
-								if (shipp->flags & SF_PRIMARY_LINKED && primary && Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK)
+								if ((shipp->flags & SF_PRIMARY_LINKED) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK))
 								 	return false;
 
 								return more_data == 1 ? primary : secondary;

@@ -102,27 +102,26 @@ typedef struct cmission {
 } cmission;
 
 typedef struct campaign {
-	char		name[NAME_LENGTH];						// name of the campaign
-	char		filename[MAX_FILENAME_LEN];			// filename the campaign info is in
-	char		*desc;										// description of campaign
-	int		type;											// type of campaign
-	int		flags;										// flags - Goober5000
-	int		num_missions;								// number of missions in the campaign
+	char	name[NAME_LENGTH];						// name of the campaign
+	char	filename[MAX_FILENAME_LEN];				// filename the campaign info is in
+	char	*desc;									// description of campaign
+	int		type;									// type of campaign
+	int		flags;									// flags - Goober5000
+	int		num_missions;							// number of missions in the campaign
 	int		num_missions_completed;					// number of missions in the campaign that have been flown
-	int		current_mission;							// the current mission that the player is playing.  Only valid during the mission
-	int		next_mission;								// number of the next mission to fly when comtinuing the campaign.  Always valid
-	int		prev_mission;								// mission that we just came from.  Always valid
-	int		loop_enabled;								// whether mission loop is chosen - true during a loop, false otherwise
-	int		loop_mission;								// mission number of misssion loop (if any)
-	int		loop_reentry;								// mission number to return to after loop is finished
-	int		realign_required;							// are any missions missing alignment info? (Fred)
-	int		num_players;								// valid in multiplayer campaigns -- number of players campaign supports.
-	ubyte		ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
-	ubyte		weapons_allowed[MAX_WEAPON_TYPES];	// which weapons the player can use
-	cmission	missions[MAX_CAMPAIGN_MISSIONS];		// decription of the missions
-	int				num_variables;						// number of variables this campaign had - Goober5000
-	sexp_variable	*variables;							// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
-
+	int		current_mission;						// the current mission that the player is playing.  Only valid during the mission
+	int		next_mission;							// number of the next mission to fly when comtinuing the campaign.  Always valid
+	int		prev_mission;							// mission that we just came from.  Always valid
+	int		loop_enabled;							// whether mission loop is chosen - true during a loop, false otherwise
+	int		loop_mission;							// mission number of misssion loop (if any)
+	int		loop_reentry;							// mission number to return to after loop is finished
+	int		realign_required;						// are any missions missing alignment info? (Fred)
+	int		num_players;							// valid in multiplayer campaigns -- number of players campaign supports.
+	ubyte	ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
+	ubyte	weapons_allowed[MAX_WEAPON_TYPES];		// which weapons the player can use
+	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
+	int				num_variables;					// number of variables this campaign had - Goober5000
+	sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
 } campaign;
 
 extern campaign Campaign;
@@ -135,9 +134,9 @@ extern int Campaign_ending_via_supernova;
 // games
 typedef struct campaign_info
 {
-	char		filename[NAME_LENGTH];
 	int		num_missions_completed;
-	ubyte		missions_completed[MAX_CAMPAIGN_MISSIONS];
+	char	filename[NAME_LENGTH];
+	ubyte	missions_completed[MAX_CAMPAIGN_MISSIONS];
 } campaign_info;
 
 // extern'ed so the mission loading can get a list of campains.  Only use this

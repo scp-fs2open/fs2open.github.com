@@ -4502,15 +4502,16 @@ void model_instance_dumb_rotation(int model_instance_num)
 	model_instance_dumb_rotation_sub(pmi, pm, mn);
 }
 
-void model_do_childeren_dumb_rotation(polymodel * pm, int mn){
-	while ( mn >= 0 )	{
+void model_do_children_dumb_rotation(polymodel * pm, int mn)
+{
+	while ( mn >= 0 ) {
 
 		bsp_info * sm = &pm->submodel[mn];
 
-		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ){
+		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ) {
 			float *ang;
 			int axis = sm->movement_axis;
-			switch(axis){
+			switch(axis) {
 			case MOVEMENT_AXIS_X:
 				ang = &sm->angs.p;
 					break;
@@ -4522,12 +4523,15 @@ void model_do_childeren_dumb_rotation(polymodel * pm, int mn){
 				ang = &sm->angs.h;
 					break;
 			}
+
 			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
 			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
 			//this keeps ang from getting bigger than 2PI
 		}
 
-		if(pm->submodel[mn].first_child >-1)model_do_childeren_dumb_rotation(pm, pm->submodel[mn].first_child);
+		if (pm->submodel[mn].first_child >-1) { 
+			model_do_children_dumb_rotation(pm, pm->submodel[mn].first_child);
+		}
 
 		mn = pm->submodel[mn].next_sibling;
 	}

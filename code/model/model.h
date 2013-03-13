@@ -31,7 +31,7 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_NONE				-1
 #define MOVEMENT_TYPE_POS				0
 #define MOVEMENT_TYPE_ROT				1
-#define MOVEMENT_TYPE_ROT_SPECIAL	2		// for turrets only
+#define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
 #define MOVEMENT_TYPE_TRIGGERED			3	//triggered rotation
 
 

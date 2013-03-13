@@ -1732,7 +1732,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			break;
 
 		// cycle to next primary weapon
-		case CYCLE_NEXT_PRIMARY:			
+		case CYCLE_NEXT_PRIMARY:
 			if (at_self) {
 				control_used(CYCLE_NEXT_PRIMARY);
 			}

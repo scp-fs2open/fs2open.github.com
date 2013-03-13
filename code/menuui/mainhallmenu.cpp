@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+ */
 
 #include <stdlib.h>
 #include <limits.h>
@@ -270,39 +270,40 @@ void main_hall_process_help_stuff();
 // are we currently recording voice?
 int Recording = 0;
 
-
-// called when multiplayer clicks on the ready room door.  May pop up dialog depending on network
-// connection status and errors
+/*
+ * Called when multiplayer clicks on the ready room door.  May pop up dialog depending on network
+ * connection status and errors
+ */
 void main_hall_do_multi_ready()
 {
 	int error;
 
 	error = psnet_get_network_status();
-	switch(error) {
-		case NETWORK_ERROR_NO_TYPE:
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have not defined your type of Internet connection.  Please run the Launcher, hit the setup button, and go to the Network tab and choose your connection type.", 360));
-			break;
-		case NETWORK_ERROR_NO_WINSOCK:
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "Winsock is not installed.  You must have TCP/IP and Winsock installed to play multiplayer FreeSpace.", 361));
-			break;
-		case NETWORK_ERROR_NO_PROTOCOL:
-			if (Multi_options_g.protocol == NET_TCP) {
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "TCP/IP protocol not found.  This protocol is required for multiplayer FreeSpace.", -1));
-			} else {
-				Assert(Multi_options_g.protocol == NET_IPX);
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "IPX protocol not found.  This protocol is required for multiplayer FreeSpace.", -1));
-			}
-			break;
-		case NETWORK_ERROR_CONNECT_TO_ISP:
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected Dial Up Networking as your type of connection to the Internet.  You are not currently connected.  You must connect to your ISP before continuing on past this point.", 363));
-			break;
-		case NETWORK_ERROR_LAN_AND_RAS:
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have indicated that you use a LAN for networking.  You also appear to be dialed into your ISP.  Please disconnect from your service provider, or choose Dial Up Networking.", 364));
-			break;
+	switch( error ) {
+	case NETWORK_ERROR_NO_TYPE:
+		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have not defined your type of Internet connection.  Please run the Launcher, hit the setup button, and go to the Network tab and choose your connection type.", 360));
+		break;
+	case NETWORK_ERROR_NO_WINSOCK:
+		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "Winsock is not installed.  You must have TCP/IP and Winsock installed to play multiplayer FreeSpace.", 361));
+		break;
+	case NETWORK_ERROR_NO_PROTOCOL:
+		if (Multi_options_g.protocol == NET_TCP) {
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "TCP/IP protocol not found.  This protocol is required for multiplayer FreeSpace.", -1));
+		} else {
+			Assert(Multi_options_g.protocol == NET_IPX);
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "IPX protocol not found.  This protocol is required for multiplayer FreeSpace.", -1));
+		}
+		break;
+	case NETWORK_ERROR_CONNECT_TO_ISP:
+		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected Dial Up Networking as your type of connection to the Internet.  You are not currently connected.  You must connect to your ISP before continuing on past this point.", 363));
+		break;
+	case NETWORK_ERROR_LAN_AND_RAS:
+		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have indicated that you use a LAN for networking.  You also appear to be dialed into your ISP.  Please disconnect from your service provider, or choose Dial Up Networking.", 364));
+		break;
 
-		case NETWORK_ERROR_NONE:
-		default:
-			break;
+	case NETWORK_ERROR_NONE:
+	default:
+		break;
 	}
 
 	// if our selected protocol is not active

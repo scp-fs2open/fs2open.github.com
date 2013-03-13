@@ -724,13 +724,13 @@ void key_mark( uint code, int state, uint latency )
 	scancode = code & (NUM_KEYS-1);
 	breakbit = !state;
 	
-	if (breakbit)	{
+	if (breakbit) {
 		// Key going up
 		keyd_last_released = scancode;
 		keyd_pressed[scancode] = 0;
 		key_data.NumUps[scancode]++;
 
-		//	What is the point of this code?  "temp" is never used!
+		// What is the point of this code?  "temp" is never used!
 		temp = 0;
 		temp |= keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT];
 		temp |= keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT];
@@ -738,20 +738,25 @@ void key_mark( uint code, int state, uint latency )
 //#ifndef NDEBUG
 		temp |= keyd_pressed[KEY_DEBUG_KEY];
 //#endif	
-		if (event_time < key_data.TimeKeyWentDown[scancode])
+		if (event_time < key_data.TimeKeyWentDown[scancode]) {
 			key_data.TimeKeyHeldDown[scancode] = 0;
-		else
+		} else {
 			key_data.TimeKeyHeldDown[scancode] += event_time - key_data.TimeKeyWentDown[scancode];
+		}
 
 		Current_key_down = scancode;
-		if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+		if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
 			Current_key_down |= KEY_SHIFTED;
+		}
 
-		if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+		if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
 			Current_key_down |= KEY_ALTED;
+		}
 
-		if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+		if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
 			Current_key_down |= KEY_CTRLED;
+		}
+
 		Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down));
 		Script_system.RunCondition(CHA_KEYRELEASED);
 		Script_system.RemHookVar("Key");
@@ -759,7 +764,7 @@ void key_mark( uint code, int state, uint latency )
 		// Key going down
 		keyd_last_pressed = scancode;
 		keyd_time_when_last_pressed = event_time;
-		if (!keyd_pressed[scancode])	{
+		if (!keyd_pressed[scancode]) {
 			// First time down
 			key_data.TimeKeyWentDown[scancode] = event_time;
 			keyd_pressed[scancode] = 1;
@@ -768,14 +773,18 @@ void key_mark( uint code, int state, uint latency )
 
 			//WMC - For scripting
 			Current_key_down = scancode;
-			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
 				Current_key_down |= KEY_SHIFTED;
+			}
 
-			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
 				Current_key_down |= KEY_ALTED;
+			}
 
-			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
 				Current_key_down |= KEY_CTRLED;
+			}
+
 			Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down));
 			Script_system.RunCondition(CHA_KEYPRESSED);
 			Script_system.RemHookVar("Key");
@@ -787,18 +796,22 @@ void key_mark( uint code, int state, uint latency )
 		if ( scancode!=0xAA ) {
 			keycode = (unsigned short)scancode;
 
-			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
 				keycode |= KEY_SHIFTED;
+			}
 
-			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
 				keycode |= KEY_ALTED;
+			}
 
-			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
 				keycode |= KEY_CTRLED;
+			}
 
 #ifndef NDEBUG
-			if ( keyd_pressed[KEY_DEBUG_KEY] )
+			if ( keyd_pressed[KEY_DEBUG_KEY] ) {
 				keycode |= KEY_DEBUGGED;
+			}
 #else
 			if ( keyd_pressed[KEY_DEBUG_KEY] ) {
 				mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
@@ -809,11 +822,11 @@ void key_mark( uint code, int state, uint latency )
 
 #endif
 
-			if ( keycode )	{
+			if ( keycode ) {
 				temp = key_data.keytail+1;
 				if ( temp >= KEY_BUFFER_SIZE ) temp=0;
 
-				if (temp!=key_data.keyhead)	{
+				if (temp!=key_data.keyhead) {
 					key_data.keybuffer[key_data.keytail] = keycode;
 					key_data.time_pressed[key_data.keytail] = keyd_time_when_last_pressed;
 					key_data.keytail = temp;
@@ -822,7 +835,7 @@ void key_mark( uint code, int state, uint latency )
 		}
 	}
 
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	LEAVE_CRITICAL_SECTION( key_lock );
 }
 
 #ifdef USE_DIRECTINPUT
