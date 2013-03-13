@@ -2643,6 +2643,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SHIP_EFFECT:
 		case OPF_ANIMATION_TYPE:
 		case OPF_SHIP_FLAG:
+		case OPF_NEBULA_PATTERN:
 			return 1;
 
 		case OPF_SHIP:
@@ -4420,6 +4421,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_team_colors();
 			break;
 
+		case OPF_NEBULA_PATTERN:
+			list = get_listing_opf_nebula_patterns();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5928,6 +5933,21 @@ sexp_list_item *sexp_tree::get_listing_opf_team_colors()
 	head.add_data("None");
 	for (SCP_map<SCP_string, team_color>::iterator tcolor = Team_Colors.begin(); tcolor != Team_Colors.end(); ++tcolor) {
 		head.add_data_dup(tcolor->first.c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < MAX_NEB2_BITMAPS; i++) {
+		if (strlen(Neb2_bitmap_filenames[i]) > 0) {
+			head.add_data(Neb2_bitmap_filenames[i]);
+		}
 	}
 
 	return head.next;

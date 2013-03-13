@@ -209,7 +209,7 @@ sexp_oper Operators[] = {
 	{ "num-ships-in-battle",			OP_NUM_SHIPS_IN_BATTLE,					0,	INT_MAX,	SEXP_INTEGER_OPERATOR,	},	//phreak modified by FUBAR
 	{ "num-ships-in-wing",				OP_NUM_SHIPS_IN_WING,					1,	INT_MAX,	SEXP_INTEGER_OPERATOR,	},	// Karajorma
 	{ "directive-value",				OP_DIRECTIVE_VALUE,						1,	2,			SEXP_INTEGER_OPERATOR,	},	// Karajorma
-	
+
 	//Player Sub-Category
 	{ "was-promotion-granted",			OP_WAS_PROMOTION_GRANTED,				0,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "was-medal-granted",				OP_WAS_MEDAL_GRANTED,					0,	1,			SEXP_BOOLEAN_OPERATOR,	},
@@ -625,6 +625,7 @@ sexp_oper Operators[] = {
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	1,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -3017,6 +3018,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_SUN_BITMAP:
 			case OPF_NEBULA_STORM_TYPE:
 			case OPF_NEBULA_POOF:
+			case OPF_NEBULA_PATTERN:
 			case OPF_POST_EFFECT:
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -12005,6 +12007,15 @@ void sexp_nebula_toggle_poof(int n)
 	else Neb2_poof_flags &= ~(1 << i);
 	
 	neb2_eye_changed();
+}
+
+void sexp_nebula_change_pattern(int n)
+{
+	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) return;
+	
+	strcpy_s(Neb2_texture_name,(CTEXT(n)));
+
+	neb2_post_level_init();
 }
 
 /**
@@ -21496,6 +21507,11 @@ char *sexp_get_result_as_text(int result)
 */
 void add_to_event_log_buffer(int op_num, int result)
 {
+	if (op_num == -1) {
+		nprintf(("SEXP", "ERROR: op_num function returned %i, this should not happen. Contact a coder.\n", op_num));
+		return; //How does this happen?
+	}
+
 	char buffer[TOKEN_LENGTH];
 	SCP_string tmp; 
 	tmp.append(Operators[op_num].text);
@@ -22601,6 +22617,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_NEBULA_TOGGLE_POOF:
 				sexp_nebula_toggle_poof(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_NEBULA_CHANGE_PATTERN:
+				sexp_nebula_change_pattern(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -24631,6 +24652,7 @@ int query_operator_return_type(int op)
 		case OP_DEBUG:
 		case OP_ALTER_SHIP_FLAG:
 		case OP_CHANGE_TEAM_COLOR:
+		case OP_NEBULA_CHANGE_PATTERN:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -26555,6 +26577,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NEBULA_CHANGE_STORM:
 			return OPF_NEBULA_STORM_TYPE;
 
+		case OP_NEBULA_CHANGE_PATTERN:
+			return OPF_NEBULA_PATTERN;
+
 		case OP_NEBULA_TOGGLE_POOF:
 			if (argnum == 1) return OPF_BOOL;
 			else return OPF_NEBULA_POOF;
@@ -28167,6 +28192,7 @@ int get_subcategory(int sexp_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_SET_AMBIENT_LIGHT:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
@@ -31692,6 +31718,12 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of nebula poof to toggle\r\n"
 		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do the opposite."
+	},
+
+	{ OP_NEBULA_CHANGE_PATTERN, "nebula-change-pattern\r\n"
+	"\tChanges the current nebula background pattern (as defined in nebula.tbl)\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tNebula background pattern to change to\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_NUM, "script-eval-num\r\n"
