@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="code"
 	ProjectGUID="{7CB3701E-F723-424B-82D5-2F7AA4169498}"
+	RootNamespace="code"
 	>
 	<Platforms>
 		<Platform
@@ -648,6 +649,14 @@
 			</File>
 			<File
 				RelativePath="..\..\code\GlobalIncs\AlphaColors.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\compatibility.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\compatibility.h"
 				>
 			</File>
 			<File

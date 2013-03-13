@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="wxFRED2"
 	ProjectGUID="{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}"
+	RootNamespace="wxFRED2"
 	>
 	<Platforms>
 		<Platform
