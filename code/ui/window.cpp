@@ -811,10 +811,7 @@ void init_tooltips()
 	static int inited = 0;
 
 	if (!inited) {
-#ifndef DEMO
 		parse_tooltips();
-#endif
-
 		inited = 1;
 	}
 }
