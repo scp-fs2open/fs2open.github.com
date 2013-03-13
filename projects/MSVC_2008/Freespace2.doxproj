@@ -1,0 +1,4 @@
+<DoxygenConfig Version="2">
+  <DoxHtmlPath>..\..\documentation\doxygen\html</DoxHtmlPath>
+  <UseFrames>False</UseFrames>
+</DoxygenConfig>
