@@ -368,7 +368,9 @@ void main_hall_blit_table_status()
 	gr_line(Mh_weapon_table_status[gr_screen.res][0], Mh_weapon_table_status[gr_screen.res][1], Mh_weapon_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1]);
 }
 
-// bash the player to a specific mission in a campaign
+/**
+ * Bash the player to a specific mission in a campaign
+ */
 void main_hall_campaign_cheat()
 {
 	char *ret = popup_input(0, XSTR("Enter mission name.\n\n* This will destroy all legitimate progress in this campaign. *", -1));
@@ -557,6 +559,11 @@ void main_hall_init(SCP_string main_hall_name)
 	Main_hall_right_click = mouse_down(MOUSE_RIGHT_BUTTON);
 }
 
+/**
+ * Exit the game
+ *
+ * @note In Debug mode, the confirmation popup does not get used, and the game usefully exits immediately
+ */
 void main_hall_exit_game()
 {
 #if defined(NDEBUG)
@@ -577,8 +584,11 @@ void main_hall_exit_game()
 #endif
 }
 
-
-// do a frame for the main hall
+/**
+ * Do a frame for the main hall
+ *
+ * @param frametime Animation frame time
+ */
 void main_hall_do(float frametime)
 {
 	int code, key, snazzy_action;
@@ -831,7 +841,9 @@ void main_hall_do(float frametime)
 	}
 }
 
-// close the main hall proper
+/**
+ * Close the main hall proper
+ */
 void main_hall_close()
 {
 	int idx, s_idx;
@@ -902,6 +914,12 @@ void main_hall_close()
 	Main_hall_inited = 0;
 }
 
+/**
+ * Return music index
+ *
+ * @param main_hall_num Index to seek
+ * @return Index into spooled music
+ */
 int main_hall_get_music_index(int main_hall_num)
 {
 	main_hall_defines *hall;
@@ -928,7 +946,9 @@ int main_hall_get_music_index(int main_hall_num)
 	return -1;
 }
 
-// start the main hall music playing
+/**
+ * Start the main hall music playing
+ */
 void main_hall_start_music()
 {
 	int index;
@@ -967,7 +987,9 @@ void main_hall_start_music()
 	audiostream_play(Main_hall_music_handle, Master_event_music_volume, 1);
 }
 
-// stop the main hall music
+/**
+ * Stop the main hall music
+ */
 void main_hall_stop_music()
 {
 	if (Main_hall_music_handle != -1) {
@@ -979,7 +1001,7 @@ void main_hall_stop_music()
 /**
  * Render all playing misc animations
  * 
- * @param frametime Animation time
+ * @param frametime Animation frame time
  */
 void main_hall_render_misc_anims(float frametime)
 {
@@ -1108,7 +1130,10 @@ void main_hall_render_misc_anims(float frametime)
 	}
 }
 
-// render all playing door animations
+/**
+ * Render all playing door animations
+ * @param frametime Animation frame time
+ */
 void main_hall_render_door_anims(float frametime)
 {
 	int idx;
@@ -1124,7 +1149,10 @@ void main_hall_render_door_anims(float frametime)
 	}
 }
 
-// do any necessary processing based upon the mouse location
+/**
+ * Any necessary processing based upon the mouse location
+ * @param cur_region Region of current mouse location
+ */
 void main_hall_handle_mouse_location(int cur_region)
 {
 	if (Main_hall_frame_skip) {
@@ -1170,7 +1198,10 @@ void main_hall_handle_mouse_location(int cur_region)
 	}
 }
 
-// if the mouse has moved off of the currently active region, handle the anim accordingly
+/**
+ * If the mouse has moved off of the currently active region, handle the anim accordingly
+ * @param region Region of prior mouse location
+ */
 void main_hall_mouse_release_region(int region)
 {
 	if (Main_hall_frame_skip) {
@@ -1202,7 +1233,10 @@ void main_hall_mouse_release_region(int region)
 	}
 }
 
-// if the mouse has moved on this region, handle it accordingly
+/**
+ * If the mouse has moved on this region, handle it accordingly
+ * @param region Region of current mouse location
+ */
 void main_hall_mouse_grab_region(int region)
 {
 	if (Main_hall_frame_skip) {
@@ -1236,7 +1270,9 @@ void main_hall_mouse_grab_region(int region)
 	}
 }
 
-// handle any right clicks which may have occured
+/**
+ * Handle any right clicks which may have occured
+ */
 void main_hall_handle_right_clicks()
 {
 	int new_region;
@@ -1273,7 +1309,9 @@ void main_hall_handle_right_clicks()
 	}
 }
 
-// cull any door sounds that have finished playing
+/**
+ * Cull any door sounds that have finished playing
+ */
 void main_hall_cull_door_sounds()
 {
 	int idx;
@@ -1286,6 +1324,9 @@ void main_hall_cull_door_sounds()
 	}
 }
 
+/**
+ * Insert random intercom sounds
+ */
 void main_hall_handle_random_intercom_sounds()
 {
 	if (Main_hall->num_random_intercom_sounds <= 0)
@@ -1336,13 +1377,19 @@ void main_hall_handle_random_intercom_sounds()
 	}
 }
 
-// set the notification string with its decay timeout
+/**
+ * Set the notification string with its decay timeout
+ * @param str Notification string
+ */
 void main_hall_set_notify_string(char *str)
 {
 	strcpy_s(Main_hall_notify_text,str);
 	Main_hall_notify_stamp = timestamp(MAIN_HALL_NOTIFY_TIME);
 }
 
+/**
+ * Handle any drawing, culling, etc of notification messages
+ */
 void main_hall_notify_do()
 {
 	// check to see if we should try and do something
@@ -1361,7 +1408,9 @@ void main_hall_notify_do()
 	}
 }
 
-// start a looping ambient sound for main hall
+/**
+ * Start a looping ambient sound for main hall
+ */
 void main_hall_start_ambient()
 {
 	int play_ambient_loop = 0;
@@ -1383,7 +1432,9 @@ void main_hall_start_ambient()
 	}
 }
 
-// stop a looping ambient sound for the main hall
+/**
+ * Stop a looping ambient sound for the main hall
+ */
 void main_hall_stop_ambient()
 {
 	if (Main_hall_ambient_loop != -1) {
@@ -1392,8 +1443,11 @@ void main_hall_stop_ambient()
 	}
 }
 
-// Reset the volume of the looping ambient sound.  This is called from the options 
-// screen when the looping ambient sound might be playing.
+/**
+ * Reset the volume of the looping ambient sound.
+ *
+ * @note This is called from the options screen when the looping ambient sound might be playing.
+ */
 void main_hall_reset_ambient_vol()
 {
 	if (Main_hall_ambient_loop >= 0) {
@@ -1401,7 +1455,9 @@ void main_hall_reset_ambient_vol()
 	}
 }
 
-// blit the freespace version #
+/**
+ * Blit the freespace version number
+ */
 void main_hall_blit_version()
 {
 	int w;
@@ -1418,7 +1474,9 @@ void main_hall_blit_version()
 	gr_string(5, gr_screen.max_h_unscaled - 24, version_string);
 }
 
-// blit any necessary tooltips
+/**
+ * Blit any necessary tooltips
+ */
 void main_hall_maybe_blit_tooltips()
 {
 	int w, text_index;
@@ -1454,7 +1512,9 @@ void main_hall_maybe_blit_tooltips()
 	}
 }
 
-
+/**
+ * Process help messages
+ */
 void main_hall_process_help_stuff()
 {
 	int w, h;
@@ -1599,8 +1659,12 @@ void intercom_sounds_init(main_hall_defines &m)
 	}
 }
 
-// helper function for initialising misc anim vectors based on number of anims
-// to be called after num_misc_animations has been parsed
+/**
+ * Iinitialising misc anim vectors based on number of anims
+ * @note To be called after num_misc_animations has been parsed
+ *
+ * @param m Main hall defines
+ */
 void misc_anim_init(main_hall_defines &m)
 {
 	int idx;
@@ -1667,8 +1731,12 @@ void misc_anim_init(main_hall_defines &m)
 	}
 }
 
-// helper function for initialising door anim vectors based on number of anims
-// to be called after num_door_animations has been parsed
+/**
+ * Initialising door anim vectors based on number of anims
+ * @note To be called after num_door_animations has been parsed
+ *
+ * @param m Main hall defines
+ */
 void door_anim_init(main_hall_defines &m)
 {
 	int idx;
@@ -1713,6 +1781,9 @@ void door_anim_init(main_hall_defines &m)
 
 }
 
+/**
+ * Read in main hall table
+ */
 void main_hall_table_init()
 {
 	// if mainhall.tbl exists, parse it
@@ -1983,19 +2054,27 @@ void parse_main_hall_table(char* filename)
 	stop_parse();
 }
 
-// make the vasudan main hall funny
+/**
+ * Make the vasudan main hall funny
+ */
 void main_hall_vasudan_funny()
 {
 	Vasudan_funny = 1;
 }
 
+/**
+ * Lookup if Vasudan main hall, based upon music name
+ * @return 1 if true, 0 if false
+ */
 int main_hall_is_vasudan()
 {
 	// kind of a hack for now
 	return (!stricmp(Main_hall->music_name.c_str(), "Psampik") || !stricmp(Main_hall->music_name.c_str(), "Psamtik"));
 }
 
-// silence sounds on mainhall if we hit a pause mode (ie. lost window focus, minimized, etc);
+/**
+ * Silence sounds on mainhall if we hit a pause mode (ie. lost window focus, minimized, etc)
+ */
 void main_hall_pause()
 {
 	if (Main_hall_paused) {
@@ -2009,7 +2088,9 @@ void main_hall_pause()
 	main_hall_stop_ambient();
 }
 
-// recover from a paused state (ie. lost window focus, minimized, etc);
+/**
+ * Recover from a paused state (ie. lost window focus, minimized, etc)
+ */
 void main_hall_unpause()
 {
 	if (!Main_hall_paused) {
