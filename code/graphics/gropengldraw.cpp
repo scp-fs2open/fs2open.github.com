@@ -833,7 +833,8 @@ void gr_opengl_circle(int xc, int yc, int d, bool resize)
 	while (x < y) {
 		// Draw the first octant
 		gr_opengl_line(xc-y, yc-x, xc+y, yc-x, false);
-		gr_opengl_line(xc-y, yc+x, xc+y, yc+x, false);
+		if (x > 0) // Don't draw the center horizontal line twice
+			gr_opengl_line(xc-y, yc+x, xc+y, yc+x, false);
 
 		if (p < 0) {
 			p += (x << 2) + 6;
