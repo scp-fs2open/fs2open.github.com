@@ -1806,7 +1806,6 @@ void hud_config_color_init()
 	// get a list of all hcf files
 	memset(HC_filenames, 0, sizeof(char*) * MAX_HCF_FILES);
 	HC_num_files = cf_get_file_list(MAX_HCF_FILES, HC_filenames, CF_TYPE_PLAYERS, "*.hcf", CF_SORT_NAME);
-    mprintf(("zoo found %i hcf files\n", HC_num_files));
 }
 
 void hud_config_color_close()
