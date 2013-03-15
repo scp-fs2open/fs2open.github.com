@@ -1571,6 +1571,9 @@ void hud_set_default_hud_config(player *p)
 	HUD_config.rp_flags = RP_DEFAULT;
 	HUD_config.rp_dist = RR_INFINITY;
 	HUD_config.is_observer = 0;
+
+	// load up the default colors
+	hud_config_color_load("hud_3.hcf");
 }
 
 // hud_config_restore() will restore the hud configuration the player started with when the 
@@ -1803,6 +1806,7 @@ void hud_config_color_init()
 	// get a list of all hcf files
 	memset(HC_filenames, 0, sizeof(char*) * MAX_HCF_FILES);
 	HC_num_files = cf_get_file_list(MAX_HCF_FILES, HC_filenames, CF_TYPE_PLAYERS, "*.hcf", CF_SORT_NAME);
+    mprintf(("zoo found %i hcf files\n", HC_num_files));
 }
 
 void hud_config_color_close()
