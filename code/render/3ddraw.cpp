@@ -1547,6 +1547,106 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	return 1;
 }
 
+void g3_draw_2d_shield_icon(const coord2d coords[6], const int r, const int g, const int b, const int a)
+{
+	int saved_zbuf;
+	vertex v[6];
+	vertex *verts[6] = {&v[0], &v[1], &v[2], &v[3], &v[4], &v[5]};
+
+	memset(v,0,sizeof(vertex)*6);
+	saved_zbuf = gr_zbuffer_get();
+
+	// start the frame, no zbuffering, no culling
+	if (!Fred_running)
+		g3_start_frame(1);
+
+	gr_zbuffer_set(GR_ZBUFF_NONE);
+	int cull = gr_set_cull(0);
+
+	// stuff coords
+	v[0].screen.xyw.x = i2fl(coords[0].x);
+	v[0].screen.xyw.y = i2fl(coords[0].y);
+	v[0].screen.xyw.w = 0.0f;
+	v[0].texture_position.u = 0.0f;
+	v[0].texture_position.v = 0.0f;
+	v[0].flags = PF_PROJECTED;
+	v[0].codes = 0;
+	v[0].r = (ubyte)r;
+	v[0].g = (ubyte)g;
+	v[0].b = (ubyte)b;
+	v[0].a = 0;
+
+	v[1].screen.xyw.x = i2fl(coords[1].x);
+	v[1].screen.xyw.y = i2fl(coords[1].y);
+	v[1].screen.xyw.w = 0.0f;
+	v[1].texture_position.u = 0.0f;
+	v[1].texture_position.v = 0.0f;
+	v[1].flags = PF_PROJECTED;
+	v[1].codes = 0;
+	v[1].r = (ubyte)r;
+	v[1].g = (ubyte)g;
+	v[1].b = (ubyte)b;
+	v[1].a = (ubyte)a;
+
+	v[2].screen.xyw.x = i2fl(coords[2].x);
+	v[2].screen.xyw.y = i2fl(coords[2].y);
+	v[2].screen.xyw.w = 0.0f;
+	v[2].texture_position.u = 0.0f;
+	v[2].texture_position.v = 0.0f;
+	v[2].flags = PF_PROJECTED;
+	v[2].codes = 0;
+	v[2].r = (ubyte)r;
+	v[2].g = (ubyte)g;
+	v[2].b = (ubyte)b;
+	v[2].a = 0;
+
+	v[3].screen.xyw.x = i2fl(coords[3].x);
+	v[3].screen.xyw.y = i2fl(coords[3].y);
+	v[3].screen.xyw.w = 0.0f;
+	v[3].texture_position.u = 0.0f;
+	v[3].texture_position.v = 0.0f;
+	v[3].flags = PF_PROJECTED;
+	v[3].codes = 0;
+	v[3].r = (ubyte)r;
+	v[3].g = (ubyte)g;
+	v[3].b = (ubyte)b;
+	v[3].a = (ubyte)a;
+
+	v[4].screen.xyw.x = i2fl(coords[4].x);
+	v[4].screen.xyw.y = i2fl(coords[4].y);
+	v[4].screen.xyw.w = 0.0f;
+	v[4].texture_position.u = 0.0f;
+	v[4].texture_position.v = 0.0f;
+	v[4].flags = PF_PROJECTED;
+	v[4].codes = 0;
+	v[4].r = (ubyte)r;
+	v[4].g = (ubyte)g;
+	v[4].b = (ubyte)b;
+	v[4].a = 0;
+
+	v[5].screen.xyw.x = i2fl(coords[5].x);
+	v[5].screen.xyw.y = i2fl(coords[5].y);
+	v[5].screen.xyw.w = 0.0f;
+	v[5].texture_position.u = 0.0f;
+	v[5].texture_position.v = 0.0f;
+	v[5].flags = PF_PROJECTED;
+	v[5].codes = 0;
+	v[5].r = (ubyte)r;
+	v[5].g = (ubyte)g;
+	v[5].b = (ubyte)b;
+	v[5].a = 0;
+
+	// draw the polys
+	g3_draw_poly_constant_sw(6, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA | TMAP_FLAG_TRISTRIP, 0.1f);
+
+	if (!Fred_running)
+		g3_end_frame();
+
+	// restore zbuffer and culling
+	gr_zbuffer_set(saved_zbuf);
+	gr_set_cull(cull);
+}
+
 void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 {
 	int saved_zbuf;

@@ -179,6 +179,10 @@ typedef struct wep_t {
 	int count;
 } wep_t;
 
+typedef struct coord2d {
+	int x,y;
+} coord2d;
+
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
 void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... );

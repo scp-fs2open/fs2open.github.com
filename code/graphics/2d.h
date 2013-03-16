@@ -634,6 +634,7 @@ __inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resi
 	(*gr_screen.gf_bitmap_ex)(x, y, w, h, sx, sy, resize);
 }
 
+void gr_shield_icon(coord2d coords[6], const bool resize = true);
 void gr_rect(int x, int y, int w, int h, bool resize = true);
 void gr_shade(int x, int y, int w, int h, bool resize = true);
 

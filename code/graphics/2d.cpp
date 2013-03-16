@@ -1464,6 +1464,28 @@ poly_list& poly_list::operator = (poly_list &other_list)
 	return *this;
 }
 
+void gr_shield_icon(coord2d coords[6], bool resize)
+{
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	if (resize) {
+		gr_resize_screen_pos(&coords[0].x, &coords[0].y);
+		gr_resize_screen_pos(&coords[1].x, &coords[1].y);
+		gr_resize_screen_pos(&coords[2].x, &coords[2].y);
+		gr_resize_screen_pos(&coords[3].x, &coords[3].y);
+		gr_resize_screen_pos(&coords[4].x, &coords[4].y);
+		gr_resize_screen_pos(&coords[5].x, &coords[5].y);
+	}
+
+	g3_draw_2d_shield_icon(coords,
+		gr_screen.current_color.red,
+		gr_screen.current_color.green,
+		gr_screen.current_color.blue,
+		gr_screen.current_color.alpha);
+}
+
 void gr_rect(int x, int y, int w, int h, bool resize)
 {
 	if (gr_screen.mode == GR_STUB) {

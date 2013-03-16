@@ -316,6 +316,11 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float radius, uint tmap_flag
 int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags);
 
 /**
+ * Draw a 2D shield icon w/ 6 points
+ */
+void g3_draw_2d_shield_icon(const coord2d coords[6], const int r, const int g, const int b, const int a);
+
+/**
  * Draw a 2D rectangle
  */
 void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a);

@@ -60,6 +60,7 @@ public:
 	virtual void render(float frametime);
 	void showShields(object *objp, int mode);
 	int maybeFlashShield(int target_index, int shield_offset);
+	void renderShieldIcon(coord2d coords[6]);
 };
 
 class HudGaugeShieldPlayer: public HudGaugeShield
