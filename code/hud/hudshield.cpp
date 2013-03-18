@@ -784,7 +784,6 @@ void HudGaugeShield::showShields(object *objp, int mode)
 						shield_icon_coords[3].x = sx;                     shield_icon_coords[3].y = sy+BAR_WIDTH+TRI_EDGE;
 						shield_icon_coords[4].x = sx+TRI_EDGE;            shield_icon_coords[4].y = sy+TRI_EDGE;
 						shield_icon_coords[5].x = sx;                     shield_icon_coords[5].y = sy;
-						shield_icon_coords[6].x = sx; shield_icon_coords[6].y = sy;
 						renderShieldIcon(shield_icon_coords);
 						sy -= BAR_HEIGHT + SHIELD_OFFSET*2 - BAR_WIDTH - TRI_EDGE;
 						break;
