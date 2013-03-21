@@ -5172,9 +5172,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		//	Note that it is important to extract the forward component of the parent's velocity to factor out sliding, else
 		//	the missile will not be moving forward.
 		if(parent_objp != NULL){
-			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z/4 );
+			if (wip->free_flight_time > 0.0)
+				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z/4 );
+			else
+				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
 		} else {
-            if (!is_locked)
+			if (!is_locked && wip->free_flight_time > 0.0)
             {
 			    vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z/4 );
             }
