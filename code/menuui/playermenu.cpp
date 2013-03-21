@@ -800,7 +800,10 @@ int player_select_get_last_pilot_info()
 	// Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
 	Player_select_last_is_multi = 0;
 
-	Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';
+	// handle changing from pre-pilot code to post-pilot code
+	if (Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' || Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'S') {
+		Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';	// chop off last char, M|P
+	}
 
 	return 1;
 }
@@ -856,6 +859,22 @@ void player_select_init_player_stuff(int mode)
 	Get_file_list_filter = player_select_pilot_file_filter;
 
 	Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+
+	// if we have a "last_player", and they're in the list, bash them to the top of the list
+	if (Player_select_last_pilot[0] != '\0') {
+		int i,j;
+		for (i = 0; i < Player_select_num_pilots; ++i) {
+			if (!stricmp(Player_select_last_pilot,Pilots[i])) {
+				break;
+			}
+		}
+		if (i != Player_select_num_pilots) {
+			for (j = i; j > 0; --j) {
+				strncpy(Pilots[j], Pilots[j-1], strlen(Pilots[j-1])+1);
+			}
+			strncpy(Pilots[0], Player_select_last_pilot, strlen(Player_select_last_pilot)+1);
+		}
+	}
 
 	Player = NULL;
 
