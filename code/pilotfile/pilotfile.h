@@ -41,6 +41,8 @@ class pilotfile {
 		SCP_string filename;
 		player *p;
 
+		int version;
+
 		// some sections are required before others...
 		bool m_have_flags;
 		bool m_have_info;

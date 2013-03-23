@@ -793,12 +793,14 @@ int player_select_get_last_pilot_info()
 	if (last_player == NULL) {
 		return 0;
 	} else {
-		strcpy_s(Player_select_last_pilot,last_player);
+		strcpy_s(Player_select_last_pilot, last_player);
 	}
 
-	//// determine if he was a single or multi-player based upon the last character in his callsign
-	// Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
-	Player_select_last_is_multi = 0;
+	if ( !Pilot.load_player(last_player, Player) ) {
+		Player_select_last_is_multi = 0;
+	} else {
+		Player_select_last_is_multi = Player->player_was_multi;
+	}
 
 	// handle changing from pre-pilot code to post-pilot code
 	if (Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' || Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'S') {

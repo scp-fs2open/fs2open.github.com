@@ -203,6 +203,8 @@ typedef struct player {
 	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).
 	button_info		lua_bi;				// copy of button info for scripting purposes (not to disturb real controls).
 	button_info		lua_bi_full;		// gets all the button controls, not just the ones usually allowed
+
+	int		player_was_multi;		// 1 if the player file was last used in Multiplayer
 } player;
 
 extern player Players[MAX_PLAYERS];

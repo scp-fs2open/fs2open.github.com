@@ -25,7 +25,8 @@ static const unsigned int PLR_FILE_ID = 0x5f524c50;	// "PLR_" in file
 //       that sort!
 //
 //   0 - initial version
-static const ubyte PLR_VERSION = 0;
+//   1 - Adding support for the player is multi flag
+static const ubyte PLR_VERSION = 1;
 
 
 void pilotfile::plr_read_flags()
@@ -44,6 +45,14 @@ void pilotfile::plr_read_flags()
 
 	// special rank setting (to avoid having to read all stats on verify)
 	p->stats.rank = cfread_int(cfp);
+
+	if (version > 0) 
+	{
+		p->player_was_multi = cfread_int(cfp);
+	} else 
+	{
+		p->player_was_multi = 0; // Default to single player
+	}
 }
 
 void pilotfile::plr_write_flags()
@@ -64,6 +73,9 @@ void pilotfile::plr_write_flags()
 
 	// special rank setting (to avoid having to read all stats on verify)
 	cfwrite_int(p->stats.rank, cfp);
+
+	// What game mode we were in last on this pilot
+	cfwrite_int(p->player_was_multi, cfp);
 
 	endSection();
 }
@@ -807,9 +819,9 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 	}
 
 	// version, should be able to just ignore it
-	ubyte plr_ver = cfread_ubyte(cfp);
+	version = cfread_ubyte(cfp);
 
-	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), (int)plr_ver));
+	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), version));
 
 	plr_reset_data();
 
