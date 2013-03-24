@@ -11,6 +11,7 @@
 #include "missionui/missionscreencommon.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionshipchoice.h"
+#include "mission/missionload.h"
 #include "sound/audiostr.h"
 #include "io/joy.h"
 #include "io/mouse.h"
@@ -31,7 +32,8 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //       that sort!
 //
 //   0 - initial version
-static const ubyte CSG_VERSION = 0;
+//   1 - re-add recent missions
+static const ubyte CSG_VERSION = 1;
 
 
 void pilotfile::csg_read_flags()
@@ -1173,6 +1175,46 @@ void pilotfile::csg_write_cutscenes() {
 	endSection();
 }
 
+/*
+ * Only used for quick start missions
+ */
+void pilotfile::csg_read_lastmissions()
+{
+	int i;
+
+	// restore list of most recently played missions
+	Num_recent_missions = cfread_int( cfp );
+	Assert(Num_recent_missions <= MAX_RECENT_MISSIONS);
+	for ( i = 0; i < Num_recent_missions; i++ ) {
+		char *cp;
+
+		cfread_string_len( Recent_missions[i], MAX_FILENAME_LEN, cfp);
+		// Remove the extension (safety check: shouldn't exist anyway)
+		cp = strchr(Recent_missions[i], '.');
+			if (cp)
+				*cp = 0;
+	}
+}
+
+/*
+ * Only used for quick start missions
+ */
+
+void pilotfile::csg_write_lastmissions()
+{
+	int i;
+
+	startSection(Section::LastMissions);
+
+	// store list of most recently played missions
+	cfwrite_int(Num_recent_missions, cfp);
+	for (i=0; i<Num_recent_missions; i++) {
+		cfwrite_string_len(Recent_missions[i], cfp);
+	}
+
+	endSection();
+}
+
 void pilotfile::csg_reset_data()
 {
 	int idx;
@@ -1376,6 +1418,11 @@ bool pilotfile::load_savefile(const char *campaign)
 					csg_read_cutscenes();
 					break;
 
+				case Section::LastMissions:
+					mprintf(("CSG => Parsing:  Last Missions...\n"));
+					csg_read_lastmissions();
+					break;
+
 				default:
 					mprintf(("CSG => Skipping unknown section 0x%04x!\n", section_id));
 					break;
@@ -1487,6 +1534,8 @@ bool pilotfile::save_savefile()
 	csg_write_controls();
 	mprintf(("CSG => Saving:  Cutscenes...\n"));
 	csg_write_cutscenes();
+	mprintf(("CSG => Saving:  Last Missions...\n"));
+	csg_write_lastmissions();
 
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));

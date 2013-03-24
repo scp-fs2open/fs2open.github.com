@@ -113,6 +113,8 @@ int mission_load(char *filename_ext)
 		Assert(!ret);
 	}
 
+	ml_update_recent_missions(filename_ext);  // update recently played missions list (save the csg later)
+
 	init_hud();
 	return 0;
 }

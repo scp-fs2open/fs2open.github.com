@@ -23,6 +23,7 @@
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
 #include "playerman/player.h"
+#include "pilotfile/pilotfile.h"
 #include "menuui/snazzyui.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
@@ -2492,17 +2493,18 @@ void update_player_ship(int si_index)
 		change_ship_type(Player_obj->instance, si_index);
 
 	Player->last_ship_flown_si_index = si_index;
+	Pilot.save_savefile();  // saves both Recent_mission & last_ship_flown_si_index (for quick-start-missions)
 }
 
-// ----------------------------------------------------------------------------
-// create a default player ship
-//
-//	parameters:		use_last_flown	=> select ship that was last flown on a mission
-//						(this is a default parameter which is set to 1)
-//
-// returns:			0 => success
-//               !0 => failure
-//
+/*
+ * create a default player ship
+ *
+ * @note: only used for quick start missions
+ *
+ * @param	use_last_flown	select ship that was last flown on a mission (default parameter set to 1)
+ *
+ * @return	0 => success, !0 => failure
+ */
 int create_default_player_ship(int use_last_flown)
 {
 	int	player_ship_class=-1, i;
@@ -2525,7 +2527,14 @@ int create_default_player_ship(int use_last_flown)
 			return 1;
 	}
 
-	update_player_ship(player_ship_class);
+	// if we still haven't found the last flown ship, handle the error semi-gracefully
+	if (player_ship_class == -1) {
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nCannot find "
+			"a valid last flown ship\n\nHave you played any missions since activating this mod/campaign?", -1));
+		return 1;
+	} else {
+		update_player_ship(player_ship_class);
+	}
 
 	// debug code to keep using descent style physics if the player starts a new game
 #ifndef NDEBUG

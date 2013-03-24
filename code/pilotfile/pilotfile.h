@@ -122,7 +122,8 @@ class pilotfile {
 				RedAlert		= 0x0011,
 				Variables		= 0x0012,
 				Missions		= 0x0013,
-				Cutscenes		= 0x0014
+				Cutscenes		= 0x0014,
+				LastMissions	= 0x0015
 			};
 		};
 
@@ -177,6 +178,7 @@ class pilotfile {
 		void csg_read_settings();
 		void csg_read_controls();
 		void csg_read_cutscenes();
+		void csg_read_lastmissions();
 
 		void csg_write_flags();
 		void csg_write_info();
@@ -190,6 +192,7 @@ class pilotfile {
 		void csg_write_settings();
 		void csg_write_controls();
 		void csg_write_cutscenes();
+		void csg_write_lastmissions();
 };
 
 extern pilotfile Pilot;
