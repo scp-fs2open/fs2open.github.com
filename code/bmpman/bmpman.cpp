@@ -1092,25 +1092,9 @@ int bm_load_either(char *filename, int *nframes, int *fps, int *keyframe, int ca
 	return tidx;
 }
 
-/**
- * Sanity check to ensure invalid bitmap handles are picked up early
- *
- * Some early known false or out of range handles (such as negative) are checked within
- * an initial routine pass, followed by a more thorough check routine to ensure the  
- * series of bitmaps within the bm_bitmaps[] structure have not become invalid.
- *
- * @param handle Bitmap handle to check for validity
- * @return 1 for valid, 0 for invalid
- */
 int bm_is_valid(int handle)
 {
-	Assertion( handle >= 0, "Out of range bitmap handle %d passed to bm_is_valid().\n", handle );
-    
-	// Ensure that certain known false or out of range handles are quickly returned as invalid,
-	// prior to utilising the handle in a way which leads to memory access outside bm_bitmaps[] 
 	if(!bm_inited) return 0;
-	if(handle < 0) return 0;
-    
 	return (bm_bitmaps[handle % MAX_BITMAPS].handle == handle);
 }
 
