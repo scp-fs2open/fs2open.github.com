@@ -605,9 +605,6 @@ void main_hall_do(float frametime)
 	// handle any sound details
 	main_hall_cull_door_sounds();
 
-	// do any campaign load failure handling
-	mission_campaign_load_failure_popup();
-
 	// process any keypresses/mouse events
 	snazzy_action = -1;
 	code = snazzy_menu_do(Main_hall_mask_data, Main_hall_mask_w, Main_hall_mask_h, Main_hall_num_options, Main_hall_region, &snazzy_action, 1, &key);

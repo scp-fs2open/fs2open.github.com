@@ -1693,8 +1693,6 @@ void campaign_room_init()
 	} else {
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
-
-		mission_campaign_load_failure_popup();
 	}
 
 	// we need descriptions too, so "true" it
