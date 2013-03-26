@@ -1107,10 +1107,7 @@ int bm_is_valid(int handle)
 	// Ensure that certain known false or out of range handles are quickly returned as invalid,
 	// prior to utilising the handle in a way which leads to memory access outside bm_bitmaps[]
 	if(!bm_inited) return 0;
-	if(handle < 0) {
-		Warning( LOCATION, "Out of range bitmap handle %d passed to bm_is_valid().\n", handle );
-		return 0;
-	}
+	if(handle < 0) return 0;
     
 	return (bm_bitmaps[handle % MAX_BITMAPS].handle == handle);
 }
