@@ -188,7 +188,7 @@ void pilot_set_start_campaign(player* p)
 
 	for (i = 0; i < rc; i++) 
 	{
-		if (!stricmp(campaign_file_list[i], "FreeSpace2"))
+		if (!stricmp(campaign_file_list[i], Default_campaign_file_name))
 		{
 			strcpy_s(p->current_campaign, campaign_file_list[i]);
 			return;
