@@ -1864,7 +1864,8 @@ void mission_campaign_load_failure_popup()
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nRequested campaign requires too many SEXPs and cannot be loaded.\n\n"
 			"Please select a different campaign in the Campaign Room.", 1615));
 	} else if (Campaign_load_failure == CAMPAIGN_ERROR_MISSING) {
-		popup(PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("The currently active campaign cannot be found.\n\nPlease select another in the Campaign Room.", 1616));
+		// if it's just the campaign missing, there's another popup to deal with that
+		;
 	} else if (Campaign_load_failure == CAMPAIGN_ERROR_SAVEFILE) {
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nThe pilot savefile "
 			"for this campaign is invalid for the current mod.\n\nPlease select another campaign or switch to the correct "
