@@ -1794,7 +1794,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			break;
 
 		// cycle number of missiles
-		case CYCLE_NUM_MISSLES:
+		case CYCLE_NUM_MISSLES: {
 			if(at_self)
 				control_used(CYCLE_NUM_MISSLES);
 
@@ -1805,8 +1805,12 @@ int button_function_critical(int n, net_player *p = NULL)
 					break;
 				}
 			}
-					
-			if ( Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE ) {		
+
+			polymodel *pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
+
+			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
+
+			if ( Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE || firepoints < 2) {		
 				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
@@ -1828,6 +1832,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
 			break;
+		}
 
 		// increase weapon recharge rate
 		case INCREASE_WEAPON:

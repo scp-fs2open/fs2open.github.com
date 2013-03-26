@@ -10983,7 +10983,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 		int start_slot, end_slot;
 
-		if ( shipp->flags & SF_SECONDARY_DUAL_FIRE ) {
+		if ( shipp->flags & SF_SECONDARY_DUAL_FIRE && num_slots > 1) {
 			start_slot = swp->secondary_next_slot[bank];
 			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
 			if ( check_ammo && (swp->secondary_bank_ammo[bank] < 2) ) {
@@ -10992,6 +10992,9 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				end_slot = start_slot+1;
 			}
 		} else {
+			// de-set the flag just in case dual-fire was set but couldn't be used
+			// because there's less than two firepoints
+			shipp->flags &= ~SF_SECONDARY_DUAL_FIRE;
 			start_slot = swp->secondary_next_slot[bank];
 			end_slot = start_slot;
 		}
