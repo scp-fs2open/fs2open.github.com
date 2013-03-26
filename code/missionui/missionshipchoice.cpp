@@ -1107,7 +1107,7 @@ void ship_select_blit_ship_info()
 	}
 	else
 	{
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Banks",-1));
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Banks",1626));
 		y_start += 10;
 		gr_set_color_fast(text);
 		if(sip->num_primary_banks)
@@ -1178,7 +1178,7 @@ void ship_select_blit_ship_info()
 		if(num_turrets)
 		{
 			gr_set_color_fast(header);
-			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",-1));
+			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",1627));
 			y_start += 10;
 			gr_set_color_fast(text);
 			sprintf(str, "%d", num_turrets);
@@ -1916,12 +1916,12 @@ void commit_pressed()
 	{
 		if (num_required_weapons == 1)
 		{
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", -1), weapon_list.c_str());
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624), weapon_list.c_str());
 			return;
 		}
 		else if (num_required_weapons > 1)
 		{
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", -1), weapon_list.c_str());
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", 1625), weapon_list.c_str());
 			return;
 		}
 	}
@@ -2530,7 +2530,7 @@ int create_default_player_ship(int use_last_flown)
 	// if we still haven't found the last flown ship, handle the error semi-gracefully
 	if (player_ship_class == -1) {
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nCannot find "
-			"a valid last flown ship\n\nHave you played any missions since activating this mod/campaign?", -1));
+			"a valid last flown ship\n\nHave you played any missions since activating this mod/campaign?", 1619));
 		return 1;
 	} else {
 		update_player_ship(player_ship_class);

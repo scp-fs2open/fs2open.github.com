@@ -802,7 +802,7 @@ void barracks_delete_pilot()
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
 					"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
-					"deleted from the single-player menu.", -1));
+					"deleted from the single-player menu.", 1598));
 		return;
 	}
 
@@ -820,7 +820,7 @@ void barracks_delete_pilot()
 	del_rval = delete_pilot_file(buf);
 
 	if ( !del_rval ) {
-		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", -1));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", 1599));
 		return;
 	} else {
 		if (active) {
@@ -981,7 +981,7 @@ void barracks_button_pressed(int n)
 				gamesnd_play_iface(SND_SCROLL);
 
 				if (Campaign_file_missing) {
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", 1600));
 					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
 				}
 			}
@@ -992,7 +992,7 @@ void barracks_button_pressed(int n)
 				gamesnd_play_iface(SND_COMMIT_PRESSED);
 
 				if (Campaign_file_missing) {
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", 1600));
 					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
 				} else {
 					gameseq_post_event(GS_EVENT_MAIN_MENU);
@@ -1021,7 +1021,7 @@ void barracks_button_pressed(int n)
 	/*	New Pilot code no longer needs a conversion function. */
 			popup(PF_TITLE_BIG | PF_TITLE_BLUE | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK,
 				XSTR("Disabled!\n\n\nMulti and Single Player Pilot files are now identical.\n\n"
-				"Conversion between the two is no longer necessary.", -1));
+				"Conversion between the two is no longer necessary.", 1601));
 		/*	// no actual conversion with new pilot code
 			if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);

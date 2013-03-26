@@ -2902,7 +2902,7 @@ void HudGaugeSupport::render(float frametime)
 		if ( Hud_support_objnum == -1 ) {
 			if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
 			{
-				strcpy_s(outstr, XSTR( "exiting hangar", -1));
+				strcpy_s(outstr, XSTR( "exiting hangar", 1622));
 			}
 			else
 			{

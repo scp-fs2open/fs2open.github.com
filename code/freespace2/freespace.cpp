@@ -7896,7 +7896,7 @@ void Do_model_timings_test()
 // Call this function when you want to inform the player that a feature is disabled in this build
 void game_feature_disabled_popup()
 {
-	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, the requested feature is currently disabled in this build", -1));
+	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, the requested feature is currently disabled in this build", 1621));
 }
 
 // format the specified time (fixed point) into a nice string

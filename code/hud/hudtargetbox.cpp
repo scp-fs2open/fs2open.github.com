@@ -1302,7 +1302,7 @@ void HudGaugeExtraTargetData::render(float frametime)
 		// docked to multiple objects
 		else
 		{
-			sprintf(outstr, XSTR("Docked: %d objects", -1), dock_count);
+			sprintf(outstr, XSTR("Docked: %d objects", 1623), dock_count);
 		}
 
 		gr_force_fit_string(outstr, 255, 173);

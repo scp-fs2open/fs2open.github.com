@@ -67,7 +67,7 @@ int Lcl_english = 1;
 // the english version (in the code) to a foreign version (in the table).  Thus, if you
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
-#define XSTR_SIZE	1574
+#define XSTR_SIZE	1636
 
 
 // struct to allow for strings.tbl-determined x offset

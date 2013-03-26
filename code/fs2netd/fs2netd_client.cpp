@@ -251,7 +251,7 @@ void fs2netd_connect()
 	if (Is_standalone) {
 		do { rc = fs2netd_connect_do(); } while (!rc);
 	} else {
-		popup_till_condition(fs2netd_connect_do, XSTR("&Cancel", 779), XSTR("Connecting into FS2NetD", -1));
+		popup_till_condition(fs2netd_connect_do, XSTR("&Cancel", 779), XSTR("Connecting into FS2NetD", 1575));
 	}
 
 	In_process = false;
@@ -264,7 +264,7 @@ int fs2netd_login_do()
 		if ( Is_standalone && std_gen_is_active() ) {
 			std_gen_set_text("Verifying username and password", 1);
 		} else {
-			popup_change_text( XSTR("Verifying username and password", -1) );
+			popup_change_text( XSTR("Verifying username and password", 1576) );
 		}
 
 		memset(Multi_tracker_id_string, 0, sizeof(Multi_tracker_id_string));
@@ -314,7 +314,7 @@ int fs2netd_login_do()
 		if ( Is_standalone && std_gen_is_active() ) {
 			std_gen_set_text("Getting pilot stats", 1);
 		} else {
-			popup_change_text( XSTR("Getting pilot stats", -1) );
+			popup_change_text( XSTR("Getting pilot stats", 1577) );
 		}
 
 		if (Local_timeout == -1) {
@@ -381,7 +381,7 @@ bool fs2netd_login()
 
 	if ( !Is_connected ) {
 		if ( !Is_standalone ) {
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Failed to connect to FS2NetD server!", -1));
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Failed to connect to FS2NetD server!", 1578));
 		} else {
 			std_gen_set_text("Connect FAILED!", 1);
 			Sleep(2000);
@@ -401,7 +401,7 @@ bool fs2netd_login()
 	if (Is_standalone) {
 		do { rc = fs2netd_login_do(); } while (!rc);
 	} else {
-		rc = popup_till_condition(fs2netd_login_do, XSTR("&Cancel", 779), XSTR("Logging into FS2NetD", -1));
+		rc = popup_till_condition(fs2netd_login_do, XSTR("&Cancel", 779), XSTR("Logging into FS2NetD", 1579));
 	}
 
 	In_process = false;
@@ -980,7 +980,7 @@ bool fs2netd_check_mission(char *mission_name)
 		// failed to send request packet
 		case 3:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request failed!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request failed!",1580));
 			}
 
 			return false;
@@ -988,7 +988,7 @@ bool fs2netd_check_mission(char *mission_name)
 		// it timed out
 		case 4:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request timed out!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request timed out!", 1581));
 			}
 
 			return false;
@@ -1076,15 +1076,15 @@ void fs2netd_store_stats()
 
 	if (Duplicate_login_detected) {
 		Duplicate_login_detected = false;
-		multi_display_chat_msg( XSTR("<Duplicate login detected - stats have been tossed>", -1), 0, 0 );
-		ml_string( XSTR("<Duplicate login detected - stats have been tossed>", -1) );
+		multi_display_chat_msg( XSTR("<Duplicate login detected - stats have been tossed>", 1582), 0, 0 );
+		ml_string( XSTR("<Duplicate login detected - stats have been tossed>", 1583) );
 		fs2netd_store_stats_results();
 		return;
 	}
 
 	if ( game_hacked_data() ) {
-		multi_display_chat_msg( XSTR("<Hacked tables detected - stats have been tossed>", -1), 0, 0 );
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You are playing with a hacked tables, your stats will not be saved", -1) );
+		multi_display_chat_msg( XSTR("<Hacked tables detected - stats have been tossed>", 1584), 0, 0 );
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You are playing with a hacked tables, your stats will not be saved", 1585) );
 		fs2netd_store_stats_results();
 		return;
 	}
@@ -1135,7 +1135,7 @@ void fs2netd_store_stats()
 			break;
 
 		default:
-			multi_display_chat_msg( XSTR("Unknown Stats Store Request Reply", -1), 0, 0 );
+			multi_display_chat_msg( XSTR("Unknown Stats Store Request Reply", 1586), 0, 0 );
 			break;
 	}
 
@@ -1184,7 +1184,7 @@ void fs2netd_update_ban_list()
 	if (Is_standalone) {
 		do { rc = fs2netd_update_ban_list_do(); } while (!rc);
 	} else {
-		rc = popup_till_condition(fs2netd_update_ban_list_do, XSTR("&Cancel", 779), XSTR("Requesting IP ban list", -1));
+		rc = popup_till_condition(fs2netd_update_ban_list_do, XSTR("&Cancel", 779), XSTR("Requesting IP ban list", 1587));
 	}
 
 	In_process = false;
@@ -1383,7 +1383,7 @@ bool fs2netd_get_valid_missions()
 	if (Is_standalone) {
 		do { rc = fs2netd_get_valid_missions_do(); } while (!rc);
 	} else {
-		rc = popup_till_condition(fs2netd_get_valid_missions_do, XSTR("&Cancel", 779), XSTR("Starting mission validation", -1));
+		rc = popup_till_condition(fs2netd_get_valid_missions_do, XSTR("&Cancel", 779), XSTR("Starting mission validation", 1588));
 	}
 
 	In_process = false;
@@ -1399,7 +1399,7 @@ bool fs2netd_get_valid_missions()
 		// timed out
 		case 1:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Mission validation timed out!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Mission validation timed out!", 1589));
 			}
 
 			return false;
@@ -1407,7 +1407,7 @@ bool fs2netd_get_valid_missions()
 		// no missions
 		case 2:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("No missions are available from the server for validation!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("No missions are available from the server for validation!", 1590));
 			}
 
 			return false;
@@ -1415,7 +1415,7 @@ bool fs2netd_get_valid_missions()
 		// out of memory
 		case 3:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Memory error during mission validation!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Memory error during mission validation!", 1591));
 			}
 
 			return false;
@@ -1491,7 +1491,7 @@ int fs2netd_update_valid_tables()
 	if (Is_standalone) {
 		do { rc = fs2netd_update_valid_tables_do(); } while (!rc);
 	} else {
-		rc = popup_till_condition(fs2netd_update_valid_tables_do, XSTR("&Cancel", 779), XSTR("Starting table validation", -1));
+		rc = popup_till_condition(fs2netd_update_valid_tables_do, XSTR("&Cancel", 779), XSTR("Starting table validation", 1592));
 	}
 
 	In_process = false;
@@ -1505,7 +1505,7 @@ int fs2netd_update_valid_tables()
 		// timed out
 		case 1: {
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Table validation timed out!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Table validation timed out!", 1593));
 			}
 
 			return -1;
@@ -1514,7 +1514,7 @@ int fs2netd_update_valid_tables()
 		// no tables
 		case 2: {
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("No tables are available from the server for validation!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("No tables are available from the server for validation!", 1594));
 			}
 
 			return -1;

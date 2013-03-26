@@ -9425,10 +9425,10 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		if ( objp == Player_obj ) {
 			if(sip->cmeasure_max < 1 || sip->cmeasure_type < 0) {
 				//TODO: multi-lingual support
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Not equipped with countermeasures", -1));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Not equipped with countermeasures", 1633));
 			} else if(shipp->current_cmeasure < 0) {
 				//TODO: multi-lingual support
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No countermeasures selected", -1));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No countermeasures selected", 1634));
 			} else if(shipp->cmeasure_count <= 0) {
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No more countermeasure charges.", 485));
 			}
@@ -12560,7 +12560,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( shipp->flags & SF_WARP_BROKEN ) {
 		// TODO: maybe do something here like informing player warp is fixed?
 		// like this? -- Goober5000
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Subspace drive repaired.", -1));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Subspace drive repaired.", 1635));
 		shipp->flags &= ~SF_WARP_BROKEN;
 	}
 

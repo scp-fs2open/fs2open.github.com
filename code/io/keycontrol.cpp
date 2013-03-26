@@ -968,7 +968,7 @@ void process_debug_keys(int k)
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
 			objp->pos = Player_obj->pos;
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Asteroid launched", -1));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Asteroid launched", 1595));
 			break;
 		}
 
@@ -2353,10 +2353,10 @@ int button_function(int n)
 				HUD_printf(XSTR("Engine failure.  Cannot engage subspace drive.", 40));
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", -1));
+				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", 1596));
 			} else if ( (Player_obj != NULL) && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", -1));
+				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", 1597));
 			} else {
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
 			}

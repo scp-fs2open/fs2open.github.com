@@ -928,7 +928,7 @@ int sim_room_button_pressed(int n)
 
 		case CAMPAIGN_TAB:
 			if ( !strlen(Campaign.filename) ) {
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found, unable to switch to campaign mode!", -1));
+				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found, unable to switch to campaign mode!", 1612));
 				break;
 			}
 
@@ -1869,7 +1869,7 @@ void campaign_room_do_frame(float frametime)
 	}
 
 	if (Num_campaigns < 1) {
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "No campaigns are available!", -1));
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "No campaigns are available!", 1613));
 		Campaign_room_no_campaigns = true;
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
 	}

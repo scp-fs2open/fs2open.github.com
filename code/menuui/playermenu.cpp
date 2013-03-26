@@ -616,7 +616,7 @@ void player_select_button_pressed(int n)
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 				popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
 							"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
-							"deleted from the single-player menu.", -1));
+							"deleted from the single-player menu.", 1610));
 			} else {
 				// display a popup requesting confirmation
 				ret = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR( "Warning!\n\nAre you sure you wish to delete this pilot?", 382));
@@ -728,7 +728,7 @@ void player_select_delete_pilot()
 	del_rval = delete_pilot_file(filename);
 
 	if ( !del_rval ) {
-		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", -1));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", 1599));
 		return;
 	}
 
@@ -952,7 +952,7 @@ void player_select_process_noninput(int k)
 			int ret;
 
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-				popup(PF_TITLE_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Pilots can only be deleted from the single player menu!", -1));
+				popup(PF_TITLE_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Pilots can only be deleted from the single player menu!", 1611));
 			} else {
 				// display a popup requesting confirmation
 				ret = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON,2,POPUP_NO,POPUP_YES,XSTR( "Are you sure you want to delete this pilot?", 383));										

@@ -210,7 +210,7 @@ void loop_brief_do()
 
 		// this popup should be straight forward, and also not allow you to get out
 		// of it without actually picking one of the two options
-		do_loop = popup(PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON | PF_IGNORE_ESC | PF_BODY_BIG, 2, XSTR("Decline", 1467), XSTR("Accept", 1035), XSTR("You must either Accept or Decline before returning to the Main Hall", -1));
+		do_loop = popup(PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON | PF_IGNORE_ESC | PF_BODY_BIG, 2, XSTR("Decline", 1467), XSTR("Accept", 1035), XSTR("You must either Accept or Decline before returning to the Main Hall", 1618));
 
 		// if we accepted moving into loop then set it up for the next time the user plays
 		if (do_loop == 1) {
