@@ -11950,9 +11950,18 @@ ADE_FUNC(getScreenHeight, l_Graphics, NULL, "Gets screen height", "number", "Hei
 	return ade_set_args(L, "i", gr_screen.max_h);
 }
 
-ADE_FUNC(getCurrentCamera, l_Graphics, NULL, "Gets the current camera handle", "camera", "camera handle or invalid handle on error")
+ADE_FUNC(getCurrentCamera, l_Graphics, "[boolean]", "Gets the current camera handle, if argument is <i>true</i> then it will also return the main camera when no custom camera is in use", "camera", "camera handle or invalid handle on error")
 {
-	camid current = cam_get_current();
+	camid current;
+
+	bool rtnMain = false;
+
+	ade_get_args(L, "|b", &rtnMain);
+
+	if (!rtnMain || Viewer_mode & VM_FREECAMERA)
+		current = cam_get_current();
+	else
+		current = Main_camera;
 
 	return ade_set_args(L, "o", l_Camera.Set(current));
 }
@@ -11980,7 +11989,12 @@ ADE_FUNC(getVectorFromCoords, l_Graphics,
 		vec3d cam_pos;
 		matrix cam_orient;
 
-		camid cid = cam_get_current();
+		camid cid;
+		if (Viewer_mode & VM_FREECAMERA)
+			cid = cam_get_current();
+		else
+			cid = Main_camera;
+
 		camera *cam = cid.getCamera();
 
 		if (cam != NULL) {
@@ -12231,7 +12245,13 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		vec3d cam_pos;
 		matrix cam_orient;
 
-		camid cid = cam_get_current();
+		camid cid;
+		
+		if (Viewer_mode & VM_FREECAMERA)
+			cid = cam_get_current();
+		else
+			cid = Main_camera;
+
 		camera *cam = cid.getCamera();
 
 		if (cam != NULL) {
@@ -12286,7 +12306,12 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	vec3d cam_pos;
 	matrix cam_orient;
 
-	camid cid = cam_get_current();
+	camid cid;
+	if (Viewer_mode & VM_FREECAMERA)
+		cid = cam_get_current();
+	else
+		cid = Main_camera;
+
 	camera *cam = cid.getCamera();
 
 	if (cam != NULL) {
