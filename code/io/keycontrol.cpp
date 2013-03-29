@@ -2134,6 +2134,30 @@ int button_function_demo_valid(int n)
 	return ret;
 }
 
+bool key_is_targeting(int n) 
+{
+	switch(n) {
+		case TARGET_NEXT:
+		case TARGET_PREV:
+		case TARGET_NEXT_CLOSEST_HOSTILE:
+		case TARGET_PREV_CLOSEST_HOSTILE:
+		case TARGET_NEXT_CLOSEST_FRIENDLY:
+		case TARGET_PREV_CLOSEST_FRIENDLY:
+		case TARGET_SHIP_IN_RETICLE:
+		case TARGET_LAST_TRANMISSION_SENDER:
+		case TARGET_CLOSEST_SHIP_ATTACKING_TARGET:
+		case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
+		case TARGET_TARGETS_TARGET:
+		case TARGET_SUBOBJECT_IN_RETICLE:
+		case TARGET_PREV_SUBOBJECT:
+		case TARGET_NEXT_SUBOBJECT:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 /**
  * Execute function corresponding to action n (BUTTON_ from KeyControl.h)
  * @return 1 when action was taken
@@ -2542,6 +2566,13 @@ int button_function(int n)
 				break;
 		};
 		if (keyHasBeenUsed) {
+			return 1;
+		}
+	}
+	else 
+	{
+		//if sensors are gone, and the passed key is one of the targeting keys, we need to exit here before we hit the Int3() later in this function
+		if (key_is_targeting(n)) {
 			return 1;
 		}
 	}
