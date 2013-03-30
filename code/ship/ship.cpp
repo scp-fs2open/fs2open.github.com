@@ -8048,7 +8048,7 @@ void ship_subsys_set_disrupted(ship_subsys *ss, int time)
 }
 
 /**
- * Determine if a given subsystem is disrupted (ie inoperable)
+ * Determine if a given type of subsystem is disrupted (i.e. inoperable)
  * 
  * @param sp	pointer to ship containing subsystem
  * @param type	type of subsystem (SUBSYSTEM_*)
@@ -8056,6 +8056,13 @@ void ship_subsys_set_disrupted(ship_subsys *ss, int time)
  */
 int ship_subsys_disrupted(ship *sp, int type)
 {
+	Assert ( sp != NULL );
+	Assert ( type >= 0 && type < SUBSYSTEM_MAX );
+    
+	// Bogus pointer to ship to check for disrupted subsystem
+	if (sp == NULL)
+		return 0;
+    
 	if ( sp->subsys_disrupted_flags & (1<<type) ) {
 		return 1;
 	} else {
