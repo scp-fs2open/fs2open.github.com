@@ -1447,11 +1447,8 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, 
 	find_handle = _findfirst( filespec, &find );
 	if (find_handle != -1) {
 		do {
-            if (strcmp(strstr(filter, "."), strstr(find.name,".")) != 0)
+            if (strcmp(strrchr(filter, '.'), strrchr(find.name,'.')) != 0)
                 continue;
-
-			if ( strlen(find.name) >= MAX_FILENAME_LEN )
-				continue;
 
 			if (!(find.attrib & _A_SUBDIR)) {
 				if ( !Get_file_list_filter || (*Get_file_list_filter)(find.name) ) {
@@ -1488,9 +1485,6 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, 
 	dirp = opendir (filespec);
 	if ( dirp ) {
 		while ((dir = readdir (dirp)) != NULL) {
-			if ( strlen(dir->d_name) >= MAX_FILENAME_LEN ) {
-				continue;
-			}
 
 			if (fnmatch(filter, dir->d_name, 0) != 0)
 				continue;
@@ -1650,7 +1644,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 			if (num_files >= max)
 				break;
 
-            if (strcmp(strstr(filter, "."), strstr(find.name,".")) != 0)
+            if (strcmp(strrchr(filter, '.'), strrchr(find.name,'.')) != 0)
                 continue;
 
 			if ( strlen(find.name) >= MAX_FILENAME_LEN )

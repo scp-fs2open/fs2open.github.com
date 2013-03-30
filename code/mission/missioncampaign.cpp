@@ -814,9 +814,10 @@ void campaign_delete_save( char *cfn, char *pname)
 void mission_campaign_delete_all_savefiles( char *pilot_name )
 {
 	int dir_type, num_files, i;
-	char *names[MAX_CAMPAIGNS], file_spec[MAX_FILENAME_LEN + 2], *ext;
+	char file_spec[MAX_FILENAME_LEN + 2], *ext;
 	char filename[1024];
 	int (*filter_save)(char *filename);
+	SCP_vector<SCP_string> names;
 
 	ext = NOX(".csg");
 	dir_type = CF_TYPE_PLAYERS;
@@ -827,14 +828,13 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 	// be.  I have to save any file filters
 	filter_save = Get_file_list_filter;
 	Get_file_list_filter = NULL;
-	num_files = cf_get_file_list(MAX_CAMPAIGNS, names, dir_type, file_spec);
+	num_files = cf_get_file_list(names, dir_type, const_cast<char *>(file_spec));
 	Get_file_list_filter = filter_save;
 
 	for (i=0; i<num_files; i++) {
-		strcpy_s(filename, names[i]);
+		strcpy_s(filename, names[i].c_str());
 		strcat_s(filename, ext);
 		cf_delete(filename, dir_type);
-		vm_free(names[i]);
 	}
 }
 
