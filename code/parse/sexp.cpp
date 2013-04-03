@@ -9898,6 +9898,10 @@ void sexp_set_player_orders(int n)
 
 	shipp = sexp_get_ship_from_node(n);
 
+	if (shipp == NULL) {
+		return;
+	}
+
 	// we need to know which orders this ship class can accept.
 	default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
 	n = CDR(n);
@@ -25442,7 +25446,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SET_PLAYER_ORDERS:
 			if (argnum==0)
-				return OPF_SHIP_WING_TEAM;
+				return OPF_SHIP;
 			if (argnum==1)
 				return OPF_BOOL;
 			else 
