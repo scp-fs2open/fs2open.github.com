@@ -388,7 +388,7 @@ void main_hall_campaign_cheat()
 /**
  * Initialize the main hall proper
  *
- * @param main_hall_num Main hall index
+ * @param main_hall_name Name of main hall to initialise
  */
 void main_hall_init(SCP_string main_hall_name)
 {

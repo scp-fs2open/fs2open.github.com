@@ -809,7 +809,6 @@ void campaign_delete_save( char *cfn, char *pname)
  * Just call cfile function which will delete multiple files
  *
  * @param pilot_name Name of pilot
- * @param is_multi Whether we are deleting single or multiplayer files
  */
 void mission_campaign_delete_all_savefiles( char *pilot_name )
 {
