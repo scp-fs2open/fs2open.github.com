@@ -300,7 +300,7 @@ char * GetChatText()
 }
 
 /**
- * Send a string to be sent as chat, or scanned for messages (/msg <user> string)
+ * Send a string to be sent as chat, or scanned for messages (/msg \<user\> string)
  */
 char * SendChatString(char *line,int raw)
 {

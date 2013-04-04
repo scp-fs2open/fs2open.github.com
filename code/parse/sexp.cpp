@@ -6180,7 +6180,7 @@ int sexp_distance3(object *objp1, object *objp2)
 }
 
 /**
- * Check distance between a given ship and a given subject (ship, wing, any <team>).
+ * Check distance between a given ship and a given subject (ship, wing, any \<team\>).
  */
 int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2)
 {
@@ -21338,7 +21338,7 @@ void multi_sexp_change_team_color() {
 }
 
 /**
- * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets>
+ * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
 int get_generic_subsys(char *subsys_name) 
 {

@@ -7220,7 +7220,7 @@ continue_outer_loop:
 }
 
 /**
- * Look for <any friendly>, <any hostile player>, etc.
+ * Look for \<any friendly\>, \<any hostile player\>, etc.
  */
 int get_special_anchor(char *name)
 {
