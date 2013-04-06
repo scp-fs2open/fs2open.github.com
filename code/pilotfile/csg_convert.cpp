@@ -757,6 +757,10 @@ void pilotfile_convert::csg_export_info()
 		cfwrite_ubyte(visible, cfp);
 	}
 
+	// single/campaign squad name & image, make it the same as multi
+	cfwrite_string_len(plr->squad_name, cfp);
+	cfwrite_string_len(plr->squad_filename, cfp);
+
 	endSection();
 }
 

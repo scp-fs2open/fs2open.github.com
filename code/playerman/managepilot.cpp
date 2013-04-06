@@ -103,8 +103,10 @@ void init_new_pilot(player *p, int reset)
 	}
 
 	// unassigned squadron
-	strcpy_s(p->squad_name, XSTR("Unassigned", 1255));
-	strcpy_s(p->squad_filename, "");
+	strcpy_s(p->s_squad_name, XSTR("Unassigned", 1255));
+	strcpy_s(p->s_squad_filename, "");
+	strcpy_s(p->m_squad_name, XSTR("Unassigned", 1255));
+	strcpy_s(p->m_squad_filename, "");
 
 	// set him to be a single player pilot by default (the actual creation routines will change this if necessary)
 	p->flags &= ~PLAYER_FLAGS_IS_MULTI;
@@ -263,19 +265,24 @@ void pilot_set_random_pic(player *p)
 	}	
 }
 
-// pick a random image for the passed player
+/*
+ * pick a random squad image for the passed player
+ * sets single & multi squad pic to the same image
+ *
+ * @param p	pointer to player
+ */
 void pilot_set_random_squad_pic(player *p)
 {	
 	// if there are no available pilot pics, set the image filename to null
 	if (Num_pilot_squad_images <= 0) {
-		player_set_squad_bitmap(p, "");
-		// strcpy_s(p->squad_filename, "");		
+		player_set_squad_bitmap(p, "", true);
+		player_set_squad_bitmap(p, "", false);
 	} else {
 		// pick a random name from the list
 		int random_index = rand() % Num_pilot_squad_images;		
 		Assert((random_index >= 0) && (random_index < Num_pilot_squad_images));
-		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index]); 
-		// strcpy_s(p->squad_filename, Pilot_squad_images_arr[random_index]);
+		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index], true);
+		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index], false);
 	}	
 }
 
@@ -330,11 +337,18 @@ void pilot_load_squad_pic_list()
 }
 
 // will attempt to load an insignia bitmap and set it as active for the player
-void player_set_squad_bitmap(player *p, char *fname)
+void player_set_squad_bitmap(player *p, char *fname, bool ismulti)
 {
 	// sanity check
 	if(p == NULL){
 		return;
+	}
+
+	char *squad_pic_p;
+	if (ismulti) {
+		squad_pic_p = p->m_squad_filename;
+	} else {
+		squad_pic_p = p->s_squad_filename;
 	}
 
 	// if he has another bitmap already - unload it
@@ -345,30 +359,19 @@ void player_set_squad_bitmap(player *p, char *fname)
 	p->insignia_texture = -1;
 
 	// try and set the new one
-	if (fname != p->squad_filename) {
-		strncpy(p->squad_filename, fname, MAX_FILENAME_LEN);
+	if (fname != squad_pic_p) {
+		strncpy(squad_pic_p, fname, MAX_FILENAME_LEN);
 	}
 
-	if (p->squad_filename[0] != '\0') {
+	if (squad_pic_p[0] != '\0') {
 		p->insignia_texture = bm_load_duplicate(fname);
-		
+
 		// lock is as a transparent texture
 		if (p->insignia_texture != -1) {
 			bm_lock(p->insignia_texture, 16, BMP_TEX_XPARENT);
 			bm_unlock(p->insignia_texture);
 		}
 	}
-
-	/*
-	flen = strlen(filename);
-	elen = strlen(ext);
-	Assert(flen < MAX_PATH_LEN);
-	strcpy_s(path, filename);
-	if ((flen < 4) || stricmp(path + flen - elen, ext)) {
-		Assert(flen + elen < MAX_PATH_LEN);
-		strcat_s(path, ext);
-	}
-	*/
 }
 
 // set squadron
@@ -379,7 +382,11 @@ void player_set_squad(player *p, char *squad_name)
 		return;
 	}
 
-	strncpy(p->squad_name, squad_name, NAME_LENGTH+1);
+	if (Game_mode & GM_MULTIPLAYER) {
+		strncpy(p->m_squad_name, squad_name, NAME_LENGTH+1);
+	} else {
+		strncpy(p->s_squad_name, squad_name, NAME_LENGTH+1);
+	}
 }
 
 void player::reset()
@@ -390,8 +397,10 @@ void player::reset()
 	short_callsign_width = 0;
 
 	memset(image_filename, 0, sizeof(image_filename));
-	memset(squad_filename, 0, sizeof(squad_filename));
-	memset(squad_name, 0, sizeof(squad_name));
+	memset(s_squad_filename, 0, sizeof(s_squad_filename));
+	memset(s_squad_name, 0, sizeof(s_squad_name));
+	memset(m_squad_filename, 0, sizeof(m_squad_filename));
+	memset(m_squad_name, 0, sizeof(m_squad_name));
 
 	memset(current_campaign, 0, sizeof(current_campaign));
 

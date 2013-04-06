@@ -88,8 +88,10 @@ typedef struct player {
 	char				short_callsign[CALLSIGN_LEN + 1];	// callsign truncated to SHORT_CALLSIGN_PIXEL_W pixels
 	int				short_callsign_width;					// useful for mutliplayer chat boxes.
 	char				image_filename[MAX_FILENAME_LEN];	// filename of the image for this pilot
-	char				squad_filename[MAX_FILENAME_LEN];	// filename of the squad image for this pilot
-	char				squad_name[NAME_LENGTH + 1];			// pilot's squadron name
+	char				s_squad_filename[MAX_FILENAME_LEN];	// filename of the squad image for this pilot
+	char				s_squad_name[NAME_LENGTH + 1];			// pilot's squadron name
+	char				m_squad_filename[MAX_FILENAME_LEN];	// filename of the squad image for this pilot (multiplayer)
+	char				m_squad_name[NAME_LENGTH + 1];			// pilot's squadron name (multiplayer)
 	char				current_campaign[MAX_FILENAME_LEN]; // Name of the currently active campaign, or zero-length string if none
 	int				readyroom_listing_mode;
 
@@ -240,7 +242,7 @@ void player_stop_cargo_scan_sound();
 void player_maybe_start_cargo_scan_sound();
 
 // will attempt to load an insignia bitmap and set it as active for the player
-void player_set_squad_bitmap(player *p, char *fname);
+void player_set_squad_bitmap(player *p, char *fnamem, bool ismulti);
 
 // set squadron
 void player_set_squad(player *p, char *squad_name);

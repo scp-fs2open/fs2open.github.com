@@ -525,23 +525,31 @@ int barracks_new_pilot_selected()
 		Cur_pilot->callsign[0] = 0;  // this indicates no pilot active
 		return -1;
 	} else {
-		Pilot.load_savefile(Cur_pilot->current_campaign);
+		if (!Pilot.load_savefile(Cur_pilot->current_campaign)) {
+			// set single player squad image to multi if campaign can't be loaded
+			strcpy_s(Cur_pilot->s_squad_filename, Cur_pilot->m_squad_filename);
+		}
 	}
 
 	// init stuff to reflect new pilot
 	int i;
 	barracks_init_stats(&Cur_pilot->stats);
+	strcpy_s(stripped, Cur_pilot->image_filename);
+	barracks_strip_pcx(stripped);
 	for (i=0; i<Num_pilot_images; i++) {
-		strcpy_s(stripped, Cur_pilot->image_filename);
-		barracks_strip_pcx(stripped);
 		if (!stricmp(stripped, Pilot_image_names[i])) {
 			break;
 		}
 	}
 	Pic_number = i;
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		strcpy_s(stripped, Cur_pilot->m_squad_filename);
+	} else {
+		strcpy_s(stripped, Cur_pilot->s_squad_filename);
+	}
+	barracks_strip_pcx(stripped);
 	for ( i=0; i<Num_pilot_squad_images; i++) {
-		strcpy_s(stripped, Cur_pilot->squad_filename);
-		barracks_strip_pcx(stripped);
 		if (!stricmp(stripped, Pilot_squad_image_names[i])) {
 			break;
 		}
@@ -621,13 +629,14 @@ int barracks_pilot_accepted()
 		return -1;
 	}
 
-	// set his image 
-	player_set_squad_bitmap(Cur_pilot, Cur_pilot->squad_filename);
-
-//	Skill_level = get_default_skill_level();
+	// set pilot image
+	if (Game_mode & GM_MULTIPLAYER) {
+		player_set_squad_bitmap(Cur_pilot, Cur_pilot->m_squad_filename, true);
+	} else {
+		player_set_squad_bitmap(Cur_pilot, Cur_pilot->s_squad_filename, false);
+	}
 
 	// MWA -- I think that we should be writing Cur_pilot here.
-	//write_pilot_file(!is_pilot_multi(Cur_pilot));
 	Pilot.save_player(Cur_pilot);
 
 	os_config_write_string(NULL, "LastPlayer", Cur_pilot->callsign);
@@ -756,7 +765,11 @@ void barracks_prev_squad_pic()
 
 	// copy squad pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)) {
-		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
+		if (Game_mode & GM_MULTIPLAYER) {
+			strcpy_s(Cur_pilot->m_squad_filename, Pilot_squad_image_names[Pic_squad_number]);
+		} else {
+			strcpy_s(Cur_pilot->s_squad_filename, Pilot_squad_image_names[Pic_squad_number]);
+		}
 	}
 
 	// play scroll sound
@@ -780,7 +793,11 @@ void barracks_next_squad_pic()
 
 	// copy squad pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)){
-		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
+		if (Game_mode & GM_MULTIPLAYER) {
+			strcpy_s(Cur_pilot->m_squad_filename, Pilot_squad_image_names[Pic_squad_number]);
+		} else {
+			strcpy_s(Cur_pilot->s_squad_filename, Pilot_squad_image_names[Pic_squad_number]);
+		}
 	}
 
 	// play scroll sound

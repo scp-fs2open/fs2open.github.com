@@ -517,11 +517,11 @@ void multi_pinfo_blit_squadron_logo()
 		gr_set_color_fast(&Color_normal);		
 
 		// if there is no image
-		if(strlen(p->squad_filename) <= 0){
+		if(strlen(p->m_squad_filename) <= 0){
 			strcpy_s(place_text,XSTR("No/Invalid Image", 1053));
 		} 
 		// if the image is xferring
-		else if(multi_xfer_lookup(p->squad_filename)){
+		else if(multi_xfer_lookup(p->m_squad_filename)){
 			strcpy_s(place_text,XSTR("Image Transferring", 691));
 		}
 		// if we're not accepting images
@@ -801,8 +801,8 @@ void multi_pinfo_reset_player(net_player *np)
 		strcpy_s(Mp_pilot.filename, np->m_player->image_filename);
 		Mp_pilot.bitmap = bm_load_duplicate(Mp_pilot.filename);
 	}
-	if(np->m_player->squad_filename[0] != '\0'){
-		strcpy_s(Mp_squad.filename, np->m_player->squad_filename);
+	if(np->m_player->m_squad_filename[0] != '\0'){
+		strcpy_s(Mp_squad.filename, np->m_player->m_squad_filename);
 		Mp_squad.bitmap = bm_load_duplicate(Mp_squad.filename);
 	}
 

@@ -33,7 +33,8 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //
 //   0 - initial version
 //   1 - re-add recent missions
-static const ubyte CSG_VERSION = 1;
+//   2 - separate single/multi squad name & pic
+static const ubyte CSG_VERSION = 2;
 
 
 void pilotfile::csg_read_flags()
@@ -167,6 +168,12 @@ void pilotfile::csg_read_info()
 		}
 	}
 
+	if (csg_ver >= 2) {
+		// single/campaign squad name & image
+		cfread_string_len(p->s_squad_name, NAME_LENGTH, cfp);
+		cfread_string_len(p->s_squad_filename, MAX_FILENAME_LEN, cfp);
+	}
+
 	// if anything we need/use was missing then it should be considered fatal
 	if (m_data_invalid) {
 		throw "Invalid data for CSG!";
@@ -230,6 +237,10 @@ void pilotfile::csg_write_info()
 	for (idx = 0; idx < Num_weapon_types; idx++) {
 		cfwrite_ubyte(Campaign.weapons_allowed[idx], cfp);
 	}
+
+	// single/campaign squad name & image
+	cfwrite_string_len(p->s_squad_name, cfp);
+	cfwrite_string_len(p->s_squad_filename, cfp);
 
 	endSection();
 }
@@ -1337,8 +1348,8 @@ bool pilotfile::load_savefile(const char *campaign)
 		return false;
 	}
 
-	// version, should be able to just ignore it
-	ubyte csg_ver = cfread_ubyte(cfp);
+	// version, now used
+	csg_ver = cfread_ubyte(cfp);
 
 	mprintf(("CSG => Loading '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
 
@@ -1449,6 +1460,12 @@ bool pilotfile::load_savefile(const char *campaign)
 		}
 	}
 
+	// if the campaign (for whatever reason) doesn't have a squad image, use the multi one
+	if (p->s_squad_filename[0] == '\0') {
+		strcpy_s(p->s_squad_filename, p->m_squad_filename);
+	}
+	player_set_squad_bitmap(p, p->s_squad_filename, false);
+
 	mprintf(("CSG => Loading complete!\n"));
 
 	// cleanup and return
@@ -1505,7 +1522,7 @@ bool pilotfile::save_savefile()
 	cfwrite_int(CSG_FILE_ID, cfp);
 	cfwrite_ubyte(CSG_VERSION, cfp);
 
-	mprintf(("CSG => Saving '%s' with version %d...\n", filename.c_str(), (int)CSG_VERSION));
+	mprintf(("CSG => Saving '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
 
 	// flags and info sections go first
 	mprintf(("CSG => Saving:  Flags...\n"));

@@ -1043,7 +1043,7 @@ void send_new_player_packet(int new_player_num,net_player *target)
 	ADD_INT(Net_players[new_player_num].flags);
 	ADD_STRING(Net_players[new_player_num].m_player->callsign);
 	ADD_STRING(Net_players[new_player_num].m_player->image_filename);
-	ADD_STRING(Net_players[new_player_num].m_player->squad_filename);
+	ADD_STRING(Net_players[new_player_num].m_player->m_squad_filename);
 	ADD_STRING(Net_players[new_player_num].p_info.pxo_squad_name);
 
 	val = (ubyte)Net_players[new_player_num].p_info.team;
@@ -1122,7 +1122,7 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 		}
 		// copy his pilot squad filename
 		Net_players[new_player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[new_player_num].m_player, new_player_squad);				
+		player_set_squad_bitmap(Net_players[new_player_num].m_player, new_player_squad, true);
 
 		// copy in his pxo squad name
 		strcpy_s(Net_players[new_player_num].p_info.pxo_squad_name, new_player_pxo_squad);
@@ -1236,7 +1236,7 @@ void send_accept_player_data( net_player *npp, int is_ingame )
 		ADD_STRING(Net_players[i].m_player->image_filename);
 
 		// add his squad filename
-		ADD_STRING(Net_players[i].m_player->squad_filename);
+		ADD_STRING(Net_players[i].m_player->m_squad_filename);
 
 		// add his PXO squad name
 		ADD_STRING(Net_players[i].p_info.pxo_squad_name);
@@ -1330,7 +1330,7 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 		
 		// copy his pilot squad filename
 		Net_players[player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[player_num].m_player, squad_name);
+		player_set_squad_bitmap(Net_players[player_num].m_player, squad_name, true);
 
 		// copy his pxo squad name
 		strcpy_s(Net_players[player_num].p_info.pxo_squad_name, pxo_squad_name);

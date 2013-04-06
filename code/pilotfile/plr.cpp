@@ -89,11 +89,11 @@ void pilotfile::plr_read_info()
 	// pilot image
 	cfread_string_len(p->image_filename, MAX_FILENAME_LEN, cfp);
 
-	// squad name
-	cfread_string_len(p->squad_name, NAME_LENGTH, cfp);
+	// multi squad name
+	cfread_string_len(p->m_squad_name, NAME_LENGTH, cfp);
 
 	// squad image
-	cfread_string_len(p->squad_filename, MAX_FILENAME_LEN, cfp);
+	cfread_string_len(p->m_squad_filename, MAX_FILENAME_LEN, cfp);
 
 	// active campaign
 	cfread_string_len(p->current_campaign, MAX_FILENAME_LEN, cfp);
@@ -106,11 +106,11 @@ void pilotfile::plr_write_info()
 	// pilot image
 	cfwrite_string_len(p->image_filename, cfp);
 
-	// squad name
-	cfwrite_string_len(p->squad_name, cfp);
+	// multi squad name
+	cfwrite_string_len(p->m_squad_name, cfp);
 
 	// squad image
-	cfwrite_string_len(p->squad_filename, cfp);
+	cfwrite_string_len(p->m_squad_filename, cfp);
 
 	// active campaign
 	cfwrite_string_len(p->current_campaign, cfp);
@@ -915,7 +915,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 	// restore the truncated callsign into Player structure
 	pilot_set_short_callsign(p, SHORT_CALLSIGN_PIXEL_W);
 
-	player_set_squad_bitmap(p, p->squad_filename);
+	player_set_squad_bitmap(p, p->m_squad_filename, true);
 
 	hud_squadmsg_save_keys();
 

@@ -2461,7 +2461,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 		// copy his pilot squad filename
 		Net_players[net_player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename);		
+		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename, true);
 
 		// clear his multi_data info
 		multi_data_handle_join(net_player_num);
@@ -2507,7 +2507,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 		// copy his pilot squad filename		
 		Net_players[net_player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename);				
+		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename, true);
 
 		// clear his multi_data info
 		multi_data_handle_join(net_player_num);

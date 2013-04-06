@@ -1898,8 +1898,8 @@ void multi_join_send_join_request(int as_observer)
 	if(Player->image_filename[0] != '\0'){
 		strcpy_s(Multi_join_request.image_filename, Player->image_filename);
 	}	
-	if(Player->squad_filename[0] != '\0'){
-		strcpy_s(Multi_join_request.squad_filename, Player->squad_filename);
+	if(Player->m_squad_filename[0] != '\0'){
+		strcpy_s(Multi_join_request.squad_filename, Player->m_squad_filename);
 	}
 
 	// tracker id (if any)

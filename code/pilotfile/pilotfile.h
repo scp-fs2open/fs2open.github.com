@@ -42,6 +42,7 @@ class pilotfile {
 		player *p;
 
 		int version;
+		ubyte csg_ver;
 
 		// some sections are required before others...
 		bool m_have_flags;

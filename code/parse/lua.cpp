@@ -9713,7 +9713,19 @@ ADE_FUNC(getSquadronName, l_Player, NULL, "Gets current player squad name", "str
 	if(idx < 0 || idx >= Player_num)
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", Players[idx].squad_name);
+	return ade_set_args(L, "s", Players[idx].s_squad_name);
+}
+
+ADE_FUNC(getMultiSquadronName, l_Player, NULL, "Gets current player multi squad name", "string", "Squadron name, or empty string if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Player.Get(&idx)))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx >= Player_num)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", Players[idx].m_squad_name);
 }
 
 //WMC - This isn't working
