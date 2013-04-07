@@ -1097,8 +1097,8 @@ void pilotfile_convert::csg_export()
 	Assert( cfp != NULL );
 
 	// header and version
-	cfwrite_int(0x5f475343, cfp);
-	cfwrite_ubyte(0, cfp);
+	cfwrite_int(CSG_FILE_ID, cfp);
+	cfwrite_ubyte(CSG_VERSION, cfp);
 
 	// flags and info sections go first
 	csg_export_flags();

@@ -26,6 +26,7 @@
 #include "mission/missioncampaign.h"
 #include "controlconfig/controlsconfig.h"
 #include "missionui/redalert.h"
+#include "pilotfile/pilotfile.h"
 
 
 

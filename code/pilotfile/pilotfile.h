@@ -10,6 +10,21 @@
 struct player;
 
 
+// current pilot constants
+static const unsigned int PLR_FILE_ID = 0x5f524c50;	// "PLR_" in file
+static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
+// NOTE: Version should be bumped only for adding/removing sections or section
+//       content.  It should *NOT* be bumped for limit bumps or anything of
+//       that sort!
+//   0 - initial version
+//   1 - Adding support for the player is multi flag
+static const ubyte PLR_VERSION = 1;
+//   0 - initial version
+//   1 - re-add recent missions
+//   2 - separate single/multi squad name & pic
+static const ubyte CSG_VERSION = 2;
+
+
 class pilotfile {
 	public:
 		pilotfile();

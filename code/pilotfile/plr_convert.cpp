@@ -816,8 +816,8 @@ void pilotfile_convert::plr_export()
 	Assert( cfp != NULL );
 
 	// header and version
-	cfwrite_int(0x5f524c50, cfp);
-	cfwrite_ubyte(0, cfp);
+	cfwrite_int(PLR_FILE_ID, cfp);
+	cfwrite_ubyte(PLR_VERSION, cfp);
 
 	// flags and info sections go first
 	plr_export_flags();

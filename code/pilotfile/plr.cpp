@@ -18,17 +18,6 @@
 #include "playerman/managepilot.h"
 
 
-static const unsigned int PLR_FILE_ID = 0x5f524c50;	// "PLR_" in file
-
-// NOTE: Version should be bumped only for adding/removing sections or section
-//       content.  It should *NOT* be bumped for limit bumps or anything of
-//       that sort!
-//
-//   0 - initial version
-//   1 - Adding support for the player is multi flag
-static const ubyte PLR_VERSION = 1;
-
-
 void pilotfile::plr_read_flags()
 {
 	// tips?

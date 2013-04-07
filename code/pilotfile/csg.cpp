@@ -25,17 +25,6 @@
 #include <sstream>
 
 
-static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
-
-// NOTE: Version should be bumped only for adding/removing sections or section
-//       content.  It should *NOT* be bumped for limit bumps or anything of
-//       that sort!
-//
-//   0 - initial version
-//   1 - re-add recent missions
-//   2 - separate single/multi squad name & pic
-static const ubyte CSG_VERSION = 2;
-
 
 void pilotfile::csg_read_flags()
 {
