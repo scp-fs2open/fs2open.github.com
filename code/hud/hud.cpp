@@ -1602,7 +1602,9 @@ void hud_update_frame(float frametime)
 	}
 
 	hud_update_target_static();
-	hud_update_ship_status(targetp);
+	if ( (targetp->instance >=0) && (targetp->instance < MAX_SHIPS) ) {
+		hud_update_ship_status(targetp);
+	}
 }
 
 /**

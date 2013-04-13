@@ -2046,24 +2046,38 @@ void hud_update_target_static()
 	}
 }
 
+/**
+ * Updates the HUD status description of a particular ship
+ * 
+ * Checks for disabled or ships with disrupted engines, as well as damage levels
+ * of the target ship. If status has changed, then the HUD will flash
+ *
+ * @param targetp Instance of the ship target -- note the targetp->instance cannot be negative
+ *
+ */
 void hud_update_ship_status(object *targetp)
 {
-	// print out status of ship for the targetbox
-	if ( (Ships[targetp->instance].flags & SF_DISABLED) || (ship_subsys_disrupted(&Ships[targetp->instance], SUBSYSTEM_ENGINE)) ) {
-		Current_ts = TS_DIS;
-	} else {
-		if ( Pl_target_integrity > 0.9 ) {
-			Current_ts = TS_OK;
-		} else if ( Pl_target_integrity > 0.2 ) {
-			Current_ts = TS_DMG;
+    Assert( targetp != NULL );
+    Assert( (targetp->instance >= 0) && (targetp->instance < MAX_SHIPS) );
+    
+    if ( (targetp->instance >= 0) && (targetp->instance < MAX_SHIPS) ) {
+    	// print out status of ship for the targetbox
+		if ( (Ships[targetp->instance].flags & SF_DISABLED) || (ship_subsys_disrupted(&Ships[targetp->instance], SUBSYSTEM_ENGINE)) ) {
+			Current_ts = TS_DIS;
 		} else {
-			Current_ts = TS_CRT;
+			if ( Pl_target_integrity > 0.9 ) {
+				Current_ts = TS_OK;
+			} else if ( Pl_target_integrity > 0.2 ) {
+				Current_ts = TS_DMG;
+			} else {
+				Current_ts = TS_CRT;
+			}
 		}
-	}
 
-	if ( Last_ts != -1 && Current_ts != Last_ts ) {
-		hud_targetbox_start_flash(TBOX_FLASH_STATUS);
-	}
+		if ( Last_ts != -1 && Current_ts != Last_ts ) {
+			hud_targetbox_start_flash(TBOX_FLASH_STATUS);
+		}
+    }
 
 	Last_ts = Current_ts;
 }
