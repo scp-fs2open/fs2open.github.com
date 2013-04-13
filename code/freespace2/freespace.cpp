@@ -1724,20 +1724,8 @@ void game_init()
 	cmdline_debug_print_cmdline();
 #endif
 
-#ifdef APPLE_APP
-	// some OSX hackery to drop us out of the APP the binary is run from
-	char *c = NULL;
-	c = strstr(full_path, ".app");
-	if ( c != NULL ) {
-		while (c && (*c != '/'))
-			c--;
-
-		*c = '\0';
-	}
-	strncpy(whee, full_path, MAX_PATH_LEN-1);
-#else
 	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
-#endif
+
 	strcat_s(whee, DIR_SEPARATOR_STR);
 	strcat_s(whee, EXE_FNAME);
 
@@ -8089,7 +8077,7 @@ int find_freespace_cd(char *volume_name)
 	_finddata_t find;
 	int find_handle;
 
-	GetCurrentDirectory(MAX_PATH, oldpath);
+	GetCurrentDirectory(MAX_PATH-1, oldpath);
 
 	for (i = 0; i < 26; i++) 
 	{

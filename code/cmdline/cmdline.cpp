@@ -765,19 +765,12 @@ void os_init_cmdline(char *cmdline)
 #ifdef _WIN32
 	fp = fopen("data\\cmdline_fso.cfg", "rt");
 #elif defined(APPLE_APP)
-	extern char full_path[1024];
-	char *c = NULL, data_path[1024];
+	char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
+     
+	GetCurrentDirectory(MAX_PATH_LEN-1, data_path);
+	snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
 
-	c = strstr(full_path, ".app");
-	if ( c != NULL ) {
-		while (c && (*c != '/'))
-			c--;
-		
-		*c = '\0';
-	}
-	snprintf(data_path, 1024, "%s/data/cmdline_fso.cfg", full_path);
-
-	fp = fopen(data_path, "rt");
+	fp = fopen(resolved_path, "rt");
 #else
 	fp = fopen("data/cmdline_fso.cfg", "rt");
 #endif
