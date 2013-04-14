@@ -305,16 +305,22 @@ bool all_turret_weapons_have_flags2(ship_weapon *swp, int flags)
  */
 bool turret_weapon_has_flags(ship_weapon *swp, int flags)
 {
+	Assert(swp != NULL);
+    
 	int i = 0;
 	for(i = 0; i < swp->num_primary_banks; i++)
 	{
-		if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & flags)
-			return true;
+		if(swp->primary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & flags)
+				return true;
+		}
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags & flags)
-			return true;
+		if(swp->secondary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags & flags)
+				return true;
+		}
 	}
 
 	return false;
@@ -327,16 +333,22 @@ bool turret_weapon_has_flags(ship_weapon *swp, int flags)
  */
 bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
 {
+	Assert(swp != NULL);
+    
 	int i = 0;
 	for(i = 0; i < swp->num_primary_banks; i++)
 	{
-		if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & flags)
-			return true;
+		if(swp->primary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & flags)
+				return true;
+		}
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & flags)
-			return true;
+		if(swp->secondary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & flags)
+				return true;
+		}
 	}
 
 	return false;
@@ -350,16 +362,22 @@ bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
  */
 bool turret_weapon_has_subtype(ship_weapon *swp, int subtype)
 {
+	Assert(swp != NULL);
+    
 	int i = 0;
 	for(i = 0; i < swp->num_primary_banks; i++)
 	{
-		if(Weapon_info[swp->primary_bank_weapons[i]].subtype == subtype)
-			return true;
+		if(swp->primary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->primary_bank_weapons[i]].subtype == subtype)
+				return true;
+		}
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(Weapon_info[swp->secondary_bank_weapons[i]].subtype == subtype)
-			return true;
+		if(swp->secondary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->secondary_bank_weapons[i]].subtype == subtype)
+				return true;
+		}
 	}
 
 	return false;
