@@ -431,7 +431,7 @@ void pilotfile_convert::csg_import_red_alert()
 		for (j = 0; j < 3; j++) {
 			i = cfread_int(cfp);
 
-			if (i >= weapon_list_size) {
+			if (i >= weapon_list_size || i < 0) {
 				throw "Data check failure (RedAlert-weapon)!";
 			}
 
