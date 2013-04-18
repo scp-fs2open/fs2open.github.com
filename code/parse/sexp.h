@@ -46,71 +46,70 @@ class waypoint_list;
 #define	OPF_SHIP_POINT			19		// a waypoint or a ship
 #define	OPF_GOAL_NAME			20		// name of goal (or maybe event?) from a mission
 #define	OPF_SHIP_WING			21		// either a ship or wing name (they don't conflict)
-#define OPF_SHIP_WING_TEAM		22		// Karajorma - Ship, wing or an IFF
-#define	OPF_SHIP_WING_TEAM_POINT	23	// name of a ship, wing, team, or a point
-#define OPF_SHIP_WING_POINT		24
-#define OPF_SHIP_WING_POINT_OR_NONE	25	// WMC - Ship, wing, point or none
-#define	OPF_SHIP_TYPE			26		// type of ship (fighter/bomber/etc)
-#define	OPF_KEYPRESS			27		// a default key
-#define	OPF_EVENT_NAME			28		// name of an event
-#define	OPF_AI_ORDER			29		// a squadmsg order player can give to a ship
-#define	OPF_SKILL_LEVEL			30		// current skill level of the game
-#define	OPF_MEDAL_NAME			31		// name of medals
-#define	OPF_WEAPON_NAME			32		// name of a weapon
-#define	OPF_SHIP_CLASS_NAME		33		// name of a ship class
-#define	OPF_HUD_GAUGE_NAME		34		// name of HUD gauge
-#define	OPF_HUGE_WEAPON			35		// name of a secondary bomb type weapon
-#define	OPF_SHIP_NOT_PLAYER		36		// a ship, but not a player ship
-#define	OPF_JUMP_NODE_NAME		37		// name of a jump node
-#define	OPF_VARIABLE_NAME		38		// variable name
-#define	OPF_AMBIGUOUS			39		// type used with variable
-#define	OPF_AWACS_SUBSYSTEM		40		// an awacs subsystem
-#define OPF_CARGO				41		// Goober5000 - a cargo string (currently used for set-cargo and is-cargo)
-#define OPF_AI_CLASS			42		// Goober5000 - an AI class
-#define OPF_SUPPORT_SHIP_CLASS	43		// Goober5000 - a support ship class
-#define OPF_ARRIVAL_LOCATION	44		// Goober5000 - a ship arrival location
-#define OPF_ARRIVAL_ANCHOR_ALL	45		// Goober5000 - all of a ship's possible arrival anchors
-#define OPF_DEPARTURE_LOCATION	46		// Goober5000 - a ship departure location
-#define OPF_SHIP_WITH_BAY		47		// Goober5000 - a ship with a fighter bay
-#define OPF_SOUNDTRACK_NAME		48		// Goober5000 - the name of a music soundtrack
-#define OPF_INTEL_NAME			49		// Goober5000 - the name of an intel entry in species.tbl
-#define OPF_STRING				50		// Goober5000 - any old string
-#define OPF_ROTATING_SUBSYSTEM	51		// Goober5000 - a rotating subsystem
-#define OPF_NAV_POINT			52		// Kazan	  - a Nav Point name
-#define OPF_SSM_CLASS			53		// Goober5000 - an SSM class
-#define OPF_FLEXIBLE_ARGUMENT	54		// Goober5000 - special to match for when-argument
-#define OPF_ANYTHING			55		// Goober5000 - anything goes
-#define OPF_SKYBOX_MODEL_NAME	56		// taylor - changing skybox model
-#define OPF_SHIP_OR_NONE		57		// Goober5000 - an "optional" ship argument
-#define OPF_BACKGROUND_BITMAP	58		// phreak - name of a background bitmap
-#define OPF_SUN_BITMAP			59		// phreak - name of a background bitmap
-#define OPF_NEBULA_STORM_TYPE	60		// phreak - name a nebula storm
-#define OPF_NEBULA_POOF			61		// phreak - name of a nebula poof
-#define OPF_TURRET_TARGET_ORDER	62		// WMC - name of a turret target type (see aiturret.cpp)
-#define OPF_SUBSYSTEM_OR_NONE	63		// Goober5000 - an "optional" subsystem argument
-#define OPF_PERSONA				64		// Karajorma - name of a persona
-#define OPF_SUBSYS_OR_GENERIC	65		// Karajorma - a subsystem or a generic name (like engine) which covers all subsystems of that type
-#define OPF_ORDER_RECIPIENT		66		// Karajorma - since orders can go to All Fighters as well as a ship or wing
-#define OPF_SUBSYSTEM_TYPE		67		// Goober5000 - a generic subsystem type (navigation, engines, etc.) rather than a specific subsystem
-#define OPF_POST_EFFECT			68		// Hery - type of post-processing effect
-#define OPF_TARGET_PRIORITIES	69		// FUBAR - Target priority groups
-#define OPF_ARMOR_TYPE			70		// FUBAR - Armor type or <none>
-#define OPF_FONT				71		// Goober5000 - a FreeSpace font
-#define OPF_HUD_ELEMENT			72		// A magic name of a specific HUD element
-#define OPF_SOUND_ENVIRONMENT	73		// Goober5000 - one of EFX_presets, per Taylor
-#define OPF_SOUND_ENVIRONMENT_OPTION 74	// Goober5000 - one of Taylor's options
-#define OPF_EXPLOSION_OPTION	75		// Goober5000
-#define OPF_AUDIO_VOLUME_OPTION 76		// The E
-#define OPF_WEAPON_BANK_NUMBER	77		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
-#define OPF_MESSAGE_OR_STRING	78		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
-#define OPF_HUD_GAUGE			79		// The E
-#define OPF_DAMAGE_TYPE			80		// FUBAR - Damage type or <none>
-#define OPF_SHIP_EFFECT			81		// The E - per-ship effects, as defined in post-processing.tbl
-#define OPF_ANIMATION_TYPE		82		// Goober5000 - as defined in modelanim.h
-#define OPF_MISSION_MOOD		83		// Karajorma - Moods determine which builtin messages will be sent
-#define OPF_SHIP_FLAG			84		// Karajorma - The name of a ship flag
-#define OPF_TEAM_COLOR			85		// The E - Color settings as defined in Colors.tbl
-#define OPF_NEBULA_PATTERN		86		// Axem - Full Nebula Background Patterns, as defined in nebula.tbl
+#define	OPF_SHIP_WING_POINT		22		// name of a ship, wing, or a point
+#define	OPF_SHIP_TYPE			23		// type of ship (fighter/bomber/etc)
+#define	OPF_KEYPRESS			24		// a default key
+#define	OPF_EVENT_NAME			25		// name of an event
+#define	OPF_AI_ORDER			26		// a squadmsg order player can give to a ship
+#define	OPF_SKILL_LEVEL			27		// current skill level of the game
+#define	OPF_MEDAL_NAME			28		// name of medals
+#define	OPF_WEAPON_NAME			29		// name of a weapon
+#define	OPF_SHIP_CLASS_NAME		30		// name of a ship class
+#define	OPF_HUD_GAUGE_NAME		31		// name of HUD gauge
+#define	OPF_HUGE_WEAPON			32		// name of a secondary bomb type weapon
+#define	OPF_SHIP_NOT_PLAYER		33		// a ship, but not a player ship
+#define	OPF_JUMP_NODE_NAME		34		// name of a jump node
+#define	OPF_VARIABLE_NAME		35		// variable name
+#define	OPF_AMBIGUOUS			36		// type used with variable
+#define	OPF_AWACS_SUBSYSTEM		37		// an awacs subsystem
+#define OPF_CARGO				38		// Goober5000 - a cargo string (currently used for set-cargo and is-cargo)
+#define OPF_AI_CLASS			39		// Goober5000 - an AI class
+#define OPF_SUPPORT_SHIP_CLASS	40		// Goober5000 - a support ship class
+#define OPF_ARRIVAL_LOCATION	41		// Goober5000 - a ship arrival location
+#define OPF_ARRIVAL_ANCHOR_ALL	42		// Goober5000 - all of a ship's possible arrival anchors
+#define OPF_DEPARTURE_LOCATION	43		// Goober5000 - a ship departure location
+#define OPF_SHIP_WITH_BAY		44		// Goober5000 - a ship with a fighter bay
+#define OPF_SOUNDTRACK_NAME		45		// Goober5000 - the name of a music soundtrack
+#define OPF_INTEL_NAME			46		// Goober5000 - the name of an intel entry in species.tbl
+#define OPF_STRING				47		// Goober5000 - any old string
+#define OPF_ROTATING_SUBSYSTEM	48		// Goober5000 - a rotating subsystem
+#define OPF_NAV_POINT			49		// Kazan	  - a Nav Point name
+#define OPF_SSM_CLASS			50		// Goober5000 - an SSM class
+#define OPF_FLEXIBLE_ARGUMENT	51		// Goober5000 - special to match for when-argument
+#define OPF_ANYTHING			52		// Goober5000 - anything goes
+#define OPF_SKYBOX_MODEL_NAME	53		// taylor - changing skybox model
+#define OPF_SHIP_OR_NONE		54		// Goober5000 - an "optional" ship argument
+#define OPF_BACKGROUND_BITMAP	55		// phreak - name of a background bitmap
+#define OPF_SUN_BITMAP			56		// phreak - name of a background bitmap
+#define OPF_NEBULA_STORM_TYPE	57		// phreak - name a nebula storm
+#define OPF_NEBULA_POOF			58		// phreak - name of a nebula poof
+#define OPF_TURRET_TARGET_ORDER	59		// WMC - name of a turret target type (see aiturret.cpp)
+#define OPF_SUBSYSTEM_OR_NONE	60		// Goober5000 - an "optional" subsystem argument
+#define OPF_PERSONA				61		// Karajorma - name of a persona
+#define OPF_SUBSYS_OR_GENERIC	62		// Karajorma - a subsystem or a generic name (like engine) which covers all subsystems of that type
+#define OPF_SHIP_WING_POINT_OR_NONE	63	// WMC - Ship, wing, point or none
+#define OPF_ORDER_RECIPIENT		64		// Karajorma - since orders can go to All Fighters as well as a ship or wing
+#define OPF_SHIP_WING_TEAM		65		// Karajorma - Ship, wing or an IFF
+#define OPF_SUBSYSTEM_TYPE		66		// Goober5000 - a generic subsystem type (navigation, engines, etc.) rather than a specific subsystem
+#define OPF_POST_EFFECT			67		// Hery - type of post-processing effect
+#define OPF_TARGET_PRIORITIES	68		// FUBAR - Target priority groups
+#define OPF_ARMOR_TYPE			69		// FUBAR - Armor type or <none>
+#define OPF_FONT				70		// Goober5000 - a FreeSpace font
+#define OPF_HUD_ELEMENT			71		// A magic name of a specific HUD element
+#define OPF_SOUND_ENVIRONMENT	72		// Goober5000 - one of EFX_presets, per Taylor
+#define OPF_SOUND_ENVIRONMENT_OPTION 73	// Goober5000 - one of Taylor's options
+#define OPF_EXPLOSION_OPTION	74		// Goober5000
+#define OPF_AUDIO_VOLUME_OPTION 75		// The E
+#define OPF_WEAPON_BANK_NUMBER	76		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
+#define OPF_MESSAGE_OR_STRING	77		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
+#define OPF_HUD_GAUGE			78		// The E
+#define OPF_DAMAGE_TYPE			79		// FUBAR - Damage type or <none>
+#define OPF_SHIP_EFFECT			80		// The E - per-ship effects, as defined in post-processing.tbl
+#define OPF_ANIMATION_TYPE		81		// Goober5000 - as defined in modelanim.h
+#define OPF_MISSION_MOOD		82		// Karajorma - Moods determine which builtin messages will be sent
+#define OPF_SHIP_FLAG			83		// Karajorma - The name of a ship flag
+#define OPF_TEAM_COLOR			84		// The E - Color settings as defined in Colors.tbl
+#define OPF_NEBULA_PATTERN		85		// Axem - Full Nebula Background Patterns, as defined in nebula.tbl
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
