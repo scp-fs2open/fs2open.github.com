@@ -29,7 +29,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/wxfred2_open_trunk_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/wxfred2_open_3_6_19-debug.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/wxfred2_open_3_6_19-debug.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
@@ -134,7 +134,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\wxfred2_open_trunk_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\wxfred2_open_3_6_19.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)\wxfred2_open_3_6_19.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
