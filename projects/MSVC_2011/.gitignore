@@ -146,3 +146,10 @@ $RECYCLE.BIN/
 
 # Mac crap
 .DS_Store
+
+Debug
+Debug SSE
+Debug SSE2
+Release
+Release SSE
+Release SSE2
