@@ -21061,8 +21061,25 @@ void sexp_force_glide(int node)
 	return;
 }
 
+bool test_point_within_box(vec3d *test_point, vec3d *box_corner_1, vec3d *box_corner_2, object *reference_ship_obj)
+{
+	// If reference_ship is specified, rotate test_point into its reference frame
+	if (reference_ship_obj != NULL) 
+	{
+		vec3d tempv;
+		vm_vec_sub(&tempv, test_point, &reference_ship_obj->pos);
+		vm_vec_unrotate(test_point, &tempv, &reference_ship_obj->orient);
+	}
+
+	// Check to see if the test point is within the specified box as defined by two extreme corners
+	return ((test_point->xyz.x >= box_corner_1->xyz.x && test_point->xyz.x <= box_corner_2->xyz.x) &&
+			(test_point->xyz.y >= box_corner_1->xyz.y && test_point->xyz.y <= box_corner_2->xyz.y) &&
+			(test_point->xyz.z >= box_corner_1->xyz.z && test_point->xyz.z <= box_corner_2->xyz.z));
+}
+
 int sexp_is_in_box(int n)
 {
+	int i;
 	Assert(n >= 0);
 
 	object_ship_wing_point_team oswpt;
@@ -21103,41 +21120,23 @@ int sexp_is_in_box(int n)
 		reference_ship_obj = &Objects[Ships[sindex].objnum];
 	}
 
-	// Get position of test point
-	vec3d test_point;
+	// Check position of object
 	switch (oswpt.type)
 	{
 		case OSWPT_TYPE_EXITED:
 			return SEXP_KNOWN_FALSE;
 
-		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
+			for (i = 0; i < oswpt.wingp->current_count; i++)
+				if (!test_point_within_box(&Objects[Ships[oswpt.wingp->ship_index[i]].objnum].pos, &box_corner_1, &box_corner_2, reference_ship_obj))
+		return SEXP_FALSE;
+			return SEXP_TRUE;
+
+		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
-		case OSWPT_TYPE_TEAM:
-			test_point = oswpt.objp->pos;
-			break;
+			return test_point_within_box(&oswpt.objp->pos, &box_corner_1, &box_corner_2, reference_ship_obj);
 
 		default:
-		return SEXP_FALSE;
-	}
-
-	// If reference_ship is specified, rotate test_point into its reference frame
-	if (reference_ship_obj != NULL) 
-	{
-		vec3d tempv;
-		vm_vec_sub(&tempv, &test_point, &reference_ship_obj->pos);
-		vm_vec_rotate(&test_point, &tempv, &reference_ship_obj->orient);
-	}
-
-	// Check to see if the test point is within the specified box
-	if ((test_point.xyz.x >= box_corner_1.xyz.x && test_point.xyz.x <= box_corner_2.xyz.x) &&
-		(test_point.xyz.y >= box_corner_1.xyz.y && test_point.xyz.y <= box_corner_2.xyz.y) &&
-		(test_point.xyz.z >= box_corner_1.xyz.z && test_point.xyz.z <= box_corner_2.xyz.z))
-	{
-		return SEXP_TRUE;
-	}
-	else
-	{
 		return SEXP_FALSE;
 	}
 }
