@@ -15200,8 +15200,13 @@ void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from
 	// don't log that the cargo was hidden and don't reset the time cargo revealed
 }
 
-// Return the range of the currently selected secondary weapon
-// NOTE: If there is no missiles left in the current bank, range returned is 0
+/**
+ * Return the range of the currently selected secondary weapon
+ *
+ * NOTE: If there is no missiles left in the current bank, range returned is 0
+ *
+ * @param shipp Pointer to ship from which currently selected secondary weapon will be ranged
+ */
 float ship_get_secondary_weapon_range(ship *shipp)
 {
 	float srange=0.0f;
@@ -15211,10 +15216,12 @@ float ship_get_secondary_weapon_range(ship *shipp)
 	if ( swp->current_secondary_bank >= 0 ) {
 		weapon_info	*wip;
 		int bank=swp->current_secondary_bank;
+		if (swp->secondary_bank_weapons[bank] >= 0) {
 		wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 		if ( swp->secondary_bank_ammo[bank] > 0 ) {
 			srange = wip->max_speed * wip->lifetime;
 		}
+	}
 	}
 
 	return srange;
