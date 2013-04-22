@@ -4586,37 +4586,7 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	}
 
 
-	// if we have a team type, pick the first ship of that team
-	team = sexp_determine_team(object_name);
-	if (team == -1) {
-		// try it another way
-		team = iff_lookup(object_name);
-	}
-	if (team >= 0)
-	{
-		for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
-		{
-			object *objp = &Objects[so->objnum];
-			ship *shipp = &Ships[objp->instance];
-
-			if (shipp->team == team)
-			{
-				oswpt->type = OSWPT_TYPE_TEAM;
-
-				oswpt->team = team;
-				oswpt->objp = objp;
-				oswpt->shipp = shipp;
-
-				return;
-			}			
-		}
-
-		// no match
-		return;
-	}
-
-
-	// at this point, we must have a ship, wing, or point for a target
+	// check if we have a ship for a target
 	ship_num = ship_name_lookup(object_name);
 	if (ship_num >= 0)
 	{
@@ -4645,7 +4615,7 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	}
 
 
-	// at this point, we must have a wing or point for a target
+	// check if we have a wing for a target
 	wing_num = wing_name_lookup(object_name, 1);
 	if (wing_num >= 0)
 	{
@@ -4682,7 +4652,7 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	}
 
 
-	// at this point, we must have a point for a target
+	// check if we have a point for a target
 	wpt = find_matching_waypoint(object_name);
 	if ((wpt != NULL) && (wpt->get_objnum() >= 0))
 	{
@@ -4691,6 +4661,37 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 		oswpt->waypointp = wpt;
 		oswpt->objp = &Objects[wpt->get_objnum()];
 
+		return;
+	}
+
+
+	// if we have an "<any team>" type, pick the first ship of that team
+	team = sexp_determine_team(object_name);
+	if (team == -1)
+	{
+		// try it another way
+		team = iff_lookup(object_name);
+	}
+	if (team >= 0)
+	{
+		for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+		{
+			object *objp = &Objects[so->objnum];
+			ship *shipp = &Ships[objp->instance];
+
+			if (shipp->team == team)
+			{
+				oswpt->type = OSWPT_TYPE_TEAM;
+
+				oswpt->team = team;
+				oswpt->objp = objp;
+				oswpt->shipp = shipp;
+
+				return;
+			}			
+		}
+
+		// no match
 		return;
 	}
 
