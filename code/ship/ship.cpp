@@ -15245,9 +15245,13 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 
+	if (ship_class < 0 || bank < 0 || ammo_type < 0) {
+		return 0;
+	} else {
 	capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
 	size = (float) Weapon_info[ammo_type].cargo_size;
 	return (int) (capacity / size);
+}
 }
 
 /**
