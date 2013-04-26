@@ -5528,9 +5528,10 @@ void game_leave_state( int old_state, int new_state )
 
 			} else {
 				cmd_brief_close();
-				if (new_state == GS_STATE_MAIN_MENU)
-					freespace_stop_mission();	
 					common_select_close();
+				if (new_state == GS_STATE_MAIN_MENU) {
+					freespace_stop_mission();	
+				}
 			}
 			break;
 
