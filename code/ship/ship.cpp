@@ -9200,7 +9200,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		for (int h = 0; h < pm->n_thrusters; h++)
 		{
-			for (int j = 0; j < pm->thrusters->num_points; j++)
+			for (int j = 0; j < pm->thrusters[h].num_points; j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
