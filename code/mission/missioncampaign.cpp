@@ -536,6 +536,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			if (optional_string("+Flags:"))
 				stuff_int(&cm->flags);
 
+			cm->main_hall = "0";
 			// deal with previous campaign versions
 			if (cm->flags & CMISSION_FLAG_BASTION) {
 				cm->main_hall = "1";
@@ -543,7 +544,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 			// Goober5000 - new main hall stuff!
 			// Updated by CommanderDJ
-			cm->main_hall = "0";
 			if (optional_string("+Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
 				cm->main_hall = temp;
