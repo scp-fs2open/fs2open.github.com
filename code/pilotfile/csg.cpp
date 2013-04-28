@@ -1511,7 +1511,7 @@ bool pilotfile::save_savefile()
 	cfwrite_int(CSG_FILE_ID, cfp);
 	cfwrite_ubyte(CSG_VERSION, cfp);
 
-	mprintf(("CSG => Saving '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
+	mprintf(("CSG => Saving '%s' with version %d...\n", filename.c_str(), (int)CSG_VERSION));
 
 	// flags and info sections go first
 	mprintf(("CSG => Saving:  Flags...\n"));
