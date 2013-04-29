@@ -2924,7 +2924,6 @@ void ss_clear_slots()
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 		for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
 			slot = &Ss_wings[i].ss_slots[j];
-			slot = &Ss_wings[i].ss_slots[j];
 			slot->status = WING_SLOT_LOCKED;
 			slot->sa_index = -1;
 			slot->original_ship_class = -1;
