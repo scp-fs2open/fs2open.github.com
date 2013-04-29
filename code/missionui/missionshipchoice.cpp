@@ -1965,6 +1965,7 @@ void commit_pressed()
 	}
 	// in single player we jump directly into the mission
 	else {
+		Pilot.save_savefile();
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
 }
@@ -2493,7 +2494,6 @@ void update_player_ship(int si_index)
 		change_ship_type(Player_obj->instance, si_index);
 
 	Player->last_ship_flown_si_index = si_index;
-	Pilot.save_savefile();  // saves both Recent_mission & last_ship_flown_si_index (for quick-start-missions)
 }
 
 /*
@@ -2923,6 +2923,7 @@ void ss_clear_slots()
 
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 		for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
+			slot = &Ss_wings[i].ss_slots[j];
 			slot = &Ss_wings[i].ss_slots[j];
 			slot->status = WING_SLOT_LOCKED;
 			slot->sa_index = -1;

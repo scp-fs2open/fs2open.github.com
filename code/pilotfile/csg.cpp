@@ -513,8 +513,7 @@ void pilotfile::csg_write_techroom()
 
 void pilotfile::csg_read_loadout()
 {
-	int j;
-	int count;
+	int j, count, ship_idx = -1, wep_idx = -1;
 	uint idx, list_size = 0;
 
 	if ( !m_have_info ) {
@@ -555,31 +554,39 @@ void pilotfile::csg_read_loadout()
 		}
 
 		// ship
-		idx = cfread_int(cfp);
+		ship_idx = cfread_int(cfp);
 
-		if (idx > ship_list.size()) {
-			//mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), Clamping to valid range.\n", idx));	
-			 idx = ship_list.size();						
+		if (ship_idx > (int)ship_list.size()) { // on the casts, assume that ship & weapon lists will never exceed ~2 billion
+			//mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), Clamping to valid range.\n", ship_idx));
+			 ship_idx = ship_list.size();
 		}
 
 		if (slot) {
-			slot->ship_class = ship_list[idx].index;
+			if (ship_idx == -1) { // -1 means no ship in this slot
+				slot->ship_class = -1;
+			} else {
+				slot->ship_class = ship_list[ship_idx].index;
+			}
 		}
 
 		// primary weapons
 		count = cfread_int(cfp);
 
 		for (j = 0; j < count; j++) {
-			idx = cfread_int(cfp);
+			wep_idx = cfread_int(cfp);
 
-			if (idx > weapon_list.size()) {
-				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));	
-				idx = weapon_list.size();
+			if (wep_idx > (int)weapon_list.size()) {
+				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", wep_idx));
+				wep_idx = weapon_list.size();
 			}
 
 
 			if ( slot && (j < MAX_SHIP_PRIMARY_BANKS) ) {
-				slot->wep[j] = weapon_list[idx].index;
+				if (wep_idx == -1) { // -1 means no weapon in this slot
+					slot->wep[j] = -1;
+				} else {
+					slot->wep[j] = weapon_list[wep_idx].index;
+				}
 			}
 
 			idx = cfread_int(cfp);
@@ -593,15 +600,19 @@ void pilotfile::csg_read_loadout()
 		count = cfread_int(cfp);
 
 		for (j = 0; j < count; j++) {
-			idx = cfread_int(cfp);
+			wep_idx = cfread_int(cfp);
 
-			if (idx > weapon_list.size()) {
-				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));
-				idx = weapon_list.size();		
+			if (wep_idx > (int)weapon_list.size()) {
+				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", wep_idx));
+				wep_idx = weapon_list.size();
 			}
 
 			if ( slot && (j < MAX_SHIP_SECONDARY_BANKS) ) {
-				slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = weapon_list[idx].index;
+				if (wep_idx == -1) { // -1 means no weapon in this slot
+					slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = -1;
+				} else {
+					slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = weapon_list[wep_idx].index;
+				}
 			}
 
 			idx = cfread_int(cfp);

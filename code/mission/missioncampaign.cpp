@@ -723,6 +723,34 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
 	return mission_campaign_load_by_name( filename);
 }
 
+/*
+ * initialise Player_loadout with default values
+ */
+void player_loadout_init()
+{
+	int i = 0, j = 0;
+
+	memset(Player_loadout.filename, 0, sizeof(Player_loadout.filename));
+	memset(Player_loadout.last_modified, 0, sizeof(Player_loadout.last_modified));
+
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+		Player_loadout.ship_pool[i] = 0;
+	}
+
+	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+		Player_loadout.weapon_pool[i] = 0;
+	}
+
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		Player_loadout.unit_data[i].ship_class = -1;
+
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+			Player_loadout.unit_data[i].wep[j] = 0;
+			Player_loadout.unit_data[i].wep_count[j] = 0;
+		}
+	}
+
+}
 
 /**
  * Initializes some variables then loads the default FreeSpace single player campaign.
@@ -732,6 +760,8 @@ void mission_campaign_init()
 	mission_campaign_clear();
 
 	Campaign_file_missing = 0;
+
+	player_loadout_init();
 }
 
 /**
