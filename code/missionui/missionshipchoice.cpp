@@ -2919,10 +2919,6 @@ void ss_clear_slots()
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		Wss_slots[i].ship_class = -1;
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			Wss_slots[i].wep[j] = 0;
-			Wss_slots[i].wep_count[j] = 0;
-		}
 	}
 
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
