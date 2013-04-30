@@ -6676,7 +6676,7 @@ void game_do_state(int state)
 
 		case GS_STATE_LOOP_BRIEF:
 			game_set_frametime(GS_STATE_LOOP_BRIEF);
-			loop_brief_do();
+			loop_brief_do(flFrametime);
 			break;
 
 		case GS_STATE_FICTION_VIEWER:
