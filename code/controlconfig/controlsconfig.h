@@ -8,45 +8,60 @@
 */ 
 
 
-
 #ifndef CONTROLS_CONFIG_H
 #define CONTROLS_CONFIG_H
 
 #define CONTROL_CONFIG_XSTR	507
 
+/*! @name       Joy_axis_index
+ *
+ * These are used to index a corresponding joystick axis value from an array.
+ * Currently only used by ::Axis_map_to[] and ::Axis_map_to_defaults[]
+ */
+//! @{
 #define JOY_X_AXIS	0
 #define JOY_Y_AXIS	1
 #define JOY_Z_AXIS	2
 #define JOY_RX_AXIS	3
 #define JOY_RY_AXIS	4
 #define JOY_RZ_AXIS	5
+//! @}
 
-#define NUM_JOY_AXIS_ACTIONS	5
 
+/*! @name       Joy_axis_action_index
+ *
+ * These are used to index a corresponding (analog) action, namely controlling the orientation angles and throttle.
+ */
+//! @{
+#define NUM_JOY_AXIS_ACTIONS	5			//!< The total number of actions an axis may map to
 #define JOY_HEADING_AXIS		0
 #define JOY_PITCH_AXIS			1
 #define JOY_BANK_AXIS			2
 #define JOY_ABS_THROTTLE_AXIS	3
 #define JOY_REL_THROTTLE_AXIS	4
+//! @}
 
-// --------------------------------------------------
-// different types of controls that can be assigned 
-// --------------------------------------------------
 
-#define CC_TYPE_TRIGGER		0
-#define CC_TYPE_CONTINUOUS	1
+/*! @name CC_type
+ *
+ * Control Configuration Types. Namely differ in how the control is activated
+ */
+//! @{
+#define CC_TYPE_TRIGGER			0			//!< A normal, one-shot type control that is activated when a key is or button is pressed
+#define CC_TYPE_CONTINUOUS		1			//!< A continous control that is activated as long as the key or button is held down
+//! @}
 
 typedef struct config_item {
-	short key_default;  // default key bound to action
-	short joy_default;  // default joystick button bound to action
-	char tab;				// what tab (category) it belongs in
-	bool hasXSTR;			// whether we should translate this with an XSTR
-	char *text;				// describes the action in the config screen
-	char type;				// manner control should be checked in
-	short key_id;  // actual key bound to action
-	short joy_id;  // joystick button bound to action
-	int used;				// has control been used yet in mission?  If so, this is the timestamp
-	bool disabled;			// whether this action should be available at all
+	short key_default;		//!< default key bound to action
+	short joy_default;		//!< default joystick button bound to action
+	char tab;				//!< what tab (category) it belongs in
+	bool hasXSTR;			//!< whether we should translate this with an XSTR
+	char *text;				//!< describes the action in the config screen
+	char type;				//!< manner control should be checked in
+	short key_id;			//!< actual key bound to action
+	short joy_id;			//!< joystick button bound to action
+	int used;				//!< has control been used yet in mission?  If so, this is the timestamp
+	bool disabled;			//!< whether this action should be available at all
 } config_item;
 
 /**
@@ -54,7 +69,7 @@ typedef struct config_item {
  * This is the value of the id field in config_item
  */
 enum IoActionId  {
-	// targeting a ship
+	//!< Targeting a Ship
 	TARGET_NEXT										=0,		//!< target next
 	TARGET_PREV										=1,		//!< target previous
 	TARGET_NEXT_CLOSEST_HOSTILE						=2,		//!< target the next hostile target
@@ -67,17 +82,17 @@ enum IoActionId  {
 	TARGET_LAST_TRANMISSION_SENDER					=9,		//!< TARGET_LAST_TRANMISSION_SENDER
 	STOP_TARGETING_SHIP								=10,	//!< stop targeting ship
 
-	// targeting a ship's subsystem
+	//!< Targeting a Ship's Subsystem
 	TARGET_SUBOBJECT_IN_RETICLE						=11,	//!< target ships subsystem in reticle
 	TARGET_NEXT_SUBOBJECT							=12,	//!< target next subsystem on current target
 	TARGET_PREV_SUBOBJECT							=13,	//!< TARGET_PREV_SUBOBJECT
 	STOP_TARGETING_SUBSYSTEM						=14,	//!< stop targeting subsystems on ship
 
-	// speed matching
+	//!< Speed Matching
 	MATCH_TARGET_SPEED								=15,	//!< match target speed
 	TOGGLE_AUTO_MATCH_TARGET_SPEED					=16,	//!< toggle auto-match target speed
 
-	// weapons
+	//!< Weapons
 	FIRE_PRIMARY									=17,	//!< FIRE_PRIMARY
 	FIRE_SECONDARY									=18,	//!< FIRE_SECONDARY
 	CYCLE_NEXT_PRIMARY								=19,	//!< cycle to next primary weapon
@@ -86,7 +101,7 @@ enum IoActionId  {
 	CYCLE_NUM_MISSLES								=22,	//!< cycle number of missiles fired from secondary bank
 	LAUNCH_COUNTERMEASURE							=23,	//!< LAUNCH_COUNTERMEASURE
 
-	// controls
+	//!< Controls
 	FORWARD_THRUST									=24,	//!< FORWARD_THRUST
 	REVERSE_THRUST									=25,	//!< REVERSE_THRUST
 	BANK_LEFT										=26,	//!< BANK_LEFT
@@ -96,7 +111,7 @@ enum IoActionId  {
 	YAW_LEFT										=30,	//!< YAW_LEFT
 	YAW_RIGHT										=31,	//!< YAW_RIGHT
 
-	// throttle control
+	//!< Throttle Control
 	ZERO_THROTTLE									=32,	//!< ZERO_THROTTLE
 	MAX_THROTTLE									=33,	//!< MAX_THROTTLE
 	ONE_THIRD_THROTTLE								=34,	//!< ONE_THIRD_THROTTLE
@@ -104,7 +119,7 @@ enum IoActionId  {
 	PLUS_5_PERCENT_THROTTLE							=36,	//!< PLUS_5_PERCENT_THROTTLE
 	MINUS_5_PERCENT_THROTTLE						=37,	//!< MINUS_5_PERCENT_THROTTLE
 
-	// squadmate messaging keys
+	//!< Squadmate Messaging Keys
 	ATTACK_MESSAGE									=38,	//!< wingman message: attack current target
 	DISARM_MESSAGE									=39,	//!< wingman message: disarm current target
 	DISABLE_MESSAGE									=40,	//!< wingman message: disable current target
@@ -119,7 +134,7 @@ enum IoActionId  {
 	REARM_MESSAGE									=49,	//!< REARM_MESSAGE
 	TARGET_CLOSEST_SHIP_ATTACKING_SELF				=50,	//!< target closest ship that is attacking player
 
-	// Views
+	//!< Views
 	VIEW_CHASE										=51,	//!< VIEW_CHASE
 	VIEW_EXTERNAL									=52,	//!< VIEW_EXTERNAL
 	VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK				=53,	//!< VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK
@@ -140,6 +155,7 @@ enum IoActionId  {
 	TARGET_TARGETS_TARGET							=67,	//!< target your target's target
 	AFTERBURNER										=68,	//!< AFTERBURNER
 
+	//!< ETS
 	INCREASE_WEAPON									=69,	//!< increase weapon recharge rate
 	DECREASE_WEAPON									=70,	//!< decrease weapon recharge rate
 	INCREASE_SHIELD									=71,	//!< increase shield recharge rate
@@ -152,11 +168,10 @@ enum IoActionId  {
 	SHIELD_XFER_BOTTOM								=78,	//!< transfer shield energy to rear
 	SHIELD_XFER_LEFT								=79,	//!< transfer shield energy to left
 	SHIELD_XFER_RIGHT								=80,	//!< transfer shield energy to right
-
 	XFER_SHIELD										=81,	//!< transfer energy to shield from weapons
 	XFER_LASER										=82,	//!< transfer energy to weapons from shield
 
-	//Backslash -- this was a convenient place for Glide When Pressed, since Show Damage Popup isn't used
+	//!< Backslash -- this was a convenient place for Glide When Pressed, since Show Damage Popup isn't used
 	GLIDE_WHEN_PRESSED								=83, 	//!< GLIDE_WHEN_PRESSED
 	BANK_WHEN_PRESSED								=84,	//!< BANK_WHEN_PRESSED
 	SHOW_NAVMAP										=85,	//!< SHOW_NAVMAP
@@ -173,13 +188,13 @@ enum IoActionId  {
 	TARGET_NEXT_BOMB								=95,	//!< TARGET_NEXT_BOMB
 	TARGET_PREV_BOMB								=96,	//!< TARGET_PREV_BOMB
 
-	// multiplayer messaging keys
+	//!< Multiplayer messaging keys
 	MULTI_MESSAGE_ALL								=97,	//!< message all netplayers
 	MULTI_MESSAGE_FRIENDLY							=98,	//!< message all friendlies
 	MULTI_MESSAGE_HOSTILE							=99,	//!< message all hostiles
 	MULTI_MESSAGE_TARGET							=100,	//!< message targeted ship (if player)
 
-	// multiplayer misc keys
+	//!< Multiplayer misc keys
 	MULTI_OBSERVER_ZOOM_TO							=101,	//!< if i'm an observer, zoom to my targeted object
 
 	TIME_SPEED_UP									=102,	//!< TIME_SPEED_UP
@@ -200,14 +215,14 @@ enum IoActionId  {
 	VIEW_TOPDOWN									=113,	//!< VIEW_TOPDOWN
 	VIEW_TRACK_TARGET								=114,	//!< VIEW_TRACK_TARGET
 
-	//AutoPilot - Kazan
+	//!< AutoPilot - Kazan
 	AUTO_PILOT_TOGGLE								=115,	//!< Autopilot key control
 	NAV_CYCLE										=116,	//!< NAV_CYCLE
 
-	//Gliding
+	//!< Gliding
 	TOGGLE_GLIDING									=117,	//!< TOGGLE_GLIDING
 
-	//Inflight configurable firing sequence
+	//!< Inflight configurable firing sequence
 	CYCLE_PRIMARY_WEAPON_SEQUENCE					=118,	//!< cycle num primaries to fire at once
 
 	/**
@@ -228,12 +243,11 @@ extern int Axis_map_to[];
 extern int Invert_axis[];
 extern int Invert_axis_defaults[];
 
-extern config_item Control_config[];	// stores the keyboard configuration
+extern config_item Control_config[];		//!< stores the keyboard configuration
 extern char **Scan_code_text;
 extern char **Joy_button_text;
 
-// initialize common control config stuff - call at game startup after localization has been initialized
-void control_config_common_init();
+void control_config_common_init();			//!< initialize common control config stuff - call at game startup after localization has been initialized
 
 void control_config_init();
 void control_config_do_frame(float frametime);
