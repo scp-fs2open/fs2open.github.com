@@ -45,10 +45,10 @@ const int MAX_TB_STACK_SIZE = 100;
 int timerbar_stack[MAX_TB_STACK_SIZE];
 int timerbar_current_stack_layer = 0;
 
-/*
+/**
+ * Pssst, hey, you. Ya wanna timerbar? Real cheap.
  *
- *
- *
+ * @param value Index count value (?)
  */
 void timerbar_push(int value)
 {
@@ -67,9 +67,6 @@ void timerbar_push(int value)
 }
 
 /*
- *
- *
- *
  */
 void timerbar_pop()
 {
@@ -84,9 +81,19 @@ void timerbar_pop()
 	timerbar_switch_type(timerbar_stack[timerbar_current_stack_layer]);
 }
 
-// This pointer holds the draw function to use or NULL
+/**
+ * This pointer holds the draw function to use or NULL
+ *
+ * @param colour Colour index (>=0)
+ * @param x Coordinate position
+ * @param y Coordinate position
+ * @param w element width
+ * @param h element height
+ */
 void (*draw_func_ptr)(int colour, float x, float y, float w, float h) = NULL;
 
+/*
+ */
 void timerbar_start_frame()
 {
 	timerbar_current_stack_layer = 0;
@@ -126,6 +133,8 @@ void timerbar_conv_and_draw(int colour, int xpos, int xwidth, int yrow)
 		0.005f);
 }
 
+/*
+ */
 void timerbar_end_frame()
 {
 	// Now we want to draw the bars
@@ -181,6 +190,11 @@ void timerbar_end_frame()
 	}
 }
 
+/**
+ * Not entirely sure what this does.
+ *
+ * @param num Probably a pretend boolean
+ */
 void timerbar_switch_type(int num)
 {
 	if(num >= MAX_NUM_TIMERBARS)
@@ -212,12 +226,11 @@ void timerbar_switch_type(int num)
 }
 
 /**
- * @param (*new_draw_func_ptr)(int colour, float x, float y, float w, float h) Pointer to draw function
+ * Clears the instance of the timer bar
  *
- * Sets the draw function used to output the timer data, designed to be generic allowing any API
- * to take advantage of this module. Set to NULL to disable drawing.
- *
- * By default the draw function is set to NULL
+ * Look at the parameters for "void (*draw_func_ptr)"
+ * They directly equate the new_draw_func_ptr, but we can't
+ * place params for a double stuffed function like this.
  */
 void timerbar_set_draw_func(void (*new_draw_func_ptr)(int colour, float x, float y, float w, float h))
 {
