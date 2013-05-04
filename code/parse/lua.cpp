@@ -1196,15 +1196,21 @@ ADE_FUNC(read, l_File, "number or string, ...",
 			else if(!stricmp(fmt, "*l"))
 			{
 				char buf[10240];
+				size_t i;
 				if(cfgets(buf, (int)(sizeof(buf)/sizeof(char)), cfp) == NULL)
 				{
 					lua_pushnil(L);
 				}
 				else
 				{
-					//WMC - strip all newlines so this works like the Lua original
-					char *pos = buf + strlen(buf);
-					while(*--pos == '\r' || *pos == '\n') *pos = '\0';
+					// Strip all newlines so this works like the Lua original
+					// http://www.lua.org/source/5.1/liolib.c.html#g_read
+					// Note: we also strip carriage return in WMC's implementation
+					for (i = 0; i < strlen(buf); i++)
+					{
+						if ( buf[i] == '\n' || buf[i] == '\r' )
+							buf[i] = '\0';
+					}
 
 					lua_pushstring(L, buf);
 				}
