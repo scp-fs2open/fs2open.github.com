@@ -883,7 +883,7 @@ ADE_FUNC(__tostring, l_Enum, NULL, "Returns enumeration name", "string", "Enumer
 	if(!ade_get_args(L, "o", l_Enum.GetPtr(&e)))
 		return ade_set_args(L, "s", "<INVALID>");
 
-	if(e->index < 0 || e->index >= (int)Num_enumerations)
+	if(e->index < 1 || e->index >= ENUM_NEXT_INDEX)
 		return ade_set_args(L, "s", "<INVALID>");
 
 	uint i;
