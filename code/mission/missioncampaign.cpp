@@ -655,6 +655,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	Campaign.prev_mission = -1;
 	Campaign.current_mission = -1;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
+	Campaign.num_missions_completed = 0;
 
 	// loading the campaign will get us to the current and next mission that the player must fly
 	// plus load all of the old goals that future missions might rely on.

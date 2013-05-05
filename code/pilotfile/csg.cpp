@@ -1328,6 +1328,13 @@ bool pilotfile::load_savefile(const char *campaign)
 
 	filename = buf.str().c_str();
 
+	// if campaign file doesn't exist, abort so we don't load irrelevant data
+	buf.str(std::string());
+	buf << base << FS_CAMPAIGN_FILE_EXT;
+	if ( !cf_exists_full((char*)buf.str().c_str(), CF_TYPE_MISSIONS) ) {
+		mprintf(("CSG => Unable to find campaign file '%s'!\n", buf.str().c_str()));
+		return false;
+	}
 
 	// we need to reset this early, in case open fails and we need to create
 	m_data_invalid = false;
