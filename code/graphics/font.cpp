@@ -96,7 +96,7 @@ int get_char_width(ubyte c1,ubyte c2,int *width,int *spacing)
 
 			if ((letter2>=0) && (letter2<Current_font->num_chars) ) {				//not in font, draw as space
 				font_kernpair	*k = &Current_font->kern_data[i];
-				while( (k->c1 == (char)letter) && (k->c2<(char)letter2) && (i<Current_font->num_kern_pairs) )	{
+				while( (k->c1 == (char)letter) && (k->c2<(char)letter2) && (i<Current_font->num_kern_pairs-1) )	{
 					i++;
 					k++;
 				}

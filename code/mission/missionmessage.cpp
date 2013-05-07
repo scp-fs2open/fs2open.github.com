@@ -311,8 +311,9 @@ int add_avi( char *avi_name )
 
 	// would have returned if a slot existed.
 	strcpy_s( extra.name, avi_name );
+	strcpy_s( extra.anim_data.filename, avi_name);
 	extra.num = -1;
-	generic_anim_unload(&extra.anim_data);
+	generic_anim_load(&extra.anim_data);
 	Message_avis.push_back(extra); 
 	Num_message_avis++;
 	return ((int)Message_avis.size() - 1);

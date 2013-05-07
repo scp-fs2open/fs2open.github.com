@@ -41,8 +41,10 @@ SCP_vector<cutscene_info> Cutscenes;
 void cutscene_close()
 {
 	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut)
-		if(cut->description)
+		if(cut->description != NULL) {
 			vm_free(cut->description);
+			cut->description = NULL;
+		}
 }
 
 // initialization stuff for cutscenes

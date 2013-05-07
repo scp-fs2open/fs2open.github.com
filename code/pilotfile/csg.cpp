@@ -513,8 +513,7 @@ void pilotfile::csg_write_techroom()
 
 void pilotfile::csg_read_loadout()
 {
-	int j;
-	int count;
+	int j, count, ship_idx = -1, wep_idx = -1;
 	uint idx, list_size = 0;
 
 	if ( !m_have_info ) {
@@ -555,31 +554,39 @@ void pilotfile::csg_read_loadout()
 		}
 
 		// ship
-		idx = cfread_int(cfp);
+		ship_idx = cfread_int(cfp);
 
-		if (idx > ship_list.size()) {
-			//mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), Clamping to valid range.\n", idx));	
-			 idx = ship_list.size();						
+		if ( (ship_idx >= (int)ship_list.size()) || (ship_idx < -1) ) { // on the casts, assume that ship & weapon lists will never exceed ~2 billion
+			mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), emptying slot.\n", ship_idx));
+			ship_idx = -1;
 		}
 
 		if (slot) {
-			slot->ship_class = ship_list[idx].index;
+			if (ship_idx == -1) { // -1 means no ship in this slot
+				slot->ship_class = -1;
+			} else {
+				slot->ship_class = ship_list[ship_idx].index;
+			}
 		}
 
 		// primary weapons
 		count = cfread_int(cfp);
 
 		for (j = 0; j < count; j++) {
-			idx = cfread_int(cfp);
+			wep_idx = cfread_int(cfp);
 
-			if (idx > weapon_list.size()) {
-				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));	
-				idx = weapon_list.size();
+			if ( (wep_idx >= (int)weapon_list.size()) || (wep_idx < -1) ) {
+				mprintf(("CSG => Parse Warning: Invalid value for primary weapon index (%d), emptying slot.\n", wep_idx));
+				wep_idx = -1;
 			}
 
 
 			if ( slot && (j < MAX_SHIP_PRIMARY_BANKS) ) {
-				slot->wep[j] = weapon_list[idx].index;
+				if (wep_idx == -1) { // -1 means no weapon in this slot
+					slot->wep[j] = -1;
+				} else {
+					slot->wep[j] = weapon_list[wep_idx].index;
+				}
 			}
 
 			idx = cfread_int(cfp);
@@ -593,15 +600,19 @@ void pilotfile::csg_read_loadout()
 		count = cfread_int(cfp);
 
 		for (j = 0; j < count; j++) {
-			idx = cfread_int(cfp);
+			wep_idx = cfread_int(cfp);
 
-			if (idx > weapon_list.size()) {
-				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));
-				idx = weapon_list.size();		
+			if ( (wep_idx >= (int)weapon_list.size()) || (wep_idx < -1) ) {
+				mprintf(("CSG => Parse Warning: Invalid value for secondary weapon index (%d), emptying slot.\n", wep_idx));
+				wep_idx = -1;
 			}
 
 			if ( slot && (j < MAX_SHIP_SECONDARY_BANKS) ) {
-				slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = weapon_list[idx].index;
+				if (wep_idx == -1) { // -1 means no weapon in this slot
+					slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = -1;
+				} else {
+					slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = weapon_list[wep_idx].index;
+				}
 			}
 
 			idx = cfread_int(cfp);
@@ -1317,6 +1328,13 @@ bool pilotfile::load_savefile(const char *campaign)
 
 	filename = buf.str().c_str();
 
+	// if campaign file doesn't exist, abort so we don't load irrelevant data
+	buf.str(std::string());
+	buf << base << FS_CAMPAIGN_FILE_EXT;
+	if ( !cf_exists_full((char*)buf.str().c_str(), CF_TYPE_MISSIONS) ) {
+		mprintf(("CSG => Unable to find campaign file '%s'!\n", buf.str().c_str()));
+		return false;
+	}
 
 	// we need to reset this early, in case open fails and we need to create
 	m_data_invalid = false;
@@ -1511,7 +1529,7 @@ bool pilotfile::save_savefile()
 	cfwrite_int(CSG_FILE_ID, cfp);
 	cfwrite_ubyte(CSG_VERSION, cfp);
 
-	mprintf(("CSG => Saving '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
+	mprintf(("CSG => Saving '%s' with version %d...\n", filename.c_str(), (int)CSG_VERSION));
 
 	// flags and info sections go first
 	mprintf(("CSG => Saving:  Flags...\n"));

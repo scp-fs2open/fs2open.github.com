@@ -4,7 +4,7 @@
  * You may not sell or otherwise commercially exploit the source or things you 
  * created based on the source.
  *
-*/ 
+*/
 
 /*
  * This module is intended as a debug tool to measure the speed of blocks of code and display
@@ -23,7 +23,7 @@
 
 
 // Internal structure for handling frame data
-typedef	struct 
+typedef	struct
 {
 	LARGE_INTEGER start_value;
 	LARGE_INTEGER total_value;
@@ -45,10 +45,10 @@ const int MAX_TB_STACK_SIZE = 100;
 int timerbar_stack[MAX_TB_STACK_SIZE];
 int timerbar_current_stack_layer = 0;
 
-/*
+/**
+ * Pssst, hey, you. Ya wanna timerbar? Real cheap.
  *
- *
- *
+ * @param value Index count value (?)
  */
 void timerbar_push(int value)
 {
@@ -67,9 +67,6 @@ void timerbar_push(int value)
 }
 
 /*
- *
- *
- *
  */
 void timerbar_pop()
 {
@@ -84,9 +81,19 @@ void timerbar_pop()
 	timerbar_switch_type(timerbar_stack[timerbar_current_stack_layer]);
 }
 
-// This pointer holds the draw function to use or NULL
+/**
+ * This pointer holds the draw function to use or NULL
+ *
+ * @param colour Colour index (>=0)
+ * @param x Coordinate position
+ * @param y Coordinate position
+ * @param w element width
+ * @param h element height
+ */
 void (*draw_func_ptr)(int colour, float x, float y, float w, float h) = NULL;
 
+/*
+ */
 void timerbar_start_frame()
 {
 	timerbar_current_stack_layer = 0;
@@ -94,7 +101,7 @@ void timerbar_start_frame()
 
 	if(QueryPerformanceCounter(&timerbar_ultimate_start_value) == FALSE)
 	{
-//		DBUGFILE_OUTPUT_0("QueryPerformanceCounter not supported by hardware");
+		// DBUGFILE_OUTPUT_0("QueryPerformanceCounter not supported by hardware");
 		draw_func_ptr = NULL;
 	}
 
@@ -118,14 +125,16 @@ void timerbar_conv_and_draw(int colour, int xpos, int xwidth, int yrow)
 {
 	float fxpos  = (float) xpos;
 	float fxwidth = (float) xwidth;
-		   
-	draw_func_ptr(colour, 
+
+	draw_func_ptr(colour,
 		fxpos / WIDTHF,
 		yrow * 0.01f,
 		fxwidth / WIDTHF,
 		0.005f);
 }
 
+/*
+ */
 void timerbar_end_frame()
 {
 	// Now we want to draw the bars
@@ -142,8 +151,8 @@ void timerbar_end_frame()
 
 
 	for(int i = 0; i < MAX_NUM_TIMERBARS; i++)
-	{		
-		// Nothing to render this frame	 
+	{
+		// Nothing to render this frame
 		if(profiles[i].frame_total.QuadPart == 0)
 		{
 			continue;
@@ -181,6 +190,11 @@ void timerbar_end_frame()
 	}
 }
 
+/**
+ * Not entirely sure what this does.
+ *
+ * @param num Probably a pretend boolean
+ */
 void timerbar_switch_type(int num)
 {
 	if(num >= MAX_NUM_TIMERBARS)
@@ -192,35 +206,34 @@ void timerbar_switch_type(int num)
 	LARGE_INTEGER now;
 	if(QueryPerformanceCounter(&now) == FALSE)
 	{
-//		DBUGFILE_OUTPUT_0("QueryPerformanceCounter not supported by hardware");
+		// DBUGFILE_OUTPUT_0("QueryPerformanceCounter not supported by hardware");
 	}
 
 	profiles[timerbar_current_profile].frame_total.QuadPart += 
-		(now.QuadPart - timerbar_last_start_value.QuadPart);  
+		(now.QuadPart - timerbar_last_start_value.QuadPart);
 
 	if(num != -1)
 	{
 		// Switch to new profile
-		timerbar_current_profile = num; 
+		timerbar_current_profile = num;
 	}
 
 	// Update time to count from
 	if(QueryPerformanceCounter(&timerbar_last_start_value) == FALSE)
 	{
-//		DBUGFILE_OUTPUT_0("QueryPerformanceCounter not supported by hardware");
+		// DBUGFILE_OUTPUT_0("QueryPerformanceCounter not supported by hardware");
 	}
 }
 
 /**
- * @param (*new_draw_func_ptr)(int colour, float x, float y, float w, float h) Pointer to draw function
+ * Clears the instance of the timer bar
  *
- * Sets the draw function used to output the timer data, designed to be generic allowing any API
- * to take advantage of this module. Set to NULL to disable drawing.
- *
- * By default the draw function is set to NULL
+ * Look at the parameters for "void (*draw_func_ptr)"
+ * They directly equate the new_draw_func_ptr, but we can't
+ * place params for a double stuffed function like this.
  */
 void timerbar_set_draw_func(void (*new_draw_func_ptr)(int colour, float x, float y, float w, float h))
 {
-  	draw_func_ptr = new_draw_func_ptr;
+	draw_func_ptr = new_draw_func_ptr;
 }
 

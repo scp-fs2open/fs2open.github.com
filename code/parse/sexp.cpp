@@ -1909,8 +1909,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_SHIP_WING:
+			case OPF_SHIP_WING_WHOLETEAM:
+			case OPF_SHIP_WING_SHIPONTEAM_POINT:
 			case OPF_SHIP_WING_POINT:
-			case OPF_SHIP_WING_TEAM:
 			case OPF_SHIP_WING_POINT_OR_NONE:
 			case OPF_ORDER_RECIPIENT:
 				if ( type2 != SEXP_ATOM_STRING ){
@@ -1923,34 +1924,40 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 				}
 
-				// none is okay for _or_none
+				// all of these have ships and wings in common
+				if (ship_name_lookup(CTEXT(node), 1) >= 0 || wing_name_lookup(CTEXT(node), 1) >= 0) {
+					break;
+				}
+				// also check arrival list if we're running the game
+				if (!Fred_running && mission_parse_get_arrival_ship(CTEXT(node))) {
+					break;
+				}
+
+				// none is okay for _OR_NONE
 				if (type == OPF_SHIP_WING_POINT_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))	{
 					break;
 				}
 
-				// IFFs are fine for ship_wing_team
-				if (type == OPF_SHIP_WING_TEAM && iff_lookup(CTEXT(node)) >= 0)	{
+				// two different ways of checking teams
+				if ((type == OPF_SHIP_WING_WHOLETEAM) && iff_lookup(CTEXT(node)) >= 0) {
+					break;
+				}
+				if ((type == OPF_SHIP_WING_SHIPONTEAM_POINT) && sexp_determine_team(CTEXT(node)) >= 0)	{
 					break;
 				}
 
-				if ((ship_name_lookup(CTEXT(node), 1) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0)) {
-					if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
-					{
-						if (type != OPF_SHIP_WING_POINT){									// return invalid if not also looking for point
-							return SEXP_CHECK_INVALID_SHIP_WING;
-						}
-
-						if (find_matching_waypoint(CTEXT(node)) == NULL){
-							if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
-								if (sexp_determine_team(CTEXT(node)) < 0){
-									return SEXP_CHECK_INVALID_POINT;
-								}
-							}
+				// only other possibility is waypoints
+				if (type == OPF_SHIP_WING_SHIPONTEAM_POINT || type == OPF_SHIP_WING_POINT || type == OPF_SHIP_WING_POINT_OR_NONE) {
+					if (find_matching_waypoint(CTEXT(node)) == NULL){
+						if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
+							return SEXP_CHECK_INVALID_POINT;
 						}
 					}
+					break;
 				}
 
-				break;
+				// nothing left
+				return SEXP_CHECK_INVALID_SHIP_WING;
 
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
@@ -4492,10 +4499,11 @@ int sexp_string_compare(int n, int op)
 #define OSWPT_TYPE_SHIP				1
 #define OSWPT_TYPE_WING				2
 #define OSWPT_TYPE_WAYPOINT			3
-#define OSWPT_TYPE_TEAM				4
-#define OSWPT_TYPE_PARSE_OBJECT		5	// a "ship" that hasn't arrived yet
-#define OSWPT_TYPE_EXITED			6
-#define OSWPT_TYPE_WING_NOT_PRESENT	7	// a wing that hasn't arrived yet or is between waves
+#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
+#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
+#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
+#define OSWPT_TYPE_EXITED			7
+#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
 
 // Goober5000
 typedef struct object_ship_wing_point_team
@@ -4586,37 +4594,7 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	}
 
 
-	// if we have a team type, pick the first ship of that team
-	team = sexp_determine_team(object_name);
-	if (team == -1) {
-		// try it another way
-		team = iff_lookup(object_name);
-	}
-	if (team >= 0)
-	{
-		for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
-		{
-			object *objp = &Objects[so->objnum];
-			ship *shipp = &Ships[objp->instance];
-
-			if (shipp->team == team)
-			{
-				oswpt->type = OSWPT_TYPE_TEAM;
-
-				oswpt->team = team;
-				oswpt->objp = objp;
-				oswpt->shipp = shipp;
-
-				return;
-			}			
-		}
-
-		// no match
-		return;
-	}
-
-
-	// at this point, we must have a ship, wing, or point for a target
+	// check if we have a ship for a target
 	ship_num = ship_name_lookup(object_name);
 	if (ship_num >= 0)
 	{
@@ -4645,7 +4623,7 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	}
 
 
-	// at this point, we must have a wing or point for a target
+	// check if we have a wing for a target
 	wing_num = wing_name_lookup(object_name, 1);
 	if (wing_num >= 0)
 	{
@@ -4682,7 +4660,7 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	}
 
 
-	// at this point, we must have a point for a target
+	// check if we have a point for a target
 	wpt = find_matching_waypoint(object_name);
 	if ((wpt != NULL) && (wpt->get_objnum() >= 0))
 	{
@@ -4695,6 +4673,24 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	}
 
 
+	// check if we have an "<any team>" type
+	team = sexp_determine_team(object_name);
+	if (team >= 0)
+	{
+		oswpt->type = OSWPT_TYPE_SHIP_ON_TEAM;
+		oswpt->team = team;
+	}
+
+
+	// check if we have a whole-team type
+	team = iff_lookup(object_name);
+	if (team >= 0)
+	{
+		oswpt->type = OSWPT_TYPE_WHOLE_TEAM;
+		oswpt->team = team;
+	}
+
+
 	// we apparently don't have anything legal
 	return;
 }
@@ -4704,7 +4700,6 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
  */
 int sexp_num_ships_in_battle(int n)
 {
-	int team=-1;
 	int count=0;
 	ship_obj	*so;
 	ship		*shipp;
@@ -4722,14 +4717,11 @@ int sexp_num_ships_in_battle(int n)
 		sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
 
 	    switch (oswpt1.type){
- 		    case OSWPT_TYPE_TEAM:
-			  team = iff_lookup(CTEXT(n));
-			  if (team >= 0) {
-				  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-					  shipp=&Ships[Objects[so->objnum].instance];
-					  if (shipp->team == team) {
-						 count++;
-					  }
+ 		    case OSWPT_TYPE_WHOLE_TEAM:
+			  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+				  shipp=&Ships[Objects[so->objnum].instance];
+				  if (shipp->team == oswpt1.team) {
+					 count++;
 				  }
 			  }
 			  break;
@@ -6188,8 +6180,8 @@ int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2)
 
 	switch (oswpt2->type)
 	{
-		// we have a team type, so check all ships of that type
-		case OSWPT_TYPE_TEAM:
+		// we have a ship-on-team type, so check all ships of that type
+		case OSWPT_TYPE_SHIP_ON_TEAM:
 		{
 			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
@@ -6267,8 +6259,8 @@ int sexp_distance(int n)
 
 	switch (oswpt1.type)
 	{
-		// we have a team type, so check all ships of that type
-		case OSWPT_TYPE_TEAM:
+		// we have a ship-on-team type, so check all ships of that type
+		case OSWPT_TYPE_SHIP_ON_TEAM:
 		{
 			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
@@ -6394,8 +6386,8 @@ int sexp_distance_subsystem(int n)
 
 	switch (oswpt.type)
 	{
-		// we have a team type, so check all ships of that type
-		case OSWPT_TYPE_TEAM:
+		// we have a ship-on-team type, so check all ships of that type
+		case OSWPT_TYPE_SHIP_ON_TEAM:
 		{
 			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
@@ -6561,8 +6553,6 @@ void sexp_set_object_speed(int n, int axis)
 	{
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
-		case OSWPT_TYPE_WAYPOINT:
-		case OSWPT_TYPE_TEAM:
 		{
 			sexp_set_object_speed(oswpt.objp, speed, axis, subjective);
 
@@ -6637,8 +6627,6 @@ int sexp_get_object_speed(int n, int axis)
 
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
-		case OSWPT_TYPE_WAYPOINT:
-		case OSWPT_TYPE_TEAM:
 			speed = sexp_get_object_speed(oswpt.objp, axis, subjective);
 			break;
 
@@ -6739,7 +6727,6 @@ int sexp_get_object_coordinate(int n, int axis)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
-		case OSWPT_TYPE_TEAM:
 			pos = &oswpt.objp->pos;
 			break;
 
@@ -6777,8 +6764,6 @@ int sexp_get_object_angle(int n, int axis)
 
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
-		case OSWPT_TYPE_WAYPOINT:
-		case OSWPT_TYPE_TEAM:
 			return sexp_calculate_angle(&oswpt.objp->orient, axis);
 
 		default:
@@ -6833,35 +6818,13 @@ void sexp_set_object_position(int n)
 
 	switch (oswpt.type)
 	{
-		case OSWPT_TYPE_TEAM:
-		{
-			// move the first one first
-			orig_leader_vec = oswpt.objp->pos;
-			oswpt.objp->pos = target_vec;
-			set_object_for_clients(oswpt.objp);
-
-			// move everything on the team
-			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
-			{
-				object *objp = &Objects[so->objnum];
-
-				if ((Ships[objp->instance].team == oswpt.team) && (objp != oswpt.objp))
-				{
-					vm_vec_sub2(&objp->pos, &orig_leader_vec);
-					vm_vec_add2(&objp->pos, &target_vec);
-					set_object_for_clients(objp);
-				}
-			}
-
-			return;
-		}
-
 		case OSWPT_TYPE_SHIP:
 		{
 			oswpt.objp->pos = target_vec;
 			set_object_for_clients(oswpt.objp);
 			return;
 		}
+
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
@@ -6946,25 +6909,7 @@ void sexp_set_object_orientation(int n)
 
 	switch (oswpt.type)
 	{
-		case OSWPT_TYPE_TEAM:
-		{
-			// move everything on the team
-			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
-			{
-				object *objp = &Objects[so->objnum];
-
-				if (Ships[objp->instance].team == oswpt.team)
-				{
-					objp->orient = target_orient;
-					set_object_for_clients(objp);
-				}
-			}
-
-			return;
-		}
-
 		case OSWPT_TYPE_SHIP:
-		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->orient = target_orient;
 			set_object_for_clients(oswpt.objp);
@@ -7041,21 +6986,7 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 
 	switch (oswpt->type)
 	{
-		case OSWPT_TYPE_TEAM:
-		{
-			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != GET_LAST(&Ship_obj_list); so = GET_NEXT(so))
-			{
-				object *objp = &Objects[so->objnum];
-
-				if (obj_team(objp) == oswpt->team)
-					sexp_set_object_orient_sub(objp, location, turn_time, bank);
-			}
-
-			break;
-		}
-
 		case OSWPT_TYPE_SHIP:
-		case OSWPT_TYPE_WAYPOINT:
 			sexp_set_object_orient_sub(oswpt->objp, location, turn_time, bank);
 			break;
 
@@ -7183,21 +7114,7 @@ void sexp_set_oswpt_maneuver(object_ship_wing_point_team *oswpt, int duration, i
 
 	switch (oswpt->type)
 	{
-		case OSWPT_TYPE_TEAM:
-		{
-			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != GET_LAST(&Ship_obj_list); so = GET_NEXT(so))
-			{
-				object *objp = &Objects[so->objnum];
-
-				if (obj_team(objp) == oswpt->team)
-					sexp_set_ship_man(objp, duration, heading, pitch, bank, apply_all_rotate, up, sideways, forward, apply_all_lat);
-			}
-
-			break;
-		}
-
 		case OSWPT_TYPE_SHIP:
-		case OSWPT_TYPE_WAYPOINT:
 			sexp_set_ship_man(oswpt->objp, duration, heading, pitch, bank, apply_all_rotate, up, sideways, forward, apply_all_lat);
 			break;
 
@@ -12570,7 +12487,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 		case OSWPT_TYPE_EXITED:
 			return;
 
-		case OSWPT_TYPE_TEAM:
+		case OSWPT_TYPE_WHOLE_TEAM:
 			Assert (oswpt.team >= 0); 
 			oswpt2.clear();
 			for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ){
@@ -12886,7 +12803,7 @@ void sexp_alter_ship_flag(int node)
 					multi_send_ushort(oswpt.wingp->net_signature);
 					break;
 
-				case OSWPT_TYPE_TEAM:
+				case OSWPT_TYPE_WHOLE_TEAM:
 					multi_send_int(oswpt.team);
 					break;
 			}
@@ -12964,7 +12881,7 @@ void multi_sexp_alter_ship_flag()
 					}
 					break;
 
-				case OSWPT_TYPE_TEAM:
+				case OSWPT_TYPE_WHOLE_TEAM:
 					multi_get_int(oswpt.team);
 					break;
 			}
@@ -18287,7 +18204,7 @@ void add_nav_waypoint(char *nav, char *WP_path, int vert, char *oswpt_name)
 
 		switch (oswpt.type)
 		{
-			case OSWPT_TYPE_TEAM:
+			case OSWPT_TYPE_WHOLE_TEAM:
 				if (oswpt.team == Player_ship->team) {
 					add_for_this_player = true; 
 				}
@@ -20052,7 +19969,6 @@ void actually_set_camera_facing_object(char *object_name, float rot_time, float 
 			return;
 		}
 
-		case OSWPT_TYPE_TEAM:
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
@@ -20204,7 +20120,6 @@ object *sexp_camera_get_objsub(int node, int *o_submodel)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
-		case OSWPT_TYPE_TEAM:
 			objp = oswpt.objp;
 			break;
 
@@ -21060,8 +20975,25 @@ void sexp_force_glide(int node)
 	return;
 }
 
+bool test_point_within_box(vec3d *test_point, vec3d *box_corner_1, vec3d *box_corner_2, object *reference_ship_obj)
+{
+	// If reference_ship is specified, rotate test_point into its reference frame
+	if (reference_ship_obj != NULL) 
+	{
+		vec3d tempv;
+		vm_vec_sub(&tempv, test_point, &reference_ship_obj->pos);
+		vm_vec_unrotate(test_point, &tempv, &reference_ship_obj->orient);
+	}
+
+	// Check to see if the test point is within the specified box as defined by two extreme corners
+	return ((test_point->xyz.x >= box_corner_1->xyz.x && test_point->xyz.x <= box_corner_2->xyz.x) &&
+			(test_point->xyz.y >= box_corner_1->xyz.y && test_point->xyz.y <= box_corner_2->xyz.y) &&
+			(test_point->xyz.z >= box_corner_1->xyz.z && test_point->xyz.z <= box_corner_2->xyz.z));
+}
+
 int sexp_is_in_box(int n)
 {
+	int i;
 	Assert(n >= 0);
 
 	object_ship_wing_point_team oswpt;
@@ -21091,7 +21023,7 @@ int sexp_is_in_box(int n)
 	box_corner_2.xyz.z = MAX(z1, z2);
 
 	// Ship to define reference frame is optional
-	object* reference_ship_obj = NULL;
+	object *reference_ship_obj = NULL;
 	if (n != -1)
 	{
 		int sindex = ship_name_lookup(CTEXT(n));
@@ -21102,42 +21034,24 @@ int sexp_is_in_box(int n)
 		reference_ship_obj = &Objects[Ships[sindex].objnum];
 	}
 
-	// Get position of test point
-	vec3d test_point;
+	// Check position of object
 	switch (oswpt.type)
 	{
 		case OSWPT_TYPE_EXITED:
 			return SEXP_KNOWN_FALSE;
 
-		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
+			for (i = 0; i < oswpt.wingp->current_count; i++)
+				if (!test_point_within_box(&Objects[Ships[oswpt.wingp->ship_index[i]].objnum].pos, &box_corner_1, &box_corner_2, reference_ship_obj))
+					return SEXP_FALSE;
+			return SEXP_TRUE;
+
+		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
-		case OSWPT_TYPE_TEAM:
-			test_point = oswpt.objp->pos;
-			break;
+			return test_point_within_box(&oswpt.objp->pos, &box_corner_1, &box_corner_2, reference_ship_obj);
 
 		default:
 			return SEXP_FALSE;
-	}
-
-	// If reference_ship is specified, rotate test_point into its reference frame
-	if (reference_ship_obj != NULL) 
-	{
-		vec3d tempv;
-		vm_vec_sub(&tempv, &test_point, &reference_ship_obj->pos);
-		vm_vec_rotate(&test_point, &tempv, &reference_ship_obj->orient);
-	}
-
-	// Check to see if the test point is within the specified box
-	if ((test_point.xyz.x >= box_corner_1.xyz.x && test_point.xyz.x <= box_corner_2.xyz.x) &&
-		(test_point.xyz.y >= box_corner_1.xyz.y && test_point.xyz.y <= box_corner_2.xyz.y) &&
-		(test_point.xyz.z >= box_corner_1.xyz.z && test_point.xyz.z <= box_corner_2.xyz.z))
-	{
-		return SEXP_TRUE;
-	}
-	else
-	{
-		return SEXP_FALSE;
 	}
 }
 
@@ -24922,7 +24836,7 @@ int query_operator_argument_type(int op, int argnum)
 			if(argnum == 1 || argnum == 2)
 				return OPF_BOOL;
 			else
-				return OPF_SHIP_WING_TEAM;
+				return OPF_SHIP_WING_WHOLETEAM;
 		
 		case OP_SET_PLAYER_THROTTLE_SPEED:
 			if(argnum == 0)
@@ -25065,13 +24979,13 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_MESSAGE_OR_STRING;
 
 		case OP_DISTANCE:
-			return OPF_SHIP_WING_POINT;
+			return OPF_SHIP_WING_SHIPONTEAM_POINT;
 
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
 			if (argnum == 0)
-				return OPF_SHIP_WING_POINT;
+				return OPF_SHIP_WING;
 			else if (argnum == 1)
 				return OPF_NUMBER;
 			else
@@ -25081,7 +24995,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_OBJECT_SPEED_Y:
 		case OP_GET_OBJECT_SPEED_Z:
 			if (argnum == 0)
-				return OPF_SHIP_WING_POINT;
+				return OPF_SHIP_WING;
 			else
 				return OPF_BOOL;
 
@@ -25098,7 +25012,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_OBJECT_PITCH:
 		case OP_GET_OBJECT_BANK:
 		case OP_GET_OBJECT_HEADING:
-			return OPF_SHIP_WING_POINT;
+			return OPF_SHIP_WING;
 
 		case OP_SET_OBJECT_POSITION:
 			if(argnum == 0)
@@ -25108,27 +25022,29 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SET_OBJECT_ORIENTATION:
 			if (argnum == 0)
-				return OPF_SHIP_WING_POINT;
+				return OPF_SHIP_WING;
 			else
 				return OPF_NUMBER;
 
 		case OP_SET_OBJECT_FACING:
 			if (argnum == 0)
-				return OPF_SHIP_WING_POINT;
+				return OPF_SHIP_WING;
 			else if (argnum < 4)
 				return OPF_NUMBER;
 			else
 				return OPF_POSITIVE;
 
 		case OP_SET_OBJECT_FACING_OBJECT:
-			if (argnum == 0 || argnum == 1)
+			if (argnum == 0)
+				return OPF_SHIP_WING;
+			else if (argnum == 1)
 				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_POSITIVE;
 
 		case OP_SHIP_MANEUVER:
 			if (argnum == 0)
-				return OPF_SHIP_WING_POINT;
+				return OPF_SHIP_WING;
 			else if (argnum == 1)
 				return OPF_POSITIVE;
 			else if (argnum < 5)
@@ -25143,7 +25059,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_ROT_MANEUVER:
 		case OP_SHIP_LAT_MANEUVER:
 			if (argnum == 0)
-				return OPF_SHIP_WING_POINT;
+				return OPF_SHIP_WING;
 			else if (argnum == 1)
 				return OPF_POSITIVE;
 			else if (argnum < 5)
@@ -25215,7 +25131,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_DISTANCE_SUBSYSTEM:
 			if (argnum == 0)
-				return OPF_SHIP_WING_POINT;
+				return OPF_SHIP_WING_SHIPONTEAM_POINT;
 			else if (argnum == 1)
 				return OPF_SHIP;
 			else if (argnum == 2)
@@ -25232,7 +25148,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING;
 
 		case OP_IS_IN_BOX:
-			if (argnum == 0) // First arg is a ship/wing
+			if (argnum == 0) // First arg is a ship/wing/point
 				return OPF_SHIP_WING_POINT;
 			else if (argnum <= 6) // Next 6 args are coordinates
 				return OPF_NUMBER;
@@ -26360,7 +26276,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING;
 
 		case OP_NUM_SHIPS_IN_BATTLE:	//phreak modified by FUBAR
-			return OPF_SHIP_WING_TEAM;
+			return OPF_SHIP_WING_WHOLETEAM;
 
 		case OP_NUM_SHIPS_IN_WING:	// Karajorma	
 			return OPF_WING;
@@ -26423,7 +26339,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum==2)
 				return OPF_POSITIVE;
 			else 
-				return OPF_SHIP_WING_TEAM;
+				return OPF_SHIP_WING_WHOLETEAM;
 
 		case OP_NAV_ADD_SHIP:		//kazan
 			if (argnum==0)
@@ -28530,40 +28446,40 @@ sexp_help_struct Sexp_help[] = {
 		"\tPerforms the bitwise XOR operator on its arguments.  This is the same as if the logical XOR operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x\r\n"
-		"\tSets the X speed of a ship, wing, or waypoint."
+		"\tSets the X speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y\r\n"
-		"\tSets the Y speed of a ship, wing, or waypoint."
+		"\tSets the Y speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z\r\n"
-		"\tSets the Z speed of a ship, wing, or waypoint."
+		"\tSets the Z speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_X, "get-object-speed-x\r\n"
-		"\tReturns the X speed of a ship, wing, or waypoint as an integer."
+		"\tReturns the X speed of a ship or wing as an integer."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_Y, "get-object-speed-y\r\n"
-		"\tReturns the Y speed of a ship, wing, or waypoint as an integer."
+		"\tReturns the Y speed of a ship or wing as an integer."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_Z, "get-object-speed-z\r\n"
-		"\tReturns the Z speed of a ship, wing, or waypoint as an integer."
+		"\tReturns the Z speed of a ship or wing as an integer."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
@@ -28616,23 +28532,23 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_GET_OBJECT_PITCH, "get-object-pitch\r\n"
 		"\tReturns the pitch angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n" },
+		"\t1: The name of a ship or wing.\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_BANK, "get-object-bank\r\n"
 		"\tReturns the bank angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n" },
+		"\t1: The name of a ship or wing.\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_HEADING, "get-object-heading\r\n"
 		"\tReturns the heading angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n" },
+		"\t1: The name of a ship or wing.\r\n" },
 
 	// Goober5000
 	{ OP_SET_OBJECT_ORIENTATION, "set-object-orientation\r\n"
 		"\tInstantaneously sets an object's spatial orientation."
 		"Takes 4 arguments...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t1: The name of a ship or wing.\r\n"
 		"\t2: The new pitch angle, in degrees.  The angle can be any number; it does not have to be between 0 and 360.\r\n"
 		"\t3: The new bank angle, in degrees.  The angle can be any can be any number; it does not have to be between 0 and 360.\r\n"
 		"\t4: The new heading angle, in degrees.  The angle can be any number; it does not have to be between 0 and 360." },
@@ -29079,7 +28995,7 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_IS_IN_BOX, "Whether an object is in the box specified. If a second ship is specified, "
 		"the box is relative to that ship's reference frame. \r\n"
-		"\t1: Ships or wings to check\r\n"
+		"\t1: Ships, wings, or points to check\r\n"
 		"\t2: Min X\r\n"
 		"\t3: Max X\r\n"
 		"\t4: Min Y\r\n"
@@ -29594,7 +29510,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SET_OBJECT_FACING, "set-object-facing\r\n"
 		"\tSets an object's orientation to face the specified coordinates.  "
 		"Takes 4 arguments...\r\n"
-		"\t1: The name of an object.\r\n"
+		"\t1: The name of a ship or wing.\r\n"
 		"\t2: The X coordinate to face.\r\n"
 		"\t3: The Y coordinate to face.\r\n"
 		"\t4: The Z coordinate to face.\r\n"
@@ -29605,7 +29521,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SET_OBJECT_FACING_OBJECT, "set-object-facing-object\r\n"
 		"\tSets an object's orientation to face the specified object.  "
 		"Takes 2 arguments...\r\n"
-		"\t1: The name of an object.\r\n"
+		"\t1: The name of a ship or wing.\r\n"
 		"\t2: The object to face.\r\n"
 		"\t3: Turn time in milliseconds (optional)\r\n"
 		"\t4: Bank (optional). Enter a non-zero value to enable banking." },
@@ -29613,7 +29529,7 @@ sexp_help_struct Sexp_help[] = {
 	// Wanderer
 	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
 		"\tCombines the effects of the ship-rot-maneuver and ship-lat-maneuver sexps.  Takes 10 arguments:\r\n"
-		"\t1: The name of a ship\r\n"
+		"\t1: The name of a ship or wing\r\n"
 		"\t2: Duration of the maneuver, in milliseconds\r\n"
 		"\t3: Heading movement velocity, as a percentage (-100 to 100) of the tabled maximum heading velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Pitch movement velocity, as a percentage (-100 to 100) of the tabled maximum pitch velocity, or 0 to not modify the ship's current value\r\n"
@@ -29629,7 +29545,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tCauses a ship to move in a rotational direction.  For the purposes of this sexp, this means the ship rotates along its own heading, pitch, or bank axis (or a combination of axes) without regard to normal ship rotation rules.  "
 		"You may find it necessary to disable the ship AI (e.g. by issuing a play-dead order) before running this sexp.\r\n\r\n"
 		"Takes 6 arguments:\r\n"
-		"\t1: The name of a ship\r\n"
+		"\t1: The name of a ship or wing\r\n"
 		"\t2: Duration of the maneuver, in milliseconds\r\n"
 		"\t3: Heading movement velocity, as a percentage (-100 to 100) of the tabled maximum heading velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Pitch movement velocity, as a percentage (-100 to 100) of the tabled maximum pitch velocity, or 0 to not modify the ship's current value\r\n"
@@ -29641,7 +29557,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tCauses a ship to move in a lateral direction.  For the purposes of this sexp, this means the ship translates along its own X, Y, or Z axis (or a combination of axes) without regard to normal ship movement rules.  "
 		"You may find it necessary to disable the ship AI (e.g. by issuing a play-dead order) before running this sexp.\r\n\r\n"
 		"Takes 6 arguments:\r\n"
-		"\t1: The name of a ship\r\n"
+		"\t1: The name of a ship or wing\r\n"
 		"\t2: Duration of the maneuver, in milliseconds\r\n"
 		"\t3: Vertical movement velocity, as a percentage (-100 to 100) of the tabled maximum vertical velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Sideways movement velocity, as a percentage (-100 to 100) of the tabled maximum sideways velocity, or 0 to not modify the ship's current value\r\n"
@@ -30172,7 +30088,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tShip flag name\r\n"
 		"\t2:\tTrue if turning on, false if turning off\r\n"
 		"\t3:\tTrue\\False - Apply this flag to future waves of this wing. Apply to ship if not present\r\n"
-		"\tRest:\t (optional)Name of ships. If not supplied, will work on all ships in the mission" },
+		"\tRest:\t (optional) Name of ships, wings, or entire teams. If not supplied, will work on all ships in the mission" },
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
 		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"

@@ -659,7 +659,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, in
 		//	miss their target.  There is code dating to FS1 in the collision code to detect that a bomb or
 		//	missile has somehow missed its target.  It gets its lifeleft set to 0.1 and then it detonates.
 		//	Unfortunately, the shockwave damage was cut by 4 above.  So boost it back up here.
-		if ((dist < 10.0f) && ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))) {	// Goober5000 check for NULL
+		if ((weapon_info_index >= 0) && (dist < 10.0f) && ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))) {	// Goober5000 check for NULL
 			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;
 			damage_if_hull *= 4.0f * Weapon_info[weapon_info_index].armor_factor;			
 		}

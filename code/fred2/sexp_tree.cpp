@@ -2442,10 +2442,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 	switch (type) {
 		case OPF_SHIP:
 		case OPF_SHIP_NOT_PLAYER:
-		case OPF_SHIP_WING:
 		case OPF_SHIP_POINT:
+		case OPF_SHIP_WING:
+		case OPF_SHIP_WING_WHOLETEAM:
+		case OPF_SHIP_WING_SHIPONTEAM_POINT:
 		case OPF_SHIP_WING_POINT:
-		case OPF_SHIP_WING_TEAM:
 			str = "<name of ship here>";
 			break;
 
@@ -2650,7 +2651,8 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SHIP_WING:
 		case OPF_SHIP_POINT:
 		case OPF_SHIP_WING_POINT:
-		case OPF_SHIP_WING_TEAM:
+		case OPF_SHIP_WING_WHOLETEAM:
+		case OPF_SHIP_WING_SHIPONTEAM_POINT:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
 				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START)
@@ -4221,12 +4223,16 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_wing();
 			break;
 
-		case OPF_SHIP_WING_POINT:
-			list = get_listing_opf_ship_wing_point();
+		case OPF_SHIP_WING_WHOLETEAM:
+			list = get_listing_opf_ship_wing_wholeteam();
 			break;
 
-		case OPF_SHIP_WING_TEAM:
-			list = get_listing_opf_ship_wing_team();
+		case OPF_SHIP_WING_SHIPONTEAM_POINT:
+			list = get_listing_opf_ship_wing_shiponteam_point();
+			break;
+
+		case OPF_SHIP_WING_POINT:
+			list = get_listing_opf_ship_wing_point();
 			break;
 
 		case OPF_SHIP_WING_POINT_OR_NONE:
@@ -5384,10 +5390,24 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_point()
 
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_point());
+
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point()
+sexp_list_item *sexp_tree::get_listing_opf_ship_wing_wholeteam()
+{
+	int i;
+	sexp_list_item head;
+
+	for (i = 0; i < Num_iffs; i++)
+		head.add_data(Iff_info[i].iff_name);
+
+	head.add_list(get_listing_opf_ship_wing());
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_wing_shiponteam_point()
 {
 	int i;
 	sexp_list_item head;
@@ -5399,23 +5419,19 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point()
 		strlwr(tmp);
 		head.add_data_dup(tmp);
 	}
-	head.add_list(get_listing_opf_ship());
-	head.add_list(get_listing_opf_wing());
-	head.add_list(get_listing_opf_point());
+
+	head.add_list(get_listing_opf_ship_wing_point());
+
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_ship_wing_team()
+sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point()
 {
-	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_iffs; i++) {
-		head.add_data(Iff_info[i].iff_name);
-	}
-	
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
+	head.add_list(get_listing_opf_point());
 
 	return head.next;
 }
@@ -5484,6 +5500,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing()
 
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
+
 	return head.next;
 }
 
