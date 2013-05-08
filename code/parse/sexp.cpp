@@ -4861,7 +4861,6 @@ int sexp_is_destroyed(int n, fix *latest_time)
 		return SEXP_FALSE;
 }
 
-
 /**
  * Return true if the subsystem of the given ship has been destroyed
  */
@@ -4886,63 +4885,6 @@ int sexp_is_subsystem_destroyed(int n)
 
 	return SEXP_FALSE;
 
-}
-
-/**
- * Determine if a ship has docked
- */
-int sexp_has_docked(int n)
-{
-	char *docker = CTEXT(n);
-	char *dockee = CTEXT(CDR(n));
-	int count = eval_num(CDR(CDR(n)));		// count of times that we should look for
-
-	if (sexp_query_has_yet_to_arrive(docker))
-		return SEXP_CANT_EVAL;
-
-	if (sexp_query_has_yet_to_arrive(dockee))
-		return SEXP_CANT_EVAL;
-
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
-		return SEXP_KNOWN_FALSE;
-
-	if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, NULL, NULL) )
-		return SEXP_KNOWN_FALSE;
-
-	Assert ( count > 0 );
-	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCKED, docker, dockee, count, NULL) )
-		return SEXP_FALSE;
-
-	return SEXP_KNOWN_TRUE;
-}
-
-/**
- * Determine if a ship has undocked
- */
-int sexp_has_undocked(int n)
-{
-	char *docker = CTEXT(n);
-	char *dockee = CTEXT(CDR(n));
-	int count = eval_num(CDR(CDR(n)));
-
-	if (sexp_query_has_yet_to_arrive(docker))
-		return SEXP_CANT_EVAL;
-
-	if (sexp_query_has_yet_to_arrive(dockee))
-		return SEXP_CANT_EVAL;
-
-	Assert ( count > 0 );
-	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCKED, docker, dockee, count, NULL) ) {
-		// if either ship destroyed before they dock, then sexp is known false
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
-		if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
-
-		return SEXP_FALSE;
-	}
-
-	return SEXP_KNOWN_TRUE;
 }
 
 /**
@@ -5217,17 +5159,41 @@ int sexp_is_disarmed_delay(int n)
 	return SEXP_FALSE;
 }
 
-int sexp_has_docked_delay(int n)
+int sexp_has_docked_or_undocked(int n, int op_num)
 {
+	Assert(op_num == OP_HAS_DOCKED || op_num == OP_HAS_UNDOCKED || op_num == OP_HAS_DOCKED_DELAY || op_num == OP_HAS_UNDOCKED_DELAY);
+
 	char *docker = CTEXT(n);
 	char *dockee = CTEXT(CDR(n));
 	int count = eval_num(CDR(CDR(n)));		// count of times that we should look for
-	fix delay = i2f(eval_num(CDR(CDR(CDR(n)))));
-	fix time;
+
 	if (count <= 0)
 	{
-		Warning(LOCATION, "Has-docked-delay count should be at least 1!  This has been automatically adjusted.");
+		Warning(LOCATION, "Has-%sdocked%s count should be at least 1!  This has been automatically adjusted.", (op_num == OP_HAS_UNDOCKED || op_num == OP_HAS_UNDOCKED_DELAY ? "un" : ""), (op_num == OP_HAS_DOCKED_DELAY || op_num == OP_HAS_UNDOCKED_DELAY ? "-delay" : ""));
 		count = 1;
+	}
+
+	if (sexp_query_has_yet_to_arrive(docker))
+		return SEXP_CANT_EVAL;
+
+	if (sexp_query_has_yet_to_arrive(dockee))
+		return SEXP_CANT_EVAL;
+
+	if (op_num == OP_HAS_DOCKED_DELAY || op_num == OP_HAS_UNDOCKED_DELAY)
+	{
+		fix delay = i2f(eval_num(CDR(CDR(CDR(n)))));
+		fix time;
+
+		if ( mission_log_get_time_indexed(op_num == OP_HAS_DOCKED_DELAY ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, &time) )
+		{
+			if ( (Missiontime - time) >= delay )
+				return SEXP_KNOWN_TRUE;
+		}
+	}
+	else
+	{
+		if ( mission_log_get_time_indexed(op_num == OP_HAS_DOCKED ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, NULL) )
+			return SEXP_KNOWN_TRUE;
 	}
 
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
@@ -5236,54 +5202,7 @@ int sexp_has_docked_delay(int n)
 	if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, NULL, NULL) )
 		return SEXP_KNOWN_FALSE;
 
-	if (sexp_query_has_yet_to_arrive(docker))
-		return SEXP_CANT_EVAL;
-
-	if (sexp_query_has_yet_to_arrive(dockee))
-		return SEXP_CANT_EVAL;
-
-	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCKED, docker, dockee, count, &time) )
-		return SEXP_FALSE;
-
-	if ( (Missiontime - time) >= delay )
-		return SEXP_KNOWN_TRUE;
-	else
-		return SEXP_FALSE;
-}
-
-int sexp_has_undocked_delay(int n)
-{
-	char *docker = CTEXT(n);
-	char *dockee = CTEXT(CDR(n));
-	int count = eval_num(CDR(CDR(n)));
-	fix delay = i2f(eval_num(CDR(CDR(CDR(n)))));
-	fix time;
-	if (count <= 0)
-	{
-		Warning(LOCATION, "Has-undocked-delay count should be at least 1!  This has been automatically adjusted.");
-		count = 1;
-	}
-
-	if (sexp_query_has_yet_to_arrive(docker))
-		return SEXP_CANT_EVAL;
-
-	if (sexp_query_has_yet_to_arrive(dockee))
-		return SEXP_CANT_EVAL;
-
-	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCKED, docker, dockee, count, &time) ) {
-		// if either ship destroyed before they dock, then sexp is known false
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
-		if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
-
-		return SEXP_FALSE;
-	}
-
-	if ( (Missiontime - time) >= delay )
-		return SEXP_KNOWN_TRUE;
-	else
-		return SEXP_FALSE;
+	return SEXP_FALSE;
 }
 
 int sexp_has_arrived_delay(int n)
@@ -21707,20 +21626,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_subsystem_destroyed(node);
 				break;
 
-			case OP_HAS_DOCKED:
-				sexp_val = sexp_has_docked(node);
-				break;
-
 			case OP_HAS_ARRIVED:
 				sexp_val = sexp_has_arrived( node, NULL );
 				break;
 
 			case OP_HAS_DEPARTED:
 				sexp_val = sexp_has_departed( node, NULL );
-				break;
-
-			case OP_HAS_UNDOCKED:
-				sexp_val = sexp_has_undocked(node);
 				break;
 
 			case OP_IS_DISABLED:
@@ -21744,8 +21655,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_subsystem_destroyed_delay(node);
 				break;
 
+			case OP_HAS_DOCKED:
+			case OP_HAS_UNDOCKED:
 			case OP_HAS_DOCKED_DELAY:
-				sexp_val = sexp_has_docked_delay(node);
+			case OP_HAS_UNDOCKED_DELAY:
+				sexp_val = sexp_has_docked_or_undocked(node, op_num);
 				break;
 
 			case OP_HAS_ARRIVED_DELAY:
@@ -21754,10 +21668,6 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_HAS_DEPARTED_DELAY:
 				sexp_val = sexp_has_departed_delay(node);
-				break;
-
-			case OP_HAS_UNDOCKED_DELAY:
-				sexp_val = sexp_has_undocked_delay(node);
 				break;
 
 			case OP_IS_DISABLED_DELAY:
