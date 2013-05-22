@@ -1249,6 +1249,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
+ * also called at campaign init and campaign load
  */
 void mission_campaign_clear()
 {
@@ -1308,6 +1309,7 @@ void mission_campaign_clear()
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
 		}
 
+		Campaign.missions[i].completed = 0;
 		Campaign.missions[i].num_goals = 0;
 		Campaign.missions[i].num_events = 0;
 		Campaign.missions[i].num_variables = 0;	// Goober5000
