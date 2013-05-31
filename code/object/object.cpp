@@ -1824,7 +1824,7 @@ int obj_team(object *objp)
 
 		case OBJ_DEBRIS:
 			team = debris_get_team(objp);
-			Assert(team != -1);
+			Assertion(team != -1, "Obj_team called for a debris object with no team.");
 			break;
 
 /*		case OBJ_CMEASURE:
@@ -1848,7 +1848,6 @@ int obj_team(object *objp)
 		case OBJ_GHOST:
 		case OBJ_SHOCKWAVE:		
 		case OBJ_BEAM:
-			nprintf(("Warning","Warning => Asking for a team for object type %s\n", Object_type_names[objp->type]));
 			team = -1;
 			break;
 
@@ -1861,7 +1860,7 @@ int obj_team(object *objp)
 			break;
 	} // end switch
 
-	Assert(team != -1);
+	Assertion(team != -1, "Obj_team called for a object of type %s with no team.",  Object_type_names[objp->type]);
 	return team;
 }
 
