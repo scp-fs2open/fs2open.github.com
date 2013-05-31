@@ -345,7 +345,7 @@ void shipfx_blow_up_hull(object *obj, int model, vec3d *exp_center)
 
 	if ( (Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_IN_MISSION) ) {
 		sig_save = multi_get_next_network_signature( MULTI_SIG_DEBRIS );
-		multi_set_network_signature( (ushort)(Ships[obj->instance].arrival_distance), MULTI_SIG_DEBRIS );
+		multi_set_network_signature( Ships[obj->instance].debris_net_sig, MULTI_SIG_DEBRIS );
 	}
 
 	bool try_live_debris = true;
@@ -362,9 +362,13 @@ void shipfx_blow_up_hull(object *obj, int model, vec3d *exp_center)
 				shipfx_maybe_create_live_debris_at_ship_death(obj);
 			}
 		}
+		// in multiplayer we need to increment the network signature for each piece of debris we create
+		if ( (Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_IN_MISSION) ) {
+			multi_assign_network_signature(MULTI_SIG_DEBRIS);
+		}
 	}
 
-	// restore the ship signature to it's original value.
+	// restore the debris signature to it's original value.
 	if ( (Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_IN_MISSION) ) {
 		multi_set_network_signature( sig_save, MULTI_SIG_DEBRIS );
 	}

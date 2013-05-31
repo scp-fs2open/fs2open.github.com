@@ -779,6 +779,7 @@ typedef struct ship {
 	int shield_armor_type_idx;
 	int collision_damage_type_idx;
 	int debris_damage_type_idx;
+	ushort debris_net_sig;						// net signiture of the first piece of debris this ship has
 
 	int model_instance_num;
 
