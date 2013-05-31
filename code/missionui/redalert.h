@@ -34,6 +34,11 @@ void red_alert_voice_unpause();
 
 // should only ever be defined in redalert.cpp and the pilot file code!!
 #ifdef REDALERT_INTERNAL
+
+#define RED_ALERT_WARN_TIME		4000				// time to warn user that new orders are coming
+
+#define RED_ALERT_EXITED_SHIP_CLASS		-1
+
 typedef struct red_alert_ship_status {
 	SCP_string	name;
 	float		hull;

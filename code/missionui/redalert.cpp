@@ -44,10 +44,6 @@ static int Red_alert_new_mission_timestamp;		// timestamp used to give user a li
 //static int Red_alert_num_slots_used = 0;
 static int Red_alert_voice_started;
 
-#define RED_ALERT_WARN_TIME		4000				// time to warn user that new orders are coming
-
-#define RED_ALERT_EXITED_SHIP_CLASS		-1
-
 SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
 SCP_string Red_alert_precursor_mission;
 
