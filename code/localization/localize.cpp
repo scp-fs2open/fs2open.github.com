@@ -711,7 +711,7 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 void lcl_ext_localize_sub(SCP_string &in, SCP_string &out, int *id)
 {
 	SCP_string text_str = "";
-	char lookup_str[1024]="";
+	char lookup_str[PARSE_BUF_SIZE]="";
 	int str_id;
 
 	// default (non-external string) value

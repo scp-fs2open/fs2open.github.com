@@ -800,7 +800,14 @@ void pilotfile::csg_read_redalert()
 
 		// ship class, index into ship_list[]
 		i = cfread_int(cfp);
-		ras.ship_class = ship_list[i].index;
+		if ( (i >= (int)ship_list.size()) || (i < RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {
+			mprintf(("CSG => Parse Warning: Invalid value for red alert ship index (%d), emptying slot.\n", i));
+			ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
+		} else if ( (i < 0 ) && (i >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {  // ship destroyed/exited
+			ras.ship_class = i;
+		} else {
+			ras.ship_class = ship_list[i].index;
+		}
 
 		// subsystem hits
 		count = cfread_int(cfp);
@@ -850,8 +857,8 @@ void pilotfile::csg_read_redalert()
 			ras.secondary_weapons.push_back( weapons );
 		}
 
-		// this is quite likely a *bad* thing if it happens
-		if (ras.ship_class >= 0) {
+		// this is quite likely a *bad* thing if it doesn't happen
+		if (ras.ship_class >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) {
 			Red_alert_wingman_status.push_back( ras );
 		}
 	}

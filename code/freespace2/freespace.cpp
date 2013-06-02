@@ -982,9 +982,7 @@ void game_level_init(int seed)
 	batch_reset();
 
 	// Initialize the game subsystems
-	if(!Is_standalone){
-		game_reset_time();			// resets time, and resets saved time too
-	}
+	game_reset_time();			// resets time, and resets saved time too
 
 	Multi_ping_timestamp = -1;
 

@@ -2501,7 +2501,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	if ( pm && !vaporized ) {
 		debris_signature = multi_get_next_network_signature( MULTI_SIG_DEBRIS );
 		multi_set_network_signature( (ushort)(debris_signature + pm->num_debris_objects), MULTI_SIG_DEBRIS );
-		Ships[objp->instance].arrival_distance = debris_signature;
+		Ships[objp->instance].debris_net_sig = debris_signature;
 	}
 
 	BUILD_HEADER(SHIP_KILL);
@@ -2632,7 +2632,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	multi_respawn_check(sobjp);
 
 	// store the debris signature in the arrival distance which will never get used for player ships
-	Ships[sobjp->instance].arrival_distance = debris_sig;
+	Ships[sobjp->instance].debris_net_sig = debris_sig;
 
 	// set this bit so that we don't accidentally start switching targets when we die
 	if(sobjp == Player_obj){

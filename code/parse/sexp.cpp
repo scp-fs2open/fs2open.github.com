@@ -7277,7 +7277,7 @@ float get_damage_caused(int damaged_ship, int attacker )
 }
 
 // Karajorma
-int sexp_get_damage_caused(int node) 
+int sexp_get_damage_caused(int node)
 {
 	int sindex, damaged_sig, attacker_sig; 
 	float damage_caused = 0.0f;
@@ -7313,7 +7313,11 @@ int sexp_get_damage_caused(int node)
 		sindex = ship_name_lookup(name); 
 		if (sindex < 0) {
 			sindex = ship_find_exited_ship_by_name(name);
-			attacker_sig = Ships_exited[sindex].obj_signature; 
+			if (sindex < 0) {
+				continue;
+			} else {
+				attacker_sig = Ships_exited[sindex].obj_signature;
+			}
 		}
 		else {
 			attacker_sig = Objects[Ships[sindex].objnum].signature ;

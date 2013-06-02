@@ -310,6 +310,7 @@ int add_avi( char *avi_name )
 	}
 
 	// would have returned if a slot existed.
+	generic_anim_init( &extra.anim_data );
 	strcpy_s( extra.name, avi_name );
 	strcpy_s( extra.anim_data.filename, avi_name);
 	extra.num = -1;
@@ -332,6 +333,7 @@ int add_wave( char *wave_name )
 			return i;
 	}
 
+	generic_anim_init( &extra.anim_data );
 	strcpy_s( extra.name, wave_name );
 	extra.num = -1;
 	Message_waves.push_back(extra);

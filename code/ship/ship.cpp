@@ -5107,6 +5107,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
 	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
 	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
+	shipp->debris_net_sig = 0;
 	sip->shockwave.damage_type_idx = sip->shockwave.damage_type_idx_sav;
 
 	// Reset special hitpoints. Fixes Mantis issue 2573

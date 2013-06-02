@@ -1549,7 +1549,10 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	Assert(ship_obj);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
 	Script_system.SetHookObject("Self", ship_obj);
-	if(other_obj != NULL) Script_system.SetHookObject("Killer", other_obj);
+	if(other_obj != NULL)
+		Script_system.SetHookObject("Killer", other_obj);
+	else
+		Script_system.SetHookObject("Killer", 0);
 
 	if(Script_system.IsConditionOverride(CHA_DEATH, ship_obj))
 	{
