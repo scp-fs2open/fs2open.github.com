@@ -1258,7 +1258,7 @@ void obj_move_all_post(object *objp, float frametime)
 					shipp->team_name = shipp->secondary_team_name;
 					shipp->team_change_timestamp = 0;
 					shipp->team_change_time = 0;
-					shipp->secondary_team_name = "<none>";
+					shipp->secondary_team_name = "none";
 				}
 			}
 
