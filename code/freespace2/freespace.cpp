@@ -982,9 +982,7 @@ void game_level_init(int seed)
 	batch_reset();
 
 	// Initialize the game subsystems
-	if(!Is_standalone){
 		game_reset_time();			// resets time, and resets saved time too
-	}
 
 	Multi_ping_timestamp = -1;
 
@@ -5528,9 +5526,10 @@ void game_leave_state( int old_state, int new_state )
 
 			} else {
 				cmd_brief_close();
-				if (new_state == GS_STATE_MAIN_MENU)
-					freespace_stop_mission();	
 					common_select_close();
+				if (new_state == GS_STATE_MAIN_MENU) {
+					freespace_stop_mission();	
+				}
 			}
 			break;
 
@@ -6675,7 +6674,7 @@ void game_do_state(int state)
 
 		case GS_STATE_LOOP_BRIEF:
 			game_set_frametime(GS_STATE_LOOP_BRIEF);
-			loop_brief_do();
+			loop_brief_do(flFrametime);
 			break;
 
 		case GS_STATE_FICTION_VIEWER:

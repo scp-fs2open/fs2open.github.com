@@ -536,6 +536,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			if (optional_string("+Flags:"))
 				stuff_int(&cm->flags);
 
+			cm->main_hall = "0";
 			// deal with previous campaign versions
 			if (cm->flags & CMISSION_FLAG_BASTION) {
 				cm->main_hall = "1";
@@ -543,7 +544,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 			// Goober5000 - new main hall stuff!
 			// Updated by CommanderDJ
-			cm->main_hall = "0";
 			if (optional_string("+Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
 				cm->main_hall = temp;
@@ -655,6 +655,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	Campaign.prev_mission = -1;
 	Campaign.current_mission = -1;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
+	Campaign.num_missions_completed = 0;
 
 	// loading the campaign will get us to the current and next mission that the player must fly
 	// plus load all of the old goals that future missions might rely on.
@@ -723,6 +724,34 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
 	return mission_campaign_load_by_name( filename);
 }
 
+/*
+ * initialise Player_loadout with default values
+ */
+void player_loadout_init()
+{
+	int i = 0, j = 0;
+
+	memset(Player_loadout.filename, 0, sizeof(Player_loadout.filename));
+	memset(Player_loadout.last_modified, 0, sizeof(Player_loadout.last_modified));
+
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+		Player_loadout.ship_pool[i] = 0;
+	}
+
+	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+		Player_loadout.weapon_pool[i] = 0;
+	}
+
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		Player_loadout.unit_data[i].ship_class = -1;
+
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+			Player_loadout.unit_data[i].wep[j] = 0;
+			Player_loadout.unit_data[i].wep_count[j] = 0;
+		}
+	}
+
+}
 
 /**
  * Initializes some variables then loads the default FreeSpace single player campaign.
@@ -732,6 +761,8 @@ void mission_campaign_init()
 	mission_campaign_clear();
 
 	Campaign_file_missing = 0;
+
+	player_loadout_init();
 }
 
 /**
@@ -1218,6 +1249,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
+ * also called at campaign init and campaign load
  */
 void mission_campaign_clear()
 {
@@ -1277,13 +1309,42 @@ void mission_campaign_clear()
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
 		}
 
+		memset(Campaign.missions[i].briefing_cutscene, 0, NAME_LENGTH);
+		Campaign.missions[i].formula = 0;
+		Campaign.missions[i].completed = 0;
 		Campaign.missions[i].num_goals = 0;
 		Campaign.missions[i].num_events = 0;
 		Campaign.missions[i].num_variables = 0;	// Goober5000
+		Campaign.missions[i].mission_loop_formula = 0;
+		Campaign.missions[i].level = 0;
+		Campaign.missions[i].pos = 0;
+		Campaign.missions[i].flags = 0;
 		Campaign.missions[i].main_hall.clear();
+		Campaign.missions[i].debrief_persona_index = 0;
+		init_scoring_element(&Campaign.missions[i].stats);
 	}
 
+	memset(Campaign.name, 0, NAME_LENGTH);
+	memset(Campaign.filename, 0, MAX_FILENAME_LEN);
+	Campaign.type = 0;
+	Campaign.flags = 0;
 	Campaign.num_missions = 0;
+	Campaign.num_missions_completed = 0;
+	Campaign.current_mission = -1;
+	Campaign.next_mission = -1;
+	Campaign.prev_mission = -1;
+	Campaign.loop_enabled = 0;
+	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
+	Campaign.loop_reentry = 0;
+	Campaign.realign_required = 0;
+	Campaign.num_players = 0;
+	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
+	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
+	Campaign.num_variables = 0;
+	if (Campaign.variables != NULL) {
+		vm_free(Campaign.variables);
+		Campaign.variables = NULL;
+	}
 }
 
 /**

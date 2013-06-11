@@ -1847,7 +1847,7 @@ int bm_release(int handle, int clear_render_targets)
 		return 0;	// Already been released?
 	}
 
-	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
+	Assertion( be->handle == handle, "Invalid bitmap handle number %d (expected %d) for %s passed to bm_release()\n", be->handle, handle, be->filename );
 
 	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
 		nprintf(("BmpMan", "Tried to release a render target!\n"));

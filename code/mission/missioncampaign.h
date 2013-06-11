@@ -154,6 +154,11 @@ extern char Default_campaign_file_name[MAX_FILENAME_LEN - 4];
 // if the campaign file is missing this will get set for us to check against
 extern int Campaign_file_missing;
 
+/*
+ * initialise Player_loadout with default values
+ */
+void player_loadout_init();
+
 // called at game startup time to load the default single player campaign
 void mission_campaign_init( void );
 

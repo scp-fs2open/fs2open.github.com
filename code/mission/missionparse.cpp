@@ -704,11 +704,11 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	//error testing
-	if ((found640) && !(found1024))
+	if (Fred_running && (found640) && !(found1024))
 	{
 		Warning(LOCATION, "Mission: %s\nhas a 640x480 loading screen but no 1024x768 loading screen!",pm->name);
 	}
-	if (!(found640) && (found1024))
+	if (Fred_running && !(found640) && (found1024))
 	{
 		Warning(LOCATION, "Mission: %s\nhas a 1024x768 loading screen but no 640x480 loading screen!",pm->name);
 	}

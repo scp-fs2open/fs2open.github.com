@@ -919,6 +919,10 @@ void hud_target_hotkey_select( int k )
 			// this should not happen
 			return;
 		}
+	// if current target is in the list but this is not our current selection set,
+	// then we don't want to change target.
+	} else if (Players[Player_num].current_hotkey_set != k) {
+		next_target = target;
 	}
 	
 	// update target if more than 1 is visible
