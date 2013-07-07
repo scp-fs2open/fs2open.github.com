@@ -330,10 +330,10 @@ void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, v
 	else
 	{
 		// create a bit array to mark the objects we check
-		ubyte *visited_bitstring = (ubyte *) vm_malloc(calculate_num_bytes(Num_objects));
+		ubyte *visited_bitstring = (ubyte *) vm_malloc(calculate_num_bytes(MAX_OBJECTS));
 
 		// clear it
-		memset(visited_bitstring, 0, calculate_num_bytes(Num_objects));
+		memset(visited_bitstring, 0, calculate_num_bytes(MAX_OBJECTS));
 
 		// start evaluating the tree
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
