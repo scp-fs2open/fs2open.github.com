@@ -21,6 +21,8 @@ void gr_opengl_aaline(vertex *v1, vertex *v2);
 void gr_opengl_pixel(int x, int y, bool resize);
 void gr_opengl_gradient(int x1, int y1, int x2, int y2, bool resize);
 void gr_opengl_circle(int xc, int yc, int d, bool resize);
+void gr_opengl_unfilled_circle(int xc, int yc, int d, bool resize);
+void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, bool resize);
 void gr_opengl_curve(int xc, int yc, int r, int direction);
 void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap );
 void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct);
