@@ -34,8 +34,9 @@ struct image_desc
 #define CHC_WEAPONCLASS		6
 #define CHC_OBJECTTYPE		7
 #define CHC_KEYPRESS		8
-#define CHC_VERSION			9
-#define CHC_APPLICATION		10
+#define CHC_ACTION			9
+#define CHC_VERSION			10
+#define CHC_APPLICATION		11
 
 //Actions
 #define CHA_NONE			-1
@@ -69,6 +70,8 @@ struct image_desc
 #define CHA_ONTURRETFIRED	27
 #define CHA_PRIMARYFIRE		28
 #define CHA_SECONDARYFIRE	29
+#define CHA_ONACTION		30
+#define CHA_ONACTIONSTOPPED	31
 
 // management stuff
 void scripting_state_init();

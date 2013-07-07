@@ -28,6 +28,7 @@
 #include "globalincs/alphacolors.h"
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
+#include "parse/scripting.h"
 
 
 #ifndef NDEBUG
@@ -2086,6 +2087,8 @@ float check_control_timef(int id)
 
 	// first, see if control actually used (makes sure modifiers match as well)
 	if (!check_control(id)) {
+		Control_config[id].continuous_ongoing = false;
+
 		return 0.0f;
 	}
 
@@ -2100,6 +2103,11 @@ float check_control_timef(int id)
 	}
 
 	if (t1 + t2) {
+		// We want to set this to true only after visiting control_used() (above)
+		// to allow it to tell the difference between an ongoing continuous action
+		// started before and a continuous action being started right now.
+		Control_config[id].continuous_ongoing = true;
+
 		return t1 + t2;
 	}
 
@@ -2187,6 +2195,15 @@ int check_control_used(int id, int key)
 		return 1;
 	}
 
+	if (Control_config[id].continuous_ongoing) {
+		// If we reach this point, then it means this is a continuous control
+		// which has just been released
+
+		Script_system.SetHookVar("Action", 's', Control_config[id].text);
+		Script_system.RunCondition(CHA_ONACTIONSTOPPED, '\0', NULL, NULL, id);
+		Script_system.RemHookVar("Action");
+	}
+
 	return 0;
 }
 
@@ -2265,6 +2282,12 @@ void control_used(int id)
 	// if we have set this key to be ignored, ignore it
 	if (Ignored_keys[id]) {
 		return;
+	}
+
+	if (!Control_config[id].continuous_ongoing) {
+		Script_system.SetHookVar("Action", 's', Control_config[id].text);
+		Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
+		Script_system.RemHookVar("Action");
 	}
 
 	Control_config[id].used = timestamp();
