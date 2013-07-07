@@ -7976,6 +7976,28 @@ ADE_VIRTVAR(WeaponEnergyMax, l_Ship, "number", "Maximum weapon energy", "number"
 	return ade_set_args(L, "f", sip->max_weapon_reserve);
 }
 
+ADE_VIRTVAR(AutoaimFOV, l_Ship, "number", "FOV of ship's autoaim, if any", "number", "FOV (in degrees), or 0 if ship uses no autoaim or if handle is invalid")
+{
+	object_h *objh;
+	float fov = -1;
+	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fov))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR && fov >= 0.0f) {
+		if (fov > 180.0)
+			fov = 180.0;
+
+		shipp->autoaim_fov = fov * PI / 180.0f;
+	}
+
+	return ade_set_args(L, "f", shipp->autoaim_fov * 180.0f / PI);
+}
+
 ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigger is pressed or not", "boolean", "True if pressed, false if not, nil if ship handle is invalid")
 {
 	object_h *objh;
