@@ -2426,6 +2426,7 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 	int size = 5;
 	int colors[3] = {255, 255, 255};
 	bool lock_color = false;
+	int autoaim_frame = -1;
 
 	// render to texture parameters
 	char display_name[MAX_FILENAME_LEN] = "";
@@ -2532,6 +2533,9 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 	if (optional_string("Firepoint Y coordinate multiplier:"))
 		stuff_int(&scaleY);
 
+	if(optional_string("Autoaim Frame:"))
+		stuff_int(&autoaim_frame);
+
 	HudGaugeReticle* hud_gauge = new HudGaugeReticle();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -2541,6 +2545,7 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->setAutoaimFrame(autoaim_frame);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {

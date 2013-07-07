@@ -20,6 +20,7 @@
 #include "weapon/emp.h"
 #include "localization/localize.h"
 #include "network/multi.h"
+#include "weapon/weapon.h"
 
 #define NUM_RETICLE_ANIS			11		// keep up to date when modifying the number of reticle ani files
 
@@ -228,6 +229,7 @@ static int Threat_lock_frame;				// frame offset of current lock flashing warnin
 HudGaugeReticle::HudGaugeReticle():
 HudGauge(HUD_OBJECT_CENTER_RETICLE, HUD_CENTER_RETICLE, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_TOPDOWN | VM_OTHER_SHIP), 255, 255, 255)
 {
+	has_autoaim_lock = false;
 }
 
 void HudGaugeReticle::initBitmaps(char *fname)
@@ -247,9 +249,39 @@ void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scale
 
 void HudGaugeReticle::render(float frametime)
 {
+	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
+
+	if (autoaim_frame_offset > 0 || sip->autoaim_lock_snd > -1 || sip->autoaim_lost_snd > -1) {
+		ship *shipp = &Ships[Objects[Player->objnum].instance];
+		ship_weapon	*swp = &shipp->weapons;
+		ai_info *aip = &Ai_info[shipp->ai_index];
+
+		if (aip->target_objnum != -1) {
+			bool autoaiming = false;
+
+			autoaiming = in_autoaim_fov(shipp, swp->current_primary_bank, &Objects[aip->target_objnum]);
+
+			if (autoaiming) {
+				if (!has_autoaim_lock && sip->autoaim_lock_snd > -1) {
+					snd_play( &Snds[sip->autoaim_lock_snd]);
+				}
+				has_autoaim_lock = true;
+			}
+			else {
+				if (has_autoaim_lock && sip->autoaim_lost_snd > -1) {
+					snd_play( &Snds[sip->autoaim_lost_snd]);
+				}
+				has_autoaim_lock = false;
+			}
+		}
+	}
+
 	setGaugeColor(HUD_C_BRIGHT);
 
-	renderBitmap(crosshair.first_frame, position[0], position[1]);
+	if (has_autoaim_lock)
+		renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0], position[1]);
+	else
+		renderBitmap(crosshair.first_frame, position[0], position[1]);
 
 	if (firepoint_display) {
 		fp.clear();
@@ -311,6 +343,13 @@ void HudGaugeReticle::getFirepointStatus() {
 			}
 		}
 	}
+}
+
+void HudGaugeReticle::setAutoaimFrame(int framenum) {
+	if (framenum < 0 || framenum > crosshair.num_frames)
+		autoaim_frame_offset = 0;
+	else
+		autoaim_frame_offset = framenum;
 }
 
 void HudGaugeReticle::pageIn()

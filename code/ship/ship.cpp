@@ -707,6 +707,8 @@ void init_ship_entry(ship_info *sip)
 	sip->minimum_convergence_distance = 0.0f;
 	sip->convergence_distance = 100.0f;
 	vm_vec_zero(&sip->convergence_offset);
+	sip->autoaim_lock_snd = -1;
+	sip->autoaim_lost_snd = -1;
 
 	sip->warpin_snd_start = -1;
 	sip->warpout_snd_start = -1;
@@ -1973,6 +1975,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		if(optional_string("+Minimum Distance:"))
 			stuff_float(&sip->minimum_convergence_distance);
+
+		parse_sound("+Autoaim Lock Snd:", &sip->autoaim_lock_snd, sip->name);
+		parse_sound("+Autoaim Lost Snd:", &sip->autoaim_lost_snd, sip->name);
 	}
 
 	if(optional_string("$Convergence:"))
@@ -9730,6 +9735,70 @@ int ship_stop_fire_primary(object * obj)
 int tracers[MAX_SHIPS][4][4];
 
 float ship_get_subsystem_strength( ship *shipp, int type );
+
+/**
+ * Checks whether a ship would use autoaim if it were to fire its primaries at
+ * the given object, taking lead into account.
+ *
+ * @param shipp the ship to check
+ * @param bank_to_fire the assumed primary bank
+ * @param obj the object to check; must be the ship's current target
+ */
+
+bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
+{
+	// Most of the code of this function has been duplicated from
+	// ship_fire_primary(), because it is not easy to encapsulate cleanly.
+
+	ship_info *sip;
+	ai_info *aip;
+	ship_weapon *swp;
+
+	bool has_autoaim, has_converging_autoaim;
+	float autoaim_fov = 0;
+	float dist_to_target = 0;
+
+	vec3d plr_to_target_vec;
+	vec3d player_forward_vec = Objects[shipp->objnum].orient.vec.fvec;
+
+	vec3d target_position;
+
+	sip = &Ship_info[shipp->ship_info_index];
+	aip = &Ai_info[shipp->ai_index];
+
+	swp = &shipp->weapons;
+	int weapon = swp->primary_bank_weapons[bank_to_fire];
+	weapon_info* winfo_p = &Weapon_info[weapon];
+
+	has_converging_autoaim = ((sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags & AIM_FLAG_AUTOAIM)) && aip->target_objnum != -1);
+
+	if (!has_autoaim)
+		return FALSE;
+
+	autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+
+	if (aip->targeted_subsys != NULL)
+	{
+		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+	}
+	else
+	{
+		target_position = obj->pos;
+	}
+
+	dist_to_target = vm_vec_dist_quick(&Objects[shipp->objnum].pos, &target_position);
+
+	hud_calculate_lead_pos(&plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target);
+	vm_vec_sub2(&plr_to_target_vec, &Objects[shipp->objnum].pos);
+
+	float angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
+
+	if (angle_to_target <= autoaim_fov)
+		return true;
+	else
+		return false;
+}
 
 // fires a primary weapon for the given object.  It also handles multiplayer cases.
 // in multiplayer, the starting network signature, and number of banks fired are sent
