@@ -919,8 +919,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_NO_ETS							(1 << 13)	// The E - No ETS on this ship class
 #define SIF2_NO_LIGHTING					(1 << 14)	// Valathil - No lighting for this ship
 #define SIF2_DYN_PRIMARY_LINKING			(1 << 15)	// RSAXVC - Dynamically generate weapon linking options
+#define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
 // !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
-#define	MAX_SHIP_FLAGS	16		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	17		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
@@ -1291,6 +1292,8 @@ typedef struct ship_info {
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
+	float	auto_shield_spread;
+	int		auto_shield_spread_from_lod;
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
