@@ -31,10 +31,10 @@ typedef struct sorted_obj {
 	{
 	}
 
-	bool operator < (const sorted_obj &other);
+	bool operator < (const sorted_obj &other) const;
 } sorted_obj;
 
-inline bool sorted_obj::operator < (const sorted_obj &other)
+inline bool sorted_obj::operator < (const sorted_obj &other) const
 {
 	int model_num_a = -1;
 	int model_num_b = -1;
