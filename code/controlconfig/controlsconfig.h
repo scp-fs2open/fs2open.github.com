@@ -299,7 +299,7 @@ void control_config_close();
 void control_config_cancel_exit();
 
 void control_config_reset_defaults();
-int translate_key_to_index(char *key);
+int translate_key_to_index(char *key, bool find_override = false);
 char *translate_key(char *key);
 char *textify_scancode(int code);
 float check_control_timef(int id);

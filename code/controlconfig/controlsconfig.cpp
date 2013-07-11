@@ -2195,15 +2195,6 @@ int check_control_used(int id, int key)
 		return 1;
 	}
 
-	if (Control_config[id].continuous_ongoing) {
-		// If we reach this point, then it means this is a continuous control
-		// which has just been released
-
-		Script_system.SetHookVar("Action", 's', Control_config[id].text);
-		Script_system.RunCondition(CHA_ONACTIONSTOPPED, '\0', NULL, NULL, id);
-		Script_system.RemHookVar("Action");
-	}
-
 	return 0;
 }
 
@@ -2220,6 +2211,17 @@ int check_control(int id, int key)
 			return 0;
 		}
 		return 1;
+	}
+
+	if (Control_config[id].continuous_ongoing) {
+		// If we reach this point, then it means this is a continuous control
+		// which has just been released
+
+		Script_system.SetHookVar("Action", 's', Control_config[id].text);
+		Script_system.RunCondition(CHA_ONACTIONSTOPPED, '\0', NULL, NULL, id);
+		Script_system.RemHookVar("Action");
+
+		Control_config[id].continuous_ongoing = false;
 	}
 
 	return 0;
@@ -2288,6 +2290,9 @@ void control_used(int id)
 		Script_system.SetHookVar("Action", 's', Control_config[id].text);
 		Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
 		Script_system.RemHookVar("Action");
+
+		if (Control_config[id].type == CC_TYPE_CONTINUOUS)
+			Control_config[id].continuous_ongoing = true;
 	}
 
 	Control_config[id].used = timestamp();

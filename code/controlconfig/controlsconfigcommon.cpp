@@ -373,7 +373,10 @@ void set_modifier_status()
 	}
 }
 
-int translate_key_to_index(char *key)
+// If find_override is set to true, then this returns the index of the action
+// which has been bound to the given key. Otherwise, the index of the action
+// which has the given key as its default key will be returned.
+int translate_key_to_index(char *key, bool find_override)
 {
 	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
 
@@ -428,10 +431,19 @@ int translate_key_to_index(char *key)
 			index |= KEY_ALTED;
 
 		// convert scancode to Control_config index
-		for (i=0; i<CCFG_MAX; i++) {
-			if (Control_config[i].key_default == index) {
-				index = i;
-				break;
+		if (find_override) {
+			for (i=0; i<CCFG_MAX; i++) {
+				if (Control_config[i].key_id == index) {
+					index = i;
+					break;
+				}
+			}
+		} else {
+			for (i=0; i<CCFG_MAX; i++) {
+				if (Control_config[i].key_default == index) {
+					index = i;
+					break;
+				}
 			}
 		}
 
