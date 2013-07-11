@@ -14763,22 +14763,25 @@ int sexp_is_facing(int node)
 	}
 	node = CDR(node);
 
-	ship *target_shipp = sexp_get_ship_from_node(node);
-	if (target_shipp == NULL) {
-		// hasn't arrived yet
-		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
-			return SEXP_CANT_EVAL;
-		}
-		// not found and won't arrive: invalid
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(node));
+
+	if (oswpt.type == OSWPT_TYPE_SHIP && sexp_get_ship_from_node(node) == NULL) {
 		return SEXP_KNOWN_FALSE;
 	}
+
+	// only true if ship has departed or not yet arrived
+	if (oswpt.type == OSWPT_TYPE_EXITED || oswpt.type == OSWPT_TYPE_PARSE_OBJECT) {
+	return SEXP_CANT_EVAL;
+	}
+
+	origin_objp = &Objects[origin_shipp->objnum];
+	target_objp = oswpt.objp;
+
 	node = CDR(node);
 
 	double angle = atof(CTEXT(node));
 	node = CDR(node);
-
-	origin_objp = &Objects[origin_shipp->objnum];
-	target_objp = &Objects[target_shipp->objnum];
 
 	// check optional distance argument
 	if (node > 0 && (sexp_distance3(origin_objp, target_objp) > eval_num(node))) {
@@ -26442,8 +26445,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 
 		case OP_IS_FACING:
-			if (argnum < 2)
+			if (argnum == 0)
 				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_SHIP_POINT;
 			else
 				return OPF_POSITIVE;
 
@@ -29666,14 +29671,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tAngle in degrees of the forward cone." },
 
 	{ OP_IS_FACING, "Is Facing (Boolean training operator)\r\n"
-		"\tIs true as long as the second ship is within the first ship's specified "
+		"\tIs true as long as the second object is within the first ship's specified "
 		"forward cone.  A forward cone is defined as any point that the angle between the "
-		"vector of the point and the player, and the forward facing vector is within the "
-		"given angle. If the distance between the two ships is greather than "
-		"the fourth parameter, this will return false.\r\n\r\n"
+		"vector of the ship and point, and the forward facing vector is within the "
+		"given angle. If the distance between the two is greater than the fourth"
+		"parameter, this will return false.\r\n\r\n"
 		"Returns a boolean value.  Takes 3 or 4 argument...\r\n"
 		"\t1:\tShip to check from.\r\n"
-		"\t2:\tShip to check is within forward cone.\r\n"
+		"\t2:\tObject to check is within forward cone.\r\n"
 		"\t3:\tAngle in degrees of the forward cone.\r\n"
 		"\t4:\tRange in meters (optional)."},
 
