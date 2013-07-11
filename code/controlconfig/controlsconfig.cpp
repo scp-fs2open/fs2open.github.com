@@ -2161,11 +2161,11 @@ int check_control_used(int id, int key)
 
 		// check what current modifiers are pressed
 		mask = 0;
-		if (keyd_pressed[KEY_LSHIFT] || key_down_count(KEY_LSHIFT) || keyd_pressed[KEY_RSHIFT] || key_down_count(KEY_RSHIFT)) {
+		if (keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT]) {
 			mask |= KEY_SHIFTED;
 		}
 
-		if (keyd_pressed[KEY_LALT] || key_down_count(KEY_LALT) || keyd_pressed[KEY_RALT] || key_down_count(KEY_RALT)) {
+		if (keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT]) {
 			mask |= KEY_ALTED;
 		}
 
@@ -2180,7 +2180,7 @@ int check_control_used(int id, int key)
 
 			z &= KEY_MASK;
 
-			if (keyd_pressed[z] || key_down_count(z)) {
+			if (keyd_pressed[z]) {
 				control_used(id);
 				return 1;
 			}
