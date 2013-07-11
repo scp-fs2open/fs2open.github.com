@@ -14076,17 +14076,6 @@ void init_ai_object(int objnum)
 	memset(&aip->ai_override_ci,0,sizeof(control_info));
 }
 
-void init_ai_objects()
-{
-	int	i;
-
-	for (i=0; i<Num_objects; i++){
-		if (Objects[i].type == OBJ_SHIP){
-			init_ai_object(i);
-		}
-	}
-}
-
 void init_ai_system()
 {
 	Ppfp = Path_points;

@@ -10,36 +10,36 @@
 
 
 
-#include "object/object.h"
-#include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "fireball/fireballs.h"
-#include "debris/debris.h"
-#include "globalincs/linklist.h"
-#include "freespace2/freespace.h"
-#include "object/objectsnd.h"
-#include "playerman/player.h"
+#include "asteroid/asteroid.h"
 #include "cmeasure/cmeasure.h"
+#include "debris/debris.h"
+#include "fireball/fireballs.h"
+#include "freespace2/freespace.h"
+#include "globalincs/linklist.h"
+#include "iff_defs/iff_defs.h"
 #include "io/timer.h"
-#include "render/3d.h"
-#include "weapon/shockwave.h"
-#include "ship/afterburner.h"
+#include "jumpnode/jumpnode.h"
+#include "lighting/lighting.h"
+#include "mission/missionparse.h" //For 2D Mode
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "object/objcollide.h"
+#include "object/object.h"
+#include "object/objectdock.h"
 #include "object/objectshield.h"
-#include "lighting/lighting.h"
+#include "object/objectsnd.h"
 #include "observer/observer.h"
 #include "parse/scripting.h"
-#include "asteroid/asteroid.h"
+#include "playerman/player.h"
 #include "radar/radar.h"
-#include "jumpnode/jumpnode.h"
-#include "weapon/beam.h"
-#include "weapon/swarm.h"
 #include "radar/radarsetup.h"
-#include "object/objectdock.h"
-#include "mission/missionparse.h" //For 2D Mode
-#include "iff_defs/iff_defs.h"
+#include "render/3d.h"
+#include "ship/afterburner.h"
+#include "ship/ship.h"
+#include "weapon/beam.h"
+#include "weapon/shockwave.h"
+#include "weapon/swarm.h"
+#include "weapon/weapon.h"
 
 
 
@@ -49,7 +49,7 @@
 
 object obj_free_list;
 object obj_used_list;
-object obj_create_list;	
+object obj_create_list;
 
 object *Player_obj = NULL;
 object *Viewer_obj = NULL;
@@ -104,9 +104,12 @@ obj_flag_name Object_flag_names[] = {
 	{OF_IMMOBILE,				"immobile",					1,	},
 };
 
-//-----------------------------------------------------------------------------
-//	Scan the object list, freeing down to num_used objects
-//	Returns number of slots freed.
+/**
+ * Scan the object list, freeing down to num_used objects
+ *
+ * @param  Number of used objects to free down to
+ * @return Returns number of slots freed
+ */
 int free_object_slots(int num_used)
 {
 	int	i, olind, deleted_weapons;
@@ -179,17 +182,6 @@ int free_object_slots(int num_used)
 
 	if (!num_to_free)
 		return original_num_to_free;
-
-//JAS - I removed this because small fireballs are now particles, which aren't objects.
-//JAS	for (i=0; i<num_to_free; i++)
-//JAS		if ( (Objects[obj_list[i]].type == OBJ_FIREBALL) && (Fireball_data[Objects[obj_list[i]].instance].type == FIREBALL_TYPE_SMALL) ) {
-//JAS			num_to_free--;
-//JAS			nprintf(("allender", "Freeing FIREBALL object %3i\n", obj_list[i]));
-//JAS			Objects[obj_list[i]].flags |= OF_SHOULD_BE_DEAD;
-//JAS		}
-//JAS
-//JAS	if (!num_to_free)
-//JAS		return original_num_to_free;
 
 	for (i=0; i<num_to_free; i++)	{
 		object *tmp_obj = &Objects[obj_list[i]];
@@ -290,7 +282,9 @@ float get_shield_pct(object *objp)
 	return shield_get_strength(objp) / total_strength;
 }
 
-//sets up the free list & init player & whatever else
+/**
+ * Sets up the free list & init player & whatever else
+ */
 void obj_init()
 {
 	int i;
@@ -328,10 +322,15 @@ void obj_init()
 
 static int num_objects_hwm = 0;
 
-//returns the number of a free object, updating Highest_object_index.
-//Generally, obj_create() should be called to get an object, since it
-//fills in important fields and does the linking.
-//returns -1 if no free objects
+/** 
+ * Allocates an object
+ *
+ * Generally, obj_create() should be called to get an object, since it
+ * fills in important fields and does the linking.
+ *
+ * @return the number of a free object, updating Highest_object_index
+ * @return -1 if no free objects
+ */
 int obj_allocate(void)
 {
 	int objnum;
@@ -367,7 +366,6 @@ int obj_allocate(void)
 	Num_objects++;
 
 	if (Num_objects > num_objects_hwm) {
-		//nprintf(("AI", "*** MAX Num Objects = %i\n", Num_objects));
 		num_objects_hwm = Num_objects;
 	}
 
@@ -383,9 +381,12 @@ int obj_allocate(void)
 	return objnum;
 }
 
-//frees up an object.  Generally, obj_delete() should be called to get
-//rid of an object.  This function deallocates the object entry after
-//the object has been unlinked
+/**
+ * Frees up an object  
+ *
+ * Generally, obj_delete() should be called to get rid of an object.
+ * This function deallocates the object entry after the object has been unlinked
+ */
 void obj_free(int objnum)
 {
 	object *objp;
@@ -415,9 +416,12 @@ void obj_free(int objnum)
 
 }
 
-//initialize a new object.  adds to the list for the given segment.
-//returns the object number.  The object will be a non-rendering, non-physics
-//object.   Pass -1 if no parent.
+/**
+ * Initialize a new object. Adds to the list for the given segment.
+ *
+ * The object will be a non-rendering, non-physics object.   Pass -1 if no parent.
+ * @return the object number 
+ */
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
                vec3d * pos, float radius, uint flags )
 {
@@ -432,10 +436,6 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 
 	obj = &Objects[objnum];
 	Assert(obj->type == OBJ_NONE);		//make sure unused 
-
-	// Zero out object structure to keep weird bugs from happening
-	// in uninitialized fields.
-//	memset( obj, 0, sizeof(object) );
 
 	Assert(Object_next_signature > 0);	// 0 is bogus!
 	obj->signature = Object_next_signature++;
@@ -469,37 +469,6 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 
 	obj->collision_group_id = 0;
 
-	//WMC
-	/*
-	char buf[NAME_LENGTH];
-	sprintf(buf, "Object %d", objnum);
-	obj->core_camera = cam_create(buf, &vmd_zero_vector, &vmd_identity_matrix, obj);
-
-	//Top-down camera
-	sprintf(buf, "Object %d topdown", objnum);
-	vec3d tdv = vmd_zero_vector;
-	matrix tdm = vmd_identity_matrix;
-	angles rot_angles = { PI_2, 0.0f, 0.0f };
-	bool position_override = false;
-	if(obj->type == OBJ_SHIP)
-	{
-		ship_info *sip = &Ship_info[Ships[Viewer_obj->instance].ship_info_index];
-		if(sip->topdown_offset_def) {
-			tdv.xyz.x = sip->topdown_offset.xyz.x;
-			tdv.xyz.y = sip->topdown_offset.xyz.y;
-			tdv.xyz.z = sip->topdown_offset.xyz.z;
-			position_override = true;
-		}
-	}
-	if(!position_override)
-	{
-		tdv.xyz.y = radius * 25.0f;
-	}
-	vm_angles_2_matrix(&tdm, &rot_angles);
-	obj->topdown_camera = cam_create(buf, &tdv, &tdm, obj);
-	*/
-
-
 	// Goober5000
 	obj->dock_list = NULL;
 	obj->dead_dock_list = NULL;
@@ -507,8 +476,12 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	return objnum;
 }
 
-//remove object from the world
-//	If Player_obj, don't remove it!
+/**
+ * Remove object from the world
+ * If Player_obj, don't remove it!
+ * 
+ * @param objnum Object number to remove
+ */
 void obj_delete(int objnum)
 {
 	object *objp;
@@ -627,8 +600,10 @@ void obj_delete_all_that_should_be_dead()
 
 }
 
-// Add all newly created objects to the end of the used list and create their
-// object pairs for collision detection
+/**
+ * Add all newly created objects to the end of the used list and create their
+ * object pairs for collision detection
+ */
 void obj_merge_created_list(void)
 {
 	// The old way just merged the two.   This code takes one out of the create list,
@@ -693,14 +668,11 @@ void obj_move_one_docked_object(object *objp, object *parent_objp)
 	call_doa(objp, parent_objp);
 }
 
-/*
-float	Last_fire_time = 0.0f;
-int Avg_delay_count = 0;
-float Avg_delay_total;
-*/
-
-// function to deal with firing player things like lasers, missiles, etc.
-// separated out because of multiplayer issues.
+/**
+ * Deals with firing player things like lasers, missiles, etc.
+ *
+ * Separated out because of multiplayer issues.
+ */
 void obj_player_fire_stuff( object *objp, control_info ci )
 {
 	ship *shipp;
@@ -724,7 +696,6 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 
 			// fire non-streaming primaries here
 			ship_fire_primary( objp, 0 );
-	//			ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 		} else {
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
@@ -736,8 +707,6 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		if ( ci.fire_countermeasure_count ) {
 			ship_launch_countermeasure( objp );
 		}
-	} else {
-//		ship_stop_fire_primary(objp);
 	}
 
 	// single player and multiplayer masters do all of the following
@@ -784,12 +753,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				vm_vec_zero(&objp->phys_info.desired_rotvel);
 				objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
 				objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
-			} // else {
-				// DA: comment out lines that resets PF_DEAD_DAMP after every frame.
-				// This is now reset during engine repair.
-				//	objp->phys_info.flags &= ~(PF_REDUCED_DAMP | PF_DEAD_DAMP);
-				// objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp;
-			// }
+			}
 
 			if (shipp->weapons.num_secondary_banks > 0) {
 				polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
@@ -878,21 +842,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				goto obj_maybe_fire;
 			}
 
-	//		if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled && !OGL_enabled) ) )	{
-	//			// If we're doing model caching, don't rotate asteroids
-	//			vec3d tmp = objp->phys_info.rotvel;
-	//
-	//			objp->phys_info.rotvel = vmd_zero_vector;
-	//			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
-	//			objp->phys_info.rotvel = tmp;
-	//		} else {
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
-	//		}
-
-			// This code seems to have no effect - DB 1/12/99
-			//if ( MULTIPLAYER_CLIENT && (objp != Player_obj) ){
-			//	return;
-			//}
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
@@ -901,7 +851,6 @@ obj_maybe_fire:
 			if ( (objp->flags & OF_PLAYER_SHIP) && (objp->type != OBJ_OBSERVER) && (objp == Player_obj)) {
 				player *pp;
 				if(Player != NULL){
-//					has_fired = 1;
 					pp = Player;
 					obj_player_fire_stuff( objp, pp->ci );				
 				}
@@ -911,17 +860,12 @@ obj_maybe_fire:
 			// do stream weapon firing for all ships themselves. 
 			if(objp->type == OBJ_SHIP){
 				ship_fire_primary(objp, 1, 0);
-//				if(ship_fire_primary(objp, 1, 0) < 1){
-					has_fired = 1;
-//				}else{
-//					has_fired = -1;
-//				}
+				has_fired = 1;
 			}
 		}
 	}
 	
 	if(has_fired == -1){
-	//	mprintf(("stoped 1\n"));
 		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 	}
 
@@ -936,7 +880,6 @@ obj_maybe_fire:
 		vm_extract_angles_matrix(&new_angles, &objp->orient);
 		new_angles.p = old_angles.p;
 		new_angles.b = old_angles.b;
-		//new_angles.h = old_angles.h;
 		vm_angles_2_matrix(&objp->orient, &new_angles);
 
 		//Phys stuff hack
@@ -1000,12 +943,14 @@ void obj_check_object( object *obj )
 }
 #endif
 
-// Call this if you want to change an object flag so that the
-// object code knows what's going on.  For instance if you turn
-// off OF_COLLIDES, the object code needs to know this in order to
-// actually turn the object collision detection off.  By calling
-// this you shouldn't get Int3's in the checkobject code.  If you
-// do, then put code in here to correctly handle the case.
+/**
+ * Call this if you want to change an object flag so that the
+ * object code knows what's going on.  For instance if you turn
+ * off OF_COLLIDES, the object code needs to know this in order to
+ * actually turn the object collision detection off.  By calling
+ * this you shouldn't get Int3's in the checkobject code.  If you
+ * do, then put code in here to correctly handle the case.
+ */
 void obj_set_flags( object *obj, uint new_flags )
 {
 	int objnum = OBJ_INDEX(obj);	
@@ -1161,7 +1106,9 @@ void obj_move_all_pre(object *objp, float frametime)
 // Used to tell if a particular group of lasers has cast light yet.
 ubyte Obj_weapon_group_id_used[WEAPON_MAX_GROUP_IDS];
 
-// Called once a frame to mark all weapon groups as not having cast light yet.
+/**
+ * Called once a frame to mark all weapon groups as not having cast light yet.
+ */
 void obj_clear_weapon_group_id_list()
 {
 	memset( Obj_weapon_group_id_used, 0, sizeof(Obj_weapon_group_id_used) );
@@ -1210,7 +1157,6 @@ void obj_move_all_post(object *objp, float frametime)
 						b = i2fl(c.blue)/255.0f;
 
 						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 0.0f, 0.0f, 1.0f, objp->parent );
 					} else {
 						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
 					} 
@@ -1384,8 +1330,9 @@ DCF_BOOL( collisions, Collisions_enabled )
 
 MONITOR( NumObjects )
 
-//--------------------------------------------------------------------
-//move all objects for the current frame
+/**
+ * Move all objects for the current frame
+ */
 void obj_move_all(float frametime)
 {
 	object *objp;	
@@ -1418,9 +1365,7 @@ void obj_move_all(float frametime)
 		vec3d cur_pos = objp->pos;			// Save the current position
 
 #ifdef OBJECT_CHECK 
-		// if(! ((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) ){
-			obj_check_object( objp );
-		// }
+		obj_check_object( objp );
 #endif
 
 		// pre-move
@@ -1530,8 +1475,9 @@ void obj_move_all(float frametime)
 
 MONITOR( NumObjectsRend )
 
-// -----------------------------------------------------------------------------
-//	Render an object.  Calls one of several routines based on type
+/**
+ * Render an object.  Calls one of several routines based on type
+ */
 extern int Cmdline_dis_weapons;
 void obj_render(object *obj)
 {
@@ -1611,7 +1557,9 @@ void obj_init_all_ships_physics()
 
 }
 
-// do client-side pre-interpolation object movement
+/**
+ * Do client-side pre-interpolation object movement
+ */
 void obj_client_pre_interpolate()
 {
 	object *objp;
@@ -1654,7 +1602,9 @@ void obj_client_pre_interpolate()
 	}
 }
 
-// do client-side post-interpolation object movement
+/**
+ * Do client-side post-interpolation object movement
+ */
 void obj_client_post_interpolate()
 {
 	object *objp;
@@ -1679,69 +1629,6 @@ void obj_client_post_interpolate()
 	beam_move_all_post();
 }
 
-#if 0
-// following function is used in multiplayer only.  It deals with simulating objects on the client
-// side.  Lasers will always get moved by the client (i.e. no object position info is ever sent for them).
-// same for dumb missiles and possibly others.  We might move ships based on the last time their posision
-// was updated
-void obj_client_simulate(float frametime)
-{
-	object *objp;
-
-	obj_delete_all_that_should_be_dead();
-
-	multi_do_client_warp(frametime);     // client side processing of warping in effect stages
-	
-	if(Net_player->flags & NETINFO_FLAG_OBSERVER){
-		obj_observer_move(frametime);   // client side movement of an observer
-	}
-
-	/*
-	obj_merge_created_list();						// must merge any objects created by the host!
-	objp = GET_FIRST(&obj_used_list);
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )	{
-
-		if ( !(objp->flags&OF_SHOULD_BE_DEAD) )	{
-			vec3d	cur_pos = objp->pos;			// Save the current position
-
-			obj_move_all_pre(objp, frametime);
-
-			int predict_from_server_pos = 1;
-
-			// If not visible (or not a ship), bash position
-			if ( (!obj_visible_from_eye(&cur_pos)) || (objp->type != OBJ_SHIP) ) {
-				predict_from_server_pos = 0;
-			}
-
-			// If this is a player ship, don't predict from server position
-			if ( objp->flags & OF_PLAYER_SHIP ) {
-				predict_from_server_pos = 0;
-			}
-
-			if ( predict_from_server_pos ) {
-				obj_client_predict_pos(objp, frametime);
-			} else {
-				obj_client_bash_pos(objp, frametime);
-			}
-
-			obj_move_all_post(objp, frametime);
-		}
-	}	
-	*/
-
-	//	After all objects have been moved, move all docked objects.
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
-		if ( objp != Player_obj ) {
-			dock_move_docked_objects(objp);
-		}
-		objp = GET_NEXT(objp);
-	}
-
-	obj_check_all_collisions();	
-}
-#endif
-
 void obj_observer_move(float frame_time)
 {
 	object *objp;
@@ -1754,8 +1641,6 @@ void obj_observer_move(float frame_time)
 
 	objp = Player_obj;
 
-	// obj_move_all_pre(objp, flFrametime);
-
 	objp->last_pos = objp->pos;
 	objp->last_orient = objp->orient;		// save the orientation -- useful in multiplayer.
 
@@ -1765,7 +1650,9 @@ void obj_observer_move(float frame_time)
 	objp->flags &= ~OF_JUST_UPDATED;
 }
 
-// function to return a vector of the average position of all ships in the mission.
+/**
+ * Returns a vector of the average position of all ships in the mission.
+ */
 void obj_get_average_ship_pos( vec3d *pos )
 {
 	int count;
@@ -1773,7 +1660,7 @@ void obj_get_average_ship_pos( vec3d *pos )
 
 	vm_vec_zero( pos );
 
-   // average up all ship positions
+	// average up all ship positions
 	count = 0;
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( objp->type != OBJ_SHIP )
@@ -1805,12 +1692,14 @@ int obj_get_SIF(int obj)
 	return 0;
 }
 
-// Return the team for the object passed as a parameter
-//
-//	input:		objp => pointer to object that you want team for
-//
-// exit:			success => enumerated team
-//					failure => -1 (for objects that don't have teams)
+/**
+ * Return the team for the object passed as a parameter
+ *
+ * @param objp Pointer to object that you want team for
+ *
+ * @return enumerated team on success
+ * @return -1 on failure (for objects that don't have teams)
+ */
 int obj_team(object *objp)
 {
 	Assert( objp != NULL );
@@ -1864,13 +1753,11 @@ int obj_team(object *objp)
 	return team;
 }
 
-// -------------------------------------------------------
-// obj_add_pairs
-//
-// Add an element to the CheckObjects[] array, and update the 
-// object pairs.  This is called from obj_create(), and the restore
-// save-game code.
-// 
+/**
+ * Add an element to the CheckObjects[] array, and update the
+ * object pairs.  This is called from obj_create(), and the restore
+ * save-game code.
+ */
 void obj_add_pairs(int objnum)
 {
 	object	*objp;
@@ -1901,8 +1788,10 @@ void obj_add_pairs(int objnum)
 	objp->flags &= ~OF_NOT_IN_COLL;	
 }
 
-// Removes any occurances of object 'a' from
-// the pairs list.
+/**
+ * Removes any occurances of object 'a' from
+ * the pairs list.
+ */
 extern int Num_pairs;
 extern obj_pair pair_used_list;
 extern obj_pair pair_free_list;
@@ -1916,7 +1805,6 @@ void obj_remove_pairs( object * a )
 #endif	
 
 	if ( a->num_pairs < 1 )	{
-		//mprintf(( "OBJPAIR: No need to remove pairs 1!\n" ));
 		return;
 	}
 
@@ -1941,7 +1829,6 @@ void obj_remove_pairs( object * a )
 			tmp = parent->next;
 
 			if ( a->num_pairs==0 )	{
-				//mprintf(( "OBJPAIR: No need to remove pairs 2!\n" ));
 				break;
 			}
 
@@ -1952,7 +1839,9 @@ void obj_remove_pairs( object * a )
 	}
 }
 
-// reset all collisions
+/**
+ * Reset all collisions
+ */
 void obj_reset_all_collisions()
 {
 	// clear checkobjects
@@ -1998,9 +1887,12 @@ int object_is_dead_docked(object *objp)
 	return (objp->dead_dock_list != NULL);
 }
 
-//Makes an object start 'gliding'
-//that is, it will continue on the same velocity that it was going,
-//regardless of orientation -WMC
+/**
+ * Makes an object start 'gliding'
+ *
+ * It will continue on the same velocity that it was going,
+ * regardless of orientation -WMC
+ */
 void object_set_gliding(object *objp, bool enable, bool force)
 {
 	Assert(objp != NULL);
@@ -2021,7 +1913,9 @@ void object_set_gliding(object *objp, bool enable, bool force)
 	}
 }
 
-//Returns whether an object is gliding -WMC
+/**
+ * @return whether an object is gliding -WMC
+ */
 bool object_get_gliding(object *objp)
 {
 	Assert(objp != NULL);
@@ -2034,7 +1928,9 @@ bool object_glide_forced(object *objp)
 	return (objp->phys_info.flags & PF_FORCE_GLIDE) != 0;
 }
 
-//Quickly finds an object by its signature
+/**
+ * Quickly finds an object by its signature
+ */
 int obj_get_by_signature(int sig)
 {
 	object *objp = GET_FIRST(&obj_used_list);
@@ -2048,7 +1944,9 @@ int obj_get_by_signature(int sig)
 	return -1;
 }
 
-//Gets object model
+/**
+ * Gets object model
+ */
 int object_get_model(object *objp)
 {
 	switch(objp->type)

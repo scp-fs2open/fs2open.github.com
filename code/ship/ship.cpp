@@ -9376,6 +9376,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			}
 		}
 	}
+
+	if (sip->uses_team_colors)
+	{
+		sp->team_name = sip->default_team_name;
+	}
 }
 
 #ifndef NDEBUG
