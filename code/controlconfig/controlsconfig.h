@@ -8,6 +8,8 @@
 */ 
 
 
+#include "globalincs/pstypes.h"
+
 #ifndef CONTROLS_CONFIG_H
 #define CONTROLS_CONFIG_H
 
@@ -61,8 +63,9 @@ typedef struct config_item {
 	short joy_default;		//!< default joystick button bound to action
 	char tab;				//!< what tab (category) it belongs in
 	bool hasXSTR;			//!< whether we should translate this with an XSTR
-	char *text;				//!< describes the action in the config screen
+	char *default_text;		//!< default description of the action
 	char type;				//!< manner control should be checked in
+	char *text;				//!< overridable description of the action
 	short key_id;			//!< actual key bound to action
 	short joy_id;			//!< joystick button bound to action
 	int used;				//!< has control been used yet in mission?  If so, this is the timestamp
@@ -287,6 +290,7 @@ extern int Invert_axis[];
 extern int Invert_axis_defaults[];
 
 extern config_item Control_config[];		//!< Stores the keyboard configuration
+extern SCP_vector<config_item*> Control_config_presets; // tabled control presets
 extern char **Scan_code_text;
 extern char **Joy_button_text;
 
@@ -298,8 +302,8 @@ void control_config_close();
 
 void control_config_cancel_exit();
 
-void control_config_reset_defaults();
-int translate_key_to_index(char *key, bool find_override = false);
+void control_config_reset_defaults(int presetnum=-1);
+int translate_key_to_index(char *key, bool find_override=true);
 char *translate_key(char *key);
 char *textify_scancode(int code);
 float check_control_timef(int id);

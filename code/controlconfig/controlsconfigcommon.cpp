@@ -348,6 +348,8 @@ char *Joy_button_text_english[] = {
 char **Scan_code_text = Scan_code_text_english;
 char **Joy_button_text = Joy_button_text_english;
 
+SCP_vector<config_item*> Control_config_presets;
+
 void set_modifier_status()
 {
 	int i;
@@ -468,7 +470,7 @@ char *translate_key(char *key)
 
 	static char text[40] = {"None"};
 
-	index = translate_key_to_index(key);
+	index = translate_key_to_index(key, true);
 	if (index < 0) {
 		return NULL;
 	}
@@ -549,6 +551,9 @@ void control_config_common_init()
 	for (int i=0; i<CCFG_MAX; i++) {
 		Control_config[i].disabled = false;
 		Control_config[i].continuous_ongoing = false;
+
+		// init the overridable description with a copy of the default
+		Control_config[i].text = strdup(Control_config[i].default_text);
 	}
 
     control_config_common_load_overrides();
@@ -589,9 +594,11 @@ void control_config_common_load_overrides()
     reset_parse();
     
 	// start parsing
-	required_string("#ControlConfigOverride");
+	while(optional_string("#ControlConfigOverride")) {
+	config_item *cfg_preset = new config_item[CCFG_MAX + 1];
+	std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
+	Control_config_presets.push_back(cfg_preset);
 
-	// read fonts
 	while (required_string_either("#End","$Bind Name:"))
     {
         const int iBufferLength = 64;
@@ -603,9 +610,9 @@ void control_config_common_load_overrides()
         const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
         for (size_t i = 0; i < cCntrlAryLength; ++i)
         {
-            config_item& r_ccConfig = Control_config[i];
+            config_item& r_ccConfig = cfg_preset[i];
             
-            if (!strcmp(szTempBuffer, r_ccConfig.text))
+            if (!strcmp(szTempBuffer, r_ccConfig.default_text))
             {
                 /**
                  * short key_default;
@@ -617,9 +624,18 @@ void control_config_common_load_overrides()
                 
                 int iTemp;
                 
-                if (optional_string("$Key Default:"))
+                if (optional_string("$New Name:"))
                 {stuff_string(szTempBuffer, F_NAME, iBufferLength);
-                 r_ccConfig.key_default = (short)mEnumNameToVal[szTempBuffer];}
+                 r_ccConfig.text = strdup(szTempBuffer);}
+                
+                if (optional_string("$Key Default:")) {
+                    stuff_string(szTempBuffer, F_NAME, iBufferLength);
+                    
+                    if (strcmpi(szTempBuffer, "NONE"))
+                        r_ccConfig.key_default = (short)mEnumNameToVal[szTempBuffer];
+                    else
+                        r_ccConfig.key_default = -1;
+                }
                 
                 if (optional_string("$Joy Default:"))
                 {stuff_int(&iTemp); r_ccConfig.joy_default = (short)iTemp;}
@@ -659,8 +675,14 @@ void control_config_common_load_overrides()
             }
         }
     }
-    
+
     required_string("#End");
+    }
+    
+	// Overwrite the control config with the first preset that was found
+	if (Control_config_presets.size() > 0) {
+		std::copy(Control_config_presets[0], Control_config_presets[0] + CCFG_MAX + 1, Control_config);
+	}
 }
 
 #define ADD_ENUM_TO_ENUM_MAP(Enum) mEnumNameToVal[#Enum] = (Enum);

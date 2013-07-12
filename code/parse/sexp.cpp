@@ -14469,7 +14469,7 @@ int sexp_key_pressed(int node)
 	int z, t;
 
 	Assert(node != -1);
-	z = translate_key_to_index(CTEXT(node));
+	z = translate_key_to_index(CTEXT(node), false);
 	if (z < 0){
 		return SEXP_FALSE;
 	}
@@ -14492,7 +14492,7 @@ void sexp_key_reset(int node)
 
 	for (n = node; n != -1; n = CDR(n))
 	{
-		z = translate_key_to_index(CTEXT(n));
+		z = translate_key_to_index(CTEXT(n), false);
 		if (z >= 0)
 			Control_config[z].used = 0;
 	}
@@ -14512,7 +14512,7 @@ void sexp_ignore_key(int node)
 	node = CDR(node);
 	while (node > -1) {
 		// get the key
-		ignored_key = translate_key_to_index(CTEXT(node));
+		ignored_key = translate_key_to_index(CTEXT(node), false);
 
 		if (ignored_key > -1) {
 			Ignored_keys[ignored_key] = ignore_count;
