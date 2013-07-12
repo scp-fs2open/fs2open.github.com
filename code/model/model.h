@@ -917,6 +917,7 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm,
 
 extern void find_submodel_instance_point(vec3d *outpnt, object *ship_obj, int submodel_num);
 extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *ship_obj, int submodel_num, vec3d *submodel_pnt, vec3d *submodel_norm);
+extern void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, object *ship_obj, int submodel_num, vec3d *submodel_pnt, matrix *submodel_orient);
 extern void find_submodel_instance_world_point(vec3d *outpnt, object *ship_obj, int submodel_num);
 
 // Given a polygon model index, find a list of rotating submodels to be used for collision

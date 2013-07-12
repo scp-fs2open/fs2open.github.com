@@ -12234,8 +12234,19 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
 	// element.
 	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
-	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
-	*eye_orient = obj->orient;
+
+	if (ep->parent >= 0 && pm->submodel[ep->parent].can_move) {
+		find_submodel_instance_point_orient(eye_pos, eye_orient, obj, ep->parent, &ep->pnt, &vmd_identity_matrix);
+		vec3d tvec = *eye_pos;
+		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
+		vm_vec_add2(eye_pos, &obj->pos);
+
+		matrix tempmat = *eye_orient;
+		vm_matrix_x_matrix(eye_orient, &obj->orient, &tempmat);
+	} else {
+		model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
+		*eye_orient = obj->orient;
+	}
 
 	//	Modify the orientation based on head orientation.
 	if ( Viewer_obj == obj && do_slew) {

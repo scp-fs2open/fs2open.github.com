@@ -337,7 +337,15 @@ void HudGaugeReticle::getFirepointStatus() {
 					isactive = 2;
 
 				for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
-					firepoint tmp = { {ep.x - pm->gun_banks[i].pnt[j].xyz.x, ep.y - pm->gun_banks[i].pnt[j].xyz.y}, isactive};
+					vec3d fpfromeye;
+
+					matrix eye_orient, player_transpose;
+
+					vm_copy_transpose_matrix(&player_transpose, &Objects[Player->objnum].orient);
+					vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
+					vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
+
+					firepoint tmp = { {fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y}, isactive};
 					fp.push_back(tmp);
 				}
 			}
