@@ -631,7 +631,7 @@ void control_config_common_load_overrides()
                 if (optional_string("$Key Default:")) {
                     stuff_string(szTempBuffer, F_NAME, iBufferLength);
                     
-                    if (strcmpi(szTempBuffer, "NONE"))
+                    if (strcmp(szTempBuffer, "NONE"))
                         r_ccConfig.key_default = (short)mEnumNameToVal[szTempBuffer];
                     else
                         r_ccConfig.key_default = -1;
