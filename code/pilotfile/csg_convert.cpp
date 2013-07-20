@@ -613,7 +613,7 @@ void pilotfile_convert::csg_import(bool inferno)
 {
 	Assert( cfp != NULL );
 
-	char name[35], temp[NAME_LENGTH];
+	char name[35];
 
 	unsigned int csg_id = cfread_uint(cfp);
 
@@ -642,8 +642,7 @@ void pilotfile_convert::csg_import(bool inferno)
 
 	csg_import_missions(inferno);
 
-	cfread_string(temp, NAME_LENGTH, cfp);
-	csg->main_hall = temp;
+	csg->main_hall = cfread_ubyte(cfp);
 
 	csg_import_red_alert();
 
