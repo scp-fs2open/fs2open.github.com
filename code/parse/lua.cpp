@@ -11586,6 +11586,23 @@ ADE_FUNC(getControlInfo, l_Base, NULL, "Gets the control info handle.", "control
 	return ade_set_args(L, "o", l_Control_Info.Set(1));
 }
 
+ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the day the next time the current pilot enters the mainhall.", NULL, NULL)
+{
+	if (Player == NULL)
+		return ADE_RETURN_NIL;
+
+	bool *tips = false;
+
+	ade_get_args(L, "b", &tips);
+
+	if (tips)
+		Player->tips = 1;
+	else
+		Player->tips = 0;
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Note that you can crash FreeSpace 2 by posting an event at an improper time, so test extensively if you use it.", "boolean", "True if event was posted, false if passed event was invalid")
 {
 	gameevent_h *gh = NULL;
