@@ -2228,6 +2228,7 @@ void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int sh
 	case TS_MOVE_PLAYER :
 		nprintf(("Network","Apply move player %d %d\n",from_index,to_index));
 		update = multi_ts_move_player(from_index,to_index,&sound,player_index);
+		break;
 	default :
 		update = 0;
 		break;

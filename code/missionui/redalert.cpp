@@ -590,7 +590,11 @@ void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 }
 
 
-// Record the current state of the players wingman
+/*
+ * Record the current state of the players wingman & ships with the "red-alert-carry" flag
+ * Wingmen without the red-alert-carry flag are only stored if they survive
+ * dead wingmen must still be handled in red_alert_bash_wingman_status
+ */
 void red_alert_store_wingman_status()
 {
 	ship				*shipp;
@@ -681,7 +685,11 @@ void red_alert_delete_ship(ship *shipp, int ship_state)
 	}
 }
 
-// Take the stored wingman status information, and adjust the player wing ships accordingly
+/*
+ * Take the red alert status information, and adjust the red alert ships accordingly
+ * "red alert ships" are wingmen and any ship with the red-alert-carry flag
+ * Wingmen without red alert data still need to be handled / removed
+ */
 void red_alert_bash_wingman_status()
 {
 	int				i;
