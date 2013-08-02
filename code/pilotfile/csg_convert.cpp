@@ -13,6 +13,8 @@
 #include "cfile/cfilesystem.h"
 #include "menuui/techmenu.h"
 
+#include <iostream>
+#include <sstream>
 
 // copy of old scoring struct  * NORMAL PILOTS *
 typedef struct scoring_conv_t {
@@ -159,8 +161,9 @@ void pilotfile_convert::csg_import_ships_weapons()
 		ilist.index = ship_info_lookup(name);
 
 		if (ilist.index < 0) {
-			SCP_string error_msg = "Data mismatch (ship lookup)! '" + ilist.name + "'";
-			throw error_msg.c_str();
+			std::ostringstream error_msg;
+			error_msg << "Data mismatch (ship lookup)! '" << ilist.name << "'";
+			throw error_msg.str().c_str();
 		}
 
 		csg->ship_list.push_back( ilist );
@@ -176,8 +179,9 @@ void pilotfile_convert::csg_import_ships_weapons()
 		ilist.index = weapon_info_lookup(name);
 
 		if (ilist.index < 0) {
-			SCP_string error_msg = "Data mismatch (weapon lookup)! '" + ilist.name + "'";
-			throw error_msg.c_str();
+			std::ostringstream error_msg;
+			error_msg << "Data mismatch (weapon lookup)! '" << ilist.name << "'";
+			throw error_msg.str().c_str();
 		}
 
 		csg->weapon_list.push_back( ilist );
@@ -192,10 +196,9 @@ void pilotfile_convert::csg_import_ships_weapons()
 	}
 
 	if (csg->last_ship_flown_index < 0) {
-		SCP_string error_msg = "Data mismatch (player ship)! '";
-		error_msg += csg->last_ship_flown_index;
-		error_msg.append("'");
-		throw error_msg.c_str();
+		std::ostringstream error_msg;
+		error_msg << "Data mismatch (player ship)! '" << csg->last_ship_flown_index << "'";
+		throw error_msg.str().c_str();
 	}
 
 	// create list of medals (since it's missing from the old files)
