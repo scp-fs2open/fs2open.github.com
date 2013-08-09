@@ -102,7 +102,7 @@ char *fs2_open_credit_text =
 	"Ogg Vorbis - (C) 2005, Xiph.Org Foundation\n"
 	"JPEG - Independent JPEG Group, (C) 1991-1998, Thomas G. Lane\n"
 	"libpng - Copyright (C) 1998-2010 Glenn Randers-Pehrson\n"
-	"liblua - Copyright (C) 1994–2008 Lua.org, PUC-Rio\n"
+	"liblua - Copyright (C) 1994-2008 Lua.org, PUC-Rio\n"
 	"zlib - Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler\n"
 	"FXAA - Copyright (c) 2010 NVIDIA Corporation. All rights reserved.\n"
 	"\n"

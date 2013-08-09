@@ -125,4 +125,6 @@ extern int Scene_texture_height;
 extern float Scene_texture_u_scale;
 extern float Scene_texture_v_scale;
 
+extern bool Use_Shaders_for_effect_rendering;
+
 #endif	// !GR_OPENGLDRAW_H

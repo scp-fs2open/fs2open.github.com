@@ -13,6 +13,8 @@
 #include "cfile/cfilesystem.h"
 #include "menuui/techmenu.h"
 
+#include <iostream>
+#include <sstream>
 
 // copy of old scoring struct  * NORMAL PILOTS *
 typedef struct scoring_conv_t {
@@ -159,7 +161,9 @@ void pilotfile_convert::csg_import_ships_weapons()
 		ilist.index = ship_info_lookup(name);
 
 		if (ilist.index < 0) {
-			throw "Data mismatch (ship lookup)!";
+			std::ostringstream error_msg;
+			error_msg << "Data mismatch (ship lookup)! '" << ilist.name << "'";
+			throw error_msg.str().c_str();
 		}
 
 		csg->ship_list.push_back( ilist );
@@ -175,7 +179,9 @@ void pilotfile_convert::csg_import_ships_weapons()
 		ilist.index = weapon_info_lookup(name);
 
 		if (ilist.index < 0) {
-			throw "Data mismatch (weapon lookup)!";
+			std::ostringstream error_msg;
+			error_msg << "Data mismatch (weapon lookup)! '" << ilist.name << "'";
+			throw error_msg.str().c_str();
 		}
 
 		csg->weapon_list.push_back( ilist );
@@ -190,7 +196,9 @@ void pilotfile_convert::csg_import_ships_weapons()
 	}
 
 	if (csg->last_ship_flown_index < 0) {
-		throw "Data mismatch (player ship)!";
+		std::ostringstream error_msg;
+		error_msg << "Data mismatch (player ship)! '" << csg->last_ship_flown_index << "'";
+		throw error_msg.str().c_str();
 	}
 
 	// create list of medals (since it's missing from the old files)
@@ -613,7 +621,7 @@ void pilotfile_convert::csg_import(bool inferno)
 {
 	Assert( cfp != NULL );
 
-	char name[35], temp[NAME_LENGTH];
+	char name[35];
 
 	unsigned int csg_id = cfread_uint(cfp);
 
@@ -642,8 +650,7 @@ void pilotfile_convert::csg_import(bool inferno)
 
 	csg_import_missions(inferno);
 
-	cfread_string(temp, NAME_LENGTH, cfp);
-	csg->main_hall = temp;
+	csg->main_hall = cfread_ubyte(cfp);
 
 	csg_import_red_alert();
 

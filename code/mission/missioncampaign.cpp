@@ -1319,7 +1319,7 @@ void mission_campaign_clear()
 		Campaign.missions[i].level = 0;
 		Campaign.missions[i].pos = 0;
 		Campaign.missions[i].flags = 0;
-		Campaign.missions[i].main_hall.clear();
+		Campaign.missions[i].main_hall = "";
 		Campaign.missions[i].debrief_persona_index = 0;
 		init_scoring_element(&Campaign.missions[i].stats);
 	}

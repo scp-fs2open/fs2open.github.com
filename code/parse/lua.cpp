@@ -2736,7 +2736,7 @@ ADE_VIRTVAR(RotationalVelocityDamping, l_Physics, "number", "Rotational damping,
 	return ade_set_args(L, "f", pih->pi->rotdamp);
 }
 
-ADE_VIRTVAR(RotationalVelocityDesired, l_Physics, "lvector", "Desired rotational velocity", "number", "Desired rotational velocity, or 0 if handle is invalid")
+ADE_VIRTVAR(RotationalVelocityDesired, l_Physics, "vector", "Desired rotational velocity", "vector", "Desired rotational velocity, or null vector if handle is invalid")
 {
 	physics_info_h *pih;
 	vec3d *v3=NULL;
@@ -4753,7 +4753,7 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].name);
 			break;
 		default:
-			sprintf(buf, "Object %d [%d]", OBJ_INDEX(objh->objp), objh->sig);
+			sprintf(buf, "Object %ld [%d]", OBJ_INDEX(objh->objp), objh->sig);
 	}
 
 	return ade_set_args(L, "s", buf);

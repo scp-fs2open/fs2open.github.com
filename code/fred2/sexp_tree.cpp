@@ -46,6 +46,7 @@
 #include "graphics/gropenglpostprocessing.h"
 #include "sound/ds.h"
 #include "globalincs/alphacolors.h"
+#include "localization/localize.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -1399,6 +1400,9 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 	*modified = 1;
 	if (!str)
 		return 0;
+
+	// let's make sure we aren't introducing any invalid characters, per Mantis #2893
+	lcl_fred_replace_stuff(str, TOKEN_LENGTH - 1);
 
 	for (node=0; node<tree_nodes.size(); node++)
 		if (tree_nodes[node].handle == h)

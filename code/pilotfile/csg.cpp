@@ -1176,16 +1176,18 @@ void pilotfile::csg_read_cutscenes() {
 }
 
 void pilotfile::csg_write_cutscenes() {
+	SCP_vector<cutscene_info>::iterator cut;
+
 	startSection(Section::Cutscenes);
 
 	size_t viewableScenes = 0;
-	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if(cut->viewable)
 			viewableScenes ++;
 	}
 	cfwrite_uint(viewableScenes, cfp);
 
-	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if(cut->viewable)
 			cfwrite_string_len(cut->filename, cfp);
 	}

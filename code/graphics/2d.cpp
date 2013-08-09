@@ -256,43 +256,6 @@ void gr_close()
 	Gr_inited = 0;
 }
 
-//XSTR:OFF
-DCF(gr,"Changes graphics mode")
-{
-	int mode = gr_screen.mode;
-
-	if ( Dc_command ) {
-		dc_get_arg(ARG_STRING);
-		
-		if ( !strcmp( Dc_arg, "o")) {
-			mode = GR_OPENGL;
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
-	}
-
-	if ( Dc_help ) {
-		dc_printf( "Usage: gr mode\n" );
-		dc_printf( "The options can be:\n" );
-		dc_printf( "Macros:  A=software win32 window (obsolete)\n" );
-		dc_printf( "         B=software directdraw fullscreen (obsolete)\n" );
-		dc_printf( "         G=Glide (obsolete)\n" );
-		dc_printf( "         O=OpenGL\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
-	}
-
-	if ( Dc_status ) {
-		switch( gr_screen.mode ) {
-		case GR_OPENGL:
-			dc_printf( "OpenGl\n" );
-			break;
-		default:
-			Int3();		// Invalid graphics mode
-		}
-	}
-}
-//XSTR:ON
 
 /**
  * Set screen clear color
