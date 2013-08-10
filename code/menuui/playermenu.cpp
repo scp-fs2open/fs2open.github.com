@@ -796,15 +796,15 @@ int player_select_get_last_pilot_info()
 		strcpy_s(Player_select_last_pilot, last_player);
 	}
 
-	if ( !Pilot.load_player(last_player, Player) ) {
-		Player_select_last_is_multi = 0;
-	} else {
-		Player_select_last_is_multi = Player->player_was_multi;
-	}
-
 	// handle changing from pre-pilot code to post-pilot code
 	if (Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' || Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'S') {
 		Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';	// chop off last char, M|P
+	}
+
+	if ( !Pilot.load_player(Player_select_last_pilot, Player) ) {
+		Player_select_last_is_multi = 0;
+	} else {
+		Player_select_last_is_multi = Player->player_was_multi;
 	}
 
 	return 1;
