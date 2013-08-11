@@ -686,12 +686,6 @@ void pilotfile_convert::csg_export_flags()
 	// tips
 	cfwrite_ubyte((ubyte)plr->tips, cfp);
 
-	// mainhall
-	cfwrite_string(const_cast<char*>(csg->main_hall.c_str()), cfp);
-
-	// cutscenes
-	cfwrite_int(csg->cutscenes, cfp);
-
 	endSection();
 }
 

@@ -128,10 +128,9 @@ struct plr_data {
 
 	// not carried over, just for reference during conversion process
 	int version;
-	int is_multi;
-
 
 	// basic flags and settings
+	int is_multi;
 	int tips;
 	int rank;
 	int skill_level;

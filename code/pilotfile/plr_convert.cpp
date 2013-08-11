@@ -421,8 +421,8 @@ void pilotfile_convert::plr_import()
 		throw "Unsupported file version!";
 	}
 
-	// multi flag, don't need it
-	cfread_ubyte(cfp);
+	// multi flag
+	plr->is_multi = (int)cfread_ubyte(cfp);
 
 	// rank
 	plr->rank = cfread_int(cfp);
@@ -548,6 +548,9 @@ void pilotfile_convert::plr_export_flags()
 
 	// special rank setting (to avoid having to read all stats on verify)
 	cfwrite_int(plr->rank, cfp);
+
+	// What game mode we were in last on this pilot
+	cfwrite_int(plr->is_multi, cfp);
 
 	endSection();
 }
