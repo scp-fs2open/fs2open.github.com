@@ -29,6 +29,8 @@
 #include "pilotfile/pilotfile.h"
 
 
+static const int MAX_WSS_SLOTS_CONV = 12;   // 3 wings * 4 slots
+static const int MAX_SHIP_WEAPONS_CONV = 7; // 3 primary + 4 secondary
 
 typedef struct index_list_t {
 	SCP_string name;
@@ -88,8 +90,8 @@ typedef struct cmission_conv_t {
 
 typedef struct wss_unit_conv_t {
 	int ship_index;
-	int wep[12];
-	int wep_count[12];
+	int wep[MAX_SHIP_WEAPONS_CONV];
+	int wep_count[MAX_SHIP_WEAPONS_CONV];
 
 	wss_unit_conv_t() :
 		ship_index(-1)
@@ -101,7 +103,7 @@ typedef struct loadout_conv_t {
 	SCP_string filename;
 	SCP_string last_modified;
 
-	wss_unit_conv_t slot[12];
+	wss_unit_conv_t slot[MAX_WSS_SLOTS_CONV];
 
 	SCP_vector<int> weapon_pool;
 	SCP_vector<int> ship_pool;

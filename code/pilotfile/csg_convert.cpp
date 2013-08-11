@@ -564,10 +564,10 @@ void pilotfile_convert::csg_import_loadout()
 	}
 
 	// loadout info
-	for (idx = 0; idx < 12; idx++) {
+	for (idx = 0; idx < MAX_WSS_SLOTS_CONV; idx++) {
 		csg->loadout.slot[idx].ship_index = cfread_int(cfp);
 
-		for (j = 0; j < 12; j++) {
+		for (j = 0; j < MAX_SHIP_WEAPONS_CONV; j++) {
 			csg->loadout.slot[idx].wep[j] = cfread_int(cfp);
 			csg->loadout.slot[idx].wep_count[j] = cfread_int(cfp);
 		}
