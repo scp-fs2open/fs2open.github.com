@@ -769,7 +769,8 @@ void pilotfile_convert::plr_export_controls()
 	}
 
 	// extra joystick stuff
-	for (idx = 0; idx < 5; idx++) {
+	cfwrite_int(MAX_JOY_AXES_CONV, cfp);
+	for (idx = 0; idx < MAX_JOY_AXES_CONV; idx++) {
 		cfwrite_int(plr->joy_axis_map_to[idx], cfp);
 		cfwrite_int(plr->joy_invert_axis[idx], cfp);
 	}

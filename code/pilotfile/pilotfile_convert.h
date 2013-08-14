@@ -29,6 +29,7 @@
 #include "pilotfile/pilotfile.h"
 
 
+static const unsigned short MAX_JOY_AXES_CONV = 5;
 static const int MAX_WSS_SLOTS_CONV = 12;   // 3 wings * 4 slots
 static const int MAX_SHIP_WEAPONS_CONV = 7; // 3 primary + 4 secondary
 
