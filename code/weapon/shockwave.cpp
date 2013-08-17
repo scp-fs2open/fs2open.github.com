@@ -356,7 +356,18 @@ void shockwave_move(object *shockwave_objp, float frametime)
 
 		// If this shockwave hit the player, play shockwave impact sound
 		if ( objp == Player_obj ) {
-			snd_play( &Snds[SND_SHOCKWAVE_IMPACT], 0.0f, MAX(0.4f, damage/Weapon_info[sw->weapon_info_index].damage) );
+			float full_damage, vol_scale;
+			if (sw->weapon_info_index >= 0) {
+				full_damage = Weapon_info[sw->weapon_info_index].damage;
+			} else {
+				full_damage = sw->damage;
+			}
+			if (full_damage != 0.0f) {
+				vol_scale = MAX(0.4f, damage/full_damage);
+			} else {
+				vol_scale = 1.0f;
+			}
+			snd_play( &Snds[SND_SHOCKWAVE_IMPACT], 0.0f, vol_scale );
 		}
 
 	}	// end for

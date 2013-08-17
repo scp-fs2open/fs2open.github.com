@@ -521,7 +521,7 @@ int ai_goal_find_dockpoint(int shipnum, int dock_type)
 
 	// insanity?
 	if (loop_count >= 100)
-		Warning(LOCATION, "Too many iterations while looking for a dockpoint on %s.  Either there was a bug or this is an übership.\n", shipp->ship_name);
+		Warning(LOCATION, "Too many iterations while looking for a dockpoint on %s.\n", shipp->ship_name);
 
 	// if we're here, just return the first dockpoint
 	return model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, dock_type);
