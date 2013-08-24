@@ -22,7 +22,7 @@ struct object;
 extern flag_def_list model_render_flags[];
 extern int model_render_flags_size;
 
-#define MAX_DEBRIS_OBJECTS	32
+#define MAX_DEBRIS_OBJECTS	48
 #define MAX_MODEL_DETAIL_LEVELS	8
 #define MAX_PROP_LEN			256
 #define MAX_NAME_LEN			32
