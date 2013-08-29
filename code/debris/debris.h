@@ -52,7 +52,7 @@ typedef struct debris {
 #define	DEBRIS_USED				(1<<0)
 #define	DEBRIS_EXPIRE			(1<<1)	// debris can expire (ie hull chunks from small ships)
 
-#define	MAX_DEBRIS_PIECES	96
+#define	MAX_DEBRIS_PIECES	64
 
 extern	debris Debris[MAX_DEBRIS_PIECES];
 
