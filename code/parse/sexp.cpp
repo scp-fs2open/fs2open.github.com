@@ -9636,8 +9636,19 @@ void sexp_hud_set_max_targeting_range(int n)
 {
 	Hud_max_targeting_range = eval_num(n);
 
-	if (Hud_max_targeting_range < 0)
+	if (Hud_max_targeting_range < 0) {
 		Hud_max_targeting_range = 0;
+	}
+
+	multi_start_callback();
+	multi_send_int(Hud_max_targeting_range);
+	multi_end_callback();
+
+}
+
+void multi_sexp_hud_set_max_targeting_range()
+{
+	multi_get_int(Hud_max_targeting_range);
 }
 
 /* Make sure that the Sexp_hud_display_* get added to the game_state
@@ -23842,6 +23853,10 @@ void multi_sexp_eval()
 
 			case OP_CHANGE_TEAM_COLOR:
 				multi_sexp_change_team_color();
+				break;
+
+			case OP_HUD_SET_MAX_TARGETING_RANGE:
+				multi_sexp_hud_set_max_targeting_range();
 				break;
 
 			// bad sexp in the packet

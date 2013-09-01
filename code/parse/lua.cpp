@@ -6554,7 +6554,8 @@ ADE_VIRTVAR(AmmoLeft, l_WeaponBank, "number", "Ammo left for the current bank", 
 	return ade_set_error(L, "i", 0);
 }
 
-ADE_VIRTVAR(AmmoMax, l_WeaponBank, "number", "Maximum ammo for the current bank", "number", "Ammo capacity, or 0 if handle is invalid")
+ADE_VIRTVAR(AmmoMax, l_WeaponBank, "number", "Maximum ammo for the current bank<br>"
+			"<b>Note:</b> Setting this value actually sets the <i>capacity</i> of the weapon bank. To set the actual maximum ammunition use <tt>AmmoMax = <amount> * class.CargoSize</tt>", "number", "Ammo capacity, or 0 if handle is invalid")
 {
 	ship_bank_h *bh = NULL;
 	int ammomax;
@@ -6567,23 +6568,35 @@ ADE_VIRTVAR(AmmoMax, l_WeaponBank, "number", "Maximum ammo for the current bank"
 	switch(bh->type)
 	{
 		case SWH_PRIMARY:
-			if(ADE_SETTING_VAR && ammomax > -1) {
-				bh->sw->primary_bank_start_ammo[bh->bank] = ammomax;
-			}
+			{
+				if(ADE_SETTING_VAR && ammomax > -1) {
+					bh->sw->primary_bank_capacity[bh->bank] = ammomax;
+				}
 
-			return ade_set_args(L, "i", bh->sw->primary_bank_start_ammo[bh->bank]);
+				int weapon_class = bh->sw->primary_bank_weapons[bh->bank];
+
+				Assert(bh->objp->type == OBJ_SHIP);
+
+				return ade_set_args(L, "i", get_max_ammo_count_for_primary_bank(Ships[bh->objp->instance].ship_info_index, bh->bank, weapon_class));
+			}
 		case SWH_SECONDARY:
-			if(ADE_SETTING_VAR && ammomax > -1) {
-				bh->sw->secondary_bank_start_ammo[bh->bank] = ammomax;
-			}
+			{
+				if(ADE_SETTING_VAR && ammomax > -1) {
+					bh->sw->secondary_bank_capacity[bh->bank] = ammomax;
+				}
 
-			return ade_set_args(L, "i", bh->sw->secondary_bank_start_ammo[bh->bank]);
+				int weapon_class = bh->sw->secondary_bank_weapons[bh->bank];
+
+				Assert(bh->objp->type == OBJ_SHIP);
+
+				return ade_set_args(L, "i", get_max_ammo_count_for_bank(Ships[bh->objp->instance].ship_info_index, bh->bank, weapon_class));
+			}
 		case SWH_TERTIARY:
 			if(ADE_SETTING_VAR && ammomax > -1) {
-				bh->sw->tertiary_bank_ammo = ammomax;
+				bh->sw->tertiary_bank_capacity = ammomax;
 			}
 
-			return ade_set_args(L, "i", bh->sw->tertiary_bank_start_ammo);
+			return ade_set_args(L, "i", bh->sw->tertiary_bank_capacity);
 	}
 
 	return ade_set_error(L, "i", 0);

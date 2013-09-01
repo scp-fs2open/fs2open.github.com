@@ -131,15 +131,15 @@ BOOL orient_editor::OnInitDialog()
 		m_object_index = 0;
 	}
 
-	m_spin1.SetRange((short)9999, (short)-9999);
+	m_spin1.SetRange((short)-9999, (short)9999);
 	m_spin1.SetPos((int) convert(m_position_x));
-	m_spin2.SetRange((short)9999, (short)-9999);
+	m_spin2.SetRange((short)-9999, (short)9999);
 	m_spin2.SetPos((int) convert(m_position_y));
-	m_spin3.SetRange((short)9999, (short)-9999);
+	m_spin3.SetRange((short)-9999, (short)9999);
 	m_spin3.SetPos((int) convert(m_position_z));
-	m_spin4.SetRange((short)9999, (short)-9999);
-	m_spin5.SetRange((short)9999, (short)-9999);
-	m_spin6.SetRange((short)9999, (short)-9999);
+	m_spin4.SetRange((short)-9999, (short)9999);
+	m_spin5.SetRange((short)-9999, (short)9999);
+	m_spin6.SetRange((short)-9999, (short)9999);
 	UpdateData(FALSE);
 	return TRUE;
 }

@@ -895,6 +895,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 
 		if (offset_pos) {
 			cfseek(cfp, offset_pos, CF_SEEK_CUR);
+			mprintf(("PLR => WARNING: Advancing to the next section. %i bytes were skipped!\n", offset_pos));
 		}
 	}
 
