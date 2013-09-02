@@ -11039,7 +11039,8 @@ ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interf
 	return ade_set_args(L, "b", idx > -1);
 }
 
-ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping = true]", "Plays a music file using FS2Open's builtin music system. Volume should be in the 0.0 - 1.0 range, and is capped at 1.0. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
+extern float Master_event_music_volume;
+ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
 	char *s;
 	float volume = 1.0f;
@@ -11051,7 +11052,8 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping
 	if(ah < 0)
 		return ade_set_error(L, "i", -1);
 
-	CLAMP(volume, 0.0f, 1.0f);
+	// didn't remove the volume parameter because it'll break the API
+	volume = Master_event_music_volume;
 
 	audiostream_play(ah, volume, loop ? 1 : 0);
 	return ade_set_args(L, "i", ah);
