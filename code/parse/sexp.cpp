@@ -898,10 +898,9 @@ ship * sexp_get_ship_from_node(int node);
 #define SEXP_HUD_GAUGE_WARPOUT "warpout"
 
 // event log stuff
-SCP_vector<SCP_string> event_log_buffer;
-SCP_vector<SCP_string> event_log_variable_buffer;
-SCP_vector<SCP_string> event_log_argument_buffer;
-
+SCP_vector<SCP_string> *Current_event_log_buffer;
+SCP_vector<SCP_string> *Current_event_log_variable_buffer;
+SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
 {
@@ -8223,7 +8222,7 @@ int eval_when(int n, int when_op_num)
 			ptr = Sexp_applicable_argument_list.get_next();		
 			while(ptr != NULL) {
 				// See if we have an argument. 
-				event_log_argument_buffer.push_back(ptr->text); 
+				Current_event_log_argument_buffer->push_back(ptr->text); 
 				ptr = ptr->get_next();
 			}
 		}	
@@ -21301,16 +21300,8 @@ int generate_event_log_flags_mask(int result)
 			matches |= MLF_SEXP_FALSE; 
 			break;
 
-		case SEXP_KNOWN_TRUE:
-			matches |= MLF_SEXP_KNOWN_TRUE; 
-			break; 
-
-		case SEXP_KNOWN_FALSE:
-			matches |= MLF_SEXP_KNOWN_FALSE; 
-			break; 
-
 		default:
-			Int3();	// just for now. This shouldn't hit trunk!
+			Error(LOCATION, "SEXP has a value which isn't true or false.");	
 	}
 
 	if (( result == SEXP_TRUE ) || (result == SEXP_KNOWN_TRUE)) {
@@ -21345,6 +21336,45 @@ int generate_event_log_flags_mask(int result)
 	return matches;
 }
 
+void current_log_to_backup_log_buffer()
+{
+	Mission_events[Event_index].backup_log_buffer.clear();
+	if (!(Mission_events[Event_index].mission_log_flags & MLF_STATE_CHANGE)){
+		return;
+	}
+
+	for (int i = 0; i < (int)Current_event_log_buffer->size(); i++) {
+		Mission_events[Event_index].backup_log_buffer.push_back(Current_event_log_buffer->at(i));
+	}
+}
+
+void maybe_write_previous_event_to_log(int result) 
+{
+	mission_event *this_event = &Mission_events[Event_index];
+
+	// if the old log is empty, all we do is record the result for the next evaluation
+	// the old log should only be empty at mission start
+	if (this_event->backup_log_buffer.empty()) {
+		this_event->previous_result = result;
+		return;
+	}
+
+	// if there's no change in state, we don't write the previous state to the log
+	if ((this_event->mission_log_flags & MLF_STATE_CHANGE) && (result == this_event->previous_result)) {
+		current_log_to_backup_log_buffer();
+		return;
+	}
+
+	log_string(LOGFILE_EVENT_LOG, "Event has changed state. Old state");
+	while (!this_event->backup_log_buffer.empty()) {
+		log_string(LOGFILE_EVENT_LOG, this_event->backup_log_buffer.back().c_str());
+		this_event->backup_log_buffer.pop_back();
+	}
+	log_string(LOGFILE_EVENT_LOG, "New state");
+
+	// backup the current buffer as this may be a repeating event
+	current_log_to_backup_log_buffer();
+}
 
 /**
 * Checks the mission logs flags for this event and writes to the log if this has been asked for
@@ -21354,8 +21384,12 @@ void maybe_write_to_event_log(int result)
 	char buffer [256]; 
 
 	int mask = generate_event_log_flags_mask(result); 
-	if (!(mask &=  Mission_events[Event_index].mission_log_flags)) {
-		event_log_buffer.clear();
+	sprintf(buffer, "%s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name, f2i(Missiontime), f2i((longlong)Missiontime * 1000));
+	Current_event_log_buffer->push_back(buffer);
+		
+	if (!Snapshot_all_events && (!(mask &=  Mission_events[Event_index].mission_log_flags))) {
+		current_log_to_backup_log_buffer();
+		Current_event_log_buffer->clear();
 		return;
 	}
 
@@ -21364,18 +21398,16 @@ void maybe_write_to_event_log(int result)
 		Mission_events[Event_index].mission_log_flags &= ~(MLF_FIRST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY) ; 
 	}
 
-	if (event_log_buffer.empty()) {
-		return;
+	if (Mission_events[Event_index].mission_log_flags & MLF_STATE_CHANGE) {
+		maybe_write_previous_event_to_log(result);
 	}
 
-	sprintf(buffer, "%s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name, f2i(Missiontime), f2i((longlong)Missiontime * 1000));
-
-	log_string(LOGFILE_EVENT_LOG, buffer);
-	while (!event_log_buffer.empty()) {
-		log_string(LOGFILE_EVENT_LOG, event_log_buffer.back().c_str());
-		event_log_buffer.pop_back();
+	while (!Current_event_log_buffer->empty()) {
+		log_string(LOGFILE_EVENT_LOG, Current_event_log_buffer->back().c_str());
+		Current_event_log_buffer->pop_back();
 	}
 	log_string(LOGFILE_EVENT_LOG, "");
+
 }
 
 /**
@@ -21418,6 +21450,10 @@ char *sexp_get_result_as_text(int result)
 */
 void add_to_event_log_buffer(int op_num, int result)
 {
+	Assertion ((Current_event_log_buffer != NULL) &&
+				(Current_event_log_variable_buffer != NULL)&& 
+				(Current_event_log_argument_buffer != NULL), "Attempting to write to a non-existent log buffer");
+
 	if (op_num == -1) {
 		nprintf(("SEXP", "ERROR: op_num function returned %i, this should not happen. Contact a coder.\n", op_num));
 		return; //How does this happen?
@@ -21441,28 +21477,28 @@ void add_to_event_log_buffer(int op_num, int result)
 		tmp.append(Sexp_replacement_arguments.back());
 	}
 	
-	if (!event_log_argument_buffer.empty()) {
+	if (!Current_event_log_argument_buffer->empty()) {
 		tmp.append(" for the following arguments");
-		while (!event_log_argument_buffer.empty()) {
+		while (!Current_event_log_argument_buffer->empty()) {
 			tmp.append("\n");
-			tmp.append(event_log_argument_buffer.back().c_str());
-			event_log_argument_buffer.pop_back();
+			tmp.append(Current_event_log_argument_buffer->back().c_str());
+			Current_event_log_argument_buffer->pop_back();
 		}
 	}
 
-	if (!event_log_variable_buffer.empty()) {
+	if (!Current_event_log_variable_buffer->empty()) {
 		tmp.append("\nVariables:\n");
-		while (!event_log_variable_buffer.empty()) {
-			tmp.append(event_log_variable_buffer.back().c_str()); 
-			event_log_variable_buffer.pop_back();
+		while (!Current_event_log_variable_buffer->empty()) {
+			tmp.append(Current_event_log_variable_buffer->back().c_str()); 
+			Current_event_log_variable_buffer->pop_back();
 			tmp.append("[");
-			tmp.append(event_log_variable_buffer.back().c_str()); 
-			event_log_variable_buffer.pop_back();
+			tmp.append(Current_event_log_variable_buffer->back().c_str()); 
+			Current_event_log_variable_buffer->pop_back();
 			tmp.append("]");
 		}
 	}
 
-	event_log_buffer.push_back(tmp);
+	Current_event_log_buffer->push_back(tmp);
 }
 
 /**
@@ -27168,8 +27204,8 @@ char *CTEXT(int n)
 		Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
 
 		if (Log_event) {
-			event_log_variable_buffer.push_back(Sexp_variables[sexp_variable_index].text); 
-			event_log_variable_buffer.push_back(Sexp_variables[sexp_variable_index].variable_name); 
+			Current_event_log_variable_buffer->push_back(Sexp_variables[sexp_variable_index].text); 
+			Current_event_log_variable_buffer->push_back(Sexp_variables[sexp_variable_index].variable_name); 
 		}
 
 		return Sexp_variables[sexp_variable_index].text;
