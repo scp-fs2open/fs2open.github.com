@@ -28,27 +28,19 @@
 // general language/localization data ---------------------
 
 // current language
-int Lcl_current_lang = LCL_ENGLISH;
+int Lcl_current_lang = FS2_OPEN_DEFAULT_LANGUAGE;
+SCP_vector<lang_info> Lcl_languages; 
 
-// language info table
-typedef struct lang_info {
-	char lang_name[LCL_LANG_NAME_LEN + 1];				// literal name of the language
-	char lang_ext[LCL_LANG_NAME_LEN + 1];				// for adding to names on disk access
-} lang_info;
+// These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
 
-lang_info Lcl_languages[LCL_NUM_LANGUAGES] = {
-	{ "English",		"" },			// english
-	{ "German",			"gr" },			// german
-	{ "French",			"fr" },			// french
-	{ "Polish",			"pl" },			// polish
+#define NUM_BUILTIN_LANGUAGES		4
+lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
+	{ "English",		"",		0,		589986744},			// English
+	{ "German",			"gr",	164,	-1132430286 },			// German
+	{ "French",			"fr",	164,	0 },			// French
+	{ "Polish",			"pl",	127 },			// Polish
 };
 
-#define DEFAULT_LANGUAGE							"English"
-
-// following is the offset where special characters start in our font
-#define LCL_SPECIAL_CHARS_FR	164
-#define LCL_SPECIAL_CHARS_GR	164
-#define LCL_SPECIAL_CHARS_PL	127
 #define LCL_SPECIAL_CHARS		127
 int Lcl_special_chars;
 
@@ -148,6 +140,9 @@ int lcl_ext_lookup_sub(char *text, char *out, int id);
 // initialize the pointer array into tstrings.tbl (call from lcl_ext_open() ONLY)
 void lcl_ext_setup_pointers();
 
+// parses the string.tbl and reports back only on the languages it found
+void parse_stringstbl_quick(char *filename);
+
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS
@@ -160,28 +155,50 @@ void lcl_init(int lang_init)
 
 	char lang_string[128];
 	char *ret;
-	int lang, idx;
+	int lang, idx, i;
+	int rval;
 
 	// initialize encryption
 	encrypt_init();
+
+	// setup English
+	Lcl_languages.push_back(Lcl_builtin_languages[FS2_OPEN_DEFAULT_LANGUAGE]);
+
+	// check string.tbl to see which languages we support
+	if ( (rval = setjmp(parse_abort)) != 0 ) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "strings.tbl", rval));
+	}
+	else {
+		parse_stringstbl_quick("strings.tbl");
+	}
+
+	parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl_quick);
+
+	// if the only language we have at this point is English, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
+	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added English above.
+	if ((int)Lcl_languages.size() == 1) {
+		for (i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
+			Lcl_languages.push_back(Lcl_builtin_languages[i]);
+		}
+	}
 
 	// read the language from the registry
 	if(lang_init < 0){
 		memset(lang_string, 0, 128);
 		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text 
 		// in tstrings in the #default section)
-		ret = os_config_read_string(NULL, "Language", DEFAULT_LANGUAGE);
+		ret = os_config_read_string(NULL, "Language", Lcl_languages[FS2_OPEN_DEFAULT_LANGUAGE].lang_name);
 
 		if(ret == NULL){
-			Int3();
-			strcpy_s(lang_string, DEFAULT_LANGUAGE);
-		} else {
-			strcpy_s(lang_string, ret);
+			Error(LOCATION, "Default language not found."); 
 		}
+
+		strcpy_s(lang_string, ret);
+		
 
 		// look it up
 		lang = -1;
-		for(idx=0; idx<LCL_NUM_LANGUAGES; idx++){
+		for(idx = 0; idx < (int)Lcl_languages.size(); idx++){
 			if(!stricmp(Lcl_languages[idx].lang_name, lang_string)){
 				lang = idx;
 				break;
@@ -191,7 +208,7 @@ void lcl_init(int lang_init)
 			lang = 0;
 		}	
 	} else {
-		Assert((lang_init >= 0) && (lang_init < LCL_NUM_LANGUAGES));
+		Assert((lang_init >= 0) && (lang_init < (int)Lcl_languages.size()));
 		lang = lang_init;
 	}
 
@@ -219,6 +236,48 @@ void lcl_close()
 int lcl_get_language()
 {
 	return Lcl_current_lang;
+}
+
+// parses the string.tbl to see which languages are supported. Doesn't read in any strings.
+void parse_stringstbl_quick(char *filename)
+{
+	lang_info language;
+	int lang_idx;
+	int i;
+
+	// make sure localization is NOT running
+	lcl_ext_close();
+
+	read_file_text(filename, CF_TYPE_TABLES);
+	reset_parse();
+
+	if (optional_string("#Supported Languages")) {
+		while (required_string_either("#End","$Language:")) {			
+			required_string("$Language:");
+			stuff_string(language.lang_name, F_NAME, LCL_LANG_NAME_LEN + 1);
+			required_string("+Extension:");
+			stuff_string(language.lang_ext, F_NAME, LCL_LANG_NAME_LEN + 1);
+			required_string("+Non-English Character Index:");
+			stuff_ubyte(&language.special_char_offset);
+
+			lang_idx = -1;
+
+			// see if we already have this language
+			for (i = 0; i < (int)Lcl_languages.size(); i++) {
+				if (!strcmp(Lcl_languages[i].lang_name, language.lang_name)) {
+					strcpy_s(Lcl_languages[i].lang_ext, language.lang_ext); 
+					Lcl_languages[i].special_char_offset = language.special_char_offset;
+					lang_idx = i;
+					break;
+				}
+			}
+
+			// if we have a new language, add it.
+			if (lang_idx == -1) {
+				Lcl_languages.push_back(language);
+			}
+		}
+	}
 }
 
 void parse_stringstbl(char *filename)
@@ -395,35 +454,16 @@ void lcl_set_language(int lang)
 
 	nprintf(("General", "Setting language to %s\n", Lcl_languages[lang].lang_name));
 
+	Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Attempt to set language to an invalid language");
+
 	// flag the proper language as being active
-	Lcl_fr = 0;
-	Lcl_gr = 0;
-	Lcl_pl = 0;
-	Lcl_english = 0;
-	switch(lang){
-	case LCL_ENGLISH:
-		Lcl_english = 1;		
-		Lcl_special_chars = LCL_SPECIAL_CHARS;
-		break;
-	case LCL_FRENCH:
-		Lcl_fr = 1;
-		Lcl_special_chars = LCL_SPECIAL_CHARS_FR;
-		break;
-	case LCL_GERMAN:
-		Lcl_gr = 1;
-		Lcl_special_chars = LCL_SPECIAL_CHARS_GR;
-		break;
-	case LCL_POLISH:
-		Lcl_pl = 1;
-		Lcl_special_chars = LCL_SPECIAL_CHARS_PL;
-		break;
-	}
+	Lcl_special_chars = Lcl_languages[Lcl_current_lang].special_char_offset;
 
 	// set to 0, so lcl_ext_open() knows to reset file pointers
 	Lcl_pointer_count = 0;
 
 	// reset file pointers to the proper language-section
-	if(Lcl_current_lang != LCL_DEFAULT_LANGUAGE){
+	if(Lcl_current_lang != FS2_OPEN_DEFAULT_LANGUAGE){
 		lcl_ext_setup_pointers();
 	}
 }
@@ -504,7 +544,7 @@ void lcl_ext_open()
 	Assert(Lcl_ext_file == NULL);	
 
 	// if we're running in the default language, do nothing
-	if(Lcl_current_lang == LCL_DEFAULT_LANGUAGE){
+	if(Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE){
 		return;
 	}
 
@@ -524,7 +564,7 @@ void lcl_ext_close()
 	}
 
 	// if we're running in the default language, do nothing
-	if(Lcl_current_lang == LCL_DEFAULT_LANGUAGE){
+	if(Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE){
 		return;
 	}
 		
@@ -673,7 +713,7 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 	}
 	
 	// if the localization file is not open, or we're running in the default language, return the original string
-	if ( (Lcl_ext_file == NULL) || (str_id < 0) || (Lcl_current_lang == LCL_DEFAULT_LANGUAGE) ) {
+	if ( (Lcl_ext_file == NULL) || (str_id < 0) || (Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE) ) {
 		if ( strlen(text_str) > (uint)max_len )
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", text_str, strlen(text_str), max_len);
 
@@ -759,7 +799,7 @@ void lcl_ext_localize_sub(SCP_string &in, SCP_string &out, int *id)
 	}
 	
 	// if the localization file is not open, or we're running in the default language, return the original string
-	if ( (Lcl_ext_file == NULL) || (str_id < 0) || (Lcl_current_lang == LCL_DEFAULT_LANGUAGE) ) {
+	if ( (Lcl_ext_file == NULL) || (str_id < 0) || (Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE) ) {
 		out = text_str;
 
 		if (id != NULL)
@@ -1274,7 +1314,7 @@ void lcl_ext_setup_pointers()
 	// seek to the currently active language
 	memset(language_string, 0, 128);
 	strcpy_s(language_string, "#");
-	if(!stricmp(DEFAULT_LANGUAGE, Lcl_languages[Lcl_current_lang].lang_name)){
+	if(Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE){
 		strcat_s(language_string, "default");
 	} else {
 		strcat_s(language_string, Lcl_languages[Lcl_current_lang].lang_name);
@@ -1348,7 +1388,7 @@ void lcl_ext_setup_pointers()
 
 void lcl_get_language_name(char *lang_name)
 {
-	Assert(LCL_NUM_LANGUAGES == 3);
+	Assert(Lcl_current_lang < (int)Lcl_languages.size());
 
 	strcpy(lang_name, Lcl_languages[Lcl_current_lang].lang_name);
 }
