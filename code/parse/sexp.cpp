@@ -220,6 +220,7 @@ sexp_oper Operators[] = {
 	{ "num_class_kills",				OP_NUM_CLASS_KILLS,						2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "ship_score",						OP_SHIP_SCORE,							1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-elapsed-last-order",		OP_LAST_ORDER_TIME,						2,	2,			SEXP_INTEGER_OPERATOR,	},
+	{ "player-is-cheating",				OP_PLAYER_IS_CHEATING_BASTARD,			0,  0,			SEXP_BOOLEAN_OPERATOR,  },
 
 	//Multiplayer Sub-Category
 	{ "num-players",					OP_NUM_PLAYERS,							0,	0,			SEXP_INTEGER_OPERATOR,	},
@@ -21243,6 +21244,15 @@ void multi_sexp_change_team_color() {
 	}
 }
 
+extern int Cheats_enabled;
+int sexp_player_is_cheating_bastard() {
+	if (Cheats_enabled) {
+		return SEXP_KNOWN_TRUE;	
+	}
+
+	return SEXP_FALSE;
+}
+
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
@@ -23623,6 +23633,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_change_team_color(node);
 				break;
 
+			case OP_PLAYER_IS_CHEATING_BASTARD:
+				sexp_val = sexp_player_is_cheating_bastard();
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -24207,6 +24221,7 @@ int query_operator_return_type(int op)
 		case OP_DIRECTIVE_VALUE:
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
+		case OP_PLAYER_IS_CHEATING_BASTARD:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -24692,6 +24707,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_SUPERNOVA_STOP:
 		case OP_NAV_UNSELECT:
+		case OP_PLAYER_IS_CHEATING_BASTARD:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -28200,6 +28216,7 @@ int get_subcategory(int sexp_id)
 		case OP_NUM_CLASS_KILLS:
 		case OP_SHIP_SCORE:
 		case OP_LAST_ORDER_TIME:
+		case OP_PLAYER_IS_CHEATING_BASTARD:
 			return STATUS_SUBCATEGORY_PLAYER;
 
 		case OP_NUM_PLAYERS:
@@ -31825,6 +31842,10 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe new team color name. Name must be defined in colors.tbl.\r\n"
 		"\t2:\tCrossfade time in milliseconds. During this time, colors will be mixed.\r\n"
 		"\t3:\tRest: List of ships this sexp will operate on."
+	},
+
+	{OP_PLAYER_IS_CHEATING_BASTARD, "player-is-cheating\r\n"
+		"\tReturns true if the player is or has been cheating in this mission.\r\n"
 	}
 };
 
