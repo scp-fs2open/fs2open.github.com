@@ -30105,6 +30105,11 @@ sexp_help_struct Sexp_help[] = {
 		"don't-collide-invisible - Will cause polygons with an invisible texture to stop colliding with objects\r\n"
 		"no-ets - Will not allow a ship to alter its ETS system\r\n"
 		"toggle-subsystem-scanning - Switches between being able to scan a whole ship or individual subsystems\r\n"
+		"scannable - Whether or not the ship can be scanned\r\n"
+		"cargo-known - If set, the ships cargo can be seen without scanning the ship\r\n"
+		"stealth - If set, the ship can't be targeted, is invisible on radar, and is ignored by AI unless firing\r\n"
+		"friendly-stealth-invisible - If set, the ship can't be targeted even by ships on the same team\r\n"
+		"hidden-from-sensors - If set, the ship can't be targeted and appears on radar as a blinking dot\r\n"
 		"no-dynamic - Will stop allowing the AI to persue dynamic goals (eg: chasing ships it was not ordered to)\r\n"},
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
