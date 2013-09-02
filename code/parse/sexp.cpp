@@ -30104,6 +30104,7 @@ sexp_help_struct Sexp_help[] = {
 		"no-subspace-drive - Will not allow a ship to jump into subspace\r\n"
 		"don't-collide-invisible - Will cause polygons with an invisible texture to stop colliding with objects\r\n"
 		"no-ets - Will not allow a ship to alter its ETS system\r\n"
+		"toggle-subsystem-scanning - Switches between being able to scan a whole ship or individual subsystems\r\n"
 		"no-dynamic - Will stop allowing the AI to persue dynamic goals (eg: chasing ships it was not ordered to)\r\n"},
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
