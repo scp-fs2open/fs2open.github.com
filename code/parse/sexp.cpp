@@ -20612,24 +20612,63 @@ void multi_sexp_show_subtitle_image()
 
 void sexp_set_time_compression(int n)
 {
+	float new_multiplier = 0.0f;
 	float new_change_time = 0.0f;
-	float new_multiplier = eval_num(n)/100.0f;			//percent->decimal
+	float current_multiplier = 0.0f;
+
+	multi_start_callback();
+
+	new_multiplier = eval_num(n)/100.0f;			//percent->decimal
+	multi_send_float(new_multiplier);
+
 
 	//Time to change
 	n = CDR(n);
-	if(n != -1)
+	if(n != -1) {
 		new_change_time = eval_num(n)/1000.0f;			//ms->seconds
+		multi_send_float(new_change_time);
+	}
 
 	//Override current time compression with this value
 	n = CDR(n);
-	if(n != -1)
-		set_time_compression(eval_num(n)/100.0f);
+	if(n != -1) {
+		current_multiplier = eval_num(n)/100.0f;
+		set_time_compression(current_multiplier);
+		multi_send_float(current_multiplier);
+	}
+
+	multi_end_callback();
+
+	set_time_compression(new_multiplier, new_change_time);
+	lock_time_compression(true);
+}
+
+void multi_sexp_set_time_compression()
+{
+	float new_change_time = 0.0f;
+	float new_multiplier = 0.0f;
+	float current_multiplier = 0.0f;
+
+	multi_get_float(new_multiplier);
+	multi_get_float(new_change_time);
+	if (multi_get_float(current_multiplier)) {
+		set_time_compression(current_multiplier);
+	}
 
 	set_time_compression(new_multiplier, new_change_time);
 	lock_time_compression(true);
 }
 
 void sexp_reset_time_compression()
+{
+	set_time_compression(1);
+	lock_time_compression(false);
+
+	multi_start_callback();
+	multi_end_callback();
+}
+
+void multi_sexp_reset_time_compression() 
 {
 	set_time_compression(1);
 	lock_time_compression(false);
@@ -23857,6 +23896,14 @@ void multi_sexp_eval()
 
 			case OP_HUD_SET_MAX_TARGETING_RANGE:
 				multi_sexp_hud_set_max_targeting_range();
+				break;
+
+			case OP_CUTSCENES_SET_TIME_COMPRESSION:
+				multi_sexp_set_time_compression();
+				break;
+
+			case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+				sexp_reset_time_compression();
 				break;
 
 			// bad sexp in the packet
