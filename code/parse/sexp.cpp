@@ -20340,10 +20340,30 @@ void multi_sexp_clear_subtitles()
 
 void sexp_show_subtitle_text(int node)
 {
-	int n = node;
-	char text[TOKEN_LENGTH];
+	int i, n = node;
+	char text[256];
 
+	// we'll suppose it's the string for now
 	char *buffer = CTEXT(n);
+
+	// but use an actual message if one exists
+	for (i=0; i<Num_messages; i++)
+	{
+		if (!stricmp(Messages[i].name, CTEXT(n)))
+		{
+			buffer = Messages[i].message;
+			break;
+		}
+	}
+
+	if (strlen(buffer) > 255)
+	{
+		Warning(LOCATION, "The subtitle system only handles text up to 255 characters long! :(");
+		return;
+	}
+
+	// translate things like keypresses, e.g. $T$ for targeting key
+	// (we don't need to do variable replacements because the subtitle code already does that)
 	message_translate_tokens(text, buffer);
 
 	n = CDR(n);
@@ -26402,7 +26422,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_MESSAGE_OR_STRING;
 			else if (argnum == 1 || argnum == 2)
 				return OPF_NUMBER;
 			else if (argnum == 3 || argnum == 4)
@@ -31475,9 +31495,9 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_TEXT, "show-subtitle-text\r\n"
-		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the SEXP type system, textual subtitles are currently limited to 31 characters or fewer.\r\n"
+		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the subtitle system, textual subtitles are currently limited to 255 characters or fewer.\r\n"
 		"Takes 6 to 13 arguments...\r\n"
-		"\t1:\tText to display\r\n"
+		"\t1:\tText to display, or the name of a message containing text\r\n"
 		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
 		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
 		"\t4:\tCenter horizontally? (if true, overrides argument #2)\r\n"
