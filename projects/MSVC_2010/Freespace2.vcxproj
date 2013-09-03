@@ -124,12 +124,12 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fs2_open_3_6_19-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fs2_open_3_6_19_SSE-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fs2_open_3_6_19_SSE2-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fs2_open_3_6_19</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fs2_open_3_6_19_SSE</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fs2_open_3_6_19_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fs2_open_3_7_1-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fs2_open_3_7_1_SSE-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fs2_open_3_7_1_SSE2-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fs2_open_3_7_1</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fs2_open_3_7_1_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fs2_open_3_7_1_SSE2</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CustomBuildStep>

@@ -8378,14 +8378,6 @@ int game_do_cd_check_specific(char *volume_name, int cdnum)
 // Language autodetection stuff
 //
 
-// this layout *must* match Lcl_languages in localize.cpp in order for the
-// correct language to be detected
-int Lang_auto_detect_checksums[LCL_NUM_LANGUAGES] = {
-	589986744,						// English
-	-1132430286,					// German
-	0,								// French
-};
-
 // default setting is "-1" to use registry setting with English as fall back
 // DO NOT change that default setting here or something uncouth might happen
 // in the localization code
@@ -8415,8 +8407,8 @@ int detect_lang()
 	detect = NULL;
 
 	// now compare the checksum/filesize against known #'s
-	for (idx=0; idx<LCL_NUM_LANGUAGES; idx++) {
-		if (Lang_auto_detect_checksums[idx] == (int)file_checksum) {
+	for (idx=0; idx < (int)Lcl_languages.size(); idx++) {
+		if (Lcl_languages[idx].checksum == (int)file_checksum) {
 			mprintf(( "AutoLang: Language auto-detection successful...\n" ));
 			return idx;
 		}

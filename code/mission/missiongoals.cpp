@@ -172,6 +172,7 @@ int Num_mission_events;
 int Num_goals = 0;								// number of goals for this mission
 int Event_index = -1;  // used by sexp code to tell what event it came from
 bool Log_event = false;
+bool Snapshot_all_events = false;
 int Mission_goal_timestamp;
 
 mission_event Mission_events[MAX_MISSION_EVENTS];
@@ -919,8 +920,12 @@ void mission_process_event( int event )
 
 	if (sindex >= 0) {
 		Sexp_useful_number = 1;
-		if (Mission_events[event].mission_log_flags != 0) {
+		if (Snapshot_all_events || Mission_events[event].mission_log_flags != 0) {
 			Log_event = true;
+			
+			Current_event_log_buffer = &Mission_events[event].event_log_buffer;
+			Current_event_log_variable_buffer = &Mission_events[event].event_log_variable_buffer;
+			Current_event_log_argument_buffer = &Mission_events[event].event_log_argument_buffer;
 		}
 		result = eval_sexp(sindex);
 
@@ -945,7 +950,7 @@ void mission_process_event( int event )
 		}
 	}
 
-	if (Mission_events[event].mission_log_flags != 0) {
+	if ((Mission_events[event].mission_log_flags != 0) || Snapshot_all_events ){
 		maybe_write_to_event_log(result);
 	}
 
@@ -1094,7 +1099,7 @@ void mission_eval_goals()
 		std_multi_update_goals();
 	}
 	
-	Log_event = false;
+	Snapshot_all_events = false;
 }
 
 //	evaluate_primary_goals() will determine if the primary goals for a mission are complete

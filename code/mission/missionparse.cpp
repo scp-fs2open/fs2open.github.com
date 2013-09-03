@@ -315,12 +315,13 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"true",
 	"false",
-	"always true",
+	"always true",			// disabled
 	"always false",
 	"first repeat",
 	"last repeat", 
 	"first trigger",
 	"last trigger",
+	"state change",
 };
 
 

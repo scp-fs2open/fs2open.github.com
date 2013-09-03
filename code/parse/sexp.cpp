@@ -220,6 +220,7 @@ sexp_oper Operators[] = {
 	{ "num_class_kills",				OP_NUM_CLASS_KILLS,						2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "ship_score",						OP_SHIP_SCORE,							1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-elapsed-last-order",		OP_LAST_ORDER_TIME,						2,	2,			SEXP_INTEGER_OPERATOR,	},
+	{ "player-is-cheating",				OP_PLAYER_IS_CHEATING_BASTARD,			0,  0,			SEXP_BOOLEAN_OPERATOR,  },
 
 	//Multiplayer Sub-Category
 	{ "num-players",					OP_NUM_PLAYERS,							0,	0,			SEXP_INTEGER_OPERATOR,	},
@@ -898,10 +899,9 @@ ship * sexp_get_ship_from_node(int node);
 #define SEXP_HUD_GAUGE_WARPOUT "warpout"
 
 // event log stuff
-SCP_vector<SCP_string> event_log_buffer;
-SCP_vector<SCP_string> event_log_variable_buffer;
-SCP_vector<SCP_string> event_log_argument_buffer;
-
+SCP_vector<SCP_string> *Current_event_log_buffer;
+SCP_vector<SCP_string> *Current_event_log_variable_buffer;
+SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
 {
@@ -8223,7 +8223,7 @@ int eval_when(int n, int when_op_num)
 			ptr = Sexp_applicable_argument_list.get_next();		
 			while(ptr != NULL) {
 				// See if we have an argument. 
-				event_log_argument_buffer.push_back(ptr->text); 
+				Current_event_log_argument_buffer->push_back(ptr->text); 
 				ptr = ptr->get_next();
 			}
 		}	
@@ -9636,8 +9636,19 @@ void sexp_hud_set_max_targeting_range(int n)
 {
 	Hud_max_targeting_range = eval_num(n);
 
-	if (Hud_max_targeting_range < 0)
+	if (Hud_max_targeting_range < 0) {
 		Hud_max_targeting_range = 0;
+}
+
+	multi_start_callback();
+	multi_send_int(Hud_max_targeting_range);
+	multi_end_callback();
+
+}
+
+void multi_sexp_hud_set_max_targeting_range()
+{
+	multi_get_int(Hud_max_targeting_range);
 }
 
 /* Make sure that the Sexp_hud_display_* get added to the game_state
@@ -20329,10 +20340,30 @@ void multi_sexp_clear_subtitles()
 
 void sexp_show_subtitle_text(int node)
 {
-	int n = node;
-	char text[TOKEN_LENGTH];
+	int i, n = node;
+	char text[256];
 
+	// we'll suppose it's the string for now
 	char *buffer = CTEXT(n);
+
+	// but use an actual message if one exists
+	for (i=0; i<Num_messages; i++)
+	{
+		if (!stricmp(Messages[i].name, CTEXT(n)))
+		{
+			buffer = Messages[i].message;
+			break;
+		}
+	}
+
+	if (strlen(buffer) > 255)
+	{
+		Warning(LOCATION, "The subtitle system only handles text up to 255 characters long! :(");
+		return;
+	}
+
+	// translate things like keypresses, e.g. $T$ for targeting key
+	// (we don't need to do variable replacements because the subtitle code already does that)
 	message_translate_tokens(text, buffer);
 
 	n = CDR(n);
@@ -20601,24 +20632,63 @@ void multi_sexp_show_subtitle_image()
 
 void sexp_set_time_compression(int n)
 {
+	float new_multiplier = 0.0f;
 	float new_change_time = 0.0f;
-	float new_multiplier = eval_num(n)/100.0f;			//percent->decimal
+	float current_multiplier = 0.0f;
+
+	multi_start_callback();
+
+	new_multiplier = eval_num(n)/100.0f;			//percent->decimal
+	multi_send_float(new_multiplier);
+
 
 	//Time to change
 	n = CDR(n);
-	if(n != -1)
+	if(n != -1) {
 		new_change_time = eval_num(n)/1000.0f;			//ms->seconds
+		multi_send_float(new_change_time);
+	}
 
 	//Override current time compression with this value
 	n = CDR(n);
-	if(n != -1)
-		set_time_compression(eval_num(n)/100.0f);
+	if(n != -1) {
+		current_multiplier = eval_num(n)/100.0f;
+		set_time_compression(current_multiplier);
+		multi_send_float(current_multiplier);
+	}
+
+	multi_end_callback();
+
+	set_time_compression(new_multiplier, new_change_time);
+	lock_time_compression(true);
+}
+
+void multi_sexp_set_time_compression()
+{
+	float new_change_time = 0.0f;
+	float new_multiplier = 0.0f;
+	float current_multiplier = 0.0f;
+
+	multi_get_float(new_multiplier);
+	multi_get_float(new_change_time);
+	if (multi_get_float(current_multiplier)) {
+		set_time_compression(current_multiplier);
+	}
 
 	set_time_compression(new_multiplier, new_change_time);
 	lock_time_compression(true);
 }
 
 void sexp_reset_time_compression()
+{
+	set_time_compression(1);
+	lock_time_compression(false);
+
+	multi_start_callback();
+	multi_end_callback();
+}
+
+void multi_sexp_reset_time_compression() 
 {
 	set_time_compression(1);
 	lock_time_compression(false);
@@ -21174,6 +21244,15 @@ void multi_sexp_change_team_color() {
 	}
 }
 
+extern int Cheats_enabled;
+int sexp_player_is_cheating_bastard() {
+	if (Cheats_enabled) {
+		return SEXP_KNOWN_TRUE;	
+	}
+
+	return SEXP_FALSE;
+}
+
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
@@ -21231,16 +21310,8 @@ int generate_event_log_flags_mask(int result)
 			matches |= MLF_SEXP_FALSE; 
 			break;
 
-		case SEXP_KNOWN_TRUE:
-			matches |= MLF_SEXP_KNOWN_TRUE; 
-			break; 
-
-		case SEXP_KNOWN_FALSE:
-			matches |= MLF_SEXP_KNOWN_FALSE; 
-			break; 
-
 		default:
-			Int3();	// just for now. This shouldn't hit trunk!
+			Error(LOCATION, "SEXP has a value which isn't true or false.");	
 	}
 
 	if (( result == SEXP_TRUE ) || (result == SEXP_KNOWN_TRUE)) {
@@ -21275,6 +21346,45 @@ int generate_event_log_flags_mask(int result)
 	return matches;
 }
 
+void current_log_to_backup_log_buffer()
+{
+	Mission_events[Event_index].backup_log_buffer.clear();
+	if (!(Mission_events[Event_index].mission_log_flags & MLF_STATE_CHANGE)){
+		return;
+	}
+
+	for (int i = 0; i < (int)Current_event_log_buffer->size(); i++) {
+		Mission_events[Event_index].backup_log_buffer.push_back(Current_event_log_buffer->at(i));
+	}
+}
+
+void maybe_write_previous_event_to_log(int result) 
+{
+	mission_event *this_event = &Mission_events[Event_index];
+
+	// if the old log is empty, all we do is record the result for the next evaluation
+	// the old log should only be empty at mission start
+	if (this_event->backup_log_buffer.empty()) {
+		this_event->previous_result = result;
+		return;
+	}
+
+	// if there's no change in state, we don't write the previous state to the log
+	if ((this_event->mission_log_flags & MLF_STATE_CHANGE) && (result == this_event->previous_result)) {
+		current_log_to_backup_log_buffer();
+		return;
+	}
+
+	log_string(LOGFILE_EVENT_LOG, "Event has changed state. Old state");
+	while (!this_event->backup_log_buffer.empty()) {
+		log_string(LOGFILE_EVENT_LOG, this_event->backup_log_buffer.back().c_str());
+		this_event->backup_log_buffer.pop_back();
+	}
+	log_string(LOGFILE_EVENT_LOG, "New state");
+
+	// backup the current buffer as this may be a repeating event
+	current_log_to_backup_log_buffer();
+}
 
 /**
 * Checks the mission logs flags for this event and writes to the log if this has been asked for
@@ -21284,8 +21394,12 @@ void maybe_write_to_event_log(int result)
 	char buffer [256]; 
 
 	int mask = generate_event_log_flags_mask(result); 
-	if (!(mask &=  Mission_events[Event_index].mission_log_flags)) {
-		event_log_buffer.clear();
+	sprintf(buffer, "%s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name, f2i(Missiontime), f2i((longlong)Missiontime * 1000));
+	Current_event_log_buffer->push_back(buffer);
+		
+	if (!Snapshot_all_events && (!(mask &=  Mission_events[Event_index].mission_log_flags))) {
+		current_log_to_backup_log_buffer();
+		Current_event_log_buffer->clear();
 		return;
 	}
 
@@ -21294,18 +21408,16 @@ void maybe_write_to_event_log(int result)
 		Mission_events[Event_index].mission_log_flags &= ~(MLF_FIRST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY) ; 
 	}
 
-	if (event_log_buffer.empty()) {
-		return;
+	if (Mission_events[Event_index].mission_log_flags & MLF_STATE_CHANGE) {
+		maybe_write_previous_event_to_log(result);
 	}
 
-	sprintf(buffer, "%s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name, f2i(Missiontime), f2i((longlong)Missiontime * 1000));
-
-	log_string(LOGFILE_EVENT_LOG, buffer);
-	while (!event_log_buffer.empty()) {
-		log_string(LOGFILE_EVENT_LOG, event_log_buffer.back().c_str());
-		event_log_buffer.pop_back();
+	while (!Current_event_log_buffer->empty()) {
+		log_string(LOGFILE_EVENT_LOG, Current_event_log_buffer->back().c_str());
+		Current_event_log_buffer->pop_back();
 	}
 	log_string(LOGFILE_EVENT_LOG, "");
+
 }
 
 /**
@@ -21348,6 +21460,10 @@ char *sexp_get_result_as_text(int result)
 */
 void add_to_event_log_buffer(int op_num, int result)
 {
+	Assertion ((Current_event_log_buffer != NULL) &&
+				(Current_event_log_variable_buffer != NULL)&& 
+				(Current_event_log_argument_buffer != NULL), "Attempting to write to a non-existent log buffer");
+
 	if (op_num == -1) {
 		nprintf(("SEXP", "ERROR: op_num function returned %i, this should not happen. Contact a coder.\n", op_num));
 		return; //How does this happen?
@@ -21371,28 +21487,28 @@ void add_to_event_log_buffer(int op_num, int result)
 		tmp.append(Sexp_replacement_arguments.back());
 	}
 	
-	if (!event_log_argument_buffer.empty()) {
+	if (!Current_event_log_argument_buffer->empty()) {
 		tmp.append(" for the following arguments");
-		while (!event_log_argument_buffer.empty()) {
+		while (!Current_event_log_argument_buffer->empty()) {
 			tmp.append("\n");
-			tmp.append(event_log_argument_buffer.back().c_str());
-			event_log_argument_buffer.pop_back();
+			tmp.append(Current_event_log_argument_buffer->back().c_str());
+			Current_event_log_argument_buffer->pop_back();
 		}
 	}
 
-	if (!event_log_variable_buffer.empty()) {
+	if (!Current_event_log_variable_buffer->empty()) {
 		tmp.append("\nVariables:\n");
-		while (!event_log_variable_buffer.empty()) {
-			tmp.append(event_log_variable_buffer.back().c_str()); 
-			event_log_variable_buffer.pop_back();
+		while (!Current_event_log_variable_buffer->empty()) {
+			tmp.append(Current_event_log_variable_buffer->back().c_str()); 
+			Current_event_log_variable_buffer->pop_back();
 			tmp.append("[");
-			tmp.append(event_log_variable_buffer.back().c_str()); 
-			event_log_variable_buffer.pop_back();
+			tmp.append(Current_event_log_variable_buffer->back().c_str()); 
+			Current_event_log_variable_buffer->pop_back();
 			tmp.append("]");
 		}
 	}
 
-	event_log_buffer.push_back(tmp);
+	Current_event_log_buffer->push_back(tmp);
 }
 
 /**
@@ -23517,6 +23633,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_change_team_color(node);
 				break;
 
+			case OP_PLAYER_IS_CHEATING_BASTARD:
+				sexp_val = sexp_player_is_cheating_bastard();
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -23844,6 +23964,18 @@ void multi_sexp_eval()
 				multi_sexp_change_team_color();
 				break;
 
+			case OP_HUD_SET_MAX_TARGETING_RANGE:
+				multi_sexp_hud_set_max_targeting_range();
+				break;
+
+			case OP_CUTSCENES_SET_TIME_COMPRESSION:
+				multi_sexp_set_time_compression();
+				break;
+
+			case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+				sexp_reset_time_compression();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -24089,6 +24221,7 @@ int query_operator_return_type(int op)
 		case OP_DIRECTIVE_VALUE:
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
+		case OP_PLAYER_IS_CHEATING_BASTARD:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -24574,6 +24707,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_SUPERNOVA_STOP:
 		case OP_NAV_UNSELECT:
+		case OP_PLAYER_IS_CHEATING_BASTARD:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -26340,7 +26474,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_MESSAGE_OR_STRING;
 			else if (argnum == 1 || argnum == 2)
 				return OPF_NUMBER;
 			else if (argnum == 3 || argnum == 4)
@@ -27086,8 +27220,8 @@ char *CTEXT(int n)
 		Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
 
 		if (Log_event) {
-			event_log_variable_buffer.push_back(Sexp_variables[sexp_variable_index].text); 
-			event_log_variable_buffer.push_back(Sexp_variables[sexp_variable_index].variable_name); 
+			Current_event_log_variable_buffer->push_back(Sexp_variables[sexp_variable_index].text); 
+			Current_event_log_variable_buffer->push_back(Sexp_variables[sexp_variable_index].variable_name); 
 		}
 
 		return Sexp_variables[sexp_variable_index].text;
@@ -28082,6 +28216,7 @@ int get_subcategory(int sexp_id)
 		case OP_NUM_CLASS_KILLS:
 		case OP_SHIP_SCORE:
 		case OP_LAST_ORDER_TIME:
+		case OP_PLAYER_IS_CHEATING_BASTARD:
 			return STATUS_SUBCATEGORY_PLAYER;
 
 		case OP_NUM_PLAYERS:
@@ -30002,7 +30137,33 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tShip flag name\r\n"
 		"\t2:\tTrue if turning on, false if turning off\r\n"
 		"\t3:\tTrue\\False - Apply this flag to future waves of this wing. Apply to ship if not present\r\n"
-		"\tRest:\t (optional) Name of ships, wings, or entire teams. If not supplied, will work on all ships in the mission" },
+		"\tRest:\t (optional) Name of ships, wings, or entire teams. If not supplied, will work on all ships in the mission\r\n\r\n"
+		"Ship Flags:\r\n"
+		"invulnerable - Stops ship from taking any damage\r\n"
+		"protect-ship - Ship and Turret AI will ignore and not attack ship\r\n"
+		"beam-protect-ship - Turrets with beam weapons will ignore and not attack ship\r\n"
+		"no-shields - Ship will have no shields\r\n"
+		"targetable-as-bomb - Allows ship to be targetted with the bomb targetting key\r\n"
+		"flak-protect-ship - Turrets with flak weapons will ignore and not attack ship\r\n"
+		"laser-protect-ship - Turrets with laser weapons will ignore and not attack ship\r\n"
+		"missile-protect-ship - Turrets with missile weapons will ignore and not attack ship\r\n"
+		"immobile - Will not let a ship move or rotate in any fashion\r\n"
+		"vaporize - Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed\r\n"
+		"break-warp - Causes a ship's subspace drive to break. Can be repaired by a support ship\r\n"
+		"never-warp - Causes a ship's subspace drive to never work. Cannot be repaired by a support ship\r\n"
+		"afterburner-locked - Will stop a ship from firing their afterburner\r\n"
+		"primaries-locked - Will stop a ship from firing their primary weapons\r\n"
+		"secondaries-locked - Will stop a ship from firing their secondary weapons\r\n"
+		"no-subspace-drive - Will not allow a ship to jump into subspace\r\n"
+		"don't-collide-invisible - Will cause polygons with an invisible texture to stop colliding with objects\r\n"
+		"no-ets - Will not allow a ship to alter its ETS system\r\n"
+		"toggle-subsystem-scanning - Switches between being able to scan a whole ship or individual subsystems\r\n"
+		"scannable - Whether or not the ship can be scanned\r\n"
+		"cargo-known - If set, the ships cargo can be seen without scanning the ship\r\n"
+		"stealth - If set, the ship can't be targeted, is invisible on radar, and is ignored by AI unless firing\r\n"
+		"friendly-stealth-invisible - If set, the ship can't be targeted even by ships on the same team\r\n"
+		"hidden-from-sensors - If set, the ship can't be targeted and appears on radar as a blinking dot\r\n"
+		"no-dynamic - Will stop allowing the AI to persue dynamic goals (eg: chasing ships it was not ordered to)\r\n"},
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
 		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"
@@ -31393,9 +31554,9 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_TEXT, "show-subtitle-text\r\n"
-		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the SEXP type system, textual subtitles are currently limited to 31 characters or fewer.\r\n"
+		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the subtitle system, textual subtitles are currently limited to 255 characters or fewer.\r\n"
 		"Takes 6 to 13 arguments...\r\n"
-		"\t1:\tText to display\r\n"
+		"\t1:\tText to display, or the name of a message containing text\r\n"
 		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
 		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
 		"\t4:\tCenter horizontally? (if true, overrides argument #2)\r\n"
@@ -31681,6 +31842,10 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe new team color name. Name must be defined in colors.tbl.\r\n"
 		"\t2:\tCrossfade time in milliseconds. During this time, colors will be mixed.\r\n"
 		"\t3:\tRest: List of ships this sexp will operate on."
+	},
+
+	{OP_PLAYER_IS_CHEATING_BASTARD, "player-is-cheating\r\n"
+		"\tReturns true if the player is or has been cheating in this mission.\r\n"
 	}
 };
 

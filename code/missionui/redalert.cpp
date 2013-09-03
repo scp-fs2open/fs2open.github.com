@@ -391,7 +391,7 @@ void red_alert_do_frame(float frametime)
 	if (!(Game_mode & GM_MULTIPLAYER)) {
 		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
 		{
-			commit_pressed();
+			red_alert_button_pressed(RA_CONTINUE);
 			return;
 		}
 	}
