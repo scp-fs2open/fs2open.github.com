@@ -35,13 +35,12 @@ SCP_vector<lang_info> Lcl_languages;
 
 #define NUM_BUILTIN_LANGUAGES		4
 lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
-	{ "English",		"",		0,		589986744},			// English
+	{ "English",		"",		127,	589986744},				// English
 	{ "German",			"gr",	164,	-1132430286 },			// German
 	{ "French",			"fr",	164,	0 },			// French
-	{ "Polish",			"pl",	127 },			// Polish
+	{ "Polish",			"pl",	127,	},						// Polish
 };
 
-#define LCL_SPECIAL_CHARS		127
 int Lcl_special_chars;
 
 // use these to replace *_BUILD, values before
