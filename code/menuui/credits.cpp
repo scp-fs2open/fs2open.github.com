@@ -37,7 +37,7 @@ char *fs2_open_credit_text =
 	"\n"
 	"Project Leaders:\n"
 	"\n"
-	"Cliff \"chief1983\" Gordon"
+	"Cliff \"chief1983\" Gordon\n"
 	"\n"
 	"Senior Advisors:\n"
 	"\n"
