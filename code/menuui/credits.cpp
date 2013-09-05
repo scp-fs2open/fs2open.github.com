@@ -732,7 +732,7 @@ void credits_do_frame(float frametime)
 		char buf[40];
 
 		if (gr_screen.res == GR_1024) {
-			sprintf(buf, NOX("2_CrIm%.2d"), Credits_artwork_index);
+			sprintf(buf, NOX("2_CrIm%.2d"), next);
 		} else {
 			sprintf(buf, NOX("CrIm%.2d"), next);
 		}
