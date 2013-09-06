@@ -56,10 +56,8 @@ void parse_mod_table(char *filename)
 		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
 
 		// remove extension?
-		char *p = strrchr(temp, '.');
-		if (p != NULL) {
-			mprintf(("Game Settings Table: Removing extension on default campaign file name %s\n", temp));
-			*p = 0;
+		if (drop_extension(temp)) {
+			mprintf(("Game Settings Table: Removed extension on default campaign file name %s\n", temp));
 		}
 
 		// check length
@@ -75,8 +73,15 @@ void parse_mod_table(char *filename)
 
 	if (optional_string("#Ignored Campaign File Names")) {
 		SCP_string campaign_name; 
+
 		while (optional_string("$Campaign File Name:")) {
 			stuff_string(campaign_name, F_NAME); 
+
+			// remove extension?
+			if (drop_extension(campaign_name)) {
+				mprintf(("Game Settings Table: Removed extension on ignored campaign file name %s\n", campaign_name.c_str()));
+			}
+
 			Ignored_campaigns.push_back(campaign_name); 
 		}
 	}

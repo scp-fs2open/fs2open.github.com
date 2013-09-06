@@ -3932,6 +3932,32 @@ int strextcmp(const char *s1, const char *s2)
 	return strnicmp(s1, s2, s1_len);
 }
 
+// Goober5000
+bool drop_extension(char *str)
+{
+	char *p = strrchr(str, '.');
+	if (p != NULL)
+	{
+		*p = 0;
+		return true;
+	}
+
+	return false;
+}
+
+// Goober5000
+bool drop_extension(SCP_string &str)
+{
+	size_t pos = str.rfind('.');
+	if (pos != SCP_string::npos)
+	{
+		str.resize(pos);
+		return true;
+	}
+
+	return false;
+}
+
 //WMC
 void backspace(char* src)
 {

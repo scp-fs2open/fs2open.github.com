@@ -235,6 +235,10 @@ extern int subsystem_stricmp(const char *str1, const char *str2);
 //WMC - compares two strings, ignoring the last extension
 extern int strextcmp(const char *s1, const char *s2);
 
+// Goober5000 - truncates a file extension
+extern bool drop_extension(char *str);
+extern bool drop_extension(SCP_string &str);
+
 //WMC - backspaces the first character of given char pointer
 extern void backspace(char *src);
 

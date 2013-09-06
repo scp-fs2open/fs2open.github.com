@@ -90,7 +90,7 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 campaign Campaign;
 
 
-bool campaign_is_ignored(char *filename, bool add_extension = false);
+bool campaign_is_ignored(const char *filename);
 
 /**
  * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
@@ -246,12 +246,12 @@ int mission_campaign_maybe_add(char *filename)
 	char *desc = NULL;
 	int type, max_players;
 
-	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		// don't add ignored campaigns
 		if (campaign_is_ignored(filename)) {
 			return 0;
 		}
 
+	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
 			Campaign_names[Num_campaigns] = vm_strdup(name);
 
@@ -418,12 +418,12 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	int len, rval, i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
-	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
-
 	if (campaign_is_ignored(filename)) {
 		Campaign_file_missing = 1;
 		return CAMPAIGN_ERROR_IGNORED;
 	}
+
+	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
 	// open localization
 	lcl_ext_open();	
@@ -1630,26 +1630,18 @@ void mission_campaign_save_persistent( int type, int sindex )
 		Int3();
 }
 
-bool campaign_is_ignored(char *filename, bool add_extension)
+bool campaign_is_ignored(const char *filename)
 {
-	bool current_campaign_ignored = false;
-	int i;
-	char campaign_name[NAME_LENGTH] = {""};
+	SCP_string filename_no_ext = filename;
+	drop_extension(filename_no_ext);
 
-	strcpy_s(campaign_name, filename);
-
-	if (add_extension) {
-		strcat_s(campaign_name, FS_CAMPAIGN_FILE_EXT);
-	}
-
-	for (i = 0; i < (int)Ignored_campaigns.size(); i++) {
-		if (!stricmp (campaign_name, Ignored_campaigns[i].c_str())) {
-			current_campaign_ignored = true;
-			break;
+	for (SCP_vector<SCP_string>::iterator ii = Ignored_campaigns.begin(); ii != Ignored_campaigns.end(); ++ii) {
+		if (ii->compare(filename_no_ext) == 0) {
+			return true;
 		}
 	}
 	
-	return current_campaign_ignored;
+	return false;
 }
 
 // returns 0: loaded, !0: error
@@ -1667,7 +1659,7 @@ int mission_load_up_campaign( player *pl )
 
 	// last used...
 	if ( strlen(pl->current_campaign) ) {
-		if (!campaign_is_ignored(pl->current_campaign, true)) {
+		if (!campaign_is_ignored(pl->current_campaign)) {
 			return mission_campaign_load(pl->current_campaign, pl);
 		}
 		else {
