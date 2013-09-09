@@ -32,7 +32,7 @@ typedef struct medal_stuff {
 	int	kills_needed;
 	int badge_num;
 
-	//If this is a badge (kills_needed > 1)
+	//If this is a badge (kills_needed > 0)
 	char voice_base[MAX_FILENAME_LEN];
 	char *promotion_text;
 
@@ -75,12 +75,6 @@ void medal_main_init(player *pl,int mode = MM_NORMAL);
 // return 0 if the screen should close (used for MM_POPUP mode)
 int medal_main_do();
 void medal_main_close();
-
-void init_medal_bitmaps();
-void init_snazzy_regions();
-void blit_medals();
-void blit_label(char *label,int *coords);
-void blit_callsign();
 
 // individual medals
 void medals_translate_name(char *name, int max_len);
