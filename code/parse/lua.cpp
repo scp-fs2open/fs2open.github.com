@@ -8880,6 +8880,23 @@ ADE_FUNC(warpOut, l_Ship, NULL, "Warps ship out", "boolean", "True if successful
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace drive and is allowed to use it", "boolean", "True if successful, or nil if ship handle is invalid")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	if(shipp->flags & SF2_NO_SUBSPACE_DRIVE){
+		return ADE_RETURN_FALSE;
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
 // Aardwolf's function for finding if a ship should be drawn as blue on the radar/minimap
 ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "True if the ship is warping in, false or nil otherwise")
 {
