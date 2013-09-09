@@ -1955,14 +1955,18 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Autoaim FOV:"))
 	{
-		int fov_temp;
-		stuff_int(&fov_temp);
+		float fov_temp;
+		stuff_float(&fov_temp);
 
 		// Make sure it is a reasonable value
-		fov_temp = (((fov_temp % 360) + 360) % 360) / 2;
+		if (fov_temp < 0.0f)
+			fov_temp = 0.0f;
+
+		if (fov_temp > 180.0f)
+			fov_temp = 180.0f;
 
 		sip->aiming_flags |= AIM_FLAG_AUTOAIM;
-		sip->autoaim_fov = (float)fov_temp * PI / 180.0f;
+		sip->autoaim_fov = fov_temp * PI / 180.0f;
 
 		if(optional_string("+Converging Autoaim"))
 			sip->aiming_flags |= AIM_FLAG_AUTOAIM_CONVERGENCE;
@@ -5125,6 +5129,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->secondary_team_name = "<none>";
 	shipp->team_change_time = 0;
 	shipp->team_change_timestamp = 0;
+
+	shipp->autoaim_fov = sip->autoaim_fov;
 }
 
 /**
@@ -9814,7 +9820,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	
 	if (needs_target_pos) {
 		if (has_autoaim) {
-			autoaim_fov = MAX(sip->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+			autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
 		}
 
 		// If a subsystem is targeted, fire in that direction instead

@@ -796,6 +796,7 @@ typedef struct ship {
 	fix team_change_timestamp;
 	int team_change_time;
 
+	float autoaim_fov;
 } ship;
 
 struct ai_target_priority {
