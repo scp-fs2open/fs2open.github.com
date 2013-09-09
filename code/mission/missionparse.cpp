@@ -6866,7 +6866,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 		// aha, but not if we were ORDERED to depart, because the comms menu ALSO uses the goal code, and yet the comms menu means any departure method!
 		if ((shipp->flags & SF_DEPARTURE_ORDERED) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_DEPARTURE_ORDERED)))
 		{
-			mprintf(("Looks like we were ordered to depart; initiating the standardard departure logic\n"));
+			mprintf(("Looks like we were ordered to depart; initiating the standard departure logic\n"));
 		}
 		// since our goal is to warp, then if we can warp, jump directly to the warping part
 		else if (ship_can_use_warp_drive(shipp))
