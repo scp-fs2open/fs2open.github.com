@@ -9211,19 +9211,19 @@ int sexp_is_ship_type(int n)
 int sexp_is_ai_class(int n)
 {
 	char *ship_name, *subsystem;
-	int i, ship_num, ai_class;
+	int i, ship_num, ai_class_to_check;
 
 	Assert ( n >= 0 );
 
 	// find ai class
-	ai_class = -1;
+	ai_class_to_check = -1;
 	for (i=0; i<Num_ai_classes; i++)
 	{
 		if (!stricmp(Ai_class_names[i], CTEXT(n)))
-			ai_class = i;
+			ai_class_to_check = i;
 	}
 
-	Assert(ai_class >= 0);
+	Assert(ai_class_to_check >= 0);
 
 	n = CDR(n);
 	ship_name = CTEXT(n);
@@ -9251,7 +9251,7 @@ int sexp_is_ai_class(int n)
 			ss = ship_get_subsys(&Ships[ship_num], subsystem);
 			if (ss != NULL)
 			{
-				if (ss->weapons.ai_class != ai_class)
+				if (ss->weapons.ai_class != ai_class_to_check)
 					return SEXP_FALSE;
 			}
 			else
@@ -9264,7 +9264,7 @@ int sexp_is_ai_class(int n)
 	// just the ship
 	else
 	{
-		if (Ai_info[Ships[ship_num].ai_index].ai_class == ai_class)
+		if (Ai_info[Ships[ship_num].ai_index].ai_class == ai_class_to_check)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;
@@ -11217,11 +11217,11 @@ void sexp_change_goal_validity( int n, int flag )
 // yeesh - be careful of the cargo-no-deplete flag :p
 int sexp_is_cargo(int n)
 {
-	char *cargo, *ship, *subsystem;
+	char *cargo, *ship_name, *subsystem;
 	int ship_num, cargo_index;
 
 	cargo = CTEXT(n);
-	ship = CTEXT(CDR(n));
+	ship_name = CTEXT(CDR(n));
 	if (CDR(CDR(n)) != -1)
 		subsystem = CTEXT(CDR(CDR(n)));
 	else
@@ -11230,7 +11230,7 @@ int sexp_is_cargo(int n)
 	cargo_index = -1;
 
 	// find ship
-	ship_num = ship_name_lookup(ship);
+	ship_num = ship_name_lookup(ship_name);
 
 	// in-mission?
 	if (ship_num != -1)
@@ -11259,7 +11259,7 @@ int sexp_is_cargo(int n)
 		}
 
 		// departed?
-		int exited_index = ship_find_exited_ship_by_name(ship);
+		int exited_index = ship_find_exited_ship_by_name(ship_name);
 		if (exited_index != -1)
 		{
 			cargo_index = Ships_exited[exited_index].cargo1;
@@ -11270,7 +11270,7 @@ int sexp_is_cargo(int n)
 			p_object *p_objp;
 
 			// find cargo for the parse object
-			p_objp = mission_parse_get_arrival_ship(ship);
+			p_objp = mission_parse_get_arrival_ship(ship_name);
 			Assert (p_objp);
 			cargo_index = (int) p_objp->cargo1;
 		}
@@ -11291,18 +11291,18 @@ int sexp_is_cargo(int n)
 // yeesh - be careful of the cargo-no-deplete flag :p
 void sexp_set_cargo(int n)
 {
-	char *cargo, *ship, *subsystem;
+	char *cargo, *ship_name, *subsystem;
 	int ship_num, i, cargo_index;
 
 	cargo = CTEXT(n);
-	ship = CTEXT(CDR(n));
+	ship_name = CTEXT(CDR(n));
 	if (CDR(CDR(n)) != -1)
 		subsystem = CTEXT(CDR(CDR(n)));
 	else
 		subsystem = NULL;
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
 		return;
 
 	cargo_index = -1;
@@ -11336,7 +11336,7 @@ void sexp_set_cargo(int n)
 	}
 
 	// get the ship
-	ship_num = ship_name_lookup(ship);
+	ship_num = ship_name_lookup(ship_name);
 
 	// we can only set subsystems if the ship is in the mission
 	if (ship_num != -1)
@@ -11365,7 +11365,7 @@ void sexp_set_cargo(int n)
 			p_object *p_objp;
 
 			// set cargo for the parse object
-			p_objp = mission_parse_get_arrival_ship(ship);
+			p_objp = mission_parse_get_arrival_ship(ship_name);
 			Assert (p_objp);
 			p_objp->cargo1 = char(cargo_index | (p_objp->cargo1 & CARGO_NO_DEPLETE));
 		}
@@ -14150,7 +14150,7 @@ void sexp_destroy_instantly(int n)
 {
 	char *ship_name;
 	int ship_num;
-	object *ship_obj;
+	object *ship_obj_p;
 
 	// if MULTIPLAYER bail
 	if (Game_mode & GM_MULTIPLAYER) {
@@ -14167,12 +14167,12 @@ void sexp_destroy_instantly(int n)
 
 		// if it still exists, destroy it
 		if (ship_num >= 0) {
-			ship_obj = &Objects[Ships[ship_num].objnum];
+			ship_obj_p = &Objects[Ships[ship_num].objnum];
 
 			//if its the player don't destroy
-			if (ship_obj == Player_obj)
+			if (ship_obj_p == Player_obj)
 				continue;
-			ship_destroy_instantly(ship_obj,ship_num);
+			ship_destroy_instantly(ship_obj_p,ship_num);
 		}
 	}
 }
@@ -17865,7 +17865,7 @@ void sexp_set_departure_info(int node)
 // than MAX_COMPLETE_ESCORT_LIST arguments
 void sexp_damage_escort_list_all(int n)
 {
-	typedef struct my_escort_ship
+	typedef struct
 	{
 		int index;
 		float hull;
@@ -20424,15 +20424,15 @@ void sexp_show_subtitle_text(int node)
 	int fontnum = -1;
 	if (n >= 0)
 	{
-		char *font = CTEXT(n);
+		char *font_name = CTEXT(n);
 		n = CDR(n);
 
 		// perform font lookup
-		for (int i = 0; i < Num_fonts; i++)
+		for (int j = 0; j < Num_fonts; j++)
 		{
-			if (!stricmp(font, Fonts[i].filename))
+			if (!stricmp(font_name, Fonts[j].filename))
 			{
-				fontnum = i;
+				fontnum = j;
 				break;
 			}
 		}
@@ -27110,7 +27110,7 @@ char *sexp_error_message(int num)
 	}
 }
 
-int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship)
+int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship_num)
 {
 	int i, op;
 
@@ -27124,7 +27124,7 @@ int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship)
 			break;
 
 	Assert(i < Num_sexp_ai_goal_links);
-	return ai_query_goal_valid(ship, Sexp_ai_goal_links[i].ai_goal);
+	return ai_query_goal_valid(ship_num, Sexp_ai_goal_links[i].ai_goal);
 }
 
 // Takes an Sexp_node.text pointing to a variable (of form "Sexp_variables[xx]=string" or "Sexp_variables[xx]=number")
