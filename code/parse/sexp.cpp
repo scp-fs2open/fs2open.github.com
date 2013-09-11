@@ -15987,7 +15987,7 @@ void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 	sindex = ship_name_lookup(CTEXT(n), 1);
 	if (sindex >= 0)
 	{
-		for ( ; n != -1; n = CDR(n))
+		for ( n = CDR(n); n != -1; n = CDR(n))
 		{
 			num = eval_num(n);
 			if (num >= 0 && num < (int)Ships[sindex].glow_point_bank_active.size())
