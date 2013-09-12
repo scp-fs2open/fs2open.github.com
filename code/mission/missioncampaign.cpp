@@ -97,7 +97,7 @@ bool campaign_is_ignored(const char *filename);
  * In the type field, we return if the campaign is a single player or multiplayer campaign.  
  * The type field will only be valid if the name returned is non-NULL
  */
-int mission_campaign_get_info(char *filename, char *name, int *type, int *max_players, char **desc)
+int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc)
 {
 	int rval, i, success = 0;
 	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
@@ -179,7 +179,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
  * @return Number of missions added to the 'list', and up to 'max' missions may be added to 'list'.  
  * @return Negative on error.
  */
-int mission_campaign_get_mission_list(char *filename, char **list, int max)
+int mission_campaign_get_mission_list(const char *filename, char **list, int max)
 {
 	int rval, i, num = 0;
 	char name[MAX_FILENAME_LEN];
@@ -240,7 +240,7 @@ void mission_campaign_free_list()
 	Campaign_names_inited = 0;
 }
 
-int mission_campaign_maybe_add(char *filename)
+int mission_campaign_maybe_add(const char *filename)
 {
 	char name[NAME_LENGTH];
 	char *desc = NULL;
@@ -846,7 +846,7 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 	int dir_type, num_files, i;
 	char file_spec[MAX_FILENAME_LEN + 2], *ext;
 	char filename[1024];
-	int (*filter_save)(char *filename);
+	int (*filter_save)(const char *filename);
 	SCP_vector<SCP_string> names;
 
 	ext = NOX(".csg");

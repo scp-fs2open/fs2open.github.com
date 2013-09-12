@@ -195,7 +195,7 @@ void player_select_set_controls(int gray);
 void player_select_draw_list();
 void player_select_process_noninput(int k);
 void player_select_process_input(int k);
-int player_select_pilot_file_filter(char *filename);
+int player_select_pilot_file_filter(const char *filename);
 int player_select_get_last_pilot_info();
 void player_select_eval_very_first_pilot();
 void player_select_commit();
@@ -1154,7 +1154,7 @@ void player_select_display_all_text()
 	}
 }
 
-int player_select_pilot_file_filter(char *filename)
+int player_select_pilot_file_filter(const char *filename)
 {
 	return (int)Pilot.verify(filename);
 }

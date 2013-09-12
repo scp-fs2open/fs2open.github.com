@@ -372,7 +372,6 @@ int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
 int mission_set_arrival_location(int anchor, int location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
-int get_parse_name_index(char *name);
 int get_anchor(char *name);
 void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
@@ -3773,7 +3772,7 @@ p_object *mission_parse_get_parse_object(ushort net_signature)
 }
 
 // Goober5000 - also get it by name
-p_object *mission_parse_get_parse_object(char *name)
+p_object *mission_parse_get_parse_object(const char *name)
 {
 	int i;
 
@@ -5722,7 +5721,7 @@ void post_process_mission()
 	Last_file_checksum = Current_file_checksum;
 }
 
-int get_mission_info(char *filename, mission *mission_p, bool basic)
+int get_mission_info(const char *filename, mission *mission_p, bool basic)
 {
 	char real_fname[MAX_FILENAME_LEN];
 	
@@ -5795,7 +5794,7 @@ void parse_init(bool basic)
 // mai parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
 // info such as game type, number of players etc.
-int parse_main(char *mission_name, int flags)
+int parse_main(const char *mission_name, int flags)
 {
 	int rval, i;
 
@@ -6196,7 +6195,7 @@ void mission_parse_set_up_initial_docks()
 /**
  * Returns true or false if the given mission support multiplayers
  */
-int mission_parse_is_multi(char *filename, char *mission_name)
+int mission_parse_is_multi(const char *filename, char *mission_name)
 {
 	int rval, game_type;
 	int filelength;
@@ -6254,7 +6253,7 @@ int mission_parse_is_multi(char *filename, char *mission_name)
  * The calling function can use the information in The_mission to get the name/description of the mission
  * if needed.
  */
-int mission_parse_get_multi_mission_info( char *filename )
+int mission_parse_get_multi_mission_info( const char *filename )
 {
 	if ( get_mission_info(filename, &The_mission) )
 		return -1;
@@ -6271,7 +6270,7 @@ int mission_parse_get_multi_mission_info( char *filename )
 /**
  * Return the parse object on the ship arrival list associated with the given name
  */
-p_object *mission_parse_get_arrival_ship(char *name)
+p_object *mission_parse_get_arrival_ship(const char *name)
 {
 	p_object *p_objp;
 
@@ -7154,7 +7153,7 @@ subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name)
 }
 
 // find (or add) the name in the list and return an index to it.
-int get_parse_name_index(char *name)
+int get_parse_name_index(const char *name)
 {
 	int i;
 

@@ -1908,7 +1908,7 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 //	When a comment is found, it is removed.  If an entire line
 //	consisted of a comment, a blank line is left in the input file.
 // Goober5000 - added ability to read somewhere other than Mission_text
-void read_file_text(char *filename, int mode, char *processed_text, char *raw_text)
+void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// copy the filename
 	if (!filename)
@@ -1934,7 +1934,7 @@ void read_file_text(char *filename, int mode, char *processed_text, char *raw_te
 }
 
 // Goober5000
-void read_file_text_from_array(char *array, char *processed_text, char *raw_text)
+void read_file_text_from_array(const char *array, char *processed_text, char *raw_text)
 {
 	// we have no filename, so copy a substitute
 	strcpy_s(Current_filename_sub, "internal default file");
@@ -2039,7 +2039,7 @@ void allocate_mission_text(int size)
 }
 
 // Goober5000
-void read_raw_file_text(char *filename, int mode, char *raw_text)
+void read_raw_file_text(const char *filename, int mode, char *raw_text)
 {
 	CFILE	*mf;
 	int	file_is_encrypted;
@@ -3552,7 +3552,7 @@ int subsystem_stricmp(const char *str1, const char *str2)
 
 // Goober5000
 // current algorithm adapted from http://www.codeproject.com/string/stringsearch.asp
-char *stristr(const char *str, const char *substr)
+const char *stristr(const char *str, const char *substr)
 {
 	// check for null and insanity
 	Assert(str);
@@ -3589,7 +3589,56 @@ char *stristr(const char *str, const char *substr)
 			}
 
 			// finished inner loop with success!
-			return const_cast<char*>(start);
+			return start;
+		}
+
+stristr_continue_outer_loop:
+		/* NO-OP */ ;
+	}
+
+	// no match
+	return NULL;
+}
+
+// non-const version
+char *stristr(char *str, const char *substr)
+{
+	// check for null and insanity
+	Assert(str);
+	Assert(substr);
+	if (str == NULL || substr == NULL || *substr == '\0')
+		return NULL;
+
+	// save both a lowercase and an uppercase version of the first character of substr
+	char substr_ch_lower = (char)tolower(*substr);
+	char substr_ch_upper = (char)toupper(*substr);
+
+	// find the maximum distance to search
+	const char *upper_bound = str + strlen(str) - strlen(substr);
+
+	// loop through every character of str
+	for (char *start = str; start <= upper_bound; start++)
+	{
+		// check first character of substr
+		if ((*start == substr_ch_upper) || (*start == substr_ch_lower))
+		{
+			// first character matched, so check the rest
+			for (const char *str_ch = start+1, *substr_ch = substr+1; *substr_ch != '\0'; str_ch++, substr_ch++)
+			{
+				// character match?
+				if (*str_ch == *substr_ch)
+					continue;
+
+				// converted character match?
+				if (tolower(*str_ch) == tolower(*substr_ch))
+					continue;
+
+				// mismatch
+				goto stristr_continue_outer_loop;
+			}
+
+			// finished inner loop with success!
+			return start;
 		}
 
 stristr_continue_outer_loop:
@@ -4095,7 +4144,7 @@ void parse_int_list(int *ilist, int size)
 }
 
 // parse a modular table of type "name_check" and parse it using the specified function callback
-int parse_modular_table(char *name_check, void (*parse_callback)(char *filename), int path_type, int sort_type)
+int parse_modular_table(const char *name_check, void (*parse_callback)(const char *filename), int path_type, int sort_type)
 {
 	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
 	char *tbl_file_names[MAX_TBL_PARTS];

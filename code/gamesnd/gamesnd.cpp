@@ -691,7 +691,7 @@ void parse_sound_environments()
 
 static SCP_vector<species_info> missingFlybySounds;
 
-void parse_sound_table(char* filename)
+void parse_sound_table(const char* filename)
 {
 	int	rval;
 

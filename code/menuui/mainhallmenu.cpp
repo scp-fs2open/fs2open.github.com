@@ -1824,7 +1824,7 @@ void main_hall_table_init()
 }
 
 // read in main hall table
-void parse_main_hall_table(char* filename)
+void parse_main_hall_table(const char* filename)
 {
 	SCP_vector<main_hall_defines> temp_vector;
 	main_hall_defines *m, temp;

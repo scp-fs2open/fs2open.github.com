@@ -26,7 +26,7 @@ bool Full_color_head_anis = false;
 bool Weapons_inherit_parent_collision_group = false;
 
 
-void parse_mod_table(char *filename)
+void parse_mod_table(const char *filename)
 {
 	int rval;
 	// SCP_vector<SCP_string> lines;

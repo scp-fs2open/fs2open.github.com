@@ -283,7 +283,7 @@ int credits_screen_button_pressed(int n)
 	return 0;
 }
 
-void credits_parse_table(char* filename)
+void credits_parse_table(const char* filename)
 {
 	int rval;
 

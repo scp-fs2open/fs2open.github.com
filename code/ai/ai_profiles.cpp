@@ -67,7 +67,7 @@ int ai_path_type_match(char *p)
 	return -1;
 }
 
-void parse_ai_profiles_tbl(char *filename)
+void parse_ai_profiles_tbl(const char *filename)
 {
 	int i, rval;
 	char profile_name[NAME_LENGTH];
@@ -512,7 +512,7 @@ void parse_ai_profiles_tbl(char *filename)
 	required_string("#End");
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
 
 	// close localization

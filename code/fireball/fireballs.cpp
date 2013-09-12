@@ -157,7 +157,7 @@ static void fireball_set_default_color(int idx)
  *
  * NOTE: we can't be too trusting here so a tbm will only modify the LOD count, not add an entry
  */
-void parse_fireball_tbl(char *filename)
+void parse_fireball_tbl(const char *filename)
 {
 	int rval;
 	lod_checker lod_check;

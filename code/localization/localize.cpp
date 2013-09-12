@@ -140,7 +140,7 @@ int lcl_ext_lookup_sub(char *text, char *out, int id);
 void lcl_ext_setup_pointers();
 
 // parses the string.tbl and reports back only on the languages it found
-void parse_stringstbl_quick(char *filename);
+void parse_stringstbl_quick(const char *filename);
 
 
 // ------------------------------------------------------------------------------------------------------------
@@ -238,7 +238,7 @@ int lcl_get_language()
 }
 
 // parses the string.tbl to see which languages are supported. Doesn't read in any strings.
-void parse_stringstbl_quick(char *filename)
+void parse_stringstbl_quick(const char *filename)
 {
 	lang_info language;
 	int lang_idx;
@@ -279,7 +279,7 @@ void parse_stringstbl_quick(char *filename)
 	}
 }
 
-void parse_stringstbl(char *filename)
+void parse_stringstbl(const char *filename)
 {
 	char chr, buf[4096];
 	char language_tag[512];

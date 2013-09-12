@@ -47,7 +47,7 @@ void FS2NetD_SendServerDisconnect();
 
 void FS2NetD_RequestServerList();
 
-void FS2NetD_GameCountUpdate(char *chan_name);
+void FS2NetD_GameCountUpdate(const char *chan_name);
 
 void FS2NetD_Ping();
 void FS2NetD_Pong(int tstamp);

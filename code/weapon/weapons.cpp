@@ -133,7 +133,7 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 
 extern int compute_num_homing_objects(object *target_objp);
 
-extern void fs2netd_add_table_validation(char *tblname);
+extern void fs2netd_add_table_validation(const char *tblname);
 
 
 weapon_explosions::weapon_explosions()
@@ -317,7 +317,7 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 }
 
 
-void parse_weapon_expl_tbl(char *filename)
+void parse_weapon_expl_tbl(const char *filename)
 {
 	int rval;
 	uint i;
@@ -2737,7 +2737,7 @@ void translate_spawn_types()
 
 static char Default_cmeasure_name[NAME_LENGTH] = "";
 
-void parse_weaponstbl(char *filename)
+void parse_weaponstbl(const char *filename)
 {
 	int rval;
 

@@ -104,7 +104,7 @@ extern int splodeingtexture;
 
 extern int Cmdline_nohtl;
 
-extern void fs2netd_add_table_validation(char *tblname);
+extern void fs2netd_add_table_validation(const char *tblname);
 
 #define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
 
@@ -993,7 +993,7 @@ void init_ship_entry(ship_info *sip)
 /**
  * Parse the information for a specific ship type.
  */
-int parse_ship(char *filename, bool replace)
+int parse_ship(const char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
@@ -3997,7 +3997,7 @@ void parse_ship_type()
 		Ship_types.push_back(stp_buf);
 }
 
-void parse_shiptype_tbl(char *filename)
+void parse_shiptype_tbl(const char *filename)
 {
 	int rval;
 
@@ -4099,7 +4099,7 @@ void ship_set_default_player_ship()
 	}
 }
 
-void parse_shiptbl(char *filename)
+void parse_shiptbl(const char *filename)
 {
 	int rval;
 
@@ -17288,7 +17288,7 @@ void parse_armor_type()
 	Armor_types.push_back(tat);
 }
 
-void armor_parse_table(char *filename)
+void armor_parse_table(const char *filename)
 {
 	int rval;
 

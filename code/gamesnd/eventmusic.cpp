@@ -1379,7 +1379,7 @@ void parse_menumusic()
 // event_music_parse_musictbl() will parse the music.tbl file, and set up the Mission_songs[]
 // array
 //
-void event_music_parse_musictbl(char *filename)
+void event_music_parse_musictbl(const char *filename)
 {
 	int rval;
 
