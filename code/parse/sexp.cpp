@@ -11487,12 +11487,11 @@ void sexp_cap_waypoint_speed(int n)
 void sexp_jettison_cargo(int n)
 {
 	char *shipname;
-	int ship_index;
-	int jettison_delay __attribute__((__unused__)); // silence gcc warning
+	int jettison_delay, ship_index;	
 
 	// get some data
 	shipname = CTEXT(n);
-	jettison_delay = eval_num(CDR(n)); // jettison_delay not implemented
+	jettison_delay = eval_num(CDR(n));
 
 	// lookup the ship
 	ship_index = ship_name_lookup(shipname);
@@ -17415,6 +17414,7 @@ void sexp_add_remove_escort(int node)
 {
 	int sindex;
 	int flag;
+	char *whee;
 
 	// get the firing ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -17426,6 +17426,7 @@ void sexp_add_remove_escort(int node)
 	}
 
 	// determine whether to add or remove it
+	whee = CTEXT(CDR(node));
 	flag = eval_num(CDR(node));
 
 	// add/remove
@@ -19391,7 +19392,7 @@ void sexp_string_set_substring(int node)
 // breaks into the code or sends a warning
 void sexp_debug(int node)
 {
-	int no_release_message __attribute__((__unused__)); // silence gcc warning
+	int no_release_message; 
 	int i;
 	char *id;
 	char temp_buf[MESSAGE_LENGTH] = {""};
