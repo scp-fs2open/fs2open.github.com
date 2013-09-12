@@ -196,6 +196,11 @@ extern int Global_error_count;
 
 #include "osapi/outwnd.h"
 
+// remove __attribute__ on non-GCC compilers
+#ifndef __GNUC__
+#	define  __attribute__(x)  /*NOTHING*/
+#endif
+
 // To debug printf do this:
 // mprintf(( "Error opening %s\n", filename ));
 #ifndef NDEBUG
