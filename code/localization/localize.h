@@ -127,11 +127,12 @@ void lcl_fix_polish(SCP_string &str);
 #define LXSTR(str, i)		(XSTR(str, i))
 #endif	// defined(GERMAN_BUILD)
 
-void lcl_translate_wep_name(char *name);
-void lcl_translate_ship_name(char *name);
-void lcl_translate_brief_icon_name(char *name);
+void lcl_translate_wep_name_gr(char *name);
+void lcl_translate_ship_name_gr(char *name);
+void lcl_translate_brief_icon_name_gr(char *name);
 void lcl_translate_brief_icon_name_pl(char *name);
-void lcl_translate_targetbox_name(char *name);
+void lcl_translate_targetbox_name_gr(char *name);
 void lcl_translate_targetbox_name_pl(char *name);
+void lcl_translate_medal_name_gr(char *name);
 
 #endif	// defined __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE

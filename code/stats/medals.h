@@ -76,9 +76,6 @@ void medal_main_init(player *pl,int mode = MM_NORMAL);
 int medal_main_do();
 void medal_main_close();
 
-// individual medals
-void medals_translate_name(char *name, int max_len);
-
 int medals_info_lookup(const char *name);
 
 #endif

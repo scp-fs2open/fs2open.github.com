@@ -2334,7 +2334,7 @@ void debrief_add_award_text(char *str)
 
 	// maybe translate for displaying
 	if (Lcl_gr) {
-		medals_translate_name(Debrief_award_text[Debrief_award_text_num_lines], AWARD_TEXT_MAX_LINE_LENGTH);
+		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
 	}
 
 	Debrief_award_text_num_lines++;

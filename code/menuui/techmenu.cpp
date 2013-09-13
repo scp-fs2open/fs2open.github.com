@@ -432,7 +432,7 @@ void tech_common_render()
 		strncpy(buf, Current_list[z].name, sizeof(buf) - 1);
 
 		if (Lcl_gr)
-			lcl_translate_ship_name(buf);
+			lcl_translate_ship_name_gr(buf);
 
 		gr_force_fit_string(buf, 255, Tech_list_coords[gr_screen.res][SHIP_W_COORD]);
 		gr_string(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, buf);

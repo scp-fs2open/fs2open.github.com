@@ -481,66 +481,6 @@ void medal_main_init(player *pl, int mode)
 	Medals_window.set_mask_bmap(Medals_mask_filename[gr_screen.res]);
 }
 
-// this is just a hack to display translated names without actually changing the names, 
-// which would break stuff
-void medals_translate_name(char *name, int max_len)
-{
-	if (!strcmp(name, "Epsilon Pegasi Liberation")) {
-		strncpy(name, "Epsilon Pegasi Befreiungsmedaille", max_len);
-
-	} else if (!strcmp(name, "Imperial Order of Vasuda")) {
-		strncpy(name, "Imperialer Orden von Vasuda ", max_len);
-
-	} else if (!strcmp(name, "Distinguished Flying Cross")) {
-		strncpy(name, "Fliegerkreuz Erster Klasse", max_len);
-
-	} else if (!strcmp(name, "SOC Service Medallion")) {
-		strncpy(name, "SEK-Dienstmedaille ", max_len);
-
-	} else if (!strcmp(name, "Intelligence Cross")) {
-		strncpy(name, "Geheimdienstkreuz am Bande", max_len);
-
-	} else if (!strcmp(name, "Order of Galatea")) {
-		strncpy(name, "Orden von Galatea ", max_len);
-
-	} else if (!strcmp(name, "Meritorious Unit Commendation")) {
-		strncpy(name, "Ehrenspange der Allianz", max_len);
-
-	} else if (!strcmp(name, "Medal of Valor")) {
-		strncpy(name, "Tapferkeitsmedaille ", max_len);
-
-	} else if (!strcmp(name, "GTVA Legion of Honor")) {
-		strncpy(name, "Orden der GTVA-Ehrenlegion", max_len);
-
-	} else if (!strcmp(name, "Allied Defense Citation")) {
-		strncpy(name, "Alliierte Abwehrspange ", max_len);
-
-	} else if (!strcmp(name, "Nebula Campaign Victory Star")) {
-		strncpy(name, "Nebel-Siegesstern", max_len);
-
-	} else if (!strcmp(name, "NTF Campaign Victory Star")) {
-		strncpy(name, "NTF-Siegesstern ", max_len);
-
-	} else if (!strcmp(name, "Rank")) {
-		strncpy(name, "Dienstgrad", max_len);
-
-	} else if (!strcmp(name, "Wings")) {
-		strncpy(name, "Fliegerspange", max_len);
-
-	} else if (!strcmp(name, "Ace")) {
-		strncpy(name, "Flieger-As", max_len);
-
-	} else if (!strcmp(name, "Double Ace")) {
-		strncpy(name, "Doppel-As ", max_len);
-
-	} else if (!strcmp(name, "Triple Ace")) {
-		strncpy(name, "Dreifach-As ", max_len);
-		
-	} else if (!strcmp(name, "SOC Unit Crest")) {
-		strncpy(name, "SEK-Abzeichen ", max_len);
-	}
-}
-
 void blit_label(char *label, int num)
 {
 	int x, y, sw;
@@ -553,7 +493,7 @@ void blit_label(char *label, int num)
 	if (Lcl_gr) {
 		char translated_label[256];
 		strncpy(translated_label, label, 256);
-		medals_translate_name(translated_label, 256);
+		lcl_translate_medal_name_gr(translated_label);
 
 		// set correct string
 		if ( num > 1 ) {

@@ -1503,12 +1503,12 @@ void lcl_fix_polish(SCP_string &str)
 }
 
 // ------------------------------------------------------------------
-// lcl_translate_wep_name()
+// lcl_translate_wep_name_gr()
 //
 // For displaying weapon names in german version
 // since we can't actually just change them outright.
 //
-void lcl_translate_wep_name(char *name)
+void lcl_translate_wep_name_gr(char *name)
 {
 	if (!strcmp(name, "Morning Star")) {	
 		strcpy(name, "Morgenstern");
@@ -1522,12 +1522,12 @@ void lcl_translate_wep_name(char *name)
 }
 
 // ------------------------------------------------------------------
-// lcl_translate_brief_icon_name()
+// lcl_translate_brief_icon_name_gr()
 //
 // For displaying ship names in german version
 // since we can't actually just change them outright.
 //
-void lcl_translate_brief_icon_name(char *name)
+void lcl_translate_brief_icon_name_gr(char *name)
 {
 	char *pos;
 	char buf[128];
@@ -1757,12 +1757,12 @@ char buf[128];
 }
 
 // ------------------------------------------------------------------
-// lcl_translate_ship_name()
+// lcl_translate_ship_name_gr()
 //
 // For displaying ship names in german version in the briefing
 // since we can't actually just change them outright.
 //
-void lcl_translate_ship_name(char *name)
+void lcl_translate_ship_name_gr(char *name)
 {
 	if (!strcmp(name, "GTDR Amazon Advanced")) {	
 		strcpy(name, "GTDR Amazon VII");
@@ -1770,12 +1770,12 @@ void lcl_translate_ship_name(char *name)
 }
 
 // ------------------------------------------------------------------
-// lcl_translate_targetbox_name()
+// lcl_translate_targetbox_name_gr()
 //
 // For displaying ship names in german version in the targetbox
 // since we can't actually just change them outright.
 //
-void lcl_translate_targetbox_name(char *name)
+void lcl_translate_targetbox_name_gr(char *name)
 {
 	char *pos;
 	char buf[128];
@@ -1870,5 +1870,66 @@ void lcl_translate_targetbox_name_pl(char *name)
 
 	} else if (!stricmp(name, "Enif Station")) {
 		strcpy(name, "Stacja Enif");
+	}
+}
+
+// this is just a hack to display translated names without actually changing the names, 
+// which would break stuff
+// (this used to be in medals.cpp)
+void lcl_translate_medal_name_gr(char *name)
+{
+	if (!strcmp(name, "Epsilon Pegasi Liberation")) {
+		strcpy(name, "Epsilon Pegasi Befreiungsmedaille");
+
+	} else if (!strcmp(name, "Imperial Order of Vasuda")) {
+		strcpy(name, "Imperialer Orden von Vasuda ");
+
+	} else if (!strcmp(name, "Distinguished Flying Cross")) {
+		strcpy(name, "Fliegerkreuz Erster Klasse");
+
+	} else if (!strcmp(name, "SOC Service Medallion")) {
+		strcpy(name, "SEK-Dienstmedaille ");
+
+	} else if (!strcmp(name, "Intelligence Cross")) {
+		strcpy(name, "Geheimdienstkreuz am Bande");
+
+	} else if (!strcmp(name, "Order of Galatea")) {
+		strcpy(name, "Orden von Galatea ");
+
+	} else if (!strcmp(name, "Meritorious Unit Commendation")) {
+		strcpy(name, "Ehrenspange der Allianz");
+
+	} else if (!strcmp(name, "Medal of Valor")) {
+		strcpy(name, "Tapferkeitsmedaille ");
+
+	} else if (!strcmp(name, "GTVA Legion of Honor")) {
+		strcpy(name, "Orden der GTVA-Ehrenlegion");
+
+	} else if (!strcmp(name, "Allied Defense Citation")) {
+		strcpy(name, "Alliierte Abwehrspange ");
+
+	} else if (!strcmp(name, "Nebula Campaign Victory Star")) {
+		strcpy(name, "Nebel-Siegesstern");
+
+	} else if (!strcmp(name, "NTF Campaign Victory Star")) {
+		strcpy(name, "NTF-Siegesstern ");
+
+	} else if (!strcmp(name, "Rank")) {
+		strcpy(name, "Dienstgrad");
+
+	} else if (!strcmp(name, "Wings")) {
+		strcpy(name, "Fliegerspange");
+
+	} else if (!strcmp(name, "Ace")) {
+		strcpy(name, "Flieger-As");
+
+	} else if (!strcmp(name, "Double Ace")) {
+		strcpy(name, "Doppel-As ");
+
+	} else if (!strcmp(name, "Triple Ace")) {
+		strcpy(name, "Dreifach-As ");
+		
+	} else if (!strcmp(name, "SOC Unit Crest")) {
+		strcpy(name, "SEK-Abzeichen ");
 	}
 }

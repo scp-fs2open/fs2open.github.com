@@ -2775,7 +2775,7 @@ void weapon_select_do(float frametime)
 				{
 					char display_name[NAME_LENGTH];
 					strncpy(display_name, (Weapon_info[Carried_wl_icon.weapon_class].alt_name[0] != '\0' ) ? Weapon_info[Carried_wl_icon.weapon_class].alt_name : Weapon_info[Carried_wl_icon.weapon_class].name, NAME_LENGTH);
-					lcl_translate_wep_name(display_name);
+					lcl_translate_wep_name_gr(display_name);
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), (Ship_info[ship_class].alt_name[0] != '\0') ? Ship_info[ship_class].alt_name : Ship_info[ship_class].name, display_name);
 				}
 				else
@@ -3532,7 +3532,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 
 				// might have to get weapon name translation
 				if (Lcl_gr) {
-					lcl_translate_wep_name(display_name);
+					lcl_translate_wep_name_gr(display_name);
 				}
 
 				sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), display_name);
@@ -3696,7 +3696,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net
 
 			// might have to get weapon name translation
 			if (Lcl_gr) {
-				lcl_translate_wep_name(display_name);
+				lcl_translate_wep_name_gr(display_name);
 			}
 
 			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), display_name);
@@ -3782,7 +3782,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 
 			// might have to get weapon name translation
 			if (Lcl_gr) {
-				lcl_translate_wep_name(display_name);
+				lcl_translate_wep_name_gr(display_name);
 			}
 
 			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), display_name);
@@ -4019,7 +4019,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			if (Lcl_gr)
 			{
 				strncpy(buf, (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name, NAME_LENGTH);
-				lcl_translate_wep_name(buf);
+				lcl_translate_wep_name_gr(buf);
 				wep_display_name = buf;
 			}
 			else
