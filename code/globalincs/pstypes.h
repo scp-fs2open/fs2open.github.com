@@ -461,7 +461,11 @@ void dc_printf( char *format, ... );
 #endif // !BYTE_ORDER
 #endif // SDL_BYTEORDER
 
-#if BYTE_ORDER == BIG_ENDIAN
+#ifdef SCP_SOLARIS // Solaris
+#define INTEL_INT(x)	x
+#define INTEL_SHORT(x)	x
+#define INTEL_FLOAT(x)	(*x)
+#elif BYTE_ORDER == BIG_ENDIAN
 // turn off inline asm
 #undef USE_INLINE_ASM
 
