@@ -1834,7 +1834,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						if (bank->glow_bitmap < 0)
 						{
-							Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
+							Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
 						}
 						else
 						{
