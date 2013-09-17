@@ -813,6 +813,7 @@ void init_ship_entry(ship_info *sip)
 	
 	sip->max_shield_strength = 0.0f;
 	sip->auto_shield_spread = 0.0f;
+	sip->auto_shield_spread_bypass = false;
 	sip->auto_shield_spread_from_lod = -1;
 	sip->shield_color[0] = 255;
 	sip->shield_color[1] = 255;
@@ -8818,7 +8819,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		shipp->shield_integrity = NULL;
 
 	// Bump the object radius to ensure that collision detection works right
-	// even when spread shields extend outside the models natural radius
+	// even when spread shields extend outside the model's natural radius
 	if (sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) {
 		Objects[objnum].radius += sip->auto_shield_spread;
 	}
