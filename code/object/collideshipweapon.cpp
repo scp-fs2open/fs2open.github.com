@@ -305,6 +305,12 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	if (shield_collision && mc_shield.flags == MC_CHECK_MODEL) {
 		memcpy(&mc_hull, &mc_shield, sizeof(mc_info));
 		hull_collision = shield_collision;
+
+		// The weapon has impacted on the hull, so if it should therefore bypass
+		// the shields altogether, we do it here
+		if (sip->auto_shield_spread_bypass) {
+			shield_collision = 0;
+		}
 	} else {
 		mc_hull.flags = MC_CHECK_MODEL;
 		hull_collision = model_collide(&mc_hull);

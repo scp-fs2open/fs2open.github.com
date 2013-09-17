@@ -1294,6 +1294,7 @@ typedef struct ship_info {
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
 	float	auto_shield_spread;
+	bool	auto_shield_spread_bypass;
 	int		auto_shield_spread_from_lod;
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second

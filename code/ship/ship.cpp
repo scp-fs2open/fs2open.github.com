@@ -2446,6 +2446,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		if(optional_string("+Auto Spread:")) {
 			stuff_float(&sip->auto_shield_spread);
 		}
+		if(optional_string("+Allow Bypass:")) {
+			stuff_boolean(&sip->auto_shield_spread_bypass);
+		}
 		if(optional_string("+Spread From LOD:")) {
 			int temp;
 			stuff_int(&temp);
