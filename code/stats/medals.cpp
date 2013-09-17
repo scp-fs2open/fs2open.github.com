@@ -31,9 +31,6 @@ int Num_medals = 0;
 // define for the medal information
 SCP_vector<medal_stuff> Medals;
 
-// the rank section of the screen
-#define RANK_MEDAL_REGION		12		// region number of the rank medal
-
 // coords for indiv medal bitmaps
 static int Default_medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 	{				// GR_640
@@ -78,6 +75,29 @@ static int Default_medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 	}
 };
 
+// debriefing bitmaps
+static const char *Default_debriefing_bitmaps[MAX_MEDALS] =
+{
+	"DebriefMedal00",
+	"DebriefMedal01",
+	"DebriefMedal02",
+	"DebriefMedal03",
+	"DebriefMedal04",
+	"DebriefMedal05",
+	"DebriefMedal06",
+	"DebriefMedal07",
+	"DebriefMedal08",
+	"DebriefMedal09",
+	"DebriefMedal10",
+	"DebriefMedal11",
+	"DebriefRank##",
+	"DebriefWings##",
+	"DebriefBadge01",
+	"DebriefBadge02",
+	"DebriefBadge03",
+	"DebriefCrest"
+};
+
 // argh
 typedef struct coord2dw {
 	int x,y,w;
@@ -118,7 +138,7 @@ UI_XSTR Medals_text[GR_NUM_RESOLUTIONS][MEDALS_NUM_TEXT] = {
 	},
 };
 
-static char* Medals_background_filename[GR_NUM_RESOLUTIONS] = {
+static const char* Medals_background_filename[GR_NUM_RESOLUTIONS] = {
 	"MedalsDisplayEmpty",
 	"2_MedalsDisplayEmpty"
 };
@@ -166,9 +186,10 @@ void medal_stuff::clone(const medal_stuff &m)
 {
 	memcpy(name, m.name, NAME_LENGTH);
 	memcpy(bitmap, m.bitmap, NAME_LENGTH);
+	memcpy(debrief_bitmap, m.debrief_bitmap, NAME_LENGTH);
 	num_versions = m.num_versions;
+	version_starts_at_1 = m.version_starts_at_1;
 	kills_needed = m.kills_needed;
-	badge_num = m.badge_num;
 	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
 
 	if (m.promotion_text)
@@ -194,7 +215,6 @@ const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
 void parse_medal_tbl()
 {
 	int rval, i;
-	int num_badges = 0;
 
 	// open localization
 	lcl_ext_open();
@@ -274,8 +294,20 @@ void parse_medal_tbl()
 			temp_display.coords[GR_1024].y = Default_medal_coords[GR_1024][Num_medals][1];
 		}
 
+		if (optional_string("+Debriefing Bitmap:")) {
+			stuff_string( temp_medal.debrief_bitmap, F_NAME, MAX_FILENAME_LEN );
+		} else {
+			strcpy_s(temp_medal.debrief_bitmap, Default_debriefing_bitmaps[Num_medals]);
+		}
+
 		required_string("$Num mods:");
-		stuff_int( &temp_medal.num_versions);
+		stuff_int( &temp_medal.num_versions );
+
+		// this is dumb
+		temp_medal.version_starts_at_1 = (Num_medals == RANK_MEDAL_INDEX);
+		if (optional_string("+Version starts at 1:")) {
+			stuff_boolean( &temp_medal.version_starts_at_1 );
+		}
 
 		// some medals are based on kill counts.  When string +Num Kills: is present, we know that
 		// this medal is a badge and should be treated specially
@@ -295,10 +327,6 @@ void parse_medal_tbl()
 			required_string("$Promotion Text:");
 			stuff_string(buf, F_MULTITEXT, sizeof(buf));
 			temp_medal.promotion_text = vm_strdup(buf);
-
-			// since badges (ace ranks) are handled a little differently we need to know
-			// which we are in the list of badges.
-			temp_medal.badge_num = num_badges++;
 		}
 
 		Medals.push_back(temp_medal);
@@ -578,7 +606,7 @@ int medal_main_do()
 			}
 			break;
 
-		case RANK_MEDAL_REGION :
+		case RANK_MEDAL_INDEX:
 			blit_label(Ranks[Player_score->rank].name, 1);
 			break;
 
@@ -697,7 +725,7 @@ void blit_medals()
 	int idx;
 
 	for (idx=0; idx<Num_medals; idx++) {
-		if (idx != RANK_MEDAL_REGION && Player_score->medals[idx] > 0) {
+		if (idx != RANK_MEDAL_INDEX && Player_score->medals[idx] > 0) {
 #ifndef NDEBUG
 			// this can happen if gimmemedals was used on the medal screen
 			if (Medal_display_info[idx].bitmap < 0) {
@@ -711,7 +739,7 @@ void blit_medals()
 
 	// now blit rank, since that "medal" doesn't get loaded (or drawn) the normal way
 	gr_set_bitmap(Rank_bm);
-	gr_bitmap(Medal_display_info[RANK_MEDAL_REGION].coords[gr_screen.res].x, Medal_display_info[RANK_MEDAL_REGION].coords[gr_screen.res].y);
+	gr_bitmap(Medal_display_info[RANK_MEDAL_INDEX].coords[gr_screen.res].x, Medal_display_info[RANK_MEDAL_INDEX].coords[gr_screen.res].y);
 }
 
 int medals_info_lookup(const char *name)

@@ -21,6 +21,8 @@ struct player;
 #define MAX_BADGES				3
 #define MAX_ASSIGNABLE_MEDALS	12		// index into Medals array of the first medal which cannot be assigned
 
+#define RANK_MEDAL_INDEX		12		// index of the rank medal
+
 extern scoring_struct *Player_score;
 
 // NUM_MEDALS stored in scoring.h since needed for player scoring structure
@@ -28,9 +30,10 @@ extern scoring_struct *Player_score;
 typedef struct medal_stuff {
 	char	name[NAME_LENGTH];
 	char	bitmap[MAX_FILENAME_LEN];
+	char	debrief_bitmap[MAX_FILENAME_LEN];
 	int	num_versions;
+	bool version_starts_at_1;
 	int	kills_needed;
-	int badge_num;
 
 	//If this is a badge (kills_needed > 0)
 	char voice_base[MAX_FILENAME_LEN];
@@ -39,9 +42,10 @@ typedef struct medal_stuff {
 	medal_stuff() {
 		name[0] = '\0';
 		bitmap[0] = '\0';
+		debrief_bitmap[0] = '\0';
 		num_versions = 1;
+		version_starts_at_1 = false;
 		kills_needed = 0;
-		badge_num = 0;
 		voice_base[0] = '\0';
 		promotion_text = NULL;
 	}
