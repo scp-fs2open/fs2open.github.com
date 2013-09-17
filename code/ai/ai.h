@@ -32,7 +32,7 @@ typedef struct ai_flag_name {
 	int flag_list;
 } ai_flag_name;
 
-#define MAX_AI_FLAG_NAMES			1
+#define MAX_AI_FLAG_NAMES			2
 extern ai_flag_name Ai_flag_names[];
 
 #define	AIF_FORMATION_WING					(1 << 0)	//	Fly in formation as part of wing.
@@ -63,6 +63,8 @@ extern ai_flag_name Ai_flag_names[];
 // Goober5000
 #define	AIF_UNLOAD_PRIMARIES				(1 << 24)	//	Fire primaries as fast as possible!
 #define AIF_TRYING_UNSUCCESSFULLY_TO_WARP	(1 << 25)	// Trying to warp, but can't warp at the moment
+
+#define AIF_FREE_AFTERBURNER_USE			(1 << 26)	// Use afterburners while following waypoints or flying towards objects
 
 #define	AIF_AVOID_SHOCKWAVE		(AIF_AVOID_SHOCKWAVE_SHIP | AIF_AVOID_SHOCKWAVE_WEAPON)
 #define	AIF_FORMATION			(AIF_FORMATION_WING | AIF_FORMATION_OBJECT)
