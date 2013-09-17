@@ -305,6 +305,7 @@ flag_def_list Ship_flags[] = {
 	{ "no pain flash",				SIF2_NO_PAIN_FLASH,			1 },
 	{ "no ets",						SIF2_NO_ETS,				1 },
 	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
+	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -809,6 +810,9 @@ void init_ship_entry(ship_info *sip)
 	}
 	
 	sip->max_shield_strength = 0.0f;
+	sip->auto_shield_spread = 0.0f;
+	sip->auto_shield_spread_bypass = false;
+	sip->auto_shield_spread_from_lod = -1;
 	sip->shield_color[0] = 255;
 	sip->shield_color[1] = 255;
 	sip->shield_color[2] = 255;
@@ -2435,8 +2439,25 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
 	}
 
-	if(optional_string("$Shields:"))
+	if(optional_string("$Shields:")) {
 		stuff_float(&sip->max_shield_strength);
+
+		if(optional_string("+Auto Spread:")) {
+			stuff_float(&sip->auto_shield_spread);
+		}
+		if(optional_string("+Allow Bypass:")) {
+			stuff_boolean(&sip->auto_shield_spread_bypass);
+		}
+		if(optional_string("+Spread From LOD:")) {
+			int temp;
+			stuff_int(&temp);
+
+			if (temp > sip->num_detail_levels)
+				Warning(LOCATION, "+Spread From LOD for %s was %i whereas ship only has %i detail levels, ignoring...", sip->name, temp, sip->num_detail_levels);
+			else
+				sip->auto_shield_spread_from_lod = temp;
+		}
+	}
 
 	// optional shield color
 	if(optional_string("$Shield Color:")){
@@ -8791,6 +8812,12 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 			shipp->shield_integrity[i] = 1.0f;
 	} else
 		shipp->shield_integrity = NULL;
+
+	// Bump the object radius to ensure that collision detection works right
+	// even when spread shields extend outside the model's natural radius
+	if (sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) {
+		Objects[objnum].radius += sip->auto_shield_spread;
+	}
 
 	// allocate memory for keeping glow point bank status (enabled/disabled)
 	{
