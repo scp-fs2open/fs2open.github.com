@@ -100,7 +100,7 @@ char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
 Cfile_block Cfile_block_list[MAX_CFILE_BLOCKS];
 CFILE Cfile_list[MAX_CFILE_BLOCKS];
 
-char *Cfile_cdrom_dir = NULL;
+const char *Cfile_cdrom_dir = NULL;
 
 //
 // Function prototypes for internally-called functions
@@ -123,7 +123,7 @@ void cfile_close()
 }
 
 // determine if the given path is in a root directory (c:\  or  c:\freespace2.exe  or  c:\fred2.exe   etc)
-int cfile_in_root_dir(char *exe_path)
+int cfile_in_root_dir(const char *exe_path)
 {
 	int token_count = 0;
 	char path_copy[CFILE_ROOT_DIRECTORY_LEN] = "";
@@ -167,7 +167,7 @@ int cfile_in_root_dir(char *exe_path)
 //	returns:  success ==> 0
 //           error   ==> non-zero
 //
-int cfile_init(char *exe_dir, char *cdrom_dir)
+int cfile_init(const char *exe_dir, const char *cdrom_dir)
 {
 	int i;
 
@@ -314,17 +314,17 @@ int cfile_push_chdir(int type)
 }
 
 
-int cfile_chdir(char *dir)
+int cfile_chdir(const char *dir)
 {
 	int e;
 	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
-	char *Path = NULL;
+	const char *Path = NULL;
 	char NoDir[] = "\\.";
 
 	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
 
 #ifdef _WIN32
-	char *colon_pos = strchr(dir, ':');
+	const char *colon_pos = strchr(dir, ':');
 	if (colon_pos)	{
 		if (!cfile_chdrive( tolower(*(colon_pos - 1)) - 'a' + 1, 1))
 			return 1;
@@ -429,7 +429,7 @@ int cfile_flush_dir(int dir_type)
 //    filename = name of filename or filepath to process
 //    ext = extension to add.  Must start with the period
 //    Returns: new filename or filepath with extension.
-char *cf_add_ext(char *filename, char *ext)
+char *cf_add_ext(const char *filename, const char *ext)
 {
 	int flen, elen;
 	static char path[MAX_PATH_LEN];
@@ -447,7 +447,7 @@ char *cf_add_ext(char *filename, char *ext)
 }
 
 // Deletes a file. Returns 0 if an error occurs, 1 on success
-int cf_delete(char *filename, int dir_type)
+int cf_delete(const char *filename, int dir_type)
 {
 	char longname[MAX_PATH_LEN];
 
@@ -478,7 +478,7 @@ int cf_delete(char *filename, int dir_type)
 
 
 // Same as _access function to read a file's access bits
-int cf_access(char *filename, int dir_type, int mode)
+int cf_access(const char *filename, int dir_type, int mode)
 {
 	char longname[MAX_PATH_LEN];
 
@@ -492,7 +492,7 @@ int cf_access(char *filename, int dir_type, int mode)
 
 // Returns 1 if the file exists, 0 if not.
 // Checks only the file system.
-int cf_exists(char *filename, int dir_type)
+int cf_exists(const char *filename, int dir_type)
 {
 	char longname[MAX_PATH_LEN];
 
@@ -514,7 +514,7 @@ int cf_exists(char *filename, int dir_type)
 // Goober5000
 // Returns !0 if the file exists, 0 if not.
 // Checks both the file system and the VPs.
-int cf_exists_full(char *filename, int dir_type)
+int cf_exists_full(const char *filename, int dir_type)
 {
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
@@ -523,7 +523,7 @@ int cf_exists_full(char *filename, int dir_type)
 }
 
 // same as the above, but with extension check
-int cf_exists_full_ext(char *filename, int dir_type, const int num_ext, const char **ext_list)
+int cf_exists_full_ext(const char *filename, int dir_type, const int num_ext, const char **ext_list)
 {
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
@@ -535,7 +535,7 @@ int cf_exists_full_ext(char *filename, int dir_type, const int num_ext, const ch
 }
 
 #ifdef _WIN32
-void cf_attrib(char *filename, int set, int clear, int dir_type)
+void cf_attrib(const char *filename, int set, int clear, int dir_type)
 {
 	char longname[MAX_PATH_LEN];
 
@@ -554,7 +554,7 @@ void cf_attrib(char *filename, int set, int clear, int dir_type)
 }
 #endif
 
-int cf_rename(char *old_name, char *name, int dir_type)
+int cf_rename(const char *old_name, const char *name, int dir_type)
 {
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
@@ -634,7 +634,7 @@ extern int game_cd_changed();
 //					error   ==> NULL
 //
 
-CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize)
+CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, bool localize)
 {
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
@@ -788,7 +788,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 // returns:		success	==> address of CFILE structure
 //				error	==> NULL
 //
-CFILE *cfopen_special(char *file_path, char *mode, const int size, const int offset, int dir_type)
+CFILE *cfopen_special(const char *file_path, const char *mode, const int size, const int offset, int dir_type)
 {
 	if ( !cfile_inited) {
 		Int3();
@@ -1337,7 +1337,7 @@ int cfwrite_char(char b, CFILE *file)
 	return cfwrite( &b, sizeof(b), 1, file);
 }
 
-int cfwrite_string(char *buf, CFILE *file)
+int cfwrite_string(const char *buf, CFILE *file)
 {
 	if ( (!buf) || (buf && !buf[0]) ) {
 		return cfwrite_char(0, file);
@@ -1475,7 +1475,7 @@ int cfputc(int c, CFILE *cfile)
 // returns:   success ==> non-negative value
 //				  error   ==> EOF
 //
-int cfputs(char *str, CFILE *cfile)
+int cfputs(const char *str, CFILE *cfile)
 {
 	if(!cf_is_valid(cfile))
 		return EOF;
@@ -1693,7 +1693,7 @@ int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 }
 
 // get the chksum of a pack file (VP)
-int cf_chksum_pack(char *filename, uint *chk_long, bool full)
+int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 {
 	const int safe_size = 2097152; // 2 Meg
 	const int header_offset = 32;  // skip 32bytes for header (header is currently smaller than this though)
@@ -1762,7 +1762,7 @@ int cf_chksum_pack(char *filename, uint *chk_long, bool full)
 	return 1;
 }
 // get the 2 byte checksum of the passed filename - return 0 if operation failed, 1 if succeeded
-int cf_chksum_short(char *filename, ushort *chksum, int max_size, int cf_type)
+int cf_chksum_short(const char *filename, ushort *chksum, int max_size, int cf_type)
 {
 	int ret_val;
 	CFILE *cfile = NULL;		
@@ -1812,7 +1812,7 @@ int cf_chksum_short(CFILE *file, ushort *chksum, int max_size)
 }
 
 // get the 32 bit CRC checksum of the passed filename - return 0 if operation failed, 1 if succeeded
-int cf_chksum_long(char *filename, uint *chksum, int max_size, int cf_type)
+int cf_chksum_long(const char *filename, uint *chksum, int max_size, int cf_type)
 {
 	int ret_val;
 	CFILE *cfile = NULL;		

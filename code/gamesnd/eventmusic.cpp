@@ -602,7 +602,7 @@ void event_music_level_init(int force_soundtrack)
 	{
 		if (!strnicmp(strack->pattern_fnames[i], NOX("none.wav"), 4))
 		{
-			Patterns[i].handle = -1;	
+			Patterns[i].handle = -1;
 			continue;
 		}
 
@@ -1379,7 +1379,7 @@ void parse_menumusic()
 // event_music_parse_musictbl() will parse the music.tbl file, and set up the Mission_songs[]
 // array
 //
-void event_music_parse_musictbl(char *filename)
+void event_music_parse_musictbl(const char *filename)
 {
 	int rval;
 
@@ -1392,7 +1392,7 @@ void event_music_parse_musictbl(char *filename)
 		lcl_ext_open();
 
 		read_file_text(filename, CF_TYPE_TABLES);
-		reset_parse();		
+		reset_parse();
 
 		while ( skip_to_start_of_string_either("#Soundtrack Start", "#Menu Music Start", NULL ) )
 		{

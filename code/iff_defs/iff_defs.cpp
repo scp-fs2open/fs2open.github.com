@@ -522,7 +522,7 @@ void iff_init()
 	}
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation("iff_defs.tbl");
 }
 

@@ -773,7 +773,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 	return 0;
 }
 
-void FS2NetD_GameCountUpdate(char *chan_name)
+void FS2NetD_GameCountUpdate(const char *chan_name)
 {
 	int buffer_size;
 	char buffer[MAX_PATH+BASE_PACKET_SIZE+10];

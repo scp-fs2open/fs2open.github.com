@@ -710,6 +710,7 @@ class waypoint_list;
 #define OP_ALTER_SHIP_FLAG					(0x001b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_CHANGE_TEAM_COLOR				(0x001c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
 #define OP_NEBULA_CHANGE_PATTERN			(0x001d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Axem
+#define OP_PLAYER_IS_CHEATING_BASTARD		(0x001e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1078,6 +1079,12 @@ extern int Players_mlocked_timestamp;
 extern int Sexp_clipboard;  // used by Fred
 
 extern SCP_vector<int> Current_sexp_operator;
+
+
+// event log stuff
+extern SCP_vector<SCP_string> *Current_event_log_buffer;
+extern SCP_vector<SCP_string> *Current_event_log_variable_buffer;
+extern SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 extern void init_sexp();
 extern int alloc_sexp(char *text, int type, int subtype, int first, int rest);

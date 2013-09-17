@@ -42,6 +42,8 @@
 // Includes for different rendering systems
 #include "graphics/gropengl.h"
 
+const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
+
 screen gr_screen;
 
 color_gun Gr_red, Gr_green, Gr_blue, Gr_alpha;

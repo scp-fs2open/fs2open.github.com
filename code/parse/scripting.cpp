@@ -85,7 +85,7 @@ int scripting_state_inited = 0;
 
 //*************************Scripting init and handling*************************
 
-void script_parse_table(char *filename)
+void script_parse_table(const char *filename)
 {
 	script_state *st = &Script_system;
 	int rval;
@@ -153,7 +153,7 @@ void script_parse_table(char *filename)
 	}
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
 }
 
@@ -1294,7 +1294,7 @@ flag_def_list* script_parse_action()
 
 	return NULL;
 }
-bool script_state::ParseCondition(char *filename)
+bool script_state::ParseCondition(const char *filename)
 {
 	ConditionedHook *chp = NULL;
 

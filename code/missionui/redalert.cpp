@@ -391,7 +391,7 @@ void red_alert_do_frame(float frametime)
 	if (!(Game_mode & GM_MULTIPLAYER)) {
 		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
 		{
-			commit_pressed();
+			red_alert_button_pressed(RA_CONTINUE);
 			return;
 		}
 	}
@@ -722,7 +722,7 @@ void red_alert_bash_wingman_status()
 		}
 
 		int found_match = 0;
-		int ship_state = 0;
+		int ship_state = RED_ALERT_DESTROYED_SHIP_CLASS;
 
 		for ( i = 0; i < (int)Red_alert_wingman_status.size(); i++ ) {
 			ras = &Red_alert_wingman_status[i];
@@ -750,7 +750,6 @@ void red_alert_bash_wingman_status()
 
 			} else if ( !stricmp(ras->name.c_str(), shipp->ship_name) && ( (ras->ship_class == RED_ALERT_DESTROYED_SHIP_CLASS) || (ras->ship_class == RED_ALERT_PLAYER_DEL_SHIP_CLASS) ) ) {
 				ship_state = ras->ship_class;
-				continue;
 			}
 		}
 

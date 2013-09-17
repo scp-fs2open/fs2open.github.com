@@ -1042,7 +1042,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				if (Lcl_gr) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
-					lcl_translate_brief_icon_name(buf);
+					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
 					gr_string(bc - fl2i(w/2.0f), by - h, buf);
 				} else {

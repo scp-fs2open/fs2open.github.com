@@ -146,7 +146,7 @@ void init_new_pilot(player *p, int reset)
 
 int local_num_campaigns = 0;
 
-int campaign_file_list_filter(char *filename)
+int campaign_file_list_filter(const char *filename)
 {
 	char name[NAME_LENGTH];
 	char *desc = NULL;

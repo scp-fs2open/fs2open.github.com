@@ -161,7 +161,7 @@ int parse_ship_start()
 	return ship_index;
 }
 
-void parse_hud_gauges_tbl(char *filename)
+void parse_hud_gauges_tbl(const char *filename)
 {
 	int i, rval;
 	char *saved_Mp = NULL;

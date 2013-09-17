@@ -104,7 +104,7 @@ extern int splodeingtexture;
 
 extern int Cmdline_nohtl;
 
-extern void fs2netd_add_table_validation(char *tblname);
+extern void fs2netd_add_table_validation(const char *tblname);
 
 #define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
 
@@ -364,15 +364,18 @@ ship_flag_name Ship_flag_names[] = {
 	{SF_VAPORIZE,					"vaporize",						1,	},
 	{SF_WARP_BROKEN,				"break-warp",					1,	},
 	{SF_WARP_NEVER,					"never-warp",					1,	},
-	//{SF_HIDDEN_FROM_SENSORS,		"hidden-from-sensors",			1,	},
-	//{SF2_STEALTH,					"stealth",						2,	},
-	//{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
+	{SF_SCANNABLE,					"scannable",					1,	},
+	{SF_CARGO_REVEALED,				"cargo-known",					1,	},
+	{SF_HIDDEN_FROM_SENSORS,		"hidden-from-sensors",			1,	},
+	{SF2_STEALTH,					"stealth",						2,	},
+	{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
 	{SF2_AFTERBURNER_LOCKED,		"afterburners-locked",			2,	},
 	{SF2_PRIMARIES_LOCKED,			"primaries-locked",				2,	},
 	{SF2_SECONDARIES_LOCKED,		"secondaries-locked",			2,	},
 	{SF2_NO_SUBSPACE_DRIVE,			"no-subspace-drive",			2,	},
 	{SF2_DONT_COLLIDE_INVIS,		"don't-collide-invisible",		2,	},
 	{SF2_NO_ETS,					"no-ets",						2,	},
+	{SF2_TOGGLE_SUBSYSTEM_SCANNING,	"toggle-subsystem-scanning",	2,	},
 };
 
 const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
@@ -995,7 +998,7 @@ void init_ship_entry(ship_info *sip)
 /**
  * Parse the information for a specific ship type.
  */
-int parse_ship(char *filename, bool replace)
+int parse_ship(const char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
@@ -4019,7 +4022,7 @@ void parse_ship_type()
 		Ship_types.push_back(stp_buf);
 }
 
-void parse_shiptype_tbl(char *filename)
+void parse_shiptype_tbl(const char *filename)
 {
 	int rval;
 
@@ -4121,7 +4124,7 @@ void ship_set_default_player_ship()
 	}
 }
 
-void parse_shiptbl(char *filename)
+void parse_shiptbl(const char *filename)
 {
 	int rval;
 
@@ -17391,7 +17394,7 @@ void parse_armor_type()
 	Armor_types.push_back(tat);
 }
 
-void armor_parse_table(char *filename)
+void armor_parse_table(const char *filename)
 {
 	int rval;
 

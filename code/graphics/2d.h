@@ -537,6 +537,8 @@ typedef struct screen {
 #define GR_640							0		// 640 x 480
 #define GR_1024						1		// 1024 x 768
 
+extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
+
 extern bool gr_init(int d_mode = GR_DEFAULT, int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 extern void gr_screen_resize(int width, int height);
 

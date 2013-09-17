@@ -263,9 +263,9 @@ void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = N
 // Finds a hash value for mission filename
 //
 // returns hash value
-int hash_filename(char *filename) {
+int hash_filename(const char *filename) {
 	ulonglong hash_val = 0;
-	char *ptr = filename;
+	const char *ptr = filename;
 	
 	// Don't hash .fsm extension, convert all to upper case
 	for (int i=0; i < ((signed int)(strlen(filename)) - 4); i++) {
@@ -321,7 +321,7 @@ int hash_insert(char *filename) {
 // Checks if a filename already exitst in the hash table
 //
 // returns 1 if found (collision), 0 if no collision
-int campaign_mission_hash_collision(char *filename)
+int campaign_mission_hash_collision(const char *filename)
 {
 	int hash_val = hash_filename(filename);
 	hash_node *cur_node = Campaign_mission_hash_table[hash_val];
@@ -402,7 +402,7 @@ int sim_room_line_add(int type, char *name, char *filename, int x, int y, int fl
 }
 
 // build up a list of all missions in all campaigns.
-int sim_room_campaign_mission_filter(char *filename)
+int sim_room_campaign_mission_filter(const char *filename)
 {
 	int num;
 
@@ -416,7 +416,7 @@ int sim_room_campaign_mission_filter(char *filename)
 }
 
 // filter out all missions already used in existing campaigns
-int sim_room_standalone_mission_filter(char *filename)
+int sim_room_standalone_mission_filter(const char *filename)
 {
 	int type;
 	char mission_name[255];

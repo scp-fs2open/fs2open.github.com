@@ -634,6 +634,10 @@ void process_debug_keys(int k)
 	}
 
 	switch (k) {
+		case KEY_DEBUGGED + KEY_Q:
+			Snapshot_all_events = true;
+			break;
+
 		case KEY_DEBUGGED + KEY_H:
 			hud_target_toggle_hidden_from_sensors();
 			break;

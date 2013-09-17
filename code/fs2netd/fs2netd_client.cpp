@@ -1539,7 +1539,7 @@ int fs2netd_update_valid_tables()
 	return hacked;
 }
 
-void fs2netd_add_table_validation(char *tblname)
+void fs2netd_add_table_validation(const char *tblname)
 {
 	uint chksum = 0;
 
@@ -1637,7 +1637,7 @@ void fs2netd_close()
 	FS2NetD_ban_list.clear();
 }
 
-void fs2netd_update_game_count(char *chan_name)
+void fs2netd_update_game_count(const char *chan_name)
 {
 	if ( !Logged_in ) {
 		return;

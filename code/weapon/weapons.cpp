@@ -133,7 +133,7 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 
 extern int compute_num_homing_objects(object *target_objp);
 
-extern void fs2netd_add_table_validation(char *tblname);
+extern void fs2netd_add_table_validation(const char *tblname);
 
 
 weapon_explosions::weapon_explosions()
@@ -317,7 +317,7 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 }
 
 
-void parse_weapon_expl_tbl(char *filename)
+void parse_weapon_expl_tbl(const char *filename)
 {
 	int rval;
 	uint i;
@@ -2737,7 +2737,7 @@ void translate_spawn_types()
 
 static char Default_cmeasure_name[NAME_LENGTH] = "";
 
-void parse_weaponstbl(char *filename)
+void parse_weaponstbl(const char *filename)
 {
 	int rval;
 
@@ -5865,8 +5865,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	int			weapon_type = Weapons[num].weapon_info_index;
 	int			expl_ani_handle;
 	weapon_info	*wip;
-	weapon *wp;
+	weapon      *wp;
 	bool		hit_target = false;
+    
+	object      *other_objp;
+	ship_obj	*so;
+	ship		*shipp;
+	int         objnum;
 
 	Assert((weapon_type >= 0) && (weapon_type < MAX_WEAPONS));
 	if((weapon_type < 0) || (weapon_type >= MAX_WEAPONS)){
@@ -5874,6 +5879,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}
 	wp = &Weapons[weapon_obj->instance];
 	wip = &Weapon_info[weapon_type];
+	objnum = wp->objnum;
 
 	// check if the weapon actually hit the intended target
 	if (wp->homing_object != NULL)
@@ -5882,7 +5888,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	//This is an expensive check
 	bool armed_weapon = weapon_armed(&Weapons[num], hit_target);
-	// int np_index;
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
@@ -5961,6 +5966,38 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 				}
 			}
 		}
+	}
+    
+	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		other_objp = &Objects[so->objnum];
+		Assert(other_objp->instance != -1);
+        
+		shipp = &Ships[other_objp->instance];
+		Assert(shipp->ai_index != -1);
+        
+		ai_info	*aip = &Ai_info[shipp->ai_index];
+        
+		if (aip->target_objnum == objnum) {
+			set_target_objnum(aip, -1);
+			//	If this ship had a dynamic goal of chasing this weapon, clear the dynamic goal.
+			if (aip->resume_goal_time != -1)
+				aip->active_goal = AI_GOAL_NONE;
+		}
+        
+		if (aip->goal_objnum == objnum) {
+			aip->goal_objnum = -1;
+			aip->goal_signature = -1;
+		}
+        
+		if (aip->guard_objnum == objnum) {
+			aip->guard_objnum = -1;
+			aip->guard_signature = -1;
+		}
+        
+		if (aip->hitter_objnum == objnum) {
+			aip->hitter_objnum = -1;
+        }
 	}
 
 	// single player and multiplayer masters evaluate the scoring and kill stuff

@@ -414,7 +414,7 @@ void scoring_level_close(int accepted)
 
 			// if a badge was earned, take it back
 			if ( Player->stats.m_badge_earned != -1){
-				Player->stats.medals[Player->stats.m_badge_earned] = -1;
+				Player->stats.medals[Player->stats.m_badge_earned] = 0;
 				Player->stats.m_badge_earned = -1;
 			}
 		}

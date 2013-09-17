@@ -18,20 +18,24 @@
 // LOCALIZE DEFINES/VARS
 //
 
-// language defines
-#define LCL_NUM_LANGUAGES				4							// keep this up to date
-#define LCL_ENGLISH						0
-#define LCL_GERMAN						1
-#define LCL_FRENCH						2
-#define LCL_POLISH						3
 
-#define LCL_DEFAULT_LANGUAGE			LCL_ENGLISH
-
-// following is the offset where special characters start in our font
-extern int Lcl_special_chars;
+#define FS2_OPEN_DEFAULT_LANGUAGE		0
 
 // for language name strings
 #define LCL_LANG_NAME_LEN				32
+
+// language info table
+typedef struct lang_info {
+	char lang_name[LCL_LANG_NAME_LEN + 1];				// literal name of the language
+	char lang_ext[LCL_LANG_NAME_LEN + 1];				// the extension used for adding to names on disk access
+	ubyte special_char_offset;							// where in the font do we have the special characters for this language
+	int checksum;										// used for language auto-detection
+} lang_info;
+
+extern SCP_vector<lang_info> Lcl_languages; 
+
+// following is the offset where special characters start in our font
+extern int Lcl_special_chars;
 
 // use these to replace *_BUILD values
 // only 1 will be active at a time
@@ -123,11 +127,12 @@ void lcl_fix_polish(SCP_string &str);
 #define LXSTR(str, i)		(XSTR(str, i))
 #endif	// defined(GERMAN_BUILD)
 
-void lcl_translate_wep_name(char *name);
-void lcl_translate_ship_name(char *name);
-void lcl_translate_brief_icon_name(char *name);
+void lcl_translate_wep_name_gr(char *name);
+void lcl_translate_ship_name_gr(char *name);
+void lcl_translate_brief_icon_name_gr(char *name);
 void lcl_translate_brief_icon_name_pl(char *name);
-void lcl_translate_targetbox_name(char *name);
+void lcl_translate_targetbox_name_gr(char *name);
 void lcl_translate_targetbox_name_pl(char *name);
+void lcl_translate_medal_name_gr(char *name);
 
 #endif	// defined __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
