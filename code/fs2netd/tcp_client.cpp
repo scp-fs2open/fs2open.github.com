@@ -141,10 +141,10 @@ int FS2NetD_SendPlayerData(const char *player_name, player *pl, bool do_send)
 			}
 		}
 
-		PXO_ADD_USHORT( (ushort)MAX_MEDALS );
+		PXO_ADD_USHORT( (ushort)Num_medals );
 
-		for (i = 0; i < MAX_MEDALS; i++) {
-			PXO_ADD_INT( pl->stats.medals[i] );
+		for (i = 0; i < Num_medals; i++) {
+			PXO_ADD_INT( pl->stats.medal_counts[i] );
 		}
 
 		DONE_PACKET();
@@ -303,8 +303,8 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 
 		PXO_GET_USHORT( num_medals );
 
-		for (idx = 0; (idx < MAX_MEDALS) && (idx < num_medals); idx++) {
-			PXO_GET_INT( pl->stats.medals[idx] );
+		for (idx = 0; (idx < Num_medals) && (idx < num_medals); idx++) {
+			PXO_GET_INT( pl->stats.medal_counts[idx] );
 		}
 
 		return (int)reply_type;

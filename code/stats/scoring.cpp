@@ -117,15 +117,53 @@ void init_scoring_element(scoring_struct *s)
 		return;
 	}
 
-	memset(s, 0, sizeof(scoring_struct));
-
+	s->flags = 0;
+	s->score = 0;
 	s->rank = RANK_ENSIGN;
+
+	s->medal_counts.resize(Num_medals);
+	for (SCP_vector<int>::iterator ii = s->medal_counts.begin(); ii != s->medal_counts.end(); ++ii)
+		*ii = 0;
+
+	memset(s->kills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	s->assists = 0;
+	s->kill_count = 0;
+	s->kill_count_ok = 0;
+	s->p_shots_fired = 0;
+	s->s_shots_fired = 0;
+
+	s->p_shots_hit = 0;
+	s->s_shots_hit = 0;
+
+	s->p_bonehead_hits = 0;
+	s->s_bonehead_hits = 0;
+	s->bonehead_kills = 0;
+
+	s->missions_flown = 0;
+	s->flight_time = 0;
+	s->last_flown = 0;
+	s->last_backup = 0;
 
 	s->m_medal_earned = -1;		// hasn't earned a medal yet
 	s->m_promotion_earned = -1;
 	s->m_badge_earned = -1;
 
-	s->flags = 0;
+	s->m_score = 0;
+	memset(s->m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	memset(s->m_okKills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	s->m_kill_count = 0;
+	s->m_kill_count_ok = 0;
+	s->m_assists = 0;
+	s->mp_shots_fired = 0;
+	s->ms_shots_fired = 0;
+	s->mp_shots_hit = 0;
+	s->ms_shots_hit = 0;
+	s->mp_bonehead_hits = 0;
+	s->ms_bonehead_hits = 0;
+	s->m_bonehead_kills = 0;
+	s->m_player_deaths = 0;
+
+	memset(s->m_dogfight_kills, 0, MAX_PLAYERS * sizeof(int));
 }
 
 #ifndef NDEBUG
@@ -260,8 +298,8 @@ void scoring_eval_badges(scoring_struct *sc)
 
 	// if player could have a badge based on kills, and doesn't currently have this badge, then
 	// return the badge id.
-	if ( (badge != -1 ) && (sc->medals[badge] < 1) ) {
-		sc->medals[badge] = 1;
+	if ( (badge != -1 ) && (sc->medal_counts[badge] < 1) ) {
+		sc->medal_counts[badge] = 1;
 		sc->m_badge_earned = badge;
 	}
 }
@@ -276,7 +314,7 @@ void scoring_do_accept(scoring_struct *score)
 
 	// do medal stuff
 	if ( score->m_medal_earned != -1 ){
-		score->medals[score->m_medal_earned]++;
+		score->medal_counts[score->m_medal_earned]++;
 	}
 
 	// return when in training mission.  We can grant a medal in training, but don't
@@ -322,7 +360,7 @@ void scoring_backout_accept( scoring_struct *score )
 
 	// if a badge was earned, take it back
 	if ( score->m_badge_earned != -1){
-		score->medals[score->m_badge_earned] = 0;
+		score->medal_counts[score->m_badge_earned] = 0;
 	}
 
 	// return when in training mission.  We can grant a medal in training, but don't
@@ -352,8 +390,8 @@ void scoring_backout_accept( scoring_struct *score )
 
 	// if the player was given a medal, take it back
 	if ( score->m_medal_earned != -1 ) {
-		score->medals[score->m_medal_earned]--;
-		Assert( score->medals[score->m_medal_earned] >= 0 );
+		score->medal_counts[score->m_medal_earned]--;
+		Assert( score->medal_counts[score->m_medal_earned] >= 0 );
 	}
 
 	// if the player was promoted, take it back
@@ -414,7 +452,7 @@ void scoring_level_close(int accepted)
 
 			// if a badge was earned, take it back
 			if ( Player->stats.m_badge_earned != -1){
-				Player->stats.medals[Player->stats.m_badge_earned] = 0;
+				Player->stats.medal_counts[Player->stats.m_badge_earned] = 0;
 				Player->stats.m_badge_earned = -1;
 			}
 		}

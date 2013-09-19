@@ -20,6 +20,10 @@ struct player;
 struct ship;
 struct object;
 
+#define NUM_MEDALS_FS2		18
+#define NUM_MEDALS_FS1		16
+extern int Num_medals;
+
 #define NUM_RANKS				10
 
 #define RANK_ENSIGN				0
@@ -35,6 +39,7 @@ struct object;
 
 #define MAX_FREESPACE1_RANK	RANK_COMMODORE
 #define MAX_FREESPACE2_RANK	RANK_ADMIRAL
+
 
 /*
 	The ins and outs of when/where stats are stored and retreived - BE SURE TO FOLLOW THESE GUIDELINES
@@ -74,7 +79,7 @@ typedef struct scoring_struct {
 	// All-time total
 	int score;								// all time score
 	int rank;								// all time rank
-	int medals[MAX_MEDALS];				// all time medal counts
+	SCP_vector<int> medal_counts;			// all time medal counts
 
 	int kills[MAX_SHIP_CLASSES];		// only valid kills (i.e. not on friendlies).
 	int assists;							// alltime assists

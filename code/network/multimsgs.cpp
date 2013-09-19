@@ -6421,9 +6421,11 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 			idx += MAX_SHIPS_PER_PACKET; 
 		}
 
+		ADD_USHORT( (ushort)Num_medals );
+
 		// medal information
-		for(idx=0;idx<MAX_MEDALS;idx++){
-			i_tmp = sc->medals[idx];
+		for(idx=0;idx<Num_medals;idx++){
+			i_tmp = sc->medal_counts[idx];
 			ADD_INT(i_tmp);
 		}
 
@@ -6531,7 +6533,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	short player_id;
 	int offset = HEADER_LENGTH;
 	ushort u_tmp;
-	int i_tmp;
+	int i_tmp, num_medals;
 
 	// nprintf(("Network","----------++++++++++********RECEIVED STATS***********+++++++++----------\n"));
 
@@ -6575,9 +6577,11 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		ml_string("Received STATS_ALLTIME\n");
 
 		// read in the stats
-		for (idx=0; idx<MAX_MEDALS; idx++) {
+		GET_USHORT( num_medals );
+
+		for (idx=0; (idx < Num_medals) && (idx < num_medals); idx++) {
 			GET_INT(i_tmp);
-			sc->medals[idx] = i_tmp;
+			sc->medal_counts[idx] = i_tmp;
 		}
 
 		GET_INT(sc->score);

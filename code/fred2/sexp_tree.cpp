@@ -5632,12 +5632,13 @@ sexp_list_item *sexp_tree::get_listing_opf_medal_name()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<MAX_ASSIGNABLE_MEDALS; i++)
+	for (i=0; i<Num_medals; i++)
+	{
+		// don't add Rank or the Ace badges
+		if ((i == Rank_medal_index) || (Medals[i].kills_needed > 0))
+			continue;
 		head.add_data(Medals[i].name);
-
-	// also add SOC crest (index 17) and Wings (index 13)
-	head.add_data(Medals[13].name);
-	head.add_data(Medals[17].name);
+	}
 
 	return head.next;
 }
