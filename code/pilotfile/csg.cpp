@@ -89,7 +89,7 @@ void pilotfile::csg_read_info()
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
-		ilist.index = intel_info_lookup(t_string, -1);
+		ilist.index = intel_info_lookup(t_string);
 
 		intel_list.push_back(ilist);
 	}

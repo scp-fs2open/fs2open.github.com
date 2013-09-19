@@ -106,6 +106,7 @@
 #include "network/multi_sexp.h"
 #include "io/keycontrol.h"
 #include "parse/generic_log.h"
+#include "localization/localize.h"
 
 
 
@@ -3417,6 +3418,29 @@ int get_sexp()
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
 				Dynamic_environment = true;
+				break;
+
+			case OP_TECH_ADD_INTEL_XSTR:
+				// do XSTR translation for each entry in the list
+				// we don't use the do_preload function because the preloader needs to access two nodes at a time
+				// also we're not using CTEXT or eval_num here because XSTR should really be constant, and
+				// also because we can't really run sexp stuff in a preloader
+				n = CDR(start);
+				while (n >= 0)
+				{
+					if (CDR(n) < 0)
+						break;
+
+					int id = atoi(Sexp_nodes[CDR(n)].text);
+					Assert(id < 10000000);
+					char xstr[NAME_LENGTH + 20];
+					sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[n].text, id);
+
+					memset(Sexp_nodes[n].text, 0, NAME_LENGTH*sizeof(char));
+					lcl_ext_localize(xstr, Sexp_nodes[n].text, NAME_LENGTH - 1);
+
+					n = CDDR(n);
+				}
 				break;
 		}
 	}
@@ -12113,7 +12137,7 @@ void sexp_tech_add_intel(int node)
 
 	while (node >= 0) {
 		name = CTEXT(node);
-		i = intel_info_lookup(name, -1);
+		i = intel_info_lookup(name);
 		if (i >= 0)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
 		else
@@ -12137,14 +12161,16 @@ void sexp_tech_add_intel_xstr(int node)
 
 	while (n >= 0)
 	{
-		name = CTEXT(n);
+		// don't use things like CTEXT or eval_num, since we didn't in the preloader
+		name = Sexp_nodes[n].text;
 		n = CDR(n);
 		if (n < 0)
 			break;
-		id = eval_num(n);
+		id = atoi(Sexp_nodes[n].text);
 		n = CDR(n);
 
-		i = intel_info_lookup(name, id);
+		// we already translated this node in the preloader, so just look it up
+		i = intel_info_lookup(name);
 		if (i >= 0)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
 		else
@@ -14499,7 +14525,6 @@ void sexp_set_death_message(int n)
 	}
 
 	// apply localization
-	extern void lcl_replace_stuff(SCP_string &text);
 	lcl_replace_stuff(Player->death_message);
 
 	sexp_replace_variable_names_with_values(Player->death_message);
