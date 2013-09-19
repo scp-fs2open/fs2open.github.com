@@ -989,7 +989,7 @@ void debrief_award_init()
 
 	// handle medal earned
 	if ( Player->stats.m_medal_earned != -1 ) {
-		debrief_choose_medal_variant(buf, Player->stats.m_medal_earned, Player->stats.medals[Player->stats.m_medal_earned] - 1);
+		debrief_choose_medal_variant(buf, Player->stats.m_medal_earned, Player->stats.medal_counts[Player->stats.m_medal_earned] - 1);
 		Medal_bitmap = bm_load(buf);
 
 		debrief_add_award_text(Medals[Player->stats.m_medal_earned].name);
@@ -998,7 +998,7 @@ void debrief_award_init()
 	// handle promotions
 	if ( Player->stats.m_promotion_earned != -1 ) {
 		Promoted = Player->stats.m_promotion_earned;
-		debrief_choose_medal_variant(buf, RANK_MEDAL_INDEX, Promoted);
+		debrief_choose_medal_variant(buf, Rank_medal_index, Promoted);
 		Rank_bitmap = bm_load(buf);
 
 		Promotion_stage.text = Ranks[Promoted].promotion_text;
@@ -1013,7 +1013,7 @@ void debrief_award_init()
 	// handle badge earned
 	// only grant badge if earned and allowed.  (no_promotion really means no promotion and no badges)
 	if ( Player->stats.m_badge_earned != -1 ) {
-		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned, Player->stats.medals[Player->stats.m_badge_earned] - 1);
+		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned, Player->stats.medal_counts[Player->stats.m_badge_earned] - 1);
 		Badge_bitmap = bm_load(buf);
 
 		Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text;
