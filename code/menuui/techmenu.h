@@ -39,7 +39,7 @@ void techroom_close();
 void techroom_do_frame(float frametime);
 int techroom_on_ships_tab();
 void techroom_intel_init();			// called on startup so campaigns can manipulate tech room visibility
-int intel_info_lookup(char *name);
+int intel_info_lookup(char *name, int id);
 extern void tech_reset_to_default();
 
 #endif

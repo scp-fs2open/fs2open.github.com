@@ -823,12 +823,14 @@ void sexp_tree::right_clicked(int mode)
 							case OP_GRANT_MEDAL:
 							case OP_TECH_ADD_SHIP:
 							case OP_TECH_ADD_WEAPON:
-							case OP_TECH_ADD_INTEL:
+							case OP_TECH_ADD_INTEL_XSTR:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 							// unlike the above operators, these are deprecated 
 							case OP_HITS_LEFT_SUBSYSTEM:
 							case OP_CUTSCENES_SHOW_SUBTITLE:
+							case OP_ORDER:
+							case OP_TECH_ADD_INTEL:
 								j = Num_op_menus;	// don't allow these operators to be visible
 								break;
 						}
@@ -861,12 +863,14 @@ void sexp_tree::right_clicked(int mode)
 							case OP_GRANT_MEDAL:
 							case OP_TECH_ADD_SHIP:
 							case OP_TECH_ADD_WEAPON:
-							case OP_TECH_ADD_INTEL:
+							case OP_TECH_ADD_INTEL_XSTR:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 							// unlike the above operators, these are deprecated 
 							case OP_HITS_LEFT_SUBSYSTEM:
 							case OP_CUTSCENES_SHOW_SUBTITLE:
+							case OP_ORDER:
+							case OP_TECH_ADD_INTEL:
 								j = Num_submenus;	// don't allow these operators to be visible
 								break;
 						}

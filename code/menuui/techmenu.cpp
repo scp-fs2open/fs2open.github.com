@@ -1368,7 +1368,7 @@ void techroom_do_frame(float frametime)
 	gr_flip();
 }
 
-int intel_info_lookup(char *name)
+int intel_info_lookup(char *name, int id)
 {
 	int	i;
 
@@ -1376,8 +1376,10 @@ int intel_info_lookup(char *name)
 	if (!name)
 		return -1;
 
+	char *translated_name = XSTR(name, id);
+
 	for (i=0; i<Intel_info_size; i++)
-		if (!stricmp(name, Intel_info[i].name))
+		if (!stricmp(translated_name, Intel_info[i].name))
 			return i;
 
 	return -1;

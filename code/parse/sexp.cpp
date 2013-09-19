@@ -541,6 +541,7 @@ sexp_oper Operators[] = {
 	{ "tech-add-ships",					OP_TECH_ADD_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "tech-add-weapons",				OP_TECH_ADD_WEAPON,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "tech-add-intel",					OP_TECH_ADD_INTEL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "tech-add-intel-xstr",			OP_TECH_ADD_INTEL_XSTR,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "tech-reset-to-default",			OP_TECH_RESET_TO_DEFAULT,				0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "change-player-score",			OP_CHANGE_PLAYER_SCORE,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "change-team-score",				OP_CHANGE_TEAM_SCORE,					2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -12071,7 +12072,7 @@ void sexp_tech_add_ship(int node)
 		if (i >= 0)
 			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;
 		else
-			Error(LOCATION, "Ship class \"%s\" invalid", name);
+			Warning(LOCATION, "In tech-add-ship, ship class \"%s\" invalid", name);
 
 		node = CDR(node);
 	}
@@ -12093,7 +12094,7 @@ void sexp_tech_add_weapon(int node)
 		if (i >= 0)
 			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
 		else
-			Error(LOCATION, "Weapon class \"%s\" invalid", name);
+			Warning(LOCATION, "In tech-add-weapon, weapon class \"%s\" invalid", name);
 
 		node = CDR(node);
 	}
@@ -12112,13 +12113,42 @@ void sexp_tech_add_intel(int node)
 
 	while (node >= 0) {
 		name = CTEXT(node);
-		i = intel_info_lookup(name);
+		i = intel_info_lookup(name, -1);
 		if (i >= 0)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
 		else
-			Error(LOCATION, "Intel name \"%s\" invalid", name);
+			Warning(LOCATION, "In tech-add-intel, intel name \"%s\" invalid", name);
 
 		node = CDR(node);
+	}
+}
+
+
+// Goober5000
+void sexp_tech_add_intel_xstr(int node)
+{
+	int i, id, n = node;
+	char *name;
+
+	Assert(n >= 0);
+	// this function doesn't mean anything when not in campaign mode
+	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
+		return;
+
+	while (n >= 0)
+	{
+		name = CTEXT(n);
+		n = CDR(n);
+		if (n < 0)
+			break;
+		id = eval_num(n);
+		n = CDR(n);
+
+		i = intel_info_lookup(name, id);
+		if (i >= 0)
+			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
+		else
+			Warning(LOCATION, "Intel entry XSTR(\"%s\", %d) invalid", name, id);
 	}
 }
 
@@ -22683,6 +22713,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TECH_ADD_INTEL_XSTR:
+				sexp_tech_add_intel_xstr(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_TECH_RESET_TO_DEFAULT:
 				sexp_tech_reset_to_default();
 				sexp_val = SEXP_TRUE;
@@ -24377,6 +24412,7 @@ int query_operator_return_type(int op)
 		case OP_TECH_ADD_SHIP:
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
+		case OP_TECH_ADD_INTEL_XSTR:
 		case OP_TECH_RESET_TO_DEFAULT:
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
@@ -25733,6 +25769,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_TECH_ADD_INTEL:
 			return OPF_INTEL_NAME;
+
+		case OP_TECH_ADD_INTEL_XSTR:
+			return !(argnum % 2) ? OPF_INTEL_NAME : OPF_NUMBER;
 
 		case OP_TECH_RESET_TO_DEFAULT:
 			return OPF_NONE;
@@ -28076,6 +28115,7 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_ADD_SHIP:
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
+		case OP_TECH_ADD_INTEL_XSTR:
 		case OP_TECH_RESET_TO_DEFAULT:
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
@@ -30051,11 +30091,21 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of weapon (primary or secondary) to add." },
 
-	{ OP_TECH_ADD_INTEL, "Tech add intel (Action operator)\r\n"
+	{ OP_TECH_ADD_INTEL, "Tech add intel (Action operator, deprecated in favor of tech-add-intel-xstr)\r\n"
 		"\tThis operator makes the given intel entry available in the techroom database.  Players will "
 		"then be able to view this intel entry there.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of intel entry to add." },
+
+	{ OP_TECH_ADD_INTEL_XSTR, "Tech add intel XSTR (Action operator)\r\n"
+		"\tThis operator makes the given intel entry available in the techroom database.  Players will "
+		"then be able to view this intel entry there.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of intel entry to add.\r\n"
+		"\t2:\tXSTR ID of intel entry, or -1 if there is no XSTR entry.\r\n"
+		"Use Add-Data for multiple entries.\r\n\r\n"
+		"IMPORTANT: Each additional entry in the list MUST HAVE two fields; "
+		"any entry without both fields will be ignored, as will any successive entries." },
 
 	{ OP_TECH_RESET_TO_DEFAULT, "Tech reset to default (Action operator)\r\n"
 		"\tThis operator resets the tech room to the default represented in the tables.  This is "
