@@ -51,7 +51,7 @@
 
 
 extern int Multi_debrief_stats_accept_code;
-extern void HUD_printf(char *format, ...);
+extern void HUD_printf(const char *format, ...);
 extern int game_hacked_data();
 
 

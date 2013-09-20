@@ -567,7 +567,7 @@ class Text : public GUIObject
 	//Used to display stuff; change only from calculate func
 	int NumLines;
 	int LineLengths[MAX_TEXT_LINES];
-	char *LineStartPoints[MAX_TEXT_LINES];
+	const char *LineStartPoints[MAX_TEXT_LINES];
 
 	//Used for editing
 	int CursorPos;	//Line #, then position in line

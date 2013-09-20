@@ -355,7 +355,7 @@ void popup_split_lines(popup_info *pi, int flags)
 {
 	int	nlines, i, body_offset = 0;
 	int	n_chars[POPUP_MAX_LINES];
-	char	*p_str[POPUP_MAX_LINES];
+	const char	*p_str[POPUP_MAX_LINES];
 
 	gr_set_font(FONT1);
 	n_chars[0]=0;

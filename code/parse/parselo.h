@@ -197,11 +197,6 @@ char *split_str_once(char *src, int max_pixel_w);
 int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char = -1);
 int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char);
 
-inline int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_lines, char ignore_char = -1)
-{
-	return split_str(const_cast<const char*>(src), max_pixel_w, n_chars, const_cast<const char**>(p_str), max_lines, ignore_char);
-}
-
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);
 extern int required_string_either_fred(char *str1, char *str2);

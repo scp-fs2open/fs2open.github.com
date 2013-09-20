@@ -202,9 +202,9 @@ ai_flag_name Ai_flag_names[] = {
 	{AIF_FREE_AFTERBURNER_USE,		"free-afterburner-use",			1,	},
 };
 
-char *Skill_level_names(int level, int translate)
+const char *Skill_level_names(int level, int translate)
 {
-	char *str = NULL;
+	const char *str = NULL;
 
 	#if NUM_SKILL_LEVELS != 5
 	#error Number of skill levels is wrong!

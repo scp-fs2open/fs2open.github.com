@@ -1456,7 +1456,7 @@ static int Desc_scroll_offset;
 static int Selected_campaign_index;
 static int Active_campaign_index;
 
-char *Info_text_ptrs[MAX_INFO_LINES];
+const char *Info_text_ptrs[MAX_INFO_LINES];
 int Num_info_lines, Info_text_line_size[MAX_INFO_LINES];
 
 void campaign_room_build_listing()

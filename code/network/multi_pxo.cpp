@@ -3166,7 +3166,7 @@ void multi_pxo_chat_process_incoming(char *txt,int mode)
 	char msg_total[512],line[512];
 	int	n_lines,idx;
 	int	n_chars[20];
-	char	*p_str[20];			//  the initial line (unindented)	
+	const char	*p_str[20];			//  the initial line (unindented)	
 	char *priv_ptr;	
 
 	// filter out "has left" channel messages, when switching channels

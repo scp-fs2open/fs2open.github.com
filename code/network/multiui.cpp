@@ -186,7 +186,7 @@ void multi_common_split_text()
 {
 	int	n_lines, i;
 	int	n_chars[MAX_BRIEF_LINES];
-	char	*p_str[MAX_BRIEF_LINES];
+	const char	*p_str[MAX_BRIEF_LINES];
 
 	n_lines = split_str(Multi_common_all_text, Multi_common_text_coords[gr_screen.res][2], n_chars, p_str, MULTI_COMMON_TEXT_MAX_LINES, MULTI_COMMON_TEXT_META_CHAR);
 	Assert(n_lines != -1);

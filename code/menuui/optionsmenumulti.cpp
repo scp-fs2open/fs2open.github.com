@@ -636,7 +636,7 @@ void options_multi_add_notify(char *str)
 void options_multi_notify_process()
 {
 	int w;
-	char *p_str[3];
+	const char *p_str[3];
 	int n_chars[3];
 	char line[255];
 	int line_count;
