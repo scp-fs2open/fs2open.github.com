@@ -1014,9 +1014,6 @@ int parse_ship(const char *filename, bool replace)
 		create_if_not_found = false;
 	}
 
-	strcpy_s(parse_error_text, "\nin ship: ");
-	strcat_s(parse_error_text, buf);
-
 #ifdef NDEBUG
 	if (get_pointer_to_first_hash_symbol(buf) && Fred_running)
 		rtn = 1;
@@ -1104,8 +1101,6 @@ int parse_ship(const char *filename, bool replace)
 
 	rtn = parse_ship_values(sip, false, first_time, replace);
 
-	strcpy_s(parse_error_text, "");
-
 	return rtn;	//0 for success
 }
 
@@ -1125,9 +1120,6 @@ int parse_ship_template()
 	if( optional_string("+nocreate") ) {
 		Warning(LOCATION, "+nocreate flag used on ship template. Ship templates can not be modified. Ignoring +nocreate.");
 	}
-	
-	strcpy_s(parse_error_text, "\nin ship template: ");
-	strcat_s(parse_error_text, buf);
 	
 	diag_printf ("Ship template name -- %s\n", buf);
 	//Check if the template exists already
@@ -2247,9 +2239,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->explosion_bitmap_anims.insert(sip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
 
-	char temp_error[128];
-	strcpy_s(temp_error, parse_error_text);
-
 	if (optional_string("$Weapon Model Draw Distance:")) {
 		stuff_float( &sip->weapon_model_draw_distance );
 	}
@@ -2274,9 +2263,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				break;
 			}
 
-			strcat_s(parse_error_text,"'s primary banks");
 			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-			strcpy_s(parse_error_text, temp_error);
 
 			// actually say which weapons are allowed
 			for ( i = 0; i < num_allowed; i++ )
@@ -2315,9 +2302,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				break;
 			}
 
-			strcat_s(parse_error_text,"'s primary dogfight banks");
 			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-			strcpy_s(parse_error_text, temp_error);
 
 			// actually say which weapons are allowed
 			for ( i = 0; i < num_allowed; i++ )
@@ -2365,9 +2350,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				break;
 			}
 
-			strcat_s(parse_error_text,"'s secondary banks");
 			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-			strcpy_s(parse_error_text, temp_error);
 
 			// actually say which weapons are allowed
 			for ( i = 0; i < num_allowed; i++ )
@@ -2406,9 +2389,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				break;
 			}
 
-			strcat_s(parse_error_text,"'s secondary dogfight banks");
 			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-			strcpy_s(parse_error_text, temp_error);
 
 			// actually say which weapons are allowed
 			for ( i = 0; i < num_allowed; i++ )
@@ -3351,8 +3332,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				{
 					Error(LOCATION, "Malformed $Subsystem entry '%s' %s.\n\n"
 						"Specify a turning rate or remove the trailing comma.",
-						sp->subobj_name,
-						parse_error_text[0] != '\0' ? parse_error_text: "unknown ship");
+						sp->subobj_name, sip->name);
 				}
 			}
 
@@ -3773,8 +3753,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	model_anim_fix_reverse_times(sip);
-
-	strcpy_s(parse_error_text, "");
 
 	return rtn;	//0 for success
 }

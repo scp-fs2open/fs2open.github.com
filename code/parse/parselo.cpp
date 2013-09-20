@@ -1,4 +1,4 @@
-/*`
+/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -33,9 +33,6 @@
 
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
-
-char	parse_error_text[128];//for my better error mesages-Bobboau
-char	parse_error_text_save[128];
 
 char		Current_filename[128];
 char		Current_filename_save[128];
@@ -477,15 +474,15 @@ int required_string(char *pstr)
 	ignore_white_space();
 
 	while (strnicmp(pstr, Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
-		error_display(1, "Missing required token: [%s]. Found [%.32s] %s instead.\n", pstr, next_tokens(), parse_error_text);
+		error_display(1, "Missing required token: [%s]. Found [%.32s] instead.\n", pstr, next_tokens());
 		advance_to_eoln(NULL);
 		ignore_white_space();
 		count++;
 	}
 
 	if (count == RS_MAX_TRIES) {
-		nprintf(("Error", "Error: Unable to find required token [%s] %s\n", pstr, parse_error_text));
-		Warning(LOCATION, "Error: Unable to find required token [%s] %s\n", pstr, parse_error_text);
+		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
+		Warning(LOCATION, "Error: Unable to find required token [%s]\n", pstr);
 		longjmp(parse_abort, 1);
 	}
 
@@ -653,15 +650,15 @@ int required_string_either(char *str1, char *str2)
 	while (count < RS_MAX_TRIES) {
 		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
 			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n%s", token_found = str1, parse_error_text);
+			diag_printf("Found required string [%s]\n", token_found = str1);
 			return 0;
 		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
 			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n%s", token_found = str2, parse_error_text);
+			diag_printf("Found required string [%s]\n", token_found = str2);
 			return 1;
 		}
 
-		error_display(1, "Required token = [%s] or [%s], found [%.32s] %s.\n", str1, str2, next_tokens(), parse_error_text);
+		error_display(1, "Required token = [%s] or [%s], found [%.32s].\n", str1, str2, next_tokens());
 
 		advance_to_eoln(NULL);
 		ignore_white_space();
@@ -675,7 +672,6 @@ int required_string_either(char *str1, char *str2)
 	}
 
 	return -1;
-	// exit (1);
 }
 
 //	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
@@ -709,7 +705,6 @@ int required_string_3(char *str1, char *str2, char *str3)
 	}
 
 	return -1;
-	// exit (1);
 }
 
 int required_string_4(char *str1, char *str2, char *str3, char *str4)
@@ -743,7 +738,6 @@ int required_string_4(char *str1, char *str2, char *str3, char *str4)
 	}
 	
 	return -1;
-	// exit (1);
 }
 
 int required_string_either_fred(char *str1, char *str2)
@@ -770,7 +764,6 @@ int required_string_either_fred(char *str1, char *str2)
 		diag_printf("Unable to find either required token [%s] or [%s]\n", str1, str2);
 
 	return -1;
-	// exit (1);
 }
 
 //	Copy characters from instr to outstr until eoln is found, or until max
@@ -2715,11 +2708,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 					Error(LOCATION, "Unable to find string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 				} else if (num == -2) {
 					if (str[0] != '\0') {
-						if(parse_error_text[0] != '\0'){
-							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" %s.\n", str, parse_error_text);
-						}else{
-							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
-						}
+						Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 					}
 				}
 
@@ -3143,18 +3132,19 @@ void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int
 	}
 }
 
-// pause current parsing so that some else can be parsed without interferring
+// pause current parsing so that some else can be parsed without interfering
 // with the currently parsing file
 void pause_parse()
 {
 	Assert( !Parsing_paused );
+	if (Parsing_paused)
+		return;
 
 	Mp_save = Mp;
 
 	Warning_count_save = Warning_count;
 	Error_count_save = Error_count;
 
-	strcpy_s(parse_error_text_save, parse_error_text);
 	strcpy_s(Current_filename_save, Current_filename);
 
 	Parsing_paused = 1;	
@@ -3164,7 +3154,6 @@ void pause_parse()
 void unpause_parse()
 {
 	Assert( Parsing_paused );
-
 	if (!Parsing_paused)
 		return;
 
@@ -3173,7 +3162,6 @@ void unpause_parse()
 	Warning_count = Warning_count_save;
 	Error_count = Error_count_save;
 
-	strcpy_s(parse_error_text, parse_error_text_save);
 	strcpy_s(Current_filename, Current_filename_save);
 
 	Parsing_paused = 0;
@@ -3189,8 +3177,6 @@ void reset_parse(char *text)
 
 	Warning_count = 0;
 	Error_count = 0;
-
-	strcpy_s(parse_error_text, "");//better error mesages-Bobboau
 
 	strcpy_s(Current_filename, Current_filename_sub);
 }
