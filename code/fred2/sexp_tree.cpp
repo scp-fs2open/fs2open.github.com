@@ -5599,7 +5599,7 @@ sexp_list_item *sexp_tree::get_listing_opf_skill_level()
 	sexp_list_item head;
 
 	for (i=0; i<NUM_SKILL_LEVELS; i++)
-		head.add_data(Skill_level_names(i, 0));
+		head.add_data(const_cast<char*>(Skill_level_names(i, 0)));
 
 	return head.next;
 }
