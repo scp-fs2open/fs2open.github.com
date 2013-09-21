@@ -592,6 +592,7 @@
 		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
 		60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E6113432B800CE910F /* voicerec.cpp */; };
 		60FAF4E9113432B800CE910F /* voicerec.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E7113432B800CE910F /* voicerec.h */; };
+		91361C9A17EDF2B7001940DC /* profiling.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91361C9917EDF2B7001940DC /* profiling.cpp */; };
 		914F0FC61639998700A5B57A /* generic_log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 914F0FC41639998700A5B57A /* generic_log.cpp */; };
 		914F0FC71639998700A5B57A /* generic_log.h in Headers */ = {isa = PBXBuildFile; fileRef = 914F0FC51639998700A5B57A /* generic_log.h */; };
 		91D778A014FE96BE00E0090A /* mod_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91D7789E14FE96BE00E0090A /* mod_table.cpp */; };
@@ -1413,32 +1414,6 @@
 		3459554D08C3D6A0003B1351 /* weapons.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = weapons.cpp; sourceTree = "<group>"; };
 		3459554F08C3D6A0003B1351 /* config.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
 		3459555008C3D6A0003B1351 /* stubs.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = stubs.cpp; sourceTree = "<group>"; };
-		3459555208C3D6A0003B1351 /* aboutbox.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = aboutbox.cpp; sourceTree = "<group>"; };
-		3459555308C3D6A0003B1351 /* aboutbox.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = aboutbox.h; sourceTree = "<group>"; };
-		3459555408C3D6A0003B1351 /* asteroidfieldeditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = asteroidfieldeditor.cpp; sourceTree = "<group>"; };
-		3459555508C3D6A0003B1351 /* asteroidfieldeditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = asteroidfieldeditor.h; sourceTree = "<group>"; };
-		3459555608C3D6A0003B1351 /* campaigneditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = campaigneditor.cpp; sourceTree = "<group>"; };
-		3459555708C3D6A0003B1351 /* campaigneditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = campaigneditor.h; sourceTree = "<group>"; };
-		3459555808C3D6A0003B1351 /* commandbriefingeditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = commandbriefingeditor.cpp; sourceTree = "<group>"; };
-		3459555908C3D6A0003B1351 /* commandbriefingeditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = commandbriefingeditor.h; sourceTree = "<group>"; };
-		3459555A08C3D6A0003B1351 /* debriefingeditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = debriefingeditor.cpp; sourceTree = "<group>"; };
-		3459555B08C3D6A0003B1351 /* debriefingeditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debriefingeditor.h; sourceTree = "<group>"; };
-		3459555C08C3D6A0003B1351 /* fredframe.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = fredframe.cpp; sourceTree = "<group>"; };
-		3459555D08C3D6A0003B1351 /* fredframe.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fredframe.h; sourceTree = "<group>"; };
-		3459555E08C3D6A0003B1351 /* missionspecseditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionspecseditor.cpp; sourceTree = "<group>"; };
-		3459555F08C3D6A0003B1351 /* missionspecseditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionspecseditor.h; sourceTree = "<group>"; };
-		3459556108C3D6A0003B1351 /* FRED.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = FRED.ico; sourceTree = "<group>"; };
-		3459556208C3D6A0003B1351 /* setglobalshipflagseditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = setglobalshipflagseditor.cpp; sourceTree = "<group>"; };
-		3459556308C3D6A0003B1351 /* setglobalshipflagseditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = setglobalshipflagseditor.h; sourceTree = "<group>"; };
-		3459556408C3D6A0003B1351 /* shieldsystemeditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = shieldsystemeditor.cpp; sourceTree = "<group>"; };
-		3459556508C3D6A0003B1351 /* shieldsystemeditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = shieldsystemeditor.h; sourceTree = "<group>"; };
-		3459556608C3D6A0003B1351 /* voiceactingmanagereditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = voiceactingmanagereditor.cpp; sourceTree = "<group>"; };
-		3459556708C3D6A0003B1351 /* voiceactingmanagereditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = voiceactingmanagereditor.h; sourceTree = "<group>"; };
-		3459556A08C3D6A0003B1351 /* wxfred.xrc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.xml; path = wxfred.xrc; sourceTree = "<group>"; };
-		3459556B08C3D6A0003B1351 /* wxfred2.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = wxfred2.cpp; sourceTree = "<group>"; };
-		3459556C08C3D6A0003B1351 /* wxfred2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wxfred2.h; sourceTree = "<group>"; };
-		3459556D08C3D6A0003B1351 /* wxfred_xrc.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = wxfred_xrc.cpp; sourceTree = "<group>"; };
-		3459556E08C3D6A0003B1351 /* wxfred_xrc.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wxfred_xrc.h; sourceTree = "<group>"; };
 		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		345A81150B4941D700282E7A /* grstub.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grstub.cpp; sourceTree = "<group>"; };
@@ -1520,6 +1495,7 @@
 		60FAF4E1113431A100CE910F /* openal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = openal.h; sourceTree = "<group>"; };
 		60FAF4E6113432B800CE910F /* voicerec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = voicerec.cpp; sourceTree = "<group>"; };
 		60FAF4E7113432B800CE910F /* voicerec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = voicerec.h; sourceTree = "<group>"; };
+		91361C9917EDF2B7001940DC /* profiling.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = profiling.cpp; sourceTree = "<group>"; };
 		914580470FD036ED00788595 /* multi_sexp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = multi_sexp.cpp; sourceTree = "<group>"; };
 		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
 		914F0FC41639998700A5B57A /* generic_log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = generic_log.cpp; sourceTree = "<group>"; };
@@ -1928,7 +1904,6 @@
 				3459552308C3D6A0003B1351 /* ui */,
 				3459553A08C3D6A0003B1351 /* weapon */,
 				3459554E08C3D6A0003B1351 /* windows_stub */,
-				3459555108C3D6A0003B1351 /* wxfred2 */,
 			);
 			name = code;
 			path = ../../code;
@@ -2179,6 +2154,7 @@
 		3459535508C3D6A0003B1351 /* globalincs */ = {
 			isa = PBXGroup;
 			children = (
+				91361C9917EDF2B7001940DC /* profiling.cpp */,
 				3459535608C3D6A0003B1351 /* alphacolors.cpp */,
 				3459535708C3D6A0003B1351 /* alphacolors.h */,
 				3468A8CE0991BD4200123C87 /* def_files.cpp */,
@@ -2900,47 +2876,6 @@
 				3459555008C3D6A0003B1351 /* stubs.cpp */,
 			);
 			path = windows_stub;
-			sourceTree = "<group>";
-		};
-		3459555108C3D6A0003B1351 /* wxfred2 */ = {
-			isa = PBXGroup;
-			children = (
-				3459555208C3D6A0003B1351 /* aboutbox.cpp */,
-				3459555308C3D6A0003B1351 /* aboutbox.h */,
-				3459555408C3D6A0003B1351 /* asteroidfieldeditor.cpp */,
-				3459555508C3D6A0003B1351 /* asteroidfieldeditor.h */,
-				3459555608C3D6A0003B1351 /* campaigneditor.cpp */,
-				3459555708C3D6A0003B1351 /* campaigneditor.h */,
-				3459555808C3D6A0003B1351 /* commandbriefingeditor.cpp */,
-				3459555908C3D6A0003B1351 /* commandbriefingeditor.h */,
-				3459555A08C3D6A0003B1351 /* debriefingeditor.cpp */,
-				3459555B08C3D6A0003B1351 /* debriefingeditor.h */,
-				3459555C08C3D6A0003B1351 /* fredframe.cpp */,
-				3459555D08C3D6A0003B1351 /* fredframe.h */,
-				3459555E08C3D6A0003B1351 /* missionspecseditor.cpp */,
-				3459555F08C3D6A0003B1351 /* missionspecseditor.h */,
-				3459556008C3D6A0003B1351 /* res */,
-				3459556208C3D6A0003B1351 /* setglobalshipflagseditor.cpp */,
-				3459556308C3D6A0003B1351 /* setglobalshipflagseditor.h */,
-				3459556408C3D6A0003B1351 /* shieldsystemeditor.cpp */,
-				3459556508C3D6A0003B1351 /* shieldsystemeditor.h */,
-				3459556608C3D6A0003B1351 /* voiceactingmanagereditor.cpp */,
-				3459556708C3D6A0003B1351 /* voiceactingmanagereditor.h */,
-				3459556A08C3D6A0003B1351 /* wxfred.xrc */,
-				3459556B08C3D6A0003B1351 /* wxfred2.cpp */,
-				3459556C08C3D6A0003B1351 /* wxfred2.h */,
-				3459556D08C3D6A0003B1351 /* wxfred_xrc.cpp */,
-				3459556E08C3D6A0003B1351 /* wxfred_xrc.h */,
-			);
-			path = wxfred2;
-			sourceTree = "<group>";
-		};
-		3459556008C3D6A0003B1351 /* res */ = {
-			isa = PBXGroup;
-			children = (
-				3459556108C3D6A0003B1351 /* FRED.ico */,
-			);
-			path = res;
 			sourceTree = "<group>";
 		};
 		345957CB08C3D836003B1351 /* libjpeg */ = {
@@ -4032,6 +3967,7 @@
 				60584F4C11347FE10080E50C /* audiostr.cpp in Sources */,
 				606034471134822A0032BB9A /* dscap.cpp in Sources */,
 				914F0FC61639998700A5B57A /* generic_log.cpp in Sources */,
+				91361C9A17EDF2B7001940DC /* profiling.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
