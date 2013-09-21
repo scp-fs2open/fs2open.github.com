@@ -529,7 +529,6 @@
     <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
     <ClCompile Include="..\..\code\Debris\debris.cpp" />
     <ClCompile Include="..\..\code\DebugConsole\console.cpp" />
-    <ClCompile Include="..\..\code\debugconsole\timerbar.cpp" />
     <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
     <ClCompile Include="..\..\code\fireball\warpineffect.cpp" />
     <ClCompile Include="..\..\code\gamehelp\contexthelp.cpp" />
@@ -541,6 +540,7 @@
     <ClCompile Include="..\..\code\globalincs\def_files.cpp" />
     <ClCompile Include="..\..\code\globalincs\fsmemory.cpp" />
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp" />
+    <ClCompile Include="..\..\code\globalincs\profiling.cpp" />
     <ClCompile Include="..\..\code\globalincs\safe_strings.cpp" />
     <ClCompile Include="..\..\code\globalincs\safe_strings_test.cpp" />
     <ClCompile Include="..\..\code\globalincs\systemvars.cpp" />
@@ -808,7 +808,6 @@
     <ClInclude Include="..\..\code\cutscene\mvelib.h" />
     <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
     <ClInclude Include="..\..\code\Debris\debris.h" />
-    <ClInclude Include="..\..\code\debugconsole\timerbar.h" />
     <ClInclude Include="..\..\code\DirectX\vasync.h" />
     <ClInclude Include="..\..\code\DirectX\vdinput.h" />
     <ClInclude Include="..\..\code\DirectX\vdplay.h" />

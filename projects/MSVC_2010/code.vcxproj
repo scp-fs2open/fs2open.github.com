@@ -412,7 +412,8 @@
     <ClCompile Include="..\..\code\globalincs\def_files.cpp" />
     <ClCompile Include="..\..\code\globalincs\fsmemory.cpp" />
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp" />
-    <ClCompile Include="..\..\code\globalincs\safe_strings.cpp" />
+	<ClCompile Include="..\..\code\globalincs\profiling.cpp" />
+	<ClCompile Include="..\..\code\globalincs\safe_strings.cpp" />
     <ClCompile Include="..\..\code\globalincs\safe_strings_test.cpp" />
     <ClCompile Include="..\..\code\globalincs\systemvars.cpp" />
     <ClCompile Include="..\..\code\globalincs\version.cpp" />
