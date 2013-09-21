@@ -1523,7 +1523,7 @@ int find_argnum(int parent, int arg)
 /**
  * From an operator name, return its index in the array Operators
  */
-int get_operator_index(char *token)
+int get_operator_index(const char *token)
 {
 	int	i;
 
@@ -1554,7 +1554,7 @@ int get_operator_index(int node)
 /**
  * From an operator name, return its constant (the number it was define'd with)
  */
-int get_operator_const(char *token)
+int get_operator_const(const char *token)
 {
 	int	idx = get_operator_index(token);
 

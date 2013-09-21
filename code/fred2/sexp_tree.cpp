@@ -96,7 +96,7 @@ sexp_tree::sexp_tree()
 }
 
 // clears out the tree, so all the nodes are unused.
-void sexp_tree::clear_tree(char *op)
+void sexp_tree::clear_tree(const char *op)
 {
 	mprintf(("Resetting dynamic tree node limit from %d to %d...\n", tree_nodes.size(), 0));
 
@@ -121,7 +121,7 @@ void sexp_tree::reset_handles()
 }
 
 // initializes and creates a tree from a given sexp startpoint.
-void sexp_tree::load_tree(int index, char *deflt)
+void sexp_tree::load_tree(int index, const char *deflt)
 {
 	int cur;
 
@@ -440,7 +440,7 @@ void sexp_tree::free_node2(int node)
 }
 
 // initialize the data for a node.  Should be called right after a new node is allocated.
-void sexp_tree::set_node(int node, int type, char *text)
+void sexp_tree::set_node(int node, int type, const char *text)
 {
 	Assert(type != SEXPT_UNUSED);
 	Assert(tree_nodes[node].type != SEXPT_UNUSED);
@@ -532,7 +532,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 }
 
 // construct tree nodes for an sexp, adding them to the list and returning first node
-int sexp_tree::load_sub_tree(int index, bool valid, char *text)
+int sexp_tree::load_sub_tree(int index, bool valid, const char *text)
 {
 	int cur;
 
@@ -1396,7 +1396,7 @@ int sexp_tree::query_node_argument_type(int node)
 int sexp_tree::end_label_edit(TVITEMA &item)
 {
 	HTREEITEM h = item.hItem; 
-	char *str = item.pszText;  
+	char *str = item.pszText;
 	int len, r = 1;	
 	bool update_node = true; 
 	uint node;
@@ -1425,12 +1425,12 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 
 	Assert(node < tree_nodes.size());
 	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		str = match_closest_operator(str, node);
-		if (!str) return 0;	// Goober5000 - avoids crashing
+		const char *op = match_closest_operator(str, node);
+		if (!op) return 0;	// Goober5000 - avoids crashing
 
-		SetItemText(h, str);
+		SetItemText(h, op);
 		item_index = node;
-		int op_num = get_operator_index(str); 
+		int op_num = get_operator_index(op); 
 		if (op_num >= 0 ) {
 			add_or_replace_operator(op_num, 1);
 		}
@@ -1482,10 +1482,10 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 // number of it.  What operators are valid is determined by 'node', and an operator is valid
 // if it is allowed to fit at position 'node'
 //
-char *sexp_tree::match_closest_operator(char *str, int node)
+const char *sexp_tree::match_closest_operator(const char *str, int node)
 {
 	int z, i, op, arg_num, opf, opr;
-	char *sub_best = NULL, *best = NULL;
+	const char *sub_best = NULL, *best = NULL;
 
 	z = tree_nodes[node].parent;
 	if (z < 0) {
@@ -2073,7 +2073,7 @@ void sexp_list_item::set_op(int op_num)
 // initialize node, type data
 // Defaults: t = SEXPT_STRING
 //
-void sexp_list_item::set_data(char *str, int t)
+void sexp_list_item::set_data(const char *str, int t)
 {
 	op = -1;
 	text = str;
@@ -2083,7 +2083,7 @@ void sexp_list_item::set_data(char *str, int t)
 // initialize node, type data, allocating memory for the text
 // Defaults: t = SEXPT_STRING
 //
-void sexp_list_item::set_data_dup(char *str, int t)
+void sexp_list_item::set_data_dup(const char *str, int t)
 {
 	op = -1;
 	text = strdup(str);
@@ -2109,7 +2109,7 @@ void sexp_list_item::add_op(int op_num)
 // add a node to end of list
 // Defaults: t = SEXPT_STRING
 //
-void sexp_list_item::add_data(char *str, int t)
+void sexp_list_item::add_data(const char *str, int t)
 {
 	sexp_list_item *item, *ptr;
 
@@ -2162,7 +2162,7 @@ void sexp_list_item::destroy()
 	while (ptr) {
 		ptr2 = ptr->next;
 		if (ptr->flags & SEXP_ITEM_F_DUP)
-			free(ptr->text);
+			free((void *) ptr->text);
 
 		delete ptr;
 		ptr = ptr2;
@@ -2178,8 +2178,7 @@ int sexp_tree::add_default_operator(int op, int argnum)
 
 	h = item_handle;
 	index = item_index;
-	item.text = buf;
-	if (get_default_value(&item, op, argnum))
+	if (get_default_value(&item, buf, op, argnum))
 		return -1;
 
 	if (item.type & SEXPT_OPERATOR) {
@@ -2221,8 +2220,7 @@ int sexp_tree::add_default_operator(int op, int argnum)
 				char buf2[256];
 				Assert(argnum == 1);
 				sexp_list_item temp_item;
-				temp_item.text = buf2;
-				get_default_value(&temp_item, op, 0);
+				get_default_value(&temp_item, buf2, op, 0);
 				int sexp_var_index = get_index_sexp_variable_name(temp_item.text);
 				Assert(sexp_var_index != -1);
 
@@ -2246,7 +2244,7 @@ int sexp_tree::add_default_operator(int op, int argnum)
 	return 0;
 }
 
-int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
+int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, int i)
 {
 	char *str = NULL;
 	int type, index;
@@ -2429,20 +2427,24 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 		list = list->next;
 
 		if (first_ptr->flags & SEXP_ITEM_F_DUP)
-			free(first_ptr->text);
+			free((void *) first_ptr->text);
 
 		delete first_ptr;
 	}
 
-	if (list) {
-		char *ptr;
-
-		ptr = item->text;
+	if (list)
+	{
+		// copy the information from the list to the passed-in item
 		*item = *list;
-		item->text = ptr;
-		strcpy(item->text, list->text);
 
+		// but use the provided text buffer
+		strcpy(text_buf, list->text);
+		item->text = text_buf;
+
+		// get rid of the list, since we're done with it
 		list->destroy();
+		item->next = NULL;
+
 		return 0;
 	}
 
@@ -2849,7 +2851,7 @@ void sexp_tree::merge_operator(int node)
 }
 
 // add a data node under operator pointed to by item_index
-int sexp_tree::add_data(char *data, int type)
+int sexp_tree::add_data(const char *data, int type)
 {
 	int node;
 
@@ -2864,7 +2866,7 @@ int sexp_tree::add_data(char *data, int type)
 }
 
 // add a (variable) data node under operator pointed to by item_index
-int sexp_tree::add_variable_data(char *data, int type)
+int sexp_tree::add_variable_data(const char *data, int type)
 {
 	int node;
 
@@ -2881,7 +2883,7 @@ int sexp_tree::add_variable_data(char *data, int type)
 
 // add an operator under operator pointed to by item_index.  Updates item_index to point
 // to this new operator.
-void sexp_tree::add_operator(char *op, HTREEITEM h)
+void sexp_tree::add_operator(const char *op, HTREEITEM h)
 {
 	int node;
 	
@@ -3093,7 +3095,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 */
 
 // display an error message and position to point of error (a node)
-int sexp_tree::node_error(int node, char *msg, int *bypass)
+int sexp_tree::node_error(int node, const char *msg, int *bypass)
 {
 	char text[512];
 
@@ -3369,7 +3371,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 	flag--;
 }
 
-void sexp_tree::replace_data(char *data, int type)
+void sexp_tree::replace_data(const char *data, int type)
 {
 	int node;
 	HTREEITEM h;
@@ -3433,7 +3435,7 @@ void sexp_tree::replace_variable_data(int var_idx, int type)
 
 
 
-void sexp_tree::replace_operator(char *op)
+void sexp_tree::replace_operator(const char *op)
 {
 	int node;
 	HTREEITEM h;
@@ -3830,7 +3832,7 @@ HTREEITEM sexp_tree::handle(int node)
 	return tree_nodes[node].handle;
 }
 
-char *sexp_tree::help(int code)
+const char *sexp_tree::help(int code)
 {
 	int i;
 
@@ -3867,7 +3869,7 @@ int sexp_tree::get_type(HTREEITEM h)
 
 void sexp_tree::update_help(HTREEITEM h)
 {
-	char *str;
+	const char *str;
 	int i, j, z, c, code, index, sibling_place;
 	CString text;
 
@@ -3921,14 +3923,14 @@ void sexp_tree::update_help(HTREEITEM h)
 			char buffer[10240] = {""};
 
 			//Get the help for the current operator
-			char *helpstr = help(code);
+			const char *helpstr = help(code);
 			bool display_number = true;
 
 			//If a help string exists, try to display it
 			if(helpstr != NULL)
 			{
 				char searchstr[32];
-				char *loc=NULL, *loc2=NULL;
+				const char *loc=NULL, *loc2=NULL;
 
 				if(loc == NULL)
 				{
@@ -4026,7 +4028,7 @@ void sexp_tree::update_help(HTREEITEM h)
 
 // find list of sexp_tree nodes with text
 // stuff node indices into find[]
-int sexp_tree::find_text(char *text, int *find)
+int sexp_tree::find_text(const char *text, int *find)
 {
 	uint i;
 	int find_count;
@@ -5599,7 +5601,7 @@ sexp_list_item *sexp_tree::get_listing_opf_skill_level()
 	sexp_list_item head;
 
 	for (i=0; i<NUM_SKILL_LEVELS; i++)
-		head.add_data(const_cast<char*>(Skill_level_names(i, 0)));
+		head.add_data(Skill_level_names(i, 0));
 
 	return head.next;
 }
@@ -5790,7 +5792,7 @@ sexp_list_item *sexp_tree::get_listing_opf_background_bitmap()
 
 	for (i=0; i < stars_get_num_entries(false, true); i++)
  	{
-		head.add_data( (char*)stars_get_name_FRED(i, false) );
+		head.add_data( stars_get_name_FRED(i, false) );
  	}
 
 	return head.next;
@@ -5803,7 +5805,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sun_bitmap()
 
 	for (i=0; i < stars_get_num_entries(true, true); i++)
  	{
-		head.add_data( (char*)stars_get_name_FRED(i, true) );
+		head.add_data( stars_get_name_FRED(i, true) );
  	}
 
 	return head.next;
