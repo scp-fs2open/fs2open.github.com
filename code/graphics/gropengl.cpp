@@ -479,7 +479,7 @@ void gr_opengl_set_palette(ubyte *new_palette, int is_alphacolor)
 {
 }
 
-void gr_opengl_print_screen(char *filename)
+void gr_opengl_print_screen(const char *filename)
 {
 	char tmp[MAX_PATH_LEN];
 	ubyte tga_hdr[18];

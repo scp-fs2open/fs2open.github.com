@@ -176,8 +176,6 @@ static int Player_select_middle_text_y[GR_NUM_RESOLUTIONS] = {
 
 char Player_select_bottom_text[150] = "";
 char Player_select_middle_text[150] = "";
-void player_select_set_bottom_text(char *txt);
-void player_select_set_middle_text(char *txt);
 
 
 // FORWARD DECLARATIONS
@@ -190,7 +188,8 @@ int player_select_create_new_pilot();
 void player_select_delete_pilot();
 void player_select_display_all_text();
 void player_select_display_copyright();
-void player_select_set_bottom_text(char *txt);
+void player_select_set_bottom_text(const char *txt);
+void player_select_set_middle_text(const char *txt);
 void player_select_set_controls(int gray);
 void player_select_draw_list();
 void player_select_process_noninput(int k);
@@ -1159,14 +1158,14 @@ int player_select_pilot_file_filter(const char *filename)
 	return (int)Pilot.verify(filename);
 }
 
-void player_select_set_bottom_text(char *txt)
+void player_select_set_bottom_text(const char *txt)
 {
 	if (txt) {
 		strncpy(Player_select_bottom_text, txt, 149);
 	}
 }
 
-void player_select_set_middle_text(char *txt)
+void player_select_set_middle_text(const char *txt)
 {
 	if (txt) {
 		strncpy(Player_select_middle_text, txt, 149);

@@ -547,7 +547,7 @@ int mission_log_get_count( int type, char *pname, char *sname )
 }
 
 
-void message_log_add_seg(int n, int x, int color, char *text, int flags = 0)
+void message_log_add_seg(int n, int x, int color, const char *text, int flags = 0)
 {
 	log_text_seg *seg, **parent;
 
@@ -568,44 +568,50 @@ void message_log_add_seg(int n, int x, int color, char *text, int flags = 0)
 	*parent = seg;
 }
 
-void message_log_add_segs(char *text, int color, int flags = 0)
+void message_log_add_segs(const char *source_string, int color, int flags = 0)
 {
-	char *ptr;
+	if (!source_string) {
+		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
+		return;
+	}
+	if (!*source_string) {
+		return;
+	}
+        
 	int w;
 
-	while (1) {
-		if (!text) {
-			mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
-			return;
-		}
-        
+	// duplicate the string so that we can split it without modifying the source
+	char *dup_string = vm_strdup(source_string);
+	char *str = dup_string;
+	char *split = NULL;
+
+	while (true) {
 		if (X == ACTION_X) {
-			while (is_white_space(*text))
-				text++;
+			while (is_white_space(*str))
+				str++;
 		}
         
-		if ( !text[0] ) {
-			return;
-		}
-
 		if (P_width - X < 1)
-			ptr = text;
+			split = str;
 		else
-			ptr = split_str_once(text, P_width - X);
+			split = split_str_once(str, P_width - X);
 
-		if (ptr != text)
-			message_log_add_seg(Num_log_lines, X, color, text, flags);
+		if (split != str)
+			message_log_add_seg(Num_log_lines, X, color, str, flags);
 
-		if (!ptr) {
-			gr_get_string_size(&w, NULL, text);
+		if (!split) {
+			gr_get_string_size(&w, NULL, str);
 			X += w;
-			return;
+			break;
 		}
 
 		Num_log_lines++;
 		X = ACTION_X;
-		text = ptr;
+		str = split;
 	}
+
+	// free the buffer
+	vm_free(dup_string);
 }
 
 void message_log_remove_segs(int n)

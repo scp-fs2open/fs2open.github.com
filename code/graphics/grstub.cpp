@@ -219,7 +219,7 @@ void gr_stub_preload_init()
 {
 }
 
-void gr_stub_print_screen(char *filename)
+void gr_stub_print_screen(const char *filename)
 {
 }
 
@@ -483,7 +483,7 @@ void gr_stub_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, 
 }
 
 // bitmap functions
-int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
+int gr_stub_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
 {
 	int dds_ct;
 
@@ -572,7 +572,7 @@ int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, i
 	return 0;
 }
 
-int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
+int gr_stub_bm_lock(const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
 {
 	ubyte c_type = BM_TYPE_NONE;
 	ubyte true_bpp;

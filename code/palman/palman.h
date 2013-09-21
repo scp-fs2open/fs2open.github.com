@@ -16,7 +16,7 @@
 
 // Calculate tables for this palette.
 // Assumes gr_palette is filled in.
-extern void palette_update(char *name, int restrict_colors_to_upper_128 );
+extern void palette_update(const char *name, int restrict_colors_to_upper_128 );
 
 // Writes current tables to disk.
 extern void palette_flush();
@@ -36,7 +36,7 @@ extern uint gr_palette_checksum;
 // Functions to deal with changing the palette.
 // These just call gr_set_palette, which will in turn
 // call palette_flush and palette_update.
-extern void palette_load_table( char * filename );
+extern void palette_load_table( const char * filename );
 extern void palette_use_bm_palette(int n);
 extern void palette_restore_palette( void );
 
