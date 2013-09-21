@@ -294,6 +294,7 @@ FS2_SOURCES =	\
 	globalincs/fsmemory.h	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
+	globalincs/profiling.cpp	\
 	globalincs/pstypes.h	\
 	globalincs/safe_strings.cpp	\
 	globalincs/safe_strings.h	\
