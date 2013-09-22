@@ -1437,7 +1437,7 @@ char *Default_main_fragment_shader =
 "	else\n"
 "		normal = tbnMatrix * vec3(0.0, 0.0, 1.0);\n"
 "  #else\n"
-"	vec3 normal = lNormal;\n"
+"	vec3 normal = normalize(lNormal);\n"
 "   #ifdef FLAG_ENV_MAP\n"
 "	vec4 envColour = textureCube(sEnvmap, envReflect);\n"
 "   #endif\n"
