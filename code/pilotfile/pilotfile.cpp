@@ -180,6 +180,6 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 	}
 }
 
-void pilotfile::stats_backout_accept(scoring_struct *stats, bool training)
+void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 {
 }
