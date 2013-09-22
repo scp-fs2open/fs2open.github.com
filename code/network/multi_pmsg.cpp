@@ -272,7 +272,7 @@ int multi_msg_message_text(char *txt)
 	switch(Multi_msg_mode){
 	// messaging all players
 	case MULTI_MSG_ALL:
-		strcpy(txt,XSTR("ALL : ",694));
+		strcpy(txt, XSTR("ALL : ",694));
 		break;
 
 	// messaging friendly players
@@ -299,7 +299,7 @@ int multi_msg_message_text(char *txt)
 }
 
 // display ingame,inmission message text
-void multi_msg_display_mission_text(char *msg,int player_index)
+void multi_msg_display_mission_text(const char *msg, int player_index)
 {
 	// play a cue voice sound and text to speech if not from this player
 	if(Net_players[player_index].player_id != MY_NET_PLAYER_NUM) {
@@ -315,7 +315,7 @@ void multi_msg_display_mission_text(char *msg,int player_index)
 }
 
 // if the passed net_player's callsign matches the reg expression of the passed expr
-int multi_msg_matches_expr(net_player *np,char *expr)
+int multi_msg_matches_expr(net_player *np, const char *expr)
 {
 	// some error checking
 	if((np == NULL) || (expr == NULL) || (strlen(expr) <= 0)){

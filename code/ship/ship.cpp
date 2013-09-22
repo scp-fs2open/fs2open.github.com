@@ -14194,7 +14194,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 {
 	ai_info	*aip;
 	ai_goal	*aigp;
-	char		*order_text;
+	const char		*order_text;
 	char ship_name[NAME_LENGTH];
 	
 	Assert(sp->ai_index >= 0);

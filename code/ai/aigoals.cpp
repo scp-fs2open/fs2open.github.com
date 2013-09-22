@@ -93,7 +93,7 @@ int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 // HUD what a ship's current orders are.  If the AI goal doesn't correspond to something that
 // ought to be printable, then NULL is used.
 // JAS: Converted to a function in order to externalize the strings
-char *Ai_goal_text(int goal)
+const char *Ai_goal_text(int goal)
 {
 	switch(goal)	{
 	case 1:
@@ -2340,7 +2340,7 @@ void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, c
 	}
 }
 
-int query_referenced_in_ai_goals(ai_goal *goals, int type, char *name)
+int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name)
 {
 	int i, mode, flag;
 
@@ -2405,7 +2405,7 @@ int query_referenced_in_ai_goals(ai_goal *goals, int type, char *name)
 	return 0;
 }
 
-char *ai_add_dock_name(char *str)
+char *ai_add_dock_name(const char *str)
 {
 	char *ptr;
 	int i;

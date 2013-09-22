@@ -1685,7 +1685,7 @@ char full_path[1024];
 void game_init()
 {
 	int s1, e1;
-	char *ptr;
+	const char *ptr;
 	char whee[MAX_PATH_LEN];
 
 	Game_current_mission_filename[0] = 0;

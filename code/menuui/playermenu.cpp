@@ -785,9 +785,7 @@ int player_select_get_last_pilot_info()
 {
 	// TODO: Replace this with a function that does this properly for the new pilot code.
 
-	char *last_player;
-
-	last_player = os_config_read_string( NULL, "LastPlayer", NULL);
+	const char *last_player = os_config_read_string( NULL, "LastPlayer", NULL);
 
 	if (last_player == NULL) {
 		return 0;

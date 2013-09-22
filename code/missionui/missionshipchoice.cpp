@@ -347,7 +347,7 @@ void	ss_set_carried_icon(int from_slot, int ship_class);
 #define SHIP_DESC_X	445
 #define SHIP_DESC_Y	273
 
-char *ss_tooltip_handler(char *str)
+const char *ss_tooltip_handler(const char *str)
 {
 	if (Selected_ss_class < 0)
 		return NULL;

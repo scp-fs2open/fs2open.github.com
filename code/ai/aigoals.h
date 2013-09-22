@@ -86,7 +86,7 @@ extern int Num_ai_goals;
 extern int Num_ai_dock_names;
 extern char Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 
-extern char *Ai_goal_text(int goal);
+extern const char *Ai_goal_text(int goal);
 
 // extern function definitions
 extern void ai_post_process_mission();
@@ -118,8 +118,8 @@ extern void ai_mission_goal_complete( ai_info *aip );
 extern void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp );
 
 extern void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, const char *new_name);
-extern int query_referenced_in_ai_goals(ai_goal *goals, int type, char *name);
-extern char *ai_add_dock_name(char *str);
+extern int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name);
+extern char *ai_add_dock_name(const char *str);
 
 extern int ai_query_goal_valid( int ship, int ai_goal );
 

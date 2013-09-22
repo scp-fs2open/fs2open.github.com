@@ -1972,7 +1972,7 @@ void ai_update_goal_references(int type, const char *old_name, const char *new_n
 			ai_update_goal_references(Wings[i].ai_goals, type, old_name, new_name);
 }
 
-int query_referenced_in_ai_goals(int type, char *name)
+int query_referenced_in_ai_goals(int type, const char *name)
 {
 	int i;
 

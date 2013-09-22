@@ -776,7 +776,7 @@ void chatbox_chat_init()
 }
 
 // int Test_color = 0;
-void chatbox_add_line(char *msg, int pid, int add_id)
+void chatbox_add_line(const char *msg, int pid, int add_id)
 {
 	int backup;
 	int	n_lines,idx;

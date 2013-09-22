@@ -80,7 +80,7 @@ void lcl_set_language(int lang);
 void lcl_add_dir(char *current_path);
 
 // maybe add localized directory to full path with file name when opening a localized file
-int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max);
+int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);
 
 // open the externalization file for use during parsing (call before parsing a given file)
 void lcl_ext_open();
@@ -89,11 +89,11 @@ void lcl_ext_open();
 void lcl_ext_close();
 
 // Goober5000
-void lcl_replace_stuff(char *text, unsigned int max_len);
+void lcl_replace_stuff(char *text, size_t max_len);
 void lcl_replace_stuff(SCP_string &text);
 
 // Karajorma
-void lcl_fred_replace_stuff(char *text, unsigned int max_len);
+void lcl_fred_replace_stuff(char *text, size_t max_len);
 void lcl_fred_replace_stuff(SCP_string &text);
 
 // get the localized version of the string. if none exists, return the original string
@@ -103,11 +103,11 @@ void lcl_fred_replace_stuff(SCP_string &text);
 // XSTR("whee", 20)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
-void lcl_ext_localize(char *in, char *out, int max_len, int *id = NULL);
-void lcl_ext_localize(SCP_string &in, SCP_string &out, int *id = NULL);
+void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = NULL);
+void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = NULL);
 
 // translate the specified string based upon the current language
-char *XSTR(char *str, int index);
+const char *XSTR(const char *str, int index);
 int lcl_get_xstr_offset(int index, int res);
 
 // translate umlauted chars from ascii to ansi codes

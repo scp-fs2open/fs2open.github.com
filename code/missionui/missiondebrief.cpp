@@ -461,7 +461,7 @@ void debrief_award_text_clear();
 
 
 // functions
-char *debrief_tooltip_handler(char *str)
+const char *debrief_tooltip_handler(const char *str)
 {
 	if (!stricmp(str, NOX("@.Medal"))) {
 		if (Award_active){
@@ -1296,7 +1296,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 	Weapon_energy_cheat=0;
 
 	if ( (/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE) ) {
-		char *str;
+		const char *str;
 		int z;
 
 		if (Game_mode & GM_MULTIPLAYER) {
@@ -2332,7 +2332,7 @@ void debrief_add_award_text(char *str)
 void debrief_do_frame(float frametime)
 {
 	int k=0, new_k=0;
-	char *please_wait_str = XSTR("Please Wait", 1242);
+	const char *please_wait_str = XSTR("Please Wait", 1242);
 	char buf[256];
 
 	Assert(Debrief_inited);	

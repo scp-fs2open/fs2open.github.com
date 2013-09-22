@@ -31,9 +31,9 @@ void multi_log_close();
 void multi_log_process();
 
 // printf function itself called by the ml_printf macro
-void ml_printf(char *format, ...);
+void ml_printf(const char *format, ...);
 
 // string print function
-void ml_string(char *string, int add_time = 1);
+void ml_string(const char *string, int add_time = 1);
 
 #endif

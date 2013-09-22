@@ -453,7 +453,7 @@ int wl_icon_being_carried();
 void wl_set_carried_icon(int from_bank, int from_slot, int weapon_class);
 
 
-char *wl_tooltip_handler(char *str)
+const char *wl_tooltip_handler(const char *str)
 {
 	if (Selected_wl_class < 0)
 		return NULL;

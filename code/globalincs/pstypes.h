@@ -549,7 +549,7 @@ typedef struct lod_checker {
 extern int game_busy_callback( void (*callback)(int count), int delta_step = -1 );
 
 // Call whenever loading to display cursor
-extern void game_busy(char *filename = NULL);
+extern void game_busy(const char *filename = NULL);
 
 //=========================================================
 // Functions to profile frame performance
@@ -620,7 +620,7 @@ void monitor_update();
 
 #define NOX(s) s
 
-char *XSTR(char *str, int index);
+const char *XSTR(const char *str, int index);
 
 // Caps V between MN and MX.
 template <class T> void CAP( T& v, T mn, T mx )

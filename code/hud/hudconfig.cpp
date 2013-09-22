@@ -99,7 +99,7 @@ float Radar_ranges[RR_MAX_RANGES] = {
 	10000000.0f,	// infinity
 };
 
-char *Radar_range_text(int n)
+const char *Radar_range_text(int n)
 {
 	#if RR_MAX_RANGES != 3
 	#error Number of ranges is wrong!
@@ -359,7 +359,7 @@ int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	}
 };
 
-char *HC_gauge_descriptions(int n)
+const char *HC_gauge_descriptions(int n)
 {
 	switch(n)	{
 	case 0:

@@ -64,7 +64,7 @@ int Lcl_english = 1;
 // struct to allow for strings.tbl-determined x offset
 // offset is 0 for english, by default
 typedef struct {
-	char *str;
+	const char *str;
 	int  offset_x;				// string offset in 640
 	int  offset_x_hi;			// string offset in 1024
 } lcl_xstr;
@@ -82,17 +82,17 @@ char *Lcl_ext_filename = NULL;
 CFILE *Lcl_ext_file = NULL;
 
 // for scanning/parsing tstrings.tbl (from ExStr)
-#define PARSE_TEXT_STRING_LEN			PARSE_BUF_SIZE
-#define PARSE_ID_STRING_LEN			128
+#define PARSE_TEXT_BUF_SIZE			PARSE_BUF_SIZE
+#define PARSE_ID_BUF_SIZE			5
 #define TS_SCANNING						0				// scanning for a line of text
 #define TS_ID_STRING						1				// reading in an id string
 #define TS_OPEN_QUOTE					2				// looking for an open quote
 #define TS_STRING							3				// reading in the text string itself
 int Ts_current_state = 0;
-char Ts_text[PARSE_TEXT_STRING_LEN];				// string we're currently working with
-char Ts_id_text[PARSE_ID_STRING_LEN];				// id string we're currently working with
-int Ts_text_size;
-int Ts_id_text_size;
+char Ts_text[PARSE_TEXT_BUF_SIZE];				// string we're currently working with
+char Ts_id_text[PARSE_ID_BUF_SIZE];				// id string we're currently working with
+size_t Ts_text_size;
+size_t Ts_id_text_size;
 
 // file pointers for optimized string lookups
 // some example times for FreeSpace2 startup with granularities (mostly .tbl files, ~500 strings in the table file, many looked up more than once)
@@ -112,15 +112,15 @@ int Lcl_pointer_count = 0;
 //
 
 // associate table file externalization with the specified input file
-void lcl_ext_associate(char *filename);
+void lcl_ext_associate(const char *filename);
 
 // given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success
-int lcl_ext_get_text(char *xstr, char *out);
-int lcl_ext_get_text(SCP_string &xstr, SCP_string &out);
+int lcl_ext_get_text(const char *xstr, char *out);
+int lcl_ext_get_text(const SCP_string &xstr, SCP_string &out);
 
 // given a valid XSTR() tag piece of text, extract the id# portion, return the value in out, nonzero on success
-int lcl_ext_get_id(char *xstr, int *out);
-int lcl_ext_get_id(SCP_string &xstr, int *out);
+int lcl_ext_get_id(const char *xstr, int *out);
+int lcl_ext_get_id(const SCP_string &xstr, int *out);
 
 // given a valid XSTR() id#, lookup the string in tstrings.tbl, filling in out if found, nonzero on success
 int lcl_ext_lookup(char *out, int id);
@@ -134,7 +134,7 @@ int lcl_is_valid_numeric_char(char c);
 // for cases 1 and 2 : the high bit (1<<31) will be set if the parser detected the beginning of a new string id on this line
 // so be sure to mask this value out to get the low portion of the return value
 //
-int lcl_ext_lookup_sub(char *text, char *out, int id);
+int lcl_ext_lookup_sub(const char *text, char *out, int id);
 
 // initialize the pointer array into tstrings.tbl (call from lcl_ext_open() ONLY)
 void lcl_ext_setup_pointers();
@@ -153,7 +153,7 @@ void lcl_init(int lang_init)
 	atexit(lcl_xstr_close);
 
 	char lang_string[128];
-	char *ret;
+	const char *ret;
 	int lang, idx, i;
 	int rval;
 
@@ -382,7 +382,7 @@ void parse_stringstbl(const char *filename)
 		// write into Xstr_table
 		if (index >= 0 && index < XSTR_SIZE) {
 			if ( Parsing_modular_table && (Xstr_table[index].str != NULL) ) {
-				vm_free(Xstr_table[index].str);
+				vm_free((void *) Xstr_table[index].str);
 				Xstr_table[index].str = NULL;
 			}
 
@@ -438,7 +438,7 @@ void lcl_xstr_close()
 {
 	for (int i=0; i<XSTR_SIZE; i++){
 		if (Xstr_table[i].str != NULL) {
-			vm_free(Xstr_table[i].str);
+			vm_free((void *) Xstr_table[i].str);
 			Xstr_table[i].str = NULL;
 		}
 	}
@@ -500,25 +500,26 @@ void lcl_add_dir(char *current_path)
 }
 
 // maybe add localized directory to full path with file name when opening a localized file
-int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max)
+int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 {
-	// if the disk extension is 0 length, don't add enything
+	// if the disk extension is 0 length, don't add anything
 	if (strlen(Lcl_languages[Lcl_current_lang].lang_ext) <= 0) {
 		return 1;
 	}
 
-	int str_size = path_max + 1;
+	size_t str_size = path_max + 1;
 
 	char *temp = new char[str_size];
+	memset(temp, 0, str_size * sizeof(char));
 
 	// find position of last slash and copy rest of filename (not counting slash) to temp
 	// mark end of current path with '\0', so strcat will work
 	char *last_slash = strrchr(current_path, DIR_SEPARATOR_CHAR);
 	if (last_slash == NULL) {
-		strncpy(temp, current_path, str_size);
+		strncpy(temp, current_path, path_max);
 		current_path[0] = '\0';
 	} else {
-		strncpy(temp, last_slash+1, str_size);
+		strncpy(temp, last_slash+1, path_max);
 		last_slash[1] = '\0';
 	}
 
@@ -572,7 +573,7 @@ void lcl_ext_close()
 	Lcl_ext_file = NULL;
 }
 
-void lcl_replace_stuff(char *text, unsigned int max_len)
+void lcl_replace_stuff(char *text, size_t max_len)
 {
 	if (Fred_running)
 		return;
@@ -584,7 +585,7 @@ void lcl_replace_stuff(char *text, unsigned int max_len)
 	lcl_replace_stuff(temp_text);
 
 	// fill up the original string
-	int len = temp_text.copy(text, max_len);
+	size_t len = temp_text.copy(text, max_len);
 	text[len] = 0;
 }
 
@@ -609,7 +610,7 @@ void lcl_replace_stuff(SCP_string &text)
 	replace_all(text, "$backslash", "\\");
 }
 
-void lcl_fred_replace_stuff(char *text, unsigned int max_len)
+void lcl_fred_replace_stuff(char *text, size_t max_len)
 {
 	if (!Fred_running)
 		return;
@@ -621,7 +622,7 @@ void lcl_fred_replace_stuff(char *text, unsigned int max_len)
 	lcl_fred_replace_stuff(temp_text);
 
 	// fill up the original string
-	int len = temp_text.copy(text, max_len);
+	size_t len = temp_text.copy(text, max_len);
 	text[len] = 0;
 }
 
@@ -643,12 +644,12 @@ void lcl_fred_replace_stuff(SCP_string &text)
 // XSTR("whee", 20)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
-void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
+void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 {
 	char text_str[PARSE_BUF_SIZE]="";
 	char lookup_str[PARSE_BUF_SIZE]="";
 	int str_id;
-	int str_len;	
+	size_t str_len;
 
 	Assert(in);
 	Assert(out);
@@ -687,7 +688,7 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 		return;
 	}
 
-	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections		
+	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections
 	if (!lcl_ext_get_text(in, text_str)) {
 		if (str_len > max_len)
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
@@ -713,7 +714,7 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 	
 	// if the localization file is not open, or we're running in the default language, return the original string
 	if ( (Lcl_ext_file == NULL) || (str_id < 0) || (Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE) ) {
-		if ( strlen(text_str) > (uint)max_len )
+		if ( strlen(text_str) > max_len )
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", text_str, strlen(text_str), max_len);
 
 		strncpy(out, text_str, max_len);
@@ -722,23 +723,23 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 			*id = str_id;
 
 		return;
-	}		
+	}
 
 	// attempt to find the string
 	if (lcl_ext_lookup(lookup_str, str_id)) {
 		// copy to the outgoing string
-		if ( strlen(lookup_str) > (uint)max_len )
+		if ( strlen(lookup_str) > max_len )
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", lookup_str, strlen(lookup_str), max_len);
 
 		strncpy(out, lookup_str, max_len);
 	}
 	// otherwise use what we have - probably should Int3() or assert here
 	else {
-		if ( strlen(text_str) > (uint)max_len )
+		if ( strlen(text_str) > max_len )
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", text_str, strlen(text_str), max_len);
 
 		strncpy(out, text_str, max_len);
-	}	
+	}
 
 	// set the id #
 	if (id != NULL) {
@@ -747,7 +748,7 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 }
 
 // ditto for SCP_string
-void lcl_ext_localize_sub(SCP_string &in, SCP_string &out, int *id)
+void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 {
 	SCP_string text_str = "";
 	char lookup_str[PARSE_BUF_SIZE]="";
@@ -805,7 +806,7 @@ void lcl_ext_localize_sub(SCP_string &in, SCP_string &out, int *id)
 			*id = str_id;
 
 		return;
-	}		
+	}
 
 	// attempt to find the string
 	if (lcl_ext_lookup(lookup_str, str_id)) {
@@ -815,7 +816,7 @@ void lcl_ext_localize_sub(SCP_string &in, SCP_string &out, int *id)
 	// otherwise use what we have - probably should Int3() or assert here
 	else {
 		out = text_str;
-	}	
+	}
 
 	// set the id #
 	if (id != NULL){
@@ -826,7 +827,7 @@ void lcl_ext_localize_sub(SCP_string &in, SCP_string &out, int *id)
 // Goober5000 - wrapper for lcl_ext_localize_sub; used because lcl_replace_stuff has to
 // be called *after* the translation is done, and the original function returned in so
 // many places that it would be messy to call lcl_replace_stuff everywhere
-void lcl_ext_localize(char *in, char *out, int max_len, int *id)
+void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id)
 {
 	// do XSTR translation
 	lcl_ext_localize_sub(in, out, max_len, id);
@@ -836,7 +837,7 @@ void lcl_ext_localize(char *in, char *out, int max_len, int *id)
 }
 
 // ditto for SCP_string
-void lcl_ext_localize(SCP_string &in, SCP_string &out, int *id)
+void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id)
 {
 	// do XSTR translation
 	lcl_ext_localize_sub(in, out, id);
@@ -846,7 +847,7 @@ void lcl_ext_localize(SCP_string &in, SCP_string &out, int *id)
 }
 
 // translate the specified string based upon the current language
-char *XSTR(char *str, int index)
+const char *XSTR(const char *str, int index)
 {
 	if(!Xstr_inited)
 	{
@@ -882,7 +883,7 @@ int lcl_get_xstr_offset(int index, int res)
 //
 
 // associate table file externalization with the specified input file
-void lcl_ext_associate(char *filename)
+void lcl_ext_associate(const char *filename)
 {
 	// if the filename already exists, free it up
 	if(Lcl_ext_filename != NULL){
@@ -894,11 +895,11 @@ void lcl_ext_associate(char *filename)
 }
 
 // given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success
-int lcl_ext_get_text(char *xstr, char *out)
+int lcl_ext_get_text(const char *xstr, char *out)
 {
 	int str_start, str_end;
 	int str_len;
-	char *p, *p2;
+	const char *p, *p2;
 
 	Assert(xstr != NULL);
 	Assert(out != NULL);
@@ -929,6 +930,12 @@ int lcl_ext_get_text(char *xstr, char *out)
 		str_end = p2 - xstr;
 	}
 
+	// check bounds
+	if (str_end - str_start > PARSE_BUF_SIZE - 1) {
+		error_display(0, "String cannot fit within XSTR buffer!\n\n%s\n", xstr);
+		return 0;
+	}
+
 	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
 	memcpy(out, xstr + str_start, str_end - str_start);	
 
@@ -940,7 +947,7 @@ int lcl_ext_get_text(char *xstr, char *out)
 }
 
 // given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success
-int lcl_ext_get_text(SCP_string &xstr, SCP_string &out)
+int lcl_ext_get_text(const SCP_string &xstr, SCP_string &out)
 {
 	size_t open_quote_pos, close_quote_pos;
 
@@ -970,9 +977,9 @@ int lcl_ext_get_text(SCP_string &xstr, SCP_string &out)
 }
 
 // given a valid XSTR() tag piece of text, extract the id# portion, return the value in out, nonzero on success
-int lcl_ext_get_id(char *xstr, int *out)
+int lcl_ext_get_id(const char *xstr, int *out)
 {
-	char *p, *pnext;
+	const char *p, *pnext;
 	int str_len;
 
 	Assert(xstr != NULL);
@@ -981,7 +988,7 @@ int lcl_ext_get_id(char *xstr, int *out)
 	str_len = strlen(xstr);
 
 	// find the first quote
-	p = strstr(xstr, "\"");
+	p = strchr(xstr, '"');
 	if(p == NULL){
 		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
 		return 0;
@@ -994,8 +1001,8 @@ int lcl_ext_get_id(char *xstr, int *out)
 	p++;
 
 	// continue searching until we find the close quote
-	while(1){
-		pnext = strstr(p, "\"");
+	while(true){
+		pnext = strchr(p, '"');
 		if(pnext == NULL){
 			error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
 			return 0;
@@ -1012,7 +1019,7 @@ int lcl_ext_get_id(char *xstr, int *out)
 	}
 
 	// search until we find a ,	
-	pnext = strstr(p, ",");
+	pnext = strchr(p, ',');
 	if(pnext == NULL){
 		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
 		return 0;
@@ -1022,15 +1029,23 @@ int lcl_ext_get_id(char *xstr, int *out)
 		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
 		return 0;
 	}
-	pnext++;
 	
 	// now get the id string
-	p = pnext;
-	pnext = strtok(p, ")");
+	p = pnext+1;
+	while (is_gray_space(*p))
+		p++;
+	pnext = strchr(p+1, ')');
 	if(pnext == NULL){
 		error_display(0, "Error parsing id# in XSTR() tag %s\n", xstr);
 		return 0;
 	}
+	if(pnext - p >= PARSE_ID_BUF_SIZE){
+		error_display(0, "XSTR() id# is too long in %s\n", xstr);
+		return 0;
+	}
+	char buf[PARSE_ID_BUF_SIZE];
+	strncpy(buf, p, pnext - p);
+	buf[pnext - p] = 0;
 
 	// get the value and we're done
 	*out = atoi(pnext);
@@ -1040,7 +1055,7 @@ int lcl_ext_get_id(char *xstr, int *out)
 }
 
 // given a valid XSTR() tag piece of text, extract the id# portion, return the value in out, nonzero on success
-int lcl_ext_get_id(SCP_string &xstr, int *out)
+int lcl_ext_get_id(const SCP_string &xstr, int *out)
 {
 	char id_buf[10];
 	size_t p, pnext;
@@ -1134,8 +1149,8 @@ int lcl_ext_lookup(char *out, int id)
 	Ts_current_state = TS_SCANNING;
 	Ts_id_text_size = 0;
 //	Ts_text_size;
-	memset(Ts_text, 0, PARSE_TEXT_STRING_LEN);
-	memset(Ts_id_text, 0, PARSE_ID_STRING_LEN);
+	memset(Ts_text, 0, PARSE_TEXT_BUF_SIZE);
+	memset(Ts_id_text, 0, PARSE_ID_BUF_SIZE);
 	while((cftell(Lcl_ext_file) < Lcl_pointers[Lcl_pointer_count - 1]) && cfgets(text, 1024, Lcl_ext_file)){
 		ret = lcl_ext_lookup_sub(text, out, id);
 			
@@ -1176,9 +1191,9 @@ int lcl_ext_lookup(char *out, int id)
 // 0 on fail, 1 on success, 2 if found a matching id/string pair, 3 if end of language has been found
 // for cases 1 and 2 : the high bit (1<<31) will be set if the parser detected the beginning of a new string id on this line
 //
-int lcl_ext_lookup_sub(char *text, char *out, int id)
+int lcl_ext_lookup_sub(const char *text, char *out, int id)
 {
-	char *p;					// current ptr
+	const char *p;					// current ptr
 	int len = strlen(text);
 	int count;	
 	char text_copy[1024];	
@@ -1186,7 +1201,7 @@ int lcl_ext_lookup_sub(char *text, char *out, int id)
 	int found_new_string_id = 0;
 
 	p = text;
-	count = 0;			
+	count = 0;
 	while(count < len){
 		// do something useful
 		switch(Ts_current_state){		
@@ -1205,7 +1220,7 @@ int lcl_ext_lookup_sub(char *text, char *out, int id)
 			// otherwise we should have an ID #, so stuff it and move to the proper state
 			else {
 				if(lcl_is_valid_numeric_char(*p)){
-					memset(Ts_id_text, 0, PARSE_ID_STRING_LEN);
+					memset(Ts_id_text, 0, PARSE_ID_BUF_SIZE);
 					Ts_id_text_size = 0;
 					Ts_id_text[Ts_id_text_size++] = *p;
 					Ts_current_state = TS_ID_STRING;
@@ -1223,7 +1238,11 @@ int lcl_ext_lookup_sub(char *text, char *out, int id)
 		// scanning in an id string
 		case TS_ID_STRING:
 			// if we have another valid char
-			if(lcl_is_valid_numeric_char(*p)){
+			if(lcl_is_valid_numeric_char(*p)) {
+				if (Ts_id_text_size >= PARSE_ID_BUF_SIZE - 1) {
+					error_display(0, "XSTR id %s too long!\n", Ts_id_text);
+					return 0;
+				}
 				Ts_id_text[Ts_id_text_size++] = *p;
 			}
 			// if we found a comma, our id# is finished, look for the open quote
@@ -1239,7 +1258,7 @@ int lcl_ext_lookup_sub(char *text, char *out, int id)
 			// valid space or an open quote
 			if((*p == ' ') || (*p == '\"')){
 				if(*p == '\"'){
-					memset(Ts_text, 0, PARSE_TEXT_STRING_LEN);
+					memset(Ts_text, 0, PARSE_TEXT_BUF_SIZE);
 					Ts_text_size = 0;
 					Ts_current_state = TS_STRING;
 				}
@@ -1257,6 +1276,11 @@ int lcl_ext_lookup_sub(char *text, char *out, int id)
 
 				// if the id#'s match, copy the string and return "string found"
 				if((atoi(Ts_id_text) == id) && (out != NULL)){
+					// this is redundant to the PARSE_TEXT_BUF_SIZE, but let's be future proof
+					if (strlen(Ts_text) > PARSE_BUF_SIZE - 1) {
+						error_display(0, "XSTR text result exceeds output buffer size!\n\n%s\n", Ts_text);
+						return 0;
+					}
 					strcpy(out, Ts_text);
 
 					return found_new_string_id ? (1<<1) | (1<<31) : (1<<1);					
@@ -1267,8 +1291,12 @@ int lcl_ext_lookup_sub(char *text, char *out, int id)
 			} 
 			// otherwise add to the string
 			else {
+				if (Ts_text_size >= PARSE_TEXT_BUF_SIZE - 1) {
+					error_display(0, "XSTR text too long!\n\n%s\n", Ts_text);
+					return 0;
+				}
 				Ts_text[Ts_text_size++] = *p;
-			}										
+			}
 			break;
 		}		
 
@@ -1306,7 +1334,7 @@ void lcl_ext_setup_pointers()
 	// open the localization file
 	lcl_ext_open();
 	if(Lcl_ext_file == NULL){
-		error_display(0, "Error opening externalization file! File likely does not exist or could not be found");
+		error_display(0, "Error opening externalization file! File likely does not exist or could not be found\n");
 		return;
 	}
 
@@ -1369,7 +1397,7 @@ void lcl_ext_setup_pointers()
 
 				// if we're out of pointer slots
 				if(Lcl_pointer_count >= LCL_MAX_POINTERS){
-					error_display(0, "Out of pointer for tstrings.tbl lookup. Please increment LCL_MAX_POINTERS in localize.cpp");
+					error_display(0, "Out of pointers for tstrings.tbl lookup. Please increment LCL_MAX_POINTERS in localize.cpp\n");
 					lcl_ext_close();
 					return;
 				}

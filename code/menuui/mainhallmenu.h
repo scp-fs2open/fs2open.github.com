@@ -100,7 +100,7 @@ typedef struct main_hall_defines {
 	// region descriptions ----------------
 
 	// text (tooltip) description
-	SCP_vector<char*> region_descript;
+	SCP_vector<const char*> region_descript;
 
 	// y coord of where to draw tooltip text
 	int region_yval;

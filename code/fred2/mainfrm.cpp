@@ -571,7 +571,7 @@ void url_launch(char *url)
 
 	r = (int) ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOW);
 	if (r < 32) {
-		char *txt = NULL;
+		const char *txt = NULL;
 
 		switch (r) {
 			case 0:	txt = XSTR("The operating system is out of memory or resources.", 1107); break;

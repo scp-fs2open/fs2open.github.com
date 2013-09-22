@@ -95,7 +95,7 @@ int popup(int flags, int nchoices, ... );
 int popup_till_condition( int(*condition)() , ...);
 
 // popup to return the value from an input box
-char *popup_input(int flags, char *caption, int max_output_len = -1);
+char *popup_input(int flags, const char *caption, int max_output_len = -1);
 
 int popup_active();
 
@@ -105,6 +105,6 @@ int popup_running_state();
 void popup_kill_any_active();
 
 // change the text inside of the popup 
-void popup_change_text(char *new_text);
+void popup_change_text(const char *new_text);
 
 #endif

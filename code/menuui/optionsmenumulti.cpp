@@ -79,7 +79,7 @@ void options_multi_load_bmaps();
 void options_multi_unload_bmaps();
 
 // add a notification message
-void options_multi_add_notify(char *str);
+void options_multi_add_notify(const char *str);
 
 // process and blit any notification messages
 void options_multi_notify_process();
@@ -620,7 +620,7 @@ void options_multi_unload_bmaps()
 }
 
 // add a notification message
-void options_multi_add_notify(char *str)
+void options_multi_add_notify(const char *str)
 {
 	// copy the string
 	memset(Om_notify_string,0,255);

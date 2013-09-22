@@ -200,7 +200,7 @@ void hud_init_comm_orders()
 {
 	int i;
 
-	char *temp_comm_order_types[] =
+	const char *temp_comm_order_types[] =
 	{
 		XSTR("Ships", 293),
 		XSTR("Wings", 294),

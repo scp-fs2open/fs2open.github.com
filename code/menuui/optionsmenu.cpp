@@ -252,7 +252,7 @@ void options_force_button_frame(int n, int frame_num);
 
 extern float FreeSpace_gamma;
 
-void options_add_notify(char *str);
+void options_add_notify(const char *str);
 void options_notify_do_frame();
 
 int Options_gamma_coords[GR_NUM_RESOLUTIONS][4] = {
@@ -475,7 +475,7 @@ void options_play_voice_clip()
 	Voice_vol_handle = snd_play_raw( snd_id, 0.0f, 1.0f, SND_PRIORITY_SINGLE_INSTANCE );
 }
 
-void options_add_notify(char *str)
+void options_add_notify(const char *str)
 {
 	strcpy_s(Options_notify_string, str);
 	Options_notify_stamp = timestamp(OPTIONS_NOTIFY_TIME);

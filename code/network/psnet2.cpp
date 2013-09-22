@@ -499,7 +499,7 @@ void psnet_init( int protocol, int port_num )
 	int idx;
 	Tcp_active = 0;
 #ifdef _WIN32
-	char *internet_connection;
+	const char *internet_connection;
 	WSADATA wsa_data; 		
 	Ipx_active = 0;
 #endif
@@ -669,7 +669,7 @@ int psnet_use_protocol( int protocol )
 	SOCKADDR_IPX	ipx_addr;
 #endif
 	SOCKADDR_IN		ip_addr;
-	char *custom_ip = NULL;
+	const char *custom_ip = NULL;
 
 	// zero out my address
 	Psnet_my_addr_valid = 0;

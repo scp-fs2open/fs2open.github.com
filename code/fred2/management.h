@@ -114,7 +114,7 @@ int	get_ship_from_obj(int obj);
 int	get_ship_from_obj(object *objp);
 void	set_valid_dock_points(int ship, int type, CComboBox *box);
 void	ai_update_goal_references(int type, const char *old_name, const char *new_name);
-int	query_referenced_in_ai_goals(int type, char *name);
+int	query_referenced_in_ai_goals(int type, const char *name);
 int	advanced_stricmp(char *one, char *two);
 int	reference_handler(char *name, int type, int obj);
 int	orders_reference_handler(int code, char *msg);

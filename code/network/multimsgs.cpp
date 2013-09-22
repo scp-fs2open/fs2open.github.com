@@ -612,7 +612,7 @@ struct fs2_game_chat_packet
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // send a general game chat packet (if msg_mode == MULTI_MSG_TARGET, need to pass in "to", if == MULTI_MSG_EXPR, need to pass in expr)
-void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player *to, char *expr, int server_msg)
+void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to, const char *expr, int server_msg)
 {
 	ubyte data[MAX_PACKET_SIZE],mode;
 	int packet_size,idx;
