@@ -197,9 +197,9 @@ void pilotfile::csg_write_info()
 	}
 
 	// medals list
-	cfwrite_int((int)Medals.size(), cfp);
+	cfwrite_int(Num_medals, cfp);
 
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
+	for (idx = 0; idx < Num_medals; idx++) {
 		cfwrite_string_len(Medals[idx].name, cfp);
 	}
 

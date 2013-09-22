@@ -83,7 +83,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 		j = -1;
 
 		for (idx = 0; idx < list_size; idx++) {
-			if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_medal_earned].name) ) {
+			if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_medal_earned].name) == 0 ) {
 				j = idx;
 				break;
 			}
@@ -93,6 +93,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 			p_stats->medals_earned[j].val++;
 		} else {
 			ilist.name = Medals[stats->m_medal_earned].name;
+			ilist.index = stats->m_medal_earned;
 			ilist.val = 1;
 
 			p_stats->medals_earned.push_back(ilist);
@@ -135,7 +136,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 		j = -1;
 
 		for (idx = 0; idx < list_size; idx++) {
-			if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_badge_earned].name) ) {
+			if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_badge_earned].name) == 0 ) {
 				j = idx;
 				break;
 			}
@@ -145,6 +146,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 			p_stats->medals_earned[j].val = 1;
 		} else {
 			ilist.name = Medals[stats->m_badge_earned].name;
+			ilist.index = stats->m_badge_earned;
 			ilist.val = 1;
 
 			p_stats->medals_earned.push_back(ilist);
@@ -159,7 +161,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 			j = -1;
 
 			for (i = 0; i < list_size; i++) {
-				if ( p_stats->ship_kills[i].name.compare(Ship_info[idx].name) ) {
+				if ( p_stats->ship_kills[i].name.compare(Ship_info[idx].name) == 0 ) {
 					j = i;
 					break;
 				}
@@ -169,10 +171,15 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 				p_stats->ship_kills[j].val += stats->m_okKills[idx];
 			} else {
 				ilist.name = Ship_info[idx].name;
+				ilist.index = idx;
 				ilist.val = stats->m_okKills[idx];
 
 				p_stats->ship_kills.push_back(ilist);
 			}
 		}
 	}
+}
+
+void pilotfile::stats_backout_accept(scoring_struct *stats, bool training)
+{
 }

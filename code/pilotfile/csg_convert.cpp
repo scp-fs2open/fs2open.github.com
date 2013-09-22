@@ -189,7 +189,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 
 	// get last ship flown index
 	for (idx = 0; idx < ship_count; idx++) {
-		if ( csg->ship_list[idx].name.compare(plr->last_ship_flown) ) {
+		if ( csg->ship_list[idx].name.compare(plr->last_ship_flown) == 0 ) {
 			csg->last_ship_flown_index = idx;
 			break;
 		}
@@ -202,7 +202,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 	}
 
 	// create list of medals (since it's missing from the old files)
-	list_size = (int)Medals.size();
+	list_size = Num_medals;
 
 	for (idx = 0; idx < list_size; idx++) {
 		ilist.name = Medals[idx].name;
