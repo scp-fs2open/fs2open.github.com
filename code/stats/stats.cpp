@@ -207,8 +207,7 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			 scoring_struct add;
 			
 			// if we are passed mission_add (the stats for the current mission), copy it to "add", otherwise,
-			// zero it out
-			init_scoring_element(&add);
+			// leave it blank
 			if (add_mission) {
 				add.kill_count_ok = Active_player->stats.m_kill_count_ok;
 				add.p_shots_fired  = Active_player->stats.mp_shots_fired;

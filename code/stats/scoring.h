@@ -122,11 +122,15 @@ typedef struct scoring_struct {
 
 	int m_dogfight_kills[MAX_PLAYERS];	// kills by player for multiplayer dogfight
 
+	scoring_struct() { init(); }
+	scoring_struct(const scoring_struct &s) { assign(s); }
+
+	void init();
+	void assign(const scoring_struct &s);
+
 } scoring_struct;
 
 extern rank_stuff Ranks[NUM_RANKS];
-
-void init_scoring_element(scoring_struct *s);
 
 void parse_rank_tbl();
 void scoring_level_init( scoring_struct *score );

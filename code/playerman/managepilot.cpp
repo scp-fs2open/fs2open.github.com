@@ -121,7 +121,7 @@ void init_new_pilot(player *p, int reset)
 		pilot_set_random_squad_pic(p);
 	}
 
-	init_scoring_element(&p->stats);	
+	p->stats.init();	
 	
 	p->stats.score = 0;
 	p->stats.rank = RANK_ENSIGN;	
@@ -430,7 +430,7 @@ void player::reset()
 	memset(&bi, 0, sizeof(button_info));
 	memset(&ci, 0, sizeof(control_info));
 
-	init_scoring_element(&stats);
+	stats.init();
 
 	friendly_hits = 0;
 	friendly_damage = 0.0f;

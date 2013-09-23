@@ -729,7 +729,7 @@ void pilotfile::plr_reset_data()
 	control_config_clear();
 
 	// init stats
-	init_scoring_element(&p->stats);
+	p->stats.init();
 
 	// reset scoring lists
 	all_time_stats.ship_kills.clear();

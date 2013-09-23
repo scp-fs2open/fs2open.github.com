@@ -1583,9 +1583,6 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 		new_plr.reset();
 		strncpy( new_plr.callsign, callsign, CALLSIGN_LEN );
 
-		// initialize the stats to default values
-		init_scoring_element( &new_plr.stats );
-
 		out_plr->reset();
 
 		Local_timeout = timer_get_seconds() + 30;

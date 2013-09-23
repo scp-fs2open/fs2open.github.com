@@ -1247,7 +1247,7 @@ void pilotfile::csg_reset_data()
 	m_data_invalid = false;
 
 	// init stats
-	init_scoring_element(&p->stats);
+	p->stats.init();
 
 	// zero out allowed ships/weapons
 	memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
@@ -1290,7 +1290,7 @@ void pilotfile::csg_reset_data()
 			mission->variables = NULL;
 		}
 
-		init_scoring_element(&mission->stats);
+		mission->stats.init();
 	}
 }
 
