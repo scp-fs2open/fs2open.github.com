@@ -23,15 +23,15 @@
 // REGISTRY DEFINES/VARS
 //
 
-char *Osreg_company_name = "Volition";
-char *Osreg_class_name = "FreeSpace2Class";
+const char *Osreg_company_name = "Volition";
+const char *Osreg_class_name = "FreeSpace2Class";
 
-char *Osreg_app_name = "FreeSpace2";
-char *Osreg_title = "FreeSpace 2";
+const char *Osreg_app_name = "FreeSpace2";
+const char *Osreg_title = "FreeSpace 2";
 #ifdef __APPLE__
-	char *Osreg_user_dir = "Library/FS2_Open";
+	const char *Osreg_user_dir = "Library/FS2_Open";
 #else
-	char *Osreg_user_dir = ".fs2_open";
+	const char *Osreg_user_dir = ".fs2_open";
 #endif // __APPLE__
 	#define PROFILE_NAME "fs2_open.ini"
 
@@ -257,7 +257,7 @@ static void profile_free(Profile *profile)
 	vm_free(profile);
 }
 
-static Profile *profile_update(Profile *profile, char *section, char *key, char *value)
+static Profile *profile_update(Profile *profile, const char *section, const char *key, const char *value)
 {
 	if (profile == NULL) {
 		profile = (Profile *)vm_malloc(sizeof(Profile));
@@ -331,7 +331,7 @@ static Profile *profile_update(Profile *profile, char *section, char *key, char 
 	return profile;
 }
 
-static char *profile_get_value(Profile *profile, char *section, char *key)
+static char *profile_get_value(Profile *profile, const char *section, const char *key)
 {
 	if (profile == NULL)
 		return NULL;
@@ -404,7 +404,7 @@ static char			szAppVersion[128];
 int Os_reg_inited = 0;
 
 // initialize the registry. setup default keys to use
-void os_init_registry_stuff(char *company, char *app, char *version)
+void os_init_registry_stuff(const char *company, const char *app, const char *version)
 {
 	if(company){
 		strcpy_s( szCompanyName, company );
@@ -429,7 +429,7 @@ void os_init_registry_stuff(char *company, char *app, char *version)
 
 static char tmp_string_data[1024];
 
-char *os_config_read_string(char *section, char *name, char *default_value)
+const char *os_config_read_string(const char *section, const char *name, const char *default_value)
 {
 	nprintf(( "Registry", "os_config_read_string(): section = \"%s\", name = \"%s\", default value: \"%s\"\n",
 			  (section) ? section : DEFAULT_SECTION, name, (default_value) ? default_value : NOX("NULL") ));
@@ -451,7 +451,7 @@ char *os_config_read_string(char *section, char *name, char *default_value)
 	return default_value;
 }
 
-unsigned int os_config_read_uint(char *section, char *name, unsigned int default_value)
+unsigned int os_config_read_uint(const char *section, const char *name, unsigned int default_value)
 {
 	Profile *p = profile_read(PROFILE_NAME);
 	
@@ -469,7 +469,7 @@ unsigned int os_config_read_uint(char *section, char *name, unsigned int default
 	return default_value;
 }
 
-void os_config_write_string(char *section, char *name, char *value)
+void os_config_write_string(const char *section, const char *name, const char *value)
 {
 	Profile *p = profile_read(PROFILE_NAME);
 	
@@ -481,7 +481,7 @@ void os_config_write_string(char *section, char *name, char *value)
 	profile_free(p);	
 }
 
-void os_config_write_uint(char *section, char *name, unsigned int value)
+void os_config_write_uint(const char *section, const char *name, unsigned int value)
 {
 	static char buf[21];
 	
