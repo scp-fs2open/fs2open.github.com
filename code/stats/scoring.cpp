@@ -233,7 +233,29 @@ void scoring_eval_harbison( ship *shipp )
 // initialize the Player's mission-based stats before he goes into a mission
 void scoring_level_init( scoring_struct *scp )
 {
-	scp->init();
+	scp->m_medal_earned = -1;		// hasn't earned a medal yet
+	scp->m_promotion_earned = -1;
+	scp->m_badge_earned = -1;
+	scp->m_score = 0;
+	scp->m_assists = 0;
+	scp->mp_shots_fired = 0;
+	scp->mp_shots_hit = 0;
+	scp->ms_shots_fired = 0;
+	scp->ms_shots_hit = 0;
+
+	scp->mp_bonehead_hits=0;
+	scp->ms_bonehead_hits=0;
+	scp->m_bonehead_kills=0;
+
+	memset(scp->m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	memset(scp->m_okKills, 0, MAX_SHIP_CLASSES * sizeof(int));
+
+	scp->m_kill_count = 0;
+	scp->m_kill_count_ok = 0;
+	
+	scp->m_player_deaths = 0;
+
+	memset(scp->m_dogfight_kills, 0, MAX_PLAYERS * sizeof(int));
 
 	if (The_mission.ai_profile != NULL) {
 		Kill_percentage = The_mission.ai_profile->kill_percentage_scale[Game_skill_level];
