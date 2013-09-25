@@ -158,7 +158,6 @@ void labviewer_setup_subsys_rotation()
 	for (uint idx = 0; idx < n_subsystems; idx++) {
 		Lab_ship_model_subsys.push_back( Ship_info[Lab_selected_index].subsystems[idx] );
 	}
-//	memcpy( &Lab_ship_model_subsys[0], Ship_info[Lab_selected_index].subsystems, n_subsystems * sizeof(model_subsystem) );
 }
 
 void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
