@@ -534,7 +534,7 @@ void engine_wash_info_init(engine_wash_info *ewi)
 void parse_engine_wash(bool replace)
 {
 	engine_wash_info ewt;
-	engine_wash_info_init(&ewi);
+	engine_wash_info_init(&ewt);
 
 	engine_wash_info *ewp;
 	bool create_if_not_found  = true;
