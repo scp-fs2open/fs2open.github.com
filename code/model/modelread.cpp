@@ -2645,22 +2645,21 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			if (sm1name.length() == sm2name.length()) {
 				// Now, check that only the last char differs and that sm2's last char is both greater than sm1's and at least "b"
 				if (sm1name.find(sm2name.data(), 0, sm1name.length() - 1) != std::string::npos && sm1last < sm2last && sm2last >= (int)'b') {
+					sm1->details[sm1->num_details] = j;
+					sm1->num_details++;
+
 					mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2last - sm1last, sm1->name));
 				}
 			} else if (sm1name.length() == sm2name.length() - 1) {
 				// This allows LOD0 submodels without the trailing "a" to work correctly
 				if (sm1name.find(sm2name.data(), 0, sm1name.length()) != std::string::npos && sm2last >= (int)'b') {
+					sm1->details[sm1->num_details] = j;
+					sm1->num_details++;
+
 					mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2last - (int)'a', sm1->name));
 				}
 			}
 		}
-
-		for (j=0; j<sm1->num_details; j++ )	{
-			if ( sm1->details[j] == -1 )	{
-				sm1->num_details = 0;
-			}
-		}
-
 	}
 
 

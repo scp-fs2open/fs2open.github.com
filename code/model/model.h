@@ -343,7 +343,7 @@ typedef struct bsp_info {
 	int		next_sibling;			// This submodel's next sibling, -1 if none
 
 	int		num_details;			// How many submodels are lower detail "mirrors" of this submodel
-	int		details[MAX_MODEL_DETAIL_LEVELS];		// A list of all the lower detail "mirrors" of this submodel
+	int		details[MAX_MODEL_DETAIL_LEVELS];	// An unordered list of all the lower detail "mirrors" of this submodel
 
 	// Electrical Arc Effect Info
 	// Sets a spark for this submodel between vertex v1 and v2	
