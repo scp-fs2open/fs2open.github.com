@@ -21,7 +21,7 @@
 
 struct p_object;
 struct CFILE;
-struct player;
+class player;
 
 // ----------------------------------------------------------------------------------------
 // Basic defines

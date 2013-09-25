@@ -141,7 +141,7 @@ class triggered_rotation
 struct model_subsystem;
 struct ship_subsys;
 struct ship;
-struct ship_info;
+class ship_info;
 
 void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss);
 void model_anim_set_initial_states(ship *shipp);

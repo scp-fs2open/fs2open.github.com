@@ -1038,9 +1038,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->alpha_min = 0.0f;
 	wip->alpha_cycle = 0.0f;
 
-	// this can get reset after the constructor, so be sure it's correct
-	wip->shockwave.damage_type_idx = -1;
-	wip->shockwave.damage_type_idx_sav = -1;
+	shockwave_create_info_init(&wip->shockwave);
+	shockwave_create_info_init(&wip->dinky_shockwave);
 
 	wip->weapon_hitpoints = 0;
 
@@ -6184,8 +6183,8 @@ void weapons_page_in()
 
 
 		//Load shockwaves
-		wip->shockwave.load();
-		wip->dinky_shockwave.load();
+		shockwave_create_info_load(&wip->shockwave);
+		shockwave_create_info_load(&wip->dinky_shockwave);
 
 		//Explosions
 		Weapon_explosions.PageIn(wip->impact_weapon_expl_index);
@@ -6281,8 +6280,8 @@ void weapons_page_in_cheats()
 		
 		
 		//Load shockwaves
-		wip->shockwave.load();
-		wip->dinky_shockwave.load();
+		shockwave_create_info_load(&wip->shockwave);
+		shockwave_create_info_load(&wip->dinky_shockwave);
 
 		used_weapons[i]++;
 	}

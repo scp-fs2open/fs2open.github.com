@@ -16,7 +16,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 
-struct player;
+class player;
 struct ship;
 struct object;
 
@@ -73,7 +73,9 @@ typedef struct rank_stuff {
 #define STATS_FLAG_CAMPAIGN		(1<<1)
 #define STATS_FLAG_MULTIPLAYER	(1<<2)
 
-typedef struct scoring_struct {
+class scoring_struct
+{
+public:
 	int flags;
 
 	// All-time total
@@ -128,7 +130,7 @@ typedef struct scoring_struct {
 	void init();
 	void assign(const scoring_struct &s);
 
-} scoring_struct;
+};
 
 extern rank_stuff Ranks[NUM_RANKS];
 

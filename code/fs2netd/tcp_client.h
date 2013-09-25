@@ -22,7 +22,7 @@
 
 #include <string>
 
-struct player;
+class player;
 struct netgame_info;
 
 

@@ -14,7 +14,7 @@
 
 #include "hud/hud.h"
 
-struct player;
+class player;
 struct ship;
 struct ai_info;
 

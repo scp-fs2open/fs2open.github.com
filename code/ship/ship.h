@@ -1151,7 +1151,10 @@ typedef struct path_metadata {
 } path_metadata;
 
 // The real FreeSpace ship_info struct.
-typedef struct ship_info {
+// NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
+class ship_info
+{
+public:
 	char		name[NAME_LENGTH];				// name for the ship
 	char		alt_name[NAME_LENGTH];			// display another name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
@@ -1423,7 +1426,7 @@ typedef struct ship_info {
 	SCP_vector<cockpit_display_info> displays;
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
-} ship_info;
+};
 
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];

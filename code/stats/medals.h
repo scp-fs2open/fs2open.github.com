@@ -15,8 +15,8 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-struct scoring_struct;
-struct player;
+class scoring_struct;
+class player;
 
 #define MAX_BADGES				3
 extern int Rank_medal_index;

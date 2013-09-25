@@ -100,7 +100,9 @@ typedef struct tsb_t {
  * This should be basicly just like it is in the VB
  * a list of triangles and their associated normals
  */
-struct poly_list {
+class poly_list
+{
+public:
 	poly_list(): n_verts(0), vert(NULL), norm(NULL), tsb(NULL), currently_allocated(0) {}
 	~poly_list();
 	poly_list& operator = (poly_list&);

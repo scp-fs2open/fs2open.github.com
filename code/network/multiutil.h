@@ -17,7 +17,7 @@
 // prototypes instead of headers :)
 struct net_player;
 struct net_addr;
-struct player;
+class player;
 struct button_info;
 struct join_request;
 struct physics_info;
@@ -25,7 +25,7 @@ struct object;
 struct active_game;
 struct ship;
 struct server_item;
-struct ship_info;
+class ship_info;
 struct p_object;
 
 // two types of signatures that we can request,  permanent signatures are all below 1000.  non-permanent are above 1000

@@ -81,7 +81,9 @@ typedef struct campaign_stats {
 	scoring_struct stats;
 } campaign_stats;
 
-typedef struct player {
+class player
+{
+public:
 	void reset();
 
 	char				callsign[CALLSIGN_LEN + 1];
@@ -207,7 +209,7 @@ typedef struct player {
 	button_info		lua_bi_full;		// gets all the button controls, not just the ones usually allowed
 
 	int		player_was_multi;		// 1 if the player file was last used in Multiplayer
-} player;
+};
 
 extern player Players[MAX_PLAYERS];
 

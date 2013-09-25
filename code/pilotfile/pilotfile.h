@@ -7,7 +7,7 @@
 #include "stats/scoring.h"
 
 
-struct player;
+class player;
 
 
 // current pilot constants

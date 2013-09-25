@@ -10291,7 +10291,6 @@ void sexp_explosion_effect(int n)
 	vec3d origin;
 	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, fireball_type, sound_index;
 	int emp_intensity, emp_duration;
-	shockwave_create_info sci;
 
 	Assert( n >= 0 );
 
@@ -10379,6 +10378,9 @@ void sexp_explosion_effect(int n)
 	{
 		if ( shockwave_speed > 0 )
 		{
+			shockwave_create_info sci;
+			shockwave_create_info_init(&sci);
+
 			sci.inner_rad = (float)inner_radius;
 			sci.outer_rad = (float)outer_radius;
 			sci.blast = (float)max_blast;

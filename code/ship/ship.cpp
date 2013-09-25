@@ -737,6 +737,7 @@ void init_ship_entry(ship_info *sip)
 	sip->death_fx_count = 6;
 	sip->vaporize_chance = 0;
 	sip->shockwave_count = 1;
+	shockwave_create_info_init(&sip->shockwave);
 	sip->explosion_bitmap_anims.clear();
 
 	sip->collision_damage_type_idx = -1;
@@ -6933,7 +6934,6 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	ship *shipp;
 	ship_info *sip;
 	float	inner_rad, outer_rad, max_damage, max_blast, shockwave_speed;
-	shockwave_create_info sci;
 
 	//	No area explosion in training missions.
 	if (The_mission.game_type & MISSION_TYPE_TRAINING){
@@ -6979,6 +6979,9 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	}
 
 	if ( shockwave_speed > 0 ) {
+		shockwave_create_info sci;
+		shockwave_create_info_init(&sci);
+
 		strcpy_s(sci.name, sip->shockwave.name);
 		strcpy_s(sci.pof_name, sip->shockwave.pof_name);
 		sci.inner_rad = inner_rad;
@@ -15510,7 +15513,7 @@ void ship_page_in()
 		}
 
 		// Page in the shockwave stuff. -C
-		sip->shockwave.load();
+		shockwave_create_info_load(&sip->shockwave);
 		if(sip->explosion_bitmap_anims.size() > 0) {
 			int num_fireballs = sip->explosion_bitmap_anims.size();
 			for(j = 0; j < num_fireballs; j++){
