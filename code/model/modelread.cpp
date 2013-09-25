@@ -2617,56 +2617,40 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		}
 
 		for (j=0; j<pm->n_models; j++ )	{
-			int k;
 			bsp_info * sm2 = &pm->submodel[j];
 
 			if ( i==j ) continue;
-			
+
 			// set all arc types to be default 		
 			for(arc_idx=0; arc_idx < MAX_ARC_EFFECTS; arc_idx++){
 				sm2->arc_type[arc_idx] = MARC_TYPE_NORMAL;
 			}
 
-			// if sm2 is a detail of sm1 and sm1 is a high detail, then add it to sm1's list
-			if ((int)strlen(sm2->name)!=l1) continue; 
-	
-			int ndiff = 0;
-			int first_diff = 0;
-			for ( k=0; k<l1; k++)	{
-				// If a backward compatibility LOD name is declared use it
-				if (sm1->lod_name[0] != '\0') {
-					if (sm1->lod_name[k] != sm2->name[k] )	{
-						if (ndiff==0) first_diff = k;
-						ndiff++;
-					}
-				}
-				// otherwise do the standard LOD comparision
-				else {
-					if (sm1->name[k] != sm2->name[k] )	{
-						if (ndiff==0) first_diff = k;
-						ndiff++;
-					}
-				}
-			}
-			if (ndiff==1)	{		// They only differ by one character!
-				int dl1, dl2;
-				// If a backward compatibility LOD name is declared use it
-				if (sm1->lod_name[0] != '\0') {
-					dl1 = tolower(sm1->lod_name[first_diff]) - 'a';
-				}
-				// otherwise do the standard LOD comparision
-				else {
-					dl1 = tolower(sm1->name[first_diff]) - 'a';
-				}
-				dl2 = tolower(sm2->name[first_diff]) - 'a';
+			SCP_string sm1name;
+			SCP_string sm2name;
 
-				if ( (dl1<0) || (dl2<0) || (dl1>=MAX_MODEL_DETAIL_LEVELS) || (dl2>=MAX_MODEL_DETAIL_LEVELS) ) continue;	// invalid detail levels
+			if (sm1->lod_name[0] != '\0')
+				// If a backward compatibility LOD name is declared, use it
+				sm1name = SCP_string(sm1->lod_name);
+			else
+				// Otherwise, use the submodel name as-is
+				sm1name = SCP_string(sm1->name);
 
-				if ( dl1 == 0 )	{
-					dl2--;	// Start from 1 up...
-					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
-					sm1->details[dl2] = j;
-  				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
+			sm2name = SCP_string(sm2->name);
+
+			// Lower-cased last chars of both names
+			int sm1last = tolower(sm1name.back());
+			int sm2last = tolower(sm2name.back());
+
+			if (sm1name.length() == sm2name.length()) {
+				// Now, check that only the last char differs and that sm2's last char is both greater than sm1's and at least "b"
+				if (sm1name.find(sm2name.data(), 0, sm1name.length() - 1) != std::string::npos && sm1last < sm2last && sm2last >= (int)'b') {
+					mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2last - sm1last, sm1->name));
+				}
+			} else if (sm1name.length() == sm2name.length() - 1) {
+				// This allows LOD0 submodels without the trailing "a" to work correctly
+				if (sm1name.find(sm2name.data(), 0, sm1name.length()) != std::string::npos && sm2last >= (int)'b') {
+					mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2last - (int)'a', sm1->name));
 				}
 			}
 		}
