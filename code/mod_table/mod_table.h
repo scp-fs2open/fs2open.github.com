@@ -21,5 +21,6 @@ extern bool Enable_external_shaders;
 extern int Default_detail_level;
 extern bool Full_color_head_anis;
 extern bool Weapons_inherit_parent_collision_group;
+extern bool Flight_controls_follow_eyepoint_orientation;
 
 void mod_table_init();

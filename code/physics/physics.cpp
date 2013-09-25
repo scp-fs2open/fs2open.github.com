@@ -20,6 +20,8 @@
 // for the damping issue
 #include "ai/ai_profiles.h"
 #include "mission/missionparse.h"
+#include "ship/ship.h"
+#include "mod_table/mod_table.h"
 
 
 
@@ -487,8 +489,32 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if (ci->forward > 1.0f ) ci->forward = 1.0f;
 	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
 
-	pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
-	pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
+	if (!Flight_controls_follow_eyepoint_orientation) {
+		// Default behavior; eyepoint orientation has no effect on controls
+		pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
+		pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
+	} else {
+		// Optional behavior; pitch and yaw are always relative to the eyepoint
+		// orientation (excluding slew)
+		vec3d tmp_vec, new_rotvel;
+		matrix tmp_mat, eyemat, rotvelmat;
+
+		ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
+
+		vm_copy_transpose_matrix(&tmp_mat, &Player_obj->orient);
+		vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
+
+		vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);
+		vm_vec_unrotate(&tmp_vec, &pi->max_rotvel, &rotvelmat);
+		new_rotvel.xyz.x = tmp_vec.xyz.x;
+
+		new_rotvel.xyz.x = ci->pitch * new_rotvel.xyz.x;
+		new_rotvel.xyz.y = ci->heading * new_rotvel.xyz.y;
+
+		vm_vec_unrotate(&tmp_vec, &new_rotvel, &rotvelmat);
+
+		pi->desired_rotvel = tmp_vec;
+	}
 
 	float	delta_bank;
 

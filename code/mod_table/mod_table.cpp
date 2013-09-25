@@ -24,6 +24,7 @@ bool Enable_external_shaders = false;
 int Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 bool Full_color_head_anis = false;
 bool Weapons_inherit_parent_collision_group = false;
+bool Flight_controls_follow_eyepoint_orientation = false;
 
 
 void parse_mod_table(const char *filename)
@@ -195,6 +196,12 @@ void parse_mod_table(const char *filename)
 		stuff_boolean(&Weapons_inherit_parent_collision_group);
 		if (Weapons_inherit_parent_collision_group)
 			mprintf(("Game Settings Table: Weapons inherit parent collision group\n"));
+	}
+
+	if (optional_string("$Flight controls follow eyepoint orientation:")) {
+		stuff_boolean(&Flight_controls_follow_eyepoint_orientation);
+		if (Flight_controls_follow_eyepoint_orientation)
+			mprintf(("Game Settings Table: Flight controls follow eyepoint orientation\n"));
 	}
 
 	required_string("#END");
