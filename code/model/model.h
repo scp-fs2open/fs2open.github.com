@@ -1023,42 +1023,12 @@ typedef struct mc_info {
 	bsp_collision_leaf *bsp_leaf;
 
 										// flags can be changed for the case of sphere check finds an edge hit
-	mc_info()
-	{
-		// Echelon9 - BIG WARNING.
-        // Using memset() as a constructor is rarely correct in C++
-        // If mc_info ever becomes non-POD type, this memset() will hose the virtual table
-        memset(this, 0, sizeof(*this));
-	}
-
-	mc_info(const mc_info& other)
-	{
-		this->model_instance_num = other.model_instance_num;
-		this->model_num = other.model_num;
-		this->submodel_num = other.submodel_num;
-		this->orient = other.orient;
-		this->pos = other.pos;
-		this->p0 = other.p0;
-		this->p1 = other.p1;
-		this->flags = other.flags;
-		this->radius = other.radius;
-
-		this->num_hits = other.num_hits;
-		this->hit_dist = other.hit_dist;
-		this->hit_point = other.hit_point;
-		this->hit_point_world = other.hit_point_world;
-        this->hit_submodel = other.hit_submodel;
-        this->hit_bitmap = other.hit_bitmap;
-		this->hit_u = other.hit_u;
-		this->hit_v = other.hit_v;
-		this->shield_hit_tri = other.shield_hit_tri;
-		this->hit_normal = other.hit_normal;
-		this->edge_hit = other.edge_hit;
-		this->f_poly = other.f_poly;
-		this->t_poly = other.t_poly;
-	}
 } mc_info;
 
+inline void mc_info_init(mc_info *mc)
+{
+	memset(mc, 0, sizeof(mc_info));
+}
 
 
 //======== MODEL_COLLIDE ============

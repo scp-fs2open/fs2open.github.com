@@ -8518,6 +8518,7 @@ int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos)
 
 	num = obj->instance;
 
+	mc_info_init(&mc);
 	mc.model_instance_num = Ships[num].model_instance_num;
 	mc.model_num = Ship_info[Ships[num].ship_info_index].model_num;	// Fill in the model to check
 	mc.orient = &obj->orient;					// The object's orient
@@ -13912,6 +13913,7 @@ int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, v
 	vm_vec_normalized_dir(&eye_to_pos, subsys_pos, eye_pos);
 	vm_vec_scale_add(&terminus, eye_pos, &eye_to_pos, 100000.0f);
 
+	mc_info_init(&mc);
 	mc.model_instance_num = Ships[objp->instance].model_instance_num;
 	mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc.orient = &objp->orient;										// The object's orientation
