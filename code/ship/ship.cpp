@@ -3706,7 +3706,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					}
 
 					//make sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
-					current_trigger->correct();
+					queued_animation_correct(current_trigger);
 				}
 				else if(!stricmp(name_tmp, "linked"))
 				{
