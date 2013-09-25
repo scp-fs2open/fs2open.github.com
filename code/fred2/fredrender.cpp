@@ -407,7 +407,7 @@ void render_waypoints(void)
 	vertex v;
 
 	SCP_list<waypoint_list>::iterator ii;
-	SCP_list<waypoint>::iterator jj;
+	SCP_vector<waypoint>::iterator jj;
 
 	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
 	{

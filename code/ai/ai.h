@@ -368,10 +368,10 @@ typedef struct ai_info {
 	int		ai_class;				//	Class.  Might be override of default.
 
 	//	Probably become obsolete, to be replaced by path_start, path_cur, etc.
-	waypoint_list				*wp_list;		// waypoint list being followed
-	SCP_list<waypoint>::iterator wp_index;	// waypoint index in list
+	waypoint_list	*wp_list;		// waypoint list being followed
+	size_t			 wp_index;		// waypoint index in list
 	int		wp_flags;				//	waypoint flags, see WPF_xxxx
-	int		waypoint_speed_cap;	// -1 no cap, otherwise cap - changed to int by Goober5000
+	int		waypoint_speed_cap;		// -1 no cap, otherwise cap - changed to int by Goober5000
 
 	//	Path following information
 	int		path_start;				//	Index into global array, start of path.

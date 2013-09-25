@@ -14306,11 +14306,11 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		min_speed = 0.9f * max_speed;
 		if (aip->wp_list != NULL) {
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
-			dist += vm_vec_dist_quick(&objp->pos, aip->wp_index->get_pos());
+			dist += vm_vec_dist_quick(&objp->pos, aip->wp_list->get_waypoints()[aip->wp_index].get_pos());
 
-			SCP_list<waypoint>::iterator ii;
+			SCP_vector<waypoint>::iterator ii;
 			vec3d *prev_vec = NULL;
-			for (ii = aip->wp_index; ii != aip->wp_list->get_waypoints().end(); ++ii) {
+			for (ii = (aip->wp_list->get_waypoints().begin() + aip->wp_index); ii != aip->wp_list->get_waypoints().end(); ++ii) {
 				if (prev_vec != NULL) {
 					dist += vm_vec_dist_quick(ii->get_pos(), prev_vec);
 				}

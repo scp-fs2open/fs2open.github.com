@@ -3239,7 +3239,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 		if (aip->wp_index == INVALID_WAYPOINT_POSITION)
 		{
 			Warning(LOCATION, "aip->wp_index should have been assigned already!");
-			aip->wp_index = aip->wp_list->get_waypoints().begin();
+			aip->wp_index = 0;
 		}
 		return;
 	}
@@ -3256,7 +3256,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 	}
 
 	aip->wp_list = wp_list;
-	aip->wp_index = wp_list->get_waypoints().begin();
+	aip->wp_index = 0;
 	aip->wp_flags = wp_flags;
 	aip->mode = AIM_WAYPOINTS;
 
@@ -4548,17 +4548,17 @@ void ai_waypoints()
 	Assert(!aip->wp_list->get_waypoints().empty());	// What? Is this zero? Probably never got initialized!
 
 	bool done, treat_as_ship;
-	ai_fly_to_target_position(aip->wp_index->get_pos(), &done, &treat_as_ship);
+	ai_fly_to_target_position(aip->wp_list->get_waypoints()[aip->wp_index].get_pos(), &done, &treat_as_ship);
 
 	if ( done ) {
 		// go on to next waypoint in path
 		++aip->wp_index;
 
-		if ( aip->wp_index == aip->wp_list->get_waypoints().end() ) {
+		if ( aip->wp_index == aip->wp_list->get_waypoints().size() ) {
 			// have reached the last waypoint.  Do I repeat?
 			if ( aip->wp_flags & WPF_REPEAT ) {
 				 // go back to the start.
-				aip->wp_index = aip->wp_list->get_waypoints().begin();
+				aip->wp_index = 0;
 			} else {
 				// stay on the last waypoint.
 				--aip->wp_index;
@@ -11680,7 +11680,7 @@ int ai_formation()
 		aip->wp_index = laip->wp_index;
 		aip->wp_flags = laip->wp_flags;
 
-		if ((aip->wp_list != NULL) && (aip->wp_index == aip->wp_list->get_waypoints().end()))
+		if ((aip->wp_list != NULL) && (aip->wp_index == aip->wp_list->get_waypoints().size()))
 			--aip->wp_index;
 	}
 
