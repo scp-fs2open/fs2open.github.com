@@ -1448,7 +1448,6 @@ typedef struct engine_wash_info
 	float		length;			// length of engine wash, measured from thruster
 	float		intensity;		// intensity of engine wash
 	
-	engine_wash_info();
 } engine_wash_info;
 
 extern SCP_vector<engine_wash_info> Engine_wash_info;

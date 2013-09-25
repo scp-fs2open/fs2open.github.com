@@ -519,13 +519,13 @@ int ship_get_num_ships()
 	return count;
 }
 
-engine_wash_info::engine_wash_info()
+void engine_wash_info_init(engine_wash_info *ewi)
 {
-	name[0] = '\0';
-	angle = PI / 10.0f;
-	radius_mult = 1.0f;
-	length = 500.0f;
-	intensity = 1.0f;
+	ewi->name[0] = '\0';
+	ewi->angle = PI / 10.0f;
+	ewi->radius_mult = 1.0f;
+	ewi->length = 500.0f;
+	ewi->intensity = 1.0f;
 }
 
 /**
@@ -534,6 +534,8 @@ engine_wash_info::engine_wash_info()
 void parse_engine_wash(bool replace)
 {
 	engine_wash_info ewt;
+	engine_wash_info_init(&ewi);
+
 	engine_wash_info *ewp;
 	bool create_if_not_found  = true;
 
