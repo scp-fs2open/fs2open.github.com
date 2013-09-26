@@ -711,6 +711,7 @@ class waypoint_list;
 #define OP_CHANGE_TEAM_COLOR				(0x001c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
 #define OP_NEBULA_CHANGE_PATTERN			(0x001d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Axem
 #define OP_PLAYER_IS_CHEATING_BASTARD		(0x001e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
+#define OP_TECH_ADD_INTEL_XSTR				(0x001f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1099,8 +1100,8 @@ extern int find_parent_operator(int num);
 extern int is_sexp_top_level( int node );
 
 // Goober5000 - renamed these to be more clear, to prevent bugs :p
-extern int get_operator_index(char *token);
-extern int get_operator_const(char *token);
+extern int get_operator_index(const char *token);
+extern int get_operator_const(const char *token);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node

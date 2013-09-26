@@ -15,7 +15,7 @@
 #include "graphics/2d.h"
 #include "hud/hud.h"
 
-struct player;
+class player;
 struct weapon_info;
 
 extern int Outer_circle_radius[GR_NUM_RESOLUTIONS];

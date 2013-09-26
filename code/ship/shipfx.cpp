@@ -907,6 +907,7 @@ int shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )	{
 			objp = &Objects[so->objnum];
 
+			mc_info_init(&mc);
 			mc.model_instance_num = -1;
 			mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 			mc.orient = &objp->orient;
@@ -956,6 +957,7 @@ int shipfx_in_shadow( object * src_obj )
 			if ( src_obj != objp )	{
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
+				mc_info_init(&mc);
 				mc.model_instance_num = -1;
 				mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 				mc.orient = &objp->orient;
@@ -1002,6 +1004,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 		if ( src_obj != objp )	{
 			vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
+			mc_info_init(&mc);
 			mc.model_instance_num = Ships[objp->instance].model_instance_num;
 			mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 			mc.orient = &objp->orient;

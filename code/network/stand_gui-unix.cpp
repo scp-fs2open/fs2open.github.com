@@ -4,12 +4,12 @@
 #include "globalincs/pstypes.h"
 #include "network/stand_gui.h"
 
-void std_add_ban(char *name)
+void std_add_ban(const char *name)
 {
 	STUB_FUNCTION;
 }
 
-void std_add_chat_text(char *text, int player_index, int add_id)
+void std_add_chat_text(const char *text, int player_index, int add_id)
 {
 	STUB_FUNCTION;
 }
@@ -111,7 +111,7 @@ void std_multi_update_netgame_info_controls()
 	STUB_FUNCTION;
 }
 
-int std_player_is_banned(char *name)
+int std_player_is_banned(const char *name)
 {
 	return 0;
 }

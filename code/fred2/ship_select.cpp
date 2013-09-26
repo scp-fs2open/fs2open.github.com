@@ -471,7 +471,7 @@ void ship_select::OnSelchangeWingList()
 		if (z != wing_sel_last[i]) {
 			waypoint_list *wp_list = find_waypoint_list_at_index(wing_index[i]);
 			Assert(wp_list != NULL);
-			SCP_list<waypoint>::iterator jj;
+			SCP_vector<waypoint>::iterator jj;
 			for (j = 0, jj = wp_list->get_waypoints().begin(); jj != wp_list->get_waypoints().end(); ++j, ++jj) {
 				for (k=0; k<list_size; k++) {
 					if ((obj_index[k]->type == OBJ_WAYPOINT) && (obj_index[k]->instance == calc_waypoint_instance(wing_index[i], j))) {
@@ -518,7 +518,7 @@ void ship_select::OnSelchangeShipList()
 	for (i=wlist_size; i<wplist_size; i++) {
 		waypoint_list *wp_list = find_waypoint_list_at_index(wing_index[i]);
 		Assert(wp_list != NULL);
-		SCP_list<waypoint>::iterator jj;
+		SCP_vector<waypoint>::iterator jj;
 
 		count = 0;
 		for (j = 0, jj = wp_list->get_waypoints().begin(); jj != wp_list->get_waypoints().end(); ++j, ++jj) {

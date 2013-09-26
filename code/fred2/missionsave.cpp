@@ -2665,7 +2665,7 @@ int CFred_mission_save::save_waypoints()
 int CFred_mission_save::save_waypoint_list(waypoint_list *wp_list)
 {
 	Assert(wp_list != NULL);
-	SCP_list<waypoint>::iterator ii;
+	SCP_vector<waypoint>::iterator ii;
 
 	for (ii = wp_list->get_waypoints().begin(); ii != wp_list->get_waypoints().end(); ++ii)
 	{

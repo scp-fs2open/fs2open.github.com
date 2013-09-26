@@ -15,13 +15,11 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-struct scoring_struct;
-struct player;
+class scoring_struct;
+class player;
 
 #define MAX_BADGES				3
-#define MAX_ASSIGNABLE_MEDALS	12		// index into Medals array of the first medal which cannot be assigned
-
-#define RANK_MEDAL_INDEX		12		// index of the rank medal
+extern int Rank_medal_index;
 
 extern scoring_struct *Player_score;
 

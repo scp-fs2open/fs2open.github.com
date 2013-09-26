@@ -451,9 +451,11 @@ void particle_render_all()
 		}
 	}
 
+	profile_begin("Batch Render");
 	if (render_batch) {
 		batch_render_all(Particle_buffer_object);
 	}
+	profile_end("Batch Render");
 }
 
 

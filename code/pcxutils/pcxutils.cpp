@@ -37,7 +37,7 @@ typedef struct	{
 } PCXHeader;
 
 // reads header information from the PCX file into the bitmap pointer
-int pcx_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *pal )
+int pcx_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *pal )
 {
 	PCXHeader header;
 	CFILE * PCXfile;
@@ -214,7 +214,7 @@ typedef struct { ubyte b, g, r, a; } COLOR32;
 #endif
 
 //int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data, ubyte bpp, int aabitmap, int nondark )
-int pcx_read_bitmap( char * real_filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap, int nondark, int cf_type )
+int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap, int nondark, int cf_type )
 {
 	PCXHeader header;
 	CFILE * PCXfile;
@@ -452,7 +452,7 @@ int pcx_encode_line(ubyte *inBuff, int inLen, FILE * fp)
 }
 
 
-int pcx_write_bitmap( char * real_filename, int w, int h, ubyte ** row_ptrs, ubyte * palette )
+int pcx_write_bitmap( const char * real_filename, int w, int h, ubyte ** row_ptrs, ubyte * palette )
 {
 	int retval;
 	int i;

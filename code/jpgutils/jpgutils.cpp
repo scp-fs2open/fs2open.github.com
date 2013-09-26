@@ -96,7 +96,7 @@ void jpg_output_message(j_common_ptr cinfo)
 //
 // returns - JPEG_ERROR_NONE if successful, otherwise error code
 //
-int jpeg_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
+int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
 {
 	CFILE *jpeg_file = NULL;
 	char filename[MAX_FILENAME_LEN];
@@ -164,7 +164,7 @@ int jpeg_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *b
 //
 // returns - true if succesful, false otherwise
 //
-int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
+int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
 {
 	char filename[MAX_FILENAME_LEN];
 	CFILE *img_cfp = NULL;

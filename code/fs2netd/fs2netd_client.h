@@ -15,7 +15,7 @@
 #include "network/multi.h"
 
 struct net_addr;
-struct player;
+class player;
 
 // channel to associate when creating a server
 extern char Multi_fs_tracker_channel[];

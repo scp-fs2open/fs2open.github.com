@@ -32,7 +32,7 @@ int Num_medals = 0;
 SCP_vector<medal_stuff> Medals;
 
 // coords for indiv medal bitmaps
-static int Default_medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
+static int Default_medal_coords[GR_NUM_RESOLUTIONS][NUM_MEDALS_FS2][2] = {
 	{				// GR_640
 		{ 89, 47 },			// eps. peg. lib
 		{ 486, 47 },		// imp. order o' vasuda
@@ -76,7 +76,7 @@ static int Default_medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 };
 
 // debriefing bitmaps
-static const char *Default_debriefing_bitmaps[MAX_MEDALS] =
+static const char *Default_debriefing_bitmaps[NUM_MEDALS_FS2] =
 {
 	"DebriefMedal00",
 	"DebriefMedal01",
@@ -175,7 +175,9 @@ typedef struct medal_display_info {
 } medal_display_info;
 
 static SCP_vector<medal_display_info> Medal_display_info;
-static MENU_REGION Medal_regions[MAX_MEDALS];
+static MENU_REGION *Medal_regions = NULL;
+
+int Rank_medal_index = -1;
 
 
 #define MEDAL_BITMAP_INIT (1<<0)
@@ -276,35 +278,50 @@ void parse_medal_tbl()
 		required_string("$Name:");
 		stuff_string( temp_medal.name, F_NAME, NAME_LENGTH );
 
+		// is this rank?  if so, save it
+		if (!stricmp(temp_medal.name, "Rank"))
+			Rank_medal_index = Num_medals;
+
 		required_string("$Bitmap:");
 		stuff_string( temp_medal.bitmap, F_NAME, MAX_FILENAME_LEN );
 
 		if (optional_string("+Position 640:")) {
 			stuff_int(&temp_display.coords[GR_640].x);
 			stuff_int(&temp_display.coords[GR_640].y);
-		} else {
+		} else if (Num_medals < NUM_MEDALS_FS2) {
 			temp_display.coords[GR_640].x = Default_medal_coords[GR_640][Num_medals][0];
 			temp_display.coords[GR_640].y = Default_medal_coords[GR_640][Num_medals][1];
+		} else {
+			Warning(LOCATION, "No default GR_640 position for medal '%s'!", temp_medal.name);
+			temp_display.coords[GR_640].x = 0;
+			temp_display.coords[GR_640].y = 0;
 		}
 		if (optional_string("+Position 1024:")) {
 			stuff_int(&temp_display.coords[GR_1024].x);
 			stuff_int(&temp_display.coords[GR_1024].y);
-		} else {
+		} else if (Num_medals < NUM_MEDALS_FS2) {
 			temp_display.coords[GR_1024].x = Default_medal_coords[GR_1024][Num_medals][0];
 			temp_display.coords[GR_1024].y = Default_medal_coords[GR_1024][Num_medals][1];
+		} else {
+			Warning(LOCATION, "No default GR_1024 position for medal '%s'!", temp_medal.name);
+			temp_display.coords[GR_1024].x = 0;
+			temp_display.coords[GR_1024].y = 0;
 		}
 
 		if (optional_string("+Debriefing Bitmap:")) {
 			stuff_string( temp_medal.debrief_bitmap, F_NAME, MAX_FILENAME_LEN );
-		} else {
+		} else if (Num_medals < NUM_MEDALS_FS2) {
 			strcpy_s(temp_medal.debrief_bitmap, Default_debriefing_bitmaps[Num_medals]);
+		} else {
+			Warning(LOCATION, "No default debriefing bitmap for medal '%s'!", temp_medal.name);
+			strcpy_s(temp_medal.debrief_bitmap, "");
 		}
 
 		required_string("$Num mods:");
 		stuff_int( &temp_medal.num_versions );
 
 		// this is dumb
-		temp_medal.version_starts_at_1 = (Num_medals == RANK_MEDAL_INDEX);
+		temp_medal.version_starts_at_1 = (Num_medals == Rank_medal_index);
 		if (optional_string("+Version starts at 1:")) {
 			stuff_boolean( &temp_medal.version_starts_at_1 );
 		}
@@ -336,6 +353,13 @@ void parse_medal_tbl()
 
 	required_string("#End");
 
+	// be sure that we know where the rank is
+	if (Rank_medal_index < 0)
+	{
+		Warning(LOCATION, "Could not find the 'Rank' medal!");
+		Rank_medal_index = 0;
+	}
+
 	// be sure that the badges kill numbers show up in order
 	//WMC - I don't think this is needed anymore due to my changes to post-mission functions
 	//but I'm keeping it here to be sure.
@@ -366,28 +390,28 @@ DCF(medals, "Grant or revoke medals")
 		{
 			int idx = Dc_arg_int;
 
-			if (idx < 0 || idx >= MAX_MEDALS)
+			if (idx < 0 || idx >= Num_medals)
 			{
 				dc_printf("Medal index %d is out of range\n", idx);
 				return;
 			}
 
 			dc_printf("Granted %s\n", Medals[idx].name);
-			Player->stats.medals[idx]++;
+			Player->stats.medal_counts[idx]++;
 		}
 		else if (Dc_arg_type & ARG_STRING)
 		{
 			if (!strcmp(Dc_arg, "all"))
 			{
-				for (i = 0; i < MAX_MEDALS; i++)
-					Player->stats.medals[i]++;
+				for (i = 0; i < Num_medals; i++)
+					Player->stats.medal_counts[i]++;
 
 				dc_printf("Granted all medals\n");
 			}
 			else if (!strcmp(Dc_arg, "clear"))
 			{
-				for (i = 0; i < MAX_MEDALS; i++)
-					Player->stats.medals[i] = 0;
+				for (i = 0; i < Num_medals; i++)
+					Player->stats.medal_counts[i] = 0;
 
 				dc_printf("Cleared all medals\n");
 			}
@@ -413,7 +437,7 @@ DCF(medals, "Grant or revoke medals")
 		else
 		{
 			dc_printf("The following medals are available:\n");
-			for (i = 0; i < MAX_MEDALS; i++)
+			for (i = 0; i < Num_medals; i++)
 				dc_printf("%d: %s\n", i, Medals[i].name);
 		}
 
@@ -432,10 +456,10 @@ DCF(medals, "Grant or revoke medals")
 	{
 		dc_printf("You have the following medals:\n");
 
-		for (i = 0; i < MAX_MEDALS; i++)
+		for (i = 0; i < Num_medals; i++)
 		{
-			if (Player->stats.medals[i] > 0)
-				dc_printf("%d %s\n", Player->stats.medals[i], Medals[i].name);
+			if (Player->stats.medal_counts[i] > 0)
+				dc_printf("%d %s\n", Player->stats.medal_counts[i], Medals[i].name);
 		}
 		dc_printf("%s\n", Ranks[Player->stats.rank].name);
 	}
@@ -451,8 +475,8 @@ void medal_main_init(player *pl, int mode)
 
 #ifndef NDEBUG
 	if (Cmdline_gimme_all_medals){
-		for (idx=0; idx < MAX_MEDALS; idx++){
-			Medals_player->stats.medals[idx] = 1;
+		for (idx=0; idx < Num_medals; idx++){
+			Medals_player->stats.medal_counts[idx] = 1;
 		}
 	}
 #endif
@@ -595,8 +619,13 @@ int medal_main_do()
 	blit_medals();
 	blit_callsign();
 
-	region = snazzy_menu_do((ubyte*)Medals_mask->data, Medals_mask_w, Medals_mask_h, MAX_MEDALS, Medal_regions, &selected);
-	switch (region) {
+	region = snazzy_menu_do((ubyte*)Medals_mask->data, Medals_mask_w, Medals_mask_h, Num_medals, Medal_regions, &selected);
+	if (region == Rank_medal_index)
+	{
+		blit_label(Ranks[Player_score->rank].name, 1);
+	}
+	else switch (region)
+	{
 		case ESC_PRESSED:
 			if (Medals_mode == MM_NORMAL) {
 				gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
@@ -606,16 +635,12 @@ int medal_main_do()
 			}
 			break;
 
-		case RANK_MEDAL_INDEX:
-			blit_label(Ranks[Player_score->rank].name, 1);
-			break;
-
 		case -1:
 			break;
 
 		default:
-			if (Player_score->medals[region] > 0) {
-				blit_label(Medals[region].name, Player_score->medals[region]);
+			if (Player_score->medal_counts[region] > 0) {
+				blit_label(Medals[region].name, Player_score->medal_counts[region]);
 			}
 			break;
 	} // end switch
@@ -644,6 +669,9 @@ void medal_main_close()
 		idx->bitmap = -1;
 	}
 
+	delete[] Medal_regions;
+	Medal_regions = NULL;
+
 	Player_score = NULL;
 	Medals_window.destroy();
 	snazzy_menu_close();
@@ -661,7 +689,7 @@ void init_medal_bitmaps()
 	for (idx=0; idx<Num_medals; idx++) {
 		Medal_display_info[idx].bitmap = -1;
 
-		if (Player_score->medals[idx] > 0) {
+		if (Player_score->medal_counts[idx] > 0) {
 			int num_medals;
 			char filename[NAME_LENGTH], base[NAME_LENGTH];
 
@@ -672,7 +700,7 @@ void init_medal_bitmaps()
 
 			_splitpath( filename, NULL, NULL, base, NULL );
 
-			num_medals = Player_score->medals[idx];
+			num_medals = Player_score->medal_counts[idx];
 
 			// can't display more than the maximum number of version for this medal
 			if ( num_medals > Medals[idx].num_versions )
@@ -713,8 +741,12 @@ void init_snazzy_regions()
 {
 	int idx;
 
+	// well, we need regions in an array (versus a vector), so...
+	Assert(Medal_regions == NULL);
+	Medal_regions = new MENU_REGION[Num_medals];
+
 	// snazzy regions for the medals/ranks, etc.
-	for (idx=0; idx<MAX_MEDALS; idx++) {
+	for (idx=0; idx<Num_medals; idx++) {
 		snazzy_menu_add_region(&Medal_regions[idx], "", idx, 0);
 	}
 }
@@ -725,7 +757,7 @@ void blit_medals()
 	int idx;
 
 	for (idx=0; idx<Num_medals; idx++) {
-		if (idx != RANK_MEDAL_INDEX && Player_score->medals[idx] > 0) {
+		if (idx != Rank_medal_index && Player_score->medal_counts[idx] > 0) {
 #ifndef NDEBUG
 			// this can happen if gimmemedals was used on the medal screen
 			if (Medal_display_info[idx].bitmap < 0) {
@@ -739,7 +771,7 @@ void blit_medals()
 
 	// now blit rank, since that "medal" doesn't get loaded (or drawn) the normal way
 	gr_set_bitmap(Rank_bm);
-	gr_bitmap(Medal_display_info[RANK_MEDAL_INDEX].coords[gr_screen.res].x, Medal_display_info[RANK_MEDAL_INDEX].coords[gr_screen.res].y);
+	gr_bitmap(Medal_display_info[Rank_medal_index].coords[gr_screen.res].x, Medal_display_info[Rank_medal_index].coords[gr_screen.res].y);
 }
 
 int medals_info_lookup(const char *name)

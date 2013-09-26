@@ -65,16 +65,16 @@ void hud_init_msg_window();
 void hud_clear_msg_buffer();
 int HUD_team_get_source(int team);
 int HUD_source_get_team(int team);
-void HUD_printf(char *format, ...);
-void hud_sourced_print(int source, char *msg);
-void HUD_sourced_printf(int source, char *format, ...);  // send hud message from specified source
-void HUD_ship_sent_printf(int sh, char *format, ...);  // send hud message from a specific ship
-void HUD_fixed_printf(float duration, color col, char *format, ...);		//	Display a single message for duration seconds.
+void HUD_printf(const char *format, ...);
+void hud_sourced_print(int source, const char *msg);
+void HUD_sourced_printf(int source, const char *format, ...);  // send hud message from specified source
+void HUD_ship_sent_printf(int sh, const char *format, ...);  // send hud message from a specific ship
+void HUD_fixed_printf(float duration, color col, const char *format, ...);		//	Display a single message for duration seconds.
 void HUD_init_fixed_text();			//	Clear all pending fixed text.
 
-void HUD_add_to_scrollback(char *text, int source);
-void hud_add_line_to_scrollback(char *text, int source, int t, int x, int y, int w);
-void hud_add_msg_to_scrollback(char *text, int source, int t);
+void HUD_add_to_scrollback(const char *text, int source);
+void hud_add_line_to_scrollback(const char *text, int source, int t, int x, int y, int w);
+void hud_add_msg_to_scrollback(const char *text, int source, int t);
 void hud_free_scrollback_list();
 
 class HudGaugeMessages: public HudGauge // HUD_MESSAGE_LINES
@@ -111,7 +111,7 @@ public:
 
 	void clearMessages();
 	void processMessageBuffer();
-	void addPending(char *text, int source, int x = 0);
+	void addPending(const char *text, int source, int x = 0);
 	void scrollMessages();
 	void preprocess();
 	void render(float frametime);
@@ -132,7 +132,7 @@ class HudGaugeTalkingHead: public HudGauge // HUD_TALKING_HEAD
 	int msg_id;
 public:
 	HudGaugeTalkingHead();
-	void initBitmaps(char *fname);
+	void initBitmaps(const char *fname);
 	void initHeaderOffsets(int x, int y);
 	void initAnimOffsets(int x, int y);
 	void initAnimSizes(int w, int h);

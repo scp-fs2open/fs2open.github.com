@@ -277,7 +277,7 @@ DCF(clear_color, "set clear color r, g, b")
 	gr_set_clear_color(r, g, b);
 }
 
-void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_128 )
+void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	if ( palette == NULL ) {
 		// Create a default palette
@@ -321,7 +321,7 @@ void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_
 }
 
 
-void gr_set_palette( char *name, ubyte * palette, int restrict_font_to_128 )
+void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	char *p;
 	palette_flush();
@@ -466,8 +466,8 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 16, mode = GR_OPENGL;
-	char *ptr = NULL;
-	char *Default_video_settings = "OGL -(1024x768)x16 bit";
+	const char *ptr = NULL;
+	const char *Default_video_settings = "OGL -(1024x768)x16 bit";
 
 	if ( !Gr_inited ) {
 		atexit(gr_close);

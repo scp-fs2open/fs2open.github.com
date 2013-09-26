@@ -55,9 +55,6 @@ enum EModelAnimationPosition {
  * a specific triggered animation, one subobject can have many triggered animations
  */
 struct queued_animation {
-	queued_animation();
-	void correct();
-
 	vec3d angle;
 	vec3d vel;
 	vec3d accel;
@@ -79,6 +76,8 @@ struct queued_animation {
 
 	char sub_name[NAME_LENGTH];
 };
+extern void queued_animation_init(queued_animation *qa);
+extern void queued_animation_correct(queued_animation *qa);
 
 /*
 struct trigger_instance{
@@ -141,7 +140,7 @@ class triggered_rotation
 struct model_subsystem;
 struct ship_subsys;
 struct ship;
-struct ship_info;
+class ship_info;
 
 void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss);
 void model_anim_set_initial_states(ship *shipp);

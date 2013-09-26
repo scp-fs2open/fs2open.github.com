@@ -17,7 +17,7 @@
 //
 
 struct net_addr;
-struct player;
+class player;
 struct net_player; 
 
 // ---------------------------------------------------------------------------------------

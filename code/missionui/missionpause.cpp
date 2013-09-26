@@ -128,7 +128,7 @@ extern int button_function(int n);
 void pause_do()
 {
 	int k;
-	char *pause_str = XSTR("Paused", 767);
+	const char *pause_str = XSTR("Paused", 767);
 	int str_w, str_h;
 	// next two are for view resetting
 	static int previous_Viewer_mode = -1;

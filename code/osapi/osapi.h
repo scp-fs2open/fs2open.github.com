@@ -54,10 +54,10 @@ extern const char *detect_home(void);
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
-void os_init(char * wclass, char * title, char *app_name=NULL, char *version_string=NULL );
+void os_init(const char * wclass, const char * title, const char *app_name=NULL, const char *version_string=NULL );
 
 // set the main window title
-void os_set_title( char * title );
+void os_set_title( const char * title );
 
 // call at program end
 void os_cleanup();

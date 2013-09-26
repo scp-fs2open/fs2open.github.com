@@ -108,7 +108,7 @@ void multi_log_process()
 }
 
 // printf function itself called by the ml_printf macro
-void ml_printf(char *format, ...)
+void ml_printf(const char *format, ...)
 {
 	char tmp[MAX_LOGFILE_LINE_LEN*4];
 	va_list args;
@@ -123,7 +123,7 @@ void ml_printf(char *format, ...)
 }
 
 // string print function
-void ml_string(char *string, int add_time)
+void ml_string(const char *string, int add_time)
 {
 	char tmp[MAX_LOGFILE_LINE_LEN*4];
 	char time_str[128];

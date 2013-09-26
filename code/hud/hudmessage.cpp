@@ -344,7 +344,7 @@ void HudGaugeMessages::processMessageBuffer()
 	}
 }
 
-void HudGaugeMessages::addPending(char *text, int source, int x)
+void HudGaugeMessages::addPending(const char *text, int source, int x)
 {
 	Assert(text != NULL);
 
@@ -461,7 +461,7 @@ void HudGaugeMessages::render(float frametime)
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
-void HUD_fixed_printf(float duration, color col, char * format, ...)
+void HUD_fixed_printf(float duration, color col, const char *format, ...)
 {
 	va_list	args;
 	char		tmp[HUD_MSG_LENGTH_MAX];
@@ -517,7 +517,7 @@ int HUD_source_get_team(int source)
 }
 
 
-void HUD_printf(char *format, ...)
+void HUD_printf(const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
@@ -538,7 +538,7 @@ void HUD_printf(char *format, ...)
 	hud_sourced_print(HUD_SOURCE_COMPUTER, tmp);
 }
 
-void HUD_ship_sent_printf(int sh, char *format, ...)
+void HUD_ship_sent_printf(int sh, const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
@@ -564,7 +564,7 @@ void HUD_ship_sent_printf(int sh, char *format, ...)
 // message on the HUD.  Text is split into multiple lines if width exceeds msg display area
 // width.  'source' is used to indicate who send the message, and is used to color code text.
 //
-void HUD_sourced_printf(int source, char *format, ...)
+void HUD_sourced_printf(int source, const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
@@ -582,7 +582,7 @@ void HUD_sourced_printf(int source, char *format, ...)
 	hud_sourced_print(source, tmp);
 }
 
-void hud_sourced_print(int source, char *msg)
+void hud_sourced_print(int source, const char *msg)
 {
 	if ( !strlen(msg) ) {
 		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
@@ -625,7 +625,7 @@ int hud_query_scrollback_size()
 }
 
 // add text directly to the hud scrollback log, without displaying on the hud
-void HUD_add_to_scrollback(char *text, int source)
+void HUD_add_to_scrollback(const char *text, int source)
 {
 	if (!strlen(text)) {
 		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
@@ -666,7 +666,7 @@ void hud_add_line_to_scrollback(char *text, int source, int t, int x, int y, int
 	list_append(&Msg_scrollback_used_list, new_line);
 }
 
-void hud_add_msg_to_scrollback(char *text, int source, int t)
+void hud_add_msg_to_scrollback(const char *text, int source, int t)
 {
 	char buf[HUD_MSG_LENGTH_MAX], *ptr, *str;
 	int msg_len, w, max_width, x, offset = 0;
@@ -1204,7 +1204,7 @@ void HudGaugeTalkingHead::initAnimSizes(int w, int h)
 	Anim_size[1] = h;
 }
 
-void HudGaugeTalkingHead::initBitmaps(char *fname)
+void HudGaugeTalkingHead::initBitmaps(const char *fname)
 {
 	Head_frame.first_frame = bm_load_animation(fname, &Head_frame.num_frames);
 	if ( Head_frame.first_frame == -1 ) {

@@ -931,7 +931,7 @@ int mission_campaign_previous_mission()
 	Pilot.save_savefile();
 
 	// reset the player stats to be the stats from this level
-	memcpy( &Player->stats, &Campaign.missions[Campaign.current_mission].stats, sizeof(Player->stats) );
+	Player->stats.assign( Campaign.missions[Campaign.current_mission].stats );
 
 	strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
 	Num_granted_ships = 0;
@@ -1193,7 +1193,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
 	if ( Campaign.prev_mission != Campaign.current_mission ) {
-		memcpy( &mission->stats, &Player->stats, sizeof(Player->stats) );
+		mission->stats.assign( Player->stats );
 		if(!(Game_mode & GM_MULTIPLAYER)){
 			scoring_backout_accept( &mission->stats );
 		}
@@ -1321,7 +1321,8 @@ void mission_campaign_clear()
 		Campaign.missions[i].flags = 0;
 		Campaign.missions[i].main_hall = "";
 		Campaign.missions[i].debrief_persona_index = 0;
-		init_scoring_element(&Campaign.missions[i].stats);
+
+		Campaign.missions[i].stats.init();
 	}
 
 	memset(Campaign.name, 0, NAME_LENGTH);

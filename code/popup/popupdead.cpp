@@ -106,7 +106,7 @@ int Popupdead_skip_message_y[GR_NUM_RESOLUTIONS] = {
 };
 
 
-static char *Popupdead_button_text[POPUPDEAD_NUM_CHOICES_MAX];
+static const char *Popupdead_button_text[POPUPDEAD_NUM_CHOICES_MAX];
 
 // multiplayer specifics to help with return values since they can vary
 #define POPUPDEAD_OBS_ONLY			1

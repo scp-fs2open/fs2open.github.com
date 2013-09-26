@@ -106,6 +106,7 @@
 #include "network/multi_sexp.h"
 #include "io/keycontrol.h"
 #include "parse/generic_log.h"
+#include "localization/localize.h"
 
 
 
@@ -541,6 +542,7 @@ sexp_oper Operators[] = {
 	{ "tech-add-ships",					OP_TECH_ADD_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "tech-add-weapons",				OP_TECH_ADD_WEAPON,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "tech-add-intel",					OP_TECH_ADD_INTEL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "tech-add-intel-xstr",			OP_TECH_ADD_INTEL_XSTR,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "tech-reset-to-default",			OP_TECH_RESET_TO_DEFAULT,				0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "change-player-score",			OP_CHANGE_PLAYER_SCORE,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "change-team-score",				OP_CHANGE_TEAM_SCORE,					2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -1521,7 +1523,7 @@ int find_argnum(int parent, int arg)
 /**
  * From an operator name, return its index in the array Operators
  */
-int get_operator_index(char *token)
+int get_operator_index(const char *token)
 {
 	int	i;
 
@@ -1552,7 +1554,7 @@ int get_operator_index(int node)
 /**
  * From an operator name, return its constant (the number it was define'd with)
  */
-int get_operator_const(char *token)
+int get_operator_const(const char *token)
 {
 	int	idx = get_operator_index(token);
 
@@ -3416,6 +3418,29 @@ int get_sexp()
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
 				Dynamic_environment = true;
+				break;
+
+			case OP_TECH_ADD_INTEL_XSTR:
+				// do XSTR translation for each entry in the list
+				// we don't use the do_preload function because the preloader needs to access two nodes at a time
+				// also we're not using CTEXT or eval_num here because XSTR should really be constant, and
+				// also because we can't really run sexp stuff in a preloader
+				n = CDR(start);
+				while (n >= 0)
+				{
+					if (CDR(n) < 0)
+						break;
+
+					int id = atoi(Sexp_nodes[CDR(n)].text);
+					Assert(id < 10000000);
+					char xstr[NAME_LENGTH + 20];
+					sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[n].text, id);
+
+					memset(Sexp_nodes[n].text, 0, NAME_LENGTH*sizeof(char));
+					lcl_ext_localize(xstr, Sexp_nodes[n].text, NAME_LENGTH - 1);
+
+					n = CDDR(n);
+				}
 				break;
 		}
 	}
@@ -10266,7 +10291,6 @@ void sexp_explosion_effect(int n)
 	vec3d origin;
 	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, fireball_type, sound_index;
 	int emp_intensity, emp_duration;
-	shockwave_create_info sci;
 
 	Assert( n >= 0 );
 
@@ -10354,6 +10378,9 @@ void sexp_explosion_effect(int n)
 	{
 		if ( shockwave_speed > 0 )
 		{
+			shockwave_create_info sci;
+			shockwave_create_info_init(&sci);
+
 			sci.inner_rad = (float)inner_radius;
 			sci.outer_rad = (float)outer_radius;
 			sci.blast = (float)max_blast;
@@ -12071,7 +12098,7 @@ void sexp_tech_add_ship(int node)
 		if (i >= 0)
 			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;
 		else
-			Error(LOCATION, "Ship class \"%s\" invalid", name);
+			Warning(LOCATION, "In tech-add-ship, ship class \"%s\" invalid", name);
 
 		node = CDR(node);
 	}
@@ -12093,7 +12120,7 @@ void sexp_tech_add_weapon(int node)
 		if (i >= 0)
 			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
 		else
-			Error(LOCATION, "Weapon class \"%s\" invalid", name);
+			Warning(LOCATION, "In tech-add-weapon, weapon class \"%s\" invalid", name);
 
 		node = CDR(node);
 	}
@@ -12116,9 +12143,40 @@ void sexp_tech_add_intel(int node)
 		if (i >= 0)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
 		else
-			Error(LOCATION, "Intel name \"%s\" invalid", name);
+			Warning(LOCATION, "In tech-add-intel, intel name \"%s\" invalid", name);
 
 		node = CDR(node);
+	}
+}
+
+
+// Goober5000
+void sexp_tech_add_intel_xstr(int node)
+{
+	int i, id, n = node;
+	char *name;
+
+	Assert(n >= 0);
+	// this function doesn't mean anything when not in campaign mode
+	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
+		return;
+
+	while (n >= 0)
+	{
+		// don't use things like CTEXT or eval_num, since we didn't in the preloader
+		name = Sexp_nodes[n].text;
+		n = CDR(n);
+		if (n < 0)
+			break;
+		id = atoi(Sexp_nodes[n].text);
+		n = CDR(n);
+
+		// we already translated this node in the preloader, so just look it up
+		i = intel_info_lookup(name);
+		if (i >= 0)
+			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
+		else
+			Warning(LOCATION, "Intel entry XSTR(\"%s\", %d) invalid", name, id);
 	}
 }
 
@@ -14469,7 +14527,6 @@ void sexp_set_death_message(int n)
 	}
 
 	// apply localization
-	extern void lcl_replace_stuff(SCP_string &text);
 	lcl_replace_stuff(Player->death_message);
 
 	sexp_replace_variable_names_with_values(Player->death_message);
@@ -22683,6 +22740,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TECH_ADD_INTEL_XSTR:
+				sexp_tech_add_intel_xstr(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_TECH_RESET_TO_DEFAULT:
 				sexp_tech_reset_to_default();
 				sexp_val = SEXP_TRUE;
@@ -24377,6 +24439,7 @@ int query_operator_return_type(int op)
 		case OP_TECH_ADD_SHIP:
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
+		case OP_TECH_ADD_INTEL_XSTR:
 		case OP_TECH_RESET_TO_DEFAULT:
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
@@ -25733,6 +25796,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_TECH_ADD_INTEL:
 			return OPF_INTEL_NAME;
+
+		case OP_TECH_ADD_INTEL_XSTR:
+			return !(argnum % 2) ? OPF_INTEL_NAME : OPF_NUMBER;
 
 		case OP_TECH_RESET_TO_DEFAULT:
 			return OPF_NONE;
@@ -28076,6 +28142,7 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_ADD_SHIP:
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
+		case OP_TECH_ADD_INTEL_XSTR:
 		case OP_TECH_RESET_TO_DEFAULT:
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
@@ -30051,11 +30118,21 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of weapon (primary or secondary) to add." },
 
-	{ OP_TECH_ADD_INTEL, "Tech add intel (Action operator)\r\n"
+	{ OP_TECH_ADD_INTEL, "Tech add intel (Action operator, deprecated in favor of tech-add-intel-xstr)\r\n"
 		"\tThis operator makes the given intel entry available in the techroom database.  Players will "
 		"then be able to view this intel entry there.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of intel entry to add." },
+
+	{ OP_TECH_ADD_INTEL_XSTR, "Tech add intel XSTR (Action operator)\r\n"
+		"\tThis operator makes the given intel entry available in the techroom database.  Players will "
+		"then be able to view this intel entry there.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of intel entry to add.\r\n"
+		"\t2:\tXSTR ID of intel entry, or -1 if there is no XSTR entry.\r\n"
+		"Use Add-Data for multiple entries.\r\n\r\n"
+		"IMPORTANT: Each additional entry in the list MUST HAVE two fields; "
+		"any entry without both fields will be ignored, as will any successive entries." },
 
 	{ OP_TECH_RESET_TO_DEFAULT, "Tech reset to default (Action operator)\r\n"
 		"\tThis operator resets the tech room to the default represented in the tables.  This is "

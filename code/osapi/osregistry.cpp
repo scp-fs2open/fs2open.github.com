@@ -24,15 +24,15 @@ static char			szCompanyName[128];
 static char			szAppName[128];
 static char			szAppVersion[128];
 
-char *Osreg_company_name = "Volition";
-char *Osreg_class_name = "FreeSpace2Class";
+const char *Osreg_company_name = "Volition";
+const char *Osreg_class_name = "FreeSpace2Class";
 
 // RT Lets make all versions use the same registry location
 // If we don't the launcher either needs to handle somehow telling what release type a 
 // FS2 exe is or it won't work. Its far similar to just use one default location.
 // The Launcher will set up everything needed
-char *Osreg_app_name = "FreeSpace2";
-char *Osreg_title = "FreeSpace 2";
+const char *Osreg_app_name = "FreeSpace2";
+const char *Osreg_title = "FreeSpace 2";
 
 int Os_reg_inited = 0;
 
@@ -44,7 +44,7 @@ int Os_reg_inited = 0;
 // os registry functions -------------------------------------------------------------
 
 // initialize the registry. setup default keys to use
-void os_init_registry_stuff(char *company, char *app, char *version)
+void os_init_registry_stuff(const char *company, const char *app, const char *version)
 {
 	if(company){
 		strcpy_s( szCompanyName, company );	
@@ -69,7 +69,7 @@ void os_init_registry_stuff(char *company, char *app, char *version)
 
 // Removes a value from to the INI file.  Passing
 // name=NULL will delete the section.
-void os_config_remove( char *section, char *name )
+void os_config_remove( const char *section, const char *name )
 {
 	HKEY hKey = NULL;
 	DWORD dwDisposition;
@@ -124,7 +124,7 @@ Cleanup:
 // Writes a string to the INI file.  If value is NULL,
 // removes the string. Writing a NULL value to a NULL name will delete
 // the section.
-void os_config_write_string( char *section, char *name, char *value )
+void os_config_write_string( const char *section, const char *name, const char *value )
 {
 	HKEY hKey = NULL;
 	DWORD dwDisposition;
@@ -177,7 +177,7 @@ Cleanup:
 }
 
 // same as previous function except we don't use the application name to build up the keyname
-void os_config_write_string2( char *section, char *name, char *value )
+void os_config_write_string2( const char *section, const char *name, const char *value )
 {
 	HKEY hKey = NULL;
 	DWORD dwDisposition;
@@ -230,7 +230,7 @@ Cleanup:
 }
 
 // Writes an unsigned int to the INI file.  
-void os_config_write_uint( char *section, char *name, uint value )
+void os_config_write_uint( const char *section, const char *name, uint value )
 {
 	HKEY hKey = NULL;
 	DWORD dwDisposition;
@@ -289,7 +289,7 @@ Cleanup:
 // calling os_read_string again, because it might reuse the
 // same buffer.
 static char tmp_string_data[1024];
-char * os_config_read_string( char *section, char *name, char *default_value )
+const char * os_config_read_string( const char *section, const char *name, const char *default_value )
 {
 	HKEY hKey = NULL;
 	DWORD dwType, dwLen;
@@ -342,7 +342,7 @@ Cleanup:
 }
 
 // same as previous function except we don't use the application name to build up the keyname
-char * os_config_read_string2( char *section, char *name, char *default_value )
+const char * os_config_read_string2( const char *section, const char *name, const char *default_value )
 {
 	HKEY hKey = NULL;
 	DWORD dwType, dwLen;
@@ -396,7 +396,7 @@ Cleanup:
 
 // Reads a string from the INI file.  Default_value must 
 // be passed, and if 'name' isn't found, then returns default_value
-uint  os_config_read_uint( char *section, char *name, uint default_value )
+uint  os_config_read_uint( const char *section, const char *name, uint default_value )
 {
 	HKEY hKey = NULL;
 	DWORD dwType, dwLen;
@@ -451,7 +451,7 @@ Cleanup:
 
 // uses Ex versions of Windows registry functions
 static char tmp_string_data_ex[1024];
-char * os_config_read_string_ex( char *keyname, char *name, char *default_value )
+const char * os_config_read_string_ex( const char *keyname, const char *name, const char *default_value )
 {
 	HKEY hKey = NULL;
 	DWORD dwType, dwLen;

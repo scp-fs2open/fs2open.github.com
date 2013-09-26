@@ -2346,6 +2346,7 @@ int beam_collide_ship(obj_pair *pair)
 
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
+	mc_info_init(&mc);
 
 	// set up collision structs, part 1
 	mc.model_instance_num = shipp->model_instance_num;
@@ -2495,7 +2496,8 @@ int beam_collide_asteroid(obj_pair *pair)
 	Beam_test_ast++;
 #endif
 
-	// do the collision		
+	// do the collision
+	mc_info_init(&test_collide);
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
@@ -2565,7 +2567,8 @@ int beam_collide_missile(obj_pair *pair)
 	Beam_test_ints++;
 #endif
 
-	// do the collision		
+	// do the collision
+	mc_info_init(&test_collide);
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
@@ -2631,7 +2634,8 @@ int beam_collide_debris(obj_pair *pair)
 	Beam_test_ints++;
 #endif
 
-	// do the collision	
+	// do the collision
+	mc_info_init(&test_collide);
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;

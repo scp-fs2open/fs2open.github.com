@@ -197,9 +197,9 @@ void pilotfile::csg_write_info()
 	}
 
 	// medals list
-	cfwrite_int((int)Medals.size(), cfp);
+	cfwrite_int(Num_medals, cfp);
 
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
+	for (idx = 0; idx < Num_medals; idx++) {
 		cfwrite_string_len(Medals[idx].name, cfp);
 	}
 
@@ -330,7 +330,7 @@ void pilotfile::csg_read_missions()
 			idx = cfread_int(cfp);
 
 			if (medals_list[j].index >= 0) {
-				mission->stats.medals[medals_list[j].index] = idx;
+				mission->stats.medal_counts[medals_list[j].index] = idx;
 			}
 		}
 	}
@@ -399,8 +399,8 @@ void pilotfile::csg_write_missions()
 			}
 
 			// medals earned (scoring)
-			for (j = 0; j < (int)Medals.size(); j++) {
-				cfwrite_int(mission->stats.medals[j], cfp);
+			for (j = 0; j < Num_medals; j++) {
+				cfwrite_int(mission->stats.medal_counts[j], cfp);
 			}
 		}
 	}
@@ -719,7 +719,7 @@ void pilotfile::csg_read_stats()
 		count = cfread_int(cfp);
 
 		if (medals_list[idx].index >= 0) {
-			p->stats.medals[medals_list[idx].index] = count;
+			p->stats.medal_counts[medals_list[idx].index] = count;
 		}
 	}
 }
@@ -757,8 +757,8 @@ void pilotfile::csg_write_stats()
 	}
 
 	// medals earned (scoring)
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
-		cfwrite_int(p->stats.medals[idx], cfp);
+	for (idx = 0; idx < Num_medals; idx++) {
+		cfwrite_int(p->stats.medal_counts[idx], cfp);
 	}
 
 	endSection();
@@ -1247,7 +1247,7 @@ void pilotfile::csg_reset_data()
 	m_data_invalid = false;
 
 	// init stats
-	init_scoring_element(&p->stats);
+	p->stats.init();
 
 	// zero out allowed ships/weapons
 	memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
@@ -1290,7 +1290,7 @@ void pilotfile::csg_reset_data()
 			mission->variables = NULL;
 		}
 
-		init_scoring_element(&mission->stats);
+		mission->stats.init();
 	}
 }
 

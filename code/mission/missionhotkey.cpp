@@ -260,7 +260,7 @@ static UI_XSTR Hotkey_text[GR_NUM_RESOLUTIONS][HOTKEY_NUM_TEXT] = {
 
 
 static struct {
-	char *label;
+	const char *label;
 	int type;
 	int index;
 	int y;  // Y coordinate of line
@@ -509,7 +509,7 @@ int get_wing_hotkeys(int n)
 }
 
 // add a line of hotkey smuck to end of list
-int hotkey_line_add(char *text, int type, int index, int y)
+int hotkey_line_add(const char *text, int type, int index, int y)
 {
 	if (Num_lines >= MAX_LINES)
 		return 0;
@@ -564,7 +564,7 @@ int hotkey_line_add_sorted(char *text, int type, int index, int start)
 int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 {
 	ship_obj *so;
-	char *str = NULL;
+	const char *str = NULL;
 	int i, j, s, z, start, team_mask;
 	int font_height = gr_get_font_height();
 

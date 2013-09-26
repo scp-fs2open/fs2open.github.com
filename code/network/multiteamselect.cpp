@@ -2578,7 +2578,7 @@ void multi_ts_select_ship()
 	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
 	char ship_desc[1000];
-	char *p_str[MAX_BRIEF_LINES];
+	const char *p_str[MAX_BRIEF_LINES];
 	char *token;
 	
 	

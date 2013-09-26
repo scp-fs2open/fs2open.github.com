@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 
 struct object;
-struct ship_info;
+class ship_info;
 class asteroid_info;
 
 // values correspond to the fireball render types

@@ -376,13 +376,13 @@ void pilotfile::plr_read_stats()
 			}
 		}
 
-		// medals earned (have to fine ones that match content)
+		// medals earned (have to find ones that match content)
 		list_size = (int)all_time_stats.medals_earned.size();
 		for (idx = 0; idx < list_size; idx++) {
 			j = all_time_stats.medals_earned[idx].index;
 
 			if (j >= 0) {
-				p->stats.medals[j] = all_time_stats.medals_earned[idx].val;
+				p->stats.medal_counts[j] = all_time_stats.medals_earned[idx].val;
 			}
 		}
 	}
@@ -523,13 +523,13 @@ void pilotfile::plr_read_stats_multi()
 			}
 		}
 
-		// medals earned (have to fine ones that match content)
+		// medals earned (have to find ones that match content)
 		list_size = (int)multi_stats.medals_earned.size();
 		for (idx = 0; idx < list_size; idx++) {
 			j = multi_stats.medals_earned[idx].index;
 
 			if (j >= 0) {
-				p->stats.medals[j] = multi_stats.medals_earned[idx].val;
+				p->stats.medal_counts[j] = multi_stats.medals_earned[idx].val;
 			}
 		}
 	}
@@ -729,7 +729,7 @@ void pilotfile::plr_reset_data()
 	control_config_clear();
 
 	// init stats
-	init_scoring_element(&p->stats);
+	p->stats.init();
 
 	// reset scoring lists
 	all_time_stats.ship_kills.clear();

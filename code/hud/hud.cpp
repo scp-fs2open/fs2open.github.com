@@ -426,7 +426,7 @@ void HudGauge::initFont(int font)
 	}
 }
 
-char* HudGauge::getCustomGaugeName()
+const char* HudGauge::getCustomGaugeName()
 {
 	return custom_name;
 }
@@ -468,7 +468,7 @@ void HudGauge::updateCustomGaugeText(const char* txt)
 	custom_text = txt;
 }
 
-void HudGauge::updateCustomGaugeText(SCP_string& txt)
+void HudGauge::updateCustomGaugeText(const SCP_string& txt)
 {
 	if(!custom_gauge) {
 		return;
@@ -702,7 +702,7 @@ void HudGauge::render(float frametime)
 	}
 }
 
-void HudGauge::renderString(int x, int y, char *str)
+void HudGauge::renderString(int x, int y, const char *str)
 {
 	int nx = 0, ny = 0;
 
@@ -725,7 +725,7 @@ void HudGauge::renderString(int x, int y, char *str)
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderString(int x, int y, int gauge_id, char *str)
+void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
 {
 	int nx = 0, ny = 0;
 
@@ -753,7 +753,7 @@ void HudGauge::renderString(int x, int y, int gauge_id, char *str)
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderStringAlignCenter(int x, int y, int area_width, char *s)
+void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char *s)
 {
 	int w, h;
 
@@ -761,7 +761,7 @@ void HudGauge::renderStringAlignCenter(int x, int y, int area_width, char *s)
 	renderString(x + ((area_width - w) / 2), y, s);
 }
 
-void HudGauge::renderPrintf(int x, int y, char* format, ...)
+void HudGauge::renderPrintf(int x, int y, const char* format, ...)
 {
 	char tmp[256] = "";
 	va_list args;	
@@ -774,7 +774,7 @@ void HudGauge::renderPrintf(int x, int y, char* format, ...)
 	renderString(x, y, tmp);
 }
 
-void HudGauge::renderPrintf(int x, int y, int gauge_id, char* format, ...)
+void HudGauge::renderPrintf(int x, int y, int gauge_id, const char* format, ...)
 {
 	char tmp[256] = "";
 	va_list args;	
@@ -1135,7 +1135,7 @@ bool HudGauge::canRender()
 	return true;
 }
 
-void HudGauge::initCockpitTarget(char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h)
+void HudGauge::initCockpitTarget(const char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h)
 {
 	if ( strlen(display_name) <= 0 ) {
 		return;
@@ -1172,7 +1172,7 @@ bool HudGauge::setupRenderCanvas(int render_target)
 	return false;
 }
 
-void HudGauge::setCockpitTarget(cockpit_display *display)
+void HudGauge::setCockpitTarget(const cockpit_display *display)
 {
 	if ( display == NULL ) {
 		return;
@@ -1689,7 +1689,7 @@ void HudGaugeMissionTime::initValueOffsets(int x, int y)
 	time_val_offsets[1] = y;
 }
 
-void HudGaugeMissionTime::initBitmaps(char *fname)
+void HudGaugeMissionTime::initBitmaps(const char *fname)
 {
 	time_gauge.first_frame = bm_load_animation(fname, &time_gauge.num_frames);
 
@@ -1991,7 +1991,7 @@ void HudGaugeDamage::initLineHeight(int h)
 	line_h = h;
 }
 
-void HudGaugeDamage::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
+void HudGaugeDamage::initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom)
 {
 	damage_top.first_frame = bm_load_animation(fname_top, &damage_top.num_frames);
 	if ( damage_top.first_frame == -1 ) {
@@ -2205,7 +2205,7 @@ void HudGaugeDamage::render(float frametime)
 /** 
  * @brief Initialise the members of the ::hud_anim struct to default values
  */
-void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename)
+void hud_anim_init(hud_anim *ha, int sx, int sy, const char *filename)
 {
 	ha->first_frame		= -1;
 	ha->num_frames		= 0;
@@ -2334,7 +2334,7 @@ void hud_init_text_flash_gauge()
 	Hud_text_flash_interval = 0;
 }
 
-void hud_start_text_flash(char *txt, int t, int interval)
+void hud_start_text_flash(const char *txt, int t, int interval)
 {
 	// bogus
 	if(txt == NULL){
@@ -2414,7 +2414,7 @@ HudGauge(HUD_OBJECT_KILLS, HUD_KILLS_GAUGE, false, false, (VM_EXTERNAL | VM_DEAD
 {
 }
 
-void HudGaugeKills::initBitmaps(char *fname)
+void HudGaugeKills::initBitmaps(const char *fname)
 {
 	Kills_gauge.first_frame = bm_load_animation(fname, &Kills_gauge.num_frames);
 	if ( Kills_gauge.first_frame == -1 ) {
@@ -2475,7 +2475,7 @@ HudGauge(HUD_OBJECT_LAG, HUD_LAG_GAUGE, false, false, (VM_EXTERNAL | VM_DEAD_VIE
 
 }
 
-void HudGaugeLag::initBitmaps(char *fname)
+void HudGaugeLag::initBitmaps(const char *fname)
 {
 	Netlag_icon.first_frame = bm_load_animation(fname, &Netlag_icon.num_frames);
 
@@ -2799,7 +2799,7 @@ void HudGaugeSupport::initTextDockValueOffsetX(int x)
 	text_dock_val_offset_x = x;
 }
 
-void HudGaugeSupport::initBitmaps(char *fname)
+void HudGaugeSupport::initBitmaps(const char *fname)
 {
 	background.first_frame = bm_load_animation(fname, &background.num_frames);
 	if ( background.first_frame == -1 ) {
@@ -3323,7 +3323,7 @@ void HudGaugeObjectiveNotify::initRedAlertValueOffsetY(int y)
 	Red_text_val_offset_y = y;
 }
 
-void HudGaugeObjectiveNotify::initBitmaps(char *fname)
+void HudGaugeObjectiveNotify::initBitmaps(const char *fname)
 {
 	Objective_display_gauge.first_frame = bm_load_animation(fname, &Objective_display_gauge.num_frames);
 	if ( Objective_display_gauge.first_frame == -1 ) {
@@ -3764,9 +3764,9 @@ void hud_page_in()
 	}
 }
 
-HudGauge* hud_get_gauge(char* name)
+HudGauge* hud_get_gauge(const char* name)
 {
-	char* gauge_name;
+	const char* gauge_name;
 	size_t j;
 
 	// go through all gauges and return the gauge that matches
@@ -3915,7 +3915,7 @@ HudGauge(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL |
 {
 }
 
-void HudGaugeFlightPath::initBitmap(char *fname)
+void HudGaugeFlightPath::initBitmap(const char *fname)
 {
 	Marker.first_frame = bm_load_animation(fname, &Marker.num_frames);
 

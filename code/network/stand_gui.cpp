@@ -1805,7 +1805,7 @@ void std_reset_timestamps()
 }
 
 // add a line of text chat to the standalone
-void std_add_chat_text(char *text,int player_index,int add_id)
+void std_add_chat_text(const char *text,int player_index,int add_id)
 {
 	int num_items,ret_val;
 	char format[512];
@@ -1933,7 +1933,7 @@ void std_mutate_sheet()
 }
 
 // if the given callsign is banned from the server
-int std_player_is_banned(char *name)
+int std_player_is_banned(const char *name)
 {
 	int idx;
 
@@ -1949,7 +1949,7 @@ int std_player_is_banned(char *name)
 }
 
 // add a callsign to the ban list
-void std_add_ban(char *name)
+void std_add_ban(const char *name)
 {
 	// if we've reached the max bans
 	if(Standalone_ban_count >= STANDALONE_MAX_BAN){

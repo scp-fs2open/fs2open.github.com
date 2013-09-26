@@ -261,7 +261,7 @@ float Ra_flash_time = 0.0f;
 int Ra_flash_up = 0;
 void red_alert_blit_title()
 {
-	char *str = XSTR("Incoming Transmission", 1406);
+	const char *str = XSTR("Incoming Transmission", 1406);
 	int w, h;
 
 	// get the string size	

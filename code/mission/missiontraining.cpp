@@ -68,11 +68,12 @@ typedef struct {
 } training_message_queue;
 
 char Training_buf[TRAINING_MESSAGE_LENGTH];
-char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
+const char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
+int Training_line_lengths[MAX_TRAINING_MESSAGE_LINES];
+
 char Training_voice_filename[NAME_LENGTH];
 int Max_directives = TRAINING_OBJ_DISPLAY_LINES;
 int Training_message_timestamp;
-int Training_line_sizes[MAX_TRAINING_MESSAGE_LINES];
 int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
@@ -838,7 +839,7 @@ void message_training_setup(int m, int length, char *special_message)
 	// moved from message_training_display() because we got rid of an extra buffer and we have to determine
 	// the number of lines earlier to avoid inadvertant modification of Training_buf.  - taylor
 	training_process_message(Training_buf);
-	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
+	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_lengths, Training_lines, MAX_TRAINING_MESSAGE_LINES);
 
 	Assert( Training_num_lines >= 0 );
 
@@ -951,7 +952,7 @@ void message_training_queue_check()
 
 void message_training_update_frame()
 {
-	int i, z;
+	int z;
 
 	if ((Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
 		return;
@@ -977,11 +978,6 @@ void message_training_update_frame()
 
 	if (Training_num_lines <= 0){
 		return;
-	}
-
-	for (i=0; i<Training_num_lines; i++) {
-		Training_lines[i][Training_line_sizes[i]] = 0;
-		drop_leading_white_space(Training_lines[i]);
 	}
 
 	Training_message_visible = 1;
@@ -1036,7 +1032,8 @@ void HudGaugeTrainingMessages::pageIn()
  */
 void HudGaugeTrainingMessages::render(float frametime)
 {
-	char *str, buf[256];
+	const char *str;
+	char buf[256];
 	int i, z, x, y, height, mode, count;
 
 	if (Training_failure){
@@ -1065,7 +1062,7 @@ void HudGaugeTrainingMessages::render(float frametime)
 		x = position[0] + (TRAINING_MESSAGE_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
 		y = position[1] + i * height + height / 2 + 1;
 
-		while (*str) {  // loop through each character of each line
+		while ((str - Training_lines[i]) < Training_line_lengths[i]) {  // loop through each character of each line
 			if ((count < MAX_TRAINING_MESSAGE_MODS) && (str == Training_message_mods[count].pos)) {
 				buf[z] = 0;
 				renderPrintf(x, y, buf);

@@ -4959,6 +4959,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	}
 
 	mc_info hull_check;
+	mc_info_init(&hull_check);
 
 	hull_check.model_num = model_num;
 	hull_check.model_instance_num = model_instance_num;
@@ -13098,8 +13099,8 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 	}
 	else
 	{
-		int *linelengths = new int[MAX_TEXT_LINES];
-		char **linestarts = new char*[MAX_TEXT_LINES];
+		int linelengths[MAX_TEXT_LINES];
+		const char *linestarts[MAX_TEXT_LINES];
 
 		num_lines = split_str(s, x2-x, linelengths, linestarts, MAX_TEXT_LINES);
 
@@ -13111,26 +13112,24 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 
 		y2 = y;
 
-		char rep;
-		char *reptr;
 		for(int i = 0; i < num_lines; i++)
 		{
 			//Increment line height
 			y2 += line_ht;
-			//WMC - rather than make a new string each line, set the right character to null
-			reptr = &linestarts[i][linelengths[i]];
-			rep = *reptr;
-			*reptr = '\0';
+
+			//Contrary to WMC's previous comment, let's make a new string each line
+			int len = linelengths[i];
+			char *buf = new char[len+1];
+			strncpy(buf, linestarts[i], len);
+			buf[len] = '\0';
 
 			//Draw the string
-			gr_string(x,y2,linestarts[i],false);
+			gr_string(x,y2,buf,false);
 
-			//Set character back
-			*reptr = rep;
+			//Free the string we made
+			delete[] buf;
 		}
 
-		delete[] linelengths;
-		delete[] linestarts;
 		NextDrawStringPos[1] = y2+gr_get_font_height();
 	}
 	return ade_set_error(L, "i", num_lines);

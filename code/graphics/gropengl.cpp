@@ -97,7 +97,7 @@ static int GL_mouse_saved_y2 = 0;
 
 void opengl_save_mouse_area(int x, int y, int w, int h);
 
-extern char *Osreg_title;
+extern const char *Osreg_title;
 
 extern GLfloat GL_anisotropy;
 
@@ -479,7 +479,7 @@ void gr_opengl_set_palette(ubyte *new_palette, int is_alphacolor)
 {
 }
 
-void gr_opengl_print_screen(char *filename)
+void gr_opengl_print_screen(const char *filename)
 {
 	char tmp[MAX_PATH_LEN];
 	ubyte tga_hdr[18];

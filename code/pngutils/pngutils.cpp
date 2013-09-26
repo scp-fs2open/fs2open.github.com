@@ -36,7 +36,7 @@ void png_scp_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
 //
 // returns - PNG_ERROR_NONE if successful, otherwise error code
 //
-int png_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
+int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
 {
 	char filename[MAX_FILENAME_LEN];
 	png_infop info_ptr;
@@ -131,7 +131,7 @@ int png_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 //
 // returns - true if succesful, false otherwise
 //
-int png_read_bitmap(char *real_filename, ubyte *image_data, ubyte *bpp, int dest_size, int cf_type)
+int png_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *bpp, int dest_size, int cf_type)
 {
 	char filename[MAX_FILENAME_LEN];
 	png_infop info_ptr;

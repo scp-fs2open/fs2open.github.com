@@ -149,5 +149,6 @@ extern int Cmdline_verify_vps;
 extern int Cmdline_no_grab;
 #endif
 extern int Cmdline_reparse_mainhall;
+extern bool Cmdline_frame_profile;
 
 #endif

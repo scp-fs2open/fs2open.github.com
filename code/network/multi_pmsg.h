@@ -60,10 +60,10 @@ int multi_msg_text_mode();
 int multi_msg_message_text(char *txt);
 
 // display ingame,inmission message text
-void multi_msg_display_mission_text(char *msg,int player_index);
+void multi_msg_display_mission_text(const char *msg, int player_index);
 
 // if the passed net_player's callsign matches the reg expression of the passed expr
-int multi_msg_matches_expr(net_player *player,char *expr);
+int multi_msg_matches_expr(net_player *player, const char *expr);
 
 // if text input mode is active, clear it
 void multi_msg_text_flush();

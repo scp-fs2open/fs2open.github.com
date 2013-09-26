@@ -2484,11 +2484,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 			if ( ok_to_fire && (tp->flags & MSS_FLAG_TURRET_HULL_CHECK) ) {
 				int model_num = Ship_info[shipp->ship_info_index].model_num;
-				mc_info hull_check;
 				vec3d end;
-
 				vm_vec_scale_add(&end, &gpos, &gvec, model_get_radius(model_num));
 
+				mc_info hull_check;
+				mc_info_init(&hull_check);
 				hull_check.model_instance_num = shipp->model_instance_num;
 				hull_check.model_num = model_num;
 				hull_check.orient = &objp->orient;

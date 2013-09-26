@@ -201,7 +201,7 @@ static int Techroom_show_all = 0;
 static int Text_size;
 static int Text_offset;
 static int Text_line_size[MAX_TEXT_LINES];
-static char *Text_lines[MAX_TEXT_LINES];
+static const char *Text_lines[MAX_TEXT_LINES];
 
 static int Cur_entry = -1;				// this is the current entry selected, using entry indexing
 static int Cur_entry_index = -1;		// this is the current entry selected, using master list indexing
@@ -1368,6 +1368,7 @@ void techroom_do_frame(float frametime)
 	gr_flip();
 }
 
+// note: the name has to be pre-translated before being passed into this function
 int intel_info_lookup(char *name)
 {
 	int	i;

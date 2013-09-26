@@ -601,6 +601,10 @@ SOURCE=..\..\code\globalincs\mspdb_callstack.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\profiling.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\GlobalIncs\PsTypes.h
 # End Source File
 # Begin Source File

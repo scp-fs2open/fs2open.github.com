@@ -914,6 +914,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	}
 
 	mc_info	mc;
+	mc_info_init(&mc);
 	int		num, asteroid_subtype;
 
 	Assert( pasteroid->type == OBJ_ASTEROID );
@@ -1641,6 +1642,7 @@ void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, 
 int asteroid_will_collide(object *asteroid_obj, object *escort_objp)
 {
 	mc_info	mc;
+	mc_info_init(&mc);
 
 	asteroid_test_collide(asteroid_obj, escort_objp, &mc);
 
@@ -1771,6 +1773,7 @@ float asteroid_time_to_impact(object *asteroid_objp)
 	float		time=-1.0f, total_dist, speed;
 	asteroid	*asp;
 	mc_info	mc;
+	mc_info_init(&mc);
 
 	asp = &Asteroids[asteroid_objp->instance];
 

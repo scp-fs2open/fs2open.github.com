@@ -358,7 +358,7 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 //
 // returns - TARGA_ERROR_NONE if successful, otherwise error code
 //
-int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette )
+int targa_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette )
 {	
 	targa_header header;
 	CFILE *targa_file = NULL;
@@ -500,7 +500,7 @@ int targa_uncompress( ubyte *dst, ubyte *src, int bitmap_width, int bytes_per_pi
 //
 // returns - true if succesful, false otherwise
 //
-int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
+int targa_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
 {
 	Assert(real_filename);
 	targa_header header;
