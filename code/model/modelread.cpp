@@ -2638,25 +2638,66 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 			sm2name = SCP_string(sm2->name);
 
-			// Lower-cased last chars of both names
-			int sm1last = tolower(sm1name.back());
-			int sm2last = tolower(sm2name.back());
-
 			if (sm1name.length() == sm2name.length()) {
-				// Now, check that only the last char differs and that sm2's last char is both greater than sm1's and at least "b"
-				if (sm1name.find(sm2name.data(), 0, sm1name.length() - 1) != std::string::npos && sm1last < sm2last && sm2last >= (int)'b') {
-					sm1->details[sm1->num_details] = j;
-					sm1->num_details++;
+				// If the submodel names are of equal length, we check if there's only a 1-char difference
+				// and then pull that char from both names and compare them
 
-					mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2last - sm1last, sm1->name));
+				int first_diff_loc = -1;
+
+				// Find the first differing char
+				for (unsigned int k=0; k<sm1name.length(); k++) {
+					if (sm1name.at(k) != sm2name.at(k)) {
+						if (first_diff_loc == -1) {
+							first_diff_loc = k;
+						} else {
+							// Found a second differing char, so bail out
+							first_diff_loc = -1;
+							break;
+						}
+					}
+				}
+
+				if (first_diff_loc != -1) {
+					int sm1_diff_char = tolower(sm1name.at(first_diff_loc));
+					int sm2_diff_char = tolower(sm2name.at(first_diff_loc));
+
+					// Check that the differing char in sm2 is at least "b" and that it's greater than in sm1
+					if (sm1_diff_char < sm2_diff_char && sm2_diff_char >= (int)'b') {
+						sm1->details[sm1->num_details] = j;
+						sm1->num_details++;
+
+						mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2_diff_char - sm1_diff_char, sm1->name));
+					}
 				}
 			} else if (sm1name.length() == sm2name.length() - 1) {
-				// This allows LOD0 submodels without the trailing "a" to work correctly
-				if (sm1name.find(sm2name.data(), 0, sm1name.length()) != std::string::npos && sm2last >= (int)'b') {
+				// If the submodel name lengths differ by only 1 char, then the other one might merely
+				// be missing the LOD0-denoting "a", so we check if the names are identical if the differing
+				// char is removed from the longer name
+
+				int first_diff_loc = -1;
+				SCP_string sm2_cmp_str = sm2name; // Gets the differing char erased when comparing
+
+				// Find the first differing char
+				for (unsigned int k=0; k<sm2name.length(); k++) {
+					if (k >= sm1name.length() || sm1name.at(k) != sm2_cmp_str.at(k)) {
+						if (first_diff_loc == -1) {
+							first_diff_loc = k;
+							// If we found the first match, we erase that char because otherwise the rest of the string could not match
+							sm2_cmp_str.erase(k, 1);
+						} else if (k < sm1name.length()) {
+							first_diff_loc = -1;
+							break;
+						}
+					}
+				}
+
+				if (first_diff_loc != -1) {
+					int sm2diff = tolower(sm2name.at(first_diff_loc));
+					
 					sm1->details[sm1->num_details] = j;
 					sm1->num_details++;
 
-					mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2last - (int)'a', sm1->name));
+					mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2diff - (int)'a', sm1->name));
 				}
 			}
 		}
