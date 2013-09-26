@@ -18,10 +18,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -51,21 +53,24 @@
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <MinimalRebuild>true</MinimalRebuild>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(WXWIN)/include;$(WXWIN)/contrib/include;$(WXWIN)/lib/mswd;$(WXWIN)/lib/vc_lib/mswd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(WXWIN)/include/msvc;$(WXWIN)/include;../../code;../../code/wxfred2;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;FRED;WIN32;_WINDOWS;WINVER=0x500;_WIN32_WINNT=0x500;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\Profile\wxfred2\</AssemblerListingLocation>
       <BrowseInformation>true</BrowseInformation>
-      <PrecompiledHeaderOutputFile>.\Debug\Profile\wxfred2\wxFRED2.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Debug\Profile\wxfred2\</ObjectFileName>
       <ProgramDataBaseFileName>.\Debug\Profile\wxfred2\</ProgramDataBaseFileName>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAsManaged>false</CompileAsManaged>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -91,32 +96,40 @@
       <IgnoreSpecificDefaultLibraries>libcd.lib;libcid.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(WXWIN)/lib;$(WXWIN)/lib/vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;rpcrt4.lib;wsock32.lib;winmm.lib;wxmsw28d_xrc.lib;wxmsw28d_html.lib;wxmsw28d_adv.lib;wxmsw28d_core.lib;wxbase28d_xml.lib;wxbase28d.lib;wxtiffd.lib;wxjpegd.lib;wxpngd.lib;wxzlibd.lib;wxregexd.lib;wxexpatd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(WXWIN)/lib/vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>comctl32.lib;rpcrt4.lib;winmm.lib;advapi32.lib;wsock32.lib;wxmsw29ud_core.lib;wxbase29ud.lib</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>copy %(FullPath) "$(FS2PATH)/wxfred2_open_3_7_1-debug.exe"  
-copy "$(ProjectDir)..\..\code\wxfred2\wxfred.xrc" "$(FS2PATH)\wxfred.xrc"</Command>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\wxfred2_open_3_7_1-debug.exe"  </Command>
       <Message>Copying build...</Message>
-      <Outputs>$(FS2PATH)/wxfred2_open_3_7_1-debug.exe;$(FS2PATH)\wxfred.xrc;%(Outputs)</Outputs>
+      <Outputs>$(FS2PATH)\wxfred2_open$(FS_VERSION_FULL)-debug.exe;$(FS2PATH)\wxfred.xrc;%(Outputs)</Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <StringPooling>true</StringPooling>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(WXWIN)/include;$(WXWIN)/contrib/include;$(WXWIN)/lib/msw;$(WXWIN)/lib/vc_lib/msw;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(WXWIN)/include/msvc;$(WXWIN)/include;../../code;../../code/wxfred2;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;FRED;WIN32;_WINDOWS;WINVER=0x500;_WIN32_WINNT=0x500;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
       <AssemblerListingLocation>.\Release\Profile\wxfred2\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\Release\Profile\wxfred2\wxFRED2.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Release\Profile\wxfred2\</ObjectFileName>
       <ProgramDataBaseFileName>.\Release\Profile\wxfred2\</ProgramDataBaseFileName>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <CompileAsManaged>false</CompileAsManaged>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -142,79 +155,153 @@ copy "$(ProjectDir)..\..\code\wxfred2\wxfred.xrc" "$(FS2PATH)\wxfred.xrc"</Comma
       <IgnoreSpecificDefaultLibraries>libc.lib;libci.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(WXWIN)/lib;$(WXWIN)/lib/vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;rpcrt4.lib;wsock32.lib;winmm.lib;wxmsw28_xrc.lib;wxmsw28_html.lib;wxmsw28_adv.lib;wxmsw28_core.lib;wxbase28_xml.lib;wxbase28.lib;wxtiff.lib;wxjpeg.lib;wxpng.lib;wxzlib.lib;wxregex.lib;wxexpat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(WXWIN)/lib/vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>comctl32.lib;rpcrt4.lib;winmm.lib;advapi32.lib;wsock32.lib;wxmsw29u_core.lib;wxbase29u.lib</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>copy %(FullPath) "$(FS2PATH)\wxfred2_open_3_7_1.exe"  
-copy "$(ProjectDir)..\..\code\wxfred2\wxfred.xrc" "$(FS2PATH)\wxfred.xrc"</Command>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)/wxfred2_open_3_7_1.exe"</Command>
       <Message>Copying build...</Message>
-      <Outputs>$(FS2PATH)\wxfred2_open_3_7_1.exe;$(FS2PATH)\wxfred.xrc;%(Outputs)</Outputs>
+      <Outputs>$(FS2PATH)\wxfred2_open_3_7_1.exe;%(Outputs)</Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\code\wxfred2\aboutbox.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\asteroidfieldeditor.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\campaigneditor.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\commandbriefingeditor.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\debriefingeditor.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\fredframe.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\missionspecseditor.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\setglobalshipflagseditor.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\shieldsystemeditor.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\voiceactingmanagereditor.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\voicefilemanager.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\base\wxFRED_base.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgAsteroidFieldEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgBackgroundEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgEventsEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgFictionViewer.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgMissionObjectivesEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgMissionSpecsEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgObjectEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgReinforcementsEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgReinforcementsPicker.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgSetGlobalShipFlagsEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgShieldSystemEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgSoundEnvironment.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgVoiceActingManager.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\frmBriefingEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\frmCampaignEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\frmCommandBriefingEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\frmDebriefingEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\frmShipsEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\frmTeamLoadoutEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\frmWaypointEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\editors\frmWingEditor.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\frmFRED2.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\help\dlgAboutBox.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\help\dlgSexpHelp.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\misc\dlgMissionStats.cpp" />
     <ClCompile Include="..\..\code\wxfred2\wxfred2.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\wxfred_xrc.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\code\wxfred2\aboutbox.h" />
-    <ClInclude Include="..\..\code\wxfred2\asteroidfieldeditor.h" />
-    <ClInclude Include="..\..\code\wxfred2\campaigneditor.h" />
-    <ClInclude Include="..\..\code\wxfred2\commandbriefingeditor.h" />
-    <ClInclude Include="..\..\code\wxfred2\debriefingeditor.h" />
-    <ClInclude Include="..\..\code\wxfred2\fredframe.h" />
-    <ClInclude Include="..\..\code\wxfred2\missionspecseditor.h" />
-    <ClInclude Include="..\..\code\wxfred2\setglobalshipflagseditor.h" />
-    <ClInclude Include="..\..\code\wxfred2\shieldsystemeditor.h" />
-    <ClInclude Include="..\..\code\wxfred2\voiceactingmanagereditor.h" />
-    <ClInclude Include="..\..\code\wxfred2\voicefilemanager.h" />
+    <ClInclude Include="..\..\code\wxfred2\base\wxFRED_base.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgAsteroidFieldEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgBackgroundEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgEventsEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgFictionViewer.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgMissionObjectivesEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgMissionSpecsEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgObjectEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgReinforcementsEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgReinforcementsPicker.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgSetGlobalShipFlagsEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgShieldSystemEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgSoundEnvironment.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgVoiceActingManager.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\frmBriefingEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\frmCampaignEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\frmCommandBriefingEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\frmDebriefingEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\frmShipsEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\frmTeamLoadoutEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\frmWaypointEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\editors\frmWingEditor.h" />
+    <ClInclude Include="..\..\code\wxfred2\frmFRED2.h" />
+    <ClInclude Include="..\..\code\wxfred2\glcViewport.h" />
+    <ClInclude Include="..\..\code\wxfred2\help\dlgAboutBox.h" />
+    <ClInclude Include="..\..\code\wxfred2\help\dlgSexpHelp.h" />
+    <ClInclude Include="..\..\code\wxfred2\misc\dlgMissionStats.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\constx.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\constxy.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\constxz.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\consty.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\constyz.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\constz.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\orbitsel.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\rotlocal.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\select.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\selectlist.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\selectlock.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\selectmove.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\selectrot.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\showdist.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\wingdisband.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\wingform.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\zoomext.png.h" />
+    <ClInclude Include="..\..\code\wxfred2\res\zoomsel.png.h" />
     <ClInclude Include="..\..\code\wxfred2\wxfred2.h" />
-    <ClInclude Include="..\..\code\wxfred2\wxfred_xrc.h" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\blank.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\bullseye.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\cdrom.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\computer.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\drive.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\file1.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\floppy.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\folder1.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\folder2.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\FRED.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\hand.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\magnif1.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\noentry.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\pbrush.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\pencil.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\pntleft.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\pntright.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\query.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\removble.ico" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\rightarr.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\roller.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\size.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\watch1.cur" />
-    <CustomBuild Include="..\..\code\wxfred2\wxfred.xrc">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(WXWIN)\utils\wxrc\vc_msw\wxrc.exe" /c /o"%(RootDir)%(Directory)/%(Filename)_xrc.inl" "%(FullPath)"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling XRC resources...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(InputDir)$(InputName)_xrc.inl;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(WXWIN)\utils\wxrc\vc_msw\wxrc.exe" /c /o"%(RootDir)%(Directory)/%(Filename)_xrc.inl" "%(FullPath)"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling XRC resources...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(InputDir)$(InputName)_xrc.inl;%(Outputs)</Outputs>
-    </CustomBuild>
+    <None Include="..\..\code\wxfred2\res\bitmap1.xpm" />
+    <None Include="..\..\code\wxfred2\res\black_do.xpm" />
+    <None Include="..\..\code\wxfred2\res\bmp00001.xpm" />
+    <None Include="..\..\code\wxfred2\res\chained.xpm" />
+    <None Include="..\..\code\wxfred2\res\chained_directive.xpm" />
+    <None Include="..\..\code\wxfred2\res\constx.png" />
+    <None Include="..\..\code\wxfred2\res\constxy.png" />
+    <None Include="..\..\code\wxfred2\res\constxz.png" />
+    <None Include="..\..\code\wxfred2\res\consty.png" />
+    <None Include="..\..\code\wxfred2\res\constyz.png" />
+    <None Include="..\..\code\wxfred2\res\constz.png" />
+    <None Include="..\..\code\wxfred2\res\data.xpm" />
+    <None Include="..\..\code\wxfred2\res\data00.xpm" />
+    <None Include="..\..\code\wxfred2\res\data05.xpm" />
+    <None Include="..\..\code\wxfred2\res\data10.xpm" />
+    <None Include="..\..\code\wxfred2\res\data15.xpm" />
+    <None Include="..\..\code\wxfred2\res\data20.xpm" />
+    <None Include="..\..\code\wxfred2\res\data25.xpm" />
+    <None Include="..\..\code\wxfred2\res\data30.xpm" />
+    <None Include="..\..\code\wxfred2\res\data35.xpm" />
+    <None Include="..\..\code\wxfred2\res\data40.xpm" />
+    <None Include="..\..\code\wxfred2\res\data45.xpm" />
+    <None Include="..\..\code\wxfred2\res\data50.xpm" />
+    <None Include="..\..\code\wxfred2\res\data55.xpm" />
+    <None Include="..\..\code\wxfred2\res\data60.xpm" />
+    <None Include="..\..\code\wxfred2\res\data65.xpm" />
+    <None Include="..\..\code\wxfred2\res\data70.xpm" />
+    <None Include="..\..\code\wxfred2\res\data75.xpm" />
+    <None Include="..\..\code\wxfred2\res\data80.xpm" />
+    <None Include="..\..\code\wxfred2\res\data85.xpm" />
+    <None Include="..\..\code\wxfred2\res\data90.xpm" />
+    <None Include="..\..\code\wxfred2\res\data95.xpm" />
+    <None Include="..\..\code\wxfred2\res\fred.ico" />
+    <None Include="..\..\code\wxfred2\res\freddoc.ico" />
+    <None Include="..\..\code\wxfred2\res\fredknows.png" />
+    <None Include="..\..\code\wxfred2\res\fred_debug.xpm" />
+    <None Include="..\..\code\wxfred2\res\green_do.xpm" />
+    <None Include="..\..\code\wxfred2\res\orbitsel.png" />
+    <None Include="..\..\code\wxfred2\res\play.xpm" />
+    <None Include="..\..\code\wxfred2\res\root.xpm" />
+    <None Include="..\..\code\wxfred2\res\root_directive.xpm" />
+    <None Include="..\..\code\wxfred2\res\rotlocal.png" />
+    <None Include="..\..\code\wxfred2\res\select.png" />
+    <None Include="..\..\code\wxfred2\res\selectlist.png" />
+    <None Include="..\..\code\wxfred2\res\selectlock.png" />
+    <None Include="..\..\code\wxfred2\res\selectmove.png" />
+    <None Include="..\..\code\wxfred2\res\selectrot.png" />
+    <None Include="..\..\code\wxfred2\res\showdist.png" />
+    <None Include="..\..\code\wxfred2\res\toolbar.xpm" />
+    <None Include="..\..\code\wxfred2\res\toolbar1.xpm" />
+    <None Include="..\..\code\wxfred2\res\toolbar1_x2.xpm" />
+    <None Include="..\..\code\wxfred2\res\variable.xpm" />
+    <None Include="..\..\code\wxfred2\res\wingdisband.png" />
+    <None Include="..\..\code\wxfred2\res\wingform.png" />
+    <None Include="..\..\code\wxfred2\res\fred_app.xpm" />
+    <None Include="..\..\code\wxfred2\res\zoomext.png" />
+    <None Include="..\..\code\wxfred2\res\zoomsel.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\code\wxfred2\res\wxfred.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

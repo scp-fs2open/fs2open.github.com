@@ -667,9 +667,6 @@
 			</object>
 			<object class="separator" />
 		</object>
-		<object class="wxBoxSizer">
-			<orient>wxVERTICAL</orient>
-		</object>
 	</object>
 	<object class="wxFrame" name="frmShipsEditor">
 		<style>wxCAPTION|wxCLOSE_BOX|wxFRAME_NO_TASKBAR|wxSYSTEM_MENU|wxTAB_TRAVERSAL</style>
@@ -3216,7 +3213,7 @@
 													<object class="wxBitmapButton" name="btnPlayAudio">
 														<style>wxBU_AUTODRAW</style>
 														<size>23,23</size>
-														<bitmap>..\res\bmp00001.xpm</bitmap>
+														<bitmap>..\res\play.xpm</bitmap>
 														<default>0</default>
 													</object>
 												</object>
@@ -6683,7 +6680,7 @@
 								<object class="wxBitmapButton" name="m_bpButton7">
 									<style>wxBU_AUTODRAW</style>
 									<size>24,24</size>
-									<bitmap>..\res\bmp00001.xpm</bitmap>
+									<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
 									<default>0</default>
 								</object>
 							</object>
@@ -6992,7 +6989,7 @@
 							<object class="wxBitmapButton" name="btnPlayVoice">
 								<style>wxBU_AUTODRAW</style>
 								<size>23,23</size>
-								<bitmap>..\res\bmp00001.xpm</bitmap>
+								<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
 								<default>0</default>
 							</object>
 						</object>
@@ -7044,7 +7041,7 @@
 									<object class="wxBitmapButton" name="btnPlayMusic">
 										<style>wxBU_AUTODRAW</style>
 										<size>23,23</size>
-										<bitmap>..\res\bmp00001.xpm</bitmap>
+										<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
 										<default>0</default>
 									</object>
 								</object>
@@ -7076,7 +7073,7 @@
 									<object class="wxBitmapButton" name="btnPlayMusicFromPack">
 										<style>wxBU_AUTODRAW</style>
 										<size>23,23</size>
-										<bitmap>..\res\bmp00001.xpm</bitmap>
+										<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
 										<default>0</default>
 									</object>
 								</object>
@@ -7497,7 +7494,7 @@
 											<object class="wxBitmapButton" name="btnPlayVoice">
 												<style>wxBU_AUTODRAW|wxBU_EXACTFIT</style>
 												<size>23,23</size>
-												<bitmap>..\res\bmp00001.xpm</bitmap>
+												<bitmap>..\res\play.xpm</bitmap>
 												<default>0</default>
 											</object>
 										</object>
@@ -7599,7 +7596,7 @@
 											<object class="wxBitmapButton" name="btnPlaySuccess">
 												<style>wxBU_AUTODRAW|wxBU_EXACTFIT</style>
 												<size>23,23</size>
-												<bitmap>..\res\bmp00001.xpm</bitmap>
+												<bitmap>..\res\play.xpm</bitmap>
 												<default>0</default>
 											</object>
 										</object>
@@ -7628,7 +7625,7 @@
 											<object class="wxBitmapButton" name="btnPlayNuetral">
 												<style>wxBU_AUTODRAW|wxBU_EXACTFIT</style>
 												<size>23,23</size>
-												<bitmap>..\res\bmp00001.xpm</bitmap>
+												<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
 												<default>0</default>
 											</object>
 										</object>
@@ -7657,7 +7654,7 @@
 											<object class="wxBitmapButton" name="btnPlayFailure">
 												<style>wxBU_AUTODRAW|wxBU_EXACTFIT</style>
 												<size>23,23</size>
-												<bitmap>..\res\bmp00001.xpm</bitmap>
+												<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
 												<default>0</default>
 											</object>
 										</object>
@@ -7924,7 +7921,7 @@
 							<object class="wxBitmapButton" name="btnVoicePlay">
 								<style>wxBU_AUTODRAW|wxBU_EXACTFIT</style>
 								<size>23,23</size>
-								<bitmap>..\res\bmp00001.xpm</bitmap>
+								<bitmap>..\res\play.xpm</bitmap>
 								<default>0</default>
 							</object>
 						</object>
@@ -8023,7 +8020,7 @@
 								<object class="wxBitmapButton" name="btnPlayMusic">
 									<style>wxBU_AUTODRAW</style>
 									<size>23,23</size>
-									<bitmap>..\res\bmp00001.xpm</bitmap>
+									<bitmap>..\res\play.xpm</bitmap>
 									<default>0</default>
 								</object>
 							</object>
@@ -9138,7 +9135,7 @@
 				<object class="wxStaticBitmap" name="bmpLogo">
 					<style>wxSUNKEN_BORDER</style>
 					<bg>#ffffff</bg>
-					<bitmap>..\res\V_fred.xpm</bitmap>
+					<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\fred_splash.xpm</bitmap>
 				</object>
 			</object>
 			<object class="sizeritem">

@@ -264,8 +264,8 @@ private:
 	dlgSexpHelp* dlgSexpHelp_p;
 
 	// Viewports and Rendering
-	wxGLContext mission_state;
-	wxGLCanvas viewport;
+//	wxGLContext mission_state;
+//	wxGLCanvas viewport;
 
 	// member variables
 	wxChar version[32];

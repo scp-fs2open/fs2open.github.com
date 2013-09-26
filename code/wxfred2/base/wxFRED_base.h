@@ -20,7 +20,6 @@
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/toolbar.h>
-#include <wx/sizer.h>
 #include <wx/frame.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
@@ -28,6 +27,7 @@
 #include <wx/combobox.h>
 #include <wx/checkbox.h>
 #include <wx/button.h>
+#include <wx/sizer.h>
 #include <wx/gbsizer.h>
 #include <wx/spinctrl.h>
 #include <wx/treectrl.h>

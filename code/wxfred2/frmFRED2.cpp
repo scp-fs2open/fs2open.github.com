@@ -11,6 +11,8 @@
 
 
 #include "frmFRED2.h"
+#include "res/fred_app.xpm"
+#include "res/fred_debug.xpm"
 
 #include "editors/frmShipsEditor.h"
 #include "editors/frmWingEditor.h"
@@ -84,7 +86,12 @@ frmFRED2::frmFRED2( const wxChar *title, int xpos, int ypos, int width, int heig
 	this->SetSizer( bSizerView );
 	this->Layout();
 
-	this->SetIcon(wxICON(wxFRED));
+	// Set the icon to use for the taskbar and titlebar of this frame
+#ifdef NDEBUG
+	this->SetIcon(wxIcon(fred_app_xpm));
+#else
+	this->SetIcon(wxIcon(fred_debug_xpm));
+#endif
 }
 
 frmFRED2::~frmFRED2( void )
