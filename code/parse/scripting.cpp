@@ -1318,7 +1318,7 @@ bool script_state::ParseCondition(const char *filename)
 			case CHC_VERSION:
 			case CHC_APPLICATION:
 			default:
-				stuff_string(sct.data.name, F_NAME, NAME_LENGTH);
+				stuff_string(sct.data.name, F_NAME, CONDITION_LENGTH);
 				break;
 		}
 

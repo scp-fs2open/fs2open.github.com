@@ -83,7 +83,7 @@ struct script_condition
 	int condition_type;
 	union
 	{
-		char name[NAME_LENGTH];
+		char name[CONDITION_LENGTH];
 	} data;
 
 	script_condition(){condition_type = CHC_NONE; memset(data.name, 0, sizeof(data.name));}
