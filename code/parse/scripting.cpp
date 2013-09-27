@@ -420,10 +420,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 					extern int Current_key_down;
 					if(gameseq_get_depth() < 0)
 						return false;
-					if(Current_key_down == 0)
-						return false;
 
-					int action_index = translate_key_to_index(textify_scancode(Current_key_down), true);
+					int action_index = more_data;
 
 					if (action_index <= 0 || stricmp(scp->data.name, Control_config[action_index].text))
 						return false;
