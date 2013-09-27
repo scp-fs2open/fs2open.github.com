@@ -123,8 +123,13 @@ private:
 };
 
 
-struct colored_vector {
-	colored_vector(): pad(1.0f) {}
+class colored_vector
+{
+public:
+	colored_vector()
+		: pad(1.0f)
+	{}
+
 	vec3d vec;
 	float pad;	//needed so I can just memcpy it in d3d
 	ubyte color[4];
@@ -136,7 +141,9 @@ struct line_list {
 	vertex *vert;
 };
 
-struct buffer_data {
+class buffer_data
+{
+public:
 	int flags;
 
 	int texture;		// this is the texture the vertex buffer will use
@@ -181,7 +188,9 @@ private:
 	uint *index;
 };
 
-struct vertex_buffer {
+class vertex_buffer
+{
+public:
 	int flags;
 
 	uint stride;

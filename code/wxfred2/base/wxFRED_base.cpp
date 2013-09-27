@@ -7,15 +7,15 @@
 
 #include "wxFRED_base.h"
 
-#include "../res/V_fred.xpm"
-#include "../res/bmp00001.xpm"
 #include "../res/constx.png.h"
 #include "../res/constxy.png.h"
 #include "../res/constxz.png.h"
 #include "../res/consty.png.h"
 #include "../res/constyz.png.h"
 #include "../res/constz.png.h"
+#include "../res/fred_splash.xpm"
 #include "../res/orbitsel.png.h"
+#include "../res/play.xpm"
 #include "../res/rotlocal.png.h"
 #include "../res/select.png.h"
 #include "../res/selectlist.png.h"
@@ -738,12 +738,6 @@ frmFRED::frmFRED( wxWindow* parent, wxWindowID id, const wxString& title, const 
 	
 	tbrFRED->Realize(); 
 	
-	wxBoxSizer* bSizer126;
-	bSizer126 = new wxBoxSizer( wxVERTICAL );
-	
-	
-	this->SetSizer( bSizer126 );
-	this->Layout();
 	
 	this->Centre( wxBOTH );
 }
@@ -2027,7 +2021,7 @@ dlgEventsEditor::dlgEventsEditor( wxWindow* parent, wxWindowID id, const wxStrin
 	btnAudioBrowse = new wxButton( pnlMessages, wxID_ANY, wxT("Browse"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
 	bSizer75->Add( btnAudioBrowse, 0, wxALL, 3 );
 	
-	btnPlayAudio = new wxBitmapButton( pnlMessages, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
+	btnPlayAudio = new wxBitmapButton( pnlMessages, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
 	bSizer75->Add( btnPlayAudio, 0, wxALIGN_CENTER|wxALL|wxEXPAND, 3 );
 	
 	
@@ -3808,7 +3802,7 @@ dlgSoundEnvironment::dlgSoundEnvironment( wxWindow* parent, wxWindowID id, const
 	wxStaticBoxSizer* sbSizer45;
 	sbSizer45 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Preview") ), wxHORIZONTAL );
 	
-	m_bpButton7 = new wxBitmapButton( this, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 24,24 ), wxBU_AUTODRAW );
+	m_bpButton7 = new wxBitmapButton( this, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 24,24 ), wxBU_AUTODRAW );
 	sbSizer45->Add( m_bpButton7, 0, wxALIGN_CENTER|wxALL, 3 );
 	
 	m_filePicker2 = new wxFilePickerCtrl( this, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("*.*"), wxDefaultPosition, wxSize( -1,24 ), wxFLP_FILE_MUST_EXIST|wxFLP_OPEN );
@@ -3980,7 +3974,7 @@ frmBriefingEditor::frmBriefingEditor( wxWindow* parent, wxWindowID id, const wxS
 	m_filePicker1 = new wxFilePickerCtrl( m_panel13, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE );
 	bSizer112->Add( m_filePicker1, 0, wxALIGN_CENTER_VERTICAL|wxALL, 3 );
 	
-	btnPlayVoice = new wxBitmapButton( m_panel13, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
+	btnPlayVoice = new wxBitmapButton( m_panel13, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
 	bSizer112->Add( btnPlayVoice, 0, wxALL, 3 );
 	
 	
@@ -4004,7 +3998,7 @@ frmBriefingEditor::frmBriefingEditor( wxWindow* parent, wxWindowID id, const wxS
 	m_choice42->SetSelection( 0 );
 	fgSizer40->Add( m_choice42, 0, wxALIGN_CENTER_VERTICAL|wxALL, 3 );
 	
-	btnPlayMusic = new wxBitmapButton( m_panel13, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
+	btnPlayMusic = new wxBitmapButton( m_panel13, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
 	fgSizer40->Add( btnPlayMusic, 0, wxALIGN_CENTER_VERTICAL|wxALL, 3 );
 	
 	m_staticText196 = new wxStaticText( m_panel13, wxID_ANY, wxT("If music pack is present:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -4017,7 +4011,7 @@ frmBriefingEditor::frmBriefingEditor( wxWindow* parent, wxWindowID id, const wxS
 	m_choice43->SetSelection( 0 );
 	fgSizer40->Add( m_choice43, 0, wxALIGN_CENTER_VERTICAL|wxALL, 3 );
 	
-	btnPlayMusicFromPack = new wxBitmapButton( m_panel13, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
+	btnPlayMusicFromPack = new wxBitmapButton( m_panel13, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
 	fgSizer40->Add( btnPlayMusicFromPack, 0, wxALIGN_CENTER_VERTICAL|wxALL, 3 );
 	
 	
@@ -4222,7 +4216,7 @@ frmDebriefingEditor::frmDebriefingEditor( wxWindow* parent, wxWindowID id, const
 	btnBrowse = new wxButton( pnlMain, wxID_ANY, wxT("Browse"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
 	bSizer26->Add( btnBrowse, 0, wxALIGN_CENTER_VERTICAL|wxALL, 3 );
 	
-	btnPlayVoice = new wxBitmapButton( pnlMain, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
+	btnPlayVoice = new wxBitmapButton( pnlMain, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
 	bSizer26->Add( btnPlayVoice, 0, wxALIGN_CENTER_VERTICAL|wxALL, 3 );
 	
 	
@@ -4274,7 +4268,7 @@ frmDebriefingEditor::frmDebriefingEditor( wxWindow* parent, wxWindowID id, const
 	cbMusicSuccess->SetSelection( 0 );
 	fgSizer40->Add( cbMusicSuccess, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	btnPlaySuccess = new wxBitmapButton( pnlMusic, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
+	btnPlaySuccess = new wxBitmapButton( pnlMusic, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
 	fgSizer40->Add( btnPlaySuccess, 0, wxALL, 3 );
 	
 	m_staticText210 = new wxStaticText( pnlMusic, wxID_ANY, wxT("Nuetral Music:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -4286,7 +4280,7 @@ frmDebriefingEditor::frmDebriefingEditor( wxWindow* parent, wxWindowID id, const
 	m_choice45->SetSelection( 0 );
 	fgSizer40->Add( m_choice45, 0, wxALL, 5 );
 	
-	btnPlayNuetral = new wxBitmapButton( pnlMusic, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
+	btnPlayNuetral = new wxBitmapButton( pnlMusic, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
 	fgSizer40->Add( btnPlayNuetral, 0, wxALL, 3 );
 	
 	m_staticText211 = new wxStaticText( pnlMusic, wxID_ANY, wxT("Failure Music:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -4298,7 +4292,7 @@ frmDebriefingEditor::frmDebriefingEditor( wxWindow* parent, wxWindowID id, const
 	m_choice46->SetSelection( 0 );
 	fgSizer40->Add( m_choice46, 0, wxALL, 5 );
 	
-	btnPlayFailure = new wxBitmapButton( pnlMusic, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
+	btnPlayFailure = new wxBitmapButton( pnlMusic, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
 	fgSizer40->Add( btnPlayFailure, 0, wxALL, 3 );
 	
 	
@@ -4471,7 +4465,7 @@ frmCommandBriefingEditor::frmCommandBriefingEditor( wxWindow* parent, wxWindowID
 	fpVoiceWave = new wxFilePickerCtrl( m_panel5, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE );
 	fgSizer28->Add( fpVoiceWave, 0, wxALL|wxEXPAND, 3 );
 	
-	btnVoicePlay = new wxBitmapButton( m_panel5, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
+	btnVoicePlay = new wxBitmapButton( m_panel5, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW|wxBU_EXACTFIT );
 	fgSizer28->Add( btnVoicePlay, 0, wxALIGN_CENTER_VERTICAL|wxALL, 3 );
 	
 	
@@ -4538,7 +4532,7 @@ dlgFictionViewer::dlgFictionViewer( wxWindow* parent, wxWindowID id, const wxStr
 	cbMusic->SetSelection( 0 );
 	bSizer125->Add( cbMusic, 1, wxALL|wxEXPAND, 3 );
 	
-	btnPlayMusic = new wxBitmapButton( this, wxID_ANY, wxBitmap( bmp00001_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
+	btnPlayMusic = new wxBitmapButton( this, wxID_ANY, wxBitmap( play_xpm ), wxDefaultPosition, wxSize( 23,23 ), wxBU_AUTODRAW );
 	bSizer125->Add( btnPlayMusic, 0, wxALL, 2 );
 	
 	
@@ -5204,7 +5198,7 @@ dlgAboutBox::dlgAboutBox( wxWindow* parent, wxWindowID id, const wxString& title
 	wxBoxSizer* bSizer104;
 	bSizer104 = new wxBoxSizer( wxHORIZONTAL );
 	
-	bmpLogo = new wxStaticBitmap( this, wxID_ANY, wxBitmap( V_fred_xpm ), wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER );
+	bmpLogo = new wxStaticBitmap( this, wxID_ANY, wxBitmap( fred_splash_xpm ), wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER );
 	bmpLogo->SetBackgroundColour( wxColour( 255, 255, 255 ) );
 	
 	bSizer104->Add( bmpLogo, 0, wxALIGN_CENTER|wxALL|wxEXPAND, 5 );

@@ -8,10 +8,14 @@
 
 #include <wx/wx.h>
 
+
 class wxFRED2 : public wxApp
 {
 	public:
 		virtual bool OnInit();
+		void LoadMission();
+		void NewMission();
+		void SaveMission();
 };
 
 DECLARE_APP(wxFRED2)

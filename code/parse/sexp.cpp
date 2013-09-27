@@ -596,8 +596,8 @@ sexp_oper Operators[] = {
 	//Cutscene Sub-Category
 	{ "set-cutscene-bars",				OP_CUTSCENES_SET_CUTSCENE_BARS,			0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "unset-cutscene-bars",			OP_CUTSCENES_UNSET_CUTSCENE_BARS,		0,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "fade-in",						OP_CUTSCENES_FADE_IN,					0,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "fade-out",						OP_CUTSCENES_FADE_OUT,					0,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "fade-in",						OP_CUTSCENES_FADE_IN,					0,	4,			SEXP_ACTION_OPERATOR,	},
+	{ "fade-out",						OP_CUTSCENES_FADE_OUT,					0,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "set-camera",						OP_CUTSCENES_SET_CAMERA,				0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "set-camera-position",			OP_CUTSCENES_SET_CAMERA_POSITION,		3,	6,			SEXP_ACTION_OPERATOR,	},
 	{ "set-camera-facing",				OP_CUTSCENES_SET_CAMERA_FACING,			3,	6,			SEXP_ACTION_OPERATOR,	},
@@ -19594,113 +19594,100 @@ void multi_sexp_toggle_cutscene_bars(int set)
 	}
 }
 
-void sexp_fade_in(int n)
+void sexp_fade(bool fade_in, int duration, ubyte R, ubyte G, ubyte B)
+{
+	if (duration > 0)
+	{
+		Fade_start_timestamp = timestamp();
+		Fade_end_timestamp = timestamp(duration);
+		Fade_type = fade_in ? FI_FADEIN : FI_FADEOUT;
+		gr_create_shader(&Viewer_shader, R, G, B, Viewer_shader.c);
+	}
+	else
+	{
+		Fade_type = FI_NONE;
+		gr_create_shader(&Viewer_shader, R, G, B, fade_in ? 0 : 255);
+	}
+}
+
+void sexp_fade(int n, bool fade_in)
 {
 	int duration = 0;
+	int R = -1;
+	int G = -1;
+	int B = -1;
 
-	if(n != -1)
+	if (n != -1)
+	{
 		duration = eval_num(n);
-
-	if (duration > 0) {
-		Fade_start_timestamp = timestamp();
-		Fade_end_timestamp = timestamp(duration);
-		Fade_type = FI_FADEIN;
-	} else {
-		Fade_type = FI_NONE;
-		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
-	}
-
-	// multiplayer callback
-	multi_start_callback();
-	multi_send_int(duration);
-	multi_end_callback();
-}
-
-void multi_sexp_fade_in()
-{
-	int duration = 0;
-
-	multi_get_int(duration);
-
-	if (duration > 0) {
-		Fade_start_timestamp = timestamp();
-		Fade_end_timestamp = timestamp(duration);
-		Fade_type = FI_FADEIN;
-	} else {
-		Fade_type = FI_NONE;
-		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
-	}
-}
-
-void sexp_fade_out(int duration, int fadeColor)
-{
-	ubyte R = 0;
-	ubyte G = 0;
-	ubyte B = 0;
-
-	switch(fadeColor) {
-		//White out
-		case 1:
-			gr_create_shader(&Viewer_shader, 255, 255, 255, Viewer_shader.c);
-			break;
-		//Red out
-		case 2:
-			gr_create_shader(&Viewer_shader, 255, 0, 0, Viewer_shader.c);
-			break;
-		//Black out
-		default:
-			gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
-			break;
-	}
-
-	R = Viewer_shader.r;
-	G = Viewer_shader.g;
-	B = Viewer_shader.b;
-
-	if (duration > 0) {
-		Fade_start_timestamp = timestamp();
-		Fade_end_timestamp = timestamp(duration);
-		Fade_type = FI_FADEOUT;
-	} else {
-		Fade_type = FI_NONE;
-		gr_create_shader(&Viewer_shader, R, G, B, 255);
-	}
-}
-
-void sexp_fade_out(int n)
-{
-	int duration = 0;
-	int fadeColor = 0;
-
-	if (n != -1) {
-		duration = eval_num(n);
-
 		n = CDR(n);
-		if (n != -1) {
-			fadeColor = eval_num(n);
+
+		if (n != -1)
+		{
+			R = eval_num(n);
+			if (R < 0 || R > 255) R = -1;
+			n = CDR(n);
+
+			if (n != -1)
+			{
+				G = eval_num(n);
+				if (G < 0 || G > 255) G = -1;
+				n = CDR(n);
+
+				if (n != -1)
+				{
+					B = eval_num(n);
+					if (B < 0 || B > 255) B = -1;
+					n = CDR(n);
+				}
+			}
 		}
 	}
 
-	sexp_fade_out(duration, fadeColor);
+	// select legacy (or default) fade color
+	if (R < 0 || G < 0 || B < 0)
+	{
+		// fade white
+		if (R == 1)
+		{
+			R = G = B = 255;
+		}
+		// fade red
+		else if (R == 2)
+		{
+			R = 255;
+			G = B = 0;
+		}
+		// default: fade black
+		else
+		{
+			R = G = B = 0;
+		}
+	}
+
+	sexp_fade(fade_in, duration, (ubyte) R, (ubyte) G, (ubyte) B);
 
 	multi_start_callback();
 	multi_send_int(duration);
-	multi_send_int(fadeColor);
+	multi_send_int(R);
+	multi_send_int(G);
+	multi_send_int(B);
 	multi_end_callback();
 }
 
-void multi_sexp_fade_out()
+void multi_sexp_fade(bool fade_in)
 {
 	int duration = 0;
-	int fadeColor = 0;
+	int R = 0;
+	int G = 0;
+	int B = 0;
 
-	multi_get_int(duration);
-	if (!multi_get_int(fadeColor)){
-		Int3();	// misformed packet
-		return;
-	}
+	if (multi_get_int(duration))
+		if (multi_get_int(R))
+			if (multi_get_int(G))
+				multi_get_int(B);
 
-	sexp_fade_out(duration, fadeColor);
+	sexp_fade(fade_in, duration, (ubyte) R, (ubyte) G, (ubyte) B);
 }
 
 camera* sexp_get_set_camera(bool reset = false)
@@ -23513,13 +23500,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_CUTSCENES_FADE_IN:
-				sexp_val = SEXP_TRUE;
-				sexp_fade_in(node);
-				break;
 			case OP_CUTSCENES_FADE_OUT:
 				sexp_val = SEXP_TRUE;
-				sexp_fade_out(node);
+				sexp_fade(node, op_num == OP_CUTSCENES_FADE_IN);
 				break;
+
 			case OP_CUTSCENES_SET_CAMERA:
 				sexp_val = SEXP_TRUE;
 				sexp_set_camera(node);
@@ -23899,11 +23884,8 @@ void multi_sexp_eval()
 				break;
 
 			case OP_CUTSCENES_FADE_IN:
-				multi_sexp_fade_in();
-				break;
-
 			case OP_CUTSCENES_FADE_OUT:
-				multi_sexp_fade_out();
+				multi_sexp_fade(op_num == OP_CUTSCENES_FADE_IN);
 				break;
 
 			case OP_NAV_ADD_SHIP:
@@ -31501,15 +31483,20 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_CUTSCENES_FADE_IN, "fade-in\r\n"
 		"\tFades in.  "
-		"Takes 0 or 1 arguments...\r\n"
+		"Takes 0 to 4 arguments...\r\n"
 		"\t1:\tTime to fade in (in milliseconds)\r\n"
+		"\t2:\tColor to fade to (optional).  If arguments 3 and 4 are specified, this is the R component of an RGB color.  Otherwise it is 1 for white, 2 for red, and any other number for black.\r\n"
+		"\t3:\tG component of an RGB color (optional)\r\n"
+		"\t4:\tB component of an RGB color (optional)\r\n"
 	},
 
 	{ OP_CUTSCENES_FADE_OUT, "fade-out\r\n"
 		"\tFades out.  "
-		"Takes 0 to 2 arguments...\r\n"
+		"Takes 0 to 4 arguments...\r\n"
 		"\t1:\tTime to fade in (in milliseconds)\r\n"
-		"\t2:\tColor to fade to - 1 for white, 2 for red, default is black\r\n"
+		"\t2:\tColor to fade to (optional).  If arguments 3 and 4 are specified, this is the R component of an RGB color.  Otherwise it is 1 for white, 2 for red, and any other number for black.\r\n"
+		"\t3:\tG component of an RGB color (optional)\r\n"
+		"\t4:\tB component of an RGB color (optional)\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA, "set-camera\r\n"
