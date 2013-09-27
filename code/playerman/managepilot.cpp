@@ -393,7 +393,6 @@ void player::reset()
 {
 	memset(callsign, 0, sizeof(callsign));
 	memset(short_callsign, 0, sizeof(short_callsign));
-
 	short_callsign_width = 0;
 
 	memset(image_filename, 0, sizeof(image_filename));
@@ -403,8 +402,8 @@ void player::reset()
 	memset(m_squad_name, 0, sizeof(m_squad_name));
 
 	memset(current_campaign, 0, sizeof(current_campaign));
-
 	readyroom_listing_mode = 0;
+
 	flags = 0;
 	save_flags = 0;
 
@@ -447,7 +446,6 @@ void player::reset()
 
 	allow_warn_timestamp = -1;
 	warn_count = 0;
-
 	damage_this_burst = 0.0f;
 
 	repair_sound_loop = -1;
@@ -465,6 +463,9 @@ void player::reset()
 
 	low_ammo_complaint_count = 0;
 	allow_ammo_timestamp = -1;
+
+	praise_self_count = 0;
+	praise_self_timestamp = -1;
 
 	subsys_in_view = -1;
 	request_repair_timestamp = -1;
@@ -497,7 +498,7 @@ void player::reset()
 
 	tips = 1;
 
-	shield_penalty_stamp = 0;
+	shield_penalty_stamp = -1;
 
 	failures_this_session = 0;
 	show_skip_popup = 0;
@@ -509,4 +510,155 @@ void player::reset()
 	memset(&lua_ci, 0, sizeof(control_info));
 	memset(&lua_bi, 0, sizeof(button_info));
 	memset(&lua_bi_full, 0, sizeof(button_info));
+
+	player_was_multi = 0;
+}
+
+
+void player::assign(const player *other)
+{
+	int i;
+
+	strcpy(callsign, other->callsign);
+	strcpy(short_callsign, other->short_callsign);
+	short_callsign_width = other->short_callsign_width;
+
+	strcpy(image_filename, other->image_filename);
+	strcpy(s_squad_filename, other->s_squad_filename);
+	strcpy(s_squad_name, other->s_squad_name);
+	strcpy(m_squad_filename, other->m_squad_filename);
+	strcpy(m_squad_name, other->m_squad_name);
+
+	strcpy(current_campaign, other->current_campaign);
+	readyroom_listing_mode = other->readyroom_listing_mode;
+
+	flags = other->flags;
+	save_flags = other->save_flags;
+
+	memcpy(keyed_targets, other->keyed_targets, sizeof(keyed_targets));
+	// make sure we correctly set the pointers
+	for (i = 0; i < MAX_KEYED_TARGETS; i++)
+	{
+		if (other->keyed_targets[i].next == NULL)
+			keyed_targets[i].next = NULL;
+		else
+			keyed_targets[i].next = &keyed_targets + (other->keyed_targets[i].next - &other->keyed_targets);
+
+		if (other->keyed_targets[i].prev == NULL)
+			keyed_targets[i].prev = NULL;
+		else
+			keyed_targets[i].prev = &keyed_targets + (other->keyed_targets[i].prev - &other->keyed_targets);
+	}
+	current_hotkey_set = other->current_hotkey_set;
+
+	lead_target_pos = other->lead_target_pos;
+	lead_target_cheat = other->lead_target_cheat;
+	lead_indicator_active = other->lead_indicator_active;
+
+	lock_indicator_x = other->lock_indicator_x;
+	lock_indicator_y = other->lock_indicator_y;
+	lock_indicator_start_x = other->lock_indicator_start_x;
+	lock_indicator_start_y = other->lock_indicator_start_y;
+	lock_indicator_visible = other->lock_indicator_visible;
+	lock_time_to_target = other->lock_time_to_target;
+	lock_dist_to_target = other->lock_dist_to_target;
+
+	last_ship_flown_si_index = other->last_ship_flown_si_index;
+
+	// this one might be dicey
+	objnum = other->objnum;
+
+	memcpy(&bi, other->bi, sizeof(button_info));
+	memcpy(&ci, other->bi, sizeof(control_info));
+
+	stats.assign(other->stats);
+
+	friendly_hits = other->friendly_hits;
+	friendly_damage = other->friendly_damage;
+	friendly_last_hit_time = other->friendly_last_hit_time;
+	last_warning_message_time = other->last_warning_message_time;
+
+	control_mode = other->control_mode;
+	saved_viewer_mode = other->saved_viewer_mode;
+
+	check_warn_timestamp = other->check_warn_timestamp;
+
+	distance_warning_count = other->distance_warning_count;
+	distance_warning_time = other->distance_warning_time;
+
+	allow_warn_timestamp = other->allow_warn_timestamp;
+	warn_count = other->warn_count;
+	damage_this_burst = other->damage_this_burst;
+
+	repair_sound_loop = other->repair_sound_loop;
+	cargo_scan_loop = other->cargo_scan_loop;
+
+	praise_count = other->praise_count;
+	allow_praise_timestamp = other->allow_praise_timestamp;
+	praise_delay_timestamp = other->praise_delay_timestamp;
+
+	ask_help_count = other->ask_help_count;
+	allow_ask_help_timestamp = other->allow_ask_help_timestamp;
+
+	scream_count = other->scream_count;
+	allow_scream_timestamp = other->allow_scream_timestamp;
+
+	low_ammo_complaint_count = other->low_ammo_complaint_count;
+	allow_ammo_timestamp = other->allow_ammo_timestamp;
+
+	praise_self_count = other->praise_self_count;
+	praise_self_timestamp = other->praise_self_timestamp;
+
+	subsys_in_view = other->subsys_in_view;
+	request_repair_timestamp = other->request_repair_timestamp;
+
+	cargo_inspect_time = other->cargo_inspect_time;
+	target_is_dying = other->target_is_dying;
+	current_target_sx = other->current_target_sx;
+	current_target_sy = other->current_target_sy;
+	target_in_lock_cone = other->target_in_lock_cone;
+	locking_subsys = other->locking_subsys;
+	locking_subsys_parent = other->locking_subsys_parent;
+	locking_on_center = other->locking_on_center;
+
+	killer_objtype = other->killer_objtype;
+	killer_species = other->killer_species;
+	killer_weapon_index = other->killer_weapon_index;
+	strcpy(killer_parent_name, other->killer_parent_name);
+
+	check_for_all_alone_msg = other->check_for_all_alone_msg;
+
+	update_dumbfire_time = other->update_dumbfire_time;
+	update_lock_time = other->update_lock_time;
+	threat_flags = other->threat_flags;
+	auto_advance = other->auto_advance;
+
+	memcpy(&m_local_options, other->m_local_options);
+	memcpy(&m_server_options, other->m_server_options);
+
+	insignia_texture = other->insignia_texture;
+
+	tips = other->tips;
+
+	shield_penalty_stamp = other->shield_penalty_stamp;
+
+	failures_this_session = other->failures_this_session;
+	show_skip_popup = other->show_skip_popup;
+
+	variables.clear();
+	variables.reserve(other->variables.size());
+	for (SCP_vector<sexp_variable>::iterator ii = other->variables.begin(); ii != other->variables.end(); ++ii)
+	{
+		sexp_variable temp;
+		memcpy(&temp, &(*ii), sizeof(sexp_variable));
+		variables.push_back(temp);
+	}
+
+	death_message = other->death_message;
+
+	memcpy(&lua_ci, other->lua_ci, sizeof(control_info));
+	memcpy(&lua_bi, other->lua_bi, sizeof(button_info));
+	memcpy(&lua_bi_full, other->lua_bi_full, sizeof(button_info));
+
+	player_was_multi = other->player_was_multi;
 }

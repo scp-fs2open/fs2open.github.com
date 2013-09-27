@@ -1609,7 +1609,7 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 	}
 
 	if (rc == 0) {
-		memcpy( out_plr, &new_plr, sizeof(player) );
+		out_plr->assign(new_plr);
 		In_process = false;
 		Local_timeout = -1;
 	}
