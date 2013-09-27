@@ -542,12 +542,18 @@ void player::assign(const player *other)
 		if (other->keyed_targets[i].next == NULL)
 			keyed_targets[i].next = NULL;
 		else
-			keyed_targets[i].next = &keyed_targets + (other->keyed_targets[i].next - &other->keyed_targets);
+		{
+			size_t index = (other->keyed_targets[i].next - &other->keyed_targets[0]);
+			keyed_targets[i].next = &keyed_targets[index];
+		}
 
 		if (other->keyed_targets[i].prev == NULL)
 			keyed_targets[i].prev = NULL;
 		else
-			keyed_targets[i].prev = &keyed_targets + (other->keyed_targets[i].prev - &other->keyed_targets);
+		{
+			size_t index = (other->keyed_targets[i].prev - &other->keyed_targets[0]);
+			keyed_targets[i].prev = &keyed_targets[index];
+		}
 	}
 	current_hotkey_set = other->current_hotkey_set;
 
@@ -568,8 +574,8 @@ void player::assign(const player *other)
 	// this one might be dicey
 	objnum = other->objnum;
 
-	memcpy(&bi, other->bi, sizeof(button_info));
-	memcpy(&ci, other->bi, sizeof(control_info));
+	memcpy(&bi, &other->bi, sizeof(button_info));
+	memcpy(&ci, &other->bi, sizeof(control_info));
 
 	stats.assign(other->stats);
 
@@ -633,8 +639,8 @@ void player::assign(const player *other)
 	threat_flags = other->threat_flags;
 	auto_advance = other->auto_advance;
 
-	memcpy(&m_local_options, other->m_local_options);
-	memcpy(&m_server_options, other->m_server_options);
+	memcpy(&m_local_options, &other->m_local_options, sizeof(multi_local_options));
+	memcpy(&m_server_options, &other->m_server_options, sizeof(multi_server_options));
 
 	insignia_texture = other->insignia_texture;
 
@@ -647,7 +653,7 @@ void player::assign(const player *other)
 
 	variables.clear();
 	variables.reserve(other->variables.size());
-	for (SCP_vector<sexp_variable>::iterator ii = other->variables.begin(); ii != other->variables.end(); ++ii)
+	for (SCP_vector<sexp_variable>::const_iterator ii = other->variables.begin(); ii != other->variables.end(); ++ii)
 	{
 		sexp_variable temp;
 		memcpy(&temp, &(*ii), sizeof(sexp_variable));
@@ -656,9 +662,9 @@ void player::assign(const player *other)
 
 	death_message = other->death_message;
 
-	memcpy(&lua_ci, other->lua_ci, sizeof(control_info));
-	memcpy(&lua_bi, other->lua_bi, sizeof(button_info));
-	memcpy(&lua_bi_full, other->lua_bi_full, sizeof(button_info));
+	memcpy(&lua_ci, &other->lua_ci, sizeof(control_info));
+	memcpy(&lua_bi, &other->lua_bi, sizeof(button_info));
+	memcpy(&lua_bi_full, &other->lua_bi_full, sizeof(button_info));
 
 	player_was_multi = other->player_was_multi;
 }
