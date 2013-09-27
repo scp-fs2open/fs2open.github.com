@@ -2153,7 +2153,6 @@ float check_control_timef(int id)
 		// to allow it to tell the difference between an ongoing continuous action
 		// started before and a continuous action being started right now.
 		Control_config[id].continuous_ongoing = true;
-        mprintf(("zoo %f %f\n", t1, t2));
 
 		return t1 + t2;
 	}
@@ -2334,7 +2333,6 @@ void control_used(int id)
 	}
 
 	if (!Control_config[id].continuous_ongoing) {
-        mprintf(("zoo should trigger %s\n", Control_config[id].text));
 		Script_system.SetHookVar("Action", 's', Control_config[id].text);
 		Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
 		Script_system.RemHookVar("Action");
