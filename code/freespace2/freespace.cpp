@@ -241,6 +241,7 @@ float frametimes[FRAME_FILTER];
 float frametotal = 0.0f;
 float flRealframetime;
 float flFrametime;
+int Last_frame_timestamp = 0;
 fix FrametimeOverall = 0;
 
 #ifndef NDEBUG
@@ -4747,6 +4748,7 @@ void game_set_frametime(int state)
 
 	Last_time = thistime;
 	//mprintf(("Frame %i, Last_time = %7.3f\n", Framecount, f2fl(Last_time)));
+	Last_frame_timestamp = timestamp();
 
 	flFrametime = f2fl(Frametime);
 	timestamp_inc(flFrametime);

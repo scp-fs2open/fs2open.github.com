@@ -2332,16 +2332,20 @@ void control_used(int id)
 		return;
 	}
 
-	if (!Control_config[id].continuous_ongoing) {
-		Script_system.SetHookVar("Action", 's', Control_config[id].text);
-		Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
-		Script_system.RemHookVar("Action");
+	// This check needs to be done because the control code might call this function more than once per frame,
+	// and we don't want to run the hooks more than once per frame
+	if (Control_config[id].used < Last_frame_timestamp) {
+		if (!Control_config[id].continuous_ongoing) {
+			Script_system.SetHookVar("Action", 's', Control_config[id].text);
+			Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
+			Script_system.RemHookVar("Action");
 
-		if (Control_config[id].type == CC_TYPE_CONTINUOUS)
-			Control_config[id].continuous_ongoing = true;
+			if (Control_config[id].type == CC_TYPE_CONTINUOUS)
+				Control_config[id].continuous_ongoing = true;
+		}
+
+		Control_config[id].used = timestamp();
 	}
-
-	Control_config[id].used = timestamp();
 }
 
 void control_config_clear_used_status()
