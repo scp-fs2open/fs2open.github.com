@@ -4973,7 +4973,16 @@ void texture_map::PageOut(bool release)
 		this->textures[i].PageOut(release);
 }
 
-void texture_map::Reset()
+void texture_map::Clear()
+{
+	is_ambient = false;
+	is_transparent = false;
+
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+		this->textures[i].clear();
+}
+
+void texture_map::ResetToOriginal()
 {
 	for(int i = 0; i < TM_NUM_TYPES; i++)
 		this->textures[i].ResetTexture();

@@ -239,7 +239,7 @@ void model_unload(int modelnum, int force)
 			}
 		}
 
-		vm_free(pm->submodel);
+		delete[] pm->submodel;
 	}
 
 	if ( !Cmdline_nohtl ) {
@@ -278,8 +278,7 @@ void model_unload(int modelnum, int force)
 	}
 
 	pm->id = 0;
-	memset( pm, 0, sizeof(polymodel));
-	vm_free( pm );
+	delete pm;
 
 	Polygon_models[num] = NULL;	
 }
@@ -1066,14 +1065,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
 				}
 
-				pm->submodel = (bsp_info *)vm_malloc( sizeof(bsp_info)*pm->n_models );
-				Assert(pm->submodel != NULL );
-				for ( i = 0; i < pm->n_models; i++ )
-				{
-					/* HACK: This is an almighty hack because it is late at night and I don't want to screw up a vm_free */
-					new ( &( pm->submodel[ i ].buffer ) ) vertex_buffer( );
-					pm->submodel[ i ].Reset( );
-				}
+				pm->submodel = new bsp_info[pm->n_models];
 
 				//Assert(pm->n_models <= MAX_SUBMODELS);
 
@@ -2298,19 +2290,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	return 1;
 }
 
-void model_init_texture_map(texture_map *tmap)
-{
-	if (tmap == NULL)
-		return;
-
-	memset(tmap, 0, sizeof(texture_map));
-
-	for(int i = 0; i < TM_NUM_TYPES; i++)
-	{
-		tmap->textures[i].clear();
-	}
-}
-
 //Goober
 void model_load_texture(polymodel *pm, int i, char *file)
 {
@@ -2321,7 +2300,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	strlwr(tmp_name);
 
 	texture_map *tmap = &pm->maps[i];
-	model_init_texture_map(tmap);
+	tmap->Clear();
 
 	//WMC - IMPORTANT!!
 	//The Fred_running checks are there so that FRED will see those textures and put them in the
@@ -2480,13 +2459,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	mprintf(( "Loading model '%s'\n", filename ));
 
-	pm = (polymodel *)vm_malloc( sizeof(polymodel) );
-	Assert( pm != NULL );
-	
+	pm = new polymodel;	
 	Polygon_models[num] = pm;
 	
-	memset(pm, 0, sizeof(polymodel));
-
 	pm->n_paths = 0;
 	pm->paths = NULL;
 
@@ -2516,8 +2491,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
 		if (pm != NULL) {
-			vm_free(pm);
-			pm = NULL;
+			delete pm;
 		}
 
 		Polygon_models[num] = NULL;
@@ -4430,7 +4404,7 @@ void model_clear_instance(int model_num)
 	pm->gun_submodel_rotation = 0.0f;
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
-		pm->maps[i].Reset();
+		pm->maps[i].ResetToOriginal();
 	}
 	
 	for (i=0; i<pm->n_models; i++ )	{

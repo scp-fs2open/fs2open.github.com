@@ -300,7 +300,32 @@ struct bsp_collision_tree {
 	bool used;
 };
 
-typedef struct bsp_info {
+class bsp_info
+{
+public:
+	bsp_info()
+		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
+		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0), sii(NULL),
+		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
+		num_arcs(0), render_sphere_radius(0.0f), use_render_box(0), use_render_sphere(0), gun_rotation(false), no_collisions(false),
+		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
+		look_at_num(-1)
+	{
+		name[0] = 0;
+		lod_name[0] = 0;
+		look_at[0] = 0;
+
+		offset = geometric_center = min = max = render_box_min = render_box_max = render_sphere_offset = vmd_zero_vector;
+		orientation = vmd_identity_matrix;
+
+		memset(&bounding_box, 0, 8 * sizeof(vec3d));
+		memset(&angs, 0, sizeof(angles));
+		memset(&live_debris, 0, MAX_LIVE_DEBRIS * sizeof(int));
+		memset(&details, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
+		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
+	}
+
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
 	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
 	int		movement_axis;			// which axis this subobject moves or rotates on.
@@ -371,64 +396,7 @@ typedef struct bsp_info {
 	//int	look_at;				//Bobboau
 	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
 	char	look_at[MAX_NAME_LEN];	//VA - name of submodel to be looked at by this submodel
-
-	/* If you've got a better way to do this, please implement it! */
-	void Reset( )
-	{
-		name[ 0 ] = '\0';
-		movement_type = 0;
-		movement_axis = 0;
-		can_move = false;
-		
-		bsp_data_size = 0;
-		blown_off = 0;
-		my_replacement = 0;
-		i_replace = 0;
-		is_live_debris = 0;
-		num_live_debris = 0;
-		sii = NULL;
-		is_thruster = 0;
-		is_damaged = 0;
-		parent = 0;
-		num_children = 0;
-		first_child = 0;
-		next_sibling = 0;
-		num_details = 0;
-		num_arcs = 0;
-		render_sphere_radius = 0;
-		use_render_box = 0;
-		use_render_sphere = 0;
-		gun_rotation = false;
-		no_collisions = false;
-		nocollide_this_only = false;
-		collide_invisible = false;
-		force_turret_normal = false;
-		dumb_turn_rate = 0.f;
-		bsp_data = NULL;
-		rad = 0.f;
-		lod_name[ 0 ] = '\0';
-		collision_tree_index = -1;
-		attach_thrusters = false;
-
-		/* Compound types */
-		memset( live_debris, 0, sizeof( live_debris ) );
-		memset( details, 0, sizeof( details ) );
-		memset( &geometric_center, 0, sizeof( geometric_center ) );
-		memset( &offset, 0, sizeof( offset ) );
-		memset( &orientation, 0, sizeof( orientation ) );
-		memset( &min, 0, sizeof( min ) );
-		memset( &max, 0, sizeof( max ) );
-		memset( bounding_box, 0, sizeof( bounding_box ) );
-		memset( &angs, 0, sizeof( angs ) );
-		memset( arc_pts, 0, sizeof( arc_pts ) );
-		memset( arc_type, 0, sizeof( arc_type ) );
-		memset( &render_box_min, 0, sizeof( render_box_min ) );
-		memset( &render_box_max, 0, sizeof( render_box_max ) );
-		memset( &render_sphere_offset, 0, sizeof( render_sphere_offset ) );
-
-		buffer.clear( );
-	}
-} bsp_info;
+};
 
 void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
 
@@ -611,7 +579,8 @@ typedef struct insignia {
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
 
 // Goober5000
-class texture_info {
+class texture_info
+{
 private:
 	int original_texture;	// what gets read in from file
 	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
@@ -620,6 +589,7 @@ private:
 	//If num_frames is < 2, it doesn't need to be treated like an animation.
 	int num_frames;
 	float total_time;		// in seconds
+
 public:
 	texture_info();
 	texture_info(int bm_handle);
@@ -650,20 +620,22 @@ public:
 									//to update switch() statement in lua.cpp
 // taylor
 //WMC - OOPified
-class texture_map {
+class texture_map
+{
 public:
 	texture_info textures[TM_NUM_TYPES];
 
 	bool is_ambient;
 	bool is_transparent;
-public:
+
 	int FindTexture(int bm_handle);
 	int FindTexture(char *name);
 
 	void PageIn();
 	void PageOut(bool release);
 
-	void Reset();
+	void Clear();
+	void ResetToOriginal();
 };
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
@@ -672,7 +644,42 @@ public:
 #define REPLACE_WITH_INVISIBLE	-47
 
 //used to describe a polygon model
-typedef struct polymodel {
+// NOTE: Because WMC OOPified the textures, this must now be treated as a class, rather than a struct.
+//       Additionally, a lot of model initialization and de-initialization is currently done in model_load or model_unload.
+class polymodel
+{
+public:
+	// initialize to 0 and NULL because previously a memset was used
+	polymodel()
+		: id(-1), version(0), flags(0), n_detail_levels(0), num_debris_objects(0), n_models(0), num_lights(0), lights(NULL),
+		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
+		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
+		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
+		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
+		vertex_buffer_id(-1)
+	{
+		filename[0] = 0;
+		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;
+		moment_of_inertia = vmd_identity_matrix;
+
+		memset(&detail, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
+		memset(&detail_depth, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(float));
+		memset(&debris_objects, 0, MAX_DEBRIS_OBJECTS * sizeof(int));
+		memset(&bounding_box, 0, 8 * sizeof(vec3d));
+		memset(&view_positions, 0, MAX_EYES * sizeof(eye));
+		memset(&shield, 0, sizeof(shield_info));
+		memset(&octants, 0, 8 * sizeof(model_octant));
+		memset(&split_plane, 0, MAX_SPLIT_PLANE * sizeof(float));
+		memset(&ins, 0, MAX_MODEL_INSIGNIAS * sizeof(insignia));
+
+#ifndef NDEBUG
+		ram_used = 0;
+		debug_info_size = 0;
+		debug_info = NULL;
+#endif
+	}
+
+
 	int			id;				// what the polygon model number is.  (Index in Polygon_models)
 	int			version;
 	char			filename[FILESPEC_LENGTH];
@@ -756,7 +763,7 @@ typedef struct polymodel {
 	float gun_submodel_rotation;
 
 	int vertex_buffer_id;			// HTL vertex buffer id
-} polymodel;
+};
 
 // Call once to initialize the model system
 void model_init();
