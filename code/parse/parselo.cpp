@@ -2681,7 +2681,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	while (*Mp != ')') {
-		Assertion(count < max_ints, "Too many entries in integer list. Expected %d, found %d.\nList type was %s", max_ints-1, count, get_lookup_type_name(lookup_type));
+		Assertion(count < max_ints, "Too many entries in integer list. Expected %d, found %d.\nList type was %s", max_ints, count+1, get_lookup_type_name(lookup_type));
 		if (*Mp == '"') {
 			int num = 0;
 			char str[128];
