@@ -2645,6 +2645,24 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 	return count;
 }
 
+const char* get_lookup_type_name(int lookup_type) 
+{
+	switch (lookup_type) {
+		case SHIP_TYPE:
+			return "Ships";
+		case SHIP_INFO_TYPE:
+			return "Ship Classes";
+		case WEAPON_POOL_TYPE:
+			return "Weapon Pool";
+		case WEAPON_LIST_TYPE:
+			return "Weapon Types";
+		case RAW_INTEGER_TYPE:
+			return "Untyped integer list";
+	}
+
+	return "Unknown lookup type, tell a coder!";
+}
+
 //	Stuffs an integer list.
 //	This is of the form ( i* )
 //	  where i is an integer.
@@ -2663,7 +2681,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	while (*Mp != ')') {
-		Assert(count < max_ints);
+		Assertion(count < max_ints, "Too many entries in integer list. Expected %d, found %d.\nList type was %s", max_ints, count, get_lookup_type_name(lookup_type));
 		if (*Mp == '"') {
 			int num = 0;
 			char str[128];
