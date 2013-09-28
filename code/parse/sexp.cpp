@@ -24083,7 +24083,7 @@ int run_sexp(const char* sexpression)
 	int n, i, sexp_val = UNINITIALIZED;
 	char buf[8192];
 
-	strncpy(buf, sexpression, 8192);
+	strcpy_s(buf, sexpression);
 
 	// HACK: ! -> "
 	for (i = 0; i < (int)strlen(buf); i++)

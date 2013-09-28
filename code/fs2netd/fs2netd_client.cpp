@@ -1560,7 +1560,7 @@ void fs2netd_add_table_validation(const char *tblname)
 
 	crc_valid_status tbl_crc;
 
-	strncpy(tbl_crc.name, tblname, NAME_LENGTH);
+	strcpy_s(tbl_crc.name, tblname);
 	tbl_crc.crc32 = chksum;
 	tbl_crc.valid = 0;
 

@@ -4761,7 +4761,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
-		strncpy(subname, sip->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
+		strcpy_s(subname, sip->subsystems[bank_obj].subobj_name);
 
 		ssp = GET_FIRST(&shipp->subsys_list);
 		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {

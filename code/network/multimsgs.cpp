@@ -2133,7 +2133,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			// do any special processing for forced state transitions
 			multi_handle_state_special();
 
-			strncpy( Game_current_mission_filename, Netgame.mission_name, MAX_FILENAME_LEN );					
+			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 			gameseq_post_event(GS_EVENT_START_BRIEFING);			
 		}
 	} 		

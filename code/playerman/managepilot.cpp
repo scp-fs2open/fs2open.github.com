@@ -383,9 +383,9 @@ void player_set_squad(player *p, char *squad_name)
 	}
 
 	if (Game_mode & GM_MULTIPLAYER) {
-		strncpy(p->m_squad_name, squad_name, NAME_LENGTH+1);
+		strcpy_s(p->m_squad_name, squad_name);
 	} else {
-		strncpy(p->s_squad_name, squad_name, NAME_LENGTH+1);
+		strcpy_s(p->s_squad_name, squad_name);
 	}
 }
 

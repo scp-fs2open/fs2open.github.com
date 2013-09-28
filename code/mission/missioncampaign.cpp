@@ -899,7 +899,7 @@ int mission_campaign_next_mission()
 		return -2;
 
 	Campaign.current_mission = Campaign.next_mission;	
-	strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
 
 	// check for end of loop.
 	if (Campaign.current_mission == Campaign.loop_reentry) {
@@ -933,7 +933,7 @@ int mission_campaign_previous_mission()
 	// reset the player stats to be the stats from this level
 	Player->stats.assign( Campaign.missions[Campaign.current_mission].stats );
 
-	strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
 	Num_granted_ships = 0;
 	Num_granted_weapons = 0;
 

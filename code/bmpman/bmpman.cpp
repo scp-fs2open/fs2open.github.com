@@ -72,7 +72,7 @@ int Bm_max_ram = 0;		//16*1024*1024;			// Only use 16 MB for textures
 static int Bm_ignore_duplicates = 0;
 static int Bm_ignore_load_count = 0;
 
-#define EFF_FILENAME_CHECK { if ( be->type == BM_TYPE_EFF ) strncpy( filename, be->info.ani.eff.filename, MAX_FILENAME_LEN ); else strncpy( filename, be->filename, MAX_FILENAME_LEN ); }
+#define EFF_FILENAME_CHECK { if ( be->type == BM_TYPE_EFF ) strcpy_s( filename, be->info.ani.eff.filename ); else strcpy_s( filename, be->filename ); }
 
 
 
@@ -663,7 +663,7 @@ int bm_reload(int bitmap_handle, const char* filename)
 		return -1;
 	}
 
-	strncpy(bm_bitmaps[bitmapnum].filename, filename, MAX_FILENAME_LEN);
+	strcpy_s(bm_bitmaps[bitmapnum].filename, filename);
 	return bitmap_handle;
 }
 

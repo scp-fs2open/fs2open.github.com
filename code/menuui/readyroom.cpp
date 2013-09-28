@@ -852,7 +852,7 @@ int readyroom_continue_campaign()
 			// this isn't the same thing that is done in mission_campaign_next_mission(), but it's
 			// cleaner to do this here than it is to hack that function to do the same thing
 			Campaign.current_mission = Campaign.prev_mission;
-			strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+			strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
 
 			// set the bit for campaign mode
 			Game_mode |= GM_CAMPAIGN_MODE;
@@ -897,7 +897,7 @@ void sim_room_commit()
 		return;
 	}
 
-	strncpy(Game_current_mission_filename, sim_room_lines[Selected_line].filename, MAX_FILENAME_LEN);
+	strcpy_s(Game_current_mission_filename, sim_room_lines[Selected_line].filename);
 
 	Game_mode &= ~(GM_CAMPAIGN_MODE);						// be sure this bit is clear
 

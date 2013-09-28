@@ -13720,7 +13720,7 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 	} else {
 		// due safety checks of the game_start_mission() function allow only main menu for now.
 		if (gameseq_get_state(gameseq_get_depth()) == GS_STATE_MAIN_MENU) {
-			strncpy( Game_current_mission_filename, str, MAX_FILENAME_LEN );
+			strcpy_s( Game_current_mission_filename, str );
 			if (b == true) {
 				// start mission - go via briefing screen
 				gameseq_post_event(GS_EVENT_START_GAME);
