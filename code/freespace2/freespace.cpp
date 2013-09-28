@@ -241,7 +241,7 @@ float frametimes[FRAME_FILTER];
 float frametotal = 0.0f;
 float flRealframetime;
 float flFrametime;
-int Last_frame_timestamp = 0;
+int Last_frame_timestamp;
 fix FrametimeOverall = 0;
 
 #ifndef NDEBUG
