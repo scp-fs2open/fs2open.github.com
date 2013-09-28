@@ -575,7 +575,7 @@ void player::assign(const player *other)
 	objnum = other->objnum;
 
 	memcpy(&bi, &other->bi, sizeof(button_info));
-	memcpy(&ci, &other->bi, sizeof(control_info));
+	memcpy(&ci, &other->ci, sizeof(control_info));
 
 	stats.assign(other->stats);
 
