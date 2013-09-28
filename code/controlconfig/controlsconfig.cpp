@@ -2325,6 +2325,7 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 	return;
 }
 
+int Last_frame_timestamp;
 void control_used(int id)
 {
 	// if we have set this key to be ignored, ignore it
