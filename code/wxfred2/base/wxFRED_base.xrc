@@ -2512,7 +2512,7 @@
 								<flag>wxEXPAND</flag>
 								<border>5</border>
 								<object class="wxFlexGridSizer">
-									<rows>2</rows>
+									<rows>0</rows>
 									<cols>2</cols>
 									<vgap>0</vgap>
 									<hgap>0</hgap>
@@ -3965,7 +3965,7 @@
 										<flag>wxEXPAND</flag>
 										<border>5</border>
 										<object class="wxFlexGridSizer">
-											<rows>2</rows>
+											<rows>0</rows>
 											<cols>2</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
@@ -4509,7 +4509,7 @@
 								<flag>wxEXPAND</flag>
 								<border>5</border>
 								<object class="wxFlexGridSizer">
-									<rows>2</rows>
+									<rows>0</rows>
 									<cols>3</cols>
 									<vgap>0</vgap>
 									<hgap>0</hgap>
@@ -4759,7 +4759,7 @@
 										<flag>wxEXPAND</flag>
 										<border>5</border>
 										<object class="wxFlexGridSizer">
-											<rows>3</rows>
+											<rows>0</rows>
 											<cols>2</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
@@ -4891,7 +4891,7 @@
 								<flag>wxEXPAND</flag>
 								<border>5</border>
 								<object class="wxFlexGridSizer">
-									<rows>2</rows>
+									<rows>0</rows>
 									<cols>2</cols>
 									<vgap>0</vgap>
 									<hgap>0</hgap>
@@ -5634,7 +5634,7 @@
 				<flag>wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxFlexGridSizer">
-					<rows>2</rows>
+					<rows>0</rows>
 					<cols>3</cols>
 					<vgap>0</vgap>
 					<hgap>0</hgap>
@@ -5848,7 +5848,7 @@
 										<flag>wxSHAPED</flag>
 										<border>0</border>
 										<object class="wxFlexGridSizer">
-											<rows>2</rows>
+											<rows>0</rows>
 											<cols>2</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
@@ -5912,7 +5912,7 @@
 										<flag>wxEXPAND</flag>
 										<border>0</border>
 										<object class="wxFlexGridSizer">
-											<rows>2</rows>
+											<rows>0</rows>
 											<cols>2</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
@@ -5939,7 +5939,7 @@
 											</object>
 											<object class="sizeritem">
 												<option>1</option>
-												<flag>wxALIGN_LEFT|wxALL|wxEXPAND|wxSHAPED</flag>
+												<flag>wxALIGN_LEFT|wxALL|wxEXPAND</flag>
 												<border>3</border>
 												<object class="wxButton" name="btnSquadronLogo">
 													<style>wxBU_EXACTFIT</style>
@@ -6175,7 +6175,7 @@
 										<flag>wxEXPAND</flag>
 										<border>5</border>
 										<object class="wxFlexGridSizer">
-											<rows>2</rows>
+											<rows>0</rows>
 											<cols>2</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
@@ -6233,7 +6233,7 @@
 										<flag>wxEXPAND</flag>
 										<border>5</border>
 										<object class="wxFlexGridSizer">
-											<rows>2</rows>
+											<rows>0</rows>
 											<cols>2</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
@@ -6343,7 +6343,7 @@
 										<flag>wxEXPAND</flag>
 										<border>5</border>
 										<object class="wxFlexGridSizer">
-											<rows>2</rows>
+											<rows>0</rows>
 											<cols>2</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
@@ -6383,7 +6383,7 @@
 										<flag>wxEXPAND</flag>
 										<border>0</border>
 										<object class="wxFlexGridSizer">
-											<rows>2</rows>
+											<rows>0</rows>
 											<cols>2</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
@@ -7654,7 +7654,7 @@
 											<object class="wxBitmapButton" name="btnPlayFailure">
 												<style>wxBU_AUTODRAW|wxBU_EXACTFIT</style>
 												<size>23,23</size>
-												<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
+												<bitmap>..\res\play.xpm</bitmap>
 												<default>0</default>
 											</object>
 										</object>

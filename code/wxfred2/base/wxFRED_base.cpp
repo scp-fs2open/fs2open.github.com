@@ -1674,7 +1674,7 @@ dlgMissionObjectivesEditor::dlgMissionObjectivesEditor( wxWindow* parent, wxWind
 	sbSizer33 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Current Objective") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer27;
-	fgSizer27 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer27 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer27->AddGrowableCol( 1 );
 	fgSizer27->SetFlexibleDirection( wxBOTH );
 	fgSizer27->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -2425,7 +2425,7 @@ dlgBackgroundEditor::dlgBackgroundEditor( wxWindow* parent, wxWindowID id, const
 	bSizer100->Add( chkToggleShipTrails, 0, wxALL, 3 );
 	
 	wxFlexGridSizer* fgSizer32;
-	fgSizer32 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer32 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer32->SetFlexibleDirection( wxBOTH );
 	fgSizer32->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
@@ -2673,7 +2673,7 @@ dlgBackgroundEditor::dlgBackgroundEditor( wxWindow* parent, wxWindowID id, const
 	sbSizer38 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Ambient Light") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer40;
-	fgSizer40 = new wxFlexGridSizer( 2, 3, 0, 0 );
+	fgSizer40 = new wxFlexGridSizer( 0, 3, 0, 0 );
 	fgSizer40->AddGrowableCol( 1 );
 	fgSizer40->SetFlexibleDirection( wxHORIZONTAL );
 	fgSizer40->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -2776,7 +2776,7 @@ dlgBackgroundEditor::dlgBackgroundEditor( wxWindow* parent, wxWindowID id, const
 	bSizer1071->Add( fgSizer3121, 0, 0, 5 );
 	
 	wxFlexGridSizer* fgSizer41;
-	fgSizer41 = new wxFlexGridSizer( 3, 2, 0, 0 );
+	fgSizer41 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer41->SetFlexibleDirection( wxBOTH );
 	fgSizer41->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
@@ -2833,7 +2833,7 @@ dlgBackgroundEditor::dlgBackgroundEditor( wxWindow* parent, wxWindowID id, const
 	sbSizer39->Add( m_checkBox48, 0, wxALL, 3 );
 	
 	wxFlexGridSizer* fgSizer37;
-	fgSizer37 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer37 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer37->AddGrowableCol( 1 );
 	fgSizer37->SetFlexibleDirection( wxHORIZONTAL );
 	fgSizer37->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -3250,7 +3250,7 @@ dlgMissionSpecsEditor::dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id, c
 	bSizer71 = new wxBoxSizer( wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer10;
-	fgSizer10 = new wxFlexGridSizer( 2, 3, 0, 0 );
+	fgSizer10 = new wxFlexGridSizer( 0, 3, 0, 0 );
 	fgSizer10->AddGrowableCol( 0 );
 	fgSizer10->AddGrowableCol( 1 );
 	fgSizer10->AddGrowableCol( 2 );
@@ -3368,7 +3368,7 @@ dlgMissionSpecsEditor::dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id, c
 	sbSizer212 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Multiplayer") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer5;
-	fgSizer5 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer5 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer5->AddGrowableCol( 1 );
 	fgSizer5->SetFlexibleDirection( wxBOTH );
 	fgSizer5->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -3401,7 +3401,7 @@ dlgMissionSpecsEditor::dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id, c
 	sbSizer17 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Squadron Reassignment") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer3;
-	fgSizer3 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer3 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer3->AddGrowableCol( 1 );
 	fgSizer3->SetFlexibleDirection( wxBOTH );
 	fgSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -3415,7 +3415,7 @@ dlgMissionSpecsEditor::dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id, c
 	fgSizer3->Add( txtSquadronName, 0, wxALL|wxEXPAND, 3 );
 	
 	btnSquadronLogo = new wxButton( this, wxID_ANY, wxT("Logo"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
-	fgSizer3->Add( btnSquadronLogo, 1, wxALIGN_LEFT|wxALL|wxEXPAND|wxSHAPED, 3 );
+	fgSizer3->Add( btnSquadronLogo, 1, wxALIGN_LEFT|wxALL|wxEXPAND, 3 );
 	
 	txtSquadronLogo = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	txtSquadronLogo->SetMaxLength( 0 ); 
@@ -3545,7 +3545,7 @@ dlgMissionSpecsEditor::dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id, c
 	sbSizer211 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Built-in Command Messages") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer7;
-	fgSizer7 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer7 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer7->AddGrowableCol( 1 );
 	fgSizer7->SetFlexibleDirection( wxBOTH );
 	fgSizer7->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -3576,7 +3576,7 @@ dlgMissionSpecsEditor::dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id, c
 	sbSizer221 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Music and Sound") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer8;
-	fgSizer8 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer8 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer8->AddGrowableCol( 1 );
 	fgSizer8->SetFlexibleDirection( wxBOTH );
 	fgSizer8->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -3627,7 +3627,7 @@ dlgMissionSpecsEditor::dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id, c
 	sbSizer231 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("AI Options") ), wxHORIZONTAL );
 	
 	wxFlexGridSizer* fgSizer9;
-	fgSizer9 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer9 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer9->AddGrowableCol( 1 );
 	fgSizer9->SetFlexibleDirection( wxBOTH );
 	fgSizer9->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -3651,7 +3651,7 @@ dlgMissionSpecsEditor::dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id, c
 	sbSizer7 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Loading Screen") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer4;
-	fgSizer4 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer4 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer4->AddGrowableCol( 1 );
 	fgSizer4->SetFlexibleDirection( wxBOTH );
 	fgSizer4->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
