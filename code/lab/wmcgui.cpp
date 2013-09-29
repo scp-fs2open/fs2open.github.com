@@ -439,7 +439,6 @@ GUIObject* GUIScreen::Add(GUIObject* new_gauge)
 		if (tgp->Name == new_gauge->Name) {
 			//Get rid of the new gauge
 			//We don't want it; breaks skinning
-			delete new_gauge;
 
 			if (tgp->Type == new_gauge->Type) {
 				//If the type of the existing object is the same
