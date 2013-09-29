@@ -1405,6 +1405,7 @@ void beam_render_muzzle_glow(beam *b)
 	beam_weapon_info *bwi = &Weapon_info[b->weapon_info_index].b_info;
 	float rad, pct, rand_val;
 	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+	pt.flags = 0;    // avoid potential read of uninit var
 
 	// if we don't have a glow bitmap
 	if (bwi->beam_glow.first_frame < 0)
