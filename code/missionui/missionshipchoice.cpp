@@ -1224,6 +1224,7 @@ void ship_select_blit_ship_info()
 
 	// strip out newlines
 	memset(ship_desc,0,1000);
+	memset(Ship_select_ship_info_text,0,1500);
 	strcpy_s(ship_desc, sip->desc);
 	token = strtok(ship_desc,"\n");
 	if(token != NULL){
