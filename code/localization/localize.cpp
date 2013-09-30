@@ -1048,7 +1048,7 @@ int lcl_ext_get_id(const char *xstr, int *out)
 	buf[pnext - p] = 0;
 
 	// get the value and we're done
-	*out = atoi(pnext);
+	*out = atoi(buf);
 
 	// success
 	return 1;
