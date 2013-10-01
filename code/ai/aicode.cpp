@@ -12197,10 +12197,10 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 	transfer_amount = 0.0f;
 	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
 
-	if (objp->shield_quadrant[quadrant_num] + (MAX_SHIELD_SECTIONS-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(MAX_SHIELD_SECTIONS-1);
+	if (objp->shield_quadrant[quadrant_num] + (objp->n_quadrants-1)*transfer_delta > max_quadrant_strength)
+		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(objp->n_quadrants-1);
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
+	for (i=0; i<objp->n_quadrants; i++)
 		if (i != quadrant_num) {
 			if (objp->shield_quadrant[i] >= transfer_delta) {
 				objp->shield_quadrant[i] -= transfer_delta;
@@ -12225,17 +12225,17 @@ void ai_balance_shield(object *objp)
 		return;
 
 
-	shield_strength_avg = shield_get_strength(objp)/MAX_SHIELD_SECTIONS;
+	shield_strength_avg = shield_get_strength(objp)/objp->n_quadrants;
 
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
+	for (i=0; i<objp->n_quadrants; i++) {
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, delta);
 			else
-				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
+				objp->shield_quadrant[i] += delta/objp->n_quadrants;
 
 			if (objp->shield_quadrant[i] > shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;
@@ -12245,7 +12245,7 @@ void ai_balance_shield(object *objp)
 			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, -delta);
 			else
-				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
+				objp->shield_quadrant[i] -= delta/objp->n_quadrants;
 
 			if (objp->shield_quadrant[i] < shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;

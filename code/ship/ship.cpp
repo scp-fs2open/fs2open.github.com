@@ -306,6 +306,7 @@ flag_def_list Ship_flags[] = {
 	{ "no ets",						SIF2_NO_ETS,				1 },
 	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
 	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
+	{ "model shield points",		SIF2_SHIELD_POINTS,			1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -4767,6 +4768,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	ship	*shipp = &Ships[ship_index];
 	ship_weapon	*swp = &shipp->weapons;
 	ship_info	*sip = &(Ship_info[ship_type]);
+	polymodel *pm = model_get(sip->model_num);
 
 	Assert(strlen(shipp->ship_name) <= NAME_LENGTH - 1);
 	shipp->ship_info_index = ship_type;
@@ -4855,6 +4857,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->wingnum = -1;
 	for (i = 0; i < MAX_PLAYERS; i++)
 		shipp->last_targeted_subobject[i] = NULL;
+
+	if (sip->flags2 & SIF2_SHIELD_POINTS) {
+		objp->n_quadrants = pm->shield_points.size();
+		shipp->shield_points = pm->shield_points;
+	}
 
 	if (Fred_running){
 		shipp->ship_max_hull_strength = 100.0f;
@@ -5060,8 +5067,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->special_warpin_objnum = -1;
 	shipp->special_warpout_objnum = -1;
-
-	polymodel *pm = model_get(sip->model_num);
 
 	if(pm != NULL && pm->n_view_positions > 0)
 		ship_set_eye(objp, 0);

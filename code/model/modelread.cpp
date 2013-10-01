@@ -2050,8 +2050,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						char type[64];
 
 						get_user_prop_value(p+9, type);
-						if ( !stricmp(type, "subsystem") )						// if we have a subsystem, put it into the list!
+						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
 							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+						} else if ( !stricmp(type, "shieldpoint") ) {
+							pm->shield_points.push_back(pnt);
+						}
 					} else if ( strstr(name, "$enginelarge") || strstr(name, "$enginehuge") ){
 						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
 					} else {

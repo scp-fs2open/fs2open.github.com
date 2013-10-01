@@ -7022,8 +7022,14 @@ void send_client_update_packet(net_player *pl)
 		}
 		ADD_DATA( percent );
 
+		// TODO: could be optimized by sending only the quadrants that are actually used
+		// but remember to change the receiving too -zookeeper
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+			if (i < objp->n_quadrants)
+				percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+			else
+				percent = 0;
+
 			ADD_DATA( percent );
 		}
 
@@ -7142,8 +7148,10 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			objp->hull_strength = fl_val;
 
 			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
-				objp->shield_quadrant[i] = fl_val;
+				if (i < objp->n_quadrants) {
+					fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
+					objp->shield_quadrant[i] = fl_val;
+				}
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,

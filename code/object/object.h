@@ -152,9 +152,10 @@ typedef struct object {
 	vec3d			last_pos;		// where object was last frame
 	matrix			last_orient;	// how the object was oriented last frame
 	physics_info	phys_info;		// a physics object
-	float				shield_quadrant[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
-	float				hull_strength;	//	Remaining hull strength.
-	float				sim_hull_strength;	// Simulated hull strength - used with training weapons.
+	int				n_quadrants;	// how many shield quadrants the ship has
+	float			shield_quadrant[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
+	float			hull_strength;	//	Remaining hull strength.
+	float			sim_hull_strength;	// Simulated hull strength - used with training weapons.
 	SCP_vector<int> objsnd_num;		// Index of persistant sound struct.
 	ushort			net_signature;
 	int				num_pairs;		// How many object pairs this is associated with.  When 0 then there are no more.

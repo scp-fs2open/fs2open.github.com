@@ -2521,8 +2521,8 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 		// radius of the object.   
 		vm_vec_scale_add( &world_hitpos, &ship_obj->pos, &ship_obj->orient.vec.fvec, ship_obj->radius );
 
-		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
-			ship_do_damage(ship_obj, other_obj, &world_hitpos, damage/MAX_SHIELD_SECTIONS, i, -1);
+		for (int i=0; i<ship_obj->n_quadrants; i++){
+			ship_do_damage(ship_obj, other_obj, &world_hitpos, damage/ship_obj->n_quadrants, i, -1);
 		}
 	}
 

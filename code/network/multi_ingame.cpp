@@ -1822,8 +1822,10 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 	
 	// shield percentages
 	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
-		f_tmp = objp->shield_quadrant[idx];
-		ADD_FLOAT(f_tmp);
+		if (idx < objp->n_quadrants) {
+			f_tmp = objp->shield_quadrant[idx];
+			ADD_FLOAT(f_tmp);
+		}
 	}
 	
 	multi_io_send_reliable(p, data, packet_size);
@@ -1850,7 +1852,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 		// read in garbage values if we can't find the ship
 		nprintf(("Network","Got ingame ship update for unknown object\n"));
 		GET_FLOAT(garbage);
-		for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
+		for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){ // TODO: wtf to do here? -zookeeper
 			GET_FLOAT(garbage);
 		}
 
@@ -1861,8 +1863,10 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	lookup->flags = flags;
  	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
-		GET_FLOAT(f_tmp);
-		lookup->shield_quadrant[idx] = f_tmp;
+		if (idx < lookup->n_quadrants) {
+			GET_FLOAT(f_tmp);
+			lookup->shield_quadrant[idx] = f_tmp;
+		}
 	}
 
 	PACKET_SET_SIZE();

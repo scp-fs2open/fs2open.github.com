@@ -225,7 +225,7 @@ float get_max_shield_quad(object *objp)
 		return 0.0f;
 	}
 
-	return Ships[objp->instance].ship_max_shield_strength / MAX_SHIELD_SECTIONS;
+	return Ships[objp->instance].ship_max_shield_strength / objp->n_quadrants;
 }
 
 // Goober5000
@@ -473,6 +473,7 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->dock_list = NULL;
 	obj->dead_dock_list = NULL;
 
+	obj->n_quadrants = MAX_SHIELD_SECTIONS; // Might be changed by the ship creation code
 	return objnum;
 }
 

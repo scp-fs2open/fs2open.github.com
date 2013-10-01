@@ -15121,7 +15121,7 @@ int sexp_shield_quad_low(int node)
 	check = (float)eval_num(CDR(node));
 
 	// check his quadrants
-	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
+	for(idx=0; idx<objp->n_quadrants; idx++){
 		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
 			return SEXP_TRUE;
 		}
@@ -15911,7 +15911,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 
 	// ...and shields
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
-	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+	for (i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
 
 

@@ -729,6 +729,7 @@ public:
 	shield_info	shield;								// new shield information
 	ubyte	*shield_collision_tree;
 	int		sldc_size;
+	SCP_vector<vec3d>		shield_points;
 
 	int			n_paths;
 	model_path	*paths;
