@@ -41,7 +41,7 @@ public:
 	char *name;						// name of parameter, must start with '-' char
 	char *help;						// help text for this parameter
 	bool stacks;					// whether this arg stacks with each use or is replaced by newest use (should only be used for strings!!)
-	char *args;						// string value for parameter arguements (NULL if no arguements)
+	char *args;						// string value for parameter arguments (NULL if no arguments)
 	int name_found;				// true if parameter on command line, otherwise false
 
 	cmdline_parm(char *name, char *help, bool stacks = false);
@@ -350,7 +350,7 @@ int Cmdline_voice_recognition = 0;
 // MOD related
 cmdline_parm mod_arg("-mod", NULL, true);	// Cmdline_mod  -- DTP modsupport
 
-char *Cmdline_mod = NULL; //DTP for mod arguement
+char *Cmdline_mod = NULL; //DTP for mod argument
 
 // Multiplayer/Network related
 cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
@@ -625,7 +625,7 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 }
 
 
-// internal function - parse the command line, extracting parameter arguements if they exist
+// internal function - parse the command line, extracting parameter arguments if they exist
 // cmdline - command line string passed to the application
 void os_parse_parms(char *cmdline)
 {
@@ -695,7 +695,7 @@ void os_validate_parms(char *cmdline)
 #ifdef _WIN32
 				// Changed this to MessageBox, this is a user error not a developer
 				char buffer[128];
-				sprintf(buffer,"Unrecogzined command line parameter %s, continue?",token);
+				sprintf(buffer,"Unrecognized command line parameter %s, continue?",token);
 				if( MessageBox(NULL, buffer, "Warning", MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
 					exit(0);
 #elif defined(APPLE_APP)
@@ -903,7 +903,7 @@ int cmdline_parm::found()
 	return name_found;
 }
 
-// returns - the interger representation for the parameter arguement
+// returns - the interger representation for the parameter argument
 int cmdline_parm::get_int()
 {
 	check_if_args_is_valid();
@@ -914,7 +914,7 @@ int cmdline_parm::get_int()
 		// first off, DON'T STACK NON-STRINGS!!
 		Int3();
 
-		// secondly, we still need to get it right for the users sake...
+		// secondly, we still need to get it right for the user's sake...
 		char *moron = strstr(args, ",");
 
 		if ( moron && ((strlen(moron) + 1) < strlen(args)) ) {
@@ -927,7 +927,7 @@ int cmdline_parm::get_int()
 }
 
 
-// returns - the float representation for the parameter arguement
+// returns - the float representation for the parameter argument
 float cmdline_parm::get_float()
 {
 	check_if_args_is_valid();
@@ -938,7 +938,7 @@ float cmdline_parm::get_float()
 		// first off, DON'T STACK NON-STRINGS!!
 		Int3();
 
-		// secondly, we still need to get it right for the users sake
+		// secondly, we still need to get it right for the user's sake
 		char *moron = strstr(args, ",");
 
 		if ( moron && ((strlen(moron) + 1) < strlen(args)) ) {
@@ -951,7 +951,7 @@ float cmdline_parm::get_float()
 }
 
 
-// returns - the string value for the parameter arguement
+// returns - the string value for the parameter argument
 char *cmdline_parm::str()
 {
 	check_if_args_is_valid();
