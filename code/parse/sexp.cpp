@@ -11510,15 +11510,15 @@ void sexp_cap_waypoint_speed(int n)
 
 /**
  * Causes a ship to jettison its cargo
+ * note that the 2nd arg (jettison delay) is not implemented
  */
 void sexp_jettison_cargo(int n)
 {
 	char *shipname;
-	int jettison_delay, ship_index;	
+	int ship_index;
 
 	// get some data
 	shipname = CTEXT(n);
-	jettison_delay = eval_num(CDR(n));
 
 	// lookup the ship
 	ship_index = ship_name_lookup(shipname);
@@ -11526,6 +11526,7 @@ void sexp_jettison_cargo(int n)
 		return;
 	object *parent_objp = &Objects[Ships[ship_index].objnum];
 
+	// note: skipping over the unimplemented "jettison delay"
 	n = CDDR(n);
 
 	// no arguments - jettison all docked objects
@@ -17471,7 +17472,6 @@ void sexp_add_remove_escort(int node)
 {
 	int sindex;
 	int flag;
-	char *whee;
 
 	// get the firing ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -17483,7 +17483,6 @@ void sexp_add_remove_escort(int node)
 	}
 
 	// determine whether to add or remove it
-	whee = CTEXT(CDR(node));
 	flag = eval_num(CDR(node));
 
 	// add/remove
@@ -19449,12 +19448,14 @@ void sexp_string_set_substring(int node)
 // breaks into the code or sends a warning
 void sexp_debug(int node)
 {
-	int no_release_message; 
 	int i;
 	char *id;
 	char temp_buf[MESSAGE_LENGTH] = {""};
 
+	#ifdef NDEBUG
+	int no_release_message;
 	no_release_message = is_sexp_true(node); 
+	#endif
 
 	node = CDR(node); 
 	Assertion (node >= 0, "No message defined in debug SEXP"); 
