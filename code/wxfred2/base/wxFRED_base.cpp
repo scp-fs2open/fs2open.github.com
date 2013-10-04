@@ -5,7 +5,7 @@
 // PLEASE DO "NOT" EDIT THIS FILE!
 ///////////////////////////////////////////////////////////////////////////
 
-#include "wxFRED_base.h"
+#include "wxfred_base.h"
 
 #include "../res/constx.png.h"
 #include "../res/constxy.png.h"
