@@ -14202,7 +14202,7 @@ ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enable
 //It should also be updated as new types are added to Lua.
 int ade_set_object_with_breed(lua_State *L, int obj_idx)
 {
-	if(obj_idx < 0 || obj_idx > MAX_OBJECTS)
+	if(obj_idx < 0 || obj_idx >= MAX_OBJECTS)
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	object *objp = &Objects[obj_idx];
