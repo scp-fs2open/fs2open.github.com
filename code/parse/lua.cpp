@@ -1196,7 +1196,7 @@ ADE_FUNC(read, l_File, "number or string, ...",
 			else if(!stricmp(fmt, "*l"))
 			{
 				char buf[10240];
-				size_t i;
+				size_t idx;
 				if(cfgets(buf, (int)(sizeof(buf)/sizeof(char)), cfp) == NULL)
 				{
 					lua_pushnil(L);
@@ -1206,10 +1206,10 @@ ADE_FUNC(read, l_File, "number or string, ...",
 					// Strip all newlines so this works like the Lua original
 					// http://www.lua.org/source/5.1/liolib.c.html#g_read
 					// Note: we also strip carriage return in WMC's implementation
-					for (i = 0; i < strlen(buf); i++)
+					for (idx = 0; idx < strlen(buf); idx++)
 					{
-						if ( buf[i] == '\n' || buf[i] == '\r' )
-							buf[i] = '\0';
+						if ( buf[idx] == '\n' || buf[idx] == '\r' )
+							buf[idx] = '\0';
 					}
 
 					lua_pushstring(L, buf);
@@ -1338,57 +1338,57 @@ ade_obj<int> l_Font("font", "font handle");
 
 ADE_FUNC(__tostring, l_Font, NULL, "Filename of font", "string", "Font filename, or an empty string if the handle is invalid")
 {
-	int font = -1;
-	if(!ade_get_args(L, "o", l_Font.Get(&font)))
+	int font_num = -1;
+	if(!ade_get_args(L, "o", l_Font.Get(&font_num)))
 		return ade_set_error(L, "s", "");
 
-	if(font < 0 || font >= Num_fonts)
+	if(font_num < 0 || font_num >= Num_fonts)
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", Fonts[font].filename);
+	return ade_set_args(L, "s", Fonts[font_num].filename);
 }
 
 ADE_VIRTVAR(Filename, l_Font, "string", "Filename of font (including extension)", "string", NULL)
 {
-	int font = -1;
+	int font_num = -1;
 	char *newname = NULL;
-	if(!ade_get_args(L, "o|s", l_Font.Get(&font), &newname))
+	if(!ade_get_args(L, "o|s", l_Font.Get(&font_num), &newname))
 		return ade_set_error(L, "s", "");
 
-	if(font < 0 || font >= Num_fonts)
+	if(font_num < 0 || font_num >= Num_fonts)
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR) {
-		strncpy(Fonts[font].filename, newname, sizeof(Fonts[font].filename)-1);
+		strncpy(Fonts[font_num].filename, newname, sizeof(Fonts[font_num].filename)-1);
 	}
 
-	return ade_set_args(L, "s", Fonts[font].filename);
+	return ade_set_args(L, "s", Fonts[font_num].filename);
 }
 
 ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)", "number", "Font height, or 0 if the handle is invalid")
 {
-	int font = -1;
+	int font_num = -1;
 	int newheight = -1;
-	if(!ade_get_args(L, "o|i", l_Font.Get(&font), &newheight))
+	if(!ade_get_args(L, "o|i", l_Font.Get(&font_num), &newheight))
 		return ade_set_error(L, "i", 0);
 
-	if(font < 0 || font >= Num_fonts)
+	if(font_num < 0 || font_num >= Num_fonts)
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR && newheight > 0) {
-		Fonts[font].h = newheight;
+		Fonts[font_num].h = newheight;
 	}
 
-	return ade_set_args(L, "i", Fonts[font].h);
+	return ade_set_args(L, "i", Fonts[font_num].h);
 }
 
 ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
-	int font;
-	if(!ade_get_args(L, "o", l_Font.Get(&font)))
+	int font_num;
+	if(!ade_get_args(L, "o", l_Font.Get(&font_num)))
 		return ADE_RETURN_NIL;
 
-	if(font < 0 || font >= Num_fonts)
+	if(font_num < 0 || font_num >= Num_fonts)
 		return ADE_RETURN_FALSE;
 	else
 		return ADE_RETURN_TRUE;
@@ -2195,7 +2195,7 @@ private:
 	int dock_id;
 
 public:
-	dockingbay_h(polymodel *pm, int dock_id) : model_h(pm), dock_id(dock_id) {}
+	dockingbay_h(polymodel *pm, int dock_idx) : model_h(pm), dock_id(dock_idx) {}
 	dockingbay_h() : model_h(), dock_id(-1){}
 
 	bool IsValid()
@@ -6440,7 +6440,7 @@ struct ship_banktype_h : public object_h
 		sw = NULL;
 		type = SWH_NONE;
 	}
-	ship_banktype_h(object *objp, ship_weapon *wpn, int in_type) : object_h(objp) {
+	ship_banktype_h(object *objp_in, ship_weapon *wpn, int in_type) : object_h(objp_in) {
 		sw = wpn;
 		type = in_type;
 	}
@@ -6457,7 +6457,7 @@ struct ship_bank_h : public ship_banktype_h
 	ship_bank_h() : ship_banktype_h() {
 		bank = -1;
 	}
-	ship_bank_h(object *objp, ship_weapon *wpn, int in_type, int in_bank) : ship_banktype_h(objp, wpn, in_type) {
+	ship_bank_h(object *objp_in, ship_weapon *wpn, int in_type, int in_bank) : ship_banktype_h(objp_in, wpn, in_type) {
 		bank = in_bank;
 	}
 
@@ -6815,7 +6815,7 @@ struct ship_subsys_h : public object_h
 	ship_subsys_h() : object_h() {
 		ss = NULL;
 	}
-	ship_subsys_h(object *objp, ship_subsys *sub) : object_h(objp) {
+	ship_subsys_h(object *objp_in, ship_subsys *sub) : object_h(objp_in) {
 		ss = sub;
 	}
 };
@@ -10747,11 +10747,11 @@ public:
 		part = NULL;
 	}
 
-	particle_h(particle *particle)
+	particle_h(particle *part_p)
 	{
-		this->part = particle;
-		if (particle != NULL)
-			this->sig = particle->signature;
+		this->part = part_p;
+		if (part_p != NULL)
+			this->sig = part_p->signature;
 	}
 
 	particle* Get()
