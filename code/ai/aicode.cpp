@@ -4503,11 +4503,14 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 				if ( Ships[Pl_objp->instance].wingnum != -1 ) {
 					int type;
 
-					type = aip->goals[aip->active_goal].type;
-					if ( (type == AIG_TYPE_EVENT_WING) || (type == AIG_TYPE_PLAYER_WING) ) {
-						treat_as_ship = 0;
-					} else {
-						treat_as_ship = 1;
+					// protect array access from invalid indexes
+					if ((aip->active_goal >= 0) && (aip->active_goal < MAX_AI_GOALS)) {
+						type = aip->goals[aip->active_goal].type;
+						if ( (type == AIG_TYPE_EVENT_WING) || (type == AIG_TYPE_PLAYER_WING) ) {
+							treat_as_ship = 0;
+						} else {
+							treat_as_ship = 1;
+						}
 					}
 				}
 				// setup out parameters

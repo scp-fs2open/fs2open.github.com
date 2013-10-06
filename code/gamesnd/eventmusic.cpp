@@ -903,7 +903,7 @@ int event_music_friendly_arrival()
 	// Goober5000 - to avoid array out-of-bounds
 	//Assert(Current_pattern >= 0 && Current_pattern < MAX_PATTERNS);
 
-	if(Current_pattern < 0 || Current_pattern > MAX_PATTERNS)
+	if(Current_pattern < 0 || Current_pattern >= MAX_PATTERNS)
 		return 0;
 
 	if ( Patterns[Current_pattern].next_pattern != Patterns[Current_pattern].default_next_pattern )
@@ -1196,7 +1196,7 @@ void parse_soundtrack()
 	if(strack_idx < 0 && (nocreate || Num_soundtracks >= MAX_SOUNDTRACKS))
 	{
 		if(Num_soundtracks >= MAX_SOUNDTRACKS) {
-			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[Num_soundtracks].name, MAX_SOUNDTRACKS);
+			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[MAX_SOUNDTRACKS].name, MAX_SOUNDTRACKS);
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it

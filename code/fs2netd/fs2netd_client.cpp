@@ -1673,7 +1673,7 @@ void fs2netd_spew_table_checksums(char *outfile)
 	p = Cmdline_spew_table_crcs;
 
 	while (*p && (offset < sizeof(description))) {
-		if (*p == '"') {
+		if (*p == '"' && offset < sizeof(description)-1) {
 			description[offset++] = '"';
 			description[offset++] = '"';
 		} else {
@@ -1694,7 +1694,7 @@ void fs2netd_spew_table_checksums(char *outfile)
 		p = tvs->name;
 
 		while (*p && (offset < sizeof(filename))) {
-			if (*p == '"') {
+			if (*p == '"' && offset < sizeof(description)-1) {
 				filename[offset++] = '"';
 				filename[offset++] = '"';
 			} else {
