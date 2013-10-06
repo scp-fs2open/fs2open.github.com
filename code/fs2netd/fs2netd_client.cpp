@@ -1694,7 +1694,7 @@ void fs2netd_spew_table_checksums(char *outfile)
 		p = tvs->name;
 
 		while (*p && (offset < sizeof(filename))) {
-			if (*p == '"' && offset < sizeof(description)-1) {
+			if (*p == '"' && offset < sizeof(filename)-1) {
 				filename[offset++] = '"';
 				filename[offset++] = '"';
 			} else {

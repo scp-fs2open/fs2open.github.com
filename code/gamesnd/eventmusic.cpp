@@ -1196,7 +1196,7 @@ void parse_soundtrack()
 	if(strack_idx < 0 && (nocreate || Num_soundtracks >= MAX_SOUNDTRACKS))
 	{
 		if(Num_soundtracks >= MAX_SOUNDTRACKS) {
-			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[MAX_SOUNDTRACKS].name, MAX_SOUNDTRACKS);
+			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[MAX_SOUNDTRACKS-1].name, MAX_SOUNDTRACKS);
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it

@@ -7947,7 +7947,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.beam_info_override = &b_info;
 	fire_info.accuracy = 1.0f;
 
-	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance > MAX_SHIPS)){
+	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance >= MAX_SHIPS)){
 		nprintf(("Network", "Couldn't get shooter info for BEAM weapon!\n"));
 		return;
 	}
