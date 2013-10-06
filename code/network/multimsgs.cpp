@@ -2108,7 +2108,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			multi_handle_state_special();
 						
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING;
-			strncpy( Game_current_mission_filename, Netgame.mission_name, MAX_FILENAME_LEN );					
+			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);
 		} 
 		// if coming from the debriefing state
@@ -2121,7 +2121,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			multi_flush_mission_stuff();
 						
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING;
-			strncpy( Game_current_mission_filename, Netgame.mission_name, MAX_FILENAME_LEN );					
+			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);
 		}
 	} 

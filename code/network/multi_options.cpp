@@ -118,7 +118,7 @@ void multi_options_read_config()
 				if ( SETTING("+pxo") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH);
+						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH-1);
 					}
 				} else
 				// set the standalone server's permanent name
