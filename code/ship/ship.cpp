@@ -10642,7 +10642,7 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 		return 0;
 	}
 
-	if ((objp->instance < 0) || (objp->instance > MAX_WEAPONS)){
+	if ((objp->instance < 0) || (objp->instance >= MAX_WEAPONS)){
 		return 0;
 	}
 

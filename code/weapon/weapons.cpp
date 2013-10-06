@@ -5861,8 +5861,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	ship		*shipp;
 	int         objnum;
 
-	Assert((weapon_type >= 0) && (weapon_type < MAX_WEAPONS));
-	if((weapon_type < 0) || (weapon_type >= MAX_WEAPONS)){
+	Assert((weapon_type >= 0) && (weapon_type < MAX_WEAPON_TYPES));
+	if((weapon_type < 0) || (weapon_type >= MAX_WEAPON_TYPES)){
 		return;
 	}
 	wp = &Weapons[weapon_obj->instance];

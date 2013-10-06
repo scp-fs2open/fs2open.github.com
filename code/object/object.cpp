@@ -683,6 +683,8 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	shipp = NULL;
 	if((objp->type == OBJ_SHIP) && (objp->instance >= 0) && (objp->instance < MAX_SHIPS)){
 		shipp = &Ships[objp->instance];
+	} else {
+		return;
 	}
 
 	// single player pilots, and all players in multiplayer take care of firing their own primaries
