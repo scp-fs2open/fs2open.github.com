@@ -1093,7 +1093,11 @@ int parse_ship(const char *filename, bool replace)
 			int template_id = ship_template_lookup( template_name);
 			if ( template_id != -1 ) {
 				first_time = false;
-				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
+
+				// TODO: whoever implemented ship templates should implement this method
+				// sip->assign(&Ship_templates[template_id]);
+				Warning(LOCATION, "Ship templates have been broken since they were added, and are not currently supported.");
+
 				strcpy_s(sip->name, buf);
 			}
 			else {
@@ -1148,7 +1152,10 @@ int parse_ship_template()
 			template_id = ship_template_lookup( template_name);
 			
 			if ( template_id != -1 ) {
-				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
+				// TODO: whoever implemented ship templates should implement this method
+				// sip->assign(&Ship_templates[template_id]);
+				Warning(LOCATION, "Ship templates have been broken since they were added, and are not currently supported.");
+				
 				strcpy_s(sip->name, buf);
 			}
 			else {
