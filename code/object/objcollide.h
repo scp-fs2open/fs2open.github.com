@@ -50,15 +50,6 @@ typedef struct collision_info_struct {
 // type specific collision modules.
 //===============================================================================
 
-typedef struct collider_pair {
-	object *a;
-	object *b;
-	int signature_a;
-	int signature_b;
-	int next_check_time;
-	bool initialized;
-} collider_pair;
-
 // Keeps track of pairs of objects for collision detection
 typedef struct obj_pair	{
 	object *a;
