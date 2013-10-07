@@ -747,7 +747,7 @@ int psnet_use_protocol( int protocol )
 		}
 
 		memset(Psnet_my_addr.net_id, 0, 4);
-		memcpy(Psnet_my_addr.addr, &ip_addr.sin_addr, 6);
+		memcpy(Psnet_my_addr.addr, &ip_addr.sin_addr, 4); // 4 bytes for TCP, 6 for IPX
 		Psnet_my_addr.port = Psnet_default_port;
 
 		ml_string("Psnet using - NET_TCP");
