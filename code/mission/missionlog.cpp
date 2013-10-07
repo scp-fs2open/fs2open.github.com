@@ -827,7 +827,7 @@ void message_log_init_scrollback(int pw)
 			message_log_remove_segs(Num_log_lines);
 
 		} else {
-			if (Num_log_lines < MAX_LOG_LINES)
+			if (Num_log_lines < MAX_LOG_LINES-1)
 				Num_log_lines++;
 		}
 	}
