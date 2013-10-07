@@ -133,7 +133,7 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 
 extern int compute_num_homing_objects(object *target_objp);
 
-extern void fs2netd_add_table_validation(char *tblname);
+extern void fs2netd_add_table_validation(const char *tblname);
 
 
 weapon_explosions::weapon_explosions()
@@ -317,7 +317,7 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 }
 
 
-void parse_weapon_expl_tbl(char *filename)
+void parse_weapon_expl_tbl(const char *filename)
 {
 	int rval;
 	uint i;
@@ -1038,9 +1038,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->alpha_min = 0.0f;
 	wip->alpha_cycle = 0.0f;
 
-	// this can get reset after the constructor, so be sure it's correct
-	wip->shockwave.damage_type_idx = -1;
-	wip->shockwave.damage_type_idx_sav = -1;
+	shockwave_create_info_init(&wip->shockwave);
+	shockwave_create_info_init(&wip->dinky_shockwave);
 
 	wip->weapon_hitpoints = 0;
 
@@ -1088,11 +1087,6 @@ int parse_weapon(int subtype, bool replace)
 		}
 		create_if_not_found = false;
 	}
-
-	strcpy_s(parse_error_text, "");
-	strcpy_s(parse_error_text, "\nin weapon: ");
-	strcat_s(parse_error_text, fname);
-	strcat_s(parse_error_text, "\n");
 
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
@@ -2737,7 +2731,7 @@ void translate_spawn_types()
 
 static char Default_cmeasure_name[NAME_LENGTH] = "";
 
-void parse_weaponstbl(char *filename)
+void parse_weaponstbl(const char *filename)
 {
 	int rval;
 
@@ -2787,8 +2781,6 @@ void parse_weaponstbl(char *filename)
 		required_string("#End");
 	}
 
-	strcpy_s(parse_error_text, "in the counter measure table entry");
-
 	if(optional_string("#Countermeasures"))
 	{
 		while (required_string_either("#End", "$Name:"))
@@ -2812,16 +2804,12 @@ void parse_weaponstbl(char *filename)
 		required_string("#End");
 	}
 
-	strcpy_s(parse_error_text, "");
-
 	// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 	// This list is used to select an alternate weapon when a particular weapon is not available
 	// during weapon selection.
 	if ( (!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:") )
 	{
-		strcpy_s(parse_error_text, "in the player weapon precedence list");
 		Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-		strcpy_s(parse_error_text, "");
 	}
 
 	// add tbl/tbm to multiplayer validation list
@@ -6195,8 +6183,8 @@ void weapons_page_in()
 
 
 		//Load shockwaves
-		wip->shockwave.load();
-		wip->dinky_shockwave.load();
+		shockwave_create_info_load(&wip->shockwave);
+		shockwave_create_info_load(&wip->dinky_shockwave);
 
 		//Explosions
 		Weapon_explosions.PageIn(wip->impact_weapon_expl_index);
@@ -6292,8 +6280,8 @@ void weapons_page_in_cheats()
 		
 		
 		//Load shockwaves
-		wip->shockwave.load();
-		wip->dinky_shockwave.load();
+		shockwave_create_info_load(&wip->shockwave);
+		shockwave_create_info_load(&wip->dinky_shockwave);
 
 		used_weapons[i]++;
 	}

@@ -521,7 +521,7 @@ void UI_INPUTBOX::get_text(char *out)
 	out[length] = 0;
 }
 
-void UI_INPUTBOX::set_text(char *in)
+void UI_INPUTBOX::set_text(const char *in)
 {
 	int in_length;
 	

@@ -51,7 +51,7 @@
 
 
 extern int Multi_debrief_stats_accept_code;
-extern void HUD_printf(char *format, ...);
+extern void HUD_printf(const char *format, ...);
 extern int game_hacked_data();
 
 
@@ -1539,7 +1539,7 @@ int fs2netd_update_valid_tables()
 	return hacked;
 }
 
-void fs2netd_add_table_validation(char *tblname)
+void fs2netd_add_table_validation(const char *tblname)
 {
 	uint chksum = 0;
 
@@ -1560,7 +1560,7 @@ void fs2netd_add_table_validation(char *tblname)
 
 	crc_valid_status tbl_crc;
 
-	strncpy(tbl_crc.name, tblname, NAME_LENGTH);
+	strcpy_s(tbl_crc.name, tblname);
 	tbl_crc.crc32 = chksum;
 	tbl_crc.valid = 0;
 
@@ -1582,9 +1582,6 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 	if (first_call) {
 		new_plr.reset();
 		strncpy( new_plr.callsign, callsign, CALLSIGN_LEN );
-
-		// initialize the stats to default values
-		init_scoring_element( &new_plr.stats );
 
 		out_plr->reset();
 
@@ -1612,7 +1609,7 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 	}
 
 	if (rc == 0) {
-		memcpy( out_plr, &new_plr, sizeof(player) );
+		out_plr->assign(&new_plr);
 		In_process = false;
 		Local_timeout = -1;
 	}
@@ -1637,7 +1634,7 @@ void fs2netd_close()
 	FS2NetD_ban_list.clear();
 }
 
-void fs2netd_update_game_count(char *chan_name)
+void fs2netd_update_game_count(const char *chan_name)
 {
 	if ( !Logged_in ) {
 		return;

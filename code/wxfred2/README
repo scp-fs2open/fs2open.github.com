@@ -1,0 +1,65 @@
+====wxFRED2 - Port of Volition's FReespace EDitor to use wxWidgets GUI libraries====
+===Required Libraries===
+You must have wxWidgets 2.9.4 or later.
+
+==Visual Studio==
+MSVC users may download the headers and binaries directly from the wxWidgets hosts:
+- wxWidgets 2.9.4:  http://sourceforge.net/projects/wxwindows/files/2.9.4/binaries/
+- wxWidgets 2.9.5:  http://sourceforge.net/projects/wxwindows/files/2.9.5/binaries/
+
+Be sure to download the wxWidgets-2.9.X_Headers.7z and the appropriate wxMSW-2.9.X_vcXX_Dev.7z
+The vcXX may be:
+- vc80  - MSVC 2005
+- vc90  - MSVC 2008
+- vc100 - MSVC 2010
+
+==Other IDE's==
+All other programming environments must compile their libraries from the source. Download from the appropriate "source archive" linked in the page below:
+- http://www.wxwidgets.org/downloads/
+
+
+===Directory Map===
+"/wxfred2/base"
+- contains the tool generated files which are derived by all windows, frames, and dialogs found elsewhere in "/wxfred2"
+
+"/wxfred2/editors"
+- contains the source code for frames and dialogs listed under the Editors menu in wxFRED2.
+- Also includes an XML resource file (".xrc") which may be, and is recommended to be, used by a WYSIWYG editor to edit the GUI elements of wxfred2. At the time of this writing, wxFormBuilder v3.3 - beta proved to be stable enough to create all the elements, although the generated wxFRED2_base.cpp had to be sanitized of deprecated flags in order for it to be compiled under the wxWidgets 2.9.4 lib.
+
+"/wxfred2/help"
+- contains the source code for the "About" and help dialogs listed under the Help menu in wxFRED2.
+
+"/wxfred2/misc"
+- contains the source code for miscillanious tools listed under the Misc menu in wxFRED2.
+
+"/wxfred2/res"
+- contains the resouce files used by wxFRED2 during runtime, these are typically images used for the graphic buttons.
+
+
+===Importing wxFRED2.xrc into a WYSIWYG Editor===
+==wxFormBuilder==
+To import wxFRED2.xrc into wxFormBuilder:
+
+ 1. Open wxFormBuilder, and create a new project (File->New Project)
+
+ 2. Import wxFRED2.xrc (File->Import XRC...)
+
+ 3. In the left-hand panel labeled "Object Tree," select the project name at the very top of the tree. You most likely will need to scroll up.
+
+ 4. In the right-hand panel labeled "Object Properties," change the properties to the following:
+  . Under "Project":
+  . name to "wxFRED2" or your name of choice
+  . path to "/"
+  . embedded_files_path to "../res/"
+  . code_generation to "C++, XRC" (check both boxes by expanding the group)
+
+ 5. Under "C++ Properties":
+  . use_enum to "checked"
+  . namespace to "fredBase"
+  . event_generation to "table"
+  . disconnect_events to "not checked"
+
+==Other WYSIYWG Editors==
+Importing into other WYSIWYG editors should be similar to importing into wxFormBuilder. Be sure the options in steps 4 and 5 are set as they are so that for your newly generated files to play nice with the existing "/wxfred2/" code.
+
+Please be sure to NOT include the project file from the WYSIWYG editor in your commits to the fs2_open repo, as they are far larger than the .xrc and are usually specific to that editor!

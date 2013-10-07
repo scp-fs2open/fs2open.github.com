@@ -4761,7 +4761,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
-		strncpy(subname, sip->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
+		strcpy_s(subname, sip->subsystems[bank_obj].subobj_name);
 
 		ssp = GET_FIRST(&shipp->subsys_list);
 		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
@@ -4973,7 +4973,16 @@ void texture_map::PageOut(bool release)
 		this->textures[i].PageOut(release);
 }
 
-void texture_map::Reset()
+void texture_map::Clear()
+{
+	is_ambient = false;
+	is_transparent = false;
+
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+		this->textures[i].clear();
+}
+
+void texture_map::ResetToOriginal()
 {
 	for(int i = 0; i < TM_NUM_TYPES; i++)
 		this->textures[i].ResetTexture();

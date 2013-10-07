@@ -308,7 +308,7 @@ int brief_setup_closeup(brief_icon *bi);
 void brief_maybe_blit_scene_cut(float frametime);
 void brief_transition_reset();
 
-char *brief_tooltip_handler(char *str)
+const char *brief_tooltip_handler(const char *str)
 {
 	if (!stricmp(str, NOX("@close"))) {
 		if (Closeup_icon)

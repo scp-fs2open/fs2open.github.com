@@ -42,6 +42,8 @@
 // Includes for different rendering systems
 #include "graphics/gropengl.h"
 
+const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
+
 screen gr_screen;
 
 color_gun Gr_red, Gr_green, Gr_blue, Gr_alpha;
@@ -275,7 +277,7 @@ DCF(clear_color, "set clear color r, g, b")
 	gr_set_clear_color(r, g, b);
 }
 
-void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_128 )
+void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	if ( palette == NULL ) {
 		// Create a default palette
@@ -319,7 +321,7 @@ void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_
 }
 
 
-void gr_set_palette( char *name, ubyte * palette, int restrict_font_to_128 )
+void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	char *p;
 	palette_flush();
@@ -464,8 +466,8 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 16, mode = GR_OPENGL;
-	char *ptr = NULL;
-	char *Default_video_settings = "OGL -(1024x768)x16 bit";
+	const char *ptr = NULL;
+	const char *Default_video_settings = "OGL -(1024x768)x16 bit";
 
 	if ( !Gr_inited ) {
 		atexit(gr_close);
@@ -696,6 +698,7 @@ void gr_init_color(color *c, int r, int g, int b)
 	c->alphacolor = -1;
 	c->is_alphacolor = 0;
 	c->magic = 0xAC01;
+	c->raw8 = 0;
 }
 
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type )

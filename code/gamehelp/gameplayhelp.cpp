@@ -175,7 +175,7 @@ void gameplay_help_blit_control_line(int x, int y, int id)
 	gr_string(x+KEY_DESCRIPTION_OFFSET, y, XSTR(ci->text, CONTROL_CONFIG_XSTR + id));
 }
 
-void gameplay_help_blit_control_line_raw(int x, int y, char *control_text, char *control_description)
+void gameplay_help_blit_control_line_raw(int x, int y, const char *control_text, const char *control_description)
 {
 	gr_string(x,y,control_text);
 	gr_string(x+KEY_DESCRIPTION_OFFSET,y,control_description);
@@ -183,7 +183,7 @@ void gameplay_help_blit_control_line_raw(int x, int y, char *control_text, char 
 
 // game_play_help_set_title() will display the title for the help screen and
 // set the font for the rest of the screen
-void gameplay_help_set_title(char *title)
+void gameplay_help_set_title(const char *title)
 {
 	int sy=TITLE_Y;
 	char buf[128];

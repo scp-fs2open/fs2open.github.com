@@ -1231,7 +1231,7 @@ int event_editor::save_message(int num)
 		}
 
 		string_copy(m_messages[num].message, m_message_text, MESSAGE_LENGTH - 1);
-		lcl_fred_replace_stuff(m_messages[num].message, MESSAGE_LENGTH);
+		lcl_fred_replace_stuff(m_messages[num].message, MESSAGE_LENGTH - 1);
 		if (m_messages[num].avi_info.name){
 			free(m_messages[num].avi_info.name);
 		}

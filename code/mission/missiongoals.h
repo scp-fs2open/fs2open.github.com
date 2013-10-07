@@ -43,7 +43,7 @@ struct ai_info;
 #define	PRIMARY_GOALS_INCOMPLETE	0
 #define	PRIMARY_GOALS_FAILED			-1
 
-extern char *Goal_type_text(int n);
+extern const char *Goal_type_text(int n);
 
 // structures for primary and secondary goals
 

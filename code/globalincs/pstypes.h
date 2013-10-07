@@ -196,6 +196,11 @@ extern int Global_error_count;
 
 #include "osapi/outwnd.h"
 
+// remove __attribute__ on non-GCC compilers
+#ifndef __GNUC__
+#	define  __attribute__(x)  /*NOTHING*/
+#endif
+
 // To debug printf do this:
 // mprintf(( "Error opening %s\n", filename ));
 #ifndef NDEBUG
@@ -456,7 +461,11 @@ void dc_printf( char *format, ... );
 #endif // !BYTE_ORDER
 #endif // SDL_BYTEORDER
 
-#if BYTE_ORDER == BIG_ENDIAN
+#ifdef SCP_SOLARIS // Solaris
+#define INTEL_INT(x)	x
+#define INTEL_SHORT(x)	x
+#define INTEL_FLOAT(x)	(*x)
+#elif BYTE_ORDER == BIG_ENDIAN
 // turn off inline asm
 #undef USE_INLINE_ASM
 
@@ -540,7 +549,41 @@ typedef struct lod_checker {
 extern int game_busy_callback( void (*callback)(int count), int delta_step = -1 );
 
 // Call whenever loading to display cursor
-extern void game_busy(char *filename = NULL);
+extern void game_busy(const char *filename = NULL);
+
+//=========================================================
+// Functions to profile frame performance
+
+typedef struct profile_sample {
+	bool valid;
+	uint profile_instances;
+	int open_profiles;
+	char name[256];
+	float start_time;
+	float accumulator;
+	float children_sample_time;
+	uint num_parents;
+} profile_sample;
+
+typedef struct profile_sample_history {
+	bool valid;
+	char name[256];
+	float avg;
+	float min;
+	float max;
+} profile_sample_history;
+
+extern char profile_output[2048];
+
+void profile_init();
+void profile_begin(char* name);
+void profile_end(char* name);
+void profile_dump_output();
+void store_profile_in_history(char* name, float percent);
+void get_profile_from_history(char* name, float* avg, float* min, float* max);
+
+// Helper macro to encapsulate a single function call in a profile_begin()/profile_end() pair.
+#define PROFILE(name, function) { profile_begin(name); function; profile_end(name); }
 
 
 //=========================================================
@@ -577,7 +620,7 @@ void monitor_update();
 
 #define NOX(s) s
 
-char *XSTR(char *str, int index);
+const char *XSTR(const char *str, int index);
 
 // Caps V between MN and MX.
 template <class T> void CAP( T& v, T mn, T mx )

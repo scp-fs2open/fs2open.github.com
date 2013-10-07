@@ -47,7 +47,7 @@ int chatbox_scroll_down();
 void chatbox_clear();
 
 // add a line of text (from the player identified by pid) to the chatbox
-void chatbox_add_line(char *msg,int pid,int add_id = 1);
+void chatbox_add_line(const char *msg, int pid, int add_id = 1);
 
 // force the chatbox to go into small mode (if its in large mode) - will not wotk if in multi paused chatbox mode
 void chatbox_force_small();

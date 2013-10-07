@@ -55,7 +55,7 @@ void ChatInit(void);
 int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid);
 void DisconnectFromChatServer();
 char *GetChatText();
-char *SendChatString(char *line, int raw = 0);
+const char *SendChatString(const char *line, int raw = 0);
 Chat_command *GetChatCommand();
 char *GetChatUserList();
 int SetNewChatChannel(char *channel);
@@ -64,7 +64,7 @@ char *GetTrackerIdByUser(char *nickname);
 char *GetChannelByUser(char *nickname);
 
 char *ChatGetString(void);
-char *GetWordNum(int num, char *l_String);
+char *GetWordNum(int num, const char *l_String);
 char *ParseIRCMessage(char *Line, int iMode);
 int AddChatUser(char *nickname);
 int RemoveChatUser(char *nickname);

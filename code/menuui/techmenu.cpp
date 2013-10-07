@@ -201,7 +201,7 @@ static int Techroom_show_all = 0;
 static int Text_size;
 static int Text_offset;
 static int Text_line_size[MAX_TEXT_LINES];
-static char *Text_lines[MAX_TEXT_LINES];
+static const char *Text_lines[MAX_TEXT_LINES];
 
 static int Cur_entry = -1;				// this is the current entry selected, using entry indexing
 static int Cur_entry_index = -1;		// this is the current entry selected, using master list indexing
@@ -432,7 +432,7 @@ void tech_common_render()
 		strncpy(buf, Current_list[z].name, sizeof(buf) - 1);
 
 		if (Lcl_gr)
-			lcl_translate_ship_name(buf);
+			lcl_translate_ship_name_gr(buf);
 
 		gr_force_fit_string(buf, 255, Tech_list_coords[gr_screen.res][SHIP_W_COORD]);
 		gr_string(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, buf);
@@ -1368,6 +1368,7 @@ void techroom_do_frame(float frametime)
 	gr_flip();
 }
 
+// note: the name has to be pre-translated before being passed into this function
 int intel_info_lookup(char *name)
 {
 	int	i;

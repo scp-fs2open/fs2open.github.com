@@ -128,7 +128,7 @@ void multi_campaign_next_mission()
 	// now we should be sequencing through the next stage (mission load, etc)
 	// this will eventually be replaced with the real filename of the next mission
 	if(Campaign.current_mission != -1){
-		strncpy(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN);
+		strcpy_s(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name);
 		strcpy_s(Netgame.mission_name,Game_current_mission_filename);			
 
 		// if we're the standalone server, set the mission and campaign names

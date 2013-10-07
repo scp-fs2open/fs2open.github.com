@@ -188,7 +188,12 @@ EXTRA_DIST =	\
 AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@
 AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 
-noinst_LIBRARIES = libcode.a
+if BUILD_WXFRED
+LIBCODE=
+else
+LIBCODE=libcode.a
+endif
+noinst_LIBRARIES = $(LIBCODE)
 bin_PROGRAMS = @FS2_BINARY@
 
 EXTRA_PROGRAMS = fs2_open_@PACKAGE_VERSION@ \
@@ -294,6 +299,7 @@ FS2_SOURCES =	\
 	globalincs/fsmemory.h	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
+	globalincs/profiling.cpp	\
 	globalincs/pstypes.h	\
 	globalincs/safe_strings.cpp	\
 	globalincs/safe_strings.h	\
@@ -826,21 +832,85 @@ fs2_open_@PACKAGE_VERSION@_LDADD = libcode.a
 ##
 
 wxFRED_SOURCES = \
-	wxfred2/wxfred2.cpp	\
-	wxfred2/wxfred2.h	\
-	wxfred2/fredframe.cpp	\
-	wxfred2/fredframe.h	\
-	wxfred2/wxfred_xrc.cpp	\
-	wxfred2/wxfred_xrc.h
+	wxfred2/res/select.png.h \
+	wxfred2/res/constz.png.h \
+	wxfred2/res/constx.png.h \
+	wxfred2/res/selectrot.png.h \
+	wxfred2/res/constyz.png.h \
+	wxfred2/res/constxy.png.h \
+	wxfred2/res/wingform.png.h \
+	wxfred2/res/zoomsel.png.h \
+	wxfred2/res/constxz.png.h \
+	wxfred2/res/consty.png.h \
+	wxfred2/res/wingdisband.png.h \
+	wxfred2/res/showdist.png.h \
+	wxfred2/res/orbitsel.png.h \
+	wxfred2/res/zoomext.png.h \
+	wxfred2/res/rotlocal.png.h \
+	wxfred2/res/selectmove.png.h \
+	wxfred2/res/selectlock.png.h \
+	wxfred2/res/selectlist.png.h \
+	wxfred2/base/wxFRED_base.h \
+	wxfred2/base/wxFRED_base.cpp \
+	wxfred2/editors/dlgObjectEditor.h \
+	wxfred2/editors/dlgObjectEditor.cpp \
+	wxfred2/editors/dlgVoiceActingManager.h \
+	wxfred2/editors/frmDebriefingEditor.h \
+	wxfred2/editors/dlgBackgroundEditor.cpp \
+	wxfred2/editors/dlgMissionObjectivesEditor.cpp \
+	wxfred2/editors/frmBriefingEditor.cpp \
+	wxfred2/editors/frmTeamLoadoutEditor.h \
+	wxfred2/editors/dlgMissionObjectivesEditor.h \
+	wxfred2/editors/dlgMissionSpecsEditor.h \
+	wxfred2/editors/frmDebriefingEditor.cpp \
+	wxfred2/editors/dlgFictionViewer.cpp \
+	wxfred2/editors/dlgVoiceActingManager.cpp \
+	wxfred2/editors/dlgSoundEnvironment.cpp \
+	wxfred2/editors/frmCommandBriefingEditor.cpp \
+	wxfred2/editors/frmBriefingEditor.h \
+	wxfred2/editors/dlgShieldSystemEditor.h \
+	wxfred2/editors/dlgReinforcementsEditor.h \
+	wxfred2/editors/dlgEventsEditor.h \
+	wxfred2/editors/frmTeamLoadoutEditor.cpp \
+	wxfred2/editors/frmCommandBriefingEditor.h \
+	wxfred2/editors/frmWaypointEditor.h \
+	wxfred2/editors/dlgAsteroidFieldEditor.h \
+	wxfred2/editors/dlgSetGlobalShipFlagsEditor.cpp \
+	wxfred2/editors/dlgShieldSystemEditor.cpp \
+	wxfred2/editors/frmShipsEditor.h \
+	wxfred2/editors/dlgFictionViewer.h \
+	wxfred2/editors/dlgReinforcementsPicker.cpp \
+	wxfred2/editors/frmCampaignEditor.cpp \
+	wxfred2/editors/dlgAsteroidFieldEditor.cpp \
+	wxfred2/editors/dlgReinforcementsPicker.h \
+	wxfred2/editors/dlgReinforcementsEditor.cpp \
+	wxfred2/editors/frmCampaignEditor.h \
+	wxfred2/editors/dlgBackgroundEditor.h \
+	wxfred2/editors/frmShipsEditor.cpp \
+	wxfred2/editors/dlgEventsEditor.cpp \
+	wxfred2/editors/dlgSetGlobalShipFlagsEditor.h \
+	wxfred2/editors/frmWingEditor.h \
+	wxfred2/editors/frmWingEditor.cpp \
+	wxfred2/editors/frmWaypointEditor.cpp \
+	wxfred2/editors/dlgSoundEnvironment.h \
+	wxfred2/editors/dlgMissionSpecsEditor.cpp \
+	wxfred2/glcViewport.h \
+	wxfred2/misc/dlgMissionStats.h \
+	wxfred2/misc/dlgMissionStats.cpp \
+	wxfred2/wxfred2.cpp \
+	wxfred2/wxfred2.h \
+	wxfred2/help/dlgSexpHelp.h \
+	wxfred2/help/dlgSexpHelp.cpp \
+	wxfred2/help/dlgAboutBox.h \
+	wxfred2/help/dlgAboutBox.cpp \
+	wxfred2/frmFRED2.h \
+	wxfred2/frmFRED2.cpp
 
 wxFRED2_@PACKAGE_VERSION@_DEBUG_SOURCES = \
 	${wxFRED_SOURCES}
 
 wxFRED2_@PACKAGE_VERSION@_SOURCES =	\
 	${wxFRED_SOURCES}
-
-wxFRED2_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a
-wxFRED2_@PACKAGE_VERSION@_LDADD = libcode.a
 
 ##
 ## End wxFRED2 binary

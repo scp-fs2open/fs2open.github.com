@@ -347,7 +347,7 @@ void	ss_set_carried_icon(int from_slot, int ship_class);
 #define SHIP_DESC_X	445
 #define SHIP_DESC_Y	273
 
-char *ss_tooltip_handler(char *str)
+const char *ss_tooltip_handler(const char *str)
 {
 	if (Selected_ss_class < 0)
 		return NULL;
@@ -1216,7 +1216,7 @@ void ship_select_blit_ship_info()
 	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
 	char ship_desc[1000];
-	char *p_str[MAX_BRIEF_LINES];
+	const char *p_str[MAX_BRIEF_LINES];
 	char *token;
 	char Ship_select_ship_info_text[1500];
 	char Ship_select_ship_info_lines[MAX_NUM_SHIP_DESC_LINES][SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN];
@@ -1224,6 +1224,7 @@ void ship_select_blit_ship_info()
 
 	// strip out newlines
 	memset(ship_desc,0,1000);
+	memset(Ship_select_ship_info_text,0,1500);
 	strcpy_s(ship_desc, sip->desc);
 	token = strtok(ship_desc,"\n");
 	if(token != NULL){

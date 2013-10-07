@@ -423,7 +423,7 @@ void WaveFile::Close(void)
 }
 
 // -- from parselo.cpp --
-extern char *stristr(const char *str, const char *substr);
+extern const char *stristr(const char *str, const char *substr);
 
 // Open
 bool WaveFile::Open(char *pszFilename, bool keep_ext)

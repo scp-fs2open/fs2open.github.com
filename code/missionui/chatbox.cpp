@@ -776,12 +776,12 @@ void chatbox_chat_init()
 }
 
 // int Test_color = 0;
-void chatbox_add_line(char *msg, int pid, int add_id)
+void chatbox_add_line(const char *msg, int pid, int add_id)
 {
 	int backup;
 	int	n_lines,idx;
 	int	n_chars[3];		
-	char	*p_str[3];			// for the initial line (unindented)
+	const char	*p_str[3];			// for the initial line (unindented)
 	char msg_extra[CHATBOX_STRING_LEN];
 
 	if(!Chatbox_created){

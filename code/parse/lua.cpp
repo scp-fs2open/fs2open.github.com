@@ -5080,6 +5080,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	}
 
 	mc_info hull_check;
+	mc_info_init(&hull_check);
 
 	hull_check.model_num = model_num;
 	hull_check.model_instance_num = model_instance_num;
@@ -7989,6 +7990,28 @@ ADE_VIRTVAR(WeaponEnergyMax, l_Ship, "number", "Maximum weapon energy", "number"
 	return ade_set_args(L, "f", sip->max_weapon_reserve);
 }
 
+ADE_VIRTVAR(AutoaimFOV, l_Ship, "number", "FOV of ship's autoaim, if any", "number", "FOV (in degrees), or 0 if ship uses no autoaim or if handle is invalid")
+{
+	object_h *objh;
+	float fov = -1;
+	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fov))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR && fov >= 0.0f) {
+		if (fov > 180.0)
+			fov = 180.0;
+
+		shipp->autoaim_fov = fov * PI / 180.0f;
+	}
+
+	return ade_set_args(L, "f", shipp->autoaim_fov * 180.0f / PI);
+}
+
 ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigger is pressed or not", "boolean", "True if pressed, false if not, nil if ship handle is invalid")
 {
 	object_h *objh;
@@ -8876,6 +8899,23 @@ ADE_FUNC(warpOut, l_Ship, NULL, "Warps ship out", "boolean", "True if successful
 		return ADE_RETURN_NIL;
 
 	shipfx_warpout_start(objh->objp);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace drive and is allowed to use it", "boolean", "True if successful, or nil if ship handle is invalid")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	if(shipp->flags & SF2_NO_SUBSPACE_DRIVE){
+		return ADE_RETURN_FALSE;
+	}
 
 	return ADE_RETURN_TRUE;
 }
@@ -12608,8 +12648,8 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 	}
 	else
 	{
-		int *linelengths = new int[MAX_TEXT_LINES];
-		char **linestarts = new char*[MAX_TEXT_LINES];
+		int linelengths[MAX_TEXT_LINES];
+		const char *linestarts[MAX_TEXT_LINES];
 
 		num_lines = split_str(s, x2-x, linelengths, linestarts, MAX_TEXT_LINES);
 
@@ -12621,26 +12661,24 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 
 		y2 = y;
 
-		char rep;
-		char *reptr;
 		for(int i = 0; i < num_lines; i++)
 		{
 			//Increment line height
 			y2 += line_ht;
-			//WMC - rather than make a new string each line, set the right character to null
-			reptr = &linestarts[i][linelengths[i]];
-			rep = *reptr;
-			*reptr = '\0';
+
+			//Contrary to WMC's previous comment, let's make a new string each line
+			int len = linelengths[i];
+			char *buf = new char[len+1];
+			strncpy(buf, linestarts[i], len);
+			buf[len] = '\0';
 
 			//Draw the string
-			gr_string(x,y2,linestarts[i],false);
+			gr_string(x,y2,buf,false);
 
-			//Set character back
-			*reptr = rep;
+			//Free the string we made
+			delete[] buf;
 		}
 
-		delete[] linelengths;
-		delete[] linestarts;
 		NextDrawStringPos[1] = y2+gr_get_font_height();
 	}
 	return ade_set_error(L, "i", num_lines);
@@ -13682,7 +13720,7 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 	} else {
 		// due safety checks of the game_start_mission() function allow only main menu for now.
 		if (gameseq_get_state(gameseq_get_depth()) == GS_STATE_MAIN_MENU) {
-			strncpy( Game_current_mission_filename, str, MAX_FILENAME_LEN );
+			strcpy_s( Game_current_mission_filename, str );
 			if (b == true) {
 				// start mission - go via briefing screen
 				gameseq_post_event(GS_EVENT_START_GAME);

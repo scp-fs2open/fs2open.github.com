@@ -176,7 +176,7 @@ void AltShipClassDlg::alt_class_list_rebuild()
 				m_alt_class_list.AddString(Ship_info[alt_class_pool[i].ship_class].name);
 			}
 			else {
-				m_alt_class_list.AddString("Invalid Ship Class");  
+				m_alt_class_list.AddString("Invalid Ship Class");
 				Int3();
 			}
 		}		

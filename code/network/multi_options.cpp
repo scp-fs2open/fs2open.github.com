@@ -219,7 +219,7 @@ void multi_options_read_config()
 			if ( SETTING("+server_port") ) {
 				NEXT_TOKEN();
 				if (tok != NULL) {
-					strncpy(Multi_options_g.tracker_port, tok, STD_NAME_LEN);
+					strcpy_s(Multi_options_g.tracker_port, tok);
 				}
 			} else
 			// ip addr of pxo chat server

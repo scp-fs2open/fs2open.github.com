@@ -867,7 +867,7 @@ void barracks_delete_pilot()
 }
 
 // Filter out pilots of wrong type (which shouldn't be in the directory we are checking, but just to be safe..)
-int barracks_pilot_filter(char *filename)
+int barracks_pilot_filter(const char *filename)
 {
 	bool r = false;
 	int rank = 0;

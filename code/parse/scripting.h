@@ -176,7 +176,7 @@ public:
 	//***Hook creation functions
 	bool EvalString(char* string, char *format=NULL, void *rtn=NULL, char *debug_str=NULL);
 	script_hook ParseChunk(char* debug_str=NULL);
-	bool ParseCondition(char *filename="<Unknown>");
+	bool ParseCondition(const char *filename="<Unknown>");
 
 	//***Hook running functions
 	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);

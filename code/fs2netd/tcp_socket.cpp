@@ -113,7 +113,7 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 		// want to keep this as clean and simple as possible and that means
 		// using an actual standard :)
 
-		strncpy( host_str, host, sizeof(host_str) );
+		strcpy_s( host_str, host );
 
 		// check that we aren't in a dotted format, some gethostbyname() implementations don't like that
 		// (NOTE: Yes, I'm aware that this is problematic if a host name uses an initial digit)

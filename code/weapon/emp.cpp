@@ -464,7 +464,7 @@ int emp_should_blit_gauge()
 }
 
 // emp hud string
-void emp_hud_string(int x, int y, int gauge_id, char *str, bool resize)
+void emp_hud_string(int x, int y, int gauge_id, const char *str, bool resize)
 {
 	char tmp[256] = "";
 
@@ -488,7 +488,7 @@ void emp_hud_string(int x, int y, int gauge_id, char *str, bool resize)
 }
 
 // emp hud printf
-void emp_hud_printf(int x, int y, int gauge_id, char *format, ...)
+void emp_hud_printf(int x, int y, int gauge_id, const char *format, ...)
 {
 	char tmp[256] = "";
 	va_list args;	

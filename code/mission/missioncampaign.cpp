@@ -90,14 +90,14 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 campaign Campaign;
 
 
-bool campaign_is_ignored(char *filename, bool add_extension = false);
+bool campaign_is_ignored(const char *filename);
 
 /**
  * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
  * In the type field, we return if the campaign is a single player or multiplayer campaign.  
  * The type field will only be valid if the name returned is non-NULL
  */
-int mission_campaign_get_info(char *filename, char *name, int *type, int *max_players, char **desc)
+int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc)
 {
 	int rval, i, success = 0;
 	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
@@ -179,7 +179,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
  * @return Number of missions added to the 'list', and up to 'max' missions may be added to 'list'.  
  * @return Negative on error.
  */
-int mission_campaign_get_mission_list(char *filename, char **list, int max)
+int mission_campaign_get_mission_list(const char *filename, char **list, int max)
 {
 	int rval, i, num = 0;
 	char name[MAX_FILENAME_LEN];
@@ -240,18 +240,18 @@ void mission_campaign_free_list()
 	Campaign_names_inited = 0;
 }
 
-int mission_campaign_maybe_add(char *filename)
+int mission_campaign_maybe_add(const char *filename)
 {
 	char name[NAME_LENGTH];
 	char *desc = NULL;
 	int type, max_players;
 
-	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		// don't add ignored campaigns
 		if (campaign_is_ignored(filename)) {
 			return 0;
 		}
 
+	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
 			Campaign_names[Num_campaigns] = vm_strdup(name);
 
@@ -418,12 +418,12 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	int len, rval, i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
-	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
-
 	if (campaign_is_ignored(filename)) {
 		Campaign_file_missing = 1;
 		return CAMPAIGN_ERROR_IGNORED;
 	}
+
+	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
 	// open localization
 	lcl_ext_open();	
@@ -846,7 +846,7 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 	int dir_type, num_files, i;
 	char file_spec[MAX_FILENAME_LEN + 2], *ext;
 	char filename[1024];
-	int (*filter_save)(char *filename);
+	int (*filter_save)(const char *filename);
 	SCP_vector<SCP_string> names;
 
 	ext = NOX(".csg");
@@ -899,7 +899,7 @@ int mission_campaign_next_mission()
 		return -2;
 
 	Campaign.current_mission = Campaign.next_mission;	
-	strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
 
 	// check for end of loop.
 	if (Campaign.current_mission == Campaign.loop_reentry) {
@@ -931,9 +931,9 @@ int mission_campaign_previous_mission()
 	Pilot.save_savefile();
 
 	// reset the player stats to be the stats from this level
-	memcpy( &Player->stats, &Campaign.missions[Campaign.current_mission].stats, sizeof(Player->stats) );
+	Player->stats.assign( Campaign.missions[Campaign.current_mission].stats );
 
-	strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
 	Num_granted_ships = 0;
 	Num_granted_weapons = 0;
 
@@ -1193,7 +1193,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
 	if ( Campaign.prev_mission != Campaign.current_mission ) {
-		memcpy( &mission->stats, &Player->stats, sizeof(Player->stats) );
+		mission->stats.assign( Player->stats );
 		if(!(Game_mode & GM_MULTIPLAYER)){
 			scoring_backout_accept( &mission->stats );
 		}
@@ -1321,7 +1321,8 @@ void mission_campaign_clear()
 		Campaign.missions[i].flags = 0;
 		Campaign.missions[i].main_hall = "";
 		Campaign.missions[i].debrief_persona_index = 0;
-		init_scoring_element(&Campaign.missions[i].stats);
+
+		Campaign.missions[i].stats.init();
 	}
 
 	memset(Campaign.name, 0, NAME_LENGTH);
@@ -1630,26 +1631,18 @@ void mission_campaign_save_persistent( int type, int sindex )
 		Int3();
 }
 
-bool campaign_is_ignored(char *filename, bool add_extension)
+bool campaign_is_ignored(const char *filename)
 {
-	bool current_campaign_ignored = false;
-	int i;
-	char campaign_name[NAME_LENGTH] = {""};
+	SCP_string filename_no_ext = filename;
+	drop_extension(filename_no_ext);
 
-	strcpy_s(campaign_name, filename);
-
-	if (add_extension) {
-		strcat_s(campaign_name, FS_CAMPAIGN_FILE_EXT);
-	}
-
-	for (i = 0; i < (int)Ignored_campaigns.size(); i++) {
-		if (!stricmp (campaign_name, Ignored_campaigns[i].c_str())) {
-			current_campaign_ignored = true;
-			break;
+	for (SCP_vector<SCP_string>::iterator ii = Ignored_campaigns.begin(); ii != Ignored_campaigns.end(); ++ii) {
+		if (ii->compare(filename_no_ext) == 0) {
+			return true;
 		}
 	}
 	
-	return current_campaign_ignored;
+	return false;
 }
 
 // returns 0: loaded, !0: error
@@ -1667,7 +1660,7 @@ int mission_load_up_campaign( player *pl )
 
 	// last used...
 	if ( strlen(pl->current_campaign) ) {
-		if (!campaign_is_ignored(pl->current_campaign, true)) {
+		if (!campaign_is_ignored(pl->current_campaign)) {
 			return mission_campaign_load(pl->current_campaign, pl);
 		}
 		else {

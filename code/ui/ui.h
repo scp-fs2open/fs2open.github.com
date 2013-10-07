@@ -315,7 +315,7 @@ class UI_INPUTBOX : public UI_GADGET
 		int changed();
 		int pressed();
 		void get_text(char *out);
-		void set_text(char *in);
+		void set_text(const char *in);
 };
 
 // Icon flags
@@ -655,7 +655,7 @@ public:
 	void add_XSTR(char *string, int xstr_id, int x, int y, UI_GADGET *assoc, int color_type, int font_id = -1);
 	void add_XSTR(UI_XSTR *xstr);
 
-	char *(*tooltip_handler)(char *text);
+	const char *(*tooltip_handler)(const char *text);
 	int last_keypress;		// filled in each frame
 	int ttx, tty;
 	int use_hack_to_get_around_stupid_problem_flag;

@@ -679,11 +679,11 @@ extern p_object *Arriving_support_ship;
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
-int parse_main(char *mission_name, int flags = 0);
+int parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
-p_object *mission_parse_get_arrival_ship(char *name);
+p_object *mission_parse_get_arrival_ship(const char *name);
 p_object *mission_parse_get_parse_object(ushort net_signature);
-p_object *mission_parse_get_parse_object(char *name);
+p_object *mission_parse_get_parse_object(const char *name);
 int parse_create_object(p_object *objp);
 void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2);
 
@@ -693,8 +693,8 @@ void mission_parse_close();
 int parse_wing_create_ships(wing *wingp, int num_to_create, int force = 0, int specific_instance = -1 );
 
 // function for getting basic mission data without loading whole mission
-int mission_parse_is_multi(char *filename, char *mission_name );
-int mission_parse_get_multi_mission_info(char *filename);
+int mission_parse_is_multi(const char *filename, char *mission_name );
+int mission_parse_get_multi_mission_info(const char *filename);
 
 // called externally from multiplayer code
 int mission_do_departure(object *objp, bool goal_is_to_warp = false);
@@ -703,7 +703,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp = false);
 void mission_parse_fixup_players(void);
 
 // get a index to a perminently kept around name of a ship or wing
-int get_parse_name_index(char *name);
+int get_parse_name_index(const char *name);
 
 // called from freespace game level loop
 void mission_parse_eval_stuff();
@@ -737,7 +737,7 @@ void mission_parse_reset_callsign();
 int is_training_mission();
 
 // code to save/restore mission parse stuff
-int get_mission_info(char *filename, mission *missionp = NULL, bool basic = true);
+int get_mission_info(const char *filename, mission *missionp = NULL, bool basic = true);
 
 // Goober5000
 void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);

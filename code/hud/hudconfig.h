@@ -14,7 +14,7 @@
 
 #include "hud/hud.h"
 
-struct player;
+class player;
 struct ship;
 struct ai_info;
 
@@ -30,7 +30,7 @@ struct ai_info;
 #define RR_LONG				1	
 #define RR_INFINITY			2
 extern float Radar_ranges[RR_MAX_RANGES];
-extern char *Radar_range_text(int range_num);
+extern const char *Radar_range_text(int range_num);
 
 #define RP_SHOW_DEBRIS						(1<<0)
 #define RP_SHOW_FRIENDLY_MISSILES		(1<<1)

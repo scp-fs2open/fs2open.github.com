@@ -796,6 +796,7 @@ typedef struct ship {
 	fix team_change_timestamp;
 	int team_change_time;
 
+	float autoaim_fov;
 } ship;
 
 struct ai_target_priority {
@@ -919,8 +920,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_NO_ETS							(1 << 13)	// The E - No ETS on this ship class
 #define SIF2_NO_LIGHTING					(1 << 14)	// Valathil - No lighting for this ship
 #define SIF2_DYN_PRIMARY_LINKING			(1 << 15)	// RSAXVC - Dynamically generate weapon linking options
+#define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
 // !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
-#define	MAX_SHIP_FLAGS	16		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	17		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
@@ -1149,7 +1151,10 @@ typedef struct path_metadata {
 } path_metadata;
 
 // The real FreeSpace ship_info struct.
-typedef struct ship_info {
+// NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
+class ship_info
+{
+public:
 	char		name[NAME_LENGTH];				// name for the ship
 	char		alt_name[NAME_LENGTH];			// display another name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
@@ -1291,6 +1296,9 @@ typedef struct ship_info {
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
+	float	auto_shield_spread;
+	bool	auto_shield_spread_bypass;
+	int		auto_shield_spread_from_lod;
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
@@ -1418,7 +1426,7 @@ typedef struct ship_info {
 	SCP_vector<cockpit_display_info> displays;
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
-} ship_info;
+};
 
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
@@ -1440,7 +1448,6 @@ typedef struct engine_wash_info
 	float		length;			// length of engine wash, measured from thruster
 	float		intensity;		// intensity of engine wash
 	
-	engine_wash_info();
 } engine_wash_info;
 
 extern SCP_vector<engine_wash_info> Engine_wash_info;

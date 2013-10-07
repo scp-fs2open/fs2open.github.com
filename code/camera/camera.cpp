@@ -561,7 +561,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 
 
 	int num_text_lines = 0;
-	char *text_line_ptrs[MAX_SUBTITLE_LINES];
+	const char *text_line_ptrs[MAX_SUBTITLE_LINES];
 	int text_line_lens[MAX_SUBTITLE_LINES];
 
 	//Setup text

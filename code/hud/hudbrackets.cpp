@@ -509,8 +509,8 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 	if(Cmdline_targetinfo && (target_objnum != -1))
 	{
 		object* t_objp = &Objects[target_objnum];
-		char* tinfo_name = NULL;
-		char* tinfo_class = NULL;
+		const char* tinfo_name = NULL;
+		const char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
 		SCP_list<CJumpNode>::iterator jnp;
@@ -963,8 +963,8 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 
 	if( (target_objnum != -1) && (flags & (TARGET_DISPLAY_NAME | TARGET_DISPLAY_CLASS)) ) {
 		object* t_objp = &Objects[target_objnum];
-		char* tinfo_name = NULL;
-		char* tinfo_class = NULL;
+		const char* tinfo_name = NULL;
+		const char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
 		SCP_list<CJumpNode>::iterator jnp;

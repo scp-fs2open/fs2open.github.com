@@ -161,10 +161,10 @@ struct goal_buttons {
 struct goal_text {
 	int m_num_lines;
 	int m_line_sizes[MAX_GOAL_LINES];
-	char *m_lines[MAX_GOAL_LINES];
+	const char *m_lines[MAX_GOAL_LINES];
 
 	void init();
-	int add(char *text = NULL);
+	int add(const char *text = NULL);
 	void display(int n, int y);
 };
 
@@ -185,7 +185,7 @@ static goal_text Goal_text;
 static int Mission_directive_sound_timestamp;	// timestamp to control when directive succcess sound gets played
 static int Mission_directive_special_timestamp;	// used to specially mark a directive as true even though it's not
 
-char *Goal_type_text(int n)
+const char *Goal_type_text(int n)
 {
 	switch (n) {
 		case 0:	
@@ -304,7 +304,7 @@ void goal_text::init()
 // Adds lines of goal text.  If passed NULL (or nothing passed) a blank line is added.  If
 // the text is too long, it is automatically split into more than one line.
 // Returns the number of lines added.
-int goal_text::add(char *text)
+int goal_text::add(const char *text)
 {
 	int max, count;
 

@@ -104,7 +104,7 @@ void	event_music_enable();
 void	event_music_pause();
 void	event_music_unpause();
 void	event_music_set_volume_all(float volume);
-void	event_music_parse_musictbl(char *filename);
+void	event_music_parse_musictbl(const char *filename);
 void	event_music_change_pattern(int new_pattern);
 int	event_music_return_current_pattern();
 void	event_music_first_pattern();

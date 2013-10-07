@@ -1564,7 +1564,7 @@ void message_queue_process()
 	}
 #endif
 	
-	strncpy (who_from, q->who_from, NAME_LENGTH);
+	strcpy_s (who_from, q->who_from);
 
 	// if this is a ship, do we use name or callsign or ship class?
 	if ( Message_shipnum >= 0 ) {

@@ -85,7 +85,7 @@ SCP_vector<mflash_info> Mflash_info;
 // MUZZLE FLASH FUNCTIONS
 // 
 
-void parse_mflash_tbl(char *filename)
+void parse_mflash_tbl(const char *filename)
 {
 	int rval;
 	uint i;

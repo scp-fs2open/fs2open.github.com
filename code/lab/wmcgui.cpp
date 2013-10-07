@@ -439,7 +439,6 @@ GUIObject* GUIScreen::Add(GUIObject* new_gauge)
 		if (tgp->Name == new_gauge->Name) {
 			//Get rid of the new gauge
 			//We don't want it; breaks skinning
-			delete new_gauge;
 
 			if (tgp->Type == new_gauge->Type) {
 				//If the type of the existing object is the same
@@ -1218,7 +1217,7 @@ int Window::DoRefreshSize()
 		
 		int caption_min_size;
 		if (Caption.size() > 0) {
-			gr_get_string_size(&w, &h, (char *)Caption.c_str());
+			gr_get_string_size(&w, &h, Caption.c_str());
 			caption_min_size = w + close_w + hide_w + 5;
 		} else {
 			caption_min_size = close_w + hide_w;
@@ -1534,7 +1533,7 @@ void Window::DoDraw(float frametime)
 		//Caption text
 		gr_set_color_fast(&Color_text_normal);
 
-		gr_string(CaptionCoords[0], CaptionCoords[1], (char *)Caption.c_str(), false);
+		gr_string(CaptionCoords[0], CaptionCoords[1], Caption.c_str(), false);
 	}
 }
 
@@ -1596,7 +1595,7 @@ int Button::DoRefreshSize()
 			Coords[3] = Coords[1] + h;
 		}
 	} else {
-		gr_get_string_size(&w, &h, (char *)Caption.c_str());
+		gr_get_string_size(&w, &h, Caption.c_str());
 		if (!(Style & GS_NOAUTORESIZEX)) {
 			Coords[2] = Coords[0] + w;
 		}
@@ -1632,10 +1631,10 @@ void Button::DoDraw(float frametime)
 		draw_open_rect(Coords[0], Coords[1], Coords[2], Coords[3], false);
 
 		int half_x, half_y;
-		gr_get_string_size(&half_x, &half_y, (char *)Caption.c_str());
+		gr_get_string_size(&half_x, &half_y, Caption.c_str());
 		half_x = Coords[0] +(((Coords[2]-Coords[0]) - half_x) / 2);
 		half_y = Coords[1] +(((Coords[3]-Coords[1]) - half_y) / 2);
-		gr_string(half_x, half_y, (char *)Caption.c_str(), false);
+		gr_string(half_x, half_y, Caption.c_str(), false);
 	}
 }
 
@@ -1713,7 +1712,7 @@ void Tree::CalcItemsSize(TreeItem *items, int DrawData[4])
 	int temp_largest = DrawData[1];
 	for (TreeItem* tip = (TreeItem*)GET_FIRST(items); tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip)) {
 		if (!DrawData[3]) {
-			gr_get_string_size(&w, &h, (char*)tip->Name.c_str());
+			gr_get_string_size(&w, &h, tip->Name.c_str());
 			if ((w + DrawData[0]) > temp_largest) {
 					temp_largest = w + DrawData[0];
 			}
@@ -1806,7 +1805,7 @@ void Tree::DrawItems(TreeItem *items)
 				gr_set_color_fast(&Color_text_normal);
 			}
 
-			gr_string(tip->Coords[0], tip->Coords[1], (char*)tip->Name.c_str(), false);
+			gr_string(tip->Coords[0], tip->Coords[1], tip->Name.c_str(), false);
 
 			if (NOT_EMPTY(&tip->Children) && tip->ShowChildren) {
 				DrawItems((TreeItem*)&tip->Children);
@@ -1950,7 +1949,7 @@ int Text::DoRefreshSize()
 		width = gr_screen.clip_right - Coords[0];
 	}
 
-	NumLines = split_str((char*)Content.c_str(), width, LineLengths, LineStartPoints, MAX_TEXT_LINES);
+	NumLines = split_str(Content.c_str(), width, LineLengths, LineStartPoints, MAX_TEXT_LINES);
 
 	//Find the shortest width we need to show all the shortened strings
 	int longest_width = 0;
@@ -2035,7 +2034,7 @@ void Text::DoDraw(float frametime)
 	int font_height = gr_get_font_height();
 
 	for (int i = 0; i < NumLines; i++) {
-		gr_string(ChildCoords[0], ChildCoords[1] + (i*font_height), (char*)Content.substr(LineStartPoints[i] - Content.c_str(), LineLengths[i]).c_str(), false);
+		gr_string(ChildCoords[0], ChildCoords[1] + (i*font_height), Content.substr(LineStartPoints[i] - Content.c_str(), LineLengths[i]).c_str(), false);
 	}
 }
 
@@ -2361,7 +2360,7 @@ Checkbox::Checkbox(const SCP_string &in_label, int x_coord, int y_coord, void (*
 int Checkbox::DoRefreshSize()
 {
 	int w, h,tw,th;
-	gr_get_string_size(&w, &h, (char *)Label.c_str());
+	gr_get_string_size(&w, &h, Label.c_str());
 	tw = w;
 	th = h;
 
@@ -2412,7 +2411,7 @@ void Checkbox::DoDraw(float frametime)
 	}
 
 	gr_set_color_fast(&Color_text_normal);
-	gr_string(CheckCoords[2] + CB_TEXTCHECKDIST, CheckCoords[1], (char *)Label.c_str(), false);
+	gr_string(CheckCoords[2] + CB_TEXTCHECKDIST, CheckCoords[1], Label.c_str(), false);
 }
 
 int Checkbox::DoMouseOver(float frametime)
@@ -2558,10 +2557,10 @@ int ImageAnim::DoRefreshSize()
 void ImageAnim::SetImage(const SCP_string &in_imagename)
 {
 	if (in_imagename.size()) {
-		ImageHandle = IMG_LOAD_ANIM((char*)in_imagename.c_str(), &TotalFrames, &FPS);
+		ImageHandle = IMG_LOAD_ANIM(in_imagename.c_str(), &TotalFrames, &FPS);
 		TotalTime = (float) (TotalFrames/FPS);
 		if (IMG_HANDLE_IS_INVALID(ImageHandle)) {
-			ImageHandle = IMG_LOAD((char*)in_imagename.c_str());
+			ImageHandle = IMG_LOAD(in_imagename.c_str());
 			if (IMG_HANDLE_IS_VALID(ImageHandle)) {
 				TotalFrames = 1;
 			} else {

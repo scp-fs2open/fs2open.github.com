@@ -39,21 +39,21 @@ class waypoint_list
 
 		// accessors
 		char *get_name();
-		SCP_list<waypoint> &get_waypoints();
+		SCP_vector<waypoint> &get_waypoints();
 
 		// mutators
 		void set_name(const char *name);
 
 	private:
 		char m_name[NAME_LENGTH];
-		SCP_list<waypoint> waypoints;
+		SCP_vector<waypoint> waypoints;
 };
 
 //********************GLOBALS********************
 extern SCP_list<waypoint_list> Waypoint_lists;
 
 // bah
-extern const SCP_list<waypoint>::iterator INVALID_WAYPOINT_POSITION;
+extern const size_t INVALID_WAYPOINT_POSITION;
 
 //********************FUNCTIONS********************
 void waypoint_parse_init();
