@@ -2015,7 +2015,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				ship_hit_pain(damage * difficulty_scale_factor);
 			}	
 		}
-		if (other_obj->type == OBJ_WEAPON)
+		if (other_obj_is_weapon)
 		{
 			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapon_types));
 			if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_obj == Player_obj))
