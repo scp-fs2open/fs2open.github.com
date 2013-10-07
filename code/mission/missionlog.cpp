@@ -547,7 +547,7 @@ int mission_log_get_count( int type, char *pname, char *sname )
 }
 
 
-void message_log_add_seg(int n, int x, int color, const char *text, int flags = 0)
+void message_log_add_seg(int n, int x, int msg_color, const char *text, int flags = 0)
 {
 	log_text_seg *seg, **parent;
 
@@ -561,14 +561,14 @@ void message_log_add_seg(int n, int x, int color, const char *text, int flags = 
 	seg = (log_text_seg *) vm_malloc(sizeof(log_text_seg));
 	Assert(seg);
 	seg->text = vm_strdup(text);
-	seg->color = color;
+	seg->color = msg_color;
 	seg->x = x;
 	seg->flags = flags;
 	seg->next = NULL;
 	*parent = seg;
 }
 
-void message_log_add_segs(const char *source_string, int color, int flags = 0)
+void message_log_add_segs(const char *source_string, int msg_color, int flags = 0)
 {
 	if (!source_string) {
 		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
@@ -597,7 +597,7 @@ void message_log_add_segs(const char *source_string, int color, int flags = 0)
 			split = split_str_once(str, P_width - X);
 
 		if (split != str)
-			message_log_add_seg(Num_log_lines, X, color, str, flags);
+			message_log_add_seg(Num_log_lines, X, msg_color, str, flags);
 
 		if (!split) {
 			gr_get_string_size(&w, NULL, str);
@@ -631,9 +631,9 @@ void message_log_remove_segs(int n)
 	Log_lines[n] = NULL;
 }
 
-int message_log_color_get_team(int color)
+int message_log_color_get_team(int msg_color)
 {
-	return color - NUM_LOG_COLORS;
+	return msg_color - NUM_LOG_COLORS;
 }
 
 int message_log_team_get_color(int team)
