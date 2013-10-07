@@ -343,7 +343,7 @@ void brief_parse_icon_tbl()
 	}
 
 	read_file_text("icons.tbl", CF_TYPE_TABLES);
-	reset_parse();		
+	reset_parse();
 
 	required_string("#Start");
 
@@ -401,20 +401,15 @@ void brief_parse_icon_tbl()
 	// error check
 	if (num_species_covered < (int)Species_info.size())
 	{
-		char *errormsg = new char[70 + (Species_info.size() * (NAME_LENGTH))];
+		SCP_string errormsg = "The following species are missing icon info in icons.tbl:\n";
 
-		strcpy(errormsg, "The following species are missing icon info in icons.tbl:\n");
 		for (species = num_species_covered; species < (int)Species_info.size(); species++)
 		{
-			strcat(errormsg, Species_info[species].species_name);
-			strcat(errormsg, "\n");
+			errormsg += Species_info[species].species_name;
+			errormsg += "\n";
 		}
-		strcat(errormsg, "\0");
 
-		Error(LOCATION, errormsg);
-
-		// probably won't get here, but just so we know about it
-		delete[] errormsg;
+		Error(LOCATION, errormsg.c_str());
 	}
 
 	delete[] temp_icon_bitmaps;
