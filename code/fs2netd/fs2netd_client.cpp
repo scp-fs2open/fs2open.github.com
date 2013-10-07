@@ -725,7 +725,7 @@ static void fs2netd_handle_messages()
 
 			case PCKT_SLIST_REPLY: {
 				int numServers = 0;
-				int svr_flags;
+				int svr_flags __attribute__((__unused__)); // gcc [-Wunused-but-set-variable] doesn't like MACROs
 				ushort svr_port;
 				char svr_ip[16];
 				active_game ag;
@@ -1650,7 +1650,6 @@ void fs2netd_update_game_count(const char *chan_name)
 void fs2netd_spew_table_checksums(char *outfile)
 {
 	char full_name[MAX_PATH_LEN];
-	int count;
 	FILE *out = NULL;
 	char description[512] = { 0 };
 	char filename[65] = { 0 };
@@ -1685,8 +1684,6 @@ void fs2netd_spew_table_checksums(char *outfile)
 
 	// header
 	fprintf(out, "filename,CRC32,description\r\n");
-
-	count = (int)Table_valid_status.size();
 
 	// do all the checksums
 	for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); ++tvs) {
