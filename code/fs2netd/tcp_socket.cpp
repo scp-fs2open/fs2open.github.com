@@ -62,7 +62,7 @@ void FS2NetD_Disconnect()
 int FS2NetD_ConnectToServer(const char *host, const char *port)
 {
 	struct hostent *my_host = NULL;
-	char host_str[5];
+	char host_str[254]; // 253 is max domain name length: http://en.wikipedia.org/wiki/Domain_Name_System#Domain_name_syntax
 #ifdef SCP_UNIX
 	int my_error = 0;
 #endif
