@@ -21004,14 +21004,16 @@ int sexp_script_eval(int node, int return_type)
 			}
 			break;
 		case OPR_NULL:
-			char* s = CTEXT(n);
-			bool success = Script_system.EvalString(s, NULL, NULL);
+			{
+				char* s = CTEXT(n);
+				bool success = Script_system.EvalString(s, NULL, NULL);
 
-			if(!success)
-				Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+				if(!success)
+					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
 
-			n = CDR(n);
-			break;
+				n = CDR(n);
+				break;
+			}
 		default:
 			Error(LOCATION, "Bad type passed to sexp_script_eval - get a coder");
 			break;
