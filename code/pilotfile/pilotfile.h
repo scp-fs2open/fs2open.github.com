@@ -39,6 +39,7 @@ class pilotfile {
 		// updating stats, multi and/or all-time
 		void update_stats(scoring_struct *stats, bool training = false);
 		void update_stats_backout(scoring_struct *stats, bool training = false);
+		void reset_stats();
 
 		// for checking to see if a PLR file is basically valid
 		bool verify(const char *fname, int *rank = NULL);

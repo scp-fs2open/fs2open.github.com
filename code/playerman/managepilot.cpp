@@ -34,6 +34,7 @@
 #include "cfile/cfile.h"
 #include "network/multi.h"
 #include "mod_table/mod_table.h"
+#include "pilotfile/pilotfile.h"
 
 
 // pilot pic image list stuff ( call pilot_load_pic_list() to make these valid )
@@ -121,7 +122,8 @@ void init_new_pilot(player *p, int reset)
 		pilot_set_random_squad_pic(p);
 	}
 
-	p->stats.init();	
+	p->stats.init();
+	Pilot.reset_stats();
 	
 	p->stats.score = 0;
 	p->stats.rank = RANK_ENSIGN;	
@@ -430,6 +432,7 @@ void player::reset()
 	memset(&ci, 0, sizeof(control_info));
 
 	stats.init();
+	Pilot.reset_stats();
 
 	friendly_hits = 0;
 	friendly_damage = 0.0f;
