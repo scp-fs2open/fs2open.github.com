@@ -17616,6 +17616,10 @@ int ship_get_sound(object *objp, GameSoundsIndex id)
 	Assert( objp != NULL );
 	Assert( id >= 0 && id < (int) Snds.size() );
 
+	// ugh, it's possible that we're an observer at this point
+	if (objp->type == OBJ_OBSERVER)
+		return id;
+
 	Assert( objp->type == OBJ_SHIP );
 
 	ship *shipp = &Ships[objp->instance];
