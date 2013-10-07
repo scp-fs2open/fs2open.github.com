@@ -1704,7 +1704,11 @@ void fs2netd_spew_table_checksums(char *outfile)
 			p++;
 		}
 
-		filename[offset] = '\0';
+		if (offset < sizeof(filename)) {
+			filename[offset] = '\0';
+		} else {
+			filename[sizeof(filename)-1] = '\0';
+		}
 
 		fprintf(out, "\"%s\",%u,\"%s\"\r\n", filename, tvs->crc32, description);
 	}

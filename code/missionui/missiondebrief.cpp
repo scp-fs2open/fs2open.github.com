@@ -2299,8 +2299,8 @@ void debrief_award_text_clear() {
 // this is the nastiest code I have ever written.  if you are modifying this, i feel bad for you.
 void debrief_add_award_text(char *str)
 {
-	Assert(Debrief_award_text_num_lines <= AWARD_TEXT_MAX_LINES);
-	if (Debrief_award_text_num_lines > AWARD_TEXT_MAX_LINES) {
+	Assert(Debrief_award_text_num_lines < AWARD_TEXT_MAX_LINES);
+	if (Debrief_award_text_num_lines >= AWARD_TEXT_MAX_LINES) {
 		return;
 	}
 
