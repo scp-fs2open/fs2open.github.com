@@ -13,7 +13,7 @@
 #define _HUD_OBSERVER_FILE
 
 // prototypes
-struct ship;
+class ship;
 struct ai_info;
 
 // use these to redirect Player_ship and Player_ai when switching into ai mode

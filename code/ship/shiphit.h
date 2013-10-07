@@ -13,7 +13,7 @@
 #define _SHIPHIT_H
 
 struct vec3d;
-struct ship;
+class ship;
 struct ship_subsys;
 struct object;
 

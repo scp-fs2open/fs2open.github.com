@@ -23,7 +23,7 @@ struct join_request;
 struct physics_info;
 struct object;
 struct active_game;
-struct ship;
+class ship;
 struct server_item;
 class ship_info;
 struct p_object;

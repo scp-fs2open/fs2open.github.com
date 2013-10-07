@@ -16,7 +16,7 @@
 #include "graphics/grbatch.h"
 
 struct object;
-struct ship;
+class ship;
 class ship_info;
 struct ship_subsys;
 struct shockwave_create_info;

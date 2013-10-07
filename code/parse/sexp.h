@@ -14,7 +14,7 @@
 #define _SEXP_H
 
 struct ship_subsys;
-struct ship;
+class ship;
 class waypoint_list;
 
 // bumped to 30 by Goober5000
