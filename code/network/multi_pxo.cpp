@@ -1333,7 +1333,7 @@ void multi_pxo_close()
 	if ( ON_CHANNEL() && strlen(Multi_pxo_channel_current.name) ) {
 		// channel name
 		strcpy(Multi_fs_tracker_channel, Multi_pxo_channel_current.name);
-		
+    
 		// filter name
 		strcpy(Multi_fs_tracker_filter, Multi_pxo_channel_current.name);
 	} 
@@ -4504,7 +4504,7 @@ void multi_pxo_pinfo_build_vals()
 	// last flown
 	memset(Multi_pxo_pinfo_vals[7], 0, 50);
 	if (fs->stats.last_flown == 0) {		
-		strcpy (Multi_pxo_pinfo_vals[7], XSTR("No missions flown", 970) );
+		strcpy_s(Multi_pxo_pinfo_vals[7], XSTR("No missions flown", 970) );
 	} else {
 		tm *tmr = gmtime( (time_t*)&fs->stats.last_flown );
 
