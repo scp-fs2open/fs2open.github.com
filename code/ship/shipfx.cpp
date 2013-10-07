@@ -1079,7 +1079,8 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 						int tmap_num = w(mc.t_poly+40);
 
 						Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
-						if( (tmap_num < MAX_MODEL_TEXTURES) && !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
+						if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
+						if( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
 							return 1;
 						}
 					}
@@ -1094,7 +1095,8 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 							int tmap_num = mc.bsp_leaf->tmap_num;
 
 							Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
-							if ( (tmap_num < MAX_MODEL_TEXTURES) && !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
+							if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
+							if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
 								return 1;
 							}
 						} else {
@@ -1118,6 +1120,8 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 						polymodel *pm = model_get(sip->model_num);
 						int tmap_num = w(mc.t_poly+40);
 
+						Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
+						if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
 						if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap),"glass.dds") ) {
 							return 1;
 						}
@@ -1132,6 +1136,8 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 							polymodel *pm = model_get(sip->model_num);
 							int tmap_num = mc.bsp_leaf->tmap_num;
 
+							Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
+							if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
 							if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
 								return 1;
 							}
