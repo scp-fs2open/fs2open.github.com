@@ -4928,7 +4928,7 @@ void ship::clear()
 
 	num_swarm_missiles_to_fire = 0;
 	next_swarm_fire = timestamp(0);
-	next_swarm_path = -1;
+	next_swarm_path = 0;
 	num_turret_swarm_info = 0;
 	swarm_missile_bank = -1;
 
