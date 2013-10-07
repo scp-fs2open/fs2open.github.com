@@ -13,3 +13,4 @@ configure
 depcomp
 install-sh
 missing
+.svn
