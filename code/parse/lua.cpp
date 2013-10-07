@@ -13739,6 +13739,35 @@ ADE_FUNC(__len, l_Mission_Wings, NULL, "Number of wings in mission", "number", "
 	return ade_set_args(L, "i", Num_wings);
 }
 
+//****SUBLIBRARY: Mission/Teams
+ade_lib l_Mission_Teams("Teams", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_Mission_Teams, "number Index/string TeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
+{
+	char *name;
+	if(!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	int idx = iff_lookup(name);
+	
+	if(idx < 0)
+	{
+		idx = atoi(name);
+
+		idx--;	//Lua->FS2
+	}
+
+	if(idx < 0 || idx >= Num_iffs)
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	return ade_set_args(L, "o", l_Team.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "Number of teams in mission")
+{
+	return ade_set_args(L, "i", Num_iffs);
+}
+
 ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]", "Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position", "ship", "Ship handle, or invalid ship handle if ship couldn't be created")
 {
 	char *name = NULL;
