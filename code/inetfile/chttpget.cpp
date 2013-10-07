@@ -399,6 +399,8 @@ int ChttpGet::ConnectSocket()
 		memcpy(&hostaddr.sin_addr,&ip,4);
 
 	}
+    
+	memset(&hostaddr.sin_zero, 0, sizeof(hostaddr.sin_zero));
 
 	//Now we will connect to the host					
 	fd_set	wfds;
