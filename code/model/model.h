@@ -636,6 +636,10 @@ public:
 
 	void Clear();
 	void ResetToOriginal();
+
+	texture_map()
+		: is_ambient(false), is_transparent(false)
+	{}
 };
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
