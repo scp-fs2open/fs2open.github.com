@@ -27502,7 +27502,7 @@ void sexp_set_variable_by_index(int node)
 	sexp_variable_index = eval_num(node);
 
 	// check range
-	if (sexp_variable_index < 0 || sexp_variable_index > MAX_SEXP_VARIABLES)
+	if (sexp_variable_index < 0 || sexp_variable_index >= MAX_SEXP_VARIABLES)
 	{
 		Warning(LOCATION, "set-variable-by-index: sexp variable index %d out of range!  min is 0; max is %d", sexp_variable_index, MAX_SEXP_VARIABLES - 1);
 		return;
@@ -27549,7 +27549,7 @@ int sexp_get_variable_by_index(int node)
 	sexp_variable_index = eval_num(node);
 
 	// check range
-	if (sexp_variable_index < 0 || sexp_variable_index > MAX_SEXP_VARIABLES)
+	if (sexp_variable_index < 0 || sexp_variable_index >= MAX_SEXP_VARIABLES)
 	{
 		Warning(LOCATION, "get-variable-by-index: sexp variable index %d out of range!  min is 0; max is %d", sexp_variable_index, MAX_SEXP_VARIABLES - 1);
 		return 0;
@@ -29310,7 +29310,7 @@ sexp_help_struct Sexp_help[] = {
 		"arrays and pointers.\r\n\r\nPlease note that only numeric variables are supported.  Any "
 		"attempt to access a string variable will result in a value of SEXP_NAN_FOREVER being returned.\r\n\r\n"
 		"Takes 1 argument...\r\n"
-		"\t1:\tIndex of variable, from 0 to 99." },
+		"\t1:\tIndex of variable, from 0 to MAX_SEXP_VARIABLES - 1." },
 
 	{ OP_SET_VARIABLE_BY_INDEX, "set-variable-by-index (originally variable-array-set)\r\n"
 		"\tSets the value of the variable specified by the given index.  This is an alternate way "
@@ -29318,7 +29318,7 @@ sexp_help_struct Sexp_help[] = {
 		"arrays and pointers.\r\n\r\nIn contrast to get-variable-by-index, note that this sexp "
 		"*does* allow the modification of string variables.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tIndex of variable, from 0 to 99.\r\n"
+		"\t1:\tIndex of variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
 		"\t2:\tValue to be set." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
