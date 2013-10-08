@@ -773,11 +773,14 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	if (Interp_warp_bitmap < 0) {
 		if ( (!Interp_thrust_scale_subobj) && (tbase->GetTexture() < 0) ) {
-			// Don't draw invisible polygons.
-			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
-				return;
-			else
-				is_invisible = 1;
+			// Ignore the following if we're drawing in outline mode.  Fixes Mantis #2931.
+			if (!(Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET))) {
+				// Don't draw invisible polygons.
+				if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
+					return;
+				else
+					is_invisible = 1;
+			}
 		}
 	}
 
