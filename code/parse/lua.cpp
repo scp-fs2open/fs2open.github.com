@@ -28,6 +28,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
+#include "mission/missionmessage.h"
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -520,7 +521,7 @@ ADE_FUNC(getRvec, l_Matrix, NULL, "Returns the vector that points to the right (
 //that any new enumerations have indexes of NEXT INDEX (see below)
 //or after. Don't forget to increment NEXT INDEX after you're done.
 //=====================================
-static const int ENUM_NEXT_INDEX = 69; // <<<<<<<<<<<<<<<<<<<<<<
+static const int ENUM_NEXT_INDEX = 72; // <<<<<<<<<<<<<<<<<<<<<<
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
@@ -726,6 +727,15 @@ static flag_def_list Enumerations[] = {
 
 	#define LE_VM_FREECAMERA				68
 	{		"VM_FREECAMERA",				LE_VM_FREECAMERA,				0},
+
+	#define LE_MESSAGE_PRIORITY_LOW			69
+	{		"MESSAGE_PRIORITY_LOW",			LE_MESSAGE_PRIORITY_LOW,		0},
+
+	#define LE_MESSAGE_PRIORITY_NORMAL		70
+	{		"MESSAGE_PRIORITY_NORMAL",		LE_MESSAGE_PRIORITY_NORMAL,		0},
+
+	#define LE_MESSAGE_PRIORITY_HIGH		71
+	{		"MESSAGE_PRIORITY_HIGH",		LE_MESSAGE_PRIORITY_HIGH,		0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
@@ -7781,6 +7791,53 @@ ADE_FUNC(isValid, l_CockpitDisplays, NULL, "Detects whether this handle is valid
 	return ade_set_args(L, "b", cdh->isValid());
 }
 
+//**********HANDLE: Message
+ade_obj<int> l_Message("message", "Handle to a mission message");
+
+ADE_VIRTVAR(Name, l_Message, "string", "The name of the message as specified in the mission file", "string", "The name or an empty string if handle is invalid")
+{
+	int idx = -1;
+	if (!ade_get_args(L, "o", l_Message.Get(&idx)))
+		return ade_set_error(L, "s", "");
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", Messages[idx].name);
+}
+
+ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "string", "Gets the text of the mission and optionally replaces variables with their text", "string", "The message or an empty string if handle is invalid")
+{
+	int idx = -1;
+	bool replace = true;
+	if (!ade_get_args(L, "o|b", l_Message.Get(&idx), &replace))
+		return ade_set_error(L, "s", "");
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "s", "");
+
+	if (!replace)
+		return ade_set_args(L, "s", Messages[idx].message);
+	else
+	{
+		char temp_buf[MESSAGE_LENGTH];
+		strcpy_s(temp_buf, Messages[idx].message);
+
+		sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH);
+
+		return ade_set_args(L, "s", temp_buf);
+	}
+}
+
+ADE_FUNC(isValid, l_Message, NULL, "Checks if the message handle is valid", "boolean", "true if valid, false otherwise")
+{	
+	int idx = -1;
+	if (!ade_get_args(L, "o", l_Message.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", idx >= 0 && idx < (int) Messages.size());
+}
+
 //**********HANDLE: Ship
 ade_obj<object_h> l_Ship("ship", "Ship handle", &l_Object);
 
@@ -9138,6 +9195,67 @@ ADE_FUNC(getMaximumSpeed, l_Ship, "[number energy = 0.333]", "Gets the maximum s
 	{
 		return ade_set_args(L, "f", ets_get_max_speed(objh->objp, energy));
 	}
+}
+
+ADE_FUNC(sendMessage, l_Ship, "message message[, number delay=0.0[, enumeration priority = MESSAGE_PRIORITY_NORMAL]]",
+		 "Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the missions command source.<br>"
+		 "If delay is specified the message will be delayed by the specified time in seconds<br>"
+		 "If you pass <i>nil</i> as the sender then the message will not have a sender.",
+		 "boolean", "true if successfull, false otherwise")
+{
+	object_h *objh = NULL;
+	int messageIdx = -1;
+	int priority = MESSAGE_PRIORITY_NORMAL;
+	float delay = 0.0f;
+
+	enum_h* ehp = NULL;
+
+	if (!ade_get_args(L, "oo|fo", l_Ship.GetPtr(&objh), l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp)))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	if (messageIdx < 0 || messageIdx >= (int) Messages.size())
+		return ADE_RETURN_FALSE;
+
+	if (messageIdx < Num_builtin_messages)
+	{
+		LuaError(L, "Cannot send built-in messages!");
+		return ADE_RETURN_FALSE;
+	}
+
+	if (delay < 0.0f)
+	{
+		LuaError(L, "Invalid negative delay of %f!", delay);
+		return ADE_RETURN_FALSE;
+	}
+
+	if (ehp != NULL)
+	{
+		switch(ehp->index)
+		{
+		case LE_MESSAGE_PRIORITY_HIGH:
+			priority = MESSAGE_PRIORITY_HIGH;
+			break;
+		case LE_MESSAGE_PRIORITY_NORMAL:
+			priority = MESSAGE_PRIORITY_NORMAL;
+			break;
+		case LE_MESSAGE_PRIORITY_LOW:
+			priority = MESSAGE_PRIORITY_LOW;
+			break;
+		default:
+			LuaError(L, "Invalid enumeration used! Must be one of MESSAGE_PRIORITY_*.");
+			return ADE_RETURN_FALSE;
+		}
+	}
+
+	// This should be enforced elsewhere but just to be safe...
+	Assert(objh->objp->type == OBJ_SHIP);
+
+	message_send_unique_to_player(Messages[messageIdx].name, (void*) &Ships[objh->objp->instance], MESSAGE_SOURCE_SHIP, priority, 0, fl2i(delay * 1000.0f));
+
+	return ADE_RETURN_TRUE;
 }
 
 //**********HANDLE: Weapon
@@ -13766,6 +13884,175 @@ ADE_INDEXER(l_Mission_Teams, "number Index/string TeamName", "Teams in the missi
 ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "Number of teams in mission")
 {
 	return ade_set_args(L, "i", Num_iffs);
+}
+
+//****SUBLIBRARY: Mission/Messages
+ade_lib l_Mission_Messages("Messages", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_Mission_Messages, "number Index/string messageName", "Messages of the mission", "message", "Message handle or invalid handle on error")
+{
+	int idx = -1;
+
+	if (lua_isnumber(L, 2))
+	{
+		if (!ade_get_args(L, "*i", &idx))
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		idx--; // Lua --> FS2
+
+		idx += Num_builtin_messages;
+	}
+	else
+	{
+		char* name = NULL;
+
+		if (!ade_get_args(L, "*s", &name))
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		if (name == NULL)
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		for (int i = Num_builtin_messages; i < (int) Messages.size(); i++)
+		{
+			if (!stricmp(Messages[i].name, name))
+			{
+				idx = i;
+				break;
+			}
+		}
+	}
+
+	if (idx < Num_builtin_messages || idx >= (int) Messages.size())
+		return ade_set_args(L, "o", l_Message.Set(-1));
+	else
+		return ade_set_args(L, "o", l_Message.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_Messages, NULL, "Number of messages in the mission", "number", "Number of messages in mission")
+{
+	return ade_set_args(L, "i", (int) Messages.size() - Num_builtin_messages);
+}
+
+//****SUBLIBRARY: Mission/BuiltinMessages
+ade_lib l_BuiltinMission_Messages("BuiltinMessages", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_BuiltinMission_Messages, "number Index/string messageName", "Built-in messages of the mission", "message", "Message handle or invalid handle on error")
+{
+	int idx = -1;
+
+	if (lua_isnumber(L, 2))
+	{
+		if (!ade_get_args(L, "*i", &idx))
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		idx--; // Lua --> FS2
+	}
+	else
+	{
+		char* name = NULL;
+
+		if (!ade_get_args(L, "*s", &name))
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		if (name == NULL)
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		for (int i = 0; i < Num_builtin_messages; i++)
+		{
+			if (!stricmp(Messages[i].name, name))
+			{
+				idx = i;
+				break;
+			}
+		}
+	}
+
+	if (idx < 0 || idx >= Num_builtin_messages)
+		return ade_set_args(L, "o", l_Message.Set(-1));
+	else
+		return ade_set_args(L, "o", l_Message.Set(idx));
+}
+
+ADE_FUNC(__len, l_BuiltinMission_Messages, NULL, "Number of built-in messages in the mission", "number", "Number of messages in mission")
+{
+	return ade_set_args(L, "i", Num_builtin_messages);
+}
+
+ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=0.0[, enumeration priority = MESSAGE_PRIORITY_NORMAL[, boolean fromCommand = false]]]",
+		 "Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the missions command source.<br>"
+		 "If delay is specified the message will be delayed by the specified time in seconds<br>"
+		 "If you pass <i>nil</i> as the sender then the message will not have a sender.",
+		 "boolean", "true if successfull, false otherwise")
+{
+	char* sender = NULL;
+	int messageIdx = -1;
+	int priority = MESSAGE_PRIORITY_NORMAL;
+	bool fromCommand = false;
+	int messageSource = MESSAGE_SOURCE_SPECIAL;
+	float delay = 0.0f;
+
+	enum_h* ehp = NULL;
+
+	// if first is nil then use no source
+	if (lua_isnil(L, 1))
+	{
+		if (!ade_get_args(L, "*o|fob", l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		messageSource = MESSAGE_SOURCE_NONE;
+	}
+	else
+	{
+		if (!ade_get_args(L, "so|fob", &sender, l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		if (sender == NULL)
+			return ADE_RETURN_FALSE;
+	}
+
+	if (fromCommand)
+		messageSource = MESSAGE_SOURCE_COMMAND;
+
+	if (messageIdx < 0 || messageIdx >= (int) Messages.size())
+		return ADE_RETURN_FALSE;
+
+	if (messageIdx < Num_builtin_messages)
+	{
+		LuaError(L, "Cannot send built-in messages!");
+		return ADE_RETURN_FALSE;
+	}
+
+	if (delay < 0.0f)
+	{
+		LuaError(L, "Invalid negative delay of %f!", delay);
+		return ADE_RETURN_FALSE;
+	}
+
+	if (ehp != NULL)
+	{
+		switch(ehp->index)
+		{
+		case LE_MESSAGE_PRIORITY_HIGH:
+			priority = MESSAGE_PRIORITY_HIGH;
+			break;
+		case LE_MESSAGE_PRIORITY_NORMAL:
+			priority = MESSAGE_PRIORITY_NORMAL;
+			break;
+		case LE_MESSAGE_PRIORITY_LOW:
+			priority = MESSAGE_PRIORITY_LOW;
+			break;
+		default:
+			LuaError(L, "Invalid enumeration used! Must be one of MESSAGE_PRIORITY_*.");
+			return ADE_RETURN_FALSE;
+		}
+	}
+
+	if (messageSource == MESSAGE_SOURCE_NONE)
+		message_send_unique_to_player(Messages[messageIdx].name, NULL, MESSAGE_SOURCE_NONE, priority, 0, fl2i(delay * 1000.0f));
+	else
+		message_send_unique_to_player(Messages[messageIdx].name, (void*) sender, messageSource, priority, 0, fl2i(delay * 1000.0f));
+
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]", "Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position", "ship", "Ship handle, or invalid ship handle if ship couldn't be created")
