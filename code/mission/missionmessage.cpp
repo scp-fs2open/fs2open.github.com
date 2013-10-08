@@ -34,6 +34,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "mod_table/mod_table.h"
+#include "parse/scripting.h"
 
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
@@ -1585,6 +1586,29 @@ void message_queue_process()
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
 	}
+
+	Script_system.SetHookVar("Name", 's', m->name);
+	Script_system.SetHookVar("Message", 's', m->message);
+	Script_system.SetHookVar("SenderString", 's', who_from);
+
+	bool builtinMessage = q->builtin_type != -1;
+	Script_system.SetHookVar("Builtin", 'b', &builtinMessage);
+	if (Message_shipnum >= 0)
+	{
+		object* sender = &Objects[Ships[Message_shipnum].objnum];
+
+		Script_system.SetHookObject("Sender", sender);
+
+		Script_system.RunCondition(CHA_MSGRECEIVED, 0, NULL, sender);
+
+		Script_system.RemHookVar("Sender");
+	}
+	else
+	{
+		Script_system.RunCondition(CHA_MSGRECEIVED);
+	}
+
+	Script_system.RemHookVars(4, "Name", "Message", "SenderString", "Builtin");
 
 all_done:
 	Num_messages_playing++;
