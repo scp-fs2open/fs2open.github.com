@@ -8279,6 +8279,29 @@ ADE_VIRTVAR(Name, l_Message, "string", "The name of the message as specified in 
 	return ade_set_args(L, "s", Messages[idx].name);
 }
 
+ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, see getMessage() for options to replace variables<br>"
+			"<b>NOTE:</b> Changing the text will also change the text for messages not yet played but already in the message queue!",
+			"string", "The message or an empty string if handle is invalid")
+{
+	int idx = -1;
+	char* newText = NULL;
+	if (!ade_get_args(L, "o|s", l_Message.Get(&idx), &newText))
+		return ade_set_error(L, "s", "");
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "s", "");
+
+	if (ADE_SETTING_VAR && newText != NULL)
+	{
+		if (strlen(newText) > MESSAGE_LENGTH)
+			LuaError(L, "New message text is too long, maximum is %d!", MESSAGE_LENGTH);
+		else
+			strcpy_s(Messages[idx].message, newText);
+	}
+
+	return ade_set_args(L, "s", Messages[idx].message);
+}
+
 // from mission/missionmessage.cpp
 extern int add_wave( char *wave_name );
 ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", "soundfile", "The voice file handle or invalid handle when not present")
