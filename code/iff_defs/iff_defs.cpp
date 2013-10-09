@@ -12,6 +12,7 @@
 #include "hud/hud.h"
 #include "mission/missionparse.h"
 #include "ship/ship.h"
+#include "io/timer.h"
 
 extern int radar_target_id_flags;
 
