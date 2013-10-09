@@ -29,6 +29,7 @@
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
+#include "mission/missiontraining.h"
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -8218,6 +8219,35 @@ ADE_FUNC(isValid, l_Soundfile, NULL, "Checks if the soundfile handle is valid", 
 	return ade_set_args(L, "b", idx >= 0);
 }
 
+//**********HANDLE: Persona
+ade_obj<int> l_Persona("persona", "Persona handle");
+
+ADE_VIRTVAR(Name, l_Persona, "string", "The name of the persona", "string", "The name or empty string on error")
+{
+	int idx = -1;
+
+	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
+		return ade_set_error(L, "s", "");
+
+	if (Personas == NULL)
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= Num_personas)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", Personas[idx].name);
+}
+
+ADE_FUNC(isValid, l_Persona, NULL, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
+{
+	int idx = -1;
+
+	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", idx >= 0 && idx < Num_personas);
+}
+
 //**********HANDLE: Message
 ade_obj<int> l_Message("message", "Handle to a mission message");
 
@@ -8256,6 +8286,25 @@ ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", 
 		
 		return ade_set_args(L, "o", l_Soundfile.Set(Message_waves[index].num));
 	}
+}
+
+ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "persona", "The persona handle or invalid handle if not present")
+{
+	int idx = -1;
+	int newPersona = -1;
+
+	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Persona.Get(&newPersona)))
+		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+	
+	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < Num_personas)
+	{
+		Messages[idx].persona_index = newPersona;
+	}
+
+	return ade_set_args(L, "o", l_Persona.Set(Messages[idx].persona_index));
 }
 
 ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "string", "Gets the text of the mission and optionally replaces variables with their text", "string", "The message or an empty string if handle is invalid")
@@ -14043,9 +14092,9 @@ ADE_FUNC(__len, l_Mission_Messages, NULL, "Number of messages in the mission", "
 }
 
 //****SUBLIBRARY: Mission/BuiltinMessages
-ade_lib l_BuiltinMission_Messages("BuiltinMessages", &l_Mission, NULL, NULL);
+ade_lib l_Mission_BuiltinMessages("BuiltinMessages", &l_Mission, NULL, NULL);
 
-ADE_INDEXER(l_BuiltinMission_Messages, "number Index/string messageName", "Built-in messages of the mission", "message", "Message handle or invalid handle on error")
+ADE_INDEXER(l_Mission_BuiltinMessages, "number Index/string messageName", "Built-in messages of the mission", "message", "Message handle or invalid handle on error")
 {
 	int idx = -1;
 
@@ -14082,9 +14131,54 @@ ADE_INDEXER(l_BuiltinMission_Messages, "number Index/string messageName", "Built
 		return ade_set_args(L, "o", l_Message.Set(idx));
 }
 
-ADE_FUNC(__len, l_BuiltinMission_Messages, NULL, "Number of built-in messages in the mission", "number", "Number of messages in mission")
+ADE_FUNC(__len, l_Mission_BuiltinMessages, NULL, "Number of built-in messages in the mission", "number", "Number of messages in mission")
 {
 	return ade_set_args(L, "i", Num_builtin_messages);
+}
+
+//****SUBLIBRARY: Mission/Personas
+ade_lib l_Mission_Personas("Personas", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mission", "persona", "Persona handle or invalid handle on error")
+{
+	int idx = -1;
+
+	if (lua_isnumber(L, 2))
+	{
+		if (!ade_get_args(L, "*i", &idx))
+			return ade_set_args(L, "o", l_Persona.Set(-1));
+
+		idx--; // Lua --> FS2
+	}
+	else
+	{
+		char* name = NULL;
+
+		if (!ade_get_args(L, "*s", &name))
+			return ade_set_args(L, "o", l_Persona.Set(-1));
+
+		if (name == NULL)
+			return ade_set_args(L, "o", l_Persona.Set(-1));
+
+		for (int i = 0; i < Num_personas; i++)
+		{
+			if (!stricmp(Personas[i].name, name))
+			{
+				idx = i;
+				break;
+			}
+		}
+	}
+
+	if (idx < 0 || idx >= Num_personas)
+		return ade_set_args(L, "o", l_Persona.Set(-1));
+	else
+		return ade_set_args(L, "o", l_Persona.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "number", "Number of messages in mission")
+{
+	return ade_set_args(L, "i", Num_personas);
 }
 
 ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=0.0[, enumeration priority = MESSAGE_PRIORITY_NORMAL[, boolean fromCommand = false]]]",
@@ -14160,6 +14254,37 @@ ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=
 		message_send_unique_to_player(Messages[messageIdx].name, NULL, MESSAGE_SOURCE_NONE, priority, 0, fl2i(delay * 1000.0f));
 	else
 		message_send_unique_to_player(Messages[messageIdx].name, (void*) sender, messageSource, priority, 0, fl2i(delay * 1000.0f));
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number delay=0.0]",
+		 "Sends a training message to the player. <i>time</i> is the amount in seconds to display the message, only whole seconds are used!",
+		 "boolean", "true if successfull, false otherwise")
+{
+	int messageIdx = -1;
+	float delay = 0.0f;
+	int time = -1;
+
+	if (!ade_get_args(L, "oi|f", l_Message.Get(&messageIdx), &time, &delay))
+		return ADE_RETURN_FALSE;
+
+	if (messageIdx < 0 || (int) messageIdx >= Messages.size())
+		return ADE_RETURN_FALSE;
+
+	if (delay < 0.0f)
+	{
+		LuaError(L, "Got invalid delay of %f seconds!", delay);
+		return ADE_RETURN_FALSE;
+	}
+
+	if (time < 0)
+	{
+		LuaError(L, "Got invalid time of %d seconds!", time);
+		return ADE_RETURN_FALSE;
+	}
+
+	message_training_queue(Messages[messageIdx].name, timestamp(fl2i(delay * 1000.0f)), time);
 
 	return ADE_RETURN_TRUE;
 }
