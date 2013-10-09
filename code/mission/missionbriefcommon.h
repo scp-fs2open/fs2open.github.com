@@ -88,8 +88,7 @@
 #define		BI_FADEIN			(1<<2)
 #define		BI_MIRROR_ICON		(1<<3)	//mirror the briefing icon so it points the other way - phreak
 
-typedef struct brief_icon
-{
+typedef struct brief_icon {
 	int		x,y,w,h;
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
@@ -111,17 +110,17 @@ typedef struct brief_icon
 
 #define MAX_BRIEF_STAGE_LINES		20
 
-typedef struct brief_line
-{
+typedef struct brief_line {
 	int start_icon;		// index into icons[], where line starts
-	int end_icon;			// index into icons[], where line ends
+	int end_icon;		// index into icons[], where line ends
 } brief_line;
 
 #define BS_FORWARD_CUT		(1<<0)
 #define BS_BACKWARD_CUT		(1<<1)
 
-typedef struct brief_stage
+class brief_stage
 {
+public:
 	SCP_string	text;
 	char			voice[MAX_FILENAME_LEN];
 	vec3d		camera_pos;
@@ -142,10 +141,11 @@ typedef struct brief_stage
 		memset( &camera_pos, 0, sizeof( vec3d ) );
 		memset( &camera_orient, 0, sizeof( matrix ) );
 	}
-} brief_stage;
+};
 
-typedef struct debrief_stage
+class debrief_stage
 {
+public:
 	int			formula;
 	SCP_string	text;
 	char			voice[MAX_FILENAME_LEN];
@@ -157,17 +157,29 @@ typedef struct debrief_stage
 	{ 
 		voice[ 0 ] = 0;
 	}
-} debrief_stage;
+};
 
-typedef struct briefing {
+class briefing
+{
+public:
 	int			num_stages;
 	brief_stage	stages[MAX_BRIEF_STAGES];
-} briefing;
 
-typedef struct debriefing {
+	briefing()
+		: num_stages(0)
+	{}
+};
+
+class debriefing
+{
+public:
 	int				num_stages;
 	debrief_stage	stages[MAX_DEBRIEF_STAGES];
-} debriefing;
+
+	debriefing()
+		: num_stages(0)
+	{}
+};
 
 
 
