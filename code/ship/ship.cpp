@@ -4861,6 +4861,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	if (sip->flags2 & SIF2_SHIELD_POINTS) {
 		objp->n_quadrants = pm->shield_points.size();
 		shipp->shield_points = pm->shield_points;
+		objp->shield_quadrant.resize(MAX(MAX_SHIELD_SECTIONS, objp->n_quadrants));
 	}
 
 	if (Fred_running){
@@ -8855,6 +8856,9 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		}
 		sip->flags |= SIF_PATH_FIXUP;
 	}
+
+	if (sip->flags2 & SIF2_SHIELD_POINTS && pm->shield_points.size() != 4 && !(sip->flags2 & SIF2_GENERATE_HUD_ICON))
+		Warning(LOCATION, "Ship %s using both \"generate icon\" and \"model shield points\" flags, with a number of shield points not equal to 4. This is very unlikely to be what you want.", sip->name);
 
 	// reset the damage record fields (for scoring purposes)
 	shipp->total_damage_received = 0.0f;

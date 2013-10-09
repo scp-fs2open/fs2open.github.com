@@ -474,6 +474,7 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->dead_dock_list = NULL;
 
 	obj->n_quadrants = MAX_SHIELD_SECTIONS; // Might be changed by the ship creation code
+	obj->shield_quadrant.resize(obj->n_quadrants);
 	return objnum;
 }
 
