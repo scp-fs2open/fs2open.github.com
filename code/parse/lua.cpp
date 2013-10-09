@@ -14160,14 +14160,7 @@ ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mis
 		if (name == NULL)
 			return ade_set_args(L, "o", l_Persona.Set(-1));
 
-		for (int i = 0; i < Num_personas; i++)
-		{
-			if (!stricmp(Personas[i].name, name))
-			{
-				idx = i;
-				break;
-			}
-		}
+		idx = message_persona_name_lookup(name);
 	}
 
 	if (idx < 0 || idx >= Num_personas)
@@ -14179,6 +14172,26 @@ ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mis
 ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "number", "Number of messages in mission")
 {
 	return ade_set_args(L, "i", Num_personas);
+}
+
+ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
+{
+	char* name = NULL;
+	char* text = NULL;
+	int personaIdx = -1;
+
+	if (!ade_get_args(L, "ss|o", &name, &text, l_Persona.Get(&personaIdx)))
+		return ade_set_error(L, "o", l_Message.Set(-1));
+
+	if (name == NULL || text == NULL)
+		return ade_set_error(L, "o", l_Message.Set(-1));
+
+	if (personaIdx < 0 || personaIdx >= Num_personas)
+		personaIdx = -1;
+
+	add_message(name, text, personaIdx, 0);
+
+	return ade_set_error(L, "o", l_Message.Set((int) Messages.size() - 1));
 }
 
 ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=0.0[, enumeration priority = MESSAGE_PRIORITY_NORMAL[, boolean fromCommand = false]]]",
@@ -14269,7 +14282,7 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number 
 	if (!ade_get_args(L, "oi|f", l_Message.Get(&messageIdx), &time, &delay))
 		return ADE_RETURN_FALSE;
 
-	if (messageIdx < 0 || (int) messageIdx >= Messages.size())
+	if (messageIdx < 0 || messageIdx >= (int) Messages.size())
 		return ADE_RETURN_FALSE;
 
 	if (delay < 0.0f)
