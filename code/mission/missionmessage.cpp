@@ -991,10 +991,7 @@ void message_remove_from_queue(message_q *q)
 //
 void message_load_wave(int index, const char *filename)
 {
-	if (index == -1) {
-		Int3();
-		return;
-	}
+	Assertion(index >= 0, "Invalid index passed!");
 
 	if ( Message_waves[index].num >= 0) {
 		return;
