@@ -2122,17 +2122,11 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// Apply leftover damage to the ship's subsystem and hull.
 	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
 		int	weapon_info_index;
-		int armor_flags = 0;		
 		float pre_subsys = subsystem_damage; // Nuke: should be the last time we need to do this in this function
 		bool apply_hull_armor = true;
 		bool apply_diff_scale = true;
 
 		subsystem_damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, subsystem_damage, &apply_hull_armor);
-
-		if(shipp->armor_type_idx != -1)
-		{
-			armor_flags = Armor_types[shipp->armor_type_idx].flags;
-		}
 
 		if(subsystem_damage > 0.0f){
 			damage *= (subsystem_damage / pre_subsys);
