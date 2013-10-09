@@ -8187,6 +8187,22 @@ ADE_VIRTVAR(Duration, l_Soundfile, "number", "The duration of the sound file, in
 	return ade_set_args(L, "f", i2fl(duration) / 1000.0f);
 }
 
+ADE_VIRTVAR(Filename, l_Soundfile, "string", "The filename of the file", "string", "The file name or empty string on error")
+{
+	int snd_idx = -1;
+
+	if (!ade_get_args(L, "o", l_Soundfile.Get(&snd_idx)))
+		return ade_set_error(L, "s", "");
+
+	if (snd_idx < 0)
+		return ade_set_error(L, "s", "");
+
+	const char* filename = snd_get_filename(snd_idx);
+
+	return ade_set_args(L, "s", filename);
+}
+
+
 ADE_FUNC(play, l_Soundfile, "[number volume = 1.0[, number panning = 0.0]]", "Plays the sound", "sound", "A sound handle or invalid handle on error")
 {
 	int snd_idx = -1;
