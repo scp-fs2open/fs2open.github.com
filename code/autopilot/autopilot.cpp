@@ -1240,7 +1240,9 @@ void send_autopilot_msg(char *msg, char *snd)
 // Inits the Nav System
 void NavSystem_Init()
 {
-	memset((char *)&Navs, 0, sizeof(Navs));
+	for (int i = 0; i < MAX_NAVPOINTS; i++)
+		Navs[i].clear();
+
 	AutoPilotEngaged = false;
 	CurrentNav = -1;
 	audio_handle = -1;
@@ -1344,13 +1346,6 @@ int FindNav(char *Nav)
 }
 
 // ********************************************************************************************
-// Set A Nav point to "ZERO"
-void ZeroNav(int i)
-{
-	memset((char *)&Navs[i], 0, sizeof(NavPoint));
-}
-
-// ********************************************************************************************
 // Removes a Nav
 bool DelNavPoint(char *Nav)
 {
@@ -1359,7 +1354,6 @@ bool DelNavPoint(char *Nav)
 	return DelNavPoint(n);
 
 }
-
 
 bool DelNavPoint(int nav)
 {	
@@ -1373,7 +1367,7 @@ bool DelNavPoint(int nav)
 			}
 
 		}
-		ZeroNav(MAX_NAVPOINTS-1);
+		Navs[MAX_NAVPOINTS-1].clear();
 		return true;
 	}
 

@@ -76,8 +76,6 @@ void cutscene_init()
 
 	while ( required_string_either("#End", "$Filename:") ) 
     {
-        memset(&cutinfo, 0, sizeof(cutscene_info));
-
 		required_string("$Filename:");
 		stuff_string( cutinfo.filename, F_PATHNAME, MAX_FILENAME_LEN );
 
@@ -93,6 +91,8 @@ void cutscene_init()
 		required_string("$cd:");
 		stuff_int( &cutinfo.cd );
 
+		cutinfo.viewable = false;
+
 		if (isFirstCutscene) {
 			isFirstCutscene = false;
 			// The original code assumes the first movie is the intro, so always viewable
@@ -102,7 +102,6 @@ void cutscene_init()
 		if (optional_string("$Always Viewable:")) {
 			stuff_boolean(&cutinfo.viewable);
 		}
-
 
         Cutscenes.push_back(cutinfo);
 	}

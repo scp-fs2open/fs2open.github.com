@@ -438,6 +438,9 @@ void iff_init()
 			if (j == MAX_PARSE_OBJECT_FLAGS_2)
 				Warning(LOCATION, "Bogus string in iff default ship flags2: %s\n", flag_strings[i]);
 		}
+
+		// this is cleared between each level but let's just set it here for thoroughness
+		iff->ai_rearm_timestamp = timestamp(-1);
 	}
 	
 	required_string("#End");
