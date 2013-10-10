@@ -36,6 +36,8 @@ void set_default_recharge_rates(object* obj);
 void transfer_energy_to_shields(object* obj);
 void transfer_energy_to_weapons(object* obj);
 
+float ets_get_max_speed(object* objp, float engine_energy);
+
 class HudGaugeEts: public HudGauge // HUD_ETS_GAUGE
 {
 protected:
