@@ -6,7 +6,7 @@
  * create based on the source.
  */
 
-#include "editors/frmWingEditor.h"
+#include "editors/frmwingeditor.h"
 #include "frmfred2.h"
 #include "base/wxfred_base.h"
 
