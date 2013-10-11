@@ -28906,7 +28906,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_GOAL_FALSE, "Previous Mission Goal False (Boolean operator)\r\n"
@@ -28915,7 +28915,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_GOAL_INCOMPLETE, "Previous Mission Goal Incomplete (Boolean operator)\r\n"
@@ -28924,7 +28924,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_EVENT_TRUE, "Previous Mission Event True (Boolean operator)\r\n"
@@ -28933,7 +28933,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_EVENT_FALSE, "Previous Mission Event False (Boolean operator)\r\n"
@@ -28942,7 +28942,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_EVENT_INCOMPLETE, "Previous Mission Event Incomplete (Boolean operator)\r\n"
@@ -28951,7 +28951,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_GOAL_TRUE_DELAY, "Mission Goal True (Boolean operator)\r\n"
