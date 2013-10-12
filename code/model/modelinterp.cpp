@@ -4660,7 +4660,6 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 				texture_info *spec_map = &tmap->textures[TM_SPECULAR_TYPE];
 				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
-				texture_info *misc_map = &tmap->textures[TM_MISC_TYPE];
 
 				if (Interp_new_replacement_textures != NULL) {
 					if (Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
@@ -4677,18 +4676,23 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 						tex_replace[TM_HEIGHT_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
 						height_map = &tex_replace[TM_HEIGHT_TYPE];
 					}
-
-					if (Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE] >= 0) {
-						tex_replace[TM_MISC_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE]);
-						misc_map = &tex_replace[TM_MISC_TYPE];
-					}
 				}
 
 				SPECMAP = model_interp_get_texture(spec_map, Interp_base_frametime);
 				NORMMAP = model_interp_get_texture(norm_map, Interp_base_frametime);
 				HEIGHTMAP = model_interp_get_texture(height_map, Interp_base_frametime);
-				MISCMAP = model_interp_get_texture(misc_map, Interp_base_frametime);
 			}
+
+			texture_info *misc_map = &tmap->textures[TM_MISC_TYPE];
+
+			if (Interp_new_replacement_textures != NULL) {
+				if (Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE] >= 0) {
+					tex_replace[TM_MISC_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE]);
+					misc_map = &tex_replace[TM_MISC_TYPE];
+				}
+			}
+
+			MISCMAP = model_interp_get_texture(misc_map, Interp_base_frametime);
 		} else {
 			alpha = forced_alpha;
 		}
