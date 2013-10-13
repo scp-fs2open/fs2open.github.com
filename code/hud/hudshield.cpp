@@ -125,7 +125,7 @@ void hud_shield_level_init()
 	unsigned int i;
 	hud_frames temp;
 
-	hud_shield_hit_reset(1);	// reset for the player
+	hud_shield_hit_reset(Player_obj, 1);	// reset for the player
 
 	if ( !Hud_shield_inited ) {
 		for ( i = 0; i < Hud_shield_filenames.size(); i++ ) {
@@ -409,7 +409,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	sy = (y_force == -1) ? Shield_mini_coords[gr_screen.res][1]+fl2i(HUD_offset_y) : y_force;
 
 	// draw the ship first
-	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, HULL_HIT_OFFSET);
+	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
 	hud_show_mini_ship_integrity(objp, x_force + x_hull_offset,y_force + y_hull_offset);
 
 	// draw the four quadrants
@@ -458,13 +458,20 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 }
 
 // reset the shield_hit_info data structure
-void shield_info_reset(shield_hit_info *shi)
+void shield_info_reset(object *objp, shield_hit_info *shi)
 {
 	int i;
 
 	shi->shield_hit_status = 0;
 	shi->shield_show_bright = 0;
-	for ( i = 0; i < NUM_SHIELD_HIT_MEMBERS; i++ ) {
+
+	shi->members = objp->n_quadrants;
+	shi->hull_hit_index = shi->members - 1;
+
+	shi->shield_hit_timers.resize(shi->members);
+	shi->shield_hit_next_flash.resize(shi->members);
+
+	for ( i = 0; i < shi->members; i++ ) {
 		shi->shield_hit_timers[i] = 1;
 		shi->shield_hit_next_flash[i] = 1;
 	}
@@ -477,7 +484,7 @@ void shield_info_reset(shield_hit_info *shi)
 // input:	player	=>	optional parameter (default value 0).  This is to indicate that player shield hit
 //								info should be reset.  This is normally not the case.
 //								is for the player's current target
-void hud_shield_hit_reset(int player)
+void hud_shield_hit_reset(object *objp, int player)
 {
 	shield_hit_info	*shi;
 
@@ -487,7 +494,7 @@ void hud_shield_hit_reset(int player)
 		shi = &Shield_hit_data[SHIELD_HIT_TARGET];
 	}
 
-	shield_info_reset(shi);
+	shield_info_reset(objp, shi);
 }
 
 // called once per frame to update the state of Shield_hit_status based on the Shield_hit_timers[]
@@ -501,7 +508,7 @@ void hud_shield_hit_update()
 	}
 
 	for ( i = 0; i < limit; i++ ) {
-		for ( j = 0; j < NUM_SHIELD_HIT_MEMBERS; j++ ) {
+		for ( j = 0; j < Shield_hit_data[i].members; j++ ) {
 			if ( timestamp_elapsed(Shield_hit_data[i].shield_hit_timers[j]) ) {
 				Shield_hit_data[i].shield_hit_status &= ~(1<<j);
 				Shield_hit_data[i].shield_show_bright &= ~(1<<j);
@@ -541,10 +548,14 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 	}
 
 	if ( quadrant >= 0 ) {
-		num = Quadrant_xlate[quadrant];
+		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SHIELD_POINTS) )
+			num = Quadrant_xlate[quadrant];
+		else
+			num = quadrant;
+
 		shi->shield_hit_timers[num] = timestamp(300);
 	} else {
-		shi->shield_hit_timers[HULL_HIT_OFFSET] = timestamp(SHIELD_HIT_DURATION_SHORT);
+		shi->shield_hit_timers[shi->hull_hit_index] = timestamp(SHIELD_HIT_DURATION_SHORT);
 		hud_targetbox_start_flash(TBOX_FLASH_HULL); 
 	}
 }
@@ -613,7 +624,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	sy += fl2i(HUD_offset_y);
 
 	// draw the ship first
-	maybeFlashShield(SHIELD_HIT_PLAYER, HULL_HIT_OFFSET);
+	maybeFlashShield(SHIELD_HIT_PLAYER, Shield_hit_data[SHIELD_HIT_PLAYER].hull_hit_index);
 
 	if(sip->shield_icon_index != 255)
 	{
@@ -687,7 +698,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	if(!sip->max_shield_strength)
 		return;
 
-	// draw the four quadrants
+	// draw the quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	max_shield = get_max_shield_quad(objp);
@@ -700,12 +711,17 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		if ( !(sip->flags2 & SIF2_SHIELD_POINTS) && objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
+
+		if ( !(sip->flags2 & SIF2_SHIELD_POINTS) )
+			hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
+		else
+			hud_color_index = fl2i( (objp->shield_quadrant[i] / max_shield) * range);
+
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 
 		if ( hud_color_index < 0 ) {
@@ -964,7 +980,7 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 	sy = position[1]+fl2i(HUD_offset_y);
 
 	// draw the ship first
-	maybeFlashShield(SHIELD_HIT_TARGET, HULL_HIT_OFFSET);
+	maybeFlashShield(SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
 	showIntegrity(get_hull_pct(objp));
 
 	// draw the four quadrants
