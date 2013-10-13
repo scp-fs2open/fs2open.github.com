@@ -1365,8 +1365,16 @@ int common_object_delete(int obj)
 			if(jnp->GetSCPObject() == &Objects[obj])
 				break;
 		}
+
+		// come on, WMC, we don't want to call obj_delete twice...
+		// fool the destructor into not calling obj_delete yet
+		Objects[obj].type = OBJ_NONE;
 		
+		// now call the destructor
 		Jump_nodes.erase(jnp);
+
+		// now restore the jump node type so that the below unmark and obj_delete will work
+		Objects[obj].type = OBJ_JUMP_NODE;
 	}
 
 	unmark_object(obj);

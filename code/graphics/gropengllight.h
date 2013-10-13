@@ -37,8 +37,6 @@ struct opengl_light
 	bool occupied;
 	int priority;
 	int type;
-
-//	opengl_light() : occupied(false), priority(1), type(0) {};
 };
 
 struct light_data;

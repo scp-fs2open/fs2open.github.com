@@ -698,6 +698,7 @@ void gr_init_color(color *c, int r, int g, int b)
 	c->alphacolor = -1;
 	c->is_alphacolor = 0;
 	c->magic = 0xAC01;
+	c->raw8 = 0;
 }
 
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type )

@@ -538,6 +538,7 @@ void script_state::SetHookObjects(int num, ...)
 	{
 		LuaError(LuaState, "Could not get HookVariable library to add hook variables - get a coder");
 	}
+	va_end(vl);
 }
 
 //This pair of abstraction functions handles
@@ -725,6 +726,7 @@ void script_state::RemHookVars(unsigned int num, ...)
 				lua_pushnil(LuaState);
 				lua_rawset(LuaState, amt_ldx);
 			}
+			va_end(vl);
 
 			this->CloseHookVarTable();
 		}

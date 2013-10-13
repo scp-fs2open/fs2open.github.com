@@ -14,7 +14,7 @@
 #define _SEXP_H
 
 struct ship_subsys;
-struct ship;
+class ship;
 class waypoint_list;
 
 // bumped to 30 by Goober5000
@@ -712,6 +712,9 @@ class waypoint_list;
 #define OP_NEBULA_CHANGE_PATTERN			(0x001d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Axem
 #define OP_PLAYER_IS_CHEATING_BASTARD		(0x001e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
 #define OP_TECH_ADD_INTEL_XSTR				(0x001f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
+#define OP_COPY_VARIABLE_FROM_INDEX			(0x0020 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_COPY_VARIABLE_BETWEEN_INDEXES	(0x0021 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Goober5000
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)

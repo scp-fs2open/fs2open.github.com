@@ -1096,7 +1096,11 @@ int parse_ship(const char *filename, bool replace)
 			int template_id = ship_template_lookup( template_name);
 			if ( template_id != -1 ) {
 				first_time = false;
-				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
+
+				// TODO: whoever implemented ship templates should implement this method
+				// sip->assign(&Ship_templates[template_id]);
+				Warning(LOCATION, "Ship templates have been broken since they were added, and are not currently supported.");
+
 				strcpy_s(sip->name, buf);
 			}
 			else {
@@ -1151,7 +1155,10 @@ int parse_ship_template()
 			template_id = ship_template_lookup( template_name);
 			
 			if ( template_id != -1 ) {
-				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
+				// TODO: whoever implemented ship templates should implement this method
+				// sip->assign(&Ship_templates[template_id]);
+				Warning(LOCATION, "Ship templates have been broken since they were added, and are not currently supported.");
+				
 				strcpy_s(sip->name, buf);
 			}
 			else {
@@ -4760,103 +4767,67 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 	}
 }
 
-void ship_set(int ship_index, int objnum, int ship_type)
+// Reset all ship values to empty/unused.
+void ship::clear()
 {
 	int i, j;
 
-	object	*objp = &Objects[objnum];
-	ship	*shipp = &Ships[ship_index];
-	ship_weapon	*swp = &shipp->weapons;
-	ship_info	*sip = &(Ship_info[ship_type]);
+	objnum = -1;
+	ai_index = -1;
+	ship_info_index = -1;
+	hotkey = -1;
+	escort_priority = 0;
+	score = 0;
+	assist_score_pct = 0.0f;
+	respawn_priority = 0;
 	polymodel *pm = model_get(sip->model_num);
 
-	Assert(strlen(shipp->ship_name) <= NAME_LENGTH - 1);
-	shipp->ship_info_index = ship_type;
-	shipp->objnum = objnum;
-	shipp->group = 0;
-	shipp->reinforcement_index = -1;
-	shipp->cargo1 = 0;
-	shipp->hotkey = -1;
-	shipp->score = 0;
-	shipp->assist_score_pct = 0;
-	shipp->escort_priority = 0;
-	shipp->num_hits = 0;
-	shipp->flags = 0;
-	shipp->flags2 = 0;
+	pre_death_explosion_happened = 0;
+	wash_killed = 0;	// serenity lies
+	cargo1 = 0;							// "Nothing"
 
-	// set certain flags that used to be in ship_info - Goober5000
-	if (sip->flags & SIF_STEALTH)
-		shipp->flags2 |= SF2_STEALTH;
-	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
-		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+	wing_status_wing_index = -1;
+	wing_status_wing_pos = -1;
 
-	if (sip->flags2 & SIF2_NO_ETS)
-		shipp->flags2 |= SF2_NO_ETS;
+	alt_type_index = -1;
+	callsign_index = -1;
 
-	shipp->wash_killed = 0;
-	shipp->time_cargo_revealed = 0;
-	shipp->time_first_tagged = 0;
-	shipp->wash_timestamp = timestamp(0);
-	shipp->large_ship_blowup_index = -1;
-	shipp->respawn_priority = 0;
-	for (i=0; i<NUM_SUB_EXPL_HANDLES; i++) {
-		shipp->sub_expl_sound_handle[i] = -1;
-	}
+	targeting_laser_bank = -1;
+	targeting_laser_objnum = -1;
 
-	if ( !Fred_running ) {
-		shipp->warpin_effect = NULL;
-		shipp->warpout_effect = NULL;
-		ship_set_warp_effects(objp, sip);
-		shipp->final_death_time = timestamp(-1);	// There death sequence ain't start et.
-		shipp->end_death_time = 0;
-		shipp->death_time = -1;
-		shipp->really_final_death_time = timestamp(-1);	// There death sequence ain't start et.
-		shipp->next_fireball = timestamp(-1);		// When a random fireball will pop up
-		shipp->next_hit_spark = timestamp(-1);		// when a hit spot will spark
-		for (i=0; i<MAX_SHIP_ARCS; i++ )	{
-			shipp->arc_timestamp[i] = timestamp(-1);		// Mark this arc as unused
-		}
-		shipp->arc_next_time = timestamp(-1);		// No electrical arcs yet.
-	} else {		// the values should be different for Fred
-		shipp->final_death_time = 0;
-		shipp->end_death_time = 0;
-		shipp->death_time = -1;
-		shipp->really_final_death_time = -1;
-		shipp->next_fireball = -1;
-		shipp->next_hit_spark = -1;
-		for (i=0; i<MAX_SHIP_ARCS; i++ )	{
-			shipp->arc_timestamp[i] = -1;
-		}
-		shipp->arc_next_time = -1;
-	}
-	shipp->team = 0;					//	Default, probably get overridden.
-	shipp->arrival_location = 0;
-	shipp->arrival_distance = 0;
-	shipp->arrival_anchor = -1;
-	shipp->arrival_path_mask = 0;
-	shipp->arrival_delay = 0;
-	shipp->arrival_cue = -1;
-	shipp->departure_location = 0;
-	shipp->departure_path_mask = 0;
-	shipp->departure_delay = 0;
-	shipp->departure_cue = -1;
-	shipp->shield_hits = 0;							//	No shield hits yet on this baby.
-	shipp->current_max_speed = Ship_info[ship_type].max_speed;
+	num_corkscrew_to_fire = 0;
+	corkscrew_missile_bank = -1;
+	next_corkscrew_fire = timestamp(0);
 
-	shipp->alt_type_index = -1;
-	shipp->callsign_index = -1;
+	final_death_time = timestamp(-1);
+	death_time = timestamp(-1);
+	end_death_time = timestamp(-1);
+	really_final_death_time = timestamp(-1);
+	deathroll_rotvel = vmd_zero_vector;
 
-	shipp->lightning_stamp = -1;
+	if (warpin_effect != NULL)
+		delete warpin_effect;
+	if (warpout_effect != NULL)
+		delete warpout_effect;
+	warpin_effect = NULL;
+	warpout_effect = NULL;
 
-	shipp->emp_intensity = -1.0f;
-	shipp->emp_decr = 0.0f;
+	next_fireball = timestamp(-1);
+	next_hit_spark = timestamp(-1);
+	num_hits = 0;
+	memset(sparks, 0, MAX_SHIP_HITS * sizeof(ship_spark));
 
-	shipp->targeting_laser_bank = -1;
-	shipp->targeting_laser_objnum = -1;
+	use_special_explosion = false;
+	special_exp_damage = 0;
+	special_exp_blast = 0;
+	special_exp_inner = 0;
+	special_exp_outer = 0;
+	use_shockwave = false;
+	special_exp_shockwave_speed = 0;
+	special_exp_deathroll_time = 0;
 
-	shipp->wingnum = -1;
-	for (i = 0; i < MAX_PLAYERS; i++)
-		shipp->last_targeted_subobject[i] = NULL;
+	special_hitpoints = 0;
+	special_shield = -1;
 
 	if (sip->flags2 & SIF2_SHIELD_POINTS) {
 		objp->n_quadrants = pm->shield_points.size();
@@ -4870,122 +4841,289 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->ship_max_hull_strength = sip->max_hull_strength;
 	}
 	objp->hull_strength = shipp->ship_max_hull_strength;
+	ship_max_shield_strength = 0.0f;
+	ship_max_hull_strength = 0.0f;
+
+	ship_guardian_threshold = 0;
+
+	ship_name[0] = 0;
+	team = 0;
+
+	time_cargo_revealed = 0;
+
+	arrival_location = 0;
+	arrival_distance = 0;
+	arrival_anchor = -1;
+	arrival_path_mask = 0;
+	arrival_cue = -1;
+	arrival_delay = 0;
+
+	departure_location = 0;
+	departure_anchor = -1;
+	departure_path_mask = 0;
+	departure_cue = -1;
+	departure_delay = 0;
+
+	wingnum = -1;
+	orders_accepted = 0;
+
+	memset(&subsys_list, 0, sizeof(ship_subsys));
+	memset(&subsys_info, 0, SUBSYSTEM_MAX * sizeof(ship_subsys_info));
+
+	memset(last_targeted_subobject, 0, MAX_PLAYERS * sizeof(ship_subsys *));
+
+	shield_integrity = NULL;
+
+	shield_recharge_index = 0;
+	weapon_recharge_index = 0;
+	engine_recharge_index = 0;
+	weapon_energy = 0;
+	current_max_speed = 0.0f;
+	next_manage_ets = timestamp(0);
+
+	flags = 0;
+	flags2 = 0;
+	reinforcement_index = -1;
 	
-	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
+	afterburner_fuel = 0.0f;
 
-	shipp->cmeasure_count = sip->cmeasure_max;
+	cmeasure_count = 0;
+	current_cmeasure = -1;
 
-	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
+	cmeasure_fire_stamp = timestamp(0);
+
+	target_shields_delta = 0.0f;
+	target_weapon_energy_delta = 0.0f;
+
+	memset(&weapons, 0, sizeof(ship_weapon));
+
+	// ---------- special weapons init that isn't setting things to 0
+	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		swp->primary_bank_ammo[i] = 0;						// added by Goober5000
-		swp->next_primary_fire_stamp[i] = timestamp(0);	
-		swp->last_primary_fire_stamp[i] = -1;	
-		swp->primary_bank_rearm_time[i] = timestamp(0);		// added by Goober5000
-		swp->last_primary_fire_sound_stamp[i] = timestamp(0); // added by Halleck
-		swp->primary_bank_fof_cooldown[i] = 0.0f;
+		weapons.primary_bank_weapons[i] = -1;
 
-		swp->primary_animation_position[i] = MA_POS_NOT_SET;
-		swp->secondary_animation_position[i] = MA_POS_NOT_SET;
-		swp->primary_animation_done_time[i] = timestamp(0);
-		swp->secondary_animation_done_time[i] = timestamp(0);
+		weapons.next_primary_fire_stamp[i] = timestamp(0);
+		weapons.last_primary_fire_stamp[i] = timestamp(-1);
+		weapons.last_primary_fire_sound_stamp[i] = timestamp(0);
 
-		swp->burst_counter[i] = 0;
+		weapons.primary_bank_slot_count[i] = 1;
+
+		weapons.primary_bank_rearm_time[i] = timestamp(0);
+		weapons.primary_animation_done_time[i] = timestamp(0);
+
+		// not part of weapons!
+		primary_rotate_rate[i] = 0.0f;
+		primary_rotate_ang[i] = 0.0f;
+		last_fired_point[i] = 0;
+		// for fighter beams
+		was_firing_last_frame[i] = 0;
 	}
 
-	shipp->cmeasure_fire_stamp = timestamp(0);
-
-	// handle ballistic primaries - kinda hackish; is this actually necessary?
-	// because I think it's not needed - when I accidentally left this unreachable
-	// it didn't cause any problems - Goober5000
-	for ( i = 0; i < sip->num_primary_banks; i++ )
+	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
 	{
-		float weapon_size;
-		weapon_size = Weapon_info[sip->primary_bank_weapons[i]].cargo_size;
+		weapons.secondary_bank_weapons[i] = -1;
 
-		if ( weapon_size > 0.0f )
-		{
-			if (Fred_running)
-			{
-				swp->primary_bank_ammo[i] = 100;
-			}
-			else
-			{
-				swp->primary_bank_ammo[i] = fl2i(sip->primary_bank_ammo_capacity[i] / weapon_size + 0.5f );
-			}
-		}
+		weapons.next_secondary_fire_stamp[i] = timestamp(0);
+		weapons.last_secondary_fire_stamp[i] = timestamp(-1);
+
+		weapons.secondary_bank_rearm_time[i] = timestamp(0);
+		weapons.secondary_animation_done_time[i] = timestamp(0);
+
+		for (j = 0; j < MAX_SLOTS; j++)
+			secondary_point_reload_pct[i][j] = 1.0f;
 	}
 
-	// conventional secondary banks
-	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ )
+	weapons.next_tertiary_fire_stamp = timestamp(0);
+
+	weapons.last_fired_weapon_index = -1;
+	weapons.last_fired_weapon_signature = -1;
+	// ---------- done with weapons init
+
+	shield_hits = 0;
+
+	wash_intensity = 0.0f;
+	wash_rot_axis = vmd_zero_vector;
+	wash_timestamp = timestamp(0);
+
+	num_swarm_missiles_to_fire = 0;
+	next_swarm_fire = timestamp(0);
+	next_swarm_path = 0;
+	num_turret_swarm_info = 0;
+	swarm_missile_bank = -1;
+
+	group = -1;
+	death_roll_snd = -1;
+	ship_list_index = -1;
+
+	thruster_bitmap = -1;
+	thruster_frame = 0.0f;
+
+	thruster_glow_bitmap = -1;
+	thruster_glow_frame = 0.0f;
+	thruster_glow_noise = 1.0f;
+
+	thruster_secondary_glow_bitmap = -1;
+	thruster_tertiary_glow_bitmap = -1;
+	thruster_distortion_bitmap = -1;
+
+	next_engine_stutter = timestamp(0);
+
+	base_texture_anim_frametime = 0;
+
+	total_damage_received = 0.0f;
+	memset(&damage_ship, 0, MAX_DAMAGE_SLOTS * sizeof(float));
+	for(i = 0; i < MAX_DAMAGE_SLOTS; i++)
+		damage_ship_id[i] = -1;
+
+	persona_index = -1;
+
+	subsys_disrupted_flags = 0;
+	subsys_disrupted_check_timestamp = timestamp(0);
+
+	create_time = 0;
+
+	ts_index = -1;
+
+	large_ship_blowup_index = -1;
+	for (i = 0; i < NUM_SUB_EXPL_HANDLES; i++)
+		sub_expl_sound_handle[i] = -1;
+
+	memset(&arc_pts, 0, MAX_SHIP_ARCS * 2 * sizeof(vec3d));
+	for (i = 0; i < MAX_SHIP_ARCS; i++)
+		arc_timestamp[i] = timestamp(-1);
+	memset(&arc_type, 0, MAX_SHIP_ARCS * sizeof(ubyte));
+	arc_next_time = timestamp(-1);
+
+	emp_intensity = -1.0f;
+	emp_decr = 0.0f;
+
+	memset(trail_ptr, 0, MAX_SHIP_CONTRAILS * sizeof(trail *));
+
+	tag_total = 0.0f;
+	tag_left = -1.0f;
+	time_first_tagged = -1;
+	level2_tag_total = 0.0f;
+	level2_tag_left = -1.0f;
+
+	for (i = 0; i < MAX_PLAYERS; i++ )
 	{
-		if (Fred_running)
-		{
-			swp->secondary_bank_ammo[i] = 100;
-		}
-		else
-		{
-			swp->secondary_bank_ammo[i] = 0;
-		}
-			
-		swp->secondary_bank_ammo[i] = 0;
-		swp->secondary_next_slot[i] = 0;
-		swp->next_secondary_fire_stamp[i] = timestamp(0);
-		swp->last_secondary_fire_stamp[i] = -1;
-		swp->secondary_bank_rearm_time[i] = timestamp(0);		// will be able to rearm this bank immediately
-
-		swp->burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
+		np_updates[i].seq = 0;
+		np_updates[i].update_stamp = -1;
+		np_updates[i].status_update_stamp = -1;
+		np_updates[i].subsys_update_stamp = -1;
+		np_updates[i].pos_chksum = 0;
+		np_updates[i].orient_chksum = 0;
 	}
 
-	for ( i = 0; i < sip->num_secondary_banks; i++ )
+	lightning_stamp = timestamp(-1);
+
+	// set awacs warning flags so awacs ship only asks for help once at each level
+	awacs_warning_flag = AWACS_WARN_NONE;
+
+	special_warpin_objnum = -1;
+	special_warpout_objnum = -1;
+
+	memset(&fighter_beam_turret_data, 0, sizeof(ship_subsys));
+	memset(&beam_sys_info, 0, sizeof(model_subsystem));
+
+	primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
+
+	ship_replacement_textures = NULL;
+
+	current_viewpoint = -1;
+
+	for (i = 0; i < MAX_SHIP_CONTRAILS; i++)
+		ABtrail_ptr[i] = NULL;
+	memset(&ab_info, 0, MAX_SHIP_CONTRAILS * sizeof(trail_info));
+	ab_count = 0;
+
+	glow_point_bank_active.clear();
+
+	shader_effect_num = 0;
+	shader_effect_duration = 0;
+	shader_effect_start_time = 0;
+	shader_effect_active = false;
+
+	last_fired_turret = NULL;
+
+	bay_doors_anim_done_time = 0;
+	bay_doors_status = MA_POS_NOT_SET;
+	bay_doors_wanting_open = 0;
+	bay_doors_launched_from = 0;
+	bay_doors_need_open = false;
+	bay_doors_parent_shipnum = -1;
+
+	for(i = 0; i < MAX_MAN_THRUSTERS; i++)
 	{
-		float weapon_size;
-		weapon_size = Weapon_info[sip->secondary_bank_weapons[i]].cargo_size;
-		Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[sip->secondary_bank_weapons[i]].name );
-		if (Fred_running)
-		{
-			swp->secondary_bank_ammo[i] = 100;
-		}
-		else
-		{
-			swp->secondary_bank_ammo[i] = fl2i(sip->secondary_bank_ammo_capacity[i] / weapon_size + 0.5f );
-		}
+		thrusters_start[i] = timestamp(-1);
+		thrusters_sounds[i] = -1;
 	}
 
-	swp->current_primary_bank = -1;
-	swp->current_secondary_bank = -1;
+	s_alt_classes.clear();
 
-	swp->previous_primary_bank = -1;
-	swp->previous_secondary_bank = -1;
+	for(i=0;i<MAX_IFFS;i++)
+		for(j=0;j<MAX_IFFS;j++)
+			ship_iff_color[i][j] = -1;
 
-	if ( sip->num_primary_banks > 0 ) {
-		if ( swp->primary_bank_weapons[BANK_1] >= 0 ) {
-			swp->current_primary_bank = BANK_1;
-			swp->previous_primary_bank = BANK_1;
-		} else {
-			swp->current_primary_bank = -1;
-		}
-	}
-	else {
-		swp->current_primary_bank = -1;
-	}
+	ammo_low_complaint_count = 0;
 
-	if ( sip->num_secondary_banks > 0 ) {
-		if ( swp->secondary_bank_weapons[BANK_1] >= 0 ) {
-			swp->current_secondary_bank = BANK_1;
-			swp->previous_secondary_bank = BANK_1;
-		} else {
-			swp->current_secondary_bank = -1;
-		}
-	}
-	else {
-		swp->current_secondary_bank = -1;
-	}
+	armor_type_idx = -1;
+	shield_armor_type_idx = -1;
+	collision_damage_type_idx = -1;
+	debris_damage_type_idx = -1;
+	debris_net_sig = 0;
 
-	shipp->current_cmeasure = sip->cmeasure_type;
+	model_instance_num = -1;
 
-	ets_init_ship(objp);	// init ship fields that are used for the ETS
+	time_created = 0;
 
+	radar_visible_since = -1;
+	radar_last_contact = -1;
+
+	radar_last_status = VISIBLE;
+	radar_current_status = VISIBLE;
+
+	team_name = "";
+	secondary_team_name = "";
+	team_change_timestamp = timestamp(-1);
+	team_change_time = 0;
+
+	autoaim_fov = 0.0f;
+}
+
+// NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
+void ship_set(int ship_index, int objnum, int ship_type)
+{
+	int i;
+	ship		*shipp = &Ships[ship_index];
+	object		*objp = &Objects[objnum];
+	ship_info	*sip = &(Ship_info[ship_type]);
+	ship_weapon	*swp = &shipp->weapons;
+
+	extern int oo_arrive_time_count[MAX_SHIPS];		
+	extern int oo_interp_count[MAX_SHIPS];	
+	oo_arrive_time_count[shipp - Ships] = 0;
+	oo_interp_count[shipp - Ships] = 0;
+
+	Assert(strlen(shipp->ship_name) <= NAME_LENGTH - 1);
+	shipp->ship_info_index = ship_type;
+	shipp->objnum = objnum;
+	shipp->score = sip->score;
+
+	ai_object_init(objp, shipp->ai_index);
 	physics_ship_init(objp);
+
+	if ( !Fred_running ) {
+		ship_set_warp_effects(objp, sip);
+	}
+
+	if (Fred_running){
+		shipp->ship_max_hull_strength = 100.0f;
+	} else {
+		shipp->ship_max_hull_strength = sip->max_hull_strength;
+	}
+	objp->hull_strength = shipp->ship_max_hull_strength;
+
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
@@ -4994,154 +5132,88 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shield_set_strength(objp, shipp->ship_max_shield_strength);
 	}
 
-	shipp->target_shields_delta = 0.0f;
-	shipp->target_weapon_energy_delta = 0.0f;
+	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 
-	ai_object_init(objp, shipp->ai_index);
-	shipp->weapons.ai_class = Ai_info[shipp->ai_index].ai_class;
-	shipp->shield_integrity = NULL;
-
-	shipp->ship_guardian_threshold = 0;
-
-	if (!subsys_set(objnum)) {		
+	if (!subsys_set(objnum))
+	{
 		char err_msg[512]; 
 		sprintf (err_msg, "Unable to allocate ship subsystems. Maximum is %d. No subsystems have been assigned to %s.", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET), shipp->ship_name);
 
-		if (Fred_running) { 
+		if (Fred_running) 
 			MessageBox(NULL, err_msg, "Error", MB_OK);
-		}
-		else {
-			Error(LOCATION, err_msg); 
+		else
+			Error(LOCATION, err_msg);
+	}
+
+	ets_init_ship(objp);	// init ship fields that are used for the ETS
+
+	shipp->current_max_speed = Ship_info[ship_type].max_speed;
+
+	shipp->flags |= SF_ENGINES_ON;
+
+	// set certain flags that used to be in ship_info - Goober5000
+	if (sip->flags & SIF_STEALTH)
+		shipp->flags2 |= SF2_STEALTH;
+	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
+		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+
+	if (sip->flags2 & SIF2_NO_ETS)
+		shipp->flags2 |= SF2_NO_ETS;
+
+	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
+
+	shipp->cmeasure_count = sip->cmeasure_max;
+	shipp->current_cmeasure = sip->cmeasure_type;
+
+	if (sip->num_primary_banks == 0 || swp->primary_bank_weapons[0] < 0) {
+		swp->current_primary_bank = -1;
+		swp->previous_primary_bank = -1;
+	}
+	if (sip->num_secondary_banks == 0 || swp->secondary_bank_weapons[0] < 0) {
+		swp->current_secondary_bank = -1;
+		swp->previous_secondary_bank = -1;
+	}
+	swp->current_tertiary_bank = -1;
+
+	swp->ai_class = Ai_info[shipp->ai_index].ai_class;
+
+	// handle ballistic primaries - kinda hackish; is this actually necessary?
+	// because I think it's not needed - when I accidentally left this unreachable
+	// it didn't cause any problems - Goober5000
+	for ( i = 0; i < sip->num_primary_banks; i++ )
+	{
+		float weapon_size = Weapon_info[sip->primary_bank_weapons[i]].cargo_size;
+
+		if ( weapon_size > 0.0f )
+		{
+			if (Fred_running)
+				swp->primary_bank_ammo[i] = 100;
+			else
+				swp->primary_bank_ammo[i] = fl2i(sip->primary_bank_ammo_capacity[i] / weapon_size + 0.5f );
 		}
 	}
-	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
-	shipp->num_swarm_missiles_to_fire = 0;	
-	shipp->num_turret_swarm_info = 0;
-	shipp->death_roll_snd = -1;
-	shipp->thruster_bitmap = -1;
-	shipp->thruster_frame = 0.0f;
-	shipp->thruster_glow_bitmap = -1;
-	shipp->thruster_glow_noise = 1.0f;
-	shipp->thruster_glow_frame = 0.0f;
-	shipp->next_engine_stutter = 1;
-	shipp->persona_index = -1;
-	shipp->flags |= SF_ENGINES_ON;
-	shipp->subsys_disrupted_flags=0;
-	shipp->subsys_disrupted_check_timestamp=timestamp(0);
 
-	shipp->base_texture_anim_frametime = 0;
+	for ( i = 0; i < sip->num_secondary_banks; i++ )
+	{
+		float weapon_size = Weapon_info[sip->secondary_bank_weapons[i]].cargo_size;
+		Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[sip->secondary_bank_weapons[i]].name );
 
-	// Bobboau's stuff
-	shipp->thruster_secondary_glow_bitmap = -1;
-	shipp->thruster_tertiary_glow_bitmap = -1;
-
-	// swarm missile stuff
-	shipp->next_swarm_fire = 1;
-
-	// corkscrew missile stuff
-	shipp->next_corkscrew_fire = 1;
-
-	// Missile bank indexes to avoid firing different swarm/corkscrew missiles
-	shipp->swarm_missile_bank = -1;
-	shipp->corkscrew_missile_bank = -1;
-
-	// field for score
-	shipp->score = sip->score;
-
-	// tag
-	shipp->tag_left = -1.0f;
-	shipp->level2_tag_left = -1.0f;
-
-	// multiplayer field initializations
-	for (i = 0; i < MAX_PLAYERS; i++ ) {
-		shipp->np_updates[i].update_stamp = -1;
-		shipp->np_updates[i].status_update_stamp = -1;
-		shipp->np_updates[i].subsys_update_stamp = -1;
-		shipp->np_updates[i].seq = 0;		
-	}		
-	extern int oo_arrive_time_count[MAX_SHIPS];		
-	extern int oo_interp_count[MAX_SHIPS];	
-	oo_arrive_time_count[shipp - Ships] = 0;				
-	oo_interp_count[shipp - Ships] = 0;	
-
-	shipp->primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
-
-	shipp->special_warpin_objnum = -1;
-	shipp->special_warpout_objnum = -1;
+		if (Fred_running)
+			swp->secondary_bank_ammo[i] = 100;
+		else
+			swp->secondary_bank_ammo[i] = fl2i(sip->secondary_bank_ammo_capacity[i] / weapon_size + 0.5f );
+	}
 
 	if(pm != NULL && pm->n_view_positions > 0)
 		ship_set_eye(objp, 0);
 	else
 		ship_set_eye(objp, -1);
 
-	// set awacs warning flags so awacs ship only asks for help once at each level
-	shipp->awacs_warning_flag = AWACS_WARN_NONE;
-
-	// Goober5000 - revised texture replacement
-	shipp->ship_replacement_textures = NULL;
-
-	shipp->glow_point_bank_active.clear();
-
-	shipp->shader_effect_active = false;
-	shipp->shader_effect_duration = 0;
-	shipp->shader_effect_num = 0;
-	shipp->shader_effect_start_time = 0;
-
-	// fighter bay door stuff
-	shipp->bay_doors_status = MA_POS_NOT_SET;
-	shipp->bay_doors_wanting_open = 0;
-	shipp->bay_doors_need_open = false;
-	shipp->bay_doors_anim_done_time = 0;
-	shipp->bay_doors_launched_from = 0;
-	shipp->bay_doors_parent_shipnum = -1;
-
-	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
-		for(int k = 0; k<MAX_SLOTS; k++){
-			shipp->secondary_point_reload_pct[i][k] = 1.0f;
-		}
-	}
-	for(i = 0; i<MAX_SHIP_PRIMARY_BANKS; i++){
-		shipp->primary_rotate_rate[i] = 0.0f;
-		shipp->primary_rotate_ang[i] = 0.0f;
-	}
-
-	//Thrusters
-	for(i = 0; i < MAX_MAN_THRUSTERS; i++)
-	{
-		shipp->thrusters_start[i] = 0;
-		shipp->thrusters_sounds[i] = -1;
-	}
-
-	// Alt classes
-	shipp->s_alt_classes.clear(); 
-
-	// Make sure these get set to -1
-	for(i=0;i<MAX_IFFS;i++)
-	{
-		for(j=0;j<MAX_IFFS;j++)
-		{
-			shipp->ship_iff_color[i][j] = -1;
-		}
-	}
-	shipp->armor_type_idx = sip->armor_type_idx;
-	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
-	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
-	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
-	shipp->debris_net_sig = 0;
 	sip->shockwave.damage_type_idx = sip->shockwave.damage_type_idx_sav;
-
-	// Reset special hitpoints. Fixes Mantis issue 2573
-	shipp->special_hitpoints = 0;
-	shipp->special_shield = -1;
-
-	// Reset special explosion too.
-	shipp->use_special_explosion = false;
 
 	// Team colors
 	shipp->team_name.assign( sip->default_team_name);
 	shipp->secondary_team_name = "<none>";
-	shipp->team_change_time = 0;
-	shipp->team_change_timestamp = 0;
 
 	shipp->autoaim_fov = sip->autoaim_fov;
 }
@@ -8725,6 +8797,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	Assert((ship_type >= 0) && (ship_type < Num_ship_classes));
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[n];
+	shipp->clear();
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 	if(strlen(sip->cockpit_pof_file))
@@ -8876,12 +8949,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	ship_make_create_time_unique(shipp);
 
-	// set the team select index to be -1
-	shipp->ts_index = -1;
-
-	shipp->wing_status_wing_index = -1;		// wing index (0-4) in wingman status gauge
-	shipp->wing_status_wing_pos = -1;		// wing position (0-5) in wingman status gauge
-
 	// first try at ABtrails -Bobboau
 	ship_init_afterburners(shipp);
 
@@ -8894,9 +8961,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	shipp->time_created = Missiontime;
 
-	shipp->radar_visible_since = -1;
-	shipp->radar_last_contact = -1;
-	
 	return objnum;
 }
 
@@ -10720,7 +10784,7 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 		return 0;
 	}
 
-	if ((objp->instance < 0) || (objp->instance > MAX_WEAPONS)){
+	if ((objp->instance < 0) || (objp->instance >= MAX_WEAPONS)){
 		return 0;
 	}
 
@@ -17643,6 +17707,10 @@ int ship_get_sound(object *objp, GameSoundsIndex id)
 {
 	Assert( objp != NULL );
 	Assert( id >= 0 && id < (int) Snds.size() );
+
+	// ugh, it's possible that we're an observer at this point
+	if (objp->type == OBJ_OBSERVER)
+		return id;
 
 	Assert( objp->type == OBJ_SHIP );
 

@@ -1135,7 +1135,7 @@ void popup_kill_any_active()
 void popup_change_text(const char *new_text)
 {
 	// copy the raw text
-	strncpy(Popup_info.raw_text,new_text,POPUP_MAX_CHARS);
+	strcpy_s(Popup_info.raw_text,new_text);
 
 	// recalculate all display information
 	popup_split_lines(&Popup_info,Popup_flags);

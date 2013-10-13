@@ -18,7 +18,7 @@
 #include "globalincs/globals.h"
 
 struct object;
-struct ship;
+class ship;
 
 // DAVE'S OFFICIAL DEFINITION OF AWACS
 

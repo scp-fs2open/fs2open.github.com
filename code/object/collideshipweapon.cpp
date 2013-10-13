@@ -328,7 +328,9 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		// see if we hit the shield
 		if (quadrant_num >= 0) {
 			// do the hit effect
-			add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+			if (mc_shield.shield_hit_tri != -1) {
+				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+			}
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield

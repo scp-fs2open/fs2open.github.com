@@ -34,6 +34,7 @@
 #include "cfile/cfile.h"
 #include "network/multi.h"
 #include "mod_table/mod_table.h"
+#include "pilotfile/pilotfile.h"
 
 
 // pilot pic image list stuff ( call pilot_load_pic_list() to make these valid )
@@ -121,7 +122,8 @@ void init_new_pilot(player *p, int reset)
 		pilot_set_random_squad_pic(p);
 	}
 
-	p->stats.init();	
+	p->stats.init();
+	Pilot.reset_stats();
 	
 	p->stats.score = 0;
 	p->stats.rank = RANK_ENSIGN;	
@@ -383,9 +385,9 @@ void player_set_squad(player *p, char *squad_name)
 	}
 
 	if (Game_mode & GM_MULTIPLAYER) {
-		strncpy(p->m_squad_name, squad_name, NAME_LENGTH+1);
+		strcpy_s(p->m_squad_name, squad_name);
 	} else {
-		strncpy(p->s_squad_name, squad_name, NAME_LENGTH+1);
+		strcpy_s(p->s_squad_name, squad_name);
 	}
 }
 
@@ -430,6 +432,7 @@ void player::reset()
 	memset(&ci, 0, sizeof(control_info));
 
 	stats.init();
+	Pilot.reset_stats();
 
 	friendly_hits = 0;
 	friendly_damage = 0.0f;
@@ -514,22 +517,21 @@ void player::reset()
 	player_was_multi = 0;
 }
 
-
 void player::assign(const player *other)
 {
 	int i;
 
-	strcpy(callsign, other->callsign);
-	strcpy(short_callsign, other->short_callsign);
+	strcpy_s(callsign, other->callsign);
+	strcpy_s(short_callsign, other->short_callsign);
 	short_callsign_width = other->short_callsign_width;
 
-	strcpy(image_filename, other->image_filename);
-	strcpy(s_squad_filename, other->s_squad_filename);
-	strcpy(s_squad_name, other->s_squad_name);
-	strcpy(m_squad_filename, other->m_squad_filename);
-	strcpy(m_squad_name, other->m_squad_name);
+	strcpy_s(image_filename, other->image_filename);
+	strcpy_s(s_squad_filename, other->s_squad_filename);
+	strcpy_s(s_squad_name, other->s_squad_name);
+	strcpy_s(m_squad_filename, other->m_squad_filename);
+	strcpy_s(m_squad_name, other->m_squad_name);
 
-	strcpy(current_campaign, other->current_campaign);
+	strcpy_s(current_campaign, other->current_campaign);
 	readyroom_listing_mode = other->readyroom_listing_mode;
 
 	flags = other->flags;
@@ -575,7 +577,7 @@ void player::assign(const player *other)
 	objnum = other->objnum;
 
 	memcpy(&bi, &other->bi, sizeof(button_info));
-	memcpy(&ci, &other->bi, sizeof(control_info));
+	memcpy(&ci, &other->ci, sizeof(control_info));
 
 	stats.assign(other->stats);
 
@@ -630,7 +632,7 @@ void player::assign(const player *other)
 	killer_objtype = other->killer_objtype;
 	killer_species = other->killer_species;
 	killer_weapon_index = other->killer_weapon_index;
-	strcpy(killer_parent_name, other->killer_parent_name);
+	strcpy_s(killer_parent_name, other->killer_parent_name);
 
 	check_for_all_alone_msg = other->check_for_all_alone_msg;
 

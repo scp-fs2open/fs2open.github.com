@@ -15,7 +15,7 @@
 #include "hud/hud.h"
 
 class player;
-struct ship;
+class ship;
 struct ai_info;
 
 #define HUD_COLOR_GREEN		0

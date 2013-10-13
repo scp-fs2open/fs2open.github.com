@@ -91,13 +91,13 @@ public:
 	char				short_callsign[CALLSIGN_LEN + 1];	// callsign truncated to SHORT_CALLSIGN_PIXEL_W pixels
 	int				short_callsign_width;					// useful for mutliplayer chat boxes.
 
-	char				image_filename[MAX_FILENAME_LEN];	// filename of the image for this pilot
-	char				s_squad_filename[MAX_FILENAME_LEN];	// filename of the squad image for this pilot
+	char				image_filename[MAX_FILENAME_LEN+1];	// filename of the image for this pilot
+	char				s_squad_filename[MAX_FILENAME_LEN+1];	// filename of the squad image for this pilot
 	char				s_squad_name[NAME_LENGTH + 1];			// pilot's squadron name
-	char				m_squad_filename[MAX_FILENAME_LEN];	// filename of the squad image for this pilot (multiplayer)
+	char				m_squad_filename[MAX_FILENAME_LEN+1];	// filename of the squad image for this pilot (multiplayer)
 	char				m_squad_name[NAME_LENGTH + 1];			// pilot's squadron name (multiplayer)
 
-	char				current_campaign[MAX_FILENAME_LEN]; // Name of the currently active campaign, or zero-length string if none
+	char				current_campaign[MAX_FILENAME_LEN+1]; // Name of the currently active campaign, or zero-length string if none
 	int				readyroom_listing_mode;
 
 	int				flags;

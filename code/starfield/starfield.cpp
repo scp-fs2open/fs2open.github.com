@@ -2123,7 +2123,7 @@ void stars_draw_background()
 
 	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(-1);
-		Nmodel_flags &= !MR_FORCE_TEXTURE;
+		Nmodel_flags &= ~MR_FORCE_TEXTURE;
 	}
 }
 

@@ -21,7 +21,7 @@
 // prototypes
 struct header;
 struct net_player;
-struct ship;
+class ship;
 
 // score for teams for this mission
 extern int Multi_team_score[MAX_TVT_TEAMS];

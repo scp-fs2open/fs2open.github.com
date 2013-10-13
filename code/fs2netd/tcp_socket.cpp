@@ -62,7 +62,7 @@ void FS2NetD_Disconnect()
 int FS2NetD_ConnectToServer(const char *host, const char *port)
 {
 	struct hostent *my_host = NULL;
-	char host_str[5];
+	char host_str[254]; // 253 is max domain name length: http://en.wikipedia.org/wiki/Domain_Name_System#Domain_name_syntax
 #ifdef SCP_UNIX
 	int my_error = 0;
 #endif
@@ -113,7 +113,7 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 		// want to keep this as clean and simple as possible and that means
 		// using an actual standard :)
 
-		strncpy( host_str, host, sizeof(host_str) );
+		strcpy_s( host_str, host );
 
 		// check that we aren't in a dotted format, some gethostbyname() implementations don't like that
 		// (NOTE: Yes, I'm aware that this is problematic if a host name uses an initial digit)

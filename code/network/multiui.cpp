@@ -1920,7 +1920,7 @@ void multi_join_send_join_request(int as_observer)
 	}
 	
 	// pxo squad info
-	strncpy(Multi_join_request.pxo_squad_name, Multi_tracker_squad_name, LOGIN_LEN);
+	strcpy_s(Multi_join_request.pxo_squad_name, Multi_tracker_squad_name);
 
 	// version of this server
 	Multi_join_request.version = MULTI_FS_SERVER_VERSION;
@@ -3680,8 +3680,8 @@ void multi_create_game_do()
 
 			Netgame.campaign_mode = MP_SINGLE_MISSION; //multiplayer single mission. meaning Single mission, not single player
 
-			strncpy(Game_current_mission_filename,almissionname,MAX_FILENAME_LEN ); // copying almissionname to Game_current_mission_filename
-			strncpy(Netgame.mission_name,almissionname,MAX_FILENAME_LEN);// copying almission name to netgame.mission_name
+			strcpy_s(Game_current_mission_filename,almissionname); // copying almissionname to Game_current_mission_filename
+			strcpy_s(Netgame.mission_name,almissionname);// copying almission name to netgame.mission_name
 
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING; //DTP must be set before a call to gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC) is done as it is below.
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);//DTP STart game
@@ -4942,8 +4942,8 @@ void multi_create_accept_hit()
 
 			// setup various filenames and mission names
 			multi_create_select_to_filename(Multi_create_list_select,selected_name);
-			strncpy( Game_current_mission_filename, selected_name, MAX_FILENAME_LEN );
-			strncpy(Netgame.mission_name,selected_name,MAX_FILENAME_LEN);			
+			strcpy_s( Game_current_mission_filename, selected_name);
+			strcpy_s(Netgame.mission_name,selected_name);
 
 			// NETLOG
 			ml_printf(NOX("Starting single mission %s, with %d players"), Game_current_mission_filename, multi_num_players());

@@ -773,11 +773,14 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	if (Interp_warp_bitmap < 0) {
 		if ( (!Interp_thrust_scale_subobj) && (tbase->GetTexture() < 0) ) {
-			// Don't draw invisible polygons.
-			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
-				return;
-			else
-				is_invisible = 1;
+			// Ignore the following if we're drawing in outline mode.  Fixes Mantis #2931.
+			if (!(Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET))) {
+				// Don't draw invisible polygons.
+				if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
+					return;
+				else
+					is_invisible = 1;
+			}
 		}
 	}
 
@@ -4765,7 +4768,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
-		strncpy(subname, sip->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
+		strcpy_s(subname, sip->subsystems[bank_obj].subobj_name);
 
 		ssp = GET_FIRST(&shipp->subsys_list);
 		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {

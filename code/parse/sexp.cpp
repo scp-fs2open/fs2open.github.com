@@ -657,8 +657,10 @@ sexp_oper Operators[] = {
 
 	//Variable Category
 	{ "modify-variable",				OP_MODIFY_VARIABLE,						2,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "variable-array-get",				OP_GET_VARIABLE_BY_INDEX,				1,	1,			SEXP_INTEGER_OPERATOR,	},
-	{ "variable-array-set",				OP_SET_VARIABLE_BY_INDEX,				2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "get-variable-by-index",			OP_GET_VARIABLE_BY_INDEX,				1,	1,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
+	{ "set-variable-by-index",			OP_SET_VARIABLE_BY_INDEX,				2,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "copy-variable-from-index",		OP_COPY_VARIABLE_FROM_INDEX,			2,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "copy-variable-between-indexes",	OP_COPY_VARIABLE_BETWEEN_INDEXES,		2,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "int-to-string",					OP_INT_TO_STRING,						2,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-concatenate",				OP_STRING_CONCATENATE,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-get-substring",			OP_STRING_GET_SUBSTRING,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -871,6 +873,8 @@ void add_block_variable(const char *text, const char *var_name, int type, int in
 void sexp_modify_variable(int node);
 int sexp_get_variable_by_index(int node);
 void sexp_set_variable_by_index(int node);
+void sexp_copy_variable_from_index(int node);
+void sexp_copy_variable_between_indexes(int node);
 
 SCP_vector<char*> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
@@ -3267,21 +3271,25 @@ int get_sexp()
 
 			// maybe replace deprecated names
 			if (!stricmp(token, "set-ship-position"))
-				strcpy(token, "set-object-position");
+				strcpy_s(token, "set-object-position");
 			else if (!stricmp(token, "set-ship-facing"))
-				strcpy(token, "set-object-facing");
+				strcpy_s(token, "set-object-facing");
 			else if (!stricmp(token, "set-ship-facing-object"))
-				strcpy(token, "set-object-facing-object");
+				strcpy_s(token, "set-object-facing-object");
 			else if (!stricmp(token, "ai-chase-any-except"))
-				strcpy(token, "ai-chase-any");
+				strcpy_s(token, "ai-chase-any");
 			else if (!stricmp(token, "change-ship-model"))
-				strcpy(token, "change-ship-class");
+				strcpy_s(token, "change-ship-class");
 			else if (!stricmp(token, "radar-set-max-range"))
-				strcpy(token, "hud-set-max-targeting-range");
+				strcpy_s(token, "hud-set-max-targeting-range");
 			else if (!stricmp(token, "ship-subsys-vanished"))
-				strcpy(token, "ship-subsys-vanish");
+				strcpy_s(token, "ship-subsys-vanish");
 			else if (!stricmp(token, "directive-is-variable"))
-				strcpy(token, "directive-value");
+				strcpy_s(token, "directive-value");
+			else if (!stricmp(token, "variable-array-get"))
+				strcpy_s(token, "get-variable-by-index");
+			else if (!stricmp(token, "variable-array-set"))
+				strcpy_s(token, "set-variable-by-index");
 
 			op = get_operator_index(token);
 			if (op != -1) {
@@ -11510,15 +11518,15 @@ void sexp_cap_waypoint_speed(int n)
 
 /**
  * Causes a ship to jettison its cargo
+ * note that the 2nd arg (jettison delay) is not implemented
  */
 void sexp_jettison_cargo(int n)
 {
 	char *shipname;
-	int jettison_delay, ship_index;	
+	int ship_index;
 
 	// get some data
 	shipname = CTEXT(n);
-	jettison_delay = eval_num(CDR(n));
 
 	// lookup the ship
 	ship_index = ship_name_lookup(shipname);
@@ -11526,6 +11534,7 @@ void sexp_jettison_cargo(int n)
 		return;
 	object *parent_objp = &Objects[Ships[ship_index].objnum];
 
+	// note: skipping over the unimplemented "jettison delay"
 	n = CDDR(n);
 
 	// no arguments - jettison all docked objects
@@ -17471,7 +17480,6 @@ void sexp_add_remove_escort(int node)
 {
 	int sindex;
 	int flag;
-	char *whee;
 
 	// get the firing ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -17483,7 +17491,6 @@ void sexp_add_remove_escort(int node)
 	}
 
 	// determine whether to add or remove it
-	whee = CTEXT(CDR(node));
 	flag = eval_num(CDR(node));
 
 	// add/remove
@@ -18679,7 +18686,7 @@ void sexp_remove_weapons(int node)
 		weapon_info_index = weapon_info_lookup(CTEXT(node));
 		if (weapon_info_index == -1) {
 			char *buf = CTEXT(node); 
-			mprintf(("Remove-weapons attempted to remove %s. Weapon not found. Remove-weapons will remove all weapons currently in the mission", buf)); 
+			mprintf(("Remove-weapons attempted to remove %s. Weapon not found. Remove-weapons will remove all weapons currently in the mission\n", buf)); 
 		}
 	}
 
@@ -19238,7 +19245,7 @@ void sexp_int_to_string(int n)
 	int i, sexp_variable_index;
 	char new_text[TOKEN_LENGTH];
 
-	// Only do single player of multi host
+	// Only do single player or multi host
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
@@ -19272,7 +19279,7 @@ void sexp_string_concatenate(int n)
 	int sexp_variable_index;
 	char new_text[TOKEN_LENGTH * 2];
 
-	// Only do single player of multi host
+	// Only do single player or multi host
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
@@ -19323,7 +19330,7 @@ void sexp_string_get_substring(int node)
 	int sexp_variable_index;
 	char new_text[TOKEN_LENGTH];
 
-	// Only do single player of multi host
+	// Only do single player or multi host
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
@@ -19376,7 +19383,7 @@ void sexp_string_set_substring(int node)
 	int sexp_variable_index;
 	char new_text[TOKEN_LENGTH * 2];
 
-	// Only do single player of multi host
+	// Only do single player or multi host
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
@@ -19449,12 +19456,14 @@ void sexp_string_set_substring(int node)
 // breaks into the code or sends a warning
 void sexp_debug(int node)
 {
-	int no_release_message; 
 	int i;
 	char *id;
 	char temp_buf[MESSAGE_LENGTH] = {""};
 
+	#ifdef NDEBUG
+	int no_release_message;
 	no_release_message = is_sexp_true(node); 
+	#endif
 
 	node = CDR(node); 
 	Assertion (node >= 0, "No message defined in debug SEXP"); 
@@ -21872,6 +21881,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_COPY_VARIABLE_FROM_INDEX:
+				sexp_copy_variable_from_index(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_COPY_VARIABLE_BETWEEN_INDEXES:
+				sexp_copy_variable_between_indexes(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_TIME_SHIP_DESTROYED:
 				sexp_val = sexp_time_destroyed(node);
 				break;
@@ -24083,7 +24102,7 @@ int run_sexp(const char* sexpression)
 	int n, i, sexp_val = UNINITIALIZED;
 	char buf[8192];
 
-	strncpy(buf, sexpression, 8192);
+	strcpy_s(buf, sexpression);
 
 	// HACK: ! -> "
 	for (i = 0; i < (int)strlen(buf); i++)
@@ -24666,6 +24685,8 @@ int query_operator_return_type(int op)
 		case OP_ALTER_SHIP_FLAG:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_NEBULA_CHANGE_PATTERN:
+		case OP_COPY_VARIABLE_FROM_INDEX:
+		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -25171,7 +25192,15 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_GET_VARIABLE_BY_INDEX:
+		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 			return OPF_POSITIVE;
+
+		case OP_COPY_VARIABLE_FROM_INDEX:
+			if (argnum == 0) {
+				return OPF_POSITIVE;
+			} else {
+				return OPF_VARIABLE_NAME;
+			}
 
 		case OP_SET_VARIABLE_BY_INDEX:
 			if (argnum == 0) {
@@ -27411,7 +27440,7 @@ void multi_sexp_modify_variable()
 	if ( (variable_index >= 0) && (variable_index < MAX_SEXP_VARIABLES) ) {
 		// maybe create it first
 		if (!(Sexp_variables[variable_index].type & SEXP_VARIABLE_SET)) {
-			mprintf(("Warning; received multi packet for variable index which is not set!  Assuming this should be an array block variable..."));
+			mprintf(("Warning; received multi packet for variable index which is not set!  Assuming this should be an array block variable...\n"));
 			sexp_add_array_block_variable(variable_index, can_construe_as_integer(value));
 		}
 
@@ -27428,7 +27457,7 @@ void sexp_modify_variable(int n)
 
 	Assert(n >= 0);
 
-	// Only do single player of multi host
+	// Only do single player or multi host
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
@@ -27489,7 +27518,7 @@ void sexp_set_variable_by_index(int node)
 
 	Assert(node >= 0);
 
-	// Only do single player of multi host
+	// Only do single player or multi host
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
@@ -27497,9 +27526,9 @@ void sexp_set_variable_by_index(int node)
 	sexp_variable_index = eval_num(node);
 
 	// check range
-	if (sexp_variable_index < 0 || sexp_variable_index > MAX_SEXP_VARIABLES)
+	if (sexp_variable_index < 0 || sexp_variable_index >= MAX_SEXP_VARIABLES)
 	{
-		Warning(LOCATION, "variable-array-set: sexp variable index %d out of range!  min is 0; max is %d", sexp_variable_index, MAX_SEXP_VARIABLES - 1);
+		Warning(LOCATION, "set-variable-by-index: sexp variable index %d out of range!  min is 0; max is %d", sexp_variable_index, MAX_SEXP_VARIABLES - 1);
 		return;
 	}
 
@@ -27544,28 +27573,135 @@ int sexp_get_variable_by_index(int node)
 	sexp_variable_index = eval_num(node);
 
 	// check range
-	if (sexp_variable_index < 0 || sexp_variable_index > MAX_SEXP_VARIABLES)
+	if (sexp_variable_index < 0 || sexp_variable_index >= MAX_SEXP_VARIABLES)
 	{
-		Warning(LOCATION, "variable-array-get: sexp variable index %d out of range!  min is 0; max is %d", sexp_variable_index, MAX_SEXP_VARIABLES - 1);
+		Warning(LOCATION, "get-variable-by-index: sexp variable index %d out of range!  min is 0; max is %d", sexp_variable_index, MAX_SEXP_VARIABLES - 1);
 		return 0;
 	}
 
 	if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NOT_USED)
 	{
-		mprintf(("warning: retrieving a value from a sexp variable which is not in use!"));
+		mprintf(("warning: retrieving a value from a sexp variable which is not in use!\n"));
 	}
 	else if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET))
 	{
-		mprintf(("warning: retrieving a value from a sexp variable which is not set!"));
+		mprintf(("warning: retrieving a value from a sexp variable which is not set!\n"));
 	}
 
 	if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING)
 	{
-		mprintf(("warning: variable %d is a string but it is not possible to return a string value through a sexp!", sexp_variable_index));
+		mprintf(("warning: variable %d is a string but it is not possible to return a string value through a sexp!\n", sexp_variable_index));
 		return SEXP_NAN_FOREVER;
 	}
 
 	return atoi(Sexp_variables[sexp_variable_index].text);
+}
+
+// Goober5000
+// (yes, this reuses a lot of code, but it's a major pain to consolidate it)
+void sexp_copy_variable_from_index(int node)
+{
+	int from_index;
+	int to_index;
+
+	Assert(node >= 0);
+
+	// Only do single player or multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	// get sexp_variable index
+	from_index = eval_num(node);
+
+	// check range
+	if (from_index < 0 || from_index >= MAX_SEXP_VARIABLES)
+	{
+		Warning(LOCATION, "copy-variable-from-index: sexp variable index %d out of range!  min is 0; max is %d", from_index, MAX_SEXP_VARIABLES - 1);
+		return;
+	}
+
+	if (Sexp_variables[from_index].type & SEXP_VARIABLE_NOT_USED)
+	{
+		mprintf(("warning: retrieving a value from a sexp variable which is not in use!\n"));
+	}
+	else if (!(Sexp_variables[from_index].type & SEXP_VARIABLE_SET))
+	{
+		mprintf(("warning: retrieving a value from a sexp variable which is not set!\n"));
+	}
+
+	// now get the variable we are modifying
+	to_index = atoi(Sexp_nodes[CDR(node)].text);
+
+	// verify variable set
+	Assert(Sexp_variables[to_index].type & SEXP_VARIABLE_SET);
+
+	// verify matching types
+	if ( ((Sexp_variables[from_index].type & SEXP_VARIABLE_NUMBER) && !(Sexp_variables[to_index].type & SEXP_VARIABLE_NUMBER))
+		|| ((Sexp_variables[from_index].type & SEXP_VARIABLE_STRING) && !(Sexp_variables[to_index].type & SEXP_VARIABLE_STRING)) )
+	{
+		Warning(LOCATION, "copy-variable-from-index: cannot copy variables of different types!  source = '%s', destination = '%s'", Sexp_variables[from_index].variable_name, Sexp_variables[to_index].variable_name);
+		return;
+	}
+
+	// assign to variable
+	sexp_modify_variable(Sexp_variables[from_index].text, to_index);
+}
+
+// Goober5000
+// (yes, this reuses a lot of code, but it's a major pain to consolidate it)
+// (and yes, that reused a comment :p)
+void sexp_copy_variable_between_indexes(int node)
+{
+	int from_index;
+	int to_index;
+
+	Assert(node >= 0);
+
+	// Only do single player or multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	// get sexp_variable indexes
+	from_index = eval_num(node);
+	to_index = eval_num(CDR(node));
+
+	// check ranges
+	if (from_index < 0 || from_index >= MAX_SEXP_VARIABLES)
+	{
+		Warning(LOCATION, "copy-variable-between-indexes: sexp variable index %d out of range!  min is 0; max is %d", from_index, MAX_SEXP_VARIABLES - 1);
+		return;
+	}
+	if (to_index < 0 || to_index >= MAX_SEXP_VARIABLES)
+	{
+		Warning(LOCATION, "copy-variable-between-indexes: sexp variable index %d out of range!  min is 0; max is %d", to_index, MAX_SEXP_VARIABLES - 1);
+		return;
+	}
+
+	if (Sexp_variables[from_index].type & SEXP_VARIABLE_NOT_USED)
+	{
+		mprintf(("warning: retrieving a value from a sexp variable which is not in use!\n"));
+	}
+	else if (!(Sexp_variables[from_index].type & SEXP_VARIABLE_SET))
+	{
+		mprintf(("warning: retrieving a value from a sexp variable which is not set!\n"));
+	}
+
+	if (!(Sexp_variables[to_index].type & SEXP_VARIABLE_SET))
+	{
+		// well phooey.  go ahead and create it
+		sexp_add_array_block_variable(to_index, (Sexp_variables[from_index].type & SEXP_VARIABLE_NUMBER) != 0);
+	}
+
+	// verify matching types
+	if ( ((Sexp_variables[from_index].type & SEXP_VARIABLE_NUMBER) && !(Sexp_variables[to_index].type & SEXP_VARIABLE_NUMBER))
+		|| ((Sexp_variables[from_index].type & SEXP_VARIABLE_STRING) && !(Sexp_variables[to_index].type & SEXP_VARIABLE_STRING)) )
+	{
+		Warning(LOCATION, "copy-variable-between-indexes: cannot copy variables of different types!  source = '%s', destination = '%s'", Sexp_variables[from_index].variable_name, Sexp_variables[to_index].variable_name);
+		return;
+	}
+
+	// assign to variable
+	sexp_modify_variable(Sexp_variables[from_index].text, to_index);
 }
 
 // Different type needed for Fred (1) allow modification of type (2) no callback required
@@ -28243,6 +28379,8 @@ int get_subcategory(int sexp_id)
 		case OP_MODIFY_VARIABLE:
 		case OP_GET_VARIABLE_BY_INDEX:
 		case OP_SET_VARIABLE_BY_INDEX:
+		case OP_COPY_VARIABLE_FROM_INDEX:
+		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_INT_TO_STRING:
 		case OP_STRING_CONCATENATE:
 		case OP_STRING_GET_SUBSTRING:
@@ -28254,7 +28392,6 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SUPPORT_SHIP:
 		case OP_SCRIPT_EVAL:
 			return CHANGE_SUBCATEGORY_OTHER;
-
 
 		case OP_NUM_SHIPS_IN_BATTLE:
 		case OP_NUM_SHIPS_IN_WING:
@@ -28769,7 +28906,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_GOAL_FALSE, "Previous Mission Goal False (Boolean operator)\r\n"
@@ -28778,7 +28915,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_GOAL_INCOMPLETE, "Previous Mission Goal Incomplete (Boolean operator)\r\n"
@@ -28787,7 +28924,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the goal in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_EVENT_TRUE, "Previous Mission Event True (Boolean operator)\r\n"
@@ -28796,7 +28933,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_EVENT_FALSE, "Previous Mission Event False (Boolean operator)\r\n"
@@ -28805,7 +28942,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_PREVIOUS_EVENT_INCOMPLETE, "Previous Mission Event Incomplete (Boolean operator)\r\n"
@@ -28814,7 +28951,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
 		"\t2:\tName of the event in the mission.\r\n"
-		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission." },
 
 	{ OP_GOAL_TRUE_DELAY, "Mission Goal True (Boolean operator)\r\n"
@@ -29299,22 +29436,36 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of Variable.\r\n"
 		"\t2:\tValue to be set." },
 
-	{ OP_GET_VARIABLE_BY_INDEX, "variable-array-get\r\n"
+	{ OP_GET_VARIABLE_BY_INDEX, "get-variable-by-index (originally variable-array-get)\r\n"
 		"\tGets the value of the variable specified by the given index.  This is an alternate way "
 		"to access variables rather than by their names, and it enables cool features such as "
 		"arrays and pointers.\r\n\r\nPlease note that only numeric variables are supported.  Any "
 		"attempt to access a string variable will result in a value of SEXP_NAN_FOREVER being returned.\r\n\r\n"
 		"Takes 1 argument...\r\n"
-		"\t1:\tIndex of variable, from 0 to 99." },
+		"\t1:\tIndex of variable, from 0 to MAX_SEXP_VARIABLES - 1." },
 
-	{ OP_SET_VARIABLE_BY_INDEX, "variable-array-set\r\n"
+	{ OP_SET_VARIABLE_BY_INDEX, "set-variable-by-index (originally variable-array-set)\r\n"
 		"\tSets the value of the variable specified by the given index.  This is an alternate way "
 		"to modify variables rather than by their names, and it enables cool features such as "
-		"arrays and pointers.\r\n\r\nIn contrast to variable-array-get, note that this sexp "
+		"arrays and pointers.\r\n\r\nIn contrast to get-variable-by-index, note that this sexp "
 		"*does* allow the modification of string variables.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tIndex of variable, from 0 to 99.\r\n"
+		"\t1:\tIndex of variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
 		"\t2:\tValue to be set." },
+
+	{ OP_COPY_VARIABLE_FROM_INDEX, "copy-variable-from-index\r\n"
+		"\tRetrieves the value of the variable specified by the given index and stores it in another variable.  "
+		"This is very similar to variable-array-get, except the result is stored in a new variable rather than "
+		"being returned by value.  One important difference is that this sexp can be used to copy string variables as well as numeric variables.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
+		"\t2:\tDestination variable.  The type of this variable must match the type of the variable referenced by the index." },
+
+	{ OP_COPY_VARIABLE_BETWEEN_INDEXES, "copy-variable-between-indexes\r\n"
+		"\tRetrieves the value of the variable specified by the first index and stores it in the variable specified by the second index.  The first variable is not modified.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
+		"\t2:\tIndex of destination variable, from 0 to MAX_SEXP_VARIABLES - 1.  The types of both variables must match." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "

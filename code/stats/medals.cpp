@@ -544,7 +544,7 @@ void blit_label(char *label, int num)
 	// can't translate in table cuz the names are used in comparisons
 	if (Lcl_gr) {
 		char translated_label[256];
-		strncpy(translated_label, label, 256);
+		strcpy_s(translated_label, label);
 		lcl_translate_medal_name_gr(translated_label);
 
 		// set correct string

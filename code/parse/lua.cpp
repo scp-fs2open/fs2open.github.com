@@ -16,6 +16,7 @@
 #include "hud/hudescort.h"
 #include "hud/hudconfig.h"
 #include "hud/hudgauges.h"
+#include "hud/hudets.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -1202,7 +1203,7 @@ ADE_FUNC(read, l_File, "number or string, ...",
 			else if(!stricmp(fmt, "*l"))
 			{
 				char buf[10240];
-				size_t i;
+				size_t idx;
 				if(cfgets(buf, (int)(sizeof(buf)/sizeof(char)), cfp) == NULL)
 				{
 					lua_pushnil(L);
@@ -1212,10 +1213,10 @@ ADE_FUNC(read, l_File, "number or string, ...",
 					// Strip all newlines so this works like the Lua original
 					// http://www.lua.org/source/5.1/liolib.c.html#g_read
 					// Note: we also strip carriage return in WMC's implementation
-					for (i = 0; i < strlen(buf); i++)
+					for (idx = 0; idx < strlen(buf); idx++)
 					{
-						if ( buf[i] == '\n' || buf[i] == '\r' )
-							buf[i] = '\0';
+						if ( buf[idx] == '\n' || buf[idx] == '\r' )
+							buf[idx] = '\0';
 					}
 
 					lua_pushstring(L, buf);
@@ -1344,57 +1345,57 @@ ade_obj<int> l_Font("font", "font handle");
 
 ADE_FUNC(__tostring, l_Font, NULL, "Filename of font", "string", "Font filename, or an empty string if the handle is invalid")
 {
-	int font = -1;
-	if(!ade_get_args(L, "o", l_Font.Get(&font)))
+	int font_num = -1;
+	if(!ade_get_args(L, "o", l_Font.Get(&font_num)))
 		return ade_set_error(L, "s", "");
 
-	if(font < 0 || font >= Num_fonts)
+	if(font_num < 0 || font_num >= Num_fonts)
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", Fonts[font].filename);
+	return ade_set_args(L, "s", Fonts[font_num].filename);
 }
 
 ADE_VIRTVAR(Filename, l_Font, "string", "Filename of font (including extension)", "string", NULL)
 {
-	int font = -1;
+	int font_num = -1;
 	char *newname = NULL;
-	if(!ade_get_args(L, "o|s", l_Font.Get(&font), &newname))
+	if(!ade_get_args(L, "o|s", l_Font.Get(&font_num), &newname))
 		return ade_set_error(L, "s", "");
 
-	if(font < 0 || font >= Num_fonts)
+	if(font_num < 0 || font_num >= Num_fonts)
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR) {
-		strncpy(Fonts[font].filename, newname, sizeof(Fonts[font].filename)-1);
+		strncpy(Fonts[font_num].filename, newname, sizeof(Fonts[font_num].filename)-1);
 	}
 
-	return ade_set_args(L, "s", Fonts[font].filename);
+	return ade_set_args(L, "s", Fonts[font_num].filename);
 }
 
 ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)", "number", "Font height, or 0 if the handle is invalid")
 {
-	int font = -1;
+	int font_num = -1;
 	int newheight = -1;
-	if(!ade_get_args(L, "o|i", l_Font.Get(&font), &newheight))
+	if(!ade_get_args(L, "o|i", l_Font.Get(&font_num), &newheight))
 		return ade_set_error(L, "i", 0);
 
-	if(font < 0 || font >= Num_fonts)
+	if(font_num < 0 || font_num >= Num_fonts)
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR && newheight > 0) {
-		Fonts[font].h = newheight;
+		Fonts[font_num].h = newheight;
 	}
 
-	return ade_set_args(L, "i", Fonts[font].h);
+	return ade_set_args(L, "i", Fonts[font_num].h);
 }
 
 ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
-	int font;
-	if(!ade_get_args(L, "o", l_Font.Get(&font)))
+	int font_num;
+	if(!ade_get_args(L, "o", l_Font.Get(&font_num)))
 		return ADE_RETURN_NIL;
 
-	if(font < 0 || font >= Num_fonts)
+	if(font_num < 0 || font_num >= Num_fonts)
 		return ADE_RETURN_FALSE;
 	else
 		return ADE_RETURN_TRUE;
@@ -2201,7 +2202,7 @@ private:
 	int dock_id;
 
 public:
-	dockingbay_h(polymodel *pm, int dock_id) : model_h(pm), dock_id(dock_id) {}
+	dockingbay_h(polymodel *pm, int dock_idx) : model_h(pm), dock_id(dock_idx) {}
 	dockingbay_h() : model_h(), dock_id(-1){}
 
 	bool IsValid()
@@ -4250,6 +4251,33 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon class", "number", "The new cargo size or -1 on error")
+{
+	int idx;
+	float newVal = -1.0f;
+	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &newVal))
+		return ade_set_args(L, "f", -1.0f);
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return ade_set_args(L, "f", -1.0f);
+	
+	weapon_info *info = &Weapon_info[idx];
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newVal > 0)
+		{
+			info->cargo_size = newVal;
+		}
+		else
+		{
+			LuaError(L, "Cargo size must be bigger than zero, got %f!", newVal);
+		}
+	}
+
+	return ade_set_args(L, "f", info->cargo_size);
+}
+
 ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;
@@ -5906,6 +5934,29 @@ ADE_VIRTVAR(Type, l_Shipclass, "shiptype", "Ship class type", "shiptype", "Ship 
 	return ade_set_args(L, "o", l_Shiptype.Set(Ship_info[idx].class_type));
 }
 
+ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "string", "Alternate string or empty string if handle is invalid")
+{
+	char* newName = NULL;
+	int idx;
+	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &newName))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR && newName != NULL) {
+		if (strlen(newName) >= NAME_LENGTH)
+		{
+			LuaError(L, "Cannot set alternate name value to '%s' because it is too long, maximum length is %d!", newName, NAME_LENGTH - 1);
+			return ade_set_error(L, "s", "");
+		}
+
+		strcpy_s(Ship_info[idx].alt_name, newName);
+	}
+
+	return ade_set_args(L, "s", Ship_info[idx].alt_name);
+}
+
 ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;
@@ -5936,7 +5987,6 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 
 	return ade_set_args(L, "b", b);
 }
-
 
 ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Bank %, Zoom multiplier]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
 {
@@ -6319,7 +6369,7 @@ struct ship_banktype_h : public object_h
 		sw = NULL;
 		type = SWH_NONE;
 	}
-	ship_banktype_h(object *objp, ship_weapon *wpn, int in_type) : object_h(objp) {
+	ship_banktype_h(object *objp_in, ship_weapon *wpn, int in_type) : object_h(objp_in) {
 		sw = wpn;
 		type = in_type;
 	}
@@ -6336,7 +6386,7 @@ struct ship_bank_h : public ship_banktype_h
 	ship_bank_h() : ship_banktype_h() {
 		bank = -1;
 	}
-	ship_bank_h(object *objp, ship_weapon *wpn, int in_type, int in_bank) : ship_banktype_h(objp, wpn, in_type) {
+	ship_bank_h(object *objp_in, ship_weapon *wpn, int in_type, int in_bank) : ship_banktype_h(objp_in, wpn, in_type) {
 		bank = in_bank;
 	}
 
@@ -6518,6 +6568,38 @@ ADE_VIRTVAR(Armed, l_WeaponBank, "boolean", "Weapon armed status. Does not take 
 	return ade_set_error(L, "b", false);
 }
 
+ADE_VIRTVAR(Capacity, l_WeaponBank, "number", "The actual capacity of a weapon bank as specified in the table", "number", "The capacity or -1 if handle is invalid")
+{
+	ship_bank_h *bh = NULL;
+	int newCapacity = -1;
+	if(!ade_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), &newCapacity))
+		return ade_set_error(L, "i", -1);
+
+	if(!bh->IsValid())
+		return ade_set_error(L, "i", -1);
+
+	switch(bh->type)
+	{
+		case SWH_PRIMARY:
+			if(ADE_SETTING_VAR && newCapacity > 0) {
+				bh->sw->primary_bank_capacity[bh->bank] = newCapacity;
+			}
+			return ade_set_args(L, "i", bh->sw->primary_bank_capacity[bh->bank]);
+		case SWH_SECONDARY:
+			if(ADE_SETTING_VAR && newCapacity > 0) {
+				bh->sw->secondary_bank_capacity[bh->bank] = newCapacity;
+			}
+			return ade_set_args(L, "i", bh->sw->secondary_bank_capacity[bh->bank]);
+		case SWH_TERTIARY:
+			if(ADE_SETTING_VAR && newCapacity > 0) {
+				bh->sw->tertiary_bank_capacity = newCapacity;
+			}
+			return ade_set_args(L, "i", bh->sw->tertiary_bank_capacity);
+	}
+	
+	return ade_set_error(L, "i", -1);
+}
+
 ADE_FUNC(isValid, l_WeaponBank, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	ship_bank_h *bh;
@@ -6694,7 +6776,7 @@ struct ship_subsys_h : public object_h
 	ship_subsys_h() : object_h() {
 		ss = NULL;
 	}
-	ship_subsys_h(object *objp, ship_subsys *sub) : object_h(objp) {
+	ship_subsys_h(object *objp_in, ship_subsys *sub) : object_h(objp_in) {
 		ss = sub;
 	}
 };
@@ -7199,6 +7281,28 @@ ADE_FUNC(isTurret, l_Subsystem, NULL, "Determines if this subsystem is a turret"
 
 	return ade_set_args(L, "b", sso->ss->system_info->type == SUBSYSTEM_TURRET);
 }
+
+ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object is in the turrets FOV", "boolean", "true if in FOV, false if not, nil on error or if subsystem is not a turret ")
+{
+	ship_subsys_h *sso;
+	object_h *newh;
+	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&newh)))
+		return ADE_RETURN_NIL;
+
+	if (!sso->IsValid() || !newh->IsValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
+		return ADE_RETURN_NIL;
+
+	vec3d	tpos,tvec;
+	ship_get_global_turret_info(sso->objp, sso->ss->system_info, &tpos, &tvec);
+
+	int in_fov = object_in_turret_fov(newh->objp,sso->ss,&tvec,&tpos,vm_vec_dist(&newh->objp->pos,&tpos));
+
+	if (in_fov)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f);
 ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]", "Fires weapon on turret", NULL, NULL)
 {
@@ -9310,6 +9414,84 @@ ADE_FUNC(getTimeUntilExplosion, l_Ship, NULL, "Returns the time in seconds until
 	return ade_set_args(L, "f", (i2fl(time_until) / 1000.0f));
 }
 
+ADE_FUNC(getCallsign, l_Ship, NULL, "Gets the callsign of the ship in the current mission", "string", "The callsign or an empty string if the ship doesn't have a callsign or an error occurs")
+{
+	object_h *objh = NULL;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (shipp->callsign_index < 0)
+		return ade_set_args(L, "s", "");
+	
+	char temp_callsign[NAME_LENGTH];
+	
+	*temp_callsign = 0;
+	mission_parse_lookup_callsign_index(shipp->callsign_index, temp_callsign);
+
+	if (*temp_callsign)
+		return ade_set_args(L, "s", temp_callsign);
+	else
+		return ade_set_args(L, "s", "");
+}
+
+ADE_FUNC(getAltClassName, l_Ship, NULL, "Gets the alternate class name of the ship", "string", "The alternate class name or an empty string if the ship doesn't have such a thing or an error occurs")
+{
+	object_h *objh = NULL;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (shipp->alt_type_index < 0)
+		return ade_set_args(L, "s", "");
+	
+	char temp[NAME_LENGTH];
+	
+	*temp = 0;
+	mission_parse_lookup_alt_index(shipp->alt_type_index, temp);
+
+	if (*temp)
+		return ade_set_args(L, "s", temp);
+	else
+		return ade_set_args(L, "s", "");
+}
+
+ADE_FUNC(getMaximumSpeed, l_Ship, "[number energy = 0.333]", "Gets the maximum speed of the ship with the given energy on the engines", "number", "The maximum speed or -1 on error")
+{
+	object_h *objh = NULL;
+	float energy = 0.333f;
+
+	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &energy)) {
+		return ade_set_error(L, "f", -1.0f);
+	}
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (energy < 0.0f || energy > 1.0f)
+	{
+		LuaError(L, "Invalid energy level %f! Needs to be in [0, 1].", energy);
+
+		return ade_set_args(L, "f", -1.0f);
+	}
+	else
+	{
+		return ade_set_args(L, "f", ets_get_max_speed(objh->objp, energy));
+	}
+}
+
 //**********HANDLE: Weapon
 ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
 
@@ -11077,11 +11259,11 @@ public:
 		part = NULL;
 	}
 
-	particle_h(particle *particle)
+	particle_h(particle *part_p)
 	{
-		this->part = particle;
-		if (particle != NULL)
-			this->sig = particle->signature;
+		this->part = part_p;
+		if (part_p != NULL)
+			this->sig = part_p->signature;
 	}
 
 	particle* Get()
@@ -14171,7 +14353,7 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 	} else {
 		// due safety checks of the game_start_mission() function allow only main menu for now.
 		if (gameseq_get_state(gameseq_get_depth()) == GS_STATE_MAIN_MENU) {
-			strncpy( Game_current_mission_filename, str, MAX_FILENAME_LEN );
+			strcpy_s( Game_current_mission_filename, str );
 			if (b == true) {
 				// start mission - go via briefing screen
 				gameseq_post_event(GS_EVENT_START_GAME);
@@ -14555,7 +14737,7 @@ ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enable
 //It should also be updated as new types are added to Lua.
 int ade_set_object_with_breed(lua_State *L, int obj_idx)
 {
-	if(obj_idx < 0 || obj_idx > MAX_OBJECTS)
+	if(obj_idx < 0 || obj_idx >= MAX_OBJECTS)
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	object *objp = &Objects[obj_idx];

@@ -5,8 +5,8 @@
  */ 
 
 //#include "mission.h"
-#include "frmFRED2.h"
-#include "base/wxFRED_base.h"
+#include "frmfred2.h"
+#include "base/wxfred_base.h"
 
 #include "wxfred2.h"
 

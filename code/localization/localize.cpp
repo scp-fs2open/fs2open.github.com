@@ -308,6 +308,10 @@ void parse_stringstbl(const char *filename)
 		stuff_int(&index);
 		stuff_string(buf, F_NAME, sizeof(buf));
 
+		if (index < 0 || index >= XSTR_SIZE) {
+			Error(LOCATION, "Invalid strings table index specified (%i)", index);
+		}
+
 		if (Lcl_pl)
 			lcl_fix_polish(buf);
 
@@ -380,17 +384,15 @@ void parse_stringstbl(const char *filename)
 		buf[z] = 0;
 
 		// write into Xstr_table
-		if (index >= 0 && index < XSTR_SIZE) {
-			if ( Parsing_modular_table && (Xstr_table[index].str != NULL) ) {
-				vm_free((void *) Xstr_table[index].str);
-				Xstr_table[index].str = NULL;
-			}
-
-			if (Xstr_table[index].str != NULL)
-				Warning(LOCATION, "Strings table index %d used more than once", index);
-
-			Xstr_table[index].str = vm_strdup(buf);
+		if ( Parsing_modular_table && (Xstr_table[index].str != NULL) ) {
+			vm_free((void *) Xstr_table[index].str);
+			Xstr_table[index].str = NULL;
 		}
+
+		if (Xstr_table[index].str != NULL)
+			Warning(LOCATION, "Strings table index %d used more than once", index);
+
+		Xstr_table[index].str = vm_strdup(buf);
 
 		// read offset information, assume 0 if nonexistant
 		if (p_offset != NULL) {
@@ -1048,7 +1050,7 @@ int lcl_ext_get_id(const char *xstr, int *out)
 	buf[pnext - p] = 0;
 
 	// get the value and we're done
-	*out = atoi(pnext);
+	*out = atoi(buf);
 
 	// success
 	return 1;

@@ -15,7 +15,7 @@
 #include "graphics/2d.h"
 #include "hud/hud.h"
 
-struct ship;
+class ship;
 struct ship_subsys;
 struct object;
 struct weapon_info;

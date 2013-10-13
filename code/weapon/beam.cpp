@@ -1405,6 +1405,7 @@ void beam_render_muzzle_glow(beam *b)
 	beam_weapon_info *bwi = &Weapon_info[b->weapon_info_index].b_info;
 	float rad, pct, rand_val;
 	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+	pt.flags = 0;    // avoid potential read of uninit var
 
 	// if we don't have a glow bitmap
 	if (bwi->beam_glow.first_frame < 0)
@@ -2404,7 +2405,9 @@ int beam_collide_ship(obj_pair *pair)
 		{
 			// do the hit effect
 			if (shield_collision) {
-				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+				if (mc_shield.shield_hit_tri != -1) {
+					add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+				}
 			} else {
 				/* TODO */;
 			}

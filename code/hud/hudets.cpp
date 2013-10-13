@@ -138,23 +138,7 @@ void update_ets(object* objp, float fl_frametime)
 	// calculate the top speed of the ship based on the energy flow to engines
 	float y = Energy_levels[ship_p->engine_recharge_index];
 
-	// check for a shortcuts first before doing linear interpolation
-	if ( y == Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX] ){
-		ship_p->current_max_speed = sinfo_p->max_speed;
-	} else if ( y == 0.0f ){
-		ship_p->current_max_speed = 0.5f * sinfo_p->max_speed;
-	} else if ( y == 1.0f ){
-		ship_p->current_max_speed = sinfo_p->max_overclocked_speed;
-	} else {
-		// do a linear interpolation to find the current max speed, using points (0,1/2 default_max_speed) (.333,default_max_speed)
-		// x = x1 + (y-y1) * (x2-x1) / (y2-y1);
-		if ( y < Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX] ){
-			ship_p->current_max_speed =  0.5f*sinfo_p->max_speed + (y  * (0.5f*sinfo_p->max_speed) ) / Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX];
-		} else {
-			// do a linear interpolation to find the current max speed, using points (.333,default_max_speed) (1,max_overclock_speed)
-			ship_p->current_max_speed = sinfo_p->max_speed + (y - Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX]) * (sinfo_p->max_overclocked_speed - sinfo_p->max_speed) / (1.0f - Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX]);
-		}
-	}
+	ship_p->current_max_speed = ets_get_max_speed(objp, y);
 
 	// AL 11-15-97: Rules for engine strength affecting max speed:
 	//						1. if strength >= 0.5 no affect 
@@ -180,6 +164,35 @@ void update_ets(object* objp, float fl_frametime)
 			if ( Weapon_energy_cheat ){
 				ship_p->weapon_energy = sinfo_p->max_weapon_reserve;
 			}
+		}
+	}
+}
+
+float ets_get_max_speed(object* objp, float engine_energy)
+{
+	Assertion(objp != NULL, "Invalid object pointer passed!");
+	Assertion(objp->type == OBJ_SHIP, "Object needs to be a ship object!");
+	Assertion(engine_energy >= 0.0f && engine_energy <= 1.0f, "Invalid float passed, needs to be in [0, 1], was %f!", engine_energy);
+
+	ship* shipp = &Ships[objp->instance];
+
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	// check for a shortcuts first before doing linear interpolation
+	if ( engine_energy == Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX] ){
+		return sip->max_speed;
+	} else if ( engine_energy == 0.0f ){
+		return 0.5f * sip->max_speed;
+	} else if ( engine_energy == 1.0f ){
+		return sip->max_overclocked_speed;
+	} else {
+		// do a linear interpolation to find the current max speed, using points (0,1/2 default_max_speed) (.333,default_max_speed)
+		// x = x1 + (y-y1) * (x2-x1) / (y2-y1);
+		if ( engine_energy < Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX] ){
+			return 0.5f*sip->max_speed + (engine_energy  * (0.5f*sip->max_speed) ) / Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX];
+		} else {
+			// do a linear interpolation to find the current max speed, using points (.333,default_max_speed) (1,max_overclock_speed)
+			return sip->max_speed + (engine_energy - Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX]) * (sip->max_overclocked_speed - sip->max_speed) / (1.0f - Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX]);
 		}
 	}
 }

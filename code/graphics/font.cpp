@@ -389,7 +389,7 @@ int gr_create_font(char * typeface)
 	fp = cfopen( typeface, "rb", CFILE_NORMAL, CF_TYPE_ANY, localize );
 	if ( fp == NULL ) return -1;
 
-	strncpy( fnt->filename, typeface, MAX_FILENAME_LEN );
+	strcpy_s( fnt->filename, typeface );
 	cfread( &fnt->id, 4, 1, fp );
 	cfread( &fnt->version, sizeof(int), 1, fp );
 	cfread( &fnt->num_chars, sizeof(int), 1, fp );

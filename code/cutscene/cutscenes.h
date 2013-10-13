@@ -14,10 +14,6 @@
 #include "globalincs/pstypes.h"
 
 typedef struct cutscene_info {
-	cutscene_info() :
-		viewable(false)
-	{}
-
 	char	filename[MAX_FILENAME_LEN];
 	char	name[NAME_LENGTH];
 	char	*description;

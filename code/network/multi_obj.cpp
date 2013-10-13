@@ -1299,7 +1299,8 @@ void multi_oo_process_all(net_player *pl)
 	}
 		
 	idx = 0;
-	while((OO_ship_index[idx] >= 0) && (idx < MAX_SHIPS)){
+	// rely on logical-AND shortcut evaluation to prevent array out-of-bounds read of OO_ship_index[idx]
+	while((idx < MAX_SHIPS) && (OO_ship_index[idx] >= 0)){
 		// if this guy is over his datarate limit, do nothing
 		if(multi_oo_rate_exceeded(pl)){
 			nprintf(("Network","Capping client\n"));

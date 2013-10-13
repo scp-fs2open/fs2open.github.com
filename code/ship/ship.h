@@ -517,7 +517,10 @@ typedef struct ship_spark {
 #define AWACS_WARN_25		(1 << 1)
 #define AWACS_WARN_75		(1 << 2)
 
-typedef struct ship {
+// NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
+class ship
+{
+public:
 	int	objnum;
 	int	ai_index;			// Index in Ai_info of ai_info associated with this ship.
 	int	ship_info_index;	// Index in ship_info for this ship
@@ -542,15 +545,13 @@ typedef struct ship {
 
 	// targeting laser info
 	char targeting_laser_bank;						// -1 if not firing, index into polymodel gun points if it _is_ firing
+	int targeting_laser_objnum;					// -1 if invalid, beam object # otherwise
+
 	// corkscrew missile stuff
 	ubyte num_corkscrew_to_fire;						// # of corkscrew missiles lef to fire
 	int corkscrew_missile_bank;
-	// END PACK
-
-	// targeting laser info
-	int targeting_laser_objnum;					// -1 if invalid, beam object # otherwise
-	// corkscrew missile stuff
 	int next_corkscrew_fire;						// next time to fire a corkscrew missile
+	// END PACK
 
 	int	final_death_time;				// Time until big fireball starts
 	int	death_time;				// Time until big fireball starts
@@ -799,7 +800,10 @@ typedef struct ship {
 	int team_change_time;
 
 	float autoaim_fov;
-} ship;
+
+	// reset to a completely blank ship
+	void clear();
+};
 
 struct ai_target_priority {
 	char name[NAME_LENGTH];

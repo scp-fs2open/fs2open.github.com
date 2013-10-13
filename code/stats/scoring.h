@@ -17,7 +17,7 @@
 #include "globalincs/globals.h"
 
 class player;
-struct ship;
+class ship;
 struct object;
 
 #define NUM_MEDALS_FS2		18

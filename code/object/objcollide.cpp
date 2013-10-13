@@ -42,6 +42,24 @@ obj_pair pair_used_list;
 obj_pair pair_free_list;
 
 SCP_vector<int> Collision_sort_list;
+
+class collider_pair
+{
+public:
+	object *a;
+	object *b;
+	int signature_a;
+	int signature_b;
+	int next_check_time;
+	bool initialized;
+
+	// we need to define a constructor because the hash map can
+	// implicitly insert an object when we use the [] operator
+	collider_pair()
+		: a(NULL), b(NULL), initialized(false)
+	{}
+};
+
 SCP_hash_map<uint, collider_pair> Collision_cached_pairs;
 
 struct checkobject;

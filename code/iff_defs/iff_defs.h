@@ -49,17 +49,6 @@ typedef struct iff_info {
 	// used internally, not parsed
 	int ai_rearm_timestamp;
 
-	// constructor to initialize everything to 0
-	iff_info()
-		: color_index( 0 ), attackee_bitmask( 0 ),
-		  attackee_bitmask_all_teams_at_war( 0 ),
-		  flags( 0 ), default_parse_flags( 0 ), default_parse_flags2( 0 ),
-		  ai_rearm_timestamp( 0 )
-	{
-		memset( iff_name, 0, sizeof( iff_name ) );
-		memset( observed_color_index, 0, sizeof( observed_color_index ) );
-	}
-
 } iff_info;
 
 extern int Num_iffs;

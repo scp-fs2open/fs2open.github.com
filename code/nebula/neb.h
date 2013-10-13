@@ -19,7 +19,7 @@
 #include "globalincs/globals.h"
 #include "camera/camera.h"
 
-struct ship;
+class ship;
 struct object;
 
 extern bool Nebula_sexp_used;
