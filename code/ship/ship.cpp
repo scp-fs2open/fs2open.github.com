@@ -4780,7 +4780,6 @@ void ship::clear()
 	score = 0;
 	assist_score_pct = 0.0f;
 	respawn_priority = 0;
-	polymodel *pm = model_get(sip->model_num);
 
 	pre_death_explosion_happened = 0;
 	wash_killed = 0;	// serenity lies
@@ -4829,18 +4828,8 @@ void ship::clear()
 	special_hitpoints = 0;
 	special_shield = -1;
 
-	if (sip->flags2 & SIF2_SHIELD_POINTS) {
-		objp->n_quadrants = pm->shield_points.size();
-		shipp->shield_points = pm->shield_points;
-		objp->shield_quadrant.resize(MAX(MAX_SHIELD_SECTIONS, objp->n_quadrants));
-	}
+	shield_points.clear();
 
-	if (Fred_running){
-		shipp->ship_max_hull_strength = 100.0f;
-	} else {
-		shipp->ship_max_hull_strength = sip->max_hull_strength;
-	}
-	objp->hull_strength = shipp->ship_max_hull_strength;
 	ship_max_shield_strength = 0.0f;
 	ship_max_hull_strength = 0.0f;
 
@@ -5099,6 +5088,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	object		*objp = &Objects[objnum];
 	ship_info	*sip = &(Ship_info[ship_type]);
 	ship_weapon	*swp = &shipp->weapons;
+	polymodel *pm = model_get(sip->model_num);
 
 	extern int oo_arrive_time_count[MAX_SHIPS];		
 	extern int oo_interp_count[MAX_SHIPS];	
@@ -5130,6 +5120,12 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
 		shield_set_strength(objp, shipp->ship_max_shield_strength);
+	}
+
+	if (sip->flags2 & SIF2_SHIELD_POINTS) {
+		objp->n_quadrants = pm->shield_points.size();
+		shipp->shield_points = pm->shield_points;
+		objp->shield_quadrant.resize(MAX(MAX_SHIELD_SECTIONS, objp->n_quadrants));
 	}
 
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
