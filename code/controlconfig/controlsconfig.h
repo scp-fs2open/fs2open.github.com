@@ -303,7 +303,7 @@ void control_config_close();
 void control_config_cancel_exit();
 
 void control_config_reset_defaults(int presetnum=-1);
-int translate_key_to_index(char *key, bool find_override=true);
+int translate_key_to_index(const char *key, bool find_override=true);
 char *translate_key(char *key);
 char *textify_scancode(int code);
 float check_control_timef(int id);

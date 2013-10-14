@@ -929,7 +929,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
 #define SIF2_SHIELD_POINTS					(1 << 17)	// zookeeper - uses model-defined shield points instead of quadrants
 // !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
-#define	MAX_SHIP_FLAGS	17		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	18		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
@@ -1306,6 +1306,8 @@ public:
 	float	auto_shield_spread;
 	bool	auto_shield_spread_bypass;
 	int		auto_shield_spread_from_lod;
+
+	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 

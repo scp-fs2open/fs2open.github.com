@@ -378,7 +378,7 @@ void set_modifier_status()
 // If find_override is set to true, then this returns the index of the action
 // which has been bound to the given key. Otherwise, the index of the action
 // which has the given key as its default key will be returned.
-int translate_key_to_index(char *key, bool find_override)
+int translate_key_to_index(const char *key, bool find_override)
 {
 	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
 

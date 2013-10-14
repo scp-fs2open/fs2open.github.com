@@ -279,14 +279,24 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
+	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	float	xfer_amount, energy_avail, percent_to_take, delta;
 	float	max_quadrant_val;
 	int	i;
 
+	if (sip->flags2 & SIF2_SHIELD_POINTS) {
+		direction = sip->shield_point_augment_ctrls[direction];
+
+		// The re-mapped direction can be -1 if this direction cannot be augmented
+		if (direction < 0)
+			return;
+	}
+
 	Assert(direction >= 0 && direction < objp->n_quadrants);
 	Assert(objp->type == OBJ_SHIP);
 	
-	xfer_amount = Ships[objp->instance].ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
+	xfer_amount = shipp->ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
 	max_quadrant_val = get_max_shield_quad(objp);
 
 	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )

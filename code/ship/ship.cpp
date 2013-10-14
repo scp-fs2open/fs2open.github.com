@@ -2456,6 +2456,34 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 	}
 
+	if(optional_string("$Model Shield Point Controls:")) {
+		SCP_vector<SCP_string> ctrl_strings;
+		int num_strings = stuff_string_list(ctrl_strings);
+
+		// Init all to -1 in case some aren't supplied...
+		sip->shield_point_augment_ctrls[FRONT_QUAD] = -1;
+		sip->shield_point_augment_ctrls[REAR_QUAD] = -1;
+		sip->shield_point_augment_ctrls[LEFT_QUAD] = -1;
+		sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
+
+		for (int i = 0; i < num_strings; i++) {
+			const char *str = ctrl_strings[i].c_str();
+
+			if (!stricmp(str, "front"))
+				sip->shield_point_augment_ctrls[FRONT_QUAD] = i;
+			else if (!stricmp(str, "rear"))
+				sip->shield_point_augment_ctrls[REAR_QUAD] = i;
+			else if (!stricmp(str, "left"))
+				sip->shield_point_augment_ctrls[LEFT_QUAD] = i;
+			else if (!stricmp(str, "right"))
+				sip->shield_point_augment_ctrls[RIGHT_QUAD] = i;
+			else if (!stricmp(str, "none"))
+				sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
+			else
+				Warning(LOCATION, "Unrecognized value \"%s\" passed to $Shield Point Controls, ignoring...", ctrl_strings[i]);
+		}
+	}
+
 	// optional shield color
 	if(optional_string("$Shield Color:")){
 		stuff_ubyte(&sip->shield_color[0]);
