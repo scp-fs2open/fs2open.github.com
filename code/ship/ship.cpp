@@ -8954,9 +8954,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		sip->flags |= SIF_PATH_FIXUP;
 	}
 
-	if (sip->flags2 & SIF2_SHIELD_POINTS && pm->shield_points.size() != 4 && !(sip->flags2 & SIF2_GENERATE_HUD_ICON))
-		Warning(LOCATION, "Ship %s using both \"generate icon\" and \"model shield points\" flags, with a number of shield points not equal to 4. This is very unlikely to be what you want.", sip->name);
-
 	// reset the damage record fields (for scoring purposes)
 	shipp->total_damage_received = 0.0f;
 	for(i=0;i<MAX_DAMAGE_SLOTS;i++)
@@ -9000,10 +8997,12 @@ void ship_model_change(int n, int ship_type)
 	ship_info	*sip;
 	ship			*sp;
 	polymodel * pm;
+	object *objp;
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
+	objp = &Objects[sp->objnum];
 
 	// get new model
 	if (sip->model_num == -1) {
@@ -9050,6 +9049,12 @@ void ship_model_change(int n, int ship_type)
 	}	
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
+
+	if (sip->flags2 & SIF2_SHIELD_POINTS) {
+		objp->n_quadrants = pm->shield_points.size();
+		sp->shield_points = pm->shield_points;
+		objp->shield_quadrant.resize(MAX(MAX_SHIELD_SECTIONS, objp->n_quadrants));
+	}
 
 	if (sp->shield_integrity != NULL) {
 		vm_free(sp->shield_integrity);
