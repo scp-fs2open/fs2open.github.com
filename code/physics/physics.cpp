@@ -489,7 +489,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if (ci->forward > 1.0f ) ci->forward = 1.0f;
 	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
 
-	if (!Flight_controls_follow_eyepoint_orientation) {
+	if (!Flight_controls_follow_eyepoint_orientation || Player_obj->type != OBJ_SHIP) {
 		// Default behavior; eyepoint orientation has no effect on controls
 		pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
 		pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
