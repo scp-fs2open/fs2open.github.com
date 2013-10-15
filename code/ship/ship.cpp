@@ -9054,6 +9054,9 @@ void ship_model_change(int n, int ship_type)
 		objp->n_quadrants = pm->shield_points.size();
 		sp->shield_points = pm->shield_points;
 		objp->shield_quadrant.resize(MAX(MAX_SHIELD_SECTIONS, objp->n_quadrants));
+	} else {
+		objp->n_quadrants = MAX_SHIELD_SECTIONS;
+		objp->shield_quadrant.resize(objp->n_quadrants);
 	}
 
 	if (sp->shield_integrity != NULL) {
