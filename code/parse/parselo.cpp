@@ -1683,6 +1683,8 @@ int strip_comments(char *line, int in_multiline_comment)
 	if (in_multiline_comment)
 	{
 		ch = strstr(line, "*/");
+		if (ch == NULL)
+			ch = strstr(line, "*!");
 		if (ch != NULL)
 		{
 			char *writep = line;
@@ -1706,15 +1708,6 @@ int strip_comments(char *line, int in_multiline_comment)
 		// can't close it, so drop the whole line
 		ch = line;
 		goto done_with_line;
-	}
-
-
-	// start of a multi-line comment?
-	ch = strstr(line, "/*");
-	if (ch != NULL)
-	{
-		// treat it as the beginning of a new line and recurse
-		return strip_comments(ch, 1);
 	}
 
 
@@ -1781,10 +1774,10 @@ int strip_comments(char *line, int in_multiline_comment)
 			}
 		}
 
-	
+
 		// this version is compatible, so copy the line past the tag
 		{
-			char *writep = line;
+			char *writep = ch;
 			char *readp = linech;
 
 			// copy all characters past the close of the comment
@@ -1799,7 +1792,7 @@ int strip_comments(char *line, int in_multiline_comment)
 			*writep = '\0';
 
 			// recurse with the other characters
-			return strip_comments(line, 0);
+			return strip_comments(ch, 0);
 		}
 	}
 
@@ -1808,6 +1801,19 @@ int strip_comments(char *line, int in_multiline_comment)
 	ch = strchr(line, ';');
 	if (ch != NULL)
 		goto done_with_line;
+
+
+	// start of a multi-line comment?
+	// (You can now use !* *! in addition to /* */ because prior to 3.7.1, a /* would be flagged
+	// even if it appeared after an initial ; such as in a version-specific comment.
+	ch = strstr(line, "/*");
+	if (ch == NULL)
+		ch = strstr(line, "!*");
+	if (ch != NULL)
+	{
+		// treat it as the beginning of a new line and recurse
+		return strip_comments(ch, 1);
+	}
 
 
 	// no comments found... try to find the newline
