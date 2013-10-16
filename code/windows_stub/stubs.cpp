@@ -37,6 +37,8 @@ static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 #ifdef __APPLE__
 #include <malloc/malloc.h>
 #define MALLOC_USABLE(pointer) malloc_size(pointer)
+#elif defined(SCP_SOLARIS)
+#define MALLOC_USABLE(pointer) (*((size_t*)(pointer)-1))
 #else
 #ifdef SCP_BSD
 #include <stdlib.h>
