@@ -817,7 +817,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		else
 			factor = vm_vec_dist_quick(&viewer_obj->pos, &viewed_obj->pos);
 
-		// use the player's up vector, and construct the viewers orientation matrix
+		// use the viewer's up vector, and construct the viewers orientation matrix
 		if (viewer_obj == Player_obj && Player_obj->type == OBJ_SHIP) {
 			vec3d tempv;
 			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
