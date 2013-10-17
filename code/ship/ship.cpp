@@ -5153,7 +5153,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	if (sip->flags2 & SIF2_SHIELD_POINTS) {
 		objp->n_quadrants = pm->shield_points.size();
 		shipp->shield_points = pm->shield_points;
-		objp->shield_quadrant.resize(MAX(MAX_SHIELD_SECTIONS, objp->n_quadrants));
+		objp->shield_quadrant.resize(MAX(DEFAULT_SHIELD_SECTIONS, objp->n_quadrants));
 	}
 
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
@@ -9053,9 +9053,9 @@ void ship_model_change(int n, int ship_type)
 	if (sip->flags2 & SIF2_SHIELD_POINTS) {
 		objp->n_quadrants = pm->shield_points.size();
 		sp->shield_points = pm->shield_points;
-		objp->shield_quadrant.resize(MAX(MAX_SHIELD_SECTIONS, objp->n_quadrants));
+		objp->shield_quadrant.resize(MAX(DEFAULT_SHIELD_SECTIONS, objp->n_quadrants));
 	} else {
-		objp->n_quadrants = MAX_SHIELD_SECTIONS;
+		objp->n_quadrants = DEFAULT_SHIELD_SECTIONS;
 		objp->shield_quadrant.resize(objp->n_quadrants);
 	}
 

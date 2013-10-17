@@ -19149,7 +19149,7 @@ int process_special_sexps(int index)
 			if (Player_obj->shield_quadrant[FRONT_QUAD] > get_max_shield_quad(Player_obj))
 			Player_obj->shield_quadrant[FRONT_QUAD] = get_max_shield_quad(Player_obj);
 
-			if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%MAX_SHIELD_SECTIONS] - 2.0f)
+			if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%DEFAULT_SHIELD_SECTIONS] - 2.0f)
 				return SEXP_TRUE;
 			else
 				return SEXP_FALSE;

@@ -21,7 +21,7 @@
  *		CONSTANTS
  */
 
-#define MAX_SHIELD_SECTIONS	4					//	Number of sections in shield.
+#define DEFAULT_SHIELD_SECTIONS	4	//	Number of sections in standard shields.
 
 #ifndef NDEBUG
 #define OBJECT_CHECK 

@@ -117,7 +117,7 @@ hud_frames Shield_mini_gauge;
 static shield_hit_info	Shield_hit_data[2];
 
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
-ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
+ubyte Quadrant_xlate[DEFAULT_SHIELD_SECTIONS] = {1,0,2,3};
 
 // called at the start of each level from HUD_init.  Use Hud_shield_init so we only init Shield_gauges[] once.
 void hud_shield_level_init()
