@@ -432,7 +432,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		if ( Quadrant_xlate[i] > objp->n_quadrants || objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
