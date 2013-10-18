@@ -138,15 +138,11 @@ UI_XSTR Medals_text[GR_NUM_RESOLUTIONS][MEDALS_NUM_TEXT] = {
 	},
 };
 
-static const char* Medals_background_filename[GR_NUM_RESOLUTIONS] = {
-	"MedalsDisplayEmpty",
-	"2_MedalsDisplayEmpty"
-};
+static const char* Default_medals_background_filename = "MedalsDisplayEmpty";
+static char Medals_background_filename[NAME_LENGTH];
 
-static char* Medals_mask_filename[GR_NUM_RESOLUTIONS] = {
-	"Medals-m",
-	"2_Medals-m"
-};
+static const char* Default_medals_mask_filename = "Medals-M";
+static char Medals_mask_filename[NAME_LENGTH];
 
 scoring_struct *Player_score=NULL;
 
@@ -231,6 +227,20 @@ void parse_medal_tbl()
 	reset_parse();
 
 	required_string("#Medals");
+
+	// special background information
+	if (optional_string("+Background Bitmap:")) {
+		stuff_string(Medals_background_filename, F_NAME, NAME_LENGTH);
+	} else {
+		strcpy_s(Medals_background_filename, Default_medals_background_filename);
+	}
+
+	// special mask information
+	if (optional_string("+Mask Bitmap:")) {
+		stuff_string(Medals_mask_filename, F_NAME, NAME_LENGTH);
+	} else {
+		strcpy_s(Medals_mask_filename, Default_medals_mask_filename);
+	}
 
 	// special positioning for player callsign
 	if (optional_string("+Callsign Position 640:")) {
@@ -469,6 +479,8 @@ DCF(medals, "Grant or revoke medals")
 void medal_main_init(player *pl, int mode)
 {
 	int idx;
+	char bitmap_buf[NAME_LENGTH];
+
 	Assert(pl != NULL);
 	Medals_player = pl;
 	Player_score = &Medals_player->stats;
@@ -505,11 +517,14 @@ void medal_main_init(player *pl, int mode)
 		Medals_window.add_XSTR(&Medals_text[gr_screen.res][idx]);
 	}
 
-	Init_flags = 0;	
+	Init_flags = 0;
 
-	Medals_bitmap = bm_load(Medals_background_filename[gr_screen.res]);
+	strcpy_s(bitmap_buf, Resolution_prefixes[gr_screen.res]);
+	strcat_s(bitmap_buf, Medals_background_filename);
+
+	Medals_bitmap = bm_load(bitmap_buf);
 	if (Medals_bitmap < 0) {
-		Error(LOCATION, "Error loading medal background bitmap %s", Medals_background_filename[gr_screen.res]);
+		Error(LOCATION, "Error loading medal background bitmap %s", bitmap_buf);
 	} else {
 		Init_flags |= MEDAL_BITMAP_INIT;
 	}
@@ -517,9 +532,12 @@ void medal_main_init(player *pl, int mode)
 	Medals_mask_w = -1;
 	Medals_mask_h = -1;
 
-	Medals_bitmap_mask = bm_load(Medals_mask_filename[gr_screen.res]);
+	strcpy_s(bitmap_buf, Resolution_prefixes[gr_screen.res]);
+	strcat_s(bitmap_buf, Medals_mask_filename);
+
+	Medals_bitmap_mask = bm_load(bitmap_buf);
 	if (Medals_bitmap_mask < 0) {
-		Error(LOCATION, "Error loading medal mask file %s", Medals_mask_filename[gr_screen.res]);
+		Error(LOCATION, "Error loading medal mask file %s", bitmap_buf);
 	} else {
 		Init_flags |= MASK_BITMAP_INIT;
 		Medals_mask = bm_lock(Medals_bitmap_mask, 8, BMP_AABITMAP);
@@ -530,7 +548,7 @@ void medal_main_init(player *pl, int mode)
 
 	gr_set_color_fast(&Color_normal);
 
-	Medals_window.set_mask_bmap(Medals_mask_filename[gr_screen.res]);
+	Medals_window.set_mask_bmap(bitmap_buf);
 }
 
 void blit_label(char *label, int num)

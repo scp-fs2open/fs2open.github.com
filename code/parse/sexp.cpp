@@ -21064,12 +21064,15 @@ void sexp_force_glide(int node)
 
 bool test_point_within_box(vec3d *test_point, vec3d *box_corner_1, vec3d *box_corner_2, object *reference_ship_obj)
 {
+	vec3d tempv, test_point_buf;
+
 	// If reference_ship is specified, rotate test_point into its reference frame
 	if (reference_ship_obj != NULL) 
 	{
-		vec3d tempv;
 		vm_vec_sub(&tempv, test_point, &reference_ship_obj->pos);
-		vm_vec_unrotate(test_point, &tempv, &reference_ship_obj->orient);
+		vm_vec_unrotate(&test_point_buf, &tempv, &reference_ship_obj->orient);
+
+		test_point = &test_point_buf;
 	}
 
 	// Check to see if the test point is within the specified box as defined by two extreme corners
