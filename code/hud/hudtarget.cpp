@@ -6431,8 +6431,6 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	if (outcoords != NULL) {
 		outcoords->x = xpos;
 		outcoords->y = ypos;
-
-		gr_resize_screen_posf(&outcoords->x, &outcoords->y);
 	}
 
 	gr_reset_screen_scale();
