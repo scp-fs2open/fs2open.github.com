@@ -595,6 +595,26 @@
 		91361C9A17EDF2B7001940DC /* profiling.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91361C9917EDF2B7001940DC /* profiling.cpp */; };
 		914F0FC61639998700A5B57A /* generic_log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 914F0FC41639998700A5B57A /* generic_log.cpp */; };
 		914F0FC71639998700A5B57A /* generic_log.h in Headers */ = {isa = PBXBuildFile; fileRef = 914F0FC51639998700A5B57A /* generic_log.h */; };
+		91CAF8BF17FF561E0053F385 /* dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8AE17FF561E0053F385 /* dump.c */; };
+		91CAF8C017FF561E0053F385 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8AF17FF561E0053F385 /* error.c */; };
+		91CAF8C117FF561E0053F385 /* hashtable.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8B017FF561E0053F385 /* hashtable.c */; };
+		91CAF8C217FF561E0053F385 /* hashtable.h in Headers */ = {isa = PBXBuildFile; fileRef = 91CAF8B117FF561E0053F385 /* hashtable.h */; };
+		91CAF8C317FF561E0053F385 /* jansson.h in Headers */ = {isa = PBXBuildFile; fileRef = 91CAF8B217FF561E0053F385 /* jansson.h */; };
+		91CAF8C417FF561E0053F385 /* jansson_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 91CAF8B317FF561E0053F385 /* jansson_config.h */; };
+		91CAF8C517FF561E0053F385 /* jansson_private.h in Headers */ = {isa = PBXBuildFile; fileRef = 91CAF8B417FF561E0053F385 /* jansson_private.h */; };
+		91CAF8C617FF561E0053F385 /* load.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8B617FF561E0053F385 /* load.c */; };
+		91CAF8C717FF561E0053F385 /* memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8B717FF561E0053F385 /* memory.c */; };
+		91CAF8C817FF561E0053F385 /* pack_unpack.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8B817FF561E0053F385 /* pack_unpack.c */; };
+		91CAF8C917FF561E0053F385 /* strbuffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8B917FF561E0053F385 /* strbuffer.c */; };
+		91CAF8CA17FF561E0053F385 /* strbuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = 91CAF8BA17FF561E0053F385 /* strbuffer.h */; };
+		91CAF8CB17FF561E0053F385 /* strconv.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8BB17FF561E0053F385 /* strconv.c */; };
+		91CAF8CC17FF561E0053F385 /* utf.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8BC17FF561E0053F385 /* utf.c */; };
+		91CAF8CD17FF561E0053F385 /* utf.h in Headers */ = {isa = PBXBuildFile; fileRef = 91CAF8BD17FF561E0053F385 /* utf.h */; };
+		91CAF8CE17FF561E0053F385 /* value.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8BE17FF561E0053F385 /* value.c */; };
+		91CAF8D117FF56AA0053F385 /* libjansson.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 91CAF8A917FF55DE0053F385 /* libjansson.a */; };
+		91CAF8DE17FF57170053F385 /* mongoose.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8DC17FF57170053F385 /* mongoose.c */; };
+		91CAF8DF17FF57170053F385 /* mongoose.h in Headers */ = {isa = PBXBuildFile; fileRef = 91CAF8DD17FF57170053F385 /* mongoose.h */; };
+		91CAF8E217FF57430053F385 /* libmongoose.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 91CAF8D617FF56E80053F385 /* libmongoose.a */; };
 		91D778A014FE96BE00E0090A /* mod_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91D7789E14FE96BE00E0090A /* mod_table.cpp */; };
 		91D778A114FE96BE00E0090A /* mod_table.h in Headers */ = {isa = PBXBuildFile; fileRef = 91D7789F14FE96BE00E0090A /* mod_table.h */; };
 		F007DDF612F4F44600D2F6C1 /* jconfig.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB512F4F44600D2F6C1 /* jconfig.h */; };
@@ -824,6 +844,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = 34C71A9008C4184200459F5B;
 			remoteInfo = jpeg;
+		};
+		91CAF8CF17FF568E0053F385 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 91CAF8A817FF55DE0053F385;
+			remoteInfo = jansson;
+		};
+		91CAF8E017FF573A0053F385 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 91CAF8D517FF56E80053F385;
+			remoteInfo = mongoose;
 		};
 		F0AAA8A510FA0AAC0086B1B4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1500,6 +1534,28 @@
 		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
 		914F0FC41639998700A5B57A /* generic_log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = generic_log.cpp; sourceTree = "<group>"; };
 		914F0FC51639998700A5B57A /* generic_log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = generic_log.h; sourceTree = "<group>"; };
+		91CAF8A917FF55DE0053F385 /* libjansson.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libjansson.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		91CAF8AE17FF561E0053F385 /* dump.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dump.c; sourceTree = "<group>"; };
+		91CAF8AF17FF561E0053F385 /* error.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = error.c; sourceTree = "<group>"; };
+		91CAF8B017FF561E0053F385 /* hashtable.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hashtable.c; sourceTree = "<group>"; };
+		91CAF8B117FF561E0053F385 /* hashtable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hashtable.h; sourceTree = "<group>"; };
+		91CAF8B217FF561E0053F385 /* jansson.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jansson.h; sourceTree = "<group>"; };
+		91CAF8B317FF561E0053F385 /* jansson_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jansson_config.h; sourceTree = "<group>"; };
+		91CAF8B417FF561E0053F385 /* jansson_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jansson_private.h; sourceTree = "<group>"; };
+		91CAF8B517FF561E0053F385 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		91CAF8B617FF561E0053F385 /* load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = load.c; sourceTree = "<group>"; };
+		91CAF8B717FF561E0053F385 /* memory.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = memory.c; sourceTree = "<group>"; };
+		91CAF8B817FF561E0053F385 /* pack_unpack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pack_unpack.c; sourceTree = "<group>"; };
+		91CAF8B917FF561E0053F385 /* strbuffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = strbuffer.c; sourceTree = "<group>"; };
+		91CAF8BA17FF561E0053F385 /* strbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = strbuffer.h; sourceTree = "<group>"; };
+		91CAF8BB17FF561E0053F385 /* strconv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = strconv.c; sourceTree = "<group>"; };
+		91CAF8BC17FF561E0053F385 /* utf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utf.c; sourceTree = "<group>"; };
+		91CAF8BD17FF561E0053F385 /* utf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utf.h; sourceTree = "<group>"; };
+		91CAF8BE17FF561E0053F385 /* value.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = value.c; sourceTree = "<group>"; };
+		91CAF8D617FF56E80053F385 /* libmongoose.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libmongoose.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		91CAF8DB17FF57170053F385 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		91CAF8DC17FF57170053F385 /* mongoose.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mongoose.c; sourceTree = "<group>"; };
+		91CAF8DD17FF57170053F385 /* mongoose.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mongoose.h; sourceTree = "<group>"; };
 		91D7789E14FE96BE00E0090A /* mod_table.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mod_table.cpp; sourceTree = "<group>"; };
 		91D7789F14FE96BE00E0090A /* mod_table.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mod_table.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
@@ -1620,6 +1676,8 @@
 				346C32FD09BD4BBC0022D46E /* Ogg.framework in Frameworks */,
 				346C32FE09BD4BBC0022D46E /* Vorbis.framework in Frameworks */,
 				34A759DD0B4924BF00C5E7AA /* Theora.framework in Frameworks */,
+				91CAF8D117FF56AA0053F385 /* libjansson.a in Frameworks */,
+				91CAF8E217FF57430053F385 /* libmongoose.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1653,6 +1711,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		34DCF85A08CFAE8A00A528A0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91CAF8A717FF55DE0053F385 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91CAF8D417FF56E80053F385 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1716,6 +1788,8 @@
 				344BA94A095A59F700B9D97D /* liblua.a */,
 				F0AAA8A310FA0A7C0086B1B4 /* libpng.a */,
 				F0AAA90F10FA0CAA0086B1B4 /* libzlib.a */,
+				91CAF8A917FF55DE0053F385 /* libjansson.a */,
+				91CAF8D617FF56E80053F385 /* libmongoose.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1736,9 +1810,11 @@
 			isa = PBXGroup;
 			children = (
 				345952CC08C3D69F003B1351 /* code */,
+				91CAF8AD17FF561E0053F385 /* jansson */,
 				345957CB08C3D836003B1351 /* libjpeg */,
 				F0AAA8AF10FA0ACE0086B1B4 /* libpng */,
 				344BA9C1095A5B7A00B9D97D /* lua */,
+				91CAF8DA17FF57170053F385 /* mongoose */,
 				F0AAA91B10FA0D060086B1B4 /* zlib */,
 			);
 			name = Sources;
@@ -3019,6 +3095,42 @@
 			name = external_dll;
 			sourceTree = "<group>";
 		};
+		91CAF8AD17FF561E0053F385 /* jansson */ = {
+			isa = PBXGroup;
+			children = (
+				91CAF8AE17FF561E0053F385 /* dump.c */,
+				91CAF8AF17FF561E0053F385 /* error.c */,
+				91CAF8B017FF561E0053F385 /* hashtable.c */,
+				91CAF8B117FF561E0053F385 /* hashtable.h */,
+				91CAF8B217FF561E0053F385 /* jansson.h */,
+				91CAF8B317FF561E0053F385 /* jansson_config.h */,
+				91CAF8B417FF561E0053F385 /* jansson_private.h */,
+				91CAF8B517FF561E0053F385 /* LICENSE */,
+				91CAF8B617FF561E0053F385 /* load.c */,
+				91CAF8B717FF561E0053F385 /* memory.c */,
+				91CAF8B817FF561E0053F385 /* pack_unpack.c */,
+				91CAF8B917FF561E0053F385 /* strbuffer.c */,
+				91CAF8BA17FF561E0053F385 /* strbuffer.h */,
+				91CAF8BB17FF561E0053F385 /* strconv.c */,
+				91CAF8BC17FF561E0053F385 /* utf.c */,
+				91CAF8BD17FF561E0053F385 /* utf.h */,
+				91CAF8BE17FF561E0053F385 /* value.c */,
+			);
+			name = jansson;
+			path = ../../jansson;
+			sourceTree = SOURCE_ROOT;
+		};
+		91CAF8DA17FF57170053F385 /* mongoose */ = {
+			isa = PBXGroup;
+			children = (
+				91CAF8DB17FF57170053F385 /* LICENSE */,
+				91CAF8DC17FF57170053F385 /* mongoose.c */,
+				91CAF8DD17FF57170053F385 /* mongoose.h */,
+			);
+			name = mongoose;
+			path = ../../mongoose;
+			sourceTree = SOURCE_ROOT;
+		};
 		91D7789D14FE96BE00E0090A /* mod_table */ = {
 			isa = PBXGroup;
 			children = (
@@ -3411,6 +3523,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		91CAF8A517FF55DE0053F385 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				91CAF8C217FF561E0053F385 /* hashtable.h in Headers */,
+				91CAF8C317FF561E0053F385 /* jansson.h in Headers */,
+				91CAF8C417FF561E0053F385 /* jansson_config.h in Headers */,
+				91CAF8C517FF561E0053F385 /* jansson_private.h in Headers */,
+				91CAF8CA17FF561E0053F385 /* strbuffer.h in Headers */,
+				91CAF8CD17FF561E0053F385 /* utf.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91CAF8D217FF56E80053F385 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				91CAF8DF17FF57170053F385 /* mongoose.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F0AAA85D10FA0A7C0086B1B4 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -3482,6 +3615,8 @@
 				34C71A8608C414E800459F5B /* PBXTargetDependency */,
 				F0AAA8A610FA0AAC0086B1B4 /* PBXTargetDependency */,
 				F0AAA91510FA0CEC0086B1B4 /* PBXTargetDependency */,
+				91CAF8D017FF568E0053F385 /* PBXTargetDependency */,
+				91CAF8E117FF573A0053F385 /* PBXTargetDependency */,
 			);
 			name = FS2_Open;
 			productInstallPath = "$(HOME)/Applications";
@@ -3559,6 +3694,40 @@
 			productReference = 34DCF85C08CFAE8A00A528A0 /* cfileextractor */;
 			productType = "com.apple.product-type.tool";
 		};
+		91CAF8A817FF55DE0053F385 /* jansson */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 91CAF8AC17FF56160053F385 /* Build configuration list for PBXNativeTarget "jansson" */;
+			buildPhases = (
+				91CAF8A517FF55DE0053F385 /* Headers */,
+				91CAF8A617FF55DE0053F385 /* Sources */,
+				91CAF8A717FF55DE0053F385 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = jansson;
+			productName = jansson;
+			productReference = 91CAF8A917FF55DE0053F385 /* libjansson.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		91CAF8D517FF56E80053F385 /* mongoose */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 91CAF8D917FF57150053F385 /* Build configuration list for PBXNativeTarget "mongoose" */;
+			buildPhases = (
+				91CAF8D217FF56E80053F385 /* Headers */,
+				91CAF8D317FF56E80053F385 /* Sources */,
+				91CAF8D417FF56E80053F385 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = mongoose;
+			productName = mongoose;
+			productReference = 91CAF8D617FF56E80053F385 /* libmongoose.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		F0AAA85C10FA0A7C0086B1B4 /* png */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F0AAA89E10FA0A7C0086B1B4 /* Build configuration list for PBXNativeTarget "png" */;
@@ -3618,8 +3787,10 @@
 			targets = (
 				3459585008C3D8CB003B1351 /* FS2_Open */,
 				34C71A8108C4147700459F5B /* code */,
+				91CAF8A817FF55DE0053F385 /* jansson */,
 				34C71A9008C4184200459F5B /* jpeg */,
 				344BA949095A59F700B9D97D /* lua */,
+				91CAF8D517FF56E80053F385 /* mongoose */,
 				F0AAA85C10FA0A7C0086B1B4 /* png */,
 				F0AAA8F010FA0CAA0086B1B4 /* zlib */,
 				34DCF83308CFA6B900A528A0 /* cfilearchiver */,
@@ -4025,6 +4196,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		91CAF8A617FF55DE0053F385 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				91CAF8BF17FF561E0053F385 /* dump.c in Sources */,
+				91CAF8C017FF561E0053F385 /* error.c in Sources */,
+				91CAF8C117FF561E0053F385 /* hashtable.c in Sources */,
+				91CAF8C617FF561E0053F385 /* load.c in Sources */,
+				91CAF8C717FF561E0053F385 /* memory.c in Sources */,
+				91CAF8C817FF561E0053F385 /* pack_unpack.c in Sources */,
+				91CAF8C917FF561E0053F385 /* strbuffer.c in Sources */,
+				91CAF8CB17FF561E0053F385 /* strconv.c in Sources */,
+				91CAF8CC17FF561E0053F385 /* utf.c in Sources */,
+				91CAF8CE17FF561E0053F385 /* value.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91CAF8D317FF56E80053F385 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				91CAF8DE17FF57170053F385 /* mongoose.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F0AAA86C10FA0A7C0086B1B4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -4082,6 +4278,16 @@
 			isa = PBXTargetDependency;
 			target = 34C71A9008C4184200459F5B /* jpeg */;
 			targetProxy = 34C71CBB08C424E700459F5B /* PBXContainerItemProxy */;
+		};
+		91CAF8D017FF568E0053F385 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 91CAF8A817FF55DE0053F385 /* jansson */;
+			targetProxy = 91CAF8CF17FF568E0053F385 /* PBXContainerItemProxy */;
+		};
+		91CAF8E117FF573A0053F385 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 91CAF8D517FF56E80053F385 /* mongoose */;
+			targetProxy = 91CAF8E017FF573A0053F385 /* PBXContainerItemProxy */;
 		};
 		F0AAA8A610FA0AAC0086B1B4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4520,6 +4726,66 @@
 			};
 			name = Release;
 		};
+		91CAF8AA17FF55DE0053F385 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = /usr/local/lib;
+				PREBINDING = NO;
+				PRODUCT_NAME = jansson;
+			};
+			name = Debug;
+		};
+		91CAF8AB17FF55DE0053F385 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/lib;
+				PREBINDING = NO;
+				PRODUCT_NAME = jansson;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		91CAF8D717FF56E80053F385 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = /usr/local/lib;
+				PREBINDING = NO;
+				PRODUCT_NAME = mongoose;
+			};
+			name = Debug;
+		};
+		91CAF8D817FF56E80053F385 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/lib;
+				PREBINDING = NO;
+				PRODUCT_NAME = mongoose;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
 		F0AAA89F10FA0A7C0086B1B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -4658,6 +4924,24 @@
 			buildConfigurations = (
 				34DCF85F08CFAF0500A528A0 /* Debug */,
 				34DCF86008CFAF0500A528A0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		91CAF8AC17FF56160053F385 /* Build configuration list for PBXNativeTarget "jansson" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				91CAF8AA17FF55DE0053F385 /* Debug */,
+				91CAF8AB17FF55DE0053F385 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		91CAF8D917FF57150053F385 /* Build configuration list for PBXNativeTarget "mongoose" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				91CAF8D717FF56E80053F385 /* Debug */,
+				91CAF8D817FF56E80053F385 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -399,6 +399,11 @@ elif test "$fs2_os_solaris" = "yes" ; then
 	AC_DEFINE([NO_DIRECT3D])
 fi
 
+dnl JANSSON
+PKG_CHECK_MODULES([JANSSON], [jansson >= 2.2.0])
+D_CFLAGS=$D_CFLAGS" $JANSSON_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $JANSSON_LIBS"
+
 dnl PNG libs (libpng, falling back to libpng12)
 PKG_CHECK_MODULES(
 	[PNG],
@@ -471,7 +476,7 @@ LIBS="$FS2_LIBS"
 
 
 dnl The makefiles we create
-AC_OUTPUT([Makefile code/Makefile])
+AC_OUTPUT([Makefile mongoose/Makefile code/Makefile])
 
 
 echo

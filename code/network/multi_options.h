@@ -6,16 +6,18 @@
  * source.
  *
 */
-
-
-
 #ifndef _MULTI_NETGAME_OPTIONS_HEADER_FILE
 #define _MULTI_NETGAME_OPTIONS_HEADER_FILE
 
-// ----------------------------------------------------------------------------------
-// MULTI OPTIONS DEFINES/VARS
-//
 #include "globalincs/pstypes.h"
+#include "psnet2.h"
+
+// local (netplayer - nonserver) options - maintained on individual clients and on the server (no need for other clients to know this guy's settings)
+#define MAX_OBJ_UPDATE_LEVELS						4					// the # of object update levels there are
+#define OBJ_UPDATE_LOW								0					// low object updates
+#define OBJ_UPDATE_MEDIUM							1					// medium object updates
+#define OBJ_UPDATE_HIGH								2					// high object updates
+#define OBJ_UPDATE_LAN								3					// ultra-high updates - no capping at all
 
 struct header;
 struct netgame_info;
@@ -51,16 +53,48 @@ typedef struct multi_global_options {
 	char		std_pxo_login[MULTI_OPTIONS_STRING_LEN];				// pxo login to use
 	char		std_pxo_password[MULTI_OPTIONS_STRING_LEN];				// pxo password to use
 	int		std_framecap;												// standalone frame cap
+
+	ushort		webapiPort;
+	SCP_string	webapiUsername;
+	SCP_string	webapiPassword;
+	SCP_string	webuiRootDirectory;
+
+	void reset() {
+		protocol = 1;//NET_TCP
+
+		port = DEFAULT_GAME_PORT;
+
+		log = 0;
+		datarate_cap = 11000;//OO_HIGH_RATE_DEFAULT;
+		strcpy_s(user_tracker_ip, "");
+		strcpy_s(game_tracker_ip, "");
+		strcpy_s(tracker_port, "");
+		strcpy_s(pxo_ip, "");
+		strcpy_s(pxo_rank_url, "");
+		strcpy_s(pxo_create_url, "");
+		strcpy_s(pxo_verify_url, "");
+		strcpy_s(pxo_banner_url, "");
+
+		// standalone values
+		std_max_players = -1;
+		std_datarate = OBJ_UPDATE_HIGH;
+		std_voice = 1;
+		memset(std_passwd, 0, STD_PASSWD_LEN+1);
+		memset(std_pname, 0, STD_NAME_LEN+1);
+		std_framecap = 30;
+
+		webapiPort = 8080;
+		webapiUsername = "admin";
+		webapiPassword = "admin";
+
+		webuiRootDirectory = "";
+	}
+
 } multi_global_options;
 
 extern multi_global_options Multi_options_g;
 
-// local (netplayer - nonserver) options - maintained on individual clients and on the server (no need for other clients to know this guy's settings)
-#define MAX_OBJ_UPDATE_LEVELS						4					// the # of object update levels there are
-#define OBJ_UPDATE_LOW								0					// low object updates
-#define OBJ_UPDATE_MEDIUM							1					// medium object updates
-#define OBJ_UPDATE_HIGH								2					// high object updates
-#define OBJ_UPDATE_LAN								3					// ultra-high updates - no capping at all
+
 
 #define MLO_FLAG_ACCEPT_PIX						(1<<0)			// accept pix from server (pilot pics, squadron logos, etc)
 #define MLO_FLAG_NO_VOICE							(1<<1)			// turn off voice altogether
