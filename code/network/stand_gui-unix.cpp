@@ -531,8 +531,8 @@ json_t* playerGet(ResourceContext *context) {
         json_object_set(obj, "id", json_integer(p.player_id));
         json_object_set(obj, "address", json_string(address));
         json_object_set(obj, "ping", json_integer(p.s_info.ping.ping_avg));
-        json_object_set(obj, "host", json_boolean((MULTI_HOST(p))));
-        json_object_set(obj, "observer", json_boolean((MULTI_OBSERVER(p))));
+        json_object_set(obj, "host", (MULTI_HOST(p)) ? json_true() : json_false());
+        json_object_set(obj, "observer", (MULTI_OBSERVER(p)) ? json_true() : json_false());
         json_object_set(obj, "callsign", json_string(p.m_player->callsign));
         json_object_set(obj, "ship", json_string(Ship_info[p.p_info.ship_class].name));
 
