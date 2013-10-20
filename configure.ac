@@ -400,9 +400,9 @@ elif test "$fs2_os_solaris" = "yes" ; then
 fi
 
 dnl JANSSON
-PKG_CHECK_MODULES([JANSSON], [jansson >= 2.2.0])
+PKG_CHECK_MODULES([JANSSON], [jansson >= 2.2])
 D_CFLAGS=$D_CFLAGS" $JANSSON_CFLAGS"
-FS2_LDFLAGS=$FS2_LDFLAGS" $JANSSON_LIBS"
+FS2_LIBS=$FS2_LIBS" $JANSSON_LIBS"
 
 dnl PNG libs (libpng, falling back to libpng12)
 PKG_CHECK_MODULES(

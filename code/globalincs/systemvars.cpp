@@ -182,7 +182,7 @@ void game_busy(const char *filename)
 
 #ifndef NDEBUG
 	if (filename != NULL) 
-		strncpy(Processing_filename, filename, MAX_PATH_LEN);
+		strcpy_s(Processing_filename, filename);
 #endif
 
 	int t1 = timer_get_milliseconds();
