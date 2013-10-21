@@ -735,7 +735,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 		}
 
 		// make sure that we get the entire packet
-		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+		while ( (rc_total < (uint)buffer_size) && (rc_total < sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
 			if ( FS2NetD_DataReady() ) {
 				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
 
