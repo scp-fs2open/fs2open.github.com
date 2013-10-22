@@ -11,7 +11,7 @@
 #include <cstddef>
 
 // Copy-Paste from http://www.cplusplus.com/faq/sequences/strings/split/#c-tokenizer
-struct split {
+struct split_struct {
     enum empties_t {
         empties_ok, no_empties
     };
@@ -19,12 +19,12 @@ struct split {
 
 template<typename Container>
 Container& split(Container& result, const typename Container::value_type& s,
-        const typename Container::value_type& delimiters, split::empties_t empties = split::empties_ok) {
+        const typename Container::value_type& delimiters, split_struct::empties_t empties = split_struct::empties_ok) {
     result.clear();
     size_t current;
     size_t next = -1;
     do {
-        if (empties == split::no_empties) {
+        if (empties == split_struct::no_empties) {
             next = s.find_first_not_of(delimiters, next + 1);
             if (next == Container::value_type::npos)
                 break;
@@ -660,7 +660,7 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
 
     resourcePath.erase(0, 1);
     SCP_vector<SCP_string> pathParts;
-    split(pathParts, resourcePath, "/", split::no_empties);
+    split(pathParts, resourcePath, "/", split_struct::no_empties);
 
     json_t *result = NULL;
 
@@ -669,7 +669,7 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
     for (size_t i = 0; i < ARRAY_SIZE(resources); i++) {
         Resource* r = &resources[i];
         SCP_vector<SCP_string> resourcePathParts;
-        split(resourcePathParts, r->path, "/", split::no_empties);
+        split(resourcePathParts, r->path, "/", split_struct::no_empties);
 
         if (resourcePathParts.size() == pathParts.size()) {
             ResourceContext context;
@@ -698,13 +698,13 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
                 if (ri->query_string) {
                     SCP_string query(ri->query_string);
                     SCP_vector<SCP_string> queryPairs;
-                    split(queryPairs, query, "&", split::no_empties);
+                    split(queryPairs, query, "&", split_struct::no_empties);
 
                     for (SCP_vector<SCP_string>::const_iterator iter = queryPairs.begin(); iter != queryPairs.end();
                             ++iter) {
                         SCP_vector<SCP_string> temp;
 
-                        split(temp, *iter, "=", split::no_empties);
+                        split(temp, *iter, "=", split_struct::no_empties);
 
                         if (temp.size() == 2) {
                             context.parameters[temp[0]] = temp[1];
@@ -798,7 +798,7 @@ void std_add_chat_text(const char *text, int player_index, int add_id) {
 void std_debug_multilog_add_line(const char *str) {
 
     SCP_vector<SCP_string> debugMessages;
-    split(debugMessages, SCP_string(str), "\n", split::no_empties);
+    split(debugMessages, SCP_string(str), "\n", split_struct::no_empties);
 
     for (SCP_vector<SCP_string>::const_iterator iter = debugMessages.begin(); iter != debugMessages.end(); ++iter) {
         json_t *msg = json_object();
