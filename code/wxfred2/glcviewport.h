@@ -7,13 +7,14 @@
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
  */
+#include <glrcmissionframe.h>
 
-#include "base/wxfred_base.h"
+#include <base/wxfred_base.h>
 
-#include "globalincs/pstypes.h"
-#include "physics/physics.h"
+#include <globalincs/pstypes.h>
+#include <physics/physics.h>
 
-#include "wx/glcanvas.h"
+#include <wx/glcanvas.h>
 
 
 #if !wxUSE_GLCANVAS
@@ -30,32 +31,27 @@ enum cmode
 class glcViewport : public wxGLCanvas
 {
 public:
-	glcViewport( wxWindow *parent, wxWindowID id = wxID_ANY, int*gl_attrib = NULL);
+	glcViewport( wxWindow *parent, wxWindowID id = wxID_ANY );
+	~glcViewport( void );
 
 protected:
 	// Handlers for glcViewport
 	void OnPaint( wxPaintEvent& event );
 	void OnSize( wxSizeEvent& event);
-	void OnEraseBackgroun( wxEraseEvent& event);
-
+	void OnEraseBackground( wxEraseEvent& event);
 	void OnMouse( wxMouseEvent& event );
+
+	// Overlays
+	void render_compass( void );
 private:
 	// Member data
-	vec3d	c_pos;	// Camera Position
-	matrix	c_rot;	// Camera Rotation/Orientation
+	ViewSettings	settings;	// View/render settings
+	cmode	Control_mode;		// Control behavior setting
 
-	// Viewport modes and options
-	cmode Control_mode;
+	glrcMissionFrame	*grFrame;
 
-	bool show_coordinates;
-	bool show_distances;
-	bool show_grid;
-	bool show_grid_aa;
-	bool show_grid_positions;
-	bool show_horizon;
-	bool show_outlines;
-
-
+	// Event handling
+	DECLARE_EVENT_TABLE()
 };
 
 #endif // _GLCVIEWPORT_H

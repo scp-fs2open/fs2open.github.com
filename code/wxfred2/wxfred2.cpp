@@ -15,7 +15,7 @@
 #include <wx/image.h>
 #include <wx/string.h>
 //#include <wx/xrc/xmlres.h>
-	#include <wx/wx.h>
+#include <wx/wx.h>
 
 IMPLEMENT_APP(wxFRED2)
 
@@ -27,9 +27,9 @@ bool wxFRED2::OnInit()
 	wxChar* title = NULL;
 	// Init image handlers before frmFRED2 (wxFormBuilder workaround)
 	wxImage::AddHandler(new wxPNGHandler);
-	frmFRED2 *frame = new frmFRED2( title, 50, 50, 800, 600 );
-	SetTopWindow(frame);
-	frame->Show(TRUE);
+	frmFRED2 *Fred_gui = new frmFRED2( title, 50, 50, 800, 600 );
+	SetTopWindow(Fred_gui);
+	Fred_gui->Show(TRUE);
 
 	return true;
 }
