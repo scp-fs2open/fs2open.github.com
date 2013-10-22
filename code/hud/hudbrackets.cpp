@@ -296,6 +296,8 @@ void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2, int thick)
 }
 
 //	Draw bounding brackets for a subobject.
+// unused function, candidate for removal
+#if 0
 void draw_bounding_brackets_subobject()
 {
 	if (Player_ai->targeted_subsys_parent == Player_ai->target_objnum)
@@ -376,6 +378,7 @@ void draw_bounding_brackets_subobject()
 			// mprintf(("Drawing subobject brackets at %4i, %4i\n", sx, sy));
 		}
 }
+#endif
 
 extern int HUD_drew_selection_bracket_on_target;
 //Do we want to show the ship & class name?
@@ -418,6 +421,8 @@ int num_ships_attacking(int target_objnum);
 
 // draw_bounding_brackets() will draw the faded brackets that surround the current target
 // NOTE: x1, y1, x2 & y2 are assumed to be scaled sizes, w_correction & h_correction are assumed to be unscaled!!
+// unused function, candidate for removal
+#if 0
 void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, int h_correction, float distance, int target_objnum)
 {
 	int width, height;
@@ -587,6 +592,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
  */
 	}
 }
+#endif
 
 int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, bool draw, bool set_color, int* draw_coords)
 {
