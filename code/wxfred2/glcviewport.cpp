@@ -6,8 +6,8 @@
  * create based on the source.
  */
 
-#include <glcviewport.h>
-#include <glrcmissionframe.h>
+#include "glcviewport.h"
+#include "glrcmissionframe.h"
 
 #include <wx/wx.h>
 

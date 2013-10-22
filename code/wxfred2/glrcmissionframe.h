@@ -8,10 +8,10 @@
  * create based on the source.
  */
 
-#include "globalincs/pstypes.h"
-#include "physics/physics.h"
+#include <globalincs/pstypes.h>
+#include <physics/physics.h>
 
-#include "wx/glcanvas.h"
+#include <wx/glcanvas.h>
 
 
 #if !wxUSE_GLCANVAS

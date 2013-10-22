@@ -18,7 +18,7 @@
 #include "editors/frmwingeditor.h"
 #include "editors/dlgobjecteditor.h"
 #include "editors/frmwaypointeditor.h"
-#include "editors/dlgmissionObjectiveseditor.h"
+#include "editors/dlgmissionobjectiveseditor.h"
 #include "editors/dlgeventseditor.h"
 #include "editors/frmteamloadouteditor.h"
 #include "editors/dlgbackgroundeditor.h"

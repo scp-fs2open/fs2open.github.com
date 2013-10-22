@@ -7,9 +7,9 @@
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
  */
-#include <glrcmissionframe.h>
+#include "glrcmissionframe.h"
 
-#include <base/wxfred_base.h>
+#include "base/wxfred_base.h"
 
 #include <globalincs/pstypes.h>
 #include <physics/physics.h>
