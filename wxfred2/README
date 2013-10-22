@@ -1,4 +1,9 @@
 ====wxFRED2 - Port of Volition's FReespace EDitor to use wxWidgets GUI libraries====
+===The Golden Rule of wxFRED2===
+Thou shalt not mix business logic with pleasure logic.
+
+Otherwise known as "keep the GUI code seperate from the code that actually does work." All GUI elements that need to access mission-related data must go through an API provided by wxfred2.h and wxfred2.cpp.
+
 ===Required Libraries===
 You must have wxWidgets 2.9.4 or later.
 
