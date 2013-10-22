@@ -7,7 +7,7 @@
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
  */
-#include <glrcmissionframe.h>
+#include "glrcmissionframe.h"
 
 #include "base/wxFRED_base.h"
 
