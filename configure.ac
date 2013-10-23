@@ -447,9 +447,11 @@ if test "$fs2_os_linux" = "yes" || test "$fs2_os_osx" = "yes" || test "$fs2_os_b
 	fi
 fi
 
-dnl Dynamic Linking
-AC_SEARCH_LIBS([dlsym], [dl])
-FS2_LIBS=$FS2_LIBS" -ldl"
+if test "$fs2_os_bsd" != "yes" ; then
+	dnl Dynamic Linking
+	AC_SEARCH_LIBS([dlsym], [dl])
+	FS2_LIBS=$FS2_LIBS" -ldl"
+fi
 
 dnl Posix Threads
 AC_SEARCH_LIBS([pthread_mutex_timedlock], [pthread])
