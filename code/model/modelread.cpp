@@ -494,7 +494,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		mprintf(("Potential problem found: Unrecognized subsystem type '%s', believed to be in ship %s\n", dname, Global_filename));
 	}
 
-	if ( (p = strstr(props, "$triggered:")) != NULL ) {
+	if ( (strstr(props, "$triggered:")) != NULL ) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 		subsystemp->flags |= MSS_FLAG_TRIGGERED;
 	}
@@ -1336,7 +1336,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				else
 					pm->submodel[n].collide_invisible = false;
 
-				if ( (p = strstr(props, "$gun_rotation:")) != NULL || (p = strstr(props, "$gun_rotation")) != NULL)
+				if (strstr(props, "$gun_rotation") != NULL)
 					pm->submodel[n].gun_rotation = true;
 				else
 					pm->submodel[n].gun_rotation = false;
@@ -2461,7 +2461,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	pm = new polymodel;	
 	Polygon_models[num] = pm;
-	
+
 	pm->n_paths = 0;
 	pm->paths = NULL;
 
@@ -3766,6 +3766,8 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 
 	// Check for a valid turret
 	Assert( turret->turret_num_firing_points > 0 );
+	// Check for a valid subsystem
+	Assert( ss != NULL );
 
 	//This should not happen
 	if ( base == gun ) {

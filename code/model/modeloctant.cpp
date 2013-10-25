@@ -252,7 +252,6 @@ int model_octant_find_faces_sub(polymodel * pm, model_octant * oct, void *model_
 	while (chunk_type != OP_EOF)	{
 
 		switch (chunk_type) {
-		case OP_EOF:			return 1;
 		case OP_DEFPOINTS:	
 			moff_defpoints(p, just_count); 
 			break;

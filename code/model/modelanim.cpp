@@ -191,6 +191,13 @@ triggered_rotation::triggered_rotation()
 	n_queue = 0;
 	instance = -1;
 	has_started = false;
+	start_sound = -1;
+	loop_sound = -1;
+	end_sound = -1;
+	current_snd = -1;
+	current_snd_index = -1;
+	snd_rad = 0.0;
+	obj_num = -1;
 }
 
 triggered_rotation::~triggered_rotation()
@@ -223,7 +230,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 
 		if (i != n_queue) {
 			// replace if it's not the last item on the list
-			if ( i != (MAX_TRIGGERED_ANIMATIONS-1) )
+			if ( i < (MAX_TRIGGERED_ANIMATIONS-1) )
 				memcpy( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
 
 			// ok these two animations cancelled each other out, so he doesn't get on the queue
@@ -284,7 +291,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 			memcpy( queue, queue_tmp, sizeof(queued_animation) * i );
 
 		// if there are any items after, copy them from the original queue
-		if ( n_queue >= (i+1) )
+		if ( (n_queue >= (i+1)) && (i < (MAX_TRIGGERED_ANIMATIONS - 1)) )
 			memcpy( &queue[i+1], &queue_tmp[i], sizeof(queued_animation) * (n_queue - i) );
 
 		// add the new item
