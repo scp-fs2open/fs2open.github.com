@@ -3688,8 +3688,8 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 	const char *handled_types = "diouxXcfsn%";
 
 	int buf_src_len;
-	char buf_src[MAX_BUF];
-	char buf_dest[MAX_BUF];
+	char buf_src[MAX_BUF+1];
+	char buf_dest[MAX_BUF+1];
 
 	const char *p;
 	int *pint;
