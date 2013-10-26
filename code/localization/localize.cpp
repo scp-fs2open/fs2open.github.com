@@ -38,7 +38,7 @@ lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
 	{ "English",		"",		127,	589986744},				// English
 	{ "German",			"gr",	164,	-1132430286 },			// German
 	{ "French",			"fr",	164,	0 },			// French
-	{ "Polish",			"pl",	127,	},						// Polish
+	{ "Polish",			"pl",	127,	-1131728960},			// Polish
 };
 
 int Lcl_special_chars;
