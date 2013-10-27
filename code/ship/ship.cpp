@@ -10982,7 +10982,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 
 
-
 	// if trying to fire a swarm missile, make sure being called from right place
 	if ( (wip->wi_flags & WIF_SWARM) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
@@ -11147,10 +11146,15 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				// show the flash only if in not cockpit view, or if "show ship" flag is set
 				shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
 			}
+
+			if((wip->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+				// calculate some arbitrary value between 100
+				// (mass * velocity) / 10
+				game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f);
+			}
 			
 			num_fired++;
-			swp->last_fired_weapon_index = weapon_num;
-			swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
+			swp->last_fired_weapon_index = weapon_num;			swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
 			if (weapon_num != -1) {
 				swp->last_fired_weapon_signature = Objects[weapon_num].signature;
 			}
