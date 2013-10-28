@@ -19619,6 +19619,10 @@ void sexp_fade(bool fade_in, int duration, ubyte R, ubyte G, ubyte B)
 	}
 }
 
+static int Fade_out_r = -1;
+static int Fade_out_g = -1;
+static int Fade_out_b = -1;
+
 void sexp_fade(int n, bool fade_in)
 {
 	int duration = 0;
@@ -19670,8 +19674,26 @@ void sexp_fade(int n, bool fade_in)
 		// default: fade black
 		else
 		{
-			R = G = B = 0;
+			// Mantis #2944: if we're fading in, and we previously faded out to some specific color, use that same color to fade in
+			if (fade_in && (Fade_out_r >= 0) && (Fade_out_g >= 0) && (Fade_out_b >= 0))
+			{
+				R = Fade_out_r;
+				G = Fade_out_g;
+				B = Fade_out_b;
+			}
+			else
+			{
+				R = G = B = 0;
+			}
 		}
+	}
+
+	// Mantis #2944, if we're fading out to some specific color, save that color
+	if (!fade_in && ((R > 0) || (G > 0) || (B > 0)))
+	{
+		Fade_out_r = R;
+		Fade_out_g = G;
+		Fade_out_b = B;
 	}
 
 	sexp_fade(fade_in, duration, (ubyte) R, (ubyte) G, (ubyte) B);
