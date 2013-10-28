@@ -502,7 +502,7 @@ void HudGaugeThrottle::render(float frametime)
 			sprintf(buf, "%d", fl2i(desired_speed * Hud_speed_multiplier + 0.5f));
 		}
 
-		hud_num_make_mono(buf);
+		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 
 		renderString(position[0] + Target_speed_offsets[0] - w, position[1] + Target_speed_offsets[1], buf);
@@ -530,7 +530,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 
 	//setGaugeColor();
 	sprintf(buf, "%d", fl2i(current_speed+0.5f));
-	hud_num_make_mono(buf);
+	hud_num_make_mono(buf, font_num);
 	gr_get_string_size(&w, &h, buf);
 
 	if ( orbit ) {

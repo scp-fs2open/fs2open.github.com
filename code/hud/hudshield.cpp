@@ -1046,7 +1046,7 @@ void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
 
 	sprintf(text_integrity, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {
-		hud_num_make_mono(text_integrity);
+		hud_num_make_mono(text_integrity, font_num);
 	}	
 
 	renderString(final_pos[0], final_pos[1], text_integrity);

@@ -5674,7 +5674,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				delta_y = clip_h;
 			}
 
-			hud_num_make_mono(buf);
+			hud_num_make_mono(buf, font_num);
 
 			if ( Text_alignment ) {
 				gr_get_string_size(&w, &h, buf);
@@ -6018,7 +6018,7 @@ void HudGaugeWeapons::render(float frametime)
 			// get rid of #
 			end_string_at_first_hash_symbol(ammo_str);
 
-			hud_num_make_mono(ammo_str);
+			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
 
 			renderString(position[0] + Weapon_pammo_offset_x - w, name_y, EG_NULL, ammo_str);
@@ -6094,7 +6094,7 @@ void HudGaugeWeapons::render(float frametime)
 	
 		// print out the ammo right justified
 		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str);
+		hud_num_make_mono(ammo_str, font_num);
 		gr_get_string_size(&w, &h, ammo_str);
 
 		renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);		
@@ -6454,7 +6454,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 
 	if (displayed_distance > 0.0f) {
 		sprintf(buf, "%d", fl2i(displayed_distance + 0.5f));
-		hud_num_make_mono(buf);
+		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);	
 	} else {
 		buf[0] = 0;
@@ -6639,7 +6639,7 @@ void HudGaugeWarheadCount::render(float frametime)
 		char ammo_str[32];
 
 		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str);
+		hud_num_make_mono(ammo_str, font_num);
 
 		if ( Text_align ) {
 			int w, h;
@@ -6877,7 +6877,7 @@ void HudGaugePrimaryWeapons::render(float frametime)
 			// get rid of #
 			end_string_at_first_hash_symbol(ammo_str);
 
-			hud_num_make_mono(ammo_str);
+			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
 
 			renderString(position[0] + _pammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
@@ -7000,7 +7000,7 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 
 		// print out the ammo right justified
 		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str);
+		hud_num_make_mono(ammo_str, font_num);
 		gr_get_string_size(&w, &h, ammo_str);
 
 		renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);

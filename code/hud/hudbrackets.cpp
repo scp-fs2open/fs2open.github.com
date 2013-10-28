@@ -385,7 +385,7 @@ extern int HUD_drew_selection_bracket_on_target;
 extern int Cmdline_targetinfo;
 
 // Display the current target distance, right justified at (x,y)
-void hud_target_show_dist_on_bracket(int x, int y, float distance)
+void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num)
 {
 	char	text_dist[64];
 	int	w,h;
@@ -403,7 +403,7 @@ void hud_target_show_dist_on_bracket(int x, int y, float distance)
 	displayed_distance = distance * Hud_unit_multiplier;
 
 	sprintf(text_dist, "%d", fl2i(displayed_distance+0.5f));
-	hud_num_make_mono(text_dist);
+	hud_num_make_mono(text_dist, font_num);
 	gr_get_string_size(&w,&h,text_dist);
 
 	int y_delta = 4;
@@ -877,7 +877,7 @@ void HudGaugeBrackets::renderNavBrackets(vec3d* nav_pos, vertex* nav_point, colo
 	}
 
 	// draw distance to target in lower right corner of box
-	hud_target_show_dist_on_bracket(x+(box_scale+10),y+(box_scale+10), dist);
+	hud_target_show_dist_on_bracket(x+(box_scale+10),y+(box_scale+10), dist, font_num);
 
 	// bring the scale back to normal
 	gr_reset_screen_scale();
@@ -925,7 +925,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 
 	// draw distance to target in lower right corner of box
 	if ( distance > 0 ) {
-		hud_target_show_dist_on_bracket(x2+w_correction,y2+h_correction,distance);
+		hud_target_show_dist_on_bracket(x2+w_correction,y2+h_correction,distance,font_num);
 	}
 
 	//	Maybe show + for each additional fighter or bomber attacking target.

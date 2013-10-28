@@ -13,6 +13,7 @@
 #define __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
 
 #include "globalincs/pstypes.h"
+#include "graphics/font.h"
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS
@@ -28,7 +29,9 @@
 typedef struct lang_info {
 	char lang_name[LCL_LANG_NAME_LEN + 1];				// literal name of the language
 	char lang_ext[LCL_LANG_NAME_LEN + 1];				// the extension used for adding to names on disk access
-	ubyte special_char_offset;							// where in the font do we have the special characters for this language
+	ubyte special_char_indexes[MAX_FONTS];				// where in the font do we have the special characters for this language
+														// note: treats 0 as "none" since a zero offset in a font makes no sense
+														// i.e. all the normal chars start at zero
 	int checksum;										// used for language auto-detection
 } lang_info;
 
@@ -70,6 +73,8 @@ void lcl_get_language_name(char *lang_name);
 // set our current language
 void lcl_set_language(int lang);
 
+// get a fonts special characters index
+ubyte lcl_get_font_index(int font_num);
 
 // NOTE : generally you should only care about the above functions. Below are very low level functions
 //        which should already be well entrenched in FreeSpace. If you think you need to use one of the below
