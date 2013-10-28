@@ -421,6 +421,8 @@ sexp_oper Operators[] = {
 	{ "never-warp",						OP_WARP_NEVER,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "allow-warp",						OP_WARP_ALLOWED,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "special-warpout-name",			OP_SET_SPECIAL_WARPOUT_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "get-ets-value",					OP_GET_ETS_VALUE,						2,	2,			SEXP_ACTION_OPERATOR,	},	// niffiwan
+	{ "set-ets-values",					OP_SET_ETS_VALUES,						4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// niffiwan
 
 	//Subsystems and Health Sub-Category
 	{ "ship-invulnerable",				OP_SHIP_INVULNERABLE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -15101,6 +15103,90 @@ int sexp_weapon_recharge_pct(int node)
 	return (int)(100.0f * Energy_levels[Ships[sindex].weapon_recharge_index]);
 }
 
+/**
+ * retrieve one ETS index from a ship
+ */
+int sexp_get_ets_value(int node)
+{
+	int sindex;
+	SCP_string ets_type;
+
+	ets_type = CTEXT(node);
+	node = CDR(node);
+
+	sindex = ship_name_lookup(CTEXT(node));
+	if (sindex < 0) {
+		return SEXP_FALSE;
+	}
+	if (Ships[sindex].objnum < 0) {
+		return SEXP_FALSE;
+	}
+
+	if (!stricmp(ets_type.c_str(), "engine")) {
+		return Ships[sindex].engine_recharge_index;
+	} else if (!stricmp(ets_type.c_str(), "shield")) {
+		return Ships[sindex].shield_recharge_index;
+	} else if (!stricmp(ets_type.c_str(), "weapon")) {
+		return Ships[sindex].weapon_recharge_index;
+	} else {
+		return SEXP_FALSE;
+	}
+}
+
+/**
+ * set all ETS indexes for one or more ships
+ */
+void sexp_set_ets_values(int node)
+{
+	int sindex;
+	int ets_idx[num_retail_ets_gauges];
+
+	ets_idx[ENGINES] = eval_num(node);
+	node = CDR(node);
+	ets_idx[SHIELDS] = eval_num(node);
+	node = CDR(node);
+	ets_idx[WEAPONS] = eval_num(node);
+	node = CDR(node);
+
+	// sanity check inputs
+	sanity_check_ets_inputs(ets_idx);
+
+	multi_start_callback();
+
+	// apply ETS settings to specified ships
+	for ( ; node != -1; node = CDR(node)) {
+		sindex = ship_name_lookup(CTEXT(node));
+
+		if (sindex >= 0 && validate_ship_ets_indxes(sindex, ets_idx)) {
+			Ships[sindex].engine_recharge_index = ets_idx[ENGINES];
+			Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
+			Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
+
+			multi_send_ship(sindex);
+			multi_send_int(ets_idx[ENGINES]);
+			multi_send_int(ets_idx[SHIELDS]);
+			multi_send_int(ets_idx[WEAPONS]);
+		}
+	}
+	multi_end_callback();
+}
+
+void multi_sexp_set_ets_values()
+{
+	int sindex;
+	int ets_idx[num_retail_ets_gauges];
+
+	while (multi_get_ship(sindex)) {
+		multi_get_int(ets_idx[ENGINES]);
+		multi_get_int(ets_idx[SHIELDS]);
+		multi_get_int(ets_idx[WEAPONS]);
+
+		Ships[sindex].engine_recharge_index = ets_idx[ENGINES];
+		Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
+		Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
+	}
+}
+
 int sexp_shield_quad_low(int node)
 {
 	int sindex, idx;	
@@ -23210,6 +23296,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_weapon_recharge_pct(node);
 				break;
 
+			case OP_GET_ETS_VALUE:
+				sexp_val = sexp_get_ets_value(node);
+				break;
+
+			case OP_SET_ETS_VALUES:
+				sexp_val = SEXP_TRUE;
+				sexp_set_ets_values(node);
+				break;
+
 			case OP_SHIELD_QUAD_LOW:
 				sexp_val = sexp_shield_quad_low(node);
 				break;
@@ -24067,6 +24162,10 @@ void multi_sexp_eval()
 				sexp_reset_time_compression();
 				break;
 
+			case OP_SET_ETS_VALUES:
+				multi_sexp_set_ets_values();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -24399,6 +24498,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_GET_FOV:
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_STRING_GET_LENGTH:
+		case OP_GET_ETS_VALUE:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -24712,6 +24812,7 @@ int query_operator_return_type(int op)
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_COPY_VARIABLE_FROM_INDEX:
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
+		case OP_SET_ETS_VALUES:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -26234,6 +26335,20 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_WEAPON_RECHARGE_PCT:
 		case OP_ENGINE_RECHARGE_PCT:
 			return OPF_SHIP;			
+
+		case OP_GET_ETS_VALUE:
+			if (argnum == 0) {
+				return OPF_STRING;
+			} else {
+				return OPF_SHIP;
+			}
+
+		case OP_SET_ETS_VALUES:
+			if (argnum < 3) {
+				return OPF_POSITIVE;
+			} else {
+				return OPF_SHIP;
+			}
 
 		case OP_SHIELD_QUAD_LOW:
 			if(argnum == 0){
@@ -28475,6 +28590,8 @@ int get_subcategory(int sexp_id)
 		case OP_SECONDARY_FIRED_SINCE:
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
+		case OP_GET_ETS_VALUE:
+		case OP_SET_ETS_VALUES:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
@@ -31045,6 +31162,20 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_ENGINE_RECHARGE_PCT, "engine-recharge-pct\r\n"
 		"\tReturns a percentage from 0 to 100\r\n"
 		"\t1: Ship name\r\n" },
+
+	{ OP_GET_ETS_VALUE, "get-ets-values\r\n"
+		"\tGets one ETS index for a ship\r\n"
+		"\t1: ETS index to get, Engine|Shield|Weapon\r\n"
+		"\t2: Ship name\r\n"},
+
+	{ OP_SET_ETS_VALUES, "set-ets-values\r\n"
+		"\tSets ETS indexes for a ship\r\n"
+		"\tUse values retrieved with get-ets-value\r\n"
+		"\tIf you use your own values, make sure they add up to 12\r\n"
+		"\t1: Engine percent\r\n"
+		"\t2: Shields percent\r\n"
+		"\t3: Weapons percent\r\n"
+		"\t4: Ship name\r\n"},
 
 	{ OP_CARGO_NO_DEPLETE, "cargo-no-deplete\r\n"
 		"\tCauses the named ship to have unlimited cargo.\r\n"
