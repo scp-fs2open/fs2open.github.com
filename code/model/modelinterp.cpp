@@ -4427,7 +4427,13 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
 		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
 
-		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset)) )
+		vec3d offset;
+		if (model->use_render_box_offset)
+			offset = model->render_box_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
+
+		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &offset)) )
 			return;
 	}
 	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
@@ -4435,8 +4441,10 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		model_find_submodel_offset(&offset, pm->id, mn);
-		vm_vec_add2(&offset, &model->render_sphere_offset);
+		if (model->use_render_sphere_offset)
+			offset = model->render_sphere_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, Interp_render_sphere_radius)) )
 			return;
@@ -4550,7 +4558,13 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
 		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
 
-		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset)) )
+		vec3d offset;
+		if (model->use_render_box_offset)
+			offset = model->render_box_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
+
+		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &offset)) )
 			return;
 	}
 	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
@@ -4558,8 +4572,10 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		model_find_submodel_offset(&offset, pm->id, mn);
-		vm_vec_add2(&offset, &model->render_sphere_offset);
+		if (model->use_render_sphere_offset)
+			offset = model->render_sphere_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, Interp_render_sphere_radius)) )
 			return;

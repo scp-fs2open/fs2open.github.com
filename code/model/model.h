@@ -307,7 +307,7 @@ public:
 		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
 		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0), sii(NULL),
 		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
-		num_arcs(0), render_sphere_radius(0.0f), use_render_box(0), use_render_sphere(0), gun_rotation(false), no_collisions(false),
+		num_arcs(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false), use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
 		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
 		look_at_num(-1)
 	{
@@ -315,7 +315,7 @@ public:
 		lod_name[0] = 0;
 		look_at[0] = 0;
 
-		offset = geometric_center = min = max = render_box_min = render_box_max = render_sphere_offset = vmd_zero_vector;
+		offset = geometric_center = min = max = render_box_min = render_box_max = render_box_offset = render_sphere_offset = vmd_zero_vector;
 		orientation = vmd_identity_matrix;
 
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
@@ -381,10 +381,13 @@ public:
 
 	vec3d	render_box_min;
 	vec3d	render_box_max;
+	vec3d	render_box_offset;
 	float	render_sphere_radius;
 	vec3d	render_sphere_offset;
 	int		use_render_box;			// 0==do nothing, 1==only render this object if you are inside the box, -1==only if you're outside
+	bool	use_render_box_offset;		// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
 	int		use_render_sphere;		// 0==do nothing, 1==only render this object if you are inside the sphere, -1==only if you're outside
+	bool 	use_render_sphere_offset;// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
 	bool	gun_rotation;			// for animated weapon models
 	bool	no_collisions;			// for $no_collisions property - kazan
 	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
