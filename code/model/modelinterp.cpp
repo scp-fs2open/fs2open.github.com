@@ -82,7 +82,6 @@ static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes
 static vec3d Interp_render_box_min = ZERO_VECTOR;
 static vec3d Interp_render_box_max = ZERO_VECTOR;
 static float Interp_render_sphere_radius = 0.0f;
-static vec3d Interp_render_sphere_offset = ZERO_VECTOR;
 
 // -------------------------------------------------------------------
 // lighting save stuff 
@@ -368,7 +367,6 @@ void interp_clear_instance()
 	Interp_render_box_min = vmd_zero_vector;
 	Interp_render_box_max = vmd_zero_vector;
 	Interp_render_sphere_radius = 0.0f;
-	Interp_render_sphere_offset = vmd_zero_vector;
 }
 
 /**
