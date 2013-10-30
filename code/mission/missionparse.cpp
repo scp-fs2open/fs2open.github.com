@@ -6493,13 +6493,15 @@ int mission_did_ship_arrive(p_object *objp)
 	}
 
 	if ( should_arrive ) { 		// has the arrival criteria been met?
-		int object_num;		
+		int object_num;
 
 		// check to see if the delay field <= 0.  if so, then create a timestamp and then maybe
 		// create the object
 		if ( objp->arrival_delay <= 0 ) {
 			objp->arrival_delay = timestamp( -objp->arrival_delay * 1000 );
-			Assert( objp->arrival_delay >= 0 );
+
+			// make sure we have a valid timestamp
+			Assert( objp->arrival_delay > 0 );
 		}
 		
 		// if the timestamp hasn't elapsed, move onto the next ship.
