@@ -3688,8 +3688,8 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 	const char *handled_types = "diouxXcfsn%";
 
 	int buf_src_len;
-	char buf_src[MAX_BUF+1];
-	char buf_dest[MAX_BUF+1];
+	char buf_src[MAX_BUF];
+	char buf_dest[MAX_BUF];
 
 	const char *p;
 	int *pint;
@@ -3713,9 +3713,9 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 		buf_src_len = 1;
 		do {
 			++p;
-			if (!*p || (buf_src_len >= MAX_BUF))
+			if (!*p || (buf_src_len >= MAX_BUF-1))
 			{
-				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF, format, (p - format));
+				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF-1, format, (p - format));
 
 				// unsafe to continue handling this va_list
 				dest += buf_src;
