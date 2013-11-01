@@ -25,7 +25,7 @@
 #if defined(_MSC_VER) && _MSC_VER < 1400
 #define SCP_hash_map std::hash_map
 #else
-#define SCP_hash_map std::hash_map
+#define SCP_hash_map stdext::hash_map
 #endif
 #endif // ! defined __GNUC__
 
