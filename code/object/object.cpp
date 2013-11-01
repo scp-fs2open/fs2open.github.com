@@ -113,8 +113,28 @@ object::~object()
 {
 	objsnd_num.clear();
 
-	Assertion(dock_list == NULL, "dock_list should have been cleared already!");
-	Assertion(dead_dock_list == NULL, "dead_dock_list should have been cleared already!");
+	if (dock_list != NULL)
+	{
+		mprintf(("dock_list should have been cleared already!\n"));
+		dock_instance *ptr = dock_list;
+		while (ptr != NULL)
+		{
+			dock_instance *nextptr = ptr->next;
+			vm_free(ptr);
+			ptr = nextptr;
+		}
+	}
+	if (dead_dock_list != NULL)
+	{
+		mprintf(("dead_dock_list should have been cleared already!\n"));
+		dock_instance *ptr = dead_dock_list;
+		while (ptr != NULL)
+		{
+			dock_instance *nextptr = ptr->next;
+			vm_free(ptr);
+			ptr = nextptr;
+		}
+	}
 }
 
 // DO NOT set next and prev to NULL because they keep the object on the free and used lists
