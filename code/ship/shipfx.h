@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/grbatch.h"
 
-struct object;
+class object;
 class ship;
 class ship_info;
 struct ship_subsys;

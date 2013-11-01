@@ -12,7 +12,7 @@
 #ifndef __AIBIG_H__
 #define __AIBIG_H__
 
-struct object;
+class object;
 struct ai_info;
 struct vec3d;
 struct ship_subsys;

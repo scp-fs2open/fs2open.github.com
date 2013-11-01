@@ -16,7 +16,7 @@
 #include "globalincs/vmallocator.h"
 #include "graphics/font.h"
 
-struct object;
+class object;
 struct cockpit_display;
 
 typedef struct hud_anim {

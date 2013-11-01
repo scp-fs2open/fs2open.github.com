@@ -14,7 +14,7 @@
 
 #include "hud/hud.h"
 
-struct object;
+class object;
 
 #define ENERGY_DIVERT_DELTA				0.2f	// percentage of energy transferred in a shield->weapon or weapon->shield energy transfer
 #define INTIAL_SHIELD_RECHARGE_INDEX	4		// default shield charge rate (index in Energy_levels[])

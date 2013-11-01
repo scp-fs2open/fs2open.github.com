@@ -28,7 +28,7 @@
 // define for trapping messages send to "all fighters"
 #define MESSAGE_ALL_FIGHTERS		-999
 
-struct object;
+class object;
 
 // defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
 // and disable messages on a message by message basis

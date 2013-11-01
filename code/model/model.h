@@ -17,7 +17,7 @@
 #include "graphics/2d.h"
 #include "object/object.h"
 
-struct object;
+class object;
 
 extern flag_def_list model_render_flags[];
 extern int model_render_flags_size;

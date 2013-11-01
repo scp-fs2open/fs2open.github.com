@@ -17,7 +17,7 @@
 
 struct net_player;
 struct net_addr;
-struct object;
+class object;
 class ship;
 struct wing;
 struct join_request;

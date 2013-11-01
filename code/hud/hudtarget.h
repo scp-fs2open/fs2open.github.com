@@ -17,7 +17,7 @@
 
 class ship;
 struct ship_subsys;
-struct object;
+class object;
 struct weapon_info;
 
 #define INCREASING	0

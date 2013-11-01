@@ -33,7 +33,7 @@
 
 #include <string>
 
-struct object;
+class object;
 class WarpEffect;
 
 //	Part of the player died system.

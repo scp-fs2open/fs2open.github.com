@@ -63,7 +63,7 @@ struct vec3d;
 #define EG_SQ9						34				// squadmsg 9
 #define EG_SQ10					35				// squadmsg 10
 
-struct object;
+class object;
 class ship;
 struct weapon_info;
 

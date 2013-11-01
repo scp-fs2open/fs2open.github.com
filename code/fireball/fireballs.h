@@ -14,7 +14,7 @@
 
 #include "globalincs/pstypes.h"
 
-struct object;
+class object;
 class ship_info;
 class asteroid_info;
 

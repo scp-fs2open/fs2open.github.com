@@ -43,7 +43,7 @@ typedef struct ssm_firing_info {
 	vec3d   start_pos[MAX_SSM_COUNT];       // start positions
 	
 	int             ssm_index;							// index info ssm_info array
-	struct object*  target;								// target for the strike
+	class object*  target;								// target for the strike
     int             ssm_team;                           // team that fired the ssm.
 } ssm_firing_info;
 

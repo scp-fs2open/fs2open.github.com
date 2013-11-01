@@ -11,7 +11,7 @@
 
 #include "globalincs/globals.h"
 
-struct object;
+class object;
 
 // info for each docked object
 typedef struct dock_instance {

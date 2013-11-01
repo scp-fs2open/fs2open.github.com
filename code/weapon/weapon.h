@@ -20,7 +20,7 @@
 #include "graphics/generic.h"
 #include "model/model.h"
 
-struct object;
+class object;
 struct ship_subsys;
 
 #define	WP_UNUSED			-1

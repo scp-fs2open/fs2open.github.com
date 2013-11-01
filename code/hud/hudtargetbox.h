@@ -16,7 +16,7 @@
 #include "radar/radarsetup.h"
 #include "ship/ship.h"
 
-struct object;
+class object;
 
 #define TBOX_FLASH_DURATION	1400
 #define TBOX_FLASH_INTERVAL	200

@@ -19,7 +19,7 @@
 #include "globalincs/globals.h"
 
 // prototypes
-struct object;
+class object;
 struct ship_subsys;
 struct obj_pair;
 struct beam_weapon_info;

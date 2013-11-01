@@ -14,7 +14,7 @@
 
 #include "globalincs/pstypes.h"
 
-struct object;
+class object;
 struct ship_subsys;
 
 typedef struct turret_swarm_info {

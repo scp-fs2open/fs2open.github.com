@@ -96,7 +96,7 @@ typedef struct particle {
 
 // Creates a single particle. See the PARTICLE_?? defines for types.
 particle *particle_create( particle_info *pinfo );
-particle *particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data = -1, float tracer_length=-1.0f, struct object *objp=NULL, bool reverse=false );
+particle *particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data = -1, float tracer_length=-1.0f, class object *objp=NULL, bool reverse=false );
 
 //============================================================================
 //============== HIGH-LEVEL PARTICLE SYSTEM CREATION CODE ====================
