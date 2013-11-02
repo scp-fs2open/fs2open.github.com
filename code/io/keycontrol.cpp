@@ -1024,12 +1024,21 @@ void process_debug_keys(int k)
 			break;
 		}
 
-		case KEY_DEBUGGED + KEY_R: {
+		case KEY_DEBUGGED + KEY_R:
 		case KEY_DEBUGGED1 + KEY_R:
-			if (Player_ai->target_objnum != -1)
-				ai_issue_rearm_request(&Objects[Player_ai->target_objnum]);
+		{
+			// rearm the target, if we have one
+			object *obj_to_rearm = (Player_ai->target_objnum >= 0) ? &Objects[Player_ai->target_objnum] : Player_obj;
+
+			if (is_support_allowed(obj_to_rearm))
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", -1), Ships[obj_to_rearm->instance].ship_name);
+				ai_issue_rearm_request(obj_to_rearm);
+			}
 			else
-				ai_issue_rearm_request(Player_obj);
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", -1), Ships[obj_to_rearm->instance].ship_name);
+			}
 
 			break;
 		}

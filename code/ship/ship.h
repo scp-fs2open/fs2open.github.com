@@ -1706,7 +1706,7 @@ extern int	ship_do_rearm_frame( object *objp, float frametime );
 extern float ship_calculate_rearm_duration( object *objp );
 extern void	ship_wing_cleanup( int shipnum, wing *wingp );
 
-extern object *ship_find_repair_ship( object *requester );
+extern int ship_find_repair_ship( object *requester_obj, object **ship_we_found = NULL );
 extern void ship_close();	// called in game_shutdown() to free malloced memory
 
 
@@ -1806,7 +1806,7 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
 
-int is_support_allowed(object *objp);
+int is_support_allowed(object *objp, bool do_simple_check = false);
 
 // Given an object and a turret on that object, return the actual firing point of the gun
 // and its normal.   This uses the current turret angles.  We are keeping track of which

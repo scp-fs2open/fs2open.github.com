@@ -12974,14 +12974,14 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	return 0;
 }
 
-// function which is used to find a repair ship to repair requester_obj.  the way repair ships will work
-// is:
-// if repair ship present and ordered to depart, return NULL.
-// if repair ship present and available, return pointer to that object.
-// If repair ship present and busy, possibly return that object if he can satisfy the request soon enough.
-// If repair ship present and busy and cannot satisfy request, return NULL to warp a new one in if below max number
-// if no repair ship present, return NULL to force a new one to be warped in.
-object *ship_find_repair_ship( object *requester_obj )
+// Goober5000 - modified the logic to clarify the various states
+// function which is used to find a repair ship to repair requester_obj.  the way repair ships will work is:
+// if no ships in the mission at all, return 0
+// if a ship can immediately satisfy a repair request, return 1 and fill in the pointer
+// if no ships can satisfy a request, but we haven't reached either the concurrent or cumulative limit, return 2
+// if no ships can satisfy a request, and we've reached the limits, but a request can be queued, return 3 and fill in the pointer
+// if no ships can satisfy a request, we've reached the limits, and we can't queue anything, we're out of luck -- return 4
+int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 {
 	object *objp;
 	int num_support_ships = 0;
@@ -13023,6 +13023,9 @@ object *ship_find_repair_ship( object *requester_obj )
 			if ( !(sip->flags & SIF_SUPPORT) ) {
 				continue;
 			}
+
+			// tally how many support ships actually exist
+			num_support_ships++;
 
 			// don't deal with dying or departing support ships
 			if ( shipp->flags & (SF_DYING | SF_DEPARTING) ) {
@@ -13072,32 +13075,43 @@ object *ship_find_repair_ship( object *requester_obj )
 					nearest_support_ship = objp;
 				}
 			}
-
-			// it a support ship, count it so that we can see if we can cheat
-			// and request for a new support ship to be warped in to service
-			// this request if all of the ships that I find are busy.
-			num_support_ships++;
 		}
 	}
 
-	if (nearest_support_ship != NULL) {
+	// no ships present?
+	// (be advised we may have an Arriving_support_ship in this case)
+	if (num_support_ships == 0) {
+		return 0;
+	}
+	// ship available?
+	else if (nearest_support_ship != NULL) {
 		// the nearest non-busy support ship is to service request
-		return nearest_support_ship;
-	} else if (num_support_ships >= The_mission.support_ships.max_concurrent_ships) {
-		// found more support ships than should be in mission, so I can't ask for more,
-		// instead I will give the player the ship that will be done soonest or return NULL
-		// because there are no support ships in mission and they are not allowed to be
-		// requested by the AI or the player (that is, they have to be FREDed in)
-		return soonest_available_support_ship;
-	} else {
-		Assert(num_support_ships < The_mission.support_ships.max_concurrent_ships);
+		Assert(ship_we_found != NULL);
+		*ship_we_found = nearest_support_ship;
+		return 1;
+	}
+	// no ships available; are we below the limits?  (can we bring another ship in? -- and btw an Arriving_support_ship counts as being able to bring one in)
+	else if ((num_support_ships < The_mission.support_ships.max_concurrent_ships)
+		&& (	(Arriving_support_ship == NULL && The_mission.support_ships.tally < The_mission.support_ships.max_support_ships)
+			 || (Arriving_support_ship != NULL && The_mission.support_ships.tally <= The_mission.support_ships.max_support_ships) ))
+	{
 		// We are allowed more support ships in the mission; request another ship
 		// to service this request.
-		return NULL;
+		return 2;
+	}
+	// we're at the limit, but maybe a ship will become available
+	else if (soonest_available_support_ship != NULL) {
+		// found more support ships than should be in mission, so I can't ask for more,
+		// instead I will give the player the ship that will be done soonest
+		Assert(ship_we_found != NULL);
+		*ship_we_found = soonest_available_support_ship;
+		return 3;
+	}
+	// none of the above; we're out of luck
+	else {
+		return 4;
 	}
 }
-
-
 
 /**
  * Called in game_shutdown() to free malloced memory
@@ -15783,7 +15797,7 @@ void ship_page_out_textures(int ship_index, bool release)
 // function to return true if support ships are allowed in the mission for the given object.
 //	In single player, must be friendly and not Shivan. (Goober5000 - Shivans can now have support)
 //	In multiplayer -- to be coded by Mark Allender after 5/4/98 -- MK, 5/4/98
-int is_support_allowed(object *objp)
+int is_support_allowed(object *objp, bool do_simple_check)
 {
 	// check updated mission conditions to allow support
 
@@ -15795,38 +15809,59 @@ int is_support_allowed(object *objp)
 	if (The_mission.support_ships.max_support_ships == 0)
 		return 0;
 
-	// restricted number allowed
-	if (The_mission.support_ships.max_support_ships > 0)
+	// ship_find_repair_ship is a little expensive, so let's not do it every frame
+	if (!do_simple_check)
 	{
-		// if all the allowed ships have been used up and there are no support ships currently in the mission - can't rearm
-		if ((The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships) && (ship_find_repair_ship(objp) == NULL))
+		// check if all support ships are departing or dying
+		int result = ship_find_repair_ship(objp);
+		if (result == 4) {
 			return 0;
+		}
+
+		// restricted number allowed
+		if (The_mission.support_ships.max_support_ships > 0)
+		{
+			// if all the allowed ships have been used up, can't rearm unless something's available in-mission or arriving
+			if ((The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships))
+			{
+				// this shouldn't happen because we've reached one of the limits
+				Assert(result != 2);
+
+				// nothing arriving and no ships available in mission
+				if ((Arriving_support_ship == NULL) && (result == 0 || result == 3))
+					return 0;
+			}
+		}
 	}
 
 	ship *shipp = &Ships[objp->instance];
 
-	// make sure, if exiting from bay, that parent ship is in the mission!
-	if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
+	// this also looks a little more expensive
+	if (!do_simple_check)
 	{
-		Assert(The_mission.support_ships.arrival_anchor != -1);
-
-		// ensure it's in-mission
-		int temp = ship_name_lookup(Parse_names[The_mission.support_ships.arrival_anchor]);
-		if (temp < 0)
+		// make sure, if exiting from bay, that parent ship is in the mission!
+		if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
 		{
-			return 0;
-		}
+			Assert(The_mission.support_ships.arrival_anchor != -1);
 
-		// make sure it's not leaving or blowing up
-		if (Ships[temp].flags & (SF_DYING | SF_DEPARTING))
-		{
-			return 0;
-		}
+			// ensure it's in-mission
+			int temp = ship_name_lookup(Parse_names[The_mission.support_ships.arrival_anchor]);
+			if (temp < 0)
+			{
+				return 0;
+			}
 
-		// also make sure that parent ship's fighterbay hasn't been destroyed
-		if (ship_fighterbays_all_destroyed(&Ships[temp]))
-		{
-			return 0;
+			// make sure it's not leaving or blowing up
+			if (Ships[temp].flags & (SF_DYING | SF_DEPARTING))
+			{
+				return 0;
+			}
+
+			// also make sure that parent ship's fighterbay hasn't been destroyed
+			if (ship_fighterbays_all_destroyed(&Ships[temp]))
+			{
+				return 0;
+			}
 		}
 	}
 
@@ -15865,12 +15900,15 @@ int is_support_allowed(object *objp)
 		return 0;
 	}
 
+// this is a mod problem, so let's only do it in debug mode
+#ifndef NDEBUG
 	// Goober5000 - extra check to make sure this guy has a rearming dockpoint
 	if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
 	{
-		mprintf(("support not allowed for %s because its model lacks a rearming dockpoint\n", shipp->ship_name));
+		Warning("Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
 		return 0;
 	}
+#endif
 
 	// Goober5000 - if we got this far, we can request support
 	return 1;
