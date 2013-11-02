@@ -15397,7 +15397,7 @@ int ai_issue_rearm_request(object *requester_objp)
 	
 	// these should have already been caught by the time we get here!
 	Assert(!(requester_aip->ai_flags & AIF_AWAITING_REPAIR));
-	Assert(is_support_allowed(requester_objp);
+	Assert(is_support_allowed(requester_objp));
 
 	requester_aip->next_rearm_request_timestamp = timestamp(NEXT_REARM_TIMESTAMP);	//	Might request again after this much time.
 
