@@ -15905,7 +15905,7 @@ int is_support_allowed(object *objp, bool do_simple_check)
 	// Goober5000 - extra check to make sure this guy has a rearming dockpoint
 	if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
 	{
-		Warning("Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
+		Warning(LOCATION, "Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
 		return 0;
 	}
 #endif
