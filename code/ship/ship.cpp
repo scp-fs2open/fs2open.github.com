@@ -4855,9 +4855,9 @@ void ship::clear()
 
 	shield_integrity = NULL;
 
-	shield_recharge_index = 0;
-	weapon_recharge_index = 0;
-	engine_recharge_index = 0;
+	shield_recharge_index = INTIAL_SHIELD_RECHARGE_INDEX;
+	weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
+	engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
 	weapon_energy = 0;
 	current_max_speed = 0.0f;
 	next_manage_ets = timestamp(0);
@@ -5184,6 +5184,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		else
 			swp->secondary_bank_ammo[i] = fl2i(sip->secondary_bank_ammo_capacity[i] / weapon_size + 0.5f );
 	}
+
+	shipp->armor_type_idx = sip->armor_type_idx;
+	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
+	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
+	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
 
 	polymodel *pm = model_get(sip->model_num);
 
