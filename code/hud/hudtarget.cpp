@@ -3981,9 +3981,16 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		vm_vec_add2(&source_pos, &gun_point);
 	} 
 	
-	// Determine "accurate" distance to target.  This is the distance from the player ship
-	// to the closest point on the bounding box of the target
-	dist_to_target = hud_find_target_distance(targetp, Player_obj);
+	// Determine "accurate" distance to target.
+	// This is the distance from the player ship to:
+	//   (if targeting a subsystem) the distance to the subsystem centre
+	//     (playing it safe, will usually be in range at slightly further away due to subsys radius)
+	//   (otherwise) the closest point on the bounding box of the target
+	if ( Player_ai->targeted_subsys != NULL ) {
+		dist_to_target = vm_vec_dist(&target_pos, &Player_obj->pos);
+	} else {
+		dist_to_target = hud_find_target_distance(targetp, Player_obj);
+	}
 
 	srange = ship_get_secondary_weapon_range(Player_ship);
 
