@@ -13221,27 +13221,30 @@ int maybe_request_support(object *objp)
 		return 0;
 	}
 
-	// Now do the more thorough check
-	if (!is_support_allowed(objp)) {
-		return 0;
-	}
+	bool try_to_rearm = false;
 
 	//	Compute danger threshold.
 	//	Balance this with desire and maybe request support.
 	if (ai_good_time_to_rearm( objp )) {
-		ai_issue_rearm_request(objp);
-		return 1;
+		try_to_rearm = true;
 	} else if (num_allies_rearming(objp) < 2) {
 		if (desire >= 8) {	//	guarantees disabled will cause repair request
-			ai_issue_rearm_request(objp);
+			try_to_rearm = true;
 		} else if (desire >= 3) {		//	>= 3 means having a single subsystem fully blown will cause repair.
 			int	count;
 			int objnum = find_nearby_threat(OBJ_INDEX(objp), iff_get_attacker_mask(obj_team(objp)), 2000.0f, &count);
 
 			if ((objnum == -1) || (count < 2) || (vm_vec_dist_quick(&objp->pos, &Objects[objnum].pos) > 3000.0f*count/desire)) {
-				ai_issue_rearm_request(objp);
-				return 1;
+				try_to_rearm = true;
 			}
+		}
+	}
+
+	if (try_to_rearm) {
+		// Now do the more thorough check
+		if (is_support_allowed(objp)) {
+			ai_issue_rearm_request(objp);
+			return 1;
 		}
 	}
 

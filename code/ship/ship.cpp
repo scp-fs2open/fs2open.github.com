@@ -13086,8 +13086,8 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 	// ship available?
 	else if (nearest_support_ship != NULL) {
 		// the nearest non-busy support ship is to service request
-		Assert(ship_we_found != NULL);
-		*ship_we_found = nearest_support_ship;
+		if (ship_we_found != NULL)
+			*ship_we_found = nearest_support_ship;
 		return 1;
 	}
 	// no ships available; are we below the limits?  (can we bring another ship in? -- and btw an Arriving_support_ship counts as being able to bring one in)
@@ -13103,8 +13103,8 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 	else if (soonest_available_support_ship != NULL) {
 		// found more support ships than should be in mission, so I can't ask for more,
 		// instead I will give the player the ship that will be done soonest
-		Assert(ship_we_found != NULL);
-		*ship_we_found = soonest_available_support_ship;
+		if (ship_we_found != NULL)
+			*ship_we_found = soonest_available_support_ship;
 		return 3;
 	}
 	// none of the above; we're out of luck
@@ -15799,6 +15799,8 @@ void ship_page_out_textures(int ship_index, bool release)
 //	In multiplayer -- to be coded by Mark Allender after 5/4/98 -- MK, 5/4/98
 int is_support_allowed(object *objp, bool do_simple_check)
 {
+	int result;
+
 	// check updated mission conditions to allow support
 
 	// If running under autopilot support is not allowed
@@ -15813,7 +15815,7 @@ int is_support_allowed(object *objp, bool do_simple_check)
 	if (!do_simple_check)
 	{
 		// check if all support ships are departing or dying
-		int result = ship_find_repair_ship(objp);
+		result = ship_find_repair_ship(objp);
 		if (result == 4) {
 			return 0;
 		}
@@ -15840,7 +15842,7 @@ int is_support_allowed(object *objp, bool do_simple_check)
 	if (!do_simple_check)
 	{
 		// make sure, if exiting from bay, that parent ship is in the mission!
-		if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
+		if ((result == 0 || result == 2) && (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY))
 		{
 			Assert(The_mission.support_ships.arrival_anchor != -1);
 
