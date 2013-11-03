@@ -12985,9 +12985,9 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 {
 	object *objp;
 	int num_support_ships = 0;
-	float min_dist = 99999.0f;
+	float min_dist = -1.0f;
 	object *nearest_support_ship = NULL;
-	float min_time_till_available = 999999.0f;
+	float min_time_till_available = -1.0f;
 	object *soonest_available_support_ship = NULL;
 
 	Assertion(requester_obj->type == OBJ_SHIP, "requester_obj not a ship. Has type of %08x", requester_obj->type);
@@ -13061,7 +13061,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 						howlong += dist * objp->phys_info.max_vel.xyz.z;
 					}
 				}
-				if ( howlong < min_time_till_available ) {
+				if ( min_time_till_available < 0.0f || howlong < min_time_till_available ) {
 					min_time_till_available = howlong;
 					soonest_available_support_ship = objp;
 				}
@@ -13069,7 +13069,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 			else
 			{
 				// support ship not already busy, find the closest
-				if (dist < min_dist)
+				if ( min_dist < 0.0f || dist < min_dist )
 				{
 					min_dist = dist;
 					nearest_support_ship = objp;
@@ -15799,7 +15799,7 @@ void ship_page_out_textures(int ship_index, bool release)
 //	In multiplayer -- to be coded by Mark Allender after 5/4/98 -- MK, 5/4/98
 int is_support_allowed(object *objp, bool do_simple_check)
 {
-	int result;
+	int result = -1;
 
 	// check updated mission conditions to allow support
 
