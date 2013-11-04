@@ -2491,6 +2491,10 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 	for (i = 0; i < pm->n_glow_point_banks; i++ ) {
 		glow_point_bank *bank = &pm->glow_point_banks[i];
 
+		//Only continue if there actually is a glowpoint bitmap available
+		if (bank->glow_bitmap == -1)
+			continue;
+
 		if (pm->submodel[bank->submodel_parent].blown_off)
 			continue;
 
