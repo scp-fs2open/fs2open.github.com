@@ -13603,6 +13603,8 @@ ADE_INDEXER(l_Mission_Debris, "number Index", "Array of debris in the current mi
 	}
 	if( idx > -1 && idx < Num_debris_pieces ) {
 		idx--; // Lua -> C
+		if (Debris[idx].objnum == -1) //Somehow accessed an invalid debris piece
+			return ade_set_error(L, "o", l_Debris.Set(object_h()));
 		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum]), Objects[Debris[idx].objnum].signature));
 	}
 
