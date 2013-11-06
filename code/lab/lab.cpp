@@ -69,6 +69,7 @@ static int Lab_insignia_index = -1;
 static ubyte Lab_mode = LAB_MODE_NONE;
 static int Lab_selected_index = -1;
 static int Lab_last_selected_ship = -1;
+static int Lab_last_selected_weapon = -1;
 
 static int Lab_model_num = -1;
 static int Lab_weaponmodel_num[MAX_SHIP_WEAPONS];
@@ -165,7 +166,11 @@ void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
 	if ( (ship_index < 0) && (weapon_index < 0) ) {
 		if (Lab_bitmap_id >= 0) {
 			bm_release(Lab_bitmap_id);
+			if (Lab_last_selected_weapon >= 0) {
+				Weapon_info[Lab_last_selected_weapon].laser_bitmap.first_frame = -1;
+			}
 			Lab_bitmap_id = -1;
+			Lab_last_selected_weapon = -1;
 		}
 
 		return;
@@ -175,6 +180,13 @@ void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
 		if (ship_index >= 0) {
 			// TODO:  Ship stuff!!
 		} else if (weapon_index >= 0) {
+			// release old bitmap if required
+			if ( (Lab_last_selected_weapon >= 0) && (Lab_last_selected_weapon != weapon_index)) {
+				Weapon_info[Lab_last_selected_weapon].laser_bitmap.first_frame = -1;
+				if (Lab_bitmap_id >= 0) {
+					bm_release(Lab_bitmap_id);
+				}
+			}
 			// load up the weapon bitmaps
 			extern void weapon_load_bitmaps(int);
 			weapon_load_bitmaps(weapon_index);
@@ -2105,6 +2117,7 @@ void labviewer_change_weapon(Tree *caller)
 	}
 
 	Lab_selected_index = weap_index;
+	Lab_last_selected_weapon = Lab_selected_index;
 
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
