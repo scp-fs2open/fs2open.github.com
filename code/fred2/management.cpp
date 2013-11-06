@@ -380,6 +380,8 @@ bool fred_init()
 	iff_init();			// Goober5000
 	species_init();		// Kazan
 
+	brief_parse_icon_tbl();
+
 	// for fred specific replacement texture stuff
 	//Fred_texture_replacements = (texture_replace*) vm_malloc( sizeof(texture_replace) * MAX_SHIPS * MAX_REPLACEMENT_TEXTURES );
 	Fred_texture_replacements = new texture_replace[MAX_SHIPS*MAX_REPLACEMENT_TEXTURES];
@@ -428,7 +430,6 @@ bool fred_init()
 	neb2_init();						// fullneb stuff
 	stars_init();
 	brief_init_colors();
-	brief_parse_icon_tbl();
 	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
 	event_music_init();
 	fiction_viewer_reset();

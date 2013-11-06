@@ -144,6 +144,7 @@ BEGIN_MESSAGE_MAP(briefing_editor_dlg, CDialog)
 	ON_BN_CLICKED(IDC_COPY_VIEW, OnCopyView)
 	ON_BN_CLICKED(IDC_PASTE_VIEW, OnPasteView)
 	ON_BN_CLICKED(IDC_FLIP_ICON, OnFlipIcon)
+	ON_BN_CLICKED(IDC_USE_WING_ICON, OnWingIcon)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -457,24 +458,24 @@ void briefing_editor_dlg::update_data(int update)
 				while (get_next_icon(m_id))
 					iconp->type = m_icon_image;
 			}
-
 			ptr->icons[m_last_icon].type = m_icon_image;
+
 			if ((ptr->icons[m_last_icon].team != m_icon_team) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
 					iconp->team = m_icon_team;
 			}
-
 			ptr->icons[m_last_icon].team = m_icon_team;
+
 			if ((ptr->icons[m_last_icon].ship_class != m_ship_type) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
 					iconp->ship_class = m_ship_type;
 			}
-
 			MODIFY(ptr->icons[m_last_icon].ship_class, m_ship_type);
+
 			deconvert_multiline_string(buf2, m_icon_text, MAX_ICON_TEXT_LEN);
 /*
 			if (stricmp(ptr->icons[m_last_icon].text, buf2) && !m_change_local) {
@@ -1423,10 +1424,10 @@ void briefing_editor_dlg::OnPasteView()
 
 void briefing_editor_dlg::OnFlipIcon() 
 {
-//	if (m_flipicon)
-//		Briefing->stages[m_cur_stage].icons[m_cur_icon].flags |= BI_MIRROR_ICON;
-//	else
-//		Briefing->stages[m_cur_stage].icons[m_cur_icon].flags &= ~BI_MIRROR_ICON;
+	update_data(1);	
+}
+
+void briefing_editor_dlg::OnWingIcon()
+{
 	update_data(1);
-	
 }
