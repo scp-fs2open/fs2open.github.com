@@ -1741,6 +1741,8 @@ void game_init()
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
 
+	mod_table_init();		// load in all the mod dependent settings
+
 	if (Is_standalone) {
 		// force off some cmdlines if they are on
 		Cmdline_spec = 0;
@@ -1843,8 +1845,6 @@ void game_init()
 	// D3D's gamma system now works differently. 1.0 is the default value
 	ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
 	FreeSpace_gamma = (float)atof(ptr);
-
-	mod_table_init();		// load in all the mod dependent settings
 
 	script_init();			//WMC
 
