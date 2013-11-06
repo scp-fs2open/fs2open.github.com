@@ -120,6 +120,7 @@ protected:
 	afx_msg void OnSaveView();
 	afx_msg void OnSelchangeIconImage();
 	afx_msg void OnSelchangeTeam();
+	afx_msg void OnSelchangeShipType();
 	afx_msg void OnPropagateIcons();
 	afx_msg void OnInitMenu(CMenu* pMenu);
 	afx_msg void OnLines();

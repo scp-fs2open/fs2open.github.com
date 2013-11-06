@@ -15,6 +15,7 @@
 #include "globalincs/globals.h"
 #include "anim/packunpack.h"
 #include "hud/hud.h"
+#include "graphics/generic.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 
@@ -22,7 +23,7 @@
 // names for the icons that can appear in the briefing.  If you modify this list,
 // update the Icons_names[] string array located in MissionParse.cpp
 // ------------------------------------------------------------------------
-#define MAX_BRIEF_ICONS						35		// keep up to date
+#define MIN_BRIEF_ICONS						35		// keep up to date
 
 #define ICON_FIGHTER							0
 #define ICON_FIGHTER_WING					1
@@ -59,6 +60,17 @@
 #define ICON_SENTRYGUN						32
 #define ICON_JUMP_NODE						33
 #define ICON_TRANSPORT						34
+
+typedef struct briefing_icon_info {
+	generic_anim	regular;
+	hud_anim		fade;
+	hud_anim		highlight;
+} briefing_icon_type;
+
+extern SCP_vector<briefing_icon_info> Briefing_icon_info;
+
+struct brief_icon;
+extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
 
 // ------------------------------------------------------------------------
 // Structures to hold briefing data
@@ -277,7 +289,7 @@ void brief_restart_text_wipe();
 void brief_reset_last_new_stage();
 void brief_blit_stage_num(int stage_num, int stage_max);
 
-void brief_common_get_icon_dimensions(int *w, int *h, int type, int ship_class);
+void brief_common_get_icon_dimensions(int *w, int *h, brief_icon *bi);
 
 // voice streaming interface
 void brief_voice_init();

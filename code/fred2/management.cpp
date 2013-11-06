@@ -267,15 +267,11 @@ void brief_init_colors();
 
 void fred_preload_all_briefing_icons()
 {
-	uint i,j;
-	for (i = 0; i < Species_info.size(); i++)
+	for (SCP_vector<briefing_icon_info>::iterator ii = Briefing_icon_info.begin(); ii != Briefing_icon_info.end(); ++ii)
 	{
-		for (j = 0; j < MAX_BRIEF_ICONS; j++)
-		{
-			generic_anim_load(&Species_info[i].icon_bitmaps[j]);
-			hud_anim_load(&Species_info[i].icon_fade_anims[j]);
-			hud_anim_load(&Species_info[i].icon_highlight_anims[j]);
-		}
+		generic_anim_load(&ii->regular);
+		hud_anim_load(&ii->fade);
+		hud_anim_load(&ii->highlight);
 	}
 }
 

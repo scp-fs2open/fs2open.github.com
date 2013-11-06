@@ -210,7 +210,7 @@ char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
 char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
 
-char *Icon_names[MAX_BRIEF_ICONS] = {
+char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
 	"Largeship Wing", "Capital", "Planet", "Asteroid Field", "Waypoint",
 	"Support Ship", "Freighter(no cargo)", "Freighter(has cargo)",

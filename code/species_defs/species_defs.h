@@ -69,9 +69,13 @@ public:
 	game_snd snd_flyby_fighter;
 	game_snd snd_flyby_bomber;
 
-	generic_anim icon_bitmaps[MAX_BRIEF_ICONS];
-	hud_anim icon_highlight_anims[MAX_BRIEF_ICONS];
-	hud_anim icon_fade_anims[MAX_BRIEF_ICONS];
+	int bii_index[MIN_BRIEF_ICONS];
+
+	species_info()
+	{
+		for (int i = 0; i < MIN_BRIEF_ICONS; i++)
+			bii_index[i] = -1;
+	}
 };
 
 extern SCP_vector<species_info> Species_info;

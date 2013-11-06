@@ -877,6 +877,9 @@ void init_ship_entry(ship_info *sip)
 	sip->icon_filename[0] = 0;
 	sip->anim_filename[0] = 0;
 	sip->overhead_filename[0] = 0;
+
+	sip->bii_index = -1;
+
 	sip->score = 0;
 
 	// Bobboau's thruster stuff
@@ -2816,6 +2819,51 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	// read in filename for animation that is used in ship selection
 	if ( optional_string("$Ship_overhead:") ) {
 		stuff_string(sip->overhead_filename, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	// read in briefing stuff
+	if ( optional_string("$Briefing icon:") )
+	{
+		int bii_index = -1;
+		size_t icon;
+		char regular_temp[MAX_FILENAME_LEN];
+		char fade_temp[MAX_FILENAME_LEN];
+		char highlight_temp[MAX_FILENAME_LEN];
+
+		required_string("+Regular:");
+		stuff_string(regular_temp, F_NAME, MAX_FILENAME_LEN);
+		required_string("+Fade:");
+		stuff_string(fade_temp, F_NAME, MAX_FILENAME_LEN);
+		required_string("+Highlight:");
+		stuff_string(highlight_temp, F_NAME, MAX_FILENAME_LEN);
+
+		// search among our existing icons
+		for (icon = 0; icon < Briefing_icon_info.size(); icon++)
+		{
+			if (   !stricmp(regular_temp, Briefing_icon_info[icon].regular.filename)
+				&& !stricmp(fade_temp, Briefing_icon_info[icon].fade.filename)
+				&& !stricmp(highlight_temp, Briefing_icon_info[icon].highlight.filename) )
+			{
+				bii_index = (int) icon;
+				break;
+			}
+		}
+
+		// icon not found: create new one
+		if (bii_index < 0)
+		{
+			briefing_icon_info bii;
+			generic_anim_init(&bii.regular, regular_temp);
+			hud_anim_init(&bii.fade, 0, 0, fade_temp);
+			hud_anim_init(&bii.highlight, 0, 0, highlight_temp);
+
+			bii_index = (int) Briefing_icon_info.size();
+			Briefing_icon_info.push_back(bii);			
+		}
+
+		// assign it to ship class
+		// (we use the extra bii_index variable so that a modular entry can properly overwrite a previous icon)
+		sip->bii_index = bii_index;
 	}
 
 	if ( optional_string("$Score:") ){
@@ -16393,20 +16441,6 @@ int ship_is_beginning_warpout_speedup(object *objp)
 	}
 
 	return 0;
-}
-
-/**
- * Given a ship info type, return a species
- */
-int ship_get_species_by_type(int ship_info_index)
-{
-	// sanity
-	if((ship_info_index < 0) || (ship_info_index >= Num_ship_classes)){
-		return -1;
-	}
-
-	// return species
-	return Ship_info[ship_info_index].species;
 }
 
 /**

@@ -131,6 +131,7 @@ BEGIN_MESSAGE_MAP(briefing_editor_dlg, CDialog)
 	ON_BN_CLICKED(IDC_SAVE_VIEW, OnSaveView)
 	ON_CBN_SELCHANGE(IDC_ICON_IMAGE, OnSelchangeIconImage)
 	ON_CBN_SELCHANGE(IDC_TEAM, OnSelchangeTeam)
+	ON_CBN_SELCHANGE(IDC_SHIP_TYPE, OnSelchangeShipType)
 	ON_BN_CLICKED(IDC_PROPAGATE_ICONS, OnPropagateIcons)
 	ON_WM_INITMENU()
 	ON_BN_CLICKED(IDC_LINES, OnLines)
@@ -181,7 +182,7 @@ void briefing_editor_dlg::create()
 	CDialog::Create(IDD);
 	theApp.init_window(&Briefing_wnd_data, this);
 	box = (CComboBox *) GetDlgItem(IDC_ICON_IMAGE);
-	for (i=0; i<MAX_BRIEF_ICONS; i++)
+	for (i=0; i<MIN_BRIEF_ICONS; i++)
 		box->AddString(Icon_names[i]);
 
 	box = (CComboBox *) GetDlgItem(IDC_TEAM);
@@ -564,9 +565,13 @@ void briefing_editor_dlg::update_data(int update)
 		enable = FALSE;
 	}
 
+	// see if icon is overridden by ships.tbl
+	// if so, disable the icon type box
+	int sip_bii = (m_ship_type >= 0) ? Ship_info[m_ship_type].bii_index : -1;
+
 	GetDlgItem(IDC_ICON_TEXT) -> EnableWindow(enable);
 	GetDlgItem(IDC_ICON_LABEL) -> EnableWindow(enable);
-	GetDlgItem(IDC_ICON_IMAGE) -> EnableWindow(enable);
+	GetDlgItem(IDC_ICON_IMAGE) -> EnableWindow(enable && (sip_bii < 0));
 	GetDlgItem(IDC_SHIP_TYPE) -> EnableWindow(enable);
 	GetDlgItem(IDC_HILIGHT) -> EnableWindow(enable);
 	GetDlgItem(IDC_FLIP_ICON) -> EnableWindow(enable);
@@ -1197,6 +1202,11 @@ void briefing_editor_dlg::OnSelchangeIconImage()
 }
 
 void briefing_editor_dlg::OnSelchangeTeam()
+{
+	update_data(1);
+}
+
+void briefing_editor_dlg::OnSelchangeShipType()
 {
 	update_data(1);
 }

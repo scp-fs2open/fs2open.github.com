@@ -1327,6 +1327,8 @@ public:
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
 
+	int bii_index;							// if this ship has a briefing icon that overrides the normal icon set
+
 	int	score;								// default score for this ship
 
 	int	scan_time;							// time to scan this ship (in ms)
@@ -1891,9 +1893,6 @@ float ship_get_warpout_speed(object *objp);
 
 // returns true if ship is beginning to speed up in warpout
 int ship_is_beginning_warpout_speedup(object *objp);
-
-// given a ship info type, return a species
-int ship_get_species_by_type(int ship_info_index);
 
 // return the length of the ship class
 float ship_class_get_length(ship_info *sip);
