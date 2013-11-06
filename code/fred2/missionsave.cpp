@@ -993,6 +993,13 @@ int CFred_mission_save::save_briefing()
 					fout(" %d", (bi->flags & BI_MIRROR_ICON)?1:0 );
 				}
 
+				if ((Format_fs2_open != FSO_FORMAT_RETAIL) && (bi->flags & BI_USE_WING_ICON))
+				{
+					required_string_fred("$use wing icon:");
+					parse_comments();
+					fout(" %d", (bi->flags & BI_USE_WING_ICON)?1:0 );
+				}
+
 				required_string_fred("$multi_text");
 				parse_comments();
 

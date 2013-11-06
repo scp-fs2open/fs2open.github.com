@@ -66,6 +66,7 @@ public:
 	BOOL	m_cut_prev;
 	int		m_current_briefing;
 	BOOL	m_flipicon;
+	BOOL	m_use_wing;
 	//}}AFX_DATA
 
 	CBitmap m_play_bm;

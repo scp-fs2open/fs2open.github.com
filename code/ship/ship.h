@@ -1327,7 +1327,8 @@ public:
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
 
-	int bii_index;							// if this ship has a briefing icon that overrides the normal icon set
+	int bii_index_ship;						// if this ship has a briefing icon that overrides the normal icon set
+	int bii_index_wing;
 
 	int	score;								// default score for this ship
 

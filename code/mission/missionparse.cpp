@@ -1505,6 +1505,14 @@ void parse_briefing(mission *pm, int flags)
 					}	
 				}
 
+				if (optional_string("$use wing icon:"))
+				{
+					stuff_int(&val);
+					if ( val>0 ) {
+						bi->flags |= BI_USE_WING_ICON;
+					}
+				}
+
 				required_string("$multi_text");
 				stuff_string(not_used_text, F_MULTITEXT, MAX_ICON_TEXT_LEN);
 				required_string("$end_icon");

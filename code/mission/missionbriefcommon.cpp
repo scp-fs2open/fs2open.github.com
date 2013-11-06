@@ -602,8 +602,13 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 	ship_info *sip = &Ship_info[bi->ship_class];
 
 	// ship info might override the usual briefing icon
-	if (sip->bii_index >= 0)
-		return &Briefing_icon_info[sip->bii_index];
+	if (sip->bii_index_ship >= 0)
+	{
+		if ((sip->bii_index_wing >= 0) && (bi->flags & BI_USE_WING_ICON))
+			return &Briefing_icon_info[sip->bii_index_wing];
+
+		return &Briefing_icon_info[sip->bii_index_ship];
+	}
 
 	if (sip->species < 0)
 		return NULL;

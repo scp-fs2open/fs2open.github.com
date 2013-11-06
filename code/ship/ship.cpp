@@ -878,7 +878,8 @@ void init_ship_entry(ship_info *sip)
 	sip->anim_filename[0] = 0;
 	sip->overhead_filename[0] = 0;
 
-	sip->bii_index = -1;
+	sip->bii_index_ship = -1;
+	sip->bii_index_wing = -1;
 
 	sip->score = 0;
 
@@ -1370,6 +1371,51 @@ void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *ban
 			Warning(LOCATION, "Ship class '%s' has %d secondary banks, but %d secondary capacities... fix this!!", sip->name, *num_banks, num_bank_capacities);
 		}
 	}
+}
+
+/**
+ * Common method for parsing briefing icon info, even though we only do it twice.
+ */
+int parse_and_add_briefing_icon_info()
+{
+	int bii_index = -1;
+	size_t icon;
+	char regular_temp[MAX_FILENAME_LEN];
+	char fade_temp[MAX_FILENAME_LEN];
+	char highlight_temp[MAX_FILENAME_LEN];
+
+	required_string("+Regular:");
+	stuff_string(regular_temp, F_NAME, MAX_FILENAME_LEN);
+	required_string("+Fade:");
+	stuff_string(fade_temp, F_NAME, MAX_FILENAME_LEN);
+	required_string("+Highlight:");
+	stuff_string(highlight_temp, F_NAME, MAX_FILENAME_LEN);
+
+	// search among our existing icons
+	for (icon = 0; icon < Briefing_icon_info.size(); icon++)
+	{
+		if (   !stricmp(regular_temp, Briefing_icon_info[icon].regular.filename)
+			&& !stricmp(fade_temp, Briefing_icon_info[icon].fade.filename)
+			&& !stricmp(highlight_temp, Briefing_icon_info[icon].highlight.filename) )
+		{
+			bii_index = (int) icon;
+			break;
+		}
+	}
+
+	// icon not found: create new one
+	if (bii_index < 0)
+	{
+		briefing_icon_info bii;
+		generic_anim_init(&bii.regular, regular_temp);
+		hud_anim_init(&bii.fade, 0, 0, fade_temp);
+		hud_anim_init(&bii.highlight, 0, 0, highlight_temp);
+
+		bii_index = (int) Briefing_icon_info.size();
+		Briefing_icon_info.push_back(bii);			
+	}
+
+	return bii_index;
 }
 
 /**
@@ -2823,48 +2869,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	// read in briefing stuff
 	if ( optional_string("$Briefing icon:") )
-	{
-		int bii_index = -1;
-		size_t icon;
-		char regular_temp[MAX_FILENAME_LEN];
-		char fade_temp[MAX_FILENAME_LEN];
-		char highlight_temp[MAX_FILENAME_LEN];
-
-		required_string("+Regular:");
-		stuff_string(regular_temp, F_NAME, MAX_FILENAME_LEN);
-		required_string("+Fade:");
-		stuff_string(fade_temp, F_NAME, MAX_FILENAME_LEN);
-		required_string("+Highlight:");
-		stuff_string(highlight_temp, F_NAME, MAX_FILENAME_LEN);
-
-		// search among our existing icons
-		for (icon = 0; icon < Briefing_icon_info.size(); icon++)
-		{
-			if (   !stricmp(regular_temp, Briefing_icon_info[icon].regular.filename)
-				&& !stricmp(fade_temp, Briefing_icon_info[icon].fade.filename)
-				&& !stricmp(highlight_temp, Briefing_icon_info[icon].highlight.filename) )
-			{
-				bii_index = (int) icon;
-				break;
-			}
-		}
-
-		// icon not found: create new one
-		if (bii_index < 0)
-		{
-			briefing_icon_info bii;
-			generic_anim_init(&bii.regular, regular_temp);
-			hud_anim_init(&bii.fade, 0, 0, fade_temp);
-			hud_anim_init(&bii.highlight, 0, 0, highlight_temp);
-
-			bii_index = (int) Briefing_icon_info.size();
-			Briefing_icon_info.push_back(bii);			
-		}
-
-		// assign it to ship class
-		// (we use the extra bii_index variable so that a modular entry can properly overwrite a previous icon)
-		sip->bii_index = bii_index;
-	}
+		sip->bii_index_ship = parse_and_add_briefing_icon_info();
+	if ( optional_string("$Briefing wing icon:") )
+		sip->bii_index_wing = parse_and_add_briefing_icon_info();
 
 	if ( optional_string("$Score:") ){
 		stuff_int( &sip->score );
