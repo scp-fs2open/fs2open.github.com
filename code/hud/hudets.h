@@ -58,6 +58,7 @@ void transfer_energy_to_weapons(object* obj);
 float ets_get_max_speed(object* objp, float engine_energy);
 void sanity_check_ets_inputs(int (&ets_indexes)[num_retail_ets_gauges]);
 bool validate_ship_ets_indxes(const int &ship_idx, int (&ets_indexes)[num_retail_ets_gauges]);
+void zero_one_ets (int *reduce, int *add1, int *add2);
 
 class HudGaugeEts: public HudGauge // HUD_ETS_GAUGE
 {

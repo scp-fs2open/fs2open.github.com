@@ -107,6 +107,7 @@
 #include "io/keycontrol.h"
 #include "parse/generic_log.h"
 #include "localization/localize.h"
+#include "hud/hudets.h"
 
 
 
@@ -12302,6 +12303,13 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 					Objects[Ships[ship_index].objnum].flags |= object_flag;
 				else
 					Objects[Ships[ship_index].objnum].flags &= ~object_flag;
+			}
+
+			// handle ETS when disabling shields
+			if (object_flag == OF_NO_SHIELDS) {
+				if (set_it) {
+					zero_one_ets(&Ships[ship_index].shield_recharge_index, &Ships[ship_index].weapon_recharge_index, &Ships[ship_index].engine_recharge_index);
+				}
 			}
 
 			// see if we have an object flag2 to set
