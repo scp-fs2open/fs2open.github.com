@@ -12309,6 +12309,8 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 			if (object_flag == OF_NO_SHIELDS) {
 				if (set_it) {
 					zero_one_ets(&Ships[ship_index].shield_recharge_index, &Ships[ship_index].weapon_recharge_index, &Ships[ship_index].engine_recharge_index);
+				} else {
+					set_default_recharge_rates(&Objects[Ships[ship_index].objnum]);
 				}
 			}
 
