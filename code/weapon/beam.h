@@ -20,7 +20,7 @@
 
 // prototypes
 class object;
-struct ship_subsys;
+class ship_subsys;
 struct obj_pair;
 struct beam_weapon_info;
 struct vec3d;

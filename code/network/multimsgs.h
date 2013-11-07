@@ -24,7 +24,7 @@ struct join_request;
 struct button_info;
 struct header;
 struct beam_info;
-struct ship_subsys;
+class ship_subsys;
 
 // macros for building up packets -- to save on time and typing.  Important to note that local variables
 // must be named correctly

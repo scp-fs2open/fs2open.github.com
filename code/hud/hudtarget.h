@@ -16,7 +16,7 @@
 #include "hud/hud.h"
 
 class ship;
-struct ship_subsys;
+class ship_subsys;
 class object;
 struct weapon_info;
 

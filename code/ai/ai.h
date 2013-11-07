@@ -20,7 +20,7 @@
 #include "object/waypoint.h"
 
 struct ship_weapon;
-struct ship_subsys;
+class ship_subsys;
 class object;
 class ship_info;
 

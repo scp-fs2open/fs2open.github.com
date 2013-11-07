@@ -174,6 +174,11 @@ void triggered_rotation::set_to_final(queued_animation *q)
 
 triggered_rotation::triggered_rotation()
 {
+	clear();
+}
+
+void triggered_rotation::clear()
+{
 	for (int i = 0; i < MAX_TRIGGERED_ANIMATIONS; i++)
 	{
 		queued_animation_init(&queue[i]);

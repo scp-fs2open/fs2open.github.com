@@ -305,8 +305,10 @@ typedef struct cockpit_display_info {
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
-typedef	struct ship_subsys {
-	struct ship_subsys *next, *prev;				//	Index of next and previous objects in list.
+class ship_subsys
+{
+public:
+	class ship_subsys *next, *prev;				//	Index of next and previous objects in list.
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
@@ -397,8 +399,14 @@ typedef	struct ship_subsys {
 
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
-	int turret_max_target_ownage; 
-} ship_subsys;
+	int turret_max_target_ownage;
+
+	ship_subsys()
+		: next(NULL), prev(NULL)
+	{}
+
+	void clear();
+};
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
 // we might have 3 engines), and the relative strength of the subsystem.  The #defines in model.h

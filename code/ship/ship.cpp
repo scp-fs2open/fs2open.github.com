@@ -4426,7 +4426,7 @@ static void ship_clear_subsystems()
 
 	for (i = 0; i < NUM_SHIP_SUBSYSTEM_SETS; i++) {
 		if (Ship_subsystems[i] != NULL) {
-			vm_free(Ship_subsystems[i]);
+			delete[] Ship_subsystems[i];
 			Ship_subsystems[i] = NULL;
 		}
 	}
@@ -4471,8 +4471,7 @@ static int ship_allocate_subsystems(int num_so, bool page_in = false)
 			return 0;
 		}
 
-		Ship_subsystems[idx] = (ship_subsys*) vm_malloc( sizeof(ship_subsys) * NUM_SHIP_SUBSYSTEMS_PER_SET );
-		memset( Ship_subsystems[idx], 0, sizeof(ship_subsys) * NUM_SHIP_SUBSYSTEMS_PER_SET );
+		Ship_subsystems[idx] = new ship_subsys[NUM_SHIP_SUBSYSTEMS_PER_SET];
 
 		// append the new set to our free list
 		for (i = 0; i < NUM_SHIP_SUBSYSTEMS_PER_SET; i++)
@@ -4903,7 +4902,11 @@ void ship::clear()
 	wingnum = -1;
 	orders_accepted = 0;
 
-	memset(&subsys_list, 0, sizeof(ship_subsys));
+	subsys_list.clear();
+	// since these aren't cleared by clear()
+	subsys_list.next = NULL;
+	subsys_list.prev = NULL;
+
 	memset(&subsys_info, 0, SUBSYSTEM_MAX * sizeof(ship_subsys_info));
 
 	memset(last_targeted_subobject, 0, MAX_PLAYERS * sizeof(ship_subsys *));
@@ -5059,7 +5062,7 @@ void ship::clear()
 	special_warpin_objnum = -1;
 	special_warpout_objnum = -1;
 
-	memset(&fighter_beam_turret_data, 0, sizeof(ship_subsys));
+	fighter_beam_turret_data.clear();
 	memset(&beam_sys_info, 0, sizeof(model_subsystem));
 
 	primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
@@ -5410,6 +5413,89 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 
 }
 
+// as with object, don't set next and prev to NULL because they keep the object on the free and used lists
+void ship_subsys::clear()
+{
+	int i;
+
+	system_info = NULL;
+
+	parent_objnum = -1;
+
+	sub_name[0] = 0;
+	current_hits = max_hits = 0.0f;
+
+	flags = 0;
+
+	subsys_guardian_threshold = 0;
+	armor_type_idx = -1;
+
+	turret_best_weapon = -1;
+	turret_last_fire_direction = vmd_zero_vector;
+	turret_next_enemy_check_stamp = timestamp(0);
+	turret_next_fire_stamp = timestamp(0);
+	turret_enemy_objnum = -1;
+	turret_enemy_sig = 0;
+	turret_next_fire_pos = 0;
+	turret_time_enemy_in_range = 0.0f;
+
+	for (i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
+		turret_targeting_order[i] = -1;
+	optimum_range = 0.0f;
+	favor_current_facing = 0.0f;
+	targeted_subsys = NULL;
+	scripting_target_override = false;
+	last_fired_weapon_info_index = -1;
+
+	turret_pick_big_attack_point_timestamp = timestamp(0);
+	turret_big_attack_point = vmd_zero_vector;
+
+	turret_animation_position = MA_POS_NOT_SET;
+	turret_animation_done_time = 0;
+
+	for (i = 0; i < MAX_TFP; i++)
+		turret_swarm_info_index[i] = -1;
+	turret_swarm_num = 0;
+
+	awacs_intensity = 0.0f;
+	awacs_radius = 0.0f;
+
+	memset(&weapons, 0, sizeof(ship_weapon));
+
+	memset(&submodel_info_1, 0, sizeof(submodel_instance_info));
+	memset(&submodel_info_2, 0, sizeof(submodel_instance_info));
+
+	disruption_timestamp = timestamp(0);
+
+	subsys_cargo_name = 0;
+	time_subsys_cargo_revealed = 0;
+
+	trigger.clear();
+
+	points_to_target = 0.0f;
+	base_rotation_rate_pct = 0.0f;
+	gun_rotation_rate_pct = 0.0f;
+
+	subsys_snd_flags = 0;
+
+	rotation_timestamp = timestamp(0);
+
+	world_to_turret_matrix = vmd_identity_matrix;
+
+	for (i = 0; i < 32; i++)
+		target_priority[i] = -1;
+	num_target_priorities = 0;
+
+	next_aim_pos_time = 0;
+	last_aim_enemy_pos = vmd_zero_vector;
+	last_aim_enemy_vel = vmd_zero_vector;
+
+	rof_scaler = 1.0f;
+	turn_rate = 0.0f;
+
+	turret_max_bomb_ownage = -1; 
+	turret_max_target_ownage = -1;
+}
 
 /**
  * Set subsystem
@@ -5445,8 +5531,9 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// set up the linked list
 		ship_system = GET_FIRST( &ship_subsys_free_list );		// get a new element from the ship_subsystem array
 		Assert ( ship_system != &ship_subsys_free_list );		// shouldn't have the dummy element
-		list_remove( ship_subsys_free_list, ship_system );	// remove the element from the array
+		list_remove( ship_subsys_free_list, ship_system );		// remove the element from the array
 		list_append( &shipp->subsys_list, ship_system );		// link the element into the ship
+		ship_system->clear();									// initialize it to a known blank slate
 
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 

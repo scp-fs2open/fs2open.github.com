@@ -111,6 +111,7 @@ class triggered_rotation
 	public:
 		triggered_rotation();
 		~triggered_rotation();
+		void clear();
 
 		void start(queued_animation *q);
 		void set_to_initial(queued_animation *q);
@@ -138,7 +139,7 @@ class triggered_rotation
 // functions...
 
 struct model_subsystem;
-struct ship_subsys;
+class ship_subsys;
 class ship;
 class ship_info;
 

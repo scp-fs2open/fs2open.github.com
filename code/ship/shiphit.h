@@ -14,7 +14,7 @@
 
 struct vec3d;
 class ship;
-struct ship_subsys;
+class ship_subsys;
 class object;
 
 #define NO_SPARKS			0

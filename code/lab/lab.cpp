@@ -125,7 +125,7 @@ void labviewer_update_flags_window();
 void labviewer_setup_subsys_rotation()
 {
 	if (Lab_ship_subsys != NULL) {
-		vm_free(Lab_ship_subsys);
+		delete[] Lab_ship_subsys;
 		Lab_ship_subsys = NULL;
 	}
 
@@ -152,8 +152,9 @@ void labviewer_setup_subsys_rotation()
 
 	uint n_subsystems = Ship_info[Lab_selected_index].n_subsystems;
 
-	Lab_ship_subsys = (ship_subsys *) vm_malloc( n_subsystems * sizeof(ship_subsys) );
-	memset( Lab_ship_subsys, 0, n_subsystems * sizeof(ship_subsys) );
+	Lab_ship_subsys = new ship_subsys[n_subsystems];
+	for (uint i = 0; i < n_subsystems; i++)
+		Lab_ship_subsys[i].clear();
 
 	Lab_ship_model_subsys.reserve(n_subsystems);
 	for (uint idx = 0; idx < n_subsystems; idx++) {
@@ -2520,7 +2521,7 @@ void lab_close()
 	Lab_ship_model_subsys.clear();
 
 	if (Lab_ship_subsys != NULL) {
-		vm_free(Lab_ship_subsys);
+		delete[] Lab_ship_subsys;
 		Lab_ship_subsys = NULL;
 	}
 

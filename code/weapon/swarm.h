@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 
 class object;
-struct ship_subsys;
+class ship_subsys;
 
 typedef struct turret_swarm_info {
 	int				flags;

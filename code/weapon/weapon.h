@@ -21,7 +21,7 @@
 #include "model/model.h"
 
 class object;
-struct ship_subsys;
+class ship_subsys;
 
 #define	WP_UNUSED			-1
 #define	WP_LASER			0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
