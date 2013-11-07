@@ -499,10 +499,6 @@ typedef struct weapon_info {
 	float alpha_min;			// minimum alpha value to use
 	float alpha_cycle;			// cycle between max and min by this much each frame
 
-	//WMC - scripting stuff
-	script_hook sc_collide_ship;
-	script_hook sc_collide_weapon;
-
 	int weapon_hitpoints;
 
 	int	burst_shots;

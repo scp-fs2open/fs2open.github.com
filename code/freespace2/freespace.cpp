@@ -5481,7 +5481,7 @@ void game_leave_state( int old_state, int new_state )
 
 	//WMC - Scripting override
 	/*
-	if(GS_state_hooks[old_state].IsValid() && Script_system.IsOverride(GS_state_hooks[old_state])) {
+	if(script_hook_valid(&GS_state_hooks[old_state]) && Script_system.IsOverride(GS_state_hooks[old_state])) {
 		return;
 	}
 	*/
@@ -5870,7 +5870,7 @@ void game_enter_state( int old_state, int new_state )
 {
 	//WMC - Scripting override
 	/*
-	if(GS_state_hooks[new_state].IsValid() && Script_system.IsOverride(GS_state_hooks[new_state])) {
+	if(script_hook_valid(&GS_state_hooks[new_state]) && Script_system.IsOverride(GS_state_hooks[new_state])) {
 		return;
 	}
 	*/
