@@ -3763,6 +3763,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	pm = model_get(model_num);
 	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
 	bsp_info * base = &pm->submodel[turret->subobj_num];
+	bool limited_base_rotation = false;
 
 	// Check for a valid turret
 	Assert( turret->turret_num_firing_points > 0 );
@@ -3810,7 +3811,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	// Call this the desired_angles
 	angles desired_angles;
 //	vm_extract_angles_vector(&desired_angles, &of_dst);
-
+	
 	if (reset == false) {
 		desired_angles.p = (float)acos(of_dst.xyz.z);
 		desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
@@ -3822,14 +3823,14 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 		if (turret->n_triggers > 0) {
 			int i;
 			for (i = 0; i<turret->n_triggers; i++) {
-				if (turret->triggers[i].type == TRIGGER_TYPE_INITIAL) {
-					desired_angles.p = turret->triggers[i].angle.xyz.x;
-					desired_angles.h = turret->triggers[i].angle.xyz.y;
-					i = turret->n_triggers;
-				}
+				desired_angles.p = turret->triggers[i].angle.xyz.x;
+				desired_angles.h = turret->triggers[i].angle.xyz.y;
 			}
 		}
 	}
+
+	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH)
+		limited_base_rotation = true;
 
 	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
 
@@ -3837,18 +3838,6 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	// Gradually turn the turret towards the desired angles
 	float step_size = turret->turret_turning_rate * flFrametime;
 	float base_delta, gun_delta;
-
-	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH) {
-		vec3d turret_base_to_enemy = of_dst;
-		if ( (turret_base_to_enemy.xyz.x) != 0 || (turret_base_to_enemy.xyz.y != 0) )  {
-			turret_base_to_enemy.xyz.z = 0;
-			vm_vec_normalize(&turret_base_to_enemy);
-			// if these two do not point roughly to the same direction...
-			// swing the gun to the forward position before continuing to chase the target
-			if ((turret_base_to_enemy.xyz.x * sin(base_angles->h)) < 0)
-				desired_angles.h = 0;
-		}
-	}
 
 	if (reset == true)
 		step_size /= 3.0f;
@@ -3859,7 +3848,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	ss->base_rotation_rate_pct = 0.0f;
 	ss->gun_rotation_rate_pct = 0.0f;
 
-	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
+	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size, limited_base_rotation);
 	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
 
 	if (turret->turret_base_rotation_snd != -1)	
