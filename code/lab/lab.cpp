@@ -40,6 +40,7 @@
 #define LAB_FLAG_LIGHTNING_ARCS		(1<<4)	// show damage lightning
 #define LAB_FLAG_FULLY_LOAD			(1<<5)	// use create_ship() to test the ships
 #define LAB_FLAG_SHOW_WEAPONS		(1<<6)	// determines if external weapons models are displayed
+#define LAB_FLAG_INITIAL_ROTATION	(1<<7)	// initial rotation setting
 
 // modes
 #define LAB_MODE_NONE		0	// not showing anything
@@ -706,7 +707,7 @@ void labviewer_add_model_thrusters(ship_info *sip)
 
 void labviewer_render_model(float frametime)
 {
-	int i;
+	int i, j;
 	float rev_rate;
 	angles rot_angles, view_angles;
 	ship_info *sip = NULL;
@@ -861,6 +862,29 @@ void labviewer_render_model(float frametime)
 		// ship/weapon thrusters
 		if (Lab_model_flags & MR_SHOW_THRUSTERS) {
 			labviewer_add_model_thrusters(sip);
+		}
+
+		// do initial rotation
+		if (sip != NULL) {
+			if (Lab_viewer_flags & LAB_FLAG_INITIAL_ROTATION) {
+				for (i = 0; i < sip->n_subsystems; i++) {
+					if (Lab_ship_model_subsys[i].type == SUBSYSTEM_TURRET) {
+												
+						for (j = 0; j < Lab_ship_model_subsys[i].n_triggers; j++) {
+						
+							// special case for turrets
+							Lab_ship_subsys[i].submodel_info_2.angs.p = Lab_ship_model_subsys[i].triggers[j].angle.xyz.x;
+							Lab_ship_subsys[i].submodel_info_1.angs.h = Lab_ship_model_subsys[i].triggers[j].angle.xyz.y;
+						}
+						if ( Lab_ship_model_subsys[i].subobj_num >= 0 )	{
+							model_set_instance(Lab_model_num, Lab_ship_model_subsys[i].subobj_num, &Lab_ship_subsys[i].submodel_info_1 );
+						}
+						if ( (Lab_ship_model_subsys[i].subobj_num != Lab_ship_model_subsys[i].turret_gun_sobj) && (Lab_ship_model_subsys[i].turret_gun_sobj >= 0) )		{
+							model_set_instance(Lab_model_num, Lab_ship_model_subsys[i].turret_gun_sobj, &Lab_ship_subsys[i].submodel_info_2 );
+						}
+					}
+				} 
+			}
 		}
 
 		// rotate submodels if wanted
@@ -1830,6 +1854,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Show Thrusters", Lab_model_flags, MR_SHOW_THRUSTERS);
 	ADD_RENDER_FLAG("Animated Shader", Lab_model_flags, MR_ANIMATED_SHADER);
 	ADD_RENDER_FLAG("Show Ship Weapons", Lab_viewer_flags, LAB_FLAG_SHOW_WEAPONS);
+	ADD_RENDER_FLAG("Initial Rotation", Lab_viewer_flags, LAB_FLAG_INITIAL_ROTATION);
 
 
 	// start tree
@@ -2297,6 +2322,7 @@ void lab_init()
 	PostProcessing_override = true;
 	// disable model rotation by default in the lab
 	Lab_viewer_flags |= LAB_FLAG_NO_ROTATION;
+	Lab_viewer_flags |= LAB_FLAG_INITIAL_ROTATION;
 }
 
 #include "controlconfig/controlsconfig.h"
