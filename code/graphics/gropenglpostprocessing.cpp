@@ -462,7 +462,10 @@ void gr_opengl_post_process_end()
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 	// Done!
 
-	GL_state.Texture.SetActiveUnit(1);	GL_state.Texture.Disable();
+	GL_state.Texture.SetActiveUnit(2);
+	GL_state.Texture.Disable();
+	GL_state.Texture.SetActiveUnit(1);	
+	GL_state.Texture.Disable();
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.Disable();
 
