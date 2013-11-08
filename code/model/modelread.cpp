@@ -4606,6 +4606,33 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	}
 }
 
+// Sets the submodel instance data in a submodel (for all detail levels)
+// Techroom version uses two floats of setting rotation angles (for turrets)
+// instead of using larger but largely unused structures for storing the same data
+void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2)
+{
+	polymodel * pm;
+
+	pm = model_get(model_num);
+
+	Assert( sub_model_num >= 0 );
+	Assert( sub_model_num < pm->n_models );
+
+	if ( sub_model_num < 0 ) return;
+	if ( sub_model_num >= pm->n_models ) return;
+	bsp_info *sm = &pm->submodel[sub_model_num];
+
+	// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
+	// the replacement model from being drawn by marking it as having been blown off
+	if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
+		pm->submodel[sm->my_replacement].blown_off = 1;
+	}
+
+	// Set the angles
+	sm->angs.p = angle_1;
+	sm->angs.h = angle_2;
+}
+
 void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii)
 {
 	int i;
