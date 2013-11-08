@@ -24,14 +24,29 @@ float g3_draw_laser_htl(vec3d *p0,float width1,vec3d *p1,float width2, int r, in
 {
 	width1 *= 0.5f;
 	width2 *= 0.5f;
-	vec3d uvec, fvec, rvec, center, reye;
+	vec3d uvec, fvec, rvec, center, reye, rfvec;
 
 	vm_vec_sub( &fvec, p0, p1 );
 	vm_vec_normalize_safe( &fvec );
+	vm_vec_copy_scale(&rfvec, &fvec, -1.0f);
 
 	vm_vec_avg( &center, p0, p1 ); //needed for the return value only
 	vm_vec_sub(&reye, &Eye_position, &center);
 	vm_vec_normalize(&reye);
+
+	// code intended to prevent possible null vector normalize issue - start
+	if (vm_test_parallel(&reye,&fvec)){
+		fvec.xyz.x = -reye.xyz.z;
+		fvec.xyz.y = 0.0f;
+		fvec.xyz.z = -reye.xyz.x;
+	}
+
+	if (vm_test_parallel(&reye,&rfvec)){
+		fvec.xyz.x = reye.xyz.z;
+		fvec.xyz.y = 0.0f;
+		fvec.xyz.z = reye.xyz.x;
+	}
+	// code intended to prevent possible null vector normalize issue - end
 
 	vm_vec_crossprod(&uvec,&fvec,&reye);
 	vm_vec_normalize(&uvec);
