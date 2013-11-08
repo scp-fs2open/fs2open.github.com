@@ -419,7 +419,7 @@ void gr_opengl_post_process_end()
 
 	// basic/default uniforms
 	vglUniform1iARB( opengl_shader_get_uniform("tex"), 0 );
-	vglUniform1iARB( opengl_shader_get_uniform("depth_tex"), 1);
+	vglUniform1iARB( opengl_shader_get_uniform("depth_tex"), 2);
 	vglUniform1fARB( opengl_shader_get_uniform("timer"), static_cast<float>(timer_get_milliseconds() % 100 + 1) );
 
 	for (size_t idx = 0; idx < Post_effects.size(); idx++) {
@@ -455,7 +455,7 @@ void gr_opengl_post_process_end()
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_color_texture);
 
-	GL_state.Texture.SetActiveUnit(1);
+	GL_state.Texture.SetActiveUnit(2);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_depth_texture);
 
