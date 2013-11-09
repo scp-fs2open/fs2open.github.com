@@ -12256,7 +12256,11 @@ void sexp_allow_weapon(int n)
 	}
 }
 
-// generic function for all those sexps that set flags
+/**
+ * generic function for all those sexps that set flags
+ *
+ * @note this function has a similar purpose to sexp_alter_ship_flag_helper; make sure you check/update both
+ */
 void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int p_object_flag, int p_object_flag2, bool set_it, bool send_multiplayer = false, bool include_players_in_ship_lookup = false)
 {
 	char *ship_name;
@@ -12295,6 +12299,9 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 		// if ship is in-mission
 		if (ship_index >= 0)
 		{
+			// save flags for state change comparisons
+			int object_flag_orig = Objects[Ships[ship_index].objnum].flags;
+
 			// see if we have an object flag to set
 			if (object_flag)
 			{
@@ -12305,11 +12312,11 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 					Objects[Ships[ship_index].objnum].flags &= ~object_flag;
 			}
 
-			// handle ETS when disabling shields
+			// handle ETS when modifying shields
 			if (object_flag == OF_NO_SHIELDS) {
 				if (set_it) {
 					zero_one_ets(&Ships[ship_index].shield_recharge_index, &Ships[ship_index].weapon_recharge_index, &Ships[ship_index].engine_recharge_index);
-				} else {
+				} else if (object_flag_orig & OF_NO_SHIELDS) {
 					set_default_recharge_rates(&Objects[Ships[ship_index].objnum]);
 				}
 			}
@@ -12487,9 +12494,14 @@ void multi_sexp_deal_with_ship_flag()
 	}
 }
 
+/**
+ * sets flags on objects from alter-ship-flag
+ *
+ * @note this function has a similar purpose to sexp_deal_with_ship_flag; make sure you check/update both
+ */
 void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
 {
-	int i;
+	int i, object_flag_orig;
 	ship_obj	*so;
 	object_ship_wing_point_team oswpt2;
 	p_object *p_objp;
@@ -12550,6 +12562,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 
 		// finally! If we actually have a ship, we can set its flags!
 		case OSWPT_TYPE_SHIP:
+			// save flags for state change comparisons
+			object_flag_orig = oswpt.objp->flags;
+
 			// see if we have an object flag to set
 			if (object_flag)
 			{
@@ -12558,6 +12573,15 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					oswpt.objp->flags |= object_flag;
 				else
 					oswpt.objp->flags &= ~object_flag;
+			}
+
+			// handle ETS when modifying shields
+			if (object_flag == OF_NO_SHIELDS) {
+				if (set_flag) {
+					zero_one_ets(&oswpt.shipp->shield_recharge_index, &oswpt.shipp->weapon_recharge_index, &oswpt.shipp->engine_recharge_index);
+				} else if (object_flag_orig & OF_NO_SHIELDS) {
+					set_default_recharge_rates(oswpt.objp);
+				}
 			}
 
 			// see if we have an object flag2 to set
@@ -12685,6 +12709,7 @@ void sexp_alter_ship_flag(int node)
 	object_ship_wing_point_team oswpt;
 
 	flag_name = CTEXT(node); 
+
 	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
 		if (!stricmp(Object_flag_names[i].flag_name, flag_name)) {
 			// make sure the list writes to the correct list of flags!
@@ -30509,7 +30534,7 @@ sexp_help_struct Sexp_help[] = {
 		"invulnerable - Stops ship from taking any damage\r\n"
 		"protect-ship - Ship and Turret AI will ignore and not attack ship\r\n"
 		"beam-protect-ship - Turrets with beam weapons will ignore and not attack ship\r\n"
-		"no-shields - Ship will have no shields\r\n"
+		"no-shields - Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)\r\n"
 		"targetable-as-bomb - Allows ship to be targetted with the bomb targetting key\r\n"
 		"flak-protect-ship - Turrets with flak weapons will ignore and not attack ship\r\n"
 		"laser-protect-ship - Turrets with laser weapons will ignore and not attack ship\r\n"
@@ -30563,7 +30588,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t1+:\tName of ships to make nontargetable with bomb targeting key." },
 
 	{ OP_SHIELDS_ON, "shields-on\r\n" //-Sesquipedalian
-		"\tCauses the ship listed in this sexpression to have their shields activated.\r\n\r\n"
+		"\tCauses the ship listed in this sexpression to have their shields activated.\r\n"
+		"If the ship had no-shields prior to the sexp being called, the ETS will be rebalanced to default.\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\t1+:\tName of ships to activate shields on." },
 
