@@ -12563,7 +12563,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 		// finally! If we actually have a ship, we can set its flags!
 		case OSWPT_TYPE_SHIP:
 			// save flags for state change comparisons
-			object_flag_orig = oswpt.objp->flags;
+			object_flag_orig = oswpt.shipp->flags;
 
 			// see if we have an object flag to set
 			if (object_flag)
