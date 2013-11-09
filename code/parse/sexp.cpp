@@ -14889,6 +14889,9 @@ int sexp_is_facing(int node)
 		return SEXP_CANT_EVAL;
 	}
 
+	if (oswpt.type == OSWPT_TYPE_NONE)
+		return SEXP_CANT_EVAL;
+
 	origin_objp = &Objects[origin_shipp->objnum];
 	target_objp = oswpt.objp;
 
