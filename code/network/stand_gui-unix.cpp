@@ -687,7 +687,15 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
 
             if (pathMatch && r->method == method) {
 
-                std::string basicAuthValue = "Basic YWRtaW46YWRtaW4=";
+                std::string userNameAndPassword;
+                
+                userNameAndPassword += Multi_options_g.webapiUsername.c_str();
+                userNameAndPassword += ":";
+                userNameAndPassword += Multi_options_g.webapiPassword.c_str();
+                
+                std::string basicAuthValue = "Basic ";
+                
+                basicAuthValue += base64_encode(reinterpret_cast<const unsigned char*>(userNameAndPassword.c_str()), userNameAndPassword.length());
 
                 const char* authValue = mg_get_header(conn, "Authorization");
                 if (authValue == NULL || strcmp(authValue, basicAuthValue.c_str()) != 0) {
