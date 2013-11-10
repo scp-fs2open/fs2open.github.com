@@ -4444,6 +4444,7 @@
 				WARNING_CFLAGS = (
 					"-Wno-write-strings",
 					"-Wno-char-subscripts",
+					"-Wno-shorten-64-to-32",
 				);
 			};
 			name = Debug;
@@ -4493,6 +4494,7 @@
 				WARNING_CFLAGS = (
 					"-Wno-write-strings",
 					"-Wno-char-subscripts",
+					"-Wno-shorten-64-to-32",
 				);
 			};
 			name = Release;
