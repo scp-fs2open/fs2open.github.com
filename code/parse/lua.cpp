@@ -11541,7 +11541,7 @@ ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the 
 	if (Player == NULL)
 		return ADE_RETURN_NIL;
 
-	bool *tips = false;
+	bool tips = false;
 
 	ade_get_args(L, "b", &tips);
 
