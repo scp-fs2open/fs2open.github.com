@@ -4502,8 +4502,6 @@
 		34DCF83808CFA6F000A528A0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				HEADER_SEARCH_PATHS = (
 					../../code,
 					./Frameworks/SDL.framework/Headers,
@@ -4515,8 +4513,6 @@
 		34DCF83908CFA6F000A528A0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				HEADER_SEARCH_PATHS = (
 					../../code,
 					./Frameworks/SDL.framework/Headers,
@@ -4528,8 +4524,6 @@
 		34DCF85F08CFAF0500A528A0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				HEADER_SEARCH_PATHS = (
 					../../code,
 					./Frameworks/SDL.framework/Headers,
@@ -4541,8 +4535,6 @@
 		34DCF86008CFAF0500A528A0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				HEADER_SEARCH_PATHS = (
 					../../code,
 					./Frameworks/SDL.framework/Headers,
