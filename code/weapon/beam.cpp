@@ -1405,6 +1405,7 @@ void beam_render_muzzle_glow(beam *b)
 	beam_weapon_info *bwi = &Weapon_info[b->weapon_info_index].b_info;
 	float rad, pct, rand_val;
 	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+	pt.flags = 0;    // avoid potential read of uninit var
 
 	// if we don't have a glow bitmap
 	if (bwi->beam_glow.first_frame < 0)
@@ -2346,6 +2347,7 @@ int beam_collide_ship(obj_pair *pair)
 
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
+	mc_info_init(&mc);
 
 	// set up collision structs, part 1
 	mc.model_instance_num = shipp->model_instance_num;
@@ -2403,7 +2405,9 @@ int beam_collide_ship(obj_pair *pair)
 		{
 			// do the hit effect
 			if (shield_collision) {
-				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+				if (mc_shield.shield_hit_tri != -1) {
+					add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+				}
 			} else {
 				/* TODO */;
 			}
@@ -2495,7 +2499,8 @@ int beam_collide_asteroid(obj_pair *pair)
 	Beam_test_ast++;
 #endif
 
-	// do the collision		
+	// do the collision
+	mc_info_init(&test_collide);
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
@@ -2565,7 +2570,8 @@ int beam_collide_missile(obj_pair *pair)
 	Beam_test_ints++;
 #endif
 
-	// do the collision		
+	// do the collision
+	mc_info_init(&test_collide);
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
@@ -2631,7 +2637,8 @@ int beam_collide_debris(obj_pair *pair)
 	Beam_test_ints++;
 #endif
 
-	// do the collision	
+	// do the collision
+	mc_info_init(&test_collide);
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;

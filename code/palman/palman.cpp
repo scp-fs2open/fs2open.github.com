@@ -126,7 +126,7 @@ void palette_cache_add( int r, int g, int b, int index )
 char palette_base_filename[128] = { "default" };
 int palette_base_loaded = 0;
 
-void palette_load_table( char * filename )
+void palette_load_table( const char * filename )
 {
 	int i;
 	int w, h;
@@ -494,7 +494,7 @@ void palette_flush()
 // When gr_set_palette is called, it fills in gr_palette and then calls this
 // function, which should update all the tables.
 // Pass NULL to flush current palette.
-void palette_update(char *name_with_extension, int restrict_font_to_128)
+void palette_update(const char *name_with_extension, int restrict_font_to_128)
 {
 	uint tmp_checksum;
 	char name[128];

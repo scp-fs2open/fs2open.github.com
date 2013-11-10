@@ -161,10 +161,10 @@ struct goal_buttons {
 struct goal_text {
 	int m_num_lines;
 	int m_line_sizes[MAX_GOAL_LINES];
-	char *m_lines[MAX_GOAL_LINES];
+	const char *m_lines[MAX_GOAL_LINES];
 
 	void init();
-	int add(char *text = NULL);
+	int add(const char *text = NULL);
 	void display(int n, int y);
 };
 
@@ -172,6 +172,7 @@ int Num_mission_events;
 int Num_goals = 0;								// number of goals for this mission
 int Event_index = -1;  // used by sexp code to tell what event it came from
 bool Log_event = false;
+bool Snapshot_all_events = false;
 int Mission_goal_timestamp;
 
 mission_event Mission_events[MAX_MISSION_EVENTS];
@@ -184,7 +185,7 @@ static goal_text Goal_text;
 static int Mission_directive_sound_timestamp;	// timestamp to control when directive succcess sound gets played
 static int Mission_directive_special_timestamp;	// used to specially mark a directive as true even though it's not
 
-char *Goal_type_text(int n)
+const char *Goal_type_text(int n)
 {
 	switch (n) {
 		case 0:	
@@ -303,7 +304,7 @@ void goal_text::init()
 // Adds lines of goal text.  If passed NULL (or nothing passed) a blank line is added.  If
 // the text is too long, it is automatically split into more than one line.
 // Returns the number of lines added.
-int goal_text::add(char *text)
+int goal_text::add(const char *text)
 {
 	int max, count;
 
@@ -919,8 +920,12 @@ void mission_process_event( int event )
 
 	if (sindex >= 0) {
 		Sexp_useful_number = 1;
-		if (Mission_events[event].mission_log_flags != 0) {
+		if (Snapshot_all_events || Mission_events[event].mission_log_flags != 0) {
 			Log_event = true;
+			
+			Current_event_log_buffer = &Mission_events[event].event_log_buffer;
+			Current_event_log_variable_buffer = &Mission_events[event].event_log_variable_buffer;
+			Current_event_log_argument_buffer = &Mission_events[event].event_log_argument_buffer;
 		}
 		result = eval_sexp(sindex);
 
@@ -943,10 +948,10 @@ void mission_process_event( int event )
 		if (Sexp_useful_number){
 			Mission_events[event].flags |= MEF_CURRENT;
 		}
-	}
 
-	if (Mission_events[event].mission_log_flags != 0) {
-		maybe_write_to_event_log(result);
+		if ((Mission_events[event].mission_log_flags != 0) || Snapshot_all_events){
+			maybe_write_to_event_log(result);
+		}
 	}
 
 	Event_index = -1;
@@ -1094,7 +1099,7 @@ void mission_eval_goals()
 		std_multi_update_goals();
 	}
 	
-	Log_event = false;
+	Snapshot_all_events = false;
 }
 
 //	evaluate_primary_goals() will determine if the primary goals for a mission are complete

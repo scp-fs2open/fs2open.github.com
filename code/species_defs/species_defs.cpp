@@ -151,7 +151,7 @@ void parse_thrust_glows(species_info *species, bool no_create)
 		generic_anim_init(&species->thruster_info.glow.afterburn, NULL);
 }
 
-void parse_species_tbl(char *filename)
+void parse_species_tbl(const char *filename)
 {
 	int i, rval;
 	char species_name[NAME_LENGTH];
@@ -347,7 +347,7 @@ void parse_species_tbl(char *filename)
 	required_string("#END");
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
 
 	// close localization

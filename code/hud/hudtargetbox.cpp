@@ -522,7 +522,14 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		factor = -target_sip->closeup_pos.xyz.z;
 
 		// use the player's up vector, and construct the viewers orientation matrix
-		up_vector = Player_obj->orient.vec.uvec;
+		if (Player_obj->type == OBJ_SHIP) {
+			vec3d tempv;
+			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
+		} else {
+			camera_orient = Player_obj->orient;
+		}
+
+		up_vector = camera_orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
@@ -531,6 +538,10 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 		// RT, changed scaling here
 		renderTargetSetup(&camera_eye, &camera_orient, target_sip->closeup_zoom);
+
+		// IMPORTANT NOTE! Code handling the case 'missile_view == TRUE' in rendering section of renderTargetWeapon()
+		//                 is largely copied over from renderTargetShip(). To keep the codes similar please update
+		//                 both if and when needed
 		ship_model_start( target_objp );
 
 		switch (Targetbox_wire) {
@@ -669,7 +680,14 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		factor = 2*target_objp->radius;
 
 		// use the player's up vector, and construct the viewers orientation matrix
-		up_vector = Player_obj->orient.vec.uvec;
+		if (Player_obj->type == OBJ_SHIP) {
+			vec3d tempv;
+			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
+		} else {
+			camera_orient = Player_obj->orient;
+		}
+
+		up_vector = camera_orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
@@ -749,6 +767,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	vec3d		camera_eye = ZERO_VECTOR;
 	matrix		camera_orient = IDENTITY_MATRIX;
 	vec3d		orient_vec, up_vector;
+	vec3d		projection_vec;
 	weapon_info	*target_wip = NULL;
 	weapon		*wp = NULL;
 	object		*viewer_obj, *viewed_obj;
@@ -776,15 +795,18 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	}
 
 	if ( Detail.targetview_model )	{
+		ship *homing_shipp = NULL;
+		ship_info *homing_sip = NULL;
 
 		viewer_obj			= Player_obj;
 		viewed_obj			= target_objp;
 		missile_view		= FALSE;
 		viewed_model_num	= target_wip->model_num;
 		hud_target_lod		= target_wip->hud_target_lod;
-		if ( is_homing && is_player_missile ) {
-			ship *homing_shipp = &Ships[wp->homing_object->instance];
-			ship_info *homing_sip = &Ship_info[homing_shipp->ship_info_index];
+		// adding a check here to make sure the homing object is a ship, technically it could be some other object just as well
+		if ( is_homing && is_player_missile && (wp->homing_object->type == OBJ_SHIP)) {
+			homing_shipp = &Ships[wp->homing_object->instance];
+			homing_sip = &Ship_info[homing_shipp->ship_info_index];
 
 			viewer_obj			= target_objp;
 			viewed_obj			= wp->homing_object;
@@ -798,42 +820,100 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		vm_vec_sub(&orient_vec, &viewed_obj->pos, &viewer_obj->pos);
 		vm_vec_normalize(&orient_vec);
 
+		if (missile_view == TRUE) {
+			vm_vec_sub(&projection_vec, &wp->homing_pos, &viewer_obj->pos);
+			vm_vec_normalize(&projection_vec);
+		}
+
 		if ( missile_view == FALSE )
 			factor = 2*target_objp->radius;
 		else
 			factor = vm_vec_dist_quick(&viewer_obj->pos, &viewed_obj->pos);
 
 		// use the viewer's up vector, and construct the viewers orientation matrix
-		up_vector = viewer_obj->orient.vec.uvec;
-		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
+		if (viewer_obj == Player_obj && Player_obj->type == OBJ_SHIP) {
+			vec3d tempv;
+			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
+		} else {
+			camera_orient = viewer_obj->orient;
+		}
+
+		up_vector = camera_orient.vec.uvec;
+
+		if (missile_view == FALSE)
+			vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
+		else
+			vm_vector_2_matrix(&camera_orient,&projection_vec,&up_vector,NULL);
 
 		// normalize the vector from the viewer to the viwed target, and scale by a factor to calculate
 		// the objects position
-		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
+		if (missile_view == FALSE) {
+			vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
+		} else {
+			vm_vec_sub(&obj_pos, &viewed_obj->pos, &viewer_obj->pos);
+		}
 
 		renderTargetSetup(&camera_eye, &camera_orient, View_zoom/3);
 		model_clear_instance(viewed_model_num);
+		
+		// IMPORTANT NOTE! Code handling the rendering when 'missile_view == TRUE' is largely copied over from
+		//                 renderTargetShip(). To keep the codes similar please update both if and when needed
+		if (missile_view == FALSE) {
+			switch (Targetbox_wire) {
+				case 0:
+					flags |= MR_NO_LIGHTING;
 
-		switch (Targetbox_wire) {
-			case 0:
-				flags |= MR_NO_LIGHTING;
+					break;
+				case 1:
+					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
-				break;
-			case 1:
-				model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+					flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+					flags |= MR_NO_POLYS | MR_NO_LIGHTING;
 
-				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
-				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+					break;
+				case 2:
+					break;
+				case 3:
+					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
-				break;
-			case 2:
-				break;
-			case 3:
-				model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
-				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
+					break;
+			}
+		} else {
+			ship_model_start( viewed_obj );
 
-				break;
+			switch (Targetbox_wire) {
+				case 0:
+					flags |= MR_NO_LIGHTING;
+
+					break;
+				case 1:
+					if (ship_is_tagged(viewed_obj))
+						model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, 1));
+					else
+						model_set_outline_color_fast(iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+
+					if (homing_sip->uses_team_colors) {
+						gr_set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
+					}
+
+					flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+					flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+
+					break;
+				case 2:
+					break;
+				case 3:
+					if (ship_is_tagged(viewed_obj))
+						model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, 1));
+					else
+						model_set_outline_color_fast(iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+
+					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+					break;
+			}
 		}
 
 		if (hud_target_lod >= 0) {
@@ -852,9 +932,36 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 
 		Interp_desaturate = Desaturated;
 
-		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
+		if (missile_view == TRUE) {
+			if (!Glowpoint_override)
+				Glowpoint_override = true;
+
+			// set glowmap flag here since model_render (etc) require an objnum to handle glowmaps
+			// if we did pass the objnum, we'd also have thrusters drawn in the targetbox
+			if (homing_shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+				flags |= MR_NO_GLOWMAPS;
+			}
+		}
+		
+		if (missile_view == FALSE ) {
+			model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
+		} else {
+			// maybe render a special hud-target-only model
+			// autocentering is bad in this one
+			if(homing_sip->model_num_hud >= 0){
+				model_render( homing_sip->model_num_hud, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING);
+			} else {
+				model_render( homing_sip->model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING, -1, -1, homing_shipp->ship_replacement_textures);
+			}
+		}
 
 		Interp_desaturate = false;
+		if (missile_view == TRUE) {
+			Glowpoint_override = false;
+
+			ship_model_stop( viewed_obj );
+			gr_disable_team_color();
+		}
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -880,8 +987,19 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	if ( is_homing ) {
 		float dist, speed;
 
-		dist = vm_vec_dist(&target_objp->pos, &wp->homing_object->pos);
 		speed = vm_vec_mag(&target_objp->phys_info.vel);
+
+		// do the extra math only if it won't lead to null vec issues
+		if(!(IS_VEC_NULL_SQ_SAFE(&target_objp->phys_info.vel))){
+			vec3d unit_vec, component_vec;
+
+			// in other words substract the magnitude of the target's velocity vectors parallel component from the speed of the weapon
+			vm_vec_copy_normalize(&unit_vec, &target_objp->phys_info.vel);
+			speed -= vm_vec_projection_parallel(&component_vec, &wp->homing_object->phys_info.vel, &unit_vec);
+		}
+
+		dist = vm_vec_dist(&target_objp->pos, &wp->homing_pos);
+		
 		if ( speed > 0 ) {
 			sprintf(outstr, NOX("impact: %.1f sec"), dist/speed);
 		} else {
@@ -920,7 +1038,14 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		factor = 2*target_objp->radius;
 
 		// use the player's up vector, and construct the viewers orientation matrix
-		up_vector = Player_obj->orient.vec.uvec;
+		if (Player_obj->type == OBJ_SHIP) {
+			vec3d tempv;
+			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
+		} else {
+			camera_orient = Player_obj->orient;
+		}
+
+		up_vector = camera_orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
@@ -1038,7 +1163,14 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 			factor = target_objp->radius*4.0f;
 
 			// use the player's up vector, and construct the viewers orientation matrix
-			up_vector = Player_obj->orient.vec.uvec;
+			if (Player_obj->type == OBJ_SHIP) {
+				vec3d tempv;
+				ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
+			} else {
+				camera_orient = Player_obj->orient;
+			}
+
+			up_vector = camera_orient.vec.uvec;
 			vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
 
 			// normalize the vector from the player to the current target, and scale by a factor to calculate
@@ -1078,7 +1210,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		hy = fl2i(HUD_offset_y);
 
 		sprintf(outstr,XSTR( "d: %.0f", 340), dist);
-		hud_num_make_mono(outstr);
+		hud_num_make_mono(outstr, font_num);
 		gr_get_string_size(&w,&h,outstr);
 	
 		renderPrintf(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, outstr);
@@ -1302,7 +1434,7 @@ void HudGaugeExtraTargetData::render(float frametime)
 		// docked to multiple objects
 		else
 		{
-			sprintf(outstr, XSTR("Docked: %d objects", -1), dock_count);
+			sprintf(outstr, XSTR("Docked: %d objects", 1623), dock_count);
 		}
 
 		gr_force_fit_string(outstr, 255, 173);
@@ -1771,7 +1903,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 	// print out the target distance and speed
 	sprintf(outstr,XSTR( "d: %.0f%s", 350), displayed_target_distance, modifiers[Player_ai->current_target_dist_trend]);
 
-	hud_num_make_mono(outstr);
+	hud_num_make_mono(outstr, font_num);
 	gr_get_string_size(&w,&h,outstr);
 
 	renderString(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, outstr);	
@@ -1800,7 +1932,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 	}
 
 	sprintf(outstr, XSTR( "s: %.0f%s", 351), displayed_target_speed, (displayed_target_speed>1)?modifiers[Player_ai->current_target_speed_trend]:"");
-	hud_num_make_mono(outstr);
+	hud_num_make_mono(outstr, font_num);
 
 	renderString(position[0] + Speed_offsets[0]+hx, position[1] + Speed_offsets[1]+hy, EG_TBOX_SPEED, outstr);
 
@@ -2046,24 +2178,38 @@ void hud_update_target_static()
 	}
 }
 
+/**
+ * Updates the HUD status description of a particular ship
+ * 
+ * Checks for disabled or ships with disrupted engines, as well as damage levels
+ * of the target ship. If status has changed, then the HUD will flash
+ *
+ * @param targetp Instance of the ship target -- note the targetp->instance cannot be negative
+ *
+ */
 void hud_update_ship_status(object *targetp)
 {
-	// print out status of ship for the targetbox
-	if ( (Ships[targetp->instance].flags & SF_DISABLED) || (ship_subsys_disrupted(&Ships[targetp->instance], SUBSYSTEM_ENGINE)) ) {
-		Current_ts = TS_DIS;
-	} else {
-		if ( Pl_target_integrity > 0.9 ) {
-			Current_ts = TS_OK;
-		} else if ( Pl_target_integrity > 0.2 ) {
-			Current_ts = TS_DMG;
+    Assert( targetp != NULL );
+    Assert( (targetp->instance >= 0) && (targetp->instance < MAX_SHIPS) );
+    
+    if ( (targetp->instance >= 0) && (targetp->instance < MAX_SHIPS) ) {
+    	// print out status of ship for the targetbox
+		if ( (Ships[targetp->instance].flags & SF_DISABLED) || (ship_subsys_disrupted(&Ships[targetp->instance], SUBSYSTEM_ENGINE)) ) {
+			Current_ts = TS_DIS;
 		} else {
-			Current_ts = TS_CRT;
+			if ( Pl_target_integrity > 0.9 ) {
+				Current_ts = TS_OK;
+			} else if ( Pl_target_integrity > 0.2 ) {
+				Current_ts = TS_DMG;
+			} else {
+				Current_ts = TS_CRT;
+			}
 		}
-	}
 
-	if ( Last_ts != -1 && Current_ts != Last_ts ) {
-		hud_targetbox_start_flash(TBOX_FLASH_STATUS);
-	}
+		if ( Last_ts != -1 && Current_ts != Last_ts ) {
+			hud_targetbox_start_flash(TBOX_FLASH_STATUS);
+		}
+    }
 
 	Last_ts = Current_ts;
 }

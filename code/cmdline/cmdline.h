@@ -79,6 +79,7 @@ extern bool Cmdline_fb_explosions;
 
 // Game Speed related
 extern int Cmdline_cache_bitmaps;
+extern int Cmdline_img2dds;
 extern int Cmdline_NoFPSCap;
 extern int Cmdline_no_vsync;
 
@@ -148,5 +149,6 @@ extern int Cmdline_verify_vps;
 extern int Cmdline_no_grab;
 #endif
 extern int Cmdline_reparse_mainhall;
+extern bool Cmdline_frame_profile;
 
 #endif

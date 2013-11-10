@@ -273,7 +273,7 @@ ushort netmisc_calc_checksum( void * vptr, int len )
 
 #define NUM_DEATH_WORDS	40
 
-char *multi_random_death_word()
+const char *multi_random_death_word()
 {
 	int index;
 
@@ -372,7 +372,7 @@ char *multi_random_death_word()
 #define NUM_CHAT_START_WORDS	8
 #define MAX_CHAT_PHRASE_LEN	25		// be careful not to exceed (or update if exceeded)
 
-char *multi_random_chat_start()
+const char *multi_random_chat_start()
 {
 	int index;
 
@@ -405,7 +405,7 @@ char *multi_random_chat_start()
 //
 //
 
-int multi_ship_class_lookup(char* ship_name)
+int multi_ship_class_lookup(const char* ship_name)
 {
 	int i, player_ship_class;
 
@@ -577,7 +577,7 @@ int multi_find_player_by_parse_object( p_object *p_objp )
 	return -1;
 }
 
-int multi_find_player_by_ship_name(char *ship_name, bool inc_respawning)
+int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning)
 {
 	int idx;
 	p_object *p_objp;
@@ -735,7 +735,7 @@ void multi_assign_player_ship( int net_player, object *objp,int ship_class )
 // depends on the parameter ship_class.  Note that if ship_class is invalid, the ship default_player_ship
 // is used.  Returns 1 on success, 0 otherwise
 
-int multi_create_player( int net_player_num, player *pl, char* name, net_addr* addr, int ship_class, short id)
+int multi_create_player( int net_player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id)
 {
 	int player_ship_class = ship_class;
 	int i,current_player_count;
@@ -1311,7 +1311,7 @@ void multi_subsys_update_all()
 	*/
 }
 
-int multi_find_player_by_callsign(char *callsign)
+int multi_find_player_by_callsign(const char *callsign)
 {
 	int idx;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -2461,7 +2461,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 		// copy his pilot squad filename
 		Net_players[net_player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename);		
+		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename, true);
 
 		// clear his multi_data info
 		multi_data_handle_join(net_player_num);
@@ -2507,7 +2507,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 		// copy his pilot squad filename		
 		Net_players[net_player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename);				
+		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename, true);
 
 		// clear his multi_data info
 		multi_data_handle_join(net_player_num);
@@ -2913,7 +2913,7 @@ int multi_kill_limit_reached()
 }
 
 // display a chat message (write to the correct spot - hud, standalone gui, chatbox, etc)
-void multi_display_chat_msg(char *msg, int player_index, int add_id)
+void multi_display_chat_msg(const char *msg, int player_index, int add_id)
 {
 	// if i'm a standalone, always add to the gui
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -2939,7 +2939,7 @@ void multi_display_chat_msg(char *msg, int player_index, int add_id)
 }
 
 // fill in Current_file_checksum and Current_file_length
-void multi_get_mission_checksum(char *filename)
+void multi_get_mission_checksum(const char *filename)
 {
 	CFILE *in;
 
@@ -3020,7 +3020,7 @@ int multi_show_ingame_ping()
 int multi_get_connection_speed()
 {
 	int cspeed;
-	char *connection_speed;
+	const char *connection_speed;
 
 #ifdef _WIN32	
 	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "");	

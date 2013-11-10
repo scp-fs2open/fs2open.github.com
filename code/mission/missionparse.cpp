@@ -210,7 +210,7 @@ char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
 char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
 
-char *Icon_names[MAX_BRIEF_ICONS] = {
+char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
 	"Largeship Wing", "Capital", "Planet", "Asteroid Field", "Waypoint",
 	"Support Ship", "Freighter(no cargo)", "Freighter(has cargo)",
@@ -315,12 +315,13 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"true",
 	"false",
-	"always true",
+	"always true",			// disabled
 	"always false",
 	"first repeat",
 	"last repeat", 
 	"first trigger",
 	"last trigger",
+	"state change",
 };
 
 
@@ -371,7 +372,6 @@ int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
 int mission_set_arrival_location(int anchor, int location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
-int get_parse_name_index(char *name);
 int get_anchor(char *name);
 void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
@@ -655,7 +655,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if(!Fred_running && (Player != NULL) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE)){
 			mprintf(("Reassigning player to squadron %s\n", pm->squad_name));
 			player_set_squad(Player, pm->squad_name);
-			player_set_squad_bitmap(Player, pm->squad_filename);
+			player_set_squad_bitmap(Player, pm->squad_filename, false);
 		}
 	}
 
@@ -704,11 +704,11 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	//error testing
-	if ((found640) && !(found1024))
+	if (Fred_running && (found640) && !(found1024))
 	{
 		Warning(LOCATION, "Mission: %s\nhas a 640x480 loading screen but no 1024x768 loading screen!",pm->name);
 	}
-	if (!(found640) && (found1024))
+	if (Fred_running && !(found640) && (found1024))
 	{
 		Warning(LOCATION, "Mission: %s\nhas a 1024x768 loading screen but no 640x480 loading screen!",pm->name);
 	}
@@ -1503,6 +1503,14 @@ void parse_briefing(mission *pm, int flags)
 					if ( val>0 ) {
 						bi->flags |= BI_MIRROR_ICON;
 					}	
+				}
+
+				if (optional_string("$use wing icon:"))
+				{
+					stuff_int(&val);
+					if ( val>0 ) {
+						bi->flags |= BI_USE_WING_ICON;
+					}
 				}
 
 				required_string("$multi_text");
@@ -3772,7 +3780,7 @@ p_object *mission_parse_get_parse_object(ushort net_signature)
 }
 
 // Goober5000 - also get it by name
-p_object *mission_parse_get_parse_object(char *name)
+p_object *mission_parse_get_parse_object(const char *name)
 {
 	int i;
 
@@ -5721,7 +5729,7 @@ void post_process_mission()
 	Last_file_checksum = Current_file_checksum;
 }
 
-int get_mission_info(char *filename, mission *mission_p, bool basic)
+int get_mission_info(const char *filename, mission *mission_p, bool basic)
 {
 	char real_fname[MAX_FILENAME_LEN];
 	
@@ -5794,7 +5802,7 @@ void parse_init(bool basic)
 // mai parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
 // info such as game type, number of players etc.
-int parse_main(char *mission_name, int flags)
+int parse_main(const char *mission_name, int flags)
 {
 	int rval, i;
 
@@ -6195,7 +6203,7 @@ void mission_parse_set_up_initial_docks()
 /**
  * Returns true or false if the given mission support multiplayers
  */
-int mission_parse_is_multi(char *filename, char *mission_name)
+int mission_parse_is_multi(const char *filename, char *mission_name)
 {
 	int rval, game_type;
 	int filelength;
@@ -6253,7 +6261,7 @@ int mission_parse_is_multi(char *filename, char *mission_name)
  * The calling function can use the information in The_mission to get the name/description of the mission
  * if needed.
  */
-int mission_parse_get_multi_mission_info( char *filename )
+int mission_parse_get_multi_mission_info( const char *filename )
 {
 	if ( get_mission_info(filename, &The_mission) )
 		return -1;
@@ -6270,7 +6278,7 @@ int mission_parse_get_multi_mission_info( char *filename )
 /**
  * Return the parse object on the ship arrival list associated with the given name
  */
-p_object *mission_parse_get_arrival_ship(char *name)
+p_object *mission_parse_get_arrival_ship(const char *name)
 {
 	p_object *p_objp;
 
@@ -6493,13 +6501,15 @@ int mission_did_ship_arrive(p_object *objp)
 	}
 
 	if ( should_arrive ) { 		// has the arrival criteria been met?
-		int object_num;		
+		int object_num;
 
 		// check to see if the delay field <= 0.  if so, then create a timestamp and then maybe
 		// create the object
 		if ( objp->arrival_delay <= 0 ) {
 			objp->arrival_delay = timestamp( -objp->arrival_delay * 1000 );
-			Assert( objp->arrival_delay >= 0 );
+
+			// make sure we have a valid timestamp
+			Assert( objp->arrival_delay > 0 );
 		}
 		
 		// if the timestamp hasn't elapsed, move onto the next ship.
@@ -6865,7 +6875,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 		// aha, but not if we were ORDERED to depart, because the comms menu ALSO uses the goal code, and yet the comms menu means any departure method!
 		if ((shipp->flags & SF_DEPARTURE_ORDERED) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_DEPARTURE_ORDERED)))
 		{
-			mprintf(("Looks like we were ordered to depart; initiating the standardard departure logic\n"));
+			mprintf(("Looks like we were ordered to depart; initiating the standard departure logic\n"));
 		}
 		// since our goal is to warp, then if we can warp, jump directly to the warping part
 		else if (ship_can_use_warp_drive(shipp))
@@ -7153,7 +7163,7 @@ subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name)
 }
 
 // find (or add) the name in the list and return an index to it.
-int get_parse_name_index(char *name)
+int get_parse_name_index(const char *name)
 {
 	int i;
 
@@ -7220,7 +7230,7 @@ continue_outer_loop:
 }
 
 /**
- * Look for <any friendly>, <any hostile player>, etc.
+ * Look for \<any friendly\>, \<any hostile player\>, etc.
  */
 int get_special_anchor(char *name)
 {

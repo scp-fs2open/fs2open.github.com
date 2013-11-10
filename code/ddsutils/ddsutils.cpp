@@ -27,7 +27,7 @@ static inline int is_power_of_two(int w, int h)
 }
 
 
-int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, int *size, ubyte *palette)
+int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, int *size, ubyte *palette)
 {
 	DDSURFACEDESC2 dds_header;
 	int code = 0;
@@ -272,7 +272,7 @@ Done:
 }
 
 //reads pixel info from a dds file
-int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp, int cf_type)
+int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 {
 	int retval;
 	int w,h,ct,lvl;
@@ -321,7 +321,7 @@ int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 // save some image data as a DDS image
 // NOTE: we only support, uncompressed, 24-bit RGB and 32-bit RGBA images here!!
-void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data, int cubemap, char *filename)
+void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data, int cubemap, const char *filename)
 {
 	DDSURFACEDESC2 dds_header;
 	char real_filename[MAX_FILENAME_LEN];

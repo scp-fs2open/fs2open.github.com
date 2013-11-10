@@ -296,6 +296,8 @@ void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2, int thick)
 }
 
 //	Draw bounding brackets for a subobject.
+// unused function, candidate for removal
+#if 0
 void draw_bounding_brackets_subobject()
 {
 	if (Player_ai->targeted_subsys_parent == Player_ai->target_objnum)
@@ -376,13 +378,14 @@ void draw_bounding_brackets_subobject()
 			// mprintf(("Drawing subobject brackets at %4i, %4i\n", sx, sy));
 		}
 }
+#endif
 
 extern int HUD_drew_selection_bracket_on_target;
 //Do we want to show the ship & class name?
 extern int Cmdline_targetinfo;
 
 // Display the current target distance, right justified at (x,y)
-void hud_target_show_dist_on_bracket(int x, int y, float distance)
+void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num)
 {
 	char	text_dist[64];
 	int	w,h;
@@ -400,7 +403,7 @@ void hud_target_show_dist_on_bracket(int x, int y, float distance)
 	displayed_distance = distance * Hud_unit_multiplier;
 
 	sprintf(text_dist, "%d", fl2i(displayed_distance+0.5f));
-	hud_num_make_mono(text_dist);
+	hud_num_make_mono(text_dist, font_num);
 	gr_get_string_size(&w,&h,text_dist);
 
 	int y_delta = 4;
@@ -418,6 +421,8 @@ int num_ships_attacking(int target_objnum);
 
 // draw_bounding_brackets() will draw the faded brackets that surround the current target
 // NOTE: x1, y1, x2 & y2 are assumed to be scaled sizes, w_correction & h_correction are assumed to be unscaled!!
+// unused function, candidate for removal
+#if 0
 void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, int h_correction, float distance, int target_objnum)
 {
 	int width, height;
@@ -509,8 +514,8 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 	if(Cmdline_targetinfo && (target_objnum != -1))
 	{
 		object* t_objp = &Objects[target_objnum];
-		char* tinfo_name = NULL;
-		char* tinfo_class = NULL;
+		const char* tinfo_name = NULL;
+		const char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
 		SCP_list<CJumpNode>::iterator jnp;
@@ -587,6 +592,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
  */
 	}
 }
+#endif
 
 int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, bool draw, bool set_color, int* draw_coords)
 {
@@ -871,7 +877,7 @@ void HudGaugeBrackets::renderNavBrackets(vec3d* nav_pos, vertex* nav_point, colo
 	}
 
 	// draw distance to target in lower right corner of box
-	hud_target_show_dist_on_bracket(x+(box_scale+10),y+(box_scale+10), dist);
+	hud_target_show_dist_on_bracket(x+(box_scale+10),y+(box_scale+10), dist, font_num);
 
 	// bring the scale back to normal
 	gr_reset_screen_scale();
@@ -919,7 +925,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 
 	// draw distance to target in lower right corner of box
 	if ( distance > 0 ) {
-		hud_target_show_dist_on_bracket(x2+w_correction,y2+h_correction,distance);
+		hud_target_show_dist_on_bracket(x2+w_correction,y2+h_correction,distance,font_num);
 	}
 
 	//	Maybe show + for each additional fighter or bomber attacking target.
@@ -963,8 +969,8 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 
 	if( (target_objnum != -1) && (flags & (TARGET_DISPLAY_NAME | TARGET_DISPLAY_CLASS)) ) {
 		object* t_objp = &Objects[target_objnum];
-		char* tinfo_name = NULL;
-		char* tinfo_class = NULL;
+		const char* tinfo_name = NULL;
+		const char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
 		SCP_list<CJumpNode>::iterator jnp;

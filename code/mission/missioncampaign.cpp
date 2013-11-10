@@ -90,14 +90,14 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 campaign Campaign;
 
 
-bool campaign_is_ignored(char *filename, bool add_extension = false);
+bool campaign_is_ignored(const char *filename);
 
 /**
  * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
  * In the type field, we return if the campaign is a single player or multiplayer campaign.  
  * The type field will only be valid if the name returned is non-NULL
  */
-int mission_campaign_get_info(char *filename, char *name, int *type, int *max_players, char **desc)
+int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc)
 {
 	int rval, i, success = 0;
 	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
@@ -179,7 +179,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
  * @return Number of missions added to the 'list', and up to 'max' missions may be added to 'list'.  
  * @return Negative on error.
  */
-int mission_campaign_get_mission_list(char *filename, char **list, int max)
+int mission_campaign_get_mission_list(const char *filename, char **list, int max)
 {
 	int rval, i, num = 0;
 	char name[MAX_FILENAME_LEN];
@@ -240,18 +240,18 @@ void mission_campaign_free_list()
 	Campaign_names_inited = 0;
 }
 
-int mission_campaign_maybe_add(char *filename)
+int mission_campaign_maybe_add(const char *filename)
 {
 	char name[NAME_LENGTH];
 	char *desc = NULL;
 	int type, max_players;
 
-	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
-		// don't add ignored campaigns
-		if (campaign_is_ignored(filename)) {
-			return 0;
-		}
+	// don't add ignored campaigns
+	if (campaign_is_ignored(filename)) {
+		return 0;
+	}
 
+	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
 			Campaign_names[Num_campaigns] = vm_strdup(name);
 
@@ -418,12 +418,12 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	int len, rval, i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
-	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
-
 	if (campaign_is_ignored(filename)) {
 		Campaign_file_missing = 1;
 		return CAMPAIGN_ERROR_IGNORED;
 	}
+
+	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
 	// open localization
 	lcl_ext_open();	
@@ -536,6 +536,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			if (optional_string("+Flags:"))
 				stuff_int(&cm->flags);
 
+			cm->main_hall = "0";
 			// deal with previous campaign versions
 			if (cm->flags & CMISSION_FLAG_BASTION) {
 				cm->main_hall = "1";
@@ -543,7 +544,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 			// Goober5000 - new main hall stuff!
 			// Updated by CommanderDJ
-			cm->main_hall = "0";
 			if (optional_string("+Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
 				cm->main_hall = temp;
@@ -655,6 +655,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	Campaign.prev_mission = -1;
 	Campaign.current_mission = -1;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
+	Campaign.num_missions_completed = 0;
 
 	// loading the campaign will get us to the current and next mission that the player must fly
 	// plus load all of the old goals that future missions might rely on.
@@ -723,6 +724,34 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
 	return mission_campaign_load_by_name( filename);
 }
 
+/*
+ * initialise Player_loadout with default values
+ */
+void player_loadout_init()
+{
+	int i = 0, j = 0;
+
+	memset(Player_loadout.filename, 0, sizeof(Player_loadout.filename));
+	memset(Player_loadout.last_modified, 0, sizeof(Player_loadout.last_modified));
+
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+		Player_loadout.ship_pool[i] = 0;
+	}
+
+	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+		Player_loadout.weapon_pool[i] = 0;
+	}
+
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		Player_loadout.unit_data[i].ship_class = -1;
+
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+			Player_loadout.unit_data[i].wep[j] = 0;
+			Player_loadout.unit_data[i].wep_count[j] = 0;
+		}
+	}
+
+}
 
 /**
  * Initializes some variables then loads the default FreeSpace single player campaign.
@@ -732,6 +761,8 @@ void mission_campaign_init()
 	mission_campaign_clear();
 
 	Campaign_file_missing = 0;
+
+	player_loadout_init();
 }
 
 /**
@@ -809,14 +840,14 @@ void campaign_delete_save( char *cfn, char *pname)
  * Just call cfile function which will delete multiple files
  *
  * @param pilot_name Name of pilot
- * @param is_multi Whether we are deleting single or multiplayer files
  */
 void mission_campaign_delete_all_savefiles( char *pilot_name )
 {
 	int dir_type, num_files, i;
-	char *names[MAX_CAMPAIGNS], file_spec[MAX_FILENAME_LEN + 2], *ext;
+	char file_spec[MAX_FILENAME_LEN + 2], *ext;
 	char filename[1024];
-	int (*filter_save)(char *filename);
+	int (*filter_save)(const char *filename);
+	SCP_vector<SCP_string> names;
 
 	ext = NOX(".csg");
 	dir_type = CF_TYPE_PLAYERS;
@@ -827,14 +858,13 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 	// be.  I have to save any file filters
 	filter_save = Get_file_list_filter;
 	Get_file_list_filter = NULL;
-	num_files = cf_get_file_list(MAX_CAMPAIGNS, names, dir_type, file_spec);
+	num_files = cf_get_file_list(names, dir_type, const_cast<char *>(file_spec));
 	Get_file_list_filter = filter_save;
 
 	for (i=0; i<num_files; i++) {
-		strcpy_s(filename, names[i]);
+		strcpy_s(filename, names[i].c_str());
 		strcat_s(filename, ext);
 		cf_delete(filename, dir_type);
-		vm_free(names[i]);
 	}
 }
 
@@ -869,7 +899,7 @@ int mission_campaign_next_mission()
 		return -2;
 
 	Campaign.current_mission = Campaign.next_mission;	
-	strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
 
 	// check for end of loop.
 	if (Campaign.current_mission == Campaign.loop_reentry) {
@@ -901,9 +931,9 @@ int mission_campaign_previous_mission()
 	Pilot.save_savefile();
 
 	// reset the player stats to be the stats from this level
-	memcpy( &Player->stats, &Campaign.missions[Campaign.current_mission].stats, sizeof(Player->stats) );
+	Player->stats.assign( Campaign.missions[Campaign.current_mission].stats );
 
-	strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
 	Num_granted_ships = 0;
 	Num_granted_weapons = 0;
 
@@ -1163,7 +1193,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
 	if ( Campaign.prev_mission != Campaign.current_mission ) {
-		memcpy( &mission->stats, &Player->stats, sizeof(Player->stats) );
+		mission->stats.assign( Player->stats );
 		if(!(Game_mode & GM_MULTIPLAYER)){
 			scoring_backout_accept( &mission->stats );
 		}
@@ -1219,6 +1249,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
+ * also called at campaign init and campaign load
  */
 void mission_campaign_clear()
 {
@@ -1278,13 +1309,43 @@ void mission_campaign_clear()
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
 		}
 
+		memset(Campaign.missions[i].briefing_cutscene, 0, NAME_LENGTH);
+		Campaign.missions[i].formula = 0;
+		Campaign.missions[i].completed = 0;
 		Campaign.missions[i].num_goals = 0;
 		Campaign.missions[i].num_events = 0;
 		Campaign.missions[i].num_variables = 0;	// Goober5000
-		Campaign.missions[i].main_hall.clear();
+		Campaign.missions[i].mission_loop_formula = 0;
+		Campaign.missions[i].level = 0;
+		Campaign.missions[i].pos = 0;
+		Campaign.missions[i].flags = 0;
+		Campaign.missions[i].main_hall = "";
+		Campaign.missions[i].debrief_persona_index = 0;
+
+		Campaign.missions[i].stats.init();
 	}
 
+	memset(Campaign.name, 0, NAME_LENGTH);
+	memset(Campaign.filename, 0, MAX_FILENAME_LEN);
+	Campaign.type = 0;
+	Campaign.flags = 0;
 	Campaign.num_missions = 0;
+	Campaign.num_missions_completed = 0;
+	Campaign.current_mission = -1;
+	Campaign.next_mission = -1;
+	Campaign.prev_mission = -1;
+	Campaign.loop_enabled = 0;
+	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
+	Campaign.loop_reentry = 0;
+	Campaign.realign_required = 0;
+	Campaign.num_players = 0;
+	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
+	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
+	Campaign.num_variables = 0;
+	if (Campaign.variables != NULL) {
+		vm_free(Campaign.variables);
+		Campaign.variables = NULL;
+	}
 }
 
 /**
@@ -1570,26 +1631,18 @@ void mission_campaign_save_persistent( int type, int sindex )
 		Int3();
 }
 
-bool campaign_is_ignored(char *filename, bool add_extension)
+bool campaign_is_ignored(const char *filename)
 {
-	bool current_campaign_ignored = false;
-	int i;
-	char campaign_name[NAME_LENGTH] = {""};
+	SCP_string filename_no_ext = filename;
+	drop_extension(filename_no_ext);
 
-	strcpy_s(campaign_name, filename);
-
-	if (add_extension) {
-		strcat_s(campaign_name, FS_CAMPAIGN_FILE_EXT);
-	}
-
-	for (i = 0; i < (int)Ignored_campaigns.size(); i++) {
-		if (!stricmp (campaign_name, Ignored_campaigns[i].c_str())) {
-			current_campaign_ignored = true;
-			break;
+	for (SCP_vector<SCP_string>::iterator ii = Ignored_campaigns.begin(); ii != Ignored_campaigns.end(); ++ii) {
+		if (ii->compare(filename_no_ext) == 0) {
+			return true;
 		}
 	}
 	
-	return current_campaign_ignored;
+	return false;
 }
 
 // returns 0: loaded, !0: error
@@ -1607,7 +1660,7 @@ int mission_load_up_campaign( player *pl )
 
 	// last used...
 	if ( strlen(pl->current_campaign) ) {
-		if (!campaign_is_ignored(pl->current_campaign, true)) {
+		if (!campaign_is_ignored(pl->current_campaign)) {
 			return mission_campaign_load(pl->current_campaign, pl);
 		}
 		else {
@@ -1859,16 +1912,17 @@ void mission_campaign_load_failure_popup()
 
 	if (Campaign_load_failure == CAMPAIGN_ERROR_CORRUPT) {
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nRequested campaign is corrupt and cannot be loaded.\n\n"
-			"Please select a different campaign in the Campaign Room.", -1));
+			"Please select a different campaign in the Campaign Room.", 1614));
 	} else if (Campaign_load_failure == CAMPAIGN_ERROR_SEXP_EXHAUSTED) {
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nRequested campaign requires too many SEXPs and cannot be loaded.\n\n"
-			"Please select a different campaign in the Campaign Room.", -1));
+			"Please select a different campaign in the Campaign Room.", 1615));
 	} else if (Campaign_load_failure == CAMPAIGN_ERROR_MISSING) {
-		popup(PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("The currently active campaign cannot be found.\n\nPlease select another in the Campaign Room.", -1));
+		// if it's just the campaign missing, there's another popup to deal with that
+		;
 	} else if (Campaign_load_failure == CAMPAIGN_ERROR_SAVEFILE) {
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nThe pilot savefile "
 			"for this campaign is invalid for the current mod.\n\nPlease select another campaign or switch to the correct "
-			"mod in order to use this campaign.", -1));
+			"mod in order to use this campaign.", 1617));
 	}
 
 	Campaign_load_failure = 0;

@@ -207,9 +207,8 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			 scoring_struct add;
 			
 			// if we are passed mission_add (the stats for the current mission), copy it to "add", otherwise,
-			// zero it out
-			memset(&add,0,sizeof(scoring_struct));				
-			if(add_mission){
+			// leave it blank
+			if (add_mission) {
 				add.kill_count_ok = Active_player->stats.m_kill_count_ok;
 				add.p_shots_fired  = Active_player->stats.mp_shots_fired;
 				add.p_shots_hit = Active_player->stats.mp_shots_hit;
@@ -222,7 +221,7 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 
          // mission kills stats
 			sprintf(text,"%d",Active_player->stats.kill_count_ok + add.kill_count_ok);
-			hud_num_make_mono(text);
+			hud_num_make_mono(text, gr_get_current_fontnum());
 			gr_printf(sx,sy,text);
 			sy += 2*dy;
          // alltime primary weapon stats

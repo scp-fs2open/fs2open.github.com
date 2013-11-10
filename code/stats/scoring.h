@@ -16,9 +16,13 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 
-struct player;
-struct ship;
-struct object;
+class player;
+class ship;
+class object;
+
+#define NUM_MEDALS_FS2		18
+#define NUM_MEDALS_FS1		16
+extern int Num_medals;
 
 #define NUM_RANKS				10
 
@@ -35,6 +39,7 @@ struct object;
 
 #define MAX_FREESPACE1_RANK	RANK_COMMODORE
 #define MAX_FREESPACE2_RANK	RANK_ADMIRAL
+
 
 /*
 	The ins and outs of when/where stats are stored and retreived - BE SURE TO FOLLOW THESE GUIDELINES
@@ -68,13 +73,15 @@ typedef struct rank_stuff {
 #define STATS_FLAG_CAMPAIGN		(1<<1)
 #define STATS_FLAG_MULTIPLAYER	(1<<2)
 
-typedef struct scoring_struct {
+class scoring_struct
+{
+public:
 	int flags;
 
 	// All-time total
 	int score;								// all time score
 	int rank;								// all time rank
-	int medals[MAX_MEDALS];				// all time medal counts
+	SCP_vector<int> medal_counts;			// all time medal counts
 
 	int kills[MAX_SHIP_CLASSES];		// only valid kills (i.e. not on friendlies).
 	int assists;							// alltime assists
@@ -117,11 +124,15 @@ typedef struct scoring_struct {
 
 	int m_dogfight_kills[MAX_PLAYERS];	// kills by player for multiplayer dogfight
 
-} scoring_struct;
+	scoring_struct() { init(); }
+	scoring_struct(const scoring_struct &s) { assign(s); }
+
+	void init();
+	void assign(const scoring_struct &s);
+
+};
 
 extern rank_stuff Ranks[NUM_RANKS];
-
-void init_scoring_element(scoring_struct *s);
 
 void parse_rank_tbl();
 void scoring_level_init( scoring_struct *score );

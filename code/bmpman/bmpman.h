@@ -88,13 +88,13 @@ extern int bm_texture_ram;
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
 // number.
-int bm_load(char * filename);
+int bm_load(const char* filename);
 int bm_load(const SCP_string& filename);
 
 // special load function. basically allows you to load a bitmap which already exists (by filename). 
 // this is useful because in some cases we need to have a bitmap which is locked in screen format
 // _and_ texture format, such as pilot pics and squad logos
-int bm_load_duplicate(char *filename);
+int bm_load_duplicate(const char *filename);
 
 // Creates a bitmap that exists in RAM somewhere, instead
 // of coming from a disk file.  You pass in a pointer to a
@@ -124,10 +124,10 @@ int bm_release( int n, int clear_render_targets = 0 );
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
 // number of the first frame and nframes is set.
-extern int bm_load_animation( char * filename, int * nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
+extern int bm_load_animation( const char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
 
 //Loads either animation (bm_load_animation) or still image (bm_load)
-extern int bm_load_either(char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+extern int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
 
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_unlock.   Only lock
@@ -154,7 +154,7 @@ extern int bm_is_valid(int handle);
 int bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL );
 
 // get filename
-extern void bm_get_filename(int bitmapnum, char *filename);	 
+extern void bm_get_filename(int bitmapnum, char *filename);
 
 // call to load all data for all bitmaps that have been requested to be loaded
 extern void bm_gfx_load_all();
@@ -173,7 +173,7 @@ void bm_gfx_get_pixel( int bitmap, float u, float v, ubyte *r, ubyte *g, ubyte *
 void bm_get_frame_usage(int *ntotal, int *nnew);
 
 // Reload a different image into an existing bmpman slot
-int bm_reload(int bitmap_handle, char* filename);
+int bm_reload(int bitmap_handle, const char* filename);
 
 /* 
  * Example on using bm_create
@@ -248,7 +248,7 @@ int bm_page_out( int handle );
 //       2 = Debug low memory ( only use first frame of each ani )
 void bm_set_low_mem( int mode );
 
-char *bm_get_filename(int handle);
+const char *bm_get_filename(int handle);
 
 void BM_SELECT_SCREEN_FORMAT();
 void BM_SELECT_TEX_FORMAT();
@@ -284,5 +284,5 @@ int bm_make_render_target( int width, int height, int flags );
 int bm_is_render_target(int bitmap_id);
 int bm_set_render_target(int handle, int face = -1);
 
-int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type);
+int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type);
 #endif

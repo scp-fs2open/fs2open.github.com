@@ -1,4 +1,4 @@
-/*`
+/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -33,9 +33,6 @@
 
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
-
-char	parse_error_text[128];//for my better error mesages-Bobboau
-char	parse_error_text_save[128];
 
 char		Current_filename[128];
 char		Current_filename_save[128];
@@ -477,15 +474,15 @@ int required_string(char *pstr)
 	ignore_white_space();
 
 	while (strnicmp(pstr, Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
-		error_display(1, "Missing required token: [%s]. Found [%.32s] %s instead.\n", pstr, next_tokens(), parse_error_text);
+		error_display(1, "Missing required token: [%s]. Found [%.32s] instead.\n", pstr, next_tokens());
 		advance_to_eoln(NULL);
 		ignore_white_space();
 		count++;
 	}
 
 	if (count == RS_MAX_TRIES) {
-		nprintf(("Error", "Error: Unable to find required token [%s] %s\n", pstr, parse_error_text));
-		Warning(LOCATION, "Error: Unable to find required token [%s] %s\n", pstr, parse_error_text);
+		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
+		Warning(LOCATION, "Error: Unable to find required token [%s]\n", pstr);
 		longjmp(parse_abort, 1);
 	}
 
@@ -653,15 +650,15 @@ int required_string_either(char *str1, char *str2)
 	while (count < RS_MAX_TRIES) {
 		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
 			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n%s", token_found = str1, parse_error_text);
+			diag_printf("Found required string [%s]\n", token_found = str1);
 			return 0;
 		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
 			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n%s", token_found = str2, parse_error_text);
+			diag_printf("Found required string [%s]\n", token_found = str2);
 			return 1;
 		}
 
-		error_display(1, "Required token = [%s] or [%s], found [%.32s] %s.\n", str1, str2, next_tokens(), parse_error_text);
+		error_display(1, "Required token = [%s] or [%s], found [%.32s].\n", str1, str2, next_tokens());
 
 		advance_to_eoln(NULL);
 		ignore_white_space();
@@ -675,7 +672,6 @@ int required_string_either(char *str1, char *str2)
 	}
 
 	return -1;
-	// exit (1);
 }
 
 //	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
@@ -709,7 +705,6 @@ int required_string_3(char *str1, char *str2, char *str3)
 	}
 
 	return -1;
-	// exit (1);
 }
 
 int required_string_4(char *str1, char *str2, char *str3, char *str4)
@@ -743,7 +738,6 @@ int required_string_4(char *str1, char *str2, char *str3, char *str4)
 	}
 	
 	return -1;
-	// exit (1);
 }
 
 int required_string_either_fred(char *str1, char *str2)
@@ -770,7 +764,6 @@ int required_string_either_fred(char *str1, char *str2)
 		diag_printf("Unable to find either required token [%s] or [%s]\n", str1, str2);
 
 	return -1;
-	// exit (1);
 }
 
 //	Copy characters from instr to outstr until eoln is found, or until max
@@ -1690,6 +1683,8 @@ int strip_comments(char *line, int in_multiline_comment)
 	if (in_multiline_comment)
 	{
 		ch = strstr(line, "*/");
+		if (ch == NULL)
+			ch = strstr(line, "*!");
 		if (ch != NULL)
 		{
 			char *writep = line;
@@ -1713,15 +1708,6 @@ int strip_comments(char *line, int in_multiline_comment)
 		// can't close it, so drop the whole line
 		ch = line;
 		goto done_with_line;
-	}
-
-
-	// start of a multi-line comment?
-	ch = strstr(line, "/*");
-	if (ch != NULL)
-	{
-		// treat it as the beginning of a new line and recurse
-		return strip_comments(ch, 1);
 	}
 
 
@@ -1770,16 +1756,28 @@ int strip_comments(char *line, int in_multiline_comment)
 
 		// check whether major, minor, and build line up with this version
 		if (major > FS_VERSION_MAJOR)
-			goto done_with_line;
-		if (minor > FS_VERSION_MINOR)
-			goto done_with_line;
-		if (build > FS_VERSION_BUILD)
-			goto done_with_line;
+		{
+ 			goto done_with_line;
+		}
+		else if (major == FS_VERSION_MAJOR)
+		{
+			if (minor > FS_VERSION_MINOR)
+			{
+				goto done_with_line;
+			}
+			else if (minor == FS_VERSION_MINOR)
+			{
+				if (build > FS_VERSION_BUILD)
+				{
+					goto done_with_line;
+				}
+			}
+		}
 
-	
+
 		// this version is compatible, so copy the line past the tag
 		{
-			char *writep = line;
+			char *writep = ch;
 			char *readp = linech;
 
 			// copy all characters past the close of the comment
@@ -1794,7 +1792,7 @@ int strip_comments(char *line, int in_multiline_comment)
 			*writep = '\0';
 
 			// recurse with the other characters
-			return strip_comments(line, 0);
+			return strip_comments(ch, 0);
 		}
 	}
 
@@ -1803,6 +1801,19 @@ int strip_comments(char *line, int in_multiline_comment)
 	ch = strchr(line, ';');
 	if (ch != NULL)
 		goto done_with_line;
+
+
+	// start of a multi-line comment?
+	// (You can now use !* *! in addition to /* */ because prior to 3.7.1, a /* would be flagged
+	// even if it appeared after an initial ; such as in a version-specific comment.
+	ch = strstr(line, "/*");
+	if (ch == NULL)
+		ch = strstr(line, "!*");
+	if (ch != NULL)
+	{
+		// treat it as the beginning of a new line and recurse
+		return strip_comments(ch, 1);
+	}
 
 
 	// no comments found... try to find the newline
@@ -1896,7 +1907,7 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 //	When a comment is found, it is removed.  If an entire line
 //	consisted of a comment, a blank line is left in the input file.
 // Goober5000 - added ability to read somewhere other than Mission_text
-void read_file_text(char *filename, int mode, char *processed_text, char *raw_text)
+void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// copy the filename
 	if (!filename)
@@ -1922,7 +1933,7 @@ void read_file_text(char *filename, int mode, char *processed_text, char *raw_te
 }
 
 // Goober5000
-void read_file_text_from_array(char *array, char *processed_text, char *raw_text)
+void read_file_text_from_array(const char *array, char *processed_text, char *raw_text)
 {
 	// we have no filename, so copy a substitute
 	strcpy_s(Current_filename_sub, "internal default file");
@@ -2027,7 +2038,7 @@ void allocate_mission_text(int size)
 }
 
 // Goober5000
-void read_raw_file_text(char *filename, int mode, char *raw_text)
+void read_raw_file_text(const char *filename, int mode, char *raw_text)
 {
 	CFILE	*mf;
 	int	file_is_encrypted;
@@ -2640,6 +2651,24 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 	return count;
 }
 
+const char* get_lookup_type_name(int lookup_type) 
+{
+	switch (lookup_type) {
+		case SHIP_TYPE:
+			return "Ships";
+		case SHIP_INFO_TYPE:
+			return "Ship Classes";
+		case WEAPON_POOL_TYPE:
+			return "Weapon Pool";
+		case WEAPON_LIST_TYPE:
+			return "Weapon Types";
+		case RAW_INTEGER_TYPE:
+			return "Untyped integer list";
+	}
+
+	return "Unknown lookup type, tell a coder!";
+}
+
 //	Stuffs an integer list.
 //	This is of the form ( i* )
 //	  where i is an integer.
@@ -2658,7 +2687,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	while (*Mp != ')') {
-		Assert(count < max_ints);
+		Assertion(count < max_ints, "Too many entries in integer list. Expected %d, found %d.\nList type was %s", max_ints, count+1, get_lookup_type_name(lookup_type));
 		if (*Mp == '"') {
 			int num = 0;
 			char str[128];
@@ -2703,11 +2732,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 					Error(LOCATION, "Unable to find string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 				} else if (num == -2) {
 					if (str[0] != '\0') {
-						if(parse_error_text[0] != '\0'){
-							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" %s.\n", str, parse_error_text);
-						}else{
-							Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
-						}
+						Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 					}
 				}
 
@@ -3131,18 +3156,19 @@ void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int
 	}
 }
 
-// pause current parsing so that some else can be parsed without interferring
+// pause current parsing so that some else can be parsed without interfering
 // with the currently parsing file
 void pause_parse()
 {
 	Assert( !Parsing_paused );
+	if (Parsing_paused)
+		return;
 
 	Mp_save = Mp;
 
 	Warning_count_save = Warning_count;
 	Error_count_save = Error_count;
 
-	strcpy_s(parse_error_text_save, parse_error_text);
 	strcpy_s(Current_filename_save, Current_filename);
 
 	Parsing_paused = 1;	
@@ -3152,7 +3178,6 @@ void pause_parse()
 void unpause_parse()
 {
 	Assert( Parsing_paused );
-
 	if (!Parsing_paused)
 		return;
 
@@ -3161,7 +3186,6 @@ void unpause_parse()
 	Warning_count = Warning_count_save;
 	Error_count = Error_count_save;
 
-	strcpy_s(parse_error_text, parse_error_text_save);
 	strcpy_s(Current_filename, Current_filename_save);
 
 	Parsing_paused = 0;
@@ -3177,8 +3201,6 @@ void reset_parse(char *text)
 
 	Warning_count = 0;
 	Error_count = 0;
-
-	strcpy_s(parse_error_text, "");//better error mesages-Bobboau
 
 	strcpy_s(Current_filename, Current_filename_sub);
 }
@@ -3540,7 +3562,7 @@ int subsystem_stricmp(const char *str1, const char *str2)
 
 // Goober5000
 // current algorithm adapted from http://www.codeproject.com/string/stringsearch.asp
-char *stristr(const char *str, const char *substr)
+const char *stristr(const char *str, const char *substr)
 {
 	// check for null and insanity
 	Assert(str);
@@ -3577,7 +3599,56 @@ char *stristr(const char *str, const char *substr)
 			}
 
 			// finished inner loop with success!
-			return const_cast<char*>(start);
+			return start;
+		}
+
+stristr_continue_outer_loop:
+		/* NO-OP */ ;
+	}
+
+	// no match
+	return NULL;
+}
+
+// non-const version
+char *stristr(char *str, const char *substr)
+{
+	// check for null and insanity
+	Assert(str);
+	Assert(substr);
+	if (str == NULL || substr == NULL || *substr == '\0')
+		return NULL;
+
+	// save both a lowercase and an uppercase version of the first character of substr
+	char substr_ch_lower = (char)tolower(*substr);
+	char substr_ch_upper = (char)toupper(*substr);
+
+	// find the maximum distance to search
+	const char *upper_bound = str + strlen(str) - strlen(substr);
+
+	// loop through every character of str
+	for (char *start = str; start <= upper_bound; start++)
+	{
+		// check first character of substr
+		if ((*start == substr_ch_upper) || (*start == substr_ch_lower))
+		{
+			// first character matched, so check the rest
+			for (const char *str_ch = start+1, *substr_ch = substr+1; *substr_ch != '\0'; str_ch++, substr_ch++)
+			{
+				// character match?
+				if (*str_ch == *substr_ch)
+					continue;
+
+				// converted character match?
+				if (tolower(*str_ch) == tolower(*substr_ch))
+					continue;
+
+				// mismatch
+				goto stristr_continue_outer_loop;
+			}
+
+			// finished inner loop with success!
+			return start;
 		}
 
 stristr_continue_outer_loop:
@@ -3642,9 +3713,9 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 		buf_src_len = 1;
 		do {
 			++p;
-			if (!*p || (buf_src_len >= MAX_BUF))
+			if (!*p || (buf_src_len >= MAX_BUF-1))
 			{
-				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF, format, (p - format));
+				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF-1, format, (p - format));
 
 				// unsafe to continue handling this va_list
 				dest += buf_src;
@@ -3693,6 +3764,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 				pint = va_arg(ap, int *);
 				Assert(pint != NULL);
 				*pint = dest.length();
+				break;
 			}
 			case '%':
 			{
@@ -3920,6 +3992,32 @@ int strextcmp(const char *s1, const char *s2)
 	return strnicmp(s1, s2, s1_len);
 }
 
+// Goober5000
+bool drop_extension(char *str)
+{
+	char *p = strrchr(str, '.');
+	if (p != NULL)
+	{
+		*p = 0;
+		return true;
+	}
+
+	return false;
+}
+
+// Goober5000
+bool drop_extension(SCP_string &str)
+{
+	size_t pos = str.rfind('.');
+	if (pos != SCP_string::npos)
+	{
+		str.resize(pos);
+		return true;
+	}
+
+	return false;
+}
+
 //WMC
 void backspace(char* src)
 {
@@ -4057,7 +4155,7 @@ void parse_int_list(int *ilist, int size)
 }
 
 // parse a modular table of type "name_check" and parse it using the specified function callback
-int parse_modular_table(char *name_check, void (*parse_callback)(char *filename), int path_type, int sort_type)
+int parse_modular_table(const char *name_check, void (*parse_callback)(const char *filename), int path_type, int sort_type)
 {
 	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
 	char *tbl_file_names[MAX_TBL_PARTS];

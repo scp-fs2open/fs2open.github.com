@@ -993,6 +993,13 @@ int CFred_mission_save::save_briefing()
 					fout(" %d", (bi->flags & BI_MIRROR_ICON)?1:0 );
 				}
 
+				if ((Format_fs2_open != FSO_FORMAT_RETAIL) && (bi->flags & BI_USE_WING_ICON))
+				{
+					required_string_fred("$use wing icon:");
+					parse_comments();
+					fout(" %d", (bi->flags & BI_USE_WING_ICON)?1:0 );
+				}
+
 				required_string_fred("$multi_text");
 				parse_comments();
 
@@ -2665,7 +2672,7 @@ int CFred_mission_save::save_waypoints()
 int CFred_mission_save::save_waypoint_list(waypoint_list *wp_list)
 {
 	Assert(wp_list != NULL);
-	SCP_list<waypoint>::iterator ii;
+	SCP_vector<waypoint>::iterator ii;
 
 	for (ii = wp_list->get_waypoints().begin(); ii != wp_list->get_waypoints().end(); ++ii)
 	{

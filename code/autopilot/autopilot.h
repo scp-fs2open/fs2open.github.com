@@ -25,8 +25,9 @@
 #define NP_NOSELECT		( NP_HIDDEN | NP_NOACCESS )
 #define NP_VALIDTYPE	( NP_WAYPOINT | NP_SHIP )
 
-struct NavPoint 
+class NavPoint 
 {
+public:
 	char m_NavName[32];
 	int flags;
 
@@ -35,6 +36,15 @@ struct NavPoint
 
 	vec3d *GetPosition();
 	char* GetInternalName();
+
+	void clear()
+	{
+		m_NavName[0] = 0;
+		flags = 0;
+
+		target_obj = NULL;
+		waypoint_num = -1;
+	}
 };
 
 

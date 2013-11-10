@@ -14,8 +14,9 @@
 #include "graphics/2d.h"
 #include "hud/hudparse.h"
 #include "globalincs/vmallocator.h"
+#include "graphics/font.h"
 
-struct object;
+class object;
 struct cockpit_display;
 
 typedef struct hud_anim {
@@ -26,13 +27,6 @@ typedef struct hud_anim {
 	int sx, sy;			// screen (x,y) of top-left corner of animation
 	float total_time;	// total time in seconds for the animation (depends on animation fps)
 	float time_elapsed;	// time that has elapsed (in seconds) since animation started playing
-
-	hud_anim( )
-		: first_frame( 0 ), num_frames( 0 ), sx( 0 ), sy( 0 ),
-		  total_time( 0 ), time_elapsed( 0 )
-	{
-		filename[ 0 ] = 0;
-	}
 } hud_anim;
 
 typedef struct hud_frames {
@@ -137,13 +131,13 @@ void hud_save_restore_camera_data(int save);
 void HUD_set_clip(int x, int y, int w, int h);
 
 // do flashing text gauge
-void hud_start_text_flash(char *txt, int t, int interval = 200);
+void hud_start_text_flash(const char *txt, int t, int interval = 200);
 
 // convert a string to use mono spaced numbers
-void hud_num_make_mono(char *num_str);
+void hud_num_make_mono(char *num_str, int font_num = FONT1);
 
 // functions for handling hud animations
-void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename);
+void hud_anim_init(hud_anim *ha, int sx, int sy, const char *filename);
 void hud_frames_init(hud_frames *hf);
 int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,bool resize=true, bool mirror = false);
 int	hud_anim_load(hud_anim *ha);
@@ -258,7 +252,7 @@ public:
 	void initBaseResolution(int w, int h);
 	void initSlew(bool slew);
 	void initFont(int font_num);
-	void initCockpitTarget(char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
+	void initCockpitTarget(const char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
 	void initRenderStatus(bool render);
 
 	int getConfigType();
@@ -282,11 +276,11 @@ public:
 	void resetTimers();
 
 	// For updating custom gauges
-	char* getCustomGaugeName();
+	const char* getCustomGaugeName();
 	void updateCustomGaugeCoords(int _x, int _y);
 	void updateCustomGaugeFrame(int frame_offset);
 	void updateCustomGaugeText(const char* txt);
-	void updateCustomGaugeText(SCP_string& txt);
+	void updateCustomGaugeText(const SCP_string& txt);
 	const char* getCustomGaugeText();
 
 	void startPopUp(int time=4000);
@@ -300,7 +294,7 @@ public:
 	virtual void onFrame(float frametime);
 
 	bool setupRenderCanvas(int render_target = -1);
-	void setCockpitTarget(cockpit_display *display);
+	void setCockpitTarget(const cockpit_display *display);
 	void resetCockpitTarget();
 	
 	void setFont();
@@ -312,11 +306,11 @@ public:
 	void renderBitmapColor(int frame, int x, int y);
 	void renderBitmapUv(int frame, int x, int y, int w, int h, float u0, float v0, float u1, float v1);
 	void renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy);
-	void renderString(int x, int y, char *str);
-	void renderString(int x, int y, int gauge_id, char *str);
-	void renderStringAlignCenter(int x, int y, int area_width, char *s);
-	void renderPrintf(int x, int y, char* format, ...);
-	void renderPrintf(int x, int y, int gauge_id, char* format, ...);
+	void renderString(int x, int y, const char *str);
+	void renderString(int x, int y, int gauge_id, const char *str);
+	void renderStringAlignCenter(int x, int y, int area_width, const char *s);
+	void renderPrintf(int x, int y, const char* format, ...);
+	void renderPrintf(int x, int y, int gauge_id, const char* format, ...);
 	void renderLine(int x1, int y1, int x2, int y2);
 	void renderGradientLine(int x1, int y1, int x2, int y2);
 	void renderRect(int x, int y, int w, int h);
@@ -338,7 +332,7 @@ class HudGaugeMissionTime: public HudGauge // HUD_MISSION_TIME
 	int time_val_offsets[2]; // Mission_time_text_val_coords[gr_screen.res]
 public:
 	HudGaugeMissionTime();
-	void initBitmaps(char *fname);
+	void initBitmaps(const char *fname);
 	void initTextOffsets(int x, int y);
 	void initValueOffsets(int x, int y);
 	void render(float frametime);
@@ -364,7 +358,7 @@ class HudGaugeKills: public HudGauge
 	int text_value_offsets[2];
 public:
 	HudGaugeKills();
-	void initBitmaps(char *fname);
+	void initBitmaps(const char *fname);
 	void initTextOffsets(int x, int y);
 	void initTextValueOffsets(int x, int y);
 	void render(float frametime);
@@ -379,7 +373,7 @@ class HudGaugeLag: public HudGauge
 	bool flash_flag;
 public:
 	HudGaugeLag();
-	void initBitmaps(char *fname);
+	void initBitmaps(const char *fname);
 	void render(float frametime);
 	void pageIn();
 
@@ -403,7 +397,7 @@ protected:
 	bool flash_flag;
 public:
 	HudGaugeObjectiveNotify();
-	void initBitmaps(char *fname);
+	void initBitmaps(const char *fname);
 	void initObjTextOffsetY(int y);
 	void initObjValueOffsetY(int y);
 	void initSubspaceTextOffsetY(int y);
@@ -444,7 +438,7 @@ protected:
 	bool flash_status;
 public:
 	HudGaugeDamage();
-	void initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom);
+	void initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom);
 	void initHeaderOffsets(int x, int y);
 	void initHullIntegOffsets(int x, int y);
 	void initHullIntegValueOffsetX(int x);
@@ -469,7 +463,7 @@ protected:
 	int text_dock_val_offset_x;
 public:
 	HudGaugeSupport();
-	void initBitmaps(char *fname);
+	void initBitmaps(const char *fname);
 	void initHeaderOffsets(int x, int y);
 	void initTextValueOffsetY(int y);
 	void initTextDockOffsetX(int x);
@@ -517,12 +511,12 @@ class HudGaugeFlightPath: public HudGauge
 	int Marker_half[2];
 public:
 	HudGaugeFlightPath();
-	void initBitmap(char *fname);
+	void initBitmap(const char *fname);
 	void initHalfSize(int w, int h);
 	void render(float frametime);
 };
 
-HudGauge* hud_get_gauge(char* name);
+HudGauge* hud_get_gauge(const char* name);
 
 extern SCP_vector<HudGauge*> default_hud_gauges;
 

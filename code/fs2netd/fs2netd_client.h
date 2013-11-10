@@ -15,7 +15,7 @@
 #include "network/multi.h"
 
 struct net_addr;
-struct player;
+class player;
 
 // channel to associate when creating a server
 extern char Multi_fs_tracker_channel[];
@@ -77,8 +77,8 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 
 void fs2netd_options_config_init();
 
-void fs2netd_add_table_validation(char *tblname);
+void fs2netd_add_table_validation(const char *tblname);
 
-void fs2netd_update_game_count(char *chan_name);
+void fs2netd_update_game_count(const char *chan_name);
 
 #endif // _FS2NETD_CLIENT_H

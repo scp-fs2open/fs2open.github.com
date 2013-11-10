@@ -838,8 +838,6 @@ void obj_snd_delete_all()
 	for(idx=0; idx<MAX_OBJ_SNDS; idx++){
 		if(Objsnds[idx].flags & OS_USED){
 			obj_snd_delete_type(Objsnds[idx].objnum);
-
-			Objects[Objsnds[idx].objnum].objsnd_num.clear();
 		}
 	}
 }

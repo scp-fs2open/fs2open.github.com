@@ -176,8 +176,6 @@ static int Player_select_middle_text_y[GR_NUM_RESOLUTIONS] = {
 
 char Player_select_bottom_text[150] = "";
 char Player_select_middle_text[150] = "";
-void player_select_set_bottom_text(char *txt);
-void player_select_set_middle_text(char *txt);
 
 
 // FORWARD DECLARATIONS
@@ -190,12 +188,13 @@ int player_select_create_new_pilot();
 void player_select_delete_pilot();
 void player_select_display_all_text();
 void player_select_display_copyright();
-void player_select_set_bottom_text(char *txt);
+void player_select_set_bottom_text(const char *txt);
+void player_select_set_middle_text(const char *txt);
 void player_select_set_controls(int gray);
 void player_select_draw_list();
 void player_select_process_noninput(int k);
 void player_select_process_input(int k);
-int player_select_pilot_file_filter(char *filename);
+int player_select_pilot_file_filter(const char *filename);
 int player_select_get_last_pilot_info();
 void player_select_eval_very_first_pilot();
 void player_select_commit();
@@ -616,7 +615,7 @@ void player_select_button_pressed(int n)
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 				popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
 							"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
-							"deleted from the single-player menu.", -1));
+							"deleted from the single-player menu.", 1610));
 			} else {
 				// display a popup requesting confirmation
 				ret = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR( "Warning!\n\nAre you sure you wish to delete this pilot?", 382));
@@ -728,7 +727,7 @@ void player_select_delete_pilot()
 	del_rval = delete_pilot_file(filename);
 
 	if ( !del_rval ) {
-		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", -1));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", 1599));
 		return;
 	}
 
@@ -786,21 +785,24 @@ int player_select_get_last_pilot_info()
 {
 	// TODO: Replace this with a function that does this properly for the new pilot code.
 
-	char *last_player;
-
-	last_player = os_config_read_string( NULL, "LastPlayer", NULL);
+	const char *last_player = os_config_read_string( NULL, "LastPlayer", NULL);
 
 	if (last_player == NULL) {
 		return 0;
 	} else {
-		strcpy_s(Player_select_last_pilot,last_player);
+		strcpy_s(Player_select_last_pilot, last_player);
 	}
 
-	//// determine if he was a single or multi-player based upon the last character in his callsign
-	// Player_select_last_is_multi = Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' ? 1 : 0;
-	Player_select_last_is_multi = 0;
+	// handle changing from pre-pilot code to post-pilot code
+	if (Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' || Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'S') {
+		Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';	// chop off last char, M|P
+	}
 
-	Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';
+	if ( !Pilot.load_player(Player_select_last_pilot, Player) ) {
+		Player_select_last_is_multi = 0;
+	} else {
+		Player_select_last_is_multi = Player->player_was_multi;
+	}
 
 	return 1;
 }
@@ -856,6 +858,22 @@ void player_select_init_player_stuff(int mode)
 	Get_file_list_filter = player_select_pilot_file_filter;
 
 	Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+
+	// if we have a "last_player", and they're in the list, bash them to the top of the list
+	if (Player_select_last_pilot[0] != '\0') {
+		int i,j;
+		for (i = 0; i < Player_select_num_pilots; ++i) {
+			if (!stricmp(Player_select_last_pilot,Pilots[i])) {
+				break;
+			}
+		}
+		if (i != Player_select_num_pilots) {
+			for (j = i; j > 0; --j) {
+				strncpy(Pilots[j], Pilots[j-1], strlen(Pilots[j-1])+1);
+			}
+			strncpy(Pilots[0], Player_select_last_pilot, strlen(Player_select_last_pilot)+1);
+		}
+	}
 
 	Player = NULL;
 
@@ -931,7 +949,7 @@ void player_select_process_noninput(int k)
 			int ret;
 
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-				popup(PF_TITLE_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Pilots can only be deleted from the single player menu!", -1));
+				popup(PF_TITLE_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Pilots can only be deleted from the single player menu!", 1611));
 			} else {
 				// display a popup requesting confirmation
 				ret = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON,2,POPUP_NO,POPUP_YES,XSTR( "Are you sure you want to delete this pilot?", 383));										
@@ -1133,19 +1151,19 @@ void player_select_display_all_text()
 	}
 }
 
-int player_select_pilot_file_filter(char *filename)
+int player_select_pilot_file_filter(const char *filename)
 {
 	return (int)Pilot.verify(filename);
 }
 
-void player_select_set_bottom_text(char *txt)
+void player_select_set_bottom_text(const char *txt)
 {
 	if (txt) {
 		strncpy(Player_select_bottom_text, txt, 149);
 	}
 }
 
-void player_select_set_middle_text(char *txt)
+void player_select_set_middle_text(const char *txt)
 {
 	if (txt) {
 		strncpy(Player_select_middle_text, txt, 149);

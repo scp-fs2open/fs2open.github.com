@@ -223,7 +223,7 @@ int Main_hall_notify_stamp = -1;
 char Main_hall_notify_text[300]="";
 
 // set the current notification string and the associated timestamp
-void main_hall_set_notify_string(char *str);
+void main_hall_set_notify_string(const char *str);
 
 // handle any drawing, culling, etc of notification messages
 void main_hall_notify_do();
@@ -288,10 +288,10 @@ void main_hall_do_multi_ready()
 		break;
 	case NETWORK_ERROR_NO_PROTOCOL:
 		if (Multi_options_g.protocol == NET_TCP) {
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "TCP/IP protocol not found.  This protocol is required for multiplayer FreeSpace.", -1));
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "TCP/IP protocol not found.  This protocol is required for multiplayer FreeSpace.", 1602));
 		} else {
 			Assert(Multi_options_g.protocol == NET_IPX);
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "IPX protocol not found.  This protocol is required for multiplayer FreeSpace.", -1));
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "IPX protocol not found.  This protocol is required for multiplayer FreeSpace.", 1603));
 		}
 		break;
 	case NETWORK_ERROR_CONNECT_TO_ISP:
@@ -309,7 +309,7 @@ void main_hall_do_multi_ready()
 	// if our selected protocol is not active
 	if ((Multi_options_g.protocol == NET_TCP) && !Tcp_active) {
 		if (Tcp_failure_code == WSAEADDRINUSE) {
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", -1));
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", 1604));
 		} else {
 			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362));
 		}
@@ -373,7 +373,7 @@ void main_hall_blit_table_status()
  */
 void main_hall_campaign_cheat()
 {
-	char *ret = popup_input(0, XSTR("Enter mission name.\n\n* This will destroy all legitimate progress in this campaign. *", -1));
+	char *ret = popup_input(0, XSTR("Enter mission name.\n\n* This will destroy all legitimate progress in this campaign. *", 1605));
 
 	// yay
 	if (ret != NULL) {
@@ -388,7 +388,7 @@ void main_hall_campaign_cheat()
 /**
  * Initialize the main hall proper
  *
- * @param main_hall_num Main hall index
+ * @param main_hall_name Name of main hall to initialise
  */
 void main_hall_init(SCP_string main_hall_name)
 {
@@ -713,12 +713,12 @@ void main_hall_do(float frametime)
 						main_hall_set_notify_string(XSTR( "Quick Start not valid for multiplayer pilots", 369));
 					} else {
 						if (Num_recent_missions > 0) {
-							strncpy(Game_current_mission_filename, Recent_missions[0], MAX_FILENAME_LEN);
+							strcpy_s(Game_current_mission_filename, Recent_missions[0]);
 						} else {
 							if (mission_load_up_campaign()) {
-								main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", -1));
+								main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", 1606));
 							}
-							strncpy(Game_current_mission_filename, Campaign.missions[0].name, MAX_FILENAME_LEN);
+							strcpy_s(Game_current_mission_filename, Campaign.missions[0].name);
 						}
 						Campaign.current_mission = -1;
 						gameseq_post_event(GS_EVENT_START_GAME_QUICK);
@@ -811,7 +811,7 @@ void main_hall_do(float frametime)
 	// see if we have a missing campaign and force the player to select a new campaign if so
 	extern bool Campaign_room_no_campaigns;
 	if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns ) {
-		int rc = popup(0, 3, XSTR("Go to Campaign Room", -1), XSTR("Select another pilot", -1), XSTR("Exit Game", -1), XSTR("The currently active campaign cannot be found.  Please select another...", -1));
+		int rc = popup(0, 3, XSTR("Go to Campaign Room", 1607), XSTR("Select another pilot", 1608), XSTR("Exit Game", 1609), XSTR("The currently active campaign cannot be found.  Please select another...", 1600));
 
 		switch (rc) {
 			case 0:
@@ -1409,7 +1409,7 @@ void main_hall_handle_random_intercom_sounds()
  * Set the notification string with its decay timeout
  * @param str Notification string
  */
-void main_hall_set_notify_string(char *str)
+void main_hall_set_notify_string(const char *str)
 {
 	strcpy_s(Main_hall_notify_text,str);
 	Main_hall_notify_stamp = timestamp(MAIN_HALL_NOTIFY_TIME);
@@ -1824,7 +1824,7 @@ void main_hall_table_init()
 }
 
 // read in main hall table
-void parse_main_hall_table(char* filename)
+void parse_main_hall_table(const char* filename)
 {
 	SCP_vector<main_hall_defines> temp_vector;
 	main_hall_defines *m, temp;

@@ -2228,6 +2228,7 @@ void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int sh
 	case TS_MOVE_PLAYER :
 		nprintf(("Network","Apply move player %d %d\n",from_index,to_index));
 		update = multi_ts_move_player(from_index,to_index,&sound,player_index);
+		break;
 	default :
 		update = 0;
 		break;
@@ -2577,7 +2578,7 @@ void multi_ts_select_ship()
 	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
 	char ship_desc[1000];
-	char *p_str[MAX_BRIEF_LINES];
+	const char *p_str[MAX_BRIEF_LINES];
 	char *token;
 	
 	

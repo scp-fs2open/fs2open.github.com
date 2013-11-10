@@ -22,7 +22,8 @@
 #include "globalincs/alphacolors.h"
 #include "network/multi.h"
 #include "hud/hudmessage.h"
-
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
@@ -116,6 +117,7 @@ void ssm_init()
 				stuff_string(s->message, F_NAME, NAME_LENGTH);
 				s->use_custom_message = true;
 			}
+			parse_sound("+Alarm Sound:", &s->sound_index, s->name);
 
 			// see if we have a valid weapon
 			s->weapon_info_index = -1;
@@ -238,6 +240,9 @@ void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *ov
 			HUD_printf(XSTR("Firing artillery", 1570));
 		else
 			HUD_printf(Ssm_info[ssm_index].message);
+	}
+	if (Ssm_info[ssm_index].sound_index >= 0) {
+		snd_play(&Snds[Ssm_info[ssm_index].sound_index]);
 	}
 }
 

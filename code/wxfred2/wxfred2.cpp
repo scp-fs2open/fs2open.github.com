@@ -4,32 +4,30 @@
  * create based on the source.
  */ 
 
-
-
-#include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
-
-#ifndef WX_PRECOMP
-	#include <wx/wx.h>
-#endif
+//#include "mission.h"
+#include "frmfred2.h"
+#include "base/wxfred_base.h"
 
 #include "wxfred2.h"
-#include <wx/xrc/xmlres.h>
-#include "fredframe.h"
-#include "wxfred_xrc.h"
-#include "mission.h"
+
+#include <globalincs/pstypes.h>
+
+#include <wx/image.h>
+#include <wx/string.h>
+//#include <wx/xrc/xmlres.h>
+#include <wx/wx.h>
 
 IMPLEMENT_APP(wxFRED2)
 
 bool wxFRED2::OnInit()
 {
-	wxXmlResource::Get()->InitAllHandlers();
-	InitXmlResource();
-	wxFREDMission* the_Mission = new wxFREDMission();
-	FREDFrame *frame = new FREDFrame(_T("Untitled - FRED2_OPEN 3.6.5 - FreeSpace 2 Mission Editor"), 50, 50, 800, 600, the_Mission);
+	//wxXmlResource::Get()->InitAllHandlers();
+	//InitXmlResource();
+	//wxFREDMission* the_Mission = new wxFREDMission();
+	wxChar* title = NULL;
+	// Init image handlers before frmFRED2 (wxFormBuilder workaround)
+	wxImage::AddHandler(new wxPNGHandler);
+	frmFRED2 *frame = new frmFRED2( title, 50, 50, 800, 600 );
 	SetTopWindow(frame);
 	frame->Show(TRUE);
 

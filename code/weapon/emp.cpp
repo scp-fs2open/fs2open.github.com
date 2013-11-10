@@ -464,7 +464,7 @@ int emp_should_blit_gauge()
 }
 
 // emp hud string
-void emp_hud_string(int x, int y, int gauge_id, char *str, bool resize)
+void emp_hud_string(int x, int y, int gauge_id, const char *str, bool resize)
 {
 	char tmp[256] = "";
 
@@ -488,7 +488,7 @@ void emp_hud_string(int x, int y, int gauge_id, char *str, bool resize)
 }
 
 // emp hud printf
-void emp_hud_printf(int x, int y, int gauge_id, char *format, ...)
+void emp_hud_printf(int x, int y, int gauge_id, const char *format, ...)
 {
 	char tmp[256] = "";
 	va_list args;	
@@ -609,7 +609,7 @@ void emp_randomize_chars(char *str)
 	// shuffle chars around
 	for(idx=0; idx<(int)(strlen(str)-1); idx++){
 		if(frand_range(0.0f, 1.0f) < Emp_intensity){
-			char_index = Emp_random_char[(int)frand_range(0.0f, (float)(NUM_RANDOM_CHARS - 1))];
+			char_index = (int)frand_range(0.0f, (float)(NUM_RANDOM_CHARS - 1));
 			str[idx] = Emp_random_char[char_index];
 		}
 	}

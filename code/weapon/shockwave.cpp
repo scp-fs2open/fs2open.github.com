@@ -356,7 +356,18 @@ void shockwave_move(object *shockwave_objp, float frametime)
 
 		// If this shockwave hit the player, play shockwave impact sound
 		if ( objp == Player_obj ) {
-			snd_play( &Snds[SND_SHOCKWAVE_IMPACT], 0.0f, MAX(0.4f, damage/Weapon_info[sw->weapon_info_index].damage) );
+			float full_damage, vol_scale;
+			if (sw->weapon_info_index >= 0) {
+				full_damage = Weapon_info[sw->weapon_info_index].damage;
+			} else {
+				full_damage = sw->damage;
+			}
+			if (full_damage != 0.0f) {
+				vol_scale = MAX(0.4f, damage/full_damage);
+			} else {
+				vol_scale = 1.0f;
+			}
+			snd_play( &Snds[SND_SHOCKWAVE_IMPACT], 0.0f, vol_scale );
 		}
 
 	}	// end for
@@ -716,10 +727,21 @@ void shockwave_page_in()
 	}
 }
 
+void shockwave_create_info_init(shockwave_create_info *sci)
+{ 
+	sci->name[ 0 ] = '\0';
+	sci->pof_name[ 0 ] = '\0';
+
+	sci->inner_rad = sci->outer_rad = sci->damage = sci->blast = sci->speed = 0.0f;
+
+	sci->rot_angles.p = sci->rot_angles.b = sci->rot_angles.h = 0.0f;
+	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
+}
+
 /**
  * Loads a shockwave in preparation for a mission
  */
-void shockwave_create_info::load()
+void shockwave_create_info_load(shockwave_create_info *sci)
 {
 	int i = -1;
 
@@ -727,9 +749,9 @@ void shockwave_create_info::load()
 	// checking for that case lets us handle a situation where a 2D shockwave
 	// of "none" was specified and a valid 3D shockwave was specified
 
-	if ( strlen(name) )
-		i = shockwave_load(name, false);
+	if ( strlen(sci->name) )
+		i = shockwave_load(sci->name, false);
 
-	if ( (i < 0) && strlen(pof_name) )
-		shockwave_load(pof_name, true);
+	if ( (i < 0) && strlen(sci->pof_name) )
+		shockwave_load(sci->pof_name, true);
 }

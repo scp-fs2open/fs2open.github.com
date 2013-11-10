@@ -163,9 +163,7 @@ void camera::set_custom_orientation_function(void (*n_func_custom_orientation)(c
 
 void camera::set_position(vec3d *in_position, float in_translation_time, float in_translation_acceleration_time, float in_translation_deceleration_time, float in_end_velocity)
 {
-	if (in_position == NULL)
-		return;
-	if(in_translation_time == 0.0f && in_translation_acceleration_time == 0.0f && in_translation_deceleration_time == 0.0f)
+	if(in_position != NULL && in_translation_time == 0.0f && in_translation_acceleration_time == 0.0f && in_translation_deceleration_time == 0.0f)
 	{
 		c_pos = *in_position;
 		pos_x.set(c_pos.xyz.x);
@@ -198,10 +196,7 @@ void camera::set_translation_velocity(vec3d *in_velocity, float in_acceleration_
 
 void camera::set_rotation(matrix *in_orientation, float in_rotation_time, float in_rotation_acceleration_time, float in_rotation_deceleration_time)
 {
-	if (in_orientation == NULL)
-		return;
-
-	if(in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f && in_rotation_deceleration_time == 0.0f)
+	if(in_orientation != NULL && in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f && in_rotation_deceleration_time == 0.0f)
 	{
 		c_ori = *in_orientation;
 		for(int i = 0; i < 9; i++)
@@ -566,7 +561,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 
 
 	int num_text_lines = 0;
-	char *text_line_ptrs[MAX_SUBTITLE_LINES];
+	const char *text_line_ptrs[MAX_SUBTITLE_LINES];
 	int text_line_lens[MAX_SUBTITLE_LINES];
 
 	//Setup text

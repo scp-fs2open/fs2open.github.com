@@ -17,15 +17,15 @@
 // prototypes instead of headers :)
 struct net_player;
 struct net_addr;
-struct player;
+class player;
 struct button_info;
 struct join_request;
 struct physics_info;
-struct object;
+class object;
 struct active_game;
-struct ship;
+class ship;
 struct server_item;
-struct ship_info;
+class ship_info;
 struct p_object;
 
 // two types of signatures that we can request,  permanent signatures are all below 1000.  non-permanent are above 1000
@@ -45,11 +45,11 @@ extern int find_player_id(short player_id);
 extern int find_player_socket(PSNET_SOCKET_RELIABLE sock);	// note this is only valid to do on a server!
 extern int multi_find_player_by_object( object *obj );
 extern int multi_find_player_by_signature( int signature );
-extern int multi_find_player_by_callsign(char *callsign);
+extern int multi_find_player_by_callsign(const char *callsign);
 extern int multi_find_player_by_net_signature(ushort net_signature);
 extern int multi_find_player_by_parse_object(p_object *p_objp );
-extern int multi_find_player_by_ship_name(char *ship_name, bool inc_respawning = false);
-extern int multi_create_player(int player_num, player *pl,char* name, net_addr* addr, int ship_class, short id);
+extern int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning = false);
+extern int multi_create_player(int player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id);
 extern int multi_find_open_netplayer_slot();
 extern int multi_find_open_player_slot();
 extern void delete_player(int player_num, int kicked_reason = -1);
@@ -59,10 +59,10 @@ extern int multi_num_players();
 extern int multi_num_observers();
 extern int multi_num_connections();
 
-extern char* multi_random_death_word();
-extern char* multi_random_chat_start();
+extern const char* multi_random_death_word();
+extern const char* multi_random_chat_start();
 
-extern int multi_ship_class_lookup(char* ship_name);
+extern int multi_ship_class_lookup(const char* ship_name);
 extern ushort netmisc_calc_checksum( void * vptr, int len );
 extern void fill_net_addr(net_addr* addr, ubyte* address, ubyte* net_id, ushort port);
 extern char* get_text_address( char * text, ubyte * address );
@@ -180,10 +180,10 @@ int multi_ignore_controls(int key = -1);
 int multi_kill_limit_reached();
 
 // display a chat message (write to the correct spot - hud, standalone gui, chatbox, etc)
-void multi_display_chat_msg(char *msg, int player_index, int add_id);
+void multi_display_chat_msg(const char *msg, int player_index, int add_id);
 
 // fill in Current_file_checksum and Current_file_length
-void multi_get_mission_checksum(char *filename);
+void multi_get_mission_checksum(const char *filename);
 
 // Packs/unpacks an object position.
 // Returns number of bytes read or written.

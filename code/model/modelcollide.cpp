@@ -68,7 +68,7 @@ void model_collide_allocate_point_list(int n_points)
 		Mc_point_list = NULL;
 	}
 
-	Mc_point_list = (vec3d**) vm_malloc( sizeof(vec3d) * n_points );
+	Mc_point_list = (vec3d**) vm_malloc( sizeof(vec3d *) * n_points );
 
 	Verify( Mc_point_list != NULL );
 }

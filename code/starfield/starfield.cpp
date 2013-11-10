@@ -399,7 +399,7 @@ static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 	}	\
 }
 
-void parse_startbl(char *filename)
+void parse_startbl(const char *filename)
 {
 	char name[MAX_FILENAME_LEN], tempf[16];
 	starfield_bitmap sbm;
@@ -2123,7 +2123,7 @@ void stars_draw_background()
 
 	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(-1);
-		Nmodel_flags &= !MR_FORCE_TEXTURE;
+		Nmodel_flags &= ~MR_FORCE_TEXTURE;
 	}
 }
 

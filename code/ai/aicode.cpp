@@ -40,6 +40,7 @@
 #include "ship/shiphit.h"
 #include "ai/aibig.h"
 #include "hud/hud.h"
+#include "hud/hudets.h"
 #include "object/objcollide.h"
 #include "object/objectshield.h"
 #include "asteroid/asteroid.h"
@@ -198,11 +199,12 @@ int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 //	Constant for flag,				Name of flag,				In flags or flags2
 ai_flag_name Ai_flag_names[] = {
 	{AIF_NO_DYNAMIC,				"no-dynamic",					1,	},
+	{AIF_FREE_AFTERBURNER_USE,		"free-afterburner-use",			1,	},
 };
 
-char *Skill_level_names(int level, int translate)
+const char *Skill_level_names(int level, int translate)
 {
-	char *str = NULL;
+	const char *str = NULL;
 
 	#if NUM_SKILL_LEVELS != 5
 	#error Number of skill levels is wrong!
@@ -1764,6 +1766,77 @@ float get_wing_lowest_max_speed(object *objp)
 	return lowest_max_speed;
 }
 
+/**
+ * Scan all the ships in *objp's wing. Return the lowest average speed with afterburner of a ship in the wing.
+ */
+float get_wing_lowest_av_ab_speed(object *objp)
+{
+	ship		*shipp;
+	ai_info	*aip;
+	float		lowest_max_av_ab_speed;
+	float recharge_scale;
+	int		wingnum;
+	object	*o;
+	ship_obj	*so;
+	ship_info *sip;
+
+	Assert(objp->type == OBJ_SHIP);
+	Assert((objp->instance >= 0) && (objp->instance < MAX_OBJECTS));
+	shipp = &Ships[objp->instance];
+	Assert((shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO));
+	aip = &Ai_info[shipp->ai_index];
+	sip = &Ship_info[shipp->ship_info_index];
+
+	wingnum = aip->wing;
+
+	if (((shipp->flags2 & SF2_AFTERBURNER_LOCKED) || !(sip->flags & SIF_AFTERBURNER)) || (shipp->current_max_speed < 5.0f) || (objp->phys_info.afterburner_max_vel.xyz.z <= shipp->current_max_speed) || !(aip->ai_flags & AIF_FREE_AFTERBURNER_USE))	{
+		lowest_max_av_ab_speed = shipp->current_max_speed;
+	}
+	else
+	{
+		recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * The_mission.ai_profile->afterburner_recharge_scale[Game_skill_level];
+		recharge_scale = sip->afterburner_recover_rate * recharge_scale / (sip->afterburner_burn_rate + sip->afterburner_recover_rate * recharge_scale);
+		lowest_max_av_ab_speed = recharge_scale * (objp->phys_info.afterburner_max_vel.xyz.z - shipp->current_max_speed) + shipp->current_max_speed;
+	}
+	
+
+	if ( wingnum == -1 )
+		return lowest_max_av_ab_speed;
+
+	Assert(wingnum >= 0);
+
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		o = &Objects[so->objnum];
+		ship	*oshipp = &Ships[o->instance];
+		ai_info	*oaip = &Ai_info[oshipp->ai_index];
+		ship_info *osip = &Ship_info[oshipp->ship_info_index];
+
+		if ((oaip->mode == AIM_WAYPOINTS) && (oaip->wing == wingnum) && (oaip->ai_flags & AIF_FORMATION)) {
+			
+			float cur_max;
+			if ((oshipp->flags2 & SF2_AFTERBURNER_LOCKED) || !(osip->flags & SIF_AFTERBURNER) || (o->phys_info.afterburner_max_vel.xyz.z <= oshipp->current_max_speed) || !(oaip->ai_flags & AIF_FREE_AFTERBURNER_USE)) {
+				cur_max = oshipp->current_max_speed;
+			}
+			else
+			{
+				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * The_mission.ai_profile->afterburner_recharge_scale[Game_skill_level];
+				recharge_scale = osip->afterburner_recover_rate * recharge_scale / (osip->afterburner_burn_rate + osip->afterburner_recover_rate * recharge_scale);
+				cur_max = recharge_scale * (o->phys_info.afterburner_max_vel.xyz.z - oshipp->current_max_speed) + oshipp->current_max_speed;
+			}
+
+			if (object_is_docked(o)) {
+				cur_max *= o->phys_info.mass / dock_calc_total_docked_mass(o);
+			}
+			//	Note: If a ship in the wing has a super low max speed, probably its engines are disabled.  So, fly along and
+			//	ignore the poor guy.				
+			if ((oshipp->current_max_speed > 5.0f) && (cur_max < lowest_max_av_ab_speed)) {
+				lowest_max_av_ab_speed = cur_max;
+			}
+		}
+	}
+
+	return lowest_max_av_ab_speed;
+}
 
 /**
  * Determine if object objnum is supposed to be ignored by object with ai_info *aip.
@@ -3166,7 +3239,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 		if (aip->wp_index == INVALID_WAYPOINT_POSITION)
 		{
 			Warning(LOCATION, "aip->wp_index should have been assigned already!");
-			aip->wp_index = aip->wp_list->get_waypoints().begin();
+			aip->wp_index = 0;
 		}
 		return;
 	}
@@ -3183,7 +3256,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 	}
 
 	aip->wp_list = wp_list;
-	aip->wp_index = wp_list->get_waypoints().begin();
+	aip->wp_index = 0;
 	aip->wp_flags = wp_flags;
 	aip->mode = AIM_WAYPOINTS;
 
@@ -4163,6 +4236,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 	vec3d	temp_vec;
 	vec3d	*slop_vec;
 	int j;
+	bool ab_allowed = true;
 
 	Assert( target_pos != NULL );
 
@@ -4228,6 +4302,9 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 
 	bool carry_flag = ((shipp->flags2 & SF2_NAVPOINT_CARRY) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY)));
 
+	if (AutoPilotEngaged)
+		ab_allowed = false;
+
 	if (AutoPilotEngaged
 		&& timestamp_elapsed(LockAPConv)
 		&& carry_flag
@@ -4287,9 +4364,11 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 
 	if (Pl_objp->phys_info.speed < 0.0f) {
 		accelerate_ship(aip, 1.0f/32);
+		ab_allowed = false;
 	} else if (prev_dot_to_goal > dot+0.01f) {
 		//	We are further from pointing at our goal this frame than last frame, so slow down.
 		set_accel_for_target_speed(Pl_objp, Pl_objp->phys_info.speed * 0.95f);
+		ab_allowed = false;
 	} else if (dist_to_goal < 100.0f) {
 		float slew_dot = vm_vec_dot(&Pl_objp->orient.vec.fvec, &nvel_vec);
 		if (fl_abs(slew_dot) < 0.9f) {
@@ -4299,6 +4378,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 		} else {
 			accelerate_ship(aip, 0.5f * dot * dot);
 		}
+		ab_allowed = false;
 	} else {
 		float	dot1;
 		if (dist_to_goal < 250.0f) {
@@ -4322,22 +4402,87 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 		} else {
 			set_accel_for_target_speed(Pl_objp, dot1 * dist_to_goal/10.0f);
 		}
+		if (dot1 < 0.8f)
+			ab_allowed = false;
+	}
+
+	if (!(sip->flags & SIF_AFTERBURNER) || (shipp->flags2 & SF2_AFTERBURNER_LOCKED) || !(aip->ai_flags & AIF_FREE_AFTERBURNER_USE)) {
+		ab_allowed = false;
 	}
 
 	//	Make sure not travelling too fast for someone to keep up.
 	float	max_allowed_speed = 9999.9f;
+	float   max_allowed_ab_speed = 10000.1f;
+	float	self_ab_speed = 10000.0f;
 
 	if (shipp->wingnum != -1) {
 		max_allowed_speed = 0.9f * get_wing_lowest_max_speed(Pl_objp);
+		max_allowed_ab_speed = 0.95f * get_wing_lowest_av_ab_speed(Pl_objp);
+		if (ab_allowed) {
+			float self_ab_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * The_mission.ai_profile->afterburner_recharge_scale[Game_skill_level];
+			self_ab_scale = sip->afterburner_recover_rate * self_ab_scale / (sip->afterburner_burn_rate + sip->afterburner_recover_rate * self_ab_scale);
+			self_ab_speed = 0.95f * (self_ab_scale * (Pl_objp->phys_info.afterburner_max_vel.xyz.z - shipp->current_max_speed) + shipp->current_max_speed);
+		}
 	}
 
 	// check if waypoint speed cap is set and adjust max speed
 	if (aip->waypoint_speed_cap > 0) {
 		max_allowed_speed = (float) aip->waypoint_speed_cap;
+		max_allowed_ab_speed = max_allowed_speed;
 	}
 
-	if (aip->prev_accel * shipp->current_max_speed > max_allowed_speed) {
-		accelerate_ship(aip, max_allowed_speed / shipp->current_max_speed);
+	if ((self_ab_speed < 5.0f) || (max_allowed_ab_speed < 5.0f)){ // || ((shipp->wingnum != -1) && (dist_to_goal / max_allowed_ab_speed < 5.0f))){
+		ab_allowed = false;
+	} else if (max_allowed_ab_speed < shipp->current_max_speed) {
+		if (max_allowed_speed < max_allowed_ab_speed) {
+			max_allowed_speed = max_allowed_ab_speed;
+		} else {
+			ab_allowed = false;
+		}
+	}
+
+	
+	if (ab_allowed) {
+		if (self_ab_speed <= (1.001 * max_allowed_ab_speed)){
+			if (!(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
+				float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+				if (percent_left > 30.0f) {
+					afterburners_start(Pl_objp);
+					aip->afterburner_stop_time = Missiontime + 5 * F1_0;
+				}
+			}
+		} else {
+			float switch_value;
+			if ((self_ab_speed - max_allowed_ab_speed) > (0.2f * max_allowed_ab_speed)) {
+				switch_value = 0.2f * max_allowed_ab_speed;
+			} else {
+				switch_value = self_ab_speed - max_allowed_ab_speed;
+			}
+			if (!(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
+				float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+				if ((Pl_objp->phys_info.speed < (max_allowed_ab_speed - switch_value)) && (percent_left > 30.0f)){
+					afterburners_start(Pl_objp);
+					aip->afterburner_stop_time = Missiontime + 5 * F1_0;
+				}
+			} else {
+				if (Pl_objp->phys_info.speed > (max_allowed_ab_speed + 0.9 * switch_value)){
+					afterburners_stop(Pl_objp);
+				}
+			}
+		}
+
+		if (!(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
+			if (aip->prev_accel * shipp->current_max_speed > max_allowed_ab_speed) {
+				accelerate_ship(aip, max_allowed_ab_speed / shipp->current_max_speed);
+			}
+		}
+	} else {
+		if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON ) {
+			afterburners_stop(Pl_objp);
+		}
+		if (aip->prev_accel * shipp->current_max_speed > max_allowed_speed) {
+			accelerate_ship(aip, max_allowed_speed / shipp->current_max_speed);
+		}
 	}
 
 	if ( (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || (vm_vec_dist_quick(&Pl_objp->last_pos, &Pl_objp->pos) > 0.1f) ) {
@@ -4358,11 +4503,14 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 				if ( Ships[Pl_objp->instance].wingnum != -1 ) {
 					int type;
 
-					type = aip->goals[aip->active_goal].type;
-					if ( (type == AIG_TYPE_EVENT_WING) || (type == AIG_TYPE_PLAYER_WING) ) {
-						treat_as_ship = 0;
-					} else {
-						treat_as_ship = 1;
+					// protect array access from invalid indexes
+					if ((aip->active_goal >= 0) && (aip->active_goal < MAX_AI_GOALS)) {
+						type = aip->goals[aip->active_goal].type;
+						if ( (type == AIG_TYPE_EVENT_WING) || (type == AIG_TYPE_PLAYER_WING) ) {
+							treat_as_ship = 0;
+						} else {
+							treat_as_ship = 1;
+						}
 					}
 				}
 				// setup out parameters
@@ -4403,17 +4551,17 @@ void ai_waypoints()
 	Assert(!aip->wp_list->get_waypoints().empty());	// What? Is this zero? Probably never got initialized!
 
 	bool done, treat_as_ship;
-	ai_fly_to_target_position(aip->wp_index->get_pos(), &done, &treat_as_ship);
+	ai_fly_to_target_position(aip->wp_list->get_waypoints()[aip->wp_index].get_pos(), &done, &treat_as_ship);
 
 	if ( done ) {
 		// go on to next waypoint in path
 		++aip->wp_index;
 
-		if ( aip->wp_index == aip->wp_list->get_waypoints().end() ) {
+		if ( aip->wp_index == aip->wp_list->get_waypoints().size() ) {
 			// have reached the last waypoint.  Do I repeat?
 			if ( aip->wp_flags & WPF_REPEAT ) {
 				 // go back to the start.
-				aip->wp_index = aip->wp_list->get_waypoints().begin();
+				aip->wp_index = 0;
 			} else {
 				// stay on the last waypoint.
 				--aip->wp_index;
@@ -6594,6 +6742,8 @@ int avoid_player(object *objp, vec3d *goal_pos)
 int will_collide_pp(vec3d *p0, vec3d *p1, float radius, object *big_objp, vec3d *collision_point)
 {
 	mc_info	mc;
+	mc_info_init(&mc);
+
 	polymodel *pm = model_get(Ship_info[Ships[big_objp->instance].ship_info_index].model_num);
 
 	mc.model_instance_num = -1;
@@ -9718,14 +9868,23 @@ void ai_big_guard()
 		// try not to bump into things along the way
 		if ( (cur_guard_rad > max_guard_dist) || (extended_z < min_z) || (extended_z > max_z) ) {
 			if (maybe_avoid_big_ship(Pl_objp, guard_objp, aip, &goal_pt, 5.0f)) {
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+					afterburners_stop(Pl_objp);
+				}
 				return;
 			}
 
 			if (avoid_player(Pl_objp, &goal_pt)) {
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+					afterburners_stop(Pl_objp);
+				}
 				return;
 			}
 		} else {
 			if (maybe_avoid_big_ship(Pl_objp, guard_objp, aip, &goal_pt, 5.0f)) {
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+					afterburners_stop(Pl_objp);
+				}
 				return;
 			}
 		}
@@ -9733,6 +9892,21 @@ void ai_big_guard()
 		// got the point, now let's go there
 		ai_turn_towards_vector(&goal_pt, Pl_objp, flFrametime, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, NULL, NULL, 0.0f, 0);
 		accelerate_ship(aip, 1.0f);
+
+		if ((aip->ai_flags & AIF_FREE_AFTERBURNER_USE) && !(shipp->flags2 & SF2_AFTERBURNER_LOCKED) && (cur_guard_rad > 1.1f * max_guard_dist)) {
+			vec3d	v2g;
+			float	dot_to_goal_point;
+
+			vm_vec_normalized_dir(&v2g, &goal_pt, &Pl_objp->pos);
+			dot_to_goal_point = vm_vec_dot(&v2g, &Pl_objp->orient.vec.fvec);
+
+			if (ai_maybe_fire_afterburner(Pl_objp, aip) && dot_to_goal_point > 0.75f) {
+				afterburners_start(Pl_objp);
+				aip->afterburner_stop_time = Missiontime + 3*F1_0;
+			}
+		} else if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+			afterburners_stop(Pl_objp);
+		}
 
 		//	Periodically, scan for a nearby ship to attack.
 		if (((AI_FrameCount ^ (Pl_objp-Objects)) & 0x07) == 0) {
@@ -9825,10 +9999,16 @@ void ai_guard()
 		//	If far away, get closer
 		if (dist_to_goal_point > MAX_GUARD_DIST + 1.5 * (Pl_objp->radius + guard_objp->radius)) {
 			if (maybe_avoid_big_ship(Pl_objp, guard_objp, aip, &goal_point, 5.0f)) {
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+					afterburners_stop(Pl_objp);
+				}
 				return;
 			}
 
 			if (avoid_player(Pl_objp, &goal_point)) {
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+					afterburners_stop(Pl_objp);
+				}
 				return;
 			}
 
@@ -9836,9 +10016,24 @@ void ai_guard()
 			compute_desired_rvec(&rvec, &goal_point, &Pl_objp->pos);
 			ai_turn_towards_vector(&goal_point, Pl_objp, flFrametime, Ship_info[shipp->ship_info_index].srotation_time, NULL, NULL, 0.0f, 0, &rvec);
 
-			accelerate_ship(aip, accel_scale * (0.25f + dist_to_goal_point/700.0f));
+			if ((aip->ai_flags & AIF_FREE_AFTERBURNER_USE) && !(shipp->flags2 & SF2_AFTERBURNER_LOCKED) && (accel_scale * (0.25f + dist_to_goal_point/700.0f) > 0.8f)) {
+				if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
+					afterburners_start(Pl_objp);
+					aip->afterburner_stop_time = Missiontime + 3*F1_0;
+				}
+				accelerate_ship(aip, 1.0f);
+			} else {
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+					afterburners_stop(Pl_objp);
+				}
+				accelerate_ship(aip, accel_scale * (0.25f + dist_to_goal_point/700.0f));
+			}
+
 		} else {
 			if (maybe_avoid_big_ship(Pl_objp, guard_objp, aip, &goal_point, 2.0f)) {
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+					afterburners_stop(Pl_objp);
+				}
 				return;
 			}
 
@@ -9910,6 +10105,9 @@ void ai_guard()
 					set_accel_for_target_speed(Pl_objp, (0.5f * (1.0f + dot)) * (guard_objp->phys_info.speed + (dist_to_guardobj - guard_objp->radius - Pl_objp->radius)/10.0f));
 				else
 					accelerate_ship(aip, 0.5f * (1.0f + dot) * (0.3f + objval/3.0f));
+			}
+			if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
+				afterburners_stop(Pl_objp);
 			}
 		}
 
@@ -11487,7 +11685,7 @@ int ai_formation()
 		aip->wp_index = laip->wp_index;
 		aip->wp_flags = laip->wp_flags;
 
-		if ((aip->wp_list != NULL) && (aip->wp_index == aip->wp_list->get_waypoints().end()))
+		if ((aip->wp_list != NULL) && (aip->wp_index == aip->wp_list->get_waypoints().size()))
 			--aip->wp_index;
 	}
 
@@ -11519,23 +11717,66 @@ int ai_formation()
 
 	chaotic_leader = formation_is_leader_chaotic(leader_objp);	//	Set to 1 if leader is player and flying erratically.  Causes ships to not aggressively pursue formation location.
 
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	bool ab_allowed = false;
+	if ((sip->flags & SIF_AFTERBURNER) && !(shipp->flags2 & SF2_AFTERBURNER_LOCKED) && (aip->ai_flags & AIF_FREE_AFTERBURNER_USE)) {
+		ab_allowed = true;
+	} else {
+		if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
+			afterburners_stop(Pl_objp);
+	}
+
+	float switch_value = 0.0f;
+	if (ab_allowed) {
+		if ((Pl_objp->phys_info.afterburner_max_vel.xyz.z - leader_speed) > (0.2f * Pl_objp->phys_info.afterburner_max_vel.xyz.z)) {
+			switch_value = 0.2f * Pl_objp->phys_info.afterburner_max_vel.xyz.z;
+		} else {
+			switch_value = Pl_objp->phys_info.afterburner_max_vel.xyz.z - leader_speed;
+		}
+	}
+
 	if (dist_to_goal > 500.0f) {
 		turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+		if (ab_allowed && !(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.2f)) {
+			float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+			if (percent_left > 30.0f) {
+				afterburners_start(Pl_objp);
+				aip->afterburner_stop_time = Missiontime + 5 * F1_0;
+			}
+		}
 		accelerate_ship(aip, 1.0f);
 	} else if (dist_to_goal > 200.0f) {
 		if (dot_to_goal > -0.5f) {
 			turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
 			float range_speed = shipp->current_max_speed - leader_speed;
-			if (range_speed > 0.0f)
+			if (range_speed > 0.0f) {
 				set_accel_for_target_speed(Pl_objp, leader_speed + range_speed * (dist_to_goal+100.0f)/500.0f);
-			else
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
+					afterburners_stop(Pl_objp);
+			} else {
 				set_accel_for_target_speed(Pl_objp, shipp->current_max_speed);
+				if (ab_allowed) {
+					if (!(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.4f)) {
+						float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+						if ((percent_left > 30.0f) && (Pl_objp->phys_info.speed < leader_speed)) {
+							afterburners_start(Pl_objp);
+							aip->afterburner_stop_time = Missiontime + 5 * F1_0;
+						}
+					} else {
+						if ((Pl_objp->phys_info.speed > leader_speed + 1.5 * switch_value) || (dot_to_goal < 0.2f))
+							afterburners_stop(Pl_objp);
+					}
+				}
+			}
 		} else {
 			turn_towards_point(Pl_objp, &future_goal_point_5, NULL, 0.0f);
 			if (leader_speed > 10.0f)
 				set_accel_for_target_speed(Pl_objp, leader_speed *(1.0f + dot_to_goal));
 			else
 				set_accel_for_target_speed(Pl_objp, 10.0f);
+			if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
+				afterburners_stop(Pl_objp);
+
 		}
 	} else {
 		vec3d	v2f2;
@@ -11549,14 +11790,31 @@ int ai_formation()
 		if (chaotic_leader) {
 			turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f);
 			set_accel_for_target_speed(Pl_objp, MIN(leader_speed*0.8f, 20.0f));
+			if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
+				afterburners_stop(Pl_objp);
 		} else if (dist_to_goal > 75.0f) {
 			turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f);
 			float	delta_speed;
 			float range_speed = shipp->current_max_speed - leader_speed;
-			if (range_speed > 0.0f)
+			if (range_speed > 0.0f) {
 				delta_speed = dist_to_goal_2/500.0f * range_speed;
-			else
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
+					afterburners_stop(Pl_objp);
+			} else {
 				delta_speed = shipp->current_max_speed - leader_speed;
+				if (ab_allowed) {
+					if (!(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.6f)) {
+						float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+						if ((percent_left > 30.0f) && (Pl_objp->phys_info.speed < leader_speed - 0.5 * switch_value)) {
+							afterburners_start(Pl_objp);
+							aip->afterburner_stop_time = Missiontime + 5 * F1_0;
+						}
+					} else {
+						if ((Pl_objp->phys_info.speed > leader_speed + 0.95 * switch_value) || (dot_to_goal < 0.4f))
+							afterburners_stop(Pl_objp);
+					}
+				}
+			}
 			if (dot_to_goal < 0.0f) {
 				delta_speed = -delta_speed;
 				if (-delta_speed > leader_speed/2)
@@ -11589,6 +11847,9 @@ int ai_formation()
 					}
 					set_accel_for_target_speed(Pl_objp, leader_speed);
 				}
+				if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
+					afterburners_stop(Pl_objp);
+
 			} else if (dist_to_goal > 10.0f) {
 				float	dv;
 
@@ -11604,6 +11865,26 @@ int ai_formation()
 				} else {
 					set_accel_for_target_speed(Pl_objp, leader_speed + 1.5f * dot_to_goal - 1.0f);
 				}
+
+				float range_speed = shipp->current_max_speed - leader_speed;
+				if (range_speed > 0.0f) {
+					if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
+						afterburners_stop(Pl_objp);
+				} else {
+					if (ab_allowed) {
+						if (!(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.9f)) {
+							float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+							if ((percent_left > 30.0f) && (Pl_objp->phys_info.speed < leader_speed - 0.75 * switch_value)) {
+								afterburners_start(Pl_objp);
+								aip->afterburner_stop_time = Missiontime + 3 * F1_0;
+							}
+						} else {
+							if ((Pl_objp->phys_info.speed > leader_speed + 0.95 * switch_value) || (dot_to_goal < 0.7f))
+								afterburners_stop(Pl_objp);
+						}
+					}
+				}
+
 			} else {
 				if (Pl_objp->phys_info.speed < 0.1f)
 					turn_towards_point(Pl_objp, &future_goal_point_1000x, NULL, 0.0f);
@@ -11612,6 +11893,26 @@ int ai_formation()
 
 				// Goober5000 7/5/2006 changed to leader_speed from 0.0f
 				set_accel_for_target_speed(Pl_objp, leader_speed);
+
+				float range_speed = shipp->current_max_speed - leader_speed;
+				if (range_speed > 0.0f) {
+					if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
+						afterburners_stop(Pl_objp);
+				} else {
+					if (ab_allowed) {
+						if (!(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.9f)) {
+							float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+							if ((percent_left > 30.0f) && (Pl_objp->phys_info.speed < leader_speed - 0.75 * switch_value)) {
+								afterburners_start(Pl_objp);
+								aip->afterburner_stop_time = Missiontime + 3 * F1_0;
+							}
+						} else {
+							if ((Pl_objp->phys_info.speed > leader_speed + 0.75 * switch_value) || (dot_to_goal < 0.8f))
+								afterburners_stop(Pl_objp);
+						}
+					}
+				}
+
 			}
 		}
 
@@ -12846,9 +13147,6 @@ int maybe_request_support(object *objp)
 	aip = &Ai_info[shipp->ai_index];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if (!timestamp_elapsed(aip->next_rearm_request_timestamp))
-		return 0;
-
 	//	Only fighters and bombers request support.
 	if (!(sip->flags & (SIF_FIGHTER | SIF_BOMBER)))
 		return 0;
@@ -12857,7 +13155,11 @@ int maybe_request_support(object *objp)
 	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
 		return 0;
 
-	if (!is_support_allowed(objp))
+	if (!timestamp_elapsed(aip->next_rearm_request_timestamp))
+		return 0;
+
+	// just do a simple check first, and the more expensive check later
+	if (!is_support_allowed(objp, true))
 		return 0;
 
 	// Goober5000 - a ship that is currently docked shouldn't request repair.
@@ -12919,22 +13221,30 @@ int maybe_request_support(object *objp)
 		return 0;
 	}
 
+	bool try_to_rearm = false;
+
 	//	Compute danger threshold.
 	//	Balance this with desire and maybe request support.
 	if (ai_good_time_to_rearm( objp )) {
-		ai_issue_rearm_request(objp);
-		return 1;
+		try_to_rearm = true;
 	} else if (num_allies_rearming(objp) < 2) {
 		if (desire >= 8) {	//	guarantees disabled will cause repair request
-			ai_issue_rearm_request(objp);
+			try_to_rearm = true;
 		} else if (desire >= 3) {		//	>= 3 means having a single subsystem fully blown will cause repair.
 			int	count;
 			int objnum = find_nearby_threat(OBJ_INDEX(objp), iff_get_attacker_mask(obj_team(objp)), 2000.0f, &count);
 
 			if ((objnum == -1) || (count < 2) || (vm_vec_dist_quick(&objp->pos, &Objects[objnum].pos) > 3000.0f*count/desire)) {
-				ai_issue_rearm_request(objp);
-				return 1;
+				try_to_rearm = true;
 			}
+		}
+	}
+
+	if (try_to_rearm) {
+		// Now do the more thorough check
+		if (is_support_allowed(objp)) {
+			ai_issue_rearm_request(objp);
+			return 1;
 		}
 	}
 
@@ -14076,17 +14386,6 @@ void init_ai_object(int objnum)
 	memset(&aip->ai_override_ci,0,sizeof(control_info));
 }
 
-void init_ai_objects()
-{
-	int	i;
-
-	for (i=0; i<Num_objects; i++){
-		if (Objects[i].type == OBJ_SHIP){
-			init_ai_object(i);
-		}
-	}
-}
-
 void init_ai_system()
 {
 	Ppfp = Path_points;
@@ -15088,42 +15387,46 @@ void ai_add_rearm_goal( object *requester_objp, object *support_objp )
 //	Success means you found someone to rearm you and you weren't previously rearming.
 int ai_issue_rearm_request(object *requester_objp)
 {
-	object	*objp;
+	object	*objp = NULL;
 	ship		*requester_shipp;
 	ai_info	*requester_aip;
 
 	Assert(requester_objp->type == OBJ_SHIP);
 	Assert((requester_objp->instance >= 0) && (requester_objp->instance < MAX_SHIPS));
 	requester_shipp = &Ships[requester_objp->instance];
+
 	Assert((requester_shipp->ai_index >= 0) && (requester_shipp->ai_index < MAX_AI_INFO));
 	requester_aip = &Ai_info[requester_shipp->ai_index];
 	
-	//	Make sure not already awaiting repair.
-	if (requester_aip->ai_flags & AIF_AWAITING_REPAIR) {
-		nprintf(("AI", "Ship %s already awaiting rearm by ship %s.\n", requester_shipp->ship_name, &Ships[Objects[requester_aip->support_ship_objnum].instance].ship_name));	
-		return -1;
-	}
-
-	if ( !is_support_allowed(requester_objp) )
-		return -1;
+	// these should have already been caught by the time we get here!
+	Assert(!(requester_aip->ai_flags & AIF_AWAITING_REPAIR));
+	Assert(is_support_allowed(requester_objp));
 
 	requester_aip->next_rearm_request_timestamp = timestamp(NEXT_REARM_TIMESTAMP);	//	Might request again after this much time.
 
 	// call ship_find_repair_ship to get a support ship.  If none is found, then we will warp one in.  This
 	// function will return the next available ship which can repair requester
-	objp = ship_find_repair_ship( requester_objp );
-	ai_do_objects_repairing_stuff( requester_objp, objp, REPAIR_INFO_QUEUE );
-	if ( objp ) {
-		return OBJ_INDEX(objp);
-	} else {
-		// call to warp in repair ship!!!!  for now, warp in any number of ships needed.  Should cap it to
-		// some reasonable max (or let support ships warp out).  We should assume here that ship_find_repair_ship()
-		// would have returned a valid object if there are too many support ships already in the mission
-		mission_bring_in_support_ship( requester_objp );
+	int result = ship_find_repair_ship( requester_objp, &objp );
 
+	// we are able to call in a ship, or a ship is warping in
+	// (Arriving_support_ship may be non-NULL in either of these cases, but mission_bring_in_support_ship has a check for that)
+	if (result == 0 || result == 2) {
+		ai_do_objects_repairing_stuff( requester_objp, NULL, REPAIR_INFO_QUEUE );
+		mission_bring_in_support_ship( requester_objp );
 		return -1;
 	}
-
+	// we are able to service a request
+	else if (result == 1 || result == 3) {
+		Assert(objp != NULL);
+		ai_do_objects_repairing_stuff( requester_objp, objp, REPAIR_INFO_QUEUE );
+		return OBJ_INDEX(objp);
+	}
+	// we aren't able to do anything!
+	else {
+		Assert(result == 4);
+		Assertion(false, "This case should have already been caught by the is_support_allowed precheck!");
+		return -1;
+	}
 }
 
 /**

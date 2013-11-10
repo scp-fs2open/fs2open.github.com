@@ -13,6 +13,8 @@
 #include "cfile/cfilesystem.h"
 #include "menuui/techmenu.h"
 
+#include <iostream>
+#include <sstream>
 
 // copy of old scoring struct  * NORMAL PILOTS *
 typedef struct scoring_conv_t {
@@ -159,7 +161,9 @@ void pilotfile_convert::csg_import_ships_weapons()
 		ilist.index = ship_info_lookup(name);
 
 		if (ilist.index < 0) {
-			throw "Data mismatch (ship lookup)!";
+			std::ostringstream error_msg;
+			error_msg << "Data mismatch (ship lookup: " << ilist.name << ")!";
+			throw std::runtime_error(error_msg.str().c_str());
 		}
 
 		csg->ship_list.push_back( ilist );
@@ -175,7 +179,9 @@ void pilotfile_convert::csg_import_ships_weapons()
 		ilist.index = weapon_info_lookup(name);
 
 		if (ilist.index < 0) {
-			throw "Data mismatch (weapon lookup)!";
+			std::ostringstream error_msg;
+			error_msg << "Data mismatch (weapon lookup: " << ilist.name << ")!";
+			throw std::runtime_error(error_msg.str().c_str());
 		}
 
 		csg->weapon_list.push_back( ilist );
@@ -183,18 +189,20 @@ void pilotfile_convert::csg_import_ships_weapons()
 
 	// get last ship flown index
 	for (idx = 0; idx < ship_count; idx++) {
-		if ( csg->ship_list[idx].name.compare(plr->last_ship_flown) ) {
+		if ( csg->ship_list[idx].name.compare(plr->last_ship_flown) == 0 ) {
 			csg->last_ship_flown_index = idx;
 			break;
 		}
 	}
 
 	if (csg->last_ship_flown_index < 0) {
-		throw "Data mismatch (player ship)!";
+		std::ostringstream error_msg;
+		error_msg << "Data mismatch (player ship: " << csg->last_ship_flown_index << ")!";
+		throw std::runtime_error(error_msg.str().c_str());
 	}
 
 	// create list of medals (since it's missing from the old files)
-	list_size = (int)Medals.size();
+	list_size = Num_medals;
 
 	for (idx = 0; idx < list_size; idx++) {
 		ilist.name = Medals[idx].name;
@@ -407,7 +415,7 @@ void pilotfile_convert::csg_import_red_alert()
 		ras.ship_class = cfread_int(cfp);
 
 		if (ras.ship_class >= ship_list_size) {
-			throw "Data failure (RedAlert-ship)!";
+			throw std::runtime_error("Data failure (RedAlert-ship)!");
 		}
 
 		// system status
@@ -431,8 +439,8 @@ void pilotfile_convert::csg_import_red_alert()
 		for (j = 0; j < 3; j++) {
 			i = cfread_int(cfp);
 
-			if (i >= weapon_list_size) {
-				throw "Data check failure (RedAlert-weapon)!";
+			if (i >= weapon_list_size || i < 0) {
+				throw std::runtime_error("Data check failure (RedAlert-weapon)!");
 			}
 
 			weapons.index = csg->weapon_list[i].index;
@@ -449,7 +457,7 @@ void pilotfile_convert::csg_import_red_alert()
 			i = cfread_int(cfp);
 
 			if (i >= weapon_list_size) {
-				throw "Data check failure (RedAlert-weapon)!";
+				throw std::runtime_error("Data check failure (RedAlert-weapon)!");
 			}
 
 			weapons.index = csg->weapon_list[i].index;
@@ -485,7 +493,7 @@ void pilotfile_convert::csg_import_techroom()
 		in = cfread_ubyte(cfp);
 
 		if (in > 1) {
-			throw "Data check failure (techroom-ship)!";
+			throw std::runtime_error("Data check failure (techroom-ship)!");
 		}
 
 		visible = (in == 1) ? true : false;
@@ -500,7 +508,7 @@ void pilotfile_convert::csg_import_techroom()
 		in = cfread_ubyte(cfp);
 
 		if (in > 1) {
-			throw "Data check failure (techroom-weapon)!";
+			throw std::runtime_error("Data check failure (techroom-weapon)!");
 		}
 
 		visible = (in == 1) ? true : false;
@@ -515,7 +523,7 @@ void pilotfile_convert::csg_import_techroom()
 		in = cfread_ubyte(cfp);
 
 		if (in > 1) {
-			throw "Data check failure (techroom-intel)!";
+			throw std::runtime_error("Data check failure (techroom-intel)!");
 		}
 
 		visible = (in == 1) ? true : false;
@@ -556,10 +564,10 @@ void pilotfile_convert::csg_import_loadout()
 	}
 
 	// loadout info
-	for (idx = 0; idx < 12; idx++) {
+	for (idx = 0; idx < MAX_WSS_SLOTS_CONV; idx++) {
 		csg->loadout.slot[idx].ship_index = cfread_int(cfp);
 
-		for (j = 0; j < 12; j++) {
+		for (j = 0; j < MAX_SHIP_WEAPONS_CONV; j++) {
 			csg->loadout.slot[idx].wep[j] = cfread_int(cfp);
 			csg->loadout.slot[idx].wep_count[j] = cfread_int(cfp);
 		}
@@ -589,7 +597,7 @@ void pilotfile_convert::csg_import_stats()
 
 	// NOTE: could be less, but never greater than
 	if ( list_size > (int)csg->stats.ship_kills.size() ) {
-		throw "Data check failure (kills size)!";
+		throw std::runtime_error("Data check failure (kills size)!");
 	}
 
 	for (idx = 0; idx < list_size; idx++) {
@@ -613,18 +621,18 @@ void pilotfile_convert::csg_import(bool inferno)
 {
 	Assert( cfp != NULL );
 
-	char name[35], temp[NAME_LENGTH];
+	char name[35];
 
 	unsigned int csg_id = cfread_uint(cfp);
 
 	if (csg_id != 0xbeefcafe) {
-		throw "Invalid file signature!";
+		throw std::runtime_error("Invalid file signature!");
 	}
 
 	fver = cfread_uint(cfp);
 
 	if (fver != 15) {
-		throw "Unsupported file version!";
+		throw std::runtime_error("Unsupported file version!");
 	}
 
 	// campaign type (single/multi)
@@ -642,8 +650,7 @@ void pilotfile_convert::csg_import(bool inferno)
 
 	csg_import_missions(inferno);
 
-	cfread_string(temp, NAME_LENGTH, cfp);
-	csg->main_hall = temp;
+	csg->main_hall = cfread_ubyte(cfp);
 
 	csg_import_red_alert();
 
@@ -657,15 +664,15 @@ void pilotfile_convert::csg_import(bool inferno)
 
 	// final data checks
 	if ( csg->ship_list.size() != csg->ships_allowed.size() ) {
-		throw "Data check failure (ship size)!";
+		throw std::runtime_error("Data check failure (ship size)!");
 	} else if ( csg->ship_list.size() != csg->ships_techroom.size() ) {
-		throw "Data check failure (ship size)!";
+		throw std::runtime_error("Data check failure (ship size)!");
 	} else if ( csg->weapon_list.size() != csg->weapons_allowed.size() ) {
-		throw "Data check failure (weapon size)!";
+		throw std::runtime_error("Data check failure (weapon size)!");
 	} else if ( csg->weapon_list.size() != csg->weapons_techroom.size() ) {
-		throw "Data check failure (weapon size)!";
+		throw std::runtime_error("Data check failure (weapon size)!");
 	} else if ( csg->intel_list.size() != csg->intel_techroom.size() ) {
-		throw "Data check failure (intel size)!";
+		throw std::runtime_error("Data check failure (intel size)!");
 	}
 
 
@@ -678,12 +685,6 @@ void pilotfile_convert::csg_export_flags()
 
 	// tips
 	cfwrite_ubyte((ubyte)plr->tips, cfp);
-
-	// mainhall
-	cfwrite_string(const_cast<char*>(csg->main_hall.c_str()), cfp);
-
-	// cutscenes
-	cfwrite_int(csg->cutscenes, cfp);
 
 	endSection();
 }
@@ -756,6 +757,10 @@ void pilotfile_convert::csg_export_info()
 		visible = csg->weapons_allowed[idx] ? 1 : 0;
 		cfwrite_ubyte(visible, cfp);
 	}
+
+	// single/campaign squad name & image, make it the same as multi
+	cfwrite_string_len(plr->squad_name, cfp);
+	cfwrite_string_len(plr->squad_filename, cfp);
 
 	endSection();
 }
@@ -1093,8 +1098,8 @@ void pilotfile_convert::csg_export()
 	Assert( cfp != NULL );
 
 	// header and version
-	cfwrite_int(0x5f475343, cfp);
-	cfwrite_ubyte(0, cfp);
+	cfwrite_int(CSG_FILE_ID, cfp);
+	cfwrite_ubyte(CSG_VERSION, cfp);
 
 	// flags and info sections go first
 	csg_export_flags();
@@ -1153,8 +1158,8 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 
 	try {
 		csg_import(inferno);
-	} catch (const char *err) {
-		mprintf(("    CS2 => Import ERROR: %s\n", err));
+	} catch (const std::exception& err) {
+		mprintf(("    CS2 => Import ERROR: %s\n", err.what()));
 		rval = false;
 	}
 

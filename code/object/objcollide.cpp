@@ -42,6 +42,24 @@ obj_pair pair_used_list;
 obj_pair pair_free_list;
 
 SCP_vector<int> Collision_sort_list;
+
+class collider_pair
+{
+public:
+	object *a;
+	object *b;
+	int signature_a;
+	int signature_b;
+	int next_check_time;
+	bool initialized;
+
+	// we need to define a constructor because the hash map can
+	// implicitly insert an object when we use the [] operator
+	collider_pair()
+		: a(NULL), b(NULL), initialized(false)
+	{}
+};
+
 SCP_hash_map<uint, collider_pair> Collision_cached_pairs;
 
 struct checkobject;
@@ -899,6 +917,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 {
 	mc_info mc;
+	mc_info_init(&mc);
 
 	Assert(goalobjp->type == OBJ_SHIP);
 

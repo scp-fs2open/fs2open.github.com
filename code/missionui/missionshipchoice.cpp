@@ -23,6 +23,7 @@
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
 #include "playerman/player.h"
+#include "pilotfile/pilotfile.h"
 #include "menuui/snazzyui.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
@@ -346,7 +347,7 @@ void	ss_set_carried_icon(int from_slot, int ship_class);
 #define SHIP_DESC_X	445
 #define SHIP_DESC_Y	273
 
-char *ss_tooltip_handler(char *str)
+const char *ss_tooltip_handler(const char *str)
 {
 	if (Selected_ss_class < 0)
 		return NULL;
@@ -1106,7 +1107,7 @@ void ship_select_blit_ship_info()
 	}
 	else
 	{
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Banks",-1));
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Banks",1626));
 		y_start += 10;
 		gr_set_color_fast(text);
 		if(sip->num_primary_banks)
@@ -1177,7 +1178,7 @@ void ship_select_blit_ship_info()
 		if(num_turrets)
 		{
 			gr_set_color_fast(header);
-			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",-1));
+			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",1627));
 			y_start += 10;
 			gr_set_color_fast(text);
 			sprintf(str, "%d", num_turrets);
@@ -1215,7 +1216,7 @@ void ship_select_blit_ship_info()
 	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
 	char ship_desc[1000];
-	char *p_str[MAX_BRIEF_LINES];
+	const char *p_str[MAX_BRIEF_LINES];
 	char *token;
 	char Ship_select_ship_info_text[1500];
 	char Ship_select_ship_info_lines[MAX_NUM_SHIP_DESC_LINES][SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN];
@@ -1223,6 +1224,7 @@ void ship_select_blit_ship_info()
 
 	// strip out newlines
 	memset(ship_desc,0,1000);
+	memset(Ship_select_ship_info_text,0,1500);
 	strcpy_s(ship_desc, sip->desc);
 	token = strtok(ship_desc,"\n");
 	if(token != NULL){
@@ -1915,12 +1917,12 @@ void commit_pressed()
 	{
 		if (num_required_weapons == 1)
 		{
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", -1), weapon_list.c_str());
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624), weapon_list.c_str());
 			return;
 		}
 		else if (num_required_weapons > 1)
 		{
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", -1), weapon_list.c_str());
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", 1625), weapon_list.c_str());
 			return;
 		}
 	}
@@ -1964,6 +1966,7 @@ void commit_pressed()
 	}
 	// in single player we jump directly into the mission
 	else {
+		Pilot.save_savefile();
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
 }
@@ -2494,15 +2497,15 @@ void update_player_ship(int si_index)
 	Player->last_ship_flown_si_index = si_index;
 }
 
-// ----------------------------------------------------------------------------
-// create a default player ship
-//
-//	parameters:		use_last_flown	=> select ship that was last flown on a mission
-//						(this is a default parameter which is set to 1)
-//
-// returns:			0 => success
-//               !0 => failure
-//
+/*
+ * create a default player ship
+ *
+ * @note: only used for quick start missions
+ *
+ * @param	use_last_flown	select ship that was last flown on a mission (default parameter set to 1)
+ *
+ * @return	0 => success, !0 => failure
+ */
 int create_default_player_ship(int use_last_flown)
 {
 	int	player_ship_class=-1, i;
@@ -2525,7 +2528,14 @@ int create_default_player_ship(int use_last_flown)
 			return 1;
 	}
 
-	update_player_ship(player_ship_class);
+	// if we still haven't found the last flown ship, handle the error semi-gracefully
+	if (player_ship_class == -1) {
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nCannot find "
+			"a valid last flown ship\n\nHave you played any missions since activating this mod/campaign?", 1619));
+		return 1;
+	} else {
+		update_player_ship(player_ship_class);
+	}
 
 	// debug code to keep using descent style physics if the player starts a new game
 #ifndef NDEBUG
@@ -2910,6 +2920,10 @@ void ss_clear_slots()
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		Wss_slots[i].ship_class = -1;
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+			Wss_slots[i].wep[j] = 0;
+			Wss_slots[i].wep_count[j] = 0;
+		}
 	}
 
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {

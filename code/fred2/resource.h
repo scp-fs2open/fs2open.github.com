@@ -1109,6 +1109,7 @@
 #define IDC_FLIP_ICON                   1578
 #define IDC_DISABLE_BUILTIN_SHIP        1579
 #define IDC_OTHER                       1579
+#define IDC_USE_WING_ICON               1579
 #define IDC_DISABLE_BUILTIN_COMMAND_MSGS 1580
 #define IDC_LBL_OTHER_SUFFIX            1580
 #define IDC_PRIMARIES_LOCKED            1581
@@ -1164,7 +1165,7 @@
 #define IDC_NEB_FAR_MULTIPLIER          1634
 #define IDC_MISSION_LOG_TRUE            1635
 #define IDC_MISSION_LOG_FALSE           1636
-#define IDC_MISSION_LOG_ALWAYS_TRUE     1637
+#define IDC_MISSION_LOG_STATE_CHANGE    1637
 #define IDC_MISSION_LOG_ALWAYS_FALSE    1638
 #define IDC_MISSION_LOG_1ST_REPEAT      1639
 #define IDC_MISSION_LOG_LAST_REPEAT     1640

@@ -32,9 +32,9 @@ extern ubyte Quadrant_xlate[4];
 
 extern SCP_vector<SCP_string> Hud_shield_filenames;
 
-struct player;
-struct object;
-struct ship_info;
+class player;
+class object;
+class ship_info;
 
 void hud_shield_level_init();
 void hud_shield_equalize(object *objp, player *pl);
@@ -60,6 +60,7 @@ public:
 	virtual void render(float frametime);
 	void showShields(object *objp, int mode);
 	int maybeFlashShield(int target_index, int shield_offset);
+	void renderShieldIcon(coord2d coords[6]);
 };
 
 class HudGaugeShieldPlayer: public HudGaugeShield

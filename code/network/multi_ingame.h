@@ -14,7 +14,7 @@
 
 #include "globalincs/pstypes.h"
 
-struct ship;
+class ship;
 struct wing;
 struct net_player;
 struct header;

@@ -691,8 +691,8 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	max_shield = get_max_shield_quad(objp);
-	
-	int j, x_val, y_val, mid_val;
+
+	coord2d shield_icon_coords[6];
 
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
@@ -731,126 +731,61 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			else
 			{
 				//Ugh, draw four shield quadrants
+				static const int TRI_EDGE = 6;
+				static const int BAR_LENGTH = 112;
+				static const int BAR_HEIGHT = 54;
+				static const int BAR_WIDTH = 6;
+				static const int SHIELD_OFFSET = BAR_WIDTH + TRI_EDGE + 3;
+
 				switch(i)
 				{
 					//Top
 					case 0:
-						sy += 3;
-						for(j = 0; j < 6; j++)
-						{
-							y_val = sy + 10;
-							renderGradientLine(sx + j,
-										sy,
-										sx + j,
-										y_val - j);
-						}
-						mid_val = sy + 5;
-						for(; j < 106; j++)
-						{
-							renderGradientLine(sx + j,
-										sy,
-										sx + j,
-										mid_val);
-						}
-						for(; j < 112; j++)
-						{
-							renderGradientLine(sx + j,
-										sy,
-										sx + j,
-										sy + (j - 101));
-						}
-						y_val = sy - 1;
-						sy -= 3;
-						for(j = 0; j < 112; j++)
-							renderGradientLine(sx + j, y_val, sx + j, sy);
+						shield_icon_coords[0].x = sx;                     shield_icon_coords[0].y = sy+BAR_WIDTH+TRI_EDGE;
+						shield_icon_coords[1].x = sx;                     shield_icon_coords[1].y = sy;
+						shield_icon_coords[2].x = sx+TRI_EDGE;            shield_icon_coords[2].y = sy+BAR_WIDTH;
+						shield_icon_coords[3].x = sx+BAR_LENGTH;          shield_icon_coords[3].y = sy;
+						shield_icon_coords[4].x = sx+BAR_LENGTH-TRI_EDGE; shield_icon_coords[4].y = sy+BAR_WIDTH;
+						shield_icon_coords[5].x = sx+BAR_LENGTH;          shield_icon_coords[5].y = sy+BAR_WIDTH+TRI_EDGE;
+						renderShieldIcon(shield_icon_coords);
 						break;
 					//Left
 					case 3:
-						sx += 1;
-						x_val = sx + 10;
-						y_val = sy + 15;
-						for(j = 0; j < 6; j++)
-						{
-							renderGradientLine(sx,
-										y_val + j,
-										x_val - j,
-										y_val + j);
-						}
-						mid_val = sx + 5;
-						for(; j < 48; j++)
-						{
-							renderGradientLine(sx,
-										y_val + j,
-										mid_val,
-										y_val + j);
-						}
-						for(; j < 54; j++)
-						{
-							renderGradientLine(sx,
-										y_val + j,
-										sx + (j - 43),
-										y_val + j);
-						}
-						x_val = sx;
-						sx -= 3;
-						for(j = 0; j < 54; j++)
-							renderGradientLine(x_val, y_val + j, sx, y_val + j);
-						sx += 2;
+						sy += SHIELD_OFFSET;
+						shield_icon_coords[0].x = sx+BAR_WIDTH+TRI_EDGE; shield_icon_coords[0].y = sy+BAR_HEIGHT;
+						shield_icon_coords[1].x = sx;                    shield_icon_coords[1].y = sy+BAR_HEIGHT;
+						shield_icon_coords[2].x = sx+BAR_WIDTH;          shield_icon_coords[2].y = sy+BAR_HEIGHT-TRI_EDGE;
+						shield_icon_coords[3].x = sx;                    shield_icon_coords[3].y = sy;
+						shield_icon_coords[4].x = sx+BAR_WIDTH;          shield_icon_coords[4].y = sy+TRI_EDGE;
+						shield_icon_coords[5].x = sx+BAR_WIDTH+TRI_EDGE; shield_icon_coords[5].y = sy;
+						renderShieldIcon(shield_icon_coords);
+						sy -= SHIELD_OFFSET + BAR_WIDTH + TRI_EDGE;
 						break;
 					//Right
 					case 1:
-						x_val = sx + 109;	//-3 for border
-						y_val = sy + 15;
-						for(j = 0; j < 6; j++)
-						{
-							renderGradientLine(x_val,
-										y_val + j,
-										x_val - (10 - j),
-										y_val + j);
-						}
-						mid_val = x_val - 5;
-						for(; j < 48; j++)
-						{
-							renderGradientLine(x_val,
-										y_val + j,
-										mid_val,
-										y_val + j);
-						}
-						for(; j < 54; j++)
-						{
-							renderGradientLine(x_val,
-										y_val + j,
-										x_val - (j - 43),
-										y_val + j);
-						}
-						mid_val = x_val;
-						x_val += 3;
-						for(j = 0; j < 54; j++)
-							renderGradientLine(mid_val, y_val + j, x_val, y_val + j);
+						sx += BAR_LENGTH;
+						sy += SHIELD_OFFSET;
+						shield_icon_coords[0].x = sx-BAR_WIDTH-TRI_EDGE; shield_icon_coords[0].y = sy;
+						shield_icon_coords[1].x = sx;                    shield_icon_coords[1].y = sy;
+						shield_icon_coords[2].x = sx-BAR_WIDTH;          shield_icon_coords[2].y = sy+TRI_EDGE;
+						shield_icon_coords[3].x = sx;                    shield_icon_coords[3].y = sy+BAR_HEIGHT;
+						shield_icon_coords[4].x = sx-BAR_WIDTH;          shield_icon_coords[4].y = sy+BAR_HEIGHT-TRI_EDGE;
+						shield_icon_coords[5].x = sx-BAR_WIDTH-TRI_EDGE; shield_icon_coords[5].y = sy+BAR_HEIGHT;
+						renderShieldIcon(shield_icon_coords);
+						sx -= BAR_LENGTH;
+						sy -= SHIELD_OFFSET;
 						break;
 					//Bottom
 					case 2:
-						y_val = sy + 80; //-3 for border
-						for(j = 0; j < 6; j++)
-							renderGradientLine(sx + j,
-										y_val,
-										sx + j,
-										y_val - (10 - j));
-						mid_val = y_val - 5;
-						for(; j < 106; j++)
-							renderGradientLine(sx + j,
-										y_val,
-										sx + j,
-										mid_val);
-						for(; j < 112; j++)
-							renderGradientLine(sx + j,
-										y_val,
-										sx + j,
-										y_val - (j - 101));
-						mid_val = y_val + 1;
-						y_val += 3;
-						for(j = 0; j < 112; j++)
-							renderGradientLine(sx + j, mid_val, sx + j, y_val);
+						sy += BAR_HEIGHT + SHIELD_OFFSET*2 - BAR_WIDTH - TRI_EDGE;
+						shield_icon_coords[0].x = sx+BAR_LENGTH;          shield_icon_coords[0].y = sy;
+						shield_icon_coords[1].x = sx+BAR_LENGTH;          shield_icon_coords[1].y = sy+BAR_WIDTH+TRI_EDGE;
+						shield_icon_coords[2].x = sx+BAR_LENGTH-TRI_EDGE; shield_icon_coords[2].y = sy+TRI_EDGE;
+						shield_icon_coords[3].x = sx;                     shield_icon_coords[3].y = sy+BAR_WIDTH+TRI_EDGE;
+						shield_icon_coords[4].x = sx+TRI_EDGE;            shield_icon_coords[4].y = sy+TRI_EDGE;
+						shield_icon_coords[5].x = sx;                     shield_icon_coords[5].y = sy;
+						renderShieldIcon(shield_icon_coords);
+						sy -= BAR_HEIGHT + SHIELD_OFFSET*2 - BAR_WIDTH - TRI_EDGE;
 						break;
 					//Whoops?
 					default:
@@ -862,6 +797,46 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	}
 
 	// hud_set_default_color();
+}
+
+/*
+ * Render a shield icon - basic shape is:
+ *   1                             3
+ *     ***************************
+ *     ***************************
+ *     ** 2                   4 **
+ *     *                         *
+ *     0                         5
+ *
+ * Defined by 6 points, must be passed in the order show above (i.e. a valid triangle strip)
+ *
+ */
+void HudGaugeShield::renderShieldIcon(coord2d coords[6])
+{
+	int nx = 0, ny = 0, i;
+
+	if ( gr_screen.rendering_to_texture != -1 ) {
+		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
+	} else {
+		if ( reticle_follow ) {
+			nx = HUD_nose_x;
+			ny = HUD_nose_y;
+
+			gr_resize_screen_pos(&nx, &ny);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&nx, &ny);
+		} else {
+			gr_set_screen_scale(base_w, base_h);
+		}
+	}
+
+	for (i = 0; i < 6; ++i) {
+		coords[i].x += nx;
+		coords[i].y += ny;
+	}
+
+	gr_shield_icon(coords);
+	gr_reset_screen_scale();
 }
 
 int HudGaugeShield::maybeFlashShield(int target_index, int shield_offset)
@@ -1071,7 +1046,7 @@ void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
 
 	sprintf(text_integrity, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {
-		hud_num_make_mono(text_integrity);
+		hud_num_make_mono(text_integrity, font_num);
 	}	
 
 	renderString(final_pos[0], final_pos[1], text_integrity);

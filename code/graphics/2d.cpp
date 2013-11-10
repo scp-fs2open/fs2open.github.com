@@ -42,6 +42,8 @@
 // Includes for different rendering systems
 #include "graphics/gropengl.h"
 
+const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
+
 screen gr_screen;
 
 color_gun Gr_red, Gr_green, Gr_blue, Gr_alpha;
@@ -256,43 +258,6 @@ void gr_close()
 	Gr_inited = 0;
 }
 
-//XSTR:OFF
-DCF(gr,"Changes graphics mode")
-{
-	int mode = gr_screen.mode;
-
-	if ( Dc_command ) {
-		dc_get_arg(ARG_STRING);
-		
-		if ( !strcmp( Dc_arg, "o")) {
-			mode = GR_OPENGL;
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
-	}
-
-	if ( Dc_help ) {
-		dc_printf( "Usage: gr mode\n" );
-		dc_printf( "The options can be:\n" );
-		dc_printf( "Macros:  A=software win32 window (obsolete)\n" );
-		dc_printf( "         B=software directdraw fullscreen (obsolete)\n" );
-		dc_printf( "         G=Glide (obsolete)\n" );
-		dc_printf( "         O=OpenGL\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
-	}
-
-	if ( Dc_status ) {
-		switch( gr_screen.mode ) {
-		case GR_OPENGL:
-			dc_printf( "OpenGl\n" );
-			break;
-		default:
-			Int3();		// Invalid graphics mode
-		}
-	}
-}
-//XSTR:ON
 
 /**
  * Set screen clear color
@@ -312,7 +277,7 @@ DCF(clear_color, "set clear color r, g, b")
 	gr_set_clear_color(r, g, b);
 }
 
-void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_128 )
+void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	if ( palette == NULL ) {
 		// Create a default palette
@@ -356,7 +321,7 @@ void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_
 }
 
 
-void gr_set_palette( char *name, ubyte * palette, int restrict_font_to_128 )
+void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	char *p;
 	palette_flush();
@@ -501,8 +466,8 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 16, mode = GR_OPENGL;
-	char *ptr = NULL;
-	char *Default_video_settings = "OGL -(1024x768)x16 bit";
+	const char *ptr = NULL;
+	const char *Default_video_settings = "OGL -(1024x768)x16 bit";
 
 	if ( !Gr_inited ) {
 		atexit(gr_close);
@@ -733,6 +698,7 @@ void gr_init_color(color *c, int r, int g, int b)
 	c->alphacolor = -1;
 	c->is_alphacolor = 0;
 	c->magic = 0xAC01;
+	c->raw8 = 0;
 }
 
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type )
@@ -1462,6 +1428,28 @@ poly_list& poly_list::operator = (poly_list &other_list)
 	n_verts = other_list.n_verts;
 
 	return *this;
+}
+
+void gr_shield_icon(coord2d coords[6], bool resize)
+{
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	if (resize) {
+		gr_resize_screen_pos(&coords[0].x, &coords[0].y);
+		gr_resize_screen_pos(&coords[1].x, &coords[1].y);
+		gr_resize_screen_pos(&coords[2].x, &coords[2].y);
+		gr_resize_screen_pos(&coords[3].x, &coords[3].y);
+		gr_resize_screen_pos(&coords[4].x, &coords[4].y);
+		gr_resize_screen_pos(&coords[5].x, &coords[5].y);
+	}
+
+	g3_draw_2d_shield_icon(coords,
+		gr_screen.current_color.red,
+		gr_screen.current_color.green,
+		gr_screen.current_color.blue,
+		gr_screen.current_color.alpha);
 }
 
 void gr_rect(int x, int y, int w, int h, bool resize)

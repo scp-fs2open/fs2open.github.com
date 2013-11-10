@@ -20,8 +20,8 @@
 struct net_player;
 struct net_addr;
 
-void multi_common_add_text(char *txt,int auto_scroll = 0);
-void multi_common_set_text(char *str,int auto_scroll = 0);
+void multi_common_add_text(const char *txt,int auto_scroll = 0);
+void multi_common_set_text(const char *str,int auto_scroll = 0);
 
 // time between sending refresh packets to known servers
 #define MULTI_JOIN_REFRESH_TIME			45000			
@@ -153,7 +153,7 @@ int multi_debrief_stats_accept_code();				// call this to determine the status o
 void multi_debrief_server_process();				// process all details regarding moving the netgame to its next state
 
 // add a notification string, drawing appropriately depending on the state/screen we're in
-void multi_common_add_notify(char *str);
+void multi_common_add_notify(const char *str);
 
 // bring up the password string popup, fill in passwd (return 1 if accept was pressed, 0 if cancel was pressed)
 int multi_passwd_popup(char *passwd);

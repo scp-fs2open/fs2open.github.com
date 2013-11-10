@@ -12,6 +12,7 @@
 #ifndef _MISSIONGOAL_H
 #define _MISSIONGOAL_H
 
+#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 
 struct ai_goal;
@@ -42,7 +43,7 @@ struct ai_info;
 #define	PRIMARY_GOALS_INCOMPLETE	0
 #define	PRIMARY_GOALS_FAILED			-1
 
-extern char *Goal_type_text(int n);
+extern const char *Goal_type_text(int n);
 
 // structures for primary and secondary goals
 
@@ -83,16 +84,17 @@ extern int	Num_goals;									// number of goals for this mission
 #define MEF_DIRECTIVE_TEMP_TRUE		(1 << 2)		// this directive is temporarily true.
 #define MEF_USING_TRIGGER_COUNT		(1 << 3)		// Karajorma - use trigger count as well as repeat count to determine how many repeats this event has
 
-#define MAX_MISSION_EVENT_LOG_FLAGS		8			// this must be added if a mission log flag is added below
+#define MAX_MISSION_EVENT_LOG_FLAGS		9			// this must be changed if a mission log flag is added below
 
 #define MLF_SEXP_TRUE				(1 << 0)
 #define MLF_SEXP_FALSE				(1 << 1)
-#define MLF_SEXP_KNOWN_TRUE			(1 << 2)
+//#define MLF_SEXP_KNOWN_TRUE			(1 << 2)
 #define MLF_SEXP_KNOWN_FALSE		(1 << 3)		
 #define MLF_FIRST_REPEAT_ONLY		(1 << 4)
 #define MLF_LAST_REPEAT_ONLY		(1 << 5)
 #define MLF_FIRST_TRIGGER_ONLY		(1 << 6)
-#define MLF_LAST_TRIGGER_ONLY		(1 << 7)	
+#define MLF_LAST_TRIGGER_ONLY		(1 << 7)
+#define MLF_STATE_CHANGE			(1 << 8)	
 
 #define MLF_ALL_REPETITION_FLAGS (MLF_FIRST_REPEAT_ONLY | MLF_LAST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY | MLF_LAST_TRIGGER_ONLY) 
 
@@ -113,7 +115,15 @@ typedef struct mission_event {
 	int	satisfied_time;			// this is used to temporarily mark the directive as satisfied when the event isn't (e.g. for a destroyed wave when there are more waves later)
 	int	born_on_date;			// timestamp at which event was born
 	int	team;						// for multiplayer games
+
+	// event log stuff
 	int mission_log_flags;		// flags that are used to determing which events are written to the log
+	SCP_vector<SCP_string> event_log_buffer;
+	SCP_vector<SCP_string> event_log_variable_buffer;
+	SCP_vector<SCP_string> event_log_argument_buffer;
+	SCP_vector<SCP_string> backup_log_buffer;
+	int	previous_result;		// result of previous evaluation of event
+
 } mission_event;
 
 extern int Num_mission_events;
@@ -121,6 +131,7 @@ extern mission_event Mission_events[MAX_MISSION_EVENTS];
 extern int Mission_goal_timestamp;
 extern int Event_index;  // used by sexp code to tell what event it came from
 extern bool Log_event;
+extern bool Snapshot_all_events;
 
 // prototypes
 void	mission_init_goals( void );

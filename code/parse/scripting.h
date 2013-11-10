@@ -75,23 +75,33 @@ void scripting_state_init();
 void scripting_state_close();
 void scripting_state_do_frame(float frametime);
 
-struct script_condition
+class script_condition
 {
+public:
 	int condition_type;
 	union
 	{
 		char name[NAME_LENGTH];
 	} data;
 
-	script_condition(){condition_type = CHC_NONE; memset(data.name, 0, sizeof(data.name));}
+	script_condition()
+		: condition_type(CHC_NONE)
+	{
+		memset(data.name, 0, sizeof(data.name));
+	}
 };
 
-struct script_action
+class script_action
 {
+public:
 	int action_type;
 	script_hook hook;
 
-	script_action(){action_type = CHA_NONE;}
+	script_action()
+		: action_type(CHA_NONE)
+	{
+		script_hook_init(&hook);
+	}
 };
 
 class ConditionedHook
@@ -100,10 +110,10 @@ private:
 	SCP_vector<script_action> Actions;
 	script_condition Conditions[MAX_HOOK_CONDITIONS];
 public:
-	bool AddCondition(script_condition sc);
-	bool AddAction(script_action sa);
+	bool AddCondition(script_condition *sc);
+	bool AddAction(script_action *sa);
 
-	bool ConditionsValid(int action, struct object *objp=NULL, int more_data = 0);
+	bool ConditionsValid(int action, class object *objp=NULL, int more_data = 0);
 	bool IsOverride(class script_state *sys, int action);
 	bool Run(class script_state *sys, int action, char format='\0', void *data=NULL);
 };
@@ -175,13 +185,13 @@ public:
 
 	//***Hook creation functions
 	bool EvalString(char* string, char *format=NULL, void *rtn=NULL, char *debug_str=NULL);
-	script_hook ParseChunk(char* debug_str=NULL);
-	bool ParseCondition(char *filename="<Unknown>");
+	void ParseChunk(script_hook *dest, char* debug_str=NULL);
+	bool ParseCondition(const char *filename="<Unknown>");
 
 	//***Hook running functions
 	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
 	bool IsOverride(script_hook &hd);
-	int RunCondition(int condition, char format='\0', void *data=NULL, struct object *objp = NULL, int more_data = 0);
+	int RunCondition(int condition, char format='\0', void *data=NULL, class object *objp = NULL, int more_data = 0);
 	bool IsConditionOverride(int action, object *objp=NULL);
 
 	//*****Other functions

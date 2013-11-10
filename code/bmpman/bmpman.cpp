@@ -72,7 +72,7 @@ int Bm_max_ram = 0;		//16*1024*1024;			// Only use 16 MB for textures
 static int Bm_ignore_duplicates = 0;
 static int Bm_ignore_load_count = 0;
 
-#define EFF_FILENAME_CHECK { if ( be->type == BM_TYPE_EFF ) strncpy( filename, be->info.ani.eff.filename, MAX_FILENAME_LEN ); else strncpy( filename, be->filename, MAX_FILENAME_LEN ); }
+#define EFF_FILENAME_CHECK { if ( be->type == BM_TYPE_EFF ) strcpy_s( filename, be->info.ani.eff.filename ); else strcpy_s( filename, be->filename ); }
 
 
 
@@ -416,7 +416,7 @@ int bm_create( int bpp, int w, int h, void *data, int flags )
  *
  * @return  -1 if it could not be found index into ext_list[] if it was found as a file, fills img_cfg if available
  */
-int bm_load_sub_slow(char *real_filename, const int num_ext, const char **ext_list, CFILE **img_cfp = NULL, int dir_type = CF_TYPE_ANY)
+int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **ext_list, CFILE **img_cfp = NULL, int dir_type = CF_TYPE_ANY)
 {	
 	char full_path[MAX_PATH];
 	int size = 0, offset = 0;
@@ -445,7 +445,7 @@ int bm_load_sub_slow(char *real_filename, const int num_ext, const char **ext_li
  * Given a raw filename, try and find a bitmap that's already loaded
  * @return  0 if it could not be found, 1 if it already exists, fills in handle
  */
-int bm_load_sub_fast(char *real_filename, int *handle, int dir_type = CF_TYPE_ANY, bool animated_type = false)
+int bm_load_sub_fast(const char *real_filename, int *handle, int dir_type = CF_TYPE_ANY, bool animated_type = false)
 {
 	if (Bm_ignore_duplicates)
 		return 0;
@@ -485,7 +485,7 @@ int bm_load_sub_fast(char *real_filename, int *handle, int dir_type = CF_TYPE_AN
  * @return A negative number if it couldn't load the bitmap.
  * @return On success, it returns the bitmap number.
  */
-int bm_load( char *real_filename )
+int bm_load( const char *real_filename )
 {
 	int i, free_slot = -1;
 	int w, h, bpp = 8;
@@ -611,7 +611,7 @@ Done:
  */
 int bm_load(const SCP_string& filename)
 {
-	return bm_load(const_cast<char*> (filename.c_str()));
+	return bm_load(filename.c_str());
 }
 
 /**
@@ -620,7 +620,7 @@ int bm_load(const SCP_string& filename)
  * This is useful because in some cases we need to have a bitmap which is locked in screen format
  * _and_ texture format, such as pilot pics and squad logos
  */
-int bm_load_duplicate(char *filename)
+int bm_load_duplicate(const char *filename)
 {
 	int ret;
 
@@ -643,7 +643,7 @@ int bm_load_duplicate(char *filename)
  * @return negative if the given handle doesn't exist, the filename was empty or the slot is still locked
  * @return the bitmap_handle on success
  */
-int bm_reload(int bitmap_handle, char* filename)
+int bm_reload(int bitmap_handle, const char* filename)
 {
 	if ( !bm_inited )
 		bm_init();
@@ -663,7 +663,7 @@ int bm_reload(int bitmap_handle, char* filename)
 		return -1;
 	}
 
-	strncpy(bm_bitmaps[bitmapnum].filename, filename, MAX_FILENAME_LEN);
+	strcpy_s(bm_bitmaps[bitmapnum].filename, filename);
 	return bitmap_handle;
 }
 
@@ -737,7 +737,7 @@ static int find_block_of(int n)
 	return -1;
 }
 
-int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type)
+int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type)
 {
 	int frames = 0, fps = 30, keyframe = 0, rval;
 	char ext[8];
@@ -825,7 +825,7 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
  *
  * @returns	Bitmap number of first frame in the animation
  */
-int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type)
+int bm_load_animation( const char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type)
 {
 	int	i, n;
 	anim	the_anim;
@@ -1075,7 +1075,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 	return bm_bitmaps[n].handle;
 }
 
-int bm_load_either(char *filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type)
+int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type)
 {
 	if(nframes != NULL)
 		*nframes = 0;
@@ -1092,9 +1092,23 @@ int bm_load_either(char *filename, int *nframes, int *fps, int *keyframe, int ca
 	return tidx;
 }
 
+/**
+ * Sanity check to ensure invalid bitmap handles are picked up early
+ *
+ * Some early known false or out of range handles (such as negative) are checked within
+ * an initial routine pass, followed by a more thorough check routine to ensure the
+ * series of bitmaps within the bm_bitmaps[] structure have not become invalid.
+ *
+ * @param handle Bitmap handle to check for validity
+ * @return 1 for valid, 0 for invalid
+ */
 int bm_is_valid(int handle)
 {
+	// Ensure that certain known false or out of range handles are quickly returned as invalid,
+	// prior to utilising the handle in a way which leads to memory access outside bm_bitmaps[]
 	if(!bm_inited) return 0;
+	if(handle < 0) return 0;
+    
 	return (bm_bitmaps[handle % MAX_BITMAPS].handle == handle);
 }
 
@@ -1780,7 +1794,7 @@ void bm_unlock( int handle )
 	Assert(be->ref_count >= 0);		// Trying to unlock data more times than lock was called!!!
 }
 
-char *bm_get_filename(int handle)
+const char *bm_get_filename(int handle)
 {
 	int n;
 
@@ -1833,7 +1847,7 @@ int bm_release(int handle, int clear_render_targets)
 		return 0;	// Already been released?
 	}
 
-	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
+	Assertion( be->handle == handle, "Invalid bitmap handle number %d (expected %d) for %s passed to bm_release()\n", be->handle, handle, be->filename );
 
 	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
 		nprintf(("BmpMan", "Tried to release a render target!\n"));

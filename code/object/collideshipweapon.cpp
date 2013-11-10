@@ -162,6 +162,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
+	mc_info_init(&mc);
 
 	// set up collision structs
 	mc.model_instance_num = shipp->model_instance_num;
@@ -193,41 +194,151 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	// will absorb it when it hits the hull instead.  This has no fancy graphical effect, though.
 	// Someone should make one.
 
-	// set flags
-	mc_shield.flags = MC_CHECK_SHIELD;
-	mc_hull.flags = MC_CHECK_MODEL;
-
 	// check both kinds of collisions
-	int shield_collision = (pm->shield.ntris > 0) ? model_collide(&mc_shield) : 0;
-	int hull_collision = model_collide(&mc_hull);
+	int shield_collision = 0;
+	int hull_collision = 0;
 
 	// check shields for impact
-	if (!(ship_objp->flags & OF_NO_SHIELDS))
-	{
-		// pick out the shield quadrant
-		if (shield_collision)
-			quadrant_num = get_quadrant(&mc_shield.hit_point);
-		else if (hull_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS)) {
-			vec3d local_pos, local_pos_rot;
-			vm_vec_sub(&local_pos, &mc_hull.hit_point_world, &ship_objp->pos);
-			vm_vec_rotate(&local_pos_rot, &local_pos, &ship_objp->orient);
-			quadrant_num = get_quadrant(&local_pos_rot);
+	if (!(ship_objp->flags & OF_NO_SHIELDS)) {
+		if (sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) {
+			// The weapon is not allowed to impact the shield before it reaches this point
+			vec3d shield_ignored_until = weapon_objp->last_pos;
+
+			float weapon_flown_for = vm_vec_dist(&wp->start_pos, &weapon_objp->last_pos);
+
+			// If weapon hasn't yet flown a distance greater than the maximum ignore
+			// range, then some part of the currently checked range needs to be
+			// ignored
+			if (weapon_flown_for < sip->auto_shield_spread) {
+				vm_vec_sub(&shield_ignored_until, &weapon_end_pos, &wp->start_pos);
+				vm_vec_normalize(&shield_ignored_until);
+				vm_vec_scale(&shield_ignored_until, sip->auto_shield_spread);
+				vm_vec_add2(&shield_ignored_until, &wp->start_pos);
+			}
+
+			float this_range = vm_vec_dist(&weapon_objp->last_pos, &weapon_end_pos);
+
+			// The range during which the weapon is not allowed to collide with the
+			// shield, except if it actually hits the hull
+			float ignored_range;
+
+			// If the weapon has not yet surpassed the ignore range, calculate the
+			// remaining ignore range
+			if (vm_vec_dist(&wp->start_pos, &shield_ignored_until) > weapon_flown_for)
+				ignored_range = vm_vec_dist(&weapon_objp->last_pos, &shield_ignored_until);
+			else
+				ignored_range = 0.0f;
+
+			// The range during which the weapon may impact the shield
+			float active_range = this_range - ignored_range;
+
+			// During the ignored range, we only check for a ray collision with
+			// the model
+			if (ignored_range > 0.0f) {
+				mc_shield.flags = MC_CHECK_MODEL;
+				mc_shield.p1 = &shield_ignored_until;
+
+				shield_collision = model_collide(&mc_shield);
+
+				mc_shield.p1 = &weapon_end_pos;
+				mc_shield.hit_dist = mc_shield.hit_dist * (ignored_range / this_range);
+			}
+
+			// If no collision with the model found in the ignore range, only
+			// then do we check for sphereline collisions with the model during the
+			// non-ignored range
+			if (!shield_collision && weapon_flown_for + this_range > sip->auto_shield_spread) {
+				mc_shield.p0 = &shield_ignored_until;
+
+				mc_shield.p1 = &weapon_end_pos;
+
+				mc_shield.radius = sip->auto_shield_spread;
+
+				mc_shield.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+
+				if (sip->auto_shield_spread_from_lod > -1) {
+					polymodel *pm = model_get(sip->model_num);
+					mc_shield.submodel_num = pm->detail[sip->auto_shield_spread_from_lod];
+				}
+
+				shield_collision = model_collide(&mc_shield);
+
+				mc_shield.submodel_num = -1;
+
+				// Because we manipulated p0 and p1 above, hit_dist will be
+				// relative to the values we used, not the values the rest of
+				// the code expects; this fixes that
+				mc_shield.p0 = &weapon_objp->last_pos;
+				mc_shield.p1 = &weapon_end_pos;
+				mc_shield.hit_dist = (ignored_range + (active_range * mc_shield.hit_dist)) / this_range;
+			}
+
+			if (shield_collision) {
+				// If we used a sphereline check, then the collision point will lie
+				// somewhere on the ship's hull; this re-positions it to lie on the
+				// correct point along the weapon's path
+				if (mc_shield.flags & MC_CHECK_SPHERELINE) {
+					vec3d tempv;
+					vm_vec_sub(&tempv, mc_shield.p1, mc_shield.p0);
+					vm_vec_scale(&tempv, mc_shield.hit_dist);
+					vm_vec_add2(&tempv, mc_shield.p0);
+					mc_shield.hit_point_world = tempv;
+				}
+
+				// Re-calculate hit_point because it's likely pointing to the wrong
+				// place
+				vec3d tempv;
+				vm_vec_sub(&tempv, &mc_shield.hit_point_world, &ship_objp->pos);
+				vm_vec_rotate(&mc_shield.hit_point, &tempv, &ship_objp->orient);
+			}
+		} else if (sip->flags2 & SIF2_SURFACE_SHIELDS) {
+			mc_shield.flags = MC_CHECK_MODEL;
+			shield_collision = model_collide(&mc_shield);
+
+			// Because we used MC_CHECK_MODEL, the returned hit position might be
+			// in a submodel's frame of reference, so we need to ensure we end up
+			// in the ship's frame of reference
+			vec3d local_pos;
+			vm_vec_sub(&local_pos, &mc_shield.hit_point_world, &ship_objp->pos);
+			vm_vec_rotate(&mc_shield.hit_point, &local_pos, &ship_objp->orient);
+		} else {
+			// Normal collision check against a shield mesh
+			mc_shield.flags = MC_CHECK_SHIELD;
+			shield_collision = (pm->shield.ntris > 0) ? model_collide(&mc_shield) : 0;
 		}
+	}
+
+	// If we found a shield collision but were only checking for a simple model
+	// collision, we can re-use the same collision info for the hull as well
+	if (shield_collision && mc_shield.flags == MC_CHECK_MODEL) {
+		memcpy(&mc_hull, &mc_shield, sizeof(mc_info));
+		hull_collision = shield_collision;
+
+		// The weapon has impacted on the hull, so if it should therefore bypass
+		// the shields altogether, we do it here
+		if (sip->auto_shield_spread_bypass) {
+			shield_collision = 0;
+		}
+	} else {
+		mc_hull.flags = MC_CHECK_MODEL;
+		hull_collision = model_collide(&mc_hull);
+	}
+
+	if (shield_collision) {
+		// pick out the shield quadrant
+		quadrant_num = get_quadrant(&mc_shield.hit_point);
 
 		// make sure that the shield is active in that quadrant
-		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
+		if (shipp->flags & SF_DYING || !ship_is_shield_up(ship_objp, quadrant_num))
 			quadrant_num = -1;
 
 		// see if we hit the shield
-		if (quadrant_num >= 0)
-		{
+		if (quadrant_num >= 0) {
 			// do the hit effect
-			if (shield_collision)
+			if (mc_shield.shield_hit_tri != -1) {
 				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
-			else {
-				/* TODO */
-            }
-            
+			}
+
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield
 			if (wip->wi_flags2 & WIF2_PIERCE_SHIELDS)
@@ -280,7 +391,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	if ( valid_hit_occurred )
 	{
 		wp->collisionOccured = true;
-		wp->collisionInfo = mc_info(mc);
+		memcpy(&wp->collisionInfo, &mc, sizeof(mc_info));
 
 		Script_system.SetHookObjects(4, "Ship", ship_objp, "Weapon", weapon_objp, "Self",ship_objp, "Object", weapon_objp);
 		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
@@ -339,6 +450,8 @@ int collide_ship_weapon( obj_pair * pair )
 	Assert( ship->type == OBJ_SHIP );
 	Assert( weapon->type == OBJ_WEAPON );
 
+	ship_info *sip = &Ship_info[Ships[ship->instance].ship_info_index];
+
 	// Don't check collisions for player if past first warpout stage.
 	if ( Player->control_mode > PCM_WARPOUT_STAGE1)	{
 		if ( ship == Player_obj )
@@ -352,11 +465,13 @@ int collide_ship_weapon( obj_pair * pair )
 	// If it does hit, don't check the pair until about 200 ms before collision.  
 	// If it does not hit and is within error tolerance, cull the pair.
 
-	if ( (Ship_info[Ships[ship->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) && (Weapon_info[Weapons[weapon->instance].weapon_info_index].subtype == WP_LASER) ) {
+	if ( (sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) && (Weapon_info[Weapons[weapon->instance].weapon_info_index].subtype == WP_LASER) ) {
 		// Check when within ~1.1 radii.  
 		// This allows good transition between sphere checking (leaving the laser about 200 ms from radius) and checking
 		// within the sphere with little time between.  There may be some time for "small" big ships
-		if ( vm_vec_dist_squared(&ship->pos, &weapon->pos) < (1.2f*ship->radius*ship->radius) ) {
+		// Note: culling ships with auto spread shields seems to waste more performance than it saves,
+		// so we're not doing that here
+		if ( !(sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) && vm_vec_dist_squared(&ship->pos, &weapon->pos) < (1.2f*ship->radius*ship->radius) ) {
 			return check_inside_radius_for_big_ships( ship, weapon, pair );
 		}
 	}

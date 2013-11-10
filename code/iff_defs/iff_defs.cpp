@@ -12,6 +12,7 @@
 #include "hud/hud.h"
 #include "mission/missionparse.h"
 #include "ship/ship.h"
+#include "io/timer.h"
 
 extern int radar_target_id_flags;
 
@@ -438,6 +439,9 @@ void iff_init()
 			if (j == MAX_PARSE_OBJECT_FLAGS_2)
 				Warning(LOCATION, "Bogus string in iff default ship flags2: %s\n", flag_strings[i]);
 		}
+
+		// this is cleared between each level but let's just set it here for thoroughness
+		iff->ai_rearm_timestamp = timestamp(-1);
 	}
 	
 	required_string("#End");
@@ -522,7 +526,7 @@ void iff_init()
 	}
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation("iff_defs.tbl");
 }
 

@@ -141,7 +141,6 @@ extern void stuff_float(float *f);
 extern int stuff_float_optional(float *f, bool raw = false);
 extern int stuff_int_optional(int *i, bool raw = false);
 extern void stuff_int(int *i);
-extern void stuff_sound(int *dest);
 extern void stuff_ubyte(ubyte *i);
 extern int stuff_string_list(SCP_vector<SCP_string>& slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
@@ -187,9 +186,9 @@ extern void stop_parse();
 extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
 extern void compact_multitext_string(SCP_string &str);
-extern void read_file_text(char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
-extern void read_file_text_from_array(char *array, char *processed_text = NULL, char *raw_text = NULL);
-extern void read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
+extern void read_file_text(const char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
+extern void read_file_text_from_array(const char *array, char *processed_text = NULL, char *raw_text = NULL);
+extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
 extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode);
@@ -197,17 +196,10 @@ char *split_str_once(char *src, int max_pixel_w);
 int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char = -1);
 int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char);
 
-inline int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_lines, char ignore_char = -1)
-{
-	return split_str(const_cast<const char*>(src), max_pixel_w, n_chars, const_cast<const char**>(p_str), max_lines, ignore_char);
-}
-
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);
 extern int required_string_either_fred(char *str1, char *str2);
 extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
-
-extern char	parse_error_text[128];
 
 // Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
 extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
@@ -220,7 +212,8 @@ extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, cons
 extern SCP_string& replace_all(SCP_string& context, const char* from, const char* to);
 
 // Goober5000 (why is this not in the C library?)
-extern char *stristr(const char *str, const char *substr);
+extern const char *stristr(const char *str, const char *substr);
+extern char *stristr(char *str, const char *substr);
 
 // Goober5000 (ditto)
 extern bool can_construe_as_integer(const char *text);
@@ -234,6 +227,10 @@ extern int subsystem_stricmp(const char *str1, const char *str2);
 
 //WMC - compares two strings, ignoring the last extension
 extern int strextcmp(const char *s1, const char *s2);
+
+// Goober5000 - truncates a file extension
+extern bool drop_extension(char *str);
+extern bool drop_extension(SCP_string &str);
 
 //WMC - backspaces the first character of given char pointer
 extern void backspace(char *src);
@@ -250,7 +247,7 @@ extern void truncate_message_lines(SCP_string &text, int num_allowed_lines);
 inline void parse_advance(int s){Mp+=s;}
 
 // parse a modular table, returns the number of files matching the "name_check" filter or 0 if it did nothing
-extern int parse_modular_table(char *name_check, void (*parse_callback)(char *filename), int path_type = CF_TYPE_TABLES, int sort_type = CF_SORT_REVERSE);
+extern int parse_modular_table(const char *name_check, void (*parse_callback)(const char *filename), int path_type = CF_TYPE_TABLES, int sort_type = CF_SORT_REVERSE);
 // to know that we are parsing a modular table
 extern bool Parsing_modular_table;
 

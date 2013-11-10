@@ -833,7 +833,8 @@ void gr_opengl_circle(int xc, int yc, int d, bool resize)
 	while (x < y) {
 		// Draw the first octant
 		gr_opengl_line(xc-y, yc-x, xc+y, yc-x, false);
-		gr_opengl_line(xc-y, yc+x, xc+y, yc+x, false);
+		if (x > 0) // Don't draw the center horizontal line twice
+			gr_opengl_line(xc-y, yc+x, xc+y, yc+x, false);
 
 		if (p < 0) {
 			p += (x << 2) + 6;
@@ -1436,6 +1437,8 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 	GL_CHECK_FOR_ERRORS("end of render3d()");
 }
 
+//Used by the effects batcher to determine whether to use shaders or not
+bool Use_Shaders_for_effect_rendering = true;
 
 void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint flags)
 {
@@ -1459,6 +1462,11 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 			{
 				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 				sdr_index = gr_opengl_maybe_create_shader(SDR_FLAG_SOFT_QUAD|SDR_FLAG_DISTORTION);
+				if (sdr_index == -1) {
+					//If we failed to compile a shader for this for whatever reason, bail out and make sure we don't get to this point again
+					Use_Shaders_for_effect_rendering = false;
+					return;
+				}
 				opengl_shader_set_current(&GL_shader[sdr_index]);
 				
 				vglUniform1iARB(opengl_shader_get_uniform("frameBuffer"), 2);
@@ -1483,6 +1491,10 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 			else
 			{
 				sdr_index = gr_opengl_maybe_create_shader(SDR_FLAG_SOFT_QUAD);
+				if (sdr_index == -1) {
+					Use_Shaders_for_effect_rendering = false;
+					return;
+				}
 				opengl_shader_set_current(&GL_shader[sdr_index]);
 				zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
 			}

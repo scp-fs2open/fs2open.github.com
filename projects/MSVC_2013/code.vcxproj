@@ -1,0 +1,1099 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug AVX|Win32">
+      <Configuration>Debug AVX</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug SSE2|Win32">
+      <Configuration>Debug SSE2</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug SSE|Win32">
+      <Configuration>Debug SSE</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release AVX|Win32">
+      <Configuration>Release AVX</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release SSE2|Win32">
+      <Configuration>Release SSE2</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release SSE|Win32">
+      <Configuration>Release SSE</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C55F5706-E947-41EF-A3E8-6D711CD4ECD8}</ProjectGuid>
+    <RootNamespace>code</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>
+      </BrowseInformation>
+      <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
+      <WarningLevel>Level4</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <Lib>
+      <OutputFile>$(OutDir)code.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+    </Lib>
+    <Bscmake>
+      <AdditionalOptions>
+ %(AdditionalOptions)</AdditionalOptions>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>
+      </BrowseInformation>
+      <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
+      <WarningLevel>Level4</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <Lib>
+      <OutputFile>$(OutDir)code.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+    </Lib>
+    <Bscmake>
+      <AdditionalOptions>
+ %(AdditionalOptions)</AdditionalOptions>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>
+      </BrowseInformation>
+      <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
+      <WarningLevel>Level4</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <Lib>
+      <OutputFile>$(OutDir)code.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+    </Lib>
+    <Bscmake>
+      <AdditionalOptions>
+ %(AdditionalOptions)</AdditionalOptions>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>
+      </BrowseInformation>
+      <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
+      <WarningLevel>Level4</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <Lib>
+      <OutputFile>$(OutDir)code.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+    </Lib>
+    <Bscmake>
+      <AdditionalOptions>
+ %(AdditionalOptions)</AdditionalOptions>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>
+      </BrowseInformation>
+      <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)code.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>
+      </BrowseInformation>
+      <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)code.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>
+      </BrowseInformation>
+      <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)code.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
+      <BrowseInformation>
+      </BrowseInformation>
+      <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)code.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\code\ai\ai.cpp" />
+    <ClCompile Include="..\..\code\ai\ai_profiles.cpp" />
+    <ClCompile Include="..\..\code\ai\aibig.cpp" />
+    <ClCompile Include="..\..\code\ai\aicode.cpp" />
+    <ClCompile Include="..\..\code\ai\aigoals.cpp" />
+    <ClCompile Include="..\..\code\ai\aiturret.cpp" />
+    <ClCompile Include="..\..\code\anim\animplay.cpp" />
+    <ClCompile Include="..\..\code\anim\packunpack.cpp" />
+    <ClCompile Include="..\..\code\Asteroid\asteroid.cpp" />
+    <ClCompile Include="..\..\code\Bmpman\bmpman.cpp" />
+    <ClCompile Include="..\..\code\camera\camera.cpp" />
+    <ClCompile Include="..\..\code\cfile\cfile.cpp" />
+    <ClCompile Include="..\..\code\cfile\cfilearchive.cpp" />
+    <ClCompile Include="..\..\code\cfile\cfilelist.cpp" />
+    <ClCompile Include="..\..\code\cfile\cfilesystem.cpp" />
+    <ClCompile Include="..\..\code\CMeasure\cmeasure.cpp" />
+    <ClCompile Include="..\..\code\controlconfig\controlsconfig.cpp" />
+    <ClCompile Include="..\..\code\controlconfig\controlsconfigcommon.cpp" />
+    <ClCompile Include="..\..\code\Cutscene\cutscenes.cpp" />
+    <ClCompile Include="..\..\code\cutscene\decoder16.cpp" />
+    <ClCompile Include="..\..\code\cutscene\decoder8.cpp" />
+    <ClCompile Include="..\..\code\cutscene\movie.cpp" />
+    <ClCompile Include="..\..\code\cutscene\mve_audio.cpp" />
+    <ClCompile Include="..\..\code\cutscene\mvelib.cpp" />
+    <ClCompile Include="..\..\code\cutscene\mveplayer.cpp" />
+    <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
+    <ClCompile Include="..\..\code\Debris\debris.cpp" />
+    <ClCompile Include="..\..\code\DebugConsole\console.cpp" />
+    <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
+    <ClCompile Include="..\..\code\fireball\warpineffect.cpp" />
+    <ClCompile Include="..\..\code\gamehelp\contexthelp.cpp" />
+    <ClCompile Include="..\..\code\gamehelp\gameplayhelp.cpp" />
+    <ClCompile Include="..\..\code\gamesequence\gamesequence.cpp" />
+    <ClCompile Include="..\..\code\gamesnd\eventmusic.cpp" />
+    <ClCompile Include="..\..\code\gamesnd\gamesnd.cpp" />
+    <ClCompile Include="..\..\code\globalincs\alphacolors.cpp" />
+    <ClCompile Include="..\..\code\globalincs\def_files.cpp" />
+    <ClCompile Include="..\..\code\globalincs\fsmemory.cpp" />
+    <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp" />
+    <ClCompile Include="..\..\code\globalincs\profiling.cpp" />
+    <ClCompile Include="..\..\code\globalincs\safe_strings.cpp" />
+    <ClCompile Include="..\..\code\globalincs\safe_strings_test.cpp" />
+    <ClCompile Include="..\..\code\globalincs\systemvars.cpp" />
+    <ClCompile Include="..\..\code\globalincs\version.cpp" />
+    <ClCompile Include="..\..\code\globalincs\windebug.cpp" />
+    <ClCompile Include="..\..\code\graphics\2d.cpp" />
+    <ClCompile Include="..\..\code\graphics\grbatch.cpp" />
+    <ClCompile Include="..\..\code\Graphics\font.cpp" />
+    <ClCompile Include="..\..\code\graphics\generic.cpp" />
+    <ClCompile Include="..\..\code\graphics\grstub.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropengl.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropenglbmpman.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropengldraw.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropenglextension.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropengllight.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropenglpostprocessing.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropenglshader.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropenglstate.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropengltexture.cpp" />
+    <ClCompile Include="..\..\code\graphics\gropengltnl.cpp" />
+    <ClCompile Include="..\..\code\hud\hud.cpp" />
+    <ClCompile Include="..\..\code\hud\hudartillery.cpp" />
+    <ClCompile Include="..\..\code\hud\hudbrackets.cpp" />
+    <ClCompile Include="..\..\code\hud\hudconfig.cpp" />
+    <ClCompile Include="..\..\code\hud\hudescort.cpp" />
+    <ClCompile Include="..\..\code\hud\hudets.cpp" />
+    <ClCompile Include="..\..\code\hud\hudlock.cpp" />
+    <ClCompile Include="..\..\code\hud\hudmessage.cpp" />
+    <ClCompile Include="..\..\code\hud\hudnavigation.cpp" />
+    <ClCompile Include="..\..\code\hud\hudobserver.cpp" />
+    <ClCompile Include="..\..\code\hud\hudparse.cpp" />
+    <ClCompile Include="..\..\code\hud\hudreticle.cpp" />
+    <ClCompile Include="..\..\code\hud\hudshield.cpp" />
+    <ClCompile Include="..\..\code\hud\hudsquadmsg.cpp" />
+    <ClCompile Include="..\..\code\hud\hudtarget.cpp" />
+    <ClCompile Include="..\..\code\hud\hudtargetbox.cpp" />
+    <ClCompile Include="..\..\code\hud\hudwingmanstatus.cpp" />
+    <ClCompile Include="..\..\code\io\joy.cpp" />
+    <ClCompile Include="..\..\code\io\joy_ff.cpp" />
+    <ClCompile Include="..\..\code\io\key.cpp" />
+    <ClCompile Include="..\..\code\io\keycontrol.cpp" />
+    <ClCompile Include="..\..\code\io\mouse.cpp" />
+    <ClCompile Include="..\..\code\io\swff_lib.cpp" />
+    <ClCompile Include="..\..\code\io\timer.cpp" />
+    <ClCompile Include="..\..\code\jumpnode\jumpnode.cpp" />
+    <ClCompile Include="..\..\code\lab\lab.cpp" />
+    <ClCompile Include="..\..\code\lab\wmcgui.cpp" />
+    <ClCompile Include="..\..\code\Lighting\lighting.cpp" />
+    <ClCompile Include="..\..\code\Math\fix.cpp" />
+    <ClCompile Include="..\..\code\Math\floating.cpp" />
+    <ClCompile Include="..\..\code\Math\fvi.cpp" />
+    <ClCompile Include="..\..\code\Math\spline.cpp" />
+    <ClCompile Include="..\..\code\Math\staticrand.cpp" />
+    <ClCompile Include="..\..\code\Math\vecmat.cpp" />
+    <ClCompile Include="..\..\code\menuui\barracks.cpp" />
+    <ClCompile Include="..\..\code\menuui\credits.cpp" />
+    <ClCompile Include="..\..\code\menuui\fishtank.cpp" />
+    <ClCompile Include="..\..\code\menuui\mainhallmenu.cpp" />
+    <ClCompile Include="..\..\code\menuui\mainhalltemp.cpp" />
+    <ClCompile Include="..\..\code\menuui\optionsmenu.cpp" />
+    <ClCompile Include="..\..\code\menuui\optionsmenumulti.cpp" />
+    <ClCompile Include="..\..\code\menuui\playermenu.cpp" />
+    <ClCompile Include="..\..\code\menuui\readyroom.cpp" />
+    <ClCompile Include="..\..\code\menuui\snazzyui.cpp" />
+    <ClCompile Include="..\..\code\menuui\techmenu.cpp" />
+    <ClCompile Include="..\..\code\menuui\trainingmenu.cpp" />
+    <ClCompile Include="..\..\code\mission\missionbriefcommon.cpp" />
+    <ClCompile Include="..\..\code\mission\missioncampaign.cpp" />
+    <ClCompile Include="..\..\code\mission\missiongoals.cpp" />
+    <ClCompile Include="..\..\code\mission\missiongrid.cpp" />
+    <ClCompile Include="..\..\code\mission\missionhotkey.cpp" />
+    <ClCompile Include="..\..\code\mission\missionload.cpp" />
+    <ClCompile Include="..\..\code\mission\missionlog.cpp" />
+    <ClCompile Include="..\..\code\mission\missionmessage.cpp" />
+    <ClCompile Include="..\..\code\mission\missionparse.cpp" />
+    <ClCompile Include="..\..\code\mission\missiontraining.cpp" />
+    <ClCompile Include="..\..\code\missionui\chatbox.cpp" />
+    <ClCompile Include="..\..\code\missionui\fictionviewer.cpp" />
+    <ClCompile Include="..\..\code\missionui\missionbrief.cpp" />
+    <ClCompile Include="..\..\code\missionui\missioncmdbrief.cpp" />
+    <ClCompile Include="..\..\code\missionui\missiondebrief.cpp" />
+    <ClCompile Include="..\..\code\missionui\missionloopbrief.cpp" />
+    <ClCompile Include="..\..\code\missionui\missionpause.cpp" />
+    <ClCompile Include="..\..\code\missionui\missionrecommend.cpp" />
+    <ClCompile Include="..\..\code\missionui\missionscreencommon.cpp" />
+    <ClCompile Include="..\..\code\missionui\missionshipchoice.cpp" />
+    <ClCompile Include="..\..\code\missionui\missionstats.cpp" />
+    <ClCompile Include="..\..\code\missionui\missionweaponchoice.cpp" />
+    <ClCompile Include="..\..\code\missionui\redalert.cpp" />
+    <ClCompile Include="..\..\code\model\modelanim.cpp" />
+    <ClCompile Include="..\..\code\model\modelcollide.cpp" />
+    <ClCompile Include="..\..\code\model\modelinterp.cpp" />
+    <ClCompile Include="..\..\code\model\modeloctant.cpp" />
+    <ClCompile Include="..\..\code\model\modelread.cpp" />
+    <ClCompile Include="..\..\code\mod_table\mod_table.cpp" />
+    <ClCompile Include="..\..\code\object\collidedebrisship.cpp" />
+    <ClCompile Include="..\..\code\object\collidedebrisweapon.cpp" />
+    <ClCompile Include="..\..\code\object\collideshipship.cpp" />
+    <ClCompile Include="..\..\code\object\collideshipweapon.cpp" />
+    <ClCompile Include="..\..\code\object\collideweaponweapon.cpp" />
+    <ClCompile Include="..\..\code\object\deadobjectdock.cpp" />
+    <ClCompile Include="..\..\code\object\objcollide.cpp" />
+    <ClCompile Include="..\..\code\object\object.cpp" />
+    <ClCompile Include="..\..\code\object\objectdock.cpp" />
+    <ClCompile Include="..\..\code\object\objectshield.cpp" />
+    <ClCompile Include="..\..\code\object\objectsnd.cpp" />
+    <ClCompile Include="..\..\code\object\objectsort.cpp" />
+    <ClCompile Include="..\..\code\object\parseobjectdock.cpp" />
+    <ClCompile Include="..\..\code\object\waypoint.cpp" />
+    <ClCompile Include="..\..\code\Observer\observer.cpp" />
+    <ClCompile Include="..\..\code\osapi\osapi.cpp" />
+    <ClCompile Include="..\..\code\osapi\osapi_unix.cpp" />
+    <ClCompile Include="..\..\code\osapi\osregistry.cpp" />
+    <ClCompile Include="..\..\code\osapi\osregistry_unix.cpp" />
+    <ClCompile Include="..\..\code\osapi\outwnd.cpp" />
+    <ClCompile Include="..\..\code\Palman\palman.cpp" />
+    <ClCompile Include="..\..\code\parse\encrypt.cpp" />
+    <ClCompile Include="..\..\code\parse\generic_log.cpp" />
+    <ClCompile Include="..\..\code\parse\lua.cpp" />
+    <ClCompile Include="..\..\code\parse\parselo.cpp" />
+    <ClCompile Include="..\..\code\parse\scripting.cpp" />
+    <ClCompile Include="..\..\code\parse\sexp.cpp" />
+    <ClCompile Include="..\..\code\Particle\particle.cpp" />
+    <ClCompile Include="..\..\code\PcxUtils\pcxutils.cpp" />
+    <ClCompile Include="..\..\code\Physics\physics.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\csg.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\csg_convert.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\pilotfile.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\pilotfile_convert.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\plr.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\plr_convert.cpp" />
+    <ClCompile Include="..\..\code\playerman\managepilot.cpp" />
+    <ClCompile Include="..\..\code\playerman\playercontrol.cpp" />
+    <ClCompile Include="..\..\code\popup\popup.cpp" />
+    <ClCompile Include="..\..\code\popup\popupdead.cpp" />
+    <ClCompile Include="..\..\code\Radar\radar.cpp" />
+    <ClCompile Include="..\..\code\radar\radardradis.cpp" />
+    <ClCompile Include="..\..\code\radar\radarorb.cpp" />
+    <ClCompile Include="..\..\code\radar\radarsetup.cpp" />
+    <ClCompile Include="..\..\code\render\3dclipper.cpp" />
+    <ClCompile Include="..\..\code\render\3ddraw.cpp" />
+    <ClCompile Include="..\..\code\render\3dlaser.cpp" />
+    <ClCompile Include="..\..\code\render\3dmath.cpp" />
+    <ClCompile Include="..\..\code\render\3dsetup.cpp" />
+    <ClCompile Include="..\..\code\ship\afterburner.cpp" />
+    <ClCompile Include="..\..\code\ship\awacs.cpp" />
+    <ClCompile Include="..\..\code\ship\shield.cpp" />
+    <ClCompile Include="..\..\code\ship\ship.cpp" />
+    <ClCompile Include="..\..\code\ship\shipcontrails.cpp" />
+    <ClCompile Include="..\..\code\ship\shipfx.cpp" />
+    <ClCompile Include="..\..\code\ship\shiphit.cpp" />
+    <ClCompile Include="..\..\code\sound\acm.cpp" />
+    <ClCompile Include="..\..\code\sound\audiostr.cpp" />
+    <ClCompile Include="..\..\code\sound\ds.cpp" />
+    <ClCompile Include="..\..\code\sound\ds3d.cpp" />
+    <ClCompile Include="..\..\code\sound\dscap.cpp" />
+    <ClCompile Include="..\..\code\sound\fsspeech.cpp" />
+    <ClCompile Include="..\..\code\sound\openal.cpp" />
+    <ClCompile Include="..\..\code\sound\rtvoice.cpp" />
+    <ClCompile Include="..\..\code\sound\sound.cpp" />
+    <ClCompile Include="..\..\code\sound\speech.cpp" />
+    <ClCompile Include="..\..\code\sound\voicerec.cpp" />
+    <ClCompile Include="..\..\code\sound\ogg\ogg.cpp" />
+    <ClCompile Include="..\..\code\Starfield\nebula.cpp" />
+    <ClCompile Include="..\..\code\Starfield\starfield.cpp" />
+    <ClCompile Include="..\..\code\Starfield\supernova.cpp" />
+    <ClCompile Include="..\..\code\Stats\medals.cpp" />
+    <ClCompile Include="..\..\code\Stats\scoring.cpp" />
+    <ClCompile Include="..\..\code\Stats\stats.cpp" />
+    <ClCompile Include="..\..\code\ui\button.cpp" />
+    <ClCompile Include="..\..\code\ui\checkbox.cpp" />
+    <ClCompile Include="..\..\code\ui\gadget.cpp" />
+    <ClCompile Include="..\..\code\ui\icon.cpp" />
+    <ClCompile Include="..\..\code\ui\inputbox.cpp" />
+    <ClCompile Include="..\..\code\ui\keytrap.cpp" />
+    <ClCompile Include="..\..\code\ui\listbox.cpp" />
+    <ClCompile Include="..\..\code\ui\radio.cpp" />
+    <ClCompile Include="..\..\code\ui\scroll.cpp" />
+    <ClCompile Include="..\..\code\ui\slider.cpp" />
+    <ClCompile Include="..\..\code\ui\slider2.cpp" />
+    <ClCompile Include="..\..\code\ui\uidraw.cpp" />
+    <ClCompile Include="..\..\code\ui\uimouse.cpp" />
+    <ClCompile Include="..\..\code\ui\window.cpp" />
+    <ClCompile Include="..\..\code\weapon\beam.cpp" />
+    <ClCompile Include="..\..\code\weapon\corkscrew.cpp" />
+    <ClCompile Include="..\..\code\weapon\emp.cpp" />
+    <ClCompile Include="..\..\code\weapon\flak.cpp" />
+    <ClCompile Include="..\..\code\weapon\muzzleflash.cpp" />
+    <ClCompile Include="..\..\code\weapon\shockwave.cpp" />
+    <ClCompile Include="..\..\code\weapon\swarm.cpp" />
+    <ClCompile Include="..\..\code\weapon\trails.cpp" />
+    <ClCompile Include="..\..\code\weapon\weapons.cpp" />
+    <ClCompile Include="..\..\code\nebula\neb.cpp" />
+    <ClCompile Include="..\..\code\nebula\neblightning.cpp" />
+    <ClCompile Include="..\..\code\Localization\fhash.cpp" />
+    <ClCompile Include="..\..\code\Localization\localize.cpp" />
+    <ClCompile Include="..\..\code\TgaUtils\tgautils.cpp" />
+    <ClCompile Include="..\..\code\inetfile\cftp.cpp" />
+    <ClCompile Include="..\..\code\inetfile\chttpget.cpp" />
+    <ClCompile Include="..\..\code\inetfile\inetgetfile.cpp" />
+    <ClCompile Include="..\..\code\exceptionhandler\exceptionhandler.cpp" />
+    <ClCompile Include="..\..\code\network\chat_api.cpp" />
+    <ClCompile Include="..\..\code\network\multi.cpp" />
+    <ClCompile Include="..\..\code\network\multi_campaign.cpp" />
+    <ClCompile Include="..\..\code\network\multi_data.cpp" />
+    <ClCompile Include="..\..\code\network\multi_dogfight.cpp" />
+    <ClCompile Include="..\..\code\network\multi_endgame.cpp" />
+    <ClCompile Include="..\..\code\network\multi_ingame.cpp" />
+    <ClCompile Include="..\..\code\network\multi_kick.cpp" />
+    <ClCompile Include="..\..\code\network\multi_log.cpp" />
+    <ClCompile Include="..\..\code\network\multi_obj.cpp" />
+    <ClCompile Include="..\..\code\network\multi_observer.cpp" />
+    <ClCompile Include="..\..\code\network\multi_options.cpp" />
+    <ClCompile Include="..\..\code\network\multi_pause.cpp" />
+    <ClCompile Include="..\..\code\network\multi_pinfo.cpp" />
+    <ClCompile Include="..\..\code\network\multi_ping.cpp" />
+    <ClCompile Include="..\..\code\network\multi_pmsg.cpp" />
+    <ClCompile Include="..\..\code\network\multi_pxo.cpp" />
+    <ClCompile Include="..\..\code\network\multi_rate.cpp" />
+    <ClCompile Include="..\..\code\network\multi_respawn.cpp" />
+    <ClCompile Include="..\..\code\network\multi_sexp.cpp" />
+    <ClCompile Include="..\..\code\network\multi_team.cpp" />
+    <ClCompile Include="..\..\code\network\multi_update.cpp" />
+    <ClCompile Include="..\..\code\network\multi_voice.cpp" />
+    <ClCompile Include="..\..\code\network\multi_xfer.cpp" />
+    <ClCompile Include="..\..\code\network\multilag.cpp" />
+    <ClCompile Include="..\..\code\network\multimsgs.cpp" />
+    <ClCompile Include="..\..\code\network\multiteamselect.cpp" />
+    <ClCompile Include="..\..\code\network\multiui.cpp" />
+    <ClCompile Include="..\..\code\network\multiutil.cpp" />
+    <ClCompile Include="..\..\code\network\psnet2.cpp" />
+    <ClCompile Include="..\..\code\network\stand_gui.cpp" />
+    <ClCompile Include="..\..\code\ddsutils\ddsutils.cpp" />
+    <ClCompile Include="..\..\code\pngutils\pngutils.cpp" />
+    <ClCompile Include="..\..\code\Cmdline\cmdline.cpp" />
+    <ClCompile Include="..\..\code\fs2netd\fs2netd_client.cpp" />
+    <ClCompile Include="..\..\code\fs2netd\tcp_client.cpp" />
+    <ClCompile Include="..\..\code\fs2netd\tcp_socket.cpp" />
+    <ClCompile Include="..\..\code\species_defs\species_defs.cpp" />
+    <ClCompile Include="..\..\code\jpgutils\jpgutils.cpp" />
+    <ClCompile Include="..\..\code\Autopilot\autopilot.cpp" />
+    <ClCompile Include="..\..\code\iff_defs\iff_defs.cpp" />
+    <ClCompile Include="..\..\code\external_dll\trackirglobal.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\code\ai\ai.h" />
+    <ClInclude Include="..\..\code\ai\ai_profiles.h" />
+    <ClInclude Include="..\..\code\ai\aibig.h" />
+    <ClInclude Include="..\..\code\ai\aigoals.h" />
+    <ClInclude Include="..\..\code\ai\aiinternal.h" />
+    <ClInclude Include="..\..\code\ai\ailocal.h" />
+    <ClInclude Include="..\..\code\anim\animplay.h" />
+    <ClInclude Include="..\..\code\anim\packunpack.h" />
+    <ClInclude Include="..\..\code\Asteroid\asteroid.h" />
+    <ClInclude Include="..\..\code\bmpman\bm_internal.h" />
+    <ClInclude Include="..\..\code\Bmpman\bmpman.h" />
+    <ClInclude Include="..\..\code\camera\camera.h" />
+    <ClInclude Include="..\..\code\cfile\cfile.h" />
+    <ClInclude Include="..\..\code\cfile\cfilearchive.h" />
+    <ClInclude Include="..\..\code\cfile\cfilesystem.h" />
+    <ClInclude Include="..\..\code\CMeasure\cmeasure.h" />
+    <ClInclude Include="..\..\code\controlconfig\controlsconfig.h" />
+    <ClInclude Include="..\..\code\Cutscene\cutscenes.h" />
+    <ClInclude Include="..\..\code\cutscene\movie.h" />
+    <ClInclude Include="..\..\code\cutscene\mvelib.h" />
+    <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
+    <ClInclude Include="..\..\code\Debris\debris.h" />
+    <ClInclude Include="..\..\code\DirectX\vasync.h" />
+    <ClInclude Include="..\..\code\DirectX\vdinput.h" />
+    <ClInclude Include="..\..\code\DirectX\vdplay.h" />
+    <ClInclude Include="..\..\code\DirectX\vdplobby.h" />
+    <ClInclude Include="..\..\code\DirectX\vdsetup.h" />
+    <ClInclude Include="..\..\code\DirectX\vdvp.h" />
+    <ClInclude Include="..\..\code\fireball\fireballs.h" />
+    <ClInclude Include="..\..\code\gamehelp\contexthelp.h" />
+    <ClInclude Include="..\..\code\gamehelp\gameplayhelp.h" />
+    <ClInclude Include="..\..\code\GameSequence\gamesequence.h" />
+    <ClInclude Include="..\..\code\gamesnd\eventmusic.h" />
+    <ClInclude Include="..\..\code\gamesnd\gamesnd.h" />
+    <ClInclude Include="..\..\code\globalincs\alphacolors.h" />
+    <ClInclude Include="..\..\code\globalincs\def_files.h" />
+    <ClInclude Include="..\..\code\globalincs\fsmemory.h" />
+    <ClInclude Include="..\..\code\globalincs\globals.h" />
+    <ClInclude Include="..\..\code\globalincs\linklist.h" />
+    <ClInclude Include="..\..\code\globalincs\mspdb_callstack.h" />
+    <ClInclude Include="..\..\code\globalincs\pstypes.h" />
+    <ClInclude Include="..\..\code\globalincs\safe_strings.h" />
+    <ClInclude Include="..\..\code\globalincs\systemvars.h" />
+    <ClInclude Include="..\..\code\globalincs\version.h" />
+    <ClInclude Include="..\..\code\globalincs\vmallocator.h" />
+    <ClInclude Include="..\..\code\Graphics\2d.h" />
+    <ClInclude Include="..\..\code\graphics\grbatch.h" />
+    <ClInclude Include="..\..\code\graphics\grinternal.h" />
+    <ClInclude Include="..\..\code\graphics\tmapper.h" />
+    <ClInclude Include="..\..\code\Graphics\font.h" />
+    <ClInclude Include="..\..\code\graphics\generic.h" />
+    <ClInclude Include="..\..\code\graphics\grstub.h" />
+    <ClInclude Include="..\..\code\Graphics\line.h" />
+    <ClInclude Include="..\..\code\graphics\gropengl.h" />
+    <ClInclude Include="..\..\code\graphics\gropenglbmpman.h" />
+    <ClInclude Include="..\..\code\graphics\gropengldraw.h" />
+    <ClInclude Include="..\..\code\graphics\gropenglextension.h" />
+    <ClInclude Include="..\..\code\graphics\gropengllight.h" />
+    <ClInclude Include="..\..\code\graphics\gropenglpostprocessing.h" />
+    <ClInclude Include="..\..\code\graphics\gropenglshader.h" />
+    <ClInclude Include="..\..\code\graphics\gropenglstate.h" />
+    <ClInclude Include="..\..\code\graphics\gropengltexture.h" />
+    <ClInclude Include="..\..\code\graphics\gropengltnl.h" />
+    <ClInclude Include="..\..\code\hud\hud.h" />
+    <ClInclude Include="..\..\code\hud\hudartillery.h" />
+    <ClInclude Include="..\..\code\hud\hudbrackets.h" />
+    <ClInclude Include="..\..\code\hud\hudconfig.h" />
+    <ClInclude Include="..\..\code\hud\hudescort.h" />
+    <ClInclude Include="..\..\code\hud\hudets.h" />
+    <ClInclude Include="..\..\code\hud\hudgauges.h" />
+    <ClInclude Include="..\..\code\hud\hudlock.h" />
+    <ClInclude Include="..\..\code\hud\hudmessage.h" />
+    <ClInclude Include="..\..\code\hud\hudnavigation.h" />
+    <ClInclude Include="..\..\code\hud\hudobserver.h" />
+    <ClInclude Include="..\..\code\hud\hudparse.h" />
+    <ClInclude Include="..\..\code\hud\hudreticle.h" />
+    <ClInclude Include="..\..\code\hud\hudshield.h" />
+    <ClInclude Include="..\..\code\hud\hudsquadmsg.h" />
+    <ClInclude Include="..\..\code\hud\hudtarget.h" />
+    <ClInclude Include="..\..\code\hud\hudtargetbox.h" />
+    <ClInclude Include="..\..\code\hud\hudwingmanstatus.h" />
+    <ClInclude Include="..\..\code\io\joy.h" />
+    <ClInclude Include="..\..\code\io\joy_ff.h" />
+    <ClInclude Include="..\..\code\io\key.h" />
+    <ClInclude Include="..\..\code\io\keycontrol.h" />
+    <ClInclude Include="..\..\code\io\mouse.h" />
+    <ClInclude Include="..\..\code\io\sw_error.hpp" />
+    <ClInclude Include="..\..\code\io\sw_force.h" />
+    <ClInclude Include="..\..\code\io\sw_guid.hpp" />
+    <ClInclude Include="..\..\code\io\timer.h" />
+    <ClInclude Include="..\..\code\jumpnode\jumpnode.h" />
+    <ClInclude Include="..\..\code\lab\lab.h" />
+    <ClInclude Include="..\..\code\lab\wmcgui.h" />
+    <ClInclude Include="..\..\code\Lighting\lighting.h" />
+    <ClInclude Include="..\..\code\math\bitarray.h" />
+    <ClInclude Include="..\..\code\Math\fix.h" />
+    <ClInclude Include="..\..\code\Math\floating.h" />
+    <ClInclude Include="..\..\code\Math\fvi.h" />
+    <ClInclude Include="..\..\code\Math\spline.h" />
+    <ClInclude Include="..\..\code\Math\staticrand.h" />
+    <ClInclude Include="..\..\code\Math\vecmat.h" />
+    <ClInclude Include="..\..\code\menuui\barracks.h" />
+    <ClInclude Include="..\..\code\menuui\credits.h" />
+    <ClInclude Include="..\..\code\menuui\fishtank.h" />
+    <ClInclude Include="..\..\code\menuui\mainhallmenu.h" />
+    <ClInclude Include="..\..\code\menuui\mainhalltemp.h" />
+    <ClInclude Include="..\..\code\menuui\optionsmenu.h" />
+    <ClInclude Include="..\..\code\menuui\optionsmenumulti.h" />
+    <ClInclude Include="..\..\code\menuui\playermenu.h" />
+    <ClInclude Include="..\..\code\menuui\readyroom.h" />
+    <ClInclude Include="..\..\code\menuui\snazzyui.h" />
+    <ClInclude Include="..\..\code\menuui\techmenu.h" />
+    <ClInclude Include="..\..\code\menuui\trainingmenu.h" />
+    <ClInclude Include="..\..\code\mission\missionbriefcommon.h" />
+    <ClInclude Include="..\..\code\mission\missioncampaign.h" />
+    <ClInclude Include="..\..\code\mission\missiongoals.h" />
+    <ClInclude Include="..\..\code\mission\missiongrid.h" />
+    <ClInclude Include="..\..\code\mission\missionhotkey.h" />
+    <ClInclude Include="..\..\code\mission\missionload.h" />
+    <ClInclude Include="..\..\code\mission\missionlog.h" />
+    <ClInclude Include="..\..\code\mission\missionmessage.h" />
+    <ClInclude Include="..\..\code\mission\missionparse.h" />
+    <ClInclude Include="..\..\code\mission\missiontraining.h" />
+    <ClInclude Include="..\..\code\missionui\chatbox.h" />
+    <ClInclude Include="..\..\code\missionui\fictionviewer.h" />
+    <ClInclude Include="..\..\code\missionui\missionbrief.h" />
+    <ClInclude Include="..\..\code\missionui\missioncmdbrief.h" />
+    <ClInclude Include="..\..\code\missionui\missiondebrief.h" />
+    <ClInclude Include="..\..\code\missionui\missionloopbrief.h" />
+    <ClInclude Include="..\..\code\missionui\missionpause.h" />
+    <ClInclude Include="..\..\code\missionui\missionrecommend.h" />
+    <ClInclude Include="..\..\code\missionui\missionscreencommon.h" />
+    <ClInclude Include="..\..\code\missionui\missionshipchoice.h" />
+    <ClInclude Include="..\..\code\missionui\missionstats.h" />
+    <ClInclude Include="..\..\code\missionui\missionweaponchoice.h" />
+    <ClInclude Include="..\..\code\missionui\redalert.h" />
+    <ClInclude Include="..\..\code\model\model.h" />
+    <ClInclude Include="..\..\code\model\modelanim.h" />
+    <ClInclude Include="..\..\code\model\modelsinc.h" />
+    <ClInclude Include="..\..\code\mod_table\mod_table.h" />
+    <ClInclude Include="..\..\code\object\deadobjectdock.h" />
+    <ClInclude Include="..\..\code\object\objcollide.h" />
+    <ClInclude Include="..\..\code\object\object.h" />
+    <ClInclude Include="..\..\code\object\objectdock.h" />
+    <ClInclude Include="..\..\code\object\objectshield.h" />
+    <ClInclude Include="..\..\code\object\objectsnd.h" />
+    <ClInclude Include="..\..\code\object\parseobjectdock.h" />
+    <ClInclude Include="..\..\code\object\waypoint.h" />
+    <ClInclude Include="..\..\code\Observer\observer.h" />
+    <ClInclude Include="..\..\code\osapi\monopub.h" />
+    <ClInclude Include="..\..\code\osapi\osapi.h" />
+    <ClInclude Include="..\..\code\osapi\osregistry.h" />
+    <ClInclude Include="..\..\code\osapi\outwnd.h" />
+    <ClInclude Include="..\..\code\Palman\palman.h" />
+    <ClInclude Include="..\..\code\parse\encrypt.h" />
+    <ClInclude Include="..\..\code\parse\generic_log.h" />
+    <ClInclude Include="..\..\code\parse\lua.h" />
+    <ClInclude Include="..\..\code\parse\parselo.h" />
+    <ClInclude Include="..\..\code\parse\scripting.h" />
+    <ClInclude Include="..\..\code\parse\sexp.h" />
+    <ClInclude Include="..\..\code\Particle\particle.h" />
+    <ClInclude Include="..\..\code\PcxUtils\pcxutils.h" />
+    <ClInclude Include="..\..\code\Physics\physics.h" />
+    <ClInclude Include="..\..\code\PilotFile\pilotfile.h" />
+    <ClInclude Include="..\..\code\PilotFile\pilotfile_convert.h" />
+    <ClInclude Include="..\..\code\playerman\managepilot.h" />
+    <ClInclude Include="..\..\code\playerman\player.h" />
+    <ClInclude Include="..\..\code\popup\popup.h" />
+    <ClInclude Include="..\..\code\popup\popupdead.h" />
+    <ClInclude Include="..\..\code\Radar\radar.h" />
+    <ClInclude Include="..\..\code\radar\radardradis.h" />
+    <ClInclude Include="..\..\code\radar\radarorb.h" />
+    <ClInclude Include="..\..\code\radar\radarsetup.h" />
+    <ClInclude Include="..\..\code\render\3d.h" />
+    <ClInclude Include="..\..\code\render\3dinternal.h" />
+    <ClInclude Include="..\..\code\ship\afterburner.h" />
+    <ClInclude Include="..\..\code\ship\awacs.h" />
+    <ClInclude Include="..\..\code\ship\ship.h" />
+    <ClInclude Include="..\..\code\ship\shipcontrails.h" />
+    <ClInclude Include="..\..\code\ship\shipfx.h" />
+    <ClInclude Include="..\..\code\ship\shiphit.h" />
+    <ClInclude Include="..\..\code\ship\subsysdamage.h" />
+    <ClInclude Include="..\..\code\sound\acm.h" />
+    <ClInclude Include="..\..\code\sound\audiostr.h" />
+    <ClInclude Include="..\..\code\sound\channel.h" />
+    <ClInclude Include="..\..\code\sound\ds.h" />
+    <ClInclude Include="..\..\code\sound\ds3d.h" />
+    <ClInclude Include="..\..\code\sound\dscap.h" />
+    <ClInclude Include="..\..\code\sound\fsspeech.h" />
+    <ClInclude Include="..\..\code\sound\grammar.h" />
+    <ClInclude Include="..\..\code\sound\openal.h" />
+    <ClInclude Include="..\..\code\sound\rtvoice.h" />
+    <ClInclude Include="..\..\code\sound\sound.h" />
+    <ClInclude Include="..\..\code\sound\speech.h" />
+    <ClInclude Include="..\..\code\sound\voicerec.h" />
+    <ClInclude Include="..\..\code\sound\ogg\ogg.h" />
+    <ClInclude Include="..\..\code\Starfield\nebula.h" />
+    <ClInclude Include="..\..\code\Starfield\starfield.h" />
+    <ClInclude Include="..\..\code\Starfield\supernova.h" />
+    <ClInclude Include="..\..\code\Stats\medals.h" />
+    <ClInclude Include="..\..\code\stats\scoring.h" />
+    <ClInclude Include="..\..\code\Stats\stats.h" />
+    <ClInclude Include="..\..\code\ui\ui.h" />
+    <ClInclude Include="..\..\code\ui\uidefs.h" />
+    <ClInclude Include="..\..\code\weapon\beam.h" />
+    <ClInclude Include="..\..\code\weapon\corkscrew.h" />
+    <ClInclude Include="..\..\code\weapon\emp.h" />
+    <ClInclude Include="..\..\code\weapon\flak.h" />
+    <ClInclude Include="..\..\code\weapon\muzzleflash.h" />
+    <ClInclude Include="..\..\code\weapon\shockwave.h" />
+    <ClInclude Include="..\..\code\weapon\swarm.h" />
+    <ClInclude Include="..\..\code\weapon\trails.h" />
+    <ClInclude Include="..\..\code\weapon\weapon.h" />
+    <ClInclude Include="..\..\code\nebula\neb.h" />
+    <ClInclude Include="..\..\code\nebula\neblightning.h" />
+    <ClInclude Include="..\..\code\Localization\fhash.h" />
+    <ClInclude Include="..\..\code\Localization\localize.h" />
+    <ClInclude Include="..\..\code\TgaUtils\tgautils.h" />
+    <ClInclude Include="..\..\code\inetfile\cftp.h" />
+    <ClInclude Include="..\..\code\inetfile\chttpget.h" />
+    <ClInclude Include="..\..\code\inetfile\inetgetfile.h" />
+    <ClInclude Include="..\..\code\ExceptionHandler\exceptionhandler.h" />
+    <ClInclude Include="..\..\code\network\chat_api.h" />
+    <ClInclude Include="..\..\code\network\multi.h" />
+    <ClInclude Include="..\..\code\network\multi_campaign.h" />
+    <ClInclude Include="..\..\code\network\multi_data.h" />
+    <ClInclude Include="..\..\code\network\multi_dogfight.h" />
+    <ClInclude Include="..\..\code\network\multi_endgame.h" />
+    <ClInclude Include="..\..\code\network\multi_ingame.h" />
+    <ClInclude Include="..\..\code\network\multi_kick.h" />
+    <ClInclude Include="..\..\code\network\multi_log.h" />
+    <ClInclude Include="..\..\code\network\multi_obj.h" />
+    <ClInclude Include="..\..\code\network\multi_observer.h" />
+    <ClInclude Include="..\..\code\network\multi_options.h" />
+    <ClInclude Include="..\..\code\network\multi_pause.h" />
+    <ClInclude Include="..\..\code\network\multi_pinfo.h" />
+    <ClInclude Include="..\..\code\network\multi_ping.h" />
+    <ClInclude Include="..\..\code\network\multi_pmsg.h" />
+    <ClInclude Include="..\..\code\network\multi_pxo.h" />
+    <ClInclude Include="..\..\code\network\multi_rate.h" />
+    <ClInclude Include="..\..\code\network\multi_respawn.h" />
+    <ClInclude Include="..\..\code\network\multi_sexp.h" />
+    <ClInclude Include="..\..\code\network\multi_team.h" />
+    <ClInclude Include="..\..\code\network\multi_update.h" />
+    <ClInclude Include="..\..\code\network\multi_voice.h" />
+    <ClInclude Include="..\..\code\network\multi_xfer.h" />
+    <ClInclude Include="..\..\code\network\multilag.h" />
+    <ClInclude Include="..\..\code\network\multimsgs.h" />
+    <ClInclude Include="..\..\code\network\multiteamselect.h" />
+    <ClInclude Include="..\..\code\network\multiui.h" />
+    <ClInclude Include="..\..\code\network\multiutil.h" />
+    <ClInclude Include="..\..\code\network\psnet2.h" />
+    <ClInclude Include="..\..\code\network\stand_gui.h" />
+    <ClInclude Include="..\..\code\ddsutils\ddsutils.h" />
+    <ClInclude Include="..\..\code\pngutils\pngutils.h" />
+    <ClInclude Include="..\..\code\Cmdline\cmdline.h" />
+    <ClInclude Include="..\..\code\fs2netd\fs2netd_client.h" />
+    <ClInclude Include="..\..\code\fs2netd\protocol.h" />
+    <ClInclude Include="..\..\code\fs2netd\tcp_client.h" />
+    <ClInclude Include="..\..\code\fs2netd\tcp_socket.h" />
+    <ClInclude Include="..\..\code\species_defs\species_defs.h" />
+    <ClInclude Include="..\..\code\jpgutils\jpgutils.h" />
+    <ClInclude Include="..\..\code\Autopilot\autopilot.h" />
+    <ClInclude Include="..\..\code\iff_defs\iff_defs.h" />
+    <ClInclude Include="..\..\code\external_dll\externalcode.h" />
+    <ClInclude Include="..\..\code\external_dll\trackirpublic.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\code\directx\dxguid.lib" />
+    <Library Include="..\..\code\directx\strmiids.lib" />
+    <Library Include="..\..\code\DirectX\vdinput.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\code\sound\phrases.xml">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">"%(RootDir)%(Directory)gc" "%(RootDir)%(Directory)%(Filename)"
+"%(RootDir)%(Directory)gc" /h "%(RootDir)%(Directory)grammar.h" "%(RootDir)%(Directory)%(Filename)"
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">"%(RootDir)%(Directory)gc" "%(RootDir)%(Directory)%(Filename)"
+"%(RootDir)%(Directory)gc" /h "%(RootDir)%(Directory)grammar.h" "%(RootDir)%(Directory)%(Filename)"
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">%(RootDir)%(Directory)phrases.cfg;%(RootDir)%(Directory)grammar.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">%(RootDir)%(Directory)phrases.cfg;%(RootDir)%(Directory)grammar.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">"%(RootDir)%(Directory)gc" "%(RootDir)%(Directory)%(Filename)"
+"%(RootDir)%(Directory)gc" /h "%(RootDir)%(Directory)grammar.h" "%(RootDir)%(Directory)%(Filename)"
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">%(RootDir)%(Directory)phrases.cfg;%(RootDir)%(Directory)grammar.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"%(RootDir)%(Directory)gc" "%(RootDir)%(Directory)%(Filename)"
+"%(RootDir)%(Directory)gc" /h "%(RootDir)%(Directory)grammar.h" "%(RootDir)%(Directory)%(Filename)"
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)phrases.cfg;%(RootDir)%(Directory)grammar.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">"%(RootDir)%(Directory)gc" "%(RootDir)%(Directory)%(Filename)"
+"%(RootDir)%(Directory)gc" /h "%(RootDir)%(Directory)grammar.h" "%(RootDir)%(Directory)%(Filename)"
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">"%(RootDir)%(Directory)gc" "%(RootDir)%(Directory)%(Filename)"
+"%(RootDir)%(Directory)gc" /h "%(RootDir)%(Directory)grammar.h" "%(RootDir)%(Directory)%(Filename)"
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">%(RootDir)%(Directory)phrases.cfg;%(RootDir)%(Directory)grammar.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">%(RootDir)%(Directory)phrases.cfg;%(RootDir)%(Directory)grammar.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">"%(RootDir)%(Directory)gc" "%(RootDir)%(Directory)%(Filename)"
+"%(RootDir)%(Directory)gc" /h "%(RootDir)%(Directory)grammar.h" "%(RootDir)%(Directory)%(Filename)"
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">%(RootDir)%(Directory)phrases.cfg;%(RootDir)%(Directory)grammar.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"%(RootDir)%(Directory)gc" "%(RootDir)%(Directory)%(Filename)"
+"%(RootDir)%(Directory)gc" /h "%(RootDir)%(Directory)grammar.h" "%(RootDir)%(Directory)%(Filename)"
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)phrases.cfg;%(RootDir)%(Directory)grammar.h;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

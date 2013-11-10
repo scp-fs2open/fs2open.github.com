@@ -18,16 +18,6 @@
 #include "playerman/managepilot.h"
 
 
-static const unsigned int PLR_FILE_ID = 0x5f524c50;	// "PLR_" in file
-
-// NOTE: Version should be bumped only for adding/removing sections or section
-//       content.  It should *NOT* be bumped for limit bumps or anything of
-//       that sort!
-//
-//   0 - initial version
-static const ubyte PLR_VERSION = 0;
-
-
 void pilotfile::plr_read_flags()
 {
 	// tips?
@@ -44,6 +34,14 @@ void pilotfile::plr_read_flags()
 
 	// special rank setting (to avoid having to read all stats on verify)
 	p->stats.rank = cfread_int(cfp);
+
+	if (version > 0) 
+	{
+		p->player_was_multi = cfread_int(cfp);
+	} else 
+	{
+		p->player_was_multi = 0; // Default to single player
+	}
 }
 
 void pilotfile::plr_write_flags()
@@ -65,6 +63,9 @@ void pilotfile::plr_write_flags()
 	// special rank setting (to avoid having to read all stats on verify)
 	cfwrite_int(p->stats.rank, cfp);
 
+	// What game mode we were in last on this pilot
+	cfwrite_int(p->player_was_multi, cfp);
+
 	endSection();
 }
 
@@ -77,11 +78,11 @@ void pilotfile::plr_read_info()
 	// pilot image
 	cfread_string_len(p->image_filename, MAX_FILENAME_LEN, cfp);
 
-	// squad name
-	cfread_string_len(p->squad_name, NAME_LENGTH, cfp);
+	// multi squad name
+	cfread_string_len(p->m_squad_name, NAME_LENGTH, cfp);
 
 	// squad image
-	cfread_string_len(p->squad_filename, MAX_FILENAME_LEN, cfp);
+	cfread_string_len(p->m_squad_filename, MAX_FILENAME_LEN, cfp);
 
 	// active campaign
 	cfread_string_len(p->current_campaign, MAX_FILENAME_LEN, cfp);
@@ -94,11 +95,11 @@ void pilotfile::plr_write_info()
 	// pilot image
 	cfwrite_string_len(p->image_filename, cfp);
 
-	// squad name
-	cfwrite_string_len(p->squad_name, cfp);
+	// multi squad name
+	cfwrite_string_len(p->m_squad_name, cfp);
 
 	// squad image
-	cfwrite_string_len(p->squad_filename, cfp);
+	cfwrite_string_len(p->m_squad_filename, cfp);
 
 	// active campaign
 	cfwrite_string_len(p->current_campaign, cfp);
@@ -375,13 +376,13 @@ void pilotfile::plr_read_stats()
 			}
 		}
 
-		// medals earned (have to fine ones that match content)
+		// medals earned (have to find ones that match content)
 		list_size = (int)all_time_stats.medals_earned.size();
 		for (idx = 0; idx < list_size; idx++) {
 			j = all_time_stats.medals_earned[idx].index;
 
 			if (j >= 0) {
-				p->stats.medals[j] = all_time_stats.medals_earned[idx].val;
+				p->stats.medal_counts[j] = all_time_stats.medals_earned[idx].val;
 			}
 		}
 	}
@@ -522,13 +523,13 @@ void pilotfile::plr_read_stats_multi()
 			}
 		}
 
-		// medals earned (have to fine ones that match content)
+		// medals earned (have to find ones that match content)
 		list_size = (int)multi_stats.medals_earned.size();
 		for (idx = 0; idx < list_size; idx++) {
 			j = multi_stats.medals_earned[idx].index;
 
 			if (j >= 0) {
-				p->stats.medals[j] = multi_stats.medals_earned[idx].val;
+				p->stats.medal_counts[j] = multi_stats.medals_earned[idx].val;
 			}
 		}
 	}
@@ -728,7 +729,7 @@ void pilotfile::plr_reset_data()
 	control_config_clear();
 
 	// init stats
-	init_scoring_element(&p->stats);
+	p->stats.init();
 
 	// reset scoring lists
 	all_time_stats.ship_kills.clear();
@@ -807,9 +808,9 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 	}
 
 	// version, should be able to just ignore it
-	ubyte plr_ver = cfread_ubyte(cfp);
+	version = cfread_ubyte(cfp);
 
-	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), (int)plr_ver));
+	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), version));
 
 	plr_reset_data();
 
@@ -894,6 +895,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 
 		if (offset_pos) {
 			cfseek(cfp, offset_pos, CF_SEEK_CUR);
+			mprintf(("PLR => WARNING: Advancing to the next section. %i bytes were skipped!\n", offset_pos));
 		}
 	}
 
@@ -903,7 +905,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 	// restore the truncated callsign into Player structure
 	pilot_set_short_callsign(p, SHORT_CALLSIGN_PIXEL_W);
 
-	player_set_squad_bitmap(p, p->squad_filename);
+	player_set_squad_bitmap(p, p->m_squad_filename, true);
 
 	hud_squadmsg_save_keys();
 

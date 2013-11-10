@@ -305,7 +305,15 @@ void HudGaugeReticle::getFirepointStatus() {
 					isactive = 2;
 
 				for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
-					firepoint tmp = { {ep.x - pm->gun_banks[i].pnt[j].xyz.x, ep.y - pm->gun_banks[i].pnt[j].xyz.y}, isactive};
+					vec3d fpfromeye;
+
+					matrix eye_orient, player_transpose;
+
+					vm_copy_transpose_matrix(&player_transpose, &Objects[Player->objnum].orient);
+					vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
+					vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
+
+					firepoint tmp = { {fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y}, isactive};
 					fp.push_back(tmp);
 				}
 			}
@@ -494,7 +502,7 @@ void HudGaugeThrottle::render(float frametime)
 			sprintf(buf, "%d", fl2i(desired_speed * Hud_speed_multiplier + 0.5f));
 		}
 
-		hud_num_make_mono(buf);
+		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 
 		renderString(position[0] + Target_speed_offsets[0] - w, position[1] + Target_speed_offsets[1], buf);
@@ -522,7 +530,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 
 	//setGaugeColor();
 	sprintf(buf, "%d", fl2i(current_speed+0.5f));
-	hud_num_make_mono(buf);
+	hud_num_make_mono(buf, font_num);
 	gr_get_string_size(&w, &h, buf);
 
 	if ( orbit ) {

@@ -499,7 +499,7 @@ void psnet_init( int protocol, int port_num )
 	int idx;
 	Tcp_active = 0;
 #ifdef _WIN32
-	char *internet_connection;
+	const char *internet_connection;
 	WSADATA wsa_data; 		
 	Ipx_active = 0;
 #endif
@@ -669,7 +669,7 @@ int psnet_use_protocol( int protocol )
 	SOCKADDR_IPX	ipx_addr;
 #endif
 	SOCKADDR_IN		ip_addr;
-	char *custom_ip = NULL;
+	const char *custom_ip = NULL;
 
 	// zero out my address
 	Psnet_my_addr_valid = 0;
@@ -747,7 +747,7 @@ int psnet_use_protocol( int protocol )
 		}
 
 		memset(Psnet_my_addr.net_id, 0, 4);
-		memcpy(Psnet_my_addr.addr, &ip_addr.sin_addr, 6);
+		memcpy(Psnet_my_addr.addr, &ip_addr.sin_addr, sizeof(ip_addr.sin_addr));
 		Psnet_my_addr.port = Psnet_default_port;
 
 		ml_string("Psnet using - NET_TCP");
@@ -1145,6 +1145,9 @@ void psnet_rel_send_ack(SOCKADDR *raddr, unsigned int sig, ubyte link_type, floa
 			return;
 		}		
 		ret = SENDTO(Unreliable_socket, (char *)&ack_header, RELIABLE_PACKET_HEADER_ONLY_SIZE+ack_header.data_len, 0, raddr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+		if (ret == -1) {
+			ml_string("IPX SENDTO failed in rel_send_ack()");
+		}
 		break;
 #endif
 	case NET_TCP:
@@ -1153,6 +1156,9 @@ void psnet_rel_send_ack(SOCKADDR *raddr, unsigned int sig, ubyte link_type, floa
 			return;
 		}
 		ret = SENDTO(Unreliable_socket, (char *)&ack_header, RELIABLE_PACKET_HEADER_ONLY_SIZE+ack_header.data_len, 0, raddr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+		if (ret == -1) {
+			ml_string("TCP SENDTO failed in rel_send_ack()");
+		}
 		break;
 	default:		
 		ml_string("Unknown protocol type in nw_SendReliable()");
@@ -1424,7 +1430,7 @@ void psnet_rel_work()
 
 	ubyte link_type;
 	net_addr d3_rcv_addr;
-	SOCKADDR_IN *rcvaddr,*rsockaddr;
+	SOCKADDR_IN *rcvaddr;
 #ifdef _WIN32
 	int ipx_has_data = 0;
 #endif
@@ -1525,7 +1531,6 @@ void psnet_rel_work()
 			//Find out if this is a packet from someone we were expecting a packet.
 			rcvaddr = (SOCKADDR_IN *)&rcv_addr;
 			for(i=1; i<MAXRELIABLESOCKETS; i++){
-				rsockaddr = (SOCKADDR_IN *)&Reliable_sockets[i].addr;
 				if(memcmp(&d3_rcv_addr,&Reliable_sockets[i].m_net_addr,sizeof(net_addr)) == 0){
 					rsocket=&Reliable_sockets[i];
 					break;
@@ -1844,7 +1849,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 	int addrlen;
 	ubyte iaddr[6];
 	ushort port;
-	float time_sent_req = 0;
 	float first_sent_req = 0;
 	static reliable_header conn_header;
 	static reliable_header ack_header;
@@ -1958,7 +1962,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 
 	
 	first_sent_req = psnet_get_time();
-	time_sent_req = psnet_get_time();
 	
 	//Wait until we get a response from the server or we timeout
 	

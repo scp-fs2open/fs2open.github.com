@@ -313,11 +313,7 @@ static int Debrief_multi_loading_bitmap;
 static int Rank_bitmap;
 static int Medal_bitmap;
 static int Badge_bitmap;
-static int Wings_bitmap;
-static int Crest_bitmap;
-//static int Rank_text_bitmap;
-//static int Medal_text_bitmap;
-//static int Badge_text_bitmap;
+
 static int Promoted;
 static int Debrief_accepted;
 static int Turned_traitor;
@@ -446,29 +442,9 @@ voice_map Debrief_promotion_voice_mapping[NUM_VOLITION_CAMPAIGNS][MAX_CAMPAIGN_M
 	}
 };
 
-#define DB_AWARD_WINGS		0
-#define DB_AWARD_MEDAL		1
-#define DB_AWARD_SOC			2
-#define DB_AWARD_RANK		3
-#define DB_AWARD_BADGE		4
-#define DB_AWARD_BG			5
-static char* Debrief_award_filename[GR_NUM_RESOLUTIONS][6] = {
-	{
-		"DebriefWings",
-		"DebriefMedal",
-		"DebriefCrest",
-		"DebriefRank",
-		"DebriefBadge",
-		"DebriefAward"
-	},
-	{
-		"2_DebriefWings",
-		"2_DebriefMedal",
-		"2_DebriefCrest",
-		"2_DebriefRank",
-		"2_DebriefBadge",
-		"2_DebriefAward"
-	}
+static char* Debrief_award_background[GR_NUM_RESOLUTIONS] = {
+	"DebriefAward",
+	"2_DebriefAward"
 };
 
 #define AWARD_TEXT_MAX_LINES				5
@@ -485,7 +461,7 @@ void debrief_award_text_clear();
 
 
 // functions
-char *debrief_tooltip_handler(char *str)
+const char *debrief_tooltip_handler(const char *str)
 {
 	if (!stricmp(str, NOX("@.Medal"))) {
 		if (Award_active){
@@ -899,7 +875,7 @@ void debrief_ui_init()
 		Warning(LOCATION, "Could not load the background bitmap for debrief screen");
 	}
 
-	Award_bg_bitmap = bm_load(Debrief_award_filename[gr_screen.res][DB_AWARD_BG]);
+	Award_bg_bitmap = bm_load(Debrief_award_background[gr_screen.res]);
 	Debrief_multi_loading_bitmap = bm_load(Debrief_loading_bitmap_fname[gr_screen.res]);
 }
 
@@ -969,39 +945,52 @@ void debrief_choose_voice(char *voice_dest, char *voice_base, int default_to_bas
 	}
 }
 
+void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_version_index)
+{
+	Assert(buf != NULL && medal_earned >= 0 && zero_based_version_index >= 0);
+
+	// start with the regular file name, adapted for resolution
+	sprintf(buf, NOX("%s%s"), Resolution_prefixes[gr_screen.res], Medals[medal_earned].debrief_bitmap);
+
+	// if the medal has multiple versions, we may want to choose a specific bitmap
+	char *p = strstr(buf, "##");
+	if (p != NULL)
+	{
+		int version;
+		char number[8];
+
+		// possible to earn more than we have variants for
+		if (zero_based_version_index >= Medals[medal_earned].num_versions)
+			version = Medals[medal_earned].num_versions - 1;
+		else
+			version = zero_based_version_index;
+
+		// also, this is dumb
+		if (Medals[medal_earned].version_starts_at_1)
+			version++;
+
+		sprintf(number, NOX("%.2d"), version);
+		Assert(strlen(number) == 2);
+		strncpy(p, number, 2);
+	}
+}
+
 void debrief_award_init()
 {
 	char buf[80];
-	int i;
 
 	Rank_bitmap = -1; 
 	Medal_bitmap = -1;
 	Badge_bitmap = -1;
-	Wings_bitmap = -1;
-	Crest_bitmap = -1;
 	Promoted = -1;
 
 	// be sure there are no old award texts floating around
 	debrief_award_text_clear();
 
 	// handle medal earned
-	if (Player->stats.m_medal_earned != -1) {
-		if (Player->stats.m_medal_earned == 13) {  // special hack for the wings..
-			int ver;
-			if ( Player->stats.medals[13] > 1 ) {
-				ver = 1;
-			} else {
-				ver = 0;
-			}
-			sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_WINGS], ver);	
-			Wings_bitmap = bm_load(buf);
-
-		} else if (Player->stats.m_medal_earned == 17) {  // special hack for the soc crest
-			Crest_bitmap = bm_load(Debrief_award_filename[gr_screen.res][DB_AWARD_SOC]);
-		} else {
-			sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_MEDAL], Player->stats.m_medal_earned);
-			Medal_bitmap = bm_load(buf);
-		}
+	if ( Player->stats.m_medal_earned != -1 ) {
+		debrief_choose_medal_variant(buf, Player->stats.m_medal_earned, Player->stats.medal_counts[Player->stats.m_medal_earned] - 1);
+		Medal_bitmap = bm_load(buf);
 
 		debrief_add_award_text(Medals[Player->stats.m_medal_earned].name);
 	}
@@ -1009,7 +998,7 @@ void debrief_award_init()
 	// handle promotions
 	if ( Player->stats.m_promotion_earned != -1 ) {
 		Promoted = Player->stats.m_promotion_earned;
-		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_RANK], Promoted + 1);
+		debrief_choose_medal_variant(buf, Rank_medal_index, Promoted);
 		Rank_bitmap = bm_load(buf);
 
 		Promotion_stage.text = Ranks[Promoted].promotion_text;
@@ -1024,20 +1013,19 @@ void debrief_award_init()
 	// handle badge earned
 	// only grant badge if earned and allowed.  (no_promotion really means no promotion and no badges)
 	if ( Player->stats.m_badge_earned != -1 ) {
-		i = Player->stats.m_badge_earned;
-		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_BADGE], Medals[i].badge_num + 1);
+		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned, Player->stats.medal_counts[Player->stats.m_badge_earned] - 1);
 		Badge_bitmap = bm_load(buf);
 
-		Badge_stage.text = Medals[i].promotion_text;
+		Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text;
 		Badge_stage.recommendation_text = "";
 
-		// choose appropriate voice
+		// choose appropriate badge voice for this mission
 		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned].voice_base);
 
-		debrief_add_award_text(Medals[i].name);
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned].name);
 	}
 
-	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0) || (Wings_bitmap >= 0) || (Crest_bitmap >= 0)) {
+	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {
 		Award_active = 1;
 	} else {
 		Award_active = 0;
@@ -1308,7 +1296,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 	Weapon_energy_cheat=0;
 
 	if ( (/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE) ) {
-		char *str;
+		const char *str;
 		int z;
 
 		if (Game_mode & GM_MULTIPLAYER) {
@@ -2177,8 +2165,6 @@ void debrief_close()
 	common_music_close();
 	chatbox_close();
 
-//	rank_bitmaps_release();
-
 	// unload bitmaps
 	if (Background_bitmap >= 0){
 		bm_release(Background_bitmap);
@@ -2198,14 +2184,6 @@ void debrief_close()
 
 	if (Badge_bitmap >= 0){
 		bm_release(Badge_bitmap);
-	}
-
-	if (Wings_bitmap >= 0) {
-		bm_release(Wings_bitmap);
-	}
-	
-	if (Crest_bitmap >= 0) {
-		bm_release(Crest_bitmap);
 	}
 
 	Debrief_ui_window.destroy();
@@ -2321,8 +2299,8 @@ void debrief_award_text_clear() {
 // this is the nastiest code I have ever written.  if you are modifying this, i feel bad for you.
 void debrief_add_award_text(char *str)
 {
-	Assert(Debrief_award_text_num_lines <= AWARD_TEXT_MAX_LINES);
-	if (Debrief_award_text_num_lines > AWARD_TEXT_MAX_LINES) {
+	Assert(Debrief_award_text_num_lines < AWARD_TEXT_MAX_LINES);
+	if (Debrief_award_text_num_lines >= AWARD_TEXT_MAX_LINES) {
 		return;
 	}
 
@@ -2334,7 +2312,7 @@ void debrief_add_award_text(char *str)
 
 	// maybe translate for displaying
 	if (Lcl_gr) {
-		medals_translate_name(Debrief_award_text[Debrief_award_text_num_lines], AWARD_TEXT_MAX_LINE_LENGTH);
+		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
 	}
 
 	Debrief_award_text_num_lines++;
@@ -2354,7 +2332,7 @@ void debrief_add_award_text(char *str)
 void debrief_do_frame(float frametime)
 {
 	int k=0, new_k=0;
-	char *please_wait_str = XSTR("Please Wait", 1242);
+	const char *please_wait_str = XSTR("Please Wait", 1242);
 	char buf[256];
 
 	Assert(Debrief_inited);	
@@ -2523,35 +2501,8 @@ void debrief_do_frame(float frametime)
 			gr_bitmap(Debrief_award_coords[gr_screen.res][0], Debrief_award_coords[gr_screen.res][1]);
 		}
 
-		if (Wings_bitmap >= 0) {
-			gr_set_bitmap(Wings_bitmap);
-			gr_bitmap(Debrief_award_coords[gr_screen.res][0], Debrief_award_coords[gr_screen.res][1]);
-		}
-
-		if (Crest_bitmap >= 0) {
-			gr_set_bitmap(Crest_bitmap);
-			gr_bitmap(Debrief_award_coords[gr_screen.res][0], Debrief_award_coords[gr_screen.res][1]);
-		}
-
 		//  draw medal/badge/rank labels
 		debrief_draw_award_text();
-
-/*		if (Rank_text_bitmap >= 0) {
-			gr_set_bitmap(Rank_text_bitmap);
-			gr_bitmap(Debrief_award_coords[gr_screen.res][0], Debrief_award_coords[gr_screen.res][1]);
-		}
-
-	
-		if (Medal_text_bitmap >= 0) {
-			gr_set_bitmap(Medal_text_bitmap);
-			gr_bitmap(Debrief_award_text_coords[gr_screen.res][0], Debrief_award_text_coords[gr_screen.res][1]);
-		}
-
-		if (Badge_text_bitmap >= 0) {
-			gr_set_bitmap(Badge_text_bitmap);
-			gr_bitmap(Debrief_award_text_coords[gr_screen.res][0], Debrief_award_text_coords[gr_screen.res][1]);
-		}
-*/
 	}
 	
 	Debrief_ui_window.draw();

@@ -170,7 +170,7 @@ int game_busy_callback( void (*callback)(int count), int delta_step )
 }
 
 // Call whenever loading to display cursor
-void game_busy(char *filename)
+void game_busy(const char *filename)
 {
 	if ( cf_in_callback != 0 ) return;	// don't call callback if we're already in it.
 	if ( cf_timestamp < 0 ) return;
@@ -182,7 +182,7 @@ void game_busy(char *filename)
 
 #ifndef NDEBUG
 	if (filename != NULL) 
-		strncpy(Processing_filename, filename, MAX_PATH_LEN);
+		strcpy_s(Processing_filename, filename);
 #endif
 
 	int t1 = timer_get_milliseconds();

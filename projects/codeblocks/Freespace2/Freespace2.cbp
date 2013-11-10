@@ -8,7 +8,7 @@
 		<Option virtualFolders="Freespace2/;" />
 		<Build>
 			<Target title="Debug">
-				<Option output="../Debug/Freespace2/lib/fs2_open_linux_d" prefix_auto="1" extension_auto="1" />
+				<Option output="../Debug/Freespace2/lib/fs2_open_3_7_1_debug" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="../freespaceDirectoryLink" />
 				<Option object_output="../Debug/Freespace2/obj/" />
 				<Option type="1" />
@@ -24,7 +24,7 @@
 				</Linker>
 			</Target>
 			<Target title="Release">
-				<Option output="../Release/Freespace2/lib/fs2_open_linux_r" prefix_auto="1" extension_auto="1" />
+				<Option output="../Release/Freespace2/lib/fs2_open_3_7_1" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../Release/Freespace2/obj/" />
 				<Option type="0" />
 				<Option compiler="gcc" />

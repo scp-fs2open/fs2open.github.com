@@ -100,7 +100,7 @@ typedef struct main_hall_defines {
 	// region descriptions ----------------
 
 	// text (tooltip) description
-	SCP_vector<char*> region_descript;
+	SCP_vector<const char*> region_descript;
 
 	// y coord of where to draw tooltip text
 	int region_yval;
@@ -116,7 +116,7 @@ void main_hall_init(SCP_string main_hall_name);
 void main_hall_table_init();
 
 // read in mainhall tables
-void parse_main_hall_table(char* filename);
+void parse_main_hall_table(const char* filename);
 
 // do a frame for the main hall
 void main_hall_do(float frametime);

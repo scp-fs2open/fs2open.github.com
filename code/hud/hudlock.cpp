@@ -64,9 +64,7 @@ int Lock_gauge_half_h[GR_NUM_RESOLUTIONS] = {
 	25
 };
 
-// hud_frames Lock_gauge;
 int Lock_gauge_loaded = 0;
-hud_anim Lock_gauge;
 int Lock_gauge_draw = 0;
 int Lock_gauge_draw_stamp = -1;
 #define LOCK_GAUGE_BLINK_RATE			5			// blinks/sec
@@ -79,7 +77,6 @@ int Lockspin_half_h[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
 	{ 16, 26 },
 	{ 32, 52 }
 };
-hud_anim	Lock_anim;
 
 char Lock_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
 {
@@ -299,12 +296,17 @@ void hud_lock_reset(float lock_time_scale)
 	ship_weapon	*swp;
 
 	swp = &Player_ship->weapons;
-	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+    
+	if (swp->current_secondary_bank > 0) {
+		wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+		Player->lock_time_to_target = i2fl(wip->min_lock_time*lock_time_scale);
+	} else {
+		Player->lock_time_to_target = 0.0f;
+	}
 
 	Player_ai->current_target_is_locked = 0;
 	Players[Player_num].lock_indicator_visible = 0;
 	Player->target_in_lock_cone = 0;
-	Player->lock_time_to_target = i2fl(wip->min_lock_time*lock_time_scale);
 	Player->current_target_sx = -1;
 	Player->current_target_sy = -1;
 	Player->locking_subsys=NULL;
@@ -316,7 +318,7 @@ void hud_lock_reset(float lock_time_scale)
 	Lock_gauge_draw = 0;
 
 	// reset the lock anim time elapsed
-	Lock_anim.time_elapsed = 0.0f;
+//	Lock_anim.time_elapsed = 0.0f;
 }
 
 // Determine if the locking code has a point to track

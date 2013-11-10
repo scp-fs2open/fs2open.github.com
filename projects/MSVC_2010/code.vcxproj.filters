@@ -327,6 +327,9 @@
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
+	<ClCompile Include="..\..\code\globalincs\profiling.cpp">
+      <Filter>GlobalIncs</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\code\globalincs\safe_strings.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>

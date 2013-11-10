@@ -185,10 +185,15 @@ EXTRA_DIST =	\
 
 # D_ variants are defaults and should always be used
 # FS2_ variants are for game building and wxFRED
-AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@
+AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@ -I../mongoose
 AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 
-noinst_LIBRARIES = libcode.a
+if BUILD_WXFRED
+LIBCODE=
+else
+LIBCODE=libcode.a
+endif
+noinst_LIBRARIES = $(LIBCODE)
 bin_PROGRAMS = @FS2_BINARY@
 
 EXTRA_PROGRAMS = fs2_open_@PACKAGE_VERSION@ \
@@ -294,6 +299,7 @@ FS2_SOURCES =	\
 	globalincs/fsmemory.h	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
+	globalincs/profiling.cpp	\
 	globalincs/pstypes.h	\
 	globalincs/safe_strings.cpp	\
 	globalincs/safe_strings.h	\
@@ -812,8 +818,8 @@ fs2_open_@PACKAGE_VERSION@_DEBUG_SOURCES =	\
 fs2_open_@PACKAGE_VERSION@_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a
-fs2_open_@PACKAGE_VERSION@_LDADD = libcode.a
+fs2_open_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a ../mongoose/libmongoose.a
+fs2_open_@PACKAGE_VERSION@_LDADD = libcode.a ../mongoose/libmongoose.a
 
 ##
 ## End MAIN binary
@@ -826,21 +832,85 @@ fs2_open_@PACKAGE_VERSION@_LDADD = libcode.a
 ##
 
 wxFRED_SOURCES = \
-	wxfred2/wxfred2.cpp	\
-	wxfred2/wxfred2.h	\
-	wxfred2/fredframe.cpp	\
-	wxfred2/fredframe.h	\
-	wxfred2/wxfred_xrc.cpp	\
-	wxfred2/wxfred_xrc.h
+	wxfred2/res/select.png.h \
+	wxfred2/res/constz.png.h \
+	wxfred2/res/constx.png.h \
+	wxfred2/res/selectrot.png.h \
+	wxfred2/res/constyz.png.h \
+	wxfred2/res/constxy.png.h \
+	wxfred2/res/wingform.png.h \
+	wxfred2/res/zoomsel.png.h \
+	wxfred2/res/constxz.png.h \
+	wxfred2/res/consty.png.h \
+	wxfred2/res/wingdisband.png.h \
+	wxfred2/res/showdist.png.h \
+	wxfred2/res/orbitsel.png.h \
+	wxfred2/res/zoomext.png.h \
+	wxfred2/res/rotlocal.png.h \
+	wxfred2/res/selectmove.png.h \
+	wxfred2/res/selectlock.png.h \
+	wxfred2/res/selectlist.png.h \
+	wxfred2/base/wxfred_base.h \
+	wxfred2/base/wxfred_base.cpp \
+	wxfred2/editors/dlgobjecteditor.h \
+	wxfred2/editors/dlgobjecteditor.cpp \
+	wxfred2/editors/dlgvoiceactingmanager.h \
+	wxfred2/editors/frmdebriefingeditor.h \
+	wxfred2/editors/dlgbackgroundeditor.cpp \
+	wxfred2/editors/dlgmissionobjectiveseditor.cpp \
+	wxfred2/editors/frmbriefingeditor.cpp \
+	wxfred2/editors/frmteamloadouteditor.h \
+	wxfred2/editors/dlgmissionobjectiveseditor.h \
+	wxfred2/editors/dlgmissionspecseditor.h \
+	wxfred2/editors/frmdebriefingeditor.cpp \
+	wxfred2/editors/dlgfictionviewer.cpp \
+	wxfred2/editors/dlgvoiceactingmanager.cpp \
+	wxfred2/editors/dlgsoundenvironment.cpp \
+	wxfred2/editors/frmcommandbriefingeditor.cpp \
+	wxfred2/editors/frmbriefingeditor.h \
+	wxfred2/editors/dlgshieldsystemeditor.h \
+	wxfred2/editors/dlgreinforcementseditor.h \
+	wxfred2/editors/dlgeventseditor.h \
+	wxfred2/editors/frmteamloadouteditor.cpp \
+	wxfred2/editors/frmcommandbriefingeditor.h \
+	wxfred2/editors/frmwaypointeditor.h \
+	wxfred2/editors/dlgasteroidfieldeditor.h \
+	wxfred2/editors/dlgsetglobalshipflagseditor.cpp \
+	wxfred2/editors/dlgshieldsystemeditor.cpp \
+	wxfred2/editors/frmshipseditor.h \
+	wxfred2/editors/dlgfictionviewer.h \
+	wxfred2/editors/dlgreinforcementspicker.cpp \
+	wxfred2/editors/frmcampaigneditor.cpp \
+	wxfred2/editors/dlgasteroidfieldeditor.cpp \
+	wxfred2/editors/dlgreinforcementspicker.h \
+	wxfred2/editors/dlgreinforcementseditor.cpp \
+	wxfred2/editors/frmcampaigneditor.h \
+	wxfred2/editors/dlgbackgroundeditor.h \
+	wxfred2/editors/frmshipseditor.cpp \
+	wxfred2/editors/dlgeventseditor.cpp \
+	wxfred2/editors/dlgsetglobalshipflagseditor.h \
+	wxfred2/editors/frmwingeditor.h \
+	wxfred2/editors/frmwingeditor.cpp \
+	wxfred2/editors/frmwaypointeditor.cpp \
+	wxfred2/editors/dlgsoundenvironment.h \
+	wxfred2/editors/dlgmissionspecseditor.cpp \
+	wxfred2/glcviewport.h \
+	wxfred2/misc/dlgmissionstats.h \
+	wxfred2/misc/dlgmissionstats.cpp \
+	wxfred2/wxfred2.cpp \
+	wxfred2/wxfred2.h \
+	wxfred2/help/dlgsexphelp.h \
+	wxfred2/help/dlgsexphelp.cpp \
+	wxfred2/help/dlgaboutbox.h \
+	wxfred2/help/dlgaboutbox.cpp \
+	wxfred2/frmfred2.h \
+	wxfred2/frmfred2.cpp
 
 wxFRED2_@PACKAGE_VERSION@_DEBUG_SOURCES = \
 	${wxFRED_SOURCES}
 
 wxFRED2_@PACKAGE_VERSION@_SOURCES =	\
 	${wxFRED_SOURCES}
-
-wxFRED2_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a
-wxFRED2_@PACKAGE_VERSION@_LDADD = libcode.a
 
 ##
 ## End wxFRED2 binary

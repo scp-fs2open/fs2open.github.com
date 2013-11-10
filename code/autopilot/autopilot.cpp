@@ -209,7 +209,7 @@ bool CanAutopilot(vec3d targetPos, bool send_msg)
 
 	// check for support ships
 	// cannot autopilot if support ship present
-	if ( ship_find_repair_ship(Player_obj) != NULL ) {
+	if ( ship_find_repair_ship(Player_obj) != 0 ) {
 		if (send_msg)
 			send_autopilot_msgID(NP_MSG_FAIL_SUPPORT_PRESENT);
 		return false;
@@ -231,32 +231,43 @@ bool StartAutopilot()
 {
 	// Check for support ship and dismiss it if it is not doing anything.
 	// If the support ship is doing something then tell the user such.
-	bool done = false;
-	while (!done) {
-		object* support_ship_op = ship_find_repair_ship(Player_obj);
-		if ( support_ship_op == NULL ) {
-			// no more
-			done = true;
-			break;
+	for ( object *objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+	{
+		if ((objp->type == OBJ_SHIP) && !(objp->flags & OF_SHOULD_BE_DEAD))
+		{
+			Assertion((objp->instance >= 0) && (objp->instance < MAX_SHIPS),
+				"objp does not have a valid pointer to a ship. Pointer is %d, which is smaller than 0 or bigger than %d",
+				objp->instance, MAX_SHIPS);
+			ship *shipp = &Ships[objp->instance];
+
+			if (shipp->team != Player_ship->team)
+				continue;
+
+			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < MAX_SHIP_CLASSES),
+				"Ship '%s' does not have a valid pointer to a ship class. Pointer is %d, which is smaller than 0 or bigger than %d",
+				shipp->ship_name, shipp->ship_info_index, MAX_SHIP_CLASSES);
+			ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+			if ( !(sip->flags & SIF_SUPPORT) )
+				continue;
+
+			// don't deal with dying or departing support ships
+			if ( shipp->flags & (SF_DYING | SF_DEPARTING) )
+				continue;
+
+			Assert(shipp->ai_index != -1);
+			ai_info* support_ship_aip = &(Ai_info[Ships[objp->instance].ai_index]);
+
+			// is support ship trying to rearm-repair
+			if ( ai_find_goal_index( support_ship_aip->goals, AI_GOAL_REARM_REPAIR ) == -1 ) {
+				// no, so tell it to depart
+				ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WARP, -1, NULL, support_ship_aip );
+			} else {
+				// yes
+				send_autopilot_msgID(NP_MSG_FAIL_SUPPORT_WORKING);
+				return false;
+			}
 		}
-
-		Assert( support_ship_op->type == OBJ_SHIP );
-		Assert( support_ship_op->instance >= 0 );
-		Assert( support_ship_op->instance < MAX_SHIPS );
-		Assert( Ships[support_ship_op->instance].ai_index != -1 );
-
-		ai_info* support_ship_aip = &(Ai_info[Ships[support_ship_op->instance].ai_index]);
-
-		// is support ship trying to rearm-repair
-		if ( ai_find_goal_index( support_ship_aip->goals, AI_GOAL_REARM_REPAIR ) == -1 ) {
-			// no, so tell it to depart
-			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WARP, -1, NULL, support_ship_aip );
-		} else {
-			// yes
-			send_autopilot_msgID(NP_MSG_FAIL_SUPPORT_WORKING);
-			return false;
-		}
-
 	}
 	if (!CanAutopilot())
 		return false;
@@ -1201,7 +1212,7 @@ void NavSystem_Do()
 
 void send_autopilot_msgID(int msgid)
 {
-	if (msgid < 0 || msgid > NP_NUM_MESSAGES)
+	if (msgid < 0 || msgid >= NP_NUM_MESSAGES)
 		return;
 
 	send_autopilot_msg(NavMsgs[msgid].message, NavMsgs[msgid].filename);
@@ -1240,7 +1251,9 @@ void send_autopilot_msg(char *msg, char *snd)
 // Inits the Nav System
 void NavSystem_Init()
 {
-	memset((char *)&Navs, 0, sizeof(Navs));
+	for (int i = 0; i < MAX_NAVPOINTS; i++)
+		Navs[i].clear();
+
 	AutoPilotEngaged = false;
 	CurrentNav = -1;
 	audio_handle = -1;
@@ -1344,13 +1357,6 @@ int FindNav(char *Nav)
 }
 
 // ********************************************************************************************
-// Set A Nav point to "ZERO"
-void ZeroNav(int i)
-{
-	memset((char *)&Navs[i], 0, sizeof(NavPoint));
-}
-
-// ********************************************************************************************
 // Removes a Nav
 bool DelNavPoint(char *Nav)
 {
@@ -1359,7 +1365,6 @@ bool DelNavPoint(char *Nav)
 	return DelNavPoint(n);
 
 }
-
 
 bool DelNavPoint(int nav)
 {	
@@ -1373,7 +1378,7 @@ bool DelNavPoint(int nav)
 			}
 
 		}
-		ZeroNav(MAX_NAVPOINTS-1);
+		Navs[MAX_NAVPOINTS-1].clear();
 		return true;
 	}
 
@@ -1401,7 +1406,7 @@ bool AddNav_Ship(char *Nav, char *TargetName, int flags)
 	// Create the NavPoint struct
 	NavPoint tnav;
 
-	strncpy(tnav.m_NavName, Nav, 32);
+	strcpy_s(tnav.m_NavName, Nav);
 	tnav.flags = NP_SHIP | flags;
 
 	Assert(!(tnav.flags & NP_WAYPOINT));
@@ -1447,7 +1452,7 @@ bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
 	// Create the NavPoint struct
 	NavPoint tnav;
 
-	strncpy(tnav.m_NavName, Nav, TOKEN_LENGTH);
+	strcpy_s(tnav.m_NavName, Nav);
 	tnav.flags = NP_WAYPOINT | flags;
 
 	Assert(!(tnav.flags & NP_SHIP));

@@ -37,7 +37,7 @@ char *fs2_open_credit_text =
 	"\n"
 	"Project Leaders:\n"
 	"\n"
-	"Cliff \"chief1983\" Gordon"
+	"Cliff \"chief1983\" Gordon\n"
 	"\n"
 	"Senior Advisors:\n"
 	"\n"
@@ -102,7 +102,7 @@ char *fs2_open_credit_text =
 	"Ogg Vorbis - (C) 2005, Xiph.Org Foundation\n"
 	"JPEG - Independent JPEG Group, (C) 1991-1998, Thomas G. Lane\n"
 	"libpng - Copyright (C) 1998-2010 Glenn Randers-Pehrson\n"
-	"liblua - Copyright (C) 1994–2008 Lua.org, PUC-Rio\n"
+	"liblua - Copyright (C) 1994-2008 Lua.org, PUC-Rio\n"
 	"zlib - Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler\n"
 	"FXAA - Copyright (c) 2010 NVIDIA Corporation. All rights reserved.\n"
 	"\n"
@@ -113,7 +113,7 @@ char *unmodified_credits = "ORIGINAL VOLITION STAFF:\n\n\n";
 char *mod_check = "Design:";
 
 #define NUM_BUTTONS				5
-#define NUM_IMAGES				46
+#define DEFAULT_NUM_IMAGES		46
 
 #define TECH_DATABASE_BUTTON	0
 #define SIMULATOR_BUTTON		1
@@ -200,8 +200,10 @@ static int	Credits_music_begin_timestamp;
 static int	Credits_frametime;		// frametime of credits_do_frame() loop in ms
 static int	Credits_last_time;		// timestamp used to calc frametime (in ms)
 static float Credits_counter;
+
+static int Credits_num_images;
 static int Credits_artwork_index;
-static int Credits_bmps[NUM_IMAGES];
+static SCP_vector<int> Credits_bmps;
 
 // Positions for credits...
 float Credit_start_pos, Credit_stop_pos, Credit_position = 0.0f;
@@ -281,7 +283,7 @@ int credits_screen_button_pressed(int n)
 	return 0;
 }
 
-void credits_parse_table(char* filename)
+void credits_parse_table(const char* filename)
 {
 	int rval;
 
@@ -299,6 +301,13 @@ void credits_parse_table(char* filename)
 	{
 		stuff_string(Credits_music_name, F_NAME, NAME_LENGTH);
 	}
+	if (optional_string("$Number of Images:"))
+	{
+		int temp;
+		stuff_int(&temp);
+		if (temp > 0)
+			Credits_num_images = temp;
+	}
 	if (optional_string("$Start Image Index:"))
 	{
 		stuff_int(&Credits_artwork_index);
@@ -308,9 +317,9 @@ void credits_parse_table(char* filename)
 		{
 			Credits_artwork_index = 0;
 		}
-		else if (Credits_artwork_index >= NUM_IMAGES)
+		else if (Credits_artwork_index >= Credits_num_images)
 		{
-			Credits_artwork_index = NUM_IMAGES - 1;
+			Credits_artwork_index = Credits_num_images - 1;
 		}
 	}
 	if (optional_string("$Text scroll rate:"))
@@ -424,15 +433,22 @@ void credits_init()
 	int i;
 	credits_screen_buttons *b;
 
-	// this is moved up here so we can override it if desired
-	Credits_artwork_index = rand() % NUM_IMAGES;
+	// pre-initialize
+	Credits_num_images = DEFAULT_NUM_IMAGES;
+	Credits_artwork_index = -1;
 
-	// ditto
+	// this is moved up here so we can override it if desired
 	strcpy_s(Credits_music_name, "Cinema");
 
 	// parse credits early so as to set up any overrides (for music and such)
 	Credits_parsed = false;
 	credits_parse();
+
+	// we could conceivably have specified a number of images but not an index,
+	// so if that's the case, set the value here
+	if (Credits_artwork_index < 0) {
+		Credits_artwork_index = rand() % Credits_num_images;
+	}
 
 	int credits_spooled_music_index = event_music_get_spooled_music_index(Credits_music_name);	
 	if(credits_spooled_music_index != -1){
@@ -628,7 +644,9 @@ void credits_init()
 	Buttons[EXIT_BUTTON][gr_screen.res].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
 
 	Background_bitmap = bm_load(Credits_bitmap_fname[gr_screen.res]);
-	for (i=0; i<NUM_IMAGES; i++){
+
+	Credits_bmps.resize(Credits_num_images);
+	for (i=0; i<Credits_num_images; i++) {
 		Credits_bmps[i] = -1;
 	}
 }
@@ -637,12 +655,12 @@ void credits_close()
 {	
 	int i;
 
-	for (i=0; i<NUM_IMAGES; i++){
-		if (Credits_bmps[i] >= 0){
+	for (i=0; i<Credits_num_images; i++) {
+		if (Credits_bmps[i] >= 0) {
 			bm_release(Credits_bmps[i]);
-			Credits_bmps[i] = -1;
 		}
-	}	
+	}
+	Credits_bmps.clear();
 
 	credits_stop_music();
 
@@ -713,7 +731,7 @@ void credits_do_frame(float frametime)
 	}
 
 	next = Credits_artwork_index + 1;
-	if (next >= NUM_IMAGES){
+	if (next >= Credits_num_images){
 		next = 0;
 	}
 
@@ -732,7 +750,7 @@ void credits_do_frame(float frametime)
 		char buf[40];
 
 		if (gr_screen.res == GR_1024) {
-			sprintf(buf, NOX("2_CrIm%.2d"), Credits_artwork_index);
+			sprintf(buf, NOX("2_CrIm%.2d"), next);
 		} else {
 			sprintf(buf, NOX("CrIm%.2d"), next);
 		}

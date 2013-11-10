@@ -12,6 +12,13 @@
 #ifndef _FREESPACE_STANDALONE_GUI_HEADER_FILE
 #define _FREESPACE_STANDALONE_GUI_HEADER_FILE
 
+#include "network/multi.h"
+#include "network/multi_options.h"
+
+#ifndef _WIN32
+	void std_configLoaded(multi_global_options *options);
+#endif
+
 // ----------------------------------------------------------------------------------------
 // external variables
 //
@@ -199,7 +206,7 @@ void std_tracker_login();
 void std_reset_timestamps();
 
 // add a line of text chat to the standalone
-void std_add_chat_text(char *text,int player_index,int add_id);
+void std_add_chat_text(const char *text,int player_index,int add_id);
 
 // if the standalone is host password protected
 int std_is_host_passwd();
@@ -208,10 +215,10 @@ int std_is_host_passwd();
 void std_mutate_sheet();
 
 // if the given callsign is banned from the server
-int std_player_is_banned(char *name);
+int std_player_is_banned(const char *name);
 
 // add a callsign to the ban list
-void std_add_ban(char *name);
+void std_add_ban(const char *name);
 
 
 #endif

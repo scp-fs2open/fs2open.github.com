@@ -154,6 +154,11 @@ extern char Default_campaign_file_name[MAX_FILENAME_LEN - 4];
 // if the campaign file is missing this will get set for us to check against
 extern int Campaign_file_missing;
 
+/*
+ * initialise Player_loadout with default values
+ */
+void player_loadout_init();
+
 // called at game startup time to load the default single player campaign
 void mission_campaign_init( void );
 
@@ -217,10 +222,10 @@ void campaign_delete_save( char *cfn, char *pname);
 void campaign_savefile_load(char *fname, char *pname);
 
 // get name and type of specified campaign file
-int mission_campaign_get_info(char *filename, char *name, int *type, int *max_players, char **desc = NULL);
+int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc = NULL);
 
 // get a listing of missions in a campaign
-int mission_campaign_get_mission_list(char *filename, char **list, int max);
+int mission_campaign_get_mission_list(const char *filename, char **list, int max);
 
 // load up a campaign for the current player.
 int mission_load_up_campaign( player *p = NULL );

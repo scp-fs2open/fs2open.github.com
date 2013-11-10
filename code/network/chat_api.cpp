@@ -300,9 +300,9 @@ char * GetChatText()
 }
 
 /**
- * Send a string to be sent as chat, or scanned for messages (/msg <user> string)
+ * Send a string to be sent as chat, or scanned for messages (/msg \<user\> string)
  */
-char * SendChatString(char *line,int raw)
+const char * SendChatString(const char *line,int raw)
 {
 	char szCmd[200];
 	char szTarget[50];
@@ -522,7 +522,7 @@ char *ChatGetString(void)
 }
 
 
-char * GetWordNum(int num, char * l_String)
+char * GetWordNum(int num, const char * l_String)
 {
 	static char strreturn[600];
 	static char ptokstr[600];

@@ -17,14 +17,14 @@
 
 struct net_player;
 struct net_addr;
-struct object;
-struct ship;
+class object;
+class ship;
 struct wing;
 struct join_request;
 struct button_info;
 struct header;
 struct beam_info;
-struct ship_subsys;
+class ship_subsys;
 
 // macros for building up packets -- to save on time and typing.  Important to note that local variables
 // must be named correctly
@@ -246,7 +246,7 @@ void send_join_packet(net_addr* addr,join_request *jr);
 void send_accept_packet(int new_player_num, int code, int ingame_join_team = -1);
 
 // send a general game chat packet (if msg_mode == MULTI_MSG_TARGET, need to pass in "to", if == MULTI_MSG_EXPR, need to pass in expr)
-void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player *to = NULL,char *expr = NULL,int server_msg = 0);
+void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to = NULL, const char *expr = NULL,int server_msg = 0);
 
 // send a game information update
 void send_game_info_packet( void );

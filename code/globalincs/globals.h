@@ -78,10 +78,6 @@
 
 #define MAX_POLYGON_MODELS  300
 
-#define MAX_MEDALS			18
-#define NUM_MEDALS_FS1		16
-extern int Num_medals;
-
 // object.h
 #define MAX_OBJECTS			3500		
 

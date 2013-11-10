@@ -982,9 +982,7 @@ void game_level_init(int seed)
 	batch_reset();
 
 	// Initialize the game subsystems
-	if(!Is_standalone){
-		game_reset_time();			// resets time, and resets saved time too
-	}
+	game_reset_time();			// resets time, and resets saved time too
 
 	Multi_ping_timestamp = -1;
 
@@ -1687,7 +1685,7 @@ char full_path[1024];
 void game_init()
 {
 	int s1, e1;
-	char *ptr;
+	const char *ptr;
 	char whee[MAX_PATH_LEN];
 
 	Game_current_mission_filename[0] = 0;
@@ -1707,6 +1705,10 @@ void game_init()
 
 	// Initialize the timer before the os
 	timer_init();
+    
+#ifndef NDEBUG
+	outwnd_init(1);
+#endif
 
 	// init os stuff next
 	if ( !Is_standalone ) {		
@@ -1724,23 +1726,12 @@ void game_init()
 	cmdline_debug_print_cmdline();
 #endif
 
-#ifdef APPLE_APP
-	// some OSX hackery to drop us out of the APP the binary is run from
-	char *c = NULL;
-	c = strstr(full_path, ".app");
-	if ( c != NULL ) {
-		while (c && (*c != '/'))
-			c--;
-
-		*c = '\0';
-	}
-	strncpy(whee, full_path, MAX_PATH_LEN-1);
-#else
 	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
-#endif
+
 	strcat_s(whee, DIR_SEPARATOR_STR);
 	strcat_s(whee, EXE_FNAME);
 
+	profile_init();
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
 
@@ -1753,6 +1744,8 @@ void game_init()
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
+
+	mod_table_init();		// load in all the mod dependent settings
 
 	if (Is_standalone) {
 		// force off some cmdlines if they are on
@@ -1856,8 +1849,6 @@ void game_init()
 	// D3D's gamma system now works differently. 1.0 is the default value
 	ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
 	FreeSpace_gamma = (float)atof(ptr);
-
-	mod_table_init();		// load in all the mod dependent settings
 
 	script_init();			//WMC
 
@@ -2119,13 +2110,19 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate)	{
+	if (Show_framerate || Cmdline_frame_profile)	{
 		gr_set_color_fast(&HUD_color_debug);
 
-		if (frametotal != 0.0f)
-			gr_printf( 20, 100, "FPS: %0.1f", Framerate );
-		else
-			gr_string( 20, 100, "FPS: ?" );
+		if (Cmdline_frame_profile) {
+			gr_string(20, 110, profile_output);
+		}
+
+		if (Show_framerate) {
+			if (frametotal != 0.0f)
+				gr_printf( 20, 100, "FPS: %0.1f", Framerate );
+			else
+				gr_string( 20, 100, "FPS: ?" );
+		}
 	}
 
 #ifndef NDEBUG
@@ -3442,15 +3439,17 @@ camid game_render_frame_setup()
 			} else if ( Viewer_mode & VM_CHASE ) {
 				vec3d	move_dir;
 				vec3d aim_pt;
-								
 				
-
 				if ( Viewer_obj->phys_info.speed < 62.5f )
 					move_dir = Viewer_obj->phys_info.vel;
 				else {
 					move_dir = Viewer_obj->phys_info.vel;
 					vm_vec_scale(&move_dir, (62.5f/Viewer_obj->phys_info.speed));
 				}
+
+				vec3d tmp_up;
+				matrix eyemat;
+				ship_get_eye(&tmp_up, &eyemat, Viewer_obj, false, false);
 
 				//create a better 3rd person view if this is the player ship
 				if (Viewer_obj==Player_obj)
@@ -3460,16 +3459,16 @@ camid game_render_frame_setup()
 					vm_vec_add2(&aim_pt,&Viewer_obj->pos);
 
 					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.125f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.625f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -2.125f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.625f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
 					vm_vec_sub(&tmp_dir, &aim_pt, &eye_pos);
 					vm_vec_normalize(&tmp_dir);
 				}
 				else
 				{
 					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.5f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -2.5f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.75f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
 					vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
 					vm_vec_normalize(&tmp_dir);
 				}
@@ -3480,8 +3479,8 @@ camid game_render_frame_setup()
 				// call because the up and the forward vector are the same.   I fixed
 				// it by adding in a fraction of the right vector all the time to the
 				// up vector.
-				vec3d tmp_up = Viewer_obj->orient.vec.uvec;
-				vm_vec_scale_add2( &tmp_up, &Viewer_obj->orient.vec.rvec, 0.00001f );
+				tmp_up = eyemat.vec.uvec;
+				vm_vec_scale_add2( &tmp_up, &eyemat.vec.rvec, 0.00001f );
 
 				vm_vector_2_matrix(&eye_orient, &tmp_dir, &tmp_up, NULL);
 				Viewer_obj = NULL;
@@ -3639,7 +3638,9 @@ void game_render_frame( camid cid )
 	//if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW))) {
 	render_shields();
 	//}
-	particle_render_all();					// render particles after everything else.
+
+	PROFILE("Particles", particle_render_all());					// render particles after everything else.
+	
 #ifdef DYN_CLIP_DIST
 	if(!Cmdline_nohtl)
 	{
@@ -3651,7 +3652,8 @@ void game_render_frame( camid cid )
 #endif
 
 	beam_render_all();						// render all beam weapons
-	trail_render_all();						// render missilie trails after everything else.	
+	
+	PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.	
 
 	// render nebula lightning
 	nebl_render_all();
@@ -3996,7 +3998,7 @@ void game_simulation_frame()
 		}
 		
 		// move all the objects now
-		obj_move_all(flFrametime);
+		PROFILE("Move Objects - Master", obj_move_all(flFrametime));
 
 		mission_eval_goals();
 	}
@@ -4015,7 +4017,7 @@ void game_simulation_frame()
 		}
 
 		// move all objects - does interpolation now as well
-		obj_move_all(flFrametime);
+		PROFILE("Move Objects - Client", obj_move_all(flFrametime));
 
 
 	}
@@ -4038,10 +4040,10 @@ void game_simulation_frame()
 
 		if (!physics_paused)	{
 			// Move particle system
-			particle_move_all(flFrametime);	
+			PROFILE("Move Particles", particle_move_all(flFrametime));	
 
 			// Move missile trails
-			trail_move_all(flFrametime);		
+			PROFILE("Move Trails", trail_move_all(flFrametime));		
 
 			// Flash the gun flashes
 			shipfx_flash_do_frame(flFrametime);			
@@ -4330,6 +4332,7 @@ void game_frame(bool paused)
 #endif
 	// start timing frame
 	timing_frame_start();
+	profile_begin("Main Frame");
 
 	DEBUG_GET_TIME( total_time1 )
 
@@ -4388,8 +4391,7 @@ void game_frame(bool paused)
 			return;
 		}
 		
-		
-		game_simulation_frame(); 
+		PROFILE("Simulation", game_simulation_frame()); 
 		
 		// if not actually in a game play state, then return.  This condition could only be true in 
 		// a multiplayer game.
@@ -4418,7 +4420,8 @@ void game_frame(bool paused)
 			DEBUG_GET_TIME( render3_time1 )
 			
 			camid cid = game_render_frame_setup();
-			game_render_frame( cid );
+
+			PROFILE("Render", game_render_frame( cid ));
 			
 			//Cutscene bars
 			clip_frame_view();
@@ -4501,7 +4504,7 @@ void game_frame(bool paused)
 			// If a regular popup is active, don't flip (popup code flips)
 			if( !popup_running_state() ){
 				DEBUG_GET_TIME( flip_time1 )
-				game_flip_page_and_time_it();
+				PROFILE("Page Flip", game_flip_page_and_time_it());
 				DEBUG_GET_TIME( flip_time2 )
 			}
 
@@ -4518,6 +4521,9 @@ void game_frame(bool paused)
 
 	// process lightning (nebula only)
 	nebl_process();
+
+	profile_end("Main Frame");
+	profile_dump_output();
 
 	DEBUG_GET_TIME( total_time2 )
 
@@ -5479,7 +5485,7 @@ void game_leave_state( int old_state, int new_state )
 
 	//WMC - Scripting override
 	/*
-	if(GS_state_hooks[old_state].IsValid() && Script_system.IsOverride(GS_state_hooks[old_state])) {
+	if(script_hook_valid(&GS_state_hooks[old_state]) && Script_system.IsOverride(GS_state_hooks[old_state])) {
 		return;
 	}
 	*/
@@ -5540,9 +5546,10 @@ void game_leave_state( int old_state, int new_state )
 
 			} else {
 				cmd_brief_close();
-				if (new_state == GS_STATE_MAIN_MENU)
+				common_select_close();
+				if (new_state == GS_STATE_MAIN_MENU) {
 					freespace_stop_mission();	
-					common_select_close();
+				}
 			}
 			break;
 
@@ -5867,7 +5874,7 @@ void game_enter_state( int old_state, int new_state )
 {
 	//WMC - Scripting override
 	/*
-	if(GS_state_hooks[new_state].IsValid() && Script_system.IsOverride(GS_state_hooks[new_state])) {
+	if(script_hook_valid(&GS_state_hooks[new_state]) && Script_system.IsOverride(GS_state_hooks[new_state])) {
 		return;
 	}
 	*/
@@ -6687,7 +6694,7 @@ void game_do_state(int state)
 
 		case GS_STATE_LOOP_BRIEF:
 			game_set_frametime(GS_STATE_LOOP_BRIEF);
-			loop_brief_do();
+			loop_brief_do(flFrametime);
 			break;
 
 		case GS_STATE_FICTION_VIEWER:
@@ -6973,7 +6980,7 @@ int game_main(char *cmdline)
 
 
 	if (Is_standalone){
-		nprintf(("Network", "Standalone running"));
+		nprintf(("Network", "Standalone running\n"));
 	}
 
 
@@ -7896,7 +7903,7 @@ void Do_model_timings_test()
 // Call this function when you want to inform the player that a feature is disabled in this build
 void game_feature_disabled_popup()
 {
-	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, the requested feature is currently disabled in this build", -1));
+	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, the requested feature is currently disabled in this build", 1621));
 }
 
 // format the specified time (fixed point) into a nice string
@@ -8089,7 +8096,7 @@ int find_freespace_cd(char *volume_name)
 	_finddata_t find;
 	int find_handle;
 
-	GetCurrentDirectory(MAX_PATH, oldpath);
+	GetCurrentDirectory(MAX_PATH-1, oldpath);
 
 	for (i = 0; i < 26; i++) 
 	{
@@ -8391,14 +8398,6 @@ int game_do_cd_check_specific(char *volume_name, int cdnum)
 // Language autodetection stuff
 //
 
-// this layout *must* match Lcl_languages in localize.cpp in order for the
-// correct language to be detected
-int Lang_auto_detect_checksums[LCL_NUM_LANGUAGES] = {
-	589986744,						// English
-	-1132430286,					// German
-	0,								// French
-};
-
 // default setting is "-1" to use registry setting with English as fall back
 // DO NOT change that default setting here or something uncouth might happen
 // in the localization code
@@ -8428,8 +8427,8 @@ int detect_lang()
 	detect = NULL;
 
 	// now compare the checksum/filesize against known #'s
-	for (idx=0; idx<LCL_NUM_LANGUAGES; idx++) {
-		if (Lang_auto_detect_checksums[idx] == (int)file_checksum) {
+	for (idx=0; idx < (int)Lcl_languages.size(); idx++) {
+		if (Lcl_languages[idx].checksum == (int)file_checksum) {
 			mprintf(( "AutoLang: Language auto-detection successful...\n" ));
 			return idx;
 		}

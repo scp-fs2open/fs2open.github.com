@@ -236,7 +236,7 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0, int n_list_ver
 			Interp_verts = NULL;
 		}
 		// Interp_verts can't be reliably realloc'd so free and malloc it on each resize (no data needs to be carried over)
-		Interp_verts = (vec3d**) vm_malloc( n_verts * sizeof(vec3d) );
+		Interp_verts = (vec3d**) vm_malloc( n_verts * sizeof(vec3d *) );
 
 		Interp_points = (vertex*) vm_realloc( Interp_points, n_verts * sizeof(vertex) );
 		Interp_splode_points = (vertex*) vm_realloc( Interp_splode_points, n_verts * sizeof(vertex) );
@@ -773,11 +773,14 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	if (Interp_warp_bitmap < 0) {
 		if ( (!Interp_thrust_scale_subobj) && (tbase->GetTexture() < 0) ) {
-			// Don't draw invisible polygons.
-			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
-				return;
-			else
-				is_invisible = 1;
+			// Ignore the following if we're drawing in outline mode.  Fixes Mantis #2931.
+			if (!(Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET))) {
+				// Don't draw invisible polygons.
+				if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
+					return;
+				else
+					is_invisible = 1;
+			}
 		}
 	}
 
@@ -2223,7 +2226,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		// set the the necessary submodel instance info needed here. The second
 		// condition is thus a hack to disable the feature while in the lab, and
 		// can be removed if the lab is re-structured accordingly. -zookeeper
-		if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+		if ( shipp && bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
 			model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_num);
 
 			submodel_rotation = true;
@@ -2464,6 +2467,8 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					pe.max_rad = gpt->radius * tp->max_rad;
 					// How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 					pe.normal_variance = tp->variance;
+					pe.min_life = 0.0;
+					pe.max_life = 1.0;
 
 					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
@@ -2485,6 +2490,10 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 
 	for (i = 0; i < pm->n_glow_point_banks; i++ ) {
 		glow_point_bank *bank = &pm->glow_point_banks[i];
+
+		//Only continue if there actually is a glowpoint bitmap available
+		if (bank->glow_bitmap == -1)
+			continue;
 
 		if (pm->submodel[bank->submodel_parent].blown_off)
 			continue;
@@ -3375,7 +3384,6 @@ static int submodel_get_points_internal(int model_num, int submodel_num)
 
 	while (chunk_type != OP_EOF)	{
 		switch (chunk_type) {
-		case OP_EOF: return 1;
 		case OP_DEFPOINTS:	{
 				int n;
 				int nverts = w(p+8);				
@@ -3530,7 +3538,6 @@ int submodel_get_num_verts(int model_num, int submodel_num )
 
 	while (chunk_type != OP_EOF)	{
 		switch (chunk_type) {
-		case OP_EOF: return 0;
 		case OP_DEFPOINTS:	{
 				int n=w(p+8);
 				return n;		// Read in 'n' points
@@ -3563,7 +3570,6 @@ int submodel_get_num_polys_sub( ubyte *p )
 	
 	while (chunk_type != OP_EOF)	{
 		switch (chunk_type) {
-		case OP_EOF:			return n;
 		case OP_DEFPOINTS:	break;
 		case OP_FLATPOLY:		n++; break;
 		case OP_TMAPPOLY:		n++; break;
@@ -3990,9 +3996,6 @@ void parse_bsp(int offset, ubyte *bsp_data)
 	while (id != 0) {
 		switch (id)
 		{
-			case OP_EOF:	
-				return;
-
 			case OP_DEFPOINTS:
 				parse_defpoint(offset, bsp_data);
 				break;
@@ -4084,9 +4087,6 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 	while (id != 0) {
 		switch (id)
 		{
-			case OP_EOF:	
-				return;
-
 			case OP_DEFPOINTS:
 				find_defpoint(offset, bsp_data);
 				break;
@@ -4185,8 +4185,8 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		total_verts += tri_count[i];
 
 		// for the moment we can only support INT_MAX worth of verts per index buffer
-		if (tri_count[i] > INT_MAX) {
-		    Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, tri_count[i], INT_MAX);
+		if (total_verts > INT_MAX) {
+			Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, total_verts, INT_MAX);
 		}
 	}
 
@@ -4660,7 +4660,6 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 				texture_info *spec_map = &tmap->textures[TM_SPECULAR_TYPE];
 				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
-				texture_info *misc_map = &tmap->textures[TM_MISC_TYPE];
 
 				if (Interp_new_replacement_textures != NULL) {
 					if (Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
@@ -4677,18 +4676,23 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 						tex_replace[TM_HEIGHT_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
 						height_map = &tex_replace[TM_HEIGHT_TYPE];
 					}
-
-					if (Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE] >= 0) {
-						tex_replace[TM_MISC_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE]);
-						misc_map = &tex_replace[TM_MISC_TYPE];
-					}
 				}
 
 				SPECMAP = model_interp_get_texture(spec_map, Interp_base_frametime);
 				NORMMAP = model_interp_get_texture(norm_map, Interp_base_frametime);
 				HEIGHTMAP = model_interp_get_texture(height_map, Interp_base_frametime);
-				MISCMAP = model_interp_get_texture(misc_map, Interp_base_frametime);
 			}
+
+			texture_info *misc_map = &tmap->textures[TM_MISC_TYPE];
+
+			if (Interp_new_replacement_textures != NULL) {
+				if (Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE] >= 0) {
+					tex_replace[TM_MISC_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_MISC_TYPE]);
+					misc_map = &tex_replace[TM_MISC_TYPE];
+				}
+			}
+
+			MISCMAP = model_interp_get_texture(misc_map, Interp_base_frametime);
 		} else {
 			alpha = forced_alpha;
 		}
@@ -4749,9 +4753,6 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 	object *obj = &Objects[objnum];
 
-	if (obj == NULL)
-		return 1;
-
 	if (obj->type == OBJ_SHIP) {
 		ship_subsys *ssp;
 		ship *shipp = &Ships[obj->instance];
@@ -4761,7 +4762,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
-		strncpy(subname, sip->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
+		strcpy_s(subname, sip->subsystems[bank_obj].subobj_name);
 
 		ssp = GET_FIRST(&shipp->subsys_list);
 		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
@@ -4973,7 +4974,16 @@ void texture_map::PageOut(bool release)
 		this->textures[i].PageOut(release);
 }
 
-void texture_map::Reset()
+void texture_map::Clear()
+{
+	is_ambient = false;
+	is_transparent = false;
+
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+		this->textures[i].clear();
+}
+
+void texture_map::ResetToOriginal()
 {
 	for(int i = 0; i < TM_NUM_TYPES; i++)
 		this->textures[i].ResetTexture();

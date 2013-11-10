@@ -51,7 +51,7 @@
 
 
 extern int Multi_debrief_stats_accept_code;
-extern void HUD_printf(char *format, ...);
+extern void HUD_printf(const char *format, ...);
 extern int game_hacked_data();
 
 
@@ -251,7 +251,7 @@ void fs2netd_connect()
 	if (Is_standalone) {
 		do { rc = fs2netd_connect_do(); } while (!rc);
 	} else {
-		popup_till_condition(fs2netd_connect_do, XSTR("&Cancel", 779), XSTR("Connecting into FS2NetD", -1));
+		popup_till_condition(fs2netd_connect_do, XSTR("&Cancel", 779), XSTR("Connecting into FS2NetD", 1575));
 	}
 
 	In_process = false;
@@ -264,7 +264,7 @@ int fs2netd_login_do()
 		if ( Is_standalone && std_gen_is_active() ) {
 			std_gen_set_text("Verifying username and password", 1);
 		} else {
-			popup_change_text( XSTR("Verifying username and password", -1) );
+			popup_change_text( XSTR("Verifying username and password", 1576) );
 		}
 
 		memset(Multi_tracker_id_string, 0, sizeof(Multi_tracker_id_string));
@@ -314,7 +314,7 @@ int fs2netd_login_do()
 		if ( Is_standalone && std_gen_is_active() ) {
 			std_gen_set_text("Getting pilot stats", 1);
 		} else {
-			popup_change_text( XSTR("Getting pilot stats", -1) );
+			popup_change_text( XSTR("Getting pilot stats", 1577) );
 		}
 
 		if (Local_timeout == -1) {
@@ -381,7 +381,7 @@ bool fs2netd_login()
 
 	if ( !Is_connected ) {
 		if ( !Is_standalone ) {
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Failed to connect to FS2NetD server!", -1));
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Failed to connect to FS2NetD server!", 1578));
 		} else {
 			std_gen_set_text("Connect FAILED!", 1);
 			Sleep(2000);
@@ -401,7 +401,7 @@ bool fs2netd_login()
 	if (Is_standalone) {
 		do { rc = fs2netd_login_do(); } while (!rc);
 	} else {
-		rc = popup_till_condition(fs2netd_login_do, XSTR("&Cancel", 779), XSTR("Logging into FS2NetD", -1));
+		rc = popup_till_condition(fs2netd_login_do, XSTR("&Cancel", 779), XSTR("Logging into FS2NetD", 1579));
 	}
 
 	In_process = false;
@@ -725,7 +725,7 @@ static void fs2netd_handle_messages()
 
 			case PCKT_SLIST_REPLY: {
 				int numServers = 0;
-				int svr_flags;
+				int svr_flags __attribute__((__unused__)); // gcc [-Wunused-but-set-variable] doesn't like MACROs
 				ushort svr_port;
 				char svr_ip[16];
 				active_game ag;
@@ -980,7 +980,7 @@ bool fs2netd_check_mission(char *mission_name)
 		// failed to send request packet
 		case 3:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request failed!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request failed!",1580));
 			}
 
 			return false;
@@ -988,7 +988,7 @@ bool fs2netd_check_mission(char *mission_name)
 		// it timed out
 		case 4:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request timed out!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request timed out!", 1581));
 			}
 
 			return false;
@@ -1076,15 +1076,15 @@ void fs2netd_store_stats()
 
 	if (Duplicate_login_detected) {
 		Duplicate_login_detected = false;
-		multi_display_chat_msg( XSTR("<Duplicate login detected - stats have been tossed>", -1), 0, 0 );
-		ml_string( XSTR("<Duplicate login detected - stats have been tossed>", -1) );
+		multi_display_chat_msg( XSTR("<Duplicate login detected - stats have been tossed>", 1582), 0, 0 );
+		ml_string( XSTR("<Duplicate login detected - stats have been tossed>", 1583) );
 		fs2netd_store_stats_results();
 		return;
 	}
 
 	if ( game_hacked_data() ) {
-		multi_display_chat_msg( XSTR("<Hacked tables detected - stats have been tossed>", -1), 0, 0 );
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You are playing with a hacked tables, your stats will not be saved", -1) );
+		multi_display_chat_msg( XSTR("<Hacked tables detected - stats have been tossed>", 1584), 0, 0 );
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You are playing with a hacked tables, your stats will not be saved", 1585) );
 		fs2netd_store_stats_results();
 		return;
 	}
@@ -1135,7 +1135,7 @@ void fs2netd_store_stats()
 			break;
 
 		default:
-			multi_display_chat_msg( XSTR("Unknown Stats Store Request Reply", -1), 0, 0 );
+			multi_display_chat_msg( XSTR("Unknown Stats Store Request Reply", 1586), 0, 0 );
 			break;
 	}
 
@@ -1184,7 +1184,7 @@ void fs2netd_update_ban_list()
 	if (Is_standalone) {
 		do { rc = fs2netd_update_ban_list_do(); } while (!rc);
 	} else {
-		rc = popup_till_condition(fs2netd_update_ban_list_do, XSTR("&Cancel", 779), XSTR("Requesting IP ban list", -1));
+		rc = popup_till_condition(fs2netd_update_ban_list_do, XSTR("&Cancel", 779), XSTR("Requesting IP ban list", 1587));
 	}
 
 	In_process = false;
@@ -1383,7 +1383,7 @@ bool fs2netd_get_valid_missions()
 	if (Is_standalone) {
 		do { rc = fs2netd_get_valid_missions_do(); } while (!rc);
 	} else {
-		rc = popup_till_condition(fs2netd_get_valid_missions_do, XSTR("&Cancel", 779), XSTR("Starting mission validation", -1));
+		rc = popup_till_condition(fs2netd_get_valid_missions_do, XSTR("&Cancel", 779), XSTR("Starting mission validation", 1588));
 	}
 
 	In_process = false;
@@ -1399,7 +1399,7 @@ bool fs2netd_get_valid_missions()
 		// timed out
 		case 1:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Mission validation timed out!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Mission validation timed out!", 1589));
 			}
 
 			return false;
@@ -1407,7 +1407,7 @@ bool fs2netd_get_valid_missions()
 		// no missions
 		case 2:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("No missions are available from the server for validation!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("No missions are available from the server for validation!", 1590));
 			}
 
 			return false;
@@ -1415,7 +1415,7 @@ bool fs2netd_get_valid_missions()
 		// out of memory
 		case 3:
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Memory error during mission validation!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Memory error during mission validation!", 1591));
 			}
 
 			return false;
@@ -1491,7 +1491,7 @@ int fs2netd_update_valid_tables()
 	if (Is_standalone) {
 		do { rc = fs2netd_update_valid_tables_do(); } while (!rc);
 	} else {
-		rc = popup_till_condition(fs2netd_update_valid_tables_do, XSTR("&Cancel", 779), XSTR("Starting table validation", -1));
+		rc = popup_till_condition(fs2netd_update_valid_tables_do, XSTR("&Cancel", 779), XSTR("Starting table validation", 1592));
 	}
 
 	In_process = false;
@@ -1505,7 +1505,7 @@ int fs2netd_update_valid_tables()
 		// timed out
 		case 1: {
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Table validation timed out!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Table validation timed out!", 1593));
 			}
 
 			return -1;
@@ -1514,7 +1514,7 @@ int fs2netd_update_valid_tables()
 		// no tables
 		case 2: {
 			if ( !Is_standalone ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("No tables are available from the server for validation!", -1));
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("No tables are available from the server for validation!", 1594));
 			}
 
 			return -1;
@@ -1539,7 +1539,7 @@ int fs2netd_update_valid_tables()
 	return hacked;
 }
 
-void fs2netd_add_table_validation(char *tblname)
+void fs2netd_add_table_validation(const char *tblname)
 {
 	uint chksum = 0;
 
@@ -1560,7 +1560,7 @@ void fs2netd_add_table_validation(char *tblname)
 
 	crc_valid_status tbl_crc;
 
-	strncpy(tbl_crc.name, tblname, NAME_LENGTH);
+	strcpy_s(tbl_crc.name, tblname);
 	tbl_crc.crc32 = chksum;
 	tbl_crc.valid = 0;
 
@@ -1582,9 +1582,6 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 	if (first_call) {
 		new_plr.reset();
 		strncpy( new_plr.callsign, callsign, CALLSIGN_LEN );
-
-		// initialize the stats to default values
-		init_scoring_element( &new_plr.stats );
 
 		out_plr->reset();
 
@@ -1612,7 +1609,7 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 	}
 
 	if (rc == 0) {
-		memcpy( out_plr, &new_plr, sizeof(player) );
+		out_plr->assign(&new_plr);
 		In_process = false;
 		Local_timeout = -1;
 	}
@@ -1637,7 +1634,7 @@ void fs2netd_close()
 	FS2NetD_ban_list.clear();
 }
 
-void fs2netd_update_game_count(char *chan_name)
+void fs2netd_update_game_count(const char *chan_name)
 {
 	if ( !Logged_in ) {
 		return;
@@ -1653,7 +1650,6 @@ void fs2netd_update_game_count(char *chan_name)
 void fs2netd_spew_table_checksums(char *outfile)
 {
 	char full_name[MAX_PATH_LEN];
-	int count;
 	FILE *out = NULL;
 	char description[512] = { 0 };
 	char filename[65] = { 0 };
@@ -1676,7 +1672,7 @@ void fs2netd_spew_table_checksums(char *outfile)
 	p = Cmdline_spew_table_crcs;
 
 	while (*p && (offset < sizeof(description))) {
-		if (*p == '"') {
+		if (*p == '"' && offset < sizeof(description)-1) {
 			description[offset++] = '"';
 			description[offset++] = '"';
 		} else {
@@ -1689,15 +1685,13 @@ void fs2netd_spew_table_checksums(char *outfile)
 	// header
 	fprintf(out, "filename,CRC32,description\r\n");
 
-	count = (int)Table_valid_status.size();
-
 	// do all the checksums
 	for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); ++tvs) {
 		offset = 0;
 		p = tvs->name;
 
 		while (*p && (offset < sizeof(filename))) {
-			if (*p == '"') {
+			if (*p == '"' && offset < sizeof(filename)-1) {
 				filename[offset++] = '"';
 				filename[offset++] = '"';
 			} else {
@@ -1707,7 +1701,11 @@ void fs2netd_spew_table_checksums(char *outfile)
 			p++;
 		}
 
-		filename[offset] = '\0';
+		if (offset < sizeof(filename)) {
+			filename[offset] = '\0';
+		} else {
+			filename[sizeof(filename)-1] = '\0';
+		}
 
 		fprintf(out, "\"%s\",%u,\"%s\"\r\n", filename, tvs->crc32, description);
 	}

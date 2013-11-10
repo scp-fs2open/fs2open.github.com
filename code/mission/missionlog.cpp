@@ -547,7 +547,7 @@ int mission_log_get_count( int type, char *pname, char *sname )
 }
 
 
-void message_log_add_seg(int n, int x, int color, char *text, int flags = 0)
+void message_log_add_seg(int n, int x, int msg_color, const char *text, int flags = 0)
 {
 	log_text_seg *seg, **parent;
 
@@ -561,51 +561,57 @@ void message_log_add_seg(int n, int x, int color, char *text, int flags = 0)
 	seg = (log_text_seg *) vm_malloc(sizeof(log_text_seg));
 	Assert(seg);
 	seg->text = vm_strdup(text);
-	seg->color = color;
+	seg->color = msg_color;
 	seg->x = x;
 	seg->flags = flags;
 	seg->next = NULL;
 	*parent = seg;
 }
 
-void message_log_add_segs(char *text, int color, int flags = 0)
+void message_log_add_segs(const char *source_string, int msg_color, int flags = 0)
 {
-	char *ptr;
+	if (!source_string) {
+		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
+		return;
+	}
+	if (!*source_string) {
+		return;
+	}
+        
 	int w;
 
-	while (1) {
-		if (!text) {
-			mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
-			return;
-		}
-        
+	// duplicate the string so that we can split it without modifying the source
+	char *dup_string = vm_strdup(source_string);
+	char *str = dup_string;
+	char *split = NULL;
+
+	while (true) {
 		if (X == ACTION_X) {
-			while (is_white_space(*text))
-				text++;
+			while (is_white_space(*str))
+				str++;
 		}
         
-		if ( !text[0] ) {
-			return;
-		}
-
 		if (P_width - X < 1)
-			ptr = text;
+			split = str;
 		else
-			ptr = split_str_once(text, P_width - X);
+			split = split_str_once(str, P_width - X);
 
-		if (ptr != text)
-			message_log_add_seg(Num_log_lines, X, color, text, flags);
+		if (split != str)
+			message_log_add_seg(Num_log_lines, X, msg_color, str, flags);
 
-		if (!ptr) {
-			gr_get_string_size(&w, NULL, text);
+		if (!split) {
+			gr_get_string_size(&w, NULL, str);
 			X += w;
-			return;
+			break;
 		}
 
 		Num_log_lines++;
 		X = ACTION_X;
-		text = ptr;
+		str = split;
 	}
+
+	// free the buffer
+	vm_free(dup_string);
 }
 
 void message_log_remove_segs(int n)
@@ -625,9 +631,9 @@ void message_log_remove_segs(int n)
 	Log_lines[n] = NULL;
 }
 
-int message_log_color_get_team(int color)
+int message_log_color_get_team(int msg_color)
 {
-	return color - NUM_LOG_COLORS;
+	return msg_color - NUM_LOG_COLORS;
 }
 
 int message_log_team_get_color(int team)
@@ -742,7 +748,7 @@ void message_log_init_scrollback(int pw)
 
 				message_log_add_segs(XSTR( "Subsystem ", 410), LOG_COLOR_NORMAL);
 				//message_log_add_segs(entry->sname, LOG_COLOR_BRIGHT);
-				char *subsys_name = Ship_info[si_index].subsystems[model_index].subobj_name;
+				const char *subsys_name = Ship_info[si_index].subsystems[model_index].subobj_name;
 				if (Ship_info[si_index].subsystems[model_index].type == SUBSYSTEM_TURRET) {
 					subsys_name = XSTR("Turret", 1487);
 				}
@@ -821,7 +827,7 @@ void message_log_init_scrollback(int pw)
 			message_log_remove_segs(Num_log_lines);
 
 		} else {
-			if (Num_log_lines < MAX_LOG_LINES)
+			if (Num_log_lines < MAX_LOG_LINES-1)
 				Num_log_lines++;
 		}
 	}

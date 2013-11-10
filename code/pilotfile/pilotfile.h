@@ -7,7 +7,22 @@
 #include "stats/scoring.h"
 
 
-struct player;
+class player;
+
+
+// current pilot constants
+static const unsigned int PLR_FILE_ID = 0x5f524c50;	// "PLR_" in file
+static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
+// NOTE: Version should be bumped only for adding/removing sections or section
+//       content.  It should *NOT* be bumped for limit bumps or anything of
+//       that sort!
+//   0 - initial version
+//   1 - Adding support for the player is multi flag
+static const ubyte PLR_VERSION = 1;
+//   0 - initial version
+//   1 - re-add recent missions
+//   2 - separate single/multi squad name & pic
+static const ubyte CSG_VERSION = 2;
 
 
 class pilotfile {
@@ -23,6 +38,8 @@ class pilotfile {
 
 		// updating stats, multi and/or all-time
 		void update_stats(scoring_struct *stats, bool training = false);
+		void update_stats_backout(scoring_struct *stats, bool training = false);
+		void reset_stats();
 
 		// for checking to see if a PLR file is basically valid
 		bool verify(const char *fname, int *rank = NULL);
@@ -40,6 +57,9 @@ class pilotfile {
 		CFILE *cfp;
 		SCP_string filename;
 		player *p;
+
+		int version;
+		ubyte csg_ver;
 
 		// some sections are required before others...
 		bool m_have_flags;
@@ -120,7 +140,8 @@ class pilotfile {
 				RedAlert		= 0x0011,
 				Variables		= 0x0012,
 				Missions		= 0x0013,
-				Cutscenes		= 0x0014
+				Cutscenes		= 0x0014,
+				LastMissions	= 0x0015
 			};
 		};
 
@@ -175,6 +196,7 @@ class pilotfile {
 		void csg_read_settings();
 		void csg_read_controls();
 		void csg_read_cutscenes();
+		void csg_read_lastmissions();
 
 		void csg_write_flags();
 		void csg_write_info();
@@ -188,6 +210,7 @@ class pilotfile {
 		void csg_write_settings();
 		void csg_write_controls();
 		void csg_write_cutscenes();
+		void csg_write_lastmissions();
 };
 
 extern pilotfile Pilot;

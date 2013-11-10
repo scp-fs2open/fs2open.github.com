@@ -31,7 +31,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildLocation</key>
-					<value>${workspace_loc:/Freespace2/Release}</value>
+					<value>${workspace_loc:/Freespace2/Debug}</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
@@ -92,12 +92,22 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>jansson</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>libpng</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
 			<name>lua</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>mongoose</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
@@ -292,6 +302,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>code/mod_table</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>code/model</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
@@ -440,6 +455,91 @@
 			<name>freespace2/levelpaging.h</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/code/freespace2/levelpaging.h</locationURI>
+		</link>
+		<link>
+			<name>jansson/LICENSE</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/LICENSE</locationURI>
+		</link>
+		<link>
+			<name>jansson/dump.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/dump.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/error.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/error.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/hashtable.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/hashtable.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/hashtable.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/hashtable.h</locationURI>
+		</link>
+		<link>
+			<name>jansson/jansson.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/jansson.h</locationURI>
+		</link>
+		<link>
+			<name>jansson/jansson_config.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/jansson_config.h</locationURI>
+		</link>
+		<link>
+			<name>jansson/jansson_private.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/jansson_private.h</locationURI>
+		</link>
+		<link>
+			<name>jansson/load.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/load.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/memory.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/memory.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/pack_unpack.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/pack_unpack.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/strbuffer.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/strbuffer.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/strbuffer.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/strbuffer.h</locationURI>
+		</link>
+		<link>
+			<name>jansson/strconv.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/strconv.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/utf.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/utf.c</locationURI>
+		</link>
+		<link>
+			<name>jansson/utf.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/utf.h</locationURI>
+		</link>
+		<link>
+			<name>jansson/value.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/jansson/value.c</locationURI>
 		</link>
 		<link>
 			<name>libpng/png.c</name>
@@ -757,11 +857,6 @@
 			<locationURI>PARENT-3-PROJECT_LOC/lua/ltablib.c</locationURI>
 		</link>
 		<link>
-			<name>lua/ltests.c</name>
-			<type>1</type>
-			<locationURI>PARENT-3-PROJECT_LOC/lua/ltests.c</locationURI>
-		</link>
-		<link>
 			<name>lua/ltm.c</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/lua/ltm.c</locationURI>
@@ -770,6 +865,11 @@
 			<name>lua/ltm.h</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/lua/ltm.h</locationURI>
+		</link>
+		<link>
+			<name>lua/lua.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/lua/lua.h</locationURI>
 		</link>
 		<link>
 			<name>lua/luaconf.h</name>
@@ -815,6 +915,21 @@
 			<name>lua/print.c</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/lua/print.c</locationURI>
+		</link>
+		<link>
+			<name>mongoose/LICENSE</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/mongoose/LICENSE</locationURI>
+		</link>
+		<link>
+			<name>mongoose/mongoose.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/mongoose/mongoose.c</locationURI>
+		</link>
+		<link>
+			<name>mongoose/mongoose.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/mongoose/mongoose.h</locationURI>
 		</link>
 		<link>
 			<name>zlib/adler32.c</name>
@@ -1717,16 +1832,6 @@
 			<locationURI>PARENT-3-PROJECT_LOC/code/hud/hudparse.h</locationURI>
 		</link>
 		<link>
-			<name>code/hud/hudresource.cpp</name>
-			<type>1</type>
-			<locationURI>PARENT-3-PROJECT_LOC/code/hud/hudresource.cpp</locationURI>
-		</link>
-		<link>
-			<name>code/hud/hudresource.h</name>
-			<type>1</type>
-			<locationURI>PARENT-3-PROJECT_LOC/code/hud/hudresource.h</locationURI>
-		</link>
-		<link>
 			<name>code/hud/hudreticle.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/code/hud/hudreticle.cpp</locationURI>
@@ -2372,6 +2477,16 @@
 			<locationURI>PARENT-3-PROJECT_LOC/code/mm/msacm.h</locationURI>
 		</link>
 		<link>
+			<name>code/mod_table/mod_table.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/mod_table/mod_table.cpp</locationURI>
+		</link>
+		<link>
+			<name>code/mod_table/mod_table.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/mod_table/mod_table.h</locationURI>
+		</link>
+		<link>
 			<name>code/model/model.h</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/code/model/model.h</locationURI>
@@ -2920,6 +3035,16 @@
 			<name>code/parse/encrypt.h</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/code/parse/encrypt.h</locationURI>
+		</link>
+		<link>
+			<name>code/parse/generic_log.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/parse/generic_log.cpp</locationURI>
+		</link>
+		<link>
+			<name>code/parse/generic_log.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/code/parse/generic_log.h</locationURI>
 		</link>
 		<link>
 			<name>code/parse/lua.cpp</name>

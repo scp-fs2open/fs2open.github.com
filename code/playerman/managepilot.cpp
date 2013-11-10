@@ -34,6 +34,7 @@
 #include "cfile/cfile.h"
 #include "network/multi.h"
 #include "mod_table/mod_table.h"
+#include "pilotfile/pilotfile.h"
 
 
 // pilot pic image list stuff ( call pilot_load_pic_list() to make these valid )
@@ -103,8 +104,10 @@ void init_new_pilot(player *p, int reset)
 	}
 
 	// unassigned squadron
-	strcpy_s(p->squad_name, XSTR("Unassigned", 1255));
-	strcpy_s(p->squad_filename, "");
+	strcpy_s(p->s_squad_name, XSTR("Unassigned", 1255));
+	strcpy_s(p->s_squad_filename, "");
+	strcpy_s(p->m_squad_name, XSTR("Unassigned", 1255));
+	strcpy_s(p->m_squad_filename, "");
 
 	// set him to be a single player pilot by default (the actual creation routines will change this if necessary)
 	p->flags &= ~PLAYER_FLAGS_IS_MULTI;
@@ -119,7 +122,8 @@ void init_new_pilot(player *p, int reset)
 		pilot_set_random_squad_pic(p);
 	}
 
-	init_scoring_element(&p->stats);	
+	p->stats.init();
+	Pilot.reset_stats();
 	
 	p->stats.score = 0;
 	p->stats.rank = RANK_ENSIGN;	
@@ -144,7 +148,7 @@ void init_new_pilot(player *p, int reset)
 
 int local_num_campaigns = 0;
 
-int campaign_file_list_filter(char *filename)
+int campaign_file_list_filter(const char *filename)
 {
 	char name[NAME_LENGTH];
 	char *desc = NULL;
@@ -188,7 +192,7 @@ void pilot_set_start_campaign(player* p)
 
 	for (i = 0; i < rc; i++) 
 	{
-		if (!stricmp(campaign_file_list[i], "FreeSpace2"))
+		if (!stricmp(campaign_file_list[i], Default_campaign_file_name))
 		{
 			strcpy_s(p->current_campaign, campaign_file_list[i]);
 			return;
@@ -263,19 +267,24 @@ void pilot_set_random_pic(player *p)
 	}	
 }
 
-// pick a random image for the passed player
+/*
+ * pick a random squad image for the passed player
+ * sets single & multi squad pic to the same image
+ *
+ * @param p	pointer to player
+ */
 void pilot_set_random_squad_pic(player *p)
 {	
 	// if there are no available pilot pics, set the image filename to null
 	if (Num_pilot_squad_images <= 0) {
-		player_set_squad_bitmap(p, "");
-		// strcpy_s(p->squad_filename, "");		
+		player_set_squad_bitmap(p, "", true);
+		player_set_squad_bitmap(p, "", false);
 	} else {
 		// pick a random name from the list
 		int random_index = rand() % Num_pilot_squad_images;		
 		Assert((random_index >= 0) && (random_index < Num_pilot_squad_images));
-		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index]); 
-		// strcpy_s(p->squad_filename, Pilot_squad_images_arr[random_index]);
+		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index], true);
+		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index], false);
 	}	
 }
 
@@ -330,11 +339,18 @@ void pilot_load_squad_pic_list()
 }
 
 // will attempt to load an insignia bitmap and set it as active for the player
-void player_set_squad_bitmap(player *p, char *fname)
+void player_set_squad_bitmap(player *p, char *fname, bool ismulti)
 {
 	// sanity check
 	if(p == NULL){
 		return;
+	}
+
+	char *squad_pic_p;
+	if (ismulti) {
+		squad_pic_p = p->m_squad_filename;
+	} else {
+		squad_pic_p = p->s_squad_filename;
 	}
 
 	// if he has another bitmap already - unload it
@@ -345,30 +361,19 @@ void player_set_squad_bitmap(player *p, char *fname)
 	p->insignia_texture = -1;
 
 	// try and set the new one
-	if (fname != p->squad_filename) {
-		strncpy(p->squad_filename, fname, MAX_FILENAME_LEN);
+	if (fname != squad_pic_p) {
+		strncpy(squad_pic_p, fname, MAX_FILENAME_LEN);
 	}
 
-	if (p->squad_filename[0] != '\0') {
+	if (squad_pic_p[0] != '\0') {
 		p->insignia_texture = bm_load_duplicate(fname);
-		
+
 		// lock is as a transparent texture
 		if (p->insignia_texture != -1) {
 			bm_lock(p->insignia_texture, 16, BMP_TEX_XPARENT);
 			bm_unlock(p->insignia_texture);
 		}
 	}
-
-	/*
-	flen = strlen(filename);
-	elen = strlen(ext);
-	Assert(flen < MAX_PATH_LEN);
-	strcpy_s(path, filename);
-	if ((flen < 4) || stricmp(path + flen - elen, ext)) {
-		Assert(flen + elen < MAX_PATH_LEN);
-		strcat_s(path, ext);
-	}
-	*/
 }
 
 // set squadron
@@ -379,23 +384,28 @@ void player_set_squad(player *p, char *squad_name)
 		return;
 	}
 
-	strncpy(p->squad_name, squad_name, NAME_LENGTH+1);
+	if (Game_mode & GM_MULTIPLAYER) {
+		strcpy_s(p->m_squad_name, squad_name);
+	} else {
+		strcpy_s(p->s_squad_name, squad_name);
+	}
 }
 
 void player::reset()
 {
 	memset(callsign, 0, sizeof(callsign));
 	memset(short_callsign, 0, sizeof(short_callsign));
-
 	short_callsign_width = 0;
 
 	memset(image_filename, 0, sizeof(image_filename));
-	memset(squad_filename, 0, sizeof(squad_filename));
-	memset(squad_name, 0, sizeof(squad_name));
+	memset(s_squad_filename, 0, sizeof(s_squad_filename));
+	memset(s_squad_name, 0, sizeof(s_squad_name));
+	memset(m_squad_filename, 0, sizeof(m_squad_filename));
+	memset(m_squad_name, 0, sizeof(m_squad_name));
 
 	memset(current_campaign, 0, sizeof(current_campaign));
-
 	readyroom_listing_mode = 0;
+
 	flags = 0;
 	save_flags = 0;
 
@@ -421,7 +431,8 @@ void player::reset()
 	memset(&bi, 0, sizeof(button_info));
 	memset(&ci, 0, sizeof(control_info));
 
-	init_scoring_element(&stats);
+	stats.init();
+	Pilot.reset_stats();
 
 	friendly_hits = 0;
 	friendly_damage = 0.0f;
@@ -438,7 +449,6 @@ void player::reset()
 
 	allow_warn_timestamp = -1;
 	warn_count = 0;
-
 	damage_this_burst = 0.0f;
 
 	repair_sound_loop = -1;
@@ -456,6 +466,9 @@ void player::reset()
 
 	low_ammo_complaint_count = 0;
 	allow_ammo_timestamp = -1;
+
+	praise_self_count = 0;
+	praise_self_timestamp = -1;
 
 	subsys_in_view = -1;
 	request_repair_timestamp = -1;
@@ -488,7 +501,7 @@ void player::reset()
 
 	tips = 1;
 
-	shield_penalty_stamp = 0;
+	shield_penalty_stamp = -1;
 
 	failures_this_session = 0;
 	show_skip_popup = 0;
@@ -500,4 +513,160 @@ void player::reset()
 	memset(&lua_ci, 0, sizeof(control_info));
 	memset(&lua_bi, 0, sizeof(button_info));
 	memset(&lua_bi_full, 0, sizeof(button_info));
+
+	player_was_multi = 0;
+}
+
+void player::assign(const player *other)
+{
+	int i;
+
+	strcpy_s(callsign, other->callsign);
+	strcpy_s(short_callsign, other->short_callsign);
+	short_callsign_width = other->short_callsign_width;
+
+	strcpy_s(image_filename, other->image_filename);
+	strcpy_s(s_squad_filename, other->s_squad_filename);
+	strcpy_s(s_squad_name, other->s_squad_name);
+	strcpy_s(m_squad_filename, other->m_squad_filename);
+	strcpy_s(m_squad_name, other->m_squad_name);
+
+	strcpy_s(current_campaign, other->current_campaign);
+	readyroom_listing_mode = other->readyroom_listing_mode;
+
+	flags = other->flags;
+	save_flags = other->save_flags;
+
+	memcpy(keyed_targets, other->keyed_targets, sizeof(keyed_targets));
+	// make sure we correctly set the pointers
+	for (i = 0; i < MAX_KEYED_TARGETS; i++)
+	{
+		if (other->keyed_targets[i].next == NULL)
+			keyed_targets[i].next = NULL;
+		else
+		{
+			size_t index = (other->keyed_targets[i].next - &other->keyed_targets[0]);
+			keyed_targets[i].next = &keyed_targets[index];
+		}
+
+		if (other->keyed_targets[i].prev == NULL)
+			keyed_targets[i].prev = NULL;
+		else
+		{
+			size_t index = (other->keyed_targets[i].prev - &other->keyed_targets[0]);
+			keyed_targets[i].prev = &keyed_targets[index];
+		}
+	}
+	current_hotkey_set = other->current_hotkey_set;
+
+	lead_target_pos = other->lead_target_pos;
+	lead_target_cheat = other->lead_target_cheat;
+	lead_indicator_active = other->lead_indicator_active;
+
+	lock_indicator_x = other->lock_indicator_x;
+	lock_indicator_y = other->lock_indicator_y;
+	lock_indicator_start_x = other->lock_indicator_start_x;
+	lock_indicator_start_y = other->lock_indicator_start_y;
+	lock_indicator_visible = other->lock_indicator_visible;
+	lock_time_to_target = other->lock_time_to_target;
+	lock_dist_to_target = other->lock_dist_to_target;
+
+	last_ship_flown_si_index = other->last_ship_flown_si_index;
+
+	// this one might be dicey
+	objnum = other->objnum;
+
+	memcpy(&bi, &other->bi, sizeof(button_info));
+	memcpy(&ci, &other->ci, sizeof(control_info));
+
+	stats.assign(other->stats);
+
+	friendly_hits = other->friendly_hits;
+	friendly_damage = other->friendly_damage;
+	friendly_last_hit_time = other->friendly_last_hit_time;
+	last_warning_message_time = other->last_warning_message_time;
+
+	control_mode = other->control_mode;
+	saved_viewer_mode = other->saved_viewer_mode;
+
+	check_warn_timestamp = other->check_warn_timestamp;
+
+	distance_warning_count = other->distance_warning_count;
+	distance_warning_time = other->distance_warning_time;
+
+	allow_warn_timestamp = other->allow_warn_timestamp;
+	warn_count = other->warn_count;
+	damage_this_burst = other->damage_this_burst;
+
+	repair_sound_loop = other->repair_sound_loop;
+	cargo_scan_loop = other->cargo_scan_loop;
+
+	praise_count = other->praise_count;
+	allow_praise_timestamp = other->allow_praise_timestamp;
+	praise_delay_timestamp = other->praise_delay_timestamp;
+
+	ask_help_count = other->ask_help_count;
+	allow_ask_help_timestamp = other->allow_ask_help_timestamp;
+
+	scream_count = other->scream_count;
+	allow_scream_timestamp = other->allow_scream_timestamp;
+
+	low_ammo_complaint_count = other->low_ammo_complaint_count;
+	allow_ammo_timestamp = other->allow_ammo_timestamp;
+
+	praise_self_count = other->praise_self_count;
+	praise_self_timestamp = other->praise_self_timestamp;
+
+	subsys_in_view = other->subsys_in_view;
+	request_repair_timestamp = other->request_repair_timestamp;
+
+	cargo_inspect_time = other->cargo_inspect_time;
+	target_is_dying = other->target_is_dying;
+	current_target_sx = other->current_target_sx;
+	current_target_sy = other->current_target_sy;
+	target_in_lock_cone = other->target_in_lock_cone;
+	locking_subsys = other->locking_subsys;
+	locking_subsys_parent = other->locking_subsys_parent;
+	locking_on_center = other->locking_on_center;
+
+	killer_objtype = other->killer_objtype;
+	killer_species = other->killer_species;
+	killer_weapon_index = other->killer_weapon_index;
+	strcpy_s(killer_parent_name, other->killer_parent_name);
+
+	check_for_all_alone_msg = other->check_for_all_alone_msg;
+
+	update_dumbfire_time = other->update_dumbfire_time;
+	update_lock_time = other->update_lock_time;
+	threat_flags = other->threat_flags;
+	auto_advance = other->auto_advance;
+
+	memcpy(&m_local_options, &other->m_local_options, sizeof(multi_local_options));
+	memcpy(&m_server_options, &other->m_server_options, sizeof(multi_server_options));
+
+	insignia_texture = other->insignia_texture;
+
+	tips = other->tips;
+
+	shield_penalty_stamp = other->shield_penalty_stamp;
+
+	failures_this_session = other->failures_this_session;
+	show_skip_popup = other->show_skip_popup;
+
+	variables.clear();
+	variables.reserve(other->variables.size());
+	for (SCP_vector<sexp_variable>::const_iterator ii = other->variables.begin(); ii != other->variables.end(); ++ii)
+	{
+		sexp_variable temp;
+		memcpy(&temp, &(*ii), sizeof(sexp_variable));
+		variables.push_back(temp);
+	}
+
+	death_message = other->death_message;
+
+	memcpy(&lua_ci, &other->lua_ci, sizeof(control_info));
+	memcpy(&lua_bi, &other->lua_bi, sizeof(button_info));
+	memcpy(&lua_bi_full, &other->lua_bi_full, sizeof(button_info));
+
+	player_was_multi = other->player_was_multi;
 }

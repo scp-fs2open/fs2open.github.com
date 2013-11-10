@@ -144,10 +144,10 @@ void mht_do()
 		}
 
 		if (Num_recent_missions > 0)	{
-			strncpy( Game_current_mission_filename, Recent_missions[0], MAX_FILENAME_LEN );
+			strcpy_s( Game_current_mission_filename, Recent_missions[0] );
 		} else {
 			mission_load_up_campaign();
-			strncpy( Game_current_mission_filename, Campaign.missions[0].name, MAX_FILENAME_LEN );
+			strcpy_s( Game_current_mission_filename, Campaign.missions[0].name );
 		}
 
 		Campaign.current_mission = -1;

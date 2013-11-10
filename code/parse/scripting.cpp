@@ -82,7 +82,23 @@ int scripting_state_inited = 0;
 
 //*************************Scripting init and handling*************************
 
-void script_parse_table(char *filename)
+// the prototype for this is in pstypes.h, below the script_hook struct
+void script_hook_init(script_hook *hook)
+{
+	hook->o_language = 0;
+	hook->h_language = 0;
+
+	hook->o_index = -1;
+	hook->h_index = -1;
+}
+
+// ditto
+bool script_hook_valid(script_hook *hook)
+{
+	return hook->h_index >= 0;
+}
+
+void script_parse_table(const char *filename)
 {
 	script_state *st = &Script_system;
 	int rval;
@@ -100,23 +116,23 @@ void script_parse_table(char *filename)
 		//int num = 42;
 		//Script_system.SetHookVar("Version", 'i', &num);
 		if(optional_string("$Global:")) {
-			Script_globalhook = st->ParseChunk("Global");
+			st->ParseChunk(&Script_globalhook, "Global");
 		}
 
 		if(optional_string("$Splash:")) {
-			Script_splashhook = st->ParseChunk("Splash");
+			st->ParseChunk(&Script_splashhook, "Splash");
 		}
 
 		if(optional_string("$GameInit:")) {
-			Script_gameinithook = st->ParseChunk("GameInit");
+			st->ParseChunk(&Script_gameinithook, "GameInit");
 		}
 
 		if(optional_string("$Simulation:")) {
-			Script_simulationhook = st->ParseChunk("Simulation");
+			st->ParseChunk(&Script_simulationhook, "Simulation");
 		}
 
 		if(optional_string("$HUD:")) {
-			Script_hudhook = st->ParseChunk("HUD");
+			st->ParseChunk(&Script_hudhook, "HUD");
 		}
 
 		required_string("#End");
@@ -150,15 +166,22 @@ void script_parse_table(char *filename)
 	}
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
 }
 
 //Initializes the (global) scripting system, as well as any subsystems.
 //script_close is handled by destructors
-void script_init (void)
+void script_init()
 {
 	mprintf(("SCRIPTING: Beginning initialization sequence...\n"));
+
+	// first things first: init all script hooks, since they are PODs now, not classes...
+	script_hook_init(&Script_splashhook);
+	script_hook_init(&Script_simulationhook);
+	script_hook_init(&Script_hudhook);
+	script_hook_init(&Script_globalhook);
+	script_hook_init(&Script_gameinithook);
 
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
@@ -193,13 +216,13 @@ DCF(script, "Evaluates a line of scripting")
 
 //*************************CLASS: ConditionedScript*************************
 extern char Game_current_mission_filename[];
-bool ConditionedHook::AddCondition(script_condition sc)
+bool ConditionedHook::AddCondition(script_condition *sc)
 {
 	for(int i = 0; i < MAX_HOOK_CONDITIONS; i++)
 	{
 		if(Conditions[i].condition_type == CHC_NONE)
 		{
-			Conditions[i] = sc;
+			Conditions[i] = *sc;
 			return true;
 		}
 	}
@@ -207,12 +230,12 @@ bool ConditionedHook::AddCondition(script_condition sc)
 	return false;
 }
 
-bool ConditionedHook::AddAction(script_action sa)
+bool ConditionedHook::AddAction(script_action *sa)
 {
-	if(!sa.hook.IsValid())
+	if(!script_hook_valid(&sa->hook))
 		return false;
 
-	Actions.push_back(sa);
+	Actions.push_back(*sa);
 
 	return true;
 }
@@ -333,8 +356,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 								break;
 							case CHA_ONWPEQUIPPED: {
 								bool equipped = false;
-								for(int j = 0; j < 3; j++) {
-									if (!equipped) {
+								for(int j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
+									if (!equipped && (shipp->weapons.primary_bank_weapons[j] >= 0) && (shipp->weapons.primary_bank_weapons[j] < MAX_WEAPON_TYPES) ) {
 										if ( !stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[j]].name, scp->data.name) ) {
 											equipped = true;
 											break;
@@ -343,8 +366,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 								}
 							
 								if (!equipped) {
-									for(int j = 0; j < 4; j++) {
-										if (!equipped) {
+									for(int j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
+										if (!equipped && (shipp->weapons.secondary_bank_weapons[j] >= 0) && (shipp->weapons.secondary_bank_weapons[j] < MAX_WEAPON_TYPES) ) {
 											if ( !stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[j]].name, scp->data.name) ) {
 												equipped = true;
 												break;
@@ -523,6 +546,7 @@ void script_state::SetHookObjects(int num, ...)
 	{
 		LuaError(LuaState, "Could not get HookVariable library to add hook variables - get a coder");
 	}
+	va_end(vl);
 }
 
 //This pair of abstraction functions handles
@@ -710,6 +734,7 @@ void script_state::RemHookVars(unsigned int num, ...)
 				lua_pushnil(LuaState);
 				lua_rawset(LuaState, amt_ldx);
 			}
+			va_end(vl);
 
 			this->CloseHookVarTable();
 		}
@@ -1223,11 +1248,10 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 	}
 }
 
-script_hook script_state::ParseChunk(char* debug_str)
+void script_state::ParseChunk(script_hook *dest, char *debug_str)
 {
 	static int total_parse_calls = 0;
 	char debug_buf[128];
-	script_hook rval;
 
 	total_parse_calls++;
 
@@ -1238,7 +1262,7 @@ script_hook script_state::ParseChunk(char* debug_str)
 		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
 	}
 
-	ParseChunkSub(&rval.h_language, &rval.h_index, debug_str);
+	ParseChunkSub(&dest->h_language, &dest->h_index, debug_str);
 
 	if(optional_string("+Override:"))
 	{
@@ -1246,11 +1270,9 @@ script_hook script_state::ParseChunk(char* debug_str)
 		char *debug_str_over = (char*)vm_malloc(bufSize);
 		strcpy_s(debug_str_over, bufSize, debug_str);
 		strcat_s(debug_str_over, bufSize, " override");
-		ParseChunkSub(&rval.o_language, &rval.o_index, debug_str_over);
+		ParseChunkSub(&dest->o_language, &dest->o_index, debug_str_over);
 		vm_free(debug_str_over);
 	}
-
-	return rval;
 }
 
 int script_parse_condition()
@@ -1277,17 +1299,16 @@ flag_def_list* script_parse_action()
 
 	return NULL;
 }
-bool script_state::ParseCondition(char *filename)
+bool script_state::ParseCondition(const char *filename)
 {
 	ConditionedHook *chp = NULL;
-
-	script_condition sct;
 	int condition;
+
 	for(condition = script_parse_condition(); condition != CHC_NONE; condition = script_parse_condition())
 	{
-		//Clear it
-		sct = script_condition();
+		script_condition sct;
 		sct.condition_type = condition;
+
 		switch(condition)
 		{
 			case CHC_STATE:
@@ -1311,7 +1332,7 @@ bool script_state::ParseCondition(char *filename)
 			chp = &ConditionalHooks[ConditionalHooks.size()-1];
 		}
 
-		if(!chp->AddCondition(sct))
+		if(!chp->AddCondition(&sct))
 		{
 			Warning(LOCATION, "Could not add condition to conditional hook in file '%s'; you may have more than %d", filename, MAX_HOOK_CONDITIONS);
 		}
@@ -1322,25 +1343,24 @@ bool script_state::ParseCondition(char *filename)
 		return false;
 	}
 
-	script_action sat;
 	flag_def_list *action;
 	bool actions_added = false;
 	for(action = script_parse_action(); action != NULL; action = script_parse_action())
 	{
-		sat = script_action();
+		script_action sat;
 		sat.action_type = action->def;
 
 		//WMC - build error string
 		char *buf = (char *)vm_malloc(strlen(filename) + strlen(action->name) + 4);
 		sprintf(buf, "%s - %s", filename, action->name);
 
-		sat.hook = ParseChunk(buf);
+		ParseChunk(&sat.hook, buf);
 		
 		//Free error string
 		vm_free(buf);
 
 		//Add the action
-		if(chp->AddAction(sat))
+		if(chp->AddAction(&sat))
 			actions_added = true;
 	}
 
@@ -1354,7 +1374,7 @@ bool script_state::ParseCondition(char *filename)
 	return true;
 }
 
-//*************************CLASS: script_hook*************************
+//*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)
 {
 	if(hd.h_index < 0)

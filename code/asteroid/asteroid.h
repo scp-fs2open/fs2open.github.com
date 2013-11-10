@@ -16,8 +16,8 @@
 #include "globalincs/globals.h"		// for NAME_LENGTH
 
 
-struct object;
-struct polymodel;
+class object;
+class polymodel;
 struct collision_info_struct;
 
 #define	MAX_ASTEROIDS			512
@@ -52,7 +52,8 @@ typedef struct asteroid_split_info {
 	int		max;
 } asteroid_split_info;
 
-class asteroid_info {
+class asteroid_info
+{
 public:
 	char		name[NAME_LENGTH];								// name for the asteroid
 	char		pof_files[NUM_DEBRIS_POFS][MAX_FILENAME_LEN];	// POF files to load/associate with ship
@@ -79,10 +80,14 @@ public:
 		  fireball_radius_multiplier( -1 )
 	{
 		name[ 0 ] = 0;
-		memset( pof_files, 0, sizeof( pof_files ) );
 		memset( detail_distance, 0, sizeof( detail_distance ) );
-		memset( modelp, 0, sizeof( modelp ) );
-		memset( model_num, -1, sizeof( model_num ) );
+
+		for (int i = 0; i < NUM_DEBRIS_POFS; i++)
+		{
+			modelp[i] = NULL;
+			model_num[i] = -1;
+			pof_files[i][0] = 0;
+		}
 	}
 };
 

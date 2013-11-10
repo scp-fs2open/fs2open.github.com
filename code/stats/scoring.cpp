@@ -109,23 +109,103 @@ void parse_rank_tbl()
 }
 
 // initialize a nice blank scoring element
-void init_scoring_element(scoring_struct *s)
+void scoring_struct::init()
 {
-	if (s == NULL) {
-		Int3();	//	DaveB -- Fix this!
-		// read_pilot_file(char* callsign);
-		return;
-	}
+	flags = 0;
+	score = 0;
+	rank = RANK_ENSIGN;
 
-	memset(s, 0, sizeof(scoring_struct));
+	medal_counts.assign(Num_medals, 0);
 
-	s->rank = RANK_ENSIGN;
+	memset(kills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	assists = 0;
+	kill_count = 0;
+	kill_count_ok = 0;
+	p_shots_fired = 0;
+	s_shots_fired = 0;
 
-	s->m_medal_earned = -1;		// hasn't earned a medal yet
-	s->m_promotion_earned = -1;
-	s->m_badge_earned = -1;
+	p_shots_hit = 0;
+	s_shots_hit = 0;
 
-	s->flags = 0;
+	p_bonehead_hits = 0;
+	s_bonehead_hits = 0;
+	bonehead_kills = 0;
+
+	missions_flown = 0;
+	flight_time = 0;
+	last_flown = 0;
+	last_backup = 0;
+
+	m_medal_earned = -1;		// hasn't earned a medal yet
+	m_promotion_earned = -1;
+	m_badge_earned = -1;
+
+	m_score = 0;
+	memset(m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	memset(m_okKills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	m_kill_count = 0;
+	m_kill_count_ok = 0;
+	m_assists = 0;
+	mp_shots_fired = 0;
+	ms_shots_fired = 0;
+	mp_shots_hit = 0;
+	ms_shots_hit = 0;
+	mp_bonehead_hits = 0;
+	ms_bonehead_hits = 0;
+	m_bonehead_kills = 0;
+	m_player_deaths = 0;
+
+	memset(m_dogfight_kills, 0, MAX_PLAYERS * sizeof(int));
+}
+
+// clone someone else's scoring element
+void scoring_struct::assign(const scoring_struct &s)
+{
+	flags = s.flags;
+	score = s.score;
+	rank = s.rank;
+
+	medal_counts.assign(s.medal_counts.begin(), s.medal_counts.end());
+
+	memcpy(kills, s.kills, MAX_SHIP_CLASSES * sizeof(int));
+	assists = s.assists;
+	kill_count = s.kill_count;
+	kill_count_ok = s.kill_count_ok;
+	p_shots_fired = s.p_shots_fired;
+	s_shots_fired = s.s_shots_fired;
+
+	p_shots_hit = s.p_shots_hit;
+	s_shots_hit = s.s_shots_hit;
+
+	p_bonehead_hits = s.p_bonehead_hits;
+	s_bonehead_hits = s.s_bonehead_hits;
+	bonehead_kills = s.bonehead_kills;
+
+	missions_flown = s.missions_flown;
+	flight_time = s.flight_time;
+	last_flown = s.last_flown;
+	last_backup = s.last_backup;
+
+	m_medal_earned = s.m_medal_earned;
+	m_promotion_earned = s.m_promotion_earned;
+	m_badge_earned = s.m_badge_earned;
+
+	m_score = s.m_score;
+	memcpy(m_kills, s.m_kills, MAX_SHIP_CLASSES * sizeof(int));
+	memcpy(m_okKills, s.m_okKills, MAX_SHIP_CLASSES * sizeof(int));
+	m_kill_count = s.m_kill_count;
+	m_kill_count_ok = s.m_kill_count_ok;
+	m_assists = s.m_assists;
+	mp_shots_fired = s.mp_shots_fired;
+	ms_shots_fired = s.ms_shots_fired;
+	mp_shots_hit = s.mp_shots_hit;
+	ms_shots_hit = s.ms_shots_hit;
+	mp_bonehead_hits = s.mp_bonehead_hits;
+	ms_bonehead_hits = s.ms_bonehead_hits;
+	m_bonehead_kills = s.m_bonehead_kills;
+	m_player_deaths = s.m_player_deaths;
+
+	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
 }
 
 #ifndef NDEBUG
@@ -153,14 +233,12 @@ void scoring_eval_harbison( ship *shipp )
 // initialize the Player's mission-based stats before he goes into a mission
 void scoring_level_init( scoring_struct *scp )
 {
-	int i;
-
 	scp->m_medal_earned = -1;		// hasn't earned a medal yet
 	scp->m_promotion_earned = -1;
 	scp->m_badge_earned = -1;
 	scp->m_score = 0;
 	scp->m_assists = 0;
-	scp->mp_shots_fired=0;
+	scp->mp_shots_fired = 0;
 	scp->mp_shots_hit = 0;
 	scp->ms_shots_fired = 0;
 	scp->ms_shots_hit = 0;
@@ -169,19 +247,15 @@ void scoring_level_init( scoring_struct *scp )
 	scp->ms_bonehead_hits=0;
 	scp->m_bonehead_kills=0;
 
-	for (i=0; i<MAX_SHIP_CLASSES; i++){
-		scp->m_kills[i] = 0;
-		scp->m_okKills[i]=0;
-	}
+	memset(scp->m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	memset(scp->m_okKills, 0, MAX_SHIP_CLASSES * sizeof(int));
 
 	scp->m_kill_count = 0;
 	scp->m_kill_count_ok = 0;
 	
-	scp->m_player_deaths =0;
+	scp->m_player_deaths = 0;
 
-	for(i=0; i<MAX_PLAYERS; i++){
-		scp->m_dogfight_kills[i] = 0;
-	}
+	memset(scp->m_dogfight_kills, 0, MAX_PLAYERS * sizeof(int));
 
 	if (The_mission.ai_profile != NULL) {
 		Kill_percentage = The_mission.ai_profile->kill_percentage_scale[Game_skill_level];
@@ -260,8 +334,8 @@ void scoring_eval_badges(scoring_struct *sc)
 
 	// if player could have a badge based on kills, and doesn't currently have this badge, then
 	// return the badge id.
-	if ( (badge != -1 ) && (sc->medals[badge] < 1) ) {
-		sc->medals[badge] = 1;
+	if ( (badge != -1 ) && (sc->medal_counts[badge] < 1) ) {
+		sc->medal_counts[badge] = 1;
 		sc->m_badge_earned = badge;
 	}
 }
@@ -276,7 +350,7 @@ void scoring_do_accept(scoring_struct *score)
 
 	// do medal stuff
 	if ( score->m_medal_earned != -1 ){
-		score->medals[score->m_medal_earned]++;
+		score->medal_counts[score->m_medal_earned]++;
 	}
 
 	// return when in training mission.  We can grant a medal in training, but don't
@@ -322,7 +396,7 @@ void scoring_backout_accept( scoring_struct *score )
 
 	// if a badge was earned, take it back
 	if ( score->m_badge_earned != -1){
-		score->medals[score->m_badge_earned] = 0;
+		score->medal_counts[score->m_badge_earned] = 0;
 	}
 
 	// return when in training mission.  We can grant a medal in training, but don't
@@ -352,8 +426,8 @@ void scoring_backout_accept( scoring_struct *score )
 
 	// if the player was given a medal, take it back
 	if ( score->m_medal_earned != -1 ) {
-		score->medals[score->m_medal_earned]--;
-		Assert( score->medals[score->m_medal_earned] >= 0 );
+		score->medal_counts[score->m_medal_earned]--;
+		Assert( score->medal_counts[score->m_medal_earned] >= 0 );
 	}
 
 	// if the player was promoted, take it back
@@ -414,7 +488,7 @@ void scoring_level_close(int accepted)
 
 			// if a badge was earned, take it back
 			if ( Player->stats.m_badge_earned != -1){
-				Player->stats.medals[Player->stats.m_badge_earned] = -1;
+				Player->stats.medal_counts[Player->stats.m_badge_earned] = 0;
 				Player->stats.m_badge_earned = -1;
 			}
 		}

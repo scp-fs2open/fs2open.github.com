@@ -355,7 +355,7 @@ void popup_split_lines(popup_info *pi, int flags)
 {
 	int	nlines, i, body_offset = 0;
 	int	n_chars[POPUP_MAX_LINES];
-	char	*p_str[POPUP_MAX_LINES];
+	const char	*p_str[POPUP_MAX_LINES];
 
 	gr_set_font(FONT1);
 	n_chars[0]=0;
@@ -1074,7 +1074,7 @@ int popup_till_condition(int (*condition)(), ...)
 }
 
 // popup to return the value from an input box
-char *popup_input(int flags, char *caption, int max_output_len)
+char *popup_input(int flags, const char *caption, int max_output_len)
 {
 	if ( Popup_is_active ) {
 		Int3();		// should never happen
@@ -1132,10 +1132,10 @@ void popup_kill_any_active()
 }
 
 // change the text inside of the popup 
-void popup_change_text(char *new_text)
+void popup_change_text(const char *new_text)
 {
 	// copy the raw text
-	strncpy(Popup_info.raw_text,new_text,POPUP_MAX_CHARS);
+	strcpy_s(Popup_info.raw_text,new_text);
 
 	// recalculate all display information
 	popup_split_lines(&Popup_info,Popup_flags);

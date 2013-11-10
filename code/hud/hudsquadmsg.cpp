@@ -200,7 +200,7 @@ void hud_init_comm_orders()
 {
 	int i;
 
-	char *temp_comm_order_types[] =
+	const char *temp_comm_order_types[] =
 	{
 		XSTR("Ships", 293),
 		XSTR("Wings", 294),
@@ -655,7 +655,7 @@ int hud_squadmsg_can_rearm( ship *shipp )
 	return 1;
 }
 
-// calls for repair/rearm of the player ship.  Checks for the presense of the support
+// calls for repair/rearm of the player ship.  Checks for the presence of the support
 // ship and does the appropriate action if found
 void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 {
@@ -700,7 +700,7 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 					message_send_builtin_to_player( MESSAGE_ON_WAY, &Ships[robjp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, multi_player_team );
 
 				} else {
-					// if we are in this part of the if statment, a support ship has been warped in to
+					// if we are in this part of the if statement, a support ship has been warped in to
 					// service us.  Issue appropriate message
 					message_send_builtin_to_player( MESSAGE_REARM_WARP, NULL, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, multi_player_team );
 				}

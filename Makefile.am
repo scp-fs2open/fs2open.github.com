@@ -2,7 +2,7 @@
 #
 # This file uses GNU Automake to generate makefiles
 
-SUBDIRS = code
+SUBDIRS = mongoose code
 
 
 EXTRA_DIST =	\

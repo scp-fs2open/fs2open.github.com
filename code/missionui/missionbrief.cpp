@@ -308,7 +308,7 @@ int brief_setup_closeup(brief_icon *bi);
 void brief_maybe_blit_scene_cut(float frametime);
 void brief_transition_reset();
 
-char *brief_tooltip_handler(char *str)
+const char *brief_tooltip_handler(const char *str)
 {
 	if (!stricmp(str, NOX("@close"))) {
 		if (Closeup_icon)
@@ -1380,7 +1380,7 @@ void brief_check_for_anim()
 
 	for ( i = 0; i < bs->num_icons; i++ ) {
 		bi = &bs->icons[i];
-		brief_common_get_icon_dimensions(&iw, &ih, bi->type, bi->ship_class);
+		brief_common_get_icon_dimensions(&iw, &ih, bi);
 		if ( mx < bi->x ) continue;
 		if ( mx > (bi->x + iw) ) continue;
 		if ( my < bi->y ) continue;

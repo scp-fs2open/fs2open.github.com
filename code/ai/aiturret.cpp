@@ -305,16 +305,22 @@ bool all_turret_weapons_have_flags2(ship_weapon *swp, int flags)
  */
 bool turret_weapon_has_flags(ship_weapon *swp, int flags)
 {
+	Assert(swp != NULL);
+    
 	int i = 0;
 	for(i = 0; i < swp->num_primary_banks; i++)
 	{
-		if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & flags)
-			return true;
+		if(swp->primary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & flags)
+				return true;
+		}
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags & flags)
-			return true;
+		if(swp->secondary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags & flags)
+				return true;
+		}
 	}
 
 	return false;
@@ -327,16 +333,22 @@ bool turret_weapon_has_flags(ship_weapon *swp, int flags)
  */
 bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
 {
+	Assert(swp != NULL);
+    
 	int i = 0;
 	for(i = 0; i < swp->num_primary_banks; i++)
 	{
-		if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & flags)
-			return true;
+		if(swp->primary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & flags)
+				return true;
+		}
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & flags)
-			return true;
+		if(swp->secondary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & flags)
+				return true;
+		}
 	}
 
 	return false;
@@ -350,16 +362,22 @@ bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
  */
 bool turret_weapon_has_subtype(ship_weapon *swp, int subtype)
 {
+	Assert(swp != NULL);
+    
 	int i = 0;
 	for(i = 0; i < swp->num_primary_banks; i++)
 	{
-		if(Weapon_info[swp->primary_bank_weapons[i]].subtype == subtype)
-			return true;
+		if(swp->primary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->primary_bank_weapons[i]].subtype == subtype)
+				return true;
+		}
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(Weapon_info[swp->secondary_bank_weapons[i]].subtype == subtype)
-			return true;
+		if(swp->secondary_bank_weapons[i] >=0) {
+			if(Weapon_info[swp->secondary_bank_weapons[i]].subtype == subtype)
+				return true;
+		}
 	}
 
 	return false;
@@ -2466,11 +2484,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 			if ( ok_to_fire && (tp->flags & MSS_FLAG_TURRET_HULL_CHECK) ) {
 				int model_num = Ship_info[shipp->ship_info_index].model_num;
-				mc_info hull_check;
 				vec3d end;
-
 				vm_vec_scale_add(&end, &gpos, &gvec, model_get_radius(model_num));
 
+				mc_info hull_check;
+				mc_info_init(&hull_check);
 				hull_check.model_instance_num = shipp->model_instance_num;
 				hull_check.model_num = model_num;
 				hull_check.orient = &objp->orient;
@@ -2524,8 +2542,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		if(!something_was_ok_to_fire)
 		{
 			mprintf(("nothing ok to fire\n"));
-			//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
-			turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);
+            
+			if (ss->turret_best_weapon >= 0) {
+				//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
+				turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);
+			}
 			ss->turret_next_fire_stamp = timestamp(500);
 
 			// If nothing is OK to fire (lost track of the target?) 

@@ -20,8 +20,8 @@
 extern GLint GL_max_elements_vertices;
 extern GLint GL_max_elements_indices;
 
-struct poly_list;
-struct vertex_buffer;
+class poly_list;
+class vertex_buffer;
 
 void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation);
 void gr_opengl_start_instance_angles(vec3d *pos, angles *rotation);

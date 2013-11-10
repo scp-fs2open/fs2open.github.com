@@ -634,6 +634,10 @@ void process_debug_keys(int k)
 	}
 
 	switch (k) {
+		case KEY_DEBUGGED + KEY_Q:
+			Snapshot_all_events = true;
+			break;
+
 		case KEY_DEBUGGED + KEY_H:
 			hud_target_toggle_hidden_from_sensors();
 			break;
@@ -968,7 +972,7 @@ void process_debug_keys(int k)
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
 			objp->pos = Player_obj->pos;
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Asteroid launched", -1));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Asteroid launched", 1595));
 			break;
 		}
 
@@ -1020,12 +1024,21 @@ void process_debug_keys(int k)
 			break;
 		}
 
-		case KEY_DEBUGGED + KEY_R: {
+		case KEY_DEBUGGED + KEY_R:
 		case KEY_DEBUGGED1 + KEY_R:
-			if (Player_ai->target_objnum != -1)
-				ai_issue_rearm_request(&Objects[Player_ai->target_objnum]);
+		{
+			// rearm the target, if we have one
+			object *obj_to_rearm = (Player_ai->target_objnum >= 0) ? &Objects[Player_ai->target_objnum] : Player_obj;
+
+			if (is_support_allowed(obj_to_rearm))
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", -1), Ships[obj_to_rearm->instance].ship_name);
+				ai_issue_rearm_request(obj_to_rearm);
+			}
 			else
-				ai_issue_rearm_request(Player_obj);
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", -1), Ships[obj_to_rearm->instance].ship_name);
+			}
 
 			break;
 		}
@@ -1794,7 +1807,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			break;
 
 		// cycle number of missiles
-		case CYCLE_NUM_MISSLES:
+		case CYCLE_NUM_MISSLES: {
 			if(at_self)
 				control_used(CYCLE_NUM_MISSLES);
 
@@ -1805,8 +1818,12 @@ int button_function_critical(int n, net_player *p = NULL)
 					break;
 				}
 			}
-					
-			if ( Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE ) {		
+
+			polymodel *pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
+
+			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
+
+			if ( Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE || firepoints < 2) {		
 				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
@@ -1828,6 +1845,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
 			break;
+		}
 
 		// increase weapon recharge rate
 		case INCREASE_WEAPON:
@@ -2129,6 +2147,30 @@ int button_function_demo_valid(int n)
 	return ret;
 }
 
+bool key_is_targeting(int n) 
+{
+	switch(n) {
+		case TARGET_NEXT:
+		case TARGET_PREV:
+		case TARGET_NEXT_CLOSEST_HOSTILE:
+		case TARGET_PREV_CLOSEST_HOSTILE:
+		case TARGET_NEXT_CLOSEST_FRIENDLY:
+		case TARGET_PREV_CLOSEST_FRIENDLY:
+		case TARGET_SHIP_IN_RETICLE:
+		case TARGET_LAST_TRANMISSION_SENDER:
+		case TARGET_CLOSEST_SHIP_ATTACKING_TARGET:
+		case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
+		case TARGET_TARGETS_TARGET:
+		case TARGET_SUBOBJECT_IN_RETICLE:
+		case TARGET_PREV_SUBOBJECT:
+		case TARGET_NEXT_SUBOBJECT:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 /**
  * Execute function corresponding to action n (BUTTON_ from KeyControl.h)
  * @return 1 when action was taken
@@ -2348,10 +2390,10 @@ int button_function(int n)
 				HUD_printf(XSTR("Engine failure.  Cannot engage subspace drive.", 40));
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", -1));
+				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", 1596));
 			} else if ( (Player_obj != NULL) && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", -1));
+				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", 1597));
 			} else {
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
 			}
@@ -2537,6 +2579,13 @@ int button_function(int n)
 				break;
 		};
 		if (keyHasBeenUsed) {
+			return 1;
+		}
+	}
+	else 
+	{
+		//if sensors are gone, and the passed key is one of the targeting keys, we need to exit here before we hit the Int3() later in this function
+		if (key_is_targeting(n)) {
 			return 1;
 		}
 	}

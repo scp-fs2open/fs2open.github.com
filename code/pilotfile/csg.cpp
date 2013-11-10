@@ -11,6 +11,7 @@
 #include "missionui/missionscreencommon.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionshipchoice.h"
+#include "mission/missionload.h"
 #include "sound/audiostr.h"
 #include "io/joy.h"
 #include "io/mouse.h"
@@ -23,15 +24,6 @@
 #include <iostream>
 #include <sstream>
 
-
-static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
-
-// NOTE: Version should be bumped only for adding/removing sections or section
-//       content.  It should *NOT* be bumped for limit bumps or anything of
-//       that sort!
-//
-//   0 - initial version
-static const ubyte CSG_VERSION = 0;
 
 
 void pilotfile::csg_read_flags()
@@ -165,6 +157,12 @@ void pilotfile::csg_read_info()
 		}
 	}
 
+	if (csg_ver >= 2) {
+		// single/campaign squad name & image
+		cfread_string_len(p->s_squad_name, NAME_LENGTH, cfp);
+		cfread_string_len(p->s_squad_filename, MAX_FILENAME_LEN, cfp);
+	}
+
 	// if anything we need/use was missing then it should be considered fatal
 	if (m_data_invalid) {
 		throw "Invalid data for CSG!";
@@ -199,9 +197,9 @@ void pilotfile::csg_write_info()
 	}
 
 	// medals list
-	cfwrite_int((int)Medals.size(), cfp);
+	cfwrite_int(Num_medals, cfp);
 
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
+	for (idx = 0; idx < Num_medals; idx++) {
 		cfwrite_string_len(Medals[idx].name, cfp);
 	}
 
@@ -228,6 +226,10 @@ void pilotfile::csg_write_info()
 	for (idx = 0; idx < Num_weapon_types; idx++) {
 		cfwrite_ubyte(Campaign.weapons_allowed[idx], cfp);
 	}
+
+	// single/campaign squad name & image
+	cfwrite_string_len(p->s_squad_name, cfp);
+	cfwrite_string_len(p->s_squad_filename, cfp);
 
 	endSection();
 }
@@ -328,7 +330,7 @@ void pilotfile::csg_read_missions()
 			idx = cfread_int(cfp);
 
 			if (medals_list[j].index >= 0) {
-				mission->stats.medals[medals_list[j].index] = idx;
+				mission->stats.medal_counts[medals_list[j].index] = idx;
 			}
 		}
 	}
@@ -397,8 +399,8 @@ void pilotfile::csg_write_missions()
 			}
 
 			// medals earned (scoring)
-			for (j = 0; j < (int)Medals.size(); j++) {
-				cfwrite_int(mission->stats.medals[j], cfp);
+			for (j = 0; j < Num_medals; j++) {
+				cfwrite_int(mission->stats.medal_counts[j], cfp);
 			}
 		}
 	}
@@ -511,8 +513,7 @@ void pilotfile::csg_write_techroom()
 
 void pilotfile::csg_read_loadout()
 {
-	int j;
-	int count;
+	int j, count, ship_idx = -1, wep_idx = -1;
 	uint idx, list_size = 0;
 
 	if ( !m_have_info ) {
@@ -553,31 +554,39 @@ void pilotfile::csg_read_loadout()
 		}
 
 		// ship
-		idx = cfread_int(cfp);
+		ship_idx = cfread_int(cfp);
 
-		if (idx > ship_list.size()) {
-			//mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), Clamping to valid range.\n", idx));	
-			 idx = ship_list.size();						
+		if ( (ship_idx >= (int)ship_list.size()) || (ship_idx < -1) ) { // on the casts, assume that ship & weapon lists will never exceed ~2 billion
+			mprintf(("CSG => Parse Warning: Invalid value for ship index (%d), emptying slot.\n", ship_idx));
+			ship_idx = -1;
 		}
 
 		if (slot) {
-			slot->ship_class = ship_list[idx].index;
+			if (ship_idx == -1) { // -1 means no ship in this slot
+				slot->ship_class = -1;
+			} else {
+				slot->ship_class = ship_list[ship_idx].index;
+			}
 		}
 
 		// primary weapons
 		count = cfread_int(cfp);
 
 		for (j = 0; j < count; j++) {
-			idx = cfread_int(cfp);
+			wep_idx = cfread_int(cfp);
 
-			if (idx > weapon_list.size()) {
-				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));	
-				idx = weapon_list.size();
+			if ( (wep_idx >= (int)weapon_list.size()) || (wep_idx < -1) ) {
+				mprintf(("CSG => Parse Warning: Invalid value for primary weapon index (%d), emptying slot.\n", wep_idx));
+				wep_idx = -1;
 			}
 
 
 			if ( slot && (j < MAX_SHIP_PRIMARY_BANKS) ) {
-				slot->wep[j] = weapon_list[idx].index;
+				if (wep_idx == -1) { // -1 means no weapon in this slot
+					slot->wep[j] = -1;
+				} else {
+					slot->wep[j] = weapon_list[wep_idx].index;
+				}
 			}
 
 			idx = cfread_int(cfp);
@@ -591,15 +600,19 @@ void pilotfile::csg_read_loadout()
 		count = cfread_int(cfp);
 
 		for (j = 0; j < count; j++) {
-			idx = cfread_int(cfp);
+			wep_idx = cfread_int(cfp);
 
-			if (idx > weapon_list.size()) {
-				//mprintf(("CSG => Parse Warning: Invalid value for weapon index (%d), Clamping to valid range.\n", idx));
-				idx = weapon_list.size();		
+			if ( (wep_idx >= (int)weapon_list.size()) || (wep_idx < -1) ) {
+				mprintf(("CSG => Parse Warning: Invalid value for secondary weapon index (%d), emptying slot.\n", wep_idx));
+				wep_idx = -1;
 			}
 
 			if ( slot && (j < MAX_SHIP_SECONDARY_BANKS) ) {
-				slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = weapon_list[idx].index;
+				if (wep_idx == -1) { // -1 means no weapon in this slot
+					slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = -1;
+				} else {
+					slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = weapon_list[wep_idx].index;
+				}
 			}
 
 			idx = cfread_int(cfp);
@@ -706,7 +719,7 @@ void pilotfile::csg_read_stats()
 		count = cfread_int(cfp);
 
 		if (medals_list[idx].index >= 0) {
-			p->stats.medals[medals_list[idx].index] = count;
+			p->stats.medal_counts[medals_list[idx].index] = count;
 		}
 	}
 }
@@ -744,8 +757,8 @@ void pilotfile::csg_write_stats()
 	}
 
 	// medals earned (scoring)
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
-		cfwrite_int(p->stats.medals[idx], cfp);
+	for (idx = 0; idx < Num_medals; idx++) {
+		cfwrite_int(p->stats.medal_counts[idx], cfp);
 	}
 
 	endSection();
@@ -787,7 +800,14 @@ void pilotfile::csg_read_redalert()
 
 		// ship class, index into ship_list[]
 		i = cfread_int(cfp);
-		ras.ship_class = ship_list[i].index;
+		if ( (i >= (int)ship_list.size()) || (i < RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {
+			mprintf(("CSG => Parse Warning: Invalid value for red alert ship index (%d), emptying slot.\n", i));
+			ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
+		} else if ( (i < 0 ) && (i >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {  // ship destroyed/exited
+			ras.ship_class = i;
+		} else {
+			ras.ship_class = ship_list[i].index;
+		}
 
 		// subsystem hits
 		count = cfread_int(cfp);
@@ -837,8 +857,8 @@ void pilotfile::csg_read_redalert()
 			ras.secondary_weapons.push_back( weapons );
 		}
 
-		// this is quite likely a *bad* thing if it happens
-		if (ras.ship_class >= 0) {
+		// this is quite likely a *bad* thing if it doesn't happen
+		if (ras.ship_class >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) {
 			Red_alert_wingman_status.push_back( ras );
 		}
 	}
@@ -1156,18 +1176,60 @@ void pilotfile::csg_read_cutscenes() {
 }
 
 void pilotfile::csg_write_cutscenes() {
+	SCP_vector<cutscene_info>::iterator cut;
+
 	startSection(Section::Cutscenes);
 
 	size_t viewableScenes = 0;
-	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if(cut->viewable)
 			viewableScenes ++;
 	}
 	cfwrite_uint(viewableScenes, cfp);
 
-	for(SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if(cut->viewable)
 			cfwrite_string_len(cut->filename, cfp);
+	}
+
+	endSection();
+}
+
+/*
+ * Only used for quick start missions
+ */
+void pilotfile::csg_read_lastmissions()
+{
+	int i;
+
+	// restore list of most recently played missions
+	Num_recent_missions = cfread_int( cfp );
+	Assert(Num_recent_missions <= MAX_RECENT_MISSIONS);
+	for ( i = 0; i < Num_recent_missions; i++ ) {
+		char *cp;
+
+		cfread_string_len( Recent_missions[i], MAX_FILENAME_LEN, cfp);
+		// Remove the extension (safety check: shouldn't exist anyway)
+		cp = strchr(Recent_missions[i], '.');
+			if (cp)
+				*cp = 0;
+	}
+}
+
+/*
+ * Only used for quick start missions
+ */
+
+void pilotfile::csg_write_lastmissions()
+{
+	int i;
+
+	startSection(Section::LastMissions);
+
+	// store list of most recently played missions
+	cfwrite_int(Num_recent_missions, cfp);
+	for (i=0; i<Num_recent_missions; i++) {
+		cfwrite_string_len(Recent_missions[i], cfp);
 	}
 
 	endSection();
@@ -1185,7 +1247,7 @@ void pilotfile::csg_reset_data()
 	m_data_invalid = false;
 
 	// init stats
-	init_scoring_element(&p->stats);
+	p->stats.init();
 
 	// zero out allowed ships/weapons
 	memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
@@ -1228,7 +1290,7 @@ void pilotfile::csg_reset_data()
 			mission->variables = NULL;
 		}
 
-		init_scoring_element(&mission->stats);
+		mission->stats.init();
 	}
 }
 
@@ -1275,6 +1337,13 @@ bool pilotfile::load_savefile(const char *campaign)
 
 	filename = buf.str().c_str();
 
+	// if campaign file doesn't exist, abort so we don't load irrelevant data
+	buf.str(std::string());
+	buf << base << FS_CAMPAIGN_FILE_EXT;
+	if ( !cf_exists_full((char*)buf.str().c_str(), CF_TYPE_MISSIONS) ) {
+		mprintf(("CSG => Unable to find campaign file '%s'!\n", buf.str().c_str()));
+		return false;
+	}
 
 	// we need to reset this early, in case open fails and we need to create
 	m_data_invalid = false;
@@ -1295,8 +1364,8 @@ bool pilotfile::load_savefile(const char *campaign)
 		return false;
 	}
 
-	// version, should be able to just ignore it
-	ubyte csg_ver = cfread_ubyte(cfp);
+	// version, now used
+	csg_ver = cfread_ubyte(cfp);
 
 	mprintf(("CSG => Loading '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
 
@@ -1376,6 +1445,11 @@ bool pilotfile::load_savefile(const char *campaign)
 					csg_read_cutscenes();
 					break;
 
+				case Section::LastMissions:
+					mprintf(("CSG => Parsing:  Last Missions...\n"));
+					csg_read_lastmissions();
+					break;
+
 				default:
 					mprintf(("CSG => Skipping unknown section 0x%04x!\n", section_id));
 					break;
@@ -1401,6 +1475,12 @@ bool pilotfile::load_savefile(const char *campaign)
 			cfseek(cfp, offset_pos, CF_SEEK_CUR);
 		}
 	}
+
+	// if the campaign (for whatever reason) doesn't have a squad image, use the multi one
+	if (p->s_squad_filename[0] == '\0') {
+		strcpy_s(p->s_squad_filename, p->m_squad_filename);
+	}
+	player_set_squad_bitmap(p, p->s_squad_filename, false);
 
 	mprintf(("CSG => Loading complete!\n"));
 
@@ -1444,7 +1524,7 @@ bool pilotfile::save_savefile()
 	// assertion before writing so that we don't corrupt the .csg by asserting halfway through writing
 	// assertion should also prevent loss of major campaign progress
 	// i.e. lose one mission, not several missions worth (in theory)
-	Assertion(Red_alert_wingman_status.size() >= 0 && Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: %u\n", Red_alert_wingman_status.size());
+	Assertion(Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: %u\n", Red_alert_wingman_status.size());
 
 	// open it, hopefully...
 	cfp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
@@ -1487,6 +1567,8 @@ bool pilotfile::save_savefile()
 	csg_write_controls();
 	mprintf(("CSG => Saving:  Cutscenes...\n"));
 	csg_write_cutscenes();
+	mprintf(("CSG => Saving:  Last Missions...\n"));
+	csg_write_lastmissions();
 
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));

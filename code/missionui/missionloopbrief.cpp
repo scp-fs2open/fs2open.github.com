@@ -23,6 +23,7 @@
 #include "sound/fsspeech.h"
 #include "popup/popup.h"
 
+#include "graphics/generic.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -65,13 +66,15 @@ UI_XSTR Loop_text[GR_NUM_RESOLUTIONS][NUM_LOOP_TEXT] = {
 	}
 };
 
-// loop brief anim
-int Loop_brief_anim_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		24, 267
+// Originally from missioncmdbrief.cpp
+// center coordinates only
+int Loop_brief_anim_center_coords[GR_NUM_RESOLUTIONS][2] =
+{
+	{
+		242, 367				// GR_640
 	},
-	{ // GR_640
-		167, 491
+	{
+		392, 587				// GR_1024
 	}
 };
 
@@ -88,8 +91,7 @@ int Loop_brief_text_coords[GR_NUM_RESOLUTIONS][4] = {
 UI_WINDOW Loop_brief_window;
 int Loop_brief_bitmap;
 
-anim *Loop_anim;
-anim_instance *Loop_anim_instance;
+generic_anim Loop_anim;
 
 int Loop_sound;
 
@@ -147,24 +149,22 @@ void loop_brief_init()
 		Loop_brief_window.add_XSTR(&Loop_text[gr_screen.res][idx]);
 	}
 
+	const char* anim_name;
 	// load animation if any
-	Loop_anim = NULL;
-	Loop_anim_instance = NULL;
 	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_anim != NULL){
-		Loop_anim = anim_load(Campaign.missions[Campaign.current_mission].mission_branch_brief_anim);
+		anim_name = Campaign.missions[Campaign.current_mission].mission_branch_brief_anim;
 	} else {
-		Loop_anim = anim_load("CB_default");
+		anim_name = "CB_default";
 	}
 
-	// fire up an anim instance
-	if(Loop_anim != NULL){
-		anim_play_struct aps;
-
-		anim_play_init(&aps, Loop_anim, Loop_brief_anim_coords[gr_screen.res][0], Loop_brief_anim_coords[gr_screen.res][1]);
-		aps.framerate_independent = 1;
-		aps.looped = 1;
-		aps.screen_id = GS_STATE_LOOP_BRIEF;
-		Loop_anim_instance = anim_play(&aps);
+	int stream_result = generic_anim_init_and_stream(&Loop_anim, anim_name, bm_get_type(Loop_brief_bitmap), true);
+	// we've failed to load any animation
+	if (stream_result < 0) {
+		// load an image and treat it like a 1 frame animation
+		Loop_anim.first_frame = bm_load(anim_name);	//if we fail here, the value is still -1
+		if(Loop_anim.first_frame != -1) {
+			Loop_anim.num_frames = 1;
+		}
 	}
 
 	// init brief text
@@ -196,7 +196,7 @@ void loop_brief_init()
 }
 
 // do
-void loop_brief_do()
+void loop_brief_do(float frametime)
 {
 	int k;
 	int idx;
@@ -210,7 +210,7 @@ void loop_brief_do()
 
 		// this popup should be straight forward, and also not allow you to get out
 		// of it without actually picking one of the two options
-		do_loop = popup(PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON | PF_IGNORE_ESC | PF_BODY_BIG, 2, XSTR("Decline", 1467), XSTR("Accept", 1035), XSTR("You must either Accept or Decline before returning to the Main Hall", -1));
+		do_loop = popup(PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON | PF_IGNORE_ESC | PF_BODY_BIG, 2, XSTR("Decline", 1467), XSTR("Accept", 1035), XSTR("You must either Accept or Decline before returning to the Main Hall", 1618));
 
 		// if we accepted moving into loop then set it up for the next time the user plays
 		if (do_loop == 1) {
@@ -245,6 +245,16 @@ void loop_brief_do()
 
 	// render the briefing text
 	brief_render_text(0, Loop_brief_text_coords[gr_screen.res][0], Loop_brief_text_coords[gr_screen.res][1], Loop_brief_text_coords[gr_screen.res][3], flFrametime);
+	
+	if(Loop_anim.num_frames > 0) {
+		int x;
+		int y;
+
+		bm_get_info((Loop_anim.streaming) ? Loop_anim.bitmap_id : Loop_anim.first_frame, &x, &y, NULL, NULL, NULL);
+		x = Loop_brief_anim_center_coords[gr_screen.res][0] - x / 2;
+		y = Loop_brief_anim_center_coords[gr_screen.res][1] - y / 2;
+		generic_anim_render(&Loop_anim, frametime, x, y);
+	}
 
 	// render all anims
 	anim_render_all(GS_STATE_LOOP_BRIEF, flFrametime);
@@ -267,14 +277,9 @@ void loop_brief_close()
 	// destroy the window
 	Loop_brief_window.destroy();
 
-	// free up anim stuff
-	if(Loop_anim_instance != NULL){
-		anim_release_render_instance(Loop_anim_instance);
-		Loop_anim_instance = NULL;
-	}
-	if(Loop_anim != NULL){
-		anim_free(Loop_anim);
-		Loop_anim = NULL;
+	if (Loop_anim.num_frames > 0)
+	{
+		generic_anim_unload(&Loop_anim);
 	}
 
 	// stop voice

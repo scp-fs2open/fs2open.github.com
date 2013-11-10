@@ -33,7 +33,7 @@
 
 #include <string>
 
-struct object;
+class object;
 class WarpEffect;
 
 //	Part of the player died system.
@@ -305,8 +305,10 @@ typedef struct cockpit_display_info {
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
-typedef	struct ship_subsys {
-	struct ship_subsys *next, *prev;				//	Index of next and previous objects in list.
+class ship_subsys
+{
+public:
+	class ship_subsys *next, *prev;				//	Index of next and previous objects in list.
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
@@ -397,8 +399,14 @@ typedef	struct ship_subsys {
 
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
-	int turret_max_target_ownage; 
-} ship_subsys;
+	int turret_max_target_ownage;
+
+	ship_subsys()
+		: next(NULL), prev(NULL)
+	{}
+
+	void clear();
+};
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
 // we might have 3 engines), and the relative strength of the subsystem.  The #defines in model.h
@@ -416,7 +424,7 @@ typedef struct ship_flag_name {
 	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					9
+#define MAX_SHIP_FLAG_NAMES					15
 extern ship_flag_name Ship_flag_names[];
 
 // states for the flags variable within the ship structure
@@ -517,7 +525,10 @@ typedef struct ship_spark {
 #define AWACS_WARN_25		(1 << 1)
 #define AWACS_WARN_75		(1 << 2)
 
-typedef struct ship {
+// NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
+class ship
+{
+public:
 	int	objnum;
 	int	ai_index;			// Index in Ai_info of ai_info associated with this ship.
 	int	ship_info_index;	// Index in ship_info for this ship
@@ -542,15 +553,13 @@ typedef struct ship {
 
 	// targeting laser info
 	char targeting_laser_bank;						// -1 if not firing, index into polymodel gun points if it _is_ firing
+	int targeting_laser_objnum;					// -1 if invalid, beam object # otherwise
+
 	// corkscrew missile stuff
 	ubyte num_corkscrew_to_fire;						// # of corkscrew missiles lef to fire
 	int corkscrew_missile_bank;
-	// END PACK
-
-	// targeting laser info
-	int targeting_laser_objnum;					// -1 if invalid, beam object # otherwise
-	// corkscrew missile stuff
 	int next_corkscrew_fire;						// next time to fire a corkscrew missile
+	// END PACK
 
 	int	final_death_time;				// Time until big fireball starts
 	int	death_time;				// Time until big fireball starts
@@ -779,6 +788,7 @@ typedef struct ship {
 	int shield_armor_type_idx;
 	int collision_damage_type_idx;
 	int debris_damage_type_idx;
+	ushort debris_net_sig;						// net signiture of the first piece of debris this ship has
 
 	int model_instance_num;
 
@@ -795,7 +805,11 @@ typedef struct ship {
 	fix team_change_timestamp;
 	int team_change_time;
 
-} ship;
+	float autoaim_fov;
+
+	// reset to a completely blank ship
+	void clear();
+};
 
 struct ai_target_priority {
 	char name[NAME_LENGTH];
@@ -918,8 +932,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_NO_ETS							(1 << 13)	// The E - No ETS on this ship class
 #define SIF2_NO_LIGHTING					(1 << 14)	// Valathil - No lighting for this ship
 #define SIF2_DYN_PRIMARY_LINKING			(1 << 15)	// RSAXVC - Dynamically generate weapon linking options
+#define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
 // !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
-#define	MAX_SHIP_FLAGS	16		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	17		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
@@ -1148,7 +1163,10 @@ typedef struct path_metadata {
 } path_metadata;
 
 // The real FreeSpace ship_info struct.
-typedef struct ship_info {
+// NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
+class ship_info
+{
+public:
 	char		name[NAME_LENGTH];				// name for the ship
 	char		alt_name[NAME_LENGTH];			// display another name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
@@ -1290,6 +1308,9 @@ typedef struct ship_info {
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
+	float	auto_shield_spread;
+	bool	auto_shield_spread_bypass;
+	int		auto_shield_spread_from_lod;
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
@@ -1313,6 +1334,9 @@ typedef struct ship_info {
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
+
+	int bii_index_ship;						// if this ship has a briefing icon that overrides the normal icon set
+	int bii_index_wing;
 
 	int	score;								// default score for this ship
 
@@ -1417,7 +1441,7 @@ typedef struct ship_info {
 	SCP_vector<cockpit_display_info> displays;
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
-} ship_info;
+};
 
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
@@ -1439,7 +1463,6 @@ typedef struct engine_wash_info
 	float		length;			// length of engine wash, measured from thruster
 	float		intensity;		// intensity of engine wash
 	
-	engine_wash_info();
 } engine_wash_info;
 
 extern SCP_vector<engine_wash_info> Engine_wash_info;
@@ -1694,7 +1717,7 @@ extern int	ship_do_rearm_frame( object *objp, float frametime );
 extern float ship_calculate_rearm_duration( object *objp );
 extern void	ship_wing_cleanup( int shipnum, wing *wingp );
 
-extern object *ship_find_repair_ship( object *requester );
+extern int ship_find_repair_ship( object *requester_obj, object **ship_we_found = NULL );
 extern void ship_close();	// called in game_shutdown() to free malloced memory
 
 
@@ -1794,7 +1817,7 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
 
-int is_support_allowed(object *objp);
+int is_support_allowed(object *objp, bool do_simple_check = false);
 
 // Given an object and a turret on that object, return the actual firing point of the gun
 // and its normal.   This uses the current turret angles.  We are keeping track of which
@@ -1879,9 +1902,6 @@ float ship_get_warpout_speed(object *objp);
 
 // returns true if ship is beginning to speed up in warpout
 int ship_is_beginning_warpout_speedup(object *objp);
-
-// given a ship info type, return a species
-int ship_get_species_by_type(int ship_info_index);
 
 // return the length of the ship class
 float ship_class_get_length(ship_info *sip);

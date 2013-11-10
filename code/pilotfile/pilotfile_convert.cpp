@@ -2,6 +2,7 @@
 #include "globalincs/pstypes.h"
 #include "pilotfile/pilotfile_convert.h"
 #include "cfile/cfile.h"
+#include "playerman/managepilot.h"
 
 
 pilotfile_convert::pilotfile_convert()
@@ -71,6 +72,7 @@ void convert_pilot_files()
 {
 	size_t idx, j, i;
 	size_t count, inf_count;
+	int max_convert, num_converted = 0;
 	SCP_vector<SCP_string> existing;
 	SCP_vector<SCP_string> old_files;
 
@@ -103,8 +105,12 @@ void convert_pilot_files()
 		}
 	}
 
+	// don't convert enough pilots to exceed the pilot limit
+	max_convert = MAX_PILOTS - existing.size();
+
 	// if everything is already converted then bail
-	if (i == count) {
+	// also bail if MAX_PILOTS (or more!) already exist
+	if (i == count || max_convert <= 0) {
 		return;
 	}
 
@@ -136,9 +142,15 @@ void convert_pilot_files()
 			for (j = 0; j < savefiles.size(); j++) {
 				pcon->csg_convert(savefiles[j].c_str(), inferno);
 			}
+
+			++num_converted;
 		}
 
 		delete pcon;
+
+		if (num_converted >= max_convert) {
+			break;
+		}
 	}
 
 	mprintf(("PILOT: Pilot file conversion complete!\n"));

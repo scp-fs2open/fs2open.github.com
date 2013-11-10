@@ -44,10 +44,6 @@ static int Red_alert_new_mission_timestamp;		// timestamp used to give user a li
 //static int Red_alert_num_slots_used = 0;
 static int Red_alert_voice_started;
 
-#define RED_ALERT_WARN_TIME		4000				// time to warn user that new orders are coming
-
-#define RED_ALERT_EXITED_SHIP_CLASS		-1
-
 SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
 SCP_string Red_alert_precursor_mission;
 
@@ -265,7 +261,7 @@ float Ra_flash_time = 0.0f;
 int Ra_flash_up = 0;
 void red_alert_blit_title()
 {
-	char *str = XSTR("Incoming Transmission", 1406);
+	const char *str = XSTR("Incoming Transmission", 1406);
 	int w, h;
 
 	// get the string size	
@@ -395,7 +391,7 @@ void red_alert_do_frame(float frametime)
 	if (!(Game_mode & GM_MULTIPLAYER)) {
 		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
 		{
-			commit_pressed();
+			red_alert_button_pressed(RA_CONTINUE);
 			return;
 		}
 	}
@@ -504,7 +500,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	int i, list_size = 0;
 
 	// restore from ship_exited
-	if (ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS) {
+	if ( (ras->ship_class == RED_ALERT_DESTROYED_SHIP_CLASS) || (ras->ship_class == RED_ALERT_PLAYER_DEL_SHIP_CLASS) ) {
 		return;
 	}
 
@@ -538,7 +534,7 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 	int list_size;
 
 	// restore from ship_exited
-	if (ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS) {
+	if ( (ras->ship_class == RED_ALERT_DESTROYED_SHIP_CLASS) || (ras->ship_class == RED_ALERT_PLAYER_DEL_SHIP_CLASS) ) {
 		return;
 	}
 
@@ -594,7 +590,11 @@ void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 }
 
 
-// Record the current state of the players wingman
+/*
+ * Record the current state of the players wingman & ships with the "red-alert-carry" flag
+ * Wingmen without the red-alert-carry flag are only stored if they survive
+ * dead wingmen must still be handled in red_alert_bash_wingman_status
+ */
 void red_alert_store_wingman_status()
 {
 	ship				*shipp;
@@ -641,8 +641,11 @@ void red_alert_store_wingman_status()
 			ras.hull = float(Ships_exited[idx].hull_strength);
 
 			// if a ship has been destroyed or removed manually by the player, then mark it as such ...
-			if ( (Ships_exited[idx].flags & SEF_DESTROYED) || (Ships_exited[idx].flags & SEF_PLAYER_DELETED) ) {
-				ras.ship_class = RED_ALERT_EXITED_SHIP_CLASS;
+			if ( Ships_exited[idx].flags & SEF_DESTROYED ) {
+				ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
+			}
+			else if (Ships_exited[idx].flags & SEF_PLAYER_DELETED) {
+				ras.ship_class = RED_ALERT_PLAYER_DEL_SHIP_CLASS;
 			}
 			// ... otherwise we want to make sure and carry over the ship class
 			else {
@@ -663,10 +666,16 @@ void red_alert_store_wingman_status()
 }
 
 // Delete a ship in a red alert mission (since it must have died/departed in the previous mission)
-void red_alert_delete_ship(ship *shipp)
+void red_alert_delete_ship(ship *shipp, int ship_state)
 {
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
-		hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+		if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS) {
+			hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+		} else if (ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS) {
+			hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+		} else {
+			Error(LOCATION, "Red Alert: asked to delete ship (%s) with invalid ship state (%d)", shipp->ship_name, ship_state);
+		}
 	}
 
 	ship_add_exited_ship( shipp, SEF_PLAYER_DELETED );
@@ -676,7 +685,11 @@ void red_alert_delete_ship(ship *shipp)
 	}
 }
 
-// Take the stored wingman status information, and adjust the player wing ships accordingly
+/*
+ * Take the red alert status information, and adjust the red alert ships accordingly
+ * "red alert ships" are wingmen and any ship with the red-alert-carry flag
+ * Wingmen without red alert data still need to be handled / removed
+ */
 void red_alert_bash_wingman_status()
 {
 	int				i;
@@ -696,6 +709,7 @@ void red_alert_bash_wingman_status()
 	// go through all ships in the game, and see if there is red alert status data for any
 
 	int remove_list[MAX_SHIPS];
+	int remove_state[MAX_SHIPS];
 	int remove_count = 0;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
@@ -708,12 +722,13 @@ void red_alert_bash_wingman_status()
 		}
 
 		int found_match = 0;
+		int ship_state = RED_ALERT_DESTROYED_SHIP_CLASS;
 
 		for ( i = 0; i < (int)Red_alert_wingman_status.size(); i++ ) {
 			ras = &Red_alert_wingman_status[i];
 
-			// we only want to restore ships which haven't been destroyed (which the RED_ALERT_EXITED_SHIP_CLASS identifies)
-			if ( !stricmp(ras->name.c_str(), shipp->ship_name) && (ras->ship_class != RED_ALERT_EXITED_SHIP_CLASS) ) {
+			// we only want to restore ships which haven't been destroyed, or were removed by the player
+			if ( !stricmp(ras->name.c_str(), shipp->ship_name) && (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) ) {
 				found_match = 1;
 
 				// if necessary, restore correct ship class
@@ -732,10 +747,14 @@ void red_alert_bash_wingman_status()
 				}
 				red_alert_bash_weapons(ras, &shipp->weapons);
 				red_alert_bash_subsys_status(ras, shipp);
+
+			} else if ( !stricmp(ras->name.c_str(), shipp->ship_name) && ( (ras->ship_class == RED_ALERT_DESTROYED_SHIP_CLASS) || (ras->ship_class == RED_ALERT_PLAYER_DEL_SHIP_CLASS) ) ) {
+				ship_state = ras->ship_class;
 			}
 		}
 
 		if ( !found_match ) {
+			remove_state[remove_count] = ship_state;
 			remove_list[remove_count++] = SHIP_INDEX(shipp);
 		}
 	}
@@ -743,7 +762,7 @@ void red_alert_bash_wingman_status()
 	// remove ships
 	for ( i = 0; i < remove_count; i++ ) {
 		// remove ship
-		red_alert_delete_ship(&Ships[remove_list[i]]);
+		red_alert_delete_ship(&Ships[remove_list[i]], remove_state[i]);
 	}
 }
 

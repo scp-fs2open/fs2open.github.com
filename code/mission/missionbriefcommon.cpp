@@ -270,26 +270,31 @@ typedef struct icon_move_info
 	float				last_dist;
 } icon_move_info;
 
-icon_move_info	Icon_movers[MAX_BRIEF_ICONS];
+#define MAX_MOVING_ICONS	MAX_STAGE_ICONS
+
+icon_move_info	Icon_movers[MAX_MOVING_ICONS];
 icon_move_info	Icon_move_list;	// head of linked list
 
 // fading out icons
-typedef struct fade_icon
+typedef struct icon_fade_info
 {
-	hud_anim	fade_anim;		// anim info
+	hud_anim	fade_anim;
 	vec3d	pos;
 	int		team;
 } fade_icon;
 
-#define		MAX_FADE_ICONS	30
-fade_icon	Fading_icons[MAX_FADE_ICONS];
-int			Num_fade_icons;
+#define		MAX_FADING_ICONS	MAX_STAGE_ICONS
+
+icon_fade_info	Fading_icons[MAX_FADING_ICONS];
+int				Num_fade_icons;
 
 // voice id's for briefing text
 int Brief_voices[MAX_BRIEF_STAGES];
 
 cmd_brief *Cur_cmd_brief;
 cmd_brief Cmd_briefs[MAX_TVT_TEAMS];
+
+SCP_vector<briefing_icon_info> Briefing_icon_info;
 
 // --------------------------------------------------------------------------------------
 // forward declarations
@@ -313,19 +318,12 @@ int brief_text_wipe_finished();
 //
 void brief_parse_icon_tbl()
 {
-	int			num_icons, current_icon, rval;
-	char			name[MAX_FILENAME_LEN];
-	generic_anim	*ga;
-	hud_anim		*ha;
-	int species, icon;
-	int num_species_covered;
+	int rval, icon;
+	size_t species;
+	char name[MAX_FILENAME_LEN];
 
-	const int max_icons = Species_info.size() * MAX_BRIEF_ICONS;
-	Assert( max_icons > 0 );
-
-	generic_anim *temp_icon_bitmaps = new generic_anim[max_icons];
-	hud_anim *temp_icon_fade_anims = new hud_anim[max_icons];
-	hud_anim *temp_icon_highlight_anims = new hud_anim[max_icons];
+	Assert(!Species_info.empty());
+	const size_t max_icons = Species_info.size() * MIN_BRIEF_ICONS;
 
 	// open localization
 	lcl_ext_open();
@@ -334,48 +332,42 @@ void brief_parse_icon_tbl()
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "icons.tbl", rval));
 		lcl_ext_close();
 
-		// Ensure no memory leak
-		delete[] temp_icon_bitmaps;
-		delete[] temp_icon_fade_anims;
-		delete[] temp_icon_highlight_anims;
-
 		return;
 	}
 
 	read_file_text("icons.tbl", CF_TYPE_TABLES);
-	reset_parse();		
+	reset_parse();
 
 	required_string("#Start");
 
-	num_icons = 0;
+	Briefing_icon_info.clear();
 	while (required_string_either("#End","$Name:"))
 	{
-		if(num_icons >= max_icons) {
+		if(Briefing_icon_info.size() >= max_icons) {
 			Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", max_icons);
 			skip_to_start_of_string("#End");
 			break;
 		}
 
+		briefing_icon_info bii;
+
 		// parse regular frames
 		required_string("$Name:");
 		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		ga = &temp_icon_bitmaps[num_icons];
-		generic_anim_init(ga, name);
+		generic_anim_init(&bii.regular, name);
 	
 		// parse fade frames
 		required_string("$Name:");
 		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		ha = &temp_icon_fade_anims[num_icons];
-		hud_anim_init(ha, 0, 0, name);
+		hud_anim_init(&bii.fade, 0, 0, name);
 
 		// parse highlighting frames
 		required_string("$Name:");
 		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		ha = &temp_icon_highlight_anims[num_icons];
-		hud_anim_init(ha, 0, 0, name);
+		hud_anim_init(&bii.highlight, 0, 0, name);
 
-		// next icon
-		num_icons++;
+		// add it to the collection
+		Briefing_icon_info.push_back(bii);
 	}
 	required_string("#End");
 
@@ -384,44 +376,28 @@ void brief_parse_icon_tbl()
 
 
 	// now assign the icons to their species
-	num_species_covered = num_icons / MAX_BRIEF_ICONS;
-	current_icon = 0;
-	for (icon = 0; icon < MAX_BRIEF_ICONS; icon++)
+	const size_t num_species_covered = Briefing_icon_info.size() / MIN_BRIEF_ICONS;
+	size_t bii_index = 0;
+	for (icon = 0; icon < MIN_BRIEF_ICONS; icon++)
 	{
 		for (species = 0; species < num_species_covered; species++)
-		{
-			Species_info[species].icon_bitmaps[icon] = temp_icon_bitmaps[current_icon];
-			Species_info[species].icon_fade_anims[icon] = temp_icon_fade_anims[current_icon];
-			Species_info[species].icon_highlight_anims[icon] = temp_icon_highlight_anims[current_icon];
-
-			current_icon++;
-		}
+			Species_info[species].bii_index[icon] = bii_index++;
 	}
 
 	// error check
-	if (num_species_covered < (int)Species_info.size())
+	if (num_species_covered < Species_info.size())
 	{
-		char *errormsg = new char[70 + (Species_info.size() * (NAME_LENGTH))];
+		SCP_string errormsg = "The following species are missing icon info in icons.tbl:\n";
 
-		strcpy(errormsg, "The following species are missing icon info in icons.tbl:\n");
-		for (species = num_species_covered; species < (int)Species_info.size(); species++)
+		for (species = num_species_covered; species < Species_info.size(); species++)
 		{
-			strcat(errormsg, Species_info[species].species_name);
-			strcat(errormsg, "\n");
+			errormsg += Species_info[species].species_name;
+			errormsg += "\n";
 		}
-		strcat(errormsg, "\0");
 
-		Error(LOCATION, errormsg);
-
-		// probably won't get here, but just so we know about it
-		delete[] errormsg;
+		Error(LOCATION, errormsg.c_str());
 	}
-
-	delete[] temp_icon_bitmaps;
-	delete[] temp_icon_fade_anims;
-	delete[] temp_icon_highlight_anims;
 }
-
 
 void brief_set_icon_color(int team)
 {
@@ -437,7 +413,7 @@ void brief_move_icon_reset()
 	int i;
 
 	list_init(&Icon_move_list);
-	for ( i = 0; i < MAX_BRIEF_ICONS; i++ )
+	for ( i = 0; i < MAX_MOVING_ICONS; i++ )
 		Icon_movers[i].used = 0;
 }
 
@@ -619,19 +595,40 @@ void brief_init_colors()
 {
 }
 
+briefing_icon_info *brief_get_icon_info(brief_icon *bi)
+{
+	if (bi->ship_class < 0)
+		return NULL;
+	ship_info *sip = &Ship_info[bi->ship_class];
+
+	// ship info might override the usual briefing icon
+	if (sip->bii_index_ship >= 0)
+	{
+		if ((sip->bii_index_wing >= 0) && (bi->flags & BI_USE_WING_ICON))
+			return &Briefing_icon_info[sip->bii_index_wing];
+
+		return &Briefing_icon_info[sip->bii_index_ship];
+	}
+
+	if (sip->species < 0)
+		return NULL;
+
+	int bii_index = Species_info[sip->species].bii_index[bi->type];
+	if (bii_index < 0)
+		return NULL;
+
+	return &Briefing_icon_info[bii_index];
+}
+
 void brief_preload_icon_anim(brief_icon *bi)
 {
-	generic_anim *ga;
-	int species = ship_get_species_by_type(bi->ship_class);
-
-	if(species < 0) {
+	briefing_icon_info *bii = brief_get_icon_info(bi);
+	if (bii == NULL)
 		return;
-	}
 
-	ga = &Species_info[species].icon_bitmaps[bi->type];
-	if ( !stricmp(NOX("none"), ga->filename) ) {
+	generic_anim *ga = &bii->regular;
+	if ( !stricmp(NOX("none"), ga->filename) )
 		return;
-	}
 
 	// force read of data from disk, so we don't glitch on initial playback
 	if ( ga->first_frame == -1 ) {
@@ -642,17 +639,13 @@ void brief_preload_icon_anim(brief_icon *bi)
 
 void brief_preload_fade_anim(brief_icon *bi)
 {
-	hud_anim *ha;
-	int species = ship_get_species_by_type(bi->ship_class);
-
-	if(species < 0){
+	briefing_icon_info *bii = brief_get_icon_info(bi);
+	if (bii == NULL)
 		return;
-	}
 
-	ha = &Species_info[species].icon_fade_anims[bi->type];
-	if ( !stricmp(NOX("none"), ha->filename) ) {
+	hud_anim *ha = &bii->fade;
+	if ( !stricmp(NOX("none"), ha->filename) )
 		return;
-	}
 
 	// force read of data from disk, so we don't glitch on initial playback
 	if ( ha->first_frame == -1 ) {
@@ -666,17 +659,13 @@ void brief_preload_fade_anim(brief_icon *bi)
 
 void brief_preload_highlight_anim(brief_icon *bi)
 {
-	hud_anim *ha;
-	int species = ship_get_species_by_type(bi->ship_class);
-
-	if(species < 0){
+	briefing_icon_info *bii = brief_get_icon_info(bi);
+	if (bii == NULL)
 		return;
-	}
 
-	ha = &Species_info[species].icon_highlight_anims[bi->type];
-	if ( !stricmp(NOX("none"), ha->filename) ) {
+	hud_anim *ha = &bii->highlight;
+	if ( !stricmp(NOX("none"), ha->filename) )
 		return;
-	}
 
 	// force read of data from disk, so we don't glitch on initial playback
 	if ( ha->first_frame == -1 ) {
@@ -866,7 +855,7 @@ void brief_render_icon_line(int stage_num, int line_num)
 
 	// get screen (x,y) for icons
 	for (i=0; i<2; i++) {
-		brief_common_get_icon_dimensions(&icon_w, &icon_h, icon[i]->type, icon[i]->ship_class);
+		brief_common_get_icon_dimensions(&icon_w, &icon_h, icon[i]);
 		icon_x[i] = icon_vertex[i].screen.xyw.x;
 		icon_y[i] = icon_vertex[i].screen.xyw.y;
 	}
@@ -947,19 +936,19 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		brief_set_icon_color(bi->team);
 
-		int species = ship_get_species_by_type(bi->ship_class);
-
-		if(species < 0){
+		briefing_icon_info *bii = brief_get_icon_info(bi);
+		if (bii == NULL) {
+			Int3();
 			return;
 		}
 
-		ga = &Species_info[species].icon_bitmaps[bi->type];
+		ga = &bii->regular;
 		if (ga->first_frame < 0) {
 			Int3();
 			return;
 		}
 
-		brief_common_get_icon_dimensions(&icon_w, &icon_h, bi->type, bi->ship_class);
+		brief_common_get_icon_dimensions(&icon_w, &icon_h, bi);
 
 		closeup_icon = brief_get_closeup_icon();
 		if ( bi == closeup_icon || selected ) {
@@ -1042,7 +1031,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				if (Lcl_gr) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
-					lcl_translate_brief_icon_name(buf);
+					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
 					gr_string(bc - fl2i(w/2.0f), by - h, buf);
 				} else {
@@ -1674,12 +1663,12 @@ int brief_get_free_move_icon()
 {
 	int i;
 
-	for ( i = 0; i < MAX_BRIEF_ICONS; i++ ) {
+	for ( i = 0; i < MAX_MOVING_ICONS; i++ ) {
 		if ( Icon_movers[i].used == 0 )
 			break;
 	}
 	
-	if ( i == MAX_BRIEF_ICONS ) 
+	if ( i == MAX_MOVING_ICONS ) 
 		return -1;
 
 	Icon_movers[i].used = 1;
@@ -1746,17 +1735,17 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 
 		// Set up fading icon (to fade out)
 		if (is_gone == 1) {
-			if ( Num_fade_icons >= MAX_FADE_ICONS ) {
+			if ( Num_fade_icons >= MAX_FADING_ICONS ) {
 				Int3();
-				Num_fade_icons=0;
+				Num_fade_icons = 0;
 			}
 
-			int species = ship_get_species_by_type(cb->icons[i].ship_class);
-			if(species < 0) {
+			briefing_icon_info *bii = brief_get_icon_info(&cb->icons[i]);
+			if (bii == NULL) {
 				return 0;
 			}
 
-			Fading_icons[Num_fade_icons].fade_anim = Species_info[species].icon_fade_anims[cb->icons[i].type];
+			Fading_icons[Num_fade_icons].fade_anim = bii->fade;
 			Fading_icons[Num_fade_icons].pos = cb->icons[i].pos;
 			Fading_icons[Num_fade_icons].team = cb->icons[i].team;
 			Num_fade_icons++;
@@ -1773,13 +1762,14 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 			}
 		}
 		if ( is_new ) {
-			int species = ship_get_species_by_type(newb->icons[i].ship_class);
-			if(species < 0) {
+			briefing_icon_info *bii = brief_get_icon_info(&newb->icons[i]);
+			if (bii == NULL) {
+				Int3();
 				return 0;
 			}
 
 			newb->icons[i].flags |= BI_FADEIN;
-			newb->icons[i].fadein_anim = Species_info[species].icon_fade_anims[newb->icons[i].type];
+			newb->icons[i].fadein_anim = bii->fade;
 			newb->icons[i].fadein_anim.time_elapsed = 0.0f;
 		}
 	}
@@ -2212,32 +2202,24 @@ void brief_modify_grid(grid *gridp)
 
 void brief_unload_anims()
 {
-	int icon, species;
-	species_info *spinfo;
-	
-	for (species = 0; species < (int)Species_info.size(); species++)
+	for (SCP_vector<briefing_icon_info>::iterator ii = Briefing_icon_info.begin(); ii != Briefing_icon_info.end(); ++ii)
 	{
-		spinfo = &Species_info[species];
-
-		for (icon=0; icon<MAX_BRIEF_ICONS; icon++)
+		if (ii->regular.first_frame >= 0)
 		{
-			if (spinfo->icon_bitmaps[icon].first_frame >= 0)
-			{
-				bm_unload(spinfo->icon_bitmaps[icon].first_frame);
-				spinfo->icon_bitmaps[icon].first_frame = -1;
-			}
+			bm_unload(ii->regular.first_frame);
+			ii->regular.first_frame = -1;
+		}
 
-			if (spinfo->icon_fade_anims[icon].first_frame >= 0)
-			{
-				bm_unload(spinfo->icon_fade_anims[icon].first_frame);
-				spinfo->icon_fade_anims[icon].first_frame = -1;
-			}
+		if (ii->fade.first_frame >= 0)
+		{
+			bm_unload(ii->fade.first_frame);
+			ii->fade.first_frame = -1;
+		}
 
-			if (spinfo->icon_highlight_anims[icon].first_frame >= 0)
-			{
-				bm_unload(spinfo->icon_highlight_anims[icon].first_frame);
-				spinfo->icon_highlight_anims[icon].first_frame = -1;
-			}
+		if (ii->highlight.first_frame >= 0)
+		{
+			bm_unload(ii->highlight.first_frame);
+			ii->highlight.first_frame = -1;
 		}
 	}
 }
@@ -2392,24 +2374,21 @@ void brief_reset_last_new_stage()
 /**
  * Get the dimensions for a briefing icon
  */
-void brief_common_get_icon_dimensions(int *w, int *h, int type, int ship_class)
+void brief_common_get_icon_dimensions(int *w, int *h, brief_icon *bi)
 {
-	Assert(type >= 0 && type < MAX_BRIEF_ICONS);
+	Assert(bi != NULL);
 
 	// in case anything goes wrong
 	*w=0;
 	*h=0;
 
-	int species = ship_get_species_by_type(ship_class);
-	if(species < 0){
+	briefing_icon_info *bii = brief_get_icon_info(bi);
+	if (bii == NULL) {
 		return;
 	}
 
-	if (Species_info[species].icon_bitmaps[type].first_frame >= 0 ) {
-		bm_get_info(Species_info[species].icon_bitmaps[type].first_frame, w, h, NULL);
-	} else {
-		*w=0;
-		*h=0;
+	if (bii->regular.first_frame >= 0) {
+		bm_get_info(bii->regular.first_frame, w, h, NULL);
 	}
 }
 

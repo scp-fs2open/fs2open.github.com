@@ -1165,6 +1165,7 @@ void player_restore_target_and_weapon_link_prefs()
 {
 	ship_info *player_sip;
 	player_sip = &Ship_info[Player_ship->ship_info_index];
+	polymodel *pm = model_get(player_sip->model_num);
 
 	//	Don't restores the save flags in training, as we must ensure certain things are off, such as speed matching.
 	if ( !(The_mission.game_type & MISSION_TYPE_TRAINING )) {
@@ -1177,7 +1178,7 @@ void player_restore_target_and_weapon_link_prefs()
 		}
 	}
 
-	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY ) {
+	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY && (pm->n_missiles > 0 && pm->missile_banks[0].num_slots > 1) ) {
 		Player_ship->flags |= SF_SECONDARY_DUAL_FIRE;
 	}
 }

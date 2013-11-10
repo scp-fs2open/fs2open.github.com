@@ -174,6 +174,17 @@ void triggered_rotation::set_to_final(queued_animation *q)
 
 triggered_rotation::triggered_rotation()
 {
+	clear();
+}
+
+void triggered_rotation::clear()
+{
+	for (int i = 0; i < MAX_TRIGGERED_ANIMATIONS; i++)
+	{
+		queued_animation_init(&queue[i]);
+		queued_animation_init(&queue_tmp[i]);
+	}
+
 	current_ang = vmd_zero_vector;
 	current_vel = vmd_zero_vector;
 	rot_accel = vmd_zero_vector;
@@ -185,6 +196,13 @@ triggered_rotation::triggered_rotation()
 	n_queue = 0;
 	instance = -1;
 	has_started = false;
+	start_sound = -1;
+	loop_sound = -1;
+	end_sound = -1;
+	current_snd = -1;
+	current_snd_index = -1;
+	snd_rad = 0.0;
+	obj_num = -1;
 }
 
 triggered_rotation::~triggered_rotation()
@@ -195,9 +213,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 {
 	int i;
 	queued_animation new_queue;
-
 	memcpy( &new_queue, the_queue, sizeof(queued_animation) );
-
 
 	if (dir == -1) {
 		new_queue.start = new_queue.reverse_start;
@@ -219,7 +235,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 
 		if (i != n_queue) {
 			// replace if it's not the last item on the list
-			if ( i != (MAX_TRIGGERED_ANIMATIONS-1) )
+			if ( i < (MAX_TRIGGERED_ANIMATIONS-1) )
 				memcpy( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
 
 			// ok these two animations cancelled each other out, so he doesn't get on the queue
@@ -280,7 +296,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 			memcpy( queue, queue_tmp, sizeof(queued_animation) * i );
 
 		// if there are any items after, copy them from the original queue
-		if ( n_queue >= (i+1) )
+		if ( (n_queue >= (i+1)) && (i < (MAX_TRIGGERED_ANIMATIONS - 1)) )
 			memcpy( &queue[i+1], &queue_tmp[i], sizeof(queued_animation) * (n_queue - i) );
 
 		// add the new item
@@ -327,36 +343,36 @@ void triggered_rotation::process_queue()
 	queue[n_queue].end_time = 0;
 }
 
-queued_animation::queued_animation()
+void queued_animation_init(queued_animation *qa)
 {
-	angle = vmd_zero_vector;
-	vel = vmd_zero_vector;
-	accel = vmd_zero_vector;
+	qa->angle = vmd_zero_vector;
+	qa->vel = vmd_zero_vector;
+	qa->accel = vmd_zero_vector;
 
-	start = 0;
-	end = 0;
-	type = TRIGGER_TYPE_NONE;
-	subtype = ANIMATION_SUBTYPE_ALL;
+	qa->start = 0;
+	qa->end = 0;
+	qa->type = TRIGGER_TYPE_NONE;
+	qa->subtype = ANIMATION_SUBTYPE_ALL;
 
-	absolute = false;
-	reverse_start = -1;
-	instance = -1;
-	real_end_time = 0;
+	qa->absolute = false;
+	qa->reverse_start = -1;
+	qa->instance = -1;
+	qa->real_end_time = 0;
 
-	start_sound = -1;
-	loop_sound = -1;
-	end_sound = -1;
-	snd_rad = 0.0f;
+	qa->start_sound = -1;
+	qa->loop_sound = -1;
+	qa->end_sound = -1;
+	qa->snd_rad = 0.0f;
 }
 
-void queued_animation::correct()
+void queued_animation_correct(queued_animation *qa)
 {
 	for (int i = 0; i < 3; i++) {
-		if ( accel.a1d[i] == 0.0f )
+		if ( qa->accel.a1d[i] == 0.0f )
 			continue;
 
-		if ( ((vel.a1d[i] * vel.a1d[i]) / accel.a1d[i]) > fabs(angle.a1d[i]) )
-			vel.a1d[i] = fl_sqrt( fabs(accel.a1d[i] * angle.a1d[i]) );
+		if ( ((qa->vel.a1d[i] * qa->vel.a1d[i]) / qa->accel.a1d[i]) > fabs(qa->angle.a1d[i]) )
+			qa->vel.a1d[i] = fl_sqrt( fabs(qa->accel.a1d[i] * qa->angle.a1d[i]) );
 	}
 }
 

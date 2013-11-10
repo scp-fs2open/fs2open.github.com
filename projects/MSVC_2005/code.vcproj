@@ -696,6 +696,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\globalincs\profiling.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\GlobalIncs\PsTypes.h"
 				>
 			</File>

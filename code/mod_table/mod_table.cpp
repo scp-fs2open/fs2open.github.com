@@ -24,9 +24,10 @@ bool Enable_external_shaders = false;
 int Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 bool Full_color_head_anis = false;
 bool Weapons_inherit_parent_collision_group = false;
+bool Flight_controls_follow_eyepoint_orientation = false;
 
 
-void parse_mod_table(char *filename)
+void parse_mod_table(const char *filename)
 {
 	int rval;
 	// SCP_vector<SCP_string> lines;
@@ -56,10 +57,8 @@ void parse_mod_table(char *filename)
 		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
 
 		// remove extension?
-		char *p = strrchr(temp, '.');
-		if (p != NULL) {
-			mprintf(("Game Settings Table: Removing extension on default campaign file name %s\n", temp));
-			*p = 0;
+		if (drop_extension(temp)) {
+			mprintf(("Game Settings Table: Removed extension on default campaign file name %s\n", temp));
 		}
 
 		// check length
@@ -75,9 +74,16 @@ void parse_mod_table(char *filename)
 
 	if (optional_string("#Ignored Campaign File Names")) {
 		SCP_string campaign_name; 
+
 		while (optional_string("$Campaign File Name:")) {
-			stuff_string(campaign_name, F_NAME); 
-			Ignored_campaigns.push_back(campaign_name); 
+			stuff_string(campaign_name, F_NAME);
+
+			// remove extension?
+			if (drop_extension(campaign_name)) {
+				mprintf(("Game Settings Table: Removed extension on ignored campaign file name %s\n", campaign_name.c_str()));
+			}
+
+			Ignored_campaigns.push_back(campaign_name);
 		}
 	}
 
@@ -190,6 +196,12 @@ void parse_mod_table(char *filename)
 		stuff_boolean(&Weapons_inherit_parent_collision_group);
 		if (Weapons_inherit_parent_collision_group)
 			mprintf(("Game Settings Table: Weapons inherit parent collision group\n"));
+	}
+
+	if (optional_string("$Flight controls follow eyepoint orientation:")) {
+		stuff_boolean(&Flight_controls_follow_eyepoint_orientation);
+		if (Flight_controls_follow_eyepoint_orientation)
+			mprintf(("Game Settings Table: Flight controls follow eyepoint orientation\n"));
 	}
 
 	required_string("#END");

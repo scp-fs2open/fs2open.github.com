@@ -161,7 +161,7 @@ int parse_ship_start()
 	return ship_index;
 }
 
-void parse_hud_gauges_tbl(char *filename)
+void parse_hud_gauges_tbl(const char *filename)
 {
 	int i, rval;
 	char *saved_Mp = NULL;
@@ -1828,7 +1828,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 486;
-		coords[1] = 206;
+		coords[1] = 200;
 
 		base_res[0] = 640;
 		base_res[1] = 480;
@@ -1836,12 +1836,12 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 		header_text_offsets[0] = 3;
 		header_text_offsets[1] = 2;
 		list_start_offsets[0] = 0;
-		list_start_offsets[1] = 12;
+		list_start_offsets[1] = 13;
 		entry_h = 11;
 		entry_stagger_w = 0;
 		ship_name_offsets[0] = 3;
 		ship_name_offsets[1] = 0;
-		ship_integrity_offsets[0] = 128;
+		ship_integrity_offsets[0] = 118;
 		ship_integrity_offsets[1] = 0;
 		ship_status_offsets[0] = -12;
 		ship_status_offsets[1] = 0;
@@ -2601,10 +2601,10 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 			throttle_h = 50;
 			throttle_w = 49;
 			throttle_aburn_h = 17;
-			max_speed_offset[0] = 19;
-			max_speed_offset[1] = 10;
-			zero_speed_offset[0] = 35;
-			zero_speed_offset[1] = 59;
+			max_speed_offset[0] = 14;
+			max_speed_offset[1] = 14;
+			zero_speed_offset[0] = 33;
+			zero_speed_offset[1] = 63;
 			orbit_center_offset[0] = 103;
 			orbit_center_offset[1] = -1;
 			orbit_radius = 104;
@@ -2620,10 +2620,10 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 			throttle_h = 80;
 			throttle_w = 78;
 			throttle_aburn_h = 27;
-			max_speed_offset[0] = 30;
-			max_speed_offset[1] = 16;
-			zero_speed_offset[0] = 56;
-			zero_speed_offset[1] = 95;
+			max_speed_offset[0] = 22;
+			max_speed_offset[1] = 22;
+			zero_speed_offset[0] = 53;
+			zero_speed_offset[1] = 101;
 			orbit_center_offset[0] = 165;
 			orbit_center_offset[1] = -1;
 			orbit_radius = 166;
@@ -2853,12 +2853,16 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 		base_res[0] = 640;
 		base_res[1] = 480;
+
+		gauge_offset = 17;
 	} else {
 		coords[0] = 880;
 		coords[1] = 648;
 
 		base_res[0] = 1024;
 		base_res[1] = 768;
+
+		gauge_offset = 18;
 	}
 	bar_h = 41;
 	letter_offsets[0] = 2;
@@ -2867,7 +2871,6 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 	top_offsets[1] = 0;
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
-	gauge_offset = 20;
 
 	// parse data from .tbl
 	if(check_base_res(base_w, base_h)) {
@@ -3434,7 +3437,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 		base_res[0] = 640;
 		base_res[1] = 480;
 
-		dock_offsets[0] = 7;
+		dock_offsets[0] = 8;
 		dock_offsets[1] = 19;
 
 		time_offsets[0] = 8;
@@ -3446,7 +3449,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 		base_res[0] = 1024;
 		base_res[1] = 768;
 
-		dock_offsets[0] = 7;
+		dock_offsets[0] = 8;
 		dock_offsets[1] = 18;
 
 		time_offsets[0] = 8;
@@ -3456,7 +3459,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 	bracket_offsets[0] = 0;
 	bracket_offsets[1] = 3;
 
-	order_offsets[0] = 7;
+	order_offsets[0] = 8;
 	order_offsets[1] = 0; 
 
 	if(check_base_res(base_w, base_h)) {
@@ -3592,7 +3595,7 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		Radar_dist_offsets[1][0] = 107;
 		Radar_dist_offsets[1][1] = 92;
 
-		Radar_dist_offsets[2][0] = 112;
+		Radar_dist_offsets[2][0] = 111;
 		Radar_dist_offsets[2][1] = 92;
 
 		strcpy_s(fname, "radar1");
@@ -4571,7 +4574,7 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 		base_res[1] = 480;
 
 		Objective_text_offset_y = 2;
-		Objective_text_val_offset_y = 10;
+		Objective_text_val_offset_y = 11;
 		Subspace_text_offset_y = 2;
 		Subspace_text_val_offset_y = 10;
 		Red_text_offset_y = 2;
@@ -4738,13 +4741,13 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 497;
-		coords[1] = 273;
+		coords[1] = 252;
 
 		base_res[0] = 640;
 		base_res[1] = 480;
 	} else {
 		coords[0] = 880;
-		coords[1] = 525;
+		coords[1] = 511;
 
 		base_res[0] = 1024;
 		base_res[1] = 768;
@@ -4999,7 +5002,7 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 	header_offsets[1] = 2;
 	middle_frame_offset_y = 12;
 	text_start_offsets[0] = 3;
-	text_start_offsets[1] = 13;
+	text_start_offsets[1] = 14;
 	text_h = 9;
 
 	if(check_base_res(base_w, base_h)) {
@@ -5632,7 +5635,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 550;
-		coords[1] = 114;
+		coords[1] = 144;
 
 		base_res[0] = 640;
 		base_res[1] = 480;
@@ -6195,10 +6198,10 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	int scroll_time = 30;
 	int step_size = 3;
 	int total_life = 14000;
-	int line_height = 12;
+	int line_height = 9;
 	bool hidden_by_comms_menu = true;
 
-	coords[0] = 5;
+	coords[0] = 8;
 	coords[1] = 5;
 	int font_num = FONT1;
 	bool slew = false;

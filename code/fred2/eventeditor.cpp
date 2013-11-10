@@ -61,12 +61,12 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_wave_id = -1;
 	m_log_true = 0;
 	m_log_false = 0;
-	m_log_always_true = 0;
 	m_log_always_false = 0;
 	m_log_1st_repeat = 0;
 	m_log_last_repeat = 0;
 	m_log_1st_trigger = 0;
 	m_log_last_trigger = 0;
+	m_log_state_change = 0;
 }
 
 void event_editor::DoDataExchange(CDataExchange* pDX)
@@ -90,12 +90,12 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_LBIndex(pDX, IDC_MESSAGE_LIST, m_cur_msg);
 	DDX_Check(pDX, IDC_MISSION_LOG_TRUE, m_log_true);
 	DDX_Check(pDX, IDC_MISSION_LOG_FALSE, m_log_false);
-	DDX_Check(pDX, IDC_MISSION_LOG_ALWAYS_TRUE, m_log_always_true);
 	DDX_Check(pDX, IDC_MISSION_LOG_ALWAYS_FALSE, m_log_always_false);
 	DDX_Check(pDX, IDC_MISSION_LOG_1ST_REPEAT, m_log_1st_repeat);
 	DDX_Check(pDX, IDC_MISSION_LOG_LAST_REPEAT, m_log_last_repeat);
 	DDX_Check(pDX, IDC_MISSION_LOG_1ST_TRIGGER, m_log_1st_trigger);
 	DDX_Check(pDX, IDC_MISSION_LOG_LAST_TRIGGER, m_log_last_trigger);
+	DDX_Check(pDX, IDC_MISSION_LOG_STATE_CHANGE, m_log_state_change);
 
 
 	// m_team == -1 maps to 2
@@ -900,8 +900,6 @@ void event_editor::save_event(int e)
 		m_events[e].mission_log_flags |= MLF_SEXP_TRUE;
 	if (m_log_false) 
 		m_events[e].mission_log_flags |= MLF_SEXP_FALSE;
-	if (m_log_always_true) 
-		m_events[e].mission_log_flags |= MLF_SEXP_KNOWN_TRUE;
 	if (m_log_always_false) 
 		m_events[e].mission_log_flags |= MLF_SEXP_KNOWN_FALSE;
 	if (m_log_1st_repeat) 
@@ -912,6 +910,8 @@ void event_editor::save_event(int e)
 		m_events[e].mission_log_flags |= MLF_FIRST_TRIGGER_ONLY;
 	if (m_log_last_trigger) 
 		m_events[e].mission_log_flags |= MLF_LAST_TRIGGER_ONLY;
+	if (m_log_state_change) 
+		m_events[e].mission_log_flags |= MLF_STATE_CHANGE;
 
 
 	// Search for item to update
@@ -1046,11 +1046,6 @@ void event_editor::update_cur_event()
 	}else {
 		m_log_false  = FALSE;
 	}
-	if (m_events[cur_event].mission_log_flags & MLF_SEXP_KNOWN_TRUE) {
-		m_log_always_true  = TRUE;
-	}else {
-		m_log_always_true  = FALSE;
-	}
 	if (m_events[cur_event].mission_log_flags & MLF_SEXP_KNOWN_FALSE) {
 		m_log_always_false  = TRUE;
 	}else {
@@ -1075,6 +1070,11 @@ void event_editor::update_cur_event()
 		m_log_last_trigger  = TRUE;
 	}else {
 		m_log_last_trigger  = FALSE;
+	}
+	if (m_events[cur_event].mission_log_flags & MLF_STATE_CHANGE) {
+		m_log_state_change  = TRUE;
+	}else {
+		m_log_state_change  = FALSE;
 	}
 
 	UpdateData(FALSE);
@@ -1231,7 +1231,7 @@ int event_editor::save_message(int num)
 		}
 
 		string_copy(m_messages[num].message, m_message_text, MESSAGE_LENGTH - 1);
-		lcl_fred_replace_stuff(m_messages[num].message, MESSAGE_LENGTH);
+		lcl_fred_replace_stuff(m_messages[num].message, MESSAGE_LENGTH - 1);
 		if (m_messages[num].avi_info.name){
 			free(m_messages[num].avi_info.name);
 		}

@@ -624,7 +624,7 @@ CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
-    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.17 Antipodes OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.7.1 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
     LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
     DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
     LTEXT           """Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",IDC_STATIC,39,62,238,20
@@ -1286,7 +1286,7 @@ BEGIN
     CONTROL         "Last Repeat",IDC_MISSION_LOG_LAST_REPEAT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,97,410,55,10
     CONTROL         "First Trigger",IDC_MISSION_LOG_1ST_TRIGGER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,155,397,53,10
     CONTROL         "Last Trigger",IDC_MISSION_LOG_LAST_TRIGGER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,155,410,53,10
-    CONTROL         "Always True",IDC_MISSION_LOG_ALWAYS_TRUE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,37,397,55,10
+    CONTROL         "Log Previous",IDC_MISSION_LOG_STATE_CHANGE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,37,397,55,10
     CONTROL         "Always False",IDC_MISSION_LOG_ALWAYS_FALSE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,37,410,57,10
     LTEXT           "Log These States To The Event.log",IDC_STATIC,37,386,114,8
 END
@@ -1556,9 +1556,9 @@ BEGIN
     CONTROL         "Reset tech db at start of campaign",IDC_CUSTOM_TECH_DB,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,106,151,122,9
     EDITTEXT        IDC_BRIEFING_CUTSCENE,73,175,66,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_MAIN_HALL,200,175,21,12,ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_MAIN_HALL,64,192,49,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_DEBRIEFING_PERSONA,200,190,21,12,ES_NUMBER,WS_EX_RIGHT
-    CONTROL         "Tree1",IDC_SEXP_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,7,224,157,111,WS_EX_CLIENTEDGE
+    CONTROL         "Tree1",IDC_SEXP_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,224,157,111,WS_EX_CLIENTEDGE
     PUSHBUTTON      "Move Up",IDC_MOVE_UP,171,225,53,14,BS_CENTER,WS_EX_STATICEDGE
     PUSHBUTTON      "Move Down",IDC_MOVE_DOWN,171,242,53,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Toggle Loop",IDC_TOGGLE_LOOP,171,259,53,14,0,WS_EX_STATICEDGE
@@ -1583,7 +1583,7 @@ BEGIN
     LTEXT           "Mission loop description",IDC_STATIC,7,367,76,8
     LTEXT           "Loop brief anim",IDC_STATIC,13,408,49,8
     LTEXT           "Loop brief voice",IDC_STATIC,13,423,52,8
-    LTEXT           "Main hall index",IDC_MAINHALL_LABEL,149,177,48,8
+    LTEXT           "Main hall name",IDC_MAINHALL_LABEL,14,194,48,8
     GROUPBOX        "Mission options",IDC_MISSION_OPTIONS,7,165,221,43
     LTEXT           "Debriefing persona index",IDC_STATIC,118,193,79,8
 END
@@ -1628,8 +1628,8 @@ BEGIN
     COMBOBOX        IDC_TEAM,52,336,75,84,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_ID,151,284,30,12,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Highlight",IDC_HILIGHT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,302,43,10
-    CONTROL         "Change locally",IDC_LOCAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,319,62,10
-    CONTROL         "Flip Icon",IDC_FLIP_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,335,43,10
+    CONTROL         "Change locally",IDC_LOCAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,317,62,10
+    CONTROL         "Flip Icon",IDC_FLIP_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,332,43,10
     PUSHBUTTON      "Make Icon",IDC_MAKE_ICON,197,283,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Delete Icon",IDC_DELETE_ICON,197,300,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Propagate",IDC_PROPAGATE_ICONS,197,317,50,14,0,WS_EX_STATICEDGE
@@ -1649,6 +1649,7 @@ BEGIN
     LTEXT           "Usage Formula",IDC_STATIC,7,180,48,8
     LTEXT           "If music pack is present",IDC_STATIC,14,157,44,17
     GROUPBOX        "Briefing Music",IDC_STATIC,7,132,150,44
+    CONTROL         "Use Wing Icon",IDC_USE_WING_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,347,63,10
 END
 
 IDD_IGNORE_ORDERS DIALOG  0, 0, 120, 217
@@ -2095,8 +2096,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,6,17,9481
- PRODUCTVERSION 3,6,17,9481
+ FILEVERSION 3,7,1,0
+ PRODUCTVERSION 3,7,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -2112,13 +2113,13 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "Volition Inc."
-            VALUE "FileDescription", "Fred 2 Open - Antipodes"
-            VALUE "FileVersion", "3.6.17.9481"
-            VALUE "InternalName", "Fred 2 Open - Antipodes"
+            VALUE "FileDescription", "Fred 2 Open"
+            VALUE "FileVersion", "3.7.1.0000"
+            VALUE "InternalName", "Fred 2 Open"
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fred2.exe"
-            VALUE "ProductName", "Fred 2 Open - Antipodes"
-            VALUE "ProductVersion", "3.6.17"
+            VALUE "ProductName", "Fred 2 Open"
+            VALUE "ProductVersion", "3.7.1"
         END
     END
     BLOCK "VarFileInfo"
@@ -2689,7 +2690,7 @@ IDC_CURSOR2             CURSOR                  "res\\cursor2.cur"
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "FRED2_OPEN 3.6.17 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+    IDR_MAINFRAME           "FRED2_OPEN 3.7.1 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
 END
 
 STRINGTABLE 

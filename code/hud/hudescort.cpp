@@ -958,11 +958,16 @@ void hud_remove_ship_from_escort(int objnum)
 	}	
 }
 
-// Called whenever a ship is hit to determine if that ship is in the escort list.  If it
-// is, then start timers to flash the name hull/shield icon for that ship.
+/**
+ * Called whenever a ship is hit to determine if that ship is in the escort list.  If it
+ * is, then start timers to flash the name hull/shield icon for that ship.
+ *
+ * @param objp      The object hit
+ * @param quadrant  Shield quadrant on the object that was hit, alternatively -1 if no shield
+ */
 void hud_escort_ship_hit(object *objp, int quadrant)
 {
-	int					num, i;
+	int num, i;
 	shield_hit_info	*shi;
 
 	// no ships on the escort list in multiplayer dogfight
@@ -973,9 +978,12 @@ void hud_escort_ship_hit(object *objp, int quadrant)
 	for ( i = 0; i < Num_escort_ships; i++ ) {
 		if ( Escort_ships[i].objnum == OBJ_INDEX(objp) ) {
 			shi = &Escort_ships[i].hit_info;
-			num = Quadrant_xlate[quadrant];
+			
 			hud_gauge_popup_start(HUD_ESCORT_VIEW);
 			if ( quadrant >= 0 ) {
+				// If no shields present on the hit object, quadrant is negative one
+				// otherwise, use the quadrant value as an index into the array
+				num = Quadrant_xlate[quadrant];
 				shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION);
 			} else {
 				shi->shield_hit_timers[HULL_HIT_OFFSET] = timestamp(SHIELD_HIT_DURATION);

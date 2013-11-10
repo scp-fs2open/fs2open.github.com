@@ -97,19 +97,22 @@ class sexp_list_item
 public:
 	int type;
 	int op;
-	char *text;
+	const char *text;
 	int flags;
 	sexp_list_item *next;
 
 	sexp_list_item() : flags(0), next(NULL) {}
 
 	void set_op(int op_num);
-	void set_data(char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void set_data_dup(char *str, int t = (SEXPT_STRING | SEXPT_VALID));
+	void set_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
+	void set_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
+
 	void add_op(int op_num);
-	void add_data(char *str, int t = (SEXPT_STRING | SEXPT_VALID));
+	void add_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void add_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void add_list(sexp_list_item *list);
+
+	void shallow_copy(const sexp_list_item *src);
 	void destroy();
 };
 
@@ -118,19 +121,19 @@ class sexp_tree : public CTreeCtrl
 public:
 	sexp_tree();
 
-	int find_text(char *text, int *find);
+	int find_text(const char *text, int *find);
 	int query_restricted_opf_range(int opf);
 	void verify_and_fix_arguments(int node);
 	void post_load();
 	void update_help(HTREEITEM h);
-	char *help(int code);
+	const char *help(int code);
 	HTREEITEM insert(LPCTSTR lpszItem, int image = BITMAP_ROOT, int sel_image = BITMAP_ROOT, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 	HTREEITEM handle(int node);
 	int get_type(HTREEITEM h);
 	void setup(CEdit *ptr = NULL);
 	int query_false(int node = -1);
 	int add_default_operator(int op, int argnum);
-	int get_default_value(sexp_list_item *item, int op, int i);
+	int get_default_value(sexp_list_item *item, char *text_buf, int op, int i);
 	int query_default_argument_available(int op);
 	int query_default_argument_available(int op, int i);
 	void swap_roots(HTREEITEM one, HTREEITEM two);
@@ -139,13 +142,13 @@ public:
 	void copy_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void setup_selected(HTREEITEM h = NULL);
 	void add_or_replace_operator(int op, int replace_flag = 0);
-	void replace_one_arg_operator(char *op, char *data, int type);
-	void replace_operator(char *op);
-	void replace_data(char *data, int type);
+//	void replace_one_arg_operator(const char *op, const char *data, int type);
+	void replace_operator(const char *op);
+	void replace_data(const char *data, int type);
 	void replace_variable_data(int var_idx, int type);
 	void link_modified(int *ptr);
 	void ensure_visible(int node);
-	int node_error(int node, char *msg, int *bypass);
+	int node_error(int node, const char *msg, int *bypass);
 	void expand_branch(HTREEITEM h);
 	void expand_operator(int node);
 	void merge_operator(int node);
@@ -156,23 +159,23 @@ public:
 	void right_clicked(int mode = 0);
 	int ctree_size;
 	virtual void build_tree();
-	void set_node(int index, int type, char *text);
+	void set_node(int index, int type, const char *text);
 	void free_node(int node, int cascade = 0);
 	int allocate_node(int parent, int after = -1);
 	int allocate_node();
 	int find_free_node();
-	void clear_tree(char *op = NULL);
+	void clear_tree(const char *op = NULL);
 	void reset_handles();
 	int save_tree(int node = -1);
-	void load_tree(int index, char *deflt = "true");
-	void add_one_arg_operator(char *op, char *data, int type);
-	void add_operator(char *op, HTREEITEM h = TVI_ROOT);
-	int add_data(char *data, int type);
-	int add_variable_data(char *data, int type);
+	void load_tree(int index, const char *deflt = "true");
+	void add_one_arg_operator(const char *op, const char *data, int type);
+	void add_operator(const char *op, HTREEITEM h = TVI_ROOT);
+	int add_data(const char *data, int type);
+	int add_variable_data(const char *data, int type);
 	void add_sub_tree(int node, HTREEITEM root);
-	int load_sub_tree(int index, bool valid, char *text);
+	int load_sub_tree(int index, bool valid, const char *text);
 	void hilite_item(int node);
-	char *match_closest_operator(char *str, int node);
+	const char *match_closest_operator(const char *str, int node);
 	void delete_sexp_tree_variable(const char *var_name);
 	void modify_sexp_tree_variable(const char *old_name, int sexp_var_index);
 	int get_item_index_to_var_index();
@@ -210,12 +213,13 @@ public:
 	sexp_list_item *get_listing_opf_priority();
 	sexp_list_item *get_listing_opf_waypoint_path();
 	sexp_list_item *get_listing_opf_ship_point();
+	sexp_list_item *get_listing_opf_ship_wing();
+	sexp_list_item *get_listing_opf_ship_wing_wholeteam();
+	sexp_list_item *get_listing_opf_ship_wing_shiponteam_point();
 	sexp_list_item *get_listing_opf_ship_wing_point();
-	sexp_list_item *get_listing_opf_ship_wing_team();
 	sexp_list_item *get_listing_opf_ship_wing_point_or_none();
 	sexp_list_item *get_listing_opf_mission_name();
 	sexp_list_item *get_listing_opf_goal_name(int parent_node);
-	sexp_list_item *get_listing_opf_ship_wing();
 	sexp_list_item *get_listing_opf_order_recipient();
 	sexp_list_item *get_listing_opf_ship_type();
 	sexp_list_item *get_listing_opf_keypress();

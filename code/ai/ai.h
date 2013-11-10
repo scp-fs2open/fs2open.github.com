@@ -20,9 +20,9 @@
 #include "object/waypoint.h"
 
 struct ship_weapon;
-struct ship_subsys;
-struct object;
-struct ship_info;
+class ship_subsys;
+class object;
+class ship_info;
 
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
@@ -32,7 +32,7 @@ typedef struct ai_flag_name {
 	int flag_list;
 } ai_flag_name;
 
-#define MAX_AI_FLAG_NAMES			1
+#define MAX_AI_FLAG_NAMES			2
 extern ai_flag_name Ai_flag_names[];
 
 #define	AIF_FORMATION_WING					(1 << 0)	//	Fly in formation as part of wing.
@@ -63,6 +63,8 @@ extern ai_flag_name Ai_flag_names[];
 // Goober5000
 #define	AIF_UNLOAD_PRIMARIES				(1 << 24)	//	Fire primaries as fast as possible!
 #define AIF_TRYING_UNSUCCESSFULLY_TO_WARP	(1 << 25)	// Trying to warp, but can't warp at the moment
+
+#define AIF_FREE_AFTERBURNER_USE			(1 << 26)	// Use afterburners while following waypoints or flying towards objects
 
 #define	AIF_AVOID_SHOCKWAVE		(AIF_AVOID_SHOCKWAVE_SHIP | AIF_AVOID_SHOCKWAVE_WEAPON)
 #define	AIF_FORMATION			(AIF_FORMATION_WING | AIF_FORMATION_OBJECT)
@@ -366,10 +368,10 @@ typedef struct ai_info {
 	int		ai_class;				//	Class.  Might be override of default.
 
 	//	Probably become obsolete, to be replaced by path_start, path_cur, etc.
-	waypoint_list				*wp_list;		// waypoint list being followed
-	SCP_list<waypoint>::iterator wp_index;	// waypoint index in list
+	waypoint_list	*wp_list;		// waypoint list being followed
+	size_t			 wp_index;		// waypoint index in list
 	int		wp_flags;				//	waypoint flags, see WPF_xxxx
-	int		waypoint_speed_cap;	// -1 no cap, otherwise cap - changed to int by Goober5000
+	int		waypoint_speed_cap;		// -1 no cap, otherwise cap - changed to int by Goober5000
 
 	//	Path following information
 	int		path_start;				//	Index into global array, start of path.
@@ -587,7 +589,7 @@ extern char** Ai_class_names;
 extern int Num_ai_classes;
 extern int Ai_firing_enabled;
 
-extern char	*Skill_level_names(int skill_level, int translate = 1);
+extern const char *Skill_level_names(int skill_level, int translate = 1);
 extern int Ai_goal_signature;
 
 // need access to following data in AiBig.cpp

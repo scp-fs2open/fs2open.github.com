@@ -17,7 +17,7 @@
 #include "graphics/2d.h"
 #include "object/object.h"
 
-struct object;
+class object;
 
 extern flag_def_list model_render_flags[];
 extern int model_render_flags_size;
@@ -300,7 +300,32 @@ struct bsp_collision_tree {
 	bool used;
 };
 
-typedef struct bsp_info {
+class bsp_info
+{
+public:
+	bsp_info()
+		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
+		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0), sii(NULL),
+		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
+		num_arcs(0), render_sphere_radius(0.0f), use_render_box(0), use_render_sphere(0), gun_rotation(false), no_collisions(false),
+		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
+		look_at_num(-1)
+	{
+		name[0] = 0;
+		lod_name[0] = 0;
+		look_at[0] = 0;
+
+		offset = geometric_center = min = max = render_box_min = render_box_max = render_sphere_offset = vmd_zero_vector;
+		orientation = vmd_identity_matrix;
+
+		memset(&bounding_box, 0, 8 * sizeof(vec3d));
+		memset(&angs, 0, sizeof(angles));
+		memset(&live_debris, 0, MAX_LIVE_DEBRIS * sizeof(int));
+		memset(&details, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
+		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
+	}
+
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
 	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
 	int		movement_axis;			// which axis this subobject moves or rotates on.
@@ -371,64 +396,7 @@ typedef struct bsp_info {
 	//int	look_at;				//Bobboau
 	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
 	char	look_at[MAX_NAME_LEN];	//VA - name of submodel to be looked at by this submodel
-
-	/* If you've got a better way to do this, please implement it! */
-	void Reset( )
-	{
-		name[ 0 ] = '\0';
-		movement_type = 0;
-		movement_axis = 0;
-		can_move = false;
-		
-		bsp_data_size = 0;
-		blown_off = 0;
-		my_replacement = 0;
-		i_replace = 0;
-		is_live_debris = 0;
-		num_live_debris = 0;
-		sii = NULL;
-		is_thruster = 0;
-		is_damaged = 0;
-		parent = 0;
-		num_children = 0;
-		first_child = 0;
-		next_sibling = 0;
-		num_details = 0;
-		num_arcs = 0;
-		render_sphere_radius = 0;
-		use_render_box = 0;
-		use_render_sphere = 0;
-		gun_rotation = false;
-		no_collisions = false;
-		nocollide_this_only = false;
-		collide_invisible = false;
-		force_turret_normal = false;
-		dumb_turn_rate = 0.f;
-		bsp_data = NULL;
-		rad = 0.f;
-		lod_name[ 0 ] = '\0';
-		collision_tree_index = -1;
-		attach_thrusters = false;
-
-		/* Compound types */
-		memset( live_debris, 0, sizeof( live_debris ) );
-		memset( details, 0, sizeof( details ) );
-		memset( &geometric_center, 0, sizeof( geometric_center ) );
-		memset( &offset, 0, sizeof( offset ) );
-		memset( &orientation, 0, sizeof( orientation ) );
-		memset( &min, 0, sizeof( min ) );
-		memset( &max, 0, sizeof( max ) );
-		memset( bounding_box, 0, sizeof( bounding_box ) );
-		memset( &angs, 0, sizeof( angs ) );
-		memset( arc_pts, 0, sizeof( arc_pts ) );
-		memset( arc_type, 0, sizeof( arc_type ) );
-		memset( &render_box_min, 0, sizeof( render_box_min ) );
-		memset( &render_box_max, 0, sizeof( render_box_max ) );
-		memset( &render_sphere_offset, 0, sizeof( render_sphere_offset ) );
-
-		buffer.clear( );
-	}
-} bsp_info;
+};
 
 void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
 
@@ -611,7 +579,8 @@ typedef struct insignia {
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
 
 // Goober5000
-class texture_info {
+class texture_info
+{
 private:
 	int original_texture;	// what gets read in from file
 	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
@@ -620,6 +589,7 @@ private:
 	//If num_frames is < 2, it doesn't need to be treated like an animation.
 	int num_frames;
 	float total_time;		// in seconds
+
 public:
 	texture_info();
 	texture_info(int bm_handle);
@@ -650,20 +620,26 @@ public:
 									//to update switch() statement in lua.cpp
 // taylor
 //WMC - OOPified
-class texture_map {
+class texture_map
+{
 public:
 	texture_info textures[TM_NUM_TYPES];
 
 	bool is_ambient;
 	bool is_transparent;
-public:
+
 	int FindTexture(int bm_handle);
 	int FindTexture(char *name);
 
 	void PageIn();
 	void PageOut(bool release);
 
-	void Reset();
+	void Clear();
+	void ResetToOriginal();
+
+	texture_map()
+		: is_ambient(false), is_transparent(false)
+	{}
 };
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
@@ -672,7 +648,42 @@ public:
 #define REPLACE_WITH_INVISIBLE	-47
 
 //used to describe a polygon model
-typedef struct polymodel {
+// NOTE: Because WMC OOPified the textures, this must now be treated as a class, rather than a struct.
+//       Additionally, a lot of model initialization and de-initialization is currently done in model_load or model_unload.
+class polymodel
+{
+public:
+	// initialize to 0 and NULL because previously a memset was used
+	polymodel()
+		: id(-1), version(0), flags(0), n_detail_levels(0), num_debris_objects(0), n_models(0), num_lights(0), lights(NULL),
+		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
+		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
+		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
+		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
+		vertex_buffer_id(-1)
+	{
+		filename[0] = 0;
+		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;
+		moment_of_inertia = vmd_identity_matrix;
+
+		memset(&detail, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
+		memset(&detail_depth, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(float));
+		memset(&debris_objects, 0, MAX_DEBRIS_OBJECTS * sizeof(int));
+		memset(&bounding_box, 0, 8 * sizeof(vec3d));
+		memset(&view_positions, 0, MAX_EYES * sizeof(eye));
+		memset(&shield, 0, sizeof(shield_info));
+		memset(&octants, 0, 8 * sizeof(model_octant));
+		memset(&split_plane, 0, MAX_SPLIT_PLANE * sizeof(float));
+		memset(&ins, 0, MAX_MODEL_INSIGNIAS * sizeof(insignia));
+
+#ifndef NDEBUG
+		ram_used = 0;
+		debug_info_size = 0;
+		debug_info = NULL;
+#endif
+	}
+
+
 	int			id;				// what the polygon model number is.  (Index in Polygon_models)
 	int			version;
 	char			filename[FILESPEC_LENGTH];
@@ -756,7 +767,7 @@ typedef struct polymodel {
 	float gun_submodel_rotation;
 
 	int vertex_buffer_id;			// HTL vertex buffer id
-} polymodel;
+};
 
 // Call once to initialize the model system
 void model_init();
@@ -917,6 +928,7 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm,
 
 extern void find_submodel_instance_point(vec3d *outpnt, object *ship_obj, int submodel_num);
 extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *ship_obj, int submodel_num, vec3d *submodel_pnt, vec3d *submodel_norm);
+extern void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, object *ship_obj, int submodel_num, vec3d *submodel_pnt, matrix *submodel_orient);
 extern void find_submodel_instance_world_point(vec3d *outpnt, object *ship_obj, int submodel_num);
 
 // Given a polygon model index, find a list of rotating submodels to be used for collision
@@ -945,6 +957,7 @@ extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
+extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2 );
 
 void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);
 void model_instance_dumb_rotation(int model_instance_num);
@@ -1023,42 +1036,12 @@ typedef struct mc_info {
 	bsp_collision_leaf *bsp_leaf;
 
 										// flags can be changed for the case of sphere check finds an edge hit
-	mc_info()
-	{
-		// Echelon9 - BIG WARNING.
-        // Using memset() as a constructor is rarely correct in C++
-        // If mc_info ever becomes non-POD type, this memset() will hose the virtual table
-        memset(this, 0, sizeof(*this));
-	}
-
-	mc_info(const mc_info& other)
-	{
-		this->model_instance_num = other.model_instance_num;
-		this->model_num = other.model_num;
-		this->submodel_num = other.submodel_num;
-		this->orient = other.orient;
-		this->pos = other.pos;
-		this->p0 = other.p0;
-		this->p1 = other.p1;
-		this->flags = other.flags;
-		this->radius = other.radius;
-
-		this->num_hits = other.num_hits;
-		this->hit_dist = other.hit_dist;
-		this->hit_point = other.hit_point;
-		this->hit_point_world = other.hit_point_world;
-        this->hit_submodel = other.hit_submodel;
-        this->hit_bitmap = other.hit_bitmap;
-		this->hit_u = other.hit_u;
-		this->hit_v = other.hit_v;
-		this->shield_hit_tri = other.shield_hit_tri;
-		this->hit_normal = other.hit_normal;
-		this->edge_hit = other.edge_hit;
-		this->f_poly = other.f_poly;
-		this->t_poly = other.t_poly;
-	}
 } mc_info;
 
+inline void mc_info_init(mc_info *mc)
+{
+	memset(mc, 0, sizeof(mc_info));
+}
 
 
 //======== MODEL_COLLIDE ============
@@ -1205,7 +1188,7 @@ typedef struct mst_info {
 	float distortion_length_factor;
 	bool draw_distortion;
 
-	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1),
+	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1), distortion_bitmap(-1),
 					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
 					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f), distortion_rad_factor(1.0f), distortion_length_factor(1.0f)
 				{}

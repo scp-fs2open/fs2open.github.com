@@ -99,7 +99,7 @@ float Radar_ranges[RR_MAX_RANGES] = {
 	10000000.0f,	// infinity
 };
 
-char *Radar_range_text(int n)
+const char *Radar_range_text(int n)
 {
 	#if RR_MAX_RANGES != 3
 	#error Number of ranges is wrong!
@@ -359,7 +359,7 @@ int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	}
 };
 
-char *HC_gauge_descriptions(int n)
+const char *HC_gauge_descriptions(int n)
 {
 	switch(n)	{
 	case 0:
@@ -1571,6 +1571,9 @@ void hud_set_default_hud_config(player *p)
 	HUD_config.rp_flags = RP_DEFAULT;
 	HUD_config.rp_dist = RR_INFINITY;
 	HUD_config.is_observer = 0;
+
+	// load up the default colors
+	hud_config_color_load("hud_3.hcf");
 }
 
 // hud_config_restore() will restore the hud configuration the player started with when the 

@@ -1,171 +1,412 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
+    <Filter Include="Base">
       <UniqueIdentifier>{a5818b72-a942-4889-b58c-6bb69d1b93d9}</UniqueIdentifier>
       <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{01783953-52ae-45e8-984b-17eb0898e4f4}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    <Filter Include="Editors">
+      <UniqueIdentifier>{a4b932db-7cf3-4f1b-94a5-465b79bf179d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{23f96195-406a-46fd-9429-2ea027c13841}</UniqueIdentifier>
-      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    <Filter Include="Misc">
+      <UniqueIdentifier>{12498d47-d5fe-42d3-9e86-65d0709d5daa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{1dab78fa-fe31-45b1-92a3-de9a6c0d0755}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help">
+      <UniqueIdentifier>{7ab947fc-1a7f-4a96-abe9-ff361b197a2f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\code\wxfred2\aboutbox.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\frmfred2.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\wxfred2.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\base\wxfred_base.cpp">
+      <Filter>Base</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\asteroidfieldeditor.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgasteroidfieldeditor.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\campaigneditor.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgbackgroundeditor.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\commandbriefingeditor.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgeventseditor.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\debriefingeditor.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgfictionviewer.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\fredframe.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgmissionobjectiveseditor.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\missionspecseditor.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgmissionspecseditor.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\setglobalshipflagseditor.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgobjecteditor.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\shieldsystemeditor.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgreinforcementseditor.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\voiceactingmanagereditor.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgreinforcementspicker.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\voicefilemanager.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgsoundenvironment.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\wxfred2.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\frmbriefingeditor.cpp">
+      <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\wxfred_xrc.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\code\wxfred2\editors\frmcommandbriefingeditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\frmdebriefingeditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\frmshipseditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\frmteamloadouteditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\frmwaypointeditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\frmwingeditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgshieldsystemeditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgsetglobalshipflagseditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgvoiceactingmanager.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\editors\frmcampaigneditor.cpp">
+      <Filter>Editors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\misc\dlgmissionstats.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\help\dlgaboutbox.cpp">
+      <Filter>Help</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\wxfred2\help\dlgsexphelp.cpp">
+      <Filter>Help</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\code\wxfred2\aboutbox.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\frmfred2.h" />
+    <ClInclude Include="..\..\code\wxfred2\wxfred2.h" />
+    <ClInclude Include="..\..\code\wxfred2\base\wxfred_base.h">
+      <Filter>Base</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\asteroidfieldeditor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgasteroidfieldeditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\campaigneditor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgbackgroundeditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\commandbriefingeditor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgeventseditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\debriefingeditor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgfictionviewer.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\fredframe.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgmissionobjectiveseditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\missionspecseditor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgmissionspecseditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\setglobalshipflagseditor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgobjecteditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\shieldsystemeditor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgreinforcementseditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\voiceactingmanagereditor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgreinforcementspicker.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\voicefilemanager.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgsoundenvironment.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\wxfred2.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\frmbriefingeditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\wxfred_xrc.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\code\wxfred2\editors\frmcommandbriefingeditor.h">
+      <Filter>Editors</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\frmdebriefingeditor.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\frmshipseditor.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\frmteamloadouteditor.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\frmwaypointeditor.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\frmwingeditor.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\constx.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\constxy.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\constxz.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\consty.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\constyz.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\constz.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\orbitsel.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\rotlocal.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\select.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\selectlist.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\selectlock.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\selectmove.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\selectrot.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\showdist.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\wingdisband.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\wingform.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\zoomext.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\res\zoomsel.png.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgshieldsystemeditor.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgsetglobalshipflagseditor.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgvoiceactingmanager.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\editors\frmcampaigneditor.h">
+      <Filter>Editors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\misc\dlgmissionstats.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\help\dlgaboutbox.h">
+      <Filter>Help</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\help\dlgsexphelp.h">
+      <Filter>Help</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\wxfred2\glcviewport.h" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\blank.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\bullseye.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\cdrom.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\computer.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\drive.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\file1.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\floppy.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\folder1.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\folder2.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\FRED.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\hand.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\magnif1.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\noentry.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\pbrush.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\pencil.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\pntleft.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\pntright.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\query.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\removble.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\rightarr.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\roller.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\size.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wx\msw\watch1.cur">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\code\wxfred2\wxfred.xrc" />
+    <None Include="..\..\code\wxfred2\res\bitmap1.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\black_do.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\bmp00001.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\chained.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\chained_directive.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\constx.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\constxy.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\constxz.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\consty.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\constyz.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\constz.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data00.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data05.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data10.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data15.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data20.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data25.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data30.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data35.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data40.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data45.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data50.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data55.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data60.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data65.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data70.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data75.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data80.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data85.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data90.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\data95.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\fred.ico">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\freddoc.ico">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\fredknows.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\green_do.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\orbitsel.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\root.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\root_directive.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\rotlocal.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\select.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\selectlist.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\selectlock.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\selectmove.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\selectrot.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\showdist.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\toolbar.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\toolbar1.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\toolbar1_x2.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\variable.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\wingdisband.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\wingform.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\zoomext.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\zoomsel.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\fred_app.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\play.xpm">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\code\wxfred2\res\fred_debug.xpm">
+      <Filter>Resources</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\code\wxfred2\res\wxfred.rc">
+      <Filter>Resources</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

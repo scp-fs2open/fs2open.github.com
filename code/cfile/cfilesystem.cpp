@@ -366,7 +366,7 @@ void cf_build_pack_list( cf_root *root )
 }
 
 
-void cf_build_root_list(char *cdrom_dir)
+void cf_build_root_list(const char *cdrom_dir)
 {
 	Num_roots = 0;
 	Num_path_roots = 0;
@@ -503,7 +503,7 @@ void cf_build_root_list(char *cdrom_dir)
 // Given a lower case list of file extensions 
 // separated by spaces, return zero if ext is
 // not in the list.
-int is_ext_in_list( char *ext_list, char *ext )
+int is_ext_in_list( const char *ext_list, const char *ext )
 {
 	char tmp_ext[128];
 
@@ -766,7 +766,7 @@ void cf_build_file_list()
 }
 
 
-void cf_build_secondary_filelist(char *cdrom_dir)
+void cf_build_secondary_filelist(const char *cdrom_dir)
 {
 	int i;
 
@@ -833,7 +833,7 @@ void cf_free_secondary_filelist()
  *
  * @return If not found returns 0.
  */
-int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
+int cf_find_file_location( const char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
 	int i;
     uint ui;
@@ -1024,7 +1024,7 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 }
 
 // -- from parselo.cpp --
-extern char *stristr(const char *str, const char *substr);
+extern char *stristr(char *str, const char *substr);
 
 /**
  * Searches for a file.
@@ -1044,7 +1044,7 @@ extern char *stristr(const char *str, const char *substr);
  *
  * @return If not found returns -1, else returns offset into ext_list.
  */
-int cf_find_file_location_ext( char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
+int cf_find_file_location_ext( const char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
 {
 	int cur_ext, i;
     uint ui;
@@ -1318,9 +1318,10 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 
 
 // Returns true if filename matches filespec, else zero if not
-int cf_matches_spec(char *filespec, char *filename)
+int cf_matches_spec(const char *filespec, const char *filename)
 {
-	char *src_ext, *dst_ext;
+	const char *src_ext;
+	const char *dst_ext;
 
 	src_ext = strrchr(filespec, '*');
 	if(!src_ext)
@@ -1353,7 +1354,7 @@ int cf_matches_spec(char *filespec, char *filename)
 	}
 }
 
-int (*Get_file_list_filter)(char *filename) = NULL;
+int (*Get_file_list_filter)(const char *filename) = NULL;
 const char *Get_file_list_child = NULL;
 int Skip_packfile_search = 0;
 
@@ -1382,7 +1383,7 @@ static bool verify_file_list_child()
 	return true;
 }
 
-static int cf_file_already_in_list( SCP_vector<SCP_string> &list, char *filename )
+static int cf_file_already_in_list( SCP_vector<SCP_string> &list, const char *filename )
 {
 	char name_no_extension[MAX_PATH_LEN];
 	size_t i, size = list.size();
@@ -1410,7 +1411,7 @@ static int cf_file_already_in_list( SCP_vector<SCP_string> &list, char *filename
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, int sort, SCP_vector<file_list_info> *info )
+int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, const char *filter, int sort, SCP_vector<file_list_info> *info )
 {
 	char *ptr;
 	uint i;
@@ -1447,11 +1448,8 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, 
 	find_handle = _findfirst( filespec, &find );
 	if (find_handle != -1) {
 		do {
-            if (strcmp(strstr(filter, "."), strstr(find.name,".")) != 0)
+            if (strcmp(strrchr(filter, '.'), strrchr(find.name,'.')) != 0)
                 continue;
-
-			if ( strlen(find.name) >= MAX_FILENAME_LEN )
-				continue;
 
 			if (!(find.attrib & _A_SUBDIR)) {
 				if ( !Get_file_list_filter || (*Get_file_list_filter)(find.name) ) {
@@ -1488,9 +1486,6 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, 
 	dirp = opendir (filespec);
 	if ( dirp ) {
 		while ((dir = readdir (dirp)) != NULL) {
-			if ( strlen(dir->d_name) >= MAX_FILENAME_LEN ) {
-				continue;
-			}
 
 			if (fnmatch(filter, dir->d_name, 0) != 0)
 				continue;
@@ -1593,7 +1588,7 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, 
 	return (int)list.size();
 }
 
-int cf_file_already_in_list( int num_files, char **list, char *filename )
+int cf_file_already_in_list( int num_files, char **list, const char *filename )
 {
 	int i;
 
@@ -1617,7 +1612,7 @@ int cf_file_already_in_list( int num_files, char **list, char *filename )
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort, file_list_info *info )
+int cf_get_file_list( int max, char **list, int pathtype, const char *filter, int sort, file_list_info *info )
 {
 	char *ptr;
 	uint i;
@@ -1650,7 +1645,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 			if (num_files >= max)
 				break;
 
-            if (strcmp(strstr(filter, "."), strstr(find.name,".")) != 0)
+            if (strcmp(strrchr(filter, '.'), strrchr(find.name,'.')) != 0)
                 continue;
 
 			if ( strlen(find.name) >= MAX_FILENAME_LEN )
@@ -1792,7 +1787,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 	return num_files;
 }
 
-int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME_LEN], char *filename )
+int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME_LEN], const char *filename )
 {
 	int i;
 
@@ -1816,7 +1811,7 @@ int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char **list, int pathtype, char *filter, int sort, file_list_info *info )
+int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char **list, int pathtype, const char *filter, int sort, file_list_info *info )
 {
 	int num_files = 0, own_flag = 0;
 
@@ -2003,7 +1998,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
-int cf_create_default_path_string( char *path, uint path_max, int pathtype, char *filename, bool localize )
+int cf_create_default_path_string(char *path, uint path_max, int pathtype, const char *filename, bool localize )
 {
 #ifdef SCP_UNIX
 	if ( filename && strpbrk(filename,"/")  ) {
@@ -2075,7 +2070,7 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
-int cf_create_default_path_string( SCP_string &path, int pathtype, char *filename, bool localize )
+int cf_create_default_path_string( SCP_string &path, int pathtype, const char *filename, bool localize )
 {
 #ifdef SCP_UNIX
 	if ( filename && strpbrk(filename,"/")  ) {

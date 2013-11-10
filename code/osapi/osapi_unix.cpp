@@ -65,12 +65,8 @@ const char *detect_home(void)
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
-void os_init(char * wclass, char * title, char *app_name, char *version_string )
+void os_init(const char * wclass, const char * title, const char *app_name, const char *version_string )
 {
-#ifndef NDEBUG
-	outwnd_init(1);
-#endif	
-
 	// create default ini entries for the user
 	if (os_config_read_string(NULL, NOX("VideocardFs2open"), NULL) == NULL)
 		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(640x480)x16 bit"));
@@ -91,7 +87,7 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 }
 
 // set the main window title
-void os_set_title( char *title )
+void os_set_title( const char *title )
 {
 	strcpy_s( szWinTitle, title );
 

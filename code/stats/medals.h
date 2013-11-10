@@ -15,11 +15,11 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-struct scoring_struct;
-struct player;
+class scoring_struct;
+class player;
 
 #define MAX_BADGES				3
-#define MAX_ASSIGNABLE_MEDALS	12		// index into Medals array of the first medal which cannot be assigned
+extern int Rank_medal_index;
 
 extern scoring_struct *Player_score;
 
@@ -28,20 +28,22 @@ extern scoring_struct *Player_score;
 typedef struct medal_stuff {
 	char	name[NAME_LENGTH];
 	char	bitmap[MAX_FILENAME_LEN];
+	char	debrief_bitmap[MAX_FILENAME_LEN];
 	int	num_versions;
+	bool version_starts_at_1;
 	int	kills_needed;
-	int badge_num;
 
-	//If this is a badge (kills_needed > 1)
+	//If this is a badge (kills_needed > 0)
 	char voice_base[MAX_FILENAME_LEN];
 	char *promotion_text;
 
 	medal_stuff() {
 		name[0] = '\0';
 		bitmap[0] = '\0';
+		debrief_bitmap[0] = '\0';
 		num_versions = 1;
+		version_starts_at_1 = false;
 		kills_needed = 0;
-		badge_num = 0;
 		voice_base[0] = '\0';
 		promotion_text = NULL;
 	}
@@ -70,20 +72,11 @@ extern void parse_medal_tbl();
 #define MM_POPUP				1		// called from within some other tight loop (don't use gameseq_ functions)
 
 // main medals screen
-void medal_main_init(player *pl,int mode = MM_NORMAL);
+void medal_main_init(player *pl, int mode = MM_NORMAL);
 
 // return 0 if the screen should close (used for MM_POPUP mode)
 int medal_main_do();
 void medal_main_close();
-
-void init_medal_bitmaps();
-void init_snazzy_regions();
-void blit_medals();
-void blit_label(char *label,int *coords);
-void blit_callsign();
-
-// individual medals
-void medals_translate_name(char *name, int max_len);
 
 int medals_info_lookup(const char *name);
 

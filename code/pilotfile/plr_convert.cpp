@@ -421,8 +421,8 @@ void pilotfile_convert::plr_import()
 		throw "Unsupported file version!";
 	}
 
-	// multi flag, don't need it
-	cfread_ubyte(cfp);
+	// multi flag
+	plr->is_multi = (int)cfread_ubyte(cfp);
 
 	// rank
 	plr->rank = cfread_int(cfp);
@@ -548,6 +548,9 @@ void pilotfile_convert::plr_export_flags()
 
 	// special rank setting (to avoid having to read all stats on verify)
 	cfwrite_int(plr->rank, cfp);
+
+	// What game mode we were in last on this pilot
+	cfwrite_int(plr->is_multi, cfp);
 
 	endSection();
 }
@@ -766,7 +769,8 @@ void pilotfile_convert::plr_export_controls()
 	}
 
 	// extra joystick stuff
-	for (idx = 0; idx < 5; idx++) {
+	cfwrite_int(MAX_JOY_AXES_CONV, cfp);
+	for (idx = 0; idx < MAX_JOY_AXES_CONV; idx++) {
 		cfwrite_int(plr->joy_axis_map_to[idx], cfp);
 		cfwrite_int(plr->joy_invert_axis[idx], cfp);
 	}
@@ -816,8 +820,8 @@ void pilotfile_convert::plr_export()
 	Assert( cfp != NULL );
 
 	// header and version
-	cfwrite_int(0x5f524c50, cfp);
-	cfwrite_ubyte(0, cfp);
+	cfwrite_int(PLR_FILE_ID, cfp);
+	cfwrite_ubyte(PLR_VERSION, cfp);
 
 	// flags and info sections go first
 	plr_export_flags();

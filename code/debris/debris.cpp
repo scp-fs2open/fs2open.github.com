@@ -101,6 +101,7 @@ void debris_init()
 	for (i=0; i<MAX_DEBRIS_PIECES; i++ )	{
 		Debris[i].flags = 0;
 		Debris[i].sound_delay = 0;
+		Debris[i].objnum = -1;
 	}
 		
 	Num_hull_pieces = 0;
@@ -237,6 +238,7 @@ void debris_delete( object * obj )
 	}
 
 	db->flags = 0;
+	db->objnum = -1;
 	Num_debris_pieces--;
 }
 
@@ -805,6 +807,7 @@ void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float dama
 int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info)
 {
 	mc_info	mc;
+	mc_info_init(&mc);
 	int		num;
 
 	Assert( pdebris->type == OBJ_DEBRIS );
@@ -834,7 +837,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 		weapon *wp = &Weapons[other_obj->instance];
 		wp->collisionOccured = true;
-		wp->collisionInfo = mc_info(mc);
+		memcpy(&wp->collisionInfo, &mc, sizeof(mc_info));
 
 		return mc.num_hits;
 	}

@@ -260,7 +260,7 @@ int Multi_pxo_status_coords[GR_NUM_RESOLUTIONS][4] = {
 char Multi_pxo_status_text[MAX_PXO_TEXT_LEN];
 
 // set the status text
-void multi_pxo_set_status_text(char *txt);
+void multi_pxo_set_status_text(const char *txt);
 
 // blit the status text
 void multi_pxo_blit_status_text();
@@ -575,10 +575,10 @@ void multi_pxo_chat_clear();
 void multi_pxo_chat_blit();
 
 // add a line of text
-void multi_pxo_chat_add_line(char *txt,int mode);
+void multi_pxo_chat_add_line(const char *txt,int mode);
 
 // process an incoming line of text
-void multi_pxo_chat_process_incoming(char *txt,int mode = CHAT_MODE_NORMAL);
+void multi_pxo_chat_process_incoming(const char *txt, int mode = CHAT_MODE_NORMAL);
 
 // scroll to the very bottom of the chat area
 void multi_pxo_goto_bottom();
@@ -598,19 +598,19 @@ void multi_pxo_scroll_chat_down();
 void multi_pxo_chat_process();
 
 // if the text is a private message, return a pointer to the beginning of the message, otherwise return NULL
-char *multi_pxo_chat_is_private(char *txt);
+const char *multi_pxo_chat_is_private(const char *txt);
 
 // if the text came from the server
-int multi_pxo_is_server_text(char *txt);
+int multi_pxo_is_server_text(const char *txt);
 
 // if the text is message of the day text
-int multi_pxo_is_motd_text(char *txt);
+int multi_pxo_is_motd_text(const char *txt);
 
 // if the text is the end of motd text
-int multi_pxo_is_end_of_motd_text(char *txt);
+int multi_pxo_is_end_of_motd_text(const char *txt);
 
 // if the text is a "has left message" from the server
-int multi_pxo_chat_is_left_message(char *txt);
+int multi_pxo_chat_is_left_message(const char *txt);
 
 // recalculate the chat start index, and adjust the slider properly
 void multi_pxo_chat_adjust_start();
@@ -630,7 +630,7 @@ int Pxo_motd_blinked_already = 0;
 void multi_pxo_motd_init();
 
 // set the motd text
-void multi_pxo_motd_add_text(char *text);
+void multi_pxo_motd_add_text(const char *text);
 
 // set end of motd
 void multi_pxo_set_end_of_motd();
@@ -739,13 +739,13 @@ void multi_pxo_com_close();
 void multi_pxo_com_blit_text();
 
 // set the top text, shortening as necessary
-void multi_pxo_com_set_top_text(char *txt);
+void multi_pxo_com_set_top_text(const char *txt);
 
 // set the middle text, shortening as necessary
-void multi_pxo_com_set_middle_text(char *txt);
+void multi_pxo_com_set_middle_text(const char *txt);
 
 // set the bottom text, shortening as necessary
-void multi_pxo_com_set_bottom_text(char *txt);
+void multi_pxo_com_set_bottom_text(const char *txt);
 
 
 // private channel join stuff -----------------------------------------
@@ -914,7 +914,7 @@ char Multi_pxo_notify_text[MAX_PXO_TEXT_LEN];
 int Multi_pxo_notify_stamp = -1;
 
 // add a notification string
-void multi_pxo_notify_add(char *txt);
+void multi_pxo_notify_add(const char *txt);
 
 // blit and process the notification string
 void multi_pxo_notify_blit();
@@ -1333,7 +1333,7 @@ void multi_pxo_close()
 	if ( ON_CHANNEL() && strlen(Multi_pxo_channel_current.name) ) {
 		// channel name
 		strcpy(Multi_fs_tracker_channel, Multi_pxo_channel_current.name);
-		
+    
 		// filter name
 		strcpy(Multi_fs_tracker_filter, Multi_pxo_channel_current.name);
 	} 
@@ -2187,7 +2187,7 @@ void multi_pxo_channel_count_update(char *name, int count)
 /**
  * Set the status text
  */
-void multi_pxo_set_status_text(char *txt)
+void multi_pxo_set_status_text(const char *txt)
 {
 	// copy in the text
 	memset(Multi_pxo_status_text, 0, MAX_PXO_TEXT_LEN);
@@ -3113,7 +3113,7 @@ void multi_pxo_chat_clear()
 /**
  * Add a line of text
  */
-void multi_pxo_chat_add_line(char *txt, int mode)
+void multi_pxo_chat_add_line(const char *txt, int mode)
 {
 	chat_line *temp;
 	
@@ -3161,13 +3161,13 @@ void multi_pxo_chat_add_line(char *txt, int mode)
 /**
  * Process an incoming line of text
  */
-void multi_pxo_chat_process_incoming(char *txt,int mode)
+void multi_pxo_chat_process_incoming(const char *txt,int mode)
 {
 	char msg_total[512],line[512];
 	int	n_lines,idx;
 	int	n_chars[20];
-	char	*p_str[20];			//  the initial line (unindented)	
-	char *priv_ptr;	
+	const char	*p_str[20];			//  the initial line (unindented)	
+	const char *priv_ptr;	
 
 	// filter out "has left" channel messages, when switching channels
 	if((SWITCHING_CHANNELS() || ((Multi_pxo_switch_delay != -1) && !timestamp_elapsed(Multi_pxo_switch_delay))) && 
@@ -3437,7 +3437,7 @@ void multi_pxo_scroll_chat_down()
 void multi_pxo_chat_process()
 {
 	char *remainder;
-	char *result;
+	const char *result;
 	char msg[512];
 	int msg_pixel_width;
 
@@ -3507,34 +3507,24 @@ void multi_pxo_chat_process()
 // PXO CHAT SERVER DATA. THEY CANNOT CHANGE!!!
 #define PMSG_FROM			"private message from "
 #define PMSG_TO			"private message to "
-char *multi_pxo_chat_is_private(char *txt)
+const char *multi_pxo_chat_is_private(const char *txt)
 {
-	char save;
-
 	// quick check
-	if( strlen(txt) > strlen( PMSG_FROM ) ){	
+	size_t from_len = strlen( PMSG_FROM );
+	if( strlen(txt) > from_len ){	
 		// otherwise do a comparison
-		save = txt[strlen( PMSG_FROM )];
-		txt[strlen( PMSG_FROM )] = '\0';
-		if(!stricmp( txt, PMSG_FROM )){
-			txt[strlen( PMSG_FROM )] = save;
-			return &txt[strlen( PMSG_FROM )];
-		} 
-
-		txt[strlen( PMSG_FROM )] = save;
+		if( !strnicmp(txt, PMSG_FROM, from_len) ){
+			return &txt[from_len];
+		}
 	}
 
 	// quick check
-	if(strlen(txt) > strlen( PMSG_TO )){	
+	size_t to_len = strlen( PMSG_TO );
+	if( strlen(txt) > to_len ){	
 		// otherwise do a comparison
-		save = txt[strlen(PMSG_TO)];
-		txt[strlen(PMSG_TO)] = '\0';
-		if(!stricmp(txt,PMSG_TO)){
-			txt[strlen(PMSG_TO)] = save;
-			return &txt[strlen(PMSG_TO)];
-		} 
-
-		txt[strlen(PMSG_TO)] = save;
+		if( !strnicmp(txt, PMSG_TO, to_len) ){
+			return &txt[to_len];
+		}
 	}
 	
 	return NULL;
@@ -3546,7 +3536,7 @@ static const size_t pxo_prefix_len = strlen(MULTI_PXO_SERVER_PREFIX);
 /**
  * If the text came from the server
  */
-int multi_pxo_is_server_text(char *txt)
+int multi_pxo_is_server_text(const char *txt)
 {
 	// if the message is prefaced by a ***
 	if((strlen(txt) >= pxo_prefix_len) && !strncmp(txt, MULTI_PXO_SERVER_PREFIX, pxo_prefix_len)){
@@ -3561,7 +3551,7 @@ static const size_t motd_prefix_len = strlen(PXO_CHAT_MOTD_PREFIX);
 /**
  * If the text is message of the day text
  */
-int multi_pxo_is_motd_text(char *txt)
+int multi_pxo_is_motd_text(const char *txt)
 {
 	// if we're not on a channel, and this is not a channel switching message assume its coming from a server
 	if((strlen(txt) >= motd_prefix_len) && !strncmp(txt, PXO_CHAT_MOTD_PREFIX, motd_prefix_len)){
@@ -3576,7 +3566,7 @@ static const size_t end_motd_prefix_len = strlen(PXO_CHAT_END_OF_MOTD_PREFIX);
 /**
  * If the text is the end of motd text
  */
-int multi_pxo_is_end_of_motd_text(char *txt)
+int multi_pxo_is_end_of_motd_text(const char *txt)
 {
 	// if we're not on a channel, and this is not a channel switching message assume its coming from a server
 	if((strlen(txt) >= end_motd_prefix_len) && !strncmp(txt, PXO_CHAT_END_OF_MOTD_PREFIX, end_motd_prefix_len)){
@@ -3589,7 +3579,7 @@ int multi_pxo_is_end_of_motd_text(char *txt)
 /**
  * If the text is a "has left message" from the server
  */
-int multi_pxo_chat_is_left_message(char *txt)
+int multi_pxo_chat_is_left_message(const char *txt)
 {
 	// if the text is not server text
 	if(!multi_pxo_is_server_text(txt)){
@@ -3650,7 +3640,7 @@ void multi_pxo_motd_init()
 /**
  * Set the motd text
  */
-void multi_pxo_motd_add_text(char *text)
+void multi_pxo_motd_add_text(const char *text)
 {
 	int cur_len = strlen(Pxo_motd);
 	int new_len;
@@ -3847,7 +3837,7 @@ void multi_pxo_com_blit_text()
 /**
  * Set the top text, shortening as necessary
  */
-void multi_pxo_com_set_top_text(char *txt)
+void multi_pxo_com_set_top_text(const char *txt)
 {	
 	if((txt != NULL) && strlen(txt)){
 		strcpy_s(Multi_pxo_com_top_text,txt);
@@ -3858,7 +3848,7 @@ void multi_pxo_com_set_top_text(char *txt)
 /**
  * Set the middle text, shortening as necessary
  */
-void multi_pxo_com_set_middle_text(char *txt)
+void multi_pxo_com_set_middle_text(const char *txt)
 {
 	if((txt != NULL) && strlen(txt)){
 		strcpy_s(Multi_pxo_com_middle_text,txt);
@@ -3869,7 +3859,7 @@ void multi_pxo_com_set_middle_text(char *txt)
 /**
  * Set the bottom text, shortening as necessary
  */
-void multi_pxo_com_set_bottom_text(char *txt)
+void multi_pxo_com_set_bottom_text(const char *txt)
 {
 	if((txt != NULL) && strlen(txt)){
 		strcpy_s(Multi_pxo_com_bottom_text,txt);
@@ -4514,7 +4504,7 @@ void multi_pxo_pinfo_build_vals()
 	// last flown
 	memset(Multi_pxo_pinfo_vals[7], 0, 50);
 	if (fs->stats.last_flown == 0) {		
-		strcpy (Multi_pxo_pinfo_vals[7], XSTR("No missions flown", 970) );
+		strcpy_s(Multi_pxo_pinfo_vals[7], XSTR("No missions flown", 970) );
 	} else {
 		tm *tmr = gmtime( (time_t*)&fs->stats.last_flown );
 
@@ -4772,7 +4762,7 @@ void multi_pxo_run_medals()
 /**
  * Add a notification string
  */
-void multi_pxo_notify_add(char *txt)
+void multi_pxo_notify_add(const char *txt)
 {
 	// copy the text
 	strcpy_s(Multi_pxo_notify_text, txt);
