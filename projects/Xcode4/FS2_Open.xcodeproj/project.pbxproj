@@ -4336,7 +4336,6 @@
 		34BE722D08C940D200673B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = ../../libjpeg;
 				PRODUCT_NAME = jpeg;
 			};
 			name = Debug;
@@ -4344,7 +4343,6 @@
 		34BE722E08C940D200673B45 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = ../../libjpeg;
 				PRODUCT_NAME = jpeg;
 			};
 			name = Release;
@@ -4594,7 +4592,6 @@
 		F0AAA89F10FA0A7C0086B1B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = ../../libpng;
 				PRODUCT_NAME = png;
 			};
 			name = Debug;
@@ -4602,7 +4599,6 @@
 		F0AAA8A110FA0A7C0086B1B4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = ../../libpng;
 				PRODUCT_NAME = png;
 			};
 			name = Release;
@@ -4610,7 +4606,6 @@
 		F0AAA90B10FA0CAA0086B1B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = ../../libzlib;
 				PRODUCT_NAME = zlib;
 			};
 			name = Debug;
@@ -4618,7 +4613,6 @@
 		F0AAA90D10FA0CAA0086B1B4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = ../../libzlib;
 				PRODUCT_NAME = zlib;
 			};
 			name = Release;
