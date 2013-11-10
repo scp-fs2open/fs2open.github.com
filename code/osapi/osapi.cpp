@@ -133,10 +133,6 @@ void os_set_process_affinity()
 // for the app name, which is where registry keys are stored.
 void os_init(const char * wclass, const char * title, const char *app_name, const char *version_string )
 {
-#ifndef NDEBUG
-	outwnd_init(1);
-#endif
-
 	os_init_registry_stuff(Osreg_company_name, title, version_string);
 
 	strcpy_s( szWinTitle, title );

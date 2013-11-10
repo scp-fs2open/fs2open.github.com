@@ -1705,6 +1705,10 @@ void game_init()
 
 	// Initialize the timer before the os
 	timer_init();
+    
+#ifndef NDEBUG
+	outwnd_init(1);
+#endif
 
 	// init os stuff next
 	if ( !Is_standalone ) {		
@@ -6976,7 +6980,7 @@ int game_main(char *cmdline)
 
 
 	if (Is_standalone){
-		nprintf(("Network", "Standalone running"));
+		nprintf(("Network", "Standalone running\n"));
 	}
 
 

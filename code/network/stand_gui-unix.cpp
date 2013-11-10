@@ -759,7 +759,7 @@ struct mg_context *webserverContext = NULL;
 
 void webapi_shutdown() {
     if (webserverContext) {
-        mprintf(("Webapi shutting down"));
+        mprintf(("Webapi shutting down\n"));
         mg_stop(webserverContext);
     }
 }
@@ -781,7 +781,7 @@ void std_configLoaded(multi_global_options *options) {
         "num_threads", "4",
         NULL };
 
-    mprintf(("Webapi starting on port: %d with document root at: %s", options->webapiPort, options->webuiRootDirectory.c_str()));
+    mprintf(("Webapi starting on port: %d with document root at: %s\n", options->webapiPort, options->webuiRootDirectory.c_str()));
 
     webserverContext = mg_start(&webserverCallback, NULL, mgOptions);
 }
