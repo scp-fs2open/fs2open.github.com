@@ -196,6 +196,12 @@ void multi_options_read_config()
 						Multi_options_g.webapiPassword = SCP_string(tok);
 					}
 				}
+				if ( SETTING("+webapi_server_port") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						Multi_options_g.webapiPort = atoi(tok);
+					}
+				}
 			}
 
 			// ... common to all modes ...
