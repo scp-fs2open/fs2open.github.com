@@ -4361,9 +4361,7 @@
 					/System/Library/Frameworks/OpenAL.framework/Headers,
 					/System/Library/Frameworks/OpenGL.framework/Headers,
 				);
-				INSTALL_PATH = "$(HOME)/lib";
 				PRODUCT_NAME = code;
-				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
@@ -4510,7 +4508,6 @@
 					../../code,
 					./Frameworks/SDL.framework/Headers,
 				);
-				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = cfilearchiver;
 			};
 			name = Debug;
@@ -4524,7 +4521,6 @@
 					../../code,
 					./Frameworks/SDL.framework/Headers,
 				);
-				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = cfilearchiver;
 			};
 			name = Release;
@@ -4538,7 +4534,6 @@
 					../../code,
 					./Frameworks/SDL.framework/Headers,
 				);
-				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = cfileextractor;
 			};
 			name = Debug;
@@ -4552,7 +4547,6 @@
 					../../code,
 					./Frameworks/SDL.framework/Headers,
 				);
-				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = cfileextractor;
 			};
 			name = Release;
