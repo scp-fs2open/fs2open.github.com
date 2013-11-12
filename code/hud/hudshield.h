@@ -33,7 +33,7 @@ extern ubyte Quadrant_xlate[4];
 extern SCP_vector<SCP_string> Hud_shield_filenames;
 
 class player;
-struct object;
+class object;
 class ship_info;
 
 void hud_shield_level_init();

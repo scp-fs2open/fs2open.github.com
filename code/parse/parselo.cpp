@@ -3713,9 +3713,9 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 		buf_src_len = 1;
 		do {
 			++p;
-			if (!*p || (buf_src_len >= MAX_BUF))
+			if (!*p || (buf_src_len >= MAX_BUF-1))
 			{
-				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF, format, (p - format));
+				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF-1, format, (p - format));
 
 				// unsafe to continue handling this va_list
 				dest += buf_src;

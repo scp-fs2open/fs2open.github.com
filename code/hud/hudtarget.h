@@ -16,8 +16,8 @@
 #include "hud/hud.h"
 
 class ship;
-struct ship_subsys;
-struct object;
+class ship_subsys;
+class object;
 struct weapon_info;
 
 #define INCREASING	0

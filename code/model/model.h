@@ -17,7 +17,7 @@
 #include "graphics/2d.h"
 #include "object/object.h"
 
-struct object;
+class object;
 
 extern flag_def_list model_render_flags[];
 extern int model_render_flags_size;
@@ -961,6 +961,7 @@ extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
+extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2 );
 
 void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);
 void model_instance_dumb_rotation(int model_instance_num);

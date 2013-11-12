@@ -96,7 +96,6 @@ int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;
 fix Entry_delay_time = 0;
-int Fred_num_texture_replacements = 0;
 
 int Num_unknown_ship_classes;
 int Num_unknown_weapon_classes;
@@ -149,7 +148,7 @@ p_object Player_start_pobject;
 char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
 int Num_parse_names;
 
-texture_replace *Fred_texture_replacements = NULL;
+SCP_vector<texture_replace> Fred_texture_replacements;
 
 int Num_path_restrictions;
 path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
@@ -210,7 +209,7 @@ char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
 char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
 
-char *Icon_names[MAX_BRIEF_ICONS] = {
+char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
 	"Largeship Wing", "Capital", "Planet", "Asteroid Field", "Waypoint",
 	"Support Ship", "Freighter(no cargo)", "Freighter(has cargo)",
@@ -1503,6 +1502,14 @@ void parse_briefing(mission *pm, int flags)
 					if ( val>0 ) {
 						bi->flags |= BI_MIRROR_ICON;
 					}	
+				}
+
+				if (optional_string("$use wing icon:"))
+				{
+					stuff_int(&val);
+					if ( val>0 ) {
+						bi->flags |= BI_USE_WING_ICON;
+					}
 				}
 
 				required_string("$multi_text");
@@ -3225,12 +3232,14 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			// *** account for FRED
 			if (Fred_running)
 			{
-				Assert( Fred_texture_replacements != NULL );
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = -1;
-				Fred_num_texture_replacements++;
+				texture_replace tr;
+
+				strcpy_s(tr.ship_name, p_objp->name);
+				strcpy_s(tr.old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
+				strcpy_s(tr.new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+				tr.new_texture_id = -1;
+
+				Fred_texture_replacements.push_back(tr);
 			}
 
 			// increment
@@ -6493,13 +6502,15 @@ int mission_did_ship_arrive(p_object *objp)
 	}
 
 	if ( should_arrive ) { 		// has the arrival criteria been met?
-		int object_num;		
+		int object_num;
 
 		// check to see if the delay field <= 0.  if so, then create a timestamp and then maybe
 		// create the object
 		if ( objp->arrival_delay <= 0 ) {
 			objp->arrival_delay = timestamp( -objp->arrival_delay * 1000 );
-			Assert( objp->arrival_delay >= 0 );
+
+			// make sure we have a valid timestamp
+			Assert( objp->arrival_delay > 0 );
 		}
 		
 		// if the timestamp hasn't elapsed, move onto the next ship.
@@ -7933,8 +7944,5 @@ void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_second
 
 void clear_texture_replacements() 
 {
-	for (int i=0; i < Fred_num_texture_replacements; i++) {
-		memset(Fred_texture_replacements, '\0', sizeof(texture_replace)); 
-	}
-	Fred_num_texture_replacements = 0; 
+	Fred_texture_replacements.clear();
 }

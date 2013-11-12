@@ -14,7 +14,7 @@
 
 #include "hud/hud.h"
 
-struct object;
+class object;
 
 #define	ETS_RECHARGE_RATE	4.0f			//	Recharge this percent of total shields/second
 
@@ -37,6 +37,7 @@ void transfer_energy_to_shields(object* obj);
 void transfer_energy_to_weapons(object* obj);
 
 float ets_get_max_speed(object* objp, float engine_energy);
+void zero_one_ets (int *reduce, int *add1, int *add2);
 
 class HudGaugeEts: public HudGauge // HUD_ETS_GAUGE
 {

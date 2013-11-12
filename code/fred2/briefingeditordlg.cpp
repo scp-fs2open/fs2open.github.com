@@ -76,6 +76,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_cut_prev = FALSE;
 	m_current_briefing = -1;
 	m_flipicon = FALSE;
+	m_use_wing = FALSE;
 	//}}AFX_DATA_INIT
 	m_voice_id = -1;
 	m_cur_stage = 0;
@@ -109,6 +110,7 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CUT_NEXT, m_cut_next);
 	DDX_Check(pDX, IDC_CUT_PREV, m_cut_prev);
 	DDX_Check(pDX, IDC_FLIP_ICON, m_flipicon);
+	DDX_Check(pDX, IDC_USE_WING_ICON, m_use_wing);
 	//}}AFX_DATA_MAP
 
 	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
@@ -131,6 +133,7 @@ BEGIN_MESSAGE_MAP(briefing_editor_dlg, CDialog)
 	ON_BN_CLICKED(IDC_SAVE_VIEW, OnSaveView)
 	ON_CBN_SELCHANGE(IDC_ICON_IMAGE, OnSelchangeIconImage)
 	ON_CBN_SELCHANGE(IDC_TEAM, OnSelchangeTeam)
+	ON_CBN_SELCHANGE(IDC_SHIP_TYPE, OnSelchangeShipType)
 	ON_BN_CLICKED(IDC_PROPAGATE_ICONS, OnPropagateIcons)
 	ON_WM_INITMENU()
 	ON_BN_CLICKED(IDC_LINES, OnLines)
@@ -141,6 +144,7 @@ BEGIN_MESSAGE_MAP(briefing_editor_dlg, CDialog)
 	ON_BN_CLICKED(IDC_COPY_VIEW, OnCopyView)
 	ON_BN_CLICKED(IDC_PASTE_VIEW, OnPasteView)
 	ON_BN_CLICKED(IDC_FLIP_ICON, OnFlipIcon)
+	ON_BN_CLICKED(IDC_USE_WING_ICON, OnWingIcon)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -181,7 +185,7 @@ void briefing_editor_dlg::create()
 	CDialog::Create(IDD);
 	theApp.init_window(&Briefing_wnd_data, this);
 	box = (CComboBox *) GetDlgItem(IDC_ICON_IMAGE);
-	for (i=0; i<MAX_BRIEF_ICONS; i++)
+	for (i=0; i<MIN_BRIEF_ICONS; i++)
 		box->AddString(Icon_names[i]);
 
 	box = (CComboBox *) GetDlgItem(IDC_TEAM);
@@ -432,6 +436,7 @@ void briefing_editor_dlg::update_data(int update)
 			}
 
 			strcpy_s(ptr->icons[m_last_icon].label, buf);
+
 			if ( m_hilight )
 				ptr->icons[m_last_icon].flags |= BI_HIGHLIGHT;
 			else
@@ -442,30 +447,35 @@ void briefing_editor_dlg::update_data(int update)
 			else
 				ptr->icons[m_last_icon].flags &= ~BI_MIRROR_ICON;
 
+			if (m_use_wing)
+				ptr->icons[m_last_icon].flags |= BI_USE_WING_ICON;
+			else
+				ptr->icons[m_last_icon].flags &= ~BI_USE_WING_ICON;
+
 			if ((ptr->icons[m_last_icon].type != m_icon_image) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
 					iconp->type = m_icon_image;
 			}
-
 			ptr->icons[m_last_icon].type = m_icon_image;
+
 			if ((ptr->icons[m_last_icon].team != m_icon_team) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
 					iconp->team = m_icon_team;
 			}
-
 			ptr->icons[m_last_icon].team = m_icon_team;
+
 			if ((ptr->icons[m_last_icon].ship_class != m_ship_type) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
 					iconp->ship_class = m_ship_type;
 			}
-
 			MODIFY(ptr->icons[m_last_icon].ship_class, m_ship_type);
+
 			deconvert_multiline_string(buf2, m_icon_text, MAX_ICON_TEXT_LEN);
 /*
 			if (stricmp(ptr->icons[m_last_icon].text, buf2) && !m_change_local) {
@@ -544,6 +554,7 @@ void briefing_editor_dlg::update_data(int update)
 	if ((m_cur_stage >= 0) && (m_cur_icon >= 0) && (m_cur_icon < ptr->num_icons)) {
 		m_hilight = (ptr->icons[m_cur_icon].flags & BI_HIGHLIGHT)?1:0;
 		m_flipicon = (ptr->icons[m_cur_icon].flags & BI_MIRROR_ICON)?1:0;
+		m_use_wing = (ptr->icons[m_cur_icon].flags & BI_USE_WING_ICON)?1:0;
 		m_icon_image = ptr->icons[m_cur_icon].type;
 		m_icon_team = ptr->icons[m_cur_icon].team;
 		m_icon_label = ptr->icons[m_cur_icon].label;
@@ -555,6 +566,7 @@ void briefing_editor_dlg::update_data(int update)
 	} else {
 		m_flipicon = FALSE;
 		m_hilight = FALSE;
+		m_use_wing = FALSE;
 		m_icon_image = -1;
 		m_icon_team = -1;
 		m_ship_type = -1;
@@ -564,12 +576,20 @@ void briefing_editor_dlg::update_data(int update)
 		enable = FALSE;
 	}
 
+	// see if icon is overridden by ships.tbl
+	// if so, disable the icon type box
+	int sip_bii_ship = (m_ship_type >= 0) ? Ship_info[m_ship_type].bii_index_ship : -1;
+	int sip_bii_wing = (sip_bii_ship >= 0) ? Ship_info[m_ship_type].bii_index_wing : -1;
+
+	GetDlgItem(IDC_USE_WING_ICON) -> ShowWindow(sip_bii_wing >= 0);
+
 	GetDlgItem(IDC_ICON_TEXT) -> EnableWindow(enable);
 	GetDlgItem(IDC_ICON_LABEL) -> EnableWindow(enable);
-	GetDlgItem(IDC_ICON_IMAGE) -> EnableWindow(enable);
+	GetDlgItem(IDC_ICON_IMAGE) -> EnableWindow(enable && (sip_bii_ship < 0));
 	GetDlgItem(IDC_SHIP_TYPE) -> EnableWindow(enable);
 	GetDlgItem(IDC_HILIGHT) -> EnableWindow(enable);
 	GetDlgItem(IDC_FLIP_ICON) -> EnableWindow(enable);
+	GetDlgItem(IDC_USE_WING_ICON) -> EnableWindow(enable);
 	GetDlgItem(IDC_LOCAL) -> EnableWindow(enable);
 	GetDlgItem(IDC_TEAM) -> EnableWindow(enable);
 	GetDlgItem(IDC_ID) -> EnableWindow(enable);
@@ -1201,6 +1221,11 @@ void briefing_editor_dlg::OnSelchangeTeam()
 	update_data(1);
 }
 
+void briefing_editor_dlg::OnSelchangeShipType()
+{
+	update_data(1);
+}
+
 int briefing_editor_dlg::check_mouse_hit(int x, int y)
 {
 	int i;
@@ -1399,10 +1424,10 @@ void briefing_editor_dlg::OnPasteView()
 
 void briefing_editor_dlg::OnFlipIcon() 
 {
-//	if (m_flipicon)
-//		Briefing->stages[m_cur_stage].icons[m_cur_icon].flags |= BI_MIRROR_ICON;
-//	else
-//		Briefing->stages[m_cur_stage].icons[m_cur_icon].flags &= ~BI_MIRROR_ICON;
+	update_data(1);	
+}
+
+void briefing_editor_dlg::OnWingIcon()
+{
 	update_data(1);
-	
 }

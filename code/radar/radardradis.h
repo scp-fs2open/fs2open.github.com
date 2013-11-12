@@ -14,7 +14,7 @@
 
 extern int Radar_static_looping;
 
-struct object;
+class object;
 struct blip;
 struct color;
 

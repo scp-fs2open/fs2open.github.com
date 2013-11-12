@@ -21,7 +21,7 @@ class player;
 struct button_info;
 struct join_request;
 struct physics_info;
-struct object;
+class object;
 struct active_game;
 class ship;
 struct server_item;

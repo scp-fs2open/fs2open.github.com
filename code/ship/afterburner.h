@@ -15,7 +15,7 @@
 #define	AFTERBURNER_MIN_DELAY	1000
 #define	ABURN_DECAY_TIME			1500		// time in ms ship shakes after afterburner pressed
 
-struct object;
+class object;
 
 void afterburners_start(object *objp);
 void afterburners_stop(object *objp, int key_released = 0);

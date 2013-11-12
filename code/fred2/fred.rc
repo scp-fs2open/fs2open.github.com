@@ -18,11 +18,13 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (United States) resources
+// English (U.S.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
+#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -1626,8 +1628,8 @@ BEGIN
     COMBOBOX        IDC_TEAM,52,336,75,84,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_ID,151,284,30,12,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Highlight",IDC_HILIGHT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,302,43,10
-    CONTROL         "Change locally",IDC_LOCAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,319,62,10
-    CONTROL         "Flip Icon",IDC_FLIP_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,335,43,10
+    CONTROL         "Change locally",IDC_LOCAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,135,317,62,10
+    CONTROL         "Flip Icon",IDC_FLIP_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,332,43,10
     PUSHBUTTON      "Make Icon",IDC_MAKE_ICON,197,283,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Delete Icon",IDC_DELETE_ICON,197,300,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Propagate",IDC_PROPAGATE_ICONS,197,317,50,14,0,WS_EX_STATICEDGE
@@ -1647,6 +1649,7 @@ BEGIN
     LTEXT           "Usage Formula",IDC_STATIC,7,180,48,8
     LTEXT           "If music pack is present",IDC_STATIC,14,157,44,17
     GROUPBOX        "Briefing Music",IDC_STATIC,7,132,150,44
+    CONTROL         "Use Wing Icon",IDC_USE_WING_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,347,63,10
 END
 
 IDD_IGNORE_ORDERS DIALOG  0, 0, 120, 217
@@ -2975,16 +2978,18 @@ BEGIN
     ID_FORMAT_FS1_RETAIL    "Save missions compatible with FS1 retail"
 END
 
-#endif    // English (United States) resources
+#endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (United Kingdom) resources
+// English (U.K.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 #pragma code_page(1252)
+#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3030,7 +3035,7 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (United Kingdom) resources
+#endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

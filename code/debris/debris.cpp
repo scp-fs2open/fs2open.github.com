@@ -101,6 +101,7 @@ void debris_init()
 	for (i=0; i<MAX_DEBRIS_PIECES; i++ )	{
 		Debris[i].flags = 0;
 		Debris[i].sound_delay = 0;
+		Debris[i].objnum = -1;
 	}
 		
 	Num_hull_pieces = 0;
@@ -237,6 +238,7 @@ void debris_delete( object * obj )
 	}
 
 	db->flags = 0;
+	db->objnum = -1;
 	Num_debris_pieces--;
 }
 

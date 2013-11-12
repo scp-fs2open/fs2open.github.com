@@ -66,6 +66,7 @@ public:
 	BOOL	m_cut_prev;
 	int		m_current_briefing;
 	BOOL	m_flipicon;
+	BOOL	m_use_wing;
 	//}}AFX_DATA
 
 	CBitmap m_play_bm;
@@ -120,6 +121,7 @@ protected:
 	afx_msg void OnSaveView();
 	afx_msg void OnSelchangeIconImage();
 	afx_msg void OnSelchangeTeam();
+	afx_msg void OnSelchangeShipType();
 	afx_msg void OnPropagateIcons();
 	afx_msg void OnInitMenu(CMenu* pMenu);
 	afx_msg void OnLines();
@@ -130,6 +132,7 @@ protected:
 	afx_msg void OnCopyView();
 	afx_msg void OnPasteView();
 	afx_msg void OnFlipIcon();
+	afx_msg void OnWingIcon();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:

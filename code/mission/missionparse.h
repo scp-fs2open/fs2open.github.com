@@ -301,7 +301,6 @@ extern int	Num_goal_type_names;
 extern int	Num_reinforcement_type_names;
 extern int	Player_starts;
 extern fix	Entry_delay_time;
-extern int	Fred_num_texture_replacements;	// Goober5000
 extern int	Loading_screen_bm_index;
 
 extern int Num_unknown_ship_classes;
@@ -329,22 +328,9 @@ typedef struct texture_replace {
 	char old_texture[MAX_FILENAME_LEN];
 	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
-
-	texture_replace( )
-	{
-		Reset( );
-	}
-
-	void Reset( )
-	{
-		new_texture_id = -1;
-		ship_name[ 0 ] = 0;
-		old_texture[ 0 ] = 0;
-		new_texture[ 0 ] = 0;
-	}
 } texture_replace;
 
-extern texture_replace *Fred_texture_replacements;
+extern SCP_vector<texture_replace> Fred_texture_replacements;
 
 typedef struct alt_class {
 	int ship_class;				
@@ -457,8 +443,8 @@ typedef struct p_object {
 		next = NULL;
 		prev = NULL;
 
-		memset( &pos, 0, sizeof( pos ) );
-		memset( &orient, 0, sizeof( orient ) );
+		vm_vec_zero(&pos);
+		vm_set_identity(&orient);
 		ship_class = 0;
 		team = 0;
 		behavior = 0;
@@ -538,7 +524,12 @@ typedef struct p_object {
 		num_texture_replacements = 0;
 		
 		for ( i = 0; i < MAX_REPLACEMENT_TEXTURES; i++ )
-			replacement_textures[ i ].Reset( );
+		{
+			replacement_textures[i].ship_name[0] = 0;
+			replacement_textures[i].old_texture[0] = 0;
+			replacement_textures[i].new_texture[0] = 0;
+			replacement_textures[i].new_texture_id = -1;
+		}
 
 		alt_classes.clear( );	
 

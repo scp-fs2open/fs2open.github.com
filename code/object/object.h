@@ -137,18 +137,20 @@ extern obj_flag_name Object_flag_names[];
 
 struct dock_instance;
 
-typedef struct object {
-	struct object	*next, *prev;	// for linked lists of objects
+class object
+{
+public:
+	class object	*next, *prev;	// for linked lists of objects
 	int				signature;		// Every object ever has a unique signature...
-	char				type;				// what type of object this is... robot, weapon, hostage, powerup, fireball
+	char			type;				// what type of object this is... robot, weapon, hostage, powerup, fireball
 	int				parent;			// This object's parent.
 	int				parent_sig;		// This object's parent's signature
-	char				parent_type;	// This object's parent's type
+	char			parent_type;	// This object's parent's type
 	int				instance;		// which instance.  ie.. if type is Robot, then this indexes into the Robots array
-	uint				flags;			// misc flags.  Call obj_set_flags to change this.
+	uint			flags;			// misc flags.  Call obj_set_flags to change this.
 	vec3d			pos;				// absolute x,y,z coordinate of center of object
 	matrix			orient;			// orientation of object in world
-	float				radius;			// 3d size of object - for collision detection
+	float			radius;			// 3d size of object - for collision detection
 	vec3d			last_pos;		// where object was last frame
 	matrix			last_orient;	// how the object was oriented last frame
 	physics_info	phys_info;		// a physics object
@@ -164,7 +166,11 @@ typedef struct object {
 	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead
 
 	int				collision_group_id; // This is a bitfield. Collision checks will be skipped if A->collision_group_id & B->collision_group_id returns nonzero
-} object;
+
+	object();
+	~object();
+	void clear();
+};
 
 struct object_h {
 	object *objp;

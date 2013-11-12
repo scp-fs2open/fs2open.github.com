@@ -13147,9 +13147,6 @@ int maybe_request_support(object *objp)
 	aip = &Ai_info[shipp->ai_index];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if (!timestamp_elapsed(aip->next_rearm_request_timestamp))
-		return 0;
-
 	//	Only fighters and bombers request support.
 	if (!(sip->flags & (SIF_FIGHTER | SIF_BOMBER)))
 		return 0;
@@ -13158,7 +13155,11 @@ int maybe_request_support(object *objp)
 	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
 		return 0;
 
-	if (!is_support_allowed(objp))
+	if (!timestamp_elapsed(aip->next_rearm_request_timestamp))
+		return 0;
+
+	// just do a simple check first, and the more expensive check later
+	if (!is_support_allowed(objp, true))
 		return 0;
 
 	// Goober5000 - a ship that is currently docked shouldn't request repair.
@@ -13220,22 +13221,30 @@ int maybe_request_support(object *objp)
 		return 0;
 	}
 
+	bool try_to_rearm = false;
+
 	//	Compute danger threshold.
 	//	Balance this with desire and maybe request support.
 	if (ai_good_time_to_rearm( objp )) {
-		ai_issue_rearm_request(objp);
-		return 1;
+		try_to_rearm = true;
 	} else if (num_allies_rearming(objp) < 2) {
 		if (desire >= 8) {	//	guarantees disabled will cause repair request
-			ai_issue_rearm_request(objp);
+			try_to_rearm = true;
 		} else if (desire >= 3) {		//	>= 3 means having a single subsystem fully blown will cause repair.
 			int	count;
 			int objnum = find_nearby_threat(OBJ_INDEX(objp), iff_get_attacker_mask(obj_team(objp)), 2000.0f, &count);
 
 			if ((objnum == -1) || (count < 2) || (vm_vec_dist_quick(&objp->pos, &Objects[objnum].pos) > 3000.0f*count/desire)) {
-				ai_issue_rearm_request(objp);
-				return 1;
+				try_to_rearm = true;
 			}
+		}
+	}
+
+	if (try_to_rearm) {
+		// Now do the more thorough check
+		if (is_support_allowed(objp)) {
+			ai_issue_rearm_request(objp);
+			return 1;
 		}
 	}
 
@@ -15378,42 +15387,46 @@ void ai_add_rearm_goal( object *requester_objp, object *support_objp )
 //	Success means you found someone to rearm you and you weren't previously rearming.
 int ai_issue_rearm_request(object *requester_objp)
 {
-	object	*objp;
+	object	*objp = NULL;
 	ship		*requester_shipp;
 	ai_info	*requester_aip;
 
 	Assert(requester_objp->type == OBJ_SHIP);
 	Assert((requester_objp->instance >= 0) && (requester_objp->instance < MAX_SHIPS));
 	requester_shipp = &Ships[requester_objp->instance];
+
 	Assert((requester_shipp->ai_index >= 0) && (requester_shipp->ai_index < MAX_AI_INFO));
 	requester_aip = &Ai_info[requester_shipp->ai_index];
 	
-	//	Make sure not already awaiting repair.
-	if (requester_aip->ai_flags & AIF_AWAITING_REPAIR) {
-		nprintf(("AI", "Ship %s already awaiting rearm by ship %s.\n", requester_shipp->ship_name, &Ships[Objects[requester_aip->support_ship_objnum].instance].ship_name));	
-		return -1;
-	}
-
-	if ( !is_support_allowed(requester_objp) )
-		return -1;
+	// these should have already been caught by the time we get here!
+	Assert(!(requester_aip->ai_flags & AIF_AWAITING_REPAIR));
+	Assert(is_support_allowed(requester_objp));
 
 	requester_aip->next_rearm_request_timestamp = timestamp(NEXT_REARM_TIMESTAMP);	//	Might request again after this much time.
 
 	// call ship_find_repair_ship to get a support ship.  If none is found, then we will warp one in.  This
 	// function will return the next available ship which can repair requester
-	objp = ship_find_repair_ship( requester_objp );
-	ai_do_objects_repairing_stuff( requester_objp, objp, REPAIR_INFO_QUEUE );
-	if ( objp ) {
-		return OBJ_INDEX(objp);
-	} else {
-		// call to warp in repair ship!!!!  for now, warp in any number of ships needed.  Should cap it to
-		// some reasonable max (or let support ships warp out).  We should assume here that ship_find_repair_ship()
-		// would have returned a valid object if there are too many support ships already in the mission
-		mission_bring_in_support_ship( requester_objp );
+	int result = ship_find_repair_ship( requester_objp, &objp );
 
+	// we are able to call in a ship, or a ship is warping in
+	// (Arriving_support_ship may be non-NULL in either of these cases, but mission_bring_in_support_ship has a check for that)
+	if (result == 0 || result == 2) {
+		ai_do_objects_repairing_stuff( requester_objp, NULL, REPAIR_INFO_QUEUE );
+		mission_bring_in_support_ship( requester_objp );
 		return -1;
 	}
-
+	// we are able to service a request
+	else if (result == 1 || result == 3) {
+		Assert(objp != NULL);
+		ai_do_objects_repairing_stuff( requester_objp, objp, REPAIR_INFO_QUEUE );
+		return OBJ_INDEX(objp);
+	}
+	// we aren't able to do anything!
+	else {
+		Assert(result == 4);
+		Assertion(false, "This case should have already been caught by the is_support_allowed precheck!");
+		return -1;
+	}
 }
 
 /**

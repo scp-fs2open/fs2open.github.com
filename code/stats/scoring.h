@@ -18,7 +18,7 @@
 
 class player;
 class ship;
-struct object;
+class object;
 
 #define NUM_MEDALS_FS2		18
 #define NUM_MEDALS_FS1		16

@@ -18,7 +18,7 @@
 #include "graphics/2d.h"
 
 struct vec3d;
-struct object;
+class object;
 
 //Jump node flags
 #define JN_USE_DISPLAY_COLOR		(1<<0)		//Use display_color instead of HUD color

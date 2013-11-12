@@ -710,8 +710,9 @@ GLint opengl_shader_get_uniform(const char *uniform_text)
 	}
 
 	SCP_vector<opengl_shader_uniform_t>::iterator uniform;
+	SCP_vector<opengl_shader_uniform_t>::iterator uniforms_end = Current_shader->uniforms.end();
 	
-	for (uniform = Current_shader->uniforms.begin(); uniform != Current_shader->uniforms.end(); ++uniform) {
+	for (uniform = Current_shader->uniforms.begin(); uniform != uniforms_end; ++uniform) {
 		if ( !uniform->text_id.compare(uniform_text) ) {
 			return uniform->location;
 		}

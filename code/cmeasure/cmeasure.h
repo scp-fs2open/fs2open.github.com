@@ -15,7 +15,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
 
-struct object;
+class object;
 
 #define	CMEASURE_WAIT				333			//	delay in milliseconds between countermeasure firing.
 

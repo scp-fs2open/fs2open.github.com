@@ -294,6 +294,13 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		} else if (sip->flags2 & SIF2_SURFACE_SHIELDS) {
 			mc_shield.flags = MC_CHECK_MODEL;
 			shield_collision = model_collide(&mc_shield);
+
+			// Because we used MC_CHECK_MODEL, the returned hit position might be
+			// in a submodel's frame of reference, so we need to ensure we end up
+			// in the ship's frame of reference
+			vec3d local_pos;
+			vm_vec_sub(&local_pos, &mc_shield.hit_point_world, &ship_objp->pos);
+			vm_vec_rotate(&mc_shield.hit_point, &local_pos, &ship_objp->orient);
 		} else {
 			// Normal collision check against a shield mesh
 			mc_shield.flags = MC_CHECK_SHIELD;

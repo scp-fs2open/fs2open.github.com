@@ -462,7 +462,7 @@ void techroom_ships_render(float frametime)
 	// now render the trackball ship, which is unique to the ships tab
 	float rev_rate = REVOLUTION_RATE;
 	angles rot_angles, view_angles;
-	int z;
+	int z, i, j;
 	ship_info *sip = &Ship_info[Cur_entry_index];
 
 	if (sip->uses_team_colors) {
@@ -534,6 +534,29 @@ void techroom_ships_render(float frametime)
 
 	model_clear_instance(Techroom_ship_modelnum);
 	model_set_detail_level(0);
+
+	for (i = 0; i < sip->n_subsystems; i++) {
+		model_subsystem *msp = &sip->subsystems[i];
+		if (msp->type == SUBSYSTEM_TURRET) {
+
+			float p = 0.0f;
+			float h = 0.0f;
+												
+			for (j = 0; j < msp->n_triggers; j++) {
+
+				// special case for turrets
+				p = msp->triggers[j].angle.xyz.x;
+				h = msp->triggers[j].angle.xyz.y;
+			}
+			if ( msp->subobj_num >= 0 )	{
+				model_set_instance_techroom(Techroom_ship_modelnum, msp->subobj_num, 0.0f, h );
+			}
+			if ( (msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0) )		{
+				model_set_instance_techroom(Techroom_ship_modelnum, msp->turret_gun_sobj, p, 0.0f );
+			}
+		}
+	}
+
 	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
 
 	Glowpoint_use_depth_buffer = true;

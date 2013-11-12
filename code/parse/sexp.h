@@ -13,7 +13,7 @@
 #ifndef _SEXP_H
 #define _SEXP_H
 
-struct ship_subsys;
+class ship_subsys;
 class ship;
 class waypoint_list;
 

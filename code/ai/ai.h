@@ -20,8 +20,8 @@
 #include "object/waypoint.h"
 
 struct ship_weapon;
-struct ship_subsys;
-struct object;
+class ship_subsys;
+class object;
 class ship_info;
 
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)

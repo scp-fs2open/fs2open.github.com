@@ -436,7 +436,7 @@ int vm_matrix_cmp( matrix * a, matrix * b );
 // Moves angle 'h' towards 'desired_angle', taking the shortest
 // route possible.   It will move a maximum of 'step_size' radians
 // each call.   All angles in radians.
-float vm_interp_angle( float *h, float desired_angle, float step_size );
+float vm_interp_angle( float *h, float desired_angle, float step_size, bool force_front = false );
 
 // calculate and return the difference (ie. delta) between two angles
 // using same method as with vm_interp_angle().

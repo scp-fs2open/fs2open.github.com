@@ -1705,6 +1705,10 @@ void game_init()
 
 	// Initialize the timer before the os
 	timer_init();
+    
+#ifndef NDEBUG
+	outwnd_init(1);
+#endif
 
 	// init os stuff next
 	if ( !Is_standalone ) {		
@@ -1740,6 +1744,8 @@ void game_init()
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
+
+	mod_table_init();		// load in all the mod dependent settings
 
 	if (Is_standalone) {
 		// force off some cmdlines if they are on
@@ -1843,8 +1849,6 @@ void game_init()
 	// D3D's gamma system now works differently. 1.0 is the default value
 	ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
 	FreeSpace_gamma = (float)atof(ptr);
-
-	mod_table_init();		// load in all the mod dependent settings
 
 	script_init();			//WMC
 
@@ -5482,7 +5486,7 @@ void game_leave_state( int old_state, int new_state )
 
 	//WMC - Scripting override
 	/*
-	if(GS_state_hooks[old_state].IsValid() && Script_system.IsOverride(GS_state_hooks[old_state])) {
+	if(script_hook_valid(&GS_state_hooks[old_state]) && Script_system.IsOverride(GS_state_hooks[old_state])) {
 		return;
 	}
 	*/
@@ -5871,7 +5875,7 @@ void game_enter_state( int old_state, int new_state )
 {
 	//WMC - Scripting override
 	/*
-	if(GS_state_hooks[new_state].IsValid() && Script_system.IsOverride(GS_state_hooks[new_state])) {
+	if(script_hook_valid(&GS_state_hooks[new_state]) && Script_system.IsOverride(GS_state_hooks[new_state])) {
 		return;
 	}
 	*/
@@ -6977,7 +6981,7 @@ int game_main(char *cmdline)
 
 
 	if (Is_standalone){
-		nprintf(("Network", "Standalone running"));
+		nprintf(("Network", "Standalone running\n"));
 	}
 
 

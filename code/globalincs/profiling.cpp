@@ -172,7 +172,7 @@ void profile_dump_output()
 			sprintf(num, "%3d", samples[i].profile_instances);
 
 			strcpy(indented_name, samples[i].name);
-			for(int indent = 0; indent < samples[i].num_parents; indent++) {
+			for(uint indent = 0; indent < samples[i].num_parents; indent++) {
 				sprintf(name, "   %s", indented_name);
 				strcpy_s(indented_name, name);
 			}

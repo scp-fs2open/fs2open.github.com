@@ -27,7 +27,7 @@
 //structures
 #define NUM_FLICKER_TIMERS	2
 
-struct object;
+class object;
 
 typedef struct rcol {
 	ubyte	r, g, b;

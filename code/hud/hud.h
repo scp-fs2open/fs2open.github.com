@@ -15,7 +15,7 @@
 #include "hud/hudparse.h"
 #include "globalincs/vmallocator.h"
 
-struct object;
+class object;
 struct cockpit_display;
 
 typedef struct hud_anim {
