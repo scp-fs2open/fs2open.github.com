@@ -5470,7 +5470,7 @@ void ship_subsys::clear()
 	subsys_cargo_name = 0;
 	time_subsys_cargo_revealed = 0;
 
-	trigger.clear();
+	triggered_rotation_index = -1;
 
 	points_to_target = 0.0f;
 	base_rotation_rate_pct = 0.0f;
@@ -16736,8 +16736,8 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		return;
 	}
 
-	if (psub->flags & MSS_FLAG_TRIGGERED) {
-		pss->trigger.process_queue();
+	if (psub->flags & MSS_FLAG_TRIGGERED && pss->triggered_rotation_index >= 0) {
+		Triggered_rotations[pss->triggered_rotation_index].process_queue();
 		model_anim_submodel_trigger_rotate(psub, pss );
 		return;
 	
