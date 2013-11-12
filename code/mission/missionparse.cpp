@@ -96,7 +96,6 @@ int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;
 fix Entry_delay_time = 0;
-int Fred_num_texture_replacements = 0;
 
 int Num_unknown_ship_classes;
 int Num_unknown_weapon_classes;
@@ -149,7 +148,7 @@ p_object Player_start_pobject;
 char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
 int Num_parse_names;
 
-texture_replace *Fred_texture_replacements = NULL;
+SCP_vector<texture_replace> Fred_texture_replacements;
 
 int Num_path_restrictions;
 path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
@@ -3233,12 +3232,14 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			// *** account for FRED
 			if (Fred_running)
 			{
-				Assert( Fred_texture_replacements != NULL );
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = -1;
-				Fred_num_texture_replacements++;
+				texture_replace tr;
+
+				strcpy_s(tr.ship_name, p_objp->name);
+				strcpy_s(tr.old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
+				strcpy_s(tr.new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+				tr.new_texture_id = -1;
+
+				Fred_texture_replacements.push_back(tr);
 			}
 
 			// increment
@@ -7943,8 +7944,5 @@ void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_second
 
 void clear_texture_replacements() 
 {
-	for (int i=0; i < Fred_num_texture_replacements; i++) {
-		memset(Fred_texture_replacements, '\0', sizeof(texture_replace)); 
-	}
-	Fred_num_texture_replacements = 0; 
+	Fred_texture_replacements.clear();
 }
