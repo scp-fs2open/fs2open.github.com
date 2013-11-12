@@ -151,8 +151,8 @@ public:
 		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
 	{ 
 		voice[ 0 ] = 0;
-		memset( &camera_pos, 0, sizeof( vec3d ) );
-		memset( &camera_orient, 0, sizeof( matrix ) );
+		camera_pos = vmd_zero_vector;
+		camera_orient = vmd_identity_matrix;
 	}
 };
 

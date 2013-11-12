@@ -443,8 +443,8 @@ typedef struct p_object {
 		next = NULL;
 		prev = NULL;
 
-		memset( &pos, 0, sizeof( pos ) );
-		memset( &orient, 0, sizeof( orient ) );
+		vm_vec_zero(&pos);
+		vm_set_identity(&orient);
 		ship_class = 0;
 		team = 0;
 		behavior = 0;
