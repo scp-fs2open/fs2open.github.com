@@ -128,7 +128,7 @@ public:
 	sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
 
 	campaign()
-		: desc(NULL), variables(NULL), num_missions(0)
+		: desc(NULL), num_missions(0), variables(NULL)
 	{
 		name[0] = 0;
 		filename[0] = 0;
