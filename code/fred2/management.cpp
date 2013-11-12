@@ -424,7 +424,7 @@ bool fred_init()
 	fiction_viewer_reset();
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
-	Campaign.filename[0] = 0;  // indicate initialized state
+	mission_campaign_clear();
 
 	stars_post_level_init();
 
