@@ -135,7 +135,6 @@ class triggered_rotation
 		int start_time;		// the time the current animation started
 };
 
-extern SCP_vector<triggered_rotation> Triggered_rotations;
 
 // functions...
 

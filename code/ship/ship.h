@@ -371,7 +371,7 @@ public:
 	int subsys_cargo_name;			// cap ship cargo on subsys
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 
-	int triggered_rotation_index;		//the actual currently running animation and assosiated states
+	triggered_rotation trigger;		//the actual currently running animation and assosiated states
 
 	float points_to_target;
 	float base_rotation_rate_pct;
