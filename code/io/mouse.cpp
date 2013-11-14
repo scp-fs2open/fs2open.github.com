@@ -25,16 +25,16 @@
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1
 
+extern SDL_Window *GL_window;
+
 LOCAL int Mouse_mode = MOUSE_MODE_WIN;
 
 int mouse_inited = 0;
-#ifdef WIN32
-    LOCAL int Di_mouse_inited = 0;
-#endif
+
 LOCAL int Mouse_x;
 LOCAL int Mouse_y;
 
-CRITICAL_SECTION mouse_lock;
+SDL_mutex* mouse_lock;
 
 int mouse_flags;
 int mouse_left_pressed = 0;
@@ -52,11 +52,6 @@ int Use_mouse_to_fly = 0;
 int Mouse_hidden = 0;
 int Keep_mouse_centered = 0;
 
-#ifdef WIN32
-int di_init();
-void di_cleanup();
-void mouse_eval_deltas_di();
-#endif
 
 void mouse_force_pos(int x, int y);
 
@@ -90,11 +85,6 @@ void mouse_close()
 	if (!mouse_inited)
 		return;
 
-#ifdef WIN32
-	if (Mouse_mode == MOUSE_MODE_DI)
-		di_cleanup();
-#endif
-
 	mouse_inited = 0;
 
 	DELETE_CRITICAL_SECTION( mouse_lock );
@@ -114,21 +104,9 @@ void mouse_init()
 	Mouse_x = gr_screen.max_w / 2;
 	Mouse_y = gr_screen.max_h / 2;
 
-	#ifdef WIN32
-		if (Cmdline_no_di_mouse) {
-			Mouse_mode = MOUSE_MODE_WIN;
-		} else {
-			if (!di_init() || Cmdline_window || Cmdline_fullscreen_window)
-				Mouse_mode = MOUSE_MODE_WIN;
-			else
-				Mouse_mode = MOUSE_MODE_DI;
-		} 
-	#else
-		Mouse_mode = MOUSE_MODE_WIN;
-	#endif
+	Mouse_mode = MOUSE_MODE_WIN;
 
 
-#ifdef SCP_UNIX
 	// we poll for mouse motion events so be sure to skip those in normal event polling
 	SDL_EventState( SDL_MOUSEMOTION, SDL_IGNORE );
 
@@ -136,7 +114,6 @@ void mouse_init()
 	// (should be on by default already, just here as a reminder)
 	SDL_EventState( SDL_MOUSEBUTTONDOWN, SDL_ENABLE );
 	SDL_EventState( SDL_MOUSEBUTTONUP, SDL_ENABLE );
-#endif
 
 	LEAVE_CRITICAL_SECTION( mouse_lock );	
 
@@ -386,13 +363,6 @@ void mouse_eval_deltas()
 	if (!mouse_inited)
 		return;
 
-#ifdef WIN32
-	if (Mouse_mode == MOUSE_MODE_DI) {
-		mouse_eval_deltas_di();
-		return;
-	}
-#endif
-
 	cx = gr_screen.max_w / 2;
 	cy = gr_screen.max_h / 2;
 
@@ -433,77 +403,6 @@ void mouse_eval_deltas()
 		Script_system.RunCondition(CHA_MOUSEMOVED);
 	}
 }
-
-#ifdef WIN32
-#include "directx/vdinput.h"
-
-static LPDIRECTINPUT			Di_mouse_obj = NULL;
-static LPDIRECTINPUTDEVICE	Di_mouse = NULL;
-
-void mouse_eval_deltas_di()
-{
-	int repeat = 1;
-	HRESULT hr = 0;
-	DIMOUSESTATE mouse_state;
-
-	Mouse_dx = Mouse_dy = Mouse_dz = 0;
-	if (!Di_mouse_inited)
-		return;
-
-	repeat = 1;
-	memset(&mouse_state, 0, sizeof(mouse_state));
-	while (repeat) {
-		repeat = 0;
-
-		hr = Di_mouse->GetDeviceState(sizeof(mouse_state), &mouse_state);
-		if ((hr == DIERR_INPUTLOST) || (hr == DIERR_NOTACQUIRED)) {
-			// DirectInput is telling us that the input stream has
-			// been interrupted.  We aren't tracking any state
-			// between polls, so we don't have any special reset
-			// that needs to be done.  We just re-acquire and
-			// try again.
-			Sleep(500);		// Pause a half second...
-			hr = Di_mouse->Acquire();
-			if (SUCCEEDED(hr))
-				repeat = 1;
-		}
-	}
-
-	if (SUCCEEDED(hr)) {
-		Mouse_dx = (int) mouse_state.lX;
-		Mouse_dy = (int) mouse_state.lY;
-		Mouse_dz = (int) mouse_state.lZ;
-
-	} else {
-		Mouse_dx = Mouse_dy = Mouse_dz = 0;
-	}
-
-	// Speeds up the menu mouse on higher resolutions. The check for a
-	// visible mouse should eliminate any possible gameplay changes.
-	if ( mouse_is_visible() ) {
-		gr_resize_screen_pos( &Mouse_dx, &Mouse_dy );
-	}
-
-	Mouse_x += Mouse_dx;
-	Mouse_y += Mouse_dy;
-
-	if (Mouse_x < 0)
-		Mouse_x = 0;
-
-	if (Mouse_y < 0)
-		Mouse_y = 0;
-
-	if (Mouse_x >= gr_screen.max_w)
-   		Mouse_x = gr_screen.max_w - 1;
-
-	if (Mouse_y >= gr_screen.max_h)
-  		Mouse_y = gr_screen.max_h - 1;
-
-	// keep the mouse inside our window so we don't switch applications or anything (debug bug people reported?)
-	// JH: Dang!  This makes the mouse readings in DirectInput act screwy!
-//	mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
-}
-#endif //#ifdef WIN32
 
 int mouse_get_pos(int *xpos, int *ypos)
 {
@@ -610,108 +509,19 @@ void mouse_set_pos(int xpos, int ypos)
 	}
 }
 
-#ifdef WIN32
-int di_init()
-{
-	HRESULT hr;
-
-	if (Mouse_mode == MOUSE_MODE_WIN){
-		return 0;
-	}
-
-	Di_mouse_inited = 0;
-	hr = DirectInputCreate(GetModuleHandle(NULL), DIRECTINPUT_VERSION, &Di_mouse_obj, NULL);
-	if (FAILED(hr)) {
-		hr = DirectInputCreate(GetModuleHandle(NULL), 0x300, &Di_mouse_obj, NULL);
-		if (FAILED(hr)) {
-			mprintf(( "DirectInputCreate() failed!\n" ));
-			return FALSE;
-		}
-	}
-
-	hr = Di_mouse_obj->CreateDevice(GUID_SysMouse, &Di_mouse, NULL);
-	if (FAILED(hr)) {
-		mprintf(( "CreateDevice() failed!\n" ));
-		return FALSE;
-	}
-
-	hr = Di_mouse->SetDataFormat(&c_dfDIMouse);
-	if (FAILED(hr)) {
-		mprintf(( "SetDataFormat() failed!\n" ));
-		return FALSE;
-	}
-
-	hr = Di_mouse->SetCooperativeLevel((HWND)os_get_window(), DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
-	if (FAILED(hr)) {
-		mprintf(( "SetCooperativeLevel() failed!\n" ));
-		return FALSE;
-	}
-/*
-	DIPROPDWORD hdr;
-
-	// Turn on buffering
-	hdr.diph.dwSize = sizeof(DIPROPDWORD); 
-	hdr.diph.dwHeaderSize = sizeof(DIPROPHEADER);
-	hdr.diph.dwObj = 0;		
-	hdr.diph.dwHow = DIPH_DEVICE;	// Apply to entire device
-	hdr.dwData = 16;	//MAX_BUFFERED_KEYBOARD_EVENTS;
-
-	hr = Di_mouse->SetProperty( DIPROP_BUFFERSIZE, &hdr.diph );
-	if (FAILED(hr)) {
-		mprintf(( "SetProperty DIPROP_BUFFERSIZE failed\n" ));
-		return FALSE;
-	}
-
-	Di_event = CreateEvent( NULL, FALSE, FALSE, NULL );
-	Assert(Di_event != NULL);
-
-	hr = Di_mouse->SetEventNotification(Di_event);
-	if (FAILED(hr)) {
-		mprintf(( "SetEventNotification failed\n" ));
-		return FALSE;
-	}
-*/
-	Di_mouse->Acquire();
-
-	Di_mouse_inited = 1;
-	return TRUE;
-}
-
-
-void di_cleanup()
-{
-	// Destroy any lingering IDirectInputDevice object.
-	if (Di_mouse) {
-		// Unacquire the device one last time just in case we got really confused
-		// and tried to exit while the device is still acquired.
-		Di_mouse->Unacquire();
-
-		Di_mouse->Release();
-		Di_mouse = NULL;
-	}
-
-	// Destroy any lingering IDirectInput object.
-	if (Di_mouse_obj) {
-		Di_mouse_obj->Release();
-		Di_mouse_obj = NULL;
-	}
-
-	Di_mouse_inited = 0;
-}
-#endif //ifdef WIN32
-
 // portable routine to get the mouse position, relative
 // to current window
 void getWindowMousePos(POINT * pt)
 {
 	Assert(pt != NULL);
 
-#ifdef _WIN32
-	GetCursorPos(pt);
-	ScreenToClient((HWND)os_get_window(), pt);
-#else
-	SDL_GetMouseState(&pt->x, &pt->y);
-#endif
+	int x = 0;
+	int y = 0;
+
+	SDL_GetMouseState(&x, &y);
+
+	pt->x = x;
+	pt->y = y;
 }
 
 
@@ -721,10 +531,5 @@ void setWindowMousePos(POINT * pt)
 {
 	Assert(pt != NULL);
 
-#ifdef _WIN32
-	ClientToScreen((HWND) os_get_window(), pt);
-	SetCursorPos(pt->x, pt->y);
-#else
-	SDL_WarpMouse(pt->x, pt->y);
-#endif
+	SDL_WarpMouseInWindow(GL_window, pt->x, pt->y);
 }

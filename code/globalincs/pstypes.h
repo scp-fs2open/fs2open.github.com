@@ -24,6 +24,8 @@
 
 #include "windows_stub/config.h"
 
+#include "SDL.h"
+
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
 

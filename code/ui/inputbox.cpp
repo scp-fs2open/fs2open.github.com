@@ -31,37 +31,17 @@ int keypad_to_ascii(int c)
 {
 	switch(c){
 	case KEY_PAD0:
-		return key_to_ascii(KEY_0);
-		break;
 	case KEY_PAD1:
-		return key_to_ascii(KEY_1);
-		break;
 	case KEY_PAD2:
-		return key_to_ascii(KEY_2);
-		break;
 	case KEY_PAD3:
-		return key_to_ascii(KEY_3);
-		break;
 	case KEY_PAD4:
-		return key_to_ascii(KEY_4);
-		break;
 	case KEY_PAD5:
-		return key_to_ascii(KEY_5);
-		break;
 	case KEY_PAD6:
-		return key_to_ascii(KEY_6);
-		break;
 	case KEY_PAD7:
-		return key_to_ascii(KEY_7);
-		break;
 	case KEY_PAD8:
-		return key_to_ascii(KEY_8);
-		break;
 	case KEY_PAD9:
-		return key_to_ascii(KEY_9);
-		break;
 	case KEY_PADPERIOD:
-		return key_to_ascii(KEY_PERIOD);
+		return key_to_ascii(c);
 		break;
 	default :
 		return -1;

@@ -6933,46 +6933,7 @@ int game_main(char *cmdline)
 	windebug_memwatch_init();
 #endif
 
-#ifdef _WIN32
-	// Find out how much RAM is on this machine
-	MEMORYSTATUS ms;
-	ms.dwLength = sizeof(MEMORYSTATUS);
-	GlobalMemoryStatus(&ms);
-	FreeSpace_total_ram = ms.dwTotalPhys;
-
-	Mem_starttime_phys      = ms.dwAvailPhys;
-	Mem_starttime_pagefile  = ms.dwAvailPageFile;
-	Mem_starttime_virtual   = ms.dwAvailVirtual;
-
-	if ( game_do_ram_check(FreeSpace_total_ram) == -1 ) {
-		return 1;
-	}
-
-	if ( ms.dwTotalVirtual < 1024 )	{
-		MessageBox( NULL, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197), MB_OK );
-		return 1;
-	}
-
-	if (!vm_init(24*1024*1024)) {
-		MessageBox( NULL, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK );
-		return 1;
-	}
-		
-	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
-	if (!tmp_mem) {
-		MessageBox(NULL, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK);
-		return 1;
-	}
-
-	vm_free(tmp_mem);
-	tmp_mem = NULL;
-
-#else
-
 	vm_init(0); 
-
-#endif // _WIN32
-
 
 	if ( !parse_cmdline(cmdline) ) {
 		return 1;
@@ -6982,13 +6943,6 @@ int game_main(char *cmdline)
 	if (Is_standalone){
 		nprintf(("Network", "Standalone running\n"));
 	}
-
-
-#ifdef _WIN32
-	if ( !Is_standalone )
-		disableWindowsKey( );
-#endif
-
 
 	init_cdrom();
 
@@ -7056,11 +7010,6 @@ int game_main(char *cmdline)
 	} 
 
 	game_shutdown();
-
-#ifdef _WIN32
-	if ( !Is_standalone )
-		enableWindowsKey( );
-#endif
 
 	return 0;
 }

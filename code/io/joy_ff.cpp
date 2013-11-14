@@ -7,7 +7,7 @@
  *
 */ 
 
-
+#ifdef SCP_OLDINPUT
 
 #include "math/vecmat.h"
 #include "io/sw_force.h"
@@ -757,3 +757,5 @@ void init_periodic_effect_struct(di_periodic_effect_struct *effect, int type, in
 	effect->effect.cbTypeSpecificParams		= sizeof(effect->periodic_struct);
 	effect->effect.lpvTypeSpecificParams	= &effect->periodic_struct;
 }
+
+#endif

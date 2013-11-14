@@ -236,11 +236,7 @@ ogl_function GL_EXT_Special[NUM_OGL_EXT_SPECIAL] = {
 };
 
 
-#ifdef _WIN32
-#define GET_PROC_ADDRESS(x)		wglGetProcAddress((x))
-#else
 #define GET_PROC_ADDRESS(x)		SDL_GL_GetProcAddress((x))
-#endif
 
 //tries to find a certain extension
 static inline int opengl_find_extension(const char *ext_to_find)

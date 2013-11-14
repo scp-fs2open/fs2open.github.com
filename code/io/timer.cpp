@@ -29,22 +29,14 @@
 	#define USE_TIMING
 #endif
 
-#ifdef _WIN32
-static longlong Timer_last_value = 0, Timer_base = 0, Timer_freq = 0;
-static const int precision = 1;
-#endif
-
 static int Timer_inited = 0;
 
-static CRITICAL_SECTION Timer_lock;
+static SDL_mutex* Timer_lock;
 
 void timer_close()
 {
 	if ( Timer_inited )	{
 		Timer_inited = 0;
-#ifdef _WIN32
-		timeEndPeriod(precision); 
-#endif
 		DELETE_CRITICAL_SECTION( Timer_lock );
 	}
 }
@@ -54,11 +46,6 @@ void timer_init()
 	if ( !Timer_inited )	{
 		INITIALIZE_CRITICAL_SECTION( Timer_lock );
 
-#ifdef _WIN32
-		timeBeginPeriod(precision);
-		Timer_base = Timer_last_value = timeGetTime();
-#endif
-
 		Timer_inited = 1;
 
 		atexit(timer_close);
@@ -67,27 +54,7 @@ void timer_init()
 
 static uint timer_get()
 {
-#ifdef _WIN32
-	ENTER_CRITICAL_SECTION( Timer_lock );
-
-	longlong time_now;
-
-	time_now = timeGetTime();
-
-	if ( time_now < Timer_last_value ) {
-		// the clock has rolled!
-		Timer_base = time_now;
-		mprintf(("TIMER ROLLED!\n"));
-	}
-
-	Timer_last_value = time_now;
-
-	LEAVE_CRITICAL_SECTION( Timer_lock );
-
-	return (uint)(time_now - Timer_base);
-#else
 	return SDL_GetTicks();
-#endif
 }
 
 

@@ -35,7 +35,7 @@
 ubyte *Wavedata_load_buffer = NULL;		// buffer used for cueing audiostreams
 ubyte *Wavedata_service_buffer = NULL;	// buffer used for servicing audiostreams
 
-CRITICAL_SECTION Global_service_lock;
+SDL_mutex* Global_service_lock;
 
 typedef bool (*TIMERCALLBACK)(ptr_u);
 
@@ -172,20 +172,12 @@ public:
     void destructor(void);
     bool Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback);
 protected:
-#ifndef SCP_UNIX
-    static void CALLBACK TimeProc(UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
-#else
     static uint TimeProc(uint interval, void *param);
-#endif
     TIMERCALLBACK m_pfnCallback;
     ptr_u m_dwUser;
     uint m_nPeriod;
     uint m_nRes;
-#ifndef SCP_UNIX
-    uint m_nIDTimer;
-#else
     SDL_TimerID m_nIDTimer;
-#endif
 };
 
 class WaveFile
@@ -286,7 +278,7 @@ protected:
 	bool	m_bPastLimit;			// flag to show we've played past the number of bytes requred
 	float	m_lDefaultVolume;
 
-	CRITICAL_SECTION write_lock;
+	SDL_mutex* write_lock;
 };
 
 
@@ -305,11 +297,7 @@ void Timer::constructor(void)
 void Timer::destructor(void)
 {
 	if (m_nIDTimer) {
-#ifndef SCP_UNIX
-		timeKillEvent (m_nIDTimer);
-#else
 		SDL_RemoveTimer(m_nIDTimer);
-#endif
 		m_nIDTimer = NULL;
 	}
 }
@@ -328,11 +316,7 @@ bool Timer::Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCall
 	m_dwUser = dwUser;
 	m_pfnCallback = pfnCallback;
 
-#ifndef SCP_UNIX
-	if ((m_nIDTimer = timeSetEvent ((UINT)m_nPeriod, (UINT)m_nRes, TimeProc, (DWORD)this, TIME_PERIODIC)) == NULL) {
-#else
 	if ((m_nIDTimer = SDL_AddTimer(m_nPeriod, TimeProc, (void*)this)) == NULL) {
-#endif
 	  bRtn = false;
 	}
 
@@ -345,11 +329,7 @@ bool Timer::Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCall
 // Calls procedure specified when Timer object was created. The 
 // dwUser parameter contains "this" pointer for associated Timer object.
 // 
-#ifndef SCP_UNIX
-void CALLBACK Timer::TimeProc(UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2)
-#else
 uint Timer::TimeProc(uint interval, void *dwUser)
-#endif
 {
     // dwUser contains ptr to Timer object
 	Timer * ptimer = (Timer *) dwUser;
@@ -357,7 +337,6 @@ uint Timer::TimeProc(uint interval, void *dwUser)
     // Call user-specified callback and pass back user specified data
     (ptimer->m_pfnCallback) (ptimer->m_dwUser);
 
-#ifdef SCP_UNIX
     if (ptimer->m_nPeriod) {
 		return interval;
     } else {
@@ -365,7 +344,6 @@ uint Timer::TimeProc(uint interval, void *dwUser)
 		ptimer->m_nIDTimer = NULL;
 		return 0;
     }
-#endif
 }
 
 

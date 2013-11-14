@@ -32,17 +32,11 @@
 #include "inetfile/cftp.h"
 
 
-#ifdef WIN32
-void FTPObjThread( void * obj )
-#else
 int FTPObjThread( void *obj )
-#endif
 {
 	((CFtpGet *)obj)->WorkerThread();
 
-#ifdef SCP_UNIX
 	return 0;
-#endif
 }
 
 void CFtpGet::AbortGet()
@@ -66,9 +60,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	m_iBytesTotal = 0;
 	m_Aborting = false;
 	m_Aborted = false;
-#ifdef SCP_UNIX
 	thread_id = NULL;
-#endif
 
 	LOCALFILE = fopen(localfile, "wb");
 
@@ -183,11 +175,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	//At this point we should have a nice host,dir and filename
 	
 	//if(NULL==CreateThread(NULL,0,ObjThread,this,0,&m_dwThreadId))
-#ifdef WIN32
-	if ( _beginthread(FTPObjThread,0,this) == NULL )
-#else
-	if ( (thread_id = SDL_CreateThread(FTPObjThread, this)) == NULL )
-#endif
+	if ( (thread_id = SDL_CreateThread(FTPObjThread, "FTP", this)) == NULL )
 	{
 		m_State = FTP_STATE_INTERNAL_ERROR;
 		return;

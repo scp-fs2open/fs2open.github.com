@@ -145,9 +145,7 @@ extern int Cmdline_show_stats;
 extern int Cmdline_save_render_targets;
 extern int Cmdline_debug_window;
 extern int Cmdline_verify_vps;
-#ifdef SCP_UNIX
 extern int Cmdline_no_grab;
-#endif
 extern int Cmdline_reparse_mainhall;
 extern bool Cmdline_frame_profile;
 

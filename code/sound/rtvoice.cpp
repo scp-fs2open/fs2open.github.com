@@ -56,11 +56,7 @@ static rtv_out_buffer Rtv_output_buffers[MAX_RTV_OUT_BUFFERS];		// data for outp
 //static struct	t_CodeInfo Rtv_code_info;		// Parms will need to be transmitted with packets
 
 // recording timer data
-#ifdef _WIN32
-static int Rtv_record_timer_id;		// unique id for callback timer
-#else
 static SDL_TimerID Rtv_record_timer_id;
-#endif
 static int Rtv_callback_time;			// callback time in ms
 
 void (*Rtv_callback)();
@@ -79,18 +75,7 @@ static int Rtv_playback_uncompressed_buffer_size;
 // RECORD/ENCODE
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef _WIN32
-void CALLBACK TimeProc(unsigned int id, unsigned int msg, unsigned long userdata, unsigned long dw1, unsigned long dw2) 
-{
-	if ( !Rtv_callback ) {
-		return;
-	}
-
-	nprintf(("Alan","In callback\n"));
-	Rtv_callback();
-}
-#else
-Uint32 CALLBACK TimeProc(Uint32 interval, void *param)
+Uint32 TimeProc(Uint32 interval, void *param)
 {
 	if ( !Rtv_callback ) {
 		SDL_RemoveTimer(Rtv_record_timer_id);
@@ -111,7 +96,6 @@ Uint32 CALLBACK TimeProc(Uint32 interval, void *param)
 		return 0;
 	}
 }
-#endif
 
 // Try to pick the most appropriate recording format
 //
@@ -148,39 +132,7 @@ void rtvoice_set_qos(int qos)
 //			!0	=>	failure, recording not possible
 int rtvoice_init_recording(int qos)
 {
-#if 0
-	if ( !Rtv_recording_inited ) {
-		if ( rtvoice_pick_record_format() ) {
-			return -1;
-		}
-
-		Rtv_capture_raw_buffer_size = Rtv_formats[Rtv_recording_format].frequency * (RTV_BUFFER_TIME) * fl2i(Rtv_formats[Rtv_recording_format].bits_per_sample/8.0f);
-
-		if ( dscap_create_buffer(Rtv_formats[Rtv_recording_format].frequency, Rtv_formats[Rtv_recording_format].bits_per_sample, 1, RTV_BUFFER_TIME) ) {
-			return -1;
-		}
-
-		// malloc out the voice data buffer for raw (uncompressed) recorded sound
-		if ( Rtv_capture_raw_buffer ) {
-			vm_free(Rtv_capture_raw_buffer);
-			Rtv_capture_raw_buffer=NULL;
-		}
-		Rtv_capture_raw_buffer = (unsigned char*)vm_malloc(Rtv_capture_raw_buffer_size);
-
-		// malloc out voice data buffer for compressed recorded sound
-		if ( Rtv_capture_compressed_buffer ) {
-			vm_free(Rtv_capture_compressed_buffer);
-			Rtv_capture_compressed_buffer=NULL;
-		}
-		Rtv_capture_compressed_buffer_size=Rtv_capture_raw_buffer_size;	// be safe and allocate same as uncompressed
-		Rtv_capture_compressed_buffer = (unsigned char*)vm_malloc(Rtv_capture_compressed_buffer_size);
-
-		Rtv_recording_inited=1;
-	}
-	return 0;
-#else
 	return -1;
-#endif
 }
 
 // Stop a stream from recording
@@ -193,13 +145,8 @@ void rtvoice_stop_recording()
 	dscap_stop_record();
 
 	if ( Rtv_record_timer_id ) {
-#ifndef _WIN32
 		SDL_RemoveTimer(Rtv_record_timer_id);
 		Rtv_record_timer_id = NULL;
-#else
-		timeKillEvent(Rtv_record_timer_id);
-		Rtv_record_timer_id = 0;
-#endif
 	}
 
 	Rtv_recording=0;
@@ -247,11 +194,7 @@ int rtvoice_start_recording( void (*user_callback)(), int callback_time )
 	}
 
 	if ( user_callback ) {
-#ifndef _WIN32
 		Rtv_record_timer_id = SDL_AddTimer(callback_time, TimeProc, NULL);
-#else
-		Rtv_record_timer_id = timeSetEvent(callback_time, callback_time, TimeProc, 0, TIME_PERIODIC);
-#endif
 		if ( !Rtv_record_timer_id ) {
 			dscap_stop_record();
 			return -1;

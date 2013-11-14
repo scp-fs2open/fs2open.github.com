@@ -33,11 +33,11 @@
 #include "io/keycontrol.h" // m!m
 
 
-#if defined(SCP_UNIX) && !defined(__APPLE__)
+//#if defined(SCP_UNIX) && !defined(__APPLE__)
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
 #endif
-#endif // SCP_UNIX && !__APPLE__
+//#endif // SCP_UNIX && !__APPLE__
 
 // Includes for different rendering systems
 #include "graphics/gropengl.h"
@@ -436,7 +436,7 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 	gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
 	gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
 
-#ifdef WIN32
+#ifdef SCP_WIN32
 	// FRED doesn't need this
 	if ( !Fred_running && !Is_standalone ) {
 		// for Windows, we need to do this just before the *_init() calls

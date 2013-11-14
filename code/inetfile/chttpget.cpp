@@ -52,19 +52,13 @@ int http_gethostbynameworker(void *parm);
 
 int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname);
 
-#ifdef WIN32
-void HTTPObjThread( void *obj )
-#else
 int HTTPObjThread( void *obj )
-#endif
 {
 	((ChttpGet *)obj)->WorkerThread();
 	((ChttpGet *)obj)->m_Aborted = true;
 	//OutputDebugString("http transfer exiting....\n");
 
-#ifdef SCP_UNIX
 	return 0;
-#endif
 }
 
 void ChttpGet::AbortGet()
@@ -176,11 +170,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 		m_szHost[(dirstart-pURL)-1] = '\0';
 	}
 
-#ifdef WIN32
-	if ( _beginthread(HTTPObjThread,0,this) == NULL )
-#else
-	if ( (thread_id = SDL_CreateThread(HTTPObjThread, this)) == NULL )
-#endif
+	if ( (thread_id = SDL_CreateThread(HTTPObjThread, "HTTP", this)) == NULL )
 	{
 		m_State = HTTP_STATE_INTERNAL_ERROR;
 		return;
@@ -190,12 +180,8 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 
 ChttpGet::~ChttpGet()
 {
-#ifdef WIN32
-	_endthread();
-#else
 	if (thread_id)
 		SDL_WaitThread(thread_id, NULL);
-#endif
 
 	if (m_DataSock != INVALID_SOCKET) {
 		shutdown(m_DataSock, 2);

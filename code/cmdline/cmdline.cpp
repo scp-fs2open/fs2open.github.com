@@ -197,9 +197,7 @@ Flag exe_params[] =
 	{ "-save_render_target",	"Save render targets to file",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-save_render_target", },
 	{ "-debug_window",		"Display debug window",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-debug_window", },
 	{ "-verify_vps",		"Spew VP CRCs to vp_crcs.txt",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-verify_vps", },
- #ifdef SCP_UNIX
 	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
- #endif
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
 	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 };
@@ -420,9 +418,7 @@ cmdline_parm fullscreen_window_arg("-fullscreen_window",NULL);
 cmdline_parm res_arg("-res", NULL);					// Cmdline_lores
 cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, NULL); 
-#ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
-#endif
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL); //Cmdline_frame_profile
 
@@ -444,9 +440,7 @@ int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
 char *Cmdline_res = 0;
 int Cmdline_verify_vps = 0;
-#ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
-#endif
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_frame_profile = false;
 
@@ -1340,12 +1334,10 @@ bool SetCmdlineParams()
 		Cmdline_no_vsync = 1;
 	}
 
-#ifdef SCP_UNIX
 	// no key/mouse grab
 	if(no_grab.found()){
 		Cmdline_no_grab = 1;
 	}
-#endif
 
 	if ( normal_arg.found() ) {
 		Cmdline_normal = 0;

@@ -63,7 +63,7 @@ static DWORD		ThreadID;
 static int			WinX, WinY, WinW, WinH;
 static int			Os_inited = 0;
 
-static CRITICAL_SECTION Os_lock;
+static SDL_mutex* Os_lock;
 
 int Os_debugger_running = 0;
 
@@ -100,6 +100,7 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 char Cur_path[MAX_PATH_LEN];
 const char *detect_home(void)
 {
+#ifdef WIN32
 	if ( strlen(Cfile_root_dir) )
 		return Cfile_root_dir;
 
@@ -107,6 +108,9 @@ const char *detect_home(void)
 	GetCurrentDirectory( MAX_PATH_LEN-1, Cur_path );
 
 	return Cur_path;
+#else
+	return (getenv("HOME"));
+#endif
 }
 
 // initialization/shutdown functions -----------------------------------------------
@@ -139,20 +143,7 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 	strcpy_s( szWinClass, wclass );	
 
 	INITIALIZE_CRITICAL_SECTION( Os_lock );
-/*
-	#ifdef THREADED_PROCESS
-		// Create an even to signal that the window is created, 
-		// so that we don't return from this function until 
-		// the window is all properly created.
-		HANDLE Window_created = CreateEvent( NULL, FALSE, FALSE, NULL );
-		hThread = CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)win32_process, Window_created, 0, &ThreadID );
-		if ( WaitForSingleObject( Window_created, 5000 )==WAIT_TIMEOUT)	{			//INFINITE );
-			mprintf(( "Wait timeout!\n" ));
-		}
-		CloseHandle(Window_created);
-		Window_created = NULL;
-	#endif // THREADED
-*/
+
 	// initialized
 	Os_inited = 1;
 
@@ -169,7 +160,6 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 void os_set_title( const char * title )
 {
 	strcpy_s( szWinTitle, title );
-	SetWindowText( hwndApp, szWinTitle );
 }
 
 extern void gr_opengl_shutdown();
@@ -177,15 +167,7 @@ extern void gr_opengl_shutdown();
 // call at program end
 void os_cleanup()
 {
-	if (gr_screen.mode == GR_OPENGL)
 		gr_opengl_shutdown();
-
-	if (dcApp != NULL) {
-		ReleaseDC( hwndApp, dcApp );
-	}
-
-	// destroy the window (takes care of a lot of window related cleanup and sys messages)
-	DestroyWindow( hwndApp );
 
 #ifndef NDEBUG
 	outwnd_close();
@@ -336,10 +318,9 @@ void os_check_debugger()
 // called at shutdown. Makes sure all thread processing terminates.
 void os_deinit()
 {
-	if (hThread)	{
-		CloseHandle(hThread);
-		hThread = NULL;
-	}
+	DELETE_CRITICAL_SECTION(Os_lock);
+
+	SDL_Quit();
 }
 
 // go through all windows and try and find the one that matches the search string
@@ -365,7 +346,9 @@ void change_window_active_state()
 	if (fAppActive != fOldAppActive) {
 		if (fAppActive) {
 			// maximize it
+#ifdef SCP_OLDINPUT
 			joy_reacquire_ff();
+#endif
 
 			game_unpause();
 
@@ -381,7 +364,9 @@ void change_window_active_state()
                 SetWindowPos(hwndApp, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
             }
 		} else {
+#ifdef SCP_OLDINPUT
 			joy_unacquire_ff();
+#endif
 
 			if (Mouse_hidden)
 				Mouse_hidden = 0;
@@ -732,25 +717,90 @@ void win32_create_window(int width, int height)
 	return;// TRUE;
 }
 
+extern std::map<int, int> SDLtoFS2;
+extern void joy_set_button_state(int button, int state);
+extern void joy_set_hat_state(int position);
+extern SDL_Window* GL_window;
+
 void os_poll()
 {
-#ifndef THREADED_PROCESS
-	win32_process(0);
-#else
-	MSG msg;
-	ENTER_CRITICAL_SECTION( Os_lock );
-	while(PeekMessage(&msg,0,0,0,PM_NOREMOVE))	{		
-		if ( msg.message == WM_DESTROY )	{
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+		case SDL_WINDOWEVENT: {
+			if (event.window.windowID == SDL_GetWindowID(GL_window)) {
+				switch (event.window.event) {
+				case SDL_WINDOWEVENT_MINIMIZED:
+				case SDL_WINDOWEVENT_FOCUS_LOST:
+				{
+													if (fAppActive) {
+														game_pause();
+														fAppActive = false;
+													}
+													break;
+				}
+				case SDL_WINDOWEVENT_MAXIMIZED:
+				case SDL_WINDOWEVENT_RESTORED:
+				case SDL_WINDOWEVENT_FOCUS_GAINED:
+				{
+													if (!fAppActive) {
+														game_unpause();
+														fAppActive = true;
+													}
+				}
+				}
+			}
+			gr_activate(fAppActive);
 			break;
 		}
-		if (PeekMessage(&msg,0,0,0,PM_REMOVE))	{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}		
-		Got_message++;
+
+		case SDL_KEYDOWN:
+			/*if( (event.key.keysym.mod & KMOD_ALT) && (event.key.keysym.sym == SDLK_RETURN) ) {
+			Gr_screen_mode_switch = 1;
+			gr_activate(1);
+			break;
+			}*/
+
+			if (SDLtoFS2[event.key.keysym.scancode]) {
+				key_mark(SDLtoFS2[event.key.keysym.scancode], 1, 0);
+			}
+			break;
+
+		case SDL_KEYUP:
+			/*if( (event.key.keysym.mod & KMOD_ALT) && (event.key.keysym.sym == SDLK_RETURN) ) {
+			Gr_screen_mode_switch = 0;
+			break;
+			}*/
+
+			if (SDLtoFS2[event.key.keysym.scancode]) {
+				key_mark(SDLtoFS2[event.key.keysym.scancode], 0, 0);
+			}
+			break;
+
+		case SDL_MOUSEBUTTONDOWN:
+		case SDL_MOUSEBUTTONUP:
+			if (event.button.button == SDL_BUTTON_LEFT)
+				mouse_mark_button(MOUSE_LEFT_BUTTON, event.button.state);
+			else if (event.button.button == SDL_BUTTON_MIDDLE)
+				mouse_mark_button(MOUSE_MIDDLE_BUTTON, event.button.state);
+			else if (event.button.button == SDL_BUTTON_RIGHT)
+				mouse_mark_button(MOUSE_RIGHT_BUTTON, event.button.state);
+
+			break;
+
+		case SDL_JOYHATMOTION:
+			joy_set_hat_state(event.jhat.value);
+			break;
+
+		case SDL_JOYBUTTONDOWN:
+		case SDL_JOYBUTTONUP:
+			if (event.jbutton.button < JOY_NUM_BUTTONS) {
+				joy_set_button_state(event.jbutton.button, event.jbutton.state);
+			}
+			break;
+		}
 	}
-	LEAVE_CRITICAL_SECTION( Os_lock );
-#endif
 }
 
 void debug_int3(char *file, int line)
