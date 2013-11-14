@@ -1,0 +1,17 @@
+//Windows resource file for wxFRED icon
+//by FSF, based on wxWidgets' sample.rc by Vadim Zeitlin
+
+//icon used by Explorer (i.e. program icon)
+//should be listed first and be first alphabetically
+aaaaaaaa ICON "V_fred.ico"
+
+//used with wxFrame::SetIcon()
+wxFRED ICON "V_fred.ico"
+
+/****** Not sure if stuff below is really useful or anything *******/
+
+//enable manifest resource for winXP visual styles
+#define wxUSE_NO_MANIFEST 0
+
+//when switched on, this somehow gives compile-time errors
+//#include "wx/msw/wx.rc"
