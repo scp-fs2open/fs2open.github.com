@@ -75,6 +75,18 @@ void dock_dead_undock_objects(object *objp1, object *objp2)
 	dead_dock_remove_instance(objp2, objp1);
 }
 
+void dock_clear_dead_dock_list(object *objp)
+{
+	dock_instance *ptr = objp->dead_dock_list;
+	while (ptr != NULL)
+	{
+		dock_instance *nextptr = ptr->next;
+		vm_free(ptr);
+		ptr = nextptr;
+	}
+	objp->dead_dock_list = NULL;
+}
+
 void dead_dock_add_instance(object *objp, int dockpoint, object *other_objp)
 {
 	dock_instance *item;

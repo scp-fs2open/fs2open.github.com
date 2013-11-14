@@ -633,6 +633,18 @@ void dock_undock_objects(object *objp1, object *objp2)
 	dock_remove_instance(objp2, objp1);
 }
 
+void dock_clear_dock_list(object *objp)
+{
+	dock_instance *ptr = objp->dock_list;
+	while (ptr != NULL)
+	{
+		dock_instance *nextptr = ptr->next;
+		vm_free(ptr);
+		ptr = nextptr;
+	}
+	objp->dock_list = NULL;
+}
+
 // dock list functions -------------------------------------------------------------------------------------------
 bool dock_check_assume_hub()
 {
