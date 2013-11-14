@@ -11,7 +11,7 @@
 
 #include "globalincs/globals.h"
 
-struct p_object;
+class p_object;
 
 // info for each docked parse object
 typedef struct p_dock_instance {
@@ -65,7 +65,7 @@ void dock_dock_docked_objects(p_object *objp);
 // add objp1 and objp2 to each others' dock lists; currently only called by mission_parse_set_up_initial_docks
 void dock_dock_objects(p_object *objp1, char *dockpoint1, p_object *objp2, char *dockpoint2);
 
-// free the entire dock list without undocking anything; called only from mission_parse_close in missionparse.cpp
-void dock_free_instances(p_object *objp);
+// free the entire dock list without undocking anything; should only be used on object cleanup
+void dock_free_dock_list(p_object *objp);
 
 #endif	// _PARSE_OBJECT_DOCK_H

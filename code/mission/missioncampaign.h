@@ -77,7 +77,9 @@ typedef struct mevent {
 	char	status;
 } mevent;
 
-typedef struct cmission {
+class cmission
+{
+public:
 	char				*name;					// name of the mission
 	char				*notes;					// mission notes for mission (used by Fred)
 	char				briefing_cutscene[NAME_LENGTH];	// name of the cutscene to be played before this mission
@@ -99,9 +101,11 @@ typedef struct cmission {
 	SCP_string		main_hall;				// which main hall the player is in - converted to SCP_string by CommanderDJ
 	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000
 	scoring_struct	stats;
-} cmission;
+};
 
-typedef struct campaign {
+class campaign
+{
+public:
 	char	name[NAME_LENGTH];						// name of the campaign
 	char	filename[MAX_FILENAME_LEN];				// filename the campaign info is in
 	char	*desc;									// description of campaign
@@ -122,7 +126,14 @@ typedef struct campaign {
 	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
 	int				num_variables;					// number of variables this campaign had - Goober5000
 	sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
-} campaign;
+
+	campaign()
+		: desc(NULL), num_missions(0), variables(NULL)
+	{
+		name[0] = 0;
+		filename[0] = 0;
+	}
+};
 
 extern campaign Campaign;
 

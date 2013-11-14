@@ -96,7 +96,6 @@ int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;
 fix Entry_delay_time = 0;
-int Fred_num_texture_replacements = 0;
 
 int Num_unknown_ship_classes;
 int Num_unknown_weapon_classes;
@@ -142,14 +141,14 @@ team_data Team_data[MAX_TVT_TEAMS];
 // variables for player start in single player
 char		Player_start_shipname[NAME_LENGTH];
 int		Player_start_shipnum;
-p_object Player_start_pobject;
+p_object *Player_start_pobject;
 
 // name of all ships to use while parsing a mission (since a ship might be referenced by
 // something before that ship has even been loaded yet)
 char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
 int Num_parse_names;
 
-texture_replace *Fred_texture_replacements = NULL;
+SCP_vector<texture_replace> Fred_texture_replacements;
 
 int Num_path_restrictions;
 path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
@@ -2609,6 +2608,16 @@ void fix_old_special_hits(p_object *p_objp, int variable_index)
 	p_objp->special_shield = atoi(Block_variables[variable_index+SHIELD_STRENGTH].text);
 }
 
+p_object::p_object()
+	: next(NULL), prev(NULL), dock_list(NULL), created_object(NULL)
+{}
+
+// this will be called when Parse_objects is cleared between missions and upon shutdown
+p_object::~p_object()
+{
+	dock_free_dock_list(this);
+}
+
 /**
  * Mp points at the text of an object, which begins with the "$Name:" field.
  * Snags all object information.  Creating the ship now only happens after everything has been parsed.
@@ -3233,12 +3242,14 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			// *** account for FRED
 			if (Fred_running)
 			{
-				Assert( Fred_texture_replacements != NULL );
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = -1;
-				Fred_num_texture_replacements++;
+				texture_replace tr;
+
+				strcpy_s(tr.ship_name, p_objp->name);
+				strcpy_s(tr.old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
+				strcpy_s(tr.new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+				tr.new_texture_id = -1;
+
+				Fred_texture_replacements.push_back(tr);
 			}
 
 			// increment
@@ -3268,13 +3279,6 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	p_objp->wing_status_wing_index = -1;
 	p_objp->wing_status_wing_pos = -1;
 	p_objp->respawn_count = 0;
-
-	// if this if the starting player ship, then copy if to Starting_player_pobject (used for ingame join)
-	if (!stricmp(p_objp->name, Player_start_shipname))
-	{
-		Player_start_pobject = *p_objp;
-	}
-	
 
 	// Goober5000 - preload stuff for certain object flags
 	// (done after parsing object, but before creating it)
@@ -3768,12 +3772,12 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 
 p_object *mission_parse_get_parse_object(ushort net_signature)
 {
-	int i;
+	SCP_vector<p_object>::iterator ii;
 
 	// look for original ships
-	for (i = 0; i < (int)Parse_objects.size(); i++)
-		if(Parse_objects[i].net_signature == net_signature)
-			return &Parse_objects[i];
+	for (ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
+		if (ii->net_signature == net_signature)
+			return &(*ii);
 
 	// boo
 	return NULL;
@@ -3782,12 +3786,12 @@ p_object *mission_parse_get_parse_object(ushort net_signature)
 // Goober5000 - also get it by name
 p_object *mission_parse_get_parse_object(const char *name)
 {
-	int i;
+	SCP_vector<p_object>::iterator ii;
 
 	// look for original ships
-	for (i = 0; i < (int)Parse_objects.size(); i++)
-		if(!stricmp(Parse_objects[i].name, name))
-			return &Parse_objects[i];
+	for (ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
+		if (!stricmp(ii->name, name))
+			return &(*ii);
 
 	// boo
 	return NULL;
@@ -3946,11 +3950,11 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 	// Goober5000 - we have to do this via the array because we have no guarantee we'll be able to iterate along the list
 	// (since created objects plus anything they're docked to will be removed from it)
-	for (i = 0; i < (int)Parse_objects.size(); i++)
+	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
 		int index;
 		ai_info *aip;
-		p_object *p_objp = &Parse_objects[i];
+		p_object *p_objp = &(*ii);
 
 		// ensure on arrival list
 		if (!parse_object_on_arrival_list(p_objp))
@@ -4553,14 +4557,11 @@ void resolve_path_masks(int anchor, int *path_mask)
 void post_process_path_stuff()
 {
 	int i;
-	p_object *pobjp;
 	wing *wingp;
 
 	// take care of parse objects (ships)
-	for (i = 0; i < (int)Parse_objects.size(); i++)
+	for (SCP_vector<p_object>::iterator pobjp = Parse_objects.begin(); pobjp != Parse_objects.end(); ++pobjp)
 	{
-		pobjp = &Parse_objects[i];
-
 		resolve_path_masks(pobjp->arrival_anchor, &pobjp->arrival_path_mask);
 		resolve_path_masks(pobjp->departure_anchor, &pobjp->departure_path_mask);
 	}
@@ -4592,9 +4593,9 @@ void post_process_ships_wings()
 	// Goober5000 - now create all objects that we can.  This must be done before any ship stuff
 	// but can't be done until the dock references are resolved.  This was originally done
 	// in parse_object().
-	for (i = 0; i < (int)Parse_objects.size(); i++)
+	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
-		mission_parse_maybe_create_parse_object(&Parse_objects[i]);
+		mission_parse_maybe_create_parse_object(&(*ii));
 	}
 
 
@@ -5379,7 +5380,6 @@ int parse_mission(mission *pm, int flags)
 	Player_starts = Num_cargo = Num_goals = Num_wings = 0;
 	Player_start_shipnum = -1;
 	*Player_start_shipname = 0;		// make the string 0 length for checking later
-	Player_start_pobject.Reset( );
 	clear_texture_replacements();
 
 	// initialize the initially_docked array.
@@ -5508,8 +5508,9 @@ void post_process_mission()
 
 	// the player_start_shipname had better exist at this point!
 	Player_start_shipnum = ship_name_lookup( Player_start_shipname );
-	Assert ( Player_start_shipnum != -1 );
-	Assert ( !stricmp(Player_start_pobject.name, Player_start_shipname) );
+	Assert( Player_start_shipnum != -1 );
+	Player_start_pobject = mission_parse_get_parse_object( Player_start_shipname );
+	Assert( Player_start_pobject != NULL );
 
 	// Assign objnum, shipnum, etc. to the player structure
 	objnum = Ships[Player_start_shipnum].objnum;
@@ -5870,6 +5871,7 @@ int parse_main(const char *mission_name, int flags)
 	return rval;
 }
 
+// Note, this is currently only called from game_shutdown()
 void mission_parse_close()
 {
 	// free subsystems
@@ -5879,11 +5881,8 @@ void mission_parse_close()
 		Subsys_status = NULL;
 	}
 
-	// free parse object dock lists
-	for (size_t i = 0; i < Parse_objects.size(); i++)
-	{
-		dock_free_instances(&Parse_objects[i]);
-	}
+	// the destructor for each p_object will clear its dock list
+	Parse_objects.clear();
 }
 
 /**
@@ -6089,9 +6088,9 @@ void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_inf
 void parse_object_clear_all_handled_flags()
 {
 	// clear flag for all ships
-	for (size_t i = 0; i < Parse_objects.size(); i++)
+	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
-		p_object *pobjp = &Parse_objects[i];
+		p_object *pobjp = &(*ii);
 		p_dock_function_info dfi;
 
 		// since we're going through all objects, this object may not be docked
@@ -6162,9 +6161,9 @@ void mission_parse_set_up_initial_docks()
 	}
 
 	// now resolve the leader of each tree
-	for (i = 0; i < (int)Parse_objects.size(); i++)
+	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
-		p_object *pobjp = &Parse_objects[i];
+		p_object *pobjp = &(*ii);
 		p_dock_function_info dfi;
 
 		// since we're going through all objects, this object may not be docked
@@ -6695,9 +6694,9 @@ void mission_eval_arrivals()
 	// check the arrival list
 	// Goober5000 - we can't run through the list the usual way because we might
 	// remove a bunch of objects and completely screw up the list linkage
-	for (i = 0; i < (int)Parse_objects.size(); i++)
+	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
-		p_object *pobjp = &Parse_objects[i];
+		p_object *pobjp = &(*ii);
 
 		// make sure we're on the arrival list
 		if (!parse_object_on_arrival_list(pobjp))
@@ -7943,8 +7942,5 @@ void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_second
 
 void clear_texture_replacements() 
 {
-	for (int i=0; i < Fred_num_texture_replacements; i++) {
-		memset(Fred_texture_replacements, '\0', sizeof(texture_replace)); 
-	}
-	Fred_num_texture_replacements = 0; 
+	Fred_texture_replacements.clear();
 }

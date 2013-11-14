@@ -108,7 +108,7 @@ void multi_campaign_start(char *filename)
 // client-side start of a campaign
 void multi_campaign_client_start()
 {
-	memset(&Campaign,0,sizeof(Campaign));
+	mission_campaign_clear();
 
 	// set campaign mode. why not.
 	Game_mode |= GM_CAMPAIGN_MODE;

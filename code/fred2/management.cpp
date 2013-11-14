@@ -253,15 +253,6 @@ void parse_medal_tbl()
 }
 */
 
-// an atexit() call!!
-void fred_close()
-{
-	if (Fred_texture_replacements != NULL) {
-		delete[] Fred_texture_replacements;
-		Fred_texture_replacements = NULL;
-	}
-}
-
 void parse_init(bool basic = false);
 void brief_init_colors();
 
@@ -383,9 +374,7 @@ bool fred_init()
 	brief_parse_icon_tbl();
 
 	// for fred specific replacement texture stuff
-	//Fred_texture_replacements = (texture_replace*) vm_malloc( sizeof(texture_replace) * MAX_SHIPS * MAX_REPLACEMENT_TEXTURES );
-	Fred_texture_replacements = new texture_replace[MAX_SHIPS*MAX_REPLACEMENT_TEXTURES];
-	atexit(fred_close);
+	Fred_texture_replacements.clear();
 
 	// Goober5000
 	for (i = 0; i < MAX_IFFS; i++)
@@ -435,7 +424,7 @@ bool fred_init()
 	fiction_viewer_reset();
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
-	Campaign.filename[0] = 0;  // indicate initialized state
+	mission_campaign_clear();
 
 	stars_post_level_init();
 
@@ -2647,11 +2636,9 @@ void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_for
 // Goober5000
 void update_texture_replacements(const char *old_name, const char *new_name)
 {
-	int i;
-
-	for (i = 0; i < Fred_num_texture_replacements; i++)
+	for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii)
 	{
-		if (!stricmp(Fred_texture_replacements[i].ship_name, old_name))
-			strcpy_s(Fred_texture_replacements[i].ship_name, new_name);
+		if (!stricmp(ii->ship_name, old_name))
+			strcpy_s(ii->ship_name, new_name);
 	}
 }

@@ -25,4 +25,7 @@ void dock_dead_dock_objects(object *objp1, int dockpoint1, object *objp2, int do
 // remove objp1 and objp2 from each others' dock lists; currently called by do_dying_undock_physics and ship_cleanup
 void dock_dead_undock_objects(object *objp1, object *objp2);
 
+// free the entire dock list without undocking anything; should only be used on object cleanup
+void dock_free_dead_dock_list(object *objp);
+
 #endif	// _DEAD_OBJECT_DOCK_H

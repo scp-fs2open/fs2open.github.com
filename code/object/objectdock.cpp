@@ -722,6 +722,17 @@ void dock_remove_instance(object *objp, object *other_objp)
 	}
 }
 
+// just free the list without worrying about undocking anything
+void dock_free_dock_list(object *objp)
+{
+	while (objp->dock_list != NULL)
+	{
+		dock_instance *ptr = objp->dock_list;
+		objp->dock_list = ptr->next;
+		vm_free(ptr);
+	}
+}
+
 dock_instance *dock_find_instance(object *objp, object *other_objp)
 {
 	dock_instance *ptr = objp->dock_list;
