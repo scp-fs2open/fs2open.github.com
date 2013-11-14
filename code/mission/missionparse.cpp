@@ -5883,7 +5883,7 @@ void mission_parse_close()
 	// free parse object dock lists
 	for (size_t i = 0; i < Parse_objects.size(); i++)
 	{
-		dock_free_instances(&Parse_objects[i]);
+		dock_free_dock_list(&Parse_objects[i]);
 	}
 }
 

@@ -247,20 +247,13 @@ void dock_add_instance(p_object *objp, char *dockpoint, p_object *other_objp)
 	objp->dock_list = item;
 }
 
-// this is only allowed for parse objects because we can just free the lists
-// at mission close without worrying about undocking them
-void dock_free_instances(p_object *objp)
+// just free the list without worrying about undocking anything
+void dock_free_dock_list(p_object *objp)
 {
-	// delete the whole list
 	while (objp->dock_list != NULL)
 	{
-		// save first item
 		p_dock_instance *ptr = objp->dock_list;
-
-		// remove it from the list
 		objp->dock_list = ptr->next;
-
-		// delete it
 		vm_free(ptr);
 	}
 }

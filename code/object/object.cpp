@@ -114,8 +114,8 @@ object::~object()
 {
 	objsnd_num.clear();
 
-	dock_clear_dock_list(this);
-	dock_clear_dead_dock_list(this);
+	dock_free_dock_list(this);
+	dock_free_dead_dock_list(this);
 }
 
 // DO NOT set next and prev to NULL because they keep the object on the free and used lists
@@ -134,8 +134,8 @@ void object::clear()
 	net_signature = 0;
 
 	// just in case nobody called obj_delete last mission
-	dock_clear_dock_list(this);
-	dock_clear_dead_dock_list(this);
+	dock_free_dock_list(this);
+	dock_free_dead_dock_list(this);
 }
 
 /**
@@ -600,8 +600,8 @@ void obj_delete(int objnum)
 	}
 
 	// delete any dock information we still have
-	dock_clear_dock_list(objp);
-	dock_clear_dead_dock_list(objp);
+	dock_free_dock_list(objp);
+	dock_free_dead_dock_list(objp);
 
 	// if a persistant sound has been created, delete it
 	obj_snd_delete_type(OBJ_INDEX(objp));		
