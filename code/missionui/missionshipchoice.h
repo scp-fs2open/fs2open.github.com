@@ -12,7 +12,7 @@
 #ifndef __MISSIONSHIPCHOICE_H__
 #define __MISSIONSHIPCHOICE_H__
 
-struct p_object;
+class p_object;
 
 ///////////////////////////////////////////////////////
 // Ships selection hot spots

@@ -11,7 +11,7 @@
 
 #include "globalincs/globals.h"
 
-struct p_object;
+class p_object;
 
 // info for each docked parse object
 typedef struct p_dock_instance {
