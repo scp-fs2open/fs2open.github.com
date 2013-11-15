@@ -8,15 +8,7 @@
 */ 
 
 
-
-//#define USE_DIRECTINPUT
-
-//#ifdef _WIN32
-//#include <windows.h>
-//#include <windowsx.h>
-//#else
 #include "SDL.h"
-//#endif
 
 #include "controlconfig/controlsconfig.h" //For textify scancode
 #include "globalincs/pstypes.h"
@@ -727,9 +719,7 @@ void key_init()
 
 	ENTER_CRITICAL_SECTION( key_lock );
 
-#ifdef SCP_UNIX
 	FillSDLArray();
-#endif
 
 	keyd_time_when_last_pressed = timer_get_milliseconds();
 	keyd_buffer_type = 1;
