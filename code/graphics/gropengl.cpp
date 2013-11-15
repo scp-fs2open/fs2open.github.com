@@ -64,12 +64,6 @@ bool GL_initted = 0;
 //3==NV Radial
 int OGL_fogmode = 0;
 
-#ifdef _WIN32
-static HDC GL_device_context = NULL;
-static HGLRC GL_render_context = NULL;
-static PIXELFORMATDESCRIPTOR GL_pfd;
-#endif
-
 static ushort *GL_original_gamma_ramp = NULL;
 
 int Use_VBOs = 0;
@@ -115,6 +109,7 @@ static GLenum GL_read_format = GL_BGRA;
 
 SDL_Window *GL_window = NULL;
 SDL_Renderer *GL_renderer = NULL;
+SDL_GLContext GL_context = NULL;
 
 void opengl_go_fullscreen()
 {
@@ -503,30 +498,10 @@ void gr_opengl_cleanup(int minimize)
 
 	opengl_tcache_flush();
 
-#ifdef _WIN32
-	HWND wnd = (HWND)os_get_window();
-
-	if (GL_render_context) {
-		if ( !wglMakeCurrent(NULL, NULL) ) {
-			MessageBox(wnd, "SHUTDOWN ERROR", "error", MB_OK);
-		}
-
-		if ( !wglDeleteContext(GL_render_context) ) {
-			MessageBox(wnd, "Unable to delete rendering context", "error", MB_OK);
-		}
-
-		GL_render_context = NULL;
-	}
-#endif
-
 	opengl_minimize();
 
 	if (minimize) {
-#ifdef _WIN32
-		if ( !Cmdline_fullscreen_window && !Cmdline_window ) {
-			ChangeDisplaySettings(NULL, 0);
-		}
-#endif
+
 	}
 }
 
@@ -1333,16 +1308,7 @@ void gr_opengl_shutdown()
 		GL_original_gamma_ramp = NULL;
 	}
 
-#ifdef _WIN32
-	wglMakeCurrent(NULL, NULL);
-
-	if (GL_render_context) {
-		wglDeleteContext(GL_render_context);
-		GL_render_context = NULL;
-	}
-
-	GL_device_context = NULL;
-#endif
+	SDL_GL_DeleteContext(GL_context);
 }
 
 // NOTE: This should only ever be called through atexit()!!!
@@ -1508,6 +1474,9 @@ int opengl_init_display_device()
 		fprintf(stderr, "Couldn't set up renderer: %s", SDL_GetError());
 		return 1;
 	}
+
+	GL_context = SDL_GL_CreateContext(GL_window);
+	SDL_GL_MakeCurrent(GL_window, GL_context);
 	//TODO: set up bpp settings
 
 	SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &r);
