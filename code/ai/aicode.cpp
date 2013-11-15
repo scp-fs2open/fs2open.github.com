@@ -13159,7 +13159,7 @@ int maybe_request_support(object *objp)
 		return 0;
 
 	// just do a simple check first, and the more expensive check later
-	if (!is_support_allowed(objp))
+	if (!is_support_allowed(objp, true))
 		return 0;
 
 	// Goober5000 - a ship that is currently docked shouldn't request repair.
