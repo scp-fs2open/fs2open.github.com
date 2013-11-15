@@ -33,11 +33,9 @@
 #include "io/keycontrol.h" // m!m
 
 
-//#if defined(SCP_UNIX) && !defined(__APPLE__)
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
 #endif
-//#endif // SCP_UNIX && !__APPLE__
 
 // Includes for different rendering systems
 #include "graphics/gropengl.h"
