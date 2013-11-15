@@ -389,7 +389,7 @@ int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
 int Cmdline_no_glsl_model_rendering = 0;
-int Cmdline_no_di_mouse = 0;
+int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
 
 // Developer/Testing related
