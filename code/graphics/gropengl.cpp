@@ -151,7 +151,7 @@ void opengl_go_windowed()
 		os_suspend();
 		if(GL_window)
 		{
-			SDL_SetWindowFullscreen(GL_window, 0);
+			SDL_SetWindowFullscreen(GL_window, Cmdline_fullscreen_window ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0 );
 		}
 		else
 		{
@@ -1322,7 +1322,7 @@ int opengl_init_display_device()
 {
 	int bpp = gr_screen.bits_per_pixel;
 
-	if ( (bpp != 16) && (bpp != 32) ) {
+	if ((bpp != 16) && (bpp != 32)) {
 		Int3();
 		return 1;
 	}
@@ -1344,7 +1344,7 @@ int opengl_init_display_device()
 			Gr_blue.bits = 5;
 			Gr_blue.shift = 0;
 			Gr_blue.scale = 8;
-			Gr_blue.mask = 0x1F;		
+			Gr_blue.mask = 0x1F;
 
 			break;
 		}
@@ -1379,17 +1379,17 @@ int opengl_init_display_device()
 	Gr_t_red.mask = 0x7c00;
 	Gr_t_red.shift = 10;
 	Gr_t_red.scale = 8;
-	
+
 	Gr_t_green.bits = 5;
 	Gr_t_green.mask = 0x03e0;
 	Gr_t_green.shift = 5;
 	Gr_t_green.scale = 8;
-	
+
 	Gr_t_blue.bits = 5;
 	Gr_t_blue.mask = 0x001f;
 	Gr_t_blue.shift = 0;
 	Gr_t_blue.scale = 8;
-	
+
 	Gr_t_alpha.bits = 1;
 	Gr_t_alpha.mask = 0x8000;
 	Gr_t_alpha.scale = 255;
@@ -1400,30 +1400,31 @@ int opengl_init_display_device()
 	Gr_ta_red.mask = 0x0f00;
 	Gr_ta_red.shift = 8;
 	Gr_ta_red.scale = 17;
-	
+
 	Gr_ta_green.bits = 4;
 	Gr_ta_green.mask = 0x00f0;
 	Gr_ta_green.shift = 4;
 	Gr_ta_green.scale = 17;
-	
+
 	Gr_ta_blue.bits = 4;
 	Gr_ta_blue.mask = 0x000f;
 	Gr_ta_blue.shift = 0;
 	Gr_ta_blue.scale = 17;
-	
+
 	Gr_ta_alpha.bits = 4;
 	Gr_ta_alpha.mask = 0xf000;
 	Gr_ta_alpha.shift = 12;
 	Gr_ta_alpha.scale = 17;
 
 	// allocate storage for original gamma settings
-	if ( !Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL) ) {
-		GL_original_gamma_ramp = (ushort*) vm_malloc_q( 3 * 256 * sizeof(ushort) );
+	if (!Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL)) {
+		GL_original_gamma_ramp = (ushort*) vm_malloc_q(3 * 256 * sizeof(ushort));
 
 		if (GL_original_gamma_ramp == NULL) {
 			mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
 			Cmdline_no_set_gamma = 1;
-		} else {
+		}
+		else {
 			// assume identity ramp by default, to be overwritten by true ramp later
 			for (ushort x = 0; x < 256; x++) {
 				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (x << 8) | x;
@@ -1437,12 +1438,12 @@ int opengl_init_display_device()
 	mprintf(("  Initializing SDL...\n"));
 
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
-		fprintf (stderr, "Couldn't init SDL: %s", SDL_GetError());
+		fprintf(stderr, "Couldn't init SDL: %s", SDL_GetError());
 		return 1;
 	}
 
 	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
-	if ( (Cmdline_fullscreen_window|| Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
+	if ((Cmdline_fullscreen_window || Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab) {
 		SDL_SetRelativeMouseMode(SDL_TRUE);
 	}
 
@@ -1465,7 +1466,11 @@ int opengl_init_display_device()
 
 	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, (bpp == 32) ? 8 : 1, db, fsaa_samples));
 
-	if ((GL_window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL)) == NULL)
+	int windowflags = SDL_WINDOW_OPENGL;
+	if (Cmdline_fullscreen_window)
+		windowflags |= SDL_WINDOW_BORDERLESS;
+
+	if ((GL_window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, gr_screen.max_w, gr_screen.max_h, windowflags)) == NULL)
 	{
 		fprintf(stderr, "Couldn't set video mode: %s", SDL_GetError());
 		return 1;
@@ -1474,6 +1479,8 @@ int opengl_init_display_device()
 		fprintf(stderr, "Couldn't set up renderer: %s", SDL_GetError());
 		return 1;
 	}
+
+	const char* sdlerror = SDL_GetError();
 
 	GL_context = SDL_GL_CreateContext(GL_window);
 	SDL_GL_MakeCurrent(GL_window, GL_context);
