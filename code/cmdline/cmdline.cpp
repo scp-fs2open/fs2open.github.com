@@ -168,9 +168,6 @@ Flag exe_params[] =
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
 	{ "-disable_glsl_model","Don't use shaders for model rendering",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_glsl_model", },
 	{ "-mipmap",			"Enable mipmapping",						true,	0,					EASY_DEFAULT_MEM,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
- #ifndef SCP_UNIX
-	{ "-disable_di_mouse",	"Don't use DirectInput for mouse control",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
- #endif
 	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 	{ "-old_collision",		"Use old collision detection system",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 
@@ -378,7 +375,6 @@ cmdline_parm mipmap_arg("-mipmap", NULL);			// Cmdline_mipmap
 cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
 cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
-cmdline_parm no_di_mouse_arg("-disable_di_mouse", NULL); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
 cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
 cmdline_parm keyboard_layout("-keyboard_layout", NULL);
 
@@ -394,7 +390,6 @@ int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
 int Cmdline_no_glsl_model_rendering = 0;
 int Cmdline_no_di_mouse = 0;
-int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
 
 // Developer/Testing related
@@ -1363,10 +1358,6 @@ bool SetCmdlineParams()
 		}
 
 		Fxaa_preset_last_frame = Cmdline_fxaa_preset;
-	}
-
-	if (no_di_mouse_arg.found() ) {
-		Cmdline_no_di_mouse = 1;
 	}
 
 	if ( img2dds_arg.found() )
