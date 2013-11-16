@@ -435,12 +435,6 @@
     <ClCompile Include="..\..\code\hud\hudwingmanstatus.cpp">
       <Filter>Hud</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\io\joy.cpp">
-      <Filter>Io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\io\joy_ff.cpp">
-      <Filter>Io</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\io\key.cpp">
       <Filter>Io</Filter>
     </ClCompile>
@@ -1055,6 +1049,12 @@
     </ClCompile>
     <ClCompile Include="..\..\code\globalincs\profiling.cpp">
       <Filter>GlobalIncs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\io\joy_ff-sdl.cpp">
+      <Filter>Io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\io\joy-sdl.cpp">
+      <Filter>Io</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

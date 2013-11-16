@@ -749,7 +749,8 @@ if FS2_OS_UNIX
 JOY_SOURCES =	\
 	io/joy.h	\
 	io/joy_ff.h	\
-	io/joy-unix.cpp
+	io/joy_ff-sdl.cpp	\
+	io/joy-sdl.cpp
 endif
 
 ## Win32-specific sources
