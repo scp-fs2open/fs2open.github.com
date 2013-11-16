@@ -56,7 +56,7 @@ char *dock_find_dockpoint_used_by_object(p_object *objp, p_object *other_objp);
 
 // Überfunction for evaluating all objects that could possibly be docked to objp.  This will
 // call "function" for each docked object.  The function should store its intermediate and
-// return values in the dock_function_info struct.
+// return values in the dock_function_info class.
 void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *));
 
 // docks all docked objects; called only from parse_create_object in missionparse.cpp
