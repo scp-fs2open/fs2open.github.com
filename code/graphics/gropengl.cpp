@@ -1480,8 +1480,6 @@ int opengl_init_display_device()
 		return 1;
 	}
 
-	const char* sdlerror = SDL_GetError();
-
 	GL_context = SDL_GL_CreateContext(GL_window);
 	SDL_GL_MakeCurrent(GL_window, GL_context);
 	//TODO: set up bpp settings
