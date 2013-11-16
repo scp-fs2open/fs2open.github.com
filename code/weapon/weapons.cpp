@@ -3353,11 +3353,8 @@ void weapon_level_init()
 	if (used_weapons == NULL)
 		used_weapons = new int[Num_weapon_types];
 
-	Assert( used_weapons != NULL );
-
 	// clear out used_weapons between missions
-	if (used_weapons != NULL)
-		memset(used_weapons, 0, Num_weapon_types * sizeof(int));
+	memset(used_weapons, 0, Num_weapon_types * sizeof(int));
 
 	Weapon_flyby_sound_timer = timestamp(0);
 	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
