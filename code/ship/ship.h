@@ -853,17 +853,6 @@ typedef struct exited_ship {
 	char	cargo1;
 	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
 	int   damage_ship_id[MAX_DAMAGE_SLOTS];
-
-	exited_ship()
-		: team( 0 ), flags( 0 ), time( 0 ), hull_strength( 0 ),
-		  time_cargo_revealed( 0 ), cargo1( 0 )
-	{ 
-		ship_name[ 0 ] = '\0';
-		obj_signature = -1;
-		ship_class = -1; 
-		memset( damage_ship, 0, sizeof( damage_ship ) );
-		memset( damage_ship_id, 0, sizeof( damage_ship_id ) );
-	}
 } exited_ship;
 
 extern SCP_vector<exited_ship> Ships_exited;
