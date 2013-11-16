@@ -86,7 +86,15 @@ void os_sleep(int ms);
 void os_suspend();
 
 // resume message processing
-void os_resume();
+void os_resume(); 
+
+// These map onto the SDL ShowSimpleMessageBox flags
+#define MESSAGEBOX_ERROR 1
+#define MESSAGEBOX_WARNING 2
+#define MESSAGEBOX_INFORMATION 3
+
+// Display a simple messagebox through SDL
+void SCP_Messagebox(int type, const char* message);
 
 #endif // _OSAPI_H
 
