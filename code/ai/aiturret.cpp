@@ -1829,13 +1829,12 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1, 0,0.0f, turret);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
 			
-
-				objp=&Objects[weapon_objnum];
-				wp=&Weapons[objp->instance];
-				wip=&Weapon_info[wp->weapon_info_index];
-
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
+					objp=&Objects[weapon_objnum];
+					wp=&Weapons[objp->instance];
+					wip=&Weapon_info[wp->weapon_info_index];
+
 					parent_ship->last_fired_turret = turret;
 					turret->last_fired_weapon_info_index = wp->weapon_info_index;
 
