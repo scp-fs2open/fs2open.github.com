@@ -1099,16 +1099,6 @@ typedef struct man_thruster {
 	float radius;
 
 	vec3d pos, norm;
-	man_thruster()
-		: use_flags( 0 ), tex_nframes( 0 ), tex_fps( 0 ), length( 0. ), radius( 0. )
-	{
-		tex_id=-1;
-		start_snd=-1;
-		loop_snd=-1;
-		stop_snd=-1;
-		memset( &pos, 0, sizeof( vec3d ) );
-		memset( &norm, 0, sizeof( vec3d ) );
-	}
 } man_thruster;
 
 //Warp type defines

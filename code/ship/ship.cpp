@@ -971,6 +971,16 @@ void init_ship_entry(ship_info *sip)
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
 
+	sip->num_maneuvering = 0;
+	memset(sip->maneuvering, 0, MAX_MAN_THRUSTERS * sizeof(man_thruster));
+	for (i = 0; i < MAX_MAN_THRUSTERS; i++)
+	{
+		sip->maneuvering[i].start_snd = -1;
+		sip->maneuvering[i].loop_snd = -1;
+		sip->maneuvering[i].stop_snd = -1;
+		sip->maneuvering[i].tex_id = -1;
+	}
+
 	sip->radar_image_2d_idx = -1;
 	sip->radar_color_image_2d_idx = -1;
 	sip->radar_image_size = -1;
