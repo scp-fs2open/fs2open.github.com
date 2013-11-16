@@ -4973,7 +4973,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wp->lifeleft = wip->lifetime;
 	} else {
 		wp->lifeleft = (rand_val) * (wip->life_max - wip->life_min) / wip->life_min;
-		if((wip->wi_flags & WIF_CMEASURE) && (parent_objp->flags & OF_PLAYER_SHIP)) {
+		if((wip->wi_flags & WIF_CMEASURE) && (parent_objp != NULL) && (parent_objp->flags & OF_PLAYER_SHIP)) {
 			wp->lifeleft *= The_mission.ai_profile->cmeasure_life_scale[Game_skill_level];
 		}
 		wp->lifeleft = wip->life_min + wp->lifeleft * (wip->life_max - wip->life_min);
@@ -5100,7 +5100,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	// Ensure weapon flyby sound doesn't get played for player lasers
-	if ( parent_objp == Player_obj ) {
+	if ( parent_objp != NULL && parent_objp == Player_obj ) {
 		wp->weapon_flags |= WF_PLAYED_FLYBY_SOUND;
 	}
 
