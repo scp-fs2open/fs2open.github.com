@@ -295,9 +295,11 @@ void ssm_process()
 						// fire the missile and flash the screen
 						weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
 
-                        Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
-                        Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
-                        Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
+						if (weapon_objnum >= 0) {
+							Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
+							Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
+							Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
+						}
 
 						// this makes this particular missile done
 						moveup->done_flags[idx] = 1;

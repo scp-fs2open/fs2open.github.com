@@ -974,6 +974,16 @@ void init_ship_entry(ship_info *sip)
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
 
+	sip->num_maneuvering = 0;
+	memset(sip->maneuvering, 0, MAX_MAN_THRUSTERS * sizeof(man_thruster));
+	for (i = 0; i < MAX_MAN_THRUSTERS; i++)
+	{
+		sip->maneuvering[i].start_snd = -1;
+		sip->maneuvering[i].loop_snd = -1;
+		sip->maneuvering[i].stop_snd = -1;
+		sip->maneuvering[i].tex_id = -1;
+	}
+
 	sip->radar_image_2d_idx = -1;
 	sip->radar_color_image_2d_idx = -1;
 	sip->radar_image_size = -1;
@@ -3664,14 +3674,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					queued_animation *current_trigger;
 
 					sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
-					
-					// Echelon9 - horrible, direct memory management (works for now)
 					Verify(sp->triggers != NULL);
-					memset(&sp->triggers[sp->n_triggers], 0, sizeof(queued_animation));
 					
-					current_trigger = &sp->triggers[sp->n_triggers];
-					sp->n_triggers++;
 					//add a new trigger
+					current_trigger = &sp->triggers[sp->n_triggers];
+					queued_animation_init(current_trigger);
+					sp->n_triggers++;
 
 					required_string("$type:");
 					char atype[NAME_LENGTH];
@@ -4467,6 +4475,8 @@ static void ship_clear_subsystems()
 
 	Num_ship_subsystems = 0;
 	Num_ship_subsystems_allocated = 0;
+
+	Triggered_rotations.clear();
 }
 
 static int ship_allocate_subsystems(int num_so, bool page_in = false)
@@ -5791,6 +5801,13 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 		// Clear this flag here so we correctly rebuild the turret matrix on mission load
 		model_system->flags &= ~MSS_FLAG_TURRET_MATRIX;
+
+		// Allocate a triggered rotation instance if we need it
+		if (model_system->flags & MSS_FLAG_TRIGGERED) {
+			ship_system->triggered_rotation_index = Triggered_rotations.size();
+			triggered_rotation tr;
+			Triggered_rotations.push_back(tr);
+		}
 	}
 
 	if ( !ignore_subsys_info ) {
@@ -6072,8 +6089,6 @@ void ship_render(object * obj)
 	}
 
 	MONITOR_INC( NumShipsRend, 1 );
-
-	memset( &dfi, 0, sizeof(dock_function_info) );
 
 	// look for a warping ship, whether for me or for anybody I'm docked with
 	dock_evaluate_all_docked_objects(obj, &dfi, ship_find_warping_ship_helper);
@@ -11410,27 +11425,33 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
-			weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
-			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
-			has_fired = true;
 
+			if (weapon_num >= 0) {
+				weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
+				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
+				has_fired = true;
 
-			// create the muzzle flash effect
-			if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
-				// show the flash only if in not cockpit view, or if "show ship" flag is set
-				shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
-			}
-			
-			num_fired++;
-			swp->last_fired_weapon_index = weapon_num;
-			swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
-			if (weapon_num != -1) {
+				// create the muzzle flash effect
+				if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
+					// show the flash only if in not cockpit view, or if "show ship" flag is set
+					shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
+				}
+
+				if((wip->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+					// calculate some arbitrary value between 100
+					// (mass * velocity) / 10
+					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f);
+				}
+
+				num_fired++;
+				swp->last_fired_weapon_index = weapon_num;
+				swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
 				swp->last_fired_weapon_signature = Objects[weapon_num].signature;
-			}
 
-			// subtract the number of missiles fired
-			if ( Weapon_energy_cheat == 0 ){
-				swp->secondary_bank_ammo[bank]--;
+				// subtract the number of missiles fired
+				if ( Weapon_energy_cheat == 0 ){
+					swp->secondary_bank_ammo[bank]--;
+				}
 			}
 		}
 	}
@@ -15761,7 +15782,7 @@ void ship_page_in()
 	int num_ship_types_used = 0;
 	int test_id = -1;
 
-	memset( &fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
+	memset( fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
 
 	for (i = 0; i < Num_ship_classes; i++) {
 		if ( !ship_class_used[i] )

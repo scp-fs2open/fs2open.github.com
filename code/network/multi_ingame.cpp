@@ -609,16 +609,16 @@ void multi_ingame_select_init()
 	// create a ship, then find a ship to copy crucial information from.  Save and restore the wing
 	// number to be safe.
 	/*
-	wingnum_save = Player_start_pobject.wingnum;
-	net_signature = Player_start_pobject.net_signature;
-	goals_save = Player_start_pobject.ai_goals;
-	Player_start_pobject.wingnum = -1;
-	Player_start_pobject.net_signature = 0;
-	Player_start_pobject.ai_goals = -1;
-	objnum = parse_create_object( &Player_start_pobject );
-	Player_start_pobject.wingnum = wingnum_save;
-	Player_start_pobject.net_signature = net_signature;
-	Player_start_pobject.ai_goals = goals_save;
+	wingnum_save = Player_start_pobject->wingnum;
+	net_signature = Player_start_pobject->net_signature;
+	goals_save = Player_start_pobject->ai_goals;
+	Player_start_pobject->wingnum = -1;
+	Player_start_pobject->net_signature = 0;
+	Player_start_pobject->ai_goals = -1;
+	objnum = parse_create_object( Player_start_pobject );
+	Player_start_pobject->wingnum = wingnum_save;
+	Player_start_pobject->net_signature = net_signature;
+	Player_start_pobject->ai_goals = goals_save;
 
 	if ( objnum == -1 ) {
 		nprintf(("Network", "Bailing ingame join because unable to create parse object player ship\n"));

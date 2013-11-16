@@ -26,6 +26,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "object/objectdock.h"
+#include "object/deadobjectdock.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
@@ -113,28 +114,8 @@ object::~object()
 {
 	objsnd_num.clear();
 
-	if (dock_list != NULL)
-	{
-		mprintf(("dock_list should have been cleared already!\n"));
-		dock_instance *ptr = dock_list;
-		while (ptr != NULL)
-		{
-			dock_instance *nextptr = ptr->next;
-			vm_free(ptr);
-			ptr = nextptr;
-		}
-	}
-	if (dead_dock_list != NULL)
-	{
-		mprintf(("dead_dock_list should have been cleared already!\n"));
-		dock_instance *ptr = dead_dock_list;
-		while (ptr != NULL)
-		{
-			dock_instance *nextptr = ptr->next;
-			vm_free(ptr);
-			ptr = nextptr;
-		}
-	}
+	dock_free_dock_list(this);
+	dock_free_dead_dock_list(this);
 }
 
 // DO NOT set next and prev to NULL because they keep the object on the free and used lists
@@ -152,8 +133,9 @@ void object::clear()
 	objsnd_num.clear();
 	net_signature = 0;
 
-	Assertion(dock_list == NULL, "dock_list should have been cleared already!");
-	Assertion(dead_dock_list == NULL, "dead_dock_list should have been cleared already!");
+	// just in case nobody called obj_delete last mission
+	dock_free_dock_list(this);
+	dock_free_dead_dock_list(this);
 }
 
 /**
@@ -618,6 +600,10 @@ void obj_delete(int objnum)
 	default:
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
+
+	// delete any dock information we still have
+	dock_free_dock_list(objp);
+	dock_free_dead_dock_list(objp);
 
 	// if a persistant sound has been created, delete it
 	obj_snd_delete_type(OBJ_INDEX(objp));		

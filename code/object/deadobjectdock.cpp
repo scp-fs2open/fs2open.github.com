@@ -131,6 +131,17 @@ void dead_dock_remove_instance(object *objp, object *other_objp)
 	}
 }
 
+// just free the list without worrying about undocking anything
+void dock_free_dead_dock_list(object *objp)
+{
+	while (objp->dead_dock_list != NULL)
+	{
+		dock_instance *ptr = objp->dead_dock_list;
+		objp->dead_dock_list = ptr->next;
+		vm_free(ptr);
+	}
+}
+
 dock_instance *dead_dock_find_instance(object *objp, object *other_objp)
 {
 	dock_instance *ptr = objp->dead_dock_list;

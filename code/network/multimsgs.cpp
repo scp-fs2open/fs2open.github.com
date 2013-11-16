@@ -3337,9 +3337,9 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	}
 
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
-	wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 
 	if (weapon_objnum != -1) {
+		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd != -1 ) {
 			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
 		}		
@@ -8374,8 +8374,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 
 	// create the weapon object	
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
-	wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 	if (weapon_objnum != -1) {
+		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd != -1 ) {
 			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
 		}

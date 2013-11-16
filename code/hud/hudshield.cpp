@@ -563,7 +563,7 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 		else
 			num = quadrant;
 
-		shi->shield_hit_timers[num] = timestamp(300);
+		shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION_SHORT);
 	} else {
 		shi->shield_hit_timers[shi->hull_hit_index] = timestamp(SHIELD_HIT_DURATION_SHORT);
 		hud_targetbox_start_flash(TBOX_FLASH_HULL); 

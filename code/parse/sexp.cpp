@@ -6752,10 +6752,14 @@ void sexp_set_object_position(int n)
 	n = CDR(n);
 
 	// retime all collision checks so they're performed
-	if ( Cmdline_old_collision_sys ) {
-		obj_all_collisions_retime();
-	} else {
-		obj_collide_retime_cached_pairs();
+	// Goober5000 - only if we have a valid object (don't do this for departed ships, waypoints, etc.)
+	if (oswpt.type == OSWPT_TYPE_SHIP || oswpt.type == OSWPT_TYPE_WING)
+	{
+		if ( Cmdline_old_collision_sys ) {
+			obj_all_collisions_retime();
+		} else {
+			obj_collide_retime_cached_pairs();
+		}
 	}
 
 	// if this is a nebula mission and a player is being moved far enough,
@@ -6854,10 +6858,14 @@ void sexp_set_object_orientation(int n)
 	vm_angles_2_matrix(&target_orient, &a);
 
 	// retime all collision checks so they're performed
-	if ( Cmdline_old_collision_sys ) {
-		obj_all_collisions_retime();
-	} else {
-		obj_collide_retime_cached_pairs();
+	// Goober5000 - only if we have a valid object (don't do this for departed ships, waypoints, etc.)
+	if (oswpt.type == OSWPT_TYPE_SHIP || oswpt.type == OSWPT_TYPE_WING)
+	{
+		if ( Cmdline_old_collision_sys ) {
+			obj_all_collisions_retime();
+		} else {
+			obj_collide_retime_cached_pairs();
+		}
 	}
 
 	switch (oswpt.type)
@@ -6913,7 +6921,6 @@ void sexp_set_object_orient_sub(object *objp, vec3d *location, int turn_time, in
 
 
 	// calculate orientation matrix ----------------
-	memset(&v_orient, 0, sizeof(vec3d));
 
 	vm_vec_sub(&v_orient, location, &objp->pos);
 
@@ -10543,7 +10550,6 @@ void sexp_warp_effect(int n)
 
 
 	// calculate orientation matrix ----------------
-	memset(&v_orient, 0, sizeof(vec3d));
 
 	vm_vec_sub(&v_orient, &location, &origin);
 
