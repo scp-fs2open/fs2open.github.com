@@ -3630,14 +3630,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					queued_animation *current_trigger;
 
 					sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
-					
-					// Echelon9 - horrible, direct memory management (works for now)
 					Verify(sp->triggers != NULL);
-					memset(&sp->triggers[sp->n_triggers], 0, sizeof(queued_animation));
 					
-					current_trigger = &sp->triggers[sp->n_triggers];
-					sp->n_triggers++;
 					//add a new trigger
+					current_trigger = &sp->triggers[sp->n_triggers];
+					queued_animation_init(current_trigger);
+					sp->n_triggers++;
 
 					required_string("$type:");
 					char atype[NAME_LENGTH];
