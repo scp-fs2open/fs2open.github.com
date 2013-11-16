@@ -21,8 +21,11 @@ typedef struct p_dock_instance {
 	p_object *docked_objp;				// parse object that is docked to me
 } p_dock_instance;
 
-// struct used when a function must be evaluated for all docked objects
-typedef struct p_dock_function_info {
+// class used when a function must be evaluated for all docked objects
+// (it's a class because it has a constructor)
+class p_dock_function_info
+{
+public:
 
 	// Set this to true when the function should return early.
 	bool early_return_condition;		
@@ -36,12 +39,14 @@ typedef struct p_dock_function_info {
 
 
 	// constructor to initialize everything to 0
+	// (revised for the same reasons as dock_function_info)
 	p_dock_function_info()
+		: early_return_condition(false)
 	{
-		memset(this, 0, sizeof(p_dock_function_info));
+		memset(&parameter_variables, 0, sizeof(parameter_variables));
+		memset(&maintained_variables, 0, sizeof(maintained_variables));
 	}
-
-} p_dock_function_info;
+};
 
 bool object_is_docked(p_object *objp);
 
@@ -56,7 +61,7 @@ char *dock_find_dockpoint_used_by_object(p_object *objp, p_object *other_objp);
 
 // Überfunction for evaluating all objects that could possibly be docked to objp.  This will
 // call "function" for each docked object.  The function should store its intermediate and
-// return values in the dock_function_info class.
+// return values in the p_dock_function_info class.
 void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *));
 
 // docks all docked objects; called only from parse_create_object in missionparse.cpp
