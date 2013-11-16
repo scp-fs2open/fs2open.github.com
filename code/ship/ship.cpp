@@ -15644,7 +15644,7 @@ void ship_page_in()
 	int num_ship_types_used = 0;
 	int test_id = -1;
 
-	memset( &fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
+	memset( fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
 
 	for (i = 0; i < Num_ship_classes; i++) {
 		if ( !ship_class_used[i] )
