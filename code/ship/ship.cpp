@@ -11298,32 +11298,33 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
-			weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
-			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
-			has_fired = true;
 
+			if (weapon_num >= 0) {
+				weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
+				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
+				has_fired = true;
 
-			// create the muzzle flash effect
-			if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
-				// show the flash only if in not cockpit view, or if "show ship" flag is set
-				shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
-			}
+				// create the muzzle flash effect
+				if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
+					// show the flash only if in not cockpit view, or if "show ship" flag is set
+					shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
+				}
 
-			if((wip->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
-				// calculate some arbitrary value between 100
-				// (mass * velocity) / 10
-				game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f);
-			}
-			
-			num_fired++;
-			swp->last_fired_weapon_index = weapon_num;			swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
-			if (weapon_num != -1) {
+				if((wip->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+					// calculate some arbitrary value between 100
+					// (mass * velocity) / 10
+					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f);
+				}
+
+				num_fired++;
+				swp->last_fired_weapon_index = weapon_num;
+				swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
 				swp->last_fired_weapon_signature = Objects[weapon_num].signature;
-			}
 
-			// subtract the number of missiles fired
-			if ( Weapon_energy_cheat == 0 ){
-				swp->secondary_bank_ammo[bank]--;
+				// subtract the number of missiles fired
+				if ( Weapon_energy_cheat == 0 ){
+					swp->secondary_bank_ammo[bank]--;
+				}
 			}
 		}
 	}
