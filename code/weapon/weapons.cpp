@@ -5765,7 +5765,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 				float draw_limit, hull_pct;
 				int dmg_type_idx, piercing_type;
 
-				ship *shipp = &Ships[other_obj->instance];
+				shipp = &Ships[other_obj->instance];
 
 				hull_pct = other_obj->hull_strength / shipp->ship_max_hull_strength;
 				dmg_type_idx = wip->damage_type_idx;
