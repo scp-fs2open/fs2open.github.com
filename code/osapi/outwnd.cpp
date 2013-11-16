@@ -59,12 +59,6 @@ char find_text[85];
 struct outwnd_filter_struct {
 	char name[NAME_LENGTH];
 	bool enabled;
-
-	outwnd_filter_struct( ) 
-		: enabled( false )
-	{ 
-		name[ 0 ] = 0;
-	}
 };
 
 SCP_vector<outwnd_filter_struct> OutwndFilter;
@@ -188,22 +182,16 @@ void load_filter_info(void)
 	if (!fp) {
 		Outwnd_no_filter_file = 1;
 
-		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 		strcpy_s( new_filter.name, "error" );
 		new_filter.enabled = true;
-
 		OutwndFilter.push_back( new_filter );
 
-		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 		strcpy_s( new_filter.name, "general" );
 		new_filter.enabled = true;
-
 		OutwndFilter.push_back( new_filter );
 
-		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 		strcpy_s( new_filter.name, "warning" );
 		new_filter.enabled = true;
-
 		OutwndFilter.push_back( new_filter );
 
 		return;
@@ -212,7 +200,6 @@ void load_filter_info(void)
 	Outwnd_no_filter_file = 0;
 
 	while ( fgets(inbuf, NAME_LENGTH+3, fp) ) {
-		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 
 		if (*inbuf == '+')
 			new_filter.enabled = true;
