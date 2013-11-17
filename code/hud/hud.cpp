@@ -1304,7 +1304,7 @@ void hud_close()
 	num_gauges = default_hud_gauges.size();
 
 	for(j = 0; j < num_gauges; j++) {
-		vm_free(default_hud_gauges[j]);
+		delete default_hud_gauges[j];
 		default_hud_gauges[j] = NULL;
 	}
 	default_hud_gauges.clear();
