@@ -40,6 +40,7 @@
 #include "help/dlgsexphelp.h"
 
 #include "base/wxfred_base.h"
+#include "wxfred2.h"
 
 #include <globalincs/version.h>
 #include <globalincs/pstypes.h>
@@ -137,8 +138,10 @@ void frmFRED2::OnFileNew( wxCommandEvent &event )
 
 void frmFRED2::OnFileOpen( wxCommandEvent &event )
 {
-	wxFileDialog *dlg =
-		new wxFileDialog( this, "Open FreeSpace 2 Mission", wxGetCwd(), wxEmptyString, "FreeSpace2 Missions (*.fs2)|*.fs2| All Files (*.*)|*.*");
+	bool file_loaded = false;
+	wxFileDialog *dlg;
+	
+	dlg = new wxFileDialog( this, "Open FreeSpace 2 Mission", wxGetCwd(), wxEmptyString, "FreeSpace2 Missions (*.fs2)|*.fs2| All Files (*.*)|*.*");
 
 	if( dlg->ShowModal() != wxID_OK )
 	{
@@ -146,9 +149,21 @@ void frmFRED2::OnFileOpen( wxCommandEvent &event )
 		return;
 	}
 
-	currentFilename = dlg->GetFilename();
-	// TODO: actually (attempt) to open the file
-	SetFredTitle();
+	// Application: Try to load the file
+	file_loaded = wxGetApp().Mission_load(dlg->GetPath());
+
+	if( !file_loaded )
+	{
+		wxMessageBox(_T("Error opening mission file."), _T("Error opening file."), wxOK);
+		// TODO: Do some fancy Debug stuffs, or a better notification of what went wrong. For now, do nothing
+		return;
+	}
+	else
+	{
+		currentFilename = dlg->GetFilename();
+		SetFredTitle();
+		//TODO: Set up the viewport
+	}
 }
 
 void frmFRED2::OnFileSave( wxCommandEvent &event )

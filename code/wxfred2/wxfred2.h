@@ -23,7 +23,7 @@ public:
 	virtual bool OnInit();
 
 	// Mission management
-	void Mission_load( void );
+	bool Mission_load( const wxString infile );
 	void Mission_new( void );
 	void Mission_save( void );
 
@@ -41,7 +41,7 @@ protected:
 	void Mission_clear( void );	// Wipes out everything, leaving a clean slate to start with
 	
 	// Object management
-	OIN_t Player_create( void );	// Creates the default player ship at { 0, 0, 0}
+	OIN_t Player_create( void );	// Creates the default player ship at {0, 0, 0}
 	OIN_t Waypoint_create( vec3d *pos, WIN_t win );	// Creates a waypoint in the same list as the given WIN, or creates a new list with the new waypoint
 
 private:
