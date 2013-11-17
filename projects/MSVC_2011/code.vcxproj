@@ -578,8 +578,8 @@
     <ClCompile Include="..\..\code\hud\hudtarget.cpp" />
     <ClCompile Include="..\..\code\hud\hudtargetbox.cpp" />
     <ClCompile Include="..\..\code\hud\hudwingmanstatus.cpp" />
-    <ClCompile Include="..\..\code\io\joy.cpp" />
-    <ClCompile Include="..\..\code\io\joy_ff.cpp" />
+    <ClCompile Include="..\..\code\io\joy-sdl.cpp" />
+    <ClCompile Include="..\..\code\io\joy_ff-sdl.cpp" />
     <ClCompile Include="..\..\code\io\key.cpp" />
     <ClCompile Include="..\..\code\io\keycontrol.cpp" />
     <ClCompile Include="..\..\code\io\mouse.cpp" />
