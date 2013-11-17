@@ -475,7 +475,7 @@ void shield_info_reset(object *objp, shield_hit_info *shi)
 	shi->shield_hit_status = 0;
 	shi->shield_show_bright = 0;
 
-	shi->members = objp->n_quadrants;
+	shi->members = objp->n_quadrants + 1;
 	shi->hull_hit_index = shi->members - 1;
 
 	shi->shield_hit_timers.resize(shi->members);
