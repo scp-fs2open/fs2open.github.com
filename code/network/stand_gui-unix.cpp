@@ -272,7 +272,6 @@ void webapiExecuteCommands() {
     for (SCP_vector<WebapiCommand*>::iterator iter = webapiCommandQueue.begin(); iter != webapiCommandQueue.end();
             ++iter) {
         (*iter)->execute();
-        free(*iter);
     }
 
     webapiCommandQueue.clear();
