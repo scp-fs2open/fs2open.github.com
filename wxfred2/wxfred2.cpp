@@ -10,6 +10,7 @@
 
 #include "wxfred2.h"
 
+#include <mission/missionparse.h>
 #include <globalincs/pstypes.h>
 
 #include <wx/image.h>
@@ -32,4 +33,19 @@ bool wxFRED2::OnInit()
 	Fred_gui->Show(TRUE);
 
 	return true;
+}
+
+// Mission Management Methods
+void wxFRED2::Mission_new( void )
+{
+//	Mission_reset();
+//	Mission_filename[0] = '\0';
+//	docFREDDoc_ptr->autosave("nothing");
+//	Undo_count = 0;
+};
+
+bool wxFRED2::Mission_load( const wxString infile )
+{
+	wxMessageBox(_T("Sorry! This feature has not been implemented yet.\nPlease encourage a developer to get right on this. :)"), _T("Unimplemented feature"), wxOK );
+	return false;
 }

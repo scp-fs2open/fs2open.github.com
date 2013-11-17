@@ -1,5 +1,7 @@
 # top-level files
 set (file_root
+	docfred.cpp
+	docfred.h
 	frmFRED2.cpp
 	frmFRED2.h
 	glrcMissionFrame.h

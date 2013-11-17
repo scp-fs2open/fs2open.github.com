@@ -41,6 +41,13 @@ void glcViewport::OnPaint( wxPaintEvent& event )
 
 	SetCurrent(*grFrame);
 
+	grFrame->render( settings );	// Render the scene
+
+	if( settings.show_compass )
+	{
+		render_compass();
+	}
+
 }
 
 void glcViewport::OnSize( wxSizeEvent& event )
@@ -52,5 +59,9 @@ void glcViewport::OnEraseBackground( wxEraseEvent& event )
 }
 
 void glcViewport::OnMouse( wxMouseEvent& event )
+{
+}
+
+void glcViewport::render_compass( void )
 {
 }
