@@ -655,6 +655,7 @@
 		F027EAD214FE67CD009645F3 /* mod_table.h in Headers */ = {isa = PBXBuildFile; fileRef = F027EAD014FE67CD009645F3 /* mod_table.h */; };
 		F0382C971838490D00018943 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F0382C961838490D00018943 /* SDL2.framework */; };
 		F0382C981838490E00018943 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F0382C961838490D00018943 /* SDL2.framework */; };
+		F06563351838652A004E5C79 /* SDL2.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = F0382C961838490D00018943 /* SDL2.framework */; };
 		F084784D1623205D0008264B /* generic_log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F084784B1623205D0008264B /* generic_log.cpp */; };
 		F084784E1623205D0008264B /* generic_log.h in Headers */ = {isa = PBXBuildFile; fileRef = F084784C1623205D0008264B /* generic_log.h */; };
 		F093F84F10FDC09B0042E30F /* gropengldraw.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB46210E2E55500089DF93 /* gropengldraw.h */; };
@@ -881,6 +882,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				F06563351838652A004E5C79 /* SDL2.framework in CopyFiles */,
 				34A75A110B49251B00C5E7AA /* Theora.framework in CopyFiles */,
 				346C330309BD4C150022D46E /* Ogg.framework in CopyFiles */,
 				346C330509BD4C150022D46E /* Vorbis.framework in CopyFiles */,
