@@ -287,4 +287,30 @@ void debug_int3(char *file, int line)
 	abort();
 }
 
+void SCP_Messagebox(int type, const char* message)
+{
+	int flags = 1;
+	const char* title;
+    
+	switch (type)
+	{
+		case MESSAGEBOX_ERROR:
+			flags = SDL_MESSAGEBOX_ERROR;
+			title = "Error";
+			break;
+		case MESSAGEBOX_INFORMATION:
+			flags = SDL_MESSAGEBOX_INFORMATION;
+			title = "Information";
+			break;
+		case MESSAGEBOX_WARNING:
+			flags = SDL_MESSAGEBOX_WARNING;
+			title = "Warning";
+			break;
+		default:
+			Int3();
+	}
+    
+	SDL_ShowSimpleMessageBox(flags, title, message, GL_window);
+}
+
 #endif		// Goober5000 - #ifndef WIN32
