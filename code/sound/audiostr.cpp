@@ -1622,9 +1622,7 @@ void audiostream_init()
 		Audio_streams[i].type = ASF_NONE;
 	}
 
-#ifdef SCP_UNIX
 	SDL_InitSubSystem(SDL_INIT_TIMER);
-#endif
 
 	INITIALIZE_CRITICAL_SECTION( Global_service_lock );
 

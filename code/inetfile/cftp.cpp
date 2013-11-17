@@ -188,12 +188,8 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 
 CFtpGet::~CFtpGet()
 {
-#ifdef WIN32
-	_endthread();
-#else
 	if (thread_id)
 		SDL_WaitThread(thread_id, NULL);
-#endif
 
 	if(m_ListenSock != INVALID_SOCKET)
 	{

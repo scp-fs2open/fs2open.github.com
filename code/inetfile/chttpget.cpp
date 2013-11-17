@@ -98,9 +98,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	m_State = HTTP_STATE_STARTUP;
 	m_Aborting = false;
 	m_Aborted = false;
-#ifdef SCP_UNIX
 	thread_id = NULL;
-#endif
 
 	strncpy(m_URL,URL,MAX_URL_LEN-1);
 	m_URL[MAX_URL_LEN-1] = 0;
