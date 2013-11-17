@@ -56,7 +56,6 @@ int HTTPObjThread( void *obj )
 {
 	((ChttpGet *)obj)->WorkerThread();
 	((ChttpGet *)obj)->m_Aborted = true;
-	//OutputDebugString("http transfer exiting....\n");
 
 	return 0;
 }
@@ -115,9 +114,6 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 		m_State = HTTP_STATE_SOCKET_ERROR;
 		return;
 	}
-
-//	uint arg = 1;
-//	ioctlsocket( m_DataSock, FIONBIO, &arg );
 
 	char *pURL = URL;
 	if(strnicmp(URL,"http:",5)==0)
@@ -298,7 +294,6 @@ if (!p) return;
 
 int ChttpGet::ConnectSocket()
 {
-	//HOSTENT *he;
 	unsigned int ip;
 	SERVENT *se;
 	SOCKADDR_IN hostaddr;
@@ -344,8 +339,7 @@ int ChttpGet::ConnectSocket()
 	{
 		hostaddr.sin_port = se->s_port;
 	}
-	hostaddr.sin_family = AF_INET;		
-	//ip = htonl(ip);
+	hostaddr.sin_family = AF_INET;
 	memcpy(&hostaddr.sin_addr, &ip, 4);
 
 	if(m_ProxyEnabled)
@@ -395,7 +389,6 @@ int ChttpGet::ConnectSocket()
 
 	int serr = connect(m_DataSock, (SOCKADDR *)&hostaddr, sizeof(SOCKADDR));
 	int cerr = WSAGetLastError();
-//printf("cerr: %s\n", strerror(cerr));
 	if (serr) {
 		while ( (cerr == WSAEALREADY) || (cerr == WSAEINVAL) || (cerr == WSAEWOULDBLOCK) ) {
 			FD_ZERO(&wfds);
@@ -431,7 +424,6 @@ int ChttpGet::ConnectSocket()
 	}
 
 	if (serr) {
-//printf("1-serr: %i\n", serr);
 		m_State = HTTP_STATE_CANT_CONNECT;
 		return 0;
 	}
@@ -458,7 +450,6 @@ char *ChttpGet::GetHTTPLine()
 			if(SOCKET_ERROR == iBytesRead)
 			{
 				int error = WSAGetLastError();
-//printf("0 - iBytesRead: %i  ==>  (%i) %s\n", iBytesRead, error, strerror(error));
 				if(WSAEWOULDBLOCK==error)
 				{
 					gotdata = false;
@@ -487,7 +478,6 @@ char *ChttpGet::GetHTTPLine()
 					int error = WSAGetLastError();
 					if(WSAEWOULDBLOCK==error)
 					{
-//printf("1 - iBytesRead: %i  ==>  %s\n", iBytesRead, strerror(error));
 						gotdata = false;
 						continue;
 					}
@@ -564,7 +554,6 @@ uint ChttpGet::ReadDataChannel()
 
 		if (nBytesRecv > 0 ) {
 			fwrite(sDataBuffer, nBytesRecv, 1, LOCALFILE);
-			//Write sDataBuffer, nBytesRecv
     	}
 		
 		Sleep(1);
@@ -578,7 +567,6 @@ uint ChttpGet::ReadDataChannel()
 		m_State = HTTP_STATE_RECV_FAILED;
 		return 0;
 	} else {
-		//OutputDebugString("HTTP File complete!\n");
 		//done!
 		m_State = HTTP_STATE_FILE_RECEIVED;
 		return 1;
@@ -634,12 +622,6 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 			newaslu->done = true;
 			memcpy( &httpaslu,newaslu, sizeof(async_dns_lookup) );
 		}
-	//	struct hostent *he;
-	//	he = gethostbyname(hostname);
-	//	newaslu->ip = (uint)((in_addr *)(he->h_addr))->s_addr;
-	//	newaslu->done = true;
-	//	httpaslu.done = true;
-	//	thread_id
 #endif
 
 		return 1;
@@ -656,7 +638,6 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 			return -1;
 		if(httpaslu.done)
 		{
-			//vm_free(http_lastaslu);
 			http_lastaslu = NULL;
 			memcpy(ip,&httpaslu.ip,sizeof(unsigned int));
 			return 1;
