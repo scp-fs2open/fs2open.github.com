@@ -8168,6 +8168,44 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 		ptr = ptr->get_next();
 	}
 }
+
+/**
+ * This is like using when, but it takes a lot of shortcuts.  It's clearer just to separate it out into its own function, especially since it's not supposed to start
+ * a new level of special argument handling, like eval_when would do.  It's a lot like the original retail version of eval_when!
+ */
+int eval_perform_actions(int n)
+{
+	int cond, val, actions;
+	Assert( n >= 0 );
+
+	cond = CAR(n);
+	actions = CDR(n);
+
+	// evaluate the conditional to see what value we eventually return
+	val = eval_sexp(cond);
+
+	// perform all the actions in the rest of the sexp
+	// (Since we are technically inside a condition already, no special argument handling is needed.  The special argument, if any,
+	// will have been provided by a higher level of nesting.)
+	while (actions != -1)
+	{
+		// get the operator
+		int exp = CAR(actions);
+		if (exp != -1)
+			eval_sexp(exp);
+
+		// iterate
+		actions = CDR(actions);
+	}
+
+	// return whatever val was, but don't return known-*
+	if (val == SEXP_KNOWN_TRUE)
+		return SEXP_TRUE;
+	else if (val == SEXP_KNOWN_FALSE)
+		return SEXP_FALSE;
+	else
+		return val;
+}
 	
 /**
  * Evaluates the when conditional
@@ -8204,7 +8242,7 @@ int eval_when(int n, int when_op_num)
 
 
 	// if value is true, perform the actions in the 'then' part
-	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE || when_op_num == OP_PERFORM_ACTIONS)
+	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
 	{
 		// get the operator
 		int exp = CAR(actions);
@@ -8274,17 +8312,6 @@ int eval_when(int n, int when_op_num)
 		// clean up any special sexp stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
 		Sexp_current_argument_nesting_level--;
-	}
-
-	// perform-actions should return whatever val was, but should not return known-*
-	if (when_op_num == OP_PERFORM_ACTIONS)
-	{
-		if (val == SEXP_KNOWN_TRUE)
-			return SEXP_TRUE;
-		else if (val == SEXP_KNOWN_FALSE)
-			return SEXP_FALSE;
-		else
-			return val;
 	}
 
 	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
@@ -22215,8 +22242,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_WHEN:
 			case OP_WHEN_ARGUMENT:
 			case OP_IF_THEN_ELSE:
-			case OP_PERFORM_ACTIONS:
 				sexp_val = eval_when( node, op_num );
+				break;
+
+			case OP_PERFORM_ACTIONS:
+				sexp_val = eval_perform_actions( node );
 				break;
 
 			case OP_COND:
