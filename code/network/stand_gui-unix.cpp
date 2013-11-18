@@ -891,4 +891,7 @@ void std_reset_standalone_gui() {}
 void std_reset_timestamps() {}
 void std_multi_set_standalone_missiontime(float mission_time) {}
 
+// stub - not required for *nix standalone
+void std_init_os() {}
+
 #endif
