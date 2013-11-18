@@ -1714,6 +1714,9 @@ void game_init()
 	if ( !Is_standalone ) {		
 		os_init( Osreg_class_name, Osreg_app_name );
 	}
+	else {
+		std_init_os();
+	}
 
 #ifndef NDEBUG
 	#if FS_VERSION_REVIS == 0
