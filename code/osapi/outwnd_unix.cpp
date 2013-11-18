@@ -22,6 +22,7 @@
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "cfile/cfilesystem.h"
+#include "globalincs/systemvars.h"
 #include "globalincs/globals.h"
 #include "parse/parselo.h"
 
@@ -193,7 +194,7 @@ void outwnd_print(const char *id, const char *tmp)
 		return;
 
   	if ( !outwnd_inited ) {
-  		fputs("outwnd not initialized yet...  ", stdout);
+  		fputs("outwnd not initialized yet...  \n", stdout);
 		fputs(tmp, stdout);
 		fflush(stdout);
 
@@ -253,6 +254,16 @@ void outwnd_init(int display_under_freespace_window)
 	outwnd_inited = true;
 
 	char pathname[MAX_PATH_LEN];
+    
+    /* Set where the log file is going to go */
+    // Zacam: Set various conditions based on what type of log to generate.
+    if (Fred_running) {
+        FreeSpace_logfilename = "fred2_open.log";
+    } else if (Is_standalone) {
+        FreeSpace_logfilename = "fs2_standalone.log";
+    } else {
+        FreeSpace_logfilename = "fs2_open.log";
+    }
 
 	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/%s", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);
 

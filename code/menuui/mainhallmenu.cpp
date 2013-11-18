@@ -713,12 +713,12 @@ void main_hall_do(float frametime)
 						main_hall_set_notify_string(XSTR( "Quick Start not valid for multiplayer pilots", 369));
 					} else {
 						if (Num_recent_missions > 0) {
-							strncpy(Game_current_mission_filename, Recent_missions[0], MAX_FILENAME_LEN);
+							strcpy_s(Game_current_mission_filename, Recent_missions[0]);
 						} else {
 							if (mission_load_up_campaign()) {
 								main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", 1606));
 							}
-							strncpy(Game_current_mission_filename, Campaign.missions[0].name, MAX_FILENAME_LEN);
+							strcpy_s(Game_current_mission_filename, Campaign.missions[0].name);
 						}
 						Campaign.current_mission = -1;
 						gameseq_post_event(GS_EVENT_START_GAME_QUICK);

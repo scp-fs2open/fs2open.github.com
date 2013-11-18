@@ -691,7 +691,7 @@ void HudGauge::render(float frametime)
 		char *text = new char[custom_text.size()+1];
 		strcpy(text, custom_text.c_str());
 
-		hud_num_make_mono(text);
+		hud_num_make_mono(text, font_num);
 		renderString(position[0] + textoffset_x, position[1] + textoffset_y, text);
 
 		delete[] text;
@@ -2073,7 +2073,7 @@ void HudGaugeDamage::render(float frametime)
 			screen_integrity = 1;
 		}
 		sprintf(buf, XSTR( "%d%%", 219), screen_integrity);
-		hud_num_make_mono(buf);
+		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 		if ( screen_integrity < 30 ) {
 			gr_set_color_fast(&Color_red);
@@ -2187,7 +2187,7 @@ void HudGaugeDamage::render(float frametime)
 		}
 
 		sprintf(buf, XSTR( "%d%%", 219), best_str);
-		hud_num_make_mono(buf);
+		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 		renderString(position[0] + subsys_integ_val_offset_x - w, sy, buf);
 		sy += line_h;
@@ -2311,12 +2311,18 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 /**
  * @brief Convert a number string to use mono-spaced 1 character
  */
-void hud_num_make_mono(char *num_str)
+void hud_num_make_mono(char *num_str, int font_num)
 {
-	int len, i, sc;
-	len = strlen(num_str);
+	int len, i;
+	ubyte sc;
 
-	sc = Lcl_special_chars;
+	sc = lcl_get_font_index(font_num);
+	if (sc == 0) {
+		// specified font has no mono-spaced 1, make do with non-mono-spaced 1
+		return;
+	}
+
+	len = strlen(num_str);
 	for ( i = 0; i < len; i++ ) {
 		if ( num_str[i] == '1' ) {
 			num_str[i] = (char)(sc + 1);

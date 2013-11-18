@@ -13,7 +13,7 @@
 #include "globalincs/globals.h"
 #include "graphics/2d.h"
 
-struct object;
+class object;
 
 // Goober5000 - new IFF color system
 #define IFF_COLOR_SELECTION			0

@@ -13,7 +13,7 @@
 #ifndef _SEXP_H
 #define _SEXP_H
 
-struct ship_subsys;
+class ship_subsys;
 class ship;
 class waypoint_list;
 
@@ -715,6 +715,8 @@ class waypoint_list;
 
 #define OP_COPY_VARIABLE_FROM_INDEX			(0x0020 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_COPY_VARIABLE_BETWEEN_INDEXES	(0x0021 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_GET_ETS_VALUE					(0x0022 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// niffiwan
+#define OP_SET_ETS_VALUES					(0x0023 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// niffiwan
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)

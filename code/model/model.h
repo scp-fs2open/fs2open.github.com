@@ -17,7 +17,7 @@
 #include "graphics/2d.h"
 #include "object/object.h"
 
-struct object;
+class object;
 
 extern flag_def_list model_render_flags[];
 extern int model_render_flags_size;
@@ -957,6 +957,7 @@ extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
+extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2 );
 
 void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);
 void model_instance_dumb_rotation(int model_instance_num);
@@ -1187,7 +1188,7 @@ typedef struct mst_info {
 	float distortion_length_factor;
 	bool draw_distortion;
 
-	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1),
+	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1), distortion_bitmap(-1),
 					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
 					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f), distortion_rad_factor(1.0f), distortion_length_factor(1.0f)
 				{}

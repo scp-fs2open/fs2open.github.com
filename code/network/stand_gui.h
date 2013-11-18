@@ -12,6 +12,13 @@
 #ifndef _FREESPACE_STANDALONE_GUI_HEADER_FILE
 #define _FREESPACE_STANDALONE_GUI_HEADER_FILE
 
+#include "network/multi.h"
+#include "network/multi_options.h"
+
+#ifndef _WIN32
+	void std_configLoaded(multi_global_options *options);
+#endif
+
 // ----------------------------------------------------------------------------------------
 // external variables
 //

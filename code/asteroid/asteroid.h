@@ -16,7 +16,7 @@
 #include "globalincs/globals.h"		// for NAME_LENGTH
 
 
-struct object;
+class object;
 class polymodel;
 struct collision_info_struct;
 

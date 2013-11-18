@@ -877,6 +877,10 @@ void init_ship_entry(ship_info *sip)
 	sip->icon_filename[0] = 0;
 	sip->anim_filename[0] = 0;
 	sip->overhead_filename[0] = 0;
+
+	sip->bii_index_ship = -1;
+	sip->bii_index_wing = -1;
+
 	sip->score = 0;
 
 	// Bobboau's thruster stuff
@@ -966,6 +970,16 @@ void init_ship_entry(ship_info *sip)
 	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
+
+	sip->num_maneuvering = 0;
+	memset(sip->maneuvering, 0, MAX_MAN_THRUSTERS * sizeof(man_thruster));
+	for (i = 0; i < MAX_MAN_THRUSTERS; i++)
+	{
+		sip->maneuvering[i].start_snd = -1;
+		sip->maneuvering[i].loop_snd = -1;
+		sip->maneuvering[i].stop_snd = -1;
+		sip->maneuvering[i].tex_id = -1;
+	}
 
 	sip->radar_image_2d_idx = -1;
 	sip->radar_color_image_2d_idx = -1;
@@ -1367,6 +1381,51 @@ void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *ban
 			Warning(LOCATION, "Ship class '%s' has %d secondary banks, but %d secondary capacities... fix this!!", sip->name, *num_banks, num_bank_capacities);
 		}
 	}
+}
+
+/**
+ * Common method for parsing briefing icon info, even though we only do it twice.
+ */
+int parse_and_add_briefing_icon_info()
+{
+	int bii_index = -1;
+	size_t icon;
+	char regular_temp[MAX_FILENAME_LEN];
+	char fade_temp[MAX_FILENAME_LEN];
+	char highlight_temp[MAX_FILENAME_LEN];
+
+	required_string("+Regular:");
+	stuff_string(regular_temp, F_NAME, MAX_FILENAME_LEN);
+	required_string("+Fade:");
+	stuff_string(fade_temp, F_NAME, MAX_FILENAME_LEN);
+	required_string("+Highlight:");
+	stuff_string(highlight_temp, F_NAME, MAX_FILENAME_LEN);
+
+	// search among our existing icons
+	for (icon = 0; icon < Briefing_icon_info.size(); icon++)
+	{
+		if (   !stricmp(regular_temp, Briefing_icon_info[icon].regular.filename)
+			&& !stricmp(fade_temp, Briefing_icon_info[icon].fade.filename)
+			&& !stricmp(highlight_temp, Briefing_icon_info[icon].highlight.filename) )
+		{
+			bii_index = (int) icon;
+			break;
+		}
+	}
+
+	// icon not found: create new one
+	if (bii_index < 0)
+	{
+		briefing_icon_info bii;
+		generic_anim_init(&bii.regular, regular_temp);
+		hud_anim_init(&bii.fade, 0, 0, fade_temp);
+		hud_anim_init(&bii.highlight, 0, 0, highlight_temp);
+
+		bii_index = (int) Briefing_icon_info.size();
+		Briefing_icon_info.push_back(bii);			
+	}
+
+	return bii_index;
 }
 
 /**
@@ -2818,6 +2877,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_string(sip->overhead_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
+	// read in briefing stuff
+	if ( optional_string("$Briefing icon:") )
+		sip->bii_index_ship = parse_and_add_briefing_icon_info();
+	if ( optional_string("$Briefing wing icon:") )
+		sip->bii_index_wing = parse_and_add_briefing_icon_info();
+
 	if ( optional_string("$Score:") ){
 		stuff_int( &sip->score );
 	}
@@ -3575,14 +3640,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					queued_animation *current_trigger;
 
 					sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
-					
-					// Echelon9 - horrible, direct memory management (works for now)
 					Verify(sp->triggers != NULL);
-					memset(&sp->triggers[sp->n_triggers], 0, sizeof(queued_animation));
 					
-					current_trigger = &sp->triggers[sp->n_triggers];
-					sp->n_triggers++;
 					//add a new trigger
+					current_trigger = &sp->triggers[sp->n_triggers];
+					queued_animation_init(current_trigger);
+					sp->n_triggers++;
 
 					required_string("$type:");
 					char atype[NAME_LENGTH];
@@ -4371,13 +4434,15 @@ static void ship_clear_subsystems()
 
 	for (i = 0; i < NUM_SHIP_SUBSYSTEM_SETS; i++) {
 		if (Ship_subsystems[i] != NULL) {
-			vm_free(Ship_subsystems[i]);
+			delete[] Ship_subsystems[i];
 			Ship_subsystems[i] = NULL;
 		}
 	}
 
 	Num_ship_subsystems = 0;
 	Num_ship_subsystems_allocated = 0;
+
+	Triggered_rotations.clear();
 }
 
 static int ship_allocate_subsystems(int num_so, bool page_in = false)
@@ -4416,8 +4481,7 @@ static int ship_allocate_subsystems(int num_so, bool page_in = false)
 			return 0;
 		}
 
-		Ship_subsystems[idx] = (ship_subsys*) vm_malloc( sizeof(ship_subsys) * NUM_SHIP_SUBSYSTEMS_PER_SET );
-		memset( Ship_subsystems[idx], 0, sizeof(ship_subsys) * NUM_SHIP_SUBSYSTEMS_PER_SET );
+		Ship_subsystems[idx] = new ship_subsys[NUM_SHIP_SUBSYSTEMS_PER_SET];
 
 		// append the new set to our free list
 		for (i = 0; i < NUM_SHIP_SUBSYSTEMS_PER_SET; i++)
@@ -4848,16 +4912,20 @@ void ship::clear()
 	wingnum = -1;
 	orders_accepted = 0;
 
-	memset(&subsys_list, 0, sizeof(ship_subsys));
+	subsys_list.clear();
+	// since these aren't cleared by clear()
+	subsys_list.next = NULL;
+	subsys_list.prev = NULL;
+
 	memset(&subsys_info, 0, SUBSYSTEM_MAX * sizeof(ship_subsys_info));
 
 	memset(last_targeted_subobject, 0, MAX_PLAYERS * sizeof(ship_subsys *));
 
 	shield_integrity = NULL;
 
-	shield_recharge_index = 0;
-	weapon_recharge_index = 0;
-	engine_recharge_index = 0;
+	shield_recharge_index = INTIAL_SHIELD_RECHARGE_INDEX;
+	weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
+	engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
 	weapon_energy = 0;
 	current_max_speed = 0.0f;
 	next_manage_ets = timestamp(0);
@@ -4982,7 +5050,7 @@ void ship::clear()
 
 	tag_total = 0.0f;
 	tag_left = -1.0f;
-	time_first_tagged = -1;
+	time_first_tagged = 0;
 	level2_tag_total = 0.0f;
 	level2_tag_left = -1.0f;
 
@@ -5004,7 +5072,7 @@ void ship::clear()
 	special_warpin_objnum = -1;
 	special_warpout_objnum = -1;
 
-	memset(&fighter_beam_turret_data, 0, sizeof(ship_subsys));
+	fighter_beam_turret_data.clear();
 	memset(&beam_sys_info, 0, sizeof(model_subsystem));
 
 	primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
@@ -5185,6 +5253,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 			swp->secondary_bank_ammo[i] = fl2i(sip->secondary_bank_ammo_capacity[i] / weapon_size + 0.5f );
 	}
 
+	shipp->armor_type_idx = sip->armor_type_idx;
+	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
+	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
+	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
+
 	polymodel *pm = model_get(sip->model_num);
 
 	if(pm != NULL && pm->n_view_positions > 0)
@@ -5350,6 +5423,89 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 
 }
 
+// as with object, don't set next and prev to NULL because they keep the object on the free and used lists
+void ship_subsys::clear()
+{
+	int i;
+
+	system_info = NULL;
+
+	parent_objnum = -1;
+
+	sub_name[0] = 0;
+	current_hits = max_hits = 0.0f;
+
+	flags = 0;
+
+	subsys_guardian_threshold = 0;
+	armor_type_idx = -1;
+
+	turret_best_weapon = -1;
+	turret_last_fire_direction = vmd_zero_vector;
+	turret_next_enemy_check_stamp = timestamp(0);
+	turret_next_fire_stamp = timestamp(0);
+	turret_enemy_objnum = -1;
+	turret_enemy_sig = 0;
+	turret_next_fire_pos = 0;
+	turret_time_enemy_in_range = 0.0f;
+
+	for (i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
+		turret_targeting_order[i] = -1;
+	optimum_range = 0.0f;
+	favor_current_facing = 0.0f;
+	targeted_subsys = NULL;
+	scripting_target_override = false;
+	last_fired_weapon_info_index = -1;
+
+	turret_pick_big_attack_point_timestamp = timestamp(0);
+	turret_big_attack_point = vmd_zero_vector;
+
+	turret_animation_position = MA_POS_NOT_SET;
+	turret_animation_done_time = 0;
+
+	for (i = 0; i < MAX_TFP; i++)
+		turret_swarm_info_index[i] = -1;
+	turret_swarm_num = 0;
+
+	awacs_intensity = 0.0f;
+	awacs_radius = 0.0f;
+
+	memset(&weapons, 0, sizeof(ship_weapon));
+
+	memset(&submodel_info_1, 0, sizeof(submodel_instance_info));
+	memset(&submodel_info_2, 0, sizeof(submodel_instance_info));
+
+	disruption_timestamp = timestamp(0);
+
+	subsys_cargo_name = 0;
+	time_subsys_cargo_revealed = 0;
+
+	triggered_rotation_index = -1;
+
+	points_to_target = 0.0f;
+	base_rotation_rate_pct = 0.0f;
+	gun_rotation_rate_pct = 0.0f;
+
+	subsys_snd_flags = 0;
+
+	rotation_timestamp = timestamp(0);
+
+	world_to_turret_matrix = vmd_identity_matrix;
+
+	for (i = 0; i < 32; i++)
+		target_priority[i] = -1;
+	num_target_priorities = 0;
+
+	next_aim_pos_time = 0;
+	last_aim_enemy_pos = vmd_zero_vector;
+	last_aim_enemy_vel = vmd_zero_vector;
+
+	rof_scaler = 1.0f;
+	turn_rate = 0.0f;
+
+	turret_max_bomb_ownage = -1; 
+	turret_max_target_ownage = -1;
+}
 
 /**
  * Set subsystem
@@ -5385,8 +5541,9 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// set up the linked list
 		ship_system = GET_FIRST( &ship_subsys_free_list );		// get a new element from the ship_subsystem array
 		Assert ( ship_system != &ship_subsys_free_list );		// shouldn't have the dummy element
-		list_remove( ship_subsys_free_list, ship_system );	// remove the element from the array
+		list_remove( ship_subsys_free_list, ship_system );		// remove the element from the array
 		list_append( &shipp->subsys_list, ship_system );		// link the element into the ship
+		ship_system->clear();									// initialize it to a known blank slate
 
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 
@@ -5601,6 +5758,13 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 		// Clear this flag here so we correctly rebuild the turret matrix on mission load
 		model_system->flags &= ~MSS_FLAG_TURRET_MATRIX;
+
+		// Allocate a triggered rotation instance if we need it
+		if (model_system->flags & MSS_FLAG_TRIGGERED) {
+			ship_system->triggered_rotation_index = Triggered_rotations.size();
+			triggered_rotation tr;
+			Triggered_rotations.push_back(tr);
+		}
 	}
 
 	if ( !ignore_subsys_info ) {
@@ -5882,8 +6046,6 @@ void ship_render(object * obj)
 	}
 
 	MONITOR_INC( NumShipsRend, 1 );
-
-	memset( &dfi, 0, sizeof(dock_function_info) );
 
 	// look for a warping ship, whether for me or for anybody I'm docked with
 	dock_evaluate_all_docked_objects(obj, &dfi, ship_find_warping_ship_helper);
@@ -10982,7 +11144,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 
 
-
 	// if trying to fire a swarm missile, make sure being called from right place
 	if ( (wip->wi_flags & WIF_SWARM) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
@@ -11137,27 +11298,33 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
-			weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
-			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
-			has_fired = true;
 
+			if (weapon_num >= 0) {
+				weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
+				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
+				has_fired = true;
 
-			// create the muzzle flash effect
-			if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
-				// show the flash only if in not cockpit view, or if "show ship" flag is set
-				shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
-			}
-			
-			num_fired++;
-			swp->last_fired_weapon_index = weapon_num;
-			swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
-			if (weapon_num != -1) {
+				// create the muzzle flash effect
+				if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
+					// show the flash only if in not cockpit view, or if "show ship" flag is set
+					shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
+				}
+
+				if((wip->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+					// calculate some arbitrary value between 100
+					// (mass * velocity) / 10
+					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f);
+				}
+
+				num_fired++;
+				swp->last_fired_weapon_index = weapon_num;
+				swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
 				swp->last_fired_weapon_signature = Objects[weapon_num].signature;
-			}
 
-			// subtract the number of missiles fired
-			if ( Weapon_energy_cheat == 0 ){
-				swp->secondary_bank_ammo[bank]--;
+				// subtract the number of missiles fired
+				if ( Weapon_energy_cheat == 0 ){
+					swp->secondary_bank_ammo[bank]--;
+				}
 			}
 		}
 	}
@@ -12965,20 +13132,20 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	return 0;
 }
 
-// function which is used to find a repair ship to repair requester_obj.  the way repair ships will work
-// is:
-// if repair ship present and ordered to depart, return NULL.
-// if repair ship present and available, return pointer to that object.
-// If repair ship present and busy, possibly return that object if he can satisfy the request soon enough.
-// If repair ship present and busy and cannot satisfy request, return NULL to warp a new one in if below max number
-// if no repair ship present, return NULL to force a new one to be warped in.
-object *ship_find_repair_ship( object *requester_obj )
+// Goober5000 - modified the logic to clarify the various states
+// function which is used to find a repair ship to repair requester_obj.  the way repair ships will work is:
+// if no ships in the mission at all, return 0
+// if a ship can immediately satisfy a repair request, return 1 and fill in the pointer
+// if no ships can satisfy a request, but we haven't reached either the concurrent or cumulative limit, return 2
+// if no ships can satisfy a request, and we've reached the limits, but a request can be queued, return 3 and fill in the pointer
+// if no ships can satisfy a request, we've reached the limits, and we can't queue anything, we're out of luck -- return 4
+int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 {
 	object *objp;
 	int num_support_ships = 0;
-	float min_dist = 99999.0f;
+	float min_dist = -1.0f;
 	object *nearest_support_ship = NULL;
-	float min_time_till_available = 999999.0f;
+	float min_time_till_available = -1.0f;
 	object *soonest_available_support_ship = NULL;
 
 	Assertion(requester_obj->type == OBJ_SHIP, "requester_obj not a ship. Has type of %08x", requester_obj->type);
@@ -13015,6 +13182,9 @@ object *ship_find_repair_ship( object *requester_obj )
 				continue;
 			}
 
+			// tally how many support ships actually exist
+			num_support_ships++;
+
 			// don't deal with dying or departing support ships
 			if ( shipp->flags & (SF_DYING | SF_DEPARTING) ) {
 				continue;
@@ -13049,7 +13219,7 @@ object *ship_find_repair_ship( object *requester_obj )
 						howlong += dist * objp->phys_info.max_vel.xyz.z;
 					}
 				}
-				if ( howlong < min_time_till_available ) {
+				if ( min_time_till_available < 0.0f || howlong < min_time_till_available ) {
 					min_time_till_available = howlong;
 					soonest_available_support_ship = objp;
 				}
@@ -13057,38 +13227,49 @@ object *ship_find_repair_ship( object *requester_obj )
 			else
 			{
 				// support ship not already busy, find the closest
-				if (dist < min_dist)
+				if ( min_dist < 0.0f || dist < min_dist )
 				{
 					min_dist = dist;
 					nearest_support_ship = objp;
 				}
 			}
-
-			// it a support ship, count it so that we can see if we can cheat
-			// and request for a new support ship to be warped in to service
-			// this request if all of the ships that I find are busy.
-			num_support_ships++;
 		}
 	}
 
-	if (nearest_support_ship != NULL) {
+	// no ships present?
+	// (be advised we may have an Arriving_support_ship in this case)
+	if (num_support_ships == 0) {
+		return 0;
+	}
+	// ship available?
+	else if (nearest_support_ship != NULL) {
 		// the nearest non-busy support ship is to service request
-		return nearest_support_ship;
-	} else if (num_support_ships >= The_mission.support_ships.max_concurrent_ships) {
-		// found more support ships than should be in mission, so I can't ask for more,
-		// instead I will give the player the ship that will be done soonest or return NULL
-		// because there are no support ships in mission and they are not allowed to be
-		// requested by the AI or the player (that is, they have to be FREDed in)
-		return soonest_available_support_ship;
-	} else {
-		Assert(num_support_ships < The_mission.support_ships.max_concurrent_ships);
+		if (ship_we_found != NULL)
+			*ship_we_found = nearest_support_ship;
+		return 1;
+	}
+	// no ships available; are we below the limits?  (can we bring another ship in? -- and btw an Arriving_support_ship counts as being able to bring one in)
+	else if ((num_support_ships < The_mission.support_ships.max_concurrent_ships)
+		&& (	(Arriving_support_ship == NULL && The_mission.support_ships.tally < The_mission.support_ships.max_support_ships)
+			 || (Arriving_support_ship != NULL && The_mission.support_ships.tally <= The_mission.support_ships.max_support_ships) ))
+	{
 		// We are allowed more support ships in the mission; request another ship
 		// to service this request.
-		return NULL;
+		return 2;
+	}
+	// we're at the limit, but maybe a ship will become available
+	else if (soonest_available_support_ship != NULL) {
+		// found more support ships than should be in mission, so I can't ask for more,
+		// instead I will give the player the ship that will be done soonest
+		if (ship_we_found != NULL)
+			*ship_we_found = soonest_available_support_ship;
+		return 3;
+	}
+	// none of the above; we're out of luck
+	else {
+		return 4;
 	}
 }
-
-
 
 /**
  * Called in game_shutdown() to free malloced memory
@@ -15474,7 +15655,7 @@ void ship_page_in()
 	int num_ship_types_used = 0;
 	int test_id = -1;
 
-	memset( &fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
+	memset( fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
 
 	for (i = 0; i < Num_ship_classes; i++) {
 		if ( !ship_class_used[i] )
@@ -15774,8 +15955,10 @@ void ship_page_out_textures(int ship_index, bool release)
 // function to return true if support ships are allowed in the mission for the given object.
 //	In single player, must be friendly and not Shivan. (Goober5000 - Shivans can now have support)
 //	In multiplayer -- to be coded by Mark Allender after 5/4/98 -- MK, 5/4/98
-int is_support_allowed(object *objp)
+int is_support_allowed(object *objp, bool do_simple_check)
 {
+	int result = -1;
+
 	// check updated mission conditions to allow support
 
 	// If running under autopilot support is not allowed
@@ -15786,38 +15969,59 @@ int is_support_allowed(object *objp)
 	if (The_mission.support_ships.max_support_ships == 0)
 		return 0;
 
-	// restricted number allowed
-	if (The_mission.support_ships.max_support_ships > 0)
+	// ship_find_repair_ship is a little expensive, so let's not do it every frame
+	if (!do_simple_check)
 	{
-		// if all the allowed ships have been used up and there are no support ships currently in the mission - can't rearm
-		if ((The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships) && (ship_find_repair_ship(objp) == NULL))
+		// check if all support ships are departing or dying
+		result = ship_find_repair_ship(objp);
+		if (result == 4) {
 			return 0;
+		}
+
+		// restricted number allowed
+		if (The_mission.support_ships.max_support_ships > 0)
+		{
+			// if all the allowed ships have been used up, can't rearm unless something's available in-mission or arriving
+			if ((The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships))
+			{
+				// this shouldn't happen because we've reached one of the limits
+				Assert(result != 2);
+
+				// nothing arriving and no ships available in mission
+				if ((Arriving_support_ship == NULL) && (result == 0 || result == 3))
+					return 0;
+			}
+		}
 	}
 
 	ship *shipp = &Ships[objp->instance];
 
-	// make sure, if exiting from bay, that parent ship is in the mission!
-	if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
+	// this also looks a little more expensive
+	if (!do_simple_check)
 	{
-		Assert(The_mission.support_ships.arrival_anchor != -1);
-
-		// ensure it's in-mission
-		int temp = ship_name_lookup(Parse_names[The_mission.support_ships.arrival_anchor]);
-		if (temp < 0)
+		// make sure, if exiting from bay, that parent ship is in the mission!
+		if ((result == 0 || result == 2) && (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY))
 		{
-			return 0;
-		}
+			Assert(The_mission.support_ships.arrival_anchor != -1);
 
-		// make sure it's not leaving or blowing up
-		if (Ships[temp].flags & (SF_DYING | SF_DEPARTING))
-		{
-			return 0;
-		}
+			// ensure it's in-mission
+			int temp = ship_name_lookup(Parse_names[The_mission.support_ships.arrival_anchor]);
+			if (temp < 0)
+			{
+				return 0;
+			}
 
-		// also make sure that parent ship's fighterbay hasn't been destroyed
-		if (ship_fighterbays_all_destroyed(&Ships[temp]))
-		{
-			return 0;
+			// make sure it's not leaving or blowing up
+			if (Ships[temp].flags & (SF_DYING | SF_DEPARTING))
+			{
+				return 0;
+			}
+
+			// also make sure that parent ship's fighterbay hasn't been destroyed
+			if (ship_fighterbays_all_destroyed(&Ships[temp]))
+			{
+				return 0;
+			}
 		}
 	}
 
@@ -15856,12 +16060,15 @@ int is_support_allowed(object *objp)
 		return 0;
 	}
 
+// this is a mod problem, so let's only do it in debug mode
+#ifndef NDEBUG
 	// Goober5000 - extra check to make sure this guy has a rearming dockpoint
 	if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
 	{
-		mprintf(("support not allowed for %s because its model lacks a rearming dockpoint\n", shipp->ship_name));
+		Warning(LOCATION, "Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
 		return 0;
 	}
+#endif
 
 	// Goober5000 - if we got this far, we can request support
 	return 1;
@@ -16347,20 +16554,6 @@ int ship_is_beginning_warpout_speedup(object *objp)
 }
 
 /**
- * Given a ship info type, return a species
- */
-int ship_get_species_by_type(int ship_info_index)
-{
-	// sanity
-	if((ship_info_index < 0) || (ship_info_index >= Num_ship_classes)){
-		return -1;
-	}
-
-	// return species
-	return Ship_info[ship_info_index].species;
-}
-
-/**
  * Return the length of a ship
  */
 float ship_class_get_length(ship_info *sip)
@@ -16559,8 +16752,8 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		return;
 	}
 
-	if (psub->flags & MSS_FLAG_TRIGGERED) {
-		pss->trigger.process_queue();
+	if (psub->flags & MSS_FLAG_TRIGGERED && pss->triggered_rotation_index >= 0) {
+		Triggered_rotations[pss->triggered_rotation_index].process_queue();
 		model_anim_submodel_trigger_rotate(psub, pss );
 		return;
 	

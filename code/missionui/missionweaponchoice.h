@@ -12,7 +12,7 @@
 #ifndef __MISSION_WEAPON_CHOICE_H__
 #define __MISSION_WEAPON_CHOICE_H__
 
-struct p_object;
+class p_object;
 struct wss_unit;
 struct ship_weapon;
 

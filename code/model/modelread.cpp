@@ -494,7 +494,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		mprintf(("Potential problem found: Unrecognized subsystem type '%s', believed to be in ship %s\n", dname, Global_filename));
 	}
 
-	if ( (p = strstr(props, "$triggered:")) != NULL ) {
+	if ( (strstr(props, "$triggered:")) != NULL ) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 		subsystemp->flags |= MSS_FLAG_TRIGGERED;
 	}
@@ -1336,7 +1336,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				else
 					pm->submodel[n].collide_invisible = false;
 
-				if ( (p = strstr(props, "$gun_rotation:")) != NULL || (p = strstr(props, "$gun_rotation")) != NULL)
+				if (strstr(props, "$gun_rotation") != NULL)
 					pm->submodel[n].gun_rotation = true;
 				else
 					pm->submodel[n].gun_rotation = false;
@@ -2461,7 +2461,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	pm = new polymodel;	
 	Polygon_models[num] = pm;
-	
+
 	pm->n_paths = 0;
 	pm->paths = NULL;
 
@@ -3763,9 +3763,12 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	pm = model_get(model_num);
 	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
 	bsp_info * base = &pm->submodel[turret->subobj_num];
+	bool limited_base_rotation = false;
 
 	// Check for a valid turret
 	Assert( turret->turret_num_firing_points > 0 );
+	// Check for a valid subsystem
+	Assert( ss != NULL );
 
 	//This should not happen
 	if ( base == gun ) {
@@ -3808,7 +3811,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	// Call this the desired_angles
 	angles desired_angles;
 //	vm_extract_angles_vector(&desired_angles, &of_dst);
-
+	
 	if (reset == false) {
 		desired_angles.p = (float)acos(of_dst.xyz.z);
 		desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
@@ -3820,14 +3823,14 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 		if (turret->n_triggers > 0) {
 			int i;
 			for (i = 0; i<turret->n_triggers; i++) {
-				if (turret->triggers[i].type == TRIGGER_TYPE_INITIAL) {
-					desired_angles.p = turret->triggers[i].angle.xyz.x;
-					desired_angles.h = turret->triggers[i].angle.xyz.y;
-					i = turret->n_triggers;
-				}
+				desired_angles.p = turret->triggers[i].angle.xyz.x;
+				desired_angles.h = turret->triggers[i].angle.xyz.y;
 			}
 		}
 	}
+
+	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH)
+		limited_base_rotation = true;
 
 	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
 
@@ -3835,18 +3838,6 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	// Gradually turn the turret towards the desired angles
 	float step_size = turret->turret_turning_rate * flFrametime;
 	float base_delta, gun_delta;
-
-	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH) {
-		vec3d turret_base_to_enemy = of_dst;
-		if ( (turret_base_to_enemy.xyz.x) != 0 || (turret_base_to_enemy.xyz.y != 0) )  {
-			turret_base_to_enemy.xyz.z = 0;
-			vm_vec_normalize(&turret_base_to_enemy);
-			// if these two do not point roughly to the same direction...
-			// swing the gun to the forward position before continuing to chase the target
-			if ((turret_base_to_enemy.xyz.x * sin(base_angles->h)) < 0)
-				desired_angles.h = 0;
-		}
-	}
 
 	if (reset == true)
 		step_size /= 3.0f;
@@ -3857,7 +3848,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	ss->base_rotation_rate_pct = 0.0f;
 	ss->gun_rotation_rate_pct = 0.0f;
 
-	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
+	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size, limited_base_rotation);
 	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
 
 	if (turret->turret_base_rotation_snd != -1)	
@@ -4613,6 +4604,33 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	for (i=0; i<sm->num_details; i++ )	{
 		model_set_instance(model_num, sm->details[i], sii, flags );
 	}
+}
+
+// Sets the submodel instance data in a submodel (for all detail levels)
+// Techroom version uses two floats of setting rotation angles (for turrets)
+// instead of using larger but largely unused structures for storing the same data
+void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2)
+{
+	polymodel * pm;
+
+	pm = model_get(model_num);
+
+	Assert( sub_model_num >= 0 );
+	Assert( sub_model_num < pm->n_models );
+
+	if ( sub_model_num < 0 ) return;
+	if ( sub_model_num >= pm->n_models ) return;
+	bsp_info *sm = &pm->submodel[sub_model_num];
+
+	// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
+	// the replacement model from being drawn by marking it as having been blown off
+	if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
+		pm->submodel[sm->my_replacement].blown_off = 1;
+	}
+
+	// Set the angles
+	sm->angs.p = angle_1;
+	sm->angs.h = angle_2;
 }
 
 void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii)

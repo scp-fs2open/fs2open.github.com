@@ -193,6 +193,10 @@ void gameseq_init()
 		gs[i].queue_head=0;
 	}
 
+	for (i=0; i<GS_NUM_STATES; i++ )	{
+		script_hook_init(&GS_state_hooks[i]);
+	}
+
 	gs_current_stack = 0;
 	state_reentry = 0;
 	state_processing_event_post = 0;

@@ -528,6 +528,8 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			cm = &Campaign.missions[Campaign.num_missions];
 			cm->name = vm_strdup(name);
 
+			cm->notes = NULL;
+
 			cm->briefing_cutscene[0] = 0;
 			if ( optional_string("+Briefing Cutscene:") )
 				stuff_string( cm->briefing_cutscene, F_NAME, NAME_LENGTH );
@@ -612,6 +614,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				}
 			}
 
+			cm->level = 0;
 			if (optional_string("+Level:")) {
 				stuff_int( &cm->level );
 				if ( cm->level == 0 )  // check if the top (root) of the whole tree
@@ -620,6 +623,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			} else
 				Campaign.realign_required = 1;
 
+			cm->pos = 0;
 			if (optional_string("+Position:"))
 				stuff_int( &cm->pos );
 			else
@@ -629,17 +633,17 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				cm->num_goals = -1;
 				cm->num_events = -1;
 				cm->num_variables = -1;
-				cm->notes = NULL;
 
 			} else {
 				cm->num_goals = 0;
 				cm->num_events = 0;
-				cm->num_variables = -1;
+				cm->num_variables = 0;
 			}
 
 			cm->goals = NULL;
 			cm->events = NULL;
 			cm->variables = NULL;
+
 			Campaign.num_missions++;
 		}
 	}

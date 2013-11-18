@@ -1319,7 +1319,7 @@ void turret_ai_update_aim(ai_info *aip, object *En_Objp, ship_subsys *ss)
  */
 int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vec3d *predicted_enemy_pos, vec3d *gvec)
 {
-	int ret_val = 0;
+	int ret_val __attribute__((__unused__)) = 0; // to be used in future, see comment @ end of function
 
 	if (ss->turret_enemy_objnum != -1) {
 		model_subsystem *tp = ss->system_info;
@@ -1829,13 +1829,12 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1, 0,0.0f, turret);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
 			
-
-				objp=&Objects[weapon_objnum];
-				wp=&Weapons[objp->instance];
-				wip=&Weapon_info[wp->weapon_info_index];
-
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
+					objp=&Objects[weapon_objnum];
+					wp=&Weapons[objp->instance];
+					wip=&Weapon_info[wp->weapon_info_index];
+
 					parent_ship->last_fired_turret = turret;
 					turret->last_fired_weapon_info_index = wp->weapon_info_index;
 

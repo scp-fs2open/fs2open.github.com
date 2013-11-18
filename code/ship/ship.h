@@ -33,7 +33,7 @@
 
 #include <string>
 
-struct object;
+class object;
 class WarpEffect;
 
 //	Part of the player died system.
@@ -155,9 +155,6 @@ typedef struct ship_weapon {
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
-
-	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
-	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
 //**************************************************************
@@ -305,8 +302,10 @@ typedef struct cockpit_display_info {
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
-typedef	struct ship_subsys {
-	struct ship_subsys *next, *prev;				//	Index of next and previous objects in list.
+class ship_subsys
+{
+public:
+	class ship_subsys *next, *prev;				//	Index of next and previous objects in list.
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
@@ -369,7 +368,7 @@ typedef	struct ship_subsys {
 	int subsys_cargo_name;			// cap ship cargo on subsys
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 
-	triggered_rotation trigger;		//the actual currently running animation and assosiated states
+	int triggered_rotation_index;		//the actual currently running animation and assosiated states
 
 	float points_to_target;
 	float base_rotation_rate_pct;
@@ -397,8 +396,14 @@ typedef	struct ship_subsys {
 
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
-	int turret_max_target_ownage; 
-} ship_subsys;
+	int turret_max_target_ownage;
+
+	ship_subsys()
+		: next(NULL), prev(NULL)
+	{}
+
+	void clear();
+};
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
 // we might have 3 engines), and the relative strength of the subsystem.  The #defines in model.h
@@ -845,17 +850,6 @@ typedef struct exited_ship {
 	char	cargo1;
 	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
 	int   damage_ship_id[MAX_DAMAGE_SLOTS];
-
-	exited_ship()
-		: team( 0 ), flags( 0 ), time( 0 ), hull_strength( 0 ),
-		  time_cargo_revealed( 0 ), cargo1( 0 )
-	{ 
-		ship_name[ 0 ] = '\0';
-		obj_signature = -1;
-		ship_class = -1; 
-		memset( damage_ship, 0, sizeof( damage_ship ) );
-		memset( damage_ship_id, 0, sizeof( damage_ship_id ) );
-	}
 } exited_ship;
 
 extern SCP_vector<exited_ship> Ships_exited;
@@ -1091,16 +1085,6 @@ typedef struct man_thruster {
 	float radius;
 
 	vec3d pos, norm;
-	man_thruster()
-		: use_flags( 0 ), tex_nframes( 0 ), tex_fps( 0 ), length( 0. ), radius( 0. )
-	{
-		tex_id=-1;
-		start_snd=-1;
-		loop_snd=-1;
-		stop_snd=-1;
-		memset( &pos, 0, sizeof( vec3d ) );
-		memset( &norm, 0, sizeof( vec3d ) );
-	}
 } man_thruster;
 
 //Warp type defines
@@ -1326,6 +1310,9 @@ public:
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
+
+	int bii_index_ship;						// if this ship has a briefing icon that overrides the normal icon set
+	int bii_index_wing;
 
 	int	score;								// default score for this ship
 
@@ -1706,7 +1693,7 @@ extern int	ship_do_rearm_frame( object *objp, float frametime );
 extern float ship_calculate_rearm_duration( object *objp );
 extern void	ship_wing_cleanup( int shipnum, wing *wingp );
 
-extern object *ship_find_repair_ship( object *requester );
+extern int ship_find_repair_ship( object *requester_obj, object **ship_we_found = NULL );
 extern void ship_close();	// called in game_shutdown() to free malloced memory
 
 
@@ -1806,7 +1793,7 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
 
-int is_support_allowed(object *objp);
+int is_support_allowed(object *objp, bool do_simple_check = false);
 
 // Given an object and a turret on that object, return the actual firing point of the gun
 // and its normal.   This uses the current turret angles.  We are keeping track of which
@@ -1891,9 +1878,6 @@ float ship_get_warpout_speed(object *objp);
 
 // returns true if ship is beginning to speed up in warpout
 int ship_is_beginning_warpout_speedup(object *objp);
-
-// given a ship info type, return a species
-int ship_get_species_by_type(int ship_info_index);
 
 // return the length of the ship class
 float ship_class_get_length(ship_info *sip);

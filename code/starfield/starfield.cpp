@@ -2687,24 +2687,8 @@ void stars_load_background(int background_idx)
 // Goober5000
 void stars_copy_background(background_t *dest, background_t *src)
 {
-	uint i;
-
-	dest->suns.clear();
-	dest->bitmaps.clear();
-
-	for (i = 0; i < src->suns.size(); i++)
-	{
-		starfield_list_entry sle;
-		memcpy(&sle, &src->suns[i], sizeof(starfield_list_entry));
-		dest->suns.push_back(sle);
-	}
-
-	for (i = 0; i < src->bitmaps.size(); i++)
-	{
-		starfield_list_entry sle;
-		memcpy(&sle, &src->bitmaps[i], sizeof(starfield_list_entry));
-		dest->bitmaps.push_back(sle);
-	}
+	dest->suns.assign(src->suns.begin(), src->suns.end());
+	dest->bitmaps.assign(src->bitmaps.begin(), src->bitmaps.end());
 }
 
 // Goober5000

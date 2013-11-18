@@ -19,7 +19,7 @@
 
 extern int Max_escort_ships;
 
-struct object;
+class object;
 
 void	hud_escort_update_list();
 void	hud_escort_init();

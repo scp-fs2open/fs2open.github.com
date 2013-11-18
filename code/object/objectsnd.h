@@ -23,6 +23,7 @@
 #define OS_SUBSYS_ROTATION		(1<<8)
 
 struct vec3d;
+class ship_subsys;
 
 extern int Obj_snd_enabled;
 
@@ -35,13 +36,13 @@ void	obj_snd_do_frame();
 // model coords of the location of the engine
 // by passing vmd_zero_vector here, you get a sound centered directly on the object
 // NOTE : if main is true, the attentuation factors don't apply if you're within the radius of the object
-int	obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags=0, struct ship_subsys *associated_sub=NULL);
+int	obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags=0, ship_subsys *associated_sub=NULL);
 
 //Delete specific persistent sound on object
 void obj_snd_delete(int objnum, int index);
 
 // if sndnum is not -1, deletes all instances of the given sound within the object
-void	obj_snd_delete_type(int objnum, int sndnum = -1, struct ship_subsys *ss = NULL);
+void	obj_snd_delete_type(int objnum, int sndnum = -1, ship_subsys *ss = NULL);
 
 void	obj_snd_delete_all();
 void	obj_snd_stop_all();

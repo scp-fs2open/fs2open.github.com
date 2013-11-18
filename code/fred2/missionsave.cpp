@@ -993,6 +993,13 @@ int CFred_mission_save::save_briefing()
 					fout(" %d", (bi->flags & BI_MIRROR_ICON)?1:0 );
 				}
 
+				if ((Format_fs2_open != FSO_FORMAT_RETAIL) && (bi->flags & BI_USE_WING_ICON))
+				{
+					required_string_fred("$use wing icon:");
+					parse_comments();
+					fout(" %d", (bi->flags & BI_USE_WING_ICON)?1:0 );
+				}
+
 				required_string_fred("$multi_text");
 				parse_comments();
 
@@ -2010,12 +2017,11 @@ int CFred_mission_save::save_objects()
 		}
 
 		// Goober5000 - deal with texture replacement ----------------
-		k = 0;
-		if (Fred_num_texture_replacements > 0) {
+		if (!Fred_texture_replacements.empty()) {
 			bool needs_header = true;
 
-			while (k < Fred_num_texture_replacements) {
-				if ( !stricmp(shipp->ship_name, Fred_texture_replacements[k].ship_name) ) {
+			for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii) {
+				if ( !stricmp(shipp->ship_name, ii->ship_name) ) {
 					if (needs_header) {
 						if (optional_string_fred("$Texture Replace:")) {
 							parse_comments(1);
@@ -2030,20 +2036,18 @@ int CFred_mission_save::save_objects()
 					// write out this entry
 					if (optional_string_fred("+old:")) {
 						parse_comments(1);
-						fout(" %s", Fred_texture_replacements[k].old_texture);
+						fout(" %s", ii->old_texture);
 					} else {
-						fout_version("\n+old: %s", Fred_texture_replacements[k].old_texture);
+						fout_version("\n+old: %s", ii->old_texture);
 					}
 
 					if (optional_string_fred("+new:")) {
 						parse_comments(1);
-						fout(" %s", Fred_texture_replacements[k].new_texture);
+						fout(" %s", ii->new_texture);
 					} else {
-						fout_version("\n+new: %s", Fred_texture_replacements[k].new_texture);
+						fout_version("\n+new: %s", ii->new_texture);
 					}
 				}
-
-				k++;	// increment down the list of texture replacements
 			}
 
 			fso_comment_pop();

@@ -542,7 +542,7 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 
 	if ( quadrant >= 0 ) {
 		num = Quadrant_xlate[quadrant];
-		shi->shield_hit_timers[num] = timestamp(300);
+		shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION_SHORT);
 	} else {
 		shi->shield_hit_timers[HULL_HIT_OFFSET] = timestamp(SHIELD_HIT_DURATION_SHORT);
 		hud_targetbox_start_flash(TBOX_FLASH_HULL); 
@@ -1046,7 +1046,7 @@ void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
 
 	sprintf(text_integrity, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {
-		hud_num_make_mono(text_integrity);
+		hud_num_make_mono(text_integrity, font_num);
 	}	
 
 	renderString(final_pos[0], final_pos[1], text_integrity);

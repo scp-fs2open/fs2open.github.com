@@ -301,7 +301,6 @@ extern int	Num_goal_type_names;
 extern int	Num_reinforcement_type_names;
 extern int	Player_starts;
 extern fix	Entry_delay_time;
-extern int	Fred_num_texture_replacements;	// Goober5000
 extern int	Loading_screen_bm_index;
 
 extern int Num_unknown_ship_classes;
@@ -329,22 +328,9 @@ typedef struct texture_replace {
 	char old_texture[MAX_FILENAME_LEN];
 	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
-
-	texture_replace( )
-	{
-		Reset( );
-	}
-
-	void Reset( )
-	{
-		new_texture_id = -1;
-		ship_name[ 0 ] = 0;
-		old_texture[ 0 ] = 0;
-		new_texture[ 0 ] = 0;
-	}
 } texture_replace;
 
-extern texture_replace *Fred_texture_replacements;
+extern SCP_vector<texture_replace> Fred_texture_replacements;
 
 typedef struct alt_class {
 	int ship_class;				
@@ -357,7 +343,9 @@ typedef struct alt_class {
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to
 // be copied into the real object, ship, etc. structs
-typedef struct p_object {
+class p_object
+{
+public:
 	char	name[NAME_LENGTH];
 	p_object *next, *prev;
 
@@ -448,103 +436,9 @@ typedef struct p_object {
 
 	int alt_iff_color[MAX_IFFS][MAX_IFFS];
 
-	void Reset( )
-	{
-		int i = 0;
-
-		name[ 0 ] = '\0';
-
-		next = NULL;
-		prev = NULL;
-
-		memset( &pos, 0, sizeof( pos ) );
-		memset( &orient, 0, sizeof( orient ) );
-		ship_class = 0;
-		team = 0;
-		behavior = 0;
-		ai_goals = 0;
-		cargo1 = 0;
-
-		status_count = 0;
-		for ( i = 0; i < MAX_OBJECT_STATUS; i++ )
-		{
-			status_type[ i ] = 0;
-			status[ i ] = 0;
-			target[ i ] = 0;
-		}
-
-		subsys_index = 0;
-		subsys_count = 0;
-		initial_velocity = 0;
-		initial_hull = 0;
-		initial_shields = 0;
-		arrival_location = 0;
-		arrival_distance = 0;
-		arrival_anchor = 0;
-		arrival_path_mask = 0;
-		arrival_cue = 0;
-		arrival_delay = 0;
-		departure_location = 0;
-		departure_anchor = 0;
-		departure_path_mask = 0;
-		departure_cue = 0;
-		departure_delay = 0;
-
-		misc[ 0 ] = '\0';
-
-		wingnum = 0;
-		pos_in_wing = 0;
-
-		flags = 0;
-		flags2 = 0;
-		escort_priority = 0;
-		ai_class = 0;
-		hotkey = 0;
-		score = 0;
-		assist_score_pct = 0.;
-		orders_accepted = 0;
-		dock_list = NULL;
-		created_object = NULL;
-		group = 0;
-		persona_index = 0;
-		kamikaze_damage = 0;
-		use_special_explosion = false;
-		special_exp_damage = -1;
-		special_exp_blast = -1;
-		special_exp_inner = -1;
-		special_exp_outer = -1;
-		use_shockwave = false;
-		special_exp_shockwave_speed = -1;
-		special_exp_deathroll_time = 0;
-
-		special_hitpoints = 0;
-		special_shield = -1;
-
-		net_signature = 0;
-		destroy_before_mission_time = 0;
-
-		wing_status_wing_index = 0;
-		wing_status_wing_pos = 0;
-
-		respawn_count = 0;
-		respawn_priority = 0;
-
-		alt_type_index = 0;
-		callsign_index = 0;
-
-		ship_max_hull_strength = 0.0f;
-		ship_max_shield_strength = 0.0f;
-
-		num_texture_replacements = 0;
-		
-		for ( i = 0; i < MAX_REPLACEMENT_TEXTURES; i++ )
-			replacement_textures[ i ].Reset( );
-
-		alt_classes.clear( );	
-
-		memset( alt_iff_color, 0, sizeof( alt_iff_color ) );
-	}
-} p_object;
+	p_object();
+	~p_object();
+};
 
 // defines for flags used for p_objects when they are created.  Used to help create special
 // circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
@@ -668,7 +562,7 @@ extern int Num_teams;
 
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;
-extern p_object	Player_start_pobject;
+extern p_object	*Player_start_pobject;
 
 extern int Mission_palette;  // index of palette file to use for mission
 extern int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.

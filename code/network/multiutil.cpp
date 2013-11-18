@@ -1605,7 +1605,7 @@ void multi_create_standalone_object()
 	Net_player->m_player->objnum = objnum;
 
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
-	pobj_num = parse_create_object(&Player_start_pobject);
+	pobj_num = parse_create_object(Player_start_pobject);
 	Assert(pobj_num != -1);
 	obj_set_flags(&Objects[pobj_num],OF_PLAYER_SHIP);
 	Objects[pobj_num].net_signature = STANDALONE_SHIP_SIG;

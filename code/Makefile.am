@@ -185,7 +185,7 @@ EXTRA_DIST =	\
 
 # D_ variants are defaults and should always be used
 # FS2_ variants are for game building and wxFRED
-AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@
+AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@ -I../mongoose
 AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 
 if BUILD_WXFRED
@@ -818,8 +818,8 @@ fs2_open_@PACKAGE_VERSION@_DEBUG_SOURCES =	\
 fs2_open_@PACKAGE_VERSION@_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a
-fs2_open_@PACKAGE_VERSION@_LDADD = libcode.a
+fs2_open_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a ../mongoose/libmongoose.a
+fs2_open_@PACKAGE_VERSION@_LDADD = libcode.a ../mongoose/libmongoose.a
 
 ##
 ## End MAIN binary

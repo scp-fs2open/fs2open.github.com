@@ -1380,7 +1380,7 @@ void brief_check_for_anim()
 
 	for ( i = 0; i < bs->num_icons; i++ ) {
 		bi = &bs->icons[i];
-		brief_common_get_icon_dimensions(&iw, &ih, bi->type, bi->ship_class);
+		brief_common_get_icon_dimensions(&iw, &ih, bi);
 		if ( mx < bi->x ) continue;
 		if ( mx > (bi->x + iw) ) continue;
 		if ( my < bi->y ) continue;

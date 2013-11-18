@@ -948,10 +948,10 @@ void mission_process_event( int event )
 		if (Sexp_useful_number){
 			Mission_events[event].flags |= MEF_CURRENT;
 		}
-	}
 
-	if ((Mission_events[event].mission_log_flags != 0) || Snapshot_all_events ){
-		maybe_write_to_event_log(result);
+		if ((Mission_events[event].mission_log_flags != 0) || Snapshot_all_events){
+			maybe_write_to_event_log(result);
+		}
 	}
 
 	Event_index = -1;

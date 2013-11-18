@@ -1495,10 +1495,10 @@ void snd_aav_init()
 
 uint nextSignature = 0;
 
-game_snd::game_snd() : name ( SCP_string("") ), default_volume( 0 ),
-	preload( false ), id( -1 ), id_sig( -1 ), flags( 0 ), signature( nextSignature++ )
-	{
-		filename[0] = 0;
-		min = 0;
-		max = 0;
-	}
+game_snd::game_snd()
+	: name ( "" ), signature( nextSignature++ ), default_volume( 0 ), preload( false ), id( -1 ), id_sig( -1 ), flags( 0 )
+{
+	filename[0] = 0;
+	min = 0;
+	max = 0;
+}

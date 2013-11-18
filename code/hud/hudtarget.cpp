@@ -3981,9 +3981,16 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		vm_vec_add2(&source_pos, &gun_point);
 	} 
 	
-	// Determine "accurate" distance to target.  This is the distance from the player ship
-	// to the closest point on the bounding box of the target
-	dist_to_target = hud_find_target_distance(targetp, Player_obj);
+	// Determine "accurate" distance to target.
+	// This is the distance from the player ship to:
+	//   (if targeting a subsystem) the distance to the subsystem centre
+	//     (playing it safe, will usually be in range at slightly further away due to subsys radius)
+	//   (otherwise) the closest point on the bounding box of the target
+	if ( Player_ai->targeted_subsys != NULL ) {
+		dist_to_target = vm_vec_dist(&target_pos, &Player_obj->pos);
+	} else {
+		dist_to_target = hud_find_target_distance(targetp, Player_obj);
+	}
 
 	srange = ship_get_secondary_weapon_range(Player_ship);
 
@@ -5674,7 +5681,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				delta_y = clip_h;
 			}
 
-			hud_num_make_mono(buf);
+			hud_num_make_mono(buf, font_num);
 
 			if ( Text_alignment ) {
 				gr_get_string_size(&w, &h, buf);
@@ -6018,7 +6025,7 @@ void HudGaugeWeapons::render(float frametime)
 			// get rid of #
 			end_string_at_first_hash_symbol(ammo_str);
 
-			hud_num_make_mono(ammo_str);
+			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
 
 			renderString(position[0] + Weapon_pammo_offset_x - w, name_y, EG_NULL, ammo_str);
@@ -6094,7 +6101,7 @@ void HudGaugeWeapons::render(float frametime)
 	
 		// print out the ammo right justified
 		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str);
+		hud_num_make_mono(ammo_str, font_num);
 		gr_get_string_size(&w, &h, ammo_str);
 
 		renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);		
@@ -6414,8 +6421,6 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	if (outcoords != NULL) {
 		outcoords->x = xpos;
 		outcoords->y = ypos;
-
-		gr_resize_screen_posf(&outcoords->x, &outcoords->y);
 	}
 
 	gr_reset_screen_scale();
@@ -6456,7 +6461,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 
 	if (displayed_distance > 0.0f) {
 		sprintf(buf, "%d", fl2i(displayed_distance + 0.5f));
-		hud_num_make_mono(buf);
+		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);	
 	} else {
 		buf[0] = 0;
@@ -6641,7 +6646,7 @@ void HudGaugeWarheadCount::render(float frametime)
 		char ammo_str[32];
 
 		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str);
+		hud_num_make_mono(ammo_str, font_num);
 
 		if ( Text_align ) {
 			int w, h;
@@ -6879,7 +6884,7 @@ void HudGaugePrimaryWeapons::render(float frametime)
 			// get rid of #
 			end_string_at_first_hash_symbol(ammo_str);
 
-			hud_num_make_mono(ammo_str);
+			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
 
 			renderString(position[0] + _pammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
@@ -7002,7 +7007,7 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 
 		// print out the ammo right justified
 		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str);
+		hud_num_make_mono(ammo_str, font_num);
 		gr_get_string_size(&w, &h, ammo_str);
 
 		renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);

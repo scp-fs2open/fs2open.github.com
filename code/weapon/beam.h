@@ -19,8 +19,8 @@
 #include "globalincs/globals.h"
 
 // prototypes
-struct object;
-struct ship_subsys;
+class object;
+class ship_subsys;
 struct obj_pair;
 struct beam_weapon_info;
 struct vec3d;

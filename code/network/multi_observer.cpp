@@ -133,7 +133,7 @@ void multi_obs_create_observer_client()
 	Player_obj = &Objects[Net_player->m_player->objnum];
 	
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
-	pobj_num = parse_create_object(&Player_start_pobject);
+	pobj_num = parse_create_object(Player_start_pobject);
 	Assert(pobj_num != -1);
 	obj_set_flags(&Objects[pobj_num],OF_PLAYER_SHIP);
 	Player_ship = &Ships[Objects[pobj_num].instance];

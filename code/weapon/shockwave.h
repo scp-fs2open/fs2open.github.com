@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 
-struct object;
+class object;
 
 #define	SW_USED				(1<<0)
 #define	SW_WEAPON			(1<<1)
