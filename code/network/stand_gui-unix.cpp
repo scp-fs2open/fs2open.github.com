@@ -866,6 +866,29 @@ void std_do_gui_frame() {
     webapiExecuteCommands();
 }
 
+// set the game name for the standalone. passing NULL uses the default
+void std_connect_set_gamename(char *name)
+{
+	// use the default name for now
+	if(name == NULL){
+		// if a permanent name exists, use that instead of the default
+		if(strlen(Multi_options_g.std_pname)){
+			strcpy_s(Netgame.name, Multi_options_g.std_pname);
+		} else {
+			strcpy_s(Netgame.name,XSTR("Standalone Server",916));
+		}
+	} else {
+		strcpy_s(Netgame.name,name);
+        
+		// update fs2netd
+		if (MULTI_IS_TRACKER_GAME) {
+			fs2netd_gameserver_disconnect();
+			Sleep(50);
+			fs2netd_gameserver_start();
+		}
+	}
+}
+
 /**
  * Unused methods from the original API below,
  * most of this stuff is now done in std_do_gui_frame
@@ -879,7 +902,6 @@ void std_update_player_ping(net_player *p) {}
 void std_multi_setup_goal_tree() {}
 void std_multi_add_goals() {}
 void std_multi_update_goals() {}
-void std_connect_set_gamename(char *name) {}
 void std_multi_update_netgame_info_controls() {}
 void std_multi_set_standalone_mission_name(char *mission_name) {}
 void std_gen_set_text(char *str, int field_num) {}
