@@ -35,7 +35,7 @@ typedef struct medal_stuff {
 
 	//If this is a badge (kills_needed > 0)
 	char voice_base[MAX_FILENAME_LEN];
-	char *promotion_text;
+	SCP_map<int, char*> promotion_text;
 
 	medal_stuff() {
 		name[0] = '\0';
@@ -45,14 +45,17 @@ typedef struct medal_stuff {
 		version_starts_at_1 = false;
 		kills_needed = 0;
 		voice_base[0] = '\0';
-		promotion_text = NULL;
+		promotion_text.clear();
 	}
 
 	~medal_stuff() {
-		if (promotion_text) {
-			vm_free(promotion_text);
-			promotion_text = NULL;
+		SCP_map<int, char*>::iterator it;
+		for (it = promotion_text.begin(); it != promotion_text.end(); it++) {
+			if (it->second) {
+				vm_free(it->second);
+			}
 		}
+		promotion_text.clear();
 	}
 
 	medal_stuff(const medal_stuff &m) { clone(m); }

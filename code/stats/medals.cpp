@@ -190,20 +190,26 @@ void medal_stuff::clone(const medal_stuff &m)
 	kills_needed = m.kills_needed;
 	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
 
-	if (m.promotion_text)
-		promotion_text = vm_strdup(m.promotion_text);
-	else
-		promotion_text = NULL;
+	promotion_text.clear();
+	SCP_map<int, char*>::const_iterator it;
+	for (it = m.promotion_text.begin(); it != m.promotion_text.end(); it++) {
+		if (it->second) {
+			promotion_text[it->first] = vm_strdup(it->second);
+		}
+	}
 }
 
 // assignment operator
 const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
 {
 	if (this != &m) {
-		if (promotion_text) {
-			vm_free(promotion_text);
-			promotion_text = NULL;
+		SCP_map<int, char*>::iterator it;
+		for (it = promotion_text.begin(); it != promotion_text.end(); it++) {
+			if (it->second) {
+				vm_free(it->second);
+			}
 		}
+		promotion_text.clear();
 		clone(m);
 	}
 
@@ -340,6 +346,7 @@ void parse_medal_tbl()
 		// this medal is a badge and should be treated specially
 		if ( optional_string("+Num Kills:") ) {
 			char buf[MULTITEXT_LENGTH];
+			int persona;
 			stuff_int( &temp_medal.kills_needed );
 
 			if (optional_string("$Wavefile 1:"))
@@ -351,9 +358,23 @@ void parse_medal_tbl()
 			if (optional_string("$Wavefile Base:"))
 				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
 
-			required_string("$Promotion Text:");
-			stuff_string(buf, F_MULTITEXT, sizeof(buf));
-			temp_medal.promotion_text = vm_strdup(buf);
+			while (check_for_string("$Promotion Text:")) {
+				required_string("$Promotion Text:");
+				stuff_string(buf, F_MULTITEXT, sizeof(buf));
+				persona = -1;
+				if (optional_string("+Persona:")) {
+					stuff_int(&persona);
+					if (persona < 0) {
+						Warning(LOCATION, "Debriefing text for %s is assigned to an invalid persona: %i (must be 0 or greater).\n", temp_medal.name, persona);
+						continue;
+					}
+				}
+				temp_medal.promotion_text[persona] = vm_strdup(buf);
+			}
+			if (temp_medal.promotion_text.find(-1) == temp_medal.promotion_text.end()) {
+				Warning(LOCATION, "%s medal is missing default debriefing text.\n", temp_medal.name);
+				temp_medal.promotion_text[-1] = "";
+			}
 		}
 
 		Medals.push_back(temp_medal);

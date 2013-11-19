@@ -58,7 +58,7 @@ void parse_rank_tbl()
 {
 	atexit(scoreing_close);
 	char buf[MULTITEXT_LENGTH];
-	int rval, idx;
+	int rval, idx, persona;
 
 	// open localization
 	lcl_ext_open();
@@ -86,11 +86,25 @@ void parse_rank_tbl()
 		stuff_string( Ranks[idx].bitmap, F_NAME, MAX_FILENAME_LEN );
 		required_string("$Promotion Voice Base:");
 		stuff_string( Ranks[idx].promotion_voice_base, F_NAME, MAX_FILENAME_LEN );
-		required_string("$Promotion Text:");
-		stuff_string(buf, F_MULTITEXT, sizeof(buf));
-		drop_white_space(buf);
-		compact_multitext_string(buf);
-		Ranks[idx].promotion_text = vm_strdup(buf);
+		while (check_for_string("$Promotion Text:")) {
+			required_string("$Promotion Text:");
+			stuff_string(buf, F_MULTITEXT, sizeof(buf));
+			drop_white_space(buf);
+			compact_multitext_string(buf);
+			persona = -1;
+			if (optional_string("+Persona:")) {
+				stuff_int(&persona);
+				if (persona < 0) {
+					Warning(LOCATION, "Debriefing text for %s rank is assigned to an invalid persona: %i (must be 0 or greater).\n", Ranks[idx].name, persona);
+					continue;
+				}
+			}
+			Ranks[idx].promotion_text[persona] = vm_strdup(buf);
+		}
+		if (Ranks[idx].promotion_text.find(-1) == Ranks[idx].promotion_text.end()) {
+			Warning(LOCATION, "%s rank is missing default debriefing text.\n", Ranks[idx].name);
+			Ranks[idx].promotion_text[-1] = "";
+		}
 		idx++;
 	}
 
@@ -1513,8 +1527,13 @@ DCF(rank, "changes scoring vars")
 
 void scoreing_close()
 {
+	SCP_map<int, char*>::iterator it;
 	for(int i = 0; i<NUM_RANKS; i++) {
-		if(Ranks[i].promotion_text)
-			vm_free(Ranks[i].promotion_text);
+		for (it = Ranks[i].promotion_text.begin(); it != Ranks[i].promotion_text.end(); it++) {
+			if (it->second) {
+				vm_free(it->second);
+			}
+		}
+		Ranks[i].promotion_text.clear();
 	}
 }
