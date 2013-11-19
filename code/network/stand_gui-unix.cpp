@@ -418,6 +418,11 @@ json_t* serverPut(ResourceContext *context) {
     if (passwd) {
         strcpy(Multi_options_g.std_passwd, passwd);
     }
+    int framecap = atoi(json_string_value(json_object_get(context->requestEntity, "framecap")));
+    if (framecap)
+    {
+        Multi_options_g.std_framecap = framecap;
+    }
 
     return json_object();
 }
