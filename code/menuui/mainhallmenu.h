@@ -107,7 +107,7 @@ typedef struct main_hall_defines {
 
 } main_hall_defines;
 
-extern SCP_vector<SCP_vector<main_hall_defines>> Main_hall_defines;
+extern SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
 
 
 // initialize the main hall proper 

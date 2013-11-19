@@ -53,7 +53,7 @@
 #define MISC_ANIM_MODE_TIMED		2		// uses timestamps to determine when a finished anim should be checked again
 #define NUM_REGIONS					7		// (6 + 1 for multiplayer equivalent of campaign room)
 
-SCP_vector<SCP_vector<main_hall_defines>> Main_hall_defines;
+SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
 
 main_hall_defines *Main_hall = NULL;
 
