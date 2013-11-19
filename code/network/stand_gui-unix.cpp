@@ -405,7 +405,14 @@ json_t* serverGet(ResourceContext *context) {
 json_t* serverPut(ResourceContext *context) {
     const char* name = json_string_value(json_object_get(context->requestEntity, "name"));
     if (name) {
+        strcpy(Netgame.name, name);
         strcpy(Multi_options_g.std_pname, name);
+        // update fs2netd with the info
+        if (MULTI_IS_TRACKER_GAME) {
+            fs2netd_gameserver_disconnect();
+            Sleep(50);
+            fs2netd_gameserver_start();
+        }
     }
     const char* passwd = json_string_value(json_object_get(context->requestEntity, "password"));
     if (passwd) {
