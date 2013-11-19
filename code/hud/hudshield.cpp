@@ -279,6 +279,8 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
+	Assert(objp->type == OBJ_SHIP);
+
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	float	xfer_amount, energy_avail, percent_to_take, delta;
@@ -294,7 +296,6 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	}
 
 	Assert(direction >= 0 && direction < objp->n_quadrants);
-	Assert(objp->type == OBJ_SHIP);
 	
 	xfer_amount = shipp->ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
 	max_quadrant_val = get_max_shield_quad(objp);
@@ -428,11 +429,11 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
-		if ( objp->flags & OF_NO_SHIELDS ) {
+		if ( objp->flags & OF_NO_SHIELDS || i >= DEFAULT_SHIELD_SECTIONS) {
 			break;
 		}
 
-		if ( Quadrant_xlate[i] > objp->n_quadrants || objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		if (objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
@@ -721,9 +722,12 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			break;
 		}
 
-		if ( !(sip->flags2 & SIF2_SHIELD_POINTS) && objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
-			continue;
-		}
+		if ( !(sip->flags2 & SIF2_SHIELD_POINTS) )
+			if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f )
+				continue;
+		else
+			if ( objp->shield_quadrant[i] < 0.1f )
+				continue;
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
 

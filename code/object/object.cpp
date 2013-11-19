@@ -129,7 +129,7 @@ void object::clear()
 	orient = last_orient = vmd_identity_matrix;
 	radius = hull_strength = sim_hull_strength = 0.0f;
 	physics_init( &phys_info );
-	memset(shield_quadrant, 0, MAX_SHIELD_SECTIONS * sizeof(float));
+	shield_quadrant.clear();
 	objsnd_num.clear();
 	net_signature = 0;
 
