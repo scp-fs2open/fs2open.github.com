@@ -5086,7 +5086,7 @@ void ship::clear()
 
 	tag_total = 0.0f;
 	tag_left = -1.0f;
-	time_first_tagged = -1;
+	time_first_tagged = 0;
 	level2_tag_total = 0.0f;
 	level2_tag_left = -1.0f;
 
@@ -5300,8 +5300,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
 	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
 	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
-
-	polymodel *pm = model_get(sip->model_num);
 
 	if(pm != NULL && pm->n_view_positions > 0)
 		ship_set_eye(objp, 0);
@@ -9118,14 +9116,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		sip->flags |= SIF_PATH_FIXUP;
 	}
 
-	// reset the damage record fields (for scoring purposes)
-	shipp->total_damage_received = 0.0f;
-	for(i=0;i<MAX_DAMAGE_SLOTS;i++)
-	{
-		shipp->damage_ship[i] = 0.0f;
-		shipp->damage_ship_id[i] = -1;
-	}
-
 	// Add this ship to Ship_obj_list
 	shipp->ship_list_index = ship_obj_list_add(objnum);
 
@@ -11267,7 +11257,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			}
 		}
 	}
-
 
 
 

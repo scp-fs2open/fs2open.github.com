@@ -4018,7 +4018,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			// maybe localize
 			if (Lcl_gr)
 			{
-				strncpy(buf, (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name, NAME_LENGTH);
+				strcpy_s(buf, (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name);
 				lcl_translate_wep_name_gr(buf);
 				wep_display_name = buf;
 			}

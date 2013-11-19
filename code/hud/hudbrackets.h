@@ -15,8 +15,11 @@
 #include "hud/hud.h"
 
 void hud_init_brackets();
+// two unused functions, candidates for removal?
+#if 0
 void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, int h_correction, float distance=0.0f, int target_objnum=-1);
 void draw_bounding_brackets_subobject();
+#endif
 void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize = true);
 void draw_brackets_diamond(int x1, int y1, int x2, int y2);
 void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick=0);

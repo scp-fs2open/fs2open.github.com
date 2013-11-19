@@ -3764,6 +3764,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 				pint = va_arg(ap, int *);
 				Assert(pint != NULL);
 				*pint = dest.length();
+				break;
 			}
 			case '%':
 			{

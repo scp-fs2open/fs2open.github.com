@@ -15,6 +15,7 @@
 #include "hud/hudbrackets.h"
 #include "hud/hudescort.h"
 #include "hud/hudconfig.h"
+#include "hud/hudets.h"
 #include "hud/hudgauges.h"
 #include "hud/hudets.h"
 #include "iff_defs/iff_defs.h"
@@ -8799,21 +8800,55 @@ ADE_VIRTVAR(Gliding, l_Ship, "boolean", "Specifies whether this ship is currentl
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", "Ship orders, or invalid handle if ship handle is invalid")
+ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Engine index value, 0 to MAX_ENERGY_INDEX")
 {
-	object_h *objh;
-	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_ShipOrders.GetPtr(&objh)))
-		return ade_set_error(L, "o", l_ShipOrders.Set(object_h()));
+	object_h *objh=NULL;
+	int ets_idx = 0;
 
-	if(!objh->IsValid())
-		return ade_set_error(L, "o", l_ShipOrders.Set(object_h()));;
+	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &ets_idx))
+		return ade_set_error(L, "i", 0);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR)
-	{
-		LuaError(L, "Attempted to use incomplete feature: Ai orders copy. Use giveOrder instead");
-	}
+		LuaError(L, "Attempted to set incomplete feature: ETS Engine Index (see EtsSetIndexes)");
 
-	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp)));
+	return ade_set_args(L, "i", Ships[objh->objp->instance].engine_recharge_index);
+}
+
+ADE_VIRTVAR(EtsShieldIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Shield index value, 0 to MAX_ENERGY_INDEX")
+{
+	object_h *objh=NULL;
+	int ets_idx = 0;
+
+	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &ets_idx))
+		return ade_set_error(L, "i", 0);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	if(ADE_SETTING_VAR)
+		LuaError(L, "Attempted to set incomplete feature: ETS Shield Index (see EtsSetIndexes)");
+
+	return ade_set_args(L, "i", Ships[objh->objp->instance].shield_recharge_index);
+}
+
+ADE_VIRTVAR(EtsWeaponIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Weapon index value, 0 to MAX_ENERGY_INDEX")
+{
+	object_h *objh=NULL;
+	int ets_idx = 0;
+
+	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &ets_idx))
+		return ade_set_error(L, "i", 0);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	if(ADE_SETTING_VAR)
+		LuaError(L, "Attempted to set incomplete feature: ETS Weapon Index (see EtsSetIndexes)");
+
+	return ade_set_args(L, "i", Ships[objh->objp->instance].weapon_recharge_index);
 }
 
 ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct", "boolean", "True if successful, false or nil otherwise")
@@ -9492,6 +9527,33 @@ ADE_FUNC(getMaximumSpeed, l_Ship, "[number energy = 0.333]", "Gets the maximum s
 	else
 	{
 		return ade_set_args(L, "f", ets_get_max_speed(objh->objp, energy));
+	}
+}
+
+ADE_FUNC(EtsSetIndexes, l_Ship, "number Engine Index, number Shield Index, number Weapon Index",
+		"Sets ships ETS systems to specified values",
+		"boolean",
+		"True if successful, false if target ships ETS was missing, or only has one system")
+{
+	object_h *objh=NULL;
+	int ets_idx[num_retail_ets_gauges] = {0};
+
+	if (!ade_get_args(L, "oiii", l_Ship.GetPtr(&objh), &ets_idx[ENGINES], &ets_idx[SHIELDS], &ets_idx[WEAPONS]))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	sanity_check_ets_inputs(ets_idx);
+
+	int sindex = objh->objp->instance;
+	if (validate_ship_ets_indxes(sindex, ets_idx)) {
+		Ships[sindex].engine_recharge_index = ets_idx[ENGINES];
+		Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
+		Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
+		return ADE_RETURN_TRUE;
+	} else {
+		return ADE_RETURN_FALSE;
 	}
 }
 

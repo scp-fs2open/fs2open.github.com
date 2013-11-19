@@ -2405,13 +2405,17 @@ DWORD standalone_process(WORD lparam)
 	return 0;
 }
 
+void std_init_os()
+{
+	os_init_registry_stuff(Osreg_company_name, Osreg_app_name,NULL);
+}
+
+
 // called when freespace initialized
 void std_init_standalone()
 {
 	// start the main thread
 	Standalone_thread = CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)standalone_process, NULL, 0, &Standalone_thread_id );
-
-	os_init_registry_stuff(Osreg_company_name, Osreg_app_name,NULL);
 	
 	// set the close functions
 	atexit(std_deinit_standalone);

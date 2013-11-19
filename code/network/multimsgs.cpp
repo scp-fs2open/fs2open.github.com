@@ -6421,6 +6421,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 			idx += MAX_SHIPS_PER_PACKET; 
 		}
 
+		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
 		ADD_USHORT( (ushort)Num_medals );
 
 		// medal information
@@ -6532,8 +6533,8 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	scoring_struct *sc,bogus;
 	short player_id;
 	int offset = HEADER_LENGTH;
-	ushort u_tmp;
-	int i_tmp, num_medals;
+	ushort u_tmp, num_medals;
+	int i_tmp;
 
 	// nprintf(("Network","----------++++++++++********RECEIVED STATS***********+++++++++----------\n"));
 

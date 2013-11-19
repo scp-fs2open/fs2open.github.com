@@ -15,7 +15,7 @@
 #include "hud/hudtargetbox.h"
 
 
-extern void hud_target_show_dist_on_bracket(int x, int y, float distance);
+extern void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num);
 extern void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick);
 
 /**

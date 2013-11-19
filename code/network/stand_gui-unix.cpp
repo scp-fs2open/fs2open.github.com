@@ -11,7 +11,7 @@
 #include <cstddef>
 
 // Copy-Paste from http://www.cplusplus.com/faq/sequences/strings/split/#c-tokenizer
-struct split {
+struct split_struct {
     enum empties_t {
         empties_ok, no_empties
     };
@@ -19,12 +19,12 @@ struct split {
 
 template<typename Container>
 Container& split(Container& result, const typename Container::value_type& s,
-        const typename Container::value_type& delimiters, split::empties_t empties = split::empties_ok) {
+        const typename Container::value_type& delimiters, split_struct::empties_t empties = split_struct::empties_ok) {
     result.clear();
     size_t current;
     size_t next = -1;
     do {
-        if (empties == split::no_empties) {
+        if (empties == split_struct::no_empties) {
             next = s.find_first_not_of(delimiters, next + 1);
             if (next == Container::value_type::npos)
                 break;
@@ -272,7 +272,6 @@ void webapiExecuteCommands() {
     for (SCP_vector<WebapiCommand*>::iterator iter = webapiCommandQueue.begin(); iter != webapiCommandQueue.end();
             ++iter) {
         (*iter)->execute();
-        free(*iter);
     }
 
     webapiCommandQueue.clear();
@@ -406,11 +405,23 @@ json_t* serverGet(ResourceContext *context) {
 json_t* serverPut(ResourceContext *context) {
     const char* name = json_string_value(json_object_get(context->requestEntity, "name"));
     if (name) {
+        strcpy(Netgame.name, name);
         strcpy(Multi_options_g.std_pname, name);
+        // update fs2netd with the info
+        if (MULTI_IS_TRACKER_GAME) {
+            fs2netd_gameserver_disconnect();
+            Sleep(50);
+            fs2netd_gameserver_start();
+        }
     }
     const char* passwd = json_string_value(json_object_get(context->requestEntity, "password"));
     if (passwd) {
         strcpy(Multi_options_g.std_passwd, passwd);
+    }
+    int framecap = atoi(json_string_value(json_object_get(context->requestEntity, "framecap")));
+    if (framecap)
+    {
+        Multi_options_g.std_framecap = framecap;
     }
 
     return json_object();
@@ -660,7 +671,7 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
 
     resourcePath.erase(0, 1);
     SCP_vector<SCP_string> pathParts;
-    split(pathParts, resourcePath, "/", split::no_empties);
+    split(pathParts, resourcePath, "/", split_struct::no_empties);
 
     json_t *result = NULL;
 
@@ -669,7 +680,7 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
     for (size_t i = 0; i < ARRAY_SIZE(resources); i++) {
         Resource* r = &resources[i];
         SCP_vector<SCP_string> resourcePathParts;
-        split(resourcePathParts, r->path, "/", split::no_empties);
+        split(resourcePathParts, r->path, "/", split_struct::no_empties);
 
         if (resourcePathParts.size() == pathParts.size()) {
             ResourceContext context;
@@ -706,13 +717,13 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
                 if (ri->query_string) {
                     SCP_string query(ri->query_string);
                     SCP_vector<SCP_string> queryPairs;
-                    split(queryPairs, query, "&", split::no_empties);
+                    split(queryPairs, query, "&", split_struct::no_empties);
 
                     for (SCP_vector<SCP_string>::const_iterator iter = queryPairs.begin(); iter != queryPairs.end();
                             ++iter) {
                         SCP_vector<SCP_string> temp;
 
-                        split(temp, *iter, "=", split::no_empties);
+                        split(temp, *iter, "=", split_struct::no_empties);
 
                         if (temp.size() == 2) {
                             context.parameters[temp[0]] = temp[1];
@@ -806,7 +817,7 @@ void std_add_chat_text(const char *text, int player_index, int add_id) {
 void std_debug_multilog_add_line(const char *str) {
 
     SCP_vector<SCP_string> debugMessages;
-    split(debugMessages, SCP_string(str), "\n", split::no_empties);
+    split(debugMessages, SCP_string(str), "\n", split_struct::no_empties);
 
     for (SCP_vector<SCP_string>::const_iterator iter = debugMessages.begin(); iter != debugMessages.end(); ++iter) {
         json_t *msg = json_object();
@@ -867,6 +878,29 @@ void std_do_gui_frame() {
     webapiExecuteCommands();
 }
 
+// set the game name for the standalone. passing NULL uses the default
+void std_connect_set_gamename(char *name)
+{
+	// use the default name for now
+	if(name == NULL){
+		// if a permanent name exists, use that instead of the default
+		if(strlen(Multi_options_g.std_pname)){
+			strcpy_s(Netgame.name, Multi_options_g.std_pname);
+		} else {
+			strcpy_s(Netgame.name,XSTR("Standalone Server",916));
+		}
+	} else {
+		strcpy_s(Netgame.name,name);
+        
+		// update fs2netd
+		if (MULTI_IS_TRACKER_GAME) {
+			fs2netd_gameserver_disconnect();
+			Sleep(50);
+			fs2netd_gameserver_start();
+		}
+	}
+}
+
 /**
  * Unused methods from the original API below,
  * most of this stuff is now done in std_do_gui_frame
@@ -880,7 +914,6 @@ void std_update_player_ping(net_player *p) {}
 void std_multi_setup_goal_tree() {}
 void std_multi_add_goals() {}
 void std_multi_update_goals() {}
-void std_connect_set_gamename(char *name) {}
 void std_multi_update_netgame_info_controls() {}
 void std_multi_set_standalone_mission_name(char *mission_name) {}
 void std_gen_set_text(char *str, int field_num) {}
@@ -891,5 +924,8 @@ void std_debug_set_standalone_state_string(char *str) {}
 void std_reset_standalone_gui() {}
 void std_reset_timestamps() {}
 void std_multi_set_standalone_missiontime(float mission_time) {}
+
+// stub - not required for *nix standalone
+void std_init_os() {}
 
 #endif

@@ -235,7 +235,7 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0, int n_list_ver
 			Interp_verts = NULL;
 		}
 		// Interp_verts can't be reliably realloc'd so free and malloc it on each resize (no data needs to be carried over)
-		Interp_verts = (vec3d**) vm_malloc( n_verts * sizeof(vec3d) );
+		Interp_verts = (vec3d**) vm_malloc( n_verts * sizeof(vec3d *) );
 
 		Interp_points = (vertex*) vm_realloc( Interp_points, n_verts * sizeof(vertex) );
 		Interp_splode_points = (vertex*) vm_realloc( Interp_splode_points, n_verts * sizeof(vertex) );
@@ -2224,7 +2224,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		// set the the necessary submodel instance info needed here. The second
 		// condition is thus a hack to disable the feature while in the lab, and
 		// can be removed if the lab is re-structured accordingly. -zookeeper
-		if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+		if ( shipp && bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
 			model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_num);
 
 			submodel_rotation = true;
@@ -2465,6 +2465,8 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					pe.max_rad = gpt->radius * tp->max_rad;
 					// How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 					pe.normal_variance = tp->variance;
+					pe.min_life = 0.0;
+					pe.max_life = 1.0;
 
 					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
@@ -3380,7 +3382,6 @@ static int submodel_get_points_internal(int model_num, int submodel_num)
 
 	while (chunk_type != OP_EOF)	{
 		switch (chunk_type) {
-		case OP_EOF: return 1;
 		case OP_DEFPOINTS:	{
 				int n;
 				int nverts = w(p+8);				
@@ -3535,7 +3536,6 @@ int submodel_get_num_verts(int model_num, int submodel_num )
 
 	while (chunk_type != OP_EOF)	{
 		switch (chunk_type) {
-		case OP_EOF: return 0;
 		case OP_DEFPOINTS:	{
 				int n=w(p+8);
 				return n;		// Read in 'n' points
@@ -3568,7 +3568,6 @@ int submodel_get_num_polys_sub( ubyte *p )
 	
 	while (chunk_type != OP_EOF)	{
 		switch (chunk_type) {
-		case OP_EOF:			return n;
 		case OP_DEFPOINTS:	break;
 		case OP_FLATPOLY:		n++; break;
 		case OP_TMAPPOLY:		n++; break;
@@ -3995,9 +3994,6 @@ void parse_bsp(int offset, ubyte *bsp_data)
 	while (id != 0) {
 		switch (id)
 		{
-			case OP_EOF:	
-				return;
-
 			case OP_DEFPOINTS:
 				parse_defpoint(offset, bsp_data);
 				break;
@@ -4089,9 +4085,6 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 	while (id != 0) {
 		switch (id)
 		{
-			case OP_EOF:	
-				return;
-
 			case OP_DEFPOINTS:
 				find_defpoint(offset, bsp_data);
 				break;
@@ -4190,8 +4183,8 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		total_verts += tri_count[i];
 
 		// for the moment we can only support INT_MAX worth of verts per index buffer
-		if (tri_count[i] > INT_MAX) {
-		    Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, tri_count[i], INT_MAX);
+		if (total_verts > INT_MAX) {
+			Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, total_verts, INT_MAX);
 		}
 	}
 
@@ -4773,9 +4766,6 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 		return 1;
 
 	object *obj = &Objects[objnum];
-
-	if (obj == NULL)
-		return 1;
 
 	if (obj->type == OBJ_SHIP) {
 		ship_subsys *ssp;

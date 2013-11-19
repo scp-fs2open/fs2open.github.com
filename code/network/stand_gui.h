@@ -187,6 +187,9 @@ void std_reset_standalone_gui();
 // reset all networking/gui stuff (calls reset_standalone_gui) for the standalone
 void std_multi_standalone_reset_all();
 
+// setup registry access, etc for the standalone
+void std_init_os();
+
 // close down the standalone
 void std_deinit_standalone();
 

@@ -368,7 +368,7 @@ public:
 	int		next_sibling;			// This submodel's next sibling, -1 if none
 
 	int		num_details;			// How many submodels are lower detail "mirrors" of this submodel
-	int		details[MAX_MODEL_DETAIL_LEVELS];	// An unordered list of all the lower detail "mirrors" of this submodel
+	int		details[MAX_MODEL_DETAIL_LEVELS];		// A list of all the lower detail "mirrors" of this submodel
 
 	// Electrical Arc Effect Info
 	// Sets a spark for this submodel between vertex v1 and v2	
@@ -1192,7 +1192,7 @@ typedef struct mst_info {
 	float distortion_length_factor;
 	bool draw_distortion;
 
-	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1),
+	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1), distortion_bitmap(-1),
 					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
 					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f), distortion_rad_factor(1.0f), distortion_length_factor(1.0f)
 				{}

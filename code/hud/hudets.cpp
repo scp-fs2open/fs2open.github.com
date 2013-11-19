@@ -23,32 +23,9 @@
 #include "object/object.h"
 #include "object/objectshield.h"
 #include "ship/subsysdamage.h"
-	
 
-#define ENERGY_DIVERT_DELTA				0.2f	// percentage of energy transferred in a shield->weapon or weapon->shield energy transfer
-#define INTIAL_SHIELD_RECHARGE_INDEX	4		// default shield charge rate (index in Energy_levels[])
-#define INTIAL_WEAPON_RECHARGE_INDEX	4		// default weapon charge rate (index in Energy_levels[])
-#define INTIAL_ENGINE_RECHARGE_INDEX	4		// default engine charge rate (index in Energy_levels[])
-
-//#define MAX_SHIELD_REGEN_PER_SECOND		0.02f	// max percent/100 of shield energy regenerated per second
-//#define MAX_WEAPON_REGEN_PER_SECOND		0.04f	// max percent/100 of weapon energy regenerated per second
-
-#define NUM_ENERGY_LEVELS	13		
-#define MAX_ENERGY_INDEX	(NUM_ENERGY_LEVELS - 1)
 float Energy_levels[NUM_ENERGY_LEVELS] = {0.0f,  0.0833f, 0.167f, 0.25f, 0.333f, 0.417f, 0.5f, 0.583f, 0.667f, 0.75f, 0.833f, 0.9167f, 1.0f};
-
-#define AI_MODIFY_ETS_INTERVAL 500	// time between ets modifications for ai's (in milliseconds)
-
 int Weapon_energy_cheat = 0;
-
-#define ZERO_INDEX			0
-#define ONE_THIRD_INDEX		4
-#define ONE_HALF_INDEX		6
-#define ALL_INDEX				12
-
-#define HAS_ENGINES			(1<<0)
-#define HAS_SHIELDS			(1<<1)
-#define HAS_WEAPONS			(1<<2)
 
 // -------------------------------------------------------------------------------------------------
 // ets_init_ship() is called by a ship when it is created (effectively, for every ship at the start
@@ -667,6 +644,138 @@ void transfer_energy_to_weapons(object* obj)
 	}
 
 	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, sinfo_p->max_weapon_reserve, 1.0f);
+}
+
+/**
+ * decrease one ets index to zero & adjust others up
+ */
+void zero_one_ets (int *reduce, int *add1, int *add2)
+{
+	int *tmp;
+	// add to the smallest index 1st
+	if (*add1 > *add2) {
+		tmp = add1;
+		add1 = add2;
+		add2 = tmp;
+	}
+	while (*reduce > ZERO_INDEX) {
+		if (*add1 < ALL_INDEX) {
+			++*add1;
+			--*reduce;
+		}
+
+		if (*reduce <= ZERO_INDEX) {
+			break;
+		}
+
+		if (*add2 < ALL_INDEX) {
+			++*add2;
+			--*reduce;
+		}
+	}
+}
+
+/**
+ * ensure input ETS indexs are valid.
+ * If not, "fix" them by moving outliers towards the middle index
+ */
+ void sanity_check_ets_inputs(int (&ets_indexes)[num_retail_ets_gauges])
+ {
+	int i;
+	int ets_delta = MAX_ENERGY_INDEX - ets_indexes[ENGINES] - ets_indexes[SHIELDS] - ets_indexes[WEAPONS];
+	if ( ets_delta != 0 ) {
+		if ( ets_delta > 0) { // add to lowest indexes
+			while ( ets_delta != 0 ) {
+				int lowest_val = MAX_ENERGY_INDEX;
+				int lowest_idx = 0;
+
+				for (i = 0; i < num_retail_ets_gauges; ++i) {
+					if (ets_indexes[i] <= lowest_val ) {
+						lowest_val = ets_indexes[i];
+						lowest_idx = i;
+					}
+				}
+				++ets_indexes[lowest_idx];
+				--ets_delta;
+			}
+		} else { // remove from highest indexes
+			while ( ets_delta != 0 ) {
+				int highest_val = 0;
+				int highest_idx = 0;
+
+				for (i = 0; i < num_retail_ets_gauges; ++i) {
+					if (ets_indexes[i] >= highest_val ) {
+						highest_val = ets_indexes[i];
+						highest_idx = i;
+					}
+				}
+				--ets_indexes[highest_idx];
+				++ets_delta;
+			}
+		}
+	}
+ }
+
+ /**
+  * adjust input ETS indexes to handle missing systems on the target ship
+  * return true if indexes are valid to be set
+  */
+bool validate_ship_ets_indxes(const int &ship_idx, int (&ets_indexes)[num_retail_ets_gauges])
+{
+	if (ship_idx < 0) {
+		return false;
+	}
+	if (Ships[ship_idx].objnum < 0) {
+		return false;
+	}
+	ship *ship_p = &Ships[ship_idx];
+
+	if (ship_p->flags2 & SF2_NO_ETS)
+		return false;
+
+	// handle ships that are missing parts of the ETS
+	int ship_properties = 0;
+	if (ship_has_energy_weapons(ship_p)) {
+		ship_properties |= HAS_WEAPONS;
+	}
+
+	if (!(Objects[ship_p->objnum].flags & OF_NO_SHIELDS)) {
+		ship_properties |= HAS_SHIELDS;
+	}
+
+	if (ship_has_engine_power(ship_p)) {
+		ship_properties |= HAS_ENGINES;
+	}
+
+	switch ( ship_properties ) {
+		case HAS_ENGINES | HAS_WEAPONS | HAS_SHIELDS:
+			// all present, don't change ets indexes
+			break;
+
+		case HAS_ENGINES | HAS_SHIELDS:
+			zero_one_ets(&ets_indexes[WEAPONS], &ets_indexes[ENGINES], &ets_indexes[SHIELDS]);
+			break;
+
+		case HAS_WEAPONS | HAS_SHIELDS:
+			zero_one_ets(&ets_indexes[ENGINES], &ets_indexes[SHIELDS], &ets_indexes[WEAPONS]);
+			break;
+
+		case HAS_ENGINES | HAS_WEAPONS:
+			zero_one_ets(&ets_indexes[SHIELDS], &ets_indexes[ENGINES], &ets_indexes[WEAPONS]);
+			break;
+
+		case HAS_ENGINES:
+		case HAS_SHIELDS:
+		case HAS_WEAPONS:
+			// can't change anything if only one is active on this ship
+			return false;
+			break;
+
+		default:
+			Error(LOCATION, "Encountered a ship (%s) with a broken ETS", ship_p->ship_name);
+			break;
+	}
+	return true;
 }
 
 HudGaugeEts::HudGaugeEts():

@@ -107,10 +107,11 @@ typedef struct main_hall_defines {
 
 } main_hall_defines;
 
-extern SCP_vector<SCP_vector<main_hall_defines> > Main_hall_defines;
+extern SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
+
 
 // initialize the main hall proper 
-void main_hall_init(SCP_string main_hall_name);
+void main_hall_init(const SCP_string &main_hall_name);
 
 // parse mainhall table files
 void main_hall_table_init();
@@ -133,16 +134,14 @@ void main_hall_stop_music();
 // get the music index
 int main_hall_get_music_index(int main_hall_num);
 
-main_hall_defines* main_hall_get_pointer(SCP_string name_to_find);
+main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find);
 
-int main_hall_get_index(SCP_string name_to_find);
+int main_hall_get_index(const SCP_string &name_to_find);
 
-SCP_string main_hall_get_name(unsigned int index);
+void main_hall_get_name(SCP_string &name, unsigned int index);
 
 // what main hall we're on
 int main_hall_id();
-
-SCP_string main_hall_name();
 
 // Vasudan?
 int main_hall_is_vasudan();

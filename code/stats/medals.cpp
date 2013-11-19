@@ -183,8 +183,8 @@ int Init_flags;
 void medal_stuff::clone(const medal_stuff &m)
 {
 	memcpy(name, m.name, NAME_LENGTH);
-	memcpy(bitmap, m.bitmap, NAME_LENGTH);
-	memcpy(debrief_bitmap, m.debrief_bitmap, NAME_LENGTH);
+	memcpy(bitmap, m.bitmap, MAX_FILENAME_LEN);
+	memcpy(debrief_bitmap, m.debrief_bitmap, MAX_FILENAME_LEN);
 	num_versions = m.num_versions;
 	version_starts_at_1 = m.version_starts_at_1;
 	kills_needed = m.kills_needed;
@@ -709,7 +709,7 @@ void init_medal_bitmaps()
 
 		if (Player_score->medal_counts[idx] > 0) {
 			int num_medals;
-			char filename[NAME_LENGTH], base[NAME_LENGTH];
+			char filename[MAX_FILENAME_LEN], base[MAX_FILENAME_LEN];
 
 			// possibly load a different filename that is specified by the bitmap filename
 			// for this medal.  if the player has > 1 of these types of medals, then determien
@@ -727,7 +727,7 @@ void init_medal_bitmaps()
 			if ( num_medals > 1 ) {
 				// append the proper character onto the end of the medal filename.  Base version
 				// has no character. next version is a, then b, etc.
-				char temp[NAME_LENGTH];
+				char temp[MAX_FILENAME_LEN];
 				strcpy_s(temp, base);
 				sprintf( base, "%s%c", temp, (num_medals-2)+'a');
 			}

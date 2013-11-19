@@ -29,16 +29,16 @@
 
 // current language
 int Lcl_current_lang = FS2_OPEN_DEFAULT_LANGUAGE;
-SCP_vector<lang_info> Lcl_languages; 
+SCP_vector<lang_info> Lcl_languages;
 
 // These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
 
 #define NUM_BUILTIN_LANGUAGES		4
 lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
-	{ "English",		"",		127,	589986744},				// English
-	{ "German",			"gr",	164,	-1132430286 },			// German
-	{ "French",			"fr",	164,	0 },					// French
-	{ "Polish",			"pl",	127,	},						// Polish
+	{ "English",		"",		{127,0,176,0,0},	589986744},				// English
+	{ "German",			"gr",	{164,0,176,0,0},	-1132430286 },			// German
+	{ "French",			"fr",	{164,0,176,0,0},	0 },					// French
+	{ "Polish",			"pl",	{127,0,176,0,0},	-1131728960},			// Polish
 };
 
 int Lcl_special_chars;
@@ -256,8 +256,17 @@ void parse_stringstbl_quick(const char *filename)
 			stuff_string(language.lang_name, F_NAME, LCL_LANG_NAME_LEN + 1);
 			required_string("+Extension:");
 			stuff_string(language.lang_ext, F_NAME, LCL_LANG_NAME_LEN + 1);
-			required_string("+Non-English Character Index:");
-			stuff_ubyte(&language.special_char_offset);
+			required_string("+Special Character Index:");
+			stuff_ubyte(&language.special_char_indexes[0]);
+			for (i = 1; i < MAX_FONTS; ++i) {
+				// default to "none"/0 except for font03 which defaults to 176
+				// NOTE: fonts.tbl may override these values
+				if (i == FONT3) {
+					language.special_char_indexes[i] = 176;
+				} else {
+					language.special_char_indexes[i] = 0;
+				}
+			}
 
 			lang_idx = -1;
 
@@ -265,7 +274,7 @@ void parse_stringstbl_quick(const char *filename)
 			for (i = 0; i < (int)Lcl_languages.size(); i++) {
 				if (!strcmp(Lcl_languages[i].lang_name, language.lang_name)) {
 					strcpy_s(Lcl_languages[i].lang_ext, language.lang_ext); 
-					Lcl_languages[i].special_char_offset = language.special_char_offset;
+					Lcl_languages[i].special_char_indexes[0] = language.special_char_indexes[0];
 					lang_idx = i;
 					break;
 				}
@@ -458,7 +467,7 @@ void lcl_set_language(int lang)
 	Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Attempt to set language to an invalid language");
 
 	// flag the proper language as being active
-	Lcl_special_chars = Lcl_languages[Lcl_current_lang].special_char_offset;
+	Lcl_special_chars = Lcl_languages[Lcl_current_lang].special_char_indexes[0];
 
 	// set to 0, so lcl_ext_open() knows to reset file pointers
 	Lcl_pointer_count = 0;
@@ -467,6 +476,14 @@ void lcl_set_language(int lang)
 	if(Lcl_current_lang != FS2_OPEN_DEFAULT_LANGUAGE){
 		lcl_ext_setup_pointers();
 	}
+}
+
+ubyte lcl_get_font_index(int font_num)
+{
+	Assertion((font_num >= 0) && (font_num < MAX_FONTS), "Passed an invalid font index");
+	Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
+
+	return Lcl_languages[Lcl_current_lang].special_char_indexes[font_num];
 }
 
 // maybe add on an appropriate subdirectory when opening a localized file
