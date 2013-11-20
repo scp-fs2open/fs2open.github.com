@@ -180,6 +180,31 @@ int Rank_medal_index = -1;
 #define MASK_BITMAP_INIT  (1<<1)
 int Init_flags;
 
+medal_stuff::medal_stuff()
+	: num_versions(1), version_starts_at_1(false), kills_needed(0), promotion_text()
+{
+	name[0] = '\0';
+	bitmap[0] = '\0';
+	debrief_bitmap[0] = '\0';
+	voice_base[0] = '\0';
+}
+
+medal_stuff::~medal_stuff()
+{
+	SCP_map<int, char*>::iterator it;
+	for (it = promotion_text.begin(); it != promotion_text.end(); it++) {
+		if (it->second) {
+			vm_free(it->second);
+		}
+	}
+	promotion_text.clear();
+}
+
+medal_stuff::medal_stuff(const medal_stuff &m)
+{
+	clone(m);
+}
+
 void medal_stuff::clone(const medal_stuff &m)
 {
 	memcpy(name, m.name, NAME_LENGTH);

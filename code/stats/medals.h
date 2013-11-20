@@ -25,7 +25,9 @@ extern scoring_struct *Player_score;
 
 // NUM_MEDALS stored in scoring.h since needed for player scoring structure
 
-typedef struct medal_stuff {
+class medal_stuff
+{
+public:
 	char	name[NAME_LENGTH];
 	char	bitmap[MAX_FILENAME_LEN];
 	char	debrief_bitmap[MAX_FILENAME_LEN];
@@ -37,34 +39,15 @@ typedef struct medal_stuff {
 	char voice_base[MAX_FILENAME_LEN];
 	SCP_map<int, char*> promotion_text;
 
-	medal_stuff() {
-		name[0] = '\0';
-		bitmap[0] = '\0';
-		debrief_bitmap[0] = '\0';
-		num_versions = 1;
-		version_starts_at_1 = false;
-		kills_needed = 0;
-		voice_base[0] = '\0';
-		promotion_text.clear();
-	}
+	medal_stuff();
+	~medal_stuff();
 
-	~medal_stuff() {
-		SCP_map<int, char*>::iterator it;
-		for (it = promotion_text.begin(); it != promotion_text.end(); it++) {
-			if (it->second) {
-				vm_free(it->second);
-			}
-		}
-		promotion_text.clear();
-	}
-
-	medal_stuff(const medal_stuff &m) { clone(m); }
+	medal_stuff(const medal_stuff &m);
 	const medal_stuff &operator=(const medal_stuff &m);
 
 private:
 	void clone(const medal_stuff &m);
-
-} medal_stuff;
+};
 
 extern SCP_vector<medal_stuff> Medals;
 
