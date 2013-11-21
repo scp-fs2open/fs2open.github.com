@@ -339,6 +339,11 @@ void parse_species_tbl(const char *filename)
 			Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", species->species_name, species->awacs_multiplier);
 		}
 
+		// Goober5000 - countermeasure type
+		// (we won't be able to resolve it until after we've parsed the weapons table)
+		if (optional_string("$Countermeasure type:"))
+			stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
+
 		// don't add new entry if this is just a modified one
 		if ( !no_create )
 			Species_info.push_back( new_species );

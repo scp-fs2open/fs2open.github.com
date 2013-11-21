@@ -307,8 +307,10 @@ void parse_stringstbl(const char *filename)
 	strcpy_s(language_tag, "#");
 	strcat_s(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
 
-	if ( skip_to_string(language_tag) != 1 )
-		Error(LOCATION, "%s is corrupt", filename);
+	if ( skip_to_string(language_tag) != 1 ) {
+		mprintf(("Current language not found in %s\n", filename));
+		return;
+	}
 
 	// parse all the strings in this section of the table
 	while ( !check_for_string("#") ) {

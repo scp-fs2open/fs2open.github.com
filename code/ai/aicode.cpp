@@ -5863,8 +5863,8 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 				int ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
 				if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
-					if (swp->secondary_bank_ammo[i] > 0) {
-						swp->current_secondary_bank = i;
+					if (swp->secondary_bank_ammo[weapon_bank_list[i]] > 0) {
+						swp->current_secondary_bank = weapon_bank_list[i];
 						break;
 					}
 				}

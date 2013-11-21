@@ -4607,7 +4607,6 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	}
 }
 
-extern bool Sexp_Messages_Scrambled;
 int hud_communications_state(ship *sp)
 {
 	float str;
@@ -4623,7 +4622,7 @@ int hud_communications_state(ship *sp)
 		return COMM_OK;
 
 	// Goober5000 - check for scrambled communications
-	if ( Sexp_Messages_Scrambled || emp_active_local() )
+	if ( emp_active_local() || sp->flags2 & SF2_SCRAMBLE_MESSAGES )
 		return COMM_SCRAMBLED;
 
 	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );

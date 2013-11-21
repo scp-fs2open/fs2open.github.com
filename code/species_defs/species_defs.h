@@ -71,10 +71,17 @@ public:
 
 	int bii_index[MIN_BRIEF_ICONS];
 
+	// countermeasures by species
+	char cmeasure_name[NAME_LENGTH];
+	int cmeasure_index;
+
 	species_info()
 	{
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++)
 			bii_index[i] = -1;
+
+		cmeasure_name[0] = '\0';
+		cmeasure_index = -1;
 	}
 };
 

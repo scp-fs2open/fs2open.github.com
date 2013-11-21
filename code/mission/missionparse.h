@@ -485,7 +485,7 @@ public:
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	22
+#define MAX_PARSE_OBJECT_FLAGS_2	23
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -509,6 +509,7 @@ public:
 #define P2_SF2_CLOAKED						(1<<19)
 #define P2_SF2_SHIP_LOCKED					(1<<20)
 #define P2_SF2_WEAPONS_LOCKED				(1<<21)
+#define P2_SF2_SCRAMBLE_MESSAGES			(1<<22)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

@@ -1728,6 +1728,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"ship-locked\"");
 			if (shipp->flags2 & SF2_WEAPONS_LOCKED)
 				fout(" \"weapons-locked\"");
+			if (shipp->flags2 & SF2_SCRAMBLE_MESSAGES)
+				fout(" \"scramble-messages\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

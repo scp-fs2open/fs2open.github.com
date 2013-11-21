@@ -106,7 +106,7 @@ int myrand()
 	return rval;
 }
 
-// returns a random number between 0 and 0x7fffffff
+// returns a random number between 0 and 0x7fffffff, or something close to it.
 int rand32()
 {
 	if (RAND_MAX == 0x7fff) {
@@ -119,8 +119,6 @@ int rand32()
 		return random32;
 	}
 	else {
-		// karajorma - can't imagine what RAND_MAX could be if it's not 0x7fffffff but let's be careful
-		Assert(RAND_MAX == 0x7fffffff);
 		return rand();
 	}
 }
