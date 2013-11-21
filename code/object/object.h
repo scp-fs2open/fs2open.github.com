@@ -21,7 +21,7 @@
  *		CONSTANTS
  */
 
-#define MAX_SHIELD_SECTIONS	4					//	Number of sections in shield.
+#define DEFAULT_SHIELD_SECTIONS	4	//	Number of sections in standard shields.
 
 #ifndef NDEBUG
 #define OBJECT_CHECK 
@@ -154,7 +154,8 @@ public:
 	vec3d			last_pos;		// where object was last frame
 	matrix			last_orient;	// how the object was oriented last frame
 	physics_info	phys_info;		// a physics object
-	float			shield_quadrant[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
+	int				n_quadrants;	// how many shield quadrants the ship has
+	SCP_vector<float>	shield_quadrant;	//	Shield is broken into components, quadrants by default.
 	float			hull_strength;	//	Remaining hull strength.
 	float			sim_hull_strength;	// Simulated hull strength - used with training weapons.
 	SCP_vector<int> objsnd_num;		// Index of persistant sound struct.

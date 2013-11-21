@@ -306,6 +306,7 @@ flag_def_list Ship_flags[] = {
 	{ "no ets",						SIF2_NO_ETS,				1 },
 	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
 	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
+	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -2495,6 +2496,34 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				Warning(LOCATION, "+Spread From LOD for %s was %i whereas ship only has %i detail levels, ignoring...", sip->name, temp, sip->num_detail_levels);
 			else
 				sip->auto_shield_spread_from_lod = temp;
+		}
+	}
+
+	if(optional_string("$Model Point Shield Controls:")) {
+		SCP_vector<SCP_string> ctrl_strings;
+		int num_strings = stuff_string_list(ctrl_strings);
+
+		// Init all to -1 in case some aren't supplied...
+		sip->shield_point_augment_ctrls[FRONT_QUAD] = -1;
+		sip->shield_point_augment_ctrls[REAR_QUAD] = -1;
+		sip->shield_point_augment_ctrls[LEFT_QUAD] = -1;
+		sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
+
+		for (int i = 0; i < num_strings; i++) {
+			const char *str = ctrl_strings[i].c_str();
+
+			if (!stricmp(str, "front"))
+				sip->shield_point_augment_ctrls[FRONT_QUAD] = i;
+			else if (!stricmp(str, "rear"))
+				sip->shield_point_augment_ctrls[REAR_QUAD] = i;
+			else if (!stricmp(str, "left"))
+				sip->shield_point_augment_ctrls[LEFT_QUAD] = i;
+			else if (!stricmp(str, "right"))
+				sip->shield_point_augment_ctrls[RIGHT_QUAD] = i;
+			else if (!stricmp(str, "none"))
+				sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
+			else
+				Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Point Shield Controls, ignoring...", str);
 		}
 	}
 
@@ -4879,6 +4908,8 @@ void ship::clear()
 	special_hitpoints = 0;
 	special_shield = -1;
 
+	shield_points.clear();
+
 	ship_max_shield_strength = 0.0f;
 	ship_max_hull_strength = 0.0f;
 
@@ -5141,6 +5172,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	object		*objp = &Objects[objnum];
 	ship_info	*sip = &(Ship_info[ship_type]);
 	ship_weapon	*swp = &shipp->weapons;
+	polymodel *pm = model_get(sip->model_num);
 
 	extern int oo_arrive_time_count[MAX_SHIPS];		
 	extern int oo_interp_count[MAX_SHIPS];	
@@ -5172,6 +5204,12 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
 		shield_set_strength(objp, shipp->ship_max_shield_strength);
+	}
+
+	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
+		objp->n_quadrants = pm->shield_points.size();
+		shipp->shield_points = pm->shield_points;
+		objp->shield_quadrant.resize(objp->n_quadrants);
 	}
 
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
@@ -5250,8 +5288,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
 	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
 	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
-
-	polymodel *pm = model_get(sip->model_num);
 
 	if(pm != NULL && pm->n_view_positions > 0)
 		ship_set_eye(objp, 0);
@@ -9103,10 +9139,12 @@ void ship_model_change(int n, int ship_type)
 	ship_info	*sip;
 	ship			*sp;
 	polymodel * pm;
+	object *objp;
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
+	objp = &Objects[sp->objnum];
 
 	// get new model
 	if (sip->model_num == -1) {
@@ -9153,6 +9191,14 @@ void ship_model_change(int n, int ship_type)
 	}	
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
+
+	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
+		objp->n_quadrants = pm->shield_points.size();
+		sp->shield_points = pm->shield_points;
+	} else {
+		objp->n_quadrants = DEFAULT_SHIELD_SECTIONS;
+	}
+	objp->shield_quadrant.resize(objp->n_quadrants);
 
 	if (sp->shield_integrity != NULL) {
 		vm_free(sp->shield_integrity);
@@ -14286,7 +14332,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	// convert hitpos to position in model coordinates
 	vm_vec_sub(&tmpv1, hitpos, &hit_objp->pos);
 	vm_vec_rotate(&tmpv2, &tmpv1, &hit_objp->orient);
-	quadrant_num = get_quadrant(&tmpv2);
+	quadrant_num = get_quadrant(&tmpv2, hit_objp);
 
 	if ( quadrant_num < 0 )
 		quadrant_num = 0;

@@ -7000,7 +7000,7 @@ void send_client_update_packet(net_player *pl)
 	// when not paused, send hull/shield/subsystem updates to all clients (except for ingame joiners)
 	if ( val & UPDATE_HULL_INFO ) {
 		object *objp;
-		ubyte percent, ns, threats;
+		ubyte percent, ns, threats, n_quadrants;
 		ship_info *sip;
 		ship *shipp;
 		ship_subsys *subsysp;
@@ -7023,8 +7023,11 @@ void send_client_update_packet(net_player *pl)
 		}
 		ADD_DATA( percent );
 
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+		n_quadrants = (ubyte)objp->n_quadrants;
+		ADD_DATA( n_quadrants );
+		for (i = 0; i < n_quadrants; i++ ) {
 			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+
 			ADD_DATA( percent );
 		}
 
@@ -7098,7 +7101,8 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		float fl_val;
 		ship_info *sip;
 		ship *shipp;
-		ubyte hull_percent, shield_percent[MAX_SHIELD_SECTIONS], n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		ubyte hull_percent, n_quadrants, n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		SCP_vector<ubyte> shield_percent;
 		ubyte ub_tmp;
 		ship_subsys *subsysp;
 		object *objp;
@@ -7108,7 +7112,9 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		// percentage value since that should be close enough
 		GET_DATA( hull_percent );
 
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ){
+		GET_DATA( n_quadrants );
+		shield_percent.resize(n_quadrants);
+		for (i = 0; i < n_quadrants; i++ ){
 			GET_DATA(ub_tmp);
 			shield_percent[i] = ub_tmp;
 		}
@@ -7142,9 +7148,11 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
 
-			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
-				objp->shield_quadrant[i] = fl_val;
+			for ( i = 0; i < n_quadrants; i++ ) {
+				if (i < objp->n_quadrants) {
+					fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
+					objp->shield_quadrant[i] = fl_val;
+				}
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,

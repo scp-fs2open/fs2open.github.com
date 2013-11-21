@@ -946,6 +946,7 @@ void hud_target_hotkey_select( int k )
 
 	if ( Player_obj != target->objp ){
 		set_target_objnum( Player_ai, OBJ_INDEX(target->objp) );
+		hud_shield_hit_reset(target->objp);
 	}
 
 	Players[Player_num].current_hotkey_set = k;
@@ -1223,6 +1224,7 @@ void hud_target_common(int team_mask, int next_flag)
 			if ( Player_ai->target_objnum != A-Objects ) {
 				target_found = TRUE;
 				set_target_objnum( Player_ai, OBJ_INDEX(A) );
+				hud_shield_hit_reset(A);
 				// if ship is BIG|HUGE and last subsys is NULL, get turret
 				hud_maybe_set_sorted_turret_subsys(shipp);
 				hud_restore_subsystem_target(shipp);
@@ -1230,6 +1232,7 @@ void hud_target_common(int team_mask, int next_flag)
 		} else {
 			target_found = TRUE;
 			set_target_objnum( Player_ai, OBJ_INDEX(A) );
+			hud_shield_hit_reset(A);
 		}
 
 		break;
@@ -1479,6 +1482,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 		// if we've reached here, got a new target
 		target_found = TRUE;
 		set_target_objnum( aip, OBJ_INDEX(A) );
+		hud_shield_hit_reset(A);
 		break;
 	}	// end for
 
@@ -1526,6 +1530,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			// found a good one
 			target_found = TRUE;
 			set_target_objnum( aip, OBJ_INDEX(A) );
+			hud_shield_hit_reset(A);
 			break;
 		}
 	}
@@ -1600,6 +1605,7 @@ void hud_target_uninspected_cargo(int next_flag)
 		if ( Player_ai->target_objnum != OBJ_INDEX(A) ) {
 			target_found = TRUE;
 			set_target_objnum( Player_ai, OBJ_INDEX(A) );
+			hud_shield_hit_reset(A);
 		}
 	}
 
@@ -1661,6 +1667,7 @@ void hud_target_newest_ship()
 
 	if (newest_obj) {
 		set_target_objnum( Player_ai, OBJ_INDEX(newest_obj) );
+		hud_shield_hit_reset(newest_obj);
 		// if BIG|HUGE and no selected subsystem, get sorted turret
 		hud_maybe_set_sorted_turret_subsys(&Ships[newest_obj->instance]);
 		hud_restore_subsystem_target(&Ships[newest_obj->instance]);
@@ -1950,6 +1957,7 @@ void hud_target_closest_locked_missile(object *locked_obj)
 	if (nearest_dist < 10000.0f) {
 		Assert(nearest_obj);
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		hud_shield_hit_reset(nearest_obj);
 		target_found = TRUE;
 	}
 
@@ -2285,6 +2293,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 
 	if (target_found) {
 		set_target_objnum(Player_ai, OBJ_INDEX(nearest_obj));
+		hud_shield_hit_reset(nearest_obj);
 		if ( check_nearest_turret ) {
 
 			// if former subobject was not a turret do, not change subsystem
@@ -2415,6 +2424,7 @@ void hud_target_targets_target()
 
 	// if we've reached here, found player target's target
 	set_target_objnum( Player_ai, tt_objnum );
+	hud_shield_hit_reset(&Objects[tt_objnum]);
 	if (Objects[tt_objnum].type == OBJ_SHIP) {
 		hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
 	}
@@ -2636,6 +2646,7 @@ void hud_target_in_reticle_old()
 	target_obj = hud_reticle_pick_target();
 	if ( target_obj != NULL ) {
 		set_target_objnum( Player_ai, OBJ_INDEX(target_obj) );
+		hud_shield_hit_reset(target_obj);
 		if ( target_obj->type == OBJ_SHIP ) {
 			// if BIG|HUGE, maybe set subsys to turret
 			hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
@@ -4429,7 +4440,7 @@ void hud_target_change_check()
 		}
 
 		player_stop_cargo_scan_sound();
-		hud_shield_hit_reset();
+		hud_shield_hit_reset(&Objects[Player_ai->target_objnum]);
 		hud_targetbox_init_flash();
 		hud_targetbox_start_flash(TBOX_FLASH_NAME);
 		hud_gauge_popup_start(HUD_TARGET_MINI_ICON);
@@ -4662,6 +4673,7 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 	if (nearest_object != NULL) {
 		// set new target
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_object) );
+		hud_shield_hit_reset(nearest_object);
 
 		// maybe set new turret subsystem
 		hud_maybe_set_sorted_turret_subsys(&Ships[nearest_object->instance]);
@@ -4894,6 +4906,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 	if (nearest_obj != &obj_used_list) {
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		hud_shield_hit_reset(nearest_obj);
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 		rval=1;
 	}
@@ -4956,6 +4969,7 @@ void hud_target_closest_uninspected_object()
 
 	if (nearest_obj != NULL) {
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		hud_shield_hit_reset(nearest_obj);
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
@@ -5058,6 +5072,7 @@ void hud_target_uninspected_object(int next_flag)
 
 	if (nearest_obj != NULL) {
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		hud_shield_hit_reset(nearest_obj);
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
@@ -5177,6 +5192,7 @@ void hud_target_last_transmit()
 
 	if ((targeted_objnum >= 0) && (targeted_objnum < MAX_OBJECTS)) {
 		set_target_objnum( Player_ai, Transmit_target_list[transmit_index].objnum );
+		hud_shield_hit_reset(&Objects[Transmit_target_list[transmit_index].objnum]);
 		hud_restore_subsystem_target(&Ships[Objects[Transmit_target_list[transmit_index].objnum].instance]);
 	}
 }
@@ -5223,6 +5239,7 @@ void hud_target_random_ship()
 			set_target_objnum(Player_ai, -1);
 		} else {
 			set_target_objnum(Player_ai, objnum);
+			hud_shield_hit_reset(&Objects[objnum]);
 		}
 	}
 }

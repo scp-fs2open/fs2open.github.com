@@ -2392,9 +2392,9 @@ int beam_collide_ship(obj_pair *pair)
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
-			quadrant_num = get_quadrant(&mc_shield.hit_point);
+			quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
 		else if (hull_enter_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
-			quadrant_num = get_quadrant(&mc_hull_enter.hit_point);
+			quadrant_num = get_quadrant(&mc_hull_enter.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
 		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))

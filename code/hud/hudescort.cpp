@@ -246,10 +246,10 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 	}
 	
 	// set flashing color
-	if (!timestamp_elapsed(shi->shield_hit_timers[HULL_HIT_OFFSET]))
+	if (!timestamp_elapsed(shi->shield_hit_timers[shi->hull_hit_index]))
 	{
 		is_flashing = 1;
-		if (shi->shield_show_bright & (1 << HULL_HIT_OFFSET))
+		if (shi->shield_show_bright & (1 << shi->hull_hit_index))
 		{
 			is_bright = 1;
 		}
@@ -449,12 +449,12 @@ void hud_escort_update_list()
 		{
 			shi = &Escort_ships[i].hit_info;
 
-			if (!timestamp_elapsed(shi->shield_hit_timers[HULL_HIT_OFFSET]))
+			if (!timestamp_elapsed(shi->shield_hit_timers[shi->hull_hit_index]))
 			{
-				if (timestamp_elapsed(shi->shield_hit_next_flash[HULL_HIT_OFFSET]))
+				if (timestamp_elapsed(shi->shield_hit_next_flash[shi->hull_hit_index]))
 				{
-					shi->shield_hit_next_flash[HULL_HIT_OFFSET] = timestamp(SHIELD_FLASH_INTERVAL);
-					shi->shield_show_bright ^= (1 << HULL_HIT_OFFSET);	// toggle between default and bright frames
+					shi->shield_hit_next_flash[shi->hull_hit_index] = timestamp(SHIELD_FLASH_INTERVAL);
+					shi->shield_show_bright ^= (1 << shi->hull_hit_index);	// toggle between default and bright frames
 				}
 			}
 		}
@@ -485,7 +485,7 @@ void hud_escort_clear_all(bool clear_flags)
 		}
 		Escort_ships[i].obj_signature = -99;
 		Escort_ships[i].np_id = -1;
-		shield_info_reset(&Escort_ships[i].hit_info);
+		shield_info_reset(&Objects[Escort_ships[i].objnum], &Escort_ships[i].hit_info);
 	}
 }
 
@@ -720,7 +720,7 @@ void merge_escort_lists(escort_info *complete_escorts, int num_complete_escorts)
 				continue;
 			}
 			if ( !valid_hit_info[i] ) {
-				shield_info_reset(&Escort_ships[i].hit_info);
+				shield_info_reset(&Objects[Escort_ships[i].objnum], &Escort_ships[i].hit_info);
 			}	
 		}
 	}
@@ -986,7 +986,7 @@ void hud_escort_ship_hit(object *objp, int quadrant)
 				num = Quadrant_xlate[quadrant];
 				shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION);
 			} else {
-				shi->shield_hit_timers[HULL_HIT_OFFSET] = timestamp(SHIELD_HIT_DURATION);
+				shi->shield_hit_timers[shi->hull_hit_index] = timestamp(SHIELD_HIT_DURATION);
 			}
 		}
 	}

@@ -107,7 +107,7 @@ void update_ets(object* objp, float fl_frametime)
 	shield_add_strength(objp, shield_delta);
 
 	if ( (_ss = shield_get_strength(objp)) > ship_p->ship_max_shield_strength ){
-		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
+		for (int i=0; i<objp->n_quadrants; i++){
 			objp->shield_quadrant[i] *= ship_p->ship_max_shield_strength / _ss;
 		}
 	}
