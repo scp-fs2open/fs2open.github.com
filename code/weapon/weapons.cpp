@@ -2614,75 +2614,20 @@ int parse_weapon(int subtype, bool replace)
 	if (wip->burst_delay >= wip->fire_wait)
 		wip->burst_shots = 0;
 
-	/* Generate a substitution pattern for this weapon.
-	This pattern is very naive such that is calculates the lowest common demoniator as being all of
-	the periods multiplied together.
-	*/
+	// vestigial parsing support for a feature that never worked
 	while ( optional_string("$substitute:") ) {
-		char subname[NAME_LENGTH];
-		int period = 0;
-		int index = 0;
-		int offset = 0;
-		stuff_string(subname, F_NAME, NAME_LENGTH);
+		nprintf(("Weapons", "Ignoring $substitute field for weapon '%s'!\n", wip->name));
+
+		char temp_name[NAME_LENGTH];
+		int  temp_int;
+		stuff_string(temp_name, F_NAME, NAME_LENGTH);
 		if ( optional_string("+period:") ) {
-			stuff_int(&period);
-			if ( period <= 0 ) {
-				Warning(LOCATION, "Substitution '%s' for weapon '%s' requires a period greater than 0. Setting period to 1.", subname, wip->name);
-				period = 1;
-			}
+			stuff_int(&temp_int);
 			if ( optional_string("+offset:") ) {
-				stuff_int(&offset);
-				if ( offset <= 0 ) {
-					Warning(LOCATION, "Period offset for substitution '%s' of weapon '%s' has to be greater than 0. Setting offset to 1.", subname, wip->name);
-					offset = 1;
-				}
+				stuff_int(&temp_int);
 			}
 		} else if ( optional_string("+index:") ) {
-			stuff_int(&index);
-			if ( index < 0 ) {
-				Warning(LOCATION, "Substitution '%s' for weapon '%s' requires an index greater than 0. Setting index to 0.", subname, wip->name);
-				index = 0;
-			}
-		}
-
-		// we are going to use weapon substition so, make sure that the pattern array has at least one element
-		if ( wip->weapon_substitution_pattern_names.empty() ) {
-			// pattern is empty, initialize pattern with the weapon being currently parsed.
-			wip->weapon_substitution_pattern_names.push_back(wip->name);
-		}
-
-		// if tbler specifies a period then determine if we can fit the resulting pattern
-		// neatly into the pattern array.
-		if ( period > 0 ) {
-			if ( (wip->weapon_substitution_pattern_names.size() % period) > 0 ) {
-				// not neat, need to expand the pattern so that our freqency pattern fits completly.
-				size_t current_size = wip->weapon_substitution_pattern_names.size();
-				wip->weapon_substitution_pattern_names.resize(current_size*period);
-
-				// now duplicate the current pattern into the new area so the current pattern holds
-				for ( size_t i = current_size; i < wip->weapon_substitution_pattern_names.size(); i++) {
-					wip->weapon_substitution_pattern_names[i] = wip->weapon_substitution_pattern_names[i%current_size];
-				}
-			}
-
-			/* Apply the substituted weapon at the requested period, barrel
-			shifted by offset if needed.*/
-			for ( size_t pos = (period + offset - 1) % period;
-				pos < wip->weapon_substitution_pattern_names.size(); pos += period )
-			{
-				wip->weapon_substitution_pattern_names[pos] = subname;
-			}
-		} else {
-			// assume that tbler wanted to specify a index for the new weapon.
-
-			// make sure that there is enough room
-			if ( !(index < (int)wip->weapon_substitution_pattern_names.size()) ) {
-				// need to make the pattern bigger by filling the extra with the current weapon.
-				size_t current_size = wip->weapon_substitution_pattern_names.size();
-				wip->weapon_substitution_pattern_names.resize(current_size+1, subname);
-			}
-
-			wip->weapon_substitution_pattern_names[index] = subname;
+			stuff_int(&temp_int);
 		}
 	}
 
@@ -3249,35 +3194,6 @@ void weapon_load_bitmaps(int weapon_index)
 		used_weapons[weapon_index]++;
 }
 
-/**
- * Checks all of the weapon infos for substitution patterns and caches the weapon_index of any that it finds. 
- */
-void weapon_generate_indexes_for_substitution() {
-	for (int i = 0; i < MAX_WEAPON_TYPES; i++) {
-		weapon_info *wip = &(Weapon_info[i]);
-
-		if ( wip->weapon_substitution_pattern_names.size() > 0 ) {
-			wip->weapon_substitution_pattern.resize(wip->weapon_substitution_pattern_names.size());
-
-			for ( size_t j = 0; j < wip->weapon_substitution_pattern_names.size(); j++ ) {
-				int weapon_index = -1;
-				if ( stricmp("none", wip->weapon_substitution_pattern_names[j].c_str()) != 0 ) {
-					weapon_index = weapon_info_lookup(wip->weapon_substitution_pattern_names[j].c_str());
-					if ( weapon_index == -1 ) { // invalid sub weapon
-						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
-							wip->name, wip->weapon_substitution_pattern_names[j].c_str());
-						continue;
-					}
-				}
-
-				wip->weapon_substitution_pattern[j] = weapon_index;
-			}
-
-			wip->weapon_substitution_pattern_names.clear();
-		}
-	}
-}
-
 void weapon_do_post_parse()
 {
 	weapon_info *wip;
@@ -3286,7 +3202,6 @@ void weapon_do_post_parse()
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_clean_entries();
-	weapon_generate_indexes_for_substitution();
 
 	Default_cmeasure_index = -1;
 
@@ -4872,31 +4787,6 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
-inline size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* shipp, ship_subsys * src_turret) {
-	Assert( shipp != NULL );
-	ship_weapon* ship_weapon_p = &(shipp->weapons);
-	if(src_turret)
-	{
-		ship_weapon_p = &src_turret->weapons;
-	}
-	Assert( ship_weapon_p != NULL );
-
-	// search for the corresponding bank pattern index for the weapon_type that is being fired.
-	// Note: Because a weapon_type may not be unique to a weapon bank per ship this search may attribute
-	// the weapon to the wrong bank.  Hopefully this isn't a problem.
-	for ( int pi = 0; pi < MAX_SHIP_PRIMARY_BANKS; pi++ ) {
-		if ( ship_weapon_p->primary_bank_weapons[pi] == weapon_type ) {
-			return &(ship_weapon_p->primary_bank_pattern_index[pi]);
-		}
-	}
-	for ( int si = 0; si < MAX_SHIP_SECONDARY_BANKS; si++ ) {
-		if ( ship_weapon_p->secondary_bank_weapons[si] == weapon_type ) {
-			return &(ship_weapon_p->secondary_bank_pattern_index[si]);
-		}
-	}
-	return NULL;
-}
-
 /**
  * Create a weapon object
  *
@@ -4920,35 +4810,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	{
 		Warning(LOCATION, "An attempt to fire a beam ('%s') through weapon_create() was made.\n", wip->name);
 		return -1;
-	}
-
-	parent_objp = NULL;
-	if(parent_objnum >= 0){
-		parent_objp = &Objects[parent_objnum];
-	}
-
-	if ( (wip->weapon_substitution_pattern.size() > 0) && (parent_objp != NULL)) {
-		// using substitution
-
-		// get to the instance of the gun
-		Assertion( parent_objp->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", parent_objp->type );
-		Assertion( (parent_objp->instance < MAX_SHIPS) && (parent_objp->instance >= 0),
-			"Ship index is %d, which is out of range [%d,%d)", parent_objp->instance, 0, MAX_SHIPS);
-		ship* parent_shipp = &(Ships[parent_objp->instance]);
-		Assert( parent_shipp != NULL );
-
-		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
-		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
-
-		*position = ++(*position) % wip->weapon_substitution_pattern.size();
-
-		if ( wip->weapon_substitution_pattern[*position] == -1 ) {
-			// weapon doesn't want any sub
-			return -1;
-		} else if ( wip->weapon_substitution_pattern[*position] != weapon_type ) {
-			// weapon wants to sub with weapon other than me
-			return weapon_create(pos, porient, wip->weapon_substitution_pattern[*position], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
-		}
 	}
 
 	num_deleted = 0;
@@ -5025,6 +4886,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
 	Assert(objnum >= 0);
 	objp = &Objects[objnum];
+
+	parent_objp = NULL;
+	if(parent_objnum >= 0){
+		parent_objp = &Objects[parent_objnum];
+	}
 
 	// Create laser n!
 	wp = &Weapons[n];
