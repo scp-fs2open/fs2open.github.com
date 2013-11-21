@@ -722,12 +722,13 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			break;
 		}
 
-		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) )
+		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) ) {
 			if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f )
 				continue;
-		else
+		} else {
 			if ( objp->shield_quadrant[i] < 0.1f )
 				continue;
+		}
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
 
