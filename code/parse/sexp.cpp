@@ -19272,7 +19272,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 3:	//	Player ship suffering shield damage on front.
-		if (!(Player_ship->flags2 & SIF2_SHIELD_POINTS)) {
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
 			apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
 			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 			return SEXP_TRUE;
@@ -19283,7 +19283,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 4:	//	Player ship suffering much damage.
-		if (!(Player_ship->flags2 & SIF2_SHIELD_POINTS)) {
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
 			nprintf(("AI", "Frame %i\n", Framecount));
 			apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
 			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
@@ -19298,7 +19298,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 5:	//	Player's shield is quick repaired
-		if (!(Player_ship->flags2 & SIF2_SHIELD_POINTS)) {
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
 			nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shield_quadrant[FRONT_QUAD]));
 
 			apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
@@ -19317,7 +19317,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 6:	//	3 of player's shield quadrants are reduced to 0.
-		if (!(Player_ship->flags2 & SIF2_SHIELD_POINTS)) {
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
 			Player_obj->shield_quadrant[1] = 1.0f;
 			Player_obj->shield_quadrant[2] = 1.0f;
 			Player_obj->shield_quadrant[3] = 1.0f;
@@ -19329,7 +19329,7 @@ int process_special_sexps(int index)
 		return SEXP_TRUE;
 
 	case 7:	//	Make sure front quadrant has been maximized, or close to it.
-		if (!(Player_ship->flags2 & SIF2_SHIELD_POINTS)) {
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
 			if (shield_quad_near_max(FRONT_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
 		} else {
 			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
@@ -19338,7 +19338,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 8:	//	Make sure rear quadrant has been maximized, or close to it.
-		if (!(Player_ship->flags2 & SIF2_SHIELD_POINTS)) {
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
 			if (shield_quad_near_max(REAR_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
 		} else {
 			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
@@ -19347,7 +19347,7 @@ int process_special_sexps(int index)
 		break;
 	
 	case 9:	//	Zero left and right quadrants in preparation for maximizing rear quadrant.
-		if (!(Player_ship->flags2 & SIF2_SHIELD_POINTS)) {
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
 			Player_obj->shield_quadrant[LEFT_QUAD] = 0.0f;
 			Player_obj->shield_quadrant[RIGHT_QUAD] = 0.0f;
 			hud_shield_quadrant_hit(Player_obj, LEFT_QUAD);
@@ -19380,7 +19380,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 13:	// Zero front shield quadrant.  Added for Jim Boone on August 26, 1999 by MK.
-		if (!(Player_ship->flags2 & SIF2_SHIELD_POINTS)) {
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
 			Player_obj->shield_quadrant[FRONT_QUAD] = 0.0f;
 			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 			return SEXP_TRUE;

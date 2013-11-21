@@ -921,7 +921,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_NO_LIGHTING					(1 << 14)	// Valathil - No lighting for this ship
 #define SIF2_DYN_PRIMARY_LINKING			(1 << 15)	// RSAXVC - Dynamically generate weapon linking options
 #define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
-#define SIF2_SHIELD_POINTS					(1 << 17)	// zookeeper - uses model-defined shield points instead of quadrants
+#define SIF2_MODEL_POINT_SHIELDS			(1 << 17)	// zookeeper - uses model-defined shield points instead of quadrants
 // !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
 #define	MAX_SHIP_FLAGS	18		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0

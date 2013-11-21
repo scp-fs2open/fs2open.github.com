@@ -287,7 +287,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	float	max_quadrant_val;
 	int	i;
 
-	if (sip->flags2 & SIF2_SHIELD_POINTS) {
+	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
 		direction = sip->shield_point_augment_ctrls[direction];
 
 		// The re-mapped direction can be -1 if this direction cannot be augmented
@@ -559,7 +559,7 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 	}
 
 	if ( quadrant >= 0 ) {
-		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_SHIELD_POINTS) )
+		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) )
 			num = Quadrant_xlate[quadrant];
 		else
 			num = quadrant;
@@ -722,7 +722,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			break;
 		}
 
-		if ( !(sip->flags2 & SIF2_SHIELD_POINTS) )
+		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) )
 			if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f )
 				continue;
 		else
@@ -731,7 +731,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
 
-		if ( !(sip->flags2 & SIF2_SHIELD_POINTS) )
+		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) )
 			hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
 		else
 			hud_color_index = fl2i( (objp->shield_quadrant[i] / max_shield) * range);

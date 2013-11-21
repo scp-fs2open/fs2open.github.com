@@ -306,7 +306,7 @@ flag_def_list Ship_flags[] = {
 	{ "no ets",						SIF2_NO_ETS,				1 },
 	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
 	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
-	{ "model shield points",		SIF2_SHIELD_POINTS,			1 },
+	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -2515,7 +2515,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 	}
 
-	if(optional_string("$Model Shield Point Controls:")) {
+	if(optional_string("$Model Point Shield Controls:")) {
 		SCP_vector<SCP_string> ctrl_strings;
 		int num_strings = stuff_string_list(ctrl_strings);
 
@@ -2539,7 +2539,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			else if (!stricmp(str, "none"))
 				sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
 			else
-				Warning(LOCATION, "Unrecognized value \"%s\" passed to $Shield Point Controls, ignoring...", str);
+				Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Point Shield Controls, ignoring...", str);
 		}
 	}
 
@@ -5218,7 +5218,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shield_set_strength(objp, shipp->ship_max_shield_strength);
 	}
 
-	if (sip->flags2 & SIF2_SHIELD_POINTS) {
+	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
 		objp->n_quadrants = pm->shield_points.size();
 		shipp->shield_points = pm->shield_points;
 		objp->shield_quadrant.resize(MAX(DEFAULT_SHIELD_SECTIONS, objp->n_quadrants));
@@ -9204,7 +9204,7 @@ void ship_model_change(int n, int ship_type)
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
-	if (sip->flags2 & SIF2_SHIELD_POINTS) {
+	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
 		objp->n_quadrants = pm->shield_points.size();
 		sp->shield_points = pm->shield_points;
 		objp->shield_quadrant.resize(MAX(DEFAULT_SHIELD_SECTIONS, objp->n_quadrants));
