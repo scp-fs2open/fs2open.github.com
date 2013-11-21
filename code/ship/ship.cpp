@@ -2787,16 +2787,18 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			Warning(LOCATION, "Ship %s entry has $Trails field specified, but no properties given.", sip->name);
 	}
 
-	if(optional_string("$Countermeasure type:")) {
+	if (optional_string("$Countermeasure type:")) {
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 		int res = weapon_info_lookup(buf);
-		if(res == -1) {
-			Warning(LOCATION, "Could not find weapon type '%s' to use as countermeasure on ship class '%s'", sip->name);
-		} else if(Weapon_info[res].wi_flags & WIF_BEAM) {
+		if (res < 0) {
+			Warning(LOCATION, "Could not find weapon type '%s' to use as countermeasure on ship class '%s'", buf, sip->name);
+		} else if (Weapon_info[res].wi_flags & WIF_BEAM) {
 			Warning(LOCATION, "Attempt made to set a beam weapon as a countermeasure on ship class '%s'", sip->name);
 		} else {
 			sip->cmeasure_type = res;
 		}
+	} else if (Species_info[sip->species].cmeasure_index >= 0) {
+		sip->cmeasure_type = Species_info[sip->species].cmeasure_index;
 	}
 
 	if(optional_string("$Countermeasures:"))

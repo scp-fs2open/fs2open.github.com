@@ -3225,7 +3225,22 @@ void weapon_do_post_parse()
 	if (Default_cmeasure_index < 0)
 		Default_cmeasure_index = first_cmeasure_index;
 
-	// translate all spawn type weapons to referrence the appropriate spawned weapon entry
+	// now we want to resolve the countermeasures by species
+	for (SCP_vector<species_info>::iterator ii = Species_info.begin(); ii != Species_info.end(); ++ii)
+	{
+		if (*ii->cmeasure_name)
+		{
+			int index = weapon_info_lookup(ii->cmeasure_name);
+			if (index < 0)
+				Warning(LOCATION, "Could not find weapon type '%s' to use as countermeasure on species '%s'", ii->cmeasure_name, ii->species_name);
+			else if (Weapon_info[index].wi_flags & WIF_BEAM)
+				Warning(LOCATION, "Attempt made to set a beam weapon as a countermeasure on species '%s'", ii->species_name);
+			else
+				ii->cmeasure_index = index;
+		}
+	}
+
+	// translate all spawn type weapons to referrnce the appropriate spawned weapon entry
 	translate_spawn_types();
 }
 
