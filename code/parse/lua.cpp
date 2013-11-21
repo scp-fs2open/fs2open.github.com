@@ -18,6 +18,7 @@
 #include "hud/hudets.h"
 #include "hud/hudgauges.h"
 #include "hud/hudets.h"
+#include "hud/hudshield.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
