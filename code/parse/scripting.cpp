@@ -438,6 +438,18 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 						return false;
 					break;
 				}
+			case CHC_ACTION:
+				{
+					extern int Current_key_down;
+					if(gameseq_get_depth() < 0)
+						return false;
+
+					int action_index = more_data;
+
+					if (action_index <= 0 || stricmp(scp->data.name, Control_config[action_index].text))
+						return false;
+					break;
+				}
 			case CHC_VERSION:
 				{
 					// Goober5000: I'm going to assume scripting doesn't care about SVN revision
