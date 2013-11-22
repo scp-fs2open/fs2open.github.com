@@ -2138,6 +2138,7 @@ void opengl_setup_scene_textures()
 	if ( !Use_GLSL || Cmdline_no_fbo || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
 		Cmdline_postprocess = 0;
 		Cmdline_softparticles = 0;
+		Cmdline_fb_explosions = 0;
 
 		Scene_color_texture = 0;
 		Scene_effect_texture = 0;
