@@ -491,6 +491,10 @@ static void joy_ff_start_effect(haptic_effect_t *eff, char *name)
 
 void joy_ff_stop_effects()
 {
+	if ( !Joy_ff_enabled ) {
+		return;
+	}
+
 	v_SDL_HapticStopAll(haptic);
 }
 
