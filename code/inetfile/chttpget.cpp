@@ -44,11 +44,7 @@
 #define NW_AGHBN_LOOKUP		2
 #define NW_AGHBN_READ		3
 
-#ifdef WIN32
-void __cdecl http_gethostbynameworker(void *parm);
-#else
 int http_gethostbynameworker(void *parm);
-#endif
 
 int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname);
 
@@ -586,11 +582,7 @@ typedef struct _async_dns_lookup
 async_dns_lookup httpaslu;
 async_dns_lookup *http_lastaslu = NULL;
 
-#ifdef WIN32
-void __cdecl http_gethostbynameworker(void *parm);
-#else
 int http_gethostbynameworker(void *parm);
-#endif
 
 int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 {
@@ -610,9 +602,6 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 		http_lastaslu = newaslu;
 		httpaslu.done = false;
 
-#ifdef WIN32
-		_beginthread(http_gethostbynameworker, 0, newaslu);
-#else
 		HOSTENT *he = gethostbyname(hostname);
 
 		if (he == NULL) {
@@ -622,7 +611,6 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 			newaslu->done = true;
 			memcpy( &httpaslu,newaslu, sizeof(async_dns_lookup) );
 		}
-#endif
 
 		return 1;
 	}
@@ -655,25 +643,14 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 }
 
 // This is the worker thread which does the lookup.
-#ifdef WIN32
-void __cdecl http_gethostbynameworker(void *parm)
-#else
 int http_gethostbynameworker(void *parm)
-#endif
 {
-#ifdef SCP_UNIX
-//	df_pthread_detach(df_pthread_self());
-#endif
 	async_dns_lookup *lookup = (async_dns_lookup *)parm;
 	HOSTENT *he = gethostbyname(lookup->host);
 	if(he==NULL)
 	{
 		lookup->error = true;
-#ifdef WIN32
-		return;
-#else
 		return 0;
-#endif
 	}
 	else if(!lookup->abort)
 	{
@@ -683,7 +660,5 @@ int http_gethostbynameworker(void *parm)
 	}
 	vm_free(lookup);
 
-#ifdef SCP_UNIX
 	return 0;
-#endif
 }
