@@ -1,0 +1,28 @@
+--- src/video/windows/SDL_windowswindow.c	Sa Nov 23 18:43:06 2013
++++ src/video/windows/SDL_windowswindow (2).c	Do Okt 24 06:05:30 2013
+@@ -288,8 +288,6 @@ WIN_CreateWindowFrom(_THIS, SDL_Window * window, c
+     LPTSTR title;
+     int titleLen;
+ 
+-	window->flags |= SDL_WINDOW_OPENGL;
+-
+     /* Query the title from the existing window */
+     titleLen = GetWindowTextLength(hwnd);
+     title = SDL_stack_alloc(TCHAR, titleLen + 1);
+@@ -308,16 +306,6 @@ WIN_CreateWindowFrom(_THIS, SDL_Window * window, c
+     if (SetupWindowData(_this, window, hwnd, SDL_FALSE) < 0) {
+         return -1;
+     }
+-
+-#if SDL_VIDEO_OPENGL_WGL
+-    if (window->flags & SDL_WINDOW_OPENGL) {
+-        if (WIN_GL_SetupWindow(_this, window) < 0) {
+-            WIN_DestroyWindow(_this, window);
+-            return -1;
+-        }
+-    }
+-#endif
+-
+     return 0;
+ }
+ 

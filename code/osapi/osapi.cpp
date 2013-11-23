@@ -49,6 +49,8 @@
 // OSAPI DEFINES/VARS
 //
 
+static SDL_Window* main_window = NULL;
+
 // os-wide globals
 static HINSTANCE	hInstApp;
 static HWND			hwndApp = NULL;
@@ -144,6 +146,8 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 
 	INITIALIZE_CRITICAL_SECTION( Os_lock );
 
+	SDL_Init(0);
+
 	// initialized
 	Os_inited = 1;
 
@@ -184,9 +188,9 @@ int os_foreground()
 }
 
 // Returns the handle to the main window
-uint os_get_window()
+SDL_Window* os_get_window()
 {
-	return (uint)hwndApp;
+	return main_window;
 }
 
 uint os_get_dc()
@@ -199,11 +203,23 @@ uint os_get_dc()
 }
 
 // Returns the handle to the main window
-void os_set_window(uint new_handle)
+void os_set_window(SDL_Window* new_handle)
 {
-	hwndApp = (HWND)new_handle;
+	main_window = new_handle;
 }
 
+// For FRED
+void os_set_window_from_hwnd(HWND handle)
+{
+	SDL_InitSubSystem(SDL_INIT_VIDEO);
+
+	if (SDL_GL_LoadLibrary(NULL) < 0)
+		Error(LOCATION, "Failed to load OpenGL library: %s!", SDL_GetError());
+
+	SDL_Window* window = SDL_CreateWindowFrom((void*) handle);
+
+	os_set_window(window);
+}
 
 // process management -----------------------------------------------------------------
 
@@ -714,7 +730,6 @@ void win32_create_window(int width, int height)
 extern std::map<int, int> SDLtoFS2;
 extern void joy_set_button_state(int button, int state);
 extern void joy_set_hat_state(int position);
-extern SDL_Window* GL_window;
 
 void os_poll()
 {
@@ -723,7 +738,7 @@ void os_poll()
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
 		case SDL_WINDOWEVENT: {
-			if (event.window.windowID == SDL_GetWindowID(GL_window)) {
+			if (event.window.windowID == SDL_GetWindowID(os_get_window())) {
 				switch (event.window.event) {
 				case SDL_WINDOWEVENT_MINIMIZED:
 					case SDL_WINDOWEVENT_FOCUS_LOST:
@@ -832,9 +847,11 @@ void SCP_Messagebox(int type, const char* message)
 			break;
 		default:
 			Int3();
+			title = ""; // Remove warning about unitialized variable
+			break;
 	}
 
-	SDL_ShowSimpleMessageBox(flags, title, message, GL_window);
+	SDL_ShowSimpleMessageBox(flags, title, message, os_get_window());
 }
 
 // Goober5000 - code provided by jr2 to disable windows key when FSO is in the foreground

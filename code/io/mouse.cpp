@@ -25,8 +25,6 @@
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1
 
-extern SDL_Window *GL_window;
-
 LOCAL int Mouse_mode = MOUSE_MODE_WIN;
 
 int mouse_inited = 0;
@@ -531,5 +529,5 @@ void setWindowMousePos(POINT * pt)
 {
 	Assert(pt != NULL);
 
-	SDL_WarpMouseInWindow(GL_window, pt->x, pt->y);
+	SDL_WarpMouseInWindow(os_get_window(), pt->x, pt->y);
 }

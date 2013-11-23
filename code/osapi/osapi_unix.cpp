@@ -43,8 +43,6 @@ static int			Os_inited = 0;
 
 static CRITICAL_SECTION Os_lock;
 
-extern SDL_Window *GL_window;
-
 int Os_debugger_running = 0;
 
 // ----------------------------------------------------------------------------------------------------
@@ -96,7 +94,7 @@ void os_set_title( const char *title )
 {
 	strcpy_s( szWinTitle, title );
 
-	SDL_SetWindowTitle( GL_window, szWinTitle);
+	SDL_SetWindowTitle( os_get_window(), szWinTitle);
 }
 
 extern void gr_opengl_shutdown();
@@ -164,7 +162,7 @@ DWORD unix_process(DWORD lparam)
 	while( SDL_PollEvent(&event) ) {
 		switch (event.type) {
 			case SDL_WINDOWEVENT: {
-				if (event.window.windowID == SDL_GetWindowID(GL_window)) {
+				if (event.window.windowID == SDL_GetWindowID(os_get_window())) {
 					switch (event.window.event) {
 						case SDL_WINDOWEVENT_MINIMIZED:
 						case SDL_WINDOWEVENT_FOCUS_LOST:
@@ -310,7 +308,7 @@ void SCP_Messagebox(int type, const char* message)
 			Int3();
 	}
     
-	SDL_ShowSimpleMessageBox(flags, title, message, GL_window);
+	SDL_ShowSimpleMessageBox(flags, title, message, os_get_window());
 }
 
 #endif		// Goober5000 - #ifndef WIN32

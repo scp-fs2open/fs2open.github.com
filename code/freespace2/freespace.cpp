@@ -1812,14 +1812,8 @@ void game_init()
 /////////////////////////////
 
 	if ( gr_init() == false ) {
-#ifdef _WIN32
-		ClipCursor(NULL);
-		ShowCursor(TRUE);
-		ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
-		MessageBox( NULL, "Error intializing graphics!", "Error", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
-#elif defined(SCP_UNIX)
-		fprintf(stderr, "Error initializing graphics!");
-
+		SCP_Messagebox(MESSAGEBOX_ERROR, "Error intializing graphics!");
+#if defined(SCP_UNIX)
 		// the default entry should have been created already if it didn't exist, so if we're here then
 		// the current value is invalid and we need to replace it
 		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(1024x768)x16 bit"));
@@ -1836,11 +1830,21 @@ void game_init()
 #ifdef FS2_VOICER
 	if(Cmdline_voice_recognition)
 	{
-		bool voiceRectOn = VOICEREC_init((HWND)os_get_window(), WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
+		SDL_SysWMinfo info;
+		SDL_VERSION(&info.version); // initialize info structure with SDL version info
+
+		bool voiceRectOn = false;
+		if(SDL_GetWindowWMInfo(window, &info)) { // the call returns true on success
+			// success
+			voiceRectOn = VOICEREC_init(info.HWND, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
+		} else {
+			// call failed
+			mprintf(( "Couldn't get window information: %s\n", SDL_GetError() ));
+		}
 	
 		if(voiceRectOn == false)
 		{
-			MessageBox((HWND)os_get_window(), "Failed to init voice rec", "Error", MB_OK);
+			SCP_Messagebox(MESSAGEBOX_ERROR, "Failed to init voice rec!");
 		}
 	}
 
