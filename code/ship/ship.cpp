@@ -11210,13 +11210,14 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}	
 
 	float t;
+	int bank_adjusted = MAX_SHIP_PRIMARY_BANKS + bank;
 
-	if (Weapon_info[weapon].burst_shots > swp->burst_counter[bank]) {
+	if (Weapon_info[weapon].burst_shots > swp->burst_counter[bank_adjusted]) {
 		t = Weapon_info[weapon].burst_delay;
-		swp->burst_counter[bank]++;
+		swp->burst_counter[bank_adjusted]++;
 	} else {
 		t = Weapon_info[weapon].fire_wait;	// They can fire 5 times a second
-		swp->burst_counter[bank] = 0;
+		swp->burst_counter[bank_adjusted] = 0;
 	}
 	swp->next_secondary_fire_stamp[bank] = timestamp((int) (t * 1000.0f));
 	swp->last_secondary_fire_stamp[bank] = timestamp();
