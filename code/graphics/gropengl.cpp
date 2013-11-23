@@ -1478,7 +1478,7 @@ int opengl_init_display_device()
 
 	if (os_get_window() == NULL)
 	{
-		SDL_Window* window = SDL_CreateWindow("Abc", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, gr_screen.max_w, gr_screen.max_h, windowflags);
+		SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, gr_screen.max_w, gr_screen.max_h, windowflags);
 		if (window == NULL)
 		{
 			fprintf(stderr, "Couldn't set video mode: %s", SDL_GetError());
