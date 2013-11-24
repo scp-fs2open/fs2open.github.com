@@ -48,7 +48,7 @@ bool wxFRED2::OnInit()
 void wxFRED2::Mission_new( void )
 {
 //	Mission_reset();
-//	Mission_filename[0] = '\0';
+	Mission_filename[0] = '\0';
 //	docFREDDoc_ptr->autosave("nothing");
 //	Undo_count = 0;
 };

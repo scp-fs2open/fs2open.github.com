@@ -50,7 +50,7 @@ protected:
 
 private:
 	std::vector<std::string> ship_types;
-//	mission The_mission;
+	mission The_mission;
 };
 
 DECLARE_APP(wxFRED2)

@@ -10,6 +10,7 @@ set (file_root
 	glcViewport.h
 	wxfred2.cpp
 	wxfred2.h
+	wxfredstubs.cpp
 )
 
 # Base files
