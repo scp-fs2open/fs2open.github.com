@@ -6,10 +6,14 @@
  * create based on the source.
  */
 
+#include <mission/missionparse.h>
 #include <object/object.h>
 #include <globalincs/pstypes.h>
 
 #include <wx/wx.h>
+
+#include <string>
+#include <vector>
 
 typedef int MTIN_t;	// Model Type Index Number, used to create objects of the assoc. model type
 typedef int OIN_t;	// Object Index Number, used to keep track of all object instances (except waypoints)
@@ -46,6 +50,7 @@ protected:
 
 private:
 	std::vector<std::string> ship_types;
+//	mission The_mission;
 };
 
 DECLARE_APP(wxFRED2)

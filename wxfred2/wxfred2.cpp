@@ -10,13 +10,22 @@
 
 #include "wxfred2.h"
 
-#include <mission/missionparse.h>
+#include <globalincs/globals.h>
 #include <globalincs/pstypes.h>
+#include <mission/missionparse.h>
 
 #include <wx/image.h>
 #include <wx/string.h>
 //#include <wx/xrc/xmlres.h>
 #include <wx/wx.h>
+
+// Referenced variables and functions from code.lib
+char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
+char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
+int Show_cpu = 0;
+int Fred_running = 1;	// z64: :V:'s cheap hack to let the codebase know that fred-specific routines should be run
+float Sun_spot = 0.0f;
+
 
 IMPLEMENT_APP(wxFRED2)
 
