@@ -99,6 +99,7 @@
     <ClCompile Include="..\..\code\wxfred2\glcviewport.cpp" />
     <ClCompile Include="..\..\code\wxfred2\glrcmissionframe.cpp" />
     <ClCompile Include="..\..\code\wxfred2\docfred.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\wxfredstubs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\wxfred2\frmfred2.h" />

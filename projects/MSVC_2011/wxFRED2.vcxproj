@@ -63,7 +63,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <AdditionalIncludeDirectories>$(WXWIN)/include/msvc;$(WXWIN)/include;../../code;../../code/wxfred2;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;FRED;WIN32;_WINDOWS;WINVER=0x500;_WIN32_WINNT=0x500;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;FRED;WIN32;_WINDOWS;WINVER=0x500;_WIN32_WINNT=0x500;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\Profile\wxfred2\</AssemblerListingLocation>
@@ -97,11 +97,12 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <IgnoreSpecificDefaultLibraries>libcd.lib;libcid.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libc.lib;libcd.lib;libci.lib;libcmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(WXWIN)/lib/vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>comctl32.lib;rpcrt4.lib;winmm.lib;advapi32.lib;wsock32.lib;wxmsw29ud_core.lib;wxbase29ud.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(Configuration);$(WXWIN)/lib/vc_lib;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>comctl32.lib;rpcrt4.lib;winmm.lib;advapi32.lib;wsock32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;wxmsw29ud_core.lib;wxbase29ud.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <CustomBuildStep>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\wxfred2_open_3_7_1-debug.exe"  </Command>
@@ -199,6 +200,7 @@
     <ClCompile Include="..\..\code\wxfred2\help\dlgsexphelp.cpp" />
     <ClCompile Include="..\..\code\wxfred2\misc\dlgmissionstats.cpp" />
     <ClCompile Include="..\..\code\wxfred2\wxfred2.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\wxfredstubs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\wxfred2\base\wxfred_base.h" />
@@ -311,6 +313,48 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\code\wxfred2\res\wxfred.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="code.vcxproj">
+      <Project>{c55f5706-e947-41ef-a3e8-6d711cd4ecd8}</Project>
+      <Private>false</Private>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
+    <ProjectReference Include="libjpeg.vcxproj">
+      <Project>{42a241f2-7996-4aaf-8491-fb885e2dc37d}</Project>
+      <Private>false</Private>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
+    <ProjectReference Include="liblua.vcxproj">
+      <Project>{332c7037-05be-4202-93ac-182f1a2df2ac}</Project>
+      <Private>false</Private>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
+    <ProjectReference Include="libpng.vcxproj">
+      <Project>{86c01eac-2406-40a7-b744-aa858b7607a9}</Project>
+      <Private>false</Private>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
+    <ProjectReference Include="zlib.vcxproj">
+      <Project>{a2aff4a4-d3a1-4bd4-86d2-673592598c38}</Project>
+      <Private>false</Private>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
