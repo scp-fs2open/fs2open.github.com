@@ -159,79 +159,72 @@ DWORD unix_process(DWORD lparam)
 {
 	SDL_Event event;
 
-	while( SDL_PollEvent(&event) ) {
+	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
-			case SDL_WINDOWEVENT: {
-				if (event.window.windowID == SDL_GetWindowID(os_get_window())) {
-					switch (event.window.event) {
-						case SDL_WINDOWEVENT_MINIMIZED:
-						case SDL_WINDOWEVENT_FOCUS_LOST:
-						{
-							if (fAppActive) {
-								game_pause();
-								fAppActive = false;
-							}
-							break;
+		case SDL_WINDOWEVENT: {
+			if (event.window.windowID == SDL_GetWindowID(os_get_window())) {
+				switch (event.window.event) {
+				case SDL_WINDOWEVENT_MINIMIZED:
+					case SDL_WINDOWEVENT_FOCUS_LOST:
+					{
+						if (fAppActive) {
+							game_pause();
+							fAppActive = false;
 						}
-						case SDL_WINDOWEVENT_MAXIMIZED:
-						case SDL_WINDOWEVENT_RESTORED:
-						case SDL_WINDOWEVENT_FOCUS_GAINED:
-						{
-							if (!fAppActive) {
-								game_unpause();
-								fAppActive = true;
-							}
-						}
+						break;
 					}
+					case SDL_WINDOWEVENT_MAXIMIZED:
+					case SDL_WINDOWEVENT_RESTORED:
+					case SDL_WINDOWEVENT_FOCUS_GAINED:
+					{
+						if (!fAppActive) {
+							game_unpause();
+							fAppActive = true;
+						}
+						break;
+					}
+					case SDL_WINDOWEVENT_CLOSE:
+						gameseq_post_event(GS_EVENT_QUIT_GAME);
+						break;
 				}
-				gr_activate(fAppActive);
-				break;
 			}
+			gr_activate(fAppActive);
+			break;
+		}
 
-			case SDL_KEYDOWN:
-				/*if( (event.key.keysym.mod & KMOD_ALT) && (event.key.keysym.sym == SDLK_RETURN) ) {
-					Gr_screen_mode_switch = 1;
-					gr_activate(1);
-					break;
-				}*/
+		case SDL_KEYDOWN:
+			if (SDLtoFS2[event.key.keysym.scancode]) {
+				key_mark(SDLtoFS2[event.key.keysym.scancode], 1, 0);
+			}
+			break;
 
-				if( SDLtoFS2[event.key.keysym.scancode] ) {
-					key_mark( SDLtoFS2[event.key.keysym.scancode], 1, 0 );
-				}
-				break;
+		case SDL_KEYUP:
+			if (SDLtoFS2[event.key.keysym.scancode]) {
+				key_mark(SDLtoFS2[event.key.keysym.scancode], 0, 0);
+			}
+			break;
 
-			case SDL_KEYUP:
-				/*if( (event.key.keysym.mod & KMOD_ALT) && (event.key.keysym.sym == SDLK_RETURN) ) {
-					Gr_screen_mode_switch = 0;
-					break;
-				}*/
+		case SDL_MOUSEBUTTONDOWN:
+		case SDL_MOUSEBUTTONUP:
+			if (event.button.button == SDL_BUTTON_LEFT)
+				mouse_mark_button(MOUSE_LEFT_BUTTON, event.button.state);
+			else if (event.button.button == SDL_BUTTON_MIDDLE)
+				mouse_mark_button(MOUSE_MIDDLE_BUTTON, event.button.state);
+			else if (event.button.button == SDL_BUTTON_RIGHT)
+				mouse_mark_button(MOUSE_RIGHT_BUTTON, event.button.state);
 
-				if (SDLtoFS2[event.key.keysym.scancode]) {
-					key_mark( SDLtoFS2[event.key.keysym.scancode], 0, 0 );
-				}
-				break;
+			break;
 
-			case SDL_MOUSEBUTTONDOWN:
-			case SDL_MOUSEBUTTONUP:
-				if (event.button.button == SDL_BUTTON_LEFT)
-					mouse_mark_button( MOUSE_LEFT_BUTTON, event.button.state );
-				else if (event.button.button == SDL_BUTTON_MIDDLE)
-					mouse_mark_button( MOUSE_MIDDLE_BUTTON, event.button.state );
-				else if (event.button.button == SDL_BUTTON_RIGHT)
-					mouse_mark_button( MOUSE_RIGHT_BUTTON, event.button.state );
+		case SDL_JOYHATMOTION:
+			joy_set_hat_state(event.jhat.value);
+			break;
 
-				break;
-
-			case SDL_JOYHATMOTION:
-				joy_set_hat_state( event.jhat.value );
-				break;
-
-			case SDL_JOYBUTTONDOWN:
-			case SDL_JOYBUTTONUP:
-				if (event.jbutton.button < JOY_NUM_BUTTONS) {
-					joy_set_button_state( event.jbutton.button, event.jbutton.state );
-				}
-				break;
+		case SDL_JOYBUTTONDOWN:
+		case SDL_JOYBUTTONUP:
+			if (event.jbutton.button < JOY_NUM_BUTTONS) {
+				joy_set_button_state(event.jbutton.button, event.jbutton.state);
+			}
+			break;
 		}
 	}
 
@@ -285,29 +278,33 @@ void debug_int3(char *file, int line)
 	abort();
 }
 
-void SCP_Messagebox(int type, const char* message)
+void SCP_Messagebox(int type, const char* message, const char* title) 
 {
 	int flags = 1;
-	const char* title;
-    
-	switch (type)
+
+	switch (type) 
 	{
 		case MESSAGEBOX_ERROR:
 			flags = SDL_MESSAGEBOX_ERROR;
-			title = "Error";
+			if (title == NULL)
+				title = "Error";
 			break;
 		case MESSAGEBOX_INFORMATION:
 			flags = SDL_MESSAGEBOX_INFORMATION;
-			title = "Information";
+			if (title == NULL)
+				title = "Information";
 			break;
 		case MESSAGEBOX_WARNING:
 			flags = SDL_MESSAGEBOX_WARNING;
-			title = "Warning";
+			if (title == NULL)
+				title = "Warning";
 			break;
 		default:
 			Int3();
+			title = ""; // Remove warning about unitialized variable
+			break;
 	}
-    
+
 	SDL_ShowSimpleMessageBox(flags, title, message, os_get_window());
 }
 

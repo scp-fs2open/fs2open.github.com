@@ -80,6 +80,7 @@
 #include "graphics/gropenglshader.h"
 #include "model/model.h"
 #include "mod_table/mod_table.h"
+#include "osapi/osapi.h"
 
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
@@ -5181,7 +5182,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		sprintf (err_msg, "Unable to allocate ship subsystems. Maximum is %d. No subsystems have been assigned to %s.", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET), shipp->ship_name);
 
 		if (Fred_running) 
-			MessageBox(NULL, err_msg, "Error", MB_OK);
+			SCP_Messagebox(MESSAGEBOX_ERROR, err_msg);
 		else
 			Error(LOCATION, err_msg);
 	}

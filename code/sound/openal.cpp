@@ -2,6 +2,7 @@
 #include "globalincs/pstypes.h"
 #include "sound/openal.h"
 #include "osapi/osregistry.h"
+#include "osapi/osapi.h"
 
 #include <string>
 #include <algorithm>
@@ -365,11 +366,14 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture)
 
 	if (AL_minor_version < 1) {
 #ifdef _WIN32
-		MessageBox(NULL, "OpenAL 1.1 or newer is required for proper operation.  Please upgrade your OpenAL drivers, which\nare available at http://www.openal.org/downloads.html, and try running the game again.", NULL, MB_OK);
+		SCP_Messagebox(MESSAGEBOX_ERROR, 
+			"OpenAL 1.1 or newer is required for proper operation.  Please upgrade your OpenAL drivers, which\n"
+			"are available at http://www.openal.org/downloads.html, and try running the game again.");
 #else
-		printf("OpenAL 1.1 or newer is required for proper operation.\n");
-		printf("Please upgrade to a newer version if on OS X or switch\n");
-		printf("to OpenAL-Soft on Linux.\n");
+		SCP_Messagebox(MESSAGEBOX_ERROR,
+			"OpenAL 1.1 or newer is required for proper operation.\n"
+			"Please upgrade to a newer version if on OS X or switch\n"
+			"to OpenAL-Soft on Linux.\n");
 #endif
 
 		alcMakeContextCurrent(NULL);

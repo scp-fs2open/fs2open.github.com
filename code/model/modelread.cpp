@@ -34,6 +34,7 @@
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
 #include "cmdline/cmdline.h"
+#include "osapi/osapi.h"
 
 
 #include "gamesnd/gamesnd.h"
@@ -2506,7 +2507,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		char buffer[100];
 		sprintf(buffer,"Serious problem loading model %s, %d normals capped to zero",
 			filename, Parse_normal_problem_count);
-		MessageBox(NULL,buffer,"Error", MB_OK);
+
+		SCP_Messagebox(MESSAGEBOX_ERROR, buffer);
 	}
 #endif
 

@@ -39,6 +39,8 @@
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
 
+#include "SDL_syswm.h"
+
 
 // used to be a THREADED define but only use multiple process threads if this is defined
 // NOTE: may hang if set
@@ -147,6 +149,10 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 	INITIALIZE_CRITICAL_SECTION( Os_lock );
 
 	SDL_Init(0);
+
+#ifdef FS2_VOICER
+	SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE); // We currently only need this for voice recognition
+#endif
 
 	// initialized
 	Os_inited = 1;
@@ -757,12 +763,34 @@ void os_poll()
 							game_unpause();
 							fAppActive = true;
 						}
+						break;
 					}
+					case SDL_WINDOWEVENT_CLOSE:
+						gameseq_post_event(GS_EVENT_QUIT_GAME);
+						break;
 				}
 			}
 			gr_activate(fAppActive);
 			break;
 		}
+
+		case SDL_SYSWMEVENT:
+#ifdef _WIN32
+#ifdef FS2_VOICER
+			switch(event.syswm.msg->msg.win.msg)
+			{
+			case WM_RECOEVENT:
+				if ( Game_mode & GM_IN_MISSION && Cmdline_voice_recognition)
+				{
+					VOICEREC_process_event( event.syswm.msg->msg.win.hwnd );
+				}
+				break;
+			default:
+				break;
+			}
+#endif
+#endif
+			break;
 
 		case SDL_KEYDOWN:
 			if (SDLtoFS2[event.key.keysym.scancode]) {
@@ -826,24 +854,26 @@ void debug_int3(char *file, int line)
 
 }
 
-void SCP_Messagebox(int type, const char* message) 
+void SCP_Messagebox(int type, const char* message, const char* title) 
 {
 	int flags = 1;
-	const char* title;
 
 	switch (type) 
 	{
 		case MESSAGEBOX_ERROR:
 			flags = SDL_MESSAGEBOX_ERROR;
-			title = "Error";
+			if (title == NULL)
+				title = "Error";
 			break;
 		case MESSAGEBOX_INFORMATION:
 			flags = SDL_MESSAGEBOX_INFORMATION;
-			title = "Information";
+			if (title == NULL)
+				title = "Information";
 			break;
 		case MESSAGEBOX_WARNING:
 			flags = SDL_MESSAGEBOX_WARNING;
-			title = "Warning";
+			if (title == NULL)
+				title = "Warning";
 			break;
 		default:
 			Int3();

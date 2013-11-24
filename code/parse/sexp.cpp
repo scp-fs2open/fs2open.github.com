@@ -96,6 +96,7 @@
 #include "mod_table/mod_table.h"
 #include "ship/afterburner.h"
 #include "globalincs/alphacolors.h"
+#include "osapi/osapi.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -32382,7 +32383,7 @@ bool output_sexps(char *filepath)
 
 	if(fp == NULL)
 	{
-		MessageBox(NULL,"Error creating SEXP operator list", "Error", MB_OK);
+		SCP_Messagebox(MESSAGEBOX_ERROR, "Error creating SEXP operator list");
 		return false; 
 	}
 

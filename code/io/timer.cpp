@@ -9,10 +9,6 @@
 
 
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <limits.h>
 
 #include "globalincs/pstypes.h"

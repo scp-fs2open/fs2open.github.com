@@ -19,16 +19,13 @@
 #include "parse/sexp.h"
 #include "globalincs/version.h"
 #include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
 
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #elif defined(APPLE_APP)
 #include <CoreFoundation/CoreFoundation.h>
-#endif
-
-#ifdef SCP_UNIX
-#include "osapi/osapi.h"
 #endif
 
 #include <string.h>
@@ -679,32 +676,6 @@ void os_validate_parms(char *cmdline)
 			}
 
 			if (parm_found == 0) {
-#ifdef _WIN32
-				// Changed this to MessageBox, this is a user error not a developer
-				char buffer[128];
-				sprintf(buffer,"Unrecognized command line parameter %s, continue?",token);
-				if( MessageBox(NULL, buffer, "Warning", MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
-					exit(0);
-#elif defined(APPLE_APP)
-				CFStringRef message;
-				char buffer[128];
-				CFOptionFlags result;
-
-				snprintf(buffer, 128, "Unrecognized command line parameter, \"%s\", continue?", token);
-				message = CFStringCreateWithCString(NULL, buffer, kCFStringEncodingASCII);
-
-				if ( CFUserNotificationDisplayAlert(0, kCFUserNotificationPlainAlertLevel, NULL, NULL, NULL, CFSTR("Unknown Command"), message, NULL, CFSTR("Quit"), NULL, &result) ) {
-                    CFRelease(message);
-					exit(0);
-				}
-
-				if (result != kCFUserNotificationDefaultResponse) {
-                    CFRelease(message);
-					exit(0);
-				}
-
-                CFRelease(message);
-#else
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
 				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?") ) {
 					if (FS_VERSION_REVIS == 0) {
@@ -728,9 +699,11 @@ void os_validate_parms(char *cmdline)
 					printf("\n");
 					exit(0);
 				} else {
-					printf("Unrecognized command line parameter \"%s\".  Ignoring...\n", token);
+					char buffer[128];
+					sprintf(buffer,"Unrecognized command line parameter %s.",token);
+					
+					SCP_Messagebox(MESSAGEBOX_INFORMATION, buffer);
 				}
-#endif
 			}
 		}
 
@@ -958,7 +931,7 @@ bool SetCmdlineParams()
 		FILE *fp = fopen("flags.lch","w");
 		
 		if (fp == NULL) {
-			MessageBox(NULL,"Error creating flag list for launcher", "Error", MB_OK);
+			SCP_Messagebox(MESSAGEBOX_ERROR,"Error creating flag list for launcher");
 			return false; 
 		}
 		

@@ -1032,7 +1032,7 @@ void outwnd_update_marking(LPARAM l_parm, HWND hwnd)
 		sprintf(msg, "Marking limits invalid!\n"
 			"(%d,%d) to (%d,%d)", marked_left, marked_top, marked_right, marked_bottom);
 
-		MessageBox(hwnd, msg, "Error", MB_OK | MB_ICONERROR);
+		SCP_Messagebox(MESSAGEBOX_ERROR, msg);
 		marked = 0;
 	}
 
@@ -1321,7 +1321,7 @@ void find_text_in_outwindow(int n, int p)
 
 		if (n == mprintf_last_line)
 		{
-			MessageBox(hOutputWnd, "Search text not found", "Find Error", MB_OK | MB_ICONERROR);
+			SCP_Messagebox(MESSAGEBOX_ERROR, "Search text not found", "Find Error");
 			find_line = -1;
 			return;
 		}

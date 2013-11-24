@@ -89,7 +89,7 @@ void os_resume();
 #define MESSAGEBOX_INFORMATION 3
 
 // Display a simple messagebox through SDL
-void SCP_Messagebox(int type, const char* message);
+void SCP_Messagebox(int type, const char* message, const char* title = NULL);
 
 #endif // _OSAPI_H
 

@@ -22,6 +22,8 @@
  #include <sys/stat.h>
 #endif
 
+#include "SDL_syswm.h" // For SDL_SysWMinfo
+
 #include "anim/animplay.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
