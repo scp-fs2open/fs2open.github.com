@@ -58,16 +58,8 @@ int HTTPObjThread( void *obj )
 
 void ChttpGet::AbortGet()
 {
-#ifdef WIN32
-	OutputDebugString("Aborting....\n");
-#endif
-
 	m_Aborting = true;
 	while(!m_Aborted) Sleep(50); //Wait for the thread to end
-
-#ifdef WIN32
-	OutputDebugString("Aborted....\n");
-#endif
 }
 
 ChttpGet::ChttpGet(char *URL,char *localfile,char *proxyip,unsigned short proxyport)
