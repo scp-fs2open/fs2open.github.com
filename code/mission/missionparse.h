@@ -10,15 +10,21 @@
 #ifndef _PARSE_H
 #define _PARSE_H
 
-#include <setjmp.h>
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
-#include "model/model.h"
-#include "object/object.h"
+#include "controlconfig/controlsconfig.h"
+#include "fireball/fireballs.h"
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
-#include "sound/sound.h"
-#include "parse/sexp.h"
 #include "io/keycontrol.h"
+#include "model/model.h"
+#include "nebula/neb.h"
+#include "object/object.h"
+#include "parse/sexp.h"
+#include "ship/ship.h"
+#include "sound/sound.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -130,7 +136,7 @@ typedef struct mission_cutscene {
 	}
 } mission_cutscene;
 
-typedef struct mission {
+struct mission {
 	char	name[NAME_LENGTH];
 	char	author[NAME_LENGTH];
 	float	version;
@@ -214,7 +220,7 @@ typedef struct mission {
 	{
 		Reset( );
 	}
-} mission;
+};
 
 // cargo defines
 // NOTE: MAX_CARGO MUST REMAIN <= 64 (CARGO_NO_DEPLETE) for NO_DEPLETE to work.

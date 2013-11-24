@@ -12,29 +12,28 @@
 #ifndef _SPECIES_DEFS_H_
 #define _SPECIES_DEFS_H_
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/vmallocator.h"
 #include "graphics/generic.h"
-#include "gamesnd/gamesnd.h"
 #include "mission/missionbriefcommon.h"
-#include "hud/hudparse.h"
+#include "sound/sound.h"
 
 // for bitmap thrusters
-typedef struct thrust_pair_bitmap {
+struct thrust_pair_bitmap {
 	generic_bitmap normal;
 	generic_bitmap afterburn;
-} thrust_pair_bitmap;
+};
 
 // for animated thrusters
-typedef struct thrust_pair {
+struct thrust_pair {
 	generic_anim normal;
 	generic_anim afterburn;
-} thrust_pair;
+};
 
-typedef struct thrust_info {
+struct thrust_info {
 	thrust_pair flames;
 	thrust_pair glow;
-} thrust_info;
+};
 
 
 // Currently the only species-specific feature not in species_info is ship debris.  This is because
