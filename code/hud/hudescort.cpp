@@ -485,7 +485,7 @@ void hud_escort_clear_all(bool clear_flags)
 		}
 		Escort_ships[i].obj_signature = -99;
 		Escort_ships[i].np_id = -1;
-		shield_info_reset(&Objects[Escort_ships[i].objnum], &Escort_ships[i].hit_info);
+		shield_info_reset(NULL, &Escort_ships[i].hit_info);
 	}
 }
 
@@ -720,7 +720,7 @@ void merge_escort_lists(escort_info *complete_escorts, int num_complete_escorts)
 				continue;
 			}
 			if ( !valid_hit_info[i] ) {
-				shield_info_reset(&Objects[Escort_ships[i].objnum], &Escort_ships[i].hit_info);
+				shield_info_reset(NULL, &Escort_ships[i].hit_info);
 			}	
 		}
 	}
