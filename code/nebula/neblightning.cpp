@@ -21,6 +21,7 @@
 #include "weapon/emp.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
+#include "mission/missionparse.h"
 extern int Cmdline_nohtl;
 
 // ------------------------------------------------------------------------------------------------------

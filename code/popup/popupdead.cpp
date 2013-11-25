@@ -31,6 +31,7 @@
 #include "network/multiutil.h"
 #include "io/timer.h"
 #include "hud/hudmessage.h"
+#include "mission/missionparse.h"
 
 
 UI_WINDOW	Popupdead_window;

@@ -31,7 +31,7 @@
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
 #include "menuui/mainhallmenu.h"
-
+#include "mission/missionparse.h"
 
 
 #define MAX_MISSIONS	1024

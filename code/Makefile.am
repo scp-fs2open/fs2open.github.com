@@ -188,11 +188,7 @@ EXTRA_DIST =	\
 AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@ -I../mongoose
 AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 
-if BUILD_WXFRED
-LIBCODE=
-else
 LIBCODE=libcode.a
-endif
 noinst_LIBRARIES = $(LIBCODE)
 bin_PROGRAMS = @FS2_BINARY@
 
@@ -903,6 +899,9 @@ wxFRED_SOURCES = \
 	wxfred2/help/dlgsexphelp.cpp \
 	wxfred2/help/dlgaboutbox.h \
 	wxfred2/help/dlgaboutbox.cpp \
+	wxfred2/wxfredstubs.cpp \
+	wxfred2/docfred.h \
+	wxfred2/docfred.cpp \
 	wxfred2/frmfred2.h \
 	wxfred2/frmfred2.cpp
 
@@ -911,6 +910,9 @@ wxFRED2_@PACKAGE_VERSION@_DEBUG_SOURCES = \
 
 wxFRED2_@PACKAGE_VERSION@_SOURCES =	\
 	${wxFRED_SOURCES}
+
+wxFRED2_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a ../mongoose/libmongoose.a
+wxFRED2_@PACKAGE_VERSION@_LDADD = libcode.a ../mongoose/libmongoose.a
 
 ##
 ## End wxFRED2 binary

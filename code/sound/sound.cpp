@@ -36,6 +36,8 @@
 
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
 
+extern fix Missiontime;
+
 typedef struct sound	{
 	int				sid;			// software id
 	char				filename[MAX_FILENAME_LEN];

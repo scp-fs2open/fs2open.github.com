@@ -13,7 +13,6 @@
 #define __GAMESND_H__
 
 #include "sound/sound.h"
-#include "mission/missionparse.h"
 
 
 void gamesnd_parse_soundstbl();	// Loads in general game sounds from sounds.tbl
