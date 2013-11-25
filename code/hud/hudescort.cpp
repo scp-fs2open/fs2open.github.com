@@ -563,6 +563,7 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 				escorts[*num_escorts].obj_signature = -1;
 				escorts[*num_escorts].priority = -1;
 				escorts[*num_escorts].np_id = Net_players[idx].player_id;
+				shield_info_reset(NULL, &escorts[*num_escorts].hit_info);
 				(*num_escorts)++;
 			}
 		}
@@ -624,6 +625,7 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			escorts[*num_escorts].obj_signature = objp->signature;
 			escorts[*num_escorts].priority = Ships[objp->instance].escort_priority;
 			escorts[*num_escorts].np_id = -1;
+			shield_info_reset(&Objects[so->objnum], &escorts[*num_escorts].hit_info);
 			(*num_escorts)++;			
 		}
 	}
@@ -660,6 +662,7 @@ void hud_setup_escort_list(int level)
 		Escort_ships[Num_escort_ships].priority = complete_escorts[Num_escort_ships].priority;
 		Escort_ships[Num_escort_ships].objnum = complete_escorts[Num_escort_ships].objnum;
 		Escort_ships[Num_escort_ships].np_id = complete_escorts[Num_escort_ships].np_id;
+		Escort_ships[Num_escort_ships].hit_info = complete_escorts[Num_escort_ships].hit_info;
 	}
 
 	if(level){
@@ -856,6 +859,7 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 		complete_escorts[num_complete_escorts].objnum = objnum;
 		complete_escorts[num_complete_escorts].obj_signature = Objects[objnum].signature;
 		complete_escorts[num_complete_escorts].priority = Ships[Objects[objnum].instance].escort_priority;
+		shield_info_reset(&Objects[objnum], &complete_escorts[num_complete_escorts].hit_info);
 
 		// add him to escort list
 		Ships[Objects[objnum].instance].flags |= SF_ESCORT;
