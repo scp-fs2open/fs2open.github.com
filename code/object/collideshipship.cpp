@@ -351,7 +351,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	if (valid_hit_occured) {
 
 		// Collision debug stuff
-#ifdef DEBUG
+#ifndef NDEBUG
 		object *collide_obj = NULL;
 		if (heavy_obj == Player_obj) {
 			collide_obj = light_obj;
