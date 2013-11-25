@@ -442,30 +442,6 @@ void init_pending_messages(void)
 		Pending_messages[i].frame_to_process = -1;
 }
 
-// void win32_blit(HDC hSrcDC, HPALETTE hPalette, int x, int y, int w, int h )
-#if 0
-void win32_blit(void *xx, void *yy, int x, int y, int w, int h )
-{
-	HPALETTE hOldPalette = NULL;
-	HDC hdc = GetDC(hwndApp);
-
-	if ( !hdc )	return;
-	if ( !fAppActive ) return;
-
-	if (hPalette)	{
-		hOldPalette = SelectPalette(hdc, hPalette, FALSE);
-		RealizePalette( hdc );
-	}
-
-	BitBlt(hdc, 0, 0, w, h, hSrcDC, x, y, SRCCOPY);
-	
-	if ( hOldPalette )	
-		SelectPalette(hdc, hOldPalette, FALSE);
-
-	ReleaseDC( hwndApp, hdc );
-}
-#endif
-
 BOOL CFREDApp::OnIdle(LONG lCount)
 {
 	int adjust = 0;

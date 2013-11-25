@@ -651,7 +651,6 @@
     <ClCompile Include="..\..\code\object\waypoint.cpp" />
     <ClCompile Include="..\..\code\Observer\observer.cpp" />
     <ClCompile Include="..\..\code\osapi\osapi.cpp" />
-    <ClCompile Include="..\..\code\osapi\osapi_unix.cpp" />
     <ClCompile Include="..\..\code\osapi\osregistry.cpp" />
     <ClCompile Include="..\..\code\osapi\osregistry_unix.cpp" />
     <ClCompile Include="..\..\code\osapi\outwnd.cpp" />

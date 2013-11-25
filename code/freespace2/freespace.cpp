@@ -22,8 +22,6 @@
  #include <sys/stat.h>
 #endif
 
-#include "SDL_syswm.h" // For SDL_SysWMinfo
-
 #include "anim/animplay.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
@@ -1679,6 +1677,11 @@ DCF(gamma,"Sets Gamma factor")
 
 #ifdef APPLE_APP
 char full_path[1024];
+#endif
+
+#ifdef FS2_VOICER
+// This is really awful but thank the guys of X11 for naming something "Window"
+#	include "SDL_syswm.h" // For SDL_SysWMinfo
 #endif
 
 /**

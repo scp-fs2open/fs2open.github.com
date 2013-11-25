@@ -648,9 +648,6 @@
     <ClCompile Include="..\..\code\osapi\osapi.cpp">
       <Filter>OsApi</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\osapi\osapi_unix.cpp">
-      <Filter>OsApi</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\osapi\osregistry.cpp">
       <Filter>OsApi</Filter>
     </ClCompile>

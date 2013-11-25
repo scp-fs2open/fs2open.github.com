@@ -588,6 +588,8 @@ FS2_SOURCES =	\
 	object/waypoint.h	\
 	observer/observer.cpp	\
 	observer/observer.h	\
+	osapi/osapi.cpp	\
+	osapi/osapi.h	\
 	palman/palman.cpp	\
 	palman/palman.h	\
 	parse/encrypt.cpp	\
@@ -771,8 +773,6 @@ WIN32_SOURCES =	\
 	graphics/gl/Glext.h	\
 	graphics/gl/wglext.h	\
 	osapi/monopub.h	\
-	osapi/osapi.cpp	\
-	osapi/osapi.h	\
 	osapi/osregistry.cpp	\
 	osapi/osregistry.h	\
 	osapi/outwnd.cpp	\
@@ -782,8 +782,6 @@ endif
 ## Unix-specific sources
 if FS2_OS_UNIX
 UNIX_SOURCES =	\
-	osapi/osapi_unix.cpp	\
-	osapi/osapi.h	\
 	osapi/osregistry_unix.cpp	\
 	osapi/osregistry.h	\
 	osapi/outwnd_unix.cpp	\

@@ -55,7 +55,6 @@ void os_set_title( const char * title );
 // call at program end
 void os_cleanup();
 
-
 // window management ---------------------------------------------------------------
 
 // toggle window size between full screen and windowed
@@ -75,7 +74,7 @@ void os_set_window(SDL_Window* new_handle);
 void os_poll();
 
 // Sleeps for n milliseconds or until app becomes active.
-void os_sleep(int ms);
+void os_sleep(uint ms);
 
 // Used to stop message processing
 void os_suspend();
@@ -84,19 +83,14 @@ void os_suspend();
 void os_resume(); 
 
 // These map onto the SDL ShowSimpleMessageBox flags
-#define MESSAGEBOX_ERROR 1
-#define MESSAGEBOX_WARNING 2
-#define MESSAGEBOX_INFORMATION 3
+enum MessageBoxType
+{
+	MESSAGEBOX_ERROR,
+	MESSAGEBOX_WARNING,
+	MESSAGEBOX_INFORMATION,
+};
 
 // Display a simple messagebox through SDL
-void SCP_Messagebox(int type, const char* message, const char* title = NULL);
+void SCP_Messagebox(MessageBoxType type, const char* message, const char* title = NULL);
 
 #endif // _OSAPI_H
-
-
-// Goober5000
-
-#ifdef _WIN32
-void disableWindowsKey();
-void enableWindowsKey();
-#endif // _WIN32
