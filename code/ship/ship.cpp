@@ -664,7 +664,7 @@ void init_ship_entry(ship_info *sip)
 
 	sip->name[0] = '\0';
 	sip->alt_name[0] = '\0';
-	sprintf(sip->short_name, "ShipClass%d", (sip - Ship_info));
+	sprintf(sip->short_name, "ShipClass%d", (int) (sip - Ship_info));
 	sip->species = 0;
 	sip->class_type = -1;
 
@@ -2519,7 +2519,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->shield_point_augment_ctrls[LEFT_QUAD] = -1;
 		sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
 
-		for (int i = 0; i < num_strings; i++) {
+		for (i = 0; i < num_strings; i++) {
 			const char *str = ctrl_strings[i].c_str();
 
 			if (!stricmp(str, "front"))
@@ -10256,11 +10256,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		polymodel *pm = model_get( sip->model_num );
 		
 		// Goober5000 (thanks to _argv[-1] for the original idea)
-		if (!(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY))
+		if ( !((winfo_p->wi_flags3 & WIF3_NO_LINKED_PENALTY) || (The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY)) )
 		{
 			int effective_primary_banks = 0;
 			for (int it = 0; it < num_primary_banks; it++)
-				if (Weapon_info[swp->primary_bank_weapons[it]].wi_flags3 & WIF3_NOLINK)
+				if (Weapon_info[swp->primary_bank_weapons[it]].wi_flags3 & (WIF3_NOLINK | WIF3_NO_LINKED_PENALTY))
 					continue;
 				else
 					effective_primary_banks++;
@@ -11074,7 +11074,7 @@ extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_i
 //                need to avoid firing when normally called
 int ship_fire_secondary( object *obj, int allow_swarm )
 {
-	int			n, weapon, j, bank, starting_bank_count = -1, num_fired;
+	int			n, weapon, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
 	ushort		starting_sig = 0;
 	ship			*shipp;
 	ship_weapon *swp;
@@ -11146,6 +11146,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	if ( bank < 0 || bank >= sip->num_secondary_banks ) {
 		return 0;
 	}
+	bank_adjusted = MAX_SHIP_PRIMARY_BANKS + bank;
 
 	if (swp->secondary_animation_position[bank] == MA_POS_SET) {
 		if ( timestamp_elapsed(swp->secondary_animation_done_time[bank]) )
@@ -11280,12 +11281,12 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	float t;
 
-	if (Weapon_info[weapon].burst_shots > swp->burst_counter[bank]) {
+	if (Weapon_info[weapon].burst_shots > swp->burst_counter[bank_adjusted]) {
 		t = Weapon_info[weapon].burst_delay;
-		swp->burst_counter[bank]++;
+		swp->burst_counter[bank_adjusted]++;
 	} else {
 		t = Weapon_info[weapon].fire_wait;	// They can fire 5 times a second
-		swp->burst_counter[bank] = 0;
+		swp->burst_counter[bank_adjusted] = 0;
 	}
 	swp->next_secondary_fire_stamp[bank] = timestamp((int) (t * 1000.0f));
 	swp->last_secondary_fire_stamp[bank] = timestamp();

@@ -648,6 +648,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_NOLINK;
 		else if (!stricmp(NOX("same emp time for capships"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS;
+		else if (!stricmp(NOX("no primary linked penalty"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_NO_LINKED_PENALTY;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}

@@ -51,9 +51,7 @@ int Msg_instance;						// variable which holds ship/wing instance to send the me
 int Msg_shortcut_command;			// holds command when using a shortcut key
 LOCAL int Msg_target_objnum;				// id of the current target of the player
 LOCAL ship_subsys *Msg_targeted_subsys;// pointer to current subsystem which is targeted
-//#ifndef NDEBUG
 LOCAL	int Msg_enemies;						// tells us whether or not to message enemy ships or friendlies
-//#endif
 
 LOCAL int Msg_eat_key_timestamp;			// used to temporarily "eat" keys
 
@@ -2177,7 +2175,6 @@ void hud_squadmsg_toggle()
 	Player->flags ^= PLAYER_FLAGS_MSG_MODE;
 }
 
-//#ifndef NDEBUG
 // extern entry point to allow messaging of enemies
 void hud_enemymsg_toggle()
 {
@@ -2186,7 +2183,6 @@ void hud_enemymsg_toggle()
 	if ( Player->flags & PLAYER_FLAGS_MSG_MODE )
 		Msg_enemies = 1;
 }
-//#endif
 
 // external entry point into code when a keyboard shortcut is used for a command
 // we are passed in an ID for the command to set internal variables.  This command
