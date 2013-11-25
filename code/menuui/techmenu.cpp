@@ -557,7 +557,12 @@ void techroom_ships_render(float frametime)
 		}
 	}
 
-	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
+	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER;
+
+	if(sip->flags2 & SIF2_NO_LIGHTING)
+				render_flags |= MR_NO_LIGHTING;
+
+	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, render_flags);
 
 	Glowpoint_use_depth_buffer = true;
 

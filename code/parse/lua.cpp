@@ -6175,7 +6175,13 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
 	model_set_detail_level(0);
-	model_render(sip->model_num, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
+
+	if(sip->flags2 & SIF2_NO_LIGHTING)
+		render_flags |= MR_NO_LIGHTING;
+
+	model_render(sip->model_num, &orient, &vmd_zero_vector, render_flags);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -6240,7 +6246,13 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
 	model_set_detail_level(0);
-	model_render(sip->model_num, orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
+
+	if(sip->flags2 & SIF2_NO_LIGHTING)
+		render_flags |= MR_NO_LIGHTING;
+
+	model_render(sip->model_num, orient, &vmd_zero_vector, render_flags);
 
 	//OK we're done
 	gr_end_view_matrix();
