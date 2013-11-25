@@ -1018,13 +1018,8 @@ void hud_init_homing_beep()
 	Homing_beep.precalced_interp = (Homing_beep.max_cycle_dist-Homing_beep.min_cycle_dist) / (Homing_beep.max_cycle_time - Homing_beep.min_cycle_time );
 }
 
-// hud_init_targeting() will set the current target to point to the dummy node
-// in the object used list
-//
-void hud_init_targeting()
+void hud_init_ballistic_index()
 {
-	Assert(Player_ai != NULL);
-
 	int i;
 
 	// decide whether to realign HUD for ballistic primaries
@@ -1037,6 +1032,14 @@ void hud_init_targeting()
 			break;
 		}
 	}
+}
+
+// hud_init_targeting() will set the current target to point to the dummy node
+// in the object used list
+//
+void hud_init_targeting()
+{
+	Assert(Player_ai != NULL);
 
 	// make sure there is no current target
 	set_target_objnum( Player_ai, -1 );

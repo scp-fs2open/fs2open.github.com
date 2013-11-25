@@ -627,9 +627,14 @@ void init_hud() {
 	}
 }
 
+extern void hud_init_ballistic_index();
+
 void set_current_hud()
 {
 	int i, num_gauges, config_type;
+
+	// before we load any hud gauges, see whether we're carring a ballistic weapon (Mantis #2962)
+	hud_init_ballistic_index();
 
 	// go through all HUD gauges. Load gauge properties defined in the HUD config if gauge is not customized.
 	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
