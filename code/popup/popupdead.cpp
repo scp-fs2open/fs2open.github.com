@@ -31,6 +31,7 @@
 #include "popup/popup.h"
 #include "popup/popupdead.h"
 #include "ui/ui.h"
+#include "mission/missionparse.h"
 
 
 UI_WINDOW	Popupdead_window;

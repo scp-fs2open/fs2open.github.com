@@ -31,7 +31,7 @@
 #include "popup/popup.h"
 #include "ui/ui.h"
 #include "ui/uidefs.h"
-
+#include "mission/missionparse.h"
 
 
 #define MAX_MISSIONS	1024

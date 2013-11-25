@@ -22,6 +22,7 @@
 #include "menuui/optionsmenumulti.h"
 #include "network/multi.h"
 #include "playerman/player.h"
+#include "object/object.h"
 #include "debugconsole/console.h"
 
 
