@@ -28400,7 +28400,7 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
-
+		case OP_SET_ETS_VALUES:
 			return CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 
 		case OP_SHIP_INVULNERABLE:
@@ -28714,7 +28714,6 @@ int get_subcategory(int sexp_id)
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_GET_ETS_VALUE:
-		case OP_SET_ETS_VALUES:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
