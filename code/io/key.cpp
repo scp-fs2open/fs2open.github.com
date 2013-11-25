@@ -735,9 +735,8 @@ void key_mark( uint code, int state, uint latency )
 		temp |= keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT];
 		temp |= keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT];
 		temp |= keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL];
-//#ifndef NDEBUG
 		temp |= keyd_pressed[KEY_DEBUG_KEY];
-//#endif	
+	
 		if (event_time < key_data.TimeKeyWentDown[scancode]) {
 			key_data.TimeKeyHeldDown[scancode] = 0;
 		} else {

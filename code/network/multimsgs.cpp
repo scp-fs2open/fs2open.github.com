@@ -1514,11 +1514,6 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 
 	// add netgame type flags
 	ADD_INT(Netgame.type_flags);
-	
-//#ifndef NDEBUG
-	// char buffer[100];
-	// nprintf(("Network", "About to send accept packet to %s on port %d\n", get_text_address(buffer, addr->addr), addr->port ));
-//#endif
 
 	// actually send the packet	
 	psnet_send(&Net_players[new_player_num].p_info.addr, data, packet_size);
