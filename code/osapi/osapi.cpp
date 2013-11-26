@@ -205,7 +205,16 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 
 	INITIALIZE_CRITICAL_SECTION( Os_lock );
 
-	SDL_Init(0);
+	mprintf(("  Initializing SDL...\n"));
+
+	if (SDL_Init(0) < 0)
+	{
+		fprintf(stderr, "Couldn't init SDL: %s", SDL_GetError());
+		mprintf(("Couldn't init SDL: %s", SDL_GetError()));
+		
+		exit(1);
+		return;
+	}
 
 #ifdef FS2_VOICER
 	SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE); // We currently only need this for voice recognition
@@ -396,6 +405,10 @@ void os_poll()
 			if (event.jbutton.button < JOY_NUM_BUTTONS) {
 				joy_set_button_state(event.jbutton.button, event.jbutton.state);
 			}
+			break;
+		
+		case SDL_MOUSEMOTION:
+			mouse_event(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
 			break;
 		}
 	}

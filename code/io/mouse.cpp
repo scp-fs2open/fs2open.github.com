@@ -41,9 +41,14 @@ int mouse_middle_pressed = 0;
 int mouse_left_up = 0;
 int mouse_right_up = 0;
 int mouse_middle_up = 0;
+
 int Mouse_dx = 0;
 int Mouse_dy = 0;
 int Mouse_dz = 0;
+
+int Last_mouse_dx = 0;
+int Last_mouse_dy = 0;
+int Last_mouse_dz = 0;
 
 int Mouse_sensitivity = 4;
 int Use_mouse_to_fly = 0;
@@ -103,10 +108,6 @@ void mouse_init()
 	Mouse_y = gr_screen.max_h / 2;
 
 	Mouse_mode = MOUSE_MODE_WIN;
-
-
-	// we poll for mouse motion events so be sure to skip those in normal event polling
-	SDL_EventState( SDL_MOUSEMOTION, SDL_IGNORE );
 
 	// we do want to make sure that button presses go through event polling though
 	// (should be on by default already, just here as a reminder)
@@ -194,7 +195,7 @@ void mouse_flush()
 	if (!mouse_inited)
 		return;
 
-	mouse_eval_deltas();
+	mouse_reset_deltas();
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
 	ENTER_CRITICAL_SECTION( mouse_lock );
 	mouse_left_pressed = 0;
@@ -350,52 +351,24 @@ void mouse_force_pos(int x, int y)
 
 #include "gamesequence/gamesequence.h"
 
-// change in mouse position since last call
-void mouse_eval_deltas()
+// Reset deltas so we don't have duplicate mouse deltas
+void mouse_reset_deltas()
 {
-	static int old_x = 0;
-	static int old_y = 0;
-	int tmp_x, tmp_y, cx, cy;
-
+	Last_mouse_dx = Mouse_dx;
+	Last_mouse_dy = Mouse_dy;
+	Last_mouse_dz = Mouse_dz;
+	
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
-	if (!mouse_inited)
-		return;
+}
 
-	cx = gr_screen.max_w / 2;
-	cy = gr_screen.max_h / 2;
+void mouse_event(int x, int y, int dx, int dy)
+{
+	Mouse_x = x;
+	Mouse_y = y;
 
-	ENTER_CRITICAL_SECTION( mouse_lock );
+	Mouse_dx = dx;
+	Mouse_dy = dy;
 
-	POINT pnt;
-	getWindowMousePos(&pnt);
-	tmp_x = pnt.x;
-	tmp_y = pnt.y;
-
-	Mouse_dx = tmp_x - old_x;
-	Mouse_dy = tmp_y - old_y;
-	Mouse_dz = 0;
-
-	// Speeds up the menu mouse on higher resolutions. The check for a
-	// visible mouse should eliminate any possible gameplay changes.
-	if ( mouse_is_visible() ) {
-		gr_resize_screen_pos( &Mouse_dx, &Mouse_dy );
-	}
-
-	if (Keep_mouse_centered && Mouse_hidden) {
-		if (Mouse_dx || Mouse_dy)
-			mouse_force_pos(cx, cy);
-
-		old_x = cx;
-		old_y = cy;
-
-	} else {
-		old_x = tmp_x;
-		old_y = tmp_y;
-	}
-
-	LEAVE_CRITICAL_SECTION( mouse_lock );
-
-	//WMC - For On Mouse Moved trigger
 	if(Mouse_dx != 0 || Mouse_dy != 0)
 	{
 		Script_system.RunCondition(CHA_MOUSEMOVED);
@@ -432,16 +405,7 @@ int mouse_get_pos(int *xpos, int *ypos)
 		return 0;
 	}
 
-	POINT pnt;
-	getWindowMousePos(&pnt);
-
-//	EnterCriticalSection(&mouse_lock);
-
 	flags = mouse_flags;
-	Mouse_x = pnt.x;
-	Mouse_y = pnt.y;
-
-//	LeaveCriticalSection(&mouse_lock);
 
 	if (Mouse_x < 0){
 		Mouse_x = 0;
@@ -521,7 +485,6 @@ void getWindowMousePos(POINT * pt)
 	pt->x = x;
 	pt->y = y;
 }
-
 
 // portable routine to get the mouse position, relative
 // to current window

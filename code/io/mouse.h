@@ -64,8 +64,10 @@ int mouse_is_visible();				// returns 1 if mouse is visible, 0 otherwise
 void mouse_lost_focus();
 void mouse_got_focus();
 
-void mouse_eval_deltas();
+void mouse_reset_deltas();
 void mouse_get_delta(int *dx = NULL, int *dy = NULL, int *dz = NULL);
+
+void mouse_event(int x, int y, int dx, int dy);
 
 // portable routines to get and set the mouse position, relative
 // to current window
