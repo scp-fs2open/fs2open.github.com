@@ -563,7 +563,7 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 				escorts[*num_escorts].obj_signature = -1;
 				escorts[*num_escorts].priority = -1;
 				escorts[*num_escorts].np_id = Net_players[idx].player_id;
-				shield_info_reset(&Objects[Net_players[idx].mplayer->objnum], &escorts[*num_escorts].hit_info);
+				shield_info_reset(&Objects[Net_players[idx].m_player->objnum], &escorts[*num_escorts].hit_info);
 				(*num_escorts)++;
 			}
 		}
