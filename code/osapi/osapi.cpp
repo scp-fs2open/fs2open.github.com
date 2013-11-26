@@ -282,7 +282,7 @@ void os_sleep(uint ms)
 	// ewwww, I hate this!!  SDL_Delay() is causing issues for us though and this
 	// basically matches Apple examples of the same thing.  Same as SDL_Delay() but
 	// we aren't hitting up the system for anything during the process
-	uint then = SDL_GetTicks() + mili;
+	uint then = SDL_GetTicks() + ms;
 
 	while (then > SDL_GetTicks());
 #else
@@ -451,8 +451,6 @@ void debug_int3(char *file, int line)
 		}
 	}
 	free(symbols);
-#	else
-#		error debug_int3: unknown OS
 #	endif
 #endif
 

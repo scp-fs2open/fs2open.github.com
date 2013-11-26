@@ -447,7 +447,6 @@
 		34C71C2F08C41BD100459F5B /* outwnd.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954AC08C3D6A0003B1351 /* outwnd.h */; };
 		34C71C3008C41BD300459F5B /* osregistry_unix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954AA08C3D6A0003B1351 /* osregistry_unix.cpp */; };
 		34C71C3108C41BD300459F5B /* osregistry.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954A908C3D6A0003B1351 /* osregistry.h */; };
-		34C71C3208C41BD600459F5B /* osapi_unix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954A708C3D6A0003B1351 /* osapi_unix.cpp */; };
 		34C71C3308C41BD700459F5B /* osapi.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954A608C3D6A0003B1351 /* osapi.h */; };
 		34C71C3608C41BE800459F5B /* palman.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954B008C3D6A0003B1351 /* palman.h */; };
 		34C71C3708C41BE900459F5B /* palman.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954AF08C3D6A0003B1351 /* palman.cpp */; };
@@ -590,6 +589,7 @@
 		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
 		60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E6113432B800CE910F /* voicerec.cpp */; };
 		60FAF4E9113432B800CE910F /* voicerec.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E7113432B800CE910F /* voicerec.h */; };
+		9103733618454969003F2463 /* osapi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954A508C3D6A0003B1351 /* osapi.cpp */; };
 		918A071C1804AF6F00983AE1 /* mongoose.c in Sources */ = {isa = PBXBuildFile; fileRef = 918A071A1804AF6F00983AE1 /* mongoose.c */; };
 		918A071D1804AF6F00983AE1 /* mongoose.h in Headers */ = {isa = PBXBuildFile; fileRef = 918A071B1804AF6F00983AE1 /* mongoose.h */; };
 		918A07381804B01800983AE1 /* dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 918A07271804B01800983AE1 /* dump.c */; };
@@ -1320,7 +1320,6 @@
 		345954A408C3D6A0003B1351 /* monopub.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = monopub.h; sourceTree = "<group>"; };
 		345954A508C3D6A0003B1351 /* osapi.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = osapi.cpp; sourceTree = "<group>"; };
 		345954A608C3D6A0003B1351 /* osapi.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = osapi.h; sourceTree = "<group>"; };
-		345954A708C3D6A0003B1351 /* osapi_unix.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = osapi_unix.cpp; sourceTree = "<group>"; };
 		345954A808C3D6A0003B1351 /* osregistry.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = osregistry.cpp; sourceTree = "<group>"; };
 		345954A908C3D6A0003B1351 /* osregistry.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = osregistry.h; sourceTree = "<group>"; };
 		345954AA08C3D6A0003B1351 /* osregistry_unix.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = osregistry_unix.cpp; sourceTree = "<group>"; };
@@ -2673,7 +2672,6 @@
 				345954A408C3D6A0003B1351 /* monopub.h */,
 				345954A508C3D6A0003B1351 /* osapi.cpp */,
 				345954A608C3D6A0003B1351 /* osapi.h */,
-				345954A708C3D6A0003B1351 /* osapi_unix.cpp */,
 				345954A808C3D6A0003B1351 /* osregistry.cpp */,
 				345954A908C3D6A0003B1351 /* osregistry.h */,
 				345954AA08C3D6A0003B1351 /* osregistry_unix.cpp */,
@@ -3866,6 +3864,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9103733618454969003F2463 /* osapi.cpp in Sources */,
 				F0ECA11612F03A9E009EB0F4 /* freespace.cpp in Sources */,
 				F0FE06C912EF01C200201F34 /* radardradis.cpp in Sources */,
 				F093F87F10FDC3010042E30F /* trackirglobal.cpp in Sources */,
@@ -4035,7 +4034,6 @@
 				34C71C2D08C41BCD00459F5B /* observer.cpp in Sources */,
 				34C71C2E08C41BD000459F5B /* outwnd_unix.cpp in Sources */,
 				34C71C3008C41BD300459F5B /* osregistry_unix.cpp in Sources */,
-				34C71C3208C41BD600459F5B /* osapi_unix.cpp in Sources */,
 				34C71C3708C41BE900459F5B /* palman.cpp in Sources */,
 				34C71C3908C41BED00459F5B /* sexp.cpp in Sources */,
 				34C71C3B08C41BEE00459F5B /* parselo.cpp in Sources */,
@@ -4504,7 +4502,7 @@
 			buildSettings = {
 				HEADER_SEARCH_PATHS = (
 					../../code,
-					./Frameworks/SDL.framework/Headers,
+					./Frameworks/SDL2.framework/Headers,
 				);
 				PRODUCT_NAME = cfilearchiver;
 			};
@@ -4515,7 +4513,7 @@
 			buildSettings = {
 				HEADER_SEARCH_PATHS = (
 					../../code,
-					./Frameworks/SDL.framework/Headers,
+					./Frameworks/SDL2.framework/Headers,
 				);
 				PRODUCT_NAME = cfilearchiver;
 			};
