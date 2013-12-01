@@ -1026,7 +1026,7 @@ void debrief_award_init()
 		int persona_index = debrief_find_persona_index();
 
 		// use persona-specific badge text if it exists; otherwise, use default
-		if (Ranks[Promoted].promotion_text.find(persona_index) != Ranks[Promoted].promotion_text.end()) {
+		if (Medals[Player->stats.m_badge_earned].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned].promotion_text.end()) {
 			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[persona_index];
 		} else {
 			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[-1];
