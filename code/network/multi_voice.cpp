@@ -1585,16 +1585,17 @@ int multi_voice_process_data_dummy(ubyte *data)
 	GET_DATA(stream_id);
 
 	// get the proper stream index
-	stream_index = multi_voice_get_stream((int)stream_id);
+	if ( (stream_index = multi_voice_get_stream((int)stream_id) ) != -1 ) {
 
-	// set the token timestamp
-	Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
+		// set the token timestamp
+		Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
 
-	// set the last heard time
-	Multi_voice_stream[stream_index].stream_last_heard = timer_get_fixed_seconds();
+		// set the last heard time
+		Multi_voice_stream[stream_index].stream_last_heard = timer_get_fixed_seconds();
 
-	// set the timeout timestamp
-	Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);	
+		// set the timeout timestamp
+		Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);
+	}
 
 	// return bytes processed
 	return offset;
