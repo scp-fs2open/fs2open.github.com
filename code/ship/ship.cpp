@@ -3745,13 +3745,15 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 							current_trigger->end = 0;
 					}else{
 
-						required_string("+delay:");
-						stuff_int(&current_trigger->start); 
-
-						current_trigger->reverse_start = -1;	//have some code figure this out for us
+						if(optional_string("+delay:"))
+							stuff_int(&current_trigger->start); 
+						else
+							current_trigger->start = 0;
 
 						if ( optional_string("+reverse_delay:") )
 							stuff_int(&current_trigger->reverse_start);
+						else
+							current_trigger->reverse_start = -1; //have some code figure this out for us
 		
 						if(optional_string("+absolute_angle:")){
 							current_trigger->absolute = true;
@@ -3776,11 +3778,16 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 						current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
 						current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
 		
-						required_string("+acceleration:");
-						stuff_vec3d(&current_trigger->accel );
-						current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
-						current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
-						current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
+						if (optional_string("+acceleration:")){
+							stuff_vec3d(&current_trigger->accel );
+							current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
+							current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
+							current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
+						} else {
+							current_trigger->accel.xyz.x = 0.0f;
+							current_trigger->accel.xyz.y = 0.0f;
+							current_trigger->accel.xyz.z = 0.0f;
+						}
 
 						if(optional_string("+time:"))
 							stuff_int(&current_trigger->end );
