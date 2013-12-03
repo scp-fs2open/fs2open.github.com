@@ -3999,7 +3999,17 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
 		{
-			sprintf(p_objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
+			// if wing name has a hash symbol, create the ship name a particular way
+			char *p = get_pointer_to_first_hash_symbol(wingp->name);
+			if (p != NULL)
+			{
+				size_t len = (p - wingp->name);
+				strncpy(p_objp->name, wingp->name, len);
+				sprintf(p_objp->name + len, NOX(" %d"), wingp->total_arrived_count);
+				strcat_s(p_objp->name, p);
+			}
+			else
+				sprintf(p_objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
 		}
 
 
