@@ -10155,8 +10155,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 
 	if(Game_mode & GM_MULTIPLAYER){
 		p_index = multi_find_player_by_object(repaired_objp);
-		p_team = Net_players[p_index].p_info.team;
-	} else {		
+		if (p_index >= 0) {
+			p_team = Net_players[p_index].p_info.team;
+		}
+	} else {
 		if(repaired_objp == Player_obj){
 			p_index = Player_num;
 		}
