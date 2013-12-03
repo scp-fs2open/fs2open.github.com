@@ -902,6 +902,7 @@ void game_level_close()
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
 		cam_close();
 		subtitles_close();
+		particle_close();
 		trail_level_close();
 		ship_clear_cockpit_displays();
 		hud_level_close();
