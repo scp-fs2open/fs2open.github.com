@@ -9523,6 +9523,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	else if (sip_orig->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)	// changing FROM a don't-collide-invisible ship class
 		sp->flags2 &= ~SF2_DONT_COLLIDE_INVIS;
 
+	if (sip->flags & SIF_NO_COLLIDE)								// changing TO a no_collide ship
+		Objects[sp->objnum].flags &= ~OF_COLLIDES;
+	else if (sip_orig->flags & SIF_NO_COLLIDE)						// changing FROM a no_collide ship
+		Objects[sp->objnum].flags |= OF_COLLIDES;
+
 	if (sip->flags2 & SIF2_NO_ETS)
 		sp->flags2 |= SF2_NO_ETS;
 	else if (sip_orig->flags2 & SIF2_NO_ETS)
