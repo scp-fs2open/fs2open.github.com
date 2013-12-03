@@ -2083,12 +2083,7 @@ int parse_create_object_sub(p_object *p_objp)
 				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
 				{
 					if ((sssp->primary_banks[j] >= 0) || Fred_running)
-					{
-						wp->primary_bank_weapons[k] = sssp->primary_banks[j];						
-
-						// next
-						k++;
-					}
+						wp->primary_bank_weapons[k++] = sssp->primary_banks[j];
 				}
 
 				if (Fred_running)
