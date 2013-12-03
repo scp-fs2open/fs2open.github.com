@@ -2114,8 +2114,10 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
 				}
-				else
+				else if (Weapon_info[wp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
 				{
+					Assert(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f);
+
 					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f);
 					wp->primary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size + 0.5f);
 				}
@@ -2129,6 +2131,8 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 				else
 				{
+					Assert(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f);
+
 					int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j] + 0.5f);
 					wp->secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size + 0.5f);
 				}
