@@ -2221,6 +2221,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				for(idx=0; idx<num_ins; idx++){
 					// get the detail level
 					pm->ins[idx].detail_level = cfread_int(fp);
+					if (pm->ins[idx].detail_level < 0) {
+						Warning(LOCATION, "Model '%s': insignia uses an invalid LOD (%i)\n", pm->filename, pm->ins[idx].detail_level);
+					}
 
 					// # of faces
 					num_faces = cfread_int(fp);

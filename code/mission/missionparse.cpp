@@ -72,6 +72,7 @@
 #include "popup/popupdead.h"
 #include "sound/sound.h"
 #include "sound/ds.h"
+#include "parse/scripting.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -2083,12 +2084,7 @@ int parse_create_object_sub(p_object *p_objp)
 				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
 				{
 					if ((sssp->primary_banks[j] >= 0) || Fred_running)
-					{
-						wp->primary_bank_weapons[k] = sssp->primary_banks[j];						
-
-						// next
-						k++;
-					}
+						wp->primary_bank_weapons[k++] = sssp->primary_banks[j];
 				}
 
 				if (Fred_running)
@@ -4004,7 +4000,17 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
 		{
-			sprintf(p_objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
+			// if wing name has a hash symbol, create the ship name a particular way
+			char *p = get_pointer_to_first_hash_symbol(wingp->name);
+			if (p != NULL)
+			{
+				size_t len = (p - wingp->name);
+				strncpy(p_objp->name, wingp->name, len);
+				sprintf(p_objp->name + len, NOX(" %d"), wingp->total_arrived_count);
+				strcat_s(p_objp->name, p);
+			}
+			else
+				sprintf(p_objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
 		}
 
 
@@ -4134,6 +4140,24 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 		// possibly change the location where these ships arrive based on the wings arrival location
 		mission_set_wing_arrival_location( wingp, num_create_save );
+
+		for (it = 0; it < wingp->current_count; it++ ) {
+			int shipobjnum = Ships[wingp->ship_index[it]].objnum;
+			int anchor_objnum = -1;
+
+			if (wingp->arrival_anchor >= 0) {
+				int parentshipnum = ship_name_lookup(Parse_names[wingp->arrival_anchor]);
+				anchor_objnum = Ships[parentshipnum].objnum;
+			}
+
+			if (anchor_objnum >= 0)
+				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", &Objects[anchor_objnum]);
+			else
+				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", NULL);
+
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[shipobjnum]);
+			Script_system.RemHookVars(2, "Ship", "Parent");
+		}
 
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
@@ -6585,6 +6609,20 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 		mission_parse_support_arrived(objnum);
 	else
 		list_remove(&Ship_arrival_list, p_objp);
+
+	int anchor_objnum = -1;
+	if (p_objp->arrival_anchor >= 0) {
+		int shipnum = ship_name_lookup(Parse_names[p_objp->arrival_anchor]);
+		anchor_objnum = Ships[shipnum].objnum;
+	}
+
+	if (anchor_objnum >= 0)
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
+	else
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
+
+	Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[objnum]);
+	Script_system.RemHookVars(2, "Ship", "Parent");
 }
 
 // Goober5000

@@ -70,8 +70,9 @@ struct image_desc
 #define CHA_ONTURRETFIRED	27
 #define CHA_PRIMARYFIRE		28
 #define CHA_SECONDARYFIRE	29
-#define CHA_ONACTION		30
-#define CHA_ONACTIONSTOPPED	31
+#define CHA_ONSHIPARRIVE	30
+#define CHA_ONACTION		31
+#define CHA_ONACTIONSTOPPED	32
 
 // management stuff
 void scripting_state_init();

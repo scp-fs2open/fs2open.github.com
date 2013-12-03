@@ -4443,7 +4443,9 @@ void hud_target_change_check()
 		}
 
 		player_stop_cargo_scan_sound();
-		hud_shield_hit_reset(&Objects[Player_ai->target_objnum]);
+		if ( (Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS) ) {
+			hud_shield_hit_reset(&Objects[Player_ai->target_objnum]);
+		}
 		hud_targetbox_init_flash();
 		hud_targetbox_start_flash(TBOX_FLASH_NAME);
 		hud_gauge_popup_start(HUD_TARGET_MINI_ICON);
@@ -4457,7 +4459,6 @@ void hud_target_change_check()
 
 		if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
 			Players[Player_num].flags &= ~PLAYER_FLAGS_MATCH_TARGET;
-//			player_match_target_speed("", "", XSTR("Matching speed of newly acquired target",-1));
 			player_match_target_speed();
 		}
 		else {
@@ -4496,7 +4497,6 @@ void hud_target_change_check()
 
 		if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
 			if ( !(Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET) ) {
-//				player_match_target_speed("", "", XSTR("Matching target speed",-1));
 				player_match_target_speed();
 			}
 		}
