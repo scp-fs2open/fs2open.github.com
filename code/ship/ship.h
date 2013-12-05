@@ -1613,14 +1613,14 @@ extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
 //Template stuff, here's as good a place as any.
 int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace);
-extern int ship_template_lookup(char *name = NULL);
+extern int ship_template_lookup(const char *name = NULL);
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
-extern int ship_info_lookup(char *name = NULL);
-extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
-extern int ship_type_name_lookup(char *name);
+extern int ship_info_lookup(const char *name = NULL);
+extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
+extern int ship_type_name_lookup(const char *name);
 
-extern int wing_lookup(char *name);
+extern int wing_lookup(const char *name);
 
 // returns 0 if no conflict, 1 if conflict, -1 on some kind of error with wing struct
 extern int wing_has_conflicting_teams(int wing_index);
@@ -1628,7 +1628,10 @@ extern int wing_has_conflicting_teams(int wing_index);
 // next function takes optional second parameter which says to ignore the current count of ships
 // in the wing -- used to tell is the wing exists or not, not whether it exists and has ships currently
 // present.
-extern int wing_name_lookup(char *name, int ignore_count = 0);
+extern int wing_name_lookup(const char *name, int ignore_count = 0);
+
+// for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
+extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index);
 
 extern int Player_ship_class;
 
@@ -1932,9 +1935,9 @@ void ship_end_render_cockpit_display(int cockpit_display_num);
 int warptype_match(char *p);
 
 // Goober5000
-int ship_starting_wing_lookup(char *wing_name);
-int ship_squadron_wing_lookup(char *wing_name);
-int ship_tvt_wing_lookup(char *wing_name);
+int ship_starting_wing_lookup(const char *wing_name);
+int ship_squadron_wing_lookup(const char *wing_name);
+int ship_tvt_wing_lookup(const char *wing_name);
 
 // Goober5000
 int ship_class_compare(int ship_class_1, int ship_class_2);

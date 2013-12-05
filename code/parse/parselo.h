@@ -74,6 +74,7 @@ extern jmp_buf parse_abort;
 extern bool end_string_at_first_hash_symbol(char *src);
 extern bool end_string_at_first_hash_symbol(SCP_string &src);
 extern char *get_pointer_to_first_hash_symbol(char *src);
+extern const char *get_pointer_to_first_hash_symbol(const char *src);
 extern int get_index_of_first_hash_symbol(SCP_string &src);
 
 // white space
