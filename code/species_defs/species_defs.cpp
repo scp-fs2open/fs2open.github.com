@@ -306,7 +306,7 @@ void parse_species_tbl(const char *filename)
 			generic_anim_init(&species->shield_anim, NULL);
 			stuff_string(species->shield_anim.filename, F_NAME, MAX_FILENAME_LEN);
 		}
-        else
+        else if (!no_create)
         {
             species->shield_anim.filename[0] = '\0';
             species->shield_anim.first_frame = -1; // Landmine to trip up anyone who does end up using this
