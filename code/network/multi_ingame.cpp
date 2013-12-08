@@ -1259,7 +1259,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				// kind of stupid, but bash the name since it won't get recreated properly from
 				// the parse_wing_create_ships call.
 				shipp = &Ships[shipnum];
-				sprintf(shipp->ship_name, NOX("%s %d"), wingp->name, which_one + 1);
+				wing_bash_ship_name(shipp->ship_name, wingp->name, which_one + 1);
 				nprintf(("Network", "Created %s\n", shipp->ship_name));
 
 				objp = &Objects[shipp->objnum];

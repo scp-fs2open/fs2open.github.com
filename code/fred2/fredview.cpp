@@ -1095,7 +1095,7 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
-						sprintf(Ships[ship].ship_name, "%s %d", Wings[Duped_wing].name,
+						wing_bash_ship_name(Ships[ship].ship_name, Wings[Duped_wing].name,
 							Wings[Duped_wing].wave_count + 1);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;
@@ -2721,7 +2721,7 @@ int CFREDView::global_error_check()
 				
 				if ((Objects[obj].type == OBJ_SHIP) || (Objects[obj].type == OBJ_START)) {
 					ship = Objects[obj].instance;
-					sprintf(buf, "%s %d", Wings[i].name, j + 1);
+					wing_bash_ship_name(buf, Wings[i].name, j + 1);
 					if (stricmp(buf, Ships[ship].ship_name)){
 						return internal_error("Ship \"%s\" in wing should be called \"%s\"", Ships[ship].ship_name, buf);
 					}

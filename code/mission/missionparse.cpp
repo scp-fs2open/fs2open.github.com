@@ -2114,8 +2114,10 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
 				}
-				else
+				else if (Weapon_info[wp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
 				{
+					Assert(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f);
+
 					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f);
 					wp->primary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size + 0.5f);
 				}
@@ -2129,6 +2131,8 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 				else
 				{
+					Assert(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f);
+
 					int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j] + 0.5f);
 					wp->secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size + 0.5f);
 				}
@@ -2988,12 +2992,13 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	if (optional_string("$Special Explosion:")) {
 		p_objp->use_special_explosion = true;
+		bool period_detected = false;
 
 		if (required_string("+Special Exp Damage:")) {
 			stuff_int(&p_objp->special_exp_damage);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion damage has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3002,7 +3007,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_blast);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion blast has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3011,7 +3016,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_inner);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion inner radius has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3020,7 +3025,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_outer);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion outer radius has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3030,13 +3035,17 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			p_objp->use_shockwave = true;
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion shockwave speed has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
 
 		if (optional_string("+Special Exp Death Roll Time:")) {
 			stuff_int(&p_objp->special_exp_deathroll_time);
+		}
+
+		if (period_detected) {
+			nprintf(("Warning", "Special explosion attributes have been returned to integer format"));
 		}
 	}
 
@@ -3861,7 +3870,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			if ( shipnum == -1 ) {
 				int num_remaining;
 				// since this wing cannot arrive from this place, we need to mark the wing as destroyed and
-				// set the wing variables appropriatly.  Good for directives.
+				// set the wing variables appropriately.  Good for directives.
 
 				// set the gone flag
 				wingp->flags |= WF_WING_GONE;
@@ -3990,27 +3999,15 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
+		wingp->total_arrived_count++;
+		if (wingp->num_waves > 1)
+			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count);
+
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
 		if (Game_mode & GM_MULTIPLAYER)
 		{
 			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count);
-		}
-
-		wingp->total_arrived_count++;
-		if (wingp->num_waves > 1)
-		{
-			// if wing name has a hash symbol, create the ship name a particular way
-			char *p = get_pointer_to_first_hash_symbol(wingp->name);
-			if (p != NULL)
-			{
-				size_t len = (p - wingp->name);
-				strncpy(p_objp->name, wingp->name, len);
-				sprintf(p_objp->name + len, NOX(" %d"), wingp->total_arrived_count);
-				strcat_s(p_objp->name, p);
-			}
-			else
-				sprintf(p_objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
 		}
 
 

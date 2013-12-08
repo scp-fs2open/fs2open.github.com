@@ -2286,7 +2286,13 @@ int parse_weapon(int subtype, bool replace)
 			// texture
 			if ( optional_string("+Texture:") ) {
 				stuff_string(fname, F_NAME, NAME_LENGTH);
-				generic_anim_init(&bsip->texture, fname);
+
+				// invisible textures are okay
+				if (!stricmp(fname, "invisible")) {
+					generic_anim_init(&bsip->texture);
+				} else {
+					generic_anim_init(&bsip->texture, fname);
+				}
 			}
 
 			// The E -- Dummied out due to not being used anywhere

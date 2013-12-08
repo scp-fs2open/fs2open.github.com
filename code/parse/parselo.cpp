@@ -3832,6 +3832,13 @@ char *get_pointer_to_first_hash_symbol(char *src)
 }
 
 // Goober5000
+const char *get_pointer_to_first_hash_symbol(const char *src)
+{
+	Assert(src);
+	return strchr(src, '#');
+}
+
+// Goober5000
 int get_index_of_first_hash_symbol(SCP_string &src)
 {
 	size_t pos = src.find('#');

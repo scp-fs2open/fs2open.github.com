@@ -229,7 +229,7 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 				int shipNum = pElements->pProperties->pNextSibling->vValue.ulVal;
 
 				char shipName[NAME_LENGTH];
-				sprintf(shipName,"%s %d", wing_names[wingType], shipNum);
+				wing_bash_ship_name(shipName, wing_names[wingType], shipNum);
 
 				Msg_instance = ship_name_lookup(shipName);
 

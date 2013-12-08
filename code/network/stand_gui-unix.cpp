@@ -637,8 +637,9 @@ json_t* chatPost(ResourceContext *context) {
     const char* message = json_string_value(json_object_get(context->requestEntity, "message"));
     if (message) {
         send_game_chat_packet(Net_player, const_cast<char*>(message), MULTI_MSG_ALL, NULL);
+        std_add_chat_text(const_cast<char*>(message), 0 /*MY_NET_PLAYER_NUM*/, 1);
     }
-
+    
     return emptyResource(context);
 }
 

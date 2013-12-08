@@ -29935,7 +29935,9 @@ sexp_help_struct Sexp_help[] = {
 
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_TABLE, "play-sound-from-table\r\n"
-		"\tPlays a sound listed in the Game Sounds section of sounds.tbl.  Takes 4 arguments...\r\n"
+		"\tPlays a sound listed in the Game Sounds section of sounds.tbl.  Note that if the sound is a non-3D sound (if the min and max radius are 0, or unspecified), the sound will just play without being fixed at a particular position in space.  "
+		"In this case, the origin coordinates will be ignored.  (A better design would have put the sound index first and made the origin arguments optional, but the difference between 2D and 3D sounds was not understood at the time.  C'est la vie.)\r\n\r\n"
+		"Takes 4 arguments...\r\n"
 		"\t1: Origin X\r\n"
 		"\t2: Origin Y\r\n"
 		"\t3: Origin Z\r\n"

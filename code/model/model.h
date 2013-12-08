@@ -565,8 +565,8 @@ typedef struct cross_section {
 
 #define MAX_MODEL_INSIGNIAS		6
 #define MAX_INS_FACE_VECS			3
-#define MAX_INS_VECS					160
-#define MAX_INS_FACES				80
+#define MAX_INS_VECS					81
+#define MAX_INS_FACES				128
 typedef struct insignia {
 	int detail_level;
 	int num_faces;					

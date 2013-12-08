@@ -1164,7 +1164,7 @@ int CShipEditorDlg::update_data(int redraw)
 					break;
 
 			Assert(i < Wings[wing].wave_count);
-			sprintf(old_name, "%s %d", Wings[wing].name, i + 1);
+			wing_bash_ship_name(old_name, Wings[wing].name, i + 1);
 			if (strcmp(old_name, m_ship_name)) {
 				if (bypass_errors)
 					return 0;

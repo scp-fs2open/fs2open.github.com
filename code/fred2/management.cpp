@@ -1448,7 +1448,7 @@ int delete_ship_from_wing(int ship)
 				wing_objects[wing][i] = wing_objects[wing][end];
 				Wings[wing].ship_index[i] = Wings[wing].ship_index[end];
 				if (Objects[wing_objects[wing][i]].type == OBJ_SHIP) {
-					sprintf(name, "%s %d", Wings[wing].name, i + 1);
+					wing_bash_ship_name(name, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], name);
 				}
 			}

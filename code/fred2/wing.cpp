@@ -189,7 +189,7 @@ void remove_ship_from_wing(int ship, int min)
 				obj = wing_objects[wing][i] = wing_objects[wing][end];
 				Wings[wing].ship_index[i] = Wings[wing].ship_index[end];
 				if (Objects[obj].type == OBJ_SHIP) {
-					sprintf(buf, "%s %d", Wings[wing].name, i + 1);
+					wing_bash_ship_name(buf, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], buf);
 				}
 			}
@@ -383,7 +383,7 @@ int create_wing()
 					remove_player_from_wing(ptr->instance);
 			}
 
-			sprintf(msg, "%s %d", Wings[wing].name, i + 1);
+			wing_bash_ship_name(msg, Wings[wing].name, i + 1);
 			rename_ship(ship, msg);
 
 			Wings[wing].ship_index[i] = ship;
