@@ -406,6 +406,12 @@ void HudGauge::initPosition(int x, int y)
 	position[1] = y;
 }
 
+void HudGauge::getPosition(int *x, int *y)
+{
+	*x = position[0];
+	*y = position[1];
+}
+
 void HudGauge::initBaseResolution(int w, int h)
 {
 	Assert(w >= 640 && h >= 480);

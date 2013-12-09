@@ -257,6 +257,7 @@ public:
 
 	int getConfigType();
 	int getObjectType();
+	void getPosition(int *x, int *y);
 	bool isOffbyDefault();
 	bool isActive();
 	
