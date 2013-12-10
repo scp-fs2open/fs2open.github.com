@@ -1061,11 +1061,33 @@ void check_color(int *colorp)
 	}
 }
 
+void adjust_base_res(int *base_res)
+{
+	// Avoid HUD blurring caused solely by rounding errors
+	if ((gr_screen.max_w >= base_res[0] && gr_screen.max_h == base_res[1]) ||
+			(gr_screen.max_w == base_res[0] && gr_screen.max_h >= base_res[1])) {
+		base_res[0] = gr_screen.max_w;
+		base_res[1] = gr_screen.max_h;
+		return;
+	}
+
+	float aspect_quotient = ((float)gr_screen.max_w / (float)gr_screen.max_h) / ((float)base_res[0] / (float)base_res[1]);
+	if (aspect_quotient >= 1.0) {
+		base_res[0] = (int)(base_res[0] * aspect_quotient);
+	} else {
+		base_res[1] = (int)(base_res[1] / aspect_quotient);
+	}
+}
+
 template<class T>
 T* gauge_load_common(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr,
-					 int defaultX, int defaultY, bool set_position = true, bool set_colour = true, T* preAllocated = NULL)
+					 float default_origin_x, float default_origin_y, int default_offset_x, int default_offset_y,
+					 bool default_position = false, int default_position_x = 0, int default_position_y = 0,
+					 bool set_position = true, bool set_colour = true, T* preAllocated = NULL)
 {
-	int coords[2];
+	int coords[2] = {default_position_x, default_position_y};
+	float origin[2] = {default_origin_x, default_origin_y};
+	int offset[2] = {default_offset_x, default_offset_y};
 	int base_res[2];
 	bool slew = false;
 	int font_num = FONT1;
@@ -1077,9 +1099,6 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 	int display_size[2] = {0, 0};
 	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
-
-	coords[0] = defaultX;
-	coords[1] = defaultY;
 
 	if(gr_screen.res == GR_640) {
 		base_res[0] = 640;
@@ -1096,7 +1115,34 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		if (set_position) {
 			if(optional_string("Position:")) {
 				stuff_int_list(coords, 2);
+			} else {
+				adjust_base_res(base_res);
+
+				// If no positioning information is specified, use the default position
+				bool use_default_pos = true;
+
+				if(optional_string("Origin:")) {
+					stuff_float_list(origin, 2);
+					use_default_pos = false;
+				}
+
+				if(optional_string("Offset:")) {
+					stuff_int_list(offset, 2);
+					use_default_pos = false;
+				}
+
+				if ( !(default_position && use_default_pos) ) {
+					coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+					coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+				}
 			}
+		}
+	} else {
+		adjust_base_res(base_res);
+
+		if (set_position && !default_position) {
+			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 		}
 	}
 
@@ -1172,7 +1218,10 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int i;
-	int coords[2];
+	float origin[2] = {0.0, 0.0};
+	int offset[2] = {0, 0};
+	int coords[2] = {0, 0};
+
 	int base_res[2] = {640, 480};
 	char gauge_string[MAX_FILENAME_LEN];
 	char name[MAX_FILENAME_LEN];
@@ -1199,6 +1248,19 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 		
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
+		} else {
+			adjust_base_res(base_res);
+
+			if(optional_string("Origin:")) {
+				stuff_float_list(origin, 2);
+			}
+
+			if(optional_string("Offset:")) {
+				stuff_int_list(offset, 2);
+			}
+
+			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 		}
 
 		if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
@@ -1297,19 +1359,20 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 
 void load_gauge_lag(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	char fname[MAX_FILENAME_LEN] = "netlag1";
 
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 386;
-		coords[1] = 331;
+		offset[0] = 66;
+		offset[1] = 91;
 	} else {
-		coords[0] = 627;
-		coords[1] = 529;
+		offset[0] = 115;
+		offset[1] = 145;
 	}
 
-	HudGaugeLag* hud_gauge = gauge_load_common<HudGaugeLag>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeLag* hud_gauge = gauge_load_common<HudGaugeLag>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1331,15 +1394,16 @@ void load_gauge_lag(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_
 
 void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Mini_3digit_offsets[2];
 	int Mini_1digit_offsets[2];
 	int Mini_2digit_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "targhit1";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 305;
-		coords[1] = 291;
+		offset[0] = -15;
+		offset[1] = 51;
 
 		Mini_3digit_offsets[0] = 5;
 		Mini_3digit_offsets[1] = 7;
@@ -1348,8 +1412,8 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 		Mini_2digit_offsets[0] = 8;
 		Mini_2digit_offsets[1] = 7;
 	} else {
-		coords[0] = 497;
-		coords[1] = 470;
+		offset[0] = -15;
+		offset[1] = 86;
 
 		Mini_3digit_offsets[0] = 5;
 		Mini_3digit_offsets[1] = 7;
@@ -1359,7 +1423,7 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 		Mini_2digit_offsets[1] = 7;
 	}
 
-	HudGaugeShieldMini* hud_gauge = gauge_load_common<HudGaugeShieldMini>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeShieldMini* hud_gauge = gauge_load_common<HudGaugeShieldMini>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1393,7 +1457,8 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 
 void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
 	int text_alignment = 0;
@@ -1421,16 +1486,16 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 416;
-		coords[1] = 265;
+		offset[0] = 96;
+		offset[1] = 25;
 
 		Wenergy_text_offsets[0] = 23;
 		Wenergy_text_offsets[1] = 53;
 
 		Wenergy_h = 60;
 	} else {
-		coords[0] = 666;
-		coords[1] = 424;
+		offset[0] = 154;
+		offset[1] = 40;
 
 		Wenergy_text_offsets[0] = 43;
 		Wenergy_text_offsets[1] = 85;
@@ -1438,7 +1503,7 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 		Wenergy_h = 96;
 	}
 
-	HudGaugeWeaponEnergy* hud_gauge = gauge_load_common<HudGaugeWeaponEnergy>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeWeaponEnergy* hud_gauge = gauge_load_common<HudGaugeWeaponEnergy>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1502,17 +1567,18 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 
 void load_gauge_target_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 142;
-		coords[1] = 379;
+		offset[0] = -178;
+		offset[1] = -101;
 	} else {
-		coords[0] = 292;
-		coords[1] = 670;
+		offset[0] = -220;
+		offset[1] = -98;
 	}
 
-	HudGaugeShieldTarget* hud_gauge = gauge_load_common<HudGaugeShieldTarget>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeShieldTarget* hud_gauge = gauge_load_common<HudGaugeShieldTarget>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1528,17 +1594,18 @@ void load_gauge_target_shields(int base_w, int base_h, int hud_font, SCP_vector<
 
 void load_gauge_player_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 396;
-		coords[1] = 379;
+		offset[0] = 76;
+		offset[1] = -101;
 	} else {
-		coords[0] = 634;
-		coords[1] = 670;
+		offset[0] = 122;
+		offset[1] = -98;
 	}
 
-	HudGaugeShieldPlayer* hud_gauge = gauge_load_common<HudGaugeShieldPlayer>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeShieldPlayer* hud_gauge = gauge_load_common<HudGaugeShieldPlayer>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1554,7 +1621,8 @@ void load_gauge_player_shields(int base_w, int base_h, int hud_font, SCP_vector<
 
 void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 0.5};
+	int offset[2];
 	int header_text_offsets[2];
 	int list_start_offsets[2];
 	int entry_h;
@@ -1570,8 +1638,8 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 	char fname_bottom[MAX_FILENAME_LEN] = "escort3";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 486;
-		coords[1] = 200;
+		offset[0] = -154;
+		offset[1] = -40;
 
 		header_text_offsets[0] = 3;
 		header_text_offsets[1] = 2;
@@ -1586,8 +1654,8 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 		ship_status_offsets[0] = -12;
 		ship_status_offsets[1] = 0;
 	} else {
-		coords[0] = 865;
-		coords[1] = 330;
+		offset[0] = -159;
+		offset[1] = -54;
 
 		header_text_offsets[0] = 3;
 		header_text_offsets[1] = 2;
@@ -1603,7 +1671,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 		ship_status_offsets[1] = 0;
 	}
 
-	HudGaugeEscort* hud_gauge = gauge_load_common<HudGaugeEscort>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeEscort* hud_gauge = gauge_load_common<HudGaugeEscort>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
@@ -1672,7 +1740,8 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 
 void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int energy_h;
 	char fname[MAX_FILENAME_LEN];
 
@@ -1691,18 +1760,18 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 171;
-		coords[1] = 265;
+		offset[0] = -149;
+		offset[1] = 25;
 
 		energy_h = 60;
 	} else {
-		coords[0] = 274;
-		coords[1] = 424;
+		offset[0] = -238;
+		offset[1] = 40;
 
 		energy_h = 96;
 	}
 
-	HudGaugeAfterburner *hud_gauge = gauge_load_common<HudGaugeAfterburner>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeAfterburner *hud_gauge = gauge_load_common<HudGaugeAfterburner>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1729,17 +1798,18 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int
 
 void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int time_text_offsets[2];
 	int time_val_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "time1";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 587;
-		coords[1] = 448;
+		offset[0] = -53;
+		offset[1] = -32;
 	} else {
-		coords[0] = 969;
-		coords[1] = 716;
+		offset[0] = -55;
+		offset[1] = -52;
 	}
 	time_text_offsets[0] = 4;
 	time_text_offsets[1] = 4;
@@ -1747,7 +1817,7 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<in
 	time_val_offsets[0] = 26;
 	time_val_offsets[1] = 12;
 
-	HudGaugeMissionTime* hud_gauge = gauge_load_common<HudGaugeMissionTime>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeMissionTime* hud_gauge = gauge_load_common<HudGaugeMissionTime>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1783,12 +1853,13 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 	char fname_laser[MAX_FILENAME_LEN];
 	char fname_lock[MAX_FILENAME_LEN];
 
-	int coords[2]; // default coordinates
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 241;
-			coords[1] = 137;
+			offset[0] = -79;
+			offset[1] = -103;
 
 			Laser_warn_offsets[0] = 59;
 			Laser_warn_offsets[1] = 0;
@@ -1800,8 +1871,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 			strcpy_s(fname_laser, "toparc2_fs1");
 			strcpy_s(fname_lock, "toparc3_fs1");
 		} else {
-			coords[0] = 386;
-			coords[1] = 219;
+			offset[0] = -126;
+			offset[1] = -165;
 
 			Laser_warn_offsets[0] = 94;
 			Laser_warn_offsets[1] = 0;
@@ -1815,8 +1886,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 359;
-			coords[1] = 168;
+			offset[0] = 39;
+			offset[1] = -72;
 
 			Laser_warn_offsets[0] = 41;
 			Laser_warn_offsets[1] = 77;
@@ -1828,8 +1899,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 			strcpy_s(fname_laser, "toparc2");
 			strcpy_s(fname_lock, "toparc3");
 		} else {
-			coords[0] = 574;
-			coords[1] = 269;
+			offset[0] = 62;
+			offset[1] = -115;
 
 			Laser_warn_offsets[0] = 66;
 			Laser_warn_offsets[1] = 124;
@@ -1843,7 +1914,7 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 		}
 	}
 
-	HudGaugeThreatIndicator* hud_gauge = gauge_load_common<HudGaugeThreatIndicator>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeThreatIndicator* hud_gauge = gauge_load_common<HudGaugeThreatIndicator>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Arc Filename:")) {
 		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
@@ -1879,7 +1950,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 
 void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	char fname[MAX_FILENAME_LEN];
 	bool firepoints = false;
 	int scaleX = 15;
@@ -1888,31 +1960,31 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 308;
-			coords[1] = 235;
+			offset[0] = -12;
+			offset[1] = -5;
 
 			strcpy_s(fname, "reticle1_fs1");
 		} else {
-			coords[0] = 493;
-			coords[1] = 376;
+			offset[0] = -19;
+			offset[1] = -8;
 
 			strcpy_s(fname, "2_reticle1_fs1");
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 308;
-			coords[1] = 235;
+			offset[0] = -12;
+			offset[1] = -5;
 
 			strcpy_s(fname, "reticle1");
 		} else {
-			coords[0] = 493;
-			coords[1] = 370;
+			offset[0] = -19;
+			offset[1] = -14;
 
 			strcpy_s(fname, "2_reticle1");
 		}
 	}
 
-	HudGaugeReticle* hud_gauge = gauge_load_common<HudGaugeReticle>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeReticle* hud_gauge = gauge_load_common<HudGaugeReticle>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1947,7 +2019,8 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 
 void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int bottom_offset_y;
 	int throttle_h, throttle_w;
 	int throttle_aburn_h;
@@ -1971,8 +2044,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	// default values for the throttle
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 217;
-			coords[1] = 244;
+			offset[0] = -103;
+			offset[1] = 4;
 
 			bottom_offset_y = 65;
 			throttle_h = 50;
@@ -1987,8 +2060,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 			orbit_radius = 104;
 			strcpy_s(fname, "leftarc_fs1");
 		} else {
-			coords[0] = 347;
-			coords[1] = 390;
+			offset[0] = -165;
+			offset[1] = 6;
 
 			bottom_offset_y = 104;
 			throttle_h = 80;
@@ -2006,8 +2079,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 		show_background = true;
 	} else {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 216;
-			coords[1] = 168;
+			offset[0] = -104;
+			offset[1] = -72;
 
 			bottom_offset_y = 139;
 			throttle_h = 50;
@@ -2022,8 +2095,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 			orbit_radius = 104;
 			strcpy_s(fname, "leftarc");
 		} else {
-			coords[0] = 346;
-			coords[1] = 269;
+			offset[0] = -166;
+			offset[1] = -115;
 
 			bottom_offset_y = 222;
 			throttle_h = 80;
@@ -2040,7 +2113,7 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 		}
 	}
 
-	HudGaugeThrottle* hud_gauge = gauge_load_common<HudGaugeThrottle>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeThrottle* hud_gauge = gauge_load_common<HudGaugeThrottle>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2129,6 +2202,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
  */
 void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int coords[2];
 	int bar_h;
 	int letter_offsets[2];
@@ -2150,13 +2225,13 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 	// default values which may be overwritten by .tbl
 	if(gr_screen.res == GR_640) {
-		coords[0] = 523;
-		coords[1] = 380;
+		offset[0] = -117;
+		offset[1] = -100;
 
 		gauge_offset = 17;
 	} else {
-		coords[0] = 880;
-		coords[1] = 648;
+		offset[0] = -144;
+		offset[1] = -120;
 
 		gauge_offset = 18;
 	}
@@ -2168,7 +2243,7 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	HudGaugeEtsRetail* hud_gauge = gauge_load_common<HudGaugeEtsRetail>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeEtsRetail* hud_gauge = gauge_load_common<HudGaugeEtsRetail>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2218,7 +2293,8 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
@@ -2238,11 +2314,11 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 523;
-		coords[1] = 380;
+		offset[0] = -117;
+		offset[1] = -100;
 	} else {
-		coords[0] = 880;
-		coords[1] = 648;
+		offset[0] = -144;
+		offset[1] = -120;
 	}
 	bar_h = 41;
 	letter_offsets[0] = 2;
@@ -2252,7 +2328,7 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	HudGaugeEtsWeapons* hud_gauge = gauge_load_common<HudGaugeEtsWeapons>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeEtsWeapons* hud_gauge = gauge_load_common<HudGaugeEtsWeapons>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2291,7 +2367,8 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 
 void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
@@ -2311,11 +2388,11 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 540;
-		coords[1] = 380;
+		offset[0] = -100;
+		offset[1] = -100;
 	} else {
-		coords[0] = 898;
-		coords[1] = 648;
+		offset[0] = -126;
+		offset[1] = -120;
 	}
 	bar_h = 41;
 
@@ -2326,7 +2403,7 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	HudGaugeEtsShields* hud_gauge = gauge_load_common<HudGaugeEtsShields>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeEtsShields* hud_gauge = gauge_load_common<HudGaugeEtsShields>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2365,7 +2442,8 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 
 void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
@@ -2385,11 +2463,11 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 557;
-		coords[1] = 380;
+		offset[0] = -83;
+		offset[1] = -100;
 	} else {
-		coords[0] = 916;
-		coords[1] = 648;
+		offset[0] = -108;
+		offset[1] = -120;
 	}
 
 	bar_h = 41;
@@ -2401,7 +2479,7 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	HudGaugeEtsEngines* hud_gauge = gauge_load_common<HudGaugeEtsEngines>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeEtsEngines* hud_gauge = gauge_load_common<HudGaugeEtsEngines>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2440,7 +2518,8 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 
 void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.0, 1.0};
+	int offset[2];
 	int dock_offsets[2];
 	int time_offsets[2];
 	int bracket_offsets[2];
@@ -2448,8 +2527,8 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 	char fname[MAX_FILENAME_LEN] = "targetview3";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 280;
+		offset[0] = 5;
+		offset[1] = -200;
 
 		dock_offsets[0] = 8;
 		dock_offsets[1] = 19;
@@ -2457,8 +2536,8 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 		time_offsets[0] = 8;
 		time_offsets[1] = 10;
 	} else {
-		coords[0] = 5;
-		coords[1] = 552;
+		offset[0] = 5;
+		offset[1] = -216;
 
 		dock_offsets[0] = 8;
 		dock_offsets[1] = 18;
@@ -2473,7 +2552,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 	order_offsets[0] = 8;
 	order_offsets[1] = 0;
 
-	HudGaugeExtraTargetData* hud_gauge = gauge_load_common<HudGaugeExtraTargetData>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeExtraTargetData* hud_gauge = gauge_load_common<HudGaugeExtraTargetData>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2511,7 +2590,8 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 
 void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 	int Radar_blip_radius_normal;
 	int Radar_blip_radius_target;
 	int Radar_radius[2];
@@ -2520,8 +2600,8 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	char fname[MAX_FILENAME_LEN];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 257;
-		coords[1] = 369;
+		offset[0] = -63;
+		offset[1] = -111;
 
 		Radar_blip_radius_normal = 2;
 		Radar_blip_radius_target = 5;
@@ -2543,8 +2623,8 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 		strcpy_s(fname, "radar1");
 	} else {
-		coords[0] = 411;
-		coords[1] = 590;
+		offset[0] = -101;
+		offset[1] = -178;
 
 		Radar_blip_radius_normal = 4;
 		Radar_blip_radius_target = 8;
@@ -2567,7 +2647,7 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		strcpy_s(fname, "2_radar1");
 	}
 
-	HudGaugeRadarStd* hud_gauge = gauge_load_common<HudGaugeRadarStd>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeRadarStd* hud_gauge = gauge_load_common<HudGaugeRadarStd>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2612,7 +2692,8 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 	int Radar_blip_radius_normal;
 	int Radar_blip_radius_target;
 	int Radar_radius[2];
@@ -2621,8 +2702,8 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	char fname[MAX_FILENAME_LEN];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 257;
-		coords[1] = 369;
+		offset[0] = -63;
+		offset[1] = -111;
 
 		Radar_blip_radius_normal = 2;
 		Radar_blip_radius_target = 5;
@@ -2644,8 +2725,8 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 		strcpy_s(fname, "radar1");
 	} else {
-		coords[0] = 411;
-		coords[1] = 590;
+		offset[0] = -101;
+		offset[1] = -178;
 
 		Radar_blip_radius_normal = 4;
 		Radar_blip_radius_target = 8;
@@ -2668,7 +2749,7 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		strcpy_s(fname, "2_radar1");
 	}
 
-	HudGaugeRadarOrb* hud_gauge = gauge_load_common<HudGaugeRadarOrb>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeRadarOrb* hud_gauge = gauge_load_common<HudGaugeRadarOrb>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2711,9 +2792,15 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	}
 }
 
+/**
+ * BSG style DRADIS as used by Diaspora
+ * Unfortunately, I can't see how to make this fit the gauge_load_common function
+ */
 void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	// basic radar gauge info
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 	int coords[2];
 	int base_res[2];
 	int Radar_radius[2];
@@ -2746,29 +2833,47 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<in
 	float departure_beep_delay = 0.0f;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 231;
-		coords[1] = 332;
-
 		base_res[0] = 640;
 		base_res[1] = 480;
-	} else {
-		coords[0] = 369;
-		coords[1] = 531;
 
+		offset[0] = -89;
+		offset[1] = -148;
+	} else {
 		base_res[0] = 1024;
 		base_res[1] = 768;
+
+		offset[0] = -143;
+		offset[1] = -237;
 	}
 
 	Radar_radius[0] = 281;
 	Radar_radius[1] = 233;
-	
+
 	if(check_base_res(base_w, base_h)) {
 		base_res[0] = base_w;
 		base_res[1] = base_h;
 
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
+		} else {
+			adjust_base_res(base_res);
+
+			if(optional_string("Origin:")) {
+				stuff_float_list(origin, 2);
+			}
+
+			if(optional_string("Offset:")) {
+				stuff_int_list(offset, 2);
+			}
+
+			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 		}
+	} else {
+		adjust_base_res(base_res);
+
+		coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+		coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 	}
 
 	if(optional_string("$Font:")) {
@@ -2876,17 +2981,18 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<in
 
 void load_gauge_text_warnings(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 172;
+		offset[0] = 0;
+		offset[1] = -68;
 	} else {
-		coords[0] = 512;
-		coords[1] = 275;
+		offset[0] = 0;
+		offset[1] = -109;
 	}
 
-	HudGaugeTextWarnings* hud_gauge = gauge_load_common<HudGaugeTextWarnings>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeTextWarnings* hud_gauge = gauge_load_common<HudGaugeTextWarnings>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2902,7 +3008,8 @@ void load_gauge_text_warnings(int base_w, int base_h, int hud_font, SCP_vector<i
 
 void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.0, 1.0};
+	int offset[2];
 	int Viewport_size[2];
 	int Viewport_offsets[2];
 	int Integrity_bar_offsets[2];
@@ -2934,11 +3041,11 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	char fname_monitor_mask[MAX_FILENAME_LEN] = "";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 319;
+		offset[0] = 5;
+		offset[1] = -161;
 	} else {
-		coords[0] = 5;
-		coords[1] = 590;
+		offset[0] = 5;
+		offset[1] = -178;
 	}
 
 	Viewport_size[0] = 131;
@@ -2972,7 +3079,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	Cargo_scan_size[0] = 130;
 	Cargo_scan_size[1] = 109;
 
-	HudGaugeTargetBox* hud_gauge = gauge_load_common<HudGaugeTargetBox>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeTargetBox* hud_gauge = gauge_load_common<HudGaugeTargetBox>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Monitor Filename:")) {
 		stuff_string(fname_monitor, F_NAME, MAX_FILENAME_LEN);
@@ -3071,7 +3178,8 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 
 void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 0.0};
+	int offset[2];
 	int Pgup_offsets[2];
 	int Pgdn_offsets[2];
 	int Header_offsets[2];
@@ -3085,16 +3193,16 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 	char fname_bottom[MAX_FILENAME_LEN] = "message3";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 445;
-		coords[1] = 5;
+		offset[0] = -195;
+		offset[1] = 5;
 
 		Pgup_offsets[0] = 145;
 		Pgup_offsets[1] = 4;
 		Pgdn_offsets[0] = 145;
 		Pgdn_offsets[1] = 115;
 	} else {
-		coords[0] = 827;
-		coords[1] = 5;
+		offset[0] = -197;
+		offset[1] = 5;
 
 		Pgup_offsets[0] = 110;
 		Pgup_offsets[1] = 5;
@@ -3110,7 +3218,7 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 	Item_h = 10;
 	Item_offset_x = 17;
 
-	HudGaugeSquadMessage* hud_gauge = gauge_load_common<HudGaugeSquadMessage>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeSquadMessage* hud_gauge = gauge_load_common<HudGaugeSquadMessage>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
@@ -3170,7 +3278,8 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 
 void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Objective_text_offset_y;
 	int Objective_text_val_offset_y;
 	int Subspace_text_offset_y;
@@ -3180,8 +3289,8 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 	char fname[MAX_FILENAME_LEN] = "objective1";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 245;
-		coords[1] = 114;
+		offset[0] = -75;
+		offset[1] = -126;
 
 		Objective_text_offset_y = 2;
 		Objective_text_val_offset_y = 11;
@@ -3190,8 +3299,8 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 		Red_text_offset_y = 2;
 		Red_text_val_offset_y = 10;
 	} else {
-		coords[0] = 436;
-		coords[1] = 184;
+		offset[0] = -76;
+		offset[1] = -200;
 
 		Objective_text_offset_y = 2;
 		Objective_text_val_offset_y = 11;
@@ -3201,7 +3310,7 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 		Red_text_val_offset_y = 10;
 	}
 
-	HudGaugeObjectiveNotify* hud_gauge = gauge_load_common<HudGaugeObjectiveNotify>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeObjectiveNotify* hud_gauge = gauge_load_common<HudGaugeObjectiveNotify>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3247,7 +3356,8 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 
 void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int top_offset_x[NUM_HUD_SETTINGS];
 	int Weapon_header_offsets[NUM_HUD_SETTINGS][2];
 	int frame_offset_x[NUM_HUD_SETTINGS];
@@ -3282,11 +3392,11 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	char fname_s_bottom_b[MAX_FILENAME_LEN] = "weapons5_b";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 497;
-		coords[1] = 252;
+		offset[0] = -143;
+		offset[1] = -228;
 	} else {
-		coords[0] = 880;
-		coords[1] = 511;
+		offset[0] = -144;
+		offset[1] = -257;
 	}
 
 	top_offset_x[0] = 12;
@@ -3317,7 +3427,7 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	primary_text_h = 12;
 	secondary_text_h = 9;
 
-	HudGaugeWeapons* hud_gauge = gauge_load_common<HudGaugeWeapons>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeWeapons* hud_gauge = gauge_load_common<HudGaugeWeapons>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Primary List Top Background Filename:")) {
 		stuff_string(fname_p_top, F_NAME, MAX_FILENAME_LEN);
@@ -3446,7 +3556,8 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 
 void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.0, 0.5};
+	int offset[2];
 	int header_offsets[2];
 	int middle_frame_offset_y;
 	int text_start_offsets[2];
@@ -3458,11 +3569,11 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 	int bottom_bg_offset = 0;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 178;
+		offset[0] = 5;
+		offset[1] = -62;
 	} else {
-		coords[0] = 5;
-		coords[1] = 278;
+		offset[0] = 5;
+		offset[1] = -106;
 	}
 
 	header_offsets[0] = 2;
@@ -3472,7 +3583,7 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 	text_start_offsets[1] = 14;
 	text_h = 9;
 
-	HudGaugeDirectives* hud_gauge = gauge_load_common<HudGaugeDirectives>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeDirectives* hud_gauge = gauge_load_common<HudGaugeDirectives>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
@@ -3524,18 +3635,19 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.0, 0.0};
+	int offset[2];
 	int Header_offsets[2];
 	int Anim_offsets[2];
 	int Anim_size[2];
 	char fname[MAX_FILENAME_LEN] = "head1";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 35;
+		offset[0] = 5;
+		offset[1] = 35;
 	} else {
-		coords[0] = 5;
-		coords[1] = 56;
+		offset[0] = 5;
+		offset[1] = 56;
 	}
 
 	Header_offsets[0] = 2;
@@ -3545,7 +3657,7 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<in
 	Anim_size[0] = 160;
 	Anim_size[1] = 120;
 
-	HudGaugeTalkingHead* hud_gauge = gauge_load_common<HudGaugeTalkingHead>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeTalkingHead* hud_gauge = gauge_load_common<HudGaugeTalkingHead>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3579,24 +3691,25 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<in
 
 void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int cm_text_offset[2];
 	int cm_text_val_offset[2];
 	char fname[MAX_FILENAME_LEN] = "countermeasure1";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 497;
-		coords[1] = 343;
+		offset[0] = -143;
+		offset[1] = -137;
 	} else {
-		coords[0] = 880;
-		coords[1] = 602;
+		offset[0] = -144;
+		offset[1] = -166;
 	}
 	cm_text_offset[0] = 36;
 	cm_text_offset[1] = 4;
 	cm_text_val_offset[0] = 9;
 	cm_text_val_offset[1] = 4;
 
-	HudGaugeCmeasures* hud_gauge = gauge_load_common<HudGaugeCmeasures>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeCmeasures* hud_gauge = gauge_load_common<HudGaugeCmeasures>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3626,7 +3739,8 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector
 
 void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int auto_text_offset[2];
 	int target_text_offset[2];
 	char fname[MAX_FILENAME_LEN] = "toggle1";
@@ -3635,11 +3749,11 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int
 	int off_color[4] = {-1, -1, -1, -1};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 577;
-		coords[1] = 380;
+		offset[0] = -63;
+		offset[1] = -100;
 	} else {
-		coords[0] = 960;
-		coords[1] = 648;
+		offset[0] = -64;
+		offset[1] = -120;
 	}
 
 	auto_text_offset[0] = 13;
@@ -3647,7 +3761,7 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int
 	target_text_offset[0] = 7;
 	target_text_offset[1] = 10;
 	
-	HudGaugeAutoTarget* hud_gauge = gauge_load_common<HudGaugeAutoTarget>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeAutoTarget* hud_gauge = gauge_load_common<HudGaugeAutoTarget>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3687,7 +3801,8 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int
 
 void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int auto_text_offset[2];
 	int speed_text_offset[2];
 	char fname[MAX_FILENAME_LEN] = "toggle1";
@@ -3695,11 +3810,11 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>
 	int off_color[4] = {-1, -1, -1, -1};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 577;
-		coords[1] = 404;
+		offset[0] = -63;
+		offset[1] = -76;
 	} else {
-		coords[0] = 960;
-		coords[1] = 672;
+		offset[0] = -64;
+		offset[1] = -96;
 	}
 
 	auto_text_offset[0] = 13;
@@ -3707,7 +3822,7 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>
 	speed_text_offset[0] = 10;
 	speed_text_offset[1] = 10;
 	
-	HudGaugeAutoSpeed* hud_gauge = gauge_load_common<HudGaugeAutoSpeed>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeAutoSpeed* hud_gauge = gauge_load_common<HudGaugeAutoSpeed>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3747,7 +3862,8 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 0.0};
+	int offset[2];
 	int header_offsets[2];
 	int left_frame_end_x;
 	
@@ -3765,11 +3881,11 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	// "wingman5" isn't used anymore since Goober implemented string based wing names
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 550;
-		coords[1] = 144;
+		offset[0] = -90;
+		offset[1] = 144;
 	} else {
-		coords[0] = 932;
-		coords[1] = 144;
+		offset[0] = -92;
+		offset[1] = 144;
 	}
 
 	header_offsets[0] = 2;
@@ -3797,7 +3913,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	wingmate_offsets[5][0] = 22;
 	wingmate_offsets[5][1] = 16;
 
-	HudGaugeWingmanStatus* hud_gauge = gauge_load_common<HudGaugeWingmanStatus>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeWingmanStatus* hud_gauge = gauge_load_common<HudGaugeWingmanStatus>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Left Background Filename:")) {
 		stuff_string(fname_left, F_NAME, MAX_FILENAME_LEN);
@@ -3889,7 +4005,8 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 
 void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.0};
+	int offset[2];
 	int header_offsets[2];
 	int hull_integ_offsets[2];
 	int hull_integ_val_offset_x;
@@ -3903,11 +4020,11 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	char fname_bottom[MAX_FILENAME_LEN] = "damage3";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 245;
-		coords[1] = 38;
+		offset[0] = -75;
+		offset[1] = 38;
 	} else {
-		coords[0] = 440;
-		coords[1] = 61;
+		offset[0] = -72;
+		offset[1] = 61;
 	}
 	header_offsets[0] = 3;
 	header_offsets[1] = 2;
@@ -3920,7 +4037,7 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	subsys_integ_val_offset_x = 142;
 	line_h = 9;
 
-	HudGaugeDamage* hud_gauge = gauge_load_common<HudGaugeDamage>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeDamage* hud_gauge = gauge_load_common<HudGaugeDamage>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
@@ -3980,7 +4097,8 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 
 void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int header_offsets[2];
 	int text_val_offset_y;
 	int text_dock_offset_x;
@@ -3988,8 +4106,8 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	char fname[MAX_FILENAME_LEN] = "support1";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 265;
-		coords[1] = 334;
+		offset[0] = -55;
+		offset[1] = 94;
 
 		header_offsets[0] = 2;
 		header_offsets[1] = 1;
@@ -3997,8 +4115,8 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 		text_dock_offset_x = 5;
 		text_dock_val_offset_x = 63;
 	} else {
-		coords[0] = 459;
-		coords[1] = 534;
+		offset[0] = -53;
+		offset[1] = 150;
 
 		header_offsets[0] = 3;
 		header_offsets[1] = 2;
@@ -4007,7 +4125,7 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 		text_dock_val_offset_x = 65;
 	}
 
-	HudGaugeSupport* hud_gauge = gauge_load_common<HudGaugeSupport>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeSupport* hud_gauge = gauge_load_common<HudGaugeSupport>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4045,17 +4163,18 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 
 void load_gauge_training_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 174;
-		coords[1] = 40;
+		offset[0] = -146;
+		offset[1] = -200;
 	} else {
-		coords[0] = 379;
-		coords[1] = 125;
+		offset[0] = -133;
+		offset[1] = -259;
 	}
 
-	HudGaugeTrainingMessages* hud_gauge = gauge_load_common<HudGaugeTrainingMessages>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeTrainingMessages* hud_gauge = gauge_load_common<HudGaugeTrainingMessages>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4071,7 +4190,8 @@ void load_gauge_training_messages(int base_w, int base_h, int hud_font, SCP_vect
 
 void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.0, 0.0};
+	int offset[2];
 
 	int max_lines = 3;
 	int max_width;
@@ -4081,8 +4201,8 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	int line_height = 9;
 	bool hidden_by_comms_menu = true;
 
-	coords[0] = 8;
-	coords[1] = 5;
+	offset[0] = 8;
+	offset[1] = 5;
 
 	if(gr_screen.res == GR_640) {
 		max_width = 620;
@@ -4090,7 +4210,7 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 		max_width = 1004;
 	}
 
-	HudGaugeMessages* hud_gauge = gauge_load_common<HudGaugeMessages>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeMessages* hud_gauge = gauge_load_common<HudGaugeMessages>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if ( optional_string("Max Lines:") ) {
 		stuff_int(&max_lines);
@@ -4136,6 +4256,8 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 
 void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
+	float origin[2] = {0.5, 0.0};
+	int offset[2] = {0, 0};
 	int coords[2];
 
 	gr_set_font(FONT1);
@@ -4144,7 +4266,8 @@ void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<
 	coords[0] = 0x8000; //Magic number, means "Center on X"
 	coords[1] = 5 + (h * 3);
 
-	HudGaugeFixedMessages* hud_gauge = gauge_load_common<HudGaugeFixedMessages>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeFixedMessages* hud_gauge = gauge_load_common<HudGaugeFixedMessages>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1],
+																					true, coords[0], coords[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4160,7 +4283,8 @@ void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<
 
 void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Weapon_link_offsets[NUM_WEAPON_LINK_MODES][2];
 	char fname_arc[MAX_FILENAME_LEN];
 	char fname_primary_link_1[MAX_FILENAME_LEN];
@@ -4170,8 +4294,8 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 	char fname_secondary_link_3[MAX_FILENAME_LEN];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 374;
-		coords[1] = 242;
+		offset[0] = 54;
+		offset[1] = 2;
 
 		Weapon_link_offsets[LINK_ONE_PRIMARY][0] = 32;
 		Weapon_link_offsets[LINK_ONE_PRIMARY][1] = 11;
@@ -4191,8 +4315,8 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 		strcpy_s(fname_secondary_link_2, "rightarc5_fs1");
 		strcpy_s(fname_secondary_link_3, "rightarc6_fs1");
 	} else {
-		coords[0] = 598;
-		coords[1] = 387;
+		offset[0] = 86;
+		offset[1] = 3;
 
 		Weapon_link_offsets[LINK_ONE_PRIMARY][0] = 52;
 		Weapon_link_offsets[LINK_ONE_PRIMARY][1] = 18;
@@ -4213,7 +4337,7 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 		strcpy_s(fname_secondary_link_3, "2_rightarc6_fs1");
 	}
 
-	HudGaugeWeaponLinking* hud_gauge = gauge_load_common<HudGaugeWeaponLinking>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeWeaponLinking* hud_gauge = gauge_load_common<HudGaugeWeaponLinking>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Arc Filename:")) {
 		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
@@ -4270,17 +4394,18 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 
 void load_gauge_multi_msg(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.0, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 150;
+		offset[0] = 5;
+		offset[1] = -90;
 	} else {
-		coords[0] = 8;
-		coords[1] = 240;
+		offset[0] = 8;
+		offset[1] = -144;
 	}
 
-	HudGaugeMultiMsg* hud_gauge = gauge_load_common<HudGaugeMultiMsg>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeMultiMsg* hud_gauge = gauge_load_common<HudGaugeMultiMsg>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4296,17 +4421,18 @@ void load_gauge_multi_msg(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 void load_gauge_voice_status(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.0, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 165;
+		offset[0] = 5;
+		offset[1] = -75;
 	} else {
-		coords[0] = 8;
-		coords[1] = 255;
+		offset[0] = 8;
+		offset[1] = -129;
 	}
 
-	HudGaugeVoiceStatus* hud_gauge = gauge_load_common<HudGaugeVoiceStatus>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeVoiceStatus* hud_gauge = gauge_load_common<HudGaugeVoiceStatus>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4322,17 +4448,18 @@ void load_gauge_voice_status(int base_w, int base_h, int hud_font, SCP_vector<in
 
 void load_gauge_ping(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 0.0};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 560;
-		coords[1] = 3;
+		offset[0] = -80;
+		offset[1] = 3;
 	} else {
-		coords[0] = 896;
-		coords[1] = 5;
+		offset[0] = -128;
+		offset[1] = 5;
 	}
 
-	HudGaugePing* hud_gauge = gauge_load_common<HudGaugePing>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugePing* hud_gauge = gauge_load_common<HudGaugePing>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4348,17 +4475,18 @@ void load_gauge_ping(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 
 void load_gauge_supernova(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 100;
-		coords[1] = 100;
+		offset[0] = -220;
+		offset[1] = -140;
 	} else {
-		coords[0] = 170;
-		coords[1] = 170;
+		offset[0] = -342;
+		offset[1] = -214;
 	}
 
-	HudGaugeSupernova* hud_gauge = gauge_load_common<HudGaugeSupernova>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeSupernova* hud_gauge = gauge_load_common<HudGaugeSupernova>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4444,7 +4572,7 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		}
 	}
 
-	HudGaugeLock* hud_gauge = gauge_load_common<HudGaugeLock>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, false, false);
+	HudGaugeLock* hud_gauge = gauge_load_common<HudGaugeLock>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, false);
 
 	if(optional_string("Lock Filename:")) {
 		stuff_string(fname_lock, F_NAME, MAX_FILENAME_LEN);
@@ -4508,7 +4636,7 @@ void load_gauge_offscreen(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		Offscreen_tri_height = 11.0f;
 	}
 
-	HudGaugeOffscreen* hud_gauge = gauge_load_common<HudGaugeOffscreen>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, false, false);
+	HudGaugeOffscreen* hud_gauge = gauge_load_common<HudGaugeOffscreen>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, false);
 
 	hud_gauge->initMaxTriSeperation(Max_offscreen_tri_seperation);
 	hud_gauge->initMaxFrontSeperation(Max_front_seperation);
@@ -4545,7 +4673,7 @@ void load_gauge_brackets(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 		min_subtarget_box[1] = 24;
 	}
 
-	HudGaugeBrackets* hud_gauge = gauge_load_common<HudGaugeBrackets>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, false, false);
+	HudGaugeBrackets* hud_gauge = gauge_load_common<HudGaugeBrackets>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, false);
 
 	if(optional_string("Dot Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4569,28 +4697,29 @@ void load_gauge_brackets(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 
 void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
+		offset[0] = 0;
+		offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
+		offset[0] = 0;
+		offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	HudGaugeHostileTriangle* hud_gauge = gauge_load_common<HudGaugeHostileTriangle>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeHostileTriangle* hud_gauge = gauge_load_common<HudGaugeHostileTriangle>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
@@ -4620,28 +4749,29 @@ void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, SCP_vector<int
 
 void load_gauge_target_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
+		offset[0] = 0;
+		offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
+		offset[0] = 0;
+		offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	HudGaugeTargetTriangle* hud_gauge = gauge_load_common<HudGaugeTargetTriangle>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeTargetTriangle* hud_gauge = gauge_load_common<HudGaugeTargetTriangle>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
@@ -4671,28 +4801,29 @@ void load_gauge_target_tri(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 void load_gauge_missile_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
+		offset[0] = 0;
+		offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
+		offset[0] = 0;
+		offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	HudGaugeMissileTriangles* hud_gauge = gauge_load_common<HudGaugeMissileTriangles>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeMissileTriangles* hud_gauge = gauge_load_common<HudGaugeMissileTriangles>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
@@ -4751,7 +4882,7 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		}
 	}
 
-	HudGaugeLeadIndicator* hud_gauge = gauge_load_common<HudGaugeLeadIndicator>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, false, false);
+	HudGaugeLeadIndicator* hud_gauge = gauge_load_common<HudGaugeLeadIndicator>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, false);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4782,22 +4913,23 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 
 void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Radius;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
+		offset[0] = 0;
+		offset[1] = 2;
 
 		Radius = 104;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
+		offset[0] = 0;
+		offset[1] = 3;
 
 		Radius = 166;
 	}
 
-	HudGaugeOrientationTee* hud_gauge = gauge_load_common<HudGaugeOrientationTee>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeOrientationTee* hud_gauge = gauge_load_common<HudGaugeOrientationTee>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
@@ -4819,18 +4951,19 @@ void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, SCP_vector
 
 void load_gauge_lead_sight(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	char fname[MAX_FILENAME_LEN] = "leadsight";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
+		offset[0] = 0;
+		offset[1] = 2;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
+		offset[0] = 0;
+		offset[1] = 3;
 	}
 
-	HudGaugeLeadSight* hud_gauge = gauge_load_common<HudGaugeLeadSight>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeLeadSight* hud_gauge = gauge_load_common<HudGaugeLeadSight>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4852,22 +4985,23 @@ void load_gauge_lead_sight(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int text_offsets[2] = {6, 4};
 	int text_value_offsets[2] = {74, 4};
 	char fname[MAX_FILENAME_LEN] = "kills1";
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 497;
-		coords[1] = 361;
+		offset[0] = -143;
+		offset[1] = -119;
 		
 		if(Lcl_gr) {
 			text_value_offsets[0] = 118;
 			text_value_offsets[1] = 4;
 		}
 	} else {
-		coords[0] = 880;
-		coords[1] = 624;
+		offset[0] = -144;
+		offset[1] = -144;
 
 		if(Lcl_gr) {
 			text_value_offsets[0] = 104;
@@ -4875,7 +5009,7 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* shi
 		}
 	}
 
-	HudGaugeKills* hud_gauge = gauge_load_common<HudGaugeKills>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeKills* hud_gauge = gauge_load_common<HudGaugeKills>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4911,7 +5045,7 @@ void load_gauge_flight_path(int base_w, int base_h, int hud_font, SCP_vector<int
 	Marker_half[0] = 21;
 	Marker_half[1] = 21;
 
-	HudGaugeFlightPath* hud_gauge = gauge_load_common<HudGaugeFlightPath>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, false, true);
+	HudGaugeFlightPath* hud_gauge = gauge_load_common<HudGaugeFlightPath>(base_w, base_h, hud_font, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, true);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4937,7 +5071,8 @@ void load_gauge_flight_path(int base_w, int base_h, int hud_font, SCP_vector<int
 
 void load_gauge_warhead_count(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int warhead_name_offsets[2] = {6, 4};
 	int warhead_count_offsets[2] = {74, 4};
 	int icon_width = 0;
@@ -4948,14 +5083,14 @@ void load_gauge_warhead_count(int base_w, int base_h, int hud_font, SCP_vector<i
 	char fname[MAX_FILENAME_LEN] = "warhead_icon";
 
 	if ( gr_screen.res == GR_640 ) {
-		coords[0] = 497;
-		coords[1] = 361;
+		offset[0] = -143;
+		offset[1] = -119;;
 	} else {
-		coords[0] = 880;
-		coords[1] = 624;
+		offset[0] = -144;
+		offset[1] = -144;
 	}
 
-	HudGaugeWarheadCount* hud_gauge = gauge_load_common<HudGaugeWarheadCount>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeWarheadCount* hud_gauge = gauge_load_common<HudGaugeWarheadCount>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if ( optional_string("Filename:") ) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -5015,7 +5150,8 @@ void load_gauge_warhead_count(int base_w, int base_h, int hud_font, SCP_vector<i
 
 void load_gauge_hardpoints(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 
 	int sizes[2] = {150, 150};
 	float line_width = 1.0f;
@@ -5024,14 +5160,14 @@ void load_gauge_hardpoints(int base_w, int base_h, int hud_font, SCP_vector<int>
 	bool show_secondary = true;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 396;
-		coords[1] = 379;
+		offset[0] = -244;
+		offset[1] = -101;
 	} else {
-		coords[0] = 634;
-		coords[1] = 670;
+		offset[0] = -390;
+		offset[1] = -98;
 	}
 
-	HudGaugeHardpoints* hud_gauge = gauge_load_common<HudGaugeHardpoints>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeHardpoints* hud_gauge = gauge_load_common<HudGaugeHardpoints>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if ( optional_string("Size:") ) {
 		stuff_int_list(sizes, 2);
@@ -5076,7 +5212,8 @@ void load_gauge_hardpoints(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2] = {0, 0};
+	float origin[2] = {0.0, 0.0};
+	int offset[2] = {0, 0};
 
 	char fname_first[MAX_FILENAME_LEN] = "weapon_list1";
 	char fname_entry[MAX_FILENAME_LEN] = "weapon_list2";
@@ -5095,7 +5232,7 @@ void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, SCP_vector
 	int link_x = 33;
 	int name_x = 35;
 
-	HudGaugePrimaryWeapons* hud_gauge = gauge_load_common<HudGaugePrimaryWeapons>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugePrimaryWeapons* hud_gauge = gauge_load_common<HudGaugePrimaryWeapons>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if ( optional_string("Header Offsets:") ) {
 		stuff_int_list(header_offsets, 2);
@@ -5190,7 +5327,8 @@ void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, SCP_vector
 
 void load_gauge_secondary_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2] = {0, 0};
+	float origin[2] = {0.0, 0.0};
+	int offset[2] = {0, 0};
 
 	char fname_first[MAX_FILENAME_LEN] = "weapon_list1";
 	char fname_entry[MAX_FILENAME_LEN] = "weapon_list2";
@@ -5211,7 +5349,7 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int hud_font, SCP_vect
 	int reload_x = 118;
 	int unlink_x = 33;
 
-	HudGaugeSecondaryWeapons* hud_gauge = gauge_load_common<HudGaugeSecondaryWeapons>(base_w, base_h, hud_font, ship_idx, use_clr, coords[0], coords[1]);
+	HudGaugeSecondaryWeapons* hud_gauge = gauge_load_common<HudGaugeSecondaryWeapons>(base_w, base_h, hud_font, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if ( optional_string("Header Offsets:") ) {
 		stuff_int_list(header_offsets, 2);
