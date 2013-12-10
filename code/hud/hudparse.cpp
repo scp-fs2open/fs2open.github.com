@@ -1136,6 +1136,8 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 					coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 				}
 			}
+		} else {
+			adjust_base_res(base_res);
 		}
 	} else {
 		adjust_base_res(base_res);
@@ -5084,7 +5086,7 @@ void load_gauge_warhead_count(int base_w, int base_h, int hud_font, SCP_vector<i
 
 	if ( gr_screen.res == GR_640 ) {
 		offset[0] = -143;
-		offset[1] = -119;;
+		offset[1] = -119;
 	} else {
 		offset[0] = -144;
 		offset[1] = -144;
