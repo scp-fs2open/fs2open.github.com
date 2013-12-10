@@ -328,6 +328,8 @@ typedef struct screen {
 	void (*gf_gradient)(int x1, int y1, int x2, int y2, bool resize);
  
 	void (*gf_circle)(int x, int y, int r, bool resize);
+	void (*gf_unfilled_circle)(int x, int y, int r, bool resize);
+	void (*gf_arc)(int x, int y, float r, float angle_start, float angle_end, bool fill, bool resize);
 	void (*gf_curve)(int x, int y, int r, int direction);
 
 	// Integer line. Used to draw a fast but pixely line.  
@@ -655,6 +657,17 @@ __inline void gr_circle(int xc, int yc, int d, bool resize = true)
 {
 	(*gr_screen.gf_circle)(xc,yc,d,resize);
 }
+
+__inline void gr_unfilled_circle(int xc, int yc, int d, bool resize = true)
+{
+	(*gr_screen.gf_unfilled_circle)(xc,yc,d,resize);
+}
+
+__inline void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, bool resize = true)
+{
+	(*gr_screen.gf_arc)(xc,yc,r,angle_start,angle_end,fill,resize);
+}
+
 #define gr_curve				GR_CALL(gr_screen.gf_curve)
 
 __inline void gr_line(int x1, int y1, int x2, int y2, bool resize = true)

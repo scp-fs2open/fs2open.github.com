@@ -12471,18 +12471,41 @@ ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width fo
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y", "Draws a circle", NULL, NULL)
+ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Filled=true]", "Draws a circle", NULL, NULL)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
 	int x,y,ra;
+	bool fill = true;
 
-	if(!ade_get_args(L, "iii", &ra,&x,&y))
+	if(!ade_get_args(L, "iii|b", &ra,&x,&y,&fill))
 		return ADE_RETURN_NIL;
 
-	//WMC - Circle takes...diameter.
-	gr_circle(x,y, ra*2, false);
+	if (fill) {
+		//WMC - Circle takes...diameter.
+		gr_circle(x,y, ra*2, false);
+	} else {
+		gr_unfilled_circle(x,y, ra*2, false);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAngle, number EndAngle, [boolean Filled=true]", "Draws an arc", NULL, NULL)
+{
+	if(!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	int x,y;
+	float ra,angle_start,angle_end;
+	bool fill = true;
+
+	if(!ade_get_args(L, "fiiff|b", &ra,&x,&y,&angle_start,&angle_end,&fill)) {
+		return ADE_RETURN_NIL;
+	}
+
+	gr_arc(x,y, ra, angle_start, angle_end, fill, false);
 
 	return ADE_RETURN_NIL;
 }
