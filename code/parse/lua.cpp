@@ -8820,6 +8820,23 @@ ADE_VIRTVAR(Gliding, l_Ship, "boolean", "Specifies whether this ship is currentl
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", "Ship orders, or invalid handle if ship handle is invalid")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_ShipOrders.GetPtr(&objh)))
+		return ade_set_error(L, "o", l_ShipOrders.Set(object_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_ShipOrders.Set(object_h()));;
+
+	if(ADE_SETTING_VAR)
+	{
+		LuaError(L, "Attempted to use incomplete feature: Ai orders copy. Use giveOrder instead");
+	}
+
+	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp)));
+}
+
 ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Engine index value, 0 to MAX_ENERGY_INDEX")
 {
 	object_h *objh=NULL;
