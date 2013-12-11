@@ -888,7 +888,8 @@ void multi_voice_release_token()
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// mark the token as being released
 		int stream_index = multi_voice_find_token(MY_NET_PLAYER_NUM);
-		Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;
+		if (stream_index != -1)
+			Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;
 				
 		// timestamp this guy so that he can't get the token back immediately
 		Net_player->s_info.voice_token_timestamp = timestamp(Netgame.options.voice_token_wait);
