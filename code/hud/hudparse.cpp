@@ -3026,13 +3026,13 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	int Cargo_scan_start_offsets[2];
 	int Cargo_scan_size[2];
 
-	int Subsys_name_offsets[2];
+	int Subsys_name_offsets[2] = {0, 0};
 	bool Use_subsys_name_offsets = false;
 	
-	int Subsys_integrity_offsets[2];
+	int Subsys_integrity_offsets[2] = {0, 0};
 	bool Use_subsys_integrity_offsets = false;
 
-	int Disabled_status_offsets[2];
+	int Disabled_status_offsets[2] = {0, 0};
 	bool Use_disabled_status_offsets = false;
 
 	bool desaturate = false;
