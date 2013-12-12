@@ -785,5 +785,9 @@ public:
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
+// c++11 standard detection
+// for GCC with autotools, see AX_CXX_COMPILE_STDCXX_11 macro in configure.ac
+// this sets HAVE_CXX11 & -std=c++0x or -std=c++11 appropriately
+
 
 #endif		// PS_TYPES_H
