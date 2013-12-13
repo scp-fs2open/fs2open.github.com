@@ -17726,7 +17726,10 @@ void sexp_damage_escort_list(int node)
 
 		if (current_hull_pct < smallest_hull_pct)
 		{
-			Ships[small_shipnum].escort_priority=priority2;		//give the previous smallest the lower priority
+			if (small_shipnum != -1) // avoid negative array index during 1st loop iteration
+			{
+				Ships[small_shipnum].escort_priority=priority2;		//give the previous smallest the lower priority
+			}
 			
 			smallest_hull_pct=current_hull_pct;
 			small_shipnum=shipnum;
