@@ -8,6 +8,8 @@
 */ 
 
 
+#include "globalincs/pstypes.h"
+
 #ifndef CONTROLS_CONFIG_H
 #define CONTROLS_CONFIG_H
 
@@ -286,6 +288,7 @@ extern int Invert_axis[];
 extern int Invert_axis_defaults[];
 
 extern config_item Control_config[];		//!< Stores the keyboard configuration
+extern SCP_vector<config_item*> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern char **Scan_code_text;
 extern char **Joy_button_text;
 
@@ -297,7 +300,7 @@ void control_config_close();
 
 void control_config_cancel_exit();
 
-void control_config_reset_defaults();
+void control_config_reset_defaults(int presetnum=-1);
 int translate_key_to_index(char *key);
 char *translate_key(char *key);
 char *textify_scancode(int code);
