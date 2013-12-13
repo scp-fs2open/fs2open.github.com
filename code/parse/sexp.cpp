@@ -9490,8 +9490,10 @@ void sexp_clear_ship_goals(int n)
 
 	Assert ( n >= 0 );
 	ship_name = CTEXT(n);
-	num = ship_name_lookup(ship_name, 1);	// Goober5000 - include players
-	ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
+	if ( (num = ship_name_lookup(ship_name, 1)) != -1) 	// Goober5000 - include players
+	{
+		ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
+	}
 }
 
 /**
