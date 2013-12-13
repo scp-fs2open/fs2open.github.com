@@ -12075,7 +12075,10 @@ void sexp_change_player_score(int node)
 	node = CDR(node);
 
 	if(!(Game_mode & GM_MULTIPLAYER)){
-		sindex = ship_name_lookup(CTEXT(node));
+		if ( (sindex = ship_name_lookup(CTEXT(node))) == -1) {
+			Warning(LOCATION, "Invalid shipname '%s' passed to sexp_change_player_score!", CTEXT(node));
+			return;
+		}
 
 		if (Player_ship != &Ships[sindex]) {
 			Warning(LOCATION, "Can not award points to '%s'. Ship is not a player!", CTEXT(node));
