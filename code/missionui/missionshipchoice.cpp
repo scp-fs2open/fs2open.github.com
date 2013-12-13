@@ -2426,10 +2426,11 @@ int create_wings()
 
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 		wb = &Ss_wings[i];
-		wp = &Wings[wb->wingnum];		
 
 		if ( wb->wingnum == -1 )
 			continue;
+
+		wp = &Wings[wb->wingnum];
 
 		for ( k = 0; k < MAX_WING_SLOTS; k++ ) {
 			cleanup_ship_index[k] = -1;
