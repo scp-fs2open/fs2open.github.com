@@ -650,6 +650,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS;
 		else if (!stricmp(NOX("no primary linked penalty"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_NO_LINKED_PENALTY;
+		else if (!stricmp(NOX("no homing speed ramp"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_NO_HOMING_SPEED_RAMP;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -839,6 +841,8 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->mass = 1.0f;
 	wip->max_speed = 10.0f;
+	wip->acceleration_time = 0.0f;
+	wip->vel_inherit_amount = 1.0f;
 	wip->free_flight_time = 0.0f;
 	wip->fire_wait = 1.0f;
 	wip->damage = 0.0f;
@@ -1652,6 +1656,14 @@ int parse_weapon(int subtype, bool replace)
 		{
 			wip->SwarmWait = int( SwarmWait * 1000 );
 		}
+	}
+
+	if(optional_string("$Acceleration Time:")) {
+		stuff_float(&wip->acceleration_time);
+	}
+
+	if(optional_string("$Velocity Inherit:")) {
+		stuff_float(&wip->vel_inherit_amount);
 	}
 
 	if(optional_string("$Free Flight Time:")) {
@@ -4008,6 +4020,16 @@ void weapon_home(object *obj, int num, float frame_time)
 		else {
 			obj->phys_info.speed = max_speed;
 		}
+
+		if (wip->acceleration_time > 0.0f) {
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+				float	t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+			}
+		}
+
 		// set velocity using whatever speed we have
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
@@ -4282,8 +4304,18 @@ void weapon_home(object *obj, int num, float frame_time)
 		} else
 			obj->phys_info.speed = max_speed;
 
-		//	For first second of weapon's life, it doesn't fly at top speed.  It ramps up.
-		if (Missiontime - wp->creation_time < i2f(1)) {
+
+		if (wip->acceleration_time > 0.0f) {
+			// Ramp up speed linearly for the given duration
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+				float t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+			}
+		} else if (!(wip->wi_flags3 & WIF3_NO_HOMING_SPEED_RAMP) && Missiontime - wp->creation_time < i2f(1)) {
+			// Default behavior:
+			// For first second of weapon's life, it doesn't fly at top speed.  It ramps up.
 			float	t;
 
 			t = f2fl(Missiontime - wp->creation_time);
@@ -5066,12 +5098,19 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	wp->weapon_max_vel = objp->phys_info.max_vel.xyz.z;
 
+	if (wip->acceleration_time > 0.0f)
+		wp->launch_speed = 0.0f;
+
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
 	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
+		float pspeed = vm_vec_mag( &parent_objp->phys_info.vel );
 		vm_vec_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel );
-		wp->weapon_max_vel += vm_vec_mag( &parent_objp->phys_info.vel );
+		wp->weapon_max_vel += pspeed * wip->vel_inherit_amount;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
+
+		if (wip->acceleration_time > 0.0f)
+			wp->launch_speed += pspeed;
 	}
 
 	// create the corkscrew
