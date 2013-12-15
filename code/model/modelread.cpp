@@ -2051,8 +2051,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						char type[64];
 
 						get_user_prop_value(p+9, type);
-						if ( !stricmp(type, "subsystem") )						// if we have a subsystem, put it into the list!
+						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
 							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+						} else if ( !stricmp(type, "shieldpoint") ) {
+							pm->shield_points.push_back(pnt);
+						}
 					} else if ( strstr(name, "$enginelarge") || strstr(name, "$enginehuge") ){
 						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
 					} else {
@@ -2205,6 +2208,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				for(idx=0; idx<num_ins; idx++){
 					// get the detail level
 					pm->ins[idx].detail_level = cfread_int(fp);
+					if (pm->ins[idx].detail_level < 0) {
+						Warning(LOCATION, "Model '%s': insignia uses an invalid LOD (%i)\n", pm->filename, pm->ins[idx].detail_level);
+					}
 
 					// # of faces
 					num_faces = cfread_int(fp);

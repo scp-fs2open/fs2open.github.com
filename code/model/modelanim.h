@@ -12,6 +12,7 @@
 #ifndef _MODELANIM_H
 #define _MODELANIM_H
 
+#include <limits.h>
 
 #define MAX_TRIGGERED_ANIMATIONS 15
 
@@ -48,7 +49,7 @@ enum EModelAnimationPosition {
     MA_POS_READY            = 2     // set, done with move
 };
 
-#define ANIMATION_SUBTYPE_ALL -1
+#define ANIMATION_SUBTYPE_ALL INT_MAX
 
 /**
  * This is an object responsable for storing the animation information assosiated with 

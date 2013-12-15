@@ -17,9 +17,6 @@
 
 extern float flFrametime;
 
-// the "lazy" macro
-#define SUBTYPE_CHECK	((subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == subtype))
-
 SCP_vector<triggered_rotation> Triggered_rotations;
 
 char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
@@ -529,6 +526,37 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 //*** ship related animation stuff ***//
 //************************************//
 
+// Checks if the given subtype matches a particular animation
+bool subtype_check(model_subsystem *psub, queued_animation *anim, int subtype)
+{
+	Assert( psub != NULL );
+	Assert( anim != NULL );
+
+	if ( (subtype == ANIMATION_SUBTYPE_ALL) || (anim->subtype == ANIMATION_SUBTYPE_ALL) )
+		return true;
+
+	// Fighterbay door animations can have negative subtypes, so handle those
+	// separately here
+	if (anim->type == TRIGGER_TYPE_DOCK_BAY_DOOR) {
+		int anim_subtype = anim->subtype -1; // in the tables, bay door +sub_types are 1-based so change to 0-based
+
+		if (anim_subtype < 0) {
+			if (abs(anim_subtype) != subtype) {
+				return true;
+			}
+		} else {
+			if (anim_subtype == subtype) {
+				return true;
+			}
+		}
+	} else {
+		if ( anim->subtype == subtype )
+			return true;
+	}
+
+	return false;
+}
+
 bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction, bool instant)
 {
 	Assert( pss != NULL );
@@ -545,7 +573,7 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 	triggered_rotation *trigger = &Triggered_rotations[pss->triggered_rotation_index];
 
 	for (int i = 0; i < psub->n_triggers; i++) {
-		if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
+		if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
 			// rotate instantly; don't use the queue
 			if (instant) {
 				trigger->set_to_final(&psub->triggers[i]);
@@ -633,7 +661,7 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 			continue;
 
 		for (i = 0; i < psub->n_triggers; i++) {
-			if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
+			if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
 				temp_ret = model_anim_instance_get_actual_time(&psub->triggers[i]);
 
 				if (temp_ret > ret)
@@ -656,7 +684,7 @@ int model_anim_get_actual_time_type(ship_info *sip, int animation_type, int subt
 		psub = &sip->subsystems[n];
 
 		for (i = 0; i < psub->n_triggers; i++) {
-			if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
+			if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
 				temp_ret = model_anim_instance_get_actual_time(&psub->triggers[i]);
 
 				if (temp_ret > ret)
