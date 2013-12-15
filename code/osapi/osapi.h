@@ -21,21 +21,6 @@
 // set if running under MsDev - done after os_init(...) has returned
 extern int Os_debugger_running;
 
-// game-wide
-//#define THREADED
-
-#ifdef THREADED
-	#define INITIALIZE_CRITICAL_SECTION(csc)	do { csc = SDL_CreateMutex(); } while(0)
-	#define DELETE_CRITICAL_SECTION(csc)		do { SDL_DestroyMutex(csc); } while(0)
-	#define ENTER_CRITICAL_SECTION(csc)			do { SDL_LockMutex(csc); } while(0)
-	#define LEAVE_CRITICAL_SECTION(csc)			do { SDL_UnlockMutex(csc); } while(0)
-#else
-	#define INITIALIZE_CRITICAL_SECTION(csc)	do { } while(0)
-	#define DELETE_CRITICAL_SECTION(csc)		do { } while(0)
-	#define ENTER_CRITICAL_SECTION(csc)			do { } while(0)
-	#define LEAVE_CRITICAL_SECTION(csc)			do { } while(0)
-#endif
-
 // --------------------------------------------------------------------------------------------------
 // OSAPI FUNCTIONS
 //

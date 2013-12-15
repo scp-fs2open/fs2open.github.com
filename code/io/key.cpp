@@ -265,7 +265,7 @@ void key_flush()
 
 	if ( !key_inited ) return;
 
-	ENTER_CRITICAL_SECTION( key_lock );	
+	SDL_LockMutex( key_lock );	
 
 	key_data.keyhead = key_data.keytail = 0;
 
@@ -289,7 +289,7 @@ void key_flush()
 		key_data.NumUps[i]=0;
 	}
 
-	LEAVE_CRITICAL_SECTION( key_lock );	
+	SDL_UnlockMutex( key_lock );	
 }
 
 //	A nifty function which performs the function:
@@ -309,13 +309,13 @@ int key_checkch()
 
 	if ( !key_inited ) return 0;
 
-	ENTER_CRITICAL_SECTION( key_lock );	
+	SDL_LockMutex( key_lock );	
 
 	if (key_data.keytail != key_data.keyhead){
 		is_one_waiting = 1;
 	}
 
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	SDL_UnlockMutex( key_lock );		
 
 	return is_one_waiting;
 }
@@ -332,14 +332,14 @@ int key_inkey()
 
 	if ( !key_inited ) return 0;
 
-	ENTER_CRITICAL_SECTION( key_lock );	
+	SDL_LockMutex( key_lock );	
 
 	if (key_data.keytail!=key_data.keyhead)	{
 		key = key_data.keybuffer[key_data.keyhead];
 		key_data.keyhead = add_one(key_data.keyhead);
 	}
 
-	LEAVE_CRITICAL_SECTION( key_lock );	
+	SDL_UnlockMutex( key_lock );	
 
 	Current_key_down = key;
 
@@ -353,7 +353,7 @@ void key_outkey(int key)
 
 	if ( !key_inited ) return;
 
-	ENTER_CRITICAL_SECTION( key_lock );		
+	SDL_LockMutex( key_lock );		
 
 	bufp = key_data.keytail+1;
 
@@ -365,7 +365,7 @@ void key_outkey(int key)
 
 	key_data.keytail = bufp;
 
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	SDL_UnlockMutex( key_lock );		
 }
 
 
@@ -382,7 +382,7 @@ int key_inkey_time(uint * time)
 		return 0;
 	}
 	
-	ENTER_CRITICAL_SECTION( key_lock );		
+	SDL_LockMutex( key_lock );		
 
 	if (key_data.keytail!=key_data.keyhead)	{
 		key = key_data.keybuffer[key_data.keyhead];
@@ -390,7 +390,7 @@ int key_inkey_time(uint * time)
 		key_data.keyhead = add_one(key_data.keyhead);
 	}
 
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	SDL_UnlockMutex( key_lock );		
 
 	return key;
 }
@@ -404,12 +404,12 @@ int key_peekkey()
 
 	if ( !key_inited ) return 0;
 
-	ENTER_CRITICAL_SECTION( key_lock );		
+	SDL_LockMutex( key_lock );		
 
 	if (key_data.keytail!=key_data.keyhead)	{
 		key = key_data.keybuffer[key_data.keyhead];
 	}
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	SDL_UnlockMutex( key_lock );		
 
 	return key;
 }
@@ -440,7 +440,7 @@ uint key_get_shift_status()
 
 	if ( !key_inited ) return 0;
 
-	ENTER_CRITICAL_SECTION( key_lock );		
+	SDL_LockMutex( key_lock );		
 
 	if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
 		shift_status |= KEY_SHIFTED;
@@ -463,7 +463,7 @@ uint key_get_shift_status()
 		}
 	}
 #endif
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	SDL_UnlockMutex( key_lock );		
 
 	return shift_status;
 }
@@ -483,7 +483,7 @@ float key_down_timef(uint scancode)
 		return 0.0f;
 	}
 
-	ENTER_CRITICAL_SECTION( key_lock );		
+	SDL_LockMutex( key_lock );		
 
 	time = timer_get_milliseconds();
 	delta_time = time - key_data.TimeKeyDownChecked[scancode];
@@ -492,10 +492,10 @@ float key_down_timef(uint scancode)
 	if ( delta_time <= 1 ) {
 		key_data.TimeKeyWentDown[scancode] = time;
 		if (keyd_pressed[scancode])	{
-			LEAVE_CRITICAL_SECTION( key_lock );		
+			SDL_UnlockMutex( key_lock );		
 			return 1.0f;
 		} else	{
-			LEAVE_CRITICAL_SECTION( key_lock );		
+			SDL_UnlockMutex( key_lock );		
 			return 0.0f;
 		}
 	}
@@ -508,7 +508,7 @@ float key_down_timef(uint scancode)
 		key_data.TimeKeyWentDown[scancode] = time;
 	}
 
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	SDL_UnlockMutex( key_lock );		
 
 	return i2fl(time_down) / i2fl(delta_time);
 }
@@ -521,12 +521,12 @@ int key_down_count(int scancode)
 	if ( !key_inited ) return 0;
 	if ((scancode<0)|| (scancode>=NUM_KEYS)) return 0;
 
-	ENTER_CRITICAL_SECTION( key_lock );		
+	SDL_LockMutex( key_lock );		
 
 	n = key_data.NumDowns[scancode];
 	key_data.NumDowns[scancode] = 0;
 
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	SDL_UnlockMutex( key_lock );		
 
 	return n;
 }
@@ -540,12 +540,12 @@ int key_up_count(int scancode)
 	if ( !key_inited ) return 0;
 	if ((scancode<0)|| (scancode>=NUM_KEYS)) return 0;
 
-	ENTER_CRITICAL_SECTION( key_lock );		
+	SDL_LockMutex( key_lock );		
 
 	n = key_data.NumUps[scancode];
 	key_data.NumUps[scancode] = 0;
 
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	SDL_UnlockMutex( key_lock );		
 
 	return n;
 }
@@ -565,7 +565,7 @@ void key_mark( uint code, int state, uint latency )
 
 	if ( !key_inited ) return;
 
-	ENTER_CRITICAL_SECTION( key_lock );		
+	SDL_LockMutex( key_lock );		
 
 	// If running in the UK, need to translate their wacky slash scancode to ours
 	if ( code == KEY_SLASH_UK ) {
@@ -691,7 +691,7 @@ void key_mark( uint code, int state, uint latency )
 		}
 	}
 
-	LEAVE_CRITICAL_SECTION( key_lock );
+	SDL_UnlockMutex( key_lock );
 }
 
 void key_close()
@@ -705,7 +705,7 @@ void key_close()
 
 	key_inited = 0;
 
-	DELETE_CRITICAL_SECTION( key_lock );
+	SDL_DestroyMutex( key_lock );
 }
 
 void key_init()
@@ -714,9 +714,9 @@ void key_init()
 	if ( key_inited ) return;
 	key_inited = 1;
 
-	INITIALIZE_CRITICAL_SECTION( key_lock );
+	key_lock = SDL_CreateMutex();
 
-	ENTER_CRITICAL_SECTION( key_lock );
+	SDL_LockMutex(key_lock);
 
 	FillSDLArray();
 
@@ -727,7 +727,7 @@ void key_init()
 	// Clear the keyboard array
 	key_flush();
 
-	LEAVE_CRITICAL_SECTION( key_lock );
+	SDL_UnlockMutex( key_lock );
 
 	atexit(key_close);
 }

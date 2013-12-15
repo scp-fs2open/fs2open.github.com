@@ -203,7 +203,7 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 	strcpy_s( szWinTitle, title );
 	strcpy_s( szWinClass, wclass );	
 
-	INITIALIZE_CRITICAL_SECTION( Os_lock );
+	Os_lock = SDL_CreateMutex();
 
 	mprintf(("  Initializing SDL...\n"));
 
@@ -293,13 +293,13 @@ void os_sleep(uint ms)
 // Used to stop message processing
 void os_suspend()
 {
-	ENTER_CRITICAL_SECTION( Os_lock );	
+	SDL_LockMutex( Os_lock );	
 }
 
 // resume message processing
 void os_resume()
 {
-	LEAVE_CRITICAL_SECTION( Os_lock );	
+	SDL_UnlockMutex( Os_lock );	
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -309,7 +309,7 @@ void os_resume()
 // called at shutdown. Makes sure all thread processing terminates.
 void os_deinit()
 {
-	DELETE_CRITICAL_SECTION(Os_lock);
+	SDL_DestroyMutex(Os_lock);
 
 	SDL_Quit();
 }

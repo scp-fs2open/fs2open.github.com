@@ -33,14 +33,14 @@ void timer_close()
 {
 	if ( Timer_inited )	{
 		Timer_inited = 0;
-		DELETE_CRITICAL_SECTION( Timer_lock );
+		SDL_DestroyMutex( Timer_lock );
 	}
 }
 
 void timer_init()
 {
 	if ( !Timer_inited )	{
-		INITIALIZE_CRITICAL_SECTION( Timer_lock );
+		Timer_lock = SDL_CreateMutex();
 
 		Timer_inited = 1;
 

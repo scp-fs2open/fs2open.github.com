@@ -1014,13 +1014,13 @@ const ushort DefBufferServiceInterval = 250;  // default buffer service interval
 // Constructor
 AudioStream::AudioStream (void)
 {
-	INITIALIZE_CRITICAL_SECTION( write_lock );
+	write_lock = SDL_CreateMutex();
 }
 
 // Destructor
 AudioStream::~AudioStream (void)
 {
-	DELETE_CRITICAL_SECTION( write_lock );
+	SDL_DestroyMutex( write_lock );
 }
 
 void AudioStream::Init_Data ()
@@ -1143,7 +1143,7 @@ bool AudioStream::Destroy (void)
 	bool fRtn = true;
 	ALint buffers_processed = 0;
 
-	ENTER_CRITICAL_SECTION(write_lock);
+	SDL_LockMutex(write_lock);
 
 	// Stop playback
 	Stop ();
@@ -1171,7 +1171,7 @@ bool AudioStream::Destroy (void)
 
 	status = ASF_FREE;
 
-	LEAVE_CRITICAL_SECTION(write_lock);
+	SDL_UnlockMutex(write_lock);
 
 	return fRtn;
 }
@@ -1196,7 +1196,7 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 	}
 
 	if ( service ) {
-		ENTER_CRITICAL_SECTION(Global_service_lock);
+		SDL_LockMutex(Global_service_lock);
 	}
 		    
 	if ( service ) {
@@ -1246,7 +1246,7 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 ErrorExit:
 
 	if ( service ) {
-		LEAVE_CRITICAL_SECTION(Global_service_lock);
+		SDL_UnlockMutex(Global_service_lock);
 	}
     
 	return (fRtn);
@@ -1282,11 +1282,11 @@ bool AudioStream::ServiceBuffer (void)
 	if ( status != ASF_USED )
 		return false;
 
-	ENTER_CRITICAL_SECTION( write_lock );
+	SDL_LockMutex( write_lock );
 
 	// status may have changed, so lets check once again
 	if ( status != ASF_USED ){
-		LEAVE_CRITICAL_SECTION( write_lock );
+		SDL_UnlockMutex( write_lock );
 
 		return false;
 	}
@@ -1309,7 +1309,7 @@ bool AudioStream::ServiceBuffer (void)
 			m_lCutoffVolume = 0.0f;
 
 			if ( m_bDestroy_when_faded == true ) {
-				LEAVE_CRITICAL_SECTION( write_lock );
+				SDL_UnlockMutex( write_lock );
 
 				Destroy();	
 				// Reset reentrancy semaphore
@@ -1318,7 +1318,7 @@ bool AudioStream::ServiceBuffer (void)
 			} else {
 				Stop_and_Rewind();
 				// Reset reentrancy semaphore
-				LEAVE_CRITICAL_SECTION( write_lock );
+				SDL_UnlockMutex( write_lock );
 
 				return true;
 			}
@@ -1356,7 +1356,7 @@ bool AudioStream::ServiceBuffer (void)
 
 			if ( PlaybackDone() ) {
 				if ( m_bDestroy_when_faded == true ) {
-					LEAVE_CRITICAL_SECTION( write_lock );
+					SDL_UnlockMutex( write_lock );
 
 					Destroy();
 					// Reset reentrancy semaphore
@@ -1378,7 +1378,7 @@ bool AudioStream::ServiceBuffer (void)
 		}
 	}
 
-	LEAVE_CRITICAL_SECTION( write_lock );
+	SDL_UnlockMutex( write_lock );
 
 	return (fRtn);
 }
@@ -1624,7 +1624,7 @@ void audiostream_init()
 
 	SDL_InitSubSystem(SDL_INIT_TIMER);
 
-	INITIALIZE_CRITICAL_SECTION( Global_service_lock );
+	Global_service_lock = SDL_CreateMutex();
 
 	Audiostream_inited = 1;
 }
@@ -1666,7 +1666,7 @@ void audiostream_close()
 		Compressed_service_buffer = NULL;
 	}
 
-	DELETE_CRITICAL_SECTION( Global_service_lock );
+	SDL_DestroyMutex( Global_service_lock );
 
 	Audiostream_inited = 0;
 
