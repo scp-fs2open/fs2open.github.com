@@ -2,6 +2,8 @@
 #
 # This file uses GNU Automake to generate makefiles
 
+ACLOCAL_AMFLAGS = -I m4
+
 SUBDIRS = mongoose code
 
 
