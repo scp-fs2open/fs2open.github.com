@@ -200,11 +200,11 @@ void multi_options_read_config()
 					NEXT_TOKEN();
 					if (tok != NULL) {
 						long int result = strtol(tok, NULL, 10);
-						if(result <= 0 || result > 65535) {
-							mprintf(("ERROR: Invalid or out of range webapi_server_port '%s' specified in multi.cfg, must be integer between 1024 and 65535.\n", tok));
+						if(result <= 0 || result > USHRT_MAX) {
+							mprintf(("ERROR: Invalid or out of range webapi_server_port '%s' specified in multi.cfg, must be integer between 1024 and %i.\n", tok, USHRT_MAX));
 						}
 						else if(result < 1024) {
-							mprintf(("ERROR: webapi_server_port '%d' in multi.cfg is too low, must be between 1024 and 65535.\n", result));
+							mprintf(("ERROR: webapi_server_port '%d' in multi.cfg is too low, must be between 1024 and %i.\n", result, USHRT_MAX));
 						}
 						else {
 							mprintf(("Using webapi_server_port '%d' from multi.cfg.\n", result));
