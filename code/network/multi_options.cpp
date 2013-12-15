@@ -199,7 +199,7 @@ void multi_options_read_config()
 				if ( SETTING("+webapi_server_port") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						Multi_options_g.webapiPort = atoi(tok);
+						Multi_options_g.webapiPort = (ushort) atoi(tok);
 					}
 				}
 			}
