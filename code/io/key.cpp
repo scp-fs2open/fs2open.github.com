@@ -57,7 +57,7 @@ SDL_mutex* key_lock;
 								// when typing in your pilots callsign.  This global flag is checked before execution
 								// is stopped.
 
-std::map<int, int> SDLtoFS2;
+SCP_map<int, int> SDLtoFS2;
 
 int ascii_table[128] = 
 { 255, 255, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',255,255,

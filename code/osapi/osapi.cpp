@@ -314,7 +314,7 @@ void os_deinit()
 	SDL_Quit();
 }
 
-extern std::map<int, int> SDLtoFS2;
+extern SCP_map<int, int> SDLtoFS2;
 extern void joy_set_button_state(int button, int state);
 extern void joy_set_hat_state(int position);
 
