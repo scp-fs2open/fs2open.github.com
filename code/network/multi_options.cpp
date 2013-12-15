@@ -199,7 +199,17 @@ void multi_options_read_config()
 				if ( SETTING("+webapi_server_port") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						Multi_options_g.webapiPort = (ushort) atoi(tok);
+						long int result = strtol(tok, NULL, 10);
+						if(result <= 0 || result > 65535) {
+							mprintf(("ERROR: Invalid or out of range webapi_server_port '%s' specified in multi.cfg, must be integer between 1024 and 65535.\n", tok));
+						}
+						else if(result < 1024) {
+							mprintf(("ERROR: webapi_server_port '%d' in multi.cfg is too low, must be between 1024 and 65535.\n", result));
+						}
+						else {
+							mprintf(("Using webapi_server_port '%d' from multi.cfg.\n", result));
+							Multi_options_g.webapiPort = (ushort) result;
+						}
 					}
 				}
 			}
