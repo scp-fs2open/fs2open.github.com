@@ -8,6 +8,7 @@ aclocal.m4
 autom4te.cache/
 config.*
 code/fs2_open_*
+code/wxFRED2_*
 configure
 depcomp
 install-sh
