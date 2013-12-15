@@ -180,30 +180,61 @@ int Rank_medal_index = -1;
 #define MASK_BITMAP_INIT  (1<<1)
 int Init_flags;
 
+medal_stuff::medal_stuff()
+	: num_versions(1), version_starts_at_1(false), kills_needed(0), promotion_text()
+{
+	name[0] = '\0';
+	bitmap[0] = '\0';
+	debrief_bitmap[0] = '\0';
+	voice_base[0] = '\0';
+}
+
+medal_stuff::~medal_stuff()
+{
+	SCP_map<int, char*>::iterator it;
+	for (it = promotion_text.begin(); it != promotion_text.end(); it++) {
+		if (it->second) {
+			vm_free(it->second);
+		}
+	}
+	promotion_text.clear();
+}
+
+medal_stuff::medal_stuff(const medal_stuff &m)
+{
+	clone(m);
+}
+
 void medal_stuff::clone(const medal_stuff &m)
 {
 	memcpy(name, m.name, NAME_LENGTH);
-	memcpy(bitmap, m.bitmap, NAME_LENGTH);
-	memcpy(debrief_bitmap, m.debrief_bitmap, NAME_LENGTH);
+	memcpy(bitmap, m.bitmap, MAX_FILENAME_LEN);
+	memcpy(debrief_bitmap, m.debrief_bitmap, MAX_FILENAME_LEN);
 	num_versions = m.num_versions;
 	version_starts_at_1 = m.version_starts_at_1;
 	kills_needed = m.kills_needed;
 	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
 
-	if (m.promotion_text)
-		promotion_text = vm_strdup(m.promotion_text);
-	else
-		promotion_text = NULL;
+	promotion_text.clear();
+	SCP_map<int, char*>::const_iterator it;
+	for (it = m.promotion_text.begin(); it != m.promotion_text.end(); it++) {
+		if (it->second) {
+			promotion_text[it->first] = vm_strdup(it->second);
+		}
+	}
 }
 
 // assignment operator
 const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
 {
 	if (this != &m) {
-		if (promotion_text) {
-			vm_free(promotion_text);
-			promotion_text = NULL;
+		SCP_map<int, char*>::iterator it;
+		for (it = promotion_text.begin(); it != promotion_text.end(); it++) {
+			if (it->second) {
+				vm_free(it->second);
+			}
 		}
+		promotion_text.clear();
 		clone(m);
 	}
 
@@ -340,6 +371,7 @@ void parse_medal_tbl()
 		// this medal is a badge and should be treated specially
 		if ( optional_string("+Num Kills:") ) {
 			char buf[MULTITEXT_LENGTH];
+			int persona;
 			stuff_int( &temp_medal.kills_needed );
 
 			if (optional_string("$Wavefile 1:"))
@@ -351,9 +383,23 @@ void parse_medal_tbl()
 			if (optional_string("$Wavefile Base:"))
 				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
 
-			required_string("$Promotion Text:");
-			stuff_string(buf, F_MULTITEXT, sizeof(buf));
-			temp_medal.promotion_text = vm_strdup(buf);
+			while (check_for_string("$Promotion Text:")) {
+				required_string("$Promotion Text:");
+				stuff_string(buf, F_MULTITEXT, sizeof(buf));
+				persona = -1;
+				if (optional_string("+Persona:")) {
+					stuff_int(&persona);
+					if (persona < 0) {
+						Warning(LOCATION, "Debriefing text for %s is assigned to an invalid persona: %i (must be 0 or greater).\n", temp_medal.name, persona);
+						continue;
+					}
+				}
+				temp_medal.promotion_text[persona] = vm_strdup(buf);
+			}
+			if (temp_medal.promotion_text.find(-1) == temp_medal.promotion_text.end()) {
+				Warning(LOCATION, "%s medal is missing default debriefing text.\n", temp_medal.name);
+				temp_medal.promotion_text[-1] = "";
+			}
 		}
 
 		Medals.push_back(temp_medal);
@@ -709,7 +755,7 @@ void init_medal_bitmaps()
 
 		if (Player_score->medal_counts[idx] > 0) {
 			int num_medals;
-			char filename[NAME_LENGTH], base[NAME_LENGTH];
+			char filename[MAX_FILENAME_LEN], base[MAX_FILENAME_LEN];
 
 			// possibly load a different filename that is specified by the bitmap filename
 			// for this medal.  if the player has > 1 of these types of medals, then determien
@@ -727,7 +773,7 @@ void init_medal_bitmaps()
 			if ( num_medals > 1 ) {
 				// append the proper character onto the end of the medal filename.  Base version
 				// has no character. next version is a, then b, etc.
-				char temp[NAME_LENGTH];
+				char temp[MAX_FILENAME_LEN];
 				strcpy_s(temp, base);
 				sprintf( base, "%s%c", temp, (num_medals-2)+'a');
 			}

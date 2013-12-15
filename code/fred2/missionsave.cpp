@@ -1358,7 +1358,7 @@ void CFred_mission_save::save_single_dock_instance(ship *shipp, dock_instance *d
 int CFred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
-	int i, j, k, z;
+	int i, j, z;
 	ai_info *aip;
 	object *objp;
 	ship *shipp;
@@ -1392,22 +1392,19 @@ int CFred_mission_save::save_objects()
 
 		//alt classes stuff
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
-			if ((int)shipp->s_alt_classes.size()) {
-				for (k = 0; k < (int)shipp->s_alt_classes.size() ; k++) {
-					// is this a variable?
-					if (shipp->s_alt_classes[k].variable_index != -1) {
-						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: @%s", Sexp_variables[shipp->s_alt_classes[k].variable_index].variable_name);  
-					}
-					else {
-						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: \"%s\"", Ship_info[shipp->s_alt_classes[k].ship_class].name);
-					}
-
-					// default class?					
-					if (shipp->s_alt_classes[k].default_to_this_class) {
-						fout_version("\n;;FSO 3.6.10;; +Default Class:");
-					}
+			for (SCP_vector<alt_class>::iterator ii = shipp->s_alt_classes.begin(); ii != shipp->s_alt_classes.end(); ++ii) {
+				// is this a variable?
+				if (ii->variable_index != -1) {
+					fout("\n$Alt Ship Class: @%s", Sexp_variables[ii->variable_index].variable_name);  
+				}
+				else {
+					fout("\n$Alt Ship Class: \"%s\"", Ship_info[ii->ship_class].name);
 				}
 
+				// default class?					
+				if (ii->default_to_this_class) {
+					fout("\n+Default Class:");
+				}
 			}
 		}
 
@@ -1731,6 +1728,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"ship-locked\"");
 			if (shipp->flags2 & SF2_WEAPONS_LOCKED)
 				fout(" \"weapons-locked\"");
+			if (shipp->flags2 & SF2_SCRAMBLE_MESSAGES)
+				fout(" \"scramble-messages\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

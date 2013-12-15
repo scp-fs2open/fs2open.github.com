@@ -162,9 +162,7 @@ extern void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_nu
 
 extern int hud_squadmsg_reinforcements_available(int team);
 
-//#ifndef NDEBUG
 void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
-//#endif
 
 // Added for voicer implementation
 void hud_squadmsg_do_mode( int mode );

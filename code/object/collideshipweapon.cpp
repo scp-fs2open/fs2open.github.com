@@ -326,7 +326,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	if (shield_collision) {
 		// pick out the shield quadrant
-		quadrant_num = get_quadrant(&mc_shield.hit_point);
+		quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
 		if (shipp->flags & SF_DYING || !ship_is_shield_up(ship_objp, quadrant_num))

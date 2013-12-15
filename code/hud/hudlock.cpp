@@ -297,7 +297,9 @@ void hud_lock_reset(float lock_time_scale)
 
 	swp = &Player_ship->weapons;
     
-	if (swp->current_secondary_bank > 0) {
+	if ((swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0)) {
+		Assert(swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS);
+		Assert(swp->secondary_bank_weapons[swp->current_secondary_bank] < MAX_WEAPON_TYPES);
 		wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 		Player->lock_time_to_target = i2fl(wip->min_lock_time*lock_time_scale);
 	} else {

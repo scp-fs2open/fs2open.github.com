@@ -404,7 +404,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		// fix old ship names for ships in wings if needed
 		while (j--) {
 			if ( (Objects[wing_objects[i][j]].type == OBJ_SHIP) || (Objects[wing_objects[i][j]].type == OBJ_START) ) {  // don't change player ship names
-				sprintf(name, "%s %d", Wings[i].name, j + 1);
+				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name)) {  // need to fix name
 					update_sexp_references(old_name, name);

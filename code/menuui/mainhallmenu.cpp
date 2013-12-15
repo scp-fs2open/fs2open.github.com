@@ -53,7 +53,8 @@
 #define MISC_ANIM_MODE_TIMED		2		// uses timestamps to determine when a finished anim should be checked again
 #define NUM_REGIONS					7		// (6 + 1 for multiplayer equivalent of campaign room)
 
-SCP_vector<SCP_vector<main_hall_defines> > Main_hall_defines;
+SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
+
 main_hall_defines *Main_hall = NULL;
 
 int Vasudan_funny = 0;
@@ -390,7 +391,7 @@ void main_hall_campaign_cheat()
  *
  * @param main_hall_name Name of main hall to initialise
  */
-void main_hall_init(SCP_string main_hall_name)
+void main_hall_init(const SCP_string &main_hall_name)
 {
 	ubyte bg_type;
 	if (Main_hall_inited) {
@@ -399,6 +400,7 @@ void main_hall_init(SCP_string main_hall_name)
 
 	int idx;
 	char temp[100], whee[100];
+	SCP_string main_hall_to_load;
 
 	// reparse the table here if the relevant cmdline flag is set
 	if (Cmdline_reparse_mainhall) {
@@ -409,15 +411,17 @@ void main_hall_init(SCP_string main_hall_name)
 	if (Main_hall_defines.at(0).size() == 0) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
 	} else if (main_hall_name == "") {
-		Warning(LOCATION, "main_hall_init() was passed a blank mainhall name, loading first available mainhall.");
-		main_hall_name = main_hall_get_name(0);
+		Warning(LOCATION, "main_hall_init() was passed a blank main hall name; loading first available main hall.");
+		main_hall_get_name(main_hall_to_load, 0);
 	} else if (main_hall_get_pointer(main_hall_name) == NULL) {
-		Warning(LOCATION, "Tried to load a main hall called '%s', but it does not exist; loading first available mainhall.\n", main_hall_name.c_str());
-		main_hall_name = main_hall_get_name(0);
+		Warning(LOCATION, "Tried to load a main hall called '%s', but it does not exist; loading first available main hall.", main_hall_name.c_str());
+		main_hall_get_name(main_hall_to_load, 0);
+	} else {
+		main_hall_to_load = main_hall_name;
 	}
 
 	// if we're switching to a different mainhall we may need to change music
-	if (main_hall_get_music_index(main_hall_get_index(main_hall_name)) != main_hall_get_music_index(main_hall_id())) {
+	if (main_hall_get_music_index(main_hall_get_index(main_hall_to_load)) != main_hall_get_music_index(main_hall_id())) {
 		main_hall_stop_music();
 	}
 
@@ -426,8 +430,8 @@ void main_hall_init(SCP_string main_hall_name)
 	read_menu_tbl(NOX("MAIN HALL"), temp, whee, Main_hall_region, &Main_hall_num_options, 0);
 
 	// assign the proper main hall data
-	Assert(main_hall_get_pointer(main_hall_name) != NULL);
-	Main_hall = main_hall_get_pointer(main_hall_name);
+	Assert(main_hall_get_pointer(main_hall_to_load) != NULL);
+	Main_hall = main_hall_get_pointer(main_hall_to_load);
 
 	// tooltip strings
 	Main_hall->region_descript.at(0) = XSTR( "Exit FreeSpace 2", 353);
@@ -1586,7 +1590,7 @@ void main_hall_process_help_stuff()
  * \return pointer to mainhall if one with a matching name is found
  * \return NULL otherwise
  */
-main_hall_defines* main_hall_get_pointer(SCP_string name_to_find)
+main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find)
 {
 	unsigned int i;
 
@@ -1606,7 +1610,7 @@ main_hall_defines* main_hall_get_pointer(SCP_string name_to_find)
  * \return -1 otherwise
  */
 
-int main_hall_get_index(SCP_string name_to_find)
+int main_hall_get_index(const SCP_string &name_to_find)
 {
 	unsigned int i;
 
@@ -1618,12 +1622,12 @@ int main_hall_get_index(SCP_string name_to_find)
 	return -1;
 }
 
-SCP_string main_hall_get_name(unsigned int index)
+void main_hall_get_name(SCP_string &name, unsigned int index)
 {
 	if (index>Main_hall_defines.at(gr_screen.res).size()) {
-		return "";
+		name = "";
 	} else {
-		return Main_hall_defines.at(gr_screen.res).at(index).name;
+		name = Main_hall_defines.at(gr_screen.res).at(index).name;
 	}
 }
 

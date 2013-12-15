@@ -1251,7 +1251,7 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 			if (idx < 0 || idx >= (int) Main_hall_defines.at(gr_screen.res).size()) {
 				dc_printf("Main hall index out of range\n");
 			} else {
-				Player_select_force_main_hall = main_hall_get_name(idx);
+				main_hall_get_name(Player_select_force_main_hall, idx);
 				dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall.c_str());
 			}
 		} else {

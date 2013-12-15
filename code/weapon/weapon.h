@@ -115,6 +115,7 @@ extern int Num_weapon_subtypes;
 
 #define WIF3_NOLINK						(1 << 0)	// This weapon can not be linked with others
 #define WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS	(1 << 1)	// override MAX_TURRET_DISRUPT_TIME in emp.cpp - Goober5000
+#define WIF3_NO_LINKED_PENALTY			(1 << 2)	// This weapon does not count into linked firing penalty
 
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -513,10 +514,6 @@ typedef struct weapon_info {
 	float			target_lead_scaler;
 	int				targeting_priorities[32];
 	int				num_targeting_priorities;
-
-	// the optional pattern of weapons that this weapon will fire
-	SCP_vector<int> weapon_substitution_pattern; //weapon_indexs
-	SCP_vector<SCP_string> weapon_substitution_pattern_names; // weapon names so that we can generate the indexs after sort
 
 	int			score; //Optional score for destroying the weapon
 

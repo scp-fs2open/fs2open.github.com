@@ -1259,7 +1259,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				// kind of stupid, but bash the name since it won't get recreated properly from
 				// the parse_wing_create_ships call.
 				shipp = &Ships[shipnum];
-				sprintf(shipp->ship_name, NOX("%s %d"), wingp->name, which_one + 1);
+				wing_bash_ship_name(shipp->ship_name, wingp->name, which_one + 1);
 				nprintf(("Network", "Created %s\n", shipp->ship_name));
 
 				objp = &Objects[shipp->objnum];
@@ -1818,10 +1818,11 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 	objp = &Objects[sp->objnum];
 	ADD_USHORT(objp->net_signature);
 	ADD_UINT(objp->flags);
+	ADD_INT(objp->n_quadrants);
 	ADD_FLOAT(objp->hull_strength);
 	
 	// shield percentages
-	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
+	for(idx=0; idx<objp->n_quadrants; idx++){
 		f_tmp = objp->shield_quadrant[idx];
 		ADD_FLOAT(f_tmp);
 	}
@@ -1835,6 +1836,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	float garbage;
 	int flags;
 	int idx;
+	int n_quadrants;
 	ushort net_sig;
 	object *lookup;
 	float f_tmp;
@@ -1843,14 +1845,15 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	// get the net sig for the ship and do a lookup
 	GET_USHORT(net_sig);
 	GET_INT(flags);
-   
+	GET_INT(n_quadrants);
+
 	// get the object
 	lookup = multi_get_network_object(net_sig);
 	if(lookup == NULL){
 		// read in garbage values if we can't find the ship
 		nprintf(("Network","Got ingame ship update for unknown object\n"));
 		GET_FLOAT(garbage);
-		for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
+		for(idx=0;idx<n_quadrants;idx++){
 			GET_FLOAT(garbage);
 		}
 
@@ -1859,8 +1862,9 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	}
 	// otherwise read in the ship values
 	lookup->flags = flags;
+	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
-	for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
+	for(idx=0;idx<n_quadrants;idx++){
 		GET_FLOAT(f_tmp);
 		lookup->shield_quadrant[idx] = f_tmp;
 	}

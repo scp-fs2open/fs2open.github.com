@@ -31,7 +31,5 @@ float shield_get_max_quad(object *objp);
 
 float shield_apply_damage(object *objp, int quadrant, float damage);
 int shield_is_up(object *objp, int quadrant_num);
-int shield_get_quadrant(vec3d *hit_pnt);
-int shield_get_quadrant_global(object *objp, vec3d *global_pos);
 
 #endif //_OBJECTSHIELD_H

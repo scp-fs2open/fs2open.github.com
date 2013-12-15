@@ -306,7 +306,7 @@ void parse_species_tbl(const char *filename)
 			generic_anim_init(&species->shield_anim, NULL);
 			stuff_string(species->shield_anim.filename, F_NAME, MAX_FILENAME_LEN);
 		}
-        else
+        else if (!no_create)
         {
             species->shield_anim.filename[0] = '\0';
             species->shield_anim.first_frame = -1; // Landmine to trip up anyone who does end up using this
@@ -338,6 +338,11 @@ void parse_species_tbl(const char *filename)
 			// let them know
 			Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", species->species_name, species->awacs_multiplier);
 		}
+
+		// Goober5000 - countermeasure type
+		// (we won't be able to resolve it until after we've parsed the weapons table)
+		if (optional_string("$Countermeasure type:"))
+			stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
 
 		// don't add new entry if this is just a modified one
 		if ( !no_create )

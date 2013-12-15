@@ -106,7 +106,7 @@ int myrand()
 	return rval;
 }
 
-// returns a random number between 0 and 0x7fffffff
+// returns a random number between 0 and 0x7fffffff, or something close to it.
 int rand32()
 {
 	if (RAND_MAX == 0x7fff) {
@@ -119,8 +119,6 @@ int rand32()
 		return random32;
 	}
 	else {
-		// karajorma - can't imagine what RAND_MAX could be if it's not 0x7fffffff but let's be careful
-		Assert(RAND_MAX == 0x7fffffff);
 		return rand();
 	}
 }
@@ -578,6 +576,7 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 
 // Goober5000
 // (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
+// NOTE: Because this uses memcpy, it should only be used to sort POD elements!
 void insertion_sort(void *array_base, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *))
 {
 	int i, j;

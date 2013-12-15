@@ -916,10 +916,8 @@ int debrief_find_persona_index()
 // Goober5000
 // V sez: "defaults to number 9 (Petrarch) for non-volition missions
 // this is an ugly, nasty, hateful way of doing this, but it saves us changing the missions at this point"
-void debrief_choose_voice(char *voice_dest, char *voice_base, int default_to_base = 0)
+void debrief_choose_voice(char *voice_dest, char *voice_base, int persona_index, int default_to_base = 0)
 {
-	// see if we have a persona
-	int persona_index = debrief_find_persona_index();
 	if (persona_index >= 0)
 	{
 		// get voice file
@@ -1001,11 +999,19 @@ void debrief_award_init()
 		debrief_choose_medal_variant(buf, Rank_medal_index, Promoted);
 		Rank_bitmap = bm_load(buf);
 
-		Promotion_stage.text = Ranks[Promoted].promotion_text;
+		// see if we have a persona
+		int persona_index = debrief_find_persona_index();
+
+		// use persona-specific promotion text if it exists; otherwise, use default
+		if (Ranks[Promoted].promotion_text.find(persona_index) != Ranks[Promoted].promotion_text.end()) {
+			Promotion_stage.text = Ranks[Promoted].promotion_text[persona_index];
+		} else {
+			Promotion_stage.text = Ranks[Promoted].promotion_text[-1];
+		}
 		Promotion_stage.recommendation_text = "";
 
 		// choose appropriate promotion voice for this mission
-		debrief_choose_voice(Promotion_stage.voice, Ranks[Promoted].promotion_voice_base);
+		debrief_choose_voice(Promotion_stage.voice, Ranks[Promoted].promotion_voice_base, persona_index);
 
 		debrief_add_award_text(Ranks[Promoted].name);
 	}
@@ -1016,11 +1022,19 @@ void debrief_award_init()
 		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned, Player->stats.medal_counts[Player->stats.m_badge_earned] - 1);
 		Badge_bitmap = bm_load(buf);
 
-		Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text;
+		// see if we have a persona
+		int persona_index = debrief_find_persona_index();
+
+		// use persona-specific badge text if it exists; otherwise, use default
+		if (Medals[Player->stats.m_badge_earned].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned].promotion_text.end()) {
+			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[persona_index];
+		} else {
+			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[-1];
+		}
 		Badge_stage.recommendation_text = "";
 
 		// choose appropriate badge voice for this mission
-		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned].voice_base);
+		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned].voice_base, persona_index);
 
 		debrief_add_award_text(Medals[Player->stats.m_badge_earned].name);
 	}
@@ -1082,7 +1096,7 @@ void debrief_traitor_init()
 //		}
 
 		// Goober5000
-		debrief_choose_voice(stagep->voice, traitor_voice_file, 1);
+		debrief_choose_voice(stagep->voice, traitor_voice_file, debrief_find_persona_index(), 1);
 
 		required_string("$Recommendation text:");
 		stuff_string( stagep->recommendation_text, F_MULTITEXT, NULL);

@@ -2498,7 +2498,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, vec3d *force
 		vm_vec_rotate( &local_hitpos, &tmp, &ship_objp->orient );
 
 		// shield_quad = quadrant facing the force_center
-		shield_quad = get_quadrant(&local_hitpos);
+		shield_quad = get_quadrant(&local_hitpos, ship_objp);
 
 		// world_hitpos use force_center for shockwave
 		// Goober5000 check for NULL
@@ -2515,8 +2515,8 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, vec3d *force
 		// radius of the object.   
 		vm_vec_scale_add( &world_hitpos, &ship_objp->pos, &ship_objp->orient.vec.fvec, ship_objp->radius );
 
-		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/MAX_SHIELD_SECTIONS, i, -1);
+		for (int i=0; i<ship_objp->n_quadrants; i++){
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/ship_objp->n_quadrants, i, -1);
 		}
 	}
 

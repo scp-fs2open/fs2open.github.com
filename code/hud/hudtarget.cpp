@@ -946,6 +946,7 @@ void hud_target_hotkey_select( int k )
 
 	if ( Player_obj != target->objp ){
 		set_target_objnum( Player_ai, OBJ_INDEX(target->objp) );
+		hud_shield_hit_reset(target->objp);
 	}
 
 	Players[Player_num].current_hotkey_set = k;
@@ -1017,13 +1018,8 @@ void hud_init_homing_beep()
 	Homing_beep.precalced_interp = (Homing_beep.max_cycle_dist-Homing_beep.min_cycle_dist) / (Homing_beep.max_cycle_time - Homing_beep.min_cycle_time );
 }
 
-// hud_init_targeting() will set the current target to point to the dummy node
-// in the object used list
-//
-void hud_init_targeting()
+void hud_init_ballistic_index()
 {
-	Assert(Player_ai != NULL);
-
 	int i;
 
 	// decide whether to realign HUD for ballistic primaries
@@ -1036,6 +1032,14 @@ void hud_init_targeting()
 			break;
 		}
 	}
+}
+
+// hud_init_targeting() will set the current target to point to the dummy node
+// in the object used list
+//
+void hud_init_targeting()
+{
+	Assert(Player_ai != NULL);
 
 	// make sure there is no current target
 	set_target_objnum( Player_ai, -1 );
@@ -1223,6 +1227,7 @@ void hud_target_common(int team_mask, int next_flag)
 			if ( Player_ai->target_objnum != A-Objects ) {
 				target_found = TRUE;
 				set_target_objnum( Player_ai, OBJ_INDEX(A) );
+				hud_shield_hit_reset(A);
 				// if ship is BIG|HUGE and last subsys is NULL, get turret
 				hud_maybe_set_sorted_turret_subsys(shipp);
 				hud_restore_subsystem_target(shipp);
@@ -1230,6 +1235,7 @@ void hud_target_common(int team_mask, int next_flag)
 		} else {
 			target_found = TRUE;
 			set_target_objnum( Player_ai, OBJ_INDEX(A) );
+			hud_shield_hit_reset(A);
 		}
 
 		break;
@@ -1479,6 +1485,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 		// if we've reached here, got a new target
 		target_found = TRUE;
 		set_target_objnum( aip, OBJ_INDEX(A) );
+		hud_shield_hit_reset(A);
 		break;
 	}	// end for
 
@@ -1526,6 +1533,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			// found a good one
 			target_found = TRUE;
 			set_target_objnum( aip, OBJ_INDEX(A) );
+			hud_shield_hit_reset(A);
 			break;
 		}
 	}
@@ -1600,6 +1608,7 @@ void hud_target_uninspected_cargo(int next_flag)
 		if ( Player_ai->target_objnum != OBJ_INDEX(A) ) {
 			target_found = TRUE;
 			set_target_objnum( Player_ai, OBJ_INDEX(A) );
+			hud_shield_hit_reset(A);
 		}
 	}
 
@@ -1661,6 +1670,7 @@ void hud_target_newest_ship()
 
 	if (newest_obj) {
 		set_target_objnum( Player_ai, OBJ_INDEX(newest_obj) );
+		hud_shield_hit_reset(newest_obj);
 		// if BIG|HUGE and no selected subsystem, get sorted turret
 		hud_maybe_set_sorted_turret_subsys(&Ships[newest_obj->instance]);
 		hud_restore_subsystem_target(&Ships[newest_obj->instance]);
@@ -1950,6 +1960,7 @@ void hud_target_closest_locked_missile(object *locked_obj)
 	if (nearest_dist < 10000.0f) {
 		Assert(nearest_obj);
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		hud_shield_hit_reset(nearest_obj);
 		target_found = TRUE;
 	}
 
@@ -2285,6 +2296,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 
 	if (target_found) {
 		set_target_objnum(Player_ai, OBJ_INDEX(nearest_obj));
+		hud_shield_hit_reset(nearest_obj);
 		if ( check_nearest_turret ) {
 
 			// if former subobject was not a turret do, not change subsystem
@@ -2415,6 +2427,7 @@ void hud_target_targets_target()
 
 	// if we've reached here, found player target's target
 	set_target_objnum( Player_ai, tt_objnum );
+	hud_shield_hit_reset(&Objects[tt_objnum]);
 	if (Objects[tt_objnum].type == OBJ_SHIP) {
 		hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
 	}
@@ -2636,6 +2649,7 @@ void hud_target_in_reticle_old()
 	target_obj = hud_reticle_pick_target();
 	if ( target_obj != NULL ) {
 		set_target_objnum( Player_ai, OBJ_INDEX(target_obj) );
+		hud_shield_hit_reset(target_obj);
 		if ( target_obj->type == OBJ_SHIP ) {
 			// if BIG|HUGE, maybe set subsys to turret
 			hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
@@ -3994,7 +4008,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 
 	srange = ship_get_secondary_weapon_range(Player_ship);
 
-	if ( swp->current_secondary_bank >= 0 )
+	if ( (swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0) )
 	{
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
@@ -4014,7 +4028,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
-	if(swp->current_secondary_bank>=0) {
+	if((swp->current_secondary_bank>=0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0)) {
 		int bank=swp->current_secondary_bank;
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
@@ -4271,7 +4285,7 @@ void HudGaugeLeadSight::render(float frametime)
 
 	srange = ship_get_secondary_weapon_range(Player_ship);
 
-	if ( swp->current_secondary_bank >= 0 ) {
+	if ( (swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0) ) {
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
 		if ( !(tmp->wi_flags & WIF_HOMING) && !(tmp->wi_flags & WIF_LOCKED_HOMING && Player->target_in_lock_cone) ) {
@@ -4298,7 +4312,7 @@ void HudGaugeLeadSight::render(float frametime)
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
-	if(swp->current_secondary_bank>=0)
+	if((swp->current_secondary_bank>=0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0))
 	{
 		int bank=swp->current_secondary_bank;
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
@@ -4429,7 +4443,9 @@ void hud_target_change_check()
 		}
 
 		player_stop_cargo_scan_sound();
-		hud_shield_hit_reset();
+		if ( (Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS) ) {
+			hud_shield_hit_reset(&Objects[Player_ai->target_objnum]);
+		}
 		hud_targetbox_init_flash();
 		hud_targetbox_start_flash(TBOX_FLASH_NAME);
 		hud_gauge_popup_start(HUD_TARGET_MINI_ICON);
@@ -4443,7 +4459,6 @@ void hud_target_change_check()
 
 		if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
 			Players[Player_num].flags &= ~PLAYER_FLAGS_MATCH_TARGET;
-//			player_match_target_speed("", "", XSTR("Matching speed of newly acquired target",-1));
 			player_match_target_speed();
 		}
 		else {
@@ -4453,7 +4468,7 @@ void hud_target_change_check()
 
 		hud_lock_reset();
 
-		if ( Player_ai->target_objnum != -1) {
+		if ( (Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS) ) {
 			if ( Objects[Player_ai->target_objnum].type == OBJ_SHIP ) {
 				hud_restore_subsystem_target(&Ships[Objects[Player_ai->target_objnum].instance]);
 			}
@@ -4482,7 +4497,6 @@ void hud_target_change_check()
 
 		if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
 			if ( !(Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET) ) {
-//				player_match_target_speed("", "", XSTR("Matching target speed",-1));
 				player_match_target_speed();
 			}
 		}
@@ -4596,7 +4610,6 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	}
 }
 
-extern bool Sexp_Messages_Scrambled;
 int hud_communications_state(ship *sp)
 {
 	float str;
@@ -4612,7 +4625,7 @@ int hud_communications_state(ship *sp)
 		return COMM_OK;
 
 	// Goober5000 - check for scrambled communications
-	if ( Sexp_Messages_Scrambled || emp_active_local() )
+	if ( emp_active_local() || sp->flags2 & SF2_SCRAMBLE_MESSAGES )
 		return COMM_SCRAMBLED;
 
 	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );
@@ -4662,6 +4675,7 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 	if (nearest_object != NULL) {
 		// set new target
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_object) );
+		hud_shield_hit_reset(nearest_object);
 
 		// maybe set new turret subsystem
 		hud_maybe_set_sorted_turret_subsys(&Ships[nearest_object->instance]);
@@ -4894,6 +4908,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 	if (nearest_obj != &obj_used_list) {
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		hud_shield_hit_reset(nearest_obj);
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 		rval=1;
 	}
@@ -4956,6 +4971,7 @@ void hud_target_closest_uninspected_object()
 
 	if (nearest_obj != NULL) {
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		hud_shield_hit_reset(nearest_obj);
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
@@ -5058,6 +5074,7 @@ void hud_target_uninspected_object(int next_flag)
 
 	if (nearest_obj != NULL) {
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
+		hud_shield_hit_reset(nearest_obj);
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
@@ -5177,6 +5194,7 @@ void hud_target_last_transmit()
 
 	if ((targeted_objnum >= 0) && (targeted_objnum < MAX_OBJECTS)) {
 		set_target_objnum( Player_ai, Transmit_target_list[transmit_index].objnum );
+		hud_shield_hit_reset(&Objects[Transmit_target_list[transmit_index].objnum]);
 		hud_restore_subsystem_target(&Ships[Objects[Transmit_target_list[transmit_index].objnum].instance]);
 	}
 }
@@ -5223,6 +5241,7 @@ void hud_target_random_ship()
 			set_target_objnum(Player_ai, -1);
 		} else {
 			set_target_objnum(Player_ai, objnum);
+			hud_shield_hit_reset(&Objects[objnum]);
 		}
 	}
 }

@@ -72,6 +72,7 @@
 #include "popup/popupdead.h"
 #include "sound/sound.h"
 #include "sound/ds.h"
+#include "parse/scripting.h"
 #include "osapi/osapi.h"
 
 LOCAL struct {
@@ -310,6 +311,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"cloaked",
 	"ship-locked",
 	"weapons-locked",
+	"scramble-messages",
 };
 
 char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
@@ -2083,12 +2085,7 @@ int parse_create_object_sub(p_object *p_objp)
 				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
 				{
 					if ((sssp->primary_banks[j] >= 0) || Fred_running)
-					{
-						wp->primary_bank_weapons[k] = sssp->primary_banks[j];						
-
-						// next
-						k++;
-					}
+						wp->primary_bank_weapons[k++] = sssp->primary_banks[j];
 				}
 
 				if (Fred_running)
@@ -2118,8 +2115,10 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
 				}
-				else
+				else if (Weapon_info[wp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
 				{
+					Assert(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f);
+
 					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f);
 					wp->primary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size + 0.5f);
 				}
@@ -2133,6 +2132,8 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 				else
 				{
+					Assert(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f);
+
 					int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j] + 0.5f);
 					wp->secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size + 0.5f);
 				}
@@ -2237,7 +2238,7 @@ int parse_create_object_sub(p_object *p_objp)
 		int max_allowed_sparks, num_sparks, iLoop;
 
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
-		for (iLoop = 0; iLoop<MAX_SHIELD_SECTIONS; iLoop++)
+		for (iLoop = 0; iLoop<Objects[objnum].n_quadrants; iLoop++)
 		{
 			Objects[objnum].shield_quadrant[iLoop] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 		}
@@ -2564,6 +2565,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_WEAPONS_LOCKED)
 		shipp->flags2 |= SF2_WEAPONS_LOCKED;
+
+	if (parse_flags2 & P2_SF2_SCRAMBLE_MESSAGES)
+		shipp->flags2 |= SF2_SCRAMBLE_MESSAGES;
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -2989,12 +2993,13 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	if (optional_string("$Special Explosion:")) {
 		p_objp->use_special_explosion = true;
+		bool period_detected = false;
 
 		if (required_string("+Special Exp Damage:")) {
 			stuff_int(&p_objp->special_exp_damage);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion damage has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3003,7 +3008,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_blast);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion blast has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3012,7 +3017,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_inner);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion inner radius has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3021,7 +3026,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_outer);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion outer radius has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3031,13 +3036,17 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			p_objp->use_shockwave = true;
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion shockwave speed has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
 
 		if (optional_string("+Special Exp Death Roll Time:")) {
 			stuff_int(&p_objp->special_exp_deathroll_time);
+		}
+
+		if (period_detected) {
+			nprintf(("Warning", "Special explosion attributes have been returned to integer format"));
 		}
 	}
 
@@ -3862,7 +3871,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			if ( shipnum == -1 ) {
 				int num_remaining;
 				// since this wing cannot arrive from this place, we need to mark the wing as destroyed and
-				// set the wing variables appropriatly.  Good for directives.
+				// set the wing variables appropriately.  Good for directives.
 
 				// set the gone flag
 				wingp->flags |= WF_WING_GONE;
@@ -3991,17 +4000,15 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
+		wingp->total_arrived_count++;
+		if (wingp->num_waves > 1)
+			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count);
+
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
 		if (Game_mode & GM_MULTIPLAYER)
 		{
 			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count);
-		}
-
-		wingp->total_arrived_count++;
-		if (wingp->num_waves > 1)
-		{
-			sprintf(p_objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
 		}
 
 
@@ -4131,6 +4138,24 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 		// possibly change the location where these ships arrive based on the wings arrival location
 		mission_set_wing_arrival_location( wingp, num_create_save );
+
+		for (it = 0; it < wingp->current_count; it++ ) {
+			int shipobjnum = Ships[wingp->ship_index[it]].objnum;
+			int anchor_objnum = -1;
+
+			if (wingp->arrival_anchor >= 0) {
+				int parentshipnum = ship_name_lookup(Parse_names[wingp->arrival_anchor]);
+				anchor_objnum = Ships[parentshipnum].objnum;
+			}
+
+			if (anchor_objnum >= 0)
+				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", &Objects[anchor_objnum]);
+			else
+				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", NULL);
+
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[shipobjnum]);
+			Script_system.RemHookVars(2, "Ship", "Parent");
+		}
 
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
@@ -6582,6 +6607,20 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 		mission_parse_support_arrived(objnum);
 	else
 		list_remove(&Ship_arrival_list, p_objp);
+
+	int anchor_objnum = -1;
+	if (p_objp->arrival_anchor >= 0) {
+		int shipnum = ship_name_lookup(Parse_names[p_objp->arrival_anchor]);
+		anchor_objnum = Ships[shipnum].objnum;
+	}
+
+	if (anchor_objnum >= 0)
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
+	else
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
+
+	Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[objnum]);
+	Script_system.RemHookVars(2, "Ship", "Parent");
 }
 
 // Goober5000

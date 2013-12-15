@@ -1074,6 +1074,7 @@ int get_string_or_variable (char *str)
 		int sexp_variable_index = get_index_sexp_variable_name(str); 
 		
 		// We only want String variables
+		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str);
 		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
 		result = PARSING_FOUND_VARIABLE; 
@@ -1105,9 +1106,10 @@ int get_string_or_variable (SCP_string &str)
 	{
 		Mp++;
 		stuff_string_white(str); 
-		int sexp_variable_index = get_index_sexp_variable_name(str); 
-		
+		int sexp_variable_index = get_index_sexp_variable_name(str);
+
 		// We only want String variables
+		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str.c_str());
 		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
 		result = PARSING_FOUND_VARIABLE; 
@@ -3826,6 +3828,13 @@ bool end_string_at_first_hash_symbol(SCP_string &src)
 
 // Goober5000
 char *get_pointer_to_first_hash_symbol(char *src)
+{
+	Assert(src);
+	return strchr(src, '#');
+}
+
+// Goober5000
+const char *get_pointer_to_first_hash_symbol(const char *src)
 {
 	Assert(src);
 	return strchr(src, '#');

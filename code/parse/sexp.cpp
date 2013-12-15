@@ -344,8 +344,8 @@ sexp_oper Operators[] = {
 	{ "send-message",					OP_SEND_MESSAGE,						3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "send-message-list",				OP_SEND_MESSAGE_LIST,					4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "send-random-message",			OP_SEND_RANDOM_MESSAGE,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
-	{ "scramble-messages",				OP_SCRAMBLE_MESSAGES,					0,	0,			SEXP_ACTION_OPERATOR,	},
-	{ "unscramble-messages",			OP_UNSCRAMBLE_MESSAGES,					0,	0,			SEXP_ACTION_OPERATOR,	},
+	{ "scramble-messages",				OP_SCRAMBLE_MESSAGES,					0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "unscramble-messages",			OP_UNSCRAMBLE_MESSAGES,					0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "disable-builtin-messages",		OP_DISABLE_BUILTIN_MESSAGES,			0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "enable-builtin-messages",		OP_ENABLE_BUILTIN_MESSAGES,				0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-persona",					OP_SET_PERSONA,							2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -6924,7 +6924,6 @@ void sexp_set_object_orient_sub(object *objp, vec3d *location, int turn_time, in
 
 
 	// calculate orientation matrix ----------------
-	memset(&v_orient, 0, sizeof(vec3d));
 
 	vm_vec_sub(&v_orient, location, &objp->pos);
 
@@ -8170,6 +8169,44 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 		ptr = ptr->get_next();
 	}
 }
+
+/**
+ * This is like using when, but it takes a lot of shortcuts.  It's clearer just to separate it out into its own function, especially since it's not supposed to start
+ * a new level of special argument handling, like eval_when would do.  It's a lot like the original retail version of eval_when!
+ */
+int eval_perform_actions(int n)
+{
+	int cond, val, actions;
+	Assert( n >= 0 );
+
+	cond = CAR(n);
+	actions = CDR(n);
+
+	// evaluate the conditional to see what value we eventually return
+	val = eval_sexp(cond);
+
+	// perform all the actions in the rest of the sexp
+	// (Since we are technically inside a condition already, no special argument handling is needed.  The special argument, if any,
+	// will have been provided by a higher level of nesting.)
+	while (actions != -1)
+	{
+		// get the operator
+		int exp = CAR(actions);
+		if (exp != -1)
+			eval_sexp(exp);
+
+		// iterate
+		actions = CDR(actions);
+	}
+
+	// return whatever val was, but don't return known-*
+	if (val == SEXP_KNOWN_TRUE)
+		return SEXP_TRUE;
+	else if (val == SEXP_KNOWN_FALSE)
+		return SEXP_FALSE;
+	else
+		return val;
+}
 	
 /**
  * Evaluates the when conditional
@@ -8206,7 +8243,7 @@ int eval_when(int n, int when_op_num)
 
 
 	// if value is true, perform the actions in the 'then' part
-	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE || when_op_num == OP_PERFORM_ACTIONS)
+	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
 	{
 		// get the operator
 		int exp = CAR(actions);
@@ -8276,17 +8313,6 @@ int eval_when(int n, int when_op_num)
 		// clean up any special sexp stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
 		Sexp_current_argument_nesting_level--;
-	}
-
-	// perform-actions should return whatever val was, but should not return known-*
-	if (when_op_num == OP_PERFORM_ACTIONS)
-	{
-		if (val == SEXP_KNOWN_TRUE)
-			return SEXP_TRUE;
-		else if (val == SEXP_KNOWN_FALSE)
-			return SEXP_FALSE;
-		else
-			return val;
 	}
 
 	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
@@ -9465,8 +9491,10 @@ void sexp_clear_ship_goals(int n)
 
 	Assert ( n >= 0 );
 	ship_name = CTEXT(n);
-	num = ship_name_lookup(ship_name, 1);	// Goober5000 - include players
-	ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
+	if ( (num = ship_name_lookup(ship_name, 1)) != -1) 	// Goober5000 - include players
+	{
+		ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
+	}
 }
 
 /**
@@ -10554,7 +10582,6 @@ void sexp_warp_effect(int n)
 
 
 	// calculate orientation matrix ----------------
-	memset(&v_orient, 0, sizeof(vec3d));
 
 	vm_vec_sub(&v_orient, &location, &origin);
 
@@ -12049,7 +12076,10 @@ void sexp_change_player_score(int node)
 	node = CDR(node);
 
 	if(!(Game_mode & GM_MULTIPLAYER)){
-		sindex = ship_name_lookup(CTEXT(node));
+		if ( (sindex = ship_name_lookup(CTEXT(node))) == -1) {
+			Warning(LOCATION, "Invalid shipname '%s' passed to sexp_change_player_score!", CTEXT(node));
+			return;
+		}
 
 		if (Player_ship != &Ships[sindex]) {
 			Warning(LOCATION, "Can not award points to '%s'. Ship is not a player!", CTEXT(node));
@@ -13298,7 +13328,7 @@ int sexp_previous_goal_status( int n, int status )
 
 		if ( i == -1 ) {
 			// if mission not found, assume that goal was false (so previous-goal-false returns true)
-			nprintf(("General", "Couldn't find mission name %s in current campaign's list of missions.\nReturning %s for goal-status function.", mission_name, (status==GOAL_COMPLETE)?"false":"true"));
+			nprintf(("General", "Couldn't find mission name \"%s\" in current campaign's list of missions.\nReturning %s for goal-status function.", mission_name, (status==GOAL_COMPLETE)?"false":"true"));
 			if ( status == GOAL_COMPLETE )
 				rval = SEXP_KNOWN_FALSE;
 			else
@@ -13316,7 +13346,7 @@ int sexp_previous_goal_status( int n, int status )
 			}
 
 			if ( i == Campaign.missions[mission_num].num_goals ) {
-				Warning(LOCATION, "Couldn't find goal name %s in mission %s.\nReturning %s for goal-true function.", goal_name, mission_name, (status==GOAL_COMPLETE)?"false":"true");
+				Warning(LOCATION, "Couldn't find goal name \"%s\" in mission %s.\nReturning %s for goal-true function.", goal_name, mission_name, (status==GOAL_COMPLETE)?"false":"true");
 				if ( status == GOAL_COMPLETE )
 					rval = SEXP_KNOWN_FALSE;
 				else
@@ -13377,7 +13407,7 @@ int sexp_previous_event_status( int n, int status )
 
 		// if the mission name wasn't found -- make this return FALSE for the event status.
 		if ( i == -1 ) {
-			nprintf(("General", "Couldn't find mission name %s in current campaign's list of missions.\nReturning %s for event-status function.", mission_name, (status==EVENT_SATISFIED)?"false":"true"));
+			nprintf(("General", "Couldn't find mission name \"%s\" in current campaign's list of missions.\nReturning %s for event-status function.", mission_name, (status==EVENT_SATISFIED)?"false":"true"));
 			if ( status == EVENT_SATISFIED ) {
 				rval = SEXP_KNOWN_FALSE;
 			} else {
@@ -13396,7 +13426,7 @@ int sexp_previous_event_status( int n, int status )
 			}
 
 			if ( i == Campaign.missions[mission_num].num_events ) {
-				Warning(LOCATION, "Couldn't find event name %s in mission %s.\nReturning %s for event_status function.", name, mission_name, (status==EVENT_SATISFIED)?"false":"true");
+				Warning(LOCATION, "Couldn't find event name \"%s\" in mission %s.\nReturning %s for event_status function.", name, mission_name, (status==EVENT_SATISFIED)?"false":"true");
 				if ( status == EVENT_SATISFIED )
 					rval = SEXP_KNOWN_FALSE;
 				else
@@ -15263,7 +15293,7 @@ int sexp_shield_quad_low(int node)
 	check = (float)eval_num(CDR(node));
 
 	// check his quadrants
-	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
+	for(idx=0; idx<objp->n_quadrants; idx++){
 		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
 			return SEXP_TRUE;
 		}
@@ -16053,7 +16083,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 
 	// ...and shields
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
-	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+	for (i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
 
 
@@ -17702,7 +17732,10 @@ void sexp_damage_escort_list(int node)
 
 		if (current_hull_pct < smallest_hull_pct)
 		{
-			Ships[small_shipnum].escort_priority=priority2;		//give the previous smallest the lower priority
+			if (small_shipnum != -1) // avoid negative array index during 1st loop iteration
+			{
+				Ships[small_shipnum].escort_priority=priority2;		//give the previous smallest the lower priority
+			}
 			
 			smallest_hull_pct=current_hull_pct;
 			small_shipnum=shipnum;
@@ -19181,16 +19214,14 @@ int sexp_is_primary_selected(int node)
 	return SEXP_FALSE;
 }
 
-#define	RIGHT_QUAD	0
-#define	FRONT_QUAD	1
-#define	LEFT_QUAD	3
-#define	REAR_QUAD	2
-
 //	Return SEXP_TRUE if quadrant quadnum is near max.
 int shield_quad_near_max(int quadnum)
 {
+	if (quadnum >= Player_obj->n_quadrants)
+		return SEXP_FALSE;
+
 	float	remaining = 0.0f;
-	for (int i=0; i<MAX_SHIELD_SECTIONS; i++) {
+	for (int i=0; i<Player_obj->n_quadrants; i++) {
 		if (i == quadnum){
 			continue;
 		}
@@ -19250,55 +19281,90 @@ int process_special_sexps(int index)
 		break;
 
 	case 3:	//	Player ship suffering shield damage on front.
-		apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
-		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
-		return SEXP_TRUE;
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+			apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
+			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
+			return SEXP_TRUE;
+		} else {
+			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
+			return SEXP_FALSE;
+		}
 		break;
 
 	case 4:	//	Player ship suffering much damage.
-		nprintf(("AI", "Frame %i\n", Framecount));
-		apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
-		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
-		if (Player_obj->shield_quadrant[FRONT_QUAD] < 2.0f)
-			return SEXP_TRUE;
-		else
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+			nprintf(("AI", "Frame %i\n", Framecount));
+			apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
+			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
+			if (Player_obj->shield_quadrant[FRONT_QUAD] < 2.0f)
+				return SEXP_TRUE;
+			else
+				return SEXP_FALSE;
+		} else {
+			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
 			return SEXP_FALSE;
+		}
 		break;
 
 	case 5:	//	Player's shield is quick repaired
-		nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shield_quadrant[FRONT_QUAD]));
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+			nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shield_quadrant[FRONT_QUAD]));
 
-		apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
+			apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
-		if (Player_obj->shield_quadrant[FRONT_QUAD] > get_max_shield_quad(Player_obj))
+			if (Player_obj->shield_quadrant[FRONT_QUAD] > get_max_shield_quad(Player_obj))
 			Player_obj->shield_quadrant[FRONT_QUAD] = get_max_shield_quad(Player_obj);
 
-		if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%MAX_SHIELD_SECTIONS] - 2.0f)
-			return SEXP_TRUE;
-		else
+			if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%DEFAULT_SHIELD_SECTIONS] - 2.0f)
+				return SEXP_TRUE;
+			else
+				return SEXP_FALSE;
+		} else {
+			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
 			return SEXP_FALSE;
+		}
 		break;
 
 	case 6:	//	3 of player's shield quadrants are reduced to 0.
-		Player_obj->shield_quadrant[1] = 1.0f;
-		Player_obj->shield_quadrant[2] = 1.0f;
-		Player_obj->shield_quadrant[3] = 1.0f;
-		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+			Player_obj->shield_quadrant[1] = 1.0f;
+			Player_obj->shield_quadrant[2] = 1.0f;
+			Player_obj->shield_quadrant[3] = 1.0f;
+			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
+		} else {
+			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
+			return SEXP_FALSE;
+		}
 		return SEXP_TRUE;
 
 	case 7:	//	Make sure front quadrant has been maximized, or close to it.
-		if (shield_quad_near_max(FRONT_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+			if (shield_quad_near_max(FRONT_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
+		} else {
+			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
+			return SEXP_FALSE;
+		}
 		break;
 
 	case 8:	//	Make sure rear quadrant has been maximized, or close to it.
-		if (shield_quad_near_max(REAR_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+			if (shield_quad_near_max(REAR_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
+		} else {
+			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
+			return SEXP_FALSE;
+		}
 		break;
 	
 	case 9:	//	Zero left and right quadrants in preparation for maximizing rear quadrant.
-		Player_obj->shield_quadrant[LEFT_QUAD] = 0.0f;
-		Player_obj->shield_quadrant[RIGHT_QUAD] = 0.0f;
-		hud_shield_quadrant_hit(Player_obj, LEFT_QUAD);
-		return SEXP_TRUE;
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+			Player_obj->shield_quadrant[LEFT_QUAD] = 0.0f;
+			Player_obj->shield_quadrant[RIGHT_QUAD] = 0.0f;
+			hud_shield_quadrant_hit(Player_obj, LEFT_QUAD);
+			return SEXP_TRUE;
+		} else {
+			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
+			return SEXP_FALSE;
+		}
 		break;
 
 	case 10:	//	Return true if player is low on Interceptors.
@@ -19323,9 +19389,14 @@ int process_special_sexps(int index)
 		break;
 
 	case 13:	// Zero front shield quadrant.  Added for Jim Boone on August 26, 1999 by MK.
-		Player_obj->shield_quadrant[FRONT_QUAD] = 0.0f;
-		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
-		return SEXP_TRUE;
+		if (!(Player_ship->flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+			Player_obj->shield_quadrant[FRONT_QUAD] = 0.0f;
+			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
+			return SEXP_TRUE;
+		} else {
+			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
+			return SEXP_FALSE;
+		}
 		break;
 
 	case 100:	//	Return true if player is out of countermeasures.
@@ -19687,10 +19758,19 @@ void sexp_set_training_context_speed(int node)
 	Training_context_speed_set = 0;
 }
 
-bool Sexp_Messages_Scrambled = false;
-void sexp_scramble_messages(bool scramble)
+void sexp_scramble_messages(int node, bool scramble)
 {
-	Sexp_Messages_Scrambled = scramble;
+	if (node < 0)
+	{
+		// scramble messages on player ship... this isn't multi compatible, but neither was the old version of the sexp
+		if (scramble)
+			Player_ship->flags2 |= SF2_SCRAMBLE_MESSAGES;
+		else
+			Player_ship->flags2 &= ~SF2_SCRAMBLE_MESSAGES;
+		return;
+	}
+
+	sexp_deal_with_ship_flag(node, true, 0, 0, 0, SF2_SCRAMBLE_MESSAGES, 0, P2_SF2_SCRAMBLE_MESSAGES, scramble, false, true);
 }
 
 void toggle_cutscene_bars(float delta_speed, int set) 
@@ -22218,8 +22298,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_WHEN:
 			case OP_WHEN_ARGUMENT:
 			case OP_IF_THEN_ELSE:
-			case OP_PERFORM_ACTIONS:
 				sexp_val = eval_when( node, op_num );
+				break;
+
+			case OP_PERFORM_ACTIONS:
+				sexp_val = eval_perform_actions( node );
 				break;
 
 			case OP_COND:
@@ -23675,7 +23758,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
-				sexp_scramble_messages(op_num == OP_SCRAMBLE_MESSAGES );
+				sexp_scramble_messages(node, op_num == OP_SCRAMBLE_MESSAGES );
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -26665,6 +26748,8 @@ int query_operator_argument_type(int op, int argnum)
 		//<Cutscenes>
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
+			return OPF_SHIP;
+
 		case OP_CUTSCENES_GET_FOV:
 			return OPF_NONE;
 
@@ -28324,7 +28409,7 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
-
+		case OP_SET_ETS_VALUES:
 			return CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 
 		case OP_SHIP_INVULNERABLE:
@@ -28638,7 +28723,6 @@ int get_subcategory(int sexp_id)
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_GET_ETS_VALUE:
-		case OP_SET_ETS_VALUES:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
@@ -29029,7 +29113,7 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_PERFORM_ACTIONS, "perform-actions\r\n"
 		"\tThis sexp allows actions to be performed as part of a conditional test.  It is most useful for assigning variables or performing some sort of pre-test action within the conditional part of \"when\", etc.  "
-		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to evaluate the other \"and\" arguments.\r\n\r\n"
+		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to not affect the return value of the \"and\".\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments.\r\n"
 		"\t1:\tA boolean value to return after all successive actions have been performed.\r\n"
 		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
@@ -29860,7 +29944,9 @@ sexp_help_struct Sexp_help[] = {
 
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_TABLE, "play-sound-from-table\r\n"
-		"\tPlays a sound listed in the Game Sounds section of sounds.tbl.  Takes 4 arguments...\r\n"
+		"\tPlays a sound listed in the Game Sounds section of sounds.tbl.  Note that if the sound is a non-3D sound (if the min and max radius are 0, or unspecified), the sound will just play without being fixed at a particular position in space.  "
+		"In this case, the origin coordinates will be ignored.  (A better design would have put the sound index first and made the origin arguments optional, but the difference between 2D and 3D sounds was not understood at the time.  C'est la vie.)\r\n\r\n"
+		"Takes 4 arguments...\r\n"
 		"\t1: Origin X\r\n"
 		"\t2: Origin Y\r\n"
 		"\t3: Origin Z\r\n"
@@ -31815,13 +31901,14 @@ sexp_help_struct Sexp_help[] = {
 
 	//phreak
 	{ OP_SCRAMBLE_MESSAGES, "scramble-messages\r\n"
-		"\tCauses messages to be sent as if the player has sustained communications subsystem or EMP damage.  Takes no arguments.\r\n"
-		"\tThis effect can be reversed using unscramble-messages."
+		"\tCauses messages to be sent as if the player has sustained communications subsystem or EMP damage.  This effect can be reversed using unscramble-messages.  Takes zero or more arguments.\r\n"
+		"\tAll (Optional):\tName of the ship for which to scramble messages.  If no ships are specified, message scrambling will be turned on for all messages the player receives.\r\n"
 	},
 
 	//phreak
 	{ OP_UNSCRAMBLE_MESSAGES, "unscramble-messages\r\n"
-		"\tUndoes the effects of scramble-messages, causing messages to be sent clearly.  Takes no arguments."
+		"\tUndoes the effects of scramble-messages, causing messages to be sent clearly.  Takes zero or more arguments.\r\n"
+		"\tAll (Optional):\tName of the ship for which to scramble messages.  If no ships are specified, message scrambling will be turned on for all messages the player receives.\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CUTSCENE_BARS, "set-cutscene-bars\r\n"

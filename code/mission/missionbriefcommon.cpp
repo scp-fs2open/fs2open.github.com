@@ -938,7 +938,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		briefing_icon_info *bii = brief_get_icon_info(bi);
 		if (bii == NULL) {
-			Int3();
 			return;
 		}
 
@@ -1764,7 +1763,6 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 		if ( is_new ) {
 			briefing_icon_info *bii = brief_get_icon_info(&newb->icons[i]);
 			if (bii == NULL) {
-				Int3();
 				return 0;
 			}
 

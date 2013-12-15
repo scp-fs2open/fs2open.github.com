@@ -844,7 +844,7 @@ void multi_ts_assign_players_all()
 	else {
 		// To account for cases where <Wingname> 1 is not a player ship
 		for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
-			sprintf(name_lookup, "%s %d", TVT_wing_names[0], i + 1);
+			wing_bash_ship_name(name_lookup, TVT_wing_names[0], i + 1);
 			if (!stricmp(name_lookup, Player_start_shipname))
 				break;
 		}
@@ -1741,10 +1741,10 @@ void multi_ts_get_shipname( char *ship_name, int team, int slot_index )
 {
 	if ( Netgame.type_flags & NG_TYPE_TEAM ) {
 		Assert( (team >= 0) && (team < MULTI_TS_MAX_TVT_TEAMS) );
-		sprintf(ship_name, "%s %d", TVT_wing_names[team], slot_index);
+		wing_bash_ship_name(ship_name, TVT_wing_names[team], slot_index);
 	} else {
 		Assert( team == 0 );
-		sprintf(ship_name, "%s %d", Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM);
+		wing_bash_ship_name(ship_name, Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM);
 	}
 }
 

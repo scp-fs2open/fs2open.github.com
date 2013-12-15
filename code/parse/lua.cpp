@@ -18,6 +18,7 @@
 #include "hud/hudets.h"
 #include "hud/hudgauges.h"
 #include "hud/hudets.h"
+#include "hud/hudshield.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -4940,7 +4941,7 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 	//WMC - copy shields
 	if(ADE_SETTING_VAR && sobjh != NULL && sobjh->IsValid())
 	{
-		for(int i = 0; i < MAX_SHIELD_SECTIONS; i++)
+		for(int i = 0; i < objh->objp->n_quadrants; i++)
 			shield_set_quad(objh->objp, i, shield_get_quad(sobjh->objp, i));
 	}
 
@@ -6174,7 +6175,13 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
 	model_set_detail_level(0);
-	model_render(sip->model_num, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
+
+	if(sip->flags2 & SIF2_NO_LIGHTING)
+		render_flags |= MR_NO_LIGHTING;
+
+	model_render(sip->model_num, &orient, &vmd_zero_vector, render_flags);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -6239,7 +6246,13 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
 	model_set_detail_level(0);
-	model_render(sip->model_num, orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
+
+	if(sip->flags2 & SIF2_NO_LIGHTING)
+		render_flags |= MR_NO_LIGHTING;
+
+	model_render(sip->model_num, orient, &vmd_zero_vector, render_flags);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -8264,6 +8277,9 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 				aip->target_objnum = OBJ_INDEX(newh->objp);
 				aip->target_signature = newh->sig;
 				aip->target_time = 0.0f;
+
+				if (aip == Player_ai)
+					hud_shield_hit_reset(newh->objp);
 			}
 			else
 			{
@@ -8300,13 +8316,17 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 	{
 		if(newh->IsValid())
 		{
+			if (aip == Player_ai) {
+				if (aip->target_signature != newh->sig)
+					hud_shield_hit_reset(newh->objp);
+
+				Ships[newh->ss->parent_objnum].last_targeted_subobject[Player_num] = newh->ss;
+			}
+
 			aip->target_objnum = OBJ_INDEX(newh->objp);
 			aip->target_signature = newh->sig;
 			aip->target_time = 0.0f;
 			set_targeted_subsys(aip, newh->ss, aip->target_objnum);
-
-			if (aip == Player_ai)
-				Ships[newh->ss->parent_objnum].last_targeted_subobject[Player_num] = newh->ss;
 		}
 		else
 		{
@@ -12451,18 +12471,41 @@ ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width fo
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y", "Draws a circle", NULL, NULL)
+ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Filled=true]", "Draws a circle", NULL, NULL)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
 	int x,y,ra;
+	bool fill = true;
 
-	if(!ade_get_args(L, "iii", &ra,&x,&y))
+	if(!ade_get_args(L, "iii|b", &ra,&x,&y,&fill))
 		return ADE_RETURN_NIL;
 
-	//WMC - Circle takes...diameter.
-	gr_circle(x,y, ra*2, false);
+	if (fill) {
+		//WMC - Circle takes...diameter.
+		gr_circle(x,y, ra*2, false);
+	} else {
+		gr_unfilled_circle(x,y, ra*2, false);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAngle, number EndAngle, [boolean Filled=true]", "Draws an arc", NULL, NULL)
+{
+	if(!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	int x,y;
+	float ra,angle_start,angle_end;
+	bool fill = true;
+
+	if(!ade_get_args(L, "fiiff|b", &ra,&x,&y,&angle_start,&angle_end,&fill)) {
+		return ADE_RETURN_NIL;
+	}
+
+	gr_arc(x,y, ra, angle_start, angle_end, fill, false);
 
 	return ADE_RETURN_NIL;
 }

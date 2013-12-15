@@ -253,10 +253,8 @@ void player_set_squad(player *p, char *squad_name);
 
 int player_inspect_cargo(float frametime, char *outstr);
 
-//#ifndef NDEBUG
 extern int use_descent;						// player is using descent-style physics
 extern void toggle_player_object();		// toggles between descent-style ship and player ship
-//#endif
 
 extern void read_player_controls( object *obj, float frametime);
 extern void player_control_reset_ci( control_info *ci );

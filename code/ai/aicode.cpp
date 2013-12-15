@@ -5863,8 +5863,8 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 				int ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
 				if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
-					if (swp->secondary_bank_ammo[i] > 0) {
-						swp->current_secondary_bank = i;
+					if (swp->secondary_bank_ammo[weapon_bank_list[i]] > 0) {
+						swp->current_secondary_bank = weapon_bank_list[i];
 						break;
 					}
 				}
@@ -8791,29 +8791,30 @@ void ai_chase()
 										if (ai_fire_secondary_weapon(Pl_objp)) {
 											//	Only if weapon was fired do we specify time until next fire.  If not fired, done in ai_fire_secondary...
 											float t;
+											int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
 											
 											if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
-												if (swip->burst_shots > swp->burst_counter[current_bank]) {
+												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 													t = swip->burst_delay;
-													swp->burst_counter[current_bank]++;
+													swp->burst_counter[current_bank_adjusted]++;
 												} else {
 													t = swip->fire_wait;
 													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
-														swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 													} else {
-														swp->burst_counter[current_bank] = 0;
+														swp->burst_counter[current_bank_adjusted] = 0;
 													}
 												}
 											} else {
-												if (swip->burst_shots > swp->burst_counter[current_bank]) {
+												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 													t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
-													swp->burst_counter[current_bank]++;
+													swp->burst_counter[current_bank_adjusted]++;
 												} else {
 													t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
 													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
-														swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 													} else {
-														swp->burst_counter[current_bank] = 0;
+														swp->burst_counter[current_bank_adjusted] = 0;
 													}
 												}
 											}
@@ -10154,8 +10155,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 
 	if(Game_mode & GM_MULTIPLAYER){
 		p_index = multi_find_player_by_object(repaired_objp);
-		p_team = Net_players[p_index].p_info.team;
-	} else {		
+		if (p_index >= 0) {
+			p_team = Net_players[p_index].p_info.team;
+		}
+	} else {
 		if(repaired_objp == Player_obj){
 			p_index = Player_num;
 		}
@@ -12200,10 +12203,10 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 	transfer_amount = 0.0f;
 	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
 
-	if (objp->shield_quadrant[quadrant_num] + (MAX_SHIELD_SECTIONS-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(MAX_SHIELD_SECTIONS-1);
+	if (objp->shield_quadrant[quadrant_num] + (objp->n_quadrants-1)*transfer_delta > max_quadrant_strength)
+		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(objp->n_quadrants-1);
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
+	for (i=0; i<objp->n_quadrants; i++)
 		if (i != quadrant_num) {
 			if (objp->shield_quadrant[i] >= transfer_delta) {
 				objp->shield_quadrant[i] -= transfer_delta;
@@ -12228,17 +12231,17 @@ void ai_balance_shield(object *objp)
 		return;
 
 
-	shield_strength_avg = shield_get_strength(objp)/MAX_SHIELD_SECTIONS;
+	shield_strength_avg = shield_get_strength(objp)/objp->n_quadrants;
 
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
+	for (i=0; i<objp->n_quadrants; i++) {
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, delta);
 			else
-				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
+				objp->shield_quadrant[i] += delta/objp->n_quadrants;
 
 			if (objp->shield_quadrant[i] > shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;
@@ -12248,7 +12251,7 @@ void ai_balance_shield(object *objp)
 			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, -delta);
 			else
-				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
+				objp->shield_quadrant[i] -= delta/objp->n_quadrants;
 
 			if (objp->shield_quadrant[i] < shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;

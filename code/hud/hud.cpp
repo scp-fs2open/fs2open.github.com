@@ -406,6 +406,12 @@ void HudGauge::initPosition(int x, int y)
 	position[1] = y;
 }
 
+void HudGauge::getPosition(int *x, int *y)
+{
+	*x = position[0];
+	*y = position[1];
+}
+
 void HudGauge::initBaseResolution(int w, int h)
 {
 	Assert(w >= 640 && h >= 480);
@@ -1304,7 +1310,7 @@ void hud_close()
 	num_gauges = default_hud_gauges.size();
 
 	for(j = 0; j < num_gauges; j++) {
-		vm_free(default_hud_gauges[j]);
+		delete default_hud_gauges[j];
 		default_hud_gauges[j] = NULL;
 	}
 	default_hud_gauges.clear();
