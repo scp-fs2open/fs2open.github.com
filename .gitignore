@@ -6,11 +6,12 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache/
-m4/
 config.*
 code/fs2_open_*
+code/wxFRED2_*
 configure
 depcomp
 install-sh
 missing
 .svn
+*.layout

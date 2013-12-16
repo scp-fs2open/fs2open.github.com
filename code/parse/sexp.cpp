@@ -9490,8 +9490,10 @@ void sexp_clear_ship_goals(int n)
 
 	Assert ( n >= 0 );
 	ship_name = CTEXT(n);
-	num = ship_name_lookup(ship_name, 1);	// Goober5000 - include players
-	ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
+	if ( (num = ship_name_lookup(ship_name, 1)) != -1) 	// Goober5000 - include players
+	{
+		ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
+	}
 }
 
 /**
@@ -12073,7 +12075,10 @@ void sexp_change_player_score(int node)
 	node = CDR(node);
 
 	if(!(Game_mode & GM_MULTIPLAYER)){
-		sindex = ship_name_lookup(CTEXT(node));
+		if ( (sindex = ship_name_lookup(CTEXT(node))) == -1) {
+			Warning(LOCATION, "Invalid shipname '%s' passed to sexp_change_player_score!", CTEXT(node));
+			return;
+		}
 
 		if (Player_ship != &Ships[sindex]) {
 			Warning(LOCATION, "Can not award points to '%s'. Ship is not a player!", CTEXT(node));
@@ -16097,7 +16102,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	}
 }
 
-int insert_subsys_status(p_object *pobjp);
+extern int insert_subsys_status(p_object *pobjp);
 
 // Goober5000
 void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
@@ -17726,7 +17731,10 @@ void sexp_damage_escort_list(int node)
 
 		if (current_hull_pct < smallest_hull_pct)
 		{
-			Ships[small_shipnum].escort_priority=priority2;		//give the previous smallest the lower priority
+			if (small_shipnum != -1) // avoid negative array index during 1st loop iteration
+			{
+				Ships[small_shipnum].escort_priority=priority2;		//give the previous smallest the lower priority
+			}
 			
 			smallest_hull_pct=current_hull_pct;
 			small_shipnum=shipnum;

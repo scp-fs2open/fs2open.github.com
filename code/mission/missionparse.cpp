@@ -4108,7 +4108,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			}
 		}
 	}
-			
+	
 	// possibly play some event driven music here.  Send a network packet indicating the wing was
 	// created.  Only do this stuff if actually in the mission.
 	if ( (objnum != -1) && (Game_mode & GM_IN_MISSION) ) {		// if true, we have created at least one new ship.
@@ -7126,7 +7126,10 @@ int allocate_subsys_status()
 
 	Verify( Subsys_status != NULL );
 
-	memset( &Subsys_status[Subsys_index], 0, sizeof(subsys_status) );
+	// the memset is redundant to the below assignments
+	//memset( &Subsys_status[Subsys_index], 0, sizeof(subsys_status) );
+
+	Subsys_status[Subsys_index].name[0] = '\0';
 
 	Subsys_status[Subsys_index].percent = 0.0f;
 
@@ -7149,6 +7152,9 @@ int allocate_subsys_status()
 	}
 
 	Subsys_status[Subsys_index].ai_class = SUBSYS_STATUS_NO_CHANGE;
+
+	Subsys_status[Subsys_index].subsys_cargo_name = 0;	// "Nothing"
+
 	return Subsys_index++;
 }
 
@@ -7159,16 +7165,29 @@ int insert_subsys_status(p_object *pobjp)
 
 	// this is not good; we have to allocate another slot, but then bump all the
 	// slots upward so that this particular parse object's subsystems are contiguous
-	allocate_subsys_status();
+	new_index = allocate_subsys_status();
 
-	// shift elements upward
-	for (i = Subsys_index - 1; i > (pobjp->subsys_index + pobjp->subsys_count); i--)
+	// only bump the subsystems if this isn't the very last subsystem
+	if (new_index != pobjp->subsys_index + pobjp->subsys_count)
 	{
-		memcpy(&Subsys_status[i], &Subsys_status[i-1], sizeof(subsys_status));
+		// copy the new blank entry for future reference
+		subsys_status temp_entry;
+		memcpy(&temp_entry, &Subsys_status[new_index], sizeof(subsys_status));
+
+		// shift elements upward
+		for (i = Subsys_index - 1; i > (pobjp->subsys_index + pobjp->subsys_count); i--)
+		{
+			memcpy(&Subsys_status[i], &Subsys_status[i-1], sizeof(subsys_status));
+		}
+
+		// correct the index so that the new subsystem belongs to the proper p_object
+		new_index = pobjp->subsys_index + pobjp->subsys_count;
+
+		// put the blank entry in the p_object
+		memcpy(&Subsys_status[new_index], &temp_entry, sizeof(subsys_status));
 	}
 
-	// generate index for new element
-	new_index = pobjp->subsys_index + pobjp->subsys_count;
+	// make the p_object aware of its new subsystem
 	pobjp->subsys_count++;
 
 	// we also have to adjust all the indexes in existing parse objects

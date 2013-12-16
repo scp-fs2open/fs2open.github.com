@@ -4468,7 +4468,7 @@ void hud_target_change_check()
 
 		hud_lock_reset();
 
-		if ( Player_ai->target_objnum != -1) {
+		if ( (Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS) ) {
 			if ( Objects[Player_ai->target_objnum].type == OBJ_SHIP ) {
 				hud_restore_subsystem_target(&Ships[Objects[Player_ai->target_objnum].instance]);
 			}
