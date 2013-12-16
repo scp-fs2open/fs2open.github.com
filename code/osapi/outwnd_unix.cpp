@@ -35,7 +35,8 @@ void outwnd_print(const char *id = NULL, const char *temp = NULL);
 bool outwnd_inited = false;
 ubyte Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warning not printed yet, 2 = not found and warning printed
 
-struct outwnd_filter_struct {
+class outwnd_filter_struct {
+public:
 	char name[NAME_LENGTH];
 	bool enabled;
 
@@ -75,22 +76,16 @@ void load_filter_info(void)
 	if (!fp) {
 		Outwnd_no_filter_file = 1;
 
-		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 		strcpy_s( new_filter.name, "error" );
 		new_filter.enabled = true;
-
 		OutwndFilter.push_back( new_filter );
 
-		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 		strcpy_s( new_filter.name, "general" );
 		new_filter.enabled = true;
-
 		OutwndFilter.push_back( new_filter );
 
-		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 		strcpy_s( new_filter.name, "warning" );
 		new_filter.enabled = true;
-
 		OutwndFilter.push_back( new_filter );
 
 		return;
@@ -99,7 +94,6 @@ void load_filter_info(void)
 	Outwnd_no_filter_file = 0;
 
 	while ( fgets(inbuf, NAME_LENGTH+3, fp) ) {
-		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 
 		if (*inbuf == '+')
 			new_filter.enabled = true;

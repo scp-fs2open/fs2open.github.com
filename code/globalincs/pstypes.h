@@ -789,5 +789,36 @@ public:
 // for GCC with autotools, see AX_CXX_COMPILE_STDCXX_11 macro in configure.ac
 // this sets HAVE_CXX11 & -std=c++0x or -std=c++11 appropriately
 
+// DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
+// would prefer std::is_trivially_copyable but it's not supported by gcc yet
+// ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
+#ifndef NDEBUG
+	#if defined(HAVE_CXX11)
+	// feature support seems to be: gcc   clang   msvc
+	// auto                         4.4   2.9     2010
+	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
+	// static_assert                4.3   2.9     2010
+	#include <type_traits>
+	#include <cstring>
+
+	// MEMSET!
+	const auto ptr_memset = std::memset;
+	#define memset memset_if_trivial_else_error
+
+	template<typename T>
+	void *memset_if_trivial_else_error(T *data, int ch, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
+		return ptr_memset(data, ch, count);
+	}
+
+	// assume memset on a void* is "safe"
+	// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
+	inline void *memset_if_trivial_else_error(void *data, int ch, size_t count)
+	{
+		return ptr_memset(data, ch, count);
+	}
+	#endif // HAVE_CXX11
+#endif // NDEBUG
 
 #endif		// PS_TYPES_H
