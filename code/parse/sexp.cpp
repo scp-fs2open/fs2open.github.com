@@ -16102,7 +16102,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	}
 }
 
-int insert_subsys_status(p_object *pobjp);
+extern int insert_subsys_status(p_object *pobjp);
 
 // Goober5000
 void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)

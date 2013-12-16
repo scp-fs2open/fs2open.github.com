@@ -575,7 +575,7 @@ void shipfx_warpin_start( object *objp )
 
 	if (shipp->flags & SF_ARRIVING)
 	{
-		mprintf(( "Ship is already arriving!\n" ));
+		mprintf(( "Ship '%s' is already arriving!\n", shipp->ship_name ));
 		Int3();
 		return;
 	}
