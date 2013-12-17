@@ -2450,7 +2450,7 @@ struct order_h
 	order_h(object *objp, int n_odx)
 	{
 		objh = object_h(objp);
-		if(objh.IsValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS)
+		if(objh.IsValid() && objh.objp->type == OBJ_SHIP && n_odx > -1 && n_odx < MAX_AI_GOALS)
 		{
 			odx = n_odx;
 			sig = Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
