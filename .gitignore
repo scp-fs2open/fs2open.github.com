@@ -14,3 +14,4 @@ depcomp
 install-sh
 missing
 .svn
+*.layout

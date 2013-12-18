@@ -272,7 +272,6 @@ void webapiExecuteCommands() {
     for (SCP_vector<WebapiCommand*>::iterator iter = webapiCommandQueue.begin(); iter != webapiCommandQueue.end();
             ++iter) {
         (*iter)->execute();
-        free(*iter);
     }
 
     webapiCommandQueue.clear();
@@ -406,11 +405,23 @@ json_t* serverGet(ResourceContext *context) {
 json_t* serverPut(ResourceContext *context) {
     const char* name = json_string_value(json_object_get(context->requestEntity, "name"));
     if (name) {
+        strcpy(Netgame.name, name);
         strcpy(Multi_options_g.std_pname, name);
+        // update fs2netd with the info
+        if (MULTI_IS_TRACKER_GAME) {
+            fs2netd_gameserver_disconnect();
+            Sleep(50);
+            fs2netd_gameserver_start();
+        }
     }
     const char* passwd = json_string_value(json_object_get(context->requestEntity, "password"));
     if (passwd) {
         strcpy(Multi_options_g.std_passwd, passwd);
+    }
+    int framecap = atoi(json_string_value(json_object_get(context->requestEntity, "framecap")));
+    if (framecap)
+    {
+        Multi_options_g.std_framecap = framecap;
     }
 
     return json_object();
@@ -626,8 +637,9 @@ json_t* chatPost(ResourceContext *context) {
     const char* message = json_string_value(json_object_get(context->requestEntity, "message"));
     if (message) {
         send_game_chat_packet(Net_player, const_cast<char*>(message), MULTI_MSG_ALL, NULL);
+        std_add_chat_text(const_cast<char*>(message), 0 /*MY_NET_PLAYER_NUM*/, 1);
     }
-
+    
     return emptyResource(context);
 }
 
@@ -867,6 +879,29 @@ void std_do_gui_frame() {
     webapiExecuteCommands();
 }
 
+// set the game name for the standalone. passing NULL uses the default
+void std_connect_set_gamename(char *name)
+{
+	// use the default name for now
+	if(name == NULL){
+		// if a permanent name exists, use that instead of the default
+		if(strlen(Multi_options_g.std_pname)){
+			strcpy_s(Netgame.name, Multi_options_g.std_pname);
+		} else {
+			strcpy_s(Netgame.name,XSTR("Standalone Server",916));
+		}
+	} else {
+		strcpy_s(Netgame.name,name);
+        
+		// update fs2netd
+		if (MULTI_IS_TRACKER_GAME) {
+			fs2netd_gameserver_disconnect();
+			Sleep(50);
+			fs2netd_gameserver_start();
+		}
+	}
+}
+
 /**
  * Unused methods from the original API below,
  * most of this stuff is now done in std_do_gui_frame
@@ -880,7 +915,6 @@ void std_update_player_ping(net_player *p) {}
 void std_multi_setup_goal_tree() {}
 void std_multi_add_goals() {}
 void std_multi_update_goals() {}
-void std_connect_set_gamename(char *name) {}
 void std_multi_update_netgame_info_controls() {}
 void std_multi_set_standalone_mission_name(char *mission_name) {}
 void std_gen_set_text(char *str, int field_num) {}
@@ -891,5 +925,8 @@ void std_debug_set_standalone_state_string(char *str) {}
 void std_reset_standalone_gui() {}
 void std_reset_timestamps() {}
 void std_multi_set_standalone_missiontime(float mission_time) {}
+
+// stub - not required for *nix standalone
+void std_init_os() {}
 
 #endif
