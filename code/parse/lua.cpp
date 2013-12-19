@@ -14534,6 +14534,8 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx)
 			return ade_set_args(L, "o", l_Waypoint.Set(object_h(objp)));
 		case OBJ_WEAPON:
 			return ade_set_args(L, "o", l_Weapon.Set(object_h(objp)));
+		case OBJ_BEAM:
+			return ade_set_args(L, "o", l_Beam.Set(object_h(objp)));
 		default:
 			return ade_set_args(L, "o", l_Object.Set(object_h(objp)));
 	}
