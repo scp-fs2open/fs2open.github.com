@@ -818,6 +818,51 @@ public:
 	{
 		return ptr_memset(data, ch, count);
 	}
+
+	// MEMCPY!
+	const auto ptr_memcpy = std::memcpy;
+	#define memcpy memcpy_if_trivial_else_error
+
+	template<typename T, typename U>
+	void *memcpy_if_trivial_else_error(T *dest, U *src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		return ptr_memcpy(dest, src, count);
+	}
+
+	// assume memcpy with void* is "safe"
+	// used in:
+	//   globalincs/systemvars.cpp:insertion_sort()
+	//   network/chat_api.cpp:AddChatCommandToQueue()
+	//   network/multi_obj.cpp:multi_oo_sort_func()
+	//   parse/lua.cpp:ade_get_args() && ade_set_args()
+	//
+	// probably should setup a static_assert on insertion_sort as well
+	template<typename U>
+	void *memcpy_if_trivial_else_error(void *dest, U *src, size_t count)
+	{
+		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		return ptr_memcpy(dest, src, count);
+	}
+
+	template<typename T>
+	void *memcpy_if_trivial_else_error(T *dest, void *src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		return ptr_memcpy(dest, src, count);
+	}
+	template<typename T>
+	void *memcpy_if_trivial_else_error(T *dest, const void *src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		return ptr_memcpy(dest, src, count);
+	}
+
+	inline void *memcpy_if_trivial_else_error(void *dest, void *src, size_t count)
+	{
+		return ptr_memcpy(dest, src, count);
+	}
 	#endif // HAVE_CXX11
 #endif // NDEBUG
 
