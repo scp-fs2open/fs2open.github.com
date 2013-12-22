@@ -863,6 +863,18 @@ public:
 	{
 		return ptr_memcpy(dest, src, count);
 	}
+
+	// MEMMOVE!
+	const auto ptr_memmove = std::memmove;
+	#define memmove memmove_if_trivial_else_error
+
+	template<typename T, typename U>
+	void *memmove_if_trivial_else_error(T *dest, U *src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
+		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
+		return ptr_memmove(dest, src, count);
+	}
 	#endif // HAVE_CXX11
 #endif // NDEBUG
 
