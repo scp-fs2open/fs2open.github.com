@@ -1688,7 +1688,6 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 	while ( chunk_type != OP_EOF )	{
 
 		switch (chunk_type) {
-		case OP_EOF: return 1;
 		case OP_DEFPOINTS:		model_interp_defpoints(p,pm,sm); break;
 		case OP_FLATPOLY:		model_interp_flatpoly(p,pm); break;
 		case OP_TMAPPOLY:		model_interp_tmappoly(p,pm); break;
