@@ -736,9 +736,6 @@ int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags, ship
 		snd->flags |= flags;
 	}
 
-	if ( sndnum == -1 ) {
-		return -1;
-	}
 	snd->id = sndnum;
 
 	snd->instance = -1;
