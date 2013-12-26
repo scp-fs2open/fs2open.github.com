@@ -56,7 +56,7 @@ public:
 	// we need to define a constructor because the hash map can
 	// implicitly insert an object when we use the [] operator
 	collider_pair()
-		: a(NULL), b(NULL), initialized(false)
+		: a(NULL), b(NULL), signature_a(-1), signature_b(-1), next_check_time(-1), initialized(false)
 	{}
 };
 
