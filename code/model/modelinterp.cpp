@@ -254,7 +254,7 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0, int n_list_ver
 			Interp_norms = NULL;
 		}
 		// Interp_norms can't be reliably realloc'd so free and malloc it on each resize (no data needs to be carried over)
-		Interp_norms = (vec3d**) vm_malloc( n_norms * sizeof(vec3d) );
+		Interp_norms = (vec3d**) vm_malloc( n_norms * sizeof(vec3d *) );
 
 		// these next two lighting things aren't values that need to be carried over, but we need to make sure they are 0 by default
 		if (Interp_light_applied != NULL) {
