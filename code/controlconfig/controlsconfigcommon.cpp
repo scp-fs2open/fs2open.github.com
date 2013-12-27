@@ -375,7 +375,10 @@ void set_modifier_status()
 	}
 }
 
-int translate_key_to_index(char *key)
+// If find_override is set to true, then this returns the index of the action
+// which has been bound to the given key. Otherwise, the index of the action
+// which has the given key as its default key will be returned.
+int translate_key_to_index(const char *key, bool find_override)
 {
 	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
 
@@ -430,10 +433,19 @@ int translate_key_to_index(char *key)
 			index |= KEY_ALTED;
 
 		// convert scancode to Control_config index
-		for (i=0; i<CCFG_MAX; i++) {
-			if (Control_config[i].key_default == index) {
-				index = i;
-				break;
+		if (find_override) {
+			for (i=0; i<CCFG_MAX; i++) {
+				if (Control_config[i].key_id == index) {
+					index = i;
+					break;
+				}
+			}
+		} else {
+			for (i=0; i<CCFG_MAX; i++) {
+				if (Control_config[i].key_default == index) {
+					index = i;
+					break;
+				}
 			}
 		}
 
@@ -458,7 +470,7 @@ char *translate_key(char *key)
 
 	static char text[40] = {"None"};
 
-	index = translate_key_to_index(key);
+	index = translate_key_to_index(key, true);
 	if (index < 0) {
 		return NULL;
 	}
@@ -536,8 +548,10 @@ void control_config_common_load_overrides();
 // initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_init()
 {
-	for (int i=0; i<CCFG_MAX; i++)
+	for (int i=0; i<CCFG_MAX; i++) {
 		Control_config[i].disabled = false;
+		Control_config[i].continuous_ongoing = false;
+	}
 
     control_config_common_load_overrides();
 	if(Lcl_gr){

@@ -28,6 +28,7 @@
 #include "globalincs/alphacolors.h"
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
+#include "parse/scripting.h"
 
 
 #ifndef NDEBUG
@@ -2132,6 +2133,8 @@ float check_control_timef(int id)
 
 	// first, see if control actually used (makes sure modifiers match as well)
 	if (!check_control(id)) {
+		Control_config[id].continuous_ongoing = false;
+
 		return 0.0f;
 	}
 
@@ -2146,6 +2149,11 @@ float check_control_timef(int id)
 	}
 
 	if (t1 + t2) {
+		// We want to set this to true only after visiting control_used() (above)
+		// to allow it to tell the difference between an ongoing continuous action
+		// started before and a continuous action being started right now.
+		Control_config[id].continuous_ongoing = true;
+
 		return t1 + t2;
 	}
 
@@ -2251,6 +2259,17 @@ int check_control(int id, int key)
 		return 1;
 	}
 
+	if (Control_config[id].continuous_ongoing) {
+		// If we reach this point, then it means this is a continuous control
+		// which has just been released
+
+		Script_system.SetHookVar("Action", 's', Control_config[id].text);
+		Script_system.RunCondition(CHA_ONACTIONSTOPPED, '\0', NULL, NULL, id);
+		Script_system.RemHookVar("Action");
+
+		Control_config[id].continuous_ongoing = false;
+	}
+
 	return 0;
 }
 
@@ -2306,6 +2325,7 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 	return;
 }
 
+int Last_frame_timestamp;
 void control_used(int id)
 {
 	// if we have set this key to be ignored, ignore it
@@ -2313,7 +2333,20 @@ void control_used(int id)
 		return;
 	}
 
-	Control_config[id].used = timestamp();
+	// This check needs to be done because the control code might call this function more than once per frame,
+	// and we don't want to run the hooks more than once per frame
+	if (Control_config[id].used < Last_frame_timestamp) {
+		if (!Control_config[id].continuous_ongoing) {
+			Script_system.SetHookVar("Action", 's', Control_config[id].text);
+			Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
+			Script_system.RemHookVar("Action");
+
+			if (Control_config[id].type == CC_TYPE_CONTINUOUS)
+				Control_config[id].continuous_ongoing = true;
+		}
+
+		Control_config[id].used = timestamp();
+	}
 }
 
 void control_config_clear_used_status()
