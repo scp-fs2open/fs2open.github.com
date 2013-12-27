@@ -808,7 +808,7 @@ void gr_opengl_circle(int xc, int yc, int d, bool resize)
 void gr_opengl_unfilled_circle(int xc, int yc, int d, bool resize)
 {
 	int r = d / 2;
-	int segments = MAX((int)(r), 8); // seems like a good approximation
+	int segments = 4 + (int)(r); // seems like a good approximation
 	float theta = 2 * PI / float(segments - 1); 
 	float c = cosf(theta);
 	float s = sinf(theta);
@@ -904,8 +904,7 @@ void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, 
 	float arc_length_ratio;
 	arc_length_ratio = MIN(angle_end - angle_start, 360.0f) / 360.0f;
 
-	// This seems a good approximation of how many segments are needed
-	int segments = MAX((int)(r * arc_length_ratio), 4);
+	int segments = 4 + (int)(r * arc_length_ratio); // seems like a good approximation
 	float theta = 2 * PI / float(segments - 1) * arc_length_ratio; 
 	float c = cosf(theta);
 	float s = sinf(theta);
