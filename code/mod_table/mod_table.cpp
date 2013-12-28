@@ -25,6 +25,7 @@ int Default_detail_level = 3; // "very high" seems a reasonable default in 2012 
 bool Full_color_head_anis = false;
 bool Weapons_inherit_parent_collision_group = false;
 bool Flight_controls_follow_eyepoint_orientation = false;
+int FS2NetD_port = 0;
 
 
 void parse_mod_table(const char *filename)
@@ -160,6 +161,14 @@ void parse_mod_table(const char *filename)
 		}
 	}
 	
+	optional_string("#NETWORK SETTINGS"); 
+
+	if (optional_string("$FS2NetD port:")) {
+		stuff_int(&FS2NetD_port);
+		if (FS2NetD_port)
+			mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
+	}
+
 	optional_string("#OTHER SETTINGS"); 
 
 	if (optional_string("$Fixed Turret Collisions:")) { 

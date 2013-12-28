@@ -14,6 +14,7 @@
 #include "io/key.h"
 #include "controlconfig/controlsconfig.h"
 #include "freespace2/freespace.h"
+#include "weapon/beam.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -78,7 +79,8 @@ flag_def_list Script_actions[] =
 	{"On Turret Fired",			CHA_ONTURRETFIRED,	0},
 	{"On Primary Fire",			CHA_PRIMARYFIRE,	0},
 	{"On Secondary Fire",		CHA_SECONDARYFIRE,	0},
-	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0}
+	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0},
+	{"On Beam Collision",		CHA_COLLIDEBEAM,	0}
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -307,12 +309,14 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 						return false;
 					break;
 				}
-			case CHC_WEAPONCLASS: 
+			case CHC_WEAPONCLASS:
 				{
 					if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
-						if(objp == NULL || objp->type != OBJ_WEAPON)
+						if(objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
 							return false;
-						else if(stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0) 
+						else if (( objp->type == OBJ_WEAPON) && (stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
+							return false;
+						else if (( objp->type == OBJ_BEAM) && (stricmp(Weapon_info[Beams[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
 							return false;
 					} else if(objp == NULL || objp->type != OBJ_SHIP) {
 						return false;
@@ -441,7 +445,6 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 				}
 			case CHC_ACTION:
 				{
-					extern int Current_key_down;
 					if(gameseq_get_depth() < 0)
 						return false;
 

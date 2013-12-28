@@ -71,8 +71,9 @@ struct image_desc
 #define CHA_PRIMARYFIRE		28
 #define CHA_SECONDARYFIRE	29
 #define CHA_ONSHIPARRIVE	30
-#define CHA_ONACTION		31
-#define CHA_ONACTIONSTOPPED	32
+#define CHA_COLLIDEBEAM		31
+#define CHA_ONACTION		32
+#define CHA_ONACTIONSTOPPED	33
 
 // management stuff
 void scripting_state_init();

@@ -60,7 +60,7 @@ static int HUD_wingman_flash_is_bright;
 void hud_set_wingman_status_dead(int wing_index, int wing_pos)
 {
 	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
-	Assert(wing_pos >= 0 && wing_index < MAX_SHIPS_PER_WING);
+	Assert(wing_pos >= 0 && wing_pos < MAX_SHIPS_PER_WING);
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_DEAD;
 }
@@ -69,7 +69,7 @@ void hud_set_wingman_status_dead(int wing_index, int wing_pos)
 void hud_set_wingman_status_departed(int wing_index, int wing_pos)
 {
 	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
-	Assert(wing_pos >= 0 && wing_index < MAX_SHIPS_PER_WING);
+	Assert(wing_pos >= 0 && wing_pos < MAX_SHIPS_PER_WING);
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_NOT_HERE;
 }
@@ -80,7 +80,7 @@ void hud_set_wingman_status_none( int wing_index, int wing_pos)
 	int i;
 
 	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
-	Assert(wing_pos >= 0 && wing_index < MAX_SHIPS_PER_WING);
+	Assert(wing_pos >= 0 && wing_pos < MAX_SHIPS_PER_WING);
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_NONE;
 
@@ -99,7 +99,7 @@ void hud_set_wingman_status_none( int wing_index, int wing_pos)
 void hud_set_wingman_status_alive( int wing_index, int wing_pos)
 {
 	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
-	Assert(wing_pos >= 0 && wing_index < MAX_SHIPS_PER_WING);
+	Assert(wing_pos >= 0 && wing_pos < MAX_SHIPS_PER_WING);
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_ALIVE;
 }
