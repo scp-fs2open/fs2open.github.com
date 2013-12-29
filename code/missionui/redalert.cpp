@@ -512,6 +512,11 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 
 		swp->primary_bank_weapons[i] = ras->primary_weapons[i].index;
 		swp->primary_bank_ammo[i] = ras->primary_weapons[i].count;
+
+		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC) {
+			// adjust to correct ammo count, per red_alert_store_weapons()
+			swp->primary_bank_ammo[i] -= 2;
+		}
 	}
 	swp->num_primary_banks = list_size;
 

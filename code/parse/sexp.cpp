@@ -181,6 +181,7 @@ sexp_oper Operators[] = {
 	//Objectives Category
 	{ "is-destroyed",					OP_IS_DESTROYED,						1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-destroyed-delay",				OP_IS_DESTROYED_DELAY,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
+	{ "was-destroyed-by-delay",			OP_WAS_DESTROYED_BY_DELAY,				3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,  },
 	{ "is-subsystem-destroyed",			OP_IS_SUBSYSTEM_DESTROYED,				2,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-subsystem-destroyed-delay",	OP_IS_SUBSYSTEM_DESTROYED_DELAY,		3,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-disabled",					OP_IS_DISABLED,							1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
@@ -5112,6 +5113,77 @@ int sexp_is_destroyed_delay(int n)
 	if ( val ) {
 
 		if ( (Missiontime - time) >= delay )
+			return SEXP_KNOWN_TRUE;
+	}
+
+	return SEXP_FALSE;
+}
+
+
+// First ship is the destroyer, rest of the arguments are the destroyed ships.
+int sexp_was_destroyed_by(int n, fix* latest_time)
+{
+	char* destroyer_ship_name;
+	char* destroyed_ship_name;
+	int count = 0, num_destroyed;
+	fix time;
+
+	Assert(n != -1);
+
+	destroyer_ship_name = CTEXT(n);
+
+	num_destroyed = 0;
+
+	for (n = CDR(n); n != -1; n = CDR(n))
+	{
+		count++;
+		destroyed_ship_name = CTEXT(n);
+
+		if (sexp_query_has_yet_to_arrive(destroyed_ship_name))
+			return SEXP_CANT_EVAL;
+
+		// check to see if this ship/wing has departed.  If so, then function is known false
+		if (mission_log_get_time(LOG_SHIP_DEPARTED, destroyed_ship_name, NULL, NULL))
+			return SEXP_KNOWN_FALSE;
+
+		// check the mission log.  If ship/wing not destroyed, immediately return SEXP_FALSE.
+		if (mission_log_get_time(LOG_SHIP_DESTROYED, destroyed_ship_name, destroyer_ship_name, &time))
+		{
+			num_destroyed++;
+			if (latest_time && (time > *latest_time))
+				*latest_time = time;
+		}
+	}
+
+	if (count == num_destroyed)
+		return SEXP_KNOWN_TRUE;
+	else
+		return SEXP_FALSE;
+}
+
+int sexp_was_destroyed_by_delay(int n)
+{
+	fix delay, time;
+	int val;
+
+	Assert(n >= 0);
+
+	time = 0;
+
+	delay = i2f(eval_num(n));
+
+	// check value of is_destroyed function.  KNOWN_FALSE should be returned immediately
+	val = sexp_was_destroyed_by(CDR(n), &time);
+	if (val == SEXP_KNOWN_FALSE)
+		return val;
+
+	if (val == SEXP_CANT_EVAL)
+		return SEXP_CANT_EVAL;
+
+	if (val)
+	{
+
+		if ((Missiontime - time) >= delay)
 			return SEXP_KNOWN_TRUE;
 	}
 
@@ -14622,7 +14694,7 @@ int sexp_key_pressed(int node)
 	int z, t;
 
 	Assert(node != -1);
-	z = translate_key_to_index(CTEXT(node));
+	z = translate_key_to_index(CTEXT(node), false);
 	if (z < 0){
 		return SEXP_FALSE;
 	}
@@ -14645,7 +14717,7 @@ void sexp_key_reset(int node)
 
 	for (n = node; n != -1; n = CDR(n))
 	{
-		z = translate_key_to_index(CTEXT(n));
+		z = translate_key_to_index(CTEXT(n), false);
 		if (z >= 0)
 			Control_config[z].used = 0;
 	}
@@ -14665,7 +14737,7 @@ void sexp_ignore_key(int node)
 	node = CDR(node);
 	while (node > -1) {
 		// get the key
-		ignored_key = translate_key_to_index(CTEXT(node));
+		ignored_key = translate_key_to_index(CTEXT(node), false);
 
 		if (ignored_key > -1) {
 			Ignored_keys[ignored_key] = ignore_count;
@@ -16103,7 +16175,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	}
 }
 
-int insert_subsys_status(p_object *pobjp);
+extern int insert_subsys_status(p_object *pobjp);
 
 // Goober5000
 void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
@@ -22036,6 +22108,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_destroyed( node, NULL );
 				break;
 
+			case OP_WAS_DESTROYED_BY_DELAY:
+				sexp_val = sexp_was_destroyed_by_delay(node);
+				break;
+
 			case OP_IS_SUBSYSTEM_DESTROYED:
 				sexp_val = sexp_is_subsystem_destroyed(node);
 				break;
@@ -24461,6 +24537,7 @@ int query_operator_return_type(int op)
 		case OP_HAS_ARRIVED:
 		case OP_HAS_DEPARTED:
 		case OP_IS_DESTROYED_DELAY:
+		case OP_WAS_DESTROYED_BY_DELAY:
 		case OP_IS_SUBSYSTEM_DESTROYED_DELAY:
 		case OP_IS_DISABLED_DELAY:
 		case OP_IS_DISARMED_DELAY:
@@ -25326,6 +25403,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUBSYSTEM;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_WAS_DESTROYED_BY_DELAY:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP;
 
 		case OP_IS_DESTROYED_DELAY:
 		case OP_HAS_ARRIVED_DELAY:
@@ -29297,6 +29380,13 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tTime delay in seconds (see above).\r\n"
 		"\tRest:\tName of ship (or wing) to check status of." },
 
+	{ OP_WAS_DESTROYED_BY_DELAY, "Was destroyed by delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after all specified ships have been destroyed by the specified first ship.\r\n\r\n"
+		"Returns a boolean value.  Takes 3 or more arguments...\r\n"
+		"\t1:\tTime delay in seconds (see above).\r\n"
+		"\t2:\tShip that should have destroyed the other ships (see below).\r\n"
+		"\tRest:\tName of ships to check status of." },
+
 	{ OP_IS_SUBSYSTEM_DESTROYED_DELAY, "Is subsystem destroyed delay (Boolean operator)\r\n"
 		"\tBecomes true <delay> seconds after the specified subsystem of the specified "
 		"ship is destroyed.\r\n\r\n"
@@ -30652,6 +30742,7 @@ sexp_help_struct Sexp_help[] = {
 		"cargo-known - If set, the ships cargo can be seen without scanning the ship\r\n"
 		"stealth - If set, the ship can't be targeted, is invisible on radar, and is ignored by AI unless firing\r\n"
 		"friendly-stealth-invisible - If set, the ship can't be targeted even by ships on the same team\r\n"
+		"hide-ship-name - If set, the ship name can't be seen when the ship is targeted\r\n"
 		"hidden-from-sensors - If set, the ship can't be targeted and appears on radar as a blinking dot\r\n"
 		"no-dynamic - Will stop allowing the AI to persue dynamic goals (eg: chasing ships it was not ordered to)\r\n"},
 

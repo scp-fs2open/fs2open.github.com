@@ -2450,7 +2450,7 @@ struct order_h
 	order_h(object *objp, int n_odx)
 	{
 		objh = object_h(objp);
-		if(objh.IsValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS)
+		if(objh.IsValid() && objh.objp->type == OBJ_SHIP && n_odx > -1 && n_odx < MAX_AI_GOALS)
 		{
 			odx = n_odx;
 			sig = Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
@@ -4422,7 +4422,7 @@ ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index value of the 
 	if(idx < 0 || idx >= Num_weapon_types)
 		return ade_set_args(L, "i", -1);
 
-	return ade_set_args(L, "i", idx);
+	return ade_set_args(L, "i", idx + 1);
 }
 
 ADE_FUNC(isLaser, l_Weaponclass, NULL, "Return true if the weapon is a primary weapon (this includes Beams). This function is deprecated, use isPrimary instead.", "boolean", "true if the weapon is a primary, false otherwise")
@@ -6297,7 +6297,7 @@ ADE_FUNC(getShipClassIndex, l_Shipclass, NULL, "Gets the index valus of the ship
 	if(idx < 0 || idx >= Num_ship_classes)
 		return ade_set_args(L, "i", -1);
 
-	return ade_set_args(L, "i", idx);
+	return ade_set_args(L, "i", idx + 1); // Lua is 1-based
 }
 
 //**********HANDLE: Debris
@@ -14361,7 +14361,13 @@ ADE_INDEXER(l_Tables_WeaponClasses, "number Index/string WeaponName", "Array of 
 	if(idx < 0) {
 		idx = atoi(name);
 
-		if(idx < 1 || idx > Num_weapon_types) {
+		// atoi is good enough here, 0 is invalid anyway
+		if (idx > 0)
+		{
+			idx--; // Lua --> C/C++
+		}
+		else
+		{
 			return ade_set_args(L, "o", l_Weaponclass.Set(-1));
 		}
 	}
@@ -14528,6 +14534,8 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx)
 			return ade_set_args(L, "o", l_Waypoint.Set(object_h(objp)));
 		case OBJ_WEAPON:
 			return ade_set_args(L, "o", l_Weapon.Set(object_h(objp)));
+		case OBJ_BEAM:
+			return ade_set_args(L, "o", l_Beam.Set(object_h(objp)));
 		default:
 			return ade_set_args(L, "o", l_Object.Set(object_h(objp)));
 	}

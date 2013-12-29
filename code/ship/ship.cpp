@@ -362,6 +362,7 @@ flag_def_list ai_tgt_weapon_flags[] = {
 };
 
 //	Constant for flag,				Name of flag,				In flags or flags2
+//  When adding new flags remember to bump MAX_SHIP_FLAG_NAMES in ship.h
 ship_flag_name Ship_flag_names[] = {
 	{SF_VAPORIZE,					"vaporize",						1,	},
 	{SF_WARP_BROKEN,				"break-warp",					1,	},
@@ -371,6 +372,7 @@ ship_flag_name Ship_flag_names[] = {
 	{SF_HIDDEN_FROM_SENSORS,		"hidden-from-sensors",			1,	},
 	{SF2_STEALTH,					"stealth",						2,	},
 	{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
+	{SF2_HIDE_SHIP_NAME,			"hide-ship-name",				2,	},
 	{SF2_AFTERBURNER_LOCKED,		"afterburners-locked",			2,	},
 	{SF2_PRIMARIES_LOCKED,			"primaries-locked",				2,	},
 	{SF2_SECONDARIES_LOCKED,		"secondaries-locked",			2,	},

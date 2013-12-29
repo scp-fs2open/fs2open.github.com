@@ -4768,6 +4768,7 @@ void game_set_frametime(int state)
 
 	Last_time = thistime;
 	//mprintf(("Frame %i, Last_time = %7.3f\n", Framecount, f2fl(Last_time)));
+	Last_frame_timestamp = timestamp();
 
 	flFrametime = f2fl(Frametime);
 	timestamp_inc(flFrametime);

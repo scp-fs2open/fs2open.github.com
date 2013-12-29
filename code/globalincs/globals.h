@@ -22,6 +22,7 @@
 #define	FILESPEC_LENGTH			64
 #define	MESSAGE_LENGTH			512
 #define TRAINING_MESSAGE_LENGTH	512
+#define CONDITION_LENGTH		64
 
 // from missionparse.h
 #define MISSION_DESC_LENGTH		512

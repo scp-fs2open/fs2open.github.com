@@ -222,6 +222,7 @@ public:
 	ade_odata GetPtr(StoreType **ptr){
 		ade_odata od;
 		od.idx = LibIdx;
+		od.sig = NULL;
 		od.buf = (void**)ptr;
 		od.size = -1;
 		return od;

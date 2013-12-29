@@ -32,6 +32,7 @@
 #include "cmdline/cmdline.h"
 #include "cfile/cfilesystem.h"
 #include "network/multimsgs.h"
+#include "mod_table/mod_table.h"
 
 #ifndef WIN32
 #include <cstdio>
@@ -122,8 +123,19 @@ void fs2netd_options_config_init()
 	}
 
 	if ( !strlen(Multi_options_g.tracker_port) ) {
-		ml_printf("NOTICE: Port for game/user trackers not specified, using default instead (%s).", FS2NETD_DEFAULT_PORT);
-		strncpy( Multi_options_g.tracker_port, FS2NETD_DEFAULT_PORT, STD_NAME_LEN );
+		if ( FS2NetD_port >= 1024 && FS2NetD_port <= USHRT_MAX ) {
+			ml_printf("NOTICE: User override for game/user tracker port not specified, using game_settings.tbl override (%i).", FS2NetD_port);
+			int result;
+			result = sprintf(Multi_options_g.tracker_port, "%i", FS2NetD_port);
+			Assertion( result > 0, "Copying port %i to tracker_port failed\n", FS2NetD_port );
+		}
+		else {
+			if ( FS2NetD_port != 0 ) {
+				ml_printf("ERROR: game_settings.tbl override for game/user tracker port '%i' must be between %i and %i.", FS2NetD_port, 1024, USHRT_MAX);
+			}
+			ml_printf("NOTICE: Port for game/user trackers not specified, using default instead (%s).", FS2NETD_DEFAULT_PORT);
+			strncpy( Multi_options_g.tracker_port, FS2NETD_DEFAULT_PORT, STD_NAME_LEN );
+		}
 	} else {
 		long port_tmp = strtol(Multi_options_g.tracker_port, (char**)NULL, 10);
 

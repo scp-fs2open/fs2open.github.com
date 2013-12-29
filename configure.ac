@@ -17,6 +17,8 @@ AM_INIT_AUTOMAKE([ 1.6.1 no-define dist-bzip2 ])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_DEFINE([NO_CD_CHECK])
 
+AC_CONFIG_MACRO_DIR([m4])
+
 dnl Check for programs
 dnl save current vars first
 CXXFLAGS_save="$CXXFLAGS"

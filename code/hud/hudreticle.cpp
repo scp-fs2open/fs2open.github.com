@@ -290,31 +290,36 @@ void HudGaugeReticle::getFirepointStatus() {
 		//Get the player eyepoint
 		pm = model_get(pship->model_num);
 
-		if (pm->n_guns > 0) { 
-			eye eyepoint = pm->view_positions[shipp->current_viewpoint];
-			vec2d ep = {eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y};
+		if (pm->n_view_positions == 0) {
+			mprintf(("Model %s does not have a defined eyepoint. Firepoint display could not be generated\n", pm->filename));
+		} else  {
+			if (pm->n_guns > 0) { 
+			
+				eye eyepoint = pm->view_positions[shipp->current_viewpoint];
+				vec2d ep = { eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y };
 
-			for (int i = 0; i < pm->n_guns; i++) {
-				int isactive = 0;
+				for (int i = 0; i < pm->n_guns; i++) {
+					int isactive = 0;
 
-				if ( !timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) )
-					isactive = 1;
-				else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
-					isactive = 1;
-				else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
-					isactive = 2;
+					if (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]))
+						isactive = 1;
+					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
+						isactive = 1;
+					else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
+						isactive = 2;
 
-				for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
-					vec3d fpfromeye;
+					for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
+						vec3d fpfromeye;
 
-					matrix eye_orient, player_transpose;
+						matrix eye_orient, player_transpose;
 
-					vm_copy_transpose_matrix(&player_transpose, &Objects[Player->objnum].orient);
-					vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
-					vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
+						vm_copy_transpose_matrix(&player_transpose, &Objects[Player->objnum].orient);
+						vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
+						vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
 
-					firepoint tmp = { {fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y}, isactive};
-					fp.push_back(tmp);
+						firepoint tmp = { { fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y }, isactive };
+						fp.push_back(tmp);
+					}
 				}
 			}
 		}

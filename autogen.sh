@@ -110,18 +110,14 @@ do
     ( cd $dr
       aclocalinclude="$ACLOCAL_FLAGS"
       for k in $macrodirs; do
-  	if test -d $k; then
+        if test -d $k; then
           aclocalinclude="$aclocalinclude -I $k"
   	##else 
 	##  echo "**Warning**: No such directory \`$k'.  Ignored."
         fi
       done
-      echo "Running $ACLOCAL $aclocalinclude ..."
-      "$ACLOCAL" $aclocalinclude
-      echo "Running $AUTOMAKE --add-missing --copy --foreign $am_opt ..."
-      "$AUTOMAKE" --add-missing --copy --foreign $am_opt
-      echo "Running autoconf..."
-      autoconf
+      echo "Running autoreconf..."
+      autoreconf --install
     )
   fi
 done

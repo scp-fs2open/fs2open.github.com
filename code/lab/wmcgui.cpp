@@ -293,7 +293,7 @@ int ClassInfoEntry::GetCoords(int *x, int *y)
 		*x=Coords[0];
 		rval |= CIE_GC_X_SET;
 	}
-	if (Coords[1]!=INT_MAX && x!=NULL) {
+	if (Coords[1]!=INT_MAX && y!=NULL) {
 		*y=Coords[1];
 		rval |= CIE_GC_Y_SET;
 	}
