@@ -550,125 +550,120 @@ char *drop_extra_chars(char *str)
 }
 
 
-// internal function - copy the value for a parameter agruement into the cmdline_parm arg field
-void parm_stuff_args(cmdline_parm *parm, char *cmdline)
+/*
+ * @brief Processes one argument for the given parameter
+ *
+ * @param param The parameter to check
+ * @param argc The argument count
+ * @param argc The argument values
+ * @param argc The current index
+ * @return @c true when an extra parameter was found, @c false otherwise
+ */
+bool parm_stuff_args(cmdline_parm *parm, int argc, char *argv[], int index)
 {
-	char buffer[1024];
-	memset( buffer, 0, sizeof( buffer ) );
-	char *dest = buffer;
-	char *saved_args = NULL;
+	Assert(index < argc);
 
-	cmdline += strlen(parm->name);
+	if (index + 1 < argc)
+	{
+		char* value = argv[index + 1];
+		if (value[0] == '-')
+		{
+			// Found another argument, just return
+			return false;
+		}
+		else
+		{
+			char* saved_args = NULL;
 
-	while ((*cmdline != '\0') && strncmp(cmdline, " -", 2) && ((size_t)(dest-buffer) < sizeof(buffer))) {
-		*dest++ = *cmdline++;
+			if (parm->args != NULL) {
+				if (parm->stacks) {
+					saved_args = parm->args;
+				}
+				else {
+					delete[] parm->args;
+				}
+
+				parm->args = NULL;
+			}
+
+			int argsize = strlen(argv[index + 1]);
+			int buffersize = argsize;
+
+			if (saved_args != NULL)
+			{
+				// Add one for the , separating args
+				buffersize += strlen(saved_args) + 1;
+			}
+
+			buffersize += 1; // Null-terminator
+
+			parm->args = new char[buffersize];
+			memset(parm->args, 0, buffersize);
+
+			if (saved_args != NULL)
+			{
+				// saved args go first, then new arg
+				strcpy_s(parm->args, buffersize, saved_args);
+				// add a separator too, so that we can tell the args apart
+				strcat_s(parm->args, buffersize, ",");
+				// now the new arg
+				strcat_s(parm->args, buffersize, argv[index + 1]);
+
+				delete[] saved_args;
+			}
+			else
+			{
+				strcpy_s(parm->args, buffersize, argv[index + 1]);
+			}
+
+			return true;
+		}
 	}
-
-	drop_extra_chars(buffer);
-
-	// mwa 9/14/98 -- made it so that newer command line arguments found will overwrite the old arguments
-	// taylor 7/25/06 -- made it so that you can stack newer arguments if that option should support stacking
-
-	if ( parm->args != NULL ) {
-		if (parm->stacks) {
-			saved_args = parm->args;
-		} else {
-			delete[] parm->args;
-		}
-
-		parm->args = NULL;
-	}
-
-	int size = strlen(buffer);
-
-	if (size > 0) {
-		size++;	// nul char
-
-		if (saved_args != NULL) {
-			size += (strlen(saved_args) + 1);	// an ',' is used as a separator when combining, so be sure to account for it
-		}
-
-		parm->args = new char[size];
-		memset(parm->args, 0, size);
-
-		if (saved_args != NULL) {
-			// saved args go first, then new arg
-			strcpy_s(parm->args, size, saved_args);
-			// add a separator too, so that we can tell the args apart
-			strcat_s(parm->args, size, ",");
-			// now the new arg
-			strcat_s(parm->args, size, buffer);
-
-			delete [] saved_args;
-		} else {
-			strcpy_s(parm->args, size, buffer);
-		}
-	} else {
-		parm->args = saved_args;
+	else
+	{
+		// Last argument, can't have any values
+		return false;
 	}
 }
 
 
 // internal function - parse the command line, extracting parameter arguments if they exist
 // cmdline - command line string passed to the application
-void os_parse_parms(char *cmdline)
+void os_parse_parms(int argc, char *argv[])
 {
 	// locate command line parameters
 	cmdline_parm *parmp;
-	char *cmdline_offset = NULL;
-	size_t get_new_offset = 0;
 
-	for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
-		// continue processing every option on the line to make sure that we account for every listing of each option
-		do {
-			// while going through the cmdline make sure to grab only the option that we are
-			// looking for, but if one similar then keep searching for the exact match
-			while (true) {
-				cmdline_offset = strstr(cmdline + get_new_offset, parmp->name);
-
-				if ( !cmdline_offset )
-					break;
-
-				int parmp_len = strlen(parmp->name);
-
-				// the new offset should be our currently location + the length of the current option
-				get_new_offset = (strlen(cmdline) - strlen(cmdline_offset) + parmp_len);
-
-				if ( (*(cmdline_offset + parmp_len)) && !is_extra_space(*(cmdline_offset + parmp_len)) ) {
-					// we found a similar, but not exact, match for this option, continue checking for the correct one
-				} else {
-					// we found what we were looking for so break out and process it
-					break;
+	for (int i = 0; i < argc; i++)
+	{
+		for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
+			if (!stricmp(parmp->name, argv[i]))
+			{
+				parmp->name_found = 1;
+				if (parm_stuff_args(parmp, argc, argv, i))
+				{
+					i++;
 				}
 			}
-
-			if (cmdline_offset) {
-				parmp->name_found = 1;
-				parm_stuff_args(parmp, cmdline_offset);
-			}
-		} while (cmdline_offset);
-
-		// reset the offset for the next param that we will look for
-		get_new_offset = 0;
-		cmdline_offset = NULL;
+		}
 	}
 }
 
 
 // validate the command line parameters.  Display an error if an unrecognized parameter is located.
-void os_validate_parms(char *cmdline)
+void os_validate_parms(int argc, char *argv[])
 {
 	cmdline_parm *parmp;
-	char seps[] = " ,\t\n";
 	char *token;
 	int parm_found;
 
-	token = strtok(cmdline, seps);
-	while(token != NULL) {
-	
+	for (int i = 0; i < argc; i++)
+	{
+		token = argv[i];
+
 		if (token[0] == '-') {
 			parm_found = 0;
-			for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
+			for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
 				if (!stricmp(parmp->name, token)) {
 					parm_found = 1;
 					break;
@@ -677,10 +672,11 @@ void os_validate_parms(char *cmdline)
 
 			if (parm_found == 0) {
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
-				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?") ) {
+				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
 					if (FS_VERSION_REVIS == 0) {
 						printf("FreeSpace 2 Open, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-					} else {
+					}
+					else {
 						printf("FreeSpace 2 Open, version %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
 					}
 					printf("Website: http://scp.indiegames.us\n");
@@ -689,7 +685,7 @@ void os_validate_parms(char *cmdline)
 
 					// not the prettiest thing but the job gets done
 					static const int STR_SIZE = 25;  // max len of exe_params.name + 5 spaces
-					int p=0, sp=0;
+					int p = 0, sp = 0;
 					while (exe_params[p].name[0] == '-') {
 						sp = strlen(exe_params[p].name);
 						printf("    [ %s ]%*s- %s\n", exe_params[p].name, (STR_SIZE - sp - 1), NOX(" "), exe_params[p].desc);
@@ -698,31 +694,119 @@ void os_validate_parms(char *cmdline)
 
 					printf("\n");
 					exit(0);
-				} else {
+				}
+				else {
 					char buffer[128];
-					sprintf(buffer,"Unrecognized command line parameter %s.",token);
-					
+					sprintf(buffer, "Unrecognized command line parameter %s.", token);
+
 					SCP_Messagebox(MESSAGEBOX_INFORMATION, buffer);
 				}
 			}
 		}
-
-		token = strtok(NULL, seps);
 	}
 }
 
+int parse_cmdline_string(char* cmdline, char** argv)
+{
+	int length = strlen(cmdline);
+
+	bool start_found = false;
+	bool quoted = false;
+
+	int argc = 0;
+	char* current_argv = NULL;
+	for (int i = 0; i < length; i++)
+	{
+		if (!start_found && !isspace(cmdline[i]))
+		{
+			start_found = true;
+			current_argv = (cmdline + i);
+		}
+		else if (start_found)
+		{
+			if (cmdline[i] == '"')
+			{
+				quoted = !quoted;
+
+				if (!quoted && current_argv != NULL)
+				{
+					if (argv != NULL)
+					{
+						// Terminate string at quote
+						cmdline[i] = '\0';
+						argv[argc] = current_argv;
+						current_argv = NULL;
+					}
+
+					argc++;
+				}
+			}
+			else if (isspace(cmdline[i]) && !quoted)
+			{
+				// Parameter terminated by space
+				if (current_argv != NULL) // == NULL means that we currently don't have a parameter
+				{
+					if (argv != NULL)
+					{
+						// Terminate string at quote
+						cmdline[i] = '\0';
+						argv[argc] = current_argv;
+						current_argv = NULL;
+					}
+
+					argc++;
+				}
+			}
+			else if (current_argv == NULL)
+			{
+				current_argv = cmdline + i;
+			}
+		}
+	}
+
+	if (current_argv != NULL)
+	{
+		if (argv != NULL)
+		{
+			// Terminate string at quote
+			argv[argc] = current_argv;
+			current_argv = NULL;
+		}
+
+		argc++;
+	}
+
+	return argc;
+}
+
+void os_process_cmdline(char* cmdline)
+{
+	int argc = parse_cmdline_string(cmdline, NULL);
+
+	char** argv = new char*[argc];
+
+	parse_cmdline_string(cmdline, argv);
+
+	os_parse_parms(argc, argv);
+	os_validate_parms(argc, argv);
+
+	delete[] argv;
+}
 
 // Call once to initialize the command line system
 //
 // cmdline - command line string passed to the application
-void os_init_cmdline(char *cmdline)
+void os_init_cmdline(int argc, char *argv[])
 {
 	FILE *fp;
 
 	bool parse_config = true;
 	
-	if (strstr(cmdline, PARSE_COMMAND_LINE_STRING) != NULL) {
-		parse_config =  false;
+	for (int i = 0; i < argc; i++)
+	{
+		if (!stricmp(argv[i], PARSE_COMMAND_LINE_STRING) != NULL) {
+			parse_config = false;
+		}
 	}
 
 	// read the cmdline.cfg file from the data folder, and pass the command line arguments to
@@ -760,8 +844,8 @@ void os_init_cmdline(char *cmdline)
 		strcat_s(buf, len, " ");
 #endif
 
-		os_parse_parms(buf);
-		os_validate_parms(buf);
+		os_process_cmdline(buf);
+
 		delete [] buf;
 		fclose(fp);
 	}
@@ -796,15 +880,14 @@ void os_init_cmdline(char *cmdline)
 		// append a space for the os_parse_parms() check
 		strcat_s(buf, len, " ");
 
-		os_parse_parms(buf);
-		os_validate_parms(buf);
+		os_process_cmdline(buf);
 		delete [] buf;
 		fclose(fp);
 	}
 #endif
 
-	os_parse_parms(cmdline);
-	os_validate_parms(cmdline);
+	os_parse_parms(argc, argv);
+	os_validate_parms(argc, argv);
 }
 
 
@@ -1520,43 +1603,11 @@ bool SetCmdlineParams()
 	return true; 
 }
 
-
-int fred2_parse_cmdline(int argc, char *argv[])
-{
-	if (argc > 1) {
-		// kind of silly -- combine arg list into single string for parsing,
-		// but it fits with the win32-centric existing code.
-		char *cmdline = NULL;
-		unsigned int arglen = 0;
-		int i;
-		for (i = 1;  i < argc;  i++)
-			arglen += strlen(argv[i]);
-		if (argc > 2)
-			arglen += argc + 2; // leave room for the separators
-		cmdline = new char [arglen+1];
-		i = 1;
-
-		strcpy_s(cmdline, arglen+1, argv[i]);
-		for (i=2; i < argc;  i++) {
-			strcat_s(cmdline, arglen+1, " ");
-			strcat_s(cmdline, arglen+1, argv[i]);
-		}
-		os_init_cmdline(cmdline);
-		delete [] cmdline;
-	} else {
-		// no cmdline args
-		os_init_cmdline("");
-	}
-
-	return SetCmdlineParams();
-}
-
-
-int parse_cmdline(char *cmdline)
+int parse_cmdline(int argc, char *argv[])
 {
 //	mprintf(("I got to parse_cmdline()!!\n"));
 
-	os_init_cmdline(cmdline);
+	os_init_cmdline(argc, argv);
 
 	// --------------- Kazan -------------
 	// If you're looking for the list of if (someparam.found()) { cmdline_someparam = something; } look above at this function
