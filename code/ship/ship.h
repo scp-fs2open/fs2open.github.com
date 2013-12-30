@@ -1480,6 +1480,7 @@ typedef struct wing {
 
 	int	wave_count;								// max ships per wave (as defined by the number of ships in the ships list)
 	int	total_arrived_count;					// count of number of ships that we have created, regardless of wave
+	int red_alert_skipped_ships;				// Goober5000 - if we skipped over any indexes while creating red-alert ships
 	int	current_count;							// count of number of ships actually in this wing -- used for limit in next array
 	int	ship_index[MAX_SHIPS_PER_WING];	// index into ships array of all ships currently in the wing
 

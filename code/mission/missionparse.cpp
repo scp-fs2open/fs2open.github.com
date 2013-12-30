@@ -2354,8 +2354,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	wing *wingp = &Wings[wingnum];
 
 	// link ship and wing together
-	// (do this first because mission log relies on ship_index
-	// and hud_wingman_status_set_index relies on ship's wingnum)
+	// (do this first because mission log relies on ship_index)
 	wingp->ship_index[p_objp->pos_in_wing] = shipnum;
 	Ships[shipnum].wingnum = wingnum;
 
@@ -2379,7 +2378,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	// at this point the wing has arrived, so handle the stuff for this particular ship
 
 	// set up wingman status index
-	hud_wingman_status_set_index(shipnum);
+	hud_wingman_status_set_index(wingp, &Ships[shipnum], p_objp);
 
 	// copy to parse object
 	p_objp->wing_status_wing_index = Ships[shipnum].wing_status_wing_index;
@@ -3987,6 +3986,23 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			specific_instance--;
 			continue;
 		}
+		// when not creating a specific ship, we should skip over any ships that weren't carried along in the red-alert
+		else if (p_objp->flags2 & P2_RED_ALERT_DELETED)
+		{
+			num_to_create--;
+			num_create_save--;
+			ship_add_ship_type_count(p_objp->ship_class, -1);
+			wingp->red_alert_skipped_ships++;
+
+			// clear the flag so that this parse object can be used for the next wave
+			p_objp->flags2 &= ~P2_RED_ALERT_DELETED;
+
+			// skip over this parse object
+			if (num_to_create == 0)
+				break;
+			else
+				continue;
+		}
 
 		Assert (!(p_objp->flags & P_SF_CANNOT_ARRIVE));		// get allender
 
@@ -4001,7 +4017,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
-			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count);
+			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
@@ -4037,7 +4053,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// set up wingman status index
-		hud_wingman_status_set_index(Objects[objnum].instance);
+		hud_wingman_status_set_index(wingp, &Ships[Objects[objnum].instance], p_objp);
 
 		p_objp->wing_status_wing_index = Ships[Objects[objnum].instance].wing_status_wing_index;
 		p_objp->wing_status_wing_pos = Ships[Objects[objnum].instance].wing_status_wing_pos;
@@ -4092,20 +4108,29 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	Assert (num_to_create == 0);
 
 	// wing current_count needs to match the end of the ship_index[] list, but there
-	// is a very off chance it could have holes in it, so make sure to compact the list
-	for (i = 0; i < (MAX_SHIPS_PER_WING-1); i++) {
-		if (wingp->ship_index[i] == -1) {
-			j = i;
-			while ( j < (MAX_SHIPS_PER_WING-1) ) {
+	// is a very off chance it could have holes in it (especially if it's a red-alert
+	// wing that arrives late), so make sure to compact the list
+	int length = MAX_SHIPS_PER_WING;
+	for (i = 0; i < length; i++)
+	{
+		if (wingp->ship_index[i] == -1)
+		{
+			// shift actual values downward
+			for (j = i; j < length - 1; j++)
+			{
 				wingp->ship_index[j] = wingp->ship_index[j+1];
 
 				// update "special" ship too
-				if (wingp->special_ship == j+1) {
+				if (wingp->special_ship == j+1)
 					wingp->special_ship--;
-				}
-
-				j++;
 			}
+
+			// last value becomes -1
+			wingp->ship_index[j] = -1;
+			length--;
+
+			// stay on the current index in case we still have a -1
+			i--;
 		}
 	}
 	
@@ -4204,6 +4229,7 @@ void parse_wing(mission *pm)
 	wingnum = Num_wings;
 
 	wingp->total_arrived_count = 0;
+	wingp->red_alert_skipped_ships = 0;
 	wingp->total_destroyed = 0;
 	wingp->total_departed = 0;	// Goober5000
 	wingp->total_vanished = 0;	// Goober5000

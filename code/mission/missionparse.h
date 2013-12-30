@@ -512,8 +512,9 @@ public:
 #define P2_SF2_SCRAMBLE_MESSAGES			(1<<22)
 
 // and again: these flags do not appear in the array
+//#define blah							(1<<28)
 //#define blah							(1<<29)
-//#define blah							(1<<30)
+#define P2_RED_ALERT_DELETED			(1<<30)	// Goober5000 - used analogously to SEF_PLAYER_DELETED
 #define P2_ALREADY_HANDLED				(1<<31)	// Goober5000 - used for docking currently, but could be used generically
 
 
