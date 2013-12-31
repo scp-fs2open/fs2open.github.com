@@ -2623,7 +2623,7 @@ int parse_weapon(int subtype, bool replace)
 		wip->burst_shots = 0;
 
 	/* Generate a substitution pattern for this weapon.
-	This pattern is very naive such that is calculates the lowest common demoniator as being all of
+	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
 	*/
 	while ( optional_string("$substitute:") ) {
@@ -2654,43 +2654,56 @@ int parse_weapon(int subtype, bool replace)
 		}
 
 		// we are going to use weapon substition so, make sure that the pattern array has at least one element
-		if ( wip->weapon_substitution_pattern_names.empty() ) {
+		if ( wip->num_substitution_patterns == 0 ) {
 			// pattern is empty, initialize pattern with the weapon being currently parsed.
-			wip->weapon_substitution_pattern_names.push_back(wip->name);
+			strcpy_s(wip->weapon_substitution_pattern_names[0], wip->name);
+			wip->num_substitution_patterns++;
 		}
 
 		// if tbler specifies a period then determine if we can fit the resulting pattern
 		// neatly into the pattern array.
 		if ( period > 0 ) {
-			if ( (wip->weapon_substitution_pattern_names.size() % period) > 0 ) {
-				// not neat, need to expand the pattern so that our freqency pattern fits completly.
-				size_t current_size = wip->weapon_substitution_pattern_names.size();
-				wip->weapon_substitution_pattern_names.resize(current_size*period);
+			if ( (wip->num_substitution_patterns % period) > 0 ) {
+				// not neat, need to expand the pattern so that our frequency pattern fits completly.
+				size_t current_size = wip->num_substitution_patterns;
+				size_t desired_size = current_size*period;
+				if (desired_size > MAX_SUBSTITUTION_PATTERNS) {
+					Warning(LOCATION, "The period is too large for the number of substitution patterns!  desired size=%d, max size=%d", desired_size, MAX_SUBSTITUTION_PATTERNS);
+				}
+				else {
+					wip->num_substitution_patterns = desired_size;
 
-				// now duplicate the current pattern into the new area so the current pattern holds
-				for ( size_t i = current_size; i < wip->weapon_substitution_pattern_names.size(); i++) {
-					wip->weapon_substitution_pattern_names[i] = wip->weapon_substitution_pattern_names[i%current_size];
+					// now duplicate the current pattern into the new area so the current pattern holds
+					for ( size_t i = current_size; i < desired_size; i++ ) {
+						strcpy_s(wip->weapon_substitution_pattern_names[i], wip->weapon_substitution_pattern_names[i%current_size]);
+					}
 				}
 			}
 
 			/* Apply the substituted weapon at the requested period, barrel
 			shifted by offset if needed.*/
 			for ( size_t pos = (period + offset - 1) % period;
-				pos < wip->weapon_substitution_pattern_names.size(); pos += period )
+				pos < wip->num_substitution_patterns; pos += period )
 			{
-				wip->weapon_substitution_pattern_names[pos] = subname;
+				strcpy_s(wip->weapon_substitution_pattern_names[pos], subname);
 			}
 		} else {
 			// assume that tbler wanted to specify a index for the new weapon.
 
 			// make sure that there is enough room
-			if ( !(index < (int)wip->weapon_substitution_pattern_names.size()) ) {
-				// need to make the pattern bigger by filling the extra with the current weapon.
-				size_t current_size = wip->weapon_substitution_pattern_names.size();
-				wip->weapon_substitution_pattern_names.resize(current_size+1, subname);
-			}
+			if (index >= MAX_SUBSTITUTION_PATTERNS) {
+				Warning(LOCATION, "Substitution pattern index exceeds the maximum size!  Index=%d, max size=%d", index, MAX_SUBSTITUTION_PATTERNS);
+			} else {
+				if ( (size_t)index >= wip->num_substitution_patterns ) {
+					// need to make the pattern bigger by filling the extra with the current weapon.
+					for ( size_t i = wip->num_substitution_patterns; i < (size_t)index; i++ ) {
+						strcpy_s(wip->weapon_substitution_pattern_names[i], subname);
+					}
+					wip->num_substitution_patterns = index+1;
+				}
 
-			wip->weapon_substitution_pattern_names[index] = subname;
+				strcpy_s(wip->weapon_substitution_pattern_names[index], subname);
+			}
 		}
 	}
 
@@ -3264,16 +3277,14 @@ void weapon_generate_indexes_for_substitution() {
 	for (int i = 0; i < MAX_WEAPON_TYPES; i++) {
 		weapon_info *wip = &(Weapon_info[i]);
 
-		if ( wip->weapon_substitution_pattern_names.size() > 0 ) {
-			wip->weapon_substitution_pattern.resize(wip->weapon_substitution_pattern_names.size());
-
-			for ( size_t j = 0; j < wip->weapon_substitution_pattern_names.size(); j++ ) {
+		if ( wip->num_substitution_patterns > 0 ) {
+			for ( size_t j = 0; j < wip->num_substitution_patterns; j++ ) {
 				int weapon_index = -1;
-				if ( stricmp("none", wip->weapon_substitution_pattern_names[j].c_str()) != 0 ) {
-					weapon_index = weapon_info_lookup(wip->weapon_substitution_pattern_names[j].c_str());
+				if ( stricmp("none", wip->weapon_substitution_pattern_names[j]) != 0 ) {
+					weapon_index = weapon_info_lookup(wip->weapon_substitution_pattern_names[j]);
 					if ( weapon_index == -1 ) { // invalid sub weapon
 						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
-							wip->name, wip->weapon_substitution_pattern_names[j].c_str());
+							wip->name, wip->weapon_substitution_pattern_names[j]);
 						continue;
 					}
 				}
@@ -3281,7 +3292,7 @@ void weapon_generate_indexes_for_substitution() {
 				wip->weapon_substitution_pattern[j] = weapon_index;
 			}
 
-			wip->weapon_substitution_pattern_names.clear();
+			memset(wip->weapon_substitution_pattern_names, 0, sizeof(char) * MAX_SUBSTITUTION_PATTERNS * NAME_LENGTH);
 		}
 	}
 }
@@ -4880,7 +4891,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
-inline size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* shipp, ship_subsys * src_turret) {
+size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* shipp, ship_subsys * src_turret)
+{
 	Assert( shipp != NULL );
 	ship_weapon* ship_weapon_p = &(shipp->weapons);
 	if(src_turret)
@@ -4935,7 +4947,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		parent_objp = &Objects[parent_objnum];
 	}
 
-	if ( (wip->weapon_substitution_pattern.size() > 0) && (parent_objp != NULL)) {
+	if ( (wip->num_substitution_patterns > 0) && (parent_objp != NULL)) {
 		// using substitution
 
 		// get to the instance of the gun
@@ -4948,7 +4960,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
-		*position = ++(*position) % wip->weapon_substitution_pattern.size();
+		*position = ++(*position) % wip->num_substitution_patterns;
 
 		if ( wip->weapon_substitution_pattern[*position] == -1 ) {
 			// weapon doesn't want any sub

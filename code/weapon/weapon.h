@@ -303,6 +303,8 @@ enum InFlightSoundType
 	ALWAYS
 };
 
+#define MAX_SUBSTITUTION_PATTERNS	10
+
 typedef struct weapon_info {
 	char	name[NAME_LENGTH];				// name of this weapon
 	char	alt_name[NAME_LENGTH];			// alt name of this weapon
@@ -516,8 +518,9 @@ typedef struct weapon_info {
 	int				num_targeting_priorities;
 
 	// the optional pattern of weapons that this weapon will fire
-	SCP_vector<int> weapon_substitution_pattern; //weapon_indexs
-	SCP_vector<SCP_string> weapon_substitution_pattern_names; // weapon names so that we can generate the indexs after sort
+	size_t			num_substitution_patterns;
+	int				weapon_substitution_pattern[MAX_SUBSTITUTION_PATTERNS]; //weapon_indexes
+	char			weapon_substitution_pattern_names[MAX_SUBSTITUTION_PATTERNS][NAME_LENGTH]; // weapon names so that we can generate the indexs after sort
 
 	int			score; //Optional score for destroying the weapon
 
