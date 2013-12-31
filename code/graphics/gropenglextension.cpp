@@ -377,7 +377,7 @@ void opengl_extensions_init()
 		Use_VBOs = 1;
 	}
 
-	if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
+	if ( !Cmdline_no_pbo && Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
 		Use_PBOs = 1;
 	}
 

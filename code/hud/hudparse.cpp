@@ -2008,9 +2008,6 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 	if(optional_string("Autoaim Frame:"))
 		stuff_int(&autoaim_frame);
 
-	HudGaugeReticle* hud_gauge = new HudGaugeReticle();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
 	hud_gauge->setAutoaimFrame(autoaim_frame);
