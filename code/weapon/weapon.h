@@ -515,6 +515,10 @@ typedef struct weapon_info {
 	int				targeting_priorities[32];
 	int				num_targeting_priorities;
 
+	// the optional pattern of weapons that this weapon will fire
+	SCP_vector<int> weapon_substitution_pattern; //weapon_indexs
+	SCP_vector<SCP_string> weapon_substitution_pattern_names; // weapon names so that we can generate the indexs after sort
+
 	int			score; //Optional score for destroying the weapon
 
 	int hud_tracking_snd; // Sound played when this weapon tracks a target
