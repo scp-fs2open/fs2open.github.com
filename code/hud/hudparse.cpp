@@ -45,6 +45,7 @@ float Hud_speed_multiplier = 1.0f;	//The E
 int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
 
 bool Hud_retail = true;
+bool Scale_retail_gauges = true;
 
 int Hud_font = -1;
 
@@ -261,6 +262,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 	if (optional_string("$Scale Gauges:")) {
 		stuff_boolean(&scale_gauge);
+		Scale_retail_gauges = scale_gauge;
 	}
 
 	int base_res[2];
@@ -481,7 +483,6 @@ void hud_positions_init()
 void load_missing_retail_gauges()
 {
 	bool retail_gauge_loaded = false;
-	bool scale_gauge = true;
 
 	// load missing retail gauges for the retail HUD if needed
 	if(Hud_retail) {
@@ -498,7 +499,7 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				load_gauge(retail_gauges[i], -1, -1, Hud_font, scale_gauge);
+				load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges);
 			}
 		}
 
@@ -515,9 +516,9 @@ void load_missing_retail_gauges()
 		// load radar gauge if not loaded.
 		if(!retail_gauge_loaded) {
 			if(Cmdline_orb_radar) {
-				load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, scale_gauge);
+				load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, Scale_retail_gauges);
 			} else {
-				load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, scale_gauge);
+				load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, Scale_retail_gauges);
 			}
 		}
 
@@ -531,7 +532,7 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, scale_gauge);
+				load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, Scale_retail_gauges);
 			}
 		}
 	}
@@ -553,7 +554,7 @@ void load_missing_retail_gauges()
 				if(!retail_gauge_loaded) {
 					SCP_vector<int> sindex;
 					sindex.push_back(k);
-					load_gauge(retail_gauges[i], -1, -1, Hud_font, scale_gauge, &sindex);
+					load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}
 
@@ -570,9 +571,9 @@ void load_missing_retail_gauges()
 			// load radar gauge if not loaded.
 			if(!retail_gauge_loaded) {
 				if(Cmdline_orb_radar) {
-					load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, scale_gauge, &sindex);
+					load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				} else {
-					load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, scale_gauge, &sindex);
+					load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}
 
@@ -586,7 +587,7 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, scale_gauge, &sindex);
+					load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}
 		}
