@@ -22,6 +22,15 @@
 #define IAM_64BIT 1
 #endif
 
+// C++11 support detection
+// autotools (gcc) uses a feature test to set HAVE_CXX11
+// Use the visual studio version to detect C++11 support
+#if _MSC_VER >= 1600
+#	define HAVE_CXX11
+#endif
+// TODO: add clang c+11 detection/support
+// TODO: sort out cmake/gcc
+
 #include "windows_stub/config.h"
 
 // value to represent an uninitialized state in any int or uint
