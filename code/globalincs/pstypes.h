@@ -823,17 +823,17 @@ public:
 	#define memset memset_if_trivial_else_error
 
 	template<typename T>
-	void *memset_if_trivial_else_error(T *data, int ch, size_t count)
+	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
 	{
 		static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
-		return ptr_memset(data, ch, count);
+		return ptr_memset(memset_data, ch, count);
 	}
 
 	// assume memset on a void* is "safe"
 	// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
-	inline void *memset_if_trivial_else_error(void *data, int ch, size_t count)
+	inline void *memset_if_trivial_else_error(void *memset_data, int ch, size_t count)
 	{
-		return ptr_memset(data, ch, count);
+		return ptr_memset(memset_data, ch, count);
 	}
 
 	// MEMCPY!
@@ -841,11 +841,11 @@ public:
 	#define memcpy memcpy_if_trivial_else_error
 
 	template<typename T, typename U>
-	void *memcpy_if_trivial_else_error(T *dest, U *src, size_t count)
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, U *src, size_t count)
 	{
 		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
 		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
-		return ptr_memcpy(dest, src, count);
+		return ptr_memcpy(memcpy_dest, src, count);
 	}
 
 	// assume memcpy with void* is "safe"
@@ -857,28 +857,28 @@ public:
 	//
 	// probably should setup a static_assert on insertion_sort as well
 	template<typename U>
-	void *memcpy_if_trivial_else_error(void *dest, U *src, size_t count)
+	void *memcpy_if_trivial_else_error(void *memcpy_dest, U *memcpy_src, size_t count)
 	{
 		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
-		return ptr_memcpy(dest, src, count);
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
 	template<typename T>
-	void *memcpy_if_trivial_else_error(T *dest, void *src, size_t count)
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, void *memcpy_src, size_t count)
 	{
 		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
-		return ptr_memcpy(dest, src, count);
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 	template<typename T>
-	void *memcpy_if_trivial_else_error(T *dest, const void *src, size_t count)
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, const void *memcpy_src, size_t count)
 	{
 		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
-		return ptr_memcpy(dest, src, count);
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
-	inline void *memcpy_if_trivial_else_error(void *dest, void *src, size_t count)
+	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, void *memcpy_src, size_t count)
 	{
-		return ptr_memcpy(dest, src, count);
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
 	// MEMMOVE!
@@ -886,11 +886,11 @@ public:
 	#define memmove memmove_if_trivial_else_error
 
 	template<typename T, typename U>
-	void *memmove_if_trivial_else_error(T *dest, U *src, size_t count)
+	void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
 	{
 		static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
 		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
-		return ptr_memmove(dest, src, count);
+		return ptr_memmove(memmove_dest, memmove_src, count);
 	}
 	#endif // HAVE_CXX11
 #endif // NDEBUG
