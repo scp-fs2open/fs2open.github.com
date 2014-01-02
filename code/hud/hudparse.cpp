@@ -248,6 +248,11 @@ void parse_hud_gauges_tbl(const char *filename)
 		stuff_boolean(&Lock_targetbox_mode);
 	}
 
+	if (optional_string("$Scale Gauges:")) {
+		stuff_boolean(&scale_gauge);
+		Scale_retail_gauges = scale_gauge;
+	}
+
 	if(optional_string("$Reticle Style:")) {
 		int temp = required_string_either("FS1", "FS2"); 
 
@@ -258,11 +263,6 @@ void parse_hud_gauges_tbl(const char *filename)
 			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
 		else
 			Hud_reticle_style = temp;
-	}
-
-	if (optional_string("$Scale Gauges:")) {
-		stuff_boolean(&scale_gauge);
-		Scale_retail_gauges = scale_gauge;
 	}
 
 	int base_res[2];
