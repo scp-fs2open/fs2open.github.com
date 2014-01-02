@@ -1143,11 +1143,13 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, SCP
 				if(optional_string("Origin:")) {
 					stuff_float_list(origin, 2);
 					use_default_pos = false;
+
+					required_string("Offset:");
+					stuff_int_list(offset, 2);
 				}
 
 				if(optional_string("Offset:")) {
-					stuff_int_list(offset, 2);
-					use_default_pos = false;
+					Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
 				}
 
 				if ( !(default_position && use_default_pos) ) {
