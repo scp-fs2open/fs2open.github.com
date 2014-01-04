@@ -785,7 +785,7 @@ void os_process_cmdline(char* cmdline)
 
 	char** argv = new char*[argc];
 
-	parse_cmdline_string(cmdline, argv);
+	argc = parse_cmdline_string(cmdline, argv);
 
 	os_parse_parms(argc, argv);
 	os_validate_parms(argc, argv);
