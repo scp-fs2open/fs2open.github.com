@@ -833,20 +833,17 @@ void model_anim_set_initial_states(ship *shipp)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
-		if (pss->triggered_rotation_index >= 0) {
-			triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
+		for (i = 0; i < psub->n_triggers; i++) {
+			if (psub->type == SUBSYSTEM_TURRET) {
+				// special case for turrets
+				pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
+				pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
+			} else if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
+				Assert(pss->triggered_rotation_index >= 0);
+				triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
-			for (i = 0; i < psub->n_triggers; i++) {
-				if (psub->type == SUBSYSTEM_TURRET) {
-					// special case for turrets
-					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
-					pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
-				} else {
-					if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
-						tr->set_to_initial(&psub->triggers[i]);
-						tr->apply_trigger_angles(&pss->submodel_info_1.angs);
-					}
-				}
+				tr->set_to_initial(&psub->triggers[i]);
+				tr->apply_trigger_angles(&pss->submodel_info_1.angs);
 			}
 		}
 	}
