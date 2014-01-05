@@ -871,10 +871,10 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.game_type & MISSION_TYPE_TRAINING)
-		Num_brief_stages = Briefing->num_stages;
-	else
+	if (The_mission.flags & MISSION_FLAG_ALWAYS_SHOW_GOALS || !(The_mission.game_type & MISSION_TYPE_TRAINING))
 		Num_brief_stages = Briefing->num_stages + 1;
+	else
+		Num_brief_stages = Briefing->num_stages;
 
 	Current_brief_stage = 0;
 	Last_brief_stage = 0;

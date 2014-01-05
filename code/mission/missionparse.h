@@ -87,6 +87,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
 #define MISSION_FLAG_USE_AP_CINEMATICS			(1<<21) // Kazan - use autopilot cinematics
 #define MISSION_FLAG_DEACTIVATE_AP         	    (1<<22) // KeldorKatarn - deactivate autopilot (patch approved by Kazan)
+#define MISSION_FLAG_ALWAYS_SHOW_GOALS     	    (1<<23) // Karajorma - Show the mission goals, even for training missions
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
