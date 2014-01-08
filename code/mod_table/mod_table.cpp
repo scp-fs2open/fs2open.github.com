@@ -11,6 +11,8 @@
 #include "mod_table/mod_table.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
+#include "sound/sound.h"
+#include "gamesnd/eventmusic.h"
 
 int Directive_wait_time = 3000;
 bool True_loop_argument_sexps = false;
@@ -167,6 +169,20 @@ void parse_mod_table(const char *filename)
 		stuff_int(&FS2NetD_port);
 		if (FS2NetD_port)
 			mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
+	}
+
+	optional_string("#SOUND SETTINGS"); 
+
+	if (optional_string("$Default Sound Volume:")) {
+		stuff_float(&Master_sound_volume);
+	}
+
+	if (optional_string("$Default Music Volume:")) {
+		stuff_float(&Master_event_music_volume);
+	}
+
+	if (optional_string("$Default Voice Volume:")) {
+		stuff_float(&Master_voice_volume);
 	}
 
 	optional_string("#OTHER SETTINGS"); 
