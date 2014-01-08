@@ -217,7 +217,7 @@ typedef struct weapon {
 
 	float weapon_max_vel;		// might just as well store the data here
 	float launch_speed;			// the initial forward speed (can vary due to additive velocity or acceleration)
-								// only gets set when weapon_info->acceleration_time is used
+								// currently only gets set when weapon_info->acceleration_time is used
 
 	bool collisionOccured;
 	mc_info collisionInfo; // The last collision of this weapon or NULL if it had none
@@ -341,8 +341,8 @@ typedef struct weapon_info {
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
 
-	float	max_speed;							// initial speed of the weapon
-	float	acceleration_time;					// how long it takes to reach max speed (secondaries only)
+	float	max_speed;							// max speed of the weapon
+	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
 	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
 	float mass;									// mass of the weapon

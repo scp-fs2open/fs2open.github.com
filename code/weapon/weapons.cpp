@@ -1664,6 +1664,7 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("$Velocity Inherit:")) {
 		stuff_float(&wip->vel_inherit_amount);
+		wip->vel_inherit_amount /= 100.0f; // % -> 0..1
 	}
 
 	if(optional_string("$Free Flight Time:")) {
@@ -1758,6 +1759,8 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
+	} else {
+		wip->weapon_range = (wip->max_speed / 2 * wip->acceleration_time) + (wip->max_speed * (wip->lifetime - wip->acceleration_time));
 	}
 
 	if( optional_string( "+Weapon Min Range:" ) )
