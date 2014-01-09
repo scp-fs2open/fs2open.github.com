@@ -2686,6 +2686,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	uint save_gr_zbuffering_mode;
 	int zbuf_mode;
 	ship *shipp = NULL;
+	ship_info *sip = NULL;
 	object *objp = NULL;
 	bool set_autocen = false;
 	bool draw_thrusters = false;
@@ -2698,6 +2699,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
+			sip = &Ship_info[shipp->ship_info_index];
 
 			if (shipp->flags2 & SF2_GLOWMAPS_DISABLED)
 				flags |= MR_NO_GLOWMAPS;
@@ -2852,33 +2854,37 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 #endif
 
-	// scale the render box settings based on the "Model Detail" slider
-	switch (Detail.detail_distance)
-	{
-		// 1st dot is 20%
-		case 0:
-			Interp_box_scale = 0.2f;
-			break;
+	if (shipp != NULL && (sip->flags2 & SIF2_LOCK_DETAIL_BOXES)) {
+		Interp_box_scale = 1.0f;
+	} else {
+		// scale the render box settings based on the "Model Detail" slider
+		switch (Detail.detail_distance)
+		{
+			// 1st dot is 20%
+			case 0:
+				Interp_box_scale = 0.2f;
+				break;
 
-		// 2nd dot is 50%
-		case 1:
-			Interp_box_scale = 0.5f;
-			break;
+			// 2nd dot is 50%
+			case 1:
+				Interp_box_scale = 0.5f;
+				break;
 
-		// 3rd dot is 80%
-		case 2:
-			Interp_box_scale = 0.8f;
-			break;
+			// 3rd dot is 80%
+			case 2:
+				Interp_box_scale = 0.8f;
+				break;
 
-		// 4th dot is 100% (this is the default setting for "High" and "Very High" settings)
-		case 3:
-			Interp_box_scale = 1.0f;
-			break;
+			// 4th dot is 100% (this is the default setting for "High" and "Very High" settings)
+			case 3:
+				Interp_box_scale = 1.0f;
+				break;
 
-		// 5th dot (max) is 120%
-		case 4:
-			Interp_box_scale = 1.2f;
-			break;
+			// 5th dot (max) is 120%
+			case 4:
+				Interp_box_scale = 1.2f;
+				break;
+		}
 	}
 
 	vec3d auto_back = ZERO_VECTOR;

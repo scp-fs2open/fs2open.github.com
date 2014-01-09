@@ -307,6 +307,7 @@ flag_def_list Ship_flags[] = {
 	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
 	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
 	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
+	{ "lock detail boxes",			SIF2_LOCK_DETAIL_BOXES,		1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
