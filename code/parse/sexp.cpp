@@ -658,6 +658,7 @@ sexp_oper Operators[] = {
 	{ "remove-weapons",					OP_REMOVE_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-time-compression",			OP_CUTSCENES_SET_TIME_COMPRESSION,		1,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
+	{ "call-ssm-strike",				OP_CALL_SSM_STRIKE,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// X3N0-Life-Form
 
 	//Variable Category
 	{ "modify-variable",				OP_MODIFY_VARIABLE,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -21609,6 +21610,26 @@ void multi_sexp_change_team_color() {
 	}
 }
 
+void sexp_call_ssm_strike(int node) {
+	int ssm_index = eval_num(node);
+	node = CDR(node);
+	int calling_team = iff_lookup(CTEXT(node));
+	if (ssm_index < 0 || calling_team < 0)
+		return;
+
+	for (int n = node; n != -1; n = CDR(n)) {
+		int ship_num = ship_name_lookup(CTEXT(n));
+		// don't do anything if the ship isn't there
+		if (ship_num >= 0) {
+			int obj_num = Ships[ship_num].objnum;
+			object *target_ship = &Objects[obj_num];
+			vec3d *start = &target_ship->pos; 
+
+			ssm_create(target_ship, start, ssm_index, NULL, calling_team);
+		}
+	}
+}
+
 extern int Cheats_enabled;
 int sexp_player_is_cheating_bastard() {
 	if (Cheats_enabled) {
@@ -24027,6 +24048,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_change_team_color(node);
 				break;
 
+			case OP_CALL_SSM_STRIKE:
+				sexp_val = SEXP_TRUE;
+				sexp_call_ssm_strike(node);
+				break;
+
 			case OP_PLAYER_IS_CHEATING_BASTARD:
 				sexp_val = sexp_player_is_cheating_bastard();
 				break;
@@ -25019,6 +25045,7 @@ int query_operator_return_type(int op)
 		case OP_COPY_VARIABLE_FROM_INDEX:
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_SET_ETS_VALUES:
+		case OP_CALL_SSM_STRIKE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -25963,6 +25990,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_TEAM_COLOR;
 			else if (argnum == 1)
 				return OPF_NUMBER;
+			else
+				return OPF_SHIP;
+
+		case OP_CALL_SSM_STRIKE:
+			if (argnum == 0)
+				return OPF_NUMBER;
+			else if (argnum == 1)
+				return OPF_IFF;
 			else
 				return OPF_SHIP;
 
@@ -28728,6 +28763,7 @@ int get_subcategory(int sexp_id)
 		case OP_REMOVE_WEAPONS:
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+		case OP_CALL_SSM_STRIKE:
 			return CHANGE_SUBCATEGORY_SPECIAL_EFFECTS;
 
 		case OP_MODIFY_VARIABLE:
@@ -32443,6 +32479,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe new team color name. Name must be defined in colors.tbl.\r\n"
 		"\t2:\tCrossfade time in milliseconds. During this time, colors will be mixed.\r\n"
 		"\t3:\tRest: List of ships this sexp will operate on."
+	},
+
+	{OP_CALL_SSM_STRIKE, "call-ssm-strike\r\n"
+		"\tCalls a subspace missile strike on the specified ship.\r\n"
+		"\tRequires a ssm table (ssm.tbl).\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tStrike index.\r\n"
+		"\t2:\tCalling team.\r\n"
+		"\tRest:\tList of ships the strike will be called on."
 	},
 
 	{OP_PLAYER_IS_CHEATING_BASTARD, "player-is-cheating\r\n"
