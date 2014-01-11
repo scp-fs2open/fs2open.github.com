@@ -650,6 +650,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS;
 		else if (!stricmp(NOX("no primary linked penalty"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_NO_LINKED_PENALTY;
+		else if (!stricmp(NOX("no homing speed ramp"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_NO_HOMING_SPEED_RAMP;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -4410,7 +4412,7 @@ void weapon_home(object *obj, int num, float frame_time)
 				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
 				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
 			}
-		} else if (Missiontime - wp->creation_time < i2f(1)) {
+		} else if (!(wip->wi_flags3 & WIF3_NO_HOMING_SPEED_RAMP) && Missiontime - wp->creation_time < i2f(1)) {
 			// Default behavior:
 			// For first second of weapon's life, it doesn't fly at top speed.  It ramps up.
 			float	t;
