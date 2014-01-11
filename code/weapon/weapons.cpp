@@ -839,6 +839,7 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->mass = 1.0f;
 	wip->max_speed = 10.0f;
+	wip->vel_inherit_amount = 1.0f;
 	wip->free_flight_time = 0.0f;
 	wip->fire_wait = 1.0f;
 	wip->damage = 0.0f;
@@ -1652,6 +1653,11 @@ int parse_weapon(int subtype, bool replace)
 		{
 			wip->SwarmWait = int( SwarmWait * 1000 );
 		}
+	}
+
+	if(optional_string("$Velocity Inherit:")) {
+		stuff_float(&wip->vel_inherit_amount);
+		wip->vel_inherit_amount /= 100.0f; // % -> 0..1
 	}
 
 	if(optional_string("$Free Flight Time:")) {
@@ -5215,8 +5221,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
 	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
-		vm_vec_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel );
-		wp->weapon_max_vel += vm_vec_mag( &parent_objp->phys_info.vel );
+		float pspeed = vm_vec_mag( &parent_objp->phys_info.vel );
+		vm_vec_scale_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel, wip->vel_inherit_amount );
+		wp->weapon_max_vel += pspeed * wip->vel_inherit_amount;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
 	}
 

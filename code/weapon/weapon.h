@@ -214,7 +214,7 @@ typedef struct weapon {
 	ubyte alpha_backward;		// 1 = move in reverse (ascending in value)
 	float alpha_current;		// the current alpha value
 
-	float weapon_max_vel;		// might just as well store the data here
+	float weapon_max_vel;		// might just as well store the data here; used for collision culling
 
 	bool collisionOccured;
 	mc_info collisionInfo; // The last collision of this weapon or NULL if it had none
@@ -339,6 +339,7 @@ typedef struct weapon_info {
 	float	laser_head_radius, laser_tail_radius;
 
 	float	max_speed;							// initial speed of the weapon
+	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon

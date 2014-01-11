@@ -6290,6 +6290,23 @@ float ai_get_weapon_speed(ship_weapon *swp)
 	return Weapon_info[weapon_num].max_speed;
 }
 
+weapon_info* ai_get_weapon(ship_weapon *swp)
+{
+	int	bank_num, weapon_num;
+
+	bank_num = swp->current_primary_bank;
+	if (bank_num < 0)
+		return NULL;
+
+	weapon_num = swp->primary_bank_weapons[bank_num];
+
+	if (weapon_num == -1) {
+		return NULL;
+	}
+
+	return &Weapon_info[weapon_num];
+}
+
 //	Compute the predicted position of a ship to be fired upon from a turret.
 //	This is based on position of firing gun, enemy object, weapon speed and skill level constraints.
 //	Return value in *predicted_enemy_pos.
@@ -6353,17 +6370,23 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 {
 	float	weapon_speed, range_time;
 	ship	*shipp = &Ships[pobjp->instance];
+	weapon_info *wip;
 	vec3d	target_moving_direction;
 
 	Assert( enemy_pos != NULL );
 	Assert( enemy_vel != NULL );
 
+	wip = ai_get_weapon(&shipp->weapons);
 	target_moving_direction = *enemy_vel;
 
-	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
-		vm_vec_sub2(&target_moving_direction, &pobjp->phys_info.vel);
+	if (wip != NULL && The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+		vm_vec_scale_sub2(&target_moving_direction, &pobjp->phys_info.vel, wip->vel_inherit_amount);
 
-	weapon_speed = ai_get_weapon_speed(&shipp->weapons);
+	if (wip != NULL)
+		weapon_speed = wip->max_speed;
+	else
+		weapon_speed = 100.0f;
+
 	weapon_speed = MAX(weapon_speed, 1.0f);		// set not less than 1
 
 	range_time = 2.0f;
