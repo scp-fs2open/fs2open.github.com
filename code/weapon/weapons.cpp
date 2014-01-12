@@ -5254,7 +5254,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	// Improves aiming during gliding.
 	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
 		float pspeed = vm_vec_mag( &parent_objp->phys_info.vel );
-		vm_vec_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel );
+		vm_vec_scale_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel, wip->vel_inherit_amount );
 		wp->weapon_max_vel += pspeed * wip->vel_inherit_amount;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
 
