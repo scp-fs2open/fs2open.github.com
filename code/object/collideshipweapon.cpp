@@ -254,11 +254,13 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 				mc_shield.radius = sip->auto_shield_spread;
 
-				mc_shield.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
-
 				if (sip->auto_shield_spread_from_lod > -1) {
 					polymodel *pm = model_get(sip->model_num);
 					mc_shield.submodel_num = pm->detail[sip->auto_shield_spread_from_lod];
+
+					mc_shield.flags = MC_CHECK_MODEL | MC_SUBMODEL_INSTANCE | MC_CHECK_SPHERELINE;
+				} else {
+					mc_shield.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 				}
 
 				shield_collision = model_collide(&mc_shield);
