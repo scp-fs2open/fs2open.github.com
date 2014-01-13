@@ -470,7 +470,7 @@ char *translate_key(char *key)
 
 	static char text[40] = {"None"};
 
-	index = translate_key_to_index(key, true);
+	index = translate_key_to_index(key, false);
 	if (index < 0) {
 		return NULL;
 	}
