@@ -6322,10 +6322,26 @@ ADE_FUNC(__len, l_WaypointList,
 ADE_VIRTVAR(Name, l_WaypointList, "string", "Name of WaypointList", "string", "Waypointlist name, or empty string if handle is invalid")
 {
 	waypointlist_h* wlh = NULL;
-	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
-		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
+	char *s = NULL;
+	if ( !ade_get_args(L, "o|s", l_WaypointList.GetPtr(&wlh), &s) ) {
+		return ade_set_error(L, "s", "");
 	}
+
+	if(ADE_SETTING_VAR && s != NULL) {
+		wlh->wlp->set_name(s);
+		strcpy_s(wlh->name,s);
+	}
+
 	return ade_set_args( L, "s", wlh->name);
+}
+
+ADE_FUNC(isValid, l_WaypointList, NULL, "Return if this waypointlist handle is valid", "boolean", "true if valid false otherwise")
+{
+	waypointlist_h* wlh = NULL;
+	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
+		return ADE_RETURN_FALSE;
+	}
+	return ade_set_args(L, "b", wlh != NULL && wlh->IsValid());
 }
 
 //WMC - Waypoints are messed. Gonna leave this for later.
@@ -6370,6 +6386,27 @@ ADE_FUNC(__len, l_WaypointList_Waypoints, NULL, "Number of waypoints in the miss
 
 	return ade_set_args(L, "i", count);
 }*/
+
+ADE_FUNC(getList, l_Waypoint, NULL, "Returns the waypoint list", "waypointlist", "waypointlist handle or invalid handle if waypoint was invalid")
+{
+	object_h *oh = NULL;
+	waypointlist_h wpl;
+	waypoint_list *wp_list = NULL;
+	if(!ade_get_args(L, "o", l_Waypoint.GetPtr(&oh)))
+		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
+
+	if(oh->IsValid() && oh->objp->type == OBJ_WAYPOINT) {
+		wp_list = find_waypoint_list_with_instance(oh->objp->instance);
+		if(wp_list != NULL)
+			wpl = waypointlist_h(wp_list);
+	}
+
+	if (wpl.IsValid()) {
+		return ade_set_args(L, "o", l_WaypointList.Set(wpl));
+	}
+
+	return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
+}
 
 //**********HANDLE: Weaponbank
 #define SWH_NONE		0
