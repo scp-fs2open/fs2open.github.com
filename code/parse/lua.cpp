@@ -8103,6 +8103,54 @@ ADE_FUNC(isValid, l_CockpitDisplays, NULL, "Detects whether this handle is valid
 	return ade_set_args(L, "b", cdh->isValid());
 }
 
+//**********HANDLE: Wing
+ade_obj<int> l_Wing("wing", "Wing handle");
+
+ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship handle, or invalid ship handle if index is invawing handle is invalid")
+{
+	int wdx;
+	int sdx;
+	object_h *ndx=NULL;
+	if(!ade_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
+		return ade_set_error(L, "o", l_Ship.Set(object_h()));
+
+	if(sdx < 1 || sdx > Wings[wdx].current_count) {
+		return ade_set_error(L, "o", l_Ship.Set(object_h()));
+	}
+
+	//Lua-->FS2
+	sdx--;
+
+	if(ADE_SETTING_VAR && ndx != NULL && ndx->IsValid()) {
+		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
+	}
+
+	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
+}
+
+ADE_FUNC(__len, l_Wing, NULL, "Number of wings in mission", "number", "Number of wings in mission")
+{
+	int wdx;
+	if(!ade_get_args(L, "o", l_Wing.Get(&wdx)))
+		return ade_set_error(L, "i", NULL);
+
+	return ade_set_args(L, "i", Wings[wdx].current_count);
+}
+
+ADE_VIRTVAR(Name, l_Wing, "string", "Name of Wing", "string", "Wing name, or empty string if handle is invalid")
+{
+	int wdx;
+	char *s = NULL;
+	if ( !ade_get_args(L, "o|s", l_Wing.Get(&wdx), &s) )
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR && s != NULL) {
+		strncpy(Wings[wdx].name, s, sizeof(Wings[wdx].name)-1);
+	}
+
+	return ade_set_args(L, "s", Wings[wdx].name);
+}
+
 //**********HANDLE: Ship
 ade_obj<object_h> l_Ship("ship", "Ship handle", &l_Object);
 
@@ -9594,6 +9642,21 @@ ADE_FUNC(EtsSetIndexes, l_Ship, "number Engine Index, number Shield Index, numbe
 	}
 }
 
+ADE_FUNC(getWing, l_Ship, NULL, "Returns the ship's wing", "Wing", "Wing handle, or invalid wing handle if ship is not part of a wing")
+{
+	object_h *objh = NULL;
+	ship *shipp = NULL;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ade_set_error(L, "o", l_Wing.Set(-1));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Wing.Set(-1));
+
+	shipp = &Ships[objh->objp->instance];
+	return ade_set_args(L, "o", l_Wing.Set(shipp->wingnum));
+}
+
 //**********HANDLE: Weapon
 ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
 
@@ -10266,39 +10329,6 @@ ADE_FUNC(getEndDirectionInfo, l_Beam, NULL, "Gets the end information about the 
 	return ade_set_args(L, "o", l_Vector.Set(inf.dir_b));
 }
 
-//**********HANDLE: Wing
-ade_obj<int> l_Wing("wing", "Wing handle");
-
-ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship handle, or invalid ship handle if index is invawing handle is invalid")
-{
-	int wdx;
-	int sdx;
-	object_h *ndx=NULL;
-	if(!ade_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
-		return ade_set_error(L, "o", l_Ship.Set(object_h()));
-
-	if(sdx < 1 || sdx > Wings[wdx].current_count) {
-		return ade_set_error(L, "o", l_Ship.Set(object_h()));
-	}
-
-	//Lua-->FS2
-	sdx--;
-
-	if(ADE_SETTING_VAR && ndx != NULL && ndx->IsValid()) {
-		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
-	}
-
-	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
-}
-
-ADE_FUNC(__len, l_Wing, NULL, "Number of wings in mission", "number", "Number of wings in mission")
-{
-	int wdx;
-	if(!ade_get_args(L, "o", l_Wing.Get(&wdx)))
-		return ade_set_error(L, "i", NULL);
-
-	return ade_set_args(L, "i", Wings[wdx].current_count);
-}
 //**********HANDLE: Player
 ade_obj<int> l_Player("player", "Player handle");
 
