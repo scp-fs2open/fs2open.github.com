@@ -1759,8 +1759,6 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
-	} else {
-		wip->weapon_range = (wip->max_speed / 2 * wip->acceleration_time) + (wip->max_speed * (wip->lifetime - wip->acceleration_time));
 	}
 
 	if( optional_string( "+Weapon Min Range:" ) )
