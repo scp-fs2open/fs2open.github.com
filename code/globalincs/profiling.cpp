@@ -12,6 +12,8 @@
 #include "io/timer.h"
 #include "cmdline/cmdline.h"
 
+#include <fstream>
+
 //======================CODE TO PROFILE PERFORMANCE=====================
 
 /*
@@ -38,6 +40,7 @@ float start_profile_time = 0.0f;
 float end_profile_time = 0.0f;
 
 char profile_output[2048] = "";
+std::ofstream profiling_file;
 
 /**
  * @brief Called once at engine initialization to set the timer
@@ -45,6 +48,28 @@ char profile_output[2048] = "";
 void profile_init()
 {
 	start_profile_time = f2fl(timer_get_fixed_seconds());
+
+	if (Cmdline_profile_write_file)
+	{
+		profiling_file.open("profiling.csv");
+
+		if (!profiling_file.good())
+		{
+			mprintf(("Failed to open profiling output file 'profiling.csv'!"));
+		}
+	}
+}
+
+void profile_deinit()
+{
+	if (Cmdline_profile_write_file)
+	{
+		if (profiling_file.is_open())
+		{
+			profiling_file.flush();
+			profiling_file.close();
+		}
+	}
 }
 
 /**
@@ -54,7 +79,7 @@ void profile_init()
  */
 void profile_begin(char* name)
 {
-	if (Cmdline_frame_profile) 
+	if (Cmdline_frame_profile)
 	{
 		for(int i = 0; i < (int)samples.size(); i++) {
 			if(samples[i].valid && !strcmp(samples[i].name, name) ) {
@@ -140,6 +165,11 @@ void profile_dump_output()
 {
 	if (Cmdline_frame_profile) {
 		end_profile_time = f2fl(timer_get_fixed_seconds());
+
+		if (Cmdline_profile_write_file)
+		{
+			profiling_file << end_profile_time << ";" << (end_profile_time - start_profile_time) << std::endl;
+		}
 
 		strcpy_s(profile_output, "");
 		strcat(profile_output, "  Avg :  Min :  Max :   # : Profile Name\n");
