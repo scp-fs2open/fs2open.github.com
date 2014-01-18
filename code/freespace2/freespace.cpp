@@ -7263,7 +7263,7 @@ void game_launch_launcher_on_exit()
 void game_shutdown(void)
 {
 	gTirDll_TrackIR.Close( );
-
+	profile_deinit();
 
 	fsspeech_deinit();
 #ifdef FS2_VOICER
