@@ -161,10 +161,13 @@ DWORD unix_process(DWORD lparam)
 			case SDL_ACTIVEEVENT:
 				if( (event.active.state & SDL_APPACTIVE) || (event.active.state & SDL_APPINPUTFOCUS) ) {
 					if (fAppActive != event.active.gain) {
-						if (fAppActive)
-							game_pause();
-						else
-							game_unpause();
+						if(!Cmdline_no_unfocus_pause)
+						{
+							if (fAppActive)
+								game_pause();
+							else
+								game_unpause();
+						}
 					}
 					fAppActive = event.active.gain;
 					gr_activate(fAppActive);
