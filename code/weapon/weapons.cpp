@@ -4993,7 +4993,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
-		*position = ++(*position) % wip->num_substitution_patterns;
+		++(*position);
+		*position = (*position) % wip->num_substitution_patterns;
 
 		if ( wip->weapon_substitution_pattern[*position] == -1 ) {
 			// weapon doesn't want any sub
