@@ -6636,6 +6636,10 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 	int anchor_objnum = -1;
 	if (p_objp->arrival_anchor >= 0) {
 		int shipnum = ship_name_lookup(Parse_names[p_objp->arrival_anchor]);
+
+		// This shouldn't be happening
+		Assertion(shipnum >= 0 && shipnum < MAX_SHIPS, "Arriving ship '%s' does not exist!", Parse_names[p_objp->arrival_anchor]);
+
 		anchor_objnum = Ships[shipnum].objnum;
 	}
 
