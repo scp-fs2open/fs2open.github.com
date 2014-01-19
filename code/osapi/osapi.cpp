@@ -367,7 +367,10 @@ void change_window_active_state()
 			// maximize it
 			joy_reacquire_ff();
 
-			game_unpause();
+			if (!Cmdline_no_unfocus_pause)
+			{
+				game_unpause();
+			}
 
 #ifdef THREADED_PROCESS
 			SetThreadPriority( hThread, THREAD_PRIORITY_HIGHEST );
@@ -380,14 +383,18 @@ void change_window_active_state()
             {
                 SetWindowPos(hwndApp, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
             }
-		} else {
+		}
+		else {
 			joy_unacquire_ff();
 
 			if (Mouse_hidden)
 				Mouse_hidden = 0;
 
-			// Pause sounds and put up pause screen if necessary
-			game_pause();
+			if(!Cmdline_no_unfocus_pause)
+			{
+				// Pause sounds and put up pause screen if necessary
+				game_pause();
+			}
 
 #ifdef THREADED_PROCESS
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
@@ -402,7 +409,10 @@ void change_window_active_state()
             }
 		}
 
-		gr_activate(fAppActive);
+		if (!Cmdline_no_unfocus_pause)
+		{
+			gr_activate(fAppActive);
+		}
 
 		fOldAppActive = fAppActive;
 	}
