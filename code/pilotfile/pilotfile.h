@@ -22,7 +22,8 @@ static const ubyte PLR_VERSION = 1;
 //   0 - initial version
 //   1 - re-add recent missions
 //   2 - separate single/multi squad name & pic
-static const ubyte CSG_VERSION = 2;
+//   3 - remove separate detail settings for campaigns
+static const ubyte CSG_VERSION = 3;
 
 
 class pilotfile {
