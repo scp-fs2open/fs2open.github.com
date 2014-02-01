@@ -523,7 +523,6 @@ int model_collide_sub(void *model_ptr )
 //		mprintf(( "Processing chunk type %d, len=%d\n", chunk_type, chunk_size ));
 
 		switch (chunk_type) {
-		case OP_EOF: return 1;
 		case OP_DEFPOINTS:	model_collide_defpoints(p); break;
 		case OP_FLATPOLY:		model_collide_flatpoly(p); break;
 		case OP_TMAPPOLY:		model_collide_tmappoly(p); break;
