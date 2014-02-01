@@ -294,8 +294,14 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 			memcpy( queue, queue_tmp, sizeof(queued_animation) * i );
 
 		// if there are any items after, copy them from the original queue
-		if ( (n_queue >= (i+1)) && (i < (MAX_TRIGGERED_ANIMATIONS - 1)) )
+		if ( (n_queue >= (i+1)) && (i < (MAX_TRIGGERED_ANIMATIONS - 1)) ) {
+			if (n_queue >= MAX_TRIGGERED_ANIMATIONS) {
+				// if the queue is full, we don't want to copy past the end of it
+				memcpy(&queue[i + 1], &queue_tmp[i], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS - i - 1));
+			} else {
 			memcpy( &queue[i+1], &queue_tmp[i], sizeof(queued_animation) * (n_queue - i) );
+			}
+		}
 
 		// add the new item
 		queue[i] = new_queue;
