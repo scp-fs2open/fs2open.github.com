@@ -171,7 +171,7 @@ int collide_weapon_weapon( obj_pair * pair )
 				dist = vm_vec_dist_quick(&A->pos, &wpA->homing_pos);
 			}
 			if (Weapons[B->instance].lifeleft == 0.01f) {
-				dist = vm_vec_dist_quick(&A->pos, &wpB->homing_pos);
+				dist = vm_vec_dist_quick(&B->pos, &wpB->homing_pos);
 			}
 	#endif
 		}
