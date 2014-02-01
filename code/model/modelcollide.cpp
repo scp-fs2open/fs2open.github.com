@@ -156,7 +156,11 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_ra
 		if ( uvl_list )	{
 			Mc->hit_u = u;
 			Mc->hit_v = v;
-			Mc->hit_bitmap = Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();			
+			if ( ntmap < 0 ) {
+				Mc->hit_bitmap = -1;
+			} else {
+				Mc->hit_bitmap = Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();			
+			}
 		}
 		
 		if(ntmap >= 0){
@@ -242,7 +246,11 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 			if ( uvl_list )	{
 				Mc->hit_u = u;
 				Mc->hit_v = v;
-				Mc->hit_bitmap = Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();
+				if ( ntmap < 0 ) {
+					Mc->hit_bitmap = -1;
+				} else {
+					Mc->hit_bitmap = Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();			
+				}
 			}
 
 			if(ntmap >= 0){
@@ -305,7 +313,11 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 				Mc->hit_point = hit_point;
 				Mc->hit_submodel = Mc_submodel;
 				Mc->edge_hit = 1;
-				Mc->hit_bitmap = Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();				
+				if ( ntmap < 0 ) {
+					Mc->hit_bitmap = -1;
+				} else {
+					Mc->hit_bitmap = Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();			
+				}
 
 				if(ntmap >= 0){
 					Mc->t_poly = poly;
@@ -523,7 +535,6 @@ int model_collide_sub(void *model_ptr )
 //		mprintf(( "Processing chunk type %d, len=%d\n", chunk_type, chunk_size ));
 
 		switch (chunk_type) {
-		case OP_EOF: return 1;
 		case OP_DEFPOINTS:	model_collide_defpoints(p); break;
 		case OP_FLATPOLY:		model_collide_flatpoly(p); break;
 		case OP_TMAPPOLY:		model_collide_tmappoly(p); break;
