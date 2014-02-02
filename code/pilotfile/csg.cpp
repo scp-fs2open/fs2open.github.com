@@ -1075,19 +1075,21 @@ void pilotfile::csg_read_settings()
 	Joy_sensitivity = cfread_int(cfp);
 	Dead_zone_size = cfread_int(cfp);
 
-	// detail
-	Detail.setting = cfread_int(cfp);
-	Detail.nebula_detail = cfread_int(cfp);
-	Detail.detail_distance = cfread_int(cfp);
-	Detail.hardware_textures = cfread_int(cfp);
-	Detail.num_small_debris = cfread_int(cfp);
-	Detail.num_particles = cfread_int(cfp);
-	Detail.num_stars = cfread_int(cfp);
-	Detail.shield_effects = cfread_int(cfp);
-	Detail.lighting = cfread_int(cfp);
-	Detail.targetview_model = cfread_int(cfp);
-	Detail.planets_suns = cfread_int(cfp);
-	Detail.weapon_extras = cfread_int(cfp);
+	if (csg_ver < 3) {
+		// detail
+		int dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+	}
 }
 
 void pilotfile::csg_write_settings()
@@ -1109,20 +1111,6 @@ void pilotfile::csg_write_settings()
 	cfwrite_int(Mouse_sensitivity, cfp);
 	cfwrite_int(Joy_sensitivity, cfp);
 	cfwrite_int(Dead_zone_size, cfp);
-
-	// detail
-	cfwrite_int(Detail.setting, cfp);
-	cfwrite_int(Detail.nebula_detail, cfp);
-	cfwrite_int(Detail.detail_distance, cfp);
-	cfwrite_int(Detail.hardware_textures, cfp);
-	cfwrite_int(Detail.num_small_debris, cfp);
-	cfwrite_int(Detail.num_particles, cfp);
-	cfwrite_int(Detail.num_stars, cfp);
-	cfwrite_int(Detail.shield_effects, cfp);
-	cfwrite_int(Detail.lighting, cfp);
-	cfwrite_int(Detail.targetview_model, cfp);
-	cfwrite_int(Detail.planets_suns, cfp);
-	cfwrite_int(Detail.weapon_extras, cfp);
 
 	endSection();
 }

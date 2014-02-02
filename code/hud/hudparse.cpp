@@ -1202,7 +1202,7 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, SCP
 		}
 	}
 
-	if(optional_string("$Font:")) {
+	if(optional_string("Font:")) {
 		stuff_int(&Hud_font);
 	} else {
 		if ( hud_font >=0 ) {

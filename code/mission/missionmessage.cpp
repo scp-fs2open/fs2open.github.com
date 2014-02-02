@@ -1858,9 +1858,6 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				shipp = (ship *)data;
 				who_from = shipp->ship_name;
 				source = HUD_team_get_source(shipp->team);
-
-				// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
-				Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
 			} else if ( m_source == MESSAGE_SOURCE_NONE ) {
 				who_from = "<none>";
 			}

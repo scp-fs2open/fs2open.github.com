@@ -1855,7 +1855,7 @@ int parse_weapon(int subtype, bool replace)
 			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
 		}
 
-		if ( optional_string("+Bitmap:") ) {
+		if ( required_string("+Bitmap:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 			generic_bitmap_init(&ti->texture, fname);
 		}
