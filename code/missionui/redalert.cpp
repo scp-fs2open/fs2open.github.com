@@ -950,7 +950,12 @@ void red_alert_bash_wingman_status()
 						if (ras->ship_class >= 0 && ras->ship_class < MAX_SHIP_CLASSES)
 							swap_parse_object(pobjp, ras->ship_class);
 						else
+						{
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
+							
+							// We will break anyway to this should work
+							break;
+						}
 					}
 
 					// restore hull (but not shields)
