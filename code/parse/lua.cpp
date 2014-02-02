@@ -3052,7 +3052,20 @@ ADE_FUNC(delete, l_SEXPVariable, NULL, "Deletes a SEXP Variable", "boolean", "Tr
 //**********HANDLE: Shields
 ade_obj<object_h> l_Shields("shields", "Shields handle");
 
-ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield quadrant strength. Use \"SHIELD_*\" enumeration or 1-4 for a specific quadrant, or NONE for the entire shield", "number", "Quadrant/shield strength, or 0 if handle is invalid")
+ADE_FUNC(__len, l_Shields, NULL, "Number of shield segments", "number", "Number of shield segments or 0 if handle is invalid")
+{
+	object_h *objh;
+
+	if(!ade_get_args(L, "o", l_Shields.GetPtr(&objh)))
+		return ade_set_error(L, "i", -1);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "i", -1);
+
+	return ade_set_args(L, "i", objh->objp->n_quadrants);
+}
+
+ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment strength. Use \"SHIELD_*\" enumerations (for standard 4-quadrant shields) or index of a specific segment, or NONE for the entire shield", "number", "Segment/shield strength, or 0 if handle is invalid")
 {
 	object_h *objh;
 	float nval = -1.0f;
@@ -3075,7 +3088,7 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield quadrant stren
 		int qdi;
 		if(qd == NULL)
 			qdx = -1;
-		else if((qdi = atoi(qd)) > 0 && qdi < 5)
+		else if((qdi = atoi(qd)) > 0 && qdi <= objp->n_quadrants)
 			qdx = qdi-1;	//LUA->FS2
 		else
 			return ade_set_error(L, "f", 0.0f);
@@ -3130,7 +3143,7 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield quadrant stren
 //WMC - Not sure if I want this to be a variable. It'd make more sense
 //as a function, since it modifies all quadrant variables
 //WMC - Ehh, screw it.
-ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for all quadrants combined)", "number", "Combined shield strength, or 0 if handle is invalid")
+ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for all segments combined)", "number", "Combined shield strength, or 0 if handle is invalid")
 {
 	object_h *objh;
 	float nval = -1.0f;
@@ -3147,7 +3160,7 @@ ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for
 	return ade_set_args(L, "f", shield_get_strength(objh->objp));
 }
 
-ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all quadrants combined)", "number", "Combined maximum shield strength, or 0 if handle is invalid")
+ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all segments combined)", "number", "Combined maximum shield strength, or 0 if handle is invalid")
 {
 	object_h *objh;
 	float nval = -1.0f;
