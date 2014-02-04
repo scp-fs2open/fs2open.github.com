@@ -14676,7 +14676,7 @@ void sexp_set_death_message(int n)
 	// but use an actual message if one exists
 	for (i=0; i<Num_messages; i++)
 	{
-		if (!stricmp(Messages[i].name, CTEXT(n)))
+		if (!stricmp(Messages[i].name, Player->death_message.c_str()))
 		{
 			Player->death_message = Messages[i].message;
 			break;
@@ -20712,7 +20712,7 @@ void sexp_show_subtitle_text(int node)
 	// but use an actual message if one exists
 	for (i=0; i<Num_messages; i++)
 	{
-		if (!stricmp(Messages[i].name, CTEXT(n)))
+		if (!stricmp(Messages[i].name, buffer))
 		{
 			buffer = Messages[i].message;
 			break;
