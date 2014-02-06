@@ -11904,9 +11904,9 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 void wing_bash_ship_name(char *ship_name, const char *wing_name, int index)
 {
 	// if wing name has a hash symbol, create the ship name a particular way
-	// (but don't do this for names that have the hash as the last character)
+	// (but don't do this for names that have the hash as the first or last character)
 	const char *p = get_pointer_to_first_hash_symbol(wing_name);
-	if ((p != NULL) && (*(p+1) != '\0'))
+	if ((p != NULL) && (p != wing_name) && (*(p+1) != '\0'))
 	{
 		size_t len = (p - wing_name);
 		strncpy(ship_name, wing_name, len);
