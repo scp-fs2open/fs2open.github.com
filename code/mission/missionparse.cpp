@@ -384,6 +384,8 @@ void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
 int add_path_restriction();
 
+static bool Warned_about_team_out_of_range;
+
 // Goober5000
 void mission_parse_mark_non_arrival(p_object *p_objp);
 void mission_parse_mark_non_arrival(wing *wingp);
@@ -4766,10 +4768,10 @@ void parse_event(mission *pm)
 
 		// sanity check
 		if (event->team < -1 || event->team >= MAX_TVT_TEAMS) {
-			if (Fred_running)
+			if (Fred_running && !Warned_about_team_out_of_range) {
 				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
-			else
-				nprintf(("Warning", "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.\n"));
+				Warned_about_team_out_of_range = true;
+			}
 			event->team = -1;
 		}
 	}
@@ -4861,7 +4863,10 @@ void parse_goal(mission *pm)
 
 		// sanity check
 		if (goalp->team < -1 || goalp->team >= Num_iffs) {
-			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			if (Fred_running && !Warned_about_team_out_of_range) {
+				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+				Warned_about_team_out_of_range = true;
+			}
 			goalp->team = -1;
 		}
 	}
@@ -5425,6 +5430,7 @@ int parse_mission(mission *pm, int flags)
 	int saved_error_count = Global_error_count;
 
 	int i;
+	Warned_about_team_out_of_range = false;
 
 	waypoint_parse_init();
 
