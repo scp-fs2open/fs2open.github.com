@@ -1656,13 +1656,13 @@ void hud_squadmsg_type_select( )
 	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
-	} else if ( mission_is_repair_scheduled(Player_obj) ) {
+	}
+	else if ( mission_is_repair_scheduled(Player_obj) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
 	}
-
 	// if no support available, can't call one in
-	if ( !is_support_allowed(Player_obj) ) {
+	else if ( !is_support_allowed(Player_obj) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
 	}
