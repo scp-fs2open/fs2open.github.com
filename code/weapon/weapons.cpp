@@ -926,6 +926,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
 
+	wip->shield_impact_explosion_radius = 1.0f;
+
 	wip->dinky_impact_explosion_radius = 1.0f;
 	wip->dinky_impact_weapon_expl_index = -1;
 
@@ -1051,8 +1053,6 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->burst_delay = 1.0f; // 1 second, just incase its not defined
 	wip->burst_shots = 0;
-
-	wip->shield_impact_explosion_radius = 0.0f;
 
 	wip->burst_flags = 0;
 
@@ -1888,8 +1888,11 @@ int parse_weapon(int subtype, bool replace)
 	if ( optional_string("$Impact Explosion Radius:") )
 		stuff_float(&wip->impact_explosion_radius);
 
-	if ( optional_string("$Shield Impact Explosion Radius:") )
+	if ( optional_string("$Shield Impact Explosion Radius:") ) {
 		stuff_float(&wip->shield_impact_explosion_radius);
+	} else if (first_time) {
+		wip->shield_impact_explosion_radius = wip->impact_explosion_radius;
+	}
 
 	if ( optional_string("$Dinky Impact Explosion:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
