@@ -411,6 +411,7 @@ typedef struct weapon_info {
 
 	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
 	float	impact_explosion_radius;		// How big the explosion should be
+	float	shield_impact_explosion_radius;	// How big the shield hit explosion should be
 
 	int dinky_impact_weapon_expl_index;
 	float dinky_impact_explosion_radius;
@@ -662,5 +663,7 @@ void weapon_pause_sounds();
 
 // Unpauses all running weapon sounds
 void weapon_unpause_sounds();
+
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx);
 
 #endif

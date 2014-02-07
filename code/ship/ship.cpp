@@ -1003,6 +1003,7 @@ void init_ship_entry(ship_info *sip)
 
 	sip->damage_lightning_type = SLT_DEFAULT;
 
+	sip->shield_impact_explosion_anim = -1;
 	sip->hud_gauges.clear();
 	sip->hud_enabled = false;
 	sip->hud_retail = false;
@@ -2551,6 +2552,14 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_ubyte(&sip->shield_color[0]);
 		stuff_ubyte(&sip->shield_color[1]);
 		stuff_ubyte(&sip->shield_color[2]);
+	}
+
+	if(optional_string("$Shield Impact Explosion:")) {
+		char fname[MAX_NAME_LEN];
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
 	}
 
 	// The next five fields are used for the ETS

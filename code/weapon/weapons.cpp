@@ -1051,6 +1051,9 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->burst_delay = 1.0f; // 1 second, just incase its not defined
 	wip->burst_shots = 0;
+
+	wip->shield_impact_explosion_radius = 0.0f;
+
 	wip->burst_flags = 0;
 
 	generic_anim_init( &wip->thruster_flame );
@@ -1884,6 +1887,9 @@ int parse_weapon(int subtype, bool replace)
 	
 	if ( optional_string("$Impact Explosion Radius:") )
 		stuff_float(&wip->impact_explosion_radius);
+
+	if ( optional_string("$Shield Impact Explosion Radius:") )
+		stuff_float(&wip->shield_impact_explosion_radius);
 
 	if ( optional_string("$Dinky Impact Explosion:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -6855,4 +6861,9 @@ void weapon_unpause_sounds()
 {
 	// Pause all beam sounds
 	beam_unpause_sounds();
+}
+
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
+	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
+	particle_create( hitpos, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
 }
