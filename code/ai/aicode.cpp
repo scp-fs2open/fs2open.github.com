@@ -4016,6 +4016,21 @@ float ai_path_1()
 		max_allowed_speed = (float) aip->waypoint_speed_cap;
 	}
 
+	// Maybe gradually ramp up the max speed of a ship arriving from a bay
+	if (aip->mode == AIM_BAY_EMERGE && The_mission.ai_profile->bay_arrive_speed_mult > 0.0f) {
+		float total_path_length = vm_vec_dist_quick(&Path_points[aip->path_start].pos, &Path_points[aip->path_start + num_points - 1].pos);
+		float dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start].pos);
+		float min_mult = The_mission.ai_profile->bay_arrive_speed_mult;
+		max_allowed_speed = sip->max_speed * (min_mult + (1.0f - min_mult) * (dist_to_end / total_path_length));
+	}
+	// Maybe gradually decrease the max speed of a ship departing to a bay
+	if (aip->mode == AIM_BAY_DEPART && The_mission.ai_profile->bay_depart_speed_mult > 0.0f && aip->path_cur != aip->path_start) {
+		float total_path_length = vm_vec_dist_quick(&Path_points[aip->path_start].pos, &Path_points[aip->path_start + num_points - 1].pos);
+		float dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start + num_points - 1].pos);
+		float min_mult = The_mission.ai_profile->bay_depart_speed_mult;
+		max_allowed_speed = sip->max_speed * (min_mult + (1.0f - min_mult) * (dist_to_end / total_path_length));
+	}
+
 	set_accel_for_docking(Pl_objp, aip, dot, dot_to_next, dist_to_next, dist_to_goal, sip, max_allowed_speed);
 	aip->prev_dot_to_goal = dot;
 
