@@ -7549,7 +7549,7 @@ struct order_h
 		if (objh.objp == NULL || aigp == NULL)
 			return false;
 
-		return (this != NULL && objh.IsValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS && sig == Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature);
+		return objh.IsValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS && sig == Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
 	}
 };
 
