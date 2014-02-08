@@ -429,6 +429,8 @@ public:
 	float ship_max_hull_strength;			// Needed to deal with special hitpoints
 	float ship_max_shield_strength;
 
+	float max_shield_recharge_percent;
+
 	// Goober5000
 	int num_texture_replacements;
 	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000

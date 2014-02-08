@@ -16197,6 +16197,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 	// ...and shields
 	target_pobjp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	target_pobjp->initial_shields = fl2i(get_shield_pct(source_objp) * 100.0f);
+	target_pobjp->max_shield_recharge_percent = source_shipp->max_shield_recharge_pct;
 
 
 	// search through all subsystems on source ship and map them onto target ship
