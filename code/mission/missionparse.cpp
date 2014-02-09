@@ -7601,9 +7601,6 @@ void mission_bring_in_support_ship( object *requester_objp )
 	if ( Player_obj->flags & OF_NO_SHIELDS )
 		pobj->flags |= P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
 
-	if ( Ships[Player_obj->instance].flags2 & SF2_NO_SUBSPACE_DRIVE )
-		pobj->flags2 |= P2_SF2_NO_SUBSPACE_DRIVE;	// support ships have no subspace drive when player has not subspace drive
-
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;
 	pobj->score = 0;
