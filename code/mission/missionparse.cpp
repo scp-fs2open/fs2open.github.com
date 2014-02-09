@@ -6942,6 +6942,10 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
+	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
+	// or revert to our default behavior
+	ai_abort_rearm_request(objp);
+
 	// if our current goal is to warp, then we won't consider departing to a bay, because the goal explicitly says to warp out
 	// (this sort of goal can be assigned in FRED, either in the ship's initial orders or as the ai-warp-out goal)
 	if (goal_is_to_warp)
@@ -7002,16 +7006,10 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 			goto try_to_warp;
 		}
 
-		// make sure ship not dying or departing
-		if (Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
+		// see if we can actually depart to the ship
+		if (!ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
 		{
-			return 0;
-		}
-
-		// make sure fighterbays aren't destroyed
-		if (ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]))
-		{
-			mprintf(("Anchor ship %s's fighterbays are destroyed!  Trying to warp...\n", name));
+			mprintf(("Anchor ship %s not suitable for departure (dying, departing, bays destroyed, etc.).  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -7030,20 +7028,28 @@ try_to_warp:
 	// make sure we can actually warp
 	if (ship_can_use_warp_drive(shipp))
 	{
+		mprintf(("Setting mode to warpout\n"));
+
 		ai_set_mode_warp_out(objp, aip);
 		MONITOR_INC(NumShipDepartures,1);
 
-		mprintf(("Setting mode to warpout\n"));
 		return 1;
 	}
+	// find something else to do
 	else
 	{
-		shipp->flags &= ~SF_DEPARTING;
-
-		// find something else to do
-		aip->mode = AIM_NONE;
-
+		// NOTE: this point should no longer be reached in the standard goal code, since the goal or comm order must be achievable
+		// for this function to be called.  This point should only be reached if the ship has no subspace drive, AND either has no
+		// mothership assigned (or departs to hyperspace) or the mothership was destroyed, AND falls into one of the following cases:
+		// 1) The ship's departure cue evaluates to true in the mission
+		// 2) A support ship has had its hull fall to 25% when it has no repair targets
+		// 3) A fighter or bomber with an IFF that doesn't allow support ships has its warp_out_timestamp elapse (but this seems to not be a possibility anymore)
+		// 4) An instructor in a training mission has been fired upon
 		mprintf(("Can't warp!  Doing something else instead.\n"));
+
+		shipp->flags &= ~SF_DEPARTING;
+		ai_do_default_behavior(objp);
+
 		return 0;
 	}
 }

@@ -1903,19 +1903,18 @@ extern void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int n
 extern void wing_load_squad_bitmap(wing *w);
 
 // Goober5000 - needed by new hangar depart code
-extern int ship_has_dock_bay(int shipnum);
-
-// Goober5000 - needed by new hangar depart code
-extern int ship_get_ship_with_dock_bay(int team);
+extern bool ship_has_dock_bay(int shipnum);
+extern bool ship_useful_for_departure(int shipnum, int path_mask = 0);
+extern int ship_get_ship_for_departure(int team);
 
 // Goober5000 - moved here from hudbrackets.cpp
-extern int ship_subsys_is_fighterbay(ship_subsys *ss);
+extern bool ship_subsys_is_fighterbay(ship_subsys *ss);
 
 // Goober5000
-extern int ship_fighterbays_all_destroyed(ship *shipp);
+extern bool ship_fighterbays_all_destroyed(ship *shipp);
 
 // Goober5000
-extern int ship_subsys_takes_damage(ship_subsys *ss);
+extern bool ship_subsys_takes_damage(ship_subsys *ss);
 
 //phreak
 extern int ship_fire_tertiary(object *objp);

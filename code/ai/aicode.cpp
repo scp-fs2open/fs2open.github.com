@@ -12867,8 +12867,10 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	if ( parent_objnum < 0 )
 	{
+		Warning(LOCATION, "In ai_acquire_depart_path(), specified a negative object number for the parent ship!  (Departing ship is %s.)  Looking for another ship...", shipp->ship_name);
+
 		// try to locate a capital ship on the same team:
-		int shipnum = ship_get_ship_with_dock_bay(shipp->team);
+		int shipnum = ship_get_ship_for_departure(shipp->team);
 
 		if (shipnum >= 0)
 			parent_objnum = Ships[shipnum].objnum;
@@ -12939,22 +12941,9 @@ void ai_bay_depart()
 
 	// check if parent ship valid; if not, abort depart
 	anchor_shipnum = ship_name_lookup(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
-	if (anchor_shipnum >= 0)
+	if (anchor_shipnum < 0 || !ship_useful_for_departure(anchor_shipnum, Ships[Pl_objp->instance].departure_path_mask))
 	{
-		// make sure not dying or departing
-		if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
-		{
-			anchor_shipnum = -1;
-		}
-		// make sure fighterbays not destroyed
-		else if ( ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]) )
-		{
-			anchor_shipnum = -1;
-		}
-	}
-
-	if (anchor_shipnum < 0)
-	{
+		mprintf(("Aborting bay departure!\n"));
 		aip->mode = AIM_NONE;
 		
 		Ships[Pl_objp->instance].flags &= ~SF_DEPART_DOCKBAY;
@@ -13318,8 +13307,13 @@ void ai_maybe_depart(object *objp)
 		if ( timestamp_elapsed(aip->warp_out_timestamp) ) {
 			ai_process_mission_orders( OBJ_INDEX(objp), aip );
 			if ( (aip->support_ship_objnum == -1) && (get_hull_pct(objp) < 0.25f) ) {
-				if (!(shipp->flags & SF_DEPARTING))
-					mission_do_departure(objp);
+				if (!(shipp->flags & SF_DEPARTING)) {
+					if (!mission_do_departure(objp)) {
+						// if departure failed, try again at a later point
+						// (timestamp taken from ai_do_objects_repairing_stuff)
+						aip->warp_out_timestamp = timestamp((int) ((30 + 10*frand()) * 1000));
+					}
+				}
 			}
 		}
 	}
@@ -14521,20 +14515,6 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 	//Combine AI profile and AI class flags
 	aip->ai_profile_flags = combine_flags(profile->flags, aicp->ai_profile_flags, aicp->ai_profile_flags_set);
 	aip->ai_profile_flags2 = combine_flags(profile->flags2, aicp->ai_profile_flags2, aicp->ai_profile_flags2_set);
-}
-
-void ai_set_default_behavior(object *obj, int classnum)
-{
-	ai_info	*aip;
-
-	Assert(obj != NULL);
-	Assert(obj->instance != -1);
-	Assert(Ships[obj->instance].ai_index != -1);
-
-	aip = &Ai_info[Ships[obj->instance].ai_index];
-
-	aip->behavior = AIM_NONE;
-
 }
 
 void ai_do_default_behavior(object *obj)
