@@ -624,7 +624,6 @@ extern void ai_ignore_object(object *ignorer, object *ignored, int ignore_new);
 extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
 extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int dock_type);
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
-extern void ai_set_default_behavior(object *obj, int classnum);
 extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags);
 extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal);

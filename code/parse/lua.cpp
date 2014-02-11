@@ -7562,7 +7562,7 @@ struct order_h
 		if (objh.objp == NULL || aigp == NULL)
 			return false;
 
-		return (this != NULL && objh.IsValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS && sig == Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature);
+		return objh.IsValid() && objh.objp->type == OBJ_SHIP && odx > -1 && odx < MAX_AI_GOALS && sig == Ai_info[Ships[objh.objp->instance].ai_index].goals[odx].signature;
 	}
 };
 
@@ -10727,9 +10727,9 @@ ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Accelerat
 ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotation Time, number Acceleration Time, number Deceleration time]",
 		"Sets camera orientation and velocity data."
 		"<br>Orientation is the final orientation for the camera, after it has finished moving. If not specified, the camera will simply stop at its current orientation."
-		"<br>Rotation time is how long total, including acceleration, the camera should take to rotate. If it is not specified, the camera will jump to the specified orientation."
-		"<br>Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving."
-		"<br>Deceleration time is how long it should take the camera to slow down. If not specified, the camera will instantly stop moving.",
+		"<br>Rotation time (seconds) is how long total, including acceleration, the camera should take to rotate. If it is not specified, the camera will jump to the specified orientation."
+		"<br>Acceleration time (seconds) is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving."
+		"<br>Deceleration time (seconds) is how long it should take the camera to slow down. If not specified, the camera will instantly stop moving.",
 		"boolean", "true if successful, false or nil otherwise")
 {
 	camid cid;
@@ -10760,9 +10760,9 @@ ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotat
 ADE_FUNC(setPosition, l_Camera, "[wvector Position, number Translation Time, number Acceleration Time, number Deceleration Time]",
 		"Sets camera position and velocity data."
 		"<br>Position is the final position for the camera. If not specified, the camera will simply stop at its current position."
-		"<br>Translation time is how long total, including acceleration, the camera should take to move. If it is not specified, the camera will jump to the specified position."
-		"<br>Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving."
-		"<br>Deceleration time is how long it should take the camera to slow down. If not specified, the camera will instantly stop moving.",
+		"<br>Translation time (seconds) is how long total, including acceleration, the camera should take to move. If it is not specified, the camera will jump to the specified position."
+		"<br>Acceleration time (seconds) is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving."
+		"<br>Deceleration time (seconds) is how long it should take the camera to slow down. If not specified, the camera will instantly stop moving.",
 		"boolean", "true if successful, false or nil otherwise")
 {
 	camid cid;
