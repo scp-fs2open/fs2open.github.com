@@ -622,6 +622,7 @@ sexp_oper Operators[] = {
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
+	{ "set-motion-debris-override",		OP_SET_MOTION_DEBRIS,					1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
 
 	//Background and Nebula Sub-Category
 	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
@@ -21639,6 +21640,10 @@ int sexp_player_is_cheating_bastard() {
 	return SEXP_FALSE;
 }
 
+void sexp_set_motion_debris(int node) {
+	Motion_debris_override = is_sexp_true(node);
+}
+
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
@@ -23510,6 +23515,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_supernova_stop(node);
 				break;
 
+			case OP_SET_MOTION_DEBRIS:
+				sexp_val = SEXP_TRUE;
+				sexp_set_motion_debris(node);
+				break;
+
 			case OP_SHIELD_RECHARGE_PCT:
 				sexp_val = sexp_shield_recharge_pct(node);
 				break;
@@ -25046,6 +25056,7 @@ int query_operator_return_type(int op)
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
+		case OP_SET_MOTION_DEBRIS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -27105,6 +27116,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
+		case OP_SET_MOTION_DEBRIS:
+			return OPF_BOOL;
+
 		default:
 			Int3();
 	}
@@ -28726,6 +28740,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_SUPERNOVA_START:
 		case OP_SUPERNOVA_STOP:
+		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
 
@@ -32492,6 +32507,13 @@ sexp_help_struct Sexp_help[] = {
 
 	{OP_PLAYER_IS_CHEATING_BASTARD, "player-is-cheating\r\n"
 		"\tReturns true if the player is or has been cheating in this mission.\r\n"
+	},
+
+	{ OP_SET_MOTION_DEBRIS, "set-motion-debris-override\r\n"
+		"\tControls whether or not motion debris should be active.\r\n"
+		"\tThis overrides any choice made by the user through the -nomotiondebris commandline flag."
+		"Takes 1 argument...\r\n"
+		"\t1:\tBoolean: True will disable motion debris, False reenable it.\r\n"
 	}
 };
 
