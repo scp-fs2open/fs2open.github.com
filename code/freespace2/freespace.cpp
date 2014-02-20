@@ -4876,7 +4876,6 @@ int game_poll()
 	{
 		if (!os_foreground()) {
 			game_stop_time();
-			//		os_sleep(100);
 			os_sleep(1);
 			game_start_time();
 

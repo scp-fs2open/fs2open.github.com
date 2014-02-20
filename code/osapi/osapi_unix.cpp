@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
+#include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "io/key.h"
 #include "io/mouse.h"
