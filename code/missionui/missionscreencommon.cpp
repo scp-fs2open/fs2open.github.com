@@ -335,8 +335,27 @@ void common_music_close()
 	briefing_stop_music();
 }
 
-void common_maybe_play_cutscene(int movie_type)
+int common_num_cutscenes_valid(int movie_type)
 {
+	int num_valid_cutscenes = 0; 
+
+	for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
+		if (movie_type == The_mission.cutscenes[i].type) {
+			if (!eval_sexp( The_mission.cutscenes[i].formula )) {
+				continue; 
+			}
+
+			num_valid_cutscenes++;
+		}
+	}
+
+	return num_valid_cutscenes;
+}
+
+void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
+{
+	bool music_off = false;
+
 	for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
 		if (movie_type == The_mission.cutscenes[i].type) {
 			if (!eval_sexp( The_mission.cutscenes[i].formula )) {
@@ -345,10 +364,15 @@ void common_maybe_play_cutscene(int movie_type)
 
 			if ( strlen(The_mission.cutscenes[i].cutscene_name) ) {
 				common_music_close(); 
+				music_off = true;
 				movie_play( The_mission.cutscenes[i].cutscene_name );	//Play the movie!
 				cutscene_mark_viewable( The_mission.cutscenes[i].cutscene_name );
 			}
 		}
+	}
+
+	if (music_off && restart_music) {
+		common_music_init(music);
 	}
 }
 

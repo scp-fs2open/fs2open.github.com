@@ -294,8 +294,14 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 			memcpy( queue, queue_tmp, sizeof(queued_animation) * i );
 
 		// if there are any items after, copy them from the original queue
-		if ( (n_queue >= (i+1)) && (i < (MAX_TRIGGERED_ANIMATIONS - 1)) )
+		if ( (n_queue >= (i+1)) && (i < (MAX_TRIGGERED_ANIMATIONS - 1)) ) {
+			if (n_queue >= MAX_TRIGGERED_ANIMATIONS) {
+				// if the queue is full, we don't want to copy past the end of it
+				memcpy(&queue[i + 1], &queue_tmp[i], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS - i - 1));
+			} else {
 			memcpy( &queue[i+1], &queue_tmp[i], sizeof(queued_animation) * (n_queue - i) );
+			}
+		}
 
 		// add the new item
 		queue[i] = new_queue;
@@ -833,20 +839,17 @@ void model_anim_set_initial_states(ship *shipp)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
-		if (pss->triggered_rotation_index >= 0) {
-			triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
+		for (i = 0; i < psub->n_triggers; i++) {
+			if (psub->type == SUBSYSTEM_TURRET) {
+				// special case for turrets
+				pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
+				pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
+			} else if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
+				Assert(pss->triggered_rotation_index >= 0);
+				triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
-			for (i = 0; i < psub->n_triggers; i++) {
-				if (psub->type == SUBSYSTEM_TURRET) {
-					// special case for turrets
-					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
-					pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
-				} else {
-					if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
-						tr->set_to_initial(&psub->triggers[i]);
-						tr->apply_trigger_angles(&pss->submodel_info_1.angs);
-					}
-				}
+				tr->set_to_initial(&psub->triggers[i]);
+				tr->apply_trigger_angles(&pss->submodel_info_1.angs);
 			}
 		}
 	}

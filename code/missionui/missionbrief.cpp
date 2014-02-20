@@ -389,9 +389,14 @@ void brief_do_prev_pressed()
 	Current_brief_stage--;
 	if ( Current_brief_stage < 0 ) {
 		Current_brief_stage = 0;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
-		if ( Quick_transition_stage != -1 )
-			brief_transition_reset();
+		if (common_num_cutscenes_valid(MOVIE_PRE_BRIEF)) {
+			common_maybe_play_cutscene(MOVIE_PRE_BRIEF, true, SCORE_BRIEFING);
+		}
+		else {
+			gamesnd_play_iface(SND_GENERAL_FAIL);
+			if ( Quick_transition_stage != -1 )
+				brief_transition_reset();
+		}
 	} else {
 		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
 	}
@@ -405,7 +410,11 @@ void brief_do_prev_pressed()
 //
 void brief_do_start_pressed()
 {
-	if ( Current_brief_stage != 0 ) {
+	if (common_num_cutscenes_valid(MOVIE_PRE_BRIEF)) {
+			common_maybe_play_cutscene(MOVIE_PRE_BRIEF, true, SCORE_BRIEFING);
+		Current_brief_stage = 0;
+	}
+	else if ( Current_brief_stage != 0 ) {
 		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
 		Current_brief_stage = 0;
 		if ( Quick_transition_stage != -1 )
@@ -871,10 +880,10 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.game_type & MISSION_TYPE_TRAINING)
-		Num_brief_stages = Briefing->num_stages;
-	else
+	if (The_mission.flags & MISSION_FLAG_ALWAYS_SHOW_GOALS || !(The_mission.game_type & MISSION_TYPE_TRAINING))
 		Num_brief_stages = Briefing->num_stages + 1;
+	else
+		Num_brief_stages = Briefing->num_stages;
 
 	Current_brief_stage = 0;
 	Last_brief_stage = 0;

@@ -599,49 +599,46 @@ bool HudGaugeWingmanStatus::maybeFlashStatus(int wing_index, int wing_pos)
 	return draw_bright;
 }
 
-int hud_wingman_status_wing_pos(int shipnum, int wing_status_index, wing *wingp)
+void hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp)
 {
-	int i, wing_pos = -1;
-
-	for (i = 0; i < wingp->wave_count; i++) {
-		if ( wingp->ship_index[i] == shipnum ) {
-			wing_pos = i;
-			break;
-		}
-	}
-
-	return wing_pos;
-}
-
-void hud_wingman_status_set_index(int shipnum)
-{
-	int	wing_index, wing_pos;
-	ship	*shipp;
-	wing	*wingp;
-
-	if ( shipnum < 0 ) {
-		return;
-	}
-
-	shipp = &Ships[shipnum];
-
-	if ( shipp->wingnum < 0 ) {
-		return;
-	}
-
-	wingp = &Wings[shipp->wingnum];
+	int wing_index;
 
 	// Check for squadron wings
 	wing_index = ship_squadron_wing_lookup(wingp->name);
-	if ( wing_index < 0 ) {
+	if ( wing_index < 0 )
 		return;
+
+	// this wing is shown on the squadron display
+	shipp->wing_status_wing_index = (char) wing_index;
+
+	// for the first wave, just use the parse object position
+	if (wingp->current_wave == 1)
+	{
+		shipp->wing_status_wing_pos = (char) pobjp->pos_in_wing;
 	}
+	// for subsequent waves, find the first position not taken
+	else
+	{
+		int i, pos, wing_bitfield = 0;
 
-	shipp->wing_status_wing_index = (char)wing_index;
+		// fill in all the positions currently used by this wing
+		for (i = 0; i < wingp->wave_count; i++)
+		{
+			pos = Ships[wingp->ship_index[i]].wing_status_wing_pos;
+			if (pos >= 0)
+				wing_bitfield |= (1<<pos);
+		}
 
-	wing_pos = hud_wingman_status_wing_pos(shipnum, wing_index, wingp);
-
-	shipp->wing_status_wing_pos = (char)wing_pos;
+		// now assign the first available slot
+		for (i = 0; i < MAX_SHIPS_PER_WING; i++)
+		{
+			if (!(wing_bitfield & (1<<i)))
+			{
+				shipp->wing_status_wing_pos = (char) i;
+				break;
+			}
+		}
+	}
 }
 
 void HudGaugeWingmanStatus::pageIn()

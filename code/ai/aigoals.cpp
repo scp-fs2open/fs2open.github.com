@@ -1374,13 +1374,17 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
 			return AI_GOAL_ACHIEVABLE;
 
-		// if no subspace drive, only valid if there's somewhere to depart to
+		// if no subspace drive, only valid if our mothership is present
 
-		// locate a capital ship on the same team:
-		if (ship_get_ship_with_dock_bay(shipp->team) >= 0)
-			return AI_GOAL_ACHIEVABLE;
-		else
-			return AI_GOAL_NOT_KNOWN;
+		// check that we have a mothership and that we can depart to it
+		if (shipp->departure_location == DEPART_AT_DOCK_BAY)
+		{
+			int anchor_shipnum = ship_name_lookup(Parse_names[shipp->departure_anchor]);
+			if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
+				return AI_GOAL_ACHIEVABLE;
+		}
+
+		return AI_GOAL_NOT_KNOWN;
 	}
 
 

@@ -14,6 +14,10 @@
 
 #include "hud/hud.h"
 
+struct wing;
+class ship;
+class p_object;
+
 void	hud_init_wingman_status_gauge();
 void	hud_wingman_status_update();
 void	hud_wingman_status_render();
@@ -24,7 +28,7 @@ void	hud_set_wingman_status_departed(int wing_index, int wing_pos);
 void	hud_set_wingman_status_alive( int wing_index, int wing_pos);
 void	hud_set_wingman_status_none( int wing_index, int wing_pos);
 void	hud_wingman_status_start_flash(int wing_index, int wing_pos);
-void	hud_wingman_status_set_index(int shipnum);
+void	hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp);
 
 class HudGaugeWingmanStatus: public HudGauge
 {

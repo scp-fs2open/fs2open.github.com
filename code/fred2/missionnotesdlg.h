@@ -63,6 +63,7 @@ public:
 	BOOL		m_autpilot_cinematics;
 	BOOL		m_no_autpilot;
 	BOOL		m_2d_mission;
+	BOOL		m_always_show_goals;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;

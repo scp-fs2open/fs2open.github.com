@@ -139,7 +139,7 @@ void hud_shield_level_init()
 
 	Shield_mini_gauge.first_frame = bm_load_animation("targhit1", &Shield_mini_gauge.num_frames);
 	if ( Shield_mini_gauge.first_frame == -1 ) {
-		Warning(LOCATION, "Could not load in the HUD shield ani: targethit1\n");
+		Warning(LOCATION, "Could not load in the HUD shield ani: targhit1\n");
 		return;
 	}
 	Shield_mini_loaded = 1;

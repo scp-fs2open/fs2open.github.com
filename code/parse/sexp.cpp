@@ -623,6 +623,7 @@ sexp_oper Operators[] = {
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
+	{ "set-motion-debris-override",		OP_SET_MOTION_DEBRIS,					1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
 
 	//Background and Nebula Sub-Category
 	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
@@ -659,6 +660,7 @@ sexp_oper Operators[] = {
 	{ "remove-weapons",					OP_REMOVE_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-time-compression",			OP_CUTSCENES_SET_TIME_COMPRESSION,		1,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
+	{ "call-ssm-strike",				OP_CALL_SSM_STRIKE,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// X3N0-Life-Form
 
 	//Variable Category
 	{ "modify-variable",				OP_MODIFY_VARIABLE,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -14676,7 +14678,7 @@ void sexp_set_death_message(int n)
 	// but use an actual message if one exists
 	for (i=0; i<Num_messages; i++)
 	{
-		if (!stricmp(Messages[i].name, CTEXT(n)))
+		if (!stricmp(Messages[i].name, Player->death_message.c_str()))
 		{
 			Player->death_message = Messages[i].message;
 			break;
@@ -20712,7 +20714,7 @@ void sexp_show_subtitle_text(int node)
 	// but use an actual message if one exists
 	for (i=0; i<Num_messages; i++)
 	{
-		if (!stricmp(Messages[i].name, CTEXT(n)))
+		if (!stricmp(Messages[i].name, buffer))
 		{
 			buffer = Messages[i].message;
 			break;
@@ -21610,6 +21612,26 @@ void multi_sexp_change_team_color() {
 	}
 }
 
+void sexp_call_ssm_strike(int node) {
+	int ssm_index = eval_num(node);
+	node = CDR(node);
+	int calling_team = iff_lookup(CTEXT(node));
+	if (ssm_index < 0 || calling_team < 0)
+		return;
+
+	for (int n = node; n != -1; n = CDR(n)) {
+		int ship_num = ship_name_lookup(CTEXT(n));
+		// don't do anything if the ship isn't there
+		if (ship_num >= 0) {
+			int obj_num = Ships[ship_num].objnum;
+			object *target_ship = &Objects[obj_num];
+			vec3d *start = &target_ship->pos; 
+
+			ssm_create(target_ship, start, ssm_index, NULL, calling_team);
+		}
+	}
+}
+
 extern int Cheats_enabled;
 int sexp_player_is_cheating_bastard() {
 	if (Cheats_enabled) {
@@ -21617,6 +21639,10 @@ int sexp_player_is_cheating_bastard() {
 	}
 
 	return SEXP_FALSE;
+}
+
+void sexp_set_motion_debris(int node) {
+	Motion_debris_override = is_sexp_true(node);
 }
 
 /**
@@ -21760,7 +21786,7 @@ void maybe_write_to_event_log(int result)
 	char buffer [256]; 
 
 	int mask = generate_event_log_flags_mask(result); 
-	sprintf(buffer, "%s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name, f2i(Missiontime), f2i((longlong)Missiontime * 1000));
+	sprintf(buffer, "Event: %s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name, f2i(Missiontime), f2i((longlong)Missiontime * 1000));
 	Current_event_log_buffer->push_back(buffer);
 		
 	if (!Snapshot_all_events && (!(mask &=  Mission_events[Event_index].mission_log_flags))) {
@@ -23490,6 +23516,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_supernova_stop(node);
 				break;
 
+			case OP_SET_MOTION_DEBRIS:
+				sexp_val = SEXP_TRUE;
+				sexp_set_motion_debris(node);
+				break;
+
 			case OP_SHIELD_RECHARGE_PCT:
 				sexp_val = sexp_shield_recharge_pct(node);
 				break;
@@ -24026,6 +24057,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_CHANGE_TEAM_COLOR:
 				sexp_val = SEXP_TRUE;
 				sexp_change_team_color(node);
+				break;
+
+			case OP_CALL_SSM_STRIKE:
+				sexp_val = SEXP_TRUE;
+				sexp_call_ssm_strike(node);
 				break;
 
 			case OP_PLAYER_IS_CHEATING_BASTARD:
@@ -25020,6 +25056,8 @@ int query_operator_return_type(int op)
 		case OP_COPY_VARIABLE_FROM_INDEX:
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_SET_ETS_VALUES:
+		case OP_CALL_SSM_STRIKE:
+		case OP_SET_MOTION_DEBRIS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -25964,6 +26002,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_TEAM_COLOR;
 			else if (argnum == 1)
 				return OPF_NUMBER;
+			else
+				return OPF_SHIP;
+
+		case OP_CALL_SSM_STRIKE:
+			if (argnum == 0)
+				return OPF_NUMBER;
+			else if (argnum == 1)
+				return OPF_IFF;
 			else
 				return OPF_SHIP;
 
@@ -27070,6 +27116,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else
 				return OPF_SHIP;
+
+		case OP_SET_MOTION_DEBRIS:
+			return OPF_BOOL;
 
 		default:
 			Int3();
@@ -28692,6 +28741,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_SUPERNOVA_START:
 		case OP_SUPERNOVA_STOP:
+		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
 
@@ -28729,6 +28779,7 @@ int get_subcategory(int sexp_id)
 		case OP_REMOVE_WEAPONS:
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
+		case OP_CALL_SSM_STRIKE:
 			return CHANGE_SUBCATEGORY_SPECIAL_EFFECTS;
 
 		case OP_MODIFY_VARIABLE:
@@ -31128,7 +31179,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t3:\tx coordinate to be targeted\r\n"
 		"\t4:\ty coordinate to be targeted\r\n"
 		"\t5:\tz coordinate to be targeted\r\n"
-		"\t6:\tWhether to force the beam to fire (disregarding FOV and subsystem status) (optional)\r\n"
+		"\t6:\t(Optional Operator) Whether to force the beam to fire (disregarding FOV and subsystem status). Defaults to False\r\n"
 		"\t7:\tsecond x coordinate to be targeted (optional; only used for slash beams)\r\n"
 		"\t8:\tsecond y coordinate to be targeted (optional; only used for slash beams)\r\n"
 		"\t9:\tsecond z coordinate to be targeted (optional; only used for slash beams)\r\n" },
@@ -32446,8 +32497,24 @@ sexp_help_struct Sexp_help[] = {
 		"\t3:\tRest: List of ships this sexp will operate on."
 	},
 
+	{OP_CALL_SSM_STRIKE, "call-ssm-strike\r\n"
+		"\tCalls a subspace missile strike on the specified ship.\r\n"
+		"\tRequires a ssm table (ssm.tbl).\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tStrike index.\r\n"
+		"\t2:\tCalling team.\r\n"
+		"\tRest:\tList of ships the strike will be called on."
+	},
+
 	{OP_PLAYER_IS_CHEATING_BASTARD, "player-is-cheating\r\n"
 		"\tReturns true if the player is or has been cheating in this mission.\r\n"
+	},
+
+	{ OP_SET_MOTION_DEBRIS, "set-motion-debris-override\r\n"
+		"\tControls whether or not motion debris should be active.\r\n"
+		"\tThis overrides any choice made by the user through the -nomotiondebris commandline flag."
+		"Takes 1 argument...\r\n"
+		"\t1:\tBoolean: True will disable motion debris, False reenable it.\r\n"
 	}
 };
 

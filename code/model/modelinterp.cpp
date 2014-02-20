@@ -254,7 +254,7 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0, int n_list_ver
 			Interp_norms = NULL;
 		}
 		// Interp_norms can't be reliably realloc'd so free and malloc it on each resize (no data needs to be carried over)
-		Interp_norms = (vec3d**) vm_malloc( n_norms * sizeof(vec3d) );
+		Interp_norms = (vec3d**) vm_malloc( n_norms * sizeof(vec3d *) );
 
 		// these next two lighting things aren't values that need to be carried over, but we need to make sure they are 0 by default
 		if (Interp_light_applied != NULL) {
@@ -1688,7 +1688,6 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 	while ( chunk_type != OP_EOF )	{
 
 		switch (chunk_type) {
-		case OP_EOF: return 1;
 		case OP_DEFPOINTS:		model_interp_defpoints(p,pm,sm); break;
 		case OP_FLATPOLY:		model_interp_flatpoly(p,pm); break;
 		case OP_TMAPPOLY:		model_interp_tmappoly(p,pm); break;

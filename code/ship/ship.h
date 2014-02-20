@@ -155,6 +155,9 @@ typedef struct ship_weapon {
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
+
+	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
+	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
 //**************************************************************
@@ -1480,6 +1483,7 @@ typedef struct wing {
 
 	int	wave_count;								// max ships per wave (as defined by the number of ships in the ships list)
 	int	total_arrived_count;					// count of number of ships that we have created, regardless of wave
+	int red_alert_skipped_ships;				// Goober5000 - if we skipped over any indexes while creating red-alert ships
 	int	current_count;							// count of number of ships actually in this wing -- used for limit in next array
 	int	ship_index[MAX_SHIPS_PER_WING];	// index into ships array of all ships currently in the wing
 
@@ -1899,19 +1903,18 @@ extern void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int n
 extern void wing_load_squad_bitmap(wing *w);
 
 // Goober5000 - needed by new hangar depart code
-extern int ship_has_dock_bay(int shipnum);
-
-// Goober5000 - needed by new hangar depart code
-extern int ship_get_ship_with_dock_bay(int team);
+extern bool ship_has_dock_bay(int shipnum);
+extern bool ship_useful_for_departure(int shipnum, int path_mask = 0);
+extern int ship_get_ship_for_departure(int team);
 
 // Goober5000 - moved here from hudbrackets.cpp
-extern int ship_subsys_is_fighterbay(ship_subsys *ss);
+extern bool ship_subsys_is_fighterbay(ship_subsys *ss);
 
 // Goober5000
-extern int ship_fighterbays_all_destroyed(ship *shipp);
+extern bool ship_fighterbays_all_destroyed(ship *shipp);
 
 // Goober5000
-extern int ship_subsys_takes_damage(ship_subsys *ss);
+extern bool ship_subsys_takes_damage(ship_subsys *ss);
 
 //phreak
 extern int ship_fire_tertiary(object *objp);

@@ -650,6 +650,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS;
 		else if (!stricmp(NOX("no primary linked penalty"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_NO_LINKED_PENALTY;
+		else if (!stricmp(NOX("no homing speed ramp"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_NO_HOMING_SPEED_RAMP;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -839,6 +841,8 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->mass = 1.0f;
 	wip->max_speed = 10.0f;
+	wip->acceleration_time = 0.0f;
+	wip->vel_inherit_amount = 1.0f;
 	wip->free_flight_time = 0.0f;
 	wip->fire_wait = 1.0f;
 	wip->damage = 0.0f;
@@ -1654,6 +1658,15 @@ int parse_weapon(int subtype, bool replace)
 		}
 	}
 
+	if(optional_string("$Acceleration Time:")) {
+		stuff_float(&wip->acceleration_time);
+	}
+
+	if(optional_string("$Velocity Inherit:")) {
+		stuff_float(&wip->vel_inherit_amount);
+		wip->vel_inherit_amount /= 100.0f; // % -> 0..1
+	}
+
 	if(optional_string("$Free Flight Time:")) {
 		stuff_float(&(wip->free_flight_time));
 	} else if(first_time && is_homing) {
@@ -1842,7 +1855,7 @@ int parse_weapon(int subtype, bool replace)
 			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
 		}
 
-		if ( optional_string("+Bitmap:") ) {
+		if ( required_string("+Bitmap:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 			generic_bitmap_init(&ti->texture, fname);
 		}
@@ -2622,20 +2635,88 @@ int parse_weapon(int subtype, bool replace)
 	if (wip->burst_delay >= wip->fire_wait)
 		wip->burst_shots = 0;
 
-	// vestigial parsing support for a feature that never worked
+	/* Generate a substitution pattern for this weapon.
+	This pattern is very naive such that it calculates the lowest common denominator as being all of
+	the periods multiplied together.
+	*/
 	while ( optional_string("$substitute:") ) {
-		nprintf(("Weapons", "Ignoring $substitute field for weapon '%s'!\n", wip->name));
-
-		char temp_name[NAME_LENGTH];
-		int  temp_int;
-		stuff_string(temp_name, F_NAME, NAME_LENGTH);
+		char subname[NAME_LENGTH];
+		int period = 0;
+		int index = 0;
+		int offset = 0;
+		stuff_string(subname, F_NAME, NAME_LENGTH);
 		if ( optional_string("+period:") ) {
-			stuff_int(&temp_int);
+			stuff_int(&period);
+			if ( period <= 0 ) {
+				Warning(LOCATION, "Substitution '%s' for weapon '%s' requires a period greater than 0. Setting period to 1.", subname, wip->name);
+				period = 1;
+			}
 			if ( optional_string("+offset:") ) {
-				stuff_int(&temp_int);
+				stuff_int(&offset);
+				if ( offset <= 0 ) {
+					Warning(LOCATION, "Period offset for substitution '%s' of weapon '%s' has to be greater than 0. Setting offset to 1.", subname, wip->name);
+					offset = 1;
+				}
 			}
 		} else if ( optional_string("+index:") ) {
-			stuff_int(&temp_int);
+			stuff_int(&index);
+			if ( index < 0 ) {
+				Warning(LOCATION, "Substitution '%s' for weapon '%s' requires an index greater than 0. Setting index to 0.", subname, wip->name);
+				index = 0;
+			}
+		}
+
+		// we are going to use weapon substition so, make sure that the pattern array has at least one element
+		if ( wip->num_substitution_patterns == 0 ) {
+			// pattern is empty, initialize pattern with the weapon being currently parsed.
+			strcpy_s(wip->weapon_substitution_pattern_names[0], wip->name);
+			wip->num_substitution_patterns++;
+		}
+
+		// if tbler specifies a period then determine if we can fit the resulting pattern
+		// neatly into the pattern array.
+		if ( period > 0 ) {
+			if ( (wip->num_substitution_patterns % period) > 0 ) {
+				// not neat, need to expand the pattern so that our frequency pattern fits completly.
+				size_t current_size = wip->num_substitution_patterns;
+				size_t desired_size = current_size*period;
+				if (desired_size > MAX_SUBSTITUTION_PATTERNS) {
+					Warning(LOCATION, "The period is too large for the number of substitution patterns!  desired size=%d, max size=%d", desired_size, MAX_SUBSTITUTION_PATTERNS);
+				}
+				else {
+					wip->num_substitution_patterns = desired_size;
+
+					// now duplicate the current pattern into the new area so the current pattern holds
+					for ( size_t i = current_size; i < desired_size; i++ ) {
+						strcpy_s(wip->weapon_substitution_pattern_names[i], wip->weapon_substitution_pattern_names[i%current_size]);
+					}
+				}
+			}
+
+			/* Apply the substituted weapon at the requested period, barrel
+			shifted by offset if needed.*/
+			for ( size_t pos = (period + offset - 1) % period;
+				pos < wip->num_substitution_patterns; pos += period )
+			{
+				strcpy_s(wip->weapon_substitution_pattern_names[pos], subname);
+			}
+		} else {
+			// assume that tbler wanted to specify a index for the new weapon.
+
+			// make sure that there is enough room
+			if (index >= MAX_SUBSTITUTION_PATTERNS) {
+				Warning(LOCATION, "Substitution pattern index exceeds the maximum size!  Index=%d, max size=%d", index, MAX_SUBSTITUTION_PATTERNS);
+			} else {
+				if ( (size_t)index >= wip->num_substitution_patterns ) {
+					// need to make the pattern bigger by filling the extra with the current weapon.
+					for ( size_t i = wip->num_substitution_patterns; i < (size_t)index; i++ ) {
+						strcpy_s(wip->weapon_substitution_pattern_names[i], subname);
+					}
+					wip->num_substitution_patterns = index+1;
+				}
+
+				strcpy_s(wip->weapon_substitution_pattern_names[index], subname);
+			}
 		}
 	}
 
@@ -3202,6 +3283,33 @@ void weapon_load_bitmaps(int weapon_index)
 		used_weapons[weapon_index]++;
 }
 
+/**
+ * Checks all of the weapon infos for substitution patterns and caches the weapon_index of any that it finds. 
+ */
+void weapon_generate_indexes_for_substitution() {
+	for (int i = 0; i < MAX_WEAPON_TYPES; i++) {
+		weapon_info *wip = &(Weapon_info[i]);
+
+		if ( wip->num_substitution_patterns > 0 ) {
+			for ( size_t j = 0; j < wip->num_substitution_patterns; j++ ) {
+				int weapon_index = -1;
+				if ( stricmp("none", wip->weapon_substitution_pattern_names[j]) != 0 ) {
+					weapon_index = weapon_info_lookup(wip->weapon_substitution_pattern_names[j]);
+					if ( weapon_index == -1 ) { // invalid sub weapon
+						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
+							wip->name, wip->weapon_substitution_pattern_names[j]);
+						continue;
+					}
+				}
+
+				wip->weapon_substitution_pattern[j] = weapon_index;
+			}
+
+			memset(wip->weapon_substitution_pattern_names, 0, sizeof(char) * MAX_SUBSTITUTION_PATTERNS * NAME_LENGTH);
+		}
+	}
+}
+
 void weapon_do_post_parse()
 {
 	weapon_info *wip;
@@ -3210,6 +3318,7 @@ void weapon_do_post_parse()
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_clean_entries();
+	weapon_generate_indexes_for_substitution();
 
 	Default_cmeasure_index = -1;
 
@@ -4008,6 +4117,16 @@ void weapon_home(object *obj, int num, float frame_time)
 		else {
 			obj->phys_info.speed = max_speed;
 		}
+
+		if (wip->acceleration_time > 0.0f) {
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+				float	t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+			}
+		}
+
 		// set velocity using whatever speed we have
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
@@ -4282,8 +4401,18 @@ void weapon_home(object *obj, int num, float frame_time)
 		} else
 			obj->phys_info.speed = max_speed;
 
-		//	For first second of weapon's life, it doesn't fly at top speed.  It ramps up.
-		if (Missiontime - wp->creation_time < i2f(1)) {
+
+		if (wip->acceleration_time > 0.0f) {
+			// Ramp up speed linearly for the given duration
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+				float t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+			}
+		} else if (!(wip->wi_flags3 & WIF3_NO_HOMING_SPEED_RAMP) && Missiontime - wp->creation_time < i2f(1)) {
+			// Default behavior:
+			// For first second of weapon's life, it doesn't fly at top speed.  It ramps up.
 			float	t;
 
 			t = f2fl(Missiontime - wp->creation_time);
@@ -4613,7 +4742,15 @@ void weapon_process_post(object * obj, float frame_time)
 		
 			//get the position of the target, and estimate its position when it warps out
 			//so we have an idea of where it will be.
-			vm_vec_scale_add(&wp->lssm_target_pos,&Objects[wp->target_num].pos,&Objects[wp->target_num].phys_info.vel,(float)wip->lssm_warpin_delay/1000.0f);
+			if (wp->target_num >= 0)
+			{
+				vm_vec_scale_add(&wp->lssm_target_pos, &Objects[wp->target_num].pos, &Objects[wp->target_num].phys_info.vel, (float)wip->lssm_warpin_delay / 1000.0f);
+			}
+			else
+			{
+				// Our target is invalid, just jump to our position
+				wp->lssm_target_pos = obj->pos;
+			}
 
 			wp->lssm_stage=3;
 
@@ -4795,6 +4932,32 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
+size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* shipp, ship_subsys * src_turret)
+{
+	Assert( shipp != NULL );
+	ship_weapon* ship_weapon_p = &(shipp->weapons);
+	if(src_turret)
+	{
+		ship_weapon_p = &src_turret->weapons;
+	}
+	Assert( ship_weapon_p != NULL );
+
+	// search for the corresponding bank pattern index for the weapon_type that is being fired.
+	// Note: Because a weapon_type may not be unique to a weapon bank per ship this search may attribute
+	// the weapon to the wrong bank.  Hopefully this isn't a problem.
+	for ( int pi = 0; pi < MAX_SHIP_PRIMARY_BANKS; pi++ ) {
+		if ( ship_weapon_p->primary_bank_weapons[pi] == weapon_type ) {
+			return &(ship_weapon_p->primary_bank_pattern_index[pi]);
+		}
+	}
+	for ( int si = 0; si < MAX_SHIP_SECONDARY_BANKS; si++ ) {
+		if ( ship_weapon_p->secondary_bank_weapons[si] == weapon_type ) {
+			return &(ship_weapon_p->secondary_bank_pattern_index[si]);
+		}
+	}
+	return NULL;
+}
+
 /**
  * Create a weapon object
  *
@@ -4818,6 +4981,36 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	{
 		Warning(LOCATION, "An attempt to fire a beam ('%s') through weapon_create() was made.\n", wip->name);
 		return -1;
+	}
+
+	parent_objp = NULL;
+	if(parent_objnum >= 0){
+		parent_objp = &Objects[parent_objnum];
+	}
+
+	if ( (wip->num_substitution_patterns > 0) && (parent_objp != NULL)) {
+		// using substitution
+
+		// get to the instance of the gun
+		Assertion( parent_objp->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", parent_objp->type );
+		Assertion( (parent_objp->instance < MAX_SHIPS) && (parent_objp->instance >= 0),
+			"Ship index is %d, which is out of range [%d,%d)", parent_objp->instance, 0, MAX_SHIPS);
+		ship* parent_shipp = &(Ships[parent_objp->instance]);
+		Assert( parent_shipp != NULL );
+
+		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
+		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
+
+		++(*position);
+		*position = (*position) % wip->num_substitution_patterns;
+
+		if ( wip->weapon_substitution_pattern[*position] == -1 ) {
+			// weapon doesn't want any sub
+			return -1;
+		} else if ( wip->weapon_substitution_pattern[*position] != weapon_type ) {
+			// weapon wants to sub with weapon other than me
+			return weapon_create(pos, porient, wip->weapon_substitution_pattern[*position], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
+		}
 	}
 
 	num_deleted = 0;
@@ -4894,11 +5087,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
 	Assert(objnum >= 0);
 	objp = &Objects[objnum];
-
-	parent_objp = NULL;
-	if(parent_objnum >= 0){
-		parent_objp = &Objects[parent_objnum];
-	}
 
 	// Create laser n!
 	wp = &Weapons[n];
@@ -5066,12 +5254,19 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	wp->weapon_max_vel = objp->phys_info.max_vel.xyz.z;
 
+	if (wip->acceleration_time > 0.0f)
+		wp->launch_speed = 0.0f;
+
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
 	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
-		vm_vec_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel );
-		wp->weapon_max_vel += vm_vec_mag( &parent_objp->phys_info.vel );
+		float pspeed = vm_vec_mag( &parent_objp->phys_info.vel );
+		vm_vec_scale_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel, wip->vel_inherit_amount );
+		wp->weapon_max_vel += pspeed * wip->vel_inherit_amount;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
+
+		if (wip->acceleration_time > 0.0f)
+			wp->launch_speed += pspeed;
 	}
 
 	// create the corkscrew

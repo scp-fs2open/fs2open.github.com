@@ -116,6 +116,7 @@ extern int Num_weapon_subtypes;
 #define WIF3_NOLINK						(1 << 0)	// This weapon can not be linked with others
 #define WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS	(1 << 1)	// override MAX_TURRET_DISRUPT_TIME in emp.cpp - Goober5000
 #define WIF3_NO_LINKED_PENALTY			(1 << 2)	// This weapon does not count into linked firing penalty
+#define WIF3_NO_HOMING_SPEED_RAMP 		(1 << 3)	// Disables the 1s long speed ramping when firing locked-on secondaries
 
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -215,6 +216,8 @@ typedef struct weapon {
 	float alpha_current;		// the current alpha value
 
 	float weapon_max_vel;		// might just as well store the data here
+	float launch_speed;			// the initial forward speed (can vary due to additive velocity or acceleration)
+								// currently only gets set when weapon_info->acceleration_time is used
 
 	bool collisionOccured;
 	mc_info collisionInfo; // The last collision of this weapon or NULL if it had none
@@ -303,6 +306,8 @@ enum InFlightSoundType
 	ALWAYS
 };
 
+#define MAX_SUBSTITUTION_PATTERNS	10
+
 typedef struct weapon_info {
 	char	name[NAME_LENGTH];				// name of this weapon
 	char	alt_name[NAME_LENGTH];			// alt name of this weapon
@@ -336,7 +341,9 @@ typedef struct weapon_info {
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
 
-	float	max_speed;							// initial speed of the weapon
+	float	max_speed;							// max speed of the weapon
+	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
+	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
@@ -514,6 +521,11 @@ typedef struct weapon_info {
 	float			target_lead_scaler;
 	int				targeting_priorities[32];
 	int				num_targeting_priorities;
+
+	// the optional pattern of weapons that this weapon will fire
+	size_t			num_substitution_patterns;
+	int				weapon_substitution_pattern[MAX_SUBSTITUTION_PATTERNS]; //weapon_indexes
+	char			weapon_substitution_pattern_names[MAX_SUBSTITUTION_PATTERNS][NAME_LENGTH]; // weapon names so that we can generate the indexs after sort
 
 	int			score; //Optional score for destroying the weapon
 

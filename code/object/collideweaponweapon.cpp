@@ -171,7 +171,7 @@ int collide_weapon_weapon( obj_pair * pair )
 				dist = vm_vec_dist_quick(&A->pos, &wpA->homing_pos);
 			}
 			if (Weapons[B->instance].lifeleft == 0.01f) {
-				dist = vm_vec_dist_quick(&A->pos, &wpB->homing_pos);
+				dist = vm_vec_dist_quick(&B->pos, &wpB->homing_pos);
 			}
 	#endif
 		}
@@ -179,13 +179,13 @@ int collide_weapon_weapon( obj_pair * pair )
 		if(!(b_override && !a_override))
 		{
 			Script_system.SetHookObjects(4, "Weapon", A, "WeaponB", B, "Self",A, "Object", B);
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, A);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, A, wpA->weapon_info_index);
 		}
 		if((b_override && !a_override) || (!b_override && !a_override))
 		{
 			//Should be reversed
 			Script_system.SetHookObjects(4, "Weapon", B, "WeaponB", A, "Self",B, "Object", A);
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, B);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, B, wpB->weapon_info_index);
 		}
 
 		Script_system.RemHookVars(4, "Weapon", "WeaponB", "Self","ObjectB");

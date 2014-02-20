@@ -444,17 +444,28 @@ void cmd_brief_button_pressed(int n)
 			break;
 
 		case CMD_BRIEF_BUTTON_FIRST_STAGE:
-			if (Cur_stage) {
+			if (common_num_cutscenes_valid(MOVIE_PRE_CMD_BRIEF)) {
+				audiostream_stop(Cmd_brief_last_voice);
+				common_maybe_play_cutscene(MOVIE_PRE_CMD_BRIEF, true, SCORE_BRIEFING);
+				cmd_brief_new_stage(0);
+			}
+			else if (Cur_stage) {
 				cmd_brief_new_stage(0);
 				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
-			} else {
+			} 
+			else {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			}
 
 			break;
 
 		case CMD_BRIEF_BUTTON_PREV_STAGE:
-			if (Cur_stage) {
+			if (!Cur_stage && common_num_cutscenes_valid(MOVIE_PRE_CMD_BRIEF)) {
+				audiostream_stop(Cmd_brief_last_voice);
+				common_maybe_play_cutscene(MOVIE_PRE_CMD_BRIEF, true, SCORE_BRIEFING);
+				cmd_brief_new_stage(0);
+			}
+			else if (Cur_stage) {
 				cmd_brief_new_stage(Cur_stage - 1);
 				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
 			} else {

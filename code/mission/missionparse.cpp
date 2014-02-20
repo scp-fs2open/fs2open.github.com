@@ -385,6 +385,8 @@ void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
 int add_path_restriction();
 
+static bool Warned_about_team_out_of_range;
+
 // Goober5000
 void mission_parse_mark_non_arrival(p_object *p_objp);
 void mission_parse_mark_non_arrival(wing *wingp);
@@ -2355,8 +2357,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	wing *wingp = &Wings[wingnum];
 
 	// link ship and wing together
-	// (do this first because mission log relies on ship_index
-	// and hud_wingman_status_set_index relies on ship's wingnum)
+	// (do this first because mission log relies on ship_index)
 	wingp->ship_index[p_objp->pos_in_wing] = shipnum;
 	Ships[shipnum].wingnum = wingnum;
 
@@ -2380,7 +2381,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	// at this point the wing has arrived, so handle the stuff for this particular ship
 
 	// set up wingman status index
-	hud_wingman_status_set_index(shipnum);
+	hud_wingman_status_set_index(wingp, &Ships[shipnum], p_objp);
 
 	// copy to parse object
 	p_objp->wing_status_wing_index = Ships[shipnum].wing_status_wing_index;
@@ -3988,6 +3989,23 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			specific_instance--;
 			continue;
 		}
+		// when not creating a specific ship, we should skip over any ships that weren't carried along in the red-alert
+		else if (p_objp->flags2 & P2_RED_ALERT_DELETED)
+		{
+			num_to_create--;
+			num_create_save--;
+			ship_add_ship_type_count(p_objp->ship_class, -1);
+			wingp->red_alert_skipped_ships++;
+
+			// clear the flag so that this parse object can be used for the next wave
+			p_objp->flags2 &= ~P2_RED_ALERT_DELETED;
+
+			// skip over this parse object
+			if (num_to_create == 0)
+				break;
+			else
+				continue;
+		}
 
 		Assert (!(p_objp->flags & P_SF_CANNOT_ARRIVE));		// get allender
 
@@ -4002,7 +4020,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
-			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count);
+			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
@@ -4038,7 +4056,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// set up wingman status index
-		hud_wingman_status_set_index(Objects[objnum].instance);
+		hud_wingman_status_set_index(wingp, &Ships[Objects[objnum].instance], p_objp);
 
 		p_objp->wing_status_wing_index = Ships[Objects[objnum].instance].wing_status_wing_index;
 		p_objp->wing_status_wing_pos = Ships[Objects[objnum].instance].wing_status_wing_pos;
@@ -4093,20 +4111,29 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	Assert (num_to_create == 0);
 
 	// wing current_count needs to match the end of the ship_index[] list, but there
-	// is a very off chance it could have holes in it, so make sure to compact the list
-	for (i = 0; i < (MAX_SHIPS_PER_WING-1); i++) {
-		if (wingp->ship_index[i] == -1) {
-			j = i;
-			while ( j < (MAX_SHIPS_PER_WING-1) ) {
+	// is a very off chance it could have holes in it (especially if it's a red-alert
+	// wing that arrives late), so make sure to compact the list
+	int length = MAX_SHIPS_PER_WING;
+	for (i = 0; i < length; i++)
+	{
+		if (wingp->ship_index[i] == -1)
+		{
+			// shift actual values downward
+			for (j = i; j < length - 1; j++)
+			{
 				wingp->ship_index[j] = wingp->ship_index[j+1];
 
 				// update "special" ship too
-				if (wingp->special_ship == j+1) {
+				if (wingp->special_ship == j+1)
 					wingp->special_ship--;
-				}
-
-				j++;
 			}
+
+			// last value becomes -1
+			wingp->ship_index[j] = -1;
+			length--;
+
+			// stay on the current index in case we still have a -1
+			i--;
 		}
 	}
 	
@@ -4205,6 +4232,7 @@ void parse_wing(mission *pm)
 	wingnum = Num_wings;
 
 	wingp->total_arrived_count = 0;
+	wingp->red_alert_skipped_ships = 0;
 	wingp->total_destroyed = 0;
 	wingp->total_departed = 0;	// Goober5000
 	wingp->total_vanished = 0;	// Goober5000
@@ -4741,10 +4769,10 @@ void parse_event(mission *pm)
 
 		// sanity check
 		if (event->team < -1 || event->team >= MAX_TVT_TEAMS) {
-			if (Fred_running)
+			if (Fred_running && !Warned_about_team_out_of_range) {
 				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
-			else
-				nprintf(("Warning", "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.\n"));
+				Warned_about_team_out_of_range = true;
+			}
 			event->team = -1;
 		}
 	}
@@ -4836,7 +4864,10 @@ void parse_goal(mission *pm)
 
 		// sanity check
 		if (goalp->team < -1 || goalp->team >= Num_iffs) {
-			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			if (Fred_running && !Warned_about_team_out_of_range) {
+				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+				Warned_about_team_out_of_range = true;
+			}
 			goalp->team = -1;
 		}
 	}
@@ -5400,6 +5431,7 @@ int parse_mission(mission *pm, int flags)
 	int saved_error_count = Global_error_count;
 
 	int i;
+	Warned_about_team_out_of_range = false;
 
 	waypoint_parse_init();
 
@@ -6611,6 +6643,10 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 	int anchor_objnum = -1;
 	if (p_objp->arrival_anchor >= 0) {
 		int shipnum = ship_name_lookup(Parse_names[p_objp->arrival_anchor]);
+
+		// This shouldn't be happening
+		Assertion(shipnum >= 0 && shipnum < MAX_SHIPS, "Arriving ship '%s' does not exist!", Parse_names[p_objp->arrival_anchor]);
+
 		anchor_objnum = Ships[shipnum].objnum;
 	}
 
@@ -6907,6 +6943,10 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
+	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
+	// or revert to our default behavior
+	ai_abort_rearm_request(objp);
+
 	// if our current goal is to warp, then we won't consider departing to a bay, because the goal explicitly says to warp out
 	// (this sort of goal can be assigned in FRED, either in the ship's initial orders or as the ai-warp-out goal)
 	if (goal_is_to_warp)
@@ -6967,16 +7007,10 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 			goto try_to_warp;
 		}
 
-		// make sure ship not dying or departing
-		if (Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
+		// see if we can actually depart to the ship
+		if (!ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
 		{
-			return 0;
-		}
-
-		// make sure fighterbays aren't destroyed
-		if (ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]))
-		{
-			mprintf(("Anchor ship %s's fighterbays are destroyed!  Trying to warp...\n", name));
+			mprintf(("Anchor ship %s not suitable for departure (dying, departing, bays destroyed, etc.).  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -6995,20 +7029,28 @@ try_to_warp:
 	// make sure we can actually warp
 	if (ship_can_use_warp_drive(shipp))
 	{
+		mprintf(("Setting mode to warpout\n"));
+
 		ai_set_mode_warp_out(objp, aip);
 		MONITOR_INC(NumShipDepartures,1);
 
-		mprintf(("Setting mode to warpout\n"));
 		return 1;
 	}
+	// find something else to do
 	else
 	{
-		shipp->flags &= ~SF_DEPARTING;
-
-		// find something else to do
-		aip->mode = AIM_NONE;
-
+		// NOTE: this point should no longer be reached in the standard goal code, since the goal or comm order must be achievable
+		// for this function to be called.  This point should only be reached if the ship has no subspace drive, AND either has no
+		// mothership assigned (or departs to hyperspace) or the mothership was destroyed, AND falls into one of the following cases:
+		// 1) The ship's departure cue evaluates to true in the mission
+		// 2) A support ship has had its hull fall to 25% when it has no repair targets
+		// 3) A fighter or bomber with an IFF that doesn't allow support ships has its warp_out_timestamp elapse (but this seems to not be a possibility anymore)
+		// 4) An instructor in a training mission has been fired upon
 		mprintf(("Can't warp!  Doing something else instead.\n"));
+
+		shipp->flags &= ~SF_DEPARTING;
+		ai_do_default_behavior(objp);
+
 		return 0;
 	}
 }
@@ -7559,9 +7601,6 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	if ( Player_obj->flags & OF_NO_SHIELDS )
 		pobj->flags |= P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
-
-	if ( Ships[Player_obj->instance].flags2 & SF2_NO_SUBSPACE_DRIVE )
-		pobj->flags2 |= P2_SF2_NO_SUBSPACE_DRIVE;	// support ships have no subspace drive when player has not subspace drive
 
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;

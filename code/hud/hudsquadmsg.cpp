@@ -761,20 +761,27 @@ int hud_squadmsg_ship_order_valid( int shipnum, int order )
 {
 	// Goober5000
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
+	ship *shipp = &Ships[shipnum];
 
 	switch ( order  )
 	{
 		case DEPART_ITEM:
 			// disabled ships can't depart.
-			if (Ships[shipnum].flags & SF_DISABLED)
+			if (shipp->flags & SF_DISABLED)
 				return 0;
 
-			// Goober5000: also can't depart if no subspace drives and no capships in the area
-			if (Ships[shipnum].flags2 & SF2_NO_SUBSPACE_DRIVE)
+			// Goober5000: also can't depart if no subspace drives and no valid mothership
+			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
 			{
-				// locate a capital ship on the same team:
-				if (ship_get_ship_with_dock_bay(Ships[shipnum].team) < 0)
-					return 0;
+				// check that we have a mothership and that we can depart to it
+				if (shipp->departure_location == DEPART_AT_DOCK_BAY)
+				{
+					int anchor_shipnum = ship_name_lookup(Parse_names[shipp->departure_anchor]);
+					if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
+						return 1;
+				}
+
+				return 0;
 			}
 
 			break;
@@ -1656,13 +1663,13 @@ void hud_squadmsg_type_select( )
 	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
-	} else if ( mission_is_repair_scheduled(Player_obj) ) {
+	}
+	else if ( mission_is_repair_scheduled(Player_obj) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
 	}
-
 	// if no support available, can't call one in
-	if ( !is_support_allowed(Player_obj) ) {
+	else if ( !is_support_allowed(Player_obj) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
 	}

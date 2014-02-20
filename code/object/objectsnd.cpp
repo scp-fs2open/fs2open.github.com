@@ -293,9 +293,7 @@ void obj_snd_stop_all()
 	object* A;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
-		if ( A ) {
-			obj_snd_stop(A, -1);
-		}
+		obj_snd_stop(A, -1);
 	}
 }
 
@@ -736,9 +734,6 @@ int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags, ship
 		snd->flags |= flags;
 	}
 
-	if ( sndnum == -1 ) {
-		return -1;
-	}
 	snd->id = sndnum;
 
 	snd->instance = -1;

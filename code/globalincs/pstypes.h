@@ -576,6 +576,7 @@ typedef struct profile_sample_history {
 extern char profile_output[2048];
 
 void profile_init();
+void profile_deinit();
 void profile_begin(char* name);
 void profile_end(char* name);
 void profile_dump_output();

@@ -1365,7 +1365,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
 		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
-			vm_vec_sub2(&target_moving_direction, &objp->phys_info.vel);
+			vm_vec_scale_sub2(&target_moving_direction, &objp->phys_info.vel, wip->vel_inherit_amount);
 		}
 
 		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
