@@ -4872,16 +4872,18 @@ int game_poll()
 {
 	int k, state;
 
-	if (!os_foreground()) {		
-		game_stop_time();
-//		os_sleep(100);
-		os_sleep(1);
-		game_start_time();
+	if (!Cmdline_no_unfocus_pause)
+	{
+		if (!os_foreground()) {
+			game_stop_time();
+			os_sleep(1);
+			game_start_time();
 
-		// If we're in a single player game, pause it.
-		if (!(Game_mode & GM_MULTIPLAYER)){
-			if ( (gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active()) )	{
-				game_process_pause_key();
+			// If we're in a single player game, pause it.
+			if (!(Game_mode & GM_MULTIPLAYER)){
+				if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active()))	{
+					game_process_pause_key();
+				}
 			}
 		}
 	}
