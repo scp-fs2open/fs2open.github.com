@@ -27,6 +27,7 @@
 #include "cmdline/cmdline.h"
 #include "sound/voicerec.h"
 #include "graphics/2d.h"
+#include "cmdline/cmdline.h"
 
 #ifdef __linux__
 #include <execinfo.h>
@@ -331,7 +332,10 @@ void os_poll()
 					case SDL_WINDOWEVENT_FOCUS_LOST:
 					{
 						if (fAppActive) {
-							game_pause();
+							if (!Cmdline_no_unfocus_pause) {
+								game_pause();
+							}
+							
 							fAppActive = false;
 						}
 						break;
@@ -341,7 +345,10 @@ void os_poll()
 					case SDL_WINDOWEVENT_FOCUS_GAINED:
 					{
 						if (!fAppActive) {
-							game_unpause();
+							if (!Cmdline_no_unfocus_pause) {
+								game_unpause();
+							}
+							
 							fAppActive = true;
 						}
 						break;
@@ -351,7 +358,11 @@ void os_poll()
 						break;
 				}
 			}
-			gr_activate(fAppActive);
+			
+			if (!Cmdline_no_unfocus_pause) {
+				gr_activate(fAppActive);
+			}
+			
 			break;
 		}
 

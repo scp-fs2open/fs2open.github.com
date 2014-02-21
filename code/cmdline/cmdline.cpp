@@ -192,8 +192,9 @@ Flag exe_params[] =
 	{ "-verify_vps",		"Spew VP CRCs to vp_crcs.txt",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-verify_vps", },
 	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
-	{ "-profile_frame_time", "Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
+	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
+	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -416,6 +417,7 @@ cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL); //Cmdline_frame_profile
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL); // Cmdline_profile_write_file
+cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL); //Cmdline_no_unfocus_pause
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
@@ -439,6 +441,7 @@ int Cmdline_no_grab = 0;
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_frame_profile = false;
 bool Cmdline_profile_write_file = false;
+bool Cmdline_no_unfocus_pause = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", NULL);
@@ -1584,6 +1587,11 @@ bool SetCmdlineParams()
 	{
 		Cmdline_frame_profile = true;
 		Cmdline_profile_write_file = true;
+	}
+
+	if (no_unfocused_pause_arg.found())
+	{
+		Cmdline_no_unfocus_pause = true;
 	}
 
 	//Deprecated flags - CommanderDJ
