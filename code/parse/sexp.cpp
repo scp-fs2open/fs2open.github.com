@@ -244,6 +244,7 @@ sexp_oper Operators[] = {
 	{ "is-facing",						OP_IS_FACING,							3,	4,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is_tagged",						OP_IS_TAGGED,							1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "has-been-tagged-delay",			OP_HAS_BEEN_TAGGED_DELAY,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
+	{ "are-ship-flags-set",				OP_ARE_SHIP_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "has-primary-weapon",				OP_HAS_PRIMARY_WEAPON,					3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
@@ -12803,24 +12804,10 @@ void alter_flag_for_all_ships(bool future_ships, int object_flag, int object_fla
 	}
 }
 
-void sexp_alter_ship_flag(int node)
+bool sexp_check_flag_arrays(char *flag_name, int &object_flag, int &object_flag2, int &ship_flags, int &ship_flags2, int &parse_obj_flag, int &parse_obj_flag2, int &ai_flag, int &ai_flag2)
 {
-	char *flag_name;
-	int object_flag = 0;
-	int object_flag2 = 0;
-	int ship_flags = 0;
-	int ship_flags2 = 0;
-	int parse_obj_flag = 0;
-	int parse_obj_flag2 = 0;
-	int ai_flag = 0;
-	int ai_flag2 = 0;
-	bool set_flag = false; 
-	bool send_multi = false;
-	bool future_ships = false; 
 	int i;
-	object_ship_wing_point_team oswpt;
-
-	flag_name = CTEXT(node); 
+	bool send_multi = false;
 
 	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
 		if (!stricmp(Object_flag_names[i].flag_name, flag_name)) {
@@ -12877,6 +12864,86 @@ void sexp_alter_ship_flag(int node)
 			break;
 		}
 	}
+
+	return send_multi;
+}
+
+int sexp_are_ship_flags_set(int node)
+{
+	char *flag_name;
+	ship *shipp;
+	int object_flag = 0;
+	int object_flag2 = 0;
+	int ship_flags = 0;
+	int ship_flags2 = 0;
+	int parse_obj_flag = 0;
+	int parse_obj_flag2 = 0;
+	int ai_flag = 0;
+	int ai_flag2 = 0;
+
+	shipp = sexp_get_ship_from_node(node);
+
+	// return false if the ship doesn't exist
+	if (shipp == NULL) {
+		return 0;
+	}
+
+	node = CDR(node); 
+
+	while (node != -1) {
+		flag_name = CTEXT(node); 
+		sexp_check_flag_arrays(flag_name, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2);
+
+		// now check the flags
+		if (object_flag) {
+			if (!(Objects[shipp->objnum].flags & object_flag))
+				return 0; 
+		}
+		// if we ever get object flags 2 - they go here.
+
+		if (ship_flags) {
+			if (!(shipp->flags & ship_flags))
+				return 0; 
+		}
+		if (ship_flags2) {
+			if (!(shipp->flags2 & ship_flags2))
+				return 0; 
+		}
+
+		// we don't check parse flags
+
+		if (ai_flag) {
+			if (!(Ai_info[shipp->ai_index].ai_flags & ai_flag))
+				return 0; 
+		}
+
+		// no ai flags 2 yet. When we do, they go here.
+		node = CDR(node); 
+	}
+
+	// if we're still here, all the flags we were looking for were present
+	return 1; 
+}
+
+void sexp_alter_ship_flag(int node)
+{
+	char *flag_name;
+	int object_flag = 0;
+	int object_flag2 = 0;
+	int ship_flags = 0;
+	int ship_flags2 = 0;
+	int parse_obj_flag = 0;
+	int parse_obj_flag2 = 0;
+	int ai_flag = 0;
+	int ai_flag2 = 0;
+	bool set_flag = false; 
+	bool send_multi = false;
+	bool future_ships = false; 
+	object_ship_wing_point_team oswpt;
+
+	flag_name = CTEXT(node); 
+
+	send_multi = sexp_check_flag_arrays(flag_name, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2); 
 
 	node = CDR(node); 
 	if (is_sexp_true(node)) {
@@ -22363,6 +22430,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_has_been_tagged_delay(node);
 				break;
 
+			case OP_ARE_SHIP_FLAGS_SET:
+				sexp_val = sexp_are_ship_flags_set(node);
+				break;
+
 			case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 				sexp_val = sexp_cap_subsys_cargo_known_delay(node);
 				break;
@@ -24654,6 +24725,7 @@ int query_operator_return_type(int op)
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
+		case OP_ARE_SHIP_FLAGS_SET:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -26170,6 +26242,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			} else {
 				return OPF_SHIP;
+			}
+
+		case OP_ARE_SHIP_FLAGS_SET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			} else {
+				return OPF_SHIP_FLAG;
 			}
 
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
@@ -28836,6 +28915,7 @@ int get_subcategory(int sexp_id)
 		case OP_IS_FACING:
 		case OP_IS_IN_MISSION:
 		case OP_NAV_ISLINKED:
+		case OP_ARE_SHIP_FLAGS_SET:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
 
 		case OP_SHIELD_RECHARGE_PCT:
@@ -30607,6 +30687,12 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value after <delay> seconds when all ships have been tagged.  Takes 2 or more arguments...\r\n"
 		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned."
 		"\tRest:\tNames of ships to check if tagged.." },
+
+	{ OP_ARE_SHIP_FLAGS_SET, "Are ship flags set (Boolean operator)\r\n"
+		"\tReturns true if all of the specified flags have been set for this particular ship.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the ship."
+		"\tRest:\tShip, object or ai flags which might be set for this ship.." },
 
 	{ OP_CAP_SUBSYS_CARGO_KNOWN_DELAY, "Is capital ship subsystem cargo known (delay) (Boolean operator)\r\n"
 		"\tReturns true if all of the specified subsystem cargo is known by the player.\r\n"
