@@ -6078,7 +6078,7 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// Goober5000 - people may not have realized that pausing causes this state to be re-entered
-			if ((old_state != GS_STATE_GAME_PAUSED) && (old_state != GS_STATE_MULTI_PAUSED))
+			if ((old_state != GS_STATE_GAME_PAUSED) && (old_state != GS_STATE_MULTI_PAUSED) && (old_state != GS_STATE_MAIN_MENU))
 			{
 				if ( !Is_standalone )
 					radar_mission_init();
