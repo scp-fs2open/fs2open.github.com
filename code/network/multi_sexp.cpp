@@ -81,6 +81,10 @@ void multi_start_callback()
 	if (!MULTIPLAYER_MASTER) {
 		return;
 	}
+	
+	// Ensure that there is enough space in the packet. At present the function writes the Operator number and the argument count into the packet. Both are ints 
+	// so we must ensure we have space left to write two ints. If this function is changed to write other data, this line MUST be updated too!
+	multi_sexp_ensure_space_remains(sizeof(int)*2);
 
 	callback_started = true;
 
@@ -105,6 +109,9 @@ void multi_end_callback()
 	if (!MULTIPLAYER_MASTER) {
 		return;
 	}	
+
+	// ensure that there is enough space in the packet. If this function is ever updated to write anything other than the terminator, this MUST be taken into account here!
+	multi_sexp_ensure_space_remains(sizeof(ubyte));
 
 	callback_started = false;
 

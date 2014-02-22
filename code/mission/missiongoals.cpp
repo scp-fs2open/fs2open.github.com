@@ -954,6 +954,8 @@ void mission_process_event( int event )
 		}
 	}
 
+	Log_event = false;
+
 	Event_index = -1;
 	Mission_events[event].result = result;
 
