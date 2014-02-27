@@ -5041,7 +5041,11 @@ void load_gauge_lead_sight(int base_w, int base_h, int hud_font, bool scale_gaug
 		offset[1] = 3;
 	}
 
-	HudGaugeLeadSight* hud_gauge = gauge_load_common<HudGaugeLeadSight>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeLeadSight* hud_gauge = gauge_load_common<HudGaugeLeadSight>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
