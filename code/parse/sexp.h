@@ -381,6 +381,7 @@ class waypoint_list;
 #define OP_GET_NUM_COUNTERMEASURES			(0x004b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_IS_IN_BOX					    (0x004c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Sushi
 #define OP_IS_IN_MISSION					(0x004d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_ARE_SHIP_FLAGS_SET				(0x004e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 // conditional sexpressions
