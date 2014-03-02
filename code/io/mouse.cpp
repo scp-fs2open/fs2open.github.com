@@ -201,17 +201,21 @@ void mouse_mark_button( uint flags, int set)
 		mouse_flags &= ~flags;
 	}
 
-	LEAVE_CRITICAL_SECTION( mouse_lock );	
+	LEAVE_CRITICAL_SECTION(mouse_lock);
+
+	Script_system.SetHookVar("MouseButton", 'i', &flags);
 
 	//WMC - On Mouse Pressed and On Mouse Released hooks
-	if(set == 1)
+	if (set == 1)
 	{
 		Script_system.RunCondition(CHA_MOUSEPRESSED);
 	}
-	else if(set == 0)
+	else if (set == 0)
 	{
 		Script_system.RunCondition(CHA_MOUSERELEASED);
 	}
+
+	Script_system.RemHookVar("MouseButton");
 }
 
 void mouse_flush()
