@@ -465,9 +465,9 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 
 bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 {
-	int width = 1024, height = 768, depth = 16, mode = GR_OPENGL;
+	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
 	const char *ptr = NULL;
-	const char *Default_video_settings = "OGL -(1024x768)x16 bit";
+	const char *Default_video_settings = "OGL -(1024x768)x32 bit";
 
 	if ( !Gr_inited ) {
 		atexit(gr_close);
@@ -491,7 +491,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	// We cannot continue without this, quit, but try to help the user out first
 	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);
 
-	// if we don't have a config string then construct one, using OpenGL 1024x768 16-bit as the default
+	// if we don't have a config string then construct one, using OpenGL 1024x768 32-bit as the default
 	if (ptr == NULL) {
 		ptr = Default_video_settings;
 	}
