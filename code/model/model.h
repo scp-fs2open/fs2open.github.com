@@ -1044,7 +1044,7 @@ typedef struct mc_info {
 
 inline void mc_info_init(mc_info *mc)
 {
-	memset(mc, 0, sizeof(mc_info));
+	memset(mc, -1, sizeof(mc_info));
 }
 
 
