@@ -78,18 +78,8 @@ static int GL_dump_frame_count_max = 0;
 static int GL_dump_frame_size = 0;
 
 static ubyte *GL_saved_screen = NULL;
-static ubyte *GL_saved_mouse_data = NULL;
 static int GL_saved_screen_id = -1;
-static GLuint GL_cursor_pbo = 0;
 static GLuint GL_screen_pbo = 0;
-
-static int GL_mouse_saved = 0;
-static int GL_mouse_saved_x1 = 0;
-static int GL_mouse_saved_y1 = 0;
-static int GL_mouse_saved_x2 = 0;
-static int GL_mouse_saved_y2 = 0;
-
-void opengl_save_mouse_area(int x, int y, int w, int h);
 
 extern const char *Osreg_title;
 
@@ -107,7 +97,6 @@ static int GL_minimized = 0;
 
 static GLenum GL_read_format = GL_BGRA;
 
-SDL_Renderer *GL_renderer = NULL;
 SDL_GLContext GL_context = NULL;
 
 void opengl_go_fullscreen()
@@ -203,17 +192,8 @@ void gr_opengl_activate(int active)
 			opengl_go_windowed();
 		else
 			opengl_go_fullscreen();
-
-		// Check again and if we didn't go fullscreen turn on grabbing if possible
-		if(!Cmdline_no_grab && !(SDL_GetWindowFlags(os_get_window()) & SDL_WINDOW_FULLSCREEN)) {
-			SDL_SetRelativeMouseMode(SDL_TRUE);
-		}
 	} else {
 		opengl_minimize();
-
-		// let go of mouse/keyboard
-		if (SDL_GetRelativeMouseMode() == SDL_TRUE)
-			SDL_SetRelativeMouseMode(SDL_FALSE);
 	}
 }
 
@@ -234,22 +214,6 @@ void gr_opengl_flip()
 	gr_reset_clip();
 
 	mouse_reset_deltas();
-	
-	GL_mouse_saved = 0;
-	
-	if ( mouse_is_visible() ) {
-		int mx, my;
-
-		gr_reset_clip();
-		mouse_get_pos( &mx, &my );
-
-	//	opengl_save_mouse_area(mx, my, Gr_cursor_size, Gr_cursor_size);
-
-		if (Gr_cursor != -1 && bm_is_valid(Gr_cursor)) {
-			gr_set_bitmap(Gr_cursor);
-			gr_bitmap( mx, my, false);
-		}
-	}
 
 	SDL_GL_SwapWindow(os_get_window());
 
@@ -799,70 +763,12 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 
 }
 
-void opengl_save_mouse_area(int x, int y, int w, int h)
-{
-	int cursor_size;
-
-	GL_CHECK_FOR_ERRORS("start of save_mouse_area()");
-
-	// lazy - taylor
-	cursor_size = (Gr_cursor_size * Gr_cursor_size);
-
-	// no reason to be bigger than the cursor, should never be smaller
-	if (w != Gr_cursor_size)
-		w = Gr_cursor_size;
-	if (h != Gr_cursor_size)
-		h = Gr_cursor_size;
-
-	GL_mouse_saved_x1 = x;
-	GL_mouse_saved_y1 = y;
-	GL_mouse_saved_x2 = x+w-1;
-	GL_mouse_saved_y2 = y+h-1;
-
-	CLAMP(GL_mouse_saved_x1, gr_screen.clip_left, gr_screen.clip_right );
-	CLAMP(GL_mouse_saved_x2, gr_screen.clip_left, gr_screen.clip_right );
-	CLAMP(GL_mouse_saved_y1, gr_screen.clip_top, gr_screen.clip_bottom );
-	CLAMP(GL_mouse_saved_y2, gr_screen.clip_top, gr_screen.clip_bottom );
-
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-
-	if ( Use_PBOs ) {
-		// since this is used a lot, and is pretty small in size, we just create it once and leave it until exit
-		if (!GL_cursor_pbo) {
-			vglGenBuffersARB(1, &GL_cursor_pbo);
-			vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
-			vglBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, cursor_size * 4, NULL, GL_STATIC_READ);
-		}
-
-		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
-		glReadBuffer(GL_BACK);
-		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-	} else {
-		// this should really only have to be malloc'd once
-		if (GL_saved_mouse_data == NULL)
-			GL_saved_mouse_data = (ubyte*)vm_malloc_q(cursor_size * 4);
-
-		if (GL_saved_mouse_data == NULL)
-			return;
-
-		glReadBuffer(GL_BACK);
-		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, GL_saved_mouse_data);
-	}
-
-	GL_CHECK_FOR_ERRORS("end of save_mouse_area()");
-
-	GL_mouse_saved = 1;
-}
-
 int gr_opengl_save_screen()
 {
 	int i;
 	ubyte *sptr = NULL, *dptr = NULL;
 	ubyte *opengl_screen_tmp = NULL;
-	int width_times_pixel, mouse_times_pixel;
+	int width_times_pixel;
 
 	gr_opengl_reset_clip();
 
@@ -903,7 +809,6 @@ int gr_opengl_save_screen()
 		pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (Gr_cursor_size * 4);
 
 		sptr = (ubyte *)pixels;
 		dptr = (ubyte *)&GL_saved_screen[gr_screen.max_w * gr_screen.max_h * 4];
@@ -916,24 +821,6 @@ int gr_opengl_save_screen()
 
 		vglUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
 		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-
-		if (GL_mouse_saved && GL_cursor_pbo) {
-			vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
-
-			pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
-
-			sptr = (ubyte *)pixels;
-			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
-
-			for (i = 0; i < Gr_cursor_size; i++) {
-				memcpy(dptr, sptr, mouse_times_pixel);
-				sptr += mouse_times_pixel;
-				dptr -= width_times_pixel;
-			}
-
-			vglUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
-			vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-		}
 
 		vglDeleteBuffersARB(1, &GL_screen_pbo);
 		GL_screen_pbo = 0;
@@ -959,7 +846,6 @@ int gr_opengl_save_screen()
 		dptr = (ubyte *)GL_saved_screen;
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (Gr_cursor_size * 4);
 
 		for (i = 0; i < gr_screen.max_h; i++) {
 			sptr -= width_times_pixel;
@@ -968,17 +854,6 @@ int gr_opengl_save_screen()
 		}
 
 		vm_free(opengl_screen_tmp);
-
-		if (GL_mouse_saved && GL_saved_mouse_data) {
-			sptr = (ubyte *)GL_saved_mouse_data;
-			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
-
-			for (i = 0; i < Gr_cursor_size; i++) {
-				memcpy(dptr, sptr, mouse_times_pixel);
-				sptr += mouse_times_pixel;
-				dptr -= width_times_pixel;
-			}
-		}
 
 		GL_saved_screen_id = bm_create(32, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 	}
@@ -1274,16 +1149,6 @@ void opengl_setup_viewport()
 // NOTE: This should only ever be called through os_cleanup(), or when switching video APIs
 void gr_opengl_shutdown()
 {
-	if (GL_cursor_pbo) {
-		vglDeleteBuffersARB(1, &GL_cursor_pbo);
-		GL_cursor_pbo = 0;
-	}
-
-	if (GL_saved_mouse_data != NULL) {
-		vm_free(GL_saved_mouse_data);
-		GL_saved_mouse_data = NULL;
-	}
-
 	opengl_tcache_shutdown();
 	opengl_light_shutdown();
 	opengl_tnl_shutdown();
@@ -1301,9 +1166,6 @@ void gr_opengl_shutdown()
 		vm_free(GL_original_gamma_ramp);
 		GL_original_gamma_ramp = NULL;
 	}
-
-	SDL_DestroyRenderer(GL_renderer);
-	GL_renderer = NULL;
 
 	SDL_GL_DeleteContext(GL_context);
 	GL_context = NULL;
@@ -1430,7 +1292,6 @@ int opengl_init_display_device()
 		}
 	}
 
-	int flags = SDL_RENDERER_ACCELERATED;
 	int r = 0, g = 0, b = 0, depth = 0, stencil = 1, db = 1;
 
 	mprintf(("  Initializing SDL video...\n"));
@@ -1438,11 +1299,6 @@ int opengl_init_display_device()
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "Couldn't init SDL video: %s", SDL_GetError());
 		return 1;
-	}
-
-	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
-	if ((Cmdline_fullscreen_window || Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab) {
-		SDL_SetRelativeMouseMode(SDL_TRUE);
 	}
 
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, Gr_red.bits);
@@ -1482,11 +1338,6 @@ int opengl_init_display_device()
 		os_set_window(window);
 	}
 
-	if ((GL_renderer = SDL_CreateRenderer(os_get_window(), -1, flags)) == NULL) {
-		fprintf(stderr, "Couldn't set up renderer: %s", SDL_GetError());
-		return 1;
-	}
-
 	GL_context = SDL_GL_CreateContext(os_get_window());
 
 	SDL_GL_MakeCurrent(os_get_window(), GL_context);
@@ -1501,11 +1352,6 @@ int opengl_init_display_device()
 	SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &fsaa_samples);
 
 	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", r, g, b, depth, stencil, db, fsaa_samples));
-
-	SDL_ShowCursor(0);
-
-	/* might as well put this here */
-//	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
 	if (GL_original_gamma_ramp != NULL) {
 		SDL_GetWindowGammaRamp( os_get_window(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
@@ -1794,14 +1640,12 @@ bool gr_opengl_init()
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
 
-	Mouse_hidden++;
 	gr_opengl_reset_clip();
 	gr_opengl_clear();
 	gr_opengl_flip();
 	gr_opengl_clear();
 	gr_opengl_flip();
 	gr_opengl_clear();
-	Mouse_hidden--;
 
 
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);

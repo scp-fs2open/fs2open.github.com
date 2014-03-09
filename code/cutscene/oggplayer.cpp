@@ -694,7 +694,6 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 	}
 }
 
-extern int Mouse_hidden;
 static void OGG_video_draw(theora_state *tstate)
 {
 	yuv_buffer yuv;
@@ -716,7 +715,7 @@ static void OGG_video_draw(theora_state *tstate)
 
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
-	Mouse_hidden = 1;
+	io::mouse::CursorManager::get()->showCursor(false);
 	gr_flip();
 	os_poll();
 

@@ -22,11 +22,6 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 
-#define MOUSE_MODE_DI	0
-#define MOUSE_MODE_WIN	1
-
-LOCAL int Mouse_mode = MOUSE_MODE_WIN;
-
 int mouse_inited = 0;
 
 LOCAL int Mouse_x;
@@ -52,8 +47,6 @@ int Last_mouse_dz = 0;
 
 int Mouse_sensitivity = 4;
 int Use_mouse_to_fly = 0;
-int Mouse_hidden = 0;
-int Keep_mouse_centered = 0;
 
 
 void mouse_force_pos(int x, int y);
@@ -76,11 +69,6 @@ void mouse_lost_focus()
     Mouse_in_focus = false;
 
     mouse_flush();
-}
-
-int mouse_is_visible()
-{
-	return !Mouse_hidden;
 }
 
 void mouse_close()
@@ -106,8 +94,6 @@ void mouse_init()
 	mouse_flags = 0;
 	Mouse_x = gr_screen.max_w / 2;
 	Mouse_y = gr_screen.max_h / 2;
-
-	Mouse_mode = MOUSE_MODE_WIN;
 
 	// we do want to make sure that button presses go through event polling though
 	// (should be on by default already, just here as a reminder)
@@ -179,6 +165,8 @@ void mouse_mark_button( uint flags, int set)
 
 	SDL_UnlockMutex( mouse_lock );	
 
+	Script_system.SetHookVar("MouseButton", 'i', &mouse_flags);
+
 	//WMC - On Mouse Pressed and On Mouse Released hooks
 	if(set == 1)
 	{
@@ -188,6 +176,8 @@ void mouse_mark_button( uint flags, int set)
 	{
 		Script_system.RunCondition(CHA_MOUSERELEASED);
 	}
+
+	Script_system.RemHookVar("MouseButton");
 }
 
 void mouse_flush()
@@ -341,11 +331,7 @@ void mouse_get_delta(int *dx, int *dy, int *dz)
 void mouse_force_pos(int x, int y)
 {
 	if (os_foreground()) {  // only mess with windows's mouse if we are in control of it
-		POINT pnt;
-
-		pnt.x = x;
-		pnt.y = y;
-		setWindowMousePos(&pnt);
+		SDL_WarpMouseInWindow(os_get_window(), x, y);
 	}
 }
 
@@ -366,8 +352,10 @@ void mouse_event(int x, int y, int dx, int dy)
 	Mouse_x = x;
 	Mouse_y = y;
 
-	Mouse_dx = dx;
-	Mouse_dy = dy;
+	// Add up these delta values so we don't overwrite previous events,
+	// should be reset in gr_flip my mouse_reset_deltas()
+	Mouse_dx += dx;
+	Mouse_dy += dy;
 
 	if(Mouse_dx != 0 || Mouse_dy != 0)
 	{
@@ -389,16 +377,6 @@ int mouse_get_pos(int *xpos, int *ypos)
 
         return 0;
     }
-
-	if (Mouse_mode == MOUSE_MODE_DI) {
-		if (xpos)
-			*xpos = Mouse_x;
-
-		if (ypos)
-			*ypos = Mouse_y;
-
-		return mouse_flags;
-	}
 
 	if (!mouse_inited) {
 		*xpos = *ypos = 0;
@@ -445,12 +423,6 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 
 void mouse_get_real_pos(int *mx, int *my)
 {
-	if (Mouse_mode == MOUSE_MODE_DI) {
-		*mx = Mouse_x;
-		*my = Mouse_y;
-		return;
-	}
-
 	POINT pnt;
 	getWindowMousePos(&pnt);
 	
@@ -460,15 +432,7 @@ void mouse_get_real_pos(int *mx, int *my)
 
 void mouse_set_pos(int xpos, int ypos)
 {
-	if (Mouse_mode == MOUSE_MODE_DI) {
-		Mouse_x = xpos;
-		Mouse_y = ypos;
-		return;
-	}
-
-	if ((xpos != Mouse_x) || (ypos != Mouse_y)){
-		mouse_force_pos(xpos, ypos);
-	}
+	mouse_force_pos(xpos, ypos);
 }
 
 // portable routine to get the mouse position, relative
@@ -484,13 +448,4 @@ void getWindowMousePos(POINT * pt)
 
 	pt->x = x;
 	pt->y = y;
-}
-
-// portable routine to get the mouse position, relative
-// to current window
-void setWindowMousePos(POINT * pt)
-{
-	Assert(pt != NULL);
-
-	SDL_WarpMouseInWindow(os_get_window(), pt->x, pt->y);
 }

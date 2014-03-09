@@ -77,7 +77,6 @@ bool movie_play(char *name)
 		cutscene_mark_viewable(name);
 	}
 
-	extern int Mouse_hidden;
 	extern int Is_standalone;
 
 	if (Cmdline_nomovies || Is_standalone)
@@ -101,7 +100,7 @@ bool movie_play(char *name)
 	}
 
 	// clear the screen and hide the mouse cursor
-	Mouse_hidden++;
+	io::mouse::CursorManager::get()->showCursor(false);
 	gr_reset_clip();
 	gr_set_color(255, 255, 255);
 	gr_set_clear_color(0, 0, 0);
@@ -127,7 +126,7 @@ bool movie_play(char *name)
 		} else {
 			// uh-oh, movie is invalid... Abory, Retry, Fail?
 			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
-			Mouse_hidden--;	// show the mouse cursor!
+			io::mouse::CursorManager::get()->showCursor(true);	// show the mouse cursor!
 			return false;
 		}
 	} else if (rc == MOVIE_MVE) {
@@ -144,13 +143,13 @@ bool movie_play(char *name)
 		} else {
 			// uh-oh, movie is invalid... Abory, Retry, Fail?
 			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
-			Mouse_hidden--;	// show the mouse cursor!
+			io::mouse::CursorManager::get()->showCursor(true);	// show the mouse cursor!
 			return false;
 		}
 	}
 
 	// show the mouse cursor again
-	Mouse_hidden--;
+	io::mouse::CursorManager::get()->showCursor(true);
 
 	return true;
 }

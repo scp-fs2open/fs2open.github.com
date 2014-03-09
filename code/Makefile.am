@@ -384,6 +384,8 @@ FS2_SOURCES =	\
 	inetfile/chttpget.h	\
 	inetfile/inetgetfile.cpp	\
 	inetfile/inetgetfile.h	\
+	io/cursor.cpp	\
+	io/cursor.h	\
 	io/key.cpp	\
 	io/key.h	\
 	io/keycontrol.cpp	\

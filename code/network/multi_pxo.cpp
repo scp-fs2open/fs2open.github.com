@@ -1136,8 +1136,8 @@ void multi_pxo_init(int use_last_channel)
 	Multi_pxo_buttons[gr_screen.res][MULTI_PXO_PLIST_DOWN].button.repeatable(1);
 
 	// set the mouseover cursor if it loaded ok
-	if (Web_cursor_bitmap > 0) {
-		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_RANKINGS].button.set_custom_cursor_bmap(Web_cursor_bitmap);
+	if (Web_cursor != NULL) {
+		Multi_pxo_buttons[gr_screen.res][MULTI_PXO_RANKINGS].button.set_custom_cursor(Web_cursor);
 	}
 
 	// create the channel list select button and hide it

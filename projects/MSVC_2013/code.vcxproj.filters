@@ -1053,6 +1053,9 @@
     <ClCompile Include="..\..\code\io\joy-sdl.cpp">
       <Filter>Io</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\io\cursor.cpp">
+      <Filter>Io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1852,6 +1855,9 @@
     </ClInclude>
     <ClInclude Include="..\..\code\PilotFile\pilotfile.h">
       <Filter>PilotFile</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\io\cursor.h">
+      <Filter>Io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -517,12 +517,12 @@ int popup_init(popup_info *pi, int flags)
 	}
 
 	// webcursor setup
-	if (Web_cursor_bitmap >= 0) {
+	if (Web_cursor != NULL) {
 		if (flags & PF_WEB_CURSOR_1) {
-			Popup_buttons[1].set_custom_cursor_bmap(Web_cursor_bitmap);
+			Popup_buttons[1].set_custom_cursor(Web_cursor);
 		}
 		if (flags & PF_WEB_CURSOR_2) {
-			Popup_buttons[2].set_custom_cursor_bmap(Web_cursor_bitmap);
+			Popup_buttons[2].set_custom_cursor(Web_cursor);
 		}
 	}
 
@@ -1007,7 +1007,7 @@ int popup(int flags, int nchoices, ... )
 	
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
-	Mouse_hidden = 0;
+	io::mouse::CursorManager::get()->showCursor(true);
 	Popup_is_active = 1;
 
 	choice = popup_do( &Popup_info, flags );
@@ -1061,7 +1061,7 @@ int popup_till_condition(int (*condition)(), ...)
 		
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
-	Mouse_hidden = 0;
+	io::mouse::CursorManager::get()->showCursor(true);
 	Popup_is_active = 1;
 
 	choice = popup_do_with_condition( &Popup_info, flags, condition );
@@ -1106,7 +1106,7 @@ char *popup_input(int flags, const char *caption, int max_output_len)
 	
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
-	Mouse_hidden = 0;
+	io::mouse::CursorManager::get()->showCursor(true);
 	Popup_is_active = 1;
 
 	// if the user cancelled

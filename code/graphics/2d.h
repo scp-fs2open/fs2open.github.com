@@ -16,6 +16,7 @@
 #include "graphics/tmapper.h"
 #include "cfile/cfile.h"
 #include "bmpman/bmpman.h"
+#include "io/cursor.h"
 
 extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
@@ -598,13 +599,7 @@ extern void gr_set_palette(const char *name, ubyte *palette, int restrict_to_128
 void gr_get_string_size_win(int *w, int *h, const char *text);
 void gr_string_win(int x, int y, const char *s );
 
-// set the mouse pointer to a specific bitmap, used for animating cursors
-#define GR_CURSOR_LOCK		1
-#define GR_CURSOR_UNLOCK	2
-void gr_set_cursor_bitmap(int n, int lock = 0);
-void gr_unset_cursor_bitmap(int n);
-int gr_get_cursor_bitmap();
-extern int Web_cursor_bitmap;
+extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
 extern void gr_activate(int active);

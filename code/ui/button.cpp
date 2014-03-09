@@ -55,8 +55,8 @@ void UI_BUTTON::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int 
 		m_flags |= BF_IGNORE_FOCUS;
 	}
 
-	custom_cursor_bmap = -1;
-	previous_cursor_bmap = -1;
+	custom_cursor = NULL;
+	previous_cursor = NULL;
 }
 
 void UI_BUTTON::destroy()
@@ -435,17 +435,18 @@ void UI_BUTTON::maybe_show_custom_cursor()
 
 	// set the mouseover cursor 
 	if (is_mouse_on()) {
-		if ((custom_cursor_bmap >= 0) && (previous_cursor_bmap < 0)) {
-			previous_cursor_bmap = gr_get_cursor_bitmap();
-			gr_set_cursor_bitmap(custom_cursor_bmap, GR_CURSOR_LOCK);			// set and lock
+		if ((custom_cursor != NULL) && (previous_cursor == NULL)) {
+			previous_cursor = io::mouse::CursorManager::get()->getCurrentCursor();
+
+			io::mouse::CursorManager::get()->setCurrentCursor(custom_cursor);
 		}
 	}
 }
 
 void UI_BUTTON::restore_previous_cursor()
 {
-	if (previous_cursor_bmap >= 0) {
-		gr_set_cursor_bitmap(previous_cursor_bmap, GR_CURSOR_UNLOCK);		// restore and unlock
-		previous_cursor_bmap = -1;
+	if (previous_cursor != NULL) {
+		io::mouse::CursorManager::get()->setCurrentCursor(previous_cursor);
+		previous_cursor = NULL;
 	}
 }

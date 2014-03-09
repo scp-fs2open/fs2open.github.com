@@ -15,6 +15,8 @@
 #include "graphics/2d.h"
 #include "graphics/font.h"
 
+#include "io/cursor.h"
+
 #define UI_KIND_BUTTON				1
 #define UI_KIND_KEYTRAP				2
 #define UI_KIND_CHECKBOX			3
@@ -221,8 +223,8 @@ class UI_BUTTON : public UI_GADGET
 		virtual void process(int focus = 0);
 		virtual void destroy();
 
-		int custom_cursor_bmap;					// bmap handle of special cursor used on mouseovers
-		int previous_cursor_bmap;				// store old cursor
+		io::mouse::Cursor* custom_cursor;					// bmap handle of special cursor used on mouseovers
+		io::mouse::Cursor* previous_cursor;				// store old cursor
 		void maybe_show_custom_cursor();		// call this in process() 
 		void restore_previous_cursor();		// called in frame_reset()
 
@@ -245,7 +247,7 @@ class UI_BUTTON : public UI_GADGET
 		void reset_timestamps();
 		void skip_first_highlight_callback();
 		void repeatable(int yes);
-		void set_custom_cursor_bmap(int bmap_id) { custom_cursor_bmap = bmap_id; };
+		void set_custom_cursor(io::mouse::Cursor* cursor) { custom_cursor = cursor; };
 };
 
 class UI_KEYTRAP : public UI_GADGET

@@ -355,7 +355,7 @@ bool fred_init()
 
 	gr_init(GR_OPENGL, 640, 480, 32);
 
-	Mouse_hidden = 1;
+	io::mouse::CursorManager::get()->showCursor(false);
 
 	gr_font_init();					// loads up all fonts  
 

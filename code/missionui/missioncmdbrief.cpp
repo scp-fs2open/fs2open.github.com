@@ -557,9 +557,7 @@ void cmd_brief_init(int team)
 
 	gr_reset_clip();
 	gr_clear();
-	Mouse_hidden++;
 	gr_flip();
-	Mouse_hidden--;
 
 	// first determine which layout to use
 	Uses_scroll_buttons = 1;	// assume true

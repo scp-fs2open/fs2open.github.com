@@ -62,6 +62,7 @@
 #include "io/joy_ff.h"
 #include "io/key.h"
 #include "io/mouse.h"
+#include "io/cursor.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
@@ -457,10 +458,6 @@ fs_builtin_mission Game_builtin_mission_list[MAX_BUILTIN_MISSIONS] = {
 
 
 // Internal function prototypes
-void game_maybe_draw_mouse(float frametime);
-void init_animating_pointer();
-void load_animating_pointer(char *filename, int dx, int dy);
-void unload_animating_pointer();
 void game_do_training_checks();
 void game_shutdown(void);
 void game_show_event_debug(float frametime);
@@ -1243,7 +1240,7 @@ void game_loading_callback_init()
 	Assertion( Game_loading_ani.num_frames > 0, "Load Screen animation %s not found, or corrupted. Needs to be an animation with at least 1 frame.", Game_loading_ani.filename );
 
 	Game_loading_callback_inited = 1;
-	Mouse_hidden = 1;
+	io::mouse::CursorManager::get()->showCursor(false);
 	framenum = 0;
 	game_busy_callback( game_loading_callback, (COUNT_ESTIMATE/Game_loading_ani.num_frames)+1 );
 
@@ -1257,8 +1254,8 @@ void game_loading_callback_close()
 	// Make sure bar shows all the way over.
 	game_loading_callback(COUNT_ESTIMATE);
 	
-	int real_count = game_busy_callback( NULL );
- 	Mouse_hidden = 0;
+	int real_count = game_busy_callback(NULL);
+	io::mouse::CursorManager::get()->showCursor(true);
 
 	Game_loading_callback_inited = 0;
 	
@@ -1990,7 +1987,6 @@ void game_init()
 	// initialize psnet
 	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
 
-	init_animating_pointer();	
 	asteroid_init();
 	mission_brief_common_init();	// Mark all the briefing structures as empty.
 
@@ -2004,8 +2000,6 @@ void game_init()
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
 	pilot_load_pic_list();	
 	pilot_load_squad_pic_list();
-
-	load_animating_pointer(NOX("cursor"), 0, 0);	
 
 	if(!Cmdline_reparse_mainhall)
 	{
@@ -2036,6 +2030,10 @@ void game_init()
 
 	mprintf(("cfile_init() took %d\n", e1 - s1));	
 	Script_system.RunBytecode(Script_gameinithook);
+	// if we are done initializing, start showing the cursor
+	io::mouse::CursorManager::get()->showCursor(true);
+
+	mouse_set_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
 }
 
 char transfer_text[128];
@@ -4821,12 +4819,8 @@ void game_do_frame()
 
 	last_single_step = game_single_step;
 
-	if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && Use_mouse_to_fly){
-		Keep_mouse_centered = 1;  // force mouse to center of our window (so we don't hit movement limits)
-	}
 	game_frame();
 
-	Keep_mouse_centered = 0;
 	monitor_update();			// Update monitor variables
 }
 
@@ -4902,7 +4896,7 @@ int game_poll()
 	k = key_inkey();
 
 	// Move the mouse cursor with the joystick.
-	if (os_foreground() && (!Mouse_hidden) && (Use_joy_mouse) )	{
+	if (os_foreground() && !io::mouse::CursorManager::get()->isCursorShown() && (Use_joy_mouse))	{
 		// Move the mouse cursor with the joystick
 		int mx, my, dx, dy;
 		int jx, jy, jz, jr;
@@ -6410,7 +6404,7 @@ void mouse_force_pos(int x, int y);
 // do stuff that may need to be done regardless of state
 void game_do_state_common(int state,int no_networking)
 {
-	game_maybe_draw_mouse(flFrametime);		// determine if to draw the mouse this frame
+	io::mouse::CursorManager::doFrame();		// determine if to draw the mouse this frame
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
 
@@ -7115,7 +7109,9 @@ void game_shutdown(void)
 	weapon_close();					// free any memory that was allocated for the weapons
 	ship_close();					// free any memory that was allocated for the ships
 	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
-	unload_animating_pointer();// frees the frames used for the animating mouse pointer
+
+	io::mouse::CursorManager::shutdown();
+
 	mission_campaign_clear();	// clear out the campaign stuff
 	message_mission_close();	// clear loaded table data from message.tbl
 	mission_parse_close();		// clear out any extra memory that may be in use by mission parsing
@@ -7192,151 +7188,6 @@ void game_stop_looped_sounds()
 	snd_stop(Target_static_looping);
 	shipfx_stop_engine_wash_sound();
 	Target_static_looping = -1;
-}
-
-//////////////////////////////////////////////////////////////////////////
-//
-// Code for supporting an animating mouse pointer
-//
-//
-//////////////////////////////////////////////////////////////////////////
-
-typedef struct animating_obj
-{
-	int	first_frame;
-	int	num_frames;
-	int	current_frame;
-	float time;
-	float elapsed_time;
-} animating_obj;
-
-static animating_obj Animating_mouse;
-
-// ----------------------------------------------------------------------------
-// init_animating_pointer()
-//
-// Called by load_animating_pointer() to ensure the Animating_mouse struct
-// gets properly initialized
-//
-void init_animating_pointer()
-{
-	Animating_mouse.first_frame	= -1;
-	Animating_mouse.num_frames		= 0;
-	Animating_mouse.current_frame	= -1;
-	Animating_mouse.time				= 0.0f;
-	Animating_mouse.elapsed_time	= 0.0f;
-}
-
-// ----------------------------------------------------------------------------
-// load_animating_pointer()
-//
-// Called at game init to load in the frames for the animating mouse pointer
-//
-// input:	filename	=>	filename of animation file that holds the animation
-// 
-void load_animating_pointer(char *filename, int dx, int dy)
-{
-	int				fps;
-	animating_obj *am;
-
-	init_animating_pointer();
-
-//TEMP
-	mprintf(("loading animated cursor \"%s\"\n", filename));
-
-
-	am = &Animating_mouse;
-	am->first_frame = bm_load_animation(filename, &am->num_frames, &fps);
-	if ( am->first_frame == -1 ) 
-		Error(LOCATION, "Could not load animation %s for the mouse pointer\n", filename);
-	am->current_frame = 0;
-	am->time = am->num_frames / i2fl(fps);
-}
-
-// ----------------------------------------------------------------------------
-// unload_animating_pointer()
-//
-// Called at game shutdown to free the memory used to store the animation frames
-//
-void unload_animating_pointer()
-{
-	int				i;
-	animating_obj	*am;
-
-	am = &Animating_mouse;
-	for ( i = 0; i < am->num_frames; i++ ) {
-		Assert( (am->first_frame+i) >= 0 );
-
-		// if we are the current cursor then reset to avoid gr_close() issues - taylor
-		gr_unset_cursor_bitmap(am->first_frame + i);
-	}
-
-	// this will release all of the frames at once
-	if (am->first_frame >= 0)
-		bm_release(am->first_frame);
-
-	am->first_frame	= -1;
-	am->num_frames		= 0;
-	am->current_frame = -1;
-}
-
-// draw the correct frame of the game mouse... called from game_maybe_draw_mouse()
-void game_render_mouse(float frametime)
-{
-	int				mx, my;
-	animating_obj	*am;
-
-	// if animating cursor exists, play the next frame
-	am = &Animating_mouse;
-	if ( am->first_frame != -1 ) {
-		mouse_get_pos(&mx, &my);
-		am->elapsed_time += frametime;
-		am->current_frame = fl2i( ( am->elapsed_time / am->time ) * (am->num_frames-1) );
-		if ( am->current_frame >= am->num_frames ) {
-			am->current_frame = 0;
-			am->elapsed_time = 0.0f;
-		}
-		gr_set_cursor_bitmap(am->first_frame + am->current_frame);
-	}
-}
-
-// ----------------------------------------------------------------------------
-// game_maybe_draw_mouse()
-//
-// determines whether to draw the mouse pointer at all, and what frame of
-// animation to use if the mouse is animating
-//
-// Sets mouse.cpp globals Mouse_hidden and Mouse_moved based on the state of the game.
-//
-// input:	frametime => elapsed frame time in seconds since last call
-//
-void game_maybe_draw_mouse(float frametime)
-{
-	int game_state;
-
-	game_state = gameseq_get_state();
-
-	switch ( game_state ) {
-		case GS_STATE_GAME_PAUSED:
-		// case GS_STATE_MULTI_PAUSED:
-		case GS_STATE_GAME_PLAY:
-		case GS_STATE_DEATH_DIED:
-		case GS_STATE_DEATH_BLEW_UP:
-			if ( popup_active() || popupdead_is_active() ) {
-				Mouse_hidden = 0;
-			} else {
-				Mouse_hidden = 1;	
-			}
-			break;
-
-		default:
-			Mouse_hidden = 0;
-			break;
-	}	// end switch
-
-	if ( !Mouse_hidden ) 
-		game_render_mouse(frametime);
-
 }
 
 void game_do_training_checks()
