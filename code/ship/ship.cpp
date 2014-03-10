@@ -2564,7 +2564,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
 	}
 
-	if(optional_string("$Max Shield Recharge Percent:")){
+	if(optional_string("$Max Shield Recharge:")){
 		stuff_float(&sip->max_shield_recharge);
 		CLAMP(sip->max_shield_recharge, 0.0f, 1.0f);
 	}
@@ -5240,14 +5240,14 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	}
 	objp->hull_strength = shipp->ship_max_hull_strength;
 
-	shipp->max_shield_recharge_pct = sip->max_shield_recharge;
+	shipp->max_shield_recharge = sip->max_shield_recharge;
 
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
-		shield_set_strength(objp, shipp->ship_max_shield_strength * shipp->max_shield_recharge_pct);
+		shield_set_strength(objp, shipp->ship_max_shield_strength * shipp->max_shield_recharge);
 	}
 
 	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
@@ -9395,7 +9395,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		objp->hull_strength = hull_pct * sp->ship_max_hull_strength;
 	}
 
-	sp->max_shield_recharge_pct = sip->max_shield_recharge;
+	sp->max_shield_recharge = sip->max_shield_recharge;
 
 	// set the correct shield strength
 	if (Fred_running) {
@@ -12869,7 +12869,7 @@ float ship_calculate_rearm_duration( object *objp )
 
 	//find out time to repair shields
 	if(sip->sup_shield_repair_rate > 0.0f)
-		shield_rep_time = ((sp->ship_max_shield_strength * sp->max_shield_recharge_pct) - shield_get_strength(objp)) / (sp->max_shield_recharge_pct * sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
+		shield_rep_time = ((sp->ship_max_shield_strength * sp->max_shield_recharge) - shield_get_strength(objp)) / (sp->max_shield_recharge * sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
@@ -13005,7 +13005,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( !(objp->flags & OF_NO_SHIELDS) )
 	{
 		shield_str = shield_get_strength(objp);
-		if ( shield_str < (shipp->ship_max_shield_strength * shipp->max_shield_recharge_pct) ) {
+		if ( shield_str < (shipp->ship_max_shield_strength * shipp->max_shield_recharge) ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}

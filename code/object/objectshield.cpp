@@ -50,7 +50,7 @@ void shield_add_strength(object *objp, float delta)
 		return;
 
 	float shield_str = shield_get_strength(objp);
-	float shield_recharge_limit = Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge_pct;
+	float shield_recharge_limit = Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge;
 
 	if (shield_str >= shield_recharge_limit)
 		return;

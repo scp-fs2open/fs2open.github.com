@@ -592,7 +592,7 @@ public:
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
 
-	float max_shield_recharge_pct;
+	float max_shield_recharge;
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
