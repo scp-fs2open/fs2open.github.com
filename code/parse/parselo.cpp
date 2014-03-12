@@ -341,7 +341,7 @@ void advance_to_eoln(char *more_terminators)
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = (char)EOF_CHAR;
+	terminators[1] = EOF_CHAR;
 	terminators[2] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
@@ -777,7 +777,7 @@ void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max)
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = (char)EOF_CHAR;
+	terminators[1] = EOF_CHAR;
 	terminators[2] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
@@ -804,7 +804,7 @@ void copy_to_eoln(SCP_string &outstr, char *more_terminators, char *instr)
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = (char)EOF_CHAR;
+	terminators[1] = EOF_CHAR;
 	terminators[2] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
@@ -1872,7 +1872,7 @@ void strip_all_comments( char *readp, char *writep )
 		}
 	}
 
-	*writep = (char)EOF_CHAR;
+	*writep = EOF_CHAR;
 }
 #endif*/
 
@@ -2151,7 +2151,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 //		mp += strlen(outbuf);
 	}
 
-	*mp = *mp_raw = (char)EOF_CHAR;
+	*mp = *mp_raw = EOF_CHAR;
 /*
 	while (cfgets(outbuf, PARSE_BUF_SIZE, mf) != NULL) {
 		if (strlen(outbuf) >= PARSE_BUF_SIZE-1)
@@ -2168,7 +2168,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 		mp += strlen(outbuf);
 	}
 	
-	*mp = *mp_raw = (char)EOF_CHAR;
+	*mp = *mp_raw = EOF_CHAR;
 */
 
 }
