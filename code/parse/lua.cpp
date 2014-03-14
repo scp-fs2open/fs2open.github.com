@@ -13018,6 +13018,7 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 
 	if(f)
 	{
+		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
 		gr_rect(x1, y1, x2-x1, y2-y1, false);
 	}
 	else
