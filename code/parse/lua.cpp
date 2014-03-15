@@ -9801,14 +9801,12 @@ ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a d
 		{
 			if(wp->target_sig != newh->sig)
 			{
-				wp->target_num = OBJ_INDEX(newh->objp);
-				wp->target_sig = newh->sig;
+				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objp), 1);
 			}
 		}
 		else
 		{
-			wp->target_num = -1;
-			wp->target_sig = 0;
+			weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, -1);
 		}
 	}
 
@@ -9870,20 +9868,16 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh != NULL && newh->IsValid())
+		if (newh != NULL && newh->IsValid())
 		{
-			if(wp->target_sig != newh->sig)
+			if (wp->target_sig != newh->sig)
 			{
-				wp->homing_object = newh->objp;
-				wp->homing_pos = newh->objp->pos;
-				wp->homing_subsys = NULL;
+				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objp), 1);
 			}
 		}
 		else
 		{
-			wp->homing_object = NULL;
-			wp->homing_pos = vmd_zero_vector;
-			wp->homing_subsys = NULL;
+			weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, -1);
 		}
 	}
 
@@ -9893,7 +9887,8 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 		return ade_set_object_with_breed(L, OBJ_INDEX(wp->homing_object));
 }
 
-ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home in on (World vector)", "vector", "Homing point, or null vector if weapon handle is invalid")
+ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home in on (World vector), setting this without a homing object in place will not have any effect!",
+	"vector", "Homing point, or null vector if weapon handle is invalid")
 {
 	object_h *objh;
 	vec3d *v3;
@@ -9913,14 +9908,10 @@ ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home 
 	{
 		if(v3 != NULL)
 		{
-			wp->homing_object = NULL;
-			wp->homing_subsys = NULL;
 			wp->homing_pos = *v3;
 		}
 		else
 		{
-			wp->homing_object = NULL;
-			wp->homing_subsys = NULL;
 			wp->homing_pos = vmd_zero_vector;
 		}
 	}
