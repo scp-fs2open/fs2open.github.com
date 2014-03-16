@@ -470,6 +470,19 @@ void lcl_set_language(int lang)
 
 	// flag the proper language as being active
 	Lcl_special_chars = Lcl_languages[Lcl_current_lang].special_char_indexes[0];
+	Lcl_fr = 0;
+	Lcl_gr = 0;
+	Lcl_pl = 0;
+	Lcl_english = 0;
+	if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_ENGLISH].lang_name)) {
+		Lcl_english = 1;
+	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_FRENCH].lang_name)) {
+		Lcl_fr = 1;
+	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_GERMAN].lang_name)) {
+		Lcl_gr = 1;
+	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_POLISH].lang_name)) {
+		Lcl_pl = 1;
+	}
 
 	// set to 0, so lcl_ext_open() knows to reset file pointers
 	Lcl_pointer_count = 0;
