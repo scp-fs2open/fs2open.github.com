@@ -422,7 +422,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 
 	// if we're switching to a different mainhall we may need to change music
 	if (main_hall_get_music_index(main_hall_get_index(main_hall_to_load)) != main_hall_get_music_index(main_hall_id())) {
-		main_hall_stop_music();
+		main_hall_stop_music(true);
 	}
 
 	// create the snazzy interface and load up the info from the table
@@ -574,7 +574,7 @@ void main_hall_exit_game()
 	int choice;
 
 	// stop music first
-	main_hall_stop_music();
+	main_hall_stop_music(true);
 	main_hall_stop_ambient();
 	choice = popup( PF_NO_NETWORKING | PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 365));
 	if (choice == 1) {
@@ -994,10 +994,10 @@ void main_hall_start_music()
 /**
  * Stop the main hall music
  */
-void main_hall_stop_music()
+void main_hall_stop_music(bool fade)
 {
 	if (Main_hall_music_handle != -1) {
-		audiostream_close_file(Main_hall_music_handle, 1);
+		audiostream_close_file(Main_hall_music_handle, fade);
 		Main_hall_music_handle = -1;
 	}
 }

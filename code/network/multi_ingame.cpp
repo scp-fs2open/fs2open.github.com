@@ -836,7 +836,7 @@ void multi_ingame_select_close()
 	Multi_ingame_window.destroy();	
 
 	// stop main hall music
-	main_hall_stop_music();	
+	main_hall_stop_music(true);
 }
 
 // display an individual ships information, starting at the indicated y pixel value

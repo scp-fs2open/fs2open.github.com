@@ -26,10 +26,12 @@
 #include "external_dll/trackirpublic.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "menuui/credits.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
+#include "missionui/missionbrief.h"
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -11771,20 +11773,35 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping
 	return ade_set_args(L, "i", ah);
 }
 
-ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false]", "Stops a playing music file, provided audiohandle is valid", NULL, NULL)
+ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false], [string 'briefing|credits|mainhall']", "Stops a playing music file, provided audiohandle is valid. If the 3rd arg is set to one of briefing,credits,mainhall then that music will be stopped despite the audiohandle given.", NULL, NULL)
 {
 	int ah;
 	bool fade = false;
-	if(!ade_get_args(L, "i|b", &ah, &fade))
+	char *music_type = NULL;
+
+	if(!ade_get_args(L, "i|bs", &ah, &fade, &music_type))
 		return ADE_RETURN_NIL;
 
-	if (ah >= MAX_AUDIO_STREAMS || ah < 0 ) 
+	if (ah >= MAX_AUDIO_STREAMS || ah < 0 )
 		return ADE_RETURN_NIL;
 
-	audiostream_close_file(ah, fade);
+	if (music_type == NULL) {
+		audiostream_close_file(ah, fade);
+	} else {
+		if (!stricmp(music_type, "briefing"))	{
+			briefing_stop_music(fade);
+		} else if (!stricmp(music_type, "credits")) {
+			credits_stop_music(fade);
+		} else if (!stricmp(music_type, "mainhall")) {
+			main_hall_stop_music(fade);
+		} else {
+			LuaError(L, "Invalid music type (%s) passed to stopMusic", music_type);
+		}
+	}
+
 	return ADE_RETURN_NIL;
-	
 }
+
 
 //**********LIBRARY: Base
 ade_lib l_Base("Base", NULL, "ba", "Base FreeSpace 2 functions");

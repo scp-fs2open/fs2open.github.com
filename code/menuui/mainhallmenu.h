@@ -129,7 +129,7 @@ void main_hall_close();
 void main_hall_start_music();
 
 // stop the main hall music
-void main_hall_stop_music();
+void main_hall_stop_music(bool fade);
 
 // get the music index
 int main_hall_get_music_index(int main_hall_num);

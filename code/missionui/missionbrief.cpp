@@ -1834,10 +1834,10 @@ void brief_close()
 	Brief_inited = FALSE;
 }
 
-void briefing_stop_music()
+void briefing_stop_music(bool fade)
 {
 	if ( Briefing_music_handle != -1 ) {
-		audiostream_close_file(Briefing_music_handle, 1);
+		audiostream_close_file(Briefing_music_handle, fade);
 		Briefing_music_handle = -1;
 	}
 }
