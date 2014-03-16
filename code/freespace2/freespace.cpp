@@ -5197,7 +5197,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_QUIT_GAME:
-			main_hall_stop_music();
+			main_hall_stop_music(true);
 			main_hall_stop_ambient();
 			gameseq_set_state(GS_STATE_QUIT_GAME);
 			break;
@@ -5801,7 +5801,7 @@ void game_leave_state( int old_state, int new_state )
 				Game_mode |= GM_IN_MISSION;
 			}
 
-			main_hall_stop_music();
+			main_hall_stop_music(true);
 			main_hall_stop_ambient();		
 			break;		
    
@@ -5942,7 +5942,7 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_START_GAME:
-			main_hall_stop_music();
+			main_hall_stop_music(true);
 			main_hall_stop_ambient();
 			
 			if (Game_mode & GM_NORMAL) {
@@ -6111,7 +6111,7 @@ void game_enter_state( int old_state, int new_state )
 					//XSTR:ON
 					#endif
 
-					main_hall_stop_music();
+					main_hall_stop_music(true);
 					main_hall_stop_ambient();
 					event_music_first_pattern();	// start the first pattern
 			}
@@ -6288,7 +6288,7 @@ void mouse_force_pos(int x, int y);
 			break;
 
 		case GS_STATE_CREDITS:
-			main_hall_stop_music();
+			main_hall_stop_music(true);
 			main_hall_stop_ambient();
 			credits_init();
 			break;
@@ -8777,7 +8777,7 @@ void game_pause()
 			case GS_STATE_TECH_MENU:
 			case GS_STATE_BARRACKS_MENU:
 				main_hall_stop_ambient();
-				main_hall_stop_music(); // not an instant shutoff
+				main_hall_stop_music(true); // not an instant shutoff
 				break;
 
 			// things that would get music except if they are called while in-mission
@@ -8785,7 +8785,7 @@ void game_pause()
 			case GS_STATE_HUD_CONFIG:
 				if ( !(Game_mode & GM_IN_MISSION) ) {
 					main_hall_stop_ambient();
-					main_hall_stop_music(); // not an instant shutoff
+					main_hall_stop_music(true); // not an instant shutoff
 				}
 				break;
 
