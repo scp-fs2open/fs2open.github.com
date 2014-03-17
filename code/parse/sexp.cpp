@@ -27229,7 +27229,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_BOOL;
 			else
-				return OPF_HUD_GAUGE;
+				return OPF_STRING;
 
 		case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
 			if (argnum == 0)
