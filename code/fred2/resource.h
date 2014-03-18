@@ -1115,6 +1115,7 @@
 #define IDC_USE_WING_ICON               1579
 #define IDC_DISABLE_BUILTIN_COMMAND_MSGS 1580
 #define IDC_LBL_OTHER_SUFFIX            1580
+#define IDC_USE_CARGO_ICON              1580
 #define IDC_PRIMARIES_LOCKED            1581
 #define IDC_EXPORT                      1581
 #define IDC_SECONDARIES_LOCKED          1582

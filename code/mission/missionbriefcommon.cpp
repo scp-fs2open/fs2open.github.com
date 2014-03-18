@@ -604,9 +604,35 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 	// ship info might override the usual briefing icon
 	if (sip->bii_index_ship >= 0)
 	{
-		if ((sip->bii_index_wing >= 0) && (bi->flags & BI_USE_WING_ICON))
-			return &Briefing_icon_info[sip->bii_index_wing];
+		if (bi->flags & BI_USE_WING_ICON)
+		{
+			if (bi->flags & BI_USE_CARGO_ICON)
+			{
+				if (sip->bii_index_wing_with_cargo >= 0)
+					return &Briefing_icon_info[sip->bii_index_wing_with_cargo];
+				else
+					mprintf(("Ship '%s' is missing the wing-with-cargo briefing icon!", sip->name));
+			}
+			else
+			{
+				if (sip->bii_index_wing >= 0)
+					return &Briefing_icon_info[sip->bii_index_wing];
+				else
+					mprintf(("Ship '%s' is missing the wing briefing icon!", sip->name));
+			}
+		}
+		else
+		{
+			if (bi->flags & BI_USE_CARGO_ICON)
+			{
+				if (sip->bii_index_ship_with_cargo >= 0)
+					return &Briefing_icon_info[sip->bii_index_ship_with_cargo];
+				else
+					mprintf(("Ship '%s' is missing the ship-with-cargo briefing icon!", sip->name));
+			}
+		}
 
+		// this will be reached if we just want the plain ship icon, or if we specified icon modifiers which didn't exist
 		return &Briefing_icon_info[sip->bii_index_ship];
 	}
 

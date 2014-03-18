@@ -892,7 +892,9 @@ void init_ship_entry(ship_info *sip)
 	sip->selection_effect = Default_ship_select_effect;
 
 	sip->bii_index_ship = -1;
+	sip->bii_index_ship_with_cargo = -1;
 	sip->bii_index_wing = -1;
+	sip->bii_index_wing_with_cargo = -1;
 
 	sip->score = 0;
 
@@ -1381,7 +1383,7 @@ void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *ban
 }
 
 /**
- * Common method for parsing briefing icon info, even though we only do it twice.
+ * Common method for parsing briefing icon info.
  */
 int parse_and_add_briefing_icon_info()
 {
@@ -2909,8 +2911,18 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	// read in briefing stuff
 	if ( optional_string("$Briefing icon:") )
 		sip->bii_index_ship = parse_and_add_briefing_icon_info();
+	if ( optional_string("$Briefing icon with cargo:") )
+		sip->bii_index_ship_with_cargo = parse_and_add_briefing_icon_info();
 	if ( optional_string("$Briefing wing icon:") )
 		sip->bii_index_wing = parse_and_add_briefing_icon_info();
+	if ( optional_string("$Briefing wing icon with cargo:") )
+		sip->bii_index_wing_with_cargo = parse_and_add_briefing_icon_info();
+
+	// check for inconsistencies
+	if ((sip->bii_index_wing_with_cargo >= 0) && (sip->bii_index_wing < 0 || sip->bii_index_ship_with_cargo < 0))
+		Warning(LOCATION, "Ship '%s' has a wing-with-cargo briefing icon but is missing a wing briefing icon or a ship-with-cargo briefing icon!", sip->name);
+	if ((sip->bii_index_wing_with_cargo < 0) && (sip->bii_index_wing >= 0) && (sip->bii_index_ship_with_cargo >= 0))
+		Warning(LOCATION, "Ship '%s' has both a wing briefing icon and a ship-with-cargo briefing icon but does not have a wing-with-cargo briefing icon!", sip->name);
 
 	if ( optional_string("$Score:") ){
 		stuff_int( &sip->score );

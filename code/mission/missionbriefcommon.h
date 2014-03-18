@@ -100,6 +100,7 @@ extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
 #define		BI_FADEIN			(1<<2)
 #define		BI_MIRROR_ICON		(1<<3)	// mirror the briefing icon so it points the other way - phreak
 #define		BI_USE_WING_ICON	(1<<4)	// use wing variant of briefing icon
+#define		BI_USE_CARGO_ICON	(1<<5)	// use cargo variant of briefing icon
 
 typedef struct brief_icon {
 	int		x,y,w,h;
