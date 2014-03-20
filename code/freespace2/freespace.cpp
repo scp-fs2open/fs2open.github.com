@@ -5764,6 +5764,7 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_CREDITS:
 			credits_close();
+			main_hall_start_music();
 			break;
 
 		case GS_STATE_VIEW_MEDALS:
