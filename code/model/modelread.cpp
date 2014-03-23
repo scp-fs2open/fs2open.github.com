@@ -2611,87 +2611,56 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		}
 
 		for (j=0; j<pm->n_models; j++ )	{
+			int k;
 			bsp_info * sm2 = &pm->submodel[j];
 
 			if ( i==j ) continue;
-
+			
 			// set all arc types to be default 		
 			for(arc_idx=0; arc_idx < MAX_ARC_EFFECTS; arc_idx++){
 				sm2->arc_type[arc_idx] = MARC_TYPE_NORMAL;
 			}
 
-			SCP_string sm1name;
-			SCP_string sm2name;
-
-			if (sm1->lod_name[0] != '\0')
-				// If a backward compatibility LOD name is declared, use it
-				sm1name = SCP_string(sm1->lod_name);
-			else
-				// Otherwise, use the submodel name as-is
-				sm1name = SCP_string(sm1->name);
-
-			sm2name = SCP_string(sm2->name);
-
-			if (sm1name.length() == sm2name.length()) {
-				// If the submodel names are of equal length, we check if there's only a 1-char difference
-				// and then pull that char from both names and compare them
-
-				int first_diff_loc = -1;
-
-				// Find the first differing char
-				for (unsigned int k=0; k<sm1name.length(); k++) {
-					if (sm1name.at(k) != sm2name.at(k)) {
-						if (first_diff_loc == -1) {
-							first_diff_loc = k;
-						} else {
-							// Found a second differing char, so bail out
-							first_diff_loc = -1;
-							break;
-						}
+			// if sm2 is a detail of sm1 and sm1 is a high detail, then add it to sm1's list
+			if ((int)strlen(sm2->name)!=l1) continue; 
+	
+			int ndiff = 0;
+			int first_diff = 0;
+			for ( k=0; k<l1; k++)	{
+				// If a backward compatibility LOD name is declared use it
+				if (sm1->lod_name[0] != '\0') {
+					if (sm1->lod_name[k] != sm2->name[k] )	{
+						if (ndiff==0) first_diff = k;
+						ndiff++;
 					}
 				}
-
-				if (first_diff_loc != -1) {
-					int sm1_diff_char = tolower(sm1name.at(first_diff_loc));
-					int sm2_diff_char = tolower(sm2name.at(first_diff_loc));
-
-					// Check that the differing char in sm2 is at least "b" and that it's greater than in sm1
-					if (sm1_diff_char < sm2_diff_char && sm2_diff_char >= (int)'b') {
-						sm1->details[sm1->num_details] = j;
-						sm1->num_details++;
-
-						mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2_diff_char - sm1_diff_char, sm1->name));
+				// otherwise do the standard LOD comparision
+				else {
+					if (sm1->name[k] != sm2->name[k] )	{
+						if (ndiff==0) first_diff = k;
+						ndiff++;
 					}
 				}
-			} else if (sm1name.length() == sm2name.length() - 1) {
-				// If the submodel name lengths differ by only 1 char, then the other one might merely
-				// be missing the LOD0-denoting "a", so we check if the names are identical if the differing
-				// char is removed from the longer name
-
-				int first_diff_loc = -1;
-				SCP_string sm2_cmp_str = sm2name; // Gets the differing char erased when comparing
-
-				// Find the first differing char
-				for (unsigned int k=0; k<sm2name.length(); k++) {
-					if (k >= sm1name.length() || sm1name.at(k) != sm2_cmp_str.at(k)) {
-						if (first_diff_loc == -1) {
-							first_diff_loc = k;
-							// If we found the first match, we erase that char because otherwise the rest of the string could not match
-							sm2_cmp_str.erase(k, 1);
-						} else if (k < sm1name.length()) {
-							first_diff_loc = -1;
-							break;
-						}
-					}
+			}
+			if (ndiff==1)	{		// They only differ by one character!
+				int dl1, dl2;
+				// If a backward compatibility LOD name is declared use it
+				if (sm1->lod_name[0] != '\0') {
+					dl1 = tolower(sm1->lod_name[first_diff]) - 'a';
 				}
+				// otherwise do the standard LOD comparision
+				else {
+					dl1 = tolower(sm1->name[first_diff]) - 'a';
+				}
+				dl2 = tolower(sm2->name[first_diff]) - 'a';
 
-				if (first_diff_loc != -1) {
-					int sm2diff = tolower(sm2name.at(first_diff_loc));
-					
-					sm1->details[sm1->num_details] = j;
-					sm1->num_details++;
+				if ( (dl1<0) || (dl2<0) || (dl1>=MAX_MODEL_DETAIL_LEVELS) || (dl2>=MAX_MODEL_DETAIL_LEVELS) ) continue;	// invalid detail levels
 
-					mprintf(("Submodel '%s' is detail level %d of '%s'\n", sm2->name, sm2diff - (int)'a', sm1->name));
+				if ( dl1 == 0 )	{
+					dl2--;	// Start from 1 up...
+					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
+					sm1->details[dl2] = j;
+  				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
 				}
 			}
 		}
