@@ -445,6 +445,29 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// init tooltip shader						// nearly black
 	gr_create_shader(&Main_hall_tooltip_shader, 5, 5, 5, 168);
 
+	// are we funny?
+	if (Vasudan_funny && main_hall_is_vasudan()) {
+		if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+			
+			// set head anim. hehe
+			Main_hall->door_anim_name.at(OPTIONS_REGION) = "vhallheads";
+			
+			// set the background
+			Main_hall->bitmap = "vhallhead";
+		} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+			
+			// set head anim. hehe
+			Main_hall->door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
+			
+			// set the background
+			Main_hall->bitmap = "2_vhallhead";
+		}
+	}
+
 	// load the background bitmap
 	Main_hall_bitmap = bm_load(Main_hall->bitmap);
 	if (Main_hall_bitmap < 0) {
@@ -2063,23 +2086,6 @@ void parse_main_hall_table(const char* filename)
 		}
 
 		count++;
-	}
-
-	// are we funny?
-	if (Vasudan_funny) {
-		int hall = main_hall_id();
-
-		Main_hall_defines.at(GR_640).at(hall).door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
-		Main_hall_defines.at(GR_640).at(hall).door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
-		Main_hall_defines.at(GR_1024).at(hall).door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
-		Main_hall_defines.at(GR_1024).at(hall).door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
-
-		// set head anim. hehe
-		Main_hall_defines.at(GR_1024).at(hall).door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
-
-		// set the background
-		Main_hall_defines.at(GR_640).at(hall).bitmap = "vhallhead";
-		Main_hall_defines.at(GR_1024).at(hall).bitmap = "2_vhallhead";
 	}
 
 	// free up memory from parsing the mainhall tbl
