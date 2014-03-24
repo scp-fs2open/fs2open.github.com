@@ -252,7 +252,7 @@ void mht_button_pressed(int n)
 void mht_exit_game()
 {
 	// stop music first
-	main_hall_stop_music();
+	main_hall_stop_music(true);
 	main_hall_stop_ambient();
 	gameseq_post_event(GS_EVENT_QUIT_GAME);
 }

@@ -332,7 +332,7 @@ void common_music_close()
 	if ( Num_music_files <= 0 )
 		return;
 
-	briefing_stop_music();
+	briefing_stop_music(true);
 }
 
 int common_num_cutscenes_valid(int movie_type)

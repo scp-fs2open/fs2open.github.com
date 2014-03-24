@@ -321,7 +321,7 @@ void cutscenes_screen_play()
 	strcpy_s(name, Cutscenes[which_cutscene].filename );
 //	full_name = cf_add_ext(name, NOX(".mve"));
 
-	main_hall_stop_music();
+	main_hall_stop_music(true);
 	main_hall_stop_ambient();
 	int rval = movie_play(name);
 	main_hall_start_music();

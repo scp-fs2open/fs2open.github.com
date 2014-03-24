@@ -422,7 +422,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 
 	// if we're switching to a different mainhall we may need to change music
 	if (main_hall_get_music_index(main_hall_get_index(main_hall_to_load)) != main_hall_get_music_index(main_hall_id())) {
-		main_hall_stop_music();
+		main_hall_stop_music(true);
 	}
 
 	// create the snazzy interface and load up the info from the table
@@ -444,6 +444,29 @@ void main_hall_init(const SCP_string &main_hall_name)
 
 	// init tooltip shader						// nearly black
 	gr_create_shader(&Main_hall_tooltip_shader, 5, 5, 5, 168);
+
+	// are we funny?
+	if (Vasudan_funny && main_hall_is_vasudan()) {
+		if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+			
+			// set head anim. hehe
+			Main_hall->door_anim_name.at(OPTIONS_REGION) = "vhallheads";
+			
+			// set the background
+			Main_hall->bitmap = "vhallhead";
+		} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
+			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
+			
+			// set head anim. hehe
+			Main_hall->door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
+			
+			// set the background
+			Main_hall->bitmap = "2_vhallhead";
+		}
+	}
 
 	// load the background bitmap
 	Main_hall_bitmap = bm_load(Main_hall->bitmap);
@@ -574,7 +597,7 @@ void main_hall_exit_game()
 	int choice;
 
 	// stop music first
-	main_hall_stop_music();
+	main_hall_stop_music(true);
 	main_hall_stop_ambient();
 	choice = popup( PF_NO_NETWORKING | PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 365));
 	if (choice == 1) {
@@ -994,10 +1017,10 @@ void main_hall_start_music()
 /**
  * Stop the main hall music
  */
-void main_hall_stop_music()
+void main_hall_stop_music(bool fade)
 {
 	if (Main_hall_music_handle != -1) {
-		audiostream_close_file(Main_hall_music_handle, 1);
+		audiostream_close_file(Main_hall_music_handle, fade);
 		Main_hall_music_handle = -1;
 	}
 }
@@ -2063,23 +2086,6 @@ void parse_main_hall_table(const char* filename)
 		}
 
 		count++;
-	}
-
-	// are we funny?
-	if (Vasudan_funny) {
-		int hall = main_hall_id();
-
-		Main_hall_defines.at(GR_640).at(hall).door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
-		Main_hall_defines.at(GR_640).at(hall).door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
-		Main_hall_defines.at(GR_1024).at(hall).door_sounds.at(OPTIONS_REGION).at(0) = SND_VASUDAN_BUP;
-		Main_hall_defines.at(GR_1024).at(hall).door_sounds.at(OPTIONS_REGION).at(1) = SND_VASUDAN_BUP;
-
-		// set head anim. hehe
-		Main_hall_defines.at(GR_1024).at(hall).door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
-
-		// set the background
-		Main_hall_defines.at(GR_640).at(hall).bitmap = "vhallhead";
-		Main_hall_defines.at(GR_1024).at(hall).bitmap = "2_vhallhead";
 	}
 
 	// free up memory from parsing the mainhall tbl

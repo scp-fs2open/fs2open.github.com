@@ -225,10 +225,10 @@ enum CreditsPosition
 
 static CreditsPosition SCP_credits_position	= START;
 
-void credits_stop_music()
+void credits_stop_music(bool fade)
 {
 	if ( Credits_music_handle != -1 ) {
-		audiostream_close_file(Credits_music_handle, 1);
+		audiostream_close_file(Credits_music_handle, fade);
 		Credits_music_handle = -1;
 	}
 }
@@ -662,7 +662,7 @@ void credits_close()
 	}
 	Credits_bmps.clear();
 
-	credits_stop_music();
+	credits_stop_music(true);
 
 	Credit_text_parts.clear();
 

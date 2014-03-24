@@ -26,10 +26,12 @@
 #include "external_dll/trackirpublic.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "menuui/credits.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
+#include "missionui/missionbrief.h"
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -9814,14 +9816,12 @@ ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a d
 		{
 			if(wp->target_sig != newh->sig)
 			{
-				wp->target_num = OBJ_INDEX(newh->objp);
-				wp->target_sig = newh->sig;
+				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objp), 1);
 			}
 		}
 		else
 		{
-			wp->target_num = -1;
-			wp->target_sig = 0;
+			weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, -1);
 		}
 	}
 
@@ -9883,20 +9883,16 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh != NULL && newh->IsValid())
+		if (newh != NULL && newh->IsValid())
 		{
-			if(wp->target_sig != newh->sig)
+			if (wp->target_sig != newh->sig)
 			{
-				wp->homing_object = newh->objp;
-				wp->homing_pos = newh->objp->pos;
-				wp->homing_subsys = NULL;
+				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objp), 1);
 			}
 		}
 		else
 		{
-			wp->homing_object = NULL;
-			wp->homing_pos = vmd_zero_vector;
-			wp->homing_subsys = NULL;
+			weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, -1);
 		}
 	}
 
@@ -9906,7 +9902,8 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 		return ade_set_object_with_breed(L, OBJ_INDEX(wp->homing_object));
 }
 
-ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home in on (World vector)", "vector", "Homing point, or null vector if weapon handle is invalid")
+ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home in on (World vector), setting this without a homing object in place will not have any effect!",
+	"vector", "Homing point, or null vector if weapon handle is invalid")
 {
 	object_h *objh;
 	vec3d *v3;
@@ -9926,14 +9923,10 @@ ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home 
 	{
 		if(v3 != NULL)
 		{
-			wp->homing_object = NULL;
-			wp->homing_subsys = NULL;
 			wp->homing_pos = *v3;
 		}
 		else
 		{
-			wp->homing_object = NULL;
-			wp->homing_subsys = NULL;
 			wp->homing_pos = vmd_zero_vector;
 		}
 	}
@@ -11793,20 +11786,35 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping
 	return ade_set_args(L, "i", ah);
 }
 
-ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false]", "Stops a playing music file, provided audiohandle is valid", NULL, NULL)
+ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false], [string 'briefing|credits|mainhall']", "Stops a playing music file, provided audiohandle is valid. If the 3rd arg is set to one of briefing,credits,mainhall then that music will be stopped despite the audiohandle given.", NULL, NULL)
 {
 	int ah;
 	bool fade = false;
-	if(!ade_get_args(L, "i|b", &ah, &fade))
+	char *music_type = NULL;
+
+	if(!ade_get_args(L, "i|bs", &ah, &fade, &music_type))
 		return ADE_RETURN_NIL;
 
-	if (ah >= MAX_AUDIO_STREAMS || ah < 0 ) 
+	if (ah >= MAX_AUDIO_STREAMS || ah < 0 )
 		return ADE_RETURN_NIL;
 
-	audiostream_close_file(ah, fade);
+	if (music_type == NULL) {
+		audiostream_close_file(ah, fade);
+	} else {
+		if (!stricmp(music_type, "briefing"))	{
+			briefing_stop_music(fade);
+		} else if (!stricmp(music_type, "credits")) {
+			credits_stop_music(fade);
+		} else if (!stricmp(music_type, "mainhall")) {
+			main_hall_stop_music(fade);
+		} else {
+			LuaError(L, "Invalid music type (%s) passed to stopMusic", music_type);
+		}
+	}
+
 	return ADE_RETURN_NIL;
-	
 }
+
 
 //**********LIBRARY: Base
 ade_lib l_Base("Base", NULL, "ba", "Base FreeSpace 2 functions");
@@ -13031,6 +13039,7 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 
 	if(f)
 	{
+		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
 		gr_rect(x1, y1, x2-x1, y2-y1, false);
 	}
 	else
