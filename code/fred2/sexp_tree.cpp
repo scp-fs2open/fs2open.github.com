@@ -2199,6 +2199,7 @@ int sexp_tree::add_default_operator(int op, int argnum)
 				(argnum == 1 && Operators[op].value == OP_INT_TO_STRING) ||
 				(argnum == 3 && Operators[op].value == OP_STRING_GET_SUBSTRING) ||
 				(argnum == 4 && Operators[op].value == OP_STRING_SET_SUBSTRING) ||
+				(argnum == 1 && Operators[op].value == OP_COPY_VARIABLE_FROM_INDEX) ||
 				(argnum == 1 && Operators[op].value == OP_SCRIPT_EVAL_STRING))
 			{
 
@@ -3256,7 +3257,8 @@ void sexp_tree::verify_and_fix_arguments(int node)
 						(arg_num == 2 && Operators[op].value == OP_STRING_CONCATENATE) ||
 						(arg_num == 1 && Operators[op].value == OP_INT_TO_STRING) ||
 						(arg_num == 3 && Operators[op].value == OP_STRING_GET_SUBSTRING) ||
-						(arg_num == 4 && Operators[op].value == OP_STRING_SET_SUBSTRING))	
+						(arg_num == 4 && Operators[op].value == OP_STRING_SET_SUBSTRING) ||
+						(arg_num == 1 && Operators[op].value == OP_COPY_VARIABLE_FROM_INDEX))
 					{
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);

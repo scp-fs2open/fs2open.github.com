@@ -28,7 +28,7 @@
 // define for trapping messages send to "all fighters"
 #define MESSAGE_ALL_FIGHTERS		-999
 
-struct object;
+class object;
 
 // defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
 // and disable messages on a message by message basis
@@ -162,9 +162,7 @@ extern void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_nu
 
 extern int hud_squadmsg_reinforcements_available(int team);
 
-//#ifndef NDEBUG
 void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
-//#endif
 
 // Added for voicer implementation
 void hud_squadmsg_do_mode( int mode );

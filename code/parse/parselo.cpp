@@ -1074,6 +1074,7 @@ int get_string_or_variable (char *str)
 		int sexp_variable_index = get_index_sexp_variable_name(str); 
 		
 		// We only want String variables
+		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str);
 		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
 		result = PARSING_FOUND_VARIABLE; 
@@ -1105,9 +1106,10 @@ int get_string_or_variable (SCP_string &str)
 	{
 		Mp++;
 		stuff_string_white(str); 
-		int sexp_variable_index = get_index_sexp_variable_name(str); 
-		
+		int sexp_variable_index = get_index_sexp_variable_name(str);
+
 		// We only want String variables
+		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str.c_str());
 		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
 		result = PARSING_FOUND_VARIABLE; 
@@ -1683,6 +1685,8 @@ int strip_comments(char *line, int in_multiline_comment)
 	if (in_multiline_comment)
 	{
 		ch = strstr(line, "*/");
+		if (ch == NULL)
+			ch = strstr(line, "*!");
 		if (ch != NULL)
 		{
 			char *writep = line;
@@ -1706,15 +1710,6 @@ int strip_comments(char *line, int in_multiline_comment)
 		// can't close it, so drop the whole line
 		ch = line;
 		goto done_with_line;
-	}
-
-
-	// start of a multi-line comment?
-	ch = strstr(line, "/*");
-	if (ch != NULL)
-	{
-		// treat it as the beginning of a new line and recurse
-		return strip_comments(ch, 1);
 	}
 
 
@@ -1781,10 +1776,10 @@ int strip_comments(char *line, int in_multiline_comment)
 			}
 		}
 
-	
+
 		// this version is compatible, so copy the line past the tag
 		{
-			char *writep = line;
+			char *writep = ch;
 			char *readp = linech;
 
 			// copy all characters past the close of the comment
@@ -1799,7 +1794,7 @@ int strip_comments(char *line, int in_multiline_comment)
 			*writep = '\0';
 
 			// recurse with the other characters
-			return strip_comments(line, 0);
+			return strip_comments(ch, 0);
 		}
 	}
 
@@ -1808,6 +1803,19 @@ int strip_comments(char *line, int in_multiline_comment)
 	ch = strchr(line, ';');
 	if (ch != NULL)
 		goto done_with_line;
+
+
+	// start of a multi-line comment?
+	// (You can now use !* *! in addition to /* */ because prior to 3.7.1, a /* would be flagged
+	// even if it appeared after an initial ; such as in a version-specific comment.
+	ch = strstr(line, "/*");
+	if (ch == NULL)
+		ch = strstr(line, "!*");
+	if (ch != NULL)
+	{
+		// treat it as the beginning of a new line and recurse
+		return strip_comments(ch, 1);
+	}
 
 
 	// no comments found... try to find the newline
@@ -3707,9 +3715,9 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 		buf_src_len = 1;
 		do {
 			++p;
-			if (!*p || (buf_src_len >= MAX_BUF))
+			if (!*p || (buf_src_len >= MAX_BUF-1))
 			{
-				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF, format, (p - format));
+				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF-1, format, (p - format));
 
 				// unsafe to continue handling this va_list
 				dest += buf_src;
@@ -3758,6 +3766,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 				pint = va_arg(ap, int *);
 				Assert(pint != NULL);
 				*pint = dest.length();
+				break;
 			}
 			case '%':
 			{
@@ -3819,6 +3828,13 @@ bool end_string_at_first_hash_symbol(SCP_string &src)
 
 // Goober5000
 char *get_pointer_to_first_hash_symbol(char *src)
+{
+	Assert(src);
+	return strchr(src, '#');
+}
+
+// Goober5000
+const char *get_pointer_to_first_hash_symbol(const char *src)
 {
 	Assert(src);
 	return strchr(src, '#');

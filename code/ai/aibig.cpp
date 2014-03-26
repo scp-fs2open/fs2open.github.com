@@ -792,28 +792,31 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 									//vm_vec_scale_add(&future_enemy_pos, enemy_pos, enemy_vel, dist_to_enemy/swip->max_speed);
 									//if (vm_vec_dist_quick(&future_enemy_pos, firing_pos) < firing_range * 0.8f) {
 										if (ai_fire_secondary_weapon(Pl_objp)) {
+
+											int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
+
 											if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
-												if (swip->burst_shots > swp->burst_counter[current_bank]) {
+												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 													t = swip->burst_delay;
-													swp->burst_counter[current_bank]++;
+													swp->burst_counter[current_bank_adjusted]++;
 												} else {
 													t = swip->fire_wait;
 													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
-														swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 													} else {
- 														swp->burst_counter[current_bank] = 0;
+ 														swp->burst_counter[current_bank_adjusted] = 0;
 													}
 												}
 											} else {
-												if (swip->burst_shots > swp->burst_counter[current_bank]) {
+												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 													t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
-													swp->burst_counter[current_bank]++;
+													swp->burst_counter[current_bank_adjusted]++;
 												} else {
 													t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
 													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
-														swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 													} else {
-														swp->burst_counter[current_bank] = 0;
+														swp->burst_counter[current_bank_adjusted] = 0;
 													}
 												}
 											}

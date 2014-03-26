@@ -1514,11 +1514,6 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 
 	// add netgame type flags
 	ADD_INT(Netgame.type_flags);
-	
-//#ifndef NDEBUG
-	// char buffer[100];
-	// nprintf(("Network", "About to send accept packet to %s on port %d\n", get_text_address(buffer, addr->addr), addr->port ));
-//#endif
 
 	// actually send the packet	
 	psnet_send(&Net_players[new_player_num].p_info.addr, data, packet_size);
@@ -2108,7 +2103,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			multi_handle_state_special();
 						
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING;
-			strncpy( Game_current_mission_filename, Netgame.mission_name, MAX_FILENAME_LEN );					
+			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);
 		} 
 		// if coming from the debriefing state
@@ -2121,7 +2116,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			multi_flush_mission_stuff();
 						
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING;
-			strncpy( Game_current_mission_filename, Netgame.mission_name, MAX_FILENAME_LEN );					
+			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);
 		}
 	} 
@@ -3337,9 +3332,9 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	}
 
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
-	wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 
 	if (weapon_objnum != -1) {
+		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd != -1 ) {
 			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
 		}		
@@ -6421,6 +6416,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 			idx += MAX_SHIPS_PER_PACKET; 
 		}
 
+		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
 		ADD_USHORT( (ushort)Num_medals );
 
 		// medal information
@@ -6532,8 +6528,8 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	scoring_struct *sc,bogus;
 	short player_id;
 	int offset = HEADER_LENGTH;
-	ushort u_tmp;
-	int i_tmp, num_medals;
+	ushort u_tmp, num_medals;
+	int i_tmp;
 
 	// nprintf(("Network","----------++++++++++********RECEIVED STATS***********+++++++++----------\n"));
 
@@ -6999,7 +6995,7 @@ void send_client_update_packet(net_player *pl)
 	// when not paused, send hull/shield/subsystem updates to all clients (except for ingame joiners)
 	if ( val & UPDATE_HULL_INFO ) {
 		object *objp;
-		ubyte percent, ns, threats;
+		ubyte percent, ns, threats, n_quadrants;
 		ship_info *sip;
 		ship *shipp;
 		ship_subsys *subsysp;
@@ -7022,8 +7018,11 @@ void send_client_update_packet(net_player *pl)
 		}
 		ADD_DATA( percent );
 
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+		n_quadrants = (ubyte)objp->n_quadrants;
+		ADD_DATA( n_quadrants );
+		for (i = 0; i < n_quadrants; i++ ) {
 			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+
 			ADD_DATA( percent );
 		}
 
@@ -7097,7 +7096,8 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		float fl_val;
 		ship_info *sip;
 		ship *shipp;
-		ubyte hull_percent, shield_percent[MAX_SHIELD_SECTIONS], n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		ubyte hull_percent, n_quadrants, n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		SCP_vector<ubyte> shield_percent;
 		ubyte ub_tmp;
 		ship_subsys *subsysp;
 		object *objp;
@@ -7107,7 +7107,9 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		// percentage value since that should be close enough
 		GET_DATA( hull_percent );
 
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ){
+		GET_DATA( n_quadrants );
+		shield_percent.resize(n_quadrants);
+		for (i = 0; i < n_quadrants; i++ ){
 			GET_DATA(ub_tmp);
 			shield_percent[i] = ub_tmp;
 		}
@@ -7141,9 +7143,11 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
 
-			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
-				objp->shield_quadrant[i] = fl_val;
+			for ( i = 0; i < n_quadrants; i++ ) {
+				if (i < objp->n_quadrants) {
+					fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
+					objp->shield_quadrant[i] = fl_val;
+				}
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,
@@ -7947,7 +7951,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.beam_info_override = &b_info;
 	fire_info.accuracy = 1.0f;
 
-	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance > MAX_SHIPS)){
+	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance >= MAX_SHIPS)){
 		nprintf(("Network", "Couldn't get shooter info for BEAM weapon!\n"));
 		return;
 	}
@@ -8366,8 +8370,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 
 	// create the weapon object	
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
-	wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 	if (weapon_objnum != -1) {
+		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd != -1 ) {
 			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
 		}

@@ -20,6 +20,8 @@
 // for the damping issue
 #include "ai/ai_profiles.h"
 #include "mission/missionparse.h"
+#include "ship/ship.h"
+#include "mod_table/mod_table.h"
 
 
 
@@ -487,8 +489,32 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if (ci->forward > 1.0f ) ci->forward = 1.0f;
 	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
 
-	pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
-	pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
+	if (!Flight_controls_follow_eyepoint_orientation || Player_obj->type != OBJ_SHIP) {
+		// Default behavior; eyepoint orientation has no effect on controls
+		pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
+		pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
+	} else {
+		// Optional behavior; pitch and yaw are always relative to the eyepoint
+		// orientation (excluding slew)
+		vec3d tmp_vec, new_rotvel;
+		matrix tmp_mat, eyemat, rotvelmat;
+
+		ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
+
+		vm_copy_transpose_matrix(&tmp_mat, &Player_obj->orient);
+		vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
+
+		vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);
+		vm_vec_unrotate(&tmp_vec, &pi->max_rotvel, &rotvelmat);
+		new_rotvel.xyz.x = tmp_vec.xyz.x;
+
+		new_rotvel.xyz.x = ci->pitch * new_rotvel.xyz.x;
+		new_rotvel.xyz.y = ci->heading * new_rotvel.xyz.y;
+
+		vm_vec_unrotate(&tmp_vec, &new_rotvel, &rotvelmat);
+
+		pi->desired_rotvel = tmp_vec;
+	}
 
 	float	delta_bank;
 
@@ -944,22 +970,28 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 
 	// compute delta rotvel, scale according to blast and radius
 	float scale;
-	vec3d delta_rotvel;
-	vm_vec_rotate( &local_torque, &torque, orient );
-	vm_vec_copy_normalize(&delta_rotvel, &local_torque);
+
 	if (radius < MIN_RADIUS) {
 		scale = 1.0f;
 	} else {
 		scale = (MAX_RADIUS - radius)/(MAX_RADIUS-MIN_RADIUS);
 	}
-	vm_vec_scale(&delta_rotvel, (float)(MAX_ROTVEL*(pressure/STD_PRESSURE)*scale));
-	// nprintf(("Physics", "rotvel scale %f\n", (MAX_ROTVEL*(pressure/STD_PRESSURE)*scale)));
-	vm_vec_add2(&pi->rotvel, &delta_rotvel);
 
 	// set shockwave shake amplitude, duration, flag
 	pi->shockwave_shake_amp = (float)(MAX_SHAKE*(pressure/STD_PRESSURE)*scale);
 	pi->shockwave_decay = timestamp( SW_BLAST_DURATION );
 	pi->flags |= PF_IN_SHOCKWAVE;
+
+	// safety dance
+	if (!(IS_VEC_NULL_SQ_SAFE(&torque))) {
+		vec3d delta_rotvel;
+		vm_vec_rotate( &local_torque, &torque, orient );
+		vm_vec_copy_normalize(&delta_rotvel, &local_torque);
+		
+		vm_vec_scale(&delta_rotvel, (float)(MAX_ROTVEL*(pressure/STD_PRESSURE)*scale));
+		// nprintf(("Physics", "rotvel scale %f\n", (MAX_ROTVEL*(pressure/STD_PRESSURE)*scale)));
+		vm_vec_add2(&pi->rotvel, &delta_rotvel);
+	}
 
 	// set reduced translational damping, set flags
 	float velocity_scale = (float)MAX_VEL*scale;

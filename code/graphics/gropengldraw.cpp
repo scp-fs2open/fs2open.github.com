@@ -802,58 +802,218 @@ void gr_opengl_gradient(int x1, int y1, int x2, int y2, bool resize)
 
 void gr_opengl_circle(int xc, int yc, int d, bool resize)
 {
-	int p, x, y, r;
+	gr_opengl_arc(xc, yc, d / 2.0f, 0.0f, 360.0f, true, resize);
+}
+
+void gr_opengl_unfilled_circle(int xc, int yc, int d, bool resize)
+{
+	int r = d / 2;
+	int segments = 4 + (int)(r); // seems like a good approximation
+	float theta = 2 * PI / float(segments - 1); 
+	float c = cosf(theta);
+	float s = sinf(theta);
+	float t;
+
+	float x1 = 1.0f;
+	float y1 = 0.0f; 
+	float x2 = x1;
+	float y2 = y1;
+
+	float linewidth;
+	glGetFloatv(GL_LINE_WIDTH, &linewidth);
+
+	float halflinewidth = linewidth / 2.0f;
+	float inner_rad = r - halflinewidth;
+	float outer_rad = r + halflinewidth;
+
+	int do_resize = 0;
 
 	if ( resize && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
 		gr_resize_screen_pos(&xc, &yc);
+		do_resize = 1;
 	}
-
-	r = d / 2;
-	p = 3 - d;
-	x = 0;
-	y = r;
 
 	// Big clip
-	if ( (xc+r) < gr_screen.clip_left ) {
+	if ( (xc+outer_rad) < gr_screen.clip_left ) {
 		return;
 	}
 
-	if ( (xc-r) > gr_screen.clip_right ) {
+	if ( (xc-outer_rad) > gr_screen.clip_right ) {
 		return;
 	}
 
-	if ( (yc+r) < gr_screen.clip_top ) {
+	if ( (yc+outer_rad) < gr_screen.clip_top ) {
 		return;
 	}
 
-	if ( (yc-r) > gr_screen.clip_bottom ) {
+	if ( (yc-outer_rad) > gr_screen.clip_bottom ) {
 		return;
 	}
 
-	while (x < y) {
-		// Draw the first octant
-		gr_opengl_line(xc-y, yc-x, xc+y, yc-x, false);
-		if (x > 0) // Don't draw the center horizontal line twice
-			gr_opengl_line(xc-y, yc+x, xc+y, yc+x, false);
+	int offset_x = ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
+	int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
 
-		if (p < 0) {
-			p += (x << 2) + 6;
-		} else {
-			// Draw the second octant
-			gr_opengl_line(xc-x, yc-y, xc+x, yc-y, false);
-			gr_opengl_line(xc-x, yc+y, xc+x, yc+y, false);
+	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
-			p += ((x - y) << 2) + 10;
-			y--;
+	GLfloat *circle = new GLfloat[segments * 4];
+
+	for (int i=0; i < segments * 4; i+=4) {
+		circle[i] = i2fl(xc + (x2 * outer_rad) + offset_x);
+		circle[i+1] = i2fl(yc + (y2 * outer_rad) + offset_y);
+
+		circle[i+2] = i2fl(xc + (x2 * inner_rad) + offset_x);
+		circle[i+3] = i2fl(yc + (y2 * inner_rad) + offset_y);
+
+		t = x2;
+		x2 = c * x1 - s * y1;
+		y2 = s * t + c * y1;
+
+		x1 = x2;
+		y1 = y2;
+	}
+
+	gr_opengl_set_2d_matrix();
+
+	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+
+	GL_state.Array.EnableClientVertex();
+	GL_state.Array.VertexPointer(2, GL_FLOAT, 0, circle);
+
+	glDrawArrays(GL_QUAD_STRIP, 0, segments * 2);
+
+	GL_state.Array.DisableClientVertex();
+
+	GL_CHECK_FOR_ERRORS("end of opengl_unfilled_circle()");
+
+	gr_opengl_end_2d_matrix();
+
+	delete [] circle;
+}
+
+void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, bool resize)
+{
+	// Ensure that angle_start < angle_end
+	if (angle_end < angle_start) {
+		float temp = angle_start;
+		angle_start = angle_end;
+		angle_end = temp;
+	}
+
+	float arc_length_ratio;
+	arc_length_ratio = MIN(angle_end - angle_start, 360.0f) / 360.0f;
+
+	int segments = 4 + (int)(r * arc_length_ratio); // seems like a good approximation
+	float theta = 2 * PI / float(segments - 1) * arc_length_ratio; 
+	float c = cosf(theta);
+	float s = sinf(theta);
+	float t;
+
+	float x1 = cosf(ANG_TO_RAD(angle_start));
+	float y1 = sinf(ANG_TO_RAD(angle_start));
+	float x2 = x1;
+	float y2 = y1;
+
+	float halflinewidth = 0.0f;
+	float inner_rad = 0.0f; // only used if fill==false
+	float outer_rad = r;
+
+	if (!fill) {
+		float linewidth;
+		glGetFloatv(GL_LINE_WIDTH, &linewidth);
+
+		halflinewidth = linewidth / 2.0f;
+		inner_rad = r - halflinewidth;
+		outer_rad = r + halflinewidth;
+	}
+
+	int do_resize = 0;
+
+	if ( resize && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+		gr_resize_screen_pos(&xc, &yc);
+		do_resize = 1;
+	}
+
+	// Big clip
+	if ( (xc+outer_rad) < gr_screen.clip_left ) {
+		return;
+	}
+
+	if ( (xc-outer_rad) > gr_screen.clip_right ) {
+		return;
+	}
+
+	if ( (yc+outer_rad) < gr_screen.clip_top ) {
+		return;
+	}
+
+	if ( (yc-outer_rad) > gr_screen.clip_bottom ) {
+		return;
+	}
+
+	int offset_x = ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
+	int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
+
+	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+
+	GLfloat *arc;
+
+	gr_opengl_set_2d_matrix();
+	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	GL_state.Array.EnableClientVertex();
+
+	if (fill) {
+		arc = new GLfloat[segments * 2 + 2];
+
+		arc[0] = i2fl(xc);
+		arc[1] = i2fl(yc);
+
+		for (int i=2; i < segments * 2 + 2; i+=2) {
+			arc[i] = i2fl(xc + (x2 * outer_rad) + offset_x);
+			arc[i+1] = i2fl(yc + (y2 * outer_rad) + offset_y);
+
+			t = x2;
+			x2 = c * x1 - s * y1;
+			y2 = s * t + c * y1;
+
+			x1 = x2;
+			y1 = y2;
 		}
 
-		x++;
+		GL_state.Array.VertexPointer(2, GL_FLOAT, 0, arc);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 1);
+	} else {
+		arc = new GLfloat[segments * 4];
+
+		for (int i=0; i < segments * 4; i+=4) {
+			arc[i] = i2fl(xc + (x2 * outer_rad) + offset_x);
+			arc[i+1] = i2fl(yc + (y2 * outer_rad) + offset_y);
+
+			arc[i+2] = i2fl(xc + (x2 * inner_rad) + offset_x);
+			arc[i+3] = i2fl(yc + (y2 * inner_rad) + offset_y);
+
+			t = x2;
+			x2 = c * x1 - s * y1;
+			y2 = s * t + c * y1;
+
+			x1 = x2;
+			y1 = y2;
+		}
+
+		GL_state.Array.VertexPointer(2, GL_FLOAT, 0, arc);
+		glDrawArrays(GL_QUAD_STRIP, 0, segments * 2);
 	}
 
-	if (x == y) {
-		gr_opengl_line(xc-x, yc-y, xc+x, yc-y, false);
-		gr_opengl_line(xc-x, yc+y, xc+x, yc+y, false);
-	}
+	GL_state.Array.DisableClientVertex();
+
+	GL_CHECK_FOR_ERRORS("end of opengl_arc()");
+
+	gr_opengl_end_2d_matrix();
+
+	delete [] arc;
 }
 
 void gr_opengl_curve(int xc, int yc, int r, int direction)
@@ -2138,6 +2298,7 @@ void opengl_setup_scene_textures()
 	if ( !Use_GLSL || Cmdline_no_fbo || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
 		Cmdline_postprocess = 0;
 		Cmdline_softparticles = 0;
+		Cmdline_fb_explosions = 0;
 
 		Scene_color_texture = 0;
 		Scene_effect_texture = 0;

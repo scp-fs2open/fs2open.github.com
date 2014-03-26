@@ -17,7 +17,7 @@
 #include "graphics/2d.h"
 #include "object/object.h"
 
-struct object;
+class object;
 
 extern flag_def_list model_render_flags[];
 extern int model_render_flags_size;
@@ -307,7 +307,7 @@ public:
 		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
 		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0), sii(NULL),
 		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
-		num_arcs(0), render_sphere_radius(0.0f), use_render_box(0), use_render_sphere(0), gun_rotation(false), no_collisions(false),
+		num_arcs(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false), use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
 		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
 		look_at_num(-1)
 	{
@@ -315,7 +315,7 @@ public:
 		lod_name[0] = 0;
 		look_at[0] = 0;
 
-		offset = geometric_center = min = max = render_box_min = render_box_max = render_sphere_offset = vmd_zero_vector;
+		offset = geometric_center = min = max = render_box_min = render_box_max = render_box_offset = render_sphere_offset = vmd_zero_vector;
 		orientation = vmd_identity_matrix;
 
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
@@ -381,10 +381,13 @@ public:
 
 	vec3d	render_box_min;
 	vec3d	render_box_max;
+	vec3d	render_box_offset;
 	float	render_sphere_radius;
 	vec3d	render_sphere_offset;
 	int		use_render_box;			// 0==do nothing, 1==only render this object if you are inside the box, -1==only if you're outside
+	bool	use_render_box_offset;		// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
 	int		use_render_sphere;		// 0==do nothing, 1==only render this object if you are inside the sphere, -1==only if you're outside
+	bool 	use_render_sphere_offset;// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
 	bool	gun_rotation;			// for animated weapon models
 	bool	no_collisions;			// for $no_collisions property - kazan
 	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
@@ -562,8 +565,8 @@ typedef struct cross_section {
 
 #define MAX_MODEL_INSIGNIAS		6
 #define MAX_INS_FACE_VECS			3
-#define MAX_INS_VECS					20
-#define MAX_INS_FACES				10
+#define MAX_INS_VECS					81
+#define MAX_INS_FACES				128
 typedef struct insignia {
 	int detail_level;
 	int num_faces;					
@@ -636,6 +639,10 @@ public:
 
 	void Clear();
 	void ResetToOriginal();
+
+	texture_map()
+		: is_ambient(false), is_transparent(false)
+	{}
 };
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
@@ -729,6 +736,7 @@ public:
 	shield_info	shield;								// new shield information
 	ubyte	*shield_collision_tree;
 	int		sldc_size;
+	SCP_vector<vec3d>		shield_points;
 
 	int			n_paths;
 	model_path	*paths;
@@ -924,6 +932,7 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm,
 
 extern void find_submodel_instance_point(vec3d *outpnt, object *ship_obj, int submodel_num);
 extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *ship_obj, int submodel_num, vec3d *submodel_pnt, vec3d *submodel_norm);
+extern void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, object *ship_obj, int submodel_num, vec3d *submodel_pnt, matrix *submodel_orient);
 extern void find_submodel_instance_world_point(vec3d *outpnt, object *ship_obj, int submodel_num);
 
 // Given a polygon model index, find a list of rotating submodels to be used for collision
@@ -952,6 +961,7 @@ extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
+extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2 );
 
 void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);
 void model_instance_dumb_rotation(int model_instance_num);
@@ -1182,9 +1192,10 @@ typedef struct mst_info {
 	float distortion_length_factor;
 	bool draw_distortion;
 
-	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1),
+	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1), distortion_bitmap(-1),
 					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
-					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f), distortion_rad_factor(1.0f), distortion_length_factor(1.0f)
+					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f), distortion_rad_factor(1.0f), distortion_length_factor(1.0f),
+					draw_distortion(true)
 				{}
 } mst_info;
 

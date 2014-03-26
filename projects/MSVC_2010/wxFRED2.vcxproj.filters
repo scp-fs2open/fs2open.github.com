@@ -19,139 +19,139 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\code\wxfred2\frmFRED2.cpp" />
+    <ClCompile Include="..\..\code\wxfred2\frmfred2.cpp" />
     <ClCompile Include="..\..\code\wxfred2\wxfred2.cpp" />
-    <ClCompile Include="..\..\code\wxfred2\base\wxFRED_base.cpp">
+    <ClCompile Include="..\..\code\wxfred2\base\wxfred_base.cpp">
       <Filter>Base</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgAsteroidFieldEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgasteroidfieldeditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgBackgroundEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgbackgroundeditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgEventsEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgeventseditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgFictionViewer.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgfictionviewer.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgMissionObjectivesEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgmissionobjectiveseditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgMissionSpecsEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgmissionspecseditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgObjectEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgobjecteditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgReinforcementsEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgreinforcementseditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgReinforcementsPicker.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgreinforcementspicker.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgSoundEnvironment.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgsoundenvironment.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\frmBriefingEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\frmbriefingeditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\frmCommandBriefingEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\frmcommandbriefingeditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\frmDebriefingEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\frmdebriefingeditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\frmShipsEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\frmshipseditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\frmTeamLoadoutEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\frmteamloadouteditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\frmWaypointEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\frmwaypointeditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\frmWingEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\frmwingeditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgShieldSystemEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgshieldsystemeditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgSetGlobalShipFlagsEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgsetglobalshipflagseditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\dlgVoiceActingManager.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\dlgvoiceactingmanager.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\editors\frmCampaignEditor.cpp">
+    <ClCompile Include="..\..\code\wxfred2\editors\frmcampaigneditor.cpp">
       <Filter>Editors</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\misc\dlgMissionStats.cpp">
+    <ClCompile Include="..\..\code\wxfred2\misc\dlgmissionstats.cpp">
       <Filter>Misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\help\dlgAboutBox.cpp">
+    <ClCompile Include="..\..\code\wxfred2\help\dlgaboutbox.cpp">
       <Filter>Help</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\wxfred2\help\dlgSexpHelp.cpp">
+    <ClCompile Include="..\..\code\wxfred2\help\dlgsexphelp.cpp">
       <Filter>Help</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\code\wxfred2\frmFRED2.h" />
+    <ClInclude Include="..\..\code\wxfred2\frmfred2.h" />
     <ClInclude Include="..\..\code\wxfred2\wxfred2.h" />
-    <ClInclude Include="..\..\code\wxfred2\base\wxFRED_base.h">
+    <ClInclude Include="..\..\code\wxfred2\base\wxfred_base.h">
       <Filter>Base</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgAsteroidFieldEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgasteroidfieldeditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgBackgroundEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgbackgroundeditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgEventsEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgeventseditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgFictionViewer.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgfictionviewer.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgMissionObjectivesEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgmissionobjectiveseditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgMissionSpecsEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgmissionspecseditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgObjectEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgobjecteditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgReinforcementsEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgreinforcementseditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgReinforcementsPicker.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgreinforcementspicker.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgSoundEnvironment.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgsoundenvironment.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\frmBriefingEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\frmbriefingeditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\frmCommandBriefingEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\frmcommandbriefingeditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\frmDebriefingEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\frmdebriefingeditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\frmShipsEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\frmshipseditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\frmTeamLoadoutEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\frmteamloadouteditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\frmWaypointEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\frmwaypointeditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\frmWingEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\frmwingeditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\wxfred2\res\constx.png.h">
@@ -208,28 +208,28 @@
     <ClInclude Include="..\..\code\wxfred2\res\zoomsel.png.h">
       <Filter>Resources</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgShieldSystemEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgshieldsystemeditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgSetGlobalShipFlagsEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgsetglobalshipflagseditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\dlgVoiceActingManager.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\dlgvoiceactingmanager.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\editors\frmCampaignEditor.h">
+    <ClInclude Include="..\..\code\wxfred2\editors\frmcampaigneditor.h">
       <Filter>Editors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\misc\dlgMissionStats.h">
+    <ClInclude Include="..\..\code\wxfred2\misc\dlgmissionstats.h">
       <Filter>Misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\help\dlgAboutBox.h">
+    <ClInclude Include="..\..\code\wxfred2\help\dlgaboutbox.h">
       <Filter>Help</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\help\dlgSexpHelp.h">
+    <ClInclude Include="..\..\code\wxfred2\help\dlgsexphelp.h">
       <Filter>Help</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\wxfred2\glcViewport.h" />
+    <ClInclude Include="..\..\code\wxfred2\glcviewport.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\code\wxfred2\res\bitmap1.xpm">

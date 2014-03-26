@@ -31,7 +31,7 @@ int Multi_ping_timestamp = -1;
 int Sun_drew = 0;
 int Networking_disabled = 0;
 
-void init_ets(struct object*){}
+void init_ets(class object*){}
 
 control_info PlayerControls;
 
@@ -157,7 +157,7 @@ char demo_read_char() { return 0; }
 
 int	red_alert_default_status() {return 0;}
 
-void send_ship_kill_packet(struct object *,struct object *,float,unsigned char) {}
+void send_ship_kill_packet(class object *,class object *,float,unsigned char) {}
 void send_debris_create_packet( object *objp, ushort net_sig, int model_num, vec3d pos) {}
 
 int Game_subspace_effect;
@@ -209,7 +209,7 @@ int game_hacked_data(){return 0;}
 int game_single_step;
 int last_single_step;
 void get_version_string_short(char *){}
-void game_tst_mark(struct object *, struct ship *){}
+void game_tst_mark(class object *, class ship *){}
 int tst;
 //int Player_multi_died_check;
 int Show_framerate = 0;

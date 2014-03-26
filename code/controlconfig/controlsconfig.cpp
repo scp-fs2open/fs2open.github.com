@@ -28,6 +28,7 @@
 #include "globalincs/alphacolors.h"
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
+#include "parse/scripting.h"
 
 
 #ifndef NDEBUG
@@ -135,6 +136,7 @@ struct config_item_undo {
 	int size;
 	int *index;  // array (size) of Control_config indices of replaced elements
 	config_item *list;  // array (size) of original elements
+	int reset_to_preset; // if >=0, then we ignore the above list and simply reset to the given preset instead
 	config_item_undo *next;
 };
 
@@ -174,6 +176,7 @@ static int Background_bitmap;
 static int Conflicts_tabs[NUM_TABS];
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 static UI_WINDOW Ui_window;
+static unsigned int Defaults_cycle_pos; // the controls preset that was last selected
 
 static struct {
 	int key;  // index of other control in conflict with this one
@@ -534,6 +537,8 @@ config_item_undo *get_undo_block(int size)
 		ptr->list = NULL;
 	}
 
+	ptr->reset_to_preset = -1;
+
 	return ptr;
 }
 
@@ -566,41 +571,45 @@ int control_config_undo_last()
 		return -1;
 	}
 
-	if (Config_item_undo->index[0] & JOY_AXIS) {
-		tab = SHIP_TAB;
+	if (Config_item_undo->reset_to_preset > -1) {
+		control_config_reset_defaults(Config_item_undo->reset_to_preset);
 	} else {
-		tab = Control_config[Config_item_undo->index[0]].tab;
-	}
-
-	for (i=1; i<Config_item_undo->size; i++) {
-		if (Config_item_undo->index[i] & JOY_AXIS) {
-			if (tab != SHIP_TAB) {
-				tab = -1;
-			}
-
+		if (Config_item_undo->index[0] & JOY_AXIS) {
+			tab = SHIP_TAB;
 		} else {
-			if (Control_config[Config_item_undo->index[i]].tab != tab) {
-				tab = -1;
+			tab = Control_config[Config_item_undo->index[0]].tab;
+		}
+
+		for (i=1; i<Config_item_undo->size; i++) {
+			if (Config_item_undo->index[i] & JOY_AXIS) {
+				if (tab != SHIP_TAB) {
+					tab = -1;
+				}
+
+			} else {
+				if (Control_config[Config_item_undo->index[i]].tab != tab) {
+					tab = -1;
+				}
 			}
 		}
-	}
 
-	if (tab >= 0) {
-		Tab = tab;
-	}
+		if (tab >= 0) {
+			Tab = tab;
+		}
 
-	for (i=0; i<Config_item_undo->size; i++) {
-		z = Config_item_undo->index[i];
-		if (z & JOY_AXIS) {
-			config_item *ptr;
+		for (i=0; i<Config_item_undo->size; i++) {
+			z = Config_item_undo->index[i];
+			if (z & JOY_AXIS) {
+				config_item *ptr;
 
-			z &= ~JOY_AXIS;
-			ptr = &Config_item_undo->list[i];
-			Axis_map_to[z] = ptr->joy_id;
-			Invert_axis[z] = ptr->used;
+				z &= ~JOY_AXIS;
+				ptr = &Config_item_undo->list[i];
+				Axis_map_to[z] = ptr->joy_id;
+				Invert_axis[z] = ptr->used;
 
-		} else {
-			Control_config[z] = Config_item_undo->list[i];
+			} else {
+				Control_config[z] = Config_item_undo->list[i];
+			}
 		}
 	}
 
@@ -860,10 +869,25 @@ int control_config_do_reset()
 	int i, j, total = 0;
 	config_item_undo *ptr;
 	config_item item;
-
+	config_item *preset;
+	bool cycling_presets = false;
+	
+	// If there are presets, then we'll cycle to the next preset and reset to that
+	if (Control_config_presets.size() >= 1) {
+		cycling_presets = true;
+		
+		if (++Defaults_cycle_pos >= Control_config_presets.size())
+			Defaults_cycle_pos = 0;
+		
+		preset = Control_config_presets[Defaults_cycle_pos];
+	} else {
+		// If there are no presets, then we'll always reset to the hardcoded defaults
+		preset = Control_config;
+	}
+	
 	// first, determine how many bindings need to be changed
 	for (i=0; i<CCFG_MAX; i++) {
-		if ((Control_config[i].key_id != Control_config[i].key_default) || (Control_config[i].joy_id != Control_config[i].joy_default)) {
+		if ((Control_config[i].key_id != preset[i].key_default) || (Control_config[i].joy_id != preset[i].joy_default)) {
 			total++;
 		}
 	}
@@ -874,7 +898,7 @@ int control_config_do_reset()
 		}
 	}
 
-	if (!total) {
+	if (!total && !cycling_presets) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		return -1;
 	}
@@ -882,7 +906,7 @@ int control_config_do_reset()
 	// now, back up the old bindings so we can undo if we want to
 	ptr = get_undo_block(total);
 	for (i=j=0; i<CCFG_MAX; i++) {
-		if ((Control_config[i].key_id != Control_config[i].key_default) || (Control_config[i].joy_id != Control_config[i].joy_default)) {
+		if ((Control_config[i].key_id != preset[i].key_default) || (Control_config[i].joy_id != preset[i].joy_default)) {
 			ptr->index[j] = i;
 			ptr->list[j] = Control_config[i];
 			j++;
@@ -901,23 +925,43 @@ int control_config_do_reset()
 			j++;
 		}
 	}
+
 	Assert(j == total);
-	control_config_reset_defaults();
+
+	if (cycling_presets)
+		control_config_reset_defaults(Defaults_cycle_pos);
+	else
+		control_config_reset_defaults();
+
 	control_config_conflict_check();
 	control_config_list_prepare();
 	gamesnd_play_iface(SND_RESET_PRESSED);
 	return 0;
 }
 
-// This sets all the controls to their default values
-void control_config_reset_defaults()
+// This sets all the controls to the default values in the given preset
+// If no preset is given, the hardcoded defaults of Control_config are used
+void control_config_reset_defaults(int presetnum)
 {
 	int i;
+	config_item *preset;
+
+	if (presetnum >= 0)
+		preset = Control_config_presets[presetnum];
+	else
+		preset = Control_config;
 
 	// Reset keyboard defaults
 	for (i=0; i<CCFG_MAX; i++) {
-		Control_config[i].key_id = Control_config[i].key_default;
-		Control_config[i].joy_id = Control_config[i].joy_default;
+		// Note that key_default and joy_default are NOT overwritten here;
+		// they should retain the values of the first preset because
+		// for example the key-pressed SEXP works off the defaults of the first preset
+		Control_config[i].key_id = preset[i].key_default;
+		Control_config[i].joy_id = preset[i].joy_default;
+		Control_config[i].tab = preset[i].tab;
+		Control_config[i].hasXSTR = preset[i].hasXSTR;
+		Control_config[i].type = preset[i].type;
+		Control_config[i].disabled = preset[i].disabled;
 	}
 
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
@@ -1240,6 +1284,8 @@ void control_config_init()
 	for (i=0; i<CCFG_MAX; i++) {
 		Control_config_backup[i] = Control_config[i];
 	}
+
+	Defaults_cycle_pos = 0;
 
 	common_set_interface_palette(NOX("ControlConfigPalette"));  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
@@ -2087,6 +2133,8 @@ float check_control_timef(int id)
 
 	// first, see if control actually used (makes sure modifiers match as well)
 	if (!check_control(id)) {
+		Control_config[id].continuous_ongoing = false;
+
 		return 0.0f;
 	}
 
@@ -2101,6 +2149,11 @@ float check_control_timef(int id)
 	}
 
 	if (t1 + t2) {
+		// We want to set this to true only after visiting control_used() (above)
+		// to allow it to tell the difference between an ongoing continuous action
+		// started before and a continuous action being started right now.
+		Control_config[id].continuous_ongoing = true;
+
 		return t1 + t2;
 	}
 
@@ -2206,6 +2259,17 @@ int check_control(int id, int key)
 		return 1;
 	}
 
+	if (Control_config[id].continuous_ongoing) {
+		// If we reach this point, then it means this is a continuous control
+		// which has just been released
+
+		Script_system.SetHookVar("Action", 's', Control_config[id].text);
+		Script_system.RunCondition(CHA_ONACTIONSTOPPED, '\0', NULL, NULL, id);
+		Script_system.RemHookVar("Action");
+
+		Control_config[id].continuous_ongoing = false;
+	}
+
 	return 0;
 }
 
@@ -2261,6 +2325,7 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 	return;
 }
 
+int Last_frame_timestamp;
 void control_used(int id)
 {
 	// if we have set this key to be ignored, ignore it
@@ -2268,7 +2333,20 @@ void control_used(int id)
 		return;
 	}
 
-	Control_config[id].used = timestamp();
+	// This check needs to be done because the control code might call this function more than once per frame,
+	// and we don't want to run the hooks more than once per frame
+	if (Control_config[id].used < Last_frame_timestamp) {
+		if (!Control_config[id].continuous_ongoing) {
+			Script_system.SetHookVar("Action", 's', Control_config[id].text);
+			Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
+			Script_system.RemHookVar("Action");
+
+			if (Control_config[id].type == CC_TYPE_CONTINUOUS)
+				Control_config[id].continuous_ongoing = true;
+		}
+
+		Control_config[id].used = timestamp();
+	}
 }
 
 void control_config_clear_used_status()

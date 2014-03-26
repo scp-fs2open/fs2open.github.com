@@ -11,7 +11,7 @@
 
 #include "globalincs/globals.h"
 
-struct object;
+class object;
 
 // info for each docked object
 typedef struct dock_instance {
@@ -21,8 +21,11 @@ typedef struct dock_instance {
 	object *docked_objp;	// object that is docked to me
 } dock_instance;
 
-// struct used when a function must be evaluated for all docked objects
-typedef struct dock_function_info {
+// class used when a function must be evaluated for all docked objects
+// (it's a class because it has a constructor)
+class dock_function_info
+{
+public:
 
 	// Set this to true when the function should return early.
 	bool early_return_condition;		
@@ -42,12 +45,15 @@ typedef struct dock_function_info {
 
 
 	// constructor to initialize everything to 0
+	// (This used to memset the entire class (which at the time was a struct) to 0, but that hosed the function address table.  Fortunately, by the time the constructor
+	// was called, the address table wasn't needed any more!  It's now revised because it's best to keep the code robust in case of future unanticipated changes.)
 	dock_function_info()
+		: early_return_condition(false)
 	{
-		memset(this, 0, sizeof(dock_function_info));
+		memset(&parameter_variables, 0, sizeof(parameter_variables));
+		memset(&maintained_variables, 0, sizeof(maintained_variables));
 	}
-
-} dock_function_info;
+};
 
 enum axis_type
 {
@@ -109,7 +115,7 @@ float dock_calc_docked_speed(object *objp);
 
 // Überfunction for evaluating all objects that could possibly be docked to objp.  This will
 // call "function" for each docked object.  The function should store its intermediate and
-// return values in the dock_function_info struct.
+// return values in the dock_function_info class.
 void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *));
 
 // moves all docked objects; called only from obj_move_all in object.cpp
@@ -120,5 +126,8 @@ void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoi
 
 // remove objp1 and objp2 from each others' dock lists; currently only called by ai_do_objects_undocked_stuff
 void dock_undock_objects(object *objp1, object *objp2);
+
+// free the entire dock list without undocking anything; should only be used on object cleanup
+void dock_free_dock_list(object *objp);
 
 #endif	// _OBJECT_DOCK_H

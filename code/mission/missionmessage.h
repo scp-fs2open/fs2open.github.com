@@ -16,7 +16,7 @@
 #include "anim/packunpack.h"
 #include "graphics/generic.h"
 
-struct ship;
+class ship;
 
 //Bumped to 500 from 300 06/15/2004 -C
 

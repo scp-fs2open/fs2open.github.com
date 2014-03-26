@@ -2,7 +2,9 @@
 #
 # This file uses GNU Automake to generate makefiles
 
-SUBDIRS = code
+ACLOCAL_AMFLAGS = -I m4
+
+SUBDIRS = mongoose code
 
 
 EXTRA_DIST =	\

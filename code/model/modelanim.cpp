@@ -17,9 +17,7 @@
 
 extern float flFrametime;
 
-// the "lazy" macro
-#define SUBTYPE_CHECK	((subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == subtype))
-
+SCP_vector<triggered_rotation> Triggered_rotations;
 
 char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
 {
@@ -174,6 +172,11 @@ void triggered_rotation::set_to_final(queued_animation *q)
 
 triggered_rotation::triggered_rotation()
 {
+	clear();
+}
+
+void triggered_rotation::clear()
+{
 	for (int i = 0; i < MAX_TRIGGERED_ANIMATIONS; i++)
 	{
 		queued_animation_init(&queue[i]);
@@ -191,6 +194,13 @@ triggered_rotation::triggered_rotation()
 	n_queue = 0;
 	instance = -1;
 	has_started = false;
+	start_sound = -1;
+	loop_sound = -1;
+	end_sound = -1;
+	current_snd = -1;
+	current_snd_index = -1;
+	snd_rad = 0.0;
+	obj_num = -1;
 }
 
 triggered_rotation::~triggered_rotation()
@@ -223,7 +233,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 
 		if (i != n_queue) {
 			// replace if it's not the last item on the list
-			if ( i != (MAX_TRIGGERED_ANIMATIONS-1) )
+			if ( i < (MAX_TRIGGERED_ANIMATIONS-1) )
 				memcpy( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
 
 			// ok these two animations cancelled each other out, so he doesn't get on the queue
@@ -284,8 +294,14 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 			memcpy( queue, queue_tmp, sizeof(queued_animation) * i );
 
 		// if there are any items after, copy them from the original queue
-		if ( n_queue >= (i+1) )
+		if ( (n_queue >= (i+1)) && (i < (MAX_TRIGGERED_ANIMATIONS - 1)) ) {
+			if (n_queue >= MAX_TRIGGERED_ANIMATIONS) {
+				// if the queue is full, we don't want to copy past the end of it
+				memcpy(&queue[i + 1], &queue_tmp[i], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS - i - 1));
+			} else {
 			memcpy( &queue[i+1], &queue_tmp[i], sizeof(queued_animation) * (n_queue - i) );
+			}
+		}
 
 		// add the new item
 		queue[i] = new_queue;
@@ -389,8 +405,9 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	Assert( psub != NULL );
 	Assert( ss != NULL );
 	Assert( psub->flags & MSS_FLAG_TRIGGERED );
+	Assert( ss->triggered_rotation_index >= 0 );
 
-	triggered_rotation *trigger = &ss->trigger;
+	triggered_rotation *trigger = &Triggered_rotations[ss->triggered_rotation_index];
 	submodel_instance_info *sii = &ss->submodel_info_1;	
 	int not_moving_count = 0;
 
@@ -515,6 +532,37 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 //*** ship related animation stuff ***//
 //************************************//
 
+// Checks if the given subtype matches a particular animation
+bool subtype_check(model_subsystem *psub, queued_animation *anim, int subtype)
+{
+	Assert( psub != NULL );
+	Assert( anim != NULL );
+
+	if ( (subtype == ANIMATION_SUBTYPE_ALL) || (anim->subtype == ANIMATION_SUBTYPE_ALL) )
+		return true;
+
+	// Fighterbay door animations can have negative subtypes, so handle those
+	// separately here
+	if (anim->type == TRIGGER_TYPE_DOCK_BAY_DOOR) {
+		int anim_subtype = anim->subtype -1; // in the tables, bay door +sub_types are 1-based so change to 0-based
+
+		if (anim_subtype < 0) {
+			if (abs(anim_subtype) != subtype) {
+				return true;
+			}
+		} else {
+			if (anim_subtype == subtype) {
+				return true;
+			}
+		}
+	} else {
+		if ( anim->subtype == subtype )
+			return true;
+	}
+
+	return false;
+}
+
 bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction, bool instant)
 {
 	Assert( pss != NULL );
@@ -527,20 +575,22 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 
 	if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
 		return false;
+	Assert(pss->triggered_rotation_index >= 0);
+	triggered_rotation *trigger = &Triggered_rotations[pss->triggered_rotation_index];
 
 	for (int i = 0; i < psub->n_triggers; i++) {
-		if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
+		if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
 			// rotate instantly; don't use the queue
 			if (instant) {
-				pss->trigger.set_to_final(&psub->triggers[i]);
-				pss->trigger.apply_trigger_angles(&pss->submodel_info_1.angs);
+				trigger->set_to_final(&psub->triggers[i]);
+				trigger->apply_trigger_angles(&pss->submodel_info_1.angs);
 
 				retval = true;
 			}
 			// rotate normally
 			else {
 				psub->triggers[i].instance = i;
-				pss->trigger.add_queue(&psub->triggers[i], direction);
+				trigger->add_queue(&psub->triggers[i], direction);
 
 				retval = true;
 			}
@@ -617,7 +667,7 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 			continue;
 
 		for (i = 0; i < psub->n_triggers; i++) {
-			if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
+			if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
 				temp_ret = model_anim_instance_get_actual_time(&psub->triggers[i]);
 
 				if (temp_ret > ret)
@@ -640,7 +690,7 @@ int model_anim_get_actual_time_type(ship_info *sip, int animation_type, int subt
 		psub = &sip->subsystems[n];
 
 		for (i = 0; i < psub->n_triggers; i++) {
-			if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
+			if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
 				temp_ret = model_anim_instance_get_actual_time(&psub->triggers[i]);
 
 				if (temp_ret > ret)
@@ -699,6 +749,8 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 
 	if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
 		return timestamp();
+	Assert(pss->triggered_rotation_index >= 0);
+	triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
 	for (i = 0; i < psub->n_triggers; i++) {
 		if ( (psub->triggers[i].type == animation_type) &&
@@ -706,24 +758,23 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 		{
 			int ani_time = 0;
 
-			if ( (pss->trigger.current_vel.a1d[0] != 0.0f) || (pss->trigger.current_vel.a1d[1] != 0.0f) || (pss->trigger.current_vel.a1d[2] != 0.0f)) {
+			if ( (tr->current_vel.a1d[0] != 0.0f) || (tr->current_vel.a1d[1] != 0.0f) || (tr->current_vel.a1d[2] != 0.0f)) {
 				// if the subobject is moving then things get really complicated
 				int a_time = 0;
 				int real_time = model_anim_instance_get_actual_time(&psub->triggers[i]);
 				int pad = real_time - psub->triggers[i].end;
 
 				for (int a = 0; a < 3; a++) {
-					triggered_rotation tr = pss->trigger;
-					float end_angle = (tr.current_ang.a1d[a]  + (((tr.rot_vel.a1d[a]*tr.rot_vel.a1d[a]) - (tr.current_vel.a1d[a]*tr.current_vel.a1d[a])) / (2*tr.rot_accel.a1d[a])));
+					float end_angle = (tr->current_ang.a1d[a]  + (((tr->rot_vel.a1d[a]*tr->rot_vel.a1d[a]) - (tr->current_vel.a1d[a]*tr->current_vel.a1d[a])) / (2*tr->rot_accel.a1d[a])));
 
-					if (end_angle > tr.slow_angle.a1d[a]) {
+					if (end_angle > tr->slow_angle.a1d[a]) {
 						//T(total) =  (2V(maximum) - V(initial))/a + (S(turnpoint) - S(initial) + (V(initial)^2 - V(maximum)^2)/2a) / V(maximum)
-						a_time = fl2i(((((2*tr.rot_vel.a1d[a]) - tr.current_ang.a1d[a])/tr.rot_accel.a1d[a]) + tr.slow_angle.a1d[a] - tr.current_ang.a1d[a] + (((tr.current_vel.a1d[a]*tr.current_vel.a1d[a]) - (tr.rot_vel.a1d[a]*tr.rot_vel.a1d[a])) / (2*tr.rot_accel.a1d[a])))*1000.0f);
+						a_time = fl2i(((((2*tr->rot_vel.a1d[a]) - tr->current_ang.a1d[a])/tr->rot_accel.a1d[a]) + tr->slow_angle.a1d[a] - tr->current_ang.a1d[a] + (((tr->current_vel.a1d[a]*tr->current_vel.a1d[a]) - (tr->rot_vel.a1d[a]*tr->rot_vel.a1d[a])) / (2*tr->rot_accel.a1d[a])))*1000.0f);
 						if (ani_time < a_time)
 							ani_time = a_time;
 					} else {
 						//T(total)  = 2 * sqrt((S(final) - S(initial))/a - ( (V(initial)/a)^2 ) / 2 ) - V(initial)/a
-						a_time = fl2i((2 * fl_sqrt(((tr.end_angle.a1d[a] - tr.current_ang.a1d[a])/tr.rot_accel.a1d[a]) - ((tr.current_vel.a1d[a] * tr.current_vel.a1d[a]) / (tr.rot_accel.a1d[a] * tr.rot_accel.a1d[a])) / 2) - (tr.current_vel.a1d[a] / tr.rot_accel.a1d[a]))*1000.0f);
+						a_time = fl2i((2 * fl_sqrt(((tr->end_angle.a1d[a] - tr->current_ang.a1d[a])/tr->rot_accel.a1d[a]) - ((tr->current_vel.a1d[a] * tr->current_vel.a1d[a]) / (tr->rot_accel.a1d[a] * tr->rot_accel.a1d[a])) / 2) - (tr->current_vel.a1d[a] / tr->rot_accel.a1d[a]))*1000.0f);
 						if (ani_time < a_time)
 							ani_time = a_time;
 					}
@@ -793,11 +844,12 @@ void model_anim_set_initial_states(ship *shipp)
 				// special case for turrets
 				pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
 				pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
-			} else {
-				if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
-					pss->trigger.set_to_initial(&psub->triggers[i]);
-					pss->trigger.apply_trigger_angles(&pss->submodel_info_1.angs);
-				}
+			} else if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
+				Assert(pss->triggered_rotation_index >= 0);
+				triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
+
+				tr->set_to_initial(&psub->triggers[i]);
+				tr->apply_trigger_angles(&pss->submodel_info_1.angs);
 			}
 		}
 	}
@@ -831,6 +883,7 @@ void model_anim_handle_multiplayer(ship *shipp)
 		// not a triggered animation, skip it
 		if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
 			continue;
+		Assert(pss->triggered_rotation_index >= 0);
 
 		for (int i = 0; i < psub->n_triggers; i++) {
 			switch (psub->triggers[i].type)
@@ -839,7 +892,7 @@ void model_anim_handle_multiplayer(ship *shipp)
 				case TRIGGER_TYPE_SECONDARY_BANK:
 				case TRIGGER_TYPE_AFTERBURNER:
 				{
-					pss->trigger.process_queue();
+					Triggered_rotations[pss->triggered_rotation_index].process_queue();
 					model_anim_submodel_trigger_rotate(psub, pss );
 
 					break;

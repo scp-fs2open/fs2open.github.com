@@ -290,23 +290,36 @@ void HudGaugeReticle::getFirepointStatus() {
 		//Get the player eyepoint
 		pm = model_get(pship->model_num);
 
-		if (pm->n_guns > 0) { 
-			eye eyepoint = pm->view_positions[shipp->current_viewpoint];
-			vec2d ep = {eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y};
+		if (pm->n_view_positions == 0) {
+			mprintf(("Model %s does not have a defined eyepoint. Firepoint display could not be generated\n", pm->filename));
+		} else  {
+			if (pm->n_guns > 0) { 
+			
+				eye eyepoint = pm->view_positions[shipp->current_viewpoint];
+				vec2d ep = { eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y };
 
-			for (int i = 0; i < pm->n_guns; i++) {
-				int isactive = 0;
+				for (int i = 0; i < pm->n_guns; i++) {
+					int isactive = 0;
 
-				if ( !timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) )
-					isactive = 1;
-				else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
-					isactive = 1;
-				else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
-					isactive = 2;
+					if (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]))
+						isactive = 1;
+					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
+						isactive = 1;
+					else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
+						isactive = 2;
 
-				for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
-					firepoint tmp = { {ep.x - pm->gun_banks[i].pnt[j].xyz.x, ep.y - pm->gun_banks[i].pnt[j].xyz.y}, isactive};
-					fp.push_back(tmp);
+					for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
+						vec3d fpfromeye;
+
+						matrix eye_orient, player_transpose;
+
+						vm_copy_transpose_matrix(&player_transpose, &Objects[Player->objnum].orient);
+						vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
+						vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
+
+						firepoint tmp = { { fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y }, isactive };
+						fp.push_back(tmp);
+					}
 				}
 			}
 		}
@@ -494,7 +507,7 @@ void HudGaugeThrottle::render(float frametime)
 			sprintf(buf, "%d", fl2i(desired_speed * Hud_speed_multiplier + 0.5f));
 		}
 
-		hud_num_make_mono(buf);
+		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 
 		renderString(position[0] + Target_speed_offsets[0] - w, position[1] + Target_speed_offsets[1], buf);
@@ -522,7 +535,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 
 	//setGaugeColor();
 	sprintf(buf, "%d", fl2i(current_speed+0.5f));
-	hud_num_make_mono(buf);
+	hud_num_make_mono(buf, font_num);
 	gr_get_string_size(&w, &h, buf);
 
 	if ( orbit ) {

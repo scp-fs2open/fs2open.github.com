@@ -21,12 +21,12 @@ class player;
 struct button_info;
 struct join_request;
 struct physics_info;
-struct object;
+class object;
 struct active_game;
-struct ship;
+class ship;
 struct server_item;
 class ship_info;
-struct p_object;
+class p_object;
 
 // two types of signatures that we can request,  permanent signatures are all below 1000.  non-permanent are above 1000
 #define MULTI_SIG_SHIP					1

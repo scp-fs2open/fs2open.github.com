@@ -74,6 +74,7 @@ extern jmp_buf parse_abort;
 extern bool end_string_at_first_hash_symbol(char *src);
 extern bool end_string_at_first_hash_symbol(SCP_string &src);
 extern char *get_pointer_to_first_hash_symbol(char *src);
+extern const char *get_pointer_to_first_hash_symbol(const char *src);
 extern int get_index_of_first_hash_symbol(SCP_string &src);
 
 // white space
@@ -141,7 +142,6 @@ extern void stuff_float(float *f);
 extern int stuff_float_optional(float *f, bool raw = false);
 extern int stuff_int_optional(int *i, bool raw = false);
 extern void stuff_int(int *i);
-extern void stuff_sound(int *dest);
 extern void stuff_ubyte(ubyte *i);
 extern int stuff_string_list(SCP_vector<SCP_string>& slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);

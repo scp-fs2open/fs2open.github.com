@@ -19,8 +19,8 @@
 #include "globalincs/globals.h"
 #include "camera/camera.h"
 
-struct ship;
-struct object;
+class ship;
+class object;
 
 extern bool Nebula_sexp_used;
 // fog near and far values for rendering the background nebula

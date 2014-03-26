@@ -12,6 +12,7 @@
 #ifndef _MODELANIM_H
 #define _MODELANIM_H
 
+#include <limits.h>
 
 #define MAX_TRIGGERED_ANIMATIONS 15
 
@@ -48,7 +49,7 @@ enum EModelAnimationPosition {
     MA_POS_READY            = 2     // set, done with move
 };
 
-#define ANIMATION_SUBTYPE_ALL -1
+#define ANIMATION_SUBTYPE_ALL INT_MAX
 
 /**
  * This is an object responsable for storing the animation information assosiated with 
@@ -111,6 +112,7 @@ class triggered_rotation
 	public:
 		triggered_rotation();
 		~triggered_rotation();
+		void clear();
 
 		void start(queued_animation *q);
 		void set_to_initial(queued_animation *q);
@@ -134,12 +136,13 @@ class triggered_rotation
 		int start_time;		// the time the current animation started
 };
 
+extern SCP_vector<triggered_rotation> Triggered_rotations;
 
 // functions...
 
 struct model_subsystem;
-struct ship_subsys;
-struct ship;
+class ship_subsys;
+class ship;
 class ship_info;
 
 void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss);

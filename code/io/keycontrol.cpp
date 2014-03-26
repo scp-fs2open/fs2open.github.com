@@ -58,6 +58,7 @@
 #include "network/multi_endgame.h"
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
+#include "object/objectshield.h"
 
 #define MAX_NUM_SLOTS 6
 
@@ -1024,12 +1025,21 @@ void process_debug_keys(int k)
 			break;
 		}
 
-		case KEY_DEBUGGED + KEY_R: {
+		case KEY_DEBUGGED + KEY_R:
 		case KEY_DEBUGGED1 + KEY_R:
-			if (Player_ai->target_objnum != -1)
-				ai_issue_rearm_request(&Objects[Player_ai->target_objnum]);
+		{
+			// rearm the target, if we have one
+			object *obj_to_rearm = (Player_ai->target_objnum >= 0) ? &Objects[Player_ai->target_objnum] : Player_obj;
+
+			if (is_support_allowed(obj_to_rearm))
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", -1), Ships[obj_to_rearm->instance].ship_name);
+				ai_issue_rearm_request(obj_to_rearm);
+			}
 			else
-				ai_issue_rearm_request(Player_obj);
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", -1), Ships[obj_to_rearm->instance].ship_name);
+			}
 
 			break;
 		}
@@ -1945,28 +1955,28 @@ int button_function_critical(int n, net_player *p = NULL)
 			if(at_self){
    			control_used(SHIELD_XFER_TOP);
 			}
-			hud_augment_shield_quadrant(objp, 1);
+			hud_augment_shield_quadrant(objp, FRONT_QUAD);
 			break;
 
 		// transfer shield energy to rear
 		case SHIELD_XFER_BOTTOM:
 			if(at_self)
 				control_used(SHIELD_XFER_BOTTOM);
-			hud_augment_shield_quadrant(objp, 2);
+			hud_augment_shield_quadrant(objp, REAR_QUAD);
 			break;
 
 		// transfer shield energy to left
 		case SHIELD_XFER_LEFT:
 			if(at_self)
 				control_used(SHIELD_XFER_LEFT);
-			hud_augment_shield_quadrant(objp, 3);
+			hud_augment_shield_quadrant(objp, LEFT_QUAD);
 			break;
 			
 		// transfer shield energy to right
 		case SHIELD_XFER_RIGHT:
 			if(at_self)
 				control_used(SHIELD_XFER_RIGHT);
-			hud_augment_shield_quadrant(objp, 0);
+			hud_augment_shield_quadrant(objp, RIGHT_QUAD);
 			break;
 
 		// transfer energy to shield from weapons

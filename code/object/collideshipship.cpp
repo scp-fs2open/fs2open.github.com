@@ -351,7 +351,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	if (valid_hit_occured) {
 
 		// Collision debug stuff
-#ifdef DEBUG
+#ifndef NDEBUG
 		object *collide_obj = NULL;
 		if (heavy_obj == Player_obj) {
 			collide_obj = light_obj;
@@ -937,7 +937,7 @@ int get_ship_quadrant_from_global(vec3d *global_pos, object *objp)
 
 	vm_vec_sub(&tpos, global_pos, &objp->pos);
 	vm_vec_rotate(&rotpos, &tpos, &objp->orient);
-	return get_quadrant(&rotpos);
+	return get_quadrant(&rotpos, objp);
 }
 
 #define	MIN_REL_SPEED_FOR_LOUD_COLLISION		50		// relative speed of two colliding objects at which we play the "loud" collide sound

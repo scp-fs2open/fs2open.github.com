@@ -66,6 +66,8 @@ public:
 	CButton m_disable_ets;
 	CButton m_cloaked;
 	CButton	m_set_class_dynamically;
+	CButton	m_scramble_messages;
+
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control m_destroy_value;
@@ -123,6 +125,7 @@ protected:
 	afx_msg void OnSetClassDynamically();
 	afx_msg void OnDisableETS();
 	afx_msg void OnCloaked();
+	afx_msg void OnScrambleMessages();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

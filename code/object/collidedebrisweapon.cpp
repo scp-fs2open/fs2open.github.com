@@ -72,7 +72,7 @@ int collide_debris_weapon( obj_pair * pair )
 
 		Script_system.SetHookObjects(2, "Self",pdebris, "Object", weapon);
 		if((debris_override && !weapon_override) || (!debris_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pdebris);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pdebris, Weapons[weapon->instance].weapon_info_index);
 
 		Script_system.RemHookVars(4, "Weapon", "Debris", "Self","ObjectB");
 		return 0;

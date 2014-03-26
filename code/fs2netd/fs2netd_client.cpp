@@ -32,6 +32,7 @@
 #include "cmdline/cmdline.h"
 #include "cfile/cfilesystem.h"
 #include "network/multimsgs.h"
+#include "mod_table/mod_table.h"
 
 #ifndef WIN32
 #include <cstdio>
@@ -122,8 +123,19 @@ void fs2netd_options_config_init()
 	}
 
 	if ( !strlen(Multi_options_g.tracker_port) ) {
-		ml_printf("NOTICE: Port for game/user trackers not specified, using default instead (%s).", FS2NETD_DEFAULT_PORT);
-		strncpy( Multi_options_g.tracker_port, FS2NETD_DEFAULT_PORT, STD_NAME_LEN );
+		if ( FS2NetD_port >= 1024 && FS2NetD_port <= USHRT_MAX ) {
+			ml_printf("NOTICE: User override for game/user tracker port not specified, using game_settings.tbl override (%i).", FS2NetD_port);
+			int result;
+			result = sprintf(Multi_options_g.tracker_port, "%i", FS2NetD_port);
+			Assertion( result > 0, "Copying port %i to tracker_port failed\n", FS2NetD_port );
+		}
+		else {
+			if ( FS2NetD_port != 0 ) {
+				ml_printf("ERROR: game_settings.tbl override for game/user tracker port '%i' must be between %i and %i.", FS2NetD_port, 1024, USHRT_MAX);
+			}
+			ml_printf("NOTICE: Port for game/user trackers not specified, using default instead (%s).", FS2NETD_DEFAULT_PORT);
+			strncpy( Multi_options_g.tracker_port, FS2NETD_DEFAULT_PORT, STD_NAME_LEN );
+		}
 	} else {
 		long port_tmp = strtol(Multi_options_g.tracker_port, (char**)NULL, 10);
 
@@ -725,7 +737,7 @@ static void fs2netd_handle_messages()
 
 			case PCKT_SLIST_REPLY: {
 				int numServers = 0;
-				int svr_flags;
+				int svr_flags __attribute__((__unused__)); // gcc [-Wunused-but-set-variable] doesn't like MACROs
 				ushort svr_port;
 				char svr_ip[16];
 				active_game ag;
@@ -1650,7 +1662,6 @@ void fs2netd_update_game_count(const char *chan_name)
 void fs2netd_spew_table_checksums(char *outfile)
 {
 	char full_name[MAX_PATH_LEN];
-	int count;
 	FILE *out = NULL;
 	char description[512] = { 0 };
 	char filename[65] = { 0 };
@@ -1673,7 +1684,7 @@ void fs2netd_spew_table_checksums(char *outfile)
 	p = Cmdline_spew_table_crcs;
 
 	while (*p && (offset < sizeof(description))) {
-		if (*p == '"') {
+		if (*p == '"' && offset < sizeof(description)-1) {
 			description[offset++] = '"';
 			description[offset++] = '"';
 		} else {
@@ -1686,15 +1697,13 @@ void fs2netd_spew_table_checksums(char *outfile)
 	// header
 	fprintf(out, "filename,CRC32,description\r\n");
 
-	count = (int)Table_valid_status.size();
-
 	// do all the checksums
 	for (SCP_vector<crc_valid_status>::iterator tvs = Table_valid_status.begin(); tvs != Table_valid_status.end(); ++tvs) {
 		offset = 0;
 		p = tvs->name;
 
 		while (*p && (offset < sizeof(filename))) {
-			if (*p == '"') {
+			if (*p == '"' && offset < sizeof(filename)-1) {
 				filename[offset++] = '"';
 				filename[offset++] = '"';
 			} else {
@@ -1704,7 +1713,11 @@ void fs2netd_spew_table_checksums(char *outfile)
 			p++;
 		}
 
-		filename[offset] = '\0';
+		if (offset < sizeof(filename)) {
+			filename[offset] = '\0';
+		} else {
+			filename[sizeof(filename)-1] = '\0';
+		}
 
 		fprintf(out, "\"%s\",%u,\"%s\"\r\n", filename, tvs->crc32, description);
 	}

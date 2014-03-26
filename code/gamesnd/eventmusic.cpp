@@ -282,22 +282,14 @@ void event_music_init()
 	event_music_reset_choices();
 
 	// Goober5000
+	// set all the filenames to "none" so we're compatible with the extra NRMLs in FS1 music
+	memset(Soundtracks, 0, MAX_SOUNDTRACKS * sizeof(SOUNDTRACK_INFO));
 	for (i = 0; i < MAX_SOUNDTRACKS; i++)
-	{
-		memset(&Soundtracks[i], 0, sizeof(SOUNDTRACK_INFO));
-
-		// set all the filenames to "none" so we're compatible with the extra NRMLs in FS1 music
 		for (j = 0; j < MAX_PATTERNS; j++)
-		{
 			strcpy_s(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
-		}
-	}
 
 	// Goober5000
-	for (i = 0; i < MAX_SPOOLED_MUSIC; i++)
-	{
-		memset(&Spooled_music[i], 0, sizeof(menu_music));
-	}
+	memset(Spooled_music, 0, MAX_SPOOLED_MUSIC * sizeof(menu_music));
 
 	//Do teh parsing
 	event_music_parse_musictbl("music.tbl");
@@ -903,7 +895,7 @@ int event_music_friendly_arrival()
 	// Goober5000 - to avoid array out-of-bounds
 	//Assert(Current_pattern >= 0 && Current_pattern < MAX_PATTERNS);
 
-	if(Current_pattern < 0 || Current_pattern > MAX_PATTERNS)
+	if(Current_pattern < 0 || Current_pattern >= MAX_PATTERNS)
 		return 0;
 
 	if ( Patterns[Current_pattern].next_pattern != Patterns[Current_pattern].default_next_pattern )
@@ -1196,7 +1188,7 @@ void parse_soundtrack()
 	if(strack_idx < 0 && (nocreate || Num_soundtracks >= MAX_SOUNDTRACKS))
 	{
 		if(Num_soundtracks >= MAX_SOUNDTRACKS) {
-			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[Num_soundtracks].name, MAX_SOUNDTRACKS);
+			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[MAX_SOUNDTRACKS-1].name, MAX_SOUNDTRACKS);
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it

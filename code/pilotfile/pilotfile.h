@@ -22,7 +22,8 @@ static const ubyte PLR_VERSION = 1;
 //   0 - initial version
 //   1 - re-add recent missions
 //   2 - separate single/multi squad name & pic
-static const ubyte CSG_VERSION = 2;
+//   3 - remove separate detail settings for campaigns
+static const ubyte CSG_VERSION = 3;
 
 
 class pilotfile {
@@ -39,6 +40,7 @@ class pilotfile {
 		// updating stats, multi and/or all-time
 		void update_stats(scoring_struct *stats, bool training = false);
 		void update_stats_backout(scoring_struct *stats, bool training = false);
+		void reset_stats();
 
 		// for checking to see if a PLR file is basically valid
 		bool verify(const char *fname, int *rank = NULL);

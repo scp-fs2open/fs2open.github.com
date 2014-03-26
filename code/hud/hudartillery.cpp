@@ -22,7 +22,8 @@
 #include "globalincs/alphacolors.h"
 #include "network/multi.h"
 #include "hud/hudmessage.h"
-
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
@@ -116,6 +117,7 @@ void ssm_init()
 				stuff_string(s->message, F_NAME, NAME_LENGTH);
 				s->use_custom_message = true;
 			}
+			parse_sound("+Alarm Sound:", &s->sound_index, s->name);
 
 			// see if we have a valid weapon
 			s->weapon_info_index = -1;
@@ -239,6 +241,9 @@ void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *ov
 		else
 			HUD_printf(Ssm_info[ssm_index].message);
 	}
+	if (Ssm_info[ssm_index].sound_index >= 0) {
+		snd_play(&Snds[Ssm_info[ssm_index].sound_index]);
+	}
 }
 
 // delete a finished ssm effect
@@ -295,9 +300,11 @@ void ssm_process()
 						// fire the missile and flash the screen
 						weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
 
-                        Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
-                        Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
-                        Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
+						if (weapon_objnum >= 0) {
+							Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
+							Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
+							Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
+						}
 
 						// this makes this particular missile done
 						moveup->done_flags[idx] = 1;

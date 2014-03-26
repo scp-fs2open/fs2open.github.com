@@ -48,6 +48,7 @@ extern background_t Backgrounds[MAX_BACKGROUNDS];
 extern int Nmodel_flags;
 
 extern bool Dynamic_environment;
+extern bool Motion_debris_override;
 
 void stars_swap_backgrounds(int idx1, int idx2);
 void stars_pack_backgrounds();

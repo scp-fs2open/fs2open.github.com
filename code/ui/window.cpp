@@ -390,7 +390,7 @@ void UI_WINDOW::render_tooltip(char *str)
 	if (ttx + str_w + 2 > gr_screen.max_w_unscaled)
 		ttx = gr_screen.max_w_unscaled - str_w;
 
-	if (tty + str_h + 2 > gr_screen.max_w_unscaled)
+	if (tty + str_h + 2 > gr_screen.max_h_unscaled)
 		tty = gr_screen.max_h_unscaled - str_h;
 
 	gr_set_color_fast(&Color_black);

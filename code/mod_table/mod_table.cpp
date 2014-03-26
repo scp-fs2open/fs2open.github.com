@@ -24,6 +24,8 @@ bool Enable_external_shaders = false;
 int Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 bool Full_color_head_anis = false;
 bool Weapons_inherit_parent_collision_group = false;
+bool Flight_controls_follow_eyepoint_orientation = false;
+int FS2NetD_port = 0;
 
 
 void parse_mod_table(const char *filename)
@@ -159,6 +161,14 @@ void parse_mod_table(const char *filename)
 		}
 	}
 	
+	optional_string("#NETWORK SETTINGS"); 
+
+	if (optional_string("$FS2NetD port:")) {
+		stuff_int(&FS2NetD_port);
+		if (FS2NetD_port)
+			mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
+	}
+
 	optional_string("#OTHER SETTINGS"); 
 
 	if (optional_string("$Fixed Turret Collisions:")) { 
@@ -195,6 +205,12 @@ void parse_mod_table(const char *filename)
 		stuff_boolean(&Weapons_inherit_parent_collision_group);
 		if (Weapons_inherit_parent_collision_group)
 			mprintf(("Game Settings Table: Weapons inherit parent collision group\n"));
+	}
+
+	if (optional_string("$Flight controls follow eyepoint orientation:")) {
+		stuff_boolean(&Flight_controls_follow_eyepoint_orientation);
+		if (Flight_controls_follow_eyepoint_orientation)
+			mprintf(("Game Settings Table: Flight controls follow eyepoint orientation\n"));
 	}
 
 	required_string("#END");

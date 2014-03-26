@@ -15,6 +15,7 @@
 #include "globalincs/globals.h"
 #include "anim/packunpack.h"
 #include "hud/hud.h"
+#include "graphics/generic.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 
@@ -22,7 +23,7 @@
 // names for the icons that can appear in the briefing.  If you modify this list,
 // update the Icons_names[] string array located in MissionParse.cpp
 // ------------------------------------------------------------------------
-#define MAX_BRIEF_ICONS						35		// keep up to date
+#define MIN_BRIEF_ICONS						35		// keep up to date
 
 #define ICON_FIGHTER							0
 #define ICON_FIGHTER_WING					1
@@ -60,6 +61,17 @@
 #define ICON_JUMP_NODE						33
 #define ICON_TRANSPORT						34
 
+typedef struct briefing_icon_info {
+	generic_anim	regular;
+	hud_anim		fade;
+	hud_anim		highlight;
+} briefing_icon_type;
+
+extern SCP_vector<briefing_icon_info> Briefing_icon_info;
+
+struct brief_icon;
+extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
+
 // ------------------------------------------------------------------------
 // Structures to hold briefing data
 // ------------------------------------------------------------------------
@@ -86,10 +98,10 @@
 #define		BI_HIGHLIGHT		(1<<0)
 #define		BI_SHOWHIGHLIGHT	(1<<1)
 #define		BI_FADEIN			(1<<2)
-#define		BI_MIRROR_ICON		(1<<3)	//mirror the briefing icon so it points the other way - phreak
+#define		BI_MIRROR_ICON		(1<<3)	// mirror the briefing icon so it points the other way - phreak
+#define		BI_USE_WING_ICON	(1<<4)	// use wing variant of briefing icon
 
-typedef struct brief_icon
-{
+typedef struct brief_icon {
 	int		x,y,w,h;
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
@@ -111,17 +123,17 @@ typedef struct brief_icon
 
 #define MAX_BRIEF_STAGE_LINES		20
 
-typedef struct brief_line
-{
+typedef struct brief_line {
 	int start_icon;		// index into icons[], where line starts
-	int end_icon;			// index into icons[], where line ends
+	int end_icon;		// index into icons[], where line ends
 } brief_line;
 
 #define BS_FORWARD_CUT		(1<<0)
 #define BS_BACKWARD_CUT		(1<<1)
 
-typedef struct brief_stage
+class brief_stage
 {
+public:
 	SCP_string	text;
 	char			voice[MAX_FILENAME_LEN];
 	vec3d		camera_pos;
@@ -139,13 +151,14 @@ typedef struct brief_stage
 		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
 	{ 
 		voice[ 0 ] = 0;
-		memset( &camera_pos, 0, sizeof( vec3d ) );
-		memset( &camera_orient, 0, sizeof( matrix ) );
+		camera_pos = vmd_zero_vector;
+		camera_orient = vmd_identity_matrix;
 	}
-} brief_stage;
+};
 
-typedef struct debrief_stage
+class debrief_stage
 {
+public:
 	int			formula;
 	SCP_string	text;
 	char			voice[MAX_FILENAME_LEN];
@@ -157,17 +170,29 @@ typedef struct debrief_stage
 	{ 
 		voice[ 0 ] = 0;
 	}
-} debrief_stage;
+};
 
-typedef struct briefing {
+class briefing
+{
+public:
 	int			num_stages;
 	brief_stage	stages[MAX_BRIEF_STAGES];
-} briefing;
 
-typedef struct debriefing {
+	briefing()
+		: num_stages(0)
+	{}
+};
+
+class debriefing
+{
+public:
 	int				num_stages;
 	debrief_stage	stages[MAX_DEBRIEF_STAGES];
-} debriefing;
+
+	debriefing()
+		: num_stages(0)
+	{}
+};
 
 
 
@@ -265,7 +290,7 @@ void brief_restart_text_wipe();
 void brief_reset_last_new_stage();
 void brief_blit_stage_num(int stage_num, int stage_max);
 
-void brief_common_get_icon_dimensions(int *w, int *h, int type, int ship_class);
+void brief_common_get_icon_dimensions(int *w, int *h, brief_icon *bi);
 
 // voice streaming interface
 void brief_voice_init();

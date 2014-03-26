@@ -54,7 +54,7 @@ END_MESSAGE_MAP()
 
 void CShipTexturesDlg::OnOK() 
 {
-	int i, k, write_index, z, not_found, temp_bmp, temp_frames, temp_fps;
+	int i, z, not_found, temp_bmp, temp_frames, temp_fps;
 	CString missing_files, message;
 	char buf[10];
 
@@ -119,43 +119,36 @@ void CShipTexturesDlg::OnOK()
 		// re-sort according to old
 		sort_textures();
 
-		// overwrite old stuff
-		k = 0;
-		write_index = 0;
-		while (k<(MAX_SHIPS * MAX_REPLACEMENT_TEXTURES))
+		// overwrite all the old entries that refer to this ship
+		SCP_vector<texture_replace>::iterator ii, end;
+		end = Fred_texture_replacements.end();
+		for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
 		{
-			//WMC - This loop will go on for a REALLY LONG TIME
-			//I don't think we need to copy empty entries.
-			if(!strlen(Fred_texture_replacements[k].ship_name))
-				break;
-
-			if (stricmp(Fred_texture_replacements[k].ship_name, Ships[self_ship].ship_name))
+			if (!stricmp(ii->ship_name, Ships[self_ship].ship_name))
 			{
-				// move up, but when copying, src and dest can't be the same
-				if (k != write_index)
-				{
-					texture_set(&Fred_texture_replacements[write_index], &Fred_texture_replacements[k]);
-				}
-				write_index++;
+				end--;
+				if (end == ii)
+					break;
+				texture_set(&(*ii), &(*end));
 			}
-
-			k++;
 		}
-		Fred_num_texture_replacements = write_index;
+		Fred_texture_replacements.erase(end);
 
-		// finally, assign duplicate textures to Fred array
+		// now put the new entries on the end of the list
 		for (i=0; i<texture_count; i++)
 		{
 			// make sure there is an entry
 			if (strlen(new_texture_name[i]))
 			{
-				// assign to global FRED array
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, old_texture_name[i]);
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, new_texture_name[i]);
-				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, Ships[self_ship].ship_name);
+				texture_replace tr;
 
-				// increment
-				Fred_num_texture_replacements++;
+				strcpy_s(tr.old_texture, old_texture_name[i]);
+				strcpy_s(tr.new_texture, new_texture_name[i]);
+				strcpy_s(tr.ship_name, Ships[self_ship].ship_name);
+				tr.new_texture_id = -1;
+
+				// assign to global FRED array
+				Fred_texture_replacements.push_back(tr);
 			}
 		}
 	}	// skipped here if nothing modified
@@ -237,27 +230,24 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	}
 
 	// now look for new textures
-	k=0;
-	while (k < Fred_num_texture_replacements)
+	for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii)
 	{
-		if (!stricmp(Ships[self_ship].ship_name, Fred_texture_replacements[k].ship_name))
+		if (!stricmp(Ships[self_ship].ship_name, ii->ship_name))
 		{
 			// look for corresponding old texture
 			for (i=0; i<texture_count; i++)
 			{
 				// if match
-				if (!stricmp(old_texture_name[i], Fred_texture_replacements[k].old_texture))
+				if (!stricmp(old_texture_name[i], ii->old_texture))
 				{
 					// assign new texture
-					strcpy_s(new_texture_name[i], Fred_texture_replacements[k].new_texture);
+					strcpy_s(new_texture_name[i], ii->new_texture);
 
 					// we found one, so no more to check
 					break;
 				}
 			}
 		}
-
-		k++;	// increment down the list of texture replacements
 	}
 	// end of new texture check
 

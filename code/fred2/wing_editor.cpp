@@ -693,7 +693,7 @@ int wing_editor::update_data(int redraw)
 
 			for (i=0; i<Wings[cur_wing].wave_count; i++) {
 				if ((Objects[wing_objects[cur_wing][i]].type == OBJ_SHIP) || (Objects[wing_objects[cur_wing][i]].type == OBJ_START)) {
-					sprintf(buf, "%s %d", str, i + 1);
+					wing_bash_ship_name(buf, str, i + 1);
 					rename_ship(Wings[cur_wing].ship_index[i], buf);
 				}
 			}

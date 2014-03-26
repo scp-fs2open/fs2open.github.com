@@ -12,7 +12,7 @@
 #ifndef _OBSERVER_HEADER_FILE
 #define _OBSERVER_HEADER_FILE
 
-struct object;
+class object;
 struct vec3d;
 struct matrix;
 

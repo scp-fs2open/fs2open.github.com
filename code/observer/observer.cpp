@@ -48,6 +48,10 @@ int observer_create(matrix *orient, vec3d *pos)
 	// attempt to create the object
 	objnum = obj_create(OBJ_OBSERVER,-1,idx,orient,pos,1.0f,0);
 
+	// fail situation
+	if(objnum == -1)
+		return -1;
+
 	// give the observer Descent style physics
 	Objects[objnum].flags |= OF_PHYSICS;
 	physics_init(&Objects[objnum].phys_info);
@@ -65,16 +69,12 @@ int observer_create(matrix *orient, vec3d *pos)
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);
 	vm_vec_zero(&pi->prev_fvec);
-	memset(&pi->last_rotmat,0,sizeof(matrix));
+	vm_set_identity(&pi->last_rotmat);
 	pi->forward_thrust = 0.0f;
 	pi->speed = 0.0f;
 	pi->fspeed = 0.0f;
 	pi->heading = 0.0f;
 		
-	// fail situation
-	if(objnum == -1)
-		return -1;
-
 	// set up the observer data
 	Observers[idx].flags |= OBS_FLAG_USED;
 	Observers[idx].objnum = objnum;

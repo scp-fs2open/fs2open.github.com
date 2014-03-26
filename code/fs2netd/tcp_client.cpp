@@ -131,7 +131,6 @@ int FS2NetD_SendPlayerData(const char *player_name, player *pl, bool do_send)
 		}
 
 		Assert( (num_type_kills >= 0) && (num_type_kills < USHRT_MAX) );
-
 		PXO_ADD_USHORT( (ushort)num_type_kills );
 
 		for (i = 0; i < MAX_SHIP_CLASSES; i++) {
@@ -141,6 +140,7 @@ int FS2NetD_SendPlayerData(const char *player_name, player *pl, bool do_send)
 			}
 		}
 
+		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
 		PXO_ADD_USHORT( (ushort)Num_medals );
 
 		for (i = 0; i < Num_medals; i++) {
@@ -735,7 +735,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 		}
 
 		// make sure that we get the entire packet
-		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+		while ( (rc_total < (uint)buffer_size) && (rc_total < sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
 			if ( FS2NetD_DataReady() ) {
 				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
 

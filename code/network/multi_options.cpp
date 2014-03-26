@@ -28,6 +28,8 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 
+#include <limits.h>
+
 
 
 // ----------------------------------------------------------------------------------
@@ -61,31 +63,12 @@ void multi_options_read_config()
 	char *tok = NULL;
 
 	// set default value for the global multi options
-	memset(&Multi_options_g, 0, sizeof(multi_global_options));
-	Multi_options_g.protocol = NET_TCP;	
+	Multi_options_g.reset();
 
-	// do we have a forced port via commandline or registry?
-	ushort forced_port = (ushort)os_config_read_uint(NULL, "ForcePort", 0);	
+	ushort forced_port = (ushort)os_config_read_uint(NULL, "ForcePort", 0);
 	Multi_options_g.port = (Cmdline_network_port >= 0) ? (ushort)Cmdline_network_port : forced_port == 0 ? (ushort)DEFAULT_GAME_PORT : forced_port;
-
 	Multi_options_g.log = (Cmdline_multi_log) ? 1 : 0;
-	Multi_options_g.datarate_cap = OO_HIGH_RATE_DEFAULT;
-	strcpy_s(Multi_options_g.user_tracker_ip, "");	
-	strcpy_s(Multi_options_g.game_tracker_ip, "");
-	strcpy_s(Multi_options_g.tracker_port, "");
-	strcpy_s(Multi_options_g.pxo_ip, "");	
-	strcpy_s(Multi_options_g.pxo_rank_url, "");	
-	strcpy_s(Multi_options_g.pxo_create_url, "");	
-	strcpy_s(Multi_options_g.pxo_verify_url, "");	
-	strcpy_s(Multi_options_g.pxo_banner_url, "");
 
-	// standalone values
-	Multi_options_g.std_max_players = -1;
-	Multi_options_g.std_datarate = OBJ_UPDATE_HIGH;
-	Multi_options_g.std_voice = 1;
-	memset(Multi_options_g.std_passwd, 0, STD_PASSWD_LEN+1);
-	memset(Multi_options_g.std_pname, 0, STD_NAME_LEN+1);
-	Multi_options_g.std_framecap = 30;
 
 	// read in the config file
 	in = cfopen(MULTI_CFG_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
@@ -118,7 +101,7 @@ void multi_options_read_config()
 				if ( SETTING("+pxo") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH);
+						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH-1);
 					}
 				} else
 				// set the standalone server's permanent name
@@ -195,6 +178,40 @@ void multi_options_read_config()
 					NEXT_TOKEN();
 					if (tok != NULL) {
 						strncpy(Multi_options_g.std_pxo_password, tok, MULTI_TRACKER_STRING_LEN);
+					}
+				} else
+				if ( SETTING("+webui_root") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						Multi_options_g.webuiRootDirectory = SCP_string(tok);
+					}
+				} else
+				if ( SETTING("+webapi_username") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						Multi_options_g.webapiUsername = SCP_string(tok);
+					}
+				} else
+				if ( SETTING("+webapi_password") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						Multi_options_g.webapiPassword = SCP_string(tok);
+					}
+				} else
+				if ( SETTING("+webapi_server_port") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						long int result = strtol(tok, NULL, 10);
+						if(result <= 0 || result > USHRT_MAX) {
+							mprintf(("ERROR: Invalid or out of range webapi_server_port '%s' specified in multi.cfg, must be integer between 1024 and %i.\n", tok, USHRT_MAX));
+						}
+						else if(result < 1024) {
+							mprintf(("ERROR: webapi_server_port '%d' in multi.cfg is too low, must be between 1024 and %i.\n", result, USHRT_MAX));
+						}
+						else {
+							mprintf(("Using webapi_server_port '%d' from multi.cfg.\n", result));
+							Multi_options_g.webapiPort = (ushort) result;
+						}
 					}
 				}
 			}
@@ -291,6 +308,12 @@ void multi_options_read_config()
 		cfclose(in);
 		in = NULL;
 	}
+
+#ifndef _WIN32
+	if (Is_standalone) {
+		std_configLoaded(&Multi_options_g);
+	}
+#endif
 }
 
 // set netgame defaults 
@@ -640,6 +663,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 			Netgame.campaign_mode = 1;
 
+#ifdef _WIN32
 			// put brackets around the campaign name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				strcpy_s(str,"(");
@@ -647,6 +671,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 				strcat_s(str,")");
 				std_multi_set_standalone_mission_name(str);
 			}
+#endif
 		}
 		// non-campaign mode
 		else {
@@ -664,11 +689,12 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			}			
 
 			Netgame.campaign_mode = 0;
-
+#ifdef _WIN32
 			// set the mission name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				std_multi_set_standalone_mission_name(Netgame.mission_name);			
 			}
+#endif
 		}
 
 		// update FS2NetD as well

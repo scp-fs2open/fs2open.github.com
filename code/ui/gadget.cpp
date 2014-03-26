@@ -80,8 +80,8 @@ int UI_GADGET::set_bmaps(char *ani_fname, int nframes, int start_frame)
 	// load all the bitmaps
 	bm_filename = ani_fname;
 
-	Assert(nframes < MAX_BMAPS_PER_GADGET);		
-	m_num_frames = nframes;		
+	Assertion(nframes < MAX_BMAPS_PER_GADGET, "Too many frames specified (%d), must be less than MAX_BMAPS_PER_GADGET", nframes);
+	m_num_frames = nframes;
 	for(idx=start_frame; idx<nframes; idx++){
 		// clear the string
 		strcpy_s(full_name, "");
@@ -90,12 +90,12 @@ int UI_GADGET::set_bmaps(char *ani_fname, int nframes, int start_frame)
 		num_digits = (idx < 10) ? 1 : (idx < 100) ? 2 : (idx < 1000) ? 3 : 4;
 
 		// build the actual filename
-		strcpy_s(full_name, ani_fname);		
+		strcpy_s(full_name, ani_fname);
 		for(s_idx=0; s_idx<(4-num_digits); s_idx++){
 			strcat_s(full_name, NOX("0"));
 		}
 		sprintf(tmp, "%d", idx);
-		strcat_s(full_name, tmp);		
+		strcat_s(full_name, tmp);
 
 		// try and load the bitmap				
 		bmap_ids[idx] = bm_load(full_name);	

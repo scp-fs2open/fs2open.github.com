@@ -1,6 +1,26 @@
 ChangeLog for fs2_open.  All times are UTC.  
-Updated 2002-10-31 03:46
 
+Features: September 2013
+http://www.hard-light.net/forums/index.php?topic=85700.0
+
+- show-subtitle-text can now display messages as well as raw text - Goober5000
+- toggle subsytem scanning, scannable, cargo revealed, hidden from sensors, stealth and friendly stealth added to the alter-ship-flag sexp - karajorma
+- Support added to add more languages besides English, French, German and Polish, leading the way to better localization! - karajorma
+- event.log can now snapshot events checked in a frame and record the status of an event the previous time it was checked as well as the current state - karajorma
+- added a player-is-cheating sexp - The E
+- allow a user-specified number of credit images - Goober5000
+- allow the specification of the positions of medals, callsigns and labels on the medal screen. - Goober5000
+- lua function to check if a ship is warp capable, and access to a ship's auto-aim FOV - zookeeper
+- is-facing now works for things that aren't ships (like waypoints!) - zookeeper
+- experimental configurations to make AVX builds (see this post for more explainations) - The E
+- new ship flag to enable smarter AI use of afterburners. Now it can use them while flying waypoints or attacking capital ships (use the free-afterburner-use flag with alter-ship-flag) - Admiral MS
+- the number of medals is now dynamic! - Goober5000
+- frame profiling code, see what exactly is slowing down FreeSpace. (Mostly for devs or coders) - Swifty + The E
+- allowing fade-in and fade-out sexps to use any color, not just black, white and red. - Goober5000
+
+==================================================================
+( massive gap in updates, maybe this will be filled in someday...)
+==================================================================
 
 2002-10-30 22:57  randomtiger
 

@@ -36,8 +36,9 @@
 /**
  * Game level sound entities
  */
-typedef struct game_snd
+class game_snd
 {
+public:
 	SCP_string name;				//!< The name of the sound
 	char filename[MAX_FILENAME_LEN];
 	uint signature;					//!< Unique signature of this sound
@@ -50,7 +51,7 @@ typedef struct game_snd
 	int	flags;
 
 	game_snd( );
-} game_snd;
+};
 
 typedef struct sound_env
 {

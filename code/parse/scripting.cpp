@@ -14,6 +14,7 @@
 #include "io/key.h"
 #include "controlconfig/controlsconfig.h"
 #include "freespace2/freespace.h"
+#include "weapon/beam.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -37,6 +38,7 @@ flag_def_list Script_conditions[] =
 	{"Ship type",	CHC_SHIPTYPE,		0},
 	{"Weapon class",CHC_WEAPONCLASS,	0},
 	{"KeyPress",	CHC_KEYPRESS,		0},
+	{"Action",		CHC_ACTION,			0},
 	{"Version",		CHC_VERSION,		0},
 	{"Application",	CHC_APPLICATION,	0}
 };
@@ -49,6 +51,8 @@ flag_def_list Script_actions[] =
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
 	{"On State Start",			CHA_ONSTATESTART,	0},
 	{"On Frame",				CHA_ONFRAME,		0},
+	{"On Action",				CHA_ONACTION,		0},
+	{"On Action Stopped",		CHA_ONACTIONSTOPPED,0},
 	{"On Key Pressed",			CHA_KEYPRESSED,		0},
 	{"On Key Released",			CHA_KEYRELEASED,	0},
 	{"On Mouse Moved",			CHA_MOUSEMOVED,		0},
@@ -75,6 +79,8 @@ flag_def_list Script_actions[] =
 	{"On Turret Fired",			CHA_ONTURRETFIRED,	0},
 	{"On Primary Fire",			CHA_PRIMARYFIRE,	0},
 	{"On Secondary Fire",		CHA_SECONDARYFIRE,	0},
+	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0},
+	{"On Beam Collision",		CHA_COLLIDEBEAM,	0},
 	{"On Message Received",		CHA_MSGRECEIVED,	0}
 };
 
@@ -82,6 +88,22 @@ int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
 int scripting_state_inited = 0;
 
 //*************************Scripting init and handling*************************
+
+// the prototype for this is in pstypes.h, below the script_hook struct
+void script_hook_init(script_hook *hook)
+{
+	hook->o_language = 0;
+	hook->h_language = 0;
+
+	hook->o_index = -1;
+	hook->h_index = -1;
+}
+
+// ditto
+bool script_hook_valid(script_hook *hook)
+{
+	return hook->h_index >= 0;
+}
 
 void script_parse_table(const char *filename)
 {
@@ -101,23 +123,23 @@ void script_parse_table(const char *filename)
 		//int num = 42;
 		//Script_system.SetHookVar("Version", 'i', &num);
 		if(optional_string("$Global:")) {
-			Script_globalhook = st->ParseChunk("Global");
+			st->ParseChunk(&Script_globalhook, "Global");
 		}
 
 		if(optional_string("$Splash:")) {
-			Script_splashhook = st->ParseChunk("Splash");
+			st->ParseChunk(&Script_splashhook, "Splash");
 		}
 
 		if(optional_string("$GameInit:")) {
-			Script_gameinithook = st->ParseChunk("GameInit");
+			st->ParseChunk(&Script_gameinithook, "GameInit");
 		}
 
 		if(optional_string("$Simulation:")) {
-			Script_simulationhook = st->ParseChunk("Simulation");
+			st->ParseChunk(&Script_simulationhook, "Simulation");
 		}
 
 		if(optional_string("$HUD:")) {
-			Script_hudhook = st->ParseChunk("HUD");
+			st->ParseChunk(&Script_hudhook, "HUD");
 		}
 
 		required_string("#End");
@@ -157,9 +179,16 @@ void script_parse_table(const char *filename)
 
 //Initializes the (global) scripting system, as well as any subsystems.
 //script_close is handled by destructors
-void script_init (void)
+void script_init()
 {
 	mprintf(("SCRIPTING: Beginning initialization sequence...\n"));
+
+	// first things first: init all script hooks, since they are PODs now, not classes...
+	script_hook_init(&Script_splashhook);
+	script_hook_init(&Script_simulationhook);
+	script_hook_init(&Script_hudhook);
+	script_hook_init(&Script_globalhook);
+	script_hook_init(&Script_gameinithook);
 
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
@@ -194,13 +223,13 @@ DCF(script, "Evaluates a line of scripting")
 
 //*************************CLASS: ConditionedScript*************************
 extern char Game_current_mission_filename[];
-bool ConditionedHook::AddCondition(script_condition sc)
+bool ConditionedHook::AddCondition(script_condition *sc)
 {
 	for(int i = 0; i < MAX_HOOK_CONDITIONS; i++)
 	{
 		if(Conditions[i].condition_type == CHC_NONE)
 		{
-			Conditions[i] = sc;
+			Conditions[i] = *sc;
 			return true;
 		}
 	}
@@ -208,12 +237,12 @@ bool ConditionedHook::AddCondition(script_condition sc)
 	return false;
 }
 
-bool ConditionedHook::AddAction(script_action sa)
+bool ConditionedHook::AddAction(script_action *sa)
 {
-	if(!sa.hook.IsValid())
+	if(!script_hook_valid(&sa->hook))
 		return false;
 
-	Actions.push_back(sa);
+	Actions.push_back(*sa);
 
 	return true;
 }
@@ -281,12 +310,17 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 						return false;
 					break;
 				}
-			case CHC_WEAPONCLASS: 
+			case CHC_WEAPONCLASS:
 				{
-					if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
-						if(objp == NULL || objp->type != OBJ_WEAPON)
+					if (action == CHA_COLLIDEWEAPON) {
+						if (stricmp(Weapon_info[more_data].name, scp->data.name) != 0)
 							return false;
-						else if(stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0) 
+					} else if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
+						if(objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
+							return false;
+						else if (( objp->type == OBJ_WEAPON) && (stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
+							return false;
+						else if (( objp->type == OBJ_BEAM) && (stricmp(Weapon_info[Beams[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
 							return false;
 					} else if(objp == NULL || objp->type != OBJ_SHIP) {
 						return false;
@@ -413,6 +447,17 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 						return false;
 					break;
 				}
+			case CHC_ACTION:
+				{
+					if(gameseq_get_depth() < 0)
+						return false;
+
+					int action_index = more_data;
+
+					if (action_index <= 0 || stricmp(scp->data.name, Control_config[action_index].text))
+						return false;
+					break;
+				}
 			case CHC_VERSION:
 				{
 					// Goober5000: I'm going to assume scripting doesn't care about SVN revision
@@ -524,6 +569,7 @@ void script_state::SetHookObjects(int num, ...)
 	{
 		LuaError(LuaState, "Could not get HookVariable library to add hook variables - get a coder");
 	}
+	va_end(vl);
 }
 
 //This pair of abstraction functions handles
@@ -711,6 +757,7 @@ void script_state::RemHookVars(unsigned int num, ...)
 				lua_pushnil(LuaState);
 				lua_rawset(LuaState, amt_ldx);
 			}
+			va_end(vl);
 
 			this->CloseHookVarTable();
 		}
@@ -1224,11 +1271,10 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 	}
 }
 
-script_hook script_state::ParseChunk(char* debug_str)
+void script_state::ParseChunk(script_hook *dest, char *debug_str)
 {
 	static int total_parse_calls = 0;
 	char debug_buf[128];
-	script_hook rval;
 
 	total_parse_calls++;
 
@@ -1239,7 +1285,7 @@ script_hook script_state::ParseChunk(char* debug_str)
 		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
 	}
 
-	ParseChunkSub(&rval.h_language, &rval.h_index, debug_str);
+	ParseChunkSub(&dest->h_language, &dest->h_index, debug_str);
 
 	if(optional_string("+Override:"))
 	{
@@ -1247,11 +1293,9 @@ script_hook script_state::ParseChunk(char* debug_str)
 		char *debug_str_over = (char*)vm_malloc(bufSize);
 		strcpy_s(debug_str_over, bufSize, debug_str);
 		strcat_s(debug_str_over, bufSize, " override");
-		ParseChunkSub(&rval.o_language, &rval.o_index, debug_str_over);
+		ParseChunkSub(&dest->o_language, &dest->o_index, debug_str_over);
 		vm_free(debug_str_over);
 	}
-
-	return rval;
 }
 
 int script_parse_condition()
@@ -1281,14 +1325,13 @@ flag_def_list* script_parse_action()
 bool script_state::ParseCondition(const char *filename)
 {
 	ConditionedHook *chp = NULL;
-
-	script_condition sct;
 	int condition;
+
 	for(condition = script_parse_condition(); condition != CHC_NONE; condition = script_parse_condition())
 	{
-		//Clear it
-		sct = script_condition();
+		script_condition sct;
 		sct.condition_type = condition;
+
 		switch(condition)
 		{
 			case CHC_STATE:
@@ -1302,7 +1345,7 @@ bool script_state::ParseCondition(const char *filename)
 			case CHC_VERSION:
 			case CHC_APPLICATION:
 			default:
-				stuff_string(sct.data.name, F_NAME, NAME_LENGTH);
+				stuff_string(sct.data.name, F_NAME, CONDITION_LENGTH);
 				break;
 		}
 
@@ -1312,7 +1355,7 @@ bool script_state::ParseCondition(const char *filename)
 			chp = &ConditionalHooks[ConditionalHooks.size()-1];
 		}
 
-		if(!chp->AddCondition(sct))
+		if(!chp->AddCondition(&sct))
 		{
 			Warning(LOCATION, "Could not add condition to conditional hook in file '%s'; you may have more than %d", filename, MAX_HOOK_CONDITIONS);
 		}
@@ -1323,25 +1366,24 @@ bool script_state::ParseCondition(const char *filename)
 		return false;
 	}
 
-	script_action sat;
 	flag_def_list *action;
 	bool actions_added = false;
 	for(action = script_parse_action(); action != NULL; action = script_parse_action())
 	{
-		sat = script_action();
+		script_action sat;
 		sat.action_type = action->def;
 
 		//WMC - build error string
 		char *buf = (char *)vm_malloc(strlen(filename) + strlen(action->name) + 4);
 		sprintf(buf, "%s - %s", filename, action->name);
 
-		sat.hook = ParseChunk(buf);
+		ParseChunk(&sat.hook, buf);
 		
 		//Free error string
 		vm_free(buf);
 
 		//Add the action
-		if(chp->AddAction(sat))
+		if(chp->AddAction(&sat))
 			actions_added = true;
 	}
 
@@ -1355,7 +1397,7 @@ bool script_state::ParseCondition(const char *filename)
 	return true;
 }
 
-//*************************CLASS: script_hook*************************
+//*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)
 {
 	if(hd.h_index < 0)

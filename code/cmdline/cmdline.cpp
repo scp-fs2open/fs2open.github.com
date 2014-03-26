@@ -41,7 +41,7 @@ public:
 	char *name;						// name of parameter, must start with '-' char
 	char *help;						// help text for this parameter
 	bool stacks;					// whether this arg stacks with each use or is replaced by newest use (should only be used for strings!!)
-	char *args;						// string value for parameter arguements (NULL if no arguements)
+	char *args;						// string value for parameter arguments (NULL if no arguments)
 	int name_found;				// true if parameter on command line, otherwise false
 
 	cmdline_parm(char *name, char *help, bool stacks = false);
@@ -163,6 +163,7 @@ Flag exe_params[] =
 	{ "-noibx",				"Don't use cached index buffers (IBX)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noibx", },
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
 	{ "-disable_fbo",		"Disable OpenGL RenderTargets",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_fbo", },
+	{ "-disable_pbo",		"Disable OpenGL Pixel Buffer Objects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_pbo", },
 	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_glsl", },
 	{ "-ati_swap",			"Fix colour issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://scp.indiegames.us/mantis/view.php?id=1669", },
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
@@ -201,7 +202,8 @@ Flag exe_params[] =
 	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
  #endif
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
-	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
+	{ "-profile_frame_time", "Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
+	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -350,7 +352,7 @@ int Cmdline_voice_recognition = 0;
 // MOD related
 cmdline_parm mod_arg("-mod", NULL, true);	// Cmdline_mod  -- DTP modsupport
 
-char *Cmdline_mod = NULL; //DTP for mod arguement
+char *Cmdline_mod = NULL; //DTP for mod argument
 
 // Multiplayer/Network related
 cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
@@ -375,6 +377,7 @@ cmdline_parm nomovies_arg("-nomovies", NULL);		// Cmdline_nomovies  -- Allows vi
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
 cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
+cmdline_parm no_pbo_arg("-disable_pbo", NULL);		// Cmdline_no_pbo
 cmdline_parm noglsl_arg("-no_glsl", NULL);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
 cmdline_parm mipmap_arg("-mipmap", NULL);			// Cmdline_mipmap
 cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
@@ -391,6 +394,7 @@ int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_no_fbo = 0;
+int Cmdline_no_pbo = 0;
 int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
@@ -425,6 +429,7 @@ cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL); //Cmdline_frame_profile
+cmdline_parm frame_profile_write_file("-profile_write_file", NULL); // Cmdline_profile_write_file
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
@@ -449,6 +454,7 @@ int Cmdline_no_grab = 0;
 #endif
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_frame_profile = false;
+bool Cmdline_profile_write_file = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", NULL);
@@ -625,7 +631,7 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 }
 
 
-// internal function - parse the command line, extracting parameter arguements if they exist
+// internal function - parse the command line, extracting parameter arguments if they exist
 // cmdline - command line string passed to the application
 void os_parse_parms(char *cmdline)
 {
@@ -695,7 +701,7 @@ void os_validate_parms(char *cmdline)
 #ifdef _WIN32
 				// Changed this to MessageBox, this is a user error not a developer
 				char buffer[128];
-				sprintf(buffer,"Unrecogzined command line parameter %s, continue?",token);
+				sprintf(buffer,"Unrecognized command line parameter %s, continue?",token);
 				if( MessageBox(NULL, buffer, "Warning", MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
 					exit(0);
 #elif defined(APPLE_APP)
@@ -903,7 +909,7 @@ int cmdline_parm::found()
 	return name_found;
 }
 
-// returns - the interger representation for the parameter arguement
+// returns - the interger representation for the parameter argument
 int cmdline_parm::get_int()
 {
 	check_if_args_is_valid();
@@ -914,7 +920,7 @@ int cmdline_parm::get_int()
 		// first off, DON'T STACK NON-STRINGS!!
 		Int3();
 
-		// secondly, we still need to get it right for the users sake...
+		// secondly, we still need to get it right for the user's sake...
 		char *moron = strstr(args, ",");
 
 		if ( moron && ((strlen(moron) + 1) < strlen(args)) ) {
@@ -927,7 +933,7 @@ int cmdline_parm::get_int()
 }
 
 
-// returns - the float representation for the parameter arguement
+// returns - the float representation for the parameter argument
 float cmdline_parm::get_float()
 {
 	check_if_args_is_valid();
@@ -938,7 +944,7 @@ float cmdline_parm::get_float()
 		// first off, DON'T STACK NON-STRINGS!!
 		Int3();
 
-		// secondly, we still need to get it right for the users sake
+		// secondly, we still need to get it right for the user's sake
 		char *moron = strstr(args, ",");
 
 		if ( moron && ((strlen(moron) + 1) < strlen(args)) ) {
@@ -951,7 +957,7 @@ float cmdline_parm::get_float()
 }
 
 
-// returns - the string value for the parameter arguement
+// returns - the string value for the parameter argument
 char *cmdline_parm::str()
 {
 	check_if_args_is_valid();
@@ -1417,6 +1423,11 @@ bool SetCmdlineParams()
 		Cmdline_novbo = 1;
 	}
 
+	if ( no_pbo_arg.found() )
+	{
+		Cmdline_no_pbo = 1;
+	}
+
 	if ( no_drawrangeelements.found() )
 	{
 		Cmdline_drawelements = 1;
@@ -1532,6 +1543,12 @@ bool SetCmdlineParams()
 	if (frame_profile_arg.found() )
 	{
 		Cmdline_frame_profile = true;
+	}
+
+	if (frame_profile_write_file.found())
+	{
+		Cmdline_frame_profile = true;
+		Cmdline_profile_write_file = true;
 	}
 
 	//Deprecated flags - CommanderDJ

@@ -51,9 +51,7 @@ int Msg_instance;						// variable which holds ship/wing instance to send the me
 int Msg_shortcut_command;			// holds command when using a shortcut key
 LOCAL int Msg_target_objnum;				// id of the current target of the player
 LOCAL ship_subsys *Msg_targeted_subsys;// pointer to current subsystem which is targeted
-//#ifndef NDEBUG
 LOCAL	int Msg_enemies;						// tells us whether or not to message enemy ships or friendlies
-//#endif
 
 LOCAL int Msg_eat_key_timestamp;			// used to temporarily "eat" keys
 
@@ -655,7 +653,7 @@ int hud_squadmsg_can_rearm( ship *shipp )
 	return 1;
 }
 
-// calls for repair/rearm of the player ship.  Checks for the presense of the support
+// calls for repair/rearm of the player ship.  Checks for the presence of the support
 // ship and does the appropriate action if found
 void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 {
@@ -700,7 +698,7 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 					message_send_builtin_to_player( MESSAGE_ON_WAY, &Ships[robjp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, multi_player_team );
 
 				} else {
-					// if we are in this part of the if statment, a support ship has been warped in to
+					// if we are in this part of the if statement, a support ship has been warped in to
 					// service us.  Issue appropriate message
 					message_send_builtin_to_player( MESSAGE_REARM_WARP, NULL, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, multi_player_team );
 				}
@@ -763,20 +761,27 @@ int hud_squadmsg_ship_order_valid( int shipnum, int order )
 {
 	// Goober5000
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
+	ship *shipp = &Ships[shipnum];
 
 	switch ( order  )
 	{
 		case DEPART_ITEM:
 			// disabled ships can't depart.
-			if (Ships[shipnum].flags & SF_DISABLED)
+			if (shipp->flags & SF_DISABLED)
 				return 0;
 
-			// Goober5000: also can't depart if no subspace drives and no capships in the area
-			if (Ships[shipnum].flags2 & SF2_NO_SUBSPACE_DRIVE)
+			// Goober5000: also can't depart if no subspace drives and no valid mothership
+			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
 			{
-				// locate a capital ship on the same team:
-				if (ship_get_ship_with_dock_bay(Ships[shipnum].team) < 0)
-					return 0;
+				// check that we have a mothership and that we can depart to it
+				if (shipp->departure_location == DEPART_AT_DOCK_BAY)
+				{
+					int anchor_shipnum = ship_name_lookup(Parse_names[shipp->departure_anchor]);
+					if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
+						return 1;
+				}
+
+				return 0;
 			}
 
 			break;
@@ -1658,13 +1663,13 @@ void hud_squadmsg_type_select( )
 	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
-	} else if ( mission_is_repair_scheduled(Player_obj) ) {
+	}
+	else if ( mission_is_repair_scheduled(Player_obj) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
 	}
-
 	// if no support available, can't call one in
-	if ( !is_support_allowed(Player_obj) ) {
+	else if ( !is_support_allowed(Player_obj) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
 	}
@@ -2177,7 +2182,6 @@ void hud_squadmsg_toggle()
 	Player->flags ^= PLAYER_FLAGS_MSG_MODE;
 }
 
-//#ifndef NDEBUG
 // extern entry point to allow messaging of enemies
 void hud_enemymsg_toggle()
 {
@@ -2186,7 +2190,6 @@ void hud_enemymsg_toggle()
 	if ( Player->flags & PLAYER_FLAGS_MSG_MODE )
 		Msg_enemies = 1;
 }
-//#endif
 
 // external entry point into code when a keyboard shortcut is used for a command
 // we are passed in an ID for the command to set internal variables.  This command

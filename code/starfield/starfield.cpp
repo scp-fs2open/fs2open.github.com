@@ -171,7 +171,7 @@ int Num_debris_normal = 0;
 int Num_debris_nebula = 0;
 
 bool Dynamic_environment = false;
-
+bool Motion_debris_override = false;
 
 void stars_release_debris_vclips(debris_vclip *vclips)
 {
@@ -765,6 +765,7 @@ void stars_pre_level_init(bool clear_backgrounds)
 	}
 
 	Dynamic_environment = false;
+	Motion_debris_override = false;
 }
 
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not
@@ -1703,6 +1704,12 @@ void stars_draw_debris()
 	float vdist;
 	vec3d tmp;
 	vertex p;
+
+	extern bool Motion_debris_override;
+
+	if (Motion_debris_override)
+		return;
+
 	gr_set_color( 0, 0, 0 );
 
 	// turn off fogging
@@ -2123,7 +2130,7 @@ void stars_draw_background()
 
 	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(-1);
-		Nmodel_flags &= !MR_FORCE_TEXTURE;
+		Nmodel_flags &= ~MR_FORCE_TEXTURE;
 	}
 }
 
@@ -2687,24 +2694,8 @@ void stars_load_background(int background_idx)
 // Goober5000
 void stars_copy_background(background_t *dest, background_t *src)
 {
-	uint i;
-
-	dest->suns.clear();
-	dest->bitmaps.clear();
-
-	for (i = 0; i < src->suns.size(); i++)
-	{
-		starfield_list_entry sle;
-		memcpy(&sle, &src->suns[i], sizeof(starfield_list_entry));
-		dest->suns.push_back(sle);
-	}
-
-	for (i = 0; i < src->bitmaps.size(); i++)
-	{
-		starfield_list_entry sle;
-		memcpy(&sle, &src->bitmaps[i], sizeof(starfield_list_entry));
-		dest->bitmaps.push_back(sle);
-	}
+	dest->suns.assign(src->suns.begin(), src->suns.end());
+	dest->bitmaps.assign(src->bitmaps.begin(), src->bitmaps.end());
 }
 
 // Goober5000

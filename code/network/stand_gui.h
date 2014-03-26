@@ -12,6 +12,13 @@
 #ifndef _FREESPACE_STANDALONE_GUI_HEADER_FILE
 #define _FREESPACE_STANDALONE_GUI_HEADER_FILE
 
+#include "network/multi.h"
+#include "network/multi_options.h"
+
+#ifndef _WIN32
+	void std_configLoaded(multi_global_options *options);
+#endif
+
 // ----------------------------------------------------------------------------------------
 // external variables
 //
@@ -179,6 +186,9 @@ void std_reset_standalone_gui();
 
 // reset all networking/gui stuff (calls reset_standalone_gui) for the standalone
 void std_multi_standalone_reset_all();
+
+// setup registry access, etc for the standalone
+void std_init_os();
 
 // close down the standalone
 void std_deinit_standalone();
