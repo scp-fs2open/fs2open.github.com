@@ -670,6 +670,8 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			{
 				if(format == 's')
 					ade_set_args(LuaState, fmt, data);
+				else if (format == 'i')
+					ade_set_args(LuaState, fmt, *(int*)data);
 				else
 					ade_set_args(LuaState, fmt, *(ade_odata*)data);
 			}
