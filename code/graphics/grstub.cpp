@@ -74,11 +74,11 @@ void gr_set_fill_mode_stub(int mode)
 {
 }
 
-void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize,bool mirror)
+void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,int resize_mode,bool mirror)
 {
 }
 
-void gr_stub_aabitmap(int x, int y,bool resize, bool mirror)
+void gr_stub_aabitmap(int x, int y,int resize_mode, bool mirror)
 {
 }
 
@@ -90,7 +90,7 @@ void gr_stub_activate(int active)
 {
 }
 
-void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize)
+void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode)
 {
 }
 
@@ -102,11 +102,11 @@ void gr_stub_center_alpha( int type)
 {
 }
 
-void gr_stub_circle( int xc, int yc, int d, bool resize )
+void gr_stub_circle( int xc, int yc, int d, int resize_mode )
 {
 }
 
-void gr_stub_unfilled_circle( int xc, int yc, int d, bool resize )
+void gr_stub_unfilled_circle( int xc, int yc, int d, int resize_mode )
 {
 }
 
@@ -118,11 +118,11 @@ void gr_stub_clear()
 {
 }
 
-void gr_stub_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct)
+void gr_stub_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode)
 {
 }
 
-void gr_stub_curve(int xc, int yc, int r, int direction)
+void gr_stub_curve(int xc, int yc, int r, int direction, int resize_mode)
 {
 }
 
@@ -195,11 +195,11 @@ void gr_stub_get_region(int front, int w, int h, ubyte *data)
 	data = NULL;
 }
 
-void gr_stub_gradient(int x1,int y1,int x2,int y2, bool resize)
+void gr_stub_gradient(int x1,int y1,int x2,int y2, int resize_mode)
 {
 }
 
-void gr_stub_line(int x1,int y1,int x2,int y2, bool resize = false)
+void gr_stub_line(int x1,int y1,int x2,int y2, int resize_mode = GR_RESIZE_NONE)
 {
 }
 
@@ -207,7 +207,7 @@ void gr_stub_modify_light(light* light, int idx, int priority)
 {
 }
 
-void gr_stub_pixel(int x, int y, bool resize)
+void gr_stub_pixel(int x, int y, int resize_mode)
 {
 }
 
@@ -235,7 +235,7 @@ void gr_stub_push_texture_matrix(int unit)
 {
 }
 
-void gr_stub_rect(int x, int y, int w, int h, bool resize)
+void gr_stub_rect(int x, int y, int w, int h, int resize_mode)
 {
 }
 
@@ -296,7 +296,7 @@ void gr_stub_set_clear_color(int r, int g, int b)
 {
 }
 
-void gr_stub_set_clip(int x, int y, int w, int h, bool resize)
+void gr_stub_set_clip(int x, int y, int w, int h, int resize_mode)
 {
 }
 
@@ -354,7 +354,7 @@ void gr_stub_start_instance_matrix(vec3d *offset, matrix* rotation)
 {
 }
 
-void gr_stub_string( int sx, int sy, const char *s, bool resize = false)
+void gr_stub_string( int sx, int sy, const char *s, int resize_mode = GR_RESIZE_NONE)
 {
 }
 

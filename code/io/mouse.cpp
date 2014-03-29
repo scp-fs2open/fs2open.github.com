@@ -581,7 +581,7 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 {
 	int flags = mouse_get_pos( xpos, ypos );
 
-	gr_unsize_screen_pos( (xpos) ? xpos : NULL, (ypos) ? ypos : NULL );
+	gr_unsize_screen_pos( (xpos) ? xpos : NULL, (ypos) ? ypos : NULL, NULL, NULL, GR_RESIZE_MENU );
 
 	return flags;
 }

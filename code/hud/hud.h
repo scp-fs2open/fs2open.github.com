@@ -139,7 +139,7 @@ void hud_num_make_mono(char *num_str, int font_num = FONT1);
 // functions for handling hud animations
 void hud_anim_init(hud_anim *ha, int sx, int sy, const char *filename);
 void hud_frames_init(hud_frames *hf);
-int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,bool resize=true, bool mirror = false);
+int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,int resize_mode=GR_RESIZE_FULL, bool mirror = false);
 int	hud_anim_load(hud_anim *ha);
 
 // functions for displaying the support view popup

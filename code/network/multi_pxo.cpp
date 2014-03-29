@@ -1456,7 +1456,7 @@ void multi_pxo_blit_all()
 	} while(0);
 	if(Multi_pxo_bitmap != -1){
 		gr_set_bitmap(Multi_pxo_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Multi_pxo_window.draw();
 
@@ -1485,7 +1485,7 @@ void multi_pxo_blit_all()
 	// display the mission start countdown timer (if any)
 	//anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);
 	if(gameseq_get_state() == GS_STATE_PXO && Multi_pxo_anim.num_frames > 0)
-		generic_anim_render(&Multi_pxo_anim, flFrametime, MULTI_PXO_ANIM_X, MULTI_PXO_ANIM_Y);
+		generic_anim_render(&Multi_pxo_anim, flFrametime, MULTI_PXO_ANIM_X, MULTI_PXO_ANIM_Y, true);
 }
 
 // process common stuff
@@ -2208,7 +2208,7 @@ void multi_pxo_blit_status_text()
 	if(strlen(Multi_pxo_status_text)) {
 		gr_set_color_fast(&Color_bright);
 		gr_get_string_size(&w, NULL, Multi_pxo_status_text);
-		gr_string(Multi_pxo_status_coords[gr_screen.res][0] + ((Multi_pxo_status_coords[gr_screen.res][2] - w)/2), Multi_pxo_status_coords[gr_screen.res][1], Multi_pxo_status_text);
+		gr_string(Multi_pxo_status_coords[gr_screen.res][0] + ((Multi_pxo_status_coords[gr_screen.res][2] - w)/2), Multi_pxo_status_coords[gr_screen.res][1], Multi_pxo_status_text, GR_RESIZE_MENU);
 	}
 }
 
@@ -2549,10 +2549,10 @@ void multi_pxo_blit_channels()
 		gr_force_fit_string(chan_name, MAX_PXO_TEXT_LEN-1, Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_PLAYERS_COLUMN]);
 
 		// blit the strings
-		gr_string(Multi_pxo_chan_coords[gr_screen.res][0], y_start, chan_name + 1);
-		gr_string(Multi_pxo_chan_coords[gr_screen.res][0] + Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_PLAYERS_COLUMN], y_start, chan_users);
+		gr_string(Multi_pxo_chan_coords[gr_screen.res][0], y_start, chan_name + 1, GR_RESIZE_MENU);
+		gr_string(Multi_pxo_chan_coords[gr_screen.res][0] + Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_PLAYERS_COLUMN], y_start, chan_users, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_pxo_chan_coords[gr_screen.res][0] + Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_GAMES_COLUMN], y_start, chan_servers);
+		gr_string(Multi_pxo_chan_coords[gr_screen.res][0] + Multi_pxo_chan_coords[gr_screen.res][2] - Multi_pxo_chan_column_offsets[gr_screen.res][CHAN_GAMES_COLUMN], y_start, chan_servers, GR_RESIZE_MENU);
 
 		// increment the displayed count
 		disp_count++;
@@ -2961,7 +2961,7 @@ void multi_pxo_blit_players()
 		gr_force_fit_string(player_name, MAX_PXO_TEXT_LEN-1, Multi_pxo_player_coords[gr_screen.res][2]);
 
 		// blit the string
-		gr_string(Multi_pxo_player_coords[gr_screen.res][0], y_start, player_name);
+		gr_string(Multi_pxo_player_coords[gr_screen.res][0], y_start, player_name, GR_RESIZE_MENU);
 
 		// increment the displayed count
 		disp_count++;
@@ -3265,7 +3265,7 @@ void multi_pxo_chat_blit()
 	gr_force_fit_string(title, MAX_PXO_TEXT_LEN-1, Multi_pxo_chat_coords[gr_screen.res][2] - 10);
 	gr_get_string_size(&token_width,NULL,title);
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + ((Multi_pxo_chat_coords[gr_screen.res][2] - token_width)/2), Multi_pxo_chat_title_y[gr_screen.res], title);	
+	gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + ((Multi_pxo_chat_coords[gr_screen.res][2] - token_width)/2), Multi_pxo_chat_title_y[gr_screen.res], title, GR_RESIZE_MENU);	
 
 	// blit all active lines of text
 	moveup = Multi_pxo_chat_start;	
@@ -3276,13 +3276,13 @@ void multi_pxo_chat_blit()
 		// if this is text from the server, display it all "bright"
 		case CHAT_MODE_SERVER:				
 			gr_set_color_fast(&Color_bright);
-			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text);
+			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text, GR_RESIZE_MENU);
 			break;
 
 		// if this is motd, display it all "bright"
 		case CHAT_MODE_MOTD:
 			gr_set_color_fast(&Color_bright_white);
-			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text);
+			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text, GR_RESIZE_MENU);
 			break;
 
 		// normal mode, just highlight the server
@@ -3296,13 +3296,13 @@ void multi_pxo_chat_blit()
 				
 				// draw it brightly
 				gr_set_color_fast(&Color_bright);
-				gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, tok);
+				gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, tok, GR_RESIZE_MENU);
 
 				// draw the rest of the string normally
 				tok = strtok(NULL,"");
 				if(tok != NULL){
 					gr_set_color_fast(&Color_normal);
-					gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + token_width + 6, y_start, tok);
+					gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + token_width + 6, y_start, tok, GR_RESIZE_MENU);
 				}
 			}
 			break;
@@ -3310,13 +3310,13 @@ void multi_pxo_chat_blit()
 		// carry mode, display with no highlight
 		case CHAT_MODE_CARRY:
 			gr_set_color_fast(&Color_normal);
-			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text);
+			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text, GR_RESIZE_MENU);
 			break;
 
 		// "switching channels mode", display it bright
 		case CHAT_MODE_CHANNEL_SWITCH:
 			gr_set_color_fast(&Color_bright);
-			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text);
+			gr_string(Multi_pxo_chat_coords[gr_screen.res][0], y_start, moveup->text, GR_RESIZE_MENU);
 			break;
 		}
 		
@@ -3822,15 +3822,15 @@ void multi_pxo_com_blit_text()
 	// blit top, middle and bottom text if possible
 	if(Multi_pxo_com_top_text[0] != '\0'){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_pxo_com_top_text_coords[gr_screen.res][0], Multi_pxo_com_top_text_coords[gr_screen.res][1], Multi_pxo_com_top_text);
+		gr_string(Multi_pxo_com_top_text_coords[gr_screen.res][0], Multi_pxo_com_top_text_coords[gr_screen.res][1], Multi_pxo_com_top_text, GR_RESIZE_MENU);
 	}
 	if(Multi_pxo_com_middle_text[0] != '\0'){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_pxo_com_top_text_coords[gr_screen.res][0], Multi_pxo_com_middle_text_y[gr_screen.res], Multi_pxo_com_middle_text);
+		gr_string(Multi_pxo_com_top_text_coords[gr_screen.res][0], Multi_pxo_com_middle_text_y[gr_screen.res], Multi_pxo_com_middle_text, GR_RESIZE_MENU);
 	}
 	if(Multi_pxo_com_bottom_text[0] != '\0'){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_pxo_com_top_text_coords[gr_screen.res][0], Multi_pxo_com_bottom_text_y[gr_screen.res], Multi_pxo_com_bottom_text);
+		gr_string(Multi_pxo_com_top_text_coords[gr_screen.res][0], Multi_pxo_com_bottom_text_y[gr_screen.res], Multi_pxo_com_bottom_text, GR_RESIZE_MENU);
 	}
 }
 
@@ -3940,7 +3940,7 @@ int multi_pxo_priv_popup()
 	// blit my stuff		
 	gr_reset_clip();	
 	gr_set_bitmap(Multi_pxo_com_bitmap);
-	gr_bitmap(Multi_pxo_com_coords[gr_screen.res][0], Multi_pxo_com_coords[gr_screen.res][1]);
+	gr_bitmap(Multi_pxo_com_coords[gr_screen.res][0], Multi_pxo_com_coords[gr_screen.res][1], GR_RESIZE_MENU);
 	Multi_pxo_com_window.draw();	
 
 	// blit all text lines, top, middle, bottoms
@@ -4124,7 +4124,7 @@ int multi_pxo_find_popup()
 	// blit my stuff		
 	gr_reset_clip();	
 	gr_set_bitmap(Multi_pxo_com_bitmap);
-	gr_bitmap(Multi_pxo_com_coords[gr_screen.res][0], Multi_pxo_com_coords[gr_screen.res][1]);
+	gr_bitmap(Multi_pxo_com_coords[gr_screen.res][0], Multi_pxo_com_coords[gr_screen.res][1], GR_RESIZE_MENU);
 	Multi_pxo_com_window.draw();	
 
 	// blit any text lines
@@ -4665,7 +4665,7 @@ int multi_pxo_pinfo_do()
 	// blit our own stuff
 	gr_reset_clip();	
 	gr_set_bitmap(Multi_pxo_pinfo_bitmap);
-	gr_bitmap(0, 0);
+	gr_bitmap(0, 0, GR_RESIZE_MENU);
 	Multi_pxo_pinfo_window.draw();	
 
 	// blit the stats themselves
@@ -4712,11 +4712,11 @@ void multi_pxo_pinfo_blit()
 	for(idx=0; idx<MULTI_PXO_PINFO_NUM_LABELS; idx++){
 		// blit the label
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_pxo_pinfo_coords[gr_screen.res][0], y_start, Multi_pxo_pinfo_stats_labels[idx]);
+		gr_string(Multi_pxo_pinfo_coords[gr_screen.res][0], y_start, Multi_pxo_pinfo_stats_labels[idx], GR_RESIZE_MENU);
 
 		// blit the label's value
 		gr_set_color_fast(&Color_normal);
-		gr_string(Multi_pxo_pinfo_val_x[gr_screen.res], y_start, Multi_pxo_pinfo_vals[idx]);
+		gr_string(Multi_pxo_pinfo_val_x[gr_screen.res], y_start, Multi_pxo_pinfo_vals[idx], GR_RESIZE_MENU);
 
 		// spacing
 		y_start += Multi_pxo_pinfo_stats_spacing[idx];
@@ -4791,7 +4791,7 @@ void multi_pxo_notify_blit()
 	// otherwise blit the text
 	gr_set_color_fast(&Color_bright);
 	gr_get_string_size(&w,NULL,Multi_pxo_notify_text);
-	gr_string((gr_screen.max_w - w)/2,MULTI_PXO_NOTIFY_Y,Multi_pxo_notify_text);
+	gr_string((gr_screen.max_w - w)/2,MULTI_PXO_NOTIFY_Y,Multi_pxo_notify_text,GR_RESIZE_MENU);
 }
 
 
@@ -4870,7 +4870,7 @@ void multi_pxo_help_do()
 	GR_MAYBE_CLEAR_RES(Multi_pxo_help_bitmap);
 	if(Multi_pxo_help_bitmap != -1){
 		gr_set_bitmap(Multi_pxo_help_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Multi_pxo_help_window.draw();
 
@@ -4978,7 +4978,7 @@ void multi_pxo_help_blit_page()
 		}
 
 		// blit the line
-		gr_string(Multi_pxo_help_coords[gr_screen.res][0], y_start, cp->text[idx] + start_pos);
+		gr_string(Multi_pxo_help_coords[gr_screen.res][0], y_start, cp->text[idx] + start_pos, GR_RESIZE_MENU);
 
 		// increment the y location
 		y_start += 10;
@@ -5373,12 +5373,12 @@ void multi_pxo_ban_draw()
 		// if the mouse is over the banner button, highlight with a rectangle
 		if(Multi_pxo_ban_button.is_mouse_on()){
 			gr_set_color_fast(&Color_bright_blue);
-			gr_rect(Pxo_ban_coords[gr_screen.res][0] - 1, Pxo_ban_coords[gr_screen.res][1] - 1, Pxo_ban_coords[gr_screen.res][2] + 2, Pxo_ban_coords[gr_screen.res][3] + 2);
+			gr_rect(Pxo_ban_coords[gr_screen.res][0] - 1, Pxo_ban_coords[gr_screen.res][1] - 1, Pxo_ban_coords[gr_screen.res][2] + 2, Pxo_ban_coords[gr_screen.res][3] + 2, GR_RESIZE_MENU);
 		}
 
 		// draw the bitmap itself
 		gr_set_bitmap(Multi_pxo_banner.ban_bitmap);
-		gr_bitmap(Pxo_ban_coords[gr_screen.res][0], Pxo_ban_coords[gr_screen.res][1]);
+		gr_bitmap(Pxo_ban_coords[gr_screen.res][0], Pxo_ban_coords[gr_screen.res][1], GR_RESIZE_MENU);
 	}
 }
 

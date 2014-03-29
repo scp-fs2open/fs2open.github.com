@@ -889,7 +889,7 @@ void hud_config_render_gauges()
 		// draw
 		if ( HC_gauge_regions[gr_screen.res][i].bitmap >= 0 ) {
 			gr_set_bitmap(HC_gauge_regions[gr_screen.res][i].bitmap);
-			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y);
+			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y, GR_RESIZE_MENU);
 		}
 		
 		/*
@@ -913,7 +913,7 @@ void hud_config_render_gauges()
 			if ( HC_gauge_regions[i].bitmap >= 0 ) {
 				Assert(offset < HC_gauge_regions[i].nframes);
 				gr_set_bitmap(HC_gauge_regions[i].bitmap+offset);
-				gr_bitmap(HC_gauge_regions[i].x, HC_gauge_regions[i].y);
+				gr_bitmap(HC_gauge_regions[i].x, HC_gauge_regions[i].y, GR_RESIZE_MENU);
 			}
 		}
 		*/
@@ -1421,7 +1421,7 @@ void hud_config_render_description()
 		gr_get_string_size(&w, &h, HC_gauge_descriptions(HC_gauge_selected));
 		sx = fl2i(HC_gauge_description_coords[gr_screen.res][0] + (HC_gauge_description_coords[gr_screen.res][2] - w)/2.0f);
 		sy = HC_gauge_description_coords[gr_screen.res][1];
-		gr_string(sx, sy, HC_gauge_descriptions(HC_gauge_selected));
+		gr_string(sx, sy, HC_gauge_descriptions(HC_gauge_selected), GR_RESIZE_MENU);
 	}
 }
 
@@ -1432,7 +1432,7 @@ void hud_config_render_special_bitmaps()
 	for (i=1; i<NUM_HC_SPECIAL_BITMAPS; i++) {
 		if (HC_special_bitmaps[i].bitmap >= 0) {
 			gr_set_bitmap(HC_special_bitmaps[i].bitmap);
-			gr_bitmap(HC_special_bitmaps[i].x, HC_special_bitmaps[i].y);
+			gr_bitmap(HC_special_bitmaps[i].x, HC_special_bitmaps[i].y, GR_RESIZE_MENU);
 		}
 	}
 	*/
@@ -1487,7 +1487,7 @@ void hud_config_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(HC_background_bitmap);
 	if ( HC_background_bitmap > 0 ) {
 		gr_set_bitmap(HC_background_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 
 	// rgb slider/button stuff
@@ -1503,7 +1503,7 @@ void hud_config_do_frame(float frametime)
 	if (HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap >= 0) {
 		hud_set_default_color();
 		gr_set_bitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap);
-		gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y);
+		gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y, GR_RESIZE_MENU);
 	}
 	*/
 

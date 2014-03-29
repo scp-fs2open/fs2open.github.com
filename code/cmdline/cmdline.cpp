@@ -141,6 +141,7 @@ Flag exe_params[] =
 	{ "-3dwarp",			"Enable 3D warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
+	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 
 	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable all sound",						false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
@@ -334,12 +335,14 @@ cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);	// Cmdline_ship_choice
 cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL);	// Cmdline_weapon_choice_3d
 cmdline_parm use_warp_flash("-warp_flash", NULL);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL);	// Cmdline_warp_flash
+cmdline_parm stretch_menu("-stretch_menu", NULL);	// Cmdline_stretch_menu
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
+int Cmdline_stretch_menu = 0;
 
 // Audio related
 cmdline_parm query_speech_arg("-query_speech", NULL);	// Cmdline_query_speech
@@ -1311,6 +1314,10 @@ bool SetCmdlineParams()
 
 	if ( allow_autpilot_interrupt.found() )	{
 		Cmdline_autopilot_interruptable = 0;
+	}
+
+	if ( stretch_menu.found() )	{
+		Cmdline_stretch_menu = 1;
 	}
 	// specular comand lines
 	if ( spec_exp_arg.found() ) {

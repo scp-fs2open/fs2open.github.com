@@ -1841,7 +1841,7 @@ void control_config_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
 	// highlight tab with conflict
@@ -1875,7 +1875,7 @@ void control_config_do_frame(float frametime)
 		int sw, sh;
 		gr_get_string_size(&sw, &sh, conflict_str);
 
-		gr_string((gr_screen.max_w / 2) - (sw / 2), Conflict_warning_coords[gr_screen.res][1], conflict_str);
+		gr_string((gr_screen.max_w / 2) - (sw / 2), Conflict_warning_coords[gr_screen.res][1], conflict_str, GR_RESIZE_MENU);
 
 		gr_set_font(FONT1);
 	} else {
@@ -1931,7 +1931,7 @@ void control_config_do_frame(float frametime)
 		if (t % 2) {
 			gr_set_color_fast(&Color_text_normal);
 			gr_get_string_size(&w, NULL, XSTR( "?", 208));
-			gr_printf(x - w / 2, y - font_height / 2, XSTR( "?", 208));
+			gr_printf_menu(x - w / 2, y - font_height / 2, XSTR( "?", 208));
 		}
 
 	} else if (!(z & JOY_AXIS) && ((Conflicts[z].key >= 0) || (Conflicts[z].joy >= 0))) {
@@ -1943,7 +1943,7 @@ void control_config_do_frame(float frametime)
 		gr_set_color_fast(&Color_text_normal);
 		str = XSTR( "Control conflicts with:", 209);
 		gr_get_string_size(&w, NULL, str);
-		gr_printf(x - w / 2, y - font_height, str);
+		gr_printf_menu(x - w / 2, y - font_height, str);
 
 		if (Control_config[i].hasXSTR) {
 			strcpy_s(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
@@ -1953,12 +1953,12 @@ void control_config_do_frame(float frametime)
 
 		gr_force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_get_string_size(&w, NULL, buf);
-		gr_printf(x - w / 2, y, buf);
+		gr_printf_menu(x - w / 2, y, buf);
 
 	} else if (*bound_string) {
 		gr_set_color_fast(&Color_text_normal);
 		gr_get_string_size(&w, NULL, bound_string);
-		gr_printf(x - w / 2, y - font_height / 2, bound_string);
+		gr_printf_menu(x - w / 2, y - font_height / 2, bound_string);
 		if (timestamp_elapsed(bound_timestamp)) {
 			*bound_string = 0;
 		}
@@ -1966,7 +1966,7 @@ void control_config_do_frame(float frametime)
 
 	if (Cc_lines[Num_cc_lines - 1].y + font_height > Cc_lines[Scroll_offset].y + Control_list_coords[gr_screen.res][CONTROL_H_COORD]) {
 		gr_set_color_fast(&Color_white);
-		gr_printf(Control_more_coords[gr_screen.res][CONTROL_X_COORD], Control_more_coords[gr_screen.res][CONTROL_Y_COORD], XSTR( "More...", 210));
+		gr_printf_menu(Control_more_coords[gr_screen.res][CONTROL_X_COORD], Control_more_coords[gr_screen.res][CONTROL_Y_COORD], XSTR( "More...", 210));
 	}
 
 	conflict = 0;
@@ -1992,7 +1992,7 @@ void control_config_do_frame(float frametime)
 		if (Cc_lines[line].label) {
 			strcpy_s(buf, Cc_lines[line].label);
 			gr_force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
-			gr_printf(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, buf);
+			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, buf);
 		}
 
 		if (!(z & JOY_AXIS)) {
@@ -2004,7 +2004,7 @@ void control_config_do_frame(float frametime)
 
 			if ((k < 0) && (j < 0)) {
 				gr_set_color_fast(&Color_grey);
-				gr_printf(x, y, XSTR( "None", 211));
+				gr_printf_menu(x, y, XSTR( "None", 211));
 
 			} else {
 				if (k >= 0) {
@@ -2024,7 +2024,7 @@ void control_config_do_frame(float frametime)
 						gr_set_color_fast(c);
 					}
 
-					gr_printf(x, y, buf);
+					gr_printf_menu(x, y, buf);
 
 					len = strlen(buf);
 					Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
@@ -2034,7 +2034,7 @@ void control_config_do_frame(float frametime)
 
 					if (j >= 0) {
 						gr_set_color_fast(&Color_text_normal);
-						gr_printf(x, y, XSTR( ", ", 212));
+						gr_printf_menu(x, y, XSTR( ", ", 212));
 						gr_get_string_size(&w, NULL, XSTR( ", ", 212));
 						x += w;
 					}
@@ -2058,7 +2058,7 @@ void control_config_do_frame(float frametime)
 					}
 
 					gr_force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
-					gr_printf(x, y, buf);
+					gr_printf_menu(x, y, buf);
 
 					Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
 					gr_get_string_size(&Cc_lines[line].jw, NULL, buf);
@@ -2074,7 +2074,7 @@ void control_config_do_frame(float frametime)
 
 			if (j < 0) {
 				gr_set_color_fast(&Color_grey);
-				gr_printf(x, y, XSTR( "None", 211));
+				gr_printf_menu(x, y, XSTR( "None", 211));
 
 			} else {
 				if (Conflicts_axes[z & ~JOY_AXIS] >= 0) {
@@ -2093,7 +2093,7 @@ void control_config_do_frame(float frametime)
 					gr_set_color_fast(c);
 				}
 
-				gr_string(x, y, Joy_axis_text[j]);
+				gr_string(x, y, Joy_axis_text[j], GR_RESIZE_MENU);
 			}
 		}
 
@@ -2165,7 +2165,7 @@ void control_check_indicate()
 #ifndef NDEBUG
 	if (Show_controls_info) {
 		gr_set_color_fast(&HUD_color_debug);
-		gr_printf(490, 15, NOX("Ctrls checked: %d"), Control_check_count);
+		gr_printf_no_resize(gr_screen.max_w - 154, 5, NOX("Ctrls checked: %d"), Control_check_count);
 	}
 #endif
 

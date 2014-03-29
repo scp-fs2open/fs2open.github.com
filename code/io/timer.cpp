@@ -439,12 +439,12 @@ void timing_display(int x, int y)
 	gr_set_color_fast(&Color_bright_blue);
 
 	// total time
-	gr_printf(x, y, "Total time %f\n", (float)timing_frame_total() / 1000000.0f);
+	gr_printf_no_resize(x, y, "Total time %f\n", (float)timing_frame_total() / 1000000.0f);
 	y += 10;
 
 	// each event percentage
 	for(idx=0; idx<Timing_event_count; idx++){
-		gr_printf(x, y, "%s: %f\n", Timing_events[idx].name, timing_event_pct(Timing_events[idx].name));
+		gr_printf_no_resize(x, y, "%s: %f\n", Timing_events[idx].name, timing_event_pct(Timing_events[idx].name));
 		y += 10;
 	}
 #endif
