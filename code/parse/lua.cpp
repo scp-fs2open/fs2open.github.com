@@ -5342,7 +5342,7 @@ ADE_FUNC(startRendering, l_CockpitDisplay, "[boolean setClip = true]", "Starts r
 	if (bm_is_valid(bm_handle) && setClip)
 	{
 		cockpit_display *cd = cdh->Get();
-		gr_set_clip(cd->offset[0], cd->offset[1], cd->size[0], cd->size[1], false);
+		gr_set_clip(cd->offset[0], cd->offset[1], cd->size[0], cd->size[1], GR_RESIZE_NONE);
 	}
 
 	return ade_set_args(L, "o", l_Texture.Set(bm_handle));
@@ -6050,7 +6050,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
 	//Clip
-	gr_set_clip(x1,y1,x2-x1,y2-y1,false);
+	gr_set_clip(x1,y1,x2-x1,y2-y1,GR_RESIZE_NONE);
 
 	//Handle 3D init stuff
 	g3_start_frame(1);
@@ -6121,7 +6121,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	matrix *orient = mh->GetMatrix();
 
 	//Clip
-	gr_set_clip(x1,y1,x2-x1,y2-y1,false);
+	gr_set_clip(x1,y1,x2-x1,y2-y1,GR_RESIZE_NONE);
 
 	//Handle 3D init stuff
 	g3_start_frame(1);
@@ -12731,6 +12731,14 @@ ADE_FUNC(createCamera, l_Graphics,
 	return ade_set_args(L, "o", l_Camera.Set(cid));
 }
 
+ADE_FUNC(isMenuStretched, l_Graphics, NULL, "Returns whether the standard interface is stretched", "boolean", "True if stretched, false if aspect ratio is maintained")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "b", 0);
+
+	return ade_set_args(L, "b", Cmdline_stretch_menu);
+}
+
 ADE_FUNC(getScreenWidth, l_Graphics, NULL, "Gets screen width", "number", "Width in pixels, or 0 if graphics are not initialized yet")
 {
 	if(!Gr_inited)
@@ -12907,9 +12915,9 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 
 	if (fill) {
 		//WMC - Circle takes...diameter.
-		gr_circle(x,y, ra*2, false);
+		gr_circle(x,y, ra*2, GR_RESIZE_NONE);
 	} else {
-		gr_unfilled_circle(x,y, ra*2, false);
+		gr_unfilled_circle(x,y, ra*2, GR_RESIZE_NONE);
 	}
 
 	return ADE_RETURN_NIL;
@@ -12928,7 +12936,7 @@ ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAn
 		return ADE_RETURN_NIL;
 	}
 
-	gr_arc(x,y, ra, angle_start, angle_end, fill, false);
+	gr_arc(x,y, ra, angle_start, angle_end, fill, GR_RESIZE_NONE);
 
 	return ADE_RETURN_NIL;
 }
@@ -12945,7 +12953,7 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 
 	//WMC - direction should be settable at a certain point via enumerations.
 	//Not gonna deal with it now.
-	gr_curve(x,y,ra,0);
+	gr_curve(x,y,ra,0,GR_RESIZE_FULL);
 
 	return ADE_RETURN_NIL;
 }
@@ -12960,7 +12968,7 @@ ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number 
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
-	gr_gradient(x1,y1,x2,y2,false);
+	gr_gradient(x1,y1,x2,y2,GR_RESIZE_NONE);
 
 	return ADE_RETURN_NIL;
 }
@@ -12975,7 +12983,7 @@ ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Dr
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
-	gr_line(x1,y1,x2,y2,false);
+	gr_line(x1,y1,x2,y2,GR_RESIZE_NONE);
 
 	return ADE_RETURN_NIL;
 }
@@ -12990,7 +12998,7 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 	if(!ade_get_args(L, "ii", &x, &y))
 		return ADE_RETURN_NIL;
 
-	gr_pixel(x,y,false);
+	gr_pixel(x,y,GR_RESIZE_NONE);
 
 	return ADE_RETURN_NIL;
 }
@@ -13040,14 +13048,14 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 	if(f)
 	{
 		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
-		gr_rect(x1, y1, x2-x1, y2-y1, false);
+		gr_rect(x1, y1, x2-x1, y2-y1, GR_RESIZE_NONE);
 	}
 	else
 	{
-		gr_line(x1,y1,x2,y1,false);	//Top
-		gr_line(x1,y2,x2,y2,false); //Bottom
-		gr_line(x1,y1,x1,y2,false);	//Left
-		gr_line(x2,y1,x2,y2,false);	//Right
+		gr_line(x1,y1,x2,y1,GR_RESIZE_NONE);	//Top
+		gr_line(x1,y2,x2,y2,GR_RESIZE_NONE); //Bottom
+		gr_line(x1,y1,x1,y2,GR_RESIZE_NONE);	//Left
+		gr_line(x2,y1,x2,y2,GR_RESIZE_NONE);	//Right
 	}
 
 	return ADE_RETURN_NIL;
@@ -13119,7 +13127,7 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	matrix *orient = mh->GetMatrix();
 
 	//Clip
-	gr_set_clip(0, 0, gr_screen.max_w, gr_screen.max_h, false);
+	gr_set_clip(0, 0, gr_screen.max_w, gr_screen.max_h, GR_RESIZE_NONE);
 
 	//Handle 3D init stuff
 	g3_start_frame(1);
@@ -13469,7 +13477,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 	if(x2 < 0)
 	{
 		num_lines = 1;
-		gr_string(x,y,s,false);
+		gr_string(x,y,s,GR_RESIZE_NONE);
 
 		int height = 0;
 		gr_get_string_size(NULL, &height, s);
@@ -13502,7 +13510,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			buf[len] = '\0';
 
 			//Draw the string
-			gr_string(x,y2,buf,false);
+			gr_string(x,y2,buf,GR_RESIZE_NONE);
 
 			//Free the string we made
 			delete[] buf;
@@ -13639,7 +13647,7 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, alpha);
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
-	gr_bitmap_list(&brl, 1, false);
+	gr_bitmap_list(&brl, 1, GR_RESIZE_NONE);
 
 	return ADE_RETURN_TRUE;
 }
@@ -13695,7 +13703,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 		h = y2-y;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,alpha);
-	gr_aabitmap_ex(x, y, w, h, sx, sy, false, m);
+	gr_aabitmap_ex(x, y, w, h, sx, sy, GR_RESIZE_NONE, m);
 
 	return ADE_RETURN_TRUE;
 }
@@ -13855,7 +13863,7 @@ ADE_FUNC(setClip, l_Graphics, "x, y, width, height", "Sets the clipping region t
 	if (!ade_get_args(L, "iiii", &x, &y, &width, &height))
 		return ADE_RETURN_FALSE;
 
-	gr_set_clip(x, y, width, height, false);
+	gr_set_clip(x, y, width, height, GR_RESIZE_NONE);
 
 	return ADE_RETURN_TRUE;
 }
@@ -14826,14 +14834,14 @@ ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 		float Pc, Vc;
 		avd.get((float)i/1000.0f, &Pc, &Vc);
 		gr_set_color(0, 255, 0);
-		gr_pixel(i/10, gr_screen.clip_bottom - (int)(Pc*10.0f), false);
+		gr_pixel(i/10, gr_screen.clip_bottom - (int)(Pc*10.0f), GR_RESIZE_NONE);
 		gr_set_color(255, 0, 0);
-		gr_pixel(i/10, gr_screen.clip_bottom - (int)(Vc*10.0f), false);
+		gr_pixel(i/10, gr_screen.clip_bottom - (int)(Vc*10.0f), GR_RESIZE_NONE);
 
 		avd.get(&Pc, &Vc);
 		gr_set_color(255, 255, 255);
-		gr_pixel((timestamp()%3000)/10, gr_screen.clip_bottom - (int)(Pc*10.0f), false);
-		gr_pixel((timestamp()%3000)/10, gr_screen.clip_bottom - (int)(Vc*10.0f), false);
+		gr_pixel((timestamp()%3000)/10, gr_screen.clip_bottom - (int)(Pc*10.0f), GR_RESIZE_NONE);
+		gr_pixel((timestamp()%3000)/10, gr_screen.clip_bottom - (int)(Vc*10.0f), GR_RESIZE_NONE);
 	}
 
 	return ADE_RETURN_NIL;

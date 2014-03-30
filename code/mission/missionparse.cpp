@@ -1117,21 +1117,30 @@ void parse_music(mission *pm, int flags)
 	if (optional_string("$Debriefing Success Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
+		index = event_music_get_spooled_music_index(temp);
+		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
+			event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
+		}
 	}
 
 	// not old, just added since it makes sense
 	if (optional_string("$Debriefing Average Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		event_music_set_score(SCORE_DEBRIEF_AVERAGE, temp);
+		index = event_music_get_spooled_music_index(temp);
+		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
+			event_music_set_score(SCORE_DEBRIEF_AVERAGE, temp);
+		}
 	}
 
 	// old stuff
 	if (optional_string("$Debriefing Fail Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
+		index = event_music_get_spooled_music_index(temp);
+		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
+			event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
+		}
 	}
 
 	// new stuff

@@ -21458,7 +21458,7 @@ bool test_point_within_box(vec3d *test_point, vec3d *box_corner_1, vec3d *box_co
 	if (reference_ship_obj != NULL) 
 	{
 		vm_vec_sub(&tempv, test_point, &reference_ship_obj->pos);
-		vm_vec_unrotate(&test_point_buf, &tempv, &reference_ship_obj->orient);
+		vm_vec_rotate(&test_point_buf, &tempv, &reference_ship_obj->orient);
 
 		test_point = &test_point_buf;
 	}

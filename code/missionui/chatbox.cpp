@@ -687,14 +687,14 @@ void chatbox_render()
 	}
 
 	// clear the multiplayer chat window
-	// gr_set_clip(Chatbox_x1, Chatbox_y1, Chatbox_w, Chatbox_h);
+	// gr_set_clip(Chatbox_x1, Chatbox_y1, Chatbox_w, Chatbox_h, GR_RESIZE_MENU);
 	// gr_clear();
 	// gr_reset_clip();
 
 	// draw the background bitmap if we're supposed to
 	if ( (Chatbox_bitmap != -1) && (Chatbox_mode_flags & CHATBOX_FLAG_DRAW_BOX)) {
 		gr_set_bitmap( Chatbox_bitmap );
-		gr_bitmap(Chatbox_x1, Chatbox_y1);		
+		gr_bitmap(Chatbox_x1, Chatbox_y1, GR_RESIZE_MENU);		
 	}
 
 	// render the chat lines
@@ -900,7 +900,7 @@ void chatbox_render_chat_lines()
 		gr_set_color_fast(Color_netplayer[player_num]);
 
 		// draw the first line (no indent)						
-		gr_string(Chatbox_begin_x + Brief_chat_indents[started_at],ly,&Brief_chat_lines[started_at][1]);		
+		gr_string(Chatbox_begin_x + Brief_chat_indents[started_at],ly,&Brief_chat_lines[started_at][1],GR_RESIZE_MENU);		
 
 		// if we're in a team vs. team game, blit the player color icon
 		if(Netgame.type_flags & NG_TYPE_TEAM){
@@ -910,14 +910,14 @@ void chatbox_render_chat_lines()
 				if(Net_players[player_num].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 					if(Multi_common_icons[MICON_TEAM0_SELECT] != -1){
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM0_SELECT]);
-						gr_bitmap(Chatbox_icon_x,ly-2);
+						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
 					} 
 				}
 				// just you're average peon
 				else {
 					if(Multi_common_icons[MICON_TEAM0] != -1){
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM0]);
-						gr_bitmap(Chatbox_icon_x,ly-2);
+						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
 					}
 				}
 				break;
@@ -926,14 +926,14 @@ void chatbox_render_chat_lines()
 				if(Net_players[player_num].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 					if(Multi_common_icons[MICON_TEAM1_SELECT] != -1){
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM1_SELECT]);
-						gr_bitmap(Chatbox_icon_x,ly-2);
+						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
 					}
 				}
 				// just your average peon
 				else {
 					if(Multi_common_icons[MICON_TEAM1] != -1){
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM1]);
-						gr_bitmap(Chatbox_icon_x,ly-2);
+						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
 					}
 				}
 				break;

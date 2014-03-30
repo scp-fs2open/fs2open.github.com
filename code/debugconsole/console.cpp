@@ -473,12 +473,12 @@ void debug_draw()
 	gr_clear();
 	gr_set_font(FONT1);
 	gr_set_color_fast( &Color_bright );
-	gr_string( 0x8000, 3, "Debug Console" );
+	gr_string( 0x8000, 3, "Debug Console", GR_RESIZE_MENU );
 
 	gr_set_color_fast( &Color_normal );
 
 	for (i=0; i<DROWS; i++ ) {
-		gr_string( 0, i*16+16, debug_text[i] );
+		gr_string( 0, i*16+16, debug_text[i], GR_RESIZE_MENU );
 	}
 
 	int t = timer_get_fixed_seconds() / (F1_0/3);
@@ -491,8 +491,8 @@ void debug_draw()
 
 		gr_get_string_size( &w, &h, debug_text[debug_y] );
 
-		//gr_string( w, debug_y*16, "_" );
-		gr_rect(w+1,debug_y*16+1+16,2,14);
+		//gr_string( w, debug_y*16, "_", GR_RESIZE_MENU );
+		gr_rect(w+1,debug_y*16+1+16,2,14,GR_RESIZE_MENU);
 
 		debug_text[debug_y][command_line_pos+1] = c;
 	}

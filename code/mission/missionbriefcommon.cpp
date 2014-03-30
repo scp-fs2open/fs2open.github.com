@@ -790,7 +790,7 @@ void brief_render_fade_outs(float frametime)
 			bm_get_info( fi->fade_anim.first_frame, &w, &h, NULL);
 			float screenX = tv.screen.xyw.x;
 			float screenY = tv.screen.xyw.y;
-			gr_unsize_screen_posf( &screenX, &screenY );
+			gr_unsize_screen_posf( &screenX, &screenY, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
 
 			bxf = screenX - w / 2.0f + 0.5f;
 			byf = screenY - h / 2.0f + 0.5f;
@@ -800,7 +800,7 @@ void brief_render_fade_outs(float frametime)
 			if ( fi->fade_anim.first_frame >= 0 ) {
 				fi->fade_anim.sx = bx;
 				fi->fade_anim.sy = by;
-				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, true);
+				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, GR_RESIZE_MENU);
 			}
 		}
 	}
@@ -888,7 +888,7 @@ void brief_render_icon_line(int stage_num, int line_num)
 
 	brief_set_icon_color(icon[0]->team);
 
-	gr_line(fl2i(icon_x[0]), fl2i(icon_y[0]), fl2i(icon_x[1]), fl2i(icon_y[1]), false);
+	gr_line(fl2i(icon_x[0]), fl2i(icon_y[0]), fl2i(icon_x[1]), fl2i(icon_y[1]), GR_RESIZE_NONE);
 }
 
 /**
@@ -987,7 +987,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		float sx = tv.screen.xyw.x;
 		float sy = tv.screen.xyw.y;
-		gr_unsize_screen_posf( &sx, &sy );
+		gr_unsize_screen_posf( &sx, &sy, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
 	
 		scaled_w = icon_w * w_scale_factor;
 		scaled_h = icon_h * h_scale_factor;
@@ -1017,7 +1017,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, true, mirror_icon);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, GR_RESIZE_MENU, mirror_icon);
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
@@ -1035,7 +1035,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				ha->sy = by;
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, true, mirror_icon) == 0 ) {
+				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, GR_RESIZE_MENU, mirror_icon) == 0 ) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1045,12 +1045,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, true,mirror_icon);
+			gr_aabitmap(bx, by, GR_RESIZE_MENU,mirror_icon);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
 				gr_get_string_size(&w,&h,Players[Player_num].callsign);
-				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign);
+				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign, GR_RESIZE_MENU);
 			}
 			else {
 				if (Lcl_gr) {
@@ -1058,10 +1058,10 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf);
+					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
 				} else {
 					gr_get_string_size(&w,&h,bi->label);
-					gr_string(bc - fl2i(w/2.0f), by - h, bi->label);
+					gr_string(bc - fl2i(w/2.0f), by - h, bi->label, GR_RESIZE_MENU);
 				}
 			}
 
@@ -1145,7 +1145,7 @@ void brief_start_highlight_anims(int stage_num)
 //
 void brief_render_map(int stage_num, float frametime)
 {
-	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2);
+	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, GR_RESIZE_MENU);
 
     if (stage_num >= Briefing->num_stages) {
 		gr_reset_clip();
@@ -1189,9 +1189,9 @@ void brief_blit_stage_num(int stage_num, int stage_max)
 	gr_set_color_fast(&Color_text_heading);
 	sprintf(buf, XSTR( "Stage %d of %d", 394), stage_num + 1, stage_max);
 	if (Game_mode & GM_MULTIPLAYER) {
-		gr_printf(Brief_stage_text_coords_multi[gr_screen.res][0], Brief_stage_text_coords_multi[gr_screen.res][1], buf);
+		gr_printf_menu(Brief_stage_text_coords_multi[gr_screen.res][0], Brief_stage_text_coords_multi[gr_screen.res][1], buf);
 	} else {
-		gr_printf(Brief_stage_text_coords[gr_screen.res][0], Brief_stage_text_coords[gr_screen.res][1], buf);
+		gr_printf_menu(Brief_stage_text_coords[gr_screen.res][0], Brief_stage_text_coords[gr_screen.res][1], buf);
 	}
 }
 
@@ -1254,7 +1254,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 				{	// Draw coloured text, and increment cariage position
 					int w=0,h=0;
 					brief_set_text_color(last_color);        
-					gr_string(x + offset, y, char_seq);
+					gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 					gr_get_string_size(&w, &h, char_seq);
 					offset += w;
 				}
@@ -1272,7 +1272,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
         {	// Draw coloured text, and increment cariage position
 			int w=0,h=0;
 			brief_set_text_color(last_color);        
-			gr_string(x + offset, y, char_seq);
+			gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 			gr_get_string_size(&w, &h, char_seq);
 			offset += w;
 		}
@@ -1287,7 +1287,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 		Assert(char_seq_pos < (int)sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
 		gr_set_color_fast(&Color_bright_white);
-		gr_string(x + offset, y, char_seq);    
+		gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);    
 	}
 }
 

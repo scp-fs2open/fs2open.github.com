@@ -486,7 +486,7 @@ int g3_draw_sphere(vertex *pnt,float rad)
 
 			t=r2*Canv_w2/pnt->world.xyz.z;
 
-			gr_circle(fl2i(pnt->screen.xyw.x),fl2i(pnt->screen.xyw.y),fl2i(t*2.0f),false);
+			gr_circle(fl2i(pnt->screen.xyw.x),fl2i(pnt->screen.xyw.y),fl2i(t*2.0f),GR_RESIZE_NONE);
 		}
 	}
 
@@ -1250,7 +1250,7 @@ void g3_draw_horizon_line()
 	}
 
 	// draw from left to right.
-	gr_line( fl2i(horz_pts[0].x),fl2i(horz_pts[0].y),fl2i(horz_pts[1].x),fl2i(horz_pts[1].y), false );
+	gr_line( fl2i(horz_pts[0].x),fl2i(horz_pts[0].y),fl2i(horz_pts[1].x),fl2i(horz_pts[1].y), GR_RESIZE_NONE );
 	
 }
 

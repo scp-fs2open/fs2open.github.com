@@ -238,7 +238,7 @@ void UI_DOT_SLIDER::draw()
 	}
 	Assert((pos >= 0) && (pos <= num_pos));
 	gr_set_bitmap(first_frame + pos);  // draw the dot level
-	gr_bitmap(x, y);
+	gr_bitmap(x, y, GR_RESIZE_MENU);
 }
 
 void UI_DOT_SLIDER::process(int focus)
@@ -409,30 +409,30 @@ void UI_SLIDER::draw()
 		if ( disabled_flag ) {
 			if ( bmap_ids[SLIDER_BAR_DISABLED] != -1 ) {
 				gr_set_bitmap(bmap_ids[SLIDER_BAR_DISABLED]);
-				gr_bitmap(x,y);
+				gr_bitmap(x,y,GR_RESIZE_MENU);
 			}
 
 			if ( bmap_ids[SLIDER_MARKER_DISABLED] != -1 ) {
 				gr_set_bitmap(bmap_ids[SLIDER_MARKER_DISABLED]);
-				gr_bitmap(marker_x,marker_y);
+				gr_bitmap(marker_x,marker_y,GR_RESIZE_MENU);
 			}
 
 		}
 		else {
 			if ( bmap_ids[SLIDER_BAR_NORMAL] != -1 ) {
 				gr_set_bitmap(bmap_ids[SLIDER_BAR_NORMAL]);
-				gr_bitmap(x,y);
+				gr_bitmap(x,y,GR_RESIZE_MENU);
 			}
 
 			if ( bmap_ids[SLIDER_MARKER_NORMAL] != -1 ) {
 				gr_set_bitmap(bmap_ids[SLIDER_MARKER_NORMAL]);
-				gr_bitmap(marker_x,marker_y);
+				gr_bitmap(marker_x,marker_y,GR_RESIZE_MENU);
 			}
 		}
 	}
 	else {
 		gr_set_font(my_wnd->f_id);
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 		if (my_wnd->selected_gadget == this)
 			gr_set_color_fast( &CBRIGHT_GREEN );
@@ -441,7 +441,7 @@ void UI_SLIDER::draw()
 
 		ui_rect( 0, 0, w-1, h-1 );
 
-		gr_set_clip( marker_x, marker_y, w, h );
+		gr_set_clip( marker_x, marker_y, w, h, GR_RESIZE_MENU );
 		ui_draw_box_out(0, 0, marker_w, marker_h);
 	}
 }

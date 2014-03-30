@@ -252,10 +252,10 @@ void snd_spew_debug_info()
 
 	// spew info
 	gr_set_color_fast(&Color_normal);
-	gr_printf(30, 100, "Game sounds : %d\n", game_sounds);
-	gr_printf(30, 110, "Interface sounds : %d\n", interface_sounds);
-	gr_printf(30, 120, "Message sounds : %d\n", message_sounds);
-	gr_printf(30, 130, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
+	gr_printf_no_resize(30, 100, "Game sounds : %d\n", game_sounds);
+	gr_printf_no_resize(30, 110, "Interface sounds : %d\n", interface_sounds);
+	gr_printf_no_resize(30, 120, "Message sounds : %d\n", message_sounds);
+	gr_printf_no_resize(30, 130, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
 }
 
 // ---------------------------------------------------------------------------------------

@@ -807,7 +807,7 @@ void multi_ingame_select_do()
 	GR_MAYBE_CLEAR_RES(Multi_ingame_bitmap);
 	if(Multi_ingame_bitmap != -1){
 		gr_set_bitmap(Multi_ingame_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Multi_ingame_window.draw();
 
@@ -848,13 +848,13 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 	
 	// blit the ship name itself
 	gr_set_color_fast(&Color_normal);
-	gr_string(Mi_name_field[gr_screen.res][MI_FIELD_X],y_start+10, Ships[objp->instance].ship_name);
+	gr_string(Mi_name_field[gr_screen.res][MI_FIELD_X],y_start+10, Ships[objp->instance].ship_name, GR_RESIZE_MENU);
 	
 	// blit the ship class icon
 	icon_num = multi_ingame_get_ship_class_icon(Ships[objp->instance].ship_info_index);
 	if(icon_num != -1){
 		gr_set_bitmap(Multi_ingame_ship_icon[icon_num].bmaps[0]);
-		gr_bitmap(Mi_class_field[gr_screen.res][MI_FIELD_X] + 15, y_start);
+		gr_bitmap(Mi_class_field[gr_screen.res][MI_FIELD_X] + 15, y_start, GR_RESIZE_MENU);
 	}
 	
 	gr_set_color_fast(&Color_bright);
@@ -863,13 +863,13 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 	// blit the ship's primary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_primary_banks * 10)) / 2;
 	for(idx=0;idx<wp->num_primary_banks;idx++){
-		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * 10), Weapon_info[wp->primary_bank_weapons[idx]].name);
+		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * 10), Weapon_info[wp->primary_bank_weapons[idx]].name, GR_RESIZE_MENU);
 	}
 
 	// blit the ship's secondary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_secondary_banks * 10)) / 2;
 	for(idx=0;idx<wp->num_secondary_banks;idx++){
-		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * 10), Weapon_info[wp->secondary_bank_weapons[idx]].name);
+		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * 10), Weapon_info[wp->secondary_bank_weapons[idx]].name, GR_RESIZE_MENU);
 	}	
 
 	// blit the shield/hull integrity
@@ -890,10 +890,10 @@ void multi_ingame_join_display_avail()
 
 		// draw the border
 		gr_set_color_fast(&Color_bright_blue);
-		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start-1, (Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start-1);
-		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start + Mi_spacing[gr_screen.res] - 2, (Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2);
-		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start, Mi_name_field[gr_screen.res][MI_FIELD_X]-1, y_start + Mi_spacing[gr_screen.res] - 2);
-		gr_line((Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2), y_start,(Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2);
+		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start-1, (Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start-1, GR_RESIZE_MENU);
+		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start + Mi_spacing[gr_screen.res] - 2, (Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
+		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start, Mi_name_field[gr_screen.res][MI_FIELD_X]-1, y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
+		gr_line((Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2), y_start,(Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
 	}
 
 	moveup = GET_FIRST(&Ship_obj_list);	
@@ -940,7 +940,7 @@ void multi_ingame_handle_timeout()
 	/*
 	// uncomment this block to disable the timer
 	gr_set_color_fast(&Color_bright_red);
-	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], "Timer disabled!!");
+	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], "Timer disabled!!", GR_RESIZE_MENU);
 	return;
 	*/
 
@@ -956,7 +956,7 @@ void multi_ingame_handle_timeout()
 	gr_set_color_fast(&Color_bright);
 	memset(tl_string,0,100);
 	sprintf(tl_string,XSTR("Time remaining : %d s\n",682),time_left);	
-	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], tl_string);
+	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], tl_string, GR_RESIZE_MENU);
 }
 
 

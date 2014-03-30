@@ -204,7 +204,7 @@ void multi_rate_display(int np_index, int x, int y)
 
 		// display
 		gr_set_color_fast(&Color_red);
-		gr_printf(x, y, "%s %d (%d/s) (%f/f)", m->type, m->total_bytes, (int)m->avg_second, m->avg_frame);
+		gr_printf_no_resize(x, y, "%s %d (%d/s) (%f/f)", m->type, m->total_bytes, (int)m->avg_second, m->avg_frame);
 		y += 10;
 	}
 }

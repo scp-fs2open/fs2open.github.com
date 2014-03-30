@@ -87,7 +87,7 @@ void training_menu_do_frame(float frametime)
 	// set the background
 	if(trainingMenuBitmap != -1){
 		gr_set_bitmap(trainingMenuBitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 
 	int snazzy_action = -1;
