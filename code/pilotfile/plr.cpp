@@ -586,7 +586,7 @@ void pilotfile::plr_write_stats_multi()
 void pilotfile::plr_read_controls()
 {
 	int idx, list_size, list_axis;
-	short id1, id2, id3;
+	short id1, id2, id3 __attribute__((__unused__));
 	int axi, inv;
 
 	list_size = (int)cfread_ushort(cfp);
