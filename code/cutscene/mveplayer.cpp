@@ -614,7 +614,7 @@ void mve_video_display()
 		// DDOI - This is probably really fricking slow
 		int bitmap = bm_create (16, g_screenWidth, g_screenHeight, pixelbuf, 0);
 		gr_set_bitmap (bitmap);
-		gr_bitmap ((int)g_screenX, (int)g_screenY, true);
+		gr_bitmap ((int)g_screenX, (int)g_screenY, GR_RESIZE_FULL);
 		bm_release (bitmap);
 	}
 

@@ -489,13 +489,13 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		// determine x,y to display the bitmap at
 		if ( instance->world_pos == NULL ) {
 			gr_set_screen_scale(instance->base_w, instance->base_h);
-			gr_set_clip(0, 0, instance->base_w, instance->base_h, false);
+			gr_set_clip(0, 0, instance->base_w, instance->base_h, GR_RESIZE_MENU);
 			if ( instance->aa_color == NULL ) {
-				gr_bitmap(instance->x, instance->y);
+				gr_bitmap(instance->x, instance->y, GR_RESIZE_MENU_NO_OFFSET);
 			}
 			else {
 				gr_set_color_fast( (color*)instance->aa_color );
-				gr_aabitmap(instance->x, instance->y);
+				gr_aabitmap(instance->x, instance->y, GR_RESIZE_MENU_NO_OFFSET);
 			}
 			gr_reset_screen_scale();
 			gr_reset_clip();

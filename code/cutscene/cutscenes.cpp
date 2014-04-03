@@ -321,7 +321,7 @@ void cutscenes_screen_play()
 	strcpy_s(name, Cutscenes[which_cutscene].filename );
 //	full_name = cf_add_ext(name, NOX(".mve"));
 
-	main_hall_stop_music();
+	main_hall_stop_music(true);
 	main_hall_stop_ambient();
 	int rval = movie_play(name);
 	main_hall_start_music();
@@ -581,7 +581,7 @@ void cutscenes_screen_do_frame()
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
 	Ui_window.draw();
@@ -611,7 +611,7 @@ void cutscenes_screen_do_frame()
 			gr_set_color_fast(&Color_text_normal);
 		}
 
-		gr_printf(Cutscene_list_coords[gr_screen.res][0], Cutscene_list_coords[gr_screen.res][1] + y, Cutscenes[Cutscene_list[z]].name);
+		gr_printf_menu(Cutscene_list_coords[gr_screen.res][0], Cutscene_list_coords[gr_screen.res][1] + y, Cutscenes[Cutscene_list[z]].name);
 
 		y += font_height;
 		z++;
@@ -650,7 +650,7 @@ void cutscenes_screen_do_frame()
 
 			strncpy(line, Text_lines[z], len);
 			line[len] = 0;
-			gr_string(Cutscene_desc_coords[gr_screen.res][0], Cutscene_desc_coords[gr_screen.res][1] + y, line);
+			gr_string(Cutscene_desc_coords[gr_screen.res][0], Cutscene_desc_coords[gr_screen.res][1] + y, line, GR_RESIZE_MENU);
 
 			y += font_height;
 			z++;

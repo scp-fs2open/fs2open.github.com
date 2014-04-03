@@ -54,7 +54,7 @@ void brief_unhide_buttons();
 brief_icon *brief_get_closeup_icon();
 void brief_turn_off_closeup_icon();
 
-void briefing_stop_music();
+void briefing_stop_music(bool fade);
 void briefing_start_music();
 void briefing_load_music(char* fname);
 void brief_stop_voices();

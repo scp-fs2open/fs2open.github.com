@@ -718,7 +718,7 @@ void subtitle::do_frame(float frametime)
 
 	for(SCP_vector<SCP_string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
 	{
-		gr_string(x, y, (char*)line->c_str(), false);
+		gr_string(x, y, (char*)line->c_str(), GR_RESIZE_NONE);
 		y += font_height;
 	}
 
@@ -744,13 +744,13 @@ void subtitle::do_frame(float frametime)
 			scale.xyz.z = 1.0f;
 
 			gr_push_scale_matrix(&scale);
-			gr_bitmap(image_pos.x, image_pos.y, false);
+			gr_bitmap(image_pos.x, image_pos.y, GR_RESIZE_NONE);
 			gr_pop_scale_matrix();
 		}
 		// no scaling
 		else
 		{
-			gr_bitmap(image_pos.x, image_pos.y, false);
+			gr_bitmap(image_pos.x, image_pos.y, GR_RESIZE_NONE);
 		}
 	}
 

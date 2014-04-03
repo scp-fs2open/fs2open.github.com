@@ -165,14 +165,14 @@ void mouse_mark_button( uint flags, int set)
 
 	SDL_UnlockMutex( mouse_lock );	
 
-	Script_system.SetHookVar("MouseButton", 'i', &mouse_flags);
+	Script_system.SetHookVar("MouseButton", 'i', &flags);
 
 	//WMC - On Mouse Pressed and On Mouse Released hooks
-	if(set == 1)
+	if (set == 1)
 	{
 		Script_system.RunCondition(CHA_MOUSEPRESSED);
 	}
-	else if(set == 0)
+	else if (set == 0)
 	{
 		Script_system.RunCondition(CHA_MOUSERELEASED);
 	}
@@ -416,7 +416,7 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 {
 	int flags = mouse_get_pos( xpos, ypos );
 
-	gr_unsize_screen_pos( (xpos) ? xpos : NULL, (ypos) ? ypos : NULL );
+	gr_unsize_screen_pos( (xpos) ? xpos : NULL, (ypos) ? ypos : NULL, NULL, NULL, GR_RESIZE_MENU );
 
 	return flags;
 }

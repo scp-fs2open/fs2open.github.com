@@ -341,7 +341,7 @@ void advance_to_eoln(char *more_terminators)
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = (char)EOF_CHAR;
+	terminators[1] = EOF_CHAR;
 	terminators[2] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
@@ -777,7 +777,7 @@ void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max)
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = (char)EOF_CHAR;
+	terminators[1] = EOF_CHAR;
 	terminators[2] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
@@ -804,7 +804,7 @@ void copy_to_eoln(SCP_string &outstr, char *more_terminators, char *instr)
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = (char)EOF_CHAR;
+	terminators[1] = EOF_CHAR;
 	terminators[2] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
@@ -1642,239 +1642,224 @@ void maybe_convert_foreign_characters(SCP_string &line)
 }
 
 // Goober5000
-int get_number_before_separator(char *text, char separator)
+bool get_number_before_separator(int &number, int &number_chars, const char *text, char separator)
 {
-	char buf[10];
-	char *ch;
+	char buf[8];
+	const char *ch = text;
+	int len = 0;
 
-	memset(buf, 0, 10);
-	strncpy(buf, text, 9);
+	while (true)
+	{
+		// didn't find separator
+		if (*ch == '\0' || len == 8)
+			return false;
 
-	ch = strchr(buf, separator);
-	if (ch == NULL)
-		return 0;
-	*ch = '\0';
+		// found separator
+		if (*ch == separator)
+			break;
 
-	return atoi(buf);	
+		// found nondigit
+		if (!isdigit(*ch))
+			return false;
+
+		// copying in progress
+		buf[len] = *ch;
+		len++;
+		ch++;
+	}
+
+	// got an integer
+	buf[len] = '\0';
+	number = atoi(buf);
+	number_chars = len;
+	return true;
 }
 
 // Goober5000
-int get_number_before_separator(SCP_string &text, char separator)
+bool get_number_before_separator(int &number, int &number_chars, const SCP_string &text, SCP_string::iterator text_pos, char separator)
 {
-	char buf[10];
-	char *ch;
+	char buf[8];
+	SCP_string::iterator ch = text_pos;
+	int len = 0;
 
-	memset(buf, 0, 10);
-	text.copy(buf, 9);
+	while (true)
+	{
+		// didn't find separator
+		if (ch == text.end() || len == 8)
+			return false;
 
-	ch = strchr(buf, separator);
-	if (ch == NULL)
-		return 0;
-	*ch = '\0';
+		// found separator
+		if (*ch == separator)
+			break;
 
-	return atoi(buf);	
+		// found nondigit
+		if (!isdigit(*ch))
+			return false;
+
+		// copying in progress
+		buf[len] = *ch;
+		len++;
+		ch++;
+	}
+
+	// got an integer
+	buf[len] = '\0';
+	number = atoi(buf);
+	number_chars = len;
+	return true;
+}
+
+bool matches_version_specific_tag(const char *line_start, bool &compatible_version, int &tag_len)
+{
+	// special version-specific comment
+	// formatted like e.g. ;;FSO 3.7.0;;
+	if (strnicmp(line_start, ";;FSO ", 6))
+		return false;
+
+	int major, minor, build, num_len;
+	const char *ch;
+
+	ch = line_start + 6;
+	if (!get_number_before_separator(major, num_len, ch, '.'))
+		return false;
+
+	ch += (num_len + 1);
+	if (!get_number_before_separator(minor, num_len, ch, '.'))
+		return false;
+
+	ch += (num_len + 1);
+	if (!get_number_before_separator(build, num_len, ch, ';'))
+		return false;
+
+	ch += (num_len + 1);
+	if (*ch != ';')
+		return false;
+
+	ch++;
+
+	// tag is a match!
+	tag_len = ch - line_start;
+	compatible_version = true;
+
+	// check whether major, minor, and build line up with this version
+	if (major > FS_VERSION_MAJOR)
+	{
+		compatible_version = false;
+	}
+	else if (major == FS_VERSION_MAJOR)
+	{
+		if (minor > FS_VERSION_MINOR)
+		{
+			compatible_version = false;
+		}
+		else if (minor == FS_VERSION_MINOR)
+		{
+			if (build > FS_VERSION_BUILD)
+			{
+				compatible_version = false;
+			}
+		}
+	}
+
+	// true for tag match
+	return true;
 }
 
 // Strip comments from a line of input.
-// Goober5000 - rewritten to make a lot more sense and to be extensible
-int strip_comments(char *line, int in_multiline_comment)
+// Goober5000 - rewritten for the second time
+void strip_comments(char *line, bool &in_multiline_comment_a, bool &in_multiline_comment_b)
 {
-	char *ch;
+	bool in_quote = false;
+	char *writep = line;
+	char *readp = line;
 
-	// if we're in a comment, see if we can close it
-	if (in_multiline_comment)
+	// copy all characters from read to write, unless they're commented
+	while (*readp != '\r' && *readp != '\n' && *readp != '\0')
 	{
-		ch = strstr(line, "*/");
-		if (ch == NULL)
-			ch = strstr(line, "*!");
-		if (ch != NULL)
+		// only check for comments if not quoting
+		if (!in_quote)
 		{
-			char *writep = line;
-			char *readp = ch + 2;
+			bool compatible_version;
+			int tag_len;
 
-			// copy all characters past the close of the comment
-			while (*readp != '\0')
+			// see what sort of comment characters we recognize
+			if (!strncmp(readp, "/*", 2))
 			{
-				*writep = *readp;
-
-				writep++;
-				readp++;
+				// comment styles are mutually exclusive
+				if (!in_multiline_comment_b)
+					in_multiline_comment_a = true;
 			}
-
-			*writep = '\0';
-
-			// recurse with the other characters
-			return strip_comments(line, 0);
-		}
-
-		// can't close it, so drop the whole line
-		ch = line;
-		goto done_with_line;
-	}
-
-
-	/* Goober5000 - this interferes with hyperlinks, heh
-	// search for //
-	ch = strstr(line, "//");
-	if (ch != NULL)
-		goto done_with_line;
-	*/
-
-
-	// special version-specific comment
-	// formatted like e.g. ;;FSO 3.7.0;;
-	ch = stristr(line, ";;FSO ");
-	if (ch != NULL)
-	{
-		int major, minor, build;
-		char *numch, *sep, *linech;
-
-		numch = ch + 6;
-		sep = strchr(numch, '.');
-		if (sep == NULL)
-			goto done_with_line;
-
-		major = get_number_before_separator(numch, '.');
-
-		numch = sep + 1;
-		sep = strchr(numch, '.');
-		if (sep == NULL)
-			goto done_with_line;
-
-		minor = get_number_before_separator(numch, '.');
-
-		numch = sep + 1;
-		sep = strchr(numch, ';');
-		if (sep == NULL)
-			goto done_with_line;
-
-		build = get_number_before_separator(numch, ';');
-
-		if (*(sep + 1) != ';')
-			goto done_with_line;
-
-		linech = sep + 2;
-
-
-		// check whether major, minor, and build line up with this version
-		if (major > FS_VERSION_MAJOR)
-		{
- 			goto done_with_line;
-		}
-		else if (major == FS_VERSION_MAJOR)
-		{
-			if (minor > FS_VERSION_MINOR)
+			else if (!strncmp(readp, "!*", 2))
 			{
-				goto done_with_line;
+				// comment styles are mutually exclusive
+				if (!in_multiline_comment_a)
+					in_multiline_comment_b = true;
 			}
-			else if (minor == FS_VERSION_MINOR)
+			else if (!strncmp(readp, "*/", 2))
 			{
-				if (build > FS_VERSION_BUILD)
+				if (in_multiline_comment_a)
 				{
-					goto done_with_line;
+					in_multiline_comment_a = false;
+					readp += 2;
+					continue;
 				}
+			}
+			else if (!strncmp(readp, "*!", 2))
+			{
+				if (in_multiline_comment_b)
+				{
+					in_multiline_comment_b = false;
+					readp += 2;
+					continue;
+				}
+			}
+			// special version-specific comment
+			// formatted like e.g. ;;FSO 3.7.0;;
+			else if (matches_version_specific_tag(readp, compatible_version, tag_len))
+			{
+				// comment passes, so advance pass the tag and keep reading
+				if (compatible_version)
+				{
+					readp += tag_len;
+					continue;
+				}
+				// comment does not pass, so ignore the line
+				else
+				{
+					break;
+				}
+			}
+			// standard comment
+			else if (*readp == ';')
+			{
+				break;
 			}
 		}
 
+		// maybe toggle quoting
+		if (*readp == '\"')
+			in_quote = !in_quote;
 
-		// this version is compatible, so copy the line past the tag
+		// if not inside a comment, copy the characters
+		if (!in_multiline_comment_a && !in_multiline_comment_b)
 		{
-			char *writep = ch;
-			char *readp = linech;
-
-			// copy all characters past the close of the comment
-			while (*readp != '\0')
-			{
+			if (writep != readp)
 				*writep = *readp;
 
-				writep++;
-				readp++;
-			}
-
-			*writep = '\0';
-
-			// recurse with the other characters
-			return strip_comments(ch, 0);
-		}
-	}
-
-
-	// search for ;
-	ch = strchr(line, ';');
-	if (ch != NULL)
-		goto done_with_line;
-
-
-	// start of a multi-line comment?
-	// (You can now use !* *! in addition to /* */ because prior to 3.7.1, a /* would be flagged
-	// even if it appeared after an initial ; such as in a version-specific comment.
-	ch = strstr(line, "/*");
-	if (ch == NULL)
-		ch = strstr(line, "!*");
-	if (ch != NULL)
-	{
-		// treat it as the beginning of a new line and recurse
-		return strip_comments(ch, 1);
-	}
-
-
-	// no comments found... try to find the newline
-	ch = strchr(line, '\n');
-	if (ch != NULL)
-		goto done_with_line;
-
-
-	// just skip to the end of the line
-	ch = line + strlen(line);
-
-
-done_with_line:
-	ch[0] = EOLN;
-	ch[1] = 0;
-
-	return in_multiline_comment;	
-}
-
-/*#if 0
-void strip_all_comments( char *readp, char *writep )
-{
-	int	ch;
-	//char	*writep = readp;
-
-	while ( *readp != EOF_CHAR ) {
-		ch = *readp;
-		if ( ch == COMMENT_CHAR ) {
-			while ( *readp != EOLN )
-				readp++;
-
-			*writep = EOLN;
 			writep++;
-			// get to next character after EOLN
-			readp++;
-		} else if ( (ch == '/') && (readp[1] == '*')) {			// Start of multi-line comment
-			int done;
-			
-			done = 0;
-			while ( !done ) {
-				while ( *readp != '*' )
-					readp++;
-				if ( readp[1] == '/' ) {
-					readp += 2;
-					done = 1;
-				} else {
-					readp++;
-				}
-			}
-		} else {
-			*writep = (char)ch;
-			*writep++;
-			readp++;
 		}
+
+		// read the next character
+		readp++;
 	}
 
-	*writep = (char)EOF_CHAR;
+	// if we moved any characters, or if we haven't reached the end of the string, then mark end-of-line and terminate string
+	if (writep != readp || *readp != '\0')
+	{
+		writep[0] = EOLN;
+		writep[1] = '\0';
+	}
 }
-#endif*/
 
 int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, char *cur)
 {
@@ -2112,7 +2097,8 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	char	*mp;
 	char	*mp_raw;
 	char outbuf[PARSE_BUF_SIZE], *str;
-	int in_multiline_comment = 0;
+	bool in_multiline_comment_a = false;
+	bool in_multiline_comment_b = false;
 	int raw_text_len = strlen(raw_text);
 
 	if (processed_text == NULL)
@@ -2132,7 +2118,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
 		mp_raw += num_chars_read;
 
-		in_multiline_comment = strip_comments(outbuf, in_multiline_comment);
+		strip_comments(outbuf, in_multiline_comment_a, in_multiline_comment_b);
 
 		maybe_convert_foreign_characters(outbuf);
 
@@ -2151,7 +2137,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 //		mp += strlen(outbuf);
 	}
 
-	*mp = *mp_raw = (char)EOF_CHAR;
+	*mp = *mp_raw = EOF_CHAR;
 /*
 	while (cfgets(outbuf, PARSE_BUF_SIZE, mf) != NULL) {
 		if (strlen(outbuf) >= PARSE_BUF_SIZE-1)
@@ -2168,7 +2154,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 		mp += strlen(outbuf);
 	}
 	
-	*mp = *mp_raw = (char)EOF_CHAR;
+	*mp = *mp_raw = EOF_CHAR;
 */
 
 }

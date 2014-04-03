@@ -379,7 +379,7 @@ void techroom_render_desc(int xo, int yo, int ho)
 
 		strncpy(line, Text_lines[z], len);
 		line[len] = 0;
-		gr_string(xo, yo + y, line);
+		gr_string(xo, yo + y, line, GR_RESIZE_MENU);
 
 		y += font_height;
 		z++;
@@ -393,9 +393,9 @@ void techroom_render_desc(int xo, int yo, int ho)
 		int w, h;
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
-		gr_rect(more_txt_x-2, more_txt_y, w+3, h);
+		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_red);
-		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469));  // base location on the input x and y?
+		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 	}
 
 }
@@ -435,7 +435,7 @@ void tech_common_render()
 			lcl_translate_ship_name_gr(buf);
 
 		gr_force_fit_string(buf, 255, Tech_list_coords[gr_screen.res][SHIP_W_COORD]);
-		gr_string(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, buf);
+		gr_string(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, buf, GR_RESIZE_MENU);
 
 		List_buttons[z - List_offset].update_dimensions(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, Tech_list_coords[gr_screen.res][SHIP_W_COORD], font_height);
 		List_buttons[z - List_offset].enable(1);
@@ -511,7 +511,7 @@ void techroom_ships_render(float frametime)
 		vm_rotate_matrix_by_angles(&Techroom_ship_orient, &rot_angles);
 	}
 
-	gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD]);	
+	gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD], GR_RESIZE_MENU);	
 
 	// render the ship
 	g3_start_frame(1);
@@ -704,7 +704,7 @@ void techroom_anim_render(float frametime)
 		//get the centre point - adjust
 		x = Tech_ani_centre_coords[gr_screen.res][0] - x / 2;
 		y = Tech_ani_centre_coords[gr_screen.res][1] - y / 2;
-		generic_anim_render(&Current_list[Cur_entry].animation, frametime, x, y);
+		generic_anim_render(&Current_list[Cur_entry].animation, frametime, x, y, true);
 	}
 	// if our active item has a bitmap instead of an animation, draw it
 	else if((Cur_entry >= 0) && (Current_list[Cur_entry].bitmap >= 0)){
@@ -714,7 +714,7 @@ void techroom_anim_render(float frametime)
 		x = Tech_ani_centre_coords[gr_screen.res][0] - x / 2;
 		y = Tech_ani_centre_coords[gr_screen.res][1] - y / 2;
 		gr_set_bitmap(Current_list[Cur_entry].bitmap);
-		gr_bitmap(x, y);
+		gr_bitmap(x, y, GR_RESIZE_MENU);
 	}
 }
 
@@ -1355,7 +1355,7 @@ void techroom_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Tech_background_bitmap);
 	if (Tech_background_bitmap >= 0) {
 		gr_set_bitmap(Tech_background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 
 	// render

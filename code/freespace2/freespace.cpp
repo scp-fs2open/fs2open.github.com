@@ -586,7 +586,7 @@ void game_framerate_check()
 	// display if we're above the critical framerate
 	if(Framerate < Gf_critical){
 		gr_set_color_fast(&Color_bright_red);
-		gr_string(200, y_start, "Framerate warning");
+		gr_string(200, y_start, "Framerate warning", GR_RESIZE_NONE);
 
 		y_start += 10;
 	}
@@ -601,7 +601,7 @@ void game_framerate_check()
 			gr_set_color_fast(&Color_bright_red);
 		}
 
-		gr_printf(200, y_start, "%d%%", (int)pct);
+		gr_printf_no_resize(200, y_start, "%d%%", (int)pct);
 
 		y_start += 10;
 	}
@@ -1153,13 +1153,14 @@ void game_loading_callback(int count)
 		framenum = new_framenum;
 
 	if ( Game_loading_ani.num_frames > 0 )	{
+		GR_MAYBE_CLEAR_RES(Game_loading_background);
 		if ( Game_loading_background > -1 )	{
 			gr_set_bitmap( Game_loading_background );
-			gr_bitmap(0,0);
+			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 
 		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
-		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
+		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1], GR_RESIZE_MENU);
 
 		do_flip = 1;
 	}
@@ -1176,10 +1177,10 @@ void game_loading_callback(int count)
 
 	if (Processing_filename[0] != '\0') {
 		gr_set_shader(&busy_shader);
-		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17); // make sure it goes across the entire width
+		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17, GR_RESIZE_MENU); // make sure it goes across the entire width
 
 		gr_set_color_fast(&Color_white);
-		gr_string(5, 5, Processing_filename);
+		gr_string(5, 5, Processing_filename, GR_RESIZE_MENU);
 
 		do_flip = 1;
 		memset( Processing_filename, 0, MAX_PATH_LEN );
@@ -1214,10 +1215,10 @@ void game_loading_callback(int count)
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( 20, 220 + (i*10), mem_buffer);
+			gr_string( 20, 220 + (i*10), mem_buffer, GR_RESIZE_MENU);
 		}
 		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( 20, 230 + (i*10), mem_buffer);
+		gr_string( 20, 230 + (i*10), mem_buffer, GR_RESIZE_MENU);
 #endif	// _WIN32
 	}
 #endif	// !NDEBUG
@@ -2112,11 +2113,11 @@ void game_show_framerate()
 		for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 			if (pss->system_info->type == SUBSYSTEM_TURRET) {
 				if(pss->turret_enemy_objnum == -1)
-					gr_printf(10, t*10, "Turret %d: <None>", t);
+					gr_printf_no_resize(10, t*10, "Turret %d: <None>", t);
 				else if (Objects[pss->turret_enemy_objnum].type == OBJ_SHIP)
-					gr_printf(10, t*10, "Turret %d: %s", t, Ships[Objects[pss->turret_enemy_objnum].instance].ship_name);
+					gr_printf_no_resize(10, t*10, "Turret %d: %s", t, Ships[Objects[pss->turret_enemy_objnum].instance].ship_name);
 				else
-					gr_printf(10, t*10, "Turret %d: <Object %d>", t, pss->turret_enemy_objnum);
+					gr_printf_no_resize(10, t*10, "Turret %d: <Object %d>", t, pss->turret_enemy_objnum);
 
 				t++;
 			}
@@ -2129,14 +2130,14 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
-			gr_string(20, 110, profile_output);
+			gr_string(20, 110, profile_output, GR_RESIZE_NONE);
 		}
 
 		if (Show_framerate) {
 			if (frametotal != 0.0f)
-				gr_printf( 20, 100, "FPS: %0.1f", Framerate );
+				gr_printf_no_resize( 20, 100, "FPS: %0.1f", Framerate );
 			else
-				gr_string( 20, 100, "FPS: ?" );
+				gr_string( 20, 100, "FPS: ?", GR_RESIZE_NONE );
 		}
 	}
 
@@ -2161,22 +2162,22 @@ void game_show_framerate()
 		else
 			sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
 
-		gr_string( 20, 120, mem_buffer);
+		gr_string( 20, 120, mem_buffer, GR_RESIZE_NONE);
 		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
-		gr_string( 20, 130, mem_buffer);
+		gr_string( 20, 130, mem_buffer, GR_RESIZE_NONE);
 		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
-		gr_string( 20, 140, mem_buffer);
+		gr_string( 20, 140, mem_buffer, GR_RESIZE_NONE);
 
 		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) )
 			sprintf(mem_buffer, "Physical Free: *** / *** (>4G)");
 		else
 			sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
 
-		gr_string( 20, 160, mem_buffer);
+		gr_string( 20, 160, mem_buffer, GR_RESIZE_NONE);
 		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
-		gr_string( 20, 170, mem_buffer);
+		gr_string( 20, 170, mem_buffer, GR_RESIZE_NONE);
 		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
-		gr_string( 20, 180, mem_buffer);
+		gr_string( 20, 180, mem_buffer, GR_RESIZE_NONE);
 	}
 #endif
 
@@ -2184,47 +2185,47 @@ void game_show_framerate()
 	if ( Show_cpu == 1 ) {
 		
 		int sx,sy,dy;
-		sx = 530;
+		sx = gr_screen.max_w - 154;
 		sy = 15;
 		dy = gr_get_font_height() + 1;
 
 		gr_set_color_fast(&HUD_color_debug);
 
-		gr_printf( sx, sy, NOX("DMA: %s"), transfer_text );
+		gr_printf_no_resize( sx, sy, NOX("DMA: %s"), transfer_text );
 		sy += dy;
-		gr_printf( sx, sy, NOX("POLYP: %d"), modelstats_num_polys );
+		gr_printf_no_resize( sx, sy, NOX("POLYP: %d"), modelstats_num_polys );
 		sy += dy;
-		gr_printf( sx, sy, NOX("POLYD: %d"), modelstats_num_polys_drawn );
+		gr_printf_no_resize( sx, sy, NOX("POLYD: %d"), modelstats_num_polys_drawn );
 		sy += dy;
-		gr_printf( sx, sy, NOX("VERTS: %d"), modelstats_num_verts );
+		gr_printf_no_resize( sx, sy, NOX("VERTS: %d"), modelstats_num_verts );
 		sy += dy;
 
 		{
 
 			extern int Num_pairs;		// Number of object pairs that were checked.
-			gr_printf( sx, sy, NOX("PAIRS: %d"), Num_pairs );
+			gr_printf_no_resize( sx, sy, NOX("PAIRS: %d"), Num_pairs );
 			sy += dy;
 
 			extern int Num_pairs_checked;	// What percent of object pairs were checked.
-			gr_printf( sx, sy, NOX("FVI: %d"), Num_pairs_checked );
+			gr_printf_no_resize( sx, sy, NOX("FVI: %d"), Num_pairs_checked );
 			sy += dy;
 			Num_pairs_checked = 0;
 
 		}
 
-		gr_printf( sx, sy, NOX("Snds: %d"), snd_num_playing() );
+		gr_printf_no_resize( sx, sy, NOX("Snds: %d"), snd_num_playing() );
 		sy += dy;
 
 		if ( Timing_total > 0.01f )	{
-			gr_printf(  sx, sy, NOX("CLEAR: %.0f%%"), Timing_clear*100.0f/Timing_total );
+			gr_printf_no_resize(  sx, sy, NOX("CLEAR: %.0f%%"), Timing_clear*100.0f/Timing_total );
 			sy += dy;
-			gr_printf( sx, sy, NOX("REND2D: %.0f%%"), Timing_render2*100.0f/Timing_total );
+			gr_printf_no_resize( sx, sy, NOX("REND2D: %.0f%%"), Timing_render2*100.0f/Timing_total );
 			sy += dy;
-			gr_printf( sx, sy, NOX("REND3D: %.0f%%"), Timing_render3*100.0f/Timing_total );
+			gr_printf_no_resize( sx, sy, NOX("REND3D: %.0f%%"), Timing_render3*100.0f/Timing_total );
 			sy += dy;
-			gr_printf( sx, sy, NOX("FLIP: %.0f%%"), Timing_flip*100.0f/Timing_total );
+			gr_printf_no_resize( sx, sy, NOX("FLIP: %.0f%%"), Timing_flip*100.0f/Timing_total );
 			sy += dy;
-			gr_printf( sx, sy, NOX("GAME: %.0f%%"), (Timing_total-(Timing_render2+Timing_render3+Timing_flip+Timing_clear))*100.0f/Timing_total );
+			gr_printf_no_resize( sx, sy, NOX("GAME: %.0f%%"), (Timing_total-(Timing_render2+Timing_render3+Timing_flip+Timing_clear))*100.0f/Timing_total );
 			sy += dy;
 		}
 	}
@@ -2232,7 +2233,7 @@ void game_show_framerate()
 	if ( Show_mem  ) {
 
 		int sx,sy,dy;
-		sx = (gr_screen.res == GR_1024) ? 870 : 530;
+		sx = gr_screen.max_w - 154;
 		sy = 15;
 		dy = gr_get_font_height() + 1;
 
@@ -2240,26 +2241,26 @@ void game_show_framerate()
 
 		{
 			extern int TotalRam;
-			gr_printf( sx, sy, NOX("DYN: %d KB\n"), TotalRam/1024 );
+			gr_printf_no_resize( sx, sy, NOX("DYN: %d KB\n"), TotalRam/1024 );
 			sy += dy;
 		}	
 
 		{
 			extern int Model_ram;
-			gr_printf( sx, sy, NOX("POF: %d KB\n"), Model_ram/1024 );
+			gr_printf_no_resize( sx, sy, NOX("POF: %d KB\n"), Model_ram/1024 );
 			sy += dy;
 		}	
 
-		gr_printf( sx, sy, NOX("%s: %d KB\n"), (Cmdline_cache_bitmaps) ? NOX("C-BMP") : NOX("BMP"), bm_texture_ram/1024 );
+		gr_printf_no_resize( sx, sy, NOX("%s: %d KB\n"), (Cmdline_cache_bitmaps) ? NOX("C-BMP") : NOX("BMP"), bm_texture_ram/1024 );
 		sy += dy;
 
-		gr_printf( sx, sy, NOX("S-SRAM: %d KB\n"), Snd_sram/1024 );		// mem used to store game sound
+		gr_printf_no_resize( sx, sy, NOX("S-SRAM: %d KB\n"), Snd_sram/1024 );		// mem used to store game sound
 		sy += dy;
 
 		{
 			extern int GL_textures_in;
 			extern int GL_vertex_data_in;
-			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
+			gr_printf_no_resize( sx, sy, NOX("VRAM: %d KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
 			sy += dy;
 		}
 	}
@@ -2269,7 +2270,7 @@ void game_show_framerate()
 		int sx, sy;
 		sx = 320;
 		sy = 100;
-		gr_printf(sx, sy, NOX("Player Pos: (%d,%d,%d)"), fl2i(Player_obj->pos.xyz.x), fl2i(Player_obj->pos.xyz.y), fl2i(Player_obj->pos.xyz.z));
+		gr_printf_no_resize(sx, sy, NOX("Player Pos: (%d,%d,%d)"), fl2i(Player_obj->pos.xyz.x), fl2i(Player_obj->pos.xyz.y), fl2i(Player_obj->pos.xyz.z));
 	}
 
 #ifdef _WIN32
@@ -2300,11 +2301,11 @@ void game_show_framerate()
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( 20, 220 + (mi*10), mem_buffer);
+			gr_string( 20, 220 + (mi*10), mem_buffer, GR_RESIZE_NONE);
 		}
 
 		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( 20, 230 + (mi*10), mem_buffer);
+		gr_string( 20, 230 + (mi*10), mem_buffer, GR_RESIZE_NONE);
 	}
 #endif
 
@@ -2339,7 +2340,7 @@ void game_show_eye_pos(camid cid)
 	gr_set_color_fast(&HUD_color_debug);
 
 	//Position
-	gr_printf(20, 100 - font_height, "X:%f Y:%f Z:%f", cam_pos.xyz.x, cam_pos.xyz.y, cam_pos.xyz.z);
+	gr_printf_no_resize(20, 100 - font_height, "X:%f Y:%f Z:%f", cam_pos.xyz.x, cam_pos.xyz.y, cam_pos.xyz.z);
 	font_height -= font_height/2;
 
 	//Orientation
@@ -2347,7 +2348,7 @@ void game_show_eye_pos(camid cid)
 	rot_angles.p *= (180/PI);
 	rot_angles.b *= (180/PI);
 	rot_angles.h *= (180/PI);
-	gr_printf(20, 100 - font_height, "Xr:%f Yr:%f Zr:%f", rot_angles.p, rot_angles.b, rot_angles.h);
+	gr_printf_no_resize(20, 100 - font_height, "Xr:%f Yr:%f Zr:%f", rot_angles.p, rot_angles.b, rot_angles.h);
 }
 
 void game_show_standalone_framerate()
@@ -2397,7 +2398,7 @@ void game_show_time_left()
 		diff = 0;
 
 	hud_set_default_color();
-	gr_printf( 5, 40, XSTR( "Mission time remaining: %d seconds", 179), diff );
+	gr_printf_no_resize( 5, 40, XSTR( "Mission time remaining: %d seconds", 179), diff );
 }
 
 //========================================================================================
@@ -2522,12 +2523,12 @@ void game_set_view_clip(float frametime)
 			// Ensure that the bars are black
 			gr_set_color(0,0,0);
 			gr_set_bitmap(0); // Valathil - Don't ask me why this has to be here but otherwise the black bars don't draw
-			gr_rect(0, 0, gr_screen.max_w, yborder, false);
-			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+			gr_rect(0, 0, gr_screen.max_w, yborder, GR_RESIZE_NONE);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 		} else {
 			//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
 			// J.S. I've changed my ways!! See the new "no constants" code!!!
-			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE );	
 		}
 	}
 	else {
@@ -2548,7 +2549,7 @@ void game_set_view_clip(float frametime)
 			xborder = ( gr_screen.max_w*(100-fi) )/200;
 			yborder = ( gr_screen.max_h*(100-fi) )/200;
 
-			gr_set_clip(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2, false );
+			gr_set_clip(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2, GR_RESIZE_NONE );
 		}
 	}
 }
@@ -2704,7 +2705,7 @@ void game_tst_frame()
 
 		// draw the bitmap
 		gr_set_bitmap(tst_bitmap);
-		gr_bitmap((int)tst_x, (int)tst_y);
+		gr_bitmap((int)tst_x, (int)tst_y, GR_RESIZE_NONE);
 
 		if(tst_mode == 1){
 			if(timestamp_elapsed_safe(tst_stamp, 1100)){
@@ -4266,12 +4267,12 @@ void bars_do_frame(float frametime)
 			//Set rectangles
 			gr_set_color(0,0,0);
 			gr_set_bitmap(0); // Valathil - Don't ask me why this has to be here but otherwise the black bars don't draw
-			gr_rect(0, 0, gr_screen.max_w, yborder, false);
-			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+			gr_rect(0, 0, gr_screen.max_w, yborder, GR_RESIZE_NONE);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 		} else {
 			//Set clipping
 			gr_reset_clip();
-			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE );
 		}
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
@@ -4281,11 +4282,11 @@ void bars_do_frame(float frametime)
 		if (g3_in_frame() == 0) {
 			gr_set_color(0,0,0);
 			gr_set_bitmap(0); // Valathil - Don't ask me why this has to be here but otherwise the black bars don't draw
-			gr_rect(0, 0, gr_screen.max_w, yborder, false);
-			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+			gr_rect(0, 0, gr_screen.max_w, yborder, GR_RESIZE_NONE);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 		} else {
 			gr_reset_clip();
-			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), GR_RESIZE_NONE );
 		}
 	}
 }
@@ -5202,7 +5203,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_QUIT_GAME:
-			main_hall_stop_music();
+			main_hall_stop_music(true);
 			main_hall_stop_ambient();
 			gameseq_set_state(GS_STATE_QUIT_GAME);
 			break;
@@ -5769,6 +5770,7 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_CREDITS:
 			credits_close();
+			main_hall_start_music();
 			break;
 
 		case GS_STATE_VIEW_MEDALS:
@@ -5806,7 +5808,7 @@ void game_leave_state( int old_state, int new_state )
 				Game_mode |= GM_IN_MISSION;
 			}
 
-			main_hall_stop_music();
+			main_hall_stop_music(true);
 			main_hall_stop_ambient();		
 			break;		
    
@@ -5947,7 +5949,7 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_START_GAME:
-			main_hall_stop_music();
+			main_hall_stop_music(true);
 			main_hall_stop_ambient();
 			
 			if (Game_mode & GM_NORMAL) {
@@ -6116,7 +6118,7 @@ void game_enter_state( int old_state, int new_state )
 					//XSTR:ON
 					#endif
 
-					main_hall_stop_music();
+					main_hall_stop_music(true);
 					main_hall_stop_ambient();
 					event_music_first_pattern();	// start the first pattern
 			}
@@ -6293,7 +6295,7 @@ void mouse_force_pos(int x, int y);
 			break;
 
 		case GS_STATE_CREDITS:
-			main_hall_stop_music();
+			main_hall_stop_music(true);
 			main_hall_stop_ambient();
 			credits_init();
 			break;
@@ -7334,7 +7336,7 @@ void game_show_event_debug(float frametime)
 	gr_clear();
 	gr_set_color_fast(&Color_bright);
 	gr_set_font(FONT1);
-	gr_printf(0x8000, 5, NOX("EVENT DEBUG VIEW"));
+	gr_printf_no_resize(0x8000, 15, NOX("EVENT DEBUG VIEW"));
 
 	gr_set_color_fast(&Color_normal);
 	gr_set_font(FONT1);
@@ -7390,7 +7392,7 @@ void game_show_event_debug(float frametime)
 			}
 		}
 
-		gr_printf(10, y_index, buf);
+		gr_printf_no_resize(10, y_index, buf);
 		y_index += font_height;
 		k++;
 	}
@@ -8360,14 +8362,14 @@ void game_title_screen_display()
 			bm_get_info(Game_title_bitmap, &width, &height);
 
 			// draw it in the center of the screen
-			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2);
+			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
 		}
 
 		if (Game_title_logo != -1)
 		{
 			gr_set_bitmap(Game_title_logo);
 
-			gr_bitmap(0, 0);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
 
 		}
 	}
@@ -8446,7 +8448,7 @@ void game_pause()
 			case GS_STATE_TECH_MENU:
 			case GS_STATE_BARRACKS_MENU:
 				main_hall_stop_ambient();
-				main_hall_stop_music(); // not an instant shutoff
+				main_hall_stop_music(true); // not an instant shutoff
 				break;
 
 			// things that would get music except if they are called while in-mission
@@ -8454,7 +8456,7 @@ void game_pause()
 			case GS_STATE_HUD_CONFIG:
 				if ( !(Game_mode & GM_IN_MISSION) ) {
 					main_hall_stop_ambient();
-					main_hall_stop_music(); // not an instant shutoff
+					main_hall_stop_music(true); // not an instant shutoff
 				}
 				break;
 

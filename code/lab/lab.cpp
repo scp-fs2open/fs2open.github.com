@@ -1152,7 +1152,7 @@ void labviewer_do_render(float frametime)
 	if ( (Lab_model_num < 0) && (Lab_bitmap_id < 0) ) {
 		gr_get_string_size(&w, &h, "Viewer off");
 		gr_set_color_fast(&Color_white);
-		gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, "Viewer off", false);
+		gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, "Viewer off", GR_RESIZE_NONE);
 
 		return;
 	}
@@ -1170,7 +1170,7 @@ void labviewer_do_render(float frametime)
 		if ( strlen(Lab_model_filename) ) {
 			gr_get_string_size(&w, &h, Lab_model_filename);
 			gr_set_color_fast(&Color_white);
-			gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, Lab_model_filename, false);
+			gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, Lab_model_filename, GR_RESIZE_NONE);
 		}
 	} else if (Lab_bitmap_id >= 0) {
 		gr_scene_texture_begin();
@@ -1183,7 +1183,7 @@ void labviewer_do_render(float frametime)
 		if ( strlen(Lab_bitmap_filename) ) {
 			gr_get_string_size(&w, &h, Lab_bitmap_filename);
 			gr_set_color_fast(&Color_white);
-			gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, Lab_bitmap_filename, false);
+			gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, Lab_bitmap_filename, GR_RESIZE_NONE);
 		}
 	}
 
@@ -1199,7 +1199,7 @@ void labviewer_do_render(float frametime)
 	if (frametotal != 0.0f) {
 		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - gr_get_font_height(), "FPS: %i", fl2i(Framerate + 0.5f));
 	} else {
-		gr_string(gr_screen.clip_left + 10, gr_screen.clip_bottom - gr_get_font_height(), "FPS: ?", false);
+		gr_string(gr_screen.clip_left + 10, gr_screen.clip_bottom - gr_get_font_height(), "FPS: ?", GR_RESIZE_NONE);
 	}
 
 	//Print FXAA preset
@@ -2334,7 +2334,7 @@ void lab_do_frame(float frametime)
 	if (Lab_in_mission) {
 		gr_restore_screen(Lab_screen_save_bitmap);
 		gr_set_shader(&Lab_shader);
-		gr_shade(0, 0, gr_screen.max_w, gr_screen.max_h, false);
+		gr_shade(0, 0, gr_screen.max_w, gr_screen.max_h, GR_RESIZE_NONE);
 	} else {
 		labviewer_do_render(frametime);
 	}

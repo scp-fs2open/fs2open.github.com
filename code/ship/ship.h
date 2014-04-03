@@ -1325,7 +1325,9 @@ public:
 	int 	selection_effect;
 
 	int bii_index_ship;						// if this ship has a briefing icon that overrides the normal icon set
+	int bii_index_ship_with_cargo;
 	int bii_index_wing;
+	int bii_index_wing_with_cargo;
 
 	int	score;								// default score for this ship
 

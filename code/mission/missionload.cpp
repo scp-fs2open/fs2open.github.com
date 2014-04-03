@@ -338,11 +338,11 @@ void mission_load_menu_do()
 
 	gr_clear();
 	gr_set_color_fast( &Color_bright );
-	gr_printf( 0x8000, 10, NOX("Select Mission") );
+	gr_printf_menu( 0x8000, 10, NOX("Select Mission") );
 
-	gr_printf( 50, 135, NOX("Campaign Filter"));
-	gr_printf( 250, 135, NOX("Recently Played"));
-	gr_printf( 450, 135, NOX("Mission List"));
+	gr_printf_menu( 50, 135, NOX("Campaign Filter"));
+	gr_printf_menu( 250, 135, NOX("Recently Played"));
+	gr_printf_menu( 450, 135, NOX("Mission List"));
 	mlm_window.draw();
 
 	gr_flip();

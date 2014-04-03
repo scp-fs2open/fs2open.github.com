@@ -228,7 +228,7 @@ void gr_opengl_flip()
 #endif
 }
 
-void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
+void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 {
 	// check for sanity of parameters
 	if (x < 0) {
@@ -239,7 +239,7 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 		y = 0;
 	}
 
-	int to_resize = (resize && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)));
+	int to_resize = (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)));
 
 	int max_w = ((to_resize) ? gr_screen.max_w_unscaled : gr_screen.max_w);
 	int max_h = ((to_resize) ? gr_screen.max_h_unscaled : gr_screen.max_h);
@@ -278,8 +278,7 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 	gr_screen.clip_height_unscaled = h;
 
 	if (to_resize) {
-		gr_resize_screen_pos(&x, &y);
-		gr_resize_screen_pos(&w, &h);
+		gr_resize_screen_pos(&x, &y, &w, &h, resize_mode);
 	} else {
 		gr_unsize_screen_pos( &gr_screen.offset_x_unscaled, &gr_screen.offset_y_unscaled );
 		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
@@ -878,7 +877,7 @@ void gr_opengl_restore_screen(int bmp_id)
 		return;
 
 	gr_set_bitmap(GL_saved_screen_id);
-	gr_bitmap(0, 0, false);	// don't scale here since we already have real screen size
+	gr_bitmap(0, 0, GR_RESIZE_NONE);	// don't scale here since we already have real screen size
 }
 
 void gr_opengl_free_screen(int bmp_id)

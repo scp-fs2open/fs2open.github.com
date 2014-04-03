@@ -1134,9 +1134,9 @@ void barracks_display_pilot_callsigns(int prospective_pilot)
 			}
 		}
 
-		gr_printf(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, Pilots[cur_pilot_idx]);
+		gr_printf_menu(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, Pilots[cur_pilot_idx]);
 		gr_set_bitmap(Rank_pips_bitmaps + Pilot_ranks[cur_pilot_idx]);
-		gr_bitmap(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD] - 34, Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y);
+		gr_bitmap(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD] - 34, Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, GR_RESIZE_MENU);
  
 		y += font_height;
 		cur_pilot_idx++;
@@ -1164,18 +1164,18 @@ void barracks_display_pilot_stats()
 
 			gr_get_string_size(&w, &h, str);
 			i = Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y + h / 2 - 1;			
-			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w - 2, i);
-			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] + 1, i, Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i);
+			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w - 2, i, GR_RESIZE_MENU);
+			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] + 1, i, Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i, GR_RESIZE_MENU);
 
 		} else {
 			gr_set_color_fast(&Color_text_normal);
 		}
 
 		gr_get_string_size(&w, NULL, str);
-		gr_printf(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
+		gr_printf_menu(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
 		str = Stats[z];
 		if (*str) {
-			gr_printf(Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
+			gr_printf_menu(Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
 		}
 
 		y += font_height;
@@ -1266,13 +1266,13 @@ void barracks_draw_pilot_pic()
 			extern int Palman_allow_any_color;
 			Palman_allow_any_color = 1;
 			gr_set_bitmap(Pilot_images[Pic_number]);
-			gr_bitmap(Barracks_image_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_coords[gr_screen.res][BARRACKS_Y_COORD]);
+			gr_bitmap(Barracks_image_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_coords[gr_screen.res][BARRACKS_Y_COORD], GR_RESIZE_MENU);
 			Palman_allow_any_color = 0;
 
 			// print number of the current pic
 			char buf[40];			
 			sprintf(buf, XSTR( "%d of %d", 71), Pic_number + 1, Num_pilot_images);
-			gr_printf(Barracks_image_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_number_coords[gr_screen.res][BARRACKS_Y_COORD], buf);				
+			gr_printf_menu(Barracks_image_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_number_coords[gr_screen.res][BARRACKS_Y_COORD], buf);				
 		}
 	} else {
 		Pic_number = -1;
@@ -1291,13 +1291,13 @@ void barracks_draw_squad_pic()
 			extern int Palman_allow_any_color;
 			Palman_allow_any_color = 1;
 			gr_set_bitmap(Pilot_squad_images[Pic_squad_number]);
-			gr_bitmap(Barracks_squad_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_coords[gr_screen.res][BARRACKS_Y_COORD]);
+			gr_bitmap(Barracks_squad_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_coords[gr_screen.res][BARRACKS_Y_COORD], GR_RESIZE_MENU);
 			Palman_allow_any_color = 0;
 
 			// print number of current squad pic
 			if(Player_sel_mode != PLAYER_SELECT_MODE_SINGLE){
 				sprintf(buf,XSTR( "%d of %d", 71), Pic_squad_number+1, Num_pilot_squad_images);
-				gr_printf(Barracks_squad_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_number_coords[gr_screen.res][BARRACKS_Y_COORD], buf);
+				gr_printf_menu(Barracks_squad_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_number_coords[gr_screen.res][BARRACKS_Y_COORD], buf);
 			}
 		}
 	} else {
@@ -1577,7 +1577,7 @@ void barracks_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);	
+		gr_bitmap(0, 0, GR_RESIZE_MENU);	
 	}		
 
 	// draw pilot image and clean up afterwards

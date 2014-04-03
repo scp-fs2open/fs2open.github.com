@@ -401,7 +401,7 @@ void fiction_viewer_do_frame(float frametime)
 	if (Fiction_viewer_bitmap >= 0)
 	{
 		gr_set_bitmap(Fiction_viewer_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 	
 	// draw the window
@@ -421,9 +421,9 @@ void fiction_viewer_do_frame(float frametime)
 
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
-		gr_rect(more_txt_x-2, more_txt_y, w+3, h);
+		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_red);
-		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469));  // base location on the input x and y?
+		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 
 		use_fv_font();
 	}

@@ -127,22 +127,22 @@ void UI_SCROLLBAR::draw()
 		if (disabled_flag) {
 			if ( bmap_ids[SB_DISABLED] != -1 ) {
 				gr_set_bitmap(bmap_ids[SB_DISABLED]);
-				gr_bitmap(x,y);
+				gr_bitmap(x,y,GR_RESIZE_MENU);
 			}
 
 		} else {
 			if ( bmap_ids[SB_NORMAL] != -1 ) {
 				gr_set_bitmap(bmap_ids[SB_NORMAL]);
-				gr_bitmap(x,y);
+				gr_bitmap(x,y,GR_RESIZE_MENU);
 			}
 		}
 
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 		ui_draw_box_out( 0, bar_position, w - 1, bar_position + bar_size - 1 );
 
 	} else {
 		gr_set_font(my_wnd->f_id);
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 		if (my_wnd->selected_gadget == this)
 			gr_set_color_fast(&CBRIGHT_GREEN);

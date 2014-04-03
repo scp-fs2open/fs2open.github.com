@@ -225,10 +225,10 @@ enum CreditsPosition
 
 static CreditsPosition SCP_credits_position	= START;
 
-void credits_stop_music()
+void credits_stop_music(bool fade)
 {
 	if ( Credits_music_handle != -1 ) {
-		audiostream_close_file(Credits_music_handle, 1);
+		audiostream_close_file(Credits_music_handle, fade);
 		Credits_music_handle = -1;
 	}
 }
@@ -662,7 +662,7 @@ void credits_close()
 	}
 	Credits_bmps.clear();
 
-	credits_stop_music();
+	credits_stop_music(true);
 
 	Credit_text_parts.clear();
 
@@ -722,7 +722,7 @@ void credits_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
 	percent = (int) (100.0f - (Credits_artwork_display_time - Credits_counter) * 100.0f / Credits_artwork_fade_time);
@@ -773,7 +773,7 @@ void credits_do_frame(float frametime)
 		bx2 = Credits_image_coords[gr_screen.res][CREDITS_X_COORD] + ((Credits_image_coords[gr_screen.res][CREDITS_W_COORD] - bw2)/2);
 		by2 = Credits_image_coords[gr_screen.res][CREDITS_Y_COORD] + ((Credits_image_coords[gr_screen.res][CREDITS_H_COORD] - bh2)/2);
 
-		gr_cross_fade(bm1, bm2, bx1, by1, bx2, by2, (float)percent / 100.0f);
+		gr_cross_fade(bm1, bm2, bx1, by1, bx2, by2, (float)percent / 100.0f, GR_RESIZE_MENU);
 	}
 
 	Ui_window.draw();
@@ -788,7 +788,7 @@ void credits_do_frame(float frametime)
 		Buttons[CREDITS_BUTTON][gr_screen.res].button.draw_forced(2);
 	}
 
-	gr_set_clip(Credits_text_coords[gr_screen.res][CREDITS_X_COORD], Credits_text_coords[gr_screen.res][CREDITS_Y_COORD], Credits_text_coords[gr_screen.res][CREDITS_W_COORD], Credits_text_coords[gr_screen.res][CREDITS_H_COORD]);
+	gr_set_clip(Credits_text_coords[gr_screen.res][CREDITS_X_COORD], Credits_text_coords[gr_screen.res][CREDITS_Y_COORD], Credits_text_coords[gr_screen.res][CREDITS_W_COORD], Credits_text_coords[gr_screen.res][CREDITS_H_COORD], GR_RESIZE_MENU);
 	gr_set_font(FONT1);
 	gr_set_color_fast(&Color_normal);
 	
@@ -808,7 +808,7 @@ void credits_do_frame(float frametime)
 		// Check if the text part is actually visible
 		if (sy + height > 0)
 		{
-			gr_string(0x8000, sy, iter->c_str());
+			gr_string(0x8000, sy, iter->c_str(), GR_RESIZE_MENU);
 		}
 
 		sy = sy + height;

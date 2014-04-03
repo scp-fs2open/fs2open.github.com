@@ -566,6 +566,8 @@ sexp_oper Operators[] = {
 	//HUD Sub-Category
 	{ "hud-disable",					OP_HUD_DISABLE,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-disable-except-messages",	OP_HUD_DISABLE_EXCEPT_MESSAGES,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "hud-set-custom-gauge-active",	OP_HUD_SET_CUSTOM_GAUGE_ACTIVE,			2, 	INT_MAX, 	SEXP_ACTION_OPERATOR,	},
+	{ "hud-set-retail-gauge-active",	OP_HUD_SET_RETAIL_GAUGE_ACTIVE,			2, 	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "hud-set-text",					OP_HUD_SET_TEXT,						2,	2,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-text-num",				OP_HUD_SET_TEXT_NUM,					2,	2,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-message",				OP_HUD_SET_MESSAGE,						2,	2,			SEXP_ACTION_OPERATOR,	},	//The E
@@ -574,8 +576,8 @@ sexp_oper Operators[] = {
 	{ "hud-set-coords",					OP_HUD_SET_COORDS,						3,	3,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-color",					OP_HUD_SET_COLOR,						4,	4,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-display-gauge",				OP_HUD_DISPLAY_GAUGE,					2,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,				2,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,				2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,				2,	2,			SEXP_ACTION_OPERATOR,	},	//Deprecated
+	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,				2,	2,			SEXP_ACTION_OPERATOR,	},	//Deprecated
 	{ "hud-clear-messages",				OP_HUD_CLEAR_MESSAGES,					0,	0,			SEXP_ACTION_OPERATOR,	},	// swifty
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 
@@ -9824,6 +9826,23 @@ void sexp_hud_gauge_set_active(int n) {
 	}
 }
 
+void sexp_hud_set_custom_gauge_active(int node) {
+	HudGauge* hg;
+	bool activate = (is_sexp_true(node) > 0);
+	node = CDR(node);
+	for(; node >= 0; node = CDR(node)) {
+
+		char* name = CTEXT(node);
+		hg = hud_get_gauge(name);
+
+		if (hg != NULL) {
+			hg->updateActive(activate);
+		}
+
+	}
+
+}
+
 int hud_gauge_type_lookup(char* name) {
 	for(int i = 0; i < Num_hud_gauge_types; i++) {
 		if(!stricmp(name, Hud_gauge_types[i].name))
@@ -9853,6 +9872,37 @@ void sexp_hud_activate_gauge_type(int n) {
 			}
 		}
 	}
+}
+
+void sexp_hud_set_retail_gauge_active(int node) {
+
+	bool activate = (is_sexp_true(node) > 0);
+	node = CDR(node);
+
+	for(; node >= 0; node = CDR(node)) {
+
+		int config_type = hud_gauge_type_lookup(CTEXT(node));
+
+		if (config_type != -1) {
+			if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+			size_t num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
+
+			for(size_t i = 0; i < num_gauges; i++) {
+				if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getObjectType() == config_type)
+					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateSexpOverride(!activate);
+				}
+			} else {
+			size_t num_gauges = default_hud_gauges.size();
+
+			for(size_t i = 0; i < num_gauges; i++) {
+				if (default_hud_gauges[i]->getObjectType() == config_type)
+					default_hud_gauges[i]->updateSexpOverride(!activate);
+				}
+			}
+		}
+
+	}
+
 }
 
 void multi_sexp_hud_display_gauge()
@@ -21408,7 +21458,7 @@ bool test_point_within_box(vec3d *test_point, vec3d *box_corner_1, vec3d *box_co
 	if (reference_ship_obj != NULL) 
 	{
 		vm_vec_sub(&tempv, test_point, &reference_ship_obj->pos);
-		vm_vec_unrotate(&test_point_buf, &tempv, &reference_ship_obj->orient);
+		vm_vec_rotate(&test_point_buf, &tempv, &reference_ship_obj->orient);
 
 		test_point = &test_point_buf;
 	}
@@ -24086,6 +24136,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_hud_gauge_set_active(node);
 				break;
 
+			case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
+				sexp_val = SEXP_TRUE;
+				sexp_hud_set_custom_gauge_active(node);
+				break;
+
 			case OP_HUD_CLEAR_MESSAGES:
 				sexp_val = SEXP_TRUE;
 				sexp_hud_clear_messages();
@@ -24094,6 +24149,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_HUD_ACTIVATE_GAUGE_TYPE:
 				sexp_val = SEXP_TRUE;
 				sexp_hud_activate_gauge_type(node);
+				break;
+
+			case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
+				sexp_val = SEXP_TRUE;
+				sexp_hud_set_retail_gauge_active(node);
 				break;
 
 			case OP_ADD_TO_COLGROUP:
@@ -25122,6 +25182,8 @@ int query_operator_return_type(int op)
 		case OP_SET_THRUSTERS:
 		case OP_SET_PLAYER_THROTTLE_SPEED:
 		case OP_DEBUG:
+		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
+		case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
 		case OP_ALTER_SHIP_FLAG:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_NEBULA_CHANGE_PATTERN:
@@ -27164,6 +27226,18 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_STRING;
+
+		case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_HUD_GAUGE;
+
 		case OP_GET_COLGROUP_ID:
 			return OPF_SHIP;
 
@@ -28762,6 +28836,8 @@ int get_subcategory(int sexp_id)
 
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
+		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
+		case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
@@ -32504,7 +32580,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tText that will be displayed. This text will be treated as directive text, meaning that references to mapped keys will be replaced with the user's preferences.\r\n"
 	},
 
-	{OP_HUD_GAUGE_SET_ACTIVE, "hud-gauge-set-active\r\n"
+	{OP_HUD_GAUGE_SET_ACTIVE, "hud-gauge-set-active (deprecated)\r\n"
 		"\tActivates or deactivates a given custom gauge."
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
@@ -32516,11 +32592,25 @@ sexp_help_struct Sexp_help[] = {
 		"Takes no arguments\r\n"
 	},
 
-	{OP_HUD_ACTIVATE_GAUGE_TYPE, "hud-activate-gauge-type\r\n"
+	{OP_HUD_ACTIVATE_GAUGE_TYPE, "hud-activate-gauge-type (deprecated)\r\n"
 		"\tActivates or deactivates all hud gauges of a given type."
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tGauge Type\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
+	},
+
+	{OP_HUD_SET_CUSTOM_GAUGE_ACTIVE, "hud-set-custom-gauge-active\r\n"
+		"\tActivates or deactivates a custom hud gauge defined in hud_gauges.tbl."
+		"Takes 2 Arguments...\r\n"
+		"\t1:\tBoolean, whether or not to display this gauge\r\n"
+		"\tRest:\tHUD Gauge name\r\n"
+	},
+
+	{OP_HUD_SET_RETAIL_GAUGE_ACTIVE, "hud-set-custom-gauge-active\r\n"
+		"\tActivates or deactivates a retail hud gauge grouping."
+		"Takes 2 Arguments...\r\n"
+		"\t1:\tBoolean, whether or not to display this gauge\r\n"
+		"\tRest:\tHUD Gauge Group name\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"

@@ -641,7 +641,7 @@ void popup_draw_title(int sy, char *line, int flags)
 	sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
 
 	popup_set_title_color(flags);
-	gr_string(sx,sy,line);
+	gr_string(sx,sy,line,GR_RESIZE_MENU);
 }
 
 // calculate the starting display index
@@ -725,14 +725,14 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 
 		gr_get_string_size(&w, &h, pi->msg_lines[i]);
 		sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
-		gr_string(sx, sy + line_count * h, pi->msg_lines[i]);
+		gr_string(sx, sy + line_count * h, pi->msg_lines[i], GR_RESIZE_MENU);
 	}
 
 	// maybe draw "more"
 	h = 10;
 	if(i < pi->nlines){
 		gr_set_color_fast(&Color_bright_red);
-		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459));
+		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459), GR_RESIZE_MENU);
 	}
 
 	gr_set_font(FONT1);	// reset back to regular font size
@@ -756,7 +756,7 @@ void popup_draw_button_text(popup_info *pi, int flags)
 			sy = Button_regions[gr_screen.res][i][1]+4;
 		}
 
-		gr_string(sx, sy, pi->button_text[i]);
+		gr_string(sx, sy, pi->button_text[i], GR_RESIZE_MENU);
 
 		// figure out where to draw underline char
 		if ( pi->shortcut_index[i] > 0 ) {
@@ -769,7 +769,7 @@ void popup_draw_button_text(popup_info *pi, int flags)
 		}
 		
 		if ( pi->shortcut_index[i] >= 0 ) {
-			gr_printf(sx, sy, NOX("%c"), 95);
+			gr_printf_menu(sx, sy, NOX("%c"), 95);
 		}
 	}
 }

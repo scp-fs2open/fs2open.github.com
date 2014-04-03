@@ -137,7 +137,7 @@ UI_XSTR Om_pro_text[GR_NUM_RESOLUTIONS][OM_PRO_NUM_TEXT] = {
 		{ "IP Address",	1380,	30,	128,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "add",				1381,	22,	235,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_ADD_IP].button },
 		{ "rem.",			1382,	68,	235,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_DELETE_IP].button },
-		{ "Broadcast Locally",	1397,	42,	260,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_LOCAL_BROADCAST].button },	
+		{ "Broadcast Locally",	1387,	42,	260,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_LOCAL_BROADCAST].button },	
 		{ "PXO",				1383,	42,	291,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_VMT].button },
 		{ "Login",			1384,	14,	309,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Password",		1385,	14,	336,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
@@ -151,7 +151,7 @@ UI_XSTR Om_pro_text[GR_NUM_RESOLUTIONS][OM_PRO_NUM_TEXT] = {
 		{ "IP Address",	1380,	47,	206,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "add",				1381,	36,	375,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_ADD_IP].button },
 		{ "rem.",			1382,	109,	375,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_DELETE_IP].button },
-		{ "Broadcast Locally",	1397,	68,	417,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_LOCAL_BROADCAST].button },	
+		{ "Broadcast Locally",	1387,	68,	417,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_LOCAL_BROADCAST].button },	
 		{ "PXO",				1383,	68,	467,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_VMT].button },
 		{ "Login",			1384,	23,	495,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Password",		1385,	23,	538,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
@@ -663,7 +663,7 @@ void options_multi_notify_process()
 		strncpy(line, p_str[idx], n_chars[idx]);
 				
 		gr_get_string_size(&w,NULL,line);
-		gr_string((600 - w)/2,y_start,line);
+		gr_string((600 - w)/2,y_start,line,GR_RESIZE_MENU);
 
 		y_start += 10;
 	}	
@@ -1219,7 +1219,7 @@ void options_multi_protocol_display_ips()
 			gr_set_color_fast(&Color_white);
 		}
 
-		gr_printf(Ip_list_coords[gr_screen.res][0], y_start, Om_ip_addrs[idx]);
+		gr_printf_menu(Ip_list_coords[gr_screen.res][0], y_start, Om_ip_addrs[idx]);
 		y_start += 10;
 	}
 }
@@ -1978,7 +1978,7 @@ void options_multi_vox_process_waveform()
 
 	// grey the screen
 	gr_set_shader(&Grey_shader);
-	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, false);
+	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, GR_RESIZE_NONE);
 
 	switch(Om_vox_test_status){
 	case OM_VOX_TEST_RECORDING:
@@ -2009,13 +2009,13 @@ void options_multi_vox_process_waveform()
 			}
 
 			running_avg /= avg_len;
-			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
+			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg, GR_RESIZE_MENU);
 		}		
 
 		// if this packet would have been dropped, notify the user
 		if(multi_voice_test_packet_tossed()){
 			gr_set_color_fast(&Color_bright);
-			gr_string(OM_VOX_DROP_ICON_X,OM_VOX_DROP_ICON_Y, XSTR( "Packet Overflow", 393));
+			gr_string(OM_VOX_DROP_ICON_X,OM_VOX_DROP_ICON_Y, XSTR( "Packet Overflow", 393), GR_RESIZE_MENU);
 		}		
 		break;
 
@@ -2041,7 +2041,7 @@ void options_multi_vox_process_waveform()
 			}
 
 			running_avg /= avg_len;			
-			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
+			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg, GR_RESIZE_MENU);
 		}				
 		break;
 	}
@@ -2085,7 +2085,7 @@ void options_multi_vox_process_player_list()
 			gr_force_fit_string(str, CALLSIGN_LEN+1, Om_vox_plist_coords[gr_screen.res][2]);
 
 			// blit the callsign
-			gr_string(Om_vox_plist_coords[gr_screen.res][0], y_start, str);
+			gr_string(Om_vox_plist_coords[gr_screen.res][0], y_start, str, GR_RESIZE_MENU);
 
 			// increment the y index
 			y_start += 10;
