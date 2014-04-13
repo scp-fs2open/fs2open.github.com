@@ -164,7 +164,7 @@ void gr_reset_screen_scale()
  */
 bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 {
-	if ( resize_mode == GR_RESIZE_NONE || !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
+	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
@@ -204,7 +204,7 @@ bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
  */
 bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 {
-	if ( resize_mode == GR_RESIZE_NONE || !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
+	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
@@ -246,7 +246,7 @@ bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
  */
 bool gr_resize_screen_posf(float *x, float *y, float *w, float *h, int resize_mode)
 {
-	if ( resize_mode == GR_RESIZE_NONE || !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
+	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
@@ -286,7 +286,7 @@ bool gr_resize_screen_posf(float *x, float *y, float *w, float *h, int resize_mo
  */
 bool gr_unsize_screen_posf(float *x, float *y, float *w, float *h, int resize_mode)
 {
-	if ( resize_mode == GR_RESIZE_NONE || !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
+	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
