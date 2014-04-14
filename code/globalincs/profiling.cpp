@@ -125,7 +125,7 @@ void profile_end(char* name)
 				samples[i].open_profiles--;
 
 				// count all parents and find the immediate parent
-				while(samples[inner].valid && inner < (int)samples.size()) {
+				while(inner < (int)samples.size() && samples[inner].valid) {
 					if(samples[inner].open_profiles > 0) {
 						// found a parent (any open profiles are parents)
 						num_parents++;
