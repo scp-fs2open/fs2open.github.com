@@ -449,6 +449,15 @@ if test "$fs2_os_linux" = "yes" || test "$fs2_os_osx" = "yes" || test "$fs2_os_b
 	fi
 fi
 
+if test "$fs2_os_bsd" != "yes" ; then
+	dnl Dynamic Linking
+	AC_SEARCH_LIBS([dlsym], [dl])
+	FS2_LIBS=$FS2_LIBS" -ldl"
+fi
+
+dnl Posix Threads
+AC_SEARCH_LIBS([pthread_mutex_timedlock], [pthread])
+FS2_LIBS=$FS2_LIBS" -lpthread"
 
 dnl any extra optimization or warning flags
 if test "$fs2_os_win32" = "yes" ; then
@@ -464,7 +473,6 @@ dnl extra OSX frameworks
 if test "$fs2_os_osx" = "yes" ; then
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework AppKit -framework Foundation"
 fi
-
 
 
 dnl substitute our default flags
