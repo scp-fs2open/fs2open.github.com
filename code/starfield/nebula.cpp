@@ -15,7 +15,7 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "cfile/cfile.h"
-
+#include "debugconsole/console.h"
 
 
 #define MAX_TRIS 200
@@ -215,17 +215,19 @@ void nebula_render()
 
 DCF(nebula,"Loads a different nebula")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
-		if ( Dc_arg_type == ARG_NONE )	{
-			nebula_close();
-		} else {
-			nebula_init( Dc_arg );
-		}
+	char filename[MAX_NAME_LEN];
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: nebula [filename]\n");
+		dc_printf("Loads the nebula file. No filename takes away nebula\n" );
+		return;
 	}
-	if ( Dc_help )	{
-		dc_printf( "Usage: nebula filename\nLoads the nebula file. No filename takes away nebula\n" );
-	}	
+
+	if (dc_maybe_stuff_string_white(filename, MAX_NAME_LEN)) {
+			nebula_init(filename);
+	} else {
+		nebula_close();
+	}
 }
 
 

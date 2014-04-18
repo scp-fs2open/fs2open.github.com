@@ -21,6 +21,7 @@
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
 
 // --------------------------------------------------------------------------------------------------------------------------
 // SUPERNOVA DEFINES/VARS
@@ -116,11 +117,8 @@ void supernova_stop()
 
 
 int sn_particles = 100;
-DCF(sn_part, "")
-{
-	dc_get_arg(ARG_INT);
-	sn_particles = Dc_arg_int;
-}
+DCF_INT2(sn_part, sn_particles, 0, INT_MAX, "Sets number of supernova particles (default is 100)");
+
 void supernova_do_particles()
 {
 	int idx;
@@ -181,11 +179,7 @@ void supernova_do_particles()
 
 // call once per frame
 float sn_shudder = 0.45f;
-DCF(sn_shud, "")
-{
-	dc_get_arg(ARG_FLOAT);
-	sn_shudder = Dc_arg_float;
-}
+DCF_FLOAT2(sn_shud, sn_shudder, 0.0, FLT_MAX, "Sets camera shudder rate for being in supernova shockwave (default is 0.45)");
 
 void supernova_process()
 {
@@ -318,17 +312,10 @@ int supernova_camera_cut()
 // get view params from supernova
 float sn_distance = 300.0f;				// shockwave moving at 1000/ms ?
 float sn_cam_distance = 25.0f;
-DCF(sn_dist, "")
-{
-	dc_get_arg(ARG_FLOAT);
-	sn_distance = Dc_arg_float;
-}
+DCF_FLOAT2(sn_dist, sn_distance, 0.0, FLT_MAX, "Sets supernova shockwave distance (default is 300.0f)");
 
-DCF(sn_cam_dist, "")
-{
-	dc_get_arg(ARG_FLOAT);
-	sn_cam_distance = Dc_arg_float;
-}
+
+DCF_FLOAT2(sn_cam_dist, sn_cam_distance, 0.0, FLT_MAX, "Sets supernova camera distance (default is 25.0f)");
 
 void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 {

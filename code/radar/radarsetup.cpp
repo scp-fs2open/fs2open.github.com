@@ -31,6 +31,7 @@
 #include "radar/radarsetup.h"
 #include "iff_defs/iff_defs.h"
 #include "globalincs/linklist.h"
+#include "debugconsole/console.h"
 
 int Radar_static_looping = -1;
 
@@ -84,7 +85,7 @@ extern int radar_iff_color[5][2][4];
 
 int See_all = 0;
 
-DCF_BOOL(see_all, See_all)
+DCF_BOOL(see_all, See_all);
 
 static const char radar_default_filenames[2][16]=
 {
