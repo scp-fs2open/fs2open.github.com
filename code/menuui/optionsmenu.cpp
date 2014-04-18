@@ -491,7 +491,7 @@ void options_notify_do_frame()
 
 		} else {
 			gr_get_string_size(&w, &h, Options_notify_string);
-			gr_printf((gr_screen.max_w - w) / 2, OPTIONS_NOTIFY_Y, Options_notify_string);
+			gr_printf_menu((gr_screen.max_w_unscaled - w) / 2, OPTIONS_NOTIFY_Y, Options_notify_string);
 		}
 	}
 }
@@ -1124,7 +1124,7 @@ void draw_gamma_box()
 		// if we're in bitmap poly mode		
 		int Gamma_bitmap = bm_create( 16, Options_gamma_coords[gr_screen.res][OPTIONS_W_COORD], Options_gamma_coords[gr_screen.res][OPTIONS_H_COORD], Gamma_data, 0 );
 		gr_set_bitmap(Gamma_bitmap);
-		gr_bitmap( Options_gamma_coords[gr_screen.res][OPTIONS_X_COORD], Options_gamma_coords[gr_screen.res][OPTIONS_Y_COORD] );
+		gr_bitmap( Options_gamma_coords[gr_screen.res][OPTIONS_X_COORD], Options_gamma_coords[gr_screen.res][OPTIONS_Y_COORD], GR_RESIZE_MENU );
 
 		bm_release( Gamma_bitmap );
 
@@ -1212,7 +1212,7 @@ void options_menu_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(i);
 	if (i >= 0) {
 		gr_set_bitmap(i);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
 	Ui_window.draw();
@@ -1271,7 +1271,7 @@ void options_menu_do_frame(float frametime)
 		x = Options_skills_text_coords[gr_screen.res][OPTIONS_X_COORD];
 		y = Options_skills_text_coords[gr_screen.res][OPTIONS_Y_COORD];
 		gr_set_color_fast(&Color_bright_white);
-		gr_string(x + (Options_skills_text_coords[gr_screen.res][OPTIONS_W_COORD] / 2) - (w/2), y, Skill_level_names(Game_skill_level));
+		gr_string(x + (Options_skills_text_coords[gr_screen.res][OPTIONS_W_COORD] / 2) - (w/2), y, Skill_level_names(Game_skill_level), GR_RESIZE_MENU);
 
 		//==============================================================================
 		// Draw the gamma adjustment grid.
@@ -1282,7 +1282,7 @@ void options_menu_do_frame(float frametime)
 		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD];
 		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD];
 
-		gr_printf(x, y, NOX("%.2f"), FreeSpace_gamma);
+		gr_printf_menu(x, y, NOX("%.2f"), FreeSpace_gamma);
 	}
 	//==============================================================================
 

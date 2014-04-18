@@ -6816,12 +6816,12 @@ int ship_start_render_cockpit_display(int cockpit_display_num)
 	
 	if ( display->source >= 0 ) {
 		gr_set_bitmap(display->source);
-		gr_bitmap(0, 0, false);
+		gr_bitmap(0, 0, GR_RESIZE_NONE);
 	}
 
 	if ( display->background >= 0 ) {
 		gr_set_bitmap(display->background);
-		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, false);
+		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, GR_RESIZE_NONE);
 	}
 
 	gr_set_cull(cull);
@@ -6851,7 +6851,7 @@ void ship_end_render_cockpit_display(int cockpit_display_num)
 	if ( display->foreground >= 0 ) {
 		gr_reset_clip();
 		gr_set_bitmap(display->foreground);
-		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, false);
+		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, GR_RESIZE_NONE);
 	}
 
 	gr_set_cull(cull);

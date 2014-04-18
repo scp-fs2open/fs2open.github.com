@@ -77,7 +77,7 @@ void UI_SLIDER2::draw() {
 			gr_set_bitmap(bmap_ids[S2_NORMAL]);  // draw slider level
 			break;
 		}
-		gr_bitmap(x, y+currentPosition);
+		gr_bitmap(x, y+currentPosition, GR_RESIZE_MENU);
 	}
 }
 

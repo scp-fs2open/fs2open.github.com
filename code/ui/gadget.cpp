@@ -375,7 +375,7 @@ int UI_GADGET::is_mouse_on()
 
 		// if the mouse values are out of range of the bitmap
 		// NOTE : this happens when using smaller mask bitmaps than the screen resolution (during development)
-		if((ui_mouse.x >= mask_w) || (ui_mouse.y >= mask_h)){
+		if((ui_mouse.x < 0) || (ui_mouse.x >= mask_w) || (ui_mouse.y < 0) || (ui_mouse.y >= mask_h)){
 			return 0;
 		}
 

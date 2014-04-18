@@ -1011,10 +1011,9 @@ void HudGauge::setClip(int x, int y, int w, int h)
 		gr_resize_screen_pos(&hx, &hy);
 
 		gr_set_screen_scale(base_w, base_h);
-		gr_resize_screen_pos(&x, &y);
-		gr_resize_screen_pos(&w, &h);
+		gr_resize_screen_pos(&x, &y, &w, &h);
 
-		gr_set_clip(hx+x, hy+y, w, h, false);
+		gr_set_clip(hx+x, hy+y, w, h, GR_RESIZE_NONE);
 	}
 
 	gr_reset_screen_scale();
@@ -1048,7 +1047,7 @@ void HudGauge::resetClip()
 		h = gr_screen.max_h;
 
 		// clip the screen based on the actual resolution
-		gr_set_clip(hx, hy, w, h, false);
+		gr_set_clip(hx, hy, w, h, GR_RESIZE_NONE);
 	}
 
 	gr_reset_screen_scale();
@@ -2270,7 +2269,7 @@ int hud_anim_load(hud_anim *ha)
  * @param resize		Resize for non-standard resolutions
  * @param mirror		Mirror along y-axis so icon points left instead of right
  */
-int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse, bool resize, bool mirror)
+int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse, int resize_mode, bool mirror)
 {
 	int framenum;
 
@@ -2305,9 +2304,9 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 	if(emp_should_blit_gauge()){
 		gr_set_bitmap(ha->first_frame + framenum);
 		if ( draw_alpha ){
-			gr_aabitmap(ha->sx, ha->sy, resize, mirror);
+			gr_aabitmap(ha->sx, ha->sy, resize_mode, mirror);
 		} else {
-			gr_bitmap(ha->sx, ha->sy, resize);
+			gr_bitmap(ha->sx, ha->sy, resize_mode);
 		}
 	}
 

@@ -110,19 +110,19 @@ void UI_LISTBOX::draw()
 		if (disabled_flag) {
 			if ( bmap_ids[LBOX_DISABLED] >= 0 ) {
 				gr_set_bitmap(bmap_ids[LBOX_DISABLED]);
-				gr_bitmap(x, y);
+				gr_bitmap(x, y, GR_RESIZE_MENU);
 			}
 
 		} else {
 			if ( bmap_ids[LBOX_NORMAL] >= 0 ) {
 				gr_set_bitmap(bmap_ids[LBOX_NORMAL]);
-				gr_bitmap(x, y);
+				gr_bitmap(x, y, GR_RESIZE_MENU);
 			}
 		}
 
 	} else {
 		gr_set_color_fast(&CBLACK);
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 		ui_rect( 0, 0, w-1, h-1 );
 		gr_reset_clip();	
 		if (draw_frame)
@@ -140,7 +140,7 @@ void UI_LISTBOX::draw()
 	if (stop>num_items) stop = num_items;
 
 	x1 = y1 = 0;
-	gr_set_clip( x, y, w, h );
+	gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 	for ( i=first_item; i<stop; i++ ) {
 		gr_get_string_size( &w1, &h1,list[i] );
@@ -153,21 +153,21 @@ void UI_LISTBOX::draw()
 			if ((current_item == -1) && (my_wnd->selected_gadget == this ) && (i == first_item)  )	{
 				if ( !uses_bmaps ) {
 					gr_set_color_fast( &CBLACK );
-					gr_rect( x1, y1, w1+2, h1 );
+					gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 				}
 				current_item = first_item;
 				gr_set_color_fast( &CBRIGHT_GREEN );
 			} else {
 				if ( !uses_bmaps ) {
 					gr_set_color_fast( &CBLACK );
-					gr_rect( x1, y1, w1+2, h1 );
+					gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 				}
 				gr_set_color_fast( &CWHITE );
 			}
 */
 			if (!uses_bmaps) {
 				gr_set_color_fast( &CBLACK );
-				gr_rect( x1, y1, w1+2, h1 );
+				gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 			}
 
 			gr_set_color_fast(&CWHITE);
@@ -175,25 +175,25 @@ void UI_LISTBOX::draw()
 		} else {
 			if (my_wnd->selected_gadget == this) {
 				gr_set_color_fast( &CGRAY );
-				gr_rect( x1, y1, w1+2, h1 );
+				gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 				gr_set_color_fast( &CBRIGHT_GREEN );
 
 			} else {
 				gr_set_color_fast( &CGRAY );
-				gr_rect( x1, y1, w1+2, h1 );
+				gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 				gr_set_color_fast( &CBLACK );
 			}
 		}
 
 		if ( check_list )	{
 			if ( check_list[i] )	{
-				gr_string( x1+2, y1, "X" );
+				gr_string( x1+2, y1, "X", GR_RESIZE_MENU );
 			}
 
-			gr_string( x1+16, y1, list[i] );
+			gr_string( x1+16, y1, list[i], GR_RESIZE_MENU );
 
 		} else
-			gr_string( x1+2, y1, list[i] );
+			gr_string( x1+2, y1, list[i], GR_RESIZE_MENU );
 
 		if (i==current_item)
 			gr_set_color_fast( &CGRAY );

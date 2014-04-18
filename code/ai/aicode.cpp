@@ -14014,8 +14014,12 @@ void ai_frame(int objnum)
 				if (target_objnum != -1) {
 					if (aip->target_objnum != target_objnum)
 						aip->aspect_locked_time = 0.0f;
-					set_target_objnum(aip, target_objnum);
-					En_objp = &Objects[target_objnum];
+					target_objnum = set_target_objnum(aip, target_objnum);
+
+					if (target_objnum >= 0)
+					{
+						En_objp = &Objects[target_objnum];
+					}
 				}
 			}
 		}

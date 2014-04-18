@@ -362,11 +362,11 @@ void main_hall_blit_table_status()
 {
 	// blit ship table status
 	gr_set_color_fast(Game_ships_tbl_valid ? &Color_bright_green : &Color_bright_red);
-	gr_line(Mh_ship_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1], Mh_ship_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1]);
+	gr_line(Mh_ship_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1], Mh_ship_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1], GR_RESIZE_MENU);
 
 	// blit weapon table status
 	gr_set_color_fast(Game_weapons_tbl_valid ? &Color_bright_green : &Color_bright_red);
-	gr_line(Mh_weapon_table_status[gr_screen.res][0], Mh_weapon_table_status[gr_screen.res][1], Mh_weapon_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1]);
+	gr_line(Mh_weapon_table_status[gr_screen.res][0], Mh_weapon_table_status[gr_screen.res][1], Mh_weapon_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1], GR_RESIZE_MENU);
 }
 
 /**
@@ -799,11 +799,8 @@ void main_hall_do(float frametime)
 	GR_MAYBE_CLEAR_RES(Main_hall_bitmap);
 	if (Main_hall_bitmap >= 0) {
 		gr_set_bitmap(Main_hall_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
-
-	// draw any pending notification messages
-	main_hall_notify_do();
 
 	// render misc animations
 	main_hall_render_misc_anims(frametime);
@@ -816,6 +813,9 @@ void main_hall_do(float frametime)
 
 	// fishtank
 	fishtank_process();
+
+	// draw any pending notification messages
+	main_hall_notify_do();
 
 	// process any help "hit f1" timestamps and display any messages if necessary
 	if (!F1_text_done) {
@@ -1157,7 +1157,7 @@ void main_hall_render_misc_anims(float frametime)
 				if (Main_hall_frame_skip || Main_hall_paused) {
 					frametime = 0;
 				}
-				generic_anim_render(&Main_hall_misc_anim.at(idx), frametime, Main_hall->misc_anim_coords.at(idx).at(0), Main_hall->misc_anim_coords.at(idx).at(1));
+				generic_anim_render(&Main_hall_misc_anim.at(idx), frametime, Main_hall->misc_anim_coords.at(idx).at(0), Main_hall->misc_anim_coords.at(idx).at(1), true);
 			}
 		}
 	}
@@ -1177,7 +1177,7 @@ void main_hall_render_door_anims(float frametime)
 		if (Main_hall_door_anim.at(idx).num_frames > 0) {
 		// first pair : coords of where to play a given door anim
 		// second pair : center of a given door anim in windowed mode
-			generic_anim_render(&Main_hall_door_anim.at(idx), frametime, Main_hall->door_anim_coords.at(idx).at(0), Main_hall->door_anim_coords.at(idx).at(1));
+			generic_anim_render(&Main_hall_door_anim.at(idx), frametime, Main_hall->door_anim_coords.at(idx).at(0), Main_hall->door_anim_coords.at(idx).at(1), true);
 		}
 	}
 }
@@ -1340,7 +1340,7 @@ void main_hall_handle_right_clicks()
 			// set the position of the mouse cursor and the newly clicked region
 			int mx = Main_hall->door_anim_coords.at(new_region).at(2);
 			int my = Main_hall->door_anim_coords.at(new_region).at(3);
-			gr_resize_screen_pos( &mx, &my );
+			gr_resize_screen_pos( &mx, &my, NULL, NULL, GR_RESIZE_MENU );
 			mouse_set_pos( mx, my );
 
 			main_hall_handle_mouse_location(new_region);
@@ -1458,7 +1458,7 @@ void main_hall_notify_do()
 			gr_set_color_fast(&Color_bright);
 
 			gr_get_string_size(&w,&h,Main_hall_notify_text);
-			gr_printf((gr_screen.max_w - w)/2, gr_screen.max_h - 40, Main_hall_notify_text);
+			gr_printf_menu((gr_screen.max_w_unscaled - w)/2, gr_screen.max_h_unscaled - 40, Main_hall_notify_text);
 		}
 	}
 }
@@ -1526,7 +1526,7 @@ void main_hall_blit_version()
 
 	// print the string near the lower left corner
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(5, gr_screen.max_h_unscaled - 24, version_string);
+	gr_string(5, gr_screen.max_h_unscaled - 24, version_string, GR_RESIZE_MENU);
 }
 
 /**
@@ -1560,10 +1560,10 @@ void main_hall_maybe_blit_tooltips()
 		gr_get_string_size(&w, NULL, Main_hall->region_descript.at(text_index));
 
 		gr_set_shader(&Main_hall_tooltip_shader);
-		gr_shade(0, shader_y, gr_screen.clip_width_unscaled, (gr_screen.clip_height_unscaled - shader_y));
+		gr_shade(0, shader_y, gr_screen.clip_width_unscaled, (gr_screen.clip_height_unscaled - shader_y), GR_RESIZE_MENU);
 
 		gr_set_color_fast(&Color_bright_white);
-		gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall->region_yval, Main_hall->region_descript.at(text_index));
+		gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall->region_yval, Main_hall->region_descript.at(text_index), GR_RESIZE_MENU);
 	}
 }
 
@@ -1602,8 +1602,8 @@ void main_hall_process_help_stuff()
 	// set the color and print out text and shader
 	gr_set_color_fast(&Color_bright_white);
 	gr_set_shader(&Main_hall_tooltip_shader);
-	gr_shade(0, 0, gr_screen.max_w_unscaled, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset);
-	gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str);
+	gr_shade(0, 0, gr_screen.max_w_unscaled, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset, GR_RESIZE_MENU);
+	gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str, GR_RESIZE_MENU);
 }
 
 /**

@@ -4872,7 +4872,7 @@ int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
 {
 	if (strlen(filename) + 4 >= NAME_LENGTH) //Filenames are passed in without extension
 	{
-		mprintf(("Generated texture name %s is too long. Skipping...\n"));
+		mprintf(("Generated texture name %s is too long. Skipping...\n", filename));
 		return -1;
 	}
 	this->original_texture = bm_load_either(filename, NULL, NULL, NULL, 1, CF_TYPE_MAPS);
