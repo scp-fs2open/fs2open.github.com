@@ -183,6 +183,11 @@ public:
 	{
 		index = new(std::nothrow) uint[n_verts];
 	}
+    
+	~buffer_data()
+	{
+		release();
+	}
 
 private:
 	uint *index;

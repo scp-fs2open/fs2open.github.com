@@ -2110,7 +2110,7 @@ void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_
 		}
 
 		if ( dy1 < clip_top ) {
-			sy += clip_top-dx1;
+			sy += clip_top-dy1;
 			dy1 = clip_top;
 		}
 
