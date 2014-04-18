@@ -1293,7 +1293,7 @@ void avd_movement::update(float Time)
 				Tc = (Tf-Tai-Taf);
 
 			Pc = Pc + Vm*Tc;
-			Vc = Vc;
+			// Vc = Vc;
 		}
 		
 		if(t >= (Tf-Taf) && Taf > 0.0f)
