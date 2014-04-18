@@ -336,8 +336,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,7,1,0000
- PRODUCTVERSION 3,7,1,0000
+ FILEVERSION 3,7,1,000000
+ PRODUCTVERSION 3,7,1,000000
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -354,7 +354,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Volition Inc."
             VALUE "FileDescription", "FreeSpace 2 Open"
-            VALUE "FileVersion", "3.7.1.0000"
+            VALUE "FileVersion", "3.7.1.000000"
             VALUE "InternalName", "FreeSpace 2 Open"
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fs2.exe"
