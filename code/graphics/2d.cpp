@@ -349,9 +349,9 @@ DCF(clear_color, "set clear color r, g, b")
 {
 	ubyte r, g, b;
 
-	dc_stuff_ubyte(&r);
-	dc_stuff_ubyte(&g);
-	dc_stuff_ubyte(&b);
+	dc_stuff_ubyte(r);
+	dc_stuff_ubyte(g);
+	dc_stuff_ubyte(b);
 
 	// set the color
 	gr_set_clear_color(r, g, b);

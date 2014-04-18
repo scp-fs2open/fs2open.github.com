@@ -294,25 +294,25 @@ DCF(cscrew, "Listing of corkscrew missile debug console functions")
 
 DCF(cscrew_delay, "Change the delay between corkscrew firing")
 {	
-	dc_stuff_int(&Corkscrew_missile_delay);
+	dc_stuff_int(Corkscrew_missile_delay);
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_count, "Change the # of corkscrew missiles fired")
 {	
-	dc_stuff_int(&Corkscrew_num_missiles_fired);
+	dc_stuff_int(Corkscrew_num_missiles_fired);
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_radius, "Change the radius of corkscrew missiles")
 {	
-	dc_stuff_float(&Corkscrew_radius);
+	dc_stuff_float(Corkscrew_radius);
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_twist, "Change the rate of the corkscrew twist")
 {
-	dc_stuff_float(&Corkscrew_twist);
+	dc_stuff_float(Corkscrew_twist);
 	cscrew_display_dcf();
 }
 
@@ -339,7 +339,7 @@ DCF(cscrew_shrink, "Shrink the radius of every other missile")
 
 DCF(cscrew_shrinkval, "Change the rate at which the radii shrink")
 {
-	dc_stuff_float(&Corkscrew_shrink_val);
+	dc_stuff_float(Corkscrew_shrink_val);
 	cscrew_display_dcf();
 }
 

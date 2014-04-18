@@ -84,39 +84,39 @@ storm_type *Storm = NULL;
 // vars
 DCF(b_scale, "Sets the scale factor for debug nebula bolts")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_scale);
+	dc_stuff_float(Bolt_types[DEBUG_BOLT].b_scale);
 }
 DCF(b_rand, "Sets the randomness factor for debug nebula bolts")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_rand);
+	dc_stuff_float(Bolt_types[DEBUG_BOLT].b_rand);
 }
 DCF(b_shrink, "Sets the shrink factor for debug nebula bolts")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_shrink);
+	dc_stuff_float(Bolt_types[DEBUG_BOLT].b_shrink);
 }
 DCF(b_poly_pct, "Sets b_poly_pct")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_poly_pct);
+	dc_stuff_float(Bolt_types[DEBUG_BOLT].b_poly_pct);
 }
 DCF(b_add, "Sets b_add")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_add);
+	dc_stuff_float(Bolt_types[DEBUG_BOLT].b_add);
 }
 DCF(b_strikes, "Sets num_strikes")
 {
-	dc_stuff_int(&Bolt_types[DEBUG_BOLT].num_strikes);
+	dc_stuff_int(Bolt_types[DEBUG_BOLT].num_strikes);
 }
 DCF(b_noise, "Sets noise factor")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].noise);
+	dc_stuff_float(Bolt_types[DEBUG_BOLT].noise);
 }
 DCF(b_bright, "Sets brightness factor")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_bright);
+	dc_stuff_float(Bolt_types[DEBUG_BOLT].b_bright);
 }
 DCF(b_lifetime, "Sets lifetime duration")
 {
-	dc_stuff_int(&Bolt_types[DEBUG_BOLT].lifetime);
+	dc_stuff_int(Bolt_types[DEBUG_BOLT].lifetime);
 }
 DCF(b_list, "Displays status of debug lightning commands")
 {
@@ -139,7 +139,7 @@ float Nebl_intensity = 0.6667f;
 DCF(lightning_intensity, "Sets lightning intensity between 0.0 and 1.0 (Default is 0.6667)")
 {
 	float val;
-	dc_stuff_float(&val);
+	dc_stuff_float(val);
 
 	CLAMP(val, 0.0f, 1.0f);
 

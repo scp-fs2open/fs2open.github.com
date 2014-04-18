@@ -474,7 +474,7 @@ DCF(lag, "Sets the lag base value (Muliplayer)")
 		return;
 	}
 
-	dc_stuff_int(&value);
+	dc_stuff_int(value);
 	// parse the argument and change things around accordingly
 	if (value < 0) {
 		// switch the lag sim off
@@ -516,7 +516,7 @@ DCF(lag_min, "Sets the lag min value (Multiplayer)")
 		dc_printf("Lag min value is currently %i\n", Multi_lag_min);
 	}
 
-	dc_stuff_int(&value);
+	dc_stuff_int(value);
 	// parse the argument and change things around accordingly
 	
 	if (value > Multi_lag_base) {
@@ -553,7 +553,7 @@ DCF(lag_max, "Sets the lag max value (Multiplayer)")
 	}
 
 	// parse the argument and change things around accordingly
-	dc_stuff_int(&value);
+	dc_stuff_int(value);
 	
 	if ((value >= 0) && (value < Multi_lag_base)) {
 		dc_printf("Max value smaller than base value, ignoring...");
@@ -589,7 +589,7 @@ DCF(loss, "Sets the loss base value (Multiplayer)")
 	}
 
 	// parse the argument and change things around accordingly
-	dc_stuff_int(&val_i);
+	dc_stuff_int(val_i);
 
 	val_f = (float)val_i / 100.0f;
 		
@@ -634,7 +634,7 @@ DCF(loss_min, "Sets the loss min value (Multiplayer)")
 	}
 
 	// parse the argument and change things around accordingly
-	dc_stuff_int(&val_i);
+	dc_stuff_int(val_i);
 
 	val_f = (float)val_i / 100.0f;
 
@@ -670,7 +670,7 @@ DCF(loss_max, "Sets the loss max value (Multiplayer)")
 	}
 
 	// parse the argument and change things around accordingly
-	dc_stuff_int(&val_i);
+	dc_stuff_int(val_i);
 	val_f = (float)val_i / 100.0f;
 
 	if (val_f < Multi_loss_base) {
@@ -716,7 +716,7 @@ DCF(lag_streak, "Sets the duration of lag streaks (Multiplayer)")
 		return;
 	}
 
-	dc_stuff_int(&val);
+	dc_stuff_int(val);
 	if(val >= 0){
 		Multi_streak_time = val;
 	} else {

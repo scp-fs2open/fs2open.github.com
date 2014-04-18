@@ -294,7 +294,7 @@ DCF(camera_speed, "Sets the camera zoom scale")
 		return;
 	}
 
-	dc_stuff_float(&camera_zoom_scale);
+	dc_stuff_float(camera_zoom_scale);
 
 	dc_printf("Camera zoom scale set to %f\n", camera_zoom_scale);
 }

@@ -130,7 +130,7 @@ int load_nebula_sub(char *filename)
 	return 1;
 }
 
-void nebula_init( char *filename, int pitch, int bank, int heading )
+void nebula_init( const char *filename, int pitch, int bank, int heading )
 {
 	angles a;
 
@@ -140,7 +140,7 @@ void nebula_init( char *filename, int pitch, int bank, int heading )
 	nebula_init(filename, &a);
 }
 
-void nebula_init( char *filename, angles * pbh )
+void nebula_init( const char *filename, angles * pbh )
 {
 	if ( Nebula_loaded )	{
 		nebula_close();
@@ -215,16 +215,16 @@ void nebula_render()
 
 DCF(nebula,"Loads a different nebula")
 {
-	char filename[MAX_NAME_LEN];
+	SCP_string filename;
 
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: nebula [filename]\n");
-		dc_printf("Loads the nebula file. No filename takes away nebula\n" );
+		dc_printf("Loads the nebula file (without filename extension). No filename takes away nebula\n" );
 		return;
 	}
 
-	if (dc_maybe_stuff_string_white(filename, MAX_NAME_LEN)) {
-			nebula_init(filename);
+	if (dc_maybe_stuff_string_white(filename)) {
+			nebula_init(filename.c_str());
 	} else {
 		nebula_close();
 	}

@@ -1777,7 +1777,7 @@ void multi_reset_timestamps()
 DCF(netd, "change netgame debug flags (Mulitplayer)")
 {
 	int value;
-	dc_stuff_int(&value);
+	dc_stuff_int(value);
 	
 	// if we're the server, change flags
 	if ((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (value <= 7)) {

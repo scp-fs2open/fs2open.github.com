@@ -1538,7 +1538,7 @@ DCF(rank, "changes player rank")
 		}
 	}
 
-	dc_stuff_int(&rank);
+	dc_stuff_int(rank);
 	
 	// parse the argument and change things around accordingly
 	if (Player != NULL) {

@@ -1319,7 +1319,7 @@ DCF(change_mission_goal, "Changes the mission goal status")
 		return;
 	}
 
-	dc_stuff_int(&num);
+	dc_stuff_int(num);
 	if ( num >= Num_goals ) {
 		dc_printf (" Error: Invalid value for <goal_num>. Valid values: 0 - %i\n", Num_goals);
 		return;
@@ -1334,7 +1334,7 @@ DCF(change_mission_goal, "Changes the mission goal status")
 	} else if (dc_optional_string("unsatisfied")) {
 		Mission_goals[num].satisfied = GOAL_INCOMPLETE;
 
-	} else if (dc_maybe_stuff_boolean(&val_b)) {
+	} else if (dc_maybe_stuff_boolean(val_b)) {
 		val_b ? Mission_goals[num].satisfied = GOAL_COMPLETE : Mission_goals[num].satisfied = GOAL_FAILED;
 
 	} else {

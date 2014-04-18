@@ -1583,7 +1583,7 @@ DCF(oog, "Sets bandwidth granularity (Multiplayer)")
 		return;
 	}
 
-	dc_stuff_int(&OO_gran);
+	dc_stuff_int(OO_gran);
 	dc_printf("Ganularity set to %i", OO_gran);
 }
 
@@ -1963,7 +1963,7 @@ DCF(oo_error, "Sets error factor for flight path prediction physics (Multiplayer
 		return;
 	}
 
-	dc_stuff_float(&oo_error);
+	dc_stuff_float(oo_error);
 	
 	dc_printf("oo_error set to %f", oo_error);
 }

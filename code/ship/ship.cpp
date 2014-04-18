@@ -8376,7 +8376,7 @@ DCF(lethality_decay, "Sets ship lethality_decay, or the time in sec to go from 1
 		return;
 	}
 	
-	dc_stuff_float(&Decay_rate);
+	dc_stuff_float(Decay_rate);
 }
 
 float min_lethality = 0.0f;
@@ -9887,7 +9887,7 @@ DCF(t_rad, "Sets weapon tracer radius")
 		return;
 	}
 	
-	dc_stuff_float(&t_rad);
+	dc_stuff_float(t_rad);
 }
 DCF(t_len, "Sets weapon tracer length")
 {
@@ -9896,7 +9896,7 @@ DCF(t_len, "Sets weapon tracer length")
 		return;
 	}
 
-	dc_stuff_float(&t_len);
+	dc_stuff_float(t_len);
 }
 DCF(t_vel, "Sets weapon tracer velocity")
 {
@@ -9905,17 +9905,17 @@ DCF(t_vel, "Sets weapon tracer velocity")
 		return;
 	}
 
-	dc_stuff_float(&t_vel);
+	dc_stuff_float(t_vel);
 }
 /*
  TODO: These two DCF's (and variables) are unused
 DCF(t_min, "")
 {
-	dc_stuff_float(&t_min);
+	dc_stuff_float(t_min);
 }
 DCF(t_max, "")
 {
-	dc_stuff_float(&t_max);
+	dc_stuff_float(t_max);
 }
 */
 void ship_fire_tracer(int weapon_objnum)
@@ -13640,7 +13640,7 @@ DCF(set_shield,"Change player ship shield strength")
 		return;
 	}
 
-	dc_stuff_float(&value);
+	dc_stuff_float(value);
 
 	CLAMP(value, 0.0f, 1.0f);
 
@@ -13666,7 +13666,7 @@ DCF(set_hull, "Change player ship hull strength")
 		return;
 	}
 
-	dc_stuff_float(&value);
+	dc_stuff_float(value);
 
 	CLAMP(value, 0.0f, 1.0f);
 	Player_obj->hull_strength = value * Player_ship->ship_max_hull_strength;
@@ -13729,7 +13729,7 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 
 	} else {
 		// Set the subsystem strength
-		dc_stuff_float(&val_f);
+		dc_stuff_float(val_f);
 
 		CLAMP(val_f, 0.0, 1.0);
 		ship_set_subsystem_strength( Player_ship, subsystem, val_f );
@@ -16430,7 +16430,7 @@ int ship_get_texture(int bitmap)
 float artillery_dist = 10.0f;
 DCF(art, "Sets artillery disance")
 {
-	dc_stuff_float(&artillery_dist);
+	dc_stuff_float(artillery_dist);
 }
 
 void ship_update_artillery_lock()

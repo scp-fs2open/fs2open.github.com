@@ -122,11 +122,11 @@ float b_whack_damage = 150.0f;
 
 DCF(b_whack_small, "Sets the whack factor for small whacks (Default is 2000f)")
 {
-	dc_stuff_float(&b_whack_small);
+	dc_stuff_float(b_whack_small);
 }
 DCF(b_whack_big, "Sets the whack factor for big whacks (Default is 10000f)")
 {
-	dc_stuff_float(&b_whack_big);
+	dc_stuff_float(b_whack_big);
 }
 DCF(b_whack_damage, "Sets the whack damage threshold (Default is 150f)")
 {
@@ -135,7 +135,7 @@ DCF(b_whack_damage, "Sets the whack damage threshold (Default is 150f)")
 		return;
 	}
 
-	dc_stuff_float(&b_whack_damage);
+	dc_stuff_float(b_whack_damage);
 }
 
 
@@ -1259,7 +1259,7 @@ void beam_render(beam *b, float u_offset)
 int hack_time = 100;
 DCF(h_time, "Sets the hack time for beam muzzle glow (Default is 100)")
 {
-	dc_stuff_int(&hack_time);
+	dc_stuff_int(hack_time);
 }
 
 void beam_generate_muzzle_particles(beam *b)
@@ -1483,7 +1483,7 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 float blight = 25.5f;
 DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 {
-	dc_stuff_float(&blight);
+	dc_stuff_float(blight);
 }
 
 // call to add a light source to a small object
@@ -3449,7 +3449,7 @@ int beam_will_tool_target(beam *b, object *objp)
 float beam_accuracy = 1.0f;
 DCF(b_aim, "Adjusts the beam accuracy factor (Default is 1.0f)")
 {
-	dc_stuff_float(&beam_accuracy);
+	dc_stuff_float(beam_accuracy);
 }
 DCF(beam_list, "Lists all beams")
 {

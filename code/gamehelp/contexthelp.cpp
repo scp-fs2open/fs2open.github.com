@@ -636,8 +636,8 @@ DCF(help_nudgetext_x, "Use to visually position overlay text.")
 		return;
 	}
 
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
+	dc_stuff_int(h_textnum);
+	dc_stuff_int(h_amt);
 
 	nudgetext_x(h_textnum, h_amt);
 }
@@ -654,8 +654,8 @@ DCF(help_nudgetext_y, "Use to visually position overlay text.")
 		return;
 	}
 
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
+	dc_stuff_int(h_textnum);
+	dc_stuff_int(h_amt);
 	
 	nudgetext_y(h_textnum, h_amt);
 }
@@ -672,9 +672,9 @@ DCF(help_nudgepline_x, "Use to visually position overlay polylines.")
 		return;
 	}
 
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_vtx);
-	dc_stuff_int(&h_amt);
+	dc_stuff_int(h_textnum);
+	dc_stuff_int(h_vtx);
+	dc_stuff_int(h_amt);
 
 	nudgepline_x(h_textnum, h_vtx, h_amt);
 }
@@ -692,9 +692,9 @@ DCF(help_nudgepline_y, "Use to visually position overlay polylines.")
 		return;
 	}
 
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_vtx);
-	dc_stuff_int(&h_amt);
+	dc_stuff_int(h_textnum);
+	dc_stuff_int(h_vtx);
+	dc_stuff_int(h_amt);
 
 	nudgepline_y(h_textnum, h_vtx, h_amt);
 }
@@ -712,8 +712,8 @@ DCF(help_nudgerbracket_x, "Use to visually position overlay right bracket.")
 		return;
 	}
 
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
+	dc_stuff_int(h_textnum);
+	dc_stuff_int(h_amt);
 
 	nudgerbracket_x(h_textnum, h_amt);
 }
@@ -730,8 +730,8 @@ DCF(help_nudgerbracket_y, "Use to visually position overlay right bracket.")
 		return;
 	}
 
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
+	dc_stuff_int(h_textnum);
+	dc_stuff_int(h_amt);
 	
 	nudgerbracket_y(h_textnum, h_amt);
 }
@@ -752,8 +752,8 @@ DCF(help_nudgelbracket_x, "Use to visually position overlay left bracket.")
 		return;
 	}
 
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
+	dc_stuff_int(h_textnum);
+	dc_stuff_int(h_amt);
 
 	nudgelbracket_x(h_textnum, h_amt);
 }
@@ -770,8 +770,8 @@ DCF(help_nudgelbracket_y, "Use to visually position overlay left bracket.")
 		return;
 	}
 
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
+	dc_stuff_int(h_textnum);
+	dc_stuff_int(h_amt);
 
 	nudgelbracket_y(h_textnum, h_amt);
 }

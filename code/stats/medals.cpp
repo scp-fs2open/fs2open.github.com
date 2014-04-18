@@ -490,7 +490,7 @@ DCF(medals, "Grant or revoke medals")
 		return;
 	}
 
-	if (dc_maybe_stuff_int(&idx)) {
+	if (dc_maybe_stuff_int(idx)) {
 		if (idx < 0 || idx >= Num_medals)
 		{
 			dc_printf("Medal index %d is out of range\n", idx);
