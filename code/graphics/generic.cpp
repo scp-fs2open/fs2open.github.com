@@ -418,7 +418,7 @@ void generic_render_ani_stream(generic_anim *ga)
 	#endif
 }
 
-void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
+void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu)
 {
 	float keytime = 0.0;
 
@@ -487,8 +487,8 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 		}
 		ga->previous_frame = ga->current_frame;
 		if(ga->use_hud_color)
-			gr_aabitmap(x,y);
+			gr_aabitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
 		else
-			gr_bitmap(x,y);
+			gr_bitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
 	}
 }

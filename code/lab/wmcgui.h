@@ -30,7 +30,7 @@
 #define IMG_UNLOAD(a)				bm_unload(a)
 #define IMG_SET(h)					gr_set_bitmap(h)
 #define IMG_SET_FRAME(h, f)			gr_set_bitmap(h + f)
-#define IMG_DRAW(x,y)				gr_bitmap(x,y,false)
+#define IMG_DRAW(x,y)				gr_bitmap(x,y,GR_RESIZE_NONE)
 #define IMG_INFO(ha,w,h)			bm_get_info(ha,w,h)
 #endif
 

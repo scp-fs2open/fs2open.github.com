@@ -19,6 +19,11 @@
 // LOCALIZE DEFINES/VARS
 //
 
+// language defines
+#define LCL_ENGLISH						0
+#define LCL_GERMAN						1
+#define LCL_FRENCH						2
+#define LCL_POLISH						3
 
 #define FS2_OPEN_DEFAULT_LANGUAGE		0
 

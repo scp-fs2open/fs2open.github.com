@@ -177,7 +177,7 @@ void mht_do()
 	GR_MAYBE_CLEAR_RES(Mht_bitmap);
 	if(Mht_bitmap != -1){		
 		gr_set_bitmap(Mht_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Mht_window.draw();	
 	
@@ -252,7 +252,7 @@ void mht_button_pressed(int n)
 void mht_exit_game()
 {
 	// stop music first
-	main_hall_stop_music();
+	main_hall_stop_music(true);
 	main_hall_stop_ambient();
 	gameseq_post_event(GS_EVENT_QUIT_GAME);
 }

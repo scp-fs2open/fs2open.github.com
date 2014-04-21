@@ -127,7 +127,7 @@ int collide_asteroid_weapon( obj_pair * pair )
 
 		Script_system.SetHookObjects(2, "Self",pasteroid, "Object", weapon);
 		if((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pasteroid);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pasteroid, Weapons[weapon->instance].weapon_info_index);
 
 		Script_system.RemHookVars(4, "Weapon", "Asteroid", "Self","ObjectB");
 		return 0;

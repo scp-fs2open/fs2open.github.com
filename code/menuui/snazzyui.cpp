@@ -70,8 +70,8 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	mouse_get_pos_unscaled( &x, &y ); 
 
 	// boundary conditions
-	if((y > mask_h - 1) || (x > mask_w - 1)){
-		pixel_value = 0;
+	if((y < 0) || (y > mask_h - 1) || (x < 0) || (x > mask_w - 1)){
+		pixel_value = 255;
 	} else {
 		// check the pixel value under the mouse
 		offset = y * mask_w + x;
@@ -133,7 +133,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	gr_set_font( FONT1 );
 
 	if ((mouse_on_choice >= 0) && (mouse_on_choice <= (num_regions)) && (i >=0)) {
-		gr_printf( 0x8000, 450, regions[i].text );
+		gr_printf_menu( 0x8000, 450, regions[i].text );
 	}
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ){

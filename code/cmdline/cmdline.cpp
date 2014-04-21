@@ -141,6 +141,7 @@ Flag exe_params[] =
 	{ "-3dwarp",			"Enable 3D warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
+	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 
 	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable all sound",						false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
@@ -204,6 +205,7 @@ Flag exe_params[] =
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
 	{ "-profile_frame_time", "Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
+	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -333,12 +335,14 @@ cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);	// Cmdline_ship_choice
 cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL);	// Cmdline_weapon_choice_3d
 cmdline_parm use_warp_flash("-warp_flash", NULL);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL);	// Cmdline_warp_flash
+cmdline_parm stretch_menu("-stretch_menu", NULL);	// Cmdline_stretch_menu
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
+int Cmdline_stretch_menu = 0;
 
 // Audio related
 cmdline_parm query_speech_arg("-query_speech", NULL);	// Cmdline_query_speech
@@ -430,6 +434,7 @@ cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL); //Cmdline_frame_profile
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL); // Cmdline_profile_write_file
+cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL); //Cmdline_no_unfocus_pause
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
@@ -455,6 +460,7 @@ int Cmdline_no_grab = 0;
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_frame_profile = false;
 bool Cmdline_profile_write_file = false;
+bool Cmdline_no_unfocus_pause = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", NULL);
@@ -1309,6 +1315,10 @@ bool SetCmdlineParams()
 	if ( allow_autpilot_interrupt.found() )	{
 		Cmdline_autopilot_interruptable = 0;
 	}
+
+	if ( stretch_menu.found() )	{
+		Cmdline_stretch_menu = 1;
+	}
 	// specular comand lines
 	if ( spec_exp_arg.found() ) {
 		specular_exponent_value = spec_exp_arg.get_float();
@@ -1549,6 +1559,11 @@ bool SetCmdlineParams()
 	{
 		Cmdline_frame_profile = true;
 		Cmdline_profile_write_file = true;
+	}
+
+	if (no_unfocused_pause_arg.found())
+	{
+		Cmdline_no_unfocus_pause = true;
 	}
 
 	//Deprecated flags - CommanderDJ

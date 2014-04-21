@@ -402,7 +402,7 @@ void popupdead_draw_button_text()
 		gr_get_string_size(&w, &h, Popupdead_button_text[i]);
 		sx = Popupdead_region_coords[gr_screen.res][i][0]-w;
 		sy = Popupdead_region_coords[gr_screen.res][i][1]+4;
-		gr_string(sx, sy, Popupdead_button_text[i]);
+		gr_string(sx, sy, Popupdead_button_text[i], GR_RESIZE_MENU);
 	}
 }
 

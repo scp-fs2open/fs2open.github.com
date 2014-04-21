@@ -1268,13 +1268,13 @@ int Window::DoRefreshSize()
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), &w, &h);
 		num = (float)((Coords[2]-CornerWidths[3])-(Coords[0]+CornerWidths[2])) / (float)w;
 		BorderRectLists[CIE_HANDLE_TM] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[1], fl2i(w*num),h,0,0,num,1.0f);
-		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
+		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, GR_RESIZE_NONE);
 	}
 	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), &w, &h);
 		num = (float)((Coords[2]-CornerWidths[3])-(Coords[0]+CornerWidths[2])) / (float)w;
 		BorderRectLists[CIE_HANDLE_BM] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[3]-h, fl2i(w*num),h,0,0,num,1.0f);
-		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
+		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, GR_RESIZE_NONE);
 	}
 	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &w, &h);
@@ -1407,15 +1407,15 @@ void Window::DoMove(int dx, int dy)
 	CaptionRectList.screen_rect.y += dy;
 }
 
-void draw_open_rect(int x1, int y1, int x2, int y2, bool resize = false)
+void draw_open_rect(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_NONE)
 {
-	gr_line(x1, y1, x2, y1, resize);
-	gr_line(x2, y1, x2, y2, resize);
-	gr_line(x2, y2, x1, y2, resize);
-	gr_line(x1, y2, x1, y1, resize);
+	gr_line(x1, y1, x2, y1, resize_mode);
+	gr_line(x2, y1, x2, y2, resize_mode);
+	gr_line(x2, y2, x1, y2, resize_mode);
+	gr_line(x1, y2, x1, y1, resize_mode);
 }
 
-extern void gr_opengl_shade(int x, int y, int w, int h, bool resize);
+extern void gr_opengl_shade(int x, int y, int w, int h, int resize_mode);
 
 void Window::DoDraw(float frametime)
 {
@@ -1428,7 +1428,7 @@ void Window::DoDraw(float frametime)
 
 	// shade the background of the window so that it's just slightly transparent
 	gr_set_shader(&WindowShade);
-	gr_opengl_shade(Coords[0], Coords[1], Coords[2], Coords[3], false);
+	gr_opengl_shade(Coords[0], Coords[1], Coords[2], Coords[3], GR_RESIZE_NONE);
 
 	gr_set_color_fast(&Color_text_normal);
 
@@ -1458,31 +1458,31 @@ void Window::DoDraw(float frametime)
 
 	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM))) {
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM));
-		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_TM], 1, false);
+		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_TM], 1, GR_RESIZE_NONE);
 	} else {
-		gr_line(Coords[0] + BorderSizes[0], Coords[1], Coords[2] - BorderSizes[2], Coords[1], false);
+		gr_line(Coords[0] + BorderSizes[0], Coords[1], Coords[2] - BorderSizes[2], Coords[1], GR_RESIZE_NONE);
 	}
 
 	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM))) {
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM));
-		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
+		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, GR_RESIZE_NONE);
 	} else {
-		gr_line(Coords[0] + BorderSizes[0], Coords[3], Coords[2] - BorderSizes[2], Coords[3], false);
+		gr_line(Coords[0] + BorderSizes[0], Coords[3], Coords[2] - BorderSizes[2], Coords[3], GR_RESIZE_NONE);
 	}
 
 	if (!(Style & GS_HIDDEN)) {
 		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML))) {
 			IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML));
-			gr_bitmap_list(&BorderRectLists[CIE_HANDLE_ML], 1, false);
+			gr_bitmap_list(&BorderRectLists[CIE_HANDLE_ML], 1, GR_RESIZE_NONE);
 		} else {
-			gr_line(Coords[0], Coords[1] + BorderSizes[1], Coords[0], Coords[3] - BorderSizes[3], false);
+			gr_line(Coords[0], Coords[1] + BorderSizes[1], Coords[0], Coords[3] - BorderSizes[3], GR_RESIZE_NONE);
 		}
 
 		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR))) {
 			IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR));
-			gr_bitmap_list(&BorderRectLists[CIE_HANDLE_MR], 1, false);
+			gr_bitmap_list(&BorderRectLists[CIE_HANDLE_MR], 1, GR_RESIZE_NONE);
 		} else {
-			gr_line(Coords[2], Coords[1] + BorderSizes[1], Coords[2], Coords[3] - BorderSizes[3], false);
+			gr_line(Coords[2], Coords[1] + BorderSizes[1], Coords[2], Coords[3] - BorderSizes[3], GR_RESIZE_NONE);
 		}
 	}
 
@@ -1490,7 +1490,7 @@ void Window::DoDraw(float frametime)
 		//Draw the caption background
 		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION))) {
 			IMG_SET(GetCIEImageHandle(WCI_CAPTION));
-			gr_bitmap_list(&CaptionRectList, 1, false);
+			gr_bitmap_list(&CaptionRectList, 1, GR_RESIZE_NONE);
 		} else {
 			draw_open_rect(Coords[0], Coords[1], Coords[2], CaptionCoords[3]);
 		}
@@ -1509,7 +1509,7 @@ void Window::DoDraw(float frametime)
 			} else {
 				gr_set_color_fast(&Color_text_normal);
 			}
-			gr_string(CloseCoords[0], CloseCoords[1], "X", false);
+			gr_string(CloseCoords[0], CloseCoords[1], "X", GR_RESIZE_NONE);
 		}
 		
 
@@ -1527,13 +1527,13 @@ void Window::DoDraw(float frametime)
 			} else {
 				gr_set_color_fast(&Color_text_normal);
 			}
-			gr_string(HideCoords[0], HideCoords[1], "-", false);
+			gr_string(HideCoords[0], HideCoords[1], "-", GR_RESIZE_NONE);
 		}
 
 		//Caption text
 		gr_set_color_fast(&Color_text_normal);
 
-		gr_string(CaptionCoords[0], CaptionCoords[1], Caption.c_str(), false);
+		gr_string(CaptionCoords[0], CaptionCoords[1], Caption.c_str(), GR_RESIZE_NONE);
 	}
 }
 
@@ -1634,7 +1634,7 @@ void Button::DoDraw(float frametime)
 		gr_get_string_size(&half_x, &half_y, Caption.c_str());
 		half_x = Coords[0] +(((Coords[2]-Coords[0]) - half_x) / 2);
 		half_y = Coords[1] +(((Coords[3]-Coords[1]) - half_y) / 2);
-		gr_string(half_x, half_y, Caption.c_str(), false);
+		gr_string(half_x, half_y, Caption.c_str(), GR_RESIZE_NONE);
 	}
 }
 
@@ -1805,7 +1805,7 @@ void Tree::DrawItems(TreeItem *items)
 				gr_set_color_fast(&Color_text_normal);
 			}
 
-			gr_string(tip->Coords[0], tip->Coords[1], tip->Name.c_str(), false);
+			gr_string(tip->Coords[0], tip->Coords[1], tip->Name.c_str(), GR_RESIZE_NONE);
 
 			if (NOT_EMPTY(&tip->Children) && tip->ShowChildren) {
 				DrawItems((TreeItem*)&tip->Children);
@@ -2034,7 +2034,7 @@ void Text::DoDraw(float frametime)
 	int font_height = gr_get_font_height();
 
 	for (int i = 0; i < NumLines; i++) {
-		gr_string(ChildCoords[0], ChildCoords[1] + (i*font_height), Content.substr(LineStartPoints[i] - Content.c_str(), LineLengths[i]).c_str(), false);
+		gr_string(ChildCoords[0], ChildCoords[1] + (i*font_height), Content.substr(LineStartPoints[i] - Content.c_str(), LineLengths[i]).c_str(), GR_RESIZE_NONE);
 	}
 }
 
@@ -2407,11 +2407,11 @@ void Checkbox::DoDraw(float frametime)
 	if ( (IsChecked && ((FlagPtr == NULL) && (BoolFlagPtr == NULL)))
 		|| ((FlagPtr != NULL) && ((*FlagPtr) & Flag))
 		|| ((BoolFlagPtr != NULL) && (*BoolFlagPtr)) ) {
-		gr_string(CheckCoords[0], CheckCoords[1], "X", false);
+		gr_string(CheckCoords[0], CheckCoords[1], "X", GR_RESIZE_NONE);
 	}
 
 	gr_set_color_fast(&Color_text_normal);
-	gr_string(CheckCoords[2] + CB_TEXTCHECKDIST, CheckCoords[1], Label.c_str(), false);
+	gr_string(CheckCoords[2] + CB_TEXTCHECKDIST, CheckCoords[1], Label.c_str(), GR_RESIZE_NONE);
 }
 
 int Checkbox::DoMouseOver(float frametime)

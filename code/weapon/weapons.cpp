@@ -4742,7 +4742,15 @@ void weapon_process_post(object * obj, float frame_time)
 		
 			//get the position of the target, and estimate its position when it warps out
 			//so we have an idea of where it will be.
-			vm_vec_scale_add(&wp->lssm_target_pos,&Objects[wp->target_num].pos,&Objects[wp->target_num].phys_info.vel,(float)wip->lssm_warpin_delay/1000.0f);
+			if (wp->target_num >= 0)
+			{
+				vm_vec_scale_add(&wp->lssm_target_pos, &Objects[wp->target_num].pos, &Objects[wp->target_num].phys_info.vel, (float)wip->lssm_warpin_delay / 1000.0f);
+			}
+			else
+			{
+				// Our target is invalid, just jump to our position
+				wp->lssm_target_pos = obj->pos;
+			}
 
 			wp->lssm_stage=3;
 

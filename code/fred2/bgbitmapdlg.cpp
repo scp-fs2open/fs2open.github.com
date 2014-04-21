@@ -233,6 +233,15 @@ void bg_bitmap_dlg::create()
 	m_skybox_bank = (int) fl_degrees(skybox_angles.b);
 	m_skybox_heading = (int) fl_degrees(skybox_angles.h);
 
+	//make sure angle values are in the 0-359 degree range
+	if (m_skybox_pitch < 0)
+		m_skybox_pitch = m_skybox_pitch + 359;
+	if (m_skybox_bank < 0)
+		m_skybox_bank = m_skybox_bank + 359;
+	if (m_skybox_heading < 0)
+		m_skybox_heading = m_skybox_heading + 359;
+
+
 	for(i=0; i<MAX_NEB2_BITMAPS; i++){
 		if(strlen(Neb2_bitmap_filenames[i]) > 0){ //-V805
 			((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i]);
