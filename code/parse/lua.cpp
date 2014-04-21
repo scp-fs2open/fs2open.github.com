@@ -16243,7 +16243,7 @@ void ade_table_entry::OutputMeta(FILE *fp)
 						fprintf(fp, "<dd>%s</dd>\n", Description);
 
 					//***Also settable with: Arguments
-					if(Arguments != NULL)
+					if(ReturnDescription != NULL)
 						fprintf(fp, "<dd><b>Value:</b> %s</b></dd>\n", ReturnDescription);
 				}
 				break;
