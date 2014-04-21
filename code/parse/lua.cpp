@@ -9293,6 +9293,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 				ai_mode = AI_GOAL_EVADE_SHIP;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
 			}
+			break;
 		}
 		case LE_ORDER_STAY_NEAR:
 		{
