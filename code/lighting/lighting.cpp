@@ -98,7 +98,7 @@ DCF(light,"Changes lighting parameters")
 	}
 	
 	if (dc_optional_string("ambient")) {
-		dc_stuff_float(val_f);
+		dc_stuff_float(&val_f);
 		if ((val_f < 0.0f) || (val_f > 1.0f)) {
 			dc_printf(" Error: ambient value must be between 0.0 and 1.0\n");
 		} else {
@@ -106,7 +106,7 @@ DCF(light,"Changes lighting parameters")
 		}
 	
 	} else if (dc_optional_string("reflect")) {
-		dc_stuff_float(val_f);
+		dc_stuff_float(&val_f);
 		if ( (val_f < 0.0f) || (val_f > 1.0f))	{
 			dc_printf(" Error: reflect value mus be between 0.0 and 1.0\n");
 		} else {
@@ -132,10 +132,10 @@ DCF(light,"Changes lighting parameters")
 		}
 	
 	} else if (dc_optional_string("dynamic")) {
-		dc_stuff_boolean(val_b);
+		dc_stuff_boolean(&val_b);
 		Lighting_flag = val_b;
 
-	} else if(dc_maybe_stuff_boolean(Lighting_off)) {
+	} else if(dc_maybe_stuff_boolean(&Lighting_off)) {
 		Lighting_off = !Lighting_off;
 
 	} else {

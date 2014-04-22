@@ -2110,7 +2110,7 @@ DCF(bmpman,"Shows/changes bitmap caching parameters and usage")
 		}
 		dc_printf( "Total RAM after flush: %d bytes\n", bm_texture_ram );
 	} else if (dc_optional_string("ram")) {
-		dc_stuff_int(Bm_max_ram);
+		dc_stuff_int(&Bm_max_ram);
 
 		if (Bm_max_ram > 0) {
 			dc_printf("BmpMan limited to %i, MB's\n", Bm_max_ram);

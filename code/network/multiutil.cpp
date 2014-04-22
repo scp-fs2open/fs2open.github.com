@@ -3251,7 +3251,7 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 	} else if (dc_optional_string("oo")) {
 		int new_flags = -1;
 
-		dc_maybe_stuff_int(new_flags);
+		dc_maybe_stuff_int(&new_flags);
 
 		dc_printf("Interesting flags\n");
 		dc_printf("Pos : %d\n", 1 << 0);
@@ -3459,17 +3459,17 @@ Done:
 DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files (Multiplayer)")
 {
 	int max_files;
-	SCP_string file_str;
+	char file_str[MAX_NAME_LEN];
 
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: pxospew <max_files> <filename>\n");
 		return;
 	}
 
-	dc_stuff_int(max_files);
-	dc_stuff_string_white(file_str);
+	dc_stuff_int(&max_files);
+	dc_stuff_string_white(file_str, MAX_NAME_LEN);
 
-	multi_spew_pxo_checksums(max_files, file_str.c_str());
+	multi_spew_pxo_checksums(max_files, file_str);
 }
 
 

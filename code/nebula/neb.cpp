@@ -902,7 +902,7 @@ void neb2_regen()
 float max_area = 100000000.0f;
 DCF(max_area, "")
 {
-	dc_stuff_float(max_area);
+	dc_stuff_float(&max_area);
 }
 */
 
@@ -1476,44 +1476,44 @@ DCF(neb2, "list nebula console commands")
 
 DCF(neb2_prad, "set cloud poof radius")
 {
-	dc_stuff_float(Nd->prad);
+	dc_stuff_float(&Nd->prad);
 }
 DCF(neb2_cdim, "poof cube dimension")
 {
-	dc_stuff_float(Nd->cube_dim);
+	dc_stuff_float(&Nd->cube_dim);
 }
 
 DCF(neb2_cinner, "poof cube inner dimension")
 {
-	dc_stuff_float(Nd->cube_inner);
+	dc_stuff_float(&Nd->cube_inner);
 }
 
 DCF(neb2_couter, "poof cube outer dimension")
 {
-	dc_stuff_float(Nd->cube_outer);
+	dc_stuff_float(&Nd->cube_outer);
 }
 
 DCF(neb2_jitter, "poof jitter")
 {
 	float value;
-	dc_stuff_float(value);
+	dc_stuff_float(&value);
 	Nd->hj = Nd->dj = Nd->wj = value;
 }
 
 DCF(neb2_max_alpha, "max alpha value (0.0 to 1.0) for cloud poofs.")
 {
-	dc_stuff_float(Nd->max_alpha_glide);
+	dc_stuff_float(&Nd->max_alpha_glide);
 }
 
 DCF(neb2_break_alpha, "alpha value (0.0 to 1.0) at which faded polygons are not drawn.")
 {
-	dc_stuff_float(Nd->break_alpha);
+	dc_stuff_float(&Nd->break_alpha);
 }
 
 DCF(neb2_break_off, "how many pixels offscreen (left, right, top, bottom) when a cloud poof becomes fully transparent.")
 {
 	int value;
-	dc_stuff_int(value);
+	dc_stuff_int(&value);
 	Nd->break_y = (float)value;
 	Nd->break_x = Nd->break_y * gr_screen.aspect;
 }
@@ -1521,7 +1521,7 @@ DCF(neb2_break_off, "how many pixels offscreen (left, right, top, bottom) when a
 DCF(neb2_smooth, "magic fog smoothing modes (0 - 3)")
 {
 	int index;
-	dc_stuff_int(index);
+	dc_stuff_int(&index);
 	if ( (index >= 0) && (index <= 3) ) {
 		wacky_scheme = index;
 	} else {
@@ -1534,10 +1534,10 @@ DCF(neb2_select, "Enables/disables a poof bitmap")
 	int bmap;
 	bool val_b;
 
-	dc_stuff_int(bmap);
+	dc_stuff_int(&bmap);
 
 	if ( (bmap >= 0) && (bmap < Neb2_poof_count) ) {
-		dc_stuff_boolean(val_b);
+		dc_stuff_boolean(&val_b);
 
 		val_b ? (Neb2_poof_flags |= (1<<bmap)) : (Neb2_poof_flags &= ~(1<<bmap));
 	}
@@ -1545,18 +1545,18 @@ DCF(neb2_select, "Enables/disables a poof bitmap")
 
 DCF(neb2_rot, "set max rotation speed for poofs")
 {
-	dc_stuff_float(max_rotation);
+	dc_stuff_float(&max_rotation);
 }
 
 DCF(neb2_ff, "flash fade/sec")
 {
-	dc_stuff_float(neb2_flash_fade);
+	dc_stuff_float(&neb2_flash_fade);
 }
 
 DCF(neb2_mode, "Switches nebula render modes")
 {
 	int mode;
-	dc_stuff_int(mode);
+	dc_stuff_int(&mode);
 
 	switch (mode) {
 		case NEB2_RENDER_NONE:
@@ -1587,7 +1587,7 @@ DCF(neb2_mode, "Switches nebula render modes")
 
 DCF(neb2_slices, "Sets how many 'slices' are used in the nebula")
 {
-	dc_stuff_int(Neb2_slices);
+	dc_stuff_int(&Neb2_slices);
 	neb2_eye_changed();
 }
 
@@ -1595,9 +1595,9 @@ DCF(neb2_background, "Sets the RGB background color (lame rendering)")
 {
 	int r, g, b;
 
-	dc_stuff_int(r);
-	dc_stuff_int(g);
-	dc_stuff_int(b);
+	dc_stuff_int(&r);
+	dc_stuff_int(&g);
+	dc_stuff_int(&b);
 
 	Neb2_background_color[0] = r;
 	Neb2_background_color[1] = g;
@@ -1608,9 +1608,9 @@ DCF(neb2_fog_color, "Sets the RGB fog color (HTL)")
 {
 	ubyte r, g, b;
 
-	dc_stuff_ubyte(r);
-	dc_stuff_ubyte(g);
-	dc_stuff_ubyte(b);
+	dc_stuff_ubyte(&r);
+	dc_stuff_ubyte(&g);
+	dc_stuff_ubyte(&b);
 
 	Neb2_fog_color_r = r;
 	Neb2_fog_color_g = g;

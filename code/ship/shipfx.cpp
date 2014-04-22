@@ -1365,7 +1365,7 @@ DCF(particle_width, "Sets multiplier for angular width of the particle spew ( 0 
 		return;
 	}
 
-	dc_stuff_float(value);
+	dc_stuff_float(&value);
 
 	CLAMP(value, 0.0, 5.0);
 	Particle_width = value;
@@ -1384,7 +1384,7 @@ DCF(particle_num, "Sets multiplier for the number of particles created")
 		return;
 	}
 
-	dc_stuff_float(value);
+	dc_stuff_float(&value);
 
 	CLAMP(value, 0.0, 5.0);
 	Particle_number = value;
@@ -1402,7 +1402,7 @@ DCF(particle_life, "Multiplier for the lifetime of particles created")
 		return;
 	}
 
-	dc_stuff_float(value);
+	dc_stuff_float(&value);
 
 	CLAMP(value, 0.0, 5.0);
 	Particle_life = value;
@@ -1628,7 +1628,7 @@ DCF(bs_exp_fire_time_mult, "Sets multiplier time between fireball in big ship ex
 		return;
 	}
 
-	dc_stuff_float(value);
+	dc_stuff_float(&value);
 
 	CLAMP(value, 0.1f, 5.0f);
 	Bs_exp_fire_time_mult = value;

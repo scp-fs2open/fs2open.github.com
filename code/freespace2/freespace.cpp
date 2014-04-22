@@ -668,7 +668,7 @@ int Sun_drew = 0;
 float sn_glare_scale = 1.7f;
 DCF(sn_glare, "Sets the sun glare scale (Default is 1.7)")
 {
-	dc_stuff_float(sn_glare_scale);
+	dc_stuff_float(&sn_glare_scale);
 }
 
 float Supernova_last_glare = 0.0f;
@@ -1508,12 +1508,12 @@ DCF(warp, "Tests warpin effect")
 	// TODO: Provide status flag
 
 	bool warpin;
-	SCP_string target;
+	char target[MAX_NAME_LEN];
 	int idx = -1;
 
-	dc_stuff_boolean(warpin);
-	if (dc_maybe_stuff_string_white(target)) {
-		idx = ship_name_lookup(target.c_str());
+	dc_stuff_boolean(&warpin);
+	if (dc_maybe_stuff_string_white(target, MAX_NAME_LEN)) {
+		idx = ship_name_lookup(target);
 	}	// Else, default target to player
 	
 	if (idx < 0) {
@@ -1556,7 +1556,7 @@ DCF(show_mem,"Toggles showing mem usage")
 		return;
 	} // Else, process the command
 
-	if (!dc_maybe_stuff_boolean(Show_mem)) {
+	if (!dc_maybe_stuff_boolean(&Show_mem)) {
 		// Nothing passed, so toggle
 		Show_mem = !Show_mem;
 	}	// Else, value was set/cleared by user
@@ -1587,7 +1587,7 @@ DCF(show_cpu,"Toggles showing cpu usage")
 		return;
 	} // Else, process the command
 
-	if (!dc_maybe_stuff_boolean(Show_cpu)) {
+	if (!dc_maybe_stuff_boolean(&Show_cpu)) {
 		// Nothing passed, so toggle
 		Show_cpu = !Show_cpu;
 	}	// Else, value was set/cleared by user
@@ -1620,7 +1620,7 @@ DCF(use_joy_mouse,"Makes joystick move mouse cursor")
 		return;
 	}
 
-	if(!dc_maybe_stuff_boolean(Use_joy_mouse)) {
+	if(!dc_maybe_stuff_boolean(&Use_joy_mouse)) {
 		// Nothing passed, so toggle
 		Use_joy_mouse = !Use_joy_mouse;
 	} // Else, value was set/cleared by user
@@ -1650,7 +1650,7 @@ DCF(low_mem,"Uses low memory settings regardless of RAM")
 		return;
 	}
 
-	if (!dc_maybe_stuff_boolean(Use_low_mem)) {
+	if (!dc_maybe_stuff_boolean(&Use_low_mem)) {
 		// Nothing passed, so toggle
 		Use_low_mem = !Use_low_mem;
 	} // Else, value was set/cleared by user
@@ -1678,7 +1678,7 @@ DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 		return;
 	}
 
-	if (dc_maybe_stuff_boolean(Use_fullscreen_at_startup)) {
+	if (dc_maybe_stuff_boolean(&Use_fullscreen_at_startup)) {
 		// Nothing passed, so toggle
 		Use_fullscreen_at_startup = !Use_fullscreen_at_startup;
 	} // Else, value was set/cleared by user
@@ -1704,7 +1704,7 @@ DCF(gamma,"Sets and saves Gamma Factor")
 		return;
 	}
 
-	if (!dc_maybe_stuff_float(FreeSpace_gamma)) {
+	if (!dc_maybe_stuff_float(&FreeSpace_gamma)) {
 		dc_printf( "Gamma reset to 1.0f\n" );
 		FreeSpace_gamma = 1.0f;
 	}
@@ -2459,7 +2459,7 @@ DCF(ai_pause,"Pauses ai")
 		return;
 	}
 
-	if (!dc_maybe_stuff_boolean(ai_paused)) {
+	if (!dc_maybe_stuff_boolean(&ai_paused)) {
 		ai_paused = !ai_paused;
 	}
 
@@ -2486,7 +2486,7 @@ DCF(single_step,"Enables single step mode.")
 		return;
 	}
 
-	if (!dc_maybe_stuff_boolean(game_single_step)) {
+	if (!dc_maybe_stuff_boolean(&game_single_step)) {
 		game_single_step = !game_single_step;
 	}
 
@@ -2554,7 +2554,7 @@ DCF(view, "Sets the percent of the 3d view to render.")
 		return;
 	}
 
-	dc_stuff_int(value);
+	dc_stuff_int(&value);
 	if ( (value >= 5 ) && (value <= 100) ) {
 		View_percent = value;
 	} else {
@@ -2907,7 +2907,7 @@ DCF(dcf_fov, "Change the field of view of the main camera")
 		return;
 	}
 
-	if (!dc_maybe_stuff_float(value)) {
+	if (!dc_maybe_stuff_float(&value)) {
 		// No value passed, use default
 		cam->set_fov(VIEWER_ZOOM_DEFAULT);
 	} else {
@@ -2952,7 +2952,7 @@ DCF(framerate_cap, "Sets the framerate cap")
 		return;
 	}
 
-	if (!dc_maybe_stuff_int(Framerate_cap)) {
+	if (!dc_maybe_stuff_int(&Framerate_cap)) {
 		Framerate_cap = 0;
 	}
 

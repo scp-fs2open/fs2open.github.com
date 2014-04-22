@@ -1953,7 +1953,7 @@ DCF(model_darkening,"Makes models darker with distance")
 		return;
 	}
 
-	dc_stuff_float(Interp_depth_scale);
+	dc_stuff_float(&Interp_depth_scale);
 
 	dc_printf("model_darkening set to %.1f\n", Interp_depth_scale);
 }

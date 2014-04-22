@@ -907,7 +907,7 @@ DCF(stars,"Set parameters for starfield")
 	dc_stuff_string_white(arg);
 	// "stars default" is handled by "stars m1"
 	if (arg == "num") {
-		dc_stuff_int(val_i);
+		dc_stuff_int(&val_i);
 
 		CLAMP(val_i, 0, MAX_STARS);
 		Num_stars = val_i;
@@ -915,14 +915,14 @@ DCF(stars,"Set parameters for starfield")
 		dc_printf("Num_stars set to %i\n", Num_stars);
 	
 	} else if (arg == "tail") {
-		dc_stuff_float(val_f);
+		dc_stuff_float(&val_f);
 		CLAMP(val_f, 0.0, 1.0);
 		Star_amount = val_f;
 		
 		dc_printf("Star_amount set to %f\n", Star_amount);
 
 	} else if (arg == "dim") {
-		dc_stuff_float(val_f);
+		dc_stuff_float(&val_f);
 
 		if (val_f > 0.0f ) {
 			Star_dim = val_f;
@@ -933,14 +933,14 @@ DCF(stars,"Set parameters for starfield")
 		}
 	
 	} else if (arg == "cap") {
-		dc_stuff_float(val_f);
+		dc_stuff_float(&val_f);
 		CLAMP(val_f, 0.0, 255);
 		Star_cap = val_f;
 		
 		dc_printf("Star_cap set to %f\n", Star_cap);
 	
 	} else if (arg == "len") {
-		dc_stuff_float(Star_max_length);
+		dc_stuff_float(&Star_max_length);
 
 		dc_printf("Star_max_length set to %f\n", Star_max_length);
 
@@ -1324,7 +1324,7 @@ DCF(subspace_set,"Set parameters for subspace effect")
 
 	dc_stuff_string_white(arg);
 	if (arg == "u") {
-		dc_stuff_float(value);
+		dc_stuff_float(&value);
 
 		if ( value < 0.0f ) {
 			dc_printf("Error: speed must be non-negative");
@@ -1333,7 +1333,7 @@ DCF(subspace_set,"Set parameters for subspace effect")
 		subspace_u_speed = value;
 
 	} else if (arg == "v") {
-		dc_stuff_float(value);
+		dc_stuff_float(&value);
 
 		if (value < 0.0f) {
 			dc_printf("Error: speed must be non-negative");

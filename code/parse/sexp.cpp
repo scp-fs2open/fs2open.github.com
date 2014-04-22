@@ -97,6 +97,7 @@
 #include "ship/afterburner.h"
 #include "globalincs/alphacolors.h"
 #include "debugconsole/console.h"
+#include "debugconsole/console.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"

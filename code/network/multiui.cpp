@@ -766,7 +766,7 @@ DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 		return;
 	}
 
-	dc_stuff_int(idx_max);
+	dc_stuff_int(&idx_max);
 
 	for(idx = 0; idx < idx_max; idx++){
 		// stuff some fake info

@@ -529,7 +529,7 @@ DCF(detail_level,"Change the detail level")
 		return;
 	}
 
-	if (dc_maybe_stuff_int(value)) {
+	if (dc_maybe_stuff_int(&value)) {
 		Game_detail_level = value;
 		dc_printf("Detail level set to %i\n", Game_detail_level);
 
@@ -576,7 +576,7 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 		return;
 	}
 
-	if (dc_maybe_stuff_int(value)) {
+	if (dc_maybe_stuff_int(&value)) {
 		Game_detail_flags ^= value;
 	
 	} else {

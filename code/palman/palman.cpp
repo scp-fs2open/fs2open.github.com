@@ -166,14 +166,14 @@ void palette_load_table( const char * filename )
 
 DCF(palette,"Loads a new palette")
 {
-	SCP_string palette_file;
+	char palette_file[MAX_FILENAME_LEN];
 
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: palette <filename>\nLoads the palette file.\n" );
 	}
 
-	dc_stuff_string_white(palette_file);
-	palette_load_table(palette_file.c_str());
+	dc_stuff_string_white(palette_file, MAX_FILENAME_LEN);
+	palette_load_table(palette_file);
 }
 
 int Palman_allow_any_color = 0;

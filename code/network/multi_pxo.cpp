@@ -467,7 +467,7 @@ DCF(players, "Adds the specified number of bogus players to the PXO listing (Mul
 	char name[512] = "";
 	int i;
 	// add a bunch of bogus players
-	dc_stuff_int(i);
+	dc_stuff_int(&i);
 
 	for(int idx = 0; idx < i; idx++){
 		sprintf(name, "bogus player %d", idx);

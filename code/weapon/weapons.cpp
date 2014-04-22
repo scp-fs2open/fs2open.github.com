@@ -6682,7 +6682,7 @@ DCF(pspew_count, "Number of particles spewed at a time")
 			return;
 	}
 
-	dc_stuff_int(Weapon_particle_spew_count);
+	dc_stuff_int(&Weapon_particle_spew_count);
 	
 	dc_printf("Partical count set to %i\n", Weapon_particle_spew_count);
 }
@@ -6699,7 +6699,7 @@ DCF(pspew_time, "Time between particle spews")
 		return;
 	}
 
-	dc_stuff_int(Weapon_particle_spew_time);
+	dc_stuff_int(&Weapon_particle_spew_time);
 
 	dc_printf("Particle spawn period set to %i\n", Weapon_particle_spew_time);
 }
@@ -6716,7 +6716,7 @@ DCF(pspew_vel, "Relative velocity of particles (0.0 - 1.0)")
 		return;
 	}
 
-	dc_stuff_float(Weapon_particle_spew_vel);
+	dc_stuff_float(&Weapon_particle_spew_vel);
 
 	dc_printf("Particle relative velocity set to %f\n", Weapon_particle_spew_vel);
 }
@@ -6733,7 +6733,7 @@ DCF(pspew_size, "Size of spewed particles")
 		return;
 	}
 
-	dc_stuff_float(Weapon_particle_spew_radius);
+	dc_stuff_float(&Weapon_particle_spew_radius);
 
 	dc_printf("Particle size set to %f\n", Weapon_particle_spew_radius);
 }
@@ -6750,7 +6750,7 @@ DCF(pspew_life, "Lifetime of spewed particles")
 		return;
 	}
 
-	dc_stuff_float(Weapon_particle_spew_lifetime);
+	dc_stuff_float(&Weapon_particle_spew_lifetime);
 
 	dc_printf("Particle lifetime set to %f\n", Weapon_particle_spew_lifetime);
 }
@@ -6766,7 +6766,7 @@ DCF(pspew_scale, "How far away particles are from the weapon path")
 		dc_printf("Particle scale is %f\n", Weapon_particle_spew_scale);
 	}
 
-	dc_stuff_float(Weapon_particle_spew_scale);
+	dc_stuff_float(&Weapon_particle_spew_scale);
 
 	dc_printf("Particle scale set to %f\n", Weapon_particle_spew_scale);
 }

@@ -2089,7 +2089,7 @@ DCF(ogl_minimize, "Minimizes opengl")
 		dc_printf("[bool] If true is passed, then the OpenGL window will minimize.\n");
 		return;
 	}
-	dc_stuff_boolean(minimize_ogl);
+	dc_stuff_boolean(&minimize_ogl);
 
 	if (minimize_ogl) {
 		opengl_minimize();
@@ -2126,7 +2126,7 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 		return;
 	}
 
-	if (!dc_maybe_stuff_int(value)) {
+	if (!dc_maybe_stuff_int(&value)) {
 		// No arg passed, set to default
 			GL_anisotropy = 1.0f;
 		//	opengl_set_anisotropy();

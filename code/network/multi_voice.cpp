@@ -490,7 +490,7 @@ void multi_voice_dcf()
 
 	// set the quality of sound
 	if (arg == NOX("qos")) {
-		dc_stuff_int(value);
+		dc_stuff_int(&value);
 		if((value >= 1) && (value <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 			multi_voice_set_vars(value,-1);
 			dc_printf("Quality of sound : %d\n", value);

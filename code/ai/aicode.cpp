@@ -11370,12 +11370,12 @@ float Wing_y_scale = 2.0f;
 float Wing_scale = 1.0f;
 DCF(wing_y_scale, "Adjusts the wing formation scale along the Y axis (Default is 2.0)")
 {
-	dc_stuff_float(Wing_y_scale);
+	dc_stuff_float(&Wing_y_scale);
 }
 
 DCF(wing_scale, "Adjusts the wing formation scale. (Default is 1.0f)")
 {
-	dc_stuff_float(Wing_scale);
+	dc_stuff_float(&Wing_scale);
 }
 
 /**
