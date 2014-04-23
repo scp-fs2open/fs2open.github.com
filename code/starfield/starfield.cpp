@@ -980,11 +980,11 @@ DCF(stars,"Set parameters for starfield")
 		} else if (arg == "aa" ) {
 			Star_flags ^= STAR_FLAG_ANTIALIAS;
 		} else {
-			dc_printf("Error: unknown flag argument '%s'\n", arg);
+			dc_printf("Error: unknown flag argument '%s'\n", arg.c_str());
 		}
 
 	} else {
-		dc_printf("Error: Unknown argument '%s'", arg);
+		dc_printf("Error: Unknown argument '%s'", arg.c_str());
 	}
 }
 //XSTR:ON
@@ -1342,7 +1342,7 @@ DCF(subspace_set,"Set parameters for subspace effect")
 		subspace_v_speed = value;
 
 	} else {
-		dc_printf("Error: Unknown axis '%s'", arg);
+		dc_printf("Error: Unknown axis '%s'", arg.c_str());
 	}
 }
 //XSTR:ON

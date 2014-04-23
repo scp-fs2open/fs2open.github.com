@@ -13720,13 +13720,17 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 	} else if (arg == "radar") {
 		subsystem = SUBSYSTEM_RADAR;
 
+	} else if ((arg == "status") || (arg == "--status") || (arg == "?") || (arg == "--?")) {
+		dc_printf("Error: Must specify a subsystem.\n");
+		return;
+
 	} else {
-		dc_printf("Erro: Unknown argument '%s'\n", arg);
+		dc_printf("Error: Unknown argument '%s'\n", arg.c_str());
 		return;
 	}
 
 	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Subsystem '%s' is at %f strength\n", arg, ship_get_subsystem_strength(Player_ship, subsystem));
+		dc_printf("Subsystem '%s' is at %f strength\n", arg.c_str(), ship_get_subsystem_strength(Player_ship, subsystem));
 
 	} else {
 		// Set the subsystem strength

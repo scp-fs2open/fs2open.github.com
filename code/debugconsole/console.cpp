@@ -54,7 +54,7 @@ uint dc_scroll_x;   // X scroll position (Leftmost character)
 uint dc_scroll_y;   // Y scroll position (Topmost character)
 int row_height;     // Row/Line height, in pixels
 int col_width;      // Col/Character width, in pixels
-int font = FONT1;
+int dc_font = FONT1;
 
 SCP_string dc_title;
 
@@ -147,7 +147,7 @@ void dc_do_command(SCP_string *cmd_str)
 	} catch (errParseString err) {
 		dc_printf("Require string(s) not found: \n");
 		for (int i = 0; i < err.expected_tokens.size(); ++i) {
-			dc_printf("%i: %s\n", err.expected_tokens[i]);
+			dc_printf("%i: %s\n", err.expected_tokens[i].c_str());
 		}
 
 		dc_printf("Found '%s' instead\n", err.found_token.c_str());
@@ -167,7 +167,7 @@ void dc_do_command(SCP_string *cmd_str)
 void dc_draw(bool show_prompt = FALSE)
 {
 	gr_clear();
-	gr_set_font(font);
+	gr_set_font(dc_font);
 	gr_set_color_fast( &Color_bright );
 	gr_string( 0x8000, 3, dc_title.c_str(), GR_RESIZE_NONE );
 
@@ -264,7 +264,7 @@ void dc_init(void)
 	std::sort(dc_commands.begin(), dc_commands.end(), dcmd_less);
 
 	// Init window settings
-	font = FONT1;
+	dc_font = FONT1;
 	row_height = (Current_font->h) * 1.5;	// Row/Line height, in pixels
 	col_width = Current_font->w;			// Col/Character width, in pixels
 	dc_scroll_x = 0;
@@ -507,7 +507,7 @@ void debug_console(void (*_func)(void))
 
 		case KEY_BACKSP:
 			if (!dc_command_buf.empty()) {
-				dc_command_buf.pop_back();
+				dc_command_buf.erase(dc_command_buf.size() - 1);
 			}
 			break;
 

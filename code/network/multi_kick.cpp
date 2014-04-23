@@ -153,7 +153,7 @@ void multi_dcf_kick()
 
 	// if we didn't find the player, notify of the results
 	if(player_num == -1){
-		dc_printf("Could not find player %s to kick!", arg);
+		dc_printf("Could not find player %s to kick!", arg.c_str());
 	} 
 	// if we found the guy, then try and kick him
 	else {

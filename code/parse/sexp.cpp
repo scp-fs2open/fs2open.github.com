@@ -24657,10 +24657,10 @@ DCF(sexpc, "Always runs the given sexp command (Warning! There is no undo for th
 
 	dc_stuff_string(sexp);
 
-	sprintf(sexp_always, "( when ( true ) ( %s ) )", sexp);
+	sexp_always = "( when ( true ) ( " + sexp + " ) )";
 
 	int sexp_val = run_sexp(sexp_always.c_str());
-	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp_always, sexp_val);
+	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp_always.c_str(), sexp_val);
 }
 
 
@@ -24676,7 +24676,7 @@ DCF(sexp,"Runs the given sexp")
 	dc_stuff_string(sexp);
 
 	int sexp_val = run_sexp(sexp.c_str());
-	dc_printf("SEXP '%s' run, sexp_val = %d\n", dc_command_str, sexp_val);
+	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp.c_str(), sexp_val);
 }
 
 

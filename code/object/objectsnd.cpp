@@ -154,7 +154,7 @@ DCF(objsnd, "Persistent sound stuff" )
 				Obj_snd_enabled = TRUE;
 		}
 	} else {
-		dc_printf("Unknown argument '%s'\n", arg);
+		dc_printf("Unknown argument '%s'\n", arg.c_str());
 	}
 }
 //XSTR:ON
