@@ -14,6 +14,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/version.h"
 #include "globalincs/vmallocator.h"
+#include "graphics/2d.h"
 #include "graphics/font.h"
 #include "io/timer.h"
 #include "io/key.h"
@@ -168,7 +169,7 @@ void dc_draw(bool show_prompt = FALSE)
 	gr_clear();
 	gr_set_font(font);
 	gr_set_color_fast( &Color_bright );
-	gr_string( 0x8000, 3, dc_title.c_str(), false );
+	gr_string( 0x8000, 3, dc_title.c_str(), GR_RESIZE_NONE );
 
 	gr_set_color_fast( &Color_normal );
 
@@ -188,7 +189,7 @@ void dc_draw_cursor( SCP_string &cmd_string, int x, int y )
 
 		w %= (DCOLS * Current_font->w);
 		//gr_string( w, debug_y*16, "_" );
-		gr_rect((x + (w + 1)), (y + (h + 1)), 2, Current_font->h, false);
+		gr_rect((x + (w + 1)), (y + (h + 1)), 2, Current_font->h, GR_RESIZE_NONE);
 	}
 }
 
@@ -224,7 +225,7 @@ void dc_draw_window(bool show_prompt)
 	// Draw the buffer strings
 	for (i = 0; i < buffer_lines; ++i) {
 		if ((i + dc_scroll_y) < dc_buffer.size()) {
-			gr_string(0, ((i * row_height) + row_height), dc_buffer[i + dc_scroll_y].substr(dc_scroll_x).c_str(), false);
+			gr_string(0, ((i * row_height) + row_height), dc_buffer[i + dc_scroll_y].substr(dc_scroll_x).c_str(), GR_RESIZE_NONE);
 		}
 	}
 
@@ -242,7 +243,7 @@ void dc_draw_window(bool show_prompt)
 				++j;
 			}
 		}
-		gr_string(0, ((i * row_height) + row_height), out_str.c_str(), false);
+		gr_string(0, ((i * row_height) + row_height), out_str.c_str(), GR_RESIZE_NONE);
 
 		dc_draw_cursor(out_str, 0, ((i * row_height)));
 		gr_set_color_fast(&Color_normal);
