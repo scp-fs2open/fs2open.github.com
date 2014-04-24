@@ -177,6 +177,7 @@ public:
 			i_last = j;
 	}
 
+	// Constructor
 	buffer_data(int n_vrts) :
 		flags(0), texture(-1), n_verts(n_vrts), index_offset(0),
 		i_first(1), i_last(0)
@@ -184,6 +185,51 @@ public:
 		index = new(std::nothrow) uint[n_verts];
 	}
     
+	// Copy-constructor
+	buffer_data(const buffer_data& other)
+	{
+		index = new(std::nothrow) uint[other.n_verts];
+		for (size_t i=0; i < (int) other.n_verts; i++)
+		{
+			index[i] = other.index[i];
+		}
+        
+		flags   = other.flags;
+		texture = other.texture;
+		n_verts = other.n_verts;
+
+		i_first = other.i_first;
+		i_last  = other.i_last;
+        
+		index_offset = other.index_offset;
+	}
+    
+	// Copy-assignment operator
+	buffer_data& operator=(const buffer_data& rhs)
+	{
+		if (this != &rhs)
+		{
+			delete [] index;
+            
+			index = new(std::nothrow) uint[rhs.n_verts];
+			for (size_t i=0; i < (int) rhs.n_verts; i++)
+			{
+				index[i] = rhs.index[i];
+			}
+            
+			flags   = rhs.flags;
+			texture = rhs.texture;
+			n_verts = rhs.n_verts;
+            
+			i_first = rhs.i_first;
+			i_last  = rhs.i_last;
+            
+			index_offset = rhs.index_offset;
+		}
+		return *this;
+	}
+    
+	// Destructor
 	~buffer_data()
 	{
 		release();
