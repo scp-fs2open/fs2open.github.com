@@ -14782,14 +14782,17 @@ int firing_aspect_seeking_bomb(object *objp)
 
 	bank_index = swp->current_secondary_bank;
 
-	if (bank_index != -1)
-		if (swp->secondary_bank_ammo[bank_index] > 0) {
-			if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_BOMB) {
-				if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_HOMING_ASPECT) {
-					return 1;
+	if (bank_index != -1) {
+		if (swp->secondary_bank_weapons[bank_index] > 0) {
+			if (swp->secondary_bank_ammo[bank_index] > 0) {
+				if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_BOMB) {
+					if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_HOMING_ASPECT) {
+						return 1;
+					}
 				}
 			}
 		}
+	}
 
 	return 0;
 }
