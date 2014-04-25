@@ -308,6 +308,7 @@ void barracks_init_stats(scoring_struct *stats)
 	int Max_stat_lines = Num_ship_classes + 23;
 	int i;
 	float f;
+	int score_from_kills = 0;
 
 	//Set up variables
 	if(Stat_labels != NULL)
@@ -470,8 +471,17 @@ void barracks_init_stats(scoring_struct *stats)
 			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), Ship_info[i].name);
 			sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
 			Num_stat_lines++;
+
+			// work out the total score from ship kills
+			score_from_kills += stats->kills[i] * Ship_info[i].score;
 		}
 	}
+
+	// add the score from kills
+	Assert((Num_stat_lines + Num_ship_classes) < Max_stat_lines);
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Score from kills only:", 1636));
+	sprintf(Stats[Num_stat_lines], "%d", score_from_kills);
+	Num_stat_lines++;
 
 	for (i=0; i<Num_stat_lines; i++) {
 		gr_force_fit_string(Stat_labels[i], Stat_column1_w[gr_screen.res], Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD]);
