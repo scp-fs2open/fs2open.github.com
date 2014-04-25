@@ -189,7 +189,7 @@ public:
 	buffer_data(const buffer_data& other)
 	{
 		index = new(std::nothrow) uint[other.n_verts];
-		for (size_t i=0; i < (int) other.n_verts; i++)
+		for (size_t i=0; i < (size_t) other.n_verts; i++)
 		{
 			index[i] = other.index[i];
 		}
@@ -212,7 +212,7 @@ public:
 			delete [] index;
             
 			index = new(std::nothrow) uint[rhs.n_verts];
-			for (size_t i=0; i < (int) rhs.n_verts; i++)
+			for (size_t i=0; i < (size_t) rhs.n_verts; i++)
 			{
 				index[i] = rhs.index[i];
 			}
