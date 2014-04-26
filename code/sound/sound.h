@@ -127,7 +127,7 @@ void	snd_chg_loop_status(int snd_handle, int loop);
 int snd_get_duration(int snd_id);
 
 // Get the file name of the specified sound
-char *snd_get_filename(int snd_id);
+const char *snd_get_filename(int snd_id);
 
 // get a 3D vol and pan for a particular sound
 int	snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius=0.0f, float range_factor=1.0f);

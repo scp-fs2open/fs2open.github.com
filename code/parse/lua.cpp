@@ -8678,7 +8678,7 @@ ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, se
 }
 
 // from mission/missionmessage.cpp
-extern int add_wave( char *wave_name );
+extern int add_wave( const char *wave_name );
 ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", "soundfile", "The voice file handle or invalid handle when not present")
 {
 	int idx = -1;
@@ -8694,7 +8694,7 @@ ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", 
 
 	if (ADE_SETTING_VAR && sndIdx >= 0)
 	{
-		char* newFilename = snd_get_filename(sndIdx);
+		const char* newFilename = snd_get_filename(sndIdx);
 
 		msg->wave_info.index = add_wave(newFilename);
 	}

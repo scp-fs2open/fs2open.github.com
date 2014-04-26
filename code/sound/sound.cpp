@@ -1059,7 +1059,7 @@ int snd_get_duration(int snd_id)
 }
 
 // return the time in ms for the duration of the sound
-char *snd_get_filename(int snd_id)
+const char *snd_get_filename(int snd_id)
 {
 	Assertion(snd_id >= 0 && snd_id < (int) Sounds.size(), "Invalid sound id %d!", snd_id);
 

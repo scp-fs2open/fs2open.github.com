@@ -322,7 +322,7 @@ int add_avi( char *avi_name )
 	return ((int)Message_avis.size() - 1);
 }
 
-int add_wave( char *wave_name )
+int add_wave( const char *wave_name )
 {
 	int i;
 	message_extra extra; 
