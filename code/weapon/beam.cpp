@@ -3227,7 +3227,7 @@ int beam_ok_to_fire(beam *b)
 		if (shipp->weapon_energy <= 0.0f) {
 
 			if ( OBJ_INDEX(Player_obj) == shipp->objnum && !(b->life_left>0.0f)) {
-				extern int ship_maybe_play_primary_fail_sound();
+				extern void ship_maybe_play_primary_fail_sound();
 				ship_maybe_play_primary_fail_sound();
 			}
 
