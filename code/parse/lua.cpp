@@ -14391,6 +14391,38 @@ ADE_FUNC(__len, l_Mission_Beams, NULL, "Number of beam objects in mission. Note 
 	return ade_set_args(L, "i", Beam_count);
 }
 
+//****SUBLIBRARY: Campaign
+ade_lib l_Campaign("Campaign", NULL, "ca", "Campaign Library");
+
+ADE_FUNC(getNextMissionFilename, l_Campaign, NULL, "Gets next mission filename", "string", "Next mission filename, or error string if the next mission is invalid")
+{
+	if (Campaign.next_mission < 0 || Campaign.next_mission >= MAX_CAMPAIGN_MISSIONS) {
+		return ade_set_error(L, "s", "Invalid mission index");
+	}
+	return ade_set_args(L, "s", Campaign.missions[Campaign.next_mission].name);
+}
+
+ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filename", "string", "Previous mission filename, or error string if the next mission is invalid")
+{
+	if (Campaign.prev_mission < 0 || Campaign.prev_mission >= MAX_CAMPAIGN_MISSIONS) {
+		return ade_set_error(L, "s", "Invalid mission index");
+	}
+	return ade_set_args(L, "s", Campaign.missions[Campaign.prev_mission].name);
+}
+
+ADE_FUNC(getAnyMissionFilename, l_Campaign, "mission index", "Gets the specified mission filename", "string", "Next mission filename, or error string if input was invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "i", &idx)) {
+		return ade_set_error(L, "s", "Invalid index");
+	}
+
+	if (idx < 0 || idx >= MAX_CAMPAIGN_MISSIONS) {
+		return ade_set_error(L, "s", "Invalid index value");
+	}
+	return ade_set_args(L, "s", Campaign.missions[idx].name);
+}
+
 //****SUBLIBRARY: Mission/Wings
 ade_lib l_Mission_Wings("Wings", &l_Mission, NULL, NULL);
 
