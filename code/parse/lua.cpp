@@ -14391,6 +14391,28 @@ ADE_FUNC(__len, l_Mission_Beams, NULL, "Number of beam objects in mission. Note 
 	return ade_set_args(L, "i", Beam_count);
 }
 
+//****SUBLIBRARY: Campaign
+ade_lib l_Campaign("Campaign", NULL, "ca", "Campaign Library");
+
+ADE_FUNC(getNextMissionFilename, l_Campaign, NULL, "Gets next mission filename", "string", "Next mission filename, or nil if the next mission is invalid")
+{
+	if (Campaign.next_mission < 0 || Campaign.next_mission >= MAX_CAMPAIGN_MISSIONS) {
+		return ADE_RETURN_NIL;
+	}
+	return ade_set_args(L, "s", Campaign.missions[Campaign.next_mission].name);
+}
+
+ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filename", "string", "Previous mission filename, or nil if the previous mission is invalid")
+{
+	if (Campaign.prev_mission < 0 || Campaign.prev_mission >= MAX_CAMPAIGN_MISSIONS) {
+		return ADE_RETURN_NIL;
+	}
+	return ade_set_args(L, "s", Campaign.missions[Campaign.prev_mission].name);
+}
+
+// TODO: add a proper indexer type that returns a handle
+// something like ca.Mission[filename/index]
+
 //****SUBLIBRARY: Mission/Wings
 ade_lib l_Mission_Wings("Wings", &l_Mission, NULL, NULL);
 
