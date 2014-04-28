@@ -14402,7 +14402,7 @@ ADE_FUNC(getNextMissionFilename, l_Campaign, NULL, "Gets next mission filename",
 	return ade_set_args(L, "s", Campaign.missions[Campaign.next_mission].name);
 }
 
-ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filename", "string", "Previous mission filename, or nil if the next mission is invalid")
+ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filename", "string", "Previous mission filename, or nil if the previous mission is invalid")
 {
 	if (Campaign.prev_mission < 0 || Campaign.prev_mission >= MAX_CAMPAIGN_MISSIONS) {
 		return ADE_RETURN_NIL;
@@ -14410,18 +14410,8 @@ ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filena
 	return ade_set_args(L, "s", Campaign.missions[Campaign.prev_mission].name);
 }
 
-ADE_FUNC(getAnyMissionFilename, l_Campaign, "mission index", "Gets the specified mission filename", "string", "Next mission filename, or nil if input was invalid")
-{
-	int idx;
-	if (!ade_get_args(L, "i", &idx)) {
-		return ADE_RETURN_NIL;
-	}
-
-	if (idx < 0 || idx >= MAX_CAMPAIGN_MISSIONS) {
-		return ADE_RETURN_NIL;
-	}
-	return ade_set_args(L, "s", Campaign.missions[idx].name);
-}
+// TODO: add a proper indexer type that returns a handle
+// something like ca.Mission[filename/index]
 
 //****SUBLIBRARY: Mission/Wings
 ade_lib l_Mission_Wings("Wings", &l_Mission, NULL, NULL);
