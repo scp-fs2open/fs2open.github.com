@@ -1542,7 +1542,7 @@ void control_config_do_frame(float frametime)
 				}
 
 				if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
-					popup(0, 1, POPUP_OK, XSTR( "That is a non-bindable key.  Please try again.", 207));
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "That is a non-bindable key.  Please try again.", 207));
 					k = 0;
 				}
 

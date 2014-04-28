@@ -1878,7 +1878,7 @@ void multi_join_send_join_request(int as_observer)
 
 	// 5/26/98 -- for team v team games, don't allow ingame joining :-(
 	if ( (Multi_join_selected_item->flags & AG_FLAG_TEAMS) && (Multi_join_selected_item->flags & (AG_FLAG_PAUSE|AG_FLAG_IN_MISSION)) ) {
-		popup(0, 1, POPUP_OK, XSTR("Joining ingame is currently not allowed for team vs. team games",772));
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Joining ingame is currently not allowed for team vs. team games",772));
 		return;
 	}
 

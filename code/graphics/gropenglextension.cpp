@@ -420,7 +420,7 @@ void opengl_extensions_init()
 			Use_GLSL = 0;
 			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
 #ifdef NDEBUG
-			popup(0, 1, POPUP_OK, "GLSL support not available on this GPU. Disabling shader support and defaulting to fixed-function rendering.\n");
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "GLSL support not available on this GPU. Disabling shader support and defaulting to fixed-function rendering.\n");
 #endif
 		}
 	}

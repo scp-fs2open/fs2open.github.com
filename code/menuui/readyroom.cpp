@@ -873,13 +873,13 @@ int readyroom_continue_campaign()
 	if (mc_rval == -1)
 	{  // is campaign and next mission valid?
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup(0, 1, POPUP_OK, XSTR( "The campaign is over.  To replay the campaign, either create a new pilot or restart the campaign in the campaign room.", 112) );
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The campaign is over.  To replay the campaign, either create a new pilot or restart the campaign in the campaign room.", 112) );
 		return -1;
 	}
 	else if(mc_rval == -2)
 	{
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup(0, 1, POPUP_OK, NOX("The current campaign has no missions") );
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("The current campaign has no missions") );
 		return -1;
 	}
 
@@ -928,7 +928,7 @@ int sim_room_button_pressed(int n)
 
 		case CAMPAIGN_TAB:
 			if ( !strlen(Campaign.filename) ) {
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found, unable to switch to campaign mode!", 1612));
+				popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found, unable to switch to campaign mode!", 1612));
 				break;
 			}
 

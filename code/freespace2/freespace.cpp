@@ -8338,7 +8338,7 @@ int game_do_cd_check(char *volume_name)
 			break;
 		} else {
 			// no CD found, so prompt user
-			popup_rval = popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "FreeSpace 2 CD not found\n\nInsert a FreeSpace 2 CD to continue", 202));
+			popup_rval = popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "FreeSpace 2 CD not found\n\nInsert a FreeSpace 2 CD to continue", 202));
 			refresh_files = 1;
 			if ( popup_rval != 1 ) {
 				cd_present = 0;
@@ -8385,7 +8385,7 @@ int game_do_cd_check_specific(char *volume_name, int cdnum)
 			break;
 		} else {
 			// no CD found, so prompt user
-			popup_rval = popup(PF_BODY_BIG, 1, POPUP_OK, XSTR("Please insert CD %d", 1468), cdnum);
+			popup_rval = popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Please insert CD %d", 1468), cdnum);
 			refresh_files = 1;
 			if ( popup_rval != 1 ) {
 				cd_present = 0;
