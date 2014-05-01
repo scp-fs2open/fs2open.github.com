@@ -12591,7 +12591,7 @@ void multi_sexp_deal_with_ship_flag()
 	multi_get_int(p_object_flag); 
 	multi_get_int(p_object_flag2); 
 	multi_get_bool(set_it);
- 
+
 	// if any of the above failed so will this loop
 	while (multi_get_bool(ship_arrived)) 
 	{
@@ -12602,7 +12602,10 @@ void multi_sexp_deal_with_ship_flag()
 				WarningEx(LOCATION, "Null ship pointer in multi_sexp_deal_with_ship_flag(), tell a coder.\n");
 				return;
 			}
-			
+
+			// save flags for state change comparisons
+			int object_flag_orig = Objects[shipp->objnum].flags;
+
 			if (set_it) {
 				Objects[shipp->objnum].flags |= object_flag;
 				// Objects[shipp->objnum].flags2 |= object_flag2;
@@ -12617,6 +12620,14 @@ void multi_sexp_deal_with_ship_flag()
 			}
 
 			// deal with side effects of these flags
+			if (object_flag == OF_NO_SHIELDS) {
+				if (set_it) {
+					zero_one_ets(&shipp->shield_recharge_index, &shipp->weapon_recharge_index, &shipp->engine_recharge_index);
+				} else if (object_flag_orig & OF_NO_SHIELDS) {
+					set_default_recharge_rates(&Objects[shipp->objnum]);
+				}
+			}
+
 			if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
 				if (set_it) {
 					afterburners_stop(&Objects[shipp->objnum], 1);
@@ -12864,6 +12875,7 @@ bool sexp_check_flag_arrays(char *flag_name, int &object_flag, int &object_flag2
 			// make sure the list writes to the correct list of flags!
 			if (Object_flag_names[i].flag_list == 1) {
 				object_flag = Object_flag_names[i].flag;
+				send_multi = true;
 			}
 			else if (Object_flag_names[i].flag_list == 2) {
 				object_flag2 = Object_flag_names[i].flag;
@@ -13032,7 +13044,9 @@ void sexp_alter_ship_flag(int node)
 	// no 4th argument means do this to every ship in the mission (and if the flag is set, every ship that will be too).
 	if (node == -1) {
 		// send a message to the clients saying there were no more arguments
-		multi_send_bool(false); 
+		if (send_multi && MULTIPLAYER_MASTER) {
+			multi_send_bool(false);
+		}
 
 		alter_flag_for_all_ships(future_ships, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 	}
@@ -13040,7 +13054,9 @@ void sexp_alter_ship_flag(int node)
 
 	else {
 		// send a message to the clients saying there are more arguments
-		multi_send_bool(true); 
+		if (send_multi && MULTIPLAYER_MASTER) {
+			multi_send_bool(true);
+		}
 
 		while (node != -1) {
 			sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(node), future_ships); 
@@ -13054,29 +13070,33 @@ void sexp_alter_ship_flag(int node)
 			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 			node = CDR(node);
 
-			multi_send_int(oswpt.type);
+			if (send_multi && MULTIPLAYER_MASTER) {
+				multi_send_int(oswpt.type);
 
-			switch (oswpt.type) {
-				case OSWPT_TYPE_SHIP:
-					multi_send_ship(oswpt.shipp);
-					break;
+				switch (oswpt.type) {
+					case OSWPT_TYPE_SHIP:
+						multi_send_ship(oswpt.shipp);
+						break;
 
-				case OSWPT_TYPE_PARSE_OBJECT:
-					multi_send_parse_object(oswpt.p_objp);
-					break;
+					case OSWPT_TYPE_PARSE_OBJECT:
+						multi_send_parse_object(oswpt.p_objp);
+						break;
 
-				case OSWPT_TYPE_WING_NOT_PRESENT:
-				case OSWPT_TYPE_WING:
-					multi_send_ushort(oswpt.wingp->net_signature);
-					break;
+					case OSWPT_TYPE_WING_NOT_PRESENT:
+					case OSWPT_TYPE_WING:
+						multi_send_ushort(oswpt.wingp->net_signature);
+						break;
 
-				case OSWPT_TYPE_WHOLE_TEAM:
-					multi_send_int(oswpt.team);
-					break;
+					case OSWPT_TYPE_WHOLE_TEAM:
+						multi_send_int(oswpt.team);
+						break;
+				}
 			}
 		}
 	}
-	multi_end_callback();
+	if (send_multi && MULTIPLAYER_MASTER) {
+		multi_end_callback();
+	}
 }
 
 
@@ -13126,7 +13146,12 @@ void multi_sexp_alter_ship_flag()
 
 			switch (oswpt.type) {
 				case OSWPT_TYPE_SHIP:
-					multi_get_ship(oswpt.shipp);
+					if (multi_get_ship(oswpt.shipp)) {
+						oswpt.objp = &Objects[oswpt.shipp->objnum];
+					} else {
+						Warning(LOCATION, "OSWPT had an invalid ship in multi_sexp_alter_ship_flag(), skipping");
+						continue;
+					}
 					break;
 
 				case OSWPT_TYPE_PARSE_OBJECT:
@@ -13139,6 +13164,16 @@ void multi_sexp_alter_ship_flag()
 					for (i = 0; i < Num_wings; i++) {
 						if (Wings[i].net_signature == wing_sig) {
 							oswpt.wingp = &Wings[i];
+
+							// wing leader handling taken from sexp_get_object_ship_wing_point_team
+							if ((oswpt.wingp->special_ship >= 0) && (oswpt.wingp->ship_index[oswpt.wingp->special_ship] >= 0)) {
+								oswpt.shipp = &Ships[oswpt.wingp->ship_index[oswpt.wingp->special_ship]];
+								oswpt.objp = &Objects[oswpt.shipp->objnum];
+							} else {
+								oswpt.shipp = &Ships[oswpt.wingp->ship_index[0]];
+								oswpt.objp = &Objects[oswpt.shipp->objnum];
+								Warning(LOCATION, "Substituting ship '%s' at index 0 for nonexistent wing leader at index %d!", oswpt.shipp->ship_name, oswpt.wingp->special_ship);
+							}
 							break;
 						}
 					}
@@ -14512,7 +14547,7 @@ void sexp_destroy_instantly(int n)
 
 void sexp_shields_off(int n, bool shields_off ) //-Sesquipedalian
 {
-	sexp_deal_with_ship_flag(n, true, OF_NO_SHIELDS, 0, 0, 0, P_OF_NO_SHIELDS, 0, shields_off);
+	sexp_deal_with_ship_flag(n, true, OF_NO_SHIELDS, 0, 0, 0, P_OF_NO_SHIELDS, 0, shields_off, true);
 }
 
 // Goober5000
@@ -24372,6 +24407,8 @@ void multi_sexp_eval()
 			case OP_UNLOCK_PRIMARY_WEAPON:
 			case OP_LOCK_SECONDARY_WEAPON:
 			case OP_UNLOCK_SECONDARY_WEAPON:
+			case OP_SHIELDS_ON:
+			case OP_SHIELDS_OFF:
 				multi_sexp_deal_with_ship_flag();
 				break;
 

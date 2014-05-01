@@ -4178,8 +4178,11 @@ void weapon_home(object *obj, int num, float frame_time)
 		(wp->target_sig > 0) &&
 		(wp->homing_subsys != NULL) &&
 		(wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE)) {
-			ship *enemy = &Ships[ship_get_by_signature(wp->target_sig)];
-			wp->homing_subsys = ship_get_closest_subsys_in_sight(enemy, SUBSYSTEM_ENGINE, &Objects[wp->objnum].pos);
+			int sindex = ship_get_by_signature(wp->target_sig);
+			if (sindex >= 0) {
+				ship *enemy = &Ships[sindex];
+				wp->homing_subsys = ship_get_closest_subsys_in_sight(enemy, SUBSYSTEM_ENGINE, &Objects[wp->objnum].pos);
+			}
 	}
 
 	// If Javelin HS missile doesn't home in on a subsystem but homing in on a

@@ -294,8 +294,13 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		if ( objp->type == OBJ_WEAPON ) {
 			// only apply to missiles with hitpoints
 			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_SHOCKWAVE_DAMAGE) || (Weapon_info[sw->weapon_info_index].wi_flags2 & WIF2_CIWS))
+			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_SHOCKWAVE_DAMAGE))
 				continue;
+			if (sw->weapon_info_index >= 0) {
+				if (Weapon_info[sw->weapon_info_index].wi_flags2 & WIF2_CIWS) {
+					continue;
+				}
+			}
 		}
 
 	

@@ -9823,7 +9823,7 @@ send_countermeasure_fired:
 /**
  * See if enough time has elapsed to play fail sound again
  */
-int ship_maybe_play_primary_fail_sound()
+void ship_maybe_play_primary_fail_sound()
 {
 	ship_weapon *swp = &Player_ship->weapons;
 	int stampval;
@@ -9843,9 +9843,7 @@ int ship_maybe_play_primary_fail_sound()
 		}
 		Laser_energy_out_snd_timer = timestamp(stampval);
 		snd_play( &Snds[ship_get_sound(Player_obj, SND_OUT_OF_WEAPON_ENERGY)]);
-		return 1;
 	}
-	return 0;
 }
 
 /**
@@ -10375,8 +10373,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// functional, which should be cool.  		
 		if ( ship_weapon_maybe_fail(shipp) && !force) {
 			if ( obj == Player_obj ) {
-				if ( ship_maybe_play_primary_fail_sound() ) {
-				}
+				ship_maybe_play_primary_fail_sound();
 			}
 			ship_stop_fire_primary_bank(obj, bank_to_fire);
 			continue;
@@ -10452,11 +10449,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 					if ( obj == Player_obj )
 					{
-						if ( ship_maybe_play_primary_fail_sound() )
-						{
-							// I guess they just deleted the commented HUD message here (they left
-							// it in in other routines)
-						}
+						ship_maybe_play_primary_fail_sound();
 					}
 					ship_stop_fire_primary_bank(obj, bank_to_fire);
 					continue;
@@ -10537,11 +10530,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 					if ( obj == Player_obj )
 					{
-						if ( ship_maybe_play_primary_fail_sound() )
-						{
-							// I guess they just deleted the commented HUD message here (they left
-							// it in in other routines)
-						}
+						ship_maybe_play_primary_fail_sound();
 					}
 					ship_stop_fire_primary_bank(obj, bank_to_fire);
 					continue;
@@ -10577,10 +10566,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					{
 						if ( obj == Player_obj )
 						{
-							if ( ship_maybe_play_primary_fail_sound() )
-							{
-//								HUD_sourced_printf(HUD_SOURCE_HIDDEN, "No %s ammunition left in bank", Weapon_info[swp->primary_bank_weapons[bank_to_fire]].name);
-							}
+							ship_maybe_play_primary_fail_sound();
 						}
 						else
 						{
