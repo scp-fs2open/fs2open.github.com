@@ -2720,6 +2720,32 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_string(sip->icon_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
+	if ( optional_string("$Model Icon Direction:") ) {
+		char str[NAME_LENGTH];
+		stuff_string(str, F_NAME, NAME_LENGTH);
+
+		angles model_icon_angles = {0.0f,0.0f,0.0f};
+
+		if (!stricmp(str, "top")) {
+			model_icon_angles.p = -PI_2;
+		} else if (!stricmp(str, "bottom")) {
+			model_icon_angles.p = -PI_2;
+			model_icon_angles.b = 2 * PI_2;
+		} else if (!stricmp(str, "front")) {
+			model_icon_angles.h = 2 * PI_2;
+		} else if (!stricmp(str, "back")) {
+			model_icon_angles.h = 4 * PI_2;
+		} else if (!stricmp(str, "left")) {
+			model_icon_angles.h = -PI_2;
+		} else if (!stricmp(str, "right")) {
+			model_icon_angles.h = PI_2;
+		} else {
+			Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Icon Direction, ignoring...", str);
+		}
+
+		sip->model_icon_angles = model_icon_angles;
+	}
+
 	// read in filename for animation that is used in ship selection
 	if ( optional_string("$Ship_anim:") ) {
 		stuff_string(sip->anim_filename, F_NAME, MAX_FILENAME_LEN);
