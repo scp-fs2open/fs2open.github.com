@@ -1372,6 +1372,7 @@ public:
 	float		thruster02_glow_len_factor;
 	float		thruster_dist_rad_factor;
 	float		thruster_dist_len_factor;
+	float		thruster_glow_noise_mult;
 
 	bool		draw_distortion;
 
