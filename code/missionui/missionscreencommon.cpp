@@ -1513,6 +1513,11 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		//Assume it's a weapon
 		rot_angles.h = -(PI_2);
 	}
+	else if(sip->model_icon_angles.p != 0.0f || sip->model_icon_angles.b != 0.0f || sip->model_icon_angles.h != 0.0f)
+	{
+		// If non-zero model_icon_angles exists, always use that
+		rot_angles = sip->model_icon_angles;
+	}
 	else if(sip->flags & SIF_SMALL_SHIP)
 	{
 		rot_angles.p = -(PI_2);
