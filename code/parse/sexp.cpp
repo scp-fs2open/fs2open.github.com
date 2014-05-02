@@ -12875,7 +12875,6 @@ bool sexp_check_flag_arrays(char *flag_name, int &object_flag, int &object_flag2
 			// make sure the list writes to the correct list of flags!
 			if (Object_flag_names[i].flag_list == 1) {
 				object_flag = Object_flag_names[i].flag;
-				send_multi = true;
 			}
 			else if (Object_flag_names[i].flag_list == 2) {
 				object_flag2 = Object_flag_names[i].flag;
@@ -12999,13 +12998,12 @@ void sexp_alter_ship_flag(int node)
 	int ai_flag = 0;
 	int ai_flag2 = 0;
 	bool set_flag = false; 
-	bool send_multi = false;
 	bool future_ships = false; 
 	object_ship_wing_point_team oswpt;
 
 	flag_name = CTEXT(node); 
 
-	send_multi = sexp_check_flag_arrays(flag_name, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2); 
+	sexp_check_flag_arrays(flag_name, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2);
 
 	node = CDR(node); 
 	if (is_sexp_true(node)) {
@@ -13019,34 +13017,30 @@ void sexp_alter_ship_flag(int node)
 
 
 	// start the multiplayer packet
-	if (send_multi && MULTIPLAYER_MASTER) {
-		multi_start_callback(); 
-		multi_send_int(object_flag); 
-		/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until object_flag2
-		is actually used by the engine 
-		*/
-		// multi_send_int(object_flag2); 
-		multi_send_int(ship_flags); 
-		multi_send_int(ship_flags2); 
-		multi_send_int(parse_obj_flag); 
-		multi_send_int(parse_obj_flag2); 
-		multi_send_int(ai_flag); 
-		/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until ai_flag2
-		is actually used by the engine 
-		*/
-		// multi_send_int(ai_flag2); 
-		multi_send_bool(set_flag); 
-		multi_send_bool(future_ships); 
-	}
+	multi_start_callback();
+	multi_send_int(object_flag);
+	/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until object_flag2
+	is actually used by the engine
+	*/
+	// multi_send_int(object_flag2);
+	multi_send_int(ship_flags);
+	multi_send_int(ship_flags2);
+	multi_send_int(parse_obj_flag);
+	multi_send_int(parse_obj_flag2);
+	multi_send_int(ai_flag);
+	/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until ai_flag2
+	is actually used by the engine
+	*/
+	// multi_send_int(ai_flag2);
+	multi_send_bool(set_flag);
+	multi_send_bool(future_ships);
 
 	node = CDR(node);
 
 	// no 4th argument means do this to every ship in the mission (and if the flag is set, every ship that will be too).
 	if (node == -1) {
 		// send a message to the clients saying there were no more arguments
-		if (send_multi && MULTIPLAYER_MASTER) {
-			multi_send_bool(false);
-		}
+		multi_send_bool(false);
 
 		alter_flag_for_all_ships(future_ships, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 	}
@@ -13054,9 +13048,7 @@ void sexp_alter_ship_flag(int node)
 
 	else {
 		// send a message to the clients saying there are more arguments
-		if (send_multi && MULTIPLAYER_MASTER) {
-			multi_send_bool(true);
-		}
+		multi_send_bool(true);
 
 		while (node != -1) {
 			sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(node), future_ships); 
@@ -13070,33 +13062,29 @@ void sexp_alter_ship_flag(int node)
 			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, object_flag2, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 			node = CDR(node);
 
-			if (send_multi && MULTIPLAYER_MASTER) {
-				multi_send_int(oswpt.type);
+			multi_send_int(oswpt.type);
 
-				switch (oswpt.type) {
-					case OSWPT_TYPE_SHIP:
-						multi_send_ship(oswpt.shipp);
-						break;
+			switch (oswpt.type) {
+				case OSWPT_TYPE_SHIP:
+					multi_send_ship(oswpt.shipp);
+					break;
 
-					case OSWPT_TYPE_PARSE_OBJECT:
-						multi_send_parse_object(oswpt.p_objp);
-						break;
+				case OSWPT_TYPE_PARSE_OBJECT:
+					multi_send_parse_object(oswpt.p_objp);
+					break;
 
-					case OSWPT_TYPE_WING_NOT_PRESENT:
-					case OSWPT_TYPE_WING:
-						multi_send_ushort(oswpt.wingp->net_signature);
-						break;
+				case OSWPT_TYPE_WING_NOT_PRESENT:
+				case OSWPT_TYPE_WING:
+					multi_send_ushort(oswpt.wingp->net_signature);
+					break;
 
-					case OSWPT_TYPE_WHOLE_TEAM:
-						multi_send_int(oswpt.team);
-						break;
-				}
+				case OSWPT_TYPE_WHOLE_TEAM:
+					multi_send_int(oswpt.team);
+					break;
 			}
 		}
 	}
-	if (send_multi && MULTIPLAYER_MASTER) {
-		multi_end_callback();
-	}
+	multi_end_callback();
 }
 
 
