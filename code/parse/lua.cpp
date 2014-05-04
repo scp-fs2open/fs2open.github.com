@@ -13004,7 +13004,7 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, orientation Orientation=null, number Width=1.0, number Height=1.0]", "Draws a polygon", NULL, NULL)
+ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, orientation Orientation=null, number Width=1.0, number Height=1.0]", "Draws a polygon. May not work properly in hooks other than On Object Render.", NULL, NULL)
 {
 	int tdx = -1;
 	vec3d pos = vmd_zero_vector;
@@ -13062,7 +13062,7 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draws a sphere with radius Radius at world vector Position", "boolean", "True if successful, false or nil otherwise")
+ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draws a sphere with radius Radius at world vector Position. May not work properly in hooks other than On Object Render.", "boolean", "True if successful, false or nil otherwise")
 {
 	float rad = 1.0f;
 	vec3d pos = vmd_zero_vector;
@@ -13171,7 +13171,7 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 }
 
 // Wanderer
-ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, integer Flags", "Draws the given model with the specified position and orientation - Use with extreme care, designer to operate properly only in On Object Render hook.", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, integer Flags", "Draws the given model with the specified position and orientation - Use with extreme care, designed to operate properly only in On Object Render hooks.", "int", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
