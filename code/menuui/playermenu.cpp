@@ -31,6 +31,7 @@
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 #include "network/multi.h"
+#include "debugconsole/console.h"
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -1237,39 +1238,38 @@ void player_select_cancel_create()
 
 DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 {
+	int idx;
+	
 	if(gameseq_get_state() != GS_STATE_INITIAL_PLAYER_SELECT) {
-		dc_printf("This command can only be run in the initial player select screen.\n");
+		dc_printf("This command can only be run while in the initial player select screen.\n");
 		return;
 	}
 
-	if (Dc_command) {
-		dc_get_arg(ARG_INT | ARG_NONE);
-
-		if (Dc_arg_type & ARG_INT) {
-			int idx = Dc_arg_int;
-
-			Assert(Main_hall_defines.at(gr_screen.res).size() < INT_MAX);
-			if (idx < 0 || idx >= (int) Main_hall_defines.at(gr_screen.res).size()) {
-				dc_printf("Main hall index out of range\n");
-			} else {
-				main_hall_get_name(Player_select_force_main_hall, idx);
-				dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall.c_str());
-			}
-		} else {
-			Player_select_force_main_hall = "1";
-			dc_printf("Player is now on the Bastion... hopefully\n");
-		}
-		Dc_status = 0;
-	}
-
-	if (Dc_help) {
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: bastion [index]\n");
-		dc_printf("       [index] -- optional main hall index; if not supplied, defaults to 1\n");
-		Dc_status = 0;
+		dc_printf("    [index] -- optional main hall index; if not supplied, defaults to 1\n");
+		return;
 	}
 
-	if (Dc_status) {
-		dc_printf("There is no current main hall, as the player has not been selected yet!\n");
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Player is on main hall '%s'\n", Player_select_force_main_hall.c_str());
+		return;
+	}
+
+	if (dc_maybe_stuff_int(&idx)) {
+		Assert(Main_hall_defines.at(gr_screen.res).size() < INT_MAX);
+		if ((idx < 0) || (idx >= (int) Main_hall_defines.at(gr_screen.res).size())) {
+			dc_printf("Main hall index out of range\n");
+
+		} else {
+			main_hall_get_name(Player_select_force_main_hall, idx);
+			dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall.c_str());
+		}
+	
+	} else {
+		// No argument passed
+		Player_select_force_main_hall = "1";
+		dc_printf("Player is now on the Bastion... hopefully\n");
 	}
 }
 

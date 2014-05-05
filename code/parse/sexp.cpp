@@ -96,6 +96,8 @@
 #include "mod_table/mod_table.h"
 #include "ship/afterburner.h"
 #include "globalincs/alphacolors.h"
+#include "debugconsole/console.h"
+#include "debugconsole/console.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -24643,40 +24645,38 @@ int run_sexp(const char* sexpression)
 	return sexp_val;
 }
 
-DCF(sexpc, "Always runs the given sexp command ")
+DCF(sexpc, "Always runs the given sexp command (Warning! There is no undo for this!)")
 {
-	if ( Dc_command )       {
-		if (Dc_command_line != NULL) {
-			char buf[8192];
-			snprintf(buf, 8191, "( when ( true ) ( %s ) )", Dc_command_line);
-
-			int sexp_val = run_sexp( buf );
-			dc_printf("SEXP '%s' run, sexp_val = %d\n", buf, sexp_val);
-			do {
-				dc_get_arg(ARG_ANY);
-			} while (Dc_arg_type != ARG_NONE);
-		}
-	}
-	if ( Dc_help )  {
+	SCP_string sexp;
+	SCP_string sexp_always;
+	
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: sexpc sexpression\n. Always runs the given sexp as '( when ( true ) ( sexp ) )' .\n" );
+		return;
 	}
+
+	dc_stuff_string(sexp);
+
+	sexp_always = "( when ( true ) ( " + sexp + " ) )";
+
+	int sexp_val = run_sexp(sexp_always.c_str());
+	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp_always.c_str(), sexp_val);
 }
 
 
 DCF(sexp,"Runs the given sexp")
 {
-	if ( Dc_command )       {
-		if (Dc_command_line != NULL) {
-			int sexp_val = run_sexp( Dc_command_line );
-			dc_printf("SEXP '%s' run, sexp_val = %d\n", Dc_command_line, sexp_val);
-			do {
-				dc_get_arg(ARG_ANY);
-			} while (Dc_arg_type != ARG_NONE);
-		}
-	}
-	if ( Dc_help )  {
+	SCP_string sexp;
+
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: sexp 'sexpression'\n. Runs the given sexp.\n");
+		return;
 	}
+
+	dc_stuff_string(sexp);
+
+	int sexp_val = run_sexp(sexp.c_str());
+	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp.c_str(), sexp_val);
 }
 
 

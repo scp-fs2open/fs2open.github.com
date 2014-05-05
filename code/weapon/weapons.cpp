@@ -47,6 +47,7 @@
 #include "parse/scripting.h"
 #include "stats/scoring.h"
 #include "mod_table/mod_table.h"
+#include "debugconsole/console.h"
 
 
 #ifndef NDEBUG
@@ -6668,75 +6669,137 @@ void weapon_maybe_spew_particle(object *obj)
 /**
  * Debug console functionality
  */
-void pspew_display_dcf()
-{
-	dc_printf("Particle spew settings\n\n");
-	dc_printf("Particle spew count (pspew_count) : %d\n", Weapon_particle_spew_count);
-	dc_printf("Particle spew time (pspew_time) : %d\n", Weapon_particle_spew_time);
-	dc_printf("Particle spew velocity (pspew_vel) : %f\n", Weapon_particle_spew_vel);
-	dc_printf("Particle spew size (pspew_size) : %f\n", Weapon_particle_spew_radius);
-	dc_printf("Particle spew lifetime (pspew_life) : %f\n", Weapon_particle_spew_lifetime);
-	dc_printf("Particle spew scale (psnew_scale) : %f\n", Weapon_particle_spew_scale);
-}
-
+void dcf_pspew();
 DCF(pspew_count, "Number of particles spewed at a time")
-{	
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){
-		Weapon_particle_spew_count = Dc_arg_int;
+{
+	if (dc_optional_string_either("help", "--help")) {
+		dcf_pspew();
+		return;
 	}
 
-	pspew_display_dcf();
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+			dc_printf("Partical count is %i\n", Weapon_particle_spew_count);
+			return;
+	}
+
+	dc_stuff_int(&Weapon_particle_spew_count);
+	
+	dc_printf("Partical count set to %i\n", Weapon_particle_spew_count);
 }
 
 DCF(pspew_time, "Time between particle spews")
-{	
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){
-		Weapon_particle_spew_time = Dc_arg_int;
+{
+	if (dc_optional_string_either("help", "--help")) {
+		dcf_pspew();
+		return;
 	}
 
-	pspew_display_dcf();
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Particle spawn period is %i\n", Weapon_particle_spew_time);
+		return;
+	}
+
+	dc_stuff_int(&Weapon_particle_spew_time);
+
+	dc_printf("Particle spawn period set to %i\n", Weapon_particle_spew_time);
 }
 
 DCF(pspew_vel, "Relative velocity of particles (0.0 - 1.0)")
-{	
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		Weapon_particle_spew_vel = Dc_arg_float;
+{
+	if (dc_optional_string_either("help", "--help")) {
+		dcf_pspew();
+		return;
 	}
 
-	pspew_display_dcf();
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Particle relative velocity is %f\n", Weapon_particle_spew_vel);
+		return;
+	}
+
+	dc_stuff_float(&Weapon_particle_spew_vel);
+
+	dc_printf("Particle relative velocity set to %f\n", Weapon_particle_spew_vel);
 }
 
 DCF(pspew_size, "Size of spewed particles")
-{	
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		Weapon_particle_spew_radius = Dc_arg_float;
+{
+	if (dc_optional_string_either("help", "--help")) {
+		dcf_pspew();
+		return;
 	}
 
-	pspew_display_dcf();
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Particle size is %f\n", Weapon_particle_spew_radius);
+		return;
+	}
+
+	dc_stuff_float(&Weapon_particle_spew_radius);
+
+	dc_printf("Particle size set to %f\n", Weapon_particle_spew_radius);
 }
 
 DCF(pspew_life, "Lifetime of spewed particles")
-{	
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		Weapon_particle_spew_lifetime = Dc_arg_float;
+{
+	if (dc_optional_string_either("help", "--help")) {
+		dcf_pspew();
+		return;
 	}
 
-	pspew_display_dcf();
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Particle lifetime is %f\n", Weapon_particle_spew_lifetime);
+		return;
+	}
+
+	dc_stuff_float(&Weapon_particle_spew_lifetime);
+
+	dc_printf("Particle lifetime set to %f\n", Weapon_particle_spew_lifetime);
 }
 
 DCF(pspew_scale, "How far away particles are from the weapon path")
-{	
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		Weapon_particle_spew_scale = Dc_arg_float;
+{
+	if (dc_optional_string_either("help", "--help")) {
+		dcf_pspew();
+		return;
 	}
 
-	pspew_display_dcf();
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Particle scale is %f\n", Weapon_particle_spew_scale);
+	}
+
+	dc_stuff_float(&Weapon_particle_spew_scale);
+
+	dc_printf("Particle scale set to %f\n", Weapon_particle_spew_scale);
+}
+
+// Help and Status provider
+DCF(pspew, "Particle spew help and status provider")
+{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Particle spew settings\n\n");
+
+		dc_printf(" Count   (pspew_count) : %d\n", Weapon_particle_spew_count);
+		dc_printf(" Time     (pspew_time) : %d\n", Weapon_particle_spew_time);
+		dc_printf(" Velocity  (pspew_vel) : %f\n", Weapon_particle_spew_vel);
+		dc_printf(" Size     (pspew_size) : %f\n", Weapon_particle_spew_radius);
+		dc_printf(" Lifetime (pspew_life) : %f\n", Weapon_particle_spew_lifetime);
+		dc_printf(" Scale   (psnew_scale) : %f\n", Weapon_particle_spew_scale);
+		return;
+	}
+
+	dc_printf("Available particlar spew commands:\n");
+	dc_printf("pspew_count : %s\n", dcmd_pspew_count.help);
+	dc_printf("pspew_time  : %s\n", dcmd_pspew_time.help);
+	dc_printf("pspew_vel   : %s\n", dcmd_pspew_vel.help);
+	dc_printf("pspew_size  : %s\n", dcmd_pspew_size.help);
+	dc_printf("pspew_life  : %s\n", dcmd_pspew_life.help);
+	dc_printf("pspew_scale : %s\n\n", dcmd_pspew_scale.help);
+
+	dc_printf("To view status of all pspew settings, type in 'pspew --status'.\n");
+	dc_printf("Passing '--status' as an argument to any of the individual spew commands will show the status of that variable only.\n\n");
+
+	dc_printf("These commands adjust the various properties of the particle spew system, which is used by weapons when they are fired, are in-flight, and die (either by impact or by end of life time.\n");
+	dc_printf("Generally, a large particle count with small size and scale will result in a nice dense particle spew.\n");
+	dc_printf("Be advised, this effect is applied to _ALL_ weapons, and as such may drastically reduce framerates on lower powered platforms.\n");
 }
 
 /**
