@@ -18,6 +18,7 @@
 
 
 #include "ai/ai.h"
+#include "debugconsole/console.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "physics/physics.h"
@@ -11367,16 +11368,14 @@ float get_wing_largest_radius(object *objp, int formation_object_flag)
 
 float Wing_y_scale = 2.0f;
 float Wing_scale = 1.0f;
-DCF(wing_y_scale, "")
+DCF(wing_y_scale, "Adjusts the wing formation scale along the Y axis (Default is 2.0)")
 {
-	dc_get_arg(ARG_FLOAT);
-	Wing_y_scale = Dc_arg_float;
+	dc_stuff_float(&Wing_y_scale);
 }
 
-DCF(wing_scale, "")
+DCF(wing_scale, "Adjusts the wing formation scale. (Default is 1.0f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	Wing_scale = Dc_arg_float;
+	dc_stuff_float(&Wing_scale);
 }
 
 /**

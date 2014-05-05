@@ -13,6 +13,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"
 #include "missionui/missionscreencommon.h"
+#include "debugconsole/console.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "hud/hud.h"
@@ -1264,77 +1265,101 @@ void mission_goal_mark_events_complete()
 }
 
 // some debug console functions to help list and change the status of mission goals
-DCF(show_mission_goals,"List and change the status of mission goals")
+DCF(show_mission_goals,"Lists the status of mission goals")
 {
 	int i, type;
 
-	if (Dc_command)
-		Dc_status = 1;
-
-	if (Dc_help) {
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: show_mission_goals\n\nList all mission goals and their current status.\n");
-		Dc_status = 0;
+		return;
 	}
 
-	if (Dc_status) {
-		for (i=0; i<Num_goals; i++) {
-			type = Mission_goals[i].type & GOAL_TYPE_MASK;
-			dc_printf("%2d. %32s(%10s) -- ", i, Mission_goals[i].name, Goal_type_text(type));
-			if ( Mission_goals[i].satisfied == GOAL_COMPLETE )
-				dc_printf("satisfied.\n");
-			else if ( Mission_goals[i].satisfied == GOAL_INCOMPLETE )
-				dc_printf("not satisfied\n");
-			else if ( Mission_goals[i].satisfied == GOAL_FAILED )
-				dc_printf("failed\n");
-			else
-				dc_printf("\t[unknown goal status].\n");
-		}
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		// Don't do anything, but advance the parser past the flag
 	}
+
+	for (i=0; i<Num_goals; i++) {
+		type = Mission_goals[i].type & GOAL_TYPE_MASK;
+		dc_printf("%2d. %32s(%10s) -- ", i, Mission_goals[i].name, Goal_type_text(type));
+		if ( Mission_goals[i].satisfied == GOAL_COMPLETE )
+			dc_printf("satisfied.\n");
+		else if ( Mission_goals[i].satisfied == GOAL_INCOMPLETE )
+			dc_printf("unsatisfied\n");
+		else if ( Mission_goals[i].satisfied == GOAL_FAILED )
+			dc_printf("failed\n");
+		else
+			dc_printf("Warning! Mission goal %i is in an invalid state! (value: %i)", i, Mission_goals[i].satisfied);
+	}
+	
 }
 
 //XSTR:OFF
-DCF(change_mission_goal, "Change the mission goal")
+DCF(change_mission_goal, "Changes the mission goal status")
 {
 	int num;
+	bool val_b;
+	char *string;
 
-	if ( Dc_command ) {
-		dc_get_arg(ARG_INT);
-		if ( Dc_arg_int >= Num_goals ) {
-			dc_printf ("First parameter must be a valid goal number.\n");
-			return;
-		}
-
-		num = Dc_arg_int;
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_STRING);
-		if ( Dc_arg_type & ARG_TRUE )
-			Mission_goals[num].satisfied = GOAL_COMPLETE;
-		else if ( Dc_arg_type & ARG_FALSE )
-			Mission_goals[num].satisfied = GOAL_FAILED;
-		else if ( Dc_arg_type & ARG_NONE )
-			Mission_goals[num].satisfied = GOAL_INCOMPLETE;
-		else if ( Dc_arg_type & ARG_STRING) {
-			if ( !stricmp(Dc_arg, "satisfied") )
-				Mission_goals[num].satisfied = GOAL_COMPLETE;
-			else if ( !stricmp( Dc_arg, "failed") )
-				Mission_goals[num].satisfied = GOAL_FAILED;
-			else if ( !stricmp( Dc_arg, "unknown") )
-				Mission_goals[num].satisfied = GOAL_INCOMPLETE;
-			else
-				dc_printf("Unknown status %s.  Use 'satisfied', 'failed', or 'unknown'\n", Dc_arg);
-		}
-	}
-
-	if ( Dc_help ) {
-		dc_printf("Usage: change_mission_goal <goal_num> <status>\n");
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: change_mission_goal <goal_num> [status]\n");
 		dc_printf("<goal_num> --  Integer number of goal to change.  See show_mission_goals\n");
-		dc_printf("<status>   --  [bool] where a true value makes the goal satisfied,\n");
-		dc_printf("               a false value makes the goal failed.\n");
-		dc_printf("The <status> field may also be one of 'satisfied', 'failed', or 'unknown'\n");
-		dc_printf("\nExamples:\n\n'change_mission_goal 1 true' makes goal 1 successful.\n");
-		dc_printf("'change_mission_goal 2' marks goal 2 not complete\n");
-		dc_printf("'change_mission_goal 0 satisfied' marks goal 0 as satisfied\n");
-		Dc_status = 0;
+		dc_printf("[status]   --  Goal status to change to.\n\n");
+
+		dc_printf("The optional [status] field may be either a bool type or a string.\n");
+		dc_printf("\ttrue  -- Goal status set to 'complete'\n");
+		dc_printf("\tfalse -- Goal status set to 'failed'\n\n");
+
+		dc_printf("A string value of 'satisfied', 'failed', or 'unknown' will set the goal status to the respective state.\n");
+		dc_printf("If [status] is not given, then the goal status will be set to 'unknown'");
+
+		dc_printf("Examples:\n");
+		dc_printf("\t'change_mission_goal 1 true'  makes goal 1 as successful.\n");
+		dc_printf("\t'change_mission_goal 2'       marks goal 2 as unknown/incomplete\n");
+		dc_printf("\t'change_mission_goal 0 satisfied'    marks goal 0 as satisfied\n");
+		return;
 	}
+
+	dc_stuff_int(&num);
+	if ( num >= Num_goals ) {
+		dc_printf (" Error: Invalid value for <goal_num>. Valid values: 0 - %i\n", Num_goals);
+		return;
+	}
+
+	if (dc_optional_string("satisfied")) {
+		Mission_goals[num].satisfied = GOAL_COMPLETE;
+
+	} else if (dc_optional_string("failed")) {
+		Mission_goals[num].satisfied = GOAL_FAILED;
+
+	} else if (dc_optional_string("unsatisfied")) {
+		Mission_goals[num].satisfied = GOAL_INCOMPLETE;
+
+	} else if (dc_maybe_stuff_boolean(&val_b)) {
+		val_b ? Mission_goals[num].satisfied = GOAL_COMPLETE : Mission_goals[num].satisfied = GOAL_FAILED;
+
+	} else {
+		// No argument given
+		Mission_goals[num].satisfied = GOAL_INCOMPLETE;
+	}
+
+	switch(Mission_goals[num].satisfied) {
+	case GOAL_COMPLETE:
+		string = "satisfied";
+		break;
+
+	case GOAL_FAILED:
+		string = "failed";
+		break;
+
+	case GOAL_INCOMPLETE:
+		string = "unsatisfied";
+		break;
+
+	default:
+		dc_printf("Warning! Mission goal %i is in an invalid state! (value: %i)", num, Mission_goals[num].satisfied);
+		return;
+	}
+	dc_printf("Mission goal %i set to '%s'\n", num, string);
 }
 //XSTR:ON
 

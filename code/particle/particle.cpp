@@ -17,6 +17,7 @@
 #include "object/object.h"
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
+#include "debugconsole/console.h"
 
 #ifndef NDEBUG
 #include "io/timer.h"
@@ -90,18 +91,7 @@ void particle_page_in()
 	bm_page_in_texture( Anim_bitmap_id_smoke2 );
 }
 
-DCF(particles,"Turns particles on/off")
-{
-	if ( Dc_command )	{	
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
-		if ( Dc_arg_type & ARG_TRUE )	Particles_enabled = 1;	
-		else if ( Dc_arg_type & ARG_FALSE ) Particles_enabled = 0;	
-		else if ( Dc_arg_type & ARG_NONE ) Particles_enabled ^= 1;	
-	}	
-	if ( Dc_help )	dc_printf( "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n" );	
-	if ( Dc_status )	dc_printf( "particles are %s\n", (Particles_enabled?"ON":"OFF") );	
-}
-
+DCF_BOOL2(particles, Particles_enabled, "Turns particles on/off", "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n");
 
 int Num_particles_hwm = 0;
 

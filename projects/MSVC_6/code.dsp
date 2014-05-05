@@ -357,7 +357,23 @@ SOURCE=..\..\code\Debris\Debris.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\DebugConsole\Console.cpp
+SOURCE=..\..\code\debugconsole\console.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\debugconsole\console.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\debugconsole\consolecmds.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\debugconsole\consoleparse.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\debugconsole\consoleparse.h
 # End Source File
 # Begin Source File
 

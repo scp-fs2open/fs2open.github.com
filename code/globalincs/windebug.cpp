@@ -33,6 +33,7 @@
 #include "cmdline/cmdline.h"
 #include "parse/lua.h"
 #include "parse/parselo.h"
+#include "debugconsole/console.h"
 
 #if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
 #	include "globalincs/mspdb_callstack.h"
@@ -1522,7 +1523,7 @@ void windebug_memwatch_init()
 #endif
 
 int Watch_malloc = 0;
-DCF_BOOL(watch_malloc, Watch_malloc )
+DCF_BOOL(watch_malloc, Watch_malloc );
 
 // Returns 0 if not enough RAM.
 int vm_init(int min_heap_size)
