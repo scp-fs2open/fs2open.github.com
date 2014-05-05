@@ -24,7 +24,6 @@
 #include "mission/missionparse.h"
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
-#include "debugconsole/console.h"
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -504,7 +503,7 @@ void neb2_page_in()
 
 // should we not render this object because its obscured by the nebula?
 int neb_skip_opt = 1;
-DCF(neb_skip, "Toggles culling of objects obscured by nebula")
+DCF(neb_skip, "")
 {
 	neb_skip_opt = !neb_skip_opt;
 	if (neb_skip_opt) {
@@ -897,14 +896,12 @@ void neb2_regen()
 	}
 }
 
-/*
- * TODO: remove this
 float max_area = 100000000.0f;
 DCF(max_area, "")
 {
-	dc_stuff_float(&max_area);
+	dc_get_arg(ARG_FLOAT);
+	max_area = Dc_arg_float;
 }
-*/
 
 float g3_draw_rotated_bitmap_area(vertex *pnt, float angle, float rad, uint tmap_flags, float area);
 int neb_mode = 1;
@@ -1446,7 +1443,7 @@ int neb2_get_bitmap()
 }
 
 // nebula DCF functions ------------------------------------------------------
-// TODO: With the new debug parser in place, most of these sub-commands can now be handled by neb2. This should clear up the DCF list a bit
+
 DCF(neb2, "list nebula console commands")
 {		
 //	dc_printf("neb2_fog <X> <float> <float>  : set near and far fog planes for ship type X\n");
@@ -1466,7 +1463,7 @@ DCF(neb2, "list nebula console commands")
 	dc_printf("neb2_cinner      : poof cube inner dimension\n");
 	dc_printf("neb2_couter      : poof cube outer dimension\n");
 	dc_printf("neb2_jitter      : poof jitter\n");
-	dc_printf("neb2_mode        : switch between no nebula, polygon background, pof background, lame, or HTL rendering (0, 1, 2, 3 and 4 respectively)\n\n");	
+	dc_printf("neb2_mode        : switch between no nebula, polygon background, pof background, lame or HTL rendering (0, 1, 2, 3 and 4 respectively)\n\n");	
 	dc_printf("neb2_ff          : flash fade/sec\n");
 	dc_printf("neb2_background	: rgb background color\n");
 	dc_printf("neb2_fog_color   : rgb fog color\n");
@@ -1474,91 +1471,95 @@ DCF(neb2, "list nebula console commands")
 //	dc_printf("neb2_fog_vals    : display all the current settings for all above values\n");	
 }
 
-DCF(neb2_prad, "set cloud poof radius")
+DCF(neb2_prad, "")
 {
-	dc_stuff_float(&Nd->prad);
+	dc_get_arg(ARG_FLOAT);
+	Nd->prad = Dc_arg_float;
 }
-DCF(neb2_cdim, "poof cube dimension")
+DCF(neb2_cdim, "")
 {
-	dc_stuff_float(&Nd->cube_dim);
-}
-
-DCF(neb2_cinner, "poof cube inner dimension")
-{
-	dc_stuff_float(&Nd->cube_inner);
+	dc_get_arg(ARG_FLOAT);
+	Nd->cube_dim = Dc_arg_float;
 }
 
-DCF(neb2_couter, "poof cube outer dimension")
+DCF(neb2_cinner, "")
 {
-	dc_stuff_float(&Nd->cube_outer);
+	dc_get_arg(ARG_FLOAT);
+	Nd->cube_inner = Dc_arg_float;
 }
 
-DCF(neb2_jitter, "poof jitter")
+DCF(neb2_couter, "")
 {
-	float value;
-	dc_stuff_float(&value);
-	Nd->hj = Nd->dj = Nd->wj = value;
+	dc_get_arg(ARG_FLOAT);
+	Nd->cube_outer = Dc_arg_float;
 }
 
-DCF(neb2_max_alpha, "max alpha value (0.0 to 1.0) for cloud poofs.")
+DCF(neb2_jitter, "")
 {
-	dc_stuff_float(&Nd->max_alpha_glide);
+	dc_get_arg(ARG_FLOAT);
+	Nd->hj = Nd->dj = Nd->wj = Dc_arg_float;
 }
 
-DCF(neb2_break_alpha, "alpha value (0.0 to 1.0) at which faded polygons are not drawn.")
+DCF(neb2_max_alpha, "")
 {
-	dc_stuff_float(&Nd->break_alpha);
+	dc_get_arg(ARG_FLOAT);
+	Nd->max_alpha_glide = Dc_arg_float;
 }
 
-DCF(neb2_break_off, "how many pixels offscreen (left, right, top, bottom) when a cloud poof becomes fully transparent.")
+DCF(neb2_break_alpha, "")
 {
-	int value;
-	dc_stuff_int(&value);
-	Nd->break_y = (float)value;
-	Nd->break_x = Nd->break_y * gr_screen.aspect;
+	dc_get_arg(ARG_FLOAT);
+	Nd->break_alpha = Dc_arg_float;
 }
 
-DCF(neb2_smooth, "magic fog smoothing modes (0 - 3)")
+DCF(neb2_break_off, "")
+{
+	dc_get_arg(ARG_INT);
+	Nd->break_y = (float)Dc_arg_int;
+	Nd->break_x = Nd->break_y * 1.3333f;
+}
+
+DCF(neb2_smooth, "")
 {
 	int index;
-	dc_stuff_int(&index);
+	dc_get_arg(ARG_INT);
+	index = Dc_arg_int;
 	if ( (index >= 0) && (index <= 3) ) {
 		wacky_scheme = index;
-	} else {
-		dc_printf("Invalid smooth mode %i", index);
 	}
 }
 
-DCF(neb2_select, "Enables/disables a poof bitmap")
+DCF(neb2_select, "")
 {
-	int bmap;
-	bool val_b;
-
-	dc_stuff_int(&bmap);
-
+	dc_get_arg(ARG_INT);
+	int bmap = Dc_arg_int;
 	if ( (bmap >= 0) && (bmap < Neb2_poof_count) ) {
-		dc_stuff_boolean(&val_b);
-
-		val_b ? (Neb2_poof_flags |= (1<<bmap)) : (Neb2_poof_flags &= ~(1<<bmap));
+		dc_get_arg(ARG_INT);
+		if (Dc_arg_int) {
+			Neb2_poof_flags |= (1<<bmap);
+		} else {
+			Neb2_poof_flags &= ~(1<<bmap);
+		}
 	}
 }
 
-DCF(neb2_rot, "set max rotation speed for poofs")
+DCF(neb2_rot, "")
 {
-	dc_stuff_float(&max_rotation);
+	dc_get_arg(ARG_FLOAT);
+	max_rotation = Dc_arg_float;
 }
 
-DCF(neb2_ff, "flash fade/sec")
+DCF(neb2_ff, "")
 {
-	dc_stuff_float(&neb2_flash_fade);
+	dc_get_arg(ARG_FLOAT);
+	neb2_flash_fade = Dc_arg_float;
 }
 
-DCF(neb2_mode, "Switches nebula render modes")
+DCF(neb2_mode, "")
 {
-	int mode;
-	dc_stuff_int(&mode);
+	dc_get_arg(ARG_INT);
 
-	switch (mode) {
+	switch (Dc_arg_int) {
 		case NEB2_RENDER_NONE:
 			Neb2_render_mode = NEB2_RENDER_NONE;
 		break;
@@ -1585,32 +1586,39 @@ DCF(neb2_mode, "Switches nebula render modes")
 	}
 }
 
-DCF(neb2_slices, "Sets how many 'slices' are used in the nebula")
+DCF(neb2_slices, "")
 {
-	dc_stuff_int(&Neb2_slices);
+	dc_get_arg(ARG_INT);
+	Neb2_slices = Dc_arg_int;
 	neb2_eye_changed();
 }
 
-DCF(neb2_background, "Sets the RGB background color (lame rendering)")
+DCF(neb2_background, "")
 {
 	int r, g, b;
 
-	dc_stuff_int(&r);
-	dc_stuff_int(&g);
-	dc_stuff_int(&b);
+	dc_get_arg(ARG_INT);
+	r = Dc_arg_int;
+	dc_get_arg(ARG_INT);
+	g = Dc_arg_int;
+	dc_get_arg(ARG_INT);
+	b = Dc_arg_int;
 
 	Neb2_background_color[0] = r;
 	Neb2_background_color[1] = g;
 	Neb2_background_color[2] = b;
 }
 
-DCF(neb2_fog_color, "Sets the RGB fog color (HTL)")
+DCF(neb2_fog_color, "")
 {
 	ubyte r, g, b;
 
-	dc_stuff_ubyte(&r);
-	dc_stuff_ubyte(&g);
-	dc_stuff_ubyte(&b);
+	dc_get_arg(ARG_UBYTE);
+	r = Dc_arg_ubyte;
+	dc_get_arg(ARG_UBYTE);
+	g = Dc_arg_ubyte;
+	dc_get_arg(ARG_UBYTE);
+	b = Dc_arg_ubyte;
 
 	Neb2_fog_color_r = r;
 	Neb2_fog_color_g = g;

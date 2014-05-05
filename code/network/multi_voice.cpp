@@ -22,7 +22,7 @@
 #include "menuui/optionsmenumulti.h"
 #include "network/multi.h"
 #include "playerman/player.h"
-#include "debugconsole/console.h"
+
 
 
 // --------------------------------------------------------------------------------------------------
@@ -483,17 +483,16 @@ void multi_voice_process()
 // voice settings debug console function
 void multi_voice_dcf()
 {
-	SCP_string arg;
-	int value;
-
-	dc_stuff_string_white(arg);
+	dc_get_arg(ARG_STRING);
 
 	// set the quality of sound
-	if (arg == NOX("qos")) {
-		dc_stuff_int(&value);
-		if((value >= 1) && (value <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-			multi_voice_set_vars(value,-1);
-			dc_printf("Quality of sound : %d\n", value);
+	if (strcmp(Dc_arg, NOX("qos")) == 0) {
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			if((Dc_arg_int >= 1) && (Dc_arg_int <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+				multi_voice_set_vars(Dc_arg_int,-1);
+				dc_printf("Quality of sound : %d\n",Dc_arg_int);
+			}
 		}
 	}
 }

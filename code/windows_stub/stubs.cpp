@@ -3,14 +3,13 @@
 
 #ifdef SCP_UNIX
 
-#include <ctype.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdarg.h>
-#include <sys/stat.h>
-#include <sys/time.h>
 #include <unistd.h>
-
+#include <sys/stat.h>
+#include <ctype.h>
+#include <sys/time.h>
 #include "SDL.h"
 
 #if defined(APPLE_APP)
@@ -21,10 +20,9 @@
 #include <malloc.h>
 #endif
 
-#include "cmdline/cmdline.h"
-#include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
 #include "parse/lua.h"
+#include "cmdline/cmdline.h"
 
 bool env_enabled = false;
 bool cell_enabled = false;

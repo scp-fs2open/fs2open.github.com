@@ -40,7 +40,6 @@
 #include "bmpman/bmpman.h"
 #include "model/model.h"
 #include "cmdline/cmdline.h"
-#include "debugconsole/console.h"
 
 
 #ifndef NDEBUG
@@ -1356,58 +1355,42 @@ void shipfx_flash_do_frame(float frametime)
 }
 
 float Particle_width = 1.2f;
-DCF(particle_width, "Sets multiplier for angular width of the particle spew ( 0 - 5)")
+DCF(particle_width, "Multiplier for angular width of the particle spew")
 {
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_width : %f\n", Particle_width);
-		return;
+	if ( Dc_command ) {
+		dc_get_arg(ARG_FLOAT);
+		if ( (Dc_arg_float >= 0 ) && (Dc_arg_float <= 5) ) {
+			Particle_width = Dc_arg_float;
+		} else {
+			dc_printf( "Illegal value for particle width. (Must be from 0-5) \n\n");
+		}
 	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_width = value;
-
-	dc_printf("Particle_width set to %f\n", Particle_width);
 }
 
 float Particle_number = 1.2f;
-DCF(particle_num, "Sets multiplier for the number of particles created")
+DCF(particle_num, "Multiplier for the number of particles created")
 {
-	
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_number : %f\n", Particle_number);
-		return;
+	if ( Dc_command ) {
+		dc_get_arg(ARG_FLOAT);
+		if ( (Dc_arg_float >= 0 ) && (Dc_arg_float <= 5) ) {
+			Particle_number = Dc_arg_float;
+		} else {
+			dc_printf( "Illegal value for particle num. (Must be from 0-5) \n\n");
+		}
 	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_number = value;
-
-	dc_printf("Particle_number set to %f\n", Particle_number);
 }
 
 float Particle_life = 1.2f;
 DCF(particle_life, "Multiplier for the lifetime of particles created")
 {
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_life : %f\n", Particle_life);
-		return;
+	if ( Dc_command ) {
+		dc_get_arg(ARG_FLOAT);
+		if ( (Dc_arg_float >= 0 ) && (Dc_arg_float <= 5) ) {
+			Particle_life = Dc_arg_float;
+		} else {
+			dc_printf( "Illegal value for particle life. (Must be from 0-5) \n\n");
+		}
 	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_life = value;
-
-	dc_printf("Particle_life set to %f\n", Particle_life);
 }
 
 // Make sparks fly off of ship n.
@@ -1619,20 +1602,16 @@ int	Bs_exp_fire_low = 1;
 float	Bs_exp_fire_time_mult = 1.0f;
 
 DCF_BOOL(bs_exp_fire_low, Bs_exp_fire_low)
-DCF(bs_exp_fire_time_mult, "Sets multiplier time between fireball in big ship explosion")
+DCF(bs_exp_fire_time_mult, "Multiplier time between fireball in big ship explosion")
 {
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Bs_exp_fire_time_mult : %f\n", Bs_exp_fire_time_mult);
-		return;
+	if ( Dc_command ) {
+		dc_get_arg(ARG_FLOAT);
+		if ( (Dc_arg_float >= 0.1 ) && (Dc_arg_float <= 5) ) {
+			Bs_exp_fire_time_mult = Dc_arg_float;
+		} else {
+			dc_printf( "Illegal value for bs_exp_fire_time_mult. (Must be from 0.1-5) \n\n");
+		}
 	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.1f, 5.0f);
-	Bs_exp_fire_time_mult = value;
-	dc_printf("Bs_exp_fire_time_mult set to %f\n", Bs_exp_fire_time_mult);
 }
 
 

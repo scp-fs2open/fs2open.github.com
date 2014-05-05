@@ -27,7 +27,6 @@
 #include "object/objectdock.h"
 #include "object/objectshield.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
 
 
 #define COLLIDE_DEBUG

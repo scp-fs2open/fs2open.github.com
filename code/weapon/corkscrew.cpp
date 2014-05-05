@@ -15,7 +15,6 @@
 #include "io/timer.h"
 #include "freespace2/freespace.h"	// for Missiontime
 #include "object/object.h"
-#include "debugconsole/console.h"
 
 
 
@@ -294,25 +293,41 @@ DCF(cscrew, "Listing of corkscrew missile debug console functions")
 
 DCF(cscrew_delay, "Change the delay between corkscrew firing")
 {	
-	dc_stuff_int(&Corkscrew_missile_delay);
+	dc_get_arg(ARG_INT);
+	if(Dc_arg_type & ARG_INT){
+		Corkscrew_missile_delay = Dc_arg_int;		
+	}
+
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_count, "Change the # of corkscrew missiles fired")
 {	
-	dc_stuff_int(&Corkscrew_num_missiles_fired);
+	dc_get_arg(ARG_INT);
+	if(Dc_arg_type & ARG_INT){
+		Corkscrew_num_missiles_fired = Dc_arg_int;		
+	}
+
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_radius, "Change the radius of corkscrew missiles")
 {	
-	dc_stuff_float(&Corkscrew_radius);
+	dc_get_arg(ARG_FLOAT);
+	if(Dc_arg_type & ARG_FLOAT){
+		Corkscrew_radius = Dc_arg_float;
+	}
+
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_twist, "Change the rate of the corkscrew twist")
 {
-	dc_stuff_float(&Corkscrew_twist);
+	dc_get_arg(ARG_FLOAT);
+	if(Dc_arg_type & ARG_FLOAT){
+		Corkscrew_twist = Dc_arg_float;
+	}
+
 	cscrew_display_dcf();
 }
 
@@ -339,7 +354,11 @@ DCF(cscrew_shrink, "Shrink the radius of every other missile")
 
 DCF(cscrew_shrinkval, "Change the rate at which the radii shrink")
 {
-	dc_stuff_float(&Corkscrew_shrink_val);
+	dc_get_arg(ARG_FLOAT);
+	if(Dc_arg_type & ARG_FLOAT){
+		Corkscrew_shrink_val = Dc_arg_float;
+	}
+
 	cscrew_display_dcf();
 }
 

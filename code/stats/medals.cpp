@@ -21,7 +21,6 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
-#include "debugconsole/console.h"
 
 #ifndef NDEBUG
 #include "cmdline/cmdline.h"
@@ -438,17 +437,78 @@ void parse_medal_tbl()
 DCF(medals, "Grant or revoke medals")
 {
 	int i;
-	int idx;
 
-	if (dc_optional_string_either("help", "--help"))
+	if (Dc_command)
 	{
-		dc_printf ("Usage: medals all | clear | promote | demote | [index]\n");
-		dc_printf ("       [index] --  index of medal to grant\n");
-		dc_printf ("       with no parameters, displays the available medals\n");
-		return;
+		dc_get_arg(ARG_STRING | ARG_INT | ARG_NONE);
+
+		if (Dc_arg_type & ARG_INT)
+		{
+			int idx = Dc_arg_int;
+
+			if (idx < 0 || idx >= Num_medals)
+			{
+				dc_printf("Medal index %d is out of range\n", idx);
+				return;
+			}
+
+			dc_printf("Granted %s\n", Medals[idx].name);
+			Player->stats.medal_counts[idx]++;
+		}
+		else if (Dc_arg_type & ARG_STRING)
+		{
+			if (!strcmp(Dc_arg, "all"))
+			{
+				for (i = 0; i < Num_medals; i++)
+					Player->stats.medal_counts[i]++;
+
+				dc_printf("Granted all medals\n");
+			}
+			else if (!strcmp(Dc_arg, "clear"))
+			{
+				for (i = 0; i < Num_medals; i++)
+					Player->stats.medal_counts[i] = 0;
+
+				dc_printf("Cleared all medals\n");
+			}
+			else if (!strcmp(Dc_arg, "demote"))
+			{
+				if (Player->stats.rank > 0)
+					Player->stats.rank--;
+
+				dc_printf("Demoted to %s\n", Ranks[Player->stats.rank].name);
+			}
+			else if (!strcmp(Dc_arg, "promote"))
+			{
+				if (Player->stats.rank < MAX_FREESPACE2_RANK)
+					Player->stats.rank++;
+
+				dc_printf("Promoted to %s\n", Ranks[Player->stats.rank].name);
+			}
+			else
+			{
+				Dc_help = 1;
+			}
+		}
+		else
+		{
+			dc_printf("The following medals are available:\n");
+			for (i = 0; i < Num_medals; i++)
+				dc_printf("%d: %s\n", i, Medals[i].name);
+		}
+
+		Dc_status = 0;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))
+	if (Dc_help)
+	{
+		dc_printf ("Usage: gimmemedals all | clear | promote | demote | [index]\n");
+		dc_printf ("       [index] --  index of medal to grant\n");
+		dc_printf ("       with no parameters, displays the available medals\n");
+		Dc_status = 0;
+	}
+
+	if (Dc_status)
 	{
 		dc_printf("You have the following medals:\n");
 
@@ -458,53 +518,6 @@ DCF(medals, "Grant or revoke medals")
 				dc_printf("%d %s\n", Player->stats.medal_counts[i], Medals[i].name);
 		}
 		dc_printf("%s\n", Ranks[Player->stats.rank].name);
-		return;
-	}
-
-	if (dc_optional_string("all")) {
-		for (i = 0; i < Num_medals; i++) {
-			Player->stats.medal_counts[i]++;
-		}
-		dc_printf("Granted all medals\n");
-		return;
-
-	} else if (dc_optional_string("clear")) {
-		for (i = 0; i < Num_medals; i++) {
-			Player->stats.medal_counts[i] = 0;
-		}
-		dc_printf("Cleared all medals\n");
-		return;
-
-	} else if (dc_optional_string("promote")) {
-		if (Player->stats.rank < MAX_FREESPACE2_RANK) {
-			Player->stats.rank++;
-		}
-		dc_printf("Promoted to %s\n", Ranks[Player->stats.rank].name);
-		return;
-
-	} else if (dc_optional_string("demote")) {
-		if (Player->stats.rank > 0) {
-			Player->stats.rank--;
-		}
-		dc_printf("Demoted to %s\n", Ranks[Player->stats.rank].name);
-		return;
-	}
-
-	if (dc_maybe_stuff_int(&idx)) {
-		if (idx < 0 || idx >= Num_medals)
-		{
-			dc_printf("Medal index %d is out of range\n", idx);
-			return;
-		}
-
-		dc_printf("Granted %s\n", Medals[idx].name);
-		Player->stats.medal_counts[idx]++;
-		return;
-	}
-
-	dc_printf("The following medals are available:\n");
-	for (i = 0; i < Num_medals; i++) {
-		dc_printf("%d: %s\n", i, Medals[i].name);
 	}
 }
 

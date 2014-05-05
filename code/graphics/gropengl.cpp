@@ -22,7 +22,6 @@
 #include "io/timer.h"
 #include "ddsutils/ddsutils.h"
 #include "model/model.h"
-#include "debugconsole/console.h"
 #include "debugconsole/timerbar.h"
 #include "graphics/gropenglbmpman.h"
 #include "graphics/gropengllight.h"
@@ -2078,61 +2077,56 @@ bool gr_opengl_init()
 
 DCF(ogl_minimize, "Minimizes opengl")
 {
-	bool minimize_ogl = false;
-
 	if ( gr_screen.mode != GR_OPENGL ) {
 		dc_printf("Command only available in OpenGL mode.\n");
 		return;
 	}
 
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("[bool] If true is passed, then the OpenGL window will minimize.\n");
-		return;
-	}
-	dc_stuff_boolean(&minimize_ogl);
+	if (Dc_command) {
+		dc_get_arg(ARG_TRUE);
 
-	if (minimize_ogl) {
-		opengl_minimize();
+		if ( Dc_arg_type & ARG_TRUE ) {
+			opengl_minimize();
+		}
 	}
+
+	if (Dc_help)
+		dc_printf("If set to true then the OpenGL window will minimize.\n");
 }
 
 DCF(ogl_anisotropy, "toggles anisotropic filtering")
 {
-	bool process = true;
-	int value;
-
 	if ( gr_screen.mode != GR_OPENGL ) {
 		dc_printf("Can only set anisotropic filter in OpenGL mode.\n");
 		return;
 	}
 
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("Sets OpenGL anisotropic filtering level.\n");
-		dc_printf("GL_anisotropy [int]  Valid values are 0 to %i. 0 turns off anisotropic filtering.\n", (int)opengl_get_max_anisotropy());
-		process = false;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Current anisotropic filter value is %i\n", (int)GL_anisotropy);
-		process = false;
-	}
-
-	if (!process) {
-		return;
-	}
-
-	if ( !Is_Extension_Enabled(OGL_EXT_TEXTURE_FILTER_ANISOTROPIC) ) {
+	if ( Dc_command && !Is_Extension_Enabled(OGL_EXT_TEXTURE_FILTER_ANISOTROPIC) ) {
 		dc_printf("Error: Anisotropic filter is not settable!\n");
 		return;
 	}
 
-	if (!dc_maybe_stuff_int(&value)) {
-		// No arg passed, set to default
+	if ( Dc_command ) {
+		dc_get_arg(ARG_INT | ARG_NONE);
+
+		if ( Dc_arg_type & ARG_NONE ) {
 			GL_anisotropy = 1.0f;
 		//	opengl_set_anisotropy();
 			dc_printf("Anisotropic filter value reset to default level.\n");
-	} else {
-		GL_anisotropy = (GLfloat)value;
+		}
+
+		if ( Dc_arg_type & ARG_INT ) {
+			GL_anisotropy = (GLfloat)Dc_arg_float;
 		//	opengl_set_anisotropy( (float)Dc_arg_float );
+		}
+	}
+
+	if ( Dc_status ) {
+		dc_printf("Current anisotropic filter value is %i\n", (int)GL_anisotropy);
+	}
+
+	if (Dc_help) {
+		dc_printf("Sets OpenGL anisotropic filtering level.\n");
+		dc_printf("Valid values are 1 to %i, or 0 to turn off.\n", (int)opengl_get_max_anisotropy());
 	}
 }

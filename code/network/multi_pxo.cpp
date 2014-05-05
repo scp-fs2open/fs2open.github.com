@@ -42,7 +42,6 @@
 #include "playerman/player.h"
 #include "fs2netd/fs2netd_client.h"
 #include "menuui/mainhallmenu.h"
-#include "debugconsole/console.h"
 
 
 
@@ -462,15 +461,14 @@ void multi_pxo_scroll_players_down();
 // get the absolute index of the displayed items which our currently selected one is
 int multi_pxo_get_select_index();
 
-DCF(players, "Adds the specified number of bogus players to the PXO listing (Multiplayer)")
+DCF(players, "")
 {
 	char name[512] = "";
-	int i;
-	// add a bunch of bogus players
-	dc_stuff_int(&i);
 
-	for(int idx = 0; idx < i; idx++){
-		sprintf(name, "bogus player %d", idx);
+	// add a bunch of bogus players
+	dc_get_arg(ARG_INT);
+	for(int idx=0; idx<Dc_arg_int; idx++){
+		sprintf(name, "player %d", idx);
 		multi_pxo_add_player(name);
 	}
 }

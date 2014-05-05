@@ -36,7 +36,6 @@
 #include "globalincs/globals.h"
 #include "cmdline/cmdline.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
 
 extern int Cmdline_nohtl;
 // ------------------------------------------------------------------------------------------------
@@ -120,22 +119,20 @@ float b_whack_small = 2000.0f;	// used to be 500.0f with the retail whack bug
 float b_whack_big = 10000.0f;	// used to be 1500.0f with the retail whack bug
 float b_whack_damage = 150.0f;
 
-DCF(b_whack_small, "Sets the whack factor for small whacks (Default is 2000f)")
+DCF(b_whack_small, "")
 {
-	dc_stuff_float(&b_whack_small);
+	dc_get_arg(ARG_FLOAT);
+	b_whack_small = Dc_arg_float;
 }
-DCF(b_whack_big, "Sets the whack factor for big whacks (Default is 10000f)")
+DCF(b_whack_big, "")
 {
-	dc_stuff_float(&b_whack_big);
+	dc_get_arg(ARG_FLOAT);
+	b_whack_big = Dc_arg_float;
 }
-DCF(b_whack_damage, "Sets the whack damage threshold (Default is 150f)")
+DCF(b_whack_damage, "")
 {
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("Sets the threshold to determine whether a big whack or a small whack should be applied. Values equal or greater than this threshold will trigger a big whack, while smaller values will trigger a small whack\n");
-		return;
-	}
-
-	dc_stuff_float(&b_whack_damage);
+	dc_get_arg(ARG_FLOAT);
+	b_whack_damage = Dc_arg_float;
 }
 
 
@@ -1257,9 +1254,10 @@ void beam_render(beam *b, float u_offset)
 
 // generate particles for the muzzle glow
 int hack_time = 100;
-DCF(h_time, "Sets the hack time for beam muzzle glow (Default is 100)")
+DCF(h_time, "")
 {
-	dc_stuff_int(&hack_time);
+	dc_get_arg(ARG_INT);
+	hack_time = Dc_arg_int;
 }
 
 void beam_generate_muzzle_particles(beam *b)
@@ -1481,9 +1479,10 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 
 // light scale factor
 float blight = 25.5f;
-DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
+DCF(blight, "")
 {
-	dc_stuff_float(&blight);
+	dc_get_arg(ARG_FLOAT);
+	blight = Dc_arg_float;
 }
 
 // call to add a light source to a small object
@@ -3447,11 +3446,12 @@ int beam_will_tool_target(beam *b, object *objp)
 }
 
 float beam_accuracy = 1.0f;
-DCF(b_aim, "Adjusts the beam accuracy factor (Default is 1.0f)")
+DCF(b_aim, "")
 {
-	dc_stuff_float(&beam_accuracy);
+	dc_get_arg(ARG_FLOAT);
+	beam_accuracy = Dc_arg_float;
 }
-DCF(beam_list, "Lists all beams")
+DCF(beam_list, "")
 {
 	int idx;
 	int b_count = 0;

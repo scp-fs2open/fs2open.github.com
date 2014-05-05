@@ -13,7 +13,6 @@
 #include "parse/parselo.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
-#include "debugconsole/console.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "render/3d.h"
@@ -82,43 +81,52 @@ vec3d Nebl_bolt_strike;			// strike point of the bolt being generated
 storm_type *Storm = NULL;
 
 // vars
-DCF(b_scale, "Sets the scale factor for debug nebula bolts")
+DCF(b_scale, "")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_scale);
+	dc_get_arg(ARG_FLOAT);
+	Bolt_types[DEBUG_BOLT].b_scale = Dc_arg_float;
 }
-DCF(b_rand, "Sets the randomness factor for debug nebula bolts")
+DCF(b_rand, "")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_rand);
+	dc_get_arg(ARG_FLOAT);
+	Bolt_types[DEBUG_BOLT].b_rand = Dc_arg_float;
 }
-DCF(b_shrink, "Sets the shrink factor for debug nebula bolts")
+DCF(b_shrink, "")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_shrink);
+	dc_get_arg(ARG_FLOAT);
+	Bolt_types[DEBUG_BOLT].b_shrink = Dc_arg_float;
 }
-DCF(b_poly_pct, "Sets b_poly_pct")
+DCF(b_poly_pct, "")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_poly_pct);
+	dc_get_arg(ARG_FLOAT);
+	Bolt_types[DEBUG_BOLT].b_poly_pct = Dc_arg_float;
 }
-DCF(b_add, "Sets b_add")
+DCF(b_add, "")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_add);
+	dc_get_arg(ARG_FLOAT);
+	Bolt_types[DEBUG_BOLT].b_add = Dc_arg_float;
 }
-DCF(b_strikes, "Sets num_strikes")
+DCF(b_strikes, "")
 {
-	dc_stuff_int(&Bolt_types[DEBUG_BOLT].num_strikes);
+	dc_get_arg(ARG_INT);
+	Bolt_types[DEBUG_BOLT].num_strikes = Dc_arg_int;
 }
-DCF(b_noise, "Sets noise factor")
+DCF(b_noise, "")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].noise);
+	dc_get_arg(ARG_FLOAT);
+	Bolt_types[DEBUG_BOLT].noise = Dc_arg_float;
 }
-DCF(b_bright, "Sets brightness factor")
+DCF(b_bright, "")
 {
-	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_bright);
+	dc_get_arg(ARG_FLOAT);
+	Bolt_types[DEBUG_BOLT].b_bright = Dc_arg_float;
 }
-DCF(b_lifetime, "Sets lifetime duration")
+DCF(b_lifetime, "")
 {
-	dc_stuff_int(&Bolt_types[DEBUG_BOLT].lifetime);
+	dc_get_arg(ARG_INT);
+	Bolt_types[DEBUG_BOLT].lifetime = Dc_arg_int;
 }
-DCF(b_list, "Displays status of debug lightning commands")
+DCF(b_list, "")
 {
 	dc_printf("Debug lightning bolt settings :\n");
 
@@ -136,12 +144,12 @@ DCF(b_list, "Displays status of debug lightning commands")
 // nebula lightning intensity (0.0 to 1.0)
 float Nebl_intensity = 0.6667f;
 
-DCF(lightning_intensity, "Sets lightning intensity between 0.0 and 1.0 (Default is 0.6667)")
+DCF(lightning_intensity, "")
 {
-	float val;
-	dc_stuff_float(&val);
-
-	CLAMP(val, 0.0f, 1.0f);
+	dc_get_arg(ARG_FLOAT);
+	float val = Dc_arg_float;
+    
+    CLAMP(val, 0.0f, 1.0f);
 
 	Nebl_intensity = 1.0f - val;
 }

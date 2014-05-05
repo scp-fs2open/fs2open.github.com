@@ -48,7 +48,6 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 #include "pilotfile/pilotfile.h"
-#include "debugconsole/console.h"
 
 
 
@@ -1106,15 +1105,14 @@ void multi_process_incoming()
 //
 
 int eye_tog = 1;
-DCF(eye_tog, "Toggles setting of the local player eyepoint on every frame (Multiplayer)")
+DCF(eye_tog, "")
 {
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("proper eye stuff is %s\n", eye_tog ? "ON" : "OFF");
-		return;
-	}
-
 	eye_tog = !eye_tog;
-	dc_printf("proper eye stuff is %s\n", eye_tog ? "ON" : "OFF");
+	if(eye_tog){
+		dc_printf("proper eye stuff on\n");
+	} else {
+		dc_printf("proper eye stuff off\n");
+	}
 }
 
 void multi_do_frame()
@@ -1774,14 +1772,13 @@ void multi_reset_timestamps()
 }
 
 // netgame debug flags for debug console stuff
-DCF(netd, "change netgame debug flags (Mulitplayer)")
+DCF(netd, "change/list netgame debug flags")
 {
-	int value;
-	dc_stuff_int(&value);
+	dc_get_arg(ARG_INT);
 	
-	// if we're the server, change flags
-	if ((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (value <= 7)) {
-		Netgame.debug_flags ^= (1 << value);
+	// if we got an integer, and we're the server, change flags
+	if((Dc_arg_type & ARG_INT) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Dc_arg_int <= 7)){
+		Netgame.debug_flags ^= (1<<Dc_arg_int);
 	}
 
 	// display network flags

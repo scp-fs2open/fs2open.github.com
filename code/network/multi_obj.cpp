@@ -26,7 +26,6 @@
 #include "physics/physics.h"
 #include "ship/afterburner.h"
 #include "cfile/cfile.h"
-#include "debugconsole/console.h"
 
 
 // ---------------------------------------------------------------------------------------------------
@@ -1570,21 +1569,10 @@ int OO_server_rate_stamp = -1;
 
 // bandwidth granularity
 int OO_gran = 1;
-DCF(oog, "Sets bandwidth granularity (Multiplayer)")
+DCF(oog, "")
 {
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("Usage: oog <OO_gran>\n");
-		dc_printf("Sets bandwidth granularity\n");
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Current Granularity is '%i' (default is 1)", OO_gran);
-		return;
-	}
-
-	dc_stuff_int(&OO_gran);
-	dc_printf("Ganularity set to %i", OO_gran);
+	dc_get_arg(ARG_INT);
+	OO_gran = Dc_arg_int;
 }
 
 // process datarate limiting stuff for the server
@@ -1951,21 +1939,10 @@ void multi_oo_interp(object *objp)
 }
 
 float oo_error = 0.8f;
-DCF(oo_error, "Sets error factor for flight path prediction physics (Multiplayer)")
+DCF(oo_error, "")
 {
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("Usage: oo_error <value>\n");
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("oo_error is currently %f", oo_error);
-		return;
-	}
-
-	dc_stuff_float(&oo_error);
-	
-	dc_printf("oo_error set to %f", oo_error);
+	dc_get_arg(ARG_FLOAT);
+	oo_error = Dc_arg_float;
 }
 
 void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info)
@@ -2017,16 +1994,14 @@ void oo_update_time()
 }
 
 int display_oo_bez = 0;
-DCF(bez, "Toggles rendering of player ship trajectory interpolation splines (Multiplayer) *disabled*")
+DCF(bez, "")
 {
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Rendering of interpolation splines is '%s'", display_oo_bez ? "ON" : "OFF");
-		return;
-	}
-
 	display_oo_bez = !display_oo_bez;
-
-	dc_printf("%showing interp splines", display_oo_bez ? "S" : "Not s");
+	if(display_oo_bez){
+		dc_printf("Showing interp splines");
+	} else {
+		dc_printf("Not showing interp splines");
+	}
 }
 
 void oo_display()

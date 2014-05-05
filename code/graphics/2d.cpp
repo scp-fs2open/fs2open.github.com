@@ -31,8 +31,6 @@
 #include "parse/scripting.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "io/keycontrol.h" // m!m
-#include "debugconsole/console.h"
-#include "debugconsole/console.h"
 
 
 #if defined(SCP_UNIX) && !defined(__APPLE__)
@@ -350,9 +348,12 @@ DCF(clear_color, "set clear color r, g, b")
 {
 	ubyte r, g, b;
 
-	dc_stuff_ubyte(&r);
-	dc_stuff_ubyte(&g);
-	dc_stuff_ubyte(&b);
+	dc_get_arg(ARG_UBYTE);
+	r = Dc_arg_ubyte;
+	dc_get_arg(ARG_UBYTE);
+	g = Dc_arg_ubyte;
+	dc_get_arg(ARG_UBYTE);
+	b = Dc_arg_ubyte;
 
 	// set the color
 	gr_set_clear_color(r, g, b);

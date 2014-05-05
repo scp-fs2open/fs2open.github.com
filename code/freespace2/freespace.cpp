@@ -33,7 +33,6 @@
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "debris/debris.h"
-#include "debugconsole/console.h"
 #include "exceptionhandler/exceptionhandler.h"
 #include "external_dll/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "fireball/fireballs.h"
@@ -190,7 +189,7 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
 //  This function is defined in code\network\multiutil.cpp so will be linked from multiutil.obj
 //  it's required fro the -missioncrcs command line option - Kazan
-void multi_spew_pxo_checksums(int max_files, const char *outfile);
+void multi_spew_pxo_checksums(int max_files, char *outfile);
 void fs2netd_spew_table_checksums(char *outfile);
 
 extern bool frame_rate_display;
@@ -666,9 +665,10 @@ void big_explosion_flash(float flash)
 int Sun_drew = 0;
 
 float sn_glare_scale = 1.7f;
-DCF(sn_glare, "Sets the sun glare scale (Default is 1.7)")
+DCF(sn_glare, "")
 {
-	dc_stuff_float(&sn_glare_scale);
+	dc_get_arg(ARG_FLOAT);
+	sn_glare_scale = Dc_arg_float;
 }
 
 float Supernova_last_glare = 0.0f;
@@ -1500,101 +1500,80 @@ DCF_BOOL(i_framerate, Interface_framerate )
 
 DCF(warp, "Tests warpin effect")
 {
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Params: bool warpin, string Target = ""\n  Warps in if true, out if false. Player is target unless specific ship is specified\n" );
-		return;
-	} // Else, process command
+	if ( Dc_command )	{
+		bool warpin = true;
+		int idx = -1;
 
-	// TODO: Provide status flag
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);
+		if( Dc_arg_type & ARG_TRUE) warpin = true;
+		else if(Dc_arg_type & ARG_FALSE) warpin = false;
 
-	bool warpin;
-	char target[MAX_NAME_LEN];
-	int idx = -1;
-
-	dc_stuff_boolean(&warpin);
-	if (dc_maybe_stuff_string_white(target, MAX_NAME_LEN)) {
-		idx = ship_name_lookup(target);
-	}	// Else, default target to player
-	
-	if (idx < 0) {
-		// Player is target
-		if (Player_ai->target_objnum > -1) {
-			if(warpin) {
-				shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
-			} else {
-				shipfx_warpout_start(&Objects[Player_ai->target_objnum]);
+		if(!(Dc_arg_type & ARG_NONE))
+		{
+			dc_get_arg(ARG_STRING|ARG_NONE);
+			if(Dc_arg_type & ARG_STRING)
+			{
+				idx = ship_name_lookup(Dc_arg);
+				if(idx > -1)
+				{
+					if(warpin)
+						shipfx_warpin_start(&Objects[Ships[idx].objnum]);
+					else
+						shipfx_warpout_start(&Objects[Ships[idx].objnum]);
+				}
 			}
 		}
-	} else {
-		// Non-player is targer
-		if (warpin) {
-			shipfx_warpin_start(&Objects[Ships[idx].objnum]);
-		} else {
-			shipfx_warpout_start(&Objects[Ships[idx].objnum]);
+		
+		if(idx < 0)
+		{
+			if(Player_ai->target_objnum > -1)
+			{
+				if(warpin)
+					shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
+				else
+					shipfx_warpout_start(&Objects[Player_ai->target_objnum]);
+			}
 		}
-	}
-	
+	}	
+	if ( Dc_help )	dc_printf( "Usage: Show_mem\nWarps in if true, out if false, player target unless specific ship is specified\n" );	
 }
 
 DCF(show_mem,"Toggles showing mem usage")
 {
-	bool process = true;
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	Show_mem = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) Show_mem = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) Show_mem ^= 1;	
 
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: (optional) bool Show_mem\n If true, Show_mem is set and Show_cpu is cleared.  If false, then Show_mem is cleared.  If nothing passed, then toggle.\n" );
-		process = false;
-	}
-	
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Show_mem is %s\n", (Show_mem ? "TRUE" : "FALSE"));
-		dc_printf("Show_cpu is %s\n", (Show_cpu ? "TRUE" : "FALSE"));
-		process = false;
-	}
-	
-	if (!process) {
-		// Help and/or status was given, so don't process the command
-		return;
-	} // Else, process the command
-
-	if (!dc_maybe_stuff_boolean(&Show_mem)) {
-		// Nothing passed, so toggle
-		Show_mem = !Show_mem;
-	}	// Else, value was set/cleared by user
-
-	// Can't show mem and cpu at same time
-	if (Show_mem) {
-		Show_cpu = false;
+		if ( Show_mem )	{
+			Show_cpu = 0;
+		}
+	}	
+	if ( Dc_help )	dc_printf( "Usage: Show_mem\nSets show_mem to true or false.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	{
+		dc_printf( "Show_mem is %s\n", (Show_mem?"TRUE":"FALSE") );	
+		dc_printf( "Show_cpu is %s\n", (Show_cpu?"TRUE":"FALSE") );	
 	}
 }
 
 DCF(show_cpu,"Toggles showing cpu usage")
 {
-	bool process = true;
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	Show_cpu = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) Show_cpu = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) Show_cpu ^= 1;	
 
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: (optional) bool Show_cpu\n If true, Show_cpu is set and Show_mem is cleared.  If false, then Show_cpu is cleared.  If nothing passed, then toggle.\n" );
-		process = false;
-	}
-	
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Show_cpu is %s\n", (Show_cpu ? "TRUE" : "FALSE"));
-		dc_printf("Show_mem is %s\n", (Show_mem ? "TRUE" : "FALSE"));
-		process = false;
-	}
+		if ( Show_cpu )	{
+			Show_mem = 0;
+		}
+	}	
+	if ( Dc_help )	dc_printf( "Usage: Show_cpu\nSets show_cpu to true or false.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	{
+		dc_printf( "Show_mem is %s\n", (Show_mem?"TRUE":"FALSE") );	
+		dc_printf( "Show_cpu is %s\n", (Show_cpu?"TRUE":"FALSE") );	
 
-	if (!process) {
-		// Help and/or status was given, so don't process the command
-		return;
-	} // Else, process the command
-
-	if (!dc_maybe_stuff_boolean(&Show_cpu)) {
-		// Nothing passed, so toggle
-		Show_cpu = !Show_cpu;
-	}	// Else, value was set/cleared by user
-
-	// Can't show mem and cpu at same time
-	if (Show_cpu) {
-		Show_mem = false;
 	}
 }
 
@@ -1604,56 +1583,42 @@ DCF(show_cpu,"Toggles showing cpu usage")
 
 DCF(use_joy_mouse,"Makes joystick move mouse cursor")
 {
-	bool process = true;
-
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("Usage: use_joy_mouse [bool]\nSets use_joy_mouse to true or false.  If nothing passed, then toggles it.\n");
-		process = false;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("use_joy_mouse is %s\n", (Use_joy_mouse ? "TRUE" : "FALSE"));
-		process = false;
-	}
-
-	if (!process) {
-		return;
-	}
-
-	if(!dc_maybe_stuff_boolean(&Use_joy_mouse)) {
-		// Nothing passed, so toggle
-		Use_joy_mouse = !Use_joy_mouse;
-	} // Else, value was set/cleared by user
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	Use_joy_mouse = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) Use_joy_mouse = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) Use_joy_mouse ^= 1;	
+	}	
+	if ( Dc_help )	dc_printf( "Usage: use_joy_mouse [bool]\nSets use_joy_mouse to true or false.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	dc_printf( "use_joy_mouse is %s\n", (Use_joy_mouse?"TRUE":"FALSE") );	
 
 	os_config_write_uint( NULL, NOX("JoystickMovesCursor"), Use_joy_mouse );
 }
 
-DCF_BOOL(palette_flash, Use_palette_flash);
+DCF(palette_flash,"Toggles palette flash effect on/off")
+{
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	Use_palette_flash = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) Use_palette_flash = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) Use_palette_flash ^= 1;	
+	}	
+	if ( Dc_help )	dc_printf( "Usage: palette_flash [bool]\nSets palette_flash to true or false.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	dc_printf( "palette_flash is %s\n", (Use_palette_flash?"TRUE":"FALSE") );	
+}
 
 int Use_low_mem = 0;
 
 DCF(low_mem,"Uses low memory settings regardless of RAM")
 {
-	bool process = true;
-
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("Usage: low_mem [bool]\nSets low_mem to true or false.  If nothing passed, then toggles it.\n");
-		process = false;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("low_mem is %s\n", (Use_low_mem ? "TRUE" : "FALSE"));
-		process = false;
-	}
-
-	if (!process) {
-		return;
-	}
-
-	if (!dc_maybe_stuff_boolean(&Use_low_mem)) {
-		// Nothing passed, so toggle
-		Use_low_mem = !Use_low_mem;
-	} // Else, value was set/cleared by user
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	Use_low_mem = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) Use_low_mem = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) Use_low_mem ^= 1;	
+	}	
+	if ( Dc_help )	dc_printf( "Usage: low_mem [bool]\nSets low_mem to true or false.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	dc_printf( "low_mem is %s\n", (Use_low_mem?"TRUE":"FALSE") );	
 
 	os_config_write_uint( NULL, NOX("LowMem"), Use_low_mem );
 }
@@ -1663,26 +1628,14 @@ DCF(low_mem,"Uses low memory settings regardless of RAM")
 
 DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 {
-	bool process = true;
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("Usage: low_mem [bool]\nSets low_mem to true or false.  If nothing passed, then toggles it.\n");
-		process = false;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("low_mem is %s\n", (Use_fullscreen_at_startup ? "TRUE" : "FALSE"));
-		process = false;
-	}
-
-	if (!process) {
-		return;
-	}
-
-	if (dc_maybe_stuff_boolean(&Use_fullscreen_at_startup)) {
-		// Nothing passed, so toggle
-		Use_fullscreen_at_startup = !Use_fullscreen_at_startup;
-	} // Else, value was set/cleared by user
-
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	Use_fullscreen_at_startup = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) Use_fullscreen_at_startup = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) Use_fullscreen_at_startup ^= 1;	
+	}	
+	if ( Dc_help )	dc_printf( "Usage: force_fullscreen [bool]\nSets force_fullscreen to true or false.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	dc_printf( "force_fullscreen is %s\n", (Use_fullscreen_at_startup?"TRUE":"FALSE") );	
 	os_config_write_uint( NULL, NOX("ForceFullscreen"), Use_fullscreen_at_startup );
 }
 #endif
@@ -1691,33 +1644,37 @@ int	Framerate_delay = 0;
 
 float FreeSpace_gamma = 1.0f;
 
-DCF(gamma,"Sets and saves Gamma Factor")
+DCF(gamma,"Sets Gamma factor")
 {
-	if (dc_optional_string_either("help", "--help")) {
+	if ( Dc_command )	{
+		dc_get_arg(ARG_FLOAT|ARG_NONE);
+		if ( Dc_arg_type & ARG_FLOAT )	{
+			FreeSpace_gamma = Dc_arg_float;
+		} else {
+			dc_printf( "Gamma reset to 1.0f\n" );
+			FreeSpace_gamma = 1.0f;
+		}
+		if ( FreeSpace_gamma < 0.1f )	{
+			FreeSpace_gamma = 0.1f;
+		} else if ( FreeSpace_gamma > 5.0f )	{
+			FreeSpace_gamma = 5.0f;
+		}
+		gr_set_gamma(FreeSpace_gamma);
+
+		char tmp_gamma_string[32];
+		sprintf( tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma );
+		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
+	}
+
+	if ( Dc_help )	{
 		dc_printf( "Usage: gamma <float>\n" );
 		dc_printf( "Sets gamma in range 1-3, no argument resets to default 1.2\n" );
-		return;
+		Dc_status = 0;	// don't print status if help is printed.  Too messy.
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+	if ( Dc_status )	{
 		dc_printf( "Gamma = %.2f\n", FreeSpace_gamma );
-		return;
 	}
-
-	if (!dc_maybe_stuff_float(&FreeSpace_gamma)) {
-		dc_printf( "Gamma reset to 1.0f\n" );
-		FreeSpace_gamma = 1.0f;
-	}
-	if ( FreeSpace_gamma < 0.1f )	{
-		FreeSpace_gamma = 0.1f;
-	} else if ( FreeSpace_gamma > 5.0f )	{
-		FreeSpace_gamma = 5.0f;
-	}
-	gr_set_gamma(FreeSpace_gamma);
-
-	char tmp_gamma_string[32];
-	sprintf( tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma );
-	os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
 }
 
 #ifdef APPLE_APP
@@ -2443,54 +2400,33 @@ void game_show_time_left()
 
 DCF(ai_pause,"Pauses ai")
 {
-	bool process = true;
-	
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: ai_paused [bool]\nSets ai_paused to true or false.  If nothing passed, then toggles it.\n" );
-		process = false;
-	}
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	ai_paused = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) ai_paused = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) ai_paused = !ai_paused;	
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf( "ai_paused is %s\n", (ai_paused?"TRUE":"FALSE") );
-		process = false;
-	}
-
-	if (!process) {
-		return;
-	}
-
-	if (!dc_maybe_stuff_boolean(&ai_paused)) {
-		ai_paused = !ai_paused;
-	}
-
-	if (ai_paused) {
-		obj_init_all_ships_physics();
-	}
+		if (ai_paused)	{	
+			obj_init_all_ships_physics();
+		}
+	}	
+	if ( Dc_help )	dc_printf( "Usage: ai_paused [bool]\nSets ai_paused to true or false.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	dc_printf( "ai_paused is %s\n", (ai_paused?"TRUE":"FALSE") );	
 }
 
-DCF(single_step,"Enables single step mode.")
+DCF(single_step,"Single steps the game")
 {
-	bool process = true;
-	
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: game_single_step [bool]\nEnables or disables single-step mode.  If nothing passed, then toggles it.\nSingle-step mode will freeze the game, and will advance frame by frame with each key press\n");
-		process = false;
-	}
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	game_single_step = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) game_single_step = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) game_single_step = !game_single_step;	
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf( "ai_paused is %s\n", (game_single_step ? "TRUE" : "FALSE") );
-		process = false;
-	}
+		last_single_step = 0;	// Make so single step waits a frame before stepping
 
-	if (!process) {
-		return;
-	}
-
-	if (!dc_maybe_stuff_boolean(&game_single_step)) {
-		game_single_step = !game_single_step;
-	}
-
-	last_single_step = 0;	// Make so single step waits a frame before stepping
+	}	
+	if ( Dc_help )	dc_printf( "Usage: single_step [bool]\nSets single_step to true or false.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	dc_printf( "single_step is %s\n", (game_single_step?"TRUE":"FALSE") );	
 }
 
 DCF_BOOL(physics_pause, physics_paused)
@@ -2537,28 +2473,22 @@ int View_percent = 100;
 
 DCF(view, "Sets the percent of the 3d view to render.")
 {
-	bool process = true;
-	int value;
+	if ( Dc_command ) {
+		dc_get_arg(ARG_INT);
+		if ( (Dc_arg_int >= 5 ) || (Dc_arg_int <= 100) ) {
+			View_percent = Dc_arg_int;
+		} else {
+			dc_printf( "Illegal value for view. (Must be from 5-100) \n\n");
+			Dc_help = 1;
+		}
+	}
 
-	if (dc_optional_string_either("help", "--help")) {
+	if ( Dc_help ) {
 		dc_printf("Usage: view [n]\nwhere n is percent of view to show (5-100).\n");
-		process = false;
 	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+	
+	if ( Dc_status ) {
 		dc_printf("View is set to %d%%\n", View_percent );
-		process = false;
-	}
-
-	if (!process) {
-		return;
-	}
-
-	dc_stuff_int(&value);
-	if ( (value >= 5 ) && (value <= 100) ) {
-		View_percent = value;
-	} else {
-		dc_printf("Error: Outside legal range [5 - 100]");
 	}
 }
 
@@ -2885,86 +2815,65 @@ void do_timing_test(float frame_time)
 DCF(dcf_fov, "Change the field of view of the main camera")
 {
 	camera *cam = Main_camera.getCamera();
-	bool process = true;
-	float value;
+	if ( Dc_command )
+	{
+		if(cam == NULL)
+			return;
 
-	if (dc_optional_string_either("help", "--help")) {
+		dc_get_arg(ARG_FLOAT|ARG_NONE);
+		if ( Dc_arg_type & ARG_NONE )	{
+			cam->set_fov(VIEWER_ZOOM_DEFAULT);
+			dc_printf( "Zoom factor reset\n" );
+		}
+		if ( Dc_arg_type & ARG_FLOAT )	{
+			if (Dc_arg_float < 0.25f) {
+				cam->set_fov(0.25f);
+				dc_printf("Zoom factor pinned at 0.25.\n");
+			} else if (Dc_arg_float > 1.25f) {
+				cam->set_fov(1.25f);
+				dc_printf("Zoom factor pinned at 1.25.\n");
+			} else {
+				cam->set_fov(Dc_arg_float);
+			}
+		}
+	}
+
+	if ( Dc_help )	
 		dc_printf( "Usage: fov [factor]\nFactor is the zoom factor btwn .25 and 1.25\nNo parameter resets it to default.\n" );
-		process = false;
-	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		if(cam == NULL) {
+	if ( Dc_status )
+	{
+		if(cam == NULL)
 			dc_printf("Camera unavailable.");
-		} else {
-			dc_printf("Zoom factor set to %6.3f (original = 0.5, John = 0.75)\n", cam->get_fov());
-		}
-
-		process = false;
-	}
-
-	if ((cam == NULL) || (!process)) {
-		return;
-	}
-
-	if (!dc_maybe_stuff_float(&value)) {
-		// No value passed, use default
-		cam->set_fov(VIEWER_ZOOM_DEFAULT);
-	} else {
-		// Value passed, Clamp it to valid values
-		if (value < 0.25f) {
-			value = 0.25f;
-			dc_printf("Zoom factor clamped to 0.25\n");
-		} else if (value > 1.25f) {
-			value = 1.25f;
-			dc_printf("Zoom factor clamped to 1.25\n");
-		} else {
-			dc_printf("Zoom factor set to %6.3f\n", value);
-		}
-
-		cam->set_fov(value);
+		else
+			dc_printf("Zoom factor set to %6.3f (original = 0.5, John = 0.75)", cam->get_fov());
 	}
 }
 
 
 DCF(framerate_cap, "Sets the framerate cap")
 {
-	bool process = true;
+	if ( Dc_command ) {
+		dc_get_arg(ARG_INT);
+		if ( (Dc_arg_int >= 1 ) || (Dc_arg_int <= 120) ) {
+			Framerate_cap = Dc_arg_int;
+		} else {
+			dc_printf( "Illegal value for framerate cap. (Must be from 1-120) \n\n");
+			Dc_help = 1;
+		}
+	}
 
-	if (dc_optional_string_either("help", "--help")) {
+	if ( Dc_help ) {
 		dc_printf("Usage: framerate_cap [n]\nwhere n is the frames per second to cap framerate at.\n");
 		dc_printf("If n is 0 or omitted, then the framerate cap is removed\n");
 		dc_printf("[n] must be from 1 to 120.\n");
-		process = false;
 	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		if ( Framerate_cap ) {
+	
+	if ( Dc_status ) {
+		if ( Framerate_cap )
 			dc_printf("Framerate cap is set to %d fps\n", Framerate_cap );
-		} else {
+		else
 			dc_printf("There is no framerate cap currently active.\n");
-		}
-
-		process = false;
-	}
-
-	if (!process) {
-		return;
-	}
-
-	if (!dc_maybe_stuff_int(&Framerate_cap)) {
-		Framerate_cap = 0;
-	}
-
-	if ((Framerate_cap < 0) || (Framerate_cap > 120)) {
-		dc_printf( "Illegal value for framerate cap. (Must be from 1-120) \n");
-		Framerate_cap = 0;
-	}
-
-	if (Framerate_cap == 0) {
-		dc_printf("Framerate cap disabled");
-	} else {
-		dc_printf("Framerate cap is set to %d fps\n", Framerate_cap );
 	}
 }
 
@@ -3866,71 +3775,87 @@ void john_debug_stuff(vec3d *eye_pos, matrix *eye_orient)
 #ifndef NDEBUG
 
 // function to toggle state of dumping every frame into PCX when playing the game
-DCF(dump_frames, "Toggles On/off frame dumping at 15 hz")
+DCF(dump_frames, "Starts/stop frame dumping at 15 hz")
 {
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 15;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 15 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
+	if ( Dc_command )	{
+
+		if ( Debug_dump_frames == 0 )	{
+			// Turn it on
+			Debug_dump_frames = 15;
+			Debug_dump_trigger = 0;
+			gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
+			dc_printf( "Frame dumping at 15 hz is now ON\n" );
+		} else {
+			// Turn it off
+			Debug_dump_frames = 0;
+			Debug_dump_trigger = 0;
+			gr_dump_frame_stop();
+			dc_printf( "Frame dumping is now OFF\n" );
+		}
+		
 	}
 }
 
 DCF(dump_frames_trigger, "Starts/stop frame dumping at 15 hz")
 {
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 15;
-		Debug_dump_trigger = 1;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 15 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
+	if ( Dc_command )	{
+
+		if ( Debug_dump_frames == 0 )	{
+			// Turn it on
+			Debug_dump_frames = 15;
+			Debug_dump_trigger = 1;
+			gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
+			dc_printf( "Frame dumping at 15 hz is now ON\n" );
+		} else {
+			// Turn it off
+			Debug_dump_frames = 0;
+			Debug_dump_trigger = 0;
+			gr_dump_frame_stop();
+			dc_printf( "Frame dumping is now OFF\n" );
+		}
+		
 	}
 }
 
 DCF(dump_frames30, "Starts/stop frame dumping at 30 hz")
 {
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 30;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 30 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
+	if ( Dc_command )	{
+
+		if ( Debug_dump_frames == 0 )	{
+			// Turn it on
+			Debug_dump_frames = 30;
+			Debug_dump_trigger = 0;
+			gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
+			dc_printf( "Frame dumping at 30 hz is now ON\n" );
+		} else {
+			// Turn it off
+			Debug_dump_frames = 0;
+			Debug_dump_trigger = 0;
+			gr_dump_frame_stop();
+			dc_printf( "Frame dumping is now OFF\n" );
+		}
+		
 	}
 }
 
 DCF(dump_frames30_trigger, "Starts/stop frame dumping at 30 hz")
 {
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 30;
-		Debug_dump_trigger = 1;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Triggered frame dumping at 30 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Triggered frame dumping is now OFF\n" );
+	if ( Dc_command )	{
+
+		if ( Debug_dump_frames == 0 )	{
+			// Turn it on
+			Debug_dump_frames = 30;
+			Debug_dump_trigger = 1;
+			gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
+			dc_printf( "Triggered frame dumping at 30 hz is now ON\n" );
+		} else {
+			// Turn it off
+			Debug_dump_frames = 0;
+			Debug_dump_trigger = 0;
+			gr_dump_frame_stop();
+			dc_printf( "Triggered frame dumping is now OFF\n" );
+		}
+		
 	}
 }
 
@@ -7000,7 +6925,7 @@ void game_spew_pof_info()
 	BAIL();
 }
 
-DCF(pofspew, "Spews POF info without shutting down the game")
+DCF(pofspew, "")
 {
 	game_spew_pof_info();
 }

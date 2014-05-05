@@ -29,7 +29,6 @@
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
 
 
 #ifndef NDEBUG
@@ -349,7 +348,7 @@ int Config_allowed[] = {
 #ifndef NDEBUG
 int Show_controls_info = 0;
 
-DCF_BOOL(show_controls_info, Show_controls_info);
+DCF_BOOL(show_controls_info, Show_controls_info)
 #endif
 
 static int Axes_origin[JOY_NUM_AXES];

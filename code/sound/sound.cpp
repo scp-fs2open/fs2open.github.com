@@ -15,7 +15,6 @@
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"
 #include "globalincs/vmallocator.h"
-#include "debugconsole/console.h"
 
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -201,15 +200,14 @@ void snd_spew_info()
 }
 
 int Sound_spew = 0;
-DCF(show_sounds, "Toggles display of sound debug info")
+DCF(show_sounds, "")
 {
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Sound debug info is %s", (Sound_spew ? "ON" : "OFF"));
-		return;
-	}
-
 	Sound_spew = !Sound_spew;
-	dc_printf("Sound debug info is %s", (Sound_spew ? "ON" : "OFF"));
+	if(Sound_spew){
+		dc_printf("Sound debug info ON");
+	} else {
+		dc_printf("Sound debug info OFF");
+	}
 }
 void snd_spew_debug_info()
 {

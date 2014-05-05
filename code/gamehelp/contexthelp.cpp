@@ -19,7 +19,6 @@
 #include "localization/localize.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
-#include "debugconsole/console.h"
 
 
 
@@ -557,14 +556,20 @@ void help_overlay_blit(int overlay_id)
 // --------------------------------------------------
 // DEBUGGING STUFF
 // --------------------------------------------------
-// z64: These DCF's really need a do-over.
+
 DCF(help_reload, "Reloads help overlay data from help.tbl")
 {
-	if (dc_optional_string_either("help", "--help")) {
+	if (Dc_command)	{
+		parse_helptbl();
+	}
+
+	if (Dc_help)	{
 		dc_printf( "Usage: sample\nCrashes your machine.\n" );
 	}
 
-	parse_helptbl();
+	if (Dc_status)	{
+		dc_printf( "Yes, my master." );
+	}
 }
 
 int h_textnum=0, h_amt=0, h_vtx = 0;
@@ -625,115 +630,150 @@ void showplinepos(int plinenum)
 
 DCF(help_nudgetext_x, "Use to visually position overlay text.")
 {
+	if (Dc_command)	{
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_textnum = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_amt = Dc_arg_int;		
+		}
+		nudgetext_x(h_textnum, h_amt);
+	}
 
-	if (dc_optional_string_either("help", "--help")) {
+	if (Dc_help)	{
 		dc_printf( "Usage: sample\nCrashes your machine.\n" );
-		return;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+	if (Dc_status)	{
 		showtextpos(h_textnum);
-		return;
 	}
-
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
-
-	nudgetext_x(h_textnum, h_amt);
 }
 
 DCF(help_nudgetext_y, "Use to visually position overlay text.")
 {
-	if (dc_optional_string_either("help", "--help")) {
+	if (Dc_command)	{
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_textnum = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_amt = Dc_arg_int;		
+		}
+		nudgetext_y(h_textnum, h_amt);
+	}
+
+	if (Dc_help)	{
 		dc_printf( "Usage: sample\nCrashes your machine.\n" );
-		return;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+	if (Dc_status)	{
 		showtextpos(h_textnum);
-		return;
 	}
-
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
-	
-	nudgetext_y(h_textnum, h_amt);
 }
 
 DCF(help_nudgepline_x, "Use to visually position overlay polylines.")
 {
-		if (dc_optional_string_either("help", "--help")) {
+	if (Dc_command)	{
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_textnum = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_vtx = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_amt = Dc_arg_int;		
+		}
+		nudgepline_x(h_textnum, h_vtx, h_amt);
+	}
+
+	if (Dc_help)	{
 		dc_printf( "Usage: help_nudgepline [pline_number] [vertex_number] [distance]\n" );
-		return;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
+	if (Dc_status)	{
 		showplinepos(h_textnum);
-		return;
 	}
-
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_vtx);
-	dc_stuff_int(&h_amt);
-
-	nudgepline_x(h_textnum, h_vtx, h_amt);
 }
 
 
 DCF(help_nudgepline_y, "Use to visually position overlay polylines.")
 {
-	if (dc_optional_string_either("help", "--help")) {
+	if (Dc_command)	{
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_textnum = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_vtx = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_amt = Dc_arg_int;		
+		}
+		nudgepline_y(h_textnum, h_vtx, h_amt);
+	}
+
+	if (Dc_help)	{
 		dc_printf( "Usage: help_nudgepline [pline_number] [vertex_number] [distance]\n" );
-		return;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
+	if (Dc_status)	{
 		showplinepos(h_textnum);
-		return;
 	}
-
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_vtx);
-	dc_stuff_int(&h_amt);
-
-	nudgepline_y(h_textnum, h_vtx, h_amt);
 }
 
 
 DCF(help_nudgerbracket_x, "Use to visually position overlay right bracket.")
 {
-	if (dc_optional_string_either("help", "--help")) {
+	if (Dc_command)	{
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_textnum = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_amt = Dc_arg_int;		
+		}
+		nudgerbracket_x(h_textnum, h_amt);
+	}
+
+	if (Dc_help)	{
 		dc_printf( "Usage: help_nudgerbracket_x [num] [amount]\n" );
-		return;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
+	if (Dc_status)	{
 		showrbracketpos(h_textnum);
-		return;
 	}
-
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
-
-	nudgerbracket_x(h_textnum, h_amt);
 }
 
 DCF(help_nudgerbracket_y, "Use to visually position overlay right bracket.")
 {
-	if (dc_optional_string_either("help", "--help")) {
+	if (Dc_command)	{
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_textnum = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_amt = Dc_arg_int;		
+		}
+		nudgerbracket_y(h_textnum, h_amt);
+	}
+
+	if (Dc_help)	{
 		dc_printf( "Usage: help_nudgerbracket_y [num] [amount]\n" );
-		return;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
+	if (Dc_status)	{
 		showrbracketpos(h_textnum);
-		return;
 	}
-
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
-	
-	nudgerbracket_y(h_textnum, h_amt);
 }
 
 
@@ -741,37 +781,46 @@ DCF(help_nudgerbracket_y, "Use to visually position overlay right bracket.")
 
 DCF(help_nudgelbracket_x, "Use to visually position overlay left bracket.")
 {
+	if (Dc_command)	{
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_textnum = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_amt = Dc_arg_int;		
+		}
+		nudgelbracket_x(h_textnum, h_amt);
+	}
 
-	if (dc_optional_string_either("help", "--help")) {
+	if (Dc_help)	{
 		dc_printf( "Usage: help_nudgelbracket_x [num] [amount]\n" );
-		return;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+	if (Dc_status)	{
 		showlbracketpos(h_textnum);
-		return;
 	}
-
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
-
-	nudgelbracket_x(h_textnum, h_amt);
 }
 
 DCF(help_nudgelbracket_y, "Use to visually position overlay left bracket.")
 {
-	if (dc_optional_string_either("help", "--help")) {
+	if (Dc_command)	{
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_textnum = Dc_arg_int;		
+		}
+		dc_get_arg(ARG_INT);
+		if(Dc_arg_type & ARG_INT){
+			 h_amt = Dc_arg_int;		
+		}
+		nudgelbracket_y(h_textnum, h_amt);
+	}
+
+	if (Dc_help)	{
 		dc_printf( "Usage: help_nudgelbracket_y [num] [amount]\n" );
-		return;
 	}
 
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
+	if (Dc_status)	{
 		showlbracketpos(h_textnum);
-		return;
 	}
-
-	dc_stuff_int(&h_textnum);
-	dc_stuff_int(&h_amt);
-
-	nudgelbracket_y(h_textnum, h_amt);
 }

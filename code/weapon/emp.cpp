@@ -26,7 +26,6 @@
 #include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
-#include "debugconsole/console.h"
 
 
 
@@ -638,12 +637,13 @@ float emp_current_intensity()
 DCF(zap, "zap a ship with an EMP effect")
 {
 	int shipnum;
-	SCP_string ship_str;
 
-	dc_stuff_string_white(ship_str);
-	shipnum = ship_name_lookup(ship_str.c_str(), 1);
+	dc_get_arg(ARG_STRING);
+	if(Dc_arg_type & ARG_STRING){
+		 shipnum = ship_name_lookup(Dc_arg, 1);
 
-	if(shipnum >= 0){
-		emp_start_ship(&Objects[Ships[shipnum].objnum], 500.0f, 10.0f);
+		 if(shipnum >= 0){
+			emp_start_ship(&Objects[Ships[shipnum].objnum], 500.0f, 10.0f);
+		 }
 	}
 }
