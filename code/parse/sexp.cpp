@@ -21783,7 +21783,7 @@ int sexp_player_is_cheating_bastard() {
 }
 
 void sexp_set_motion_debris(int node) {
-	Motion_debris_override = is_sexp_true(node);
+	Motion_debris_override = is_sexp_true(node) != 0;
 }
 
 /**
