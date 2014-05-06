@@ -25,6 +25,7 @@
 #include "parse/parselo.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
+#include "debugconsole/console.h"
 
 
 #define MAX_DEBRIS_VCLIPS			4
@@ -866,75 +867,11 @@ uint Star_flags = STAR_FLAG_DEFAULT;
 //XSTR:OFF
 DCF(stars,"Set parameters for starfield")
 {
-	if ( Dc_command ) {
-		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "tail" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) ) {
-				Dc_help = 1;
-			} else {
-				Star_amount = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "len" )) {
-			dc_get_arg(ARG_FLOAT);
-			Star_max_length = Dc_arg_float;
-		} else if ( !strcmp( Dc_arg, "dim" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f ) {
-				Dc_help = 1;
-			} else {
-				Star_dim = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "flag" )) {
-			dc_get_arg(ARG_STRING);
-			if ( !strcmp( Dc_arg, "tail" )) {
-				Star_flags ^= STAR_FLAG_TAIL;
-			} else if ( !strcmp( Dc_arg, "dim" )) {
-				Star_flags ^= STAR_FLAG_DIM;
-			} else if ( !strcmp( Dc_arg, "aa" )) {
-				Star_flags ^= STAR_FLAG_ANTIALIAS;
-			} else {
-				Dc_help = 1;
-			}
-		} else if ( !strcmp( Dc_arg, "cap" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 255.0f) ) {
-				Dc_help = 1;
-			} else {
-				Star_cap = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "m0" )) {
-			Star_amount = 0.0f;
-			Star_dim = 0.0f;
-			Star_cap = 0.0f;
-			Star_flags = 0;
-			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "m1" ) || !strcmp( Dc_arg, "default" )) {
-			Star_amount = STAR_AMOUNT_DEFAULT;
-			Star_dim = STAR_DIM_DEFAULT;
-			Star_cap = STAR_CAP_DEFAULT;
-			Star_flags = STAR_FLAG_DEFAULT;
-			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "m2" )) {
-			Star_amount = 0.75f;
-			Star_dim = 20.0f;
-			Star_cap = 75.0f;
-			Star_flags = STAR_FLAG_TAIL|STAR_FLAG_DIM|STAR_FLAG_ANTIALIAS;
-			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "num" )) {
-			dc_get_arg(ARG_INT);
-			if ( (Dc_arg_int < 0) || (Dc_arg_int > MAX_STARS) ) {
-				Dc_help = 1;
-			} else {
-				Num_stars = Dc_arg_int;
-			} 
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
-	}
+	SCP_string arg;
+	float val_f;
+	int val_i;
 
-	if ( Dc_help ) {
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: stars keyword\nWhere keyword can be in the following forms:\n" );
 		dc_printf( "stars default   Resets stars to all default values\n" );
 		dc_printf( "stars num X     Sets number of stars to X.  Between 0 and %d.\n", MAX_STARS );
@@ -949,21 +886,105 @@ DCF(stars,"Set parameters for starfield")
 		dc_printf( "\nHINT: set cap to 0 to get dim rate and tail down, then use\n" );
 		dc_printf( "cap to keep the lines from going away when moving too fast.\n" );
 		dc_printf( "\nUse '? stars' to see current values.\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
+		return;	// don't print status if help is printed.  Too messy.
 	}
 
-	if ( Dc_status ) {
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "Num_stars: %d\n", Num_stars );
 		dc_printf( "Tail: %.2f\n", Star_amount );
-		dc_printf( "Dim: %.2f\n", Star_dim );
-		dc_printf( "Cap: %.2f\n", Star_cap );
+		dc_printf( "Dim : %.2f\n", Star_dim );
+		dc_printf( "Cap : %.2f\n", Star_cap );
 		dc_printf( "Max length: %.2f\n", Star_max_length );
 		dc_printf( "Flags:\n" );
-		dc_printf( "  Tail: %s\n", (Star_flags&STAR_FLAG_TAIL?"On":"Off") );
-		dc_printf( "  Dim: %s\n", (Star_flags&STAR_FLAG_DIM?"On":"Off") );
+		dc_printf( "  Tail : %s\n", (Star_flags&STAR_FLAG_TAIL?"On":"Off") );
+		dc_printf( "  Dim  : %s\n", (Star_flags&STAR_FLAG_DIM?"On":"Off") );
 		dc_printf( "  Antialias: %s\n", (Star_flags&STAR_FLAG_ANTIALIAS?"On":"Off") );
 		dc_printf( "\nTHESE AREN'T SAVED TO DISK, SO IF YOU TWEAK\n" );
 		dc_printf( "THESE AND LIKE THEM, WRITE THEM DOWN!!\n" );
+		return;
+	}
+
+	dc_stuff_string_white(arg);
+	// "stars default" is handled by "stars m1"
+	if (arg == "num") {
+		dc_stuff_int(&val_i);
+
+		CLAMP(val_i, 0, MAX_STARS);
+		Num_stars = val_i;
+
+		dc_printf("Num_stars set to %i\n", Num_stars);
+	
+	} else if (arg == "tail") {
+		dc_stuff_float(&val_f);
+		CLAMP(val_f, 0.0, 1.0);
+		Star_amount = val_f;
+		
+		dc_printf("Star_amount set to %f\n", Star_amount);
+
+	} else if (arg == "dim") {
+		dc_stuff_float(&val_f);
+
+		if (val_f > 0.0f ) {
+			Star_dim = val_f;
+			dc_printf("Star_dim set to %f\n", Star_dim);
+		
+		} else {
+			dc_printf("Error: Star_dim value must be non-negative\n");
+		}
+	
+	} else if (arg == "cap") {
+		dc_stuff_float(&val_f);
+		CLAMP(val_f, 0.0, 255);
+		Star_cap = val_f;
+		
+		dc_printf("Star_cap set to %f\n", Star_cap);
+	
+	} else if (arg == "len") {
+		dc_stuff_float(&Star_max_length);
+
+		dc_printf("Star_max_length set to %f\n", Star_max_length);
+
+	} else if (arg == "m0") {
+		Star_amount = 0.0f;
+		Star_dim = 0.0f;
+		Star_cap = 0.0f;
+		Star_flags = 0;
+		Star_max_length = STAR_MAX_LENGTH_DEFAULT;
+
+		dc_printf("Starfield set: Old 'pixel type' crappy stars. flags=none\n");
+	
+	} else if ((arg == "m1") || (arg == "default")) {
+		Star_amount = STAR_AMOUNT_DEFAULT;
+		Star_dim = STAR_DIM_DEFAULT;
+		Star_cap = STAR_CAP_DEFAULT;
+		Star_flags = STAR_FLAG_DEFAULT;
+		Star_max_length = STAR_MAX_LENGTH_DEFAULT;
+
+		dc_printf("Starfield set: (default) tail=.75, dim=20.0, cap=75.0, flags=dim,tail\n");
+
+	} else if (arg == "m2") {
+		Star_amount = 0.75f;
+		Star_dim = 20.0f;
+		Star_cap = 75.0f;
+		Star_flags = STAR_FLAG_TAIL|STAR_FLAG_DIM|STAR_FLAG_ANTIALIAS;
+		Star_max_length = STAR_MAX_LENGTH_DEFAULT;
+
+		dc_printf("Starfield set: tail=.75, dim=20.0, cap=75.0, flags=dim,tail,aa\n");
+
+	} else if (arg == "flag") {
+		dc_stuff_string_white(arg);
+		if (arg == "tail") {
+			Star_flags ^= STAR_FLAG_TAIL;
+		} else if (arg == "dim" ) {
+			Star_flags ^= STAR_FLAG_DIM;
+		} else if (arg == "aa" ) {
+			Star_flags ^= STAR_FLAG_ANTIALIAS;
+		} else {
+			dc_printf("Error: unknown flag argument '%s'\n", arg.c_str());
+		}
+
+	} else {
+		dc_printf("Error: Unknown argument '%s'", arg.c_str());
 	}
 }
 //XSTR:ON
@@ -1284,39 +1305,44 @@ float Subspace_glow_rate = 1.0f;
 //XSTR:OFF
 DCF(subspace_set,"Set parameters for subspace effect")
 {
-	if ( Dc_command ) {
-		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "u" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f ) {
-				Dc_help = 1;
-			} else {
-				subspace_u_speed = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "v" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f ) {
-				Dc_help = 1;
-			} else {
-				subspace_v_speed = Dc_arg_float;
-			}
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
+	SCP_string arg;
+	float value;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: subspace [--status] <axis> <speed>\n");
+		dc_printf("[--status] -- Displays the current speeds for both axes\n");
+		dc_printf("<axis>  -- May be either 'u' or 'v', and corresponds to the texture axis\n");
+		dc_printf("<speed> -- is the speed along the axis that the texture is moved\n");
+		return;
 	}
 
-	if ( Dc_help ) {
-		dc_printf( "Usage: subspace keyword\nWhere keyword can be in the following forms:\n" );
-		dc_printf( "subspace u X    Where X is how fast u moves.\n", MAX_STARS );
-		dc_printf( "subspace v X    Where X is how fast v moves.\n" );
-		dc_printf( "\nUse '? subspace' to see current values.\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
-	}
-
-	if ( Dc_status ) {
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "u: %.2f\n", subspace_u_speed );
 		dc_printf( "v: %.2f\n", subspace_v_speed );
+		return;
+	}
+
+	dc_stuff_string_white(arg);
+	if (arg == "u") {
+		dc_stuff_float(&value);
+
+		if ( value < 0.0f ) {
+			dc_printf("Error: speed must be non-negative");
+			return;
+		}
+		subspace_u_speed = value;
+
+	} else if (arg == "v") {
+		dc_stuff_float(&value);
+
+		if (value < 0.0f) {
+			dc_printf("Error: speed must be non-negative");
+			return;
+		}
+		subspace_v_speed = value;
+
+	} else {
+		dc_printf("Error: Unknown axis '%s'", arg.c_str());
 	}
 }
 //XSTR:ON

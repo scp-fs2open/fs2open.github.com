@@ -15,7 +15,7 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "cfile/cfile.h"
-
+#include "debugconsole/console.h"
 
 
 #define MAX_TRIS 200
@@ -130,7 +130,7 @@ int load_nebula_sub(char *filename)
 	return 1;
 }
 
-void nebula_init( char *filename, int pitch, int bank, int heading )
+void nebula_init( const char *filename, int pitch, int bank, int heading )
 {
 	angles a;
 
@@ -140,7 +140,7 @@ void nebula_init( char *filename, int pitch, int bank, int heading )
 	nebula_init(filename, &a);
 }
 
-void nebula_init( char *filename, angles * pbh )
+void nebula_init( const char *filename, angles * pbh )
 {
 	if ( Nebula_loaded )	{
 		nebula_close();
@@ -215,17 +215,19 @@ void nebula_render()
 
 DCF(nebula,"Loads a different nebula")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
-		if ( Dc_arg_type == ARG_NONE )	{
-			nebula_close();
-		} else {
-			nebula_init( Dc_arg );
-		}
+	SCP_string filename;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: nebula [filename]\n");
+		dc_printf("Loads the nebula file (without filename extension). No filename takes away nebula\n" );
+		return;
 	}
-	if ( Dc_help )	{
-		dc_printf( "Usage: nebula filename\nLoads the nebula file. No filename takes away nebula\n" );
-	}	
+
+	if (dc_maybe_stuff_string_white(filename)) {
+			nebula_init(filename.c_str());
+	} else {
+		nebula_close();
+	}
 }
 
 

@@ -37,6 +37,7 @@
 #include "jpgutils/jpgutils.h"
 #include "parse/parselo.h"
 #include "network/multiutil.h"
+#include "debugconsole/console.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -669,46 +670,53 @@ int bm_reload(int bitmap_handle, const char* filename)
 
 DCF(bm_frag,"Shows BmpMan fragmentation")
 {
-	if ( Dc_command )	{
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Displays a graphic showing the BmpMan fragmentation. Color key:\n");
+		dc_printf("\tGray  : NONE\n");
+		dc_printf("\tRed   : PCXn");
+		dc_printf("\tGreen : USER, TGA, PNG, DDS\n");
+		dc_printf("\tBlue  : ANI, EFF\n\n");
 
-		gr_clear();
+		dc_printf("Once done reviewing the graphic, press any key to return to the console\n");
+		return;
+	}
+	
+	gr_clear();
 
-		int x=0, y=0;
-		int xs=2, ys=2;
-		int w=4, h=4;
+	int x=0, y=0;
+	int xs=2, ys=2;
+	int w=4, h=4;
 
-		for (int i=0; i<MAX_BITMAPS; i++ )	{
-			switch( bm_bitmaps[i].type )	{
-			case BM_TYPE_NONE:
-				gr_set_color(128,128,128);
-				break;
-			case BM_TYPE_PCX:
-				gr_set_color(255,0,0);
-				break;
-			case BM_TYPE_USER:
-			case BM_TYPE_TGA:
-			case BM_TYPE_PNG:
-			case BM_TYPE_DDS:
-				gr_set_color(0,255,0);
-				break;
-			case BM_TYPE_ANI:
-			case BM_TYPE_EFF:
-				gr_set_color(0,0,255);
-				break;
-			}
-
-			gr_rect( x+xs, y+ys, w, h );
-			x += w+xs+xs;
-			if ( x > 639 )	{
-				x = 0;
-				y += h + ys + ys;
-			}
-
+	for (int i=0; i<MAX_BITMAPS; i++ )	{
+		switch( bm_bitmaps[i].type )	{
+		case BM_TYPE_NONE:
+			gr_set_color(128,128,128);
+			break;
+		case BM_TYPE_PCX:
+			gr_set_color(255,0,0);
+			break;
+		case BM_TYPE_USER:
+		case BM_TYPE_TGA:
+		case BM_TYPE_PNG:
+		case BM_TYPE_DDS:
+			gr_set_color(0,255,0);
+			break;
+		case BM_TYPE_ANI:
+		case BM_TYPE_EFF:
+			gr_set_color(0,0,255);
+			break;
 		}
 
-		gr_flip();
-		key_getch();
+		gr_rect( x+xs, y+ys, w, h );
+		x += w+xs+xs;
+		if ( x > 639 )	{
+			x = 0;
+			y += h + ys + ys;
+		}
 	}
+
+	gr_flip();
+	key_getch();
 }
 
 static int find_block_of(int n)
@@ -2068,48 +2076,52 @@ void bm_unload_all()
 
 DCF(bmpman,"Shows/changes bitmap caching parameters and usage")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "flush" ))	{
-			dc_printf( "Total RAM usage before flush: %d bytes\n", bm_texture_ram );
-			int i;
-			for (i = 0; i < MAX_BITMAPS; i++)	{
-				if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
-					bm_free_data(i);
-				}
-			}
-			dc_printf( "Total RAM after flush: %d bytes\n", bm_texture_ram );
-		} else if ( !strcmp( Dc_arg, "ram" ))	{
-			dc_get_arg(ARG_INT);
-			Bm_max_ram = Dc_arg_int*1024*1024;
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
+	if ( dc_optional_string_either("help", "--help"))	{
+		dc_printf( "Usage: BmpMan [arg]\nWhere arg can be any of the following:\n" );
+		dc_printf( "\tflush    Unloads all bitmaps.\n" );
+		dc_printf( "\tram [x]  Sets max mem usage to x MB. (Set to 0 to have no limit.)\n" );
+		dc_printf( "\t?        Displays status of Bitmap manager.\n" );
+		return;
 	}
 
-	if ( Dc_help )	{
-		dc_printf( "Usage: BmpMan keyword\nWhere keyword can be in the following forms:\n" );
-		dc_printf( "BmpMan flush    Unloads all bitmaps.\n" );
-		dc_printf( "BmpMan ram x    Sets max mem usage to x MB. (Set to 0 to have no limit.)\n" );
-		dc_printf( "\nUse '? BmpMan' to see status of Bitmap manager.\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
-	}
-
-	if ( Dc_status )	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "Total RAM usage: %d bytes\n", bm_texture_ram );
 
+		if (Bm_max_ram > 1024*1024) {
+			dc_printf( "\tMax RAM allowed: %.1f MB\n", i2fl(Bm_max_ram)/(1024.0f*1024.0f) );
+		} else if ( Bm_max_ram > 1024 ) {
+			dc_printf( "\tMax RAM allowed: %.1f KB\n", i2fl(Bm_max_ram)/(1024.0f) );
+		} else if ( Bm_max_ram > 0 ) {
+			dc_printf( "\tMax RAM allowed: %d bytes\n", Bm_max_ram );
+		} else {
+			dc_printf( "\tNo RAM limit\n" );
+		}
+		return;
+	}
 
-		if ( Bm_max_ram > 1024*1024 )
-			dc_printf( "Max RAM allowed: %.1f MB\n", i2fl(Bm_max_ram)/(1024.0f*1024.0f) );
-		else if ( Bm_max_ram > 1024 )
-			dc_printf( "Max RAM allowed: %.1f KB\n", i2fl(Bm_max_ram)/(1024.0f) );
-		else if ( Bm_max_ram > 0 )
-			dc_printf( "Max RAM allowed: %d bytes\n", Bm_max_ram );
-		else
-			dc_printf( "No RAM limit\n" );
 
+	if (dc_optional_string("flush")) {
+		dc_printf( "Total RAM usage before flush: %d bytes\n", bm_texture_ram );
+		int i;
+		for (i = 0; i < MAX_BITMAPS; i++)	{
+			if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
+				bm_free_data(i);
+			}
+		}
+		dc_printf( "Total RAM after flush: %d bytes\n", bm_texture_ram );
+	} else if (dc_optional_string("ram")) {
+		dc_stuff_int(&Bm_max_ram);
 
+		if (Bm_max_ram > 0) {
+			dc_printf("BmpMan limited to %i, MB's\n", Bm_max_ram);
+			Bm_max_ram *= 1024 * 1024;
+		} else if (Bm_max_ram == 0) {
+			dc_printf("!!BmpMan memory is unlimited!!\n");
+		} else {
+			dc_printf("Illegal value. Must be non-negative.");
+		}
+	} else {
+		dc_printf("<BmpMan> No argument given\n");
 	}
 }
 
