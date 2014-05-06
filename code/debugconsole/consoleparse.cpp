@@ -24,6 +24,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstring>
+#include <limits.h>
 
 
 // ========================= LOCALS =========================
