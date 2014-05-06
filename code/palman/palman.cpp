@@ -11,6 +11,7 @@
 
 #include "palman/palman.h"
 #include "bmpman/bmpman.h"
+#include "debugconsole/console.h"
 #include "pcxutils/pcxutils.h"
 #include "parse/parselo.h"
 #include "graphics/grinternal.h"
@@ -165,17 +166,14 @@ void palette_load_table( const char * filename )
 
 DCF(palette,"Loads a new palette")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
-		if ( Dc_arg_type == ARG_NONE )	{
-		} else {
-			palette_load_table( Dc_arg );
-		}
-	}
-	if ( Dc_help )	{
-		dc_printf( "Usage: palette filename\nLoads the palette file.\n" );
+	char palette_file[MAX_FILENAME_LEN];
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: palette <filename>\nLoads the palette file.\n" );
 	}
 
+	dc_stuff_string_white(palette_file, MAX_FILENAME_LEN);
+	palette_load_table(palette_file);
 }
 
 int Palman_allow_any_color = 0;

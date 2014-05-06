@@ -334,7 +334,7 @@ void cutscenes_screen_play()
 		else
 			sprintf(str, XSTR("Unable to play movie %s.", 204), Cutscenes[which_cutscene].name);
 
-		popup(0, 1, POPUP_OK, str );
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, str );
 	}
 	
 }

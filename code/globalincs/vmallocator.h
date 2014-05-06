@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include <queue>
+#include <deque>
 
 #if defined __GNUC__
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
@@ -126,6 +127,9 @@ class SCP_multimap : public std::multimap<T, U, std::less<T>, SCP_vm_allocator<s
 
 template< typename T >
 class SCP_queue : public std::queue< T, std::deque< T, SCP_vm_allocator< T > > > { };
+
+template< typename T >
+class SCP_deque : public std::deque< T, SCP_vm_allocator< T > > { };
 
 template <class T1, class T2>
 bool operator==(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw()

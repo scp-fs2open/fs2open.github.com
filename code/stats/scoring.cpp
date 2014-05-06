@@ -31,6 +31,7 @@
 #include "network/multi_pmsg.h"
 #include "ai/ai_profiles.h"
 #include "pilotfile/pilotfile.h"
+#include "debugconsole/console.h"
 
 /*
 // uncomment to get extra debug messages when a player scores
@@ -1509,20 +1510,42 @@ void scoring_bash_rank(player *pl,int rank)
 	pl->stats.rank = rank;
 }
 
-DCF(rank, "changes scoring vars")
+DCF(rank, "changes player rank")
 {
-	if(Dc_command){		
-		dc_get_arg(ARG_INT);		
-		
-		// parse the argument and change things around accordingly		
-		if((Dc_arg_type & ARG_INT) && (Player != NULL)){							
-			scoring_bash_rank(Player,Dc_arg_int);
-		}		
+	int rank;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: rank <index>\n");
+		dc_printf(" <index> The rank index you wish to have. For retail ranks, these correspond to:\n");
+		dc_printf("\t0 : Ensign\n");
+		dc_printf("\t1 : Lieutenant Junior Grade\n");
+		dc_printf("\t2 : Lietenant\n");
+		dc_printf("\t3 : Lieutenant Commander\n");
+		dc_printf("\t4 : Commander\n");
+		dc_printf("\t5 : Captain\n");
+		dc_printf("\t6 : Commodore\n");
+		dc_printf("\t7 : Rear Admiral\n");
+		dc_printf("\t8 : Vice Admiral\n");
+		dc_printf("\t9 : Admiral\n\n");
+		return;
 	}
-	dc_printf("Usage\n0 : Ensign\n1 : Lieutenant Junior Grade\n");
-	dc_printf("2 : Lietenant\n3 : Lieutenant Commander\n");
-	dc_printf("4 : Commander\n5 : Captain\n6 : Commodore\n");
-	dc_printf("7 : Rear Admiral\n8 : Vice Admiral\n9 : Admiral");
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		if (Player != NULL) {
+			dc_printf("Current rank is %i\n", Player->stats.rank);
+		} else {
+			dc_printf("Error! Current Player not active or loaded\n");
+		}
+	}
+
+	dc_stuff_int(&rank);
+	
+	// parse the argument and change things around accordingly
+	if (Player != NULL) {
+			scoring_bash_rank(Player, rank);
+	} else {
+		dc_printf("Error! Current Player not active or loaded\n");
+	}
 }
 
 void scoreing_close()
