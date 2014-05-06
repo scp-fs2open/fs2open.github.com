@@ -1133,10 +1133,12 @@
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
     </ClInclude>
-	<ClInclude Include="..\..\code\debugconsole\console.h">
+    <ClInclude Include="..\..\code\debugconsole\console.h">
       <Filter>DebugConsole</Filter>
-	 <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
+    </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
       <Filter>DebugConsole</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\code\debugconsole\timerbar.h">
       <Filter>DebugConsole</Filter>
     </ClInclude>
