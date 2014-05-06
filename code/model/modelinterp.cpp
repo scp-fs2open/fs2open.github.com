@@ -33,6 +33,7 @@
 #include "graphics/gropengllight.h"
 #include "ship/shipfx.h"
 #include "gamesequence/gamesequence.h"
+#include "debugconsole/console.h"
 
 #include <limits.h>
 
@@ -1939,19 +1940,20 @@ float Interp_depth_scale = 1500.0f;
 
 DCF(model_darkening,"Makes models darker with distance")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_FLOAT);
-		Interp_depth_scale = Dc_arg_float;
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: model_darkening <float>\n" );
+		dc_printf("Sets the distance at which to start blacking out models (namely asteroids).\n");
+		return;
 	}
 
-	if ( Dc_help )	{
-		dc_printf( "Usage: model_darkening float\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
-	}
-
-	if ( Dc_status )	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "model_darkening = %.1f\n", Interp_depth_scale );
+		return;
 	}
+
+	dc_stuff_float(&Interp_depth_scale);
+
+	dc_printf("model_darkening set to %.1f\n", Interp_depth_scale);
 }
 
 void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
@@ -2114,8 +2116,13 @@ float model_find_closest_point( vec3d *outpnt, int model_num, int submodel_num, 
 }
 
 int tiling = 1;
-DCF(tiling, "")
+DCF(tiling, "Toggles rendering of tiled textures (default is on)")
 {
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Tiled textures are %s", tiling ? "ON" : "OFF");
+		return;
+	}
+
 	tiling = !tiling;
 	if(tiling){
 		dc_printf("Tiled textures\n");

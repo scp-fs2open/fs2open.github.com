@@ -64,6 +64,7 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 #include "menuui/mainhallmenu.h"
+#include "debugconsole/console.h"
 
 #include <algorithm>
 
@@ -754,13 +755,20 @@ int multi_join_maybe_warn();
 int multi_join_warn_pxo();
 void multi_join_blit_protocol();
 
-DCF(mj_make, "")
+DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 {
 	active_game ag, *newitem;
 	int idx;
+	int idx_max;
 
-	dc_get_arg(ARG_INT);
-	for(idx=0; idx<Dc_arg_int; idx++){
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: mj_make <num_games>\n");
+		return;
+	}
+
+	dc_stuff_int(&idx_max);
+
+	for(idx = 0; idx < idx_max; idx++){
 		// stuff some fake info
 		memset(&ag, 0, sizeof(active_game));
 		sprintf(ag.name, "Game %d", idx);
@@ -776,7 +784,7 @@ DCF(mj_make, "")
 		if(newitem != NULL){
 			// newitem->heard_from_timer = timestamp((int)frand_range(500.0f, 10000.0f));
 		}
-	}	
+	}
 }
 
 void multi_join_notify_new_game()

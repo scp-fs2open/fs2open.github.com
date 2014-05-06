@@ -41,6 +41,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
+#include "debugconsole/console.h"
 
 
 

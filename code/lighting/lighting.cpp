@@ -15,6 +15,7 @@
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
 
 
 
@@ -62,52 +63,11 @@ int Lighting_flag = 1;
 
 DCF(light,"Changes lighting parameters")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "ambient" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				Ambient_light = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "reflect" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				Reflective_light = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "default" ))	{
-			Lighting_mode = LM_BRIGHTEN;
-			Ambient_light = AMBIENT_LIGHT_DEFAULT;
-			Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
-			Lighting_flag = 0;
-		} else if ( !strcmp( Dc_arg, "mode" ))	{
-			dc_get_arg(ARG_STRING);
-			if ( !strcmp(Dc_arg, "light") )	{
-				Lighting_mode = LM_BRIGHTEN;
-			} else if ( !strcmp(Dc_arg, "darken"))	{ 
-				Lighting_mode = LM_DARKEN;
-			} else {
-				Dc_help = 1;
-			}
-		} else if ( !strcmp( Dc_arg, "dynamic" ))	{
-			dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
-			if ( Dc_arg_type & ARG_TRUE )	Lighting_flag = 1;	
-			else if ( Dc_arg_type & ARG_FALSE ) Lighting_flag = 0;	
-			else if ( Dc_arg_type & ARG_NONE ) Lighting_flag ^= 1;	
-		} else if ( !strcmp( Dc_arg, "on" ) )	{
-			Lighting_off = 0;
-		} else if ( !strcmp( Dc_arg, "off" ) )	{
-			Lighting_off = 1;
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
-	}
+	SCP_string arg_str;
+	float val_f;
+	bool  val_b;
 
-	if ( Dc_help )	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: light keyword\nWhere keyword can be in the following forms:\n" );
 		dc_printf( "light on|off          Turns all lighting on/off\n" );
 		dc_printf( "light default         Resets lighting to all default values\n" );
@@ -117,18 +77,70 @@ DCF(light,"Changes lighting parameters")
 		dc_printf( "light mode [light|darken]   Changes the lighting mode.\n" );
 		dc_printf( "   Where 'light' means the global light adds light.\n");
 		dc_printf( "   and 'darken' means the global light subtracts light.\n");
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
+		return;
 	}
 
-	if ( Dc_status )	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "Ambient light is set to %.2f\n", Ambient_light );
 		dc_printf( "Reflective light is set to %.2f\n", Reflective_light );
 		dc_printf( "Dynamic lighting is: %s\n", (Lighting_flag?"on":"off") );
-		switch( Lighting_mode )	{
-		case LM_BRIGHTEN:   dc_printf( "Lighting mode is: light\n" ); break;
-		case LM_DARKEN:   dc_printf( "Lighting mode is: darken\n" ); break;
-		default: dc_printf( "Lighting mode is: UNKNOWN\n" ); break;
+		switch( Lighting_mode ) {
+		case LM_BRIGHTEN:
+			dc_printf( "Lighting mode is: light\n" );
+			break;
+		case LM_DARKEN:
+			dc_printf( "Lighting mode is: darken\n" );
+			break;
+		default:
+			dc_printf( "Lighting mode is: UNKNOWN\n" );
 		}
+		return;
+	}
+	
+	if (dc_optional_string("ambient")) {
+		dc_stuff_float(&val_f);
+		if ((val_f < 0.0f) || (val_f > 1.0f)) {
+			dc_printf(" Error: ambient value must be between 0.0 and 1.0\n");
+		} else {
+			Ambient_light = val_f;
+		}
+	
+	} else if (dc_optional_string("reflect")) {
+		dc_stuff_float(&val_f);
+		if ( (val_f < 0.0f) || (val_f > 1.0f))	{
+			dc_printf(" Error: reflect value mus be between 0.0 and 1.0\n");
+		} else {
+			Reflective_light = val_f;
+		}
+	
+	} else if (dc_optional_string("default")) {
+		Lighting_mode = LM_BRIGHTEN;
+		Ambient_light = AMBIENT_LIGHT_DEFAULT;
+		Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
+		Lighting_flag = 0;
+	
+	} else if (dc_optional_string("mode")) {
+		dc_stuff_string_white(arg_str);
+		if (arg_str == "light") {
+			Lighting_mode = LM_BRIGHTEN;
+	
+		} else if (arg_str == "darken") {
+			Lighting_mode = LM_DARKEN;
+		
+		} else {
+			dc_printf(" Error: unknown light mode: '%s'\n", arg_str.c_str());
+		}
+	
+	} else if (dc_optional_string("dynamic")) {
+		dc_stuff_boolean(&val_b);
+		Lighting_flag = val_b;
+
+	} else if(dc_maybe_stuff_boolean(&Lighting_off)) {
+		Lighting_off = !Lighting_off;
+
+	} else {
+		dc_stuff_string_white(arg_str);
+		dc_printf("Error: Unknown argument '%s'\n", arg_str.c_str());
 	}
 }
 

@@ -22,7 +22,7 @@
 #include "render/3d.h"
 #include "io/joy_ff.h"
 #include "species_defs/species_defs.h"
-
+#include "debugconsole/console.h"
 
 
 //  // --mharris port hack--
@@ -96,62 +96,65 @@ void obj_snd_source_pos(vec3d *sound_pos, obj_snd *osp)
 //XSTR:OFF
 DCF(objsnd, "Persistent sound stuff" )
 {
-	char		buf1[16], buf2[64];
-	obj_snd	*osp;
+	char buf1[4];
+	char buf2[MAX_NAME_LEN];
+	obj_snd *osp;
+	SCP_string arg;
 
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf ("Usage: objsnd [-list]\n");
+		dc_printf ("[-list] --  displays status of all objects with linked sounds\n");
+		dc_printf ("with no parameters, object sounds are toggled on/off\n");
+		return;
+	}
 
-		if ( Dc_arg_type & ARG_NONE ) {
-			if ( Obj_snd_enabled == TRUE ) {
-				obj_snd_stop_all();
-				Obj_snd_enabled = FALSE;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf( "Object sounds are: %s\n", (Obj_snd_enabled?"ON":"OFF") );
+	}
+	
+	if (dc_optional_string("-list")) {
+		for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
+			vec3d source_pos;
+			float distance;
+
+			Assert(osp != NULL);
+			if ( osp->instance == -1 ) {
+				continue;
+				//sprintf(buf1,"OFF");
+			} else {
+				sprintf(buf1,"ON");
+			}
+
+			if ( Objects[osp->objnum].type == OBJ_SHIP ) {
+				strcpy_s(buf2, Ships[Objects[osp->objnum].instance].ship_name);
+			}
+			else if ( Objects[osp->objnum].type == OBJ_DEBRIS ) {
+				sprintf(buf2, "Debris");
 			}
 			else {
-				Obj_snd_enabled = TRUE;
+				sprintf(buf2, "Unknown");
 			}
-		}
-		if ( !stricmp( Dc_arg, "list" ))	{
-			for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
-				Assert(osp != NULL);
-				if ( osp->instance == -1 ) {
-					continue;
-					//sprintf(buf1,"OFF");
-				} else {
-					sprintf(buf1,"ON");
-				}
 
-				if ( Objects[osp->objnum].type == OBJ_SHIP ) {
-					strcpy_s(buf2, Ships[Objects[osp->objnum].instance].ship_name);
-				}
-				else if ( Objects[osp->objnum].type == OBJ_DEBRIS ) {
-					sprintf(buf2, "Debris");
-				}
-				else {
-					sprintf(buf2, "Unknown");
-				}
+			obj_snd_source_pos(&source_pos, osp);
+			distance = vm_vec_dist_quick( &source_pos, &View_position );
 
-				vec3d source_pos;
-				float distance;
+			dc_printf("Object %d => name: %s vol: %.2f pan: %.2f dist: %.2f status: %s\n", osp->objnum, buf2, osp->vol, osp->pan, distance, buf1);
+		} // end for
 
-				obj_snd_source_pos(&source_pos, osp);
-				distance = vm_vec_dist_quick( &source_pos, &View_position );
-
-				dc_printf("Object %d => name: %s vol: %.2f pan: %.2f dist: %.2f status: %s\n", osp->objnum, buf2, osp->vol, osp->pan, distance, buf1);
-			} // end for
-				dc_printf("Number object-linked sounds playing: %d\n", Num_obj_sounds_playing);
-		}
+		dc_printf("Number object-linked sounds playing: %d\n", Num_obj_sounds_playing);
+		return;
 	}
 
-	if ( Dc_help ) {
-		dc_printf ("Usage: objsnd [list]\n");
-		dc_printf ("[list] --  displays status of all objects with linked sounds\n");
-		dc_printf ("with no parameters, object sounds are toggled on/off\n");
-		Dc_status = 0;
-	}
-
-	if ( Dc_status )	{
-		dc_printf( "Object sounds are: %s\n", (Obj_snd_enabled?"ON":"OFF") );
+	if (!dc_maybe_stuff_string_white(arg)) {
+		// No arguments, toggle snd on/off
+		if ( Obj_snd_enabled == TRUE ) {
+				obj_snd_stop_all();
+				Obj_snd_enabled = FALSE;
+			} else {
+				Obj_snd_enabled = TRUE;
+		}
+	} else {
+		dc_printf("Unknown argument '%s'\n", arg.c_str());
 	}
 }
 //XSTR:ON

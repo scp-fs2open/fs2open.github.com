@@ -80,6 +80,8 @@
 #include "graphics/gropenglshader.h"
 #include "model/model.h"
 #include "mod_table/mod_table.h"
+#include "debugconsole/console.h"
+#include "debugconsole/console.h"
 
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
@@ -8434,10 +8436,14 @@ int ship_subsys_disrupted(ship *sp, int type)
 }
 
 float Decay_rate = 1.0f / 120.0f;
-DCF(lethality_decay, "time in sec to return from 100 to 0")
+DCF(lethality_decay, "Sets ship lethality_decay, or the time in sec to go from 100 to 0 health (default is 1/120)")
 {
-	dc_get_arg(ARG_FLOAT);
-	Decay_rate = Dc_arg_float;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Decay rate is currently %f\n", Decay_rate);
+		return;
+	}
+	
+	dc_stuff_float(&Decay_rate);
 }
 
 float min_lethality = 0.0f;
@@ -9943,31 +9949,44 @@ float t_len = 10.0f;
 float t_vel = 0.2f;
 float t_min = 150.0f;
 float t_max = 300.0f;
-DCF(t_rad, "")
+DCF(t_rad, "Sets weapon tracer radius")
 {
-	dc_get_arg(ARG_FLOAT);
-	t_rad = Dc_arg_float;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("t_rad : %f\n", t_rad);
+		return;
+	}
+	
+	dc_stuff_float(&t_rad);
 }
-DCF(t_len, "")
+DCF(t_len, "Sets weapon tracer length")
 {
-	dc_get_arg(ARG_FLOAT);
-	t_len = Dc_arg_float;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("t_len : %f\n", t_len);
+		return;
+	}
+
+	dc_stuff_float(&t_len);
 }
-DCF(t_vel, "")
+DCF(t_vel, "Sets weapon tracer velocity")
 {
-	dc_get_arg(ARG_FLOAT);
-	t_vel = Dc_arg_float;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("t_vel : %f\n", t_vel);
+		return;
+	}
+
+	dc_stuff_float(&t_vel);
 }
+/*
+ TODO: These two DCF's (and variables) are unused
 DCF(t_min, "")
 {
-	dc_get_arg(ARG_FLOAT);
-	t_min = Dc_arg_float;
+	dc_stuff_float(&t_min);
 }
 DCF(t_max, "")
 {
-	dc_get_arg(ARG_FLOAT);
-	t_max = Dc_arg_float;
+	dc_stuff_float(&t_max);
 }
+*/
 void ship_fire_tracer(int weapon_objnum)
 {
 	particle_info pinfo;
@@ -13741,26 +13760,25 @@ void ship_assign_sound_all()
  */
 DCF(set_shield,"Change player ship shield strength")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_FLOAT|ARG_NONE);
+	float value;
 
-		if ( Dc_arg_type & ARG_FLOAT ) {
-            CLAMP(Dc_arg_float, 0.0f, 1.0f);
-			shield_set_strength(Player_obj, Dc_arg_float * Player_ship->ship_max_shield_strength);
-			dc_printf("Shields set to %.2f\n", shield_get_strength(Player_obj) );
-		}
-	}
-
-	if ( Dc_help ) {
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf ("Usage: set_shield [num]\n");
 		dc_printf ("[num] --  shield percentage 0.0 -> 1.0 of max\n");
-		dc_printf ("with no parameters, displays shield strength\n");
-		Dc_status = 0;
+		return;
 	}
 
-	if ( Dc_status )	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "Shields are currently %.2f", shield_get_strength(Player_obj) );
+		return;
 	}
+
+	dc_stuff_float(&value);
+
+	CLAMP(value, 0.0f, 1.0f);
+
+	shield_set_strength(Player_obj, value * Player_ship->ship_max_shield_strength);
+	dc_printf("Shields set to %.2f\n", shield_get_strength(Player_obj) );
 }
 
 /**
@@ -13768,26 +13786,24 @@ DCF(set_shield,"Change player ship shield strength")
  */
 DCF(set_hull, "Change player ship hull strength")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_FLOAT|ARG_NONE);
-
-		if ( Dc_arg_type & ARG_FLOAT ) {
-			CLAMP(Dc_arg_float, 0.0f, 1.0f);
-			Player_obj->hull_strength = Dc_arg_float * Player_ship->ship_max_hull_strength;
-			dc_printf("Hull set to %.2f\n", Player_obj->hull_strength );
-		}
-	}
-
-	if ( Dc_help ) {
+	float value;
+	
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf ("Usage: set_hull [num]\n");
 		dc_printf ("[num] --  hull percentage 0.0 -> 1.0 of max\n");
-		dc_printf ("with no parameters, displays hull strength\n");
-		Dc_status = 0;
+		return;
 	}
 
-	if ( Dc_status )	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "Hull is currently %.2f", Player_obj->hull_strength );
+		return;
 	}
+
+	dc_stuff_float(&value);
+
+	CLAMP(value, 0.0f, 1.0f);
+	Player_obj->hull_strength = value * Player_ship->ship_max_hull_strength;
+	dc_printf("Hull set to %.2f\n", Player_obj->hull_strength );
 }
 
 /**
@@ -13796,70 +13812,69 @@ DCF(set_hull, "Change player ship hull strength")
 //XSTR:OFF
 DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING);
-		if ( !subsystem_stricmp( Dc_arg, "weapons" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, Dc_arg_float );
-			} 
-		} else if ( !subsystem_stricmp( Dc_arg, "engine" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_ENGINE, Dc_arg_float );
-				if ( Dc_arg_float < ENGINE_MIN_STR )	{
-					Player_ship->flags |= SF_DISABLED;				// add the disabled flag
-				} else {
-					Player_ship->flags &= (~SF_DISABLED);				// add the disabled flag
-				}
-			} 
-		} else if ( !subsystem_stricmp( Dc_arg, "sensors" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_SENSORS, Dc_arg_float );
-			} 
-		} else if ( !subsystem_stricmp( Dc_arg, "communication" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_COMMUNICATION, Dc_arg_float );
-			} 
-		} else if ( !subsystem_stricmp( Dc_arg, "navigation" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_NAVIGATION, Dc_arg_float );
-			} 
-		} else if ( !subsystem_stricmp( Dc_arg, "radar" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_RADAR, Dc_arg_float );
-			} 
-		} else {
-			// print usage
-			Dc_help = 1;
-		}
+	SCP_string arg;
+	int subsystem = SUBSYSTEM_NONE;
+	float val_f;
+	
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: set_subsys <type> [--status] <strength>\n");
+		dc_printf("<type> is any of the following:\n");
+		dc_printf("\tweapons\n");
+		dc_printf("\tengine\n");
+		dc_printf("\tsensors\n");
+		dc_printf("\tcommunication\n");
+		dc_printf("\tnavigation\n");
+		dc_printf("\tradar\n\n");
+
+		dc_printf("[--status] will display status of that subsystem\n\n");
+		
+		dc_printf("<strength> is any value between 0 and 1.0\n");
+		return;
 	}
 
-	if ( Dc_help )	{
-		dc_printf( "Usage: set_subsys type X\nWhere X is value between 0 and 1.0, and type can be:\n" );
-		dc_printf( "weapons\n" );
-		dc_printf( "engine\n" );
-		dc_printf( "sensors\n" );
-		dc_printf( "communication\n" );
-		dc_printf( "navigation\n" );
-		dc_printf( "radar\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
+	dc_stuff_string_white(arg);
+
+	if (arg == "weapons") {
+		subsystem = SUBSYSTEM_WEAPONS;
+	
+	} else if (arg == "engine") {
+		subsystem = SUBSYSTEM_ENGINE;	
+	
+	} else if (arg == "sensors") {
+		subsystem = SUBSYSTEM_SENSORS;
+
+	} else if (arg == "communication") {
+		subsystem = SUBSYSTEM_COMMUNICATION;
+
+	} else if (arg == "navigation") {
+		subsystem = SUBSYSTEM_NAVIGATION;
+
+	} else if (arg == "radar") {
+		subsystem = SUBSYSTEM_RADAR;
+
+	} else if ((arg == "status") || (arg == "--status") || (arg == "?") || (arg == "--?")) {
+		dc_printf("Error: Must specify a subsystem.\n");
+		return;
+
+	} else {
+		dc_printf("Error: Unknown argument '%s'\n", arg.c_str());
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Subsystem '%s' is at %f strength\n", arg.c_str(), ship_get_subsystem_strength(Player_ship, subsystem));
+
+	} else {
+		// Set the subsystem strength
+		dc_stuff_float(&val_f);
+
+		CLAMP(val_f, 0.0, 1.0);
+		ship_set_subsystem_strength( Player_ship, subsystem, val_f );
+		
+		if (subsystem == SUBSYSTEM_ENGINE) {
+			// If subsystem is an engine, set/clear the disabled flag
+			(val_f < ENGINE_MIN_STR) ? (Player_ship->flags |= SF_DISABLED) : (Player_ship->flags &= (~SF_DISABLED));
+		}
 	}
 }
 //XSTR:ON
@@ -16550,11 +16565,11 @@ int ship_get_texture(int bitmap)
 // update artillery lock info
 #define CLEAR_ARTILLERY_AND_CONTINUE()	{ if(aip != NULL){ aip->artillery_objnum = -1; aip->artillery_sig = -1;	aip->artillery_lock_time = 0.0f;} continue; } 
 float artillery_dist = 10.0f;
-DCF(art, "")
+DCF(art, "Sets artillery disance")
 {
-	dc_get_arg(ARG_FLOAT);
-	artillery_dist = Dc_arg_float;
+	dc_stuff_float(&artillery_dist);
 }
+
 void ship_update_artillery_lock()
 {
 	ai_info *aip = NULL;

@@ -39,6 +39,8 @@
 #include "network/multimsgs.h"
 #include "network/multi.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
+
 #include <algorithm>
 #include "globalincs/compatibility.h"
 
@@ -1404,23 +1406,8 @@ void asteroid_level_close()
 	Asteroid_field.num_initial_asteroids=0;
 }
 
-DCF(asteroids,"Turns asteroids on/off")
-{	
-	if ( Dc_command )	{	
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
-		if ( Dc_arg_type & ARG_TRUE )	
-			Asteroids_enabled = 1;	
-		else if ( Dc_arg_type & ARG_FALSE ) 
-			Asteroids_enabled = 0;	
-		else if ( Dc_arg_type & ARG_NONE ) 
-			Asteroids_enabled ^= 1;	
-	}	
-	if ( Dc_help )	
-		dc_printf( "Usage: asteroids [bool]\nTurns asteroid system on/off.  If nothing passed, then toggles it.\n" );	
-	
-	if ( Dc_status )	
-		dc_printf( "asteroids are %s\n", (Asteroids_enabled?"ON":"OFF") );	
-}
+DCF_BOOL2(asteroids, Asteroids_enabled, "enables or disables asteroids", "Usage: asteroids [bool]\nTurns asteroid system on/off.  If nothing passed, then toggles it.\n");
+
 
 void hud_target_asteroid()
 {

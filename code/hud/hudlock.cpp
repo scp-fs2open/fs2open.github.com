@@ -26,6 +26,7 @@
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
+#include "debugconsole/console.h"
 
 
 vec3d lock_world_pos;
@@ -333,7 +334,7 @@ int hud_lock_has_homing_point()
 }
 
 int Nebula_sec_range = 0;
-DCF_BOOL(nebula_sec_range, Nebula_sec_range)
+DCF_BOOL(nebula_sec_range, Nebula_sec_range);
 
 int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 {
