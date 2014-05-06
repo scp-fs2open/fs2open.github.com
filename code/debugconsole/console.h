@@ -70,7 +70,7 @@ class debug_command;
 	void dcf_##function_name();		\
 	debug_command dcmd_##function_name(#function_name, "Sets or toggles the boolean: "#bool_variable, dcf_##function_name );	\
 	void dcf_##function_name() {	\
-		bool bool_tmp = (bool) bool_variable;	\
+		bool bool_tmp = bool_variable != 0;	\
 		if (dc_optional_string_either("help", "--help")) {	\
 				dc_printf( "Usage: %s [bool]\nSets %s to true or false.  If nothing passed, then toggles it.\n", #function_name, #bool_variable );	\
 				return;		\
@@ -80,11 +80,17 @@ class debug_command;
 			return;		\
 		}	\
 		if (!dc_maybe_stuff_boolean(&bool_tmp)) {	\
-			bool_variable ? (bool_variable = 0) : (bool_variable = 1);	\
+			if (bool_variable != 0) \
+				bool_variable = 0; \
+			else \
+				bool_variable = 1;	\
 		} else { \
-			bool_tmp ? (bool_variable = 1) : (bool_variable = 0);	\
+			if (bool_tmp) \
+				bool_variable = 1; \
+			else \
+				bool_variable = 0;	\
 		}	\
-		dc_printf("%s set to %\ns", #bool_variable, (bool_variable ? "TRUE" : "FALSE"));	\
+		dc_printf("%s set to %\ns", #bool_variable, (bool_variable != 0 ? "TRUE" : "FALSE"));	\
 	}
 
 
