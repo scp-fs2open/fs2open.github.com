@@ -92,7 +92,7 @@ DCF(help, "Displays the help list." )
 		return;
 
 	} else if (command != "") {
-		dc_commands_it it = find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(command.c_str()));
+		dc_commands_it it = std::find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(command.c_str()));
 
 		if (it == dc_commands.end()) {
 			dc_printf("Command not found: '%s'\n", command.c_str());

@@ -134,7 +134,7 @@ void dc_do_command(SCP_string *cmd_str)
 
 	dc_stuff_string_white(command);		// Grab the first token, presumably this is a command
 
-	SCP_vector<debug_command*>::iterator it = find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(command.c_str()));
+	SCP_vector<debug_command*>::iterator it = std::find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(command.c_str()));
 
 	if (it == dc_commands.end()) {
 		dc_printf("Command not found: '%s'\n", command.c_str());
