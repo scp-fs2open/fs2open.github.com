@@ -192,7 +192,7 @@ int dc_required_string_either(char *str1, char *str2);
  *
  * @throws errParseString with the required strings
  */
-int dc_required_string_any(const uint n, ...);
+uint dc_required_string_any(const uint n, ...);
 
 /**
  * @brief Searches for an optional string

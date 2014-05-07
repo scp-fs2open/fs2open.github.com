@@ -517,12 +517,12 @@ int dc_required_string_either(char *str1, char *str2)
 	return i;
 }
 
-int dc_required_string_any(const uint n, ...)
+uint dc_required_string_any(const uint n, ...)
 {
 	va_list vl;
 	SCP_vector<SCP_string> strings;
 	const char *str_found = NULL;
-	int i;
+	uint i;
 
 	dc_ignore_gray_space();
 

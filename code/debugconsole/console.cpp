@@ -146,7 +146,7 @@ void dc_do_command(SCP_string *cmd_str)
 	
 	} catch (errParseString err) {
 		dc_printf("Require string(s) not found: \n");
-		for (int i = 0; i < err.expected_tokens.size(); ++i) {
+		for (uint i = 0; i < err.expected_tokens.size(); ++i) {
 			dc_printf("%i: %s\n", err.expected_tokens[i].c_str());
 		}
 
@@ -265,7 +265,7 @@ void dc_init(void)
 
 	// Init window settings
 	dc_font = FONT1;
-	row_height = (Current_font->h) * 1.5;	// Row/Line height, in pixels
+	row_height = ((Current_font->h) * 3) / 2;	// Row/Line height, in pixels
 	col_width = Current_font->w;			// Col/Character width, in pixels
 	dc_scroll_x = 0;
 	dc_scroll_y = 0;

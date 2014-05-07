@@ -90,7 +90,7 @@ class debug_command;
 			else \
 				bool_variable = 0;	\
 		}	\
-		dc_printf("%s set to %\ns", #bool_variable, (bool_variable != 0 ? "TRUE" : "FALSE"));	\
+		dc_printf("%s set to %s\n", #bool_variable, (bool_variable != 0 ? "TRUE" : "FALSE"));	\
 	}
 
 
