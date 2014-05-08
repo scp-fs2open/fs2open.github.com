@@ -42,6 +42,21 @@ uint DBCOLS = 80;   // # of buffer columns
 uint lastwhite = 0; // Last whitespace character encountered, used by putc for 'true' word wrapping
 ubyte DTABS = 4;    //!< Tab size in spaces
 
+/**
+ * Human readable versions of the dc_token's. Primarily used in error diagnosis
+ */
+static
+const char *token_str[DCT_MAX_ITEMS] =
+{
+	"nothing",
+	"string",
+	"float",
+	"integer",
+	"unsigned integer",
+	"byte",
+	"unsigned byte",
+	"boolean"
+};
 
 SCP_deque<SCP_string> dc_buffer;
 

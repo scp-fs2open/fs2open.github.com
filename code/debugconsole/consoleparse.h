@@ -35,22 +35,6 @@ enum dc_token {
 };
 
 /**
- * Human readable versions of the dc_token's. Primarily used in error diagnosis
- */
-static
-const char *token_str[DCT_MAX_ITEMS] =
-{
-	"nothing",
-	"string",
-	"float",
-	"integer",
-	"unsigned integer",
-	"byte",
-	"unsigned byte",
-	"boolean"
-};
-
-/**
  * @class errParse
  *
  * @brief Class thrown when a required token is not found
