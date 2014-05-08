@@ -230,9 +230,9 @@ void dc_draw_window(bool show_prompt)
 	CLAMP(DCOLS, DCOLS_MIN, DBCOLS);
 
 	// Ensure we don't scroll too far
-	CLAMP(dc_scroll_x, 0, (DBCOLS - DCOLS));
+	dc_scroll_x = MIN(dc_scroll_x, (DBCOLS - DCOLS));
 	if (dc_buffer.size() >= buffer_lines) {
-		CLAMP(dc_scroll_y, 0, (dc_buffer.size() - buffer_lines));
+		dc_scroll_y = MIN(dc_scroll_y, (dc_buffer.size() - buffer_lines));
 	} else {
 		dc_scroll_y = 0;	// Disallow vscroll until the buffer is larger than the window
 	}

@@ -599,7 +599,7 @@ bool dc_optional_string_either(const char *str1, const char *str2)
 
 void dc_parse_init(SCP_string &str)
 {
-	strcpy(Command_string, str.c_str());
+	strcpy_s(Command_string, str.c_str());
 	Cp = Command_string;
 }
 
@@ -1123,7 +1123,7 @@ void dc_stuff_ubyte(ubyte *i)
 	value_ul = dc_parse_ulong(Cp, DCT_UBYTE);
 
 	// Since some system's chars may be greater than 1 byte, we can't use UCHAR_MAX for a UBYTE
-	if ((value_ul <= 255) && (value_ul >= 0)) {
+	if (value_ul <= 255) {
 		*i = value_ul;
 
 	} else {
@@ -1231,7 +1231,7 @@ void dc_stuff_string(SCP_string &out_str)
 	}
 
 	// Bail if overflow
-	if ((count == out_str.max_size()) && (c_ptr != '\0')) {
+	if ((count == out_str.max_size()) && (*c_ptr != '\0')) {
 		throw errParse("SCP_string overflow!", DCT_STRING);
 	}
 
