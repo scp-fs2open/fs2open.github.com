@@ -1123,7 +1123,7 @@ void dc_stuff_ubyte(ubyte *i)
 	value_ul = dc_parse_ulong(Cp, DCT_UBYTE);
 
 	// Since some system's chars may be greater than 1 byte, we can't use UCHAR_MAX for a UBYTE
-	if ((value_ul <= 255) && (value_ul >= 0)) {
+	if (value_ul <= 255) {
 		*i = value_ul;
 
 	} else {
