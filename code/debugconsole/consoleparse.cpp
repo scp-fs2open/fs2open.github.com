@@ -1231,7 +1231,7 @@ void dc_stuff_string(SCP_string &out_str)
 	}
 
 	// Bail if overflow
-	if ((count == out_str.max_size()) && (c_ptr != '\0')) {
+	if ((count == out_str.max_size()) && (*c_ptr != '\0')) {
 		throw errParse("SCP_string overflow!", DCT_STRING);
 	}
 
