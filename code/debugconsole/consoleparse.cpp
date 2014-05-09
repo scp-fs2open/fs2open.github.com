@@ -599,7 +599,7 @@ bool dc_optional_string_either(const char *str1, const char *str2)
 
 void dc_parse_init(SCP_string &str)
 {
-	strcpy(Command_string, str.c_str());
+	strcpy_s(Command_string, str.c_str());
 	Cp = Command_string;
 }
 
