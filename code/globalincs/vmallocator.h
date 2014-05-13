@@ -9,6 +9,7 @@
 #include <string>
 #include <queue>
 #include <deque>
+#include <bitset>
 
 #if defined __GNUC__
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
@@ -143,6 +144,8 @@ bool operator!=(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw(
 	return false;
 }
 
+#define SCP_bitset std::bitset
+
 #else
 #define SCP_string std::string
 #define SCP_stringstream std::stringstream
@@ -152,6 +155,7 @@ bool operator!=(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw(
 #define SCP_deque std::deque
 #define SCP_vector std::vector
 #define SCP_list std::list
+#define SCP_bitset std::bitset
 
 #endif
 

@@ -83,6 +83,8 @@
 #include "debugconsole/console.h"
 #include "debugconsole/console.h"
 
+using namespace Ship;
+
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
 												//     we can't easily go fully dynamic)
@@ -261,60 +263,56 @@ flag_def_list Subsystem_flags[] = {
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
 
 
-// NOTE: a var of:
-//         "0"    means that it's a SIF_* flag
-//         "1"    means that it's a SIF2_* flag
-//         "255"  means that the option is obsolete and a warning should be generated
-flag_def_list Ship_flags[] = {
-	{ "no_collide",					SIF_NO_COLLIDE,				0 },
-	{ "player_ship",				SIF_PLAYER_SHIP,			0 },
-	{ "default_player_ship",		SIF_DEFAULT_PLAYER_SHIP,	0 },
-	{ "repair_rearm",				SIF_SUPPORT,				0 },
-	{ "cargo",						SIF_CARGO,					0 },
-	{ "fighter",					SIF_FIGHTER,				0 },
-	{ "bomber",						SIF_BOMBER,					0 },
-	{ "transport",					SIF_TRANSPORT,				0 },
-	{ "freighter",					SIF_FREIGHTER,				0 },
-	{ "capital",					SIF_CAPITAL,				0 },
-	{ "supercap",					SIF_SUPERCAP,				0 },
-	{ "drydock",					SIF_DRYDOCK,				0 },
-	{ "cruiser",					SIF_CRUISER,				0 },
-	{ "navbuoy",					SIF_NAVBUOY,				0 },
-	{ "sentrygun",					SIF_SENTRYGUN,				0 },
-	{ "escapepod",					SIF_ESCAPEPOD,				0 },
-	{ "stealth",					SIF_STEALTH,				0 },
-	{ "no type",					SIF_NO_SHIP_TYPE,			0 },
-	{ "ship copy",					SIF_SHIP_COPY,				0 },
-	{ "in tech database",			SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M,	0 },
-	{ "in tech database multi",		SIF_IN_TECH_DATABASE_M,		0 },
-	{ "dont collide invisible",		SIF_SHIP_CLASS_DONT_COLLIDE_INVIS,	0 },
-	{ "big damage",					SIF_BIG_DAMAGE,				0 },
-	{ "corvette",					SIF_CORVETTE,				0 },
-	{ "gas miner",					SIF_GAS_MINER,				0 },
-	{ "awacs",						SIF_AWACS,					0 },
-	{ "knossos",					SIF_KNOSSOS_DEVICE,			0 },
-	{ "no_fred",					SIF_NO_FRED,				0 },
-	{ "flash",						SIF2_FLASH,					1 },
-	{ "surface shields",			SIF2_SURFACE_SHIELDS,		1 },
-	{ "show ship",					SIF2_SHOW_SHIP_MODEL,		1 },
-	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
-	{ "no weapon damage scaling",	SIF2_DISABLE_WEAPON_DAMAGE_SCALING,	1 },
-	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
-	{ "no thruster geometry noise", SIF2_NO_THRUSTER_GEO_NOISE,	1 },
-	{ "intrinsic no shields",		SIF2_INTRINSIC_NO_SHIELDS,	1 },
-	{ "dynamic primary linking",    SIF2_DYN_PRIMARY_LINKING,	1 },
-	{ "no primary linking",			SIF2_NO_PRIMARY_LINKING,	1 },
-	{ "no pain flash",				SIF2_NO_PAIN_FLASH,			1 },
-	{ "no ets",						SIF2_NO_ETS,				1 },
-	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
-	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
-	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
+flag_def_list_new<Info_Flags> Ship_flags[] = {
+	{ "no_collide",					Info_Flags::No_collide,				true },
+	{ "player_ship",				Info_Flags::Player_ship,			true },
+	{ "default_player_ship",		Info_Flags::Default_player_ship,	true },
+	{ "repair_rearm",				Info_Flags::Support,				true },
+	{ "cargo",						Info_Flags::Cargo,					true },
+	{ "fighter",					Info_Flags::Fighter,				true },
+	{ "bomber",						Info_Flags::Bomber,					true },
+	{ "transport",					Info_Flags::Transport,				true },
+	{ "freighter",					Info_Flags::Freighter,				true },
+	{ "capital",					Info_Flags::Capital,				true },
+	{ "supercap",					Info_Flags::Supercap,				true },
+	{ "drydock",					Info_Flags::Drydock,				true },
+	{ "cruiser",					Info_Flags::Cruiser,				true },
+	{ "navbuoy",					Info_Flags::Navbuoy,				true },
+	{ "sentrygun",					Info_Flags::Sentrygun,				true },
+	{ "escapepod",					Info_Flags::Escapepod,				true },
+	{ "stealth",					Info_Flags::Stealth,				true },
+	{ "no type",					Info_Flags::No_ship_type,			true },
+	{ "ship copy",					Info_Flags::Ship_copy,				true },
+	{ "in tech database",			Info_Flags::In_tech_database,		true },
+	{ "in tech database multi",		Info_Flags::In_tech_database_m,		true },
+	{ "dont collide invisible",		Info_Flags::Ship_class_dont_collide_invis, true },
+	{ "big damage",					Info_Flags::Big_damage,				true },
+	{ "corvette",					Info_Flags::Corvette,				true },
+	{ "gas miner",					Info_Flags::Gas_miner,				true },
+	{ "awacs",						Info_Flags::Awacs,					true },
+	{ "knossos",					Info_Flags::Knossos_device,			true },
+	{ "no_fred",					Info_Flags::No_fred,				true },
+	{ "flash",						Info_Flags::Flash,					true },
+	{ "surface shields",			Info_Flags::Surface_shields,		true },
+	{ "show ship",					Info_Flags::Show_ship_model,		true },
+	{ "generate icon",				Info_Flags::Generate_hud_icon,		true },
+	{ "no weapon damage scaling",	Info_Flags::Disable_weapon_damage_scaling, true },
+	{ "gun convergence",			Info_Flags::Gun_convergence,		true },
+	{ "no thruster geometry noise", Info_Flags::No_thruster_geo_noise,	true },
+	{ "intrinsic no shields",		Info_Flags::Intrinsic_no_shields,	true },
+	{ "dynamic primary linking",	Info_Flags::Dyn_primary_linking,	true },
+	{ "no primary linking",			Info_Flags::No_primary_linking,		true },
+	{ "no pain flash",				Info_Flags::No_pain_flash,			true },
+	{ "no ets",						Info_Flags::No_ets,					true },
+	{ "no lighting",				Info_Flags::No_lighting,			true },
+	{ "auto spread shields",		Info_Flags::Auto_spread_shields,	true },
+	{ "model point shields",		Info_Flags::Model_point_shields,	true },
 
 	// to keep things clean, obsolete options go last
-	{ "ballistic primaries",		-1,		255 }
+	{ "ballistic primaries",		Info_Flags::Ballistic_primaries,	false }
 };
 
-const int Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list);
+const int Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list_new<Info_Flags>);
 
 /*
 ++Here be dragons.. err.. begins the section for the ai targeting revision
@@ -726,8 +724,6 @@ void init_ship_entry(ship_info *sip)
 
 	sip->warpout_player_speed = 0.0f;
 
-	sip->flags = SIF_DEFAULT_VALUE;
-	sip->flags2 = SIF2_DEFAULT_VALUE;
 	sip->ai_class = 0;
 	sip->max_speed = 0.0f;
 	sip->min_speed = 0.0f;
@@ -2399,7 +2395,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Show Primary Models:"))
 	{
-		sip->flags2 |= SIF2_DRAW_WEAPON_MODELS;
+		sip->flags[Ship::Info_Flags::Draw_weapon_models] = true;
 		stuff_bool_list(sip->draw_primary_models, sip->num_primary_banks);
 	}
 
@@ -2486,7 +2482,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
     
 	if(optional_string("$Show Secondary Models:"))
 	{
-		sip->flags2 |= SIF2_DRAW_WEAPON_MODELS;
+		sip->flags[Ship::Info_Flags::Draw_weapon_models] = true;
 		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
 	}
 
@@ -2659,8 +2655,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		if (!optional_string("+noreplace")) {
 			// clear flags since we might have a modular table
 			// clear only those which are actually set in the flags
-			sip->flags = (sip->flags & SIF_MASK);
-			sip->flags2 = (sip->flags2 & SIF2_MASK);
+			bool has_afterburner = sip->flags[Ship::Info_Flags::Afterburner];
+			bool draw_weapon_models = sip->flags[Ship::Info_Flags::Draw_weapon_models];
+			sip->flags.reset();
+			sip->flags[Ship::Info_Flags::Afterburner] = has_afterburner;
+			sip->flags[Ship::Info_Flags::Draw_weapon_models] = draw_weapon_models;
 		}
 
 		for (i = 0; i < num_strings; i++)
@@ -2695,12 +2694,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				if ( !stricmp(Ship_flags[idx].name, ship_strings[i]) ) {
 					flag_found = true;
 
-					if (Ship_flags[idx].var == 255)
+					if (!Ship_flags[idx].current)
 						Warning(LOCATION, "Use of '%s' flag for ship '%s' - this flag is no longer needed.", Ship_flags[idx].name, sip->name);
-					else if (Ship_flags[idx].var == 0)
-						sip->flags |= Ship_flags[idx].def;
-					else if (Ship_flags[idx].var == 1)
-						sip->flags2 |= Ship_flags[idx].def;
+					else
+						sip->flags[Ship_flags[idx].def] = true;
 				}
 			}
 
@@ -2709,10 +2706,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 
 		// set original status of tech database flags - Goober5000
-		if (sip->flags & SIF_IN_TECH_DATABASE)
-			sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE;
-		if (sip->flags & SIF_IN_TECH_DATABASE_M)
-			sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE_M;
+		if (sip->flags[Info_Flags::In_tech_database])
+			sip->flags[Info_Flags::Default_in_tech_database] = true;
+		if (sip->flags[Info_Flags::In_tech_database_m])
+			sip->flags[Info_Flags::Default_in_tech_database_m] = true;
 	}
 
 	// Goober5000 - ensure number of banks checks out
@@ -2741,7 +2738,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		{
 			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags2 & WIF2_BALLISTIC))
 			{
-				sip->flags |= SIF_BALLISTIC_PRIMARIES;
+				sip->flags[Info_Flags::Ballistic_primaries] = true;
 				break;
 			}
 		}
@@ -2758,7 +2755,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if ( has_afterburner == 1 )
 	{
-		sip->flags |= SIF_AFTERBURNER;
+		sip->flags[Info_Flags::Afterburner] = true;
 
 		if(optional_string("+Aburn Max Vel:")) {
 			stuff_vec3d(&sip->afterburner_max_vel);
@@ -3087,12 +3084,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	// if the ship is a stealth ship
 	if ( optional_string("$Stealth:") ) {
-		sip->flags |= SIF_STEALTH;
+		sip->flags[Info_Flags::Stealth] = true;
 	}
 	
 	else if ( optional_string("$Stealth") ) {
 		Warning(LOCATION, "Ship %s is missing the colon after \"$Stealth\". Note that you may also use the ship flag \"stealth\".", sip->name);
-		sip->flags |= SIF_STEALTH;
+		sip->flags[Info_Flags::Stealth] = true;
 	}
 
 	if ( optional_string("$max decals:") ){
@@ -3506,7 +3503,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 				sfo_return = stuff_float_optional(&sp->awacs_intensity);
 				if(sfo_return > 0)
 					stuff_float_optional(&sp->awacs_radius);
-				sip->flags |= SIF_HAS_AWACS;
+				sip->flags[Info_Flags::Has_awacs] = true;
 			}
 
 			if(optional_string("$Maximum Barrel Elevation:")){
@@ -3629,7 +3626,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 				//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
 				if (sp->flags & MSS_FLAG_ALLOW_LANDING)
-					sip->flags2 |= SIF2_ALLOW_LANDINGS;
+					sip->flags[Info_Flags::Allow_landings] = true;
 			}
 
 			if (turret_has_base_fov)
@@ -4197,7 +4194,7 @@ void ship_set_default_player_ship()
 	// find the first with the default flag
 	for(i = 0; i < Num_ship_classes; i++)
 	{
-		if(Ship_info[i].flags & SIF_DEFAULT_PLAYER_SHIP)
+		if(Ship_info[i].flags[Info_Flags::Default_player_ship])
 		{
 			strcpy_s(default_player_ship, Ship_info[i].name);
 			return;
@@ -4207,7 +4204,7 @@ void ship_set_default_player_ship()
 	// find the first player ship
 	for(i = 0; i < Num_ship_classes; i++)
 	{
-		if(Ship_info[i].flags & SIF_PLAYER_SHIP)
+		if(Ship_info[i].flags[Info_Flags::Player_ship])
 		{
 			strcpy_s(default_player_ship, Ship_info[i].name);
 			return;
@@ -4325,7 +4322,7 @@ void ship_parse_post_cleanup()
 
 			// be friendly; ensure ballistic flags check out
 			if (pbank_capacity_specified) {
-				if ( !(sip->flags & SIF_BALLISTIC_PRIMARIES) ) {
+				if ( !(sip->flags[Info_Flags::Ballistic_primaries]) ) {
 					Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\nTo fix this, add a ballistic primary to the list of allowed primaries.\n", sip->name);
 
 					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
@@ -4333,7 +4330,7 @@ void ship_parse_post_cleanup()
 					}
 				}
 			} else {
-				if (sip->flags & SIF_BALLISTIC_PRIMARIES) {
+				if (sip->flags[Info_Flags::Ballistic_primaries]) {
 					Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
 
 					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
@@ -4345,15 +4342,15 @@ void ship_parse_post_cleanup()
 
 		// ultra stupid compatbility handling for the once broken "generate hud" flag.
 		// it was previously testing the afterburner flag, so that's what we check for that
-		if ( (sip->shield_icon_index == 255) && (sip->flags & SIF_AFTERBURNER)
-				&& !(sip->flags2 & SIF2_GENERATE_HUD_ICON) && (sip->flags & SIF_PLAYER_SHIP) )
+		if ( (sip->shield_icon_index == 255) && (sip->flags[Info_Flags::Afterburner])
+				&& !(sip->flags[Info_Flags::Generate_hud_icon]) && (sip->flags [Info_Flags::Player_ship]) )
 		{
 			Warning(LOCATION, "Compatibility warning:\nNo shield icon specified for '%s' but the \"generate icon\" flag is not specified.\nEnabling flag by default.\n", sip->name);
-			sip->flags2 |= SIF2_GENERATE_HUD_ICON;
+			sip->flags[Info_Flags::Generate_hud_icon] = true;
 		}
 
 		// if we have a ship copy, then check to be sure that our base ship exists
-		if (sip->flags & SIF_SHIP_COPY)
+		if (sip->flags[Info_Flags::Ship_copy])
 		{
 			strcpy_s(name_tmp, sip->name);
 
@@ -4362,13 +4359,13 @@ void ship_parse_post_cleanup()
 				if (ship_info_lookup(name_tmp) < 0)
 				{
 					Warning(LOCATION, "Ship %s is a copy, but base ship %s couldn't be found.", sip->name, name_tmp);
-					sip->flags &= ~SIF_SHIP_COPY;
+					sip->flags[Info_Flags::Ship_copy] = false;
 				}
 			}
 			else
 			{
 				Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
-				sip->flags &= ~SIF_SHIP_COPY;
+				sip->flags[Info_Flags::Ship_copy] = false;
 			}
 		}
 	}
@@ -4632,7 +4629,7 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.team = sp->team;
 	entry.flags = reason;
 	// if ship is red alert, flag as such
-	if (sp->flags & SF_RED_ALERT_STORE_STATUS) {
+	if (sp->flags[Ship_Flags::Red_alert_store_status]) {
 		entry.flags |= SEF_RED_ALERT_CARRY;
 	}
 	entry.time = Missiontime;
@@ -4641,7 +4638,7 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.cargo1 = sp->cargo1;
 
 	entry.time_cargo_revealed = (fix)0;
-	if ( sp->flags & SF_CARGO_REVEALED )
+	if ( sp->flags[Ship_Flags::Cargo_revealed] )
 	{
 		entry.flags |= SEF_CARGO_KNOWN;
 		entry.time_cargo_revealed = sp->time_cargo_revealed;
@@ -4982,8 +4979,7 @@ void ship::clear()
 	current_max_speed = 0.0f;
 	next_manage_ets = timestamp(0);
 
-	flags = 0;
-	flags2 = 0;
+	flags.reset();
 	reinforcement_index = -1;
 	
 	afterburner_fuel = 0.0f;
@@ -5234,7 +5230,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shield_set_strength(objp, shipp->ship_max_shield_strength);
 	}
 
-	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
+	if (sip->flags[Info_Flags::Model_point_shields]) {
 		objp->n_quadrants = pm->shield_points.size();
 		shipp->shield_points = pm->shield_points;
 		objp->shield_quadrant.resize(objp->n_quadrants);
@@ -5257,16 +5253,16 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->current_max_speed = Ship_info[ship_type].max_speed;
 
-	shipp->flags |= SF_ENGINES_ON;
+	shipp->flags.set(Ship_Flags::Engines_on);
 
 	// set certain flags that used to be in ship_info - Goober5000
-	if (sip->flags & SIF_STEALTH)
-		shipp->flags2 |= SF2_STEALTH;
-	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
-		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+	if (sip->flags[Info_Flags::Stealth])
+		shipp->flags.set(Ship_Flags::Stealth);
+	if (sip->flags[Info_Flags::Ship_class_dont_collide_invis])
+		shipp->flags.set(Ship_Flags::Dont_collide_invis);
 
-	if (sip->flags2 & SIF2_NO_ETS)
-		shipp->flags2 |= SF2_NO_ETS;
+	if (sip->flags[Info_Flags::No_ets])
+		shipp->flags.set(Ship_Flags::No_ets);
 
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
@@ -5427,9 +5423,9 @@ void ship_recalc_subsys_strength( ship *shipp )
 	// set any ship flags which should be set.  unset the flags since we might be repairing a subsystem
 	// through sexpressions.
 	if ( (shipp->subsys_info[SUBSYSTEM_ENGINE].type_count > 0) && (shipp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f) ) {
-		shipp->flags |= SF_DISABLED;
+		shipp->flags.set(Ship_Flags::Disabled);
 	} else {
-		shipp->flags &= ~SF_DISABLED;
+		shipp->flags.set(Ship_Flags::Disabled, false);
 		ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 	}
 }
@@ -5447,7 +5443,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 	// no point copying the subsystem data if the ship in question has none...
 	// mark that the ship (cargo container) has the path fixup done.
 	if (sip->n_subsystems == 0) {
-		sip->flags |= SIF_PATH_FIXUP;
+		sip->flags.set(Info_Flags::Path_fixup);
 		return;
 	}
 
@@ -5474,7 +5470,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 			// if none were found try finding a another ship to copy the data from
 			continue;
 		}
-		sip->flags |= SIF_PATH_FIXUP;
+		sip->flags.set(Info_Flags::Path_fixup);
 		break;
 	}
 
@@ -5941,7 +5937,7 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 		return;
 
 	// am I arriving or departing by warp?
-	if ( Ships[objp->instance].flags & (SF_ARRIVING|SF_DEPART_WARP) )
+	if ( is_ship_arriving(&Ships[objp->instance]) || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
 	{
 #ifndef NDEBUG
 		// in debug builds, make sure only one of the docked objects has these flags set
@@ -6042,7 +6038,7 @@ void ship_render(object * obj)
 	ship *warp_shipp = NULL;
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 	bool is_first_stage_arrival = false;
-	bool show_thrusters = (shipp->flags2 & SF2_NO_THRUSTERS) == 0;
+	bool show_thrusters = !shipp->flags[Ship_Flags::No_thrusters];
 	dock_function_info dfi;
 
 
@@ -6282,7 +6278,7 @@ void ship_render(object * obj)
 				}
 			}
 
-			if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
+			if ( !(shipp->flags[Ship_Flags::Disabled]) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
 				mst_info mst;
 
 				mst.length.xyz.z = obj->phys_info.forward_thrust;
@@ -6290,7 +6286,7 @@ void ship_render(object * obj)
 				mst.length.xyz.y = obj->phys_info.vert_thrust;
 
 				//	Maybe add noise to thruster geometry.
-				if (!(sip->flags2 & SIF2_NO_THRUSTER_GEO_NOISE)) {
+				if (!(sip->flags[Info_Flags::No_thruster_geo_noise])) {
 					mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
 					mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
 					mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
@@ -6337,9 +6333,9 @@ void ship_render(object * obj)
 			// warp... either this ship or the ship it is docked with.
 			if ( warp_shipp != NULL )
 			{
-				if(warp_shipp->flags & SF_ARRIVING)
+				if(is_ship_arriving(warp_shipp))
 					clip_started = warp_shipp->warpin_effect->warpShipClip();
-				else if(warp_shipp->flags & SF_DEPART_WARP)
+				else if(warp_shipp->flags[Ship_Flags::Depart_warp])
 					clip_started = warp_shipp->warpout_effect->warpShipClip();
 			}
 
@@ -6400,10 +6396,10 @@ void ship_render(object * obj)
 				opengl_shader_set_animated_timer(timer);
 
 				if (sep->disables_rendering && (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
-					shipp->flags2 |= SF2_CLOAKED;
+					shipp->flags.set(Ship_Flags::Cloaked);
 					shipp->shader_effect_active = false;
 				} else {
-					shipp->flags2 &= ~SF2_CLOAKED;
+					shipp->flags.set(Ship_Flags::Cloaked, false);
 					if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration)
 						shipp->shader_effect_active = false;
 				}
@@ -6413,11 +6409,11 @@ void ship_render(object * obj)
 				gr_set_team_color(shipp->team_name, shipp->secondary_team_name, shipp->team_change_timestamp, shipp->team_change_time);
 			}
 
-			if(sip->flags2 & SIF2_NO_LIGHTING)
+			if(sip->flags[Info_Flags::No_lighting])
 				render_flags |= MR_NO_LIGHTING;
 
 			//draw weapon models
-			if ((sip->flags2 & SIF2_DRAW_WEAPON_MODELS) && !(shipp->flags2 & SF2_CLOAKED)) {
+			if ((sip->flags[Info_Flags::Draw_weapon_models]) && !(shipp->flags[Ship_Flags::Cloaked])) {
 				int i,k;
 				ship_weapon *swp = &shipp->weapons;
 				g3_start_instance_matrix(&obj->pos, &obj->orient, true);
@@ -6481,8 +6477,8 @@ void ship_render(object * obj)
 			}
 
 			// small ships
-			if (!(shipp->flags2 & SF2_CLOAKED)) {
-				if ((The_mission.flags & MISSION_FLAG_FULLNEB) && (sip->flags & SIF_SMALL_SHIP)) {			
+			if (!(shipp->flags[Ship_Flags::Cloaked])) {
+				if ((The_mission.flags & MISSION_FLAG_FULLNEB) && is_small_ship(sip)) {			
 					// force detail levels
  					float fog_val = neb2_get_fog_intensity(obj);
 					if(fog_val >= 0.6f){
@@ -6558,9 +6554,9 @@ void ship_render(object * obj)
 	//WMC - based on Bobb's secondary thruster stuff
 	//which was in turn based on the beam code.
 	//I'm gonna need some serious acid to neutralize this base.
-	if(shipp->flags & SF_ARRIVING)
+	if(is_ship_arriving(shipp))
 		shipp->warpin_effect->warpShipRender();
-	else if(shipp->flags & SF_DEPART_WARP)
+	else if(shipp->flags[Ship_Flags::Depart_warp])
 		shipp->warpout_effect->warpShipRender();
 
 	gr_disable_team_color();
@@ -7398,9 +7394,9 @@ void ship_dying_frame(object *objp, int ship_num)
 {
 	ship *shipp = &Ships[ship_num];
 
-	if ( shipp->flags & SF_DYING )	{
+	if ( shipp->flags[Ship_Flags::Dying] )	{
 		ship_info *sip = &Ship_info[shipp->ship_info_index];
-		int knossos_ship = (sip->flags & SIF_KNOSSOS_DEVICE);
+		int knossos_ship = (sip->flags[Info_Flags::Knossos_device]);
 
 		// bash hull value toward 0 (from self destruct)
 		if (objp->hull_strength > 0) {
@@ -7411,7 +7407,7 @@ void ship_dying_frame(object *objp, int ship_num)
 		}
 
 		// special case of VAPORIZE
-		if (shipp->flags & SF_VAPORIZE) {
+		if (shipp->flags[Ship_Flags::Vaporize]) {
 			if (timestamp_elapsed(shipp->final_death_time)) {
 				// play death sound
 				snd_play_3d( &Snds[SND_VAPORIZED], &objp->pos, &View_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
@@ -8916,7 +8912,7 @@ void ship_init_afterburners(ship *shipp)
 	polymodel *pm = model_get(sip->model_num);
 	Assert( pm != NULL );
 
-	if ( !(sip->flags & SIF_AFTERBURNER) ) {
+	if ( !(sip->flags[Info_Flags::Afterburner]) ) {
 		return;
 	}
 
@@ -9498,7 +9494,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		generic_bitmap_load(&sip->afterburner_trail);
 
 	sp->ab_count = 0;
-	if (sip->flags & SIF_AFTERBURNER)
+	if (sip->flags[Info_Flags::Afterburner])
 	{
 		polymodel *pm = model_get(sip->model_num);
 
