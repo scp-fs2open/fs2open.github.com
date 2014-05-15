@@ -236,8 +236,8 @@ void pilotfile::csg_write_info()
 	json_object_set_new(csg_obj_info, "Campaign.next_mission", json_integer(Campaign.next_mission));
 
 	// loop state
-	cfwrite_int(Campaign.loop_enabled, cfp);
 	cfwrite_int(Campaign.loop_reentry, cfp);
+	cfwrite_int(Campaign.loop_enabled, cfp);
 	json_object_set_new(csg_obj_info, "Campaign.loop_enabled", json_integer(Campaign.loop_enabled));
 	json_object_set_new(csg_obj_info, "Campaign.loop_reentry", json_integer(Campaign.loop_reentry));
 

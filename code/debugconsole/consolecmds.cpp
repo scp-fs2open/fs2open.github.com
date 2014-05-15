@@ -80,7 +80,7 @@ DCF(debug, "Runs a command in debug mode.")
 
 DCF(help, "Displays the help list." )
 {
-	extern uint DBROWS;
+	extern uint DROWS;
 
 	SCP_string command = "";
 
@@ -112,7 +112,7 @@ DCF(help, "Displays the help list." )
 
 	dc_printf(" Available commands:\n");
 	for (dc_commands_it it = dc_commands.begin(); it != dc_commands.end(); ++it) {
-		if (((lastline % DBROWS) == 0) && (lastline != 0)) {
+		if (((lastline % DROWS) == 0) && (lastline != 0)) {
 			dc_pause_output();
 		}
 
