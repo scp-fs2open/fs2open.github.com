@@ -121,7 +121,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	// create fireballs when subsys destroy for large ships.
 	object* objp = &Objects[ship_p->objnum];
 
-	if (!(subsys->flags & SSF_VANISHED) && !no_explosion) {
+	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
 		if (objp->radius > 100.0f) {
 			// number of fireballs determined by radius of subsys
 			int num_fireballs;
@@ -193,7 +193,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		hits = 0.0f;
 		for ( ssp=GET_FIRST(&ship_p->subsys_list); ssp != END_OF_LIST(&ship_p->subsys_list); ssp = GET_NEXT(ssp) ) {
 			// type matches?
-			if ( (ssp->system_info->type == type) && !(ssp->flags & SSF_NO_AGGREGATE) ) {
+			if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
 				hits += ssp->current_hits;
 			}
 		}
@@ -223,7 +223,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	// Don't log, display info, or play sounds about the activation subsytem
 	// FUBAR/Goober5000 - or about vanishing subsystems, per precedent with ship-vanish
-	int notify = (psub->type != SUBSYSTEM_ACTIVATION) && !(subsys->flags & SSF_VANISHED);
+	int notify = (psub->type != SUBSYSTEM_ACTIVATION) && !(subsys->flags[Ship::Subsystem_Flags::Vanished]);
 
 	if (notify) 
 	{
@@ -250,7 +250,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if ( psub->type == SUBSYSTEM_TURRET ) {
 		if ( ship_p->subsys_info[type].aggregate_current_hits <= 0.0f ) {
 			//	Don't create "disarmed" event for small ships.
-			if (!(Ship_info[ship_p->ship_info_index].flags & SIF_SMALL_SHIP)) {
+			if (!(is_small_ship(&Ship_info[ship_p->ship_info_index]))) {
 				mission_log_add_entry(LOG_SHIP_DISARMED, ship_p->ship_name, NULL );
 				// ship_p->flags |= SF_DISARMED;
 			}
@@ -261,7 +261,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 		if ( ship_p->subsys_info[type].aggregate_current_hits <= 0.0f ) {
 			mission_log_add_entry(LOG_SHIP_DISABLED, ship_p->ship_name, NULL );
-			ship_p->flags |= SF_DISABLED;				// add the disabled flag
+			ship_p->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
 		}
 	}
 
@@ -277,9 +277,9 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if (notify && !no_explosion) {
 		// play sound effect when subsys gets blown up
 		int sound_index=-1;
-		if ( Ship_info[ship_p->ship_info_index].flags & SIF_HUGE_SHIP ) {
+		if ( is_huge_ship(&Ship_info[ship_p->ship_info_index]) ) {
 			sound_index=SND_CAPSHIP_SUBSYS_EXPLODE;
-		} else if ( Ship_info[ship_p->ship_info_index].flags & SIF_BIG_SHIP ) {
+		} else if ( is_big_ship(&Ship_info[ship_p->ship_info_index])) {
 			sound_index=SND_SUBSYS_EXPLODE;
 		}
 		if ( sound_index >= 0 ) {
@@ -288,26 +288,26 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// make the shipsounds work as they should...
-	if(subsys->subsys_snd_flags & SSSF_ALIVE)
+	if(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive])
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->alive_snd, subsys);
-		subsys->subsys_snd_flags &= ~SSSF_ALIVE;
+		subsys->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive, false);
 	}
-	if(subsys->subsys_snd_flags & SSSF_TURRET_ROTATION)
+	if (subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_Rotation])
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_base_rotation_snd, subsys);
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_gun_rotation_snd, subsys);
-		subsys->subsys_snd_flags &= ~SSSF_TURRET_ROTATION;
+		subsys->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_Rotation, false);
 	}
-	if(subsys->subsys_snd_flags & SSSF_ROTATE)
+	if (subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->rotation_snd, subsys);
-		subsys->subsys_snd_flags &= ~SSSF_ROTATE;
+		subsys->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate, false);
 	}
-	if((subsys->system_info->dead_snd != -1) && !(subsys->subsys_snd_flags & SSSF_DEAD))
+	if ((subsys->system_info->dead_snd != -1) && !(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
 	{
 		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, 0, OS_SUBSYS_DEAD, subsys);
-		subsys->subsys_snd_flags |= SSSF_DEAD;
+		subsys->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
 	}
 }
 
@@ -471,7 +471,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
-		if ((Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP)) && !(The_mission.ai_profile->flags & AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
+		if ((is_small_ship(&Ship_info[ship_p->ship_info_index])) && !(The_mission.ai_profile->flags & AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
 			return damage;
 		else {
 			damage_left = shockwave_get_damage(other_obj->instance) / 4.0f;
@@ -521,7 +521,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			Assert(Player_ai->targeted_subsys != NULL);
 			if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0) ) {
 				Assert(mss->type == (int) -damage);
-				if (!(subsys->flags & SSF_NO_AGGREGATE)) {
+				if (!(subsys->flags[Ship::Subsystem_Flags::No_aggregate])) {
 					ship_p->subsys_info[mss->type].aggregate_current_hits -= subsys->current_hits;
 					if (ship_p->subsys_info[mss->type].aggregate_current_hits < 0.0f) {
 						ship_p->subsys_info[mss->type].aggregate_current_hits = 0.0f;
@@ -665,12 +665,12 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		}
 
 		if ( dist < range/2.0f ) {
-			if (subsystem->flags & SSF_DAMAGE_AS_HULL)
+			if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull])
 				damage_to_apply = damage_if_hull;
 			else
 				damage_to_apply = damage_left;
 		} else if ( dist < range ) {
-			if (subsystem->flags & SSF_DAMAGE_AS_HULL)
+			if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull])
 				damage_to_apply = damage_if_hull * (1.0f - dist/range);
 			else
 				damage_to_apply = damage_left * (1.0f - dist/range);
@@ -706,7 +706,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
 					float subsystem_factor = 0.0f;
 					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
-						if (subsystem->flags & SSF_DAMAGE_AS_HULL) {
+						if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
 							subsystem_factor = Weapon_info[weapon_info_index].armor_factor;
 						} else {
 							subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
@@ -729,13 +729,13 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			}
 
 			subsystem->current_hits -= damage_to_apply;
-			if (!(subsystem->flags & SSF_NO_AGGREGATE)) {
+			if (!(subsystem->flags[Ship::Subsystem_Flags::No_aggregate])) {
 				ship_p->subsys_info[subsystem->system_info->type].aggregate_current_hits -= damage_to_apply;
 			}
 
 			if (subsystem->current_hits < 0.0f) {
 				damage_left -= subsystem->current_hits;
-				if (!(subsystem->flags & SSF_NO_AGGREGATE)) {
+				if (!(subsystem->flags[Ship::Subsystem_Flags::No_aggregate])) {
 					ship_p->subsys_info[subsystem->system_info->type].aggregate_current_hits -= subsystem->current_hits;
 				}
 				subsystem->current_hits = 0.0f;					// set to 0 so repair on subsystem takes immediate effect
@@ -832,7 +832,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 		p->killer_weapon_index=-1;
 		p->killer_species = Ship_info[Ships[killer_objp->instance].ship_info_index].species;
 
-		if ( Ships[killer_objp->instance].flags & SF_EXPLODED ) {
+		if ( Ships[killer_objp->instance].flags[Ship::Ship_Flags::Exploded] ) {
 			p->flags |= PLAYER_FLAGS_KILLED_BY_EXPLOSION;
 		}
 
@@ -1050,7 +1050,7 @@ int get_max_sparks(object* ship_objp)
 
 	ship *ship_p = &Ships[ship_objp->instance];
 	ship_info* si = &Ship_info[ship_p->ship_info_index];
-	if (si->flags & SIF_FIGHTER) {
+	if (si->flags[Ship::Info_Flags::Fighter]) {
 		float hull_percent = ship_objp->hull_strength / ship_p->ship_max_hull_strength;
 
 		if (hull_percent > 0.8f) {
@@ -1206,7 +1206,7 @@ void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submodel_num)
 	max_sparks = get_max_sparks(ship_objp);
 
 	if (n >= max_sparks)	{
-		if (sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		if (is_big_ship(sip) || is_huge_ship(sip)) {
 			// large ship, choose intelligently
 			n = choose_next_spark(ship_objp, hitpos);
 		} else {
@@ -1391,7 +1391,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
 	ship_stop_fire_primary(objp);	//mostly for stopping fighter beam looping sounds -Bobboau
 
-	sp->flags |= SF_DYING;
+	sp->flags.set(Ship::Ship_Flags::Dying);
 	objp->phys_info.flags |= (PF_DEAD_DAMP | PF_REDUCED_DAMP);
 	delta_time = (int) (sip->death_roll_base_time);
 
@@ -1400,7 +1400,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		delta_time -=  (int) (1.01f - 4*percent_killed);
 
 	//	Cut down cargo death rolls.  Looks a little silly. -- MK, 3/30/98.
-	if (sip->flags & SIF_CARGO) {
+	if (sip->flags[Ship::Info_Flags::Cargo]) {
 		delta_time /= 4;
 	}
 	
@@ -1428,7 +1428,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		delta_time = 2;
 
 	// Knossos gets 7-10 sec to die, time for "little" explosions
-	if (Ship_info[sp->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+	if (Ship_info[sp->ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 		delta_time = 7000 + (int)(frand() * 3000.0f);
 		Ship_info[sp->ship_info_index].explosion_propagates = 0;
 	}
@@ -1451,7 +1451,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	if (sip->vaporize_chance > 0)
 		vapChance = sip->vaporize_chance;
 
-	if (sp->flags & SF_VAPORIZE || frand() < vapChance) {
+	if (sp->flags[Ship::Ship_Flags::Vaporize] || frand() < vapChance) {
 		// Assert(Ship_info[sp->ship_info_index].flags & SIF_SMALL_SHIP);
 
 		// LIVE FOR 100 MS
@@ -1577,7 +1577,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 	}
 
 	// maybe vaporize him
-	if(sp->flags & SF_VAPORIZE){
+	if(sp->flags[Ship::Ship_Flags::Vaporize]){
 		ship_vaporize(sp);
 	}
 
@@ -1764,7 +1764,7 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 		// correct torque.
 		// Addendum: this block is now not executed for docked fighters or bombers because the whack
 		// looks like the fighter is doing evasive maneuvers
-		if ((objp->type != OBJ_SHIP) || !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)))
+		if ((objp->type != OBJ_SHIP) || !(is_fighter_bomber(&Ship_info[Ships[objp->instance].ship_info_index])))
 		{
 			vec3d world_hit_pos, world_center_pos;
 
@@ -1806,7 +1806,7 @@ void shiphit_hit_after_death(object *ship_objp, float damage)
 	}
 
 	// Don't adjust vaporized ship
-	if (shipp->flags & SF_VAPORIZE) {
+	if (shipp->flags[Ship::Ship_Flags::Vaporize]) {
 		return;
 	}
 
@@ -1865,7 +1865,7 @@ int maybe_shockwave_damage_adjust(object *ship_objp, object *other_obj, float *d
 		return 0;
 	}
 
-	if (!(Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_HUGE_SHIP)) {
+	if (!(is_huge_ship(&Ship_info[Ships[ship_objp->instance].ship_info_index]))) {
 		return 0;
 	}
 
@@ -2000,7 +2000,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// apply pain to me
 
 	// Goober5000: make sure other_obj doesn't cause a read violation!
-	if (other_obj && !(Ship_info[Ships[Player_obj->instance].ship_info_index].flags2 & SIF2_NO_PAIN_FLASH))
+	if (other_obj && !(Ship_info[Ships[Player_obj->instance].ship_info_index].flags[Ship::Info_Flags::No_pain_flash]))
 	{
 		// For the record, ship_hit_pain seems to simply be the red flash that appears
 		// on the screen when you're hit.
@@ -2032,7 +2032,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	}
 
 	//	if ship is already dying, shorten deathroll.
-	if (shipp->flags & SF_DYING) {
+	if (shipp->flags[Ship::Ship_Flags::Dying]) {
 		shiphit_hit_after_death(ship_objp, (damage * difficulty_scale_factor));
 		return;
 	}
@@ -2238,7 +2238,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 						if (bobjn >= 0)
 						{
 							if ( !(The_mission.ai_profile->flags & AIPF_INCLUDE_BEAMS_IN_STAT_CALCS) && 
-								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && 
+								 !(is_fighter_bomber(&Ship_info[Ships[Objects[bobjn].instance].ship_info_index])) && 
 								 !(Objects[bobjn].flags & OF_PLAYER_SHIP) ) {
 								bobjn = -1;
 							}
@@ -2265,16 +2265,16 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				// Only vaporize once
 				// multiplayer clients should skip this
 				if(!MULTIPLAYER_CLIENT) {
-					if ( !(shipp->flags & SF_VAPORIZE) ) {
+					if ( !(shipp->flags[Ship::Ship_Flags::Vaporize]) ) {
 						// Only small ships can be vaporized
-						if (sip->flags & (SIF_SMALL_SHIP)) {
+						if (is_small_ship(sip)) {
 							if (other_obj) {	// Goober5000 check for NULL
 								if (other_obj->type == OBJ_BEAM)
 								{
 									int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
 									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_HUGE)) ) {
 										// Flag as vaporized
-										shipp->flags |= SF_VAPORIZE;
+										shipp->flags.set(Ship::Ship_Flags::Vaporize);
 									}
 								}
 							}
@@ -2292,7 +2292,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 					percent_killed = 1.0f;
 				}
 
-				if ( !(shipp->flags & SF_DYING) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
+				if ( !(shipp->flags[Ship::Ship_Flags::Dying]) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
 					ship_hit_kill(ship_objp, other_obj, percent_killed, 0);
 				}
 			}
@@ -2502,7 +2502,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, vec3d *force
 
 		// world_hitpos use force_center for shockwave
 		// Goober5000 check for NULL
-		if (Cmdline_nohtl && (other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_HUGE_SHIP))
+		if (Cmdline_nohtl && (other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (is_huge_ship(&Ship_info[Ships[ship_objp->instance].ship_info_index])))
 		{
 			world_hitpos = *force_center;
 		}

@@ -898,7 +898,7 @@ void multi_ingame_join_display_avail()
 
 	moveup = GET_FIRST(&Ship_obj_list);	
 	while(moveup != END_OF_LIST(&Ship_obj_list)){
-		if( !(Ships[Objects[moveup->objnum].instance].flags & (SF_DYING|SF_DEPARTING)) && (Objects[moveup->objnum].flags & OF_COULD_BE_PLAYER) ) {
+		if (!(is_ship_departing(&Ships[Objects[moveup->objnum].instance]) || Ships[Objects[moveup->objnum].instance].flags[Ship::Ship_Flags::Dying]) && (Objects[moveup->objnum].flags & OF_COULD_BE_PLAYER)) {
 			// display the ship
 			multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
 
@@ -969,7 +969,8 @@ void multi_ingame_handle_timeout()
 
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
-	int offset, sflags, sflags2, oflags, team, j;
+	int offset, oflags, team, j;
+	char sflags[255] = "";
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
@@ -1003,11 +1004,10 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	while ( p_type == INGAME_SHIP_NEXT ) {
 		p_object *p_objp;
 		int ship_num, objnum;
-
+		
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
-		GET_INT( sflags );
-		GET_INT( sflags2 );
+		GET_STRING( sflags );
 		GET_INT( oflags );
 		GET_INT( team );		
 		GET_SHORT( wing_data );
@@ -1042,8 +1042,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
-		Ships[ship_num].flags = sflags;
-		Ships[ship_num].flags2 = sflags2;
+		Ships[ship_num].flags.from_string(sflags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1131,8 +1130,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
-		ADD_INT( shipp->flags );
-		ADD_INT( shipp->flags2 );
+		ADD_STRING( shipp->flags.to_string().c_str() );
 		ADD_INT( Objects[so->objnum].flags );
 		ADD_INT( shipp->team );
 		wing_data = (short)shipp->wingnum;
@@ -1187,7 +1185,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 		} else if ( what == INGAME_WING_DEPARTED ) {
 			// mark the wing as gone.  if it isn't, it soon will be.  Maybe we should send more information
 			// about these wings later (like total_arrived_count, etc), but we will see.
-			wingp->flags |= WF_WING_GONE;
+			wingp->flags.set(Ship::Wing_Flags::Gone);
 		} else {
 			int total_arrived_count, current_count, current_wave, i, j;
 			ushort signature;
@@ -1441,7 +1439,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 
 		// add the ballistic primary flag - Goober5000
 		val = 0;
-		if(sip->flags & SIF_BALLISTIC_PRIMARIES){
+		if(sip->flags[Ship::Info_Flags::Ballistic_primaries]){
 			val |= (1<<0);
 		}
 		ADD_DATA(val);
@@ -1474,10 +1472,10 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		// add the link status of weapons
 		// primary link status	
 		val = 0;
-		if(shipp->flags & SF_PRIMARY_LINKED){
+		if(shipp->flags[Ship::Ship_Flags::Primary_linked]){
 			val |= (1<<0);
 		}
-		if(shipp->flags & SF_SECONDARY_DUAL_FIRE){
+		if(shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]){
 			val |= (1<<1);
 		}
 		ADD_DATA(val);		
@@ -1686,10 +1684,11 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Player_ship->engine_recharge_index = val;		
 
 		// handle the ballistic primary flag - Goober5000
+		// This seems rather obsolete - The E
 		GET_DATA(val);
-		if(val & (1<<0)){
-			Player_ship->flags |= SIF_BALLISTIC_PRIMARIES;
-		}
+		//if(val & (1<<0)){
+		//	Player_ship->flags |= SIF_BALLISTIC_PRIMARIES;
+		//}
 
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);
@@ -1717,10 +1716,10 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// get the link status of weapons
 		GET_DATA(val);
 		if(val & (1<<0)){
-			Player_ship->flags |= SF_PRIMARY_LINKED;
+			Player_ship->flags.set(Ship::Ship_Flags::Primary_linked);
 		}
 		if(val & (1<<1)){
-			Player_ship->flags |= SF_SECONDARY_DUAL_FIRE;
+			Player_ship->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 		}		
 		PACKET_SET_SIZE();					
 

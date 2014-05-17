@@ -596,7 +596,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 		// set glowmap flag here since model_render (etc) require an objnum to handle glowmaps
 		// if we did pass the objnum, we'd also have thrusters drawn in the targetbox
-		if (target_shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+		if (target_shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 			flags |= MR_NO_GLOWMAPS;
 		}
 
@@ -938,7 +938,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 
 			// set glowmap flag here since model_render (etc) require an objnum to handle glowmaps
 			// if we did pass the objnum, we'd also have thrusters drawn in the targetbox
-			if (homing_shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+			if (homing_shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 				flags |= MR_NO_GLOWMAPS;
 			}
 		}

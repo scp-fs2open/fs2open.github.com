@@ -74,7 +74,7 @@ void update_ets(object* objp, float fl_frametime)
 	float max_g=sinfo_p->max_weapon_reserve,
 		  max_s=ship_p->ship_max_shield_strength;
 
-	if ( ship_p->flags & SF_DYING ){
+	if ( ship_p->flags[Ship::Ship_Flags::Dying] ){
 		return;
 	}
 
@@ -206,7 +206,7 @@ void ai_manage_ets(object* obj)
 	if ( ship_info_p->power_output == 0 )
 		return;
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
 	// check if any of the three systems are not being used.  If so, don't allow energy management.
@@ -616,7 +616,7 @@ void transfer_energy_to_shields(object* obj)
 {
 	ship*			ship_p = &Ships[obj->instance];
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
 	if ( !ship_has_energy_weapons(ship_p) || obj->flags & OF_NO_SHIELDS )
@@ -635,7 +635,7 @@ void transfer_energy_to_weapons(object* obj)
 	ship*			ship_p = &Ships[obj->instance];
 	ship_info*	sinfo_p = &Ship_info[ship_p->ship_info_index];
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
 	if ( !ship_has_energy_weapons(ship_p) || obj->flags & OF_NO_SHIELDS )

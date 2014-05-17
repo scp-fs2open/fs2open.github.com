@@ -82,7 +82,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	
 
 	// send player pain packet
-	if ( (MULTIPLAYER_MASTER) && !(shipp->flags & SF_DYING) ){
+	if ( (MULTIPLAYER_MASTER) && !(shipp->flags[Ship::Ship_Flags::Dying]) ){
 		int np_index = multi_find_player_by_object(ship_obj);
 
 		// if this is a player ship
@@ -139,10 +139,10 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	Assert( shipp->objnum == OBJ_INDEX(ship_objp));
 
 	// Make ships that are warping in not get collision detection done
-	if ( shipp->flags & SF_ARRIVING ) return 0;
+	if ( is_ship_arriving(shipp) ) return 0;
 
 	//	If either of these objects doesn't get collision checks, abort.
-	if (Ship_info[shipp->ship_info_index].flags & SIF_NO_COLLIDE)
+	if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::No_collide])
 		return 0;
 
 	//	Return information for AI to detect incoming fire.
@@ -200,7 +200,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	// check shields for impact
 	if (!(ship_objp->flags & OF_NO_SHIELDS)) {
-		if (sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) {
+		if (sip->flags[Ship::Info_Flags::Auto_spread_shields]) {
 			// The weapon is not allowed to impact the shield before it reaches this point
 			vec3d shield_ignored_until = weapon_objp->last_pos;
 
@@ -340,7 +340,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
-		if (shipp->flags & SF_DYING || !ship_is_shield_up(ship_objp, quadrant_num))
+		if (shipp->flags[Ship::Ship_Flags::Dying] || !ship_is_shield_up(ship_objp, quadrant_num))
 			quadrant_num = -1;
 
 		// see if we hit the shield
@@ -372,7 +372,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	}
 
     // check if the hit point is beyond the clip plane when warping out.
-    if ((shipp->flags & SF_DEPART_WARP) &&
+    if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) &&
         (shipp->warpout_effect) &&
         (valid_hit_occurred))
     {
@@ -432,7 +432,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 			if (vm_vec_dot(&vec_to_ship, &weapon_objp->orient.vec.fvec) < 0.0f) {
 				// check if we're colliding against "invisible" ship
-				if (!(shipp->flags2 & SF2_DONT_COLLIDE_INVIS)) {
+				if (!(shipp->flags[Ship::Ship_Flags::Dont_collide_invis])) {
 					wp->lifeleft = 0.001f;
 					if (ship_objp == Player_obj)
 						nprintf(("Jim", "Frame %i: Weapon %i set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));
@@ -482,7 +482,7 @@ int collide_ship_weapon( obj_pair * pair )
 		// within the sphere with little time between.  There may be some time for "small" big ships
 		// Note: culling ships with auto spread shields seems to waste more performance than it saves,
 		// so we're not doing that here
-		if ( !(sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) && vm_vec_dist_squared(&ship->pos, &weapon->pos) < (1.2f*ship->radius*ship->radius) ) {
+		if ( !(sip->flags[Ship::Info_Flags::Auto_spread_shields]) && vm_vec_dist_squared(&ship->pos, &weapon->pos) < (1.2f*ship->radius*ship->radius) ) {
 			return check_inside_radius_for_big_ships( ship, weapon, pair );
 		}
 	}

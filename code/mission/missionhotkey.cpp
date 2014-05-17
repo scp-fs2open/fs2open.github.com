@@ -639,7 +639,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 
 			// don't add any wing data whose ships are hidden from sensors
 			for ( j = 0; j < Wings[i].current_count; j++ ) {
-				if ( Ships[Wings[i].ship_index[j]].flags & SF_HIDDEN_FROM_SENSORS )
+				if ( Ships[Wings[i].ship_index[j]].flags[Ship::Ship_Flags::Hidden_from_sensors] )
 					break;
 			}
 			// if we didn't reach the end of the list, don't display the wing

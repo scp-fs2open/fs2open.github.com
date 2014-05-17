@@ -190,12 +190,12 @@ BOOL initial_status::OnInitDialog()
 	else
 		m_force_shields = 0;
 
-	if (Ships[m_ship].flags2 & SF2_SHIP_LOCKED)
+	if (Ships[m_ship].flags[Ship::Ship_Flags::Ship_locked])
 		m_ship_locked = 1;
 	else
 		m_ship_locked = 0;
 
-	if (Ships[m_ship].flags2 & SF2_WEAPONS_LOCKED)
+	if (Ships[m_ship].flags[Ship::Ship_Flags::Weapons_locked])
 		m_weapons_locked = 1;
 	else
 		m_weapons_locked = 0;
@@ -224,7 +224,7 @@ BOOL initial_status::OnInitDialog()
 		m_turrets_locked = 0;
 	}
 
-	if (Ships[m_ship].flags2 & SF2_AFTERBURNER_LOCKED) {
+	if (Ships[m_ship].flags[Ship::Ship_Flags::Afterburner_locked]) {
 		m_afterburner_locked = 1;
 	}
 	else {
@@ -263,7 +263,7 @@ BOOL initial_status::OnInitDialog()
 						m_force_shields = 2;
 				}
 
-				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_SHIP_LOCKED) {
+				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Ship_locked]) {
 					if (!m_ship_locked)
 						m_ship_locked = 2;
 
@@ -272,7 +272,7 @@ BOOL initial_status::OnInitDialog()
 						m_ship_locked = 2;
 				}
 
-				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_WEAPONS_LOCKED) {
+				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Weapons_locked]) {
 					if (!m_weapons_locked)
 						m_weapons_locked = 2;
 
@@ -308,7 +308,7 @@ BOOL initial_status::OnInitDialog()
 						m_turrets_locked = 2;
 				}
 				
-				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_AFTERBURNER_LOCKED){
+				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Afterburner_locked]){
 					if (!m_afterburner_locked)
 						m_afterburner_locked = 2;
 				}
@@ -630,7 +630,7 @@ void initial_status::change_subsys()
 
 	// Goober5000
 	ship_has_scannable_subsystems = (Ship_info[Ships[m_ship].ship_info_index].flags & SIF_HUGE_SHIP);
-	if (Ships[m_ship].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
+	if (Ships[m_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 		ship_has_scannable_subsystems = !ship_has_scannable_subsystems;
 
 	if (cur_subsys != LB_ERR) {

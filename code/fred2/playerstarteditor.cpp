@@ -282,7 +282,7 @@ void player_start_editor::reset_controls()
 	m_ship_list.ResetContent();
 	ct = 0;
 	for (i=0; i<Num_ship_classes; i++) {
-		if (Ship_info[i].flags & SIF_PLAYER_SHIP) {
+		if (Ship_info[i].flags[Ship::Info_Flags::Player_ship]) {
 			m_ship_list.AddString(Ship_info[i].name);
 			
 			// if the ship currently has pool entries or was set by a variable, check it

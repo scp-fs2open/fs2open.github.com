@@ -590,22 +590,22 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			}		
 			
 			// only process ships that might be on the list
-			if ( !(Ships[objp->instance].flags & SF_ESCORT) ){
+			if ( !(Ships[objp->instance].flags[Ship::Ship_Flags::Escort]) ){
 				continue;
 			}
 
 			// only process ships that can be seen by sensors
-			if ( (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS) ){
+			if ( (Ships[objp->instance].flags[Ship::Ship_Flags::Hidden_from_sensors]) ){
 				continue;
 			}
 
 			// don't process most stealth ships
-			if ( (Ships[objp->instance].flags2 & SF2_STEALTH) )
+			if ( (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth]) )
 			{
 				if ( Ships[objp->instance].team == Player_ship->team )
 				{
 					// friendly stealths are only not seen when explicitly specified
-					if ( Ships[objp->instance].flags2 & SF2_FRIENDLY_STEALTH_INVIS )
+					if ( Ships[objp->instance].flags[Ship::Ship_Flags::Friendly_stealth_invis] )
 					{
 						continue;
 					}
@@ -814,8 +814,8 @@ void hud_escort_cull_list()
 				int shipnum = Objects[objnum].instance;
 				Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 
-				if ( (Ships[shipnum].flags & SF_HIDDEN_FROM_SENSORS)
-					|| ((Ships[shipnum].flags2 & SF2_STEALTH) && ((Ships[shipnum].team != Player_ship->team) || (Ships[shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS)))
+				if ( (Ships[shipnum].flags[Ship::Ship_Flags::Hidden_from_sensors])
+					|| ((Ships[shipnum].flags[Ship::Ship_Flags::Stealth]) && ((Ships[shipnum].team != Player_ship->team) || (Ships[shipnum].flags[Ship::Ship_Flags::Friendly_stealth_invis])))
 				) {
 					hud_setup_escort_list(0);
 					break;

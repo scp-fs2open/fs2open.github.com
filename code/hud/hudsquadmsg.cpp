@@ -931,7 +931,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	for ( i = 0; i < Num_wings; i++ ) {
 		int shipnum;
 
-		if ( (Wings[i].flags & WF_WING_GONE) || (Wings[i].current_count == 0) )
+		if ( (Wings[i].flags[Ship::Wing_Flags::Gone]) || (Wings[i].current_count == 0) )
 			continue;
 
 		if ( Wings[i].flags & WF_WING_DEPARTING )

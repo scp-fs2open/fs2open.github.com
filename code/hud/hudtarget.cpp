@@ -1495,7 +1495,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 		if ( (aip->target_objnum != -1)
 			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
-			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER)
+			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags[Ship::Info_Flags::Bomber])
 				|| (Objects[aip->target_objnum].flags & OF_TARGETABLE_AS_BOMB))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
 			startShip = get_ship_obj_ptr_from_index(index);
@@ -1521,7 +1521,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// check if ship type is bomber
-			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) && !(A->flags & OF_TARGETABLE_AS_BOMB) ) {
+			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags[Ship::Info_Flags::Bomber]) && !(A->flags & OF_TARGETABLE_AS_BOMB) ) {
 				continue;
 			}
 
@@ -1551,11 +1551,11 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	// ignore cargo that has already been scanned
-	if (shipp->flags & SF_CARGO_REVEALED)
+	if (shipp->flags[Ship::Ship_Flags::Cargo_revealed])
 		return 0;
 
 	// allow ships with scannable flag set
-	if (shipp->flags & SF_SCANNABLE)
+	if (shipp->flags[Ship::Ship_Flags::Scannable])
 		return 1;
 
 	// ignore ships that don't carry cargo
@@ -3284,13 +3284,13 @@ void hud_show_message_sender()
 	}
 
 	// Goober5000 - don't draw if primitive sensors
-	if ( Ships[Player_obj->instance].flags2 & SF2_PRIMITIVE_SENSORS ) {
+	if ( Ships[Player_obj->instance].flags[Ship::Ship_Flags::Primitive_sensors] ) {
 		return;
 	}
 
 	// Karajorma - If we've gone to all the trouble to make our friendly ships stealthed they shouldn't then give away 
 	// their position cause they're feeling chatty
-	if ( Ships[Message_shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS ) {
+	if ( Ships[Message_shipnum].flags[Ship::Ship_Flags::Friendly_stealth_invis] ) {
 		return;
 	}
 
@@ -3722,7 +3722,7 @@ int hud_get_best_primary_bank(float *range)
 	farthest_weapon_range = 0.0f;
 	best_bank = -1;
 
-	if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
+	if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 		num_to_test = swp->num_primary_banks;
 	} else {
 		num_to_test = MIN(1, swp->num_primary_banks);
@@ -4621,7 +4621,7 @@ int hud_communications_state(ship *sp)
 	}
 
 	// Goober5000 - if the ship is the player, and he's dying, return OK (so laments can be played)
-	if ((sp == Player_ship) && (sp->flags & SF_DYING))
+	if ((sp == Player_ship) && (sp->flags[Ship::Ship_Flags::Dying]))
 		return COMM_OK;
 
 	// Goober5000 - check for scrambled communications
@@ -4737,7 +4737,7 @@ void HudGaugeAutoTarget::initOffColor(int r, int g, int b, int a)
 
 void HudGaugeAutoTarget::render(float frametime)
 {
-	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
+	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 		return;
 
 	int frame_offset;
@@ -4823,7 +4823,7 @@ void HudGaugeAutoSpeed::initOffColor(int r, int g, int b, int a)
 
 void HudGaugeAutoSpeed::render(float frametime)
 {
-	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
+	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 		return;
 
 	int frame_offset;
@@ -4876,7 +4876,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		// ignore all ships that aren't repair ships 
-		if ( !(Ship_info[shipp->ship_info_index].flags & SIF_SUPPORT) ) {
+		if ( !(Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Support]) ) {
 			continue;
 		}
 
@@ -4925,11 +4925,11 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 void hud_target_toggle_hidden_from_sensors()
 {
-	if ( TARGET_SHIP_IGNORE_FLAGS & SF_HIDDEN_FROM_SENSORS ) {
-		TARGET_SHIP_IGNORE_FLAGS &= ~SF_HIDDEN_FROM_SENSORS;
+	if ( TARGET_SHIP_IGNORE_flags[Ship::Ship_Flags::Hidden_from_sensors] ) {
+		TARGET_SHIP_IGNORE_flags.set(Ship::Ship_Flags::Hidden_from_sensors, false);
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Target hiding from sensors disabled"));
 	} else {
-		TARGET_SHIP_IGNORE_FLAGS |= SF_HIDDEN_FROM_SENSORS;
+		TARGET_SHIP_IGNORE_flags.set(Ship::Ship_Flags::Hidden_from_sensors);
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Target hiding from sensors enabled"));
 	}
 }
@@ -5443,7 +5443,7 @@ void HudGaugeAfterburner::render(float frametime)
 	}
 
 	Assert(Player_ship);
-	if ( !(Ship_info[Player_ship->ship_info_index].flags & SIF_AFTERBURNER) ) {
+	if ( !(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Afterburner]) ) {
 		// Goober5000 - instead of drawing an empty burner gauge, don't draw the gauge at all
 		return;
 	} else {
@@ -5538,7 +5538,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 	bool use_new_gauge = false;
 
 	// Goober5000 - only check for the new gauge in case of command line + a ballistic-capable ship
-	if (Cmdline_ballistic_gauge && Ship_info[Player_ship->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES)
+	if (Cmdline_ballistic_gauge && Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries])
 	{
 		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 		{
@@ -5595,7 +5595,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				continue;
 
 			//Draw the weapon bright or normal depending if it's active or not.
-			if(x == Player_ship->weapons.current_primary_bank || (Player_ship->flags & SF_PRIMARY_LINKED)) {
+			if(x == Player_ship->weapons.current_primary_bank || (Player_ship->flags[Ship::Ship_Flags::Primary_linked])) {
 				setGaugeColor(HUD_C_BRIGHT);
 			} else {
 				setGaugeColor(HUD_C_NORMAL);
@@ -5647,8 +5647,8 @@ void HudGaugeWeaponEnergy::render(float frametime)
 		sw = &Player_ship->weapons;
 
 		// show ballistic ammunition in energy gauge if need be
-		if ( Show_ballistic && Ship_info[Player_ship->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES ) {
-			if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
+		if ( Show_ballistic && Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries] ) {
+			if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 
 				// go through all ballistic primaries and add up their ammunition totals and max capacities
 				for ( i = 0; i < sw->num_primary_banks; i++ ) {
@@ -5714,7 +5714,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 
 		// list currently armed primary banks if we have to
 		if ( Show_armed ) {
-			if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
+			if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 				// show all primary banks
 				for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
 					wip = &Weapon_info[sw->primary_bank_weapons[i]];
@@ -6025,7 +6025,7 @@ void HudGaugeWeapons::render(float frametime)
 		}
 
 		// indicate if this is linked or currently armed
-		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags & SF_PRIMARY_LINKED)) || ((Player_ship->flags & SF_PRIMARY_LINKED) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK))) {
+		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags[Ship::Ship_Flags::Primary_linked])) || ((Player_ship->flags[Ship::Ship_Flags::Primary_linked]) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK))) {
 			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);
 		}
 		
@@ -6093,7 +6093,7 @@ void HudGaugeWeapons::render(float frametime)
 			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);			
 
 			// indicate if this is linked
-			if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
 				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);				
 			}
 
@@ -6850,7 +6850,7 @@ void HudGaugePrimaryWeapons::render(float frametime)
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
 
 	sw = &Ships[Player_obj->instance].weapons;
-	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags & SIF_BALLISTIC_PRIMARIES);
+	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries]);
 
 	num_primaries = sw->num_primary_banks;
 
@@ -6884,7 +6884,7 @@ void HudGaugePrimaryWeapons::render(float frametime)
 		}
 
 		// indicate if this is linked or currently armed
-		if ( (sw->current_primary_bank == i) || (Player_ship->flags & SF_PRIMARY_LINKED) ) {
+		if ( (sw->current_primary_bank == i) || (Player_ship->flags[Ship::Ship_Flags::Primary_linked]) ) {
 			renderPrintf(position[0] + _plink_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);
 		}
 
@@ -6965,7 +6965,7 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
 
 	sw = &Ships[Player_obj->instance].weapons;
-	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags & SIF_BALLISTIC_PRIMARIES);
+	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries]);
 
 	num_primaries = sw->num_primary_banks;
 	num_secondaries = sw->num_secondary_banks;
@@ -7000,7 +7000,7 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);
 
 			// indicate if this is linked
-			if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
 				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);				
 			}
 
@@ -7192,7 +7192,7 @@ void HudGaugeHardpoints::render(float frametime)
 					if(sp->secondary_point_reload_pct[i][k] <= 0.0)
 						continue;
 
-					if ( swp->current_secondary_bank == i && ( swp->secondary_next_slot[i] == k || ( swp->secondary_next_slot[i]+1 == k && sp->flags & SF_SECONDARY_DUAL_FIRE ) ) ) {
+					if ( swp->current_secondary_bank == i && ( swp->secondary_next_slot[i] == k || ( swp->secondary_next_slot[i]+1 == k && sp->flags[Ship::Ship_Flags::Secondary_dual_fire] ) ) ) {
 						gr_set_color_fast(&Color_bright_blue);
 					} else {
 						gr_set_color_fast(&Color_bright_white);

@@ -581,7 +581,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 	if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_CARGO) {
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_CARGO);
 		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_CARGO);
-	} else if (Ship_info[Ships[aip->shipnum].ship_info_index].flags & SIF_SUPPORT) {
+	} else if (Ship_info[Ships[aip->shipnum].ship_info_index].flags[Ship::Info_Flags::Support]) {
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_REARM);
 		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_REARM);
 	}
@@ -1557,7 +1557,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		wing *wingp = &Wings[sindex];
 
-		if ( wingp->flags & WF_WING_GONE )
+		if ( wingp->flags[Ship::Wing_Flags::Gone] )
 			return AI_GOAL_NOT_ACHIEVABLE;
 		else if ( wingp->total_arrived_count == 0 )
 			return AI_GOAL_NOT_KNOWN;

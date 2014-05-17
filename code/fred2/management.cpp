@@ -554,7 +554,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 		{
 			// if this ship is not a small ship, then make the orders be the default orders without
 			// the depart item
-			if (!(sip->flags & SIF_SMALL_SHIP))
+			if (!(is_small_ship(sip)))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 				shipp->orders_accepted &= ~DEPART_ITEM;

@@ -2261,7 +2261,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			if (shipp) {
 				// if ship is warping out, check position of the engine glow to the warp plane
-				if ( (shipp->flags & (SF_ARRIVING) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+				if ( (is_ship_arriving(shipp) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
 					vec3d warp_pnt, tmp;
 					matrix warp_orient;
 
@@ -2274,7 +2274,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					}
 				}
 
-				if ( (shipp->flags & (SF_DEPART_WARP) ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+				if ( (shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
 					vec3d warp_pnt, tmp;
 					matrix warp_orient;
 
@@ -2546,7 +2546,7 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 
 					vm_vec_unrotate(&world_norm, &loc_norm, orient);
 					
-					if ( (shipp != NULL) && (shipp->flags & (SF_ARRIVING | SF_DEPART_WARP) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+					if ( (shipp != NULL) && (is_ship_arriving(shipp) || shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
 						if (g3_point_behind_user_plane(&world_pnt))
 							continue;
 					}
@@ -2707,7 +2707,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
 
-			if (shipp->flags2 & SF2_GLOWMAPS_DISABLED)
+			if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled])
 				flags |= MR_NO_GLOWMAPS;
 		}
 	}

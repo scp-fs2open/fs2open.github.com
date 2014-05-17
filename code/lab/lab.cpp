@@ -721,9 +721,9 @@ void labviewer_render_model(float frametime)
 	rev_rate = REVOLUTION_RATE;
 
 	if (sip != NULL) {
-		if (sip->flags & SIF_BIG_SHIP) {
+		if (is_big_ship(sip)) {
 			rev_rate *= 1.7f;
-		} else if (sip->flags & SIF_HUGE_SHIP) {
+		} else if (is_huge_ship(sip)) {
 			rev_rate *= 3.0f;
 		}
 

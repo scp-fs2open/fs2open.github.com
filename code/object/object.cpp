@@ -736,7 +736,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		if ( ci.fire_primary_count ) {
 			// flag the ship as having the trigger down
 			if(shipp != NULL){
-				shipp->flags |= SF_TRIGGER_DOWN;
+				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 			}
 
 			// fire non-streaming primaries here
@@ -744,7 +744,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		} else {
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
-				shipp->flags &= ~(SF_TRIGGER_DOWN);
+				shipp->flags.set(Ship::Ship_Flags::Trigger_down, false);
 				ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 			}
 		}
@@ -784,7 +784,7 @@ void obj_move_call_physics(object *objp, float frametime)
 	//	Do physics for objects with OF_PHYSICS flag set and with some engine strength remaining.
 	if ( objp->flags & OF_PHYSICS ) {
 		// only set phys info if ship is not dead
-		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags & SF_DYING)) {
+		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags[Ship::Ship_Flags::Dying])) {
 			ship *shipp = &Ships[objp->instance];
 			float	engine_strength;
 
@@ -1718,25 +1718,6 @@ void obj_get_average_ship_pos( vec3d *pos )
 
 	if ( count )
 		vm_vec_scale( pos, 1.0f/(float)count );
-}
-
-
-int obj_get_SIF(object *objp)
-{
-	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
-		return Ship_info[Ships[objp->instance].ship_info_index].flags;
-
-	Int3();
-	return 0;
-}
-
-int obj_get_SIF(int obj)
-{
-	if ((Objects[obj].type == OBJ_SHIP) || (Objects[obj].type == OBJ_START))
-		return Ship_info[Ships[Objects[obj].instance].ship_info_index].flags;
-
-	Int3();
-	return 0;
 }
 
 /**

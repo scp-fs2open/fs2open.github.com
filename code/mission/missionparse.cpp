@@ -574,7 +574,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	{
 		for (int ship_class = 0; ship_class < Num_ship_classes; ship_class++)
 		{
-			if ((Ship_info[ship_class].flags & SIF_SUPPORT) && (Ship_info[ship_class].species == species))
+			if ((Ship_info[ship_class].flags[Ship::Info_Flags::Support]) && (Ship_info[ship_class].species == species))
 			{
 				pm->support_ships.support_available_for_species |= (1 << species);
 				break;
@@ -1601,7 +1601,7 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	{
 		object *ship_objp = &Objects[so->objnum];
 
-		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)
+		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])
 		{
 			// be close to the right device (allow multiple knossoses)
 			if ( vm_vec_dist_quick(&ship_objp->pos, &p_objp->pos) < 2.0f*(ship_objp->radius + objp->radius) )
@@ -1627,7 +1627,7 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	vm_vec_scale_add2(&objp->pos, &objp->orient.vec.fvec, (dist - desired_dist));
 	
 	// if ship is BIG or HUGE, make it go through the center of the knossos
-	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP)
+	if (is_huge_ship(&Ship_info[shipp->ship_info_index]))
 	{
 		vec3d offset;
 		vm_vec_sub(&offset, &knossos_objp->pos, &new_point);
@@ -1977,7 +1977,7 @@ int parse_create_object_sub(p_object *p_objp)
 	else if (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON)
 		Objects[objnum].flags &= ~OF_NO_SHIELDS;
 	// intrinsic no-shields means we have them off in-game
-	else if (!Fred_running && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS))
+	else if (!Fred_running && (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]))
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
@@ -2001,7 +2001,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if (p_objp->flags & P_SF_RED_ALERT_STORE_STATUS)
 	{
 		if (!(Game_mode & GM_MULTIPLAYER)) {
-			shipp->flags |= SF_RED_ALERT_STORE_STATUS;
+			shipp->flags.set(Ship::Ship_Flags::Red_alert_store_status);
 		}
 	}
 
@@ -2187,7 +2187,7 @@ int parse_create_object_sub(p_object *p_objp)
 					ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
 
 					float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
-					if (!(ptr->flags & SSF_NO_AGGREGATE)) {
+					if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
 						shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
 					}
 
@@ -2325,7 +2325,7 @@ int parse_create_object_sub(p_object *p_objp)
 			mission_hotkey_mf_add(Wings[shipp->wingnum].hotkey, shipp->objnum, HOTKEY_MISSION_FILE_ADDED);
 
 		// possibly add this ship to the hud escort list
-		if (shipp->flags & SF_ESCORT)
+		if (shipp->flags[Ship::Ship_Flags::Escort])
 			hud_add_remove_ship_escort(objnum, 1);
 	}
 
@@ -2475,7 +2475,7 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 		objp->flags |= OF_INVULNERABLE;
 
 	if (parse_flags & P_SF_HIDDEN_FROM_SENSORS)
-		shipp->flags |= SF_HIDDEN_FROM_SENSORS;
+		shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
 
 	if (parse_flags & P_SF_SCANNABLE)
 		shipp->flags |= SF_SCANNABLE;
@@ -2498,7 +2498,7 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 
 	if (parse_flags & P_SF_VAPORIZE)
-		shipp->flags |= SF_VAPORIZE;
+		shipp->flags.set(Ship::Ship_Flags::Vaporize);
 
 	if (parse_flags & P_SF2_STEALTH)
 		shipp->flags2 |= SF2_STEALTH;
@@ -2528,7 +2528,7 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 		objp->flags |= OF_TARGETABLE_AS_BOMB;
 
 	if (parse_flags2 & P2_SF2_NO_BUILTIN_MESSAGES) 
-		shipp->flags2 |= SF2_NO_BUILTIN_MESSAGES;
+		shipp->flags.set(Ship::Ship_Flags::No_builtin_messages);
 
 	if (parse_flags2 & P2_SF2_PRIMARIES_LOCKED) 
 		shipp->flags2 |= SF2_PRIMARIES_LOCKED;
@@ -2718,7 +2718,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
-	if(MULTI_DOGFIGHT && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
+	if(MULTI_DOGFIGHT && (Ship_info[p_objp->ship_class].flags[Ship::Info_Flags::Support]))
 		return 0;
 
 	// optional alternate name type
@@ -3883,10 +3883,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				// set the wing variables appropriately.  Good for directives.
 
 				// set the gone flag
-				wingp->flags |= WF_WING_GONE;
+				wingp->flags.set(Ship::Wing_Flags::Gone);
 
 				// if the current wave is zero, it never existed
-				wingp->flags |= WF_NEVER_EXISTED;
+				wingp->flags.set(Ship::Wing_Flags::Never_existed);
 
 				// mark the number of waves and number of ships destroyed equal to the last wave and the number
 				// of ships yet to arrive
@@ -5752,7 +5752,7 @@ void post_process_mission()
 		ship *shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING ) )
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing] ) )
 			continue;			
 
 		swp = &shipp->weapons;
@@ -6809,7 +6809,7 @@ void mission_eval_arrivals()
 		wingp = &Wings[i];
 
 		// should we process this wing anymore
-		if (wingp->flags & WF_WING_GONE)
+		if (wingp->flags[Ship::Wing_Flags::Gone])
 			continue;
 
 		// if we have a reinforcement wing, then don't try to create new ships automatically.
@@ -7137,7 +7137,7 @@ void mission_eval_departures()
 				ship *shipp;
 
 				shipp = &Ships[wingp->ship_index[j]];
-				if ( (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_DYING) )
+				if ((is_ship_departing(shipp)) || (shipp->flags[Ship::Ship_Flags::Dying]))
 					continue;
 
 				Assert ( shipp->objnum != -1 );
@@ -7535,7 +7535,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 		// get index of correct species support ship
 		for (i=0; i < Num_ship_classes; i++) {
-			if ( (Ship_info[i].species == requester_species) && (Ship_info[i].flags & SIF_SUPPORT) )
+			if ( (Ship_info[i].species == requester_species) && (Ship_info[i].flags[Ship::Info_Flags::Support]) )
 				break;
 		}
 

@@ -424,7 +424,7 @@ void pilotfile::csg_read_techroom()
 
 		if (visible) {
 			if (ship_list[idx].index >= 0) {
-				Ship_info[ship_list[idx].index].flags |= SIF_IN_TECH_DATABASE;
+				Ship_info[ship_list[idx].index].flags.set(Ship::Info_Flags::In_tech_database);
 			} else {
 				m_data_invalid = true;
 			}
@@ -475,7 +475,7 @@ void pilotfile::csg_write_techroom()
 	// visible ships
 	for (idx = 0; idx < Num_ship_classes; idx++) {
 		// only visible if not in techroom by default
-		if ( (Ship_info[idx].flags & SIF_IN_TECH_DATABASE) && !(Ship_info[idx].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE) ) {
+		if ( (Ship_info[idx].flags[Ship::Info_Flags::In_tech_database]) && !(Ship_info[idx].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE) ) {
 			visible = 1;
 		} else {
 			visible = 0;

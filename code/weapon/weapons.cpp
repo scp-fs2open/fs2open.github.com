@@ -3854,19 +3854,19 @@ void find_homing_object(object *weapon_objp, int num)
                     //if the homing weapon is a huge weapon and the ship that is being
                     //looked at is not huge, then don't home
                     if ((wip->wi_flags & WIF_HUGE) &&
-                        (sip->flags & (SIF_SMALL_SHIP | SIF_NOT_FLYABLE | SIF_HARMLESS)))
+                        (is_small_ship(sip) || !is_flyable(sip) || is_harmless(sip) ))
                     {
                         continue;
                     }
 
 					// AL 2-17-98: If ship is immune to sensors, can't home on it (Sandeep says so)!
-					if ( sp->flags & SF_HIDDEN_FROM_SENSORS ) {
+					if ( sp->flags[Ship::Ship_Flags::Hidden_from_sensors] ) {
 						continue;
 					}
 
 					// Goober5000: if missiles can't home on sensor-ghosted ships,
 					// they definitely shouldn't home on stealth ships
-					if ( sp->flags2 & SF2_STEALTH && (The_mission.ai_profile->flags & AIPF_FIX_HEAT_SEEKER_STEALTH_BUG) ) {
+					if ( sp->flags[Ship::Ship_Flags::Stealth] && (The_mission.ai_profile->flags & AIPF_FIX_HEAT_SEEKER_STEALTH_BUG) ) {
 						continue;
 					}
 
@@ -4156,7 +4156,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	// If target subsys is dead make missile pick random spot on target as attack point.
 	if (wp->homing_subsys != NULL) {
-		if (wp->homing_subsys->flags & SSF_MISSILES_IGNORE_IF_DEAD) {
+		if (wp->homing_subsys->flags[Ship::Subsystem_Flags::Missiles_ignore_if_dead]) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
 				wp->homing_object = &obj_used_list;
 				return;
@@ -5819,7 +5819,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 		if ( objp->type == OBJ_SHIP ) {
 			// don't blast navbuoys
-			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY ) {
+			if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy]) {
 				continue;
 			}
 		}
@@ -6842,7 +6842,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	// if the hit object was a ship and we're doing damage scaling
 	if ( (target->type == OBJ_SHIP) &&
 		!(The_mission.ai_profile->flags & AIPF_DISABLE_WEAPON_DAMAGE_SCALING) &&
-		!(Ship_info[Ships[target->instance].ship_info_index].flags2 & SIF2_DISABLE_WEAPON_DAMAGE_SCALING)
+		!(Ship_info[Ships[target->instance].ship_info_index].flags[Ship::Info_Flags::Disable_weapon_damage_scaling])
 	) {
 		ship_info *sip;
 
@@ -6857,7 +6857,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		hull_pct = get_hull_pct(target);
 
 		// if it has hit a supercap ship and is not a supercap class weapon
-		if((sip->flags & SIF_SUPERCAP) && !(wip->wi_flags & WIF_SUPERCAP)){
+		if((sip->flags[Ship::Info_Flags::Supercap]) && !(wip->wi_flags & WIF_SUPERCAP)){
 			// if the supercap is around 3/4 damage, apply nothing
 			if(hull_pct <= 0.75f){
 				return 0.0f;
@@ -6867,7 +6867,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		}
 
 		// determine if this is a big damage ship
-		is_big_damage_ship = (sip->flags & SIF_BIG_DAMAGE);
+		is_big_damage_ship = (sip->flags[Ship::Info_Flags::Big_damage]);
 
 		// if this is a large ship, and is being hit by flak
 		if(is_big_damage_ship && (wip->wi_flags & WIF_FLAK)){

@@ -276,5 +276,15 @@ namespace Ship {
 		NUM_VALUES
 	};
 	typedef flagset<Wing_Flags> wing_flags;
+
+	FLAG_LIST(Subsys_Sound_Flags) {
+		Alive,
+		Dead,
+		Rotate,
+		Turret_Rotation,
+
+		NUM_VALUES
+	};
+	typedef flagset<Subsys_Sound_Flags> subsys_sound_flags;
 }
 #endif

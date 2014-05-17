@@ -505,7 +505,7 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 {
 	// if moving slowly (or stopped), and SIF_SMALL_SHIP, then enter STRAFE mode if enemy fighter/bombers
 	// are near
-	if ( sip->flags & SIF_SMALL_SHIP ) {
+	if ( is_small_ship(sip) ) {
 		if ( timestamp_elapsed(aip->scan_for_enemy_timestamp) ) {
 			ship_obj	*so;
 			object	*test_objp;
@@ -635,7 +635,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 				accelerate_ship(aip, 1.0f);
 				
 				ship	*shipp = &Ships[Pl_objp->instance];
-				if ((aip->ai_flags & AIF_FREE_AFTERBURNER_USE) && !(shipp->flags2 & SF2_AFTERBURNER_LOCKED) && (dot_to_enemy > 0.75f)) {
+				if ((aip->ai_flags & AIF_FREE_AFTERBURNER_USE) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (dot_to_enemy > 0.75f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
 						aip->afterburner_stop_time = Missiontime + 3*F1_0;
@@ -677,7 +677,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 				accelerate_ship(aip, accel);
 
 				ship	*shipp = &Ships[Pl_objp->instance];
-				if ((aip->ai_flags & AIF_FREE_AFTERBURNER_USE) && !(shipp->flags2 & SF2_AFTERBURNER_LOCKED) && (accel > 0.95f)) {
+				if ((aip->ai_flags & AIF_FREE_AFTERBURNER_USE) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
 						aip->afterburner_stop_time = Missiontime + 3*F1_0;

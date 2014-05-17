@@ -373,7 +373,7 @@ void mission_campaign_get_sw_info()
 	// set allowable ships to the SIF_PLAYER_SHIPs
 	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
 	for (i = 0; i < Num_ship_classes; i++ ) {
-		if ( Ship_info[i].flags & SIF_PLAYER_SHIP )
+		if ( Ship_info[i].flags[Ship::Info_Flags::Player_ship] )
 			Campaign.ships_allowed[i] = 1;
 	}
 
@@ -388,7 +388,7 @@ void mission_campaign_get_sw_info()
 
 		// now set the array elements stating which ships we are allowed
 		for (i = 0; i < count; i++ ) {
-			if ( Ship_info[ship_list[i]].flags & SIF_PLAYER_SHIP )
+			if ( Ship_info[ship_list[i]].flags[Ship::Info_Flags::Player_ship] )
 				Campaign.ships_allowed[ship_list[i]] = 1;
 		}
 	}

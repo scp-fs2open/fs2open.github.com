@@ -697,6 +697,12 @@ public:
 	void reset() { values.reset(); }
 	void reset(T idx) { values.reset(static_cast < typename std::underlying_type<T>::type>(idx)); }
 	void set(T idx, bool value = true) { values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); }
+	void from_string(SCP_string string) { 
+		for (size_t i = 0; i < string.length(); ++i) {
+			values[i] = string[i] == '1' ? true : false;
+		}
+	}
+	SCP_string to_string() { return values.to_string<char, std::char_traits<char>, SCP_vm_allocator<char>>(); }
 };
 
 #define FLAG_LIST(Type) enum class Type : size_t

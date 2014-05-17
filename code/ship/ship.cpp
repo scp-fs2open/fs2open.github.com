@@ -363,22 +363,22 @@ flag_def_list ai_tgt_weapon_flags[] = {
 //	Constant for flag,				Name of flag,				In flags or flags2
 //  When adding new flags remember to bump MAX_SHIP_FLAG_NAMES in ship.h
 ship_flag_name Ship_flag_names[] = {
-	{SF_VAPORIZE,					"vaporize",						1,	},
-	{SF_WARP_BROKEN,				"break-warp",					1,	},
-	{SF_WARP_NEVER,					"never-warp",					1,	},
-	{SF_SCANNABLE,					"scannable",					1,	},
-	{SF_CARGO_REVEALED,				"cargo-known",					1,	},
-	{SF_HIDDEN_FROM_SENSORS,		"hidden-from-sensors",			1,	},
-	{SF2_STEALTH,					"stealth",						2,	},
-	{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
-	{SF2_HIDE_SHIP_NAME,			"hide-ship-name",				2,	},
-	{SF2_AFTERBURNER_LOCKED,		"afterburners-locked",			2,	},
-	{SF2_PRIMARIES_LOCKED,			"primaries-locked",				2,	},
-	{SF2_SECONDARIES_LOCKED,		"secondaries-locked",			2,	},
-	{SF2_NO_SUBSPACE_DRIVE,			"no-subspace-drive",			2,	},
-	{SF2_DONT_COLLIDE_INVIS,		"don't-collide-invisible",		2,	},
-	{SF2_NO_ETS,					"no-ets",						2,	},
-	{SF2_TOGGLE_SUBSYSTEM_SCANNING,	"toggle-subsystem-scanning",	2,	},
+	{ Ship_Flags::Vaporize,						"vaporize" },
+	{ Ship_Flags::Warp_broken,					"break-warp" },
+	{ Ship_Flags::Warp_never,					"never-warp" },
+	{ Ship_Flags::Scannable,					"scannable" },
+	{ Ship_Flags::Cargo_revealed,				"cargo-known" },
+	{ Ship_Flags::Hidden_from_sensors,			"hidden-from-sensors" },
+	{ Ship_Flags::Stealth,						"stealth" },
+	{ Ship_Flags::Friendly_stealth_invis,		"friendly-stealth-invisible" },
+	{ Ship_Flags::Hide_ship_name,				"hide-ship-name" },
+	{ Ship_Flags::Afterburner_locked,			"afterburners-locked" },
+	{ Ship_Flags::Primaries_locked,				"primaries-locked" },
+	{ Ship_Flags::Secondaries_locked,			"secondaries-locked" },
+	{ Ship_Flags::No_subspace_drive,			"no-subspace-drive" },
+	{ Ship_Flags::Dont_collide_invis,			"don't-collide-invisible" },
+	{ Ship_Flags::No_ets,						"no-ets" },
+	{ Ship_Flags::Toggle_subsystem_scanning,	"toggle-subsystem-scanning" },
 };
 
 const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
@@ -5385,57 +5385,57 @@ void ship_recalc_subsys_strength( ship *shipp )
 		//if a subsystem is brought back from the dead, other than this
 		if(ship_system->current_hits > 0.0f)
 		{
-			if(ship_system->subsys_snd_flags & SSSF_DEAD)
+			if(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead])
 			{
 				obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
-				ship_system->subsys_snd_flags &= ~SSSF_DEAD;
+				ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
 			}
-			if((ship_system->system_info->alive_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ALIVE))
+			if((ship_system->system_info->alive_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
 			{
 				obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ALIVE, ship_system);
-				ship_system->subsys_snd_flags |= SSSF_ALIVE;
+				ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
 			}
-			if(!(ship_system->subsys_snd_flags & SSSF_TURRET_ROTATION))
+			if(!(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_Rotation]))
 			{
 				if(ship_system->system_info->turret_base_rotation_snd != -1)
 				{
 					obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, ship_system);
-					ship_system->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+					ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_Rotation);
 				}
 				if(ship_system->system_info->turret_gun_rotation_snd != -1)
 				{
 					obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, ship_system);
-					ship_system->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+					ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_Rotation);
 				}
 			}
-			if((ship_system->flags[Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ROTATE))
+			if((ship_system->flags[Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
 			{
 				obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ROTATION, ship_system);
-				ship_system->subsys_snd_flags |= SSSF_ROTATE;
+				ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
 			}
 		}
 		else
 		{
-			if(ship_system->subsys_snd_flags & SSSF_ALIVE)
+			if(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive])
 			{
 				obj_snd_delete_type(shipp->objnum, ship_system->system_info->alive_snd, ship_system);
-				ship_system->subsys_snd_flags &= ~SSSF_ALIVE;
+				ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive, false);;
 			}
-			if(ship_system->subsys_snd_flags & SSSF_TURRET_ROTATION)
+			if(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_Rotation])
 			{
 				obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, ship_system);
 				obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, ship_system);
-				ship_system->subsys_snd_flags &= ~SSSF_TURRET_ROTATION;
+				ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_Rotation, false);
 			}
-			if(ship_system->subsys_snd_flags & SSSF_ROTATE)
+			if(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
 			{
 				obj_snd_delete_type(shipp->objnum, ship_system->system_info->rotation_snd, ship_system);
-				ship_system->subsys_snd_flags &= ~SSSF_ROTATE;
+				ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate, false);
 			}
-			if((ship_system->system_info->dead_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_DEAD))
+			if((ship_system->system_info->dead_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
 			{
 				obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_DEAD, ship_system);
-				ship_system->subsys_snd_flags |= SSSF_DEAD;
+				ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
 			}
 		}
 	}
@@ -5559,7 +5559,7 @@ void ship_subsys::clear()
 	base_rotation_rate_pct = 0.0f;
 	gun_rotation_rate_pct = 0.0f;
 
-	subsys_snd_flags = 0;
+	subsys_snd_flags.reset();
 
 	rotation_timestamp = timestamp(0);
 
@@ -5641,7 +5641,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// zero flags
 		ship_system->flags.reset();
 		ship_system->weapons.flags.reset();
-		ship_system->subsys_snd_flags = 0;
+		ship_system->subsys_snd_flags.reset();
 
 		// Goober5000
 		if (model_system->flags & MSS_FLAG_UNTARGETABLE)
@@ -13583,22 +13583,22 @@ void ship_assign_sound(ship *sp)
 			if(moveup->system_info->alive_snd != -1)
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->alive_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ALIVE, moveup);
-				moveup->subsys_snd_flags |= SSSF_ALIVE;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
 			}
 			if(moveup->system_info->turret_base_rotation_snd != -1)
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->turret_base_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, moveup);
-				moveup->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_Rotation);
 			}
 			if(moveup->system_info->turret_gun_rotation_snd != -1)
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->turret_gun_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, moveup);
-				moveup->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_Rotation);
 			}
 			if ((moveup->system_info->rotation_snd != -1) && (moveup->flags[Subsystem_Flags::Rotates]))
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->rotation_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ROTATION, moveup);
-				moveup->subsys_snd_flags |= SSSF_ROTATE;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
 			}
 		} 
 		else 
@@ -13606,7 +13606,7 @@ void ship_assign_sound(ship *sp)
 			if(moveup->system_info->dead_snd != -1)
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->dead_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_DEAD, moveup);
-				moveup->subsys_snd_flags |= SSSF_DEAD;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead);
 			}
 		}
 
@@ -14759,7 +14759,7 @@ void ship_check_cargo_all()
 		if ( (Ship_info[cargo_sp->ship_info_index].flags & SIF_CARGO) && (cargo_sp->team != Player_ship->team) ) {
 			
 			// If the cargo is revealed, continue on to next hostile cargo
-			if ( cargo_sp->flags & SF_CARGO_REVEALED ) {
+			if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
 				goto next_cargo;
 			}
 
@@ -15400,7 +15400,7 @@ void ship_primary_changed(ship *sp)
 	Assert(sp);
 
 	if ( MULTIPLAYER_MASTER )
-		send_ship_weapon_change( sp, MULTI_PRIMARY_CHANGED, swp->current_primary_bank, (sp->flags & SF_PRIMARY_LINKED)?1:0 );
+		send_ship_weapon_change( sp, MULTI_PRIMARY_CHANGED, swp->current_primary_bank, (sp->flags[Ship::Ship_Flags::Primary_linked])?1:0 );
 #endif
 }
 
@@ -15446,7 +15446,7 @@ void ship_secondary_changed(ship *sp)
 	Assert(sp);
 
 	if ( MULTIPLAYER_MASTER )
-		send_ship_weapon_change( sp, MULTI_SECONDARY_CHANGED, swp->current_secondary_bank, (sp->flags & SF_SECONDARY_DUAL_FIRE)?1:0 );
+		send_ship_weapon_change( sp, MULTI_SECONDARY_CHANGED, swp->current_secondary_bank, (sp->flags[Ship::Ship_Flags::Secondary_dual_fire])?1:0 );
 #endif
 }
 

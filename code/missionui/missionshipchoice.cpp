@@ -1529,10 +1529,10 @@ void ship_select_do(float frametime)
 		{
 			ship_info *sip = &Ship_info[Selected_ss_class];
 			float rev_rate = REVOLUTION_RATE;
-			if (sip->flags & SIF_BIG_SHIP) {
+			if (is_big_ship(sip)) {
 				rev_rate *= 1.7f;
 			}
-			if (sip->flags & SIF_HUGE_SHIP) {
+			if (is_huge_ship(sip)) {
 				rev_rate *= 3.0f;
 			}
 
@@ -3062,10 +3062,10 @@ void ss_init_units()
 			// going to be able to modify that ship.
 			if ( ss_slot->sa_index == -1 ) {
 				int objnum;
-				if ( Ships[wp->ship_index[j]].flags2 & SF2_SHIP_LOCKED ) {
+				if ( Ships[wp->ship_index[j]].flags[Ship::Ship_Flags::Ship_locked] ) {
 					ss_slot->status |= WING_SLOT_SHIPS_DISABLED;
 				} 
-				if ( Ships[wp->ship_index[j]].flags2 & SF2_WEAPONS_LOCKED ) {
+				if ( Ships[wp->ship_index[j]].flags[Ship::Ship_Flags::Weapons_locked] ) {
 					ss_slot->status |= WING_SLOT_WEAPONS_DISABLED;
 				}  
 

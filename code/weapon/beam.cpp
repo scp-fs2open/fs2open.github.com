@@ -411,7 +411,7 @@ int beam_fire(beam_fire_info *fire_info)
 			ship *target_ship = &Ships[fire_info->target->instance];
 			
 			// maybe force to be a type A
-			if(Ship_info[target_ship->ship_info_index].class_type > -1 && (Ship_types[Ship_info[target_ship->ship_info_index].class_type].weapon_bools & STI_WEAP_BEAMS_EASILY_HIT)){
+			if(Ship_info[target_ship->ship_info_index].class_type > -1 && (Ship_types[Ship_info[target_ship->ship_info_index].class_type].weapon_bools[Ship::Type_Info_Weapon::Beams_easily_hit])){
 				new_item->type = BEAM_TYPE_A;
 			}
 		}
@@ -2062,7 +2062,7 @@ void beam_aim(beam *b)
 		}
 
 		// if we're shooting at a big ship - shoot directly at the model
-		if((b->target != NULL) && (b->target->type == OBJ_SHIP) && (Ship_info[Ships[b->target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))){
+		if ((b->target != NULL) && (b->target->type == OBJ_SHIP) && (is_big_ship(&Ship_info[Ships[b->target->instance].ship_info_index]) || is_huge_ship(&Ship_info[Ships[b->target->instance].ship_info_index]))){
 			// rotate into world coords
 			vm_vec_unrotate(&temp, &b->binfo.dir_a, &b->target->orient);
 			vm_vec_add2(&temp, &b->target->pos);
@@ -2321,11 +2321,11 @@ int beam_collide_ship(obj_pair *pair)
 		// pick out the shield quadrant
 		if (shield_collision)
 			quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
-		else if (hull_enter_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
+		else if (hull_enter_collision && (sip->flags[Ship::Info_Flags::Surface_shields]))
 			quadrant_num = get_quadrant(&mc_hull_enter.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
-		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
+		if ((quadrant_num >= 0) && ((shipp->flags[Ship::Ship_Flags::Dying]) || !ship_is_shield_up(ship_objp, quadrant_num)))
 			quadrant_num = -1;
 
 		// see if we hit the shield
@@ -2871,7 +2871,7 @@ void beam_handle_collisions(beam *b)
 			if (Objects[target].type == OBJ_SHIP) {
 				ship_type_info *sti;
 				sti = ship_get_type_info(&Objects[target]);
-				if (sti->weapon_bools & STI_WEAP_NO_HUGE_IMPACT_EFF)
+				if (sti->weapon_bools[Ship::Type_Info_Weapon::No_huge_impact_eff])
 					draw_effects = 0;
 			}
 		}
@@ -3163,7 +3163,7 @@ void beam_get_cull_vals(object *objp, beam *b, float *cull_dot, float *cull_dist
 
 	case OBJ_SHIP:
 		// for large ships, cull at some multiple of the radius
-		if(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
+		if (is_big_ship(&Ship_info[Ships[objp->instance].ship_info_index]) || is_huge_ship(&Ship_info[Ships[objp->instance].ship_info_index])){
 			*cull_dot = 1.0f - ((1.0f - beam_get_cone_dot(b)) * 1.25f);
 			
 			*cull_dist = (objp->radius * 1.3f) * (objp->radius * 1.3f);

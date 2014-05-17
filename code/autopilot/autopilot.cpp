@@ -248,7 +248,7 @@ bool StartAutopilot()
 				shipp->ship_name, shipp->ship_info_index, MAX_SHIP_CLASSES);
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-			if ( !(sip->flags & SIF_SUPPORT) )
+			if ( !(sip->flags[Ship::Info_Flags::Support]) )
 				continue;
 
 			// don't deal with dying or departing support ships

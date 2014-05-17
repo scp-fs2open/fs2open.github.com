@@ -379,7 +379,7 @@ public:
 	float gun_rotation_rate_pct;
 
 	// still going through these...
-	int subsys_snd_flags;
+	Ship::subsys_sound_flags subsys_snd_flags;
 
 	int      rotation_timestamp;
 	matrix   world_to_turret_matrix;
@@ -420,9 +420,8 @@ typedef struct ship_subsys_info {
 
 // Karajorma - Used by the alter-ship-flag SEXP as an alternative to having lots of ship flag SEXPs
 typedef struct ship_flag_name {
-	int flag;							// the actual ship flag constant as given by the define below
+	Ship::Ship_Flags flag;							// the actual ship flag constant as given by the define below
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
-	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
 #define MAX_SHIP_FLAG_NAMES					16
@@ -506,69 +505,6 @@ extern ship_flag_name Ship_flag_names[];
 #define SF2_WEAPONS_LOCKED					(1<<25)		// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
 #define SF2_SHIP_SELECTIVE_LINKING			(1<<26)		// RSAXVC - Allow pilot to pick firing configuration
 #define SF2_SCRAMBLE_MESSAGES				(1<<27)		// Goober5000 - all messages sent from this ship appear scrambled
-
-enum Ship_Flags {
-	IGNORE_COUNT = 0,			// ignore this ship when counting ship types for goals
-	REINFORCEMENT,				// this ship is a reinforcement ship
-	ESCORT,						// this ship is an escort ship
-	NO_ARRIVAL_MUSIC,			// don't play arrival music when ship arrives
-	NO_ARRIVAL_WARP,			// no arrival warp in effect
-	NO_DEPARTURE_WARP,			// no departure warp in effect
-	KILL_BEFORE_MISSION,
-	DYING,
-	DISABLED,
-	DEPART_WARP,				// ship is departing via warp-out
-	DEPART_DOCKBAY,				// ship is departing via docking bay
-	ARRIVING_STAGE_1,			// ship is arriving. In other words, doing warp in effect, stage 1
-	ARRIVING_STAGE_2,			// ship is arriving. In other words, doing warp in effect, stage 2             
-	ENGINES_ON,					// engines sound should play if set
-	DOCK_LEADER,				// Goober5000 - this guy is in charge of everybody he's docked to
-	CARGO_REVEALED,				// ship's cargo is revealed to all friendly ships
-	FROM_PLAYER_WING,			// set for ships that are members of any player starting wing
-	PRIMARY_LINKED,				// ships primary weapons are linked together
-	SECONDARY_DUAL_FIRE,		// ship is firing two missiles from the current secondary bank
-	WARP_BROKEN,				// set when warp drive is not working, but is repairable
-	WARP_NEVER,					// set when ship can never warp
-	TRIGGER_DOWN,				// ship has its "trigger" held down
-	AMMO_COUNT_RECORDED,		// we've recorded the initial secondary weapon count (which is used to limit support ship rearming)
-	HIDDEN_FROM_SENSORS,		// ship doesn't show up on sensors, blinks in/out on radar
-	SCANNABLE,					// ship is "scannable".  Play scan effect and report as "Scanned" or "not scanned".
-	WARPED_SUPPORT,				// set when this is a support ship which was warped in automatically
-	EXPLODED,					// ship has exploded (needed for kill messages)
-	SHIP_HAS_SCREAMED,			// ship has let out a death scream
-	RED_ALERT_STORE_STATUS,		// ship status should be stored/restored if red alert mission
-	VAPORIZE,					// ship is vaporized by beam - alternative death sequence
-	DEPARTURE_ORDERED,			// departure of this ship was ordered by player - Goober5000, similar to WF_DEPARTURE_ORDERED
-	PRIMITIVE_SENSORS,			// Goober5000 - primitive sensor display
-	FRIENDLY_STEALTH_INVIS,		// Goober5000 - when stealth, don't appear on radar even if friendly
-	STEALTH,					// Goober5000 - is this particular ship stealth
-	DONT_COLLIDE_INVIS,			// Goober5000 - is this particular ship don't-collide-invisible
-	NO_SUBSPACE_DRIVE,			// Goober5000 - this ship has no subspace drive
-	NAVPOINT_CARRY,				// Kazan      - This ship autopilots with the player
-	AFFECTED_BY_GRAVITY,		// Goober5000 - ship affected by gravity points
-	TOGGLE_SUBSYSTEM_SCANNING,	// Goober5000 - switch whether subsystems are scanned
-	NO_BUILTIN_MESSAGES,		// Karajorma - ship should not send built-in messages
-	PRIMARIES_LOCKED,			// Karajorma - This ship can't fire primary weapons
-	SECONDARIES_LOCKED,			// Karajorma - This ship can't fire secondary weapons
-	GLOWMAPS_DISABLED,			// taylor - to disable glow maps
-	NO_DEATH_SCREAM,			// Goober5000 - for WCS
-	ALWAYS_DEATH_SCREAM,		// Goober5000 - for WCS
-	NAVPOINT_NEEDSLINK,			// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance NAVPOINT_NEEDSLINK is replaced by NAVPOINT_CARRY)
-	HIDE_SHIP_NAME,				// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
-	AFTERBURNER_LOCKED,			// KeldorKatarn - This ship can't use its afterburners
-	SET_CLASS_DYNAMICALLY,		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
-	LOCK_ALL_TURRETS_INITIALLY,	// Karajorma - Lock all turrets on this ship at mission start or on arrival
-	FORCE_SHIELDS_ON,				
-	NO_ETS,						// The E - This ship does not have an ETS
-	CLOAKED,					// The E - This ship will not be rendered
-	NO_THRUSTERS,				// The E - Thrusters on this ship are not rendered.
-	SHIP_LOCKED,				// Karajorma - Prevents the player from changing the ship class on loadout screen
-	WEAPONS_LOCKED,				// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
-	SHIP_SELECTIVE_LINKING,		// RSAXVC - Allow pilot to pick firing configuration
-	SCRAMBLE_MESSAGES,			// Goober5000 - all messages sent from this ship appear scrambled
-
-	N_SHIP_FLAGS				// The E - Needs to be last
-};
 
 #define IS_SHIP_ARRIVING(shipp) (shipp->flagset[Ship_Flags::ARRIVING_STAGE_1] || shipp->flagset[Ship_Flags::ARRIVING_STAGE_2])
 #define IS_SHIP_DEPARTING(shipp) (shipp->flagset[Ship_Flags::DEPART_WARP] || shipp->flagset[Ship_Flags::DEPART_DOCKBAY])
@@ -2085,6 +2021,9 @@ inline bool is_big_ship(ship_info* sip) { return sip->flags[Ship::Info_Flags::Cr
 inline bool is_huge_ship(ship_info* sip) { return sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Supercap] || sip->flags[Ship::Info_Flags::Drydock] || sip->flags[Ship::Info_Flags::Knossos_device]; }
 inline bool is_flyable(ship_info* sip) { return !(sip->flags[Ship::Info_Flags::Cargo] || sip->flags[Ship::Info_Flags::Navbuoy] || sip->flags[Ship::Info_Flags::Escapepod]); }
 inline bool is_harmless(ship_info* sip) { return !is_flyable(sip); }
+inline bool is_fighter_bomber(ship_info* sip) { return sip->flags[Ship::Info_Flags::Fighter] || sip->flags[Ship::Info_Flags::Bomber]; }
+inline bool is_big_huge(ship_info* sip) { return is_big_ship(sip) || is_huge_ship(sip); }
+inline bool ship_cannot_warp(ship* shipp) { return shipp->flags[Ship::Ship_Flags::Warp_broken] || shipp->flags[Ship::Ship_Flags::Warp_never] || shipp->flags[Ship::Ship_Flags::Disabled]; }
 
 inline bool should_be_ignored(ship* shipp) {
 	return shipp->flags[Ship::Ship_Flags::Exploded] || shipp->flags[Ship::Ship_Flags::Depart_warp] || shipp->flags[Ship::Ship_Flags::Dying] || shipp->flags[Ship::Ship_Flags::Arriving_stage_1] || shipp->flags[Ship::Ship_Flags::Hidden_from_sensors];

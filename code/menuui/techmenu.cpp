@@ -559,7 +559,7 @@ void techroom_ships_render(float frametime)
 
 	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 				render_flags |= MR_NO_LIGHTING;
 
 	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, render_flags);
@@ -1421,12 +1421,12 @@ void tech_reset_to_default()
 	for (i=0; i<Num_ship_classes; i++)
 	{
 		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;
+			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
 		else
 			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE;
 
 		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE_M)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE_M;
+			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database)_M;
 		else
 			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE_M;
 	}

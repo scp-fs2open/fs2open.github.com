@@ -1329,7 +1329,7 @@ void message_queue_process()
 
 			// see if the ship sending this message is dying.  If do, kill wave and anim
 			if ( Playing_messages[i].shipnum != -1 ) {
-				if ( (Ships[Playing_messages[i].shipnum].flags & SF_DYING) && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) ) {
+				if ( (Ships[Playing_messages[i].shipnum].flags[Ship::Ship_Flags::Dying]) && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) ) {
 					int shipnum;
 
 					shipnum = Playing_messages[i].shipnum;
