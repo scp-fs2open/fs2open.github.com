@@ -662,7 +662,7 @@ void labviewer_add_model_thrusters(ship_info *sip)
 
 	//	Add noise to thruster geometry.
 	if ( Lab_mode == LAB_MODE_SHIP ) {
-		if (!(sip->flags2 & SIF2_NO_THRUSTER_GEO_NOISE)) {
+		if (!(sip->flags[Ship::Info_Flags::No_thruster_geo_noise])) {
 			mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
 			mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
 			mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
@@ -721,9 +721,9 @@ void labviewer_render_model(float frametime)
 	rev_rate = REVOLUTION_RATE;
 
 	if (sip != NULL) {
-		if (sip->flags & SIF_BIG_SHIP) {
+		if (is_big_ship(sip)) {
 			rev_rate *= 1.7f;
-		} else if (sip->flags & SIF_HUGE_SHIP) {
+		} else if (is_huge_ship(sip)) {
 			rev_rate *= 3.0f;
 		}
 

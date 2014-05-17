@@ -2460,7 +2460,7 @@ int CFREDView::global_error_check()
 
 			if (ptr->type == OBJ_START) {
 				t++;
-				if (!(Ship_info[z].flags & SIF_PLAYER_SHIP)) {
+				if (!(Ship_info[z].flags[Ship::Info_Flags::Player_ship])) {
 					ptr->type = OBJ_SHIP;
 					Player_starts--;
 					t--;
@@ -2950,7 +2950,7 @@ int CFREDView::global_error_check()
 		starting_wing = (ship_starting_wing_lookup(Wings[i].name) != -1);
 
 		// first, be sure this isn't a reinforcement wing.
-		if ( starting_wing && (Wings[i].flags & WF_REINFORCEMENT) ) {
+		if ( starting_wing && (Wings[i].flags[Ship::Wing_Flags::Reinforcement]) ) {
 			if ( error("Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.", Wings[i].name) ){
 // Goober5000				return 1;
 			}

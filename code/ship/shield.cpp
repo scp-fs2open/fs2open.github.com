@@ -413,7 +413,7 @@ void render_shield(int shield_num)
 	// objp, shipp, and si are now setup correctly
 
 	//	If this ship is in its deathroll, make the shield hit effects go away faster.
-	if (shipp->flags & SF_DYING)	{
+	if (shipp->flags[Ship::Ship_Flags::Dying])	{
 		Shield_hits[shield_num].start_time -= fl2f(2*flFrametime);
 	}
 
@@ -983,7 +983,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 //	Note: This is in the object's local reference frame.  Do _not_ pass a vector in the world frame.
 int get_quadrant(vec3d *hit_pnt, object *shipobjp)
 {
-	if (shipobjp != NULL && Ship_info[Ships[shipobjp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) {
+	if (shipobjp != NULL && Ship_info[Ships[shipobjp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]) {
 		int closest = -1;
 		float closest_dist = FLT_MAX;
 

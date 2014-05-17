@@ -994,7 +994,7 @@ void briefing_editor_dlg::OnMakeIcon()
 				team = Ships[ship].team;
 
 				z = ship_query_general_type(ship);
-				if (Ship_info[Ships[ship].ship_info_index].flags & SIF_CARGO)
+				if (Ship_info[Ships[ship].ship_info_index].flags[Ship::Info_Flags::Cargo])
 					cargo_count++;
 
 				if (Ship_info[Ships[ship].ship_info_index].flags & SIF_FREIGHTER)
@@ -1004,7 +1004,7 @@ void briefing_editor_dlg::OnMakeIcon()
 					{
 						if (dock_ptr->docked_objp->flags & OF_MARKED)
 						{
-							if (Ship_info[Ships[dock_ptr->docked_objp->instance].ship_info_index].flags & SIF_CARGO)
+							if (Ship_info[Ships[dock_ptr->docked_objp->instance].ship_info_index].flags[Ship::Info_Flags::Cargo])
 								freighter_count++;
 						}
 					}
@@ -1129,7 +1129,7 @@ void briefing_editor_dlg::OnMakeIcon()
 		iconp->ship_class = -1;
 		for (int i = 0; i < Num_ship_classes; i++)
 		{
-			if (Ship_info[i].flags & SIF_NAVBUOY)
+			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
 			{
 				iconp->ship_class = i;
 				break;
@@ -1143,7 +1143,7 @@ void briefing_editor_dlg::OnMakeIcon()
 		iconp->ship_class = -1;
 		for (int i = 0; i < Num_ship_classes; i++)
 		{
-			if (Ship_info[i].flags & SIF_NAVBUOY)
+			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
 			{
 				iconp->ship_class = i;
 				break;

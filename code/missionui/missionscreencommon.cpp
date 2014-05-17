@@ -1513,11 +1513,11 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		//Assume it's a weapon
 		rot_angles.h = -(PI_2);
 	}
-	else if(sip->flags & SIF_SMALL_SHIP)
+	else if(is_small_ship(sip))
 	{
 		rot_angles.p = -(PI_2);
 	}
-	else if((sip->max_speed <= 0.0f) && !(sip->flags & SIF_CARGO))
+	else if((sip->max_speed <= 0.0f) && !(sip->flags[Ship::Info_Flags::Cargo]))
 	{
 		//Probably an installation or Knossos
 		rot_angles.h = PI;

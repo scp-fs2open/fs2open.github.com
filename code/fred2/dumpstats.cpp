@@ -432,7 +432,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	buffer += "\r\nESCORT\r\n";
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( (objp->type == OBJ_SHIP) || (objp->type == OBJ_START) ) {
-			if (Ships[objp->instance].flags & SF_ESCORT) {
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Escort]) {
 				temp.Format("\tShip name: %s, priority: %d\r\n", Ships[objp->instance].ship_name, Ships[objp->instance].escort_priority);
 				buffer += temp;
 			}
@@ -603,7 +603,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 			if (Wings[i].wave_count > 0) {
 				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
-					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags & SIF_BOMBER) {
+					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Bomber]) {
 						temp.Format("\t\tWing: %s, count: %d, waves: %d, type: %s\r\n", Wings[i].name, Wings[i].wave_count, Wings[i].num_waves, Ship_info[Ships[wing_leader_shipnum].ship_info_index].name);
 						buffer += temp;
 					}
@@ -786,7 +786,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 			if (Wings[i].wave_count > 0) {
 				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
-					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags & SIF_BOMBER) {
+					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Bomber]) {
 						temp.Format("\t\tWing: %s\r\n", Wings[i].name);
 						buffer += temp;
 						dump_loadout(&Ships[wing_leader_shipnum], loadout);

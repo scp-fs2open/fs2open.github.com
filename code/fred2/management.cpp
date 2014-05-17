@@ -554,7 +554,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 		{
 			// if this ship is not a small ship, then make the orders be the default orders without
 			// the depart item
-			if (!(sip->flags & SIF_SMALL_SHIP))
+			if (!(is_small_ship(sip)))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 				shipp->orders_accepted &= ~DEPART_ITEM;
@@ -1741,7 +1741,7 @@ int set_reinforcement(char *name, int state)
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags &= ~WF_REINFORCEMENT;
+				Wings[index].flags.unset(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if (index == -1 ){
@@ -1764,11 +1764,11 @@ int set_reinforcement(char *name, int state)
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags |= SF_REINFORCEMENT;
+			Ships[index].flags.set(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags |= WF_REINFORCEMENT;
+				Wings[index].flags.set(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if ( index == -1 ){
@@ -1784,11 +1784,11 @@ int set_reinforcement(char *name, int state)
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags |= SF_REINFORCEMENT;
+			Ships[index].flags.set(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags |= WF_REINFORCEMENT;
+				Wings[index].flags.set(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if ( index == -1 ){

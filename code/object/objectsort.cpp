@@ -253,7 +253,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		//This is for ship cockpits. Bobb, feel free to optimize this any way you see fit
 		if ( (obj == Viewer_obj)
 			&& (obj->type == OBJ_SHIP)
-			&& (Ship_info[Ships[obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL)
+			&& (Ship_info[Ships[obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
 			&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)) )
 		{
 			(*draw_viewer_last) = true;

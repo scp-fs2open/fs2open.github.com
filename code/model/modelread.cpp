@@ -4565,6 +4565,12 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 
 
 // Sets the submodel instance data in a submodel (for all detail levels)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii) 
+{
+	Ship::subsystem_flags flags;
+	flags.reset();
+	model_set_instance(model_num, sub_model_num, sii, flags);
+}
 void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, Ship::subsystem_flags flags)
 {
 	int i;

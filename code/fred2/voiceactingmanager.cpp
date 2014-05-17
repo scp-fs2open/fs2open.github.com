@@ -566,7 +566,7 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, MMes
 			hud_stuff_ship_callsign(sender, shipp);
 		}
 		// account for hidden ship names
-		else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) )
+		else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) )
 		{
 			hud_stuff_ship_class(sender, shipp);
 		}

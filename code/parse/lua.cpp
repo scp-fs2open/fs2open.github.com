@@ -5999,9 +5999,9 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 		return ade_set_error(L, "b", false);
 
 	bool b = false;
-	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags & SIF_IN_TECH_DATABASE_M)) {
+	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags[Ship::Info_Flags::In_tech_database_m])) {
 		b = true;
-	} else if(Ship_info[idx].flags & SIF_IN_TECH_DATABASE) {
+	} else if(Ship_info[idx].flags[Ship::Info_Flags::In_tech_database]) {
 		b = true;
 	}
 
@@ -6072,7 +6072,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 
 	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 		render_flags |= MR_NO_LIGHTING;
 
 	model_render(sip->model_num, &orient, &vmd_zero_vector, render_flags);
@@ -6143,7 +6143,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 
 	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 		render_flags |= MR_NO_LIGHTING;
 
 	model_render(sip->model_num, orient, &vmd_zero_vector, render_flags);
@@ -6758,12 +6758,12 @@ ADE_VIRTVAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or u
 		case SWH_PRIMARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
 				if(newlink)
-					Ships[bh->objp->instance].flags |= SF_PRIMARY_LINKED;
+					Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Primary_linked);
 				else
-					Ships[bh->objp->instance].flags &= ~SF_PRIMARY_LINKED;
+					Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Primary_linked, false);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_PRIMARY_LINKED) > 0);
+			return ade_set_args(L, "b", Ships[bh->objp->instance].flags[Ship::Ship_Flags::Primary_linked]);
 
 		case SWH_SECONDARY:
 		case SWH_TERTIARY:
@@ -6790,12 +6790,12 @@ ADE_VIRTVAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire
 		case SWH_SECONDARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
 				if(newfire)
-					Ships[bh->objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
+					Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				else
-					Ships[bh->objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+					Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire, false);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_SECONDARY_DUAL_FIRE) > 0);
+			return ade_set_args(L, "b", Ships[bh->objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]);
 
 		case SWH_PRIMARY:
 		case SWH_TERTIARY:
@@ -7242,12 +7242,12 @@ ADE_VIRTVAR(Targetable, l_Subsystem, "boolean", "Targetability of this subsystem
 	if(ADE_SETTING_VAR)
 	{
 		if (!newVal)
-			sso->ss->flags &= ~SSF_UNTARGETABLE;
+			sso->ss->flags.set(Ship::Subsystem_Flags::Untargetable, false);
 		else
-			sso->ss->flags |= SSF_UNTARGETABLE;
+			sso->ss->flags.set(Ship::Subsystem_Flags::Untargetable);
 	}
 
-	return ade_set_args(L, "b", !(sso->ss->flags & SSF_UNTARGETABLE));
+	return ade_set_args(L, "b", !(sso->ss->flags[Ship::Subsystem_Flags::Untargetable]));
 }
 
 ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "number", "The radius or 0 on error")
@@ -7280,13 +7280,13 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 	if(ADE_SETTING_VAR)
 	{
 		if (newVal) {
-			sso->ss->weapons.flags |= SW_FLAG_TURRET_LOCK;
+			sso->ss->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
 		} else {
-			sso->ss->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
+			sso->ss->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock, false);
 		}
 	}
 
-	return ade_set_args(L, "b", (sso->ss->weapons.flags & SW_FLAG_TURRET_LOCK));
+	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]));
 }
 
 ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret may attempt to fire", "number", "Mission time (seconds) or -1 on error")
@@ -7332,8 +7332,8 @@ ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boo
 	if(!sso->IsValid())
 		return ADE_RETURN_NIL;
 
-	if(sso->ss->flags & SSF_HAS_FIRED){
-		sso->ss->flags &= ~SSF_HAS_FIRED;
+	if(sso->ss->flags[Ship::Subsystem_Flags::Has_fired]){
+		sso->ss->flags.set(Ship::Subsystem_Flags::Has_fired, false);
 		return ADE_RETURN_TRUE;}
 	else
 		return ADE_RETURN_FALSE;
@@ -8531,12 +8531,12 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 	if(ADE_SETTING_VAR)
     {
 		if(trig)
-			shipp->flags |= SF_TRIGGER_DOWN;
+			shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 		else
-			shipp->flags &= ~SF_TRIGGER_DOWN;
+			shipp->flags.set(Ship::Ship_Flags::Trigger_down, false);
     }
 
-	if (shipp->flags & SF_TRIGGER_DOWN)
+	if (shipp->flags[Ship::Ship_Flags::Trigger_down])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -8784,13 +8784,13 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 
 	if(ADE_SETTING_VAR)
     {
-		if(set)
-			shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
+		if (set)
+			shipp->flags.set(Ship::Ship_Flags::Affected_by_gravity);
 		else
-			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+			shipp->flags.set(Ship::Ship_Flags::Affected_by_gravity, false);
     }
 
-	if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
+	if (shipp->flags[Ship::Ship_Flags::Affected_by_gravity])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -8815,16 +8815,16 @@ ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boo
 		if(set)
 		{
 			mission_log_add_entry(LOG_SHIP_DISABLED, shipp->ship_name, NULL );
-			shipp->flags |= SF_DISABLED;
+			shipp->flags.set(Ship::Ship_Flags::Disabled);
 		}
 		else
 		{
-			shipp->flags &= ~SF_DISABLED;
+			shipp->flags.set(Ship::Ship_Flags::Disabled, false);
 			ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 		}
 	}
 
-	if (shipp->flags & SF_DISABLED)
+	if (shipp->flags[Ship::Ship_Flags::Disabled])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -8847,15 +8847,15 @@ ADE_VIRTVAR(Stealthed, l_Ship, "boolean", "Stealth status of this ship", "boolea
 	{
 		if(stealthed)
 		{
-			shipp->flags2 &= ~SF2_STEALTH;
+			shipp->flags.set(Ship::Ship_Flags::Stealth, false);
 		}
 		else
 		{
-			shipp->flags2 |= SF2_STEALTH;
+			shipp->flags.set(Ship::Ship_Flags::Stealth);
 		}
 	}
 
-	if (shipp->flags2 & SF2_STEALTH)
+	if (shipp->flags[Ship::Ship_Flags::Stealth])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -8878,15 +8878,15 @@ ADE_VIRTVAR(HiddenFromSensors, l_Ship, "boolean", "Hidden from sensors status of
 	{
 		if(hidden)
 		{
-			shipp->flags &= ~SF_HIDDEN_FROM_SENSORS;
+			shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors, false);
 		}
 		else
 		{
-			shipp->flags |= SF_HIDDEN_FROM_SENSORS;
+			shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
 		}
 	}
 
-	if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+	if (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9048,7 +9048,7 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 
 	ship *shipp = &Ships[shiph->objp->instance];
 
-	if (shipp->flags & SF_DYING) {
+	if (shipp->flags[Ship::Ship_Flags::Dying]) {
 		if (shipp->final_death_time == 0) {
 			return ade_set_args(L, "i", 2);
 		}		
@@ -9523,7 +9523,7 @@ ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace driv
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags & SF2_NO_SUBSPACE_DRIVE){
+	if(shipp->flags[Ship::Ship_Flags::No_subspace_drive]){
 		return ADE_RETURN_FALSE;
 	}
 
@@ -9541,7 +9541,7 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags & SF_ARRIVING_STAGE_1){
+	if(shipp->flags[Ship::Ship_Flags::Arriving_stage_1]){
 		return ADE_RETURN_TRUE;
 	}
 

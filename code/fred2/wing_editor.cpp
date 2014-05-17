@@ -327,7 +327,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_arrival_dist = Wings[cur_wing].arrival_distance;
 		m_arrival_target = Wings[cur_wing].arrival_anchor;
 		m_departure_target = Wings[cur_wing].departure_anchor;
-		m_no_dynamic = (Wings[cur_wing].flags & WF_NO_DYNAMIC)?1:0;
+		m_no_dynamic = (Wings[cur_wing].flags[Ship::Wing_Flags::No_dynamic])?1:0;
 
 		// Add the ships/special items to the combo box here before data is updated
 		if ( m_arrival_location == ARRIVE_FROM_DOCK_BAY ) {
@@ -375,27 +375,27 @@ void wing_editor::initialize_data_safe(int full_update)
 
 		m_departure_tree.load_tree(Wings[cur_wing].departure_cue, "false");
 		m_hotkey = Wings[cur_wing].hotkey+1;
-		if (Wings[cur_wing].flags & WF_IGNORE_COUNT)
+		if (Wings[cur_wing].flags[Ship::Wing_Flags::Ignore_count])
 			m_ignore_count = 1;
 		else
 			m_ignore_count = 0;
 
-		if (Wings[cur_wing].flags & WF_NO_ARRIVAL_MUSIC)
+		if (Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_music])
 			m_no_arrival_music = 1;
 		else
 			m_no_arrival_music = 0;
 
-		if ( Wings[cur_wing].flags & WF_NO_ARRIVAL_MESSAGE )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_message] )
 			m_no_arrival_message = 1;
 		else
 			m_no_arrival_message = 0;
 
-		if ( Wings[cur_wing].flags & WF_NO_ARRIVAL_WARP )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_warp] )
 			m_no_arrival_warp = 1;
 		else
 			m_no_arrival_warp = 0;
 
-		if ( Wings[cur_wing].flags & WF_NO_DEPARTURE_WARP )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_departure_warp] )
 			m_no_departure_warp = 1;
 		else
 			m_no_departure_warp = 0;
@@ -830,66 +830,66 @@ void wing_editor::update_data_safe()
 	hotkey = m_hotkey - 1;
 	MODIFY(Wings[cur_wing].hotkey, hotkey);
 	if ( m_ignore_count ) {
-		if ( !(Wings[cur_wing].flags & WF_IGNORE_COUNT) )
+		if ( !(Wings[cur_wing].flags[Ship::Wing_Flags::Ignore_count]) )
 			set_modified();
-		Wings[cur_wing].flags |= WF_IGNORE_COUNT;
+		Wings[cur_wing].flags.set(Ship::Wing_Flags::Ignore_count);
 
 	} else {
-		if ( Wings[cur_wing].flags & WF_IGNORE_COUNT )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::Ignore_count] )
 			set_modified();
 		Wings[cur_wing].flags &= ~WF_IGNORE_COUNT;
 	}
 
 	if ( m_no_arrival_music ) {
-		if ( !(Wings[cur_wing].flags & WF_NO_ARRIVAL_MUSIC) )
+		if ( !(Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_music]) )
 			set_modified();
-		Wings[cur_wing].flags |= WF_NO_ARRIVAL_MUSIC;
+		Wings[cur_wing].flags.set(Ship::Wing_Flags::No_arrival_music);
 
 	} else {
-		if ( Wings[cur_wing].flags & WF_NO_ARRIVAL_MUSIC )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_music] )
 			set_modified();
 		Wings[cur_wing].flags &= ~WF_NO_ARRIVAL_MUSIC;
 	}
 
 	// check the no message flag
 	if ( m_no_arrival_message ) {
-		if ( !(Wings[cur_wing].flags & WF_NO_ARRIVAL_MESSAGE) )
+		if ( !(Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_message]) )
 			set_modified();
-		Wings[cur_wing].flags |= WF_NO_ARRIVAL_MESSAGE;
+		Wings[cur_wing].flags.set(Ship::Wing_Flags::No_arrival_message);
 
 	} else {
-		if ( Wings[cur_wing].flags & WF_NO_ARRIVAL_MESSAGE )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_message] )
 			set_modified();
 		Wings[cur_wing].flags &= ~WF_NO_ARRIVAL_MESSAGE;
 	}
 
 	// set the no warp effect for wings flag
 	if ( m_no_arrival_warp ) {
-		if ( !(Wings[cur_wing].flags & WF_NO_ARRIVAL_WARP) )
+		if ( !(Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_warp]) )
 			set_modified();
-		Wings[cur_wing].flags |= WF_NO_ARRIVAL_WARP;
+		Wings[cur_wing].flags.set(Ship::Wing_Flags::No_arrival_warp);
 	} else {
-		if ( Wings[cur_wing].flags & WF_NO_ARRIVAL_WARP )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_warp] )
 			set_modified();
 		Wings[cur_wing].flags &= ~WF_NO_ARRIVAL_WARP;
 	}
 	// set the no warp effect for wings flag
 	if ( m_no_departure_warp ) {
-		if ( !(Wings[cur_wing].flags & WF_NO_DEPARTURE_WARP) )
+		if ( !(Wings[cur_wing].flags[Ship::Wing_Flags::No_departure_warp]) )
 			set_modified();
-		Wings[cur_wing].flags |= WF_NO_DEPARTURE_WARP;
+		Wings[cur_wing].flags.set(Ship::Wing_Flags::No_departure_warp);
 	} else {
-		if ( Wings[cur_wing].flags & WF_NO_DEPARTURE_WARP )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_departure_warp] )
 			set_modified();
 		Wings[cur_wing].flags &= ~WF_NO_DEPARTURE_WARP;
 	}
 
 	if ( m_no_dynamic ) {
-		if ( !(Wings[cur_wing].flags & WF_NO_DYNAMIC) )
+		if ( !(Wings[cur_wing].flags[Ship::Wing_Flags::No_dynamic]) )
 			set_modified();
-		Wings[cur_wing].flags |= WF_NO_DYNAMIC;
+		Wings[cur_wing].flags.set(Ship::Wing_Flags::No_dynamic);
 	} else {
-		if ( Wings[cur_wing].flags & WF_NO_DYNAMIC )
+		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_dynamic] )
 			set_modified();
 		Wings[cur_wing].flags &= ~WF_NO_DYNAMIC;
 	}

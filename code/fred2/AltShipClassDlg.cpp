@@ -126,7 +126,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 	count = 0; 
 	for (i=0; i<Num_ship_classes; i++)
 	{
-		if (player_ships_only && !(Ship_info[i].flags & SIF_PLAYER_SHIP)) {
+		if (player_ships_only && !(Ship_info[i].flags[Ship::Info_Flags::Player_ship])) {
 			continue;
 		}
 

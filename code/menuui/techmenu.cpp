@@ -462,7 +462,7 @@ void techroom_ships_render(float frametime)
 	// now render the trackball ship, which is unique to the ships tab
 	float rev_rate = REVOLUTION_RATE;
 	angles rot_angles, view_angles;
-	int z, i, j;
+	int i, j;
 	ship_info *sip = &Ship_info[Cur_entry_index];
 
 	if (sip->uses_team_colors) {
@@ -470,11 +470,10 @@ void techroom_ships_render(float frametime)
 	}
 
 	// get correct revolution rate
-	z = sip->flags;
-	if (z & SIF_BIG_SHIP) {
+	if (is_big_ship(sip)) {
 		rev_rate *= 1.7f;
 	}
-	if (z & SIF_HUGE_SHIP) {
+	if (is_huge_ship(sip)) {
 		rev_rate *= 3.0f;
 	}
 
@@ -559,7 +558,7 @@ void techroom_ships_render(float frametime)
 
 	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 				render_flags |= MR_NO_LIGHTING;
 
 	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, render_flags);
@@ -720,7 +719,8 @@ void techroom_anim_render(float frametime)
 
 void techroom_change_tab(int num)
 {
-	int i, multi = 0, mask, mask2, font_height, max_num_entries_viewable;	
+	int i, multi = 0, font_height, mask, mask2, max_num_entries_viewable;	
+	Ship::Info_Flags si_mask, si_mask2;
 
 	//unload the current animation, we load another one for the new current entry
 	if(Tab != SHIPS_DATA_TAB)
@@ -743,8 +743,8 @@ void techroom_change_tab(int num)
 
 	switch (Tab) {
 		case SHIPS_DATA_TAB:
-			mask = multi ? SIF_IN_TECH_DATABASE_M : SIF_IN_TECH_DATABASE;
-			mask2 = multi ? SIF2_DEFAULT_IN_TECH_DATABASE_M : SIF2_DEFAULT_IN_TECH_DATABASE;
+			si_mask = multi ? Ship::Info_Flags::In_tech_database_m : Ship::Info_Flags::In_tech_database;
+			si_mask2 = multi ? Ship::Info_Flags::Default_in_tech_database_m : Ship::Info_Flags::Default_in_tech_database;
 			
 			// load ship info if necessary
 			if ( Ships_loaded == 0 ) {
@@ -759,7 +759,7 @@ void techroom_change_tab(int num)
 
 				for (i=0; i<Num_ship_classes; i++)
 				{
-					if (Techroom_show_all || (Ship_info[i].flags & mask) || (Ship_info[i].flags2 & mask2))
+					if (Techroom_show_all || (Ship_info[i].flags[si_mask]) || (Ship_info[i].flags[si_mask2]))
 					{
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
@@ -1420,15 +1420,15 @@ void tech_reset_to_default()
 	// ships
 	for (i=0; i<Num_ship_classes; i++)
 	{
-		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;
+		if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database])
+			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
 		else
-			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE;
+			Ship_info[i].flags.set(Ship::Info_Flags::Default_in_tech_database, false);
 
-		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE_M)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE_M;
+		if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database_m])
+			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database_m);
 		else
-			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE_M;
+			Ship_info[i].flags.set(Ship::Info_Flags::Default_in_tech_database_m, false);
 	}
 
 	// weapons

@@ -690,13 +690,31 @@ public:
 
 template <class T, size_t size = static_cast<typename std::underlying_type<T>::type>(T::NUM_VALUES)>
 class flagset {
+protected:
 	SCP_bitset<size> values;
 public:
 	bool operator[](T idx) { return values[(static_cast<typename std::underlying_type<T>::type>(idx))]; };
-	//const bool& operator[](T idx) { return values[static_cast<typename std::underlying_type<T>::type>(idx)]; } const;
+	flagset<T> operator&(flagset<T>& other) { 
+		flagset<T> result; 
+		result.values = this->values & other.values;
+		return result;
+	}
+
+	bool operator==(flagset<T> other) { return this->values == other.values; }
+
+	bool compare(flagset<T> other) { }
 	void reset() { values.reset(); }
-	void reset(T idx) { values.reset(static_cast < typename std::underlying_type<T>::type>(idx)); }
 	void set(T idx, bool value = true) { values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); }
+	void unset(T idx) { set(idx, false); }
+	bool any_set() { return values.any(); }
+	bool none_set() { return values.none(); }
+	
+	void from_string(SCP_string string) { 
+		for (size_t i = 0; i < string.length(); ++i) {
+			values[i] = string[i] == '1' ? true : false;
+		}
+	}
+	SCP_string to_string() { return values.to_string<char, std::char_traits<char>, SCP_vm_allocator<char>>(); }
 };
 
 #define FLAG_LIST(Type) enum class Type : size_t

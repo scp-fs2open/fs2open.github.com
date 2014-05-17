@@ -461,7 +461,7 @@ void debug_cycle_player_ship(int delta)
 			si_index = Num_ship_classes - 1;
 		}
 		sip = &Ship_info[si_index];
-		if ( sip->flags & SIF_PLAYER_SHIP ){
+		if ( sip->flags[Ship::Info_Flags::Player_ship] ){
 			break;
 		}
 
@@ -516,7 +516,7 @@ void debug_cycle_targeted_ship(int delta)
 		if ( strstr(name,NOX("test")) != NULL )
 			continue;
 
-		if ( sip->species == species && (sip->flags & (SIF_FIGHTER | SIF_BOMBER | SIF_TRANSPORT) ) )
+		if ( sip->species == species && (is_fighter_bomber(sip) || sip->flags[Ship::Info_Flags::Transport] ) )
 			break;
 
 		// just in case
@@ -552,7 +552,7 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 	ship_weapon *swp = &shipp->weapons;
 	weapon_info *wip;
 
-	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+	if (sip->flags[Ship::Info_Flags::Ballistic_primaries])
 	{
 		for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
 		{
@@ -825,7 +825,7 @@ void process_debug_keys(int k)
 
 					if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
-						sp->flags |= SF_DISABLED;				// add the disabled flag
+						sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
 					}
 
 					if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
@@ -1550,7 +1550,7 @@ void game_process_cheats(int k)
 			ship_idx++;
 		} while(1);
 
-		shipp->flags |= SF_ESCORT;
+		shipp->flags.set(Ship::Ship_Flags::Escort);
 		shipp->escort_priority = 1000 - ship_idx;
 
 		// now make sure we're not colliding with anyone
@@ -1562,7 +1562,7 @@ void game_process_cheats(int k)
 			// mark all turrets as beam free
 			if (ptr->system_info->type == SUBSYSTEM_TURRET)
 			{
-				ptr->weapons.flags |= SW_FLAG_BEAM_FREE;
+				ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
 				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 			}
 		}
@@ -1724,7 +1724,7 @@ int button_function_critical(int n, net_player *p = NULL)
 		npl = p;
 		at_self = 0;
 
-		if ( NETPLAYER_IS_DEAD(npl) || (Ships[Objects[pl->objnum].instance].flags & SF_DYING) )
+		if ( NETPLAYER_IS_DEAD(npl) || (Ships[Objects[pl->objnum].instance].flags[Ship::Ship_Flags::Dying]) )
 			return 0;
 	}
 	
@@ -1824,15 +1824,15 @@ int button_function_critical(int n, net_player *p = NULL)
 
 			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
 
-			if ( Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE || firepoints < 2) {		
-				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+			if ( Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2) {		
+				Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire, false);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			} else {
-				Ships[objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
+				Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to dual fire mode", 35));
 					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
@@ -2197,7 +2197,7 @@ int button_function(int n)
 	}
 
 	// Goober5000 - if the ship doesn't have subspace drive, jump key doesn't work: so test and exit early
-	if (Player_ship->flags2 & SF2_NO_SUBSPACE_DRIVE)
+	if (Player_ship->flags[Ship::Ship_Flags::No_subspace_drive])
 	{
 		switch(n)
 		{
@@ -2208,7 +2208,7 @@ int button_function(int n)
 	}
 
 	// Goober5000 - if we have primitive sensors, some keys don't work: so test and exit early
-	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
+	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 	{
 		switch (n)
 		{
@@ -2289,7 +2289,7 @@ int button_function(int n)
 		case INCREASE_ENGINE:		// increase energy to engines
 		case DECREASE_ENGINE:		// decrease energy to engines
 		case ETS_EQUALIZE:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+			if ((Player_ship->flags[Ship::Ship_Flags::No_ets]) == 0) {
 				hud_gauge_popup_start(HUD_ETS_GAUGE);
 				return button_function_critical(n);
 			}
