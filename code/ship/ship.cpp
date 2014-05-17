@@ -15203,7 +15203,7 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 	swp = &sp->weapons;
 	
 	// stole the code for this from ship_maybe_tell_about_rearm()
-	if (sp->flags & SIF_BALLISTIC_PRIMARIES)
+	if (Ship_info[sp->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES)
 	{
 		for (i = 0; i < swp->num_primary_banks; i++)
 		{
