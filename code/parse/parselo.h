@@ -146,6 +146,33 @@ extern void stuff_ubyte(ubyte *i);
 extern int stuff_string_list(SCP_vector<SCP_string>& slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
+
+template<class Flags, class Flagset>
+int parse_string_flag_list(Flagset *dest, flag_def_list_new<Flags> defs[])
+{
+	int defs_size = sizeof(defs) / sizeof(flag_def_list_new<Flags>);
+	Assert(dest != NULL);
+
+	char(*slp)[NAME_LENGTH] = (char(*)[32])new char[defs_size*NAME_LENGTH];
+	int num_strings = stuff_string_list(slp, defs_size);
+	int i, j;
+
+	for (i = 0; i < num_strings; i++)
+	{
+		for (j = 0; j < defs_size; j++)
+		{
+			if (!stricmp(slp[i], defs[j].name)) {
+				dest->set(defs[j].def);
+			}
+		}
+	}
+
+	delete[] slp;	//>_>
+	//nobody saw that right
+
+	return num_strings;
+}
+
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern int stuff_float_list(float* flp, int max_floats);
 extern int stuff_vec3d_list(vec3d *vlp, int max_vecs);

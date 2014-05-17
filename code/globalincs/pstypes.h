@@ -173,6 +173,13 @@ typedef struct flag_def_list {
 	ubyte var;
 } def_list;
 
+template<class T>
+struct flag_def_list_new {
+	char* name;
+	T def;
+	bool current;
+};
+
 // weapon count list (mainly for pilot files)
 typedef struct wep_t {
 	int index;
@@ -679,5 +686,18 @@ public:
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
+/*Flagset*/
 
+template <class T, size_t size = static_cast<typename std::underlying_type<T>::type>(T::NUM_VALUES)>
+class flagset {
+	SCP_bitset<size> values;
+public:
+	bool operator[](T idx) { return values[(static_cast<typename std::underlying_type<T>::type>(idx))]; };
+	//const bool& operator[](T idx) { return values[static_cast<typename std::underlying_type<T>::type>(idx)]; } const;
+	void reset() { values.reset(); }
+	void reset(T idx) { values.reset(static_cast < typename std::underlying_type<T>::type>(idx)); }
+	void set(T idx, bool value = true) { values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); }
+};
+
+#define FLAG_LIST(Type) enum class Type : size_t
 #endif		// PS_TYPES_H

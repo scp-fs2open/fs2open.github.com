@@ -4565,7 +4565,7 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 
 
 // Sets the submodel instance data in a submodel (for all detail levels)
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, Ship::subsystem_flags flags)
 {
 	int i;
 	polymodel * pm;
@@ -4579,7 +4579,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	if ( sub_model_num >= pm->n_models ) return;
 	bsp_info *sm = &pm->submodel[sub_model_num];
 
-	if (flags & SSF_NO_DISAPPEAR) {
+	if (flags[Ship::Subsystem_Flags::No_disappear]) {
 		// If the submodel is to not disappear when the subsystem is destroyed, we simply
 		// make the submodel act as its own replacement as well
 		sm->my_replacement = sub_model_num;
@@ -4588,7 +4588,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	// Set the "blown out" flags	
 	sm->blown_off = sii->blown_off;
 
-	if ( (sm->blown_off) && (!(flags & SSF_NO_REPLACE)) )	{
+	if ((sm->blown_off) && (!(flags[Ship::Subsystem_Flags::No_replace])))	{
 		if ( sm->my_replacement > -1 )	{
 			pm->submodel[sm->my_replacement].blown_off = 0;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
