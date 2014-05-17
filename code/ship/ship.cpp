@@ -15284,7 +15284,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		}
 
 		// also check ballistic primaries - Goober5000
-		if (sp->flags & SIF_BALLISTIC_PRIMARIES)
+		if (Ship_info[sp->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES)
 		{
 			for (i = 0; i < swp->num_primary_banks; i++)
 			{
