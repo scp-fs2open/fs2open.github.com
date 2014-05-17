@@ -1948,6 +1948,9 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 			if (shipp->flags & SF_DYING)
 				return;
 
+			if (shipp->flagset[Ship_Flags::DYING])
+				return;
+
 			if (is_ignore_object(aip, OBJ_INDEX(eno->trial_objp)))
 				return;
 
@@ -1955,6 +1958,9 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				return;
 
 			if (shipp->flags & SF_ARRIVING)
+				return;
+
+			if (IS_SHIP_ARRIVING(shipp))
 				return;
 
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -2115,6 +2121,9 @@ int find_nearby_threat(int objnum, int enemy_team_mask, float range, int *count)
 
 		if ( OBJ_INDEX(objp) != objnum ) {
 			if (Ships[objp->instance].flags & SF_DYING)
+				continue;
+
+			if (Ships[objp->instance].flagset[Ship_Flags::DYING])
 				continue;
 
 			if (Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_NO_SHIP_TYPE | SIF_NAVBUOY))
