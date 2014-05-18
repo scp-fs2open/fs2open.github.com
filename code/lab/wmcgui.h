@@ -669,6 +669,59 @@ public:
 	}
 };
 
+template<class T, class flag_storage>
+class Checkbox_new : public GUIObject
+{
+	SCP_string Label;
+	void(*function)(Checkbox *caller);
+
+	//For toggling flags with this thing
+	flagset<T>* FlagPtr;
+	T Flag;
+
+	bool *BoolFlagPtr;
+
+	int CheckCoords[4];
+	bool IsChecked;	//Is it checked?
+	int HighlightStatus;
+
+protected:
+	void DoDraw(float frametime);
+	void DoMove(int dx, int dy);
+	int DoRefreshSize();
+	int DoMouseOver(float frametime);
+	int DoMouseDown(float frametime);
+	int DoMouseUp(float frametime);
+	int DoMouseOut(float frametime);
+
+public:
+	Checkbox_new<T, flag_storage>(const SCP_string &in_label, int x_coord, int y_coord, void(*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
+
+	bool GetChecked() {
+		return IsChecked;
+	}
+
+	void SetLabel(const SCP_string &in_label) {
+		Label = in_label;
+	}
+
+	void SetChecked(bool in_ischecked) {
+		IsChecked = in_ischecked;
+	}
+
+	void SetFlag(flag_storage* in_flag_ptr, T in_flag) {
+		FlagPtr = in_flag_ptr;
+		Flag = in_flag;
+
+		if ((FlagPtr != NULL) && ( FlagPtr[Flag] ) ) {
+			IsChecked = true;
+		}
+	}
+
+	void SetBool(bool *in_bool_ptr) {
+		BoolFlagPtr = in_bool_ptr;
+	}
+};
 //*****************************ImageAnim*******************************
 #define PT_STOPPED			0
 #define PT_PLAYING			1

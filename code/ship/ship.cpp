@@ -336,13 +336,13 @@ flag_def_list ai_tgt_obj_flags[] = {
 
 const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list);
 
-flag_def_list ai_tgt_ship_flags[] = {
-	{ "afterburners",	SIF_AFTERBURNER,	0 },
-	{ "big damage",		SIF_BIG_DAMAGE,		0 },
-	{ "has awacs",		SIF_HAS_AWACS,		0 }
+flag_def_list_new<Ship::Info_Flags> ai_tgt_ship_flags[] = {
+	{ "afterburners",	Ship::Info_Flags::Afterburner, true},
+	{ "big damage",		Ship::Info_Flags::Big_damage,  true},
+	{ "has awacs",		Ship::Info_Flags::Has_awacs,   true}
 };
 
-const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list);
+const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list_new<Ship::Info_Flags>);
 
 flag_def_list ai_tgt_weapon_flags[] = {
 	{ "bomb",				WIF_BOMB,				0 },
@@ -17809,11 +17809,7 @@ void parse_ai_target_priorities()
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_ship_flags; j++) {
 				if ( !stricmp(ai_tgt_ship_flags[j].name, temp_strings[i].c_str()) ) {
-					if (ai_tgt_ship_flags[j].var == 0) {
-						temp_priority.sif_flags |= ai_tgt_ship_flags[j].def;
-					} else {
-						temp_priority.sif2_flags |= ai_tgt_ship_flags[j].def;
-					}
+					temp_priority.sif_flags->set(ai_tgt_ship_flags[j].def);
 					break;
 				}
 			}

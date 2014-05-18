@@ -2478,6 +2478,158 @@ int Checkbox::DoMouseOut(float frametime)
 	return OF_TRUE;
 }
 
+//*****************************Checkbox_new*****************************
+
+template<class T, class flag_storage>
+Checkbox_new<T, flag_storage>::Checkbox(const SCP_string &in_label, int x_coord, int y_coord, void(*in_function)(Checkbox *caller), int x_width, int y_height, int in_style)
+:GUIObject(in_label, x_coord, y_coord, x_width, y_height, in_style)
+{
+	Label = in_label;
+
+	function = in_function;
+
+	IsChecked = false;
+	HighlightStatus = 0;
+	FlagPtr = NULL;
+	BoolFlagPtr = NULL;
+
+	//Set the type
+	Type = GT_CHECKBOX;
+}
+
+template<class T, class flag_storage>
+int Checkbox_new<T, flag_storage>::DoRefreshSize()
+{
+	int w, h, tw, th;
+	gr_get_string_size(&w, &h, Label.c_str());
+	tw = w;
+	th = h;
+
+	gr_get_string_size(&w, &h, "X");
+	tw += w;
+	th += h + CB_TEXTCHECKDIST; //Spacing b/t 'em
+
+	CheckCoords[0] = Coords[0];
+	CheckCoords[1] = Coords[1];
+	CheckCoords[2] = Coords[0] + w;
+	CheckCoords[3] = Coords[1] + h;
+
+	if (!(Style & GS_NOAUTORESIZEX)) {
+		Coords[2] = Coords[0] + tw;
+	}
+
+	if (!(Style & GS_NOAUTORESIZEY)) {
+		Coords[3] = Coords[1] + th;
+	}
+
+	return OF_TRUE;
+}
+
+template<class T, class flag_storage>
+void Checkbox_new<T, flag_storage>::DoMove(int dx, int dy)
+{
+	CheckCoords[0] += dx;
+	CheckCoords[2] += dx;
+	CheckCoords[1] += dy;
+	CheckCoords[3] += dy;
+}
+
+template<class T, class flag_storage>
+void Checkbox_new<T, flag_storage>::DoDraw(float frametime)
+{
+	if (HighlightStatus == 1) {
+		gr_set_color_fast(&Color_text_active);
+	}
+	else if (HighlightStatus == 2) {
+		gr_set_color_fast(&Color_text_selected);
+	}
+	else {
+		gr_set_color_fast(&Color_text_normal);
+	}
+
+	draw_open_rect(CheckCoords[0], CheckCoords[1], CheckCoords[2], CheckCoords[3], false);
+
+	if ((IsChecked && ((FlagPtr == NULL) && (BoolFlagPtr == NULL)))
+		|| ((FlagPtr != NULL) && ((*FlagPtr) & Flag))
+		|| ((BoolFlagPtr != NULL) && (*BoolFlagPtr))) {
+		gr_string(CheckCoords[0], CheckCoords[1], "X", GR_RESIZE_NONE);
+	}
+
+	gr_set_color_fast(&Color_text_normal);
+	gr_string(CheckCoords[2] + CB_TEXTCHECKDIST, CheckCoords[1], Label.c_str(), GR_RESIZE_NONE);
+}
+
+template<class T, class flag_storage>
+int Checkbox_new<T, flag_storage>::DoMouseOver(float frametime)
+{
+	if ((OwnerSystem->GetMouseX() >= CheckCoords[0])
+		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
+		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3])) {
+		HighlightStatus = 1;
+	}
+
+	return OF_TRUE;
+}
+
+template<class T, class flag_storage>
+int Checkbox_new<T, flag_storage>::DoMouseDown(float frametime)
+{
+	OwnerSystem->SetActiveObject(this);
+
+	if ((OwnerSystem->GetMouseX() >= CheckCoords[0])
+		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
+		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3])) {
+		HighlightStatus = 2;
+	}
+
+	return OF_TRUE;
+}
+
+template<class T, class flag_storage>
+int Checkbox_new<T, flag_storage>::DoMouseUp(float frametime)
+{
+	if ((OwnerSystem->GetMouseX() >= CheckCoords[0])
+		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
+		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3])) {
+		HighlightStatus = 1;
+
+		if (function != NULL) {
+			function(this);
+		}
+
+		if (FlagPtr != NULL) {
+			if (!(*FlagPtr & Flag)) {
+				*FlagPtr |= Flag;
+				IsChecked = true;
+			}
+			else {
+				*FlagPtr &= ~Flag;
+				IsChecked = false;
+			}
+		}
+		else if (BoolFlagPtr != NULL) {
+			*BoolFlagPtr = !(*BoolFlagPtr);
+			IsChecked = *BoolFlagPtr;
+		}
+		else {
+			IsChecked = !IsChecked;
+		}
+	}
+
+	return OF_TRUE;
+}
+
+template<class T, class flag_storage>
+int Checkbox_new<T, flag_storage>::DoMouseOut(float frametime)
+{
+	HighlightStatus = 0;
+
+	return OF_TRUE;
+}
+
 //*****************************ImageAnim*******************************
 ImageAnim::ImageAnim(const SCP_string &in_name, const SCP_string &in_imagename, int x_coord, int y_coord, int x_width, int y_width, int in_style)
 :GUIObject(in_name, x_coord, y_coord, x_width, y_width, in_style)

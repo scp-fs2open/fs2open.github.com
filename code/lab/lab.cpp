@@ -1275,6 +1275,14 @@ typedef struct lab_flag {
 	bool second;
 } lab_flag;
 
+template<class T>
+struct lab_flag_new {
+	Checkbox_new<T, flagset<T>> *cb;
+	T flag;
+};
+
+static SCP_vector<lab_flag_new<Ship::Info_Flags>> Lab_ship_info_flags;
+
 static SCP_vector<lab_flag> Lab_flags;
 
 void labviewer_flags_clear()
@@ -1317,6 +1325,38 @@ void labviewer_flags_add(int *X, int *Y, char *flag_name, int flag, bool flags2 
 	}
 }
 
+template<class T>
+void labviewer_flags_add_new(int *X, int *Y, char *flag_name, T flag, SCP_vector<lab_flag_new<T>> *vector)
+{
+	int x = 0, y = 0;
+
+	Assert((Lab_flags_window != NULL) && (flag_name != NULL));
+
+	lab_flag_new<T> new_flag;
+
+	if (X) {
+		x = *X;
+	}
+
+	if (Y) {
+		y = *Y;
+	}
+
+	new_flag.cb = (Checkbox_new<T>*) Lab_flags_window->AddChild(new Checkbox_new<T>(flag_name, x, y));
+	new_flag.flag = flag;
+
+	vector->push_back(new_flag);
+
+	if (X) {
+		*X += new_flag.cb->GetWidth() + 2;
+	}
+
+	if (Y) {
+		*Y += new_flag.cb->GetHeight() + 1;
+	}
+}
+
+
 void labviewer_populate_flags_window()
 {
 	int y;
@@ -1336,37 +1376,37 @@ void labviewer_populate_flags_window()
 
 	// ship flags ...
 	if (Lab_mode == LAB_MODE_SHIP) {
-		labviewer_flags_add(NULL, &y, "SUPPORT", SIF_SUPPORT);
-		labviewer_flags_add(NULL, &y, "CARGO", SIF_CARGO);
-		labviewer_flags_add(NULL, &y, "FIGHTER", SIF_FIGHTER);
-		labviewer_flags_add(NULL, &y, "BOMBER", SIF_BOMBER);
-		labviewer_flags_add(NULL, &y, "CRUISER", SIF_CRUISER);
-		labviewer_flags_add(NULL, &y, "CORVETTE", SIF_CORVETTE);
-		labviewer_flags_add(NULL, &y, "FREIGHTER", SIF_FREIGHTER);
-		labviewer_flags_add(NULL, &y, "CAPITAL", SIF_CAPITAL);
-		labviewer_flags_add(NULL, &y, "TRANSPORT", SIF_TRANSPORT);
-		labviewer_flags_add(NULL, &y, "NAVBUOY", SIF_NAVBUOY);
-		labviewer_flags_add(NULL, &y, "SENTRYGUN", SIF_SENTRYGUN);
-		labviewer_flags_add(NULL, &y, "ESCAPEPOD", SIF_ESCAPEPOD);
-		labviewer_flags_add(NULL, &y, "GAS MINER", SIF_GAS_MINER);
-		labviewer_flags_add(NULL, &y, "AWACS", SIF_AWACS);
-		labviewer_flags_add(NULL, &y, "STEALTH", SIF_STEALTH);
-		labviewer_flags_add(NULL, &y, "SUPERCAP", SIF_SUPERCAP);
-		labviewer_flags_add(NULL, &y, "KNOSSOS DEVICE", SIF_KNOSSOS_DEVICE);
-		labviewer_flags_add(NULL, &y, "DRYDOCK", SIF_DRYDOCK);
-		labviewer_flags_add(NULL, &y, "SHIP COPY", SIF_SHIP_COPY);
-		labviewer_flags_add(NULL, &y, "BIG DAMAGE", SIF_BIG_DAMAGE);
-		labviewer_flags_add(NULL, &y, "HAS AWACS", SIF_HAS_AWACS);
-		labviewer_flags_add(NULL, &y, "NO COLLIDE INVISIBLE", SIF_SHIP_CLASS_DONT_COLLIDE_INVIS);
-		labviewer_flags_add(NULL, &y, "DO COLLISION CHECK", SIF_NO_COLLIDE);
-		labviewer_flags_add(NULL, &y, "PLAYER SHIP", SIF_PLAYER_SHIP);
-		labviewer_flags_add(NULL, &y, "DEFAULT PLAYER SHIP", SIF_DEFAULT_PLAYER_SHIP);
-		labviewer_flags_add(NULL, &y, "BALLISTIC PRIMARIES", SIF_BALLISTIC_PRIMARIES);
-		labviewer_flags_add(NULL, &y, "FLASH", SIF2_FLASH, true);
-		labviewer_flags_add(NULL, &y, "SURFACE SHIELDS", SIF2_SURFACE_SHIELDS, true);
-		labviewer_flags_add(NULL, &y, "SHOW SHIP MODEL", SIF2_SHOW_SHIP_MODEL, true);
-		labviewer_flags_add(NULL, &y, "IN TECH DATABASE", SIF_IN_TECH_DATABASE);
-		labviewer_flags_add(NULL, &y, "IN TECH DATABASE MULTI", SIF_IN_TECH_DATABASE_M);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "SUPPORT", Ship::Info_Flags::Support, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "CARGO", Ship::Info_Flags::Cargo, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "FIGHTER", Ship::Info_Flags::Fighter, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "BOMBER", Ship::Info_Flags::Bomber, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "CRUISER", Ship::Info_Flags::Cruiser, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "CORVETTE", Ship::Info_Flags::Corvette, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "FREIGHTER", Ship::Info_Flags::Freighter, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "CAPITAL", Ship::Info_Flags::Capital, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "TRANSPORT", Ship::Info_Flags::Transport, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "NAVBUOY", Ship::Info_Flags::Navbuoy, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "SENTRYGUN", Ship::Info_Flags::Sentrygun, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "ESCAPEPOD", Ship::Info_Flags::Escapepod, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "GAS MINER", Ship::Info_Flags::Gas_miner, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "AWACS", Ship::Info_Flags::Awacs, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "STEALTH", Ship::Info_Flags::Stealth, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "SUPERCAP", Ship::Info_Flags::Supercap, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "KNOSSOS DEVICE", Ship::Info_Flags::Knossos_device, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "DRYDOCK", Ship::Info_Flags::Drydock, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "SHIP COPY", Ship::Info_Flags::Ship_copy, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "BIG DAMAGE", Ship::Info_Flags::Big_damage, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "HAS AWACS", Ship::Info_Flags::Has_awacs, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "NO COLLLIDE INVISIBLE", Ship::Info_Flags::Ship_class_dont_collide_invis, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "NO COLLIDE", Ship::Info_Flags::No_collide, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "PLAYER SHIP", Ship::Info_Flags::Player_ship, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "DEFAULT PLAYER SHIP", Ship::Info_Flags::Default_player_ship, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "BALLISTIC PRIMARIES", Ship::Info_Flags::Ballistic_primaries, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "FLASH", Ship::Info_Flags::Flash, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "SURFACE SHIELDS", Ship::Info_Flags::Surface_shields, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "SHOW SHIP MODEL", Ship::Info_Flags::Show_ship_model, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "IN TECH DATABASE", Ship::Info_Flags::In_tech_database, &Lab_ship_info_flags);
+		labviewer_flags_add_new<Ship::Info_Flags>(NULL, &y, "IN TECH DATABASE M", Ship::Info_Flags::In_tech_database_m, &Lab_ship_info_flags);
 	}
 	// weapon flags ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
@@ -1409,12 +1449,8 @@ void labviewer_update_flags_window()
 	if (Lab_mode == LAB_MODE_SHIP) {
 		ship_info *sip = &Ship_info[Lab_selected_index];
 
-		for (i = 0; i < Lab_flags.size(); i++) {
-			if (Lab_flags[i].second) {
-				Lab_flags[i].cb->SetFlag(&sip->flags2, Lab_flags[i].flag);
-			} else {
-				Lab_flags[i].cb->SetFlag(&sip->flags, Lab_flags[i].flag);
-			}
+		for (i = 0; i < Lab_ship_info_flags.size(); i++) {
+			Lab_ship_info_flags[i].cb->SetFlag(&sip->flags, Lab_ship_info_flags[i].flag);
 		}
 	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		weapon_info *wip = &Weapon_info[Lab_selected_index];
