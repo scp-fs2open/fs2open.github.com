@@ -1622,6 +1622,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 extern int ship_template_lookup(const char *name = NULL);
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
+char * ship_index_lookup(int ship_idx);
 extern int ship_info_lookup(const char *name = NULL);
 extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(const char *name);

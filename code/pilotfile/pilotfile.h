@@ -4,7 +4,9 @@
 
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "stats/scoring.h"
+#include "jansson.h"
 
 
 class player;
@@ -18,7 +20,7 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //       that sort!
 //   0 - initial version
 //   1 - Adding support for the player is multi flag
-static const ubyte PLR_VERSION = 1;
+static const ubyte PLR_VERSION = 2;
 //   0 - initial version
 //   1 - re-add recent missions
 //   2 - separate single/multi squad name & pic
@@ -43,7 +45,7 @@ class pilotfile {
 		void reset_stats();
 
 		// for checking to see if a PLR file is basically valid
-		bool verify(const char *fname, int *rank = NULL);
+		bool verify(const char *fname, int *rank = NULL, char *valid_language = NULL);
 
 		// whether current campaign savefile has valid data to work with
 		bool is_invalid()
@@ -55,8 +57,8 @@ class pilotfile {
 		// --------------------------------------------------------------------
 		// info shared between PLR and CSG ...
 		// --------------------------------------------------------------------
-		CFILE *cfp;
-		SCP_string filename;
+		CFILE *cfp, *cfp_json;
+		SCP_string filename, filename_json;
 		player *p;
 
 		int version;
@@ -124,6 +126,8 @@ class pilotfile {
 
 		scoring_special_t all_time_stats;
 		scoring_special_t multi_stats;
+
+		json_t *csg_root, *plr_root;
 
 		// sections of a pilot file. includes both plr and csg sections
 		struct Section {
