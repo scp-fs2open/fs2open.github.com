@@ -1336,37 +1336,7 @@ void labviewer_populate_flags_window()
 
 	// ship flags ...
 	if (Lab_mode == LAB_MODE_SHIP) {
-		labviewer_flags_add(NULL, &y, "SUPPORT", SIF_SUPPORT);
-		labviewer_flags_add(NULL, &y, "CARGO", SIF_CARGO);
-		labviewer_flags_add(NULL, &y, "FIGHTER", SIF_FIGHTER);
-		labviewer_flags_add(NULL, &y, "BOMBER", SIF_BOMBER);
-		labviewer_flags_add(NULL, &y, "CRUISER", SIF_CRUISER);
-		labviewer_flags_add(NULL, &y, "CORVETTE", SIF_CORVETTE);
-		labviewer_flags_add(NULL, &y, "FREIGHTER", SIF_FREIGHTER);
-		labviewer_flags_add(NULL, &y, "CAPITAL", SIF_CAPITAL);
-		labviewer_flags_add(NULL, &y, "TRANSPORT", SIF_TRANSPORT);
-		labviewer_flags_add(NULL, &y, "NAVBUOY", SIF_NAVBUOY);
-		labviewer_flags_add(NULL, &y, "SENTRYGUN", SIF_SENTRYGUN);
-		labviewer_flags_add(NULL, &y, "ESCAPEPOD", SIF_ESCAPEPOD);
-		labviewer_flags_add(NULL, &y, "GAS MINER", SIF_GAS_MINER);
-		labviewer_flags_add(NULL, &y, "AWACS", SIF_AWACS);
-		labviewer_flags_add(NULL, &y, "STEALTH", SIF_STEALTH);
-		labviewer_flags_add(NULL, &y, "SUPERCAP", SIF_SUPERCAP);
-		labviewer_flags_add(NULL, &y, "KNOSSOS DEVICE", SIF_KNOSSOS_DEVICE);
-		labviewer_flags_add(NULL, &y, "DRYDOCK", SIF_DRYDOCK);
-		labviewer_flags_add(NULL, &y, "SHIP COPY", SIF_SHIP_COPY);
-		labviewer_flags_add(NULL, &y, "BIG DAMAGE", SIF_BIG_DAMAGE);
-		labviewer_flags_add(NULL, &y, "HAS AWACS", SIF_HAS_AWACS);
-		labviewer_flags_add(NULL, &y, "NO COLLIDE INVISIBLE", SIF_SHIP_CLASS_DONT_COLLIDE_INVIS);
-		labviewer_flags_add(NULL, &y, "DO COLLISION CHECK", SIF_NO_COLLIDE);
-		labviewer_flags_add(NULL, &y, "PLAYER SHIP", SIF_PLAYER_SHIP);
-		labviewer_flags_add(NULL, &y, "DEFAULT PLAYER SHIP", SIF_DEFAULT_PLAYER_SHIP);
-		labviewer_flags_add(NULL, &y, "BALLISTIC PRIMARIES", SIF_BALLISTIC_PRIMARIES);
-		labviewer_flags_add(NULL, &y, "FLASH", SIF2_FLASH, true);
-		labviewer_flags_add(NULL, &y, "SURFACE SHIELDS", SIF2_SURFACE_SHIELDS, true);
-		labviewer_flags_add(NULL, &y, "SHOW SHIP MODEL", SIF2_SHOW_SHIP_MODEL, true);
-		labviewer_flags_add(NULL, &y, "IN TECH DATABASE", SIF_IN_TECH_DATABASE);
-		labviewer_flags_add(NULL, &y, "IN TECH DATABASE MULTI", SIF_IN_TECH_DATABASE_M);
+		//Needs reimplementation
 	}
 	// weapon flags ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
@@ -1407,15 +1377,7 @@ void labviewer_update_flags_window()
 
 
 	if (Lab_mode == LAB_MODE_SHIP) {
-		ship_info *sip = &Ship_info[Lab_selected_index];
-
-		for (i = 0; i < Lab_flags.size(); i++) {
-			if (Lab_flags[i].second) {
-				Lab_flags[i].cb->SetFlag(&sip->flags2, Lab_flags[i].flag);
-			} else {
-				Lab_flags[i].cb->SetFlag(&sip->flags, Lab_flags[i].flag);
-			}
-		}
+		//Needs reimplementation
 	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		weapon_info *wip = &Weapon_info[Lab_selected_index];
 

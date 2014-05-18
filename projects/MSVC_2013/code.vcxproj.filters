@@ -1871,6 +1871,9 @@
     <ClInclude Include="..\..\code\ship\ship_flags.h">
       <Filter>Ship</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\weapon\weapon_flags.h">
+      <Filter>Weapon</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\code\directx\dxguid.lib">

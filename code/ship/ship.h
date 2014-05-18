@@ -2025,26 +2025,14 @@ inline bool is_big_huge(ship_info* sip) { return is_big_ship(sip) || is_huge_shi
 inline bool ship_cannot_warp(ship* shipp) { return shipp->flags[Ship::Ship_Flags::Warp_broken] || shipp->flags[Ship::Ship_Flags::Warp_never] || shipp->flags[Ship::Ship_Flags::Disabled]; }
 inline bool is_dying_departing(ship* shipp) { return is_ship_departing(shipp) || shipp->flags[Ship::Ship_Flags::Dying]; }
 
-Ship::ship_flags Ignore_List;
+extern Ship::ship_flags Ignore_List;
 inline bool should_be_ignored(ship* shipp) {
 	return (shipp->flags & Ignore_List).any_set();
 }
 
-void set_default_ignore_list() {
-	Ignore_List.reset();
-	Ignore_List.set(Ship::Ship_Flags::Exploded);
-	Ignore_List.set(Ship::Ship_Flags::Depart_warp);
-	Ignore_List.set(Ship::Ship_Flags::Dying);
-	Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1);
-	Ignore_List.set(Ship::Ship_Flags::Hidden_from_sensors);
-}
+extern void set_default_ignore_list();
 
-void toggle_ignore_list_flag(Ship::Ship_Flags flag) {
-	if (Ignore_List[flag])
-		Ignore_List.unset(flag);
-	else
-		Ignore_List.set(flag);
-}
+extern void toggle_ignore_list_flag(Ship::Ship_Flags flag);
 
 // for ships of this type, we make beam weapons miss a little bit otherwise they'd be way too powerful
 inline bool apply_beam_jitter(ship_info* sip) {

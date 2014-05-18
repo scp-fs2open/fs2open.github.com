@@ -336,13 +336,13 @@ flag_def_list ai_tgt_obj_flags[] = {
 
 const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list);
 
-flag_def_list ai_tgt_ship_flags[] = {
-	{ "afterburners",	SIF_AFTERBURNER,	0 },
-	{ "big damage",		SIF_BIG_DAMAGE,		0 },
-	{ "has awacs",		SIF_HAS_AWACS,		0 }
+flag_def_list_new<Ship::Info_Flags> ai_tgt_ship_flags[] = {
+	{ "afterburners",	Ship::Info_Flags::Afterburner, true},
+	{ "big damage",		Ship::Info_Flags::Big_damage,  true},
+	{ "has awacs",		Ship::Info_Flags::Has_awacs,   true}
 };
 
-const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list);
+const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list_new<Ship::Info_Flags>);
 
 flag_def_list ai_tgt_weapon_flags[] = {
 	{ "bomb",				WIF_BOMB,				0 },
@@ -17809,11 +17809,7 @@ void parse_ai_target_priorities()
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_ship_flags; j++) {
 				if ( !stricmp(ai_tgt_ship_flags[j].name, temp_strings[i].c_str()) ) {
-					if (ai_tgt_ship_flags[j].var == 0) {
-						temp_priority.sif_flags |= ai_tgt_ship_flags[j].def;
-					} else {
-						temp_priority.sif2_flags |= ai_tgt_ship_flags[j].def;
-					}
+					temp_priority.sif_flags->set(ai_tgt_ship_flags[j].def);
 					break;
 				}
 			}
@@ -18004,4 +18000,21 @@ int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt)
 	vm_vec_add2(box_pt, &ship_obj->pos);
 
 	return inside;
+}
+
+Ship::ship_flags Ignore_List;
+void set_default_ignore_list() {
+	Ignore_List.reset();
+	Ignore_List.set(Ship::Ship_Flags::Exploded);
+	Ignore_List.set(Ship::Ship_Flags::Depart_warp);
+	Ignore_List.set(Ship::Ship_Flags::Dying);
+	Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1);
+	Ignore_List.set(Ship::Ship_Flags::Hidden_from_sensors);
+}
+
+void toggle_ignore_list_flag(Ship::Ship_Flags flag) {
+	if (Ignore_List[flag])
+		Ignore_List.unset(flag);
+	else
+		Ignore_List.set(flag);
 }

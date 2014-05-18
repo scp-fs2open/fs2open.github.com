@@ -1056,6 +1056,7 @@
     <ClInclude Include="..\..\code\iff_defs\iff_defs.h" />
     <ClInclude Include="..\..\code\external_dll\externalcode.h" />
     <ClInclude Include="..\..\code\external_dll\trackirpublic.h" />
+    <ClInclude Include="..\..\code\weapon\weapon_flags.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\code\directx\dxguid.lib" />
