@@ -1624,7 +1624,7 @@ int CFred_mission_save::save_objects()
 			fout(" \"ignore-count\"");
 		if (objp->flags & OF_PROTECTED)
 			fout(" \"protect-ship\"");
-		if (shipp->flags & SF_REINFORCEMENT)
+		if (shipp->flags[Ship::Ship_Flags::Reinforcement])
 			fout(" \"reinforcement\"");
 		if (objp->flags & OF_NO_SHIELDS)
 			fout(" \"no-shields\"");
@@ -1634,9 +1634,9 @@ int CFred_mission_save::save_objects()
 			fout(" \"player-start\"");
 		if (shipp->flags[Ship::Ship_Flags::No_arrival_music])
 			fout(" \"no-arrival-music\"");
-		if (shipp->flags & SF_NO_ARRIVAL_WARP)
+		if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
 			fout(" \"no-arrival-warp\"");
-		if (shipp->flags & SF_NO_DEPARTURE_WARP)
+		if (shipp->flags[Ship::Ship_Flags::No_departure_warp])
 			fout(" \"no-departure-warp\"");
 		if (Objects[shipp->objnum].flags & OF_INVULNERABLE)
 			fout(" \"invulnerable\"");
@@ -1662,7 +1662,7 @@ int CFred_mission_save::save_objects()
 			fout(" \"guardian\"");
 		if (objp->flags & OF_SPECIAL_WARPIN)
 			fout(" \"special-warp\"");
-		if (shipp->flags.set(Ship::Ship_Flags::Vaporize))
+		if (shipp->flags[Ship::Ship_Flags::Vaporize])
 			fout(" \"vaporize\"");
 		if (shipp->flags[Ship::Ship_Flags::Stealth])
 			fout(" \"stealth\"");
@@ -1690,7 +1690,7 @@ int CFred_mission_save::save_objects()
 				fout(" \"no-subspace-drive\"");
 			if (shipp->flags[Ship::Ship_Flags::Navpoint_carry])
 				fout(" \"nav-carry-status\"");
-			if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
+			if (shipp->flags[Ship::Ship_Flags::Affected_by_gravity])
 				fout(" \"affected-by-gravity\"");
 			if (shipp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 				fout(" \"toggle-subsystem-scanning\"");
@@ -1698,31 +1698,31 @@ int CFred_mission_save::save_objects()
 				fout(" \"targetable-as-bomb\"");
 			if (shipp->flags[Ship::Ship_Flags::No_builtin_messages])
 				fout(" \"no-builtin-messages\"");
-			if (shipp->flags2 & SF2_PRIMARIES_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Primaries_locked])
 				fout(" \"primaries-locked\"");
-			if (shipp->flags2 & SF2_SECONDARIES_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Secondaries_locked])
 				fout(" \"secondaries-locked\"");
 			if (shipp->flags[Ship::Ship_Flags::No_death_scream])
 				fout(" \"no-death-scream\"");
 			if (shipp->flags[Ship::Ship_Flags::Always_death_scream])
 				fout(" \"always-death-scream\"");
-			if (shipp->flags2 & SF2_NAVPOINT_NEEDSLINK)
+			if (shipp->flags[Ship::Ship_Flags::Navpoint_needslink])
 				fout(" \"nav-needslink\"");
 			if (shipp->flags[Ship::Ship_Flags::Hide_ship_name])
 				fout(" \"hide-ship-name\"");
-			if (shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY)
+			if (shipp->flags[Ship::Ship_Flags::Set_class_dynamically])
 				fout(" \"set-class-dynamically\"");
 			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
 				fout(" \"lock-all-turrets\"");
 			if (shipp->flags[Ship::Ship_Flags::Afterburner_locked])
 				fout(" \"afterburners-locked\"");
-			if (shipp->flags2 & SF2_FORCE_SHIELDS_ON)
+			if (shipp->flags[Ship::Ship_Flags::Force_shields_on])
 				fout(" \"force-shields-on\"");
 			if (objp->flags & OF_IMMOBILE)
 				fout(" \"immobile\"");
 			if (shipp->flags[Ship::Ship_Flags::No_ets])
 				fout(" \"no-ets\"");
-			if (shipp->flags2 & SF2_CLOAKED)
+			if (shipp->flags[Ship::Ship_Flags::Cloaked])
 				fout(" \"cloaked\"");
 			if (shipp->flags[Ship::Ship_Flags::Ship_locked])
 				fout(" \"ship-locked\"");
@@ -1920,7 +1920,7 @@ int CFred_mission_save::save_objects()
 			if (dock_check_docked_one_on_one(&Objects[shipp->objnum]))
 			{
 				// retail format only saved information for non-leaders
-				if (!(shipp->flags & SF_DOCK_LEADER))
+				if (!(shipp->flags[Ship::Ship_Flags::Dock_leader]))
 				{
 					save_single_dock_instance(&Ships[i], Objects[shipp->objnum].dock_list);
 				}
@@ -1938,7 +1938,7 @@ int CFred_mission_save::save_objects()
 
 		// check the ship flag about killing off the ship before a missino starts.  Write out the appropriate
 		// variable if necessary
-		if ( shipp->flags & SF_KILL_BEFORE_MISSION ) {
+		if ( shipp->flags[Ship::Ship_Flags::Kill_before_mission] ) {
 			if ( optional_string_fred("+Destroy At:", "$Name:"))
 				parse_comments();
 			else

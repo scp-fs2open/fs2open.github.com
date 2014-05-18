@@ -3626,7 +3626,7 @@ int WE_Default::warpFrame(float frametime)
 				}
 			}
 
-			// MWA 10/21/97 -- added shipp->flags & SF_NO_DEPARTURE_WARP part of next if statement.  For ships
+			// MWA 10/21/97 -- added shipp->flags[Ship::Ship_Flags::No_departure_warp] part of next if statement.  For ships
 			// that don't get a wormhole effect, I wanted to drop into this code immediately.
 			if ( (warp_pos > objp->radius)  || (shipp->flags[Ship::Ship_Flags::No_departure_warp]) || timed_out )	{
 				this->warpEnd();

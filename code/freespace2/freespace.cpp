@@ -2811,7 +2811,7 @@ void game_tst_mark(object *objp, ship *shipp)
 	}
 
 	tst_pos = objp->pos;
-	if(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
+	if(is_big_huge(sip)){
 		tst_big = 1;
 	}
 	tst = 3;
@@ -2831,7 +2831,7 @@ void player_repair_frame(float frametime)
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != NULL) && (Net_player->player_id != Net_players[idx].player_id) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS)){
 
 				// don't rearm/repair if the player is dead or dying/departing
-				if ( !NETPLAYER_IS_DEAD(np) && !(Ships[Objects[np->m_player->objnum].instance].flags & (SF_DYING|SF_DEPARTING)) ) {
+				if ( !NETPLAYER_IS_DEAD(np) && !(is_dying_departing(&Ships[Objects[np->m_player->objnum].instance])) ) {
 					ai_do_repair_frame(&Objects[Net_players[idx].m_player->objnum],&Ai_info[Ships[Objects[Net_players[idx].m_player->objnum].instance].ai_index],frametime);
 				}
 			}

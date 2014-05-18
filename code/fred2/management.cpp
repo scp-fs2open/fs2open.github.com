@@ -716,7 +716,7 @@ int create_object(vec3d *pos, int waypoint_instance)
 		CJumpNode* jnp = new CJumpNode(pos);
 		obj = jnp->GetSCPObjectNumber();
 		Jump_nodes.push_back(*jnp);
-	} else if(Ship_info[cur_model_index].flags & SIF_NO_FRED){		
+	} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){		
 		obj = -1;
 	} else {  // creating a ship
 		obj = create_ship(NULL, pos, cur_model_index);
@@ -881,7 +881,7 @@ void clear_mission()
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
 		for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
-			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
+			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");
 				Team_data[i].ship_count[count] = 5;
@@ -1617,7 +1617,7 @@ void generate_ship_popup_menu(CMenu *mptr, int first_id, int state, int filter)
 		if ((ptr->type == OBJ_SHIP) || ((ptr->type == OBJ_START) && (filter & SHIP_FILTER_PLAYERS))) {
 			z = 1;
 			if (filter & SHIP_FILTER_FLYABLE) {
-				if (Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index].flags & SIF_NOT_FLYABLE){
+				if (!is_flyable(&Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index])){
 					z = 0;
 				}
 			}
@@ -1737,7 +1737,7 @@ int set_reinforcement(char *name, int state)
 		// clear the ship/wing flag for this reinforcement
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags &= ~SF_REINFORCEMENT;
+			Ships[index].flags.unset(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){

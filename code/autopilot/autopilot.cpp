@@ -252,7 +252,7 @@ bool StartAutopilot()
 				continue;
 
 			// don't deal with dying or departing support ships
-			if ( shipp->flags & (SF_DYING | SF_DEPARTING) )
+			if ( is_dying_departing(shipp) )
 				continue;
 
 			Assert(shipp->ai_index != -1);
@@ -373,21 +373,20 @@ bool StartAutopilot()
 			)
 		{
 			// do we have capital ships in the area?
-			if (Ship_info[Ships[i].ship_info_index].flags 
-				& ( SIF_CRUISER | SIF_CAPITAL | SIF_SUPERCAP | SIF_CORVETTE | SIF_AWACS | SIF_GAS_MINER | SIF_FREIGHTER | SIF_TRANSPORT))
+			if (is_big_ship(&Ship_info[Ships[i].ship_info_index]) || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Supercap])
 			{
 				capshipPresent = true;
 
 				capIndexes.push_back(i);
 				// ok.. what size class
 
-				if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
+				if (Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Supercap])
 				{
 					capship_counts[0]++;
 					if (capship_spreads[0] < Objects[Ships[i].objnum].radius)
 						capship_spreads[0] = Objects[Ships[i].objnum].radius;
 				}
-				else if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CORVETTE))
+				else if (Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Corvette])
 				{
 					capship_counts[1]++;
 					if (capship_spreads[1] < Objects[Ships[i].objnum].radius)
@@ -470,8 +469,10 @@ bool StartAutopilot()
 				}
 			}
 			// lock primary and secondary weapons
-			if ( LockWeaponsDuringAutopilot )
-				Ships[i].flags2 |= (SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+			if (LockWeaponsDuringAutopilot) {
+				Ships[i].flags.set(Ship::Ship_Flags::Primaries_locked);
+				Ships[i].flags.set(Ship::Ship_Flags::Secondaries_locked);
+			}
 
 			// clear the ship goals and cap the waypoint speed
 			ai_clear_ship_goals(&Ai_info[Ships[i].ai_index]);
@@ -570,7 +571,7 @@ bool StartAutopilot()
 				vm_vec_add(&front, &Autopilot_flight_leader->orient.vec.fvec, &zero);
 				vm_vec_add(&up, &Autopilot_flight_leader->orient.vec.uvec, &zero);
 				vm_vec_add(&offset, &zero, &zero);
-				if (Ship_info[Ships[*idx].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
+				if (Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Supercap])
 				{
 					//0 - below - three lines of position
 
@@ -604,7 +605,7 @@ bool StartAutopilot()
 
 					capship_placed[0]++;
 				}
-				else if (Ship_info[Ships[*idx].ship_info_index].flags & SIF_CORVETTE)
+				else if (Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Corvette])
 				{
 					//1 above - 3 lines of position
 					// front/back to zero
@@ -919,8 +920,10 @@ void EndAutoPilot()
 		   )
 		{
 			//unlock their weaponry
-			if ( LockWeaponsDuringAutopilot )
-				Ships[i].flags2 &= ~(SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+			if (LockWeaponsDuringAutopilot){
+				Ships[i].flags.unset(Ship::Ship_Flags::Primaries_locked);
+				Ships[i].flags.unset(Ship::Ship_Flags::Secondaries_locked);
+			}
 			Ai_info[Ships[i].ai_index].waypoint_speed_cap = -1; // uncap their speed
 			Ai_info[Ships[i].ai_index].mode = AIM_NONE; // make AI re-evaluate current ship mode
 
@@ -1193,13 +1196,13 @@ void NavSystem_Do()
 	*/
 	for (int i = 0; i < MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum != -1 && Ships[i].flags2 & SF2_NAVPOINT_NEEDSLINK)
+		if (Ships[i].objnum != -1 && Ships[i].flags[Ship::Ship_Flags::Navpoint_needslink])
 		{
 			object *other_objp = &Objects[Ships[i].objnum];
 
 			if (vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) < (NavLinkDistance + other_objp->radius))
 			{
-				Ships[i].flags2 &= ~SF2_NAVPOINT_NEEDSLINK;
+				Ships[i].flags.unset(Ship::Ship_Flags::Navpoint_needslink);
 				Ships[i].flags.set(Ship::Ship_Flags::Navpoint_carry);
 				
 				send_autopilot_msgID(NP_MSG_MISC_LINKED);

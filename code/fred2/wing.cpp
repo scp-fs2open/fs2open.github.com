@@ -311,7 +311,7 @@ int create_wing()
 		Wings[wing].departure_delay = 0;
 		Wings[wing].departure_cue = Locked_sexp_false;
 		Wings[wing].hotkey = -1;
-		Wings[wing].flags = 0;
+		Wings[wing].flags.reset();
 		Wings[wing].wave_delay_min = 0;
 		Wings[wing].wave_delay_max = 0;
 
@@ -343,7 +343,7 @@ int create_wing()
 
 			} else if (ptr->type == OBJ_SHIP) {
 				int ship_type = ship_query_general_type(ptr->instance);
-				if(ship_type < 0 || !(Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING))
+				if(ship_type < 0 || !(Ship_types[ship_type].ai_bools[Ship::Type_Info_AI::Can_form_wing]))
 				{
 					illegal_ships++;
 					unmark_object(OBJ_INDEX(ptr));

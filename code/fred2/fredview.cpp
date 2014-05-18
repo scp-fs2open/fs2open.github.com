@@ -2199,7 +2199,7 @@ void CFREDView::OnFormWing()
 	bool found = false;
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags & OF_MARKED)) {
-			if(Ships[ptr->instance].flags & SF_REINFORCEMENT) {
+			if(Ships[ptr->instance].flags[Ship::Ship_Flags::Reinforcement]) {
 				found = true;
 				break;
 			}
@@ -2240,7 +2240,7 @@ void CFREDView::OnUpdateFormWing(CCmdUI* pCmdUI)
 				if (ptr->type == OBJ_SHIP)
 				{
 					int ship_type = ship_query_general_type(ptr->instance);
-					if(ship_type > -1 && (Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING))
+					if(ship_type > -1 && (Ship_types[ship_type].ai_bools[Ship::Type_Info_AI::Can_form_wing]))
 					{
 						count++;
 					}
@@ -2541,13 +2541,13 @@ int CFREDView::global_error_check()
 				}
 			}
 
-			if ( (Ships[i].flags & SF_KILL_BEFORE_MISSION) && (Ships[i].hotkey >= 0) ){
+			if ( (Ships[i].flags[Ship::Ship_Flags::Kill_before_mission]) && (Ships[i].hotkey >= 0) ){
 				if (error("Ship flagged as \"destroy before mission start\" has a hotkey assignment")){
 					return 1;
 				}
 			}
 
-			if ( (Ships[i].flags & SF_KILL_BEFORE_MISSION) && (ptr->type == OBJ_START) ){
+			if ( (Ships[i].flags[Ship::Ship_Flags::Kill_before_mission]) && (ptr->type == OBJ_START) ){
 				if (error("Player start flagged as \"destroy before mission start\"")){
 					return 1;
 				}
@@ -2727,7 +2727,7 @@ int CFREDView::global_error_check()
 					}
 
 					int ship_type = ship_query_general_type(ship);
-					if(ship_type < 0 || !(Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING))
+					if(ship_type < 0 || !(Ship_types[ship_type].ai_bools[Ship::Type_Info_AI::Can_form_wing]))
 					{
 							if (error("Ship \"%s\" is an illegal type to be in a wing", Ships[ship].ship_name)){
 								return 1;

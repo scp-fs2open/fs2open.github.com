@@ -1316,7 +1316,7 @@ void asteroid_do_area_effect(object *asteroid_objp)
 		ship_objp = &Objects[so->objnum];
 	
 		// don't blast navbuoys
-		if ( ship_get_SIF(ship_objp->instance) & SIF_NAVBUOY ) {
+		if ( ship_get_SIF(ship_objp->instance)[Ship::Info_Flags::Navbuoy] ) {
 			continue;
 		}
 
@@ -1646,11 +1646,11 @@ int asteroid_will_collide(object *asteroid_obj, object *escort_objp)
  */
 int asteroid_valid_ship_to_warn_collide(ship *shipp)
 {
-	if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+	if ( !(is_big_huge(&Ship_info[shipp->ship_info_index])) ) {
 		return 0;
 	}
 
-	if ( shipp->flags & (SF_DYING|SF_DEPART_WARP) ) {
+	if ( shipp->flags[Ship::Ship_Flags::Dying] || shipp->flags[Ship::Ship_Flags::Depart_warp] ) {
 		return 0;
 	}
 
@@ -2074,7 +2074,7 @@ int set_asteroid_throw_objnum()
 		ship_objp = &Objects[so->objnum];
 		float		radius = ship_objp->radius*2.0f;
 
-		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & (SIF_HUGE_SHIP | SIF_BIG_SHIP)) {
+		if (is_big_huge(&Ship_info[Ships[ship_objp->instance].ship_info_index])) {
 			if (ship_objp->pos.xyz.x + radius > Asteroid_field.min_bound.xyz.x)
 				if (ship_objp->pos.xyz.y + radius > Asteroid_field.min_bound.xyz.y)
 				if (ship_objp->pos.xyz.z + radius > Asteroid_field.min_bound.xyz.z)
