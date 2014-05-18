@@ -42,7 +42,7 @@ enum cmdline_arg_type
 	STRING,
 };
 // values and order MUST match cmdline_arg_type
-char *cmdline_arg_types[] =
+const char *cmdline_arg_types[] =
 {
 	"NONE",
 	"INT",
@@ -61,7 +61,7 @@ public:
 	int name_found;				// true if parameter on command line, otherwise false
 	int arg_type;					// from enum cmdline_arg_type; used for help
 
-	cmdline_parm(char *name, char *help, int arg_type, bool stacks = false);
+	cmdline_parm(char *name, char *help, const int arg_type, bool stacks = false);
 	~cmdline_parm();
 	int found();
 	int get_int();
@@ -429,12 +429,12 @@ char* Cmdline_keyboard_layout = NULL;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", STRING);	// Cmdline_start_mission
-cmdline_parm old_collision_system("-old_collision", get_param_desc("-old_collision"), NONE); // Cmdline_new_collision
-cmdline_parm dis_collisions("-dis_collisions", get_param_desc("-dis_collisions"), NONE);	// Cmdline_dis_collisions
-cmdline_parm dis_weapons("-dis_weapons", get_param_desc("-dis_weapons"), NONE);		// Cmdline_dis_weapons
-cmdline_parm noparseerrors_arg("-noparseerrors", get_param_desc("-noparseerrors"), NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
+cmdline_parm old_collision_system("-old_collision", NULL, NONE); // Cmdline_new_collision
+cmdline_parm dis_collisions("-dis_collisions", NULL, NONE);	// Cmdline_dis_collisions
+cmdline_parm dis_weapons("-dis_weapons", NULL, NONE);		// Cmdline_dis_weapons
+cmdline_parm noparseerrors_arg("-noparseerrors", NULL, NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 #ifdef Allow_NoWarn
-cmdline_parm nowarn_arg("-no_warn", get_param_desc("-no_warn"), NONE);			// Cmdline_nowarn
+cmdline_parm nowarn_arg("-no_warn", "Disable warnings (not recommended)", NONE);			// Cmdline_nowarn
 #endif
 cmdline_parm extra_warn_arg("-extra_warn", "Enable 'extra' warnings", NONE);	// Cmdline_extra_warn
 cmdline_parm fps_arg("-fps", NULL, NONE);					// Cmdline_show_fps
@@ -891,7 +891,7 @@ void os_init_cmdline(char *cmdline)
 // arg constructor
 // name_ - name of the parameter, must start with '-' character
 // help_ - help text for this parameter
-cmdline_parm::cmdline_parm(char *name_, char *help_, int arg_type_, bool stacks_)
+cmdline_parm::cmdline_parm(char *name_, char *help_, const int arg_type_, bool stacks_)
 {
 	name = name_;
 	help = help_;
