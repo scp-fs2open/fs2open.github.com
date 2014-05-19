@@ -54,14 +54,14 @@ const char *cmdline_arg_types[] =
 class cmdline_parm {
 public:
 	cmdline_parm *next, *prev;
-	char *name;						// name of parameter, must start with '-' char
-	char *help;						// help text for this parameter
-	bool stacks;					// whether this arg stacks with each use or is replaced by newest use (should only be used for strings!!)
+	const char *name;						// name of parameter, must start with '-' char
+	const char *help;						// help text for this parameter
+	const bool stacks;					// whether this arg stacks with each use or is replaced by newest use (should only be used for strings!!)
 	char *args;						// string value for parameter arguments (NULL if no arguments)
 	int name_found;				// true if parameter on command line, otherwise false
-	int arg_type;					// from enum cmdline_arg_type; used for help
+	const int arg_type;					// from enum cmdline_arg_type; used for help
 
-	cmdline_parm(char *name, char *help, const int arg_type, bool stacks = false);
+	cmdline_parm(const char *name, const char *help, const int arg_type, const bool stacks = false);
 	~cmdline_parm();
 	int found();
 	int get_int();
@@ -226,7 +226,7 @@ Flag exe_params[] =
 };
 
 // forward declaration
-char * get_param_desc(const char *flag_name);
+const char * get_param_desc(const char *flag_name);
 
 // here are the command line parameters that we will be using for FreeSpace
 
@@ -888,17 +888,19 @@ void os_init_cmdline(char *cmdline)
 }
 
 
-// arg constructor
-// name_ - name of the parameter, must start with '-' character
-// help_ - help text for this parameter
-cmdline_parm::cmdline_parm(char *name_, char *help_, const int arg_type_, bool stacks_)
+/*
+ * arg constructor
+ *
+ * @param name_    name of the parameter, must start with '-' character
+ * @param help_    help text for this parameter
+ * @param arg_type_    parameters arguement type (if any)
+ * @param stacks_    can the parameter be stacked
+ */
+cmdline_parm::cmdline_parm(const char *name_, const char *help_, const int arg_type_, const bool stacks_):
+	name(name_), help(help_), stacks(stacks_), arg_type(arg_type_)
 {
-	name = name_;
-	help = help_;
-	stacks = stacks_;
 	args = NULL;
 	name_found = 0;
-	arg_type = arg_type_;
 
 	if (Parm_list_inited == 0) {
 		list_init(&Parm_list);
@@ -1680,7 +1682,7 @@ int parse_cmdline(char *cmdline)
 	return SetCmdlineParams();
 }
 
-char * get_param_desc(const char *flag_name)
+const char * get_param_desc(const char *flag_name)
 {
 	int i;
 	int flag_size = sizeof(Flag);
