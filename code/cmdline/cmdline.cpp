@@ -36,10 +36,10 @@
 
 enum cmdline_arg_type
 {
-	NONE       =0,
-	INT,
-	FLOAT,
-	STRING,
+	AT_NONE       =0,
+	AT_INT,
+	AT_FLOAT,
+	AT_STRING,
 };
 // values and order MUST match cmdline_arg_type
 const char *cmdline_arg_types[] =
@@ -70,7 +70,7 @@ public:
 	bool check_if_args_is_valid();
 };
 
-static cmdline_parm Parm_list(NULL, NULL, NONE);
+static cmdline_parm Parm_list(NULL, NULL, AT_NONE);
 static int Parm_list_inited = 0;
 
 extern int Show_framerate;	// from freespace.cpp
@@ -99,7 +99,7 @@ enum
 
 typedef struct
 {
-	// DO NOT CHANGE THE SIZE OF THIS STRING!
+	// DO NOT CHANGE THE SIZE OF THIS AT_STRING!
 	char name[32];
 
 } EasyFlag;
@@ -231,24 +231,24 @@ const char * get_param_desc(const char *flag_name);
 // here are the command line parameters that we will be using for FreeSpace
 
 // RETAIL options ----------------------------------------------
-cmdline_parm connect_arg("-connect", "Automatically connect to multiplayer IP:PORT", STRING);			// Cmdline_connect_addr
-cmdline_parm gamename_arg("-gamename", "Set multiplayer game name", STRING);		// Cmdline_game_name
-cmdline_parm gamepassword_arg("-password", "Set multiplayer game password", STRING);	// Cmdline_game_password
-cmdline_parm allowabove_arg("-allowabove", "Ranks above this can join multi", STRING);	// Cmdline_rank_above
-cmdline_parm allowbelow_arg("-allowbelow", "Ranks below this can join multi", STRING);	// Cmdline_rank_below
-cmdline_parm standalone_arg("-standalone", NULL, NONE);
-cmdline_parm nosound_arg("-nosound", NULL, NONE);			// Cmdline_freespace_no_sound
-cmdline_parm nomusic_arg("-nomusic", NULL, NONE);			// Cmdline_freespace_no_music
-cmdline_parm startgame_arg("-startgame", NULL, NONE);		// Cmdline_start_netgame
-cmdline_parm gameclosed_arg("-closed", NULL, NONE);		// Cmdline_closed_game
-cmdline_parm gamerestricted_arg("-restricted", NULL, NONE);	// Cmdline_restricted_game
-cmdline_parm port_arg("-port", "Multiplayer network port", INT);
-cmdline_parm multilog_arg("-multilog", NULL, NONE);		// Cmdline_multi_log
-cmdline_parm client_dodamage("-clientdamage", NULL, NONE);	// Cmdline_client_dodamage
-cmdline_parm pof_spew("-pofspew", NULL, NONE);			// Cmdline_spew_pof_info
-cmdline_parm mouse_coords("-coords", NULL, NONE);			// Cmdline_mouse_coords
-cmdline_parm timeout("-timeout", "Multiplayer network timeout (secs)", INT);				// Cmdline_timeout
-cmdline_parm bit32_arg("-32bit", "Deprecated", NONE);				// (only here for retail compatibility reasons, doesn't actually do anything)
+cmdline_parm connect_arg("-connect", "Automatically connect to multiplayer IP:PORT", AT_STRING);			// Cmdline_connect_addr
+cmdline_parm gamename_arg("-gamename", "Set multiplayer game name", AT_STRING);		// Cmdline_game_name
+cmdline_parm gamepassword_arg("-password", "Set multiplayer game password", AT_STRING);	// Cmdline_game_password
+cmdline_parm allowabove_arg("-allowabove", "Ranks above this can join multi", AT_STRING);	// Cmdline_rank_above
+cmdline_parm allowbelow_arg("-allowbelow", "Ranks below this can join multi", AT_STRING);	// Cmdline_rank_below
+cmdline_parm standalone_arg("-standalone", NULL, AT_NONE);
+cmdline_parm nosound_arg("-nosound", NULL, AT_NONE);			// Cmdline_freespace_no_sound
+cmdline_parm nomusic_arg("-nomusic", NULL, AT_NONE);			// Cmdline_freespace_no_music
+cmdline_parm startgame_arg("-startgame", NULL, AT_NONE);		// Cmdline_start_netgame
+cmdline_parm gameclosed_arg("-closed", NULL, AT_NONE);		// Cmdline_closed_game
+cmdline_parm gamerestricted_arg("-restricted", NULL, AT_NONE);	// Cmdline_restricted_game
+cmdline_parm port_arg("-port", "Multiplayer network port", AT_INT);
+cmdline_parm multilog_arg("-multilog", NULL, AT_NONE);		// Cmdline_multi_log
+cmdline_parm client_dodamage("-clientdamage", NULL, AT_NONE);	// Cmdline_client_dodamage
+cmdline_parm pof_spew("-pofspew", NULL, AT_NONE);			// Cmdline_spew_pof_info
+cmdline_parm mouse_coords("-coords", NULL, AT_NONE);			// Cmdline_mouse_coords
+cmdline_parm timeout("-timeout", "Multiplayer network timeout (secs)", AT_INT);				// Cmdline_timeout
+cmdline_parm bit32_arg("-32bit", "Deprecated", AT_NONE);				// (only here for retail compatibility reasons, doesn't actually do anything)
 
 char *Cmdline_connect_addr = NULL;
 char *Cmdline_game_name = NULL;
@@ -275,31 +275,31 @@ int Cmdline_use_last_pilot = 0;
 // FSO options -------------------------------------------------
 
 // Graphics related
-cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
-cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", FLOAT);		// Cmdline_clip_dist
-cmdline_parm spec_exp_arg("-spec_exp", "Adjusts the size of shiny spots on ships", FLOAT);
-cmdline_parm ogl_spec_arg("-ogl_spec", "Shininess of specular light", FLOAT);		// Cmdline_ogl_spec
-cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", FLOAT);
-cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", FLOAT);
-cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", FLOAT);
-cmdline_parm ambient_factor_arg("-ambient_factor", "Adjusts ambient light applied to all parts of a ship", INT);		// Cmdline_ambient_factor
-cmdline_parm missile_lighting_arg("-missile_lighting", NULL, NONE);	// Cmdline_missile_lighting
-cmdline_parm env("-noenv", NULL, NONE);								// Cmdline_env
-cmdline_parm glow_arg("-noglow", NULL, NONE); 						// Cmdline_glow  -- use Bobs glow code
-cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
-cmdline_parm noscalevid_arg("-noscalevid", NULL, NONE);				// Cmdline_noscalevid  -- disable video scaling that fits to window
-cmdline_parm spec_arg("-nospec", NULL, NONE);			// Cmdline_spec  --
-cmdline_parm noemissive_arg("-no_emissive_light", "Disable emissive light from ships", NONE);		// Cmdline_no_emissive  -- don't use emissive light in OGL
-cmdline_parm normal_arg("-nonormal", NULL, NONE);						// Cmdline_normal  -- disable normal mapping
-cmdline_parm height_arg("-noheight", NULL, NONE);						// Cmdline_height  -- enable support for parallax mapping
-cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, NONE);
-cmdline_parm softparticles_arg("-soft_particles", NULL, NONE);
-cmdline_parm postprocess_arg("-post_process", NULL, NONE);
-cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires -post_process", INT);
-cmdline_parm fxaa_arg("-fxaa", NULL, NONE);
-cmdline_parm fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-9), requires -post_process and -fxaa", INT);
-cmdline_parm fb_explosions_arg("-fb_explosions", NULL, NONE);
-cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, NONE);
+cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
+cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
+cmdline_parm spec_exp_arg("-spec_exp", "Adjusts the size of shiny spots on ships", AT_FLOAT);
+cmdline_parm ogl_spec_arg("-ogl_spec", "Shininess of specular light", AT_FLOAT);		// Cmdline_ogl_spec
+cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT);
+cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
+cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", AT_FLOAT);
+cmdline_parm ambient_factor_arg("-ambient_factor", "Adjusts ambient light applied to all parts of a ship", AT_INT);		// Cmdline_ambient_factor
+cmdline_parm missile_lighting_arg("-missile_lighting", NULL, AT_NONE);	// Cmdline_missile_lighting
+cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
+cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
+cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
+cmdline_parm noscalevid_arg("-noscalevid", NULL, AT_NONE);				// Cmdline_noscalevid  -- disable video scaling that fits to window
+cmdline_parm spec_arg("-nospec", NULL, AT_NONE);			// Cmdline_spec  --
+cmdline_parm noemissive_arg("-no_emissive_light", "Disable emissive light from ships", AT_NONE);		// Cmdline_no_emissive  -- don't use emissive light in OGL
+cmdline_parm normal_arg("-nonormal", NULL, AT_NONE);						// Cmdline_normal  -- disable normal mapping
+cmdline_parm height_arg("-noheight", NULL, AT_NONE);						// Cmdline_height  -- enable support for parallax mapping
+cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, AT_NONE);
+cmdline_parm softparticles_arg("-soft_particles", NULL, AT_NONE);
+cmdline_parm postprocess_arg("-post_process", NULL, AT_NONE);
+cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires -post_process", AT_INT);
+cmdline_parm fxaa_arg("-fxaa", NULL, AT_NONE);
+cmdline_parm fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-9), requires -post_process and -fxaa", AT_INT);
+cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
+cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -326,10 +326,10 @@ bool Cmdline_fb_explosions = 0;
 extern bool ls_force_off;
 
 // Game Speed related
-cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL, NONE);	// Cmdline_cache_bitmaps
-cmdline_parm img2dds_arg("-img2dds", NULL, NONE);			// Cmdline_img2dds
-cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", NONE);	// Cmdline_NoFPSCap
-cmdline_parm no_vsync_arg("-no_vsync", NULL, NONE);		// Cmdline_no_vsync
+cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL, AT_NONE);	// Cmdline_cache_bitmaps
+cmdline_parm img2dds_arg("-img2dds", NULL, AT_NONE);			// Cmdline_img2dds
+cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NONE);	// Cmdline_NoFPSCap
+cmdline_parm no_vsync_arg("-no_vsync", NULL, AT_NONE);		// Cmdline_no_vsync
 
 int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
 int Cmdline_img2dds = 0;
@@ -337,11 +337,11 @@ int Cmdline_NoFPSCap = 0; // Disable FPS capping - kazan
 int Cmdline_no_vsync = 0;
 
 // HUD related
-cmdline_parm ballistic_gauge("-ballistic_gauge", NULL, NONE);	// Cmdline_ballistic_gauge
-cmdline_parm dualscanlines_arg("-dualscanlines", NULL, NONE); // Cmdline_dualscanlines  -- Change to phreaks options including new targeting code
-cmdline_parm orb_radar("-orbradar", NULL, NONE);			// Cmdline_orb_radar
-cmdline_parm rearm_timer_arg("-rearm_timer", NULL, NONE);	// Cmdline_rearm_timer
-cmdline_parm targetinfo_arg("-targetinfo", NULL, NONE);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C
+cmdline_parm ballistic_gauge("-ballistic_gauge", NULL, AT_NONE);	// Cmdline_ballistic_gauge
+cmdline_parm dualscanlines_arg("-dualscanlines", NULL, AT_NONE); // Cmdline_dualscanlines  -- Change to phreaks options including new targeting code
+cmdline_parm orb_radar("-orbradar", NULL, AT_NONE);			// Cmdline_orb_radar
+cmdline_parm rearm_timer_arg("-rearm_timer", NULL, AT_NONE);	// Cmdline_rearm_timer
+cmdline_parm targetinfo_arg("-targetinfo", NULL, AT_NONE);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C
 
 int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 int Cmdline_dualscanlines = 0;
@@ -350,12 +350,12 @@ int Cmdline_rearm_timer = 0;
 int Cmdline_targetinfo = 0;
 
 // Gameplay related
-cmdline_parm use_3dwarp("-3dwarp", NULL, NONE);			// Cmdline_3dwarp
-cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL, NONE);	// Cmdline_ship_choice_3d
-cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL, NONE);	// Cmdline_weapon_choice_3d
-cmdline_parm use_warp_flash("-warp_flash", NULL, NONE);	// Cmdline_warp_flash
-cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, NONE);
-cmdline_parm stretch_menu("-stretch_menu", NULL, NONE);	// Cmdline_stretch_menu
+cmdline_parm use_3dwarp("-3dwarp", NULL, AT_NONE);			// Cmdline_3dwarp
+cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL, AT_NONE);	// Cmdline_ship_choice_3d
+cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL, AT_NONE);	// Cmdline_weapon_choice_3d
+cmdline_parm use_warp_flash("-warp_flash", NULL, AT_NONE);	// Cmdline_warp_flash
+cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, AT_NONE);
+cmdline_parm stretch_menu("-stretch_menu", NULL, AT_NONE);	// Cmdline_stretch_menu
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
@@ -365,26 +365,26 @@ int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
 
 // Audio related
-cmdline_parm query_speech_arg("-query_speech", NULL, NONE);	// Cmdline_query_speech
-cmdline_parm snd_preload_arg("-snd_preload", NULL, NONE);		// Cmdline_snd_preload
-cmdline_parm voice_recognition_arg("-voicer", NULL, NONE);	// Cmdline_voice_recognition
+cmdline_parm query_speech_arg("-query_speech", NULL, AT_NONE);	// Cmdline_query_speech
+cmdline_parm snd_preload_arg("-snd_preload", NULL, AT_NONE);		// Cmdline_snd_preload
+cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
 
 int Cmdline_query_speech = 0;
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
 int Cmdline_voice_recognition = 0;
 
 // MOD related
-cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", STRING, true);	// Cmdline_mod  -- DTP modsupport
+cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
 
 char *Cmdline_mod = NULL; //DTP for mod argument
 
 // Multiplayer/Network related
-cmdline_parm almission_arg("-almission", "Autoload multiplayer mission", STRING);		// Cmdline_almission  -- DTP for autoload Multi mission
-cmdline_parm ingamejoin_arg("-ingame_join", NULL, NONE);	// Cmdline_ingamejoin
-cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL, NONE);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
-cmdline_parm missioncrcspew_arg("-missioncrcs", NULL, STRING);		// Cmdline_spew_mission_crcs
-cmdline_parm tablecrcspew_arg("-tablecrcs", NULL, STRING);			// Cmdline_spew_table_crcs
-cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", INT);
+cmdline_parm almission_arg("-almission", "Autoload multiplayer mission", AT_STRING);		// Cmdline_almission  -- DTP for autoload Multi mission
+cmdline_parm ingamejoin_arg("-ingame_join", NULL, AT_NONE);	// Cmdline_ingamejoin
+cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL, AT_NONE);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
+cmdline_parm missioncrcspew_arg("-missioncrcs", NULL, AT_STRING);		// Cmdline_spew_mission_crcs
+cmdline_parm tablecrcspew_arg("-tablecrcs", NULL, AT_STRING);			// Cmdline_spew_table_crcs
+cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", AT_INT);
 
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
 int Cmdline_ingamejoin = 0;
@@ -394,22 +394,22 @@ char *Cmdline_spew_table_crcs = NULL;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
-cmdline_parm loadallweapons_arg("-loadallweps", NULL, NONE);	// Cmdline_load_all_weapons
-cmdline_parm htl_arg("-nohtl", NULL, NONE);				// Cmdline_nohtl  -- don't use HT&L
-cmdline_parm noibx_arg("-noibx", NULL, NONE);				// Cmdline_noibx
-cmdline_parm nomovies_arg("-nomovies", NULL, NONE);		// Cmdline_nomovies  -- Allows video streaming
-cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, NONE);	// Cmdline_no_set_gamma
-cmdline_parm no_vbo_arg("-novbo", NULL, NONE);			// Cmdline_novbo
-cmdline_parm no_fbo_arg("-disable_fbo", NULL, NONE);		// Cmdline_no_fbo
-cmdline_parm no_pbo_arg("-disable_pbo", NULL, NONE);		// Cmdline_no_pbo
-cmdline_parm noglsl_arg("-no_glsl", NULL, NONE);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
-cmdline_parm mipmap_arg("-mipmap", NULL, NONE);			// Cmdline_mipmap
-cmdline_parm atiswap_arg("-ati_swap", NULL, NONE);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
-cmdline_parm no3dsound_arg("-no_3d_sound", NULL, NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
-cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL, NONE); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
-cmdline_parm no_di_mouse_arg("-disable_di_mouse", "Disable DirectInput mouse code (Windows only)", NONE); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
-cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
-cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwertz or azerty)", STRING);
+cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
+cmdline_parm htl_arg("-nohtl", NULL, AT_NONE);				// Cmdline_nohtl  -- don't use HT&L
+cmdline_parm noibx_arg("-noibx", NULL, AT_NONE);				// Cmdline_noibx
+cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
+cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
+cmdline_parm no_vbo_arg("-novbo", NULL, AT_NONE);			// Cmdline_novbo
+cmdline_parm no_fbo_arg("-disable_fbo", NULL, AT_NONE);		// Cmdline_no_fbo
+cmdline_parm no_pbo_arg("-disable_pbo", NULL, AT_NONE);		// Cmdline_no_pbo
+cmdline_parm noglsl_arg("-no_glsl", NULL, AT_NONE);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
+cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
+cmdline_parm atiswap_arg("-ati_swap", NULL, AT_NONE);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
+cmdline_parm no3dsound_arg("-no_3d_sound", NULL, AT_NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
+cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL, AT_NONE); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
+cmdline_parm no_di_mouse_arg("-disable_di_mouse", "Disable DirectInput mouse code (Windows only)", AT_NONE); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
+cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, AT_NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
+cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwertz or azerty)", AT_STRING);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
@@ -428,33 +428,33 @@ int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
 
 // Developer/Testing related
-cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", STRING);	// Cmdline_start_mission
-cmdline_parm old_collision_system("-old_collision", NULL, NONE); // Cmdline_new_collision
-cmdline_parm dis_collisions("-dis_collisions", NULL, NONE);	// Cmdline_dis_collisions
-cmdline_parm dis_weapons("-dis_weapons", NULL, NONE);		// Cmdline_dis_weapons
-cmdline_parm noparseerrors_arg("-noparseerrors", NULL, NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
+cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", AT_STRING);	// Cmdline_start_mission
+cmdline_parm old_collision_system("-old_collision", NULL, AT_NONE); // Cmdline_new_collision
+cmdline_parm dis_collisions("-dis_collisions", NULL, AT_NONE);	// Cmdline_dis_collisions
+cmdline_parm dis_weapons("-dis_weapons", NULL, AT_NONE);		// Cmdline_dis_weapons
+cmdline_parm noparseerrors_arg("-noparseerrors", NULL, AT_NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 #ifdef Allow_NoWarn
-cmdline_parm nowarn_arg("-no_warn", "Disable warnings (not recommended)", NONE);			// Cmdline_nowarn
+cmdline_parm nowarn_arg("-no_warn", "Disable warnings (not recommended)", AT_NONE);			// Cmdline_nowarn
 #endif
-cmdline_parm extra_warn_arg("-extra_warn", "Enable 'extra' warnings", NONE);	// Cmdline_extra_warn
-cmdline_parm fps_arg("-fps", NULL, NONE);					// Cmdline_show_fps
-cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL, NONE);	// Cmdline_show_mem_usage
-cmdline_parm pos_arg("-pos", NULL, NONE);					// Cmdline_show_pos
-cmdline_parm stats_arg("-stats", NULL, NONE);				// Cmdline_show_stats
-cmdline_parm save_render_targets_arg("-save_render_target", NULL, NONE);	// Cmdline_save_render_targets
-cmdline_parm debug_window_arg("-debug_window", NULL, NONE);	// Cmdline_debug_window
-cmdline_parm window_arg("-window", NULL, NONE);				// Cmdline_window
-cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", NONE);
-cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", STRING);
-cmdline_parm verify_vps_arg("-verify_vps", NULL, NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
-cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", NONE);
+cmdline_parm extra_warn_arg("-extra_warn", "Enable 'extra' warnings", AT_NONE);	// Cmdline_extra_warn
+cmdline_parm fps_arg("-fps", NULL, AT_NONE);					// Cmdline_show_fps
+cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL, AT_NONE);	// Cmdline_show_mem_usage
+cmdline_parm pos_arg("-pos", NULL, AT_NONE);					// Cmdline_show_pos
+cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
+cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
+cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
+cmdline_parm window_arg("-window", NULL, AT_NONE);				// Cmdline_window
+cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", AT_NONE);
+cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
+cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
 #ifdef SCP_UNIX
-cmdline_parm no_grab("-nograb", NULL, NONE);				// Cmdline_no_grab
+cmdline_parm no_grab("-nograb", NULL, AT_NONE);				// Cmdline_no_grab
 #endif
-cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, NONE); //Cmdline_reparse_mainhall
-cmdline_parm frame_profile_arg("-profile_frame_time", NULL, NONE); //Cmdline_frame_profile
-cmdline_parm frame_profile_write_file("-profile_write_file", NULL, NONE); // Cmdline_profile_write_file
-cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, NONE); //Cmdline_no_unfocus_pause
+cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
+cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
+cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
+cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
@@ -483,17 +483,17 @@ bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
 
 // Other
-cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", NONE);
-cmdline_parm output_sexp_arg("-output_sexps", NULL, NONE); //WMC - outputs all SEXPs to sexps.html
-cmdline_parm output_scripting_arg("-output_scripting", NULL, NONE);	//WMC
+cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
+cmdline_parm output_sexp_arg("-output_sexps", NULL, AT_NONE); //WMC - outputs all SEXPs to sexps.html
+cmdline_parm output_scripting_arg("-output_scripting", NULL, AT_NONE);	//WMC
 
 // Deprecated flags - CommanderDJ
-cmdline_parm deprecated_spec_arg("-spec", "Deprecated", NONE);
-cmdline_parm deprecated_glow_arg("-glow", "Deprecated", NONE);
-cmdline_parm deprecated_normal_arg("-normal", "Deprecated", NONE);
-cmdline_parm deprecated_env_arg("-env", "Deprecated", NONE);
-cmdline_parm deprecated_tbp_arg("-tbp", "Deprecated", NONE);
-cmdline_parm deprecated_jpgtga_arg("-jpgtga", "Deprecated", NONE);
+cmdline_parm deprecated_spec_arg("-spec", "Deprecated", AT_NONE);
+cmdline_parm deprecated_glow_arg("-glow", "Deprecated", AT_NONE);
+cmdline_parm deprecated_normal_arg("-normal", "Deprecated", AT_NONE);
+cmdline_parm deprecated_env_arg("-env", "Deprecated", AT_NONE);
+cmdline_parm deprecated_tbp_arg("-tbp", "Deprecated", AT_NONE);
+cmdline_parm deprecated_jpgtga_arg("-jpgtga", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -769,7 +769,7 @@ void os_validate_parms(char *cmdline)
 						// don't output deprecated flags
 						if (stricmp("deprecated", parmp->help)) {
 							sp = strlen(parmp->name);
-							if (parmp->arg_type != NONE) {
+							if (parmp->arg_type != AT_NONE) {
 								atp = strlen(cmdline_arg_types[parmp->arg_type]);
 								printf("    [ %s ]%*s[ %s ]%*s- %s\n", parmp->name, (STR_SIZE - sp -1), NOX(" "), cmdline_arg_types[parmp->arg_type], AT_SIZE-atp, NOX(" "), parmp->help);
 							} else {
@@ -953,7 +953,7 @@ int cmdline_parm::found()
 // returns - the interger representation for the parameter argument
 int cmdline_parm::get_int()
 {
-	Assertion(arg_type == INT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_int() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
+	Assertion(arg_type == AT_INT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_int() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
 	int offset = 0;
@@ -978,7 +978,7 @@ int cmdline_parm::get_int()
 // returns - the float representation for the parameter argument
 float cmdline_parm::get_float()
 {
-	Assertion(arg_type == FLOAT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_float() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
+	Assertion(arg_type == AT_FLOAT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_float() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
 	int offset = 0;
@@ -1003,7 +1003,7 @@ float cmdline_parm::get_float()
 // returns - the string value for the parameter argument
 char *cmdline_parm::str()
 {
-	Assertion(arg_type == STRING, "Coding error! Cmdline arg (%s) called cmdline_parm::str() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
+	Assertion(arg_type == AT_STRING, "Coding error! Cmdline arg (%s) called cmdline_parm::str() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
 	return args;
