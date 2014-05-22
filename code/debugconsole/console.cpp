@@ -138,8 +138,9 @@ void dc_do_command(SCP_string *cmd_str)
 	 *      Call the function to process the command (the rest of the command line is in the parser)
 	 *          Function takes care of long_help and status depending on the mode.
 	 */
+	int i;
 	SCP_string command;
-	extern SCP_vector<debug_command*> dc_commands;	// z64: I don't like this extern here, at all. Nope nope nope.
+	extern debug_command* dc_commands[];	// z64: I don't like this extern here, at all. Nope nope nope.
 
 	if (cmd_str->empty()) {
 		return;
@@ -149,15 +150,20 @@ void dc_do_command(SCP_string *cmd_str)
 
 	dc_stuff_string_white(command);		// Grab the first token, presumably this is a command
 
-	SCP_vector<debug_command*>::iterator it = std::find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(command.c_str()));
+	for (i = 0; i < dc_commands_size; ++i) {
 
-	if (it == dc_commands.end()) {
+		if (stricmp(dc_commands[i]->name, command.c_str()) == 0) {
+			break;
+		} // Else, continue
+	}
+
+	if (i == dc_commands_size) {
 		dc_printf("Command not found: '%s'\n", command.c_str());
 		return;
 	} // Else, we found our command
 
 	try {
-		(*it)->func();	// Run the command!
+		dc_commands[i]->func();	// Run the command!
 	
 	} catch (errParseString err) {
 		dc_printf("Require string(s) not found: \n");
@@ -267,16 +273,11 @@ void dc_draw_window(bool show_prompt)
 
 void dc_init(void)
 {
-	extern SCP_vector<debug_command*> dc_commands;
-
 	if (debug_inited) {
 		return;
 	}
 
 	debug_inited = TRUE;
-
-	// Sort debug_commands
-	std::sort(dc_commands.begin(), dc_commands.end(), dcmd_less);
 
 	// Init window settings
 	dc_font = FONT1;
