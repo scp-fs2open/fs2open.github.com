@@ -913,6 +913,8 @@ cmdline_parm::cmdline_parm(const char *name_, const char *help_, const int arg_t
 			help = get_param_desc(name);
 		}
 		list_append(&Parm_list, this);
+	} else {
+		list_init(&Parm_list);
 	}
 }
 
