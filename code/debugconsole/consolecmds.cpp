@@ -45,7 +45,7 @@ debug_command::debug_command(const char *_name, const char *_help, void(*_func)(
 	int i = 0;
 	int ret = 0;
 
-	if (dc_commands_size > DC_MAX_COMMANDS) {
+	if (dc_commands_size >= DC_MAX_COMMANDS) {
 		Error(LOCATION, "Too many debug console commands! Please inform a coder to increase DC_MAX_COMMANDS.");
 		return;
 	}
