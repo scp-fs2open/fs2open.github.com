@@ -26,8 +26,8 @@
 #include <algorithm>
 
 // ========================= GLOBALS =========================
-SCP_vector<debug_command*> dc_commands;
-typedef SCP_vector<debug_command*>::iterator dc_commands_it;
+debug_command *dc_commands[DC_MAX_COMMANDS];
+int dc_commands_size = 0;
 
 // ========================= LOCALS ==========================
 // dcf_shell commands
@@ -36,23 +36,53 @@ void dc_shell_resize( void );
 void dc_shell_resize_buf( void );
 
 // =================== class debug_command ===================
-debug_command::debug_command(const char *_name, const char *_help, void (*_func)())
-	: name(_name), help(_help), func(_func)
-{
-	dc_commands_it it = std::find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(_name));
-	
-	if (it != dc_commands.end()) {
-		Int3();		// Command already exists! Somebody didn't use the DCF macro as they should've...
+debug_command::debug_command()
+: name(""), help(""), func(NULL) {
+};
+
+debug_command::debug_command(const char *_name, const char *_help, void(*_func)())
+	: name(_name), help(_help), func(_func) {
+	int i = 0;
+	int ret = 0;
+
+	if (dc_commands_size > DC_MAX_COMMANDS) {
+		Error(LOCATION, "Too many debug console commands! Please inform a coder to increase DC_MAX_COMMANDS.");
+		return;
 	}
 
-	dc_commands.push_back(this);
+	// Start the insertion sort by finding where to stick the debug command
+	for (; i < dc_commands_size; ++i) {
+		ret = stricmp(dc_commands[i]->name, _name);
+
+		if (ret == 0) {
+			Error(LOCATION, "Debug Command %s already exists! Please inform a coder immediately.", _name);
+			return;
+		} else if (ret > 0) {
+			// Insert the command here
+			break;
+		} // Else, do nothing
+	}
+
+	// Then, do the insertion
+	if (i < dc_commands_size) {
+		for (int j = dc_commands_size; j > i; --j) {
+			dc_commands[j] = dc_commands[j - 1];
+		}
+		dc_commands[i] = this;
+		dc_commands_size++;
+	} else {
+		dc_commands[dc_commands_size] = this;
+		dc_commands_size++;
+	}
 }
 
 // ============================== IMPLEMENTATIONS =============================
 
 DCF(debug, "Runs a command in debug mode.")
 {
+	int i;
 	SCP_string command = "";
+	
 	Dc_debug_on = true;
 
 	dc_stuff_string_white(command);
@@ -62,16 +92,20 @@ DCF(debug, "Runs a command in debug mode.")
 		return;
 	} // Else, command is present.
 
-	dc_commands_it it = std::find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(command.c_str()));
+	for (i = 0; i < dc_commands_size; ++i) {
+		if (stricmp(dc_commands[i]->name, command.c_str()) == 0) {
+			break;
+		} // Else, continue
+	}
 
-	if (it == dc_commands.end()) {
+	if (i == dc_commands_size) {
 		dc_printf("<debug> Command not found: '%s'\n", command.c_str());
 		return;
-	} // Else, command exists. Run it.
+	} // Else, we found our command
 
 	dc_printf("<debug> Executing command: '%s'\n", command.c_str());
 	// try {
-	(*it)->func();
+	dc_commands[i]->func();
 	// } catch {
 	// }
 
@@ -82,6 +116,7 @@ DCF(help, "Displays the help list." )
 {
 	extern uint DROWS;
 
+	int i;
 	SCP_string command = "";
 
 	dc_maybe_stuff_string_white(command);
@@ -92,14 +127,18 @@ DCF(help, "Displays the help list." )
 		return;
 
 	} else if (command != "") {
-		dc_commands_it it = std::find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(command.c_str()));
-
-		if (it == dc_commands.end()) {
-			dc_printf("Command not found: '%s'\n", command.c_str());
-			return;
+		for (i = 0; i < dc_commands_size; ++i) {
+			if (stricmp(dc_commands[i]->name, command.c_str()) == 0) {
+				break;
+			} // Else, continue
 		}
 
-		dc_printf("%s\n", (*it)->help);
+		if (i == dc_commands_size) {
+			dc_printf("Command not found: '%s'\n", command.c_str());
+			return;
+		} // Else, we found our command
+
+		dc_printf("%s\n", dc_commands[i]->help);
 		return;
 	} // Else, command line is empty, print out the help list
 
@@ -111,12 +150,12 @@ DCF(help, "Displays the help list." )
 	dc_printf("\n");
 
 	dc_printf(" Available commands:\n");
-	for (dc_commands_it it = dc_commands.begin(); it != dc_commands.end(); ++it) {
+	for (i = 0; i < dc_commands_size; ++i) {
 		if (((lastline % DROWS) == 0) && (lastline != 0)) {
 			dc_pause_output();
 		}
 
-		dc_printf(" %s - %s\n", (*it)->name, (*it)->help);
+		dc_printf(" %s - %s\n", dc_commands[i]->name, dc_commands[i]->help);
 	}
 }
 
