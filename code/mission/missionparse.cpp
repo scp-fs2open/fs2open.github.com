@@ -4226,7 +4226,7 @@ void parse_wing(mission *pm)
 {
 	int wingnum, i, wing_goals, delay, saved_arrival_delay;
 	char name[NAME_LENGTH], ship_names[MAX_SHIPS_PER_WING][NAME_LENGTH];
-	char wing_flag_strings[MAX_WING_FLAGS][NAME_LENGTH];
+	char wing_flag_strings[(int)Ship::Wing_Flags::NUM_VALUES][NAME_LENGTH];
 	wing *wingp;
 
 	Assert(pm != NULL);
@@ -4400,7 +4400,7 @@ void parse_wing(mission *pm)
 	if (optional_string("+Flags:")) {
 		int count;
 
-		count = stuff_string_list( wing_flag_strings, MAX_WING_FLAGS );
+		count = stuff_string_list(wing_flag_strings, (int)Ship::Wing_Flags::NUM_VALUES);
 		for (i = 0; i < count; i++ ) {
 			if ( !stricmp( wing_flag_strings[i], NOX("ignore-count")) )
 				wingp->flags.set(Ship::Wing_Flags::Ignore_count);

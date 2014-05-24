@@ -47,9 +47,6 @@
 #include "network/multiutil.h"
 #include "model/model.h"
 
-// If any of these bits in the ship->flags are set, ignore this ship when targeting
-int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);
-
 // Global values for the target bracket width and height, used for debugging
 int Hud_target_w, Hud_target_h;
 
@@ -1295,7 +1292,7 @@ ship_obj *advance_ship(ship_obj *so, int next_flag)
 ///                                        
 /// \returns         The next object to target if targeting was successful. 
 ///                  Returns NULL if targeting was unsuccessful.
-static object* select_next_target_by_distance( const bool targeting_from_closest_to_farthest, const int valid_team_mask, const int attacked_object_number = -1, Ship::info_flags* target_filters = NULL) {
+static object* select_next_target_by_distance(const bool targeting_from_closest_to_farthest, const int valid_team_mask, const int attacked_object_number = -1, flagset<Ship::Info_Flags>* target_filters = NULL) {
 	object *minimum_object_ptr, *maximum_object_ptr, *nearest_object_ptr;
 	minimum_object_ptr = maximum_object_ptr = nearest_object_ptr = NULL;
 	float current_distance = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
@@ -1304,7 +1301,7 @@ static object* select_next_target_by_distance( const bool targeting_from_closest
 	int player_object_index = OBJ_INDEX(Player_obj);
 
 	if (target_filters == NULL) {
-		target_filters = new Ship::info_flags();
+		target_filters = new flagset<Ship::Info_Flags>();
 		target_filters->set(Ship::Info_Flags::Cargo);
 		target_filters->set(Ship::Info_Flags::Navbuoy);
 	}

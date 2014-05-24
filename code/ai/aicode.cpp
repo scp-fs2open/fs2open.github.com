@@ -8138,8 +8138,8 @@ void ai_chase()
 	ship_info	*enemy_sip;
 	ship_weapon	*swp = &shipp->weapons;
 	ai_info		*aip = &Ai_info[shipp->ai_index];
-	Ship::info_flags	enemy_sip_flags;
-	Ship::ship_flags	enemy_shipp_flags;
+	flagset<Ship::Info_Flags>	enemy_sip_flags;
+	flagset<Ship::Ship_Flags>	enemy_shipp_flags;
 	int has_fired = -1;
 
 	if (aip->mode != AIM_CHASE) {
@@ -15194,7 +15194,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 // the parameter 'method' is used to tell is this ship was destroyed or it departed normally.
 // This function will get called in either case, and there are things that should be done if
 // the ship actually gets destroyed which shouldn't get done if it departed.
-void ai_ship_destroy(int shipnum, int method)
+void ai_ship_destroy(int shipnum, Ship::Exit_Flags method)
 {
 	int		objnum;
 	object	*other_objp;

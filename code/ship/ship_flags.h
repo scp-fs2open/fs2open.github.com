@@ -12,7 +12,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Weapon_Flags> weapon_flags;
 
 	FLAG_LIST(Subsystem_Flags) {
 		Cargo_revealed = 0,
@@ -33,8 +32,7 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Subsystem_Flags> subsystem_flags;
-
+	
 	FLAG_LIST(System_Flags) {
 		Alive = 0,				// subsystem has active alive sound
 		Dead,					// subsystem has active dead sound
@@ -43,7 +41,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<System_Flags> system_flags;
 
 	FLAG_LIST(Ship_Flags) {
 		Ignore_count = 0,			// ignore this ship when counting ship types for goals
@@ -108,7 +105,6 @@ namespace Ship {
 		NUM_VALUES
 
 	};
-	typedef flagset<Ship_Flags> ship_flags;
 
 	FLAG_LIST(Exit_Flags) {
 		Destroyed = 0,
@@ -120,7 +116,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Exit_Flags> exit_flags;
 
 	FLAG_LIST(Info_Flags) {
 		No_collide = 0,
@@ -177,7 +172,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Info_Flags> info_flags;
 
 	FLAG_LIST(Aiming_Flags) {
 		Autoaim = 0,			// has autoaim
@@ -188,7 +182,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Aiming_Flags> aiming_flags;
 
 	FLAG_LIST(Type_Info_Msg) {
 		Counts_for_alone,
@@ -196,7 +189,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Type_Info_Msg> type_info_msg;
 
 	FLAG_LIST(Type_Info_Hud) {
 		Hotkey_on_list,
@@ -206,7 +198,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Type_Info_Hud> type_info_hud;
 
 	FLAG_LIST(Type_Info_Ship) {
 		Scannable,
@@ -216,7 +207,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Type_Info_Ship> type_info_ship;
 
 	FLAG_LIST(Type_Info_Weapon) {
 		Beams_easily_hit,
@@ -224,7 +214,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Type_Info_Weapon> type_info_weapon;
 
 	FLAG_LIST(Type_Info_AI) {
 		Accept_player_orders,
@@ -237,7 +226,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Type_Info_AI> type_info_ai;
 
 	FLAG_LIST(Thruster_Flags) {
 		Bank_right,
@@ -255,7 +243,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Thruster_Flags> thruster_flags;
 
 	FLAG_LIST(Wing_Flags) {
 		Gone,					// all ships were either destroyed or departed
@@ -275,7 +262,6 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Wing_Flags> wing_flags;
 
 	FLAG_LIST(Subsys_Sound_Flags) {
 		Alive,
@@ -285,6 +271,13 @@ namespace Ship {
 
 		NUM_VALUES
 	};
-	typedef flagset<Subsys_Sound_Flags> subsys_sound_flags;
+
+	FLAG_LIST(Awacs_Warning_Flags) {
+		None = 0,
+		Warn_25,
+		Warn_75,
+
+		NUM_VALUES
+	};
 }
 #endif

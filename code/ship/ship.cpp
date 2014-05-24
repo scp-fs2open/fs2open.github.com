@@ -988,7 +988,7 @@ void init_ship_entry(ship_info *sip)
 			sip->ship_iff_info[i][j] = -1;
 	}
 
-	sip->aiming_flags = 0;
+	sip->aiming_flags.reset();
 	sip->minimum_convergence_distance = 0.0f;
 	sip->convergence_distance = 100.0f;
 	vm_vec_zero(&sip->convergence_offset);
@@ -2027,11 +2027,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		if (fov_temp > 180.0f)
 			fov_temp = 180.0f;
 
-		sip->aiming_flags |= AIM_FLAG_AUTOAIM;
+		sip->aiming_flags.set(Ship::Aiming_Flags::Autoaim);
 		sip->autoaim_fov = fov_temp * PI / 180.0f;
 
-		if(optional_string("+Converging Autoaim"))
-			sip->aiming_flags |= AIM_FLAG_AUTOAIM_CONVERGENCE;
+		if (optional_string("+Converging Autoaim"))
+			sip->aiming_flags.set(Ship::Aiming_Flags::Autoaim_convergence);
 
 		if(optional_string("+Minimum Distance:"))
 			stuff_float(&sip->minimum_convergence_distance);
@@ -2041,13 +2041,13 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	{
 		if(optional_string("+Automatic"))
 		{
-			sip->aiming_flags |= AIM_FLAG_AUTO_CONVERGENCE;
+			sip->aiming_flags.set(Ship::Aiming_Flags::Auto_convergence);
 			if(optional_string("+Minimum Distance:"))
 				stuff_float(&sip->minimum_convergence_distance);
 		}
 		if(optional_string("+Standard"))
 		{
-			sip->aiming_flags |= AIM_FLAG_STD_CONVERGENCE;
+			sip->aiming_flags.set(Ship::Aiming_Flags::Std_convergence);
 			if(required_string("+Distance:"))
 				stuff_float(&sip->convergence_distance);
 		}
@@ -2055,9 +2055,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			stuff_vec3d(&sip->convergence_offset);
 
 			if (IS_VEC_NULL(&sip->convergence_offset))
-				sip->aiming_flags &= ~AIM_FLAG_CONVERGENCE_OFFSET;
+				sip->aiming_flags.unset(Ship::Aiming_Flags::Convergence_offset);
 			else
-				sip->aiming_flags |= AIM_FLAG_CONVERGENCE_OFFSET;				
+				sip->aiming_flags.set(Ship::Aiming_Flags::Convergence_offset);
 		}
 	}
 
@@ -3170,7 +3170,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 
 		if(optional_string("+Used for:")) {
-			parse_string_flag_list<Thruster_Flags, thruster_flags>(&mtp->use_flags, Man_types);
+			parse_string_flag_list<Thruster_Flags, flagset<Ship::Thruster_Flags>>(&mtp->use_flags, Man_types);
 		}
 
 		if(optional_string("+Position:")) {
@@ -4641,7 +4641,7 @@ void ship_level_init()
  *
  * The reason parameter tells us why the ship left the mission (i.e. departed or destroyed)
  */
-void ship_add_exited_ship( ship *sp, int reason )
+void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 {
 	exited_ship entry; 
 
@@ -4649,10 +4649,10 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.obj_signature = Objects[sp->objnum].signature;
 	entry.ship_class = sp->ship_info_index;
 	entry.team = sp->team;
-	entry.flags = reason;
+	entry.flags.set(reason);
 	// if ship is red alert, flag as such
 	if (sp->flags[Ship_Flags::Red_alert_store_status]) {
-		entry.flags |= SEF_RED_ALERT_CARRY;
+		entry.flags.set(Ship::Exit_Flags::Red_alert_carry);
 	}
 	entry.time = Missiontime;
 	entry.hull_strength = int(Objects[sp->objnum].hull_strength);
@@ -4662,12 +4662,12 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.time_cargo_revealed = (fix)0;
 	if ( sp->flags[Ship_Flags::Cargo_revealed] )
 	{
-		entry.flags |= SEF_CARGO_KNOWN;
+		entry.flags.set(Ship::Exit_Flags::Cargo_known);
 		entry.time_cargo_revealed = sp->time_cargo_revealed;
 	}
 
-	if ( sp->time_first_tagged > 0 )
-		entry.flags |= SEF_BEEN_TAGGED;
+	if (sp->time_first_tagged > 0)
+		entry.flags.set(Ship::Exit_Flags::Been_tagged);
 	
 	//copy across the damage_ship arrays
 	for (int i = 0; i < MAX_DAMAGE_SLOTS ; i++) {
@@ -5137,7 +5137,8 @@ void ship::clear()
 	lightning_stamp = timestamp(-1);
 
 	// set awacs warning flags so awacs ship only asks for help once at each level
-	awacs_warning_flag = AWACS_WARN_NONE;
+	awacs_warning_flag.reset();
+	awacs_warning_flag.set(Ship::Awacs_Warning_Flags::None);
 
 	special_warpin_objnum = -1;
 	special_warpout_objnum = -1;
@@ -7118,9 +7119,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 
 	// add the information to the exited ship list
 	if (cleanup_mode == SHIP_DESTROYED) {
-		ship_add_exited_ship(shipp, SEF_DESTROYED);
+		ship_add_exited_ship(shipp, Ship::Exit_Flags::Destroyed);
 	} else {
-		ship_add_exited_ship(shipp, SEF_DEPARTED);
+		ship_add_exited_ship(shipp, Ship::Exit_Flags::Departed);
 	}
 
 	// record kill?
@@ -7188,9 +7189,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// Note, this call to ai_ship_destroy must come after ship_wing_cleanup for guarded wings to
 	// properly note the destruction of a ship in their wing.
 	if (cleanup_mode == SHIP_DESTROYED) {
-		ai_ship_destroy(shipnum, SEF_DESTROYED);	// Do AI stuff for destruction of ship.
+		ai_ship_destroy(shipnum, Ship::Exit_Flags::Destroyed);	// Do AI stuff for destruction of ship.
 	} else {
-		ai_ship_destroy(shipnum, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
+		ai_ship_destroy(shipnum, Ship::Exit_Flags::Departed);		// should still do AI cleanup after ship has departed
 	}
 
 	// Goober5000 - lastly, clear out the dead-docked list, per Mantis #2294
@@ -10152,9 +10153,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 
 	// lets start gun convergence / autoaim code from here - Wanderer
-	has_converging_autoaim = ((sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags & AIM_FLAG_AUTOAIM)) && aip->target_objnum != -1);
-	needs_target_pos = ((has_autoaim || (sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE)) && aip->target_objnum != -1);
+	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !(Game_mode & GM_MULTIPLAYER))) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
+	needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
 	
 	if (needs_target_pos) {
 		if (has_autoaim) {
@@ -10606,13 +10607,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								}
 
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-							} else if ((sip->aiming_flags & AIM_FLAG_STD_CONVERGENCE) || ((sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) && (aip->target_objnum != -1))) {
+							}
+							else if ((sip->aiming_flags[Ship::Aiming_Flags::Std_convergence]) || ((sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence]) && (aip->target_objnum != -1))) {
 								// std & auto convergence
 								vec3d target_vec, firing_vec, convergence_offset;
 								
 								// make sure vector is of the set length
 								vm_vec_copy_normalize(&target_vec, &player_forward_vec);
-								if ((sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) && (aip->target_objnum != -1)) {
+								if ((sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence]) && (aip->target_objnum != -1)) {
 									// auto convergence
 									vm_vec_scale(&target_vec, dist_to_aim);
 								} else {
@@ -10621,7 +10623,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								}
 								
 								// if there is convergence offset then make use of it)
-								if (sip->aiming_flags & AIM_FLAG_CONVERGENCE_OFFSET) {
+								if (sip->aiming_flags[Ship::Aiming_Flags::Convergence_offset]) {
 									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
 									vm_vec_add2(&target_vec, &convergence_offset);
 								}
@@ -10631,7 +10633,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 								// set orientation
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-							} else if (sip->aiming_flags & AIM_FLAG_STD_CONVERGENCE) {
+							}
+							else if (sip->aiming_flags[Ship::Aiming_Flags::Std_convergence]) {
 								// fixed distance convergence
 								vec3d target_vec, firing_vec, convergence_offset;
 																
@@ -10640,7 +10643,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								vm_vec_scale(&target_vec, sip->convergence_distance);
 								
 								// if there is convergence offset then make use of it)
-								if (sip->aiming_flags & AIM_FLAG_CONVERGENCE_OFFSET) {
+								if (sip->aiming_flags[Ship::Aiming_Flags::Convergence_offset]) {
 									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
 									vm_vec_add2(&target_vec, &convergence_offset);
 								}
@@ -15004,15 +15007,15 @@ void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 
 	if ( objp->hull_strength < ( (AWACS_HELP_HULL_LOW + 0.01f *(static_rand(objp-Objects) & 5)) * sp->ship_max_hull_strength) ) {
 		// awacs ship below 25 + (0-4) %
-		if (!(sp->awacs_warning_flag & AWACS_WARN_25)) {
+		if (!sp->awacs_warning_flag[Ship::Awacs_Warning_Flags::Warn_25]) {
 			message = MESSAGE_AWACS_25;
-			sp->awacs_warning_flag |=  AWACS_WARN_25;
+			sp->awacs_warning_flag.set(Ship::Awacs_Warning_Flags::Warn_25);
 		}
 	} else if ( objp->hull_strength < ( (AWACS_HELP_HULL_HI + 0.01f*(static_rand(objp-Objects) & 5)) * sp->ship_max_hull_strength) ) {
 		// awacs ship below 75 + (0-4) %
-		if (!(sp->awacs_warning_flag & AWACS_WARN_75)) {
+		if (!sp->awacs_warning_flag[Ship::Awacs_Warning_Flags::Warn_75]) {
 			message = MESSAGE_AWACS_75;
-			sp->awacs_warning_flag |=  AWACS_WARN_75;
+			sp->awacs_warning_flag.set(Ship::Awacs_Warning_Flags::Warn_75);
 		}
 	}
 
@@ -15452,12 +15455,12 @@ void ship_secondary_changed(ship *sp)
 #endif
 }
 
-info_flags ship_get_SIF(ship *shipp)
+flagset<Ship::Info_Flags> ship_get_SIF(ship *shipp)
 {
 	return Ship_info[shipp->ship_info_index].flags;
 }
 
-info_flags ship_get_SIF(int sh)
+flagset<Ship::Info_Flags> ship_get_SIF(int sh)
 {
 	return Ship_info[Ships[sh].ship_info_index].flags;
 }
@@ -18002,7 +18005,7 @@ int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt)
 	return inside;
 }
 
-Ship::ship_flags Ignore_List;
+flagset<Ship::Ship_Flags> Ignore_List;
 void set_default_ignore_list() {
 	Ignore_List.reset();
 	Ignore_List.set(Ship::Ship_Flags::Exploded);

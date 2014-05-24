@@ -962,7 +962,7 @@ extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii);
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, Ship::subsystem_flags flags );
+extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, flagset<Ship::Subsystem_Flags> flags);
 extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2 );
 
 void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);

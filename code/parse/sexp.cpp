@@ -7708,7 +7708,7 @@ int sexp_is_cargo_known( int n, int check_delay )
 			if (exited_index != -1)
 			{
 				// if not known, the whole thing is known false
-				if ( !(Ships_exited[exited_index].flags & SEF_CARGO_KNOWN) )
+				if ( !(Ships_exited[exited_index].flags[Ship::Exit_Flags::Cargo_known]) )
 					return SEXP_KNOWN_FALSE;
 
 				// check the delay of when we found out
@@ -7985,7 +7985,7 @@ int sexp_has_been_tagged_delay(int n)
 			// grab the status of whether the cargo is known from this list
 			exited_index = ship_find_exited_ship_by_name( name );
 			if (exited_index != -1 ) {
-				if ( !(Ships_exited[exited_index].flags & SEF_BEEN_TAGGED) )
+				if ( !(Ships_exited[exited_index].flags[Ship::Exit_Flags::Been_tagged]) )
 					return SEXP_KNOWN_FALSE;
 
 				// check the delay of when we found out.  We use the ship died time which isn't entirely accurate
@@ -13971,7 +13971,7 @@ void sexp_friendly_stealth_invisible(int n, bool invisible)
 //FUBAR
 //generic function to deal with subsystem flag sexps.
 //setit only passed for backward compatibility with older sexps.
-void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = false, bool setit = false)
+void sexp_ship_deal_with_subsystem_flag(int node, Ship::Subsystem_Flags ss_flag, bool sendit = false, bool setit = false)
 {	
 	ship *shipp = NULL;
 	ship_subsys *ss = NULL;	
@@ -13986,7 +13986,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 	// OP_SHIP_SUBSYS_TARGETABLE/UNTARGETABLE, OP_SHIP_SUBSYS_TARGETABLE and OP_TURRET_SUBSYS_TARGET_ENABLE/DISABLE 
 	// will have already passed us this data we don't need to set it for them. 
 	// backward compatibility hack for older sexps
-	if (!((ss_flag == SSF_UNTARGETABLE) || (ss_flag == SSF_NO_SS_TARGETING)))
+	if (!((ss_flag == Ship::Subsystem_Flags::Untargetable) || (ss_flag == Ship::Subsystem_Flags::No_SS_targeting)))
 	{
 		node = CDR(node);
 		setit = (is_sexp_true(node) ? true : false);
@@ -14009,9 +14009,9 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
 				if (generic_type == ss->system_info->type) {
 					if (setit)
-						ss->flags.set((Ship::Subsystem_Flags)ss_flag);
+						ss->flags.set(ss_flag);
 					else
-						ss->flags.set((Ship::Subsystem_Flags)ss_flag, false);
+						ss->flags.unset(ss_flag);
 				}
 			}
 		}
@@ -16056,7 +16056,7 @@ void multi_sexp_set_countermeasures()
 void sexp_deal_with_afterburner_lock (int node, bool lock)
 {
 	Assert (node != -1);
-	sexp_deal_with_ship_flag(node, true, 0, 0, 0, SF2_AFTERBURNER_LOCKED, 0, 0, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, 0, 0, 0, (int)Ship::Ship_Flags::Afterburner_locked, 0, 0, (lock ? 1:0), true);
 }
 
 // Karajorma - locks or unlocks primary weapons on the requested ship
@@ -22718,42 +22718,42 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SHIP_SUBSYS_TARGETABLE:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_UNTARGETABLE, true, false);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::Untargetable, true, false);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_UNTARGETABLE:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_UNTARGETABLE, true, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::Untargetable, true, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TURRET_SUBSYS_TARGET_DISABLE:
 				sexp_val = SEXP_TRUE;
-				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_SS_TARGETING, false, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::No_SS_targeting, false, true);
 				break;
 
 			case OP_TURRET_SUBSYS_TARGET_ENABLE:
 				sexp_val = SEXP_TRUE;
-				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_SS_TARGETING, false, false);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::No_SS_targeting, false, false);
 				break;
 
 			case OP_SHIP_SUBSYS_NO_REPLACE:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_REPLACE, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::No_replace, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_LIVE_DEBRIS, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::No_live_debris, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_VANISHED:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_VANISHED, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::Vanished, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_MISSILES_IGNORE_IF_DEAD, false);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::Missiles_ignore_if_dead, false);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -24304,20 +24304,20 @@ void multi_sexp_eval()
 				break;
 
 			case OP_SHIP_SUBSYS_NO_REPLACE:
-				multi_sexp_deal_with_subsys_flag(SSF_NO_REPLACE);
+				multi_sexp_deal_with_subsys_flag((int) Ship::Subsystem_Flags::No_replace);
 				break;
 			case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
-				multi_sexp_deal_with_subsys_flag(SSF_NO_LIVE_DEBRIS);
+				multi_sexp_deal_with_subsys_flag((int) Ship::Subsystem_Flags::No_live_debris);
 				break;
 			case OP_SHIP_SUBSYS_VANISHED:
-				multi_sexp_deal_with_subsys_flag(SSF_VANISHED);
+				multi_sexp_deal_with_subsys_flag((int) Ship::Subsystem_Flags::Vanished);
 				break;
 			case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
-				multi_sexp_deal_with_subsys_flag(SSF_MISSILES_IGNORE_IF_DEAD);
+				multi_sexp_deal_with_subsys_flag((int) Ship::Subsystem_Flags::Missiles_ignore_if_dead);
 				break;
 			case OP_SHIP_SUBSYS_TARGETABLE:
 			case OP_SHIP_SUBSYS_UNTARGETABLE:
-				multi_sexp_deal_with_subsys_flag(SSF_UNTARGETABLE);
+				multi_sexp_deal_with_subsys_flag((int) Ship::Subsystem_Flags::Untargetable);
 				break;
 
 			case OP_SHIP_CHANGE_CALLSIGN:
