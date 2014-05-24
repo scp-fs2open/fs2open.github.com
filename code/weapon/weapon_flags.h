@@ -74,6 +74,7 @@ namespace Weapon {
 		Use_emp_time_for_capship_turrets,	// override MAX_TURRET_DISRUPT_TIME in emp.cpp - Goober5000
 		No_linked_penalty,					// This weapon does not count into linked firing penalty
 		No_homing_speed_ramp,				// Disables the 1s long speed ramping when firing locked-on secondaries
+		Cmeasure_aspect_home_on,			// This countermeasure flag makes aspect seekers home on the countermeasure instead of going into dumbfire mode
 
 		NUM_VALUES
 	};

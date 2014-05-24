@@ -19433,7 +19433,7 @@ int process_special_sexps(int index)
 
 	case 1:	//	Fired Interceptors
 		object	*objp;
-		for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 			if (objp->type == OBJ_WEAPON) {
 				if (!stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, "Interceptor#weak")) {
 					int target = Weapons[objp->instance].target_num;

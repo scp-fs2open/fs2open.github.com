@@ -211,8 +211,8 @@ void pilotfile::csg_write_info()
 	cfwrite_int(Campaign.next_mission, cfp);
 
 	// loop state
-	cfwrite_int(Campaign.loop_enabled, cfp);
 	cfwrite_int(Campaign.loop_reentry, cfp);
+	cfwrite_int(Campaign.loop_enabled, cfp);
 
 	// missions completed
 	cfwrite_int(Campaign.num_missions_completed, cfp);

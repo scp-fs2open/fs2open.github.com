@@ -135,7 +135,8 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "no primary linking", Weapon::Info_Flags::Nolink, true, false },
 	{ "same emp time for capships", Weapon::Info_Flags::Use_emp_time_for_capship_turrets, true, false },
 	{ "no primary linked penalty", Weapon::Info_Flags::No_linked_penalty, true, false },
-	{ "no homing speed ramp", Weapon::Info_Flags::No_homing_speed_ramp, true, false }
+	{ "no homing speed ramp", Weapon::Info_Flags::No_homing_speed_ramp, true, false },
+	{ "pulls aspect seekers", Weapon::Info_Flags::Cmeasure_aspect_home_on, true, false},
 };
 
 int Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list);
@@ -648,6 +649,12 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 	if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
 	{
 		Warning(LOCATION,"Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
+	}
+
+	if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
+	{
+		weaponp->wi_flags.unset(Weapon::Info_Flags::Cmeasure_aspect_home_on);
+		Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
 	}
 }
 
@@ -4003,6 +4010,32 @@ void find_homing_object_by_sig(object *weapon_objp, int sig)
 	}
 }
 
+bool aspect_should_lose_target(weapon* wp)
+{
+	Assert(wp != NULL);
+	
+	if (wp->homing_object->signature != wp->target_sig) {
+		if (wp->homing_object->type == OBJ_WEAPON)
+		{
+			weapon_info* target_info = &Weapon_info[Weapons[wp->homing_object->instance].weapon_info_index];
+
+			if (target_info->wi_flags[Weapon::Info_Flags::Cmeasure])
+			{
+				// Check if we can home on this countermeasure
+				bool home_on_cmeasure = The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE
+					|| target_info->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
+
+				if (!home_on_cmeasure)
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 /**
  * Make weapon num home.  It's also object *obj.
  */
@@ -4077,7 +4110,8 @@ void weapon_home(object *obj, int num, float frame_time)
 	// WCS - or javelin
 	if (is_locked_homing(wip)) {
 		if ( wp->target_sig > 0 ) {
-			if ( wp->homing_object->signature != wp->target_sig ) {
+			if (aspect_should_lose_target(wp))
+			{ 
 				wp->homing_object = &obj_used_list;
 				return;
 			}
@@ -4131,7 +4165,8 @@ void weapon_home(object *obj, int num, float frame_time)
 	case OBJ_NONE:
 		if (is_locked_homing(wip)) {
 			find_homing_object_by_sig(obj, wp->target_sig);
-		} else {
+		}
+		else {
 			find_homing_object(obj, num);
 		}
 		return;
@@ -4140,23 +4175,35 @@ void weapon_home(object *obj, int num, float frame_time)
 		if (hobjp->signature != wp->target_sig) {
 			if (is_locked_homing(wip)) {
 				find_homing_object_by_sig(obj, wp->target_sig);
-			} else {
+			}
+			else {
 				find_homing_object(obj, num);
 			}
 			return;
 		}
 		break;
 	case OBJ_WEAPON:
+	{
+		bool home_on_cmeasure = The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE
+			|| Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
+
 		// don't home on countermeasures or non-bombs, that's handled elsewhere
-		if ( ((Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure]) && !(The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE)) || !(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) )
+		if ( ((Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure]) && !home_on_cmeasure) ) 
+		{			break;
+		}
+		else if (!(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]))
+		{
 			break;
+		}
 
 		if (is_locked_homing(wip)) {
 			find_homing_object_by_sig(obj, wp->target_sig);
-		} else {
+		}
+		else {
 			find_homing_object(obj, num);
 		}
 		break;
+	}
 	default:
 		return;
 	}
