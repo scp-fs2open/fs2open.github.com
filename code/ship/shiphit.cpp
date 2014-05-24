@@ -487,7 +487,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
-		if ( Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING ) {
+		if ( Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training] ) {
 			return damage_left;
 		}
 		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
@@ -2167,7 +2167,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		if(damage > 0.0){
 			weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 			if ( weapon_info_index >= 0 ) {
-				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
+				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) {
 					damage /= 4;
 				}
 
@@ -2192,7 +2192,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				// Check if this is simulated damage.
 				weapon_info_index = shiphit_get_damage_weapon(other_obj);
 				if ( weapon_info_index >= 0 ) {
-					if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING) {
+					if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training]) {
 //						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_objp->sim_hull_strength * 100 ), (int) ( ( ship_objp->sim_hull_strength - damage ) * 100 ) );
 						ship_objp->sim_hull_strength -= damage;
 						ship_objp->sim_hull_strength = MAX( 0, ship_objp->sim_hull_strength );
@@ -2406,7 +2406,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 
 		Assert(wip != NULL);
 
-		if (wip->wi_flags & WIF_TAG) {
+		if (wip->wi_flags[Weapon::Info_Flags::Tag]) {
 			// ssm stuff
 			vec3d *start = hitpos;
 			int ssm_index = wip->SSM_index;
@@ -2418,7 +2418,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 #ifndef NDEBUG
 	if (other_obj->type == OBJ_WEAPON) {
 		weapon_info	*wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
-		if (wip->wi_flags & WIF_HOMING) {
+		if (is_homing(wip)) {
 			Homing_hits++;
 			// nprintf(("AI", " Hit!  Hits = %i/%i\n", Homing_hits, (Homing_hits + Homing_misses)));
 		}
@@ -2456,7 +2456,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 
 				Assert(wip != NULL);
 
-				if (wip->wi_flags2 & WIF2_TRAINING) {
+				if (wip->wi_flags[Weapon::Info_Flags::Training]) {
 					create_sparks = false;
 				}
 			}

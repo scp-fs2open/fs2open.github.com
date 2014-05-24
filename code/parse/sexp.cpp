@@ -2881,7 +2881,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				// we need to be sure that for huge weapons, the WIF_HUGE flag is set
 				if ( type == OPF_HUGE_WEAPON ) {
-					if ( !(Weapon_info[i].wi_flags & WIF_HUGE) )
+					if ( !(Weapon_info[i].wi_flags[Weapon::Info_Flags::Huge]) )
 						return SEXP_CHECK_INVALID_WEAPON_NAME;
 				}
 
@@ -12295,7 +12295,7 @@ void sexp_tech_add_weapon(int node)
 		name = CTEXT(node);
 		i = weapon_info_lookup(name);
 		if (i >= 0)
-			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
+			Weapon_info[i].wi_flags.set(Weapon::Info_Flags::In_tech_database);
 		else
 			Warning(LOCATION, "In tech-add-weapon, weapon class \"%s\" invalid", name);
 
@@ -15000,7 +15000,7 @@ int sexp_primaries_depleted(int node)
 	for (int idx=0; idx<num_banks; idx++)
 	{
 		// is this a ballistic bank?
-		if (Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			// is this bank out of ammo?
 			if (shipp->weapons.primary_bank_ammo[idx] == 0)
@@ -15519,7 +15519,7 @@ int sexp_primary_ammo_pct(int node)
 		for(idx=0; idx<shipp->weapons.num_primary_banks; idx++)
 		{
 			// ballistic
-			if (Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags2 & WIF2_BALLISTIC)
+			if (Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				ret_sum[idx] = (int)(((float)shipp->weapons.primary_bank_ammo[idx] / (float)shipp->weapons.primary_bank_start_ammo[idx]) * 100.0f);
 			}
@@ -15541,7 +15541,7 @@ int sexp_primary_ammo_pct(int node)
 	else
 	{
 		// ballistic
-		if (Weapon_info[shipp->weapons.primary_bank_weapons[check]].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[shipp->weapons.primary_bank_weapons[check]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			ret = (int)(((float)shipp->weapons.primary_bank_ammo[check] / (float)shipp->weapons.primary_bank_start_ammo[check]) * 100.0f);
 		}
@@ -15638,7 +15638,7 @@ int sexp_get_primary_ammo(int node)
 		for(int bank=0; bank<shipp->weapons.num_primary_banks; bank++)
 		{
 			// Only ballistic weapons need to be counted
-			if (Weapon_info[shipp->weapons.primary_bank_weapons[bank]].wi_flags2 & WIF2_BALLISTIC)
+			if (Weapon_info[shipp->weapons.primary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				ammo_left += shipp->weapons.primary_bank_ammo[bank] ;
 			}
@@ -15647,7 +15647,7 @@ int sexp_get_primary_ammo(int node)
 	else
 	{
 		// Again only ballistic weapons need to be counted
-		if (Weapon_info[shipp->weapons.primary_bank_weapons[check]].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[shipp->weapons.primary_bank_weapons[check]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			ammo_left = shipp->weapons.primary_bank_ammo[check] ;
 		}
@@ -15720,7 +15720,7 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	}
 
 	// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
-	if (!(Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].wi_flags2 & WIF2_BALLISTIC))
+	if (!(Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].wi_flags[Weapon::Info_Flags::Ballistic]))
 	{
 		return ;
 	}
@@ -16645,7 +16645,7 @@ void sexp_beam_fire(int node, bool at_coords)
 	fire_info.beam_info_index = -1;	
 	for (idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++) {
 		// store the weapon info index
-		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags & WIF_BEAM) {
+		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Beam]) {
 			fire_info.beam_info_index = fire_info.turret->weapons.primary_bank_weapons[idx];
 		}
 	}

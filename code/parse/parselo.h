@@ -148,7 +148,7 @@ extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 
 template<class Flags, class Flagset>
-int parse_string_flag_list(Flagset *dest, flag_def_list_new<Flags> defs[])
+int parse_string_flag_list(Flagset *dest, flag_def_list_new<Flags> defs[], SCP_vector<SCP_string>* unparsed_or_special_strings)
 {
 	int defs_size = sizeof(defs) / sizeof(flag_def_list_new<Flags>);
 	Assert(dest != NULL);
@@ -159,11 +159,20 @@ int parse_string_flag_list(Flagset *dest, flag_def_list_new<Flags> defs[])
 
 	for (i = 0; i < num_strings; i++)
 	{
+		bool string_parsed = false;
 		for (j = 0; j < defs_size; j++)
 		{
 			if (!stricmp(slp[i], defs[j].name)) {
-				dest->set(defs[j].def);
+				if (defs[j].def != Flags::NUM_VALUES)
+					dest->set(defs[j].def);
+				
+				if (!defs[j].is_special)
+					string_parsed = true;
 			}
+		}
+		if (!string_parsed && unparsed_or_special_strings != NULL) {
+			SCP_string* s = new SCP_string(slp[i]);
+			unparsed_or_special_strings->push_back(*s);
 		}
 	}
 

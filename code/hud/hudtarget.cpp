@@ -1023,7 +1023,7 @@ void hud_init_ballistic_index()
 	ballistic_hud_index = 0;
 	for (i = 0; i <	Player_ship->weapons.num_primary_banks; i++)
 	{
-		if (Weapon_info[Player_ship->weapons.primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[Player_ship->weapons.primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			ballistic_hud_index = 1;
 			break;
@@ -1181,8 +1181,8 @@ void hud_target_common(int team_mask, int next_flag)
 			continue;
 
 		if (A->type == OBJ_WEAPON) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) )
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) )
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) )
 					continue;
 
 			if (Weapons[A->instance].lssm_stage == 3)
@@ -1466,8 +1466,8 @@ void hud_target_missile(object *source_obj, int next_flag)
 		wip = &Weapon_info[wp->weapon_info_index];
 
 		// only allow targeting of bombs
-		if ( !(wip->wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
-			if ( !(wip->wi_flags & WIF_BOMB) ) {
+		if ( !(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
+			if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) ) {
 				continue;
 			}
 		}
@@ -1937,7 +1937,7 @@ void hud_target_closest_locked_missile(object *locked_obj)
 			continue;
 		}
 
-		if ( !(wip->wi_flags & WIF_HOMING ) ){
+		if ( !(is_homing(wip) ) ){
 			continue;
 		}
 
@@ -2142,9 +2142,9 @@ bool evaluate_ship_as_closest_target(esct *esct)
 						/*
 						// GET TURRET TYPE, FAVOR BEAM, FLAK, OTHER
 						int turret_type = ss->system_info->turret_weapon_type;
-						if (Weapon_info[turret_type].wi_flags & WIF_BEAM) {
+						if (Weapon_info[turret_type].wi_flags[Weapon::Info_Flags::Beam]) {
 							new_distance *= 0.3f;
-						} else if (Weapon_info[turret_type].wi_flags & WIF_FLAK) {
+						} else if (Weapon_info[turret_type].wi_flags[Weapon::Info_Flags::Flak]) {
 							new_distance *= 0.6f;
 						} */
 
@@ -2353,9 +2353,9 @@ void hud_update_closest_turret()
 
 				// GET TURRET TYPE, FAVOR BEAM, FLAK, OTHER
 				int turret_type = ss->system_info->turret_weapon_type;
-				if (Weapon_info[turret_type].wi_flags & WIF_BEAM) {
+				if (Weapon_info[turret_type].wi_flags[Weapon::Info_Flags::Beam]) {
 					new_distance *= 0.3f;
-				} else if (Weapon_info[turret_type].wi_flags & WIF_FLAK) {
+				} else if (Weapon_info[turret_type].wi_flags[Weapon::Info_Flags::Flak]) {
 					new_distance *= 0.6f;
 				}
 
@@ -2508,8 +2508,8 @@ void hud_target_in_reticle_new()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ){
 					continue;
 				}
 			}
@@ -2616,8 +2616,8 @@ void hud_target_in_reticle_old()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ){
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ){
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ){
 					continue;
 				}
 			}
@@ -3123,7 +3123,7 @@ void hud_process_homing_missiles()
 
 			if (dist < nearest_dist) {
 				nearest_dist = dist;
-				if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_LOCKED_HOMING ) {
+				if ( is_locked_homing(&Weapon_info[wp->weapon_info_index]) ) {
 					closest_is_aspect=1;
 				} else {
 					closest_is_aspect=0;
@@ -3183,7 +3183,7 @@ void HudGaugeMissileTriangles::render(float frametime)
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
-			renderTriangle(&A->pos, Weapon_info[wp->weapon_info_index].wi_flags & WIF_LOCKED_HOMING, 1, 1);
+			renderTriangle(&A->pos, is_locked_homing(&Weapon_info[wp->weapon_info_index]), 1, 1);
 		}
 	}
 
@@ -3240,7 +3240,7 @@ void hud_process_remote_detonate_missile()
 		mobjp = &Objects[mo->objnum];
 
 		if ((Player_obj != NULL) && (mobjp->parent_sig == Player_obj->parent_sig)) {
-			if (Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags & WIF_REMOTE) {
+			if (Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
 				// get box center point
 				g3_rotate_vertex(&target_point,&mobjp->pos);
 
@@ -3747,7 +3747,7 @@ int hud_get_best_primary_bank(float *range)
 		weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
 
 		// don't consider this primary if it's a ballistic that's out of ammo - Goober5000
-		if ( wip->wi_flags2 & WIF2_BALLISTIC )
+		if ( wip->wi_flags[Weapon::Info_Flags::Ballistic] )
 		{
 			if ( swp->primary_bank_ammo[bank_to_fire] <= 0)
 			{
@@ -3947,8 +3947,8 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
-			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
+			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
 				return;
 			}
 		}
@@ -4015,7 +4015,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	{
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( !(tmp->wi_flags & WIF_HOMING) && !(tmp->wi_flags & WIF_LOCKED_HOMING && Player->target_in_lock_cone) ) {
+		if ( !(is_homing(tmp)) && !(is_locked_homing(tmp) && Player->target_in_lock_cone) ) {
 			//The secondary lead indicator is handled farther below if it is a non-locking type
 			srange = -1.0f;
 		}
@@ -4036,7 +4036,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->wi_flags & WIF_HOMING )
+		if ( is_homing(wip) )
 			return;
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
@@ -4073,8 +4073,8 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
-			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
+			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
 				return;
 			}
 		}
@@ -4235,7 +4235,7 @@ void HudGaugeLeadSight::render(float frametime)
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
 			return;
 		}
 	}
@@ -4291,7 +4291,7 @@ void HudGaugeLeadSight::render(float frametime)
 	if ( (swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0) ) {
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( !(tmp->wi_flags & WIF_HOMING) && !(tmp->wi_flags & WIF_LOCKED_HOMING && Player->target_in_lock_cone) ) {
+		if ( !(is_homing(tmp)) && !(is_locked_homing(tmp) && Player->target_in_lock_cone) ) {
 			//The secondary lead indicator is handled farther below if it is a non-locking type
 			srange = -1.0f;
 		}
@@ -4321,7 +4321,7 @@ void HudGaugeLeadSight::render(float frametime)
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->wi_flags & WIF_HOMING ) {
+		if ( is_homing(wip) ) {
 			return;
 		}
 
@@ -5545,7 +5545,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 	{
 		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 		{
-			if(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags2 & WIF2_BALLISTIC)
+			if(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				use_new_gauge = true;
 				break;
@@ -5594,7 +5594,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 		{
 			//Skip all pure-energy weapons
-			if(!(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags2 & WIF2_BALLISTIC))
+			if(!(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags[Weapon::Info_Flags::Ballistic]))
 				continue;
 
 			//Draw the weapon bright or normal depending if it's active or not.
@@ -5657,7 +5657,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				for ( i = 0; i < sw->num_primary_banks; i++ ) {
 
 					// skip all pure-energy weapons
-					if( ! ( Weapon_info[sw->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC ) ) {
+					if( ! ( Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic] ) ) {
 						continue;
 					}
 
@@ -6028,7 +6028,7 @@ void HudGaugeWeapons::render(float frametime)
 		}
 
 		// indicate if this is linked or currently armed
-		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags[Ship::Ship_Flags::Primary_linked])) || ((Player_ship->flags[Ship::Ship_Flags::Primary_linked]) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK))) {
+		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags[Ship::Ship_Flags::Primary_linked])) || ((Player_ship->flags[Ship::Ship_Flags::Primary_linked]) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Nolink]))) {
 			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);
 		}
 		
@@ -6040,7 +6040,7 @@ void HudGaugeWeapons::render(float frametime)
 		}
 
 		// if this is a ballistic primary with ammo, render the ammo count
-		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC) {
+		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// print out the ammo right justified
 			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
 
@@ -6899,7 +6899,7 @@ void HudGaugePrimaryWeapons::render(float frametime)
 		}
 
 		// if this is a ballistic primary with ammo, render the ammo count
-		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC) {
+		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// print out the ammo right justified
 			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
 
@@ -7178,7 +7178,7 @@ void HudGaugeHardpoints::render(float frametime)
 
 			bank = &(model_get(sip->model_num))->missile_banks[i];
 
-			if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+			if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 				for(k = 0; k < bank->num_slots; k++) {
 					model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
 				}

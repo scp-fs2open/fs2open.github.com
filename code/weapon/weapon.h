@@ -19,6 +19,7 @@
 #include "weapon/shockwave.h"
 #include "graphics/generic.h"
 #include "model/model.h"
+#include "weapon/weapon_flags.h"
 
 class object;
 class ship_subsys;
@@ -122,6 +123,7 @@ extern int Num_weapon_subtypes;
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_HURTS_BIG_SHIPS			(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
+
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
 
@@ -367,9 +369,7 @@ typedef struct weapon_info {
 	float max_lifetime ;						// How long this weapon will actually live for
 	float	lifetime;						// How long the AI thinks this thing lives (used for distance calculations etc)
 	float energy_consumed;					// Energy used up when weapon is fired
-	int	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
-	int wi_flags2;							// stupid int wi_flags, only 32 bits... argh - Goober5000
-	int wi_flags3;							// stupid int wi_flags2, only 32 bits... argh - The E
+	flagset<Weapon::Info_Flags>	wi_flags;
 	float turn_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
@@ -662,5 +662,10 @@ void weapon_pause_sounds();
 
 // Unpauses all running weapon sounds
 void weapon_unpause_sounds();
+
+
+inline bool is_homing(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Homing_heat] || wip->wi_flags[Weapon::Info_Flags::Homing_aspect] || wip->wi_flags[Weapon::Info_Flags::Homing_javelin]; }
+inline bool is_locked_homing(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Homing_aspect] || wip->wi_flags[Weapon::Info_Flags::Homing_javelin]; }
+inline bool hurts_big_ships(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Bomb] || wip->wi_flags[Weapon::Info_Flags::Beam] || wip->wi_flags[Weapon::Info_Flags::Huge] || wip->wi_flags[Weapon::Info_Flags::Big_only]; }
 
 #endif

@@ -772,7 +772,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	weapon		*wp = NULL;
 	object		*viewer_obj, *viewed_obj;
 	int *replacement_textures = NULL;
-	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
+	int			target_team, is_homing_local, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
 	float			factor;
 	char			outstr[100];				// temp buffer
 	int flags=0;
@@ -785,9 +785,9 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	if (target_wip->model_num == -1)
 		return;
 
-	is_homing = FALSE;
-	if ( target_wip->wi_flags & WIF_HOMING && wp->homing_object != &obj_used_list )
-		is_homing = TRUE;
+	is_homing_local = FALSE;
+	if ( is_homing(target_wip) && wp->homing_object != &obj_used_list )
+		is_homing_local = TRUE;
 
 	is_player_missile = FALSE;
 	if ( target_objp->parent_sig == Player_obj->signature ) {

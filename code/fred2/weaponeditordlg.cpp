@@ -240,7 +240,7 @@ BOOL WeaponEditorDlg::OnInitDialog()
 	}
 
 	for (i=0; i<end1; i++){
-		if ((Weapon_info[i].wi_flags & WIF_CHILD) || (!big && (Weapon_info[i].wi_flags & WIF_BIG_ONLY))){
+		if ((Weapon_info[i].wi_flags[Weapon::Info_Flags::Child]) || (!big && (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only]))){
 			end1 = i;
 		}
 	}
@@ -264,7 +264,7 @@ BOOL WeaponEditorDlg::OnInitDialog()
 	}
 
 	for (i=First_secondary_index; i<end2; i++){
-		if ((Weapon_info[i].wi_flags & WIF_CHILD) || (!big && (Weapon_info[i].wi_flags & WIF_BIG_ONLY))){
+		if ((Weapon_info[i].wi_flags[Weapon::Info_Flags::Child]) || (!big && (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only]))){
 			end2 = i;
 		}
 	}

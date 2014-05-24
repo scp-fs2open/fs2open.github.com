@@ -721,6 +721,7 @@ void techroom_change_tab(int num)
 {
 	int i, multi = 0, font_height, mask, mask2, max_num_entries_viewable;	
 	Ship::Info_Flags si_mask, si_mask2;
+	Weapon::Info_Flags wi_mask, wi_mask2;
 
 	//unload the current animation, we load another one for the new current entry
 	if(Tab != SHIPS_DATA_TAB)
@@ -812,12 +813,12 @@ void techroom_change_tab(int num)
 				}
 
 				Weapon_list_size = 0;
-				mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
-				mask2 = WIF2_DEFAULT_IN_TECH_DATABASE;
+				wi_mask = multi ? Weapon::Info_Flags::Player_allowed : Weapon::Info_Flags::In_tech_database;
+				wi_mask2 = Weapon::Info_Flags::Default_in_tech_database;
 
 				for (i=0; i<Num_weapon_types; i++)
 				{
-					if (Techroom_show_all || (Weapon_info[i].wi_flags & mask) || (Weapon_info[i].wi_flags2 & mask2))
+					if (Techroom_show_all || (Weapon_info[i].wi_flags[wi_mask]) || (Weapon_info[i].wi_flags[wi_mask2]))
 					{ 
 						// we have a weapon that should be in the tech db, so fill out the entry struct
 						Weapon_list[Weapon_list_size].index = i;
@@ -1423,21 +1424,21 @@ void tech_reset_to_default()
 		if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database])
 			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
 		else
-			Ship_info[i].flags.set(Ship::Info_Flags::Default_in_tech_database, false);
+			Ship_info[i].flags.unset(Ship::Info_Flags::Default_in_tech_database);
 
 		if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database_m])
 			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database_m);
 		else
-			Ship_info[i].flags.set(Ship::Info_Flags::Default_in_tech_database_m, false);
+			Ship_info[i].flags.unset(Ship::Info_Flags::Default_in_tech_database_m);
 	}
 
 	// weapons
 	for (i=0; i<Num_weapon_types; i++)
 	{
-		if (Weapon_info[i].wi_flags2 & WIF2_DEFAULT_IN_TECH_DATABASE)
-			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Default_in_tech_database])
+			Weapon_info[i].wi_flags.set(Weapon::Info_Flags::In_tech_database);
 		else
-			Weapon_info[i].wi_flags &= ~WIF_IN_TECH_DATABASE;
+			Weapon_info[i].wi_flags.unset(Weapon::Info_Flags::In_tech_database);
 	}
 
 	// intelligence

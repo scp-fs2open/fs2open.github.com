@@ -294,11 +294,11 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 
 		if (awip->subtype != WP_LASER || bwip->subtype != WP_LASER) {
 			if (awip->subtype == WP_LASER) {
-				if ( bwip->wi_flags & WIF_BOMB ) {
+				if ( bwip->wi_flags[Weapon::Info_Flags::Bomb] ) {
 					check_collision = collide_weapon_weapon;
 				}
 			} else if (bwip->subtype == WP_LASER) {
-				if ( awip->wi_flags & WIF_BOMB ) {
+				if ( awip->wi_flags[Weapon::Info_Flags::Bomb] ) {
 					check_collision = collide_weapon_weapon;
 					swapped=1;			
 				}
@@ -355,7 +355,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	// only check debris:weapon collisions for player
 	if (check_collision == collide_debris_weapon) {
 		// weapon is B
-		if ( !(Weapon_info[Weapons[B->instance].weapon_info_index].wi_flags & WIF_TURNS) ) {
+		if ( !(Weapon_info[Weapons[B->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Turns]) ) {
 		// check for dumbfire weapon
 			// check if debris is behind laser
 			float vdot;
@@ -729,7 +729,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 	
 
 	// Do some checks for weapons that don't turn
-	if ( !(wip->wi_flags & WIF_TURNS) )	{
+	if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) )	{
 
 		// This first check is to see if a weapon is behind an object, and they
 		// are heading in opposite directions.   If so, we don't need to ever check	
@@ -780,7 +780,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 
 		//SUSHI: Fix bug where additive weapon velocity screws up collisions
 		//Assumes that weapons which don't home don't change speed, which is currently the case.
-		if (!(wip->wi_flags & WIF_TURNS))
+		if (!(wip->wi_flags[Weapon::Info_Flags::Turns]))
 			max_vel_weapon = obj_weapon->phys_info.speed;
 		else if (wp->lssm_stage==5)
 			max_vel_weapon = wip->lssm_stage5_vel;
@@ -801,7 +801,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		// compare (weeapon) ray with expanding sphere (ship) to find earliest possible collision time
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
-		if ( !(wip->wi_flags & WIF_TURNS) ) {
+		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) ) {
 			vec3d delta_x, laser_vel;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
@@ -1580,7 +1580,7 @@ void obj_collide_pair(object *A, object *B)
 		// only check debris:weapon collisions for player
 		if (check_collision == collide_debris_weapon) {
 			// weapon is B
-			if ( !(Weapon_info[Weapons[B->instance].weapon_info_index].wi_flags & WIF_TURNS) ) {
+			if ( !(Weapon_info[Weapons[B->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Turns]) ) {
 				// check for dumbfire weapon
 				// check if debris is behind laser
 				float vdot;

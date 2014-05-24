@@ -56,11 +56,11 @@ int collide_weapon_weapon( obj_pair * pair )
 	B_radius = B->radius;
 
 	if (wipA->weapon_hitpoints > 0) {
-		if (!(wipA->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
+		if (!(wipA->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
 		
-		if (wipA->wi_flags & WIF_LOCKED_HOMING) {
+		if (is_locked_homing(wipA)) {
 			if ( (wipA->max_lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
@@ -69,10 +69,10 @@ int collide_weapon_weapon( obj_pair * pair )
 	}
 
 	if (wipB->weapon_hitpoints > 0) {
-		if (!(wipB->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
+		if (!(wipB->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
-		if (wipB->wi_flags & WIF_LOCKED_HOMING) {
+		if (is_locked_homing(wipB)) {
 			if ( (wipB->max_lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
@@ -102,7 +102,7 @@ int collide_weapon_weapon( obj_pair * pair )
 
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
-					if ((wipA->wi_flags & WIF_BOMB) && (wipB->wi_flags & WIF_BOMB)) {
+					if ((wipA->wi_flags[Weapon::Info_Flags::Bomb]) && (wipB->wi_flags[Weapon::Info_Flags::Bomb])) {
 						Weapons[A->instance].lifeleft = 0.01f;
 						Weapons[B->instance].lifeleft = 0.01f;
 						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
@@ -152,12 +152,12 @@ int collide_weapon_weapon( obj_pair * pair )
 			if (!MULTIPLAYER_CLIENT) {
 
 				//Save damage for bomb so we can do scoring once it's destroyed. -Halleck
-				if (wipA->wi_flags & WIF_BOMB) {
+				if (wipA->wi_flags[Weapon::Info_Flags::Bomb]) {
 					scoring_add_damage_to_weapon(A, B, wipB->damage);
 					//Update stats. -Halleck
 					scoring_eval_hit(A, B, 0);
 				}
-				if (wipB->wi_flags & WIF_BOMB) {
+				if (wipB->wi_flags[Weapon::Info_Flags::Bomb]) {
 					scoring_add_damage_to_weapon(B, A, wipA->damage);
 					//Update stats. -Halleck
 					scoring_eval_hit(B, A, 0);

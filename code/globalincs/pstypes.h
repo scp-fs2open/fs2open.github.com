@@ -175,9 +175,10 @@ typedef struct flag_def_list {
 
 template<class T>
 struct flag_def_list_new {
-	char* name;
-	T def;
-	bool current;
+	char* name;			// The parseable representation of this flag
+	T def;				// The flag definition for this flag
+	bool in_use;		// Whether or not this flag is currently in use or obsolete
+	bool is_special;	// Whether this flag requires special processing
 };
 
 // weapon count list (mainly for pilot files)
@@ -704,7 +705,10 @@ public:
 
 	bool compare(flagset<T> other) { }
 	void reset() { values.reset(); }
-	void set(T idx, bool value = true) { values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); }
+	void set(T idx, bool value = true) { 
+		if (static_cast<typename std::underlying_type<T>::type>(idx) < size)
+			values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); 
+	}
 	void unset(T idx) { set(idx, false); }
 	bool any_set() { return values.any(); }
 	bool none_set() { return values.none(); }

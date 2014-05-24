@@ -938,7 +938,7 @@ void labviewer_render_model(float frametime)
 					continue;
 				if (Lab_weaponmodel_num[l] >= 0) {
 					bank = &(model_get(Lab_model_num))->missile_banks[j];
-					if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+					if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 						for(k = 0; k < bank->num_slots; k++) {
 							model_render(Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k], render_flags);
 						}
@@ -1340,25 +1340,7 @@ void labviewer_populate_flags_window()
 	}
 	// weapon flags ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
-		labviewer_flags_add(NULL, &y, "HEAT SEEKING", WIF_HOMING_HEAT);
-		labviewer_flags_add(NULL, &y, "ASPECT SEEKING", WIF_HOMING_ASPECT);
-		labviewer_flags_add(NULL, &y, "ELECTRONICS", WIF_ELECTRONICS);
-		labviewer_flags_add(NULL, &y, "PUNCTURE", WIF_PUNCTURE);
-		labviewer_flags_add(NULL, &y, "SUPERCAP", WIF_SUPERCAP);
-		labviewer_flags_add(NULL, &y, "COUNTERMEASURE", WIF_CMEASURE);
-		labviewer_flags_add(NULL, &y, "BIG ONLY", WIF_BIG_ONLY);
-		labviewer_flags_add(NULL, &y, "HUGE", WIF_HUGE);
-		labviewer_flags_add(NULL, &y, "PLAYER ALLOWED", WIF_PLAYER_ALLOWED);
-		labviewer_flags_add(NULL, &y, "PARTICLE SPEW", WIF_PARTICLE_SPEW);
-		labviewer_flags_add(NULL, &y, "EMP", WIF_EMP);
-		labviewer_flags_add(NULL, &y, "ENERGY SUCK", WIF_ENERGY_SUCK);
-		labviewer_flags_add(NULL, &y, "SHUDDER", WIF_SHUDDER);
-		labviewer_flags_add(NULL, &y, "BALLISTIC", WIF2_BALLISTIC, true);
-		labviewer_flags_add(NULL, &y, "PIERCE SHIELDS", WIF2_PIERCE_SHIELDS, true);
-		labviewer_flags_add(NULL, &y, "CYCLE", WIF2_CYCLE, true);
-		labviewer_flags_add(NULL, &y, "NO LIGHTING", WIF2_MR_NO_LIGHTING, true);
-		labviewer_flags_add(NULL, &y, "TRANSPARENT", WIF2_TRANSPARENT, true);
-		labviewer_flags_add(NULL, &y, "IN TECH DATABASE", WIF_IN_TECH_DATABASE);
+		//Needs reimplementation
 	}
 }
 
@@ -1379,15 +1361,7 @@ void labviewer_update_flags_window()
 	if (Lab_mode == LAB_MODE_SHIP) {
 		//Needs reimplementation
 	} else if (Lab_mode == LAB_MODE_WEAPON) {
-		weapon_info *wip = &Weapon_info[Lab_selected_index];
-
-		for (i = 0; i < Lab_flags.size(); i++) {
-			if (Lab_flags[i].second) {
-				Lab_flags[i].cb->SetFlag(&wip->wi_flags2, Lab_flags[i].flag);
-			} else {
-				Lab_flags[i].cb->SetFlag(&wip->wi_flags, Lab_flags[i].flag);
-			}
-		}
+		//Needs reimplementation
 	}
 }
 
@@ -2084,7 +2058,7 @@ void labviewer_change_weapon(Tree *caller)
 	int weap_index = (int)(caller->GetSelectedItem()->GetData());
 	Assert( weap_index >= 0 );
 
-	if ( !(Weapon_info[weap_index].wi_flags & WIF_BEAM) ) {
+	if ( !(Weapon_info[weap_index].wi_flags[Weapon::Info_Flags::Beam]) ) {
 		switch (Weapon_info[weap_index].render_type) {
 			case WRT_POF:
 				labviewer_change_bitmap();
@@ -2166,7 +2140,7 @@ void labviewer_make_weap_window(Button* caller)
 			continue;
 		}
 		
-		if (Weapon_info[i].wi_flags & WIF_BEAM) {
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Beam]) {
 			stip = type_nodes[WP_BEAM];
 		} else {
 			stip = type_nodes[Weapon_info[i].subtype];

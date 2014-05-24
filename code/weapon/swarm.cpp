@@ -111,7 +111,7 @@ void swarm_maybe_fire_missile(int shipnum)
 	Assert( weapon_info_index >= 0 && weapon_info_index < MAX_WEAPON_TYPES );
 
 	// if swarm secondary bank is not a swarm missile, return
-	if ( !(Weapon_info[weapon_info_index].wi_flags & WIF_SWARM) ) {
+	if ( !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Swarm]) ) {
 		sp->num_swarm_missiles_to_fire = 0;
 		sp->swarm_missile_bank = -1;
 		return;
@@ -451,9 +451,9 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	target_obj = &Objects[turret->turret_enemy_objnum];
 
 	// valid swarm weapon
-	Assert(((wip->wi_flags & WIF_SWARM) && (wip->swarm_count > 0)) || ((wip->wi_flags & WIF_CORKSCREW) && (wip->cs_num_fired > 0)));
+	Assert(((wip->wi_flags[Weapon::Info_Flags::Swarm]) && (wip->swarm_count > 0)) || ((wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && (wip->cs_num_fired > 0)));
 
-	if(!((wip->wi_flags & WIF_SWARM) || (wip->wi_flags & WIF_CORKSCREW)) || ((wip->wi_flags & WIF_SWARM) && (wip->swarm_count <= 0)) || ((wip->wi_flags & WIF_CORKSCREW) && (wip->cs_num_fired <= 0)))
+	if(!((wip->wi_flags[Weapon::Info_Flags::Swarm]) || (wip->wi_flags[Weapon::Info_Flags::Corkscrew])) || ((wip->wi_flags[Weapon::Info_Flags::Swarm]) && (wip->swarm_count <= 0)) || ((wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && (wip->cs_num_fired <= 0)))
 		return;
 
 	// get turret_swarm_info
@@ -496,7 +496,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
     */
 	// initialize tsi
 	tsi->weapon_class = WEAPON_INFO_INDEX(wip);
-	if (wip->wi_flags & WIF_SWARM)
+	if (wip->wi_flags[Weapon::Info_Flags::Swarm])
 		tsi->num_to_launch = wip->swarm_count;
 	else
 		tsi->num_to_launch = wip->cs_num_fired;
@@ -575,7 +575,7 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 						}
 
 	                    // *Get timestamp from weapon info's -Et1
-						if (wip->wi_flags & WIF_SWARM) {
+						if (wip->wi_flags[Weapon::Info_Flags::Swarm]) {
 							tsi->time_to_fire = timestamp( wip->SwarmWait );
 						} else {
 							tsi->time_to_fire = timestamp( wip->cs_delay );

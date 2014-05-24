@@ -922,7 +922,7 @@ void parse_player_info2(mission *pm)
 			if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
 				// always allow the pool to be added in FRED, it is a verbal warning
 				// to let the mission dev know about the problem
-				if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running ) {
+				if ( (Weapon_info[list2[i]].wi_flags[Weapon::Info_Flags::Player_allowed]) || Fred_running ) {
 					ptr->weaponry_pool[num_choices] = list2[i]; 
 					ptr->weaponry_count[num_choices] = list2[i+2];
 
@@ -2125,7 +2125,7 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
 				}
-				else if (Weapon_info[wp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
+				else if (Weapon_info[wp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic])
 				{
 					Assert(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f);
 

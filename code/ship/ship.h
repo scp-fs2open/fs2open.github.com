@@ -31,6 +31,7 @@
 #include "fireball/fireballs.h"
 #include "hud/hud.h"
 #include "ship/ship_flags.h"
+#include "weapon/weapon_flags.h"
 
 #include <string>
 
@@ -708,8 +709,7 @@ struct ai_target_priority {
 
 	unsigned int obj_flags;
 	flagset<Ship::Info_Flags>* sif_flags;
-	int wif_flags;
-	int wif2_flags;
+	flagset<Weapon::Info_Flags>* wif_flags;
 };
 
 extern SCP_vector <ai_target_priority> Ai_tp_list;

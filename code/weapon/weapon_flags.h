@@ -77,7 +77,6 @@ namespace Weapon {
 
 		NUM_VALUES
 	};
-	typedef flagset<Info_Flags> info_flags;
 
 	FLAG_LIST(Weapon_Flags) {
 		Lock_warning_played,		// set when a lock warning sound is played for the player (needed since we don't want to play multiple lock sounds)
@@ -92,7 +91,6 @@ namespace Weapon {
 
 		NUM_VALUES
 	};
-	typedef flagset<Weapon_Flags> weapon_flags;
 
 	FLAG_LIST(Burst_Flags) { 
 		Fast_firing,
@@ -100,7 +98,6 @@ namespace Weapon {
 
 		NUM_VALUES
 	};
-	typedef flagset<Burst_Flags> burst_flags;
 }
 
 #endif

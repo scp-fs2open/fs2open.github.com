@@ -44,7 +44,7 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 	Assert(objp->type == OBJ_WEAPON);
 	Assert(objp->instance >= 0);
 	Assert(Weapons[objp->instance].weapon_info_index >= 0);
-	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_FLAK);	
+	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]);	
 
 	weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 
@@ -124,8 +124,8 @@ void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_wea
 	if((turret_weapon_class < 0) || (turret_weapon_class >= Num_weapon_types)){
 		return;
 	}
-	Assert(Weapon_info[turret_weapon_class].wi_flags & WIF_FLAK);
-	if(!(Weapon_info[turret_weapon_class].wi_flags & WIF_FLAK)){
+	Assert(Weapon_info[turret_weapon_class].wi_flags[Weapon::Info_Flags::Flak]);
+	if(!(Weapon_info[turret_weapon_class].wi_flags[Weapon::Info_Flags::Flak])){
 		return;
 	}
 
