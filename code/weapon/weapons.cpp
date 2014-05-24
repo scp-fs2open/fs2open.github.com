@@ -73,9 +73,9 @@ char *Weapon_subtype_names[] = {
 };
 int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
 
-flag_def_list Burst_fire_flags[] = {
-	{ "fast firing",		WBF_FAST_FIRING,		0 },
-	{ "random length",		WBF_RANDOM_LENGTH,		0 }
+flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
+	{ "fast firing",		Weapon::Burst_Flags::Fast_firing, true, false },
+	{ "random length",		Weapon::Burst_Flags::Random_length, true, false }
 };
 
 flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
@@ -994,7 +994,7 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->burst_delay = 1.0f; // 1 second, just incase its not defined
 	wip->burst_shots = 0;
-	wip->burst_flags = 0;
+	wip->burst_flags.reset();
 
 	generic_anim_init( &wip->thruster_flame );
 	generic_anim_init( &wip->thruster_glow );
@@ -2551,7 +2551,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("$Burst Flags:")) {
-		parse_string_flag_list((int*)&wip->burst_flags, Burst_fire_flags, Num_burst_fire_flags);
+		parse_string_flag_list<Weapon::Burst_Flags, flagset<Weapon::Burst_Flags>>(&wip->burst_flags, Burst_fire_flags, NULL);
 	}
 
 	if (optional_string("$Thruster Flame Effect:")) {
@@ -3520,10 +3520,10 @@ void weapon_render(object *obj)
 				vec3d headp;
 				
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
-				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
+				wp->weapon_flags.unset(Weapon::Weapon_Flags::Consider_for_flyby_sound);
 
 				if ( batch_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha) ) {
-					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
+					wp->weapon_flags.set(Weapon::Weapon_Flags::Consider_for_flyby_sound);
 				}
 			}			
 
@@ -3630,7 +3630,7 @@ void weapon_render(object *obj)
 
 
 			model_render(wip->model_num, &obj->orient, &obj->pos, render_flags);
-			wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
+			wp->weapon_flags.set(Weapon::Weapon_Flags::Consider_for_flyby_sound);
 			if (clip_plane)
 			{
 				g3_stop_user_clip_plane();
@@ -3695,8 +3695,8 @@ void weapon_delete(object *obj)
 void weapon_maybe_play_warning(weapon *wp)
 {
 	if ( wp->homing_object == Player_obj ) {
-		if ( !(wp->weapon_flags & WF_LOCK_WARNING_PLAYED) ) {
-			wp->weapon_flags |= WF_LOCK_WARNING_PLAYED;
+		if ( !(wp->weapon_flags[Weapon::Weapon_Flags::Lock_warning_played]) ) {
+			wp->weapon_flags.set(Weapon::Weapon_Flags::Lock_warning_played);
 			// Use heatlock-warning sound for Heat and Javelin for now
 			// Possibly add an additional third sound later
 			if ( (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_heat]) ||
@@ -3782,11 +3782,11 @@ void find_homing_object(object *weapon_objp, int num)
 			//WMC - Spawn weapons shouldn't go for protected ships
 			// ditto for untargeted heat seekers - niffiwan
 			if ( (objp->flags & OF_PROTECTED) &&
-				((wp->weapon_flags & WF_SPAWNED) || (wip->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])) )
+				((wp->weapon_flags[Weapon::Weapon_Flags::Spawned]) || (wip->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])) )
 				continue;
 
 			// Spawned weapons should never home in on their parent - even in multiplayer dogfights where they would pass the iff test below
-			if ((wp->weapon_flags & WF_SPAWNED) && (objp == &Objects[weapon_objp->parent]))
+			if ((wp->weapon_flags[Weapon::Weapon_Flags::Spawned]) && (objp == &Objects[weapon_objp->parent]))
 				continue; 
 
 			homing_object_team = obj_team(objp);
@@ -4073,8 +4073,8 @@ void weapon_home(object *obj, int num, float frame_time)
         {
             find_homing_object(obj, num);
         }
-		else if (MULTIPLAYER_MASTER && is_locked_homing(wip) && (wp->weapon_flags & WF_HOMING_UPDATE_NEEDED)) {
-			wp->weapon_flags &= ~WF_HOMING_UPDATE_NEEDED; 
+		else if (MULTIPLAYER_MASTER && is_locked_homing(wip) && (wp->weapon_flags[Weapon::Weapon_Flags::Homing_update_needed])) {
+			wp->weapon_flags.unset(Weapon::Weapon_Flags::Homing_update_needed);
 			send_homing_weapon_info(num);
 		}
 
@@ -4485,7 +4485,7 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 		return;
 	}
 
-	if ( !(wp->weapon_flags & WF_PLAYED_FLYBY_SOUND) && (wp->weapon_flags & WF_CONSIDER_FOR_FLYBY_SOUND) ) {
+	if ( !(wp->weapon_flags[Weapon::Weapon_Flags::Played_flyby_sound]) && (wp->weapon_flags[Weapon::Weapon_Flags::Consider_for_flyby_sound]) ) {
 		float		dist, dot, radius;
 
 		if ( (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Corkscrew]) ) {
@@ -4524,7 +4524,7 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 					}
 				}
 				Weapon_flyby_sound_timer = timestamp(200);
-				wp->weapon_flags |= WF_PLAYED_FLYBY_SOUND;
+				wp->weapon_flags.set(Weapon::Weapon_Flags::Played_flyby_sound);
 			}
 		}
 	}
@@ -4914,7 +4914,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		if (target_is_locked && (wp->target_num != -1) && (is_locked_homing(wip)) ) {
 			wp->lifeleft *= LOCKED_HOMING_EXTENDED_LIFE_FACTOR;
 			if (MULTIPLAYER_MASTER) {
-				wp->weapon_flags |= WF_HOMING_UPDATE_NEEDED;
+				wp->weapon_flags.set(Weapon::Weapon_Flags::Homing_update_needed);
 			}
 		}
 
@@ -5108,7 +5108,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 	wp->turret_subsys = NULL;
 	vm_vec_zero(&wp->homing_pos);
-	wp->weapon_flags = 0;
+	wp->weapon_flags.reset();
 	wp->target_sig = -1;
 	wp->cmeasure_ignore_objnum = -1;
 	wp->cmeasure_chase_objnum = -1;
@@ -5309,7 +5309,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// Ensure weapon flyby sound doesn't get played for player lasers
 	if ( parent_objp != NULL && parent_objp == Player_obj ) {
-		wp->weapon_flags |= WF_PLAYED_FLYBY_SOUND;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Played_flyby_sound);
 	}
 
 	wp->pick_big_attack_point_timestamp = timestamp(1);
@@ -5340,12 +5340,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 		// if the weapon was fired locked
 	if(is_locked){
-		wp->weapon_flags |= WF_LOCKED_WHEN_FIRED;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Locked_when_fired);
 	}
 
 	//if the weapon was spawned from a spawning type weapon
 	if(is_spawned){
-		wp->weapon_flags |= WF_SPAWNED;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Spawned);
 	}
 
 	wp->alpha_current = -1.0f;
@@ -5430,7 +5430,7 @@ void spawn_child_weapons(object *objp)
 		    vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
 
 		    vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
-		    weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+		    weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], 1);
 
 			//if the child inherits parent target, do it only if the parent weapon was locked to begin with
 			if ((child_wip->wi_flags[Weapon::Info_Flags::Inherit_parent_target]) && (wp->homing_object != &obj_used_list))
@@ -5588,7 +5588,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 	}
 }
 
-extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
+extern bool turret_weapon_has_flags(ship_weapon *swp, flagset<Weapon::Info_Flags>* flags);
 
 /**
  * Distrupt any subsystems that fall into damage sphere of this Electronics missile
@@ -5605,10 +5605,13 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
 	model_subsystem		*psub;
 	vec3d				subsys_world_pos;
 	float				dist;
+	flagset<Weapon::Info_Flags> beams;
+
 
 	shipp = &Ships[ship_objp->instance];
 	wip = &Weapon_info[wi_index];
 
+	beams.set(Weapon::Info_Flags::Beam);
 	for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) )
 	{
 		psub = ss->system_info;
@@ -5640,7 +5643,7 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
 					//I figure, the big fancy electronics on beams will be used for the other
 					//weapons as well. No reason having two targeting computers on a turret.
 					//Plus, it's easy and fast to code. :)
-					if ((psub->type==SUBSYSTEM_TURRET) && turret_weapon_has_flags(&ss->weapons, WIF_BEAM))
+					if ((psub->type==SUBSYSTEM_TURRET) && turret_weapon_has_flags(&ss->weapons, &beams))
 					{
 						disrupt_time*=wip->elec_beam_mult;
 					}
@@ -5835,7 +5838,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
 				Weapons[objp->instance].lifeleft = 0.01f;
-				Weapons[objp->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 			}
 			break;
 		default:
@@ -5870,7 +5873,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
 
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-	if((wp->weapon_flags & WF_DESTROYED_BY_WEAPON)
+	if((wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
 		&& !wip->arm_time
 		&& wip->arm_dist == 0.0f
 		&& wip->arm_radius == 0.0f)
@@ -6072,7 +6075,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
 
-	if ( ((other_obj) && (other_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags & WF_DESTROYED_BY_WEAPON)) {
+	if ( ((other_obj) && (other_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])) {
 		sw_flag |= SW_WEAPON_KILL;
 	}
 
@@ -6821,7 +6824,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	}
 		
 	// if this is a lockarm weapon, and it was fired unlocked
-	if((wip->wi_flags[Weapon::Info_Flags::Lockarm]) && !(wp->weapon_flags & WF_LOCKED_WHEN_FIRED)){		
+	if((wip->wi_flags[Weapon::Info_Flags::Lockarm]) && !(wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired])){		
 		total_scale *= 0.1f;
 	}
 	

@@ -344,20 +344,20 @@ flag_def_list_new<Ship::Info_Flags> ai_tgt_ship_flags[] = {
 
 const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list_new<Ship::Info_Flags>);
 
-flag_def_list ai_tgt_weapon_flags[] = {
-	{ "bomb",				WIF_BOMB,				0 },
-	{ "huge damage",		WIF_HUGE,				0 },
-	{ "supercap damage",	WIF_SUPERCAP,			0 },
-	{ "bomber+",			WIF_BOMBER_PLUS,		0 },
-	{ "electronics",		WIF_ELECTRONICS,		0 },
-	{ "puncture",			WIF_PUNCTURE,			0 },
-	{ "emp",				WIF_EMP,				0 },
-	{ "heat seeking",		WIF_HOMING_HEAT,		0 },
-	{ "aspect seeking",		WIF_HOMING_ASPECT,		0 },
-	{ "engine seeking",		WIF_HOMING_JAVELIN,		0 },
-	{ "pierce shields",		WIF2_PIERCE_SHIELDS,	1 },
-	{ "local ssm",			WIF2_LOCAL_SSM,			1 },
-	{ "capital+",			WIF2_CAPITAL_PLUS,		1 }
+flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags [] = {
+	{ "bomb",				Weapon::Info_Flags::Bomb,			true, false },
+	{ "huge damage",		Weapon::Info_Flags::Huge,			true, false },
+	{ "supercap damage",	Weapon::Info_Flags::Supercap,		true, false },
+	{ "bomber+",			Weapon::Info_Flags::Bomber_plus,	true, false },
+	{ "electronics",		Weapon::Info_Flags::Electronics,	true, false },
+	{ "puncture",			Weapon::Info_Flags::Puncture,		true, false },
+	{ "emp",				Weapon::Info_Flags::Emp,			true, false },
+	{ "heat seeking",		Weapon::Info_Flags::Homing_heat,	true, false },
+	{ "aspect seeking",		Weapon::Info_Flags::Homing_aspect,	true, false },
+	{ "engine seeking",		Weapon::Info_Flags::Homing_javelin, true, false },
+	{ "pierce shields",		Weapon::Info_Flags::Pierce_shields, true, false },
+	{ "local ssm",			Weapon::Info_Flags::Local_ssm,		true, false },
+	{ "capital+",			Weapon::Info_Flags::Capital_plus,	true, false }
 };
 
 //	Constant for flag,				Name of flag,				In flags or flags2
@@ -4395,7 +4395,7 @@ void ship_parse_post_cleanup()
 
 	if (n_tgt_groups > 0) {
 		for(i = 0; i < n_tgt_groups; i++) {
-			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
+			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].wif_flags)) {
 				//had none of these, check next
 				if (Ai_tp_list[i].obj_type == -1) {
 					//didn't have this one
@@ -10243,7 +10243,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
 			next_fire_delay = (float) winfo_p->burst_delay * 1000.0f;
 			swp->burst_counter[bank_to_fire]++;
-			if (winfo_p->burst_flags & WBF_FAST_FIRING)
+			if (winfo_p->burst_flags[Weapon::Burst_Flags::Fast_firing])
 				fast_firing = true;
 		} else {
 			next_fire_delay	= (float) winfo_p->fire_wait * 1000.0f;
@@ -11192,7 +11192,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
-	if ( wip->wi_flags & WIF_NO_DUMBFIRE ) {
+	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
 		if ( aip->current_target_is_locked <= 0 ) {
 			if ( obj == Player_obj ) {			
 				if ( !Weapon_energy_cheat ) {
@@ -17829,11 +17829,7 @@ void parse_ai_target_priorities()
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_weapon_flags; j++) {
 				if ( !stricmp(ai_tgt_weapon_flags[j].name, temp_strings[i].c_str()) ) {
-					if (ai_tgt_weapon_flags[j].var == 0) {
-						temp_priority.wif_flags |= ai_tgt_weapon_flags[j].def;
-					} else {
-						temp_priority.wif2_flags |= ai_tgt_weapon_flags[j].def;
-					}
+					temp_priority.wif_flags->set(ai_tgt_weapon_flags[j].def);
 					break;
 				}
 			}
@@ -17861,10 +17857,9 @@ ai_target_priority init_ai_target_priorities()
 	temp_priority.obj_type = -1;
 	temp_priority.ship_class.clear();
 	temp_priority.ship_type.clear();
-	temp_priority.sif_flags = 0;
+	temp_priority.sif_flags->reset();
 	temp_priority.weapon_class.clear();
-	temp_priority.wif2_flags = 0;
-	temp_priority.wif_flags = 0;
+	temp_priority.wif_flags->reset();
 	temp_priority.name[0] = '\0';
 
 	//return the initialized

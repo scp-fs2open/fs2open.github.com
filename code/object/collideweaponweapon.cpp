@@ -105,8 +105,8 @@ int collide_weapon_weapon( obj_pair * pair )
 					if ((wipA->wi_flags[Weapon::Info_Flags::Bomb]) && (wipB->wi_flags[Weapon::Info_Flags::Bomb])) {
 						Weapons[A->instance].lifeleft = 0.01f;
 						Weapons[B->instance].lifeleft = 0.01f;
-						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
-						Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						Weapons[A->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+						Weapons[B->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					} else {
 						A->hull_strength -= bDamage;
 						B->hull_strength -= aDamage;
@@ -122,29 +122,29 @@ int collide_weapon_weapon( obj_pair * pair )
 						
 						if (A->hull_strength < 0.0f) {
 							Weapons[A->instance].lifeleft = 0.01f;
-							Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+							Weapons[A->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						}
 						if (B->hull_strength < 0.0f) {
 							Weapons[B->instance].lifeleft = 0.01f;
-							Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+							Weapons[B->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						}
 					}
 				} else {
 					A->hull_strength -= bDamage;
 					Weapons[B->instance].lifeleft = 0.01f;
-					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					Weapons[B->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					if (A->hull_strength < 0.0f) {
 						Weapons[A->instance].lifeleft = 0.01f;
-						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						Weapons[A->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					}
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= aDamage;
 				Weapons[A->instance].lifeleft = 0.01f;
-				Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+				Weapons[A->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				if (B->hull_strength < 0.0f) {
 					Weapons[B->instance].lifeleft = 0.01f;
-					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					Weapons[B->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				}
 			}
 

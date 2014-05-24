@@ -804,7 +804,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		viewed_model_num	= target_wip->model_num;
 		hud_target_lod		= target_wip->hud_target_lod;
 		// adding a check here to make sure the homing object is a ship, technically it could be some other object just as well
-		if ( is_homing && is_player_missile && (wp->homing_object->type == OBJ_SHIP)) {
+		if ( is_homing_local && is_player_missile && (wp->homing_object->type == OBJ_SHIP)) {
 			homing_shipp = &Ships[wp->homing_object->instance];
 			homing_sip = &Ship_info[homing_shipp->ship_info_index];
 
@@ -984,7 +984,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
 
 	// If a homing weapon, show time to impact
-	if ( is_homing ) {
+	if ( is_homing_local ) {
 		float dist, speed;
 
 		speed = vm_vec_mag(&target_objp->phys_info.vel);
@@ -1498,30 +1498,38 @@ void HudGaugeExtraTargetData::endFlashDock()
 }
 
 //from aicode.cpp. Less include...problems...this way.
-extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
-extern bool turret_weapon_has_flags2(ship_weapon *swp, int flags);
+extern bool turret_weapon_has_flags(ship_weapon *swp, flagset<Weapon::Info_Flags>* flags);
 extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
 	Assert(swp != NULL);	// Goober5000 //WMC
 
+	flagset<Weapon::Info_Flags> beams;
+	beams.set(Weapon::Info_Flags::Beam);
+	flagset<Weapon::Info_Flags> flak;
+	flak.set(Weapon::Info_Flags::Flak);
+	flagset<Weapon::Info_Flags> ballistic;
+	ballistic.set(Weapon::Info_Flags::Ballistic); 
+	flagset<Weapon::Info_Flags> bomb;
+	bomb.set(Weapon::Info_Flags::Bomb);
+
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
 		// check if beam or flak using weapon flags
-		if (turret_weapon_has_flags(swp, WIF_BEAM)) {
+		if (turret_weapon_has_flags(swp, &beams)) {
 			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
-		}else if (turret_weapon_has_flags(swp, WIF_FLAK)) {
+		}else if (turret_weapon_has_flags(swp, &flak)) {
 			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
 		} else {
 
 			if (!turret_weapon_has_subtype(swp, WP_MISSILE) && turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
-				if (turret_weapon_has_flags2(swp, WIF2_BALLISTIC))
+				if (turret_weapon_has_flags(swp, &ballistic))
 				{
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
-				else if (turret_weapon_has_flags(swp, WIF_BOMB))
+				else if (turret_weapon_has_flags(swp, &bomb))
 				{
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 				}

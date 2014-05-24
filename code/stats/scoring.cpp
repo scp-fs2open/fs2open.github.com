@@ -1237,7 +1237,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 		return;
 	}
 	
-	if((other_obj->type == OBJ_WEAPON) && !(Weapons[other_obj->instance].weapon_flags & WF_ALREADY_APPLIED_STATS)){		
+	if((other_obj->type == OBJ_WEAPON) && !(Weapons[other_obj->instance].weapon_flags[Weapon::Weapon_Flags::Already_applied_stats])){		
 		// bogus weapon
 		if(other_obj->instance >= MAX_WEAPONS){
 			return;
@@ -1288,9 +1288,6 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 		else {
 			is_bonehead = 0;
 		}
-
-		// set the flag indicating that we've already applied a "stats" hit for this weapon
-		// Weapons[other_obj->instance].weapon_flags |= WF_ALREADY_APPLIED_STATS;
 
 		// in multiplayer -- only the server records the stats
 		if( Game_mode & GM_MULTIPLAYER ) {

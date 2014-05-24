@@ -2272,7 +2272,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 								if (other_obj->type == OBJ_BEAM)
 								{
 									int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
-									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_HUGE)) ) {
+									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags[Weapon::Info_Flags::Huge]) ) {
 										// Flag as vaporized
 										shipp->flags.set(Ship::Ship_Flags::Vaporize);
 									}
@@ -2314,7 +2314,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 
 		// if its a leech weapon - NOTE - unknownplayer: Perhaps we should do something interesting like direct the leeched energy into the attacker ?
-		if(wip->wi_flags & WIF_ENERGY_SUCK){
+		if(wip->wi_flags[Weapon::Info_Flags::Energy_suck]){
 			// reduce afterburner fuel
 			shipp->afterburner_fuel -= wip->afterburner_reduce;
 			shipp->afterburner_fuel = (shipp->afterburner_fuel < 0.0f) ? 0.0f : shipp->afterburner_fuel;

@@ -1722,7 +1722,7 @@ int turret_compare_func(const void *e1, const void *e2)
 	}
 }
 
-extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
+extern bool turret_weapon_has_flags(ship_weapon *swp, flagset<Weapon::Info_Flags>* flags);
 extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 // target the next/prev live turret on the current target
 // auto_advance from hud_update_closest_turret
@@ -1804,10 +1804,15 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 						}
 					}
 
+					flagset<Weapon::Info_Flags> beams;
+					beams.set(Weapon::Info_Flags::Beam);
+					flagset<Weapon::Info_Flags> flak;
+					flak.set(Weapon::Info_Flags::Flak);
+
 					// set weapon_type to allow sort of ent on type
-					if (turret_weapon_has_flags(&A->weapons, WIF_BEAM)) {
+					if (turret_weapon_has_flags(&A->weapons, &beams)) {
 						ent[num_live_turrets].type = TYPE_FACING_BEAM;
-					} else  if (turret_weapon_has_flags(&A->weapons, WIF_FLAK)) {
+					} else  if (turret_weapon_has_flags(&A->weapons, &flak)) {
 						ent[num_live_turrets].type = TYPE_FACING_FLAK;
 					} else {
 						if (turret_weapon_has_subtype(&A->weapons, WP_MISSILE)) {

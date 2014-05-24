@@ -743,22 +743,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 
 			if (tswp->num_secondary_banks > 0) {
 
-				int	priority1, priority2;
-
-				priority1 = -1;
-				priority2 = -1;
-
-				//	Maybe favor selecting a bomb.
-				//	Note, if you're firing a bomb, if it's aspect seeking, the firing conditions can be looser.
-				if (is_big_huge(&Ship_info[Ships[En_objp->instance].ship_info_index]))
-					if (En_objp->phys_info.speed * dist_to_enemy < 5000.0f)		//	Don't select a bomb if enemy moving fast relative to distance
-						priority1 = WIF_BOMB;
-
 				if (!(En_objp->flags & OF_PROTECTED) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
-					//ai_select_secondary_weapon(Pl_objp, tswp, priority1, priority2);	//	Note, need to select to get weapon speed and lifetime
-					if(aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) {
-						priority1 = WIF_PUNCTURE;
-					}
 					ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
 					weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
@@ -795,13 +780,13 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 
 											int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
 
-											if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
+											if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags[Weapon::Burst_Flags::Fast_firing])) {
 												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 													t = swip->burst_delay;
 													swp->burst_counter[current_bank_adjusted]++;
 												} else {
 													t = swip->fire_wait;
-													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+													if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 													} else {
  														swp->burst_counter[current_bank_adjusted] = 0;
@@ -813,7 +798,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 													swp->burst_counter[current_bank_adjusted]++;
 												} else {
 													t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
-													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+													if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 													} else {
 														swp->burst_counter[current_bank_adjusted] = 0;

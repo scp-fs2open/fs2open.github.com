@@ -719,7 +719,7 @@ void techroom_anim_render(float frametime)
 
 void techroom_change_tab(int num)
 {
-	int i, multi = 0, font_height, mask, mask2, max_num_entries_viewable;	
+	int i, multi = 0, font_height, max_num_entries_viewable;	
 	Ship::Info_Flags si_mask, si_mask2;
 	Weapon::Info_Flags wi_mask, wi_mask2;
 
