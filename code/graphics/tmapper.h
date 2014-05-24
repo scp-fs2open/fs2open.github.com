@@ -109,11 +109,11 @@ struct bitmap_2d_list{
 //from 0,0 in the upper left to 1,1 in the lowwer right
 //out of range values are valid
 struct texture_rect_list{
-	texture_rect_list(float X=0, float Y=0, float W=1.0f, float H=1.0f):x(X),y(Y),w(W),h(H){}
-	float x;
-	float y;
-	float w;
-	float h;
+	texture_rect_list(float u0In=0.0f, float v0In=0.0f, float u1In=1.0f, float v1In=1.0f):u0(u0In),v0(v0In),u1(u1In),v1(v1In){}
+	float u0;
+	float v0;
+	float u1;
+	float v1;
 };
 
 struct bitmap_rect_list{
