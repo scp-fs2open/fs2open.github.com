@@ -7946,6 +7946,7 @@ void restore_default_weapons(char *ships_tbl)
 		{
 			// get ship_info
 			sip = &Ship_info[Ships[i].ship_info_index];
+			strcpy_s(ship_class, sip->name);
 
 			// find the ship class
 			ch = strstr(ships_tbl, ship_class);
