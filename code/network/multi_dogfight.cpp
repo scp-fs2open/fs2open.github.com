@@ -30,7 +30,7 @@
 #include "stats/scoring.h"
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
-
+#include "pilotfile/pilotfile.h"
 #include "fs2netd/fs2netd_client.h"
 #include "cfile/cfile.h"
 
@@ -296,6 +296,7 @@ void multi_df_debrief_do()
 void multi_df_debrief_close()
 {
 	int idx;
+	scoring_struct *sc;
 
 	// shutdown the chatbox
 	chatbox_close();
@@ -307,11 +308,17 @@ void multi_df_debrief_close()
 			if(MULTIPLAYER_MASTER){
 				for(idx=0; idx<MAX_PLAYERS; idx++){
 					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL)){
-						scoring_backout_accept(&Net_players[idx].m_player->stats);
+						sc = &Net_players[idx].m_player->stats;
+						scoring_backout_accept(sc);
+
+						if (Net_player == &Net_players[idx]) {
+							Pilot.update_stats_backout( sc );
+						}
 					}
 				}
 			} else {
 				scoring_backout_accept( &Player->stats );
+				Pilot.update_stats_backout( &Player->stats );
 			}
 		}
 	}
