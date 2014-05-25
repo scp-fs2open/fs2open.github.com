@@ -29,6 +29,7 @@
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
 
 
 #ifndef NDEBUG
@@ -348,7 +349,7 @@ int Config_allowed[] = {
 #ifndef NDEBUG
 int Show_controls_info = 0;
 
-DCF_BOOL(show_controls_info, Show_controls_info)
+DCF_BOOL(show_controls_info, Show_controls_info);
 #endif
 
 static int Axes_origin[JOY_NUM_AXES];
@@ -1542,7 +1543,7 @@ void control_config_do_frame(float frametime)
 				}
 
 				if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
-					popup(0, 1, POPUP_OK, XSTR( "That is a non-bindable key.  Please try again.", 207));
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "That is a non-bindable key.  Please try again.", 207));
 					k = 0;
 				}
 

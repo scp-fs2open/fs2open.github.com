@@ -64,6 +64,7 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 #include "menuui/mainhallmenu.h"
+#include "debugconsole/console.h"
 
 #include <algorithm>
 
@@ -754,13 +755,20 @@ int multi_join_maybe_warn();
 int multi_join_warn_pxo();
 void multi_join_blit_protocol();
 
-DCF(mj_make, "")
+DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 {
 	active_game ag, *newitem;
 	int idx;
+	int idx_max;
 
-	dc_get_arg(ARG_INT);
-	for(idx=0; idx<Dc_arg_int; idx++){
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: mj_make <num_games>\n");
+		return;
+	}
+
+	dc_stuff_int(&idx_max);
+
+	for(idx = 0; idx < idx_max; idx++){
 		// stuff some fake info
 		memset(&ag, 0, sizeof(active_game));
 		sprintf(ag.name, "Game %d", idx);
@@ -776,7 +784,7 @@ DCF(mj_make, "")
 		if(newitem != NULL){
 			// newitem->heard_from_timer = timestamp((int)frand_range(500.0f, 10000.0f));
 		}
-	}	
+	}
 }
 
 void multi_join_notify_new_game()
@@ -1878,7 +1886,7 @@ void multi_join_send_join_request(int as_observer)
 
 	// 5/26/98 -- for team v team games, don't allow ingame joining :-(
 	if ( (Multi_join_selected_item->flags & AG_FLAG_TEAMS) && (Multi_join_selected_item->flags & (AG_FLAG_PAUSE|AG_FLAG_IN_MISSION)) ) {
-		popup(0, 1, POPUP_OK, XSTR("Joining ingame is currently not allowed for team vs. team games",772));
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Joining ingame is currently not allowed for team vs. team games",772));
 		return;
 	}
 

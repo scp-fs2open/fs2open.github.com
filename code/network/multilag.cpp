@@ -18,6 +18,7 @@
 #include "io/timer.h"
 #include "globalincs/linklist.h"
 #include "network/psnet2.h"
+#include "debugconsole/console.h"
 
 
 
@@ -392,6 +393,7 @@ void multi_lag_put_free(lag_buf *buf)
 	Lag_buf_count--;
 }
 
+// Help and status provider for the lag-loss system
 void multi_lagloss_dcf()
 {
 	// if the lag system isn't inited, don't do anything
@@ -400,183 +402,290 @@ void multi_lagloss_dcf()
 		return;
 	}
 
+	// display status of lag system
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Lag system status:\n");
+		// display lag settings
+		dc_printf("Lag : \n");
+		dc_printf("Base  \t\tMin   \t\tMax   \t\tStreak\n");
+		dc_printf("%f\t\t%f\t\t%f\t\t%f\n\n", Multi_lag_base, Multi_lag_min, Multi_lag_max, Multi_streak_time);
+
+		// display loss settings
+		dc_printf("Loss : \n");
+		dc_printf("Base  \t\tMin   \t\tMax\n");
+		dc_printf("%f\t\t%f\t\t%f\n", Multi_loss_base, Multi_loss_min, Multi_loss_max);
+		return;
+	}
+
 	// display all available commands
-	dc_printf("Usage :\nlag <ms>  (-1 to disable)\nlag_min <ms>\nlag_max <ms>\nloss <0-100>  (-1 to disable)\nloss_min <0-100>\nloss_max <0-100>\nlag_streak <ms>\nlagloss\n");
+	dc_printf("Lag system commands\n\n");
 
-	// display lag settings
-	dc_printf("Lag : ");		
-	dc_printf("\n   Base %d\n   Min %d\n   Max %d\n   Streak %d\n", Multi_lag_base, Multi_lag_min, Multi_lag_max, Multi_streak_time);	
+	dc_printf("Usage :\n");
+	dc_printf("lag <ms>\n");
+		dc_printf("\tSets the lag base value if <ms> is within the max and min limits (see lag_min and lag_max)\n");
+		dc_printf("\tIf <ms> is outside of the max and min limits, then nothing is done\n");
+		dc_printf("\tIf <ms> is negative, then lag simulation is turned off\n\n");
 
-	// display loss settings
-	dc_printf("Loss : ");		
-	dc_printf("\n   Base %f\n   Min %f\n   Max %f\n", Multi_loss_base, Multi_loss_min, Multi_loss_max);	
+	dc_printf("lag_min <ms>\n");
+		dc_printf("\tSets the lag min value if <ms> is less than the base value\n");
+		dc_printf("\tIf <ms> is outside the base or max values, then nothing is done\n");
+		dc_printf("\tIf <ms> is negative, then the min limit is removed\n\n");
+
+	dc_printf("lag_max <ms>\n");
+		dc_printf("\tSets the lag max value if <ms> is greater than the base value\n");
+		dc_printf("\tIf <ms> is outside the base or min values, then nothing is done\n");
+		dc_printf("\tIf <ms> is negative, then the max limit is removed\n\n");
+
+	dc_printf("loss    <0-100>  (-1 to disable)\n");
+		dc_printf("\tSimilar to lag, but applies value to loss base value\n\n");
+
+	dc_printf("loss_min <0-100>\n");
+		dc_printf("\tSimilar to lag_min, but applies value to loss min value\n\n");
+	
+	dc_printf("loss_max <0-100>\n");
+		dc_printf("\tSimilar to lag_max, but applies value to loss max value\n\n");
+
+
+	dc_printf("lag_streak <ms>\n");
+		dc_printf("\tSets the duration of lag streaks where the lag is consistant for <ms>\n");
+		dc_printf("\tEx: A value of 2000 would result in lag streaks that last 2 seconds each\n\n");
+
+	dc_printf("lagloss\n");
+		dc_printf("\tDisplays this text. Passing --status will display the status of the entire lag system");
 }
 
-DCF(lag, "")
+DCF(lag, "Sets the lag base value (Muliplayer)")
 {
+	int value;
+
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
 		dc_printf("Lag System Not Initialized!\n");
 		return;
 	}
 
-	dc_get_arg(ARG_INT);		
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Lag base value is currently %i\n", Multi_lag_base);
+		return;
+	}
+
+	dc_stuff_int(&value);
 	// parse the argument and change things around accordingly
-	if(Dc_arg_type & ARG_INT){			
-		if(Dc_arg_int < 0){
-			// switch the lag sim off
-			Multi_lag_base = -1;
-			Multi_lag_min = -1;
-			Multi_lag_max = -1;
-			dc_printf("Turning simulated lag off\n");
-			multi_lagloss_dcf();
-		} else if((Multi_lag_max >= 0) && (Dc_arg_int > Multi_lag_max)){
-			dc_printf("Base value greater than max value, ignoring...");
-		} else if((Multi_lag_min >= 0) && (Dc_arg_int < Multi_lag_min)){
-			dc_printf("Base value smaller than min value, ignoring...");
-		} else {
-			Multi_lag_base = Dc_arg_int;
-			multi_lagloss_dcf();
-		}
-	}	
+	if (value < 0) {
+		// switch the lag sim off
+		Multi_lag_base = -1;
+		Multi_lag_min = -1;
+		Multi_lag_max = -1;
+		dc_printf("Turning simulated lag off\n");
+		multi_lagloss_dcf();
+
+	} else if ((Multi_lag_max >= 0) && (value > Multi_lag_max)) {
+		dc_printf("Base value greater than max value, ignoring...");
+
+	} else if ((Multi_lag_min >= 0) && (value < Multi_lag_min)) {
+		dc_printf("Base value smaller than min value, ignoring...");
+
+	} else {
+
+		Multi_lag_base = value;
+		multi_lagloss_dcf();
+		dc_printf("Base value set to %i", value);
+	}
 }
 
-DCF(lag_min, "")
+DCF(lag_min, "Sets the lag min value (Multiplayer)")
 {
+	int value;
+
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
 		dc_printf("Lag System Not Initialized!\n");
 		return;
 	}
 
-	dc_get_arg(ARG_INT);		
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Lag min value is currently %i\n", Multi_lag_min);
+	}
+
+	dc_stuff_int(&value);
 	// parse the argument and change things around accordingly
-	if(Dc_arg_type & ARG_INT){			
-		if(Dc_arg_int > Multi_lag_base){
-			dc_printf("Min value greater than base value, ignoring...");
-		} else {
-			if(Dc_arg_int < 0){
-				Multi_lag_min = -1;
-			} else {
-				Multi_lag_min = Dc_arg_int;
-			}
-			multi_lagloss_dcf();
-		}
-	}			
+	
+	if (value > Multi_lag_base) {
+		dc_printf("Min value greater than base value, ignoring...");
+		return;
+
+	} else if (value < 0) {
+		Multi_lag_min = -1;
+
+	} else {
+		Multi_lag_min = value;
+	}
+	dc_printf("Lag min value set to %i\n", Multi_lag_min);
 }
 
-DCF(lag_max, "")
+DCF(lag_max, "Sets the lag max value (Multiplayer)")
 {
+	int value;
+
+	// if the lag system isn't inited, don't do anything
+	if (!Multi_lag_inited) {
+		dc_printf("Lag System Not Initialized!\n");
+		return;
+	}
+
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Lag max value is currently %i\n", Multi_lag_max);
+		return;
+	}
+
+	// parse the argument and change things around accordingly
+	dc_stuff_int(&value);
+	
+	if ((value >= 0) && (value < Multi_lag_base)) {
+		dc_printf("Max value smaller than base value, ignoring...");
+
+	} else if (value < 0) {
+		Multi_lag_max = -1;
+
+	} else {
+		Multi_lag_max = value;
+	}
+	dc_printf("Lag max value set to %i\n", Multi_lag_max);
+}
+
+DCF(loss, "Sets the loss base value (Multiplayer)")
+{
+	int val_i;
+	float val_f;
+
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
 		dc_printf("Lag System Not Initialized!\n");
 		return;
 	}
 
+		if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Loss value is currently %i percent", Multi_loss_base);
+		return;
+	}
+
 	// parse the argument and change things around accordingly
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){			
-		if((Dc_arg >=0) && (Dc_arg_int < Multi_lag_base)){
-			dc_printf("Max value smaller than base value, ignoring...");
-		} else {
-			if(Dc_arg_int < 0){
-				Multi_lag_max = -1;
-			} else {
-				Multi_lag_max = Dc_arg_int;
-			}
-			multi_lagloss_dcf();
-		}
-	}		
+	dc_stuff_int(&val_i);
+
+	val_f = (float)val_i / 100.0f;
+		
+	if(val_i > 100){
+		dc_printf("Illegal loss base value, ignoring...");
+	} else if (val_i < 0){
+		// switch the loss sim off
+		dc_printf("Turning simulated loss off\n");
+		Multi_loss_base = -1.0f;
+		Multi_loss_min = -1.0f;
+		Multi_loss_max = -1.0f;
+
+	} else if((Multi_loss_max >= 0.0f) && (val_f > Multi_loss_max)){
+		dc_printf("Base value greater than max value, ignoring...");
+
+	} else if((Multi_loss_min >= 0.0f) && (val_f < Multi_loss_min)){
+		dc_printf("Base value smaller than min value, ignoring...");
+
+	} else {
+		Multi_loss_base = val_f;
+	}
 }
 
-DCF(loss, "")
+DCF(loss_min, "Sets the loss min value (Multiplayer)")
 {
+	int val_i;
+	float val_f;
+
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
 		dc_printf("Lag System Not Initialized!\n");
 		return;
 	}
 
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("loss_min value is currently %f percent", Multi_loss_min);
+	}
+
 	// parse the argument and change things around accordingly
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){
-		float val = (float)Dc_arg_int / 100.0f;
-			
-		if(Dc_arg_int > 100){
-			dc_printf("Illegal loss base value, ignoring...");
-		} else if(Dc_arg_int < 0){
-			// switch the loss sim off
-			dc_printf("Turning simulated loss off\n");
-			Multi_loss_base = -1.0f;
+	dc_stuff_int(&val_i);
+
+	val_f = (float)val_i / 100.0f;
+
+	if(val_f > Multi_loss_base){
+		dc_printf("Min value greater than base value, ignoring...");
+	} else {
+		// otherwise set the value
+		if (val_f < 0) {
 			Multi_loss_min = -1.0f;
-			Multi_loss_max = -1.0f;
-			multi_lagloss_dcf();
-		} else if((Multi_loss_max >= 0.0f) && (val > Multi_loss_max)){
-			dc_printf("Base value greater than max value, ignoring...");
-		} else if((Multi_loss_min >= 0.0f) && (val < Multi_loss_min)){
-			dc_printf("Base value smaller than min value, ignoring...");
 		} else {
-			Multi_loss_base = val;
-			multi_lagloss_dcf();
+			Multi_loss_min = val_f;
 		}
-	}			
+	}
 }
 
-DCF(loss_min, "")
+DCF(loss_max, "Sets the loss max value (Multiplayer)")
 {
+	int val_i;
+	float val_f;
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
 		dc_printf("Lag System Not Initialized!\n");
 		return;
 	}
 
-	// parse the argument and change things around accordingly
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){			
-      float val = (float)Dc_arg_int / 100.0f;
-
-		if(val > Multi_loss_base){
-			dc_printf("Min value greater than base value, ignoring...");
-		} else {
-			// otherwise set the value
-			if(Dc_arg_int < 0){
-				Multi_loss_min = -1.0f;
-			} else {
-				Multi_loss_min = val;
-			}
-			multi_lagloss_dcf();
-		}
-	}
-}
-
-DCF(loss_max, "")
-{	
-	// if the lag system isn't inited, don't do anything
-	if(!Multi_lag_inited){
-		dc_printf("Lag System Not Initialized!\n");
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
 		return;
 	}
 
-	// parse the argument and change things around accordingly
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){			
-      float val = (float)Dc_arg_int / 100.0f;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("loss_max value is currently %f percent", Multi_loss_max);
+	}
 
-		if(val < Multi_loss_base){
-			dc_printf("Max value smaller than base value, ignoring...");
+	// parse the argument and change things around accordingly
+	dc_stuff_int(&val_i);
+	val_f = (float)val_i / 100.0f;
+
+	if (val_f < Multi_loss_base) {
+		dc_printf("Max value smaller than base value, ignoring...");
+	} else {
+		// otherwise set the value
+		if (val_f < 0) {
+			Multi_loss_max = -1.0f;
 		} else {
-			// otherwise set the value
-			if(Dc_arg_int < 0){
-				Multi_loss_max = -1.0f;
-			} else {
-				Multi_loss_min = val;
-			}
-			multi_lagloss_dcf();
+			Multi_loss_max = val_f;
 		}
-	}			
+	}
 }
 
-DCF(lagloss, "")
+DCF(lagloss, "Help provider for the lag system (Multiplayer)")
 {
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
@@ -587,27 +696,44 @@ DCF(lagloss, "")
 	multi_lagloss_dcf();
 }
 
-DCF(lag_streak, "")
+DCF(lag_streak, "Sets the duration of lag streaks (Multiplayer)")
+{
+	int val;
+
+	// if the lag system isn't inited, don't do anything
+	if (!Multi_lag_inited) {
+		dc_printf("Lag System Not Initialized!\n");
+		return;
+	}
+
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("lag_streak value is currently %i", Multi_streak_time);
+		return;
+	}
+
+	dc_stuff_int(&val);
+	if(val >= 0){
+		Multi_streak_time = val;
+	} else {
+		dc_printf("Ignoring invalid value (must be non-negative)\n");
+	}
+}
+
+DCF(lag_bad, "Lag system shortcut - Sets for 'bad' lag simulation (Multiplayer)")
 {
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
 		dc_printf("Lag System Not Initialized!\n");
 		return;
 	}
-
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){			      		
-		if(Dc_arg_int >= 0){
-			Multi_streak_time = Dc_arg_int;
-		} 
-	}
-}
-
-DCF(lag_bad, "")
-{
-	// if the lag system isn't inited, don't do anything
-	if(!Multi_lag_inited){
-		dc_printf("Lag System Not Initialized!\n");
+	
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
 		return;
 	}
 
@@ -627,11 +753,16 @@ DCF(lag_bad, "")
 	Multi_current_streak = -1;
 }
 
-DCF(lag_avg, "")
+DCF(lag_avg, "Lag system shortcut - Sets for 'average' lag simulation (Multiplayer)")
 {
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
 		dc_printf("Lag System Not Initialized!\n");
+		return;
+	}
+
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
 		return;
 	}
 
@@ -651,11 +782,16 @@ DCF(lag_avg, "")
 	Multi_current_streak = -1;
 }
 
-DCF(lag_good, "")
+DCF(lag_good, "Lag system shortcut - Sets for 'good' lag simulation (Multiplayer)")
 {
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
 		dc_printf("Lag System Not Initialized!\n");
+		return;
+	}
+
+	if (dc_optional_string_either("help", "--help")) {
+		multi_lagloss_dcf();
 		return;
 	}
 

@@ -21,7 +21,7 @@
 #include "io/joy_ff.h"
 #include "directx/vdinput.h"
 #include "osapi/osapi.h"
-
+#include "debugconsole/console.h"
 
 
 #define PRECALIBRATED 1
@@ -302,43 +302,60 @@ int joy_get_unscaled_reading(int raw, int axn);
 
 DCF(joytest, "Test joystick")
 {
-	if (Dc_command) {
-		while (!keyd_pressed[KEY_ESC]) {
-			int x, y, axis[JOY_NUM_AXES];
+	if (dc_optional_string_either("help", "?") || dc_optional_string_either("--help", "--?"))
+	{
+		dc_printf("Real-time test of the joystick's X and Y axes. Readings are taken from the joystick and directly");
+		dc_printf("spewed to a popup window. Press ESC to abort the test.\n");
 
-			if (joy_num_sticks < 1)
-				return;
-
-			joystick_read_raw_axis(JOY_NUM_AXES, axis);
-
-			x = joy_get_scaled_reading(axis[0], 0);
-			y = joy_get_scaled_reading(axis[1], 1);
-
-			mprintf(("X=%5d Y=%5d  Calibrated X=%6d Y=%6d\n", axis[0], axis[1], x, y));
-			Sleep(100);
-		}
+		dc_printf("First pair of readings are the raw values as reported by the OS's input library. Second pair of");
+		dc_printf("readings are what the engine uses for controls\n");
+		return;
 	}
+
+	while (!keyd_pressed[KEY_ESC]) {
+		int x, y, axis[JOY_NUM_AXES];
+
+		if (joy_num_sticks < 1)
+			return;
+
+		joystick_read_raw_axis(JOY_NUM_AXES, axis);
+
+		x = joy_get_scaled_reading(axis[0], 0);
+		y = joy_get_scaled_reading(axis[1], 1);
+
+		mprintf(("X=%5d Y=%5d  Calibrated X=%6d Y=%6d\n", axis[0], axis[1], x, y));
+		Sleep(100);
+	}
+	
 }
 
 DCF(joytest2, "Test joystick (extended)")
 {
-	if (Dc_command) {
-		while (!keyd_pressed[KEY_ESC]) {
-			int x, y, z, r, axis[JOY_NUM_AXES];
+	if (dc_optional_string_either("help", "?") || dc_optional_string_either("--help", "--?"))
+	{
+		dc_printf("Real-time test of the joystick's X, Y, Z, Rx, Ry, and Rz axes. Readings are taken from the joystick");
+		dc_printf("and directly spewed to a popup window. Press ESC to abort the test.");
 
-			if (joy_num_sticks < 1)
-				return;
+		dc_printf("First set of readings are the raw values as reported by the OS's input library. Second set of");
+		dc_printf("readings are what the engine uses for controls\n");
+		return;
+	}
 
-			joystick_read_raw_axis(JOY_NUM_AXES, axis);
+	while (!keyd_pressed[KEY_ESC]) {
+		int x, y, z, r, axis[JOY_NUM_AXES];
 
-			x = joy_get_scaled_reading(axis[0], 0);
-			y = joy_get_scaled_reading(axis[1], 1);
-			z = joy_get_unscaled_reading(axis[2], 2);
-			r = joy_get_scaled_reading(axis[3], 3);
+		if (joy_num_sticks < 1)
+			return;
 
-			mprintf(("X=%5d Y=%5d Z=%5d Rx=%5d Ry=%5d Rz=%5d Cal X=%6d Y=%6d Z=%6d R=%6d\n", axis[0], axis[1], axis[2], axis[3], axis[4], axis[5], x, y, z, r));
-			Sleep(100);
-		}
+		joystick_read_raw_axis(JOY_NUM_AXES, axis);
+
+		x = joy_get_scaled_reading(axis[0], 0);
+		y = joy_get_scaled_reading(axis[1], 1);
+		z = joy_get_unscaled_reading(axis[2], 2);
+		r = joy_get_scaled_reading(axis[3], 3);
+
+		mprintf(("X=%5d Y=%5d Z=%5d Rx=%5d Ry=%5d Rz=%5d Cal X=%6d Y=%6d Z=%6d R=%6d\n", axis[0], axis[1], axis[2], axis[3], axis[4], axis[5], x, y, z, r));
+		Sleep(100);
 	}
 }
 

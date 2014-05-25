@@ -263,7 +263,10 @@ FS2_SOURCES =	\
 	debris/debris.cpp	\
 	debris/debris.h	\
 	debugconsole/console.cpp	\
-	debugconsole/dbugfile.h	\
+	debugconsole/console.h	\
+	debugconsole/consolecmds.cpp	\
+	debugconsole/consoleparse.cpp	\
+	debugconsole/consoleparse.h	\
 	debugconsole/timerbar.cpp	\
 	debugconsole/timerbar.h	\
 	exceptionhandler/exceptionhandler.cpp	\

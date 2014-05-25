@@ -8,7 +8,7 @@
 */ 
 
 
-
+#include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "io/timer.h"
@@ -248,73 +248,76 @@ int Monitor_inited = 0;
 char Monitor_filename[128];
 fix monitor_last_time = -1;
 
-DCF(monitor,"Monitors game performace")
+DCF(monitor,"Monitors game performace by saving to file")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
-		if ( Dc_arg_type == ARG_NONE )	{
-			if ( Monitor_inited )	{
-				Monitor_inited = 0;
+	SCP_string filename;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: monitor [filename]\n");
+		dc_printf("Outputs monitoring info to [filename]. No filename turns it off\n" );
+		return;
+	}
+
+	if (dc_maybe_stuff_string_white(filename)) {
+		if ( Monitor_inited )	{
+				dc_printf( "Monitor already on\n" );
+		} else {
+			Monitor_inited = 1;
+
+			strcpy_s(Monitor_filename, filename.c_str());
+
+			// Reset them all
+			int i;
+			for (i=0; i<Num_monitors; i++ )	{
+				Monitor[i]->value = 0;
+				Monitor[i]->sum = 0;
+				Monitor[i]->cnt = 0;
+				Monitor[i]->min = 0;
+				Monitor[i]->max = 0;
+			}
+
+			FILE *fp = fopen( Monitor_filename, "wt" );
+			if ( fp )	{
+				for (i=0; i<Num_monitors; i++ )	{
+					if ( i > 0 )	{
+						fprintf( fp, "\t" );
+					}
+					fprintf( fp, "%s", Monitor[i]->name );
+
+				}
+				fprintf( fp, "\n" );
+				fclose(fp);
+			}
+			dc_printf( "Monitor outputting to file '%s'\n", Monitor_filename );
+			monitor_last_time = -1;
+		}
+
+	} else {
+		// Turn off monitoring
+		if ( Monitor_inited )	{
+			Monitor_inited = 0;
 
 /*
-				FILE *fp = fopen( Monitor_filename, "at" );
-				if ( fp )	{
-					fprintf( fp, "\n\n" );
-					fprintf( fp, "Name\tMin\tMax\tAvg\n" );
-					for (int i=0; i<Num_monitors; i++ )	{
-						if ( Monitor[i]->cnt > 0 )	{
-							fprintf( fp, "%s\t%d\t%d\t%d\n", Monitor[i]->name, Monitor[i]->min, Monitor[i]->max, Monitor[i]->sum / Monitor[i]->cnt  );
-						} else {
-							fprintf( fp, "%s\t%d\t%d\t?\n", Monitor[i]->name, Monitor[i]->min, Monitor[i]->max );
-						}
+			FILE *fp = fopen( Monitor_filename, "at" );
+			if ( fp )	{
+				fprintf( fp, "\n\n" );
+				fprintf( fp, "Name\tMin\tMax\tAvg\n" );
+				for (int i=0; i<Num_monitors; i++ )	{
+					if ( Monitor[i]->cnt > 0 )	{
+						fprintf( fp, "%s\t%d\t%d\t%d\n", Monitor[i]->name, Monitor[i]->min, Monitor[i]->max, Monitor[i]->sum / Monitor[i]->cnt  );
+					} else {
+						fprintf( fp, "%s\t%d\t%d\t?\n", Monitor[i]->name, Monitor[i]->min, Monitor[i]->max );
 					}
-					fclose(fp);
 				}
+				fclose(fp);
+			}
 */
 
-				dc_printf( "Monitor to file '%s' turned off\n", Monitor_filename );
-			} else {
-				dc_printf( "Monitor isn't on\n" );
-			}
+			dc_printf( "Monitor to file '%s' turned off\n", Monitor_filename );
 		} else {
-			if ( Monitor_inited )	{
-				dc_printf( "Monitor already on\n" );
-			} else {
-				Monitor_inited = 1;
-
-				strcpy_s( Monitor_filename, Dc_arg );
-
-				// Reset them all
-				int i;
-				for (i=0; i<Num_monitors; i++ )	{
-					Monitor[i]->value = 0;
-					Monitor[i]->sum = 0;
-					Monitor[i]->cnt = 0;
-					Monitor[i]->min = 0;
-					Monitor[i]->max = 0;
-				}
-
-				FILE *fp = fopen( Monitor_filename, "wt" );
-				if ( fp )	{
-					for (i=0; i<Num_monitors; i++ )	{
-						if ( i > 0 )	{
-							fprintf( fp, "\t" );
-						}
-						fprintf( fp, "%s", Monitor[i]->name );
-					
-					}
-					fprintf( fp, "\n" );
-					fclose(fp);
-				}
-				dc_printf( "Monitor outputting to file '%s'\n", Monitor_filename );
-				monitor_last_time = -1;
-			}
+			dc_printf( "Monitor isn't on\n" );
 		}
 	}
-	if ( Dc_help )	{
-		dc_printf( "Usage: monitor filename\nOutputs monitoring info to filename. No filename turns it off\n" );
-	}
-	
 }
 
 
@@ -508,44 +511,41 @@ int current_detail_level()
 #ifndef NDEBUG
 DCF(detail_level,"Change the detail level")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_INT|ARG_NONE);
-		if ( Dc_arg_type & ARG_NONE )	{
-			Game_detail_level = 0;
-			dc_printf( "Detail level reset\n" );
-		}
-		if ( Dc_arg_type & ARG_INT )	{
-			Game_detail_level = Dc_arg_int;
-		}
+	int value;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: detail_level [n]\n");
+		dc_printf("[n]  -- is detail level.\n");
+			dc_printf("\t0 is 'normal' detail,\n");
+			dc_printf("\tnegative values are lower, and\n");
+			dc_printf("\tpositive values are higher.\n\n");
+		
+		dc_printf("No parameter resets it to default.\n");
+		return;
 	}
 
-	if ( Dc_help )	
-		dc_printf( "Usage: detail_level [n]\nn is detail level. 0 normal, - lower, + higher, -2 to 2 usually\nNo parameter resets it to default.\n" );
-
-	if ( Dc_status )				
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf("Detail level set to %d\n", Game_detail_level);
+		return;
+	}
+
+	if (dc_maybe_stuff_int(&value)) {
+		Game_detail_level = value;
+		dc_printf("Detail level set to %i\n", Game_detail_level);
+
+	} else {
+		Game_detail_level = 0;
+		dc_printf("Detail level reset\n");
+	}
 }
 
 DCF(detail, "Turns on/off parts of the game for speed testing" )
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_INT|ARG_NONE);
-		if ( Dc_arg_type & ARG_NONE )	{
-			if ( Game_detail_flags == DETAIL_DEFAULT )	{
-				Game_detail_flags = DETAIL_FLAG_CLEAR;
-				dc_printf( "Detail flags set lowest (except has screen clear)\n" );
-			} else {
-				Game_detail_flags = DETAIL_DEFAULT;
-				dc_printf( "Detail flags set highest\n" );
-			}
-		}
-		if ( Dc_arg_type & ARG_INT )	{
-			Game_detail_flags ^= Dc_arg_int;
-		}
-	}
+	int value;
 
-	if ( Dc_help )	{
-		dc_printf( "Usage: detail [n]\nn is detail bit to toggle.\n" );
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: detail [n]\n");
+		dc_printf("[n] is detail bit to toggle:\n" );
 		dc_printf( "   1: draw the stars\n" );
 		dc_printf( "   2: draw the nebulas\n" );
 		dc_printf( "   4: draw the motion debris\n" );
@@ -555,21 +555,38 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 		dc_printf( "  64: clear screen background after each frame\n" );
 		dc_printf( " 128: draw hud stuff\n" );
 		dc_printf( " 256: draw fireballs\n" );
-		dc_printf( " 512: do collision detection\n" );
+		dc_printf( " 512: do collision detection\n\n" );
+
+		dc_printf("No argument will toggle between highest/lowest detail settings\n");
+		return;
 	}
 
-	if ( Dc_status )	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf("Detail flags set to 0x%08x\n", Game_detail_flags);
-		dc_printf( "   1: draw the stars: %s\n", (Game_detail_flags&1?"on":"off") );
-		dc_printf( "   2: draw the nebulas: %s\n", (Game_detail_flags&2?"on":"off") );
-		dc_printf( "   4: draw the motion debris: %s\n", (Game_detail_flags&4?"on":"off")  );
-		dc_printf( "   8: draw planets: %s\n", (Game_detail_flags&8?"on":"off")  );
-		dc_printf( "  16: draw models not as blobs: %s\n", (Game_detail_flags&16?"on":"off")  );
-		dc_printf( "  32: draw lasers not as pixels: %s\n", (Game_detail_flags&32?"on":"off")  );
-		dc_printf( "  64: clear screen background after each frame: %s\n", (Game_detail_flags&64?"on":"off")  );
-		dc_printf( " 128: draw hud stuff: %s\n", (Game_detail_flags&128?"on":"off")  );
-		dc_printf( " 256: draw fireballs: %s\n", (Game_detail_flags&256?"on":"off")  );
-		dc_printf( " 512: do collision detection: %s\n", (Game_detail_flags&512?"on":"off")  );
+		dc_printf( "   1: draw the stars: %s\n", ((Game_detail_flags & 1) ? "on" : "off"));
+		dc_printf( "   2: draw the nebulas: %s\n", ((Game_detail_flags & 2)?"on" : "off"));
+		dc_printf( "   4: draw the motion debris: %s\n", ((Game_detail_flags & 4) ? "on" : "off"));
+		dc_printf( "   8: draw planets: %s\n", ((Game_detail_flags & 8) ? "on" : "off"));
+		dc_printf( "  16: draw models not as blobs: %s\n", ((Game_detail_flags & 16) ? "on" : "off"));
+		dc_printf( "  32: draw lasers not as pixels: %s\n", ((Game_detail_flags & 32) ? "on" : "off"));
+		dc_printf( "  64: clear screen background after each frame: %s\n", ((Game_detail_flags & 64) ? "on" : "off"));
+		dc_printf( " 128: draw hud stuff: %s\n", ((Game_detail_flags & 128) ? "on" : "off"));
+		dc_printf( " 256: draw fireballs: %s\n", ((Game_detail_flags & 256) ? "on" : "off"));
+		dc_printf( " 512: do collision detection: %s\n", ((Game_detail_flags & 512) ? "on" : "off"));
+		return;
+	}
+
+	if (dc_maybe_stuff_int(&value)) {
+		Game_detail_flags ^= value;
+	
+	} else {
+		if (Game_detail_flags == DETAIL_DEFAULT) {
+			Game_detail_flags = DETAIL_FLAG_CLEAR;
+			dc_printf( "Detail flags set lowest (except has screen clear)\n" );
+		} else {
+			Game_detail_flags = DETAIL_DEFAULT;
+			dc_printf( "Detail flags set highest\n" );
+		}
 	}
 }
 #endif
