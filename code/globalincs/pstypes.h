@@ -178,7 +178,7 @@ struct flag_def_list_new {
 	char* name;			// The parseable representation of this flag
 	T def;				// The flag definition for this flag
 	bool in_use;		// Whether or not this flag is currently in use or obsolete
-	bool is_special;	// Whether this flag requires special processing
+	bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
 };
 
 // weapon count list (mainly for pilot files)
@@ -702,6 +702,7 @@ public:
 	}
 
 	bool operator==(flagset<T> other) { return this->values == other.values; }
+	bool operator!=(flagset<T> other) { return this->values != other.values; }
 
 	bool compare(flagset<T> other) { }
 	void reset() { values.reset(); }
@@ -719,6 +720,9 @@ public:
 		}
 	}
 	SCP_string to_string() { return values.to_string<char, std::char_traits<char>, SCP_vm_allocator<char>>(); }
+
+	void from_long(ulong num) { values = num; }
+	ulong to_long() { return values.to_ulong(); }
 };
 
 #define FLAG_LIST(Type) enum class Type : size_t

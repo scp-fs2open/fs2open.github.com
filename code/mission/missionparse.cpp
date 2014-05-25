@@ -471,9 +471,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_int(&pm->game_type);
 	}
 
-	pm->flags = 0;
+	pm->flags.reset();
 	if (optional_string("+Flags:")){
-		stuff_int(&pm->flags);
+		stuff_flagset<flagset<Mission::Mission_Flags>>(&pm->flags);
 	}
 
 	// nebula mission stuff
@@ -530,9 +530,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_int(&temp);
 
 		if (temp)
-			pm->flags |= MISSION_FLAG_RED_ALERT;
+			pm->flags.set(Mission::Mission_Flags::Red_alert);
 		else
-			pm->flags &= ~MISSION_FLAG_RED_ALERT;
+			pm->flags.unset(Mission::Mission_Flags::Red_alert);
 	} 
 	red_alert_invalidate_timestamp();
 
@@ -541,9 +541,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_int(&temp);
 
 		if (temp)
-			pm->flags |= MISSION_FLAG_SCRAMBLE;
+			pm->flags.set(Mission::Mission_Flags::Scramble);
 		else
-			pm->flags &= ~MISSION_FLAG_SCRAMBLE;
+			pm->flags.unset(Mission::Mission_Flags::Scramble);
 	}
 
 	// if we are just requesting basic info then skip everything else.  the reason
@@ -754,7 +754,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	Assert( The_mission.ai_profile != NULL );
 
 	// Kazan - player use AI at start?
-	if (pm->flags & MISSION_FLAG_PLAYER_START_AI)
+	if (pm->flags[Mission::Mission_Flags::Player_start_ai])
 		Player_use_ai = 1;
 
 	pm->sound_environment.id = -1;
@@ -2156,7 +2156,7 @@ int parse_create_object_sub(p_object *p_objp)
 		while (ptr != END_OF_LIST(&shipp->subsys_list))
 		{
 			// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
-			if (The_mission.flags & MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT)
+			if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
 			{
 				// mark all turrets as beam free
 				if(ptr->system_info->type == SUBSYSTEM_TURRET)
@@ -5179,12 +5179,12 @@ void parse_bitmaps(mission *pm)
 		stuff_int(&Neb2_poof_flags);
 
 		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(
-		if(Fred_running && (pm->flags & MISSION_FLAG_FULLNEB)){
+		if(Fred_running && (pm->flags[Mission::Mission_Flags::Fullneb])){
 			neb2_post_level_init();
 		}
 	}
 
-	if(pm->flags & MISSION_FLAG_FULLNEB){
+	if(pm->flags[Mission::Mission_Flags::Fullneb]){
 		// no regular nebula stuff
 		nebula_close();
 	} else {
@@ -5193,7 +5193,7 @@ void parse_bitmaps(mission *pm)
 			
 			// parse the proper nebula type (full or not)	
 			for (z=0; z<NUM_NEBULAS; z++){
-				if(pm->flags & MISSION_FLAG_FULLNEB){
+				if(pm->flags[Mission::Mission_Flags::Fullneb]){
 					if (!stricmp(str, Neb2_filenames[z])) {
 						Nebula_index = z;
 						break;

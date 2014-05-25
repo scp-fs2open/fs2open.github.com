@@ -495,7 +495,7 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 		obj->parent_type = obj->type;
 	}
 
-	obj->flags 					= flags | OF_NOT_IN_COLL;
+	obj->flags					= flags | OF_NOT_IN_COLL;
 	if (pos)	{
 		obj->pos 				= *pos;
 		obj->last_pos			= *pos;
@@ -917,7 +917,7 @@ obj_maybe_fire:
 	//2D MODE
 	//THIS IS A FREAKIN' HACK
 	//Do not let ship change position on Y axis
-	if(The_mission.flags & MISSION_FLAG_2D_MISSION)
+	if(The_mission.flags[Mission::Mission_Flags::Mission_2d])
 	{
 		angles old_angles, new_angles;
 		objp->pos.xyz.y = objp->last_pos.xyz.y;

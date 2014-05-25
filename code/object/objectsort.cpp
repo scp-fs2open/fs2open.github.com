@@ -261,7 +261,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		}
 
 		// if we're fullneb, fire up the fog - this also generates a fog table
-		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
+		if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
 			// get the fog values
 			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 
@@ -301,7 +301,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			continue;
 
 		// if we're fullneb, fire up the fog - this also generates a fog table
-		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
+		if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
 			// get the fog values
 			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 
@@ -327,7 +327,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	batch_render_man_thrusters();
 
 	// if we're fullneb, switch off the fog effet
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 

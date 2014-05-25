@@ -1909,11 +1909,11 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 
 	// if we aren't showing builtin msgs, bail
-	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)
+	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs])
 		return;
 
 	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
-	if ( (shipp == NULL) && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) 
+	if ( (shipp == NULL) && (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ) 
 		return;
 
 	// builtin type isn't supported by this version of the table
@@ -1949,7 +1949,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			nprintf(("messaging", "Couldn't find persona for %s\n", shipp->ship_name ));	
 
 		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
-		Assert( !(is_flyable(&Ship_info[shipp->ship_info_index]) ));		// get allender or alan
+		Assert( (is_flyable(&Ship_info[shipp->ship_info_index]) ));		// get allender or alan
 	} else {
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}

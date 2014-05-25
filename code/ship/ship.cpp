@@ -179,21 +179,21 @@ flag_def_list Armor_flags[] = {
 const int Num_armor_flags = sizeof(Armor_flags)/sizeof(flag_def_list);
 
 flag_def_list_new<Thruster_Flags> Man_types[] = {
-	{ "Bank right", Thruster_Flags::Bank_right, true },
-	{ "Bank left",	Thruster_Flags::Bank_left,	true },
-	{ "Pitch up",	Thruster_Flags::Pitch_up,	true },
-	{ "Pitch down", Thruster_Flags::Pitch_down, true },
-	{ "Roll right", Thruster_Flags::Roll_right, true },
-	{ "Roll left",	Thruster_Flags::Roll_left,	true },
-	{ "Slide right",Thruster_Flags::Slide_right,true },
-	{ "Slide left", Thruster_Flags::Slide_left, true },
-	{ "Slide up",	Thruster_Flags::Slide_up,	true },
-	{ "Slide down", Thruster_Flags::Slide_down, true },
-	{ "Forward",	Thruster_Flags::Forward,	true },
-	{ "Reverse",	Thruster_Flags::Reverse,	true }
+	{ "Bank right", Thruster_Flags::Bank_right, true, false },
+	{ "Bank left",	Thruster_Flags::Bank_left,	true, false },
+	{ "Pitch up",	Thruster_Flags::Pitch_up,	true, false },
+	{ "Pitch down", Thruster_Flags::Pitch_down, true, false },
+	{ "Roll right", Thruster_Flags::Roll_right, true, false },
+	{ "Roll left",	Thruster_Flags::Roll_left,	true, false },
+	{ "Slide right",Thruster_Flags::Slide_right,true, false },
+	{ "Slide left", Thruster_Flags::Slide_left, true, false },
+	{ "Slide up",	Thruster_Flags::Slide_up,	true, false },
+	{ "Slide down", Thruster_Flags::Slide_down, true, false },
+	{ "Forward",	Thruster_Flags::Forward,	true, false },
+	{ "Reverse",	Thruster_Flags::Reverse,	true, false }
 };
 
-const int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list_new<Thruster_Flags>);
+const size_t Num_man_types = sizeof(Man_types)/sizeof(flag_def_list_new<Thruster_Flags>);
 
 // Goober5000 - I figured we should keep this separate
 // from Comm_orders, considering how I redid it :p
@@ -264,55 +264,55 @@ const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
 
 
 flag_def_list_new<Info_Flags> Ship_flags[] = {
-	{ "no_collide",					Info_Flags::No_collide,				true },
-	{ "player_ship",				Info_Flags::Player_ship,			true },
-	{ "default_player_ship",		Info_Flags::Default_player_ship,	true },
-	{ "repair_rearm",				Info_Flags::Support,				true },
-	{ "cargo",						Info_Flags::Cargo,					true },
-	{ "fighter",					Info_Flags::Fighter,				true },
-	{ "bomber",						Info_Flags::Bomber,					true },
-	{ "transport",					Info_Flags::Transport,				true },
-	{ "freighter",					Info_Flags::Freighter,				true },
-	{ "capital",					Info_Flags::Capital,				true },
-	{ "supercap",					Info_Flags::Supercap,				true },
-	{ "drydock",					Info_Flags::Drydock,				true },
-	{ "cruiser",					Info_Flags::Cruiser,				true },
-	{ "navbuoy",					Info_Flags::Navbuoy,				true },
-	{ "sentrygun",					Info_Flags::Sentrygun,				true },
-	{ "escapepod",					Info_Flags::Escapepod,				true },
-	{ "stealth",					Info_Flags::Stealth,				true },
-	{ "no type",					Info_Flags::No_ship_type,			true },
-	{ "ship copy",					Info_Flags::Ship_copy,				true },
-	{ "in tech database",			Info_Flags::In_tech_database,		true },
-	{ "in tech database multi",		Info_Flags::In_tech_database_m,		true },
-	{ "dont collide invisible",		Info_Flags::Ship_class_dont_collide_invis, true },
-	{ "big damage",					Info_Flags::Big_damage,				true },
-	{ "corvette",					Info_Flags::Corvette,				true },
-	{ "gas miner",					Info_Flags::Gas_miner,				true },
-	{ "awacs",						Info_Flags::Awacs,					true },
-	{ "knossos",					Info_Flags::Knossos_device,			true },
-	{ "no_fred",					Info_Flags::No_fred,				true },
-	{ "flash",						Info_Flags::Flash,					true },
-	{ "surface shields",			Info_Flags::Surface_shields,		true },
-	{ "show ship",					Info_Flags::Show_ship_model,		true },
-	{ "generate icon",				Info_Flags::Generate_hud_icon,		true },
-	{ "no weapon damage scaling",	Info_Flags::Disable_weapon_damage_scaling, true },
-	{ "gun convergence",			Info_Flags::Gun_convergence,		true },
-	{ "no thruster geometry noise", Info_Flags::No_thruster_geo_noise,	true },
-	{ "intrinsic no shields",		Info_Flags::Intrinsic_no_shields,	true },
-	{ "dynamic primary linking",	Info_Flags::Dyn_primary_linking,	true },
-	{ "no primary linking",			Info_Flags::No_primary_linking,		true },
-	{ "no pain flash",				Info_Flags::No_pain_flash,			true },
-	{ "no ets",						Info_Flags::No_ets,					true },
-	{ "no lighting",				Info_Flags::No_lighting,			true },
-	{ "auto spread shields",		Info_Flags::Auto_spread_shields,	true },
-	{ "model point shields",		Info_Flags::Model_point_shields,	true },
+	{ "no_collide",					Info_Flags::No_collide,				true, false },
+	{ "player_ship",				Info_Flags::Player_ship,			true, false },
+	{ "default_player_ship",		Info_Flags::Default_player_ship,	true, false },
+	{ "repair_rearm",				Info_Flags::Support,				true, false },
+	{ "cargo",						Info_Flags::Cargo,					true, false },
+	{ "fighter",					Info_Flags::Fighter,				true, false },
+	{ "bomber",						Info_Flags::Bomber,					true, false },
+	{ "transport",					Info_Flags::Transport,				true, false },
+	{ "freighter",					Info_Flags::Freighter,				true, false },
+	{ "capital",					Info_Flags::Capital,				true, false },
+	{ "supercap",					Info_Flags::Supercap,				true, false },
+	{ "drydock",					Info_Flags::Drydock,				true, false },
+	{ "cruiser",					Info_Flags::Cruiser,				true, false },
+	{ "navbuoy",					Info_Flags::Navbuoy,				true, false },
+	{ "sentrygun",					Info_Flags::Sentrygun,				true, false },
+	{ "escapepod",					Info_Flags::Escapepod,				true, false },
+	{ "stealth",					Info_Flags::Stealth,				true, false },
+	{ "no type",					Info_Flags::No_ship_type,			true, false },
+	{ "ship copy",					Info_Flags::Ship_copy,				true, false },
+	{ "in tech database",			Info_Flags::In_tech_database,		true, false },
+	{ "in tech database multi",		Info_Flags::In_tech_database_m,		true, false },
+	{ "dont collide invisible",		Info_Flags::Ship_class_dont_collide_invis, true, false },
+	{ "big damage",					Info_Flags::Big_damage,				true, false },
+	{ "corvette",					Info_Flags::Corvette,				true, false },
+	{ "gas miner",					Info_Flags::Gas_miner,				true, false },
+	{ "awacs",						Info_Flags::Awacs,					true, false },
+	{ "knossos",					Info_Flags::Knossos_device,			true, false },
+	{ "no_fred",					Info_Flags::No_fred,				true, false },
+	{ "flash",						Info_Flags::Flash,					true, false },
+	{ "surface shields",			Info_Flags::Surface_shields,		true, false },
+	{ "show ship",					Info_Flags::Show_ship_model,		true, false },
+	{ "generate icon",				Info_Flags::Generate_hud_icon,		true, false },
+	{ "no weapon damage scaling",	Info_Flags::Disable_weapon_damage_scaling, true, false },
+	{ "gun convergence",			Info_Flags::Gun_convergence,		true, false },
+	{ "no thruster geometry noise", Info_Flags::No_thruster_geo_noise,	true, false },
+	{ "intrinsic no shields",		Info_Flags::Intrinsic_no_shields,	true, false },
+	{ "dynamic primary linking",	Info_Flags::Dyn_primary_linking,	true, false },
+	{ "no primary linking",			Info_Flags::No_primary_linking,		true, false },
+	{ "no pain flash",				Info_Flags::No_pain_flash,			true, false },
+	{ "no ets",						Info_Flags::No_ets,					true, false },
+	{ "no lighting",				Info_Flags::No_lighting,			true, false },
+	{ "auto spread shields",		Info_Flags::Auto_spread_shields,	true, false },
+	{ "model point shields",		Info_Flags::Model_point_shields,	true, false },
 
 	// to keep things clean, obsolete options go last
-	{ "ballistic primaries",		Info_Flags::Ballistic_primaries,	false }
+	{ "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
 };
 
-const int Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list_new<Info_Flags>);
+const size_t Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list_new<Info_Flags>);
 
 /*
 ++Here be dragons.. err.. begins the section for the ai targeting revision
@@ -337,9 +337,9 @@ flag_def_list ai_tgt_obj_flags[] = {
 const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list);
 
 flag_def_list_new<Ship::Info_Flags> ai_tgt_ship_flags[] = {
-	{ "afterburners",	Ship::Info_Flags::Afterburner, true},
-	{ "big damage",		Ship::Info_Flags::Big_damage,  true},
-	{ "has awacs",		Ship::Info_Flags::Has_awacs,   true}
+	{ "afterburners",	Ship::Info_Flags::Afterburner, true, false},
+	{ "big damage",		Ship::Info_Flags::Big_damage,  true, false},
+	{ "has awacs",		Ship::Info_Flags::Has_awacs,   true, false}
 };
 
 const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list_new<Ship::Info_Flags>);
@@ -360,8 +360,10 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags [] = {
 	{ "capital+",			Weapon::Info_Flags::Capital_plus,	true, false }
 };
 
-//	Constant for flag,				Name of flag,				In flags or flags2
-//  When adding new flags remember to bump MAX_SHIP_FLAG_NAMES in ship.h
+const int num_ai_tgt_weapon_info_flags = sizeof (ai_tgt_weapon_flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
+
+//	Constant for flag,				Name of flag,				In flagsor flags2
+//  When adding new flagsremember to bump MAX_SHIP_FLAG_NAMES in ship.h
 ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Vaporize,						"vaporize" },
 	{ Ship_Flags::Warp_broken,					"break-warp" },
@@ -408,7 +410,7 @@ SCP_vector<ship_effect> Ship_effects;
  */
 void ship_obj_list_reset_slot(int index)
 {
-	Ship_objs[index].flags = 0;
+	Ship_objs[index].flags= 0;
 	Ship_objs[index].next = NULL;
 	Ship_objs[index].prev = (ship_obj*)-1;
 }
@@ -466,7 +468,7 @@ int ship_obj_list_add(int objnum)
 		return -1;
 	}
 	
-	Ship_objs[i].flags = 0;
+	Ship_objs[i].flags= 0;
 	Ship_objs[i].objnum = objnum;
 	list_append(&Ship_obj_list, &Ship_objs[i]);
 	Ship_objs[i].flags |= SHIP_OBJ_USED;
@@ -3170,7 +3172,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		}
 
 		if(optional_string("+Used for:")) {
-			parse_string_flag_list<Thruster_Flags, flagset<Ship::Thruster_Flags>>(&mtp->use_flags, Man_types, NULL);
+			parse_string_flag_list<Thruster_Flags, flagset<Ship::Thruster_Flags>>(&mtp->use_flags, Man_types, Num_man_types, NULL);
 		}
 
 		if(optional_string("+Position:")) {
@@ -6406,7 +6408,7 @@ void ship_render(object * obj)
 			}
 
 			// nebula		
-			if(The_mission.flags & MISSION_FLAG_FULLNEB){		
+			if(The_mission.flags[Mission::Mission_Flags::Fullneb]){		
 				extern void model_set_fog_level(float l);
 				model_set_fog_level(neb2_get_fog_intensity(obj));
 			}
@@ -6511,7 +6513,7 @@ void ship_render(object * obj)
 
 			// small ships
 			if (!(shipp->flags[Ship_Flags::Cloaked])) {
-				if ((The_mission.flags & MISSION_FLAG_FULLNEB) && is_small_ship(sip)) {			
+				if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && is_small_ship(sip)) {			
 					// force detail levels
  					float fog_val = neb2_get_fog_intensity(obj);
 					if(fog_val >= 0.6f){
@@ -12824,7 +12826,7 @@ float ship_calculate_rearm_duration( object *objp )
 		shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
-	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
+	if ((The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
 	{
 		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * sip->sup_hull_repair_rate);
 	}
@@ -12986,7 +12988,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		max_hull_repair = objp->hull_strength;
 	}
 	
-	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
+	if(The_mission.flags[Mission::Mission_Flags::Support_repairs_hull])
 	{
 		objp->hull_strength += repair_allocated;
 		if ( objp->hull_strength > max_hull_repair ) {
@@ -13230,7 +13232,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	}
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
-	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && hull_ok ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
+	if ( (subsys_all_ok && shields_full && (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) && hull_ok ) || (subsys_all_ok && shields_full && !(The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) ) )
 	{
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();

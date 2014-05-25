@@ -335,7 +335,7 @@ void radar_plot_object( object *objp )
 	// is not active
 	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 	{
-		if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
+		if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
 			b->flags &= ~BLIP_DRAW_DISTORTED;
 	}
 

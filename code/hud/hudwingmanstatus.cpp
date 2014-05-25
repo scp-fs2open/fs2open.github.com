@@ -95,7 +95,7 @@ void hud_set_wingman_status_none( int wing_index, int wing_pos)
 	HUD_wingman_status[wing_index].used = used;
 }
 
-// flags a given player wing ship as "alive" (for multiplayer respawns )
+// flagsa given player wing ship as "alive" (for multiplayer respawns )
 void hud_set_wingman_status_alive( int wing_index, int wing_pos)
 {
 	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);

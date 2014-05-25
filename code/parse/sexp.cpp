@@ -6848,7 +6848,7 @@ void sexp_set_object_position(int n)
 	extern neb2_detail *Nd;
 
 	if ( (oswpt.objp == Player_obj) 
-		&& (The_mission.flags & MISSION_FLAG_FULLNEB) 
+		&& (The_mission.flags[Mission::Mission_Flags::Fullneb]) 
 		&& (vm_vec_dist(&oswpt.objp->pos, &target_vec) >= Nd->cube_inner) )
 	{
 		neb2_eye_changed();
@@ -9930,10 +9930,10 @@ void sexp_allow_treason (int n)
 	n = CDR(n);
 	if (n != -1) {
 		if ( is_sexp_true(n) ) {
-			The_mission.flags |= MISSION_FLAG_NO_TRAITOR;
+			The_mission.flags.set(Mission::Mission_Flags::No_traitor);
 		} 
 		else {
-			The_mission.flags &= ~MISSION_FLAG_NO_TRAITOR;
+			The_mission.flags.unset(Mission::Mission_Flags::No_traitor);
 		}
 	}
 }
@@ -11843,11 +11843,11 @@ extern void game_stop_subspace_ambient_sound();
 void sexp_mission_set_subspace(int n)
 {
 	if (eval_num(n) > 0) {
-		The_mission.flags |= MISSION_FLAG_SUBSPACE;
+		The_mission.flags.set(Mission::Mission_Flags::Subspace);
 		Game_subspace_effect = 1;
 		game_start_subspace_ambient_sound();
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_SUBSPACE;
+		The_mission.flags.unset(Mission::Mission_Flags::Subspace);
 		Game_subspace_effect = 0;
 		game_stop_subspace_ambient_sound();
 	}
@@ -12038,7 +12038,7 @@ void sexp_remove_sun_bitmap(int n)
 
 void sexp_nebula_change_storm(int n)
 {
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
 	
 	nebl_set_storm(CTEXT(n));
 }
@@ -12067,7 +12067,7 @@ void sexp_nebula_toggle_poof(int n)
 
 void sexp_nebula_change_pattern(int n)
 {
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
 	
 	strcpy_s(Neb2_texture_name,(CTEXT(n)));
 
@@ -12117,9 +12117,9 @@ void sexp_end_mission(int n)
 void sexp_set_debriefing_toggled(int node)
 {
 	if (is_sexp_true(node))
-		The_mission.flags |= MISSION_FLAG_TOGGLE_DEBRIEFING;
+		The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing);
 	else
-		The_mission.flags &= ~MISSION_FLAG_TOGGLE_DEBRIEFING;
+		The_mission.flags.unset(Mission::Mission_Flags::Toggle_debriefing);
 }
 
 /**
@@ -13220,12 +13220,12 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 	{
 		if (enable_messages) 
 		{
-			The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_MSGS;	
+			The_mission.flags.unset(Mission::Mission_Flags::No_builtin_msgs);	
 			return;
 		}
 		else 
 		{
-			The_mission.flags |= MISSION_FLAG_NO_BUILTIN_MSGS;
+			The_mission.flags.set(Mission::Mission_Flags::No_builtin_msgs);
 			return;
 		}
 	}
@@ -13241,11 +13241,11 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 			// Either disable or enable messages from command
 			if (enable_messages) 
 			{
-				The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_COMMAND;	
+				The_mission.flags.unset(Mission::Mission_Flags::No_builtin_command);	
 			}
 			else 
 			{
-				The_mission.flags |= MISSION_FLAG_NO_BUILTIN_COMMAND;
+				The_mission.flags.set(Mission::Mission_Flags::No_builtin_command);
 			}
 		}
 		else if (!stricmp(ship_name, "<Any Wingman>"))
@@ -18703,11 +18703,11 @@ void set_use_ap_cinematics(int node)
 {
 	if (is_sexp_true(node))
 	{
-		The_mission.flags |= MISSION_FLAG_USE_AP_CINEMATICS;
+		The_mission.flags.set(Mission::Mission_Flags::Use_ap_cinematics);
 	}
 	else
 	{
-		The_mission.flags &= ~MISSION_FLAG_USE_AP_CINEMATICS;
+		The_mission.flags.unset(Mission::Mission_Flags::Use_ap_cinematics);
 	}
 }
 
@@ -18717,11 +18717,11 @@ void set_use_ap(int node)
 {
 	if (is_sexp_true(node))
 	{
-		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
+		The_mission.flags.unset(Mission::Mission_Flags::Deactivate_ap);
 	}
 	else
 	{
-		The_mission.flags |= MISSION_FLAG_DEACTIVATE_AP;
+		The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap);
 	}
 }
 

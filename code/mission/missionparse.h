@@ -19,6 +19,7 @@
 #include "sound/sound.h"
 #include "parse/sexp.h"
 #include "io/keycontrol.h"
+#include "mission/mission_flags.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -140,7 +141,7 @@ typedef struct mission {
 	char	notes[NOTES_LENGTH];
 	char	mission_desc[MISSION_DESC_LENGTH];
 	int	game_type;
-	int	flags;
+	flagset<Mission::Mission_Flags>	flags;
 	int	num_players;									// valid in multiplayer missions -- number of players supported
 	uint	num_respawns;									// valid in multiplayer missions -- number of respawns allowed
 	int		max_respawn_delay;									// valid in multiplayer missions -- number of respawns allowed
@@ -184,7 +185,7 @@ typedef struct mission {
 		notes[ 0 ] = '\0';
 		mission_desc[ 0 ] = '\0';
 		game_type = 0;
-		flags = 0;
+		flags.reset();
 		num_players = 0;
 		num_respawns = 0;
 		max_respawn_delay = 0;

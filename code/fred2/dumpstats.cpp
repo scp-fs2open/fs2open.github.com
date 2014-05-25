@@ -167,15 +167,15 @@ void DumpStats::get_mission_stats(CString &buffer)
 		buffer += temp;
 	}
 
-	if (The_mission.flags & MISSION_FLAG_RED_ALERT) {
+	if (The_mission.flags[Mission::Mission_Flags::Red_alert]) {
 		buffer += "\tRed Alert\r\n";
 	}
 
-	if (The_mission.flags & MISSION_FLAG_SCRAMBLE) {
+	if (The_mission.flags[Mission::Mission_Flags::Scramble]) {
 		buffer += "\tScramble\r\n";
 	}
 
-	if (The_mission.flags & MISSION_FLAG_NO_PROMOTION) {
+	if (The_mission.flags[Mission::Mission_Flags::No_promotion]) {
 		buffer += "\tNo Promotions\r\n";
 	}
 
@@ -258,7 +258,7 @@ void DumpStats::get_background_stats(CString &buffer)
 	}
 
 	// Nebula mission
-	int nebula_mission = (The_mission.flags & MISSION_FLAG_FULLNEB);
+	int nebula_mission = (The_mission.flags[Mission::Mission_Flags::Fullneb]);
 	temp = "Nebula mission:";
 	if (nebula_mission) {
 		temp += " Yes\r\n";
@@ -295,7 +295,7 @@ void DumpStats::get_background_stats(CString &buffer)
 
 	// Subspace mission
 	temp = "Subspace mission:";
-	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
+	if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 		temp += " Yes\r\n";
 	} else {
 		temp += " No\r\n";

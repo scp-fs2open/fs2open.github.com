@@ -2036,7 +2036,7 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 	}
 
 	// turn off fog after each model renders
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
@@ -2213,7 +2213,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	vm_vec_normalize(&norm);
 
 	// we need to disable fogging
-	if (The_mission.flags & MISSION_FLAG_FULLNEB)
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 	for (i = 0; i < pm->n_thrusters; i++ ) {
@@ -2330,7 +2330,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			float fog_int = 1.0f;
 
 			// fade them in the nebula as well
-			if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+			if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 				vm_vec_rotate(&npnt, &gpt->pnt, orient);
 				vm_vec_add2(&npnt, pos);
 
@@ -2404,7 +2404,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 					vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * Interp_thrust_glow_len_factor);
 
-					if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+					if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 						vm_vec_add(&npnt, &pnt, pos);
 						d *= fog_int;
 					}
@@ -2578,7 +2578,7 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 								float w = gpt->radius;
 
 								// fade them in the nebula as well
-								if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+								if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 									//vec3d npnt;
 									//vm_vec_add(&npnt, &loc_offset, pos);
 
@@ -2663,7 +2663,7 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 							vm_vec_sub(&tempv,&View_position,&loc_offset);
 							vm_vec_normalize(&tempv);
 
-							if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+							if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 								gr_set_bitmap(bank->glow_neb_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
 							} else {
 								gr_set_bitmap(bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
@@ -2741,7 +2741,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode, fog everything except for the warp holes and other non-fogged models
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(flags & MR_NO_FOGGING)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(flags & MR_NO_FOGGING)){
 		Interp_tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
@@ -2818,7 +2818,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			}
 
 			// nebula ?
-			if(The_mission.flags & MISSION_FLAG_FULLNEB){
+			if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 				depth *= neb2_get_lod_scale(Interp_objnum);
 			}
 
@@ -3194,7 +3194,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 	Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		Interp_tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
@@ -3362,7 +3362,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 	g3_done_instance(true);
 
 	// turn off fog after each model renders, RT This fixes HUD being fogged when debris is in target box
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 

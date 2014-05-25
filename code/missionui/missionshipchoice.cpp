@@ -452,7 +452,7 @@ ss_active_item *get_free_active_list_node()
 	int i;
 	for ( i = 0; i < Num_ship_classes; i++ ) { 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY MAX_WSS_SLOTS SHIPS ???
-	if ( SS_active_items[i].flags == 0 ) {
+	if ( SS_active_items[i].flags== 0 ) {
 			SS_active_items[i].flags |= SS_ACTIVE_ITEM_USED;
 			return &SS_active_items[i];
 		}
@@ -484,7 +484,7 @@ void active_list_remove(int ship_class)
 		temp = GET_NEXT(sai);
 		if ( sai->ship_class == ship_class ) {
 			list_remove(&SS_active_head, sai);
-			sai->flags = 0;
+			sai->flags= 0;
 		}
 		sai = temp;
 	}
@@ -1935,7 +1935,7 @@ void commit_pressed()
 	mission_hotkey_validate();
 
 	// Goober5000 - no sound when skipping briefing
-	if (!(The_mission.flags & MISSION_FLAG_NO_BRIEFING))
+	if (!(The_mission.flags[Mission::Mission_Flags::No_briefing]))
 		gamesnd_play_iface(SND_COMMIT_PRESSED);
 
 	// save the player loadout

@@ -771,7 +771,7 @@ int debrief_set_stages_and_multi_stuff()
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
 		// although the no traitor flag check seems redundant it allows the mission designer to turn the traitor
 		// debriefing off before the mission ends and supply one themselves 
-		if ((Player_ship->team == Iff_traitor) && !(The_mission.flags & MISSION_FLAG_NO_TRAITOR))
+		if ((Player_ship->team == Iff_traitor) && !(The_mission.flags[Mission::Mission_Flags::No_traitor]))
 			debriefp = &Traitor_debriefing;
 	}
 
@@ -1405,7 +1405,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 		}
 
 		// Goober5000
-		if ( play_commit_sound && !(The_mission.flags & MISSION_FLAG_TOGGLE_DEBRIEFING)) {
+		if ( play_commit_sound && !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing])) {
 			gamesnd_play_iface(SND_COMMIT_PRESSED);
 		}
 
@@ -2352,7 +2352,7 @@ void debrief_do_frame(float frametime)
 	Assert(Debrief_inited);	
 
 	// Goober5000 - accept immediately if skipping debriefing
-	if (The_mission.flags & MISSION_FLAG_TOGGLE_DEBRIEFING)
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing])
 	{
 		// make sure that we can actually advance - we don't want an endless loop!!!
 		if ( !((/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE)) )

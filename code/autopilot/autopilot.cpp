@@ -286,7 +286,7 @@ bool StartAutopilot()
 		Autopilot_flight_leader = Player_obj;
 	}
 
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 		LockAPConv = timestamp(); // lock convergence instantly
 	else
 		LockAPConv = timestamp(3000); // 3 seconds before we lock convergence
@@ -325,7 +325,7 @@ bool StartAutopilot()
 
 
 	// instantly turn player toward tpos
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 	{
 		vm_vec_sub(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
 		vm_vector_2_matrix(&Player_obj->orient, &norm1, NULL, NULL);
@@ -345,7 +345,7 @@ bool StartAutopilot()
 	}
 
 	// damp speed_cap to 90% of actual -- to make sure ships stay in formation
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 		speed_cap = 0.90f * speed_cap;
 
 	if ( speed_cap < 1.0f ) {
@@ -415,14 +415,14 @@ bool StartAutopilot()
 				radius = Objects[Ships[i].objnum].radius;
 			}
 
-			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 			{// instantly turn the ship to match the direction player is looking
 				//vm_vec_sub(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
 				vm_vector_2_matrix(&Objects[Ships[i].objnum].orient, &norm1, NULL, NULL);
 			}
 
 			// snap wings into formation
-			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS &&  // only if using cinematics 
+			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics] &&  // only if using cinematics 
 				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags[Ship::Wing_Flags::Nav_carry]) // only if in a wing
 				&& Autopilot_flight_leader != &Objects[Ships[i].objnum]) //only if not flight leader's object
 			{	
@@ -480,7 +480,7 @@ bool StartAutopilot()
 
 			
 			// if they're not part of a wing set their goal
-			if (Ships[i].wingnum == -1 || The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+			if (Ships[i].wingnum == -1 || The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 			{ 
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
@@ -497,7 +497,7 @@ bool StartAutopilot()
 	}
 
 	// assign wing goals
-	if (!(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS))
+	if (!(The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]))
 	{
 		for (i = 0; i < MAX_WINGS; i++)
 		{
@@ -558,7 +558,7 @@ bool StartAutopilot()
 	start_dist = DistanceTo(CurrentNav);
 
 	// ----------------------------- setup cinematic -----------------------------
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 	{	
 		if (capshipPresent)
 		{
@@ -958,7 +958,7 @@ void EndAutoPilot()
 	}
 
 	// un-assign wing goals
-	if ( !(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) )
+	if ( !(The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) )
 	{
 		for (i = 0; i < MAX_WINGS; i++)
 		{
@@ -1072,7 +1072,7 @@ void NavSystem_Do()
 	{
 		if (AutoPilotEngaged)
 		{
-			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 			{
 				camera *cam = nav_get_set_camera();
 				if (CinematicStarted)
@@ -1151,7 +1151,7 @@ void NavSystem_Do()
 	}
 
 	// ramp time compression - only if not using cinematics
-	if (AutoPilotEngaged && !(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS))
+	if (AutoPilotEngaged && !(The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]))
 	{
 		int dstfrm_start = start_dist - DistanceTo(CurrentNav);
 

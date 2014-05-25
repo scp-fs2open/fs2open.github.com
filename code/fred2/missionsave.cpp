@@ -343,10 +343,10 @@ int CFred_mission_save::save_mission_info()
 		fout("\n+Flags:");
 	}
 
-	fout(" %d", The_mission.flags);
+	fout(" %lu", The_mission.flags.to_long());
 
 	// maybe write out Nebula intensity
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		Assert(Neb2_awacs > 0.0f);
 		fout("\n+NebAwacs: %f\n", Neb2_awacs);
 
@@ -406,7 +406,7 @@ int CFred_mission_save::save_mission_info()
 		else
 			fout("\n+Red Alert:");
 
-		fout(" %d", (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0);
+		fout(" %d", (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0);
 	}
 
 	if ( Format_fs2_open == FSO_FORMAT_RETAIL ) //-V581
@@ -416,7 +416,7 @@ int CFred_mission_save::save_mission_info()
 		else
 			fout("\n+Scramble:");
 
-		fout(" %d", (The_mission.flags & MISSION_FLAG_SCRAMBLE) ? 1 : 0);
+		fout(" %d", (The_mission.flags[Mission::Mission_Flags::Scramble]) ? 1 : 0);
 	}
 
 	if ( optional_string_fred("+Disallow Support:")){
@@ -3521,7 +3521,7 @@ int CFred_mission_save::save_bitmaps()
 	fout(" %d", The_mission.ambient_light_level);
 
 	// neb2 stuff
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		required_string_fred("+Neb2:");
 		parse_comments();
 		fout(" %s\n", Neb2_texture_name);

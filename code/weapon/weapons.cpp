@@ -74,72 +74,73 @@ char *Weapon_subtype_names[] = {
 int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
 
 flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
-	{ "fast firing",		Weapon::Burst_Flags::Fast_firing, true, false },
+	{ "fast firing",		Weapon::Burst_Flags::Fast_firing,	true, false },
 	{ "random length",		Weapon::Burst_Flags::Random_length, true, false }
 };
+const size_t num_burst_fire_flags = sizeof(Burst_fire_flags) / sizeof(flag_def_list_new<Weapon::Burst_Flags>);
 
 flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "spawn",							Weapon::Info_Flags::Spawn,								true, true }, //special case
 	{ "remote detonate",				Weapon::Info_Flags::Remote,								true, false },
-	{ "puncture", Weapon::Info_Flags::Puncture, true, false },
-	{ "big ship", Weapon::Info_Flags::Big_only, true, false },
-	{ "huge", Weapon::Info_Flags::Huge, true, false },
-	{ "bomber+", Weapon::Info_Flags::Bomber_plus, true, false },
-	{ "child", Weapon::Info_Flags::Child, true, false },
-	{ "bomb", Weapon::Info_Flags::Bomb, true, false },
-	{ "no dumbfire", Weapon::Info_Flags::No_dumbfire, true, false },
-	{ "in tech database", Weapon::Info_Flags::In_tech_database, true, false },
-	{ "player allowed", Weapon::Info_Flags::Player_allowed, true, false },
-	{ "particle spew", Weapon::Info_Flags::Particle_spew, true, false },
-	{ "emp", Weapon::Info_Flags::Emp, true, false },
-	{ "esuck", Weapon::Info_Flags::Energy_suck, true, false },
-	{ "flak", Weapon::Info_Flags::Flak, true, false },
-	{ "corkscrew", Weapon::Info_Flags::Corkscrew, true, false },
-	{ "shudder", Weapon::Info_Flags::Shudder, true, false },
-	{ "electronics", Weapon::Info_Flags::Electronics, true, false },
-	{ "lockarm", Weapon::Info_Flags::Lockarm, true, false },
-	{ "beam", Weapon::Info_Flags::Beam, true, false },
-	{ "stream", Weapon::Info_Flags::Stream, true, false },
-	{ "supercap", Weapon::Info_Flags::Supercap, true, false },
-	{ "countermeasure", Weapon::Info_Flags::Cmeasure, true, false },
-	{ "ballistic", Weapon::Info_Flags::Ballistic, true, false },
-	{ "pierce shields", Weapon::Info_Flags::Pierce_shields, true, false },
+	{ "puncture",						Weapon::Info_Flags::Puncture,							true, false },
+	{ "big ship",						Weapon::Info_Flags::Big_only,							true, false },
+	{ "huge",							Weapon::Info_Flags::Huge,								true, false },
+	{ "bomber+",						Weapon::Info_Flags::Bomber_plus,						true, false },
+	{ "child",							Weapon::Info_Flags::Child,								true, false },
+	{ "bomb",							Weapon::Info_Flags::Bomb,								true, false },
+	{ "no dumbfire",					Weapon::Info_Flags::No_dumbfire,						true, false },
+	{ "in tech database",				Weapon::Info_Flags::In_tech_database,					true, false },
+	{ "player allowed",					Weapon::Info_Flags::Player_allowed,                     true, false },
+	{ "particle spew",					Weapon::Info_Flags::Particle_spew,						true, false },
+	{ "emp",							Weapon::Info_Flags::Emp,								true, false },
+	{ "esuck",							Weapon::Info_Flags::Energy_suck,						true, false },
+	{ "flak",							Weapon::Info_Flags::Flak,								true, false },
+	{ "corkscrew",						Weapon::Info_Flags::Corkscrew,							true, false },
+	{ "shudder",						Weapon::Info_Flags::Shudder,							true, false },
+	{ "electronics",					Weapon::Info_Flags::Electronics,						true, false },
+	{ "lockarm",						Weapon::Info_Flags::Lockarm,							true, false },
+	{ "beam",							Weapon::Info_Flags::Beam,								true, false },
+	{ "stream",							Weapon::Info_Flags::Stream,								true, false },
+	{ "supercap",						Weapon::Info_Flags::Supercap,							true, false },
+	{ "countermeasure",					Weapon::Info_Flags::Cmeasure,							true, false },
+	{ "ballistic",						Weapon::Info_Flags::Ballistic,							true, false },
+	{ "pierce shields",					Weapon::Info_Flags::Pierce_shields,						true, false },
 	{ "no pierce shields",				Weapon::Info_Flags::NUM_VALUES,							true, true }, //special case
-	{ "local ssm", Weapon::Info_Flags::Local_ssm, true, false },
-	{ "tagged only", Weapon::Info_Flags::Tagged_only, true, false },
-	{ "beam no whack", Weapon::Info_Flags::NUM_VALUES, false, true }, //special case
-	{ "cycle", Weapon::Info_Flags::Cycle, true, false },
-	{ "small only", Weapon::Info_Flags::Small_only, true, false },
-	{ "same turret cooldown", Weapon::Info_Flags::Same_turret_cooldown, true, false },
-	{ "apply no light", Weapon::Info_Flags::Mr_no_lighting, true, false },
-	{ "training", Weapon::Info_Flags::Training, true, false },
-	{ "smart spawn", Weapon::Info_Flags::Smart_spawn, true, false },
-	{ "inherit parent target", Weapon::Info_Flags::Inherit_parent_target, true, false },
-	{ "no emp kill", Weapon::Info_Flags::No_emp_kill, true, false },
-	{ "untargeted heat seeker", Weapon::Info_Flags::Untargeted_heat_seeker, true, false },
-	{ "no radius doubling", Weapon::Info_Flags::Hard_target_bomb, true, false }, 
-	{ "no subsystem homing", Weapon::Info_Flags::Non_subsys_homing, true, false },
-	{ "no lifeleft penalty", Weapon::Info_Flags::No_life_lost_if_missed, true, false },
-	{ "can be targeted", Weapon::Info_Flags::Can_be_targeted, true, false },
-	{ "show on radar", Weapon::Info_Flags::Shown_on_radar, true, false },
-	{ "show friendly on radar", Weapon::Info_Flags::Show_friendly, true, false },
-	{ "capital+", Weapon::Info_Flags::Capital_plus, true, false },
-	{ "chain external model fps", Weapon::Info_Flags::External_weapon_fp, true, false },
-	{ "external model launcher", Weapon::Info_Flags::External_weapon_lnch, true, false },
-	{ "takes blast damage", Weapon::Info_Flags::Takes_blast_damage, true, false },
-	{ "takes shockwave damage", Weapon::Info_Flags::Takes_shockwave_damage, true, false },
-	{ "hide from radar", Weapon::Info_Flags::Dont_show_on_radar, true, false },
-	{ "render flak", Weapon::Info_Flags::Render_flak, true, false },
-	{ "ciws", Weapon::Info_Flags::Ciws, true, false },
-	{ "anti-subsystem beam", Weapon::Info_Flags::Antisubsysbeam, true, false },
-	{ "no primary linking", Weapon::Info_Flags::Nolink, true, false },
-	{ "same emp time for capships", Weapon::Info_Flags::Use_emp_time_for_capship_turrets, true, false },
-	{ "no primary linked penalty", Weapon::Info_Flags::No_linked_penalty, true, false },
-	{ "no homing speed ramp", Weapon::Info_Flags::No_homing_speed_ramp, true, false },
-	{ "pulls aspect seekers", Weapon::Info_Flags::Cmeasure_aspect_home_on, true, false},
+	{ "local ssm",						Weapon::Info_Flags::Local_ssm,							true, false },
+	{ "tagged only",					Weapon::Info_Flags::Tagged_only,						true, false },
+	{ "beam no whack",					Weapon::Info_Flags::NUM_VALUES,							false, true }, //special case
+	{ "cycle",							Weapon::Info_Flags::Cycle,								true, false },
+	{ "small only",						Weapon::Info_Flags::Small_only,							true, false },
+	{ "same turret cooldown",			Weapon::Info_Flags::Same_turret_cooldown,				true, false },
+	{ "apply no light",					Weapon::Info_Flags::Mr_no_lighting,						true, false },
+	{ "training",						Weapon::Info_Flags::Training,							true, false },
+	{ "smart spawn",					Weapon::Info_Flags::Smart_spawn,						true, false },
+	{ "inherit parent target",			Weapon::Info_Flags::Inherit_parent_target,				true, false },
+	{ "no emp kill",					Weapon::Info_Flags::No_emp_kill,						true, false },
+	{ "untargeted heat seeker",			Weapon::Info_Flags::Untargeted_heat_seeker,				true, false },
+	{ "no radius doubling",				Weapon::Info_Flags::Hard_target_bomb,					true, false }, 
+	{ "no subsystem homing",			Weapon::Info_Flags::Non_subsys_homing,					true, false },
+	{ "no lifeleft penalty",			Weapon::Info_Flags::No_life_lost_if_missed,				true, false },
+	{ "can be targeted",				Weapon::Info_Flags::Can_be_targeted,					true, false },
+	{ "show on radar",					Weapon::Info_Flags::Shown_on_radar,						true, false },
+	{ "show friendly on radar",			Weapon::Info_Flags::Show_friendly,						true, false },
+	{ "capital+",						Weapon::Info_Flags::Capital_plus,						true, false },
+	{ "chain external model fps",		Weapon::Info_Flags::External_weapon_fp,					true, false },
+	{ "external model launcher",		Weapon::Info_Flags::External_weapon_lnch,				true, false },
+	{ "takes blast damage",				Weapon::Info_Flags::Takes_blast_damage,					true, false },
+	{ "takes shockwave damage",			Weapon::Info_Flags::Takes_shockwave_damage,				true, false },
+	{ "hide from radar",				Weapon::Info_Flags::Dont_show_on_radar,					true, false },
+	{ "render flak",					Weapon::Info_Flags::Render_flak,						true, false },
+	{ "ciws",							Weapon::Info_Flags::Ciws,								true, false },
+	{ "anti-subsystem beam",			Weapon::Info_Flags::Antisubsysbeam,						true, false },
+	{ "no primary linking",				Weapon::Info_Flags::Nolink,								true, false },
+	{ "same emp time for capships",		Weapon::Info_Flags::Use_emp_time_for_capship_turrets,	true, false },
+	{ "no primary linked penalty",		Weapon::Info_Flags::No_linked_penalty,					true, false },
+	{ "no homing speed ramp",			Weapon::Info_Flags::No_homing_speed_ramp,				true, false },
+	{ "pulls aspect seekers",			Weapon::Info_Flags::Cmeasure_aspect_home_on,			true, false},
 };
 
-int Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list);
+const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
 
 weapon_explosions Weapon_explosions;
 
@@ -544,7 +545,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 
 	bool set_nopierce = false;
 	SCP_vector<SCP_string> unparsed_or_special;
-	parse_string_flag_list<Weapon::Info_Flags, flagset<Weapon::Info_Flags>>(&weaponp->wi_flags, Weapon_Info_Flags, &unparsed_or_special);
+	parse_string_flag_list<Weapon::Info_Flags, flagset<Weapon::Info_Flags>>(&weaponp->wi_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
 	
 	if (unparsed_or_special.size() > 0) {
 		SCP_vector<SCP_string>::iterator flag = unparsed_or_special.begin();
@@ -563,7 +564,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 					}
 
 					int	skip_length, name_length;
-					char	*temp_string = "";
+					char	*temp_string = new char[flag_text.size() + 1];
 
 					strcpy(temp_string, flag_text.c_str());
 
@@ -2551,7 +2552,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("$Burst Flags:")) {
-		parse_string_flag_list<Weapon::Burst_Flags, flagset<Weapon::Burst_Flags>>(&wip->burst_flags, Burst_fire_flags, NULL);
+		parse_string_flag_list<Weapon::Burst_Flags, flagset<Weapon::Burst_Flags>>(&wip->burst_flags, Burst_fire_flags, num_burst_fire_flags, NULL);
 	}
 
 	if (optional_string("$Thruster Flame Effect:")) {

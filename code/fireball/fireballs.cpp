@@ -388,7 +388,7 @@ void fireball_render(object * obj)
 		return;
 
 	// turn off fogging
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
