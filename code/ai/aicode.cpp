@@ -2285,7 +2285,7 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp)
 	}
 
 	//	Only set to chase if a fighter or bomber, otherwise just return.
-	if (!(is_small_ship(&Ship_info[Ships[attacker->instance].ship_info_index]) && (attacked != NULL))) {
+	if ((!is_small_ship(&Ship_info[Ships[attacker->instance].ship_info_index]) && (attacked != NULL))) {
 		nprintf(("AI", "AI ship %s is large ship ordered to attack %s\n", Ships[attacker->instance].ship_name, Ships[attacked->instance].ship_name));
 	}
 
@@ -3207,7 +3207,7 @@ void ai_start_fly_to_ship(object *objp, int shipnum)
 
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS && AutoPilotEngaged)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics] && AutoPilotEngaged)
 	{
 		aip->ai_flags &= ~AIF_FORMATION_WING;
 		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
@@ -3247,7 +3247,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 		return;
 	}
 
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS && AutoPilotEngaged)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics] && AutoPilotEngaged)
 	{
 		aip->ai_flags &= ~AIF_FORMATION_WING;
 		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
@@ -4312,11 +4312,11 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 	if (AutoPilotEngaged
 		&& timestamp_elapsed(LockAPConv)
 		&& carry_flag
-		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != Autopilot_flight_leader)) )
+		&& ((The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) || (Pl_objp != Autopilot_flight_leader)) )
 	{
 		Assertion( Autopilot_flight_leader != NULL, "When under autopilot there must be a flight leader" );
 		// snap wings into formation them into formation
-		if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) {
+		if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) {
 			if (aip->wing != -1) {
 				int wing_index = get_wing_index(Pl_objp, aip->wing);
 				object *wing_leader = get_wing_leader(aip->wing);
@@ -8145,7 +8145,7 @@ void ai_chase()
 	vec3d		player_pos, enemy_pos, predicted_enemy_pos, real_vec_to_enemy, predicted_vec_to_enemy;
 	ship		*shipp = &Ships[Pl_objp->instance];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
-	ship_info	*enemy_sip;
+	ship_info	*enemy_sip = NULL;
 	ship_weapon	*swp = &shipp->weapons;
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 	flagset<Ship::Info_Flags>	enemy_sip_flags;
@@ -8197,6 +8197,8 @@ void ai_chase()
 	}
 
 	Assert( En_objp != NULL );
+	if (En_objp == NULL)
+		return;
 
 	if ( En_objp->type == OBJ_SHIP ) {
 		enemy_sip_flags = Ship_info[Ships[En_objp->instance].ship_info_index].flags;
@@ -8448,7 +8450,7 @@ void ai_chase()
 			aip->submode = SM_GET_AWAY;
 			aip->submode_start_time = Missiontime;
 			aip->last_hit_target_time = Missiontime;
-		} else if ((is_small_ship(enemy_sip))
+		} else if (enemy_sip != NULL && (is_small_ship(enemy_sip))
 			&& (dot_to_enemy < dot_from_enemy)
 			&& (En_objp->phys_info.speed > 15.0f) 
 			&& (dist_to_enemy < 200.0f) 
@@ -8805,7 +8807,7 @@ void ai_chase()
 									
 									// reduce firing range in nebula
 									extern int Nebula_sec_range;
-									if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
+									if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
 										firing_range *= 0.8f;
 									}
 
@@ -10980,7 +10982,7 @@ void ai_dock()
 		// If at goal point, or quite far away from dock object
 		// NOTE: the speed check has an etra 5 thousandths added on to account for some floating point error
 		if ((dist < 2.0f) || (vm_vec_dist_quick(&Pl_objp->pos, &goal_objp->pos) > (Pl_objp->radius + goal_objp->radius)*2) || ((goal_objp->phys_info.speed + 0.005f) > MAX_UNDOCK_ABORT_SPEED) ) {
-			// reset the dock flags.  If rearm/repair, reset rearm repair flags for those ships as well.
+			// reset the dock flags.  If rearm/repair, reset rearm repair flagsfor those ships as well.
 			if ( sip->flags[Ship::Info_Flags::Support] ) {
 				ai_do_objects_repairing_stuff( &Objects[aip->support_ship_objnum], Pl_objp, REPAIR_INFO_END );
 			}
@@ -13209,7 +13211,7 @@ int maybe_request_support(object *objp)
 	//	Set desire based on hull strength.
 	//	Note: We no longer repair hull, so this would cause repeated repair requests.
 	// Added back in upon mission flag condition - Goober5000
-	if (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
+	if (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull])
 	{
 		desire += 6 - (int) (get_hull_pct(objp) * 6.0f);
 	}
@@ -14458,8 +14460,8 @@ int combine_flags(int base_flags, int override_flags, int override_set)
 //Sets the ai_info stuff based on what is in the ai class and the current ai profile
 //Stuff in the ai class will override what is in the ai profile, but only if it is set.
 //Unset per-difficulty-level values are marked with FLT_MIN or INT_MIN
-//Which flags are set is handled by using two flag ints: one with the flag values (TRUE/FALSE), one that
-//just says which flags are set.
+//Which flagsare set is handled by using two flag ints: one with the flag values (TRUE/FALSE), one that
+//just says which flagsare set.
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile)
 {
 	// since we use it so much in this function, sanity check the value for Game_skill_level
@@ -14604,7 +14606,7 @@ void process_friendly_hit_message( int message, object *objp )
 	}
 
 	// Karajorma - pick a random ship to send Command messages if command is silenced. 
-	if (index < 0 && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) {
+	if (index < 0 && (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ) {
 		index = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED );
 	}
 
@@ -14629,7 +14631,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 	}
 
 	// ditto if mission says no traitors allowed
-	if (The_mission.flags & MISSION_FLAG_NO_TRAITOR) {
+	if (The_mission.flags[Mission::Mission_Flags::No_traitor]) {
 		return;
 	}
 
@@ -15365,7 +15367,7 @@ int ai_abort_rearm_request(object *requester_objp)
 				}
 			}
 		} else {
-			// setting these flags is the safe things to do.  There may not be a corresponding repair
+			// setting these flagsis the safe things to do.  There may not be a corresponding repair
 			// ship for this guys since a repair ship may be currently repairing someone else.
 			ai_do_objects_repairing_stuff( requester_objp, NULL, REPAIR_INFO_ABORT );
 
@@ -15550,7 +15552,7 @@ void cheat_fire_synaptic(object *objp, ship *shipp, ai_info *aip)
 void maybe_cheat_fire_synaptic(object *objp, ai_info *aip)
 {
 	//	Only do in subspace missions.
-	if (!(The_mission.flags & MISSION_FLAG_SUBSPACE))
+	if (!(The_mission.flags[Mission::Mission_Flags::Subspace]))
 		return;
 
 	//	Only do in sm3-09a
