@@ -925,6 +925,7 @@
     <ClInclude Include="..\..\code\missionui\missionstats.h" />
     <ClInclude Include="..\..\code\missionui\missionweaponchoice.h" />
     <ClInclude Include="..\..\code\missionui\redalert.h" />
+    <ClInclude Include="..\..\code\mission\mission_flags.h" />
     <ClInclude Include="..\..\code\model\model.h" />
     <ClInclude Include="..\..\code\model\modelanim.h" />
     <ClInclude Include="..\..\code\model\modelsinc.h" />

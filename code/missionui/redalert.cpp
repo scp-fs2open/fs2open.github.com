@@ -799,10 +799,10 @@ void red_alert_delete_ship(p_object *pobjp, int ship_state)
 {
 	if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS || ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS)
 	{
-		pobjp->flags2 |= P2_RED_ALERT_DELETED;
-
+		pobjp->flags.set(Mission::Parse_Object_Flags::Red_alert_deleted);
+		
 		if (pobjp->wingnum < 0)
-			pobjp->flags |= P_SF_CANNOT_ARRIVE;
+			pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 	}
 	else
 		Error(LOCATION, "Red Alert: asked to delete ship (%s) with invalid ship state (%d)", pobjp->name, ship_state);
@@ -927,7 +927,7 @@ void red_alert_bash_wingman_status()
 		}
 
 		// same condition as in ship_obj loop
-		if ( !from_player_wing && !(pobjp->flags & P_SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !from_player_wing && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) ) {
 			continue;
 		}
 
@@ -1015,10 +1015,10 @@ void red_alert_bash_wingman_status()
 				{
 					// no waves left to arrive, so mark ships accordingly
 					if (wingp->num_waves == 0)
-						pobjp->flags |= P_SF_CANNOT_ARRIVE;
+						pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 					// we skipped one complete wave, so clear the flag so the next wave creates all ships
 					else
-						pobjp->flags2 &= ~P2_RED_ALERT_DELETED;
+						pobjp->flags.unset(Mission::Parse_Object_Flags::Red_alert_deleted);
 				}
 			}
 		}

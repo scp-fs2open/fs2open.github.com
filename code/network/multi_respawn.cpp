@@ -143,7 +143,7 @@ void multi_respawn_check(object *objp)
 			}
 
 			// if we need to respawn this ai ship, add him to a list of ships to get respawned
-			if ( (pobjp->flags & P_OF_PLAYER_START) && (pobjp->respawn_count < Netgame.respawn) && !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ){
+			if ( (pobjp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (pobjp->respawn_count < Netgame.respawn) && !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ){
 				int i;
 
 				for (i = 0; i < MAX_AI_RESPAWNS; i++ ) {
@@ -201,7 +201,7 @@ void multi_respawn_player_leave(net_player *pl)
 
 	// if we need to respawn this ai ship, add him to a list of ships to get respawned
 	p_object *pobjp = pl->p_info.p_objp;
-	if ( (pobjp->flags & P_OF_PLAYER_START) && (pobjp->respawn_count < Netgame.respawn) ){
+	if ( (pobjp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (pobjp->respawn_count < Netgame.respawn) ){
 		int i;
 
 		for (i = 0; i < MAX_AI_RESPAWNS; i++ ) {

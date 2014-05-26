@@ -1262,7 +1262,7 @@ void multi_ts_blit_wing_callsigns()
 		} else {
 			// determine if this is a locked AI ship
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].instance].ship_name);			
-			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
+			if((pobj == NULL) || !(pobj->flags[Mission::Parse_Object_Flags::OF_Player_start])){
 				strcpy_s(callsign, NOX("<"));
 				strcat_s(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
 				strcat_s(callsign, NOX(">"));
@@ -2066,7 +2066,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 		// if this is not a player ship type object
 		if(Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index] != -1){
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].instance].ship_name);
-			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
+			if((pobj == NULL) || !(pobj->flags[Mission::Parse_Object_Flags::OF_Player_start])){
 				return 0;
 			}
 		}		
@@ -2103,7 +2103,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 		// if this is not a player ship type object
 		if(Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index] != -1){
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].instance].ship_name);
-			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
+			if((pobj == NULL) || !(pobj->flags[Mission::Parse_Object_Flags::OF_Player_start])){
 				return 0;
 			}
 		}
