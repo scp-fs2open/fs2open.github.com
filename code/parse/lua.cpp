@@ -8692,11 +8692,18 @@ ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", 
 
 	MissionMessage* msg = &Messages[idx];
 
-	if (ADE_SETTING_VAR && sndIdx >= 0)
+	if (ADE_SETTING_VAR)
 	{
-		const char* newFilename = snd_get_filename(sndIdx);
+		if (sndIdx >= 0)
+		{
+			const char* newFilename = snd_get_filename(sndIdx);
 
-		msg->wave_info.index = add_wave(newFilename);
+			msg->wave_info.index = add_wave(newFilename);
+		}
+		else
+		{
+			msg->wave_info.index = -1;
+		}
 	}
 
 	if (msg->wave_info.index < 0)
