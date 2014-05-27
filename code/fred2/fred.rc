@@ -171,7 +171,6 @@ BEGIN
         POPUP "&Import"
         BEGIN
             MENUITEM "&FreeSpace 1 mission...",     33074
-            MENUITEM "&Weapon loadouts...",         33075
         END
         MENUITEM SEPARATOR
         MENUITEM "&Run FreeSpace\tAlt+R",       32985

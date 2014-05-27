@@ -89,7 +89,6 @@ protected:
 	afx_msg void OnFileNew();
 	afx_msg void editor_init_mission();
 	afx_msg void OnFileImportFSM();
-	afx_msg void OnFileImportWeapons();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

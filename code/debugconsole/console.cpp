@@ -42,6 +42,21 @@ uint DBCOLS = 80;   // # of buffer columns
 uint lastwhite = 0; // Last whitespace character encountered, used by putc for 'true' word wrapping
 ubyte DTABS = 4;    //!< Tab size in spaces
 
+/**
+ * Human readable versions of the dc_token's. Primarily used in error diagnosis
+ */
+static
+const char *token_str[DCT_MAX_ITEMS] =
+{
+	"nothing",
+	"string",
+	"float",
+	"integer",
+	"unsigned integer",
+	"byte",
+	"unsigned byte",
+	"boolean"
+};
 
 SCP_deque<SCP_string> dc_buffer;
 
@@ -123,8 +138,9 @@ void dc_do_command(SCP_string *cmd_str)
 	 *      Call the function to process the command (the rest of the command line is in the parser)
 	 *          Function takes care of long_help and status depending on the mode.
 	 */
+	int i;
 	SCP_string command;
-	extern SCP_vector<debug_command*> dc_commands;	// z64: I don't like this extern here, at all. Nope nope nope.
+	extern debug_command* dc_commands[];	// z64: I don't like this extern here, at all. Nope nope nope.
 
 	if (cmd_str->empty()) {
 		return;
@@ -134,19 +150,24 @@ void dc_do_command(SCP_string *cmd_str)
 
 	dc_stuff_string_white(command);		// Grab the first token, presumably this is a command
 
-	SCP_vector<debug_command*>::iterator it = find_if(dc_commands.begin(), dc_commands.end(), is_dcmd(command.c_str()));
+	for (i = 0; i < dc_commands_size; ++i) {
 
-	if (it == dc_commands.end()) {
+		if (stricmp(dc_commands[i]->name, command.c_str()) == 0) {
+			break;
+		} // Else, continue
+	}
+
+	if (i == dc_commands_size) {
 		dc_printf("Command not found: '%s'\n", command.c_str());
 		return;
 	} // Else, we found our command
 
 	try {
-		(*it)->func();	// Run the command!
+		dc_commands[i]->func();	// Run the command!
 	
 	} catch (errParseString err) {
 		dc_printf("Require string(s) not found: \n");
-		for (int i = 0; i < err.expected_tokens.size(); ++i) {
+		for (uint i = 0; i < err.expected_tokens.size(); ++i) {
 			dc_printf("%i: %s\n", err.expected_tokens[i].c_str());
 		}
 
@@ -215,9 +236,9 @@ void dc_draw_window(bool show_prompt)
 	CLAMP(DCOLS, DCOLS_MIN, DBCOLS);
 
 	// Ensure we don't scroll too far
-	CLAMP(dc_scroll_x, 0, (DBCOLS - DCOLS));
+	dc_scroll_x = MIN(dc_scroll_x, (DBCOLS - DCOLS));
 	if (dc_buffer.size() >= buffer_lines) {
-		CLAMP(dc_scroll_y, 0, (dc_buffer.size() - buffer_lines));
+		dc_scroll_y = MIN(dc_scroll_y, (dc_buffer.size() - buffer_lines));
 	} else {
 		dc_scroll_y = 0;	// Disallow vscroll until the buffer is larger than the window
 	}
@@ -252,20 +273,15 @@ void dc_draw_window(bool show_prompt)
 
 void dc_init(void)
 {
-	extern SCP_vector<debug_command*> dc_commands;
-
 	if (debug_inited) {
 		return;
 	}
 
 	debug_inited = TRUE;
 
-	// Sort debug_commands
-	std::sort(dc_commands.begin(), dc_commands.end(), dcmd_less);
-
 	// Init window settings
 	dc_font = FONT1;
-	row_height = (Current_font->h) * 1.5;	// Row/Line height, in pixels
+	row_height = ((Current_font->h) * 3) / 2;	// Row/Line height, in pixels
 	col_width = Current_font->w;			// Col/Character width, in pixels
 	dc_scroll_x = 0;
 	dc_scroll_y = 0;

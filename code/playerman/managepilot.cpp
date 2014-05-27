@@ -432,7 +432,11 @@ void player::reset()
 	memset(&ci, 0, sizeof(control_info));
 
 	stats.init();
-	Pilot.reset_stats();
+	// only reset Pilotfile stats if we're resetting Player
+	// remember: multi has many Players...
+	if (Player == this) {
+		Pilot.reset_stats();
+	}
 
 	friendly_hits = 0;
 	friendly_damage = 0.0f;

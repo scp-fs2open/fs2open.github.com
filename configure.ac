@@ -147,6 +147,8 @@ case "$target" in
 		echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"
 		echo "************************************************************"
 		fs2_os_solaris="yes"
+		LDFLAGS="$LDFLAGS -L/opt/csw/lib"
+		CPPFLAGS="$CPPFLAGS -I/opt/csw/include"
 		;;
 	*freebsd*)
 		# FreeBSD 9.1

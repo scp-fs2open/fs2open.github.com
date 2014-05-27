@@ -478,7 +478,7 @@ void barracks_init_stats(scoring_struct *stats)
 	}
 
 	// add the score from kills
-	Assert((Num_stat_lines + Num_ship_classes) < Max_stat_lines);
+	Assert((Num_stat_lines + 1) < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Score from kills only:", 1636));
 	sprintf(Stats[Num_stat_lines], "%d", score_from_kills);
 	Num_stat_lines++;

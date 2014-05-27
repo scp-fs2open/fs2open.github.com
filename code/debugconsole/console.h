@@ -22,6 +22,8 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/vmallocator.h"
 
+#define DC_MAX_COMMANDS 300
+
 class debug_command;
 
 /**
@@ -90,7 +92,7 @@ class debug_command;
 			else \
 				bool_variable = 0;	\
 		}	\
-		dc_printf("%s set to %\ns", #bool_variable, (bool_variable != 0 ? "TRUE" : "FALSE"));	\
+		dc_printf("%s set to %s\n", #bool_variable, (bool_variable != 0 ? "TRUE" : "FALSE"));	\
 	}
 
 
@@ -222,6 +224,8 @@ public:
 	const char *help;		//!< The short help string, as shown by 'help <command>'
 	void (*func)();	//!< Pointer to the function that to run when this command is evoked
 
+	debug_command();
+
 	/**
 	* @brief Adds a debug command to the debug_commands map, if it isn't in there already.
 	*
@@ -248,6 +252,7 @@ public:
 };
 
 extern bool Dc_debug_on;
+extern int dc_commands_size;
 extern uint lastline;
 extern SCP_string dc_command_str;	// The rest of the command line, from the end of the last processed arg on.
 
