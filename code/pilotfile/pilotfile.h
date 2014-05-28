@@ -23,7 +23,8 @@ static const ubyte PLR_VERSION = 1;
 //   1 - re-add recent missions
 //   2 - separate single/multi squad name & pic
 //   3 - remove separate detail settings for campaigns
-static const ubyte CSG_VERSION = 3;
+//   4 - save rank to flags for quick access
+static const ubyte CSG_VERSION = 4;
 
 
 class pilotfile {
@@ -212,6 +213,10 @@ class pilotfile {
 		void csg_write_controls();
 		void csg_write_cutscenes();
 		void csg_write_lastmissions();
+
+		// similar to PLR verify, except we only want the rank
+		bool get_csg_rank(int *rank);
+
 };
 
 extern pilotfile Pilot;

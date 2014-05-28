@@ -686,6 +686,9 @@ void pilotfile_convert::csg_export_flags()
 	// tips
 	cfwrite_ubyte((ubyte)plr->tips, cfp);
 
+	// special rank
+	cfwrite_int(csg->stats.rank, cfp);
+
 	endSection();
 }
 
