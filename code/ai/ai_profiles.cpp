@@ -467,6 +467,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 			set_flag(profile, "$fix ai path order bug:", AIPF2_FIX_AI_PATH_ORDER_BUG, AIP_FLAG2);
 
+			profile->bay_arrive_speed_mult = 0.0f;
+			profile->bay_depart_speed_mult = 0.0f;
 			if (optional_string("$bay arrive start speed multiplier:")) {
 				stuff_float(&profile->bay_arrive_speed_mult);
 			}
