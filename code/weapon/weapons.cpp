@@ -3782,7 +3782,7 @@ void find_homing_object(object *weapon_objp, int num)
 		{
 			//WMC - Spawn weapons shouldn't go for protected ships
 			// ditto for untargeted heat seekers - niffiwan
-			if ( (objp->flags & OF_PROTECTED) &&
+			if ( (objp->flags[Object::Object_Flags::Protected]) &&
 				((wp->weapon_flags[Weapon::Weapon_Flags::Spawned]) || (wip->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])) )
 				continue;
 
@@ -4283,7 +4283,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 					if ( pick_homing_point && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing]) ) {
 						// If *any* player is parent of homing missile, then use position where lock indicator is
-						if ( Objects[obj->parent].flags & OF_PLAYER_SHIP ) {
+						if ( Objects[obj->parent].flags[Object::Object_Flags::Player_ship] ) {
 							player *pp;
 
 							// determine the player
@@ -4586,7 +4586,7 @@ void weapon_process_post(object * obj, float frame_time)
 				Homing_misses++;
 			}
 		} else {
-			obj->flags |= OF_SHOULD_BE_DEAD;
+			obj->flags.set(Object::Object_Flags::Should_be_dead);
 		}
 
 		return;
@@ -4727,7 +4727,9 @@ void weapon_process_post(object * obj, float frame_time)
 		//its just entered subspace subspace. don't collide or render
 		if ((wp->lssm_stage==2) && (fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <= wp->lssm_warp_pct))
 		{
-			uint flags=obj->flags & ~(OF_RENDERS | OF_COLLIDES);
+			flagset<Object::Object_Flags> flags = obj->flags;
+			flags.unset(Object::Object_Flags::Renders);
+			flags.unset(Object::Object_Flags::Collides);
 
 			obj_set_flags(obj, flags);
 		
@@ -4786,9 +4788,11 @@ void weapon_process_post(object * obj, float frame_time)
 
 			wp->lssm_stage=5;
 
-			uint flags=obj->flags | OF_RENDERS | OF_COLLIDES;
+			flagset<Object::Object_Flags> flags = obj->flags;
+			flags.unset(Object::Object_Flags::Renders);
+			flags.unset(Object::Object_Flags::Collides);
 
-			obj_set_flags(obj,flags);
+			obj_set_flags(obj, flags);
 		}
 	}
 
@@ -5008,7 +5012,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	if (Num_weapons >= MAX_WEAPONS-5) {
 
 		//No, do remove for AI ships -- MK, 3/12/98  // don't need to try and delete weapons for ai ships
-		//if ( !(Objects[parent_objnum].flags & OF_PLAYER_SHIP) )
+		//if ( !(Objects[parent_objnum].flags[Object::Object_Flags::Player_ship]) )
 		//	return -1;
 
 		num_deleted = collide_remove_weapons();
@@ -5075,7 +5079,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	Weapons_created++;
-	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Renders);
+	objflags.set(Object::Object_Flags::Collides);
+	objflags.set(Object::Object_Flags::Physics);
+	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, objflags );
 	Assert(objnum >= 0);
 	objp = &Objects[objnum];
 
@@ -5175,7 +5183,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wp->lifeleft = wip->lifetime;
 	} else {
 		wp->lifeleft = (rand_val) * (wip->life_max - wip->life_min) / wip->life_min;
-		if((wip->wi_flags[Weapon::Info_Flags::Cmeasure]) && (parent_objp != NULL) && (parent_objp->flags & OF_PLAYER_SHIP)) {
+		if((wip->wi_flags[Weapon::Info_Flags::Cmeasure]) && (parent_objp != NULL) && (parent_objp->flags[Object::Object_Flags::Player_ship])) {
 			wp->lifeleft *= The_mission.ai_profile->cmeasure_life_scale[Game_skill_level];
 		}
 		wp->lifeleft = wip->life_min + wp->lifeleft * (wip->life_max - wip->life_min);
@@ -5187,7 +5195,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	//	Make remote detonate missiles look like they're getting detonated by firer simply by giving them variable lifetimes.
-	if (parent_objp != NULL && !(parent_objp->flags & OF_PLAYER_SHIP) && (wip->wi_flags[Weapon::Info_Flags::Remote])) {
+	if (parent_objp != NULL && !(parent_objp->flags[Object::Object_Flags::Player_ship]) && (wip->wi_flags[Weapon::Info_Flags::Remote])) {
 		wp->lifeleft = wp->lifeleft/2.0f + rand_val * wp->lifeleft/2.0f;
 	}
 
@@ -5284,7 +5292,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	// if this is a flak weapon shell, make it so
 	// NOTE : this function will change some fundamental things about the weapon object
 	if ( (wip->wi_flags[Weapon::Info_Flags::Flak]) && !(wip->wi_flags[Weapon::Info_Flags::Render_flak]) ) {
-		obj_set_flags(&Objects[wp->objnum], Objects[wp->objnum].flags & ~(OF_RENDERS));
+		flagset<Object::Object_Flags> flags = Objects[wp->objnum].flags;
+		flags.unset(Object::Object_Flags::Renders);
+		obj_set_flags(&Objects[wp->objnum], flags);
 	}
 
 	wp->missile_list_index = -1;
@@ -6071,7 +6081,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	weapon_obj->flags |= OF_SHOULD_BE_DEAD;
+	weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
@@ -6820,7 +6830,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 
 	// was the weapon fired by the player
 	from_player = 0;
-	if((wep->parent >= 0) && (wep->parent < MAX_OBJECTS) && (Objects[wep->parent].flags & OF_PLAYER_SHIP)){
+	if((wep->parent >= 0) && (wep->parent < MAX_OBJECTS) && (Objects[wep->parent].flags[Object::Object_Flags::Player_ship])){
 		from_player = 1;
 	}
 		

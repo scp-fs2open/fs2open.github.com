@@ -1971,20 +1971,20 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// no strength means we can't have shields, period
 	if (p_objp->ship_max_shield_strength == 0.0f)
-		Objects[objnum].flags |= OF_NO_SHIELDS;
+		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
 	// force shields on means we have them regardless of other flags; per r5332 this ranks above the next check
 	else if (p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
-		Objects[objnum].flags &= ~OF_NO_SHIELDS;
+		Objects[objnum].flags.unset(Object::Object_Flags::No_shields);
 	// intrinsic no-shields means we have them off in-game
 	else if (!Fred_running && (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]))
-		Objects[objnum].flags |= OF_NO_SHIELDS;
+		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
 	// game only before the game or during respawning.
 	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
 	// this flag in single player mode -- it gets set in post process mission.
 	if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)))) 
-		Objects[objnum].flags |= OF_PLAYER_SHIP;
+		Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
 
 	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
 	// whether this flag is set or not
@@ -2006,7 +2006,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
 	{
-		Objects[objnum].flags |= OF_SPECIAL_WARPIN;
+		Objects[objnum].flags.set(Object::Object_Flags::Special_warpin);
 		Knossos_warp_ani_used = 1;
 	}
 
@@ -2429,7 +2429,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> pars
 		shipp->flags.set(Ship::Ship_Flags::Ignore_count);
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Protected])
-		objp->flags |= OF_PROTECTED;
+		objp->flags.set(Object::Object_Flags::Protected);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Reinforcement])
 	{
@@ -2449,7 +2449,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> pars
 		Warning(LOCATION, "The parser found a ship with both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent!");
 	}
 	if (parse_flags[Mission::Parse_Object_Flags::OF_No_shields])
-		objp->flags |= OF_NO_SHIELDS;
+		objp->flags.set(Object::Object_Flags::No_shields);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Escort])
 		shipp->flags.set(Ship::Ship_Flags::Escort);
@@ -2471,7 +2471,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> pars
 	}
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Invulnerable])
-		objp->flags |= OF_INVULNERABLE;
+		objp->flags.set(Object::Object_Flags::Invulnerable);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Hidden_from_sensors])
 		shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
@@ -2482,16 +2482,16 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> pars
 	// P_AIF_KAMIKAZE, P_AIF_NO_DYNAMIC, and P_SF_RED_ALERT_CARRY are handled in parse_create_object_sub
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Beam_protected])
-		objp->flags |= OF_BEAM_PROTECTED;
+		objp->flags.set(Object::Object_Flags::Beam_protected);
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Flak_protected])
-		objp->flags |= OF_FLAK_PROTECTED;
+		objp->flags.set(Object::Object_Flags::Flak_protected);
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Laser_protected])
-		objp->flags |= OF_LASER_PROTECTED;
+		objp->flags.set(Object::Object_Flags::Laser_protected);
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Missile_protected])
-		objp->flags |= OF_MISSILE_PROTECTED;
+		objp->flags.set(Object::Object_Flags::Missile_protected);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Guardian])
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
@@ -2524,7 +2524,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> pars
 		shipp->flags.set(Ship::Ship_Flags::Toggle_subsystem_scanning);
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Targetable_as_bomb])
-		objp->flags |= OF_TARGETABLE_AS_BOMB;
+		objp->flags.set(Object::Object_Flags::Targetable_as_bomb);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_builtin_messages])
 		shipp->flags.set(Ship::Ship_Flags::No_builtin_messages);
@@ -2560,7 +2560,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> pars
 		shipp->flags.set(Ship::Ship_Flags::Force_shields_on);
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Immobile])
-		objp->flags |= OF_IMMOBILE;
+		objp->flags.set(Object::Object_Flags::Immobile);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_ets])
 		shipp->flags.set(Ship::Ship_Flags::No_ets);
@@ -3369,7 +3369,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			{
 				int i;
 				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
-				objp->flags |= OF_SHOULD_BE_DEAD;
+				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
@@ -5566,7 +5566,7 @@ void post_process_mission()
 		Player->objnum = objnum;
 	}
 
-	Player_obj->flags |= OF_PLAYER_SHIP;			// make this object a player controlled ship.
+	Player_obj->flags.set(Object::Object_Flags::Player_ship);			// make this object a player controlled ship.
 	Player_ship = &Ships[Player_start_shipnum];
 	Player_ai = &Ai_info[Player_ship->ai_index];
 
@@ -5691,7 +5691,7 @@ void post_process_mission()
 
 		shipnum = Objects[so->objnum].instance;
 		// pass over non-ship objects and player ship objects
-		if ( Ships[shipnum].objnum == -1 || (Objects[Ships[shipnum].objnum].flags & OF_PLAYER_SHIP) )
+		if ( Ships[shipnum].objnum == -1 || (Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Player_ship]) )
 			continue;
 		if ( Ships[shipnum].flags[Ship::Ship_Flags::Ignore_count] )
 			continue;
@@ -7367,7 +7367,7 @@ void mission_parse_fixup_players()
 	object *objp;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( (objp->type == OBJ_SHIP) && (objp->flags & OF_PLAYER_SHIP) ) {
+		if ( (objp->type == OBJ_SHIP) && (objp->flags[Object::Object_Flags::Player_ship]) ) {
 			game_busy( NOX("** fixing up player/ai stuff **") );	// animate the loading screen, doesn't nothing if the screen is not active
 			ai_clear_ship_goals( &Ai_info[Ships[objp->instance].ai_index] );
 			init_ai_object( OBJ_INDEX(objp) );
@@ -7588,7 +7588,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	pobj->flags.reset();
 
-	if (Player_obj->flags & OF_NO_SHIELDS)
+	if (Player_obj->flags[Object::Object_Flags::No_shields])
 		pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
 
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;

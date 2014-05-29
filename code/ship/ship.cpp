@@ -329,12 +329,12 @@ flag_def_list ai_tgt_objects[] = {
 
 const int num_ai_tgt_objects = sizeof(ai_tgt_objects) / sizeof(flag_def_list);
 
-flag_def_list ai_tgt_obj_flags[] = {
-	{ "no shields",			OF_NO_SHIELDS,			0 },
-	{ "targetable as bomb",	OF_TARGETABLE_AS_BOMB,	0 }
+flag_def_list_new<Object::Object_Flags> ai_tgt_obj_flags[] = {
+	{ "no shields", Object::Object_Flags::No_shields, true, false },
+	{ "targetable as bomb",	Object::Object_Flags::Targetable_as_bomb, true, false }
 };
 
-const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list);
+const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list_new<Object::Object_Flags>);
 
 flag_def_list_new<Ship::Info_Flags> ai_tgt_ship_flags[] = {
 	{ "afterburners",	Ship::Info_Flags::Afterburner, true, false},
@@ -4397,7 +4397,7 @@ void ship_parse_post_cleanup()
 
 	if (n_tgt_groups > 0) {
 		for(i = 0; i < n_tgt_groups; i++) {
-			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].wif_flags)) {
+			if (!(Ai_tp_list[i].obj_flags.any_set() || Ai_tp_list[i].sif_flags || Ai_tp_list[i].wif_flags)) {
 				//had none of these, check next
 				if (Ai_tp_list[i].obj_type == -1) {
 					//didn't have this one
@@ -7059,7 +7059,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 {
 	// do standard departure stuff first
-	objp->flags |= OF_SHOULD_BE_DEAD;	
+	objp->flags.set(Object::Object_Flags::Should_be_dead);	
 	if (objp->type == OBJ_SHIP)
 		ship_cleanup(objp->instance, infop->parameter_variables.bool_value ? SHIP_VANISHED : SHIP_DEPARTED);
 
@@ -7101,7 +7101,7 @@ void ship_destroy_instantly(object *ship_obj, int shipnum)
 	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
 	Script_system.RemHookVars(2, "Self", "Killer");
 
-	ship_obj->flags |= OF_SHOULD_BE_DEAD;
+	ship_obj->flags.set(Object::Object_Flags::Should_be_dead);
 	ship_cleanup(shipnum,SHIP_DESTROYED);
 }
 
@@ -7114,7 +7114,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
 	Assert(cleanup_mode == SHIP_DESTROYED || cleanup_mode == SHIP_DEPARTED || cleanup_mode == SHIP_VANISHED);
 	Assert(Objects[Ships[shipnum].objnum].type == OBJ_SHIP);
-	Assert(Objects[Ships[shipnum].objnum].flags & OF_SHOULD_BE_DEAD);
+	Assert(Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Should_be_dead]);
 
 	ship *shipp = &Ships[shipnum];
 	object *objp = &Objects[shipp->objnum];
@@ -7463,7 +7463,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				}
 
 				// mark object as dead
-				objp->flags |= OF_SHOULD_BE_DEAD;
+				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
 				// Don't blow up model.  Only use debris shards.
 				// call ship function to clean up after the ship is destroyed.
@@ -7755,7 +7755,7 @@ void ship_dying_frame(object *objp, int ship_num)
 						gameseq_post_event(GS_EVENT_DEATH_BLEW_UP);
 					}
 
-					objp->flags |= OF_SHOULD_BE_DEAD;									
+					objp->flags.set(Object::Object_Flags::Should_be_dead);									
 					
 					ship_cleanup(ship_num, SHIP_DESTROYED);		// call ship function to clean up after the ship is destroyed.
 				}
@@ -7769,7 +7769,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				gameseq_post_event(GS_EVENT_DEATH_BLEW_UP);
 			}
 
-			objp->flags |= OF_SHOULD_BE_DEAD;
+			objp->flags.set(Object::Object_Flags::Should_be_dead);
 								
 			ship_cleanup(ship_num, SHIP_DESTROYED);		// call ship function to clean up after the ship is destroyed.
 			shipp->really_final_death_time = timestamp( -1 );	// Never time out again!
@@ -8420,7 +8420,7 @@ void lethality_decay(ai_info *aip)
 	aip->lethality = MAX(-10.0f, aip->lethality);
 
 #ifndef NDEBUG
-	if (Objects[Ships[aip->shipnum].objnum].flags & OF_PLAYER_SHIP) {
+	if (Objects[Ships[aip->shipnum].objnum].flags[Object::Object_Flags::Player_ship]) {
 		if (Framecount % 10 == 0) {
 			int num_turrets = 0;
 			if ((aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP)) {
@@ -8653,7 +8653,7 @@ void ship_process_post(object * obj, float frametime)
 		//rotate player subobjects since its processed by the ai functions
 		// AL 2-19-98: Fire turret for player if it exists
 		//WMC - changed this to call process_subobjects
-		if ( (obj->flags & OF_PLAYER_SHIP) && !Player_use_ai )
+		if ( (obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai )
 		{
 			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
 			if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
@@ -8684,7 +8684,7 @@ void ship_process_post(object * obj, float frametime)
 		}
 
 		// Goober5000 - player may want to use AI
-		if ( (Ships[num].ai_index >= 0) && (!(obj->flags & OF_PLAYER_SHIP) || Player_use_ai) ){
+		if ( (Ships[num].ai_index >= 0) && (!(obj->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) ){
 			if (!physics_paused && !ai_paused){
 				ai_process( obj, Ships[num].ai_index, frametime );
 			}
@@ -9078,10 +9078,14 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	// JAS: Nav buoys don't need to do collisions!
 	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Renders);
+	objflags.set(Object::Object_Flags::Physics);
 	if ( sip->flags[Info_Flags::No_collide] )	{
-		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), OF_RENDERS | OF_PHYSICS );
+		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), objflags );
 	} else {
-		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
+		objflags.set(Object::Object_Flags::Collides);
+		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), objflags );
 	}
 	Assert( objnum >= 0 );
 
@@ -9437,14 +9441,14 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
 	if (!Fred_running) {
 		if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on]) && (sp->ship_max_shield_strength > 0.0f)) {
-			objp->flags &= ~OF_NO_SHIELDS;
+			objp->flags.unset(Object::Object_Flags::No_shields);
 		} else if ((p_objp->flags[Mission::Parse_Object_Flags::OF_No_shields]) || (sp->ship_max_shield_strength == 0.0f)) {
-			objp->flags |= OF_NO_SHIELDS;
+			objp->flags.set(Object::Object_Flags::No_shields);
 		// Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
 		} else if (!(sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && (sip->flags[Info_Flags::Intrinsic_no_shields])) {
-			objp->flags |= OF_NO_SHIELDS;
+			objp->flags.set(Object::Object_Flags::No_shields);
 		} else if ((sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && !(sip->flags[Info_Flags::Intrinsic_no_shields]) && (sp->ship_max_shield_strength > 0.0f)) {
-			objp->flags &= ~OF_NO_SHIELDS;
+			objp->flags.unset(Object::Object_Flags::No_shields);
 		}
 	}
 
@@ -9582,9 +9586,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		sp->flags.set(Ship_Flags::Dont_collide_invis, false);
 
 	if (sip->flags[Info_Flags::No_collide])								// changing TO a no_collide ship
-		Objects[sp->objnum].flags &= ~OF_COLLIDES;
+		Objects[sp->objnum].flags.unset(Object::Object_Flags::Collides);
 	else if (sip_orig->flags[Info_Flags::No_collide])						// changing FROM a no_collide ship
-		Objects[sp->objnum].flags |= OF_COLLIDES;
+		Objects[sp->objnum].flags.set(Object::Object_Flags::Collides);
 
 	if (sip->flags[Info_Flags::No_ets])
 		sp->flags.set(Ship_Flags::No_ets);
@@ -9790,7 +9794,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		// if we have a player ship, then send the fired packet anyway so that the player
 		// who fired will get his 'out of countermeasures' sound
 		cmeasure_count = 0;
-		if ( objp->flags & OF_PLAYER_SHIP ){
+		if ( objp->flags[Object::Object_Flags::Player_ship] ){
 			goto send_countermeasure_fired;
 		}
 
@@ -10251,7 +10255,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			next_fire_delay	= (float) winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
 		}
-		if (!((obj->flags & OF_PLAYER_SHIP) || (fast_firing))) {
+		if (!((obj->flags[Object::Object_Flags::Player_ship]) || (fast_firing))) {
 			if (shipp->team == Ships[Player_obj->instance].team){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
@@ -10287,7 +10291,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		//	Note, unless we track whether the fire button has been held down, and not tapped, it's hard to
 		//	know how much time to subtract off.  It could be this fire is "late" because the user didn't want to fire.
 		if ((next_fire_delay > 0.0f)) {
-			if (obj->flags & OF_PLAYER_SHIP) {
+			if (obj->flags[Object::Object_Flags::Player_ship]) {
 				int	t = timestamp_until(swp->next_primary_fire_stamp[bank_to_fire]);
 				if (t < 0) {
 					float	tx;
@@ -10802,7 +10806,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	}
 
    // STATS
-   if (obj->flags & OF_PLAYER_SHIP) {
+   if (obj->flags[Object::Object_Flags::Player_ship]) {
 		// in multiplayer -- only the server needs to keep track of the stats.  Call the cool
 		// function to find the player given the object *.  It had better return a valid player
 		// or our internal structure as messed up.
@@ -11471,7 +11475,7 @@ done_secondary:
 		}
 
 		// STATS
-		if (obj->flags & OF_PLAYER_SHIP) {
+		if (obj->flags[Object::Object_Flags::Player_ship]) {
 			// in multiplayer -- only the server needs to keep track of the stats.  Call the cool
 			// function to find the player given the object *.  It had better return a valid player
 			// or our internal structure as messed up.
@@ -11525,7 +11529,7 @@ done_secondary:
 	//the next valid bank. the delay is there to prevent things like Trible/Quad Fire Trebuchets.
 	//
 	// niffiwan: only try to switch banks if object has multiple banks, and firing bank is the current bank
-	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
+	if ( (obj->flags[Object::Object_Flags::Player_ship]) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
 		// niffiwan: call ship_select_next_secondary instead of ship_select_next_valid_secondary_bank
 		// ensures all "extras" are dealt with, like animations, scripting hooks, etc
 		if (ship_select_next_secondary(obj) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
@@ -12956,7 +12960,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	shipp->cmeasure_count = sip->cmeasure_max;
 
 	// Do shield repair here
-	if ( !(objp->flags & OF_NO_SHIELDS) )
+	if ( !(objp->flags[Object::Object_Flags::No_shields]) )
 	{
 		shield_str = shield_get_strength(objp);
 		if ( shield_str < shipp->ship_max_shield_strength ) {
@@ -13213,7 +13217,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	}
 
 	int shields_full = 0;
-	if ( (objp->flags & OF_NO_SHIELDS) ) {
+	if ( (objp->flags[Object::Object_Flags::No_shields]) ) {
 		shields_full = 1;
 	} else {
 		if ( shield_get_strength(objp) >= shipp->ship_max_shield_strength ) 
@@ -13283,7 +13287,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 	ship *requester_ship = &Ships[requester_obj->instance];
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 	{
-		if ((objp->type == OBJ_SHIP) && !(objp->flags & OF_SHOULD_BE_DEAD))
+		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			ship *shipp;
 			ship_info *sip;
@@ -13928,7 +13932,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 				continue;
 			}
 			// see if ship meets our criterea
-			if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags & OF_PLAYER_SHIP) ){
+			if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags[Object::Object_Flags::Player_ship]) ){
 				continue;
 			}
 			
@@ -13999,7 +14003,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 		}
 
 		// see if ship meets our criterea
-		if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags & OF_PLAYER_SHIP) )
+		if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags[Object::Object_Flags::Player_ship]) )
 			continue;
 
 		if ((flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags[Ship_Flags::No_builtin_messages]))
@@ -14063,9 +14067,9 @@ int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 			continue;
 		else if ( !is_flyable(&Ship_info[Ships[objp->instance].ship_info_index]))
 			continue;
-		else if ( (flags == SHIP_GET_NO_PLAYERS) && (objp->flags & OF_PLAYER_SHIP) )
+		else if ( (flags == SHIP_GET_NO_PLAYERS) && (objp->flags[Object::Object_Flags::Player_ship]) )
 			continue;
-		else if ( (flags == SHIP_GET_ONLY_PLAYERS) && !(objp->flags & OF_PLAYER_SHIP) )
+		else if ( (flags == SHIP_GET_ONLY_PLAYERS) && !(objp->flags[Object::Object_Flags::Player_ship]) )
 			continue;
 
 		if (Ships[objp->instance].flags[Ship_Flags::Dying]) {
@@ -14399,7 +14403,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	vec3d		tmpv1, tmpv2;
 
 	// If ship doesn't have shield mesh, then return
-	if ( hit_objp->flags & OF_NO_SHIELDS ) {
+	if ( hit_objp->flags[Object::Object_Flags::No_shields] ) {
 		return 0.0f;
 	}
 
@@ -15049,7 +15053,7 @@ void ship_maybe_ask_for_help(ship *sp)
 	objp = &Objects[sp->objnum];
 
 	// don't let the player ask for help!
-	if (objp->flags & OF_PLAYER_SHIP)
+	if (objp->flags[Object::Object_Flags::Player_ship])
 		return;
 
 	// determine team filter if TvT
@@ -15072,7 +15076,7 @@ void ship_maybe_ask_for_help(ship *sp)
 		goto play_ask_help;
 
 	// check if shields are near critical level
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return;	// no shields on ship, no don't check shield levels
 
 	if (shield_get_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_max_shield_strength))
@@ -17797,7 +17801,7 @@ void parse_ai_target_priorities()
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_obj_flags; j++) {
 				if ( !stricmp(ai_tgt_obj_flags[j].name, temp_strings[i].c_str()) ) {
-					temp_priority.obj_flags |= ai_tgt_obj_flags[j].def;
+					temp_priority.obj_flags.set(ai_tgt_obj_flags[j].def);
 					break;
 				}
 			}
@@ -17855,7 +17859,7 @@ ai_target_priority init_ai_target_priorities()
 	ai_target_priority temp_priority;
 
 	//initialize the entries
-	temp_priority.obj_flags = 0;
+	temp_priority.obj_flags.reset();
 	temp_priority.obj_type = -1;
 	temp_priority.ship_class.clear();
 	temp_priority.ship_type.clear();

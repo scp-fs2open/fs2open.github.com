@@ -338,7 +338,7 @@ void multi_endgame_cleanup()
 	besides if the game is over why are we setting flags on a Player_obj anyway? 
 
 	if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Player_obj != NULL)){
-		Player_obj->flags &= ~(OF_PLAYER_SHIP);
+		Player_obj->flags.unset(Object::Object_Flags::Player_ship);
 		obj_set_flags( Player_obj, Player_obj->flags | OF_COULD_BE_PLAYER );
 	}
 	*/

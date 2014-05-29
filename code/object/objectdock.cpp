@@ -378,7 +378,7 @@ void dock_move_docked_objects(object *objp)
 		return;
 
 	// has this object (by extension, this group of docked objects) been handled already?
-	if (objp->flags & OF_DOCKED_ALREADY_HANDLED)
+	if (objp->flags[Object::Object_Flags::Docked_already_handled])
 		return;
 
 	Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
@@ -415,11 +415,11 @@ void dock_move_docked_objects(object *objp)
 void dock_move_docked_children_tree(object *objp, object *parent_objp)
 {
 	// has this object been handled already?
-	if (objp->flags & OF_DOCKED_ALREADY_HANDLED)
+	if (objp->flags[Object::Object_Flags::Docked_already_handled])
 		return;
 
 	// mark as handled
-	objp->flags |= OF_DOCKED_ALREADY_HANDLED;
+	objp->flags.set(Object::Object_Flags::Docked_already_handled);
 
 	// if parent_objp exists
 	if (parent_objp != NULL)

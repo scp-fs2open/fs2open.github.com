@@ -2027,7 +2027,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	// Goober5000 - we may want to use AI for the player
 	// AL 3-7-98: If this is a player ship, and the goal is not a formation goal, then do a quick out
-	if ( !(Player_use_ai) && (objp->flags & OF_PLAYER_SHIP) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) )
+	if ( !(Player_use_ai) && (objp->flags[Object::Object_Flags::Player_ship]) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) )
 	{
 		return;
 	}	
@@ -2184,11 +2184,11 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 			if (aip->target_objnum != -1) {
 				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
 				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].ai_bools[Ship::Type_Info_AI::Protected_on_cripple])
-					Objects[aip->target_objnum].flags |= OF_PROTECTED;
+					Objects[aip->target_objnum].flags.set(Object::Object_Flags::Protected);
 			}
 		} else	//	Just in case this ship had been protected, unprotect it.
 			if (aip->target_objnum != -1)
-				Objects[aip->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[aip->target_objnum].flags.unset(Object::Object_Flags::Protected);
 
 		break;
 	}

@@ -87,7 +87,7 @@ void afterburners_start(object *objp)
 		return;
 	}
 
-	if ( (objp->flags & OF_PLAYER_SHIP) && (objp == Player_obj) ) {
+	if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj) ) {
 		unsigned int now;
 		now = timer_get_milliseconds();
 
@@ -175,7 +175,7 @@ void afterburners_update(object *objp, float fl_frametime)
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if ( (objp->flags & OF_PLAYER_SHIP ) && (Game_mode & GM_DEAD) ) {
+	if ( (objp->flags[Object::Object_Flags::Player_ship] ) && (Game_mode & GM_DEAD) ) {
 		return;
 	}
 
@@ -284,7 +284,7 @@ void afterburners_stop(object *objp, int key_released)
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if ( (objp->flags & OF_PLAYER_SHIP) && key_released ) {
+	if ( (objp->flags[Object::Object_Flags::Player_ship]) && key_released ) {
 		objp->phys_info.flags &= ~PF_AFTERBURNER_WAIT;
 	}
 

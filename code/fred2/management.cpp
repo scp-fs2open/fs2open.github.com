@@ -532,7 +532,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[ship_type];
 	if (((z1 == 1) && z2) || (z2 == 1))
-		Objects[obj].flags |= OF_NO_SHIELDS;
+		Objects[obj].flags.set(Object::Object_Flags::No_shields);
 
 	// set orders according to whether the ship is on the player ship's team
 	{
@@ -682,7 +682,7 @@ int dup_object(object *objp)
 
 	Objects[obj].pos = objp->pos;
 	Objects[obj].orient = objp->orient;
-	Objects[obj].flags |= OF_TEMP_MARKED;
+	Objects[obj].flags.set(Object::Object_Flags::Temp_marked);
 	return obj;
 }
 
@@ -1384,7 +1384,7 @@ void delete_marked()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		next = GET_NEXT(ptr);
-		if (ptr->flags & OF_MARKED)
+		if (ptr->flags[Object::Object_Flags::Marked])
 			if (delete_object(ptr) == 2)  // user went to a reference, so don't get in the way.
 				break;
 		
@@ -1506,8 +1506,8 @@ int query_object_in_wing(int obj)
 void mark_object(int obj)
 {
 	Assert(query_valid_object(obj));
-	if (!(Objects[obj].flags & OF_MARKED)) {
-		Objects[obj].flags |= OF_MARKED;  // set as marked
+	if (!(Objects[obj].flags[Object::Object_Flags::Marked])) {
+		Objects[obj].flags.set(Object::Object_Flags::Marked);  // set as marked
 		Marked++;
 		Update_window = 1;
 		if (cur_object_index == -1){
@@ -1521,8 +1521,8 @@ void mark_object(int obj)
 void unmark_object(int obj)
 {
 	Assert(query_valid_object(obj));
-	if (Objects[obj].flags & OF_MARKED) {
-		Objects[obj].flags &= ~OF_MARKED;
+	if (Objects[obj].flags[Object::Object_Flags::Marked]) {
+		Objects[obj].flags.unset(Object::Object_Flags::Marked);
 		Marked--;
 		Update_window = 1;
 		if (obj == cur_object_index) {  // need to find a new index
@@ -1530,7 +1530,7 @@ void unmark_object(int obj)
 
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
-				if (ptr->flags & OF_MARKED) {
+				if (ptr->flags[Object::Object_Flags::Marked]) {
 					set_cur_object_index(OBJ_INDEX(ptr));  // found one
 					return;
 				}
@@ -1552,7 +1552,7 @@ void unmark_all()
 
 	if (Marked) {
 		for (i=0; i<MAX_OBJECTS; i++){
-			Objects[i].flags &= ~OF_MARKED;
+			Objects[i].flags.unset(Object::Object_Flags::Marked);
 		}
 
 		Marked = 0;
@@ -1887,8 +1887,8 @@ void correct_marking()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
-			if (ptr->flags & OF_HIDDEN)
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+			if (ptr->flags[Object::Object_Flags::Hidden])
 				unmark_object(OBJ_INDEX(ptr));
 
 			else switch (ptr->type) {
@@ -2351,7 +2351,7 @@ void object_moved(object *objp)
 	{
 		// reset the already-handled flag (inefficient, but it's FRED, so who cares)
 		for (int i = 0; i < MAX_OBJECTS; i++)
-			Objects[i].flags &= ~OF_DOCKED_ALREADY_HANDLED;
+			Objects[i].flags.unset(Object::Object_Flags::Docked_already_handled);
 
 		// move all docked objects docked to me
 		dock_move_docked_objects(objp);
@@ -2369,7 +2369,7 @@ int query_whole_wing_marked(int wing)
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED)
+		if (ptr->flags[Object::Object_Flags::Marked])
 			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START))
 				if (Ships[get_ship_from_obj(ptr)].wingnum == wing)
 					count++;
@@ -2480,14 +2480,14 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 	// either add all ships to the list, or only add ships with docking bays.
 	if ( flags & SHIPS_2_COMBO_ALL_SHIPS ) {
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-			if ( ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && !(objp->flags & OF_MARKED) ) {
+			if ( ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && !(objp->flags[Object::Object_Flags::Marked]) ) {
 				id = box->AddString(Ships[get_ship_from_obj(objp)].ship_name);
 				box->SetItemData(id, get_ship_from_obj(objp));
 			}
 		}
 	} else if ( flags & SHIPS_2_COMBO_DOCKING_BAY_ONLY ) {
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-			if ( ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && !(objp->flags & OF_MARKED) ) {
+			if ( ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && !(objp->flags[Object::Object_Flags::Marked]) ) {
 				polymodel *pm;
 
 				// determine if this ship has a docking bay

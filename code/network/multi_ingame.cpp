@@ -898,7 +898,7 @@ void multi_ingame_join_display_avail()
 
 	moveup = GET_FIRST(&Ship_obj_list);	
 	while(moveup != END_OF_LIST(&Ship_obj_list)){
-		if (!(is_ship_departing(&Ships[Objects[moveup->objnum].instance]) || Ships[Objects[moveup->objnum].instance].flags[Ship::Ship_Flags::Dying]) && (Objects[moveup->objnum].flags & OF_COULD_BE_PLAYER)) {
+		if (!(is_ship_departing(&Ships[Objects[moveup->objnum].instance]) || Ships[Objects[moveup->objnum].instance].flags[Ship::Ship_Flags::Dying]) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player])) {
 			// display the ship
 			multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
 
@@ -969,8 +969,8 @@ void multi_ingame_handle_timeout()
 
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
-	int offset, oflags, team, j;
-	char sflags[255] = "";
+	int offset, team, j;
+	long sflags, oflags;
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
@@ -1007,8 +1007,8 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
-		GET_STRING( sflags );
-		GET_INT( oflags );
+		GET_ULONG( sflags );
+		GET_ULONG( oflags );
 		GET_INT( team );		
 		GET_SHORT( wing_data );
 		net_sig_modify = 0;
@@ -1037,12 +1037,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
-		Objects[objnum].flags = oflags;
+		Objects[objnum].flags.from_long(oflags);
 		Objects[objnum].net_signature = net_signature;
 
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
-		Ships[ship_num].flags.from_string(sflags);
+		Ships[ship_num].flags.from_long(sflags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1074,15 +1074,15 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
 	
 				// Be sure to mark this ship as as a could_be_player
-				obj_set_flags( objp, objp->flags | OF_COULD_BE_PLAYER );
-				objp->flags &= ~OF_PLAYER_SHIP;
+				objp->flags.set(Object::Object_Flags::Could_be_player);
+				objp->flags.unset(Object::Object_Flags::Player_ship);
 
                 // if this is a player ship, make sure we find out who's it is and set their objnum accordingly
 				for( j = 0; j < MAX_PLAYERS; j++){
 					if(MULTI_CONNECTED(Net_players[j]) && (Net_players[j].m_player->objnum == Objects[Ships[idx].objnum].net_signature)) {
 						multi_assign_player_ship( j, objp, Ships[idx].ship_info_index );
-						objp->flags |= OF_PLAYER_SHIP;
-						objp->flags &= ~OF_COULD_BE_PLAYER;
+						objp->flags.set(Object::Object_Flags::Player_ship);
+						objp->flags.unset(Object::Object_Flags::Could_be_player);
 						break;
 					}
 				}
@@ -1130,8 +1130,8 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
-		ADD_STRING( shipp->flags.to_string().c_str() );
-		ADD_INT( Objects[so->objnum].flags );
+		ADD_ULONG( shipp->flags.to_long() );
+		ADD_ULONG( Objects[so->objnum].flags.to_long() );
 		ADD_INT( shipp->team );
 		wing_data = (short)shipp->wingnum;
 		ADD_SHORT(wing_data);
@@ -1220,7 +1220,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				Objects[objnum].net_signature = 0;				// makes this object "invalid" until dead.
 				if ( Objects[objnum].type == OBJ_GHOST ) {
 					nprintf(("Network", "Marking ghost objnum %d as dead\n", objnum));
-					Objects[objnum].flags |= OF_SHOULD_BE_DEAD;
+					Objects[objnum].flags.set(Object::Object_Flags::Should_be_dead);
 				}
 				Ingame_ships_to_delete[index] = 0;		// be sure that this guy doesn't get deleted, since we already deleted it
 				wingp->ship_index[i] = -1;
@@ -1275,7 +1275,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 
 					// Be sure to mark this ship as as a could_be_player
 					obj_set_flags( objp, objp->flags | OF_COULD_BE_PLAYER );
-					objp->flags &= ~OF_PLAYER_SHIP;
+					objp->flags.unset(Object::Object_Flags::Player_ship);
 				}
 
 				// if this is a player ship, make sure we find out who's it is and set their objnum accordingly
@@ -1284,8 +1284,8 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 						Assert( team != -1 );		// to help trap errors!!!
 						nprintf(("Network", "Making %s ship for %s\n", Ships[shipnum].ship_name, Net_players[j].player->callsign));
 						multi_assign_player_ship( j, objp, Ships[shipnum].ship_info_index );
-						objp->flags |= OF_PLAYER_SHIP;
-						objp->flags &= ~OF_COULD_BE_PLAYER;
+						objp->flags.set(Object::Object_Flags::Player_ship);
+						objp->flags.unset(Object::Object_Flags::Could_be_player);
 						break;
 					}
 				}
@@ -1587,7 +1587,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// try and find the object
 		objp = NULL;
 		objp = multi_get_network_object(sig_request);
-		if(objp == NULL || !(objp->flags & OF_COULD_BE_PLAYER)){
+		if(objp == NULL || !(objp->flags[Object::Object_Flags::Could_be_player])){
 			send_ingame_ship_request_packet(INGAME_SR_DENY,0,&Net_players[player_num]);
 			break;
 		}		
@@ -1601,8 +1601,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// update his ets and link status stuff
 		multi_server_update_player_weapons(&Net_players[player_num],&Ships[objp->instance]);
 
-		objp->flags &= ~(OF_COULD_BE_PLAYER);
-		objp->flags |= OF_PLAYER_SHIP;
+		objp->flags.unset(Object::Object_Flags::Could_be_player);
+		objp->flags.set(Object::Object_Flags::Player_ship);
 
 		// send a player settings packet to update all other players of this guy's final choices
 		send_player_settings_packet();
@@ -1658,8 +1658,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// setup our object				
 		Net_player->m_player->objnum = OBJ_INDEX(objp);			
 		Player_obj = objp;
-		Player_obj->flags &= ~(OF_COULD_BE_PLAYER);
-		Player_obj->flags |= OF_PLAYER_SHIP;
+		Player_obj->flags.unset(Object::Object_Flags::Could_be_player);
+		Player_obj->flags.set(Object::Object_Flags::Player_ship);
 		multi_assign_player_ship( MY_NET_PLAYER_NUM, objp, Ships[objp->instance].ship_info_index );
 
 		// must change the ship type and weapons.  An ingame joiner know about the default class
@@ -1767,8 +1767,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 			nprintf(("Network", "Couldn't find ship for ingame joiner %s\n", Net_players[player_num].m_player->callsign));
 			break;
 		}
-		objp->flags |= OF_PLAYER_SHIP;
-		objp->flags &= ~OF_COULD_BE_PLAYER;
+		objp->flags.set(Object::Object_Flags::Player_ship);
+		objp->flags.unset(Object::Object_Flags::Could_be_player);
 
 		multi_assign_player_ship( player_num, objp, Ships[objp->instance].ship_info_index );
 
@@ -1792,7 +1792,7 @@ void multi_ingame_send_ship_update(net_player *p)
 	// go through the list and send all ships which are mark as OF_COULD_BE_PLAYER
 	while(moveup!=END_OF_LIST(&Ship_obj_list)){
 		//Make sure the object can be a player and is on the same team as this guy
-		if(Objects[moveup->objnum].flags & OF_COULD_BE_PLAYER && obj_team(&Objects[moveup->objnum]) == p->p_info.team){
+		if(Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player] && obj_team(&Objects[moveup->objnum]) == p->p_info.team){
 			// send the update
 			send_ingame_ship_update_packet(p,&Ships[Objects[moveup->objnum].instance]);
 		}
@@ -1816,7 +1816,7 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 	// just send net signature, shield and hull percentages
 	objp = &Objects[sp->objnum];
 	ADD_USHORT(objp->net_signature);
-	ADD_UINT(objp->flags);
+	ADD_ULONG(objp->flags.to_long());
 	ADD_INT(objp->n_quadrants);
 	ADD_FLOAT(objp->hull_strength);
 	
@@ -1843,7 +1843,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	offset = HEADER_LENGTH;
 	// get the net sig for the ship and do a lookup
 	GET_USHORT(net_sig);
-	GET_INT(flags);
+	GET_ULONG(flags);
 	GET_INT(n_quadrants);
 
 	// get the object
@@ -1860,7 +1860,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 		return;
 	}
 	// otherwise read in the ship values
-	lookup->flags = flags;
+	lookup->flags.from_long(flags);
 	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<n_quadrants;idx++){

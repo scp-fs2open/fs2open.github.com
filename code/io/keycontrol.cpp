@@ -672,11 +672,15 @@ void process_debug_keys(int k)
 
 		case KEY_DEBUGGED + KEY_C:
 		case KEY_DEBUGGED1 + KEY_C:
-			if(Player_obj->flags & OF_COLLIDES){
-				obj_set_flags(Player_obj, Player_obj->flags & ~(OF_COLLIDES));
+			if(Player_obj->flags[Object::Object_Flags::Collides]){
+				flagset<Object::Object_Flags> flags = Player_obj->flags;
+				flags.unset(Object::Object_Flags::Collides);
+				obj_set_flags(Player_obj, flags);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player no longer collides");
 			} else {
-				obj_set_flags(Player_obj, Player_obj->flags | OF_COLLIDES);
+				flagset<Object::Object_Flags> flags = Player_obj->flags;
+				flags.set(Object::Object_Flags::Collides);
+				obj_set_flags(Player_obj, flags);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player collides");
 			}
 			break;
@@ -853,8 +857,8 @@ void process_debug_keys(int k)
 		//	Select next object to be viewed by AI.
 		case KEY_DEBUGGED + KEY_I:
 		case KEY_DEBUGGED1 + KEY_I:
-			Player_obj->flags ^= OF_INVULNERABLE;
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You are %s", 10), Player_obj->flags & OF_INVULNERABLE ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+			Player_obj->flags.toggle(Object::Object_Flags::Invulnerable);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("You are %s", 10), Player_obj->flags[Object::Object_Flags::Invulnerable] ? XSTR("now INVULNERABLE!", 11) : XSTR("no longer invulnerable...", 12));
 			break;
 
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_I:
@@ -862,8 +866,8 @@ void process_debug_keys(int k)
 			if (Player_ai->target_objnum != -1) {
 				object	*objp = &Objects[Player_ai->target_objnum];
 
-				objp->flags ^= OF_INVULNERABLE;
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags & OF_INVULNERABLE ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+				objp->flags.toggle(Object::Object_Flags::Invulnerable);
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags[Object::Object_Flags::Invulnerable] ? XSTR("now INVULNERABLE!", 11) : XSTR("no longer invulnerable...", 12));
 			}
 			break;
 

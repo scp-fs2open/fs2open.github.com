@@ -138,7 +138,9 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	orient = vmd_identity_matrix;
 	vm_angles_2_matrix(&orient, &sw->rot_angles);
 
-	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, OF_RENDERS );
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Renders);
+	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, objflags );
 
 	if ( objnum == -1 ){
 		Int3();
@@ -177,7 +179,7 @@ void shockwave_delete_all()
 	while ( sw != &Shockwave_list ) {
 		next = sw->next;
 		Assert(sw->objnum != -1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
+		Objects[sw->objnum].flags.set(Object::Object_Flags::Should_be_dead);
 		sw = next;
 	}
 }
@@ -205,7 +207,7 @@ void shockwave_set_framenum(int index)
 	// ensure we don't go past the number of frames of animation
 	if ( framenum > (si->num_frames-1) ) {
 		framenum = (si->num_frames-1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
+		Objects[sw->objnum].flags.set(Object::Object_Flags::Should_be_dead);
 	}
 
 	if ( framenum < 0 ) {
@@ -236,7 +238,7 @@ int shockwave_get_framenum(int index, int num_frames)
 	// ensure we don't go past the number of frames of animation
 	if ( framenum > (num_frames-1) ) {
 		framenum = (num_frames-1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
+		Objects[sw->objnum].flags.set(Object::Object_Flags::Should_be_dead);
 	}
 
 	if ( framenum < 0 ) {
@@ -280,7 +282,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	sw->radius += (frametime * sw->speed);
 	if ( sw->radius > sw->outer_radius ) {
 		sw->radius = sw->outer_radius;
-		shockwave_objp->flags |= OF_SHOULD_BE_DEAD;
+		shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
 		return;
 	}
 

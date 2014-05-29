@@ -833,7 +833,7 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	// don't send ship depart packets for player ships
-	if ( (MULTIPLAYER_MASTER) && !(objp->flags & OF_PLAYER_SHIP) ){
+	if ( (MULTIPLAYER_MASTER) && !(objp->flags[Object::Object_Flags::Player_ship]) ){
 		send_ship_depart_packet( objp );
 	}
 
@@ -2234,7 +2234,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 	if ( timestamp_elapsed(the_split_ship->explosion_flash_timestamp) ) {
 		if ( !the_split_ship->explosion_flash_started ) {
 			object* objp = &Objects[shipp->objnum];
-			if (objp->flags & OF_WAS_RENDERED) {
+			if (objp->flags[Object::Object_Flags::Was_rendered]) {
 				float excess_dist = vm_vec_dist(&Player_obj->pos, &objp->pos) - 2.0f*objp->radius - Player_obj->radius;
 				float intensity = 1.0f - 0.1f*excess_dist / objp->radius;
 
@@ -4317,7 +4317,7 @@ int WE_Hyperspace::warpStart()
 		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		objp->phys_info.flags |= PF_WARP_IN;
 		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
-		objp->flags &= ~OF_PHYSICS;
+		objp->flags.unset(Object::Object_Flags::Physics);
 	}
 	else if(direction == WD_WARP_OUT)
 	{
@@ -4352,7 +4352,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 			objp->phys_info.desired_vel = vel;
 			shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 		}
-		objp->flags |= OF_PHYSICS;
+		objp->flags.set(Object::Object_Flags::Physics);
 		this->warpEnd();
 	}
 	else

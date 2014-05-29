@@ -936,6 +936,7 @@
     <ClInclude Include="..\..\code\object\objectdock.h" />
     <ClInclude Include="..\..\code\object\objectshield.h" />
     <ClInclude Include="..\..\code\object\objectsnd.h" />
+    <ClInclude Include="..\..\code\object\object_flags.h" />
     <ClInclude Include="..\..\code\object\parseobjectdock.h" />
     <ClInclude Include="..\..\code\object\waypoint.h" />
     <ClInclude Include="..\..\code\Observer\observer.h" />

@@ -428,7 +428,9 @@ int beam_fire(beam_fire_info *fire_info)
 	}	
 
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Collides);
+	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, objflags);
 	if(objnum < 0){
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
@@ -554,7 +556,9 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	// type c is a very special weapon type - binfo has no meaning
 
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Collides);
+	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, objflags);
 
 	if(objnum < 0){
 		beam_delete(new_item);
@@ -2130,7 +2134,7 @@ void beam_aim(beam *b)
 	b->subsys->turret_next_fire_pos = temp_int;
 
 	// recalculate object pairs
-	OBJ_RECALC_PAIRS((&Objects[b->objnum]));
+	obj_recalc_pairs((&Objects[b->objnum]));
 }
 
 // given a model #, and an object, stuff 2 good world coord points
@@ -2316,7 +2320,7 @@ int beam_collide_ship(obj_pair *pair)
 	// check shields for impact
 	// (tooled ships are probably not going to be maintaining a shield over their exit hole,
 	// therefore we need only check the entrance, just as with conventional weapons)
-	if (!(ship_objp->flags & OF_NO_SHIELDS))
+	if (!(ship_objp->flags[Object::Object_Flags::No_shields]))
 	{
 		// pick out the shield quadrant
 		if (shield_collision)

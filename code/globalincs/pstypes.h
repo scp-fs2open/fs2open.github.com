@@ -398,6 +398,7 @@ inline float SWAPFLOAT(float *x)
 #ifdef SCP_UNIX
 #define INTEL_INT(x)	SDL_Swap32(x)
 #define INTEL_SHORT(x)	SDL_Swap16(x)
+#define INTEL_LONG(x)	SDL_Swap64(x)
 #else
 #define INTEL_INT(x)	SWAPINT(x)
 #define INTEL_SHORT(x)	SWAPSHORT(x)
@@ -408,6 +409,7 @@ inline float SWAPFLOAT(float *x)
 #define INTEL_INT(x)	x
 #define INTEL_SHORT(x)	x
 #define INTEL_FLOAT(x)	(*x)
+#define INTEL_LONG(x)   x
 #endif // BYTE_ORDER
 
 #define TRUE	1
@@ -704,22 +706,16 @@ public:
 	bool operator==(flagset<T> other) { return this->values == other.values; }
 	bool operator!=(flagset<T> other) { return this->values != other.values; }
 
-	bool compare(flagset<T> other) { }
 	void reset() { values.reset(); }
 	void set(T idx, bool value = true) { 
-		if (static_cast<typename std::underlying_type<T>::type>(idx) < size)
-			values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); 
+		values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); 
 	}
 	void unset(T idx) { set(idx, false); }
+	void toggle(T idx) {
+		values[static_cast <typename std::underlying_type<T>::type>(idx)] = !values[static_cast <typename std::underlying_type<T>::type>(idx)];
+	}
 	bool any_set() { return values.any(); }
 	bool none_set() { return values.none(); }
-	
-	void from_string(SCP_string string) { 
-		for (size_t i = 0; i < string.length(); ++i) {
-			values[i] = string[i] == '1' ? true : false;
-		}
-	}
-	SCP_string to_string() { return values.to_string<char, std::char_traits<char>, SCP_vm_allocator<char>>(); }
 
 	void from_long(ulong num) { values = num; }
 	ulong to_long() { return values.to_ulong(); }

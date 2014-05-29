@@ -82,7 +82,7 @@ void asteroid_update_collide(object *objp)
 	// Asteroid has wrapped, update collide objnum and flags
 	Asteroids[objp->instance].collide_objnum = -1;
 	Asteroids[objp->instance].collide_objsig = -1;
-	OBJ_RECALC_PAIRS(objp);	
+	obj_recalc_pairs(objp);	
 }
 
 /**
@@ -321,7 +321,11 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 	vm_angles_2_matrix(&orient, &angs);
 
-	objnum = obj_create( OBJ_ASTEROID, -1, n, &orient, &pos, radius, OF_RENDERS | OF_PHYSICS | OF_COLLIDES);
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Renders);
+	objflags.set(Object::Object_Flags::Physics);
+	objflags.set(Object::Object_Flags::Collides);
+	objnum = obj_create( OBJ_ASTEROID, -1, n, &orient, &pos, radius, objflags);
 	
 	if ( (objnum == -1) || (objnum >= MAX_OBJECTS) ) {
 		mprintf(("Couldn't create asteroid -- out of object slots\n"));
@@ -799,7 +803,7 @@ void maybe_throw_asteroid(int count)
 
 				// if asteroid is inside inner bound, kill it
 				if (asteroid_in_inner_bound(&Asteroid_field, &objp->pos, 0.0f)) {
-					objp->flags |= OF_SHOULD_BE_DEAD;
+					objp->flags.set(Object::Object_Flags::Should_be_dead);
 				} else {
 					Asteroids[objp->instance].target_objnum = so->objnum;
 
@@ -863,7 +867,7 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 			
 			if ((dot < 0.7f) || (dist > 3000.0f)) {
 				if (Num_asteroids > MAX_ASTEROIDS-10) {
-					objp->flags |= OF_SHOULD_BE_DEAD;
+					objp->flags.set(Object::Object_Flags::Should_be_dead);
 				} else {
 					// check to ensure player won't see asteroid appear either
 					asteroid_wrap_pos(objp, asfieldp);
@@ -1343,7 +1347,7 @@ void asteroid_hit( object * asteroid_obj, object * other_obj, vec3d * hitpos, fl
 
 	asp = &Asteroids[asteroid_obj->instance];
 
-	if (asteroid_obj->flags & OF_SHOULD_BE_DEAD){
+	if (asteroid_obj->flags[Object::Object_Flags::Should_be_dead]){
 		return;
 	}
 
@@ -1399,7 +1403,7 @@ void asteroid_level_close()
 		if (Asteroids[i].flags & AF_USED) {
 			Asteroids[i].flags &= ~AF_USED;
 			Assert(Asteroids[i].objnum >=0 && Asteroids[i].objnum < MAX_OBJECTS);
-			Objects[Asteroids[i].objnum].flags |= OF_SHOULD_BE_DEAD;
+			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
 		}
 	}
 
@@ -1464,7 +1468,7 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 		Script_system.SetHookObject("Self", asteroid_obj);
 		if(!Script_system.IsConditionOverride(CHA_DEATH, asteroid_obj))
 		{
-			asteroid_obj->flags |= OF_SHOULD_BE_DEAD;
+			asteroid_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
 			// multiplayer clients won't go through the following code.  asteroid_sub_create will send
 			// a create packet to the client in the above named function

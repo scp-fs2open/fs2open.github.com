@@ -378,7 +378,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 			continue;
 
 		// if it is a player ship, we must be in multiplayer
-		if ( (objp->flags & OF_PLAYER_SHIP) && !(Game_mode & GM_MULTIPLAYER) )
+		if ( (objp->flags[Object::Object_Flags::Player_ship]) && !(Game_mode & GM_MULTIPLAYER) )
 			continue;
 
 		// if a messaging shortcut, be sure this ship can process the order
@@ -1109,7 +1109,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 				// Orders to override protect
 				if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
-					Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+					Objects[ainfo->target_objnum].flags.unset(Object::Object_Flags::Protected);
 				}
 
 				ai_mode = AI_GOAL_CHASE;
@@ -1128,7 +1128,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			// Orders to override protect
 			if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[ainfo->target_objnum].flags.unset(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DISABLE_SHIP;
@@ -1142,7 +1142,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			// Orders to override protect
 			if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[ainfo->target_objnum].flags.unset(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DISARM_SHIP;
@@ -1158,7 +1158,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			// Orders to override protect
 			if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[ainfo->target_objnum].flags.unset(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
@@ -1173,7 +1173,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			Assert(ainfo->target_objnum > -1);
 
-			Objects[ainfo->target_objnum].flags |= OF_PROTECTED;
+			Objects[ainfo->target_objnum].flags.set(Object::Object_Flags::Protected);
 
 			ai_mode = AI_GOAL_DOCK;
 			ai_submode = AIS_DOCK_0;

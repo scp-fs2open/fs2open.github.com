@@ -1622,11 +1622,11 @@ int CFred_mission_save::save_objects()
 			fout(" \"cargo-known\"");
 		if (shipp->flags[Ship::Ship_Flags::Ignore_count])
 			fout(" \"ignore-count\"");
-		if (objp->flags & OF_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Protected])
 			fout(" \"protect-ship\"");
 		if (shipp->flags[Ship::Ship_Flags::Reinforcement])
 			fout(" \"reinforcement\"");
-		if (objp->flags & OF_NO_SHIELDS)
+		if (objp->flags[Object::Object_Flags::No_shields])
 			fout(" \"no-shields\"");
 		if (shipp->flags[Ship::Ship_Flags::Escort])
 			fout(" \"escort\"");
@@ -1638,7 +1638,7 @@ int CFred_mission_save::save_objects()
 			fout(" \"no-arrival-warp\"");
 		if (shipp->flags[Ship::Ship_Flags::No_departure_warp])
 			fout(" \"no-departure-warp\"");
-		if (Objects[shipp->objnum].flags & OF_INVULNERABLE)
+		if (Objects[shipp->objnum].flags[Object::Object_Flags::Invulnerable])
 			fout(" \"invulnerable\"");
 		if (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors])
 			fout(" \"hidden-from-sensors\"");
@@ -1650,17 +1650,17 @@ int CFred_mission_save::save_objects()
 			fout(" \"no-dynamic\"");
 		if (shipp->flags[Ship::Ship_Flags::Red_alert_store_status])
 			fout(" \"red-alert-carry\"");
-		if (objp->flags & OF_BEAM_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Beam_protected])
 			fout(" \"beam-protect-ship\"");
-		if (objp->flags & OF_FLAK_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Flak_protected])
 			fout(" \"flak-protect-ship\"");
-		if (objp->flags & OF_LASER_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Laser_protected])
 			fout(" \"laser-protect-ship\"");
-		if (objp->flags & OF_MISSILE_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Missile_protected])
 			fout(" \"missile-protect-ship\"");
 		if (shipp->ship_guardian_threshold != 0)
 			fout(" \"guardian\"");
-		if (objp->flags & OF_SPECIAL_WARPIN)
+		if (objp->flags[Object::Object_Flags::Special_warpin])
 			fout(" \"special-warp\"");
 		if (shipp->flags[Ship::Ship_Flags::Vaporize])
 			fout(" \"vaporize\"");
@@ -1694,7 +1694,7 @@ int CFred_mission_save::save_objects()
 				fout(" \"affected-by-gravity\"");
 			if (shipp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 				fout(" \"toggle-subsystem-scanning\"");
-			if (objp->flags & OF_TARGETABLE_AS_BOMB)
+			if (objp->flags[Object::Object_Flags::Targetable_as_bomb])
 				fout(" \"targetable-as-bomb\"");
 			if (shipp->flags[Ship::Ship_Flags::No_builtin_messages])
 				fout(" \"no-builtin-messages\"");
@@ -1718,7 +1718,7 @@ int CFred_mission_save::save_objects()
 				fout(" \"afterburners-locked\"");
 			if (shipp->flags[Ship::Ship_Flags::Force_shields_on])
 				fout(" \"force-shields-on\"");
-			if (objp->flags & OF_IMMOBILE)
+			if (objp->flags[Object::Object_Flags::Immobile])
 				fout(" \"immobile\"");
 			if (shipp->flags[Ship::Ship_Flags::No_ets])
 				fout(" \"no-ets\"");

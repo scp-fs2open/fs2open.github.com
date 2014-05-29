@@ -187,7 +187,7 @@ BOOL WeaponEditorDlg::OnInitDialog()
 		list->SetItemDataPtr(z, &pilot);
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 				inst = ptr->instance;
 				if (!(is_big_huge(&Ship_info[Ships[inst].ship_info_index])))
 					big = 0;
@@ -526,7 +526,7 @@ void WeaponEditorDlg::update_pilot()
 	if (m_multi_edit) {
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 				weapon = &Ships[ptr->instance].weapons;
 
 				if (pilot.ai_class >= 0)
