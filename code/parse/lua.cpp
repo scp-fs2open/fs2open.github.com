@@ -13420,6 +13420,8 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 				offscreengauge->renderOffscreenIndicator(&outpoint, dir, distance, tri_separation, true);
 			}
 
+			offscreengauge->resize(&outpoint.x, &outpoint.y);
+
 			break;
 		}
 	}

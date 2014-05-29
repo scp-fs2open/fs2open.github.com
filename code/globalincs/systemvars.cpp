@@ -264,7 +264,7 @@ DCF(monitor,"Monitors game performace by saving to file")
 		} else {
 			Monitor_inited = 1;
 
-			strcpy(Monitor_filename, filename.c_str());
+			strcpy_s(Monitor_filename, filename.c_str());
 
 			// Reset them all
 			int i;

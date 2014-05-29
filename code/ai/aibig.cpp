@@ -742,23 +742,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 			}
 
 			if (tswp->num_secondary_banks > 0) {
-
-				int	priority1, priority2;
-
-				priority1 = -1;
-				priority2 = -1;
-
-				//	Maybe favor selecting a bomb.
-				//	Note, if you're firing a bomb, if it's aspect seeking, the firing conditions can be looser.
-				if (Ship_info[Ships[En_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))
-					if (En_objp->phys_info.speed * dist_to_enemy < 5000.0f)		//	Don't select a bomb if enemy moving fast relative to distance
-						priority1 = WIF_BOMB;
-
 				if (!(En_objp->flags & OF_PROTECTED) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
-					//ai_select_secondary_weapon(Pl_objp, tswp, priority1, priority2);	//	Note, need to select to get weapon speed and lifetime
-					if(aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) {
-						priority1 = WIF_PUNCTURE;
-					}
 					ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
 					weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];

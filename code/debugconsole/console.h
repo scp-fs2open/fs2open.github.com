@@ -22,6 +22,8 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/vmallocator.h"
 
+#define DC_MAX_COMMANDS 300
+
 class debug_command;
 
 /**
@@ -70,7 +72,7 @@ class debug_command;
 	void dcf_##function_name();		\
 	debug_command dcmd_##function_name(#function_name, "Sets or toggles the boolean: "#bool_variable, dcf_##function_name );	\
 	void dcf_##function_name() {	\
-		bool bool_tmp = (bool) bool_variable;	\
+		bool bool_tmp = bool_variable != 0;	\
 		if (dc_optional_string_either("help", "--help")) {	\
 				dc_printf( "Usage: %s [bool]\nSets %s to true or false.  If nothing passed, then toggles it.\n", #function_name, #bool_variable );	\
 				return;		\
@@ -80,11 +82,17 @@ class debug_command;
 			return;		\
 		}	\
 		if (!dc_maybe_stuff_boolean(&bool_tmp)) {	\
-			bool_variable ? (bool_variable = 0) : (bool_variable = 1);	\
+			if (bool_variable != 0) \
+				bool_variable = 0; \
+			else \
+				bool_variable = 1;	\
 		} else { \
-			bool_tmp ? (bool_variable = 1) : (bool_variable = 0);	\
+			if (bool_tmp) \
+				bool_variable = 1; \
+			else \
+				bool_variable = 0;	\
 		}	\
-		dc_printf("%s set to %\ns", #bool_variable, (bool_variable ? "TRUE" : "FALSE"));	\
+		dc_printf("%s set to %s\n", #bool_variable, (bool_variable != 0 ? "TRUE" : "FALSE"));	\
 	}
 
 
@@ -216,6 +224,8 @@ public:
 	const char *help;		//!< The short help string, as shown by 'help <command>'
 	void (*func)();	//!< Pointer to the function that to run when this command is evoked
 
+	debug_command();
+
 	/**
 	* @brief Adds a debug command to the debug_commands map, if it isn't in there already.
 	*
@@ -242,6 +252,7 @@ public:
 };
 
 extern bool Dc_debug_on;
+extern int dc_commands_size;
 extern uint lastline;
 extern SCP_string dc_command_str;	// The rest of the command line, from the end of the last processed arg on.
 
