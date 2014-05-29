@@ -3264,7 +3264,7 @@ int beam_ok_to_fire(beam *b)
 
 			if (b->flags & BF_IS_FIGHTER_BEAM) {
 				turret_normal = b->objp->orient.vec.fvec;
-				b->subsys->system_info->flags &= ~MSS_FLAG_TURRET_ALT_MATH;
+				b->subsys->system_info->flags.unset(Model::Subsystem_Flags::Turret_alt_math);
 			} else {
 				vm_vec_unrotate(&turret_normal, &b->subsys->system_info->turret_norm, &b->objp->orient);
 			}

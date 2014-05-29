@@ -2090,13 +2090,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if(Fred_running)
 				{
 					// if we're checking for an AWACS subsystem and this is not an awacs subsystem
-					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_AWACS))
+					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Awacs]))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
 
 					// rotating subsystem, like above - Goober5000
-					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_ROTATES))
+					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Rotates]))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
@@ -13095,7 +13095,7 @@ void sexp_deal_with_warp( int n, bool repairable, bool damage_it )
 		p_object_flag = (int) Mission::Parse_Object_Flags::SF_Warp_never;;
 	}
 
-	sexp_deal_with_ship_flag(n, true, 0, 0, ship_flag, p_object_flag, damage_it);
+	sexp_deal_with_ship_flag(n, true, 0, ship_flag, p_object_flag, damage_it);
 }
 
 // Goober5000
@@ -13103,7 +13103,7 @@ void sexp_set_subspace_drive(int node)
 {
 	bool set_flag = !is_sexp_true(node);
 
-	sexp_deal_with_ship_flag(CDR(node), true, 0, 0, (int)Ship::Ship_Flags::No_subspace_drive, 0, set_flag);
+	sexp_deal_with_ship_flag(CDR(node), true, 0, (int)Ship::Ship_Flags::No_subspace_drive, 0, set_flag);
 }
 
 /**
@@ -13196,7 +13196,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		// If it isn't command then assume that we're dealing with a ship 
 		else 
 		{
-			sexp_deal_with_ship_flag(node, false, 0, 0, (int)Ship::Ship_Flags::No_builtin_messages, (int)Mission::Parse_Object_Flags::SF_No_builtin_messages, !enable_messages);
+			sexp_deal_with_ship_flag(node, false, 0, (int)Ship::Ship_Flags::No_builtin_messages, (int)Mission::Parse_Object_Flags::SF_No_builtin_messages, !enable_messages);
 		}
 
 		node = CDR(node);
@@ -13778,7 +13778,7 @@ void sexp_protect_ships(int n, bool flag)
  */
 void sexp_beam_protect_ships(int n, bool flag)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Beam_protected, 0, (int)Mission::Parse_Object_Flags::OF_Beam_protected, flag);
+	sexp_deal_with_ship_flag(n, true, (int) Object::Object_Flags::Beam_protected, 0, (int)Mission::Parse_Object_Flags::OF_Beam_protected, flag);
 }
 
 /**
@@ -18297,7 +18297,7 @@ void sexp_awacs_set_radius(int node)
 		return;
 	}
 
-	if (!(awacs->system_info->flags & MSS_FLAG_AWACS))
+	if (!(awacs->system_info->flags[Model::Subsystem_Flags::Awacs]))
 		return;
 
 	// set the new awacs radius

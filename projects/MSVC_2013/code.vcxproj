@@ -929,6 +929,7 @@
     <ClInclude Include="..\..\code\model\model.h" />
     <ClInclude Include="..\..\code\model\modelanim.h" />
     <ClInclude Include="..\..\code\model\modelsinc.h" />
+    <ClInclude Include="..\..\code\model\model_flags.h" />
     <ClInclude Include="..\..\code\mod_table\mod_table.h" />
     <ClInclude Include="..\..\code\object\deadobjectdock.h" />
     <ClInclude Include="..\..\code\object\objcollide.h" />

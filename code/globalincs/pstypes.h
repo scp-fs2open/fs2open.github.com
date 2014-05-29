@@ -710,7 +710,19 @@ public:
 	void set(T idx, bool value = true) { 
 		values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); 
 	}
-	void unset(T idx) { set(idx, false); }
+	void set(T idx[], size_t arg_length) {
+		for (size_t i = 0; i < arg_length; ++i) {
+			values.set(static_cast <typename std::underlying_type<T>::type>(idx[i]));
+		}
+	}
+	void unset(T idx) { 
+		values.set(static_cast < typename std::underlying_type<T>::type>(idx), false);
+	}
+	void unset(T idx [], size_t arg_length) {
+		for (size_t i = 0; i < arg_length; ++i) {
+			values.set(static_cast <typename std::underlying_type<T>::type>(idx[i]), false);
+		}
+	}
 	void toggle(T idx) {
 		values[static_cast <typename std::underlying_type<T>::type>(idx)] = !values[static_cast <typename std::underlying_type<T>::type>(idx)];
 	}

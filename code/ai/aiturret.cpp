@@ -158,7 +158,7 @@ bool is_object_radius_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, 
 			fix_elevation = true;
 		}
 
-		if (tp->flags & MSS_FLAG_TURRET_ALT_MATH) {
+		if (tp->flags[Model::Subsystem_Flags::Turret_alt_math]) {
 			vec3d temp_vec2;
 			vm_vec_rotate(&temp_vec2, &temp_vec, &ss->world_to_turret_matrix);
 
@@ -1369,10 +1369,10 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 										tp, &Objects[parent_objnum].orient, 
 										&ss->submodel_info_1.angs, &ss->submodel_info_2.angs,
 										&Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum);
-		} else if ((tp->flags & MSS_FLAG_TURRET_RESET_IDLE) &&(timestamp_elapsed(ss->rotation_timestamp))) {
+		} else if ((tp->flags[Model::Subsystem_Flags::Turret_reset_idle]) &&(timestamp_elapsed(ss->rotation_timestamp))) {
 			ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num, tp, &Objects[parent_objnum].orient, &ss->submodel_info_1.angs, &ss->submodel_info_2.angs, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
 		}
-	} else if ((ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE) && (timestamp_elapsed(ss->rotation_timestamp))) {
+	} else if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
 		ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num, ss->system_info, &Objects[parent_objnum].orient, &ss->submodel_info_1.angs, &ss->submodel_info_2.angs, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
 	}
 
@@ -1383,7 +1383,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 	// return 0 by default (to preserve retail behavior) but allow for a per-subsystem option
 	// for using the turret normals for firing
-	if (ss->system_info->flags & MSS_FLAG_FIRE_ON_NORMAL)
+	if (ss->system_info->flags[Model::Subsystem_Flags::Fire_on_normal])
 		return 1;
 
 	return 0;
@@ -1704,7 +1704,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	object *objp;
 	bool last_shot_in_salvo = true;
 
-	if (turret->system_info->flags & MSS_FLAG_TURRET_SALVO)
+	if (turret->system_info->flags[Model::Subsystem_Flags::Turret_salvo])
 	{
 		if ((turret->turret_next_fire_pos + 1) == (turret->system_info->turret_num_firing_points))
 		{
@@ -1899,7 +1899,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	}
 	
 	//	if fixed fp make sure to use constant fp
-	if (tsi->turret->system_info->flags & MSS_FLAG_TURRET_FIXED_FP)
+	if (tsi->turret->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp])
 		tsi->turret->turret_next_fire_pos = tsi->weapon_num;
 
 	//	change firing point
@@ -2054,7 +2054,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	
 	//aip = &Ai_info[Ships[objp->instance].ai_index];
 	// Wanderer - make sure turrets already have all the data
-	if ( !(tp->flags & MSS_FLAG_TURRET_MATRIX) )
+	if (!(tp->flags[Model::Subsystem_Flags::Turret_matrix]))
 	{
 		if (!(tp->turret_gun_sobj == tp->subobj_num))
 		{
@@ -2066,14 +2066,14 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	vec3d	 gvec, gpos;
 	ship_get_global_turret_info(&Objects[parent_objnum], tp, &gpos, &gvec);
 
-	if (tp->flags & MSS_FLAG_TURRET_ALT_MATH) {
+	if (tp->flags[Model::Subsystem_Flags::Turret_alt_math]) {
 		vm_matrix_x_matrix( &ss->world_to_turret_matrix, &Objects[parent_objnum].orient, &tp->turret_matrix );
 	}
 
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
 	int use_angles = aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
 
-	if ((tp->flags & MSS_FLAG_FIRE_ON_TARGET) && (ss->points_to_target >= 0.0f))
+	if ((tp->flags[Model::Subsystem_Flags::Fire_on_target]) && (ss->points_to_target >= 0.0f))
 	{
 		// value probably needs tweaking... could perhaps be made into table option?
 		if (ss->points_to_target > 0.010f)
@@ -2107,7 +2107,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	for(i = 0; i < (MAX_SHIP_WEAPONS); i++)
 	{
 		//WMC - Only fire more than once if we have multiple guns flag set.
-		if(num_valid > 0 && !(tp->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
+		if(num_valid > 0 && !(tp->flags[Model::Subsystem_Flags::Use_multiple_guns]))
 			break;
 
 		if(i < MAX_SHIP_PRIMARY_BANKS)
@@ -2338,7 +2338,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;
-		if (tp->flags & MSS_FLAG_TURRET_SALVO)
+		if (tp->flags[Model::Subsystem_Flags::Turret_salvo])
 		{
 			number_of_firings = tp->turret_num_firing_points;
 			ss->turret_next_fire_pos = 0;
@@ -2350,7 +2350,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		for(i = 0; i < number_of_firings; i++)
 		{
-			if (tp->flags & MSS_FLAG_TURRET_FIXED_FP)
+			if (tp->flags[Model::Subsystem_Flags::Turret_fixed_fp])
 			{
 				int ffp_pos = 0;
 				int ffp_bank;
@@ -2376,7 +2376,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			dist_to_enemy = vm_vec_normalize(&v2e);
 			dot = vm_vec_dot(&v2e, &gvec);
 
-			if (tp->flags & MSS_FLAG_TURRET_SALVO)
+			if (tp->flags[Model::Subsystem_Flags::Turret_salvo])
 				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[0]);
 			else
 				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
@@ -2460,7 +2460,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				}
 			}
 
-			if ( ok_to_fire && (tp->flags & MSS_FLAG_TURRET_HULL_CHECK) ) {
+			if ( ok_to_fire && (tp->flags[Model::Subsystem_Flags::Turret_hull_check]) ) {
 				int model_num = Ship_info[shipp->ship_info_index].model_num;
 				vec3d end;
 				vm_vec_scale_add(&end, &gpos, &gvec, model_get_radius(model_num));
@@ -2491,7 +2491,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				}
 
 				//Wait until the animation is done to actually fire
-				if (tp->flags & MSS_FLAG_TURRET_ANIM_WAIT && (ss->turret_animation_position != MA_POS_READY))
+				if (tp->flags[Model::Subsystem_Flags::Turret_anim_wait] && (ss->turret_animation_position != MA_POS_READY))
 				{
 					ok_to_fire = false;
 				}
@@ -2503,13 +2503,13 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				Num_turrets_fired++;
 
 				//Pass along which gun we are using
-				if (tp->flags & MSS_FLAG_TURRET_SALVO)
+				if (tp->flags[Model::Subsystem_Flags::Turret_salvo])
 					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
 				else
 					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
 			} else {
 				// make sure salvo fire mode does not turn into autofire
-				if ((tp->flags & MSS_FLAG_TURRET_SALVO) && ((i + 1) == number_of_firings)) {
+				if ((tp->flags[Model::Subsystem_Flags::Turret_salvo]) && ((i + 1) == number_of_firings)) {
 					ai_info *parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
 					turret_set_next_fire_timestamp(valid_weapons[0], wip, ss, parent_aip);
 				}
@@ -2529,7 +2529,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 			// If nothing is OK to fire (lost track of the target?) 
 			// reset the target (so we don't continue to track what we can't hit)
-			if (tp->flags2 & MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE)
+			if (tp->flags[Model::Subsystem_Flags::Turret_only_target_if_can_fire])
 			{
 				ss->turret_enemy_objnum = -1;		//	Reset enemy objnum, find a new one next frame.
 				ss->turret_time_enemy_in_range = 0.0f;
@@ -2613,7 +2613,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
 {
 	bool in_fov = false;
-	if (ss->system_info->flags & MSS_FLAG_TURRET_ALT_MATH)
+	if (ss->system_info->flags[Model::Subsystem_Flags::Turret_alt_math])
 		in_fov = turret_adv_fov_test(ss, gvec, v2e, size_mod);
 	else
 		in_fov = turret_std_fov_test(ss, gvec, v2e, size_mod);

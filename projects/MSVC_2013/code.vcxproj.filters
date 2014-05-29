@@ -1880,6 +1880,9 @@
     <ClInclude Include="..\..\code\object\object_flags.h">
       <Filter>Object</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\model\model_flags.h">
+      <Filter>Model</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\code\directx\dxguid.lib">

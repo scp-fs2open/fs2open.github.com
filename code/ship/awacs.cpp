@@ -129,7 +129,7 @@ void awacs_update_all_levels()
 		for (ship_system = GET_FIRST(&shipp->subsys_list); ship_system != END_OF_LIST(&shipp->subsys_list); ship_system = GET_NEXT(ship_system))
 		{
 			// if this is an AWACS subsystem
-			if ((ship_system->system_info != NULL) && (ship_system->system_info->flags & MSS_FLAG_AWACS))
+			if ((ship_system->system_info != NULL) && (ship_system->system_info->flags[Model::Subsystem_Flags::Awacs]))
 			{
 				// add the intensity to the team total
 				Awacs_team[shipp->team] += ship_system->awacs_intensity * (ship_system->current_hits / ship_system->max_hits);

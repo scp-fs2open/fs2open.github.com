@@ -4891,14 +4891,14 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 			// awacs level
 			case OPS_AWACS:
-				if (subsys->system_info->flags & MSS_FLAG_AWACS) {
+				if (subsys->system_info->flags[Model::Subsystem_Flags::Awacs]) {
 					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
 
 			// rotating
 			case OPS_ROTATE:
-				if (subsys->system_info->flags & MSS_FLAG_ROTATES) {
+				if (subsys->system_info->flags[Model::Subsystem_Flags::Rotates]) {
 					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
