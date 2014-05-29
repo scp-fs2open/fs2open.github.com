@@ -1582,7 +1582,7 @@ void message_queue_process()
 	}
 
 	Script_system.SetHookVar("Name", 's', m->name);
-	Script_system.SetHookVar("Message", 's', m->message);
+	Script_system.SetHookVar("Message", 's', buf);
 	Script_system.SetHookVar("SenderString", 's', who_from);
 
 	bool builtinMessage = q->builtin_type != -1;
