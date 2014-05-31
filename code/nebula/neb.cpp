@@ -939,6 +939,8 @@ void neb2_render_player()
 	if ((Neb2_render_mode == NEB2_RENDER_LAME) || (Neb2_render_mode == NEB2_RENDER_NONE)) {
 		return;
 	}
+    
+    memset(&p, 0, sizeof(p));
 
 	// get eye position and orientation
 	neb2_get_eye_pos(&eye_pos);

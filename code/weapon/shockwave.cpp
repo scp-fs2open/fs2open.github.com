@@ -391,6 +391,7 @@ void shockwave_render(object *objp)
 	Assert(objp->type == OBJ_SHOCKWAVE);
 	Assert(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES);
 
+    memset(&p, 0, sizeof(p));
 	sw = &Shockwaves[objp->instance];
 
 	if( (sw->delay_stamp != -1) && !timestamp_elapsed(sw->delay_stamp)){
