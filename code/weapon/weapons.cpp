@@ -4305,7 +4305,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		// world coordinates of that subsystem so the homing missile can seek it out.
 		//	For now, March 7, 1997, MK, heat seeking homing missiles will be able to home on
 		//	any subsystem.  Probably makes sense for them to only home on certain kinds of subsystems.
-		if ( (wp->homing_subsys != NULL) && !(wip->wi_flags2 & WIF2_NON_SUBSYS_HOMING) ) {
+		if ( (wp->homing_subsys != NULL) && !(wip->wi_flags2 & WIF2_NON_SUBSYS_HOMING) && hobjp->type == OBJ_SHIP) {
 			get_subsystem_world_pos(hobjp, Weapons[num].homing_subsys, &target_pos);
 			wp->homing_pos = target_pos;	// store the homing position in weapon data
 			Assert( !vm_is_vec_nan(&wp->homing_pos) );
