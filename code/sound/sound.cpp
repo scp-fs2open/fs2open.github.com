@@ -312,7 +312,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if ( n == Sounds.size() ) {
 		sound new_sound;
 		new_sound.sid = -1;
-		new_sound.flags &= ~SND_F_USED;
+		new_sound.flags = ~SND_F_USED;
 
 		Sounds.push_back( new_sound );
 	}
