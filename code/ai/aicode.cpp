@@ -12649,6 +12649,8 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	{
 		int i, num_allowed_paths = 0, allowed_bay_paths[MAX_SHIP_BAY_PATHS];
 
+		memset(allowed_bay_paths, 0, sizeof(allowed_bay_paths));
+        
 		for (i = 0; i < bay->num_paths; i++)
 		{
 			if (allowed_path_mask & (1 << i))
