@@ -341,6 +341,8 @@ static int Debrief_music_timeout = 0;
 static int Multi_list_size;
 static int Multi_list_offset;
 
+int Debrief_overlay_id;
+
 int Debrief_multi_stages_loaded = 0;
 int Debrief_multi_voice_loaded = 0;
 
@@ -854,8 +856,8 @@ void debrief_ui_init()
 	debrief_buttons_init();
 
 	// load in help overlay bitmap	
-	help_overlay_load(DEBRIEFING_OVERLAY);
-	help_overlay_set_state(DEBRIEFING_OVERLAY,0);
+	Debrief_overlay_id = help_overlay_get_index(DEBRIEFING_OVERLAY);
+	help_overlay_set_state(Debrief_overlay_id,0);
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// close down any old instances of the chatbox
@@ -2169,9 +2171,6 @@ void debrief_close()
 	// clear out debrief info parsed from mission file - taylor
 	mission_debrief_common_reset();
 
-	// unload the overlay bitmap
-//	help_overlay_unload(DEBRIEFING_OVERLAY);
-
 	// clear out award text 
 	Debrief_award_text_num_lines = 0;
 
@@ -2412,7 +2411,7 @@ void debrief_do_frame(float frametime)
 		Debrief_multi_voice_loaded = 1;
 	}
 
-	if ( help_overlay_active(DEBRIEFING_OVERLAY) ) {
+	if ( help_overlay_active(Debrief_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Debrief_ui_window.set_ignore_gadgets(1);
 	}
@@ -2427,15 +2426,15 @@ void debrief_do_frame(float frametime)
 	}
 
 	if ( (k > 0) || (new_k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(DEBRIEFING_OVERLAY) ) {
-			help_overlay_set_state(DEBRIEFING_OVERLAY, 0);
+		if ( help_overlay_active(Debrief_overlay_id) ) {
+			help_overlay_set_state(Debrief_overlay_id, 0);
 			Debrief_ui_window.set_ignore_gadgets(0);
 			k = 0;
 			new_k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(DEBRIEFING_OVERLAY) ) {
+	if ( !help_overlay_active(Debrief_overlay_id) ) {
 		Debrief_ui_window.set_ignore_gadgets(0);
 	}
 
@@ -2588,13 +2587,13 @@ void debrief_do_frame(float frametime)
 	// AL 3-6-98: Needed to move key reading here, since popups are launched from this code, and we don't
 	//				  want to include the mouse pointer which is drawn in the flip
 
-	if ( !help_overlay_active(DEBRIEFING_OVERLAY) ) {
+	if ( !help_overlay_active(Debrief_overlay_id) ) {
 		debrief_check_buttons();
 		debrief_do_keys(new_k);	
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(DEBRIEFING_OVERLAY);
+	help_overlay_maybe_blit(Debrief_overlay_id);
 
 	gr_flip();
 

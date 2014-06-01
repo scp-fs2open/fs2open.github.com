@@ -73,6 +73,8 @@ hud_anim		Fade_anim;
 int	Briefing_music_handle = -1;
 int	Briefing_music_begin_timestamp = 0;
 
+int Briefing_overlay_id = -1;
+
 // --------------------------------------------------------------------------------------
 // Module scope globals
 // --------------------------------------------------------------------------------------
@@ -870,7 +872,8 @@ void brief_init()
 	common_flash_button_init();
 	common_music_init(SCORE_BRIEFING);
 
-	help_overlay_set_state(BR_OVERLAY,0);
+	Briefing_overlay_id = help_overlay_get_index(BR_OVERLAY);
+	help_overlay_set_state(Briefing_overlay_id,0);
 
 	if ( Brief_inited == TRUE ) {
 		common_buttons_maybe_reload(&Brief_ui_window);	// AL 11-21-97: this is necessary since we may returning from the hotkey
@@ -896,8 +899,6 @@ void brief_init()
 
 	nprintf(("Alan","Entering brief_init()\n"));
 	common_select_init();
-
-	help_overlay_load(BR_OVERLAY);
 
 	// Set up the mask regions
    // initialize the different regions of the menu that will react when the mouse moves over it
@@ -1480,7 +1481,7 @@ void brief_do_frame(float frametime)
 		Brief_mouse_up_flag = 0;
 	}
 
-	if ( help_overlay_active(BR_OVERLAY) ) {
+	if ( help_overlay_active(Briefing_overlay_id) ) {
 		common_flash_button_init();
 		brief_turn_off_closeup_icon();
 	}
@@ -1628,7 +1629,7 @@ void brief_do_frame(float frametime)
 	common_render(frametime);
 
 	if ( Current_brief_stage < (Num_brief_stages-1) ) {
-		if ( !help_overlay_active(BR_OVERLAY) && brief_time_to_advance(Current_brief_stage) ) {
+		if ( !help_overlay_active(Briefing_overlay_id) && brief_time_to_advance(Current_brief_stage) ) {
 			brief_do_next_pressed(0);
 			common_flash_button_init();
 			Brief_last_auto_advance = timer_get_milliseconds();
@@ -1754,7 +1755,7 @@ void brief_do_frame(float frametime)
 	brief_maybe_flash_button();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(BR_OVERLAY);	
+	help_overlay_maybe_blit(Briefing_overlay_id);
 
 	gr_flip();	
 
@@ -1797,8 +1798,6 @@ void brief_unload_bitmaps()
 		bm_release(Brief_background_bitmap);
 		Brief_background_bitmap = -1;
 	}
-
-	help_overlay_unload(BR_OVERLAY);
 }
 
 // ------------------------------------------------------------------------------------

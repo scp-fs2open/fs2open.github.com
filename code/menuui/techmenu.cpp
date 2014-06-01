@@ -214,6 +214,8 @@ static int Ships_loaded = 0;
 static int Weapons_loaded = 0;
 static int Intel_loaded = 0;
 
+int Techroom_overlay_id;
+
 // out entry data struct & vars
 typedef struct {
 	int	index;		// index into the master table that its in (ie Ship_info[])
@@ -1155,7 +1157,8 @@ void techroom_init()
 	Buttons[gr_screen.res][SCROLL_LIST_DOWN].button.set_hotkey(KEY_PAGEDOWN);
 
 	// init help overlay states
-	help_overlay_set_state(TECH_ROOM_OVERLAY, 0);
+	Techroom_overlay_id = help_overlay_get_index(TECH_ROOM_OVERLAY);
+	help_overlay_set_state(Techroom_overlay_id, 0);
 
 	// setup slider
 	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Num_ship_classes, Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
@@ -1250,7 +1253,7 @@ void techroom_do_frame(float frametime)
 	int i, k;	
 
 	// turn off controls when overlay is on
-	if ( help_overlay_active(TECH_ROOM_OVERLAY) ) {
+	if ( help_overlay_active(Techroom_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -1265,14 +1268,14 @@ void techroom_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(TECH_ROOM_OVERLAY) ) {
-			help_overlay_set_state(TECH_ROOM_OVERLAY, 0);
+		if ( help_overlay_active(Techroom_overlay_id) ) {
+			help_overlay_set_state(Techroom_overlay_id, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(TECH_ROOM_OVERLAY) ) {
+	if ( !help_overlay_active(Techroom_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -1391,7 +1394,7 @@ void techroom_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(TECH_ROOM_OVERLAY);
+	help_overlay_maybe_blit(Techroom_overlay_id);
 
 	gr_flip();
 }

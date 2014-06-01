@@ -13,6 +13,8 @@
 #define __MISSIONDEBRIEF_H__
 
 
+extern int Debrief_overlay_id;
+
 extern int Debrief_multi_stages_loaded;
 
 void debrief_init();

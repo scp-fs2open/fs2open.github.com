@@ -26,4 +26,6 @@ void mission_hotkey_exit();
 // function to return the hotkey set number of the given key
 extern int mission_hotkey_get_set_num( int k );
 
+extern int Hotkey_overlay_id;
+
 #endif

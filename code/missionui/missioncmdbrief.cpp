@@ -183,6 +183,8 @@ static int Cmd_brief_paused = 0;
 
 static int Uses_scroll_buttons = 0;
 
+int Cmd_brief_overlay_id;
+
 void cmd_brief_init_voice()
 {
 	int i;
@@ -605,8 +607,8 @@ void cmd_brief_init(int team)
 	}
 
 	// load in help overlay bitmap	
-	help_overlay_load(CMD_BRIEF_OVERLAY);
-	help_overlay_set_state(CMD_BRIEF_OVERLAY,0);
+	Cmd_brief_overlay_id = help_overlay_get_index(CMD_BRIEF_OVERLAY);
+	help_overlay_set_state(Cmd_brief_overlay_id,0);
 
 	for (i=0; i<Cur_cmd_brief->num_stages; i++)
 		cmd_brief_ani_wave_init(i);
@@ -636,9 +638,6 @@ void cmd_brief_close()
 		if (Cmd_brief_background_bitmap >= 0)
 			bm_release(Cmd_brief_background_bitmap);
 
-		// unload the overlay bitmap
-		help_overlay_unload(CMD_BRIEF_OVERLAY);
-
 		Ui_window.destroy();
 
 		game_flush();
@@ -660,7 +659,7 @@ void cmd_brief_do_frame(float frametime)
 		return;
 	}
 
-	if ( help_overlay_active(CMD_BRIEF_OVERLAY) ) {
+	if ( help_overlay_active(Cmd_brief_overlay_id) ) {
 		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_HELP].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -668,14 +667,14 @@ void cmd_brief_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(CMD_BRIEF_OVERLAY) ) {
-			help_overlay_set_state(CMD_BRIEF_OVERLAY, 0);
+		if ( help_overlay_active(Cmd_brief_overlay_id) ) {
+			help_overlay_set_state(Cmd_brief_overlay_id, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(CMD_BRIEF_OVERLAY) ) {
+	if ( !help_overlay_active(Cmd_brief_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -751,7 +750,7 @@ void cmd_brief_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(CMD_BRIEF_OVERLAY);
+	help_overlay_maybe_blit(Cmd_brief_overlay_id);
 
 	gr_flip();
 }
