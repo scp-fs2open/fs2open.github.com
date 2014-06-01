@@ -12719,7 +12719,7 @@ ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "I
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(HUDDrawnExceptMessages, l_HUD, "boolean", "Specifies if only the messages gauges of the hud are drawn", "boolean", "true if only the message gauges are drawn, false otherwise")
+ADE_VIRTVAR(HUDDisabledExceptMessages, l_HUD, "boolean", "Specifies if only the messages gauges of the hud are drawn", "boolean", "true if only the message gauges are drawn, false otherwise")
 {
 	bool to_draw = false;
 
@@ -12728,10 +12728,10 @@ ADE_VIRTVAR(HUDDrawnExceptMessages, l_HUD, "boolean", "Specifies if only the mes
 
 	if (ADE_SETTING_VAR)
 	{
-		hud_disable_except_messages(!to_draw);
+		hud_disable_except_messages(to_draw);
 	}
 
-	if (!hud_disabled_except_messages())
+	if (hud_disabled_except_messages())
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
