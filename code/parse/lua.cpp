@@ -12719,6 +12719,24 @@ ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "I
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(HUDDrawnExceptMessages, l_HUD, "boolean", "Specifies if only the messages gauges of the hud are drawn", "boolean", "true if only the message gauges are drawn, false otherwise")
+{
+	bool to_draw = false;
+
+	if (!ade_get_args(L, "*|b", &to_draw))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+	{
+		hud_disable_except_messages(!to_draw);
+	}
+
+	if (!hud_disabled_except_messages())
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(setHUDGaugeColor, l_HUD, "number (index number of the gauge), [number red, number green, number blue, number alpha]", "Color used to draw the gauge", "boolean", "If the operation was successful")
 {
 	int idx = -1; 
