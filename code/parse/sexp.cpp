@@ -8468,12 +8468,12 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		// only eval this argument if it's valid
 		if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 		{
-			// flush conditional to avoid short-circuiting
-			flush_sexp_tree(condition_node);
-
 			// evaluate conditional for current argument
 			Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 			val = eval_sexp(condition_node);
+
+			// flush conditional to avoid short-circuiting
+			flush_sexp_tree(condition_node);
 
 			switch (val)
 			{
@@ -8542,12 +8542,12 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 	{
 		// since we can't see or modify the validity, assume all are valid
 		{
-			// flush conditional to avoid short-circuiting
-			flush_sexp_tree(condition_node);
-
 			// evaluate conditional for current argument
 			Sexp_replacement_arguments.push_back(argument_vector[i]);
 			val = eval_sexp(condition_node);
+
+			// flush conditional to avoid short-circuiting
+			flush_sexp_tree(condition_node);
 
 			switch (val)
 			{
@@ -8741,11 +8741,13 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	{
 		// flush stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
-		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
 		Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 		val = eval_sexp(condition_node);
+
+		// flush conditional to avoid short-circuiting
+		flush_sexp_tree(condition_node);
 
 		// true?
 		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
@@ -8790,11 +8792,13 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	{
 		// flush stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
-		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
 		Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 		val = eval_sexp(condition_node);
+
+		// flush conditional to avoid short-circuiting
+		flush_sexp_tree(condition_node);
 
 		// true?
 		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
