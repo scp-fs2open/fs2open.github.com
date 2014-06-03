@@ -8294,14 +8294,14 @@ int eval_perform_actions(int n)
  */
 int eval_when(int n, int when_op_num)
 {
-	int cond, val, actions;
+	int arg_handler = -1, cond, val, actions;
 	Assert( n >= 0 );
 	arg_item *ptr;
 
 	// get the parts of the sexp and evaluate the conditional
 	if (is_blank_argument_op(when_op_num))
 	{
-		int arg_handler = CAR(n);
+		arg_handler = CAR(n);
 		cond = CADR(n);
 		actions = CDDR(n);
 
@@ -8393,7 +8393,10 @@ int eval_when(int n, int when_op_num)
 		Sexp_current_argument_nesting_level--;
 	}
 
-	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
+	// thanks to MageKing17 for noticing that we need to short-circuit on the correct node!
+	int short_circuit_node = (arg_handler >= 0) ? arg_handler : cond;
+
+	if (Sexp_nodes[short_circuit_node].value == SEXP_KNOWN_FALSE)
 		return SEXP_KNOWN_FALSE;  // no need to waste time on this anymore
 
 	if (val == SEXP_KNOWN_FALSE)
