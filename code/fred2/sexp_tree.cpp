@@ -2634,6 +2634,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_FLEXIBLE_ARGUMENT:
 		case OPF_ANYTHING:
 		case OPF_SKYBOX_MODEL_NAME:
+		case OPF_SKYBOX_FLAGS:
 		case OPF_SHIP_OR_NONE:
 		case OPF_SUBSYSTEM_OR_NONE:
 		case OPF_SHIP_WING_POINT_OR_NONE:
@@ -4347,6 +4348,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_skybox_model();
 			break;
 
+		case OPF_SKYBOX_FLAGS:
+			list = get_listing_opf_skybox_flags();
+			break;
+
 		case OPF_BACKGROUND_BITMAP:
 			list = get_listing_opf_background_bitmap();
 			break;
@@ -5788,6 +5793,17 @@ sexp_list_item *sexp_tree::get_listing_opf_skybox_model()
 
 	sexp_list_item head;
 	head.add_data("default");
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_skybox_flags()
+{
+	sexp_list_item head;
+	int i;
+
+	for (i = 0; i < Num_skybox_flags; ++i) {
+		head.add_data(Skybox_flags[i]);
+	}
 	return head.next;
 }
 

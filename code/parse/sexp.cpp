@@ -807,6 +807,15 @@ char *HUD_gauge_text[NUM_HUD_GAUGES] =
 
 
 void sexp_set_skybox_model_preload(char *name); // taylor
+int Num_skybox_flags = 6;
+char *Skybox_flags[] = {
+	"force-clamp",
+	"add-lighting",
+	"no-transparency",
+	"add-zbuffer",
+	"add-culling",
+	"no-glowmaps",
+};
 
 int	Directive_count;
 int	Sexp_useful_number;  // a variable to pass useful info in from external modules
@@ -3004,6 +3013,21 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if ( stricmp(CTEXT(node), NOX("default")) && !strstr(CTEXT(node), NOX(".pof")) )
 					return SEXP_CHECK_INVALID_SKYBOX_NAME;
+
+				break;
+
+			case OPF_SKYBOX_FLAGS:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				for ( i = 0; i < Num_skybox_flags; ++i ) {
+					if ( !stricmp( CTEXT(node), Skybox_flags[i]) )
+						break;
+				}
+
+				// if we reached the end of the list, then the flag is invalid
+				if ( i == Num_skybox_flags )
+					return SEXP_CHECK_INVALID_SKYBOX_FLAG;
 
 				break;
 
@@ -16561,6 +16585,7 @@ void sexp_set_skybox_model(int n)
 	// gather any flags
 	n = CDR(n);
 	while (n != -1) {
+		// this should check all entries in Skybox_flags
 		if ( !stricmp("add-lighting", CTEXT(n) )) {
 			new_skybox_model_flags &= ~MR_NO_LIGHTING;
 		}
@@ -16576,7 +16601,7 @@ void sexp_set_skybox_model(int n)
 		else if ( !stricmp("no-glowmaps", CTEXT(n) )) {
 			new_skybox_model_flags |= MR_NO_GLOWMAPS;
 		}
-		else if ( !stricmp("add-clamp", CTEXT(n) )) {
+		else if ( !stricmp("force-clamp", CTEXT(n) )) {
 			new_skybox_model_flags |= MR_FORCE_CLAMP;
 		}
 		else {
@@ -26945,7 +26970,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_SKYBOX_MODEL_NAME;
 			else if (argnum <= 7)
-				return OPF_STRING;
+				return OPF_SKYBOX_FLAGS;
 
 		case OP_SET_SKYBOX_ORIENT:
 			return OPF_NUMBER;
@@ -32526,7 +32551,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tModel filename (with .pof extension) to switch to\r\n"
 		"\t2-7:\tSet or unset the following skyboxes flags\r\n"
 		"\t\t\tadd-lighting, no-transparency, add-zbuffer\r\n"
-		"\t\t\tadd-culling, no-glowmaps, add-clamp\r\n\r\n"
+		"\t\t\tadd-culling, no-glowmaps, force-clamp\r\n\r\n"
 		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
 	},
 
