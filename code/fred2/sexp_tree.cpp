@@ -2203,7 +2203,8 @@ int sexp_tree::add_default_operator(int op, int argnum)
 				(argnum == 1 && Operators[op].value == OP_INT_TO_STRING) ||
 				(argnum == 3 && Operators[op].value == OP_STRING_GET_SUBSTRING) ||
 				(argnum == 4 && Operators[op].value == OP_STRING_SET_SUBSTRING) ||
-				(argnum == 1 && Operators[op].value == OP_COPY_VARIABLE_FROM_INDEX))
+				(argnum == 1 && Operators[op].value == OP_COPY_VARIABLE_FROM_INDEX) ||
+				(argnum == 1 && Operators[op].value == OP_SCRIPT_EVAL_STRING))
 			{
 
 				int sexp_var_index = get_index_sexp_variable_name(item.text);

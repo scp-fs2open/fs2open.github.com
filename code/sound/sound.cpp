@@ -1060,6 +1060,14 @@ int snd_get_duration(int snd_id)
 		return 0;
 }
 
+// return the time in ms for the duration of the sound
+const char *snd_get_filename(int snd_id)
+{
+	Assertion(snd_id >= 0 && snd_id < (int) Sounds.size(), "Invalid sound id %d!", snd_id);
+
+	return Sounds[snd_id].filename;
+}
+
 
 MONITOR( SoundChannels )
 
