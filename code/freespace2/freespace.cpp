@@ -8877,6 +8877,10 @@ void game_pause()
 					pause_init();
 				break;
 
+			case GS_STATE_FICTION_VIEWER:
+				fiction_viewer_pause();
+				break;
+
 			default:
 				audiostream_pause_all();
 		}
@@ -8938,6 +8942,9 @@ void game_unpause()
 			// and will get cleaned up elsewhere
 			case GS_STATE_GAME_PLAY:
 				break;
+
+			case GS_STATE_FICTION_VIEWER:
+				fiction_viewer_unpause();
 
 			default:
 				audiostream_unpause_all();
