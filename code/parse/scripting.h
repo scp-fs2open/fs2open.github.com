@@ -74,6 +74,7 @@ struct image_desc
 #define CHA_COLLIDEBEAM		31
 #define CHA_ONACTION		32
 #define CHA_ONACTIONSTOPPED	33
+#define CHA_MSGRECEIVED		34
 
 // management stuff
 void scripting_state_init();

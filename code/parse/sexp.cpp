@@ -307,7 +307,7 @@ sexp_oper Operators[] = {
 
 	//Other Sub-Category
 	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
-	{ "script-eval-string",				OP_SCRIPT_EVAL_STRING,					1,	1,			SEXP_INTEGER_OPERATOR,	},
+	{ "script-eval-string",				OP_SCRIPT_EVAL_STRING,					2,	2,			SEXP_ACTION_OPERATOR,	},
 
 	//Time Category
 	{ "time-ship-destroyed",			OP_TIME_SHIP_DESTROYED,					1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -21473,24 +21473,65 @@ void multi_sexp_show_hide_jumpnode(bool show)
 int sexp_script_eval(int node, int return_type)
 {
 	int n = node;
-	char *s = CTEXT(n);
-	bool success = false;
-
-	int r = -1;
 
 	switch(return_type)
 	{
 		case OPR_NUMBER:
-			success = Script_system.EvalString(s, "|i", &r, s);
-			break;
+			{
+				char* s = CTEXT(n);
+				int r = -1;
+				bool success = Script_system.EvalString(CTEXT(n), "|i", &r);
+
+				if(!success)
+					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+
+				return r;
+			}
 		case OPR_STRING:
-			Error(LOCATION, "SEXP system does not support string return type; Goober must fix this before script-eval-string will work");
+			{
+				char* ret = NULL;
+				char* s = CTEXT(n);
+
+				bool success = Script_system.EvalString(s, "|s", &ret);
+				n = CDR(n);
+
+				if(!success)
+					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+
+				if (n != -1 && success)
+				{
+					Assert(Sexp_nodes[n].first == -1);
+					int variable_index = atoi(Sexp_nodes[n].text);
+
+					// verify variable set
+					Assert(Sexp_variables[variable_index].type & SEXP_VARIABLE_SET);
+
+					if (!(Sexp_variables[variable_index].type & SEXP_VARIABLE_STRING))
+					{
+						Warning(LOCATION, "Variable for script-eval has to be a string variable!");
+					}
+					else if (ret != NULL)
+					{
+						// assign to variable
+						sexp_modify_variable(ret, variable_index);
+					}
+
+					n = CDR(n);
+				}
+			}
 			break;
 		case OPR_NULL:
-			while(n != -1)
 			{
-				success = Script_system.EvalString(s, NULL, NULL, CTEXT(n));
-				n = CDR(n);
+				while (n != -1)
+				{
+					char* s = CTEXT(n);
+					bool success = Script_system.EvalString(s, NULL, NULL);
+
+					if (!success)
+						Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+
+					n = CDR(n);
+				}
 			}
 			break;
 		default:
@@ -21498,10 +21539,7 @@ int sexp_script_eval(int node, int return_type)
 			break;
 	}
 
-	if(!success)
-		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
-
-	return r;
+	return -1;
 }
 
 void sexp_force_glide(int node)
@@ -24893,7 +24931,6 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_SPEED_Y:
 		case OP_GET_OBJECT_SPEED_Z:
 		case OP_SCRIPT_EVAL_NUM:
-		case OP_SCRIPT_EVAL_STRING:
 		case OP_STRING_TO_INT:
 		case OP_GET_THROTTLE_SPEED:
 		case OP_GET_VARIABLE_BY_INDEX:
@@ -25225,6 +25262,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SECONDARY_WEAPON:
 		case OP_SET_NUM_COUNTERMEASURES:
 		case OP_SCRIPT_EVAL:
+		case OP_SCRIPT_EVAL_STRING:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
 		case OP_LOCK_PRIMARY_WEAPON:
@@ -27260,9 +27298,12 @@ int query_operator_argument_type(int op, int argnum)
 			else return OPF_NEBULA_POOF;
 
 		case OP_SCRIPT_EVAL_NUM:
-		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL:
 			return OPF_STRING;
+
+		case OP_SCRIPT_EVAL_STRING:
+			if (argnum == 1)return OPF_VARIABLE_NAME;
+			else return OPF_STRING;
 
 		case OP_CHANGE_IFF_COLOR:
 			if ((argnum == 0) || (argnum == 1))
@@ -29036,6 +29077,7 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
+		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL:
 			return CHANGE_SUBCATEGORY_OTHER;
 
@@ -29135,7 +29177,6 @@ int get_subcategory(int sexp_id)
 		case OP_STRING_GET_LENGTH:
 			return STATUS_SUBCATEGORY_VARIABLES;
 
-		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL_NUM:
 			return STATUS_SUBCATEGORY_OTHER;
 			
@@ -32644,13 +32685,14 @@ sexp_help_struct Sexp_help[] = {
 
 	{OP_SCRIPT_EVAL_STRING, "script-eval-string\r\n"
 		"\tEvaluates script to return a string"
-		"Takes 1 argument...\r\n"
-		"\t1:\tScript\r\n"
+		"Takes a multiple of 2 arguments...\r\n"
+		"\t1:\tScript (Without a leading 'return')\r\n"
+		"\t2:\tDestination variable\r\n"
 	},
 
 	{OP_SCRIPT_EVAL, "script-eval\r\n"
-		"\tEvaluates script"
-		"Takes at least 1 argument...\r\n"
+		"\tEvaluates the given script\r\n"
+		"Takes 1 argument...\r\n"
 		"\t1:\tScript to evaluate\r\n"
 	},
 
