@@ -639,7 +639,7 @@ sexp_oper Operators[] = {
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
-	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	1,			SEXP_ACTION_OPERATOR,	},	// taylor
+	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	7,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 
@@ -807,6 +807,15 @@ char *HUD_gauge_text[NUM_HUD_GAUGES] =
 
 
 void sexp_set_skybox_model_preload(char *name); // taylor
+int Num_skybox_flags = 6;
+char *Skybox_flags[] = {
+	"force-clamp",
+	"add-lighting",
+	"no-transparency",
+	"add-zbuffer",
+	"add-culling",
+	"no-glowmaps",
+};
 
 int	Directive_count;
 int	Sexp_useful_number;  // a variable to pass useful info in from external modules
@@ -3004,6 +3013,21 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if ( stricmp(CTEXT(node), NOX("default")) && !strstr(CTEXT(node), NOX(".pof")) )
 					return SEXP_CHECK_INVALID_SKYBOX_NAME;
+
+				break;
+
+			case OPF_SKYBOX_FLAGS:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				for ( i = 0; i < Num_skybox_flags; ++i ) {
+					if ( !stricmp( CTEXT(node), Skybox_flags[i]) )
+						break;
+				}
+
+				// if we reached the end of the list, then the flag is invalid
+				if ( i == Num_skybox_flags )
+					return SEXP_CHECK_INVALID_SKYBOX_FLAG;
 
 				break;
 
@@ -16557,13 +16581,44 @@ void sexp_set_skybox_orientation(int n)
 // taylor - load and set a skybox model
 void sexp_set_skybox_model(int n)
 {
-	if ( !stricmp("default", CTEXT(n)) ) {
-		stars_set_background_model( The_mission.skybox_model, NULL );
+	char new_skybox_model[TOKEN_LENGTH+1]; //max input is TOKEN_LENGTH, +1 for NUL
+	strcpy_s(new_skybox_model, CTEXT(n));
+	int new_skybox_model_flags = DEFAULT_NMODEL_FLAGS;
+
+	// gather any flags
+	n = CDR(n);
+	while (n != -1) {
+		// this should check all entries in Skybox_flags
+		if ( !stricmp("add-lighting", CTEXT(n) )) {
+			new_skybox_model_flags &= ~MR_NO_LIGHTING;
+		}
+		else if ( !stricmp("no-transparency", CTEXT(n) )) {
+			new_skybox_model_flags &= ~MR_ALL_XPARENT;
+		}
+		else if ( !stricmp("add-zbuffer", CTEXT(n) )) {
+			new_skybox_model_flags &= ~MR_NO_ZBUFFER;
+		}
+		else if ( !stricmp("add-culling", CTEXT(n) )) {
+			new_skybox_model_flags &= ~MR_NO_CULL;
+		}
+		else if ( !stricmp("no-glowmaps", CTEXT(n) )) {
+			new_skybox_model_flags |= MR_NO_GLOWMAPS;
+		}
+		else if ( !stricmp("force-clamp", CTEXT(n) )) {
+			new_skybox_model_flags |= MR_FORCE_CLAMP;
+		}
+		else {
+			Warning(LOCATION, "Invalid flag passed to set-skybox-model: %s\n", CTEXT(n));
+		}
+		n = CDR(n);
+	}
+	if ( !stricmp("default", new_skybox_model )) {
+		stars_set_background_model( The_mission.skybox_model, NULL, new_skybox_model_flags );
 	} else {
 		// stars_level_init() will set the actual mission skybox after this gets
 		// evaluated during parse. by setting it now we get everything loaded so
 		// there is less slowdown when it actually swaps out - taylor
-		stars_set_background_model( CTEXT(n), NULL );
+		stars_set_background_model( new_skybox_model, NULL, new_skybox_model_flags );
 	}
 }
 
@@ -26915,7 +26970,10 @@ int query_operator_argument_type(int op, int argnum)
 
 		// taylor
 		case OP_SET_SKYBOX_MODEL:
-			return OPF_SKYBOX_MODEL_NAME;
+			if (argnum == 0)
+				return OPF_SKYBOX_MODEL_NAME;
+			else if (argnum <= 7)
+				return OPF_SKYBOX_FLAGS;
 
 		case OP_SET_SKYBOX_ORIENT:
 			return OPF_NUMBER;
@@ -32492,8 +32550,11 @@ sexp_help_struct Sexp_help[] = {
 
 	// taylor
 	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
-		"\tSets the current skybox model.  Takes 1 argument...\r\n"
-		"\t1:\tModel filename (with .pof extension) to switch to\r\n\r\n"
+		"\tSets the current skybox model.  Takes 1-7 arguments\r\n"
+		"\t1:\tModel filename (with .pof extension) to switch to\r\n"
+		"\t2-7:\tSet or unset the following skyboxes flags\r\n"
+		"\t\t\tadd-lighting, no-transparency, add-zbuffer\r\n"
+		"\t\t\tadd-culling, no-glowmaps, force-clamp\r\n\r\n"
 		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
 	},
 
