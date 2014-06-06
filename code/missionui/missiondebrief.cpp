@@ -1694,7 +1694,7 @@ void debrief_button_pressed(int num)
 			break;
 
 		case TEXT_SCROLL_DOWN:
-			if (Max_debrief_Lines < Num_text_lines) {
+			if (Max_debrief_Lines < (Num_text_lines - Text_offset)) {
 				Text_offset++;
 				gamesnd_play_iface(SND_SCROLL);
 			} else {
@@ -2555,16 +2555,12 @@ void debrief_do_frame(float frametime)
 			break;
 	} // end switch
 
-	if (gr_screen.res == 1) {
-		Max_debrief_Lines = 450/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
-	} else {
-		Max_debrief_Lines = 340/gr_get_font_height();
-	}
+	Max_debrief_Lines = Debrief_text_wnd_coords[gr_screen.res][3]/gr_get_font_height(); //Make the max number of lines dependent on the font height.
 
-	if (Max_debrief_Lines < Num_text_lines) {
+	if ( (Max_debrief_Lines + Text_offset) < Num_text_lines ) {
 		int w;
 
-		gr_set_color_fast(&Color_red);
+		gr_set_color_fast(&Color_more_indicator);
 		gr_get_string_size(&w, NULL, XSTR( "More", 459));
 		gr_printf_menu(Debrief_text_wnd_coords[gr_screen.res][0] + Debrief_text_wnd_coords[gr_screen.res][2] / 2 - w / 2, Debrief_text_wnd_coords[gr_screen.res][1] + Debrief_text_wnd_coords[gr_screen.res][3], XSTR( "More", 459));
 	}

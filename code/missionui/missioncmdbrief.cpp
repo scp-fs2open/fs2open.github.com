@@ -730,14 +730,10 @@ void cmd_brief_do_frame(float frametime)
 		Voice_good_to_go = 1;
 	}
 
-	if (gr_screen.res == 1) {
-		Max_cmdbrief_Lines = 166/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
-	} else {
-		Max_cmdbrief_Lines = 116/gr_get_font_height();
-	}
+	Max_cmdbrief_Lines = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD]/(gr_get_font_height() + 1); //Make the max number of lines dependent on the font height, keeping in mind that we have an extra pixel between lines.
 
 	// maybe output the "more" indicator
-	if ( Max_cmdbrief_Lines < Num_brief_text_lines[0] ) {
+	if ( (Max_cmdbrief_Lines + Top_cmd_brief_text_line) < Num_brief_text_lines[0] ) {
 		// can be scrolled down
 		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2) - 10;
 		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered
@@ -745,7 +741,7 @@ void cmd_brief_do_frame(float frametime)
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
-		gr_set_color_fast(&Color_red);
+		gr_set_color_fast(&Color_more_indicator);
 		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 	}
 

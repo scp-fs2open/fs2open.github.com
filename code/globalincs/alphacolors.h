@@ -38,6 +38,8 @@
 #define Color_text_active_hi	Color_bright_white
 // text drawn as a heading for a section or title, etc
 #define Color_text_heading		Color_violet_gray
+// color of the "more" indicator in briefings/command briefings/debrefings
+#define Color_more_indicator	Color_red
 
 #define Color_bright Color_bright_blue
 #define Color_normal Color_white
