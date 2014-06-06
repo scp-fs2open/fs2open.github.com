@@ -14296,6 +14296,10 @@ ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle o
 	if(!ade_get_args(L, "i", &sig))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
+	if (sig == -1) {
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+	}
+
 	objnum = obj_get_by_signature(sig);
 
 	return ade_set_object_with_breed(L, objnum);
