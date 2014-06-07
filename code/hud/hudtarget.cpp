@@ -2722,8 +2722,6 @@ void hud_target_subsystem_in_reticle()
 			if ( best_dot > MIN_DOT_FOR_TARGET )
 				nearest_subsys = subsys;
 		}
-
-		Assert(best_dot <= 1.0f);
 	} // end for
 
 	if ( nearest_subsys != NULL ) {
