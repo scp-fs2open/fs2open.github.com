@@ -8739,7 +8739,7 @@ ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "person
 	return ade_set_args(L, "o", l_Persona.Set(Messages[idx].persona_index));
 }
 
-ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text of the message and optionally replaces SEXP variables with their respective values.", "string", "The message or an empty string if handle is invalid", "string")
+ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text of the message and optionally replaces SEXP variables with their respective values.", "string", "The message or an empty string if handle is invalid")
 {
 	int idx = -1;
 	bool replace = true;

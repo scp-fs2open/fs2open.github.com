@@ -1278,6 +1278,7 @@ void message_queue_process()
 	message_q *q;
 	int i;
 	MissionMessage *m;
+	bool builtinMessage = false; // gcc doesn't like var decls crossed by goto's
 
 	// Don't play messages until first frame has been rendered
 	if ( Framecount < 2 ) {
@@ -1585,7 +1586,7 @@ void message_queue_process()
 	Script_system.SetHookVar("Message", 's', buf);
 	Script_system.SetHookVar("SenderString", 's', who_from);
 
-	bool builtinMessage = q->builtin_type != -1;
+	builtinMessage = q->builtin_type != -1;
 	Script_system.SetHookVar("Builtin", 'b', &builtinMessage);
 	if (Message_shipnum >= 0)
 	{
