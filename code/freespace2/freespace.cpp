@@ -8945,6 +8945,7 @@ void game_unpause()
 
 			case GS_STATE_FICTION_VIEWER:
 				fiction_viewer_unpause();
+				break;
 
 			default:
 				audiostream_unpause_all();
