@@ -3970,6 +3970,9 @@ int WE_BSG::warpShipRender()
 		{
 			vertex p;
 			extern int Cmdline_nohtl;
+            
+            memset(&p, 0, sizeof(p));
+            
 			if(Cmdline_nohtl) {
 				g3_rotate_vertex(&p, &pos );
 			}else{

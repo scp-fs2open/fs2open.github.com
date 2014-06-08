@@ -245,7 +245,7 @@ monitor::monitor( char *_name )
 
 
 int Monitor_inited = 0;
-char Monitor_filename[128];
+char Monitor_filename[MAX_PATH_LEN];
 fix monitor_last_time = -1;
 
 DCF(monitor,"Monitors game performace by saving to file")

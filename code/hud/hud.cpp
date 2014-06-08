@@ -1583,7 +1583,7 @@ void hud_update_frame(float frametime)
 	}
 
 	// Make sure that the player isn't targeting a 3rd stage local ssm
-	if (Objects[Player_ai->target_objnum].type == OBJ_WEAPON)
+	if (Player_ai->target_objnum >= 0 && Objects[Player_ai->target_objnum].type == OBJ_WEAPON)
 	{
 		if (Weapons[Objects[Player_ai->target_objnum].instance].lssm_stage==3)
 		{

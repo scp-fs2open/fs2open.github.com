@@ -582,7 +582,7 @@ int common_select_do(float frametime)
 	int	k, new_k;
 
 
-	if ( help_overlay_active(BR_OVERLAY) || help_overlay_active(SS_OVERLAY) || help_overlay_active(WL_OVERLAY) ) {
+	if ( help_overlay_active(Briefing_overlay_id) || help_overlay_active(Ship_select_overlay_id) || help_overlay_active(Weapon_select_overlay_id) ) {
 		Common_buttons[0][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
 		Common_buttons[1][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
 		Common_buttons[2][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
@@ -600,10 +600,10 @@ int common_select_do(float frametime)
 	}
 
 	if ( (k > 0) || (new_k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(BR_OVERLAY) || help_overlay_active(SS_OVERLAY) || help_overlay_active(WL_OVERLAY) ) {
-			help_overlay_set_state(BR_OVERLAY, 0);
-			help_overlay_set_state(SS_OVERLAY, 0);
-			help_overlay_set_state(WL_OVERLAY, 0);
+		if ( help_overlay_active(Briefing_overlay_id) || help_overlay_active(Ship_select_overlay_id) || help_overlay_active(Weapon_select_overlay_id) ) {
+			help_overlay_set_state(Briefing_overlay_id, 0);
+			help_overlay_set_state(Ship_select_overlay_id, 0);
+			help_overlay_set_state(Weapon_select_overlay_id, 0);
 			Active_ui_window->set_ignore_gadgets(0);
 			k = 0;
 			new_k = 0;

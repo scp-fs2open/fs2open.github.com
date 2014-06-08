@@ -881,18 +881,19 @@ void parse_player_info2(mission *pm)
 			ptr->default_ship = ship_info_lookup(str);
 			if (-1 == ptr->default_ship) {
 				WarningEx(LOCATION, "Mission: %s\nUnknown default ship %s!  Defaulting to %s.", pm->name, str, Ship_info[ptr->ship_list[0]].name );
+				ptr->default_ship = ptr->ship_list[0]; // default to 1st in list
 			}
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
 					for (i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-						if ( Campaign.ships_allowed[ptr->default_ship] ) {
+						if ( Campaign.ships_allowed[i] ) {
 							ptr->default_ship = i;
 							break;
 						}
 					}
-					Assert( i < MAX_SHIP_CLASSES );
+					Assertion( i < MAX_SHIP_CLASSES, "Mission: %s: Could not find a valid default ship.\n", pm->name );
 				}
 			}
 		}
@@ -1263,6 +1264,7 @@ void parse_fiction(mission *pm)
 {
 	char filename[MAX_FILENAME_LEN];
 	char font_filename[MAX_FILENAME_LEN];
+	char voice_filename[MAX_FILENAME_LEN];
 
 	fiction_viewer_reset();
 
@@ -1278,7 +1280,13 @@ void parse_fiction(mission *pm)
 		strcpy_s(font_filename, "");
 	}
 
-	fiction_viewer_load(filename, font_filename);
+	if (optional_string("$Voice:")) {
+		stuff_string(voice_filename, F_FILESPEC, MAX_FILENAME_LEN);
+	} else {
+		strcpy_s(voice_filename, "");
+	}
+
+	fiction_viewer_load(filename, font_filename, voice_filename);
 }
 
 /**

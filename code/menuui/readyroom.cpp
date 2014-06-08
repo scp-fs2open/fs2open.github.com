@@ -221,6 +221,9 @@ static int Background_bitmap;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 
+int Sim_room_overlay_id;
+int Campaign_room_overlay_id;
+
 // globals
 bool Campaign_room_no_campaigns = false;
 
@@ -1049,8 +1052,8 @@ void sim_room_init()
 	Background_bitmap = bm_load(Sim_filename[gr_screen.res]);
 
 	// load in help overlay bitmap	
-	help_overlay_load(SIM_ROOM_OVERLAY);
-	help_overlay_set_state(SIM_ROOM_OVERLAY,0);
+	Sim_room_overlay_id = help_overlay_get_index(SIM_ROOM_OVERLAY);
+	help_overlay_set_state(Sim_room_overlay_id,0);
 
 	Scroll_offset = Selected_line = 0;
 
@@ -1151,9 +1154,6 @@ void sim_room_close()
 	// free global Campaign_* list stuff
 	mission_campaign_free_list();
 
-	// unload the overlay bitmap
-	help_overlay_unload(SIM_ROOM_OVERLAY);
-
 	campaign_mission_hash_table_delete();
 
 	Ui_window.destroy();
@@ -1183,7 +1183,7 @@ void sim_room_do_frame(float frametime)
 			break;
 		}
 
-	if ( help_overlay_active(SIM_ROOM_OVERLAY) ) {
+	if ( help_overlay_active(Sim_room_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -1191,14 +1191,14 @@ void sim_room_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(SIM_ROOM_OVERLAY) ) {
-			help_overlay_set_state(SIM_ROOM_OVERLAY, 0);
+		if ( help_overlay_active(Sim_room_overlay_id) ) {
+			help_overlay_set_state(Sim_room_overlay_id, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(SIM_ROOM_OVERLAY) ) {
+	if ( !help_overlay_active(Sim_room_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -1355,7 +1355,7 @@ void sim_room_do_frame(float frametime)
 		List_buttons[i++].disable();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(SIM_ROOM_OVERLAY);
+	help_overlay_maybe_blit(Sim_room_overlay_id);
 
 	gr_flip();
 }
@@ -1680,8 +1680,8 @@ void campaign_room_init()
 	Background_bitmap = bm_load(Campaign_filename[gr_screen.res]);
 
 	// load in help overlay bitmap	
-	help_overlay_load(CAMPAIGN_ROOM_OVERLAY);
-	help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY,0);
+	Campaign_room_overlay_id = help_overlay_get_index(CAMPAIGN_ROOM_OVERLAY);
+	help_overlay_set_state(Campaign_room_overlay_id,0);
 
 	Num_desc_lines = 0;
 	Desc_scroll_offset = Scroll_offset = 0;
@@ -1723,9 +1723,6 @@ void campaign_room_close()
 	// free the global Campaign_* list stuff
 	mission_campaign_free_list();
 
-	// unload the overlay bitmap
-	help_overlay_unload(CAMPAIGN_ROOM_OVERLAY);
-
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
 	Pilot.save_player();
@@ -1739,7 +1736,7 @@ void campaign_room_do_frame(float frametime)
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 
-	if ( help_overlay_active(CAMPAIGN_ROOM_OVERLAY) ) {
+	if ( help_overlay_active(Campaign_room_overlay_id) ) {
 		// Cr_buttons[gr_screen.res][CR_HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -1747,14 +1744,14 @@ void campaign_room_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(CAMPAIGN_ROOM_OVERLAY) ) {
-			help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY, 0);
+		if ( help_overlay_active(Campaign_room_overlay_id) ) {
+			help_overlay_set_state(Campaign_room_overlay_id, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(CAMPAIGN_ROOM_OVERLAY) ) {
+	if ( !help_overlay_active(Campaign_room_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -1875,7 +1872,7 @@ void campaign_room_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(CAMPAIGN_ROOM_OVERLAY);
+	help_overlay_maybe_blit(Campaign_room_overlay_id);
 
 	gr_flip();
 }

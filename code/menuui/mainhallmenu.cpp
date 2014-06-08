@@ -535,12 +535,13 @@ void main_hall_init(const SCP_string &main_hall_name)
 	}
 
 	// load in help overlay bitmap
-	if (Main_hall == &Main_hall_defines.at(gr_screen.res).at(0)) {
-		Main_hall_overlay_id = MH_OVERLAY;
+	if (!Main_hall->help_overlay_name.empty()) {
+		Main_hall_overlay_id = help_overlay_get_index(Main_hall->help_overlay_name.c_str());
+	} else if (Main_hall == &Main_hall_defines.at(gr_screen.res).at(0)) {
+		Main_hall_overlay_id = help_overlay_get_index(MH_OVERLAY);
 	} else {
-		Main_hall_overlay_id = MH2_OVERLAY;
+		Main_hall_overlay_id = help_overlay_get_index(MH2_OVERLAY);
 	}
-	help_overlay_load(Main_hall_overlay_id);
 	help_overlay_set_state(Main_hall_overlay_id,0);
 
 	// check to see if the "very first pilot" flag is set, and load the overlay if so
@@ -924,9 +925,6 @@ void main_hall_close()
 			}
 		}
 	}
-
-	// unload the overlay bitmap
-	help_overlay_unload(Main_hall_overlay_id);
 
 	// close any snazzy menu details
 	snazzy_menu_close();
@@ -1654,6 +1652,15 @@ void main_hall_get_name(SCP_string &name, unsigned int index)
 	}
 }
 
+int main_hall_get_overlay_id()
+{
+	if (Main_hall==NULL) {
+		return -1;
+	} else {
+		return Main_hall_overlay_id;
+	}
+}
+
 // what main hall we're on
 int main_hall_id()
 {
@@ -1933,6 +1940,11 @@ void parse_main_hall_table(const char* filename)
 			if (optional_string("+Substitute Music:")) {
 				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
 				m->substitute_music_name = temp_string;
+			}
+
+			if (optional_string("+Help Overlay:")) {
+				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+				m->help_overlay_name = temp_string;
 			}
 
 			// intercom sounds

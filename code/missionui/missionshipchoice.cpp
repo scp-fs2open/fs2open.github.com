@@ -123,6 +123,8 @@ int Hot_ss_slot;			// index for slot that mouse is over (0..MAX_WSS_SLOTS)
 ////////////////////////////////////////////////////////////
 UI_WINDOW	Ship_select_ui_window;	
 
+int Ship_select_overlay_id = -1;
+
 static int Ship_anim_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
 		257, 84		// GR_640
@@ -658,7 +660,8 @@ void ship_select_init()
 
 	Ss_mouse_down_on_region = -1;
 
-	help_overlay_set_state(SS_OVERLAY,0);
+	Ship_select_overlay_id = help_overlay_get_index(SS_OVERLAY);
+	help_overlay_set_state(Ship_select_overlay_id,0);
 
 	if ( Ship_select_open ) {
 		//reset the animation
@@ -690,8 +693,6 @@ void ship_select_init()
 	ShipSelectMaskPtr = bm_lock(ShipSelectMaskBitmap, 8, BMP_AABITMAP);
 	ShipSelectMaskData = (ubyte*)ShipSelectMaskPtr->data;	
 	bm_get_info(ShipSelectMaskBitmap, &Shipselect_mask_w, &Shipselect_mask_h);
-
-	help_overlay_load(SS_OVERLAY);
 
 	// Set up the mask regions
    // initialize the different regions of the menu that will react when the mouse moves over it
@@ -1456,7 +1457,7 @@ void ship_select_do(float frametime)
 	if(!Cmdline_ship_choice_3d)
 	{
 		if ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0) ) {
-			generic_anim_render(&Ss_icons[Selected_ss_class].ss_anim, (help_overlay_active(SS_OVERLAY)) ? 0 : frametime, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], true);
+			generic_anim_render(&Ss_icons[Selected_ss_class].ss_anim, (help_overlay_active(Ship_select_overlay_id)) ? 0 : frametime, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], true);
 		}
 	}
 
@@ -1507,7 +1508,7 @@ void ship_select_do(float frametime)
 	ss_maybe_flash_button();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(SS_OVERLAY);
+	help_overlay_maybe_blit(Ship_select_overlay_id);
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
@@ -1601,7 +1602,6 @@ void ship_select_close()
 
 	// unload the bitmaps
 	bm_release(ShipSelectMaskBitmap);
-	help_overlay_unload(SS_OVERLAY);
 
 	Ship_select_ui_window.destroy();
 

@@ -31,6 +31,8 @@
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "mission/missiontraining.h"
 #include "missionui/missionbrief.h"
 #include "model/model.h"
 #include "network/multi.h"
@@ -524,7 +526,7 @@ ADE_FUNC(getRvec, l_Matrix, NULL, "Returns the vector that points to the right (
 //that any new enumerations have indexes of NEXT INDEX (see below)
 //or after. Don't forget to increment NEXT INDEX after you're done.
 //=====================================
-static const int ENUM_NEXT_INDEX = 71; // <<<<<<<<<<<<<<<<<<<<<<
+static const int ENUM_NEXT_INDEX = 74; // <<<<<<<<<<<<<<<<<<<<<<
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
@@ -736,6 +738,15 @@ static flag_def_list Enumerations[] = {
 
 	#define LE_VM_FREECAMERA				68
 	{		"VM_FREECAMERA",				LE_VM_FREECAMERA,				0},
+
+	#define LE_MESSAGE_PRIORITY_LOW			71
+	{		"MESSAGE_PRIORITY_LOW",			LE_MESSAGE_PRIORITY_LOW,		0},
+
+	#define LE_MESSAGE_PRIORITY_NORMAL		72
+	{		"MESSAGE_PRIORITY_NORMAL",		LE_MESSAGE_PRIORITY_NORMAL,		0},
+
+	#define LE_MESSAGE_PRIORITY_HIGH		73
+	{		"MESSAGE_PRIORITY_HIGH",		LE_MESSAGE_PRIORITY_HIGH,		0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
@@ -8155,6 +8166,611 @@ ADE_FUNC(isValid, l_CockpitDisplays, NULL, "Detects whether this handle is valid
 	return ade_set_args(L, "b", cdh->isValid());
 }
 
+//**********HANDLE: SoundEntry
+struct sound_entry_h
+{
+	int idx;
+
+	sound_entry_h()
+	{
+		idx = -1;
+	}
+
+	sound_entry_h(int n_idx)
+	{
+		idx = n_idx;
+	}
+
+	game_snd *Get()
+	{
+		if (!this->IsValid())
+			return NULL;
+
+		return &Snds[idx];
+	}
+
+	bool IsValid()
+	{
+		if (idx < 0 || idx > (int) Snds.size())
+			return false;
+
+		return true;
+	}
+
+	int getId() 
+	{
+		if (!IsValid())
+			return -1;
+
+		game_snd *snd = Get();
+
+		if (snd == NULL)
+			return -1;
+
+		return snd->id;
+	}
+
+};
+
+//**********HANDLE: SoundEntry
+ade_obj<sound_entry_h> l_SoundEntry("soundentry", "sounds.tbl table entry handle");
+
+ADE_VIRTVAR(DefaultVolume, l_SoundEntry, "number", "The default volume of this game sound", "number", "Volume in the range from 1 to 0 or -1 on error")
+{
+	sound_entry_h *seh = NULL;
+	float newVal = -1.0f;
+
+	if (!ade_get_args(L, "o|f", l_SoundEntry.GetPtr(&seh), &newVal))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		if (seh->Get() != NULL)
+		{
+			CAP(newVal, 0.0f, 1.0f);
+
+			seh->Get()->default_volume = newVal;
+		}
+	}
+
+	return ade_set_args(L, "f", seh->Get()->default_volume);
+}
+
+ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound", "string", "filename or empty string on error")
+{
+	sound_entry_h *seh = NULL;
+
+	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
+		return ade_set_error(L, "s", "");
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", seh->Get()->filename);
+}
+
+ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seconds.", "number", "the length, or -1 on error")
+{
+	sound_entry_h *seh = NULL;
+
+	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	return ade_set_args(L, "f", (i2fl(snd_get_duration(seh->getId())) / 1000.0f));
+}
+
+ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]", "Computes the volume and the panning of the sound when it would be played from the specified position.<br>"
+	"If range is given then the volume will diminish when the listener is withing that distance to the source.<br>"
+	"The position of the listener is always the the current viewing position.", "number, number", "The volume and the panning, in that sequence, or both -1 on error")
+{
+	sound_entry_h *seh = NULL;
+	vec3d *sourcePos = NULL;
+	float radius = 0.0f;
+
+	float vol = 0.0f;
+	float pan = 0.0f;
+
+	if (!ade_get_args(L, "oo|f", l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&sourcePos), &radius))
+		return ade_set_error(L, "ff", -1.0f, -1.0f);
+
+	if (seh == NULL || !seh->IsValid())
+		return ade_set_error(L, "ff", -1.0f, -1.0f);
+
+	int result = snd_get_3d_vol_and_pan(seh->Get(), sourcePos, &vol, &pan, radius);
+
+	if (result < 0)
+	{
+		return ade_set_args(L, "ff", -1.0f, -1.0f);
+	}
+	else
+	{
+		return ade_set_args(L, "ff", vol, pan);
+	}
+}
+
+ADE_FUNC(isValid, l_SoundEntry, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	sound_entry_h *seh;
+	if(!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", seh->IsValid());
+}
+
+//**********HANDLE: Sound
+struct sound_h : public sound_entry_h
+{
+	int sig;
+
+	sound_h():sound_entry_h()
+	{
+		sig=-1;
+	}
+
+	sound_h(int n_gs_idx, int n_sig) : sound_entry_h(n_gs_idx)
+	{
+		sig=n_sig;
+	}
+
+	int getSignature()
+	{
+		if (!IsValid())
+			return -1;
+
+		return sig;
+	}
+
+	bool IsSoundValid()
+	{
+		if(sig < 0 || ds_get_channel(sig) < 0)
+			return false;
+
+		return true;
+	}
+
+	bool IsValid()
+	{
+		if(!sound_entry_h::IsValid())
+			return false;
+
+		if(sig < 0 || ds_get_channel(sig) < 0)
+			return false;
+
+		return true;
+	}
+};
+
+ade_obj<sound_h> l_Sound("sound", "sound instance handle");
+
+ADE_VIRTVAR(Pitch, l_Sound, "number", "Pitch of sound, from 100 to 100000", "number", "Pitch, or 0 if handle is invalid")
+{
+	sound_h *sh;
+	int newpitch = 100;
+	if(!ade_get_args(L, "o|i", l_Sound.GetPtr(&sh), &newpitch))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!sh->IsSoundValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newpitch < 100)
+			newpitch = 100;
+		if(newpitch > 100000)
+			newpitch = 100000;
+
+		snd_set_pitch(sh->sig, newpitch);
+	}
+
+	return ade_set_args(L, "f", snd_get_pitch(sh->sig));
+}
+
+ADE_FUNC(getRemainingTime, l_Sound, NULL, "The remaining time of this sound handle", "number", "Remaining time, or -1 on error")
+{
+	sound_h *sh;
+	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!sh->IsSoundValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	int remaining = snd_time_remaining(sh->getSignature());
+
+	return ade_set_args(L, "f", i2fl(remaining) / 1000.0f);
+}
+
+ADE_FUNC(setVolume, l_Sound, "number", "Sets the volume of this sound instance", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	float newVol = -1.0f;
+	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newVol))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsSoundValid())
+		return ADE_RETURN_FALSE;
+
+	CAP(newVol, 0.0f, 1.0f);
+
+	snd_set_volume(sh->getSignature(), newVol);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setPanning, l_Sound, "number", "Sets the panning of this sound. Argument ranges from -1 for left to 1 for right", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	float newPan = -1.0f;
+	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newPan))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsSoundValid())
+		return ADE_RETURN_FALSE;
+
+	CAP(newPan, -1.0f, 1.0f);
+
+	snd_set_pan(sh->getSignature(), newPan);
+
+	return ADE_RETURN_TRUE;
+}
+
+
+ADE_FUNC(setPosition, l_Sound, "number[,boolean = true]", 
+		 "Sets the absolute position of the sound. If boolean argument is true then the value is given as a percentage<br>"
+		 "This operation fails if there is no backing soundentry!", 
+		 "boolean", "true if successfull, false otherwise")
+{
+	sound_h *sh;
+	float val = -1.0f;
+	bool percent = true;
+	if(!ade_get_args(L, "of|b", l_Sound.GetPtr(&sh), &val, &percent))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	if (val <= 0.0f)
+		return ADE_RETURN_FALSE;
+
+	snd_set_pos(sh->getSignature(), sh->Get(), val, percent);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(rewind, l_Sound, "number", "Rewinds the sound by the given number of seconds<br>"
+		 "This operation fails if there is no backing soundentry!", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	float val = -1.0f;
+	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	if (val <= 0.0f)
+		return ADE_RETURN_FALSE;
+
+	snd_rewind(sh->getSignature(), sh->Get(), val);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(skip, l_Sound, "number", "Skips the given number of seconds of the sound<br>"
+		 "This operation fails if there is no backing soundentry!", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	float val = -1.0f;
+	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
+		return ADE_RETURN_FALSE;
+
+	if (!sh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	if (val <= 0.0f)
+		return ADE_RETURN_FALSE;
+
+	snd_ffwd(sh->getSignature(), sh->Get(), val);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(isPlaying, l_Sound, NULL, "Specifies if this handle is currently playing", "boolean", "true if playing, false if otherwise")
+{
+	sound_h *sh;
+	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ade_set_error(L, "b", false);
+
+	if (!sh->IsSoundValid())
+		return ade_set_error(L, "b", false);
+
+	return ade_set_args(L, "b", snd_is_playing(sh->getSignature()) == 1);
+}
+
+ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true if succeeded, false otherwise")
+{
+	sound_h *sh;
+	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ade_set_error(L, "b", false);
+
+	if (!sh->IsSoundValid())
+		return ade_set_error(L, "b", false);
+
+	snd_stop(sh->getSignature());
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(isValid, l_Sound, NULL, "Detects whether the whole handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	sound_h *sh;
+	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", sh->IsValid());
+}
+
+ADE_FUNC(isSoundValid, l_Sound, NULL, "Checks if only the sound is valid, should be used for non soundentry sounds",
+		 "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	sound_h *sh;
+	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", sh->IsSoundValid());
+}
+
+ade_obj<sound_h> l_Sound3D("3Dsound", "3D sound instance handle", &l_Sound);
+
+ADE_FUNC(updatePosition, l_Sound3D, "vector Position[, number radius = 0.0]", "Updates the given 3D sound with the specified position and an optional range value", "boolean", "true if succeesed, false otherwise")
+{
+	sound_h *sh;
+	vec3d *newPos = NULL;
+	float radius = 0.0f;
+
+	if(!ade_get_args(L, "oo|f", l_Sound.GetPtr(&sh), l_Vector.GetPtr(&newPos), &radius))
+		return ade_set_error(L, "b", false);
+
+	if (!sh->IsValid() || newPos == NULL)
+		return ade_set_error(L, "b", false);
+
+	snd_update_3d_pos(sh->getSignature(), sh->Get(), newPos, radius);
+
+	return ADE_RETURN_TRUE;
+}
+
+//**********HANDLE: Soundfile
+ade_obj<int> l_Soundfile("soundfile", "Handle to a sound file");
+
+ADE_VIRTVAR(Duration, l_Soundfile, "number", "The duration of the sound file, in seconds", "number", "The duration or -1 on error")
+{
+	int snd_idx = -1;
+
+	if (!ade_get_args(L, "o", l_Soundfile.Get(&snd_idx)))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (snd_idx < 0)
+		return ade_set_error(L, "f", -1.0f);
+
+	int duration = snd_get_duration(snd_idx);
+
+	return ade_set_args(L, "f", i2fl(duration) / 1000.0f);
+}
+
+ADE_VIRTVAR(Filename, l_Soundfile, "string", "The filename of the file", "string", "The file name or empty string on error")
+{
+	int snd_idx = -1;
+
+	if (!ade_get_args(L, "o", l_Soundfile.Get(&snd_idx)))
+		return ade_set_error(L, "s", "");
+
+	if (snd_idx < 0)
+		return ade_set_error(L, "s", "");
+
+	const char* filename = snd_get_filename(snd_idx);
+
+	return ade_set_args(L, "s", filename);
+}
+
+
+ADE_FUNC(play, l_Soundfile, "[number volume = 1.0[, number panning = 0.0]]", "Plays the sound", "sound", "A sound handle or invalid handle on error")
+{
+	int snd_idx = -1;
+	float volume = 1.0f;
+	float panning = 0.0f;
+
+	if (!ade_get_args(L, "o|ff", l_Soundfile.Get(&snd_idx)))
+		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
+
+	if (snd_idx < 0)
+		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
+
+	if (volume < 0.0f)
+	{
+		LuaError(L, "Invalid volume value of %f specified!", volume);
+		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
+	}
+
+	int handle = snd_play_raw(snd_idx, panning, volume);
+	
+	return ade_set_args(L, "o", l_Sound.Set(sound_h(-1, handle)));
+}
+
+ADE_FUNC(isValid, l_Soundfile, NULL, "Checks if the soundfile handle is valid", "boolean", "true if valid, false otherwise")
+{	
+	int idx = -1;
+	if (!ade_get_args(L, "o", l_Soundfile.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", idx >= 0);
+}
+
+//**********HANDLE: Persona
+ade_obj<int> l_Persona("persona", "Persona handle");
+
+ADE_VIRTVAR(Name, l_Persona, "string", "The name of the persona", "string", "The name or empty string on error")
+{
+	int idx = -1;
+
+	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
+		return ade_set_error(L, "s", "");
+
+	if (Personas == NULL)
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= Num_personas)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", Personas[idx].name);
+}
+
+ADE_FUNC(isValid, l_Persona, NULL, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
+{
+	int idx = -1;
+
+	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", idx >= 0 && idx < Num_personas);
+}
+
+//**********HANDLE: Message
+ade_obj<int> l_Message("message", "Handle to a mission message");
+
+ADE_VIRTVAR(Name, l_Message, "string", "The name of the message as specified in the mission file", "string", "The name or an empty string if handle is invalid")
+{
+	int idx = -1;
+	if (!ade_get_args(L, "o", l_Message.Get(&idx)))
+		return ade_set_error(L, "s", "");
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", Messages[idx].name);
+}
+
+ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, see getMessage() for options to replace variables<br>"
+			"<b>NOTE:</b> Changing the text will also change the text for messages not yet played but already in the message queue!",
+			"string", "The message or an empty string if handle is invalid")
+{
+	int idx = -1;
+	char* newText = NULL;
+	if (!ade_get_args(L, "o|s", l_Message.Get(&idx), &newText))
+		return ade_set_error(L, "s", "");
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "s", "");
+
+	if (ADE_SETTING_VAR && newText != NULL)
+	{
+		if (strlen(newText) > MESSAGE_LENGTH)
+			LuaError(L, "New message text is too long, maximum is %d!", MESSAGE_LENGTH);
+		else
+			strcpy_s(Messages[idx].message, newText);
+	}
+
+	return ade_set_args(L, "s", Messages[idx].message);
+}
+
+// from mission/missionmessage.cpp
+extern int add_wave( const char *wave_name );
+ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", "soundfile", "The voice file handle or invalid handle when not present")
+{
+	int idx = -1;
+	int sndIdx = -1;
+
+	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Soundfile.Get(&sndIdx)))
+		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+
+	MissionMessage* msg = &Messages[idx];
+
+	if (ADE_SETTING_VAR)
+	{
+		if (sndIdx >= 0)
+		{
+			const char* newFilename = snd_get_filename(sndIdx);
+
+			msg->wave_info.index = add_wave(newFilename);
+		}
+		else
+		{
+			msg->wave_info.index = -1;
+		}
+	}
+
+	if (msg->wave_info.index < 0)
+	{
+		return ade_set_args(L, "o", l_Soundfile.Set(-1));
+	}
+	else
+	{
+		int index = msg->wave_info.index;
+		// Load the sound before using it
+		message_load_wave(index, Message_waves[index].name);
+		
+		return ade_set_args(L, "o", l_Soundfile.Set(Message_waves[index].num));
+	}
+}
+
+ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "persona", "The persona handle or invalid handle if not present")
+{
+	int idx = -1;
+	int newPersona = -1;
+
+	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Persona.Get(&newPersona)))
+		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+	
+	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < Num_personas)
+	{
+		Messages[idx].persona_index = newPersona;
+	}
+
+	return ade_set_args(L, "o", l_Persona.Set(Messages[idx].persona_index));
+}
+
+ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text of the message and optionally replaces SEXP variables with their respective values.", "string", "The message or an empty string if handle is invalid")
+{
+	int idx = -1;
+	bool replace = true;
+	if (!ade_get_args(L, "o|b", l_Message.Get(&idx), &replace))
+		return ade_set_error(L, "s", "");
+	
+	if (idx < 0 && idx >= (int) Messages.size())
+		return ade_set_error(L, "s", "");
+
+	if (!replace)
+		return ade_set_args(L, "s", Messages[idx].message);
+	else
+	{
+		char temp_buf[MESSAGE_LENGTH];
+		strcpy_s(temp_buf, Messages[idx].message);
+
+		sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH);
+
+		return ade_set_args(L, "s", temp_buf);
+	}
+}
+
+ADE_FUNC(isValid, l_Message, NULL, "Checks if the message handle is valid", "boolean", "true if valid, false otherwise")
+{	
+	int idx = -1;
+	if (!ade_get_args(L, "o", l_Message.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", idx >= 0 && idx < (int) Messages.size());
+}
+
 //**********HANDLE: Wing
 ade_obj<int> l_Wing("wing", "Wing handle");
 
@@ -10775,363 +11391,6 @@ ADE_FUNC(setPosition, l_Camera, "[wvector Position, number Translation Time, num
 	return ADE_RETURN_TRUE;
 }
 
-//**********HANDLE: SoundEntry
-struct sound_entry_h
-{
-	int type;
-	int idx;
-
-	sound_entry_h()
-	{
-		type = -1;
-		idx = -1;
-	}
-
-	sound_entry_h(int n_type, int n_idx)
-	{
-		type = n_type;
-		idx = n_idx;
-	}
-
-	game_snd *Get()
-	{
-		if (!this->IsValid())
-			return NULL;
-
-		return &Snds[idx];
-	}
-
-	bool IsValid()
-	{
-		if (idx < 0 || idx > (int) Snds.size())
-			return false;
-
-		return true;
-	}
-
-	int getId() 
-	{
-		if (!IsValid())
-			return -1;
-
-		game_snd *snd = Get();
-
-		if (snd == NULL)
-			return -1;
-
-		return snd->id;
-	}
-
-};
-
-ade_obj<sound_entry_h> l_SoundEntry("soundentry", "sounds.tbl table entry handle");
-
-ADE_VIRTVAR(DefaultVolume, l_SoundEntry, "number", "The default volume of this game sound", "number", "Volume in the range from 1 to 0 or -1 on error")
-{
-	sound_entry_h *seh = NULL;
-	float newVal = -1.0f;
-
-	if (!ade_get_args(L, "o|f", l_SoundEntry.GetPtr(&seh), &newVal))
-		return ade_set_error(L, "f", -1.0f);
-
-	if (seh == NULL || !seh->IsValid())
-		return ade_set_error(L, "f", -1.0f);
-
-	if (ADE_SETTING_VAR)
-	{
-		if (seh->Get() != NULL)
-		{
-			CAP(newVal, 0.0f, 1.0f);
-
-			seh->Get()->default_volume = newVal;
-		}
-	}
-
-	return ade_set_args(L, "f", seh->Get()->default_volume);
-}
-
-ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound", "string", "filename or empty string on error")
-{
-	sound_entry_h *seh = NULL;
-
-	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
-		return ade_set_error(L, "s", "");
-
-	if (seh == NULL || !seh->IsValid())
-		return ade_set_error(L, "s", "");
-
-	return ade_set_args(L, "s", seh->Get()->filename);
-}
-
-ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seconds.", "number", "the length, or -1 on error")
-{
-	sound_entry_h *seh = NULL;
-
-	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
-		return ade_set_error(L, "f", -1.0f);
-
-	if (seh == NULL || !seh->IsValid())
-		return ade_set_error(L, "f", -1.0f);
-
-	return ade_set_args(L, "f", (i2fl(snd_get_duration(seh->getId())) / 1000.0f));
-}
-
-ADE_FUNC(get3DValues, l_SoundEntry, "vector Position[, number radius=0.0]", "Computes the volume and the panning of the sound when it would be played from the specified position.<br>"
-	"If range is given then the volume will diminish when the listener is withing that distance to the source.<br>"
-	"The position of the listener is always the the current viewing position.", "number, number", "The volume and the panning, in that sequence, or both -1 on error")
-{
-	sound_entry_h *seh = NULL;
-	vec3d *sourcePos = NULL;
-	float radius = 0.0f;
-
-	float vol = 0.0f;
-	float pan = 0.0f;
-
-	if (!ade_get_args(L, "oo|f", l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&sourcePos), &radius))
-		return ade_set_error(L, "ff", -1.0f, -1.0f);
-
-	if (seh == NULL || !seh->IsValid())
-		return ade_set_error(L, "ff", -1.0f, -1.0f);
-
-	int result = snd_get_3d_vol_and_pan(seh->Get(), sourcePos, &vol, &pan, radius);
-
-	if (result < 0)
-	{
-		return ade_set_args(L, "ff", -1.0f, -1.0f);
-	}
-	else
-	{
-		return ade_set_args(L, "ff", vol, pan);
-	}
-}
-
-ADE_FUNC(isValid, l_SoundEntry, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	sound_entry_h *seh;
-	if(!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", seh->IsValid());
-}
-
-//**********HANDLE: Sound
-struct sound_h : public sound_entry_h
-{
-	int sig;
-
-	sound_h():sound_entry_h()
-	{
-		sig=-1;
-	}
-
-	sound_h(int n_gs_type, int n_gs_idx, int n_sig) : sound_entry_h(n_gs_type, n_gs_idx)
-	{
-		sig=n_sig;
-	}
-
-	int getSignature()
-	{
-		if (!IsValid())
-			return -1;
-
-		return sig;
-	}
-
-	bool IsValid()
-	{
-		if(!sound_entry_h::IsValid())
-			return false;
-
-		if(sig < 0 || ds_get_channel(sig) < 0)
-			return false;
-
-		return true;
-	}
-};
-
-ade_obj<sound_h> l_Sound("sound", "sound instance handle");
-
-ADE_VIRTVAR(Pitch, l_Sound, "number", "Pitch of sound, from 100 to 100000", "number", "Pitch, or 0 if handle is invalid")
-{
-	sound_h *sh;
-	int newpitch = 100;
-	if(!ade_get_args(L, "o|i", l_Sound.GetPtr(&sh), &newpitch))
-		return ade_set_error(L, "f", 0.0f);
-
-	if (!sh->IsValid())
-		return ade_set_error(L, "f", 0.0f);
-
-	if(ADE_SETTING_VAR)
-	{
-		if(newpitch < 100)
-			newpitch = 100;
-		if(newpitch > 100000)
-			newpitch = 100000;
-
-		snd_set_pitch(sh->sig, newpitch);
-	}
-
-	return ade_set_args(L, "f", snd_get_pitch(sh->sig));
-}
-
-ADE_FUNC(getRemainingTime, l_Sound, NULL, "The remaining time of this sound handle", "number", "Remaining time, or -1 on error")
-{
-	sound_h *sh;
-	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
-		return ade_set_error(L, "f", -1.0f);
-
-	if (!sh->IsValid())
-		return ade_set_error(L, "f", -1.0f);
-
-	int remaining = snd_time_remaining(sh->getSignature());
-
-	return ade_set_args(L, "f", i2fl(remaining) / 1000.0f);
-}
-
-ADE_FUNC(setVolume, l_Sound, "number", "Sets the volume of this sound instance", "boolean", "true if succeeded, false otherwise")
-{
-	sound_h *sh;
-	float newVol = -1.0f;
-	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newVol))
-		return ADE_RETURN_FALSE;
-
-	if (!sh->IsValid())
-		return ADE_RETURN_FALSE;
-
-	CAP(newVol, 0.0f, 1.0f);
-
-	snd_set_volume(sh->getSignature(), newVol);
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(setPanning, l_Sound, "number", "Sets the panning of this sound. Argument ranges from -1 for left to 1 for right", "boolean", "true if succeeded, false otherwise")
-{
-	sound_h *sh;
-	float newPan = -1.0f;
-	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newPan))
-		return ADE_RETURN_FALSE;
-
-	if (!sh->IsValid())
-		return ADE_RETURN_FALSE;
-
-	CAP(newPan, -1.0f, 1.0f);
-
-	snd_set_pan(sh->getSignature(), newPan);
-
-	return ADE_RETURN_TRUE;
-}
-
-
-ADE_FUNC(setPosition, l_Sound, "number[,boolean = true]", "Sets the absolute position of the sound. If boolean argument is true then the value is given as a percentage", "boolean", "true if successfull, false otherwise")
-{
-	sound_h *sh;
-	float val = -1.0f;
-	bool percent = true;
-	if(!ade_get_args(L, "of|b", l_Sound.GetPtr(&sh), &val, &percent))
-		return ADE_RETURN_FALSE;
-
-	if (!sh->IsValid())
-		return ADE_RETURN_FALSE;
-
-	if (val <= 0.0f)
-		return ADE_RETURN_FALSE;
-
-	snd_set_pos(sh->getSignature(), sh->Get(), val, percent);
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(rewind, l_Sound, "number", "Rewinds the sound by the given number of seconds", "boolean", "true if succeeded, false otherwise")
-{
-	sound_h *sh;
-	float val = -1.0f;
-	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
-		return ADE_RETURN_FALSE;
-
-	if (!sh->IsValid())
-		return ADE_RETURN_FALSE;
-
-	if (val <= 0.0f)
-		return ADE_RETURN_FALSE;
-
-	snd_rewind(sh->getSignature(), sh->Get(), val);
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(skip, l_Sound, "number", "Skips the given number of seconds of the sound", "boolean", "true if succeeded, false otherwise")
-{
-	sound_h *sh;
-	float val = -1.0f;
-	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
-		return ADE_RETURN_FALSE;
-
-	if (!sh->IsValid())
-		return ADE_RETURN_FALSE;
-
-	if (val <= 0.0f)
-		return ADE_RETURN_FALSE;
-
-	snd_ffwd(sh->getSignature(), sh->Get(), val);
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(isPlaying, l_Sound, NULL, "Specifies if this handle is currently playing", "boolean", "true if playing, false if otherwise")
-{
-	sound_h *sh;
-	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
-		return ade_set_error(L, "b", false);
-
-	if (!sh->IsValid())
-		return ade_set_error(L, "b", false);
-
-	return ade_set_args(L, "b", snd_is_playing(sh->getSignature()) == 1);
-}
-
-ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true if succeeded, false otherwise")
-{
-	sound_h *sh;
-	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
-		return ade_set_error(L, "b", false);
-
-	if (!sh->IsValid())
-		return ade_set_error(L, "b", false);
-
-	snd_stop(sh->getSignature());
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(isValid, l_Sound, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	sound_h *sh;
-	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", sh->IsValid());
-}
-
-ade_obj<sound_h> l_Sound3D("3Dsound", "3D sound instance handle", &l_Sound);
-
-ADE_FUNC(updatePosition, l_Sound3D, "vector Position[, number radius = 0.0]", "Updates the given 3D sound with the specified position and an optional range value", "boolean", "true if succeesed, false otherwise")
-{
-	sound_h *sh;
-	vec3d *newPos = NULL;
-	float radius = 0.0f;
-
-	if(!ade_get_args(L, "oo|f", l_Sound.GetPtr(&sh), l_Vector.GetPtr(&newPos), &radius))
-		return ade_set_error(L, "b", false);
-
-	if (!sh->IsValid() || newPos == NULL)
-		return ade_set_error(L, "b", false);
-
-	snd_update_3d_pos(sh->getSignature(), sh->Get(), newPos, radius);
-
-	return ADE_RETURN_TRUE;
-}
-
 //**********HANDLE: Control Info
 ade_obj<int> l_Control_Info("control info", "control info handle");
 
@@ -11660,8 +11919,22 @@ ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching
 	}
 	else
 	{
-		return ade_set_args(L, "o", l_SoundEntry.Set(sound_entry_h(0, index)));
+		return ade_set_args(L, "o", l_SoundEntry.Set(sound_entry_h(index)));
 	}
+}
+
+ADE_FUNC(loadSoundfile, l_Audio, "string filename", "Loads the specified sound file", "soundfile", "A soundfile handle")
+{
+	char* fileName = NULL;
+
+	if (!ade_get_args(L, "s", &fileName))
+		return ade_set_error(L, "o", l_Soundfile.Set(-1));
+
+	game_snd tmp_gs;
+	strcpy_s( tmp_gs.filename, fileName );
+	int n = snd_load( &tmp_gs, 0 );
+
+	return ade_set_error(L, "o", l_Soundfile.Set(n));
 }
 
 ADE_FUNC(playSound, l_Audio, "soundentry", "Plays the specified sound entry handle", "sound", "A handle to the playing sound")
@@ -11682,7 +11955,7 @@ ADE_FUNC(playSound, l_Audio, "soundentry", "Plays the specified sound entry hand
 	}
 	else
 	{
-		return ade_set_args(L, "o", l_Sound.Set(sound_h(0, seh->idx, handle)));
+		return ade_set_args(L, "o", l_Sound.Set(sound_h(seh->idx, handle)));
 	}
 }
 
@@ -11704,7 +11977,7 @@ ADE_FUNC(playLoopingSound, l_Audio, "soundentry", "Plays the specified sound as 
 	}
 	else
 	{
-		return ade_set_args(L, "o", l_Sound.Set(sound_h(0, seh->idx, handle)));
+		return ade_set_args(L, "o", l_Sound.Set(sound_h(seh->idx, handle)));
 	}
 }
 
@@ -11728,7 +12001,7 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
 	}
 	else
 	{
-		return ade_set_args(L, "o", l_Sound3D.Set(sound_h(0, seh->idx, handle)));
+		return ade_set_args(L, "o", l_Sound3D.Set(sound_h(seh->idx, handle)));
 	}
 }
 
@@ -12441,6 +12714,24 @@ ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "I
 	}
 
 	if (HUD_draw)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(HUDDisabledExceptMessages, l_HUD, "boolean", "Specifies if only the messages gauges of the hud are drawn", "boolean", "true if only the message gauges are drawn, false otherwise")
+{
+	bool to_draw = false;
+
+	if (!ade_get_args(L, "*|b", &to_draw))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+	{
+		hud_disable_except_messages(to_draw);
+	}
+
+	if (hud_disabled_except_messages())
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -14005,6 +14296,10 @@ ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle o
 	if(!ade_get_args(L, "i", &sig))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
+	if (sig == -1) {
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+	}
+
 	objnum = obj_get_by_signature(sig);
 
 	return ade_set_object_with_breed(L, objnum);
@@ -14441,6 +14736,293 @@ ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the missi
 ADE_FUNC(__len, l_Mission_Wings, NULL, "Number of wings in mission", "number", "Number of wings in mission")
 {
 	return ade_set_args(L, "i", Num_wings);
+}
+
+//****SUBLIBRARY: Mission/Teams
+ade_lib l_Mission_Teams("Teams", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_Mission_Teams, "number Index/string TeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
+{
+	char *name;
+	if(!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	int idx = iff_lookup(name);
+	
+	if(idx < 0)
+	{
+		idx = atoi(name);
+
+		idx--;	//Lua->FS2
+	}
+
+	if(idx < 0 || idx >= Num_iffs)
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	return ade_set_args(L, "o", l_Team.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "Number of teams in mission")
+{
+	return ade_set_args(L, "i", Num_iffs);
+}
+
+//****SUBLIBRARY: Mission/Messages
+ade_lib l_Mission_Messages("Messages", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_Mission_Messages, "number Index/string messageName", "Messages of the mission", "message", "Message handle or invalid handle on error")
+{
+	int idx = -1;
+
+	if (lua_isnumber(L, 2))
+	{
+		if (!ade_get_args(L, "*i", &idx))
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		idx--; // Lua --> FS2
+
+		idx += Num_builtin_messages;
+	}
+	else
+	{
+		char* name = NULL;
+
+		if (!ade_get_args(L, "*s", &name))
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		if (name == NULL)
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		for (int i = Num_builtin_messages; i < (int) Messages.size(); i++)
+		{
+			if (!stricmp(Messages[i].name, name))
+			{
+				idx = i;
+				break;
+			}
+		}
+	}
+
+	if (idx < Num_builtin_messages || idx >= (int) Messages.size())
+		return ade_set_args(L, "o", l_Message.Set(-1));
+	else
+		return ade_set_args(L, "o", l_Message.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_Messages, NULL, "Number of messages in the mission", "number", "Number of messages in mission")
+{
+	return ade_set_args(L, "i", (int) Messages.size() - Num_builtin_messages);
+}
+
+//****SUBLIBRARY: Mission/BuiltinMessages
+ade_lib l_Mission_BuiltinMessages("BuiltinMessages", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_Mission_BuiltinMessages, "number Index/string messageName", "Built-in messages of the mission", "message", "Message handle or invalid handle on error")
+{
+	int idx = -1;
+
+	if (lua_isnumber(L, 2))
+	{
+		if (!ade_get_args(L, "*i", &idx))
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		idx--; // Lua --> FS2
+	}
+	else
+	{
+		char* name = NULL;
+
+		if (!ade_get_args(L, "*s", &name))
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		if (name == NULL)
+			return ade_set_args(L, "o", l_Message.Set(-1));
+
+		for (int i = 0; i < Num_builtin_messages; i++)
+		{
+			if (!stricmp(Messages[i].name, name))
+			{
+				idx = i;
+				break;
+			}
+		}
+	}
+
+	if (idx < 0 || idx >= Num_builtin_messages)
+		return ade_set_args(L, "o", l_Message.Set(-1));
+	else
+		return ade_set_args(L, "o", l_Message.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_BuiltinMessages, NULL, "Number of built-in messages in the mission", "number", "Number of messages in mission")
+{
+	return ade_set_args(L, "i", Num_builtin_messages);
+}
+
+//****SUBLIBRARY: Mission/Personas
+ade_lib l_Mission_Personas("Personas", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mission", "persona", "Persona handle or invalid handle on error")
+{
+	int idx = -1;
+
+	if (lua_isnumber(L, 2))
+	{
+		if (!ade_get_args(L, "*i", &idx))
+			return ade_set_args(L, "o", l_Persona.Set(-1));
+
+		idx--; // Lua --> FS2
+	}
+	else
+	{
+		char* name = NULL;
+
+		if (!ade_get_args(L, "*s", &name))
+			return ade_set_args(L, "o", l_Persona.Set(-1));
+
+		if (name == NULL)
+			return ade_set_args(L, "o", l_Persona.Set(-1));
+
+		idx = message_persona_name_lookup(name);
+	}
+
+	if (idx < 0 || idx >= Num_personas)
+		return ade_set_args(L, "o", l_Persona.Set(-1));
+	else
+		return ade_set_args(L, "o", l_Persona.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "number", "Number of messages in mission")
+{
+	return ade_set_args(L, "i", Num_personas);
+}
+
+ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
+{
+	char* name = NULL;
+	char* text = NULL;
+	int personaIdx = -1;
+
+	if (!ade_get_args(L, "ss|o", &name, &text, l_Persona.Get(&personaIdx)))
+		return ade_set_error(L, "o", l_Message.Set(-1));
+
+	if (name == NULL || text == NULL)
+		return ade_set_error(L, "o", l_Message.Set(-1));
+
+	if (personaIdx < 0 || personaIdx >= Num_personas)
+		personaIdx = -1;
+
+	add_message(name, text, personaIdx, 0);
+
+	return ade_set_error(L, "o", l_Message.Set((int) Messages.size() - 1));
+}
+
+ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=0.0[, enumeration priority = MESSAGE_PRIORITY_NORMAL[, boolean fromCommand = false]]]",
+		 "Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the missions command source.<br>"
+		 "If delay is specified the message will be delayed by the specified time in seconds<br>"
+		 "If you pass <i>nil</i> as the sender then the message will not have a sender.",
+		 "boolean", "true if successfull, false otherwise")
+{
+	char* sender = NULL;
+	int messageIdx = -1;
+	int priority = MESSAGE_PRIORITY_NORMAL;
+	bool fromCommand = false;
+	int messageSource = MESSAGE_SOURCE_SPECIAL;
+	float delay = 0.0f;
+
+	enum_h* ehp = NULL;
+
+	// if first is nil then use no source
+	if (lua_isnil(L, 1))
+	{
+		if (!ade_get_args(L, "*o|fob", l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		messageSource = MESSAGE_SOURCE_NONE;
+	}
+	else
+	{
+		if (!ade_get_args(L, "so|fob", &sender, l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		if (sender == NULL)
+			return ADE_RETURN_FALSE;
+	}
+
+	if (fromCommand)
+		messageSource = MESSAGE_SOURCE_COMMAND;
+
+	if (messageIdx < 0 || messageIdx >= (int) Messages.size())
+		return ADE_RETURN_FALSE;
+
+	if (messageIdx < Num_builtin_messages)
+	{
+		LuaError(L, "Cannot send built-in messages!");
+		return ADE_RETURN_FALSE;
+	}
+
+	if (delay < 0.0f)
+	{
+		LuaError(L, "Invalid negative delay of %f!", delay);
+		return ADE_RETURN_FALSE;
+	}
+
+	if (ehp != NULL)
+	{
+		switch(ehp->index)
+		{
+		case LE_MESSAGE_PRIORITY_HIGH:
+			priority = MESSAGE_PRIORITY_HIGH;
+			break;
+		case LE_MESSAGE_PRIORITY_NORMAL:
+			priority = MESSAGE_PRIORITY_NORMAL;
+			break;
+		case LE_MESSAGE_PRIORITY_LOW:
+			priority = MESSAGE_PRIORITY_LOW;
+			break;
+		default:
+			LuaError(L, "Invalid enumeration used! Must be one of MESSAGE_PRIORITY_*.");
+			return ADE_RETURN_FALSE;
+		}
+	}
+
+	if (messageSource == MESSAGE_SOURCE_NONE)
+		message_send_unique_to_player(Messages[messageIdx].name, NULL, MESSAGE_SOURCE_NONE, priority, 0, fl2i(delay * 1000.0f));
+	else
+		message_send_unique_to_player(Messages[messageIdx].name, (void*) sender, messageSource, priority, 0, fl2i(delay * 1000.0f));
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number delay=0.0]",
+		 "Sends a training message to the player. <i>time</i> is the amount in seconds to display the message, only whole seconds are used!",
+		 "boolean", "true if successfull, false otherwise")
+{
+	int messageIdx = -1;
+	float delay = 0.0f;
+	int time = -1;
+
+	if (!ade_get_args(L, "oi|f", l_Message.Get(&messageIdx), &time, &delay))
+		return ADE_RETURN_FALSE;
+
+	if (messageIdx < 0 || messageIdx >= (int) Messages.size())
+		return ADE_RETURN_FALSE;
+
+	if (delay < 0.0f)
+	{
+		LuaError(L, "Got invalid delay of %f seconds!", delay);
+		return ADE_RETURN_FALSE;
+	}
+
+	if (time < 0)
+	{
+		LuaError(L, "Got invalid time of %d seconds!", time);
+		return ADE_RETURN_FALSE;
+	}
+
+	message_training_queue(Messages[messageIdx].name, timestamp(fl2i(delay * 1000.0f)), time);
+
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]", "Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position", "ship", "Ship handle, or invalid ship handle if ship couldn't be created")

@@ -29,6 +29,8 @@ typedef struct {
 #define IIF_IN_TECH_DATABASE			(1 << 0)	// in tech database? - Goober5000
 #define IIF_DEFAULT_IN_TECH_DATABASE	(1 << 1)	// in tech database by default? - Goober5000
 
+extern int Techroom_overlay_id;
+
 extern intel_data Intel_info[MAX_INTEL_ENTRIES];
 extern int Intel_info_size;
 

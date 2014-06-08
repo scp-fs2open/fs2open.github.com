@@ -732,6 +732,8 @@ int Multi_autojoin_query_stamp;
 // our join request
 join_request Multi_join_request;
 
+int Multi_join_overlay_id;
+
 // LOCAL function definitions
 void multi_join_check_buttons();
 void multi_join_button_pressed(int n);
@@ -881,8 +883,8 @@ void multi_join_game_init()
 	multi_common_set_palette();
 
 	// load the help overlay
-	help_overlay_load(MULTI_JOIN_OVERLAY);
-	help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
+	Multi_join_overlay_id = help_overlay_get_index(MULTI_JOIN_OVERLAY);
+	help_overlay_set_state(Multi_join_overlay_id,0);
 	
 	// try to login to the tracker
 	if (MULTI_IS_TRACKER_GAME) {
@@ -1045,8 +1047,8 @@ void multi_join_game_do_frame()
 	// process any keypresses
 	switch(k){
 	case KEY_ESC :
-		if(help_overlay_active(MULTI_JOIN_OVERLAY)){
-			help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
+		if(help_overlay_active(Multi_join_overlay_id)){
+			help_overlay_set_state(Multi_join_overlay_id,0);
 		} else {		
 			if (MULTI_IS_TRACKER_GAME) {
 				gameseq_post_event(GS_EVENT_PXO);
@@ -1098,7 +1100,7 @@ void multi_join_game_do_frame()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(MULTI_JOIN_OVERLAY, 0);
+		help_overlay_set_state(Multi_join_overlay_id, 0);
 	}
 
 	// do any network related stuff
@@ -1132,7 +1134,7 @@ void multi_join_game_do_frame()
 	multi_join_blit_top_stuff();
 
 	// draw the help overlay
-	help_overlay_maybe_blit(MULTI_JOIN_OVERLAY);
+	help_overlay_maybe_blit(Multi_join_overlay_id);
 	
 	// flip the buffer
 	gr_flip();
@@ -1153,9 +1155,6 @@ void multi_join_game_close()
 	if(!bm_unload(Multi_join_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_join_bitmap_fname[gr_screen.res]));
 	}
-
-	// unload the help overlay
-	help_overlay_unload(MULTI_JOIN_OVERLAY);	
 
 	// free up the active game list
 	multi_free_active_games();
@@ -1222,10 +1221,10 @@ void multi_join_button_pressed(int n)
 
 	// help overlay
 	case MJ_HELP:
-		if(!help_overlay_active(MULTI_JOIN_OVERLAY)){
-			help_overlay_set_state(MULTI_JOIN_OVERLAY,1);
+		if(!help_overlay_active(Multi_join_overlay_id)){
+			help_overlay_set_state(Multi_join_overlay_id,1);
 		} else {
-			help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
+			help_overlay_set_state(Multi_join_overlay_id,0);
 		}
 		break;
 
@@ -2263,6 +2262,8 @@ netgame_info *Multi_sg_netgame;
 // hold temporary values in this structure when on a standalone server
 netgame_info Multi_sg_netgame_temp;
 
+int Multi_sg_overlay_id;
+
 // forward declarations
 void multi_sg_check_buttons();
 void multi_sg_button_pressed(int n);
@@ -2342,8 +2343,8 @@ void multi_start_game_init()
 	}
 
 	// load the help overlay
-	help_overlay_load(MULTI_START_OVERLAY);
-	help_overlay_set_state(MULTI_START_OVERLAY,0);
+	Multi_sg_overlay_id = help_overlay_get_index(MULTI_START_OVERLAY);
+	help_overlay_set_state(Multi_sg_overlay_id,0);
 
 	// intiialize the rank selection items	
 	multi_sg_select_rank_default();	
@@ -2429,8 +2430,8 @@ void multi_start_game_do()
 	// process any keypresses
 	switch(k){
 	case KEY_ESC :		
-		if(help_overlay_active(MULTI_START_OVERLAY)){
-			help_overlay_set_state(MULTI_START_OVERLAY,0);
+		if(help_overlay_active(Multi_sg_overlay_id)){
+			help_overlay_set_state(Multi_sg_overlay_id,0);
 		} else {
 			gamesnd_play_iface(SND_USER_SELECT);
 			multi_quit_game(PROMPT_NONE);
@@ -2446,7 +2447,7 @@ void multi_start_game_do()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(MULTI_START_OVERLAY, 0);
+		help_overlay_set_state(Multi_sg_overlay_id, 0);
 	}
 
 	// check to see if the user has selected a different rank
@@ -2478,7 +2479,7 @@ void multi_start_game_do()
 	multi_sg_draw_radio_buttons();
 
 	// draw the help overlay
-	help_overlay_maybe_blit(MULTI_START_OVERLAY);
+	help_overlay_maybe_blit(Multi_sg_overlay_id);
 	
 	// flip the buffer
 	gr_flip();
@@ -2495,9 +2496,6 @@ void multi_start_game_close()
 	if(!bm_unload(Multi_sg_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_sg_bitmap_fname[gr_screen.res]));
 	}
-
-	// unload the help overlay
-	help_overlay_unload(MULTI_START_OVERLAY);
 	
 	// destroy the UI_WINDOW
 	Multi_sg_window.destroy();	
@@ -2526,10 +2524,10 @@ void multi_sg_button_pressed(int n)
 
 	// help overlay	
 	case MSG_HELP:
-		if(!help_overlay_active(MULTI_START_OVERLAY)){
-			help_overlay_set_state(MULTI_START_OVERLAY,1);
+		if(!help_overlay_active(Multi_sg_overlay_id)){
+			help_overlay_set_state(Multi_sg_overlay_id,1);
 		} else {
-			help_overlay_set_state(MULTI_START_OVERLAY,0);
+			help_overlay_set_state(Multi_sg_overlay_id,0);
 		}
 		break;
 
@@ -3339,6 +3337,8 @@ int Multi_create_files_loaded;
 SCP_vector<multi_create_info> Multi_create_mission_list;
 SCP_vector<multi_create_info> Multi_create_campaign_list;
 
+int Multi_create_overlay_id;
+
 // LOCAL function definitions
 void multi_create_check_buttons();
 void multi_create_button_pressed(int n);
@@ -3574,8 +3574,8 @@ void multi_create_game_init()
 	chatbox_create();
 
 	// load the help overlay 
-	help_overlay_load(MULTI_CREATE_OVERLAY);
-	help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
+	Multi_create_overlay_id = help_overlay_get_index(MULTI_CREATE_OVERLAY);
+	help_overlay_set_state(Multi_create_overlay_id, 0);
 
 	// initialize the common notification messaging
 	multi_common_notify_init();		
@@ -3785,8 +3785,8 @@ void multi_create_game_do()
 	switch(k){	
 		// same as the cancel button
 		case KEY_ESC: {
-			if ( help_overlay_active(MULTI_CREATE_OVERLAY) ) {
-				help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
+			if ( help_overlay_active(Multi_create_overlay_id) ) {
+				help_overlay_set_state(Multi_create_overlay_id, 0);
 			} else {		
 				gamesnd_play_iface(SND_USER_SELECT);		
 				multi_quit_game(PROMPT_HOST);		
@@ -3802,7 +3802,7 @@ void multi_create_game_do()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
+		help_overlay_set_state(Multi_create_overlay_id, 0);
 	}
 
 	// process any button clicks
@@ -3889,7 +3889,7 @@ void multi_create_game_do()
 	multi_common_voice_display_status();
 
 	// blit the help overlay if necessary
-	help_overlay_maybe_blit(MULTI_CREATE_OVERLAY);
+	help_overlay_maybe_blit(Multi_create_overlay_id);
 
 	// test code
 	if(MULTI_IS_TRACKER_GAME){
@@ -3925,9 +3925,6 @@ void multi_create_game_close()
 	if(!bm_unload(Multi_create_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_create_bitmap_fname[gr_screen.res]));
 	}		
-
-	// unload the help overlay
-	help_overlay_unload(MULTI_CREATE_OVERLAY);
 	
 	// destroy the chatbox
 	// chatbox_close();
@@ -3975,10 +3972,10 @@ void multi_create_button_pressed(int n)
 
 	// help button
 	case MC_HELP :
-		if(!help_overlay_active(MULTI_CREATE_OVERLAY)){
-			help_overlay_set_state(MULTI_CREATE_OVERLAY,1);
+		if(!help_overlay_active(Multi_create_overlay_id)){
+			help_overlay_set_state(Multi_create_overlay_id,1);
 		} else {
-			help_overlay_set_state(MULTI_CREATE_OVERLAY,0);
+			help_overlay_set_state(Multi_create_overlay_id,0);
 		}
 		break;
 

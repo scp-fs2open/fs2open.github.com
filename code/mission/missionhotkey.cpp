@@ -276,6 +276,8 @@ static UI_WINDOW Ui_window;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 //static UI_BUTTON List_region;
 
+int Hotkey_overlay_id;
+
 //////////////////////
 
 
@@ -954,7 +956,8 @@ void mission_hotkey_init()
 	Buttons[gr_screen.res][SCROLL_DOWN_BUTTON].button.set_hotkey(KEY_PAGEDOWN);
 
 	// ensure help overlay is off
-	help_overlay_set_state(HOTKEY_OVERLAY,0);
+	Hotkey_overlay_id = help_overlay_get_index(HOTKEY_OVERLAY);
+	help_overlay_set_state(Hotkey_overlay_id,0);
 
 	// load in relevant bitmaps
 	Background_bitmap = bm_load(Hotkey_background_fname[gr_screen.res]);
@@ -986,9 +989,6 @@ void mission_hotkey_close()
 	if (Wing_bmp >= 0)
 		bm_release(Wing_bmp);
 
-	// unload the overlay bitmap
-//	help_overlay_unload(HOTKEY_OVERLAY);
-
 	// unpause all weapon sounds
 	weapon_unpause_sounds();
 
@@ -1013,7 +1013,7 @@ void mission_hotkey_do_frame(float frametime)
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	color circle_color;
 
-	if ( help_overlay_active(HOTKEY_OVERLAY) ) {
+	if ( help_overlay_active(Hotkey_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -1021,14 +1021,14 @@ void mission_hotkey_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(HOTKEY_OVERLAY) ) {
-			help_overlay_set_state(HOTKEY_OVERLAY, 0);
+		if ( help_overlay_active(Hotkey_overlay_id) ) {
+			help_overlay_set_state(Hotkey_overlay_id, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(HOTKEY_OVERLAY) ) {
+	if ( !help_overlay_active(Hotkey_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -1268,7 +1268,7 @@ void mission_hotkey_do_frame(float frametime)
 		List_buttons[i++].disable();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(HOTKEY_OVERLAY);
+	help_overlay_maybe_blit(Hotkey_overlay_id);
 
 	gr_flip();
 }

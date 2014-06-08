@@ -276,7 +276,7 @@ uint palette_find( int r, int g, int b )
 void palette_write_cached1( char *name )
 {
 	CFILE *fp;
-	char new_name[128];
+	char new_name[MAX_PATH_LEN];
 
 	strcpy_s( new_name, name );
 	strcat_s( new_name, ".clr" );
@@ -318,7 +318,7 @@ void palette_write_cached1( char *name )
 int palette_read_cached( char *name )
 {
 	CFILE *fp;
-	char new_name[128];
+	char new_name[MAX_PATH_LEN];
 	int version;
 	uint id, new_checksum;
 	ubyte new_palette[768];
@@ -495,7 +495,7 @@ void palette_flush()
 void palette_update(const char *name_with_extension, int restrict_font_to_128)
 {
 	uint tmp_checksum;
-	char name[128];
+	char name[MAX_PATH_LEN];
 
 	Palman_restrict_colors = restrict_font_to_128;
 	
@@ -655,7 +655,7 @@ uint palette_compute_checksum( ubyte *pal )
 void palette_use_bm_palette(int n)
 {
 	ubyte tmp[768];
-	char name[128];
+	char name[MAX_PATH_LEN];
 
 	bm_get_palette(n, tmp, name);				// get the palette for this bitmap
 
