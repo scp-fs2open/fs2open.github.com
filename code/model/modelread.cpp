@@ -2664,6 +2664,13 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 				}
 			}
 		}
+
+		for (j=0; j<sm1->num_details; j++ )	{
+			if ( sm1->details[j] == -1 )	{
+				sm1->num_details = 0;
+			}
+		}
+
 	}
 
 
