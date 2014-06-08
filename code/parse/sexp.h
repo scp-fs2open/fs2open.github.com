@@ -1028,7 +1028,7 @@ typedef struct sexp_node {
 
 typedef struct sexp_variable {
 	int		type;
-	char	text[TOKEN_LENGTH];
+	char	text[256];
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
 
