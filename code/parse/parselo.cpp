@@ -34,9 +34,9 @@
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
 
-char		Current_filename[128];
-char		Current_filename_save[128];
-char		Current_filename_sub[128];	//Last attempted file to load, don't know if ex or not.
+char		Current_filename[MAX_PATH_LEN];
+char		Current_filename_save[MAX_PATH_LEN];
+char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
 char		Error_str[ERROR_LENGTH];
 int		my_errno;
 int		Warning_count, Error_count;

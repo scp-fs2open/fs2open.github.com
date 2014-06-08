@@ -261,7 +261,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 	int cd_present = 0;
 	int cd_drive_num;
 	int cd_mve_is_on;
-	char volume_name[128];
+	char volume_name[MAX_PATH_LEN];
 
 	int num_attempts = 0;
 
