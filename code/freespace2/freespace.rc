@@ -359,7 +359,7 @@ BEGIN
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fs2.exe"
             VALUE "ProductName", "FreeSpace 2 Open"
-            VALUE "ProductVersion", "3.7.2 RC2"
+            VALUE "ProductVersion", "3.7.2 RC3"
         END
     END
     BLOCK "VarFileInfo"
