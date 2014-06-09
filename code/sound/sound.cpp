@@ -312,7 +312,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if ( n == Sounds.size() ) {
 		sound new_sound;
 		new_sound.sid = -1;
-		new_sound.flags &= ~SND_F_USED;
+		new_sound.flags = 0;
 
 		Sounds.push_back( new_sound );
 	}
@@ -1058,6 +1058,14 @@ int snd_get_duration(int snd_id)
 		return Sounds[snd_id].duration;
 	else
 		return 0;
+}
+
+// return the time in ms for the duration of the sound
+const char *snd_get_filename(int snd_id)
+{
+	Assertion(snd_id >= 0 && snd_id < (int) Sounds.size(), "Invalid sound id %d!", snd_id);
+
+	return Sounds[snd_id].filename;
 }
 
 

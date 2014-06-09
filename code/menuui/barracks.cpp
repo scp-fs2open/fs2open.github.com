@@ -290,6 +290,8 @@ static int Pilot_squad_images[MAX_PILOT_IMAGES];
 static int Rank_pips_bitmaps;
 static int Rank_pips_count;
 
+int Barracks_overlay_id;
+
 void barracks_squad_change_popup();
 
 
@@ -1381,8 +1383,8 @@ void barracks_init()
 	Inputbox.hide();
 
 	// load in help overlay bitmap	
-	help_overlay_load(BARRACKS_OVERLAY);
-	help_overlay_set_state(BARRACKS_OVERLAY,0);	
+	Barracks_overlay_id = help_overlay_get_index(BARRACKS_OVERLAY);
+	help_overlay_set_state(Barracks_overlay_id,0);
 
 	// other init stuff
 	Barracks_callsign_enter_mode = 0;	
@@ -1433,8 +1435,8 @@ void barracks_do_frame(float frametime)
 	int k = Ui_window.process();
 
 	if ( k > 0 ) {
-		if ( help_overlay_active(BARRACKS_OVERLAY) ) {
-			help_overlay_set_state(BARRACKS_OVERLAY,0);
+		if ( help_overlay_active(Barracks_overlay_id) ) {
+			help_overlay_set_state(Barracks_overlay_id,0);
 			k = 0;
 		}
 	}
@@ -1476,7 +1478,7 @@ void barracks_do_frame(float frametime)
 				break;
 
 			case KEY_ESC:  // cancel
-				if (!help_overlay_active(BARRACKS_OVERLAY)) {
+				if (!help_overlay_active(Barracks_overlay_id)) {
 					if (Num_pilots && !barracks_pilot_accepted()) {
 						gameseq_post_event(GS_EVENT_MAIN_MENU);
 					} else {
@@ -1484,7 +1486,7 @@ void barracks_do_frame(float frametime)
 					}
 				} else {
 					// kill the overlay
-					help_overlay_set_state(BARRACKS_OVERLAY,0);
+					help_overlay_set_state(Barracks_overlay_id,0);
 				}
 				break;
 
@@ -1541,7 +1543,7 @@ void barracks_do_frame(float frametime)
 
 	// check mouse over help
 	if (mouse_down(MOUSE_LEFT_BUTTON)) {
-		help_overlay_set_state(BARRACKS_OVERLAY, 0);
+		help_overlay_set_state(Barracks_overlay_id, 0);
 	}
 
 	// do pilot pic stuff
@@ -1611,7 +1613,7 @@ void barracks_do_frame(float frametime)
 	barracks_display_pilot_stats();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(BARRACKS_OVERLAY);	
+	help_overlay_maybe_blit(Barracks_overlay_id);
 	
 	// flip the page
 	gr_flip();
@@ -1637,9 +1639,6 @@ void barracks_close()
 			bm_release(Pilot_images[i]);
 		}
 	}
-
-	// unload the overlay bitmap
-	help_overlay_unload(BARRACKS_OVERLAY);
 
 	if(Stat_labels != NULL)
 	{

@@ -179,6 +179,8 @@ static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of te
 static UI_WINDOW Ui_window;
 static unsigned int Defaults_cycle_pos; // the controls preset that was last selected
 
+int Control_config_overlay_id;
+
 static struct {
 	int key;  // index of other control in conflict with this one
 	int joy;  // index of other control in conflict with this one
@@ -1294,8 +1296,8 @@ void control_config_init()
 	Ui_window.tooltip_handler = control_config_tooltip_handler;
 
 	// load in help overlay bitmap	
-	help_overlay_load(CONTROL_CONFIG_OVERLAY);
-	help_overlay_set_state(CONTROL_CONFIG_OVERLAY,0);
+	Control_config_overlay_id = help_overlay_get_index(CONTROL_CONFIG_OVERLAY);
+	help_overlay_set_state(Control_config_overlay_id,0);
 
 	// reset conflict flashing
 	Conflict_stamp = -1;
@@ -1385,9 +1387,6 @@ void control_config_close()
 	while (Config_item_undo){
 		free_undo_block();
 	}
-
-	// unload the overlay bitmap
-	help_overlay_unload(CONTROL_CONFIG_OVERLAY);
 	
 	if (Background_bitmap){
 		bm_release(Background_bitmap);
@@ -1499,7 +1498,7 @@ void control_config_do_frame(float frametime)
 			}
 
 		} else {
-			if (help_overlay_active(CONTROL_CONFIG_OVERLAY)) {
+			if (help_overlay_active(Control_config_overlay_id)) {
 				CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 				Ui_window.set_ignore_gadgets(1);
 			}
@@ -1509,14 +1508,14 @@ void control_config_do_frame(float frametime)
 			Ui_window.process(0);
 
 			if ( (k > 0) || B1_JUST_RELEASED ) {
-				if (help_overlay_active(CONTROL_CONFIG_OVERLAY)) {
-					help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 0);
+				if (help_overlay_active(Control_config_overlay_id)) {
+					help_overlay_set_state(Control_config_overlay_id, 0);
 					Ui_window.set_ignore_gadgets(0);
 					k = 0;
 				}
 			}
 
-			if ( !help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
+			if ( !help_overlay_active(Control_config_overlay_id) ) {
 				Ui_window.set_ignore_gadgets(0);
 			}
 
@@ -1610,7 +1609,7 @@ void control_config_do_frame(float frametime)
 		}
 
 	} else if (Search_mode) {
-		if (help_overlay_active(CONTROL_CONFIG_OVERLAY)) {
+		if (help_overlay_active(Control_config_overlay_id)) {
 			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 			Ui_window.set_ignore_gadgets(1);
 		}
@@ -1620,14 +1619,14 @@ void control_config_do_frame(float frametime)
 		Ui_window.process(0);
 
 		if ( (k > 0) || B1_JUST_RELEASED ) {
-			if ( help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
-				help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 0);
+			if ( help_overlay_active(Control_config_overlay_id) ) {
+				help_overlay_set_state(Control_config_overlay_id, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 			}
 		}
 
-		if ( !help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
+		if ( !help_overlay_active(Control_config_overlay_id) ) {
 			Ui_window.set_ignore_gadgets(0);
 		}
 
@@ -1721,7 +1720,7 @@ void control_config_do_frame(float frametime)
 
 		CC_Buttons[gr_screen.res][UNDO_BUTTON].button.enable(Config_item_undo != NULL);
 
-		if ( help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
+		if ( help_overlay_active(Control_config_overlay_id) ) {
 			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 			Ui_window.set_ignore_gadgets(1);
 		}
@@ -1729,14 +1728,14 @@ void control_config_do_frame(float frametime)
 		k = Ui_window.process();
 
 		if ( (k > 0) || B1_JUST_RELEASED ) {
-			if ( help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
-				help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 0);
+			if ( help_overlay_active(Control_config_overlay_id) ) {
+				help_overlay_set_state(Control_config_overlay_id, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 			}
 		}
 
-		if ( !help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
+		if ( !help_overlay_active(Control_config_overlay_id) ) {
 			Ui_window.set_ignore_gadgets(0);
 		}
 
@@ -2109,7 +2108,7 @@ void control_config_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(CONTROL_CONFIG_OVERLAY);
+	help_overlay_maybe_blit(Control_config_overlay_id);
 
 	gr_flip();
 }

@@ -36,6 +36,8 @@ struct cmd_brief {
 extern cmd_brief Cmd_briefs[MAX_TVT_TEAMS];
 extern cmd_brief *Cur_cmd_brief;  // pointer to one of the Cmd_briefs elements (the active one)
 
+extern int Cmd_brief_overlay_id;
+
 void cmd_brief_init(int stages);
 void cmd_brief_close();
 void cmd_brief_do_frame(float frametime);

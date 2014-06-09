@@ -496,8 +496,8 @@ void fix_ship_name(int ship)
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
 {
 	// Save the Current Working dir to restore in a minute - fred is being stupid
-	char pwd[128];
-	getcwd(pwd, 128); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
+	char pwd[MAX_PATH_LEN];
+	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
 	
 
 	int obj, z1, z2;

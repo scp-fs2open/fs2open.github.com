@@ -545,7 +545,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 	// make sure we have a valid chunk of data
 	Assert(packet_size < 255);
-	if(packet_size >= 255){
+	if(packet_size > 255){
 		return 0;
 	}
 	data_size = (ubyte)packet_size;

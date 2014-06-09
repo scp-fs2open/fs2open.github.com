@@ -795,6 +795,18 @@ int CFred_mission_save::save_fiction()
 			}
 			else
 				optional_string_fred("$Font:");
+
+			// save voice
+			if (strlen(fiction_voice()) > 0) //-V805
+			{
+				if (optional_string_fred("$Voice:"))
+					parse_comments();
+				else
+					fout("\n$Voice:");
+				fout(" %s", fiction_voice());
+			}
+			else
+				optional_string_fred("$Voice:");
 		}
 		else
 		{

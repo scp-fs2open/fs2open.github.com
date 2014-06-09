@@ -95,6 +95,8 @@ typedef struct wl_bitmap_group
 
 extern int anim_timer_start;
 
+extern int Weapon_select_overlay_id = -1;
+
 // convenient struct for handling all button controls
 struct wl_buttons {
 	char *filename;
@@ -1955,7 +1957,8 @@ void weapon_select_init()
 	Assert( Wss_slots != NULL );
 	wl_set_disabled_weapons(Wss_slots[Selected_wl_slot].ship_class);
 
-	help_overlay_set_state(WL_OVERLAY,0);
+	Weapon_select_overlay_id = help_overlay_get_index(WL_OVERLAY);
+	help_overlay_set_state(Weapon_select_overlay_id,0);
 
 	if ( Weapon_select_open ) {
 		wl_maybe_reset_selected_weapon_class();
@@ -2679,7 +2682,7 @@ void weapon_select_do(float frametime)
 		if ( Weapon_anim_class != Selected_wl_class )
 			start_weapon_animation(Selected_wl_class);
  
-		generic_anim_render(&Cur_Anim, (help_overlay_active(WL_OVERLAY)) ? 0 : frametime, weapon_ani_coords[0], weapon_ani_coords[1], true);
+		generic_anim_render(&Cur_Anim, (help_overlay_active(Weapon_select_overlay_id)) ? 0 : frametime, weapon_ani_coords[0], weapon_ani_coords[1], true);
 	}
 
 	if ( !Background_playing ) {
@@ -2814,7 +2817,7 @@ void weapon_select_do(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(WL_OVERLAY);
+	help_overlay_maybe_blit(Weapon_select_overlay_id);
 	gr_flip();	
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
@@ -2851,8 +2854,6 @@ void weapon_select_close()
 	Weapon_ui_window.destroy();
 
 	// unload bitmaps
-	help_overlay_unload(WL_OVERLAY);
-
 	bm_release(WeaponSelectMaskBitmap);
 
 	wl_unload_icons();

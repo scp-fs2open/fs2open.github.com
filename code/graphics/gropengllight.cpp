@@ -422,6 +422,9 @@ void gr_opengl_set_center_alpha(int type)
 	glight.Position[3] = 0.0f;
 
 	// defaults
+	glight.SpotDir[0] = 0.0f;
+	glight.SpotDir[1] = 0.0f;
+	glight.SpotDir[2] = -1.0f;
 	glight.ConstantAtten = 1.0f;
 	glight.LinearAtten = 0.0f;
 	glight.QuadraticAtten = 0.0f;

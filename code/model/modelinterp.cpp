@@ -2618,6 +2618,8 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 						{
 							vertex verts[4];
 							vec3d fvec, top1, bottom1, top2, bottom2, start, end;
+                            
+							memset(verts, 0, sizeof(verts));
 
 							vm_vec_add2(&loc_norm, &loc_offset);
 

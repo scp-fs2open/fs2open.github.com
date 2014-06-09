@@ -28,6 +28,9 @@ typedef struct main_hall_defines {
 	SCP_string music_name;
 	SCP_string substitute_music_name;
 
+	// help overlay
+	SCP_string help_overlay_name;
+
 	// intercom defines -------------------
 
 	// # of intercom sounds
@@ -139,6 +142,8 @@ main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find);
 int main_hall_get_index(const SCP_string &name_to_find);
 
 void main_hall_get_name(SCP_string &name, unsigned int index);
+
+int main_hall_get_overlay_id();
 
 // what main hall we're on
 int main_hall_id();

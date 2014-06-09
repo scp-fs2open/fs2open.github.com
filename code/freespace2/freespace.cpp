@@ -4529,7 +4529,7 @@ void game_frame(bool paused)
 			}
 
 			Script_system.SetHookObject("Self", Viewer_obj);
-			if (!hud_disabled_except_messages() && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
+			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
 			{
 				Script_system.RunBytecode(Script_hudhook);
 				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
@@ -8877,6 +8877,10 @@ void game_pause()
 					pause_init();
 				break;
 
+			case GS_STATE_FICTION_VIEWER:
+				fiction_viewer_pause();
+				break;
+
 			default:
 				audiostream_pause_all();
 		}
@@ -8937,6 +8941,10 @@ void game_unpause()
 			// if in a game then do nothing, pause_init() should have been called
 			// and will get cleaned up elsewhere
 			case GS_STATE_GAME_PLAY:
+				break;
+
+			case GS_STATE_FICTION_VIEWER:
+				fiction_viewer_unpause();
 				break;
 
 			default:

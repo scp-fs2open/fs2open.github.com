@@ -14,6 +14,17 @@
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "menuui/mainhallmenu.h"
+#include "missionui/missionbrief.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionweaponchoice.h"
+#include "menuui/barracks.h"
+#include "controlconfig/controlsconfig.h"
+#include "missionui/missiondebrief.h"
+#include "network/multiui.h"
+#include "mission/missionhotkey.h"
+#include "menuui/readyroom.h"
+#include "menuui/techmenu.h"
+#include "missionui/missioncmdbrief.h"
 #include "graphics/2d.h"
 #include "parse/parselo.h"
 #include "localization/localize.h"
@@ -26,7 +37,7 @@
 ////////////////////////////////////////////////////////////////////
 // private function prototypes / structs
 ////////////////////////////////////////////////////////////////////
-void parse_helptbl();
+void parse_helptbl(const char *filename);
 void help_overlay_blit(int overlay_id);
 void help_overlay_init();
 
@@ -55,6 +66,7 @@ typedef struct {
 } help_right_bracket;
 
 typedef struct {
+	char name[HELP_MAX_NAME_LENGTH];
 	help_pline				plinelist[GR_NUM_RESOLUTIONS][HELP_MAX_ITEM];
 	help_text				textlist[GR_NUM_RESOLUTIONS][HELP_MAX_ITEM];
 	help_left_bracket		lbracketlist[GR_NUM_RESOLUTIONS][HELP_MAX_ITEM];
@@ -64,26 +76,6 @@ typedef struct {
 	int lbracketcount;
 	int rbracketcount;
 } help_overlay;
-
-// new help.tbl file way
-char *help_overlay_section_names[MAX_HELP_OVERLAYS] = {
-	"$ship",					// ship_help
-	"$weapon",				// weapon_help
-	"$briefing",			// briefing
-	"$main",					//	main help overlay
-	"$barracks",			// barracks
-	"$control",				// control help
-	"$debrief",				// debrief help
-	"$multicreate",		// multicreate help
-	"$multistart",			// multistart help
-	"$multijoin",			// multijoin help
-	"$main2",				// main help overlay2
-	"$hotkey",				// hotkey help
-	"$campaign",			// campaign help
-	"$simulator",			//	simulator help
-	"$tech",					// tech help
-	"$command"				// command help
-};
 
 ////////////////////////////////////////////////////////////////////
 // Game-wide globals
@@ -96,6 +88,7 @@ shader Grey_shader;
 static int help_left_bracket_bitmap;
 static int help_right_bracket_bitmap;
 static help_overlay help_overlaylist[MAX_HELP_OVERLAYS];
+int num_help_overlays;
 
 static int current_helpid = -1;		// the currently active overlay_id, only really used for the debug console funxions
 int Help_overlay_flags;
@@ -106,48 +99,52 @@ static int Source_game_state;			// state from where F1 was pressed
 ////////////////////////////////////////////////////////////////////
 
 
+int help_overlay_get_index(const char* overlay_name)
+{
+	for (int i = 0; i < num_help_overlays; i++) {
+		if (!stricmp(overlay_name, help_overlaylist[i].name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 // query whether a help overlay is active (ie being displayed)
 int help_overlay_active(int overlay_id)
 {
-	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
+	Assert(overlay_id < MAX_HELP_OVERLAYS);
+
+	if (overlay_id < 0) {
+		return 0;
+	}
+
 	return Help_overlay_flags & (1<<overlay_id);
 }
 
 // stop displaying a help overlay
 void help_overlay_set_state(int overlay_id, int state)
 {
-	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
+	Assert(overlay_id < MAX_HELP_OVERLAYS);
 
-	if ( state > 0 ) {
-		Help_overlay_flags |= (1<<overlay_id);
-		current_helpid = overlay_id;
-	} else {
-		Help_overlay_flags &= ~(1<<overlay_id);
-		//current_helpid = -1;
+	if (overlay_id >= 0 && overlay_id < num_help_overlays) {
+		if ( state > 0 ) {
+			Help_overlay_flags |= (1<<overlay_id);
+			current_helpid = overlay_id;
+		} else {
+			Help_overlay_flags &= ~(1<<overlay_id);
+			//current_helpid = -1;
+		}
 	}
 
-}
-
-// load in the bitmap for a help overlay
-// FIXME - leftover from the old bitmap overlay days - prune this out sometime
-void help_overlay_load(int overlay_id)
-{
-	return;
-} 
-
-// unload a bitmap of a help overlay
-// FIXME - leftover from the old bitmap overlay days - prune this out sometime
-void help_overlay_unload(int overlay_id)
-{
-	return; 
 }
 
 // maybe blit a bitmap of a help overlay to the screen
 void help_overlay_maybe_blit(int overlay_id)
 {
-	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
+	Assert(overlay_id < MAX_HELP_OVERLAYS);
 
-	if ( Help_overlay_flags & (1<<overlay_id) ) {
+	if ( overlay_id >= 0 && (Help_overlay_flags & (1<<overlay_id)) ) {
 		context_help_grey_screen();
 		help_overlay_blit(overlay_id);				
 	}
@@ -190,20 +187,15 @@ void context_help_grey_screen()
 // launch_context_help() will switch to a context sensitive help state
 void launch_context_help()
 {
+	int overlay_id = -1;
+
 	// look at the state the game was in when F1 was pressed
 	Source_game_state = gameseq_get_state();
 
 	switch (Source_game_state) {
 
 		case GS_STATE_MAIN_MENU:
-			int main_hall_num;
-			main_hall_num = (main_hall_id() == 0) ? MH_OVERLAY : MH2_OVERLAY;
-			if ( !help_overlay_active(main_hall_num) ) {
-				help_overlay_set_state(main_hall_num, 1);
-			}
-			else {
-				help_overlay_set_state(main_hall_num, 0);
-			}
+			overlay_id = main_hall_get_overlay_id();
 			break;
 
 		case GS_STATE_GAME_PLAY:
@@ -213,139 +205,59 @@ void launch_context_help()
 			break;
 
 		case GS_STATE_BRIEFING:
-			if ( !help_overlay_active(BR_OVERLAY) ) {
-				help_overlay_set_state(BR_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(BR_OVERLAY, 0);
-			}
+			overlay_id = Briefing_overlay_id;
 			break;
 
 		case GS_STATE_SHIP_SELECT:
-			if ( !help_overlay_active(SS_OVERLAY) ) {
-				help_overlay_set_state(SS_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(SS_OVERLAY, 0);
-			}
+			overlay_id = Ship_select_overlay_id;
 			break;
 
 		case GS_STATE_WEAPON_SELECT:
-			if ( !help_overlay_active(WL_OVERLAY) ) {
-				help_overlay_set_state(WL_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(WL_OVERLAY, 0);
-			}
+			overlay_id = Weapon_select_overlay_id;
 			break;
 
 		case GS_STATE_BARRACKS_MENU:
-			if ( !help_overlay_active(BARRACKS_OVERLAY) ) {
-				help_overlay_set_state(BARRACKS_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(BARRACKS_OVERLAY, 0);
-			}
+			overlay_id = Barracks_overlay_id;
 			break;
 
 		case GS_STATE_CONTROL_CONFIG:
-			if ( !help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
-				help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 0);
-			}
+			overlay_id = Control_config_overlay_id;
 			break;
 
 		case GS_STATE_DEBRIEF:
-			if ( !help_overlay_active(DEBRIEFING_OVERLAY) ) {
-				help_overlay_set_state(DEBRIEFING_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(DEBRIEFING_OVERLAY, 0);
-			}
+			overlay_id = Debrief_overlay_id;
 			break;
 
 		case GS_STATE_MULTI_HOST_SETUP:
-			if ( !help_overlay_active(MULTI_CREATE_OVERLAY) ) {
-				help_overlay_set_state(MULTI_CREATE_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
-			}
+			overlay_id = Multi_create_overlay_id;
 			break;
 
 		case GS_STATE_MULTI_START_GAME:
-			if ( !help_overlay_active(MULTI_START_OVERLAY) ) {
-				help_overlay_set_state(MULTI_START_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(MULTI_START_OVERLAY, 0);
-			}
+			overlay_id = Multi_sg_overlay_id;
 			break;
-/*
-		case GS_STATE_NET_CHAT:
-			if (!help_overlay_active(FS2OX_OVERLAY) ) {
-				help_overlay_set_state(FS2OX_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(FS2OX_OVERLAY, 1);
-			}
-			break;
-*/
+
 		case GS_STATE_MULTI_JOIN_GAME:
-			if ( !help_overlay_active(MULTI_JOIN_OVERLAY) ) {
-				help_overlay_set_state(MULTI_JOIN_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(MULTI_JOIN_OVERLAY, 0);
-			}
+			overlay_id = Multi_join_overlay_id;
 			break;
 
 		case GS_STATE_HOTKEY_SCREEN:
-			if ( !help_overlay_active(HOTKEY_OVERLAY) ) {
-				help_overlay_set_state(HOTKEY_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(HOTKEY_OVERLAY, 0);
-			}
+			overlay_id = Hotkey_overlay_id;
 			break;
 
 		case GS_STATE_CAMPAIGN_ROOM:
-			if ( !help_overlay_active(CAMPAIGN_ROOM_OVERLAY) ) {
-				help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY, 0);
-			}
+			overlay_id = Campaign_room_overlay_id;
 			break;
 
 		case GS_STATE_SIMULATOR_ROOM:
-			if ( !help_overlay_active(SIM_ROOM_OVERLAY) ) {
-				help_overlay_set_state(SIM_ROOM_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(SIM_ROOM_OVERLAY, 0);
-			}
+			overlay_id = Sim_room_overlay_id;
 			break;
 
-		case GS_STATE_TECH_MENU: {				
-			if ( !help_overlay_active(TECH_ROOM_OVERLAY) ) {
-				help_overlay_set_state(TECH_ROOM_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(TECH_ROOM_OVERLAY, 0);
-			}
+		case GS_STATE_TECH_MENU:
+			overlay_id = Techroom_overlay_id;
 			break;
-		}
 
 		case GS_STATE_CMD_BRIEF:
-			if ( !help_overlay_active(CMD_BRIEF_OVERLAY) ) {
-				help_overlay_set_state(CMD_BRIEF_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(CMD_BRIEF_OVERLAY, 0);
-			}
+			overlay_id = Cmd_brief_overlay_id;
 			break;
 
 		default:
@@ -353,6 +265,15 @@ void launch_context_help()
 			break;
 
 	} // end switch
+
+	if (overlay_id >= 0) {
+		if ( !help_overlay_active(overlay_id) ) {
+			help_overlay_set_state(overlay_id, 1);
+		}
+		else {
+			help_overlay_set_state(overlay_id, 0);
+		}
+	}
 }
 
 void close_help(){
@@ -376,14 +297,21 @@ void help_overlay_init()
 	Assertion( help_left_bracket_bitmap >= 0, "Failed to load bitmap left_bracket for help overlay\n");
 
 	atexit(close_help);
+
+	num_help_overlays = 0;
+
 	// parse help.tbl
-	parse_helptbl();
+	parse_helptbl(HELP_OVERLAY_FILENAME);
+
+	// look for any modular tables
+	parse_modular_table(NOX("*-hlp.tbm"), parse_helptbl);
 }
 
 // parses help.tbl and populates help_overlaylist[]
-void parse_helptbl()
+void parse_helptbl(const char *filename)
 {
 	int overlay_id, currcount;
+	char name[HELP_MAX_NAME_LENGTH];
 	char buf[HELP_MAX_STRING_LENGTH + 1];
 	int i, rval;
 
@@ -391,18 +319,36 @@ void parse_helptbl()
 	lcl_ext_open();
 	
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", HELP_OVERLAY_FILENAME, rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		lcl_ext_close();
 		return;
 	} 
 
-	read_file_text(HELP_OVERLAY_FILENAME, CF_TYPE_TABLES);
+	read_file_text(filename, CF_TYPE_TABLES);
+	reset_parse();
 
 	// for each overlay...
-	for (overlay_id=0; overlay_id<MAX_HELP_OVERLAYS; overlay_id++) {
+	while (optional_string("$")) {
 
-		reset_parse();
-		skip_to_string(help_overlay_section_names[overlay_id]);
+		stuff_string(name, F_NAME, HELP_MAX_NAME_LENGTH);
+
+		overlay_id = help_overlay_get_index(name);
+
+		if (overlay_id < 0) {
+			if (num_help_overlays >= MAX_HELP_OVERLAYS) {
+				Warning(LOCATION, "Could not load help overlay after '%s' as maximum number of help overlays was reached (Max is %d)", help_overlaylist[overlay_id - 1].name, MAX_HELP_OVERLAYS);
+
+				if (!skip_to_string("$end")) {
+					Error(LOCATION, "Couldn't find $end. Help.tbl or -hlp.tbm is invalid.\n");
+				}
+
+				continue;
+			} else {
+				overlay_id = num_help_overlays;
+				strcpy_s(help_overlaylist[overlay_id].name, name);
+				num_help_overlays++;
+			}
+		}
 
 		// clear out counters in the overlay struct
 		help_overlaylist[overlay_id].plinecount = 0;
@@ -411,7 +357,7 @@ void parse_helptbl()
 		help_overlaylist[overlay_id].lbracketcount = 0;
 		
 		// read in all elements for this overlay
-		while (!(check_for_string("$end")))  {
+		while (!(optional_string("$end")))  {
 
 			if (optional_string("+pline")) {
 
@@ -505,7 +451,7 @@ void parse_helptbl()
 			}		// end if
 
 		}		// end while
-	}		// end for
+	}		// end while
 
 	// close localization
 	lcl_ext_close();
@@ -564,7 +510,9 @@ DCF(help_reload, "Reloads help overlay data from help.tbl")
 		dc_printf( "Usage: sample\nCrashes your machine.\n" );
 	}
 
-	parse_helptbl();
+	num_help_overlays = 0;
+	parse_helptbl(HELP_OVERLAY_FILENAME);
+	parse_modular_table(NOX("*-hlp.tbm"), parse_helptbl);
 }
 
 int h_textnum=0, h_amt=0, h_vtx = 0;

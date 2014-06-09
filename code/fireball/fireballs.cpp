@@ -381,7 +381,9 @@ void fireball_render(object * obj)
     
 	MONITOR_INC( NumFireballsRend, 1 );	
 	
-	num = obj->instance;
+	memset(&p, 0, sizeof(p));
+    
+    num = obj->instance;
 	fb = &Fireballs[num];
 
 	if ( Fireballs[num].current_bitmap < 0 )

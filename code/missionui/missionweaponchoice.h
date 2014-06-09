@@ -36,6 +36,8 @@ struct ship_weapon;
 #define ICON_SHIP_SECONDARY_3		38
 
 
+extern int Weapon_select_overlay_id;
+
 void weapon_select_init();
 void weapon_select_common_init();
 void weapon_select_do(float frametime);
