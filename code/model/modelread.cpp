@@ -2678,11 +2678,11 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	if ( !Cmdline_old_collision_sys ) {
 		for ( i = 0; i < pm->n_models; ++i ) {
-			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
-			bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-
-			if ( !(pm->submodel[i].nocollide_this_only || pm->submodel[i].no_collisions) )
+			if ( !(pm->submodel[i].nocollide_this_only || pm->submodel[i].no_collisions) ) {
+				pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
+				bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
 				model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+			}
 		}
 	}
 
