@@ -1212,13 +1212,13 @@ void wss_direct_restore_loadout()
 
 			// This wing is already created, so directly update the ships
 			for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
+				if ( wp->ship_index[j] == -1 ) { // if this is an invalid ship, move on
+					continue;
+				}
+
 				slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
 				shipp = &Ships[wp->ship_index[j]];
 				if ( shipp->ship_info_index != slot->ship_class ) {
-
-					if ( wp->ship_index[j] == -1 ) {
-						continue;
-					}
 
 					if ( slot->ship_class == -1 ) {
 						cleanup_ship_index[j] = wp->ship_index[j];

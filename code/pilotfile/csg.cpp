@@ -1029,6 +1029,29 @@ void pilotfile::csg_read_variables()
 			cfread_string_len(Campaign.variables[idx].variable_name, TOKEN_LENGTH, cfp);
 		}
 	}
+
+	if (csg_ver < 4) { // CSG files before version 4 don't have a Red Alert set of CPVs to load, so just copy the regular set.
+		Campaign.redalert_num_variables = Campaign.num_variables;
+		Campaign.redalert_variables = (sexp_variable *) vm_malloc( Campaign.redalert_num_variables * sizeof(sexp_variable) );
+		Verify( Campaign.redalert_variables != NULL);
+
+		memcpy( Campaign.redalert_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
+	} else {
+		Campaign.redalert_num_variables = cfread_int(cfp);
+
+		if (Campaign.redalert_num_variables > 0) {
+			Campaign.redalert_variables = (sexp_variable *) vm_malloc( Campaign.redalert_num_variables * sizeof(sexp_variable) );
+			Verify( Campaign.redalert_variables != NULL );
+
+			memset( Campaign.redalert_variables, 0, Campaign.redalert_num_variables * sizeof(sexp_variable) );
+
+			for (idx = 0; idx < Campaign.redalert_num_variables; idx++) {
+				Campaign.redalert_variables[idx].type = cfread_int(cfp);
+				cfread_string_len(Campaign.redalert_variables[idx].text, TOKEN_LENGTH, cfp);
+				cfread_string_len(Campaign.redalert_variables[idx].variable_name, TOKEN_LENGTH, cfp);
+			}
+		}
+	}
 }
 
 void pilotfile::csg_write_variables()
@@ -1043,6 +1066,14 @@ void pilotfile::csg_write_variables()
 		cfwrite_int(Campaign.variables[idx].type, cfp);
 		cfwrite_string_len(Campaign.variables[idx].text, cfp);
 		cfwrite_string_len(Campaign.variables[idx].variable_name, cfp);
+	}
+
+	cfwrite_int(Campaign.redalert_num_variables, cfp);
+
+	for (idx = 0; idx < Campaign.redalert_num_variables; idx++) {
+		cfwrite_int(Campaign.redalert_variables[idx].type, cfp);
+		cfwrite_string_len(Campaign.redalert_variables[idx].text, cfp);
+		cfwrite_string_len(Campaign.redalert_variables[idx].variable_name, cfp);
 	}
 
 	endSection();
@@ -1254,6 +1285,12 @@ void pilotfile::csg_reset_data()
 		Campaign.num_variables = 0;
 		vm_free(Campaign.variables);
 		Campaign.variables = NULL;
+	}
+
+	if (Campaign.redalert_variables) {
+		Campaign.redalert_num_variables = 0;
+		vm_free(Campaign.redalert_variables);
+		Campaign.redalert_variables = NULL;
 	}
 
 	// clear out mission stuff
