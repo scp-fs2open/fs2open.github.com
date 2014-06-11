@@ -16519,7 +16519,7 @@ void ship_update_artillery_lock()
 		aip->artillery_lock_time += flFrametime;
 
 		// TEST CODE
-		if(aip->artillery_lock_time >= 2.0f){
+		if(aip->artillery_objnum >= 0 && aip->artillery_lock_time >= 2.0f){
 			ssm_create(&Objects[aip->artillery_objnum], &cinfo->hit_point_world, 0, NULL, shipp->team);				
 
 			// reset the artillery			
