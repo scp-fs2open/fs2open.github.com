@@ -13723,6 +13723,11 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		return ADE_RETURN_NIL;
 }
 
+// Stupid windows headers
+#ifdef min
+#undef min
+#endif
+
 #define MAX_TEXT_LINES		256
 static char *BooleanValues[] = {"False", "True"};
 static const int NextDrawStringPosInitial[] = {0, 0};
@@ -13782,21 +13787,25 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 		int linelengths[MAX_TEXT_LINES];
 		const char *linestarts[MAX_TEXT_LINES];
 
+		if (y2 >= 0 && y2 < y)
+		{
+			// Invalid y2 value
+			Warning(LOCATION, "Illegal y2 value passed to drawString. Got %d y2 value but %d for y.", y2, y);
+		
+			int temp = y;
+			y = y2;
+			y2 = temp;
+		}
+
 		num_lines = split_str(s, x2-x, linelengths, linestarts, MAX_TEXT_LINES);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
-		y2 = line_ht * (y2-y);
-		if(y2 < num_lines)
-			num_lines = y2;
+		num_lines = MIN(num_lines, (y2 - y) / line_ht);
 
-		y2 = y;
-
+		int curr_y = y;
 		for(int i = 0; i < num_lines; i++)
 		{
-			//Increment line height
-			y2 += line_ht;
-
 			//Contrary to WMC's previous comment, let's make a new string each line
 			int len = linelengths[i];
 			char *buf = new char[len+1];
@@ -13804,13 +13813,23 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			buf[len] = '\0';
 
 			//Draw the string
-			gr_string(x,y2,buf,GR_RESIZE_NONE);
+			gr_string(x,curr_y,buf,GR_RESIZE_NONE);
 
 			//Free the string we made
 			delete[] buf;
-		}
 
-		NextDrawStringPos[1] = y2+gr_get_font_height();
+			//Increment line height
+			curr_y += line_ht;
+		}
+		
+		if (num_lines <= 0)
+		{
+			// If no line was drawn then we need to add one so the next line is 
+			// aligned right
+			curr_y += line_ht;
+		}
+		
+		NextDrawStringPos[1] = curr_y;
 	}
 	return ade_set_error(L, "i", num_lines);
 }
