@@ -703,7 +703,7 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius,
 		if (!ds_initialized)
 			return;
 
-		Assertion( gs == NULL, "*gs was NULL in snd_update_3d_pos(); get a coder!\n" );
+		Assertion( gs != NULL, "*gs was NULL in snd_update_3d_pos(); get a coder!\n" );
 
 		if ( gs->id == -1 ) {
 			gs->id = snd_load(gs);
@@ -754,7 +754,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	if (!ds_initialized)
 		return -1;
 
-	Assertion( gs == NULL, "*gs was NULL in snd_get_3d_vol_and_pan(); get a coder!\n" );
+	Assertion( gs != NULL, "*gs was NULL in snd_get_3d_vol_and_pan(); get a coder!\n" );
 
 	if ( gs->id == -1 ) {
 		gs->id = snd_load(gs);
