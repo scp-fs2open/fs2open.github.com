@@ -1746,7 +1746,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 			// render the ships
 			model_clear_instance(model_id);
 			model_set_detail_level(0);
-			gr_set_color(80,49,160);
+			model_set_outline_color(80,49,160);
 			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2);
 			opengl_shader_set_animated_timer(-clip);
 
