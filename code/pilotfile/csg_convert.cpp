@@ -439,12 +439,12 @@ void pilotfile_convert::csg_import_red_alert()
 		for (j = 0; j < 3; j++) {
 			i = cfread_int(cfp);
 
-			if (i >= weapon_list_size || i < 0) {
+			if (i >= weapon_list_size || i < -1) {
 				throw std::runtime_error("Data check failure (RedAlert-weapon)!");
+			} else {
+				weapons.index = csg->weapon_list[i].index;
+				weapons.count = cfread_int(cfp);
 			}
-
-			weapons.index = csg->weapon_list[i].index;
-			weapons.count = cfread_int(cfp);
 
 			if (weapons.index >= 0) {
 				ras.primary_weapons.push_back( weapons );
@@ -456,12 +456,12 @@ void pilotfile_convert::csg_import_red_alert()
 		for (j = 0; j < 4; j++) {
 			i = cfread_int(cfp);
 
-			if (i >= weapon_list_size) {
+			if (i >= weapon_list_size || i < -1) {
 				throw std::runtime_error("Data check failure (RedAlert-weapon)!");
+			} else {
+				weapons.index = csg->weapon_list[i].index;
+				weapons.count = cfread_int(cfp);
 			}
-
-			weapons.index = csg->weapon_list[i].index;
-			weapons.count = cfread_int(cfp);
 
 			if (weapons.index >= 0) {
 				ras.secondary_weapons.push_back( weapons );
