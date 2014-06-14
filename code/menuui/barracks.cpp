@@ -920,12 +920,6 @@ void barracks_init_player_stuff(int mode)
 	// determine if we should be looking for single or multiplayers at the outset
 	Player_sel_mode = mode;
 	
-	// get the list of pilots based upon whether we're in single or multiplayer mode
-	Num_pilots = 0;
-	Get_file_list_filter = barracks_pilot_filter;
-
-	Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
-
 	// single player specific stuff
 	if (mode == PLAYER_SELECT_MODE_SINGLE) {
 		Game_mode &= ~GM_MULTIPLAYER;
@@ -950,6 +944,13 @@ void barracks_init_player_stuff(int mode)
 		Buttons[gr_screen.res][B_SQUAD_NEXT_BUTTON].button.enable();
 		Buttons[gr_screen.res][B_SQUAD_NEXT_BUTTON].button.unhide();			
 	}
+
+	// get the list of pilots based upon whether we're in single or multiplayer mode
+	// moved down here so pilotfile::verify knows which Game_mode to get ranks for
+	Num_pilots = 0;
+	Get_file_list_filter = barracks_pilot_filter;
+
+	Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
 	int ranks[MAX_PILOTS];
 

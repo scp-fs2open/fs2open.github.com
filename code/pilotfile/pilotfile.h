@@ -26,7 +26,8 @@ static const ubyte PLR_VERSION = 2;
 //   2 - separate single/multi squad name & pic
 //   3 - remove separate detail settings for campaigns
 //   4 - add CPV rollback for Red Alert missions
-static const ubyte CSG_VERSION = 4;
+//   5 - save rank to flags for quick access
+static const ubyte CSG_VERSION = 5;
 
 
 class pilotfile {
@@ -215,6 +216,10 @@ class pilotfile {
 		void csg_write_controls();
 		void csg_write_cutscenes();
 		void csg_write_lastmissions();
+
+		// similar to PLR verify, except we only want the rank
+		bool get_csg_rank(int *rank);
+
 };
 
 extern pilotfile Pilot;

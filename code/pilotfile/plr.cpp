@@ -34,6 +34,8 @@ void pilotfile::plr_read_flags()
 	p->auto_advance = cfread_int(cfp);
 
 	// special rank setting (to avoid having to read all stats on verify)
+	// will be the multi rank
+	// if there's a valid CSG, this will be overwritten
 	p->stats.rank = cfread_int(cfp);
 
 	if (version > 0) 
@@ -70,7 +72,8 @@ void pilotfile::plr_write_flags()
 	cfwrite_int(p->auto_advance, cfp);
 
 	// special rank setting (to avoid having to read all stats on verify)
-	cfwrite_int(p->stats.rank, cfp);
+	// should be multi only from now on
+	cfwrite_int(multi_stats.rank, cfp);
 
 	// What game mode we were in last on this pilot
 	cfwrite_int(p->player_was_multi, cfp);
@@ -1038,7 +1041,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), (int)version));
 
 	// the point of all this: read in the PLR contents
-	while ( !m_have_flags && !cfeof(cfp) ) {
+	while ( !(m_have_flags && m_have_info) && !cfeof(cfp) ) {
 		ushort section_id = cfread_ushort(cfp);
 		uint section_size = cfread_uint(cfp);
 
@@ -1053,6 +1056,14 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 					mprintf(("PLR => Parsing:  Flags...\n"));
 					m_have_flags = true;
 					plr_read_flags();
+					break;
+
+				// now reading the Info section to get the campaign
+				// and be able to lookup the campaign rank
+				case Section::Info:
+					mprintf(("PLR => Parsing:  Info...\n"));
+					m_have_info = true;
+					plr_read_info();
 					break;
 
 				default:
@@ -1080,17 +1091,34 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		}
 	}
 
-	if (rank) {
-		*rank = p->stats.rank;
-	}
 	if (valid_language) {
 		strncpy(valid_language, p->language, sizeof(p->language));
 	}
 
-	mprintf(("PLR => Verifying complete!\n"));
-
-	// cleanup and return
+	// need to cleanup early to ensure everything is OK for use in the CSG next
+	// also means we can't use *p from now on, use t_plr instead for a few vars
 	plr_close();
+
+	if (rank) {
+		// maybe get the rank from the CSG
+		if ( !(Game_mode & GM_MULTIPLAYER) ) {
+			// build the csg filename
+			// since filename/fname was validated above, perform less safety checks here
+			filename = fname;
+			filename = filename.replace(filename.find_last_of('.')+1,filename.npos, t_plr.current_campaign);
+			filename.append(".csg");
+
+			if (!this->get_csg_rank(rank)) {
+				// if we failed to get the csg rank, default to multi rank
+				*rank = t_plr.stats.rank;
+			}
+		} else {
+			// if the CSG isn't valid, or for multi, use this rank
+			*rank = t_plr.stats.rank;
+		}
+	}
+
+	mprintf(("PLR => Verifying complete!\n"));
 
 	return true;
 }
