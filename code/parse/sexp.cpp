@@ -538,7 +538,7 @@ sexp_oper Operators[] = {
 	{ "end-mission",					OP_END_MISSION,							0,	2,			SEXP_ACTION_OPERATOR,	},	//-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,							0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,						1,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "end-campaign",					OP_END_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
+	{ "end-campaign",					OP_END_CAMPAIGN,						0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -10990,7 +10990,18 @@ void sexp_end_of_campaign(int n)
 // campaign, and otherwise to do the conventional code
 void sexp_end_campaign(int n)
 {
+	int ignore_player_mortality = 1;
+
 	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
+		return;
+	}
+
+	if (n != -1) {
+		ignore_player_mortality = is_sexp_true(n);
+	}
+
+	// if the player is dead we may want to let the death screen handle things
+	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
 		return;
 	}
 
@@ -26274,6 +26285,8 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_MISSION_NAME;
 
 		case OP_END_CAMPAIGN:
+			return OPF_BOOL;
+
 		case OP_END_OF_CAMPAIGN:
 			return OPF_NONE;
 
@@ -31370,7 +31383,8 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_END_CAMPAIGN, "end-campaign\r\n"
-		"\tEnds the builtin campaign.  Should only be used by the main FreeSpace campaign\r\n" },
+		"\tEnds the builtin campaign.  Should only be used by the main FreeSpace campaign\r\n"
+		"\t1:\tEnd Campaign even if the player is dead (optional; defaults to true)\r\n" },
 
 	{ OP_SHIP_VAPORIZE, "ship-vaporize\r\n"
 		"\tSets the ship to vaporize when it is destroyed.  Does not actually destroy the ship - use self-destruct for that.\r\n"
