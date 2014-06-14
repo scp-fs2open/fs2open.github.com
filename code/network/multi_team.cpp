@@ -578,10 +578,10 @@ void multi_team_report()
 	SEND_AND_DISPLAY("----****");	
 
 	// display scores
-	for (i = 0; i < Num_teams; i++)
+	for (i = 0; i < Num_teams && i < MAX_TVT_TEAMS; i++)
 	{
 		// Retail FS2 teams (i.e red or green)
-		if (i <= 1)
+		if (i < 2)
 		{
 			sprintf(report, XSTR("<Team %d had %d points>", (1275+i)), Multi_team_score[i]);
 		}
