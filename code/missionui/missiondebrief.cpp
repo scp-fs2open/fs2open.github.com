@@ -47,6 +47,7 @@
 #include "network/multi_campaign.h"
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
+#include "pilotfile/pilotfile.h"
 
 
 #define MAX_TOTAL_DEBRIEF_LINES	200
@@ -2127,6 +2128,7 @@ void debrief_init()
 void debrief_close()
 {
 	int i;
+	scoring_struct *sc;
 
 	Assert(Debrief_inited);
 
@@ -2139,11 +2141,17 @@ void debrief_close()
 			if(MULTIPLAYER_MASTER){
 				for(i=0; i<MAX_PLAYERS; i++){
 					if(MULTI_CONNECTED(Net_players[i]) && !MULTI_STANDALONE(Net_players[i]) && !MULTI_PERM_OBSERVER(Net_players[i]) && (Net_players[i].m_player != NULL)){
-						scoring_backout_accept(&Net_players[i].m_player->stats);
+						sc = &Net_players[i].m_player->stats;
+						scoring_backout_accept(sc);
+
+						if (Net_player == &Net_players[i]) {
+							Pilot.update_stats_backout( sc );
+						}
 					}
 				}
 			} else {
 				scoring_backout_accept( &Player->stats );
+				Pilot.update_stats_backout( &Player->stats );
 			}
 		}
 	} else {
@@ -2154,6 +2162,7 @@ void debrief_close()
 				Campaign.next_mission = Campaign.current_mission;
 			}
 			scoring_backout_accept( &Player->stats );
+			Pilot.update_stats_backout( &Player->stats );
 		}
 	}
 
