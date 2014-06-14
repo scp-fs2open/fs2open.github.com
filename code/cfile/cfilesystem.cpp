@@ -695,6 +695,7 @@ void cf_search_root_pack(int root_index)
 		find.offset = INTEL_INT( find.offset ); //-V570
 		find.size = INTEL_INT( find.size ); //-V570
 		find.write_time = INTEL_INT( find.write_time ); //-V570
+		find.filename[sizeof(find.filename)-1] = '\0';
 
 		if ( find.size == 0 )	{
 			int search_path_len = strlen(search_path);
