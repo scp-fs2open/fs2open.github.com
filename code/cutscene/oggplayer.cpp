@@ -797,7 +797,8 @@ THEORAFILE *theora_open(char *filename)
 
 	// lower case filename for checking
 	memset( lower_name, 0, sizeof(lower_name) );
-	strncpy( lower_name, filename, strlen(filename) );
+	strncpy( lower_name, filename, sizeof(lower_name)-1 );
+	lower_name[sizeof(lower_name)-1] = '\0';
 	strlwr(lower_name);
 	
 	char *p = strchr( lower_name, '.' );
