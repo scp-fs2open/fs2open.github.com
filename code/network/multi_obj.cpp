@@ -544,8 +544,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	}			
 
 	// make sure we have a valid chunk of data
-	Assert(packet_size < 255);
-	if(packet_size > 255){
+	// Clients: must be able to accomodate the data_size and shipp->np_updates[NET_PLAYER_NUM(pl)].seq before the data itself
+	// Server: TODO
+	Assert(packet_size < 255-1);
+	if(packet_size >= 255-1){
 		return 0;
 	}
 	data_size = (ubyte)packet_size;
