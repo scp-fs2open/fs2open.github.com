@@ -798,91 +798,89 @@ void os_validate_parms(char *cmdline)
 void os_init_cmdline(char *cmdline)
 {
 	FILE *fp;
-
-	bool parse_config = true;
 	
-	if (strstr(cmdline, PARSE_COMMAND_LINE_STRING) != NULL) {
-		parse_config =  false;
-	}
+	if (strstr(cmdline, PARSE_COMMAND_LINE_STRING) == NULL) {
 
-	// read the cmdline.cfg file from the data folder, and pass the command line arguments to
-	// the the parse_parms and validate_parms line.  Read these first so anything actually on
-	// the command line will take precedence
+		// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
+		// the the parse_parms and validate_parms line.  Read these first so anything actually on
+		// the command line will take precedence
 #ifdef _WIN32
-	fp = fopen("data\\cmdline_fso.cfg", "rt");
+		fp = fopen("data\\cmdline_fso.cfg", "rt");
 #elif defined(APPLE_APP)
-	char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
+		char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
      
-	GetCurrentDirectory(MAX_PATH_LEN-1, data_path);
-	snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
+		GetCurrentDirectory(MAX_PATH_LEN-1, data_path);
+		snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
 
-	fp = fopen(resolved_path, "rt");
+		fp = fopen(resolved_path, "rt");
 #else
-	fp = fopen("data/cmdline_fso.cfg", "rt");
+		fp = fopen("data/cmdline_fso.cfg", "rt");
 #endif
 
-	// if the file exists, get a single line, and deal with it
-	if ( fp && parse_config ) {
-		char *buf, *p;
+		// if the file exists, get a single line, and deal with it
+		if ( fp ) {
+			char *buf, *p;
 
-		size_t len = filelength( fileno(fp) ) + 2;
-		buf = new char [len];
+			size_t len = filelength( fileno(fp) ) + 2;
+			buf = new char [len];
 
-		fgets(buf, len-1, fp);
+			fgets(buf, len-1, fp);
 
-		// replace the newline character with a NULL
-		if ( (p = strrchr(buf, '\n')) != NULL ) {
-			*p = '\0';
+			// replace the newline character with a NULL
+			if ( (p = strrchr(buf, '\n')) != NULL ) {
+				*p = '\0';
+			}
+
+#ifdef SCP_UNIX
+			// append a space for the os_parse_parms() check
+			strcat_s(buf, len, " ");
+#endif
+
+			os_parse_parms(buf);
+			os_validate_parms(buf);
+			delete [] buf;
+			fclose(fp);
 		}
 
 #ifdef SCP_UNIX
-		// append a space for the os_parse_parms() check
-		strcat_s(buf, len, " ");
-#endif
+		// parse user specific cmdline_fso config file (will supersede options in global file)
+		char cmdname[MAX_PATH];
 
-		os_parse_parms(buf);
-		os_validate_parms(buf);
-		delete [] buf;
-		fclose(fp);
-	}
-
-#ifdef SCP_UNIX
-	// parse user specific cmdline config file (will supersede options in global file)
-	char cmdname[MAX_PATH];
-
-	snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline_fso.cfg", detect_home(), Osreg_user_dir);
-	fp = fopen(cmdname, "rt");
-
-	if ( !fp ) {
-		// try for non "_fso", for older code versions
-		snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
+		snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline_fso.cfg", detect_home(), Osreg_user_dir);
 		fp = fopen(cmdname, "rt");
-	}
 
-	// if the file exists, get a single line, and deal with it
-	if ( fp ) {
-		char *buf, *p;
-
-		size_t len = filelength( fileno(fp) ) + 2;
-		buf = new char [len];
-
-		fgets(buf, len-1, fp);
-
-		// replace the newline character with a NULL
-		if ( (p = strrchr(buf, '\n')) != NULL ) {
-			*p = '\0';
+		if ( !fp ) {
+			// try for non "_fso", for older code versions
+			snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
+			fp = fopen(cmdname, "rt");
 		}
 
-		// append a space for the os_parse_parms() check
-		strcat_s(buf, len, " ");
+		// if the file exists, get a single line, and deal with it
+		if ( fp ) {
+			char *buf, *p;
 
-		os_parse_parms(buf);
-		os_validate_parms(buf);
-		delete [] buf;
-		fclose(fp);
-	}
+			size_t len = filelength( fileno(fp) ) + 2;
+			buf = new char [len];
+
+			fgets(buf, len-1, fp);
+
+			// replace the newline character with a NULL
+			if ( (p = strrchr(buf, '\n')) != NULL ) {
+				*p = '\0';
+			}
+
+			// append a space for the os_parse_parms() check
+			strcat_s(buf, len, " ");
+
+			os_parse_parms(buf);
+			os_validate_parms(buf);
+			delete [] buf;
+			fclose(fp);
+		}
 #endif
-
+	} // If cmdline included PARSE_COMMAND_LINE_STRING
+    
+	// By parsing cmdline last, anything actually on the command line will take precedence.
 	os_parse_parms(cmdline);
 	os_validate_parms(cmdline);
 }
