@@ -641,6 +641,15 @@ int barracks_pilot_accepted()
 		return -1;
 	}
 
+	// check that pilot language is OK
+	if (!valid_pilot_lang(Cur_pilot->callsign)) {
+		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
+			"Selected pilot was created with a different language\n"
+			"to the currently active language.\n\n"
+			"Please select a different pilot or change the language", 1637));
+		return -1;
+	}
+
 	// set pilot image
 	if (Game_mode & GM_MULTIPLAYER) {
 		player_set_squad_bitmap(Cur_pilot, Cur_pilot->m_squad_filename, true);
