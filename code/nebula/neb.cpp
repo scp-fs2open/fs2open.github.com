@@ -510,7 +510,7 @@ void neb2_page_in()
 }
 
 // should we not render this object because its obscured by the nebula?
-int neb_skip_opt = 1;
+int neb_skip_opt = 0;
 DCF(neb_skip, "Toggles culling of objects obscured by nebula")
 {
 	neb_skip_opt = !neb_skip_opt;
