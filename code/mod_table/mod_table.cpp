@@ -28,6 +28,7 @@ bool Full_color_head_anis = false;
 bool Weapons_inherit_parent_collision_group = false;
 bool Flight_controls_follow_eyepoint_orientation = false;
 int FS2NetD_port = 0;
+float Briefing_window_FOV = 0.29375f;
 
 
 void parse_mod_table(const char *filename)
@@ -161,6 +162,16 @@ void parse_mod_table(const char *filename)
 		} else {
 			Default_detail_level = detail_level;
 		}
+	}
+
+	if (optional_string("$Briefing Window FOV:")) {
+		float fov;
+
+		stuff_float(&fov);
+
+		mprintf(("Game Settings Table: Setting briefing window FOV from %f to %f", Briefing_window_FOV, fov));
+
+		Briefing_window_FOV = fov;
 	}
 	
 	optional_string("#NETWORK SETTINGS"); 

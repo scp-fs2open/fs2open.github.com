@@ -32,6 +32,7 @@
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
+#include "mod_table/mod_table.h"
 
 
 // --------------------------------------------------------------------------------------
@@ -1155,7 +1156,7 @@ void brief_render_map(int stage_num, float frametime)
 	Assert(Briefing);
 
 	g3_start_frame(0);
-	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, 0.5f);
+	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, Briefing_window_FOV);
 
 	brief_maybe_create_new_grid(The_grid, &Current_cam_pos, &Current_cam_orient);
 	brief_render_grid(The_grid);
