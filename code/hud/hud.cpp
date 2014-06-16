@@ -400,8 +400,6 @@ disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), cus
 
 void HudGauge::initPosition(int x, int y)
 {
-	Assert(x >= 0 && y >= 0);
-
 	position[0] = x;
 	position[1] = y;
 }
