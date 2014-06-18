@@ -3811,12 +3811,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 							current_trigger->end = 0;
 
 						if(optional_string("$Sound:")){
-							required_string("+Start:");
-							stuff_int(&current_trigger->start_sound );
-							required_string("+Loop:");
-							stuff_int(&current_trigger->loop_sound );
-							required_string("+End:");
-							stuff_int(&current_trigger->end_sound );
+							parse_sound("+Start:", &current_trigger->start_sound, sip->name);
+
+							parse_sound("+Loop:", &current_trigger->loop_sound, sip->name);
+
+							parse_sound("+End:", &current_trigger->end_sound, sip->name);
+
 							required_string("+Radius:");
 							stuff_float(&current_trigger->snd_rad );
 						}else{
