@@ -64,6 +64,7 @@
 #include "iff_defs/iff_defs.h"
 #include "menuui/techmenu.h"
 #include "missionui/fictionviewer.h"
+#include "mod_table/mod_table.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -307,6 +308,9 @@ bool fred_init()
 	if(cfile_init(Fred_exe_dir)){
 		exit(1);
 	}
+
+	// Load game_settings.tbl
+	mod_table_init();
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	// NOTE : Fred should ALWAYS run in English. Otherwise it might swap in another language
