@@ -1010,13 +1010,13 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 			g3_project_vertex(&cap->vex[idx]);			
 
 			// if first frame, keep track of the average screen pos			
-			if( (c->vex[idx].screen.xyw.x >= 0)
-				&& (c->vex[idx].screen.xyw.x < gr_screen.max_w)
-				&& (c->vex[idx].screen.xyw.y >= 0)
-				&& (c->vex[idx].screen.xyw.y < gr_screen.max_h))
+			if( (cap->vex[idx].screen.xyw.x >= 0)
+				&& (cap->vex[idx].screen.xyw.x < gr_screen.max_w)
+				&& (cap->vex[idx].screen.xyw.y >= 0)
+				&& (cap->vex[idx].screen.xyw.y < gr_screen.max_h))
 			{
-				Nebl_flash_x += c->vex[idx].screen.xyw.x;
-				Nebl_flash_y += c->vex[idx].screen.xyw.y;
+				Nebl_flash_x += cap->vex[idx].screen.xyw.x;
+				Nebl_flash_y += cap->vex[idx].screen.xyw.y;
 				Nebl_flash_count++;
 			}
 		}
