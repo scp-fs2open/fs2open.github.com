@@ -535,7 +535,7 @@ sexp_oper Operators[] = {
 	{ "invalidate-goal",				OP_INVALIDATE_GOAL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "validate-goal",					OP_VALIDATE_GOAL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "red-alert",						OP_RED_ALERT,							0,	0,			SEXP_ACTION_OPERATOR,	},
-	{ "end-mission",					OP_END_MISSION,							0,	2,			SEXP_ACTION_OPERATOR,	},	//-Sesquipedalian
+	{ "end-mission",					OP_END_MISSION,							0,	3,			SEXP_ACTION_OPERATOR,	},	//-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,							0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "end-campaign",					OP_END_CAMPAIGN,						0,	1,			SEXP_ACTION_OPERATOR,	},
@@ -12121,6 +12121,7 @@ void sexp_end_mission(int n)
 {
 	int ignore_player_mortality = 1;
 	int boot_to_main_hall = 0;
+	int from_debrief_to_main_hall = 0;
 
 	if (n != -1) {
 		ignore_player_mortality = is_sexp_true(n);
@@ -12130,10 +12131,21 @@ void sexp_end_mission(int n)
 		boot_to_main_hall = is_sexp_true(n);
 		n = CDR(n);
 	}
+	if (n != -1) {
+		from_debrief_to_main_hall = is_sexp_true(n);
+		n = CDR(n);
+	}
 
 	// if the player is dead we may want to let the death screen handle things
 	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
 		return;
+	}
+
+	// ending via debrief and then going to mainhall could maybe work with multiplayer?
+	if (from_debrief_to_main_hall) {
+		The_mission.flags |= MISSION_FLAG_END_TO_MAINHALL;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_END_TO_MAINHALL;
 	}
 
 	// if we go straight to the main hall we have to clean up the mission without entering the debriefing
@@ -31321,7 +31333,8 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_END_MISSION, "end-mission\r\n" 
 		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
 		"\t1:\tEnd Mission even if the player is dead (optional; defaults to true)\r\n"
-		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)"
+		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)\r\n"
+		"\t3:\tGo to the mainhall instead of starting the next mission (optional; defaults to false; not yet tested in multi)"
 	},
 
 	// Goober5000

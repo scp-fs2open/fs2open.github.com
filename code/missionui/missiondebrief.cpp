@@ -1394,8 +1394,8 @@ void debrief_accept(int ok_to_post_start_game_event)
 					Campaign.loop_enabled = 0;
 				}
 
-				// check if campaign is over
-				if ( Campaign.next_mission == -1 ) {
+				// check if campaign is over, or if FREDer wants the mainhall
+				if ( Campaign.next_mission == -1 || (The_mission.flags & MISSION_FLAG_END_TO_MAINHALL) ) {
 					gameseq_post_event(GS_EVENT_MAIN_MENU);
 				} else {
 					if ( ok_to_post_start_game_event ) {

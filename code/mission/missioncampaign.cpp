@@ -1832,8 +1832,8 @@ void mission_campaign_skip_to_next(int start_game)
 			// closes out mission stuff, sets up next one
 			mission_campaign_mission_over();
 
-			if ( Campaign.next_mission == -1 ) {
-				// go to main hall, tha campaign is over!
+			if ( Campaign.next_mission == -1 || (The_mission.flags & MISSION_FLAG_END_TO_MAINHALL) ) {
+				// go to main hall, either the campaign is over or the FREDer requested it.
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
 			} else {
 				// go to next mission

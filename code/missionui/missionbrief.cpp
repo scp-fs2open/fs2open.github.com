@@ -351,7 +351,11 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	gameseq_post_event( GS_EVENT_START_GAME );
+	if ( The_mission.flags & MISSION_FLAG_END_TO_MAINHALL ) {
+		gameseq_post_event( GS_EVENT_MAIN_MENU );
+	} else {
+		gameseq_post_event( GS_EVENT_START_GAME );
+	}
 }
 
 // --------------------------------------------------------------------------------------
