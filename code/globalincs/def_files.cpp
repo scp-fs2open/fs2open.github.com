@@ -1428,7 +1428,7 @@ char *Default_main_fragment_shader =
 "	vec3 envReflectNM = envReflect + envOffset;\n"
 "	vec4 envColour = textureCube(sEnvmap, envReflectNM);\n"
 "   #endif\n"
-"	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));\n"
+"	normal.b = 1.0;\n"
 "	normal = tbnMatrix * normal;\n"
 "	float norm = length(normal);\n"
 "	// prevent breaking of normal maps\n"
