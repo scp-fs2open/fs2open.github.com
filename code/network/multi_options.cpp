@@ -663,7 +663,6 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 			Netgame.campaign_mode = 1;
 
-#ifdef _WIN32
 			// put brackets around the campaign name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				strcpy_s(str,"(");
@@ -671,7 +670,6 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 				strcat_s(str,")");
 				std_multi_set_standalone_mission_name(str);
 			}
-#endif
 		}
 		// non-campaign mode
 		else {
@@ -689,12 +687,11 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			}			
 
 			Netgame.campaign_mode = 0;
-#ifdef _WIN32
+            
 			// set the mission name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				std_multi_set_standalone_mission_name(Netgame.mission_name);			
 			}
-#endif
 		}
 
 		// update FS2NetD as well
