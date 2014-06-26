@@ -2668,7 +2668,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 	if (p_objp->ship_class < 0)
 	{
-		mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
+		if (Fred_running) {
+			Warning(LOCATION, "Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name);
+		} 
+		else {
+			mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
+		}
 
 		p_objp->ship_class = 0;
 		Num_unknown_ship_classes++;
