@@ -1852,7 +1852,9 @@ void multi_ts_handle_mouse()
 			break;
 		case MULTI_TS_PLAYER_LIST:
 			region_index = multi_ts_player_index(snazzy_region);
-			region_empty = (Multi_ts_team[Net_player->p_info.team].multi_ts_player[region_index] != NULL) ? 0 : 1;
+			if(region_index >= 0 ) {
+				region_empty = (Multi_ts_team[Net_player->p_info.team].multi_ts_player[region_index] != NULL) ? 0 : 1;
+			}
 			break;
 		}
 	}	
