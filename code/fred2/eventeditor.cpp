@@ -20,6 +20,7 @@
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -222,21 +223,23 @@ BOOL event_editor::OnInitDialog()
 		}
 	}
 
-	// add new heads, if not already in
-	maybe_add_head(box, "Head-TP2");
-	maybe_add_head(box, "Head-VC2");
-	maybe_add_head(box, "Head-TP4");
-	maybe_add_head(box, "Head-TP5");
-	maybe_add_head(box, "Head-TP6");
-	maybe_add_head(box, "Head-TP7");
-	maybe_add_head(box, "Head-TP8");
-	maybe_add_head(box, "Head-VP2");
-	maybe_add_head(box, "Head-VP2");
-	maybe_add_head(box, "Head-CM2");
-	maybe_add_head(box, "Head-CM3");
-	maybe_add_head(box, "Head-CM4");
-	maybe_add_head(box, "Head-CM5");
-	maybe_add_head(box, "Head-BSH");
+	if (!Disable_hc_message_ani) {
+		maybe_add_head(box, "Head-TP2");
+		maybe_add_head(box, "Head-VC2");
+		maybe_add_head(box, "Head-TP4");
+		maybe_add_head(box, "Head-TP5");
+		maybe_add_head(box, "Head-TP6");
+		maybe_add_head(box, "Head-TP7");
+		maybe_add_head(box, "Head-TP8");
+		maybe_add_head(box, "Head-VP2");
+		maybe_add_head(box, "Head-VP2");
+		maybe_add_head(box, "Head-CM2");
+		maybe_add_head(box, "Head-CM3");
+		maybe_add_head(box, "Head-CM4");
+		maybe_add_head(box, "Head-CM5");
+		maybe_add_head(box, "Head-BSH");
+		
+	}
 
 /*
 	box->AddString("Head-VC");  // force it in, since Sandeep wants it and it's not used in built-in messages

@@ -29,6 +29,7 @@ bool Weapons_inherit_parent_collision_group = false;
 bool Flight_controls_follow_eyepoint_orientation = false;
 int FS2NetD_port = 0;
 float Briefing_window_FOV = 0.29375f;
+bool Disable_hc_message_ani = false;
 
 
 void parse_mod_table(const char *filename)
@@ -194,6 +195,18 @@ void parse_mod_table(const char *filename)
 
 	if (optional_string("$Default Voice Volume:")) {
 		stuff_float(&Master_voice_volume);
+	}
+
+	optional_string("#FRED SETTINGS");
+	
+	if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
+		stuff_boolean(&Disable_hc_message_ani);
+		if (Disable_hc_message_ani) {
+			mprintf(("Game Settings Table: FRED - Disabling Hard Coded Message Ani Files\n"));
+		} else {
+			mprintf(("Game Settings Table: FRED - Using Hard Coded Message Ani Files\n"));
+			
+		}
 	}
 
 	optional_string("#OTHER SETTINGS"); 
