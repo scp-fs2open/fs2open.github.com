@@ -1843,9 +1843,11 @@ void multi_ts_handle_mouse()
 			break;
 		case MULTI_TS_SLOT_LIST:
 			region_index = multi_ts_slot_index(snazzy_region);
-			region_empty = (Multi_ts_team[Net_player->p_info.team].multi_ts_flag[region_index] >= 0) ? 0 : 1;
-			if(!region_empty){
-				ship_class = Wss_slots[region_index].ship_class;
+			if(region_index >= 0 ) {
+				region_empty = (Multi_ts_team[Net_player->p_info.team].multi_ts_flag[region_index] >= 0) ? 0 : 1;
+				if(!region_empty){
+					ship_class = Wss_slots[region_index].ship_class;
+				}
 			}
 			break;
 		case MULTI_TS_PLAYER_LIST:
