@@ -1285,8 +1285,8 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 	}
 
 	if (dc_maybe_stuff_int(&idx)) {
-		Assert(Main_hall_defines.at(gr_screen.res).size() < INT_MAX);
-		if ((idx < 0) || (idx >= (int) Main_hall_defines.at(gr_screen.res).size())) {
+		Assert(Main_hall_defines.size() < INT_MAX);
+		if ((idx < 0) || (idx >= (int) Main_hall_defines.size())) {
 			dc_printf("Main hall index out of range\n");
 
 		} else {

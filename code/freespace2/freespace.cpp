@@ -8767,16 +8767,21 @@ void game_title_screen_display()
 			int width, height;
 			bm_get_info(Game_title_bitmap, &width, &height);
 
+			// set the screen scale to the bitmap's dimensions
+			gr_set_screen_scale(width, height);
+
 			// draw it in the center of the screen
 			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
-		}
 
-		if (Game_title_logo != -1)
-		{
-			gr_set_bitmap(Game_title_logo);
+			if (Game_title_logo != -1)
+			{
+				gr_set_bitmap(Game_title_logo);
 
-			gr_bitmap(0, 0, GR_RESIZE_MENU);
+				gr_bitmap(0, 0, GR_RESIZE_MENU);
 
+			}
+
+			gr_reset_screen_scale();
 		}
 	}
 

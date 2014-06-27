@@ -858,7 +858,7 @@ void debrief_ui_init()
 
 	// load in help overlay bitmap	
 	Debrief_overlay_id = help_overlay_get_index(DEBRIEFING_OVERLAY);
-	help_overlay_set_state(Debrief_overlay_id,0);
+	help_overlay_set_state(Debrief_overlay_id,gr_screen.res,0);
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// close down any old instances of the chatbox
@@ -2438,7 +2438,7 @@ void debrief_do_frame(float frametime)
 
 	if ( (k > 0) || (new_k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Debrief_overlay_id) ) {
-			help_overlay_set_state(Debrief_overlay_id, 0);
+			help_overlay_set_state(Debrief_overlay_id, gr_screen.res, 0);
 			Debrief_ui_window.set_ignore_gadgets(0);
 			k = 0;
 			new_k = 0;
@@ -2600,7 +2600,7 @@ void debrief_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Debrief_overlay_id);
+	help_overlay_maybe_blit(Debrief_overlay_id, gr_screen.res);
 
 	gr_flip();
 

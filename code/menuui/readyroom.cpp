@@ -1053,7 +1053,7 @@ void sim_room_init()
 
 	// load in help overlay bitmap	
 	Sim_room_overlay_id = help_overlay_get_index(SIM_ROOM_OVERLAY);
-	help_overlay_set_state(Sim_room_overlay_id,0);
+	help_overlay_set_state(Sim_room_overlay_id,gr_screen.res,0);
 
 	Scroll_offset = Selected_line = 0;
 
@@ -1192,7 +1192,7 @@ void sim_room_do_frame(float frametime)
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Sim_room_overlay_id) ) {
-			help_overlay_set_state(Sim_room_overlay_id, 0);
+			help_overlay_set_state(Sim_room_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
@@ -1355,7 +1355,7 @@ void sim_room_do_frame(float frametime)
 		List_buttons[i++].disable();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Sim_room_overlay_id);
+	help_overlay_maybe_blit(Sim_room_overlay_id, gr_screen.res);
 
 	gr_flip();
 }
@@ -1681,7 +1681,7 @@ void campaign_room_init()
 
 	// load in help overlay bitmap	
 	Campaign_room_overlay_id = help_overlay_get_index(CAMPAIGN_ROOM_OVERLAY);
-	help_overlay_set_state(Campaign_room_overlay_id,0);
+	help_overlay_set_state(Campaign_room_overlay_id,gr_screen.res,0);
 
 	Num_desc_lines = 0;
 	Desc_scroll_offset = Scroll_offset = 0;
@@ -1745,7 +1745,7 @@ void campaign_room_do_frame(float frametime)
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Campaign_room_overlay_id) ) {
-			help_overlay_set_state(Campaign_room_overlay_id, 0);
+			help_overlay_set_state(Campaign_room_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
@@ -1872,7 +1872,7 @@ void campaign_room_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Campaign_room_overlay_id);
+	help_overlay_maybe_blit(Campaign_room_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

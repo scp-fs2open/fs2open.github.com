@@ -661,7 +661,7 @@ void ship_select_init()
 	Ss_mouse_down_on_region = -1;
 
 	Ship_select_overlay_id = help_overlay_get_index(SS_OVERLAY);
-	help_overlay_set_state(Ship_select_overlay_id,0);
+	help_overlay_set_state(Ship_select_overlay_id,gr_screen.res,0);
 
 	if ( Ship_select_open ) {
 		//reset the animation
@@ -1508,7 +1508,7 @@ void ship_select_do(float frametime)
 	ss_maybe_flash_button();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Ship_select_overlay_id);
+	help_overlay_maybe_blit(Ship_select_overlay_id, gr_screen.res);
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if

@@ -601,9 +601,9 @@ int common_select_do(float frametime)
 
 	if ( (k > 0) || (new_k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Briefing_overlay_id) || help_overlay_active(Ship_select_overlay_id) || help_overlay_active(Weapon_select_overlay_id) ) {
-			help_overlay_set_state(Briefing_overlay_id, 0);
-			help_overlay_set_state(Ship_select_overlay_id, 0);
-			help_overlay_set_state(Weapon_select_overlay_id, 0);
+			help_overlay_set_state(Briefing_overlay_id, gr_screen.res, 0);
+			help_overlay_set_state(Ship_select_overlay_id, gr_screen.res, 0);
+			help_overlay_set_state(Weapon_select_overlay_id, gr_screen.res, 0);
 			Active_ui_window->set_ignore_gadgets(0);
 			k = 0;
 			new_k = 0;

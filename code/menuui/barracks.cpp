@@ -1394,7 +1394,7 @@ void barracks_init()
 
 	// load in help overlay bitmap	
 	Barracks_overlay_id = help_overlay_get_index(BARRACKS_OVERLAY);
-	help_overlay_set_state(Barracks_overlay_id,0);
+	help_overlay_set_state(Barracks_overlay_id,gr_screen.res,0);
 
 	// other init stuff
 	Barracks_callsign_enter_mode = 0;	
@@ -1446,7 +1446,7 @@ void barracks_do_frame(float frametime)
 
 	if ( k > 0 ) {
 		if ( help_overlay_active(Barracks_overlay_id) ) {
-			help_overlay_set_state(Barracks_overlay_id,0);
+			help_overlay_set_state(Barracks_overlay_id,gr_screen.res,0);
 			k = 0;
 		}
 	}
@@ -1496,7 +1496,7 @@ void barracks_do_frame(float frametime)
 					}
 				} else {
 					// kill the overlay
-					help_overlay_set_state(Barracks_overlay_id,0);
+					help_overlay_set_state(Barracks_overlay_id,gr_screen.res,0);
 				}
 				break;
 
@@ -1553,7 +1553,7 @@ void barracks_do_frame(float frametime)
 
 	// check mouse over help
 	if (mouse_down(MOUSE_LEFT_BUTTON)) {
-		help_overlay_set_state(Barracks_overlay_id, 0);
+		help_overlay_set_state(Barracks_overlay_id, gr_screen.res, 0);
 	}
 
 	// do pilot pic stuff
@@ -1623,7 +1623,7 @@ void barracks_do_frame(float frametime)
 	barracks_display_pilot_stats();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Barracks_overlay_id);
+	help_overlay_maybe_blit(Barracks_overlay_id, gr_screen.res);
 	
 	// flip the page
 	gr_flip();

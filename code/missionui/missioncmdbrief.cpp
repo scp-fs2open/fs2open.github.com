@@ -608,7 +608,7 @@ void cmd_brief_init(int team)
 
 	// load in help overlay bitmap	
 	Cmd_brief_overlay_id = help_overlay_get_index(CMD_BRIEF_OVERLAY);
-	help_overlay_set_state(Cmd_brief_overlay_id,0);
+	help_overlay_set_state(Cmd_brief_overlay_id,gr_screen.res,0);
 
 	for (i=0; i<Cur_cmd_brief->num_stages; i++)
 		cmd_brief_ani_wave_init(i);
@@ -668,7 +668,7 @@ void cmd_brief_do_frame(float frametime)
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Cmd_brief_overlay_id) ) {
-			help_overlay_set_state(Cmd_brief_overlay_id, 0);
+			help_overlay_set_state(Cmd_brief_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
@@ -746,7 +746,7 @@ void cmd_brief_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Cmd_brief_overlay_id);
+	help_overlay_maybe_blit(Cmd_brief_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

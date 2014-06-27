@@ -74,6 +74,10 @@ int Main_hall_music_handle = -1;
 // background bitmap handle
 int Main_hall_bitmap;
 
+// background bitmap dimensions
+int Main_hall_bitmap_w;
+int Main_hall_bitmap_h;
+
 // background bitmap mask handle
 int Main_hall_mask;
 
@@ -251,7 +255,7 @@ void main_hall_maybe_blit_tooltips();
 shader Main_hall_tooltip_shader;
 
 // num pixels shader is above/below tooltip text
-static int Main_hall_tooltip_padding[GR_NUM_RESOLUTIONS] = {
+static int Main_hall_default_tooltip_padding[GR_NUM_RESOLUTIONS] = {
 	4,		// GR_640
 	7,		// GR_1024
 };
@@ -350,23 +354,15 @@ void main_hall_do_multi_ready()
 // blit some small color indicators to show whether ships.tbl and weapons.tbl are valid
 // green == valid, red == invalid.
 // ships.tbl will be on the left, weapons.tbl on the right
-int Mh_ship_table_status[GR_NUM_RESOLUTIONS][2] = {
-	{ 1, 479 },
-	{ 1, 767 }
-};
-int Mh_weapon_table_status[GR_NUM_RESOLUTIONS][2] = {
-	{ 3, 479 },
-	{ 3, 767 }
-};
 void main_hall_blit_table_status()
 {
 	// blit ship table status
 	gr_set_color_fast(Game_ships_tbl_valid ? &Color_bright_green : &Color_bright_red);
-	gr_line(Mh_ship_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1], Mh_ship_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1], GR_RESIZE_MENU);
+	gr_line(1, gr_screen.max_h_unscaled_zoomed - 1, 1, gr_screen.max_h_unscaled_zoomed - 1, GR_RESIZE_MENU_ZOOMED);
 
 	// blit weapon table status
 	gr_set_color_fast(Game_weapons_tbl_valid ? &Color_bright_green : &Color_bright_red);
-	gr_line(Mh_weapon_table_status[gr_screen.res][0], Mh_weapon_table_status[gr_screen.res][1], Mh_weapon_table_status[gr_screen.res][0], Mh_ship_table_status[gr_screen.res][1], GR_RESIZE_MENU);
+	gr_line(3, gr_screen.max_h_unscaled_zoomed - 1, 3, gr_screen.max_h_unscaled_zoomed - 1, GR_RESIZE_MENU_ZOOMED);
 }
 
 /**
@@ -408,7 +404,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	}
 
 	// sanity checks
-	if (Main_hall_defines.at(0).size() == 0) {
+	if (Main_hall_defines.size() == 0) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
 	} else if (main_hall_name == "") {
 		Warning(LOCATION, "main_hall_init() was passed a blank main hall name; loading first available main hall.");
@@ -468,10 +464,15 @@ void main_hall_init(const SCP_string &main_hall_name)
 		}
 	}
 
+	Main_hall_bitmap_w = -1;
+	Main_hall_bitmap_h = -1;
+
 	// load the background bitmap
 	Main_hall_bitmap = bm_load(Main_hall->bitmap);
 	if (Main_hall_bitmap < 0) {
 		nprintf(("General","WARNING! Couldn't load main hall background bitmap %s\n", Main_hall->bitmap.c_str()));
+	} else {
+		bm_get_info(Main_hall_bitmap, &Main_hall_bitmap_w, &Main_hall_bitmap_h);
 	}
 	bg_type = bm_get_type(Main_hall_bitmap);
 
@@ -492,6 +493,23 @@ void main_hall_init(const SCP_string &main_hall_name)
 		Main_hall_mask_bitmap = bm_lock(Main_hall_mask, 8, BMP_AABITMAP);
 		Main_hall_mask_data = (ubyte*)Main_hall_mask_bitmap->data;
 		bm_get_info(Main_hall_mask, &Main_hall_mask_w, &Main_hall_mask_h);
+	}
+
+	// make sure the zoom area is completely within the background bitmap
+	if (Main_hall->zoom_area_width > Main_hall_bitmap_w) {
+		Main_hall->zoom_area_width = Main_hall_bitmap_w;
+	}
+	if (Main_hall->zoom_area_height > Main_hall_bitmap_h) {
+		Main_hall->zoom_area_height = Main_hall_bitmap_h;
+	}
+
+	// get the default value for tooltip padding if necessary
+	if (Main_hall->tooltip_padding == -1) {
+		if (Main_hall_bitmap_w >= GR_1024_THRESHOLD_WIDTH && Main_hall_bitmap_h >= GR_1024_THRESHOLD_HEIGHT) {
+			Main_hall->tooltip_padding = Main_hall_default_tooltip_padding[GR_1024];
+		} else {
+			Main_hall->tooltip_padding = Main_hall_default_tooltip_padding[GR_640];
+		}
 	}
 
 	// In case we're re-entering the mainhall
@@ -537,12 +555,12 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// load in help overlay bitmap
 	if (!Main_hall->help_overlay_name.empty()) {
 		Main_hall_overlay_id = help_overlay_get_index(Main_hall->help_overlay_name.c_str());
-	} else if (Main_hall == &Main_hall_defines.at(gr_screen.res).at(0)) {
+	} else if (main_hall_id() == 0) {
 		Main_hall_overlay_id = help_overlay_get_index(MH_OVERLAY);
 	} else {
 		Main_hall_overlay_id = help_overlay_get_index(MH2_OVERLAY);
 	}
-	help_overlay_set_state(Main_hall_overlay_id,0);
+	help_overlay_set_state(Main_hall_overlay_id,gr_screen.res,0);
 
 	// check to see if the "very first pilot" flag is set, and load the overlay if so
 	if (!F1_text_done) {
@@ -620,6 +638,9 @@ void main_hall_exit_game()
 void main_hall_do(float frametime)
 {
 	int code, key, snazzy_action;
+
+	// set the screen scale to the main hall's dimensions
+	gr_set_screen_scale(Main_hall_bitmap_w, Main_hall_bitmap_h, Main_hall->zoom_area_width, Main_hall->zoom_area_height);
 
 	// need to ensure ambient is playing, since it may be stopped by a playing movie
 	main_hall_start_ambient();
@@ -775,7 +796,7 @@ void main_hall_do(float frametime)
 						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 						main_hall_exit_game();
 					} else { // kill the overlay
-						help_overlay_set_state(Main_hall_overlay_id,0);
+						help_overlay_set_state(Main_hall_overlay_id,gr_screen.res,0);
 					}
 					break;
 			} // END switch (code)
@@ -792,7 +813,7 @@ void main_hall_do(float frametime)
 	} // END switch (snazzy_action)
 
 	if (mouse_down(MOUSE_LEFT_BUTTON)) {
-		help_overlay_set_state(Main_hall_overlay_id, 0);
+		help_overlay_set_state(Main_hall_overlay_id, main_hall_get_overlay_resolution_index(), 0);
 	}
 
 	// draw the background bitmap
@@ -824,7 +845,7 @@ void main_hall_do(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Main_hall_overlay_id);
+	help_overlay_maybe_blit(Main_hall_overlay_id, main_hall_get_overlay_resolution_index());
 
 	// blit the freespace version #
 	main_hall_blit_version();
@@ -835,6 +856,7 @@ void main_hall_do(float frametime)
 #endif
 
 	gr_flip();
+	gr_reset_screen_scale();
 
 	// see if we have a missing campaign and force the player to select a new campaign if so
 	extern bool Campaign_room_no_campaigns;
@@ -954,7 +976,7 @@ int main_hall_get_music_index(int main_hall_num)
 		return -1;
 	}
 
-	hall = &Main_hall_defines.at(gr_screen.res).at(main_hall_num);
+	hall = &Main_hall_defines.at(main_hall_num).at(main_hall_get_resolution_index(main_hall_num));
 
 	// Goober5000 - try substitute first
 	index = event_music_get_spooled_music_index(hall->substitute_music_name);
@@ -1339,6 +1361,20 @@ void main_hall_handle_right_clicks()
 			int mx = Main_hall->door_anim_coords.at(new_region).at(2);
 			int my = Main_hall->door_anim_coords.at(new_region).at(3);
 			gr_resize_screen_pos( &mx, &my, NULL, NULL, GR_RESIZE_MENU );
+
+			if (mx < 0) {
+				mx = 0;
+			}
+			if (mx >= gr_screen.max_w) {
+				mx = gr_screen.max_w - 1;
+			}
+			if (my < 0) {
+				my = 0;
+			}
+			if (my >= gr_screen.max_h) {
+				my = gr_screen.max_h - 1;
+			}
+
 			mouse_set_pos( mx, my );
 
 			main_hall_handle_mouse_location(new_region);
@@ -1453,10 +1489,16 @@ void main_hall_notify_do()
 			Main_hall_notify_stamp = -1;
 		} else {
 			int w,h;
+
+			int old_font = gr_get_current_fontnum();
+
 			gr_set_color_fast(&Color_bright);
+			gr_set_font(Main_hall->font);
 
 			gr_get_string_size(&w,&h,Main_hall_notify_text);
-			gr_printf_menu((gr_screen.max_w_unscaled - w)/2, gr_screen.max_h_unscaled - 40, Main_hall_notify_text);
+			gr_printf_menu_zoomed((gr_screen.max_w_unscaled_zoomed - w)/2, gr_screen.max_h_unscaled_zoomed - (h * 4 + 4), Main_hall_notify_text);
+
+			gr_set_font(old_font);
 		}
 	}
 }
@@ -1513,18 +1555,23 @@ void main_hall_reset_ambient_vol()
  */
 void main_hall_blit_version()
 {
-	int w;
+	int w, h;
 	char version_string[100];
 
 	// format the version string
 	get_version_string(version_string, sizeof(version_string));
 
+	int old_font = gr_get_current_fontnum();
+	gr_set_font(Main_hall->font);
+
 	// get the length of the string
-	gr_get_string_size(&w,NULL,version_string);
+	gr_get_string_size(&w,&h,version_string);
 
 	// print the string near the lower left corner
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(5, gr_screen.max_h_unscaled - 24, version_string, GR_RESIZE_MENU);
+	gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 2 + 6), version_string, GR_RESIZE_MENU_ZOOMED);
+
+	gr_set_font(old_font);
 }
 
 /**
@@ -1532,7 +1579,7 @@ void main_hall_blit_version()
  */
 void main_hall_maybe_blit_tooltips()
 {
-	int w, text_index;
+	int w, h, text_index;
 
 	// if we're over no region - don't blit anything
 	if (Main_hall_mouse_region < 0) {
@@ -1553,15 +1600,25 @@ void main_hall_maybe_blit_tooltips()
 
 	// set the color and blit the string
 	if (!help_overlay_active(Main_hall_overlay_id)) {
-		int shader_y = (Main_hall->region_yval) - Main_hall_tooltip_padding[gr_screen.res];	// subtract more to pull higher
+		int old_font = gr_get_current_fontnum();
+		gr_set_font(Main_hall->font);
 		// get the width of the string
-		gr_get_string_size(&w, NULL, Main_hall->region_descript.at(text_index));
+		gr_get_string_size(&w, &h, Main_hall->region_descript.at(text_index));
+		int text_y;
+		if (Main_hall->region_yval == -1) {
+			text_y = gr_screen.max_h_unscaled - ((gr_screen.max_h_unscaled - gr_screen.max_h_unscaled_zoomed) / 2) - Main_hall->tooltip_padding - h;
+		} else {
+			text_y = Main_hall->region_yval;
+		}
+		int shader_y = text_y - (Main_hall->tooltip_padding);	// subtract more to pull higher
 
 		gr_set_shader(&Main_hall_tooltip_shader);
 		gr_shade(0, shader_y, gr_screen.clip_width_unscaled, (gr_screen.clip_height_unscaled - shader_y), GR_RESIZE_MENU);
 
 		gr_set_color_fast(&Color_bright_white);
-		gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall->region_yval, Main_hall->region_descript.at(text_index), GR_RESIZE_MENU);
+		gr_string((gr_screen.max_w_unscaled - w)/2, text_y, Main_hall->region_descript.at(text_index), GR_RESIZE_MENU);
+
+		gr_set_font(old_font);
 	}
 }
 
@@ -1583,6 +1640,9 @@ void main_hall_process_help_stuff()
 		Main_hall_f1_text_frame++;
 	}
 
+	int old_font = gr_get_current_fontnum();
+	gr_set_font(Main_hall->font);
+
 	// otherwise print out the message
 	strcpy_s(str, XSTR( "Press F1 for help", 371));
 	gr_get_string_size(&w, &h, str);
@@ -1590,7 +1650,7 @@ void main_hall_process_help_stuff()
 	int y_anim_offset = Main_hall_f1_text_frame;
 
 	// if anim is off the screen finally, stop altogether
-	if ( (y_anim_offset >= (2*Main_hall_tooltip_padding[gr_screen.res]) + h) || (help_overlay_active(Main_hall_overlay_id)) ) {
+	if ( (y_anim_offset >= (2*Main_hall->tooltip_padding) + h) || (help_overlay_active(Main_hall_overlay_id)) ) {
 		Main_hall_f1_text_frame = -1;
 		Main_hall_help_stamp = -1;
 		F1_text_done = 1;
@@ -1600,8 +1660,10 @@ void main_hall_process_help_stuff()
 	// set the color and print out text and shader
 	gr_set_color_fast(&Color_bright_white);
 	gr_set_shader(&Main_hall_tooltip_shader);
-	gr_shade(0, 0, gr_screen.max_w_unscaled, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset, GR_RESIZE_MENU);
-	gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str, GR_RESIZE_MENU);
+	gr_shade(0, 0, gr_screen.max_w_unscaled_zoomed, (2*Main_hall->tooltip_padding) + h - y_anim_offset, GR_RESIZE_MENU_ZOOMED);
+	gr_string((gr_screen.max_w_unscaled_zoomed - w)/2, Main_hall->tooltip_padding - y_anim_offset, str, GR_RESIZE_MENU_ZOOMED);
+
+	gr_set_font(old_font);
 }
 
 /**
@@ -1615,9 +1677,9 @@ main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find)
 {
 	unsigned int i;
 
-	for (i = 0; i < Main_hall_defines.at(gr_screen.res).size(); i++) {
-		if (Main_hall_defines.at(gr_screen.res).at(i).name == name_to_find) {
-			return &Main_hall_defines.at(gr_screen.res).at(i);
+	for (i = 0; i < Main_hall_defines.size(); i++) {
+		if (Main_hall_defines.at(i).at(0).name == name_to_find) {
+			return &Main_hall_defines.at(i).at(main_hall_get_resolution_index(i));
 		}
 	}
 	return NULL;
@@ -1635,20 +1697,34 @@ int main_hall_get_index(const SCP_string &name_to_find)
 {
 	unsigned int i;
 
-	for (i = 0; i < Main_hall_defines.at(gr_screen.res).size(); i++) {
-		if (Main_hall_defines.at(gr_screen.res).at(i).name == name_to_find) {
+	for (i = 0; i < Main_hall_defines.size(); i++) {
+		if (Main_hall_defines.at(i).at(0).name == name_to_find) {
 			return i;
 		}
 	}
 	return -1;
 }
 
+int main_hall_get_resolution_index(int main_hall_num)
+{
+	unsigned int i;
+	float aspect_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
+
+	for (i = Main_hall_defines.at(main_hall_num).size() - 1; i >= 1; i--) {
+		main_hall_defines* m = &Main_hall_defines.at(main_hall_num).at(i);
+		if (gr_screen.max_w >= m->min_width && gr_screen.max_h >= m->min_height && aspect_ratio >= m->min_aspect_ratio) {
+			return i;
+		}
+	}
+	return 0;
+}
+
 void main_hall_get_name(SCP_string &name, unsigned int index)
 {
-	if (index>Main_hall_defines.at(gr_screen.res).size()) {
+	if (index>=Main_hall_defines.size()) {
 		name = "";
 	} else {
-		name = Main_hall_defines.at(gr_screen.res).at(index).name;
+		name = Main_hall_defines.at(index).at(0).name;
 	}
 }
 
@@ -1661,6 +1737,15 @@ int main_hall_get_overlay_id()
 	}
 }
 
+int main_hall_get_overlay_resolution_index()
+{
+	if (Main_hall==NULL) {
+		return -1;
+	} else {
+		return Main_hall->help_overlay_resolution_index;
+	}
+}
+
 // what main hall we're on
 int main_hall_id()
 {
@@ -1668,25 +1753,6 @@ int main_hall_id()
 		return -1;
 	} else {
 		return main_hall_get_index(Main_hall->name);
-	}
-}
-
-// helper function for initialising the Main_hall_defines vector
-// call before parsing mainhall.tbl
-void main_hall_defines_init()
-{
-	int i;
-
-	// if we're parsing a modular table (ie Main_hall_defines already has GR_NUM_RESOLUTIONS vectors in it),
-	// we can skip this.
-	if (Main_hall_defines.size() >= GR_NUM_RESOLUTIONS) {
-		return;
-	}
-
-	SCP_vector<main_hall_defines> temp;
-	// for each resolution we just want to put in a blank vector
-	for (i = 0; i < GR_NUM_RESOLUTIONS; i++) {
-		Main_hall_defines.push_back(temp);
 	}
 }
 
@@ -1848,6 +1914,9 @@ void door_anim_init(main_hall_defines &m)
  */
 void main_hall_table_init()
 {
+	// clear the main hall entries
+	Main_hall_defines.clear();
+
 	// if mainhall.tbl exists, parse it
 	if (cf_exists_full("mainhall.tbl", CF_TYPE_TABLES)) {
 		parse_main_hall_table("mainhall.tbl");
@@ -1863,6 +1932,7 @@ void parse_main_hall_table(const char* filename)
 	SCP_vector<main_hall_defines> temp_vector;
 	main_hall_defines *m, temp;
 	int idx, s_idx, m_idx, rval;
+	int num_resolutions = 2;
 	unsigned int count;
 	char temp_string[MAX_FILENAME_LEN];
 
@@ -1875,21 +1945,28 @@ void parse_main_hall_table(const char* filename)
 
 	reset_parse();
 
-	main_hall_defines_init();
+	if (optional_string("$Num Resolutions:")) {
+		stuff_int(&num_resolutions);
+	}
+
+	if (num_resolutions < 1) {
+		Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
+	}
 
 	// go for it
-	count = Main_hall_defines.at(0).size();
+	count = Main_hall_defines.size();
 	while (!optional_string("#end")) {
-		// read in 2 resolutions
-		for (m_idx = 0; m_idx < GR_NUM_RESOLUTIONS; m_idx++) {
-			Main_hall_defines.at(m_idx).push_back(temp);
-			m = &Main_hall_defines.at(m_idx).at(count);
+		Main_hall_defines.push_back(temp_vector);
+		// read in all resolutions
+		for (m_idx = 0; m_idx < num_resolutions; m_idx++) {
+			Main_hall_defines.at(count).push_back(temp);
+			m = &Main_hall_defines.at(count).at(m_idx);
 
 			// ready
 			required_string("$Main Hall");
 
-			// Parse the 640 entry name, checking for duplicates and erroring if necessary
-			if (m_idx == GR_640) {
+			// Parse the entry name for the first resolution, checking for duplicates and erroring if necessary
+			if (m_idx == 0) {
 				if (optional_string("+Name:")) {
 					stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
 
@@ -1903,7 +1980,7 @@ void parse_main_hall_table(const char* filename)
 					snprintf(temp_string, MAX_FILENAME_LEN, "%d", count);
 					m->name = temp_string;
 				}
-			} else if (m_idx == GR_1024) {
+			} else {
 				if (optional_string("+Name:")) {
 					stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
 
@@ -1912,15 +1989,31 @@ void parse_main_hall_table(const char* filename)
 					 * it is very likely the user would get the wrong mainhall loaded since their campaign files 
 					 * may still refer to the entry with the incorrect name
 					 */
-					if (strcmp(temp_string, Main_hall_defines.at(GR_640).at(count).name.c_str()) != 0) {
-						Error(LOCATION, "The mainhall '%s' has different names for different resolutions. Both resolutions must have the same name. Either remove the hi-res entry's name entirely or set it to match the lo-res entry's name.", Main_hall_defines.at(GR_640).at(count).name.c_str());
+					if (strcmp(temp_string, Main_hall_defines.at(count).at(0).name.c_str()) != 0) {
+						Error(LOCATION, "The mainhall '%s' has different names for different resolutions. All resolutions must have the same name. Either remove the hi-res entries' names entirely or set them to match the first resolution entry's name.", Main_hall_defines.at(0).at(count).name.c_str());
 					}
 				}
 
-				m->name = Main_hall_defines.at(GR_640).at(count).name;
+				m->name = Main_hall_defines.at(count).at(0).name;
+			}
+
+			// minimum resolution
+			if (optional_string("+Min Resolution:")) {
+				stuff_int(&m->min_width);
+				stuff_int(&m->min_height);
+			} else if (m_idx == 0) {
+				m->min_width = 0;
+				m->min_height = 0;
 			} else {
-				// bad things happened somewhere
-				Error(LOCATION, "Invalid value of m_idx, was expecting either GR_640 or GR_1024, got %d! Notify a coder.", m_idx);
+				m->min_width = GR_1024_THRESHOLD_WIDTH;
+				m->min_height = GR_1024_THRESHOLD_HEIGHT;
+			}
+
+			// minimum aspect ratio
+			if (optional_string("+Min Aspect Ratio:")) {
+				stuff_float(&m->min_aspect_ratio);
+			} else {
+				m->min_aspect_ratio = 0.0f;
 			}
 
 			// bitmap and mask
@@ -1945,6 +2038,21 @@ void parse_main_hall_table(const char* filename)
 			if (optional_string("+Help Overlay:")) {
 				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
 				m->help_overlay_name = temp_string;
+			}
+
+			if (optional_string("+Help Overlay Resolution Index:")) {
+				stuff_int(&m->help_overlay_resolution_index);
+			} else {
+				m->help_overlay_resolution_index = m_idx;
+			}
+
+			// zoom area
+			if (optional_string("+Zoom To:")) {
+				stuff_int(&m->zoom_area_width);
+				stuff_int(&m->zoom_area_height);
+			} else {
+				m->zoom_area_width = -1;
+				m->zoom_area_height = -1;
 			}
 
 			// intercom sounds
@@ -2092,9 +2200,26 @@ void parse_main_hall_table(const char* filename)
 				stuff_float(&m->door_sound_pan[idx]);
 			}
 
+			// font for tooltips and other text
+			if (optional_string("+Font:")) {
+				stuff_int(&m->font);
+			} else {
+				m->font = FONT1;
+			}
+
+			// tooltip padding
+			if (optional_string("+Tooltip Padding:")) {
+				stuff_int(&m->tooltip_padding);
+			} else {
+				m->tooltip_padding = -1; // we'll get the default value later
+			}
+
 			// tooltip y location
-			required_string("+Tooltip Y:");
-			stuff_int(&m->region_yval);
+			if (optional_string("+Tooltip Y:")) {
+				stuff_int(&m->region_yval);
+			} else {
+				m->region_yval = -1;
+			}
 		}
 
 		count++;

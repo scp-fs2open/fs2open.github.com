@@ -20,6 +20,11 @@ typedef struct main_hall_defines {
 	// mainhall name identifier
 	SCP_string name;
 
+	// minimum resolution and aspect ratio needed to display this main hall
+	int min_width;
+	int min_height;
+	float min_aspect_ratio;
+
 	// bitmap and mask
 	SCP_string bitmap;
 	SCP_string mask;
@@ -30,6 +35,11 @@ typedef struct main_hall_defines {
 
 	// help overlay
 	SCP_string help_overlay_name;
+	int help_overlay_resolution_index;
+
+	// zoom area
+	int zoom_area_width;
+	int zoom_area_height;
 
 	// intercom defines -------------------
 
@@ -102,8 +112,14 @@ typedef struct main_hall_defines {
 
 	// region descriptions ----------------
 
+	// font used for the tooltips, version number, etc.
+	int font;
+
 	// text (tooltip) description
 	SCP_vector<const char*> region_descript;
+
+	// num pixels shader is above/below tooltip text
+	int tooltip_padding;
 
 	// y coord of where to draw tooltip text
 	int region_yval;
@@ -141,9 +157,12 @@ main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find);
 
 int main_hall_get_index(const SCP_string &name_to_find);
 
+int main_hall_get_resolution_index(int main_hall_num);
+
 void main_hall_get_name(SCP_string &name, unsigned int index);
 
 int main_hall_get_overlay_id();
+int main_hall_get_overlay_resolution_index();
 
 // what main hall we're on
 int main_hall_id();

@@ -36,19 +36,17 @@
 #define	CMD_BRIEF_OVERLAY				"command" // command briefing help overlay
 
 // other help overlay constants
-#define HELP_MAX_ITEM				50				// max number of screen elements per element type per overlay
 #define HELP_PADDING		1							//
 #define HELP_MAX_NAME_LENGTH	32			// max string length for overlay name
 #define HELP_MAX_STRING_LENGTH	128			// max string length for text overlay element
-#define HELP_MAX_PLINE_VERTICES	21				// good for 20 segments, can prolly reduce this (FIXME)
 #define HELP_PLINE_THICKNESS		2
 #define HELP_OVERLAY_FILENAME		"help.tbl"
 
 // help overlay calls
 int	help_overlay_get_index(const char* overlay_name);
 int	help_overlay_active(int overlay_id);
-void	help_overlay_set_state(int overlay_id, int state);
-void	help_overlay_maybe_blit(int overlay_id);
+void	help_overlay_set_state(int overlay_id, int resolution_index, int state);
+void	help_overlay_maybe_blit(int overlay_id, int resolution_index);
 
 void context_help_init();			// called once at game startup
 void context_help_grey_screen();	// call to grey out a screen (normally when applying a help overlay)

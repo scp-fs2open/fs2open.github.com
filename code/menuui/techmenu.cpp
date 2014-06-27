@@ -1158,7 +1158,7 @@ void techroom_init()
 
 	// init help overlay states
 	Techroom_overlay_id = help_overlay_get_index(TECH_ROOM_OVERLAY);
-	help_overlay_set_state(Techroom_overlay_id, 0);
+	help_overlay_set_state(Techroom_overlay_id, gr_screen.res, 0);
 
 	// setup slider
 	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Num_ship_classes, Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
@@ -1269,7 +1269,7 @@ void techroom_do_frame(float frametime)
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Techroom_overlay_id) ) {
-			help_overlay_set_state(Techroom_overlay_id, 0);
+			help_overlay_set_state(Techroom_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
@@ -1394,7 +1394,7 @@ void techroom_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Techroom_overlay_id);
+	help_overlay_maybe_blit(Techroom_overlay_id, gr_screen.res);
 
 	gr_flip();
 }
