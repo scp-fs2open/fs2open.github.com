@@ -33,6 +33,7 @@
 #include "menuui/fishtank.h"
 #include "mission/missioncampaign.h"
 #include "parse/parselo.h"
+#include "parse/scripting.h"
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/multi_voice.h"
@@ -147,8 +148,7 @@ void main_hall_render_door_anims(float frametime);
 // ----------------------------------------------------------------------------
 // SNAZZY MENU stuff
 //
-#define NUM_MAIN_HALL_REGIONS 10
-#define NUM_MAIN_HALL_MOUSE_REGIONS 6
+#define NUM_MAIN_HALL_MAX_REGIONS 20
 
 // region mask #'s (identifiers)
 #define EXIT_REGION				0
@@ -161,9 +161,32 @@ void main_hall_render_door_anims(float frametime);
 #define LOAD_MISSION_REGION		11
 #define QUICK_START_REGION		12
 #define SKILL_LEVEL_REGION		13
+#define SCRIPT_REGION			14
+#define START_REGION			15
+
+struct main_hall_region_info {
+	int mask;
+	char *name;
+};
+
+main_hall_region_info Main_hall_region_map[] = {
+	{ EXIT_REGION, "Exit" },
+	{ BARRACKS_REGION, "Barracks" },
+	{ READY_ROOM_REGION, "Readyroom" },
+	{ TECH_ROOM_REGION, "Techroom" },
+	{ OPTIONS_REGION, "Options" },
+	{ CAMPAIGN_ROOM_REGION, "Campaigns" },
+	{ MULTIPLAYER_REGION, "Multiplayer" },
+	{ LOAD_MISSION_REGION, "Load Mission" },
+	{ QUICK_START_REGION, "Quickstart" },
+	{ SKILL_LEVEL_REGION, "Skilllevel" },
+	{ SCRIPT_REGION, "Script" },
+	{ START_REGION, "Start" },
+	{ -1, NULL }
+};
 
 // all the menu regions in the main hall
-MENU_REGION Main_hall_region[NUM_MAIN_HALL_REGIONS];
+MENU_REGION Main_hall_region[NUM_MAIN_HALL_MAX_REGIONS];
 
 // # of regions (options) on this screen. parsed from a table
 int Main_hall_num_options;
@@ -399,7 +422,6 @@ void main_hall_init(const SCP_string &main_hall_name)
 	}
 
 	int idx;
-	char temp[100], whee[100];
 	SCP_string main_hall_to_load;
 
 	// reparse the table here if the relevant cmdline flag is set
@@ -427,20 +449,26 @@ void main_hall_init(const SCP_string &main_hall_name)
 
 	// create the snazzy interface and load up the info from the table
 	snazzy_menu_init();
-	read_menu_tbl(NOX("MAIN HALL"), temp, whee, Main_hall_region, &Main_hall_num_options, 0);
-
+	//read_menu_tbl(NOX("MAIN HALL"), temp, whee, Main_hall_region, &Main_hall_num_options, 0);
+	
 	// assign the proper main hall data
 	Assert(main_hall_get_pointer(main_hall_to_load) != NULL);
 	Main_hall = main_hall_get_pointer(main_hall_to_load);
 
-	// tooltip strings
-	Main_hall->region_descript.at(0) = XSTR( "Exit FreeSpace 2", 353);
-	Main_hall->region_descript.at(1) = XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354);
-	Main_hall->region_descript.at(2) = XSTR( "Ready room - Start or continue a campaign", 355);
-	Main_hall->region_descript.at(3) = XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356);
-	Main_hall->region_descript.at(4) = XSTR( "Options - Change your FreeSpace 2 options", 357);
-	Main_hall->region_descript.at(5) = XSTR( "Campaign Room - View all available campaigns", 358);
-	Main_hall->region_descript.at(6) = XSTR( "Multiplayer - Start or join a multiplayer game", 359);
+	// check if we have to change the ready room's description
+	if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
+		if(Main_hall->default_readyroom) {
+			Main_hall->regions.at(2).description = XSTR( "Multiplayer - Start or join a multiplayer game", 359);
+		}
+	}
+	
+	// Read the menu regions from mainhall.tbl
+	main_hall_region *region;
+	for (idx = 0; idx < (int) Main_hall->regions.size(); idx++) {
+		region = &Main_hall->regions.at(idx);
+		snazzy_menu_add_region(Main_hall_region + idx, (char*) region->description.c_str(), region->mask, 0, -1);
+	}
+	Main_hall_num_options = Main_hall->regions.size();
 
 	// init tooltip shader						// nearly black
 	gr_create_shader(&Main_hall_tooltip_shader, 5, 5, 5, 168);
@@ -619,7 +647,7 @@ void main_hall_exit_game()
  */
 void main_hall_do(float frametime)
 {
-	int code, key, snazzy_action;
+	int idx, code, key, snazzy_action, region_action = -1;
 
 	// need to ensure ambient is playing, since it may be stopped by a playing movie
 	main_hall_start_ambient();
@@ -671,11 +699,38 @@ void main_hall_do(float frametime)
 	// do any processing based upon what happened to the snazzy menu
 	switch (snazzy_action) {
 		case SNAZZY_OVER:
-			main_hall_handle_mouse_location(code);
+			for (idx = 0; idx < (int) Main_hall->regions.size(); idx++) {
+				if (Main_hall->regions.at(idx).mask == code) {
+					break;
+				}
+			}
+			
+			main_hall_handle_mouse_location(idx);
 			break;
 
 		case SNAZZY_CLICKED:
-			switch (code) {
+			if (code == ESC_PRESSED) {
+				region_action = ESC_PRESSED;
+			} else {
+				for (idx = 0; idx < (int) Main_hall->regions.size(); idx++) {
+					if (Main_hall->regions.at(idx).mask == code) {
+						region_action = Main_hall->regions.at(idx).action;
+						break;
+					}
+				}
+				
+				if (region_action == -1) {
+					Error(LOCATION, "Region %d doesn't have an action!", code);
+				} else if (region_action == START_REGION) {
+					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
+						region_action = MULTIPLAYER_REGION;
+					} else {
+						region_action = READY_ROOM_REGION;
+					}
+				}
+			}
+			
+			switch (region_action) {
 				// clicked on the exit region
 				case EXIT_REGION:
 					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
@@ -684,17 +739,16 @@ void main_hall_do(float frametime)
 
 				// clicked on the readyroom region
 				case READY_ROOM_REGION:
-					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-						main_hall_do_multi_ready();
+					// Make sure we aren't in multi mode.
+					Player->flags = Player->flags ^ PLAYER_FLAGS_IS_MULTI;
+					Game_mode = GM_NORMAL;
+					
+					if (strlen(Main_hall_campaign_cheat)) {
+						gameseq_post_event(GS_EVENT_CAMPAIGN_CHEAT);
 					} else {
-						if (strlen(Main_hall_campaign_cheat)) {
-							gameseq_post_event(GS_EVENT_CAMPAIGN_CHEAT);
-						} else {
-							gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
-						}
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+						gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
 					}
+					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 					break;
 
 				// clicked on the tech room region
@@ -711,23 +765,20 @@ void main_hall_do(float frametime)
 
 				// clicked on the campaign toom region
 				case CAMPAIGN_ROOM_REGION:
-					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-						main_hall_set_notify_string(XSTR( "Campaign Room not valid for multiplayer pilots", 366));
-					} else {
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-						gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
-					}
+					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
 					break;
 
 				// clicked on the multiplayer region
 				case MULTIPLAYER_REGION:
-					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-						// NOTE : this isn't a great thing to be calling this anymore. But we'll leave it for now
-						gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
-					} else {
-						main_hall_set_notify_string(XSTR( "Not a valid multiplayer pilot!!", 367));
-					}
+					// Make sure we are in multi mode.
+					Player->flags |= PLAYER_FLAGS_IS_MULTI;
+					Game_mode = GM_MULTIPLAYER;
+					
+					main_hall_do_multi_ready();
+					
+					// NOTE : this isn't a great thing to be calling this anymore. But we'll leave it for now
+					gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 					break;
 
 				// load mission key was pressed
@@ -737,20 +788,16 @@ void main_hall_do(float frametime)
 				// quick start a game region
 				case QUICK_START_REGION:
 			#if !defined(NDEBUG)
-					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-						main_hall_set_notify_string(XSTR( "Quick Start not valid for multiplayer pilots", 369));
+					if (Num_recent_missions > 0) {
+						strcpy_s(Game_current_mission_filename, Recent_missions[0]);
 					} else {
-						if (Num_recent_missions > 0) {
-							strcpy_s(Game_current_mission_filename, Recent_missions[0]);
-						} else {
-							if (mission_load_up_campaign()) {
-								main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", 1606));
-							}
-							strcpy_s(Game_current_mission_filename, Campaign.missions[0].name);
+						if (mission_load_up_campaign()) {
+							main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", 1606));
 						}
-						Campaign.current_mission = -1;
-						gameseq_post_event(GS_EVENT_START_GAME_QUICK);
+						strcpy_s(Game_current_mission_filename, Campaign.missions[0].name);
 					}
+					Campaign.current_mission = -1;
+					gameseq_post_event(GS_EVENT_START_GAME_QUICK);
 			#endif
 					break;
 
@@ -778,11 +825,17 @@ void main_hall_do(float frametime)
 						help_overlay_set_state(Main_hall_overlay_id,0);
 					}
 					break;
+				
+				// custom action
+				case SCRIPT_REGION:
+					char *lua = (char*) Main_hall->regions.at(idx).lua_action.c_str();
+					Script_system.EvalString(lua, NULL, NULL, lua);
+					break;
 			} // END switch (code)
 
 			// if the escape key wasn't pressed handle any mouse position related events
 			if (code != ESC_PRESSED) {
-				main_hall_handle_mouse_location(code);
+				main_hall_handle_mouse_location((region_action == -1 ? -1 : idx));
 			}
 			break;
 
@@ -1189,8 +1242,8 @@ void main_hall_handle_mouse_location(int cur_region)
 	if (Main_hall_frame_skip) {
 		return;
 	}
-
-	if (cur_region > NUM_MAIN_HALL_MOUSE_REGIONS) {
+	
+	if (cur_region > (int)Main_hall->regions.size() - 1) {
 		// MWA -- inserted return since Int3() was tripped when hitting L from main menu.
 		return;
 	}
@@ -1240,7 +1293,7 @@ void main_hall_mouse_release_region(int region)
 	}
 
 	// don't do anything if there are no animations to play
-	else if(Main_hall_door_anim.size() == 0)
+	else if(region > (int) Main_hall_door_anim.size() - 1)
 	{
 		return;
 	}
@@ -1281,7 +1334,7 @@ void main_hall_mouse_grab_region(int region)
 	}
 
 	// don't do anything if there are no animations to play
-	else if(Main_hall_door_anim.size() == 0)
+	else if(region > (int) Main_hall_door_anim.size() - 1)
 	{
 		return;
 	}
@@ -1329,7 +1382,7 @@ void main_hall_handle_right_clicks()
 	if (!Main_hall_right_click) {
 		if (mouse_down(MOUSE_RIGHT_BUTTON)) {
 			// cycle through the available regions
-			if (Main_hall_last_clicked_region == NUM_MAIN_HALL_MOUSE_REGIONS - 1) {
+			if (Main_hall_last_clicked_region == (int) Main_hall_door_anim.size() - 1) {
 				new_region = 0;
 			} else {
 				new_region = Main_hall_last_clicked_region + 1;
@@ -1532,36 +1585,30 @@ void main_hall_blit_version()
  */
 void main_hall_maybe_blit_tooltips()
 {
-	int w, text_index;
+	int w;
 
 	// if we're over no region - don't blit anything
 	if (Main_hall_mouse_region < 0) {
 		return;
 	}
 
-	// get the index of the proper text to be using
-	if (Main_hall_mouse_region == READY_ROOM_REGION) {
-		// if this is a multiplayer pilot, the ready room region becomes the multiplayer region
-		if (Player->flags & PLAYER_FLAGS_IS_MULTI){
-			text_index = NUM_REGIONS - 1;
-		} else {
-			text_index = READY_ROOM_REGION;
-		}
-	} else {
-		text_index = Main_hall_mouse_region;
+	if (Main_hall_mouse_region >= (int) Main_hall->regions.size()) {
+		Error(LOCATION, "Missing region description for index %d!\n", Main_hall_mouse_region);
 	}
 
 	// set the color and blit the string
 	if (!help_overlay_active(Main_hall_overlay_id)) {
 		int shader_y = (Main_hall->region_yval) - Main_hall_tooltip_padding[gr_screen.res];	// subtract more to pull higher
+		const char *desc = Main_hall->regions.at(Main_hall_mouse_region).description.c_str();
+		
 		// get the width of the string
-		gr_get_string_size(&w, NULL, Main_hall->region_descript.at(text_index));
+		gr_get_string_size(&w, NULL, desc);
 
 		gr_set_shader(&Main_hall_tooltip_shader);
 		gr_shade(0, shader_y, gr_screen.clip_width_unscaled, (gr_screen.clip_height_unscaled - shader_y), GR_RESIZE_MENU);
 
 		gr_set_color_fast(&Color_bright_white);
-		gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall->region_yval, Main_hall->region_descript.at(text_index), GR_RESIZE_MENU);
+		gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall->region_yval, desc, GR_RESIZE_MENU);
 	}
 }
 
@@ -1810,7 +1857,6 @@ void door_anim_init(main_hall_defines &m)
 		m.door_anim_coords.clear();
 		m.door_sounds.clear();
 		m.door_sound_pan.clear();
-		m.region_descript.clear();
 	}
 
 	SCP_vector<int> temp;
@@ -1835,12 +1881,37 @@ void door_anim_init(main_hall_defines &m)
 		// door_sound_pan
 		m.door_sound_pan.push_back(0.0f);
 	}
+}
 
-	// region_descript
-	for (idx = 0; idx < NUM_REGIONS; idx++) {
-		m.region_descript.push_back(NULL);
+void region_entry_init(main_hall_region &r, int mask, SCP_string description, int action, SCP_string lua_action)
+{
+	r.mask = mask;
+	r.description = description;
+	r.action = action;
+	r.lua_action = lua_action;
+}
+
+void region_info_init(main_hall_defines &m)
+{
+	if (Cmdline_reparse_mainhall) {
+		m.regions.clear();
 	}
-
+	
+	main_hall_region defaults[] = {
+		{0, XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""},
+		{1, XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""},
+		{2, XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""},
+		{3, XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""},
+		{4, XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""},
+		{5, XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""}
+	};
+	
+	for (int idx = 0; idx < 6; idx++) {
+		m.regions.push_back(defaults[idx]);
+	}
+	
+	// XSTR( "Multiplayer - Start or join a multiplayer game", 359)
+	m.default_readyroom = true;
 }
 
 /**
@@ -1865,6 +1936,7 @@ void parse_main_hall_table(const char* filename)
 	int idx, s_idx, m_idx, rval;
 	unsigned int count;
 	char temp_string[MAX_FILENAME_LEN];
+	SCP_string temp_scp_string;
 
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
@@ -2090,6 +2162,64 @@ void parse_main_hall_table(const char* filename)
 				// door pan value
 				required_string("+Door pan:");
 				stuff_float(&m->door_sound_pan[idx]);
+			}
+			
+			region_info_init(*m);
+			
+			int mask;
+			for (idx = 0; optional_string("+Door mask value:"); idx++) {
+				// door mask
+				stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
+				
+				mask = (int) strtol(temp_string, NULL, 0);
+				mask = 255 - mask;
+				
+				m->regions.resize(m->regions.size() + 1);
+				m->regions.at(idx).mask = mask;
+			}
+			
+			for (idx = 0; optional_string("+Door action:"); idx++) {
+				// door action
+				
+				if (optional_string("Script")) {
+					m->regions.at(idx).action = SCRIPT_REGION;
+					stuff_string(m->regions.at(idx).lua_action, F_RAW);
+				} else {
+					stuff_string(temp_scp_string, F_RAW);
+					
+					int action = -1;
+					for (int i = 0; Main_hall_region_map[i].name != NULL; i++) {
+						if (temp_scp_string == Main_hall_region_map[i].name) {
+							action = Main_hall_region_map[i].mask;
+							break;
+						}
+					}
+					
+					if (action == -1) {
+						temp_scp_string = "";
+						for (int i = 0; Main_hall_region_map[i].name != NULL; i++) {
+							temp_scp_string += ", ";
+							temp_scp_string += Main_hall_region_map[i].name;
+						}
+						
+						Error(LOCATION, "Unkown Door Region '%s'! Expected one of: %s", temp_string, temp_scp_string.substr(2).c_str());
+					}
+					
+					m->regions.at(idx).action = action;
+				}
+			}
+
+			for (idx = 0; optional_string("+Door description:"); idx++) {
+				// region description (tooltip)
+				stuff_string(temp_scp_string, F_MESSAGE);
+
+				if (temp_scp_string != "default") {
+					m->regions.at(idx).description = temp_scp_string;
+					
+					if (idx == 2) {
+						m->default_readyroom = false;
+					}
+				}
 			}
 
 			// tooltip y location
