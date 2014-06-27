@@ -162,6 +162,7 @@ void main_hall_render_door_anims(float frametime);
 #define QUICK_START_REGION		12
 #define SKILL_LEVEL_REGION		13
 #define SCRIPT_REGION			14
+#define START_REGION			15
 
 struct main_hall_region_info {
 	int mask;
@@ -180,6 +181,7 @@ main_hall_region_info Main_hall_region_map[] = {
 	{ QUICK_START_REGION, "Quickstart" },
 	{ SKILL_LEVEL_REGION, "Skilllevel" },
 	{ SCRIPT_REGION, "Script" },
+	{ START_REGION, "Start" },
 	{ -1, NULL }
 };
 
@@ -458,10 +460,6 @@ void main_hall_init(const SCP_string &main_hall_name)
 		if(Main_hall->default_readyroom) {
 			Main_hall->regions.at(2).description = XSTR( "Multiplayer - Start or join a multiplayer game", 359);
 		}
-		
-		if(Main_hall->regions.at(2).action == READY_ROOM_REGION) {
-			Main_hall->regions.at(2).action = MULTIPLAYER_REGION;
-		}
 	}
 	
 	// Read the menu regions from mainhall.tbl
@@ -701,7 +699,13 @@ void main_hall_do(float frametime)
 	// do any processing based upon what happened to the snazzy menu
 	switch (snazzy_action) {
 		case SNAZZY_OVER:
-			main_hall_handle_mouse_location(code);
+			for (idx = 0; idx < (int) Main_hall->regions.size(); idx++) {
+				if (Main_hall->regions.at(idx).mask == code) {
+					break;
+				}
+			}
+			
+			main_hall_handle_mouse_location(idx);
 			break;
 
 		case SNAZZY_CLICKED:
@@ -717,8 +721,15 @@ void main_hall_do(float frametime)
 				
 				if (region_action == -1) {
 					Error(LOCATION, "Region %d doesn't have an action!", code);
+				} else if (region_action == START_REGION) {
+					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
+						region_action = MULTIPLAYER_REGION;
+					} else {
+						region_action = READY_ROOM_REGION;
+					}
 				}
 			}
+			
 			switch (region_action) {
 				// clicked on the exit region
 				case EXIT_REGION:
@@ -728,17 +739,16 @@ void main_hall_do(float frametime)
 
 				// clicked on the readyroom region
 				case READY_ROOM_REGION:
-					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-						main_hall_do_multi_ready();
+					// Make sure we aren't in multi mode.
+					Player->flags = Player->flags ^ PLAYER_FLAGS_IS_MULTI;
+					Game_mode = GM_NORMAL;
+					
+					if (strlen(Main_hall_campaign_cheat)) {
+						gameseq_post_event(GS_EVENT_CAMPAIGN_CHEAT);
 					} else {
-						if (strlen(Main_hall_campaign_cheat)) {
-							gameseq_post_event(GS_EVENT_CAMPAIGN_CHEAT);
-						} else {
-							gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
-						}
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+						gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);
 					}
+					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 					break;
 
 				// clicked on the tech room region
@@ -755,23 +765,20 @@ void main_hall_do(float frametime)
 
 				// clicked on the campaign toom region
 				case CAMPAIGN_ROOM_REGION:
-					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-						main_hall_set_notify_string(XSTR( "Campaign Room not valid for multiplayer pilots", 366));
-					} else {
-						gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
-						gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
-					}
+					gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
 					break;
 
 				// clicked on the multiplayer region
 				case MULTIPLAYER_REGION:
-					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-						// NOTE : this isn't a great thing to be calling this anymore. But we'll leave it for now
-						gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
-					} else {
-						main_hall_set_notify_string(XSTR( "Not a valid multiplayer pilot!!", 367));
-					}
+					// Make sure we are in multi mode.
+					Player->flags |= PLAYER_FLAGS_IS_MULTI;
+					Game_mode = GM_MULTIPLAYER;
+					
+					main_hall_do_multi_ready();
+					
+					// NOTE : this isn't a great thing to be calling this anymore. But we'll leave it for now
+					gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 					break;
 
 				// load mission key was pressed
@@ -781,20 +788,16 @@ void main_hall_do(float frametime)
 				// quick start a game region
 				case QUICK_START_REGION:
 			#if !defined(NDEBUG)
-					if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-						main_hall_set_notify_string(XSTR( "Quick Start not valid for multiplayer pilots", 369));
+					if (Num_recent_missions > 0) {
+						strcpy_s(Game_current_mission_filename, Recent_missions[0]);
 					} else {
-						if (Num_recent_missions > 0) {
-							strcpy_s(Game_current_mission_filename, Recent_missions[0]);
-						} else {
-							if (mission_load_up_campaign()) {
-								main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", 1606));
-							}
-							strcpy_s(Game_current_mission_filename, Campaign.missions[0].name);
+						if (mission_load_up_campaign()) {
+							main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", 1606));
 						}
-						Campaign.current_mission = -1;
-						gameseq_post_event(GS_EVENT_START_GAME_QUICK);
+						strcpy_s(Game_current_mission_filename, Campaign.missions[0].name);
 					}
+					Campaign.current_mission = -1;
+					gameseq_post_event(GS_EVENT_START_GAME_QUICK);
 			#endif
 					break;
 
@@ -1897,7 +1900,7 @@ void region_info_init(main_hall_defines &m)
 	main_hall_region defaults[] = {
 		{0, XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""},
 		{1, XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""},
-		{2, XSTR( "Ready room - Start or continue a campaign", 355), READY_ROOM_REGION, ""},
+		{2, XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""},
 		{3, XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""},
 		{4, XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""},
 		{5, XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""}
