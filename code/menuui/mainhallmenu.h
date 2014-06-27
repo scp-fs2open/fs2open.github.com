@@ -16,6 +16,13 @@
 // CommanderDJ - this is now dynamic
 // #define MAIN_HALLS_MAX			10
 
+typedef struct main_hall_region {
+	int mask;
+	SCP_string description;
+	int action;
+	SCP_string lua_action;
+} main_hall_region;
+
 typedef struct main_hall_defines {
 	// mainhall name identifier
 	SCP_string name;
@@ -102,8 +109,10 @@ typedef struct main_hall_defines {
 
 	// region descriptions ----------------
 
-	// text (tooltip) description
-	SCP_vector<const char*> region_descript;
+	// action
+	SCP_vector<main_hall_region> regions;
+	
+	bool default_readyroom;
 
 	// y coord of where to draw tooltip text
 	int region_yval;
