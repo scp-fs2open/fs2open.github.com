@@ -1753,18 +1753,20 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 // in the tech room - UnknownPlayer
 void start_ship_animation(int ship_class, int play_sound)
 {
-	ship_info *sip = &Ship_info[ship_class];
 	char *p;
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
 
+	if (ship_class < 0) {
+		mprintf(("No ship class passed in to start_ship_animation\n"));
+		ShipSelectModelNum = -1;
+		return;
+	}
+    
+	ship_info *sip = &Ship_info[ship_class];
+    
 	anim_timer_start = timer_get_milliseconds();
 
 	if ( Cmdline_ship_choice_3d || !strlen(sip->anim_filename) ) {
-		if (ship_class < 0) {
-			mprintf(("No ship class passed in to start_ship_animation\n"));
-			ShipSelectModelNum = -1;
-			return;
-		}
 
 		//Unload Anim if one was playing
 		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0) {
