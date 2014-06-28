@@ -2692,7 +2692,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		if (is_variable) {
 			new_alt_class.variable_index = get_index_sexp_variable_name(alt_ship_class);
-			new_alt_class.ship_class = ship_info_lookup(Sexp_variables[new_alt_class.variable_index].text);
+			if(new_alt_class.variable_index >= 0) {
+				new_alt_class.ship_class = ship_info_lookup(Sexp_variables[new_alt_class.variable_index].text);
+			}
+			else {
+				new_alt_class.ship_class = -1;
+			}
 		}
 		else {
 			new_alt_class.variable_index = -1;
