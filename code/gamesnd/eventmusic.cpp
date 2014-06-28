@@ -788,6 +788,9 @@ int event_music_enemy_arrival()
 	else {
 		next_pattern = SONG_EARV_1;
 	}
+    
+	if ( Current_pattern < 0 )
+		return 0;
 
 	if ( Current_pattern == next_pattern )
 		return 0;	// already playing
