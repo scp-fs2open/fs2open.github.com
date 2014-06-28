@@ -899,6 +899,11 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 	weapon *dead_wp;						// the weapon that was killed
 	weapon_info *dead_wip;				// info on the weapon that was killed
+
+	if((weapon_obj->instance < 0) || (weapon_obj->instance >= MAX_WEAPONS)){
+		return -1;
+	}
+    
 	dead_wp = &Weapons[weapon_obj->instance]; //assign the dead weapon
 	dead_wip = &Weapon_info[dead_wp->weapon_info_index];
 
@@ -914,10 +919,6 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 	// we don't evaluate kills on anything except bombs, currently. -Halleck
 	if(!(dead_wip->wi_flags & WIF_BOMB))  {
-		return -1;
-	}
-
-	if((weapon_obj->instance < 0) || (weapon_obj->instance >= MAX_WEAPONS)){
 		return -1;
 	}
 
