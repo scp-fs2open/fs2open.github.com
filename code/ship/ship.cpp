@@ -10915,7 +10915,7 @@ void ship_process_targeting_lasers()
  * @param src	Source of weapon
  * @return true if detonated, else return false.
  * 
- *	Calls ::weapon_hit() to detonate weapon.
+ *	Calls ::weapon_hit(), indirectly via ::weapon_detonate(), to detonate weapon.
  *	If it's a weapon that spawns particles, those will be released.
  */
 int maybe_detonate_weapon(ship_weapon *swp, object *src)
@@ -10924,6 +10924,10 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 	object		*objp;
 	weapon_info	*wip;
 
+	if ((objnum < 0) || (objnum > MAX_OBJECTS)) {
+		return 0;
+	}
+    
 	objp = &Objects[objnum];
 
 	if (objp->type != OBJ_WEAPON){
@@ -10944,17 +10948,15 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 
 	if (wip->wi_flags & WIF_REMOTE) {
 
-		if ((objnum >= 0) && (objnum < MAX_OBJECTS)) {
-			int	weapon_sig;
+		int	weapon_sig;
 
-			weapon_sig = objp->signature;
+		weapon_sig = objp->signature;
 
-			if (swp->last_fired_weapon_signature == weapon_sig) {				
-				weapon_detonate(objp);
-				swp->last_fired_weapon_index = -1;
+		if (swp->last_fired_weapon_signature == weapon_sig) {
+			weapon_detonate(objp);
+			swp->last_fired_weapon_index = -1;
 
-				return 1;
-			}
+			return 1;
 		}
 	}
 
