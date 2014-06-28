@@ -946,6 +946,8 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 
 	// rotate the basic section into world	
 	for(idx=0; idx<3; idx++){
+		memset(&tempv, 0, sizeof(tempv));
+        
 		// rotate to world		
 		if(pinch_a){			
 			vm_vec_rotate(&pt, &Nebl_ring_pinched[idx], &m);
