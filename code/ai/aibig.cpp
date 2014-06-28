@@ -369,9 +369,13 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 	object	*target_objp;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+    
+	if ( aip->target_objnum < 0 )
+		return 0;
+    
 	target_objp = &Objects[aip->target_objnum];
 
-	if ( (aip->targeted_subsys != NULL) && (aip->target_objnum >= 0) && (aip->targeted_subsys->system_info->path_num >= 0) ) {
+	if ( (aip->targeted_subsys != NULL) && (aip->targeted_subsys->system_info->path_num >= 0) ) {
 		int			subsys_path_num, subsys_in_sight, checked_sight;
 		float			dist;
 
