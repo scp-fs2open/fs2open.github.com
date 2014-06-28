@@ -1939,8 +1939,10 @@ void multi_ts_handle_mouse()
 				multi_ts_maybe_host_only_popup();			
 				return;
 			}
-			if(Multi_ts_team[Net_player->p_info.team].multi_ts_flag[region_index] < 0){
-				return;
+			if(region_index >= 0 ) {
+				if(Multi_ts_team[Net_player->p_info.team].multi_ts_flag[region_index] < 0){
+					return;
+				}
 			}
 			break;
 		case MULTI_TS_PLAYER_LIST:
