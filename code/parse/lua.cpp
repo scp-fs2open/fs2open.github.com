@@ -13723,11 +13723,6 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		return ADE_RETURN_NIL;
 }
 
-// Stupid windows headers
-#ifdef min
-#undef min
-#endif
-
 #define MAX_TEXT_LINES		256
 static char *BooleanValues[] = {"False", "True"};
 static const int NextDrawStringPosInitial[] = {0, 0};
