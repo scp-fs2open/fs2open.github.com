@@ -95,7 +95,7 @@ typedef struct wl_bitmap_group
 
 extern int anim_timer_start;
 
-extern int Weapon_select_overlay_id = -1;
+int Weapon_select_overlay_id = -1;
 
 // convenient struct for handling all button controls
 struct wl_buttons {

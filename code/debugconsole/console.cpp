@@ -78,7 +78,6 @@ SCP_string dc_title;
 
 // Commands and History
 uint DCMDS = 40;			// Max number of commands to remember
-const uint DCMDS_MIN = 3;
 
 SCP_deque<SCP_string> dc_history;
 SCP_deque<SCP_string>::iterator last_oldcommand;		// Iterator to the last old command. Is reset to the start every new command push.
