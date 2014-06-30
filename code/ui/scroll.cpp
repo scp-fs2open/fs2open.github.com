@@ -70,11 +70,6 @@ void UI_SCROLLBAR::unhide()
 	down_button.unhide();
 }
 
-int UI_SCROLLBAR::get_hidden()
-{
-	return hidden;
-}
-
 void UI_SCROLLBAR::create(UI_WINDOW *wnd, int _x, int _y, int _h, int _start, int _stop, int _position, int _window_size)
 {
 	char *up = "^";
