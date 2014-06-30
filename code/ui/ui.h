@@ -259,6 +259,7 @@ class UI_KEYTRAP : public UI_GADGET
 		void create(UI_WINDOW *wnd, int hotkey, void (*_user_function)(void) );
 };
 
+/** TODO
 class UI_USERBOX : public UI_GADGET
 {
 		int b1_held_down;
@@ -273,6 +274,7 @@ class UI_USERBOX : public UI_GADGET
 		int mouse_x, mouse_y;
 		int bitmap_number;
 };
+ */
 
 class UI_INPUTBOX : public UI_GADGET
 {
