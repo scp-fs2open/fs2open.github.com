@@ -167,16 +167,6 @@ void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int ma
 		gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled;
 		gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled;
 	}
-
-	gr_screen.offset_x_unscaled = 0;
-	gr_screen.offset_y_unscaled = 0;
-
-	gr_screen.clip_left_unscaled = 0;
-	gr_screen.clip_top_unscaled = 0;
-	gr_screen.clip_right_unscaled = w - 1;
-	gr_screen.clip_bottom_unscaled = h - 1;
-	gr_screen.clip_width_unscaled = w;
-	gr_screen.clip_height_unscaled = h;
 }
 
 void gr_reset_screen_scale()
@@ -197,16 +187,6 @@ void gr_reset_screen_scale()
 
 	gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = (gr_screen.res == GR_1024) ? 1024 : 640;
 	gr_screen.max_h_unscaled = gr_screen.max_h_unscaled_zoomed = (gr_screen.res == GR_1024) ?  768 : 480;
-
-	gr_screen.offset_x_unscaled = 0;
-	gr_screen.offset_y_unscaled = 0;
-
-	gr_screen.clip_left_unscaled = 0;
-	gr_screen.clip_top_unscaled = 0;
-	gr_screen.clip_right_unscaled = gr_screen.max_w_unscaled - 1;
-	gr_screen.clip_bottom_unscaled = gr_screen.max_h_unscaled - 1;
-	gr_screen.clip_width_unscaled = gr_screen.max_w_unscaled;
-	gr_screen.clip_height_unscaled = gr_screen.max_h_unscaled;
 }
 
 /**

@@ -1613,7 +1613,7 @@ void main_hall_maybe_blit_tooltips()
 		int shader_y = text_y - (Main_hall->tooltip_padding);	// subtract more to pull higher
 
 		gr_set_shader(&Main_hall_tooltip_shader);
-		gr_shade(0, shader_y, gr_screen.clip_width_unscaled, (gr_screen.clip_height_unscaled - shader_y), GR_RESIZE_MENU);
+		gr_shade(0, shader_y, gr_screen.max_w_unscaled, (gr_screen.max_h_unscaled - shader_y), GR_RESIZE_MENU);
 
 		gr_set_color_fast(&Color_bright_white);
 		gr_string((gr_screen.max_w_unscaled - w)/2, text_y, Main_hall->region_descript.at(text_index), GR_RESIZE_MENU);
