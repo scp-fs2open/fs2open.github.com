@@ -1842,7 +1842,6 @@ void multi_voice_client_send_pending()
 		// add the current stream id#
 		ADD_DATA(Multi_voice_stream_id);
 
-		Assert(str->accum_buffer_usize[sent] < MULTI_VOICE_MAX_BUFFER_SIZE);
 		uc_size = (ushort)str->accum_buffer_usize[sent];
 		ADD_USHORT(uc_size);
 
