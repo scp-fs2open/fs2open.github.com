@@ -931,8 +931,8 @@ void clear_mission()
 	event_music_reset_choices();
 	clear_texture_replacements();
 
-	// alternate ship type names
-	mission_parse_reset_alt();
+	mission_parse_reset_alt();		// alternate ship type names
+	mission_parse_reset_callsign();
 
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
