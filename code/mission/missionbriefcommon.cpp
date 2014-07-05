@@ -1499,9 +1499,6 @@ ubyte brief_return_color_index(char c)
 		case 'P':
 			return BRIEF_TEXT_LIGHT_PINK;
 
-		case '|':	//This is not a duplicate, but a Non-Breaking Space case. Do not remove.
-			return BRIEF_TEXT_WHITE;
-
 		default:	//Zacam: Changed fron an Int3() in order to provide better feedback while still allowing play.
 			Warning(LOCATION, "Unrecognized or undefined case character: '$%c' used in Briefing in mission: '%s'. Tell Zacam.", c, Mission_filename);
 	} // end switch
@@ -1568,29 +1565,34 @@ int brief_text_colorize(char *src, int instance, ubyte default_color_stack[], in
 				}
 				i++;	// consume the }
 			}
+			// breaking character
+			else if (src[i] == '|')
+			{
+				active_color_index = default_color_stack[color_stack_index];
+				i++;	// consume the |
+			}
 			// normal $c or $c{
 			else
 			{
 				active_color_index = brief_return_color_index(src[i]);
 				i++; // Consume the color identifier and focus on the white character (if any)
+
+				// special case: color spans (different default color within braces)
+				// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
+				if (src[i] == '{')
+				{
+					if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
+					{
+						color_stack_index++;
+						default_color_stack[color_stack_index] = active_color_index;
+					}
+					i++;	// consume the {
+				}
 			}
 
-			// special case: color spans (different default color within braces)
-			// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
-			if (src[i] == '{')
-			{
-				if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
-				{
-					color_stack_index++;
-					default_color_stack[color_stack_index] = active_color_index;
-				}
-				i++;	// consume the {
-			}
- 
 			// Skip every whitespace until the next word is reached
 			while ( (i < src_len) && is_white_space(src[i]) )
 				i++;
-
 			//The next character is not a whitespace, let's process it as usual
 			//(subtract 1 because the for loop will add it again)
 			i--;
