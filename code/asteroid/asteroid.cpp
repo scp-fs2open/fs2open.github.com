@@ -873,7 +873,8 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 					
 					if (( dot > 0.7f) && (dist < 3000.0f)) {
-						// player would see asteroid pop out other side, so reverse velocity instead of wrapping						objp->pos = old_asteroid_pos;		
+						// player would see asteroid pop out other side, so reverse velocity instead of wrapping						
+						objp->pos = old_asteroid_pos;		
 						vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
 						objp->phys_info.desired_vel = objp->phys_info.vel;
 						Asteroids[objp->instance].target_objnum = -1;
