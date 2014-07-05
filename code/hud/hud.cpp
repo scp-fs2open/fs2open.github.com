@@ -398,6 +398,8 @@ disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), cus
 	}
 }
 
+HudGauge::~HudGauge() {};
+
 void HudGauge::initPosition(int x, int y)
 {
 	position[0] = x;

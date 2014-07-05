@@ -247,6 +247,7 @@ public:
 	HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b);
 	// constructor for custom gauges
 	HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y);
+	virtual ~HudGauge();
 
 	void initPosition(int x, int y);
 	void initBaseResolution(int w, int h);
