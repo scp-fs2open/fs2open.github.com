@@ -288,7 +288,6 @@ class UI_INPUTBOX : public UI_GADGET
 		int flags;
 		int pixel_limit;    // base max characters on how wide the string is (-1 to ignore) in pixels
 		int locked;
-		int ignore_escape;
 		color *text_color;
 		char *valid_chars;
 		char *invalid_chars;
