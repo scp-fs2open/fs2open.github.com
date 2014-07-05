@@ -166,8 +166,8 @@ void dc_do_command(SCP_string *cmd_str)
 	
 	} catch (errParseString err) {
 		dc_printf("Require string(s) not found: \n");
-		for (uint i = 0; i < err.expected_tokens.size(); ++i) {
-			dc_printf("%i: %s\n", err.expected_tokens[i].c_str());
+		for (uint j = 0; j < err.expected_tokens.size(); ++j) {
+			dc_printf("%i: %s\n", j, err.expected_tokens[j].c_str());
 		}
 
 		dc_printf("Found '%s' instead\n", err.found_token.c_str());
