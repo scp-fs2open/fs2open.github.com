@@ -2138,9 +2138,9 @@ void parse_main_hall_table(const char* filename)
 			for (idx = 0; idx < m->num_misc_animations; idx++) {
 				// anim sound triggers
 				required_string("+Misc anim trigger:");
-				int temp = 0;
-				stuff_int(&temp);
-				for (s_idx = 0; s_idx < temp; s_idx++) {
+				int temp_int = 0;
+				stuff_int(&temp_int);
+				for (s_idx = 0; s_idx < temp_int; s_idx++) {
 					m->misc_anim_special_trigger.at(idx).push_back(0);
 					stuff_int(&m->misc_anim_special_trigger.at(idx).at(s_idx));
 				}
