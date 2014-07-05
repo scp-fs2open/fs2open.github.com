@@ -2501,7 +2501,7 @@ int button_function(int n)
 	control_used(n);
 
 	if ( hud_sensors_ok(Player_ship) ) {
-		int keyHasBeenUsed = TRUE;
+		keyHasBeenUsed = TRUE;
 		switch(n) {
 			// target next
 			case TARGET_NEXT:
