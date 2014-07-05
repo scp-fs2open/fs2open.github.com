@@ -133,10 +133,10 @@ int CFred_mission_save::save_mission_file(char *pathname)
 		err = -3;
 //	else if (save_briefing_info())
 //		err = -4;
-	else if (save_fiction())
-		err = -3;
 	else if (save_cutscenes())
 		err = -4;
+	else if (save_fiction())
+		err = -3;
 	else if (save_cmd_briefs())
 		err = -4;
 	else if (save_briefing())
