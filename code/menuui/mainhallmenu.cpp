@@ -449,7 +449,6 @@ void main_hall_init(const SCP_string &main_hall_name)
 
 	// create the snazzy interface and load up the info from the table
 	snazzy_menu_init();
-	//read_menu_tbl(NOX("MAIN HALL"), temp, whee, Main_hall_region, &Main_hall_num_options, 0);
 	
 	// assign the proper main hall data
 	Assert(main_hall_get_pointer(main_hall_to_load) != NULL);
@@ -458,15 +457,15 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// check if we have to change the ready room's description
 	if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
 		if(Main_hall->default_readyroom) {
-			Main_hall->regions.at(2).description = XSTR( "Multiplayer - Start or join a multiplayer game", 359);
+			Main_hall->regions[2].description = XSTR( "Multiplayer - Start or join a multiplayer game", 359);
 		}
 	}
 	
 	// Read the menu regions from mainhall.tbl
 	main_hall_region *region;
 	for (idx = 0; idx < (int) Main_hall->regions.size(); idx++) {
-		region = &Main_hall->regions.at(idx);
-		snazzy_menu_add_region(Main_hall_region + idx, (char*) region->description.c_str(), region->mask, 0, -1);
+		region = &Main_hall->regions[idx];
+		snazzy_menu_add_region(Main_hall_region + idx, region->description.c_str(), region->mask, 0, -1);
 	}
 	Main_hall_num_options = Main_hall->regions.size();
 
@@ -647,7 +646,8 @@ void main_hall_exit_game()
  */
 void main_hall_do(float frametime)
 {
-	int idx, code, key, snazzy_action, region_action = -1;
+	int code, key, snazzy_action, region_action = -1;
+	SCP_vector<main_hall_region>::iterator it;
 
 	// need to ensure ambient is playing, since it may be stopped by a playing movie
 	main_hall_start_ambient();
@@ -699,22 +699,22 @@ void main_hall_do(float frametime)
 	// do any processing based upon what happened to the snazzy menu
 	switch (snazzy_action) {
 		case SNAZZY_OVER:
-			for (idx = 0; idx < (int) Main_hall->regions.size(); idx++) {
-				if (Main_hall->regions.at(idx).mask == code) {
+			for (it = Main_hall->regions.begin(); Main_hall->regions.end() != it; ++it) {
+				if (it->mask == code) {
+					main_hall_handle_mouse_location(it - Main_hall->regions.begin());
 					break;
 				}
 			}
 			
-			main_hall_handle_mouse_location(idx);
 			break;
 
 		case SNAZZY_CLICKED:
 			if (code == ESC_PRESSED) {
 				region_action = ESC_PRESSED;
 			} else {
-				for (idx = 0; idx < (int) Main_hall->regions.size(); idx++) {
-					if (Main_hall->regions.at(idx).mask == code) {
-						region_action = Main_hall->regions.at(idx).action;
+				for (it = Main_hall->regions.begin(); Main_hall->regions.end() != it; ++it) {
+					if (it->mask == code) {
+						region_action = it->action;
 						break;
 					}
 				}
@@ -828,14 +828,14 @@ void main_hall_do(float frametime)
 				
 				// custom action
 				case SCRIPT_REGION:
-					char *lua = (char*) Main_hall->regions.at(idx).lua_action.c_str();
+					const char *lua = it->lua_action.c_str();
 					Script_system.EvalString(lua, NULL, NULL, lua);
 					break;
 			} // END switch (code)
 
 			// if the escape key wasn't pressed handle any mouse position related events
 			if (code != ESC_PRESSED) {
-				main_hall_handle_mouse_location((region_action == -1 ? -1 : idx));
+				main_hall_handle_mouse_location((region_action == -1 ? -1 : it - Main_hall->regions.begin()));
 			}
 			break;
 
@@ -1883,14 +1883,6 @@ void door_anim_init(main_hall_defines &m)
 	}
 }
 
-void region_entry_init(main_hall_region &r, int mask, SCP_string description, int action, SCP_string lua_action)
-{
-	r.mask = mask;
-	r.description = description;
-	r.action = action;
-	r.lua_action = lua_action;
-}
-
 void region_info_init(main_hall_defines &m)
 {
 	if (Cmdline_reparse_mainhall) {
@@ -2174,16 +2166,22 @@ void parse_main_hall_table(const char* filename)
 				mask = (int) strtol(temp_string, NULL, 0);
 				mask = 255 - mask;
 				
-				m->regions.resize(m->regions.size() + 1);
-				m->regions.at(idx).mask = mask;
+				if(idx >= (int) m->regions.size()) {
+					m->regions.resize(idx + 1);
+				}
+				m->regions[idx].mask = mask;
 			}
 			
 			for (idx = 0; optional_string("+Door action:"); idx++) {
 				// door action
 				
+				if(idx >= (int) m->regions.size()) {
+					m->regions.resize(idx + 1);
+				}
+				
 				if (optional_string("Script")) {
-					m->regions.at(idx).action = SCRIPT_REGION;
-					stuff_string(m->regions.at(idx).lua_action, F_RAW);
+					m->regions[idx].action = SCRIPT_REGION;
+					stuff_string(m->regions[idx].lua_action, F_RAW);
 				} else {
 					stuff_string(temp_scp_string, F_RAW);
 					
@@ -2196,16 +2194,16 @@ void parse_main_hall_table(const char* filename)
 					}
 					
 					if (action == -1) {
-						temp_scp_string = "";
+						SCP_string err_msg = "";
 						for (int i = 0; Main_hall_region_map[i].name != NULL; i++) {
-							temp_scp_string += ", ";
-							temp_scp_string += Main_hall_region_map[i].name;
+							err_msg += ", ";
+							err_msg += Main_hall_region_map[i].name;
 						}
 						
-						Error(LOCATION, "Unkown Door Region '%s'! Expected one of: %s", temp_string, temp_scp_string.substr(2).c_str());
+						Error(LOCATION, "Unkown Door Region '%s'! Expected one of: %s", temp_scp_string.c_str(), err_msg.substr(2).c_str());
 					}
 					
-					m->regions.at(idx).action = action;
+					m->regions[idx].action = action;
 				}
 			}
 
@@ -2214,7 +2212,11 @@ void parse_main_hall_table(const char* filename)
 				stuff_string(temp_scp_string, F_MESSAGE);
 
 				if (temp_scp_string != "default") {
-					m->regions.at(idx).description = temp_scp_string;
+					if(idx >= (int) m->regions.size()) {
+						m->regions.resize(idx + 1);
+					}
+					
+					m->regions[idx].description = temp_scp_string;
 					
 					if (idx == 2) {
 						m->default_readyroom = false;
