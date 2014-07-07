@@ -1059,12 +1059,8 @@ void debrief_traitor_init()
 		int rval;
 		int stage_num;
 
-		// open localization
-		lcl_ext_open();
-
 		if ((rval = setjmp(parse_abort)) != 0) {
 			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "traitor.tbl", rval));
-			lcl_ext_close();
 			return;
 		}
 
@@ -1103,9 +1099,6 @@ void debrief_traitor_init()
 		stuff_string( stagep->recommendation_text, F_MULTITEXT, NULL);
 
 		inited = 1;
-
-		// close localization
-		lcl_ext_close();
 	}
 
 	// disable the accept button if in single player and I am a traitor

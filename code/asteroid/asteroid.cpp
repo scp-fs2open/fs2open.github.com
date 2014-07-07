@@ -1895,12 +1895,8 @@ void asteroid_parse_tbl()
 		"are no species for them to belong to."
 		);
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "asteroid.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -2029,9 +2025,6 @@ void asteroid_parse_tbl()
 	} else {
 		Asteroid_icon_closeup_zoom = 0.5f;	// magic number from retail
 	}
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**

@@ -334,13 +334,9 @@ void parse_helptbl(const char *filename)
 	SCP_vector<help_left_bracket> lbracket_temp;
 	help_left_bracket lbracket_temp2;
 	vec3d vec3d_temp;
-
-	// open localization
-	lcl_ext_open();
 	
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	} 
 
@@ -488,9 +484,6 @@ void parse_helptbl(const char *filename)
 
 		}		// end while
 	}		// end while
-
-	// close localization
-	lcl_ext_close();
 }
 
 

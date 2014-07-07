@@ -324,12 +324,8 @@ void parse_weapon_expl_tbl(const char *filename)
 	uint i;
 	lod_checker lod_check;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -368,9 +364,6 @@ void parse_weapon_expl_tbl(const char *filename)
 		}
 	}
 	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**
@@ -2781,13 +2774,9 @@ void parse_weaponstbl(const char *filename)
 {
 	int rval;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -2860,9 +2849,6 @@ void parse_weaponstbl(const char *filename)
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 //uses a simple bucket sort to sort weapons, order of importance is:

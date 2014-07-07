@@ -246,12 +246,8 @@ void parse_medal_tbl()
 {
 	int rval, i;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "medals.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -429,9 +425,6 @@ void parse_medal_tbl()
 		if (Medals[i].kills_needed > 0)
 			prev_badge_kills = Medals[i].kills_needed;
 	}
-
-	// close localization
-	lcl_ext_close();
 }
 
 // replacement for -gimmemedals

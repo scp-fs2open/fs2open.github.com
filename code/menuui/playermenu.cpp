@@ -1314,12 +1314,8 @@ void player_tips_init()
 
 	Num_player_tips = 0;
 
-	// begin external localization stuff
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tips.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -1334,9 +1330,6 @@ void player_tips_init()
 		}
 		Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
 	}
-
-	// stop externalizing, homey
-	lcl_ext_close();
 }
 
 // close out player tips - *only call from game_shutdown()*

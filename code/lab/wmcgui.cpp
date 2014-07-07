@@ -149,12 +149,8 @@ void GUISystem::ParseClassInfo(char* filename)
 		DestroyClassInfo();
 	}
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("WMCGUI: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -170,9 +166,6 @@ void GUISystem::ParseClassInfo(char* filename)
 			list_append(&ScreenClassInfo, sciep);
 		}
 	} while(flag);
-
-	// close localization
-	lcl_ext_close();
 
 	ClassInfoParsed = true;
 }

@@ -113,9 +113,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 	}
 	Assert(fname_len < MAX_FILENAME_LEN);
 
-	// open localization
-	lcl_ext_open();
-
 	*type = -1;
 	do {
 		if ((rval = setjmp(parse_abort)) != 0) {
@@ -166,9 +163,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 			success = 1;
 		}
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	Assert(success);
 	return success;
@@ -425,9 +419,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
-	// open localization
-	lcl_ext_open();	
-
 	if ( pl == NULL )
 		pl = Player;
 
@@ -439,9 +430,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	// read the mission file and get the list of mission filenames
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("Error parsing '%s'\r\nError code = %i.\r\n", filename, rval));
-
-		// close localization
-		lcl_ext_close();
 
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
@@ -565,9 +553,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 				} else {
 					if ( cm->formula == -1 ){
-						// close localization
-						lcl_ext_close();
-
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
@@ -605,9 +590,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 				} else {
 					if ( cm->mission_loop_formula == -1 ){
-						// close localization
-						lcl_ext_close();
-
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
@@ -647,9 +629,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			Campaign.num_missions++;
 		}
 	}
-
-	// close localization
-	lcl_ext_close();
 
 	// set up the other variables for the campaign stuff.  After initializing, we must try and load
 	// the campaign save file for this player.  Since all campaign loads go through this routine, I
@@ -1447,13 +1426,9 @@ void read_mission_goal_list(int num)
 	int i, z, rval, event_count, count = 0;
 
 	filename = Campaign.missions[num].name;
-
-	// open localization
-	lcl_ext_open();	
 	
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -1552,9 +1527,6 @@ void read_mission_goal_list(int num)
 	}
 
 	// Goober5000 - variables do not need to be read here
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**

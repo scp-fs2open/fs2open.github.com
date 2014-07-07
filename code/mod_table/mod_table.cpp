@@ -37,13 +37,9 @@ void parse_mod_table(const char *filename)
 	int rval;
 	// SCP_vector<SCP_string> lines;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default game_settings.tbl>", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -254,9 +250,6 @@ void parse_mod_table(const char *filename)
 	}
 
 	required_string("#END");
-
-	// close localization
-	lcl_ext_close();
 }
 
 void mod_table_init()

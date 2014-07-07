@@ -1032,12 +1032,8 @@ void techroom_intel_init()
 	if (inited)
 		return;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "species.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 	
@@ -1075,9 +1071,6 @@ void techroom_intel_init()
 	}
 
 	inited = 1;
-
-	// close localization
-	lcl_ext_close();
 }
 
 void techroom_init()

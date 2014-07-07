@@ -305,12 +305,8 @@ void brief_parse_icon_tbl()
 	Assert(!Species_info.empty());
 	const size_t max_icons = Species_info.size() * MIN_BRIEF_ICONS;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "icons.tbl", rval));
-		lcl_ext_close();
 
 		return;
 	}
@@ -350,9 +346,6 @@ void brief_parse_icon_tbl()
 		Briefing_icon_info.push_back(bii);
 	}
 	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
 
 
 	// now assign the icons to their species

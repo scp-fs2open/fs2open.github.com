@@ -533,9 +533,6 @@ void parse_msgtbl()
 {
 	int i, j;
 
-	// open localization
-	lcl_ext_open();
-
 	//speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
 	Messages.reserve(500);
 	Message_waves.reserve(300);
@@ -646,10 +643,6 @@ void parse_msgtbl()
 
 		required_string("#End");
 	}
-
-	
-	// close localization
-	lcl_ext_close();
 }
 
 // this is called at the start of each level

@@ -415,17 +415,11 @@ void credits_parse_table(const char* filename)
 
 void credits_parse()
 {
-	// open localization
-	lcl_ext_open();
-
 	// Parse main table
 	credits_parse_table("credits.tbl");
 
 	// Parse modular tables
 	parse_modular_table("*-crd.tbm", credits_parse_table);
-
-	// close localization
-	lcl_ext_close();
 }
 
 void credits_init()

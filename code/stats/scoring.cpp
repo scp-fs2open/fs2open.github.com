@@ -61,12 +61,8 @@ void parse_rank_tbl()
 	char buf[MULTITEXT_LENGTH];
 	int rval, idx, persona;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "rank.tbl", rval));
-		lcl_ext_close();
 		return;
 	} 
 
@@ -118,9 +114,6 @@ void parse_rank_tbl()
 			Int3();
 	}
 #endif
-
-	// close localization
-	lcl_ext_close();
 }
 
 // initialize a nice blank scoring element
