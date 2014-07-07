@@ -307,7 +307,7 @@ sexp_oper Operators[] = {
 
 	//Other Sub-Category
 	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
-	{ "script-eval-string",				OP_SCRIPT_EVAL_STRING,					1,	1,			SEXP_INTEGER_OPERATOR,	},
+	{ "script-eval-string",				OP_SCRIPT_EVAL_STRING,					2,	2,			SEXP_ACTION_OPERATOR,	},
 
 	//Time Category
 	{ "time-ship-destroyed",			OP_TIME_SHIP_DESTROYED,					1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -535,10 +535,10 @@ sexp_oper Operators[] = {
 	{ "invalidate-goal",				OP_INVALIDATE_GOAL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "validate-goal",					OP_VALIDATE_GOAL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "red-alert",						OP_RED_ALERT,							0,	0,			SEXP_ACTION_OPERATOR,	},
-	{ "end-mission",					OP_END_MISSION,							0,	2,			SEXP_ACTION_OPERATOR,	},	//-Sesquipedalian
+	{ "end-mission",					OP_END_MISSION,							0,	3,			SEXP_ACTION_OPERATOR,	},	//-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,							0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,						1,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "end-campaign",					OP_END_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
+	{ "end-campaign",					OP_END_CAMPAIGN,						0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -639,7 +639,7 @@ sexp_oper Operators[] = {
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
-	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	1,			SEXP_ACTION_OPERATOR,	},	// taylor
+	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	7,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 
@@ -807,6 +807,15 @@ char *HUD_gauge_text[NUM_HUD_GAUGES] =
 
 
 void sexp_set_skybox_model_preload(char *name); // taylor
+int Num_skybox_flags = 6;
+char *Skybox_flags[] = {
+	"force-clamp",
+	"add-lighting",
+	"no-transparency",
+	"add-zbuffer",
+	"add-culling",
+	"no-glowmaps",
+};
 
 int	Directive_count;
 int	Sexp_useful_number;  // a variable to pass useful info in from external modules
@@ -3004,6 +3013,21 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if ( stricmp(CTEXT(node), NOX("default")) && !strstr(CTEXT(node), NOX(".pof")) )
 					return SEXP_CHECK_INVALID_SKYBOX_NAME;
+
+				break;
+
+			case OPF_SKYBOX_FLAGS:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				for ( i = 0; i < Num_skybox_flags; ++i ) {
+					if ( !stricmp( CTEXT(node), Skybox_flags[i]) )
+						break;
+				}
+
+				// if we reached the end of the list, then the flag is invalid
+				if ( i == Num_skybox_flags )
+					return SEXP_CHECK_INVALID_SKYBOX_FLAG;
 
 				break;
 
@@ -8294,14 +8318,14 @@ int eval_perform_actions(int n)
  */
 int eval_when(int n, int when_op_num)
 {
-	int cond, val, actions;
+	int arg_handler = -1, cond, val, actions;
 	Assert( n >= 0 );
 	arg_item *ptr;
 
 	// get the parts of the sexp and evaluate the conditional
 	if (is_blank_argument_op(when_op_num))
 	{
-		int arg_handler = CAR(n);
+		arg_handler = CAR(n);
 		cond = CADR(n);
 		actions = CDDR(n);
 
@@ -8393,7 +8417,10 @@ int eval_when(int n, int when_op_num)
 		Sexp_current_argument_nesting_level--;
 	}
 
-	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
+	// thanks to MageKing17 for noticing that we need to short-circuit on the correct node!
+	int short_circuit_node = (arg_handler >= 0) ? arg_handler : cond;
+
+	if (Sexp_nodes[short_circuit_node].value == SEXP_KNOWN_FALSE)
 		return SEXP_KNOWN_FALSE;  // no need to waste time on this anymore
 
 	if (val == SEXP_KNOWN_FALSE)
@@ -10963,7 +10990,18 @@ void sexp_end_of_campaign(int n)
 // campaign, and otherwise to do the conventional code
 void sexp_end_campaign(int n)
 {
+	int ignore_player_mortality = 1;
+
 	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
+		return;
+	}
+
+	if (n != -1) {
+		ignore_player_mortality = is_sexp_true(n);
+	}
+
+	// if the player is dead we may want to let the death screen handle things
+	if (!ignore_player_mortality && (Player_ship->flags[Ship::Ship_Flags::Dying])) {
 		return;
 	}
 
@@ -12083,6 +12121,7 @@ void sexp_end_mission(int n)
 {
 	int ignore_player_mortality = 1;
 	int boot_to_main_hall = 0;
+	int from_debrief_to_main_hall = 0;
 
 	if (n != -1) {
 		ignore_player_mortality = is_sexp_true(n);
@@ -12092,10 +12131,21 @@ void sexp_end_mission(int n)
 		boot_to_main_hall = is_sexp_true(n);
 		n = CDR(n);
 	}
+	if (n != -1) {
+		from_debrief_to_main_hall = is_sexp_true(n);
+		n = CDR(n);
+	}
 
 	// if the player is dead we may want to let the death screen handle things
 	if (!ignore_player_mortality && (Player_ship->flags[Ship::Ship_Flags::Dying])) {
 		return;
+	}
+
+	// ending via debrief and then going to mainhall could maybe work with multiplayer?
+	if (from_debrief_to_main_hall) {
+		The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall);
+	} else {
+		The_mission.flags.unset(Mission::Mission_Flags::End_to_mainhall);
 	}
 
 	// if we go straight to the main hall we have to clean up the mission without entering the debriefing
@@ -16447,13 +16497,44 @@ void sexp_set_skybox_orientation(int n)
 // taylor - load and set a skybox model
 void sexp_set_skybox_model(int n)
 {
-	if ( !stricmp("default", CTEXT(n)) ) {
-		stars_set_background_model( The_mission.skybox_model, NULL );
+	char new_skybox_model[TOKEN_LENGTH+1]; //max input is TOKEN_LENGTH, +1 for NUL
+	strcpy_s(new_skybox_model, CTEXT(n));
+	int new_skybox_model_flags = DEFAULT_NMODEL_FLAGS;
+
+	// gather any flags
+	n = CDR(n);
+	while (n != -1) {
+		// this should check all entries in Skybox_flags
+		if ( !stricmp("add-lighting", CTEXT(n) )) {
+			new_skybox_model_flags &= ~MR_NO_LIGHTING;
+		}
+		else if ( !stricmp("no-transparency", CTEXT(n) )) {
+			new_skybox_model_flags &= ~MR_ALL_XPARENT;
+		}
+		else if ( !stricmp("add-zbuffer", CTEXT(n) )) {
+			new_skybox_model_flags &= ~MR_NO_ZBUFFER;
+		}
+		else if ( !stricmp("add-culling", CTEXT(n) )) {
+			new_skybox_model_flags &= ~MR_NO_CULL;
+		}
+		else if ( !stricmp("no-glowmaps", CTEXT(n) )) {
+			new_skybox_model_flags |= MR_NO_GLOWMAPS;
+		}
+		else if ( !stricmp("force-clamp", CTEXT(n) )) {
+			new_skybox_model_flags |= MR_FORCE_CLAMP;
+		}
+		else {
+			Warning(LOCATION, "Invalid flag passed to set-skybox-model: %s\n", CTEXT(n));
+		}
+		n = CDR(n);
+	}
+	if ( !stricmp("default", new_skybox_model )) {
+		stars_set_background_model( The_mission.skybox_model, NULL, new_skybox_model_flags );
 	} else {
 		// stars_level_init() will set the actual mission skybox after this gets
 		// evaluated during parse. by setting it now we get everything loaded so
 		// there is less slowdown when it actually swaps out - taylor
-		stars_set_background_model( CTEXT(n), NULL );
+		stars_set_background_model( new_skybox_model, NULL, new_skybox_model_flags );
 	}
 }
 
@@ -21308,24 +21389,65 @@ void multi_sexp_show_hide_jumpnode(bool show)
 int sexp_script_eval(int node, int return_type)
 {
 	int n = node;
-	char *s = CTEXT(n);
-	bool success = false;
-
-	int r = -1;
 
 	switch(return_type)
 	{
 		case OPR_NUMBER:
-			success = Script_system.EvalString(s, "|i", &r, s);
-			break;
+			{
+				char* s = CTEXT(n);
+				int r = -1;
+				bool success = Script_system.EvalString(CTEXT(n), "|i", &r);
+
+				if(!success)
+					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+
+				return r;
+			}
 		case OPR_STRING:
-			Error(LOCATION, "SEXP system does not support string return type; Goober must fix this before script-eval-string will work");
+			{
+				char* ret = NULL;
+				char* s = CTEXT(n);
+
+				bool success = Script_system.EvalString(s, "|s", &ret);
+				n = CDR(n);
+
+				if(!success)
+					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+
+				if (n != -1 && success)
+				{
+					Assert(Sexp_nodes[n].first == -1);
+					int variable_index = atoi(Sexp_nodes[n].text);
+
+					// verify variable set
+					Assert(Sexp_variables[variable_index].type & SEXP_VARIABLE_SET);
+
+					if (!(Sexp_variables[variable_index].type & SEXP_VARIABLE_STRING))
+					{
+						Warning(LOCATION, "Variable for script-eval has to be a string variable!");
+					}
+					else if (ret != NULL)
+					{
+						// assign to variable
+						sexp_modify_variable(ret, variable_index);
+					}
+
+					n = CDR(n);
+				}
+			}
 			break;
 		case OPR_NULL:
-			while(n != -1)
 			{
-				success = Script_system.EvalString(s, NULL, NULL, CTEXT(n));
-				n = CDR(n);
+				while (n != -1)
+				{
+					char* s = CTEXT(n);
+					bool success = Script_system.EvalString(s, NULL, NULL);
+
+					if (!success)
+						Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+
+					n = CDR(n);
+				}
 			}
 			break;
 		default:
@@ -21333,10 +21455,7 @@ int sexp_script_eval(int node, int return_type)
 			break;
 	}
 
-	if(!success)
-		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
-
-	return r;
+	return -1;
 }
 
 void sexp_force_glide(int node)
@@ -24728,7 +24847,6 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_SPEED_Y:
 		case OP_GET_OBJECT_SPEED_Z:
 		case OP_SCRIPT_EVAL_NUM:
-		case OP_SCRIPT_EVAL_STRING:
 		case OP_STRING_TO_INT:
 		case OP_GET_THROTTLE_SPEED:
 		case OP_GET_VARIABLE_BY_INDEX:
@@ -25060,6 +25178,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SECONDARY_WEAPON:
 		case OP_SET_NUM_COUNTERMEASURES:
 		case OP_SCRIPT_EVAL:
+		case OP_SCRIPT_EVAL_STRING:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
 		case OP_LOCK_PRIMARY_WEAPON:
@@ -26071,6 +26190,8 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_MISSION_NAME;
 
 		case OP_END_CAMPAIGN:
+			return OPF_BOOL;
+
 		case OP_END_OF_CAMPAIGN:
 			return OPF_NONE;
 
@@ -26805,7 +26926,10 @@ int query_operator_argument_type(int op, int argnum)
 
 		// taylor
 		case OP_SET_SKYBOX_MODEL:
-			return OPF_SKYBOX_MODEL_NAME;
+			if (argnum == 0)
+				return OPF_SKYBOX_MODEL_NAME;
+			else if (argnum <= 7)
+				return OPF_SKYBOX_FLAGS;
 
 		case OP_SET_SKYBOX_ORIENT:
 			return OPF_NUMBER;
@@ -27092,9 +27216,12 @@ int query_operator_argument_type(int op, int argnum)
 			else return OPF_NEBULA_POOF;
 
 		case OP_SCRIPT_EVAL_NUM:
-		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL:
 			return OPF_STRING;
+
+		case OP_SCRIPT_EVAL_STRING:
+			if (argnum == 1)return OPF_VARIABLE_NAME;
+			else return OPF_STRING;
 
 		case OP_CHANGE_IFF_COLOR:
 			if ((argnum == 0) || (argnum == 1))
@@ -28868,6 +28995,7 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
+		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL:
 			return CHANGE_SUBCATEGORY_OTHER;
 
@@ -28967,7 +29095,6 @@ int get_subcategory(int sexp_id)
 		case OP_STRING_GET_LENGTH:
 			return STATUS_SUBCATEGORY_VARIABLES;
 
-		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL_NUM:
 			return STATUS_SUBCATEGORY_OTHER;
 			
@@ -31099,7 +31226,8 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_END_MISSION, "end-mission\r\n" 
 		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
 		"\t1:\tEnd Mission even if the player is dead (optional; defaults to true)\r\n"
-		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)"
+		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)\r\n"
+		"\t3:\tGo to the mainhall instead of starting the next mission (optional; defaults to false; not yet tested in multi)"
 	},
 
 	// Goober5000
@@ -31161,7 +31289,8 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_END_CAMPAIGN, "end-campaign\r\n"
-		"\tEnds the builtin campaign.  Should only be used by the main FreeSpace campaign\r\n" },
+		"\tEnds the builtin campaign.  Should only be used by the main FreeSpace campaign\r\n"
+		"\t1:\tEnd Campaign even if the player is dead (optional; defaults to true)\r\n" },
 
 	{ OP_SHIP_VAPORIZE, "ship-vaporize\r\n"
 		"\tSets the ship to vaporize when it is destroyed.  Does not actually destroy the ship - use self-destruct for that.\r\n"
@@ -32382,8 +32511,11 @@ sexp_help_struct Sexp_help[] = {
 
 	// taylor
 	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
-		"\tSets the current skybox model.  Takes 1 argument...\r\n"
-		"\t1:\tModel filename (with .pof extension) to switch to\r\n\r\n"
+		"\tSets the current skybox model.  Takes 1-7 arguments\r\n"
+		"\t1:\tModel filename (with .pof extension) to switch to\r\n"
+		"\t2-7:\tSet or unset the following skyboxes flags\r\n"
+		"\t\t\tadd-lighting, no-transparency, add-zbuffer\r\n"
+		"\t\t\tadd-culling, no-glowmaps, force-clamp\r\n\r\n"
 		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
 	},
 
@@ -32473,13 +32605,14 @@ sexp_help_struct Sexp_help[] = {
 
 	{OP_SCRIPT_EVAL_STRING, "script-eval-string\r\n"
 		"\tEvaluates script to return a string"
-		"Takes 1 argument...\r\n"
-		"\t1:\tScript\r\n"
+		"Takes a multiple of 2 arguments...\r\n"
+		"\t1:\tScript (Without a leading 'return')\r\n"
+		"\t2:\tDestination variable\r\n"
 	},
 
 	{OP_SCRIPT_EVAL, "script-eval\r\n"
-		"\tEvaluates script"
-		"Takes at least 1 argument...\r\n"
+		"\tEvaluates the given script\r\n"
+		"Takes 1 argument...\r\n"
 		"\t1:\tScript to evaluate\r\n"
 	},
 

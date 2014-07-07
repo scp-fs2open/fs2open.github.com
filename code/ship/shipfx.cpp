@@ -3304,7 +3304,6 @@ flag_def_list Warp_variables[] = {
 	{"Speed",			WV_SPEED,			CombinedVariable::TYPE_FLOAT},
 	{"Time",			WV_TIME,			CombinedVariable::TYPE_FLOAT},
 };
-static const size_t Warp_variables_num = sizeof(Warp_variables)/sizeof(flag_def_list);
 
 //********************-----CLASS: WarpEffect-----********************//
 WarpEffect::WarpEffect()
@@ -3971,6 +3970,9 @@ int WE_BSG::warpShipRender()
 		{
 			vertex p;
 			extern int Cmdline_nohtl;
+            
+            memset(&p, 0, sizeof(p));
+            
 			if(Cmdline_nohtl) {
 				g3_rotate_vertex(&p, &pos );
 			}else{

@@ -58,6 +58,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 
 	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
+	memset(verts, 0, sizeof(verts));
 
 	if (Warp_glow_bitmap >= 0) {
 		float r = radius;

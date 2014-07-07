@@ -1178,7 +1178,7 @@ void game_loading_callback(int count)
 
 	if (Processing_filename[0] != '\0') {
 		gr_set_shader(&busy_shader);
-		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17, GR_RESIZE_MENU); // make sure it goes across the entire width
+		gr_shade(0, 0, gr_screen.max_w_unscaled, 17, GR_RESIZE_MENU); // make sure it goes across the entire width
 
 		gr_set_color_fast(&Color_white);
 		gr_string(5, 5, Processing_filename, GR_RESIZE_MENU);
@@ -4529,7 +4529,7 @@ void game_frame(bool paused)
 			}
 
 			Script_system.SetHookObject("Self", Viewer_obj);
-			if (!hud_disabled_except_messages() && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
+			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
 			{
 				Script_system.RunBytecode(Script_hudhook);
 				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
@@ -8767,16 +8767,21 @@ void game_title_screen_display()
 			int width, height;
 			bm_get_info(Game_title_bitmap, &width, &height);
 
+			// set the screen scale to the bitmap's dimensions
+			gr_set_screen_scale(width, height);
+
 			// draw it in the center of the screen
 			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
-		}
 
-		if (Game_title_logo != -1)
-		{
-			gr_set_bitmap(Game_title_logo);
+			if (Game_title_logo != -1)
+			{
+				gr_set_bitmap(Game_title_logo);
 
-			gr_bitmap(0, 0, GR_RESIZE_MENU);
+				gr_bitmap(0, 0, GR_RESIZE_MENU);
 
+			}
+
+			gr_reset_screen_scale();
 		}
 	}
 
@@ -8877,6 +8882,10 @@ void game_pause()
 					pause_init();
 				break;
 
+			case GS_STATE_FICTION_VIEWER:
+				fiction_viewer_pause();
+				break;
+
 			default:
 				audiostream_pause_all();
 		}
@@ -8937,6 +8946,10 @@ void game_unpause()
 			// if in a game then do nothing, pause_init() should have been called
 			// and will get cleaned up elsewhere
 			case GS_STATE_GAME_PLAY:
+				break;
+
+			case GS_STATE_FICTION_VIEWER:
+				fiction_viewer_unpause();
 				break;
 
 			default:

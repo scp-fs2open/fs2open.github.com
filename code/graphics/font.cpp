@@ -309,6 +309,19 @@ void _cdecl gr_printf_menu( int x, int y, const char * format, ... )
 	gr_string(x,y,grx_printf_text,GR_RESIZE_MENU);
 }
 
+void _cdecl gr_printf_menu_zoomed( int x, int y, const char * format, ... )
+{
+	va_list args;
+
+	if ( !Current_font ) return;
+
+	va_start(args, format);
+	vsprintf(grx_printf_text,format,args);
+	va_end(args);
+
+	gr_string(x,y,grx_printf_text,GR_RESIZE_MENU_ZOOMED);
+}
+
 void _cdecl gr_printf_no_resize( int x, int y, const char * format, ... )
 {
 	va_list args;

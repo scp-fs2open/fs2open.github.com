@@ -46,6 +46,43 @@ namespace Model {
 
 		NUM_VALUES
 	};
+
+	FLAG_LIST(Render_Flags) {
+		Normal,					// Draw a normal object
+		Show_outline,			// Draw the object in outline mode. Color specified by model_set_outline_color
+		Show_pivots,			// Show the pivot points
+		Show_paths,				// Show the paths associated with a model
+		Show_radius,			// Show the radius around the object
+		Show_shields,			// Show the shield mesh
+		Show_thrusters,			// Show the engine thrusters. See model_set_thrust for how long it draws.
+		Lock_detail,			// Only draw the detail level defined in model_set_detail_level
+		No_polys,				// Don't draw the polygons.
+		No_lighting,			// Don't perform any lighting on the model.
+		No_texturing,			// Draw textures as flat-shaded polygons.
+		No_correct,				// Don't to correct texture mapping
+		No_smoothing,			// Don't perform smoothing on vertices.
+		Is_asteroid,			// When set, treat this as an asteroid.  
+		Is_missile,				// When set, treat this as a missilie.  No lighting, small thrusters.
+		Show_outline_preset,	// Draw the object in outline mode. Color assumed to be set already.	
+		Show_invisible_faces,	// Show invisible faces as green...
+		Autocenter,				// Always use the center of the hull bounding box as the center, instead of the pivot point
+		Bay_paths,				// draw bay paths
+		All_xparent,			// render it fully transparent
+		No_zbuffer,				// switch z-buffering off completely 
+		No_cull,				// don't cull backfacing poly's
+		Force_texture,			// force a given texture to always be used
+		Force_lower_detail,		// force the model to draw 1 LOD lower, if possible
+		Edge_alpha,				// makes norms that are faceing away from you render more transparent -Bobboau
+		Center_alpha,			// oposite of above -Bobboau
+		No_fogging,				// Don't fog - taylor
+		Show_outline_htl,		// Show outlines (wireframe view) using HTL method
+		No_glowmaps,			// disable rendering of glowmaps - taylor
+		Full_detail,			// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
+		Force_clamp,			// force clamp - Hery
+		Animated_shader,		// Use a animated Shader - Valathil
+		
+		NUM_VALUES
+	};
 }
 
 #endif

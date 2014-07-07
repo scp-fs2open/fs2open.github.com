@@ -34,9 +34,9 @@
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
 
-char		Current_filename[128];
-char		Current_filename_save[128];
-char		Current_filename_sub[128];	//Last attempted file to load, don't know if ex or not.
+char		Current_filename[MAX_PATH_LEN];
+char		Current_filename_save[MAX_PATH_LEN];
+char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
 char		Error_str[ERROR_LENGTH];
 int		my_errno;
 int		Warning_count, Error_count;
@@ -1767,9 +1767,8 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 
 // Strip comments from a line of input.
 // Goober5000 - rewritten for the second time
-void strip_comments(char *line, bool &in_multiline_comment_a, bool &in_multiline_comment_b)
+void strip_comments(char *line, bool &in_quote, bool &in_multiline_comment_a, bool &in_multiline_comment_b)
 {
-	bool in_quote = false;
 	char *writep = line;
 	char *readp = line;
 
@@ -2097,6 +2096,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	char	*mp;
 	char	*mp_raw;
 	char outbuf[PARSE_BUF_SIZE], *str;
+	bool in_quote = false;
 	bool in_multiline_comment_a = false;
 	bool in_multiline_comment_b = false;
 	int raw_text_len = strlen(raw_text);
@@ -2118,7 +2118,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
 		mp_raw += num_chars_read;
 
-		strip_comments(outbuf, in_multiline_comment_a, in_multiline_comment_b);
+		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
 
 		maybe_convert_foreign_characters(outbuf);
 

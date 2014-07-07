@@ -788,6 +788,9 @@ int event_music_enemy_arrival()
 	else {
 		next_pattern = SONG_EARV_1;
 	}
+    
+	if ( Current_pattern < 0 )
+		return 0;
 
 	if ( Current_pattern == next_pattern )
 		return 0;	// already playing
@@ -1125,7 +1128,7 @@ int event_music_player_respawn_as_observer()
 bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 {
 	char fname[MAX_FILENAME_LEN];
-	char line_buf[128];
+	char line_buf[MAX_PATH_LEN];
 	char *token;
 	int count = 0;
 

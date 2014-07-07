@@ -108,8 +108,8 @@ obj_flag_name Object_flag_names[] = {
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
-	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), dock_list(NULL), dead_dock_list(NULL),
-	  n_quadrants(0), hull_strength(0.0), sim_hull_strength(0.0), net_signature(0), num_pairs(0), collision_group_id(0)
+	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
+	  sim_hull_strength(0.0), net_signature(0), num_pairs(0), dock_list(NULL), dead_dock_list(NULL), collision_group_id(0)
 {
 	memset(&(this->phys_info), 0, sizeof(physics_info));
 }

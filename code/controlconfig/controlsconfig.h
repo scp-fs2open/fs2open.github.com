@@ -288,6 +288,8 @@ extern int Axis_map_to[];
 extern int Invert_axis[];
 extern int Invert_axis_defaults[];
 
+extern int Control_config_overlay_id;
+
 extern config_item Control_config[];		//!< Stores the keyboard configuration
 extern SCP_vector<config_item*> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern char **Scan_code_text;

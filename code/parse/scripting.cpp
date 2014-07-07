@@ -80,7 +80,8 @@ flag_def_list Script_actions[] =
 	{"On Primary Fire",			CHA_PRIMARYFIRE,	0},
 	{"On Secondary Fire",		CHA_SECONDARYFIRE,	0},
 	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0},
-	{"On Beam Collision",		CHA_COLLIDEBEAM,	0}
+	{"On Beam Collision",		CHA_COLLIDEBEAM,	0},
+	{"On Message Received",		CHA_MSGRECEIVED,	0}
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);

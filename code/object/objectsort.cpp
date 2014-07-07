@@ -307,7 +307,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 			// only reset fog if the fog mode has changed - since regenerating a fog table takes
 			// a bit of time
-			if((fog_near != gr_screen.fog_near) || (fog_far != gr_screen.fog_far)){
+			if((GR_FOGMODE_FOG != gr_screen.current_fog_mode) || (fog_near != gr_screen.fog_near) || (fog_far != gr_screen.fog_far)) {
 				gr_fog_set(GR_FOGMODE_FOG, gr_screen.current_fog_color.red, gr_screen.current_fog_color.green, gr_screen.current_fog_color.blue, fog_near, fog_far);
 			}
 

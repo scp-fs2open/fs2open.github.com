@@ -126,6 +126,8 @@ public:
 	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
 	int				num_variables;					// number of variables this campaign had - Goober5000
 	sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
+	int				redalert_num_variables;			// These two variables hold the previous state of the above for restoration
+	sexp_variable	*redalert_variables;			// if you replay the previous mission in a Red Alert scenario. -MageKing17
 
 	campaign()
 		: desc(NULL), num_missions(0), variables(NULL)
@@ -242,6 +244,12 @@ int mission_campaign_get_mission_list(const char *filename, char **list, int max
 int mission_load_up_campaign( player *p = NULL );
 
 // stores mission goals and events in Campaign struct
+void mission_campaign_store_goals_and_events();
+
+// stores campaign-persistent variables
+void mission_campaign_store_variables();
+
+// does both of the above
 void mission_campaign_store_goals_and_events_and_variables();
 
 // evaluates next mission and possible loop mission

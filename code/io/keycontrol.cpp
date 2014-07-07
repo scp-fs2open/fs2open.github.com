@@ -636,6 +636,7 @@ void process_debug_keys(int k)
 
 	switch (k) {
 		case KEY_DEBUGGED + KEY_Q:
+		case KEY_DEBUGGED1 + KEY_Q:
 			Snapshot_all_events = true;
 			break;
 

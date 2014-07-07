@@ -650,27 +650,25 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 		return;
 	}
 	
-  	if (gr_screen.current_fog_mode != fog_mode) {
-	  	if (OGL_fogmode == 3) {
-			glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
-			glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
-		}
-		// Um.. this is not the correct way to fog in software, probably doesn't matter though
-		else if ( (OGL_fogmode == 2) && Cmdline_nohtl ) {
-			glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
-			fog_near *= fog_near;		// it's faster this way
-			fog_far *= fog_far;		
-		} else {
-			glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
-		}
-
-		GL_state.Fog(GL_TRUE); 
-		glFogf(GL_FOG_MODE, GL_LINEAR);
-		glFogf(GL_FOG_START, fog_near);
-		glFogf(GL_FOG_END, fog_far);
-
-		gr_screen.current_fog_mode = fog_mode;
+  	if (OGL_fogmode == 3) {
+		glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
+		glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
 	}
+	// Um.. this is not the correct way to fog in software, probably doesn't matter though
+	else if ( (OGL_fogmode == 2) && Cmdline_nohtl ) {
+		glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
+		fog_near *= fog_near;		// it's faster this way
+		fog_far *= fog_far;		
+	} else {
+		glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
+	}
+
+	GL_state.Fog(GL_TRUE); 
+	glFogf(GL_FOG_MODE, GL_LINEAR);
+	glFogf(GL_FOG_START, fog_near);
+	glFogf(GL_FOG_END, fog_far);
+
+	gr_screen.current_fog_mode = fog_mode;
 	
 	if ( (gr_screen.current_fog_color.red != r) ||
 			(gr_screen.current_fog_color.green != g) ||

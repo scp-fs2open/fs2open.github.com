@@ -2331,7 +2331,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// fade them in the nebula as well
 			if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-				vm_vec_rotate(&npnt, &gpt->pnt, orient);
+				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 				vm_vec_add2(&npnt, pos);
 
 				fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
@@ -2545,10 +2545,33 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 					vm_vec_add2(&world_pnt, pos);
 
 					vm_vec_unrotate(&world_norm, &loc_norm, orient);
-					
-					if ( (shipp != NULL) && (is_ship_arriving(shipp) || shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
-						if (g3_point_behind_user_plane(&world_pnt))
-							continue;
+
+					if ( shipp != NULL ) {
+						if ( (is_ship_arriving(shipp) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+							vec3d warp_pnt, tmp;
+							matrix warp_orient;
+
+							shipp->warpin_effect->getWarpPosition(&warp_pnt);
+							shipp->warpin_effect->getWarpOrientation(&warp_orient);
+							vm_vec_sub( &tmp, &world_pnt, &warp_pnt );
+
+							if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f ) {
+								continue;
+							}
+						}
+
+						if ( (shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+							vec3d warp_pnt, tmp;
+							matrix warp_orient;
+
+							shipp->warpout_effect->getWarpPosition(&warp_pnt);
+							shipp->warpout_effect->getWarpOrientation(&warp_orient);
+							vm_vec_sub( &tmp, &world_pnt, &warp_pnt );
+
+							if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) > 0.0f ) {
+								continue;
+							}
+						}
 					}
 
 					switch (bank->type)
@@ -2618,6 +2641,8 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 						{
 							vertex verts[4];
 							vec3d fvec, top1, bottom1, top2, bottom2, start, end;
+                            
+							memset(verts, 0, sizeof(verts));
 
 							vm_vec_add2(&loc_norm, &loc_offset);
 

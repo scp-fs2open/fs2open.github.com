@@ -30,6 +30,7 @@ namespace Mission {
 		Use_ap_cinematics,			// Kazan - use autopilot cinematics
 		Deactivate_ap,				// KeldorKatarn - deactivate autopilot (patch approved by Kazan)
 		Always_show_goals,			// Karajorma - Show the mission goals, even for training missions
+		End_to_mainhall,			// niffiwan - Return to the mainhall after debrief
 		
 		NUM_VALUES
 	};

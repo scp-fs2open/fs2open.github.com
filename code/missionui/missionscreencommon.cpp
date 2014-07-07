@@ -582,7 +582,7 @@ int common_select_do(float frametime)
 	int	k, new_k;
 
 
-	if ( help_overlay_active(BR_OVERLAY) || help_overlay_active(SS_OVERLAY) || help_overlay_active(WL_OVERLAY) ) {
+	if ( help_overlay_active(Briefing_overlay_id) || help_overlay_active(Ship_select_overlay_id) || help_overlay_active(Weapon_select_overlay_id) ) {
 		Common_buttons[0][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
 		Common_buttons[1][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
 		Common_buttons[2][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
@@ -600,10 +600,10 @@ int common_select_do(float frametime)
 	}
 
 	if ( (k > 0) || (new_k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(BR_OVERLAY) || help_overlay_active(SS_OVERLAY) || help_overlay_active(WL_OVERLAY) ) {
-			help_overlay_set_state(BR_OVERLAY, 0);
-			help_overlay_set_state(SS_OVERLAY, 0);
-			help_overlay_set_state(WL_OVERLAY, 0);
+		if ( help_overlay_active(Briefing_overlay_id) || help_overlay_active(Ship_select_overlay_id) || help_overlay_active(Weapon_select_overlay_id) ) {
+			help_overlay_set_state(Briefing_overlay_id, gr_screen.res, 0);
+			help_overlay_set_state(Ship_select_overlay_id, gr_screen.res, 0);
+			help_overlay_set_state(Weapon_select_overlay_id, gr_screen.res, 0);
 			Active_ui_window->set_ignore_gadgets(0);
 			k = 0;
 			new_k = 0;
@@ -1212,13 +1212,13 @@ void wss_direct_restore_loadout()
 
 			// This wing is already created, so directly update the ships
 			for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
+				if ( wp->ship_index[j] == -1 ) { // if this is an invalid ship, move on
+					continue;
+				}
+
 				slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
 				shipp = &Ships[wp->ship_index[j]];
 				if ( shipp->ship_info_index != slot->ship_class ) {
-
-					if ( wp->ship_index[j] == -1 ) {
-						continue;
-					}
 
 					if ( slot->ship_class == -1 ) {
 						cleanup_ship_index[j] = wp->ship_index[j];
@@ -1746,7 +1746,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 			// render the ships
 			model_clear_instance(model_id);
 			model_set_detail_level(0);
-			gr_set_color(80,49,160);
+			model_set_outline_color(80,49,160);
 			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2);
 			opengl_shader_set_animated_timer(-clip);
 

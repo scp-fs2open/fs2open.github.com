@@ -196,8 +196,8 @@ anim_instance *anim_play(anim_play_struct *aps)
 	}
 
 	if(aps->base_w < 0 || aps->base_h < 0) {
-		instance->base_w = gr_screen.max_w_unscaled;
-		instance->base_h = gr_screen.max_h_unscaled;
+		instance->base_w = gr_screen.max_w_unscaled_zoomed;
+		instance->base_h = gr_screen.max_h_unscaled_zoomed;
 	} else {
 		instance->base_w = aps->base_w;
 		instance->base_h = aps->base_h;
@@ -488,6 +488,10 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		
 		// determine x,y to display the bitmap at
 		if ( instance->world_pos == NULL ) {
+			int old_max_w_unscaled = gr_screen.max_w_unscaled;
+			int old_max_h_unscaled = gr_screen.max_h_unscaled;
+			int old_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+			int old_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 			gr_set_screen_scale(instance->base_w, instance->base_h);
 			gr_set_clip(0, 0, instance->base_w, instance->base_h, GR_RESIZE_MENU);
 			if ( instance->aa_color == NULL ) {
@@ -497,7 +501,7 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 				gr_set_color_fast( (color*)instance->aa_color );
 				gr_aabitmap(instance->x, instance->y, GR_RESIZE_MENU_NO_OFFSET);
 			}
-			gr_reset_screen_scale();
+			gr_set_screen_scale(old_max_w_unscaled, old_max_h_unscaled, old_max_w_unscaled_zoomed, old_max_h_unscaled_zoomed);
 			gr_reset_clip();
 		}
 		else {

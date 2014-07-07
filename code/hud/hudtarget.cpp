@@ -2730,8 +2730,6 @@ void hud_target_subsystem_in_reticle()
 			if ( best_dot > MIN_DOT_FOR_TARGET )
 				nearest_subsys = subsys;
 		}
-
-		Assert(best_dot <= 1.0f);
 	} // end for
 
 	if ( nearest_subsys != NULL ) {
@@ -2838,7 +2836,7 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 
 	// zero verts[] out, this is a faster way (nods to Kazan) to make sure that
 	// the specular colors are set to 0 to avoid rendering problems - taylor
-	memset(verts, 0, sizeof(vertex)*3);
+	memset(verts, 0, sizeof(verts));
 
 	for (i=0; i<3; i++ )	
 		vertlist[i] = &verts[i];
@@ -3238,6 +3236,8 @@ void hud_process_remote_detonate_missile()
 	missile_obj	*mo;
 	object	*mobjp;
 	vertex target_point;
+    
+    memset(&target_point, 0, sizeof(target_point));
 
 	// check for currently locked missiles (highest precedence)
 	for ( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
@@ -3309,6 +3309,8 @@ void hud_show_message_sender()
 		Message_shipnum = -1;
 		return;
 	}
+    
+    memset(&target_point, 0, sizeof(target_point));
 
 	// find the current target vertex 
 	g3_rotate_vertex(&target_point, &targetp->pos);
@@ -3412,6 +3414,8 @@ void hud_show_selection_set()
 		Players[Player_num].current_hotkey_set = -1;
 		return;
 	}
+    
+    memset(&target_point, 0, sizeof(target_point));
 
 	for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
 		targetp = hitem->objp;

@@ -199,22 +199,6 @@ void UI_SLIDER2::process(int focus)
 	}
 }
 
-void UI_SLIDER2::hide()
-{
-	hidden = 1;
-}
-
-void UI_SLIDER2::unhide()
-{
-	hidden = 0;
-}
-
-int UI_SLIDER2::get_hidden()
-{
-	return hidden;
-}
-
-
 // return number of itmes
 int UI_SLIDER2::get_numberItems() {
 	return numberItems;

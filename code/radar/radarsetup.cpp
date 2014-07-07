@@ -87,11 +87,6 @@ int See_all = 0;
 
 DCF_BOOL(see_all, See_all);
 
-static const char radar_default_filenames[2][16]=
-{
-	"radar1","2_radar1"
-};
-
 void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int *blip_type)
 {
 	ship *shipp = NULL;
