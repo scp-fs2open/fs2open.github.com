@@ -1599,7 +1599,7 @@ void main_hall_maybe_blit_tooltips()
 	// set the color and blit the string
 	if (!help_overlay_active(Main_hall_overlay_id)) {
 		int shader_y = (Main_hall->region_yval) - Main_hall_tooltip_padding[gr_screen.res];	// subtract more to pull higher
-		const char *desc = Main_hall->regions.at(Main_hall_mouse_region).description.c_str();
+		const char *desc = Main_hall->regions[Main_hall_mouse_region].description.c_str();
 		
 		// get the width of the string
 		gr_get_string_size(&w, NULL, desc);
