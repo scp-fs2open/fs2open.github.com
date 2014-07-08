@@ -140,7 +140,7 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 	}
 }
 
-void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha, float scale)
+void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha, float scale_factor)
 {
 	vec3d  p;
 	int h, w;
@@ -155,7 +155,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float di
 	vm_vec_rotate(&p, pnt,  &vmd_identity_matrix); 
 	g3_transfer_vertex(&vert, &p);
 	
-	float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f) * scale;
+	float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f) * scale_factor;
 
     if ( clr_idx >= 0 ) {
         bm_get_info(clr_idx, &w, &h);
@@ -267,7 +267,7 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 		blip_head = &Blip_dim_list[blip_type];
 	}
 	
-	float scale = 1.0f;
+	float scale_factor = 1.0f;
 
 	// draw all blips of this type
 	for (b = GET_FIRST(blip_head); b != END_OF_LIST(blip_head); b = GET_NEXT(b))
@@ -276,25 +276,25 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 		
 		gr_set_color_fast(b->blip_color);
 
-		scale = 1.0f;
+		scale_factor = 1.0f;
 
 		// maybe draw cool blip to indicate current target
 		if (b->flags & BLIP_CURRENT_TARGET)
 		{
 			if (radar_target_id_flags & RTIF_PULSATE) {
-				scale *= 1.3f + (sinf(10 * f2fl(Missiontime)) * 0.3f);
+				scale_factor *= 1.3f + (sinf(10 * f2fl(Missiontime)) * 0.3f);
 			}
 			if (radar_target_id_flags & RTIF_BLINK) {
 				if (Missiontime & 8192)
 					continue;
 			}
 			if (radar_target_id_flags & RTIF_ENLARGE) {
-				scale *= 1.3f;
+				scale_factor *= 1.3f;
 			}
 
 			alpha = 1.0;
 			b->rad = Radar_blip_radius_target;
-			drawContact(&pos, -1, target_brackets, b->dist, alpha, scale);
+			drawContact(&pos, -1, target_brackets, b->dist, alpha, scale_factor);
 		}
 		else {
 			b->rad = Radar_blip_radius_normal;
@@ -307,9 +307,9 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 			if (b->flags & BLIP_DRAW_DISTORTED) {
 				blipDrawFlicker(b, &pos, alpha);
 			} else if (b->radar_image_2d >= 0 || b->radar_color_image_2d >= 0) {
-				drawContact(&pos, b->radar_image_2d, b->radar_color_image_2d, b->dist, alpha, scale);
+				drawContact(&pos, b->radar_image_2d, b->radar_color_image_2d, b->dist, alpha, scale_factor);
 			} else {
-				drawContact(&pos, -1, unknown_contact_icon, b->dist, alpha, scale);
+				drawContact(&pos, -1, unknown_contact_icon, b->dist, alpha, scale_factor);
 			}
 		}
 	}
