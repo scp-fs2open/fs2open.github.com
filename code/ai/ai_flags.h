@@ -48,6 +48,19 @@ namespace AI {
 
 		NUM_VALUES
 	};
+
+	FLAG_LIST(Override_flags) {
+		Full,		//	Full sexp control
+		Roll,		//	Sexp forced roll maneuver
+		Pitch,		//	Sexp forced pitch change
+		Heading,	//	Sexp forced heading change
+		Full_lat,	//  full control over up/side/forward movement
+		Up,			//	vertical movement
+		Sideways,	//	horizontal movement
+		Forward,	//	forward movement
+
+		NUM_VALUES
+	};
 }
 
 #endif

@@ -499,7 +499,7 @@ typedef struct ai_info {
 	vec3d	artillery_lock_pos;				// base position of the lock point on (in model's frame of reference)
 	float		lethality;							// measure of how dangerous ship is to enemy BIG|HUGE ships (likelyhood of targeting)
 
-	int		ai_override_flags;			// flags for marking ai overrides from sexp or lua systems
+	flagset<AI::Override_flags>	ai_override_flags;			// flags for marking ai overrides from sexp or lua systems
 	control_info	ai_override_ci;		// ai override control info
 	int		ai_override_timestamp;		// mark for when to end the current override
 } ai_info;

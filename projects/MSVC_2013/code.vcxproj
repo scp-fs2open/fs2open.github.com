@@ -788,6 +788,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h" />
+    <ClInclude Include="..\..\code\ai\ai_flags.h" />
     <ClInclude Include="..\..\code\ai\ai_profiles.h" />
     <ClInclude Include="..\..\code\ai\aibig.h" />
     <ClInclude Include="..\..\code\ai\aigoals.h" />

@@ -10020,7 +10020,7 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	control_info *cip = &aip->ai_override_ci;
 
 	aip->ai_override_timestamp = timestamp(t);
-	aip->ai_override_flags = 0;
+	aip->ai_override_flags.reset();
 
 	if (t < 2)
 		return ADE_RETURN_FALSE;
@@ -10031,41 +10031,41 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	}
 
 	if(f_rot) {
-		aip->ai_override_flags = AIORF_FULL;
+		aip->ai_override_flags.set(AI::Override_flags::Full);
 		cip->heading = arr[0];
 		cip->pitch = arr[1];
 		cip->bank = arr[2];
 	} else {
 		if (arr[0] != 0) {
 			cip->heading = arr[0];
-			aip->ai_override_flags |= AIORF_HEADING;
+			aip->ai_override_flags.set(AI::Override_flags::Heading);
 		} 
 		if (arr[1] != 0) {
 			cip->pitch = arr[1];
-			aip->ai_override_flags |= AIORF_PITCH;
+			aip->ai_override_flags.set(AI::Override_flags::Pitch);
 		} 
 		if (arr[2] != 0) {
 			cip->bank = arr[2];
-			aip->ai_override_flags |= AIORF_ROLL;
+			aip->ai_override_flags.set(AI::Override_flags::Roll);
 		} 
 	}
 	if(f_move) {
-		aip->ai_override_flags = AIORF_FULL_LAT;
+		aip->ai_override_flags.set(AI::Override_flags::Full_lat);
 		cip->vertical = arr[3];
 		cip->sideways = arr[4];
 		cip->forward = arr[5];
 	} else {
 		if (arr[3] != 0) {
 			cip->vertical = arr[3];
-			aip->ai_override_flags |= AIORF_UP;
+			aip->ai_override_flags.set(AI::Override_flags::Up);
 		} 
 		if (arr[4] != 0) {
 			cip->sideways = arr[4];
-			aip->ai_override_flags |= AIORF_SIDEWAYS;
+			aip->ai_override_flags.set(AI::Override_flags::Sideways);
 		} 
 		if (arr[5] != 0) {
 			cip->forward = arr[5];
-			aip->ai_override_flags |= AIORF_FORWARD;
+			aip->ai_override_flags.set(AI::Override_flags::Forward);
 		} 
 	}
 	return ADE_RETURN_TRUE;
