@@ -1908,7 +1908,7 @@ int parse_create_object_sub(p_object *p_objp)
 		aip->goals[i].ai_mode = AI_GOAL_NONE;
 		aip->goals[i].signature = -1;
 		aip->goals[i].priority = -1;
-		aip->goals[i].flags = 0;
+		aip->goals[i].flags.reset();
 	}
 
 	shipp->cargo1 = p_objp->cargo1;
@@ -1995,12 +1995,12 @@ int parse_create_object_sub(p_object *p_objp)
 	// whether this flag is set or not
 	if (p_objp->flags[Mission::Parse_Object_Flags::AIF_Kamikaze])
 	{
-		Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
+		Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Kamikaze);
 		Ai_info[shipp->ai_index].kamikaze_damage = p_objp->kamikaze_damage;
 	}
 
 	if (p_objp->flags[Mission::Parse_Object_Flags::AIF_No_dynamic])
-		Ai_info[shipp->ai_index].ai_flags |= AIF_NO_DYNAMIC;
+		Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::No_dynamic);
 
 	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status])
 	{
@@ -2411,7 +2411,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	aip->wing = wingnum;
 
 	if (wingp->flags[Ship::Wing_Flags::No_dynamic])
-		aip->ai_flags |= AIF_NO_DYNAMIC;
+		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
 
 	// copy any goals from the wing to the newly created ship
 	for (index = 0; index < MAX_AI_GOALS; index++)
@@ -4047,7 +4047,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		Ai_info[Ships[Objects[objnum].instance].ai_index].wing = wingnum;
 
 		if (wingp->flags[Ship::Wing_Flags::No_dynamic])
-			aip->ai_flags |= AIF_NO_DYNAMIC;
+			aip->ai_flags.set(AI::AI_Flags::No_dynamic);
 
 		// update housekeeping variables
 		// NOTE:  for the initial wing setup we use actual position to get around
@@ -4437,7 +4437,7 @@ void parse_wing(mission *pm)
 		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
 		wingp->ai_goals[i].signature = -1;
 		wingp->ai_goals[i].priority = -1;
-		wingp->ai_goals[i].flags = 0;
+		wingp->ai_goals[i].flags.reset();
 	}
 
 	// 7/13/98 -- MWA
@@ -5990,7 +5990,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 
 				// change the position of the next ships in the wing.  Use the cool function in AiCode.cpp which
 				// Mike K wrote to give new positions to the wing members.
-				get_absolute_wing_pos( &objp->pos, leader_objp, wing_index++, 0);
+				get_absolute_wing_pos( &objp->pos, leader_objp, wing_index++, false);
 				memcpy( &objp->orient, &orient, sizeof(matrix) );
 
 				index++;

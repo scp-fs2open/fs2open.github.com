@@ -434,7 +434,7 @@ bool StartAutopilot()
 				if (leader_objp != &Objects[Ships[i].objnum])
 				{
 					// not leader.. get our position relative to leader
-					get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object]);
 				}
 				else
 				{
@@ -950,7 +950,7 @@ void EndAutoPilot()
 						aigp->ai_mode = AI_GOAL_NONE;
 						aigp->signature = -1;
 						aigp->priority = -1;
-						aigp->flags = 0;
+						aigp->flags.reset();
 					}
 				}
 			}
@@ -974,7 +974,7 @@ void EndAutoPilot()
 						aigp->ai_mode = AI_GOAL_NONE;
 						aigp->signature = -1;
 						aigp->priority = -1;
-						aigp->flags = 0;
+						aigp->flags.reset();
 					}
 				}
 			}

@@ -286,7 +286,7 @@ int multi_oo_pack_client_data(ubyte *data)
 	if ( Player_ai->current_target_is_locked ){
 		out_flags |= OOC_TARGET_LOCKED;
 	}
-	if ( Player_ai->ai_flags & AIF_SEEK_LOCK ){	
+	if ( Player_ai->ai_flags[AI::AI_Flags::Seek_lock] ){	
 		out_flags |= OOC_TARGET_SEEK_LOCK;
 	}
 	if ( Player->locking_on_center ){
@@ -353,6 +353,7 @@ int multi_oo_pack_client_data(ubyte *data)
 #define PACK_USHORT(v) { short swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(short) ); packet_size += sizeof(short); }
 #define PACK_SHORT(v) { ushort swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(ushort) ); packet_size += sizeof(ushort); }
 #define PACK_INT(v) { int swap = INTEL_INT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(int) ); packet_size += sizeof(int); }
+#define PACK_LONG(v) {long swap = INTEL_LONG(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(long)); packet_size += sizeof(long); }
 int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data_out)
 {	
 	ubyte data[255];
@@ -527,7 +528,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		// flag
 		support_extra = 1;		
 		PACK_BYTE( support_extra );
-		PACK_INT( Ai_info[shipp->ai_index].ai_flags );
+		PACK_LONG( Ai_info[shipp->ai_index].ai_flags.to_long() );
 		PACK_INT( Ai_info[shipp->ai_index].mode );
 		PACK_INT( Ai_info[shipp->ai_index].submode );
 
@@ -642,9 +643,9 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 		if((shipp != NULL) && (shipp->ai_index != -1)){			
 			Ai_info[shipp->ai_index].current_target_is_locked = ( in_flags & OOC_TARGET_LOCKED) ? 1 : 0;
 			if	( in_flags & OOC_TARGET_SEEK_LOCK ) {
-				Ai_info[shipp->ai_index].ai_flags |= AIF_SEEK_LOCK;
+				Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Seek_lock);
 			} else {
-				Ai_info[shipp->ai_index].ai_flags &= ~AIF_SEEK_LOCK;
+				Ai_info[shipp->ai_index].ai_flags.unset(AI::AI_Flags::Seek_lock);
 			}
 		}
 
@@ -944,17 +945,18 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	GET_DATA(support_extra);
 	if(support_extra){
 		ushort dock_sig;
-		int ai_flags, ai_mode, ai_submode;
+		int ai_mode, ai_submode;
+		ulong ai_flags;
 
 		// flag		
-		GET_INT(ai_flags);
+		GET_LONG(ai_flags);
 		GET_INT(ai_mode);
 		GET_INT(ai_submode);
 		GET_USHORT(dock_sig);		
 
 		// valid ship?							
 		if((shipp != NULL) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
-			Ai_info[shipp->ai_index].ai_flags = ai_flags;
+			Ai_info[shipp->ai_index].ai_flags.from_long(ai_flags);
 			Ai_info[shipp->ai_index].mode = ai_mode;
 			Ai_info[shipp->ai_index].submode = ai_submode;
 

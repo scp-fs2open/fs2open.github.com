@@ -4908,20 +4908,6 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 		// packet.  Also set any other flags/modes which need to be set to prevent Asserts.
 		// bleah.
 		if ( (code == REPAIR_INFO_BEGIN) && (repair_objp != NULL) ) {
-// Karajorma removed this in revision 4808 to fix bug 1088.  Problem is, if
-// this was originally intended to prevent docking problems, will they return?
-/*
-			// find indexes from goal
-			ai_info *aip = &Ai_info[Ships[repair_objp->instance].ai_index];
-			Assert(aip->active_goal >= 0);
-			ai_goal *aigp = &aip->goals[aip->active_goal];
-			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
-
-			int docker_index = aigp->docker.index;
-			int dockee_index = aigp->dockee.index;
-
-			ai_do_objects_docked_stuff( repair_objp, docker_index, repaired_objp, dockee_index );
-*/
 			Ai_info[Ships[repair_objp->instance].ai_index].mode = AIM_DOCK;
 		}
 
@@ -5033,7 +5019,7 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 
 		// for docking, add the dock and dockee index
 		if ( aigp->ai_mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
-			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+			Assert(ai_goal_valid_dock_index(aigp));
 			Assert( (aigp->docker.index >= 0) && (aigp->docker.index < UCHAR_MAX) );
 			Assert( (aigp->dockee.index >= 0) && (aigp->dockee.index < UCHAR_MAX) );
 			docker_index = (ubyte) aigp->docker.index;
@@ -5125,7 +5111,8 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 		if ( mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
 			aigp->docker.index = docker_index;
 			aigp->dockee.index = dockee_index;
-			aigp->flags |= AIGF_DOCK_INDEXES_VALID;
+			aigp->flags.set(AI::Goal_flags::Dockee_index_valid);
+			aigp->flags.set(AI::Goal_flags::Docker_index_valid);
 		}
 
 		// get a shipname if we can.

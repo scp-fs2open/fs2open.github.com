@@ -12589,7 +12589,6 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 void multi_sexp_deal_with_ship_flag() 
 {
 	int object_flag = 0;
-	// int object_flag2 = 0;
 	Ship::Ship_Flags ship_flag;
 	int tmp_ship_flag = 0; 
 	int p_object_flag = 0;
@@ -12686,7 +12685,7 @@ void multi_sexp_deal_with_ship_flag()
  *
  * @note this function has a similar purpose to sexp_deal_with_ship_flag; make sure you check/update both
  */
-void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int ship_flag, int parse_obj_flag, int ai_flag, int ai_flag2, bool set_flag)
+void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int ship_flag, int parse_obj_flag, int ai_flag, bool set_flag)
 {
 	int i;
 	flagset<Object::Object_Flags> object_flag_orig;
@@ -12708,7 +12707,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					object_ship_wing_point_team_set_ship(&oswpt2, so, future_ships); 
 
 					// recurse
-					sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, ai_flag2, set_flag);
+					sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 				}
 			}
 
@@ -12717,7 +12716,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					if (p_objp->team == oswpt.team) {
 						oswpt2.p_objp = p_objp;
 						oswpt2.type = OSWPT_TYPE_PARSE_OBJECT;
-						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, ai_flag2, set_flag);
+						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 					}
 				}
 			}
@@ -12736,14 +12735,14 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					if (p_objp->wingnum == WING_INDEX(oswpt.wingp)) {
 						oswpt2.p_objp = p_objp;
 						oswpt2.type = OSWPT_TYPE_PARSE_OBJECT;
-						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, ai_flag2, set_flag);
+						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 					}
 				}
 			}
 
 			for (i = 0; i < oswpt.wingp->current_count; i++) {
 				object_ship_wing_point_team_set_ship(&oswpt2, &Ships[oswpt.wingp->ship_index[i]], future_ships); 
-				sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, ai_flag2, set_flag);
+				sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 			}
 
 			break;
@@ -12794,15 +12793,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			{
 				// set or clear?
 				if (set_flag)
-					Ai_info[oswpt.shipp->ai_index].ai_flags |= ai_flag;
+					Ai_info[oswpt.shipp->ai_index].ai_flags.set((AI::AI_Flags)ai_flag);
 				else
-					Ai_info[oswpt.shipp->ai_index].ai_flags &= ~ai_flag;
-			}
-
-			// see if we have an object flag2 to set
-			if (ai_flag2)
-			{
-				// Add code here when have flag2 settings
+					Ai_info[oswpt.shipp->ai_index].ai_flags.unset((AI::AI_Flags)ai_flag);
 			}
 
 			// no break statement. We want to fall through. 
@@ -12826,7 +12819,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 
 }
 
-void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag, int parse_obj_flag, int ai_flag, int ai_flag2, bool set_flag)
+void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag, int parse_obj_flag, int ai_flag, bool set_flag)
 {
 	ship_obj	*so;
 	p_object	*p_objp;
@@ -12836,7 +12829,7 @@ void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag,
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		object_ship_wing_point_team_set_ship(&oswpt, so, future_ships); 
 
-		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, ai_flag2, set_flag);
+		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 	}
 
 	// set up all the ships which have yet to arrive
@@ -12846,12 +12839,12 @@ void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag,
 		{
 			oswpt.p_objp = p_objp; 
 			oswpt.type = OSWPT_TYPE_PARSE_OBJECT;
-			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, ai_flag2, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 		}
 	}
 }
 
-bool sexp_check_flag_arrays(char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, int &ai_flag, int &ai_flag2)
+bool sexp_check_flag_arrays(char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag)
 {
 	int i;
 	bool send_multi = false;
@@ -12883,12 +12876,7 @@ bool sexp_check_flag_arrays(char *flag_name, Object::Object_Flags &object_flag, 
 	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
 		if (!stricmp(Ai_flag_names[i].flag_name, flag_name)) {
 			// make sure the list writes to the correct list of flags!
-			if (Ai_flag_names[i].flag_list == 1) {
-				ai_flag = Ai_flag_names[i].flag;
-			}
-			else if (Ai_flag_names[i].flag_list == 2) {
-				ai_flag2 = Ai_flag_names[i].flag;
-			}
+			ai_flag = Ai_flag_names[i].flag;
 			break;
 		}
 	}
@@ -12903,8 +12891,7 @@ int sexp_are_ship_flags_set(int node)
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
 	Ship::Ship_Flags ship_flags = Ship::Ship_Flags::NUM_VALUES;
 	Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
-	int ai_flag = 0;
-	int ai_flag2 = 0;
+	AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
 
 	shipp = sexp_get_ship_from_node(node);
 
@@ -12917,7 +12904,7 @@ int sexp_are_ship_flags_set(int node)
 
 	while (node != -1) {
 		flag_name = CTEXT(node); 
-		sexp_check_flag_arrays(flag_name, object_flag, ship_flags, parse_obj_flag, ai_flag, ai_flag2);
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flags, parse_obj_flag, ai_flag);
 
 		// now check the flags
 		if (object_flag != Object::Object_Flags::NUM_VALUES) {
@@ -12932,8 +12919,8 @@ int sexp_are_ship_flags_set(int node)
 
 		// we don't check parse flags
 
-		if (ai_flag) {
-			if (!(Ai_info[shipp->ai_index].ai_flags & ai_flag))
+		if (ai_flag != AI::AI_Flags::NUM_VALUES) {
+			if (!(Ai_info[shipp->ai_index].ai_flags[(AI::AI_Flags)ai_flag]))
 				return 0; 
 		}
 
@@ -12951,15 +12938,14 @@ void sexp_alter_ship_flag(int node)
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
 	Ship::Ship_Flags ship_flags = Ship::Ship_Flags::NUM_VALUES;
 	Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
-	int ai_flag = 0;
-	int ai_flag2 = 0;
+	AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
 	bool set_flag = false; 
 	bool future_ships = false; 
 	object_ship_wing_point_team oswpt;
 
 	flag_name = CTEXT(node); 
 
-	sexp_check_flag_arrays(flag_name, object_flag, ship_flags, parse_obj_flag, ai_flag, ai_flag2);
+	sexp_check_flag_arrays(flag_name, object_flag, ship_flags, parse_obj_flag, ai_flag);
 
 	node = CDR(node); 
 	if (is_sexp_true(node)) {
@@ -12977,11 +12963,8 @@ void sexp_alter_ship_flag(int node)
 	multi_send_int((int)object_flag);
 	multi_send_int((int)ship_flags);
 	multi_send_int((int)parse_obj_flag);
-	multi_send_int(ai_flag);
-	/* Uncommenting this will break compatibility with earlier builds but it is pointless to send it until ai_flag2
-	is actually used by the engine
-	*/
-	// multi_send_int(ai_flag2);
+	multi_send_int((int)ai_flag);
+
 	multi_send_bool(set_flag);
 	multi_send_bool(future_ships);
 
@@ -12992,7 +12975,7 @@ void sexp_alter_ship_flag(int node)
 		// send a message to the clients saying there were no more arguments
 		multi_send_bool(false);
 
-		alter_flag_for_all_ships(future_ships, (int)object_flag, (int)ship_flags, (int)parse_obj_flag, ai_flag, ai_flag2, set_flag);
+		alter_flag_for_all_ships(future_ships, (int)object_flag, (int)ship_flags, (int)parse_obj_flag, (int)ai_flag, set_flag);
 	}
 
 
@@ -13009,7 +12992,7 @@ void sexp_alter_ship_flag(int node)
 				continue; 
 			}
 
-			sexp_alter_ship_flag_helper(oswpt, future_ships, (int)object_flag, (int)ship_flags, (int)parse_obj_flag, ai_flag, ai_flag2, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, (int)object_flag, (int)ship_flags, (int)parse_obj_flag, (int)ai_flag, set_flag);
 			node = CDR(node);
 
 			multi_send_int(oswpt.type);
@@ -13049,7 +13032,6 @@ void multi_sexp_alter_ship_flag()
 	bool future_ships = true; 
 	bool process_data = false;
 	int ai_flag = 0;
-	int ai_flag2 = 0;
 	int type = -1;
 	object_ship_wing_point_team oswpt;
 	ushort wing_sig;
@@ -13069,7 +13051,7 @@ void multi_sexp_alter_ship_flag()
 
 	// no more data means do this to every ship in the mission
 	if (!process_data) {
-		alter_flag_for_all_ships(future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, ai_flag2, set_flag);
+		alter_flag_for_all_ships(future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 	}
 	else {
 		while (multi_get_int(type)) {
@@ -13119,7 +13101,7 @@ void multi_sexp_alter_ship_flag()
 					multi_get_int(oswpt.team);
 					break;
 			}
-			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, ai_flag2, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 		}
 	}
 }
@@ -14492,12 +14474,12 @@ void sexp_ingame_ship_kamikaze(ship *shipp, int kdamage)
 
 	if (kdamage > 0)
 	{
-		aip->ai_flags |= AIF_KAMIKAZE;
+		aip->ai_flags.set(AI::AI_Flags::Kamikaze);
 		aip->kamikaze_damage = kdamage;
 	}
 	else
 	{
-		aip->ai_flags &= ~AIF_KAMIKAZE;
+		aip->ai_flags.unset(AI::AI_Flags::Kamikaze);
 		aip->kamikaze_damage = 0;
 	}
 }

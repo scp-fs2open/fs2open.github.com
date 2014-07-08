@@ -1656,9 +1656,9 @@ int CFred_mission_save::save_objects()
 			fout(" \"hidden-from-sensors\"");
 		if (shipp->flags[Ship::Ship_Flags::Scannable])
 			fout(" \"scannable\"");
-		if (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE)
+		if (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze])
 			fout(" \"kamikaze\"");
-		if (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC)
+		if (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::No_dynamic])
 			fout(" \"no-dynamic\"");
 		if (shipp->flags[Ship::Ship_Flags::Red_alert_store_status])
 			fout(" \"red-alert-carry\"");
@@ -1888,7 +1888,7 @@ int CFred_mission_save::save_objects()
 		}
 		// -----------------------------------------------------------
 
-		if ( Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE ) {
+		if ( Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze] ) {
 			if ( optional_string_fred("+Kamikaze Damage:", "$Name:")){
 				parse_comments();
 			} else {
