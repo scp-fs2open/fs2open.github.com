@@ -39,7 +39,7 @@ enum cmdline_arg_type
 	AT_NONE       =0,
 	AT_INT,
 	AT_FLOAT,
-	AT_STRING,
+	AT_STRING
 };
 // values and order MUST match cmdline_arg_type
 const char *cmdline_arg_types[] =
